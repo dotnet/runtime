@@ -12,21 +12,24 @@
 #include <glib.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/ipc.h>
+#include <unistd.h>
+
 #ifdef HAVE_SYS_SEM
-#include <sys/sem.h>
+#  include <sys/sem.h>
 #else
-#define DISABLE_SHARED_HANDLES
+#  define DISABLE_SHARED_HANDLES
 #endif
 
-#ifdef HAVE_SYS_UTSNAME_H
-#include <sys/utsname.h>
+#ifndef DISABLE_SHARED_HANDLES
+#  include <sys/mman.h>
+#  include <sys/ipc.h>
+#  ifdef HAVE_SYS_UTSNAME_H
+#    include <sys/utsname.h>
+#  endif
 #endif
 
 #include <mono/io-layer/wapi.h>
@@ -34,6 +37,89 @@
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/handles-private.h>
 
+#define DEBUGLOG(...)
+//#define DEBUGLOG(...) g_message(__VA_ARGS__);
+
+// Semaphores used when no-shared-memory use is in use
+
+static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
+
+static void
+noshm_semaphores_init (void)
+{
+       int i;
+
+       for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) 
+               mono_mutex_init (&noshm_sems [i], NULL);
+}
+
+static int
+noshm_sem_lock (int sem)
+{
+	int ret;
+	
+	DEBUGLOG ("%s: locking nosem %d", __func__, sem);
+	
+	ret = mono_mutex_lock (&noshm_sems[sem]);
+	
+	return ret;
+}
+
+static int
+noshm_sem_trylock (int sem)
+{
+	int ret;
+	
+	DEBUGLOG ("%s: trying to lock nosem %d", __func__, sem);
+	
+	ret = mono_mutex_trylock (&noshm_sems[sem]);
+	
+	return ret;
+}
+
+static int
+noshm_sem_unlock (int sem)
+{
+	int ret;
+	
+	DEBUGLOG ("%s: unlocking nosem %d", __func__, sem);
+	
+	ret = mono_mutex_unlock (&noshm_sems[sem]);
+	
+	return ret;
+}
+
+#ifdef DISABLE_SHARED_HANDLES
+void
+_wapi_shm_semaphores_init (void)
+{
+	noshm_semaphores_init ();
+}
+
+void
+_wapi_shm_semaphores_remove (void)
+{
+	/* Nothing */
+}
+
+int
+_wapi_shm_sem_lock (int sem)
+{
+	return noshm_sem_lock (sem);
+}
+
+int
+_wapi_shm_sem_trylock (int sem)
+{
+	return noshm_sem_trylock (sem);
+}
+
+int
+_wapi_shm_sem_unlock (int sem)
+{
+	return noshm_sem_unlock (sem);
+}
+#else
 /*
  * Use POSIX shared memory if possible, it is simpler, and it has the advantage that 
  * writes to the shared area does not need to be written to disk, avoiding spinning up 
@@ -42,8 +128,6 @@
 #ifdef HAVE_SHM_OPEN
 #define USE_SHM 1
 #endif
-
-#undef DEBUG
 
 #ifdef DISABLE_SHARED_HANDLES
 gboolean _wapi_shm_disabled = TRUE;
@@ -134,7 +218,8 @@ _wapi_shm_open (const char *filename, int size)
 
 #endif
 
-static gchar *_wapi_shm_file (_wapi_shm_t type)
+static gchar *
+_wapi_shm_file (_wapi_shm_t type)
 {
 	static gchar file[_POSIX_PATH_MAX];
 	gchar *name = NULL, *filename, *dir, *wapi_dir;
@@ -165,10 +250,11 @@ static gchar *_wapi_shm_file (_wapi_shm_t type)
 	mkdir (dir, 0755);
 	g_free (dir);
 	
-	return(file);
+	return file;
 }
 
-static int _wapi_shm_file_open (const gchar *filename, guint32 wanted_size)
+static int
+_wapi_shm_file_open (const gchar *filename, guint32 wanted_size)
 {
 	int fd;
 	struct stat statbuf;
@@ -212,7 +298,7 @@ try_again:
 		} else if (fd == -1) {
 			g_critical ("%s: shared file [%s] open error: %s",
 				    __func__, filename, g_strerror (errno));
-			return(-1);
+			return -1;
 		} else {
 			/* We created the file, so we need to expand
 			 * the file.
@@ -225,7 +311,7 @@ try_again:
 				g_critical ("%s: shared file [%s] lseek error: %s", __func__, filename, g_strerror (errno));
 				close (fd);
 				unlink (filename);
-				return(-1);
+				return -1;
 			}
 			
 			do {
@@ -236,7 +322,7 @@ try_again:
 				g_critical ("%s: shared file [%s] write error: %s", __func__, filename, g_strerror (errno));
 				close (fd);
 				unlink (filename);
-				return(-1);
+				return -1;
 			}
 			
 			created = TRUE;
@@ -250,7 +336,7 @@ try_again:
 	} else if (fd == -1) {
 		g_critical ("%s: shared file [%s] open error: %s", __func__,
 			    filename, g_strerror (errno));
-		return(-1);
+		return -1;
 	}
 	
 	/* Use stat to find the file size (instead of hard coding it)
@@ -264,7 +350,7 @@ try_again:
 			unlink (filename);
 		}
 		close (fd);
-		return(-1);
+		return -1;
 	}
 
 	if (statbuf.st_size < wanted_size) {
@@ -272,7 +358,7 @@ try_again:
 		if (created == TRUE) {
 			g_critical ("%s: shared file [%s] is not big enough! (found %ld, need %d bytes)", __func__, filename, (long)statbuf.st_size, wanted_size);
 			unlink (filename);
-			return(-1);
+			return -1;
 		} else {
 			/* We didn't create it, so just try opening it again */
 			_wapi_handle_spin (100);
@@ -280,10 +366,11 @@ try_again:
 		}
 	}
 	
-	return(fd);
+	return fd;
 }
 
-static gboolean check_disabled (void)
+static gboolean
+check_disabled (void)
 {
 	if (_wapi_shm_disabled || g_getenv ("MONO_DISABLE_SHM")) {
 		const char* val = g_getenv ("MONO_DISABLE_SHM");
@@ -292,7 +379,7 @@ static gboolean check_disabled (void)
 		}
 	}
 
-	return(_wapi_shm_disabled);
+	return _wapi_shm_disabled;
 }
 
 /*
@@ -302,7 +389,8 @@ static gboolean check_disabled (void)
  * Attach to the shared memory file or create it if it did not exist.
  * Returns the memory area the file was mmapped to.
  */
-gpointer _wapi_shm_attach (_wapi_shm_t type)
+gpointer
+_wapi_shm_attach (_wapi_shm_t type)
 {
 	gpointer shm_seg;
 	int fd;
@@ -341,14 +429,14 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	if (fd == -1) {
 		g_critical ("%s: shared file [%s] open error", __func__,
 			    filename);
-		return(NULL);
+		return NULL;
 	}
 
 	if (fstat (fd, &statbuf)==-1) {
 		g_critical ("%s: fstat error: %s", __func__,
 			    g_strerror (errno));
 		close (fd);
-		return(NULL);
+		return NULL;
 	}
 	
 	shm_seg = mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE,
@@ -359,23 +447,24 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 		if (shm_seg == MAP_FAILED) {
 			g_critical ("%s: mmap error: %s", __func__, g_strerror (errno));
 			close (fd);
-			return(NULL);
+			return NULL;
 		}
 	}
 		
 	close (fd);
-	return(shm_seg);
+	return shm_seg;
 }
 
-#ifdef HAVE_SYS_SEM
-static void shm_semaphores_init (void)
+static void
+shm_semaphores_init (void)
 {
 	key_t key;
 	key_t oldkey;
 	int thr_ret;
 	struct _WapiHandleSharedLayout *tmp_shared;
 	
-	/* Yet more barmy API - this union is a well-defined parameter
+	/*
+	 * Yet more barmy API - this union is a well-defined parameter
 	 * in a syscall, yet I still have to define it here as it
 	 * doesn't appear in a header
 	 */
@@ -392,14 +481,16 @@ static void shm_semaphores_init (void)
 		def_vals[i] = 1;
 	}
 
-	/* Process count must start at '0' - the 1 for all the others
+	/*
+	 * Process count must start at '0' - the 1 for all the others
 	 * sets the semaphore to "unlocked"
 	 */
 	def_vals[_WAPI_SHARED_SEM_PROCESS_COUNT] = 0;
 	
 	defs.array = def_vals;
 	
-	/* Temporarily attach the shared data so we can read the
+	/*
+	 *Temporarily attach the shared data so we can read the
 	 * semaphore key.  We release this mapping and attach again
 	 * after getting the semaphores to avoid a race condition
 	 * where a terminating process can delete the shared files
@@ -417,11 +508,10 @@ again:
 	oldkey = tmp_shared->sem_key;
 
 	if (oldkey == 0) {
-#ifdef DEBUG
-		g_message ("%s: Creating with new key (0x%x)", __func__, key);
-#endif
+		DEBUGLOG ("%s: Creating with new key (0x%x)", __func__, key);
 
-		/* The while loop attempts to make some sense of the
+		/*
+		 * The while loop attempts to make some sense of the
 		 * bonkers 'think of a random number' method of
 		 * picking a key without collision with other
 		 * applications
@@ -440,12 +530,10 @@ again:
 			}
 			
 			key++;
-#ifdef DEBUG
-			g_message ("%s: Got (%s), trying with new key (0x%x)",
-				   __func__, g_strerror (errno), key);
-#endif
+			DEBUGLOG ("%s: Got (%s), trying with new key (0x%x)", __func__, g_strerror (errno), key);
 		}
-		/* Got a semaphore array, so initialise it and install
+		/*
+		 * Got a semaphore array, so initialise it and install
 		 * the key into the shared memory
 		 */
 		
@@ -453,7 +541,8 @@ again:
 			if (retries > 3)
 				g_warning ("%s: semctl init error: %s - trying again", __func__, g_strerror (errno));
 
-			/* Something went horribly wrong, so try
+			/*
+			 * Something went horribly wrong, so try
 			 * getting a new set from scratch
 			 */
 			semctl (_wapi_sem_id, 0, IPC_RMID);
@@ -462,7 +551,8 @@ again:
 
 		if (InterlockedCompareExchange (&tmp_shared->sem_key,
 						key, 0) != 0) {
-			/* Someone else created one and installed the
+			/*
+			 * Someone else created one and installed the
 			 * key while we were working, so delete the
 			 * array we created and fall through to the
 			 * 'key already known' case.
@@ -470,16 +560,15 @@ again:
 			semctl (_wapi_sem_id, 0, IPC_RMID);
 			oldkey = tmp_shared->sem_key;
 		} else {
-			/* We've installed this semaphore set's key into
+			/*
+			 * We've installed this semaphore set's key into
 			 * the shared memory
 			 */
 			goto done;
 		}
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: Trying with old key 0x%x", __func__, oldkey);
-#endif
+	DEBUGLOG ("%s: Trying with old key 0x%x", __func__, oldkey);
 
 	_wapi_sem_id = semget (oldkey, _WAPI_SHARED_SEM_COUNT, 0600);
 	if (_wapi_sem_id == -1) {
@@ -487,7 +576,8 @@ again:
 			g_warning ("%s: semget error opening old key 0x%x (%s) - trying again",
 					__func__, oldkey,g_strerror (errno));
 
-		/* Someone must have deleted the semaphore set, so
+		/*
+		 * Someone must have deleted the semaphore set, so
 		 * blow away the bad key and try again
 		 */
 		InterlockedCompareExchange (&tmp_shared->sem_key, 0, oldkey);
@@ -500,11 +590,10 @@ again:
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 	g_assert (thr_ret == 0);
 	
-#ifdef DEBUG
-	g_message ("%s: Incrementing the process count (%d)", __func__, _wapi_getpid ());
-#endif
+	DEBUGLOG ("%s: Incrementing the process count (%d)", __func__, _wapi_getpid ());
 
-	/* We only ever _unlock_ this semaphore, letting the kernel
+	/*
+	 * We only ever _unlock_ this semaphore, letting the kernel
 	 * restore (ie decrement) this unlock when this process exits.
 	 * We lock another semaphore around it so we can serialise
 	 * access when we're testing the value of this semaphore when
@@ -512,9 +601,7 @@ again:
 	 */
 	_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT);
 
-#ifdef DEBUG
-	g_message ("%s: Process count is now %d (%d)", __func__, semctl (_wapi_sem_id, _WAPI_SHARED_SEM_PROCESS_COUNT, GETVAL), _wapi_getpid ());
-#endif
+	DEBUGLOG ("%s: Process count is now %d (%d)", __func__, semctl (_wapi_sem_id, _WAPI_SHARED_SEM_PROCESS_COUNT, GETVAL), _wapi_getpid ());
 	
 	_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 
@@ -523,30 +610,15 @@ again:
 	else
 		munmap (tmp_shared, sizeof(struct _WapiHandleSharedLayout));
 }
-#endif
 
-static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
-
-static void noshm_semaphores_init (void)
-{
-	int i;
-
-	for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) {
-		mono_mutex_init (&noshm_sems[i], NULL);
-	}
-}
-
-#ifdef HAVE_SYS_SEM
-static void shm_semaphores_remove (void)
+static void
+shm_semaphores_remove (void)
 {
 	int thr_ret;
 	int proc_count;
 	gchar *shm_name;
 	
-#ifdef DEBUG
-	g_message ("%s: Checking process count (%d)", __func__,
-		   _wapi_getpid ());
-#endif
+	DEBUGLOG ("%s: Checking process count (%d)", __func__, _wapi_getpid ());
 	
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 	g_assert (thr_ret == 0);
@@ -556,13 +628,11 @@ static void shm_semaphores_remove (void)
 
 	g_assert (proc_count > 0);
 	if (proc_count == 1) {
-		/* Just us, so blow away the semaphores and the shared
+		/*
+		 * Just us, so blow away the semaphores and the shared
 		 * files
 		 */
-#ifdef DEBUG
-		g_message ("%s: Removing semaphores! (%d)", __func__,
-			   _wapi_getpid ());
-#endif
+		DEBUGLOG ("%s: Removing semaphores! (%d)", __func__, _wapi_getpid ());
 
 		semctl (_wapi_sem_id, 0, IPC_RMID);
 #ifdef USE_SHM
@@ -577,28 +647,21 @@ static void shm_semaphores_remove (void)
 		unlink (_wapi_shm_file (WAPI_SHM_DATA));
 		unlink (_wapi_shm_file (WAPI_SHM_FILESHARE));
 	} else {
-		/* "else" clause, because there's no point unlocking
+		/*
+		 * "else" clause, because there's no point unlocking
 		 * the semaphore if we've just blown it away...
 		 */
 		_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 	}
 }
-#endif
 
-static void noshm_semaphores_remove (void)
-{
-	/* No need to do anything */
-}
-
-#ifdef HAVE_SYS_SEM
-static int shm_sem_lock (int sem)
+static int
+shm_sem_lock (int sem)
 {
 	struct sembuf ops;
 	int ret;
 	
-#ifdef DEBUG
-	g_message ("%s: locking sem %d", __func__, sem);
-#endif
+	DEBUGLOG ("%s: locking sem %d", __func__, sem);
 
 	ops.sem_num = sem;
 	ops.sem_op = -1;
@@ -610,17 +673,16 @@ static int shm_sem_lock (int sem)
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
-		/* EINVAL covers the case when the semaphore was
+		/*
+		 * EINVAL covers the case when the semaphore was
 		 * deleted before we started the semop
 		 */
 		if (errno == EIDRM || errno == EINVAL) {
-			/* Someone blew away this semaphore set, so
+			/*
+			 * Someone blew away this semaphore set, so
 			 * get a new one and try again
 			 */
-#ifdef DEBUG
-			g_message ("%s: Reinitialising the semaphores!",
-				   __func__);
-#endif
+			DEBUGLOG ("%s: Reinitialising the semaphores!", __func__);
 
 			_wapi_shm_semaphores_init ();
 			goto retry;
@@ -630,36 +692,18 @@ static int shm_sem_lock (int sem)
 		ret = errno;
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
-#endif
+	DEBUGLOG ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
 	
-	return(ret);
-}
-#endif
-
-static int noshm_sem_lock (int sem)
-{
-	int ret;
-	
-#ifdef DEBUG
-	g_message ("%s: locking nosem %d", __func__, sem);
-#endif
-	
-	ret = mono_mutex_lock (&noshm_sems[sem]);
-	
-	return(ret);
+	return ret;
 }
 
-#ifdef HAVE_SYS_SEM
-static int shm_sem_trylock (int sem)
+static int
+shm_sem_trylock (int sem)
 {
 	struct sembuf ops;
 	int ret;
 	
-#ifdef DEBUG
-	g_message ("%s: trying to lock sem %d", __func__, sem);
-#endif
+	DEBUGLOG ("%s: trying to lock sem %d", __func__, sem);
 	
 	ops.sem_num = sem;
 	ops.sem_op = -1;
@@ -671,17 +715,16 @@ static int shm_sem_trylock (int sem)
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
-		/* EINVAL covers the case when the semaphore was
+		/*
+		 * EINVAL covers the case when the semaphore was
 		 * deleted before we started the semop
 		 */
 		if (errno == EIDRM || errno == EINVAL) {
-			/* Someone blew away this semaphore set, so
+			/*
+			 * Someone blew away this semaphore set, so
 			 * get a new one and try again
 			 */
-#ifdef DEBUG
-			g_message ("%s: Reinitialising the semaphores!",
-				   __func__);
-#endif
+			DEBUGLOG ("%s: Reinitialising the semaphores!", __func__);
 
 			_wapi_shm_semaphores_init ();
 			goto retry;
@@ -696,36 +739,18 @@ static int shm_sem_trylock (int sem)
 		ret = EBUSY;
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
-#endif
+	DEBUGLOG ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
 	
-	return(ret);
-}
-#endif
-
-static int noshm_sem_trylock (int sem)
-{
-	int ret;
-	
-#ifdef DEBUG
-	g_message ("%s: trying to lock nosem %d", __func__, sem);
-#endif
-	
-	ret = mono_mutex_trylock (&noshm_sems[sem]);
-	
-	return(ret);
+	return ret;
 }
 
-#ifdef HAVE_SYS_SEM
-static int shm_sem_unlock (int sem)
+static int
+shm_sem_unlock (int sem)
 {
 	struct sembuf ops;
 	int ret;
 	
-#ifdef DEBUG
-	g_message ("%s: unlocking sem %d", __func__, sem);
-#endif
+	DEBUGLOG ("%s: unlocking sem %d", __func__, sem);
 	
 	ops.sem_num = sem;
 	ops.sem_op = 1;
@@ -745,10 +770,7 @@ static int shm_sem_unlock (int sem)
 			 * get a new one and try again (we can't just
 			 * assume that the semaphore is now unlocked)
 			 */
-#ifdef DEBUG
-			g_message ("%s: Reinitialising the semaphores!",
-				   __func__);
-#endif
+			DEBUGLOG ("%s: Reinitialising the semaphores!", __func__);
 
 			_wapi_shm_semaphores_init ();
 			goto retry;
@@ -758,88 +780,51 @@ static int shm_sem_unlock (int sem)
 		ret = errno;
 	}
 	
-#ifdef DEBUG
-	g_message ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
-#endif
+	DEBUGLOG ("%s: returning %d (%s)", __func__, ret, g_strerror (ret));
 
-	return(ret);
-}
-#endif
-
-static int noshm_sem_unlock (int sem)
-{
-	int ret;
-	
-#ifdef DEBUG
-	g_message ("%s: unlocking nosem %d", __func__, sem);
-#endif
-	
-	ret = mono_mutex_unlock (&noshm_sems[sem]);
-	
-	return(ret);
+	return ret;
 }
 
-void _wapi_shm_semaphores_init (void)
+void
+_wapi_shm_semaphores_init (void)
 {
-#ifndef HAVE_SYS_SEM
-	noshm_semaphores_init ();
-#else
-	if (check_disabled ()) {
+	if (check_disabled ()) 
 		noshm_semaphores_init ();
-	} else {
+	else
 		shm_semaphores_init ();
-	}
-#endif
 }
 
-void _wapi_shm_semaphores_remove (void)
+void
+_wapi_shm_semaphores_remove (void)
 {
-#ifndef HAVE_SYS_SEM
-	noshm_semaphores_remove ();
-#else
-	if (_wapi_shm_disabled) {
-		noshm_semaphores_remove ();
-	} else {
+	if (!_wapi_shm_disabled) 
 		shm_semaphores_remove ();
-	}
-#endif
 }
 
-int _wapi_shm_sem_lock (int sem)
+int
+_wapi_shm_sem_lock (int sem)
 {
-#ifndef HAVE_SYS_SEM
-	return(noshm_sem_lock (sem));
-#else
-	if (_wapi_shm_disabled) {
-		return(noshm_sem_lock (sem));
-	} else {
-		return(shm_sem_lock (sem));
-	}
-#endif
+	if (_wapi_shm_disabled) 
+		return noshm_sem_lock (sem);
+	else
+		return shm_sem_lock (sem);
 }
 
-int _wapi_shm_sem_trylock (int sem)
+int
+_wapi_shm_sem_trylock (int sem)
 {
-#ifndef HAVE_SYS_SEM
-	return(noshm_sem_trylock (sem));
-#else
-	if (_wapi_shm_disabled) {
-		return(noshm_sem_trylock (sem));
-	} else {
-		return(shm_sem_trylock (sem));
-	}
-#endif
+	if (_wapi_shm_disabled) 
+		return noshm_sem_trylock (sem);
+	else 
+		return shm_sem_trylock (sem);
 }
 
-int _wapi_shm_sem_unlock (int sem)
+int
+_wapi_shm_sem_unlock (int sem)
 {
-#ifndef HAVE_SYS_SEM
-	return(noshm_sem_unlock (sem));
-#else
-	if (_wapi_shm_disabled) {
-		return(noshm_sem_unlock (sem));
-	} else {
-		return(shm_sem_unlock (sem));
-	}
-#endif
+	if (_wapi_shm_disabled) 
+		return noshm_sem_unlock (sem);
+	else 
+		return shm_sem_unlock (sem);
 }
+#endif /* !DISABLE_SHARED_HANDLES */
