@@ -804,26 +804,26 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	guint8 *current = (guint8*)&attr;
 
 	pthread_attr_init (&attr);
-#ifdef HAVE_PTHREAD_GETATTR_NP
+#  ifdef HAVE_PTHREAD_GETATTR_NP
 	pthread_getattr_np (pthread_self(), &attr);
-#else
-#ifdef HAVE_PTHREAD_ATTR_GET_NP
+#  else
+#    ifdef HAVE_PTHREAD_ATTR_GET_NP
 	pthread_attr_get_np (pthread_self(), &attr);
-#elif defined(sun)
+#    elif defined(sun)
 	*staddr = NULL;
 	pthread_attr_getstacksize (&attr, &stsize);
-#else
+#    else
 	*staddr = NULL;
 	*stsize = 0;
 	return;
-#endif
-#endif
+#    endif
+#  endif
 
-#ifndef sun
+#  ifndef sun
 	pthread_attr_getstack (&attr, (void**)staddr, stsize);
 	if (*staddr)
 		g_assert ((current > *staddr) && (current < *staddr + *stsize));
-#endif
+#  endif
 
 	pthread_attr_destroy (&attr); 
 #endif
