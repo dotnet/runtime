@@ -1325,4 +1325,17 @@ class Tests {
 			return 2;
 		return 0;
 	}
+
+	//repro for #505375
+	public static int test_2_cprop_bug () {
+		int idx = 0;
+		int a = 1;
+		var cmp = System.Collections.Generic.Comparer<int>.Default ;
+		if (cmp.Compare (a, 0) > 0)
+			a = 0;
+		do { idx++; } while (cmp.Compare (idx - 1, a) == 0);
+		return idx;
+	}
+
+
 }
