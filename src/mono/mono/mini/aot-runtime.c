@@ -1141,9 +1141,9 @@ mono_aot_init (void)
 
 	mono_install_assembly_load_hook (load_aot_module, NULL);
 
-	if (getenv ("MONO_LASTAOT"))
-		mono_last_aot_method = atoi (getenv ("MONO_LASTAOT"));
-	if (getenv ("MONO_AOT_CACHE"))
+	if (g_getenv ("MONO_LASTAOT"))
+		mono_last_aot_method = atoi (g_getenv ("MONO_LASTAOT"));
+	if (g_getenv ("MONO_AOT_CACHE"))
 		use_aot_cache = TRUE;
 }
 
