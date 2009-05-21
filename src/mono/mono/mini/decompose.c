@@ -1164,7 +1164,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 						case 8:
 #if SIZEOF_REGISTER == 4
 							/*
-							FIXME It would be nice to fix the operding of OP_CALL to make it possible to use numbering voodoo
+							FIXME Other ABIs might return in different regs than the ones used for LCALL.
 							FIXME It would be even nicer to be able to leverage the long decompose stuff.
 							*/
 							switch (call2->inst.opcode) {
