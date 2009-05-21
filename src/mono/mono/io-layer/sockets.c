@@ -1305,8 +1305,8 @@ int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 			// ai_canonname can be null in some cases on darwin, where the runtime assumes it will
 			// be the value of the ip buffer.
 
-			socklen_t optlen = sizeof (amount);
-			ret = getsockopt (sock, SOL_SOCKET, SO_NREAD, &amount, &optlen);
+			socklen_t optlen = sizeof (int);
+			ret = getsockopt (sock, SOL_SOCKET, SO_NREAD, arg, &optlen);
 #else
 			ret = ioctl (fd, command, arg);
 #endif
