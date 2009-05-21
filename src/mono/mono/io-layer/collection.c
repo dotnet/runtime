@@ -18,7 +18,8 @@
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/handles-private.h>
 
-#undef DEBUG
+#define LOGDEBUG(...)
+// #define LOGDEBUG(...) g_message(__VA_ARGS__)
 
 static pthread_t collection_thread_id;
 
@@ -77,18 +78,13 @@ void _wapi_handle_collect (void)
 	guint32 count = _wapi_shared_layout->collection_count;
 	int i, thr_ret;
 	
-#ifdef DEBUG
-	g_message ("%s: (%d) Starting a collection", __func__,
-		   _wapi_getpid ());
-#endif
+	LOGDEBUG ("%s: (%d) Starting a collection", __func__, _wapi_getpid ());
 
 	/* Become the collection master */
 	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
 	
-#ifdef DEBUG
-	g_message ("%s: (%d) Master set", __func__, _wapi_getpid ());
-#endif
+	LOGDEBUG ("%s: (%d) Master set", __func__, _wapi_getpid ());
 	
 	/* If count has changed, someone else jumped in as master */
 	if (count == _wapi_shared_layout->collection_count) {
@@ -99,9 +95,7 @@ void _wapi_handle_collect (void)
 			
 			data = &_wapi_shared_layout->handles[i];
 			if (data->timestamp < too_old) {
-#ifdef DEBUG
-				g_message ("%s: (%d) Deleting handle 0x%x", __func__, _wapi_getpid (), i);
-#endif
+				LOGDEBUG ("%s: (%d) Deleting handle 0x%x", __func__, _wapi_getpid (), i);
 				memset (&_wapi_shared_layout->handles[i], '\0', sizeof(struct _WapiHandleShared));
 			}
 		}
@@ -120,7 +114,5 @@ void _wapi_handle_collect (void)
 	
 	_wapi_handle_unlock_shared_handles ();
 
-#ifdef DEBUG
-	g_message ("%s: (%d) Collection done", __func__, _wapi_getpid ());
-#endif
+	LOGDEBUG ("%s: (%d) Collection done", __func__, _wapi_getpid ());
 }
