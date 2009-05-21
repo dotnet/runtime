@@ -125,6 +125,24 @@ _wapi_shm_sem_unlock (int sem)
 {
 	return noshm_sem_unlock (sem);
 }
+
+gpointer
+_wapi_shm_attach (_wapi_shm_t type)
+{
+	guint32 size;
+
+	switch(type) {
+	case WAPI_SHM_DATA:
+		return g_malloc0 (sizeof(struct _WapiHandleSharedLayout));
+		
+	case WAPI_SHM_FILESHARE:
+		return g_malloc0 (sizeof(struct _WapiFileShareLayout));
+
+	default:
+		g_error ("Invalid type in _wapi_shm_attach ()");
+		return NULL;
+	}
+}
 #else
 /*
  * Use POSIX shared memory if possible, it is simpler, and it has the advantage that 
@@ -397,7 +415,7 @@ _wapi_shm_attach (_wapi_shm_t type)
 	struct stat statbuf;
 	gchar *filename = _wapi_shm_file (type), *shm_name;
 	guint32 size;
-
+	
 	switch(type) {
 	case WAPI_SHM_DATA:
 		size = sizeof(struct _WapiHandleSharedLayout);
