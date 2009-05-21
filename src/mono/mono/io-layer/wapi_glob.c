@@ -46,7 +46,6 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
-#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,7 +105,7 @@ _wapi_glob(GDir *dir, const char *pattern, int flags, wapi_glob_t *pglob)
 {
 	const u_char *patnext;
 	int c;
-	gchar *bufnext, *bufend, patbuf[MAXPATHLEN];
+	gchar *bufnext, *bufend, patbuf[PATH_MAX];
 
 	patnext = (u_char *) pattern;
 	if (!(flags & WAPI_GLOB_APPEND)) {
@@ -117,7 +116,7 @@ _wapi_glob(GDir *dir, const char *pattern, int flags, wapi_glob_t *pglob)
 	pglob->gl_flags = flags & ~WAPI_GLOB_MAGCHAR;
 
 	bufnext = patbuf;
-	bufend = bufnext + MAXPATHLEN - 1;
+	bufend = bufnext + PATH_MAX - 1;
 
 	/* Protect the quoted characters. */
 	while (bufnext < bufend && (c = *patnext++) != EOS)
@@ -149,7 +148,7 @@ glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase,
 {
 	const gchar *qpatnext;
 	int c, err, oldpathc;
-	gchar *bufnext, patbuf[MAXPATHLEN];
+	gchar *bufnext, patbuf[PATH_MAX];
 	size_t limit = 0;
 
 	qpatnext = pattern;
@@ -181,7 +180,7 @@ glob0(GDir *dir, const gchar *pattern, wapi_glob_t *pglob, gboolean ignorecase,
 	qprintf("glob0:", patbuf);
 #endif
 
-	if ((err = glob1(dir, patbuf, patbuf+MAXPATHLEN-1, pglob, &limit,
+	if ((err = glob1(dir, patbuf, patbuf+PATH_MAX-1, pglob, &limit,
 			 ignorecase, unique)) != 0)
 		return(err);
 
