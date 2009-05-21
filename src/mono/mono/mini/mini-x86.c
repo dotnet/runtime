@@ -1951,9 +1951,6 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 static guint8*
 emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 {
-	CallInfo *cinfo;
-	int quad;
-
 	/* Move return value to the target register */
 	switch (ins->opcode) {
 	case OP_CALL:
