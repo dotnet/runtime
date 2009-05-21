@@ -1094,7 +1094,11 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	if (method->wrapper_type) {
 		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
 			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
+			if (mono_marshal_method_from_wrapper (method) != method) {
+				/* Direct wrapper, encode it normally */
+			} else {
+				name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
+			}
 			g_free (tmpsig);
 		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
 			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
@@ -1162,7 +1166,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
 		case MONO_WRAPPER_SYNCHRONIZED:
-		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
+		case MONO_WRAPPER_MANAGED_TO_NATIVE:
+		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			MonoMethod *m;
 
 			m = mono_marshal_method_from_wrapper (method);
@@ -3795,6 +3800,11 @@ emit_extra_methods (MonoAotCompile *acfg)
 			case MONO_WRAPPER_SYNCHRONIZED:
 				/* encode_method_ref () can handle these */
 				break;
+			case MONO_WRAPPER_RUNTIME_INVOKE:
+				if (mono_marshal_method_from_wrapper (method) != method && !strstr (method->name, "virtual"))
+					/* Direct wrapper, encode normally */
+					break;
+				/* Fall through */
 			default:
 				name = mono_aot_wrapper_name (method);
 				break;
