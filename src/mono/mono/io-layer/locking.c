@@ -8,6 +8,7 @@
  * Copyright (c) 2002-2009 Novell, Inc.
  */
 #include <config.h>
+#include <stdio.h>
 #include <glib.h>
 #include <fcntl.h>
 #include <errno.h>
