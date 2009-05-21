@@ -804,14 +804,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock,
 
 	*error = 0;
 	
-#if defined(PLATFORM_MACOSX)
-	{
-		socklen_t optlen = sizeof (amount);
-		ret=getsockopt (sock, SOL_SOCKET, SO_NREAD, &amount, &optlen);
-	}
-#else
 	ret=ioctlsocket(sock, FIONREAD, &amount);
-#endif
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
 		return(0);

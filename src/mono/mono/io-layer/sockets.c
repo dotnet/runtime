@@ -1286,10 +1286,32 @@ int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 			}
 			break;
 #endif /* O_NONBLOCK */
-		case FIONREAD:
+			/* Unused in Mono */
 		case SIOCATMARK:
 			ret = ioctl (fd, command, arg);
 			break;
+			
+		case FIONREAD:
+		{
+#if defined (PLATFORM_MACOSX)
+			
+			// ioctl (fd, FIONREAD, XXX) returns the size of
+			// the UDP header as well on
+			// Darwin.
+			//
+			// Use getsockopt SO_NREAD instead to get the
+			// right values for TCP and UDP.
+			// 
+			// ai_canonname can be null in some cases on darwin, where the runtime assumes it will
+			// be the value of the ip buffer.
+
+			socklen_t optlen = sizeof (amount);
+			ret = getsockopt (sock, SOL_SOCKET, SO_NREAD, &amount, &optlen);
+#else
+			ret = ioctl (fd, command, arg);
+#endif
+			break;
+		}
 		default:
 			WSASetLastError (WSAEINVAL);
 			return(SOCKET_ERROR);
