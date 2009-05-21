@@ -3812,8 +3812,12 @@ add_string_ctor_signature (MonoMethod *method)
 static MonoType*
 get_runtime_invoke_type (MonoType *t, gboolean ret)
 {
-	if (t->byref)
-		return &mono_defaults.int_class->byval_arg;
+	if (t->byref) {
+		if (t->type == MONO_TYPE_GENERICINST)
+			return t;
+		else
+			return &mono_defaults.int_class->byval_arg;
+	}
 
 handle_enum:
 	switch (t->type) {
@@ -3867,7 +3871,7 @@ static gboolean
 runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
 {
 	/* Can't share wrappers which return a vtype since it needs to be boxed */
-	if (sig1->ret != sig2->ret && !(MONO_TYPE_IS_REFERENCE (sig1->ret) && MONO_TYPE_IS_REFERENCE (sig2->ret)))
+	if (sig1->ret != sig2->ret && !(MONO_TYPE_IS_REFERENCE (sig1->ret) && MONO_TYPE_IS_REFERENCE (sig2->ret)) && !mono_metadata_type_equal (sig1->ret, sig2->ret))
 		return FALSE;
 	else
 		return mono_metadata_signature_equal (sig1, sig2);
@@ -3957,11 +3961,13 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		}
 	}
 
+#if 0
 	/* Vtypes/nullables/Byrefs cause too many problems */
 	for (i = 0; i < callsig->param_count; ++i) {
 		if (MONO_TYPE_ISSTRUCT (callsig->params [i]) || callsig->params [i]->byref)
 			need_direct_wrapper = TRUE;
 	}
+#endif
 
 	/*
 	 * We try to share runtime invoke wrappers between different methods but have to
