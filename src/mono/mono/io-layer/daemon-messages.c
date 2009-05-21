@@ -34,6 +34,9 @@
 #define CMSG_SPACE(size)  (sizeof (struct cmsghdr) + (size))
 #endif
 
+#define LOGDEBUG(...)
+// #define LOGDEBUG(...) g_message(__VA_ARGS__)
+
 static mono_mutex_t req_mutex;
 static mono_once_t attr_key_once = MONO_ONCE_INIT;
 static mono_mutexattr_t attr;
@@ -224,10 +227,8 @@ int _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 		/* Make sure we dont do anything with this response */
 		req->type=WapiHandleRequestType_Error;
 		
-#ifdef DEBUG
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Recv error: %s",
 			   strerror (errno));
-#endif
 		/* The next loop around poll() should tidy up */
 	}
 
@@ -245,26 +246,15 @@ int _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 	cmsg=CMSG_FIRSTHDR (&msg);
 	if(cmsg!=NULL && cmsg->cmsg_level==SOL_SOCKET &&
 	   cmsg->cmsg_type==SCM_RIGHTS) {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": cmsg->cmsg_len=%d",
-			   cmsg->cmsg_len);
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": cmsg->level=%d cmsg->type=%d", cmsg->cmsg_level,
-			   cmsg->cmsg_type);
-#endif
+		LOGDEBUG (G_GNUC_PRETTY_FUNCTION ": cmsg->cmsg_len=%d", cmsg->cmsg_len);
+		LOGDEBUG (G_GNUC_PRETTY_FUNCTION ": cmsg->level=%d cmsg->type=%d", cmsg->cmsg_level, cmsg->cmsg_type);
 
 		memcpy (fds, (int *)CMSG_DATA (cmsg), sizeof(int)*3);
 		*has_fds=TRUE;
 
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": fd[0]=%d, fd[1]=%d, fd[2]=%d", fds[0], fds[1],
-			   fds[2]);
-#endif
+		LOGDEBUG (G_GNUC_PRETTY_FUNCTION ": fd[0]=%d, fd[1]=%d, fd[2]=%d", fds[0], fds[1], fds[2]);
 	} else {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": no ancillary data");
-#endif
+		LOGDEBUG (G_GNUC_PRETTY_FUNCTION ": no ancillary data");
 		*has_fds=FALSE;
 	}
 
@@ -286,7 +276,6 @@ int _wapi_daemon_response (int fd, WapiHandleResponse *resp)
 	while (ret==-1 && errno==EINTR);
 
 #ifdef DEBUG
-
 	if(ret==-1 || ret != sizeof(WapiHandleResponse)) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Send error: %s",
 			   strerror (errno));
