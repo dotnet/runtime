@@ -282,7 +282,7 @@ fi
 AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h)
-AC_CHECK_HEADERS(sys/user.h sys/socket.h sys/ipc.h sys/sem.h sys/utsname.h alloca.h ucontext.h pwd.h)
+AC_CHECK_HEADERS(sys/user.h sys/socket.h sys/ipc.h sys/sem.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h)
 
 
 AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
@@ -1184,7 +1184,7 @@ if test x$platform_win32 = xno; then
 		AC_DEFINE(USE_MONO_MUTEX, 1, [Use mono_mutex_t])
 	])
 	AC_CHECK_FUNCS(pthread_attr_setstacksize)
-	AC_CHECK_FUNCS(pthread_attr_getstack)
+	AC_CHECK_FUNCS(pthread_attr_getstack pthread_attr_getstacksize)
 	AC_CHECK_FUNCS(pthread_get_stacksize_np pthread_get_stackaddr_np)
 
 	dnl ***********************************
