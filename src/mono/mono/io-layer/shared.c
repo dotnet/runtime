@@ -44,6 +44,12 @@
 
 static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
 
+#ifdef DISABLE_SHARED_HANDLES
+gboolean _wapi_shm_disabled = TRUE;
+#else
+gboolean _wapi_shm_disabled = FALSE;
+#endif
+
 static void
 noshm_semaphores_init (void)
 {
@@ -127,12 +133,6 @@ _wapi_shm_sem_unlock (int sem)
  */
 #ifdef HAVE_SHM_OPEN
 #define USE_SHM 1
-#endif
-
-#ifdef DISABLE_SHARED_HANDLES
-gboolean _wapi_shm_disabled = TRUE;
-#else
-gboolean _wapi_shm_disabled = FALSE;
 #endif
 
 static gchar *
