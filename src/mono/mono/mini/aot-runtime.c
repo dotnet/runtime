@@ -554,6 +554,15 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			*method = mono_monitor_get_fast_path (orig_method);
 			break;
 		}
+		case MONO_WRAPPER_RUNTIME_INVOKE: {
+			/* Direct wrapper */
+			MonoMethod *m = decode_method_ref_2 (module, p, &p);
+
+			if (!m)
+				return NULL;
+			*method = mono_marshal_get_runtime_invoke (m, FALSE);
+			break;
+		}
 		default:
 			g_assert_not_reached ();
 		}

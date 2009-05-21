@@ -1370,7 +1370,7 @@ get_shared_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 
 /* Add a method to the list of methods which need to be emitted */
 static void
-add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index)
+add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index, gboolean extra)
 {
 	g_assert (method);
 	if (!g_hash_table_lookup (acfg->method_indexes, method)) {
@@ -1378,6 +1378,9 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index)
 		g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
 		acfg->nmethods = acfg->methods->len + 1;
 	}
+
+	if (method->wrapper_type || extra)
+		g_ptr_array_add (acfg->extra_methods, method);
 }
 
 static guint32
@@ -1391,7 +1394,7 @@ get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 }
 
 static int
-add_method (MonoAotCompile *acfg, MonoMethod *method)
+add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra)
 {
 	int index;
 
@@ -1400,7 +1403,7 @@ add_method (MonoAotCompile *acfg, MonoMethod *method)
 		return index - 1;
 
 	index = acfg->method_index;
-	add_method_with_index (acfg, method, index);
+	add_method_with_index (acfg, method, index, extra);
 
 	/* FIXME: Fix quadratic behavior */
 	acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (index));
@@ -1410,16 +1413,16 @@ add_method (MonoAotCompile *acfg, MonoMethod *method)
 	return index;
 }
 
+static int
+add_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	return add_method_full (acfg, method, FALSE);
+}
+
 static void
 add_extra_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-	int index;
-
-	index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_indexes, method));
-	if (index)
-		return;
-	add_method (acfg, method);
-	g_ptr_array_add (acfg->extra_methods, method);
+	add_method_full (acfg, method, TRUE);
 }
 
 static void
@@ -1866,7 +1869,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
 
 		klass = mono_class_get (acfg->image, token);
-		if (!klass)
+		if (!klass || klass->rank)
 			continue;
 
 		add_generic_class (acfg, klass);
@@ -3307,8 +3310,10 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	g_hash_table_insert (acfg->method_to_cfg, cfg->orig_method, cfg);
 
+	/*
 	if (cfg->orig_method->wrapper_type)
 		g_ptr_array_add (acfg->extra_methods, cfg->orig_method);
+	*/
 
 	mono_acfg_unlock (acfg);
 
@@ -4458,7 +4463,7 @@ collect_methods (MonoAotCompile *acfg)
 		}
 
 		/* Since we add the normal methods first, their index will be equal to their zero based token index */
-		add_method_with_index (acfg, method, i);
+		add_method_with_index (acfg, method, i, FALSE);
 		acfg->method_index ++;
 	}
 

@@ -204,6 +204,7 @@ class Tests {
 		return 0;
 	}
 
+	[Category ("!FULLAOT")]
 	public static int test_0_generic_get_value_optimization_int () {
 		int[] x = new int[] {100, 200};
 
