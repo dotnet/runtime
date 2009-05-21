@@ -1306,7 +1306,7 @@ int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 			// be the value of the ip buffer.
 
 			socklen_t optlen = sizeof (int);
-			ret = getsockopt (sock, SOL_SOCKET, SO_NREAD, arg, &optlen);
+			ret = getsockopt (fd, SOL_SOCKET, SO_NREAD, arg, &optlen);
 #else
 			ret = ioctl (fd, command, arg);
 #endif
