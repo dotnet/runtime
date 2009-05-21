@@ -19,7 +19,7 @@
 #define LOGDEBUG(...)
 //#define LOGDEBUG(...) g_message (__VA_ARGS__)
 
-static gboolean
+gboolean
 _wapi_lock_file_region (int fd, off_t offset, off_t length)
 {
 	struct flock lock_data;
@@ -59,7 +59,7 @@ _wapi_lock_file_region (int fd, off_t offset, off_t length)
 	return(TRUE);
 }
 
-static gboolean
+gboolean
 _wapi_unlock_file_region (int fd, off_t offset, off_t length)
 {
 	struct flock lock_data;

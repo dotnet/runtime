@@ -24,6 +24,8 @@ extern struct _WapiHandleOps _wapi_console_ops;
 extern struct _WapiHandleOps _wapi_find_ops;
 extern struct _WapiHandleOps _wapi_pipe_ops;
 
+extern gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length);
+extern gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length);
 extern void _wapi_file_details (gpointer handle_info);
 extern void _wapi_console_details (gpointer handle_info);
 extern void _wapi_pipe_details (gpointer handle_info);

@@ -40,9 +40,6 @@
 
 #undef DEBUG
 
-static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length);
-static gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length);
-
 static void file_close (gpointer handle, gpointer data);
 static WapiFileType file_getfiletype(void);
 static gboolean file_read(gpointer handle, gpointer buffer,
