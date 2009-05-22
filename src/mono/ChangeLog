@@ -1,3 +1,7 @@
+2009-05-22  Zoltan Varga  <vargaz@gmail.com>
+
+	* acinclude.m4 (dolt_supported): Enable dolt on sparc linux.
+
 2009-05-17  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add TARGET_POWERPC/POWERPC64 defines.
