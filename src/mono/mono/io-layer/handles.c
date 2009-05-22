@@ -54,7 +54,9 @@ static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
 	&_wapi_sem_ops,
 	&_wapi_mutex_ops,
 	&_wapi_event_ops,
+#ifndef DISABLE_SOCKETS
 	&_wapi_socket_ops,
+#endif
 	&_wapi_find_ops,
 	&_wapi_process_ops,
 	&_wapi_pipe_ops,

@@ -1253,6 +1253,7 @@ WSAIoctl (guint32 fd, gint32 command,
 	return(0);
 }
 
+#ifndef PLATFORM_PORT_PROVIDES_IOCTLSOCKET
 int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
@@ -1425,6 +1426,7 @@ void _wapi_FD_SET(guint32 fd, fd_set *set)
 
 	FD_SET (fd, set);
 }
+#endif
 
 static void
 wsabuf_to_msghdr (WapiWSABuf *buffers, guint32 count, struct msghdr *hdr)

@@ -402,9 +402,6 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 
 	ret = pthread_create (&thread_handle_p->id, &attr,
 			      thread_start_routine, (void *)thread_handle_p);
-#ifdef MONO_REGISTER_THREAD_ATTR
-	mono_register_thread_attr (&attr, &thread_handle_p->id);
-#endif
 
 	if (ret != 0) {
 #ifdef DEBUG

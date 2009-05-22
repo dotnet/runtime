@@ -39,7 +39,7 @@
  * GLOB_MAGCHAR:
  *	Set in gl_flags if pattern contained a globbing character.
  */
-#include <sys/param.h>
+//#include <sys/param.h>
 #include <sys/stat.h>
 
 #include <glib.h>
