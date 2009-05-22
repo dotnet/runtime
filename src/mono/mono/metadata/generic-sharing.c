@@ -585,6 +585,8 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, M
 	default:
 		g_assert_not_reached ();
 	}
+	/* Not reached, quiet compiler */
+	return NULL;
 }
 
 static gpointer
@@ -771,6 +773,8 @@ class_type_info (MonoDomain *domain, MonoClass *class, int info_type)
 	default:
 		g_assert_not_reached ();
 	}
+	/* Not reached */
+	return NULL;
 }
 
 static gpointer
@@ -837,6 +841,8 @@ instantiate_other_info (MonoDomain *domain, MonoRuntimeGenericContextOtherInfoTe
 	default:
 		g_assert_not_reached ();
 	}
+	/* Not reached */
+	return NULL;
 }
 
 /*
@@ -940,6 +946,8 @@ other_info_equal (gpointer data1, gpointer data2, int info_type)
 	default:
 		g_assert_not_reached ();
 	}
+	/* never reached */
+	return NULL;
 }
 
 static int

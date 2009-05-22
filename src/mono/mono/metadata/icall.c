@@ -7217,13 +7217,15 @@ mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 	if (start) {
 		iter->args = start;
 	} else {
-		guint32 i, arg_size;
-		gint32 align;
 		iter->args = argsp + sizeof (gpointer);
 #ifndef MONO_ARCH_REGPARMS
+		{
+		guint32 i, arg_size;
+		gint32 align;
 		for (i = 0; i < iter->sig->sentinelpos; ++i) {
 			arg_size = mono_type_stack_size (iter->sig->params [i], &align);
 			iter->args = (char*)iter->args + arg_size;
+		}
 		}
 #endif
 	}
@@ -7501,6 +7503,8 @@ custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
 	if (mono_loader_get_last_error ()) {
 		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
 		g_assert_not_reached ();
+		/* Not reached */
+		return NULL;
 	} else {
 		return res;
 	}

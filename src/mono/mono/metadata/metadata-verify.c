@@ -24,7 +24,7 @@
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/strenc.h>
 #include <string.h>
-#include <signal.h>
+//#include <signal.h>
 #include <ctype.h>
 
 #ifndef DISABLE_VERIFIER

@@ -3458,6 +3458,8 @@ mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTar
 	} else {
 		return mono_marshal_get_remoting_invoke (method);
 	}
+	/* Not erached */
+	return NULL;
 }
 
 G_GNUC_UNUSED static gpointer

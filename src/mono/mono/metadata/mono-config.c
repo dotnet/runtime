@@ -37,11 +37,14 @@
 #define CONFIG_OS "aix"
 #elif defined(__hpux)
 #define CONFIG_OS "hpux"
+#elif defined(SN_TARGET_PS3)
+#define CONFIG_OS "CellOS"
 #else
 #warning Unknown operating system
 #define CONFIG_OS "unknownOS"
 #endif
 
+#ifndef CONFIG_CPU
 #if defined(__i386__)
 #define CONFIG_CPU "x86"
 #define CONFIG_WORDSIZE "32"
@@ -81,6 +84,7 @@
 #else
 #warning Unknown CPU
 #define CONFIG_CPU "unknownCPU"
+#endif
 #endif
 
 static void start_element (GMarkupParseContext *context, 
