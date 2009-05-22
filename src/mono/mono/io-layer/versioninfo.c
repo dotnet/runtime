@@ -989,7 +989,7 @@ GetFileVersionInfo (gunichar2 *filename, guint32 handle G_GNUC_UNUSED, guint32 l
 #endif
 	}
 
-	unmap_pe_file (file_map, &map_handle);
+	unmap_pe_file (file_map, map_handle);
 	
 	return(ret);
 }
