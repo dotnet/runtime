@@ -861,6 +861,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 				cinfo->args [n].vtsize = nwords - n_in_regs;
 				cinfo->args [n].reg = gr;
 				gr += n_in_regs;
+				nwords -= n_in_regs;
 			}
 			cinfo->args [n].offset = stack_size;
 			/*g_print ("offset for arg %d at %d\n", n, stack_size);*/
