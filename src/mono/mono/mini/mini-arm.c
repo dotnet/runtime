@@ -739,7 +739,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 }
 
 static CallInfo*
-calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint i, gr;
 	int n = sig->hasthis + sig->param_count;
@@ -825,15 +825,17 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			gint size;
 			int align_size;
 			int nwords;
+			guint32 align;
 
 			if (simpletype->type == MONO_TYPE_TYPEDBYREF) {
 				size = sizeof (MonoTypedRef);
+				align = sizeof (gpointer);
 			} else {
 				MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
 				if (is_pinvoke)
-					size = mono_class_native_size (klass, NULL);
+					size = mono_class_native_size (klass, &align);
 				else
-					size = mono_class_value_size (klass, NULL);
+					size = mono_class_value_size (klass, &align);
 			}
 			DEBUG(printf ("load %d bytes struct\n",
 				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
@@ -843,13 +845,18 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			align_size &= ~(sizeof (gpointer) - 1);
 			nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
 			cinfo->args [n].regtype = RegTypeStructByVal;
-			/* FIXME: align gr and stack_size if needed */
+			/* FIXME: align stack_size if needed */
+#ifdef __ARM_EABI__
+			if (align >= 8 && (gr & 1))
+				gr ++;
+#endif
 			if (gr > ARMREG_R3) {
 				cinfo->args [n].size = 0;
 				cinfo->args [n].vtsize = nwords;
 			} else {
 				int rest = ARMREG_R3 - gr + 1;
 				int n_in_regs = rest >= nwords? nwords: rest;
+
 				cinfo->args [n].size = n_in_regs;
 				cinfo->args [n].vtsize = nwords - n_in_regs;
 				cinfo->args [n].reg = gr;
@@ -1132,7 +1139,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	
-	cinfo = calculate_sizes (sig, sig->pinvoke);
+	cinfo = get_call_info (sig, sig->pinvoke);
 
 	for (i = 0; i < n; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
@@ -2364,7 +2371,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	pos = 0;
 
-	cinfo = calculate_sizes (sig, sig->pinvoke);
+	cinfo = get_call_info (sig, sig->pinvoke);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -3837,7 +3844,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* load arguments allocated to register from the stack */
 	pos = 0;
 
-	cinfo = calculate_sizes (sig, sig->pinvoke);
+	cinfo = get_call_info (sig, sig->pinvoke);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;
