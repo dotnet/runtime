@@ -166,9 +166,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 
-#ifndef __mono_ppc64__
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
-#endif
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 

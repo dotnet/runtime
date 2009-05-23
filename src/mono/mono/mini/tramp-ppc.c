@@ -586,14 +586,17 @@ gpointer
 mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
 {
 	guint8 *code, *buf;
+	guint32 tramp_size = 64;
 
-	code = buf = mono_global_codeman_reserve (16);
+	code = buf = mono_global_codeman_reserve (tramp_size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
 	ppc_blr (code);
 
 	mono_arch_flush_icache (buf, code - buf);
 
 	*code_len = code - buf;
+
+	g_assert (code - buf <= tramp_size);
 
 	return buf;
 }
