@@ -1146,10 +1146,10 @@ is_valid_blob_object (VerifyContext *ctx, guint32 offset)
 	if (!decode_value (ctx->data + offset + blob.offset, blob.size - blob.offset, &entry_size, &bytes))
 		return FALSE;
 
-	if (offset + entry_size < offset)
+	if (offset + entry_size + bytes < offset)
 		return FALSE;
 
-	return blob.size >= offset + entry_size;
+	return blob.size >= offset + entry_size + bytes;
 }
 
 static gboolean
