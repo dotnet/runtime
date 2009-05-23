@@ -1534,7 +1534,7 @@ static void
 asm_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
 	asm_writer_emit_unset_mode (acfg);
-	fprintf (acfg->fp, "\t.%s %s\n", AS_INT64_DIRECTIVE, target ? target : "0");
+	fprintf (acfg->fp, "\t%s %s\n", AS_INT64_DIRECTIVE, target ? target : "0");
 }
 
 static void
@@ -1579,7 +1579,7 @@ asm_writer_emit_int16 (MonoImageWriter *acfg, int value)
 		acfg->col_count = 0;
 	}
 	if ((acfg->col_count++ % 8) == 0)
-		fprintf (acfg->fp, "\n\t.%s ", AS_INT16_DIRECTIVE);
+		fprintf (acfg->fp, "\n\t%s ", AS_INT16_DIRECTIVE);
 	fprintf (acfg->fp, "%d", value);
 }
 
@@ -1591,7 +1591,7 @@ asm_writer_emit_int32 (MonoImageWriter *acfg, int value)
 		acfg->col_count = 0;
 	}
 	if ((acfg->col_count++ % 8) == 0)
-		fprintf (acfg->fp, "\n\t.%s ", AS_INT32_DIRECTIVE);
+		fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
 	else
 		fprintf (acfg->fp, ",");
 	fprintf (acfg->fp, "%d", value);
@@ -1605,7 +1605,7 @@ asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char*
 		acfg->col_count = 0;
 	}
 	if ((acfg->col_count++ % 8) == 0)
-		fprintf (acfg->fp, "\n\t.%s ", AS_INT32_DIRECTIVE);
+		fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
 	else
 		fprintf (acfg->fp, ",");
 	if (offset > 0)
@@ -1620,7 +1620,7 @@ static void
 asm_writer_emit_zero_bytes (MonoImageWriter *acfg, int num)
 {
 	asm_writer_emit_unset_mode (acfg);
-	fprintf (acfg->fp, "\t.%s %d\n", AS_SKIP_DIRECTIVE, num);
+	fprintf (acfg->fp, "\t%s %d\n", AS_SKIP_DIRECTIVE, num);
 }
 
 /* EMIT FUNCTIONS */
