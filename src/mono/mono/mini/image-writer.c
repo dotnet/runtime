@@ -52,18 +52,12 @@
  * TARGET_ASM_APPLE == apple assembler on OSX
  * TARGET_ASM_GAS == GNU assembler
  */
-#ifndef TARGET_ASM
+#if !defined(TARGET_ASM_APPLE) && !defined(TARGET_ASM_GAS)
 #ifdef __MACH__
-#define TARGET_ASM APPLE
-#else
-#define TARGET_ASM GAS
-#endif
-#endif
-
-#if TARGET_ASM == APPLE
 #define TARGET_ASM_APPLE
-#elif TARGET_ASM == GAS
+#else
 #define TARGET_ASM_GAS
+#endif
 #endif
 
 /*
