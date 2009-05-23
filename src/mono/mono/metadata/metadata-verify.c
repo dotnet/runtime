@@ -249,6 +249,14 @@ typedef struct {
 		return; \
 	} while (0)
 
+#define FAIL(__ctx, __msg)	\
+	do {	\
+		if ((__ctx)->report_error) \
+			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR, MONO_EXCEPTION_INVALID_PROGRAM); \
+		(__ctx)->valid = 0; \
+		return FALSE; \
+	} while (0)
+
 #define CHECK_STATE() do { if (!ctx.valid) goto cleanup; } while (0)
 
 #define CHECK_ERROR() do { if (!ctx->valid) return; } while (0)
@@ -1020,7 +1028,7 @@ typedef_is_system_object (VerifyContext *ctx, guint32 *data)
 }
 
 static gboolean
-decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
+decode_value (const char *_ptr, unsigned available, unsigned *value, unsigned *size)
 {
 	unsigned char b;
 	const unsigned char *ptr = (const unsigned char *)_ptr;
@@ -1079,7 +1087,7 @@ static gboolean
 safe_read (const char **_ptr, const char *limit, void *dest, int size)
 {
 	const char *ptr = *_ptr;
-	if (ptr + size >= limit)
+	if (ptr + size > limit)
 		return FALSE;
 	switch (size) {
 	case 1:
@@ -1099,9 +1107,57 @@ safe_read (const char **_ptr, const char *limit, void *dest, int size)
 	return TRUE;
 }
 
+static gboolean
+safe_read_compressed_int (const char **_ptr, const char *limit, unsigned *dest)
+{
+	unsigned size = 0;
+	const char *ptr = *_ptr;
+	gboolean res = decode_value (ptr, limit - ptr, dest, &size);
+	*_ptr = ptr + size;
+	return res;
+}
+
 #define safe_read8(VAR, PTR, LIMIT) safe_read (&PTR, LIMIT, &VAR, 1)
+#define safe_read_cint(VAR, PTR, LIMIT) safe_read_compressed_int (&PTR, LIMIT, &VAR)
 #define safe_read16(VAR, PTR, LIMIT) safe_read (&PTR, LIMIT, &VAR, 2)
 #define safe_read32(VAR, PTR, LIMIT) safe_read (&PTR, LIMIT, &VAR, 4)
+
+static gboolean
+parse_custom_mods (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	return TRUE;
+}
+
+static gboolean
+parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	return TRUE;
+}
+
+static gboolean
+parse_return_type (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	const char *ptr;
+	int type = 0;
+
+	if (!parse_custom_mods (ctx, _ptr, end))
+		return FALSE;
+
+	ptr = *_ptr;
+	if (!safe_read8 (type, ptr, end))
+		FAIL (ctx, g_strdup ("ReturnType: Not enough room for the type"));
+
+	if (type == MONO_TYPE_VOID || type == MONO_TYPE_TYPEDBYREF) {
+		*_ptr = ptr;
+		return TRUE;
+	}
+
+	//it's a byref, update the cursor ptr
+	if (type == MONO_TYPE_TYPEDBYREF)
+		*_ptr = ptr;
+
+	return parse_type (ctx, _ptr, end);
+}
 
 static gboolean
 is_valid_field_signature (VerifyContext *ctx, guint32 offset)
@@ -1115,21 +1171,29 @@ static gboolean
 is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 {
 	int size = 0, cconv = 0;
+	unsigned param_count;
 	const char *ptr = NULL, *end;
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
 		return FALSE;
 	end = ptr + size;
 
 	if (!safe_read8 (cconv, ptr, end))
-		return FALSE;
+		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the call conv"));
 
 	if (cconv & 0x80)
+		FAIL (ctx, g_strdup ("MethodSig: CallConv has 0x80 set"));
+
+	if ((cconv & 0x0F) != 0 && (cconv & 0x0F)!= 5)
+		FAIL (ctx, g_strdup ("MethodSig: CallConv is not Default or Vararg"));
+
+	if (!safe_read_cint (param_count, ptr, end))
+		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the param count"));
+
+	printf ("ok3\n");
+
+	if (!parse_return_type (ctx, &ptr, end))
 		return FALSE;
 
-	cconv &= 0x0F;
-	if (cconv > 5)
-		return FALSE;
-	
 	return TRUE;
 }
 
