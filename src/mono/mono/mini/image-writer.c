@@ -72,6 +72,12 @@
 #define AS_INT32_DIRECTIVE ".long"
 #define AS_INT64_DIRECTIVE ".quad"
 
+#if defined(TARGET_AMD64)
+#define AS_POINTER_DIRECTIVE ".quad"
+#else
+#define AS_POINTER_DIRECTIVE ".long"
+#endif
+
 #if defined(TARGET_ASM_APPLE)
 #define AS_INT16_DIRECTIVE ".short"
 #elif defined(TARGET_ASM_GAS)
@@ -1528,7 +1534,7 @@ static void
 asm_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
 	asm_writer_emit_unset_mode (acfg);
-	fprintf (acfg->fp, "\t%s %s\n", AS_INT64_DIRECTIVE, target ? target : "0");
+	fprintf (acfg->fp, "\t%s %s\n", AS_POINTER_DIRECTIVE, target ? target : "0");
 }
 
 static void
