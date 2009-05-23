@@ -47,27 +47,51 @@
 #define TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define TV_ELAPSED(start,end) (((end) - (start)) / 10)
 
-#ifdef PLATFORM_WIN32
-#define SHARED_EXT ".dll"
-#elif defined(__ppc__) && defined(__MACH__)
-#define SHARED_EXT ".dylib"
+/* 
+ * The used assembler dialect
+ * TARGET_ASM_APPLE == apple assembler on OSX
+ * TARGET_ASM_GAS == GNU assembler
+ */
+#ifndef TARGET_ASM
+#ifdef __MACH__
+#define TARGET_ASM APPLE
 #else
-#define SHARED_EXT ".so"
+#define TARGET_ASM GAS
+#endif
 #endif
 
-#if defined(sparc) || defined(__ppc__) || defined(__powerpc__) || defined(__MACH__)
+#if TARGET_ASM == APPLE
+#define TARGET_ASM_APPLE
+#elif TARGET_ASM == GAS
+#define TARGET_ASM_GAS
+#endif
+
+/*
+ * Defines for the directives used by different assemblers
+ */
+#if defined(__ppc__) || defined(__powerpc__) || defined(__MACH__)
 #define AS_STRING_DIRECTIVE ".asciz"
 #else
-/* GNU as */
 #define AS_STRING_DIRECTIVE ".string"
 #endif
 
+#define AS_INT32_DIRECTIVE ".long"
+#define AS_INT64_DIRECTIVE ".quad"
 
-// __MACH__
-// .byte generates 1 byte per expression.
-// .short generates 2 bytes per expression.
-// .long generates 4 bytes per expression.
-// .quad generates 8 bytes per expression.
+#if defined(TARGET_ASM_APPLE)
+#define AS_INT16_DIRECTIVE ".short"
+#elif defined(TARGET_ASM_GAS)
+#define AS_INT16_DIRECTIVE ".hword"
+#else
+#define AS_INT16_DIRECTIVE ".word"
+#endif
+
+#if defined(TARGET_ASM_APPLE)
+#define AS_SKIP_DIRECTIVE ".space"
+#else
+#define AS_SKIP_DIRECTIVE ".skip"
+#endif
+
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
@@ -1388,14 +1412,11 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 	asm_writer_emit_unset_mode (acfg);
 #if defined(PLATFORM_WIN32)
 	fprintf (acfg->fp, ".section %s\n", section_name);
-#elif defined(__MACH__)
+#elif defined(TARGET_ASM_APPLE)
 	if (strcmp(section_name, ".bss") == 0)
 		fprintf (acfg->fp, "%s\n", ".data");
 	else
 		fprintf (acfg->fp, "%s\n", section_name);
-#elif defined(sparc)
-	/* For solaris as, GNU as should accept the same */
-	fprintf (acfg->fp, ".section \"%s\"\n", section_name);
 #elif defined(TARGET_ARM)
 	/* ARM gas doesn't seem to like subsections of .bss */
 	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data")) {
@@ -1425,14 +1446,12 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 		stype = "object";
 
 	asm_writer_emit_unset_mode (acfg);
-#if defined(__MACH__)
+#if defined(TARGET_ASM_APPLE)
 
-#elif defined(sparc) || defined(TARGET_ARM)
+#elif defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
 #elif defined(PLATFORM_WIN32)
 
-#elif defined(TARGET_AMD64) || defined(TARGET_X86)
-	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
 #else
 	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
 #endif
@@ -1442,7 +1461,7 @@ static void
 asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if  (defined(__ppc__) && defined(__MACH__)) || defined(PLATFORM_WIN32)
+#if  (defined(__ppc__) && defined(TARGET_ASM_APPLE)) || defined(PLATFORM_WIN32)
     // mach-o always uses a '_' prefix.
 	fprintf (acfg->fp, "\t.globl _%s\n", name);
 #else
@@ -1457,7 +1476,7 @@ asm_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const cha
 {
 	asm_writer_emit_unset_mode (acfg);
 
-#ifndef __MACH__
+#ifndef TARGET_ASM_APPLE
 	fprintf (acfg->fp, "\t.local %s\n", name);
 #endif
 
@@ -1468,7 +1487,7 @@ static void
 asm_writer_emit_label (MonoImageWriter *acfg, const char *name)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if (defined(__ppc__) && defined(__MACH__)) || defined(PLATFORM_WIN32)
+#if (defined(__ppc__) && defined(TARGET_ASM_APPLE)) || defined(PLATFORM_WIN32)
     // mach-o always uses a '_' prefix.
 	fprintf (acfg->fp, "_%s:\n", name);
 #else
@@ -1501,11 +1520,11 @@ asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 	asm_writer_emit_unset_mode (acfg);
 #if defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.align %d\n", ilog2 (size));
-#elif defined(__ppc__) && defined(__MACH__)
+#elif defined(__ppc__) && defined(TARGET_ASM_APPLE)
 	// the mach-o assembler specifies alignments as powers of 2.
 	fprintf (acfg->fp, "\t.align %d\t; ilog2\n", ilog2(size));
-#elif defined(__powerpc__)
-	/* ignore on linux/ppc */
+#elif defined(TARGET_ASM_GAS)
+	fprintf (acfg->fp, "\t.balign %d\n", size);
 #else
 	fprintf (acfg->fp, "\t.align %d\n", size);
 #endif
@@ -1515,13 +1534,7 @@ static void
 asm_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if defined(TARGET_AMD64)
-	fprintf (acfg->fp, "\t.quad %s\n", target ? target : "0");
-#elif defined(sparc) && SIZEOF_VOID_P == 8
-	fprintf (acfg->fp, "\t.xword %s\n", target ? target : "0");
-#else
-	fprintf (acfg->fp, "\t.long %s\n", target ? target : "0");
-#endif
+	fprintf (acfg->fp, "\t.%s %s\n", AS_INT64_DIRECTIVE, target ? target : "0");
 }
 
 static void
@@ -1566,16 +1579,7 @@ asm_writer_emit_int16 (MonoImageWriter *acfg, int value)
 		acfg->col_count = 0;
 	}
 	if ((acfg->col_count++ % 8) == 0)
-#if defined(__MACH__)
-		fprintf (acfg->fp, "\n\t.short ");
-#elif defined(TARGET_ARM)
-		/* FIXME: Use .hword on other archs as well */
-		fprintf (acfg->fp, "\n\t.hword ");
-#else
-		fprintf (acfg->fp, "\n\t.word ");
-#endif
-	else
-		fprintf (acfg->fp, ", ");
+		fprintf (acfg->fp, "\n\t.%s ", AS_INT16_DIRECTIVE);
 	fprintf (acfg->fp, "%d", value);
 }
 
@@ -1587,7 +1591,7 @@ asm_writer_emit_int32 (MonoImageWriter *acfg, int value)
 		acfg->col_count = 0;
 	}
 	if ((acfg->col_count++ % 8) == 0)
-		fprintf (acfg->fp, "\n\t.long ");
+		fprintf (acfg->fp, "\n\t.%s ", AS_INT32_DIRECTIVE);
 	else
 		fprintf (acfg->fp, ",");
 	fprintf (acfg->fp, "%d", value);
@@ -1601,7 +1605,7 @@ asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char*
 		acfg->col_count = 0;
 	}
 	if ((acfg->col_count++ % 8) == 0)
-		fprintf (acfg->fp, "\n\t.long ");
+		fprintf (acfg->fp, "\n\t.%s ", AS_INT32_DIRECTIVE);
 	else
 		fprintf (acfg->fp, ",");
 	if (offset > 0)
@@ -1616,11 +1620,7 @@ static void
 asm_writer_emit_zero_bytes (MonoImageWriter *acfg, int num)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if defined(__MACH__)
-	fprintf (acfg->fp, "\t.space %d\n", num);
-#else
-	fprintf (acfg->fp, "\t.skip %d\n", num);
-#endif
+	fprintf (acfg->fp, "\t.%s %d\n", AS_SKIP_DIRECTIVE, num);
 }
 
 /* EMIT FUNCTIONS */
