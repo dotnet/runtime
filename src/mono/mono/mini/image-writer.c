@@ -1574,6 +1574,8 @@ asm_writer_emit_int16 (MonoImageWriter *acfg, int value)
 	}
 	if ((acfg->col_count++ % 8) == 0)
 		fprintf (acfg->fp, "\n\t%s ", AS_INT16_DIRECTIVE);
+	else
+		fprintf (acfg->fp, ", ");
 	fprintf (acfg->fp, "%d", value);
 }
 
