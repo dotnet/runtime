@@ -76,7 +76,8 @@ fun_name:
 	translate.rva |
 	translate.rva.ind |
 	stream-header |
-	table-row
+	table-row |
+	blob.i
 
 arg_list:
 	expression |
@@ -395,7 +396,7 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 	if (!strcmp ("read.ushort", name)) {
 		guint32 offset;
 		if (g_slist_length (args) != 1) {
-			printf ("Invalid number of args to read.ushort %d\b", g_slist_length (args));
+			printf ("Invalid number of args to read.ushort %d\n", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		offset = expression_eval (args->data, entry);
@@ -404,7 +405,7 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 	if (!strcmp ("read.uint", name)) {
 		guint32 offset;
 		if (g_slist_length (args) != 1) {
-			printf ("Invalid number of args to read.uint %d\b", g_slist_length (args));
+			printf ("Invalid number of args to read.uint %d\n", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		offset = expression_eval (args->data, entry);
@@ -413,7 +414,7 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 	if (!strcmp ("translate.rva", name)) {
 		guint32 rva;
 		if (g_slist_length (args) != 1) {
-			printf ("Invalid number of args to translate.rva %d\b", g_slist_length (args));
+			printf ("Invalid number of args to translate.rva %d\n", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		rva = expression_eval (args->data, entry);
@@ -422,7 +423,7 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 	if (!strcmp ("translate.rva.ind", name)) {
 		guint32 rva;
 		if (g_slist_length (args) != 1) {
-			printf ("Invalid number of args to translate.rva.ind %d\b", g_slist_length (args));
+			printf ("Invalid number of args to translate.rva.ind %d\n", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		rva = expression_eval (args->data, entry);
@@ -432,7 +433,7 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 	if (!strcmp ("stream-header", name)) {
 		guint32 idx;
 		if (g_slist_length (args) != 1) {
-			printf ("Invalid number of args to stream-header %d\b", g_slist_length (args));
+			printf ("Invalid number of args to stream-header %d\n", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		idx = expression_eval (args->data, entry);
@@ -443,7 +444,7 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 		guint32 table, row;
 		const MonoTableInfo *info;
 		if (g_slist_length (args) != 2) {
-			printf ("Invalid number of args to table-row %d\b", g_slist_length (args));
+			printf ("Invalid number of args to table-row %d\n", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		table = expression_eval (args->data, entry);
@@ -451,6 +452,18 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 		info = mono_image_get_table_info (entry->test_set->image, table);
 		data = info->base + row * info->row_size;
 		return data - entry->test_set->assembly_data;
+	}
+	if (!strcmp ("blob.i", name)) {
+		guint32 offset, base;
+		MonoStreamHeader blob = entry->test_set->image->heap_blob;
+		if (g_slist_length (args) != 1) {
+			printf ("Invalid number of args to blob %d\n", g_slist_length (args));
+			exit (INVALID_ARG_COUNT);
+		}
+		base = blob.data - entry->test_set->image->raw_data;
+		offset = expression_eval (args->data, entry);
+		offset = READ_VAR (guint16, entry->data + offset);
+		return base + offset;
 	}
 
 	printf ("Unknown function %s\n", name);
