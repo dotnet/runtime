@@ -1020,6 +1020,90 @@ typedef_is_system_object (VerifyContext *ctx, guint32 *data)
 }
 
 static gboolean
+decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
+{
+	unsigned char b;
+	const unsigned char *ptr = (const unsigned char *)_ptr;
+
+	if (!available)
+		return FALSE;
+
+	b = *ptr;
+	*value = *size = 0;
+	
+	if ((b & 0x80) == 0) {
+		*size = 1;
+		*value = b;
+	} else if ((b & 0x40) == 0) {
+		if (available < 2)
+			return FALSE;
+		*size = 2;
+		*value = ((b & 0x3f) << 8 | ptr [1]);
+	} else {
+		if (available < 4)
+			return FALSE;
+		*size = 4;
+		*value  = ((b & 0x1f) << 24) |
+			(ptr [1] << 16) |
+			(ptr [2] << 8) |
+			ptr [3];
+	}
+
+	return TRUE;
+}
+
+static gboolean
+decode_signature_header (VerifyContext *ctx, guint32 offset, int *size, const char **first_byte)
+{
+	MonoStreamHeader blob = ctx->image->heap_blob;
+	guint32 value, enc_size;
+
+	if (offset >= blob.size)
+		return FALSE;
+
+	if (!decode_value (blob.data + offset, blob.size - offset, &value, &enc_size))
+		return FALSE;
+
+	if (offset + enc_size + value < offset)
+		return FALSE;
+
+	if (offset + enc_size + value >= blob.size)
+		return FALSE;
+
+	*size = value;
+	*first_byte = blob.data + offset + enc_size;
+	return TRUE;
+}
+
+static gboolean
+safe_read (const char **_ptr, const char *limit, void *dest, int size)
+{
+	const char *ptr = *_ptr;
+	if (ptr + size >= limit)
+		return FALSE;
+	switch (size) {
+	case 1:
+		*((guint8*)dest) = *((guint8*)ptr);
+		++ptr;
+		break;
+	case 2:
+		*((guint16*)dest) = *((guint16*)ptr);
+		ptr += 2;
+		break;
+	case 4:
+		*((guint32*)dest) = *((guint32*)ptr);
+		ptr += 4;
+		break;
+	}
+	*_ptr = ptr;
+	return TRUE;
+}
+
+#define safe_read8(VAR, PTR, LIMIT) safe_read (&PTR, LIMIT, &VAR, 1)
+#define safe_read16(VAR, PTR, LIMIT) safe_read (&PTR, LIMIT, &VAR, 2)
+#define safe_read32(VAR, PTR, LIMIT) safe_read (&PTR, LIMIT, &VAR, 4)
+
+static gboolean
 is_valid_field_signature (VerifyContext *ctx, guint32 offset)
 {
 	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
@@ -1030,9 +1114,23 @@ is_valid_field_signature (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return blob.size >= 2 && blob.size - 2 >= offset;
+	int size = 0, cconv = 0;
+	const char *ptr = NULL, *end;
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		return FALSE;
+	end = ptr + size;
+
+	if (!safe_read8 (cconv, ptr, end))
+		return FALSE;
+
+	if (cconv & 0x80)
+		return FALSE;
+
+	cconv &= 0x0F;
+	if (cconv > 5)
+		return FALSE;
+	
+	return TRUE;
 }
 
 static gboolean
@@ -1097,39 +1195,6 @@ is_valid_methodspec_blog (VerifyContext *ctx, guint32 offset)
 	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
 	//TODO do proper verification
 	return offset > 0 && blob.size >= 1 && blob.size - 1 >= offset;
-}
-
-static gboolean
-decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
-{
-	unsigned char b;
-	const unsigned char *ptr = (const unsigned char *)_ptr;
-
-	if (!available)
-		return FALSE;
-
-	b = *ptr;
-	*value = *size = 0;
-	
-	if ((b & 0x80) == 0) {
-		*size = 1;
-		*value = b;
-	} else if ((b & 0x40) == 0) {
-		if (available < 2)
-			return FALSE;
-		*size = 2;
-		*value = ((b & 0x3f) << 8 | ptr [1]);
-	} else {
-		if (available < 4)
-			return FALSE;
-		*size = 4;
-		*value  = ((b & 0x1f) << 24) |
-			(ptr [1] << 16) |
-			(ptr [2] << 8) |
-			ptr [3];
-	}
-
-	return TRUE;
 }
 
 static gboolean
