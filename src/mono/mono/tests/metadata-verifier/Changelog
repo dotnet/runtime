@@ -1,5 +1,11 @@
 2009-05-22 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: New file for blob signature tests.
+
+	* Makefile: Update for new test source.
+
+2009-05-22 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* gen-md-tests.c: Added blob.i to make it easier to locate signatures to
 	mess around.
 

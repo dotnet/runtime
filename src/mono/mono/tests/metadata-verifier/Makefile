@@ -86,7 +86,11 @@ cli-tables-tests.ok: gen-md-tests cli-tables-tests.md $(TEST_BINARIES)
 	./gen-md-tests cli-tables-tests.md
 	touch cli-tables-tests.ok
 
-generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok cli-metadata-tests.ok cli-tables-tests.ok
+cli-blob-tests.ok: gen-md-tests cli-blob-tests.md $(TEST_BINARIES)
+	./gen-md-tests cli-blob-tests.md
+	touch cli-blob-tests.ok
+
+generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok cli-metadata-tests.ok cli-tables-tests.ok cli-blob-tests.ok
 	touch generate-stamp
 
 clean-stamps:
