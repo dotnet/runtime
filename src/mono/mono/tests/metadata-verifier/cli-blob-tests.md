@@ -22,4 +22,10 @@ method-def-sig {
 
 	#upper nimble flags 0x80 is invalid	
 	invalid offset blob.i (table-row (6 0) + 12) + 1 set-bit 7
+
+	#sig is too small to decode param count
+	invalid offset blob.i (table-row (6 0) + 12) set-byte 1
+
+	#sig is too small to decode return type
+	invalid offset blob.i (table-row (6 0) + 12) set-byte 2
 }
