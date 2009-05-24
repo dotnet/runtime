@@ -1417,7 +1417,7 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 		fprintf (acfg->fp, "%s\n", ".data");
 	else
 		fprintf (acfg->fp, "%s\n", section_name);
-#elif defined(TARGET_ARM)
+#elif defined(TARGET_ARM) || defined(TARGET_POWERPC)
 	/* ARM gas doesn't seem to like subsections of .bss */
 	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data")) {
 		fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);
