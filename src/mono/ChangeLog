@@ -1,3 +1,7 @@
+2009-05-24  Zoltan Varga  <vargaz@gmail.com>
+
+	* */CMakeLists.txt: Add beginnings of a cmake based build system.
+
 2009-05-22  Zoltan Varga  <vargaz@gmail.com>
 
 	* acinclude.m4 (dolt_supported): Enable dolt on sparc linux.
