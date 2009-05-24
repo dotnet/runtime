@@ -2602,6 +2602,7 @@ echo "
         olive source:  $olive_topdir
 
 	GC:	       $gc
+	GLIB:	       $with_glib
 	TLS:           $with_tls
 	SIGALTSTACK:   $with_sigaltstack
 	Engine:        $jit_status
