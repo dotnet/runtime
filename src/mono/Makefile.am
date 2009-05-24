@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
-SUBDIRS = po $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) support data runtime scripts man samples web msvc docs
+SUBDIRS = po $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) support data runtime scripts man samples web msvc $(docs_dir)
 
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
