@@ -1,3 +1,7 @@
+2009-05-24  Miguel de Icaza  <miguel@novell.com>
+
+	* Disable mono/docs build if we disabled the mcs build.
+
 2009-05-24  Zoltan Varga  <vargaz@gmail.com>
 
 	* */CMakeLists.txt: Add beginnings of a cmake based build system.

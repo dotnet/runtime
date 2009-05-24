@@ -2291,6 +2291,17 @@ AC_ARG_WITH(mcs_docs,[  --with-mcs-docs=yes,no         If you want to build the 
 	fi
 ])
 
+dnl
+dnl Consistency settings
+dnl
+if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
+   DISABLE_MCS_DOCS=yes
+   docs_dir=""
+else
+   docs_dir=docs
+fi
+AC_SUBST(docs_dir)
+
 AM_CONDITIONAL(HAVE_OPROFILE, test x$OPROFILE = xyes)
 AC_SUBST(OPROFILE_CFLAGS)
 AC_SUBST(OPROFILE_LIBS)
@@ -2512,13 +2523,6 @@ if test x$platform_win32 = xyes; then
    # wrapper scripts which use exec(). gcc has no problem compiling+linking this, but the resulting
    # executable doesn't work...
    sed -e "s,-mno-cygwin,,g" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
-fi
-
-dnl
-dnl Consistency settings
-dnl
-if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
-   DISABLE_MCS_DOCS=yes
 fi
 
 (
