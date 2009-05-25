@@ -1095,11 +1095,11 @@ safe_read (const char **_ptr, const char *limit, void *dest, int size)
 		++ptr;
 		break;
 	case 2:
-		*((guint16*)dest) = *((guint16*)ptr);
+		*((guint16*)dest) = read16 (ptr);
 		ptr += 2;
 		break;
 	case 4:
-		*((guint32*)dest) = *((guint32*)ptr);
+		*((guint32*)dest) = read32 (ptr);
 		ptr += 4;
 		break;
 	}
