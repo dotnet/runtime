@@ -3163,6 +3163,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			x86_patch (br, code);
 
+			/* Change precision */
+			x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
+			x86_fld_membase (code, X86_ESP, 0, TRUE);
+
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 
 			break;

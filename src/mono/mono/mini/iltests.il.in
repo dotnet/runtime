@@ -2230,6 +2230,32 @@ OK:
 	}
 */
 
+	.method public static default int32 test_0_long_to_r8_un_overflow () cil managed
+	{
+		.maxstack 16
+		ldc.i8     0x00FFFFFFFFFFFFFF
+		conv.r.un
+		conv.i8
+		ldc.i8 0x100000000000000
+		beq OK_1
+
+		ldc.i4.1
+		ret
+OK_1:
+		ldc.i8     0x00FFFFFFFFFFFFFF
+		conv.r.un
+		conv.r8
+		conv.i8
+		ldc.i8 0x100000000000000
+		beq OK_2
+
+		ldc.i4.2
+		ret
+OK_2:
+		ldc.i4.0
+		ret
+	}
+
 	.field public static int32 shift1
 
 	.method public static int32 regress_497271_helper (int32 i) cil managed
