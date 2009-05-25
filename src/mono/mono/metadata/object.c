@@ -5721,7 +5721,7 @@ mono_create_ftnptr (MonoDomain *domain, gpointer addr)
 #elif defined(__ppc64__) || defined(__powerpc64__)
 	gpointer *desc;
 
-	desc = mono_domain_code_reserve (domain, 3 * sizeof (gpointer));
+	desc = mono_domain_alloc0 (domain, 3 * sizeof (gpointer));
 
 	desc [0] = addr;
 	desc [1] = NULL;
