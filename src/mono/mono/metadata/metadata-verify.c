@@ -1189,8 +1189,6 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 	if (!safe_read_cint (param_count, ptr, end))
 		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the param count"));
 
-	printf ("ok3\n");
-
 	if (!parse_return_type (ctx, &ptr, end))
 		return FALSE;
 
