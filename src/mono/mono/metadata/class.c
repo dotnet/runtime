@@ -3929,7 +3929,6 @@ mono_class_init (MonoClass *class)
 	if (mono_debugger_class_init_func)
 		mono_debugger_class_init_func (class);
 
-	//printf ("class %s size %d\n", class->name, class->instance_size);
 	return class_init_ok;
 }
 
