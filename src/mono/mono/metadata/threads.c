@@ -627,6 +627,8 @@ static guint32 WINAPI start_wrapper(void *data)
 		   thread->tid);
 #endif
 
+	mono_thread_set_execution_context (thread->ec_to_set);
+
 	/* start_func is set only for unmanaged start functions */
 	if (start_func) {
 		start_func (start_arg);
