@@ -134,10 +134,9 @@ endfunction()
 # need to be ported to cmake
 # The svn revision of the configure.in used is r132691
 
-ac_define_unquoted(VERSION 2.5 "Version number of package")
-###
-###set(API_VER 1.0)
-###AC_SUBST(API_VER)
+set(VERSION 2.5)
+ac_define_unquoted(VERSION ${VERSION} "Version number of package")
+set(API_VER 1.0)
 ###
 ###AC_PROG_LN_S
 ###
@@ -544,6 +543,7 @@ set(CFLAGS "${CFLAGS} -g ${WARN}")
 
 set(srcdir ${CMAKE_SOURCE_DIR})
 set(top_srcdir ${CMAKE_SOURCE_DIR})
+set(abs_top_srcdir ${top_srcdir})
 
 # FIXME:
 set(top_builddir ${CMAKE_BINARY_DIR})
@@ -732,6 +732,7 @@ set(with_static_mono ${static_mono})
 if(with_static_mono)
   set(STATIC_MONO yes)
 endif()
+set(enable_mcs_build yes)
 ###AC_ARG_ENABLE(mcs-build, [  --disable-mcs-build disable the build of the mcs directory], set(try_mcs_build $enableval, enable_mcs_build=yes))
 ###
 ###set(xen_opt,   [  --with-set(xen_opt yes,no          Enable Xen-specific behaviour (defaults to yes)],[],[with_xen_opt=yes]))
@@ -2531,7 +2532,11 @@ endif()
 ###AC_SUBST(OPROFILE_CFLAGS)
 ###AC_SUBST(OPROFILE_LIBS)
 
-###set(libmono_ldflags "$libmono_ldflags $LIBS")
+set(libs_list)
+foreach(lib ${LIBS})
+  set(libs_list "${libs_list} ${lib}")
+endforeach()
+set(libmono_ldflags "${libmono_ldflags} ${libs_list}")
 
 if(PREVIEW)
   set(INSTALL_2_0 yes)
@@ -2667,6 +2672,33 @@ execute_process (COMMAND chmod a+x runtime/mono-wrapper runtime/monodis-wrapper)
 ###   AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/$echo "copying selected/$show "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
 ###fi
 
+if("${prefix}" STREQUAL "")
+  set(prefix /usr/local)
+endif()
+if("${exec_prefix}" STREQUAL "")
+  set(exec_prefix "\${prefix}")
+endif()
+
+# FIXME: Make these overridable
+set(bindir "\${exec_prefix}/bin")
+set(sbindir "\${exec_prefix}/sbin")
+set(libexecdir "\${exec_prefix}/libexec")
+set(datarootdir "\${prefix}/share")
+set(datadir "\${datarootdir}")
+set(sysconfdir "\${prefix}/etc")
+set(sharedstatedir "\${prefix}/com")
+set(localstatedir "\${prefix}/var")
+set(includedir "\${prefix}/include")
+set(oldincludedir "/usr/include")
+set(docdir "\${datarootdir}/doc/\${PACKAGE}")
+set(infodir "\${datarootdir}/info")
+set(htmldir "\${docdir}")
+set(dvidir "\${docdir}")
+set(pdfdir "\${docdir}")
+set(psdir "\${docdir}")
+set(libdir "\${exec_prefix}/lib")
+set(localedir "\${datarootdir}/locale")
+set(mandir "\${datarootdir}/man")
 
 autoheader("config.h" autoheader_vars)
 
@@ -2676,13 +2708,40 @@ foreach(dir ${SUBDIRS})
   add_subdirectory(${dir})
 endforeach()
 
+# Implementation of AC_OUTPUT for cmake
+function(ac_output outputs)
+  foreach (output ${ARGV})
+	configure_file ("${output}.in" "${output}" @ONLY)
+  endforeach()
+endfunction()
+
+ac_output(
+mono-uninstalled.pc
+scripts/mono-find-provides
+scripts/mono-find-requires
+mono/tests/tests-config
+data/mint.pc
+data/mono.pc
+data/mono-cairo.pc
+data/mono-nunit.pc
+data/mono-options.pc
+data/mono-lineeditor.pc
+data/monodoc.pc
+data/mono.web.pc
+data/dotnet.pc
+data/dotnet35.pc
+data/wcf.pc
+data/cecil.pc
+data/system.web.extensions_1.0.pc
+data/system.web.extensions.design_1.0.pc
+data/system.web.mvc.pc
+data/config
+)
+
 ###AC_OUTPUT([
 ###mono-uninstalled.pc
 ###scripts/mono-find-provides
 ###scripts/mono-find-requires
-###mono/Makefile
-###mono/utils/Makefile
-###mono/metadata/Makefile
 ###mono/dis/Makefile
 ###mono/cil/Makefile
 ###mono/arch/Makefile
@@ -2709,8 +2768,6 @@ endforeach()
 ###mono/tests/cas/threads/Makefile
 ###mono/benchmark/Makefile
 ###mono/monograph/Makefile
-###mono/io-layer/Makefile
-###mono/mini/Makefile
 ###mono/profiler/Makefile
 ###ikvm-native/Makefile
 ###scripts/Makefile
@@ -2755,56 +2812,51 @@ endforeach()
 ###   sed -e "s,-mno-cygwin,,g" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
 ###fi
 
-###(
-###  case $prefix in
-###  NONE) set(prefix $ac_default_prefix ;;)
-###  esac
-###  case $exec_prefix in
-###  NONE) set(exec_prefix '${prefix}' ;;)
-###  esac
+# FIXME:
+set(mcs_INSTALL ${mono_build_root}/install-sh)
 
-###  test -w $srcdir/$mcsdir/build || chmod +w $srcdir/$mcsdir/build
-
-###  #
-###  # If we are cross compiling, we don't build in the mcs/ tree.  Let us not clobber
-###  # any existing config.make.  This allows people to share the same source tree
-###  # with different build directories, one native and one cross
-###  #
-###  if test x$cross_compiling = xno && test x$enable_mcs_build != xno; then
-###    echo "set(prefix $prefix" > $srcdir/$mcsdir/build/config.make)
-###    echo "set(exec_prefix $exec_prefix" >> $srcdir/$mcsdir/build/config.make)
-###    echo "set(sysconfdir $sysconfdir" >> $srcdir/$mcsdir/build/config.make)
-###    echo 'set(mono_libdir ${exec_prefix}/lib' >> $srcdir/$mcsdir/build/config.make)
-###    echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
-###    echo 'IL_FLAGS = /debug' >> $srcdir/$mcsdir/build/config.make
-###    echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$mcsdir/build/config.make
-###    echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $srcdir/$mcsdir/build/config.make
 ###    case $INSTALL in
 ###    [[\\/$]]* | ?:[[\\/]]* ) set(mcs_INSTALL $INSTALL ;;)
 ###    *) set(mcs_INSTALL $mono_build_root/$INSTALL ;;)
 ###    esac
 
-###    echo "INSTALL = $mcs_INSTALL" >> $srcdir/$mcsdir/build/config.make
+# Compute a 4 part version number into myver from ${mono_version}
+string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.([0-9]+).*" "\\1.\\2.\\3.\\4" myver "${mono_version}.0.0.0")
 
-###    export VERSION
-###    [set(myver $($AWK 'BEGIN {)
-###      split (ENVIRON["VERSION"] ".0.0.0", vsplit, ".")
-###      if(length(vsplit [1]) > 4) {
-###        split (substr(ENVIRON["VERSION"], 0, 4) "." substr(ENVIRON["VERSION"], 5) ".0.0", vsplit, ".")
-###      }
-###      print vsplit [1] "." vsplit [2] "." vsplit [3] "." vsplit [4]
-###    }')]
+set(config.make ${srcdir}/${mcsdir}/build/config.make)
+#
+# If we are cross compiling, we don't build in the mcs/ tree.  Let us not clobber
+# any existing config.make.  This allows people to share the same source tree
+# with different build directories, one native and one cross
+#
+if(NOT cross_compiling)
+  set(not_cross_compiling yes)
+endif()
+if(not_cross_compiling AND enable_mcs_build)
+  file(WRITE ${config.make} "prefix=${prefix}
+exec_prefix=${exec_prefix}
+sysconfdir=${sysconfdir}
+mono_libdir=\${exec_prefix}/lib
+MCS_FLAGS=$(PLATFORM_DEBUG_FLAGS)
+IL_FLAGS=/debug
+RUNTIME=${mono_build_root}/runtime/mono-wrapper
+ILDISASM=${mono_build_root}/runtime/monodis-wrapper
+INSTALL=${mcs_INSTALL}
+MONO_VERSION=${myver}
+")
+endif()
 
-###    echo "MONO_VERSION = $myver" >> $srcdir/$mcsdir/build/config.make
-###  fi
+if(platform_darwin)
+  file(APPEND ${config.make} "PLATFORM=darwin\n")
+endif()
 
-###  if test x$platform_darwin = xyes; then
-###	echo "PLATFORM = darwin" >> $srcdir/$mcsdir/build/config.make
-###  fi
+if (${TARGET} STREQUAL "AMD64" AND ${platform_win32} STREQUAL "no" AND AOT_SUPPORTED)
+  file(APPEND ${config.make} "ENABLE_AOT=1\n")
+endif()
 
-###  if test x$TARGET = xAMD64 -a x$platform_win32 = xno -a "x$AOT_SUPPORTED" = "xyes"; then
-###  	 echo "ENABLE_AOT = 1" >> $srcdir/$mcsdir/build/config.make
-###  fi
+if (DISABLE_MCS_DOCS)
+  file(APPEND ${config.make} "DISABLE_MCS_DOCS=yes\n")
+endif()
 
 ###  # if we have an olive folder, override the default settings
 ###  if test -d $olivedir; then
@@ -2823,11 +2875,6 @@ endforeach()
 ###      fi
 ###    fi
 ###  fi
-
-###  if test x$DISABLE_MCS_DOCS = xyes; then
-###	echo "DISABLE_MCS_DOCS = yes" >> $srcdir/$mcsdir/build/config.make
-###  fi
-###)
 
 if(NOT libgdiplus_loc)
   set(libgdiplus_msg "assumed to be installed")

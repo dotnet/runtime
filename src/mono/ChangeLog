@@ -1,8 +1,10 @@
 2009-05-26  Zoltan Varga  <vargaz@gmail.com>
 
+	* CMakeLists.txt: Implement AC_OUTPUT, creation of config.make, etc.
+	
 	* CMakeLists.txt: implement arm fpu detection, add vfp detection as
 	well.
-	
+
 	* CMakeLists.txt: Add arm support.
 
 2009-05-24  Miguel de Icaza  <miguel@novell.com>
