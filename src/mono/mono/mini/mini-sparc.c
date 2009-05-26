@@ -1080,11 +1080,9 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 static void
 add_outarg_load (MonoCompile *cfg, MonoCallInst *call, int opcode, int basereg, int offset, int reg)
 {
-	MonoInst *arg;
 	int dreg = mono_alloc_ireg (cfg);
 
-	EMIT_NEW_LOAD_MEMBASE (cfg, arg, OP_LOAD_MEMBASE, dreg, sparc_sp, offset);
-	MONO_ADD_INS (cfg->cbb, arg);
+    MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, sparc_sp, offset);
 
 	mono_call_inst_add_outarg_reg (cfg, call, dreg, reg, FALSE);
 }
