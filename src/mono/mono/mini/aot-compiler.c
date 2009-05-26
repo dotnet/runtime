@@ -2062,10 +2062,16 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_alignment (acfg, func_alignment);
 	emit_label (acfg, symbol);
 
-	if (acfg->aot_opts.write_symbols && !acfg->aot_opts.nodebug) {
+	if (acfg->aot_opts.write_symbols) {
 		char *name1, *name2, *cached;
 		int i, j, len, count;
 
+		/* 
+		 * Write a C style symbol for every method, this has two uses:
+		 * - it works on platforms where the dwarf debugging info is not
+		 *   yet supported.
+		 * - it allows the setting of breakpoints of aot-ed methods.
+		 */
 		name1 = mono_method_full_name (method, TRUE);
 		len = strlen (name1);
 		name2 = malloc (len + 1);
