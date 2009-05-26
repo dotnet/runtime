@@ -3714,6 +3714,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	gpointer iter;
 	MonoObject *member;
 	int i, len, match, nslots;
+	/*FIXME, use MonoBitSet*/
 	guint32 method_slots_default [8];
 	guint32 *method_slots;
 	gchar *mname = NULL;
@@ -3775,6 +3776,13 @@ handle_parent:
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		match = 0;
+		if (method->slot != -1) {
+			g_assert (method->slot < nslots);
+			if (method_slots [method->slot >> 5] & (1 << (method->slot & 0x1f)))
+				continue;
+			method_slots [method->slot >> 5] |= 1 << (method->slot & 0x1f);
+		}
+
 		if (method->name [0] == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0))
 			continue;
 		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
@@ -3804,12 +3812,6 @@ handle_parent:
 		}
 		
 		match = 0;
-		if (method->slot != -1) {
-			g_assert (method->slot < nslots);
-			if (method_slots [method->slot >> 5] & (1 << (method->slot & 0x1f)))
-				continue;
-			method_slots [method->slot >> 5] |= 1 << (method->slot & 0x1f);
-		}
 		
 		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
 		
