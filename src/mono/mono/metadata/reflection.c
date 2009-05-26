@@ -4771,14 +4771,14 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 
 	mono_image_init (&image->image);
 
-	image->token_fixups = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
+	image->token_fixups = mono_g_hash_table_new_type (mono_object_hash, NULL, MONO_HASH_KEY_GC);
 	image->method_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->field_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->method_aux_hash = g_hash_table_new (NULL, NULL);
 	image->handleref = g_hash_table_new (NULL, NULL);
 	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 	image->generic_def_objects = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
-	image->methodspec = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
+	image->methodspec = mono_g_hash_table_new_type (mono_object_hash, NULL, MONO_HASH_KEY_GC);
 	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
