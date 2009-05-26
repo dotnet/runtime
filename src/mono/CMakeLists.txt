@@ -2431,20 +2431,38 @@ if (with_tls STREQUAL "__thread")
 ###fi
 
 endif()
-###if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_build != xno; then
+
 # ******************************************
 # *** Check to see what FPU is available ***
 # ******************************************
-###	ac_msg_checking(which FPU to use)
-
-###	AC_TRY_COMPILE([], [
-###		__asm__ ("ldfd f0, [r0]");
-###		], set(fpu FPA, fpu=NONE))
-
-###	ac_msg_result($fpu)
-###	set(CPPFLAGS "$CPPFLAGS -DARM_FPU_$fpu=1")
-###	unset fpu
-###fi
+# FIXME: Don't do this if cross-compiling
+if(${TARGET} STREQUAL "ARM")
+  ac_msg_checking("which FPU to use")
+  set(CMAKE_REQUIRED_FLAGS "-mfloat-abi=softfp -mfpu=vfp")
+  set(compiles_fpu_vfp)
+  check_c_source_compiles("
+void main () {
+		__asm__ (\"faddd   d7, d6, d7\");
+}
+" compiles_fpu_vfp)
+  set(compiles_fpu_fpa)
+  set(cmake_required_flags)
+  check_c_source_compiles("
+void main () {
+		__asm__ (\"ldfd f0, [r0]\");
+}
+" compiles_fpu_fpa)
+  if(compiles_fpu_vfp)
+	set(fpu VFP)
+  elseif(compiles_fpu_fpa)
+	set(fpu FPA)
+  else()
+	set(fpu NONE)
+  endif()
+  ac_msg_result(${fpu})
+  set(CPPFLAGS "${CPPFLAGS} -DARM_FPU_${fpu}=1")
+  set(fpu)
+endif()
 
 if(${TARGET} STREQUAL "unknown")
 	set(CPPFLAGS ${CPPFLAGS} -DNO_PORT)
@@ -2452,7 +2470,7 @@ if(${TARGET} STREQUAL "unknown")
 endif()
 
 if(NOT ACCESS_UNALIGNED)
-  set(CPPFLAGS ${CPPFLAGS} -DNO_UNALIGNED_ACCESS)
+  set(CPPFLAGS "${CPPFLAGS} -DNO_UNALIGNED_ACCESS")
 endif()
 
 ###case "x$gc" in
