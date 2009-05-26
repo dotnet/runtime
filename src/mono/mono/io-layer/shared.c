@@ -240,7 +240,7 @@ static gchar *
 _wapi_shm_file (_wapi_shm_t type)
 {
 	static gchar file[_POSIX_PATH_MAX];
-	gchar *name = NULL, *filename, *dir, *wapi_dir;
+	gchar *name = NULL, *filename, *wapi_dir;
 
 	name = _wapi_shm_base_name (type);
 
@@ -259,14 +259,6 @@ _wapi_shm_file (_wapi_shm_t type)
 
 	g_snprintf (file, _POSIX_PATH_MAX, "%s", filename);
 	g_free (filename);
-		
-	/* No need to check if the dir already exists or check
-	 * mkdir() errors, because on any error the open() call will
-	 * report the problem.
-	 */
-	dir = g_path_get_dirname (file);
-	mkdir (dir, 0755);
-	g_free (dir);
 	
 	return file;
 }
@@ -279,6 +271,15 @@ _wapi_shm_file_open (const gchar *filename, guint32 wanted_size)
 	int ret, tries = 0;
 	gboolean created = FALSE;
 	mode_t oldmask;
+	gchar *dir;
+		
+	/* No need to check if the dir already exists or check
+	 * mkdir() errors, because on any error the open() call will
+	 * report the problem.
+	 */
+	dir = g_path_get_dirname (filename);
+	mkdir (dir, 0755);
+	g_free (dir);
 
 try_again:
 	if (tries++ > 10) {
