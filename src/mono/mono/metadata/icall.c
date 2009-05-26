@@ -110,6 +110,8 @@ typedef struct {
 	if ((ARRAY).size >= (ARRAY).capacity) {\
 		void *__tmp = mono_gc_alloc_fixed (sizeof (void*) * (ARRAY).capacity * 2, NULL); \
 		memcpy (__tmp, (ARRAY).data, (ARRAY).capacity * sizeof (void*)); \
+		if ((ARRAY).capacity > MONO_PTR_ARRAY_MAX_ON_STACK)	\
+			mono_gc_free_fixed ((ARRAY).data);	\
 		(ARRAY).data = __tmp;											\
 		(ARRAY).capacity *= 2;\
 	}\
