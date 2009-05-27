@@ -1,3 +1,11 @@
+2009-05-27 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-blob-tests.md: More signature tests.
+
+	* assembly-with-custommod.il: File with custom mods.
+
+	* Makefile: Add new dependency.
+
 2009-05-22 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: More tests for method def signatures.

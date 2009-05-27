@@ -52,6 +52,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-module.exe \
 	assembly-with-resource.exe \
 	assembly-with-generics.exe \
+	assembly-with-custommod.exe \
 	simple-assembly.exe
 
 
