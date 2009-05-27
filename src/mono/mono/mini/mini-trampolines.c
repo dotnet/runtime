@@ -22,7 +22,6 @@
 guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 
 static GHashTable *class_init_hash_addr = NULL;
-static GHashTable *delegate_trampoline_hash_addr = NULL;
 static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
 static GHashTable *rgctx_lazy_fetch_trampoline_hash_addr = NULL;
 
@@ -946,8 +945,6 @@ mono_trampolines_cleanup (void)
 {
 	if (class_init_hash_addr)
 		g_hash_table_destroy (class_init_hash_addr);
-	if (delegate_trampoline_hash_addr)
-		g_hash_table_destroy (delegate_trampoline_hash_addr);
 
 	DeleteCriticalSection (&trampolines_mutex);
 }
@@ -1163,12 +1160,6 @@ mono_create_delegate_trampoline (MonoClass *klass)
 							  klass, ptr);
 	mono_domain_unlock (domain);
 
-	mono_trampolines_lock ();
-	if (!delegate_trampoline_hash_addr)
-		delegate_trampoline_hash_addr = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (delegate_trampoline_hash_addr, ptr, klass);
-	mono_trampolines_unlock ();
-
 	return ptr;
 #else
 	return NULL;
@@ -1314,20 +1305,6 @@ mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 	mono_trampolines_lock ();
 	if (class_init_hash_addr)
 		res = g_hash_table_lookup (class_init_hash_addr, addr);
-	else
-		res = NULL;
-	mono_trampolines_unlock ();
-	return res;
-}
-
-MonoClass*
-mono_find_delegate_trampoline_by_addr (gconstpointer addr)
-{
-	MonoClass *res;
-
-	mono_trampolines_lock ();
-	if (delegate_trampoline_hash_addr)
-		res = g_hash_table_lookup (delegate_trampoline_hash_addr, addr);
 	else
 		res = NULL;
 	mono_trampolines_unlock ();
