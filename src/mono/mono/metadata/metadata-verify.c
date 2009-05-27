@@ -1075,7 +1075,7 @@ decode_signature_header (VerifyContext *ctx, guint32 offset, int *size, const ch
 	if (offset + enc_size + value < offset)
 		return FALSE;
 
-	if (offset + enc_size + value >= blob.size)
+	if (offset + enc_size + value > blob.size)
 		return FALSE;
 
 	*size = value;
@@ -1125,12 +1125,46 @@ safe_read_compressed_int (const char **_ptr, const char *limit, unsigned *dest)
 static gboolean
 parse_custom_mods (VerifyContext *ctx, const char **_ptr, const char *end)
 {
+	const char *ptr = *_ptr;
+	guint type = 0;
+	guint32 token = 0;
+
+	while (TRUE) {
+		if (!safe_read8 (type, ptr, end))
+			FAIL (ctx, g_strdup ("CustomMod: Not enough room for the type"));
+	
+		if (type != MONO_TYPE_CMOD_REQD && type != MONO_TYPE_CMOD_OPT) {
+			--ptr;
+			break;
+		}
+	
+		if (!safe_read_cint (token, ptr, end))
+			FAIL (ctx, g_strdup ("CustomMod: Not enough room for the token"));
+	
+		printf ("type %x token %x\n", type, token);
+		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
+			FAIL (ctx, g_strdup_printf ("CustomMod: invalid TypeDefOrRef token %x", token));
+	}
+
+	*_ptr = ptr;
 	return TRUE;
 }
 
 static gboolean
 parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 {
+	const char *ptr = *_ptr;
+	guint type = 0;
+
+	if (!safe_read8 (type, ptr, end))
+		FAIL (ctx, g_strdup ("Type: Not enough room for the type"));
+
+	if (!((type >= MONO_TYPE_BOOLEAN && type <= MONO_TYPE_PTR) ||
+		(type >= MONO_TYPE_VALUETYPE && type <= MONO_TYPE_GENERICINST) ||
+		(type >= MONO_TYPE_I && type <= MONO_TYPE_U) ||
+		(type >= MONO_TYPE_FNPTR && type <= MONO_TYPE_MVAR)))
+		FAIL (ctx, g_strdup_printf ("Type: Invalid type kind %x\n", type));
+
 	return TRUE;
 }
 
@@ -1171,10 +1205,11 @@ static gboolean
 is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 {
 	int size = 0, cconv = 0;
-	unsigned param_count;
+	unsigned param_count = 0, gparam_count = 0;
 	const char *ptr = NULL, *end;
+
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
-		return FALSE;
+		FAIL (ctx, g_strdup ("MethodSig: Could not decode signature header"));
 	end = ptr + size;
 
 	if (!safe_read8 (cconv, ptr, end))
@@ -1186,6 +1221,9 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 	if ((cconv & 0x0F) != 0 && (cconv & 0x0F)!= 5)
 		FAIL (ctx, g_strdup ("MethodSig: CallConv is not Default or Vararg"));
 
+	if ((cconv & 0x10) && !safe_read_cint (gparam_count, ptr, end))
+		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the generic param count"));
+		
 	if (!safe_read_cint (param_count, ptr, end))
 		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the param count"));
 
@@ -1610,7 +1648,7 @@ verify_method_table (VerifyContext *ctx)
 		//TODO check iface with .ctor (15,16)
 
 		if (!data [MONO_METHOD_SIGNATURE] || !is_valid_method_signature (ctx, data [MONO_METHOD_SIGNATURE]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid signature token %08x", i, data [MONO_METHOD_SIGNATURE]));
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid signature token 0x%08x", i, data [MONO_METHOD_SIGNATURE]));
 
 		if (i + 1 < module_method_list) {
 			if (!(flags & METHOD_ATTRIBUTE_STATIC))
