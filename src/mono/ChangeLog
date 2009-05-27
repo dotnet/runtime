@@ -1,3 +1,7 @@
+2009-05-27  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Disable USE_MUNMAP on ppc to work around #504411.
+
 2009-05-26  Zoltan Varga  <vargaz@gmail.com>
 
 	* CMakeLists.txt: Implement AC_OUTPUT, creation of config.make, etc.

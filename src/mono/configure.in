@@ -65,6 +65,14 @@ AC_MSG_CHECKING([host platform characteristics])
 libgc_threads=no
 has_dtrace=no
 parallel_mark=yes
+
+case "$host" in
+	powerpc*-*-linux*)
+		# https://bugzilla.novell.com/show_bug.cgi?id=504411
+		disable_munmap=yes
+	;;
+esac
+
 case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
@@ -145,7 +153,10 @@ case "$host" in
 		;;
 	*-*-linux*)
 		platform_win32=no
-		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP -DUSE_MUNMAP"
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
+		if test "x$disable_munmap" != "xyes"; then
+			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
+		fi
 		libmono_cflags="-D_REENTRANT"
 		libmono_ldflags="-lpthread"
 		libdl="-ldl"
