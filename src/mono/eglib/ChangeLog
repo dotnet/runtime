@@ -1,3 +1,7 @@
+2009-05-27  Geoff Norton  <gnorton@novell.com>
+
+	* src/gfile-posix.c: Fix g_get_current_dir on amd64
+
 2009-04-22  Jeffrey Stedfast  <fejj@novell.com>
 
 	* src/gtimer-win32.c (g_timer_elapsed): Avoid re-querying freq by
