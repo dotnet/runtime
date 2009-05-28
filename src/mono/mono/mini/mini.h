@@ -1690,10 +1690,14 @@ extern gssize mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
 
 gboolean mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guint8 *buf, int size);
 
-/* Mono Debugger support */
-void      mono_debugger_init                    (void);
-int       mono_debugger_main                    (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv);
+#ifdef MONO_DEBUGGER_SUPPORTED
 
+/* Mono Debugger support */
+void      mini_debugger_init                    (void);
+int       mini_debugger_main                    (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv);
+gboolean  mini_debug_running_inside_mdb         (void);
+
+#endif
 
 /* Tracing */
 MonoTraceSpec *mono_trace_parse_options         (const char *options) MONO_INTERNAL;

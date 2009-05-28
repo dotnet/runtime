@@ -456,14 +456,38 @@ debugger_init_code_buffer (void)
 }
 
 extern MonoDebuggerInfo *MONO_DEBUGGER__debugger_info_ptr;
+extern long MONO_DEBUGGER__using_debugger;
 
 static void
 debugger_initialize (void)
 {
 }
 
+/**
+ * Check whether we're running inside the debugger.
+ *
+ * There seems to be a bug in some versions of glibc which causes _dl_debug_state() being called with
+ * RT_CONSISTENT before relocations are done.
+ *
+ * If that happens, the debugger cannot read the `MONO_DEBUGGER__debugger_info' structure at the time
+ * the `libmono.so' library is loaded.
+ *
+ * As a workaround, the `mdb_debug_info' now also contains a global variable called
+ * `MONO_DEBUGGER__using_debugger' which may we set to 1 by the debugger to tell us that we're running
+ * inside the debugger.
+ *
+ * mini_init() checks this and calls mini_debugger_init() if necessary.
+ *
+ */
+
+gboolean
+mini_debug_running_inside_mdb (void)
+{
+	return MONO_DEBUGGER__using_debugger || mono_debug_using_mono_debugger ();
+}
+
 void
-mono_debugger_init (void)
+mini_debugger_init (void)
 {
 	if (mono_debugger_event_handler) {
 		g_warning (G_STRLOC ": duplicate call to mono_debugger_init()!");
@@ -514,7 +538,7 @@ main_thread_handler (gpointer user_data)
 }
 
 int
-mono_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv)
+mini_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv)
 {
 	MainThreadArgs main_args;
 	MonoImage *image;

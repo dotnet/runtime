@@ -4698,8 +4698,8 @@ mini_init (const char *filename, const char *runtime_version)
 		default_opt = mono_parse_default_optimizations (NULL);
 
 #ifdef MONO_DEBUGGER_SUPPORTED
-	if (mono_debug_using_mono_debugger ())
-		mono_debugger_init ();
+	if (mini_debug_running_inside_mdb ())
+		mini_debugger_init ();
 #endif
 
 	InitializeCriticalSection (&jit_mutex);

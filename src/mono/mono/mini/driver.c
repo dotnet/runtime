@@ -1688,7 +1688,7 @@ mono_main (int argc, char* argv[])
 			exit (1);
 		}
 
-		mono_debugger_main (domain, assembly, argc - i, argv + i);
+		mini_debugger_main (domain, assembly, argc - i, argv + i);
 		mini_cleanup (domain);
 		return 0;
 #else
