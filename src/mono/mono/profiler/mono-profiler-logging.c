@@ -5236,6 +5236,13 @@ failure_handling:
 		profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
 	}
 	
+	/* Tracking call stacks is useless if we already emit all enter-exit events... */
+	if (profiler->action_flags.track_calls) {
+		profiler->action_flags.track_stack = FALSE;
+		profiler->action_flags.save_allocation_caller = FALSE;
+		profiler->action_flags.save_allocation_stack = FALSE;
+	}
+	
 	/* Without JIT events the stat profiler will not find method IDs... */
 	if (profiler->flags | MONO_PROFILE_STATISTICAL) {
 		profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
