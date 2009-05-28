@@ -1141,7 +1141,6 @@ parse_custom_mods (VerifyContext *ctx, const char **_ptr, const char *end)
 		if (!safe_read_cint (token, ptr, end))
 			FAIL (ctx, g_strdup ("CustomMod: Not enough room for the token"));
 	
-		printf ("type %x token %x\n", type, token);
 		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
 			FAIL (ctx, g_strdup_printf ("CustomMod: invalid TypeDefOrRef token %x", token));
 	}
@@ -1165,6 +1164,7 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 		(type >= MONO_TYPE_FNPTR && type <= MONO_TYPE_MVAR)))
 		FAIL (ctx, g_strdup_printf ("Type: Invalid type kind %x\n", type));
 
+	*_ptr = ptr;
 	return TRUE;
 }
 
@@ -1187,7 +1187,32 @@ parse_return_type (VerifyContext *ctx, const char **_ptr, const char *end)
 	}
 
 	//it's a byref, update the cursor ptr
-	if (type == MONO_TYPE_TYPEDBYREF)
+	if (type == MONO_TYPE_BYREF)
+		*_ptr = ptr;
+
+	return parse_type (ctx, _ptr, end);
+}
+
+static gboolean
+parse_param (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	const char *ptr;
+	int type = 0;
+
+	if (!parse_custom_mods (ctx, _ptr, end))
+		return FALSE;
+
+	ptr = *_ptr;
+	if (!safe_read8 (type, ptr, end))
+		FAIL (ctx, g_strdup ("Param: Not enough room for the type"));
+
+	if (type == MONO_TYPE_TYPEDBYREF) {
+		*_ptr = ptr;
+		return TRUE;
+	}
+
+	//it's a byref, update the cursor ptr
+	if (type == MONO_TYPE_BYREF)
 		*_ptr = ptr;
 
 	return parse_type (ctx, _ptr, end);
@@ -1205,7 +1230,7 @@ static gboolean
 is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 {
 	int size = 0, cconv = 0;
-	unsigned param_count = 0, gparam_count = 0;
+	unsigned param_count = 0, gparam_count = 0, i;
 	const char *ptr = NULL, *end;
 
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
@@ -1223,12 +1248,20 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 
 	if ((cconv & 0x10) && !safe_read_cint (gparam_count, ptr, end))
 		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the generic param count"));
-		
+
+	if ((cconv & 0x10) && gparam_count == 0)
+		FAIL (ctx, g_strdup ("MethodSig: Signature with generics but zero arity"));
+
 	if (!safe_read_cint (param_count, ptr, end))
 		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the param count"));
 
 	if (!parse_return_type (ctx, &ptr, end))
-		return FALSE;
+		FAIL (ctx, g_strdup ("MethodSig: Error parsing return type"));
+
+	for (i = 0; i < param_count; ++i) {
+		if (!parse_param (ctx, &ptr, end))
+			FAIL (ctx, g_strdup_printf ("MethodSig: Error parsing arg %d", i));
+	}
 
 	return TRUE;
 }
