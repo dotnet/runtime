@@ -499,6 +499,16 @@ typedef struct {
 	guint32 intType;
 } MonoInterfaceTypeAttribute;
 
+/* 
+ * Callbacks supplied by the runtime and called by the modules in metadata/
+ * This interface is easier to extend than adding a new function type +
+ * a new 'install' function for every callback.
+ */
+typedef struct {
+	gpointer (*create_ftnptr) (MonoDomain *domain, gpointer addr);
+	gpointer (*get_addr_from_ftnptr) (gpointer descr);
+} MonoRuntimeCallbacks;
+
 /* used to free a dynamic method */
 typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *method);
 
@@ -564,6 +574,9 @@ mono_install_compile_method (MonoCompileFunc func) MONO_INTERNAL;
 
 void
 mono_install_free_method    (MonoFreeMethodFunc func) MONO_INTERNAL;
+
+void
+mono_install_callbacks      (MonoRuntimeCallbacks *cbs) MONO_INTERNAL;
 
 void
 mono_type_initialization_init (void) MONO_INTERNAL;

@@ -141,6 +141,9 @@ static GHashTable *blocked_thread_hash;
 /* Main thread */
 static MonoThread *main_thread;
 
+/* Functions supplied by the runtime */
+static MonoRuntimeCallbacks callbacks;
+
 /**
  * mono_thread_set_main:
  * @thread: thread to set as the main thread
@@ -472,6 +475,12 @@ static MonoImtThunkBuilder imt_thunk_builder = NULL;
 #if (MONO_IMT_SIZE > 32)
 #error "MONO_IMT_SIZE cannot be larger than 32"
 #endif
+
+void
+mono_install_callbacks (MonoRuntimeCallbacks *cbs)
+{
+	memcpy (&callbacks, cbs, sizeof (*cbs));
+}
 
 void
 mono_install_trampoline (MonoTrampoline func) 
@@ -5704,49 +5713,24 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
  * mono_create_ftnptr:
  *
  *   Given a function address, create a function descriptor for it.
- * This is only needed on IA64 and PPC64.
+ * This is only needed on some platforms.
  */
 gpointer
 mono_create_ftnptr (MonoDomain *domain, gpointer addr)
 {
-#ifdef __ia64__
-	gpointer *desc;
-
-	desc = mono_domain_code_reserve (domain, 2 * sizeof (gpointer));
-
-	desc [0] = addr;
-	desc [1] = NULL;
-
-	return desc;
-#elif defined(__ppc64__) || defined(__powerpc64__)
-	gpointer *desc;
-
-	desc = mono_domain_alloc0 (domain, 3 * sizeof (gpointer));
-
-	desc [0] = addr;
-	desc [1] = NULL;
-	desc [2] = NULL;
-
-	return desc;
-#else
-	return addr;
-#endif
+	return callbacks.create_ftnptr (domain, addr);
 }
 
 /*
  * mono_get_addr_from_ftnptr:
  *
  *   Given a pointer to a function descriptor, return the function address.
- * This is only needed on IA64 and PPC64.
+ * This is only needed on some platforms.
  */
 gpointer
 mono_get_addr_from_ftnptr (gpointer descr)
 {
-#if defined(__ia64__) || defined(__ppc64__) || defined(__powerpc64__)
-	return *(gpointer*)descr;
-#else
-	return descr;
-#endif
+	return callbacks.get_addr_from_ftnptr (descr);
 }	
 
 #if 0
