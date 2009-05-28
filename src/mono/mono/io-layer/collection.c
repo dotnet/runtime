@@ -52,21 +52,32 @@ void _wapi_collection_init (void)
 {
 	pthread_attr_t attr;
 	int ret;
-	
-	ret = pthread_attr_init (&attr);
-	g_assert (ret == 0);
-	
+        int set_stacksize = 0;
+
+ retry:
+        ret = pthread_attr_init (&attr);
+        g_assert (ret == 0);
+
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+        if (set_stacksize == 0) {
 #if defined(__FreeBSD__) || defined(__NetBSD__)
-	ret = pthread_attr_setstacksize (&attr, 65536);
+                ret = pthread_attr_setstacksize (&attr, 65536);
 #else
-	ret = pthread_attr_setstacksize (&attr, PTHREAD_STACK_MIN);
+                ret = pthread_attr_setstacksize (&attr, PTHREAD_STACK_MIN);
 #endif
-	g_assert (ret == 0);
+                g_assert (ret == 0);
+        } else if (set_stacksize == 1) {
+                ret = pthread_attr_setstacksize (&attr, 131072);
+                g_assert (ret == 0);
+        }
 #endif
 
-	ret = pthread_create (&collection_thread_id, &attr, collection_thread,
-			      NULL);
+        ret = pthread_create (&collection_thread_id, &attr, collection_thread,
+                              NULL);
+        if (ret != 0 && set_stacksize < 2) {
+                set_stacksize++;
+                goto retry;
+        }
 	if (ret != 0) {
 		g_error ("%s: Couldn't create handle collection thread: %s",
 			 __func__, g_strerror (ret));
