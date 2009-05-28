@@ -1367,7 +1367,7 @@ ncells ) {
 
 	//repro for #506915
 	struct Bug506915 { public int val; }
-	static int test_2_ldobj_stobj_optization (string[] args)
+	static int test_2_ldobj_stobj_optization ()
 	{
 		int i = 99;
 		var a = new Bug506915 ();
