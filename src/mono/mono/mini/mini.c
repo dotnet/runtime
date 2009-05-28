@@ -4619,6 +4619,43 @@ mini_get_debug_options (void)
 {
 	return &debug_options;
 }
+
+static gpointer
+mini_create_ftnptr (MonoDomain *domain, gpointer addr)
+{
+#ifdef __ia64__
+	gpointer *desc;
+
+	desc = mono_domain_code_reserve (domain, 2 * sizeof (gpointer));
+
+	desc [0] = addr;
+	desc [1] = NULL;
+
+	return desc;
+#elif defined(__ppc64__) || defined(__powerpc64__)
+	gpointer *desc;
+
+	desc = mono_domain_alloc0 (domain, 3 * sizeof (gpointer));
+
+	desc [0] = addr;
+	desc [1] = NULL;
+	desc [2] = NULL;
+
+	return desc;
+#else
+	return addr;
+#endif
+}
+
+static gpointer
+mini_get_addr_from_ftnptr (gpointer descr)
+{
+#if defined(__ia64__) || defined(__ppc64__) || defined(__powerpc64__)
+	return *(gpointer*)descr;
+#else
+	return descr;
+#endif
+}	
  
 static void
 mini_create_jit_domain_info (MonoDomain *domain)
@@ -4683,6 +4720,7 @@ MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
 {
 	MonoDomain *domain;
+	MonoRuntimeCallbacks callbacks;
 
 	MONO_PROBE_VES_INIT_BEGIN ();
 
@@ -4708,6 +4746,12 @@ mini_init (const char *filename, const char *runtime_version)
 		global_codeman = mono_code_manager_new ();
 	jit_icall_name_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
+	memset (&callbacks, 0, sizeof (callbacks));
+	callbacks.create_ftnptr = mini_create_ftnptr;
+	callbacks.get_addr_from_ftnptr = mini_get_addr_from_ftnptr;
+
+	mono_install_callbacks (&callbacks);
+	
 	mono_arch_cpu_init ();
 
 	mono_arch_init ();
