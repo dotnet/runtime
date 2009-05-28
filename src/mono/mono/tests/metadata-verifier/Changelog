@@ -1,5 +1,12 @@
 2009-05-27 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: Tests for parameters and generics
+
+	* assembly-with-custommod.il: Added more methods to use
+	in the tests.
+
+2009-05-27 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-blob-tests.md: More signature tests.
 
 	* assembly-with-custommod.il: File with custom mods.

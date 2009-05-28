@@ -49,6 +49,14 @@
 		ret
 	}
 
+	.method public static int32& ByRefMethod () cil managed
+	{
+		.locals (int32 V_0)
+
+		ldloca 0
+		ret
+	}
+
 	.method public static void Main () cil managed 
 	{
 		.entrypoint

@@ -29,6 +29,11 @@ method-def-sig {
 	#sig is too small to decode return type
 	invalid offset blob.i (table-row (6 0) + 10) set-byte 2
 
+	#zero generic args
+	#method 1 is generic
+	#bytes: size cconv gen_param_count
+	invalid offset blob.i (table-row (6 1) + 10) + 2 set-byte 0
+
 	#set ret type to an invalid value
 	invalid offset blob.i (table-row (6 0) + 10) + 3 set-byte 0
 	invalid offset blob.i (table-row (6 0) + 10) + 3 set-byte 0x17
@@ -44,9 +49,24 @@ method-def-sig {
 	invalid offset blob.i (table-row (6 0) + 10) + 3 set-byte 0x54 #property
 	invalid offset blob.i (table-row (6 0) + 10) + 3 set-byte 0x55 #enum
 
+	#bad args
+	#method 12 has sig void (int,int,int)
+	#bytes: size cconv param_count void int32 int32 int32
+	valid offset blob.i (table-row (6 12) + 10) + 4 set-byte 0x05
+	valid offset blob.i (table-row (6 12) + 10) + 5 set-byte 0x06
+	valid offset blob.i (table-row (6 12) + 10) + 6 set-byte 0x07
+
+	#void
+	invalid offset blob.i (table-row (6 12) + 10) + 5 set-byte 0x01
+
+	#byref without anything after
+	invalid offset blob.i (table-row (6 12) + 10) + 4 set-byte 0x10
+	invalid offset blob.i (table-row (6 12) + 10) + 5 set-byte 0x10
+	invalid offset blob.i (table-row (6 12) + 10) + 6 set-byte 0x10
 }
 
-method-def-sig2 {
+#Test for stuff in the ret that can't be expressed with C#
+method-def-ret-misc {
 	assembly assembly-with-custommod.exe
 
 	#method 0 has a modreq
@@ -57,5 +77,11 @@ method-def-sig2 {
 	#switch modreq to modopt
 	valid offset blob.i (table-row (6 0) + 10) + 3 set-byte 0x20
 
+	#2 times byref
+	#method 4 returns byref
+	#bytes: size cconv param_count byref int32
+	invalid offset blob.i (table-row (6 4) + 10) + 4 set-byte 0x10
+	#byref of typedref
+	invalid offset blob.i (table-row (6 4) + 10) + 4 set-byte 0x16
 
 }
