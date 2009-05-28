@@ -465,6 +465,11 @@ debugger_initialize (void)
 void
 mono_debugger_init (void)
 {
+	if (mono_debugger_event_handler) {
+		g_warning (G_STRLOC ": duplicate call to mono_debugger_init()!");
+		return;
+	}
+
 	debugger_executable_code_buffer = mono_global_codeman_reserve (EXECUTABLE_CODE_BUFFER_SIZE);
 	mono_debugger_event_handler = debugger_event_handler;
 

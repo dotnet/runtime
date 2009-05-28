@@ -223,6 +223,9 @@ mono_debug_init (MonoDebugFormat format)
 {
 	g_assert (!mono_debug_initialized);
 
+	if (_mono_debug_using_mono_debugger)
+		format = MONO_DEBUG_FORMAT_DEBUGGER;
+
 	mono_debug_initialized = TRUE;
 	mono_debug_format = format;
 

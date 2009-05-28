@@ -4697,6 +4697,9 @@ mini_init (const char *filename, const char *runtime_version)
 	if (!default_opt_set)
 		default_opt = mono_parse_default_optimizations (NULL);
 
+	if (mono_debug_using_mono_debugger ())
+		mono_debugger_init ();
+
 	InitializeCriticalSection (&jit_mutex);
 
 	if (!global_codeman)

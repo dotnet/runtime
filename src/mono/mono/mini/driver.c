@@ -1525,7 +1525,6 @@ mono_main (int argc, char* argv[])
 
 #ifdef MONO_DEBUGGER_SUPPORTED
 		mono_debug_init (MONO_DEBUG_FORMAT_DEBUGGER);
-		mono_debugger_init ();
 #else
 		g_print ("The Mono Debugger is not supported on this platform.\n");
 		return 1;
