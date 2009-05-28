@@ -1,3 +1,8 @@
+2009-05-28  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/InjectSecurityAttributes.cs: show a warning if using
+	the MoonlightAssemblyStep but no secattr option is specified.
+
 2009-05-15  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/InjectSecurityAttributes.cs: fix retrieval
