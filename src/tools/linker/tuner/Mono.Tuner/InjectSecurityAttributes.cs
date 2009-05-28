@@ -64,8 +64,10 @@ namespace Mono.Tuner {
 
 		protected override bool ConditionToProcess ()
 		{
-			if (!Context.HasParameter (sec_attr_folder))
+			if (!Context.HasParameter (sec_attr_folder)) {
+				Console.Error.WriteLine ("Warning: no secattrs folder specified.");
 				return false;
+			}
 
 			data_folder = Context.GetParameter (sec_attr_folder);
 			return true;
