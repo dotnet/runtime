@@ -1219,7 +1219,7 @@ parse_param (VerifyContext *ctx, const char **_ptr, const char *end)
 }
 
 static gboolean
-parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, gboolean allow_sentinel)
+parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, gboolean allow_sentinel, gboolean allow_unmanaged)
 {
 	int cconv = 0;
 	unsigned param_count = 0, gparam_count = 0, type = 0, i;
@@ -1232,14 +1232,20 @@ parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, 
 	if (cconv & 0x80)
 		FAIL (ctx, g_strdup ("MethodSig: CallConv has 0x80 set"));
 
-	if ((cconv & 0x0F) != MONO_CALL_DEFAULT && (cconv & 0x0F) != MONO_CALL_VARARG)
-		FAIL (ctx, g_strdup_printf ("MethodSig: CallConv is not Default or Vararg, it's %x", cconv));
+	if (allow_unmanaged) {
+		if ((cconv & 0x0F) > MONO_CALL_VARARG)
+			FAIL (ctx, g_strdup_printf ("MethodSig: CallConv is not valid, it's %x", cconv & 0x0F));
+	} else if ((cconv & 0x0F) != MONO_CALL_DEFAULT && (cconv & 0x0F) != MONO_CALL_VARARG)
+		FAIL (ctx, g_strdup_printf ("MethodSig: CallConv is not Default or Vararg, it's %x", cconv & 0x0F));
 
 	if ((cconv & 0x10) && !safe_read_cint (gparam_count, ptr, end))
 		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the generic param count"));
 
 	if ((cconv & 0x10) && gparam_count == 0)
 		FAIL (ctx, g_strdup ("MethodSig: Signature with generics but zero arity"));
+
+	if (allow_unmanaged && (cconv & 0x10))
+		FAIL (ctx, g_strdup ("MethodSig: Standalone signature with generic params"));
 
 	if (!safe_read_cint (param_count, ptr, end))
 		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the param count"));
@@ -1291,7 +1297,7 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 		FAIL (ctx, g_strdup ("MethodSig: Could not decode signature header"));
 	end = ptr + size;
 
-	return parse_method_signature (ctx, &ptr, end, FALSE);
+	return parse_method_signature (ctx, &ptr, end, FALSE, FALSE);
 }
 
 static gboolean
@@ -1302,7 +1308,7 @@ is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 	const char *ptr = NULL, *end;
 
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
-		FAIL (ctx, g_strdup ("MethodSig: Could not decode signature header"));
+		FAIL (ctx, g_strdup ("MemberRefSig: Could not decode signature header"));
 	end = ptr + size;
 
 	if (!safe_read8 (signature, ptr, end))
@@ -1311,7 +1317,7 @@ is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 	if (signature == 0x06) //FIXME implement field sig checking
 		return TRUE;
 	--ptr;
-	return parse_method_signature (ctx, &ptr, end, TRUE);
+	return parse_method_signature (ctx, &ptr, end, TRUE, FALSE);
 }
 
 static gboolean
@@ -1341,9 +1347,22 @@ is_valid_permission_set (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_standalonesig_blob (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return blob.size >= 1 && blob.size - 1 >= offset;
+	int size = 0;
+	unsigned signature = 0;
+	const char *ptr = NULL, *end;
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("StandAloneSig: Could not decode signature header"));
+	end = ptr + size;
+
+	if (!safe_read8 (signature, ptr, end))
+		FAIL (ctx, g_strdup ("StandAloneSig: Not enough room for the call conv"));
+
+	if (signature == 0x07) //FIXME implement localvarsig checking
+		return TRUE;
+	--ptr;
+
+	return parse_method_signature (ctx, &ptr, end, TRUE, TRUE);
 }
 
 static gboolean
