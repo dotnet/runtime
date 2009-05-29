@@ -1280,11 +1280,31 @@ parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, 
 }
 
 static gboolean
+parse_field (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	if (!parse_custom_mods (ctx, _ptr, end))
+		return FALSE;
+	return parse_type (ctx, _ptr, end);
+}
+
+static gboolean
 is_valid_field_signature (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return blob.size >= 2 && blob.size - 2 >= offset;
+	int size = 0, signature = 0;
+	const char *ptr = NULL, *end;
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("FieldSig: Could not decode signature header"));
+	end = ptr + size;
+
+	if (!safe_read8 (signature, ptr, end))
+		FAIL (ctx, g_strdup ("FieldSig: Not enough room for the signature"));
+
+	if (signature != 6)
+		FAIL (ctx, g_strdup_printf ("FieldSig: Invalid signature %x", signature));
+	--ptr;
+
+	return parse_field (ctx, &ptr, end);
 }
 
 static gboolean
@@ -1313,10 +1333,11 @@ is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 
 	if (!safe_read8 (signature, ptr, end))
 		FAIL (ctx, g_strdup ("MemberRefSig: Not enough room for the call conv"));
-
-	if (signature == 0x06) //FIXME implement field sig checking
-		return TRUE;
 	--ptr;
+
+	if (signature == 0x06)
+		return parse_field (ctx, &ptr, end);
+
 	return parse_method_signature (ctx, &ptr, end, TRUE, FALSE);
 }
 
