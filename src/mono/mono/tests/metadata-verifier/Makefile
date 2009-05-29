@@ -40,6 +40,9 @@ assembly-with-module.exe: assembly-with-module.cs module.netmodule
 assembly-with-generics.exe: assembly-with-generics.cs
 	gmcs assembly-with-generics.cs
 
+assembly-with-signatures.exe: assembly-with-signatures.cs
+	gmcs assembly-with-signatures.cs
+
 TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-complex-type.exe \
 	assembly-with-methods.exe \
@@ -53,6 +56,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-resource.exe \
 	assembly-with-generics.exe \
 	assembly-with-custommod.exe \
+	assembly-with-signatures.exe \
 	simple-assembly.exe
 
 

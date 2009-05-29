@@ -85,3 +85,20 @@ method-def-ret-misc {
 	invalid offset blob.i (table-row (6 4) + 10) + 4 set-byte 0x16
 
 }
+
+method-ref-sig {
+	assembly assembly-with-signatures.exe
+
+	#member ref 0 is has a vararg sig 
+	#member ref 1 don't use vararg
+
+	#2 sentinels
+	#bytes: size cconv pcount void str obj obj obj obj ... i32 i32 i32
+	invalid offset blob.i (table-row (0xA 0) + 4) + 10 set-byte 0x41
+	invalid offset blob.i (table-row (0xA 0) + 4) + 11 set-byte 0x41
+
+	#sentinel but not vararg
+	invalid offset blob.i (table-row (0xA 0) + 4) + 1 set-byte 0
+
+	
+}

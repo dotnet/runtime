@@ -1,3 +1,11 @@
+2009-05-28 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-blob-tests.md: Methodref signature tests.
+
+	* assembly-with-signatures.cs: File with vararg call.
+
+	* Makefile: Add new dependency.
+
 2009-05-27 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: Tests for parameters and generics
