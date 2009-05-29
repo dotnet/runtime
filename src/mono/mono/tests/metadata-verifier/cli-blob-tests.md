@@ -119,7 +119,17 @@ stand-alone-method-sig {
 	invalid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x10,
 			offset blob.i (table-row (0x11 3)) + 2 set-byte 1,
 			offset blob.i (table-row (0x11 3)) + 3 set-byte 0
+}
 
+field-sig {
+	assembly assembly-with-complex-type.exe
 
+	#first byte must be 6
+	invalid offset blob.i (table-row (4 0) + 4) + 1 set-byte 0x0
+	invalid offset blob.i (table-row (4 0) + 4) + 1 set-byte 0x5
+	invalid offset blob.i (table-row (4 0) + 4) + 1 set-byte 0x7
+	invalid offset blob.i (table-row (4 0) + 4) + 1 set-byte 0x16
+	invalid offset blob.i (table-row (4 0) + 4) + 1 set-byte 0x26
 
 }
+

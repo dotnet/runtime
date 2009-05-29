@@ -1,5 +1,9 @@
 2009-05-29 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: FieldSig tests.
+
+2009-05-29 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-blob-tests.md: StandAloneSig tests.
 
 	* assembly-with-custommod.il: Added a calli
