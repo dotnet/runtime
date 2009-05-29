@@ -99,6 +99,27 @@ method-ref-sig {
 
 	#sentinel but not vararg
 	invalid offset blob.i (table-row (0xA 0) + 4) + 1 set-byte 0
+}
 
-	
+stand-alone-method-sig {
+	assembly assembly-with-custommod.exe
+
+	#standalone sig 0x3 points to an icall sig
+	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x0
+	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x1
+	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x2
+	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x3
+	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x4
+	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x5
+
+	#sig is int32 (int32)
+	#size cconv pcount(1) int32 int32 ->
+	#size cconv gcount(1) pcount(0) int32
+	#cannot have generics
+	invalid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x10,
+			offset blob.i (table-row (0x11 3)) + 2 set-byte 1,
+			offset blob.i (table-row (0x11 3)) + 3 set-byte 0
+
+
+
 }

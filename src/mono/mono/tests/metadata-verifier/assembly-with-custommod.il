@@ -41,7 +41,7 @@
 
 	.method public static typedref StrangeMethod () cil managed
 	{
-		.locals (typedref V_0)
+		.locals init (typedref V_0)
 
 		ldloca 0
 		initobj typedref
@@ -51,9 +51,27 @@
 
 	.method public static int32& ByRefMethod () cil managed
 	{
-		.locals (int32 V_0)
+		.locals init (int32 V_0)
 
 		ldloca 0
+		ret
+	}
+
+	.method public static int32 SimpleMethod (int32 foo) cil managed
+	{
+		ldc.i4.0
+		ret
+	}
+
+	.method public static void MethodWithCalli () cil managed
+	{
+		.locals init (native int V_0)
+
+		ldftn int32 class Program::SimpleMethod ()
+		stloc.0
+		ldloc.0
+		calli unmanaged cdecl int32 (int32) 
+		pop
 		ret
 	}
 

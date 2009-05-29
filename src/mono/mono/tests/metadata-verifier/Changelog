@@ -1,3 +1,9 @@
+2009-05-29 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-blob-tests.md: StandAloneSig tests.
+
+	* assembly-with-custommod.il: Added a calli
+
 2009-05-28 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: Methodref signature tests.
