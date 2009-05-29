@@ -1219,23 +1219,12 @@ parse_param (VerifyContext *ctx, const char **_ptr, const char *end)
 }
 
 static gboolean
-is_valid_field_signature (VerifyContext *ctx, guint32 offset)
+parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, gboolean allow_sentinel)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return blob.size >= 2 && blob.size - 2 >= offset;
-}
-
-static gboolean
-is_valid_method_signature (VerifyContext *ctx, guint32 offset)
-{
-	int size = 0, cconv = 0;
-	unsigned param_count = 0, gparam_count = 0, i;
-	const char *ptr = NULL, *end;
-
-	if (!decode_signature_header (ctx, offset, &size, &ptr))
-		FAIL (ctx, g_strdup ("MethodSig: Could not decode signature header"));
-	end = ptr + size;
+	int cconv = 0;
+	unsigned param_count = 0, gparam_count = 0, type = 0, i;
+	const char *ptr = *_ptr;
+	gboolean saw_sentinel = FALSE;
 
 	if (!safe_read8 (cconv, ptr, end))
 		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the call conv"));
@@ -1243,8 +1232,8 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 	if (cconv & 0x80)
 		FAIL (ctx, g_strdup ("MethodSig: CallConv has 0x80 set"));
 
-	if ((cconv & 0x0F) != 0 && (cconv & 0x0F)!= 5)
-		FAIL (ctx, g_strdup ("MethodSig: CallConv is not Default or Vararg"));
+	if ((cconv & 0x0F) != MONO_CALL_DEFAULT && (cconv & 0x0F) != MONO_CALL_VARARG)
+		FAIL (ctx, g_strdup_printf ("MethodSig: CallConv is not Default or Vararg, it's %x", cconv));
 
 	if ((cconv & 0x10) && !safe_read_cint (gparam_count, ptr, end))
 		FAIL (ctx, g_strdup ("MethodSig: Not enough room for the generic param count"));
@@ -1259,19 +1248,70 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 		FAIL (ctx, g_strdup ("MethodSig: Error parsing return type"));
 
 	for (i = 0; i < param_count; ++i) {
+		if (allow_sentinel) {
+			if (!safe_read8 (type, ptr, end))
+				FAIL (ctx, g_strdup_printf ("MethodSig: Not enough room for param %d type", i));
+
+			if (type == MONO_TYPE_SENTINEL) {
+				if ((cconv & 0x0F) != MONO_CALL_VARARG)
+					FAIL (ctx, g_strdup ("MethodSig: Found sentinel but signature is not vararg"));
+
+				if (saw_sentinel)
+					FAIL (ctx, g_strdup ("MethodSig: More than one sentinel type"));
+
+				saw_sentinel = TRUE;
+			} else {
+				--ptr;
+			}
+		}
+
 		if (!parse_param (ctx, &ptr, end))
 			FAIL (ctx, g_strdup_printf ("MethodSig: Error parsing arg %d", i));
 	}
 
+	*_ptr = ptr;
 	return TRUE;
+}
+
+static gboolean
+is_valid_field_signature (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return blob.size >= 2 && blob.size - 2 >= offset;
+}
+
+static gboolean
+is_valid_method_signature (VerifyContext *ctx, guint32 offset)
+{
+	int size = 0;
+	const char *ptr = NULL, *end;
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("MethodSig: Could not decode signature header"));
+	end = ptr + size;
+
+	return parse_method_signature (ctx, &ptr, end, FALSE);
 }
 
 static gboolean
 is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return blob.size >= 2 && blob.size - 2 >= offset;
+	int size = 0;
+	unsigned signature = 0;
+	const char *ptr = NULL, *end;
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("MethodSig: Could not decode signature header"));
+	end = ptr + size;
+
+	if (!safe_read8 (signature, ptr, end))
+		FAIL (ctx, g_strdup ("MemberRefSig: Not enough room for the call conv"));
+
+	if (signature == 0x06) //FIXME implement field sig checking
+		return TRUE;
+	--ptr;
+	return parse_method_signature (ctx, &ptr, end, TRUE);
 }
 
 static gboolean
