@@ -101,19 +101,26 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 gpointer
 mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
 {
-	guint8 *code, *start;
+	guint8 *code, *start, *p;
+	guint8 imm_buf [128];
 	guint32 short_branch;
 	MonoDomain *domain = mono_domain_get ();
-	int size = MONO_PPC_32_64_CASE (24, 36) + PPC_FTNPTR_SIZE;
+	int imm_size;
+	int size = MONO_PPC_32_64_CASE (24, (PPC_LOAD_SEQUENCE_LENGTH * 2) + 8) + PPC_FTNPTR_SIZE;
 
 	addr = mono_get_addr_from_ftnptr (addr);
+
+	/* Compute size of code needed to emit mrgctx */
+	p = imm_buf;
+	ppc_load (p, MONO_ARCH_RGCTX_REG, mrgctx);
+	imm_size = p - imm_buf;
 
 	mono_domain_lock (domain);
 	start = code = mono_domain_code_reserve (domain, size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
-	short_branch = branch_for_target_reachable (code + 8, addr);
+	short_branch = branch_for_target_reachable (code + imm_size, addr);
 	if (short_branch)
-		mono_domain_code_commit (domain, code, size, 12);
+		mono_domain_code_commit (domain, code, size, imm_size + 4);
 	mono_domain_unlock (domain);
 
 	if (short_branch) {
