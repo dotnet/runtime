@@ -947,7 +947,7 @@ other_info_equal (gpointer data1, gpointer data2, int info_type)
 		g_assert_not_reached ();
 	}
 	/* never reached */
-	return NULL;
+	return FALSE;
 }
 
 static int
