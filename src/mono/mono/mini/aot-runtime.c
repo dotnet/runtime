@@ -1830,27 +1830,19 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 		gboolean res;
 		guint32 got_offset;
 
-		ji->type = decode_value (p, &p);
+		got_offset = decode_value (p, &p);
 
-		if (mono_aot_is_shared_got_patch (ji)) {
-			got_offset = decode_value (p, &p);
-
-			if (aot_module->got [got_offset]) {
-				/* Already loaded */
-				//printf ("HIT!\n");
-			} else {
-				shared_p = aot_module->got_info + aot_module->got_info_offsets [got_offset];
-
-				res = decode_patch (aot_module, mp, ji, shared_p, &shared_p);
-				if (!res)
-					goto cleanup;
-			}
+		if (aot_module->got [got_offset]) {
+			/* Already loaded */
+			//printf ("HIT!\n");
 		} else {
-			res = decode_patch (aot_module, mp, ji, p, &p);
+			shared_p = aot_module->got_info + aot_module->got_info_offsets [got_offset];
+
+			ji->type = decode_value (shared_p, &shared_p);
+
+			res = decode_patch (aot_module, mp, ji, shared_p, &shared_p);
 			if (!res)
 				goto cleanup;
-
-			got_offset = got_index ++;
 		}
 
 		(*got_slots) [pindex] = got_offset;

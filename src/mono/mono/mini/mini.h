@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "54"
+#define MONO_AOT_FILE_VERSION "55"
 
 /* Constants used to encode different types of methods in AOT */
 enum {
@@ -1402,7 +1402,6 @@ guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_in
 guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
 char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
 MonoAotTrampInfo* mono_aot_tramp_info_create (const char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
-gboolean mono_aot_is_shared_got_patch       (MonoJumpInfo *patch_info) MONO_INTERNAL;
 guint    mono_aot_str_hash                  (gconstpointer v1) MONO_INTERNAL;
 
 /* This is an exported function */
