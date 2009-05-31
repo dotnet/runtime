@@ -4667,42 +4667,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->aot_opts.static_link)
 		acfg->aot_opts.asm_writer = TRUE;
 
-	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && bin_writer_supported ()) {
-		if (acfg->aot_opts.outfile)
-			outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
-		else
-			outfile_name = g_strdup_printf ("%s%s", acfg->image->name, SHARED_EXT);
-
-		tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
-
-		acfg->fp = fopen (tmp_outfile_name, "w");
-		g_assert (acfg->fp);
-
-		acfg->w = img_writer_create (acfg->fp, TRUE);
-		acfg->use_bin_writer = TRUE;
-	} else {
-		if (acfg->aot_opts.asm_only) {
-			if (acfg->aot_opts.outfile)
-				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
-			else
-				acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
-			acfg->fp = fopen (acfg->tmpfname, "w+");
-		} else {
-			int i = g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL);
-			acfg->fp = fdopen (i, "w+");
-		}
-		g_assert (acfg->fp);
-
-		acfg->w = img_writer_create (acfg->fp, FALSE);
-		
-		tmp_outfile_name = NULL;
-		outfile_name = NULL;
-	}
-
 	load_profile_files (acfg);
-
-	if (!acfg->aot_opts.nodebug)
-		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
 
 	acfg->num_trampolines [MONO_AOT_TRAMP_SPECIFIC] = acfg->aot_opts.full_aot ? acfg->aot_opts.ntrampolines : 0;
 #ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
@@ -4749,6 +4714,41 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->stats.jit_time = TV_ELAPSED (atv, btv);
 
 	TV_GETTIME (atv);
+
+	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && bin_writer_supported ()) {
+		if (acfg->aot_opts.outfile)
+			outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+		else
+			outfile_name = g_strdup_printf ("%s%s", acfg->image->name, SHARED_EXT);
+
+		tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
+
+		acfg->fp = fopen (tmp_outfile_name, "w");
+		g_assert (acfg->fp);
+
+		acfg->w = img_writer_create (acfg->fp, TRUE);
+		acfg->use_bin_writer = TRUE;
+	} else {
+		if (acfg->aot_opts.asm_only) {
+			if (acfg->aot_opts.outfile)
+				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+			else
+				acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
+			acfg->fp = fopen (acfg->tmpfname, "w+");
+		} else {
+			int i = g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL);
+			acfg->fp = fdopen (i, "w+");
+		}
+		g_assert (acfg->fp);
+
+		acfg->w = img_writer_create (acfg->fp, FALSE);
+		
+		tmp_outfile_name = NULL;
+		outfile_name = NULL;
+	}
+
+	if (!acfg->aot_opts.nodebug)
+		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
 
 	img_writer_emit_start (acfg->w);
 
