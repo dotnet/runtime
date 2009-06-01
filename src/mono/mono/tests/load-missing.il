@@ -551,3 +551,8 @@
   }
 
 }
+
+.class public auto ansi beforefieldinit BrokenClass
+       extends [mscorlib]System.Object1
+{
+}

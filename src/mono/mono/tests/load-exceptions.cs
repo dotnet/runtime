@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 
 class Miss1 : Missing.Foo1 {
 }
@@ -236,6 +237,17 @@ public class Tests : LoadMissing {
 		return 0;
 	}
 
+	#Regression test for #508532
+	public static int test_0_assembly_throws_on_loader_error ()
+	{
+		try {
+			Assembly asm = Assembly.Load ("load-missing");
+			asm.GetType ("BrokenClass", false);
+			return 1;
+		} catch (TypeLoadException) {}
+		return 0;
+	}
+	
 	// FIXME: These do not work yet
 #if FALSE
 	public static void missing_parent () {
