@@ -4389,6 +4389,9 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		if (throwOnError)
 			e = mono_get_exception_type_load (name, NULL);
 
+		if (mono_loader_get_last_error () && mono_defaults.generic_ilist_class)
+			e = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
+
 		mono_loader_clear_error ();
 
 		if (e != NULL)
