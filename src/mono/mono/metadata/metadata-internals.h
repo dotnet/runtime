@@ -181,7 +181,7 @@ struct _MonoImage {
 	/*
 	 * Indexes namespaces to hash tables that map class name to typedef token.
 	 */
-	GHashTable *name_cache;
+	GHashTable *name_cache;  /*protected by the image lock*/
 
 	/*
 	 * Indexed by MonoClass

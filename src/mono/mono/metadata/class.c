@@ -5535,7 +5535,7 @@ mono_class_get (MonoImage *image, guint32 type_token)
  *
  *  Initializes the class name cache stored in image->name_cache.
  *
- * LOCKING: Acquires the loader lock.
+ * LOCKING: Acquires the corresponding image lock.
  */
 void
 mono_image_init_name_cache (MonoImage *image)
@@ -5547,12 +5547,17 @@ mono_image_init_name_cache (MonoImage *image)
 	guint32 i, visib, nspace_index;
 	GHashTable *name_cache2, *nspace_table;
 
-	mono_loader_lock ();
+	mono_image_lock (image);
+
+	if (image->name_cache) {
+		mono_image_unlock (image);
+		return;
+	}
 
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 
 	if (image->dynamic) {
-		mono_loader_unlock ();
+		mono_image_unlock (image);
 		return;
 	}
 
@@ -5606,10 +5611,10 @@ mono_image_init_name_cache (MonoImage *image)
 	}
 
 	g_hash_table_destroy (name_cache2);
-
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 }
 
+/*FIXME Only dynamic assemblies should allow this operation.*/
 void
 mono_image_add_to_name_cache (MonoImage *image, const char *nspace, 
 							  const char *name, guint32 index)
@@ -5617,7 +5622,7 @@ mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 	GHashTable *nspace_table;
 	GHashTable *name_cache;
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 
 	if (!image->name_cache)
 		mono_image_init_name_cache (image);
@@ -5629,7 +5634,7 @@ mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 	}
 	g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (index));
 
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 }
 
 typedef struct {
@@ -5670,7 +5675,7 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 		guint32 token = 0;
 		FindUserData user_data;
 
-		mono_loader_lock ();
+		mono_image_lock (image);
 
 		if (!image->name_cache)
 			mono_image_init_name_cache (image);
@@ -5691,7 +5696,7 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 				token = GPOINTER_TO_UINT (user_data.value);
 		}
 
-		mono_loader_unlock ();
+		mono_image_unlock (image);
 		
 		if (token)
 			return mono_class_get (image, MONO_TOKEN_TYPE_DEF | token);
@@ -5814,7 +5819,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 		}
 	}
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 
 	if (!image->name_cache)
 		mono_image_init_name_cache (image);
@@ -5824,7 +5829,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	if (nspace_table)
 		token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
 
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 
 	if (!token && image->dynamic && image->modules) {
 		/* Search modules as well */
