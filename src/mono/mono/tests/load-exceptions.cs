@@ -237,7 +237,7 @@ public class Tests : LoadMissing {
 		return 0;
 	}
 
-	#Regression test for #508532
+	//Regression test for #508532
 	public static int test_0_assembly_throws_on_loader_error ()
 	{
 		try {
