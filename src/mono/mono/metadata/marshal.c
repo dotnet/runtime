@@ -4134,7 +4134,7 @@ handle_enum:
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
-				mono_mb_emit_byte (mb, CEE_LDIND_I);
+				mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));
 				break;
 			}
 
