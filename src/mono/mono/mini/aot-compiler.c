@@ -4812,7 +4812,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->use_bin_writer) {
 		int err = rename (tmp_outfile_name, outfile_name);
 
-		if (!err) {
+		if (err) {
 			printf ("Unable to rename '%s' to '%s': %s\n", tmp_outfile_name, outfile_name, strerror (errno));
 			return 1;
 		}
