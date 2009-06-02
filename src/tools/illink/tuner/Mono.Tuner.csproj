@@ -35,7 +35,6 @@
   <ItemGroup>
     <Compile Include="Mono.Tuner\AdjustVisibility.cs" />
     <Compile Include="Mono.Tuner\CheckVisibility.cs" />
-    <Compile Include="Mono.Tuner\InjectAttributes.cs" />
     <Compile Include="Mono.Tuner\PrintStatus.cs" />
     <Compile Include="Mono.Tuner\RemoveSerialization.cs" />
     <Compile Include="Mono.Tuner\TunerAnnotations.cs" />
