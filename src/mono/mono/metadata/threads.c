@@ -2274,7 +2274,7 @@ make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
 MonoObject*
 ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *thread)
 {
-	MonoObject *state, *serialized, *deserialized, *exc;
+	MonoObject *state, *serialized, *deserialized = NULL, *exc;
 	MonoDomain *domain;
 	gboolean failure = FALSE;
 
@@ -3674,11 +3674,11 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 	
 	EnterCriticalSection (thread->synch_cs);
 
-	if (thread->interruption_requested) {
+	/* MonoThread::interruption_requested can only be changed with atomics */
+	if (InterlockedCompareExchange (&thread->interruption_requested, FALSE, TRUE)) {
 		/* this will consume pending APC calls */
 		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
 		InterlockedDecrement (&thread_interruption_requested);
-		thread->interruption_requested = FALSE;
 #ifndef PLATFORM_WIN32
 		/* Clear the interrupted flag of the thread so it can wait again */
 		wapi_clear_interruption ();
