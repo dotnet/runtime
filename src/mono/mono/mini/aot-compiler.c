@@ -4721,10 +4721,17 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		else
 			outfile_name = g_strdup_printf ("%s%s", acfg->image->name, SHARED_EXT);
 
+		/* 
+		 * Can't use g_file_open_tmp () as it will be deleted at exit, and
+		 * it might be in another file system so the rename () won't work.
+		 */
 		tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
 
 		acfg->fp = fopen (tmp_outfile_name, "w");
-		g_assert (acfg->fp);
+		if (!acfg->fp) {
+			printf ("Unable to create temporary file '%s': %s\n", tmp_outfile_name, strerror (errno));
+			return 1;
+		}
 
 		acfg->w = img_writer_create (acfg->fp, TRUE);
 		acfg->use_bin_writer = TRUE;
@@ -4803,7 +4810,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		return res;
 	}
 	if (acfg->use_bin_writer) {
-		rename (tmp_outfile_name, outfile_name);
+		int err = rename (tmp_outfile_name, outfile_name);
+
+		if (!err) {
+			printf ("Unable to rename '%s' to '%s': %s\n", tmp_outfile_name, outfile_name, strerror (errno));
+			return 1;
+		}
 	} else {
 		res = compile_asm (acfg);
 		if (res != 0) {
