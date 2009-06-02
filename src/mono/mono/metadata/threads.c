@@ -168,6 +168,8 @@ static gboolean mono_thread_resume (MonoThread* thread);
 static void mono_thread_start (MonoThread *thread);
 static void signal_thread_state_change (MonoThread *thread);
 
+static MonoException* mono_thread_execute_interruption (MonoThread *thread);
+
 /* Spin lock for InterlockedXXX 64 bit functions */
 #define mono_interlocked_lock() EnterCriticalSection (&interlocked_mutex)
 #define mono_interlocked_unlock() LeaveCriticalSection (&interlocked_mutex)
@@ -1083,6 +1085,7 @@ static void mono_thread_start (MonoThread *thread)
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 {
+	guint32 res;
 	MonoThread *thread = mono_thread_current ();
 	
 	MONO_ARCH_SAVE_REGS;
@@ -1093,9 +1096,14 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-	SleepEx(ms,TRUE);
+	res = SleepEx(ms,TRUE);
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
+
+	if (res == WAIT_IO_COMPLETION) { /* we might have been interrupted */
+		MonoException* exc = mono_thread_execute_interruption (thread);
+		if (exc) mono_raise_exception (exc);
+	}
 }
 
 void ves_icall_System_Threading_Thread_SpinWait_nop (void)
@@ -2783,8 +2791,6 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 
 	return (thread->tid != self && !mono_gc_is_finalizer_thread (thread)); 
 }
-
-static MonoException* mono_thread_execute_interruption (MonoThread *thread);
 
 /** 
  * mono_threads_set_shutting_down:
