@@ -1,3 +1,10 @@
+2009-06-02  Bill Holmes  <billholmes54@gmail.com>
+
+	* src/gpath.c (g_find_program_in_path):  While searching on Windows
+	  also try additional suffixes .exe, .cmd, .bat, and.com.
+
+	Contributed under MIT/X11 license.
+
 2009-05-27  Geoff Norton  <gnorton@novell.com>
 
 	* src/gfile-posix.c: Fix g_get_current_dir on amd64
