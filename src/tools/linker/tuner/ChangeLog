@@ -1,3 +1,9 @@
+2009-06-02  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner.csproj: Update.
+
+	* Mono.Tuner/InjectSecurityAttributes.cs: Avoid NRE.
+
 2009-05-28  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/InjectSecurityAttributes.cs: show a warning if using

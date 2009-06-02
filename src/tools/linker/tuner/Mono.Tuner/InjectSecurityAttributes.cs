@@ -369,7 +369,11 @@ namespace Mono.Tuner {
 			if (_safe_critical_ctor != null)
 				return _safe_critical_ctor;
 
-			_safe_critical_ctor = GetDefaultConstructor (Context.GetType (_safe_critical));
+			TypeDefinition t = Context.GetType (_safe_critical);
+			if (t == null)
+				throw new InvalidOperationException (String.Format ("{0} type not found", _safe_critical));
+			
+			_safe_critical_ctor = GetDefaultConstructor (t);
 			return _safe_critical_ctor;
 		}
 
@@ -378,7 +382,11 @@ namespace Mono.Tuner {
 			if (_critical_ctor != null)
 				return _critical_ctor;
 
-			_critical_ctor = GetDefaultConstructor (Context.GetType (_critical));
+			TypeDefinition t = Context.GetType (_critical);
+			if (t == null)
+				throw new InvalidOperationException (String.Format ("{0} type not found", _critical));
+			
+			_critical_ctor = GetDefaultConstructor (t);
 			return _critical_ctor;
 		}
 
