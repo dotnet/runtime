@@ -718,7 +718,8 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
 	}
 
 	mh = mono_metadata_parse_mh_full (m, container, ptr);
-	if ((entry_point = mono_image_get_entry_point (m)) && mono_metadata_token_index (entry_point)){
+	entry_point = mono_image_get_entry_point (m);
+	if (entry_point && mono_metadata_token_index (entry_point) && mono_metadata_token_table (entry_point) == MONO_TABLE_METHOD) {
 		loc = mono_metadata_locate_token (m, entry_point);
 		if (rva == read32 (loc))
 			fprintf (output, "\t.entrypoint\n");
