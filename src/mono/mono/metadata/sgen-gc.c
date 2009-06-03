@@ -376,7 +376,9 @@ enum {
 	REMSET_ROOT_LOCATION, /* a location inside a root */
 };
 
+#ifdef HAVE_KW_THREAD
 static __thread RememberedSet *remembered_set MONO_TLS_FAST;
+#endif
 static pthread_key_t remembered_set_key;
 static RememberedSet *global_remset;
 //static int store_to_global_remset = 0;
@@ -659,16 +661,60 @@ static int num_roots_entries [ROOT_TYPE_NUM] = { 0, 0, 0 };
  */
 static char *nursery_start = NULL;
 
+/* eventually share with MonoThread? */
+typedef struct _SgenThreadInfo SgenThreadInfo;
+
+struct _SgenThreadInfo {
+	SgenThreadInfo *next;
+	ARCH_THREAD_TYPE id;
+	unsigned int stop_count; /* to catch duplicate signals */
+	int signal;
+	int skip;
+	void *stack_end;
+	void *stack_start;
+	char **tlab_next_addr;
+	char **tlab_start_addr;
+	char **tlab_temp_end_addr;
+	char **tlab_real_end_addr;
+	RememberedSet *remset;
+	gpointer runtime_data;
+#ifndef HAVE_KW_THREAD
+	char *tlab_start;
+	char *tlab_next;
+	char *tlab_temp_end;
+	char *tlab_real_end;
+#endif
+};
+
+#ifdef HAVE_KW_THREAD
+#define TLAB_ACCESS_INIT
+#define TLAB_START	tlab_start
+#define TLAB_NEXT	tlab_next
+#define TLAB_TEMP_END	tlab_temp_end
+#define TLAB_REAL_END	tlab_real_end
+#define REMEMBERED_SET	remembered_set
+#else
+static pthread_key_t thread_info_key;
+#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = pthread_getspecific (thread_info_key)
+#define TLAB_START	(__thread_info__->tlab_start)
+#define TLAB_NEXT	(__thread_info__->tlab_next)
+#define TLAB_TEMP_END	(__thread_info__->tlab_temp_end)
+#define TLAB_REAL_END	(__thread_info__->tlab_real_end)
+#define REMEMBERED_SET	(__thread_info__->remset)
+#endif
+
 /*
  * FIXME: What is faster, a TLS variable pointing to a structure, or separate TLS 
  * variables for next+temp_end ?
  */
+#ifdef HAVE_KW_THREAD
 static __thread char *tlab_start;
 static __thread char *tlab_next;
 static __thread char *tlab_temp_end;
 static __thread char *tlab_real_end;
 /* Used by the managed allocator */
 static __thread char **tlab_next_addr;
+#endif
 static char *nursery_next = NULL;
 static char *nursery_frag_real_end = NULL;
 static char *nursery_real_end = NULL;
@@ -3521,6 +3567,8 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	char *new_next;
 	int dummy;
 	gboolean res;
+	TLAB_ACCESS_INIT;
+
 	size += ALLOC_ALIGN - 1;
 	size &= ~(ALLOC_ALIGN - 1);
 
@@ -3546,12 +3594,12 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 
 	/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
 
-	p = (void**)tlab_next;
+	p = (void**)TLAB_NEXT;
 	/* FIXME: handle overflow */
 	new_next = (char*)p + size;
-	tlab_next = new_next;
+	TLAB_NEXT = new_next;
 
-	if (G_LIKELY (new_next < tlab_temp_end)) {
+	if (G_LIKELY (new_next < TLAB_TEMP_END)) {
 		/* Fast path */
 
 		/* 
@@ -3580,10 +3628,10 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	if (size > MAX_SMALL_OBJ_SIZE) {
 		/* get ready for possible collection */
 		update_current_thread_stack (&dummy);
-		tlab_next -= size;
+		TLAB_NEXT -= size;
 		p = alloc_large_inner (vtable, size);
 	} else {
-		if (tlab_next >= tlab_real_end) {
+		if (TLAB_NEXT >= TLAB_REAL_END) {
 			/* 
 			 * Run out of space in the TLAB. When this happens, some amount of space
 			 * remains in the TLAB, but not enough to satisfy the current allocation
@@ -3591,7 +3639,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 			 * keep it if the remaining space is above a treshold, and satisfy the
 			 * allocation directly from the nursery.
 			 */
-			tlab_next -= size;
+			TLAB_NEXT -= size;
 			/* when running in degraded mode, we continue allocing that way
 			 * for a while, to decrease the number of useless nursery collections.
 			 */
@@ -3626,8 +3674,8 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 					memset (p, 0, size);
 			} else {
-				if (tlab_start)
-					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", tlab_start, tlab_real_end, (long)(tlab_real_end - tlab_next - size)));
+				if (TLAB_START)
+					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size)));
 
 				if (nursery_next + tlab_size >= nursery_frag_real_end) {
 					res = search_fragment_for_size (tlab_size);
@@ -3644,19 +3692,19 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 				}
 
 				/* Allocate a new TLAB from the current nursery fragment */
-				tlab_start = nursery_next;
+				TLAB_START = nursery_next;
 				nursery_next += tlab_size;
-				tlab_next = tlab_start;
-				tlab_real_end = tlab_start + tlab_size;
-				tlab_temp_end = tlab_start + MIN (SCAN_START_SIZE, tlab_size);
+				TLAB_NEXT = TLAB_START;
+				TLAB_REAL_END = TLAB_START + tlab_size;
+				TLAB_TEMP_END = TLAB_START + MIN (SCAN_START_SIZE, tlab_size);
 
 				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
-					memset (tlab_start, 0, tlab_size);
+					memset (TLAB_START, 0, tlab_size);
 
 				/* Allocate from the TLAB */
-				p = (void*)tlab_next;
-				tlab_next += size;
-				g_assert (tlab_next <= tlab_real_end);
+				p = (void*)TLAB_NEXT;
+				TLAB_NEXT += size;
+				g_assert (TLAB_NEXT <= TLAB_REAL_END);
 
 				nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
 			}
@@ -3666,8 +3714,8 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 			/* record the scan start so we can find pinned objects more easily */
 			nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
 			/* we just bump tlab_temp_end as well */
-			tlab_temp_end = MIN (tlab_real_end, tlab_next + SCAN_START_SIZE);
-			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", tlab_next, tlab_temp_end));
+			TLAB_TEMP_END = MIN (TLAB_REAL_END, TLAB_NEXT + SCAN_START_SIZE);
+			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", TLAB_NEXT, TLAB_TEMP_END));
 		}
 	}
 
@@ -4412,25 +4460,6 @@ mono_gc_deregister_root (char* addr)
  * ######################################################################
  */
 
-/* eventually share with MonoThread? */
-typedef struct _SgenThreadInfo SgenThreadInfo;
-
-struct _SgenThreadInfo {
-	SgenThreadInfo *next;
-	ARCH_THREAD_TYPE id;
-	unsigned int stop_count; /* to catch duplicate signals */
-	int signal;
-	int skip;
-	void *stack_end;
-	void *stack_start;
-	char **tlab_next_addr;
-	char **tlab_start_addr;
-	char **tlab_temp_end_addr;
-	char **tlab_real_end_addr;
-	RememberedSet *remset;
-	gpointer runtime_data;
-};
-
 /* FIXME: handle large/small config */
 #define THREAD_HASH_SIZE 11
 #define HASH_PTHREAD_T(id) (((unsigned int)(id) >> 4) * 2654435761u)
@@ -4537,8 +4566,10 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 		errno = old_errno;
 		return;
 	}
+#ifdef HAVE_KW_THREAD
 	/* update the remset info in the thread data structure */
 	info->remset = remembered_set;
+#endif
 	/* 
 	 * this includes the register values that the kernel put on the stack.
 	 * Write arch-specific code to only push integer regs and a more accurate
@@ -4923,19 +4954,31 @@ gc_register_current_thread (void *addr)
 {
 	int hash;
 	SgenThreadInfo* info = malloc (sizeof (SgenThreadInfo));
+	TLAB_ACCESS_INIT;
+
 	if (!info)
 		return NULL;
+
+#ifndef HAVE_KW_THREAD
+	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
+
+	g_assert (!pthread_getspecific (thread_info_key));
+	pthread_setspecific (thread_info_key, info);
+#endif
+
 	info->id = ARCH_GET_THREAD ();
 	info->stop_count = -1;
 	info->skip = 0;
 	info->signal = 0;
 	info->stack_start = NULL;
-	info->tlab_start_addr = &tlab_start;
-	info->tlab_next_addr = &tlab_next;
-	info->tlab_temp_end_addr = &tlab_temp_end;
-	info->tlab_real_end_addr = &tlab_real_end;
+	info->tlab_start_addr = &TLAB_START;
+	info->tlab_next_addr = &TLAB_NEXT;
+	info->tlab_temp_end_addr = &TLAB_TEMP_END;
+	info->tlab_real_end_addr = &TLAB_REAL_END;
 
+#ifdef HAVE_KW_THREAD
 	tlab_next_addr = &tlab_next;
+#endif
 
 	/* try to get it with attributes first */
 #if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
@@ -4965,8 +5008,11 @@ gc_register_current_thread (void *addr)
 	info->next = thread_table [hash];
 	thread_table [hash] = info;
 
-	remembered_set = info->remset = alloc_remset (DEFAULT_REMSET_SIZE, info);
-	pthread_setspecific (remembered_set_key, remembered_set);
+	info->remset = alloc_remset (DEFAULT_REMSET_SIZE, info);
+	pthread_setspecific (remembered_set_key, info->remset);
+#ifdef HAVE_KW_THREAD
+	remembered_set = info->remset;
+#endif
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) (hash: %d)\n", info, (gpointer)info->id, hash));
 
 	if (gc_callbacks.thread_attach_func)
@@ -5130,21 +5176,24 @@ void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	RememberedSet *rs;
+	TLAB_ACCESS_INIT;
 	if (ptr_in_nursery (field_ptr)) {
 		*(void**)field_ptr = value;
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
-	rs = remembered_set;
+	rs = REMEMBERED_SET;
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)field_ptr;
 		*(void**)field_ptr = value;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = remembered_set;
-	remembered_set = rs;
+	rs->next = REMEMBERED_SET;
+	REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 	*(rs->store_next++) = (mword)field_ptr;
 	*(void**)field_ptr = value;
 }
@@ -5152,7 +5201,9 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 void
 mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
-	RememberedSet *rs = remembered_set;
+	RememberedSet *rs;
+	TLAB_ACCESS_INIT;
+	rs = REMEMBERED_SET;
 	if (ptr_in_nursery (slot_ptr)) {
 		*(void**)slot_ptr = value;
 		return;
@@ -5164,9 +5215,11 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = remembered_set;
-	remembered_set = rs;
+	rs->next = REMEMBERED_SET;
+	REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 	*(rs->store_next++) = (mword)slot_ptr;
 	*(void**)slot_ptr = value;
 }
@@ -5174,7 +5227,9 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 void
 mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 {
-	RememberedSet *rs = remembered_set;
+	RememberedSet *rs;
+	TLAB_ACCESS_INIT;
+	rs = REMEMBERED_SET;
 	if (ptr_in_nursery (slot_ptr))
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", slot_ptr, count));
@@ -5184,9 +5239,11 @@ mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = remembered_set;
-	remembered_set = rs;
+	rs->next = REMEMBERED_SET;
+	REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 	*(rs->store_next++) = (mword)slot_ptr | REMSET_RANGE;
 	*(rs->store_next++) = count;
 }
@@ -5195,12 +5252,13 @@ void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	RememberedSet *rs;
+	TLAB_ACCESS_INIT;
 	if (ptr_in_nursery (ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		*(void**)ptr = value;
 		return;
 	}
-	rs = remembered_set;
+	rs = REMEMBERED_SET;
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
 	/* FIXME: ensure it is on the heap */
 	if (rs->store_next < rs->end_set) {
@@ -5209,9 +5267,11 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = remembered_set;
-	remembered_set = rs;
+	rs->next = REMEMBERED_SET;
+	REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 	*(rs->store_next++) = (mword)ptr;
 	*(void**)ptr = value;
 }
@@ -5219,7 +5279,9 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 void
 mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value)
 {
-	RememberedSet *rs = remembered_set;
+	RememberedSet *rs;
+	TLAB_ACCESS_INIT;
+	rs = REMEMBERED_SET;
 	if (ptr_in_nursery (ptr))
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding root remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
@@ -5231,9 +5293,11 @@ mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value)
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = remembered_set;
-	remembered_set = rs;
+	rs->next = REMEMBERED_SET;
+	REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 	*(rs->store_next++) = (mword)ptr | REMSET_OTHER;
 	*(rs->store_next++) = (mword)REMSET_ROOT_LOCATION;
 
@@ -5243,7 +5307,9 @@ mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value)
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
-	RememberedSet *rs = remembered_set;
+	RememberedSet *rs;
+	TLAB_ACCESS_INIT;
+	rs = REMEMBERED_SET;
 	if (ptr_in_nursery (dest))
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
@@ -5256,9 +5322,11 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = remembered_set;
-	remembered_set = rs;
+	rs->next = REMEMBERED_SET;
+	REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 	*(rs->store_next++) = (mword)dest | REMSET_OTHER;
 	*(rs->store_next++) = (mword)REMSET_VTYPE;
 	*(rs->store_next++) = (mword)klass->gc_descr;
@@ -5273,16 +5341,20 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 void
 mono_gc_wbarrier_object (MonoObject* obj)
 {
-	RememberedSet *rs = remembered_set;
+	RememberedSet *rs;
+	TLAB_ACCESS_INIT;
+	rs = REMEMBERED_SET;
 	DEBUG (1, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = remembered_set;
-	remembered_set = rs;
+	rs->next = REMEMBERED_SET;
+	REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
 }
 
@@ -5900,6 +5972,11 @@ mono_gc_base_init (void)
 	global_remset->next = NULL;
 
 	pthread_key_create (&remembered_set_key, unregister_thread);
+
+#ifndef HAVE_KW_THREAD
+	pthread_key_create (&thread_info_key, NULL);
+#endif
+
 	gc_initialized = TRUE;
 	UNLOCK_GC;
 	mono_gc_register_thread (&sinfo);
