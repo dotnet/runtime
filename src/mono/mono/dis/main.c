@@ -1204,8 +1204,12 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 
 	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]);
-	if (*nspace && !is_nested) 
-		fprintf (output, ".namespace %s\n{\n", nspace);
+	if (*nspace && !is_nested) {
+		char *esnspace;
+		esnspace = get_escaped_name (nspace);
+		fprintf (output, ".namespace %s\n{\n", esnspace);
+		g_free (esnspace);
+	}
 
 	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), NULL);
 	if (container)
