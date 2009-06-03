@@ -3880,6 +3880,35 @@ runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *
 }
 
 /*
+ * get_wrapper_target_class:
+ *
+ *   Return the class where a wrapper method should be placed.
+ */
+static MonoClass*
+get_wrapper_target_class (MonoImage *image)
+{
+	MonoClass *klass;
+
+	/*
+	 * Notes:
+	 * - can't put all wrappers into an mscorlib class, because they reference
+	 *   metadata (signature) so they should be put into the same image as the 
+	 *   method they wrap, so they are unloaded together.
+	 * - putting them into a class with a type initalizer could cause the 
+	 *   initializer to be executed which can be a problem if the wrappers are 
+	 *   shared.
+	 * - putting them into an inflated class can cause problems if the the 
+	 *   class is deleted because it references an image which is unloaded.
+	 * To avoid these problems, we put the wrappers into the <Module> class of 
+	 * the image.
+	 */
+	klass = mono_class_get (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, 1));
+	g_assert (klass);
+
+	return klass;
+}
+
+/*
  * generates IL code for the runtime invoke function 
  * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc, void* method)
  *
@@ -3996,11 +4025,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 				need_direct_wrapper = TRUE;
 			*/
 
-			/*
-			 * Can't put these wrappers into object, since they reference non-corlib
-			 * metadata (callsig).
-			 */
-			target_klass = method->klass;
+			target_klass = get_wrapper_target_class (method->klass->image);
 		}
 	}
 
