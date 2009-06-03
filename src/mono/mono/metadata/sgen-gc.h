@@ -59,6 +59,15 @@
 		: "memory"	\
 	)
 
+#elif defined(__ppc__)
+#define ARCH_NUM_REGS 32
+#define ARCH_STORE_REGS(ptr)	\
+	__asm__ __volatile__(	\
+		"stmw r0, 0(%0)\n"	\
+		:			\
+		: "b" (ptr)		\
+	)
+
 #endif
 
 #endif /* __MONO_SGENGC_H__ */
