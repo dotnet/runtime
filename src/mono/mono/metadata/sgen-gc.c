@@ -5910,6 +5910,11 @@ enum {
 	ATYPE_NUM
 };
 
+#ifdef HAVE_KW_THREAD
+#define MANAGED_ALLOCATION
+#endif
+
+#ifdef MANAGED_ALLOCATION
 /* FIXME: Do this in the JIT, where specialized allocation sequences can be created
  * for each class. This is currently not easy to do, as it is hard to generate basic 
  * blocks + branches, but it is easy with the linear IL codebase.
@@ -6035,6 +6040,7 @@ create_allocator (int atype)
 }
 
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
+#endif
 
 /*
  * Generate an allocator method implementing the fast path of mono_gc_alloc_obj ().
@@ -6044,6 +6050,7 @@ static MonoMethod* alloc_method_cache [ATYPE_NUM];
 MonoMethod*
 mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 {
+#ifdef MANAGED_ALLOCATION
 	int tlab_next_offset = -1;
 	int tlab_temp_end_offset = -1;
 	MonoClass *klass = vtable->klass;
@@ -6064,6 +6071,9 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 		return NULL;
 
 	return mono_gc_get_managed_allocator_by_type (0);
+#else
+	return NULL;
+#endif
 }
 
 int
@@ -6075,6 +6085,7 @@ mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
 MonoMethod*
 mono_gc_get_managed_allocator_by_type (int atype)
 {
+#ifdef MANAGED_ALLOCATION
 	MonoMethod *res;
 
 	mono_loader_lock ();
@@ -6083,6 +6094,9 @@ mono_gc_get_managed_allocator_by_type (int atype)
 		res = alloc_method_cache [atype] = create_allocator (atype);
 	mono_loader_unlock ();
 	return res;
+#else
+	return NULL;
+#endif
 }
 
 guint32
@@ -6097,13 +6111,15 @@ MonoMethod*
 mono_gc_get_write_barrier (void)
 {
 	MonoMethod *res;
-	int remset_offset = -1;
-	int remset_var, next_var;
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
+#ifdef MANAGED_ALLOCATION
 	int label1, label2;
+	int remset_offset = -1;
+	int remset_var, next_var;
 
 	MONO_THREAD_VAR_OFFSET (remembered_set, remset_offset);
+#endif
 
 	// FIXME: Maybe create a separate version for ctors (the branch would be
 	// correctly predicted more times)
@@ -6118,6 +6134,7 @@ mono_gc_get_write_barrier (void)
 
 	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
 
+#ifdef MANAGED_ALLOCATION
 	/* ptr_in_nursery () check */
 #ifdef ALIGN_NURSERY
 	/* 
@@ -6194,6 +6211,7 @@ mono_gc_get_write_barrier (void)
 
 	/* write barrier slow path */
 	mono_mb_patch_branch (mb, label2);
+#endif
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
