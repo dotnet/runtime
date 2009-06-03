@@ -4954,7 +4954,7 @@ gc_register_current_thread (void *addr)
 {
 	int hash;
 	SgenThreadInfo* info = malloc (sizeof (SgenThreadInfo));
-	TLAB_ACCESS_INIT;
+	SgenThreadInfo *__thread_info__ = info;
 
 	if (!info)
 		return NULL;
