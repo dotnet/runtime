@@ -254,6 +254,9 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method) MONO_INTERNAL;
 void
 mono_marshal_free_dynamic_wrappers (MonoMethod *method) MONO_INTERNAL;
 
+void
+mono_marshal_free_inflated_wrappers (MonoMethod *method) MONO_INTERNAL;
+
 /* marshaling internal calls */
 
 void * 

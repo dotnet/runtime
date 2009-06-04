@@ -25,6 +25,7 @@
 #include "metadata-internals.h"
 #include "class-internals.h"
 #include "class.h"
+#include "marshal.h"
 
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 					 const char *ptr, const char **rptr);

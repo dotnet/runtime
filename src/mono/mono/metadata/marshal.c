@@ -74,6 +74,7 @@ typedef struct _MonoRemotingMethods MonoRemotingMethods;
 #define mono_marshal_lock() EnterCriticalSection (&marshal_mutex)
 #define mono_marshal_unlock() LeaveCriticalSection (&marshal_mutex)
 static CRITICAL_SECTION marshal_mutex;
+static gboolean marshal_mutex_initialized;
 
 static guint32 last_error_tls_id;
 
@@ -193,6 +194,7 @@ mono_marshal_init (void)
 	if (!module_initialized) {
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
+		marshal_mutex_initialized = TRUE;
 		last_error_tls_id = TlsAlloc ();
 		load_type_info_tls_id = TlsAlloc ();
 
@@ -254,6 +256,7 @@ mono_marshal_cleanup (void)
 	TlsFree (load_type_info_tls_id);
 	TlsFree (last_error_tls_id);
 	DeleteCriticalSection (&marshal_mutex);
+	marshal_mutex_initialized = FALSE;
 }
 
 MonoClass *byte_array_class;
@@ -10643,4 +10646,83 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	if (method->klass->image->runtime_invoke_direct_cache)
 		g_hash_table_remove (method->klass->image->runtime_invoke_direct_cache, method);
 	mono_marshal_unlock ();
+}
+
+/*
+ * mono_marshal_free_inflated_wrappers:
+ *
+ *   Free wrappers of the inflated method METHOD.
+ */
+
+static gboolean
+signature_method_pair_matches_signature (gpointer key, gpointer value, gpointer user_data)
+{
+       SignatureMethodPair *pair = (SignatureMethodPair*)key;
+       MonoMethodSignature *sig = (MonoMethodSignature*)user_data;
+
+       return mono_metadata_signature_equal (pair->sig, sig);
+}
+
+void
+mono_marshal_free_inflated_wrappers (MonoMethod *method)
+{
+       MonoMethodSignature *sig = method->signature;
+
+       g_assert (method->is_inflated);
+
+       /* Ignore calls occuring late during cleanup.  */
+       if (!marshal_mutex_initialized)
+               return;
+
+       mono_marshal_lock ();
+       /*
+        * FIXME: We currently leak the wrappers. Freeing them would be tricky as
+        * they could be shared with other methods ?
+        */
+
+        /*
+         * indexed by MonoMethodSignature
+         */
+	   /* FIXME: This could remove unrelated wrappers as well */
+       if (sig && method->klass->image->delegate_begin_invoke_cache)
+               g_hash_table_remove (method->klass->image->delegate_begin_invoke_cache, sig);
+       if (sig && method->klass->image->delegate_end_invoke_cache)
+               g_hash_table_remove (method->klass->image->delegate_end_invoke_cache, sig);
+       if (sig && method->klass->image->delegate_invoke_cache)
+               g_hash_table_remove (method->klass->image->delegate_invoke_cache, sig);
+       if (sig && method->klass->image->runtime_invoke_cache)
+               g_hash_table_remove (method->klass->image->runtime_invoke_cache, sig);
+
+        /*
+         * indexed by SignatureMethodPair
+         */
+       if (sig && method->klass->image->delegate_abstract_invoke_cache)
+               g_hash_table_foreach_remove (method->klass->image->delegate_abstract_invoke_cache,
+                                            signature_method_pair_matches_signature, (gpointer)sig);
+
+        /*
+         * indexed by MonoMethod pointers
+         */
+       if (method->klass->image->runtime_invoke_direct_cache)
+               g_hash_table_remove (method->klass->image->runtime_invoke_direct_cache, method);
+       if (method->klass->image->managed_wrapper_cache)
+               g_hash_table_remove (method->klass->image->managed_wrapper_cache, method);
+       if (method->klass->image->native_wrapper_cache)
+               g_hash_table_remove (method->klass->image->native_wrapper_cache, method);
+       if (method->klass->image->remoting_invoke_cache)
+               g_hash_table_remove (method->klass->image->remoting_invoke_cache, method);
+       if (method->klass->image->synchronized_cache)
+               g_hash_table_remove (method->klass->image->synchronized_cache, method);
+       if (method->klass->image->unbox_wrapper_cache)
+               g_hash_table_remove (method->klass->image->unbox_wrapper_cache, method);
+       if (method->klass->image->cominterop_invoke_cache)
+               g_hash_table_remove (method->klass->image->cominterop_invoke_cache, method);
+       if (method->klass->image->cominterop_wrapper_cache)
+               g_hash_table_remove (method->klass->image->cominterop_wrapper_cache, method);
+       if (method->klass->image->static_rgctx_invoke_cache)
+               g_hash_table_remove (method->klass->image->static_rgctx_invoke_cache, method);
+       if (method->klass->image->thunk_invoke_cache)
+               g_hash_table_remove (method->klass->image->thunk_invoke_cache, method);
+
+       mono_marshal_unlock ();
 }
