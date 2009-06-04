@@ -70,6 +70,12 @@
 #include <mach/task.h>
 #include <pthread.h>
 
+#ifdef HAVE_SGEN_GC
+#undef pthread_create
+#undef pthread_join
+#undef pthread_detach
+#endif
+
 /*
  * This code disables the CrashReporter of MacOS X by installing
  * a dummy Mach exception handler.
