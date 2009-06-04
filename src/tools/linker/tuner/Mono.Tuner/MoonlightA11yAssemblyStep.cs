@@ -1,8 +1,8 @@
 //
-// MoonlightAssemblyStep.cs
+// MoonlightRestrictedAssemblyStep.cs
 //
 // Author:
-//   Jb Evain (jbevain@novell.com)
+//   Andrés G. Aragoneses (aaragoneses@novell.com)
 //
 // (C) 2009 Novell, Inc.
 //
@@ -37,20 +37,8 @@ using Mono.Cecil;
 
 namespace Mono.Tuner {
 
-	public class MoonlightAssemblyStep : IStep {
-
-		public void Process (LinkContext context)
-		{
-			CustomizePipeline (context.Pipeline);
-			ProcessAssemblies (context.GetAssemblies ());
-		}
-
-		static void ProcessAssemblies (AssemblyDefinition [] assemblies)
-		{
-			foreach (AssemblyDefinition assembly in assemblies)
-				Annotations.SetAction (assembly, AssemblyAction.Link);
-		}
-
+	public class MoonlightA11yAssemblyStep : MoonlightAssemblyStep {
+		
 		protected virtual void CustomizePipeline (Pipeline pipeline)
 		{
 			pipeline.RemoveStep (typeof (LoadI18nAssemblies));
@@ -59,7 +47,8 @@ namespace Mono.Tuner {
 			pipeline.RemoveStep (typeof (SweepStep));
 			pipeline.RemoveStep (typeof (CleanStep));
 			pipeline.RemoveStep (typeof (RegenerateGuidStep));
-			pipeline.AddStepBefore (typeof (OutputStep), new InjectSecurityAttributes ());
+			pipeline.AddStepBefore (typeof (OutputStep), new MoonlightA11yProcessor ());
 		}
+		
 	}
 }

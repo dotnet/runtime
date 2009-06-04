@@ -4,5 +4,7 @@ Mono.Tuner/RemoveSerialization.cs
 Mono.Tuner/AdjustVisibility.cs
 Mono.Tuner/CheckVisibility.cs
 Mono.Tuner/InjectSecurityAttributes.cs
+Mono.Tuner/MoonlightA11yAssemblyStep.cs
+Mono.Tuner/MoonlightA11yProcessor.cs
 Mono.Tuner/MoonlightAssemblyStep.cs
 Mono.Tuner/FilterAttributes.cs
