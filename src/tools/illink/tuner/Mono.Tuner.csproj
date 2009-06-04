@@ -40,16 +40,8 @@
     <Compile Include="Mono.Tuner\TunerAnnotations.cs" />
     <Compile Include="Mono.Tuner\InjectSecurityAttributes.cs" />
     <Compile Include="Mono.Tuner\MoonlightAssemblyStep.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\linker\Mono.Linker.csproj">
-      <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
-      <Name>Mono.Linker</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\class\Mono.Cecil\Mono.Cecil.csproj">
-      <Project>{D8F63DFF-5230-43E4-9AB2-DA6E721A1FAE}</Project>
-      <Name>Mono.Cecil</Name>
-    </ProjectReference>
+    <Compile Include="Mono.Tuner\MoonlightA11yProcessor.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yAssemblyStep.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
@@ -61,5 +53,15 @@
   -->
   <ItemGroup>
     <None Include="Makefile" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\linker\Mono.Linker.csproj">
+      <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
+      <Name>Mono.Linker</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\class\Mono.Cecil\Mono.Cecil.csproj">
+      <Project>{D8F63DFF-5230-43E4-9AB2-DA6E721A1FAE}</Project>
+      <Name>Mono.Cecil</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

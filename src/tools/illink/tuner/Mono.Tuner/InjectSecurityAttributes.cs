@@ -55,7 +55,7 @@ namespace Mono.Tuner {
 
 		const string sec_attr_folder = "secattrs";
 
-		AssemblyDefinition _assembly;
+		protected AssemblyDefinition _assembly;
 
 		MethodDefinition _safe_critical_ctor;
 		MethodDefinition _critical_ctor;
@@ -96,7 +96,7 @@ namespace Mono.Tuner {
 			ProcessSecurityAttributeFile (secattr_file);
 		}
 
-		void RemoveSecurityAttributes ()
+		protected void RemoveSecurityAttributes ()
 		{
 			foreach (TypeDefinition type in _assembly.MainModule.Types) {
 				RemoveSecurityAttributes (type);
@@ -208,7 +208,7 @@ namespace Mono.Tuner {
 			}
 		}
 
-		void AddCriticalAttribute (ICustomAttributeProvider provider)
+		protected void AddCriticalAttribute (ICustomAttributeProvider provider)
 		{
 			// a [SecurityCritical] replaces a [SecuritySafeCritical]
 			if (HasSecurityAttribute (provider, AttributeType.SafeCritical))

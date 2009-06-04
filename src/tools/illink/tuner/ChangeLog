@@ -1,3 +1,13 @@
+2009-06-04  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner.dll.sources:
+	* Mono.Tuner.csproj: Update.
+	* Mono.Tuner/InjectSecurityAttributes.cs:
+	* Mono.Tuner/MoonlightAssemblyStep.cs: Change some accessibility
+	keywords, to be able to override and inherit.
+	* Mono.Tuner/MoonlightA11yProcessor.cs:
+	* Mono.Tuner/MoonlightA11yAssemblyStep.cs: New steps for a11y.
+
 2009-06-02  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner.csproj: Update.
