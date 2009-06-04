@@ -6019,10 +6019,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	delegate = mono_object_new (mono_object_domain (type), delegate_class);
 
-	if (mono_method_needs_static_rgctx_invoke (method, FALSE)) {
-		method = mono_marshal_get_static_rgctx_invoke (method);
-		func = mono_compile_method (method);
-	} else if (method->dynamic) {
+	if (method->dynamic) {
 		/* Creating a trampoline would leak memory */
 		func = mono_compile_method (method);
 	} else {

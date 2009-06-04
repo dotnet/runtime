@@ -32,5 +32,5 @@ WRAPPER(UNKNOWN, "unknown")
 WRAPPER(COMINTEROP_INVOKE, "cominterop-invoke")
 WRAPPER(COMINTEROP, "cominterop")
 WRAPPER(ALLOC, "alloc")
-WRAPPER(STATIC_RGCTX_INVOKE, "static-rgctx-invoke")
+
 

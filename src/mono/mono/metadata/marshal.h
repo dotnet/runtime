@@ -185,9 +185,6 @@ MonoMethod *
 mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual) MONO_INTERNAL;
 
 MonoMethod *
-mono_marshal_get_static_rgctx_invoke (MonoMethod *method) MONO_INTERNAL;
-
-MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoObject **this_loc) MONO_INTERNAL;
 
 gpointer

@@ -552,7 +552,6 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, M
 
 			method = mono_marshal_method_from_wrapper (method);
 			method = mono_class_inflate_generic_method (method, context);
-			method = mono_marshal_get_static_rgctx_invoke (method);
 		}
 
 		if (inflated_class->byval_arg.type == MONO_TYPE_ARRAY ||

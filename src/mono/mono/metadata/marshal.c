@@ -4345,62 +4345,6 @@ handle_enum:
 	return res;	
 }
 
-/*
- * mono_marshal_get_static_rgctx_invoke:
- * @method: a method
- *
- * Generates a wrapper for calling a generic shared method, either
- * static or generic.  We need this for virtual generic method lookup
- * and ldftn when we do generic code sharing.  Instead of producing
- * the address of the method we produce the address of a wrapper for
- * the method because the wrapper passes the (method) runtime generic
- * context argument which calli cannot do.
- */
-MonoMethod *
-mono_marshal_get_static_rgctx_invoke (MonoMethod *method)
-{
-	static gboolean inited = FALSE;
-	static int num_wrappers = 0;
-
-	MonoMethodBuilder *mb;
-	MonoMethod *res;
-	MonoClass *target_klass = method->klass;
-	MonoMethodSignature *sig = mono_method_signature (method);
-	int i;
-	char *name;
-	GHashTable *cache;
-	MonoImage *image = method->klass->image;
-
-	cache = get_cache (&image->static_rgctx_invoke_cache, mono_aligned_addr_hash, NULL);
-	if ((res = mono_marshal_find_in_cache (cache, method)))
-		return res;
-
-	if (!inited) {
-		mono_counters_register ("Static rgctx invoke wrappers",
-				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_wrappers);
-		inited = TRUE;
-	}
-	++num_wrappers;
-
-	name = mono_signature_to_name (mono_method_signature (method), "static_rgctx_invoke");
-	mb = mono_mb_new (target_klass, name, MONO_WRAPPER_STATIC_RGCTX_INVOKE);
-	g_free (name);
-
-	for (i = 0; i < sig->param_count + sig->hasthis; i++)
-		mono_mb_emit_ldarg (mb, i);
-	mono_mb_emit_op (mb, CEE_CALL, method);
-	mono_mb_emit_byte (mb, CEE_RET);
-
-	mb->skip_visibility = TRUE;
-	res = mono_mb_create_and_cache (cache, method, mb, mono_method_signature (method),
-		sig->param_count + sig->hasthis + 4);
-	res->flags = method->flags;
-
-	mono_mb_free (mb);
-
-	return res;
-}
-
 static void
 mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 {

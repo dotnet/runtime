@@ -1754,15 +1754,6 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 	if (!klass->generic_class && !klass->rank)
 		return;
 
-	/* 
-	 * Add rgctx wrappers for cctors since those are called by the runtime, so 
-	 * there is no methodspec for them. This is needed even for shared classes,
-	 * since rgctx wrappers belong to inflated methods.
-	 */
-	method = mono_class_get_cctor (klass);
-	if (method && mono_method_needs_static_rgctx_invoke (method, FALSE))
-		add_extra_method (acfg, mono_marshal_get_static_rgctx_invoke (method));
-
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if (mono_method_is_generic_sharable_impl (method, FALSE))

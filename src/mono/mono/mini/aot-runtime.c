@@ -521,14 +521,6 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		case MONO_WRAPPER_STELEMREF:
 			*method = mono_marshal_get_stelemref ();
 			break;
-		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
-			MonoMethod *m = decode_method_ref_2 (module, p, &p);
-
-			if (!m)
-				return NULL;
-			*method = mono_marshal_get_static_rgctx_invoke (m);
-			break;
-		}
 		case MONO_WRAPPER_SYNCHRONIZED: {
 			MonoMethod *m = decode_method_ref_2 (module, p, &p);
 
