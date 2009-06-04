@@ -2270,6 +2270,7 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 	int i;
 	MonoCCW* ccw = ccwe->ccw;
 	MonoClass* klass = NULL;
+	MonoClass* klass_iter = NULL;
 	MonoObject* object = mono_gchandle_get_target (ccw->gc_handle);
 	
 	g_assert (object);
@@ -2306,18 +2307,25 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 		return cominterop_ccw_getfreethreadedmarshaler (ccw, object, ppv);	
 	}
 #endif
-
-	ifaces = mono_class_get_implemented_interfaces (klass);
-	if (ifaces) {
-		for (i = 0; i < ifaces->len; ++i) {
-			MonoClass *ic = NULL;
-			ic = g_ptr_array_index (ifaces, i);
-			if (cominterop_class_guid_equal (riid, ic)) {
-				itf = ic;
-				break;
+	klass_iter = klass;
+	while (klass_iter && klass_iter != mono_defaults.object_class) {
+		ifaces = mono_class_get_implemented_interfaces (klass_iter);
+		if (ifaces) {
+			for (i = 0; i < ifaces->len; ++i) {
+				MonoClass *ic = NULL;
+				ic = g_ptr_array_index (ifaces, i);
+				if (cominterop_class_guid_equal (riid, ic)) {
+					itf = ic;
+					break;
+				}
 			}
+			g_ptr_array_free (ifaces, TRUE);
 		}
-		g_ptr_array_free (ifaces, TRUE);
+
+		if (itf)
+			break;
+
+		klass_iter = klass_iter->parent;
 	}
 	if (itf) {
 		*ppv = cominterop_get_ccw (object, itf);
