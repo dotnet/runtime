@@ -10,7 +10,7 @@
 #include "config.h"
 #include "mini-gc.h"
 
-#ifdef HAVE_SGEN_GC
+#if 0
 
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-counters.h>
