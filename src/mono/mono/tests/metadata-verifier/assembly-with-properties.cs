@@ -25,7 +25,14 @@ public class Class2
 	public int Prop0 { get; set; }
 	public int Prop1 { get; set; }
 	public int Prop2 { get; set; }
+
+	public int this [string key] {
+	    get { return 0; }
+	    set { }
+	}
+
 }
+
 public class Class
 {
 	public static void Main ()

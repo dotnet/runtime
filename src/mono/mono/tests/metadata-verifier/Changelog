@@ -1,3 +1,10 @@
+2009-06-03 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-blob-tests.md: PropertySig tests.
+
+	* assembly-with-properties.cs: Add property with
+	parameters.
+
 2009-05-29 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: FieldSig tests.

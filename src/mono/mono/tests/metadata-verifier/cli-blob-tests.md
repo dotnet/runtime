@@ -130,6 +130,24 @@ field-sig {
 	invalid offset blob.i (table-row (4 0) + 4) + 1 set-byte 0x7
 	invalid offset blob.i (table-row (4 0) + 4) + 1 set-byte 0x16
 	invalid offset blob.i (table-row (4 0) + 4) + 1 set-byte 0x26
-
 }
 
+property-sig {
+	assembly assembly-with-properties.exe
+
+	#bad size
+	invalid offset blob.i (table-row (0x17 0) + 4) set-byte 0x0
+	invalid offset blob.i (table-row (0x17 0) + 4) set-byte 0x1
+
+	#cconv must be 0x08 or 0x28
+	valid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x08
+	valid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x28
+
+	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x09
+	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x29
+	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x48
+	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x18
+	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x07
+	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x00
+
+}
