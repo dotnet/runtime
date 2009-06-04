@@ -1280,6 +1280,37 @@ parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, 
 }
 
 static gboolean
+parse_property_signature (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	unsigned sig = 0;
+	unsigned param_count = 0, i;
+	const char *ptr = *_ptr;
+
+	if (!safe_read8 (sig, ptr, end))
+		FAIL (ctx, g_strdup ("PropertySig: Not enough room for signature"));
+
+	if (sig != 0x08 && sig != 0x28)
+		FAIL (ctx, g_strdup_printf ("PropertySig: Signature is not 0x28 or 0x08: %x", sig));
+
+	if (!safe_read_cint (param_count, ptr, end))
+		FAIL (ctx, g_strdup ("PropertySig: Not enough room for the param count"));
+
+	if (!parse_custom_mods (ctx, &ptr, end))
+		return FALSE;
+
+	if (!parse_type (ctx, &ptr, end))
+		FAIL (ctx, g_strdup ("PropertySig: Could not parse property type"));
+
+	for (i = 0; i < param_count; ++i) {
+		if (!parse_type (ctx, &ptr, end))
+			FAIL (ctx, g_strdup_printf ("PropertySig: Error parsing arg %d", i));
+	}
+
+	*_ptr = ptr;
+	return TRUE;
+}
+
+static gboolean
 parse_field (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	if (!parse_custom_mods (ctx, _ptr, end))
@@ -1389,9 +1420,14 @@ is_valid_standalonesig_blob (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_property_sig_blob (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return offset > 0 && blob.size >= 1 && blob.size - 1 >= offset;
+	int size = 0;
+	const char *ptr = NULL, *end;
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("PropertySig: Could not decode signature header"));
+	end = ptr + size;
+
+	return parse_property_signature (ctx, &ptr, end);
 }
 
 static gboolean
