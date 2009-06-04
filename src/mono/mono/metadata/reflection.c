@@ -6217,13 +6217,6 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	MonoClass *klass;
 	MonoReflectionMethod *ret;
 
-	/*
-	 * Don't let static RGCTX invoke wrappers get into
-	 * MonoReflectionMethods.
-	 */
-	if (method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
-		method = mono_marshal_method_from_wrapper (method);
-
 	if (method->is_inflated) {
 		MonoReflectionGenericMethod *gret;
 

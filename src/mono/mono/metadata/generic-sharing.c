@@ -546,13 +546,7 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, M
 
 		mono_class_init (inflated_class);
 
-		if (method->wrapper_type != MONO_WRAPPER_NONE) {
-			g_assert (info_type != MONO_RGCTX_INFO_METHOD_RGCTX);
-			g_assert (method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE);
-
-			method = mono_marshal_method_from_wrapper (method);
-			method = mono_class_inflate_generic_method (method, context);
-		}
+		g_assert (!method->wrapper_type);
 
 		if (inflated_class->byval_arg.type == MONO_TYPE_ARRAY ||
 				inflated_class->byval_arg.type == MONO_TYPE_SZARRAY) {
