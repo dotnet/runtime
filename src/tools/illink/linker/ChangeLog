@@ -1,3 +1,8 @@
+2009-06-04  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/ResolveFromXmlStep.cs: fix handling
+	of wildcards constructors.
+
 2009-04-23  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Linker/Driver.cs: Report error and exit if it cannot

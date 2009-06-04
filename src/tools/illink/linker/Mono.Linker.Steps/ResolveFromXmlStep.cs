@@ -234,16 +234,15 @@ namespace Mono.Linker.Steps {
 
 		static MethodDefinition GetMethod (TypeDefinition type, string signature)
 		{
-			if (!type.HasMethods)
-				return null;
+			if (type.HasMethods)
+				foreach (MethodDefinition meth in type.Methods)
+					if (signature == GetMethodSignature (meth))
+						return meth;
 
-			foreach (MethodDefinition meth in type.Methods)
-				if (signature == GetMethodSignature (meth))
-					return meth;
-
-			foreach (MethodDefinition ctor in type.Constructors)
-				if (signature == GetMethodSignature (ctor))
-					return ctor;
+			if (type.HasConstructors)
+				foreach (MethodDefinition ctor in type.Constructors)
+					if (signature == GetMethodSignature (ctor))
+						return ctor;
 
 			return null;
 		}
