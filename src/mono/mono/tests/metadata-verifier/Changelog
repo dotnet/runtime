@@ -1,3 +1,12 @@
+2009-06-04 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-blob-tests.md: LocalsSig tests.
+
+	* assembly-with-locals.il: File with all sort
+	of locals sig.
+
+	* Makefile: Add new dependency.
+
 2009-06-03 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: PropertySig tests.

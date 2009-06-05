@@ -149,5 +149,33 @@ property-sig {
 	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x18
 	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x07
 	invalid offset blob.i (table-row (0x17 0) + 4) + 1 set-byte 0x00
+}
 
+locals-sig {
+	assembly assembly-with-locals.exe
+
+	#bad local sig
+	#row 0 has tons of locals
+	#row 1 is int32&, int32 
+	#row 2 is typedref
+
+	#typedref with byref
+	#row 1 is:      cconv pcount(2) byref int32      int32 
+	#row 1 goes to: cconv pcount(2) byref typedbyref int32
+	invalid offset blob.i (table-row (0x11 1)) + 4 set-byte 0x18
+
+	#byref pinned int32
+	#row 1 is:      cconv pcount(2) byref int32  int32 
+	#row 1 goes to: cconv pcount(1) byref pinned int32
+
+	invalid offset blob.i (table-row (0x11 1)) + 2 set-byte 0x01,
+			offset blob.i (table-row (0x11 1)) + 4 set-byte 0x45
+
+	#pinned pinned int32
+	#row 1 is:      cconv pcount(2) byref  int32  int32 
+	#row 1 goes to: cconv pcount(1) pinned pinned int32
+
+	invalid offset blob.i (table-row (0x11 1)) + 2 set-byte 0x01,
+			offset blob.i (table-row (0x11 1)) + 3 set-byte 0x45,
+			offset blob.i (table-row (0x11 1)) + 4 set-byte 0x45
 }
