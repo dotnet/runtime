@@ -42,7 +42,7 @@
 	.field private object a14
 	.field private string a15
 
-	.field private string[] modreq ([mscorlib]System.Runtime.CompilerServices.IsVolatile) a16
+	.field private string modopt ([mscorlib]System.Runtime.CompilerServices.IsVolatile) [] a16
 
 	.field valuetype [mscorlib]System.DateTime a17	
 	.field valuetype Foo a18

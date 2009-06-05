@@ -244,5 +244,10 @@ type-enc {
 	#bad callconv
 	invalid offset blob.i (table-row (0x04 10) + 4) + 3 set-byte 0x88
 
+	#szarray
+	#field 17 is an array with modreq on target
+	#format is: cconv SZARRAY cmod* type
+	#array type is void
+	invalid offset blob.i (table-row (0x04 17) + 4) + 3 set-byte 0x01
 }
 

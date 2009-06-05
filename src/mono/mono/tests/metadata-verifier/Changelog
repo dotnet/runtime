@@ -1,5 +1,11 @@
 2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: Tests for szarray.
+
+	* assembly-with-types.il: Fix the szarray field.
+
+2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-blob-tests.md: Tests for fnptr instance.
 
 2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
