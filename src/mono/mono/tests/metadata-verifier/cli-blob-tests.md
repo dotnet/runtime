@@ -221,5 +221,22 @@ type-enc {
 	invalid offset blob.i (table-row (0x04 3) + 4) + 5 set-byte 0x1F
 	#large nlowb
 	invalid offset blob.i (table-row (0x04 3) + 4) + 6 set-byte 0x1F
+
+
+	#generic inst
+	#field 20 is Test<int32>; 21 is class [mscorlib]System.IComparable`1<object>; 22 is valuetype Test2<!0>
+	#format is cconc GINST KIND token arg_count type*
+
+	#make bad kind
+	invalid offset blob.i (table-row (0x04 20) + 4) + 3 set-byte 0x05
+
+	#bad token
+	invalid offset blob.i (table-row (0x04 20) + 4) + 4 set-byte 0x3F
+	#zero arg_count
+	invalid offset blob.i (table-row (0x04 20) + 4) + 5 set-byte 0x0
+	#bad arg_count
+	invalid offset blob.i (table-row (0x04 20) + 4) + 5 set-byte 0x10
+
+
 }
 

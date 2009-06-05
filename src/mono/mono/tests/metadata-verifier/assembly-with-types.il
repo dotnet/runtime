@@ -11,11 +11,10 @@
 
 .module simple_assembly.exe
 
-.class public auto ansi beforefieldinit Foo extends [mscorlib]System.ValueType
+.class sealed public auto ansi beforefieldinit Foo extends [mscorlib]System.ValueType
 {
 	.field public int32 __x
 }
-
 
 .class public auto ansi beforefieldinit Test<T> extends [mscorlib]System.Object
 {
@@ -46,16 +45,23 @@
 	.field private string[] modreq ([mscorlib]System.Runtime.CompilerServices.IsVolatile) a16
 
 	.field valuetype [mscorlib]System.DateTime a17	
-	.field valuetype Foo a18	
+	.field valuetype Foo a18
+	.field class Test<int32> a19
+	.field class [mscorlib]System.IComparable`1<object> a20
+	.field valuetype Test2<!T> a21
 
 	.method public static void M1<TT> (!T foo, !!TT bar) cil managed
 	{
 		.maxstack 8
 		ret
-	} 
-
-
+	}
 }
+
+.class sealed public auto ansi beforefieldinit Test2<T> extends [mscorlib]System.ValueType
+{
+	.field public int32 __x
+}
+
 
 .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
 {

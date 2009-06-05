@@ -1,5 +1,11 @@
 2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: Tests for generic instance.
+
+	* assembly-with-types.il: Add some generic instances.
+
+2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-blob-tests.md: Tests for array shape.
 
 2009-06-04 Rodrigo Kumpera  <rkumpera@novell.com>
