@@ -1,3 +1,7 @@
+2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-blob-tests.md: Tests for array shape.
+
 2009-06-04 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: Tests for type encoding.

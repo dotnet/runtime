@@ -189,11 +189,11 @@ type-enc {
 
 	#field 10 is cconv PTR int32
 	#make it: cconv PTR modreq
-	invalid offset blob.i (table-row (0x04 10) + 4) + 3 set-byte 0x1f
+	invalid offset blob.i (table-row (0x04 11) + 4) + 3 set-byte 0x1f
 
 	#pointer to pointer (not enought room to parse pointed to type)
 	#make it: cconv PTR PTR
-	invalid offset blob.i (table-row (0x04 10) + 4) + 3 set-byte 0x0f
+	invalid offset blob.i (table-row (0x04 11) + 4) + 3 set-byte 0x0f
 
 	#value type / class
 	#make it not have room for the token
@@ -204,4 +204,22 @@ type-enc {
 	#make it not have room for the token
 	invalid offset blob.i (table-row (0x04 0) + 4) + 2 set-byte 0x13
 	invalid offset blob.i (table-row (0x04 0) + 4) + 2 set-byte 0x1e
+
+	#general array
+	#field 3 is a int32[,,]: cconv ARRAY int32 rank(3) nsizes(0) nlowb(0)
+	#make the array type invalid (byref/typedref/void/plain wrong)
+	invalid offset blob.i (table-row (0x04 3) + 4) + 3 set-byte 0x00
+	invalid offset blob.i (table-row (0x04 3) + 4) + 3 set-byte 0x01
+	invalid offset blob.i (table-row (0x04 3) + 4) + 3 set-byte 0x10
+	#LAMEIMPL MS accepts arrays of typedbyref, which is illegal and unsafe
+	invalid offset blob.i (table-row (0x04 3) + 4) + 3 set-byte 0x16
+
+	#LAMEIMPL MS verifier doesn't catch this one (runtime does)
+	#rank 0 
+	invalid offset blob.i (table-row (0x04 3) + 4) + 4 set-byte 0x00
+	#large nsizes
+	invalid offset blob.i (table-row (0x04 3) + 4) + 5 set-byte 0x1F
+	#large nlowb
+	invalid offset blob.i (table-row (0x04 3) + 4) + 6 set-byte 0x1F
 }
+
