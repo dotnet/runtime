@@ -1153,7 +1153,8 @@ static gboolean
 parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
-	guint type = 0;
+	guint8 type = 0;
+	guint32 token = 0;
 
 	if (!safe_read8 (type, ptr, end))
 		FAIL (ctx, g_strdup ("Type: Not enough room for the type"));
@@ -1164,6 +1165,36 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 		(type >= MONO_TYPE_FNPTR && type <= MONO_TYPE_MVAR)))
 		FAIL (ctx, g_strdup_printf ("Type: Invalid type kind %x\n", type));
 
+	switch (type) {
+	case MONO_TYPE_PTR:
+		if (!parse_custom_mods (ctx, &ptr, end))
+			FAIL (ctx, g_strdup ("Type: Failed to parse pointer custom attr"));
+
+		if (!safe_read8 (type, ptr, end))
+			FAIL (ctx, g_strdup ("Type: Not enough room to parse the pointer type"));
+
+		if (type != MONO_TYPE_VOID) {
+			--ptr;
+			if (!parse_type (ctx, &ptr, end))
+				FAIL (ctx, g_strdup ("Type: Could not parse pointer type"));
+		}
+		break;
+
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		if (!safe_read_cint (token, ptr, end))
+			FAIL (ctx, g_strdup ("Type: Not enough room for the type token"));
+	
+		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
+			FAIL (ctx, g_strdup_printf ("Type: invalid TypeDefOrRef token %x", token));
+		break;
+
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		if (!safe_read_cint (token, ptr, end))
+			FAIL (ctx, g_strdup ("Type: Not enough room for to decode generic argument number"));
+		break;
+	}
 	*_ptr = ptr;
 	return TRUE;
 }
@@ -1313,8 +1344,19 @@ parse_property_signature (VerifyContext *ctx, const char **_ptr, const char *end
 static gboolean
 parse_field (VerifyContext *ctx, const char **_ptr, const char *end)
 {
+	const char *ptr = *_ptr;
+	guint8 signature = 0;
+
+	if (!safe_read8 (signature, ptr, end))
+		FAIL (ctx, g_strdup ("Field: Not enough room for field signature"));
+
+	if (signature != 0x06)
+		FAIL (ctx, g_strdup_printf ("Field: Invalid signature 0x%x, must be 6", signature));
+	*_ptr = ptr; 
+
 	if (!parse_custom_mods (ctx, _ptr, end))
 		return FALSE;
+
 	return parse_type (ctx, _ptr, end);
 }
 
