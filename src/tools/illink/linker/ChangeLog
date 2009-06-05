@@ -1,5 +1,10 @@
 2009-06-05  Jb Evain  <jbevain@novell.com>
 
+	* Mono.Linker.Steps/MarkStep.cs: fix a nre.
+	Based on patch by Andres G. Aragoneses  <aaragoneses@novell.com>.
+
+2009-06-05  Jb Evain  <jbevain@novell.com>
+
 	* Mono.Linker.Steps/ResolveFromXmlStep.cs: more ways of choosing fields.
 
 2009-06-05  Jb Evain  <jbevain@novell.com>

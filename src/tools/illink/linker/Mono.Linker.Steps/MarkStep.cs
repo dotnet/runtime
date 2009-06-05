@@ -157,7 +157,10 @@ namespace Mono.Linker.Steps {
 
 			MarkCustomAttributeParameters (ca);
 
-			TypeDefinition type = ca.Constructor.DeclaringType.Resolve ();
+			TypeReference constructor_type = ca.Constructor.DeclaringType;
+			TypeDefinition type = constructor_type.Resolve ();
+			if (type == null)
+				throw new ResolutionException (constructor_type);
 
 			MarkCustomAttributeProperties (ca, type);
 			MarkCustomAttributeFields (ca, type);
