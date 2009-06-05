@@ -236,16 +236,16 @@ namespace Mono.Linker.Steps {
 		{
 			string signature = GetSignature (nav);
 			MethodDefinition meth = GetMethod (type, signature);
-			MarkMethod (meth, signature);
+			MarkMethod (type, meth, signature);
 		}
 
-		private void MarkMethod (MethodDefinition method, string signature)
+		private void MarkMethod (TypeDefinition type, MethodDefinition method, string signature)
 		{
 			if (method != null) {
 				Annotations.Mark (method);
 				Annotations.SetAction (method, MethodAction.Parse);
 			} else
-				AddUnresolveMarker (string.Format ("T: {0}; M: {1}", method.DeclaringType, signature));
+				AddUnresolveMarker (string.Format ("T: {0}; M: {1}", type, signature));
 		}
 
 		void ProcessMethodName (TypeDefinition type, XPathNavigator nav)
@@ -254,12 +254,12 @@ namespace Mono.Linker.Steps {
 			if (name == ".ctor" || name == ".cctor" && type.HasConstructors)
 				foreach (MethodDefinition ctor in type.Constructors)
 					if (name == ctor.Name)
-						MarkMethod (ctor, name);
+						MarkMethod (type, ctor, name);
 
 			if (type.HasMethods)
 				foreach (MethodDefinition method in type.Methods)
 					if (name == method.Name)
-						MarkMethod (method, name);
+						MarkMethod (type, method, name);
 		}
 
 		static MethodDefinition GetMethod (TypeDefinition type, string signature)
