@@ -147,15 +147,17 @@ namespace Mono.Linker.Steps {
 
 			switch (preserve) {
 			case TypePreserve.Nothing:
-				if (nav.HasChildren) {
-					MarkSelectedFields (nav, type);
-					MarkSelectedMethods (nav, type);
-				} else
+				if (!nav.HasChildren)
 					Annotations.SetPreserve (type, TypePreserve.All);
 				break;
 			default:
 				Annotations.SetPreserve (type, preserve);
 				break;
+			}
+
+			if (nav.HasChildren) {
+				MarkSelectedFields (nav, type);
+				MarkSelectedMethods (nav, type);
 			}
 		}
 
@@ -222,14 +224,42 @@ namespace Mono.Linker.Steps {
 		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext()) {
-				string signature = GetSignature (iterator.Current);
-				MethodDefinition meth = GetMethod (type, signature);
-				if (meth != null) {
-					Annotations.Mark (meth);
-					Annotations.SetAction (meth, MethodAction.Parse);
-				} else
-					AddUnresolveMarker (string.Format ("T: {0}; M: {1}", type, signature));
+				if (GetAttribute (iterator.Current, "signature") != null)
+					ProcessMethodSignature (type, iterator.Current);
+
+				if (GetAttribute (iterator.Current, "name") != null)
+					ProcessMethodName (type, iterator.Current);
 			}
+		}
+
+		void ProcessMethodSignature (TypeDefinition type, XPathNavigator nav)
+		{
+			string signature = GetSignature (nav);
+			MethodDefinition meth = GetMethod (type, signature);
+			MarkMethod (meth, signature);
+		}
+
+		private void MarkMethod (MethodDefinition method, string signature)
+		{
+			if (method != null) {
+				Annotations.Mark (method);
+				Annotations.SetAction (method, MethodAction.Parse);
+			} else
+				AddUnresolveMarker (string.Format ("T: {0}; M: {1}", method.DeclaringType, signature));
+		}
+
+		void ProcessMethodName (TypeDefinition type, XPathNavigator nav)
+		{
+			string name = GetAttribute (nav, "name");
+			if (name == ".ctor" || name == ".cctor" && type.HasConstructors)
+				foreach (MethodDefinition ctor in type.Constructors)
+					if (name == ctor.Name)
+						MarkMethod (ctor, name);
+
+			if (type.HasMethods)
+				foreach (MethodDefinition method in type.Methods)
+					if (name == method.Name)
+						MarkMethod (method, name);
 		}
 
 		static MethodDefinition GetMethod (TypeDefinition type, string signature)
