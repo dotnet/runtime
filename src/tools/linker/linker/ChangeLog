@@ -1,5 +1,9 @@
 2009-06-05  Jb Evain  <jbevain@novell.com>
 
+	* Mono.Linker.Steps/ResolveFromXmlStep.cs: more ways of choosing fields.
+
+2009-06-05  Jb Evain  <jbevain@novell.com>
+
 	* Mono.Linker.Steps/ResolveFromXmlStep.cs: give us more
 	possibilities to detail the xml descriptors.
 

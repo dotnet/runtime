@@ -195,13 +195,38 @@ namespace Mono.Linker.Steps {
 		void ProcessFields (TypeDefinition type, XPathNodeIterator iterator)
 		{
 			while (iterator.MoveNext ()) {
-				string signature = GetSignature (iterator.Current);
-				FieldDefinition field = GetField (type, signature);
-				if (field != null)
-					Annotations.Mark (field);
-				else
-					AddUnresolveMarker (string.Format ("T: {0}; F: {1}", type, signature));
+				if (GetAttribute (iterator.Current, "signature") != null)
+					ProcessFieldSignature (type, iterator.Current);
+
+				if (GetAttribute (iterator.Current, "name") != null)
+					ProcessFieldName (type, iterator.Current);
 			}
+		}
+
+		void ProcessFieldSignature (TypeDefinition type, XPathNavigator nav)
+		{
+			string signature = GetSignature (nav);
+			FieldDefinition field = GetField (type, signature);
+			MarkField (type, field, signature);
+		}
+
+		void MarkField (TypeDefinition type, FieldDefinition field, string signature)
+		{
+			if (field != null)
+				Annotations.Mark (field);
+			else
+				AddUnresolveMarker (string.Format ("T: {0}; F: {1}", type, signature));
+		}
+
+		void ProcessFieldName (TypeDefinition type, XPathNavigator nav)
+		{
+			if (!type.HasFields)
+				return;
+
+			string name = GetAttribute (nav, "name");
+			foreach (FieldDefinition field in type.Fields)
+				if (field.Name == name)
+					MarkField (type, field, name);
 		}
 
 		static FieldDefinition GetField (TypeDefinition type, string signature)
