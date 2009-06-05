@@ -237,6 +237,12 @@ type-enc {
 	#bad arg_count
 	invalid offset blob.i (table-row (0x04 20) + 4) + 5 set-byte 0x10
 
+	#fnptr
+	#field 10 is a fnptr
+	#format is: cconv FNPTR cconv pcount ret param* sentinel? param*
+	#LAMESPEC, it lacks the fact that fnptr allows for unmanaged call conv 
+	#bad callconv
+	invalid offset blob.i (table-row (0x04 10) + 4) + 3 set-byte 0x88
 
 }
 

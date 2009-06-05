@@ -1,5 +1,9 @@
 2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: Tests for fnptr instance.
+
+2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-blob-tests.md: Tests for generic instance.
 
 	* assembly-with-types.il: Add some generic instances.
