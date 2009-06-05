@@ -1282,6 +1282,14 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 	case MONO_TYPE_FNPTR:
 		if (!parse_method_signature (ctx, &ptr, end, TRUE, TRUE))
 			FAIL (ctx, g_strdup ("Type: Could not parse method pointer signature"));
+		break;
+
+	case MONO_TYPE_SZARRAY:
+		if (!parse_custom_mods (ctx, &ptr, end))
+			FAIL (ctx, g_strdup ("Type: Failed to parse array element custom attr"));
+		if (!parse_type (ctx, &ptr, end))
+			FAIL (ctx, g_strdup ("Type: Could not parse array type"));
+		break;
 	}
 	*_ptr = ptr;
 	return TRUE;
