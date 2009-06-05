@@ -1126,6 +1126,9 @@ static gboolean
 parse_type (VerifyContext *ctx, const char **_ptr, const char *end);
 
 static gboolean
+parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, gboolean allow_sentinel, gboolean allow_unmanaged);
+
+static gboolean
 parse_custom_mods (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
@@ -1275,6 +1278,10 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 		if (!parse_generic_inst (ctx, &ptr, end))
 			FAIL (ctx, g_strdup ("Type: Could not parse generic inst"));
 		break;
+
+	case MONO_TYPE_FNPTR:
+		if (!parse_method_signature (ctx, &ptr, end, TRUE, TRUE))
+			FAIL (ctx, g_strdup ("Type: Could not parse method pointer signature"));
 	}
 	*_ptr = ptr;
 	return TRUE;
