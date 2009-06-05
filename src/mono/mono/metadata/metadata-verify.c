@@ -1150,6 +1150,40 @@ parse_custom_mods (VerifyContext *ctx, const char **_ptr, const char *end)
 }
 
 static gboolean
+parse_array_shape (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	const char *ptr = *_ptr;
+	guint8 val;
+	guint32 size, num, i;
+
+	if (!safe_read8 (val, ptr, end))
+		FAIL (ctx, g_strdup ("ArrayShape: Not enough room for Rank"));
+
+	if (val == 0)
+		FAIL (ctx, g_strdup ("ArrayShape: Invalid shape with zero Rank"));
+
+	if (!safe_read_cint (size, ptr, end))
+		FAIL (ctx, g_strdup ("ArrayShape: Not enough room for NumSizes"));
+
+	for (i = 0; i < size; ++i) {
+		if (!safe_read_cint (num, ptr, end))
+			FAIL (ctx, g_strdup_printf ("ArrayShape: Not enough room for Size of rank %d", i + 1));
+	}
+
+	if (!safe_read_cint (size, ptr, end))
+		FAIL (ctx, g_strdup ("ArrayShape: Not enough room for NumLoBounds"));
+
+	for (i = 0; i < size; ++i) {
+		if (!safe_read_cint (num, ptr, end))
+			FAIL (ctx, g_strdup_printf ("ArrayShape: Not enough room for LoBound of rank %d", i + 1));
+	}
+
+	*_ptr = ptr;
+	return TRUE;
+
+}
+
+static gboolean
 parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
@@ -1193,6 +1227,12 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 	case MONO_TYPE_MVAR:
 		if (!safe_read_cint (token, ptr, end))
 			FAIL (ctx, g_strdup ("Type: Not enough room for to decode generic argument number"));
+		break;
+	case MONO_TYPE_ARRAY:
+		if (!parse_type (ctx, &ptr, end))
+			FAIL (ctx, g_strdup ("Type: Could not parse array type"));
+		if (!parse_array_shape (ctx, &ptr, end))
+			FAIL (ctx, g_strdup ("Type: Could not parse array shape"));
 		break;
 	}
 	*_ptr = ptr;
