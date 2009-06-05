@@ -1319,6 +1319,47 @@ parse_field (VerifyContext *ctx, const char **_ptr, const char *end)
 }
 
 static gboolean
+parse_locals_signature (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	unsigned sig = 0;
+	unsigned locals_count = 0, i;
+	const char *ptr = *_ptr;	
+
+	if (!safe_read8 (sig, ptr, end))
+		FAIL (ctx, g_strdup ("LocalsSig: Not enough room for signature"));
+
+	if (sig != 0x07)
+		FAIL (ctx, g_strdup_printf ("LocalsSig: Signature is not 0x28 or 0x08: %x", sig));
+
+	if (!safe_read_cint (locals_count, ptr, end))
+		FAIL (ctx, g_strdup ("LocalsSig: Not enough room for the param count"));
+
+	if (locals_count == 0)
+		FAIL (ctx, g_strdup ("LocalsSig: Signature with zero locals"));
+
+	for (i = 0; i < locals_count; ++i) {
+		if (!safe_read8 (sig, ptr, end))
+			FAIL (ctx, g_strdup ("LocalsSig: Not enough room for type"));
+
+		if (sig == MONO_TYPE_TYPEDBYREF)
+			continue;
+
+		while (sig == MONO_TYPE_CMOD_REQD || sig == MONO_TYPE_CMOD_OPT || sig == MONO_TYPE_PINNED) {
+			if (sig != MONO_TYPE_PINNED && !parse_custom_mods (ctx, &ptr, end))
+				FAIL (ctx, g_strdup_printf ("LocalsSig: Error parsing local %d", i));
+			if (!safe_read8 (sig, ptr, end))
+				FAIL (ctx, g_strdup ("LocalsSig: Not enough room for type"));
+		}
+		--ptr;
+		if (!parse_type (ctx, &ptr, end))
+			FAIL (ctx, g_strdup_printf ("LocalsSig: Error parsing local %d", i));
+	}
+
+	*_ptr = ptr;
+	return TRUE;
+}
+
+static gboolean
 is_valid_field_signature (VerifyContext *ctx, guint32 offset)
 {
 	int size = 0, signature = 0;
@@ -1410,10 +1451,9 @@ is_valid_standalonesig_blob (VerifyContext *ctx, guint32 offset)
 	if (!safe_read8 (signature, ptr, end))
 		FAIL (ctx, g_strdup ("StandAloneSig: Not enough room for the call conv"));
 
-	if (signature == 0x07) //FIXME implement localvarsig checking
-		return TRUE;
 	--ptr;
-
+	if (signature == 0x07)
+		return parse_locals_signature (ctx, &ptr, end);
 	return parse_method_signature (ctx, &ptr, end, TRUE, TRUE);
 }
 
