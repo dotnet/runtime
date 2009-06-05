@@ -1,5 +1,14 @@
 2009-06-04 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: Tests for type encoding.
+
+	* assembly-with-types.il: Input file with all
+	sorts of type encodings.
+
+	* Makefile: Add new dependency.
+
+2009-06-04 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-blob-tests.md: LocalsSig tests.
 
 	* assembly-with-locals.il: File with all sort

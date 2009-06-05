@@ -179,3 +179,29 @@ locals-sig {
 			offset blob.i (table-row (0x11 1)) + 3 set-byte 0x45,
 			offset blob.i (table-row (0x11 1)) + 4 set-byte 0x45
 }
+
+type-enc {
+	assembly assembly-with-types.exe
+
+	#valid
+	#change type from int to string
+	valid offset blob.i (table-row (0x04 0) + 4) + 2 set-byte 0x0E
+
+	#field 10 is cconv PTR int32
+	#make it: cconv PTR modreq
+	invalid offset blob.i (table-row (0x04 10) + 4) + 3 set-byte 0x1f
+
+	#pointer to pointer (not enought room to parse pointed to type)
+	#make it: cconv PTR PTR
+	invalid offset blob.i (table-row (0x04 10) + 4) + 3 set-byte 0x0f
+
+	#value type / class
+	#make it not have room for the token
+	invalid offset blob.i (table-row (0x04 0) + 4) + 2 set-byte 0x11
+	invalid offset blob.i (table-row (0x04 0) + 4) + 2 set-byte 0x12
+
+	#var / mvar
+	#make it not have room for the token
+	invalid offset blob.i (table-row (0x04 0) + 4) + 2 set-byte 0x13
+	invalid offset blob.i (table-row (0x04 0) + 4) + 2 set-byte 0x1e
+}
