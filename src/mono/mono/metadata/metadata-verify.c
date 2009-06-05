@@ -1123,6 +1123,9 @@ safe_read_compressed_int (const char **_ptr, const char *limit, unsigned *dest)
 #define safe_read32(VAR, PTR, LIMIT) safe_read (&PTR, LIMIT, &VAR, 4)
 
 static gboolean
+parse_type (VerifyContext *ctx, const char **_ptr, const char *end);
+
+static gboolean
 parse_custom_mods (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
@@ -1180,7 +1183,39 @@ parse_array_shape (VerifyContext *ctx, const char **_ptr, const char *end)
 
 	*_ptr = ptr;
 	return TRUE;
+}
 
+static gboolean
+parse_generic_inst (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	const char *ptr = *_ptr;
+	guint8 type;
+	guint32 count, token, i;
+
+	if (!safe_read8 (type, ptr, end))
+		FAIL (ctx, g_strdup ("GenericInst: Not enough room for kind"));
+
+	if (type != MONO_TYPE_CLASS && type != MONO_TYPE_VALUETYPE)
+		FAIL (ctx, g_strdup_printf ("GenericInst: Invalid GenericInst kind %x\n", type));
+
+	if (!safe_read_cint (token, ptr, end))
+		FAIL (ctx, g_strdup ("GenericInst: Not enough room for type token"));
+
+	if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
+		FAIL (ctx, g_strdup_printf ("GenericInst: invalid TypeDefOrRef token %x", token));
+
+	if (!safe_read_cint (count, ptr, end))
+		FAIL (ctx, g_strdup ("GenericInst: Not enough room for argument count"));
+
+	if (count == 0)
+		FAIL (ctx, g_strdup ("GenericInst: Zero arguments generic instance"));
+
+	for (i = 0; i < count; ++i) {
+		if (!parse_type (ctx, &ptr, end))
+			FAIL (ctx, g_strdup_printf ("GenericInst: invalid generic argument %d", i + 1));
+	}
+	*_ptr = ptr;
+	return TRUE;
 }
 
 static gboolean
@@ -1228,11 +1263,17 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 		if (!safe_read_cint (token, ptr, end))
 			FAIL (ctx, g_strdup ("Type: Not enough room for to decode generic argument number"));
 		break;
+
 	case MONO_TYPE_ARRAY:
 		if (!parse_type (ctx, &ptr, end))
 			FAIL (ctx, g_strdup ("Type: Could not parse array type"));
 		if (!parse_array_shape (ctx, &ptr, end))
 			FAIL (ctx, g_strdup ("Type: Could not parse array shape"));
+		break;
+
+	case MONO_TYPE_GENERICINST:
+		if (!parse_generic_inst (ctx, &ptr, end))
+			FAIL (ctx, g_strdup ("Type: Could not parse generic inst"));
 		break;
 	}
 	*_ptr = ptr;
