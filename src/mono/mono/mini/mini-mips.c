@@ -187,7 +187,7 @@ mips_emit_exc_by_name(guint8 *code, const char *name)
 	guint32 addr;
 	MonoClass *exc_class;
 
-	exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
+	exc_class = mono_class_from_name (mono_defaults.corlib, "System", name);
 	g_assert (exc_class);
 
 	mips_load_const (code, mips_a0, exc_class->type_token);
