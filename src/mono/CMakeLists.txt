@@ -2420,7 +2420,7 @@ if (with_tls STREQUAL "__thread")
   ac_define(HAVE_KW_THREAD 1 "Have __thread keyword")
   ac_define(USE_COMPILER_TLS 1 "Use __thread for TLS access")
 # Pass the information to libgc
-###	set(CPPFLAGS "$CPPFLAGS -DUSE_COMPILER_TLS")
+set(CPPFLAGS "${CPPFLAGS} -DUSE_COMPILER_TLS")
 ###	ac_msg_checking(if the tls_model attribute is supported)
 ###	AC_TRY_COMPILE([static __thread int foo __attribute__((tls_model("initial-exec")));], [
 ###		], [
