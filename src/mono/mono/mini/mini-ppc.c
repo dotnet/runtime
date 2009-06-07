@@ -5082,8 +5082,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 	cfg->code_len = code - cfg->native_code;
 
-	g_assert (cfg->code_len < cfg->code_size);
-
+	g_assert (cfg->code_len <= cfg->code_size);
 }
 
 #if DEAD_CODE
