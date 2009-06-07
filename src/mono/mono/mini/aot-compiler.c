@@ -4350,7 +4350,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 		sprintf (symbol, ".Lm_%x", i);
 		sprintf (symbol2, ".Lme_%x", i);
 
-		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, symbol, symbol2, NULL, 0, cfg->args, cfg->locals, cfg->unwind_ops, NULL);
+		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, symbol, symbol2, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
 	}
 #endif
 }

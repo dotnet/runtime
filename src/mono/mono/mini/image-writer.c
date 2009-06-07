@@ -541,8 +541,14 @@ append_subsection (MonoImageWriter *acfg, ElfSectHeader *sheaders, BinSection *s
 	int offset = sect->cur_offset;
 	/*offset += (sheaders [sect->shidx].sh_addralign - 1);
 	offset &= ~(sheaders [sect->shidx].sh_addralign - 1);*/
-	offset += (8 - 1);
-	offset &= ~(8 - 1);
+	/* 
+	 * FIXME: we shouldn't align subsections at all, but if we don't then the
+	 * stuff inside the subsections which is aligned won't get aligned.
+	 */
+	if (strcmp (sect->name, ".debug_line") != 0) {
+		offset += (8 - 1);
+		offset &= ~(8 - 1);
+	}
 	bin_writer_emit_ensure_buffer (sect, offset);
 	//g_print ("section %s aligned to %d from %d\n", sect->name, offset, sect->cur_offset);
 	sect->cur_offset = offset;

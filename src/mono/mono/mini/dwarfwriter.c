@@ -561,14 +561,6 @@ emit_line_number_file_name (MonoDwarfWriter *w, const char *name,
 static void
 emit_line_number_info_begin (MonoDwarfWriter *w)
 {
-	if (!w->il_file) {
-		/* FIXME: This doesn't seem to work with !xdebug */
-		emit_section_change (w, ".debug_line", 0);
-		emit_label (w, ".Ldebug_line_start");
-		emit_label (w, ".Ldebug_line_section_start");
-		return;
-	}
-
 	/* Line number info header */
 	/* 
 	 * GAS seems to emit its own data to the end of the first subsection, so we use
@@ -1240,8 +1232,10 @@ compare_lne (MonoDebugLineNumberEntry *a, MonoDebugLineNumberEntry *b)
 }
 
 static void
-emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
-					   guint32 code_size, MonoDebugMethodJitInfo *debug_info)
+emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, 
+					   char *start_symbol, char *end_symbol,
+					   guint8 *code, guint32 code_size,
+					   MonoDebugMethodJitInfo *debug_info)
 {
 	guint32 prev_line = 0;
 	guint32 prev_native_offset = 0;
@@ -1254,13 +1248,11 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 	GArray *ln_array;
 	int *native_to_il_offset = NULL;
 
-	if (!code)
-		// FIXME: The set_address op below only works with xdebug
-		return;
-
 	minfo = mono_debug_lookup_method (method);
 
 	/* Compute the native->IL offset mapping */
+
+	g_assert (code_size);
 
 #ifndef _EGLIB_MAJOR
 	ln_array = g_array_sized_new (FALSE, FALSE, sizeof (MonoDebugLineNumberEntry), 
@@ -1332,7 +1324,10 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 				emit_byte (w, 0);
 				emit_byte (w, sizeof (gpointer) + 1);
 				emit_byte (w, DW_LNE_set_address);
-				emit_pointer_value (w, code);
+				if (start_symbol)
+					emit_pointer_unaligned (w, start_symbol);
+				else
+					emit_pointer_value (w, code);
 
 				/* 
 				 * The prolog+initlocals region does not have a line number, this
@@ -1379,7 +1374,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 		emit_byte (w, 0);
 		emit_byte (w, 1);
 		emit_byte (w, DW_LNE_end_sequence);
-	} else if (code) {
+	} else if (!start_symbol) {
 		/* No debug info, XDEBUG mode */
 		char *name, *dis;
 		const guint8 *ip = header->code;
@@ -1659,10 +1654,9 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	}
 
 	/* Emit line number info */
-	if (code && debug_info)
-		/* != could happen when using --regression */
-		if (debug_info->code_start == code)
-			emit_line_number_info (w, method, code, code_size, debug_info);
+	/* != could happen when using --regression */
+	if (debug_info && (debug_info->code_start == code))
+		emit_line_number_info (w, method, start_symbol, end_symbol, code, code_size, debug_info);
 
 	emit_line (w);
 }
