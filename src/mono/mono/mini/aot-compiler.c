@@ -157,6 +157,7 @@ typedef struct MonoAotCompile {
 	guint32 unwind_info_offset;
 	char *got_symbol;
 	GHashTable *method_label_hash;
+	const char *temp_prefix;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -1957,7 +1958,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						if (direct_callable) {
 							//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
 							direct_call = TRUE;
-							sprintf (direct_call_target, ".Lm_%x", get_method_index (acfg, callee_cfg->orig_method));
+							sprintf (direct_call_target, "%sm_%x", acfg->temp_prefix, get_method_index (acfg, callee_cfg->orig_method));
 							patch_info->type = MONO_PATCH_INFO_NONE;
 							acfg->stats.direct_calls ++;
 						}
@@ -1971,7 +1972,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					if (plt_offset != -1) {
 						/* This patch has a PLT entry, so we must emit a call to the PLT entry */
 						direct_call = TRUE;
-						sprintf (direct_call_target, ".Lp_%d", plt_offset);
+						sprintf (direct_call_target, "%sp_%d", acfg->temp_prefix, plt_offset);
 		
 						/* Nullify the patch */
 						patch_info->type = MONO_PATCH_INFO_NONE;
@@ -2034,7 +2035,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	method_index = get_method_index (acfg, method);
 
 	/* Make the labels local */
-	sprintf (symbol, ".Lm_%x", method_index);
+	sprintf (symbol, "%sm_%x", acfg->temp_prefix, method_index);
 
 	emit_alignment (acfg, func_alignment);
 	emit_label (acfg, symbol);
@@ -2076,7 +2077,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		cached = g_strdup (name2);
 		g_hash_table_insert (acfg->method_label_hash, cached, cached);
 
-		sprintf (symbol, ".Lme_%x", method_index);
+		sprintf (symbol, "%sme_%x", acfg->temp_prefix, method_index);
 		emit_local_symbol (acfg, name2, symbol, TRUE);
 		emit_label (acfg, name2);
 		g_free (name1);
@@ -2094,7 +2095,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	emit_line (acfg);
 
-	sprintf (symbol, ".Lme_%x", method_index);
+	sprintf (symbol, "%sme_%x", acfg->temp_prefix, method_index);
 	emit_label (acfg, symbol);
 }
 
@@ -2265,7 +2266,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	method_index = get_method_index (acfg, method);
 
 	/* Make the labels local */
-	sprintf (symbol, ".Lm_%x_p", method_index);
+	sprintf (symbol, "%sm_%x_p", acfg->temp_prefix, method_index);
 
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
@@ -2395,7 +2396,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	method_index = get_method_index (acfg, method);
 
 	/* Make the labels local */
-	sprintf (symbol, ".Le_%x_p", method_index);
+	sprintf (symbol, "%se_%x_p", acfg->temp_prefix, method_index);
 
 	if (!acfg->aot_opts.nodebug) {
 		mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
@@ -2548,7 +2549,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	acfg->stats.class_info_size += p - buf;
 
 	/* Emit the info */
-	sprintf (symbol, ".LK_I_%x", token - MONO_TOKEN_TYPE_DEF - 1);
+	sprintf (symbol, "%sK_I_%x", acfg->temp_prefix, token - MONO_TOKEN_TYPE_DEF - 1);
 	emit_label (acfg, symbol);
 
 	g_assert (p - buf < buf_size);
@@ -2587,7 +2588,7 @@ emit_plt (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->plt_offset; ++i) {
 		char label [128];
 
-		sprintf (label, ".Lp_%d", i);
+		sprintf (label, "%sp_%d", acfg->temp_prefix, i);
 		emit_label (acfg, label);
 
 		/* 
@@ -2620,7 +2621,7 @@ emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code,
 	emit_alignment (acfg, 16);
 	emit_label (acfg, symbol);
 
-	sprintf (symbol, ".Lnamed_%s", name);
+	sprintf (symbol, "%snamed_%s", acfg->temp_prefix, name);
 	emit_label (acfg, symbol);
 
 	/* 
@@ -2657,7 +2658,7 @@ emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code,
 		char symbol2 [256];
 
 		sprintf (symbol, "%s", name);
-		sprintf (symbol2, ".Lnamed_%s", name);
+		sprintf (symbol2, "%snamed_%s", acfg->temp_prefix, name);
 
 		if (acfg->dwarf)
 			mono_dwarf_writer_emit_trampoline (acfg->dwarf, symbol, symbol2, NULL, NULL, code_size, unwind_ops);
@@ -2874,7 +2875,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_global (acfg, symbol, TRUE);
 		emit_label (acfg, symbol);
 
-		sprintf (call_target, ".Lm_%x", get_method_index (acfg, cfg->orig_method));
+		sprintf (call_target, "%sm_%x", acfg->temp_prefix, get_method_index (acfg, cfg->orig_method));
 
 		arch_emit_unbox_trampoline (acfg, cfg->orig_method, cfg->generic_sharing_context, call_target);
 	}
@@ -3414,7 +3415,7 @@ emit_code (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			sprintf (symbol, ".Lm_%x", i);
+			sprintf (symbol, "%sm_%x", acfg->temp_prefix, i);
 			emit_symbol_diff (acfg, symbol, "methods", 0);
 		} else {
 			emit_int32 (acfg, 0xffffffff);
@@ -3456,7 +3457,7 @@ emit_info (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			sprintf (symbol, ".Lm_%x_p", i);
+			sprintf (symbol, "%sm_%x_p", acfg->temp_prefix, i);
 			emit_symbol_diff (acfg, symbol, "mi", 0);
 		} else {
 			emit_int32 (acfg, 0);
@@ -3921,7 +3922,7 @@ emit_exception_info (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			sprintf (symbol, ".Le_%x_p", i);
+			sprintf (symbol, "%se_%x_p", acfg->temp_prefix, i);
 			emit_symbol_diff (acfg, symbol, "ex", 0);
 		} else {
 			emit_int32 (acfg, 0);
@@ -3988,7 +3989,7 @@ emit_class_info (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
-		sprintf (symbol, ".LK_I_%x", i);
+		sprintf (symbol, "%sK_I_%x", acfg->temp_prefix, i);
 		emit_symbol_diff (acfg, symbol, "class_info", 0);
 	}
 	emit_line (acfg);
@@ -4347,8 +4348,8 @@ emit_dwarf_info (MonoAotCompile *acfg)
 		if (!cfg)
 			continue;
 
-		sprintf (symbol, ".Lm_%x", i);
-		sprintf (symbol2, ".Lme_%x", i);
+		sprintf (symbol, "%sm_%x", acfg->temp_prefix, i);
+		sprintf (symbol2, "%sme_%x", acfg->temp_prefix, i);
 
 		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, symbol, symbol2, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
 	}
@@ -4740,6 +4741,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		tmp_outfile_name = NULL;
 		outfile_name = NULL;
 	}
+
+	acfg->temp_prefix = img_writer_get_temp_label_prefix (acfg->w);
 
 	if (!acfg->aot_opts.nodebug)
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
