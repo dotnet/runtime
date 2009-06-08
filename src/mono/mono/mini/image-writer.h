@@ -76,4 +76,10 @@ void img_writer_emit_reloc (MonoImageWriter *acfg, int reloc_type, const char *s
 
 void img_writer_emit_unset_mode (MonoImageWriter *acfg) MONO_INTERNAL;
 
+gboolean img_writer_subsections_supported (MonoImageWriter *acfg) MONO_INTERNAL;
+
+FILE * img_writer_get_fp (MonoImageWriter *acfg) MONO_INTERNAL;
+
+const char *img_writer_get_temp_label_prefix (MonoImageWriter *acfg) MONO_INTERNAL;
+
 #endif

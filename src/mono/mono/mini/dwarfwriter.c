@@ -40,6 +40,9 @@ struct _MonoDwarfWriter
 	FILE *il_file;
 	int il_file_line_index, loclist_index;
 	GSList *cie_program;
+	FILE *fp;
+	const char *temp_prefix;
+	gboolean emit_line;
 };
 
 /*
@@ -56,6 +59,9 @@ mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file)
 	
 	w->w = writer;
 	w->il_file = il_file;
+
+	w->fp = img_writer_get_fp (w->w);
+	w->temp_prefix = img_writer_get_temp_label_prefix (w->w);
 
 	return w;
 }
@@ -621,11 +627,30 @@ emit_line_number_info_begin (MonoDwarfWriter *w)
 	emit_label (w, ".Ldebug_line_end");
 }
 
+/*
+ * Some assemblers like apple's do not support subsections, so we can't place
+ * .Ldebug_info_end at the end of the section using subsections. Instead, we 
+ * define it every time something gets added to the .debug_info section.
+ * The apple assember seems to use the last definition.
+ */
+static void
+emit_debug_info_end (MonoDwarfWriter *w)
+{
+	if (!img_writer_subsections_supported (w->w))
+		fprintf (w->fp, "\n.set %sdebug_info_end,.\n", w->temp_prefix);
+}
+
 void
 mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_program)
 {
 	char *s, *build_info;
 	int i;
+
+	if (!img_writer_subsections_supported (w->w))
+		/* Can't emit line number info without subsections */
+		w->emit_line = FALSE;
+	else
+		w->emit_line = TRUE;
 
 	w->cie_program = base_unwind_program;
 
@@ -671,11 +696,13 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 	emit_int32 (w, 0); /* .debug_abbrev offset */
 	emit_byte (w, sizeof (gpointer)); /* address size */
 
-	/* Emit this into a separate section so it gets placed at the end */
-	emit_section_change (w, ".debug_info", 1);
-	emit_int32 (w, 0); /* close everything */
-	emit_label (w, ".Ldebug_info_end");
-	emit_section_change (w, ".debug_info", 0);
+	if (img_writer_subsections_supported (w->w)) {
+		/* Emit this into a separate section so it gets placed at the end */
+		emit_section_change (w, ".debug_info", 1);
+		emit_int32 (w, 0); /* close everything */
+		emit_label (w, ".Ldebug_info_end");
+		emit_section_change (w, ".debug_info", 0);
+	}
 
 	/* Compilation unit */
 	emit_uleb128 (w, ABBREV_COMPILE_UNIT);
@@ -690,7 +717,10 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 	emit_pointer_value (w, 0);
 	emit_pointer_value (w, 0);
 	/* offset into .debug_line section */
-	emit_symbol_diff (w, ".Ldebug_line_start", ".Ldebug_line_section_start", 0);
+	if (w->emit_line)
+		emit_symbol_diff (w, ".Ldebug_line_start", ".Ldebug_line_section_start", 0);
+	else
+		emit_int32 (w, 0);
 
 	/* Base types */
 	for (i = 0; i < G_N_ELEMENTS (basic_types); ++i) {
@@ -701,12 +731,15 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 		emit_string (w, basic_types [i].name);
 	}
 
+	emit_debug_info_end (w);
+
 	/* debug_loc section */
 	emit_section_change (w, ".debug_loc", 0);
 	emit_label (w, ".Ldebug_loc_start");
 
 	/* debug_line section */
-	emit_line_number_info_begin (w);
+	if (w->emit_line)
+		emit_line_number_info_begin (w);
 
 	emit_cie (w);
 }
@@ -1248,6 +1281,9 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	GArray *ln_array;
 	int *native_to_il_offset = NULL;
 
+	if (!w->emit_line)
+		return;
+
 	minfo = mono_debug_lookup_method (method);
 
 	/* Compute the native->IL offset mapping */
@@ -1647,6 +1683,8 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 	emit_line (w);
 
+	emit_debug_info_end (w);
+
 	/* Emit unwind info */
 	if (unwind_info) {
 		emit_fde (w, w->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, TRUE);
@@ -1678,6 +1716,8 @@ mono_dwarf_writer_emit_trampoline (MonoDwarfWriter *w, const char *tramp_name, c
 
 	/* Subprogram end */
 	emit_uleb128 (w, 0x0);
+
+	emit_debug_info_end (w);
 
 	/* Emit unwind info */
 	emit_fde (w, w->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, FALSE);

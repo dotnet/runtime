@@ -157,6 +157,7 @@ struct _MonoImageWriter {
 	char *tmpfname;
 	int mode; /* emit mode */
 	int col_count; /* bytes emitted per .byte line */
+	int label_gen;
 };
 
 static G_GNUC_UNUSED int
@@ -1421,7 +1422,10 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 #elif defined(TARGET_ASM_APPLE)
 	if (strcmp(section_name, ".bss") == 0)
 		fprintf (acfg->fp, "%s\n", ".data");
-	else
+	else if (strstr (section_name, ".debug") == section_name) {
+		//g_assert (subsection_index == 0);
+		fprintf (acfg->fp, ".section __DWARF, __%s,regular,debug\n", section_name + 1);
+	} else
 		fprintf (acfg->fp, "%s\n", section_name);
 #elif defined(TARGET_ARM) || defined(TARGET_POWERPC)
 	/* ARM gas doesn't seem to like subsections of .bss */
@@ -1439,6 +1443,17 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 		fprintf (acfg->fp, ".subsection %d\n", subsection_index);
 	}
 #endif
+}
+
+static inline
+const char *get_label (const char *s)
+{
+#ifdef TARGET_ASM_APPLE
+	if (s [0] == '.' && s [1] == 'L')
+		/* apple uses "L" instead of ".L" to mark temporary labels */
+		s ++;
+#endif
+	return s;
 }
 
 static void
@@ -1493,11 +1508,10 @@ static void
 asm_writer_emit_label (MonoImageWriter *acfg, const char *name)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if (defined(__ppc__) && defined(TARGET_ASM_APPLE)) || defined(PLATFORM_WIN32)
-    // mach-o always uses a '_' prefix.
+#if defined(PLATFORM_WIN32)
 	fprintf (acfg->fp, "_%s:\n", name);
 #else
-	fprintf (acfg->fp, "%s:\n", name);
+	fprintf (acfg->fp, "%s:\n", get_label (name));
 #endif
 
 #if defined(PLATFORM_WIN32)
@@ -1608,10 +1622,31 @@ asm_writer_emit_int32 (MonoImageWriter *acfg, int value)
 static void
 asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char* start, int offset)
 {
+#ifdef TARGET_ASM_APPLE
+	char symbol [128];
+#endif
+
 	if (acfg->mode != EMIT_LONG) {
 		acfg->mode = EMIT_LONG;
 		acfg->col_count = 0;
 	}
+
+#ifdef TARGET_ASM_APPLE
+	/* The apple assembler needs a separate symbol to be able to handle complex expressions */
+	sprintf (symbol, "LTMP_SYM%d", acfg->label_gen);
+	start = get_label (start);
+	end = get_label (end);
+	acfg->label_gen ++;
+	if (offset > 0)
+		fprintf (acfg->fp, "\n%s=%s - %s + %d", symbol, end, start, offset);
+	else if (offset < 0)
+		fprintf (acfg->fp, "\n%s=%s - %s %d", symbol, end, start, offset);
+	else
+		fprintf (acfg->fp, "\n%s=%s - %s", symbol, end, start);
+
+	fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
+	fprintf (acfg->fp, "%s", symbol);
+#else
 	if ((acfg->col_count++ % 8) == 0)
 		fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
 	else
@@ -1622,6 +1657,7 @@ asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char*
 		fprintf (acfg->fp, "%s - %s %d", end, start, offset);
 	else
 		fprintf (acfg->fp, "%s - %s", end, start);
+#endif
 }
 
 static void
@@ -1935,4 +1971,30 @@ img_writer_destroy (MonoImageWriter *w)
 	// FIXME: Free all the stuff
 	mono_mempool_destroy (w->mempool);
 	g_free (w);
+}
+
+gboolean
+img_writer_subsections_supported (MonoImageWriter *acfg)
+{
+#ifdef TARGET_ASM_APPLE
+	return acfg->use_bin_writer;
+#else
+	return TRUE;
+#endif
+}
+
+FILE *
+img_writer_get_fp (MonoImageWriter *acfg)
+{
+	return acfg->fp;
+}
+
+const char *
+img_writer_get_temp_label_prefix (MonoImageWriter *acfg)
+{
+#ifdef TARGET_ASM_APPLE
+	return "L";
+#else
+	return ".L";
+#endif
 }
