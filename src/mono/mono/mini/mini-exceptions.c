@@ -854,7 +854,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
  * the first filter clause which caught the exception.
  */
 static gboolean
-mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, gint32 *out_filter_idx)
+mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, gint32 *out_filter_idx, MonoJitInfo **out_ji)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
@@ -923,7 +923,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		if (mono_trace_is_enabled ())
 			g_print ("[%p:] EXCEPTION handling: %s\n", (void*)GetCurrentThreadId (), mono_object_class (obj)->name);
 		mono_profiler_exception_thrown (obj);
-		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, &first_filter_idx)) {
+		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, &first_filter_idx, out_ji)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
 			// FIXME: This runs managed code so it might cause another stack overflow when
@@ -934,6 +934,8 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 	if (out_filter_idx)
 		*out_filter_idx = -1;
+	if (out_ji)
+		*out_ji = NULL;
 	filter_idx = 0;
 	initial_ctx = *ctx;
 	memset (&rji, 0, sizeof (rji));
@@ -1018,12 +1020,14 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-							// mono_debugger_call_exception_handler (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
 							if (test_only) {
 								mono_perfcounters->exceptions_filters++;
+								mono_debugger_call_exception_handler (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
 								filtered = call_filter (ctx, ei->data.filter);
 								if (filtered && out_filter_idx)
 									*out_filter_idx = filter_idx;
+								if (out_ji)
+									*out_ji = ji;
 							}
 							else {
 								/* 
@@ -1114,6 +1118,72 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	g_assert_not_reached ();
 }
 
+/*
+ * mono_debugger_handle_exception:
+ *
+ *  Notify the debugger about exceptions.  Returns TRUE if the debugger wants us to stop
+ *  at the exception and FALSE to resume with the normal exception handling.
+ *
+ *  The arch code is responsible to setup @ctx in a way that MONO_CONTEXT_GET_IP () and
+ *  MONO_CONTEXT_GET_SP () point to the throw instruction; ie. before executing the
+ *  `callq throw' instruction.
+ */
+gboolean
+mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj)
+{
+	MonoDebuggerExceptionAction action;
+
+	if (!mono_debug_using_mono_debugger ())
+		return FALSE;
+
+	if (!obj) {
+		MonoException *ex = mono_get_exception_null_reference ();
+		MONO_OBJECT_SETREF (ex, message, mono_string_new (mono_domain_get (), "Object reference not set to an instance of an object"));
+		obj = (MonoObject *)ex;
+	}
+
+	action = _mono_debugger_throw_exception (MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), obj);
+
+	if (action == MONO_DEBUGGER_EXCEPTION_ACTION_STOP) {
+		/*
+		 * The debugger wants us to stop on the `throw' instruction.
+		 * By the time we get here, it already inserted a breakpoint there.
+		 */
+		return TRUE;
+	} else if (action == MONO_DEBUGGER_EXCEPTION_ACTION_STOP_UNHANDLED) {
+		MonoContext ctx_cp = *ctx;
+		MonoJitInfo *ji = NULL;
+		gboolean ret;
+
+		/*
+		 * The debugger wants us to stop only if this exception is user-unhandled.
+		 */
+
+		ret = mono_handle_exception_internal (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), TRUE, NULL, &ji);
+		if (ret && (ji != NULL) && (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
+			/*
+			 * The exception is handled in a runtime-invoke wrapper, that means that it's unhandled
+			 * inside the method being invoked, so we handle it like a user-unhandled exception.
+			 */
+			ret = FALSE;
+		}
+
+		if (!ret) {
+			/*
+			 * The exception is user-unhandled - tell the debugger to stop.
+			 */
+			return _mono_debugger_unhandled_exception (MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), obj);
+		}
+
+		/*
+		 * The exception is catched somewhere - resume with the normal exception handling and don't
+		 * stop in the debugger.
+		 */
+	}
+
+	return FALSE;
+}
+
 /**
  * mono_debugger_run_finally:
  * @start_ctx: saved processor state
@@ -1167,7 +1237,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 {
 	if (!test_only)
 		mono_perfcounters->exceptions_thrown++;
-	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, NULL);
+	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, NULL, NULL);
 }
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK

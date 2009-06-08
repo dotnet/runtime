@@ -81,12 +81,6 @@ typedef struct {
 	guint32 stop_unhandled;
 } MonoDebuggerExceptionInfo;
 
-typedef enum {
-	MONO_DEBUGGER_EXCEPTION_ACTION_NONE		= 0,
-	MONO_DEBUGGER_EXCEPTION_ACTION_STOP		= 1,
-	MONO_DEBUGGER_EXCEPTION_ACTION_STOP_UNHANDLED	= 2
-} MonoDebuggerExceptionAction;
-
 MonoDebuggerThreadInfo *mono_debugger_thread_table = NULL;
 
 static inline void
@@ -888,7 +882,7 @@ find_debugger_thread_info (MonoThread *thread)
 }
 #endif
 
-static MonoDebuggerExceptionAction
+MonoDebuggerExceptionAction
 _mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 #ifdef MONO_DEBUGGER_SUPPORTED
@@ -953,7 +947,7 @@ _mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc)
 	return MONO_DEBUGGER_EXCEPTION_ACTION_NONE;
 }
 
-static gboolean
+gboolean
 _mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 #ifdef MONO_DEBUGGER_SUPPORTED
@@ -1035,61 +1029,6 @@ mono_debugger_call_exception_handler (gpointer addr, gpointer stack, MonoObject 
 
 	mono_debugger_unlock ();
 #endif
-}
-
-/*
- * mono_debugger_handle_exception:
- *
- *  Notify the debugger about exceptions.  Returns TRUE if the debugger wants us to stop
- *  at the exception and FALSE to resume with the normal exception handling.
- *
- *  The arch code is responsible to setup @ctx in a way that MONO_CONTEXT_GET_IP () and
- *  MONO_CONTEXT_GET_SP () point to the throw instruction; ie. before executing the
- *  `callq throw' instruction.
- */
-gboolean
-mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj)
-{
-	MonoDebuggerExceptionAction action;
-
-	if (!mono_debug_using_mono_debugger ())
-		return FALSE;
-
-	if (!obj) {
-		MonoException *ex = mono_get_exception_null_reference ();
-		MONO_OBJECT_SETREF (ex, message, mono_string_new (mono_domain_get (), "Object reference not set to an instance of an object"));
-		obj = (MonoObject *)ex;
-	} 
-
-	action = _mono_debugger_throw_exception (MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), obj);
-
-	if (action == MONO_DEBUGGER_EXCEPTION_ACTION_STOP) {
-		/*
-		 * The debugger wants us to stop on the `throw' instruction.
-		 * By the time we get here, it already inserted a breakpoint there.
-		 */
-		return TRUE;
-	} else if (action == MONO_DEBUGGER_EXCEPTION_ACTION_STOP_UNHANDLED) {
-		MonoContext ctx_cp = *ctx;
-
-		/*
-		 * The debugger wants us to stop only if this exception is user-unhandled.
-		 */
-
-		if (!mono_handle_exception (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), TRUE)) {
-			/*
-			 * The exception is user-unhandled - tell the debugger to stop.
-			 */
-			return _mono_debugger_unhandled_exception (MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), obj);
-		}
-
-		/*
-		 * The exception is catched somewhere - resume with the normal exception handling and don't
-		 * stop in the debugger.
-		 */
-	}
-
-	return FALSE;
 }
 
 #ifdef MONO_DEBUGGER_SUPPORTED

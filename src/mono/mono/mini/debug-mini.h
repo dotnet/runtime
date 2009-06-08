@@ -31,6 +31,22 @@ MonoObject *
 mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 
 /*
+ * Internal exception API.
+ */
+
+typedef enum {
+	MONO_DEBUGGER_EXCEPTION_ACTION_NONE		= 0,
+	MONO_DEBUGGER_EXCEPTION_ACTION_STOP		= 1,
+	MONO_DEBUGGER_EXCEPTION_ACTION_STOP_UNHANDLED	= 2
+} MonoDebuggerExceptionAction;
+
+MonoDebuggerExceptionAction
+_mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc);
+
+gboolean
+_mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *exc);
+
+/*
  * This is the old breakpoint interface.
  * It isn't used by the debugger anymore, but still when using the `--break' command
  * line argument.
