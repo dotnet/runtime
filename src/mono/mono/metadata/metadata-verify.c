@@ -1611,9 +1611,26 @@ is_valid_property_sig_blob (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return offset > 0 && blob.size >= 1 && blob.size - 1 >= offset;
+	int size = 0;
+	const char *ptr = NULL, *end;
+	guint8 type = 0;
+	
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("TypeSpec: Could not decode signature header"));
+	end = ptr + size;
+
+	if (!parse_custom_mods (ctx, &ptr, end))
+		return FALSE;
+
+	if (!safe_read8 (type, ptr, end))
+		FAIL (ctx, g_strdup ("TypeSpec: Not enough room for type"));
+	--ptr;
+
+	if (type == MONO_TYPE_TYPEDBYREF)
+		return TRUE;
+
+	return parse_type (ctx, &ptr, end);
 }
 
 static gboolean
