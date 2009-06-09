@@ -1,3 +1,10 @@
+2009-06-09  Jonathan Chambers <joncham@gmail.com>
+	
+	* CMakeLists.txt: Add start of CMake build.
+	* src/CMakeLists.txt: Add start of CMake build.
+	
+	Contribution is licensed as MIT/X11.
+
 2009-06-02  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/gpath.c (g_find_program_in_path):  While searching on Windows
