@@ -1,5 +1,5 @@
 //
-// MoonlightA11yAssemblyStep.cs
+// MoonlightA11yUsageInspectionStep.cs
 //
 // Author:
 //   Andrés G. Aragoneses (aaragoneses@novell.com)
@@ -37,18 +37,14 @@ using Mono.Cecil;
 
 namespace Mono.Tuner {
 
-	public class MoonlightA11yAssemblyStep : MoonlightAssemblyStep {
-		
-		protected virtual void CustomizePipeline (Pipeline pipeline)
+	public class MoonlightA11yUsageInspectionStep : MoonlightAssemblyStep {
+
+		protected override void CustomizePipeline (Pipeline pipeline)
 		{
+			pipeline.ReplaceStep (typeof (SweepStep), new MoonlightA11yDescriptorGenerator ());
 			pipeline.RemoveStep (typeof (LoadI18nAssemblies));
-			pipeline.RemoveStep (typeof (BlacklistStep));
-			pipeline.RemoveStep (typeof (MarkStep));
-			pipeline.RemoveStep (typeof (SweepStep));
 			pipeline.RemoveStep (typeof (CleanStep));
 			pipeline.RemoveStep (typeof (RegenerateGuidStep));
-			pipeline.AddStepBefore (typeof (OutputStep), new MoonlightA11yProcessor ());
 		}
-		
 	}
 }

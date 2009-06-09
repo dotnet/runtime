@@ -1,3 +1,15 @@
+2009-06-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner.csproj:
+	* Mono.Tuner.dll.sources: Update.
+
+	* Mono.Tuner/MoonlightA11yProcessor.cs:
+	* Mono.Tuner/MoonlightA11yAssemblyStep.cs: Typo.
+
+	* Mono.Tuner/MoonlightA11yUsageInspectionStep.cs:
+	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: New steps
+	  for prevention of API stripping.
+
 2009-06-04  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner.dll.sources:
