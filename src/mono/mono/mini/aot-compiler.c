@@ -419,6 +419,12 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #define EMIT_DWARF_INFO 1
 #endif
 
+#if defined(TARGET_ARM)
+#define AOT_FUNC_ALIGNMENT 4
+#else
+#define AOT_FUNC_ALIGNMENT 16
+#endif
+
 /*
  * arch_emit_direct_call:
  *
@@ -2028,7 +2034,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	int method_index;
 	guint8 *code;
 	char symbol [128];
-	int func_alignment = 16;
+	int func_alignment = AOT_FUNC_ALIGNMENT;
 	MonoMethodHeader *header;
 
 	method = cfg->orig_method;
