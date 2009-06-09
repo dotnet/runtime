@@ -1,5 +1,9 @@
 2009-06-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
+	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Cosmetic.
+
+2009-06-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
 	* Mono.Tuner.csproj:
 	* Mono.Tuner.dll.sources: Update.
 
