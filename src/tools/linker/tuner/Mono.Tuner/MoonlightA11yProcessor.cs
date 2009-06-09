@@ -1,5 +1,5 @@
 //
-// AddFullSecurity.cs
+// MoonlightA11yProcessor.cs
 //
 // Author:
 //   Andrés G. Aragoneses (aaragoneses@novell.com)

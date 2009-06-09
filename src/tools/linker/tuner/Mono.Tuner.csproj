@@ -40,8 +40,11 @@
     <Compile Include="Mono.Tuner\TunerAnnotations.cs" />
     <Compile Include="Mono.Tuner\InjectSecurityAttributes.cs" />
     <Compile Include="Mono.Tuner\MoonlightAssemblyStep.cs" />
+    <Compile Include="Mono.Tuner\FilterAttributes.cs" />
     <Compile Include="Mono.Tuner\MoonlightA11yProcessor.cs" />
     <Compile Include="Mono.Tuner\MoonlightA11yAssemblyStep.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yUsageInspectionStep.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yDescriptorGenerator.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
