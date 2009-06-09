@@ -64,8 +64,8 @@ namespace Mono.Tuner {
 							if (method != null) {
 								writer.WriteStartElement("method");
 								writer.WriteAttributeString ("signature", 
-									                         method.ReturnType.ReturnType.FullName + " " +
-									                         method.Name + GetMethodParams (method));
+								                             method.ReturnType.ReturnType.FullName + " " +
+								                             method.Name + GetMethodParams (method));
 								writer.WriteEndElement ();
 								continue;
 							}
@@ -120,14 +120,14 @@ namespace Mono.Tuner {
 			Hashtable members_used = new Hashtable ();
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
 				if (Annotations.IsMarked (type)) {
-					members_used [type] = SweepType (type);
+					members_used [type] = ScanType (type);
 					continue;
 				}
 			}
 			return members_used;
 		}
 
-		static IList SweepType (TypeDefinition type)
+		static IList ScanType (TypeDefinition type)
 		{
 			return ExtractUsedProviders (type.Methods, type.Constructors, type.Fields);
 		}
