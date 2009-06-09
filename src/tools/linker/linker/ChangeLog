@@ -1,3 +1,9 @@
+2009-06-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Linker.csproj: Update.
+
+	* Mono.Linker/Driver.cs: Prevent InvalidCastException.
+
 2009-06-05  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker.Steps/MarkStep.cs: fix a nre.
