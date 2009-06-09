@@ -1,5 +1,9 @@
 2009-06-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: Tests for methodspec signature.
+
+2009-06-09 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-blob-tests.md: Tests for typespec signature.
 
 	* assembly-with-typespec.il: Input file with a

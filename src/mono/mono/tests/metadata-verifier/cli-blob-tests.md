@@ -273,5 +273,21 @@ typespec-sig {
 
 	#typedref is fine too.
 	valid offset blob.i (table-row (0x1B 2)) + 0 set-byte 0x16
+}
 
+methodspec-sig {
+	assembly assembly-with-generics.exe
+
+	#LAMESPEC spec is completelly wrong on this one. method spec holds simply a generic instantation
+	#no type on it
+
+	#first byte is the genericinst callconv 0xA
+	#row zero is Gen<!1> or: GENRICINST gcount(1) type*
+	invalid offset blob.i (table-row (0x2B 0) + 2) + 1 set-byte 0x08
+
+	#zero arg count
+	invalid offset blob.i (table-row (0x2B 0) + 2) + 2 set-byte 0x0
+
+	#bad argument
+	invalid offset blob.i (table-row (0x2B 0) + 2) + 3 set-byte 0x01
 }
