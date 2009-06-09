@@ -1636,9 +1636,32 @@ is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_methodspec_blog (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return offset > 0 && blob.size >= 1 && blob.size - 1 >= offset;
+	int size = 0;
+	const char *ptr = NULL, *end;
+	guint8 type = 0;
+	guint32 count = 0, i;
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("MethodSpec: Could not decode signature header"));
+	end = ptr + size;
+
+	if (!safe_read8 (type, ptr, end))
+		FAIL (ctx, g_strdup ("MethodSpec: Not enough room for call convention"));
+
+	if (type != 0x0A)
+		FAIL (ctx, g_strdup_printf ("MethodSpec: Invalid call convention 0x%x, expected 0x0A", type));
+
+	if (!safe_read_cint (count, ptr, end))
+		FAIL (ctx, g_strdup ("MethodSpec: Not enough room for parameter count"));
+
+	if (!count)
+		FAIL (ctx, g_strdup ("MethodSpec: Zero generic argument count"));
+
+	for (i = 0; i < count; ++i) {
+		if (!parse_type (ctx, &ptr, end))
+			FAIL (ctx, g_strdup_printf ("MethodSpec: Could not parse parameter %d", i + 1));
+	}
+	return TRUE;
 }
 
 static gboolean
