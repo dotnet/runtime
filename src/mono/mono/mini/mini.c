@@ -67,7 +67,6 @@
 #include "mini-gc.h"
 
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
-static gpointer mono_jit_compile_method (MonoMethod *method);
 
 /* helper methods signature */
 /* FIXME: Make these static again */
@@ -4243,7 +4242,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 	return p;
 }
 
-static gpointer
+gpointer
 mono_jit_compile_method (MonoMethod *method)
 {
 	return mono_jit_compile_method_with_opt (method, default_opt);
