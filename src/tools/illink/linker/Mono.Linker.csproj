@@ -70,12 +70,6 @@
     <Compile Include="Mono.Linker\XApiReader.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\class\Mono.Cecil\Mono.Cecil.csproj">
-      <Project>{D8F63DFF-5230-43E4-9AB2-DA6E721A1FAE}</Project>
-      <Name>Mono.Cecil</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Descriptors\mscorlib.xml">
       <LogicalName>mscorlib.xml</LogicalName>
     </EmbeddedResource>
@@ -95,5 +89,11 @@
   <ItemGroup>
     <None Include="Makefile" />
     <None Include="README" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\class\Mono.Cecil\Mono.Cecil.csproj">
+      <Project>{D8F63DFF-5230-43E4-9AB2-DA6E721A1FAE}</Project>
+      <Name>Mono.Cecil</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

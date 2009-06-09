@@ -204,7 +204,9 @@ namespace Mono.Linker {
 		{
 			Type step = Type.GetType (type, false);
 			if (step == null)
-				Usage ("Step type '" + type + "' not found.");
+				Usage (String.Format ("Step type '{0}' not found.", type));
+			if (!typeof (IStep).IsAssignableFrom (step))
+				Usage (String.Format ("Step type '{0}' does not implement IStep interface.", type));
 			return (IStep) Activator.CreateInstance (step);
 		}
 
