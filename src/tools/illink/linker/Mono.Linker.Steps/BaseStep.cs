@@ -49,6 +49,8 @@ namespace Mono.Linker.Steps {
 
 			foreach (AssemblyDefinition assembly in context.GetAssemblies ())
 				ProcessAssembly (assembly);
+			
+			EndProcess ();
 		}
 
 		protected virtual bool ConditionToProcess ()
@@ -57,6 +59,10 @@ namespace Mono.Linker.Steps {
 		}
 
 		protected virtual void Process ()
+		{
+		}
+		
+		protected virtual void EndProcess ()
 		{
 		}
 
