@@ -1,5 +1,11 @@
 2009-06-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
+	* Mono.Linker.Steps/BaseStep.cs: New virtual API needed.
+
+	* Mono.Linker/Pipeline.cs: API love.
+
+2009-06-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
 	* Mono.Linker.csproj: Update.
 
 	* Mono.Linker/Driver.cs: Prevent InvalidCastException.
