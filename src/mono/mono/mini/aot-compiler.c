@@ -605,23 +605,26 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	guint8 buf [128];
 	guint8 *code;
 
-	/* This should be exactly 28 bytes long */
-	*tramp_size = 28;
+	/* This should be exactly 20 bytes long */
+	*tramp_size = 20;
 	code = buf;
 	ARM_PUSH (code, 0x5fff);
-	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8);
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 4);
 	/* Load the value from the GOT */
 	ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_PC, ARMREG_R1);
 	/* Branch to it */
-	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+	ARM_BLX_REG (code, ARMREG_R1);
 
-	g_assert (code - buf == 20);
+	g_assert (code - buf == 16);
 
 	/* Emit it */
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 8);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
+	/* 
+	 * Only one offset is needed, since the second one would be equal to the
+	 * first one.
+	 */
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 4);
+	//emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
 #else
 	g_assert_not_reached ();
 #endif

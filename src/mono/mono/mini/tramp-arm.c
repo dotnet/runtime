@@ -89,7 +89,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	ARM_LDR_IMM (code, MONO_ARCH_RGCTX_REG, ARMREG_PC, 0);
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_PC, 0);
-	*(guint32*)code = mrgctx;
+	*(guint32*)code = (guint32)mrgctx;
 	code += 4;
 	*(guint32*)code = (guint32)addr;
 	code += 4;
@@ -227,10 +227,12 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	ARM_MOV_REG_REG (code, ARMREG_V1, ARMREG_SP);
 	if (aot && tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
 		/* 
-		 * The trampoline contains a pc-relative offset to the got slot where the
-		 * value is stored. The offset can be found at [lr + 4].
+		 * The trampoline contains a pc-relative offset to the got slot 
+		 * preceeding the got slot where the value is stored. The offset can be
+		 * found at [lr + 0].
 		 */
-		ARM_LDR_IMM (code, ARMREG_V2, ARMREG_LR, 4);
+		ARM_LDR_IMM (code, ARMREG_V2, ARMREG_LR, 0);
+		ARM_ADD_REG_IMM (code, ARMREG_V2, ARMREG_V2, 4, 0);
 		ARM_LDR_REG_REG (code, ARMREG_V2, ARMREG_V2, ARMREG_LR);
 	} else {
 		if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
