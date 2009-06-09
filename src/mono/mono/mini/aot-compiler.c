@@ -4642,7 +4642,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
 	acfg->aot_opts.write_symbols = TRUE;
-	acfg->aot_opts.ntrampolines = 10240;
+	acfg->aot_opts.ntrampolines = 1024;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 

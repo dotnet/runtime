@@ -2364,7 +2364,18 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	// FIXME: Error handling (how ?)
 	g_assert (res);
 
-	target = mono_resolve_patch_target (NULL, mono_domain_get (), NULL, &ji, TRUE);
+	/* 
+	 * Avoid calling resolve_patch_target in the full-aot case if possible, since
+	 * it would create a trampoline, and we don't need that.
+	 * We could do this only if the method does not need the special handling
+	 * in mono_magic_trampoline ().
+	 */
+	if (mono_aot_only && ji.type == MONO_PATCH_INFO_METHOD && !ji.data.method->is_generic && !mono_method_check_context_used (ji.data.method) && !(ji.data.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) &&
+		!mono_method_needs_static_rgctx_invoke (ji.data.method, FALSE)) {
+		target = mono_jit_compile_method (ji.data.method);
+	} else {
+		target = mono_resolve_patch_target (NULL, mono_domain_get (), NULL, &ji, TRUE);
+	}
 
 	mono_mempool_destroy (mp);
 
