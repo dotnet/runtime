@@ -59,6 +59,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-signatures.exe \
 	assembly-with-locals.exe \
 	assembly-with-types.exe \
+	assembly-with-typespec.exe \
 	simple-assembly.exe
 
 

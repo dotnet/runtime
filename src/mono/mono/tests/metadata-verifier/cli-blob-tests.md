@@ -251,3 +251,27 @@ type-enc {
 	invalid offset blob.i (table-row (0x04 17) + 4) + 3 set-byte 0x01
 }
 
+typespec-sig {
+	assembly assembly-with-typespec.exe
+
+	#LAMESPEC
+	#ecma spec doesn't allow simple types such as uint32. But MS does and there
+	#is no harm into supporting it.
+	#row zero is "void*" encoded as PTR VOID
+	valid offset blob.i (table-row (0x1B 0)) + 1 set-byte 0x09
+
+	#type zero is invalid
+	invalid offset blob.i (table-row (0x1B 0)) + 1 set-byte 0x0
+
+	#LAMESPEC part II, MS allows for cmods on a typespec as well 
+	#modreq int32 is invalid
+	#typespec 2 is "modreq int32*" encoded as: PTR CMOD_REQD token INT32
+	#change int to CMOD_REQD token INT32 
+	valid offset blob.i (table-row (0x1B 2)) + 1 set-byte 0x1f, #CMOD_REQD
+			offset blob.i (table-row (0x1B 2)) + 2 set-byte read.byte (blob.i (table-row (0x1B 2)) + 3), #token
+			offset blob.i (table-row (0x1B 2)) + 3 set-byte 0x08 #int8
+
+	#typedref is fine too.
+	valid offset blob.i (table-row (0x1B 2)) + 0 set-byte 0x16
+
+}
