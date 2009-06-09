@@ -1,3 +1,7 @@
+2009-06-09 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Added read.byte.
+
 2009-06-05 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: Tests for szarray.
