@@ -1631,7 +1631,9 @@ asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char*
 		acfg->col_count = 0;
 	}
 
-#ifdef TARGET_ASM_APPLE
+	// FIXME: This doesn't seem to work on the iphone
+#if 0
+	//#ifdef TARGET_ASM_APPLE
 	/* The apple assembler needs a separate symbol to be able to handle complex expressions */
 	sprintf (symbol, "LTMP_SYM%d", acfg->label_gen);
 	start = get_label (start);
