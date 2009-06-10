@@ -2496,8 +2496,8 @@ mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
 #elif defined(__x86_64__)
 	return *(guint32*)(plt_entry + 6);
 #elif defined(__arm__)
-	/* The offset is stored as the 5th word of the plt entry */
-	return ((guint32*)plt_entry) [4];
+	/* The offset is stored as the 4th word of the plt entry */
+	return ((guint32*)plt_entry) [3];
 #else
 	g_assert_not_reached ();
 	return 0;

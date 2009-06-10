@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "55"
+#define MONO_AOT_FILE_VERSION "56"
 
 /* Constants used to encode different types of methods in AOT */
 enum {

@@ -132,9 +132,17 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 void
 mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 {
+	guint8 *jump_entry;
+
 	/* Patch the jump table entry used by the plt entry */
-	guint32 offset = ((guint32*)code)[3];
-	guint8 *jump_entry = code + offset + 12;
+	if (*(guint32*)code == 0xe59fc000) {
+		/* ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0); */
+		guint32 offset = ((guint32*)code)[2];
+		
+		jump_entry = code + offset + 12;
+	} else {
+		g_assert_not_reached ();
+	}
 
 	*(guint8**)jump_entry = addr;
 }

@@ -548,7 +548,8 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		 * - implement IMT support
 		 */
 		code = buf;
-		if (acfg->use_bin_writer) {
+		if (acfg->use_bin_writer && FALSE) {
+			/* FIXME: mono_arch_patch_plt_entry () needs to decode this */
 			/* We only emit 1 relocation since we implement it ourselves anyway */
 			img_writer_emit_reloc (acfg->w, R_ARM_ALU_PC_G0_NC, acfg->got_symbol, ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 8);
 			/* FIXME: A 2 instruction encoding is sufficient in most cases */
@@ -556,16 +557,13 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
 			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
 			emit_bytes (acfg, buf, code - buf);
-			/* FIXME: Get rid of this */
-			emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
 			/* Used by mono_aot_get_plt_info_offset */
 			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		} else {
-			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
-			ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
-			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
+			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+			ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_IP);
 			emit_bytes (acfg, buf, code - buf);
-			emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
+			emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 4);
 			/* Used by mono_aot_get_plt_info_offset */
 			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		}
