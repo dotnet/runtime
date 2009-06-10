@@ -2205,6 +2205,14 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		return NULL;
 
+	/*
+	 * Use the original method instead of its invoke-with-check wrapper.
+	 * This is not a problem when using full-aot, since it doesn't support
+	 * remoting.
+	 */
+	if (mono_aot_only && method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+		return mono_aot_get_method (domain, mono_marshal_method_from_wrapper (method));
+
 	g_assert (klass->inited);
 
 	/* Find method index */

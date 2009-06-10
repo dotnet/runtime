@@ -1599,6 +1599,12 @@ add_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, method);
 	}
 
+	/* 
+	 * remoting-invoke-with-check wrappers are very frequent, so avoid emitting them,
+	 * we use the original method instead at runtime.
+	 * Since full-aot doesn't support remoting, this is not a problem.
+	 */
+#if 0
 	/* remoting-invoke wrappers */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		MonoMethodSignature *sig;
@@ -1614,6 +1620,7 @@ add_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, m);
 		}
 	}
+#endif
 
 	/* delegate-invoke wrappers */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
@@ -4794,7 +4801,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	acfg->stats.gen_time = TV_ELAPSED (atv, btv);
 
-	printf ("Code: %d Info: %d Ex Info: %d Unwind Info: %d Class Info: %d PLT: %d GOT Info: %d GOT Info Offsets: %d GOT: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.unwind_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, acfg->stats.got_info_offsets_size, (int)(acfg->got_offset * sizeof (gpointer)));
+	printf ("Code: %d Info: %d Ex Info: %d Unwind Info: %d Class Info: %d PLT: %d GOT Info: %d GOT Info Offsets: %d GOT: %d Offsets: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.unwind_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, acfg->stats.got_info_offsets_size, (int)(acfg->got_offset * sizeof (gpointer)), acfg->nmethods * 3 * sizeof (gpointer));
 
 	TV_GETTIME (atv);
 	res = img_writer_emit_writeout (acfg->w);
