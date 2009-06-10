@@ -55,8 +55,8 @@
 #define MONO_ARCH_CALLEE_SAVED_REGS ((1<<ARMREG_V1) | (1<<ARMREG_V2) | (1<<ARMREG_V3) | (1<<ARMREG_V4) | (1<<ARMREG_V5) | (1<<ARMREG_V6) | (1<<ARMREG_V7))
 
 #ifdef ARM_FPU_VFP
-/* Every double precision vfp register, d0 is reserved for a scratch reg */
-#define MONO_ARCH_CALLEE_FREGS 0x55555554
+/* Every double precision vfp register, d0/d1 is reserved for a scratch reg */
+#define MONO_ARCH_CALLEE_FREGS 0x55555550
 #else
 #define MONO_ARCH_CALLEE_FREGS 0xf
 #endif

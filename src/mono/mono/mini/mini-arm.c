@@ -3570,11 +3570,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_FBGE:
-			/* FIXME does VFP requires both conds?
-			 * FPA requires EQ even thou the docs suggests that just CS is enough
-			 */
+#ifdef ARM_FPU_VFP
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_GE);
+#else
+			/* FPA requires EQ even thou the docs suggests that just CS is enough */			 
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_EQ);
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS);
+#endif
 			break;
 		case OP_FBGE_UN:
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_VS); /* V set */
@@ -3586,6 +3588,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != ins->sreg1)
 				ARM_MVFD (code, ins->dreg, ins->sreg1);
 #elif defined(ARM_FPU_VFP)
+			ARM_ABSD (code, ARM_VFP_D1, ins->sreg1);
+			ARM_FLDD (code, ARM_VFP_D0, ARMREG_PC, 0);
+			ARM_B (code, 1);
+			*(guint32*)code = 0xffffffff;
+			code += 4;
+			*(guint32*)code = 0x7fefffff;
+			code += 4;
+			ARM_CMPD (code, ARM_VFP_D1, ARM_VFP_D0);
+			ARM_FMSTAT (code);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_GT, "ArithmeticException");
+			ARM_CMPD (code, ins->sreg1, ins->sreg1);
+			ARM_FMSTAT (code);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_VS, "ArithmeticException");			
+
 			ARM_CPYD (code, ins->dreg, ins->sreg1);
 #endif
 			break;
