@@ -2265,6 +2265,13 @@ AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install
 	fi
 ])
 
+PROFILE4=yes
+AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to yes)],[
+	if test x$with_profile4 = xno; then
+	      PROFILE4=no
+	fi
+])
+
 MOONLIGHT=yes
 AC_ARG_WITH(moonlight,[  --with-moonlight=yes,no        If you want to build the Moonlight 2.1 assemblies (defaults to yes)],[
 	if test x$with_moonlight = xno; then
@@ -2321,6 +2328,7 @@ libmono_ldflags="$libmono_ldflags $LIBS"
 
 AM_CONDITIONAL(INSTALL_2_0, test x$PROFILE2 = xyes)
 AM_CONDITIONAL(INSTALL_2_1, test x$MOONLIGHT = xyes)
+AM_CONDITIONAL(INSTALL_4_0, test x$PROFILE4 = xyes)
 
 AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
 AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
@@ -2623,6 +2631,7 @@ echo "
 	Engine:        $jit_status
 	2.0 Profile:   $PROFILE2
 	2.1 Alpha:     $MOONLIGHT
+	4.0 Aplha:     $PROFILE4
 	JNI support:   $jdk_headers_found
 	libgdiplus:    $libgdiplus_msg
 	zlib:          $zlib_msg

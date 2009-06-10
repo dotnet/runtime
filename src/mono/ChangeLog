@@ -1,3 +1,7 @@
+2009-06-10  Marek Safar  <marek.safar@gmail.com>
+
+	* runtime/Makefile.am, configure.in: Make net_4_0 profile optional.
+
 2009-06-07  Marek Safar  <marek.safar@gmail.com>
 
 	* runtime/Makefile.am: Enabled net_4_0 for compilation.
