@@ -1,3 +1,9 @@
+2009-06-10  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Cosmetic.
+
+	* Mono.Tuner/MoonlightA11yAssemblyStep.cs: Typo.
+
 2009-06-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Cosmetic.

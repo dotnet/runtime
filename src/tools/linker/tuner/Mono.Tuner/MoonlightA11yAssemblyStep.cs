@@ -39,7 +39,7 @@ namespace Mono.Tuner {
 
 	public class MoonlightA11yAssemblyStep : MoonlightAssemblyStep {
 		
-		protected virtual void CustomizePipeline (Pipeline pipeline)
+		protected override void CustomizePipeline (Pipeline pipeline)
 		{
 			pipeline.RemoveStep (typeof (LoadI18nAssemblies));
 			pipeline.RemoveStep (typeof (BlacklistStep));

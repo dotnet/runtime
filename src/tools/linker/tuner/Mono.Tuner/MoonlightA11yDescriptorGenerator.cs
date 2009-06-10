@@ -52,13 +52,13 @@ namespace Mono.Tuner {
 			if (types != null && types.Count > 0) {
 				writer.WriteStartElement("assembly");
 				writer.WriteAttributeString ("fullname", assembly.Name.Name);
-				
+
 				foreach (TypeDefinition type in types.Keys) {
 					IList members = (IList)types [type];
 					if (members != null && members.Count > 0) {
 						writer.WriteStartElement("type");
 						writer.WriteAttributeString ("fullname", type.FullName);
-						
+
 						foreach (IAnnotationProvider member in members) {
 							MethodDefinition method = member as MethodDefinition;
 							if (method != null) {
@@ -69,7 +69,7 @@ namespace Mono.Tuner {
 								writer.WriteEndElement ();
 								continue;
 							}
-							
+
 							FieldDefinition field = member as FieldDefinition;
 							if (field != null) {
 								writer.WriteStartElement("field");
@@ -147,6 +147,6 @@ namespace Mono.Tuner {
 				if (Annotations.IsMarked (provider))
 					result.Add (provider);
 		}
-		
+
 	}
 }
