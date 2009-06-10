@@ -195,7 +195,7 @@ patch_types [MONO_PATCH_INFO_NUM + 1] = {
 	NULL
 };
 
-static const char*
+static G_GNUC_UNUSED const char*
 get_patch_name (int info)
 {
 	return patch_types [info];
@@ -567,6 +567,10 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 			/* Used by mono_aot_get_plt_info_offset */
 			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		}
+		/* 
+		 * The plt_got_info_offset is computed automatically by 
+		 * mono_aot_get_plt_info_offset (), so no need to save it here.
+		 */
 #else
 		g_assert_not_reached ();
 #endif
@@ -2253,9 +2257,6 @@ encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, int 
 	MonoJumpInfo *patch_info;
 
 	encode_value (n_patches, p, &p);
-
-	if (n_patches)
-		encode_value (first_got_offset, p, &p);
 
 	for (pindex = 0; pindex < patches->len; ++pindex) {
 		patch_info = g_ptr_array_index (patches, pindex);
@@ -4175,7 +4176,8 @@ emit_got_info (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	for (i = 0; i < acfg->got_patches->len; ++i)
+	/* No need to emit offsets for the got plt entries, the plt embeds them directly */
+	for (i = 0; i < first_plt_got_patch; ++i)
 		emit_int32 (acfg, got_info_offsets [i]);
 
 	acfg->stats.got_info_offsets_size = acfg->got_patches->len * 4;

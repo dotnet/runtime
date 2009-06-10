@@ -1803,7 +1803,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 
 static MonoJumpInfo*
 load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches, 
-				 guint32 got_index, guint32 **got_slots, 
+				 guint32 **got_slots, 
 				 guint8 *buf, guint8 **endbuf)
 {
 	MonoJumpInfo *patches;
@@ -1884,7 +1884,7 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 	MonoClass *klass;
 	gboolean from_plt = method == NULL;
 	MonoMemPool *mp;
-	int i, pindex, got_index = 0, n_patches, used_strings;
+	int i, pindex, n_patches, used_strings;
 	gboolean keep_patches = TRUE;
 	guint8 *p, *ex_info;
 	MonoJitInfo *jinfo = NULL;
@@ -1967,9 +1967,7 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		else
 			mp = mono_mempool_new ();
 
-		got_index = decode_value (p, &p);
-
-		patches = load_patch_info (aot_module, mp, n_patches, got_index, &got_slots, p, &p);
+		patches = load_patch_info (aot_module, mp, n_patches, &got_slots, p, &p);
 		if (patches == NULL)
 			goto cleanup;
 
@@ -2497,7 +2495,7 @@ mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
 	return *(guint32*)(plt_entry + 6);
 #elif defined(__arm__)
 	/* The offset is stored as the 4th word of the plt entry */
-	return ((guint32*)plt_entry) [3];
+	return ((guint32*)plt_entry) [3];          
 #else
 	g_assert_not_reached ();
 	return 0;
@@ -2514,7 +2512,7 @@ load_function (MonoAotModule *amodule, const char *name)
 {
 	char *symbol;
 	guint8 *p;
-	int n_patches, got_index, pindex;
+	int n_patches, pindex;
 	MonoMemPool *mp;
 	gpointer code;
 
@@ -2547,9 +2545,7 @@ load_function (MonoAotModule *amodule, const char *name)
 
 		mp = mono_mempool_new ();
 
-		got_index = decode_value (p, &p);
-
-		patches = load_patch_info (amodule, mp, n_patches, got_index, &got_slots, p, &p);
+		patches = load_patch_info (amodule, mp, n_patches, &got_slots, p, &p);
 		g_assert (patches);
 
 		for (pindex = 0; pindex < n_patches; ++pindex) {
