@@ -3545,9 +3545,11 @@ add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *a
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 scope, idx, res, impl;
+	gboolean forwarder = TRUE;
 
 	if (klass->nested_in) {
 		impl = add_exported_type (assemblyb, assembly, klass->nested_in);
+		forwarder = FALSE;
 	} else {
 		scope = resolution_scope_from_image (assembly, klass->image);
 		g_assert ((scope & MONO_RESOLTION_SCOPE_MASK) == MONO_RESOLTION_SCOPE_ASSEMBLYREF);
@@ -3561,7 +3563,7 @@ add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *a
 	alloc_table (table, table->rows);
 	values = table->values + table->next_idx * MONO_EXP_TYPE_SIZE;
 
-	values [MONO_EXP_TYPE_FLAGS] = TYPE_ATTRIBUTE_FORWARDER;
+	values [MONO_EXP_TYPE_FLAGS] = forwarder ? TYPE_ATTRIBUTE_FORWARDER : 0;
 	values [MONO_EXP_TYPE_TYPEDEF] = 0;
 	values [MONO_EXP_TYPE_IMPLEMENTATION] = impl;
 	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
