@@ -3539,43 +3539,60 @@ mono_image_fill_export_table_from_module (MonoDomain *domain, MonoReflectionModu
 	}
 }
 
-static void
-mono_image_fill_export_table_from_type_forwarders (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *assembly)
+static guint32
+add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *assembly, MonoClass *klass)
 {
 	MonoDynamicTable *table;
-	MonoClass *klass;
 	guint32 *values;
-	guint32 scope, idx;
-	int i;
+	guint32 scope, idx, res, impl;
+
+	if (klass->nested_in) {
+		impl = add_exported_type (assemblyb, assembly, klass->nested_in);
+	} else {
+		scope = resolution_scope_from_image (assembly, klass->image);
+		g_assert ((scope & MONO_RESOLTION_SCOPE_MASK) == MONO_RESOLTION_SCOPE_ASSEMBLYREF);
+		idx = scope >> MONO_RESOLTION_SCOPE_BITS;
+		impl = (idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_ASSEMBLYREF;
+	}
 
 	table = &assembly->tables [MONO_TABLE_EXPORTEDTYPE];
 
-	if (assemblyb->type_forwarders) {
-		for (i = 0; i < mono_array_length (assemblyb->type_forwarders); ++i) {
-			MonoReflectionType *t = mono_type_array_get (assemblyb->type_forwarders, i);
-			if (!t)
-				continue;
+	table->rows++;
+	alloc_table (table, table->rows);
+	values = table->values + table->next_idx * MONO_EXP_TYPE_SIZE;
 
-			g_assert (t->type);
+	values [MONO_EXP_TYPE_FLAGS] = TYPE_ATTRIBUTE_FORWARDER;
+	values [MONO_EXP_TYPE_TYPEDEF] = 0;
+	values [MONO_EXP_TYPE_IMPLEMENTATION] = impl;
+	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
+	values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
 
-			klass = mono_class_from_mono_type (t->type);
+	res = (table->next_idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_EXP_TYPE;
 
-			scope = resolution_scope_from_image (assembly, klass->image);
-			g_assert ((scope & MONO_RESOLTION_SCOPE_MASK) == MONO_RESOLTION_SCOPE_ASSEMBLYREF);
-			idx = scope >> MONO_RESOLTION_SCOPE_BITS;
+	table->next_idx++;
 
-			table->rows++;
-			alloc_table (table, table->rows);
-			values = table->values + table->next_idx * MONO_EXP_TYPE_SIZE;
+	return res;
+}
 
-			values [MONO_EXP_TYPE_FLAGS] = TYPE_ATTRIBUTE_FORWARDER;
-			values [MONO_EXP_TYPE_TYPEDEF] = 0;
-			values [MONO_EXP_TYPE_IMPLEMENTATION] = (idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_ASSEMBLYREF;
-			values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
-			values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
+static void
+mono_image_fill_export_table_from_type_forwarders (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *assembly)
+{
+	MonoClass *klass;
+	int i;
 
-			table->next_idx++;
-		}
+	if (!assemblyb->type_forwarders)
+		return;
+
+	for (i = 0; i < mono_array_length (assemblyb->type_forwarders); ++i) {
+		MonoReflectionType *t = mono_type_array_get (assemblyb->type_forwarders, i);
+		if (!t)
+			continue;
+
+		g_assert (t->type);
+
+		klass = mono_class_from_mono_type (t->type);
+
+		add_exported_type (assemblyb, assembly, klass);
 	}
 }
 
