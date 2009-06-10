@@ -22,6 +22,9 @@ assembly-with-constants.exe: assembly-with-constants.cs
 assembly-with-cattr.exe: assembly-with-cattr.cs
 	gmcs assembly-with-cattr.cs
 
+assembly-with-cattr-enc.exe: assembly-with-cattr-enc.cs
+	gmcs assembly-with-cattr-enc.cs
+
 assembly-with-cas.exe: assembly-with-cas.cs
 	gmcs assembly-with-cas.cs
 
@@ -49,6 +52,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-params.exe \
 	assembly-with-constants.exe \
 	assembly-with-cattr.exe \
+	assembly-with-cattr-enc.exe \
 	assembly-with-cas.exe \
 	assembly-with-events.exe \
 	assembly-with-properties.exe \
@@ -98,7 +102,11 @@ cli-blob-tests.ok: gen-md-tests cli-blob-tests.md $(TEST_BINARIES)
 	./gen-md-tests cli-blob-tests.md
 	touch cli-blob-tests.ok
 
-generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok cli-metadata-tests.ok cli-tables-tests.ok cli-blob-tests.ok
+cli-cattr-tests.ok: gen-md-tests cli-cattr-tests.md $(TEST_BINARIES)
+	./gen-md-tests cli-cattr-tests.md
+	touch cli-cattr-tests.ok
+
+generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok cli-metadata-tests.ok cli-tables-tests.ok cli-blob-tests.ok cli-cattr-tests.ok
 	touch generate-stamp
 
 clean-stamps:

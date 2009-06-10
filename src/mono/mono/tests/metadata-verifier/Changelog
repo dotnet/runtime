@@ -1,3 +1,12 @@
+2009-06-10 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-cattr-tests.md: Tests for custom attributes
+	encoding.
+
+	*assembly-with-cattr-enc.cs: Input file
+
+	* Makefile: Add new dependency and test.
+
 2009-06-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: Tests for methodspec signature.
