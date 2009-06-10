@@ -1554,9 +1554,24 @@ is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_vald_cattr_blob (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
-	//TODO do proper verification
-	return blob.size >= 1 && blob.size - 1 >= offset;
+	int size = 0;
+	guint16 prolog = 0;
+	const char *ptr = NULL, *end;
+
+	if (!offset)
+		return TRUE;
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("CustomAttribute: Could not decode signature header"));
+	end = ptr + size;
+
+	if (!safe_read16 (prolog, ptr, end))
+		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for prolog"));
+
+	if (prolog != 1)
+		FAIL (ctx, g_strdup_printf ("CustomAttribute: Prolog is 0x%x, expected 0x1", prolog));
+		
+	return TRUE;
 }
 
 static gboolean
