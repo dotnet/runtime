@@ -2899,7 +2899,7 @@ add_custom_modifiers (MonoDynamicImage *assembly, MonoType *type, MonoArray *mod
 
 	len = sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
 	t = g_malloc (len);
-	memcpy (t, type, len);
+	memcpy (t, type, sizeof (MonoType));
 
 	t->num_mods = count;
 	pos = 0;
