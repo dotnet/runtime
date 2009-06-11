@@ -3692,9 +3692,14 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 	}
 
 	if ((thread->state & ThreadState_AbortRequested) != 0) {
-		if (thread->abort_exc == NULL)
-			MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
 		LeaveCriticalSection (thread->synch_cs);
+		if (thread->abort_exc == NULL) {
+			/* 
+			 * This might be racy, but it has to be called outside the lock
+			 * since it calls managed code.
+			 */
+			MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
+		}
 		return thread->abort_exc;
 	}
 	else if ((thread->state & ThreadState_SuspendRequested) != 0) {
