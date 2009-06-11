@@ -387,7 +387,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 }
 
 /**
- * mono_type_get_name:
+ * mono_type_get_name_full:
  * @type: a type
  * @format: the format for the return string.
  *
@@ -757,7 +757,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 }
 
 /**
- * mono_class_inflate_generic_method:
+ * mono_class_inflate_generic_method_full:
  *
  * Instantiate method @method with the generic context @context.
  * BEWARE: All non-trivial fields are invalid, including klass, signature, and header.
@@ -2244,7 +2244,7 @@ fill_valuetype_array_derived_types (MonoClass **valuetype_types, MonoClass *ecla
  *	Type b = ((IEnumerable<IList<byte>>)obj).GetEnumerator ().GetType ();
  * 	a != b ==> true
  * 
- * Fixing this should kill quite some code, save some bits and improve compatbility.
+ * Fixing this should kill quite some code, save some bits and improve compatibility.
  */
 static MonoClass**
 get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enumerator)
@@ -6911,7 +6911,7 @@ mono_field_get_type (MonoClassField *field)
 }
 
 /**
- * mono_field_get_type:
+ * mono_field_get_parent:
  * @field: the MonoClassField to act on
  *
  * Returns: MonoClass where the field was defined.
@@ -7708,7 +7708,7 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 
 
 /*
- * mono_method_can_access_method_with_context:
+ * mono_method_can_access_field_full:
  * @method: The caller method 
  * @field: The accessed field
  * @context_klass: The static type on stack of the owner @field object used
