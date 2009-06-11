@@ -521,7 +521,12 @@ struct _MonoDynamicGenericClass {
 struct _MonoGenericParam {
 	MonoGenericContainer *owner;	/* Type or method this parameter was defined in. */
 	guint16 num;
-	/* If owner is NULL, this is the image whose mempool this struct was allocated from */
+	/* 
+	 * If owner is NULL, or owner is 'owned' by this gparam,
+	 * then this is the image whose mempool this struct was allocated from.
+	 * The second case happens for gparams created in
+	 * mono_reflection_initialize_generic_parameter ().
+	 */
 	MonoImage *image;
 };
 
@@ -560,6 +565,12 @@ struct _MonoGenericContainer {
 	int is_method    : 1;
 	/* Our type parameters. */
 	MonoGenericParamFull *type_params;
+
+	/* 
+	 * For owner-less containers created by SRE, the image the container was
+	 * allocated from.
+	 */
+	MonoImage *image;
 };
 
 #define mono_generic_container_get_param(gc, i) ((MonoGenericParam *) ((gc)->type_params + (i)))

@@ -2127,7 +2127,7 @@ retry:
 			 * check.
 			 */
 			if (!container->owner.klass)
-				return FALSE;
+				return container->image == image;
 			return container->owner.klass->image == image;
 		} else {
 			return type->data.generic_param->image == image;
@@ -2135,11 +2135,13 @@ retry:
 	}
 	case MONO_TYPE_MVAR: {
 		MonoGenericContainer *container = mono_type_get_generic_param_owner (type);
+		if (type->data.generic_param->image == image)
+			return TRUE;
 		if (container) {
 			g_assert (container->is_method);
 			if (!container->owner.method)
 				/* RefEmit created generic param whose method is not finished */
-				return FALSE;
+				return container->image == image;
 			return container->owner.method->klass->image == image;
 		} else {
 			return type->data.generic_param->image == image;
@@ -5224,6 +5226,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	params = NULL;
 	n = 0;
 	container = mono_image_alloc0 (image, sizeof (MonoGenericContainer));
+	container->image = image;
 	do {
 		n++;
 		params = g_realloc (params, sizeof (MonoGenericParamFull) * n);

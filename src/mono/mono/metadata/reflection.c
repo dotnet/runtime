@@ -10446,6 +10446,11 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 			MonoClass *klass = mono_class_from_mono_type (tb->type.type);
 			gparam->mbuilder->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 			gparam->mbuilder->generic_container->is_method = TRUE;
+			/* 
+			 * Cannot set owner.method, since the MonoMethod is not created yet.
+			 * Set the image field instead, so type_in_image () works.
+			 */
+			gparam->mbuilder->generic_container->image = klass->image;
 		}
 		param->param.owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
