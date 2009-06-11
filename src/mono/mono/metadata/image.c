@@ -1588,7 +1588,10 @@ mono_image_close (MonoImage *image)
 		/* Dynamic images are GC_MALLOCed */
 		g_free ((char*)image->module_name);
 		mono_dynamic_image_free ((MonoDynamicImage*)image);
-		mono_mempool_destroy (image->mempool);
+		if (debug_assembly_unload)
+			mono_mempool_invalidate (image->mempool);
+		else
+			mono_mempool_destroy (image->mempool);
 	}
 
 	mono_profiler_module_event (image, MONO_PROFILE_END_UNLOAD);
