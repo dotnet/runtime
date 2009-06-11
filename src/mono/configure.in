@@ -1787,6 +1787,9 @@ if test "x$enable_dtrace" = "xyes"; then
    if test "x$DTRACE" = "xno"; then
    	  AC_MSG_RESULT([dtrace utility not found, dtrace support disabled.])
 	  enable_dtrace=no
+   elif ! $DTRACE -h $srcdir/data/mono.d > /dev/null 2>&1; then
+	  AC_MSG_RESULT([dtrace doesn't support -h option, dtrace support disabled.])
+	  enable_dtrace=no
    fi
 fi
 
