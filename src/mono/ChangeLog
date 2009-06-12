@@ -1,3 +1,7 @@
+2009-06-12  Andreia Gaita  <avidigal@novell.com>
+
+	* data/config.in: add libcups dllmap entry
+
 2009-06-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Disable dtrace support if dtrace doesn't support the
