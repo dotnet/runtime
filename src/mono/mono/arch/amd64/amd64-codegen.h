@@ -504,6 +504,33 @@ typedef union {
  * SSE
  */
 
+/* Two opcode SSE defines */
+
+#define emit_sse_reg_reg_op2_size(inst,dreg,reg,op1,op2,size) do { \
+    amd64_emit_rex ((inst), size, (dreg), 0, (reg)); \
+    *(inst)++ = (unsigned char)(op1); \
+    *(inst)++ = (unsigned char)(op2); \
+    x86_reg_emit ((inst), (dreg), (reg)); \
+} while (0)
+
+#define emit_sse_reg_reg_op2(inst,dreg,reg,op1,op2) emit_sse_reg_reg_op2_size ((inst), (dreg), (reg), (op1), (op2), 0)
+
+#define emit_sse_membase_reg_op2(inst,basereg,disp,reg,op1,op2) do { \
+    amd64_emit_rex ((inst), 0, (reg), 0, (basereg)); \
+    *(inst)++ = (unsigned char)(op1); \
+    *(inst)++ = (unsigned char)(op2); \
+    amd64_membase_emit ((inst), (reg), (basereg), (disp)); \
+} while (0)
+
+#define emit_sse_reg_membase_op2(inst,dreg,basereg,disp,op1,op2) do { \
+    amd64_emit_rex ((inst), 0, (dreg), 0, (basereg) == AMD64_RIP ? 0 : (basereg)); \
+    *(inst)++ = (unsigned char)(op1); \
+    *(inst)++ = (unsigned char)(op2); \
+    amd64_membase_emit ((inst), (dreg), (basereg), (disp)); \
+} while (0)
+
+/* Three opcode SSE defines */
+
 #define emit_opcode3(inst,op1,op2,op3) do { \
    *(inst)++ = (unsigned char)(op1); \
    *(inst)++ = (unsigned char)(op2); \
@@ -536,6 +563,8 @@ typedef union {
     amd64_membase_emit ((inst), (dreg), (basereg), (disp)); \
 } while (0)
 
+/* specific SSE opcode defines */
+ 
 #define amd64_sse_xorpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg), 0x66, 0x0f, 0x57)
 
 #define amd64_sse_xorpd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst),(dreg),(basereg), (disp), 0x66, 0x0f, 0x57)
