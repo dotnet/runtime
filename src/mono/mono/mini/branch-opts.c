@@ -958,21 +958,27 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 		mono_unlink_bblock (cfg, bbn, bbn->out_bb [0]);
 
 	/* Handle the branch at the end of the bb */
-	for (inst = bb->code; inst != NULL; inst = inst->next) {
-		if (inst->opcode == OP_CALL_HANDLER) {
-			g_assert (inst->inst_target_bb == bbn);
-			NULLIFY_INS (inst);
-		}
-		if (MONO_IS_JUMP_TABLE (inst)) {
-			int i;
-			MonoJumpInfoBBTable *table = MONO_JUMP_TABLE_FROM_INS (inst);
-			for (i = 0; i < table->table_size; i++ ) {
-				/* Might be already NULL from a previous merge */
-				if (table->table [i])
-					g_assert (table->table [i] == bbn);
-				table->table [i] = NULL;
+	if (bb->has_call_handler) {
+		for (inst = bb->code; inst != NULL; inst = inst->next) {
+			if (inst->opcode == OP_CALL_HANDLER) {
+				g_assert (inst->inst_target_bb == bbn);
+				NULLIFY_INS (inst);
 			}
-			/* Can't nullify this as later instructions depend on it */
+		}
+	}
+	if (bb->has_jump_table) {
+		for (inst = bb->code; inst != NULL; inst = inst->next) {
+			if (MONO_IS_JUMP_TABLE (inst)) {
+				int i;
+				MonoJumpInfoBBTable *table = MONO_JUMP_TABLE_FROM_INS (inst);
+				for (i = 0; i < table->table_size; i++ ) {
+					/* Might be already NULL from a previous merge */
+					if (table->table [i])
+						g_assert (table->table [i] == bbn);
+					table->table [i] = NULL;
+				}
+				/* Can't nullify this as later instructions depend on it */
+			}
 		}
 	}
 	if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
@@ -982,6 +988,9 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 	} else if (bb->last_ins && MONO_IS_BRANCH_OP (bb->last_ins)) {
 		NULLIFY_INS (bb->last_ins);
 	}
+
+	bb->has_call_handler |= bbn->has_call_handler;
+	bb->has_jump_table |= bbn->has_jump_table;
 
 	if (bb->last_ins) {
 		if (bbn->code) {

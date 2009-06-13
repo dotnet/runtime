@@ -6856,6 +6856,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (COMPILE_LLVM (cfg))
 				use_op_switch = TRUE;
 
+			cfg->cbb->has_jump_table = 1;
+
 			if (use_op_switch) {
 				MONO_INST_NEW (cfg, ins, OP_SWITCH);
 				ins->sreg1 = src1->dreg;
@@ -8813,6 +8815,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_INST_NEW (cfg, ins, OP_CALL_HANDLER);
 					ins->inst_target_bb = tblock;
 					MONO_ADD_INS (bblock, ins);
+					bblock->has_call_handler = 1;
 				}
 				g_list_free (handlers);
 			} 

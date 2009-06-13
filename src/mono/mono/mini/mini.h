@@ -429,6 +429,10 @@ struct MonoBasicBlock {
 	guint has_array_access : 1;
 	/* Whenever this bblock is extended, ie. it has branches inside it */
 	guint extended : 1;
+	/* Whenever this bblock contains a OP_JUMP_TABLE instruction */
+	guint has_jump_table : 1;
+	/* Whenever this bblock contains an OP_CALL_HANDLER instruction */
+	guint has_call_handler : 1;
 	
 	/* use for liveness analysis */
 	MonoBitSet *gen_set;
