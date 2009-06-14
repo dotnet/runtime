@@ -1,5 +1,7 @@
 2009-06-14  Zoltan Varga  <vargaz@gmail.com>
 
+	* scripts/CMakeLists.txt: New file.
+
 	* samples/CMakeLists.txt: New file, currently empty.
 
 2009-06-12  Andreia Gaita  <avidigal@novell.com>
