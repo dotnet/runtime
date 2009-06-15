@@ -28,7 +28,7 @@
 		 * ARM has no definition for some atomic functions in gc_locks.h and
 		 * support is also disabled in libgc/configure.in.
 		 */
-#       if !defined(__sparc__) && !defined(__sun) && !defined(__arm__)
+#       if !defined(__sparc__) && !defined(__sun) && !defined(__arm__) && !defined(__mips__)
 #		    define GC_REDIRECT_TO_LOCAL
 #       endif
 #	endif
