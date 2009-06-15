@@ -344,6 +344,19 @@ mono_arch_get_throw_exception (void)
 	return start;
 }
 
+gpointer 
+mono_arch_get_throw_exception_by_name (void)
+{
+	guint8 *start, *code;
+	int size = 64;
+
+	/* Not used on MIPS */	
+	start = code = mono_global_codeman_reserve (size);
+	mips_break (code, 0xfd);
+	mono_arch_flush_icache (start, code - start);
+	return start;
+}
+
 /**
  * mono_arch_get_throw_corlib_exception:
  *
