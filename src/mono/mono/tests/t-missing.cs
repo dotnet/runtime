@@ -4,6 +4,7 @@ namespace Missing {
 
 #if FOUND
 public class Foo1 {
+	public class InnerFoo {}
 }
 #endif
 

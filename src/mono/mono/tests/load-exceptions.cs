@@ -247,8 +247,17 @@ public class Tests : LoadMissing {
 		} catch (TypeLoadException) {}
 		return 0;
 	}
-	
-	// FIXME: These do not work yet
+
+
+	public static void missing_outer () {
+		new Missing.Foo1.InnerFoo ();
+	}
+
+	//Regression test for #508487
+	public static int test_0_missing_outer_type_in_typeref () {
+		return check_type_load (new TestDel (missing_outer));
+	}
+
 #if FALSE
 	public static void missing_parent () {
 		new Miss1 ();
