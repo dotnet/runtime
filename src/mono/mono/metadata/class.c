@@ -121,6 +121,9 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		MonoClass *enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
 		GList *tmp;
 
+		if (!enclosing)
+			return NULL;
+
 		if (enclosing->nested_classes_inited && enclosing->ext) {
 			/* Micro-optimization: don't scan the metadata tables if enclosing is already inited */
 			for (tmp = enclosing->ext->nested_classes; tmp; tmp = tmp->next) {
