@@ -1,3 +1,7 @@
+2009-06-15  Zoltan Varga  <vargaz@gmail.com>
+
+	* CMakeLists.txt: Add mips support.
+
 2009-06-14  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/CMakeLists.txt: New file.

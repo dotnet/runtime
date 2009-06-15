@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 2.6.4)
 # - It would be nice to have a per-target VERBOSE setting
 # - or a way to change the setting name to 'V' and the output to CC <src>
 #   to be similar to the current build output
+# - Add a cache to the manual checks
 
 # We use lowercase commands as advocated by the kde cmake coding style
 
@@ -497,19 +498,22 @@ check_c_source_compiles("
 void main () {}
 " GCC)
 
-ac_msg_checking("for isinf")
-set(compiles)
-check_c_source_compiles("
+if(NOT HAVE_ISINF)
+  ac_msg_checking("for isinf")
+  set(compiles)
+  check_c_source_compiles("
 #include <math.h>
 void main () {
 int f = isinf (1);
 }
 " compiles)
-if(compiles)
-  ac_msg_result(yes)
-  ac_define(HAVE_ISINF 1 "isinf available")
-else()
-  ac_msg_result(no)
+  if(compiles)
+	ac_msg_result(yes)
+	ac_define(HAVE_ISINF 1 "isinf available")
+	set(HAVE_ISINF 1 CACHE BOOL "Have the isinf function")
+  else()
+	ac_msg_result(no)
+  endif()
 endif()
 
 # not 64 bit clean in cross-compile
@@ -559,12 +563,16 @@ endif()
 # A sanity check to catch cases where the package was unpacked
 # with an ancient tar program (Solaris)
 #
-ac_msg_checking("integrity of package")
-if(EXISTS ${srcdir}/${mcsdir}/class/System.Runtime.Serialization.Formatters.Soap/System.Runtime.Serialization.Formatters.Soap/SoapTypeMapper.cs)
-  ac_msg_result(ok)
-else()
-  set(errorm "Your mono distribution is incomplete;  if unpacking from a tar file, make sure you use GNU tar;  see http://www.mono-project.com/IncompletePackage for more details")
-  ac_msg_error(${errorm})
+set(solaris-tar-check yes CACHE BOOL "Enable/disable solaris tar check")
+
+if(solaris-tar-check)
+  ac_msg_checking("integrity of package")
+  if(EXISTS ${srcdir}/${mcsdir}/class/System.Runtime.Serialization.Formatters.Soap/System.Runtime.Serialization.Formatters.Soap/SoapTypeMapper.cs)
+	ac_msg_result(ok)
+  else()
+	set(errorm "Your mono distribution is incomplete;  if unpacking from a tar file, make sure you use GNU tar;  see http://www.mono-project.com/IncompletePackage for more details")
+	ac_msg_error(${errorm})
+  endif()
 endif()
 
 set(mcs_topdir ${top_srcdir}/${mcsdir})
@@ -2105,6 +2113,26 @@ elseif(host MATCHES "arm.*-linux.*")
   set(ACCESS_UNALIGNED no)
   set(JIT_SUPPORTED yes)
   set(jit_wanted true)
+elseif(host MATCHES "mips.*")
+  set(TARGET MIPS)
+  set(arch_target mips)
+  set(ACCESS_UNALIGNED no)
+  set(JIT_SUPPORTED yes)
+  set(jit_wanted true)
+###		ac_msg_checking(for mips n32)
+###		AC_TRY_COMPILE([], [
+###		void main () {
+###		#if _MIPS_SIM != _ABIN32
+###		#error Not mips n32
+###		#endif
+###   		}
+###		],[
+###		ac_msg_result(yes)
+###		set(sizeof_register 8)
+###		],[
+###		ac_msg_result(no)
+###		])
+###		;;
 else()
   message(FATAL_ERROR "Host ${host} not yet supported by the cmake build.")
 endif()
@@ -2123,27 +2151,6 @@ endif()
 #		set(TARGET MIPS;)
 #		set(ACCESS_UNALIGNED "no")
 #		;;
-###	mips*)
-###		set(TARGET MIPS;)
-###		set(arch_target mips;)
-###		set(ACCESS_UNALIGNED "no")
-###		set(JIT_SUPPORTED yes)
-###		set(jit_wanted true)
-
-###		ac_msg_checking(for mips n32)
-###		AC_TRY_COMPILE([], [
-###		void main () {
-###		#if _MIPS_SIM != _ABIN32
-###		#error Not mips n32
-###		#endif
-###   		}
-###		],[
-###		ac_msg_result(yes)
-###		set(sizeof_register 8)
-###		],[
-###		ac_msg_result(no)
-###		])
-###		;;
 ###	i*86-*-*)
 ###		set(TARGET X86;)
 ###		set(arch_target x86;)
