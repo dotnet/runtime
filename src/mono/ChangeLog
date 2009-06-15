@@ -1,3 +1,8 @@
+2009-06-15  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: Changed the default to not build the 4.0 profile
+	unless explicitly enabled.
+
 2009-06-15  Zoltan Varga  <vargaz@gmail.com>
 
 	* CMakeLists.txt: Add mips support.

@@ -601,8 +601,8 @@ AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsy
 AC_DEFINE_UNQUOTED(DISABLED_FEATURES, "$DISABLED_FEATURES", [String of disabled features])
 
 if test "x$mono_feature_disable_aot" = "xyes"; then
-	AC_DEFINE(DISABLE_AOT, 1, [Disable AOT support])
-	AC_MSG_NOTICE([Disabled support for AOT])
+	AC_DEFINE(DISABLE_AOT_COMPILER, 1, [Disable AOT Compiler])
+	AC_MSG_NOTICE([Disabled AOT compiler])
 fi
 
 if test "x$mono_feature_disable_profiler" = "xyes"; then
@@ -2268,10 +2268,10 @@ AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install
 	fi
 ])
 
-PROFILE4=yes
+PROFILE4=no
 AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to yes)],[
-	if test x$with_profile4 = xno; then
-	      PROFILE4=no
+	if test x$with_profile4 = xyes; then
+	      PROFILE4=yes
 	fi
 ])
 
