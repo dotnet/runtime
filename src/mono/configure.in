@@ -2616,7 +2616,7 @@ echo "
 	SIGALTSTACK:   $with_sigaltstack
 	Engine:        $jit_status
 	2.0 Profile:   $with_profile2
-	2.1 Alpha:     $with_moonlight
+	Moon Profile:  $with_moonlight
 	4.0 Aplha:     $with_profile4
 	JNI support:   $jdk_headers_found
 	libgdiplus:    $libgdiplus_msg
