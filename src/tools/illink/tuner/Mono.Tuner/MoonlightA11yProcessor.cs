@@ -65,7 +65,7 @@ namespace Mono.Tuner {
 				if (type.IsPublic)
 					type.IsPublic = false;
 
-				if (type.HasConstructors)
+				if (type.HasConstructors && !type.Name.EndsWith ("Adapter"))
 					foreach (MethodDefinition ctor in type.Constructors)
 						if (ctor.IsPublic)
 							ctor.IsAssembly = true;
