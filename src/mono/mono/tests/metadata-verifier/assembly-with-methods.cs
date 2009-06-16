@@ -4,10 +4,15 @@ using System.Runtime.CompilerServices;
 
 public class TypeOne
 {
+	static int z;
 	public void GenericMethod<T> () {
+		int foo = 10;
+		z = foo;
 	}
 
 	public void SimpleMethod () {
+		int foo = 10;
+		z = foo;
 	}
 }
 
@@ -53,6 +58,5 @@ public class LastClass
 {
 	public static void Main ()
 	{
-	
 	}
 }

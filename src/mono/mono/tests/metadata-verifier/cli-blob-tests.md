@@ -291,3 +291,21 @@ methodspec-sig {
 	#bad argument
 	invalid offset blob.i (table-row (0x2B 0) + 2) + 3 set-byte 0x01
 }
+
+method-header {
+	assembly assembly-with-methods.exe
+
+	#invalid header kind
+	#method zero is an empty .ctor(), so it takes 7 bytes (call super + ret)
+	invalid offset translate.rva.ind (table-row (0x06 0)) + 0 set-byte 0x1C
+	invalid offset translate.rva.ind (table-row (0x06 0)) + 0 set-byte 0x1D
+
+	#method 1 has fat header
+	#size must be 3
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x0013
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x1013
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x2013
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x5013
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0xF013
+
+}

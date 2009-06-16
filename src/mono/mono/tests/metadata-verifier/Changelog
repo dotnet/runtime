@@ -1,3 +1,10 @@
+2009-06-16 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-blob-tests.md: Tests for method header.
+
+	* assembly-with-methods.cs: Add some body to
+	make for some fat headers.
+
 2009-06-10 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-cattr-tests.md: Tests for custom attributes
