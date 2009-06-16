@@ -1,3 +1,10 @@
+2009-06-16  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/MoonlightA11yProcessor.cs: GLibSharp uses
+	  Activator.CreateInstance for *Adapter classes, so we need to
+	  have an exception here for these ctors (to avoid
+	  MissingMethodExceptions).
+
 2009-06-10  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Cosmetic.
