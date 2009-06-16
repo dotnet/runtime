@@ -565,34 +565,42 @@ verify_import_table (VerifyContext *ctx)
 		ADD_ERROR (ctx, g_strdup_printf ("Import table size %d is smaller than 40", it.size));
 
 	ilt_rva = read32 (ptr);
-	if (!bounds_check_virtual_address (ctx, ilt_rva, 8))
+	if (ilt_rva && !bounds_check_virtual_address (ctx, ilt_rva, 8))
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Lookup Table rva %x", ilt_rva));
 
 	name_rva = read32 (ptr + 12);
-	if (!bounds_check_virtual_address (ctx, name_rva, SIZE_OF_MSCOREE))
+	if (name_rva && !bounds_check_virtual_address (ctx, name_rva, SIZE_OF_MSCOREE))
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name rva %x", name_rva));
 
 	iat_rva = read32 (ptr + 16);
-	if (!bounds_check_virtual_address (ctx, iat_rva, 8))
-		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Address Table rva %x", iat_rva));
+	if (iat_rva) {
+		if (!bounds_check_virtual_address (ctx, iat_rva, 8))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Address Table rva %x", iat_rva));
 
-	if (iat_rva != ctx->data_directories [IAT_IDX].rva)
-		ADD_ERROR (ctx, g_strdup_printf ("Import Address Table rva %x different from data directory entry %x", read32 (ptr + 16), ctx->data_directories [IAT_IDX].rva));
+		if (iat_rva != ctx->data_directories [IAT_IDX].rva)
+			ADD_ERROR (ctx, g_strdup_printf ("Import Address Table rva %x different from data directory entry %x", read32 (ptr + 16), ctx->data_directories [IAT_IDX].rva));
+	}
 
-	name_rva = translate_rva (ctx, name_rva);
-	g_assert (name_rva != INVALID_OFFSET);
-	ptr = ctx->data + name_rva;
-
-	if (memcmp ("mscoree.dll", ptr, SIZE_OF_MSCOREE)) {
-		char name[SIZE_OF_MSCOREE];
-		memcpy (name, ptr, SIZE_OF_MSCOREE);
-		name [SIZE_OF_MSCOREE - 1] = 0;
-		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name: '%s'", name));
+	if (name_rva) {
+		name_rva = translate_rva (ctx, name_rva);
+		g_assert (name_rva != INVALID_OFFSET);
+		ptr = ctx->data + name_rva;
+	
+		if (memcmp ("mscoree.dll", ptr, SIZE_OF_MSCOREE)) {
+			char name[SIZE_OF_MSCOREE];
+			memcpy (name, ptr, SIZE_OF_MSCOREE);
+			name [SIZE_OF_MSCOREE - 1] = 0;
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name: '%s'", name));
+		}
 	}
 	
-	verify_hint_name_table (ctx, ilt_rva, "Import Lookup Table");
-	CHECK_ERROR ();
-	verify_hint_name_table (ctx, iat_rva, "Import Address Table");
+	if (ilt_rva) {
+		verify_hint_name_table (ctx, ilt_rva, "Import Lookup Table");
+		CHECK_ERROR ();
+	}
+
+	if (iat_rva)
+		verify_hint_name_table (ctx, iat_rva, "Import Address Table");
 }
 
 static void
