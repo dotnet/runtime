@@ -1693,10 +1693,8 @@ is_valid_blob_object (VerifyContext *ctx, guint32 offset)
 	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
 	guint32 entry_size, bytes;
 
-	if (blob.size < offset) {
-		printf ("1\n");
+	if (blob.size < offset)
 		return FALSE;
-	}
 
 	if (!decode_value (ctx->data + offset + blob.offset, blob.size - blob.offset, &entry_size, &bytes))
 		return FALSE;
@@ -1713,11 +1711,8 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
 	guint32 size, entry_size, bytes;
 
-	if (blob.size < offset) {
-		printf ("1\n");
+	if (blob.size < offset)
 		return FALSE;
-	}
-
 	
 	if (!decode_value (ctx->data + offset + blob.offset, blob.size - blob.offset, &entry_size, &bytes))
 		return FALSE;
@@ -1777,8 +1772,41 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 static gboolean
 is_valid_method_header (VerifyContext *ctx, guint32 rva)
 {
+	guint32 offset = mono_cli_rva_image_map (ctx->image, rva);
+	guint8 header = 0;
+	guint16 fat_header = 0, size;
+	const char *ptr = NULL, *end;
+
+	if (offset == INVALID_ADDRESS)
+		FAIL (ctx, g_strdup ("MethodHeader: Invalid RVA"));
+
+	ptr = ctx->data + offset;
+	end = ctx->data + ctx->size; /*no worries if it spawns multiple sections*/
+
+	if (!safe_read8 (header, ptr, end))
+		FAIL (ctx, g_strdup ("MethodHeader: Not enough room for header"));
+
+	switch (header & 0x3) {
+	case 0:
+	case 1:
+		FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid header type %x", header & 0x3));
+	case 2:
+		header >>= 2;
+		if (ptr + header > end)
+			FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for method body. Required %d, but only %d is available", header, end - ptr));
+		return TRUE;
+	}
+	//FAT HEADER
+	--ptr;
+	if (!safe_read16 (fat_header, ptr, end))
+		FAIL (ctx, g_strdup ("MethodHeader: Not enough room for fat header"));
+
+	size = (fat_header >> 12) & 0xF;
+	if (size != 3)
+		FAIL (ctx, g_strdup ("MethodHeader: header size must be 3"));
+
 	//TODO do proper method header validation
-	return mono_cli_rva_image_map (ctx->image, rva) != INVALID_ADDRESS;
+	return TRUE;
 }
 
 static void
