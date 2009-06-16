@@ -281,7 +281,8 @@ emit_cie (MonoDwarfWriter *w)
 	emit_alignment (w, 8);
 
 	/* Emit a CIE */
-	emit_symbol_diff (w, ".Lcie0_end", ".", -4); /* length */
+	emit_symbol_diff (w, ".Lcie0_end", ".Lcie0_start", 0); /* length */
+	emit_label (w, ".Lcie0_start");
 	emit_int32 (w, 0xffffffff); /* CIE id */
 	emit_byte (w, 3); /* version */
 	emit_string (w, ""); /* augmention */
@@ -312,15 +313,18 @@ static void
 emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbol,
 		  guint8 *code, guint32 code_size, GSList *unwind_ops, gboolean use_cie)
 {
-	char symbol [128];
+	char symbol1 [128];
+	char symbol2 [128];
 	GSList *l;
 	guint8 *uw_info;
 	guint32 uw_info_len;
 
 	emit_section_change (w, ".debug_frame", 0);
 
-	sprintf (symbol, ".Lfde%d_end", fde_index);
-	emit_symbol_diff (w, symbol, ".", -4); /* length */
+	sprintf (symbol1, ".Lfde%d_start", fde_index);
+	sprintf (symbol2, ".Lfde%d_end", fde_index);
+	emit_symbol_diff (w, symbol2, symbol1, 0); /* length */
+	emit_label (w, symbol1);
 	emit_int32 (w, 0); /* CIE_pointer */
 	if (start_symbol) {
 		emit_pointer (w, start_symbol); /* initial_location */
@@ -354,8 +358,7 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 	g_free (uw_info);
 
 	emit_alignment (w, sizeof (gpointer));
-	sprintf (symbol, ".Lfde%d_end", fde_index);
-	emit_label (w, symbol);
+	emit_label (w, symbol2);
 }
 
 /* Abbrevations */
