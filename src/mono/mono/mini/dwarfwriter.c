@@ -720,10 +720,7 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 	emit_pointer_value (w, 0);
 	emit_pointer_value (w, 0);
 	/* offset into .debug_line section */
-	if (w->emit_line)
-		emit_symbol_diff (w, ".Ldebug_line_start", ".Ldebug_line_section_start", 0);
-	else
-		emit_int32 (w, 0);
+	emit_symbol_diff (w, ".Ldebug_line_start", ".Ldebug_line_section_start", 0);
 
 	/* Base types */
 	for (i = 0; i < G_N_ELEMENTS (basic_types); ++i) {
@@ -741,8 +738,11 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 	emit_label (w, ".Ldebug_loc_start");
 
 	/* debug_line section */
-	if (w->emit_line)
-		emit_line_number_info_begin (w);
+	/*
+	 * We emit some info even if emit_line is FALSE, as the
+	 * apple linker seems to require a .debug_line section.
+	 */
+	emit_line_number_info_begin (w);
 
 	emit_cie (w);
 }
