@@ -1649,6 +1649,8 @@ asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char*
 	fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
 	fprintf (acfg->fp, "%s", symbol);
 #else
+	start = get_label (start);
+	end = get_label (end);
 	if ((acfg->col_count++ % 8) == 0)
 		fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
 	else
