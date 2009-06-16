@@ -2617,7 +2617,7 @@ echo "
 	Engine:        $jit_status
 	2.0 Profile:   $with_profile2
 	Moon Profile:  $with_moonlight
-	4.0 Aplha:     $with_profile4
+	4.0 Alpha:     $with_profile4
 	JNI support:   $jdk_headers_found
 	libgdiplus:    $libgdiplus_msg
 	zlib:          $zlib_msg
