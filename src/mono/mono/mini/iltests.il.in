@@ -2292,5 +2292,67 @@ OK_2:
 		call	int32 Tests::regress_497271_helper (int32)
 		ret
 	}
+
+   .field  private static  int32 Value
+
+  .method public static hidebysig  specialname 
+          default int32 regress_513931_inner ()  cil managed 
+    {                                                                 
+        // Method begins at RVA 0x225c                                
+        // Code size 52 (0x34)                                        
+        .maxstack 2                                                   
+        .locals init (                                                
+                int32   V_0,                                          
+                int32   V_1,                                          
+                bool    V_2)
+                       
+				ldc.i4 999
+				stsfld int32 Tests::Value
+
+        IL_0000:  nop                                                 
+        IL_0001:  ldsfld int32 Tests::Value      
+        IL_0006:  stloc.0                                             
+        IL_0007:  ldloc.0                                             
+        IL_0008:  ldc.i4.0                                            
+        IL_0009:  cgt                                                 
+        IL_000b:  ldc.i4.0                                            
+        IL_000c:  ceq                                                 
+        IL_000e:  stloc.2                                             
+        IL_000f:  ldloc.2                                             
+        IL_0010:  brtrue.s IL_0027                                    
+
+        IL_0012:  nop 
+        IL_0013:  ldloc.0 
+        IL_0014:  ldc.i4.s 0x7b
+        IL_0016:  ceq          
+        IL_0018:  ldc.i4.0     
+        IL_0019:  ceq          
+        IL_001b:  stloc.2      
+        IL_001c:  ldloc.2      
+        IL_001d:  brtrue.s IL_0023
+
+        IL_001f:  ldc.i4.m1 
+        IL_0020:  stloc.1   
+        IL_0021:  br.s IL_0032
+
+        IL_0023:  ldc.i4.1 
+        IL_0024:  stloc.1  
+        IL_0025:  br.s IL_0032
+
+        IL_0027:  
+        IL_002c:  newobj instance void class [mscorlib]System.Exception::'.ctor'()
+        IL_0031:  throw                                                                            
+        IL_0032:  ldloc.1                                                                          
+        IL_0033:  ret                                                                              
+    }
+
+	.method public static hidebysig  specialname 
+         default int32 test_0_regress_513931 ()  cil managed 
+	{
+		call int32 Tests::regress_513931_inner ()
+		pop
+		ldc.i4.0
+		ret
+	}
 		
 }

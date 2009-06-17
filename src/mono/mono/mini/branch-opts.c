@@ -1013,6 +1013,16 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 			bb->next_bb = bbn->next_bb;
 	}
 	mono_nullify_basic_block (bbn);
+
+	/* 
+	 * If bbn fell through to its next bblock, have to add a branch, since bb
+	 * will not fall though to the same bblock (#513931).
+	 */
+	if (bb->last_ins && bb->out_count == 1 && bb->out_bb [0] != bb->next_bb && !MONO_IS_BRANCH_OP (bb->last_ins)) {
+		MONO_INST_NEW (cfg, inst, OP_BR);
+		inst->inst_target_bb = bb->out_bb [0];
+		MONO_ADD_INS (bb, inst);
+	}
 }
 
 static void
