@@ -2546,8 +2546,11 @@ write_thread_data_block (ProfilerPerThreadData *data) {
 	
 	write_uint64 (data->start_event_counter);
 	
-	/* Make sure that stack sections can be fully reconstructed even reading only one block */
-	rewrite_last_written_stack (&(data->stack));
+	/* If we are tracking the stack, make sure that stack sections */
+	/* can be fully reconstructed even reading only one block */
+	if (profiler->action_flags.track_stack) {
+		rewrite_last_written_stack (&(data->stack));
+	}
 	
 	while (start < end) {
 		start = write_event (start, data);
