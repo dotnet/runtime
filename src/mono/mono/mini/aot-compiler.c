@@ -4755,7 +4755,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->temp_prefix = img_writer_get_temp_label_prefix (acfg->w);
 
 	if (!acfg->aot_opts.nodebug)
-		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
+		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, FALSE);
 
 	img_writer_emit_start (acfg->w);
 
@@ -4794,6 +4794,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	if (acfg->dwarf)
 		emit_dwarf_info (acfg);
+
+	mono_dwarf_writer_close (acfg->dwarf);
 
 	emit_mem_end (acfg);
 
@@ -4896,7 +4898,7 @@ mono_xdebug_init (void)
 	/* This file will contain the IL code for methods which don't have debug info */
 	il_file = fopen ("xdb.il", "w");
 
-	xdebug_writer = mono_dwarf_writer_create (w, il_file);
+	xdebug_writer = mono_dwarf_writer_create (w, il_file, TRUE);
 
 	/* Emit something so the file has a text segment */
 	img_writer_emit_section_change (w, ".text", 0);

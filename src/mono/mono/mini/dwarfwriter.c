@@ -42,7 +42,7 @@ struct _MonoDwarfWriter
 	GSList *cie_program;
 	FILE *fp;
 	const char *temp_prefix;
-	gboolean emit_line;
+	gboolean emit_line, appending;
 };
 
 /*
@@ -51,14 +51,31 @@ struct _MonoDwarfWriter
  *   Create a DWARF writer object. WRITER is the underlying image writer this 
  * writer will emit to. IL_FILE is the file where IL code will be dumped to for
  * methods which have no line number info. It can be NULL.
+ * If APPENDING is TRUE, the output file will be in assembleable state after each
+ * call to the _emit_ functions. This is used for XDEBUG. If APPENDING is FALSE,
+ * a separate mono_dwarf_writer_close () call is needed to finish the emission of
+ * debug information.
  */
 MonoDwarfWriter*
-mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file)
+mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, gboolean appending)
 {
 	MonoDwarfWriter *w = g_new0 (MonoDwarfWriter, 1);
 	
+	/*
+	 * The appending flag is needed because we use subsections to order things in 
+	 * the debug info, and:
+	 * - apple's assembler doesn't support them
+	 * - the binary writer has problems with subsections+alignment
+	 * So instead of subsections, we use the _close () function in AOT mode,
+	 * which writes out things in order.
+	 */
+
 	w->w = writer;
 	w->il_file = il_file;
+	w->appending = appending;
+
+	if (appending)
+		g_assert (img_writer_subsections_supported (w->w));
 
 	w->fp = img_writer_get_fp (w->w);
 	w->temp_prefix = img_writer_get_temp_label_prefix (w->w);
@@ -378,6 +395,7 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 #define ABBREV_REFERENCE_TYPE 14
 #define ABBREV_PARAM_LOCLIST 15
 #define ABBREV_INHERITANCE 16
+#define ABBREV_STRUCT_TYPE_NOCHILDREN 17
 
 static int compile_unit_attr [] = {
 	DW_AT_producer     ,DW_FORM_string,
@@ -670,6 +688,8 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 					   base_type_attr, G_N_ELEMENTS (base_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_STRUCT_TYPE, DW_TAG_class_type, TRUE, 
 					   struct_type_attr, G_N_ELEMENTS (struct_type_attr));
+	emit_dwarf_abbrev (w, ABBREV_STRUCT_TYPE_NOCHILDREN, DW_TAG_class_type, FALSE, 
+					   struct_type_attr, G_N_ELEMENTS (struct_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_DATA_MEMBER, DW_TAG_member, FALSE, 
 					   data_member_attr, G_N_ELEMENTS (data_member_attr));
 	emit_dwarf_abbrev (w, ABBREV_TYPEDEF, DW_TAG_typedef, FALSE, 
@@ -694,15 +714,16 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 
 	emit_section_change (w, ".debug_info", 0);
 	emit_label (w, ".Ldebug_info_start");
-	emit_symbol_diff (w, ".Ldebug_info_end", ".", -4); /* length */
+	emit_symbol_diff (w, ".Ldebug_info_end", ".Ldebug_info_begin", 0); /* length */
+	emit_label (w, ".Ldebug_info_begin");
 	emit_int16 (w, 0x2); /* DWARF version 2 */
 	emit_int32 (w, 0); /* .debug_abbrev offset */
 	emit_byte (w, sizeof (gpointer)); /* address size */
 
-	if (img_writer_subsections_supported (w->w)) {
+	if (img_writer_subsections_supported (w->w) && w->appending) {
 		/* Emit this into a separate section so it gets placed at the end */
 		emit_section_change (w, ".debug_info", 1);
-		emit_int32 (w, 0); /* close everything */
+		emit_byte (w, 0); /* close COMPILE_UNIT */
 		emit_label (w, ".Ldebug_info_end");
 		emit_section_change (w, ".debug_info", 0);
 	}
@@ -747,6 +768,21 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 	emit_cie (w);
 }
 
+/*
+ * mono_dwarf_writer_close:
+ *
+ *   Finalize the emitted debugging info.
+ */
+void
+mono_dwarf_writer_close (MonoDwarfWriter *w)
+{
+	if (!w->appending) {
+		emit_section_change (w, ".debug_info", 0);
+		emit_byte (w, 0); /* close COMPILE_UNIT */
+		emit_label (w, ".Ldebug_info_end");
+	}
+}
+
 static const char* emit_type (MonoDwarfWriter *w, MonoType *t);
 
 /* Returns the local symbol pointing to the emitted debug info */
@@ -759,7 +795,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	MonoClassField *field;
 	const char *fdie;
 	int k;
-	gboolean emit_namespace = FALSE;
+	gboolean emit_namespace = FALSE, has_children;
 	GHashTable *cache;
 
 	// FIXME: Appdomains
@@ -876,6 +912,8 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 				g_assert_not_reached ();
 			}
 		}
+
+		has_children = TRUE;
 	} else {
 		guint8 buf [128];
 		guint8 *p;
@@ -895,9 +933,12 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 			emit_type (w, field->type);
 		}
 
+		iter = NULL;
+		has_children = parent_die || mono_class_get_fields (klass, &iter);
+
 		emit_label (w, die);
 
-		emit_uleb128 (w, ABBREV_STRUCT_TYPE);
+		emit_uleb128 (w, has_children ? ABBREV_STRUCT_TYPE : ABBREV_STRUCT_TYPE_NOCHILDREN);
 		emit_string (w, full_name);
 		emit_uleb128 (w, klass->instance_size);
 
@@ -938,7 +979,8 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	}
 
 	/* Type end */
-	emit_uleb128 (w, 0x0);
+	if (has_children)
+		emit_uleb128 (w, 0x0);
 
 	/* Add a typedef, so we can reference the type without a 'struct' in gdb */
 	emit_uleb128 (w, ABBREV_TYPEDEF);
