@@ -39,6 +39,14 @@ class X
 		return Enum2.C;
 	}
 
+	public static long return_long () {
+		return 1234;
+	}
+
+	public static ulong return_ulong () {
+		return UInt64.MaxValue - 5;
+	}
+
 	static int Main ()
 	{
 		Assembly ass = Assembly.GetCallingAssembly ();
@@ -64,6 +72,12 @@ class X
 			return 1;
 		if (typeof (X).GetMethod ("return_enum2").Invoke (null, null).GetType () != typeof (Enum2))
 			return 2;
+
+		/* Check sharing of wrappers returning primitive types */
+		if (typeof (X).GetMethod ("return_long").Invoke (null, null).GetType () != typeof (long))
+			return 3;
+		if (typeof (X).GetMethod ("return_ulong").Invoke (null, null).GetType () != typeof (ulong))
+			return 4;
 
 		return 0;
 	}
