@@ -3824,6 +3824,13 @@ get_runtime_invoke_type (MonoType *t, gboolean ret)
 			return &mono_defaults.int_class->byval_arg;
 	}
 
+	if (MONO_TYPE_IS_REFERENCE (t))
+		return &mono_defaults.object_class->byval_arg;
+
+	if (ret)
+		/* The result needs to be boxed */
+		return t;
+
 handle_enum:
 	switch (t->type) {
 	case MONO_TYPE_U1:
@@ -3842,14 +3849,12 @@ handle_enum:
 	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass->enumtype && !ret) {
+		if (t->data.klass->enumtype) {
 			t = mono_class_enum_basetype (t->data.klass);
 			goto handle_enum;
 		}
 		return t;
 	default:
-		if (MONO_TYPE_IS_REFERENCE (t))
-			return &mono_defaults.object_class->byval_arg;
 		return t;
 	}
 }
