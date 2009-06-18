@@ -261,6 +261,27 @@ typedef struct {
 
 #define CHECK_ERROR() do { if (!ctx->valid) return; } while (0)
 
+#define CHECK_ADD4_OVERFLOW_UN(a, b) ((guint32)(0xFFFFFFFFU) - (guint32)(b) < (guint32)(a))
+#define CHECK_ADD8_OVERFLOW_UN(a, b) ((guint64)(0xFFFFFFFFFFFFFFFFUL) - (guint64)(b) < (guint64)(a))
+
+#if SIZEOF_VOID_P == 4
+#define CHECK_ADDP_OVERFLOW_UN(a,b) CHECK_ADD4_OVERFLOW_UN(a, b)
+#else
+#define CHECK_ADDP_OVERFLOW_UN(a,b) CHECK_ADD8_OVERFLOW_UN(a, b)
+#endif
+
+#define ADDP_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADDP_OVERFLOW_UN (a, b))
+
+static const char *
+dword_align (const char *ptr)
+{
+#if SIZEOF_VOID_P == 8
+	return (const char *) (((guint64) (ptr + 3)) & ~3);
+#else
+	return (const char *) (((guint32) (ptr + 3)) & ~3);
+#endif
+}
+
 static guint32
 pe_signature_offset (VerifyContext *ctx)
 {
@@ -1769,12 +1790,16 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 	return TRUE;
 }
 
+#define FAT_HEADER_INVALID_FLAGS ~(0x3 | 0x8 | 0x10 | 0xF000)
+//only 0x01, 0x40 and 0x80 are allowed
+#define SECTION_HEADER_INVALID_FLAGS 0x3E
+
 static gboolean
 is_valid_method_header (VerifyContext *ctx, guint32 rva)
 {
-	guint32 offset = mono_cli_rva_image_map (ctx->image, rva);
+	guint32 local_vars_tok, code_size, offset = mono_cli_rva_image_map (ctx->image, rva);
 	guint8 header = 0;
-	guint16 fat_header = 0, size;
+	guint16 fat_header = 0, size = 0, max_stack;
 	const char *ptr = NULL, *end;
 
 	if (offset == INVALID_ADDRESS)
@@ -1789,10 +1814,10 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 	switch (header & 0x3) {
 	case 0:
 	case 1:
-		FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid header type %x", header & 0x3));
+		FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid header type 0x%x", header & 0x3));
 	case 2:
 		header >>= 2;
-		if (ptr + header > end)
+		if (ADDP_IS_GREATER_OR_OVF (ptr, header, end)) 
 			FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for method body. Required %d, but only %d is available", header, end - ptr));
 		return TRUE;
 	}
@@ -1805,7 +1830,63 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 	if (size != 3)
 		FAIL (ctx, g_strdup ("MethodHeader: header size must be 3"));
 
-	//TODO do proper method header validation
+	if (!safe_read16 (max_stack, ptr, end))
+		FAIL (ctx, g_strdup ("MethodHeader: Not enough room for max stack"));
+
+	if (!safe_read32 (code_size, ptr, end))
+		FAIL (ctx, g_strdup ("MethodHeader: Not enough room for code size"));
+
+	if (!safe_read32 (local_vars_tok, ptr, end))
+		FAIL (ctx, g_strdup ("MethodHeader: Not enough room for local vars tok"));
+
+	if (local_vars_tok) {
+		if (((local_vars_tok >> 24) & 0xFF) != 0x11)
+			FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid local vars signature table 0x%x", ((local_vars_tok >> 24) & 0xFF)));
+		if ((local_vars_tok & 0xFFFFFF) > ctx->image->tables [MONO_TABLE_STANDALONESIG].rows)	
+			FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid local vars signature points to invalid row 0x%x", local_vars_tok & 0xFFFFFF));
+	}
+
+	if (fat_header & FAT_HEADER_INVALID_FLAGS)
+		FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid fat signature flags %x", fat_header & FAT_HEADER_INVALID_FLAGS));
+
+	if (ADDP_IS_GREATER_OR_OVF (ptr, code_size, end))
+		FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for code %d", code_size));
+
+	if (!(fat_header & 0x08))
+		return TRUE;
+
+	ptr += code_size;
+
+	do {
+		guint32 section_header = 0, section_size = 0;
+		gboolean is_fat;
+
+		ptr = dword_align (ptr);
+		if (!safe_read32 (section_header, ptr, end))
+			FAIL (ctx, g_strdup ("MethodHeader: Not enough room for data section header"));
+
+		if (section_header & SECTION_HEADER_INVALID_FLAGS)
+			FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid section header flags 0x%x", section_header & SECTION_HEADER_INVALID_FLAGS));
+			
+		is_fat = (section_header & METHOD_HEADER_SECTION_FAT_FORMAT) != 0;
+		section_size = (section_header >> 8) & (is_fat ? 0xFFFFFF : 0xFF);
+
+		if (section_size < 4)
+			FAIL (ctx, g_strdup_printf ("MethodHeader: Section size too small"));
+			
+		if (ADDP_IS_GREATER_OR_OVF (ptr, section_size - 4, end)) /*must be section_size -4 as ptr was incremented by safe_read32*/
+			FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for section content %d", section_size));
+
+		if (section_header & METHOD_HEADER_SECTION_EHTABLE) {
+			guint32 clauses = (section_size - 4) / (is_fat ? 24 : 12);
+			if (clauses * (is_fat ? 24 : 12) + 4 != section_size)
+				FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid EH section size %d, it's not of the proper size", section_size));
+		}
+
+		//TODO verify the eh clauses
+		if (!(section_header & METHOD_HEADER_SECTION_MORE_SECTS))
+			break;
+	} while (1);
 	return TRUE;
 }
 
