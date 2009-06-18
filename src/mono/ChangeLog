@@ -1,3 +1,8 @@
+2009-06-18  Marek Habersack  <mhabersack@novell.com>
+
+	* data/browscap.ini: applied Mono modifications to the upstream
+	version. Fixes three tests failing in System.Web.
+
 2009-06-16  Raja R Harinath  <harinath@hurrynot.org>
 
 	* configure.in (--with-profile2): Simplify slightly.
