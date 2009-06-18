@@ -4792,10 +4792,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_globals (acfg);
 
-	if (acfg->dwarf)
+	if (acfg->dwarf) {
 		emit_dwarf_info (acfg);
-
-	mono_dwarf_writer_close (acfg->dwarf);
+		mono_dwarf_writer_close (acfg->dwarf);
+	}
 
 	emit_mem_end (acfg);
 
