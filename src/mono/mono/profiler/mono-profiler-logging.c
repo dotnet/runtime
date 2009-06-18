@@ -51,6 +51,9 @@ typedef enum {
 	MONO_PROFILER_DIRECTIVE_ALLOCATIONS_CARRY_CALLER = 1,
 	MONO_PROFILER_DIRECTIVE_ALLOCATIONS_HAVE_STACK = 2,
 	MONO_PROFILER_DIRECTIVE_ALLOCATIONS_CARRY_ID = 3,
+	MONO_PROFILER_DIRECTIVE_LOADED_ELEMENTS_CARRY_ID = 4,
+	MONO_PROFILER_DIRECTIVE_CLASSES_CARRY_ASSEMBLY_ID = 5,
+	MONO_PROFILER_DIRECTIVE_METHODS_CARRY_WRAPPER_FLAG = 6,
 	MONO_PROFILER_DIRECTIVE_LAST
 } MonoProfilerDirectives;
 
@@ -308,6 +311,7 @@ typedef struct _LoadedElement {
 	guint64 load_end_counter;
 	guint64 unload_start_counter;
 	guint64 unload_end_counter;
+	guint32 id;
 	guint8 loaded;
 	guint8 load_written;
 	guint8 unloaded;
@@ -819,6 +823,7 @@ struct _MonoProfiler {
 	MethodIdMapping *methods;
 	ClassIdMapping *classes;
 	
+	guint32 loaded_element_next_free_id;
 	GHashTable *loaded_assemblies;
 	GHashTable *loaded_modules;
 	GHashTable *loaded_appdomains;
@@ -1508,6 +1513,8 @@ print_load_event (const char *event_name, GHashTable *table, gpointer item, Load
 static LoadedElement*
 loaded_element_load_start (GHashTable *table, gpointer item) {
 	LoadedElement *element = g_new0 (LoadedElement, 1);
+	element->id = profiler->loaded_element_next_free_id;
+	profiler->loaded_element_next_free_id ++;
 #if (DEBUG_LOAD_EVENTS)
 	print_load_event ("LOAD START", table, item, element);
 #endif
@@ -1552,6 +1559,21 @@ loaded_element_unload_end (GHashTable *table, gpointer item) {
 	return element;
 }
 
+static LoadedElement*
+loaded_element_find (GHashTable *table, gpointer item) {
+	LoadedElement *element = g_hash_table_lookup (table, item);
+	return element;
+}
+
+static guint32
+loaded_element_get_id (GHashTable *table, gpointer item) {
+	LoadedElement *element = loaded_element_find (table, item);
+	if (element != NULL) {
+		return element->id;
+	} else {
+		return 0;
+	}
+}
 
 static void
 loaded_element_destroy (gpointer element) {
@@ -1585,7 +1607,7 @@ print_load_event (const char *event_name, GHashTable *table, gpointer item, Load
 		item_name = "<NULL>";
 	}
 	
-	printf ("%s EVENT for %s (%s)\n", event_name, item_info, item_name);
+	printf ("%s EVENT for %s (%s [id %d])\n", event_name, item_info, item_name, element->id);
 	g_free (item_info);
 }
 #endif
@@ -2017,6 +2039,9 @@ write_directives_block (gboolean start) {
 		if (profiler->action_flags.allocations_carry_id) {
 			write_uint32 (MONO_PROFILER_DIRECTIVE_ALLOCATIONS_CARRY_ID);
 		}
+		write_uint32 (MONO_PROFILER_DIRECTIVE_LOADED_ELEMENTS_CARRY_ID);
+		write_uint32 (MONO_PROFILER_DIRECTIVE_CLASSES_CARRY_ASSEMBLY_ID);
+		write_uint32 (MONO_PROFILER_DIRECTIVE_METHODS_CARRY_WRAPPER_FLAG);
 	}
 	write_uint32 (MONO_PROFILER_DIRECTIVE_END);
 	
@@ -2249,12 +2274,37 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 }
 
 static void
-write_element_load_block (LoadedElement *element, guint8 kind, gsize thread_id) {
+write_element_load_block (LoadedElement *element, guint8 kind, gsize thread_id, gpointer item) {
 	WRITE_BYTE (kind);
 	write_uint64 (element->load_start_counter);
 	write_uint64 (element->load_end_counter);
 	write_uint64 (thread_id);
+	write_uint32 (element->id);
 	write_string (element->name);
+	if (kind & MONO_PROFILER_LOADED_EVENT_ASSEMBLY) {
+		MonoImage *image = mono_assembly_get_image ((MonoAssembly*) item);
+		MonoAssemblyName aname;
+		if (mono_assembly_fill_assembly_name (image, &aname)) {
+			write_string (aname.name);
+			write_uint32 (aname.major);
+			write_uint32 (aname.minor);
+			write_uint32 (aname.build);
+			write_uint32 (aname.revision);
+			write_string (aname.culture && *aname.culture? aname.culture: "neutral");
+			write_string (aname.public_key_token [0] ? (char *)aname.public_key_token : "null");
+			/* Retargetable flag */
+			write_uint32 ((aname.flags & 0x00000100) ? 1 : 0);
+		} else {
+			write_string ("UNKNOWN");
+			write_uint32 (0);
+			write_uint32 (0);
+			write_uint32 (0);
+			write_uint32 (0);
+			write_string ("neutral");
+			write_string ("null");
+			write_uint32 (0);
+		}
+	}
 	write_current_block (MONO_PROFILER_FILE_BLOCK_KIND_LOADED);
 	element->load_written = TRUE;
 }
@@ -2265,6 +2315,7 @@ write_element_unload_block (LoadedElement *element, guint8 kind, gsize thread_id
 	write_uint64 (element->unload_start_counter);
 	write_uint64 (element->unload_end_counter);
 	write_uint64 (thread_id);
+	write_uint32 (element->id);
 	write_string (element->name);
 	write_current_block (MONO_PROFILER_FILE_BLOCK_KIND_UNLOADED);
 	element->unload_written = TRUE;
@@ -2298,7 +2349,11 @@ write_mapping_block (gsize thread_id) {
 	write_uint64 (thread_id);
 	
 	for (current_class = profiler->classes->unwritten; current_class != NULL; current_class = current_class->next_unwritten) {
+		MonoImage *image = mono_class_get_image (current_class->klass);
+		MonoAssembly *assembly = mono_image_get_assembly (image);
+		guint32 assembly_id = loaded_element_get_id (profiler->loaded_assemblies, assembly);
 		write_uint32 (current_class->id);
+		write_uint32 (assembly_id);
 		write_string (current_class->name);
 #if (DEBUG_MAPPING_EVENTS)
 		printf ("mapping CLASS (%d => %s)\n", current_class->id, current_class->name);
@@ -2316,7 +2371,15 @@ write_mapping_block (gsize thread_id) {
 		g_assert (class_element != NULL);
 		write_uint32 (current_method->id);
 		write_uint32 (class_element->id);
+		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			write_uint32 (1);
+		} else {
+			write_uint32 (0);
+		}
 		write_string (current_method->name);
+		
+		printf ("MAPPING: method [flags %d, iflags %d, wrapper %d] %s\n", method->flags, method->flags, method->flags, current_method->name);
+		
 #if (DEBUG_MAPPING_EVENTS)
 		printf ("mapping METHOD ([%d]%d => %s)\n", class_element?class_element->id:1, current_method->id, current_method->name);
 #endif
@@ -3736,7 +3799,7 @@ appdomain_end_load (MonoProfiler *profiler, MonoDomain *domain, int result) {
 	name = g_strdup_printf ("%d", mono_domain_get_id (domain));
 	LOCK_PROFILER ();
 	element = loaded_element_load_end (profiler->loaded_appdomains, domain, name);
-	write_element_load_block (element, MONO_PROFILER_LOADED_EVENT_APPDOMAIN | RESULT_TO_LOAD_CODE (result), CURRENT_THREAD_ID ());
+	write_element_load_block (element, MONO_PROFILER_LOADED_EVENT_APPDOMAIN | RESULT_TO_LOAD_CODE (result), CURRENT_THREAD_ID (), domain);
 	UNLOCK_PROFILER ();
 }
 
@@ -3778,7 +3841,7 @@ module_end_load (MonoProfiler *profiler, MonoImage *module, int result) {
 	}
 	LOCK_PROFILER ();
 	element = loaded_element_load_end (profiler->loaded_modules, module, name);
-	write_element_load_block (element, MONO_PROFILER_LOADED_EVENT_MODULE | RESULT_TO_LOAD_CODE (result), CURRENT_THREAD_ID ());
+	write_element_load_block (element, MONO_PROFILER_LOADED_EVENT_MODULE | RESULT_TO_LOAD_CODE (result), CURRENT_THREAD_ID (), module);
 	UNLOCK_PROFILER ();
 }
 
@@ -3820,7 +3883,7 @@ assembly_end_load (MonoProfiler *profiler, MonoAssembly *assembly, int result) {
 	}
 	LOCK_PROFILER ();
 	element = loaded_element_load_end (profiler->loaded_assemblies, assembly, name);
-	write_element_load_block (element, MONO_PROFILER_LOADED_EVENT_ASSEMBLY | RESULT_TO_LOAD_CODE (result), CURRENT_THREAD_ID ());
+	write_element_load_block (element, MONO_PROFILER_LOADED_EVENT_ASSEMBLY | RESULT_TO_LOAD_CODE (result), CURRENT_THREAD_ID (), assembly);
 	UNLOCK_PROFILER ();
 }
 
@@ -5446,6 +5509,7 @@ mono_profiler_startup (const char *desc)
 	
 	profiler->methods = method_id_mapping_new ();
 	profiler->classes = class_id_mapping_new ();
+	profiler->loaded_element_next_free_id = 1;
 	profiler->loaded_assemblies = g_hash_table_new_full (g_direct_hash, NULL, NULL, loaded_element_destroy);
 	profiler->loaded_modules = g_hash_table_new_full (g_direct_hash, NULL, NULL, loaded_element_destroy);
 	profiler->loaded_appdomains = g_hash_table_new_full (g_direct_hash, NULL, NULL, loaded_element_destroy);
