@@ -1,7 +1,9 @@
 2009-06-18  Marek Habersack  <mhabersack@novell.com>
 
 	* data/browscap.ini: applied Mono modifications to the upstream
-	version. Fixes three tests failing in System.Web.
+	version. Fixes three tests failing in System.Web. Fixes bug #513965
+	Added ecmascriptversion, msdomversion and w3cdomversion to the IE
+	8.0 entry. Fixes bug #513965
 
 2009-06-16  Raja R Harinath  <harinath@hurrynot.org>
 
