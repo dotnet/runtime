@@ -10,9 +10,12 @@ public class TypeOne
 		z = foo;
 	}
 
-	public void SimpleMethod () {
+	public void SimpleMethod () { //thin EH table 
 		int foo = 10;
 		z = foo;
+		try {
+			z = 10;
+		} catch (Exception e) {}
 	}
 }
 
@@ -24,12 +27,42 @@ public interface IFace
 
 public abstract class TypeTwo
 {
+	public TypeTwo () { //2 simple EH entries
+		try {
+			new TypeOne ();
+		} catch (Exception) {}
+
+		try {
+			new TypeOne ();
+		} finally {}
+		
+	}
 	[DllImport ("bla.dll")]
 	public static extern void PInvoke ();
 }
 
 public abstract class AbsClass
 {
+	public AbsClass () { //fat EH table
+		int z = 99;
+		int foo = 10;
+		z = foo;
+		try {
+			//make this bigger than 256 bytes, each entry is 25 bytes
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+			z = typeof(int).GetHashCode ();
+		} finally {}
+	}
 	public abstract void AbsBla ();
 }
 

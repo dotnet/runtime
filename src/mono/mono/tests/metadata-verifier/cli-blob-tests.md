@@ -296,7 +296,7 @@ method-header {
 	assembly assembly-with-methods.exe
 
 	#invalid header kind
-	#method zero is an empty .ctor(), so it takes 7 bytes (call super + ret)
+	#method zero is an empty .ctor (), so it takes 7 bytes (call super + ret) so we do 7 << 2 | header kind
 	invalid offset translate.rva.ind (table-row (0x06 0)) + 0 set-byte 0x1C
 	invalid offset translate.rva.ind (table-row (0x06 0)) + 0 set-byte 0x1D
 
@@ -307,5 +307,48 @@ method-header {
 	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x2013
 	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x5013
 	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0xF013
+
+	#maxstack can be anything between 0-2^16-1, it's up to the IL verifier to use it.
+
+	#make codesize huge enought to overflow
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 4 set-uint 0x1FFFFFF0
+
+	#bad local vars token
+	#out of bounds
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 8 set-uint 0x1100FFFF
+	#wrong table
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 8 set-uint 0x1B000001
+
+	#bad fat header flags
+	#only 0x08 and 0x10 allowed
+	#regular value is 
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3033 #or 0x20
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3053
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3093
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3113
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3213
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3413
+	invalid offset translate.rva.ind (table-row (0x06 1)) + 0 set-ushort 0x3813
+
+	#methods 2, 4 and 6 have EH tables. 2 and 4 are regular, 6 is fat 4 has 2 EH entries
+	#LAMEIMPL (our) well, 2 and 4 could be thin, but mono's SRE isn't keen to use small form
+	#thin format must have size that is n*12+4 fat n*24+4
+
+	#set invalid flags
+	valid offset translate.rva.ind (table-row (0x06 2)) + 4 set-ushort 0x1C #set the code size to be sure
+
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 40 or-byte 0x02
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 40 or-byte 0x04
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 40 or-byte 0x08
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 40 or-byte 0x10
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 40 or-byte 0x20
+
+	#set invalid size
+	#not multiple of n*24+4
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 41 set-byte 0x10
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 41 set-byte 0x1F
+
+	#out of bound
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 40 set-uint 0x5FFFFF41
 
 }

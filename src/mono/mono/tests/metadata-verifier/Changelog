@@ -1,3 +1,10 @@
+2009-06-18 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-blob-tests.md: Tests for method header.
+
+	* assembly-with-methods.cs: Fill in more methods
+	with EH tables.
+
 2009-06-16 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: Tests for method header.
