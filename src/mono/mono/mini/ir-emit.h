@@ -71,6 +71,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 	default:
 		g_warning ("Unknown stack type %x\n", stack_type);
 		g_assert_not_reached ();
+		return -1;
 	}
 }
 
