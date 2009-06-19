@@ -853,6 +853,21 @@ mono_image_load_cli_data (MonoImage *image)
 	return TRUE;
 }
 
+void
+mono_image_load_names (MonoImage *image)
+{
+	/* modules don't have an assembly table row */
+	if (image->tables [MONO_TABLE_ASSEMBLY].rows) {
+		image->assembly_name = mono_metadata_string_heap (image, 
+			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
+					0, MONO_ASSEMBLY_NAME));
+	}
+
+	image->module_name = mono_metadata_string_heap (image, 
+			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
+					0, MONO_MODULE_NAME));
+}
+
 static MonoImage *
 do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		    gboolean care_about_cli, gboolean care_about_pecoff)
@@ -889,16 +904,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-	/* modules don't have an assembly table row */
-	if (image->tables [MONO_TABLE_ASSEMBLY].rows) {
-		image->assembly_name = mono_metadata_string_heap (image, 
-			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
-					0, MONO_ASSEMBLY_NAME));
-	}
-
-	image->module_name = mono_metadata_string_heap (image, 
-			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
-					0, MONO_MODULE_NAME));
+	mono_image_load_names (image);
 
 	load_modules (image);
 
