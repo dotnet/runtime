@@ -135,12 +135,7 @@ typedef struct MonoRegallocContext {
  * MACROS
  */
 
-#if SIZEOF_REGISTER == 8
-#define BITS_PER_CHUNK 64
-#else
-#define BITS_PER_CHUNK 32
-#endif
-
+#define BITS_PER_CHUNK MONO_BITSET_BITS_PER_CHUNK
 #define MONO_FIRST_VREG (MONO_MAX_IREGS+MONO_MAX_FREGS)
 
 /* 
