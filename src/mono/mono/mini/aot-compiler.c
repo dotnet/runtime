@@ -4153,6 +4153,9 @@ emit_got_info (MonoAotCompile *acfg)
 	p = buf = mono_mempool_alloc (acfg->mempool, buf_size);
 	got_info_offsets = mono_mempool_alloc (acfg->mempool, acfg->got_patches->len * sizeof (guint32));
 	acfg->plt_got_info_offsets = mono_mempool_alloc (acfg->mempool, acfg->plt_offset * sizeof (guint32));
+	/* Unused */
+	if (acfg->plt_offset)
+		acfg->plt_got_info_offsets [0] = 0;
 	for (i = 0; i < acfg->got_patches->len; ++i) {
 		MonoJumpInfo *ji = g_ptr_array_index (acfg->got_patches, i);
 
