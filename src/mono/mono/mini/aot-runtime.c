@@ -2388,7 +2388,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	/* Patch the PLT entry with target which might be the actual method not a trampoline */
 	plt_entry = mono_aot_get_plt_entry (code);
 	g_assert (plt_entry);
-	mono_arch_patch_plt_entry (plt_entry, target);
+	mono_arch_patch_plt_entry (plt_entry, module->got, NULL, target);
 
 	return target;
 #else

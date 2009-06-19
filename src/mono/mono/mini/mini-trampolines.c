@@ -487,7 +487,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
 		if (plt_entry) {
-			mono_arch_patch_plt_entry (plt_entry, addr);
+			mono_arch_patch_plt_entry (plt_entry, NULL, regs, addr);
 		} else if (!generic_shared || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 			mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
 			if (generic_shared) {
@@ -655,7 +655,7 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 	plt_entry = mono_aot_get_plt_entry (code);
 	g_assert (plt_entry);
 
-	mono_arch_patch_plt_entry (plt_entry, addr);
+	mono_arch_patch_plt_entry (plt_entry, NULL, regs, addr);
 
 	is_got_entry = FALSE;
 
@@ -706,7 +706,7 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
 	mono_runtime_class_init (vtable);
 
 	if (plt_entry) {
-		mono_arch_nullify_plt_entry (plt_entry);
+		mono_arch_nullify_plt_entry (plt_entry, regs);
 	} else {
 		mono_arch_nullify_class_init_trampoline (code, regs);
 	}

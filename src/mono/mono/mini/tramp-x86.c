@@ -119,7 +119,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr)
 {
 	/* A PLT entry: jmp <DISP> */
 	g_assert (code [0] == 0xe9);
@@ -186,7 +186,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 }
 
 void
-mono_arch_nullify_plt_entry (guint8 *code)
+mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
 {
 	if (!mono_running_on_valgrind ()) {
 		guint32 ops;
