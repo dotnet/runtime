@@ -223,6 +223,25 @@ mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
 #define PPC_TOC_REG -1
 #endif
 
+guchar*
+mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
+{
+	MonoJumpInfo *ji;
+	guint32 code_size;
+	guchar *code;
+	GSList *unwind_ops, *l;
+
+	code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, &unwind_ops, FALSE);
+
+	//mono_save_trampoline_xdebug_info ("<generic_trampoline>", code, code_size, unwind_ops);
+
+	for (l = unwind_ops; l; l = l->next)
+		g_free (l->data);
+	g_slist_free (unwind_ops);
+
+	return code;
+}
+
 /*
  * Stack frame description when the generic trampoline is called.
  * caller frame
