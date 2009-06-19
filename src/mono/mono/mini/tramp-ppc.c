@@ -201,15 +201,9 @@ mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
 
 /* Stack size for trampoline function 
  * PPC_MINIMAL_STACK_SIZE + 16 (args + alignment to ppc_magic_trampoline)
- * + MonoLMF + 14 fp regs + 13 gregs + alignment
- * #define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 13 * (sizeof (gulong)))
- * STACK would be 444 for 32 bit darwin
+ * + MonoLMF + 14 fp regs + 31 gregs + alignment
  */
-#ifdef __mono_ppc64__
-#define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 13 * sizeof (gulong))
-#else
-#define STACK (448)
-#endif
+#define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 31 * sizeof (gulong))
 
 /* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
