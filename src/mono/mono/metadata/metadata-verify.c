@@ -2239,8 +2239,6 @@ verify_method_table (VerifyContext *ctx)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is Abstract", i));
 			if (code_type == METHOD_IMPL_ATTRIBUTE_OPTIL)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is CodeTypeMask is neither Native, CIL or Runtime", i));
-			if (!is_valid_method_header (ctx, rva))
-				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d RVA points to an invalid method header", i));
 		} else {
 			if (!(flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_PINVOKE_IMPL)) && !(implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && code_type != METHOD_IMPL_ATTRIBUTE_RUNTIME)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA = 0 but neither Abstract, InternalCall, Runtime or PinvokeImpl", i));
@@ -2269,6 +2267,22 @@ verify_method_table (VerifyContext *ctx)
 
 		paramlist = data [MONO_METHOD_PARAMLIST];
 
+	}
+}
+
+static void
+verify_method_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_METHOD];
+	guint32 data [MONO_METHOD_SIZE], rva;
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_METHOD_SIZE);
+		rva = data [MONO_METHOD_RVA];
+		
+		if (rva && !is_valid_method_header (ctx, rva))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d RVA points to an invalid method header", i));
 	}
 }
 
@@ -3241,6 +3255,8 @@ mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list)
 	verify_typedef_table_full (&ctx);
 	CHECK_STATE ();
 	verify_field_table_full (&ctx);
+	CHECK_STATE ();
+	verify_method_table_full (&ctx);
 
 cleanup:
 	return cleanup_context (&ctx, error_list);
