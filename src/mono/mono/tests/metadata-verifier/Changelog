@@ -1,3 +1,8 @@
+2009-06-19 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Fix a implmap-table test
+	related to SupportLastError.
+
 2009-06-18 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-blob-tests.md: Last tests for method header.

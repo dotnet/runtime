@@ -905,7 +905,7 @@ implmap-table {
 	invalid offset table-row (0x1C 0) set-bit 3
 	invalid offset table-row (0x1C 0) set-bit 4
 	invalid offset table-row (0x1C 0) set-bit 5
-	invalid offset table-row (0x1C 0) set-bit 6
+	invalid offset table-row (0x1C 0) set-bit 7
 	invalid offset table-row (0x1C 0) set-bit 11
 	invalid offset table-row (0x1C 0) set-bit 12
 	invalid offset table-row (0x1C 0) set-bit 13
