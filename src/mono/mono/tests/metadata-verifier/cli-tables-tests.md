@@ -344,7 +344,7 @@ methoddef-table {
 	#Interface cannot have .ctors (15)
 	#method 3 belongs to an inteface
 	invalid offset table-row ( 6 3 ) + 8 set-ushort read.ushort ( table-row ( 6 0 ) + 8 )
-	#Interfacre methods can't be static 
+	#Interface methods can't be static 
 	invalid offset table-row ( 6 3 ) + 6 or-ushort 0x0010 
 
 	#XXX we don't care about CLS names (17)
@@ -417,7 +417,7 @@ methoddef-table {
 	invalid offset table-row ( 6 9 ) + 6 set-ushort 0x0006
 	invalid offset table-row ( 6 10 ) + 6 set-ushort 0x0016
 
-	#TODO do all .ctor and .cctor valdiation (39, 40)
+	#TODO do all .ctor and .cctor validation (39, 40)
 }
 
 methoddef-table-global-methods {
