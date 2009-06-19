@@ -351,4 +351,12 @@ method-header {
 	#out of bound
 	invalid offset translate.rva.ind (table-row (0x06 2)) + 40 set-uint 0x5FFFFF41
 
+	#extra section is at + 40, so EH table at + 44, class token at + 64
+	#bad table
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 64 set-uint 0x11000001
+	#bad token idx
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 64 set-uint 0x010FF001
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 64 set-uint 0x020FF001
+	invalid offset translate.rva.ind (table-row (0x06 2)) + 64 set-uint 0x1B0FF001
+
 }

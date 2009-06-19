@@ -1,5 +1,9 @@
 2009-06-18 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-blob-tests.md: Last tests for method header.
+
+2009-06-18 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-blob-tests.md: Tests for method header.
 
 	* assembly-with-methods.cs: Fill in more methods
