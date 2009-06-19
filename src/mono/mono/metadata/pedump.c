@@ -452,6 +452,9 @@ verify_image_file (const char *fname)
 
 	mono_image_load_names (image);
 
+	if (!mono_verifier_verify_full_table_data (image, &errors))
+		goto invalid_image;
+
 	return 0;
 
 invalid_image:

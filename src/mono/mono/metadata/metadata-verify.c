@@ -1988,9 +1988,6 @@ verify_typedef_table (VerifyContext *ctx)
 			if (data [MONO_TYPEDEF_EXTENDS] != 0)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row 0 for the special <module> type must have a null extend field"));
 		} else {
-			if (typedef_is_system_object (ctx, data) && data [MONO_TYPEDEF_EXTENDS] != 0)
-				ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for System.Object must have a null extend field", i));
-	
 			if (data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_INTERFACE) {
 				if (data [MONO_TYPEDEF_EXTENDS])
 					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for interface type must have a null extend field", i));
@@ -1999,9 +1996,6 @@ verify_typedef_table (VerifyContext *ctx)
 			} else {
 				if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
 					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
-	
-				if (!get_coded_index_token (TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS])) 
-					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for non-interface type must have a non-null extend field", i));
 			}
 		}
 
@@ -2026,6 +2020,34 @@ verify_typedef_table (VerifyContext *ctx)
 
 		fieldlist = data [MONO_TYPEDEF_FIELD_LIST];
 		methodlist = data [MONO_TYPEDEF_METHOD_LIST];
+	}
+}
+
+static void
+verify_typedef_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPEDEF];
+	guint32 data [MONO_TYPEDEF_SIZE];
+	int i;
+
+	if (table->rows == 0)
+		ADD_ERROR (ctx, g_strdup_printf ("Typedef table must have exactly at least one row"));
+
+	for (i = 1; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_TYPEDEF_SIZE);
+		if (!(data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_INTERFACE)) {
+			gboolean is_sys_obj = typedef_is_system_object (ctx, data);
+			gboolean has_parent = get_coded_index_token (TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]) != 0;
+
+			if (is_sys_obj) {
+				if (has_parent)
+					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for System.Object must have a null extend field", i));
+			} else {
+				if (!has_parent) {
+					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for non-interface type must have a non-null extend field", i));
+				}
+			}
+		}
 	}
 }
 
@@ -3160,6 +3182,18 @@ cleanup:
 	return cleanup_context (&ctx, error_list);
 }
 
+
+/*
+ * Verifies basic table constraints such as global table invariants (sorting, field monotonicity, etc).
+ * Other verification checks are meant to be done lazily by the runtime. Those include:
+ * 	blob items (signatures, method headers, custom attributes, etc)
+ *  type semantics related
+ *  vtable related
+ *  stuff that should not block other pieces from running such as bad types/methods/fields/etc.
+ * 
+ * The whole idea is that if this succeed the runtime is free to play around safely but any complex
+ * operation still need more checking.
+ */
 gboolean
 mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
 {
@@ -3175,6 +3209,27 @@ mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
 
 	return cleanup_context (&ctx, error_list);
 }
+
+
+/*
+ * Verifies all other constraints.
+ */
+gboolean
+mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_TABLES;
+
+	verify_typedef_table_full (&ctx);
+
+	return cleanup_context (&ctx, error_list);
+}
+
 #else
 gboolean
 mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
@@ -3193,4 +3248,11 @@ mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
 {
 	return TRUE;
 }
+
+gboolean
+mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list)
+{
+	return TRUE;
+}
+
 #endif /* DISABLE_VERIFIER */

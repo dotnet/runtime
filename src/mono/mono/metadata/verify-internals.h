@@ -30,6 +30,8 @@ gboolean mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list) MO
 gboolean mono_verifier_verify_cli_data (MonoImage *image, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_verify_table_data (MonoImage *image, GSList **error_list) MONO_INTERNAL;
 
+gboolean mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list) MONO_INTERNAL;
+
 G_END_DECLS
 
 #endif  /* __MONO_METADATA_VERIFY_INTERNAL_H__ */
