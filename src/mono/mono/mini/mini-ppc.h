@@ -52,14 +52,26 @@ typedef struct MonoCompileArch {
 	int fp_conv_var_offset;
 } MonoCompileArch;
 
+/*
+ * ILP32 uses a version of the ppc64 abi with sizeof(void*)==sizeof(long)==4.
+ * To support this, code which needs the size of a pointer needs to use 
+ * sizeof (gpointer), while code which needs the size of a register/stack slot 
+ * needs to use SIZEOF_REGISTER.
+ */
+
 #ifdef __mono_ppc64__
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 #define MONO_ARCH_HAVE_ATOMIC_ADD 1
 #define PPC_USES_FUNCTION_DESCRIPTOR
+
+#ifndef __mono_ilp32__
 #define MONO_ARCH_HAVE_TLS_GET 1
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
+#endif
+
 #else /* must be __mono_ppc__ */
+
 #if 0
 /* enabling this for PPC32 causes hangs in the thread/delegate tests.
    So disable for now. */
@@ -167,10 +179,13 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
+#define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 
 #define MONO_ARCH_NEED_DIV_CHECK 1
+#define MONO_ARCH_AOT_SUPPORTED 1
+#define MONO_ARCH_NEED_GOT_VAR 1
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
 #define PPC_NUM_REG_FPARGS (PPC_LAST_FPARG_REG-PPC_FIRST_FPARG_REG+1)
@@ -184,7 +199,17 @@ typedef struct MonoCompileArch {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
 
-#ifdef __APPLE__
+#ifdef MONO_CROSS_COMPILE
+
+typedef struct {
+	unsigned long sp;
+	unsigned long unused1;
+	unsigned long lr;
+} MonoPPCStackFrame;
+
+#define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) g_assert_not_reached ()
+
+#elif defined(__APPLE__)
 
 typedef struct {
 	unsigned long sp;
@@ -294,6 +319,12 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 #include "mini-ppc-os.h"
 #endif
 
+void
+mono_ppc_patch (guchar *code, const guchar *target) MONO_INTERNAL;
+
+void
+mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs, gboolean rethrow) MONO_INTERNAL;
+
 #ifdef __mono_ppc64__
 #define MONO_PPC_32_64_CASE(c32,c64)	c64
 extern void mono_ppc_emitted (guint8 *code, ssize_t length, const char *format, ...);
@@ -301,6 +332,8 @@ extern void mono_ppc_emitted (guint8 *code, ssize_t length, const char *format, 
 #define MONO_PPC_32_64_CASE(c32,c64)	c32
 #endif
 
-extern gboolean mono_ppc_is_direct_call_sequence (guint32 *code);
+gboolean mono_ppc_is_direct_call_sequence (guint32 *code) MONO_INTERNAL;
+
+void mono_ppc_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_PPC_H__ */

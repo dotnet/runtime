@@ -5,7 +5,7 @@
 #include "mini-x86.h"
 #elif defined(TARGET_AMD64)
 #include "mini-amd64.h"
-#elif defined(__mono_ppc__)
+#elif defined(TARGET_POWERPC)
 #include "mini-ppc.h"
 #elif defined(__sparc__) || defined(sparc)
 #include "mini-sparc.h"

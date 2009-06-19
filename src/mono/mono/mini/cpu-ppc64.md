@@ -91,7 +91,7 @@ call_membase: dest:a src1:b len:12 clob:c
 iconst: dest:i len:20
 i8const: dest:i len:20
 r4const: dest:f len:12
-r8const: dest:f len:12
+r8const: dest:f len:24
 label: len:0
 store_membase_reg: dest:b src1:i len:12
 storei1_membase_reg: dest:b src1:i len:12
@@ -199,6 +199,8 @@ float_conv_to_u: dest:i src1:f len:36
 call_handler: len:12
 endfilter: src1:i len:20
 aot_const: dest:i len:8
+load_gotaddr: dest:i len:32
+got_entry: dest:i src1:b len:32
 sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4

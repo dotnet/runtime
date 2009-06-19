@@ -1047,7 +1047,7 @@ mono_get_domainvar (MonoCompile *cfg)
  * The got_var contains the address of the Global Offset Table when AOT 
  * compiling.
  */
-inline static MonoInst *
+MonoInst *
 mono_get_got_var (MonoCompile *cfg)
 {
 #ifdef MONO_ARCH_NEED_GOT_VAR
@@ -2859,7 +2859,11 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box)
 		return mono_emit_jit_icall (cfg, mono_helper_newobj_mscorlib, iargs);
 	} else {
 		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+#ifdef MONO_CROSS_COMPILE
+		MonoMethod *managed_alloc = NULL;
+#else
 		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
+#endif
 		gboolean pass_lw;
 
 		if (managed_alloc) {
@@ -4036,7 +4040,11 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 		if (strcmp (method->name, "InternalAllocateStr") == 0) {
 			MonoInst *iargs [2];
 			MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
+#ifdef MONO_CROSS_COMPILE
+			MonoMethod *managed_alloc = NULL;
+#else
 			MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, FALSE);
+#endif
 			if (!managed_alloc)
 				return NULL;
 			EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
@@ -5869,38 +5877,76 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_LDC_R4: {
 			float *f;
+			gboolean use_aotconst = FALSE;
+
+#ifdef TARGET_POWERPC
+			/* FIXME: Clean this up */
+			if (cfg->compile_aot)
+				use_aotconst = TRUE;
+#endif
+
 			/* FIXME: we should really allocate this only late in the compilation process */
 			f = mono_domain_alloc (cfg->domain, sizeof (float));
 			CHECK_OPSIZE (5);
 			CHECK_STACK_OVF (1);
-			MONO_INST_NEW (cfg, ins, OP_R4CONST);
-			ins->type = STACK_R8;
-			ins->dreg = alloc_dreg (cfg, STACK_R8);
+
+			if (use_aotconst) {
+				MonoInst *cons;
+				int dreg;
+
+				EMIT_NEW_AOTCONST (cfg, cons, MONO_PATCH_INFO_R4, f);
+
+				dreg = alloc_freg (cfg);
+				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADR4_MEMBASE, dreg, cons->dreg, 0);
+				ins->type = STACK_R8;
+			} else {
+				MONO_INST_NEW (cfg, ins, OP_R4CONST);
+				ins->type = STACK_R8;
+				ins->dreg = alloc_dreg (cfg, STACK_R8);
+				ins->inst_p0 = f;
+				MONO_ADD_INS (bblock, ins);
+			}
 			++ip;
 			readr4 (ip, f);
-			ins->inst_p0 = f;
-			MONO_ADD_INS (bblock, ins);
-			
 			ip += 4;
 			*sp++ = ins;			
 			break;
 		}
 		case CEE_LDC_R8: {
 			double *d;
+			gboolean use_aotconst = FALSE;
+
+#ifdef TARGET_POWERPC
+			/* FIXME: Clean this up */
+			if (cfg->compile_aot)
+				use_aotconst = TRUE;
+#endif
+
 			/* FIXME: we should really allocate this only late in the compilation process */
 			d = mono_domain_alloc (cfg->domain, sizeof (double));
 			CHECK_OPSIZE (9);
 			CHECK_STACK_OVF (1);
-			MONO_INST_NEW (cfg, ins, OP_R8CONST);
-			ins->type = STACK_R8;
-			ins->dreg = alloc_dreg (cfg, STACK_R8);
+
+			if (use_aotconst) {
+				MonoInst *cons;
+				int dreg;
+
+				EMIT_NEW_AOTCONST (cfg, cons, MONO_PATCH_INFO_R8, d);
+
+				dreg = alloc_freg (cfg);
+				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADR8_MEMBASE, dreg, cons->dreg, 0);
+				ins->type = STACK_R8;
+			} else {
+				MONO_INST_NEW (cfg, ins, OP_R8CONST);
+				ins->type = STACK_R8;
+				ins->dreg = alloc_dreg (cfg, STACK_R8);
+				ins->inst_p0 = d;
+				MONO_ADD_INS (bblock, ins);
+			}
 			++ip;
 			readr8 (ip, d);
-			ins->inst_p0 = d;
-			MONO_ADD_INS (bblock, ins);
-
 			ip += 8;
-			*sp++ = ins;			
+			*sp++ = ins;
 			break;
 		}
 		case CEE_DUP: {
@@ -6500,6 +6546,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						 * with the contents of the aotconst as the patch info.
 						 */
 						ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_p0, fsig, sp);
+						NULLIFY_INS (addr);
+					} else if (addr->opcode == OP_GOT_ENTRY && addr->inst_right->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
+						ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_right->inst_left, fsig, sp);
 						NULLIFY_INS (addr);
 					} else {
 						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr);
@@ -9567,6 +9616,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		NEW_TEMPSTORE (cfg, store, cfg->domainvar->inst_c0, get_domain);
 		MONO_ADD_INS (cfg->cbb, store);
 	}
+
+#ifdef TARGET_POWERPC
+	if (cfg->compile_aot)
+		/* FIXME: The plt slots require a GOT var even if the method doesn't use it */
+		mono_get_got_var (cfg);
+#endif
 
 	if (cfg->method == method && cfg->got_var)
 		mono_emit_load_got_addr (cfg);

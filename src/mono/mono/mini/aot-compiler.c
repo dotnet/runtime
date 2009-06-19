@@ -158,6 +158,7 @@ typedef struct MonoAotCompile {
 	char *got_symbol;
 	GHashTable *method_label_hash;
 	const char *temp_prefix;
+	guint32 label_generator;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -424,6 +425,14 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #else
 #define AOT_FUNC_ALIGNMENT 16
 #endif
+ 
+#if defined(TARGET_POWERPC64)
+#define PPC_LD_OP "ld"
+#define PPC_LDX_OP "ldx"
+#else
+#define PPC_LD_OP "lwz"
+#define PPC_LDX_OP "lwzx"
+#endif
 
 /*
  * arch_emit_direct_call:
@@ -454,10 +463,44 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
 		fprintf (acfg->fp, "bl %s\n", target);
 	}
 	*call_size = 4;
+#elif defined(TARGET_POWERPC)
+	if (acfg->use_bin_writer) {
+		g_assert_not_reached ();
+	} else {
+		img_writer_emit_unset_mode (acfg->w);
+		fprintf (acfg->fp, "bl %s\n", target);
+		*call_size = 4;
+	}
 #else
 	g_assert_not_reached ();
 #endif
 }
+
+/*
+ * PPC32 design:
+ * - we use an approach similar to the x86 abi: reserve a register (r30) to hold 
+ *   the GOT pointer.
+ * - The full-aot trampolines need access to the GOT of mscorlib, so we store
+ *   in in the 2. slot of every GOT, and require every method to place the GOT
+ *   address in r30, even when it doesn't access the GOT otherwise. This way,
+ *   the trampolines can compute the mscorlib GOT address by loading 4(r30).
+ */
+
+/*
+ * PPC64 design:
+ * PPC64 uses function descriptors which greatly complicate all code, since
+ * these are used very inconsistently in the runtime. Some functions like 
+ * mono_compile_method () return ftn descriptors, while others like the
+ * trampoline creation functions do not.
+ * We assume that all GOT slots contain function descriptors, and create 
+ * descriptors in aot-runtime.c when needed.
+ * The ppc64 abi uses r2 to hold the address of the TOC/GOT, which is loaded
+ * from function descriptors, we could do the same, but it would require 
+ * rewriting all the ppc/aot code to handle function descriptors properly.
+ * So instead, we use the same approach as on PPC32.
+ * This is a horrible mess, but fixing it would probably lead to an even bigger
+ * one.
+ */
 
 #ifdef MONO_ARCH_AOT_SUPPORTED
 /*
@@ -470,11 +513,36 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
 static void
 arch_emit_got_offset (MonoAotCompile *acfg, guint8 *code, int *code_size)
 {
+#if defined(TARGET_POWERPC64)
+	g_assert (!acfg->use_bin_writer);
+	img_writer_emit_unset_mode (acfg->w);
+	/* 
+	 * The ppc32 code doesn't seem to work on ppc64, the assembler complains about
+	 * unsupported relocations. So we store the got address into the .Lgot_addr
+	 * symbol which is in the text segment, compute its address, and load it.
+	 */
+	fprintf (acfg->fp, ".L%d:\n", acfg->label_generator);
+	fprintf (acfg->fp, "lis 0, (.Lgot_addr + 4 - .L%d)@h\n", acfg->label_generator);
+	fprintf (acfg->fp, "ori 0, 0, (.Lgot_addr + 4 - .L%d)@l\n", acfg->label_generator);
+	fprintf (acfg->fp, "add 30, 30, 0\n");
+	fprintf (acfg->fp, "%s 30, 0(30)\n", PPC_LD_OP);
+	acfg->label_generator ++;
+	*code_size = 16;
+#elif defined(TARGET_POWERPC)
+	g_assert (!acfg->use_bin_writer);
+	img_writer_emit_unset_mode (acfg->w);
+	fprintf (acfg->fp, ".L%d:\n", acfg->label_generator);
+	fprintf (acfg->fp, "lis 0, (%s + 4 - .L%d)@h\n", acfg->got_symbol, acfg->label_generator);
+	fprintf (acfg->fp, "ori 0, 0, (%s + 4 - .L%d)@l\n", acfg->got_symbol, acfg->label_generator);
+	acfg->label_generator ++;
+	*code_size = 8;
+#else
 	guint32 offset = mono_arch_get_patch_offset (code);
 	emit_bytes (acfg, code, offset);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", offset);
 
 	*code_size = offset + 4;
+#endif
 }
 
 /*
@@ -493,15 +561,27 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 	/* Emit the offset */
 #ifdef TARGET_AMD64
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
+	*code_size = mono_arch_get_patch_offset (code) + 4;
 #elif defined(TARGET_X86)
 	emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
+	*code_size = mono_arch_get_patch_offset (code) + 4;
 #elif defined(TARGET_ARM)
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
+	*code_size = mono_arch_get_patch_offset (code) + 4;
+#elif defined(TARGET_POWERPC)
+	{
+		guint8 buf [32];
+		guint8 *code;
+
+		code = buf;
+		ppc_load32 (code, ppc_r0, got_slot * sizeof (gpointer));
+		g_assert (code - buf == 8);
+		emit_bytes (acfg, buf, code - buf);
+		*code_size = code - buf;
+	}
 #else
 	g_assert_not_reached ();
 #endif
-
-	*code_size = mono_arch_get_patch_offset (code) + 4;
 }
 
 #endif
@@ -571,6 +651,23 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		 * The plt_got_info_offset is computed automatically by 
 		 * mono_aot_get_plt_info_offset (), so no need to save it here.
 		 */
+#elif defined(TARGET_POWERPC)
+		guint32 offset = (acfg->plt_got_offset_base + index) * sizeof (gpointer);
+
+		/* The GOT address is guaranteed to be in r30 by OP_LOAD_GOTADDR */
+		g_assert (!acfg->use_bin_writer);
+		img_writer_emit_unset_mode (acfg->w);
+		fprintf (acfg->fp, "lis 11, %d@h\n", offset);
+		fprintf (acfg->fp, "ori 11, 11, %d@l\n", offset);
+		fprintf (acfg->fp, "add 11, 11, 30\n");
+		fprintf (acfg->fp, "%s 11, 0(11)\n", PPC_LD_OP);
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+		fprintf (acfg->fp, "%s 2, %d(11)\n", PPC_LD_OP, (int)sizeof (gpointer));
+		fprintf (acfg->fp, "%s 11, 0(11)\n", PPC_LD_OP);
+#endif
+		fprintf (acfg->fp, "mtctr 11\n");
+		fprintf (acfg->fp, "bctr\n");
+		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 #else
 		g_assert_not_reached ();
 #endif
@@ -633,6 +730,45 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	 */
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 4);
 	//emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
+#elif defined(TARGET_POWERPC)
+	guint8 buf [128];
+	guint8 *code;
+
+	*tramp_size = 4;
+	code = buf;
+
+	g_assert (!acfg->use_bin_writer);
+
+	/*
+	 * PPC has no ip relative addressing, so we need to compute the address
+	 * of the mscorlib got. That is slow and complex, so instead, we store it
+	 * in the second got slot of every aot image. The caller already computed
+	 * the address of its got and placed it into r30.
+	 */
+	img_writer_emit_unset_mode (acfg->w);
+	/* Load mscorlib got address */
+	fprintf (acfg->fp, "%s 0, %d(30)\n", PPC_LD_OP, (int)sizeof (gpointer));
+	/* Load generic trampoline address */
+	fprintf (acfg->fp, "lis 11, %d@h\n", (int)(offset * sizeof (gpointer)));
+	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)(offset * sizeof (gpointer)));
+	fprintf (acfg->fp, "%s 11, 11, 0\n", PPC_LDX_OP);
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	fprintf (acfg->fp, "%s 11, 0(11)\n", PPC_LD_OP);
+#endif
+	fprintf (acfg->fp, "mtctr 11\n");
+	/* Load trampoline argument */
+	/* On ppc, we pass it normally to the generic trampoline */
+	fprintf (acfg->fp, "lis 11, %d@h\n", (int)((offset + 1) * sizeof (gpointer)));
+	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)((offset + 1) * sizeof (gpointer)));
+	fprintf (acfg->fp, "%s 0, 11, 0\n", PPC_LDX_OP);
+	/* Branch to generic trampoline */
+	fprintf (acfg->fp, "bctr\n");
+
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	*tramp_size = 10 * 4;
+#else
+	*tramp_size = 9 * 4;
+#endif
 #else
 	g_assert_not_reached ();
 #endif
@@ -686,6 +822,16 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 	} else {
 		fprintf (acfg->fp, "\n\tb %s\n", call_target);
 	}
+#elif defined(TARGET_POWERPC)
+	int this_pos = 3;
+
+	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
+		this_pos = 4;
+
+	g_assert (!acfg->use_bin_writer);
+
+	fprintf (acfg->fp, "\n\taddi %d, %d, %d\n", this_pos, this_pos, (int)sizeof (MonoObject));
+	fprintf (acfg->fp, "\n\tb %s\n", call_target);
 #else
 	g_assert_not_reached ();
 #endif
@@ -738,6 +884,46 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	emit_bytes (acfg, buf, code - buf);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 8);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 4);
+#elif defined(TARGET_POWERPC)
+	guint8 buf [128];
+	guint8 *code;
+
+	*tramp_size = 4;
+	code = buf;
+
+	g_assert (!acfg->use_bin_writer);
+
+	/*
+	 * PPC has no ip relative addressing, so we need to compute the address
+	 * of the mscorlib got. That is slow and complex, so instead, we store it
+	 * in the second got slot of every aot image. The caller already computed
+	 * the address of its got and placed it into r30.
+	 */
+	img_writer_emit_unset_mode (acfg->w);
+	/* Load mscorlib got address */
+	fprintf (acfg->fp, "%s 0, %d(30)\n", PPC_LD_OP, (int)sizeof (gpointer));
+	/* Load rgctx */
+	fprintf (acfg->fp, "lis 11, %d@h\n", (int)(offset * sizeof (gpointer)));
+	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)(offset * sizeof (gpointer)));
+	fprintf (acfg->fp, "%s %d, 11, 0\n", PPC_LDX_OP, MONO_ARCH_RGCTX_REG);
+	/* Load target address */
+	fprintf (acfg->fp, "lis 11, %d@h\n", (int)((offset + 1) * sizeof (gpointer)));
+	fprintf (acfg->fp, "ori 11, 11, %d@l\n", (int)((offset + 1) * sizeof (gpointer)));
+	fprintf (acfg->fp, "%s 11, 11, 0\n", PPC_LDX_OP);
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	fprintf (acfg->fp, "%s 2, %d(11)\n", PPC_LD_OP, (int)sizeof (gpointer));
+	fprintf (acfg->fp, "%s 11, 0(11)\n", PPC_LD_OP);
+#endif
+	fprintf (acfg->fp, "mtctr 11\n");
+	/* Branch to the target address */
+	fprintf (acfg->fp, "bctr\n");
+
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	*tramp_size = 11 * 4;
+#else
+	*tramp_size = 9 * 4;
+#endif
+
 #else
 	g_assert_not_reached ();
 #endif
@@ -851,6 +1037,53 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + (code - (labels [0] + 8)) - 4);
 
 	*tramp_size = code - buf + 4;
+#elif defined(TARGET_POWERPC)
+	guint8 buf [128];
+	guint8 *code, *labels [16];
+
+	code = buf;
+
+	/* Load the mscorlib got address */
+	ppc_load_reg (code, ppc_r11, sizeof (gpointer), ppc_r30);
+	/* Load the parameter from the GOT */
+	ppc_load (code, ppc_r0, offset * sizeof (gpointer));
+	ppc_load_reg_indexed (code, ppc_r11, ppc_r11, ppc_r0);
+
+	/* Load and check key */
+	labels [1] = code;
+	ppc_load_reg (code, ppc_r0, 0, ppc_r11);
+	ppc_cmp (code, 0, sizeof (gpointer) == 8 ? 1 : 0, ppc_r0, MONO_ARCH_IMT_REG);
+	labels [2] = code;
+	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+
+	/* End-of-loop check */
+	ppc_cmpi (code, 0, sizeof (gpointer) == 8 ? 1 : 0, ppc_r0, 0);
+	labels [3] = code;
+	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+
+	/* Loop footer */
+	ppc_addi (code, ppc_r11, ppc_r11, 2 * sizeof (gpointer));
+	labels [4] = code;
+	ppc_b (code, 0);
+	mono_ppc_patch (labels [4], labels [1]);
+
+	/* Match */
+	mono_ppc_patch (labels [2], code);
+	ppc_load_reg (code, ppc_r11, sizeof (gpointer), ppc_r11);
+	/* r11 now contains the value of the vtable slot */
+	/* this is not a function descriptor on ppc64 */
+	ppc_load_reg (code, ppc_r11, 0, ppc_r11);
+	ppc_mtctr (code, ppc_r11);
+	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+
+	/* Fail */
+	mono_ppc_patch (labels [3], code);
+	/* FIXME: */
+	ppc_break (code);
+
+	*tramp_size = code - buf;
+
+	emit_bytes (acfg, buf, code - buf);
 #else
 	g_assert_not_reached ();
 #endif
@@ -1570,6 +1803,10 @@ add_wrappers (MonoAotCompile *acfg)
 		/* FIXME: locking */
 		g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
 
+		/* stelemref */
+		add_method (acfg, mono_marshal_get_stelemref ());
+
+#ifdef MONO_ARCH_HAVE_TLS_GET
 		/* Managed Allocators */
 		nallocators = mono_gc_get_managed_allocator_types ();
 		for (i = 0; i < nallocators; ++i) {
@@ -1577,9 +1814,6 @@ add_wrappers (MonoAotCompile *acfg)
 			if (m)
 				add_method (acfg, m);
 		}
-
-		/* stelemref */
-		add_method (acfg, mono_marshal_get_stelemref ());
 
 		/* Monitor Enter/Exit */
 		desc = mono_method_desc_new ("Monitor:Enter", FALSE);
@@ -1597,6 +1831,7 @@ add_wrappers (MonoAotCompile *acfg)
 		method = mono_monitor_get_fast_path (orig_method);
 		if (method)
 			add_method (acfg, method);
+#endif
 	}
 
 	/* 
@@ -1954,6 +2189,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				arch_emit_got_offset (acfg, code + i, &code_size);
 				i += code_size - 1;
 				skip = TRUE;
+				patch_info->type = MONO_PATCH_INFO_NONE;
 				break;
 			}
 			default: {
@@ -2152,6 +2388,8 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		break;
 	case MONO_PATCH_INFO_IMAGE:
 		encode_value (get_image_index (acfg, patch_info->data.image), p, &p);
+		break;
+	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
 		break;
 	case MONO_PATCH_INFO_METHOD_REL:
 		encode_value ((gint)patch_info->data.offset, p, &p);
@@ -2670,7 +2908,8 @@ emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code,
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
 	for (patch_info = ji; patch_info; patch_info = patch_info->next)
-		g_ptr_array_add (patches, patch_info);
+		if (patch_info->type != MONO_PATCH_INFO_NONE)
+			g_ptr_array_add (patches, patch_info);
 	g_ptr_array_sort (patches, compare_patches);
 
 	buf_size = patches->len * 128 + 128;
@@ -2770,7 +3009,6 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_trampoline (acfg, "throw_pending_exception", code, code_size, acfg->got_offset, ji, NULL);
 #endif
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM)
 		for (i = 0; i < 128; ++i) {
 			int offset;
 
@@ -2784,9 +3022,7 @@ emit_trampolines (MonoAotCompile *acfg)
 			sprintf (symbol, "rgctx_fetch_trampoline_%u", offset);
 			emit_trampoline (acfg, symbol, code, code_size, acfg->got_offset, ji, NULL);
 		}
-#endif
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM)
 		{
 			GSList *l;
 
@@ -2799,7 +3035,6 @@ emit_trampolines (MonoAotCompile *acfg)
 				l = l->next;
 			}
 		}
-#endif
 
 #endif /* #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES */
 
@@ -3390,6 +3625,14 @@ emit_code (MonoAotCompile *acfg)
 	int i;
 	char symbol [256];
 	GList *l;
+
+#if defined(TARGET_POWERPC64)
+	sprintf (symbol, ".Lgot_addr");
+	emit_section_change (acfg, ".text", 0);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_pointer (acfg, acfg->got_symbol);
+#endif
 
 	sprintf (symbol, "methods");
 	emit_section_change (acfg, ".text", 0);
@@ -4477,10 +4720,17 @@ compile_asm (MonoAotCompile *acfg)
 
 #if defined(TARGET_AMD64)
 #define AS_OPTIONS "--64"
+#elif defined(TARGET_POWERPC64)
+#define AS_OPTIONS "-a64 -mppc64"
+#define LD_OPTIONS "-m elf64ppc"
 #elif defined(sparc) && SIZEOF_VOID_P == 8
 #define AS_OPTIONS "-xarch=v9"
 #else
 #define AS_OPTIONS ""
+#endif
+
+#ifndef LD_OPTIONS
+#define LD_OPTIONS ""
 #endif
 
 	if (acfg->aot_opts.asm_only) {
@@ -4529,7 +4779,7 @@ compile_asm (MonoAotCompile *acfg)
 #elif defined(PLATFORM_WIN32)
 	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #else
-	command = g_strdup_printf ("ld -shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("ld %s -shared -o %s %s.o", LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
 #endif
 	printf ("Executing the native linker: %s\n", command);
 	if (system (command) != 0) {
@@ -4703,6 +4953,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		ji->type = MONO_PATCH_INFO_IMAGE;
 		ji->data.image = acfg->image;
 
+		get_got_offset (acfg, ji);
+
+		/* Slot 1 is reserved for the mscorlib got addr */
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji->type = MONO_PATCH_INFO_MSCORLIB_GOT_ADDR;
 		get_got_offset (acfg, ji);
 	}
 

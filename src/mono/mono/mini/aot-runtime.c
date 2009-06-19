@@ -59,7 +59,7 @@
 
 #ifdef PLATFORM_WIN32
 #define SHARED_EXT ".dll"
-#elif (defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__)) || defined(__MACH__)
+#elif ((defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__)) || defined(__MACH__)) && !defined(__linux__)
 #define SHARED_EXT ".dylib"
 #else
 #define SHARED_EXT ".so"
@@ -1069,6 +1069,17 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	assembly->image->aot_module = amodule;
 
+	if (mono_aot_only) {
+		if (mono_defaults.corlib) {
+			/* The second got slot contains the mscorlib got addr */
+			MonoAotModule *mscorlib_amodule = mono_defaults.corlib->aot_module;
+
+			amodule->got [1] = mscorlib_amodule->got;
+		} else {
+			amodule->got [1] = amodule->got;
+		}
+	}
+
 	/*
 	 * Since we store methoddef and classdef tokens when referring to methods/classes in
 	 * referenced assemblies, we depend on the exact versions of the referenced assemblies.
@@ -1654,7 +1665,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			goto cleanup;
 
 		if (!method && !mono_aot_only && !no_aot_trampoline && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
-			ji->data.target = mono_create_jit_trampoline_from_token (image, token);
+			ji->data.target = mono_create_ftnptr (mono_domain_get (), mono_create_jit_trampoline_from_token (image, token));
 			ji->type = MONO_PATCH_INFO_ABS;
 		}
 		else {
@@ -1977,6 +1988,8 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 			if (!aot_module->got [got_slots [pindex]]) {
 				aot_module->got [got_slots [pindex]] = mono_resolve_patch_target (method, domain, code, ji, TRUE);
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
+					aot_module->got [got_slots [pindex]] = mono_create_ftnptr (domain, aot_module->got [got_slots [pindex]]);
+				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
 					register_jump_target_got_slot (domain, ji->data.method, &(aot_module->got [got_slots [pindex]]));
 			}
 			ji->type = MONO_PATCH_INFO_NONE;
@@ -2185,6 +2198,13 @@ find_extra_method (MonoMethod *method, MonoAotModule **out_amodule)
 	return index;
 }
 
+/*
+ * mono_aot_get_method:
+ *
+ *   Return a pointer to the AOTed native code for METHOD if it can be found,
+ * NULL otherwise.
+ * On platforms with function pointers, this doesn't return a function pointer.
+ */
 gpointer
 mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
@@ -2407,11 +2427,14 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 static void
 init_plt (MonoAotModule *amodule)
 {
+#ifndef MONO_CROSS_COMPILE
+
 #ifdef MONO_ARCH_AOT_SUPPORTED
 #ifdef __i386__
 	guint8 *buf = amodule->plt;
-#elif defined(__x86_64__) || defined(__arm__)
+#elif defined(__x86_64__) || defined(__arm__) || defined(__mono_ppc__)
 	int i;
+	gpointer plt_0;
 #endif
 	gpointer tramp;
 
@@ -2424,22 +2447,26 @@ init_plt (MonoAotModule *amodule)
 	/* Initialize the first PLT entry */
 	make_writable (amodule->plt, amodule->plt_end - amodule->plt);
 	x86_jump_code (buf, tramp);
-#elif defined(__x86_64__) || defined(__arm__)
+#elif defined(__x86_64__) || defined(__arm__) || defined(__mono_ppc__)
 	/*
 	 * Initialize the PLT entries in the GOT to point to the default targets.
 	 */
 
+	tramp = mono_create_ftnptr (mono_domain_get (), tramp);
+	plt_0 = mono_create_ftnptr (mono_domain_get (), amodule->plt);
 	 /* The first entry points to the AOT trampoline */
 	 ((gpointer*)amodule->got)[amodule->info.plt_got_offset_base] = tramp;
 	 for (i = 1; i < amodule->info.plt_size; ++i)
 		 /* All the default entries point to the first entry */
-		 ((gpointer*)amodule->got)[amodule->info.plt_got_offset_base + i] = amodule->plt;
+		 ((gpointer*)amodule->got)[amodule->info.plt_got_offset_base + i] = plt_0;
 #else
 	g_assert_not_reached ();
 #endif
 
 	amodule->plt_inited = TRUE;
 #endif
+
+#endif /* MONO_CROSS_COMPILE */
 }
 
 /*
@@ -2451,7 +2478,7 @@ guint8*
 mono_aot_get_plt_entry (guint8 *code)
 {
 	MonoAotModule *aot_module = find_aot_module (code);
-#if defined(__arm__)
+#if defined(__arm__) || defined(__mono_ppc__)
 	guint32 ins;
 #endif
 
@@ -2477,6 +2504,17 @@ mono_aot_get_plt_entry (guint8 *code)
 		if ((target >= (guint8*)(aot_module->plt)) && (target < (guint8*)(aot_module->plt_end)))
 			return target;
 	}		
+#elif defined(__mono_ppc__)
+	/* Should be a bl */
+	ins = ((guint32*)(gpointer)code) [-1];
+
+	if ((ins >> 26 == 18) && ((ins & 1) == 1) && ((ins & 2) == 0)) {
+		gint32 disp = (((gint32)ins) >> 2) & 0xffffff;
+		guint8 *target = code - 4 + (disp * 4);
+
+		if ((target >= (guint8*)(aot_module->plt)) && (target < (guint8*)(aot_module->plt_end)))
+			return target;
+	}
 #else
 	g_assert_not_reached ();
 #endif
@@ -2504,9 +2542,31 @@ mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
 #elif defined(__arm__)
 	/* The offset is stored as the 4th word of the plt entry */
 	return ((guint32*)plt_entry) [3];          
+#elif defined(__mono_ppc__)
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	return ((guint32*)plt_entry) [8];
+#else
+	return ((guint32*)plt_entry) [6];
+#endif
 #else
 	g_assert_not_reached ();
 	return 0;
+#endif
+}
+
+static gpointer
+mono_create_ftnptr_malloc (guint8 *code)
+{
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	MonoPPCFunctionDescriptor *ftnptr = g_malloc0 (sizeof (MonoPPCFunctionDescriptor));
+
+	ftnptr->code = code;
+	ftnptr->toc = NULL;
+	ftnptr->env = NULL;
+
+	return ftnptr;
+#else
+	return code;
 #endif
 }
 
@@ -2590,6 +2650,10 @@ load_function (MonoAotModule *amodule, const char *name)
 				} else if (!strcmp (ji->data.name, "mono_arm_throw_exception_by_token")) {
 					target = mono_arm_throw_exception_by_token;
 #endif
+#ifdef __mono_ppc__
+				} else if (!strcmp (ji->data.name, "mono_ppc_throw_exception")) {
+					target = mono_ppc_throw_exception;
+#endif
 				} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
 					int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));
 					target = (gpointer)mono_get_trampoline_func (tramp_type2);
@@ -2601,12 +2665,16 @@ load_function (MonoAotModule *amodule, const char *name)
 					res = sscanf (ji->data.name, "specific_trampoline_lazy_fetch_%u", &slot);
 					g_assert (res == 1);
 					target = mono_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "specific_trampoline_monitor_enter")) {
 					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
+					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "specific_trampoline_monitor_exit")) {
 					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_EXIT, mono_get_root_domain (), NULL);
+					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "specific_trampoline_generic_class_init")) {
 					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), NULL);
+					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "mono_thread_get_and_clear_pending_exception")) {
 					target = mono_thread_get_and_clear_pending_exception;
 				} else {
@@ -2635,6 +2703,7 @@ load_function (MonoAotModule *amodule, const char *name)
 
 /*
  * Return the piece of code identified by NAME from the mscorlib AOT file.
+ * On ppc64, this returns a function descriptor.
  */
 gpointer
 mono_aot_get_named_code (const char *name)
@@ -2648,7 +2717,7 @@ mono_aot_get_named_code (const char *name)
 	amodule = image->aot_module;
 	g_assert (amodule);
 
-	return load_function (amodule, name);
+	return mono_create_ftnptr_malloc (load_function (amodule, name));
 }
 
 /* Return a given kind of trampoline */
@@ -2747,7 +2816,8 @@ mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr)
 	amodule->got [got_offset] = ctx;
 	amodule->got [got_offset + 1] = addr; 
 
-	return code;
+	/* The caller expects an ftnptr */
+	return mono_create_ftnptr (mono_domain_get (), code);
 }
 
 gpointer
@@ -2771,7 +2841,9 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	}
 	code = load_function (amodule, symbol);
 	g_free (symbol);
-	return code;
+
+	/* The caller expects an ftnptr */
+	return mono_create_ftnptr (mono_domain_get (), code);
 }
 
 gpointer

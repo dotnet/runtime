@@ -75,22 +75,22 @@ oparglist: src1:i len:12
 setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
 voidcall: len:16 clob:c
-voidcall_reg: src1:i len:8 clob:c
+voidcall_reg: src1:i len:16 clob:c
 voidcall_membase: src1:b len:12 clob:c
 fcall: dest:g len:16 clob:c
-fcall_reg: dest:g src1:i len:8 clob:c
+fcall_reg: dest:g src1:i len:16 clob:c
 fcall_membase: dest:g src1:b len:12 clob:c
 lcall: dest:l len:16 clob:c
-lcall_reg: dest:l src1:i len:8 clob:c
+lcall_reg: dest:l src1:i len:16 clob:c
 lcall_membase: dest:l src1:b len:12 clob:c
 vcall: len:16 clob:c
-vcall_reg: src1:i len:8 clob:c
+vcall_reg: src1:i len:16 clob:c
 vcall_membase: src1:b len:12 clob:c
-call_reg: dest:a src1:i len:8 clob:c
+call_reg: dest:a src1:i len:16 clob:c
 call_membase: dest:a src1:b len:12 clob:c
 iconst: dest:i len:8
 r4const: dest:f len:12
-r8const: dest:f len:12
+r8const: dest:f len:24
 label: len:0
 store_membase_reg: dest:b src1:i len:12
 storei1_membase_reg: dest:b src1:i len:12
@@ -196,6 +196,8 @@ float_conv_to_u: dest:i src1:f len:36
 call_handler: len:12
 endfilter: src1:i len:32
 aot_const: dest:i len:8
+load_gotaddr: dest:i len:32
+got_entry: dest:i src1:b len:32
 sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4

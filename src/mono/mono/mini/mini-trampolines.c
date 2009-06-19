@@ -226,6 +226,8 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 			/* Avoid loading metadata or creating a generic vtable if possible */
 			addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, displacement);
+			if (addr)
+				addr = mono_create_ftnptr (mono_domain_get (), addr);
 			if (addr && !vt->klass->valuetype) {
 				vtable_slot = mono_get_vcall_slot_addr (code, (gpointer*)regs);
 				if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot)) {
@@ -647,6 +649,8 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 		/* Use the generic code */
 		return mono_magic_trampoline (regs, code, method, tramp);
 	}
+
+	addr = mono_create_ftnptr (mono_domain_get (), addr);
 
 	vtable_slot = mono_get_vcall_slot_addr (code, (gpointer*)regs);
 	g_assert (!vtable_slot);

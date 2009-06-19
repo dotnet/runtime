@@ -5066,7 +5066,9 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
 	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
+#ifndef MONO_CROSS_COMPILE
 	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
+#endif
 	mono_thread_attach (domain);
 #endif
 
@@ -5172,7 +5174,8 @@ mini_cleanup (MonoDomain *domain)
 #ifndef DISABLE_COM
 	cominterop_release_all_rcws ();
 #endif
-	
+
+#ifndef MONO_CROSS_COMPILE	
 	/* 
 	 * mono_runtime_cleanup() and mono_domain_finalize () need to
 	 * be called early since they need the execution engine still
@@ -5180,11 +5183,14 @@ mini_cleanup (MonoDomain *domain)
 	 * and mono_runtime_cleanup will wait for other threads to finish).
 	 */
 	mono_domain_finalize (domain, 2000);
+#endif
 
 	/* This accesses metadata so needs to be called before runtime shutdown */
 	print_jit_stats ();
 
+#ifndef MONO_CROSS_COMPILE
 	mono_runtime_cleanup (domain);
+#endif
 
 	mono_profiler_shutdown ();
 
