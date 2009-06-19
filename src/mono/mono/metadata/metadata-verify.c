@@ -1053,7 +1053,7 @@ string_cmp (VerifyContext *ctx, const char *str, guint offset)
 static gboolean
 typedef_is_system_object (VerifyContext *ctx, guint32 *data)
 {
-	return ctx->is_corlib && !string_cmp (ctx, "System", data [MONO_TYPEDEF_NAME]) && !string_cmp (ctx, "Object", data [MONO_TYPEDEF_NAMESPACE]);
+	return ctx->is_corlib && !string_cmp (ctx, "System", data [MONO_TYPEDEF_NAMESPACE]) && !string_cmp (ctx, "Object", data [MONO_TYPEDEF_NAME]);
 }
 
 static gboolean
@@ -2676,7 +2676,7 @@ verify_typespec_table (VerifyContext *ctx)
 	}
 }
 
-#define INVALID_IMPLMAP_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 7) | (1 << 8) | (1 << 9) | (1 << 10))
+#define INVALID_IMPLMAP_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 6) | (1 << 8) | (1 << 9) | (1 << 10))
 static void
 verify_implmap_table (VerifyContext *ctx)
 {
@@ -2706,7 +2706,7 @@ verify_implmap_table (VerifyContext *ctx)
 		if (!is_valid_non_empty_string (ctx, data [MONO_IMPLMAP_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d ImportName Token %x", i, data [MONO_IMPLMAP_NAME]));
 
-		if (!data [MONO_IMPLMAP_SCOPE] || data [MONO_IMPLMAP_SCOPE] > ctx->image->tables [MONO_TABLE_MODULE].rows + 1)
+		if (!data [MONO_IMPLMAP_SCOPE] || data [MONO_IMPLMAP_SCOPE] > ctx->image->tables [MONO_TABLE_MODULEREF].rows + 1)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d Invalid ImportScope token %x", i, data [MONO_IMPLMAP_SCOPE]));
 	}
 }
@@ -3083,7 +3083,7 @@ mono_verifier_is_corlib (MonoImage *image)
 	gboolean trusted_location = (mono_security_get_mode () != MONO_SECURITY_MODE_CORE_CLR) ? 
 			TRUE : mono_security_core_clr_is_platform_image (image);
 
-	return trusted_location && !strcmp ("mscorlib.dll", image->name);
+	return trusted_location && image->module_name && !strcmp ("mscorlib.dll", image->module_name);
 }
 
 static void
