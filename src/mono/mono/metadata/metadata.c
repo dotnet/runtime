@@ -1506,11 +1506,12 @@ mono_metadata_init (void)
 void
 mono_metadata_cleanup (void)
 {
+	/* Has to free this first, as it could reference data in the other caches */
+	if (generic_method_cache)
+		g_hash_table_destroy (generic_method_cache);
 	g_hash_table_destroy (type_cache);
 	g_hash_table_destroy (generic_inst_cache);
 	g_hash_table_destroy (generic_class_cache);
-	if (generic_method_cache)
-		g_hash_table_destroy (generic_method_cache);
 	if (generic_signature_cache)
 		g_hash_table_destroy (generic_signature_cache);
 	type_cache = NULL;
