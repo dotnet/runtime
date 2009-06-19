@@ -219,7 +219,6 @@ typedef struct {
 	guint32 size;
 	GSList *errors;
 	int valid;
-	gboolean is_corlib;
 	MonoImage *image;
 	gboolean report_error;
 	int stage;
@@ -1051,9 +1050,18 @@ string_cmp (VerifyContext *ctx, const char *str, guint offset)
 }
 
 static gboolean
+mono_verifier_is_corlib (MonoImage *image)
+{
+	gboolean trusted_location = (mono_security_get_mode () != MONO_SECURITY_MODE_CORE_CLR) ? 
+			TRUE : mono_security_core_clr_is_platform_image (image);
+
+	return trusted_location && image->module_name && !strcmp ("mscorlib.dll", image->module_name);
+}
+
+static gboolean
 typedef_is_system_object (VerifyContext *ctx, guint32 *data)
 {
-	return ctx->is_corlib && !string_cmp (ctx, "System", data [MONO_TYPEDEF_NAMESPACE]) && !string_cmp (ctx, "Object", data [MONO_TYPEDEF_NAME]);
+	return mono_verifier_is_corlib (ctx->image) && !string_cmp (ctx, "System", data [MONO_TYPEDEF_NAMESPACE]) && !string_cmp (ctx, "Object", data [MONO_TYPEDEF_NAME]);
 }
 
 static gboolean
@@ -3099,15 +3107,6 @@ verify_tables_data (VerifyContext *ctx)
 	verify_generic_param_constraint_table (ctx);
 }
 
-static gboolean
-mono_verifier_is_corlib (MonoImage *image)
-{
-	gboolean trusted_location = (mono_security_get_mode () != MONO_SECURITY_MODE_CORE_CLR) ? 
-			TRUE : mono_security_core_clr_is_platform_image (image);
-
-	return trusted_location && image->module_name && !strcmp ("mscorlib.dll", image->module_name);
-}
-
 static void
 init_verify_context (VerifyContext *ctx, MonoImage *image, GSList **error_list)
 {
@@ -3117,7 +3116,6 @@ init_verify_context (VerifyContext *ctx, MonoImage *image, GSList **error_list)
 	ctx->valid = 1;
 	ctx->size = image->raw_data_len;
 	ctx->data = image->raw_data;
-	ctx->is_corlib = mono_verifier_is_corlib (image);	
 }
 
 static gboolean
