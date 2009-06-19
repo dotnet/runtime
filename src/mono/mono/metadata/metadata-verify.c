@@ -2115,8 +2115,6 @@ verify_field_table (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid name token %08x", i, data [MONO_FIELD_NAME]));
 
 		//TODO verify contant flag
-		if (!data [MONO_FIELD_SIGNATURE] || !is_valid_field_signature (ctx, data [MONO_FIELD_SIGNATURE]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid signature token %08x", i, data [MONO_FIELD_SIGNATURE]));
 
 		if (i + 1 < module_field_list) {
 			guint32 access = flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK;
@@ -2125,6 +2123,21 @@ verify_field_table (VerifyContext *ctx)
 			if (access != FIELD_ATTRIBUTE_COMPILER_CONTROLLED && access != FIELD_ATTRIBUTE_PRIVATE && access != FIELD_ATTRIBUTE_PUBLIC)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d is a global variable but have wrong visibility %x", i, access));
 		}
+	}
+}
+
+static void
+verify_field_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_FIELD];
+	guint32 data [MONO_FIELD_SIZE];
+	int i;
+	
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_FIELD_SIZE);
+
+		if (!data [MONO_FIELD_SIGNATURE] || !is_valid_field_signature (ctx, data [MONO_FIELD_SIGNATURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid signature token %08x", i, data [MONO_FIELD_SIGNATURE]));
 	}
 }
 
@@ -3226,7 +3239,10 @@ mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list)
 	ctx.stage = STAGE_TABLES;
 
 	verify_typedef_table_full (&ctx);
+	CHECK_STATE ();
+	verify_field_table_full (&ctx);
 
+cleanup:
 	return cleanup_context (&ctx, error_list);
 }
 
