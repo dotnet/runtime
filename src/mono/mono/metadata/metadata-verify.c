@@ -1873,17 +1873,31 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 
 		if (section_size < 4)
 			FAIL (ctx, g_strdup_printf ("MethodHeader: Section size too small"));
-			
+
 		if (ADDP_IS_GREATER_OR_OVF (ptr, section_size - 4, end)) /*must be section_size -4 as ptr was incremented by safe_read32*/
 			FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for section content %d", section_size));
 
 		if (section_header & METHOD_HEADER_SECTION_EHTABLE) {
-			guint32 clauses = (section_size - 4) / (is_fat ? 24 : 12);
+			guint32 i, clauses = (section_size - 4) / (is_fat ? 24 : 12);
 			if (clauses * (is_fat ? 24 : 12) + 4 != section_size)
 				FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid EH section size %d, it's not of the proper size", section_size));
+
+			/* only verify the class token is verified as the rest is done by the IL verifier*/
+			for (i = 0; i < clauses; ++i) {
+				guint32 class_token = 0;
+				ptr += (is_fat ? 20 : 8);
+				if (!safe_read32 (class_token, ptr, end))
+					FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for section %d", i));
+				if (!*ptr == MONO_EXCEPTION_CLAUSE_NONE && class_token) {
+					guint table = mono_metadata_token_table (class_token);
+					if (table != MONO_TABLE_TYPEREF && table != MONO_TABLE_TYPEDEF && table != MONO_TABLE_TYPESPEC)
+						FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid section %d class token table %x", i, table));
+					if (mono_metadata_token_index (class_token) > ctx->image->tables [table].rows)
+						FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid section %d class token index %x", i, mono_metadata_token_index (class_token)));
+				}
+			}
 		}
 
-		//TODO verify the eh clauses
 		if (!(section_header & METHOD_HEADER_SECTION_MORE_SECTS))
 			break;
 	} while (1);
