@@ -2377,9 +2377,6 @@ write_mapping_block (gsize thread_id) {
 			write_uint32 (0);
 		}
 		write_string (current_method->name);
-		
-		printf ("MAPPING: method [flags %d, iflags %d, wrapper %d] %s\n", method->flags, method->flags, method->flags, current_method->name);
-		
 #if (DEBUG_MAPPING_EVENTS)
 		printf ("mapping METHOD ([%d]%d => %s)\n", class_element?class_element->id:1, current_method->id, current_method->name);
 #endif
