@@ -206,7 +206,7 @@ mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
  * STACK would be 444 for 32 bit darwin
  */
 #ifdef __mono_ppc64__
-#define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 13 * sizeof (gulong))
+#define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 31 * sizeof (gulong))
 #else
 #define STACK (448)
 #endif
