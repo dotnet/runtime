@@ -1491,6 +1491,13 @@ mono_main (int argc, char* argv[])
 	if (getenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;
 
+#ifdef MONO_CROSS_COMPILE
+       if (!mono_compile_aot) {
+		   fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.");
+		   exit (1);
+       }
+#endif
+
 	if ((action == DO_EXEC) && mono_debug_using_mono_debugger ())
 		action = DO_DEBUGGER;
 
