@@ -4677,7 +4677,7 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 		case MONO_TYPE_U1:
 			size = 1; break;
 		/* we need to swap on big endian, so punt. Should we handle R4 and R8 as well? */
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#if TARGET_BYTE_ORDER == G_LITTLE_ENDIAN
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
