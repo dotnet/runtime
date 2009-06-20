@@ -8727,7 +8727,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ins = emit_get_rgctx_klass (cfg, context_used,
 							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
 					} else if (cfg->compile_aot) {
-						EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
+						if (method->wrapper_type) {
+							/* FIXME: n is not a normal token */
+							cfg->disable_aot = TRUE;
+							EMIT_NEW_PCONST (cfg, ins, NULL);
+						} else {
+							EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
+						}
 					} else {
 						EMIT_NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
 					}

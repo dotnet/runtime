@@ -1910,15 +1910,13 @@ add_wrappers (MonoAotCompile *acfg)
 		klass = mono_class_get (acfg->image, token);
 
 		if (klass->valuetype && !klass->generic_container && ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT)) {
-			MonoMarshalType *info;
 			gboolean can_marshal = TRUE;
-			int j;
-
-			info = mono_marshal_load_type_info (klass);
+			gpointer iter = NULL;
+			MonoClassField *field;
 
 			/* Only allow a few field types to avoid asserts in the marshalling code */
-			for (j = 0; j < info->num_fields; j++) {
-				switch (info->fields [j].field->type->type) {
+			while ((field = mono_class_get_fields (klass, &iter))) {
+				switch (field->type->type) {
 				case MONO_TYPE_I4:
 				case MONO_TYPE_U4:
 				case MONO_TYPE_I1:
