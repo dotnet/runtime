@@ -4784,7 +4784,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_set_generic_sharing_supported (TRUE);
 #endif
 
+#ifndef MONO_CROSS_COMPILE
 	mono_runtime_install_handlers ();
+#endif
 	mono_threads_install_cleanup (mini_thread_cleanup);
 
 #ifdef MONO_ARCH_HAVE_NOTIFY_PENDING_EXC
