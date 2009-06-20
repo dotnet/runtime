@@ -123,7 +123,7 @@ enum {
 	PPC_TRAP_GE_UN = 16 + PPC_TRAP_EQ
 };
 
-#define ppc_emit32(c,x) do { *((guint32 *) (c)) = x; (c) = (gpointer)((guint8 *)(c) + sizeof (guint32));} while (0)
+#define ppc_emit32(c,x) do { *((guint32 *) (c)) = GUINT32_TO_BE (x); (c) = (gpointer)((guint8 *)(c) + sizeof (guint32));} while (0)
 
 #define ppc_is_imm16(val) ((((val)>> 15) == 0) || (((val)>> 15) == -1))
 #define ppc_is_uimm16(val) ((glong)(val) >= 0L && (glong)(val) <= 65535L)
@@ -132,6 +132,58 @@ enum {
 		ppc_lis ((c), (D),      (guint32)(v) >> 16);	\
 		ppc_ori ((c), (D), (D), (guint32)(v) & 0xffff);	\
 	} G_STMT_END
+
+/* Macros to load/store pointer sized quantities */
+
+#if defined(__mono_ppc64__) && !defined(__mono_ilp32__)
+
+#define ppc_load_reg(c,D,d,A)         ppc_ld   ((c), (D), (d), (A))
+#define ppc_load_reg_update(c,D,d,A)  ppc_ldu  ((c), (D), (d), (A))
+#define ppc_load_reg_indexed(c,D,A,B)        ppc_ldx  ((c), (D), (A), (B))
+#define ppc_load_reg_update_indexed(c,D,A,B) ppc_ldux ((c), (D), (A), (B))
+
+#define ppc_store_reg(c,S,d,A)        ppc_std  ((c), (S), (d), (A))
+#define ppc_store_reg_update(c,S,d,A) ppc_stdu ((c), (S), (d), (A))
+#define ppc_store_reg_indexed(c,S,A,B)        ppc_stdx  ((c), (S), (A), (B))
+#define ppc_store_reg_update_indexed(c,S,A,B) ppc_stdux ((c), (S), (A), (B))
+
+#else
+
+/* Same as ppc32 */
+#define ppc_load_reg(c,D,d,A)         ppc_lwz  ((c), (D), (d), (A))
+#define ppc_load_reg_update(c,D,d,A)  ppc_lwzu ((c), (D), (d), (A))
+#define ppc_load_reg_indexed(c,D,A,B)        ppc_lwzx ((c), (D), (A), (B))
+#define ppc_load_reg_update_indexed(c,D,A,B) ppc_lwzux ((c), (D), (A), (B))
+
+#define ppc_store_reg(c,S,d,A)        ppc_stw  ((c), (S), (d), (A))
+#define ppc_store_reg_update(c,S,d,A) ppc_stwu ((c), (S), (d), (A))
+#define ppc_store_reg_indexed(c,S,A,B)        ppc_stwx  ((c), (S), (A), (B))
+#define ppc_store_reg_update_indexed(c,S,A,B) ppc_stwux ((c), (S), (A), (B))
+
+#endif
+
+/* Macros to load/store regsize quantities */
+
+#ifdef __mono_ppc64__
+#define ppc_ldr(c,D,d,A)         ppc_ld  ((c), (D), (d), (A))
+#define ppc_ldr_indexed(c,D,A,B) ppc_ldx  ((c), (D), (A), (B))
+#define ppc_str(c,S,d,A)         ppc_std ((c), (S), (d), (A))
+#define ppc_str_update(c,S,d,A)  ppc_stdu ((c), (S), (d), (A))
+#define ppc_str_indexed(c,S,A,B) ppc_stdx ((c), (S), (A), (B))
+#define ppc_str_update_indexed(c,S,A,B) ppc_stdux ((c), (S), (A), (B))
+#else
+#define ppc_ldr(c,D,d,A)         ppc_lwz  ((c), (D), (d), (A))
+#define ppc_ldr_indexed(c,D,A,B) ppc_lwzx ((c), (D), (A), (B))
+#define ppc_str(c,S,d,A)         ppc_stw ((c), (S), (d), (A))
+#define ppc_str_update(c,S,d,A)  ppc_stwu ((c), (S), (d), (A))
+#define ppc_str_indexed(c,S,A,B) ppc_stwx ((c), (S), (A), (B))
+#define ppc_str_update_indexed(c,S,A,B) ppc_stwux ((c), (S), (A), (B))
+#endif
+
+#define ppc_str_multiple(c,S,d,A) ppc_store_multiple_regs((c),(S),(d),(A))
+#define ppc_ldr_multiple(c,D,d,A) ppc_load_multiple_regs((c),(D),(d),(A))
+
+/* PPC32 macros */
 
 #ifndef __mono_ppc64__
 
@@ -709,17 +761,18 @@ my and Ximian's copyright to this code. ;)
 #ifdef __mono_ppc64__
 
 #define ppc_load_sequence(c,D,v) G_STMT_START {	\
-		ppc_lis  ((c), (D),      ((guint64)(v) >> 48) & 0xffff);	\
-		ppc_ori  ((c), (D), (D), ((guint64)(v) >> 32) & 0xffff);	\
+		guint64 val = (guint64)(v);				\
+		ppc_lis  ((c), (D),      (val >> 48) & 0xffff);	\
+		ppc_ori  ((c), (D), (D), (val >> 32) & 0xffff);	\
 		ppc_sldi ((c), (D), (D), 32); \
-		ppc_oris ((c), (D), (D), ((guint64)(v) >> 16) & 0xffff);	\
-		ppc_ori  ((c), (D), (D),  (guint64)(v)        & 0xffff);	\
+		ppc_oris ((c), (D), (D), (val >> 16) & 0xffff);	\
+		ppc_ori  ((c), (D), (D),  val        & 0xffff);	\
 	} G_STMT_END
 
 #define PPC_LOAD_SEQUENCE_LENGTH	20
 
-#define ppc_is_imm32(val) (((((long)val)>> 31) == 0) || ((((long)val)>> 31) == -1))
-#define ppc_is_imm48(val) (((((long)val)>> 47) == 0) || ((((long)val)>> 47) == -1))
+#define ppc_is_imm32(val) (((((gint64)val)>> 31) == 0) || ((((gint64)val)>> 31) == -1))
+#define ppc_is_imm48(val) (((((gint64)val)>> 47) == 0) || ((((gint64)val)>> 47) == -1))
 
 #define ppc_load48(c,D,v) G_STMT_START {	\
 		ppc_li   ((c), (D), ((gint64)(v) >> 32) & 0xffff);	\
@@ -729,14 +782,15 @@ my and Ximian's copyright to this code. ;)
 	} G_STMT_END
 
 #define ppc_load(c,D,v) G_STMT_START {	\
-		if (ppc_is_imm16 ((gulong)(v)))	{	\
-			ppc_li ((c), (D), (guint16)(guint64)(v));	\
-		} else if (ppc_is_imm32 ((gulong)(v))) {	\
-			ppc_load32 ((c), (D), (guint32)(guint64)(v)); \
-		} else if (ppc_is_imm48 ((gulong)(v))) {	\
-			ppc_load48 ((c), (D), (guint64)(v)); \
+		guint64 val = (guint64)(v);				\
+		if (ppc_is_imm16 (val))	{						\
+			ppc_li ((c), (D), val);	\
+		} else if (ppc_is_imm32 (val)) {	\
+			ppc_load32 ((c), (D), val); \
+		} else if (ppc_is_imm48 (val)) {	\
+			ppc_load48 ((c), (D), val); \
 		} else {	\
-			ppc_load_sequence ((c), (D), (guint64)(v)); \
+			ppc_load_sequence ((c), (D), val); \
 		}	\
 	} G_STMT_END
 
@@ -746,27 +800,19 @@ my and Ximian's copyright to this code. ;)
 		ppc_load_reg ((c), (D), 0, ppc_r11);	\
 	} G_STMT_END
 
-#define ppc_load_reg(c,D,d,A)         ppc_ld   ((c), (D), (d), (A))
-#define ppc_load_reg_update(c,D,d,A)  ppc_ldu  ((c), (D), (d), (A))
-#define ppc_load_reg_indexed(c,D,A,B)        ppc_ldx  ((c), (D), (A), (B))
-#define ppc_load_reg_update_indexed(c,D,A,B) ppc_ldux ((c), (D), (A), (B))
 #define ppc_load_multiple_regs(c,D,d,A) G_STMT_START { \
 		int __i, __o = (d);			\
 		for (__i = (D); __i <= 31; ++__i) {	\
-			ppc_load_reg ((c), __i, __o, (A));		\
-			__o += sizeof (gulong);				\
+			ppc_ldr ((c), __i, __o, (A));		\
+			__o += sizeof (guint64);				\
 		} \
 	} G_STMT_END
 
-#define ppc_store_reg(c,S,d,A)        ppc_std  ((c), (S), (d), (A))
-#define ppc_store_reg_update(c,S,d,A) ppc_stdu ((c), (S), (d), (A))
-#define ppc_store_reg_indexed(c,S,A,B)        ppc_stdx  ((c), (S), (A), (B))
-#define ppc_store_reg_update_indexed(c,S,A,B) ppc_stdux ((c), (S), (A), (B))
 #define ppc_store_multiple_regs(c,S,d,A) G_STMT_START { \
 		int __i, __o = (d);			\
 		for (__i = (S); __i <= 31; ++__i) {	\
-			ppc_store_reg ((c), __i, __o, (A));		\
-			__o += sizeof (gulong);				\
+			ppc_str ((c), __i, __o, (A));		\
+			__o += sizeof (guint64);				\
 		} \
 	} G_STMT_END
 
