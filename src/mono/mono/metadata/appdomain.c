@@ -818,6 +818,9 @@ mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, gboolean refon
 	MonoBoolean isrefonly;
 	gpointer params [2];
 
+	if (mono_runtime_get_no_exec ())
+		return NULL;
+
 	g_assert (domain != NULL && fname != NULL);
 
 	klass = domain->domain->mbr.obj.vtable->klass;
