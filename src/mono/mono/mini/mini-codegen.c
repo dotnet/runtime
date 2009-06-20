@@ -40,15 +40,6 @@ static const int regbank_size [] = {
 	MONO_MAX_XREGS
 };
 
-/* FIXME: */
-#ifdef __mono_ilp32__
-#define OP_LOADR_MEMBASE OP_LOADI8_MEMBASE
-#define OP_STORER_MEMBASE_REG OP_STOREI8_MEMBASE_REG
-#else
-#define OP_LOADR_MEMBASE OP_LOAD_MEMBASE
-#define OP_STORER_MEMBASE_REG OP_STORE_MEMBASE_REG
-#endif
-
 static const int regbank_load_ops [] = { 
 	OP_LOADR_MEMBASE,
 	OP_LOADR8_MEMBASE,
