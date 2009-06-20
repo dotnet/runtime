@@ -629,7 +629,7 @@ static inline gint32 InterlockedExchange(register volatile gint32 *dest, registe
 #define InterlockedExchangePointer(dest,exch) (void*)InterlockedExchange((volatile gint32 *)(dest), (gint32)(exch))
 #else
 
-#ifdef __mono_ppc64__
+#if defined(__mono_ppc64__) && !defined(__mono_ilp32__)
 #define LDREGX "ldarx"
 #define STREGCXD "stdcx."
 #define CMPREG "cmpd"
