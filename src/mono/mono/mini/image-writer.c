@@ -72,7 +72,7 @@
 #define AS_INT32_DIRECTIVE ".long"
 #define AS_INT64_DIRECTIVE ".quad"
 
-#if defined(TARGET_AMD64) || defined(TARGET_POWERPC64)
+#if (defined(TARGET_AMD64) || defined(TARGET_POWERPC64)) && !defined(__mono_ilp32__)
 #define AS_POINTER_DIRECTIVE ".quad"
 #else
 #define AS_POINTER_DIRECTIVE ".long"

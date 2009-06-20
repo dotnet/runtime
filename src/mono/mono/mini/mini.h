@@ -1148,6 +1148,15 @@ enum {
 #define OP_STOREP_MEMBASE_IMM OP_STOREI4_MEMBASE_IMM
 #endif
 
+/* Opcodes to load/store regsize quantities */
+#ifdef __mono_ilp32__
+#define OP_LOADR_MEMBASE OP_LOADI8_MEMBASE
+#define OP_STORER_MEMBASE_REG OP_STOREI8_MEMBASE_REG
+#else
+#define OP_LOADR_MEMBASE OP_LOAD_MEMBASE
+#define OP_STORER_MEMBASE_REG OP_STORE_MEMBASE_REG
+#endif
+
 typedef enum {
 	STACK_INV,
 	STACK_I4,

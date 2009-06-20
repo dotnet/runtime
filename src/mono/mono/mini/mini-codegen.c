@@ -40,14 +40,23 @@ static const int regbank_size [] = {
 	MONO_MAX_XREGS
 };
 
+/* FIXME: */
+#ifdef __mono_ilp32__
+#define OP_LOADR_MEMBASE OP_LOADI8_MEMBASE
+#define OP_STORER_MEMBASE_REG OP_STOREI8_MEMBASE_REG
+#else
+#define OP_LOADR_MEMBASE OP_LOAD_MEMBASE
+#define OP_STORER_MEMBASE_REG OP_STORE_MEMBASE_REG
+#endif
+
 static const int regbank_load_ops [] = { 
-	OP_LOAD_MEMBASE,
+	OP_LOADR_MEMBASE,
 	OP_LOADR8_MEMBASE,
 	OP_LOADX_MEMBASE
 };
 
 static const int regbank_store_ops [] = { 
-	OP_STORE_MEMBASE_REG,
+	OP_STORER_MEMBASE_REG,
 	OP_STORER8_MEMBASE_REG,
 	OP_STOREX_MEMBASE
 };
@@ -73,7 +82,7 @@ static const regmask_t regbank_callee_regs [] = {
 };
 
 static const int regbank_spill_var_size[] = {
-	sizeof (gpointer),
+	sizeof (mgreg_t),
 	sizeof (double),
 	16 /*FIXME make this a constant. Maybe MONO_ARCH_SIMD_VECTOR_SIZE? */
 };
@@ -260,14 +269,14 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 	 */
 	info = &cfg->spill_info [bank][spillvar];
 	if (info->offset == -1) {
-		cfg->stack_offset += sizeof (gpointer) - 1;
-		cfg->stack_offset &= ~(sizeof (gpointer) - 1);
+		cfg->stack_offset += sizeof (mgreg_t) - 1;
+		cfg->stack_offset &= ~(sizeof (mgreg_t) - 1);
 
 		g_assert (bank < MONO_NUM_REGBANKS);
 		if (G_UNLIKELY (bank))
 			size = regbank_spill_var_size [bank];
 		else
-			size = sizeof (gpointer);
+			size = sizeof (mgreg_t);
 
 		if (cfg->flags & MONO_CFG_HAS_SPILLUP) {
 			cfg->stack_offset += size - 1;
