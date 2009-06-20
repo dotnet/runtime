@@ -1,3 +1,7 @@
+2009-06-20  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/glib.h: Add GUINT32_FROM/TO_BE macros.
+
 2009-06-09  Jonathan Chambers <joncham@gmail.com>
 	
 	* CMakeLists.txt: Add start of CMake build.
