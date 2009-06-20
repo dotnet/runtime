@@ -761,12 +761,11 @@ my and Ximian's copyright to this code. ;)
 #ifdef __mono_ppc64__
 
 #define ppc_load_sequence(c,D,v) G_STMT_START {	\
-		guint64 val = (guint64)(v);				\
-		ppc_lis  ((c), (D),      (val >> 48) & 0xffff);	\
-		ppc_ori  ((c), (D), (D), (val >> 32) & 0xffff);	\
+		ppc_lis  ((c), (D),      ((guint64)(v) >> 48) & 0xffff);	\
+		ppc_ori  ((c), (D), (D), ((guint64)(v) >> 32) & 0xffff);	\
 		ppc_sldi ((c), (D), (D), 32); \
-		ppc_oris ((c), (D), (D), (val >> 16) & 0xffff);	\
-		ppc_ori  ((c), (D), (D),  val        & 0xffff);	\
+		ppc_oris ((c), (D), (D), ((guint64)(v) >> 16) & 0xffff);	\
+		ppc_ori  ((c), (D), (D),  (guint64)(v)        & 0xffff);	\
 	} G_STMT_END
 
 #define PPC_LOAD_SEQUENCE_LENGTH	20
@@ -782,15 +781,14 @@ my and Ximian's copyright to this code. ;)
 	} G_STMT_END
 
 #define ppc_load(c,D,v) G_STMT_START {	\
-		guint64 val = (guint64)(v);				\
-		if (ppc_is_imm16 (val))	{						\
-			ppc_li ((c), (D), val);	\
-		} else if (ppc_is_imm32 (val)) {	\
-			ppc_load32 ((c), (D), val); \
-		} else if (ppc_is_imm48 (val)) {	\
-			ppc_load48 ((c), (D), val); \
+		if (ppc_is_imm16 ((guint64)(v)))	{	\
+			ppc_li ((c), (D), (guint16)(guint64)(v));	\
+		} else if (ppc_is_imm32 ((guint64)(v))) {	\
+			ppc_load32 ((c), (D), (guint32)(guint64)(v)); \
+		} else if (ppc_is_imm48 ((guint64)(v))) {	\
+			ppc_load48 ((c), (D), (guint64)(v)); \
 		} else {	\
-			ppc_load_sequence ((c), (D), val); \
+			ppc_load_sequence ((c), (D), (guint64)(v)); \
 		}	\
 	} G_STMT_END
 
