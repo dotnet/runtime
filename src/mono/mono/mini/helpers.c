@@ -62,6 +62,9 @@ opnames[] = {
 #define emit_debug_info  FALSE
 #endif
 
+#define ARCH_PREFIX ""
+//#define ARCH_PREFIX "powerpc64-linux-gnu-"
+
 const char*
 mono_inst_name (int op) {
 	if (op >= OP_LOAD && op <= OP_LAST)
@@ -215,7 +218,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	close (i);
 #endif
 
-	cmd = g_strdup_printf (AS_CMD " %s -o %s", as_file, o_file);
+	cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
 	system (cmd); 
 	g_free (cmd);
 	if (!objdump_args)
@@ -226,12 +229,12 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	 * The arm assembler inserts ELF directives instructing objdump to display 
 	 * everything as data.
 	 */
-	cmd = g_strdup_printf ("strip -x %s", o_file);
+	cmd = g_strdup_printf (ARCH_PREFIX "strip -x %s", o_file);
 	system (cmd);
 	g_free (cmd);
 #endif
 	
-	cmd = g_strdup_printf (DIS_CMD " %s %s", objdump_args, o_file);
+	cmd = g_strdup_printf (ARCH_PREFIX DIS_CMD " %s %s", objdump_args, o_file);
 	system (cmd);
 	g_free (cmd);
 	
