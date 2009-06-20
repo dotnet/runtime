@@ -1,3 +1,8 @@
+2009-06-21  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in (TARGET_BYTE_ORDER): New define containing the byte order of
+	the target.
+
 2009-06-18  Marek Habersack  <mhabersack@novell.com>
 
 	* data/browscap.ini: applied Mono modifications to the upstream

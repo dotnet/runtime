@@ -2080,6 +2080,14 @@ else
    AC_DEFINE(SIZEOF_REGISTER,SIZEOF_VOID_P,[size of machine integer registers])
 fi
 
+if test "x$target_byte_order" = "xG_BIG_ENDIAN"; then
+   AC_DEFINE(TARGET_BYTE_ORDER,G_BIG_ENDIAN,[byte order of target])
+elif test "x$target_byte_order" = "xG_LITTLE_ENDIAN"; then
+   AC_DEFINE(TARGET_BYTE_ORDER,G_LITTLE_ENDIAN,[byte order of target])
+else
+   AC_DEFINE(TARGET_BYTE_ORDER,G_BYTE_ORDER,[byte order of target])
+fi
+
 if test "x$have_visibility_hidden" = "xyes"; then
    AC_DEFINE(HAVE_VISIBILITY_HIDDEN, 1, [Support for the visibility ("hidden") attribute])
 fi
