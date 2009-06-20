@@ -156,6 +156,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *unwind_ops;
 	guint32 unwind_info_offset;
 	char *got_symbol;
+	char *plt_symbol;
 	GHashTable *method_label_hash;
 	const char *temp_prefix;
 	guint32 label_generator;
@@ -317,6 +318,12 @@ emit_global (MonoAotCompile *acfg, const char *name, gboolean func)
 	} else {
 		img_writer_emit_global (acfg->w, name, func);
 	}
+}
+
+static void
+emit_symbol_size (MonoAotCompile *acfg, const char *name, const char *end_label)
+{
+	img_writer_emit_symbol_size (acfg->w, name, end_label);
 }
 
 static void
@@ -602,7 +609,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		} else {
 			/* Need to make sure this is 9 bytes long */
 			emit_byte (acfg, '\xe9');
-			emit_symbol_diff (acfg, "plt", ".", -4);
+			emit_symbol_diff (acfg, acfg->plt_symbol, ".", -4);
 			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		}
 #elif defined(TARGET_AMD64)
@@ -1710,62 +1717,6 @@ add_wrappers (MonoAotCompile *acfg)
 	 * names.
 	 */
 
-	/* FIXME: Collect these automatically */
-
-	/* Runtime invoke wrappers */
-
-	/* void runtime-invoke () [.cctor] */
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-	csig->ret = &mono_defaults.void_class->byval_arg;
-	add_method (acfg, get_runtime_invoke_sig (csig));
-
-	/* void runtime-invoke () [Finalize] */
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-	csig->hasthis = 1;
-	csig->ret = &mono_defaults.void_class->byval_arg;
-	add_method (acfg, get_runtime_invoke_sig (csig));
-
-	/* void runtime-invoke (string) [exception ctor] */
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	csig->hasthis = 1;
-	csig->ret = &mono_defaults.void_class->byval_arg;
-	csig->params [0] = &mono_defaults.string_class->byval_arg;
-	add_method (acfg, get_runtime_invoke_sig (csig));
-
-	/* void runtime-invoke (string, string) [exception ctor] */
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	csig->hasthis = 1;
-	csig->ret = &mono_defaults.void_class->byval_arg;
-	csig->params [0] = &mono_defaults.string_class->byval_arg;
-	csig->params [1] = &mono_defaults.string_class->byval_arg;
-	add_method (acfg, get_runtime_invoke_sig (csig));
-
-	/* string runtime-invoke () [Exception.ToString ()] */
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-	csig->hasthis = 1;
-	csig->ret = &mono_defaults.string_class->byval_arg;
-	add_method (acfg, get_runtime_invoke_sig (csig));
-
-	/* void runtime-invoke (string, Exception) [exception ctor] */
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	csig->hasthis = 1;
-	csig->ret = &mono_defaults.void_class->byval_arg;
-	csig->params [0] = &mono_defaults.string_class->byval_arg;
-	csig->params [1] = &mono_defaults.exception_class->byval_arg;
-	add_method (acfg, get_runtime_invoke_sig (csig));
-
-	/* Assembly runtime-invoke (string, bool) [DoAssemblyResolve] */
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	csig->hasthis = 1;
-	csig->ret = &(mono_class_from_name (
-										mono_defaults.corlib, "System.Reflection", "Assembly"))->byval_arg;
-	csig->params [0] = &mono_defaults.string_class->byval_arg;
-	csig->params [1] = &mono_defaults.boolean_class->byval_arg;
-	add_method (acfg, get_runtime_invoke_sig (csig));
-
-	/* runtime-invoke used by finalizers */
-	add_method (acfg, mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE));
-
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
@@ -1799,6 +1750,60 @@ add_wrappers (MonoAotCompile *acfg)
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
 		MonoMethodDesc *desc;
 		MonoMethod *orig_method;
+
+		/* Runtime invoke wrappers */
+
+		/* void runtime-invoke () [.cctor] */
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		csig->ret = &mono_defaults.void_class->byval_arg;
+		add_method (acfg, get_runtime_invoke_sig (csig));
+
+		/* void runtime-invoke () [Finalize] */
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		csig->hasthis = 1;
+		csig->ret = &mono_defaults.void_class->byval_arg;
+		add_method (acfg, get_runtime_invoke_sig (csig));
+
+		/* void runtime-invoke (string) [exception ctor] */
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+		csig->hasthis = 1;
+		csig->ret = &mono_defaults.void_class->byval_arg;
+		csig->params [0] = &mono_defaults.string_class->byval_arg;
+		add_method (acfg, get_runtime_invoke_sig (csig));
+
+		/* void runtime-invoke (string, string) [exception ctor] */
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+		csig->hasthis = 1;
+		csig->ret = &mono_defaults.void_class->byval_arg;
+		csig->params [0] = &mono_defaults.string_class->byval_arg;
+		csig->params [1] = &mono_defaults.string_class->byval_arg;
+		add_method (acfg, get_runtime_invoke_sig (csig));
+
+		/* string runtime-invoke () [Exception.ToString ()] */
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		csig->hasthis = 1;
+		csig->ret = &mono_defaults.string_class->byval_arg;
+		add_method (acfg, get_runtime_invoke_sig (csig));
+
+		/* void runtime-invoke (string, Exception) [exception ctor] */
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+		csig->hasthis = 1;
+		csig->ret = &mono_defaults.void_class->byval_arg;
+		csig->params [0] = &mono_defaults.string_class->byval_arg;
+		csig->params [1] = &mono_defaults.exception_class->byval_arg;
+		add_method (acfg, get_runtime_invoke_sig (csig));
+
+		/* Assembly runtime-invoke (string, bool) [DoAssemblyResolve] */
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+		csig->hasthis = 1;
+		csig->ret = &(mono_class_from_name (
+											mono_defaults.corlib, "System.Reflection", "Assembly"))->byval_arg;
+		csig->params [0] = &mono_defaults.string_class->byval_arg;
+		csig->params [1] = &mono_defaults.boolean_class->byval_arg;
+		add_method (acfg, get_runtime_invoke_sig (csig));
+
+		/* runtime-invoke used by finalizers */
+		add_method (acfg, mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE));
 
 		/* JIT icall wrappers */
 		/* FIXME: locking */
@@ -2271,12 +2276,52 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	}
 }
 
+static char*
+get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
+{
+	char *name1, *name2, *cached;
+	int i, j, len, count;
+		
+	name1 = mono_method_full_name (method, TRUE);
+	len = strlen (name1);
+	name2 = malloc (strlen (prefix) + len + 16);
+	memcpy (name2, prefix, strlen (prefix));
+	j = strlen (prefix);
+	for (i = 0; i < len; ++i) {
+		if (isalnum (name1 [i])) {
+			name2 [j ++] = name1 [i];
+		} else if (name1 [i] == ' ' && name1 [i + 1] == '(' && name1 [i + 2] == ')') {
+			i += 2;
+		} else if (name1 [i] == ',' && name1 [i + 1] == ' ') {
+			name2 [j ++] = '_';
+			i++;
+		} else if (name1 [i] == '(' || name1 [i] == ')' || name1 [i] == '>') {
+		} else
+			name2 [j ++] = '_';
+	}
+	name2 [j] = '\0';
+
+	g_free (name1);
+
+	count = 0;
+	while (g_hash_table_lookup (cache, name2)) {
+		sprintf (name2 + j, "_%d", count);
+		count ++;
+	}
+
+	cached = g_strdup (name2);
+	g_hash_table_insert (cache, cached, cached);
+
+	return name2;
+}
+
 static void
 emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 {
 	MonoMethod *method;
 	int method_index;
 	guint8 *code;
+	char *debug_sym = NULL;
 	char symbol [128];
 	int func_alignment = AOT_FUNC_ALIGNMENT;
 	MonoMethodHeader *header;
@@ -2314,47 +2359,17 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_label (acfg, symbol);
 
 	if (acfg->aot_opts.write_symbols) {
-		char *name1, *name2, *cached;
-		int i, j, len, count;
-
 		/* 
 		 * Write a C style symbol for every method, this has two uses:
 		 * - it works on platforms where the dwarf debugging info is not
 		 *   yet supported.
 		 * - it allows the setting of breakpoints of aot-ed methods.
 		 */
-		name1 = mono_method_full_name (method, TRUE);
-		len = strlen (name1);
-		name2 = malloc (len + 1);
-		j = 0;
-		for (i = 0; i < len; ++i) {
-			if (isalnum (name1 [i])) {
-				name2 [j ++] = name1 [i];
-			} else if (name1 [i] == ' ' && name1 [i + 1] == '(' && name1 [i + 2] == ')') {
-				i += 2;
-			} else if (name1 [i] == ',' && name1 [i + 1] == ' ') {
-				name2 [j ++] = '_';
-				i++;
-			} else if (name1 [i] == '(' || name1 [i] == ')' || name1 [i] == '>') {
-			} else
-				name2 [j ++] = '_';
-		}
-		name2 [j] = '\0';
-
-		count = 0;
-		while (g_hash_table_lookup (acfg->method_label_hash, name2)) {
-			sprintf (name2 + j, "_%d", count);
-			count ++;
-		}
-
-		cached = g_strdup (name2);
-		g_hash_table_insert (acfg->method_label_hash, cached, cached);
+		debug_sym = get_debug_sym (method, "", acfg->method_label_hash);
 
 		sprintf (symbol, "%sme_%x", acfg->temp_prefix, method_index);
-		emit_local_symbol (acfg, name2, symbol, TRUE);
-		emit_label (acfg, name2);
-		g_free (name1);
-		g_free (name2);
+		emit_local_symbol (acfg, debug_sym, symbol, TRUE);
+		emit_label (acfg, debug_sym);
 	}
 
 	if (cfg->verbose_level > 0)
@@ -2367,6 +2382,11 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE);
 
 	emit_line (acfg);
+
+	if (acfg->aot_opts.write_symbols) {
+		emit_symbol_size (acfg, debug_sym, ".");
+		g_free (debug_sym);
+	}
 
 	sprintf (symbol, "%sme_%x", acfg->temp_prefix, method_index);
 	emit_label (acfg, symbol);
@@ -2843,6 +2863,9 @@ emit_plt (MonoAotCompile *acfg)
 {
 	char symbol [128];
 	int i;
+	GHashTable *cache;
+
+	cache = g_hash_table_new (g_str_hash, g_str_equal);
 
 	emit_line (acfg);
 	sprintf (symbol, "plt");
@@ -2856,28 +2879,51 @@ emit_plt (MonoAotCompile *acfg)
 	emit_alignment (acfg, 16);
 #endif
 	emit_label (acfg, symbol);
+	emit_label (acfg, acfg->plt_symbol);
 
 	for (i = 0; i < acfg->plt_offset; ++i) {
 		char label [128];
+		char *debug_sym = NULL;
 
 		sprintf (label, "%sp_%d", acfg->temp_prefix, i);
 		emit_label (acfg, label);
+
+		if (acfg->aot_opts.write_symbols) {
+			MonoJumpInfo *patch_info = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
+
+			if (patch_info && patch_info->type == MONO_PATCH_INFO_METHOD) {
+				char *debug_sym = get_debug_sym (patch_info->data.method, "plt_", cache);
+
+				emit_local_symbol (acfg, debug_sym, NULL, TRUE);
+				emit_label (acfg, debug_sym);
+			}
+		}
 
 		/* 
 		 * The first plt entry is used to transfer code to the AOT loader. 
 		 */
 		arch_emit_plt_entry (acfg, i);
+
+		if (debug_sym) {
+			emit_symbol_size (acfg, debug_sym, ".");
+			g_free (debug_sym);
+		}
 	}
+
+	emit_symbol_size (acfg, acfg->plt_symbol, ".");
 
 	sprintf (symbol, "plt_end");
 	emit_global (acfg, symbol, TRUE);
 	emit_label (acfg, symbol);
+
+	g_hash_table_destroy (cache);
 }
 
 static G_GNUC_UNUSED void
 emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code, 
 				 guint32 code_size, int got_offset, MonoJumpInfo *ji, GSList *unwind_ops)
 {
+	char start_symbol [256];
 	char symbol [256];
 	guint32 buf_size;
 	MonoJumpInfo *patch_info;
@@ -2886,12 +2932,12 @@ emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code,
 
 	/* Emit code */
 
-	sprintf (symbol, "%s", name);
+	sprintf (start_symbol, "%s", name);
 
 	emit_section_change (acfg, ".text", 0);
-	emit_global (acfg, symbol, TRUE);
+	emit_global (acfg, start_symbol, TRUE);
 	emit_alignment (acfg, 16);
-	emit_label (acfg, symbol);
+	emit_label (acfg, start_symbol);
 
 	sprintf (symbol, "%snamed_%s", acfg->temp_prefix, name);
 	emit_label (acfg, symbol);
@@ -2901,6 +2947,8 @@ emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code,
 	 * TRUE here.
 	 */
 	emit_and_reloc_code (acfg, NULL, code, code_size, ji, TRUE);
+
+	emit_symbol_size (acfg, start_symbol, ".");
 
 	/* Emit info */
 
@@ -4867,6 +4915,8 @@ acfg_free (MonoAotCompile *acfg)
 			g_free (acfg->cfgs [i]);
 	g_free (acfg->cfgs);
 	g_free (acfg->static_linking_symbol);
+	g_free (acfg->got_symbol);
+	g_free (acfg->plt_symbol);
 	g_ptr_array_free (acfg->methods, TRUE);
 	g_ptr_array_free (acfg->got_patches, TRUE);
 	g_ptr_array_free (acfg->image_table, TRUE);
@@ -4926,6 +4976,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? 128 : 0;
 
 	acfg->got_symbol = g_strdup_printf ("mono_aot_%s_got", acfg->image->assembly->aname.name);
+	acfg->plt_symbol = g_strdup_printf ("mono_aot_%s_plt", acfg->image->assembly->aname.name);
 
 	/* Get rid of characters which cannot occur in symbols */
 	p = acfg->got_symbol;

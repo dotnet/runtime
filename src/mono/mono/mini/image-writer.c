@@ -1505,6 +1505,16 @@ asm_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const cha
 }
 
 static void
+asm_writer_emit_symbol_size (MonoImageWriter *acfg, const char *name, const char *end_label)
+{
+	asm_writer_emit_unset_mode (acfg);
+
+#ifndef TARGET_ASM_APPLE
+	fprintf (acfg->fp, "\t.size %s,%s-%s\n", name, end_label, name);
+#endif
+}
+
+static void
 asm_writer_emit_label (MonoImageWriter *acfg, const char *name)
 {
 	asm_writer_emit_unset_mode (acfg);
@@ -1745,6 +1755,13 @@ img_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const cha
 #else
 	asm_writer_emit_local_symbol (acfg, name, end_label, func);
 #endif
+}
+
+void
+img_writer_emit_symbol_size (MonoImageWriter *acfg, const char *name, const char *end_label)
+{
+	if (!acfg->use_bin_writer)
+		asm_writer_emit_symbol_size (acfg, name, end_label);
 }
 
 void

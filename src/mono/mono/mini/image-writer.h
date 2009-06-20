@@ -46,6 +46,8 @@ void img_writer_emit_global (MonoImageWriter *w, const char *name, gboolean func
 
 void img_writer_emit_local_symbol (MonoImageWriter *w, const char *name, const char *end_label, gboolean func) MONO_INTERNAL;
 
+void img_writer_emit_symbol_size (MonoImageWriter *w, const char *start, const char *end_label);
+
 void img_writer_emit_label (MonoImageWriter *w, const char *name) MONO_INTERNAL;
 
 void img_writer_emit_bytes (MonoImageWriter *w, const guint8* buf, int size) MONO_INTERNAL;
