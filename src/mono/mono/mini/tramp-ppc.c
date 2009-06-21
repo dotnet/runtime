@@ -184,7 +184,22 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 void
 mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr)
 {
-	g_assert_not_reached ();
+	guint32 ins1, ins2, offset;
+	mgreg_t *r = (mgreg_t*)regs;
+
+	/* Patch the jump table entry used by the plt entry */
+
+	/* Should be a lis+ori */
+	ins1 = ((guint32*)code)[0];
+	g_assert (ins1 >> 26 == 15);
+	ins2 = ((guint32*)code)[1];
+	g_assert (ins2 >> 26 == 24);
+	offset = ((ins1 & 0xffff) << 16) | (ins2 & 0xffff);
+
+	/* Either got or regs is set */
+	if (!got)
+		got = (gpointer*)r [30];
+	*(guint8**)((guint8*)got + offset) = addr;
 }
 
 void
@@ -196,7 +211,10 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 void
 mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
 {
-	g_assert_not_reached ();
+	if (mono_aot_only && !nullified_class_init_trampoline)
+		nullified_class_init_trampoline = mono_aot_get_named_code ("nullified_class_init_trampoline");
+
+	mono_arch_patch_plt_entry (code, NULL, regs, nullified_class_init_trampoline);
 }
 
 /* Stack size for trampoline function 
