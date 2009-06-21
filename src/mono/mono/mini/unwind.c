@@ -62,7 +62,7 @@ static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8,
 										  17, 18, 19, 20, 21, 22, 23, 24,
 										  25, 26, 27, 28, 29, 30, 31 };
 #define NUM_REGS 110
-#define DWARF_DATA_ALIGN (-sizeof (mgreg_t))
+#define DWARF_DATA_ALIGN (-(gint32)sizeof (mgreg_t))
 #define DWARF_PC_REG 108
 #else
 static int map_hw_reg_to_dwarf_reg [16];
@@ -83,7 +83,7 @@ static int map_dwarf_reg_to_hw_reg [NUM_REGS];
 int
 mono_hw_reg_to_dwarf_reg (int reg)
 {
-#ifdef TARGET_PPC
+#ifdef TARGET_POWERPC
 	if (reg == ppc_lr)
 		return 108;
 	else
@@ -134,6 +134,37 @@ encode_uleb128 (guint32 value, guint8 *buf, guint8 **endbuf)
 			b |= 0x80;
 		*p ++ = b;
 	} while (value);
+
+	*endbuf = p;
+}
+
+static G_GNUC_UNUSED void
+encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
+{
+	gboolean more = 1;
+	gboolean negative = (value < 0);
+	guint32 size = 32;
+	guint8 byte;
+	guint8 *p = buf;
+
+	while (more) {
+		byte = value & 0x7f;
+		value >>= 7;
+		/* the following is unnecessary if the
+		 * implementation of >>= uses an arithmetic rather
+		 * than logical shift for a signed left operand
+		 */
+		if (negative)
+			/* sign extend */
+			value |= - (1 <<(size - 7));
+		/* sign bit of byte is second high order bit (0x40) */
+		if ((value == 0 && !(byte & 0x40)) ||
+			(value == -1 && (byte & 0x40)))
+			more = 0;
+		else
+			byte |= 0x80;
+		*p ++= byte;
+	}
 
 	*endbuf = p;
 }
@@ -240,7 +271,7 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 			if (reg > 63) {
 				*p ++ = DW_CFA_offset_extended_sf;
 				encode_uleb128 (reg, p, &p);
-				encode_uleb128 (op->val / DWARF_DATA_ALIGN, p, &p);
+				encode_sleb128 (op->val / DWARF_DATA_ALIGN, p, &p);
 			} else {
 				*p ++ = DW_CFA_offset | reg;
 				encode_uleb128 (op->val / DWARF_DATA_ALIGN, p, &p);

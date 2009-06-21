@@ -4500,22 +4500,24 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
  * the instruction offset immediate for all the registers.
  */
 static guint8*
-save_registers (guint8* code, int pos, int base_reg, gboolean save_lmf, guint32 used_int_regs)
+save_registers (MonoCompile *cfg, guint8* code, int pos, int base_reg, gboolean save_lmf, guint32 used_int_regs, int cfa_offset)
 {
 	int i;
 	if (!save_lmf) {
 		for (i = 13; i <= 31; i++) {
 			if (used_int_regs & (1 << i)) {
-				ppc_store_reg (code, i, pos, base_reg);
-				pos += sizeof (gulong);
+				ppc_str (code, i, pos, base_reg);
+				mono_emit_unwind_op_offset (cfg, code, i, pos - cfa_offset);
+				pos += sizeof (mgreg_t);
 			}
 		}
 	} else {
 		/* pos is the start of the MonoLMF structure */
 		int offset = pos + G_STRUCT_OFFSET (MonoLMF, iregs);
 		for (i = 13; i <= 31; i++) {
-			ppc_store_reg (code, i, offset, base_reg);
-			offset += sizeof (gulong);
+			ppc_str (code, i, offset, base_reg);
+			mono_emit_unwind_op_offset (cfg, code, i, offset - cfa_offset);
+			offset += sizeof (mgreg_t);
 		}
 		offset = pos + G_STRUCT_OFFSET (MonoLMF, fregs);
 		for (i = 14; i < 32; i++) {
@@ -4551,7 +4553,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	long alloc_size, pos, max_offset;
+	long alloc_size, pos, max_offset, cfa_offset;
 	int i;
 	guint8 *code;
 	CallInfo *cinfo;
@@ -4562,13 +4564,20 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
 
+	/* We currently emit unwind info for aot, but don't use it */
+	mono_emit_unwind_op_def_cfa (cfg, code, ppc_r1, 0);
+
 	sig = mono_method_signature (method);
 	cfg->code_size = MONO_PPC_32_64_CASE (260, 384) + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
+	cfa_offset = 0;
+
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
 		ppc_mflr (code, ppc_r0);
-		ppc_store_reg (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
+		ppc_str (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
+
+		mono_emit_unwind_op_offset (cfg, code, ppc_lr, PPC_RET_ADDR_OFFSET);
 	}
 
 	alloc_size = cfg->stack_offset;
@@ -4595,18 +4604,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
 	if (alloc_size) {
 		if (ppc_is_imm16 (-alloc_size)) {
-			ppc_store_reg_update (code, ppc_sp, -alloc_size, ppc_sp);
-			code = save_registers (code, alloc_size - pos, ppc_sp, method->save_lmf, cfg->used_int_regs);
+			ppc_str_update (code, ppc_sp, -alloc_size, ppc_sp);
+			cfa_offset = alloc_size;
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, alloc_size);
+			code = save_registers (cfg, code, alloc_size - pos, ppc_sp, method->save_lmf, cfg->used_int_regs, cfa_offset);
 		} else {
 			if (pos)
 				ppc_addi (code, ppc_r11, ppc_sp, -pos);
 			ppc_load (code, ppc_r0, -alloc_size);
-			ppc_store_reg_update_indexed (code, ppc_sp, ppc_sp, ppc_r0);
-			code = save_registers (code, 0, ppc_r11, method->save_lmf, cfg->used_int_regs);
+			ppc_str_update_indexed (code, ppc_sp, ppc_sp, ppc_r0);
+			cfa_offset = alloc_size;
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, alloc_size);
+			code = save_registers (cfg, code, 0, ppc_r11, method->save_lmf, cfg->used_int_regs, cfa_offset);
 		}
 	}
-	if (cfg->frame_reg != ppc_sp)
+	if (cfg->frame_reg != ppc_sp) {
 		ppc_mr (code, cfg->frame_reg, ppc_sp);
+		mono_emit_unwind_op_def_cfa_reg (cfg, code, cfg->frame_reg);
+	}
 
 	/* store runtime generic context */
 	if (cfg->rgctx_var) {

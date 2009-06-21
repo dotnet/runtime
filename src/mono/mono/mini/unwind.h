@@ -57,7 +57,7 @@
 /* Represents one unwind instruction */
 typedef struct {
 	guint8 op; /* One of DW_CFA_... */
-	guint8 reg; /* register number in the hardware encoding */
+	guint16 reg; /* register number in the hardware encoding */
 	gint32 val; /* arbitrary value */
 	guint32 when; /* The offset _after_ the cpu instruction this unwind op belongs to */
 } MonoUnwindOp;

@@ -422,7 +422,7 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 
 /* ARCHITECTURE SPECIFIC CODE */
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_POWERPC)
 #define EMIT_DWARF_INFO 1
 #endif
 

@@ -374,7 +374,7 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 	emit_bytes (w, uw_info, uw_info_len);
 	g_free (uw_info);
 
-	emit_alignment (w, sizeof (gpointer));
+	emit_alignment (w, sizeof (mgreg_t));
 	emit_label (w, symbol2);
 }
 
