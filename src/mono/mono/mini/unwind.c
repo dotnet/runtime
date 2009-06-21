@@ -55,6 +55,15 @@ static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 #define NUM_REGS X86_NREG + 1
 #define DWARF_DATA_ALIGN (-4)
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (X86_NREG))
+#elif defined (TARGET_PPC)
+// http://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi-1.9.html
+static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 
+										  9, 10, 11, 12, 13, 14, 15, 16,
+										  17, 18, 19, 20, 21, 22, 23, 24,
+										  25, 26, 27, 28, 29, 30, 31 };
+#define NUM_REGS 110
+#define DWARF_DATA_ALIGN (-sizeof (mgreg_t))
+#define DWARF_PC_REG 108
 #else
 static int map_hw_reg_to_dwarf_reg [16];
 #define NUM_REGS 16
@@ -74,6 +83,13 @@ static int map_dwarf_reg_to_hw_reg [NUM_REGS];
 int
 mono_hw_reg_to_dwarf_reg (int reg)
 {
+#ifdef TARGET_PPC
+	if (reg == ppc_lr)
+		return 108;
+	else
+		g_assert (reg < NUM_REGS);
+#endif
+
 	if (NUM_REGS == 0) {
 		g_assert_not_reached ();
 		return -1;
@@ -221,8 +237,14 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 			encode_uleb128 (reg, p, &p);
 			break;
 		case DW_CFA_offset:
-			*p ++ = DW_CFA_offset | reg;
-			encode_uleb128 (op->val / DWARF_DATA_ALIGN, p, &p);
+			if (reg > 63) {
+				*p ++ = DW_CFA_offset_extended_sf;
+				encode_uleb128 (reg, p, &p);
+				encode_uleb128 (op->val / DWARF_DATA_ALIGN, p, &p);
+			} else {
+				*p ++ = DW_CFA_offset | reg;
+				encode_uleb128 (op->val / DWARF_DATA_ALIGN, p, &p);
+			}
 			break;
 		default:
 			g_assert_not_reached ();
@@ -269,7 +291,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				   int nregs, guint8 **out_cfa) 
 {
 	Loc locations [NUM_REGS];
-	int i, pos, reg, cfa_reg, cfa_offset;
+	int i, pos, reg, cfa_reg, cfa_offset, offset;
 	guint8 *p;
 	guint8 *cfa_val;
 
@@ -310,6 +332,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				break;
 			case DW_CFA_def_cfa_register:
 				cfa_reg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
+				break;
+			case DW_CFA_offset_extended_sf:
+				reg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
+				offset = decode_sleb128 (p, &p) * DWARF_DATA_ALIGN;
 				break;
 			case DW_CFA_advance_loc4:
 				pos += *(guint32*)p;

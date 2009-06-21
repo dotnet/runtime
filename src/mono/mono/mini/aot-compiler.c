@@ -1110,6 +1110,12 @@ arch_get_cie_program (void)
 	mono_add_unwind_op_offset (l, (guint8*)NULL, (guint8*)NULL, AMD64_RIP, -8);
 
 	return l;
+#elif defined(TARGET_POWERPC)
+	GSList *l = NULL;
+
+	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, ppc_r1, 0);
+
+	return l;
 #else
 	return NULL;
 #endif
