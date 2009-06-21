@@ -4983,8 +4983,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->plt_symbol = g_strdup_printf ("mono_aot_%s_plt", acfg->image->assembly->aname.name);
 
 	/* Get rid of characters which cannot occur in symbols */
-	p = acfg->got_symbol;
 	for (p = acfg->got_symbol; *p; ++p) {
+		if (!(isalnum (*p) || *p == '_'))
+			*p = '_';
+	}
+	for (p = acfg->plt_symbol; *p; ++p) {
 		if (!(isalnum (*p) || *p == '_'))
 			*p = '_';
 	}
