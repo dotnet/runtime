@@ -207,10 +207,6 @@ enum {
 
 #define ppc_load_multiple_regs(c,D,d,A)      ppc_lmw   ((c), (D), (d), (A))
 
-#define ppc_store_reg(c,S,d,A)        ppc_stw  ((c), (S), (d), (A))
-#define ppc_store_reg_update(c,S,d,A) ppc_stwu ((c), (S), (d), (A))
-#define ppc_store_reg_indexed(c,S,A,B)        ppc_stwx  ((c), (S), (A), (B))
-#define ppc_store_reg_update_indexed(c,S,A,B) ppc_stwux ((c), (S), (A), (B))
 #define ppc_store_multiple_regs(c,S,d,A)      ppc_stmw  ((c), (S), (d), (A))
 
 #define ppc_compare(c,cfrD,A,B)		      ppc_cmp((c), (cfrD), 0, (A), (B))
