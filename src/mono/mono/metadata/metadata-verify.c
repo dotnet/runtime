@@ -2392,6 +2392,19 @@ verify_memberref_table (VerifyContext *ctx)
 
 		if (!is_valid_non_empty_string (ctx, data [MONO_MEMBERREF_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid MemberRef row %d Name field coded is invalid or empty 0x%08x", i, data [MONO_MEMBERREF_NAME]));
+	}
+}
+
+
+static void
+verify_memberref_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_MEMBERREF];
+	guint32 data [MONO_MEMBERREF_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_MEMBERREF_SIZE);
 
 		if (!is_valid_method_or_field_signature (ctx, data [MONO_MEMBERREF_SIGNATURE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid MemberRef row %d Signature field  0x%08x", i, data [MONO_MEMBERREF_SIGNATURE]));
@@ -2438,10 +2451,21 @@ verify_cattr_table (VerifyContext *ctx)
 
 		if (!is_valid_coded_index (ctx, CATTR_TYPE_DESC, data [MONO_CUSTOM_ATTR_TYPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Parent field 0x%08x", i, data [MONO_CUSTOM_ATTR_PARENT]));
+	}
+}
+
+static void
+verify_cattr_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	guint32 data [MONO_CUSTOM_ATTR_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_CUSTOM_ATTR_SIZE);
 
 		if (!is_vald_cattr_blob (ctx, data [MONO_CUSTOM_ATTR_VALUE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Value field 0x%08x", i, data [MONO_CUSTOM_ATTR_VALUE]));
-			
 	}
 }
 
@@ -2463,10 +2487,21 @@ verify_field_marshal_table (VerifyContext *ctx)
 
 		if (!data [MONO_FIELD_MARSHAL_NATIVE_TYPE])
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldMarshal row %d NativeType field is null", i));
+	}
+}
+
+static void
+verify_field_marshal_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_FIELDMARSHAL];
+	guint32 data [MONO_FIELD_MARSHAL_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_FIELD_MARSHAL_SIZE);
 
 		if (!is_valid_marshal_spec (ctx, data [MONO_FIELD_MARSHAL_NATIVE_TYPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldMarshal row %d NativeType field 0x%08x", i, data [MONO_FIELD_MARSHAL_NATIVE_TYPE]));
-			
 	}
 }
 
@@ -2488,10 +2523,21 @@ verify_decl_security_table (VerifyContext *ctx)
 
 		if (!data [MONO_DECL_SECURITY_PERMISSIONSET])
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid DeclSecurity row %d PermissionSet field is null", i));
+	}
+}
+
+static void
+verify_decl_security_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_DECLSECURITY];
+	guint32 data [MONO_DECL_SECURITY_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_DECL_SECURITY_SIZE);
 
 		if (!is_valid_permission_set (ctx, data [MONO_DECL_SECURITY_PERMISSIONSET]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid DeclSecurity row %d PermissionSet field 0x%08x", i, data [MONO_DECL_SECURITY_PERMISSIONSET]));
-
 	}
 }
 
@@ -2541,7 +2587,7 @@ verify_field_layout_table (VerifyContext *ctx)
 }
 
 static void
-verify_standalonesig_table (VerifyContext *ctx)
+verify_standalonesig_table_full (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_STANDALONESIG];
 	guint32 data [MONO_STAND_ALONE_SIGNATURE_SIZE];
@@ -3097,8 +3143,6 @@ verify_tables_data (VerifyContext *ctx)
 	CHECK_ERROR ();
 	verify_field_layout_table (ctx);
 	CHECK_ERROR ();
-	verify_standalonesig_table (ctx);
-	CHECK_ERROR ();
 	verify_eventmap_table (ctx);
 	CHECK_ERROR ();
 	verify_event_table (ctx);
@@ -3257,6 +3301,16 @@ mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list)
 	verify_field_table_full (&ctx);
 	CHECK_STATE ();
 	verify_method_table_full (&ctx);
+	CHECK_STATE ();
+	verify_memberref_table_full (&ctx);
+	CHECK_STATE ();
+	verify_cattr_table_full (&ctx);
+	CHECK_STATE ();
+	verify_field_marshal_table_full (&ctx);
+	CHECK_STATE ();
+	verify_decl_security_table_full (&ctx);
+	CHECK_STATE ();
+	verify_standalonesig_table_full (&ctx);
 
 cleanup:
 	return cleanup_context (&ctx, error_list);
