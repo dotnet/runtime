@@ -163,7 +163,7 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
-		ppc_load_reg (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
+		ppc_ldptr (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
 		ppc_load_multiple_regs (code, ppc_r13, G_STRUCT_OFFSET (MonoContext, regs), ctx_reg);	\
 		for (reg = 0; reg < MONO_SAVED_FREGS; ++reg) {	\
 			ppc_lfd (code, (14 + reg),	\
@@ -207,7 +207,7 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 		code = mono_ppc_create_pre_code_ftnptr (code);
 	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
 	/* restore also the stack pointer */
-	ppc_load_reg (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
+	ppc_ldptr (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
 	//ppc_break (code);
 	/* jump to the saved IP */
 	ppc_mtctr (code, ppc_r4);
@@ -267,15 +267,15 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 
 	/* store ret addr */
 	ppc_mflr (code, ppc_r0);
-	ppc_store_reg (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_stptr (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 
 	alloc_size = REG_SAVE_STACK_FRAME_SIZE;
 
 	/* allocate stack frame and set link from sp in ctx */
 	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
-	ppc_load_reg (code, ppc_r0, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
-	ppc_load_reg_indexed (code, ppc_r0, ppc_r0, ppc_r0);
-	ppc_store_reg_update (code, ppc_r0, -alloc_size, ppc_sp);
+	ppc_ldptr (code, ppc_r0, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
+	ppc_ldptr_indexed (code, ppc_r0, ppc_r0, ppc_r0);
+	ppc_stptr_update (code, ppc_r0, -alloc_size, ppc_sp);
 
 	code = emit_save_saved_regs (code, alloc_size);
 
@@ -287,7 +287,7 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 
 	/* epilog */
-	ppc_load_reg (code, ppc_r0, alloc_size + PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_ldptr (code, ppc_r0, alloc_size + PPC_RET_ADDR_OFFSET, ppc_sp);
 	ppc_mtlr (code, ppc_r0);
 
 	/* restore all the regs from the stack */
@@ -367,12 +367,12 @@ mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInf
 		ppc_mr (code, ppc_r0, ppc_r4);
 	else
 		ppc_mflr (code, ppc_r0);
-	ppc_store_reg (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_stptr (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 
 	alloc_size = REG_SAVE_STACK_FRAME_SIZE;
 
 	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
-	ppc_store_reg_update (code, ppc_sp, -alloc_size, ppc_sp);
+	ppc_stptr_update (code, ppc_sp, -alloc_size, ppc_sp);
 
 	code = emit_save_saved_regs (code, alloc_size);
 
@@ -385,8 +385,8 @@ mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInf
 			ppc_mr (code, ppc_r3, ppc_r11);
 			code = mono_arch_emit_load_aotconst (start, code, ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-			ppc_load_reg (code, ppc_r2, sizeof (gpointer), ppc_r11);
-			ppc_load_reg (code, ppc_r11, 0, ppc_r11);
+			ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r11);
+			ppc_ldptr (code, ppc_r11, 0, ppc_r11);
 #endif
 			ppc_mtctr (code, ppc_r11);
 			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
@@ -400,10 +400,10 @@ mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInf
 
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
-	ppc_load_reg (code, ppc_r5, 0, ppc_sp);
+	ppc_ldptr (code, ppc_r5, 0, ppc_sp);
 	/* exc is already in place in r3 */
 	if (corlib)
-		ppc_load_reg (code, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_r5);
+		ppc_ldptr (code, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_r5);
 	else
 		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
 	/* pointer to the saved fp regs */
@@ -421,8 +421,8 @@ mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInf
 		code = mono_arch_emit_load_got_addr (start, code, NULL, ji);
 		code = mono_arch_emit_load_aotconst (start, code, ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_ppc_throw_exception");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		ppc_load_reg (code, ppc_r2, sizeof (gpointer), ppc_r11);
-		ppc_load_reg (code, ppc_r11, 0, ppc_r11);
+		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r11);
+		ppc_ldptr (code, ppc_r11, 0, ppc_r11);
 #endif
 		ppc_mtctr (code, ppc_r11);
 		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
