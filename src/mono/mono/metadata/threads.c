@@ -3774,6 +3774,13 @@ mono_thread_request_interruption (gboolean running_managed)
 	/* The thread may already be stopping */
 	if (thread == NULL) 
 		return NULL;
+
+#ifdef PLATFORM_WIN32
+	if (thread->interrupt_on_stop && 
+		thread->state & ThreadState_StopRequested && 
+		thread->state & ThreadState_Background)
+		ExitThread (1);
+#endif
 	
 	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1)
 		return NULL;
