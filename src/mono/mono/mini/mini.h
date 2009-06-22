@@ -1712,6 +1712,7 @@ gboolean mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int off
 void      mini_debugger_init                    (void);
 int       mini_debugger_main                    (MonoDomain *domain, MonoAssembly *assembly, int argc, char **argv);
 gboolean  mini_debug_running_inside_mdb         (void);
+void      mini_debugger_set_attach_ok           (void);
 
 #endif
 

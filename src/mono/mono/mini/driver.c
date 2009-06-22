@@ -1539,6 +1539,13 @@ mono_main (int argc, char* argv[])
 	} else if (enable_debugging)
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 
+#ifdef MONO_DEBUGGER_SUPPORTED
+	if (enable_debugging) {
+		if ((opt & MONO_OPT_GSHARED) == 0)
+			mini_debugger_set_attach_ok ();
+	}
+#endif
+
 	mono_set_defaults (mini_verbose, opt);
 	mono_setup_vtable_in_class_init = FALSE;
 	domain = mini_init (argv [i], forced_version);

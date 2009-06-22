@@ -23,6 +23,11 @@ typedef struct _MonoDebuggerMetadataInfo	MonoDebuggerMetadataInfo;
  */
 extern guint8 *mono_trampoline_code [];
 
+typedef enum {
+	DEBUGGER_RUNTIME_FLAGS_NONE		= 0,
+	DEBUGGER_RUNTIME_FLAGS_ATTACH_OK	= 1
+} MonoDebuggerRuntimeFlags;
+
 /*
  * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
  * contains pointers to global variables and functions which must be accessed
@@ -32,7 +37,7 @@ struct _MonoDebuggerInfo {
 	guint64 magic;
 	guint32 major_version;
 	guint32 minor_version;
-	guint32 dummy;
+	guint32 runtime_flags;
 	guint32 total_size;
 	guint32 symbol_table_size;
 	guint32 mono_trampoline_num;

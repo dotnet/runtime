@@ -120,7 +120,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_DEBUGGER_MAGIC,
 	MONO_DEBUGGER_MAJOR_VERSION,
 	MONO_DEBUGGER_MINOR_VERSION,
-	0, /* dummy */
+	0, /* runtime_flags */
 	sizeof (MonoDebuggerInfo),
 	sizeof (MonoSymbolTable),
 	MONO_TRAMPOLINE_NUM,
@@ -513,6 +513,12 @@ mini_debugger_init (void)
 
 	mono_debugger_event (MONO_DEBUGGER_EVENT_INITIALIZE_THREAD_MANAGER,
 			     (guint64) (gssize) MONO_DEBUGGER__debugger_info_ptr, 0);
+}
+
+void
+mini_debugger_set_attach_ok (void)
+{
+	MONO_DEBUGGER__debugger_info.runtime_flags |= DEBUGGER_RUNTIME_FLAGS_ATTACH_OK;
 }
 
 typedef struct 
