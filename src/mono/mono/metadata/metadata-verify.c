@@ -2318,6 +2318,12 @@ verify_param_table (VerifyContext *ctx)
 	gboolean first_param = TRUE;
 	int i;
 
+	if (ctx->image->tables [MONO_TABLE_METHOD].rows == 0) {
+		if (table->rows > 0)
+			ADD_ERROR (ctx, g_strdup ("Param table has rows while the method table has zero"));
+		return;
+	}
+	
 	remaining_params = get_next_param_count (ctx, &current_method);
 
 	for (i = 0; i < table->rows; ++i) {
