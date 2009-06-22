@@ -5262,7 +5262,9 @@ setup_tls_access (void)
 	}
 
  	if (tls_mode == TLS_MODE_DETECT) {
-#if defined(__linux__) && defined(_CS_GNU_LIBPTHREAD_VERSION)
+#if defined(__APPLE__) && defined(__mono_ppc__) && !defined(__mono_ppc64__)
+		tls_mode = TLS_MODE_DARWIN_G4;
+#elif defined(__linux__) && defined(_CS_GNU_LIBPTHREAD_VERSION)
 		conf_size = confstr ( _CS_GNU_LIBPTHREAD_VERSION, confbuf, sizeof(confbuf));
 		if ((conf_size > 4) && (strncmp (confbuf, "NPTL", 4) == 0))
 			tls_mode = TLS_MODE_NPTL;

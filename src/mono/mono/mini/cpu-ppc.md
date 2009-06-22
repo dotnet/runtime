@@ -209,7 +209,7 @@ ppc_subfic: dest:i src1:i len:4
 ppc_subfze: dest:i src1:i len:4
 bigmul: len:12 dest:l src1:i src2:i
 bigmul_un: len:12 dest:l src1:i src2:i
-tls_get: len:8 dest:i
+tls_get: len:20 dest:i
 
 # Linear IR opcodes
 dummy_use: len:0
