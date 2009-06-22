@@ -2626,10 +2626,8 @@ static void
 verify_event_table (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_EVENT];
-	MonoTableInfo *sema_table = &ctx->image->tables [MONO_TABLE_METHODSEMANTICS];
-	guint32 data [MONO_EVENT_SIZE], sema_data [MONO_METHOD_SEMA_SIZE], token;
-	gboolean found_add, found_remove;
-	int i, idx;
+	guint32 data [MONO_EVENT_SIZE];
+	int i;
 
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, data, MONO_EVENT_SIZE);
@@ -2642,8 +2640,21 @@ verify_event_table (VerifyContext *ctx)
 
 		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_EVENT_TYPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid Event row %d EventType field %08x", i, data [MONO_EVENT_TYPE]));
+	}
+}
 
-		//check for Add and Remove
+static void
+verify_event_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_EVENT];
+	MonoTableInfo *sema_table = &ctx->image->tables [MONO_TABLE_METHODSEMANTICS];
+	guint32 data [MONO_EVENT_SIZE], sema_data [MONO_METHOD_SEMA_SIZE], token;
+	gboolean found_add, found_remove;
+	int i, idx;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_EVENT_SIZE);
+
 		token = make_coded_token (HAS_SEMANTICS_DESC, MONO_TABLE_EVENT, i);
 		idx = search_sorted_table (ctx, MONO_TABLE_METHODSEMANTICS, MONO_METHOD_SEMA_ASSOCIATION, token);
 		if (idx == -1)
@@ -2767,7 +2778,7 @@ verify_moduleref_table (VerifyContext *ctx)
 }
 
 static void
-verify_typespec_table (VerifyContext *ctx)
+verify_typespec_table_full (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPESPEC];
 	guint32 data [MONO_TYPESPEC_SIZE];
@@ -3063,6 +3074,18 @@ verify_method_spec_table (VerifyContext *ctx)
 
 		if (!get_coded_index_token (METHODDEF_OR_REF_DESC, data [MONO_METHODSPEC_METHOD]))
 			ADD_ERROR (ctx, g_strdup_printf ("MethodSpec table row %d has null Method token", i));
+	}
+}
+
+static void
+verify_method_spec_table_full (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_METHODSPEC];
+	guint32 data [MONO_METHODSPEC_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_METHODSPEC_SIZE);
 
 		if (!is_valid_methodspec_blog (ctx, data [MONO_METHODSPEC_SIGNATURE]))
 			ADD_ERROR (ctx, g_strdup_printf ("MethodSpec table row %d has invalid Instantiation token %08x", i, data [MONO_METHODSPEC_SIGNATURE]));
@@ -3154,8 +3177,6 @@ verify_tables_data (VerifyContext *ctx)
 	verify_methodimpl_table (ctx);
 	CHECK_ERROR ();
 	verify_moduleref_table (ctx);
-	CHECK_ERROR ();
-	verify_typespec_table (ctx);
 	CHECK_ERROR ();
 	verify_implmap_table (ctx);
 	CHECK_ERROR ();
@@ -3311,6 +3332,12 @@ mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list)
 	verify_decl_security_table_full (&ctx);
 	CHECK_STATE ();
 	verify_standalonesig_table_full (&ctx);
+	CHECK_STATE ();
+	verify_event_table_full (&ctx);
+	CHECK_STATE ();
+	verify_typespec_table_full (&ctx);
+	CHECK_STATE ();
+	verify_method_spec_table_full (&ctx);
 
 cleanup:
 	return cleanup_context (&ctx, error_list);
