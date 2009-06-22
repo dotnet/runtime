@@ -47,6 +47,12 @@ typedef struct {
 	guint32 stopped_on_unhandled : 1;
 } MonoDebuggerExceptionState;
 
+typedef enum {
+	MONO_DEBUGGER_THREAD_FLAGS_NONE		= 0,
+	MONO_DEBUGGER_THREAD_FLAGS_INTERNAL	= 1,
+	MONO_DEBUGGER_THREAD_FLAGS_THREADPOOL	= 2
+} MonoDebuggerThreadFlags;
+
 struct _MonoDebuggerThreadInfo {
 	guint64 tid;
 	guint64 lmf_addr;
@@ -65,11 +71,13 @@ struct _MonoDebuggerThreadInfo {
 	guint32 stack_size;
 	guint32 signal_stack_size;
 
-	MonoDebuggerExceptionState exception_state;
+	guint32 thread_flags;
 
 	/*
 	 * The debugger doesn't access anything beyond this point.
 	 */
+	MonoDebuggerExceptionState exception_state;
+
 	MonoJitTlsData *jit_tls;
 	MonoThread *thread;
 };
@@ -766,7 +774,7 @@ mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 }
 
 void
-mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit_tls)
+mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit_tls, gpointer func)
 {
 #ifdef MONO_DEBUGGER_SUPPORTED
 	size_t stsize = 0;
@@ -790,6 +798,11 @@ mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit
 	info->end_stack = (guint64) (gsize) GC_mono_debugger_get_stack_ptr ();
 	info->lmf_addr = (guint64) (gsize) mono_get_lmf_addr ();
 	info->jit_tls = jit_tls;
+
+	if (func)
+		info->thread_flags = MONO_DEBUGGER_THREAD_FLAGS_INTERNAL;
+	if (thread->threadpool_thread)
+		info->thread_flags |= MONO_DEBUGGER_THREAD_FLAGS_THREADPOOL;
 
 	info->next = mono_debugger_thread_table;
 	mono_debugger_thread_table = info;

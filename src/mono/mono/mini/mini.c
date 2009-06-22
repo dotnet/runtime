@@ -2260,7 +2260,7 @@ mono_thread_start_cb (gsize tid, gpointer stack_start, gpointer func)
 	MonoThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
 	thread = mono_thread_current ();
-	mono_debugger_thread_created (tid, thread, jit_tls);
+	mono_debugger_thread_created (tid, thread, jit_tls, func);
 	if (thread)
 		thread->jit_data = jit_tls;
 }
@@ -2282,7 +2282,7 @@ mono_thread_attach_cb (gsize tid, gpointer stack_start)
 	MonoThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
 	thread = mono_thread_current ();
-	mono_debugger_thread_created (tid, thread, (MonoJitTlsData *) jit_tls);
+	mono_debugger_thread_created (tid, thread, (MonoJitTlsData *) jit_tls, NULL);
 	if (thread)
 		thread->jit_data = jit_tls;
 	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)

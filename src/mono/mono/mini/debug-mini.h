@@ -10,7 +10,7 @@ typedef struct _MonoDebuggerThreadInfo MonoDebuggerThreadInfo;
 extern MonoDebuggerThreadInfo *mono_debugger_thread_table;
 
 void
-mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit_tls);
+mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit_tls, gpointer func);
 
 void
 mono_debugger_thread_cleanup (MonoJitTlsData *jit_tls);
