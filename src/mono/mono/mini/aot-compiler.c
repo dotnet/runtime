@@ -1706,7 +1706,7 @@ static void
 add_wrappers (MonoAotCompile *acfg)
 {
 	MonoMethod *method, *m;
-	int i, j, nallocators;
+	int i, j;
 	MonoMethodSignature *sig, *csig;
 	guint32 token;
 
@@ -1752,8 +1752,11 @@ add_wrappers (MonoAotCompile *acfg)
 	}
 
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+#ifdef MONO_ARCH_HAVE_TLS_GET
 		MonoMethodDesc *desc;
 		MonoMethod *orig_method;
+		int nallocators;
+#endif
 
 		/* Runtime invoke wrappers */
 
