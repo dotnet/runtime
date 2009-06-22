@@ -4030,3 +4030,17 @@ mono_thread_set_execution_context (MonoObject *ec)
 {
 	*get_execution_context_addr () = ec;
 }
+
+static gboolean has_tls_get = FALSE;
+
+void
+mono_runtime_set_has_tls_get (gboolean val)
+{
+	has_tls_get = val;
+}
+
+gboolean
+mono_runtime_has_tls_get (void)
+{
+	return has_tls_get;
+}

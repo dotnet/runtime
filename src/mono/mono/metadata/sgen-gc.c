@@ -6037,8 +6037,23 @@ enum {
 	ATYPE_NUM
 };
 
-#ifdef HAVE_KW_THREAD
 #define MANAGED_ALLOCATION
+
+#ifdef HAVE_KW_THREAD
+#define EMIT_TLS_ACCESS(mb,dummy,offset)	do {	\
+	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
+	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
+	mono_mb_emit_i4 ((mb), (offset));		\
+	} while (0)
+#else
+#define EMIT_TLS_ACCESS(mb,member,dummy)	do {	\
+	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
+	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
+	mono_mb_emit_i4 ((mb), thread_info_key);	\
+	mono_mb_emit_icon ((mb), G_STRUCT_OFFSET (SgenThreadInfo, member));	\
+	mono_mb_emit_byte ((mb), CEE_ADD);		\
+	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
+	} while (0)
 #endif
 
 #ifdef MANAGED_ALLOCATION
@@ -6049,20 +6064,24 @@ enum {
 static MonoMethod*
 create_allocator (int atype)
 {
-	int tlab_next_addr_offset = -1;
-	int tlab_temp_end_offset = -1;
-	int p_var, size_var, tlab_next_addr_var, new_next_var;
+	int p_var, size_var;
 	guint32 slowpath_branch;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoMethodSignature *csig;
 	static gboolean registered = FALSE;
+	int tlab_next_addr_var, new_next_var;
+
+#ifdef HAVE_KW_THREAD
+	int tlab_next_addr_offset = -1;
+	int tlab_temp_end_offset = -1;
 
 	MONO_THREAD_VAR_OFFSET (tlab_next_addr, tlab_next_addr_offset);
 	MONO_THREAD_VAR_OFFSET (tlab_temp_end, tlab_temp_end_offset);
 
 	g_assert (tlab_next_addr_offset != -1);
 	g_assert (tlab_temp_end_offset != -1);
+#endif
 
 	g_assert (atype == ATYPE_NORMAL);
 
@@ -6104,9 +6123,7 @@ create_allocator (int atype)
 
 	/* tlab_next_addr (local) = tlab_next_addr (TLS var) */
 	tlab_next_addr_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_TLS);
-	mono_mb_emit_i4 (mb, tlab_next_addr_offset);
+	EMIT_TLS_ACCESS (mb, tlab_next_addr, tlab_next_addr_offset);
 	mono_mb_emit_stloc (mb, tlab_next_addr_var);
 
 	/* p = (void**)tlab_next; */
@@ -6130,9 +6147,7 @@ create_allocator (int atype)
 
 	/* if (G_LIKELY (new_next < tlab_temp_end)) */
 	mono_mb_emit_ldloc (mb, new_next_var);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_TLS);
-	mono_mb_emit_i4 (mb, tlab_temp_end_offset);
+	EMIT_TLS_ACCESS (mb, tlab_temp_end, tlab_temp_end_offset);
 	slowpath_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BLT_UN_S);
 
 	/* Slowpath */
@@ -6178,13 +6193,19 @@ MonoMethod*
 mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 {
 #ifdef MANAGED_ALLOCATION
+	MonoClass *klass = vtable->klass;
+
+#ifdef HAVE_KW_THREAD
 	int tlab_next_offset = -1;
 	int tlab_temp_end_offset = -1;
-	MonoClass *klass = vtable->klass;
 	MONO_THREAD_VAR_OFFSET (tlab_next, tlab_next_offset);
 	MONO_THREAD_VAR_OFFSET (tlab_temp_end, tlab_temp_end_offset);
 
 	if (tlab_next_offset == -1 || tlab_temp_end_offset == -1)
+		return NULL;
+#endif
+
+	if (!mono_runtime_has_tls_get ())
 		return NULL;
 	if (klass->instance_size > tlab_size)
 		return NULL;
@@ -6215,6 +6236,9 @@ mono_gc_get_managed_allocator_by_type (int atype)
 #ifdef MANAGED_ALLOCATION
 	MonoMethod *res;
 
+	if (!mono_runtime_has_tls_get ())
+		return NULL;
+
 	mono_loader_lock ();
 	res = alloc_method_cache [atype];
 	if (!res)
@@ -6242,10 +6266,14 @@ mono_gc_get_write_barrier (void)
 	MonoMethodSignature *sig;
 #ifdef MANAGED_ALLOCATION
 	int label1, label2;
-	int remset_offset = -1;
 	int remset_var, next_var;
 
+#ifdef HAVE_KW_THREAD
+	int remset_offset = -1;
+
 	MONO_THREAD_VAR_OFFSET (remembered_set, remset_offset);
+	g_assert (remset_offset != -1);
+#endif
 #endif
 
 	// FIXME: Maybe create a separate version for ctors (the branch would be
@@ -6262,82 +6290,78 @@ mono_gc_get_write_barrier (void)
 	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
 
 #ifdef MANAGED_ALLOCATION
-	/* ptr_in_nursery () check */
+	if (mono_runtime_has_tls_get ()) {
+		/* ptr_in_nursery () check */
 #ifdef ALIGN_NURSERY
-	/* 
-	 * Masking out the bits might be faster, but we would have to use 64 bit
-	 * immediates, which might be slower.
-	 */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
-	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
-	label1 = mono_mb_emit_branch (mb, CEE_BNE_UN);
+		/*
+		 * Masking out the bits might be faster, but we would have to use 64 bit
+		 * immediates, which might be slower.
+		 */
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+		mono_mb_emit_byte (mb, CEE_SHR_UN);
+		mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
+		label1 = mono_mb_emit_branch (mb, CEE_BNE_UN);
 #else
-	// FIXME:
-	g_assert_not_reached ();
-#endif
-
-	/* Don't need write barrier case */
-	/* do the assignment */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldarg (mb, 1);
-	/* Don't use STIND_REF, as it would cause infinite recursion */
-	mono_mb_emit_byte (mb, CEE_STIND_I);
-	mono_mb_emit_byte (mb, CEE_RET);
-
-	/* Need write barrier case */
-	mono_mb_patch_branch (mb, label1);
-
-	if (remset_offset == -1)
 		// FIXME:
 		g_assert_not_reached ();
+#endif
 
-	// remset_var = remembered_set;
-	remset_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_TLS);
-	mono_mb_emit_i4 (mb, remset_offset);
-	mono_mb_emit_stloc (mb, remset_var);
+		/* Don't need write barrier case */
+		/* do the assignment */
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldarg (mb, 1);
+		/* Don't use STIND_REF, as it would cause infinite recursion */
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, CEE_RET);
 
-	// next_var = rs->store_next
-	next_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	mono_mb_emit_ldloc (mb, remset_var);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, store_next));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_stloc (mb, next_var);
+		/* Need write barrier case */
+		mono_mb_patch_branch (mb, label1);
 
-	// if (rs->store_next < rs->end_set) {
-	mono_mb_emit_ldloc (mb, next_var);
-	mono_mb_emit_ldloc (mb, remset_var);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, end_set));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	label2 = mono_mb_emit_branch (mb, CEE_BGE);
+		// remset_var = remembered_set;
+		remset_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		EMIT_TLS_ACCESS (mb, remset, remset_offset);
+		mono_mb_emit_stloc (mb, remset_var);
 
-	/* write barrier fast path */
-	// *(rs->store_next++) = (mword)ptr;
-	mono_mb_emit_ldloc (mb, next_var);
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_byte (mb, CEE_STIND_I);
+		// next_var = rs->store_next
+		next_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		mono_mb_emit_ldloc (mb, remset_var);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, store_next));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_stloc (mb, next_var);
 
-	mono_mb_emit_ldloc (mb, next_var);
-	mono_mb_emit_icon (mb, sizeof (gpointer));
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_stloc (mb, next_var);
+		// if (rs->store_next < rs->end_set) {
+		mono_mb_emit_ldloc (mb, next_var);
+		mono_mb_emit_ldloc (mb, remset_var);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, end_set));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		label2 = mono_mb_emit_branch (mb, CEE_BGE);
 
-	mono_mb_emit_ldloc (mb, remset_var);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, store_next));
-	mono_mb_emit_ldloc (mb, next_var);
-	mono_mb_emit_byte (mb, CEE_STIND_I);
+		/* write barrier fast path */
+		// *(rs->store_next++) = (mword)ptr;
+		mono_mb_emit_ldloc (mb, next_var);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
 
-	// *(void**)ptr = value;
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldarg (mb, 1);
-	mono_mb_emit_byte (mb, CEE_STIND_I);
-	mono_mb_emit_byte (mb, CEE_RET);
+		mono_mb_emit_ldloc (mb, next_var);
+		mono_mb_emit_icon (mb, sizeof (gpointer));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_stloc (mb, next_var);
 
-	/* write barrier slow path */
-	mono_mb_patch_branch (mb, label2);
+		mono_mb_emit_ldloc (mb, remset_var);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, store_next));
+		mono_mb_emit_ldloc (mb, next_var);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+
+		// *(void**)ptr = value;
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		mono_mb_emit_byte (mb, CEE_RET);
+
+		/* write barrier slow path */
+		mono_mb_patch_branch (mb, label2);
+	}
 #endif
 
 	mono_mb_emit_ldarg (mb, 0);

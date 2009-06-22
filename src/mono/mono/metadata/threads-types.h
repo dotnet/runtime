@@ -187,4 +187,7 @@ void mono_threads_install_notify_pending_exc (MonoThreadNotifyPendingExcFunc fun
 MonoObject* mono_thread_get_execution_context (void) MONO_INTERNAL;
 void mono_thread_set_execution_context (MonoObject *ec) MONO_INTERNAL;
 
+void mono_runtime_set_has_tls_get (gboolean val) MONO_INTERNAL;
+gboolean mono_runtime_has_tls_get (void) MONO_INTERNAL;
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

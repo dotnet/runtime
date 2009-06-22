@@ -1871,4 +1871,8 @@ enum {
 	MONO_AOT_WRAPPER_LAST
 };
 
+#ifndef MONO_ARCH_HAVE_TLS_GET
+#define MONO_ARCH_HAVE_TLS_GET 0
+#endif
+
 #endif /* __MONO_MINI_H__ */
