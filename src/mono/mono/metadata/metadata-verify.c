@@ -270,6 +270,7 @@ typedef struct {
 #endif
 
 #define ADDP_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADDP_OVERFLOW_UN (a, b))
+#define ADD_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADD4_OVERFLOW_UN (a, b))
 
 static const char *
 dword_align (const char *ptr)
@@ -1741,19 +1742,19 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 	guint32 size, entry_size, bytes;
 
 	if (blob.size < offset)
-		return FALSE;
+		FAIL (ctx, g_strdup ("ContantValue: invalid offset"));
 	
 	if (!decode_value (ctx->data + offset + blob.offset, blob.size - blob.offset, &entry_size, &bytes))
-		return FALSE;
+		FAIL (ctx, g_strdup ("ContantValue: not enough space to decode size"));
 
 	if (type == MONO_TYPE_STRING) {
 		//String is encoded as: compressed_int:len len *chars
-
 		offset += bytes;
-		if (offset > offset + entry_size * 2) //overflow
-			return FALSE;
-		offset += offset + entry_size * 2;
-		return  offset <= blob.size;
+
+		if (ADD_IS_GREATER_OR_OVF (offset, (entry_size * 2), blob.size))
+			FAIL (ctx, g_strdup_printf ("ContantValue: not enough space for string, required %d but got %d", entry_size * 2, blob.size - offset));	
+
+		return TRUE;
 	}
 
 	switch (type) {
@@ -1784,17 +1785,15 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 	}
 
 	if (size != entry_size)
-		return FALSE;
+		FAIL (ctx, g_strdup_printf ("ContantValue: Expected size %d but got %d", size, entry_size));
+
 	offset += bytes;
 
-	if(offset > offset + size) //overflow
-		return FALSE;
-
-	if (offset + size > blob.size)
-		return FALSE;
+	if (ADD_IS_GREATER_OR_OVF (offset, size, blob.size))
+		FAIL (ctx, g_strdup_printf ("ContantValue: Not enough room for constant, required %d but have %d", size, blob.size - offset));
 
 	if (type == MONO_TYPE_CLASS && read32 (ctx->data + offset))
-		return FALSE;
+		FAIL (ctx, g_strdup_printf ("ContantValue: Type is class but value is not null"));
 	return TRUE;
 }
 
