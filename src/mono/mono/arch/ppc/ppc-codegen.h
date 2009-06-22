@@ -137,30 +137,34 @@ enum {
 
 #if defined(__mono_ppc64__) && !defined(__mono_ilp32__)
 
-#define ppc_load_reg(c,D,d,A)         ppc_ld   ((c), (D), (d), (A))
-#define ppc_load_reg_update(c,D,d,A)  ppc_ldu  ((c), (D), (d), (A))
-#define ppc_load_reg_indexed(c,D,A,B)        ppc_ldx  ((c), (D), (A), (B))
-#define ppc_load_reg_update_indexed(c,D,A,B) ppc_ldux ((c), (D), (A), (B))
+#define ppc_ldptr(c,D,d,A)         ppc_ld   ((c), (D), (d), (A))
+#define ppc_ldptr_update(c,D,d,A)  ppc_ldu  ((c), (D), (d), (A))
+#define ppc_ldptr_indexed(c,D,A,B)        ppc_ldx  ((c), (D), (A), (B))
+#define ppc_ldptr_update_indexed(c,D,A,B) ppc_ldux ((c), (D), (A), (B))
 
-#define ppc_store_reg(c,S,d,A)        ppc_std  ((c), (S), (d), (A))
-#define ppc_store_reg_update(c,S,d,A) ppc_stdu ((c), (S), (d), (A))
-#define ppc_store_reg_indexed(c,S,A,B)        ppc_stdx  ((c), (S), (A), (B))
-#define ppc_store_reg_update_indexed(c,S,A,B) ppc_stdux ((c), (S), (A), (B))
+#define ppc_stptr(c,S,d,A)        ppc_std  ((c), (S), (d), (A))
+#define ppc_stptr_update(c,S,d,A) ppc_stdu ((c), (S), (d), (A))
+#define ppc_stptr_indexed(c,S,A,B)        ppc_stdx  ((c), (S), (A), (B))
+#define ppc_stptr_update_indexed(c,S,A,B) ppc_stdux ((c), (S), (A), (B))
 
 #else
 
 /* Same as ppc32 */
-#define ppc_load_reg(c,D,d,A)         ppc_lwz  ((c), (D), (d), (A))
-#define ppc_load_reg_update(c,D,d,A)  ppc_lwzu ((c), (D), (d), (A))
-#define ppc_load_reg_indexed(c,D,A,B)        ppc_lwzx ((c), (D), (A), (B))
-#define ppc_load_reg_update_indexed(c,D,A,B) ppc_lwzux ((c), (D), (A), (B))
+#define ppc_ldptr(c,D,d,A)         ppc_lwz  ((c), (D), (d), (A))
+#define ppc_ldptr_update(c,D,d,A)  ppc_lwzu ((c), (D), (d), (A))
+#define ppc_ldptr_indexed(c,D,A,B)        ppc_lwzx ((c), (D), (A), (B))
+#define ppc_ldptr_update_indexed(c,D,A,B) ppc_lwzux ((c), (D), (A), (B))
 
-#define ppc_store_reg(c,S,d,A)        ppc_stw  ((c), (S), (d), (A))
-#define ppc_store_reg_update(c,S,d,A) ppc_stwu ((c), (S), (d), (A))
-#define ppc_store_reg_indexed(c,S,A,B)        ppc_stwx  ((c), (S), (A), (B))
-#define ppc_store_reg_update_indexed(c,S,A,B) ppc_stwux ((c), (S), (A), (B))
+#define ppc_stptr(c,S,d,A)        ppc_stw  ((c), (S), (d), (A))
+#define ppc_stptr_update(c,S,d,A) ppc_stwu ((c), (S), (d), (A))
+#define ppc_stptr_indexed(c,S,A,B)        ppc_stwx  ((c), (S), (A), (B))
+#define ppc_stptr_update_indexed(c,S,A,B) ppc_stwux ((c), (S), (A), (B))
 
 #endif
+
+/* Macros to load pointer sized immediates */
+#define ppc_load_ptr(c,D,v) ppc_load ((c),(D),(gsize)(v))
+#define ppc_load_ptr_sequence(c,D,v) ppc_load_sequence ((c),(D),(gsize)(v))
 
 /* Macros to load/store regsize quantities */
 
@@ -793,7 +797,7 @@ my and Ximian's copyright to this code. ;)
 	} G_STMT_END
 
 #define ppc_load_func(c,D,v) G_STMT_START { \
-		ppc_load_sequence ((c), ppc_r11, (guint64)(v)); \
+		ppc_load_sequence ((c), ppc_r11, (guint64)(gsize)(v));	\
 		ppc_load_reg ((c), ppc_r2, 8, ppc_r11);	\
 		ppc_load_reg ((c), (D), 0, ppc_r11);	\
 	} G_STMT_END
