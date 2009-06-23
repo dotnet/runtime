@@ -1748,10 +1748,10 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 		FAIL (ctx, g_strdup ("ContantValue: not enough space to decode size"));
 
 	if (type == MONO_TYPE_STRING) {
-		//String is encoded as: compressed_int:len len *chars
+		//String is encoded as: compressed_int:len len *bytes
 		offset += bytes;
 
-		if (ADD_IS_GREATER_OR_OVF (offset, (entry_size * 2), blob.size))
+		if (ADD_IS_GREATER_OR_OVF (offset, entry_size, blob.size))
 			FAIL (ctx, g_strdup_printf ("ContantValue: not enough space for string, required %d but got %d", entry_size * 2, blob.size - offset));	
 
 		return TRUE;
