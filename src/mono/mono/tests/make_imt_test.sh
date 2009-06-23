@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 LOW=2000
 HIGH=2000
