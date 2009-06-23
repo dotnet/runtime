@@ -1792,7 +1792,7 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 	if (ADD_IS_GREATER_OR_OVF (offset, size, blob.size))
 		FAIL (ctx, g_strdup_printf ("ContantValue: Not enough room for constant, required %d but have %d", size, blob.size - offset));
 
-	if (type == MONO_TYPE_CLASS && read32 (ctx->data + offset))
+	if (type == MONO_TYPE_CLASS && read32 (ctx->data + blob.offset + offset))
 		FAIL (ctx, g_strdup_printf ("ContantValue: Type is class but value is not null"));
 	return TRUE;
 }
