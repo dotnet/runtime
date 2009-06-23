@@ -139,7 +139,7 @@ icompare_imm: src1:i len:14
 iconst: dest:i len:40
 
 
-jmp: len:40
+jmp: len:46
 label: len:0
 lcall: dest:o len:22 clob:c
 lcall_membase: dest:o src1:b len:12 clob:c
@@ -296,8 +296,8 @@ long_sub_imm: dest:i src1:i len:16
 long_sub_ovf: dest:i src1:i src2:i len:16
 long_sub_ovf_un: dest:i src1:i src2:i len:28
 
-long_conv_to_i1: dest:i src1:i len:30
-long_conv_to_i2: dest:i src1:i len:36
+long_conv_to_i1: dest:i src1:i len:12
+long_conv_to_i2: dest:i src1:i len:12
 long_conv_to_i4: dest:i src1:i len:4
 long_conv_to_i8: dest:i src1:i len:4
 long_conv_to_i: dest:i src1:i len:4
@@ -307,7 +307,7 @@ long_conv_to_ovf_u4: dest:i src1:i len:48
 long_conv_to_ovf_u8_un: dest:i src1:i len:4
 long_conv_to_r4: dest:f src1:i len:16
 long_conv_to_r8: dest:f src1:i len:16
-long_conv_to_u1: dest:i src1:i len:14
+long_conv_to_u1: dest:i src1:i len:16
 long_conv_to_u2: dest:i src1:i len:24
 long_conv_to_u4: dest:i src1:i len:4
 long_conv_to_u8: dest:i src1:i len:4
@@ -333,11 +333,11 @@ not_null: src1:i len:0
 
 jump_table: dest:i len:24
 
-int_conv_to_i1: dest:i src1:i len:26
-int_conv_to_i2: dest:i src1:i len:26
+int_conv_to_i1: dest:i src1:i len:12
+int_conv_to_i2: dest:i src1:i len:12
 int_conv_to_i4: dest:i src1:i len:2
 int_conv_to_i: dest:i src1:i len:2
-int_conv_to_u1: dest:i src1:i len:8
+int_conv_to_u1: dest:i src1:i len:10
 int_conv_to_u2: dest:i src1:i len:16
 int_conv_to_u4: dest:i src1:i
 int_conv_to_r_un: dest:f src1:i len:37 

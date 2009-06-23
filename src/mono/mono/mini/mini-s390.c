@@ -4978,7 +4978,7 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_emit_inst_for_method                        */
+/* Name		- mono_arch_emit_inst_for_method                    */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
@@ -4989,6 +4989,12 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 }
 
 /*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_decompose_opts 	                    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
 
 void
 mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
@@ -5015,7 +5021,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_decompose_long_opts                         */
+/* Name		- mono_arch_decompose_long_opts                     */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
@@ -5283,6 +5289,16 @@ mono_arch_get_patch_offset (guint8 *code)
 
 /*========================= End of Function ========================*/
 
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_context_get_int_reg.                    */
+/*                                                                  */
+/* Function	- Dummy entry point until s390x supports aot.       */
+/*		                               			    */
+/* Returns	- Pointer to intreg.				    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
@@ -5290,3 +5306,5 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	g_assert_not_reached ();
 	return NULL;
 }
+
+/*========================= End of Function ========================*/
