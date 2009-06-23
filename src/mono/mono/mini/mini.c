@@ -4733,7 +4733,11 @@ mini_init (const char *filename, const char *runtime_version)
 		mini_debugger_init ();
 #endif
 
-	mono_runtime_set_has_tls_get (MONO_ARCH_HAVE_TLS_GET);
+#ifdef MONO_ARCH_HAVE_TLS_GET
+	mono_runtime_set_has_tls_get (TRUE);
+#else
+	mono_runtime_set_has_tls_get (FALSE);
+#endif
 
 	InitializeCriticalSection (&jit_mutex);
 
