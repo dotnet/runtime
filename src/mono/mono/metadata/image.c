@@ -904,6 +904,9 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
+	if (!mono_verifier_verify_table_data (image, NULL))
+		goto invalid_image;
+
 	mono_image_load_names (image);
 
 	load_modules (image);
