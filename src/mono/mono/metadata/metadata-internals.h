@@ -218,8 +218,7 @@ struct _MonoImage {
 	GHashTable *synchronized_cache;
 	GHashTable *unbox_wrapper_cache;
 	GHashTable *cominterop_invoke_cache;
-	GHashTable *cominterop_wrapper_cache;
-	GHashTable *static_rgctx_invoke_cache; /* LOCKING: marshal lock */
+	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
 	GHashTable *thunk_invoke_cache;
 
 	/*

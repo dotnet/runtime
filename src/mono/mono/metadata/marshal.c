@@ -10668,8 +10668,6 @@ mono_marshal_free_inflated_wrappers (MonoMethod *method)
                g_hash_table_remove (method->klass->image->cominterop_invoke_cache, method);
        if (method->klass->image->cominterop_wrapper_cache)
                g_hash_table_remove (method->klass->image->cominterop_wrapper_cache, method);
-       if (method->klass->image->static_rgctx_invoke_cache)
-               g_hash_table_remove (method->klass->image->static_rgctx_invoke_cache, method);
        if (method->klass->image->thunk_invoke_cache)
                g_hash_table_remove (method->klass->image->thunk_invoke_cache, method);
 

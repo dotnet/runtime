@@ -1825,7 +1825,7 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 	case 2:
 		header >>= 2;
 		if (ADDP_IS_GREATER_OR_OVF (ptr, header, end)) 
-			FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for method body. Required %d, but only %d is available", header, end - ptr));
+			FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for method body. Required %d, but only %d is available", header, (int)(end - ptr)));
 		return TRUE;
 	}
 	//FAT HEADER

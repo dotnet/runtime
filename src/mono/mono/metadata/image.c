@@ -1538,7 +1538,6 @@ mono_image_close (MonoImage *image)
 	free_hash (image->castclass_cache);
 	free_hash (image->proxy_isinst_cache);
 	free_hash (image->thunk_invoke_cache);
-	free_hash (image->static_rgctx_invoke_cache);
 
 	/* The ownership of signatures is not well defined */
 	//g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
