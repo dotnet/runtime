@@ -2283,6 +2283,21 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	}
 }
 
+/*
+ * sanitize_symbol:
+ *
+ *   Modify SYMBOL so it only includes characters permissible in symbols.
+ */
+static void
+sanitize_symbol (char *symbol)
+{
+	int i, len = strlen (symbol);
+
+	for (i = 0; i < len; ++i)
+		if (!isalnum (symbol [i]) && (symbol [i] != '_'))
+			symbol [i] = '_';
+}
+
 static char*
 get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 {
@@ -2896,13 +2911,45 @@ emit_plt (MonoAotCompile *acfg)
 		emit_label (acfg, label);
 
 		if (acfg->aot_opts.write_symbols) {
-			MonoJumpInfo *patch_info = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
+			MonoJumpInfo *ji = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
+			char *debug_sym = NULL;
 
-			if (patch_info && patch_info->type == MONO_PATCH_INFO_METHOD) {
-				char *debug_sym = get_debug_sym (patch_info->data.method, "plt_", cache);
+			if (ji) {
+				switch (ji->type) {
+				case MONO_PATCH_INFO_METHOD:
+					debug_sym = get_debug_sym (ji->data.method, "plt_", cache);
+					break;
+				case MONO_PATCH_INFO_INTERNAL_METHOD:
+					debug_sym = g_strdup_printf ("plt__jit_icall_%s", ji->data.name);
+					break;
+				case MONO_PATCH_INFO_CLASS_INIT:
+					debug_sym = g_strdup_printf ("plt__class_init_%s", mono_type_get_name (&ji->data.klass->byval_arg));
+					sanitize_symbol (debug_sym);
+					break;
+				case MONO_PATCH_INFO_RGCTX_FETCH:
+					debug_sym = g_strdup_printf ("plt__rgctx_fetch_%d", acfg->label_generator ++);
+					break;
+				case MONO_PATCH_INFO_ICALL_ADDR: {
+					char *s = get_debug_sym (ji->data.method, "", cache);
+					
+					debug_sym = g_strdup_printf ("plt__icall_native_%s", s);
+					g_free (s);
+					break;
+				}
+				case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+					debug_sym = g_strdup_printf ("plt__jit_icall_native_%s", ji->data.name);
+					break;
+				case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
+					debug_sym = g_strdup_printf ("plt__generic_class_init");
+					break;
+				default:
+					break;
+				}
 
-				emit_local_symbol (acfg, debug_sym, NULL, TRUE);
-				emit_label (acfg, debug_sym);
+				if (debug_sym) {
+					emit_local_symbol (acfg, debug_sym, NULL, TRUE);
+					emit_label (acfg, debug_sym);
+				}
 			}
 		}
 
