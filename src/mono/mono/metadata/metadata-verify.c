@@ -1985,11 +1985,17 @@ verify_typedef_table (VerifyContext *ctx)
 		if ((data [MONO_TYPEDEF_FLAGS] & 0xC00000) != 0)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d mono doesn't support custom string format", i));
 
+		if ((data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_INTERFACE) && (data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_ABSTRACT) == 0)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for interface type must be abstract", i));
+
 		if (!data [MONO_TYPEDEF_NAME] || !is_valid_non_empty_string (ctx, data [MONO_TYPEDEF_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid name token %08x", i, data [MONO_TYPEDEF_NAME]));
 
 		if (data [MONO_TYPEREF_NAMESPACE] && !is_valid_non_empty_string (ctx, data [MONO_TYPEREF_NAMESPACE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid namespace token %08x", i, data [MONO_TYPEREF_NAMESPACE]));
+
+		if (data [MONO_TYPEDEF_EXTENDS] && !is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
 
 		if (data [MONO_TYPEDEF_FIELD_LIST] == 0)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d FieldList be be >= 1", i));
@@ -2008,7 +2014,6 @@ verify_typedef_table (VerifyContext *ctx)
 
 		if (data [MONO_TYPEDEF_METHOD_LIST] < methodlist)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d MethodList rowid 0x%08x can't be smaller than of previous row 0x%08x", i, data [MONO_TYPEDEF_METHOD_LIST], methodlist));
-
 
 		fieldlist = data [MONO_TYPEDEF_FIELD_LIST];
 		methodlist = data [MONO_TYPEDEF_METHOD_LIST];
@@ -2037,14 +2042,7 @@ verify_typedef_table_full (VerifyContext *ctx)
 		if (data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_INTERFACE) {
 			if (data [MONO_TYPEDEF_EXTENDS])
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for interface type must have a null extend field", i));
-			if ((data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_ABSTRACT) == 0)
-				ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for interface type must be abstract", i));
 		} else {
-			if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
-				ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
-		}
-
-		if (!(data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_INTERFACE)) {
 			gboolean is_sys_obj = typedef_is_system_object (ctx, data);
 			gboolean has_parent = get_coded_index_token (TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]) != 0;
 
