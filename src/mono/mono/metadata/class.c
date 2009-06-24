@@ -993,11 +993,21 @@ mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* con
 static MonoType*
 mono_class_find_enum_basetype (MonoClass *class)
 {
+	MonoGenericContainer *container = NULL;
 	MonoImage *m = class->image; 
 	const int top = class->field.count;
 	int i;
 
 	g_assert (class->enumtype);
+
+	if (class->generic_container)
+		container = class->generic_container;
+	else if (class->generic_class) {
+		MonoClass *gklass = class->generic_class->container_class;
+
+		container = gklass->generic_container;
+		g_assert (container);
+	}
 
 	/*
 	 * Fetch all the field information.
@@ -1006,23 +1016,19 @@ mono_class_find_enum_basetype (MonoClass *class)
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
 		int idx = class->field.first + i;
-		MonoGenericContainer *container = NULL;
 		MonoType *ftype;
 
 		/* class->field.first and idx points into the fieldptr table */
 		mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
+
+		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC) //no need to decode static fields
+			continue;
+		
 		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
-		if (class->generic_container)
-			container = class->generic_container;
-		else if (class->generic_class) {
-			MonoClass *gklass = class->generic_class->container_class;
 
-			container = gklass->generic_container;
-			g_assert (container);
-		}
 		ftype = mono_metadata_parse_type_full (m, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (!ftype)
 			return NULL;
@@ -1032,8 +1038,7 @@ mono_class_find_enum_basetype (MonoClass *class)
 			ftype->attrs = cols [MONO_FIELD_FLAGS];
 		}
 
-		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC))
-			return ftype;
+		return ftype;
 	}
 
 	return NULL;
