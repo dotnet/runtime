@@ -3361,6 +3361,21 @@ mono_verifier_verify_field_signature (MonoImage *image, guint32 offset, GSList *
 	return cleanup_context (&ctx, error_list);
 }
 
+gboolean
+mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_TABLES;
+
+	is_valid_method_header (&ctx, offset);
+	return cleanup_context (&ctx, error_list);
+}
+
 #else
 gboolean
 mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
@@ -3388,6 +3403,13 @@ mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list)
 
 gboolean
 mono_verifier_verify_field_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	return TRUE;
+}
+
+
+gboolean
+mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **error_list)
 {
 	return TRUE;
 }

@@ -37,6 +37,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/lock-tracer.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-membar.h>
@@ -2163,6 +2164,9 @@ mono_method_get_header (MonoMethod *method)
 	loc = mono_image_rva_map (img, rva);
 
 	g_assert (loc);
+
+	if (!mono_verifier_verify_method_header (img, rva, NULL))
+		return NULL;
 
 	header = mono_metadata_parse_mh_full (img, mono_method_get_generic_container (method), loc);
 
