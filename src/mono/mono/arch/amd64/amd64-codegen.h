@@ -504,6 +504,8 @@ typedef union {
  * SSE
  */
 
+//TODO Reorganize SSE opcode defines.
+
 /* Two opcode SSE defines */
 
 #define emit_sse_reg_reg_op2_size(inst,dreg,reg,op1,op2,size) do { \
@@ -608,6 +610,106 @@ typedef union {
 #define amd64_sse_mulsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x59)
 
 #define amd64_sse_divsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5e)
+
+
+
+#define amd64_sse_addps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x58)
+
+#define amd64_sse_divps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x5e)
+
+#define amd64_sse_mulps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x59)
+
+#define amd64_sse_subps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x5c)
+
+#define amd64_sse_maxps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x5d)
+
+#define amd64_sse_minps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x5f)
+
+#define amd64_sse_cmpps_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op2_imm((inst), (dreg), (reg), 0x0f, 0xc2, (imm))
+
+#define amd64_sse_andps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x54)
+
+#define amd64_sse_andnps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x55)
+
+#define amd64_sse_orps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x56)
+
+#define amd64_sse_xorps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x57)
+
+#define amd64_sse_sqrtps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x51)
+
+#define amd64_sse_rsqrtps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x52)
+
+#define amd64_sse_rcpps_reg_reg(inst,dreg,reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0f, 0x53)
+
+#define amd64_sse_addsubps_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0xd0)
+
+#define amd64_sse_haddps_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0x7c)
+
+#define amd64_sse_hsubps_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0x7d)
+
+#define amd64_sse_movshdup_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf3, 0x0f, 0x16)
+
+#define amd64_sse_movsldup_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf3, 0x0f, 0x12)
+
+
+#define amd64_sse_pshufhw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0xf3, 0x0f, 0x70, (imm))
+
+#define amd64_sse_pshuflw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0xf2, 0x0f, 0x70, (imm))
+
+#define amd64_sse_pshufd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0x70, (imm))
+
+
+#define amd64_sse_divpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x5e)
+
+#define amd64_sse_mulpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x59)
+
+#define amd64_sse_subpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x5c)
+
+#define amd64_sse_maxpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x5d)
+
+#define amd64_sse_minpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x5f)
+
+#define amd64_sse_cmppd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0xc2, (imm))
+
+#define amd64_sse_andpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x66, 0x0f, 0x54)
+
+#define amd64_sse_andnpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x55)
+
+#define amd64_sse_sqrtpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x51)
+
+#define amd64_sse_rsqrtpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x52)
+
+#define amd64_sse_rcppd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x53)
+
+#define amd64_sse_addsubpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd0)
+
+#define amd64_sse_haddpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x7c)
+
+#define amd64_sse_hsubpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x7d)
+
+#define amd64_sse_movddup_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0x12)
+
+
+#define amd64_sse_pmovmskb_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd7)
+
+
+#define amd64_sse_pand_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xdb)
+
+#define amd64_sse_por_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xeb)
+
+#define amd64_sse_pxor_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xef)
+
+
+#define amd64_sse_paddb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xfc)
+
+#define amd64_sse_paddw_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xfd)
+
+#define amd64_sse_paddd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xfe)
+
+#define amd64_sse_paddq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xd4)
+
+
+#define amd64_sse_psubb_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf8)
 
 /* Generated from x86-codegen.h */
 
