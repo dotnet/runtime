@@ -1023,11 +1023,15 @@ mono_class_find_enum_basetype (MonoClass *class)
 
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC) //no need to decode static fields
 			continue;
-		
+
+		if (!mono_verifier_verify_field_signature (class->image, cols [MONO_FIELD_SIGNATURE], NULL))
+			return NULL;
+
 		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
-		g_assert (*sig == 0x06);
+		if (*sig != 0x06)
+			return NULL;
 
 		ftype = mono_metadata_parse_type_full (m, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (!ftype)
@@ -1181,6 +1185,10 @@ mono_class_setup_fields (MonoClass *class)
 			mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 			/* The name is needed for fieldrefs */
 			field->name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
+			if (!mono_verifier_verify_field_signature (class->image, cols [MONO_FIELD_SIGNATURE], NULL)) {
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+				break;
+			}
 			sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 			mono_metadata_decode_value (sig, &sig);
 			/* FIELD signature == 0x06 */
