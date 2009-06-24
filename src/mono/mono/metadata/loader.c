@@ -1980,6 +1980,7 @@ mono_method_signature (MonoMethod *m)
 	MonoGenericContainer *container;
 	MonoMethodSignature *signature = NULL;
 	int *pattrs;
+	guint32 sig_offset;
 
 	/* We need memory barriers below because of the double-checked locking pattern */ 
 
@@ -2011,7 +2012,7 @@ mono_method_signature (MonoMethod *m)
 	idx = mono_metadata_token_index (m->token);
 	img = m->klass->image;
 
-	sig = mono_metadata_blob_heap (img, mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
+	sig = mono_metadata_blob_heap (img, sig_offset = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
 
 	g_assert (!m->klass->generic_class);
 	container = mono_method_get_generic_container (m);
@@ -2034,6 +2035,11 @@ mono_method_signature (MonoMethod *m)
 
 	if (!signature) {
 		const char *sig_body;
+		/*TODO we should cache the failure result somewhere*/
+		if (!mono_verifier_verify_method_signature (img, sig_offset, NULL)) {
+			mono_loader_unlock ();
+			return NULL;
+		}
 
 		size = mono_metadata_decode_blob_size (sig, &sig_body);
 

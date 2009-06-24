@@ -2202,9 +2202,6 @@ verify_method_table (VerifyContext *ctx)
 
 		//TODO check iface with .ctor (15,16)
 
-		if (!data [MONO_METHOD_SIGNATURE] || !is_valid_method_signature (ctx, data [MONO_METHOD_SIGNATURE]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid signature token 0x%08x", i, data [MONO_METHOD_SIGNATURE]));
-
 		if (i + 1 < module_method_list) {
 			if (!(flags & METHOD_ATTRIBUTE_STATIC))
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is a global method but not Static", i));
@@ -2277,7 +2274,10 @@ verify_method_table_full (VerifyContext *ctx)
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, data, MONO_METHOD_SIZE);
 		rva = data [MONO_METHOD_RVA];
-		
+
+		if (!data [MONO_METHOD_SIGNATURE] || !is_valid_method_signature (ctx, data [MONO_METHOD_SIGNATURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid signature token 0x%08x", i, data [MONO_METHOD_SIGNATURE]));
+
 		if (rva && !is_valid_method_header (ctx, rva))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d RVA points to an invalid method header", i));
 	}
@@ -3376,6 +3376,21 @@ mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **e
 	return cleanup_context (&ctx, error_list);
 }
 
+gboolean
+mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_TABLES;
+
+	is_valid_method_signature (&ctx, offset);
+	return cleanup_context (&ctx, error_list);
+}
+
 #else
 gboolean
 mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
@@ -3407,9 +3422,14 @@ mono_verifier_verify_field_signature (MonoImage *image, guint32 offset, GSList *
 	return TRUE;
 }
 
-
 gboolean
 mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, GSList **error_list)
 {
 	return TRUE;
 }
