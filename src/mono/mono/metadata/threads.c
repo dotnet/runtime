@@ -141,8 +141,8 @@ static __thread MonoThread * tls_current_object MONO_TLS_FAST;
 } while (FALSE)
 #define GET_CURRENT_OBJECT() tls_current_object
 #else
-#define SET_CURRENT_OBJECT(x) TlsSetValue (current_object_key, x);
-#define GET_CURRENT_OBJECT() (MonoThread*) TlsGetValue (current_object_key);
+#define SET_CURRENT_OBJECT(x) TlsSetValue (current_object_key, x)
+#define GET_CURRENT_OBJECT() (MonoThread*) TlsGetValue (current_object_key)
 #endif
 
 /* function called at thread start */
@@ -1321,7 +1321,7 @@ ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture (MonoThread *thi
 MonoThread *
 mono_thread_current (void)
 {
-	MonoThread *res = GET_CURRENT_OBJECT ()
+	MonoThread *res = GET_CURRENT_OBJECT ();
 	THREAD_DEBUG (g_message ("%s: returning %p", __func__, res));
 	return res;
 }
