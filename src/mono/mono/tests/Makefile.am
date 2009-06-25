@@ -158,6 +158,7 @@ BASE_TEST_CS_SRC=		\
 	appdomain2.cs		\
 	appdomain-client.cs	\
 	appdomain-unload.cs \
+	appdomain-async-invoke.cs	\
 	loader.cs       \
 	pointer.cs		\
 	hashcode.cs		\

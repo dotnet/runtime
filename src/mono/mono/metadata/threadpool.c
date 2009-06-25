@@ -1104,6 +1104,9 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	MonoAsyncResult *ares;
 	ASyncCall *ac;
 
+	if (domain->state == MONO_APPDOMAIN_UNLOADED || domain->state == MONO_APPDOMAIN_UNLOADING)
+		return NULL;
+
 	ac = (ASyncCall*)mono_object_new (mono_domain_get (), async_call_klass);
 	MONO_OBJECT_SETREF (ac, msg, msg);
 	MONO_OBJECT_SETREF (ac, state, state);
@@ -1331,6 +1334,7 @@ dequeue_job (CRITICAL_SECTION *cs, TPQueue *list)
 		return NULL;
 	}
 	ar = mono_array_get (list->array, MonoObject*, list->first_elem);
+	mono_array_setref (list->array, list->first_elem, NULL);
 	list->first_elem++;
 	count = list->next_elem - list->first_elem;
 	/* reduce the size of the array if it's mostly empty */
