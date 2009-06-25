@@ -3958,7 +3958,7 @@ null_link_in_range (char *start, char *end, int generation)
 						hash->num_links--;
 
 						add_or_remove_disappearing_link ((MonoObject*)copy, link,
-							track, generation);
+							track, GENERATION_OLD);
 
 						DEBUG (5, fprintf (gc_debug_file, "Upgraded dislink at %p to major because object %p moved to %p\n", link, object, copy));
 
