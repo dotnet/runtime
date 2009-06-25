@@ -14,7 +14,10 @@ public class Test : MarshalByRefObject {
 	    Console.WriteLine ("in test desctructor");
 	    GetIntDelegate del = new GetIntDelegate (getInt);
 	    AsyncCallback ac = new AsyncCallback (async_callback);
-	    del.BeginInvoke (ac, "bla");
+	    if (del.BeginInvoke (ac, "bla") == null) {
+		    Console.WriteLine ("async recult is null");
+		    Environment.Exit (1);
+	    }
     }
 
     public int getInt () {
