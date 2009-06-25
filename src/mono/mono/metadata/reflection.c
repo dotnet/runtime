@@ -1785,6 +1785,10 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 			}
 		}
 		break;
+	case MONO_NATIVE_SAFEARRAY:
+		if (minfo->eltype)
+			sigbuffer_add_value (&buf, minfo->eltype);
+		break;
 	case MONO_NATIVE_CUSTOM:
 		if (minfo->guid) {
 			str = mono_string_to_utf8 (minfo->guid);

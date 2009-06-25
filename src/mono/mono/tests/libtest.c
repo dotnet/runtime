@@ -4045,4 +4045,126 @@ mono_test_managed_marshal_bool_ref (int arg, unsigned int expected, unsigned int
 	return 0;
 }
 
+#ifdef WIN32
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_safearray_1dim_vt_bstr_empty (SAFEARRAY** safearray)
+{
+	/* Create an empty one-dimensional array of variants */
+	SAFEARRAY *pSA;
+	SAFEARRAYBOUND dimensions [1];
+
+	dimensions [0].lLbound = 0;
+	dimensions [0].cElements = 0;
+
+	pSA= SafeArrayCreate (VT_VARIANT, 1, dimensions);
+	*safearray = pSA;
+	return S_OK;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_safearray_1dim_vt_bstr (SAFEARRAY** safearray)
+{
+	/* Create a one-dimensional array of 10 variants filled with "0" to "9" */
+	SAFEARRAY *pSA;
+	SAFEARRAYBOUND dimensions [1];
+	long i;
+	wchar_t buffer [20];
+	HRESULT hr = S_OK;
+	long indices [1];
+
+	dimensions [0].lLbound = 0;
+	dimensions [0].cElements = 10;
+
+	pSA= SafeArrayCreate (VT_VARIANT, 1, dimensions);
+	for (i= dimensions [0].lLbound; i< (dimensions [0].cElements + dimensions [0].lLbound); i++) {
+		VARIANT vOut;
+		VariantInit (&vOut);
+		vOut.vt = VT_BSTR;
+		_ltow (i,buffer,10);
+		vOut.bstrVal= SysAllocString (buffer);
+		indices [0] = i;
+		if ((hr = SafeArrayPutElement (pSA, indices, &vOut)) != S_OK) {
+			VariantClear (&vOut);
+			SafeArrayDestroy (pSA);
+			return hr;
+		}
+		VariantClear (&vOut);
+	}
+	*safearray = pSA;
+	return hr;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_safearray_2dim_vt_int (SAFEARRAY** safearray)
+{
+	/* Create a two-dimensional array of 4x3 variants filled with 11, 12, 13, etc. */
+	SAFEARRAY *pSA;
+	SAFEARRAYBOUND dimensions [2];
+	long i, j;
+	HRESULT hr = S_OK;
+	long indices [2];
+
+	dimensions [0].lLbound = 0;
+	dimensions [0].cElements = 4;
+	dimensions [1].lLbound = 0;
+	dimensions [1].cElements = 3;
+
+	pSA= SafeArrayCreate(VT_VARIANT, 2, dimensions);
+	for (i= dimensions [0].lLbound; i< (dimensions [0].cElements + dimensions [0].lLbound); i++) {
+		for (j= dimensions [1].lLbound; j< (dimensions [1].cElements + dimensions [1].lLbound); j++) {
+			VARIANT vOut;
+			VariantInit (&vOut);
+			vOut.vt = VT_I4;
+			vOut.intVal = (i+1)*10+(j+1);
+			indices [0] = i;
+			indices [1] = j;
+			if ((hr = SafeArrayPutElement (pSA, indices, &vOut)) != S_OK) {
+				VariantClear (&vOut);
+				SafeArrayDestroy (pSA);
+				return hr;
+			}
+			VariantClear (&vOut);  // does a deep destroy of source VARIANT	
+		}
+	}
+	*safearray = pSA;
+	return hr;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_variant_out_safearray_4dim_vt_int (SAFEARRAY** safearray)
+{
+	/* Create a four-dimensional array of 10x3x6x7 variants filled with their indices */
+	/* Also use non zero lower bounds                                                 */
+	SAFEARRAY *pSA;
+	SAFEARRAYBOUND dimensions [4];
+	long i;
+	HRESULT hr = S_OK;
+	VARIANT *pData;
+
+	dimensions [0].lLbound = 15;
+	dimensions [0].cElements = 10;
+	dimensions [1].lLbound = 20;
+	dimensions [1].cElements = 3;
+	dimensions [2].lLbound = 5;
+	dimensions [2].cElements = 6;
+	dimensions [3].lLbound = 12;
+	dimensions [3].cElements = 7;
+
+	pSA= SafeArrayCreate (VT_VARIANT, 4, dimensions);
+
+	SafeArrayAccessData (pSA, (void **)&pData);
+
+	for (i= 0; i< 10*3*6*7; i++) {
+		VariantInit(&pData [i]);
+		pData [i].vt = VT_I4;
+		pData [i].intVal = i;
+	}
+	SafeArrayUnaccessData(pSA);
+	*safearray = pSA;
+	return hr;
+}
+
+#endif
+
 

@@ -40,6 +40,13 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 											int conv_arg, MonoType **conv_arg_type, 
 											MarshalAction action) MONO_INTERNAL;
 
+int
+mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum,
+										MonoType *t,
+										MonoMarshalSpec *spec, 
+										int conv_arg, MonoType **conv_arg_type,
+										MarshalAction action) MONO_INTERNAL;
+
 MonoString * 
 mono_string_from_bstr (gpointer bstr);
 
