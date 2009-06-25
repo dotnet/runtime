@@ -2147,6 +2147,34 @@ add_generic_instances (MonoAotCompile *acfg)
 }
 
 /*
+ * is_direct_callable:
+ *
+ *   Return whenever the method identified by JI is directly callable without 
+ * going through the PLT.
+ */
+static gboolean
+is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patch_info)
+{
+	if ((patch_info->type == MONO_PATCH_INFO_METHOD) && (patch_info->data.method->klass->image == acfg->image)) {
+		MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
+		if (callee_cfg) {
+			gboolean direct_callable = TRUE;
+
+			if (direct_callable && !(!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+				direct_callable = FALSE;
+			if ((callee_cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && (!method || method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED))
+				// FIXME: Maybe call the wrapper directly ?
+				direct_callable = FALSE;
+
+			if (direct_callable)
+				return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+/*
  * emit_and_reloc_code:
  *
  *   Emit the native code in CODE, handling relocations along the way. If GOT_ONLY
@@ -2210,23 +2238,14 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				 * the same assembly and requires no initialization.
 				 */
 				direct_call = FALSE;
-				if (!got_only && (patch_info->type == MONO_PATCH_INFO_METHOD) && (patch_info->data.method->klass->image == method->klass->image)) {
-					MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
-					if (callee_cfg) {
-						gboolean direct_callable = TRUE;
-
-						if (direct_callable && !(!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
-							direct_callable = FALSE;
-						if ((callee_cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED)
-							// FIXME: Maybe call the wrapper directly ?
-							direct_callable = FALSE;
-						if (direct_callable) {
-							//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
-							direct_call = TRUE;
-							sprintf (direct_call_target, "%sm_%x", acfg->temp_prefix, get_method_index (acfg, callee_cfg->orig_method));
-							patch_info->type = MONO_PATCH_INFO_NONE;
-							acfg->stats.direct_calls ++;
-						}
+				if ((patch_info->type == MONO_PATCH_INFO_METHOD) && (patch_info->data.method->klass->image == acfg->image)) {
+					if (!got_only && is_direct_callable (acfg, method, patch_info)) {
+						MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
+						//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
+						direct_call = TRUE;
+						sprintf (direct_call_target, "%sm_%x", acfg->temp_prefix, get_method_index (acfg, callee_cfg->orig_method));
+						patch_info->type = MONO_PATCH_INFO_NONE;
+						acfg->stats.direct_calls ++;
 					}
 
 					acfg->stats.all_calls ++;
