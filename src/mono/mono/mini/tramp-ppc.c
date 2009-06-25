@@ -185,7 +185,6 @@ void
 mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
 {
 	guint32 ins1, ins2, offset;
-	mgreg_t *r = (mgreg_t*)regs;
 
 	/* Patch the jump table entry used by the plt entry */
 
@@ -198,7 +197,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 
 	/* Either got or regs is set */
 	if (!got)
-		got = (gpointer*)r [30];
+		got = (gpointer*)regs [30];
 	*(guint8**)((guint8*)got + offset) = addr;
 }
 

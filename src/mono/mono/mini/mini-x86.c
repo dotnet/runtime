@@ -5366,7 +5366,7 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 		return NULL;
 
 	*displacement = disp;
-	return regs [reg];
+	return (gpointer)regs [reg];
 }
 
 gpointer

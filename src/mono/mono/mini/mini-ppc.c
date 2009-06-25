@@ -5565,7 +5565,7 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 MonoObject*
 mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
 }
 #endif
 

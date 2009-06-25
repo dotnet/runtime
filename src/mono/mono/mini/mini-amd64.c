@@ -6010,7 +6010,7 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 	g_assert (reg != AMD64_R11);
 
 	*displacement = disp;
-	return regs [reg];
+	return (gpointer)regs [reg];
 }
 
 int
@@ -6389,13 +6389,13 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 MonoMethod*
 mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
-	return regs [MONO_ARCH_IMT_REG];
+	return (MonoMethod*)regs [MONO_ARCH_IMT_REG];
 }
 
 MonoObject*
 mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
 }
 #endif
 
