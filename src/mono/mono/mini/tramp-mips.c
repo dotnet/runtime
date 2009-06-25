@@ -115,7 +115,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 
 
 gpointer
-mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 {
 	char *o = NULL;
 	char *vtable = NULL;

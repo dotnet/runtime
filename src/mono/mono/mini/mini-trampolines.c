@@ -98,7 +98,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 #endif
 
 gpointer*
-mono_get_vcall_slot_addr (guint8* code, gpointer *regs)
+mono_get_vcall_slot_addr (guint8* code, mgreg_t *regs)
 {
 	gpointer vt;
 	int displacement;
@@ -111,7 +111,7 @@ mono_get_vcall_slot_addr (guint8* code, gpointer *regs)
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
-mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method, gboolean *need_rgctx_tramp)
+mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method, gboolean *need_rgctx_tramp)
 {
 	MonoGenericSharingContext *gsctx = mono_get_generic_context_from_code (code);
 	MonoObject *this_argument = mono_arch_find_this_argument (regs, method, gsctx);

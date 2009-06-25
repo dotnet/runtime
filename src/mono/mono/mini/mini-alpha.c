@@ -5806,7 +5806,7 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 */
 
 gpointer*
-mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
+mono_arch_get_vcall_slot_addr (guint8* code, mgreg_t *regs)
 {
   unsigned int *pc = (unsigned int *)code;
   guint32 reg, disp;

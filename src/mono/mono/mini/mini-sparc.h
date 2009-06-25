@@ -176,7 +176,7 @@ static void * __builtin_frame_address(int depth)
 
 gboolean mono_sparc_is_virtual_call (guint32 *code);
 
-gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, gpointer *regs);
+gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, mgreg_t *regs);
 
 void mono_sparc_flushw (void);
 

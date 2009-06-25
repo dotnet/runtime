@@ -209,7 +209,7 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 {
 	int reg, lkReg;
 	guchar* base;

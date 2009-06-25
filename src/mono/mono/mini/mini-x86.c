@@ -5113,13 +5113,13 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 }
 
 MonoMethod*
-mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
 	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
+mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
 	CallInfo *cinfo = get_call_info (gsctx, NULL, sig, FALSE);
@@ -5142,7 +5142,7 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSha
 #endif
 
 MonoVTable*
-mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code)
+mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 {
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
@@ -5322,7 +5322,7 @@ mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guin
 }
 
 gpointer
-mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 {
 	guint8 buf [8];
 	guint8 reg = 0;
