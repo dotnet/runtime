@@ -336,7 +336,7 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 				if (ok == FALSE) {
 					/* ECONNRESET means the socket was closed by another thread */
 					if (errnum != WSAECONNRESET)
-						g_warning ("%s: error looking up socket handle %p", __func__, handle);
+						g_warning ("%s: error looking up socket handle %p (error %d)", __func__, handle, errnum);
 				} else {
 					socket_handle->saved_error = errnum;
 				}
