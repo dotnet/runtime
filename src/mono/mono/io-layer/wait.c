@@ -627,6 +627,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 #endif
 
 			bogustype = TRUE;
+			break;
 		}
 
 		g_hash_table_insert (dups, handles[i], handles[i]);
