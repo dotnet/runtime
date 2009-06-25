@@ -5371,7 +5371,7 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 
 gpointer
 mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig,
-		gssize *regs, guint8 *code)
+		mgreg_t *regs, guint8 *code)
 {
 	guint32 esp = regs [X86_ESP];
 	CallInfo *cinfo = NULL;

@@ -1369,7 +1369,7 @@ restore_stack_protection (void)
 }
 
 gpointer
-mono_altstack_restore_prot (gssize *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
+mono_altstack_restore_prot (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
 {
 	void (*func)(void) = (gpointer)tramp_data;
 	func ();

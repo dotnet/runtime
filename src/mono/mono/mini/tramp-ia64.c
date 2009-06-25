@@ -122,13 +122,13 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
 {
 	g_assert_not_reached ();
 }
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 {
 	guint8 *callsite_begin;
 	guint64 *callsite = (guint64*)(gpointer)(code - 16);
@@ -174,7 +174,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 }
 
 void
-mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
+mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 {
 	g_assert_not_reached ();
 }

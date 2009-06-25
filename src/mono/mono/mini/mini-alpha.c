@@ -5858,7 +5858,7 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
 {
   unsigned int *pc = (unsigned int *)code;
 

@@ -192,7 +192,7 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *co
  *   This trampoline handles calls from JITted code.
  */
 gpointer
-mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
+mono_magic_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
 	gpointer *vtable_slot;
@@ -523,7 +523,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
  *   This trampoline handles virtual calls when using LLVM.
  */
 static gpointer
-mono_llvm_vcall_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
+mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
 {
 	MonoObject *this;
 	gpointer addr;
@@ -583,7 +583,7 @@ mono_llvm_vcall_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *t
 #endif
 
 gpointer
-mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
+mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
 {
 	MonoGenericContext context = { NULL, NULL };
 	MonoMethod *imt_method, *declaring;
@@ -625,7 +625,7 @@ mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod
  */
 #ifdef MONO_ARCH_AOT_SUPPORTED
 gpointer
-mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
+mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info, 
 					 guint8* tramp)
 {
 	MonoImage *image;
@@ -687,7 +687,7 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
  *   This trampoline handles calls made from AOT code through the PLT table.
  */
 gpointer
-mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *aot_module, 
+mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module, 
 						 guint8* tramp)
 {
 	guint32 plt_info_offset = mono_aot_get_plt_info_offset (regs, code);
@@ -703,7 +703,7 @@ mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *aot_module,
  * for the type, then patches the caller code so it is not called again.
  */
 void
-mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
+mono_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
 	guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
@@ -723,13 +723,13 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
  * for the type.
  */
 void
-mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
+mono_generic_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
 	mono_runtime_class_init (vtable);
 }
 
 static gpointer
-mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, gpointer data, guint8 *tramp)
+mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, guint8 *tramp)
 {
 #ifdef MONO_ARCH_VTABLE_REG
 	static gboolean inited = FALSE;
@@ -756,13 +756,13 @@ mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, gpointer data, gui
 }
 
 void
-mono_monitor_enter_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
+mono_monitor_enter_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
 {
 	mono_monitor_enter (obj);
 }
 
 void
-mono_monitor_exit_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
+mono_monitor_exit_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
 {
 	mono_monitor_exit (obj);
 }
@@ -776,7 +776,7 @@ mono_monitor_exit_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint
  * This is called once the first time a delegate is invoked, so it must be fast.
  */
 gpointer
-mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
+mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoDelegate *delegate;
