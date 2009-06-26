@@ -1976,6 +1976,7 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val, gint32 *error)
 {
+	struct linger linger;
 	int system_level;
 	int system_name;
 	int ret;
@@ -2021,7 +2022,6 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 	/* Only one of obj_val, byte_val or int_val has data */
 	if(obj_val!=NULL) {
 		MonoClassField *field;
-		struct linger linger;
 		int valsize;
 		
 		switch(name) {
@@ -2120,17 +2120,31 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			return;
 		}
 	} else if (byte_val!=NULL) {
-		int valsize=mono_array_length(byte_val);
-		guchar *buf=mono_array_addr(byte_val, guchar, 0);
-	
-		ret = _wapi_setsockopt (sock, system_level, system_name, buf, valsize);
-		if(ret==SOCKET_ERROR) {
-			*error = WSAGetLastError ();
-			return;
+		int valsize = mono_array_length (byte_val);
+		guchar *buf = mono_array_addr (byte_val, guchar, 0);
+		
+		switch(name) {
+		case SocketOptionName_DontLinger:
+			if (valsize == 1) {
+				linger.l_onoff = (*buf) ? 0 : 1;
+				linger.l_linger = 0;
+				ret = _wapi_setsockopt (sock, system_level, system_name, &linger, sizeof (linger));
+			} else {
+				*error = WSAEINVAL;
+			}
+			break;
+		default:
+			ret = _wapi_setsockopt (sock, system_level, system_name, buf, valsize);
+			break;
 		}
 	} else {
 		/* ReceiveTimeout/SendTimeout get here */
 		switch(name) {
+		case SocketOptionName_DontLinger:
+			linger.l_onoff = !int_val;
+			linger.l_linger = 0;
+			ret = _wapi_setsockopt (sock, system_level, system_name, &linger, sizeof (linger));
+			break;
 		case SocketOptionName_DontFragment:
 #ifdef HAVE_IP_MTU_DISCOVER
 			/* Fiddle with the value slightly if we're
