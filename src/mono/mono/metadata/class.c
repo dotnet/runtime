@@ -500,9 +500,11 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		MonoGenericInst *inst = context->method_inst;
 		if (!inst || !inst->type_argv)
 			return NULL;
-		if (num >= inst->type_argc)
+		if (num >= inst->type_argc) {
+			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
 			g_error ("MVAR %d (%s) cannot be expanded in this context with %d instantiations",
-				num, mono_generic_param_info (type->data.generic_param)->name, inst->type_argc);
+				num, info ? info->name : "", inst->type_argc);
+		}
 
 		/*
 		 * Note that the VAR/MVAR cases are different from the rest.  The other cases duplicate @type,
@@ -520,9 +522,11 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		MonoGenericInst *inst = context->class_inst;
 		if (!inst)
 			return NULL;
-		if (num >= inst->type_argc)
+		if (num >= inst->type_argc) {
+			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
 			g_error ("VAR %d (%s) cannot be expanded in this context with %d instantiations",
-				num, mono_generic_param_info (type->data.generic_param)->name, inst->type_argc);
+				num, info ? info->name : "", inst->type_argc);
+		}
 		nt = mono_metadata_type_dup (image, inst->type_argv [num]);
 		nt->byref = type->byref;
 		nt->attrs = type->attrs;
