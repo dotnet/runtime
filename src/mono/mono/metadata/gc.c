@@ -415,7 +415,8 @@ ves_icall_System_GC_KeepAlive (MonoObject *obj)
 void
 ves_icall_System_GC_ReRegisterForFinalize (MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
+	if (!obj)
+		mono_raise_exception (mono_get_exception_argument_null ("obj"));
 
 	object_register_finalizer (obj, mono_gc_run_finalize);
 }
@@ -423,7 +424,8 @@ ves_icall_System_GC_ReRegisterForFinalize (MonoObject *obj)
 void
 ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
+	if (!obj)
+		mono_raise_exception (mono_get_exception_argument_null ("obj"));
 
 	/* delegates have no finalizers, but we register them to deal with the
 	 * unmanaged->managed trampoline. We don't let the user suppress it
