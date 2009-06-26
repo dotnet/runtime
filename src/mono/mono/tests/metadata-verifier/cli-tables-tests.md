@@ -611,8 +611,9 @@ cattr-table {
 
 	#parent is a valid coded index (2)
 	#The spec say any table can be used, but only 19 tables are allowed on the coded token
+	#Actually 20 tables are allowed, the spec doesn't mention, but generic param is allowed
+	valid offset table-row ( 0xC 0 ) set-ushort 0x33
 	#bad table
-	invalid offset table-row ( 0xC 0 ) set-ushort 0x33
 	invalid offset table-row ( 0xC 0 ) set-ushort 0x34
 	invalid offset table-row ( 0xC 0 ) set-ushort 0x35
 	invalid offset table-row ( 0xC 0 ) set-ushort 0x36

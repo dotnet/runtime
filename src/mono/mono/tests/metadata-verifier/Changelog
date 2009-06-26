@@ -1,3 +1,8 @@
+2009-06-26 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Fix a cattr-table test
+	where generic param is allowed as a parent.
+
 2009-06-19 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Fix a implmap-table test
