@@ -24,6 +24,7 @@
 #include "tokentype.h"
 #include "metadata-internals.h"
 #include "class-internals.h"
+#include "verify-internals.h"
 #include "class.h"
 #include "marshal.h"
 
@@ -2983,6 +2984,10 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		int len=0, i, bsize;
 
 		mono_metadata_decode_row (t, (local_var_sig_tok & 0xffffff)-1, cols, 1);
+
+		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], NULL))
+			return NULL;
+
 		locals_ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
 		bsize = mono_metadata_decode_blob_size (locals_ptr, &locals_ptr);
 		if (*locals_ptr != 0x07)

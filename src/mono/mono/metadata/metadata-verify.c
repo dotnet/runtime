@@ -1718,7 +1718,7 @@ is_valid_methodspec_blog (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
-is_valid_blob_object (VerifyContext *ctx, guint32 offset, int minsize)
+is_valid_blob_object (VerifyContext *ctx, guint32 offset, guint32 minsize)
 {
 	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
 	guint32 entry_size, bytes;
@@ -1729,13 +1729,12 @@ is_valid_blob_object (VerifyContext *ctx, guint32 offset, int minsize)
 	if (!decode_value (ctx->data + offset + blob.offset, blob.size - blob.offset, &entry_size, &bytes))
 		return FALSE;
 
+	if (entry_size < minsize)
+		return FALSE;
+
 	if (CHECK_ADD4_OVERFLOW_UN (entry_size, bytes))
 		return FALSE;
 	entry_size += bytes;
-
-	if (CHECK_ADD4_OVERFLOW_UN (entry_size, minsize))
-		return FALSE;
-	entry_size += minsize;
 
 	return !ADD_IS_GREATER_OR_OVF (offset, entry_size, blob.size);
 }
@@ -3463,6 +3462,21 @@ mono_verifier_verify_memberref_signature (MonoImage *image, guint32 offset, GSLi
 	return cleanup_context (&ctx, error_list);
 }
 
+gboolean
+mono_verifier_verify_standalone_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_TABLES;
+
+	is_valid_standalonesig_blob (&ctx, offset);
+	return cleanup_context (&ctx, error_list);
+}
+
 #else
 gboolean
 mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
@@ -3508,6 +3522,12 @@ mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, GSList 
 
 gboolean
 mono_verifier_verify_memberref_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_standalone_signature (MonoImage *image, guint32 offset, GSList **error_list)
 {
 	return TRUE;
 }
