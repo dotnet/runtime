@@ -1718,7 +1718,7 @@ is_valid_methodspec_blog (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
-is_valid_blob_object (VerifyContext *ctx, guint32 offset)
+is_valid_blob_object (VerifyContext *ctx, guint32 offset, int minsize)
 {
 	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
 	guint32 entry_size, bytes;
@@ -1729,10 +1729,15 @@ is_valid_blob_object (VerifyContext *ctx, guint32 offset)
 	if (!decode_value (ctx->data + offset + blob.offset, blob.size - blob.offset, &entry_size, &bytes))
 		return FALSE;
 
-	if (offset + entry_size + bytes < offset)
+	if (CHECK_ADD4_OVERFLOW_UN (entry_size, bytes))
 		return FALSE;
+	entry_size += bytes;
 
-	return blob.size >= offset + entry_size + bytes;
+	if (CHECK_ADD4_OVERFLOW_UN (entry_size, minsize))
+		return FALSE;
+	entry_size += minsize;
+
+	return !ADD_IS_GREATER_OR_OVF (offset, entry_size, blob.size);
 }
 
 static gboolean
@@ -2869,7 +2874,7 @@ verify_assembly_table (VerifyContext *ctx)
 		if (data [MONO_ASSEMBLY_FLAGS] & INVALID_ASSEMBLY_FLAGS_BITS)
 			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid Flags %08x", i, data [MONO_ASSEMBLY_FLAGS]));
 
-		if (data [MONO_ASSEMBLY_PUBLIC_KEY] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLY_PUBLIC_KEY]))
+		if (data [MONO_ASSEMBLY_PUBLIC_KEY] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLY_PUBLIC_KEY], 1))
 			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid PublicKey %08x", i, data [MONO_ASSEMBLY_FLAGS]));
 
 		if (!is_valid_non_empty_string (ctx, data [MONO_ASSEMBLY_NAME]))
@@ -2894,7 +2899,7 @@ verify_assemblyref_table (VerifyContext *ctx)
 		if (data [MONO_ASSEMBLYREF_FLAGS] & INVALID_ASSEMBLYREF_FLAGS_BITS)
 			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid Flags %08x", i, data [MONO_ASSEMBLYREF_FLAGS]));
 
-		if (data [MONO_ASSEMBLYREF_PUBLIC_KEY] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLYREF_PUBLIC_KEY]))
+		if (data [MONO_ASSEMBLYREF_PUBLIC_KEY] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLYREF_PUBLIC_KEY], 1))
 			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid PublicKeyOrToken %08x", i, data [MONO_ASSEMBLYREF_PUBLIC_KEY]));
 
 		if (!is_valid_non_empty_string (ctx, data [MONO_ASSEMBLYREF_NAME]))
@@ -2903,7 +2908,7 @@ verify_assemblyref_table (VerifyContext *ctx)
 		if (data [MONO_ASSEMBLYREF_CULTURE] && !is_valid_string (ctx, data [MONO_ASSEMBLYREF_CULTURE]))
 			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid Culture %08x", i, data [MONO_ASSEMBLYREF_CULTURE]));
 
-		if (data [MONO_ASSEMBLYREF_HASH_VALUE] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLYREF_HASH_VALUE]))
+		if (data [MONO_ASSEMBLYREF_HASH_VALUE] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLYREF_HASH_VALUE], 1))
 			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid HashValue %08x", i, data [MONO_ASSEMBLYREF_HASH_VALUE]));
 	}
 }
@@ -2925,7 +2930,7 @@ verify_file_table (VerifyContext *ctx)
 		if (!is_valid_non_empty_string (ctx, data [MONO_FILE_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("File table row %d has invalid Name %08x", i, data [MONO_FILE_NAME]));
 
-		if (!data [MONO_FILE_HASH_VALUE] || !is_valid_blob_object (ctx, data [MONO_FILE_HASH_VALUE]))
+		if (!data [MONO_FILE_HASH_VALUE] || !is_valid_blob_object (ctx, data [MONO_FILE_HASH_VALUE], 1))
 			ADD_ERROR (ctx, g_strdup_printf ("File table row %d has invalid HashValue %08x", i, data [MONO_FILE_HASH_VALUE]));
 	}
 }
