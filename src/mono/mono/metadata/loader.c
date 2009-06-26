@@ -420,6 +420,11 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 
 	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
+	if (!mono_verifier_verify_memberref_signature (image, cols [MONO_MEMBERREF_SIGNATURE], NULL)) {
+		mono_loader_set_error_bad_image (g_strdup_printf ("Bad field signature class token %08x field name %s token %08x", class, fname, token));
+		return NULL;
+	}
+
 	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 	/* we may want to check the signature here... */
@@ -784,6 +789,14 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 
 	sig = find_cached_memberref_sig (image, sig_idx);
 	if (!sig) {
+		if (!mono_verifier_verify_memberref_signature (image, sig_idx, NULL)) {
+			guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
+			const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
+
+			mono_loader_set_error_bad_image (g_strdup_printf ("Bad method signature class token %08x field name %s token %08x", class, fname, token));
+			return NULL;
+		}
+
 		ptr = mono_metadata_blob_heap (image, sig_idx);
 		mono_metadata_decode_blob_size (ptr, &ptr);
 		sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
@@ -908,6 +921,11 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	mono_class_init (klass);
 
 	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
+
+	if (!mono_verifier_verify_memberref_signature (image, sig_idx, NULL)) {
+		mono_loader_set_error_method_load (klass->name, mname);
+		return NULL;
+	}
 
 	ptr = mono_metadata_blob_heap (image, sig_idx);
 	mono_metadata_decode_blob_size (ptr, &ptr);
