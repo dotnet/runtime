@@ -97,7 +97,7 @@ const static unsigned char coded_index_desc[] = {
 
 #define HAS_CATTR_DESC (HAS_CONSTANT_DESC + 5)
 	5, /*bits*/
-	19, /*tables*/
+	20, /*tables*/
 	MONO_TABLE_METHOD,
 	MONO_TABLE_FIELD,
 	MONO_TABLE_TYPEREF,
@@ -117,8 +117,9 @@ const static unsigned char coded_index_desc[] = {
 	MONO_TABLE_FILE,
 	MONO_TABLE_EXPORTEDTYPE,
 	MONO_TABLE_MANIFESTRESOURCE,
+	MONO_TABLE_GENERICPARAM,
 
-#define HAS_FIELD_MARSHAL_DESC (HAS_CATTR_DESC + 21)
+#define HAS_FIELD_MARSHAL_DESC (HAS_CATTR_DESC + 22)
 	1, /*bits*/
 	2, /*tables*/
 	MONO_TABLE_FIELD,
