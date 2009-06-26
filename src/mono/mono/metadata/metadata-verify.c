@@ -2116,6 +2116,9 @@ verify_field_table (VerifyContext *ctx)
 		if (!data [MONO_FIELD_NAME] || !is_valid_non_empty_string (ctx, data [MONO_FIELD_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid name token %08x", i, data [MONO_FIELD_NAME]));
 
+		if (data [MONO_FIELD_SIGNATURE] && !is_valid_blob_object (ctx, data [MONO_FIELD_SIGNATURE], 1))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid signature blob token 0x%x", i, data [MONO_FIELD_SIGNATURE]));
+
 		//TODO verify contant flag
 
 		if (i + 1 < module_field_list) {
@@ -2254,6 +2257,9 @@ verify_method_table (VerifyContext *ctx)
 
 		if ((is_ctor || is_cctor) && !(flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is named .ctor or .cctor but is not RtSpecialName", i));
+
+		if (data [MONO_METHOD_SIGNATURE] && !is_valid_blob_object (ctx, data [MONO_METHOD_SIGNATURE], 1))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid signature blob token 0x%x", i, data [MONO_METHOD_SIGNATURE]));
 
 		if (data [MONO_METHOD_PARAMLIST] == 0)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d ParamList be be >= 1", i));
@@ -2400,6 +2406,9 @@ verify_memberref_table (VerifyContext *ctx)
 
 		if (!is_valid_non_empty_string (ctx, data [MONO_MEMBERREF_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid MemberRef row %d Name field coded is invalid or empty 0x%08x", i, data [MONO_MEMBERREF_NAME]));
+
+		if (data [MONO_MEMBERREF_SIGNATURE] && !is_valid_blob_object (ctx, data [MONO_MEMBERREF_SIGNATURE], 1))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MemberRef row %d invalid signature blob token 0x%x", i, data [MONO_MEMBERREF_SIGNATURE]));
 	}
 }
 
@@ -2459,6 +2468,9 @@ verify_cattr_table (VerifyContext *ctx)
 
 		if (!is_valid_coded_index (ctx, CATTR_TYPE_DESC, data [MONO_CUSTOM_ATTR_TYPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Parent field 0x%08x", i, data [MONO_CUSTOM_ATTR_PARENT]));
+
+		if (data [MONO_CUSTOM_ATTR_VALUE] && !is_valid_blob_object (ctx, data [MONO_CUSTOM_ATTR_VALUE], 0))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d invalid value blob 0x%x", i, data [MONO_CUSTOM_ATTR_VALUE]));
 	}
 }
 
@@ -2495,6 +2507,9 @@ verify_field_marshal_table (VerifyContext *ctx)
 
 		if (!data [MONO_FIELD_MARSHAL_NATIVE_TYPE])
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldMarshal row %d NativeType field is null", i));
+
+		if (!is_valid_blob_object (ctx, data [MONO_FIELD_MARSHAL_NATIVE_TYPE], 1))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldMarshal row %d invalid NativeType blob 0x%x", i, data [MONO_FIELD_MARSHAL_NATIVE_TYPE]));
 	}
 }
 
@@ -2591,6 +2606,21 @@ verify_field_layout_table (VerifyContext *ctx)
 
 		if (!data [MONO_FIELD_LAYOUT_FIELD] || data[MONO_FIELD_LAYOUT_FIELD] > ctx->image->tables [MONO_TABLE_FIELD].rows + 1)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldLayout row %d Field field 0x%08x", i, data [MONO_FIELD_LAYOUT_FIELD]));
+	}
+}
+
+static void
+verify_standalonesig_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_STANDALONESIG];
+	guint32 data [MONO_STAND_ALONE_SIGNATURE_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_STAND_ALONE_SIGNATURE_SIZE);
+
+		if (data [MONO_STAND_ALONE_SIGNATURE] && !is_valid_blob_object (ctx, data [MONO_STAND_ALONE_SIGNATURE], 1))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid StandAloneSig row %d invalid signature 0x%x", i, data [MONO_STAND_ALONE_SIGNATURE]));
 	}
 }
 
@@ -2782,6 +2812,21 @@ verify_moduleref_table (VerifyContext *ctx)
 
 		if (!is_valid_non_empty_string (ctx, data[MONO_MODULEREF_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d Class field %08x", i, data [MONO_TABLE_TYPEDEF]));
+	}
+}
+
+static void
+verify_typespec_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPESPEC];
+	guint32 data [MONO_TYPESPEC_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_TYPESPEC_SIZE);
+
+		if (data [MONO_TYPESPEC_SIGNATURE] && !is_valid_blob_object (ctx, data [MONO_TYPESPEC_SIGNATURE], 1))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid TypeSpec row %d Signature field %08x", i, data [MONO_TYPESPEC_SIGNATURE]));
 	}
 }
 
@@ -3082,6 +3127,9 @@ verify_method_spec_table (VerifyContext *ctx)
 
 		if (!get_coded_index_token (METHODDEF_OR_REF_DESC, data [MONO_METHODSPEC_METHOD]))
 			ADD_ERROR (ctx, g_strdup_printf ("MethodSpec table row %d has null Method token", i));
+
+		if (data [MONO_METHODSPEC_SIGNATURE] && !is_valid_blob_object (ctx, data [MONO_METHODSPEC_SIGNATURE], 1))
+			ADD_ERROR (ctx, g_strdup_printf ("MethodSpec table row %d has invalid signature token %08x", i, data [MONO_METHODSPEC_SIGNATURE]));
 	}
 }
 
@@ -3174,6 +3222,8 @@ verify_tables_data (VerifyContext *ctx)
 	CHECK_ERROR ();
 	verify_field_layout_table (ctx);
 	CHECK_ERROR ();
+	verify_standalonesig_table (ctx);
+	CHECK_ERROR ();
 	verify_eventmap_table (ctx);
 	CHECK_ERROR ();
 	verify_event_table (ctx);
@@ -3185,6 +3235,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_methodimpl_table (ctx);
 	CHECK_ERROR ();
 	verify_moduleref_table (ctx);
+	CHECK_ERROR ();
+	verify_typespec_table (ctx);
 	CHECK_ERROR ();
 	verify_implmap_table (ctx);
 	CHECK_ERROR ();
