@@ -1002,6 +1002,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	token = cols [MONO_METHODSPEC_METHOD];
 	nindex = token >> MONO_METHODDEFORREF_BITS;
 
+	if (!mono_verifier_verify_methodspec_signature (image, cols [MONO_METHODSPEC_SIGNATURE], NULL))
+		return NULL;
+
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
 
 	mono_metadata_decode_value (ptr, &ptr);
