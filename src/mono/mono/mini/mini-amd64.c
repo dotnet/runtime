@@ -5155,10 +5155,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			guint8 *buf, *no_domain_branch;
 
 			code = mono_amd64_emit_tls_get (code, AMD64_RAX, appdomain_tls_offset);
-			if ((domain >> 32) == 0)
-				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
-			else
-				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			if (cfg->compile_aot) {
+				/* AOT code is only used in the root domain */
+				amd64_mov_reg_imm (code, AMD64_ARG_REG1, 0);
+			} else {
+				if ((domain >> 32) == 0)
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
+				else
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			}
 			amd64_alu_reg_reg (code, X86_CMP, AMD64_RAX, AMD64_ARG_REG1);
 			no_domain_branch = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
@@ -5177,10 +5182,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 		} else {
 			g_assert (!cfg->compile_aot);
-			if ((domain >> 32) == 0)
-				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
-			else
-				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			if (cfg->compile_aot) {
+				/* AOT code is only used in the root domain */
+				amd64_mov_reg_imm (code, AMD64_ARG_REG1, 0);
+			} else {
+				if ((domain >> 32) == 0)
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
+				else
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			}
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD,
 					  (gpointer)"mono_jit_thread_attach", TRUE);
 		}
@@ -5189,8 +5199,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		if ((lmf_tls_offset != -1) && !optimize_for_xen) {
 			/*
-			 * Optimized version which uses the mono_lmf TLS variable instead of indirection
-			 * through the mono_lmf_addr TLS variable.
+			 * Optimized version which uses the mono_lmf TLS variable instead of 
+			 * indirection through the mono_lmf_addr TLS variable.
 			 */
 			/* %rax = previous_lmf */
 			x86_prefix (code, X86_FS_PREFIX);
