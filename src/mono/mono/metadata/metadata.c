@@ -4645,6 +4645,12 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
+
+	if (!mono_verifier_verify_typespec_signature (image, cols [MONO_TYPESPEC_SIGNATURE], NULL)) {
+		mono_loader_unlock ();
+		return NULL;
+	}
+
 	len = mono_metadata_decode_value (ptr, &ptr);
 
 	type = mono_image_alloc0 (image, sizeof (MonoType));
