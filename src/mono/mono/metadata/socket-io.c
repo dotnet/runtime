@@ -2025,14 +2025,6 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 		int valsize;
 		
 		switch(name) {
-		case SocketOptionName_DontLinger:
-			linger.l_onoff=0;
-			linger.l_linger=0;
-			valsize=sizeof(linger);
-			ret = _wapi_setsockopt (sock, system_level,
-						system_name, &linger, valsize);
-			break;
-			
 		case SocketOptionName_Linger:
 			/* Dig out "bool enabled" and "int seconds"
 			 * fields
