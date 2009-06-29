@@ -126,6 +126,10 @@ static MonoGHashTable *threads=NULL;
  * Protected by mono_threads_lock ().
  */
 static MonoGHashTable *threads_starting_up = NULL;
+ 
+/* Maps a MonoThread to its start argument */
+/* Protected by mono_threads_lock () */
+static MonoGHashTable *thread_start_args = NULL;
 
 /* The TLS key that holds the MonoObject assigned to each thread */
 static guint32 current_object_key = -1;
@@ -620,7 +624,10 @@ static guint32 WINAPI start_wrapper(void *data)
 		ReleaseSemaphore (thread->start_notify, 1, NULL);
 	}
 
-	MONO_GC_UNREGISTER_ROOT (start_info->start_arg);
+	mono_threads_lock ();
+	mono_g_hash_table_remove (thread_start_args, thread);
+	mono_threads_unlock ();
+
 	g_free (start_info);
 
 	thread_adjust_static_data (thread);
@@ -729,12 +736,6 @@ MonoThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpoi
 	start_info->domain = domain;
 	start_info->start_arg = arg;
 
-	/* 
-	 * The argument may be an object reference, and there is no ref to keep it alive
-	 * when the new thread is started but not yet registered with the collector.
-	 */
-	MONO_GC_REGISTER_ROOT (start_info->start_arg);
-
 	mono_threads_lock ();
 	if (shutting_down) {
 		mono_threads_unlock ();
@@ -744,7 +745,17 @@ MonoThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpoi
 		MONO_GC_REGISTER_ROOT (threads_starting_up);
 		threads_starting_up = mono_g_hash_table_new (NULL, NULL);
 	}
-	mono_g_hash_table_insert (threads_starting_up, thread, thread);
+	if (thread_start_args == NULL) {
+		MONO_GC_REGISTER_ROOT (thread_start_args);
+		thread_start_args = mono_g_hash_table_new (NULL, NULL);
+	}
+ 	mono_g_hash_table_insert (threads_starting_up, thread, thread);
+	/* 
+	 * The argument may be an object reference, and there is no ref to keep it alive
+	 * when the new thread is started but not yet registered with the collector. So
+	 * we store it in a GC tracked hash table.
+	 */
+	mono_g_hash_table_insert (thread_start_args, thread, start_info->start_arg);
 	mono_threads_unlock ();	
 
 	/* Create suspended, so we can do some housekeeping before the thread
@@ -755,7 +766,6 @@ MonoThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpoi
 	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so throw an exception */
-		MONO_GC_UNREGISTER_ROOT (start_info->start_arg);
 		mono_threads_lock ();
 		mono_g_hash_table_remove (threads_starting_up, thread);
 		mono_threads_unlock ();
