@@ -162,6 +162,17 @@ mono_gc_run_finalize (void *obj, void *data)
 		}
 	}
 
+	if (o->vtable->klass->image == mono_defaults.corlib && !strcmp (o->vtable->klass->name, "DynamicMethod") && finalizing_root_domain) {
+		/*
+		 * These can't be finalized during unloading/shutdown, since that would
+		 * free the native code which can still be referenced by other
+		 * finalizers.
+		 * FIXME: This is not perfect, objects dying at the same time as 
+		 * dynamic methods can still reference them even when !shutdown.
+		 */
+		return;
+	}
+
 	if (mono_runtime_get_no_exec ())
 		return;
 
