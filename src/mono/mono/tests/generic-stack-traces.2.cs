@@ -13,6 +13,20 @@ public class Gen<T> {
     }
 }
 
+class Foo<T1, T2> {
+
+	public void Throw () {
+		throw new Exception ();
+	}
+
+	public void Throw<T3> () {
+		throw new Exception ();
+	}
+}
+
+class Bar<T> : Foo<object, T> {
+}
+
 public class main {
     public static void callCallStaticCrash<T> () {
 	Gen<T> gt = new Gen<T> ();
@@ -70,6 +84,21 @@ public class main {
 	    if (!test (exc, typeof (Gen<string>)))
 		return 1;
 	}
+
+	// Exception thrown in inherited method with different generic context
+	// (#509406)
+	try {
+		new Bar <string> ().Throw ();
+	} catch (Exception ex) {
+		Console.WriteLine (new StackTrace (ex));
+	}
+
+	try {
+		new Bar <string> ().Throw<Bar<string>> ();
+	} catch (Exception ex) {
+		Console.WriteLine (new StackTrace (ex));
+	}
+
 	return 0;
     }
 }
