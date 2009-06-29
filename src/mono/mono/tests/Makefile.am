@@ -305,6 +305,7 @@ BASE_TEST_CS_SRC=		\
 	bug-479763.2.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
+	dynamic-method-finalize.2.cs	\
 	bug-82194.2.cs	\
 	anonarray.2.cs	\
 	ienumerator-interfaces.2.cs	\
