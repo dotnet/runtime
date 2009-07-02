@@ -4,6 +4,8 @@ include ../../build/rules.make
 
 PROGRAM_SNK = ../../class/mono.snk
 
+CECIL = $(topdir)/class/lib/net_1_1/Mono.Cecil.dll
+
 RESOURCES = \
 	Descriptors/mscorlib.xml	\
 	Descriptors/System.xml		\
@@ -15,7 +17,7 @@ PROGRAM = $(topdir)/class/lib/$(PROFILE)/monolinker.exe
 
 $(PROGRAM): $(RESOURCES)
 
-LOCAL_MCS_FLAGS = /r:Mono.Cecil.dll /r:System.Xml.dll -keyfile:$(PROGRAM_SNK) $(RESOURCES:%=-resource:%)
+LOCAL_MCS_FLAGS = /r:$(CECIL) /r:System.Xml.dll -keyfile:$(PROGRAM_SNK) $(RESOURCES:%=-resource:%)
 
 EXTRA_DISTFILES = $(RESOURCES)
 
