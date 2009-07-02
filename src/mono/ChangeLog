@@ -1,3 +1,7 @@
+2009-07-02  Jb Evain  <jbevain@novell.com>
+
+	* scripts/Makefile.am: monolinker is now a 2.0 assembly.
+
 2009-07-02  jonas echterhoff <jonas@unity3d.com>
 
 	* configure.in: Add linker flag on Mac OS X to allow access to other
