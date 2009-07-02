@@ -2,9 +2,10 @@ thisdir = tools/tuner
 SUBDIRS =
 include ../../build/rules.make
 
+CECIL = $(topdir)/class/lib/net_1_1/Mono.Cecil.dll
 LINKER = $(topdir)/class/lib/net_1_1/monolinker.exe
 
-LOCAL_MCS_FLAGS = -r:System.Xml.dll -r:$(LINKER) -r:Mono.Cecil.dll
+LOCAL_MCS_FLAGS = -r:System.Xml.dll -r:$(LINKER) -r:$(CECIL)
 
 LIBRARY = Mono.Tuner.dll
 
