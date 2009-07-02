@@ -2717,6 +2717,7 @@ collect_nursery (size_t requested_size)
 	}
 	/* registered roots, this includes static fields */
 	scan_from_registered_roots (nursery_start, nursery_next, ROOT_TYPE_NORMAL);
+	scan_from_registered_roots (nursery_start, nursery_next, ROOT_TYPE_WBARRIER);
 	scan_thread_data (nursery_start, nursery_next, TRUE);
 	/* alloc_pinned objects */
 	scan_from_pinned_objects (nursery_start, nursery_next);
