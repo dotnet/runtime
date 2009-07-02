@@ -342,6 +342,7 @@ struct _MonoDynamicImage {
 	MonoDynamicStream tstream;
 	MonoDynamicStream guid;
 	MonoDynamicTable tables [MONO_TABLE_NUM];
+	MonoClass *wrappers_type; /*wrappers are bound to this type instead of <Module>*/
 };
 
 /* Contains information about assembly binding */

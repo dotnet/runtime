@@ -527,6 +527,7 @@ ICALL(MODULEB_4, "create_modified_type", ves_icall_ModuleBuilder_create_modified
 ICALL(MODULEB_5, "getMethodToken", ves_icall_ModuleBuilder_getMethodToken)
 ICALL(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken)
 ICALL(MODULEB_7, "getUSIndex", mono_image_insert_string)
+ICALL(MODULEB_9, "set_wrappers_type", mono_image_set_wrappers_type)
 
 ICALL_TYPE(SIGH, "System.Reflection.Emit.SignatureHelper", SIGH_1)
 ICALL(SIGH_1, "get_signature_field", mono_reflection_sighelper_get_signature_field)

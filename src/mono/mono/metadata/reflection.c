@@ -5864,6 +5864,13 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 	}
 }
 
+void
+mono_image_set_wrappers_type (MonoReflectionModuleBuilder *moduleb, MonoReflectionType *type)
+{
+	MonoDynamicImage *image = moduleb->dynamic_image;
+	image->wrappers_type = mono_class_from_mono_type (type->type);
+}
+
 #endif
 
 /*
@@ -10970,6 +10977,12 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 
 void
 mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_image_set_wrappers_type (MonoReflectionModuleBuilder *moduleb, MonoReflectionType *type)
 {
 	g_assert_not_reached ();
 }
