@@ -2291,7 +2291,7 @@ alloc_nursery (void)
 	UPDATE_HEAP_BOUNDARIES (nursery_start, nursery_real_end);
 	nursery_next = nursery_start;
 	total_alloc += alloc_size;
-	DEBUG (4, fprintf (gc_debug_file, "Expanding heap size: %zd, total: %zd\n", nursery_size, total_alloc));
+	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %zd, total: %zd\n", data, data + alloc_size, nursery_size, total_alloc));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
 	section->end_data = nursery_real_end;
@@ -2978,7 +2978,7 @@ alloc_section (size_t size)
 	section->end_data = data + new_size;
 	UPDATE_HEAP_BOUNDARIES (data, section->end_data);
 	total_alloc += new_size;
-	DEBUG (2, fprintf (gc_debug_file, "Expanding heap size: %zd, total: %zd\n", new_size, total_alloc));
+	DEBUG (2, fprintf (gc_debug_file, "Expanding heap size: %zd (%p-%p), total: %zd\n", new_size, data, data + new_size, total_alloc));
 	section->data = data;
 	section->size = new_size;
 	scan_starts = new_size / SCAN_START_SIZE;
@@ -4726,15 +4726,51 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 	/* FIXME: check register */
 }
 
+static gboolean
+ptr_on_stack (void *ptr)
+{
+	int rs = 0;
+	int dummy;
+	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
+
+	update_current_thread_stack (&dummy);
+
+	if (ptr >= (gpointer)info->stack_start && ptr < (gpointer)info->stack_end)
+		return TRUE;
+	return FALSE;
+}
+
 /* return TRUE if ptr points inside the managed heap */
 static gboolean
 ptr_in_heap (void* ptr)
 {
 	mword p = (mword)ptr;
+	LOSObject *bigobj;
+	GCMemSection *section;
+
 	if (p < lowest_heap_address || p >= highest_heap_address)
 		return FALSE;
-	/* FIXME: more checks */
-	return TRUE;
+
+	if (ptr_in_nursery (ptr))
+		return TRUE;
+
+	if (ptr_on_stack (ptr))
+		return FALSE;
+
+	for (section = section_list; section; section = section->next) {
+		if (ptr >= (gpointer)section->data && ptr < (gpointer)(section->data + section->size))
+			return TRUE;
+	}
+
+	if (obj_is_from_pinned_alloc (ptr))
+		return TRUE;
+
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
+		if (ptr >= (gpointer)bigobj->data && ptr < (gpointer)(bigobj->data + bigobj->size))
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 static mword*
@@ -5292,14 +5328,13 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
-	if (ptr_in_nursery (ptr)) {
+	if (ptr_in_nursery (ptr) || !ptr_in_heap (ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		*(void**)ptr = value;
 		return;
 	}
 	rs = REMEMBERED_SET;
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
-	/* FIXME: ensure it is on the heap */
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)ptr;
 		*(void**)ptr = value;
@@ -5349,7 +5384,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
 	rs = REMEMBERED_SET;
-	if (ptr_in_nursery (dest))
+	if (ptr_in_nursery (dest) || !ptr_in_heap (dest))
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
 

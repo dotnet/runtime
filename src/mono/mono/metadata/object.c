@@ -2591,6 +2591,8 @@ set_value (MonoType *type, void *dest, void *value, int deref_pointer)
 {
 	int t;
 	if (type->byref) {
+		/* object fields cannot be byref, so we don't need a
+		   wbarrier here */
 		gpointer *p = (gpointer*)dest;
 		*p = value;
 		return;
@@ -2661,12 +2663,14 @@ handle_enum:
 			t = mono_class_enum_basetype (type->data.klass)->type;
 			goto handle_enum;
 		} else {
-			int size;
-			size = mono_class_value_size (mono_class_from_mono_type (type), NULL);
-			if (value == NULL)
+			MonoClass *class = mono_class_from_mono_type (type);
+			int size = mono_class_value_size (class, NULL);
+			if (value == NULL) {
 				memset (dest, 0, size);
-			else
+			} else {
 				memcpy (dest, value, size);
+				mono_gc_wbarrier_value_copy (dest, value, size, class);
+			}
 		}
 		return;
 	case MONO_TYPE_GENERICINST:
