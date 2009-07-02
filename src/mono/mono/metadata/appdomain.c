@@ -2002,8 +2002,7 @@ deregister_reflection_info_roots (MonoDomain *domain)
 		MonoAssembly *assembly = list->data;
 		MonoImage *image = assembly->image;
 		int i;
-
-		mono_image_lock (image); /*FIXME this is a temporary fix until we change the code to loop over image->class_cache*/
+		/*No need to take the image lock here since dynamic images are appdomain bound and at this point the mutator is gone.*/
 		if (image->dynamic && image->name_cache)
 			g_hash_table_foreach (image->name_cache, deregister_reflection_info_roots_name_space, image);
 		for (i = 0; i < image->module_count; ++i) {
@@ -2011,7 +2010,6 @@ deregister_reflection_info_roots (MonoDomain *domain)
 			if (module && module->dynamic && module->name_cache)
 				g_hash_table_foreach (module->name_cache, deregister_reflection_info_roots_name_space, module);
 		}
-		mono_image_unlock (image);
 	}
 	mono_domain_assemblies_unlock (domain);
 	mono_loader_unlock ();
