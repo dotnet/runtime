@@ -117,7 +117,7 @@ mono_LDADD = \
 	$(MONO_DTRACE_OBJECT)
 
 mono_LDFLAGS = \
-	$(static_flags) -export-dynamic $(monobinldflags)
+	$(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)
 
 if DTRACE_G_REQUIRED
 
@@ -304,11 +304,15 @@ test_sources = 			\
 	basic-simd.cs
 
 if MONO_DEBUGGER_SUPPORTED
+if PLATFORM_DARWIN
+mono_debugger_arch_sources = mdb-debug-info32-darwin.s
+else
 if AMD64
 mono_debugger_arch_sources = mdb-debug-info64.s
 else
 if X86
 mono_debugger_arch_sources = mdb-debug-info32.s
+endif
 endif
 endif
 mono_debugger_sources = debug-debugger.c debug-debugger.h $(mono_debugger_arch_sources)

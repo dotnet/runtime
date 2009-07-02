@@ -4735,6 +4735,8 @@ mini_init (const char *filename, const char *runtime_version)
 	if (!default_opt_set)
 		default_opt = mono_parse_default_optimizations (NULL);
 
+	InitializeCriticalSection (&jit_mutex);
+
 #ifdef MONO_DEBUGGER_SUPPORTED
 	if (mini_debug_running_inside_mdb ())
 		mini_debugger_init ();
@@ -4745,8 +4747,6 @@ mini_init (const char *filename, const char *runtime_version)
 #else
 	mono_runtime_set_has_tls_get (FALSE);
 #endif
-
-	InitializeCriticalSection (&jit_mutex);
 
 	if (!global_codeman)
 		global_codeman = mono_code_manager_new ();
