@@ -2488,10 +2488,8 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 			gray_start = scan_object (gray_start, start_addr, end_addr);
 		}
 	} while (fin_ready != num_ready_finalizers || bigo_scanned_num);
-
-	DEBUG (2, fprintf (gc_debug_file, "Copied from %s to old space: %d bytes\n", generation_name (generation), (int)(gray_objects - to_space)));
-	to_space = gray_start;
-	to_space_section->next_data = to_space;
+	TV_GETTIME (btv);
+	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan for %s generation: %d usecs\n", generation_name (generation), TV_ELAPSED (atv, btv)));
 
 	/*
 	 * handle disappearing links
@@ -2501,11 +2499,23 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 * GC a finalized object my lose the monitor because it is cleared before the finalizer is
 	 * called.
 	 */
-	null_link_in_range (start_addr, end_addr, generation);
-	if (generation == GENERATION_OLD)
-		null_link_in_range (start_addr, end_addr, GENERATION_NURSERY);
-	TV_GETTIME (btv);
-	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan for %s generation: %d usecs\n", generation_name (generation), TV_ELAPSED (atv, btv)));
+	g_assert (gray_start == gray_objects);
+	for (;;) {
+		null_link_in_range (start_addr, end_addr, generation);
+		if (generation == GENERATION_OLD)
+			null_link_in_range (start_addr, end_addr, GENERATION_NURSERY);
+		if (gray_start == gray_objects)
+			break;
+		while (gray_start < gray_objects) {
+			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
+			gray_start = scan_object (gray_start, start_addr, end_addr);
+		}
+	}
+
+	g_assert (gray_start == gray_objects);
+	DEBUG (2, fprintf (gc_debug_file, "Copied from %s to old space: %d bytes (%p-%p)\n", generation_name (generation), (int)(gray_objects - to_space), to_space, gray_objects));
+	to_space = gray_start;
+	to_space_section->next_data = to_space;
 }
 
 static int last_num_pinned = 0;
