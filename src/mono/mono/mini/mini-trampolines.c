@@ -30,12 +30,20 @@ static GHashTable *rgctx_lazy_fetch_trampoline_hash_addr = NULL;
 static CRITICAL_SECTION trampolines_mutex;
 
 static gpointer
-get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr)
+get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr, gboolean need_rgctx_tramp)
 {
-	if (mono_aot_only)
-		return mono_aot_get_unbox_trampoline (m);
-	else
+	if (mono_aot_only) {
+		if (need_rgctx_tramp)
+			/* 
+			 * The unbox trampolines call the method directly, so need to add
+			 * an rgctx tramp before them.
+			 */
+			return mono_create_static_rgctx_trampoline (m, mono_aot_get_unbox_trampoline (m));
+		else
+			return mono_aot_get_unbox_trampoline (m);
+	} else {
 		return mono_arch_get_unbox_trampoline (gsctx, m, addr);
+	}
 }
 
 #ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
@@ -434,7 +442,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp
 		g_assert (vtable_slot);
 
 		if (vt->klass->valuetype)
-			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);			
+			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr, need_rgctx_tramp);
 
 		mono_method_add_generic_virtual_invocation (mono_domain_get (), 
 													vt, vtable_slot,
@@ -475,7 +483,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
-			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);
+			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr, need_rgctx_tramp);
 		g_assert (*vtable_slot);
 
 		if (!proxy && (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))) {
@@ -564,7 +572,7 @@ mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *
 	g_assert (addr);
 
 	if (m->klass->valuetype)
-		addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);
+		addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr, need_rgctx_tramp);
 
 	vtable_slot = &(vt->vtable [mono_method_get_vtable_slot (m)]);
 	g_assert (*vtable_slot);
@@ -735,7 +743,8 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 	static gboolean inited = FALSE;
 	static int num_lookups = 0;
 	guint32 slot = GPOINTER_TO_UINT (data);
-	gpointer arg = (gpointer)(gssize)regs [MONO_ARCH_VTABLE_REG];
+	mgreg_t *r = (mgreg_t*)regs;
+	gpointer arg = (gpointer)(gssize)r [MONO_ARCH_VTABLE_REG];
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
 	gboolean mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 
