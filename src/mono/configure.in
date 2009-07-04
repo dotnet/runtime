@@ -47,10 +47,8 @@ CFLAGS_FOR_LIBGC=$CFLAGS
 #
 libmono_cflags=""
 libmono_ldflags=""
-monobin_platform_ldflags=""
 AC_SUBST(libmono_cflags)
 AC_SUBST(libmono_ldflags)
-AC_SUBST(monobin_platform_ldflags)
 
 # Variable to have relocatable .pc files (lib, or lib64)
 reloc_libdir=`basename ${libdir}`
@@ -205,7 +203,6 @@ case "$host" in
 		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
 		libmono_ldflags="-pthread"
-		monobin_platform_ldflags="-sectcreate __TEXT __info_plist Info.plist"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA, 1, [...])

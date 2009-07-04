@@ -405,14 +405,17 @@ endif
 
 if PLATFORM_WIN32
 os_sources = $(windows_sources)
+monobin_platform_ldflags=
 endif
 
 if PLATFORM_SIGPOSIX
 os_sources = $(posix_sources)
+monobin_platform_ldflags=
 endif
 
 if PLATFORM_DARWIN
 os_sources = $(darwin_sources) $(posix_sources)
+monobin_platform_ldflags=-sectcreate __TEXT __info_plist $(top_srcdir)/mono/mini/Info.plist
 endif
 
 libmono_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
