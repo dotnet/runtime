@@ -1065,6 +1065,12 @@ typedef struct {
 
 typedef struct {
 	MonoReflectionType type;
+	MonoReflectionType *element_type;
+	int rank;
+} MonoReflectionArrayType;
+
+typedef struct {
+	MonoReflectionType type;
 	MonoReflectionTypeBuilder *tbuilder;
 	MonoReflectionMethodBuilder *mbuilder;
 	MonoString *name;
@@ -1254,6 +1260,7 @@ void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m) MONO
 void mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb) MONO_INTERNAL;
 
 void        mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam) MONO_INTERNAL;
+void        mono_reflection_create_unmanaged_type (MonoReflectionType *type) MONO_INTERNAL;
 
 MonoArray* mono_param_get_objects_internal  (MonoDomain *domain, MonoMethod *method, MonoClass *refclass) MONO_INTERNAL;
 
