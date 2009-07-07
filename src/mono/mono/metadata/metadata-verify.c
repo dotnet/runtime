@@ -1896,11 +1896,12 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 
 			/* only verify the class token is verified as the rest is done by the IL verifier*/
 			for (i = 0; i < clauses; ++i) {
+				guint flags = *ptr;
 				guint32 class_token = 0;
 				ptr += (is_fat ? 20 : 8);
 				if (!safe_read32 (class_token, ptr, end))
 					FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for section %d", i));
-				if (!*ptr == MONO_EXCEPTION_CLAUSE_NONE && class_token) {
+				if (flags == MONO_EXCEPTION_CLAUSE_NONE && class_token) {
 					guint table = mono_metadata_token_table (class_token);
 					if (table != MONO_TABLE_TYPEREF && table != MONO_TABLE_TYPEDEF && table != MONO_TABLE_TYPESPEC)
 						FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid section %d class token table %x", i, table));
