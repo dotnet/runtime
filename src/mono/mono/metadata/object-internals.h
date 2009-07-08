@@ -1072,7 +1072,7 @@ typedef struct {
 typedef struct {
 	MonoReflectionType type;
 	MonoReflectionType *element_type;
-} MonoReflectionByRefType;
+} MonoReflectionDerivedType;
 
 typedef struct {
 	MonoReflectionType type;
