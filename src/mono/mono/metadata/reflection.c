@@ -4734,7 +4734,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 	} else if (strcmp (klass->name, "MethodOnTypeBuilderInst") == 0) {
 		MonoReflectionMethodOnTypeBuilderInst *m = (MonoReflectionMethodOnTypeBuilderInst*)obj;
 		token = mono_image_get_method_on_inst_token (assembly, m, create_methodspec);
-	} else if (strcmp (klass->name, "ArrayType") == 0) {
+	} else if (strcmp (klass->name, "ArrayType") == 0 || strcmp (klass->name, "ByRefType") == 0) {
 		MonoReflectionType *type = (MonoReflectionType *)obj;
 		token = mono_metadata_token_from_dor (
 				mono_image_typedef_or_ref (assembly, mono_reflection_type_get_handle (type)));
@@ -8517,6 +8517,14 @@ is_sre_array (MonoReflectionType *ref)
 			!strcmp ("System.Reflection.Emit", mono_object_class (ref)->name_space);
 }
 
+static gboolean
+is_sre_byref (MonoReflectionType *ref)
+{
+	return ref && is_corlib_type (ref) &&
+			!strcmp ("ByRefType", mono_object_class (ref)->name) &&
+			!strcmp ("System.Reflection.Emit", mono_object_class (ref)->name_space);
+}
+
 static MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref)
 {
@@ -8535,6 +8543,14 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		g_assert (base);
 		res = &mono_array_class_get (mono_class_from_mono_type (base), sre_array->rank)->byval_arg;
 		sre_array->type.type = res;
+		return res;
+	} else if (is_sre_byref (ref)) {
+		MonoType *res;
+		MonoReflectionByRefType *sre_byref = (MonoReflectionByRefType*)ref;
+		MonoType *base = mono_reflection_type_get_handle (sre_byref->element_type);
+		g_assert (base);
+		res = &mono_class_from_mono_type (base)->this_arg;
+		sre_byref->type.type = res;
 		return res;
 	}
 
@@ -10989,7 +11005,7 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		result = inflate_mono_method (inflated_klass, m->mb->mhandle, (MonoObject*)m->mb);
 		*handle_class = mono_defaults.methodhandle_class;
 		mono_metadata_free_type (type);
-	} else if (strcmp (mono_object_get_class(obj)->name, "ArrayType") == 0) {
+	} else if (strcmp (mono_object_get_class(obj)->name, "ArrayType") == 0 || strcmp (mono_object_get_class(obj)->name, "ByRefType") == 0) {
 		MonoReflectionType *ref_type = (MonoReflectionType *)obj;
 		MonoType *type = mono_reflection_type_get_handle (ref_type);
 		result = mono_class_from_mono_type (type);

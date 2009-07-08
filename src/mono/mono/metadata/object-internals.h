@@ -1071,6 +1071,11 @@ typedef struct {
 
 typedef struct {
 	MonoReflectionType type;
+	MonoReflectionType *element_type;
+} MonoReflectionByRefType;
+
+typedef struct {
+	MonoReflectionType type;
 	MonoReflectionTypeBuilder *tbuilder;
 	MonoReflectionMethodBuilder *mbuilder;
 	MonoString *name;
