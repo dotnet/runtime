@@ -536,7 +536,8 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, M
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 	case MONO_RGCTX_INFO_METHOD_RGCTX:
-	case MONO_RGCTX_INFO_METHOD_CONTEXT: {
+	case MONO_RGCTX_INFO_METHOD_CONTEXT:
+	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK: {
 		MonoMethod *method = data;
 		MonoMethod *inflated_method;
 		MonoType *inflated_type = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
@@ -812,6 +813,10 @@ instantiate_other_info (MonoDomain *domain, MonoRuntimeGenericContextOtherInfoTe
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 		return mono_create_ftnptr (mono_domain_get (),
 				mono_runtime_create_jump_trampoline (mono_domain_get (), data, TRUE));
+	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
+		return mono_create_ftnptr (mono_domain_get (),
+				mono_runtime_create_jump_trampoline (mono_domain_get (),
+						mono_marshal_get_remoting_invoke_with_check (data), TRUE));
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 		return data;
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
@@ -935,6 +940,7 @@ other_info_equal (gpointer data1, gpointer data2, int info_type)
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_METHOD_RGCTX:
 	case MONO_RGCTX_INFO_METHOD_CONTEXT:
+	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
 		return data1 == data2;
 	default:
 		g_assert_not_reached ();

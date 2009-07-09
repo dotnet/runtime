@@ -2233,11 +2233,16 @@ mono_emit_rgctx_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **ar
 }
 
 static MonoInst*
+emit_get_rgctx_method (MonoCompile *cfg, int context_used, MonoMethod *cmethod, int rgctx_type);
+
+static MonoInst*
 mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
 							MonoInst **args, MonoInst *this, MonoInst *imt_arg)
 {
+	gboolean might_be_remote;
 	gboolean virtual = this != NULL;
 	gboolean enable_for_aot = TRUE;
+	int context_used;
 	MonoCallInst *call;
 
 	if (method->string_ctor) {
@@ -2249,15 +2254,27 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		sig = ctor_sig;
 	}
 
+	might_be_remote = this && sig->hasthis &&
+		(method->klass->marshalbyref || method->klass == mono_defaults.object_class) &&
+		!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !MONO_CHECK_THIS (this);
+
+	context_used = mono_method_check_context_used (method);
+	if (might_be_remote && context_used) {
+		MonoInst *addr;
+
+		g_assert (cfg->generic_sharing_context);
+
+		addr = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK);
+
+		return mono_emit_calli (cfg, sig, args, addr);
+	}
+
 	call = mono_emit_call_args (cfg, sig, args, FALSE, virtual, FALSE);
 
-	if (this && sig->hasthis && 
-	    (method->klass->marshalbyref || method->klass == mono_defaults.object_class) && 
-	    !(method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !MONO_CHECK_THIS (this)) {
+	if (might_be_remote)
 		call->method = mono_marshal_get_remoting_invoke_with_check (method);
-	} else {
+	else
 		call->method = method;
-	}
 	call->inst.flags |= MONO_INST_HAS_METHOD;
 	call->inst.inst_left = this;
 
@@ -7547,8 +7564,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					INLINE_FAILURE;
 					ins = mono_emit_rgctx_method_call_full (cfg, cmethod, fsig, sp,
 															callvirt_this_arg, NULL, vtable_arg);
-					if (mono_method_is_generic_sharable_impl (cmethod, TRUE) && ((MonoCallInst*)ins)->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
-						GENERIC_SHARING_FAILURE (*ip);
 				}
 			}
 
