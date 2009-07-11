@@ -1224,6 +1224,12 @@ typedef struct {
 	guint32 location;
 } MonoManifestResourceInfo;
 
+/* A boxed IntPtr */
+typedef struct {
+	MonoObject object;
+	gpointer m_value;
+} MonoIntPtr;
+
 /* Keep in sync with System.GenericParameterAttributes */
 typedef enum {
 	GENERIC_PARAMETER_ATTRIBUTE_NON_VARIANT		= 0,

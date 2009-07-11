@@ -4242,6 +4242,9 @@ handle_enum:
 		/* nothing to do */
 		break;
 	case MONO_TYPE_PTR:
+		/* The result is an IntPtr */
+		mono_mb_emit_op (mb, CEE_BOX, mono_defaults.int_class);
+		break;
 	default:
 		g_assert_not_reached ();
 	}

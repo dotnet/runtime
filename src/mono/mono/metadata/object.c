@@ -3594,8 +3594,21 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				else
 					t = &t->data.generic_class->container_class->byval_arg;
 				goto again;
+			case MONO_TYPE_PTR: {
+				MonoObject *arg;
+
+				/* The argument should be an IntPtr */
+				arg = mono_array_get (params, MonoObject*, i);
+				if (arg == NULL) {
+					pa [i] = NULL;
+				} else {
+					g_assert (arg->vtable->klass == mono_defaults.int_class);
+					pa [i] = ((MonoIntPtr*)arg)->m_value;
+				}
+				break;
+			}
 			default:
-				g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
+				g_error ("type 0x%x not handled in mono_runtime_invoke_array", sig->params [i]->type);
 			}
 		}
 	}
@@ -3641,6 +3654,27 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 		/* obj must be already unboxed if needed */
 		res = mono_runtime_invoke (method, obj, pa, exc);
+
+		if (sig->ret->type == MONO_TYPE_PTR) {
+			MonoClass *pointer_class;
+			static MonoMethod *box_method;
+			void *box_args [2];
+			MonoObject *box_exc;
+
+			/* 
+			 * The runtime-invoke wrapper returns a boxed IntPtr, need to 
+			 * convert it to a Pointer object.
+			 */
+			pointer_class = mono_class_from_name_cached (mono_defaults.corlib, "System.Reflection", "Pointer");
+			if (!box_method)
+				box_method = mono_class_get_method_from_name (pointer_class, "Box", -1);
+
+			g_assert (res->vtable->klass == mono_defaults.int_class);
+			box_args [0] = ((MonoIntPtr*)res)->m_value;
+			box_args [1] = mono_type_get_object (mono_domain_get (), sig->ret);
+			res = mono_runtime_invoke (box_method, NULL, box_args, &box_exc);
+			g_assert (!box_exc);
+		}
 
 		if (has_byref_nullables) {
 			/* 
