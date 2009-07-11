@@ -29,7 +29,7 @@ enum Enum2
 	D
 }
 
-class X
+class Tests
 {
 	public static Enum1 return_enum1 () {
 		return Enum1.A;
@@ -47,9 +47,13 @@ class X
 		return UInt64.MaxValue - 5;
 	}
 
-	static int Main ()
+	static int Main (string[] args)
 	{
-		Assembly ass = Assembly.GetCallingAssembly ();
+		return TestDriver.RunTests (typeof (Tests), args);
+	}
+
+	public static int test_0_base () {
+		Assembly ass = typeof (Tests).Assembly;
 		Type a_type = ass.GetType ("A");
 		MethodInfo a_method = a_type.GetMethod ("ToString");
 
@@ -67,18 +71,47 @@ class X
 		object d_ret = d_method.Invoke (d, null);
 		Console.WriteLine (d_ret);
 
-		/* Check sharing of wrappers returning enums */
-		if (typeof (X).GetMethod ("return_enum1").Invoke (null, null).GetType () != typeof (Enum1))
-			return 1;
-		if (typeof (X).GetMethod ("return_enum2").Invoke (null, null).GetType () != typeof (Enum2))
-			return 2;
+		return 0;
+	}
 
+	public static int test_0_enum_sharing () {
+		/* Check sharing of wrappers returning enums */
+		if (typeof (Tests).GetMethod ("return_enum1").Invoke (null, null).GetType () != typeof (Enum1))
+			return 1;
+		if (typeof (Tests).GetMethod ("return_enum2").Invoke (null, null).GetType () != typeof (Enum2))
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_primitive_sharing () {
 		/* Check sharing of wrappers returning primitive types */
-		if (typeof (X).GetMethod ("return_long").Invoke (null, null).GetType () != typeof (long))
+		if (typeof (Tests).GetMethod ("return_long").Invoke (null, null).GetType () != typeof (long))
 			return 3;
-		if (typeof (X).GetMethod ("return_ulong").Invoke (null, null).GetType () != typeof (ulong))
+		if (typeof (Tests).GetMethod ("return_ulong").Invoke (null, null).GetType () != typeof (ulong))
 			return 4;
 
 		return 0;
 	}
+
+	public static unsafe int test_0_ptr () {
+		int[] arr = new int [10];
+		fixed (void *p = &arr [5]) {
+			object o = typeof (Tests).GetMethod ("Test").Invoke (null, new object [1] { new IntPtr (p) });
+			void *p2 = Pointer.Unbox (o);
+			if (new IntPtr (p) != new IntPtr (p2))
+				return 1;
+
+			o = typeof (Tests).GetMethod ("Test").Invoke (null, new object [1] { null });
+			p2 = Pointer.Unbox (o);
+			if (new IntPtr (p2) != IntPtr.Zero)
+				return 1;
+		}
+
+		return 0;
+	}
+
+    public static unsafe int* Test (int *val) {
+		Console.WriteLine (new IntPtr (val));
+        return val;
+    }
 }
