@@ -678,6 +678,8 @@ struct _SgenThreadInfo {
 	char **tlab_real_end_addr;
 	RememberedSet *remset;
 	gpointer runtime_data;
+	gpointer stopped_ip;	/* only valid if the thread is stopped */
+	MonoDomain *stopped_domain; /* ditto */
 #ifndef HAVE_KW_THREAD
 	char *tlab_start;
 	char *tlab_next;
@@ -3603,6 +3605,18 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		}
 	}
 
+	/*
+	 * We need to lock here instead of after the fast path because
+	 * we might be interrupted in the fast path (after confirming
+	 * that new_next < TLAB_TEMP_END) by the GC, and we'll end up
+	 * allocating an object in a fragment which no longer belongs
+	 * to us.
+	 *
+	 * The managed allocator does not do this, but it's treated
+	 * specially by the world-stopping code.
+	 */
+	LOCK_GC;
+
 	/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
 
 	p = (void**)TLAB_NEXT;
@@ -3619,8 +3633,13 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		 */
 
 		DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+		g_assert (*p == NULL);
 		*p = vtable;
-		
+
+		g_assert (TLAB_NEXT == new_next);
+
+		UNLOCK_GC;
+
 		return p;
 	}
 
@@ -3635,7 +3654,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	 * This avoids taking again the GC lock when registering, but this is moot when
 	 * doing thread-local allocation, so it may not be a good idea.
 	 */
-	LOCK_GC;
+	g_assert (TLAB_NEXT == new_next);
 	if (size > MAX_SMALL_OBJ_SIZE) {
 		/* get ready for possible collection */
 		update_current_thread_stack (&dummy);
@@ -4528,6 +4547,28 @@ signal_desc (int signum)
 	return "unknown";
 }
 
+#define MANAGED_ALLOCATION
+#define MANAGED_WBARRIER
+
+#ifdef MANAGED_ALLOCATION
+static gboolean
+is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip);
+#endif
+
+static void
+wait_for_suspend_ack (int count)
+{
+	int i, result;
+
+	for (i = 0; i < count; ++i) {
+		while ((result = sem_wait (suspend_ack_semaphore_ptr)) != 0) {
+			if (errno != EINTR) {
+				g_error ("sem_wait ()");
+			}
+		}
+	}
+}
+
 /* LOCKING: assumes the GC lock is held */
 static int
 thread_handshake (int signum)
@@ -4557,14 +4598,82 @@ thread_handshake (int signum)
 		}
 	}
 
-	for (i = 0; i < count; ++i) {
-		while ((result = sem_wait (suspend_ack_semaphore_ptr)) != 0) {
-			if (errno != EINTR) {
-				g_error ("sem_wait ()");
+	wait_for_suspend_ack (count);
+
+	return count;
+}
+
+static int
+restart_threads_until_none_in_managed_allocator (void)
+{
+	SgenThreadInfo *info;
+	int i, result, num_threads_died = 0;
+	int sleep_duration = -1;
+
+#ifdef MANAGED_ALLOCATION
+	for (;;) {
+		int restart_count = 0, restarted_count = 0;
+		/* restart all threads that stopped in the
+		   allocator */
+		for (i = 0; i < THREAD_HASH_SIZE; ++i) {
+			for (info = thread_table [i]; info; info = info->next) {
+				if (info->skip)
+					continue;
+				if (is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
+					result = pthread_kill (info->id, restart_signal_num);
+					if (result == 0) {
+						++restart_count;
+					} else {
+						info->skip = 1;
+					}
+				} else {
+					/* we set the stopped_ip to
+					   NULL for threads which
+					   we're not restarting so
+					   that we can easily identify
+					   the others */
+					info->stopped_ip = NULL;
+					info->stopped_domain = NULL;
+				}
 			}
 		}
+		/* if no threads were restarted, we're done */
+		if (restart_count == 0)
+			break;
+
+		/* wait for the threads to signal their restart */
+		wait_for_suspend_ack (restart_count);
+
+		if (sleep_duration < 0) {
+			sched_yield ();
+			sleep_duration = 0;
+		} else {
+			g_usleep (sleep_duration);
+			sleep_duration += 10;
+		}
+
+		/* stop them again */
+		for (i = 0; i < THREAD_HASH_SIZE; ++i) {
+			for (info = thread_table [i]; info; info = info->next) {
+				if (info->skip || info->stopped_ip == NULL)
+					continue;
+				result = pthread_kill (info->id, suspend_signal_num);
+				if (result == 0) {
+					++restarted_count;
+				} else {
+					info->skip = 1;
+				}
+			}
+		}
+		/* some threads might have died */
+		num_threads_died += restart_count - restarted_count;
+		/* wait for the threads to signal their suspension
+		   again */
+		wait_for_suspend_ack (restart_count);
 	}
-	return count;
+#endif
+
+	return num_threads_died;
 }
 
 /* LOCKING: assumes the GC lock is held (by the stopping thread) */
@@ -4578,6 +4687,8 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 
 	id = pthread_self ();
 	info = thread_info_lookup (id);
+	info->stopped_domain = mono_domain_get ();
+	info->stopped_ip = mono_gc_get_ip_from_sigctx (context);
 	stop_count = global_stop_count;
 	/* duplicate signal */
 	if (0 && info->stop_count == stop_count) {
@@ -4640,6 +4751,8 @@ stop_world (void)
 	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", global_stop_count, thread_info_lookup (ARCH_GET_THREAD ()), (gpointer)ARCH_GET_THREAD ()));
 	TV_GETTIME (stop_world_time);
 	count = thread_handshake (suspend_signal_num);
+	count -= restart_threads_until_none_in_managed_allocator ();
+	g_assert (count >= 0);
 	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
 	return count;
 }
@@ -5029,6 +5142,8 @@ gc_register_current_thread (void *addr)
 	info->tlab_next_addr = &TLAB_NEXT;
 	info->tlab_temp_end_addr = &TLAB_TEMP_END;
 	info->tlab_real_end_addr = &TLAB_REAL_END;
+	info->stopped_ip = NULL;
+	info->stopped_domain = NULL;
 
 #ifdef HAVE_KW_THREAD
 	tlab_next_addr = &tlab_next;
@@ -6228,6 +6343,26 @@ create_allocator (int atype)
 }
 
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
+
+static gboolean
+is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
+{
+	MonoJitInfo *ji;
+	MonoMethod *method;
+	int i;
+
+	if (!ip || !domain)
+		return FALSE;
+	ji = mono_jit_info_table_find (domain, ip);
+	if (!ji)
+		return FALSE;
+	method = ji->method;
+
+	for (i = 0; i < ATYPE_NUM; ++i)
+		if (method == alloc_method_cache [i])
+			return TRUE;
+	return FALSE;
+}
 #endif
 
 /*
