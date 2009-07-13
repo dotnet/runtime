@@ -6152,7 +6152,7 @@ mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller)
 	if (method)
 		return (method == caller) ? FALSE : TRUE;
 	else
-		return TRUE;
+		return FALSE;
 }
 
 /**
