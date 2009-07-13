@@ -318,7 +318,7 @@ print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *location
  */
 void
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
-				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, gssize *regs, 
+				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, mgreg_t *regs, 
 				   int nregs, guint8 **out_cfa) 
 {
 	Loc locations [NUM_REGS];

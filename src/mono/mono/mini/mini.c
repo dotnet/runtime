@@ -2172,6 +2172,13 @@ mono_get_lmf_addr (void)
 void
 mono_jit_thread_attach (MonoDomain *domain)
 {
+	if (!domain)
+		/* 
+		 * Happens when called from AOTed code which is only used in the root
+		 * domain.
+		 */
+		domain = mono_get_root_domain ();
+
 #ifdef HAVE_KW_THREAD
 	if (!mono_lmf_addr) {
 		mono_thread_attach (domain);
@@ -4728,6 +4735,8 @@ mini_init (const char *filename, const char *runtime_version)
 	if (!default_opt_set)
 		default_opt = mono_parse_default_optimizations (NULL);
 
+	InitializeCriticalSection (&jit_mutex);
+
 #ifdef MONO_DEBUGGER_SUPPORTED
 	if (mini_debug_running_inside_mdb ())
 		mini_debugger_init ();
@@ -4738,8 +4747,6 @@ mini_init (const char *filename, const char *runtime_version)
 #else
 	mono_runtime_set_has_tls_get (FALSE);
 #endif
-
-	InitializeCriticalSection (&jit_mutex);
 
 	if (!global_codeman)
 		global_codeman = mono_code_manager_new ();
@@ -4829,6 +4836,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
+
+	mono_install_get_ip_from_sigctx (mono_arch_ip_from_context);
 
 	if (runtime_version)
 		domain = mono_init_version (filename, runtime_version);

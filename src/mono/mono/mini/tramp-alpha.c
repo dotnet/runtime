@@ -497,7 +497,7 @@ mono_arch_create_specific_trampoline (gpointer arg1,
 /*========================= End of Function ========================*/
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 {
   unsigned int *pcode = (unsigned int *)code;
 
@@ -614,13 +614,13 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 }
 
 void
-mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
+mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 {
         g_assert_not_reached ();
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
 {
         g_assert_not_reached ();
 }

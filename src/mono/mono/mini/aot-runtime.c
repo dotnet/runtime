@@ -2528,7 +2528,7 @@ mono_aot_get_plt_entry (guint8 *code)
  *   Return the PLT info offset belonging to the plt entry called by CODE.
  */
 guint32
-mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
+mono_aot_get_plt_info_offset (mgreg_t *regs, guint8 *code)
 {
 	guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
@@ -2952,7 +2952,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 }
 
 guint32
-mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
+mono_aot_get_plt_info_offset (mgreg_t *regs, guint8 *code)
 {
 	g_assert_not_reached ();
 

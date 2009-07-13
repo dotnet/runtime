@@ -368,7 +368,9 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 
 	/* load the metadata */
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-       	        method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		if (!method)
+			continue;
 		mono_class_init (method->klass);
 
 		if (!strncmp (method->name, "test_", 5) && mini_stats_fd) {
@@ -402,7 +404,9 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		if (mini_stats_fd)
 			fprintf (mini_stats_fd, "[");
 		for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-        	        method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+			if (!method)
+				continue;
 			if (strncmp (method->name, "test_", 5) == 0) {
 				expected = atoi (method->name + 5);
 				run++;

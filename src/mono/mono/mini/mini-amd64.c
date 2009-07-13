@@ -916,6 +916,36 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	return opts;
 }
 
+/*
+ * This function test for all SSE functions supported.
+ *
+ * Returns a bitmask corresponding to all supported versions.
+ * 
+ * TODO detect other versions like SSE4a.
+ */
+guint32
+mono_arch_cpu_enumerate_simd_versions (void)
+{
+	int eax, ebx, ecx, edx;
+	guint32 sse_opts = 0;
+
+	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
+		if (edx & (1 << 25))
+			sse_opts |= 1 << SIMD_VERSION_SSE1;
+		if (edx & (1 << 26))
+			sse_opts |= 1 << SIMD_VERSION_SSE2;
+		if (ecx & (1 << 0))
+			sse_opts |= 1 << SIMD_VERSION_SSE3;
+		if (ecx & (1 << 9))
+			sse_opts |= 1 << SIMD_VERSION_SSSE3;
+		if (ecx & (1 << 19))
+			sse_opts |= 1 << SIMD_VERSION_SSE41;
+		if (ecx & (1 << 20))
+			sse_opts |= 1 << SIMD_VERSION_SSE42;
+	}
+	return sse_opts;	
+}
+
 GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
@@ -4451,6 +4481,158 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, size);
 			break;
 		}
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+		case OP_ADDPS:
+			amd64_sse_addps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_DIVPS:
+			amd64_sse_divps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MULPS:
+			amd64_sse_mulps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_SUBPS:
+			amd64_sse_subps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MAXPS:
+			amd64_sse_maxps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MINPS:
+			amd64_sse_minps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_COMPPS:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 7);
+			amd64_sse_cmpps_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_ANDPS:
+			amd64_sse_andps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ANDNPS:
+			amd64_sse_andnps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ORPS:
+			amd64_sse_orps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_XORPS:
+			amd64_sse_xorps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_SQRTPS:
+			amd64_sse_sqrtps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_RSQRTPS:
+			amd64_sse_rsqrtps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_RCPPS:
+			amd64_sse_rcpps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_ADDSUBPS:
+			amd64_sse_addsubps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_HADDPS:
+			amd64_sse_haddps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_HSUBPS:
+			amd64_sse_hsubps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_DUPPS_HIGH:
+			amd64_sse_movshdup_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_DUPPS_LOW:
+			amd64_sse_movsldup_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+
+		case OP_PSHUFLEW_HIGH:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
+			amd64_sse_pshufhw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			break;
+		case OP_PSHUFLEW_LOW:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
+			amd64_sse_pshuflw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			break;
+		case OP_PSHUFLED:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
+			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			break;
+
+		case OP_ADDPD:
+			amd64_sse_addpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_DIVPD:
+			amd64_sse_divpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MULPD:
+			amd64_sse_mulpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_SUBPD:
+			amd64_sse_subpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MAXPD:
+			amd64_sse_maxpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MINPD:
+			amd64_sse_minpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_COMPPD:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 7);
+			amd64_sse_cmppd_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_ANDPD:
+			amd64_sse_andpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ANDNPD:
+			amd64_sse_andnpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ORPD:
+			amd64_sse_orpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_XORPD:
+			amd64_sse_xorpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		/* TODO: This op is in the AMD64 manual but has not been implemented.
+		case OP_SQRTPD:
+			amd64_sse_sqrtpd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		*/
+		case OP_ADDSUBPD:
+			amd64_sse_addsubpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_HADDPD:
+			amd64_sse_haddpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_HSUBPD:
+			amd64_sse_hsubpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_DUPPD:
+			amd64_sse_movddup_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+
+		case OP_EXTRACT_MASK:
+			amd64_sse_pmovmskb_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+
+		case OP_PAND:
+			amd64_sse_pand_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_POR:
+			amd64_sse_por_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PXOR:
+			amd64_sse_pxor_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PADDB:
+			amd64_sse_paddb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDW:
+			amd64_sse_paddw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDD:
+			amd64_sse_paddd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDQ:
+			amd64_sse_paddq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+#endif
 		case OP_LIVERANGE_START: {
 			if (cfg->verbose_level > 1)
 				printf ("R%d START=0x%x\n", MONO_VARINFO (cfg, ins->inst_c0)->vreg, (int)(code - cfg->native_code));
@@ -4973,10 +5155,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			guint8 *buf, *no_domain_branch;
 
 			code = mono_amd64_emit_tls_get (code, AMD64_RAX, appdomain_tls_offset);
-			if ((domain >> 32) == 0)
-				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
-			else
-				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			if (cfg->compile_aot) {
+				/* AOT code is only used in the root domain */
+				amd64_mov_reg_imm (code, AMD64_ARG_REG1, 0);
+			} else {
+				if ((domain >> 32) == 0)
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
+				else
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			}
 			amd64_alu_reg_reg (code, X86_CMP, AMD64_RAX, AMD64_ARG_REG1);
 			no_domain_branch = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
@@ -4995,10 +5182,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 		} else {
 			g_assert (!cfg->compile_aot);
-			if ((domain >> 32) == 0)
-				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
-			else
-				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			if (cfg->compile_aot) {
+				/* AOT code is only used in the root domain */
+				amd64_mov_reg_imm (code, AMD64_ARG_REG1, 0);
+			} else {
+				if ((domain >> 32) == 0)
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
+				else
+					amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			}
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD,
 					  (gpointer)"mono_jit_thread_attach", TRUE);
 		}
@@ -5007,8 +5199,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		if ((lmf_tls_offset != -1) && !optimize_for_xen) {
 			/*
-			 * Optimized version which uses the mono_lmf TLS variable instead of indirection
-			 * through the mono_lmf_addr TLS variable.
+			 * Optimized version which uses the mono_lmf TLS variable instead of 
+			 * indirection through the mono_lmf_addr TLS variable.
 			 */
 			/* %rax = previous_lmf */
 			x86_prefix (code, X86_FS_PREFIX);
@@ -5747,7 +5939,7 @@ mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guin
 }
 
 gpointer
-mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 {
 	guint8 buf [10];
 	guint32 reg;
@@ -5828,7 +6020,7 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 	g_assert (reg != AMD64_R11);
 
 	*displacement = disp;
-	return regs [reg];
+	return (gpointer)regs [reg];
 }
 
 int
@@ -5853,7 +6045,7 @@ mono_arch_get_this_arg_reg (MonoMethodSignature *sig, MonoGenericSharingContext 
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
 {
 	return (gpointer)regs [mono_arch_get_this_arg_reg (sig, gsctx, code)];
 }
@@ -6205,20 +6397,20 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 }
 
 MonoMethod*
-mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
-	return regs [MONO_ARCH_IMT_REG];
+	return (MonoMethod*)regs [MONO_ARCH_IMT_REG];
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
+mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
 }
 #endif
 
 MonoVTable*
-mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code)
+mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 {
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }

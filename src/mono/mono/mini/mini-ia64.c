@@ -4500,7 +4500,7 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 gpointer
-mono_arch_get_vcall_slot (guint8* code, gpointer *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8* code, mgreg_t *regs, int *displacement)
 {
 	guint8 *bundle2 = code - 48;
 	guint8 *bundle3 = code - 32;
@@ -4558,7 +4558,7 @@ mono_arch_get_vcall_slot (guint8* code, gpointer *regs, int *displacement)
 }
 
 gpointer*
-mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs)
+mono_arch_get_delegate_method_ptr_addr (guint8* code, mgreg_t *regs)
 {
 	NOT_IMPLEMENTED;
 
@@ -4659,7 +4659,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 }
 
 MonoMethod*
-mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
 	return regs [IA64_R9];
 }
@@ -4672,15 +4672,15 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt
 #endif
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
 {
 	return (gpointer)regs [IA64_R10];
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
+mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
 }
 
 gpointer

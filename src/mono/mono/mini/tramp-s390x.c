@@ -158,7 +158,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 /*========================= End of Function ========================*/
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
 {
 	g_assert_not_reached ();
 }
@@ -174,7 +174,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *ad
 /*------------------------------------------------------------------*/
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 {
 	char patch[2] = {0x07, 0x00};
 
@@ -186,7 +186,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 /*========================= End of Function ========================*/
 
 void
-mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
+mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 {
 	g_assert_not_reached ();
 }
@@ -209,7 +209,7 @@ mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 {
 	int reg, lkReg;
 	guchar* base;
@@ -401,7 +401,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 				
 	/* Set arguments */
 
-	/* Arg 1: gssize *regs. We pass sp instead */
+	/* Arg 1: mgreg_t *regs. We pass sp instead */
 	s390_lgr  (buf, s390_r2, STK_BASE);
 	s390_ahi  (buf, s390_r2, CREATE_STACK_SIZE);
 		

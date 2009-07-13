@@ -2905,15 +2905,6 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static int test_0_sse41_vector8s_min () {
-		Vector8s v = new Vector8s(2);
-		Vector8s v2 = new Vector8s(1);
-		v = v.Min(v2);
-		if (v.V0 != 1 || v.V1 != 1 || v.V2 != 1 || v.V3 != 1 || v.V4 != 1 || v.V5 != 1 || v.V6 != 1 || v.V7 != 1)
-			return 1;
-		return 0;
-	}
-
 	public static int Main () {
 		return TestDriver.RunTests (typeof (SimdTests));
 	}

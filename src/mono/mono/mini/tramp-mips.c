@@ -99,7 +99,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
 {
 	g_assert_not_reached ();
 }
@@ -115,7 +115,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *ad
 
 
 gpointer
-mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 {
 	char *o = NULL;
 	char *vtable = NULL;
@@ -177,13 +177,13 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 }
 
 void
-mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
+mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 {
 	g_assert_not_reached ();
 }
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 {
 	guint32 *code32 = (guint32*)code;
 

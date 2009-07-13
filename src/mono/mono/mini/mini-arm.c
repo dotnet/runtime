@@ -264,7 +264,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 }
 
 static gpointer
-decode_vcall_slot_from_ldr (guint32 ldr, gpointer *regs, int *displacement)
+decode_vcall_slot_from_ldr (guint32 ldr, mgreg_t *regs, int *displacement)
 {
 	char *o = NULL;
 	int reg, offset = 0;
@@ -280,7 +280,7 @@ decode_vcall_slot_from_ldr (guint32 ldr, gpointer *regs, int *displacement)
 }
 
 gpointer
-mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 {
 	guint32* code = (guint32*)code_ptr;
 
@@ -466,7 +466,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
 {
 	/* FIXME: handle returning a struct */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
@@ -4350,7 +4350,7 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt
 }
 
 MonoMethod*
-mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
 	guint32 *code_ptr = (guint32*)code;
 	code_ptr -= 2;
@@ -4367,13 +4367,13 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
+mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
 }
 
 MonoVTable*
-mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code)
+mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 {
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
