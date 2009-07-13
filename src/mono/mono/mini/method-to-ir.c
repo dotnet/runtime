@@ -2708,6 +2708,36 @@ emit_get_rgctx_field (MonoCompile *cfg, int context_used,
 }
 
 static void
+emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
+{
+	MonoInst *vtable_arg;
+	MonoCallInst *call;
+	int context_used = 0;
+
+	if (cfg->generic_sharing_context)
+		context_used = mono_class_check_context_used (klass);
+
+	if (context_used) {
+		vtable_arg = emit_get_rgctx_klass (cfg, context_used,
+										   klass, MONO_RGCTX_INFO_VTABLE);
+	} else {
+		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+
+		if (!vtable)
+			return;
+		EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
+	}
+
+	call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline, &vtable_arg);
+#ifdef MONO_ARCH_VTABLE_REG
+	mono_call_inst_add_outarg_reg (cfg, call, vtable_arg->dreg, MONO_ARCH_VTABLE_REG, FALSE);
+	cfg->uses_vtable_reg = TRUE;
+#else
+	NOT_IMPLEMENTED;
+#endif
+}
+
+static void
 mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_class)
 {
 	int vtable_reg = alloc_preg (cfg);
@@ -6208,6 +6238,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
 				UNVERIFIED;
 
+			/* 
+			 * If the callee is a shared method, then its static cctor
+			 * might not get called after the call was patched.
+			 */
+			if (cfg->generic_sharing_context && cmethod && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable_impl (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
+				emit_generic_class_init (cfg, cmethod->klass);
+			}
 
 			if (cmethod && ((cmethod->flags & METHOD_ATTRIBUTE_STATIC) || cmethod->klass->valuetype) &&
 					(cmethod->klass->generic_class || cmethod->klass->generic_container)) {
