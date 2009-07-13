@@ -1756,8 +1756,8 @@ typedef enum {
 	X86_SSE_PMAXUD = 0x3F, /*sse41*/
 
 	X86_SSE_PMINSB = 0x38, /*sse41*/
-	X86_SSE_PMINSW = 0x39, 
-	X86_SSE_PMINSD = 0xEA,/*sse41*/
+	X86_SSE_PMINSW = 0xEA, 
+	X86_SSE_PMINSD = 0x39,/*sse41*/
 
 	X86_SSE_PMINUB = 0xDA,
 	X86_SSE_PMINUW = 0x3A, /*sse41*/
