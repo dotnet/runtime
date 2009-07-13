@@ -5268,8 +5268,6 @@ setup_tls_access (void)
 		conf_size = confstr ( _CS_GNU_LIBPTHREAD_VERSION, confbuf, sizeof(confbuf));
 		if ((conf_size > 4) && (strncmp (confbuf, "NPTL", 4) == 0))
 			tls_mode = TLS_MODE_NPTL;
-		else
-			tls_mode = TLS_MODE_LTHREADS;
 #else
 		ins = (guint32*)pthread_getspecific;
 		/* uncond branch to the real method */
@@ -5344,6 +5342,10 @@ setup_tls_access (void)
 		}
 #endif
 	}
+	if (tls_mode == TLS_MODE_DETECT)
+		tls_mode = TLS_MODE_FAILED;
+	if (tls_mode == TLS_MODE_FAILED)
+		return;
 	if ((monodomain_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
 		monodomain_key = mono_domain_get_tls_offset();
  	}
