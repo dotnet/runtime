@@ -615,8 +615,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 
 	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
 	shellex.fMask = SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE;
-	shellex.nShow = SW_SHOWNORMAL;
-
+	shellex.nShow = proc_start_info->window_style;
+	shellex.nShow = (shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow);
 	
 	
 	if (proc_start_info->filename != NULL) {
