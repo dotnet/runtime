@@ -2645,9 +2645,10 @@ scan_from_registered_roots (char *addr_start, char *addr_end, int root_type)
 }
 
 /*
- * Collect objects in the nursery.
+ * Collect objects in the nursery.  Returns whether to trigger a major
+ * collection.
  */
-static void
+static gboolean
 collect_nursery (size_t requested_size)
 {
 	GCMemSection *section;
@@ -2655,6 +2656,7 @@ collect_nursery (size_t requested_size)
 	int i;
 	char *orig_nursery_next;
 	Fragment *frag;
+	gboolean invoke_major_gc = FALSE;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
@@ -2694,6 +2696,7 @@ collect_nursery (size_t requested_size)
 		to_space = gray_objects = gray_first = section->next_data;
 		to_space_end = section->end_data;
 		to_space_section = section;
+		invoke_major_gc = TRUE;
 	}
 	DEBUG (2, fprintf (gc_debug_file, "To space setup: %p-%p in section %p\n", to_space, to_space_end, to_space_section));
 	nursery_section->next_data = nursery_next;
@@ -2756,6 +2759,8 @@ collect_nursery (size_t requested_size)
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
+
+	return invoke_major_gc;
 }
 
 static void
@@ -3033,7 +3038,8 @@ minor_collect_or_expand_inner (size_t size)
 	}
 	if (do_minor_collection) {
 		stop_world ();
-		collect_nursery (size);
+		if (collect_nursery (size))
+			major_collection ();
 		DEBUG (2, fprintf (gc_debug_file, "Heap size: %zd, LOS size: %zd\n", total_alloc, los_memory_usage));
 		restart_world ();
 		/* this also sets the proper pointers for the next allocation */
