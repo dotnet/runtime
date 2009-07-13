@@ -356,19 +356,6 @@ add_library(libmono-static STATIC ${libmono_la_SOURCES} ${CMAKE_CURRENT_BINARY_D
 target_link_libraries(libmono-static monoruntime-static monoutils-static monogc-static wapi-static ${GLIB2_LIBRARIES} ${LIBS})
 set_target_properties(libmono-static PROPERTIES OUTPUT_NAME "mono-static")
 
-# Since cmake has no support for convenience libraries, we have to link the
-# final libmono.a ourselves, similarly to how libtool does it
-add_custom_target(libmono.a
-  COMMAND rm -rf .libs/tmp libmono.a
-  COMMAND mkdir -p .libs/tmp/{1,2,3,4,5}
-  COMMAND cd .libs/tmp/1 && ar x ../../../../metadata/libmonoruntime-static.a
-  COMMAND cd .libs/tmp/2 && ar x ../../../../utils/libmonoutils-static.a
-  COMMAND cd .libs/tmp/3 && ar x ../../../../io-layer/libwapi-static.a
-  COMMAND cd .libs/tmp/3 && ar x ../../../../mini/libmono-static.a
-  COMMAND cd .libs/tmp/4 && ar x ../../../../../libgc/libmonogc-static.a
-  COMMAND ar r libmono.a `find .libs/tmp/ -name '*.o'`
-)
-
 # FIXME: cmake has no support for convenience libraries, so we would end up 
 # creating a lot of shared libraries linking to each other
 #add_library(libmono SHARED ${libmono_la_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/${arch_built})
@@ -424,15 +411,6 @@ set_source_files_properties(main.c PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_BIN
 add_executable(mono main.c ${CMAKE_CURRENT_BINARY_DIR}/buildver.h)
 add_dependencies(mono libmono-static)
 target_link_libraries(mono libmono-static ${GLIB2_LIBRARIES})
-
-install(
-  TARGETS mono
-  RUNTIME DESTINATION bin)
-
-# FIXME: Can't specify a dependency on libmono.a, and we don't want to build
-# libmono.a until needed
-install(
-  FILES libmono.a DESTINATION lib)
 
 # Test file targets
 

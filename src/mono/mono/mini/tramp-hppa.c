@@ -114,13 +114,13 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *p, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr)
 {
 	g_assert_not_reached ();
 }
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *code8, mgreg_t *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *code8, gssize *regs)
 {
 	guint32 *buf = (guint32 *)((unsigned long)code8 & ~3);
 	guint32 *code = buf;
@@ -137,7 +137,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code8, mgreg_t *regs)
 }
 
 void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
+mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
 {
 	g_assert_not_reached ();
 }
@@ -229,7 +229,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	hppa_ldo (buf, HPPA_STACK_LMF_OFFSET, hppa_r3, hppa_r1);
 	hppa_stw (buf, hppa_r1, 0, hppa_r28);
 
-	/* Call mono_magic_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp) */
+	/* Call mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp) */
 	hppa_ldo (buf, HPPA_STACK_LMF_OFFSET + G_STRUCT_OFFSET (MonoLMF, regs), hppa_r3, hppa_r26);
 	hppa_ldw (buf, HPPA_STACK_LMF_OFFSET + G_STRUCT_OFFSET (MonoLMF, method), hppa_r3, hppa_r24);
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)

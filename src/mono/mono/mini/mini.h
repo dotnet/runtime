@@ -1401,7 +1401,7 @@ gpointer  mono_aot_get_method               (MonoDomain *domain,
 gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token) MONO_INTERNAL;
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr) MONO_INTERNAL;
 guint8*   mono_aot_get_plt_entry            (guint8 *code) MONO_INTERNAL;
-guint32   mono_aot_get_plt_info_offset      (mgreg_t *regs, guint8 *code) MONO_INTERNAL;
+guint32   mono_aot_get_plt_info_offset      (gssize *regs, guint8 *code) MONO_INTERNAL;
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res) MONO_INTERNAL;
 gboolean  mono_aot_get_class_from_name      (MonoImage *image, const char *name_space, const char *name, MonoClass **klass) MONO_INTERNAL;
 MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr) MONO_INTERNAL;
@@ -1472,20 +1472,20 @@ gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer a
 gpointer          mono_create_llvm_vcall_trampoline (MonoMethod *method) MONO_INTERNAL;
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 guint32           mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
-gpointer          mono_magic_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp) MONO_INTERNAL;
-gpointer          mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp) MONO_INTERNAL;
-gpointer          mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
-gpointer          mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info, 
+gpointer          mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp) MONO_INTERNAL;
+gpointer          mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *tramp) MONO_INTERNAL;
+gpointer          mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
+gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 									   guint8* tramp) MONO_INTERNAL;
-gpointer          mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info, 
+gpointer          mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 										   guint8* tramp) MONO_INTERNAL;
-void              mono_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
-void              mono_generic_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
-void              mono_monitor_enter_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
-void              mono_monitor_exit_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
+void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
+void              mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
+void              mono_monitor_enter_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
+void              mono_monitor_exit_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (void) MONO_INTERNAL;
-gpointer*         mono_get_vcall_slot_addr (guint8* code, mgreg_t *regs) MONO_INTERNAL;
+gpointer*         mono_get_vcall_slot_addr (guint8* code, gpointer *regs) MONO_INTERNAL;
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;
 void*             mono_global_codeman_reserve (int size) MONO_INTERNAL;
@@ -1617,25 +1617,25 @@ MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg) MONO_INTERNAL
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info) MONO_INTERNAL;
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg) MONO_INTERNAL;
 guint32  mono_arch_get_patch_offset             (guint8 *code) MONO_INTERNAL;
-gpointer mono_arch_get_vcall_slot               (guint8 *code, mgreg_t *regs, int *displacement) MONO_INTERNAL;
-gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, mgreg_t *regs) MONO_INTERNAL;
+gpointer mono_arch_get_vcall_slot               (guint8 *code, gpointer *regs, int *displacement) MONO_INTERNAL;
+gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs) MONO_INTERNAL;
 void     mono_arch_create_vars                  (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_arch_save_unwind_info             (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_arch_register_lowlevel_calls      (void) MONO_INTERNAL;
 gpointer mono_arch_get_unbox_trampoline         (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr) MONO_INTERNAL;
 gpointer mono_arch_get_static_rgctx_trampoline  (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr) MONO_INTERNAL;
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr) MONO_INTERNAL;
-void     mono_arch_patch_plt_entry              (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr) MONO_INTERNAL;
-void     mono_arch_nullify_class_init_trampoline(guint8 *code, mgreg_t *regs) MONO_INTERNAL;
-void     mono_arch_nullify_plt_entry            (guint8 *code, mgreg_t *regs) MONO_INTERNAL;
+void     mono_arch_patch_plt_entry              (guint8 *code, gpointer *got, gssize *regs, guint8 *addr) MONO_INTERNAL;
+void     mono_arch_nullify_class_init_trampoline(guint8 *code, gssize *regs) MONO_INTERNAL;
+void     mono_arch_nullify_plt_entry            (guint8 *code, gssize *regs) MONO_INTERNAL;
 int      mono_arch_get_this_arg_reg             (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx, guint8 *code) MONO_INTERNAL;
-gpointer mono_arch_get_this_arg_from_call       (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code) MONO_INTERNAL;
-MonoObject* mono_arch_find_this_argument        (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
+gpointer mono_arch_get_this_arg_from_call       (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code) MONO_INTERNAL;
+MonoObject* mono_arch_find_this_argument        (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gboolean has_target) MONO_INTERNAL;
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
 void        mono_arch_emit_imt_argument         (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg) MONO_INTERNAL;
-MonoMethod* mono_arch_find_imt_method           (mgreg_t *regs, guint8 *code) MONO_INTERNAL;
-MonoVTable* mono_arch_find_static_call_vtable   (mgreg_t *regs, guint8 *code) MONO_INTERNAL;
+MonoMethod* mono_arch_find_imt_method           (gpointer *regs, guint8 *code) MONO_INTERNAL;
+MonoVTable* mono_arch_find_static_call_vtable   (gpointer *regs, guint8 *code) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp) MONO_INTERNAL;
 void    mono_arch_notify_pending_exc            (void) MONO_INTERNAL;
 
@@ -1649,7 +1649,7 @@ void     mono_jit_walk_stack                    (MonoStackWalk func, gboolean do
 void     mono_jit_walk_stack_from_ctx           (MonoStackWalk func, MonoContext *ctx, gboolean do_il_offset, gpointer user_data) MONO_INTERNAL;
 void     mono_setup_altstack                    (MonoJitTlsData *tls) MONO_INTERNAL;
 void     mono_free_altstack                     (MonoJitTlsData *tls) MONO_INTERNAL;
-gpointer mono_altstack_restore_prot             (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
+gpointer mono_altstack_restore_prot             (gssize *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
 
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed) MONO_INTERNAL;
 

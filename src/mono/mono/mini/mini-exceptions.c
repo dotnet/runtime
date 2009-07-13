@@ -307,20 +307,14 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 		class = generic_info;
 	}
 
+	if (class->generic_class || class->generic_container)
+		context.class_inst = mini_class_get_context (class)->class_inst;
+
 	g_assert (!ji->method->klass->generic_container);
 	if (ji->method->klass->generic_class)
 		method_container_class = ji->method->klass->generic_class->container_class;
 	else
 		method_container_class = ji->method->klass;
-
-	/* class might refer to a subclass of ji->method's class */
-	while (class->generic_class && class->generic_class->container_class != method_container_class) {
-		class = class->parent;
-		g_assert (class);
-	}
-
-	if (class->generic_class || class->generic_container)
-		context.class_inst = mini_class_get_context (class)->class_inst;
 
 	if (class->generic_class)
 		g_assert (mono_class_has_parent_and_ignore_generics (class->generic_class->container_class, method_container_class));
@@ -335,7 +329,7 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 {
 	MonoGenericContext context;
 	MonoMethod *method;
-	
+
 	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this)
 		return ji->method;
 	context = get_generic_context_from_stack_frame (ji, generic_info);
@@ -1375,7 +1369,7 @@ restore_stack_protection (void)
 }
 
 gpointer
-mono_altstack_restore_prot (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
+mono_altstack_restore_prot (gssize *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
 {
 	void (*func)(void) = (gpointer)tramp_data;
 	func ();

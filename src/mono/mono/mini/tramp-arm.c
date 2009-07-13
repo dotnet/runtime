@@ -130,7 +130,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, gssize *regs, guint8 *addr)
 {
 	guint8 *jump_entry;
 
@@ -148,13 +148,13 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 }
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
 	mono_arch_patch_callsite (NULL, code, nullified_class_init_trampoline);
 }
 
 void
-mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
+mono_arch_nullify_plt_entry (guint8 *code, gssize *regs)
 {
 	if (mono_aot_only && !nullified_class_init_trampoline)
 		nullified_class_init_trampoline = mono_aot_get_named_code ("nullified_class_init_trampoline");

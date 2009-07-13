@@ -322,7 +322,7 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 }
 
 gpointer
-mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 {
 	char *o = NULL;
 	int reg, offset = 0;
@@ -504,7 +504,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
 	/* FIXME: handle returning a struct */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
@@ -5268,6 +5268,8 @@ setup_tls_access (void)
 		conf_size = confstr ( _CS_GNU_LIBPTHREAD_VERSION, confbuf, sizeof(confbuf));
 		if ((conf_size > 4) && (strncmp (confbuf, "NPTL", 4) == 0))
 			tls_mode = TLS_MODE_NPTL;
+		else
+			tls_mode = TLS_MODE_LTHREADS;
 #else
 		ins = (guint32*)pthread_getspecific;
 		/* uncond branch to the real method */
@@ -5342,10 +5344,6 @@ setup_tls_access (void)
 		}
 #endif
 	}
-	if (tls_mode == TLS_MODE_DETECT)
-		tls_mode = TLS_MODE_FAILED;
-	if (tls_mode == TLS_MODE_FAILED)
-		return;
 	if ((monodomain_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
 		monodomain_key = mono_domain_get_tls_offset();
  	}
@@ -5559,20 +5557,20 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 }
 
 MonoMethod*
-mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
+mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 {
 	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
 }
 
 MonoObject*
-mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
 }
 #endif
 
 MonoVTable*
-mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
+mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code)
 {
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }

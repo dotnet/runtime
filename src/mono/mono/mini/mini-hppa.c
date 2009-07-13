@@ -1112,7 +1112,7 @@ emit_memcpy (guint32 *code, int doff, int dreg, int soff, int sreg, int size)
  *  Determine the vtable slot used by a virtual call.
  */
 gpointer*
-mono_arch_get_vcall_slot_addr (guint8 *code8, mgreg_t *regs)
+mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 {
 	guint32 *code = (guint32*)((unsigned long)code8 & ~3);
 

@@ -2248,7 +2248,7 @@ mono_sparc_is_virtual_call (guint32 *code)
  *  Determine the vtable slot used by a virtual call.
  */
 gpointer
-mono_arch_get_vcall_slot (guint8 *code8, mgreg_t *regs, int *displacement)
+mono_arch_get_vcall_slot (guint8 *code8, gpointer *regs, int *displacement)
 {
 	guint32 *code = (guint32*)(gpointer)code8;
 	guint32 ins = code [0];
@@ -2416,7 +2416,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 }
 
 MonoMethod*
-mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
+mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 {
 #ifdef SPARCV9
 	g_assert_not_reached ();
@@ -2426,7 +2426,7 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 }
 
 MonoObject*
-mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
 	mono_sparc_flushw ();
 
