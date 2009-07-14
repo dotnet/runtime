@@ -67,6 +67,9 @@ public:
     void *getDlsymTable() const {
 		return mm->getDlsymTable ();
     }
+
+	void setPoisonMemory(bool) {
+	}
       
 	void SetDlsymTable(void *ptr);
   
@@ -80,6 +83,8 @@ public:
 						 unsigned char *FunctionEnd);
 
 	unsigned char *allocateSpace(intptr_t Size, unsigned Alignment);
+
+	uint8_t *allocateGlobal(uintptr_t Size, unsigned Alignment);
   
 	void deallocateMemForFunction(const Function *F);
   
@@ -149,7 +154,13 @@ MonoJITMemoryManager::allocateSpace(intptr_t Size, unsigned Alignment)
 {
 	return new unsigned char [Size];
 }
-  
+
+uint8_t *
+MonoJITMemoryManager::allocateGlobal(uintptr_t Size, unsigned Alignment)
+{
+	return new unsigned char [Size];
+}
+
 void
 MonoJITMemoryManager::deallocateMemForFunction(const Function *F)
 {
