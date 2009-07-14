@@ -4991,6 +4991,13 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	image->initial_image = TRUE;
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
+	if (assemblyb->pktoken && assemblyb->pktoken->max_length) {
+		/* -1 to correct for the trailing NULL byte */
+		if (assemblyb->pktoken->max_length != MONO_PUBLIC_KEY_TOKEN_LENGTH - 1) {
+			g_error ("Public key token length invalid for assembly %s: %i", assembly->assembly.aname.name, assemblyb->pktoken->max_length);
+		}
+		memcpy (&assembly->assembly.aname.public_key_token, mono_array_addr (assemblyb->pktoken, guint8, 0), assemblyb->pktoken->max_length);		
+	}
 
 	mono_domain_assemblies_lock (domain);
 	domain->domain_assemblies = g_slist_prepend (domain->domain_assemblies, assembly);

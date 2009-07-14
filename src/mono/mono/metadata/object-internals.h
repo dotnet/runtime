@@ -978,6 +978,7 @@ typedef struct {
 	gint32 machine;
 	MonoBoolean corlib_internal;
 	MonoArray *type_forwarders;
+	MonoArray *pktoken; /* as hexadecimal byte[] */
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
