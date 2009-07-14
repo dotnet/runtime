@@ -74,6 +74,15 @@ struct sigcontext {
 };
 #endif  // sun, Solaris x86
 
+#define MONO_ARCH_SUPPORT_SIMD_INTRINSICS 1
+
+#ifndef DISABLE_SIMD
+#define MONO_ARCH_SIMD_INTRINSICS 1
+#define MONO_ARCH_NEED_SIMD_BANK 1
+#endif
+
+
+
 #define MONO_ARCH_SIGNAL_STACK_SIZE (16 * 1024)
 
 #define MONO_ARCH_HAVE_RESTORE_STACK_SUPPORT 1
@@ -86,9 +95,21 @@ struct sigcontext {
 
 #define MONO_ARCH_FP_RETURN_REG AMD64_XMM0
 
+/* XREG and FREG banks are the same in amd64 
+ * Until the regalloc is redone so that they can play nicely
+ * divide up the regbank and force them to play in thier own worlds.
+ *
+ * FREGS are at the top of the xmm reg bank and the XREGS are at the bottom.
+ */
 /* xmm15 is reserved for use by some opcodes */
-#define MONO_ARCH_CALLEE_FREGS 0xef
+#define MONO_ARCH_CALLEE_FREGS 0x00ff
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
+
+#define MONO_MAX_XREGS MONO_MAX_FREGS
+
+#define MONO_ARCH_CALLEE_XREGS 0x7f00
+#define MONO_ARCH_CALLEE_SAVED_XREGS 0
+
 
 #define MONO_ARCH_CALLEE_REGS AMD64_CALLEE_REGS
 #define MONO_ARCH_CALLEE_SAVED_REGS AMD64_CALLEE_SAVED_REGS

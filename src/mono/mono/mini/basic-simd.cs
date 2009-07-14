@@ -2914,6 +2914,58 @@ public class SimdTests {
 		return 0;
 	}
 
+	public static int test_0_simd_const_indexer_simple () {
+		Vector4f v = new Vector4f (1, 2, 3, 4);
+		
+		if (v[0] != 1) 
+			return 1;
+		if (v[1] != 2) 
+			return 2;
+		if (v[2] != 3) 
+			return 3;
+		if (v[3] != 4) 
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_simd_var_indexer_simple () {
+		Vector4f v = new Vector4f (1, 2, 3, 4);
+
+		int index = 0;
+		
+		if (v[index++] != 1) 
+			return 1;
+		if (v[index++] != 2) 
+			return 2;
+		if (v[index++] != 3) 
+			return 3;
+		if (v[index] != 4) 
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_simd_const_indexer_double () {
+		Vector2d v = new Vector2d (1, 2);
+		
+		if (v[0] != 1) 
+			return 1;
+		if (v[1] != 2) 
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_simd_var_indexer_double () {
+		Vector2d v = new Vector2d (1, 2);
+
+		int index = 0;
+		
+		if (v[index++] != 1) 
+			return 1;
+		if (v[index] != 2) 
+			return 2;
+		return 0;
+	}
+
 	public static int Main () {
 		return TestDriver.RunTests (typeof (SimdTests));
 	}

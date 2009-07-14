@@ -131,6 +131,13 @@ mono_arch_fregname (int reg)
 		return "unknown";
 }
 
+/* TODO: Figure out away of telling this and the one above apart if things get confussing. */
+const char *
+mono_arch_xregname (int reg)
+{
+	return mono_arch_fregname (reg);
+}
+
 G_GNUC_UNUSED static void
 break_count (void)
 {
@@ -2511,6 +2518,30 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = temp->dreg;
 			}
 			break;
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+		case OP_EXPAND_I1: {
+				int temp_reg1 = mono_alloc_ireg (cfg);
+				int temp_reg2 = mono_alloc_ireg (cfg);
+				int original_reg = ins->sreg1;
+
+				NEW_INS (cfg, ins, temp, OP_ICONV_TO_U1);
+				temp->sreg1 = original_reg;
+				temp->dreg = temp_reg1;
+
+				NEW_INS (cfg, ins, temp, OP_SHL_IMM);
+				temp->sreg1 = temp_reg1;
+				temp->dreg = temp_reg2;
+				temp->inst_imm = 8;
+
+				NEW_INS (cfg, ins, temp, OP_LOR);
+				temp->sreg1 = temp->dreg = temp_reg2;
+				temp->sreg2 = temp_reg1;
+
+ 				ins->opcode = OP_EXPAND_I2;
+				ins->sreg1 = temp_reg2;
+			}
+			break;
+#endif
 		default:
 			break;
 		}
@@ -4482,6 +4513,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 #ifdef MONO_ARCH_SIMD_INTRINSICS
+		/* TODO: Some of these IR opcodes are marked as no clobber when they indeed do. */
 		case OP_ADDPS:
 			amd64_sse_addps_reg_reg (code, ins->sreg1, ins->sreg2);
 			break;
@@ -4631,6 +4663,428 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_PADDQ:
 			amd64_sse_paddq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PSUBB:
+			amd64_sse_psubb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBW:
+			amd64_sse_psubw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBD:
+			amd64_sse_psubd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBQ:
+			amd64_sse_psubq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PMAXB_UN:
+			amd64_sse_pmaxub_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMAXW_UN:
+			amd64_sse_pmaxuw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMAXD_UN:
+			amd64_sse_pmaxud_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		
+		case OP_PMAXB:
+			amd64_sse_pmaxsb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMAXW:
+			amd64_sse_pmaxsw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMAXD:
+			amd64_sse_pmaxsd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PAVGB_UN:
+			amd64_sse_pavgb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PAVGW_UN:
+			amd64_sse_pavgw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PMINB_UN:
+			amd64_sse_pminub_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMINW_UN:
+			amd64_sse_pminuw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMIND_UN:
+			amd64_sse_pminud_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PMINB:
+			amd64_sse_pminsb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMINW:
+			amd64_sse_pminsw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMIND:
+			amd64_sse_pminsd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PCMPEQB:
+			amd64_sse_pcmpeqb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPEQW:
+			amd64_sse_pcmpeqw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPEQD:
+			amd64_sse_pcmpeqd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPEQQ:
+			amd64_sse_pcmpeqq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PCMPGTB:
+			amd64_sse_pcmpgtb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPGTW:
+			amd64_sse_pcmpgtw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPGTD:
+			amd64_sse_pcmpgtd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPGTQ:
+			amd64_sse_pcmpgtq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PSUM_ABS_DIFF:
+			amd64_sse_psadbw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_UNPACK_LOWB:
+			amd64_sse_punpcklbw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_LOWW:
+			amd64_sse_punpcklwd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_LOWD:
+			amd64_sse_punpckldq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_LOWQ:
+			amd64_sse_punpcklqdq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_LOWPS:
+			amd64_sse_unpcklps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_LOWPD:
+			amd64_sse_unpcklpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_UNPACK_HIGHB:
+			amd64_sse_punpckhbw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHW:
+			amd64_sse_punpckhwd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHD:
+			amd64_sse_punpckhdq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHQ:
+			amd64_sse_punpckhqdq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHPS:
+			amd64_sse_unpckhps_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHPD:
+			amd64_sse_unpckhpd_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PACKW:
+			amd64_sse_packsswb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PACKD:
+			amd64_sse_packssdw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PACKW_UN:
+			amd64_sse_packuswb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PACKD_UN:
+			amd64_sse_packusdw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PADDB_SAT_UN:
+			amd64_sse_paddusb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBB_SAT_UN:
+			amd64_sse_psubusb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDW_SAT_UN:
+			amd64_sse_paddusw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBW_SAT_UN:
+			amd64_sse_psubusw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PADDB_SAT:
+			amd64_sse_paddsb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBB_SAT:
+			amd64_sse_psubsb_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDW_SAT:
+			amd64_sse_paddsw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBW_SAT:
+			amd64_sse_psubsw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+			
+		case OP_PMULW:
+			amd64_sse_pmullw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMULD:
+			amd64_sse_pmulld_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMULQ:
+			amd64_sse_pmuludq_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMULW_HIGH_UN:
+			amd64_sse_pmulhuw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMULW_HIGH:
+			amd64_sse_pmulhw_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PSHRW:
+			amd64_sse_psrlw_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHRW_REG:
+			amd64_sse_psrlw_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSARW:
+			amd64_sse_psraw_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSARW_REG:
+			amd64_sse_psraw_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSHLW:
+			amd64_sse_psllw_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHLW_REG:
+			amd64_sse_psllw_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSHRD:
+			amd64_sse_psrld_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHRD_REG:
+			amd64_sse_psrld_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSARD:
+			amd64_sse_psrad_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSARD_REG:
+			amd64_sse_psrad_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSHLD:
+			amd64_sse_pslld_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHLD_REG:
+			amd64_sse_pslld_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSHRQ:
+			amd64_sse_psrlq_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHRQ_REG:
+			amd64_sse_psrlq_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		
+		/*TODO: This is appart of the sse spec but not added
+		case OP_PSARQ:
+			amd64_sse_psraq_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSARQ_REG:
+			amd64_sse_psraq_reg_reg (code, ins->dreg, ins->sreg2);
+			break;	
+		*/
+	
+		case OP_PSHLQ:
+			amd64_sse_psllq_reg_imm (code, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHLQ_REG:
+			amd64_sse_psllq_reg_reg (code, ins->dreg, ins->sreg2);
+			break;	
+
+		case OP_ICONV_TO_X:
+			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			break;
+		case OP_EXTRACT_I4:
+			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
+			break;
+		case OP_EXTRACT_I8:
+			if (ins->inst_c0) {
+				amd64_movhlps_reg_reg (code, AMD64_XMM15, ins->sreg1);
+				amd64_movd_reg_xreg_size (code, ins->dreg, AMD64_XMM15, 8);
+			} else {
+				amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
+			}
+			break;
+		case OP_EXTRACT_I1:
+		case OP_EXTRACT_U1:
+			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
+			if (ins->inst_c0)
+				amd64_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
+			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I1, FALSE);
+			break;
+		case OP_EXTRACT_I2:
+		case OP_EXTRACT_U2:
+			/*amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
+			if (ins->inst_c0)
+				amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, 16, 4);*/
+			amd64_sse_pextrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I2, TRUE, 4);
+			break;
+		case OP_EXTRACT_R8:
+			if (ins->inst_c0)
+				amd64_movhlps_reg_reg (code, ins->dreg, ins->sreg1);
+			else
+				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_INSERT_I2:
+			amd64_sse_pinsrw_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_EXTRACTX_U2:
+			amd64_sse_pextrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			break;
+		case OP_INSERTX_U1_SLOW:
+			/*sreg1 is the extracted ireg (scratch)
+			/sreg2 is the to be inserted ireg (scratch)
+			/dreg is the xreg to receive the value*/
+
+			/*clear the bits from the extracted word*/
+			amd64_alu_reg_imm (code, X86_AND, ins->sreg1, ins->inst_c0 & 1 ? 0x00FF : 0xFF00);
+			/*shift the value to insert if needed*/
+			if (ins->inst_c0 & 1)
+				amd64_shift_reg_imm_size (code, X86_SHL, ins->sreg2, 8, 4);
+			/*join them together*/
+			amd64_alu_reg_reg (code, X86_OR, ins->sreg1, ins->sreg2);
+			amd64_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0 / 2);
+			break;
+		case OP_INSERTX_I4_SLOW:
+			amd64_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg2, ins->inst_c0 * 2);
+			amd64_shift_reg_imm (code, X86_SHR, ins->sreg2, 16);
+			amd64_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg2, ins->inst_c0 * 2 + 1);
+			break;
+		case OP_INSERTX_I8_SLOW:
+			amd64_movd_xreg_reg_size(code, AMD64_XMM15, ins->sreg2, 8);
+			if (ins->inst_c0)
+				amd64_movlhps_reg_reg (code, ins->dreg, AMD64_XMM15);
+			else
+				amd64_sse_movsd_reg_reg (code, ins->dreg, AMD64_XMM15);
+			break;
+
+		case OP_INSERTX_R4_SLOW:
+			switch (ins->inst_c0) {
+			case 0:
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			case 1:
+				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
+				break;
+			case 2:
+				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
+				break;
+			case 3:
+				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
+				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
+				break;
+			}
+			break;
+		case OP_INSERTX_R8_SLOW:
+			if (ins->inst_c0)
+				amd64_movlhps_reg_reg (code, ins->dreg, ins->sreg2);
+			else
+				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_STOREX_MEMBASE_REG:
+		case OP_STOREX_MEMBASE:
+			amd64_sse_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
+			break;
+		case OP_LOADX_MEMBASE:
+			amd64_sse_movups_reg_membase (code, ins->dreg, ins->sreg1, ins->inst_offset);
+			break;
+		case OP_LOADX_ALIGNED_MEMBASE:
+			amd64_sse_movaps_reg_membase (code, ins->dreg, ins->sreg1, ins->inst_offset);
+			break;
+		case OP_STOREX_ALIGNED_MEMBASE_REG:
+			amd64_sse_movaps_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
+			break;
+		case OP_STOREX_NTA_MEMBASE_REG:
+			amd64_sse_movntps_reg_membase (code, ins->dreg, ins->sreg1, ins->inst_offset);
+			break;
+		case OP_PREFETCH_MEMBASE:
+			amd64_sse_prefetch_reg_membase (code, ins->backend.arg_info, ins->sreg1, ins->inst_offset);
+			break;
+
+		case OP_XMOVE:
+			/*FIXME the peephole pass should have killed this*/
+			if (ins->dreg != ins->sreg1)
+				amd64_sse_movaps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;		
+		case OP_XZERO:
+			amd64_sse_pxor_reg_reg (code, ins->dreg, ins->dreg);
+			break;
+		case OP_ICONV_TO_R8_RAW:
+			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			break;
+
+		case OP_FCONV_TO_R8_X:
+			amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+
+		case OP_XCONV_R8_TO_I4:
+			amd64_sse_cvttsd2si_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
+			switch (ins->backend.source_opcode) {
+			case OP_FCONV_TO_I1:
+				amd64_widen_reg (code, ins->dreg, ins->dreg, TRUE, FALSE);
+				break;
+			case OP_FCONV_TO_U1:
+				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+				break;
+			case OP_FCONV_TO_I2:
+				amd64_widen_reg (code, ins->dreg, ins->dreg, TRUE, TRUE);
+				break;
+			case OP_FCONV_TO_U2:
+				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, TRUE);
+				break;
+			}			
+			break;
+
+		case OP_EXPAND_I2:
+			amd64_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg1, 0);
+			amd64_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg1, 1);
+			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_EXPAND_I4:
+			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_EXPAND_I8:
+			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 8);
+			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0x44);
+			break;
+		case OP_EXPAND_R4:
+			amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->dreg);
+			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_EXPAND_R8:
+			amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
+			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0x44);
 			break;
 #endif
 		case OP_LIVERANGE_START: {
