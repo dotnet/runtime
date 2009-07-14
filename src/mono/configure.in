@@ -1847,11 +1847,12 @@ if test "x$enable_llvm" = "xyes"; then
 
    LLVM_CXXFLAGS=`$LLVM_CONFIG --cflags`
    LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
-   LLVM_LIBS=`$LLVM_CONFIG --libs core engine`
+   LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter jit x86codegen`
    LLVM_LIBS="$LLVM_LDFLAGS $LLVM_LIBS -lstdc++"
 
    AC_SUBST(LLVM_CXXFLAGS)
    AC_SUBST(LLVM_LIBS)
+   AC_SUBST(LLVM_LDFLAGS)
    AC_DEFINE(ENABLE_LLVM, 1, [Enable the LLVM back end])
 fi
 
