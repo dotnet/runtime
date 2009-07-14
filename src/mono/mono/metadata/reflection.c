@@ -3101,7 +3101,7 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	sig->sentinelpos = -1;
 	sig->call_convention = reflection_cc_to_file (m->call_conv);
 	sig->param_count = nparams;
-	sig->ret = m->ret? m->ret->type: &mono_defaults.void_class->byval_arg;
+	sig->ret = m->ret ? mono_reflection_type_get_handle (m->ret): &mono_defaults.void_class->byval_arg;
 	for (i = 0; i < nparams; ++i)
 		sig->params [i] = mono_type_array_get_and_resolve (m->parameters, i);
 
@@ -3119,7 +3119,7 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	am = g_new0 (ArrayMethod, 1);
 	am->name = name;
 	am->sig = sig;
-	am->parent = m->parent->type;
+	am->parent = mono_reflection_type_get_handle (m->parent);
 	am->token = mono_image_get_memberref_token (assembly, am->parent, name,
 		method_encode_signature (assembly, sig));
 	assembly->array_methods = g_list_prepend (assembly->array_methods, am);
