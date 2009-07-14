@@ -608,7 +608,7 @@ decode_cie_op (guint8 *p, guint8 **endp)
  *   Return the unwind opcodes encoded in a DWARF FDE entry.
  */
 guint8*
-mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len)
+mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len, guint32 *code_len)
 {
 	guint8 *p, *cie, *code, *fde_cfi, *cie_cfi;
 	gint32 fde_len, cie_offset, pc_begin, pc_range, aug_len, fde_data_len;
@@ -640,6 +640,9 @@ mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len)
 	g_assert (aug_len == 0);
 	fde_cfi = p;
 	fde_data_len = fde + 4 + fde_len - p;
+
+	if (code_len)
+		*code_len = pc_range;
 
 	/* Decode CIE */
 	p = cie;

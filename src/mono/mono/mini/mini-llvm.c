@@ -2573,7 +2573,7 @@ exception_cb (void *data)
 	 * An alternative would be to save it directly, and modify our unwinder to work
 	 * with it.
 	 */
-	cfg->encoded_unwind_ops = mono_unwind_get_ops_from_fde ((guint8*)data, &cfg->encoded_unwind_ops_len);
+	cfg->encoded_unwind_ops = mono_unwind_get_ops_from_fde ((guint8*)data, &cfg->encoded_unwind_ops_len, NULL);
 }
 
 void

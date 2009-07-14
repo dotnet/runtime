@@ -211,6 +211,8 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 {
   std::string Error;
 
+  LLVMInitializeX86Target ();
+
   llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
 
   mono_mm = new MonoJITMemoryManager ();

@@ -114,7 +114,8 @@ mono_LDADD = \
 	$(GLIB_LIBS)		\
 	$(LLVM_LIBS)		\
 	-lm	\
-	$(MONO_DTRACE_OBJECT)
+	$(MONO_DTRACE_OBJECT) \
+	$(LLVM_LDFLAGS)
 
 mono_LDFLAGS = \
 	$(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)

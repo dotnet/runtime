@@ -111,6 +111,6 @@ guint32 mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len) MO
 
 guint8* mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len) MONO_INTERNAL;
 
-guint8* mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len) MONO_INTERNAL;
+guint8* mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len, guint32 *code_len) MONO_INTERNAL;
 
 #endif
