@@ -14,6 +14,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/utils/mono-proclib.h>
 
 #include "mini-ppc.h"
 #ifdef TARGET_POWERPC64
@@ -39,6 +40,18 @@ enum {
 	TLS_MODE_NPTL,
 	TLS_MODE_DARWIN_G4,
 	TLS_MODE_DARWIN_G5
+};
+
+/* cpu_hw_caps contains the flags defined below */
+static int cpu_hw_caps = 0;
+static int cachelinesize = 0;
+static int cachelineinc = 0;
+enum {
+	PPC_ICACHE_SNOOP      = 1 << 0,
+	PPC_MULTIPLE_LS_UNITS = 1 << 1,
+	PPC_SMP_CAPABLE       = 1 << 2,
+	PPC_ISA_2X            = 1 << 3,
+	PPC_HW_CAP_END
 };
 
 /* This mutex protects architecture specific caches */
@@ -512,12 +525,105 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 	return (gpointer)regs [ppc_r3];
 }
 
+typedef struct {
+	long int type;
+	long int value;
+} AuxVec;
+
+#ifdef USE_ENVIRON_HACK
+static AuxVec*
+linux_find_auxv (int *count)
+{
+	AuxVec *vec;
+	int c = 0;
+	char **result = __environ;
+	/* Scan over the env vector looking for the ending NULL */
+	for (; *result != NULL; ++result) {
+	}
+	/* Bump the pointer one more step, which should be the auxv. */
+	++result;
+	vec = (AuxVec *)result;
+	if (vec->type != 22 /*AT_IGNOREPPC*/) {
+		*count = 0;
+		return NULL;
+	}
+	while (vec->type != 0 /*AT_NULL*/) {
+		vec++;
+		c++;
+	}
+	*count = c;
+	return (AuxVec *)result;
+}
+#endif
+
+#define MAX_AUX_ENTRIES 128
+/* 
+ * PPC_FEATURE_POWER4, PPC_FEATURE_POWER5, PPC_FEATURE_POWER5_PLUS, PPC_FEATURE_CELL,
+ * PPC_FEATURE_PA6T, PPC_FEATURE_ARCH_2_05 are considered supporting 2X ISA features
+ */
+#define ISA_2X (0x00080000 | 0x00040000 | 0x00020000 | 0x00010000 | 0x00000800 | 0x00001000)
 /*
  * Initialize the cpu to execute managed code.
  */
 void
 mono_arch_cpu_init (void)
 {
+#ifdef __APPLE__
+	int mib [3];
+	size_t len;
+	mib [0] = CTL_HW;
+	mib [1] = HW_CACHELINE;
+	len = sizeof (cachelinesize);
+	if (sysctl (mib, 2, &cachelinesize, (size_t*)&len, NULL, 0) == -1) {
+		perror ("sysctl");
+		cachelinesize = 128;
+	} else {
+		cachelineinc = cachelinesize;
+	}
+#elif defined(__linux__)
+	AuxVec vec [MAX_AUX_ENTRIES];
+	int i, vec_entries = 0;
+	/* sadly this will work only with 2.6 kernels... */
+	FILE* f = fopen ("/proc/self/auxv", "rb");
+	if (f) {
+		vec_entries = fread (&vec, sizeof (AuxVec), MAX_AUX_ENTRIES, f);
+		fclose (f);
+#ifdef USE_ENVIRON_HACK
+	} else {
+		AuxVec *evec = linux_find_auxv (&vec_entries);
+		if (vec_entries)
+			memcpy (&vec, evec, sizeof (AuxVec) * MIN (vec_entries, MAX_AUX_ENTRIES));
+#endif
+	}
+	for (i = 0; i < vec_entries; i++) {
+		int type = vec [i].type;
+		if (type == 19) { /* AT_DCACHEBSIZE */
+			cachelinesize = vec [i].value;
+			continue;
+		} else if (type == 16) { /* AT_HWCAP */
+			if (vec [i].value & 0x00002000 /*PPC_FEATURE_ICACHE_SNOOP*/)
+				cpu_hw_caps |= PPC_ICACHE_SNOOP;
+			if (vec [i].value & ISA_2X)
+				cpu_hw_caps |= PPC_ISA_2X;
+			continue;
+		} else if (type == 15) { /* AT_PLATFORM */
+			/*printf ("cpu: %s\n", (char*)vec [i].value);*/
+			continue;
+		}
+	}
+#elif defined(G_COMPILER_CODEWARRIOR)
+	cachelinesize = 32;
+	cachelineinc = 32;
+#else
+#warning Need a way to get cache line size
+#endif
+	if (!cachelinesize)
+		cachelinesize = 32;
+	if (!cachelineinc)
+		cachelineinc = cachelinesize;
+
+	if (mono_cpu_count () > 1)
+		cpu_hw_caps |= PPC_SMP_CAPABLE;
 }
 
 /*
@@ -646,11 +752,6 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 	return 2;
 }
 
-typedef struct {
-	long int type;
-	long int value;
-} AuxVec;
-
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
@@ -658,52 +759,13 @@ mono_arch_flush_icache (guint8 *code, gint size)
 #else
 	register guint8 *p;
 	guint8 *endp, *start;
-	static int cachelinesize = 0;
-	static int cachelineinc = 16;
 
-	if (!cachelinesize) {
-#ifdef __APPLE__
-		int mib [3];
-		size_t len;
-		mib [0] = CTL_HW;
-		mib [1] = HW_CACHELINE;
-		len = sizeof (cachelinesize);
-		if (sysctl(mib, 2, &cachelinesize, (size_t*)&len, NULL, 0) == -1) {
-			perror ("sysctl");
-			cachelinesize = 128;
-		} else {
-			cachelineinc = cachelinesize;
-			/*g_print ("setting cl size to %d\n", cachelinesize);*/
-		}
-#elif defined(__linux__)
-		/* sadly this will work only with 2.6 kernels... */
-		FILE* f = fopen ("/proc/self/auxv", "rb");
-		if (f) {
-			AuxVec vec;
-			while (fread (&vec, sizeof (vec), 1, f) == 1) {
-				if (vec.type == 19) {
-					cachelinesize = vec.value;
-					break;
-				}
-			}
-			fclose (f);
-		}
-		if (!cachelinesize)
-			cachelinesize = 128;
-#elif defined(G_COMPILER_CODEWARRIOR)
-	cachelinesize = 32;
-	cachelineinc = 32;
-#else
-#warning Need a way to get cache line size
-		cachelinesize = 128;
-#endif
-	}
 	p = start = code;
 	endp = p + size;
 	start = (guint8*)((gsize)start & ~(cachelinesize - 1));
 	/* use dcbf for smp support, later optimize for UP, see pem._64bit.d20030611.pdf page 211 */
 #if defined(G_COMPILER_CODEWARRIOR)
-	if (1) {
+	if (cpu_hw_caps & PPC_SMP_CAPABLE) {
 		for (p = start; p < endp; p += cachelineinc) {
 			asm { dcbf 0, p };
 		}
@@ -725,7 +787,19 @@ mono_arch_flush_icache (guint8 *code, gint size)
 		isync
 	}
 #else
-	if (1) {
+	/* For POWER5/6 with ICACHE_SNOOPing only one icbi in the range is required.
+	 * The sync is required to insure that the store queue is completely empty.
+	 * While the icbi performs no cache operations, icbi/isync is required to
+	 * kill local prefetch.
+	 */
+	if (cpu_hw_caps & PPC_ICACHE_SNOOP) {
+		asm ("sync");
+		asm ("icbi 0,%0;" : : "r"(code) : "memory");
+		asm ("isync");
+		return;
+	}
+	/* use dcbf for smp support, see pem._64bit.d20030611.pdf page 211 */
+	if (cpu_hw_caps & PPC_SMP_CAPABLE) {
 		for (p = start; p < endp; p += cachelineinc) {
 			asm ("dcbf 0,%0;" : : "r"(p) : "memory");
 		}
@@ -737,9 +811,18 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	asm ("sync");
 	p = code;
 	for (p = start; p < endp; p += cachelineinc) {
-		asm ("icbi 0,%0; sync;" : : "r"(p) : "memory");
+		/* for ISA2.0+ implementations we should not need any extra sync between the
+		 * icbi instructions.  Both the 2.0 PEM and the PowerISA-2.05 say this.
+		 * So I am not sure which chip had this problem but its not an issue on
+		 * of the ISA V2 chips.
+		 */
+		if (cpu_hw_caps & PPC_ISA_2X)
+			asm ("icbi 0,%0;" : : "r"(p) : "memory");
+		else
+			asm ("icbi 0,%0; sync;" : : "r"(p) : "memory");
 	}
-	asm ("sync");
+	if (!(cpu_hw_caps & PPC_ISA_2X))
+		asm ("sync");
 	asm ("isync");
 #endif
 #endif
