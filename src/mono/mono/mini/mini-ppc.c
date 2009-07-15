@@ -191,12 +191,38 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 		dreg = ppc_r12;
 	}
 #ifdef __mono_ppc64__
+	/* the hardware has multiple load/store units and the move is long
+	   enough to use more then one regiester, then use load/load/store/store
+	   to execute 2 instructions per cycle. */
+	if ((cpu_hw_caps & PPC_MULTIPLE_LS_UNITS) && (dreg != ppc_r12) && (sreg != ppc_r12)) { 
+		while (size >= 16) {
+			ppc_ldptr (code, ppc_r0, soffset, sreg);
+			ppc_ldptr (code, ppc_r12, soffset+8, sreg);
+			ppc_stptr (code, ppc_r0, doffset, dreg);
+			ppc_stptr (code, ppc_r12, doffset+8, dreg);
+			size -= 16;
+			soffset += 16;
+			doffset += 16; 
+		}
+	}
 	while (size >= 8) {
 		ppc_ldptr (code, ppc_r0, soffset, sreg);
 		ppc_stptr (code, ppc_r0, doffset, dreg);
 		size -= 8;
 		soffset += 8;
 		doffset += 8;
+	}
+#else
+	if ((cpu_hw_caps & PPC_MULTIPLE_LS_UNITS) && (dreg != ppc_r12) && (sreg != ppc_r12)) { 
+		while (size >= 8) {
+			ppc_lwz (code, ppc_r0, soffset, sreg);
+			ppc_lwz (code, ppc_r12, soffset+4, sreg);
+			ppc_stw (code, ppc_r0, doffset, dreg);
+			ppc_stw (code, ppc_r12, doffset+4, dreg);
+			size -= 8;
+			soffset += 8;
+			doffset += 8; 
+		}
 	}
 #endif
 	while (size >= 4) {
@@ -607,6 +633,10 @@ mono_arch_cpu_init (void)
 				cpu_hw_caps |= PPC_ISA_2X;
 			continue;
 		} else if (type == 15) { /* AT_PLATFORM */
+			const char *arch = (char*)vec [i].value;
+			if (strcmp (arch, "cell") == 0 || strcmp (arch, "ppc970") == 0 ||
+					(strncmp (arch, "power", 5) == 0 && arch [5] >= '4' && arch [5] <= '7'))
+				cpu_hw_caps |= PPC_MULTIPLE_LS_UNITS;
 			/*printf ("cpu: %s\n", (char*)vec [i].value);*/
 			continue;
 		}
