@@ -184,6 +184,8 @@ static MonoJITMemoryManager *mono_mm;
 
 static FunctionPassManager *fpm;
 
+static LLVMContext ctx;
+
 void
 mono_llvm_optimize_method (LLVMValueRef method)
 {
@@ -204,7 +206,7 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 						LLVMValueRef ArraySize,
 						int alignment, const char *Name)
 {
-	return wrap (unwrap (builder)->Insert (new AllocaInst(unwrap (Ty), unwrap (ArraySize), alignment), Name));
+	return wrap (unwrap (builder)->Insert (new AllocaInst (ctx, unwrap (Ty), unwrap (ArraySize), alignment), Name));
 }
 
 LLVMValueRef 
