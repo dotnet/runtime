@@ -1511,8 +1511,10 @@ parse_locals_signature (VerifyContext *ctx, const char **_ptr, const char *end)
 	if (!safe_read_cint (locals_count, ptr, end))
 		FAIL (ctx, g_strdup ("LocalsSig: Not enough room for the param count"));
 
+	/* LAMEIMPL: MS sometimes generates empty local signatures and its verifier is ok with.
 	if (locals_count == 0)
 		FAIL (ctx, g_strdup ("LocalsSig: Signature with zero locals"));
+	*/
 
 	for (i = 0; i < locals_count; ++i) {
 		if (!safe_read8 (sig, ptr, end))
