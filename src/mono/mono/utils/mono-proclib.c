@@ -131,7 +131,7 @@ get_pid_status_item_buf (int pid, const char *item, char *rbuf, int blen, MonoPr
 		fclose (f);
 		len = strlen (s);
 		strncpy (rbuf, s, MIN (len, blen));
-		rbuf [blen - 1] = 0;
+		rbuf [MIN (len, blen) - 1] = 0;
 		if (error)
 			*error = MONO_PROCESS_ERROR_NONE;
 		return rbuf;
