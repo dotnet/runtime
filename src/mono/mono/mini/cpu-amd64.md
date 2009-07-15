@@ -505,7 +505,6 @@ loadu2_mem: dest:i len:16
 
 
 #SIMD
-#TODO: Some of these IR opcodes are marked as no clobber when they indeed do.
 
 addps: dest:x src1:x src2:x len:4 clob:1
 divps: dest:x src1:x src2:x len:4 clob:1
@@ -546,9 +545,9 @@ pand: dest:x src1:x src2:x len:5 clob:1
 por: dest:x src1:x src2:x len:5 clob:1
 pxor: dest:x src1:x src2:x len:5 clob:1
 
-sqrtps: dest:x src1:x len:5
-rsqrtps: dest:x src1:x len:5
-rcpps: dest:x src1:x len:5
+sqrtps: dest:x src1:x len:5 clob:1
+rsqrtps: dest:x src1:x len:5 clob:1
+rcpps: dest:x src1:x len:5 clob:1
 
 pshufflew_high: dest:x src1:x len:6
 pshufflew_low: dest:x src1:x len:6
