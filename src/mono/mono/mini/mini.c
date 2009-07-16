@@ -2455,6 +2455,8 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_DECLSEC:
 		return (ji->type << 8) | ji->data.token->token;
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+		return (ji->type << 8) | g_str_hash (ji->data.name);
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
@@ -2502,6 +2504,8 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 			(ji1->data.token->context.method_inst != ji2->data.token->context.method_inst))
 			return 0;
 		break;
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+		return g_str_equal (ji1->data.name, ji2->data.name);
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;
