@@ -38,7 +38,7 @@ static int unwind_info_size;
 #define unwind_lock() EnterCriticalSection (&unwind_mutex)
 #define unwind_unlock() LeaveCriticalSection (&unwind_mutex)
 
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 #define NUM_REGS AMD64_NREG
 #define DWARF_DATA_ALIGN (-8)
