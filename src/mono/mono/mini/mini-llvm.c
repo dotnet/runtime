@@ -1970,7 +1970,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					if (cfg->compile_aot) {
 						callee = get_plt_entry (ctx, llvm_sig, MONO_PATCH_INFO_METHOD, call->method);
 					} else {
-						callee = LLVMAddFunction (ctx->module, "", llvm_sig);
+						callee = LLVMAddFunction (module, "", llvm_sig);
  
 						target = 
 							mono_create_jit_trampoline_in_domain (mono_domain_get (),
@@ -1993,7 +1993,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 						if (cfg->compile_aot) {
 							callee = get_plt_entry (ctx, llvm_sig, MONO_PATCH_INFO_INTERNAL_METHOD, (char*)info->name);
 						} else {
-							callee = LLVMAddFunction (ctx->module, "", llvm_sig);
+							callee = LLVMAddFunction (module, "", llvm_sig);
 							target = (gpointer)mono_icall_get_wrapper (info);
 							LLVMAddGlobalMapping (ee, callee, target);
 						}
@@ -2009,7 +2009,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 							if (!callee)
 								LLVM_FAILURE (ctx, "aot");
 						} else {
-							callee = LLVMAddFunction (ctx->module, "", llvm_sig);
+							callee = LLVMAddFunction (module, "", llvm_sig);
 							target = NULL;
 							if (cfg->abs_patches) {
 								MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, call->fptr);
@@ -2152,7 +2152,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					if (cfg->compile_aot) {
 						callee = get_plt_entry (ctx, sig_to_llvm_sig (ctx, throw_sig, NULL), MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception");
 					} else {
-						callee = LLVMAddFunction (ctx->module, "mono_arch_throw_exception", sig_to_llvm_sig (ctx, throw_sig, NULL));
+						callee = LLVMAddFunction (module, "mono_arch_throw_exception", sig_to_llvm_sig (ctx, throw_sig, NULL));
 						LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception"));
 					}
 
