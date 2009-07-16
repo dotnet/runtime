@@ -1340,8 +1340,7 @@ dis_globals (MonoImage *m)
 
 }
 
-static void
-dis_mresource (MonoImage *m)
+static void dis_resources_worker (MonoImage *m, gboolean just_print)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_MANIFESTRESOURCE];
 	int i;
@@ -1354,10 +1353,21 @@ dis_mresource (MonoImage *m)
 
 		mono_metadata_decode_row (t, i, cols, MONO_MANIFEST_SIZE);
 		name = mono_metadata_string_heap (m, cols [MONO_MANIFEST_NAME]);
-		
-		if (! (res = mono_image_get_resource (m, cols [MONO_MANIFEST_OFFSET], &size)))
-			continue;	
 
+		if (just_print)
+			fprintf (output, "%8x: %s", cols [MONO_MANIFEST_OFFSET], name);
+		
+		if (! (res = mono_image_get_resource (m, cols [MONO_MANIFEST_OFFSET], &size))) {
+			if (just_print)
+				fprintf (output, " (absent from image)\n");
+			continue;	
+		}
+
+		if (just_print) {
+			fprintf (output, " (size %u)\n", size);
+			continue;
+		}
+		
 		if ( (fp = fopen (name, "ab")) ) {
 			if (ftell (fp) == 0)
 				fwrite (res, size, 1, fp);
@@ -1368,6 +1378,18 @@ dis_mresource (MonoImage *m)
 		} else
 			g_warning ("Error creating managed resource - %s : %s", name, g_strerror (errno));
 	}		
+}
+
+static void
+dis_mresource (MonoImage *m)
+{
+	dis_resources_worker (m, FALSE);
+}
+
+static void
+dis_presource (MonoImage *m)
+{
+	dis_resources_worker (m, TRUE);
 }
 
 static char *
@@ -1570,6 +1592,7 @@ struct {
 	{ "--moduleref",   MONO_TABLE_MODULEREF,   	dump_table_moduleref },
 	{ "--module",      MONO_TABLE_MODULE,      	dump_table_module },
 	{ "--mresources",  0,	dis_mresource },
+	{ "--presources", 0, dis_presource },
 	{ "--nested",      MONO_TABLE_NESTEDCLASS, 	dump_table_nestedclass },
 	{ "--param",       MONO_TABLE_PARAM,       	dump_table_param },
 	{ "--parconst",    MONO_TABLE_GENERICPARAMCONSTRAINT, dump_table_parconstraint },
