@@ -11202,6 +11202,14 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 	return NULL;
 }
 
+MonoType*
+mono_reflection_type_get_handle (MonoReflectionType* ref)
+{
+	if (!ref)
+		return NULL;
+	return ref->type;
+}
+
 #endif /* DISABLE_REFLECTION_EMIT */
 
 /* SECURITY_ACTION_* are defined in mono/metadata/tabledefs.h */
