@@ -2870,7 +2870,7 @@ ves_icall_MonoGenericClass_InflateType (MonoReflectionGenericClass *type,
 	MONO_ARCH_SAVE_REGS;
 
 	gklass = mono_class_from_mono_type (type->type.type);
-	res_type = mono_class_inflate_generic_type (target->type, mono_class_get_context (gklass));
+	res_type = mono_class_inflate_generic_type (mono_reflection_type_get_handle (target), mono_class_get_context (gklass));
 	res = mono_type_get_object (mono_object_domain (type), res_type);
 	mono_metadata_free_type (res_type);
 	return res;

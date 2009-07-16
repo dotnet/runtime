@@ -174,7 +174,6 @@ static void get_default_param_value_blobs (MonoMethod *method, char **blobs, gui
 static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
-static MonoType* mono_reflection_type_get_handle (MonoReflectionType *ref);
 static MonoReflectionType* mono_reflection_type_resolve_user_types (MonoReflectionType *type);
 
 #define RESOLVE_TYPE(type) do { type = (void*)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type); } while (0)
@@ -8553,7 +8552,7 @@ is_sre_pointer (MonoReflectionType *ref)
 			!strcmp ("System.Reflection.Emit", mono_object_class (ref)->name_space);
 }
 
-static MonoType*
+MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref)
 {
 	if (!ref)

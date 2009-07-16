@@ -1302,6 +1302,9 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass) MONO
 gboolean
 mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token) MONO_INTERNAL;
 
+MonoType*
+mono_reflection_type_get_handle (MonoReflectionType *ref) MONO_INTERNAL;
+
 void
 mono_image_build_metadata (MonoReflectionModuleBuilder *module) MONO_INTERNAL;
 
