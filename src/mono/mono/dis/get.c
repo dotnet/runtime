@@ -1308,7 +1308,24 @@ get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGen
 
 	default:
 		t = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, start, &ptr);
-		*result = dis_stringify_type (m, t, is_def);
+		if (t) {
+			*result = dis_stringify_type (m, t, is_def);
+		} else {
+			GString *err = g_string_new ("@!#$<InvalidType>$#!@");
+			if (container)
+				t = mono_metadata_parse_type_full (m, NULL, MONO_PARSE_TYPE, 0, start, &ptr);
+			if (t) {
+				char *name = dis_stringify_type (m, t, is_def);
+				g_warning ("Encountered a generic type inappropriate for its context");
+				g_string_append (err, " // ");
+				g_string_append (err, name);
+				g_free (name);
+			} else {
+				g_warning ("Encountered an invalid type");
+			}
+			*result = g_string_free (err, FALSE);
+		}
+
 		break;
 	}
 
