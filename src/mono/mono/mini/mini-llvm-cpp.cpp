@@ -30,6 +30,7 @@
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/CommandLine.h>
 #include "llvm/Support/PassNameParser.h"
+#include "llvm/Support/PrettyStackTrace.h"
 #include <llvm/CodeGen/Passes.h>
 #include <llvm/CodeGen/MachineFunctionPass.h>
 //#include <llvm/LinkAllPasses.h>
@@ -38,6 +39,8 @@
 #include "llvm-c/ExecutionEngine.h"
 
 #include "mini-llvm-cpp.h"
+
+extern "C" void LLVMInitializeX86TargetInfo();
 
 using namespace llvm;
 
@@ -206,7 +209,7 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 						LLVMValueRef ArraySize,
 						int alignment, const char *Name)
 {
-	return wrap (unwrap (builder)->Insert (new AllocaInst (ctx, unwrap (Ty), unwrap (ArraySize), alignment), Name));
+	return wrap (unwrap (builder)->Insert (new AllocaInst (unwrap (Ty), unwrap (ArraySize), alignment), Name));
 }
 
 LLVMValueRef 
@@ -225,6 +228,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   std::string Error;
 
   LLVMInitializeX86Target ();
+  LLVMInitializeX86TargetInfo ();
 
   llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
 
@@ -233,6 +237,8 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   mono_mm->emitted_cb = emitted_cb;
 
   ExceptionHandling = true;
+  // PrettyStackTrace installs signal handlers which trip up libgc
+  DisablePrettyStackTrace = true;
 
   ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, CodeGenOpt::Default);
   if (!EE) {
