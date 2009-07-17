@@ -2506,6 +2506,12 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		break;
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 		return g_str_equal (ji1->data.name, ji2->data.name);
+	case MONO_PATCH_INFO_RGCTX_FETCH: {
+		MonoJumpInfoRgctxEntry *e1 = ji1->data.rgctx_entry;
+		MonoJumpInfoRgctxEntry *e2 = ji2->data.rgctx_entry;
+
+		return e1->method == e2->method && e1->in_mrgctx == e2->in_mrgctx && mono_patch_info_equal (e1->data, e2->data);
+	}
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;
