@@ -726,6 +726,7 @@ static __thread char *tlab_temp_end;
 static __thread char *tlab_real_end;
 /* Used by the managed allocator */
 static __thread char **tlab_next_addr;
+static __thread char *stack_end;
 #endif
 static char *nursery_next = NULL;
 static char *nursery_frag_real_end = NULL;
@@ -5222,6 +5223,10 @@ gc_register_current_thread (void *addr)
 	}
 #endif
 
+#ifdef HAVE_KW_THREAD
+	stack_end = info->stack_end;
+#endif
+
 	/* hash into the table */
 	hash = HASH_PTHREAD_T (info->id) % THREAD_HASH_SIZE;
 	info->next = thread_table [hash];
@@ -6261,8 +6266,6 @@ enum {
 	ATYPE_NUM
 };
 
-#define MANAGED_ALLOCATION
-
 #ifdef HAVE_KW_THREAD
 #define EMIT_TLS_ACCESS(mb,dummy,offset)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
@@ -6508,15 +6511,16 @@ mono_gc_get_write_barrier (void)
 	MonoMethod *res;
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
-#ifdef MANAGED_ALLOCATION
-	int label1, label2;
-	int remset_var, next_var;
+#ifdef MANAGED_WBARRIER
+	int label_no_wb, label_need_wb_1, label_need_wb_2, label2;
+	int remset_var, next_var, dummy_var;
 
 #ifdef HAVE_KW_THREAD
-	int remset_offset = -1;
+	int remset_offset = -1, stack_end_offset = -1;
 
 	MONO_THREAD_VAR_OFFSET (remembered_set, remset_offset);
-	g_assert (remset_offset != -1);
+	MONO_THREAD_VAR_OFFSET (stack_end, stack_end_offset);
+	g_assert (remset_offset != -1 && stack_end_offset != -1);
 #endif
 #endif
 
@@ -6533,7 +6537,7 @@ mono_gc_get_write_barrier (void)
 
 	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
 
-#ifdef MANAGED_ALLOCATION
+#ifdef MANAGED_WBARRIER
 	if (mono_runtime_has_tls_get ()) {
 		/* ptr_in_nursery () check */
 #ifdef ALIGN_NURSERY
@@ -6545,13 +6549,26 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
 		mono_mb_emit_byte (mb, CEE_SHR_UN);
 		mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
-		label1 = mono_mb_emit_branch (mb, CEE_BNE_UN);
+		label_no_wb = mono_mb_emit_branch (mb, CEE_BEQ);
 #else
 		// FIXME:
 		g_assert_not_reached ();
 #endif
 
+		/* Need write barrier if ptr >= stack_end */
+		mono_mb_emit_ldarg (mb, 0);
+		EMIT_TLS_ACCESS (mb, stack_end, stack_end_offset);
+		label_need_wb_1 = mono_mb_emit_branch (mb, CEE_BGE_UN);
+
+		/* Need write barrier if ptr < stack_start */
+		dummy_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldloc_addr (mb, dummy_var);
+		label_need_wb_2 = mono_mb_emit_branch (mb, CEE_BLE_UN);
+
 		/* Don't need write barrier case */
+		mono_mb_patch_branch (mb, label_no_wb);
+
 		/* do the assignment */
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_ldarg (mb, 1);
@@ -6560,7 +6577,8 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_byte (mb, CEE_RET);
 
 		/* Need write barrier case */
-		mono_mb_patch_branch (mb, label1);
+		mono_mb_patch_branch (mb, label_need_wb_1);
+		mono_mb_patch_branch (mb, label_need_wb_2);
 
 		// remset_var = remembered_set;
 		remset_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
