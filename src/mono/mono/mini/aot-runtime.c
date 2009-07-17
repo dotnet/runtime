@@ -1936,11 +1936,14 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		return code;
 
 	if (mono_last_aot_method != -1) {
-		if (mono_jit_stats.methods_aot > mono_last_aot_method)
+		if (mono_jit_stats.methods_aot >= mono_last_aot_method)
 				return NULL;
-		else
-			if (method && mono_jit_stats.methods_aot == mono_last_aot_method)
-				printf ("LAST AOT METHOD: %s.%s.%s.\n", method->klass->name_space, method->klass->name, method->name);
+		else if (mono_jit_stats.methods_aot == mono_last_aot_method - 1) {
+			if (method)
+				printf ("LAST AOT METHOD: %s%s%s.%s.\n", method->klass->name_space, method->klass->name_space [0] ? "." : "", method->klass->name, method->name);
+			else
+				printf ("LAST AOT METHOD: %p %d\n", code, method_index);
+		}
 	}
 
 	p = info;
