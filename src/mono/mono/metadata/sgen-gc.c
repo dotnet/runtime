@@ -553,6 +553,15 @@ struct _DisappearingLinkHashTable {
 	int num_links;
 };
 
+#define LARGE_INTERNAL_MEM_HEADER_MAGIC	0x7d289f3a
+
+typedef struct _LargeInternalMemHeader LargeInternalMemHeader;
+struct _LargeInternalMemHeader {
+	guint32 magic;
+	size_t size;
+	double data[0];
+};
+
 enum {
 	GENERATION_NURSERY,
 	GENERATION_OLD,
@@ -3389,40 +3398,53 @@ alloc_from_freelist (size_t size)
 static void*
 get_internal_mem (size_t size)
 {
-	return calloc (1, size);
-#if 0
 	int slot;
 	void *res = NULL;
 	PinnedChunk *pchunk;
+
+	if (size > freelist_sizes [FREELIST_NUM_SLOTS - 1]) {
+		LargeInternalMemHeader *mh;
+
+		size += sizeof (LargeInternalMemHeader);
+		mh = get_os_memory (size, TRUE);
+		mh->magic = LARGE_INTERNAL_MEM_HEADER_MAGIC;
+		mh->size = size;
+		return mh->data;
+	}
+
 	slot = slot_for_size (size);
 	g_assert (size <= freelist_sizes [slot]);
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->next) {
 		void **p = pchunk->free_list [slot];
 		if (p) {
 			pchunk->free_list [slot] = *p;
+			memset (p, 0, size);
 			return p;
 		}
 	}
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->next) {
 		res = get_chunk_freelist (pchunk, slot);
-		if (res)
+		if (res) {
+			memset (res, 0, size);
 			return res;
+		}
 	}
 	pchunk = alloc_pinned_chunk (size);
 	/* FIXME: handle OOM */
 	pchunk->next = internal_chunk_list;
 	internal_chunk_list = pchunk;
 	res = get_chunk_freelist (pchunk, slot);
+	memset (res, 0, size);
 	return res;
-#endif
 }
 
 static void
 free_internal_mem (void *addr)
 {
-	free (addr);
-#if 0
 	PinnedChunk *pchunk;
+	LargeInternalMemHeader *mh;
+	if (!addr)
+		return;
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->next) {
 		/*printf ("trying to free %p in %p (pages: %d)\n", addr, pchunk, pchunk->num_pages);*/
 		if (addr >= (void*)pchunk && (char*)addr < (char*)pchunk + pchunk->num_pages * FREELIST_PAGESIZE) {
@@ -3435,9 +3457,9 @@ free_internal_mem (void *addr)
 			return;
 		}
 	}
-	printf ("free of %p failed\n", addr);
-	g_assert_not_reached ();
-#endif
+	mh = (LargeInternalMemHeader*)((char*)addr - G_STRUCT_OFFSET (LargeInternalMemHeader, data));
+	g_assert (mh->magic == LARGE_INTERNAL_MEM_HEADER_MAGIC);
+	free_os_memory (mh, mh->size);
 }
 
 /*
