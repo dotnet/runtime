@@ -381,6 +381,7 @@ static __thread RememberedSet *remembered_set MONO_TLS_FAST;
 #endif
 static pthread_key_t remembered_set_key;
 static RememberedSet *global_remset;
+static RememberedSet *freed_thread_remsets;
 //static int store_to_global_remset = 0;
 
 /* FIXME: later choose a size that takes into account the RememberedSet struct
@@ -5064,6 +5065,19 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 			}
 		}
 	}
+
+	/* the freed thread ones */
+	while (freed_thread_remsets) {
+		remset = freed_thread_remsets;
+		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		for (p = remset->data; p < remset->store_next;) {
+			p = handle_remset (p, start_nursery, end_nursery, FALSE);
+		}
+		next = remset->next;
+		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
+		free_internal_mem (remset);
+		freed_thread_remsets = next;
+	}
 }
 
 /*
@@ -5101,6 +5115,14 @@ clear_remsets (void)
 				}
 			}
 		}
+	}
+
+	/* the freed thread ones */
+	while (freed_thread_remsets) {
+		next = freed_thread_remsets->next;
+		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", freed_thread_remsets->data));
+		free_internal_mem (freed_thread_remsets);
+		freed_thread_remsets = next;
 	}
 }
 
@@ -5240,12 +5262,15 @@ unregister_current_thread (void)
 	} else {
 		prev->next = p->next;
 	}
-	rset = p->remset;
-	/* FIXME: transfer remsets if any */
-	while (rset) {
-		RememberedSet *next = rset->next;
-		free_internal_mem (rset);
-		rset = next;
+	if (p->remset) {
+		if (freed_thread_remsets) {
+			for (rset = p->remset; rset->next; rset = rset->next)
+				;
+			rset->next = freed_thread_remsets;
+			freed_thread_remsets = p->remset;
+		} else {
+			freed_thread_remsets = p->remset;
+		}
 	}
 	free (p);
 }
@@ -5750,6 +5775,16 @@ find_in_remsets (char *addr)
 						return TRUE;
 				}
 			}
+		}
+	}
+
+	/* the freed thread ones */
+	for (remset = freed_thread_remsets; remset; remset = remset->next) {
+		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		for (p = remset->data; p < remset->store_next;) {
+			p = find_in_remset_loc (p, addr, &found);
+			if (found)
+				return TRUE;
 		}
 	}
 
