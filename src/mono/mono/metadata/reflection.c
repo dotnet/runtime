@@ -175,6 +175,9 @@ static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
 static MonoReflectionType* mono_reflection_type_resolve_user_types (MonoReflectionType *type);
+static gboolean is_sre_array (MonoClass *class);
+static gboolean is_sre_byref (MonoClass *class);
+static gboolean is_sre_pointer (MonoClass *class);
 
 #define RESOLVE_TYPE(type) do { type = (void*)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type); } while (0)
 #define RESOLVE_ARRAY_TYPE_ELEMENT(array, index) do {	\
@@ -4742,9 +4745,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 	} else if (strcmp (klass->name, "MethodOnTypeBuilderInst") == 0) {
 		MonoReflectionMethodOnTypeBuilderInst *m = (MonoReflectionMethodOnTypeBuilderInst*)obj;
 		token = mono_image_get_method_on_inst_token (assembly, m, create_methodspec);
-	} else if (strcmp (klass->name, "ArrayType") == 0 ||
-				strcmp (klass->name, "ByRefType") == 0||
-				strcmp (klass->name, "PointerType") == 0) {
+	} else if (is_sre_array (klass) || is_sre_byref (klass) || is_sre_pointer (klass)) {
 		MonoReflectionType *type = (MonoReflectionType *)obj;
 		token = mono_metadata_token_from_dor (
 				mono_image_typedef_or_ref (assembly, mono_reflection_type_get_handle (type)));
@@ -8516,54 +8517,66 @@ mono_reflection_type_get_underlying_system_type (MonoReflectionType* t)
 #ifndef DISABLE_REFLECTION_EMIT
 
 static gboolean
-is_corlib_type (MonoReflectionType *ref)
+is_corlib_type (MonoClass *class)
 {
-	return ref && mono_object_class (ref)->image == mono_defaults.corlib;
+	return class->image == mono_defaults.corlib;
 }
 
 static gboolean
-is_sre_usertype (MonoReflectionType *ref)
+is_usertype (MonoReflectionType *ref)
 {
 	MonoClass *class = mono_object_class (ref);
-	return ref && class->image == mono_defaults.corlib && strcmp ("TypeDelegator", class->name);
+	return class->image != mono_defaults.corlib || strcmp ("TypeDelegator", class->name) == 0;
+}
+
+#define check_corlib_type_cached(_class, _namespace, _name) do { \
+	static MonoClass *cached_class; \
+	if (cached_class) \
+		return cached_class == _class; \
+	if (is_corlib_type (_class) && !strcmp (_name, _class->name) && !strcmp (_namespace, _class->name_space)) { \
+		cached_class = _class; \
+		return TRUE; \
+	} \
+	return FALSE; \
+} while (0) \
+
+static gboolean
+is_sre_array (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection.Emit", "ArrayType");
 }
 
 static gboolean
-is_sre_array (MonoReflectionType *ref)
+is_sre_byref (MonoClass *class)
 {
-	return ref && is_corlib_type (ref) &&
-			!strcmp ("ArrayType", mono_object_class (ref)->name) &&
-			!strcmp ("System.Reflection.Emit", mono_object_class (ref)->name_space);
+	check_corlib_type_cached (class, "System.Reflection.Emit", "ByRefType");
 }
 
 static gboolean
-is_sre_byref (MonoReflectionType *ref)
+is_sre_pointer (MonoClass *class)
 {
-	return ref && is_corlib_type (ref) &&
-			!strcmp ("ByRefType", mono_object_class (ref)->name) &&
-			!strcmp ("System.Reflection.Emit", mono_object_class (ref)->name_space);
-}
-
-static gboolean
-is_sre_pointer (MonoReflectionType *ref)
-{
-	return ref && is_corlib_type (ref) &&
-			!strcmp ("PointerType", mono_object_class (ref)->name) &&
-			!strcmp ("System.Reflection.Emit", mono_object_class (ref)->name_space);
+	check_corlib_type_cached (class, "System.Reflection.Emit", "PointerType");
 }
 
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref)
 {
+	MonoClass *class;
 	if (!ref)
 		return NULL;
 	if (ref->type)
 		return ref->type;
 
-	if (!is_sre_usertype (ref))
+	if (is_usertype (ref)) {
 		ref = mono_reflection_type_get_underlying_system_type (ref);
+		g_assert (!is_usertype (ref)); /*FIXME fail better*/
+		if (ref->type)
+			return ref->type;
+	}
 
-	if (is_sre_array (ref)) {
+	class = mono_object_class (ref);
+
+	if (is_sre_array (class)) {
 		MonoType *res;
 		MonoReflectionArrayType *sre_array = (MonoReflectionArrayType*)ref;
 		MonoType *base = mono_reflection_type_get_handle (sre_array->element_type);
@@ -8571,7 +8584,7 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		res = &mono_array_class_get (mono_class_from_mono_type (base), sre_array->rank)->byval_arg;
 		sre_array->type.type = res;
 		return res;
-	} else if (is_sre_byref (ref)) {
+	} else if (is_sre_byref (class)) {
 		MonoType *res;
 		MonoReflectionDerivedType *sre_byref = (MonoReflectionDerivedType*)ref;
 		MonoType *base = mono_reflection_type_get_handle (sre_byref->element_type);
@@ -8579,7 +8592,7 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		res = &mono_class_from_mono_type (base)->this_arg;
 		sre_byref->type.type = res;
 		return res;
-	} else if (is_sre_pointer (ref)) {
+	} else if (is_sre_pointer (class)) {
 		MonoType *res;
 		MonoReflectionDerivedType *sre_pointer = (MonoReflectionDerivedType*)ref;
 		MonoType *base = mono_reflection_type_get_handle (sre_pointer->element_type);
@@ -8599,9 +8612,9 @@ mono_reflection_type_resolve_user_types (MonoReflectionType *type)
 	if (!type || type->type)
 		return type;
 
-	if (!is_sre_usertype (type)) {
+	if (is_usertype (type)) {
 		type = mono_reflection_type_get_underlying_system_type (type);
-		if (!is_sre_usertype (type))
+		if (is_usertype (type))
 			mono_raise_exception (mono_get_exception_not_supported ("User defined subclasses of System.Type are not yet supported22"));
 	}
 
@@ -11043,9 +11056,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		result = inflate_mono_method (inflated_klass, m->mb->mhandle, (MonoObject*)m->mb);
 		*handle_class = mono_defaults.methodhandle_class;
 		mono_metadata_free_type (type);
-	} else if (strcmp (mono_object_get_class(obj)->name, "ArrayType") == 0 ||
-				strcmp (mono_object_get_class(obj)->name, "ByRefType") == 0 ||
-				strcmp (mono_object_get_class(obj)->name, "PointerType") == 0) {
+	} else if (is_sre_array (mono_object_get_class(obj)) ||
+				is_sre_byref (mono_object_get_class(obj)) ||
+				is_sre_pointer (mono_object_get_class(obj))) {
 		MonoReflectionType *ref_type = (MonoReflectionType *)obj;
 		MonoType *type = mono_reflection_type_get_handle (ref_type);
 		result = mono_class_from_mono_type (type);
