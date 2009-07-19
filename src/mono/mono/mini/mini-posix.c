@@ -21,6 +21,9 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#ifdef HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#endif
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
