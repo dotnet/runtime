@@ -522,3 +522,37 @@ mono_runtime_setup_stat_profiler (void)
 	add_signal_handler (SIGPROF, sigprof_signal_handler);
 #endif
 }
+
+#if !defined(__APPLE__)
+pid_t
+mono_runtime_syscall_fork ()
+{
+	return (pid_t) syscall (SYS_fork);
+}
+
+gboolean
+mono_gdb_render_native_backtraces ()
+{
+	const char *argv [9];
+	char buf1 [128];
+
+	argv [0] = g_find_program_in_path ("gdb");
+	if (argv [0] == NULL) {
+		return FALSE;
+	}
+
+	argv [1] = "-ex";
+	sprintf (buf1, "attach %ld", (long)getpid ());
+	argv [2] = buf1;
+	argv [3] = "--ex";
+	argv [4] = "info threads";
+	argv [5] = "--ex";
+	argv [6] = "thread apply all bt";
+	argv [7] = "--batch";
+	argv [8] = 0;
+
+	execv (argv [0], (char**)argv);
+
+	return TRUE;
+}
+#endif

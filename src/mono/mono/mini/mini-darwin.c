@@ -197,3 +197,70 @@ mono_runtime_install_handlers (void)
 	macosx_register_exception_handler ();
 	mono_runtime_posix_install_handlers ();
 }
+
+pid_t
+mono_runtime_syscall_fork ()
+{
+#if defined(__i386__)
+	/* Apple's fork syscall returns a regpair in EAX:EDX.
+	 *  EAX == pid of caller always
+	 *  EDX == 0 for parent, 1 for child
+	 */             
+	register_t eax;
+	register_t edx;
+	pid_t pid;
+
+	__asm__  __volatile__ (
+		"mov $0x2, %%eax;"
+		"int $0x80;"
+		"mov %%eax, %0;"
+		"mov %%edx, %1;"
+		: "=m" (eax), "=m" (edx));
+
+	if (edx == 0) {
+		pid = eax;
+	} else if (edx == 1) {
+		pid = 0;
+	} else {
+		g_assert_not_reached ();
+	}
+
+	return pid;
+#else
+	g_assert_not_reached ();
+#endif
+}
+
+gboolean
+mono_gdb_render_native_backtraces ()
+{
+	const char *argv [5];
+	char gdb_template [] = "/tmp/mono-gdb-commands.XXXXXX";
+
+	argv [0] = g_find_program_in_path ("gdb");
+	if (argv [0] == NULL) {
+		return FALSE;
+	}
+
+	if (mkstemp (gdb_template) != -1) {
+		FILE *gdb_commands = fopen (gdb_template, "w");
+
+		fprintf (gdb_commands, "attach %ld\n", (long) getpid ());
+		fprintf (gdb_commands, "info threads\n");
+		fprintf (gdb_commands, "thread apply all bt\n");
+
+		fflush (gdb_commands);
+		fclose (gdb_commands);
+
+		argv [1] = "-batch";
+		argv [2] = "-x";
+		argv [3] = gdb_template;
+		argv [4] = 0;
+
+		execv (argv [0], (char**)argv);
+
+		unlink (gdb_template);
+	}
+
+	return TRUE;
+}

@@ -1823,6 +1823,8 @@ void mono_runtime_cleanup_handlers (void) MONO_INTERNAL;
 void mono_runtime_setup_stat_profiler (void) MONO_INTERNAL;
 void mono_runtime_shutdown_stat_profiler (void) MONO_INTERNAL;
 void mono_runtime_posix_install_handlers (void) MONO_INTERNAL;
+pid_t mono_runtime_syscall_fork (void) MONO_INTERNAL;
+gboolean mono_gdb_render_native_backtraces (void) MONO_INTERNAL;
 
 /*
  * Signal handling

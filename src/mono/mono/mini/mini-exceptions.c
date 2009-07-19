@@ -1526,8 +1526,6 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 		int res;
 		int stdout_pipe [2] = { -1, -1 };
 		pid_t pid;
-		const char *argv [16];
-		char buf1 [128];
 		int status;
 		char buffer [1024];
 
@@ -1539,7 +1537,8 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 		 * glibc fork acquires some locks, so if the crash happened inside malloc/free,
 		 * it will deadlock. Call the syscall directly instead.
 		 */
-		pid = syscall (SYS_fork);
+		pid = mono_runtime_syscall_fork ();
+
 		if (pid == 0) {
 			close (stdout_pipe [0]);
 			dup2 (stdout_pipe [1], STDOUT_FILENO);
@@ -1547,23 +1546,9 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 			for (i = getdtablesize () - 1; i >= 3; i--)
 				close (i);
 
-			argv [0] = g_find_program_in_path ("gdb");
-			if (argv [0] == NULL) {
+			if (!mono_gdb_render_native_backtraces ())
 				close (STDOUT_FILENO);
-				exit (1);
-			}
 
-			argv [1] = "-ex";
-			sprintf (buf1, "attach %ld", (long)getpid ());
-			argv [2] = buf1;
-			argv [3] = "--ex";
-			argv [4] = "info threads";
-			argv [5] = "--ex";
-			argv [6] = "thread apply all bt";
-			argv [7] = "--batch";
-			argv [8] = 0;
-
-			execv (argv [0], (char**)argv);
 			exit (1);
 		}
 
