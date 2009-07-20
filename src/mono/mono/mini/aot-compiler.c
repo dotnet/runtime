@@ -99,6 +99,7 @@ typedef struct MonoAotOptions {
 	int nthreads;
 	int ntrampolines;
 	gboolean print_skipped_methods;
+	char *tool_prefix;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -3334,6 +3335,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->nodebug = TRUE;
 		} else if (str_begins_with (arg, "ntrampolines=")) {
 			opts->ntrampolines = atoi (arg + strlen ("ntrampolines="));
+		} else if (str_begins_with (arg, "tool-prefix=")) {
+			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -4881,6 +4884,7 @@ compile_asm (MonoAotCompile *acfg)
 {
 	char *command, *objfile;
 	char *outfile_name, *tmp_outfile_name;
+	const char *tool_prefix = acfg->aot_opts.tool_prefix ? acfg->aot_opts.tool_prefix : "";
 
 #if defined(TARGET_AMD64)
 #define AS_OPTIONS "--64"
@@ -4912,7 +4916,7 @@ compile_asm (MonoAotCompile *acfg)
 	} else {
 		objfile = g_strdup_printf ("%s.o", acfg->tmpfname);
 	}
-	command = g_strdup_printf ("as %s %s -o %s", AS_OPTIONS, acfg->tmpfname, objfile);
+	command = g_strdup_printf ("%sas %s %s -o %s", tool_prefix, AS_OPTIONS, acfg->tmpfname, objfile);
 	printf ("Executing the native assembler: %s\n", command);
 	if (system (command) != 0) {
 		g_free (command);
@@ -4943,7 +4947,7 @@ compile_asm (MonoAotCompile *acfg)
 #elif defined(PLATFORM_WIN32)
 	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #else
-	command = g_strdup_printf ("ld %s -shared -o %s %s.o", LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("%sld %s -shared -o %s %s.o", tool_prefix, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
 #endif
 	printf ("Executing the native linker: %s\n", command);
 	if (system (command) != 0) {
@@ -4966,7 +4970,7 @@ compile_asm (MonoAotCompile *acfg)
 	 * gas generates 'mapping symbols' each time code and data is mixed, which 
 	 * happens a lot in emit_and_reloc_code (), so we need to get rid of them.
 	 */
-	command = g_strdup_printf ("strip --strip-symbol=\\$a --strip-symbol=\\$d %s", tmp_outfile_name);
+	command = g_strdup_printf ("%sstrip --strip-symbol=\\$a --strip-symbol=\\$d %s", tool_prefix, tmp_outfile_name);
 	printf ("Stripping the binary: %s\n", command);
 	if (system (command) != 0) {
 		g_free (tmp_outfile_name);
