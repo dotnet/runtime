@@ -1487,10 +1487,15 @@ parse_field (VerifyContext *ctx, const char **_ptr, const char *end)
 
 	if (signature != 0x06)
 		FAIL (ctx, g_strdup_printf ("Field: Invalid signature 0x%x, must be 6", signature));
-	*_ptr = ptr; 
 
-	if (!parse_custom_mods (ctx, _ptr, end))
+	if (!parse_custom_mods (ctx, &ptr, end))
 		return FALSE;
+
+	if (safe_read8 (signature, ptr, end)) {
+		if (signature != MONO_TYPE_BYREF)
+			--ptr;
+	}
+	*_ptr = ptr;
 
 	return parse_type (ctx, _ptr, end);
 }
@@ -1520,16 +1525,25 @@ parse_locals_signature (VerifyContext *ctx, const char **_ptr, const char *end)
 		if (!safe_read8 (sig, ptr, end))
 			FAIL (ctx, g_strdup ("LocalsSig: Not enough room for type"));
 
-		if (sig == MONO_TYPE_TYPEDBYREF)
-			continue;
-
 		while (sig == MONO_TYPE_CMOD_REQD || sig == MONO_TYPE_CMOD_OPT || sig == MONO_TYPE_PINNED) {
 			if (sig != MONO_TYPE_PINNED && !parse_custom_mods (ctx, &ptr, end))
 				FAIL (ctx, g_strdup_printf ("LocalsSig: Error parsing local %d", i));
 			if (!safe_read8 (sig, ptr, end))
 				FAIL (ctx, g_strdup ("LocalsSig: Not enough room for type"));
 		}
+
+		if (sig == MONO_TYPE_BYREF) {
+			if (!safe_read8 (sig, ptr, end))
+				FAIL (ctx, g_strdup_printf ("Type: Not enough room for byref type for local %d", i));
+			if (sig == MONO_TYPE_TYPEDBYREF)
+				FAIL (ctx, g_strdup_printf ("Type: Invalid type typedref& for local %d", i));
+		}
+
+		if (sig == MONO_TYPE_TYPEDBYREF)
+			continue;
+
 		--ptr;
+
 		if (!parse_type (ctx, &ptr, end))
 			FAIL (ctx, g_strdup_printf ("LocalsSig: Error parsing local %d", i));
 	}
@@ -1681,11 +1695,18 @@ is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
 
 	if (!safe_read8 (type, ptr, end))
 		FAIL (ctx, g_strdup ("TypeSpec: Not enough room for type"));
-	--ptr;
 
+	if (type == MONO_TYPE_BYREF) {
+		if (!safe_read8 (type, ptr, end)) 
+			FAIL (ctx, g_strdup ("TypeSpec: Not enough room for byref type"));
+		if (type == MONO_TYPE_TYPEDBYREF)
+			FAIL (ctx, g_strdup ("TypeSpec: Invalid type typedref"));
+	}
+	
 	if (type == MONO_TYPE_TYPEDBYREF)
 		return TRUE;
 
+	--ptr;
 	return parse_type (ctx, &ptr, end);
 }
 
