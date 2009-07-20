@@ -129,7 +129,7 @@ typedef struct MonoAotFileInfo
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
 } MonoAotFileInfo;
- 
+
 /* Per-domain information maintained by the JIT */
 typedef struct
 {
@@ -146,8 +146,8 @@ typedef struct
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;
-	/* Compiled runtime invoke function for parameterless ctors */
-	gpointer ctor_runtime_invoke;
+	/* Maps methods to a RuntimeInvokeInfo structure */
+	GHashTable *runtime_invoke_hash;
 } MonoJitDomainInfo;
 
 typedef struct {
