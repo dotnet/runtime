@@ -13,28 +13,7 @@
 #include <config.h>
 #include <glib.h>
 #include <pthread.h>
-#ifdef HAVE_SEMAPHORE_H
-#include <semaphore.h>
-#endif
-
-#ifdef USE_MACH_SEMA
-#  include <mach/mach_init.h>
-#  include <mach/task.h>
-#  include <mach/semaphore.h>
-
-typedef semaphore_t MonoSemType;
-#  define MONO_SEM_INIT(addr,value) semaphore_create (current_task (), (addr), SYNC_POLICY_FIFO, (value))
-#  define MONO_SEM_WAIT(sem) semaphore_wait (*(sem))
-#  define MONO_SEM_POST(sem) semaphore_signal (*(sem))
-#  define MONO_SEM_DESTROY(sem) semaphore_destroy (current_task (), *(sem))
-#else
-
-typedef sem_t MonoSemType;
-#  define MONO_SEM_INIT(addr,value) sem_init ((addr), 0, (value))
-#  define MONO_SEM_WAIT(sem) sem_wait ((sem))
-#  define MONO_SEM_POST(sem) sem_post ((sem))
-#  define MONO_SEM_DESTROY(sem) sem_destroy ((sem))
-#endif
+#include <mono/utils/mono-semaphore.h>
 
 /* There doesn't seem to be a defined symbol for this */
 #define _WAPI_THREAD_CURRENT (gpointer)0xFFFFFFFE
