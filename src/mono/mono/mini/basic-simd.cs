@@ -2966,8 +2966,8 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static int Main () {
-		return TestDriver.RunTests (typeof (SimdTests));
+	public static int Main (String[] args) {
+		return TestDriver.RunTests (typeof (SimdTests), args);
 	}
 }
 
