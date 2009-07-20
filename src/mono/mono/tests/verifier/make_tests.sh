@@ -321,14 +321,18 @@ do
     I=`expr $I + 1`
   done
 
-  for TYPE in 'object' 'string' 'class Class' 'valuetype MyStruct' 'int32[]' 'int32[,]' 'typedref' 'int32*' 'method int32 *(int32)' 'class Template`1<object>' 'int8&' 'bool&' 'unsigned int8&' 'int16&' 'char&' 'unsigned int16&' 'int32&' 'unsigned int32&' 'int64&' 'unsigned int64&' 'float32&' 'float64&' 'native int&' 'native unsigned int&' 'object&' 'string&' 'class Class&' 'valuetype MyStruct&' 'int32[]&' 'int32[,]&' 'typedref&'  'class Template`1<object>&'
+  for TYPE in 'object' 'string' 'class Class' 'valuetype MyStruct' 'int32[]' 'int32[,]' 'typedref' 'int32*' 'method int32 *(int32)' 'class Template`1<object>' 'int8&' 'bool&' 'unsigned int8&' 'int16&' 'char&' 'unsigned int16&' 'int32&' 'unsigned int32&' 'int64&' 'unsigned int64&' 'float32&' 'float64&' 'native int&' 'native unsigned int&' 'object&' 'string&' 'class Class&' 'valuetype MyStruct&' 'int32[]&' 'int32[,]&' 'class Template`1<object>&'
   do
     ./make_unary_test.sh conv_op_${J}_${I} unverifiable $OP "$TYPE"
     I=`expr $I + 1`
   done
+
+  ./make_unary_test.sh conv_op_${J}_${I} badmd $OP "$TYPE" "typedref&"
   J=`expr $J + 1`
   I=1
 done
+
+
 
 #local and argument store with invalid values lead to unverifiable code
 I=1
@@ -431,7 +435,7 @@ do
   ./make_store_test.sh coercion_78_${I} unverifiable "$OP" typedref 'native int'
   ./make_store_test.sh coercion_89_${I} unverifiable "$OP" typedref int64
   ./make_store_test.sh coercion_80_${I} unverifiable "$OP" typedref float64
-  ./make_store_test.sh coercion_81_${I} unverifiable "$OP" typedref 'typedref&'
+  ./make_store_test.sh coercion_81_${I} badmd "$OP" typedref 'typedref&'
   ./make_store_test.sh coercion_82_${I} unverifiable "$OP" typedref object
   I=`expr $I + 1`
 done
@@ -1048,7 +1052,7 @@ done
 ./make_ret_test.sh ret_coercion_78 unverifiable typedref 'native int'
 ./make_ret_test.sh ret_coercion_79 unverifiable typedref int64
 ./make_ret_test.sh ret_coercion_80 unverifiable typedref float64
-./make_ret_test.sh ret_coercion_81 unverifiable typedref 'typedref&'
+./make_ret_test.sh ret_coercion_81 badmd typedref 'typedref&'
 ./make_ret_test.sh ret_coercion_82 unverifiable typedref object
 
 ./make_ret_test.sh ret_coercion_83 valid int32 "native int"
@@ -3669,7 +3673,7 @@ done
 
 for TYPE in "int32\&" "void"
 do
-	./make_stobj_test.sh stobj_simple_${I} invalid "$TYPE" "$TYPE\&" "$TYPE" 
+	./make_stobj_test.sh stobj_simple_${I} badmd "$TYPE" "$TYPE\&" "$TYPE" 
 	I=`expr $I + 1`
 done
 
@@ -3794,7 +3798,7 @@ done
 #should be able to use invalid types
 for TYPE in "int32\&" "void"
 do
-	./make_cpobj_test.sh cpobj_simple_${I} invalid "${TYPE}\&" "${TYPE}\&" "${TYPE}"
+	./make_cpobj_test.sh cpobj_simple_${I} badmd "${TYPE}\&" "${TYPE}\&" "${TYPE}"
 	I=`expr $I + 1`
 done
 
@@ -3825,11 +3829,13 @@ done
 
 #bad token type
 I=1
-for TYPE in "int32\&" "void"
+for TYPE in "int32\&"
 do
 	./make_cpobj_test.sh cpobj_bad_token_type_${I} invalid "int32\&" "int32\&" "${TYPE}"
 	I=`expr $I + 1`
 done
+
+./make_cpobj_test.sh cpobj_bad_token_type_2 badmd "int32\&" "int32\&" "void"
 
 #src compat to token
 ./make_cpobj_test.sh cpobj_src_compat_1 valid "int32\&" "int32\&" "native int"

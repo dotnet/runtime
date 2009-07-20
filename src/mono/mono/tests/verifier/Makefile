@@ -46,6 +46,10 @@ run-test: compile-stamp
 		then \
 			RES=2; \
 		fi; \
+		if [ "$$FIRST" == "badmd" ]; \
+		then \
+			RES=1; \
+		fi; \
 		if [ "$$FIRST" == "valid" ]; \
 		then \
 			RES=0; \
