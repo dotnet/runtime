@@ -1,3 +1,10 @@
+2009-07-20 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* assembly-with-locals.il: Fix method to be verifiable.
+	Add more shapes of valid locals.
+
+	* cli-blob-tests.md (locals-sig): Fix some tests.
+
 2009-06-26 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Fix a cattr-table test

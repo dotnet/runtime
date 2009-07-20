@@ -162,7 +162,7 @@ locals-sig {
 	#typedref with byref
 	#row 1 is:      cconv pcount(2) byref int32      int32 
 	#row 1 goes to: cconv pcount(2) byref typedbyref int32
-	invalid offset blob.i (table-row (0x11 1)) + 4 set-byte 0x18
+	invalid offset blob.i (table-row (0x11 1)) + 4 set-byte 0x16
 
 	#byref pinned int32
 	#row 1 is:      cconv pcount(2) byref int32  int32 
@@ -174,8 +174,8 @@ locals-sig {
 	#pinned pinned int32
 	#row 1 is:      cconv pcount(2) byref  int32  int32 
 	#row 1 goes to: cconv pcount(1) pinned pinned int32
-
-	invalid offset blob.i (table-row (0x11 1)) + 2 set-byte 0x01,
+	#LAMEIMPL MS doesn't care about this
+	valid offset blob.i (table-row (0x11 1)) + 2 set-byte 0x01,
 			offset blob.i (table-row (0x11 1)) + 3 set-byte 0x45,
 			offset blob.i (table-row (0x11 1)) + 4 set-byte 0x45
 }
