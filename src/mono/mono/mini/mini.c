@@ -4300,6 +4300,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	g_hash_table_remove (domain_jit_info (domain)->dynamic_code_hash, method);
 	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	g_hash_table_remove (domain_jit_info (domain)->jump_trampoline_hash, method);
+	g_hash_table_remove (domain_jit_info (domain)->runtime_invoke_hash, method);
 	mono_domain_unlock (domain);
 
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
@@ -4362,6 +4363,13 @@ mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 	return mono_jit_find_compiled_method_with_jit_info (domain, method, NULL);
 }
 
+typedef struct {
+	MonoMethod *method;
+	gpointer compiled_method;
+	gpointer runtime_invoke;
+	MonoVTable *vtable;
+} RuntimeInvokeInfo;
+
 /**
  * mono_jit_runtime_invoke:
  * @method: the method to invoke
@@ -4372,60 +4380,65 @@ mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 static MonoObject*
 mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
-	MonoMethod *to_compile;
 	MonoMethod *invoke;
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc, void* compiled_method);
-	void* compiled_method;
-	MonoVTable *vtable;
-	gboolean need_rgctx_tramp = FALSE;
-
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitDomainInfo *domain_info;
+	RuntimeInvokeInfo *info, *info2;
+	
 	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {
 		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
 		return NULL;
 	}
 
-	to_compile = method;
+	domain_info = domain_jit_info (domain);
 
-	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-		need_rgctx_tramp = TRUE;
+	mono_domain_lock (domain);
+	info = g_hash_table_lookup (domain_info->runtime_invoke_hash, method);
+	mono_domain_unlock (domain);		
 
-	/* Special case parameterless ctors to speed up Activator.CreateInstance () */
-	if (method->flags & (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME) && !strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == 0 && !method->klass->valuetype) {
-		MonoJitDomainInfo *domain_info = domain_jit_info (mono_domain_get ());
+	if (!info) {
+		info = g_new0 (RuntimeInvokeInfo, 1);
 
-		if (!domain_info->ctor_runtime_invoke) {
-			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-			domain_info->ctor_runtime_invoke = mono_jit_compile_method (invoke);
+		invoke = mono_marshal_get_runtime_invoke (method, FALSE);
+		info->runtime_invoke = mono_jit_compile_method (invoke);
+		info->vtable = mono_class_vtable (domain, method->klass);
+		g_assert (info->vtable);
+
+		if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+			(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+			/* 
+			 * Array Get/Set/Address methods. The JIT implements them using inline code 
+			 * inside the runtime invoke wrappers, so no need to compile them.
+			 */
+			info->compiled_method = NULL;
+		} else {
+			info->compiled_method = mono_jit_compile_method (method);
+
+			if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+				info->compiled_method = mono_create_static_rgctx_trampoline (method, info->compiled_method);
 		}
 
-		runtime_invoke = domain_info->ctor_runtime_invoke;
-	} else {
-		invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-		runtime_invoke = mono_jit_compile_method (invoke);
+		mono_domain_lock (domain);
+		info2 = g_hash_table_lookup (domain_info->runtime_invoke_hash, method);
+		if (info2) {
+			g_free (info);
+			info = info2;
+		} else {
+			g_hash_table_insert (domain_info->runtime_invoke_hash, method, info);
+		}
+		mono_domain_unlock (domain);		
 	}
+
+	runtime_invoke = info->runtime_invoke;
 
 	/*
 	 * We need this here because mono_marshal_get_runtime_invoke can place 
 	 * the helper method in System.Object and not the target class.
 	 */
-	vtable = mono_class_vtable (mono_domain_get (), method->klass);
-	g_assert (vtable);
-	mono_runtime_class_init (vtable);
+	mono_runtime_class_init (info->vtable);
 
-	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
-		/* 
-		 * Array Get/Set/Address methods. The JIT implements them using inline code 
-		 * inside the runtime invoke wrappers, so no need to compile them.
-		 */
-		compiled_method = NULL;
-	} else {
-		compiled_method = mono_jit_compile_method (to_compile);
-	}
-	if (need_rgctx_tramp)
-		compiled_method = mono_create_static_rgctx_trampoline (to_compile, compiled_method);
-
-	return runtime_invoke (obj, params, exc, compiled_method);
+	return runtime_invoke (obj, params, exc, info->compiled_method);
 }
 
 void
@@ -4680,6 +4693,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->delegate_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->static_rgctx_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	info->runtime_invoke_hash = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, g_free);
 
 	domain->runtime_info = info;
 }
@@ -4723,6 +4737,7 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	g_hash_table_destroy (info->delegate_trampoline_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
+	g_hash_table_destroy (info->runtime_invoke_hash);
 
 	g_free (domain->runtime_info);
 	domain->runtime_info = NULL;
