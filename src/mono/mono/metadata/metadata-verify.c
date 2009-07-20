@@ -1700,7 +1700,7 @@ is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
 		if (!safe_read8 (type, ptr, end)) 
 			FAIL (ctx, g_strdup ("TypeSpec: Not enough room for byref type"));
 		if (type == MONO_TYPE_TYPEDBYREF)
-			FAIL (ctx, g_strdup ("TypeSpec: Invalid type typedref"));
+			FAIL (ctx, g_strdup ("TypeSpec: Invalid type typedref&"));
 	}
 	
 	if (type == MONO_TYPE_TYPEDBYREF)
