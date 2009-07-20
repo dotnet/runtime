@@ -775,7 +775,7 @@ typedef union {
 
 #define amd64_sse_pminuw_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3a)
 
-#define amd64_sse_pminud_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3)
+#define amd64_sse_pminud_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x3b)
 
 
 #define amd64_sse_pminsb_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x38)
