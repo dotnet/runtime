@@ -1452,38 +1452,47 @@ void*
 mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments, gboolean preserve_argument_registers)
 {
 	guchar *code = p;
-	int arg_size = 0, save_mode = SAVE_NONE;
+	int arg_size = 0, stack_usage = 0, save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
 	
 	switch (mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret)->type) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
-		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
+		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class) {
 			save_mode = SAVE_EAX;
-		else
+			stack_usage = enable_arguments ? 8 : 4;
+		} else
 			save_mode = SAVE_NONE;
 		break;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		save_mode = SAVE_EAX_EDX;
+		stack_usage = enable_arguments ? 16 : 8;
 		break;
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
 		save_mode = SAVE_FP;
+		stack_usage = enable_arguments ? 16 : 8;
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (!mono_type_generic_inst_is_valuetype (mono_method_signature (method)->ret)) {
 			save_mode = SAVE_EAX;
+			stack_usage = enable_arguments ? 8 : 4;
 			break;
 		}
 		/* Fall through */
 	case MONO_TYPE_VALUETYPE:
+		// FIXME: Handle SMALL_STRUCT_IN_REG here for proper alignment on darwin-x86
 		save_mode = SAVE_STRUCT;
+		stack_usage = enable_arguments ? 4 : 0;
 		break;
 	default:
 		save_mode = SAVE_EAX;
+		stack_usage = enable_arguments ? 8 : 4;
 		break;
 	}
+
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - stack_usage - 4);
 
 	switch (save_mode) {
 	case SAVE_EAX_EDX:
@@ -1532,6 +1541,7 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 		mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_ABS, func);
 		x86_call_code (code, 0);
 	}
+
 	x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 4);
 
 	switch (save_mode) {
@@ -1550,6 +1560,8 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 	default:
 		break;
 	}
+	
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - stack_usage);
 
 	return code;
 }
