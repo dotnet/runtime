@@ -2138,9 +2138,14 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	mono_mb_emit_managed_call (mb, method, NULL);
 
 	if (!MONO_TYPE_IS_VOID (sig->ret)) {
-		if (!preserve_sig)
-			mono_mb_emit_byte (mb, mono_type_to_stind (sig->ret));
-		else
+		if (!preserve_sig) {
+			MonoClass *rclass = mono_class_from_mono_type (sig->ret);
+			if (rclass->valuetype) {
+				mono_mb_emit_op (mb, CEE_STOBJ, rclass);
+			} else {
+				mono_mb_emit_byte (mb, mono_type_to_stind (sig->ret));
+			}
+		} else
 			mono_mb_emit_stloc (mb, hr);
 	}
 
