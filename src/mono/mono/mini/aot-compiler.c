@@ -2144,6 +2144,50 @@ add_generic_instances (MonoAotCompile *acfg)
 					add_generic_class (acfg, mono_class_from_mono_type (header->locals [j]));
 		}
 	}
+
+	if (acfg->image == mono_defaults.corlib) {
+		/* Add GenericComparer<T> instances for primitive types for Enum.ToString () */
+		MonoClass *klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
+
+		if (klass) {
+			MonoGenericContext ctx;
+			MonoType *args [16];
+
+			memset (&ctx, 0, sizeof (ctx));
+
+			args [0] = &mono_defaults.byte_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.sbyte_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.int16_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.uint16_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.int32_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.uint32_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.int64_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.uint64_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+		}
+	}
 }
 
 /*
