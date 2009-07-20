@@ -27,16 +27,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 #include <mono/metadata/attach.h>
-#if HAVE_SEMAPHORE_H
-#include <semaphore.h>
-/* we do this only for known working systems (OSX for example
- * has the header and functions, but they don't work at all): in other cases
- * we fall back to the io-layer slightly slower and signal-unsafe Event.
- */
-#if defined (__linux__)
-#define USE_POSIX_SEM 1
-#endif
-#endif
+#include <mono/utils/mono-semaphore.h>
 
 #ifndef PLATFORM_WIN32
 #include <pthread.h>
@@ -918,8 +909,8 @@ mono_gchandle_free_domain (MonoDomain *domain)
 
 #ifndef HAVE_NULL_GC
 
-#if USE_POSIX_SEM
-static sem_t finalizer_sem;
+#ifdef MONO_HAS_SEMAPHORES
+static MonoSemType finalizer_sem;
 #endif
 static HANDLE finalizer_event;
 static volatile gboolean finished=FALSE;
@@ -931,8 +922,8 @@ mono_gc_finalize_notify (void)
 	g_message (G_GNUC_PRETTY_FUNCTION ": prodding finalizer");
 #endif
 
-#if USE_POSIX_SEM
-	sem_post (&finalizer_sem);
+#ifdef MONO_HAS_SEMAPHORES
+	MONO_SEM_POST (&finalizer_sem);
 #else
 	SetEvent (finalizer_event);
 #endif
@@ -1009,8 +1000,8 @@ finalizer_thread (gpointer unused)
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
-#if USE_POSIX_SEM
-		sem_wait (&finalizer_sem);
+#ifdef MONO_HAS_SEMAPHORES
+		MONO_SEM_WAIT (&finalizer_sem);
 #else
 		/* Use alertable=FALSE since we will be asked to exit using the event too */
 		WaitForSingleObjectEx (finalizer_event, INFINITE, FALSE);
@@ -1069,8 +1060,8 @@ mono_gc_init (void)
 	if (finalizer_event == NULL || pending_done_event == NULL || shutdown_event == NULL) {
 		g_assert_not_reached ();
 	}
-#if USE_POSIX_SEM
-	sem_init (&finalizer_sem, 0, 0);
+#ifdef MONO_HAS_SEMAPHORES
+	MONO_SEM_INIT (&finalizer_sem, 0);
 #endif
 
 	gc_thread = mono_thread_create_internal (mono_domain_get (), finalizer_thread, NULL, FALSE);
