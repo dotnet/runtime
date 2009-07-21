@@ -749,7 +749,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\support\zlib_macros.c"
+				RelativePath="..\support\zlib-helper.c"
 				>
 			</File>
 			<File
