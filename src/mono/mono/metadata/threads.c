@@ -2524,6 +2524,12 @@ ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *value)
 	*((volatile void **) ptr) = value;
 }
 
+void
+ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, void *value)
+{
+	mono_gc_wbarrier_generic_store (ptr, value);
+}
+
 void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
 {

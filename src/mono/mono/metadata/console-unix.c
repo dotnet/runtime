@@ -417,7 +417,7 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 
 	/* 17 is the number of entries set in set_control_chars() above.
 	 * NCCS is the total size, but, by now, we only care about those 17 values*/
-	*control_chars = mono_array_new (mono_domain_get (), mono_defaults.byte_class, 17);
+	mono_gc_wbarrier_generic_store (control_chars, (MonoObject*) mono_array_new (mono_domain_get (), mono_defaults.byte_class, 17));
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
 		return FALSE;
 

@@ -1015,7 +1015,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 
 	if (values) {
 		int i;
-		*fields = mono_array_new (mono_domain_get (), mono_defaults.object_class, count);
+		mono_gc_wbarrier_generic_store (fields, (MonoObject*) mono_array_new (mono_domain_get (), mono_defaults.object_class, count));
 		for (i = 0; i < count; ++i)
 			mono_array_setref (*fields, i, values [i]);
 	} else {
@@ -1127,7 +1127,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 
 	if (values) {
 		int i;
-		*fields = mono_array_new (mono_domain_get (), mono_defaults.object_class, count);
+		mono_gc_wbarrier_generic_store (fields, (MonoObject*) mono_array_new (mono_domain_get (), mono_defaults.object_class, count));
 		for (i = 0; i < count; ++i)
 			mono_array_setref (*fields, i, values [i]);
 		return FALSE;
@@ -1622,9 +1622,9 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 		g_assert (mono_loader_get_last_error ());
 		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
 	}
-	
-	info->parent = mono_type_get_object (domain, &method->klass->byval_arg);
-	info->ret = mono_type_get_object (domain, sig->ret);
+
+	MONO_STRUCT_SETREF (info, parent, mono_type_get_object (domain, &method->klass->byval_arg));
+	MONO_STRUCT_SETREF (info, ret, mono_type_get_object (domain, sig->ret));
 	info->attrs = method->flags;
 	info->implattrs = method->iflags;
 	if (sig->call_convention == MONO_CALL_DEFAULT)
@@ -2016,20 +2016,20 @@ ves_icall_get_event_info (MonoReflectionMonoEvent *event, MonoEventInfo *info)
 
 	MONO_ARCH_SAVE_REGS;
 
-	info->reflected_type = mono_type_get_object (domain, &event->klass->byval_arg);
-	info->declaring_type = mono_type_get_object (domain, &event->event->parent->byval_arg);
+	MONO_STRUCT_SETREF (info, reflected_type, mono_type_get_object (domain, &event->klass->byval_arg));
+	MONO_STRUCT_SETREF (info, declaring_type, mono_type_get_object (domain, &event->event->parent->byval_arg));
 
-	info->name = mono_string_new (domain, event->event->name);
+	MONO_STRUCT_SETREF (info, name, mono_string_new (domain, event->event->name));
 	info->attrs = event->event->attrs;
-	info->add_method = event->event->add ? mono_method_get_object (domain, event->event->add, NULL): NULL;
-	info->remove_method = event->event->remove ? mono_method_get_object (domain, event->event->remove, NULL): NULL;
-	info->raise_method = event->event->raise ? mono_method_get_object (domain, event->event->raise, NULL): NULL;
+	MONO_STRUCT_SETREF (info, add_method, event->event->add ? mono_method_get_object (domain, event->event->add, NULL): NULL);
+	MONO_STRUCT_SETREF (info, remove_method, event->event->remove ? mono_method_get_object (domain, event->event->remove, NULL): NULL);
+	MONO_STRUCT_SETREF (info, raise_method, event->event->raise ? mono_method_get_object (domain, event->event->raise, NULL): NULL);
 
 	if (event->event->other) {
 		int i, n = 0;
 		while (event->event->other [n])
 			n++;
-		info->other_methods = mono_array_new (domain, mono_defaults.method_info_class, n);
+		MONO_STRUCT_SETREF (info, other_methods, mono_array_new (domain, mono_defaults.method_info_class, n));
 
 		for (i = 0; i < n; i++)
 			mono_array_setref (info->other_methods, i, mono_method_get_object (domain, event->event->other [i], NULL));
@@ -2119,8 +2119,8 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	len = mono_class_num_methods (iclass);
 	ioffset = mono_class_interface_offset (class, iclass);
 	domain = mono_object_domain (type);
-	*targets = mono_array_new (domain, mono_defaults.method_info_class, len);
-	*methods = mono_array_new (domain, mono_defaults.method_info_class, len);
+	mono_gc_wbarrier_generic_store (targets, (MonoObject*) mono_array_new (domain, mono_defaults.method_info_class, len));
+	mono_gc_wbarrier_generic_store (methods, (MonoObject*) mono_array_new (domain, mono_defaults.method_info_class, len));
 	iter = NULL;
 	iter = NULL;
 	while ((method = mono_class_get_methods (iclass, &iter))) {
@@ -3080,7 +3080,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (this) {
 			if (!mono_object_isinst (this, m->klass)) {
-				*exc = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Object does not match target type.");
+				mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Object does not match target type."));
 				return NULL;
 			}
 			m = mono_object_get_virtual_method (this, m);
@@ -3088,24 +3088,24 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 			if (m->klass->valuetype)
 				obj = mono_object_unbox (this);
 		} else if (strcmp (m->name, ".ctor") && !m->wrapper_type) {
-			*exc = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Non-static method requires a target.");
+			mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Non-static method requires a target."));
 			return NULL;
 		}
 	}
 
 	pcount = params? mono_array_length (params): 0;
 	if (pcount != mono_method_signature (m)->param_count) {
-		*exc = mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException");
+		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
 		return NULL;
 	}
 
 	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor") && !this) {
-		*exc = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Cannot invoke constructor of an abstract class.");
+		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Cannot invoke constructor of an abstract class."));
 		return NULL;
 	}
 
 	if (m->klass->image->assembly->ref_only) {
-		*exc = mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api.");
+		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api."));
 		return NULL;
 	}
 	
@@ -3173,7 +3173,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 						result = *((gpointer *)((char *)this + field->offset));
 				
 					out_args = mono_array_new (domain, mono_defaults.object_class, 1);
-					*outArgs = out_args;
+					mono_gc_wbarrier_generic_store (outArgs, (MonoObject*) out_args);
 					mono_array_setref (out_args, 0, result);
 					g_free (str);
 					return NULL;
@@ -3220,7 +3220,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 					}
 				
 					out_args = mono_array_new (domain, mono_defaults.object_class, 0);
-					*outArgs = out_args;
+					mono_gc_wbarrier_generic_store (outArgs, (MonoObject*) out_args);
 
 					g_free (str);
 					return NULL;
@@ -3259,7 +3259,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 		}
 	}
 
-	*outArgs = out_args;
+	mono_gc_wbarrier_generic_store (outArgs, (MonoObject*) out_args);
 
 	return result;
 }
@@ -3482,11 +3482,11 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 
 	MONO_ARCH_SAVE_REGS;
 
-	info->utype = mono_type_get_object (domain, mono_class_enum_basetype (enumc));
+	MONO_STRUCT_SETREF (info, utype, mono_type_get_object (domain, mono_class_enum_basetype (enumc)));
 	nvalues = mono_class_num_fields (enumc) ? mono_class_num_fields (enumc) - 1 : 0;
-	info->names = mono_array_new (domain, mono_defaults.string_class, nvalues);
-	info->values = mono_array_new (domain, enumc, nvalues);
-	
+	MONO_STRUCT_SETREF (info, names, mono_array_new (domain, mono_defaults.string_class, nvalues));
+	MONO_STRUCT_SETREF (info, values, mono_array_new (domain, enumc, nvalues));
+
 	crow = -1;
 	iter = NULL;
 	while ((field = mono_class_get_fields (enumc, &iter))) {
@@ -4813,7 +4813,7 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 	else
 		module = assembly->assembly->image;
 
-	*ref_module = mono_module_get_object (mono_domain_get (), module);
+	mono_gc_wbarrier_generic_store (ref_module, (MonoObject*) mono_module_get_object (mono_domain_get (), module));
 
 	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], (guint32*)size);
 }
@@ -6134,8 +6134,8 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 	MONO_CHECK_ARG_NULL (data);
 	MONO_CHECK_ARG_NULL (names);
 
-	(*data) = mono_array_new (domain, mono_defaults.int64_class, 4);
-	(*names) = mono_array_new (domain, mono_defaults.string_class, 2);
+	mono_gc_wbarrier_generic_store (data, (MonoObject*) mono_array_new (domain, mono_defaults.int64_class, 4));
+	mono_gc_wbarrier_generic_store (names, (MonoObject*) mono_array_new (domain, mono_defaults.string_class, 2));
 
 	/* 
 	 * no info is better than crashing: we'll need our own tz data
@@ -6233,8 +6233,8 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 	MONO_CHECK_ARG_NULL (data);
 	MONO_CHECK_ARG_NULL (names);
 
-	(*data) = mono_array_new (domain, mono_defaults.int64_class, 4);
-	(*names) = mono_array_new (domain, mono_defaults.string_class, 2);
+	mono_gc_wbarrier_generic_store (data, mono_array_new (domain, mono_defaults.int64_class, 4));
+	mono_gc_wbarrier_generic_store (names, mono_array_new (domain, mono_defaults.string_class, 2));
 
 	for (i = 0; i < 32; ++i)
 		if (!tz_info.DaylightName [i])

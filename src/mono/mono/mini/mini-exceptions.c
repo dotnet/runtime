@@ -626,7 +626,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ji_ctx));
 
-	*method = mono_method_get_object (domain, actual_method, NULL);
+	mono_gc_wbarrier_generic_store (method, (MonoObject*) mono_method_get_object (domain, actual_method, NULL));
 
 	location = mono_debug_lookup_source_location (ji->method, *native_offset, domain);
 	if (location)
@@ -636,7 +636,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	if (need_file_info) {
 		if (location) {
-			*file = mono_string_new (domain, location->source_file);
+			mono_gc_wbarrier_generic_store (file, (MonoObject*) mono_string_new (domain, location->source_file));
 			*line = location->row;
 			*column = location->column;
 		} else {
