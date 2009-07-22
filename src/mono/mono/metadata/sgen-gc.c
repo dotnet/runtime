@@ -456,8 +456,8 @@ safe_object_get_size (MonoObject* o)
 		MonoArray *array = (MonoArray*)o;
 		size_t size = sizeof (MonoArray) + mono_array_element_size (klass) * mono_array_length (array);
 		if (G_UNLIKELY (array->bounds)) {
-			size += 3;
-			size &= ~3;
+			size += sizeof (mono_array_size_t) - 1;
+			size &= ~(sizeof (mono_array_size_t) - 1);
 			size += sizeof (MonoArrayBounds) * klass->rank;
 		}
 		return size;
@@ -1313,9 +1313,6 @@ scan_area (char *start, char *end)
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
 			OBJ_VECTOR_FOREACH_PTR (vt, start);
-			if (type == DESC_TYPE_ARRAY) {
-				/* account for the bounds */
-			}
 			start += skip_size;
 			type_vector++;
 			continue;
@@ -1345,15 +1342,10 @@ scan_area (char *start, char *end)
 			continue;
 		} else if (type == DESC_TYPE_COMPLEX_ARR) {
 			/* this is an array of complex structs */
-			skip_size = mono_array_element_size (((MonoVTable*)vt)->klass);
-			skip_size *= mono_array_length ((MonoArray*)start);
-			skip_size += sizeof (MonoArray);
+			skip_size = safe_object_get_size ((MonoObject*)start);
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
 			OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
-			if (type == DESC_TYPE_ARRAY) {
-				/* account for the bounds */
-			}
 			start += skip_size;
 			type_complex++;
 			continue;
@@ -1435,9 +1427,6 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 			skip_size = safe_object_get_size ((MonoObject*)start);
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
-			if (type == DESC_TYPE_ARRAY) {
-				/* account for the bounds */
-			}
 			if (remove) memset (start, 0, skip_size);
 			start += skip_size;
 			continue;
@@ -1464,14 +1453,9 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 			continue;
 		} else if (type == DESC_TYPE_COMPLEX_ARR) {
 			/* this is an array of complex structs */
-			skip_size = mono_array_element_size (((MonoVTable*)vt)->klass);
-			skip_size *= mono_array_length ((MonoArray*)start);
-			skip_size += sizeof (MonoArray);
+			skip_size = safe_object_get_size ((MonoObject*)start);
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
-			if (type == DESC_TYPE_ARRAY) {
-				/* account for the bounds */
-			}
 			if (remove) memset (start, 0, skip_size);
 			start += skip_size;
 			continue;
@@ -5851,10 +5835,6 @@ check_remsets_for_area (char *start, char *end)
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
 			OBJ_VECTOR_FOREACH_PTR (vt, start);
-			if (((MonoArray*)start)->bounds) {
-				/* account for the bounds */
-				skip_size += sizeof (MonoArrayBounds) * vt->klass->rank;
-			}
 			start += skip_size;
 			type_vector++;
 			continue;
@@ -5884,16 +5864,10 @@ check_remsets_for_area (char *start, char *end)
 			continue;
 		} else if (type == DESC_TYPE_COMPLEX_ARR) {
 			/* this is an array of complex structs */
-			skip_size = mono_array_element_size (((MonoVTable*)vt)->klass);
-			skip_size *= mono_array_length ((MonoArray*)start);
-			skip_size += sizeof (MonoArray);
+			skip_size = safe_object_get_size ((MonoObject*)start);
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
 			OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
-			if (((MonoArray*)start)->bounds) {
-				/* account for the bounds */
-				skip_size += sizeof (MonoArrayBounds) * vt->klass->rank;
-			}
 			start += skip_size;
 			type_complex++;
 			continue;
