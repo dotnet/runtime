@@ -5569,7 +5569,8 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	rs = REMEMBERED_SET;
 	if (ptr_in_nursery (dest) || !ptr_in_heap (dest))
 		return;
-	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
+	mono_class_compute_gc_descriptor (klass);
+	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
 
 	if (rs->store_next + 3 < rs->end_set) {
 		*(rs->store_next++) = (mword)dest | REMSET_OTHER;
