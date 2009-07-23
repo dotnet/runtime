@@ -66,7 +66,7 @@
 #include "debug-mini.h"
 #include "mini-gc.h"
 
-static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
+static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
 
 /* helper methods signature */
 /* FIXME: Make these static again */
@@ -3972,12 +3972,13 @@ lookup_method (MonoDomain *domain, MonoMethod *method)
 }
 
 static gpointer
-mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt)
+mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt, MonoException **jit_ex)
 {
 	MonoCompile *cfg;
 	gpointer code = NULL;
 	MonoJitInfo *info;
 	MonoVTable *vtable;
+	MonoException *ex = NULL;
 
 #ifdef MONO_USE_AOT_COMPILER
 	if ((opt & MONO_OPT_AOT) && !(mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)) {
@@ -4068,7 +4069,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	case MONO_EXCEPTION_BAD_IMAGE: {
 		/* Throw a type load exception if needed */
 		MonoLoaderError *error = mono_loader_get_last_error ();
-		MonoException *ex;
 
 		if (error) {
 			ex = mono_loader_error_prepare_exception (error);
@@ -4090,34 +4090,20 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 					g_assert_not_reached ();
 			}
 		}
-		mono_destroy_compile (cfg);
-		mono_raise_exception (ex);
 		break;
 	}
-	case MONO_EXCEPTION_INVALID_PROGRAM: {
-		MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", cfg->exception_message);
-		mono_destroy_compile (cfg);
-		mono_raise_exception (ex);
+	case MONO_EXCEPTION_INVALID_PROGRAM:
+		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", cfg->exception_message);
 		break;
-	}
-	case MONO_EXCEPTION_UNVERIFIABLE_IL: {
-		MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.Security", "VerificationException", cfg->exception_message);
-		mono_destroy_compile (cfg);
-		mono_raise_exception (ex);
+	case MONO_EXCEPTION_UNVERIFIABLE_IL:
+		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.Security", "VerificationException", cfg->exception_message);
 		break;
-	}
-	case MONO_EXCEPTION_METHOD_ACCESS: {
-		MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", cfg->exception_message);
-		mono_destroy_compile (cfg);
-		mono_raise_exception (ex);
+	case MONO_EXCEPTION_METHOD_ACCESS:
+		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", cfg->exception_message);
 		break;
-	}
-	case MONO_EXCEPTION_FIELD_ACCESS: {
-		MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FieldAccessException", cfg->exception_message);
-		mono_destroy_compile (cfg);
-		mono_raise_exception (ex);
+	case MONO_EXCEPTION_FIELD_ACCESS:
+		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FieldAccessException", cfg->exception_message);
 		break;
-	}
 	/* this can only be set if the security manager is active */
 	case MONO_EXCEPTION_SECURITY_LINKDEMAND: {
 		MonoSecurityManager* secman = mono_security_manager_get_methods ();
@@ -4128,20 +4114,24 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		args [1] = &method;
 		mono_runtime_invoke (secman->linkdemandsecurityexception, NULL, args, &exc);
 
-		mono_destroy_compile (cfg);
-		cfg = NULL;
-
-		mono_raise_exception ((MonoException*)exc);
+		ex = (MonoException*)exc;
+		break;
 	}
 	case MONO_EXCEPTION_OBJECT_SUPPLIED: {
 		MonoException *exp = cfg->exception_ptr;
 		MONO_GC_UNREGISTER_ROOT (cfg->exception_ptr);
-		mono_destroy_compile (cfg);
-		mono_raise_exception (exp);
+
+		ex = exp;
 		break;
 	}
 	default:
 		g_assert_not_reached ();
+	}
+
+	if (ex) {
+		mono_destroy_compile (cfg);
+		*jit_ex = ex;
+		return NULL;
 	}
 
 	mono_loader_lock (); /*FIXME lookup_method_inner requires the loader lock*/
@@ -4205,11 +4195,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 }
 
 static gpointer
-mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
+mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex)
 {
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *info;
-	gpointer p;
+	gpointer code, p;
 	MonoJitICallInfo *callinfo = NULL;
 
 	/*
@@ -4246,7 +4236,11 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 		}
 	}
 
-	p = mono_create_ftnptr (target_domain, mono_jit_compile_method_inner (method, target_domain, opt));
+	code = mono_jit_compile_method_inner (method, target_domain, opt, ex);
+	if (!code)
+		return NULL;
+
+	p = mono_create_ftnptr (target_domain, code);
 
 	if (callinfo) {
 		mono_jit_lock ();
@@ -4264,7 +4258,16 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 gpointer
 mono_jit_compile_method (MonoMethod *method)
 {
-	return mono_jit_compile_method_with_opt (method, default_opt);
+	MonoException *ex = NULL;
+	gpointer code;
+
+	code = mono_jit_compile_method_with_opt (method, default_opt, &ex);
+	if (!code) {
+		g_assert (ex);
+		mono_raise_exception (ex);
+	}
+
+	return code;
 }
 
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
@@ -4413,7 +4416,19 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			 */
 			info->compiled_method = NULL;
 		} else {
-			info->compiled_method = mono_jit_compile_method (method);
+			MonoException *jit_ex = NULL;
+
+			info->compiled_method = mono_jit_compile_method_with_opt (method, default_opt, &jit_ex);
+			if (!info->compiled_method) {
+				g_free (info);
+				g_assert (jit_ex);
+				if (exc) {
+					*exc = (MonoObject*)jit_ex;
+					return NULL;
+				} else {
+					mono_raise_exception (jit_ex);
+				}
+			}
 
 			if (mono_method_needs_static_rgctx_invoke (method, FALSE))
 				info->compiled_method = mono_create_static_rgctx_trampoline (method, info->compiled_method);
