@@ -530,7 +530,11 @@ mono_runtime_setup_stat_profiler (void)
 pid_t
 mono_runtime_syscall_fork ()
 {
+#if defined(SYS_fork)
 	return (pid_t) syscall (SYS_fork);
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 gboolean
