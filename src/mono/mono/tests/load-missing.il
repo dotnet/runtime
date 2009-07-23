@@ -556,3 +556,40 @@
        extends [mscorlib]System.Object1
 {
 }
+
+.class public auto ansi CCtorClass
+        extends [mscorlib]System.Object     
+  {                                         
+
+    // method line 48
+    .method public hidebysig  specialname  rtspecialname 
+           instance default void '.ctor' ()  cil managed 
+    {                                                    
+        .maxstack 8                                      
+        IL_0000:  ldarg.0                                
+        IL_0001:  call instance void object::'.ctor'()   
+        IL_0006:  ret                                    
+    } // end of method CCtorClass::.ctor                 
+
+    // method line 49
+    .method private static  specialname  rtspecialname 
+           default void '.cctor' ()  cil managed       
+    {                                                  
+    IL_0000:  nop
+    IL_0001:  newobj     instance void [t]Missing.Foo2::.ctor()
+    IL_0006:  stloc.0
+    IL_0007:  ldloc.0
+    IL_0008:  callvirt   instance void [t]Missing.Foo2::missing()
+    IL_000d:  nop
+    IL_000e:  ret
+    } // end of method CCtorClass::.cctor                                    
+
+    // method line 50
+    .method public static  hidebysig 
+           default void foo ()  cil managed 
+    {                                       
+        .maxstack 8                         
+        IL_0000:  ret                       
+    } // end of method CCtorClass::foo      
+
+  } // end of class CCtorClass

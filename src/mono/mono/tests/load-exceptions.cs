@@ -258,6 +258,17 @@ public class Tests : LoadMissing {
 		return check_type_load (new TestDel (missing_outer));
 	}
 
+	// #524498
+	public static int test_0_exception_while_jitting_cctor () {
+		try {
+			CCtorClass.foo ();
+		} catch (TypeInitializationException) {
+			return 0;
+		}
+
+		return 1;
+	}
+
 #if FALSE
 	public static void missing_parent () {
 		new Miss1 ();
