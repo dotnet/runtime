@@ -145,6 +145,9 @@ typedef struct {
 #if defined(__FreeBSD__) || defined(__APPLE__)
 #include <ucontext.h>
 #endif 
+#if defined(__APPLE__)
+#include <AvailabilityMacros.h>
+#endif
 
 #if defined(__FreeBSD__)
 	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext.mc_eax)
@@ -156,7 +159,8 @@ typedef struct {
 	#define UCONTEXT_REG_ESI(ctx) ((ctx)->uc_mcontext.mc_esi)
 	#define UCONTEXT_REG_EDI(ctx) ((ctx)->uc_mcontext.mc_edi)
 	#define UCONTEXT_REG_EIP(ctx) ((ctx)->uc_mcontext.mc_eip)
-#elif defined(__APPLE__) && defined(_STRUCT_MCONTEXT)
+#elif defined(__APPLE__)
+#  if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5
 	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext->__ss.__eax)
 	#define UCONTEXT_REG_EBX(ctx) ((ctx)->uc_mcontext->__ss.__ebx)
 	#define UCONTEXT_REG_ECX(ctx) ((ctx)->uc_mcontext->__ss.__ecx)
@@ -166,7 +170,7 @@ typedef struct {
 	#define UCONTEXT_REG_ESI(ctx) ((ctx)->uc_mcontext->__ss.__esi)
 	#define UCONTEXT_REG_EDI(ctx) ((ctx)->uc_mcontext->__ss.__edi)
 	#define UCONTEXT_REG_EIP(ctx) ((ctx)->uc_mcontext->__ss.__eip)
-#elif defined(__APPLE__) && !defined(_STRUCT_MCONTEXT)
+#  else
 	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext->ss.eax)
 	#define UCONTEXT_REG_EBX(ctx) ((ctx)->uc_mcontext->ss.ebx)
 	#define UCONTEXT_REG_ECX(ctx) ((ctx)->uc_mcontext->ss.ecx)
@@ -176,6 +180,7 @@ typedef struct {
 	#define UCONTEXT_REG_ESI(ctx) ((ctx)->uc_mcontext->ss.esi)
 	#define UCONTEXT_REG_EDI(ctx) ((ctx)->uc_mcontext->ss.edi)
 	#define UCONTEXT_REG_EIP(ctx) ((ctx)->uc_mcontext->ss.eip)
+#  endif
 #elif defined(__NetBSD__)
 	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext.__gregs [_REG_EAX])
 	#define UCONTEXT_REG_EBX(ctx) ((ctx)->uc_mcontext.__gregs [_REG_EBX])
