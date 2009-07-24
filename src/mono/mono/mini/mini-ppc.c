@@ -51,6 +51,8 @@ enum {
 	PPC_MULTIPLE_LS_UNITS = 1 << 1,
 	PPC_SMP_CAPABLE       = 1 << 2,
 	PPC_ISA_2X            = 1 << 3,
+	PPC_ISA_64            = 1 << 4,
+	PPC_MOVE_FPR_GPR      = 1 << 5,
 	PPC_HW_CAP_END
 };
 
@@ -403,7 +405,7 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 				/* saved in the MonoLMF structure */
 				o = (gpointer)lmf->iregs [reg - 13];
 			} else {
-				o = regs [reg];
+				o = (gpointer)regs [reg];
 			}
 			break;
 		}
@@ -588,6 +590,12 @@ linux_find_auxv (int *count)
  * PPC_FEATURE_PA6T, PPC_FEATURE_ARCH_2_05 are considered supporting 2X ISA features
  */
 #define ISA_2X (0x00080000 | 0x00040000 | 0x00020000 | 0x00010000 | 0x00000800 | 0x00001000)
+
+/* define PPC_FEATURE_64 HWCAP for 64-bit category.  */
+#define ISA_64 0x40000000
+
+/* define PPC_FEATURE_POWER6_EXT HWCAP for power6x mffgpr/mftgpr instructions.  */
+#define ISA_MOVE_FPR_GPR 0x00000200
 /*
  * Initialize the cpu to execute managed code.
  */
@@ -631,10 +639,14 @@ mono_arch_cpu_init (void)
 				cpu_hw_caps |= PPC_ICACHE_SNOOP;
 			if (vec [i].value & ISA_2X)
 				cpu_hw_caps |= PPC_ISA_2X;
+			if (vec [i].value & ISA_64)
+				cpu_hw_caps |= PPC_ISA_64;
+			if (vec [i].value & ISA_MOVE_FPR_GPR)
+				cpu_hw_caps |= PPC_MOVE_FPR_GPR;
 			continue;
 		} else if (type == 15) { /* AT_PLATFORM */
 			const char *arch = (char*)vec [i].value;
-			if (strcmp (arch, "cell") == 0 || strcmp (arch, "ppc970") == 0 ||
+			if (strcmp (arch, "ppc970") == 0 ||
 					(strncmp (arch, "power", 5) == 0 && arch [5] >= '4' && arch [5] <= '7'))
 				cpu_hw_caps |= PPC_MULTIPLE_LS_UNITS;
 			/*printf ("cpu: %s\n", (char*)vec [i].value);*/
@@ -2171,28 +2183,34 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 #ifndef __mono_ppc64__
 	case OP_ICONV_TO_R4:
 	case OP_ICONV_TO_R8: {
-		/* FIXME: change precision for CEE_CONV_R4 */
-		static const guint64 adjust_val = 0x4330000080000000ULL;
-		int msw_reg = mono_alloc_ireg (cfg);
-		int xored = mono_alloc_ireg (cfg);
-		int adj_reg = mono_alloc_freg (cfg);
-		int tmp_reg = mono_alloc_freg (cfg);
-		int basereg = ppc_sp;
-		int offset = -8;
-		if (!ppc_is_imm16 (offset + 4)) {
-			basereg = mono_alloc_ireg (cfg);
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
+		/* If we have a PPC_FEATURE_64 machine we can avoid
+		   this and use the fcfid instruction.  Otherwise
+		   on an old 32-bit chip and we have to do this the
+		   hard way.  */
+		if (!(cpu_hw_caps & PPC_ISA_64)) {
+			/* FIXME: change precision for CEE_CONV_R4 */
+			static const guint64 adjust_val = 0x4330000080000000ULL;
+			int msw_reg = mono_alloc_ireg (cfg);
+			int xored = mono_alloc_ireg (cfg);
+			int adj_reg = mono_alloc_freg (cfg);
+			int tmp_reg = mono_alloc_freg (cfg);
+			int basereg = ppc_sp;
+			int offset = -8;
+			if (!ppc_is_imm16 (offset + 4)) {
+				basereg = mono_alloc_ireg (cfg);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
+			}
+			MONO_EMIT_NEW_ICONST (cfg, msw_reg, 0x43300000);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, msw_reg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, xored, ins->sreg1, 0x80000000);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, xored);
+			MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, (gpointer)&adjust_val);
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, basereg, offset);
+			MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
+			if (ins->opcode == OP_ICONV_TO_R4)
+				MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, ins->dreg, ins->dreg);
+			ins->opcode = OP_NOP;
 		}
-		MONO_EMIT_NEW_ICONST (cfg, msw_reg, 0x43300000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, msw_reg);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, xored, ins->sreg1, 0x80000000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, xored);
-		MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, (gpointer)&adjust_val);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, basereg, offset);
-		MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
-		if (ins->opcode == OP_ICONV_TO_R4)
-			MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, ins->dreg, ins->dreg);
-		ins->opcode = OP_NOP;
 		break;
 	}
 #endif
@@ -3814,7 +3832,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (cfg->stack_usage)) {
 				ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->stack_usage);
 			} else {
-				ppc_load (code, ppc_r11, cfg->stack_usage);
+				ppc_load32 (code, ppc_r11, cfg->stack_usage);
 				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
 			}
 			if (!cfg->method->save_lmf) {
@@ -4361,8 +4379,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				tmp = ins->sreg1;
 			}
-			ppc_stptr (code, tmp, -8, ppc_r1);
-			ppc_lfd (code, ins->dreg, -8, ppc_r1);
+			if (cpu_hw_caps & PPC_MOVE_FPR_GPR) {
+				ppc_mffgpr (code, ins->dreg, tmp);
+			} else {
+				ppc_stptr (code, tmp, -8, ppc_r1);
+				ppc_lfd (code, ins->dreg, -8, ppc_r1);
+			}
 			ppc_fcfid (code, ins->dreg, ins->dreg);
 			if (ins->opcode == OP_ICONV_TO_R4 || ins->opcode == OP_LCONV_TO_R4)
 				ppc_frsp (code, ins->dreg, ins->dreg);
@@ -4441,6 +4463,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 			ppc_patch (branch, loop);
 			ppc_mr (code, ins->dreg, ppc_r0);
+			break;
+		}
+#else
+		case OP_ICONV_TO_R4:
+		case OP_ICONV_TO_R8: {
+			if (cpu_hw_caps & PPC_ISA_64) {
+				ppc_srawi(code, ppc_r0, ins->sreg1, 31);
+				ppc_stw (code, ppc_r0, -8, ppc_r1);
+				ppc_stw (code, ins->sreg1, -4, ppc_r1);
+				ppc_lfd (code, ins->dreg, -8, ppc_r1);
+				ppc_fcfid (code, ins->dreg, ins->dreg);
+				if (ins->opcode == OP_ICONV_TO_R4)
+					ppc_frsp (code, ins->dreg, ins->dreg);
+				}
 			break;
 		}
 #endif
@@ -4677,14 +4713,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
 
-	/* We currently emit unwind info for aot, but don't use it */
-	mono_emit_unwind_op_def_cfa (cfg, code, ppc_r1, 0);
-
 	sig = mono_method_signature (method);
 	cfg->code_size = MONO_PPC_32_64_CASE (260, 384) + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
 	cfa_offset = 0;
+
+	/* We currently emit unwind info for aot, but don't use it */
+	mono_emit_unwind_op_def_cfa (cfg, code, ppc_r1, 0);
 
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
 		ppc_mflr (code, ppc_r0);
@@ -4851,6 +4887,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				}
 			} else if (ainfo->regtype == RegTypeBase) {
+				g_assert (ppc_is_imm16 (ainfo->offset));
 				/* load the previous stack pointer in r11 */
 				ppc_ldptr (code, ppc_r11, 0, ppc_sp);
 				ppc_ldptr (code, ppc_r0, ainfo->offset, ppc_r11);
@@ -4882,13 +4919,18 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 #else
 				case 8:
+					g_assert (ppc_is_imm16 (ainfo->offset + 4));
 					if (ppc_is_imm16 (inst->inst_offset + 4)) {
 						ppc_stw (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
 						ppc_lwz (code, ppc_r0, ainfo->offset + 4, ppc_r11);
 						ppc_stw (code, ppc_r0, inst->inst_offset + 4, inst->inst_basereg);
 					} else {
-						/* FIXME */
-						g_assert_not_reached ();
+						/* use r12 to load the 2nd half of the long before we clobber r11.  */
+						ppc_lwz (code, ppc_r12, ainfo->offset + 4, ppc_r11);
+						ppc_load (code, ppc_r11, inst->inst_offset);
+						ppc_add (code, ppc_r11, ppc_r11, inst->inst_basereg);
+						ppc_stw (code, ppc_r0, 0, ppc_r11);
+						ppc_stw (code, ppc_r12, 4, ppc_r11);
 					}
 					break;
 #endif
@@ -5164,7 +5206,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			else
 				ppc_addi (code, ppc_sp, ppc_sp, cfg->stack_usage);
 		} else {
-			ppc_load (code, ppc_r11, cfg->stack_usage);
+			ppc_load32 (code, ppc_r11, cfg->stack_usage);
 			if (cfg->used_int_regs) {
 				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
 				for (i = 31; i >= 13; --i) {
