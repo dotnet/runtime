@@ -127,6 +127,7 @@ enum {
 
 #define ppc_is_imm16(val) ((((val)>> 15) == 0) || (((val)>> 15) == -1))
 #define ppc_is_uimm16(val) ((glong)(val) >= 0L && (glong)(val) <= 65535L)
+#define ppc_ha(val) (((val >> 16) + ((val & 0x8000) ? 1 : 0)) & 0xffff)
 
 #define ppc_load32(c,D,v) G_STMT_START {	\
 		ppc_lis ((c), (D),      (guint32)(v) >> 16);	\
@@ -754,6 +755,23 @@ my and Ximian's copyright to this code. ;)
 
 /* PPC64 */
 
+/* The following FP instructions are not are available to 32-bit
+   implementations (prior to PowerISA-V2.01 but are available to
+   32-bit mode programs on 64-bit PowerPC implementations and all
+   processors compliant with PowerISA-2.01 or later.  */
+
+#define ppc_fcfidx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (846 << 1) | (Rc))
+#define ppc_fcfid(c,D,B)  ppc_fcfidx(c,D,B,0)
+#define ppc_fcfidd(c,D,B) ppc_fcfidx(c,D,B,1)
+
+#define ppc_fctidx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (814 << 1) | (Rc))
+#define ppc_fctid(c,D,B)  ppc_fctidx(c,D,B,0)
+#define ppc_fctidd(c,D,B) ppc_fctidx(c,D,B,1)
+
+#define ppc_fctidzx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (815 << 1) | (Rc))
+#define ppc_fctidz(c,D,B)  ppc_fctidzx(c,D,B,0)
+#define ppc_fctidzd(c,D,B) ppc_fctidzx(c,D,B,1)
+
 #ifdef __mono_ppc64__
 
 #define ppc_load_sequence(c,D,v) G_STMT_START {	\
@@ -840,17 +858,14 @@ my and Ximian's copyright to this code. ;)
 #define ppc_extsw(c,A,S)  ppc_extswx(c,S,A,0)
 #define ppc_extswd(c,A,S) ppc_extswx(c,S,A,1)
 
-#define ppc_fcfidx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (846 << 1) | (Rc))
-#define ppc_fcfid(c,D,B)  ppc_fcfidx(c,D,B,0)
-#define ppc_fcfidd(c,D,B) ppc_fcfidx(c,D,B,1)
-
-#define ppc_fctidx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (814 << 1) | (Rc))
-#define ppc_fctid(c,D,B)  ppc_fctidx(c,D,B,0)
-#define ppc_fctidd(c,D,B) ppc_fctidx(c,D,B,1)
-
-#define ppc_fctidzx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (815 << 1) | (Rc))
-#define ppc_fctidz(c,D,B)  ppc_fctidzx(c,D,B,0)
-#define ppc_fctidzd(c,D,B) ppc_fctidzx(c,D,B,1)
+/* These move float to/from instuctions are only available on POWER6 in
+   native mode.  These instruction are faster then the equivalent
+   store/load because they avoid the store queue and associated delays.
+   These instructions should only be used in 64-bit mode unless the
+   kernel preserves the 64-bit GPR on signals and dispatch in 32-bit
+   mode.  The Linux kernel does not.  */
+#define ppc_mftgpr(c,T,B) ppc_emit32(c, (31 << 26) | ((T) << 21) | (0 << 16) | ((B) << 11) | (735 << 1) | 0)
+#define ppc_mffgpr(c,T,B) ppc_emit32(c, (31 << 26) | ((T) << 21) | (0 << 16) | ((B) << 11) | (607 << 1) | 0)
 
 #define ppc_ld(c,D,ds,A) ppc_emit32(c, (58 << 26) | ((D) << 21) | ((A) << 16) | ((guint32)(ds) & 0xfffc) | 0)
 #define ppc_lwa(c,D,ds,A) ppc_emit32(c, (58 << 26) | ((D) << 21) | ((A) << 16) | ((ds) & 0xfffc) | 2)
@@ -930,6 +945,9 @@ my and Ximian's copyright to this code. ;)
 #define ppc_stdux(c,S,A,B)  ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (181 << 1) | 0)
 #define ppc_stdx(c,S,A,B)   ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | ((B) << 11) | (149 << 1) | 0)
 
+#else
+/* Always true for 32-bit */
+#define ppc_is_imm32(val) (1)
 #endif
 
 #endif
