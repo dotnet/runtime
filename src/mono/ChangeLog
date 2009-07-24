@@ -1,5 +1,10 @@
 2009-07-24  Jb Evain  <jbevain@novell.com>
 
+	* scripts/Makefile.am: generate a dmcs script for the 4.0 compiler
+	when building the net_4_0 profile.
+
+2009-07-24  Jb Evain  <jbevain@novell.com>
+
 	* configure.in
 	* runtime/Makefile.am
 	* data/Makefile.am: create a and populate a configuration folder
