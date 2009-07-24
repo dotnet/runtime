@@ -7043,21 +7043,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (2);
 			sp -= 2;
 
+			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (*ip), sp [0]->dreg, 0, sp [1]->dreg);
+			ins->flags |= ins_flag;
+			ins_flag = 0;
+			MONO_ADD_INS (bblock, ins);
+
 #if HAVE_WRITE_BARRIERS
 			if (*ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !((sp [1]->opcode == OP_PCONST) && (sp [1]->inst_p0 == 0))) {
 				/* insert call to write barrier */
 				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 				mono_emit_method_call (cfg, write_barrier, sp, NULL);
-				ins_flag = 0;
-				ip++;
-				break;
 			}
 #endif
 
-			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (*ip), sp [0]->dreg, 0, sp [1]->dreg);
-			ins->flags |= ins_flag;
-			ins_flag = 0;
-			MONO_ADD_INS (bblock, ins);
 			inline_costs += 1;
 			++ip;
 			break;
@@ -7979,6 +7977,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					MonoInst *store;
 
+					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
+
 #if HAVE_WRITE_BARRIERS
 				if (mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
 					/* insert call to write barrier */
@@ -7993,8 +7993,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 #endif
 
-					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
-						
 					store->flags |= ins_flag;
 				}
 				ins_flag = 0;

@@ -5491,7 +5491,7 @@ mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 }
 
 void
-mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
+mono_gc_wbarrier_generic_nostore (gpointer ptr, MonoObject* value)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
@@ -5514,7 +5514,13 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 	*(rs->store_next++) = (mword)ptr;
+}
+
+void
+mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
+{
 	*(void**)ptr = value;
+	mono_gc_wbarrier_generic_nostore (ptr, value);
 }
 
 void
@@ -6590,12 +6596,6 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_ldloc (mb, next_var);
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 
-		// *(void**)ptr = value;
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ldarg (mb, 1);
-		mono_mb_emit_byte (mb, CEE_STIND_I);
-		mono_mb_emit_byte (mb, CEE_RET);
-
 		/* write barrier slow path */
 		mono_mb_patch_branch (mb, label2);
 	}
@@ -6603,7 +6603,7 @@ mono_gc_get_write_barrier (void)
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
-	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_store);
+	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_method (mb, sig, 16);
