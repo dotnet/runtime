@@ -827,10 +827,10 @@ ves_icall_System_Array_SetGenericValueImpl (MonoObject *this, guint32 pos, gpoin
 	if (MONO_TYPE_IS_REFERENCE (&ec->byval_arg)) {
 		g_assert (esize == sizeof (gpointer));
 		mono_gc_wbarrier_generic_store (ea, *(gpointer*)value);
-	} else if (ec->has_references) {
-		g_assert (ec->inited);
-		mono_gc_wbarrier_value_copy (ea, value, 1, ec);
 	} else {
+		g_assert (ec->inited);
+		if (ec->has_references)
+			mono_gc_wbarrier_value_copy (ea, value, 1, ec);
 		memcpy (ea, value, esize);
 	}
 }
