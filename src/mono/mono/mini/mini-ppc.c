@@ -3313,34 +3313,49 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_stb (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_stbx (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset)) {
+					ppc_addis (code, ppc_r12, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_stb (code, ins->sreg1, ins->inst_offset, ppc_r12);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_stbx (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_STOREI2_MEMBASE_REG:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_sth (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_sthx (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset)) {
+					ppc_addis (code, ppc_r12, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_sth (code, ins->sreg1, ins->inst_offset, ppc_r12);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_sthx (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_STORE_MEMBASE_REG:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_stptr (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_stptr_indexed (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset)) {
+					ppc_addis (code, ppc_r12, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_stptr (code, ins->sreg1, ins->inst_offset, ppc_r12);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_stptr_indexed (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_STOREI1_MEMINDEX:
-			ppc_stbx (code, ins->sreg1, ins->sreg2, ins->inst_destbasereg);
+			ppc_stbx (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
 			break;
 		case OP_STOREI2_MEMINDEX:
-			ppc_sthx (code, ins->sreg1, ins->sreg2, ins->inst_destbasereg);
+			ppc_sthx (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
 			break;
 		case OP_STORE_MEMINDEX:
-			ppc_stptr_indexed (code, ins->sreg1, ins->sreg2, ins->inst_destbasereg);
+			ppc_stptr_indexed (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
 			break;
 		case OP_LOADU4_MEM:
 			g_assert_not_reached ();
@@ -3349,8 +3364,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_ldptr (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_ldptr_indexed (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
+					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
+					ppc_ldptr (code, ins->dreg, ins->inst_offset, ins->dreg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_ldptr_indexed (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_LOADI4_MEMBASE:
@@ -3358,8 +3378,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_lwa (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_lwax (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
+					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
+					ppc_lwa (code, ins->dreg, ins->inst_offset, ins->dreg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_lwax (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			}
 			break;
 #endif
@@ -3367,8 +3392,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_lwz (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_lwzx (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
+					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
+					ppc_lwz (code, ins->dreg, ins->inst_offset, ins->dreg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_lwzx (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_LOADI1_MEMBASE:
@@ -3376,8 +3406,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_lbz (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_lbzx (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
+					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
+					ppc_lbz (code, ins->dreg, ins->inst_offset, ins->dreg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_lbzx (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			}
 			if (ins->opcode == OP_LOADI1_MEMBASE)
 				ppc_extsb (code, ins->dreg, ins->dreg);
@@ -3386,40 +3421,50 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_lhz (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_lhzx (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
+					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
+					ppc_lhz (code, ins->dreg, ins->inst_offset, ins->dreg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_lhzx (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_LOADI2_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_lha (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_lhax (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
+					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
+					ppc_lha (code, ins->dreg, ins->inst_offset, ins->dreg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_lhax (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_LOAD_MEMINDEX:
-			ppc_ldptr_indexed (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_ldptr_indexed (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADI4_MEMINDEX:
 #ifdef __mono_ppc64__
-			ppc_lwax (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_lwax (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 #endif
 		case OP_LOADU4_MEMINDEX:
-			ppc_lwzx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_lwzx (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADU2_MEMINDEX:
-			ppc_lhzx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_lhzx (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADI2_MEMINDEX:
-			ppc_lhax (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_lhax (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADU1_MEMINDEX:
-			ppc_lbzx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_lbzx (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADI1_MEMINDEX:
-			ppc_lbzx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_lbzx (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			ppc_extsb (code, ins->dreg, ins->dreg);
 			break;
 		case OP_ICONV_TO_I1:
@@ -3832,8 +3877,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (cfg->stack_usage)) {
 				ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->stack_usage);
 			} else {
-				ppc_load32 (code, ppc_r11, cfg->stack_usage);
-				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
+				/* cfg->stack_usage is an int, so we can use
+				 * an addis/addi sequence here even in 64-bit.  */
+				ppc_addis (code, ppc_r11, cfg->frame_reg, ppc_ha(cfg->stack_usage));
+				ppc_addi (code, ppc_r11, ppc_r11, cfg->stack_usage);
 			}
 			if (!cfg->method->save_lmf) {
 				/*for (i = 31; i >= 14; --i) {
@@ -4148,16 +4195,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_stfd (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_stfdx (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset)) {
+					ppc_addis (code, ppc_r12, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_stfd (code, ins->sreg1, ins->inst_offset, ppc_r12);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_stfdx (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_LOADR8_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_lfd (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_lfdx (code, ins->dreg, ins->inst_destbasereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset)) {
+					ppc_addis (code, ppc_r12, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_lfd (code, ins->dreg, ins->inst_offset, ppc_r12);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_lfdx (code, ins->dreg, ins->inst_destbasereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_STORER4_MEMBASE_REG:
@@ -4165,30 +4222,40 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_stfs (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_stfsx (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset)) {
+					ppc_addis (code, ppc_r12, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_stfs (code, ins->sreg1, ins->inst_offset, ppc_r12);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_stfsx (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_LOADR4_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_lfs (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
-				ppc_load (code, ppc_r0, ins->inst_offset);
-				ppc_lfsx (code, ins->dreg, ins->inst_destbasereg, ppc_r0);
+				if (ppc_is_imm32 (ins->inst_offset)) {
+					ppc_addis (code, ppc_r12, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_lfs (code, ins->dreg, ins->inst_offset, ppc_r12);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_lfsx (code, ins->dreg, ins->inst_destbasereg, ppc_r0);
+				}
 			}
 			break;
 		case OP_LOADR4_MEMINDEX:
-			ppc_lfsx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_lfsx (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_LOADR8_MEMINDEX:
-			ppc_lfdx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			ppc_lfdx (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
 		case OP_STORER4_MEMINDEX:
 			ppc_frsp (code, ins->sreg1, ins->sreg1);
-			ppc_stfsx (code, ins->sreg1, ins->sreg2, ins->inst_destbasereg);
+			ppc_stfsx (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
 			break;
 		case OP_STORER8_MEMINDEX:
-			ppc_stfdx (code, ins->sreg1, ins->sreg2, ins->inst_destbasereg);
+			ppc_stfdx (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
 			break;
 		case CEE_CONV_R_UN:
 		case CEE_CONV_R4: /* FIXME: change precision */
@@ -4843,16 +4910,26 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					if (ppc_is_imm16 (inst->inst_offset)) {
 						ppc_stb (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stbx (code, ainfo->reg, ppc_r11, inst->inst_basereg);
+						if (ppc_is_imm32 (inst->inst_offset)) {
+							ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+							ppc_stb (code, ainfo->reg, ppc_r11, inst->inst_offset);
+						} else {
+							ppc_load (code, ppc_r11, inst->inst_offset);
+							ppc_stbx (code, ainfo->reg, inst->inst_basereg, ppc_r11);
+						}
 					}
 					break;
 				case 2:
 					if (ppc_is_imm16 (inst->inst_offset)) {
 						ppc_sth (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_sthx (code, ainfo->reg, ppc_r11, inst->inst_basereg);
+						if (ppc_is_imm32 (inst->inst_offset)) {
+							ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+							ppc_sth (code, ainfo->reg, ppc_r11, inst->inst_offset);
+						} else {
+							ppc_load (code, ppc_r11, inst->inst_offset);
+							ppc_sthx (code, ainfo->reg, inst->inst_basereg, ppc_r11);
+						}
 					}
 					break;
 #ifdef __mono_ppc64__
@@ -4860,8 +4937,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					if (ppc_is_imm16 (inst->inst_offset)) {
 						ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stwx (code, ainfo->reg, ppc_r11, inst->inst_basereg);
+						if (ppc_is_imm32 (inst->inst_offset)) {
+							ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+							ppc_stw (code, ainfo->reg, ppc_r11, inst->inst_offset);
+						} else {
+							ppc_load (code, ppc_r11, inst->inst_offset);
+							ppc_stwx (code, ainfo->reg, inst->inst_basereg, ppc_r11);
+						}
 					}
 					break;
 #else
@@ -4870,8 +4952,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 						ppc_stw (code, ainfo->reg + 1, inst->inst_offset + 4, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_add (code, ppc_r11, ppc_r11, inst->inst_basereg);
+						ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+						ppc_addi (code, ppc_r11, ppc_r11, inst->inst_offset);
 						ppc_stw (code, ainfo->reg, 0, ppc_r11);
 						ppc_stw (code, ainfo->reg + 1, 4, ppc_r11);
 					}
@@ -4881,8 +4963,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					if (ppc_is_imm16 (inst->inst_offset)) {
 						ppc_stptr (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stptr_indexed (code, ainfo->reg, ppc_r11, inst->inst_basereg);
+						if (ppc_is_imm32 (inst->inst_offset)) {
+							ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+							ppc_stptr (code, ainfo->reg, ppc_r11, inst->inst_offset);
+						} else {
+							ppc_load (code, ppc_r11, inst->inst_offset);
+							ppc_stptr_indexed (code, ainfo->reg, inst->inst_basereg, ppc_r11);
+						}
 					}
 					break;
 				}
@@ -4896,16 +4983,26 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					if (ppc_is_imm16 (inst->inst_offset)) {
 						ppc_stb (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stbx (code, ppc_r0, ppc_r11, inst->inst_basereg);
+						if (ppc_is_imm32 (inst->inst_offset)) {
+							ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+							ppc_stb (code, ppc_r0, ppc_r11, inst->inst_offset);
+						} else {
+							ppc_load (code, ppc_r11, inst->inst_offset);
+							ppc_stbx (code, ppc_r0, inst->inst_basereg, ppc_r11);
+						}
 					}
 					break;
 				case 2:
 					if (ppc_is_imm16 (inst->inst_offset)) {
 						ppc_sth (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_sthx (code, ppc_r0, ppc_r11, inst->inst_basereg);
+						if (ppc_is_imm32 (inst->inst_offset)) {
+							ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+							ppc_sth (code, ppc_r0, ppc_r11, inst->inst_offset);
+						} else {
+							ppc_load (code, ppc_r11, inst->inst_offset);
+							ppc_sthx (code, ppc_r0, inst->inst_basereg, ppc_r11);
+						}
 					}
 					break;
 #ifdef __mono_ppc64__
@@ -4913,8 +5010,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					if (ppc_is_imm16 (inst->inst_offset)) {
 						ppc_stw (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stwx (code, ppc_r0, ppc_r11, inst->inst_basereg);
+						if (ppc_is_imm32 (inst->inst_offset)) {
+							ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+							ppc_stw (code, ppc_r0, ppc_r11, inst->inst_offset);
+						} else {
+							ppc_load (code, ppc_r11, inst->inst_offset);
+							ppc_stwx (code, ppc_r0, inst->inst_basereg, ppc_r11);
+						}
 					}
 					break;
 #else
@@ -4927,8 +5029,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					} else {
 						/* use r12 to load the 2nd half of the long before we clobber r11.  */
 						ppc_lwz (code, ppc_r12, ainfo->offset + 4, ppc_r11);
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_add (code, ppc_r11, ppc_r11, inst->inst_basereg);
+						ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+						ppc_addi (code, ppc_r11, ppc_r11, inst->inst_offset);
 						ppc_stw (code, ppc_r0, 0, ppc_r11);
 						ppc_stw (code, ppc_r12, 4, ppc_r11);
 					}
@@ -4938,8 +5040,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					if (ppc_is_imm16 (inst->inst_offset)) {
 						ppc_stptr (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
 					} else {
-						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_stptr_indexed (code, ppc_r0, ppc_r11, inst->inst_basereg);
+						if (ppc_is_imm32 (inst->inst_offset)) {
+							ppc_addis (code, ppc_r11, inst->inst_basereg, ppc_ha(inst->inst_offset));
+							ppc_stptr (code, ppc_r0, ppc_r11, inst->inst_offset);
+						} else {
+							ppc_load (code, ppc_r11, inst->inst_offset);
+							ppc_stptr_indexed (code, ppc_r0, inst->inst_basereg, ppc_r11);
+						}
 					}
 					break;
 				}
