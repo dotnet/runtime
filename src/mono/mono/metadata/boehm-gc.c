@@ -532,7 +532,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 }
 
 void
-mono_gc_wbarrier_generic_nostore (gpointer ptr, MonoObject* value)
+mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
 }
 

@@ -5491,20 +5491,18 @@ mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 }
 
 void
-mono_gc_wbarrier_generic_nostore (gpointer ptr, MonoObject* value)
+mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
 	if (ptr_in_nursery (ptr) || !ptr_in_heap (ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
-		*(void**)ptr = value;
 		return;
 	}
 	rs = REMEMBERED_SET;
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
+	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)ptr;
-		*(void**)ptr = value;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
@@ -5519,8 +5517,9 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr, MonoObject* value)
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
+	DEBUG (8, fprintf (gc_debug_file, "Wbarrier store at %p to %p (%s)\n", ptr, value, value ? safe_name (value) : "null"));
 	*(void**)ptr = value;
-	mono_gc_wbarrier_generic_nostore (ptr, value);
+	mono_gc_wbarrier_generic_nostore (ptr);
 }
 
 void
@@ -6511,10 +6510,9 @@ mono_gc_get_write_barrier (void)
 		return write_barrier_method;
 
 	/* Create the IL version of mono_gc_barrier_generic_store () */
-	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 	sig->ret = &mono_defaults.void_class->byval_arg;
 	sig->params [0] = &mono_defaults.int_class->byval_arg;
-	sig->params [1] = &mono_defaults.object_class->byval_arg;
 
 	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
 
@@ -6550,11 +6548,6 @@ mono_gc_get_write_barrier (void)
 		/* Don't need write barrier case */
 		mono_mb_patch_branch (mb, label_no_wb);
 
-		/* do the assignment */
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ldarg (mb, 1);
-		/* Don't use STIND_REF, as it would cause infinite recursion */
-		mono_mb_emit_byte (mb, CEE_STIND_I);
 		mono_mb_emit_byte (mb, CEE_RET);
 
 		/* Need write barrier case */
@@ -6602,7 +6595,6 @@ mono_gc_get_write_barrier (void)
 #endif
 
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
 	mono_mb_emit_byte (mb, CEE_RET);
 

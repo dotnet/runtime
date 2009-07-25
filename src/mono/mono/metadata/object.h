@@ -332,7 +332,7 @@ void mono_gc_wbarrier_set_field     (MonoObject *obj, gpointer field_ptr, MonoOb
 void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
 void mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count);
 void mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value);
-void mono_gc_wbarrier_generic_nostore (gpointer ptr, MonoObject* value);
+void mono_gc_wbarrier_generic_nostore (gpointer ptr);
 void mono_gc_wbarrier_value_copy    (gpointer dest, gpointer src, int count, MonoClass *klass);
 void mono_gc_wbarrier_object        (MonoObject* obj);
 

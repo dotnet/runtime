@@ -244,7 +244,7 @@ mono_marshal_init (void)
 		register_icall (mono_context_set, "mono_context_set", "void object", FALSE);
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
-		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr object", FALSE);
+		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
 		register_icall (runtime_invoke_reset_abort, "runtime_invoke_reset_abort", "void object", FALSE);
 
 		mono_cominterop_init ();
