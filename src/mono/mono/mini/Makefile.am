@@ -582,7 +582,7 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(posix_sources)
 
 version.h: Makefile
-	if test -d $(top_srcdir)/.git/svn; then svn_info="git log --no-color --first-parent -n1 --grep=git-svn-id: --pretty=format:%b | sed -e 's,git-svn-id: \(.*\)@\(.*\) .*,URL: \1 Revision: \2,'"; fi; \
+	if test -d $(top_srcdir)/.git/svn; then svn_info="git log --no-color --first-parent -n1 --grep=git-svn-id: --pretty=format:%b | sed -n -e 's,git-svn-id: \(.*\)@\(.*\) .*,URL: \1 Revision: \2,p'"; fi; \
 	if test -d $(srcdir)/.svn; then svn_info='svn info'; fi; \
 	if test -n "$$svn_info"; then \
 		(cd $(top_srcdir); \
