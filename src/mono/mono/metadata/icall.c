@@ -4215,6 +4215,9 @@ ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint3
 	
 	MONO_ARCH_SAVE_REGS;
 
+	if (name == NULL)
+		mono_raise_exception (mono_get_exception_argument_null ("name"));
+	
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref)
 		return NULL;
