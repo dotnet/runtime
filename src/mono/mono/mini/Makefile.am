@@ -582,13 +582,13 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(posix_sources)
 
 version.h: Makefile
-	if test -d $(top_srcdir)/.git/svn; then svn_info="echo \"`git log --no-color --first-parent --pretty=format:%b|grep -m1 git-svn-id|sed -e 's,git-svn-id: \(.*\)@\(.*\) .*,URL: \1 Revision: \2,'`"; fi; \
+	if test -d $(top_srcdir)/.git/svn; then svn_info="git log --no-color --first-parent -n1 --grep=git-svn-id: --pretty=format:%b | sed -e 's,git-svn-id: \(.*\)@\(.*\) .*,URL: \1 Revision: \2,'"; fi; \
 	if test -d $(srcdir)/.svn; then svn_info='svn info'; fi; \
 	if test -n "$$svn_info"; then \
 		(cd $(top_srcdir); \
 			LANG=C; export LANG; \
-			branch=`$$svn_info | grep URL | sed -e 's,.*source/\(.*\)/mono.*,/\1/mono,'`; \
-			version=`$$svn_info | grep Revision | sed 's/.*: //'`; \
+			branch=`eval $$svn_info | sed -n -e '/URL/ s,.*source/\(.*\)/mono.*,/\1/mono,p'`; \
+			version=`eval $$svn_info | sed -n -e '/Revision/ s/.*: //p'`; \
 			echo "#define FULL_VERSION \"$$branch r$$version\""; \
 		); \
 	else \
