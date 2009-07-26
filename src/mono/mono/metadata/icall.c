@@ -4095,21 +4095,20 @@ handle_parent:
 				if ((klass != startklass) && (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PRIVATE)
 					continue;
 			}
-		}
-		else
+
+			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+				if (!(bflags & BFLAGS_Static))
+					continue;
+				if (!(bflags & BFLAGS_FlattenHierarchy) && (klass != startklass))
+					continue;
+			} else {
+				if (!(bflags & BFLAGS_Instance))
+					continue;
+			}
+		} else 
 			if (!(bflags & BFLAGS_NonPublic))
 				continue;
-
-		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-			if (!(bflags & BFLAGS_Static))
-				continue;
-			if (!(bflags & BFLAGS_FlattenHierarchy) && (klass != startklass))
-				continue;
-		} else {
-			if (!(bflags & BFLAGS_Instance))
-				continue;
-		}
-
+		
 		g_free (event_name);
 		return mono_event_get_object (domain, startklass, event);
 	}
