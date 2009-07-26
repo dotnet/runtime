@@ -111,6 +111,9 @@ enum Token {
 static int
 get_token (void)
 {
+	while (input [0] == '+')
+		input++;
+
 	if (input [0] == '\0') {
 		return TOKEN_END;
 	}
