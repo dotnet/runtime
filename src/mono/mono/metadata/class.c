@@ -6206,6 +6206,10 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		type = &type->data.generic_class->container_class->byval_arg;
 		goto handle_enum;
+
+	case MONO_TYPE_VOID:
+		return 0;
+		
 	default:
 		g_error ("unknown type 0x%02x in mono_class_array_element_size", type->type);
 	}
