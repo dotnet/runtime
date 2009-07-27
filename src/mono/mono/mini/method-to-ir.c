@@ -3966,17 +3966,16 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #ifdef MONO_ARCH_HAVE_ATOMIC_EXCHANGE
 		if (strcmp (cmethod->name, "Exchange") == 0) {
 			guint32 opcode;
+			gboolean is_ref = fsig->params [0]->type == MONO_TYPE_OBJECT;
 
 			if (fsig->params [0]->type == MONO_TYPE_I4)
 				opcode = OP_ATOMIC_EXCHANGE_I4;
 #if SIZEOF_REGISTER == 8
-			else if ((fsig->params [0]->type == MONO_TYPE_I8) ||
-					 (fsig->params [0]->type == MONO_TYPE_I) ||
-					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
+			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I8) ||
+					(fsig->params [0]->type == MONO_TYPE_I))
 				opcode = OP_ATOMIC_EXCHANGE_I8;
 #else
-			else if ((fsig->params [0]->type == MONO_TYPE_I) ||
-					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
+			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I))
 				opcode = OP_ATOMIC_EXCHANGE_I4;
 #endif
 			else
@@ -4003,15 +4002,23 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			default:
 				g_assert_not_reached ();
 			}
+
+#if HAVE_WRITE_BARRIERS
+			if (is_ref) {
+				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
+				mono_emit_method_call (cfg, write_barrier, &args [0], NULL);
+			}
+#endif
 		}
 #endif /* MONO_ARCH_HAVE_ATOMIC_EXCHANGE */
  
 #ifdef MONO_ARCH_HAVE_ATOMIC_CAS
 		if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
 			int size = 0;
+			gboolean is_ref = MONO_TYPE_IS_REFERENCE (fsig->params [1]);
 			if (fsig->params [1]->type == MONO_TYPE_I4)
 				size = 4;
-			else if (fsig->params [1]->type == MONO_TYPE_I || MONO_TYPE_IS_REFERENCE (fsig->params [1]))
+			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I)
 				size = sizeof (gpointer);
 			else if (sizeof (gpointer) == 8 && fsig->params [1]->type == MONO_TYPE_I4)
 				size = 8;
@@ -4034,6 +4041,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			} else {
 				/* g_assert_not_reached (); */
 			}
+#if HAVE_WRITE_BARRIERS
+			if (is_ref) {
+				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
+				mono_emit_method_call (cfg, write_barrier, &args [0], NULL);
+			}
+#endif
 		}
 #endif /* MONO_ARCH_HAVE_ATOMIC_CAS */
 

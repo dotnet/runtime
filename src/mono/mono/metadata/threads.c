@@ -1751,9 +1751,15 @@ gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location, gi
 
 MonoObject * ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject **location, MonoObject *value)
 {
-	MONO_ARCH_SAVE_REGS;
+	MonoObject *res;
+	res = (MonoObject *) InterlockedExchangePointer((gpointer *) location, value);
+	mono_gc_wbarrier_generic_nostore (location);
+	return res;
+}
 
-	return (MonoObject *) InterlockedExchangePointer((gpointer *) location, value);
+gpointer ves_icall_System_Threading_Interlocked_Exchange_IntPtr (gpointer *location, gpointer value)
+{
+	return InterlockedExchangePointer(location, value);
 }
 
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location, gfloat value)
@@ -1824,9 +1830,15 @@ gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *locati
 
 MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject **location, MonoObject *value, MonoObject *comparand)
 {
-	MONO_ARCH_SAVE_REGS;
+	MonoObject *res;
+	res = (MonoObject *) InterlockedCompareExchangePointer((gpointer *) location, value, comparand);
+	mono_gc_wbarrier_generic_nostore (location);
+	return res;
+}
 
-	return (MonoObject *) InterlockedCompareExchangePointer((gpointer *) location, value, comparand);
+gpointer ves_icall_System_Threading_Interlocked_CompareExchange_IntPtr(gpointer *location, gpointer value, gpointer comparand)
+{
+	return InterlockedCompareExchangePointer(location, value, comparand);
 }
 
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location, gfloat value, gfloat comparand)
@@ -1887,17 +1899,19 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location, g
 MonoObject*
 ves_icall_System_Threading_Interlocked_CompareExchange_T (MonoObject **location, MonoObject *value, MonoObject *comparand)
 {
-	MONO_ARCH_SAVE_REGS;
-
-	return InterlockedCompareExchangePointer ((gpointer *)location, value, comparand);
+	MonoObject *res;
+	res = InterlockedCompareExchangePointer ((gpointer *)location, value, comparand);
+	mono_gc_wbarrier_generic_nostore (location);
+	return res;
 }
 
 MonoObject*
 ves_icall_System_Threading_Interlocked_Exchange_T (MonoObject **location, MonoObject *value)
 {
-	MONO_ARCH_SAVE_REGS;
-
-	return InterlockedExchangePointer ((gpointer *)location, value);
+	MonoObject *res;
+	res = InterlockedExchangePointer ((gpointer *)location, value);
+	mono_gc_wbarrier_generic_nostore (location);
+	return res;
 }
 
 gint32 
