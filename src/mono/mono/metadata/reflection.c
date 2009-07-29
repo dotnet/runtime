@@ -8581,7 +8581,10 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		MonoReflectionArrayType *sre_array = (MonoReflectionArrayType*)ref;
 		MonoType *base = mono_reflection_type_get_handle (sre_array->element_type);
 		g_assert (base);
-		res = &mono_array_class_get (mono_class_from_mono_type (base), sre_array->rank)->byval_arg;
+		if (sre_array->rank == 0) //single dimentional array
+			res = &mono_array_class_get (mono_class_from_mono_type (base), 1)->byval_arg;
+		else
+			res = &mono_bounded_array_class_get (mono_class_from_mono_type (base), sre_array->rank, TRUE)->byval_arg;
 		sre_array->type.type = res;
 		return res;
 	} else if (is_sre_byref (class)) {
