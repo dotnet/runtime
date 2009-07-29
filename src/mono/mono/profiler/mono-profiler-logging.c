@@ -317,6 +317,42 @@ typedef struct _LoadedElement {
 	guint8 unloaded;
 	guint8 unload_written;
 } LoadedElement;
+struct _ProfilerCodeBufferArray;
+typedef struct _ProfilerCodeBuffer {
+	gpointer start;
+	gpointer end;
+	struct {
+		union {
+			MonoMethod *method;
+			MonoClass *klass;
+			void *data;
+			struct _ProfilerCodeBufferArray *sub_buffers;
+		} data;
+		guint16 value;
+		guint16 type;
+	} info;
+} ProfilerCodeBuffer;
+
+#define PROFILER_CODE_BUFFER_ARRAY_SIZE 64
+typedef struct _ProfilerCodeBufferArray {
+	int level;
+	int number_of_buffers;
+	ProfilerCodeBuffer buffers [PROFILER_CODE_BUFFER_ARRAY_SIZE];
+} ProfilerCodeBufferArray;
+
+typedef struct _ProfilerCodeChunk {
+	gpointer start;
+	gpointer end;
+	gboolean destroyed;
+	ProfilerCodeBufferArray *buffers;
+} ProfilerCodeChunk;
+
+typedef struct _ProfilerCodeChunks {
+	int capacity;
+	int number_of_chunks;;
+	ProfilerCodeChunk *chunks;
+} ProfilerCodeChunks;
+
 
 #define PROFILER_HEAP_SHOT_OBJECT_BUFFER_SIZE 1024
 #define PROFILER_HEAP_SHOT_HEAP_BUFFER_SIZE 4096
@@ -835,6 +871,8 @@ struct _MonoProfiler {
 	ProfilerStatisticalData *statistical_data_ready;
 	ProfilerStatisticalData *statistical_data_second_buffer;
 	int statistical_call_chain_depth;
+	
+	ProfilerCodeChunks code_chunks;
 	
 	THREAD_TYPE data_writer_thread;
 	EVENT_TYPE enable_data_writer_event;
@@ -1901,6 +1939,286 @@ static void
 profiler_statistical_data_destroy (ProfilerStatisticalData *data) {
 	g_free (data->hits);
 	g_free (data);
+}
+
+static ProfilerCodeBufferArray*
+profiler_code_buffer_array_new (ProfilerCodeBufferArray *child) {
+	ProfilerCodeBufferArray *result = g_new0 (ProfilerCodeBufferArray, 1);
+	if (child == NULL) {
+		result->level = 0;
+	} else {
+		result->level = child->level + 1;
+		result->number_of_buffers = 1;
+		result->buffers [0].info.data.sub_buffers = child;
+		result->buffers [0].start = child->buffers [0].start;
+		result->buffers [0].end = child->buffers [child->number_of_buffers - 1].end;
+	}
+	return result;
+}
+
+static void
+profiler_code_buffer_array_destroy (ProfilerCodeBufferArray *buffers) {
+	if (buffers->level > 0) {
+		int i;
+		for (i = 0; i < buffers->number_of_buffers; i++) {
+			ProfilerCodeBufferArray *sub_buffers = buffers->buffers [i].info.data.sub_buffers;
+			profiler_code_buffer_array_destroy (sub_buffers);
+		}
+	}
+	g_free (buffers);
+}
+
+static gboolean
+profiler_code_buffer_array_is_full (ProfilerCodeBufferArray *buffers) {
+	while (buffers->level > 0) {
+		ProfilerCodeBufferArray *next;
+		if (buffers->number_of_buffers < PROFILER_CODE_BUFFER_ARRAY_SIZE) {
+			return FALSE;
+		}
+		next = buffers->buffers [PROFILER_CODE_BUFFER_ARRAY_SIZE - 1].info.data.sub_buffers;
+		if (next->level < (buffers->level - 1)) {
+			return FALSE;
+		}
+		buffers = next;
+	}
+	return (buffers->number_of_buffers == PROFILER_CODE_BUFFER_ARRAY_SIZE);
+}
+
+static ProfilerCodeBufferArray*
+profiler_code_buffer_add (ProfilerCodeBufferArray *buffers, gpointer *buffer, int size, MonoProfilerCodeBufferType type, void *data) {
+	if (buffers == NULL) {
+		buffers = profiler_code_buffer_array_new (NULL);
+	}
+	
+	if (profiler_code_buffer_array_is_full (buffers)) {
+		ProfilerCodeBufferArray *new_slot = profiler_code_buffer_add (NULL, buffer, size, type, data);
+		buffers = profiler_code_buffer_array_new (buffers);
+		buffers->buffers [buffers->number_of_buffers].info.data.sub_buffers = new_slot;
+		buffers->buffers [buffers->number_of_buffers].start = new_slot->buffers [0].start;
+		buffers->buffers [buffers->number_of_buffers].end = new_slot->buffers [new_slot->number_of_buffers - 1].end;
+		buffers->number_of_buffers ++;
+	} else if (buffers->level > 0) {
+		ProfilerCodeBufferArray *new_slot = profiler_code_buffer_add (buffers->buffers [buffers->number_of_buffers - 1].info.data.sub_buffers, buffer, size, type, data);
+		buffers->buffers [buffers->number_of_buffers - 1].info.data.sub_buffers = new_slot;
+		buffers->buffers [buffers->number_of_buffers - 1].start = new_slot->buffers [0].start;
+		buffers->buffers [buffers->number_of_buffers - 1].end = new_slot->buffers [new_slot->number_of_buffers - 1].end;
+	} else {
+		buffers->buffers [buffers->number_of_buffers].start = buffer;
+		buffers->buffers [buffers->number_of_buffers].end = (((guint8*) buffer) + size);
+		buffers->buffers [buffers->number_of_buffers].info.type = type;
+		switch (type) {
+		case MONO_PROFILER_CODE_BUFFER_UNKNOWN:
+			buffers->buffers [buffers->number_of_buffers].info.data.data = NULL;
+			break;
+		case MONO_PROFILER_CODE_BUFFER_METHOD:
+			buffers->buffers [buffers->number_of_buffers].info.data.method = data;
+			break;
+		default:
+			buffers->buffers [buffers->number_of_buffers].info.type = MONO_PROFILER_CODE_BUFFER_UNKNOWN;
+			buffers->buffers [buffers->number_of_buffers].info.data.data = NULL;
+		}
+		buffers->number_of_buffers ++;
+	}
+	return buffers;
+}
+
+static ProfilerCodeBuffer*
+profiler_code_buffer_find (ProfilerCodeBufferArray *buffers, gpointer *address) {
+	if (buffers != NULL) {
+		ProfilerCodeBuffer *result = NULL;
+		do {
+			int low = 0;
+			int high = buffers->number_of_buffers - 1;
+			
+			while (high != low) {
+				int middle = low + ((high - low) >> 1);
+				
+				if ((guint8*) address < (guint8*) buffers->buffers [low].start) {
+					return NULL;
+				}
+				if ((guint8*) address >= (guint8*) buffers->buffers [high].end) {
+					return NULL;
+				}
+				
+				if ((guint8*) address < (guint8*) buffers->buffers [middle].start) {
+					high = middle - 1;
+					if (high < low) {
+						high = low;
+					}
+				} else if ((guint8*) address >= (guint8*) buffers->buffers [middle].end) {
+					low = middle + 1;
+					if (low > high) {
+						low = high;
+					}
+				} else {
+					high = middle;
+					low = middle;
+				}
+			}
+			
+			if (((guint8*) address >= (guint8*) buffers->buffers [low].start) && ((guint8*) address < (guint8*) buffers->buffers [low].end)) {
+				if (buffers->level == 0) {
+					result = & (buffers->buffers [low]);
+				} else {
+					buffers = buffers->buffers [low].info.data.sub_buffers;
+				}
+			} else {
+				return NULL;
+			}
+		} while (result == NULL);
+		return result;
+	} else {
+		return NULL;
+	}
+}
+
+static void
+profiler_code_chunk_initialize (ProfilerCodeChunk *chunk, gpointer memory, gsize size) {
+	chunk->buffers = profiler_code_buffer_array_new (NULL);
+	chunk->destroyed = FALSE;
+	chunk->start = memory;
+	chunk->end = ((guint8*)memory) + size;
+}
+
+static void
+profiler_code_chunk_cleanup (ProfilerCodeChunk *chunk) {
+	if (chunk->buffers != NULL) {
+		profiler_code_buffer_array_destroy (chunk->buffers);
+		chunk->buffers = NULL;
+	}
+	chunk->start = NULL;
+	chunk->end = NULL;
+}
+
+static void
+profiler_code_chunks_initialize (ProfilerCodeChunks *chunks) {
+	chunks->capacity = 32;
+	chunks->chunks = g_new0 (ProfilerCodeChunk, 32);
+	chunks->number_of_chunks = 0;
+}
+
+static void
+profiler_code_chunks_cleanup (ProfilerCodeChunks *chunks) {
+	int i;
+	for (i = 0; i < chunks->number_of_chunks; i++) {
+		profiler_code_chunk_cleanup (& (chunks->chunks [i]));
+	}
+	chunks->capacity = 0;
+	chunks->number_of_chunks = 0;
+	g_free (chunks->chunks);
+	chunks->chunks = NULL;
+}
+
+static int
+compare_code_chunks (const void* c1, const void* c2) {
+	ProfilerCodeChunk *chunk1 = (ProfilerCodeChunk*) c1;
+	ProfilerCodeChunk *chunk2 = (ProfilerCodeChunk*) c2;
+	return ((guint8*) chunk1->end < (guint8*) chunk2->start) ? -1 : (((guint8*) chunk1->start >= (guint8*) chunk2->end) ? 1 : 0);
+}
+
+static int
+compare_address_and_code_chunk (const void* a, const void* c) {
+	gpointer address = (gpointer) a;
+	ProfilerCodeChunk *chunk = (ProfilerCodeChunk*) c;
+	return ((guint8*) address < (guint8*) chunk->start) ? -1 : (((guint8*) address >= (guint8*) chunk->end) ? 1 : 0);
+}
+
+static void
+profiler_code_chunks_sort (ProfilerCodeChunks *chunks) {
+	qsort (chunks->chunks, chunks->number_of_chunks, sizeof (ProfilerCodeChunk), compare_code_chunks);
+}
+
+static ProfilerCodeChunk*
+profiler_code_chunk_find (ProfilerCodeChunks *chunks, gpointer address) {
+	return bsearch (address, chunks->chunks, chunks->number_of_chunks, sizeof (ProfilerCodeChunk), compare_address_and_code_chunk);
+}
+
+static ProfilerCodeChunk*
+profiler_code_chunk_new (ProfilerCodeChunks *chunks, gpointer memory, gsize size) {
+	ProfilerCodeChunk *result;
+	
+	if (chunks->number_of_chunks == chunks->capacity) {
+		ProfilerCodeChunk *new_chunks = g_new0 (ProfilerCodeChunk, chunks->capacity * 2);
+		memcpy (new_chunks, chunks->chunks, chunks->capacity * sizeof (ProfilerCodeChunk));
+		chunks->capacity *= 2;
+		g_free (chunks->chunks);
+		chunks->chunks = new_chunks;
+	}
+	
+	result = & (chunks->chunks [chunks->number_of_chunks]);
+	chunks->number_of_chunks ++;
+	profiler_code_chunk_initialize (result, memory, size);
+	profiler_code_chunks_sort (chunks);
+	return result;
+}
+
+static int
+profiler_code_chunk_to_index (ProfilerCodeChunks *chunks, ProfilerCodeChunk *chunk) {
+	return (int) (chunk - chunks->chunks);
+}
+
+static void
+profiler_code_chunk_remove (ProfilerCodeChunks *chunks, ProfilerCodeChunk *chunk) {
+	int index = profiler_code_chunk_to_index (chunks, chunk);
+	
+	profiler_code_chunk_cleanup (chunk);
+	if ((index >= 0) && (index < chunks->number_of_chunks)) {
+		memmove (chunk, chunk + 1, (chunks->number_of_chunks - index) * sizeof (ProfilerCodeChunk));
+	}
+}
+
+/* This assumes the profiler lock is held */
+static ProfilerCodeBuffer*
+profiler_code_buffer_from_address (MonoProfiler *prof, gpointer address) {
+	ProfilerCodeChunks *chunks = & (prof->code_chunks);
+	
+	ProfilerCodeChunk *chunk = profiler_code_chunk_find (chunks, address);
+	if (chunk != NULL) {
+		return profiler_code_buffer_find (chunk->buffers, address);
+	} else {
+		return NULL;
+	}
+}
+
+static void
+profiler_code_chunk_new_callback (MonoProfiler *prof, gpointer address, int size) {
+	ProfilerCodeChunks *chunks = & (prof->code_chunks);
+	
+	if (prof->code_chunks.chunks != NULL) {
+		LOCK_PROFILER ();
+		profiler_code_chunk_new (chunks, address, size);
+		UNLOCK_PROFILER ();
+	}
+}
+
+static void
+profiler_code_chunk_destroy_callback  (MonoProfiler *prof, gpointer address) {
+	ProfilerCodeChunks *chunks = & (prof->code_chunks);
+	ProfilerCodeChunk *chunk;
+	
+	if (prof->code_chunks.chunks != NULL) {
+		LOCK_PROFILER ();
+		chunk = profiler_code_chunk_find (chunks, address);
+		if (chunk != NULL) {
+			profiler_code_chunk_remove (chunks, chunk);
+		}
+		UNLOCK_PROFILER ();
+	}
+}
+
+static void
+profiler_code_buffer_new_callback  (MonoProfiler *prof, gpointer address, int size, MonoProfilerCodeBufferType type, void *data) {
+	ProfilerCodeChunks *chunks = & (prof->code_chunks);
+	ProfilerCodeChunk *chunk;
+	
+	if (prof->code_chunks.chunks != NULL) {
+		LOCK_PROFILER ();
+		chunk = profiler_code_chunk_find (chunks, address);
+		if (chunk != NULL) {
+			chunk->buffers = profiler_code_buffer_add (chunk->buffers, address, size, type, data);
+		}
+		UNLOCK_PROFILER ();
+	}
 }
 
 static void
@@ -3517,10 +3835,10 @@ refresh_memory_regions (void) {
 
 static gboolean
 write_statistical_hit (MonoDomain *domain, gpointer address, gboolean regions_refreshed) {
-	MonoJitInfo *ji = (domain != NULL) ? mono_jit_info_table_find (domain, (char*) address) : NULL;
+	ProfilerCodeBuffer *code_buffer = profiler_code_buffer_from_address (profiler, address);
 	
-	if (ji != NULL) {
-		MonoMethod *method = mono_jit_info_get_method (ji);
+	if ((code_buffer != NULL) && (code_buffer->info.type == MONO_PROFILER_CODE_BUFFER_METHOD)) {
+		MonoMethod *method = code_buffer->info.data.method;
 		MethodIdMappingElement *element = method_id_mapping_element_get (method);
 		
 		if (element != NULL) {
@@ -4980,6 +5298,10 @@ profiler_shutdown (MonoProfiler *prof)
 	if (profiler->executable_regions != NULL) {
 		profiler_executable_memory_regions_destroy (profiler->executable_regions);
 	}
+	mono_profiler_install_code_chunk_new (NULL);
+	mono_profiler_install_code_chunk_destroy (NULL);
+	mono_profiler_install_code_buffer_new (NULL);
+	profiler_code_chunks_cleanup (& (profiler->code_chunks));
 	
 	profiler_heap_buffers_free (&(profiler->heap));
 	if (profiler->heap_shot_command_file_name != NULL) {
@@ -5519,6 +5841,7 @@ mono_profiler_startup (const char *desc)
 	profiler->current_write_buffer = profiler->write_buffers;
 	profiler->current_write_position = 0;
 	profiler->full_write_buffers = 0;
+	profiler_code_chunks_initialize (& (profiler->code_chunks));
 	
 	profiler->executable_regions = profiler_executable_memory_regions_new (1, 1);
 	
@@ -5568,6 +5891,11 @@ mono_profiler_startup (const char *desc)
 #if (HAS_OPROFILE)
 	mono_profiler_install_jit_end (method_jit_result);
 #endif
+	if (profiler->flags | MONO_PROFILE_STATISTICAL) {
+		mono_profiler_install_code_chunk_new (profiler_code_chunk_new_callback);
+		mono_profiler_install_code_chunk_destroy (profiler_code_chunk_destroy_callback);
+		mono_profiler_install_code_buffer_new (profiler_code_buffer_new_callback);
+	}
 	
 	mono_profiler_set_events (profiler->flags);
 }
