@@ -1123,22 +1123,22 @@ decode_signature_header (VerifyContext *ctx, guint32 offset, int *size, const ch
 }
 
 static gboolean
-safe_read (const char **_ptr, const char *limit, void *dest, int size)
+safe_read (const char **_ptr, const char *limit, unsigned *dest, int size)
 {
 	const char *ptr = *_ptr;
 	if (ptr + size > limit)
 		return FALSE;
 	switch (size) {
 	case 1:
-		*((guint8*)dest) = *((guint8*)ptr);
+		*dest = *((guint8*)ptr);
 		++ptr;
 		break;
 	case 2:
-		*((guint16*)dest) = read16 (ptr);
+		*dest = read16 (ptr);
 		ptr += 2;
 		break;
 	case 4:
-		*((guint32*)dest) = read32 (ptr);
+		*dest = read32 (ptr);
 		ptr += 4;
 		break;
 	}
@@ -1171,8 +1171,8 @@ static gboolean
 parse_custom_mods (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
-	guint type = 0;
-	guint32 token = 0;
+	unsigned type = 0;
+	unsigned token = 0;
 
 	while (TRUE) {
 		if (!safe_read8 (type, ptr, end))
@@ -1198,8 +1198,8 @@ static gboolean
 parse_array_shape (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
-	guint8 val;
-	guint32 size, num, i;
+	unsigned val = 0;
+	unsigned size, num, i;
 
 	if (!safe_read8 (val, ptr, end))
 		FAIL (ctx, g_strdup ("ArrayShape: Not enough room for Rank"));
@@ -1231,8 +1231,8 @@ static gboolean
 parse_generic_inst (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
-	guint8 type;
-	guint32 count, token, i;
+	unsigned type;
+	unsigned count, token, i;
 
 	if (!safe_read8 (type, ptr, end))
 		FAIL (ctx, g_strdup ("GenericInst: Not enough room for kind"));
@@ -1264,8 +1264,8 @@ static gboolean
 parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
-	guint8 type = 0;
-	guint32 token = 0;
+	unsigned type;
+	unsigned token = 0;
 
 	if (!safe_read8 (type, ptr, end))
 		FAIL (ctx, g_strdup ("Type: Not enough room for the type"));
@@ -1338,7 +1338,7 @@ static gboolean
 parse_return_type (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr;
-	int type = 0;
+	unsigned type = 0;
 
 	if (!parse_custom_mods (ctx, _ptr, end))
 		return FALSE;
@@ -1363,7 +1363,7 @@ static gboolean
 parse_param (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr;
-	int type = 0;
+	unsigned type = 0;
 
 	if (!parse_custom_mods (ctx, _ptr, end))
 		return FALSE;
@@ -1387,7 +1387,7 @@ parse_param (VerifyContext *ctx, const char **_ptr, const char *end)
 static gboolean
 parse_method_signature (VerifyContext *ctx, const char **_ptr, const char *end, gboolean allow_sentinel, gboolean allow_unmanaged)
 {
-	int cconv = 0;
+	unsigned cconv = 0;
 	unsigned param_count = 0, gparam_count = 0, type = 0, i;
 	const char *ptr = *_ptr;
 	gboolean saw_sentinel = FALSE;
@@ -1480,7 +1480,7 @@ static gboolean
 parse_field (VerifyContext *ctx, const char **_ptr, const char *end)
 {
 	const char *ptr = *_ptr;
-	guint8 signature = 0;
+	unsigned signature = 0;
 
 	if (!safe_read8 (signature, ptr, end))
 		FAIL (ctx, g_strdup ("Field: Not enough room for field signature"));
@@ -1555,7 +1555,8 @@ parse_locals_signature (VerifyContext *ctx, const char **_ptr, const char *end)
 static gboolean
 is_valid_field_signature (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0, signature = 0;
+	int size = 0;
+	unsigned signature = 0;
 	const char *ptr = NULL, *end;
 
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
@@ -1610,7 +1611,7 @@ static gboolean
 is_vald_cattr_blob (VerifyContext *ctx, guint32 offset)
 {
 	int size = 0;
-	guint16 prolog = 0;
+	unsigned prolog = 0;
 	const char *ptr = NULL, *end;
 
 	if (!offset)
@@ -1683,7 +1684,7 @@ is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
 {
 	int size = 0;
 	const char *ptr = NULL, *end;
-	guint8 type = 0;
+	unsigned type = 0;
 	
 
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
@@ -1715,8 +1716,8 @@ is_valid_methodspec_blog (VerifyContext *ctx, guint32 offset)
 {
 	int size = 0;
 	const char *ptr = NULL, *end;
-	guint8 type = 0;
-	guint32 count = 0, i;
+	unsigned type = 0;
+	unsigned count = 0, i;
 
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
 		FAIL (ctx, g_strdup ("MethodSpec: Could not decode signature header"));
@@ -1832,9 +1833,9 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 static gboolean
 is_valid_method_header (VerifyContext *ctx, guint32 rva)
 {
-	guint32 local_vars_tok, code_size, offset = mono_cli_rva_image_map (ctx->image, rva);
-	guint8 header = 0;
-	guint16 fat_header = 0, size = 0, max_stack;
+	unsigned local_vars_tok, code_size, offset = mono_cli_rva_image_map (ctx->image, rva);
+	unsigned header = 0;
+	unsigned fat_header = 0, size = 0, max_stack;
 	const char *ptr = NULL, *end;
 
 	if (offset == INVALID_ADDRESS)
@@ -1893,7 +1894,7 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 	ptr += code_size;
 
 	do {
-		guint32 section_header = 0, section_size = 0;
+		unsigned section_header = 0, section_size = 0;
 		gboolean is_fat;
 
 		ptr = dword_align (ptr);
@@ -1919,8 +1920,8 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 
 			/* only verify the class token is verified as the rest is done by the IL verifier*/
 			for (i = 0; i < clauses; ++i) {
-				guint flags = *ptr;
-				guint32 class_token = 0;
+				unsigned flags = *(unsigned char*)ptr;
+				unsigned class_token = 0;
 				ptr += (is_fat ? 20 : 8);
 				if (!safe_read32 (class_token, ptr, end))
 					FAIL (ctx, g_strdup_printf ("MethodHeader: Not enough room for section %d", i));
