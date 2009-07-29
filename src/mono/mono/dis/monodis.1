@@ -52,12 +52,16 @@ monodis \- CIL image content dumper and disassembler.
 [\-\-userstrings]
 [FILES...]
 .SH DESCRIPTION
-The \fImonodis\fP program is used to dump the contents a CIL image
-(contained in .EXE files that contain extended PE/COFF CIL code).  
+The \fImonodis\fP program is used to dump the contents an ECMA/ISO CIL
+image (contained in .EXE files that contain extended PE/COFF CIL
+code).
 .PP
 To roundtrip assemblies using ilasm, it is best to use the --output
 argument, as that will make monodis save the embedded resources in
 files that can later be properly embedded back by ilasm. 
+.PP
+Additionally, the tool can be used to dump the contents of the various
+ECMA CIL metadata tables.
 .SH OPTIONS
 The following Generic options are supported:
 .TP
@@ -73,6 +77,9 @@ is useful for round-tripping the IL with ilasm.
 .TP
 .I "--show-method-tokens"
 Display tokens for disassembled methods.
+.SH OPTIONS TO DISPLAY METADATA TABLES
+The following options are used to display metadata tables instead of
+disassembling the CIL image.
 .TP
 .I "--assembly"
 Dumps the contents of the Assembly table.
@@ -144,7 +151,9 @@ Dumps the contents of the Module table.
 Dumps the contents of the ModuleRef table.
 .TP
 .I "--mresources"
-Dumps the managed resources embedded in the assembly.
+Saves all the managed resources embedded in the assembly into the
+current directory.   To get a list of the embedded resources use the
+--manifest option.
 .TP
 .I "--presources"
 Prints offsets and names of manifest resources embedded in the assembly.
