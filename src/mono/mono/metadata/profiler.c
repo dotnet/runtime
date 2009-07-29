@@ -560,6 +560,38 @@ mono_profiler_runtime_initialized (void) {
 		runtime_initialized_event (current_profiler);
 }
 
+static MonoProfilerCodeChunkNew code_chunk_new = NULL;
+void
+mono_profiler_install_code_chunk_new (MonoProfilerCodeChunkNew callback) {
+	code_chunk_new = callback;
+}
+void
+mono_profiler_code_chunk_new (gpointer chunk, int size) {
+	if (code_chunk_new)
+		code_chunk_new (current_profiler, chunk, size);
+}
+
+static MonoProfilerCodeChunkDestroy code_chunk_destroy = NULL;
+void
+mono_profiler_install_code_chunk_destroy (MonoProfilerCodeChunkDestroy callback) {
+	code_chunk_destroy = callback;
+}
+void
+mono_profiler_code_chunk_destroy (gpointer chunk) {
+	if (code_chunk_destroy)
+		code_chunk_destroy (current_profiler, chunk);
+}
+
+static MonoProfilerCodeBufferNew code_buffer_new = NULL;
+void
+mono_profiler_install_code_buffer_new (MonoProfilerCodeBufferNew callback) {
+	code_buffer_new = callback;
+}
+void
+mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeBufferType type, void *data) {
+	if (code_buffer_new)
+		code_buffer_new (current_profiler, buffer, size, type, data);
+}
 
 static GHashTable *coverage_hash = NULL;
 

@@ -56,6 +56,13 @@ typedef struct {
 	int col;
 } MonoProfileCoverageEntry;
 
+/* executable code buffer info */
+typedef enum {
+	MONO_PROFILER_CODE_BUFFER_UNKNOWN,
+	MONO_PROFILER_CODE_BUFFER_METHOD,
+	MONO_PROFILER_CODE_BUFFER_LAST
+} MonoProfilerCodeBufferType;
+
 typedef struct _MonoProfiler MonoProfiler;
 
 typedef enum {
@@ -100,6 +107,11 @@ typedef gboolean (*MonoProfileCoverageFilterFunc)   (MonoProfiler *prof, MonoMet
 
 typedef void (*MonoProfileCoverageFunc)   (MonoProfiler *prof, const MonoProfileCoverageEntry *entry);
 
+
+typedef void (*MonoProfilerCodeChunkNew) (MonoProfiler *prof, gpointer chunk, int size);
+typedef void (*MonoProfilerCodeChunkDestroy) (MonoProfiler *prof, gpointer chunk);
+typedef void (*MonoProfilerCodeBufferNew) (MonoProfiler *prof, gpointer buffer, int size, MonoProfilerCodeBufferType type, void *data);
+
 /*
  * Function the profiler may call.
  */
@@ -132,6 +144,10 @@ void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callba
 void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
 void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
 void mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback);
+
+void mono_profiler_install_code_chunk_new (MonoProfilerCodeChunkNew callback);
+void mono_profiler_install_code_chunk_destroy (MonoProfilerCodeChunkDestroy callback);
+void mono_profiler_install_code_buffer_new (MonoProfilerCodeBufferNew callback);
 
 void mono_profiler_load             (const char *desc);
 

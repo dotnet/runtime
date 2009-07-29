@@ -62,6 +62,10 @@ void                     mono_profiler_coverage_free  (MonoMethod *method) MONO_
 void mono_profiler_gc_event       (MonoGCEvent e, int generation) MONO_INTERNAL;
 void mono_profiler_gc_heap_resize (gint64 new_size) MONO_INTERNAL;
 
+void mono_profiler_code_chunk_new (gpointer chunk, int size) MONO_INTERNAL;
+void mono_profiler_code_chunk_destroy (gpointer chunk) MONO_INTERNAL;
+void mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeBufferType type, void *data) MONO_INTERNAL;
+
 void mono_profiler_runtime_initialized (void) MONO_INTERNAL;
 
 #endif /* __MONO_PROFILER_PRIVATE_H__ */
