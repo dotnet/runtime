@@ -1,3 +1,15 @@
+2009-07-29 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* Makefile: Fix mac build and dependencies.
+	Add new file.
+
+	* cli-blob-tests.md: stand-alone-method-sig tests now use
+	a separate input file with a single standalone sig so it's
+	no longer dependent on ilasm ordering.
+
+	* assembly-with-calli.il: New file with a single standalone
+	signature.
+
 2009-07-20 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* assembly-with-locals.il: Fix method to be verifiable.

@@ -102,23 +102,23 @@ method-ref-sig {
 }
 
 stand-alone-method-sig {
-	assembly assembly-with-custommod.exe
+	assembly assembly-with-calli.exe
 
-	#standalone sig 0x3 points to an icall sig
-	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x0
-	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x1
-	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x2
-	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x3
-	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x4
-	valid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x5
+	#standalone sig 0x2 points to a calli sig
+	valid offset blob.i (table-row (0x11 0)) + 1 set-byte 0x0
+	valid offset blob.i (table-row (0x11 0)) + 1 set-byte 0x1
+	valid offset blob.i (table-row (0x11 0)) + 1 set-byte 0x2
+	valid offset blob.i (table-row (0x11 0)) + 1 set-byte 0x3
+	valid offset blob.i (table-row (0x11 0)) + 1 set-byte 0x4
+	valid offset blob.i (table-row (0x11 0)) + 1 set-byte 0x5
 
 	#sig is int32 (int32)
 	#size cconv pcount(1) int32 int32 ->
 	#size cconv gcount(1) pcount(0) int32
 	#cannot have generics
-	invalid offset blob.i (table-row (0x11 3)) + 1 set-byte 0x10,
-			offset blob.i (table-row (0x11 3)) + 2 set-byte 1,
-			offset blob.i (table-row (0x11 3)) + 3 set-byte 0
+	invalid offset blob.i (table-row (0x11 0)) + 1 set-byte 0x10,
+			offset blob.i (table-row (0x11 0)) + 2 set-byte 1,
+			offset blob.i (table-row (0x11 0)) + 3 set-byte 0
 }
 
 field-sig {
