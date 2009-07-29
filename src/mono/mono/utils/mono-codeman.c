@@ -15,6 +15,7 @@
 #include "mono-mmap.h"
 #include "dlmalloc.h"
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/profiler-private.h>
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
@@ -135,6 +136,7 @@ free_chunklist (CodeChunk *chunk)
 
 	for (; chunk; ) {
 		dead = chunk;
+		mono_profiler_code_chunk_destroy ((gpointer) dead->data);
 		chunk = chunk->next;
 		if (dead->flags == CODE_FLAG_MMAP) {
 			mono_vfree (dead->data, dead->size);
@@ -304,6 +306,7 @@ new_codechunk (int dynamic, int size)
 	chunk->flags = flags;
 	chunk->pos = bsize;
 	chunk->bsize = bsize;
+	mono_profiler_code_chunk_new((gpointer) chunk->data, chunk->size);
 
 	/*printf ("code chunk at: %p\n", ptr);*/
 	return chunk;
