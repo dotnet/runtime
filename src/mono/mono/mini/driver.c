@@ -953,6 +953,17 @@ static void main_thread_handler (gpointer user_data)
 				fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
 				exit (1);
 			}
+			/* Check that the assembly loaded matches the filename */
+			{
+				MonoImageOpenStatus status;
+				MonoImage *img;
+
+				img = mono_image_open (main_args->argv [i], &status);
+				if (img && strcmp (img->name, assembly->image->name)) {
+					fprintf (stderr, "Error: Loaded assembly '%s' doesn't match original file name '%s'. Set MONO_PATH to the assembly's location.\n", assembly->image->name, img->name);
+					exit (1);
+				}
+			}
 			res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options);
 			if (res != 0) {
 				fprintf (stderr, "AOT of image %s failed.\n", main_args->argv [i]);
