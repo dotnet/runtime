@@ -2,6 +2,7 @@
 #define __MONO_MINI_X86_H__
 
 #include <mono/arch/x86/x86-codegen.h>
+#include <mono/utils/mono-sigcontext.h>
 #ifdef PLATFORM_WIN32
 #include <windows.h>
 /* use SIG* defines if possible */
@@ -141,67 +142,6 @@ typedef struct {
 	gboolean need_stack_frame_inited;
 	gboolean need_stack_frame;
 } MonoCompileArch;
-
-#if defined(__FreeBSD__) || defined(__APPLE__)
-#include <ucontext.h>
-#endif 
-#if defined(__APPLE__)
-#include <AvailabilityMacros.h>
-#endif
-
-#if defined(__FreeBSD__)
-	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext.mc_eax)
-	#define UCONTEXT_REG_EBX(ctx) ((ctx)->uc_mcontext.mc_ebx)
-	#define UCONTEXT_REG_ECX(ctx) ((ctx)->uc_mcontext.mc_ecx)
-	#define UCONTEXT_REG_EDX(ctx) ((ctx)->uc_mcontext.mc_edx)
-	#define UCONTEXT_REG_EBP(ctx) ((ctx)->uc_mcontext.mc_ebp)
-	#define UCONTEXT_REG_ESP(ctx) ((ctx)->uc_mcontext.mc_esp)
-	#define UCONTEXT_REG_ESI(ctx) ((ctx)->uc_mcontext.mc_esi)
-	#define UCONTEXT_REG_EDI(ctx) ((ctx)->uc_mcontext.mc_edi)
-	#define UCONTEXT_REG_EIP(ctx) ((ctx)->uc_mcontext.mc_eip)
-#elif defined(__APPLE__)
-#  if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5
-	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext->__ss.__eax)
-	#define UCONTEXT_REG_EBX(ctx) ((ctx)->uc_mcontext->__ss.__ebx)
-	#define UCONTEXT_REG_ECX(ctx) ((ctx)->uc_mcontext->__ss.__ecx)
-	#define UCONTEXT_REG_EDX(ctx) ((ctx)->uc_mcontext->__ss.__edx)
-	#define UCONTEXT_REG_EBP(ctx) ((ctx)->uc_mcontext->__ss.__ebp)
-	#define UCONTEXT_REG_ESP(ctx) ((ctx)->uc_mcontext->__ss.__esp)
-	#define UCONTEXT_REG_ESI(ctx) ((ctx)->uc_mcontext->__ss.__esi)
-	#define UCONTEXT_REG_EDI(ctx) ((ctx)->uc_mcontext->__ss.__edi)
-	#define UCONTEXT_REG_EIP(ctx) ((ctx)->uc_mcontext->__ss.__eip)
-#  else
-	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext->ss.eax)
-	#define UCONTEXT_REG_EBX(ctx) ((ctx)->uc_mcontext->ss.ebx)
-	#define UCONTEXT_REG_ECX(ctx) ((ctx)->uc_mcontext->ss.ecx)
-	#define UCONTEXT_REG_EDX(ctx) ((ctx)->uc_mcontext->ss.edx)
-	#define UCONTEXT_REG_EBP(ctx) ((ctx)->uc_mcontext->ss.ebp)
-	#define UCONTEXT_REG_ESP(ctx) ((ctx)->uc_mcontext->ss.esp)
-	#define UCONTEXT_REG_ESI(ctx) ((ctx)->uc_mcontext->ss.esi)
-	#define UCONTEXT_REG_EDI(ctx) ((ctx)->uc_mcontext->ss.edi)
-	#define UCONTEXT_REG_EIP(ctx) ((ctx)->uc_mcontext->ss.eip)
-#  endif
-#elif defined(__NetBSD__)
-	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext.__gregs [_REG_EAX])
-	#define UCONTEXT_REG_EBX(ctx) ((ctx)->uc_mcontext.__gregs [_REG_EBX])
-	#define UCONTEXT_REG_ECX(ctx) ((ctx)->uc_mcontext.__gregs [_REG_ECX])
-	#define UCONTEXT_REG_EDX(ctx) ((ctx)->uc_mcontext.__gregs [_REG_EDX])
-	#define UCONTEXT_REG_EBP(ctx) ((ctx)->uc_mcontext.__gregs [_REG_EBP])
-	#define UCONTEXT_REG_ESP(ctx) ((ctx)->uc_mcontext.__gregs [_REG_ESP])
-	#define UCONTEXT_REG_ESI(ctx) ((ctx)->uc_mcontext.__gregs [_REG_ESI])
-	#define UCONTEXT_REG_EDI(ctx) ((ctx)->uc_mcontext.__gregs [_REG_EDI])
-	#define UCONTEXT_REG_EIP(ctx) ((ctx)->uc_mcontext.__gregs [_REG_EIP])
-#else
-	#define UCONTEXT_REG_EAX(ctx) ((ctx)->uc_mcontext.gregs [REG_EAX])
-	#define UCONTEXT_REG_EBX(ctx) ((ctx)->uc_mcontext.gregs [REG_EBX])
-	#define UCONTEXT_REG_ECX(ctx) ((ctx)->uc_mcontext.gregs [REG_ECX])
-	#define UCONTEXT_REG_EDX(ctx) ((ctx)->uc_mcontext.gregs [REG_EDX])
-	#define UCONTEXT_REG_EBP(ctx) ((ctx)->uc_mcontext.gregs [REG_EBP])
-	#define UCONTEXT_REG_ESP(ctx) ((ctx)->uc_mcontext.gregs [REG_ESP])
-	#define UCONTEXT_REG_ESI(ctx) ((ctx)->uc_mcontext.gregs [REG_ESI])
-	#define UCONTEXT_REG_EDI(ctx) ((ctx)->uc_mcontext.gregs [REG_EDI])
-	#define UCONTEXT_REG_EIP(ctx) ((ctx)->uc_mcontext.gregs [REG_EIP])
-#endif
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
 # define SC_EAX sc_eax

@@ -2,6 +2,7 @@
 #define __MONO_MINI_PPC_H__
 
 #include <mono/arch/ppc/ppc-codegen.h>
+#include <mono/utils/mono-sigcontext.h>
 #include <glib.h>
 
 #ifdef __mono_ppc64__
@@ -275,45 +276,13 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 #endif
 
 #if defined(__linux__)
-	typedef struct ucontext os_ucontext;
-
 #define MONO_ARCH_USE_SIGACTION 1
-
-#ifdef __mono_ppc64__
-	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.gp_regs [(n)])
-	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.fp_regs [(n)])
-	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext.gp_regs [PT_NIP])
-	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.gp_regs [PT_LNK])
-#else
-	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.uc_regs->gregs [(n)])
-	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.uc_regs->fpregs.fpregs [(n)])
-	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_NIP])
-	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_LNK])
-#endif
 #elif defined (__APPLE__) && defined (_STRUCT_MCONTEXT)
 #define MONO_ARCH_USE_SIGACTION 1
-	typedef struct __darwin_ucontext os_ucontext;
-
-	#define UCONTEXT_REG_Rn(ctx, n)   ((&(ctx)->uc_mcontext->__ss.__r0) [(n)])
-	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext->__fs.__fpregs [(n)])
-	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext->__ss.__srr0)
-	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext->__ss.__lr)
 #elif defined (__APPLE__) && !defined (_STRUCT_MCONTEXT)
 #define MONO_ARCH_USE_SIGACTION 1
-	typedef struct ucontext os_ucontext;
-
-	#define UCONTEXT_REG_Rn(ctx, n)   ((&(ctx)->uc_mcontext->ss.r0) [(n)])
-	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext->fs.fpregs [(n)])
-	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext->ss.srr0)
-	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext->ss.lr)
 #elif defined(__NetBSD__)
 #define MONO_ARCH_USE_SIGACTION 1
-	typedef ucontext_t os_ucontext;
-
-	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.__gregs [(n)])
-	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.__fpregs.__fpu_regs [(n)])
-	#define UCONTEXT_REG_NIP(ctx)     _UC_MACHINE_PC(ctx)
-	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.__gregs [_REG_LR])
 #else
 /* For other operating systems, we pull the definition from an external file */
 #include "mini-ppc-os.h"

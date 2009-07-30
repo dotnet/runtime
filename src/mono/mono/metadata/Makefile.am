@@ -146,6 +146,7 @@ libmonoruntime_la_SOURCES = \
 	security-manager.h	\
 	sgen-gc.c		\
 	sgen-gc.h		\
+	sgen-archdep.h		\
 	string-icalls.c 	\
 	string-icalls.h 	\
 	sysmath.h		\

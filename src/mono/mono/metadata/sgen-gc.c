@@ -143,6 +143,7 @@
 #include "metadata/object-internals.h"
 #include "metadata/threads.h"
 #include "metadata/sgen-gc.h"
+#include "metadata/sgen-archdep.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
@@ -690,6 +691,7 @@ struct _SgenThreadInfo {
 	gpointer runtime_data;
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
 	MonoDomain *stopped_domain; /* ditto */
+	gpointer *stopped_regs;	    /* ditto */
 #ifndef HAVE_KW_THREAD
 	char *tlab_start;
 	char *tlab_next;
@@ -4547,6 +4549,7 @@ update_current_thread_stack (void *start)
 	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
 	info->stack_start = align_pointer (&ptr);
 	ARCH_STORE_REGS (ptr);
+	info->stopped_regs = ptr;
 	if (gc_callbacks.thread_suspend_func)
 		gc_callbacks.thread_suspend_func (info->runtime_data, NULL);
 }
@@ -4648,6 +4651,7 @@ restart_threads_until_none_in_managed_allocator (void)
 					   the others */
 					info->stopped_ip = NULL;
 					info->stopped_domain = NULL;
+					info->stopped_regs = NULL;
 				}
 			}
 		}
@@ -4698,11 +4702,12 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	pthread_t id;
 	int stop_count;
 	int old_errno = errno;
+	gpointer regs [ARCH_NUM_REGS];
 
 	id = pthread_self ();
 	info = thread_info_lookup (id);
 	info->stopped_domain = mono_domain_get ();
-	info->stopped_ip = mono_gc_get_ip_from_sigctx (context);
+	info->stopped_ip = (gpointer) ARCH_SIGCTX_IP (context);
 	stop_count = global_stop_count;
 	/* duplicate signal */
 	if (0 && info->stop_count == stop_count) {
@@ -4713,12 +4718,11 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	/* update the remset info in the thread data structure */
 	info->remset = remembered_set;
 #endif
-	/* 
-	 * this includes the register values that the kernel put on the stack.
-	 * Write arch-specific code to only push integer regs and a more accurate
-	 * stack pointer.
-	 */
-	info->stack_start = align_pointer (&id);
+	info->stack_start = (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE;
+	g_assert (info->stack_start < info->stack_end);
+
+	ARCH_COPY_SIGCTX_REGS (regs, context);
+	info->stopped_regs = regs;
 
 	/* Notify the JIT */
 	if (gc_callbacks.thread_suspend_func)
@@ -4833,11 +4837,12 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 				gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
 			else if (!precise)
 				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery);
+
+			if (!precise)
+				conservatively_pin_objects_from (info->stopped_regs, info->stopped_regs + ARCH_NUM_REGS,
+						start_nursery, end_nursery);
 		}
 	}
-	DEBUG (2, fprintf (gc_debug_file, "Scanning current thread registers, pinned=%d\n", next_pin_slot));
-	if (!precise)
-		conservatively_pin_objects_from ((void*)cur_thread_regs, (void*)(cur_thread_regs + ARCH_NUM_REGS), start_nursery, end_nursery);
 }
 
 static void
@@ -4858,9 +4863,10 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 				}
 				start++;
 			}
+
+			/* FIXME: check info->stopped_regs */
 		}
 	}
-	/* FIXME: check register */
 }
 
 static gboolean
@@ -5179,6 +5185,7 @@ gc_register_current_thread (void *addr)
 	info->tlab_real_end_addr = &TLAB_REAL_END;
 	info->stopped_ip = NULL;
 	info->stopped_domain = NULL;
+	info->stopped_regs = NULL;
 
 #ifdef HAVE_KW_THREAD
 	tlab_next_addr = &tlab_next;

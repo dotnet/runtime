@@ -696,13 +696,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 static inline guint64*
 gregs_from_ucontext (ucontext_t *ctx)
 {
-#ifdef __FreeBSD__
-    guint64 *gregs = (guint64 *) &ctx->uc_mcontext;
-#else
-    guint64 *gregs = (guint64 *) &ctx->uc_mcontext.gregs;
-#endif
-
-	return gregs;
+	return (guint64 *) UCONTEXT_GREGS (ctx);
 }
 #endif
 void

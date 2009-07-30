@@ -2,6 +2,7 @@
 #define __MONO_MINI_AMD64_H__
 
 #include <mono/arch/amd64/amd64-codegen.h>
+#include <mono/utils/mono-sigcontext.h>
 #include <glib.h>
 
 #ifdef PLATFORM_WIN32
@@ -10,6 +11,7 @@
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
 #endif
+
 
 /* sigcontext surrogate */
 struct sigcontext {

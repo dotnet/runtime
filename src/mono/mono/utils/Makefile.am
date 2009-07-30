@@ -50,6 +50,7 @@ libmonoutils_la_SOURCES = \
 	mono-poll.c		\
 	mono-path.c		\
 	mono-semaphore.h	\
+	mono-sigcontext.h	\
 	mono-stdlib.c 		\
 	mono-property-hash.h 	\
 	mono-property-hash.c 	\

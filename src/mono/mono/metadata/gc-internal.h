@@ -195,11 +195,5 @@ void *mono_gc_scan_object (void *obj) MONO_INTERNAL;
 /* Return the bitmap encoded by a descriptor */
 gsize* mono_gc_get_bitmap_for_descr (void *descr, int *numbits) MONO_INTERNAL;
 
-typedef gpointer (*MonoGetIPFromSigCtxFunc) (gpointer ctx);
-
-void mono_install_get_ip_from_sigctx (MonoGetIPFromSigCtxFunc func) MONO_INTERNAL;
-
-gpointer mono_gc_get_ip_from_sigctx (gpointer ctx) MONO_INTERNAL;
-
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

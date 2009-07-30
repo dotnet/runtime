@@ -1155,18 +1155,3 @@ mono_gc_is_finalizer_thread (MonoThread *thread)
 {
 	return thread == gc_thread;
 }
-
-static MonoGetIPFromSigCtxFunc get_ip_from_sigctx = NULL;
-
-void
-mono_install_get_ip_from_sigctx (MonoGetIPFromSigCtxFunc func)
-{
-	get_ip_from_sigctx = func;
-}
-
-gpointer
-mono_gc_get_ip_from_sigctx (gpointer ctx)
-{
-	g_assert (get_ip_from_sigctx);
-	return get_ip_from_sigctx (ctx);
-}
