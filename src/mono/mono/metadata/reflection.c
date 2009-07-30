@@ -7318,7 +7318,7 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	if (info->name_space && (info->name_space [0] != '\0'))
 		g_string_printf (fullName, "%s.%s", info->name_space, info->name);
 	else
-		g_string_printf (fullName, info->name);
+		g_string_printf (fullName, "%s", info->name);
 	for (mod = info->nested; mod; mod = mod->next)
 		g_string_append_printf (fullName, "+%s", (char*)mod->data);
 
@@ -11070,7 +11070,7 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		result = mono_class_from_mono_type (type);
 		*handle_class = mono_defaults.typehandle_class;
 	} else {
-		g_print (obj->vtable->klass->name);
+		g_print ("%s\n", obj->vtable->klass->name);
 		g_assert_not_reached ();
 	}
 	return result;
