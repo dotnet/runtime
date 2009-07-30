@@ -683,6 +683,7 @@ struct _SgenThreadInfo {
 	int skip;
 	void *stack_end;
 	void *stack_start;
+	void *stack_start_limit;
 	char **tlab_next_addr;
 	char **tlab_start_addr;
 	char **tlab_temp_end_addr;
@@ -3609,7 +3610,6 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		if (nursery_section) {
 			LOCK_GC;
 
-			update_current_thread_stack (&dummy);
 			stop_world ();
 			collect_nursery (0);
 			restart_world ();
@@ -3672,8 +3672,6 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	 */
 	g_assert (TLAB_NEXT == new_next);
 	if (size > MAX_SMALL_OBJ_SIZE) {
-		/* get ready for possible collection */
-		update_current_thread_stack (&dummy);
 		TLAB_NEXT -= size;
 		p = alloc_large_inner (vtable, size);
 	} else {
@@ -3699,8 +3697,6 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 				/* Allocate directly from the nursery */
 				if (nursery_next + size >= nursery_frag_real_end) {
 					if (!search_fragment_for_size (size)) {
-						/* get ready for possible collection */
-						update_current_thread_stack (&dummy);
 						minor_collect_or_expand_inner (size);
 						if (degraded_mode) {
 							p = alloc_degraded (vtable, size);
@@ -3726,8 +3722,6 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 				if (nursery_next + tlab_size >= nursery_frag_real_end) {
 					res = search_fragment_for_size (tlab_size);
 					if (!res) {
-						/* get ready for possible collection */
-						update_current_thread_stack (&dummy);
 						minor_collect_or_expand_inner (tlab_size);
 						if (degraded_mode) {
 							p = alloc_degraded (vtable, size);
@@ -3786,7 +3780,6 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 	size &= ~(ALLOC_ALIGN - 1);
 	LOCK_GC;
 	if (size > MAX_FREELIST_SIZE) {
-		update_current_thread_stack (&p);
 		/* large objects are always pinned anyway */
 		p = alloc_large_inner (vtable, size);
 	} else {
@@ -4548,6 +4541,7 @@ update_current_thread_stack (void *start)
 	void *ptr = cur_thread_regs;
 	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
 	info->stack_start = align_pointer (&ptr);
+	g_assert (info->stack_start >= info->stack_start_limit && info->stack_start < info->stack_end);
 	ARCH_STORE_REGS (ptr);
 	info->stopped_regs = ptr;
 	if (gc_callbacks.thread_suspend_func)
@@ -4570,6 +4564,12 @@ signal_desc (int signum)
 #ifdef MANAGED_ALLOCATION
 static gboolean
 is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip);
+#else
+static gboolean
+is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
+{
+	return FALSE;
+}
 #endif
 
 static void
@@ -4627,7 +4627,6 @@ restart_threads_until_none_in_managed_allocator (void)
 	int i, result, num_threads_died = 0;
 	int sleep_duration = -1;
 
-#ifdef MANAGED_ALLOCATION
 	for (;;) {
 		int restart_count = 0, restarted_count = 0;
 		/* restart all threads that stopped in the
@@ -4636,7 +4635,8 @@ restart_threads_until_none_in_managed_allocator (void)
 			for (info = thread_table [i]; info; info = info->next) {
 				if (info->skip)
 					continue;
-				if (is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
+				if (!info->stack_start ||
+						is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
 					result = pthread_kill (info->id, restart_signal_num);
 					if (result == 0) {
 						++restart_count;
@@ -4651,7 +4651,6 @@ restart_threads_until_none_in_managed_allocator (void)
 					   the others */
 					info->stopped_ip = NULL;
 					info->stopped_domain = NULL;
-					info->stopped_regs = NULL;
 				}
 			}
 		}
@@ -4689,7 +4688,6 @@ restart_threads_until_none_in_managed_allocator (void)
 		   again */
 		wait_for_suspend_ack (restart_count);
 	}
-#endif
 
 	return num_threads_died;
 }
@@ -4703,6 +4701,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	int stop_count;
 	int old_errno = errno;
 	gpointer regs [ARCH_NUM_REGS];
+	gpointer stack_start;
 
 	id = pthread_self ();
 	info = thread_info_lookup (id);
@@ -4718,11 +4717,17 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	/* update the remset info in the thread data structure */
 	info->remset = remembered_set;
 #endif
-	info->stack_start = (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE;
-	g_assert (info->stack_start < info->stack_end);
+	stack_start = (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE;
+	/* If stack_start is not within the limits, then don't set it
+	   in info and we will be restarted. */
+	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
+		info->stack_start = stack_start;
 
-	ARCH_COPY_SIGCTX_REGS (regs, context);
-	info->stopped_regs = regs;
+		ARCH_COPY_SIGCTX_REGS (regs, context);
+		info->stopped_regs = regs;
+	} else {
+		g_assert (!info->stack_start);
+	}
 
 	/* Notify the JIT */
 	if (gc_callbacks.thread_suspend_func)
@@ -4765,6 +4770,8 @@ stop_world (void)
 {
 	int count;
 
+	update_current_thread_stack (&count);
+
 	global_stop_count++;
 	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", global_stop_count, thread_info_lookup (ARCH_GET_THREAD ()), (gpointer)ARCH_GET_THREAD ()));
 	TV_GETTIME (stop_world_time);
@@ -4779,9 +4786,17 @@ stop_world (void)
 static int
 restart_world (void)
 {
-	int count;
+	int count, i;
+	SgenThreadInfo *info;
 	TV_DECLARE (end_sw);
 	unsigned long usec;
+
+	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
+		for (info = thread_table [i]; info; info = info->next) {
+			info->stack_start = NULL;
+			info->stopped_regs = NULL;
+		}
+	}
 
 	count = thread_handshake (restart_signal_num);
 	TV_GETTIME (end_sw);
@@ -4873,12 +4888,10 @@ static gboolean
 ptr_on_stack (void *ptr)
 {
 	int rs = 0;
-	int dummy;
+	gpointer stack_start = &stack_start;
 	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
 
-	update_current_thread_stack (&dummy);
-
-	if (ptr >= (gpointer)info->stack_start && ptr < (gpointer)info->stack_end)
+	if (ptr >= stack_start && ptr < (gpointer)info->stack_end)
 		return TRUE;
 	return FALSE;
 }
@@ -5199,6 +5212,7 @@ gc_register_current_thread (void *addr)
 		pthread_attr_t attr;
 		pthread_getattr_np (pthread_self (), &attr);
 		pthread_attr_getstack (&attr, &sstart, &size);
+		info->stack_start_limit = sstart;
 		info->stack_end = (char*)sstart + size;
 		pthread_attr_destroy (&attr);
 	}
@@ -5998,7 +6012,6 @@ void
 mono_gc_collect (int generation)
 {
 	LOCK_GC;
-	update_current_thread_stack (&generation);
 	stop_world ();
 	if (generation == 0) {
 		collect_nursery (0);
