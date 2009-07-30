@@ -1810,6 +1810,19 @@ mono_class_get_vtable_entry (MonoClass *class, int offset)
 	return m;
 }
 
+/*
+ * mono_class_get_vtable_size:
+ *
+ *   Return the vtable size for KLASS.
+ */
+int
+mono_class_get_vtable_size (MonoClass *klass)
+{
+	mono_class_setup_vtable (klass);
+
+	return klass->vtable_size;
+}
+
 static void
 mono_class_setup_properties (MonoClass *class)
 {
