@@ -213,6 +213,7 @@ mono_marshal_init (void)
 		register_icall (mono_string_builder_to_utf16, "mono_string_builder_to_utf16", "ptr object", FALSE);
 		register_icall (mono_array_to_savearray, "mono_array_to_savearray", "ptr object", FALSE);
 		register_icall (mono_array_to_lparray, "mono_array_to_lparray", "ptr object", FALSE);
+		register_icall (mono_free_lparray, "mono_free_lparray", "void object ptr", FALSE);
 		register_icall (mono_byvalarray_to_array, "mono_byvalarray_to_array", "void object ptr ptr int32", FALSE);
 		register_icall (mono_array_to_byvalarray, "mono_array_to_byvalarray", "void ptr object ptr int32", FALSE);
 		register_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", "ptr object", FALSE);
@@ -545,11 +546,79 @@ mono_array_to_savearray (MonoArray *array)
 gpointer
 mono_array_to_lparray (MonoArray *array)
 {
+	gpointer *nativeArray = NULL;
+	int nativeArraySize = 0;
+
+	int i = 0;
+	MonoClass *klass;
+
 	if (!array)
 		return NULL;
 
-	/* fixme: maybe we need to make a copy */
+	klass = array->obj.vtable->klass;
+
+	switch (klass->element_class->byval_arg.type) {
+	case MONO_TYPE_VOID:
+		g_assert_not_reached ();
+		break;
+	case MONO_TYPE_CLASS:
+		nativeArraySize = array->max_length;
+		nativeArray = malloc(sizeof(gpointer) * nativeArraySize);
+		for(i = 0; i < nativeArraySize; ++i) 	
+			nativeArray[i] = ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal(((gpointer*)array->vector)[i]);
+		return nativeArray;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_VALUETYPE:
+		/* nothing to do */
+		break;
+	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_ARRAY: 
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_STRING:
+	default:
+		g_warning ("type 0x%x not handled", klass->element_class->byval_arg.type);
+		g_assert_not_reached ();
+	}
+
 	return array->vector;
+}
+
+void
+mono_free_lparray (MonoArray *array, gpointer* nativeArray)
+{
+	MonoClass *klass;
+	int i = 0;
+
+	if (!array)
+		return;
+
+	if (!nativeArray)
+		return;
+
+	klass = array->obj.vtable->klass;
+
+	switch (klass->element_class->byval_arg.type) {
+		case MONO_TYPE_CLASS:
+			for(i = 0; i < array->max_length; ++i) 	
+				mono_marshal_free_ccw(nativeArray[i]);
+			free(nativeArray);
+		break;
+	}		
 }
 
 static void
@@ -1338,6 +1407,8 @@ conv_to_icall (MonoMarshalConv conv)
 		return mono_array_to_savearray;
 	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
 		return mono_array_to_lparray;
+	case MONO_MARSHAL_FREE_LPARRAY:
+		return mono_free_lparray;
 	case MONO_MARSHAL_CONV_DEL_FTN:
 		return mono_delegate_to_ftnptr;
 	case MONO_MARSHAL_CONV_FTN_DEL:
@@ -6707,6 +6778,15 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_patch_branch (mb, label1);
 			mono_mb_patch_branch (mb, label3);
 		}
+		
+		if (klass->element_class->blittable) {
+			/* free memory allocated (if any) by MONO_MARSHAL_CONV_ARRAY_LPARRAY */
+
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_FREE_LPARRAY));
+		}
+
 		break;
 
 	case MARSHAL_ACTION_PUSH:

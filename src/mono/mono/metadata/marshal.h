@@ -109,6 +109,9 @@ gpointer
 mono_array_to_lparray (MonoArray *array) MONO_INTERNAL;
 
 void
+mono_free_lparray (MonoArray *array, gpointer* nativeArray) MONO_INTERNAL;
+
+void
 mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text) MONO_INTERNAL;
 
 void
