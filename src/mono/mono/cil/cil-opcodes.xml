@@ -162,8 +162,8 @@
 <opcode name="stelem.r4" input="PopRef+PopI+PopR4" output="Push0" args="InlineNone" o1="0xFF" o2="0xA0" flow="next" type="Objmodel" />
 <opcode name="stelem.r8" input="PopRef+PopI+PopR8" output="Push0" args="InlineNone" o1="0xFF" o2="0xA1" flow="next" type="Objmodel" />
 <opcode name="stelem.ref" input="PopRef+PopI+PopRef" output="Push0" args="InlineNone" o1="0xFF" o2="0xA2" flow="next" type="Objmodel" />
-<opcode name="ldelem.any" input="PopRef+PopI" output="Push1" args="InlineType" o1="0xFF" o2="0xA3" flow="next" type="Objmodel" />
-<opcode name="stelem.any" input="PopRef+PopI+PopRef" output="Push0" args="InlineType" o1="0xFF" o2="0xA4" flow="next" type="Objmodel" />
+<opcode name="ldelem" input="PopRef+PopI" output="Push1" args="InlineType" o1="0xFF" o2="0xA3" flow="next" type="Objmodel" />
+<opcode name="stelem" input="PopRef+PopI+Pop1" output="Push0" args="InlineType" o1="0xFF" o2="0xA4" flow="next" type="Objmodel" />
 <opcode name="unbox.any" input="PopRef" output="Push1" args="InlineType" o1="0xFF" o2="0xA5" flow="next" type="Objmodel" />
 <opcode name="unused5" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA6" flow="next" />
 <opcode name="unused6" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA7" flow="next" />
@@ -277,7 +277,7 @@
 <opcode name="volatile." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x13" flow="meta" type="Prefix" />
 <opcode name="tail." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x14" flow="meta" type="Prefix" />
 <opcode name="initobj" input="PopI" output="Push0" args="InlineType" o1="0xFE" o2="0x15" flow="next" type="Objmodel" />
-<opcode name="constrained." input="Pop0" output="Push0" args="InlineType" o1="0xFE" o2="0x16" flow="next" type="Prefix" />
+<opcode name="constrained." input="Pop0" output="Push0" args="InlineType" o1="0xFE" o2="0x16" flow="meta" type="Prefix" />
 <opcode name="cpblk" input="PopI+PopI+PopI" output="Push0" args="InlineNone" o1="0xFE" o2="0x17" flow="next" type="Primitive" />
 <opcode name="initblk" input="PopI+PopI+PopI" output="Push0" args="InlineNone" o1="0xFE" o2="0x18" flow="next" type="Primitive" />
 <opcode name="no." input="Pop0" output="Push0" args="ShortInlineI" o1="0xFE" o2="0x19" flow="next" />
@@ -285,7 +285,7 @@
 <opcode name="unused" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x1B" flow="next" />
 <opcode name="sizeof" input="Pop0" output="PushI" args="InlineType" o1="0xFE" o2="0x1C" flow="next" type="Primitive" />
 <opcode name="refanytype" input="Pop1" output="PushI" args="InlineNone" o1="0xFE" o2="0x1D" flow="next" type="Primitive" />
-<opcode name="readonly." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x1E" flow="next" />
+<opcode name="readonly." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x1E" flow="meta" />
 <opcode name="unused53" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x1F" flow="next" />
 <opcode name="unused54" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x20" flow="next" />
 <opcode name="unused55" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x21" flow="next" />

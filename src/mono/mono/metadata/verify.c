@@ -4193,7 +4193,7 @@ do_ldelem (VerifyContext *ctx, int opcode, int token)
 	if (!check_underflow (ctx, 2))
 		return;
 
-	if (opcode == CEE_LDELEM_ANY) {
+	if (opcode == CEE_LDELEM) {
 		if (!(type = verifier_load_type (ctx, token, "ldelem.any"))) {
 			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Type (0x%08x) not found at 0x%04x", token, ctx->ip_offset));
 			return;
@@ -4246,7 +4246,7 @@ do_stelem (VerifyContext *ctx, int opcode, int token)
 	if (!check_underflow (ctx, 3))
 		return;
 
-	if (opcode == CEE_STELEM_ANY) {
+	if (opcode == CEE_STELEM) {
 		if (!(type = verifier_load_type (ctx, token, "stelem.any"))) {
 			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Type (0x%08x) not found at 0x%04x", token, ctx->ip_offset));
 			return;
@@ -5544,13 +5544,13 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			break;
 
-		case CEE_LDELEM_ANY:
+		case CEE_LDELEM:
 			code_bounds_check (5);
 			do_ldelem (&ctx, *ip, read32 (ip + 1));
 			ip += 5;
 			break;
 
-		case CEE_STELEM_ANY:
+		case CEE_STELEM:
 			code_bounds_check (5);
 			do_stelem (&ctx, *ip, read32 (ip + 1));
 			ip += 5;

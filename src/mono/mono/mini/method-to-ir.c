@@ -8484,7 +8484,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			ip += 5;
 			break;
-		case CEE_LDELEM_ANY:
+		case CEE_LDELEM:
 		case CEE_LDELEM_I1:
 		case CEE_LDELEM_U1:
 		case CEE_LDELEM_I2:
@@ -8501,7 +8501,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (2);
 			sp -= 2;
 
-			if (*ip == CEE_LDELEM_ANY) {
+			if (*ip == CEE_LDELEM) {
 				CHECK_OPSIZE (5);
 				token = read32 (ip + 1);
 				klass = mini_get_class (method, token, generic_context);
@@ -8528,7 +8528,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0);
 			}
 			*sp++ = ins;
-			if (*ip == CEE_LDELEM_ANY)
+			if (*ip == CEE_LDELEM)
 				ip += 5;
 			else
 				++ip;
@@ -8542,7 +8542,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STELEM_R4:
 		case CEE_STELEM_R8:
 		case CEE_STELEM_REF:
-		case CEE_STELEM_ANY: {
+		case CEE_STELEM: {
 			MonoInst *addr;
 
 			CHECK_STACK (3);
@@ -8550,7 +8550,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			cfg->flags |= MONO_CFG_HAS_LDELEMA;
 
-			if (*ip == CEE_STELEM_ANY) {
+			if (*ip == CEE_STELEM) {
 				CHECK_OPSIZE (5);
 				token = read32 (ip + 1);
 				klass = mini_get_class (method, token, generic_context);
@@ -8593,7 +8593,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
-			if (*ip == CEE_STELEM_ANY)
+			if (*ip == CEE_STELEM)
 				ip += 5;
 			else
 				++ip;
