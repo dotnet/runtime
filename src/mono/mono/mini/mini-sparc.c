@@ -2753,6 +2753,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			sparc_sub (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
 			break;
+		case OP_IREM_UN_IMM:
+			sparc_set (code, ins->inst_imm, GP_SCRATCH_REG);
+			sparc_wry (code, sparc_g0, sparc_g0);
+			sparc_udiv (code, FALSE, ins->sreg1, GP_SCRATCH_REG, sparc_o7);
+			sparc_umul (code, FALSE, ins->sreg2, sparc_o7, sparc_o7);
+			sparc_sub (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
+			break;
 		case OP_IOR:
 			sparc_or (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
