@@ -6247,7 +6247,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	mono_g_hash_table_insert (domain->type_hash, type, res);
 
 	if (type->type == MONO_TYPE_VOID)
-		MONO_OBJECT_SETREF (domain, typeof_void, res);
+		domain->typeof_void = res;
 
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
