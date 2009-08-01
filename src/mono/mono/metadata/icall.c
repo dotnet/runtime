@@ -2902,20 +2902,21 @@ ves_icall_MonoGenericClass_InflateType (MonoReflectionGenericClass *type,
 }
 
 static MonoReflectionMethod *
-ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
+ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *ref_type)
 {
 	MonoMethod *method;
-	MonoClass *klass;
+	MonoType *type = ref_type->type;
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->byref || type->type->type != MONO_TYPE_MVAR)
+	if (type->byref || (type->type != MONO_TYPE_MVAR && type->type != MONO_TYPE_VAR))
+		mono_raise_exception (mono_get_exception_invalid_operation ("DeclaringMethod can only be used on generic arguments"));
+	if (type->type == MONO_TYPE_VAR)
 		return NULL;
 
-	method = mono_type_get_generic_param_owner (type->type)->owner.method;
+	method = mono_type_get_generic_param_owner (type)->owner.method;
 	g_assert (method);
-	klass = mono_class_from_mono_type (type->type);
-	return mono_method_get_object (mono_object_domain (type), method, klass);
+	return mono_method_get_object (mono_object_domain (ref_type), method, method->klass);
 }
 
 static MonoReflectionDllImportAttribute*
