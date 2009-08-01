@@ -22,7 +22,7 @@ namespace TestApp
 
 			assembly =
 				Thread.GetDomain ().DefineDynamicAssembly (
-					assemblyName, AssemblyBuilderAccess.RunAndSave, ".");
+					assemblyName, AssemblyBuilderAccess.RunAndSave | (AssemblyBuilderAccess)0x800, ".");
 
 			module = assembly.DefineDynamicModule ("module1", "Module1.dll");
 		}
