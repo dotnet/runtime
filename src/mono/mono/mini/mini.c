@@ -4405,7 +4405,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		mono_class_setup_vtable (method->klass);
 		if (method->klass->exception_type != MONO_EXCEPTION_NONE) {
 			if (exc)
-				*exc = mono_class_get_exception_for_failure (method->klass);
+				*exc = (MonoObject*)mono_class_get_exception_for_failure (method->klass);
 			else
 				mono_raise_exception (mono_class_get_exception_for_failure (method->klass));
 			return NULL;
