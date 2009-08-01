@@ -3049,15 +3049,18 @@ static void
 print_unimplemented_interface_method_info (MonoClass *class, MonoClass *ic, MonoMethod *im, int im_slot, MonoMethod **overrides, int onum) {
 	int index;
 	char *method_signature;
+	char *type_name;
 	
 	for (index = 0; index < onum; ++index) {
 		g_print (" at slot %d: %s (%d) overrides %s (%d)\n", im_slot, overrides [index*2+1]->name, 
 			 overrides [index*2+1]->slot, overrides [index*2]->name, overrides [index*2]->slot);
 	}
 	method_signature = mono_signature_get_desc (mono_method_signature (im), FALSE);
-	printf ("no implementation for interface method %s::%s(%s) in class %s.%s\n",
-		mono_type_get_name (&ic->byval_arg), im->name, method_signature, class->name_space, class->name);
+	type_name = mono_type_full_name (&class->byval_arg);
+	printf ("no implementation for interface method %s::%s(%s) in class %s\n",
+		mono_type_get_name (&ic->byval_arg), im->name, method_signature, type_name);
 	g_free (method_signature);
+	g_free (type_name);
 	mono_class_setup_methods (class);
 	for (index = 0; index < class->method.count; ++index) {
 		MonoMethod *cm = class->methods [index];
@@ -3123,6 +3126,10 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		MonoMethod **tmp;
 
 		mono_class_setup_vtable (gklass);
+		if (gklass->exception_type != MONO_EXCEPTION_NONE) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			return;
+		}
 
 		tmp = mono_image_alloc0 (class->image, sizeof (gpointer) * gklass->vtable_size);
 		class->vtable_size = gklass->vtable_size;
