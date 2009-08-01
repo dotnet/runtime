@@ -2234,6 +2234,8 @@ mono_emit_rgctx_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **ar
 
 static MonoInst*
 emit_get_rgctx_method (MonoCompile *cfg, int context_used, MonoMethod *cmethod, int rgctx_type);
+static MonoInst*
+emit_get_rgctx_klass (MonoCompile *cfg, int context_used, MonoClass *klass, int rgctx_type);
 
 static MonoInst*
 mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
@@ -2547,9 +2549,19 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 		/* Avoid barriers when storing to the stack */
 		if (!((dest->opcode == OP_ADD_IMM && dest->sreg1 == cfg->frame_reg) ||
 			  (dest->opcode == OP_LDADDR))) {
+			int context_used = 0;
+
 			iargs [0] = dest;
 			iargs [1] = src;
-			EMIT_NEW_PCONST (cfg, iargs [2], klass);
+
+			if (cfg->generic_sharing_context)
+				context_used = mono_class_check_context_used (klass);
+			if (context_used) {
+				iargs [2] = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+			} else {
+				EMIT_NEW_PCONST (cfg, iargs [2], klass);
+				mono_class_compute_gc_descriptor (klass);
+			}
 
 			mono_emit_jit_icall (cfg, mono_value_copy, iargs);
 		}

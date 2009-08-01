@@ -766,6 +766,12 @@ instantiate_other_info (MonoDomain *domain, MonoRuntimeGenericContextOtherInfoTe
 		free_inflated_info (oti->info_type, data);
 		g_assert (arg_class);
 
+		/* The class might be used as an argument to
+		   mono_value_copy(), which requires that its GC
+		   descriptor has been computed. */
+		if (oti->info_type == MONO_RGCTX_INFO_KLASS)
+			mono_class_compute_gc_descriptor (arg_class);
+
 		return class_type_info (domain, arg_class, oti->info_type);
 	}
 	case MONO_RGCTX_INFO_TYPE:
