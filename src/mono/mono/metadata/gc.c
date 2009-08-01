@@ -181,6 +181,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		MonoDelegate* del = (MonoDelegate*)o;
 		if (del->delegate_trampoline)
 			mono_delegate_free_ftnptr ((MonoDelegate*)o);
+		mono_domain_set_internal (caller_domain);
 		return;
 	}
 
@@ -1000,6 +1001,9 @@ finalizer_thread (gpointer unused)
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
+
+		g_assert (mono_domain_get () == mono_get_root_domain ());
+
 #ifdef MONO_HAS_SEMAPHORES
 		MONO_SEM_WAIT (&finalizer_sem);
 #else
