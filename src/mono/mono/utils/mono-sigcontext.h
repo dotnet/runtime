@@ -69,9 +69,9 @@
 #elif defined(__x86_64__)
 
 #ifdef __FreeBSD__
-#define UCONTEXT_GREGS(ctx)	(((ucontext_t*)(ctx))->uc_mcontext)
+#define UCONTEXT_GREGS(ctx)	&(((ucontext_t*)(ctx))->uc_mcontext)
 #else
-#define UCONTEXT_GREGS(ctx)	(((ucontext_t*)(ctx))->uc_mcontext.gregs)
+#define UCONTEXT_GREGS(ctx)	&(((ucontext_t*)(ctx))->uc_mcontext.gregs)
 #endif
 
 #elif defined(__mono_ppc__)
