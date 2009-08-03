@@ -27,6 +27,38 @@
 #define MONO_ARCH_CALLEE_XREGS 0
 
 #endif
+ 
+
+#define MONO_ARCH_BANK_MIRRORED -2
+
+#ifdef MONO_ARCH_USE_SHARED_FP_SIMD_BANK
+
+#ifndef MONO_ARCH_NEED_SIMD_BANK
+#error "MONO_ARCH_USE_SHARED_FP_SIMD_BANK needs MONO_ARCH_NEED_SIMD_BANK to work"
+#endif
+
+#define get_mirrored_bank(bank) (((bank) == MONO_REG_SIMD ) ? MONO_REG_DOUBLE : (((bank) == MONO_REG_DOUBLE ) ? MONO_REG_SIMD : -1))
+
+#define is_hreg_mirrored(rs, bank, hreg) ((rs)->symbolic [(bank)] [(hreg)] == MONO_ARCH_BANK_MIRRORED)
+
+
+#else
+
+
+#define get_mirrored_bank(bank) (-1)
+
+#define is_hreg_mirrored(rs, bank, hreg) (0)
+
+#endif
+
+
+/* If the bank is mirrored return the true logical bank that the register in the
+ * physical register bank is allocated to.
+ */
+static inline int translate_bank (MonoRegState *rs, int bank, int hreg) {
+	return is_hreg_mirrored (rs, bank, hreg) ? get_mirrored_bank (bank) : bank;
+}
+
 /*
  * Every hardware register belongs to a register type or register bank. bank 0 
  * contains the int registers, bank 1 contains the fp registers.
@@ -104,6 +136,15 @@ g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
 static inline void
 mono_regstate_assign (MonoRegState *rs)
 {
+#ifdef MONO_ARCH_USE_SHARED_FP_SIMD_BANK
+	/* The regalloc may fail if fp and simd logical regbanks share the same physical reg bank and
+	 * if the values here are not the same.
+	 */
+	g_assert(regbank_callee_regs [MONO_REG_SIMD] == regbank_callee_regs [MONO_REG_DOUBLE]);
+	g_assert(regbank_callee_saved_regs [MONO_REG_SIMD] == regbank_callee_saved_regs [MONO_REG_DOUBLE]);
+	g_assert(regbank_size [MONO_REG_SIMD] == regbank_size [MONO_REG_DOUBLE]);
+#endif
+
 	if (rs->next_vreg > rs->vassign_size) {
 		g_free (rs->vassign);
 		rs->vassign_size = MAX (rs->next_vreg, 256);
@@ -166,10 +207,17 @@ static inline int
 mono_regstate_alloc_general (MonoRegState *rs, regmask_t allow, int bank)
 {
 	int i;
+	int mirrored_bank;
 	regmask_t mask = allow & rs->free_mask [bank];
 	for (i = 0; i < regbank_size [bank]; ++i) {
 		if (mask & ((regmask_t)1 << i)) {
 			rs->free_mask [bank] &= ~ ((regmask_t)1 << i);
+
+			mirrored_bank = get_mirrored_bank (bank);
+			if (mirrored_bank == -1)
+				return i;
+
+			rs->free_mask [mirrored_bank] = rs->free_mask [bank];
 			return i;
 		}
 	}
@@ -179,9 +227,17 @@ mono_regstate_alloc_general (MonoRegState *rs, regmask_t allow, int bank)
 static inline void
 mono_regstate_free_general (MonoRegState *rs, int reg, int bank)
 {
+	int mirrored_bank;
+
 	if (reg >= 0) {
 		rs->free_mask [bank] |= (regmask_t)1 << reg;
 		rs->symbolic [bank][reg] = 0;
+
+		mirrored_bank = get_mirrored_bank (bank);
+		if (mirrored_bank == -1)
+			return;
+		rs->free_mask [mirrored_bank] = rs->free_mask [bank];
+		rs->symbolic [mirrored_bank][reg] = 0;
 	}
 }
 
@@ -659,6 +715,9 @@ get_register_force_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **la
 	symbolic = rs->symbolic [bank];
 	sel = rs->vassign [reg];
 
+	/* the vreg we need to spill lives in another logical reg bank */
+	bank = translate_bank (cfg->rs, bank, sel);
+
 	/*i = rs->isymbolic [sel];
 	g_assert (i == reg);*/
 	i = reg;
@@ -727,6 +786,10 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 		for (i = 0; i < regbank_size [bank]; ++i) {
 			if (regmask & (regmask (i))) {
 				sel = i;
+
+				/* the vreg we need to load lives in another logical bank */
+				bank = translate_bank (cfg->rs, bank, sel);
+
 				DEBUG (printf ("\t\tselected register %s has assignment %d\n", mono_regname_full (sel, bank), rs->symbolic [bank] [sel]));
 				break;
 			}
@@ -773,6 +836,7 @@ free_up_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *in
 {
 	if (G_UNLIKELY (bank)) {
 		if (!(cfg->rs->free_mask [1] & (regmask (hreg)))) {
+			bank = translate_bank (cfg->rs, bank, hreg);
 			DEBUG (printf ("\tforced spill of R%d\n", cfg->rs->symbolic [bank] [hreg]));
 			get_register_force_spilling (cfg, bb, last, ins, cfg->rs->symbolic [bank] [hreg], bank);
 			mono_regstate_free_general (cfg->rs, hreg, bank);
@@ -874,6 +938,8 @@ static inline void
 assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 {
 	if (G_UNLIKELY (bank)) {
+		int mirrored_bank;
+
 		g_assert (reg >= regbank_size [bank]);
 		g_assert (hreg < regbank_size [bank]);
 		g_assert (! is_global_freg (hreg));
@@ -881,6 +947,21 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 		rs->vassign [reg] = hreg;
 		rs->symbolic [bank] [hreg] = reg;
 		rs->free_mask [bank] &= ~ (regmask (hreg));
+
+		mirrored_bank = get_mirrored_bank (bank);
+		if (mirrored_bank == -1)
+			return;
+
+		/* Make sure the other logical reg bank that this bank shares
+		 * a single hard reg bank knows that this hard reg is not free.
+		 */
+		rs->free_mask [mirrored_bank] = rs->free_mask [bank];
+
+		/* Mark the other logical bank that the this bank shares
+		 * a single hard reg bank with as mirrored.
+		 */
+		rs->symbolic [mirrored_bank] [hreg] = MONO_ARCH_BANK_MIRRORED;
+
 	}
 	else {
 		g_assert (reg >= MONO_MAX_IREGS);
@@ -1481,8 +1562,12 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->dreg = dest_dreg;
 
 			if (G_UNLIKELY (bank)) {
-				if (rs->symbolic [bank] [dest_dreg] >= regbank_size [bank])
-					free_up_reg (cfg, bb, tmp, ins, dest_dreg, bank);
+				/* the register we need to free up may be used in another logical regbank
+				 * so do a translate just in case.
+				 */
+				int translated_bank = translate_bank (cfg->rs, bank, dest_dreg);
+				if (rs->symbolic [translated_bank] [dest_dreg] >= regbank_size [translated_bank])
+					free_up_reg (cfg, bb, tmp, ins, dest_dreg, translated_bank);
 			}
 			else {
 				if (rs->isymbolic [dest_dreg] >= MONO_MAX_IREGS)
@@ -1552,6 +1637,14 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						dreg = -1;
 
 					for (j = 0; j < regbank_size [cur_bank]; ++j) {
+
+						/* we are looping though the banks in the outer loop
+						 * so, we don't need to deal with mirrored hregs
+						 * because we will get them in one of the other bank passes.
+						 */
+						if (is_hreg_mirrored (rs, cur_bank, j))
+							continue;
+
 						s = regmask (j);
 						if ((clob_mask & s) && !(rs->free_mask [cur_bank] & s) && (j != ins->sreg1)) {
 							if (j != dreg)

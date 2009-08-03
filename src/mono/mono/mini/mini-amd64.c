@@ -117,25 +117,32 @@ mono_arch_regname (int reg)
 	return "unknown";
 }
 
-static const char * xmmregs [] = {
-	"xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "xmm8",
-	"xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15"
+static const char * packed_xmmregs [] = {
+	"p:xmm0", "p:xmm1", "p:xmm2", "p:xmm3", "p:xmm4", "p:xmm5", "p:xmm6", "p:xmm7", "p:xmm8",
+	"p:xmm9", "p:xmm10", "p:xmm11", "p:xmm12", "p:xmm13", "p:xmm14", "p:xmm15"
+};
+
+static const char * single_xmmregs [] = {
+	"s:xmm0", "s:xmm1", "s:xmm2", "s:xmm3", "s:xmm4", "s:xmm5", "s:xmm6", "s:xmm7", "s:xmm8",
+	"s:xmm9", "s:xmm10", "s:xmm11", "s:xmm12", "s:xmm13", "s:xmm14", "s:xmm15"
 };
 
 const char*
 mono_arch_fregname (int reg)
 {
 	if (reg < AMD64_XMM_NREG)
-		return xmmregs [reg];
+		return single_xmmregs [reg];
 	else
 		return "unknown";
 }
 
-/* TODO: Figure out away of telling this and the one above apart if things get confussing. */
 const char *
 mono_arch_xregname (int reg)
 {
-	return mono_arch_fregname (reg);
+	if (reg < AMD64_XMM_NREG)
+		return packed_xmmregs [reg];
+	else
+		return "unknown";
 }
 
 G_GNUC_UNUSED static void

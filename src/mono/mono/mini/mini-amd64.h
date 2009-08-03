@@ -81,6 +81,7 @@ struct sigcontext {
 #ifndef DISABLE_SIMD
 #define MONO_ARCH_SIMD_INTRINSICS 1
 #define MONO_ARCH_NEED_SIMD_BANK 1
+#define MONO_ARCH_USE_SHARED_FP_SIMD_BANK 1
 #endif
 
 
@@ -97,19 +98,13 @@ struct sigcontext {
 
 #define MONO_ARCH_FP_RETURN_REG AMD64_XMM0
 
-/* XREG and FREG banks are the same in amd64 
- * Until the regalloc is redone so that they can play nicely
- * divide up the regbank and force them to play in thier own worlds.
- *
- * FREGS are at the top of the xmm reg bank and the XREGS are at the bottom.
- */
 /* xmm15 is reserved for use by some opcodes */
-#define MONO_ARCH_CALLEE_FREGS 0x00ff
+#define MONO_ARCH_CALLEE_FREGS 0x7fff
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
 
 #define MONO_MAX_XREGS MONO_MAX_FREGS
 
-#define MONO_ARCH_CALLEE_XREGS 0x7f00
+#define MONO_ARCH_CALLEE_XREGS 0x7fff
 #define MONO_ARCH_CALLEE_SAVED_XREGS 0
 
 
