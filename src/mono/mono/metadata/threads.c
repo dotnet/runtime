@@ -1052,7 +1052,8 @@ void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 
 	THREAD_DEBUG (g_message ("%s: Closing thread %p, handle %p", __func__, this, thread));
 
-	CloseHandle (thread);
+	if (thread)
+		CloseHandle (thread);
 
 	DeleteCriticalSection (this->synch_cs);
 	g_free (this->synch_cs);
