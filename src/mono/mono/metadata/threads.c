@@ -1055,9 +1055,11 @@ void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 	if (thread)
 		CloseHandle (thread);
 
-	DeleteCriticalSection (this->synch_cs);
-	g_free (this->synch_cs);
-	this->synch_cs = NULL;
+	if (this->synch_cs) {
+		DeleteCriticalSection (this->synch_cs);
+		g_free (this->synch_cs);
+		this->synch_cs = NULL;
+	}
 
 	g_assert (!this->abort_exc && !this->abort_state_handle);
 }
