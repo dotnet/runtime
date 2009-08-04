@@ -1053,7 +1053,7 @@ mono_gc_init (void)
 
 	mono_gc_base_init ();
 
-	if (g_getenv ("GC_DONT_GC")) {
+	if (GC_dont_gc || g_getenv ("GC_DONT_GC")) {
 		gc_disabled = TRUE;
 		return;
 	}
