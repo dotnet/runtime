@@ -1,12 +1,23 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 LOW=2000
 HIGH=2000
 
-function create_iface () {
+iota() {
+	(
+		i=$1
+		while [ $i -le $2 ]
+		do
+			echo $i
+			i=`expr $i + 1`
+		done
+	)
+}
+
+create_iface () {
 	COUNT=$1
 	echo "public interface Iface_$COUNT {"
-	for i in `seq 1 $COUNT`;
+	for i in `iota 1 $COUNT`;
 	do
 		echo "	int Method_$i (int a, int b, int c, int d);"
 	done 
@@ -15,10 +26,10 @@ function create_iface () {
 }
 
 
-function create_impl () {
+create_impl() {
 	COUNT=$1
 	echo "public class Impl_$COUNT : Iface_$COUNT {"
-	for i in `seq 1 $COUNT`;
+	for i in `iota 1 $COUNT`;
 	do
 		echo "	public virtual int Method_$i (int a, int b, int c, int d) { return a - b - c - d + ${i}; }"
 	done 
@@ -27,7 +38,7 @@ function create_impl () {
 }
 
 
-function create_static_part () {
+create_static_part() {
 	IFACE=$1
 	echo "	static Iface_$IFACE var_$IFACE = new Impl_$IFACE ();"
 	echo "	static int Test_$IFACE () {
@@ -35,7 +46,7 @@ function create_static_part () {
 		int r;
 	"
 
-	for i in `seq 1 $IFACE`;
+	for i in `iota 1 $IFACE`;
 	do	
 		echo "		if ((r = var_${IFACE}.Method_$i (10,5,3,2)) != ${i}) {
 			Console.WriteLine(\"iface $IFACE method $i returned {0}\", r);
@@ -49,7 +60,7 @@ function create_static_part () {
 }
 
 
-function test_iface () {
+test_iface() {
 	IFACE=$1
 	echo "		res |= Test_$IFACE ();"
 }
@@ -61,7 +72,7 @@ echo "using System;
 
 "
 
-for i in `seq $LOW $HIGH`;
+for i in `iota $LOW $HIGH`;
 do
 	create_iface $i
 	create_impl $i
@@ -75,7 +86,7 @@ public class Driver
 "
 
 
-for i in `seq $LOW $HIGH`;
+for i in `iota $LOW $HIGH`;
 do
 	create_static_part $i
 done
@@ -87,7 +98,7 @@ echo "
 		int res = 0;"
 
 
-for i in `seq $LOW $HIGH`;
+for i in `iota $LOW $HIGH`;
 do
 	test_iface  $i
 done
