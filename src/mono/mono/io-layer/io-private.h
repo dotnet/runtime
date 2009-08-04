@@ -29,6 +29,7 @@ extern gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length);
 extern void _wapi_file_details (gpointer handle_info);
 extern void _wapi_console_details (gpointer handle_info);
 extern void _wapi_pipe_details (gpointer handle_info);
+extern gpointer _wapi_stdhandle_create (int fd, const gchar *name);
 
 /* Currently used for both FILE, CONSOLE and PIPE handle types.  This may
  * have to change in future.
