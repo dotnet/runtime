@@ -545,6 +545,9 @@ static void thread_cleanup (MonoThread *thread)
 	if (thread->serialized_culture_info)
 		g_free (thread->serialized_culture_info);
 
+	if (thread->serialized_ui_culture_info)
+		g_free (thread->serialized_ui_culture_info);
+
 	g_free (thread->name);
 
 	thread->cached_culture_info = NULL;
