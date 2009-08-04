@@ -634,6 +634,8 @@ typedef union {
 
 #define amd64_sse_divsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5e)
 
+#define amd64_sse_sqrtsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xf2, 0x0f, 0x51)
+
 
 #define amd64_sse_pinsrw_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm ((inst), (dreg), (reg), 0x66, 0x0f, 0xc4, (imm))
 

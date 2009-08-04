@@ -4627,11 +4627,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XORPD:
 			amd64_sse_xorpd_reg_reg (code, ins->sreg1, ins->sreg2);
 			break;
-		/* TODO: This op is in the AMD64 manual but has not been implemented.
 		case OP_SQRTPD:
 			amd64_sse_sqrtpd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
-		*/
 		case OP_ADDSUBPD:
 			amd64_sse_addsubpd_reg_reg (code, ins->sreg1, ins->sreg2);
 			break;

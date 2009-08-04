@@ -3867,6 +3867,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XORPD:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_XOR, ins->sreg1, ins->sreg2);
 			break;
+		case OP_SQRTPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_SQRT, ins->dreg, ins->sreg1);
+			break;
 		case OP_ADDSUBPD:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_ADDSUB, ins->sreg1, ins->sreg2);
 			break;

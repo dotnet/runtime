@@ -436,6 +436,7 @@ andpd: dest:x src1:x src2:x len:4 clob:1
 andnpd: dest:x src1:x src2:x len:4 clob:1
 orpd: dest:x src1:x src2:x len:4 clob:1
 xorpd: dest:x src1:x src2:x len:4 clob:1
+sqrtpd: dest:x src1:x src2:x len:4 clob:1
 
 haddpd: dest:x src1:x src2:x len:5 clob:1
 hsubpd: dest:x src1:x src2:x len:5 clob:1

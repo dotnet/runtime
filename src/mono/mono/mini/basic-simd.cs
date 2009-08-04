@@ -2852,6 +2852,16 @@ public class SimdTests {
 		return 0;
 	}
 	
+	public static int test_0_double_packed_sqrt () {
+		Vector2d a = new Vector2d (16, 4);
+		a = a.Sqrt ();
+		if (a.X != 4f)
+			return 1;
+		if (a.Y != 2f)
+			return 2;
+		return 0;
+	}
+
 	public static int test_24_regs_pressure_a () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
 		Vector4f b = a + a;
