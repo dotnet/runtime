@@ -1,3 +1,14 @@
+2009-08-04  Miguel de Icaza  <miguel@novell.com>
+
+	* Start the split between PLATFORM_WIN32 and TARGET_WIN32.  
+
+	PLATFORM_WIN32 should be used to configure the runtime while
+	building it.   TARGET_WIN32 is used for target execution.
+
+	This is used by Mono's AOT cross compiler when running on Windows,
+	but targetting a different operating system.    So we have to tell
+	those two apart.
+
 2009-07-24  Jb Evain  <jbevain@novell.com>
 
 	* scripts/Makefile.am: generate a dmcs script for the 4.0 compiler

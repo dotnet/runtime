@@ -76,7 +76,8 @@ esac
 case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
-		AC_DEFINE(PLATFORM_WIN32,1,[Platform is Win32])
+		AC_DEFINE(PLATFORM_WIN32,1,[Host Platform is Win32])
+		AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
 		AC_DEFINE(PLATFORM_NO_SYMLINKS,1,[This platform does not support symlinks])
 		if test "x$cross_compiling" = "xno"; then

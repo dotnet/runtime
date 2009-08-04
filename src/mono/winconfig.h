@@ -567,6 +567,7 @@
 
 /* Platform is Win32 */
 #define PLATFORM_WIN32 1
+#define TARGET_WIN32 1
 
 /* pthread_t is a pointer */
 /* #undef PTHREAD_POINTER_ID */
