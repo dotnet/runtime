@@ -1093,6 +1093,7 @@ struct _MonoReflectionGenericClass {
 	/* From System.MonoType */
 	MonoObject *type_info;
 	MonoReflectionTypeBuilder *generic_type;
+	MonoArray *type_arguments;
 	guint32 initialized;
 };
 

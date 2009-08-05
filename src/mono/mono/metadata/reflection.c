@@ -6110,6 +6110,9 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 	static MonoClass *System_Reflection_MonoGenericClass;
 	MonoReflectionGenericClass *res;
 	MonoClass *klass, *gklass;
+	MonoGenericInst *ginst;
+	MonoArray *type_args;
+	int i;
 
 	if (!System_Reflection_MonoGenericClass) {
 		System_Reflection_MonoGenericClass = mono_class_from_name (
@@ -6132,6 +6135,12 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 	g_assert (gklass->reflection_info);
 	g_assert (!strcmp (((MonoObject*)gklass->reflection_info)->vtable->klass->name, "TypeBuilder"));
 	MONO_OBJECT_SETREF (res, generic_type, gklass->reflection_info);
+
+	ginst = klass->generic_class->context.class_inst;
+	type_args = mono_array_new (domain, mono_defaults.systemtype_class, ginst->type_argc);
+	for (i = 0; i < ginst->type_argc; ++i)
+		mono_array_setref (type_args, i, mono_type_get_object (domain, ginst->type_argv [i]));
+	MONO_OBJECT_SETREF (res, type_arguments, type_args);
 
 	return res;
 }
