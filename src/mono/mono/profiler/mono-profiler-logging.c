@@ -880,9 +880,6 @@ struct _MonoProfiler {
 	EVENT_TYPE done_data_writer_event;
 	gboolean terminate_writer_thread;
 	gboolean writer_thread_terminated;
-	gboolean detach_writer_thread;
-	gboolean writer_thread_enabled;
-	gboolean writer_thread_flush_everything;
 	
 	ProfilerFileWriteBuffer *write_buffers;
 	ProfilerFileWriteBuffer *current_write_buffer;
@@ -4083,21 +4080,6 @@ flush_everything (void) {
 	write_statistical_data_block (profiler->statistical_data);
 }
 
-/* This assumes the lock is held: it just offloads the work to the writer thread. */
-static void
-writer_thread_flush_everything (void) {
-	if (CHECK_WRITER_THREAD ()) {
-		profiler->writer_thread_flush_everything = TRUE;
-		LOG_WRITER_THREAD ("writer_thread_flush_everything: raising event...");
-		WRITER_EVENT_RAISE ();
-		LOG_WRITER_THREAD ("writer_thread_flush_everything: waiting event...");
-		WRITER_EVENT_DONE_WAIT ();
-		LOG_WRITER_THREAD ("writer_thread_flush_everything: got event.");
-	} else {
-		LOG_WRITER_THREAD ("writer_thread_flush_everything: no thread.");
-	}
-}
-
 #define RESULT_TO_LOAD_CODE(r) (((r)==MONO_PROFILE_OK)?MONO_PROFILER_LOADED_EVENT_SUCCESS:MONO_PROFILER_LOADED_EVENT_FAILURE)
 static void
 appdomain_start_load (MonoProfiler *profiler, MonoDomain *domain) {
@@ -4122,7 +4104,7 @@ static void
 appdomain_start_unload (MonoProfiler *profiler, MonoDomain *domain) {
 	LOCK_PROFILER ();
 	loaded_element_unload_start (profiler->loaded_appdomains, domain);
-	writer_thread_flush_everything ();
+	flush_everything ();
 	UNLOCK_PROFILER ();
 }
 
@@ -4164,7 +4146,7 @@ static void
 module_start_unload (MonoProfiler *profiler, MonoImage *module) {
 	LOCK_PROFILER ();
 	loaded_element_unload_start (profiler->loaded_modules, module);
-	writer_thread_flush_everything ();
+	flush_everything ();
 	UNLOCK_PROFILER ();
 }
 
@@ -4206,7 +4188,7 @@ static void
 assembly_start_unload (MonoProfiler *profiler, MonoAssembly *assembly) {
 	LOCK_PROFILER ();
 	loaded_element_unload_start (profiler->loaded_assemblies, assembly);
-	writer_thread_flush_everything ();
+	flush_everything ();
 	UNLOCK_PROFILER ();
 }
 static void
@@ -5228,11 +5210,7 @@ gc_resize (MonoProfiler *profiler, gint64 new_size) {
 
 static void
 runtime_initialized (MonoProfiler *profiler) {
-	LOG_WRITER_THREAD ("runtime_initialized: waking writer thread to enable it...\n");
-	WRITER_EVENT_ENABLE_RAISE ();
-	LOG_WRITER_THREAD ("runtime_initialized: waiting writer thread...\n");
-	WRITER_EVENT_DONE_WAIT ();
-	LOG_WRITER_THREAD ("runtime_initialized: writer thread enabled.\n");
+	LOG_WRITER_THREAD ("runtime_initialized: initializing internal calls.\n");
 	mono_add_internal_call ("Mono.Profiler.RuntimeControls::EnableProfiler", enable_profiler);
 	mono_add_internal_call ("Mono.Profiler.RuntimeControls::DisableProfiler", disable_profiler);
 	mono_add_internal_call ("Mono.Profiler.RuntimeControls::TakeHeapSnapshot", request_heap_snapshot);
@@ -5267,6 +5245,10 @@ profiler_shutdown (MonoProfiler *prof)
 	write_end_block ();
 	FLUSH_FILE ();
 	CLOSE_FILE();
+	mono_profiler_install_code_chunk_new (NULL);
+	mono_profiler_install_code_chunk_destroy (NULL);
+	mono_profiler_install_code_buffer_new (NULL);
+	profiler_code_chunks_cleanup (& (profiler->code_chunks));
 	UNLOCK_PROFILER ();
 	
 	g_free (profiler->file_name);
@@ -5298,10 +5280,6 @@ profiler_shutdown (MonoProfiler *prof)
 	if (profiler->executable_regions != NULL) {
 		profiler_executable_memory_regions_destroy (profiler->executable_regions);
 	}
-	mono_profiler_install_code_chunk_new (NULL);
-	mono_profiler_install_code_chunk_destroy (NULL);
-	mono_profiler_install_code_buffer_new (NULL);
-	profiler_code_chunks_cleanup (& (profiler->code_chunks));
 	
 	profiler_heap_buffers_free (&(profiler->heap));
 	if (profiler->heap_shot_command_file_name != NULL) {
@@ -5683,42 +5661,8 @@ failure_handling:
 	}
 }
 
-static gboolean
-thread_detach_callback (MonoThread *thread) {
-	LOG_WRITER_THREAD ("thread_detach_callback: asking writer thread to detach");
-	profiler->detach_writer_thread = TRUE;
-	WRITER_EVENT_RAISE ();
-	LOG_WRITER_THREAD ("thread_detach_callback: done");
-	return FALSE;
-}
-
 static guint32
 data_writer_thread (gpointer nothing) {
-	static gboolean thread_attached = FALSE;
-	static gboolean thread_detached = FALSE;
-	static MonoThread *this_thread = NULL;
-	
-	/* Wait for the OK to attach to the runtime */
-	WRITER_EVENT_ENABLE_WAIT ();
-	if (! profiler->terminate_writer_thread) {
-		MonoDomain * root_domain = mono_get_root_domain ();
-		if (root_domain != NULL) {
-			LOG_WRITER_THREAD ("data_writer_thread: attaching thread");
-			this_thread = mono_thread_attach (root_domain);
-			mono_thread_set_manage_callback (this_thread, thread_detach_callback);
-			thread_attached = TRUE;
-		} else {
-			g_error ("Cannot get root domain\n");
-		}
-	} else {
-		/* Execution was too short, pretend we attached and detached. */
-		thread_attached = TRUE;
-		thread_detached = TRUE;
-	}
-	profiler->writer_thread_enabled = TRUE;
-	/* Notify that we are attached to the runtime */
-	WRITER_EVENT_DONE_RAISE ();
-	
 	for (;;) {
 		ProfilerStatisticalData *statistical_data;
 		gboolean done;
@@ -5728,77 +5672,51 @@ data_writer_thread (gpointer nothing) {
 		LOG_WRITER_THREAD ("data_writer_thread: just woke up");
 		
 		if (profiler->heap_shot_was_signalled) {
+			MonoDomain * root_domain = mono_get_root_domain ();
+			
+			if (root_domain != NULL) {
+				MonoThread *this_thread;
+				LOG_WRITER_THREAD ("data_writer_thread: attaching thread");
+				this_thread = mono_thread_attach (root_domain);
 			LOG_WRITER_THREAD ("data_writer_thread: starting requested collection");
 			mono_gc_collect (mono_gc_max_generation ());
 			LOG_WRITER_THREAD ("data_writer_thread: requested collection done");
-		}
-		
-		statistical_data = profiler->statistical_data_ready;
-		done = (statistical_data == NULL) && (profiler->heap_shot_write_jobs == NULL) && (profiler->writer_thread_flush_everything == FALSE);
-		
-		if ((!done) && thread_attached) {
-			if (profiler->writer_thread_flush_everything) {
-				/* Note that this assumes the lock is held by the thread that woke us up! */
-				if (! thread_detached) {
-					LOG_WRITER_THREAD ("data_writer_thread: flushing everything...");
-					flush_everything ();
-					profiler->writer_thread_flush_everything = FALSE;
-					WRITER_EVENT_DONE_RAISE ();
-					LOG_WRITER_THREAD ("data_writer_thread: flushed everything.");
-				} else {
-					LOG_WRITER_THREAD ("data_writer_thread: flushing requested, but thread is detached...");
-					profiler->writer_thread_flush_everything = FALSE;
-					WRITER_EVENT_DONE_RAISE ();
-					LOG_WRITER_THREAD ("data_writer_thread: done event raised.");
-				}
-			} else {
-				LOG_WRITER_THREAD ("data_writer_thread: acquiring lock and writing data");
-				LOCK_PROFILER ();
-				
-				// This makes sure that all method ids are in place
-				LOG_WRITER_THREAD ("data_writer_thread: writing mapping...");
-				flush_all_mappings ();
-				LOG_WRITER_THREAD ("data_writer_thread: wrote mapping");
-				
-				if ((statistical_data != NULL) && ! thread_detached) {
-					LOG_WRITER_THREAD ("data_writer_thread: writing statistical data...");
-					profiler->statistical_data_ready = NULL;
-					write_statistical_data_block (statistical_data);
-					statistical_data->next_free_index = 0;
-					statistical_data->first_unwritten_index = 0;
-					profiler->statistical_data_second_buffer = statistical_data;
-					LOG_WRITER_THREAD ("data_writer_thread: wrote statistical data");
-				}
-				
-				profiler_process_heap_shot_write_jobs ();
-				
-				UNLOCK_PROFILER ();
-				LOG_WRITER_THREAD ("data_writer_thread: wrote data and released lock");
-			}
-		} else {
-			if (profiler->writer_thread_flush_everything) {
-				LOG_WRITER_THREAD ("data_writer_thread: flushing requested, but thread is not attached...");
-				profiler->writer_thread_flush_everything = FALSE;
-				WRITER_EVENT_DONE_RAISE ();
-				LOG_WRITER_THREAD ("data_writer_thread: done event raised.");
-			}
-		}
-		
-		if (profiler->detach_writer_thread) {
-			if (this_thread != NULL) {
-				LOG_WRITER_THREAD ("data_writer_thread: detach requested, acquiring lock and flushing data");
-				LOCK_PROFILER ();
-				flush_everything ();
-				UNLOCK_PROFILER ();
-				LOG_WRITER_THREAD ("data_writer_thread: flushed data and released lock");
 				LOG_WRITER_THREAD ("data_writer_thread: detaching thread");
 				mono_thread_detach (this_thread);
 				this_thread = NULL;
-				profiler->detach_writer_thread = FALSE;
-				thread_detached = TRUE;
+				LOG_WRITER_THREAD ("data_writer_thread: collection sequence completed");
 			} else {
-				LOG_WRITER_THREAD ("data_writer_thread: warning: thread has already been detached");
+				LOG_WRITER_THREAD ("data_writer_thread: cannot get root domain, collection sequence skipped");
 			}
+			
+		}
+		
+		statistical_data = profiler->statistical_data_ready;
+		done = (statistical_data == NULL) && (profiler->heap_shot_write_jobs == NULL);
+		
+		if (!done) {
+			LOG_WRITER_THREAD ("data_writer_thread: acquiring lock and writing data");
+			LOCK_PROFILER ();
+			
+			// This makes sure that all method ids are in place
+			LOG_WRITER_THREAD ("data_writer_thread: writing mapping...");
+			flush_all_mappings ();
+			LOG_WRITER_THREAD ("data_writer_thread: wrote mapping");
+			
+			if (statistical_data != NULL) {
+				LOG_WRITER_THREAD ("data_writer_thread: writing statistical data...");
+				profiler->statistical_data_ready = NULL;
+				write_statistical_data_block (statistical_data);
+				statistical_data->next_free_index = 0;
+				statistical_data->first_unwritten_index = 0;
+				profiler->statistical_data_second_buffer = statistical_data;
+				LOG_WRITER_THREAD ("data_writer_thread: wrote statistical data");
+			}
+			
+			profiler_process_heap_shot_write_jobs ();
+			
+			UNLOCK_PROFILER ();
+			LOG_WRITER_THREAD ("data_writer_thread: wrote data and released lock");
 		}
 		
 		if (profiler->terminate_writer_thread) {
