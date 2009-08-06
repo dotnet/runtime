@@ -4055,8 +4055,16 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		return NULL;
 	}
 
-	if (mono_aot_only)
-		g_error ("Attempting to JIT compile method '%s' while running with --aot-only.\n", mono_method_full_name (method, TRUE));
+	if (mono_aot_only) {
+		char *fullname = mono_method_full_name (method, TRUE);
+		char *msg = g_strdup_printf ("Attempting to JIT compile method '%s' while running with --aot-only.\n", fullname);
+
+		*jit_ex = mono_get_exception_execution_engine (msg);
+		g_free (fullname);
+		g_free (msg);
+		
+		return NULL;
+	}
 
 	cfg = mini_method_compile (method, opt, target_domain, TRUE, FALSE, 0);
 
