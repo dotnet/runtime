@@ -45,7 +45,7 @@ namespace Mono.Tuner {
 			Method,
 		}
 
-		enum AttributeType {
+		protected enum AttributeType {
 			Critical,
 			SafeCritical,
 		}
@@ -242,7 +242,7 @@ namespace Mono.Tuner {
 			}
 		}
 
-		static bool HasSecurityAttribute (ICustomAttributeProvider provider, AttributeType type)
+		protected static bool HasSecurityAttribute (ICustomAttributeProvider provider, AttributeType type)
 		{
 			if (!provider.HasCustomAttributes)
 				return false;

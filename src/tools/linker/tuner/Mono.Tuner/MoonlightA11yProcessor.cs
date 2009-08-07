@@ -87,10 +87,66 @@ namespace Mono.Tuner {
 						AddCriticalAttribute (ctor);
 
 				if (type.HasMethods)
-					foreach (MethodDefinition method in type.Methods)
-						AddCriticalAttribute (method);
+					foreach (MethodDefinition method in type.Methods) {
+						MethodDefinition parent = GetOverridenMethod (type, method);
+						//to prevent Type*Exceptions because of having SC attribs in overriden methods of non-SC base methods
+						if (parent == null || HasSecurityAttribute (parent, AttributeType.Critical))
+							AddCriticalAttribute (method);
+				}
+				
 			}
 		}
-
+		
+//		bool HasSecurityAttribute (ICustomAttributeProvider provider)
+//		{
+//			CustomAttributeCollection attributes = provider.CustomAttributes;
+//			for (int i = 0; i < attributes.Count; i++) {
+//				CustomAttribute attribute = attributes [i];
+//				if (attribute.Constructor.DeclaringType.FullName == _critical)
+//					return true;
+//			}
+//			return false;
+//		}
+		
+		//note: will not return abstract methods
+		MethodDefinition GetOverridenMethod (TypeDefinition finalType, MethodDefinition final)
+		{
+			Console.WriteLine ("__GetOverridenMethod " + finalType.FullName + ":" + final.ToString ());
+			var baseType = finalType.BaseType;
+			while (baseType != null && baseType.Resolve () != null) {
+				
+				foreach (MethodDefinition method in baseType.Resolve ().Methods) {
+					if (!method.IsVirtual || method.Name != final.Name)
+						continue;
+					
+					//TODO: should we discard them?
+					if (method.IsAbstract)
+						continue;
+					
+					if (HasSameSignature (method, final))
+						return method;
+				}
+				baseType = baseType.Resolve().BaseType;
+			}
+			return null;
+		}
+		
+		//FIXME: take in account generic params
+		bool HasSameSignature (MethodDefinition method1, MethodDefinition method2)
+		{
+			if (method1.ReturnType.ReturnType.FullName != method2.ReturnType.ReturnType.FullName)
+				return false;
+			
+			if (method1.Parameters.Count != method2.Parameters.Count)
+				return false;
+			
+			for (int i = 0; i < method1.Parameters.Count; i++) {
+				if (method1.Parameters [i].ParameterType.DeclaringType.FullName !=
+				    method2.Parameters [i].ParameterType.DeclaringType.FullName)
+					return false;
+			}
+			
+			return true;
+		}
 	}
 }
