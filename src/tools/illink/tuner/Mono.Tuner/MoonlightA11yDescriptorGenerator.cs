@@ -112,7 +112,7 @@ namespace Mono.Tuner {
 			return @params;
 		}
 
-		Hashtable /*Dictionary<TypeDefinition,List<IAnnotationProvider>>*/ ScanAssembly (AssemblyDefinition assembly)
+		Hashtable /*Dictionary<TypeDefinition,List<IAnnotationProvider>*/ ScanAssembly (AssemblyDefinition assembly)
 		{
 			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
 				return null;
