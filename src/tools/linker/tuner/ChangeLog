@@ -1,7 +1,12 @@
 2009-08-07  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
+	* tuner/Mono.Tuner/MoonlightA11yProcessor.cs: Don't use var.
+	Remove debug spew.
+
+2009-08-07  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
 	* Mono.Tuner/InjectSecurityAttributes.cs: Make an enum
-	  protected.
+	  and a method protected.
 
 	* Mono.Tuner/MoonlightA11yProcessor.cs: Prevent
 	  Type*Exceptions because of badly placed SC attrib on

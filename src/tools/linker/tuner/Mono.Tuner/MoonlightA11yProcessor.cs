@@ -100,8 +100,7 @@ namespace Mono.Tuner {
 		//note: will not return abstract methods
 		MethodDefinition GetOverridenMethod (TypeDefinition finalType, MethodDefinition final)
 		{
-			Console.WriteLine ("__GetOverridenMethod " + finalType.FullName + ":" + final.ToString ());
-			var baseType = finalType.BaseType;
+			TypeReference baseType = finalType.BaseType;
 			while (baseType != null && baseType.Resolve () != null) {
 				
 				foreach (MethodDefinition method in baseType.Resolve ().Methods) {
