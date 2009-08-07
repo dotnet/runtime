@@ -9557,7 +9557,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_CONSTRAINED_:
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
-				constrained_call = mono_class_get_full (image, token, generic_context);
+				if (method->wrapper_type != MONO_WRAPPER_NONE)
+					constrained_call =  (MonoClass *)mono_method_get_wrapper_data (method, token);
+				else
+					constrained_call = mono_class_get_full (image, token, generic_context);
 				CHECK_TYPELOAD (constrained_call);
 				ip += 6;
 				break;
