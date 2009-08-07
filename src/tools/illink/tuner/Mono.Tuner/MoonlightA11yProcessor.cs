@@ -97,17 +97,6 @@ namespace Mono.Tuner {
 			}
 		}
 		
-//		bool HasSecurityAttribute (ICustomAttributeProvider provider)
-//		{
-//			CustomAttributeCollection attributes = provider.CustomAttributes;
-//			for (int i = 0; i < attributes.Count; i++) {
-//				CustomAttribute attribute = attributes [i];
-//				if (attribute.Constructor.DeclaringType.FullName == _critical)
-//					return true;
-//			}
-//			return false;
-//		}
-		
 		//note: will not return abstract methods
 		MethodDefinition GetOverridenMethod (TypeDefinition finalType, MethodDefinition final)
 		{
