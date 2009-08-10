@@ -1,3 +1,8 @@
+2009-08-10  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/MoonlightA11yProcessor.cs: Move FIXME to a better
+	  place. Fix NRE.
+
 2009-08-07  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* tuner/Mono.Tuner/MoonlightA11yProcessor.cs: Don't use var.

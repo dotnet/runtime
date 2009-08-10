@@ -88,7 +88,13 @@ namespace Mono.Tuner {
 
 				if (type.HasMethods)
 					foreach (MethodDefinition method in type.Methods) {
-						MethodDefinition parent = GetOverridenMethod (type, method);
+						MethodDefinition parent = null;
+					
+						//TODO: take in account generic params
+						if (!method.HasGenericParameters)
+							//NOTE: GetOverridenMethod returns null if there is no base method
+							parent = GetOverridenMethod (type, method);
+
 						//to prevent Type*Exceptions because of having SC attribs in overriden methods of non-SC base methods
 						if (parent == null || HasSecurityAttribute (parent, AttributeType.Critical))
 							AddCriticalAttribute (method);
@@ -119,7 +125,6 @@ namespace Mono.Tuner {
 			return null;
 		}
 		
-		//FIXME: take in account generic params
 		bool HasSameSignature (MethodDefinition method1, MethodDefinition method2)
 		{
 			if (method1.ReturnType.ReturnType.FullName != method2.ReturnType.ReturnType.FullName)
@@ -127,10 +132,10 @@ namespace Mono.Tuner {
 			
 			if (method1.Parameters.Count != method2.Parameters.Count)
 				return false;
-			
+
 			for (int i = 0; i < method1.Parameters.Count; i++) {
-				if (method1.Parameters [i].ParameterType.DeclaringType.FullName !=
-				    method2.Parameters [i].ParameterType.DeclaringType.FullName)
+				if (method1.Parameters [i].ParameterType.FullName !=
+				    method2.Parameters [i].ParameterType.FullName)
 					return false;
 			}
 			
