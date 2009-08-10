@@ -2394,7 +2394,7 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	MonoGenericInst *ginst;
 	gboolean is_open;
 	int i;
-	int size = sizeof (MonoGenericInst) + (type_argc - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
+	int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 
 	for (i = 0; i < type_argc; ++i)
 		if (mono_class_is_open_constructed_type (type_argv [i]))

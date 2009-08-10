@@ -10,10 +10,17 @@
 
 G_BEGIN_DECLS
 
+/*
+ * When embedding, you have to define MONO_ZERO_LEN_ARRAY before including any
+ * other Mono header file if you use a different compiler from the one used to
+ * build Mono.
+ */
+#ifndef MONO_ZERO_LEN_ARRAY
 #ifdef __GNUC__
 #define MONO_ZERO_LEN_ARRAY 0
 #else
 #define MONO_ZERO_LEN_ARRAY 1
+#endif
 #endif
 
 #define MONO_TYPE_ISSTRUCT(t) (!(t)->byref && (((t)->type == MONO_TYPE_VALUETYPE && \

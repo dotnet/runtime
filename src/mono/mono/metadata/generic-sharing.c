@@ -1086,12 +1086,12 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	first_slot = 0;
 	size = mono_class_rgctx_get_array_size (0, method_inst != NULL);
 	if (method_inst)
-		size -= sizeof (MonoMethodRuntimeGenericContext) / sizeof (gpointer);
+		size -= MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
 	for (i = 0; ; ++i) {
 		int offset;
 
 		if (method_inst && i == 0)
-			offset = sizeof (MonoMethodRuntimeGenericContext) / sizeof (gpointer);
+			offset = MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
 		else
 			offset = 0;
 

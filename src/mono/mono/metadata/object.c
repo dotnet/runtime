@@ -1750,7 +1750,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	}
 
 	if (ARCH_USE_IMT) {
-		vtable_size = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+		vtable_size = MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer);
 		if (class->interface_offsets_count) {
 			imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
 			vtable_size += sizeof (gpointer) * (MONO_IMT_SIZE);
@@ -1759,7 +1759,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	} else {
 		vtable_size = sizeof (gpointer) * (class->max_interface_id + 1) +
-			sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+			MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer);
 	}
 
 	mono_stats.used_class_count++;
@@ -1901,7 +1901,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		/* this is a bounded memory retention issue: may want to 
 		 * handle it differently when we'll have a rcu-like system.
 		 */
-		runtime_info = mono_image_alloc0 (class->image, sizeof (MonoClassRuntimeInfo) + new_size * sizeof (gpointer));
+		runtime_info = mono_image_alloc0 (class->image, MONO_SIZEOF_CLASS_RUNTIME_INFO + new_size * sizeof (gpointer));
 		runtime_info->max_domain = new_size - 1;
 		/* copy the stuff from the older info */
 		if (old_info) {
@@ -2024,10 +2024,10 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		mono_stats.imt_number_of_tables++;
 		mono_stats.imt_tables_size += (sizeof (gpointer) * MONO_IMT_SIZE);
 		vtsize = sizeof (gpointer) * (MONO_IMT_SIZE) +
-			sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+			MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer);
 	} else {
 		vtsize = sizeof (gpointer) * (max_interface_id + 1) +
-			sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+			MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer);
 	}
 
 	mono_stats.class_vtable_size += vtsize + extra_interface_vtsize;
@@ -2037,7 +2037,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		pvt = (MonoVTable*) (interface_offsets + MONO_IMT_SIZE);
 	else
 		pvt = (MonoVTable*) (interface_offsets + max_interface_id + 1);
-	memcpy (pvt, vt, sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
+	memcpy (pvt, vt, MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer));
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
 	/* we need to keep the GC descriptor for a transparent proxy or we confuse the precise GC */

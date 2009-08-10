@@ -633,7 +633,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
 	if (mrgctx)
-		index += sizeof (MonoMethodRuntimeGenericContext) / sizeof (gpointer);
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
 	for (depth = 0; ; ++depth) {
 		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
 
@@ -664,7 +664,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 	for (i = 0; i < depth; ++i) {
 		/* load ptr to next array */
 		if (mrgctx && i == 0)
-			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, sizeof (MonoMethodRuntimeGenericContext), 8);
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT, 8);
 		else
 			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, 0, 8);
 		/* is the ptr null? */

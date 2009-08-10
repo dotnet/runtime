@@ -161,6 +161,8 @@ typedef struct {
 	MonoMarshalField fields [MONO_ZERO_LEN_ARRAY];
 } MonoMarshalType;
 
+#define MONO_SIZEOF_MARSHAL_TYPE (sizeof (MonoMarshalType) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 struct _MonoProperty {
 	MonoClass *parent;
 	const char *name;
@@ -207,6 +209,8 @@ typedef struct {
 	MonoVTable *domain_vtables [MONO_ZERO_LEN_ARRAY];
 } MonoClassRuntimeInfo;
 
+#define MONO_SIZEOF_CLASS_RUNTIME_INFO (sizeof (MonoClassRuntimeInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 enum {
 	MONO_RGCTX_INFO_STATIC_DATA,
 	MONO_RGCTX_INFO_KLASS,
@@ -238,6 +242,8 @@ typedef struct {
 	MonoGenericInst *method_inst;
 	gpointer infos [MONO_ZERO_LEN_ARRAY];
 } MonoMethodRuntimeGenericContext;
+
+#define MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT (sizeof (MonoMethodRuntimeGenericContext) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 #define MONO_RGCTX_SLOT_MAKE_RGCTX(i)	(i)
 #define MONO_RGCTX_SLOT_MAKE_MRGCTX(i)	((i) | 0x80000000)
@@ -436,6 +442,8 @@ struct MonoVTable {
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
 
+#define MONO_SIZEOF_VTABLE (sizeof (MonoVTable) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 #define MONO_VTABLE_IMPLEMENTS_INTERFACE(vt,uiid) (((uiid) <= (vt)->max_interface_id) && ((vt)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
 
 /*
@@ -455,6 +463,7 @@ struct _MonoGenericInst {
 	MonoType *type_argv [MONO_ZERO_LEN_ARRAY];
 };
 
+#define MONO_SIZEOF_GENERIC_INST (sizeof (MonoGenericInst) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 /*
  * The generic context: an instantiation of a set of class and method generic parameters.
  *
