@@ -539,7 +539,7 @@
 #define MONO_XEN_OPT 1
 
 /* Length of zero length arrays */
-/* #undef MONO_ZERO_ARRAY_LENGTH */
+#define MONO_ZERO_LEN_ARRAY 1
 
 /* Name of /dev/random */
 #define NAME_DEV_RANDOM ""
