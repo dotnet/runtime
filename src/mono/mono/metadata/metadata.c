@@ -1591,13 +1591,13 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	}
 
 	if (count) {
-		type = mono_image_alloc0 (m, sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
+		type = mono_image_alloc0 (m, MONO_SIZEOF_TYPE + ((gint32)count) * sizeof (MonoCustomMod));
 		type->num_mods = count;
 		if (count > 64)
 			g_warning ("got more than 64 modifiers in type");
 	} else {
 		type = &stype;
-		memset (type, 0, sizeof (MonoType));
+		memset (type, 0, MONO_SIZEOF_TYPE);
 	}
 
 	/* Parse pinned, byref and custom modifiers */
@@ -1670,8 +1670,8 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
 	
 	if (type == &stype) {
-		type = mono_image_alloc (m, sizeof (MonoType));
-		memcpy (type, &stype, sizeof (MonoType));
+		type = mono_image_alloc (m, MONO_SIZEOF_TYPE);
+		memcpy (type, &stype, MONO_SIZEOF_TYPE);
 	}
 	return type;
 }
@@ -1785,7 +1785,7 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 {
 	MonoMethodSignature *sig;
 
-	sig = mono_image_alloc0 (m, sizeof (MonoMethodSignature) + ((gint32)nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+	sig = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_SIGNATURE + ((gint32)nparams) * sizeof (MonoType*));
 	sig->param_count = nparams;
 	sig->sentinelpos = -1;
 
@@ -1797,7 +1797,7 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMet
 {
 	int sigsize;
 	MonoMethodSignature *ret;
-	sigsize = sizeof (MonoMethodSignature) + (sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
+	sigsize = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *);
 
 	if (image) {
 		ret = mono_image_alloc (image, sigsize);
@@ -1846,7 +1846,7 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
 guint32
 mono_metadata_signature_size (MonoMethodSignature *sig)
 {
-	return sizeof (MonoMethodSignature) + (sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
+	return MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *);
 }
 
 /*
@@ -4225,9 +4225,9 @@ MonoType *
 mono_metadata_type_dup (MonoImage *image, const MonoType *o)
 {
 	MonoType *r = NULL;
-	int sizeof_o = sizeof (MonoType);
+	int sizeof_o = MONO_SIZEOF_TYPE;
 	if (o->num_mods)
-		sizeof_o += (o->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
+		sizeof_o += o->num_mods  * sizeof (MonoCustomMod);
 
 	r = image ? mono_image_alloc0 (image, sizeof_o) : g_malloc (sizeof_o);
 
@@ -4653,7 +4653,7 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 
 	len = mono_metadata_decode_value (ptr, &ptr);
 
-	type = mono_image_alloc0 (image, sizeof (MonoType));
+	type = mono_image_alloc0 (image, MONO_SIZEOF_TYPE);
 
 	if (*ptr == MONO_TYPE_BYREF) {
 		type->byref = 1;

@@ -349,6 +349,8 @@ struct _MonoType {
 	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
 };
 
+#define MONO_SIZEOF_TYPE (sizeof (struct _MonoType) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 /*
  * This structure is an internal runtime detail: use the mono_signature_*
  * accessors below, because it will go away from the public header.
@@ -367,6 +369,8 @@ struct _MonoMethodSignature {
 	MonoType     *ret;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
+
+#define MONO_SIZEOF_METHOD_SIGNATURE (sizeof (struct _MonoMethodSignature) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 typedef struct _MonoMethodHeader MonoMethodHeader;
 

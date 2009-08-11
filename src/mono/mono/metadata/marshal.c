@@ -170,7 +170,7 @@ signature_dup (MonoImage *image, MonoMethodSignature *sig)
 	int sigsize;
 
 	res = mono_metadata_signature_alloc (image, sig->param_count);
-	sigsize = sizeof (MonoMethodSignature) + ((sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
+	sigsize = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *);
 	memcpy (res, sig, sigsize);
 
 	return res;
@@ -3829,7 +3829,7 @@ signature_dup_add_this (MonoMethodSignature *sig, MonoClass *klass)
 	int i;
 
 	res = mono_metadata_signature_alloc (klass->image, sig->param_count + 1);
-	memcpy (res, sig, sizeof (MonoMethodSignature));
+	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
 	res->param_count = sig->param_count + 1;
 	res->hasthis = FALSE;
 	for (i = sig->param_count - 1; i >= 0; i --)
@@ -10558,7 +10558,7 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 
 	/* dup & extend signature */
 	csig = mono_metadata_signature_alloc (image, param_count);
-	sig_size = sizeof (MonoMethodSignature) + ((sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
+	sig_size = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *);
 	memcpy (csig, sig, sig_size);
 	csig->param_count = param_count;
 	csig->hasthis = 0;

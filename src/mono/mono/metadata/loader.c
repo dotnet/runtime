@@ -704,7 +704,7 @@ inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGener
 	if (!context)
 		return sig;
 
-	res = g_malloc0 (sizeof (MonoMethodSignature) + ((gint32)sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+	res = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + ((gint32)sig->param_count) * sizeof (MonoType*));
 	res->param_count = sig->param_count;
 	res->sentinelpos = -1;
 	res->ret = mono_class_inflate_generic_type (sig->ret, context);

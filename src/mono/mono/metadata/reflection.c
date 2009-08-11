@@ -2959,9 +2959,9 @@ add_custom_modifiers (MonoDynamicImage *assembly, MonoType *type, MonoArray *mod
 	if (count == 0)
 		return mono_metadata_type_dup (NULL, type);
 
-	len = sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
+	len = MONO_SIZEOF_TYPE + ((gint32)count) * sizeof (MonoCustomMod);
 	t = g_malloc (len);
-	memcpy (t, type, sizeof (MonoType));
+	memcpy (t, type, MONO_SIZEOF_TYPE);
 
 	t->num_mods = count;
 	pos = 0;
@@ -3150,7 +3150,7 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 
 	name = mono_string_to_utf8 (m->name);
 	nparams = mono_array_length (m->parameters);
-	sig = g_malloc0 (sizeof (MonoMethodSignature) + sizeof (MonoType*) * nparams);
+	sig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + sizeof (MonoType*) * nparams);
 	sig->hasthis = 1;
 	sig->sentinelpos = -1;
 	sig->call_convention = reflection_cc_to_file (m->call_conv);
@@ -8695,7 +8695,7 @@ parameters_to_signature (MonoImage *image, MonoArray *parameters) {
 
 	count = parameters? mono_array_length (parameters): 0;
 
-	sig = image_g_malloc0 (image, sizeof (MonoMethodSignature) + sizeof (MonoType*) * count);
+	sig = image_g_malloc0 (image, MONO_SIZEOF_METHOD_SIGNATURE + sizeof (MonoType*) * count);
 	sig->param_count = count;
 	sig->sentinelpos = -1; /* FIXME */
 	for (i = 0; i < count; ++i)
@@ -9598,7 +9598,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				mono_array_get (rmb->ilgen->locals, MonoReflectionLocalBuilder*, i);
 
 			header->locals [i] = image_g_new0 (image, MonoType, 1);
-			memcpy (header->locals [i], mono_reflection_type_get_handle ((MonoReflectionType*)lb->type), sizeof (MonoType));
+			memcpy (header->locals [i], mono_reflection_type_get_handle ((MonoReflectionType*)lb->type), MONO_SIZEOF_TYPE);
 		}
 
 		header->num_clauses = num_clauses;

@@ -160,7 +160,7 @@ cominterop_method_signature (MonoMethod* method)
 		param_count++;
 
 	res = mono_metadata_signature_alloc (image, param_count);
-	sigsize = sizeof (MonoMethodSignature) + ((sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
+	sigsize = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *);
 	memcpy (res, sig, sigsize);
 
 	// now move args forward one
