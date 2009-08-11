@@ -1,9 +1,12 @@
 2009-08-11  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Blacklist
-	  our bridge.
+	  more stuff.
 
-	* ChangeLog: 
+2009-08-11  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Blacklist
+	  our bridge.
 
 2009-08-10  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
