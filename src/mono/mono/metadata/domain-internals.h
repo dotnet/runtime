@@ -134,7 +134,7 @@ struct _MonoJitInfo {
 	/* There is an optional MonoGenericJitInfo after the clauses */
 };
 
-#define MONO_SIZEOF_JIT_INFO (sizeof (struct _MonoJitInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+#define MONO_SIZEOF_JIT_INFO (offsetof (struct _MonoJitInfo, clauses))
 
 struct _MonoAppContext {
 	MonoObject obj;

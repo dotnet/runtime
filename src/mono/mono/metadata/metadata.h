@@ -349,7 +349,7 @@ struct _MonoType {
 	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
 };
 
-#define MONO_SIZEOF_TYPE (sizeof (struct _MonoType) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+#define MONO_SIZEOF_TYPE (offsetof (struct _MonoType, modifiers))
 
 /*
  * This structure is an internal runtime detail: use the mono_signature_*

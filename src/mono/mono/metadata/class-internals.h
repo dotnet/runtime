@@ -161,7 +161,7 @@ typedef struct {
 	MonoMarshalField fields [MONO_ZERO_LEN_ARRAY];
 } MonoMarshalType;
 
-#define MONO_SIZEOF_MARSHAL_TYPE (sizeof (MonoMarshalType) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+#define MONO_SIZEOF_MARSHAL_TYPE (offsetof (MonoMarshalType, fields))
 
 struct _MonoProperty {
 	MonoClass *parent;
