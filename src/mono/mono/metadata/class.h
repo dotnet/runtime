@@ -22,6 +22,8 @@ typedef struct {
 	MonoClass *interfaces [MONO_ZERO_LEN_ARRAY];
 } MonoRemoteClass;
 
+#define MONO_SIZEOF_REMOTE_CLASS (sizeof (MonoRemoteClass) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 MonoClass *
 mono_class_get             (MonoImage *image, guint32 type_token);
 

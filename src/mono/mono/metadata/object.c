@@ -2257,12 +2257,12 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	key = mp_key;
 
 	if (proxy_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		rc = mono_domain_alloc (domain, sizeof(MonoRemoteClass) + sizeof(MonoClass*));
+		rc = mono_domain_alloc (domain, MONO_SIZEOF_REMOTE_CLASS + sizeof(MonoClass*));
 		rc->interface_count = 1;
 		rc->interfaces [0] = proxy_class;
 		rc->proxy_class = mono_defaults.marshalbyrefobject_class;
 	} else {
-		rc = mono_domain_alloc (domain, sizeof(MonoRemoteClass));
+		rc = mono_domain_alloc (domain, MONO_SIZEOF_REMOTE_CLASS);
 		rc->interface_count = 0;
 		rc->proxy_class = proxy_class;
 	}
@@ -2301,7 +2301,7 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 
 	if (extra_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		int i,j;
-		rc = mono_domain_alloc (domain, sizeof(MonoRemoteClass) + sizeof(MonoClass*) * (remote_class->interface_count + 1));
+		rc = mono_domain_alloc (domain, MONO_SIZEOF_REMOTE_CLASS + sizeof(MonoClass*) * (remote_class->interface_count + 1));
 		rc->proxy_class = remote_class->proxy_class;
 		rc->interface_count = remote_class->interface_count + 1;
 		
@@ -2316,7 +2316,7 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 			rc->interfaces [j] = extra_class;
 	} else {
 		// Replace the old class. The interface array is the same
-		rc = mono_domain_alloc (domain, sizeof(MonoRemoteClass) + sizeof(MonoClass*) * remote_class->interface_count);
+		rc = mono_domain_alloc (domain, MONO_SIZEOF_REMOTE_CLASS + sizeof(MonoClass*) * remote_class->interface_count);
 		rc->proxy_class = extra_class;
 		rc->interface_count = remote_class->interface_count;
 		if (rc->interface_count > 0)
