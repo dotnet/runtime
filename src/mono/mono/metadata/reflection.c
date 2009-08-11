@@ -9584,8 +9584,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			}
 		}
 
-		header = image_g_malloc0 (image, sizeof (MonoMethodHeader) + 
-			(num_locals - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+		header = image_g_malloc0 (image, MONO_SIZEOF_METHOD_HEADER + num_locals * sizeof (MonoType*));
 		header->code_size = code_size;
 		header->code = image_g_malloc (image, code_size);
 		memcpy ((char*)header->code, code, code_size);

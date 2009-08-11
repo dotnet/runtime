@@ -373,6 +373,8 @@ struct _MonoMethodHeader {
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 };
 
+#define MONO_SIZEOF_METHOD_HEADER (sizeof (struct _MonoMethodHeader) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr) MONO_INTERNAL;
 

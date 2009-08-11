@@ -2927,7 +2927,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
-		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
+		mh = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_HEADER);
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
@@ -2935,7 +2935,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh->code = (unsigned char*)ptr;
 		return mh;
 	case METHOD_HEADER_TINY_FORMAT1:
-		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
+		mh = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_HEADER);
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
@@ -2994,7 +2994,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			g_warning ("wrong signature for locals blob");
 		locals_ptr++;
 		len = mono_metadata_decode_value (locals_ptr, &locals_ptr);
-		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+		mh = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_HEADER + len * sizeof (MonoType*));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
 			mh->locals [i] = mono_metadata_parse_type_full (
@@ -3004,7 +3004,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			}
 		}
 	} else {
-		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
+		mh = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_HEADER);
 	}
 	mh->code = code;
 	mh->code_size = code_size;

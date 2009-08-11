@@ -730,7 +730,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 {
 	MonoMethodHeader *res;
 	int i;
-	res = g_malloc0 (sizeof (MonoMethodHeader) + sizeof (gpointer) * header->num_locals);
+	res = g_malloc0 (MONO_SIZEOF_METHOD_HEADER + sizeof (gpointer) * header->num_locals);
 	res->code = header->code;
 	res->code_size = header->code_size;
 	res->max_stack = header->max_stack;

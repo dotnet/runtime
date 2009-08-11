@@ -147,7 +147,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		method->dynamic = TRUE;
 
 		((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
-			g_malloc0 (sizeof (MonoMethodHeader) + mb->locals * sizeof (MonoType *));
+			g_malloc0 (MONO_SIZEOF_METHOD_HEADER + mb->locals * sizeof (MonoType *));
 
 		header->code = mb->code;
 
@@ -166,7 +166,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 			method->name = mono_image_strdup (image, mb->name);
 
 		((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
-			mono_image_alloc0 (image, sizeof (MonoMethodHeader) + mb->locals * sizeof (MonoType *));
+			mono_image_alloc0 (image, MONO_SIZEOF_METHOD_HEADER + mb->locals * sizeof (MonoType *));
 
 		header->code = mono_image_alloc (image, mb->pos);
 		memcpy ((char*)header->code, mb->code, mb->pos);
