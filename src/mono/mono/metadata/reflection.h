@@ -29,6 +29,8 @@ typedef struct {
 	MonoCustomAttrEntry attrs [MONO_ZERO_LEN_ARRAY];
 } MonoCustomAttrInfo;
 
+#define MONO_SIZEOF_CUSTOM_ATTR_INFO (sizeof (MonoCustomAttrInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 /* 
  * Information which isn't in the MonoMethod structure is stored here for
  * dynamic methods.

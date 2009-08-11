@@ -1122,7 +1122,7 @@ lookup_custom_attr (MonoImage *image, gpointer member)
 	if (!res)
 		return NULL;
 
-	return g_memdup (res, sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (res->num_attrs - MONO_ZERO_LEN_ARRAY));
+	return g_memdup (res, MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * res->num_attrs);
 }
 
 static gboolean
@@ -1162,7 +1162,7 @@ mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArr
 	}
 	count -= not_visible;
 
-	ainfo = image_g_malloc0 (alloc_img, sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (count - MONO_ZERO_LEN_ARRAY));
+	ainfo = image_g_malloc0 (alloc_img, MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * count);
 
 	ainfo->image = image;
 	ainfo->num_attrs = count;
@@ -8160,7 +8160,7 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 	len = g_list_length (list);
 	if (!len)
 		return NULL;
-	ainfo = g_malloc0 (sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (len - MONO_ZERO_LEN_ARRAY));
+	ainfo = g_malloc0 (MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * len);
 	ainfo->num_attrs = len;
 	ainfo->image = image;
 	for (i = 0, tmp = list; i < len; ++i, tmp = tmp->next) {
@@ -8341,7 +8341,7 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 
 		/* Need to copy since it will be freed later */
 		ainfo = aux->param_cattr [param];
-		size = sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (ainfo->num_attrs - MONO_ZERO_LEN_ARRAY);
+		size = MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * ainfo->num_attrs;
 		res = g_malloc0 (size);
 		memcpy (res, ainfo, size);
 		return res;
