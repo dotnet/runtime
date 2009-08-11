@@ -3745,10 +3745,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		generic_info_size = 0;
 
 	if (cfg->method->dynamic) {
-		jinfo = g_malloc0 (sizeof (MonoJitInfo) + (header->num_clauses * sizeof (MonoJitExceptionInfo)) +
+		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (header->num_clauses * sizeof (MonoJitExceptionInfo)) +
 				generic_info_size);
 	} else {
-		jinfo = mono_domain_alloc0 (cfg->domain, sizeof (MonoJitInfo) +
+		jinfo = mono_domain_alloc0 (cfg->domain, MONO_SIZEOF_JIT_INFO +
 				(header->num_clauses * sizeof (MonoJitExceptionInfo)) +
 				generic_info_size);
 	}

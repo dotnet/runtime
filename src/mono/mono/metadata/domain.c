@@ -222,7 +222,7 @@ jit_info_table_new_chunk (void)
 static MonoJitInfoTable *
 jit_info_table_new (MonoDomain *domain)
 {
-	MonoJitInfoTable *table = g_malloc0 (sizeof (MonoJitInfoTable) + sizeof (MonoJitInfoTableChunk*));
+	MonoJitInfoTable *table = g_malloc0 (MONO_SIZEOF_JIT_INFO_TABLE + sizeof (MonoJitInfoTableChunk*));
 
 	table->domain = domain;
 	table->num_chunks = 1;
@@ -507,7 +507,7 @@ jit_info_table_realloc (MonoJitInfoTable *old)
 	required_size = (int)((long)num_elements * JIT_INFO_TABLE_FILL_RATIO_DENOM / JIT_INFO_TABLE_FILL_RATIO_NOM);
 	num_chunks = (required_size + MONO_JIT_INFO_TABLE_CHUNK_SIZE - 1) / MONO_JIT_INFO_TABLE_CHUNK_SIZE;
 
-	new = g_malloc (sizeof (MonoJitInfoTable) + sizeof (MonoJitInfoTableChunk*) * num_chunks);
+	new = g_malloc (MONO_SIZEOF_JIT_INFO_TABLE + sizeof (MonoJitInfoTableChunk*) * num_chunks);
 	new->domain = old->domain;
 	new->num_chunks = num_chunks;
 
@@ -576,7 +576,7 @@ jit_info_table_split_chunk (MonoJitInfoTableChunk *chunk, MonoJitInfoTableChunk 
 static MonoJitInfoTable*
 jit_info_table_copy_and_split_chunk (MonoJitInfoTable *table, MonoJitInfoTableChunk *chunk)
 {
-	MonoJitInfoTable *new_table = g_malloc (sizeof (MonoJitInfoTable)
+	MonoJitInfoTable *new_table = g_malloc (MONO_SIZEOF_JIT_INFO_TABLE
 		+ sizeof (MonoJitInfoTableChunk*) * (table->num_chunks + 1));
 	int i, j;
 
@@ -624,7 +624,7 @@ jit_info_table_purify_chunk (MonoJitInfoTableChunk *old)
 static MonoJitInfoTable*
 jit_info_table_copy_and_purify_chunk (MonoJitInfoTable *table, MonoJitInfoTableChunk *chunk)
 {
-	MonoJitInfoTable *new_table = g_malloc (sizeof (MonoJitInfoTable)
+	MonoJitInfoTable *new_table = g_malloc (MONO_SIZEOF_JIT_INFO_TABLE
 		+ sizeof (MonoJitInfoTableChunk*) * table->num_chunks);
 	int i, j;
 

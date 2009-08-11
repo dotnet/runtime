@@ -658,7 +658,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 				/* Top LMF entry */
 				return (gpointer)-1;
 			/* Trampoline lmf frame */
-			memset (res, 0, sizeof (MonoJitInfo));
+			memset (res, 0, MONO_SIZEOF_JIT_INFO);
 			res->method = (*lmf)->method;
 		}
 

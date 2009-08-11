@@ -1063,7 +1063,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	code = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
 	g_assert (code_size);
 
-	ji = mono_domain_alloc0 (domain, sizeof (MonoJitInfo));
+	ji = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
 	ji->code_start = code;
 	ji->code_size = code_size;
 	ji->method = method;

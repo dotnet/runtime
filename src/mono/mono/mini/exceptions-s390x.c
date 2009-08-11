@@ -489,7 +489,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
 		} else {
-			memset (res, 0, sizeof (MonoJitInfo));
+			memset (res, 0, MONO_SIZEOF_JIT_INFO);
 			res->method = (*lmf)->method;
 		}
 

@@ -414,7 +414,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->ip))) {
 		} else {
-			memset (res, 0, sizeof (MonoJitInfo));
+			memset (res, 0, MONO_SIZEOF_JIT_INFO);
 			res->method = (*lmf)->method;
 		}
 

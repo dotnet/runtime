@@ -69,6 +69,8 @@ struct _MonoJitInfoTable
 	MonoJitInfoTableChunk  *chunks [MONO_ZERO_LEN_ARRAY];
 };
 
+#define MONO_SIZEOF_JIT_INFO_TABLE (sizeof (struct _MonoJitInfoTable) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 typedef GArray MonoAotModuleInfoTable;
 
 typedef struct {
@@ -131,6 +133,8 @@ struct _MonoJitInfo {
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 	/* There is an optional MonoGenericJitInfo after the clauses */
 };
+
+#define MONO_SIZEOF_JIT_INFO (sizeof (struct _MonoJitInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 struct _MonoAppContext {
 	MonoObject obj;
