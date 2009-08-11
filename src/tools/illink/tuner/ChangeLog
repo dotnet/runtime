@@ -1,5 +1,10 @@
 2009-08-11  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
+	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Yet another
+	  blacklisted element (SW.dll is not linked).
+
+2009-08-11  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
 	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Blacklist
 	  more stuff.
 
