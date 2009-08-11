@@ -59,7 +59,7 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	sizeof (MonoDebuggerMetadataInfo),
 	sizeof (MonoDefaults),
 	&mono_defaults,
-	sizeof (MonoType),
+	MONO_SIZEOF_TYPE,
 	sizeof (MonoArrayType),
 	sizeof (MonoClass),
 	sizeof (MonoThread),
