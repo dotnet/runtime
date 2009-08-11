@@ -42,7 +42,7 @@ namespace Mono.Tuner {
 		XmlTextWriter writer = null;
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			if (assembly.Name.Name == "MoonAtkBridge")
+			if (assembly.Name.Name == "MoonAtkBridge" || assembly.Name.Name.Contains ("Dummy"))
 				return;
 			
 			if (writer == null) {
