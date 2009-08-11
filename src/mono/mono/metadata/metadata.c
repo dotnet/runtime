@@ -5305,43 +5305,95 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 	return nginst;
 }
 
+/**
+ * mono_type_is_byref:
+ * @type: the MonoType operated on
+ *
+ * Returns: #TRUE if @type represents a type passed by reference,
+ * #FALSE otherwise.
+ */
 gboolean
 mono_type_is_byref (MonoType *type)
 {
 	return type->byref;
 }
 
+/**
+ * mono_type_get_type:
+ * @type: the MonoType operated on
+ *
+ * Returns: the IL type value for @type. This is one of the MonoTypeEnum
+ * enum members like MONO_TYPE_I4 or MONO_TYPE_STRING.
+ */
 int
 mono_type_get_type (MonoType *type)
 {
 	return type->type;
 }
 
-/* For MONO_TYPE_FNPTR */
+/**
+ * mono_type_get_signature:
+ * @type: the MonoType operated on
+ *
+ * It is only valid to call this function if @type is a MONO_TYPE_FNPTR.
+ *
+ * Returns: the MonoMethodSignature pointer that describes the signature
+ * of the function pointer @type represents.
+ */
 MonoMethodSignature*
 mono_type_get_signature (MonoType *type)
 {
+	g_assert (type->type == MONO_TYPE_FNPTR);
 	return type->data.method;
 }
 
-/* For MONO_TYPE_CLASS, VALUETYPE */
+/**
+ * mono_type_get_class:
+ * @type: the MonoType operated on
+ *
+ * It is only valid to call this function if @type is a MONO_TYPE_CLASS or a
+ * MONO_TYPE_VALUETYPE. For more general functionality, use mono_class_from_mono_type (),
+ * instead
+ *
+ * Returns: the MonoClass pointer that describes the class that @type represents.
+ */
 MonoClass*
 mono_type_get_class (MonoType *type)
 {
+	/* FIXME: review the runtime users before adding the assert here */
 	return type->data.klass;
 }
 
-/* For MONO_TYPE_ARRAY */
+/**
+ * mono_type_get_array_type:
+ * @type: the MonoType operated on
+ *
+ * It is only valid to call this function if @type is a MONO_TYPE_ARRAY.
+ *
+ * Returns: a MonoArrayType struct describing the array type that @type
+ * represents. The info includes details such as rank, array element type
+ * and the sizes and bounds of multidimensional arrays.
+ */
 MonoArrayType*
 mono_type_get_array_type (MonoType *type)
 {
 	return type->data.array;
 }
 
-/* For MONO_TYPE_PTR */
+/**
+ * mono_type_get_ptr_type:
+ * @type: the MonoType operated on
+ *
+ * It is only valid to call this function if @type is a MONO_TYPE_PTR.
+ * instead
+ *
+ * Returns: the MonoType pointer that describes the type that @type
+ * represents a pointer to.
+ */
 MonoType*
 mono_type_get_ptr_type (MonoType *type)
 {
+	g_assert (type->type == MONO_TYPE_PTR);
 	return type->data.type;
 }
 
