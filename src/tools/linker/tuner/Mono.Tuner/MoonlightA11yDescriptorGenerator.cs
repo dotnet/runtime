@@ -42,6 +42,9 @@ namespace Mono.Tuner {
 		XmlTextWriter writer = null;
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
+			if (assembly.Name.Name == "MoonAtkBridge")
+				return;
+			
 			if (writer == null) {
 				writer = new XmlTextWriter (System.Console.Out);
 				writer.Formatting = Formatting.Indented;

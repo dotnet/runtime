@@ -1,3 +1,10 @@
+2009-08-11  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Blacklist
+	  our bridge.
+
+	* ChangeLog: 
+
 2009-08-10  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/MoonlightA11yProcessor.cs: Move FIXME to a better
@@ -5,7 +12,7 @@
 
 2009-08-07  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
-	* tuner/Mono.Tuner/MoonlightA11yProcessor.cs: Don't use var.
+	* Mono.Tuner/MoonlightA11yProcessor.cs: Don't use var.
 	Remove debug spew.
 
 2009-08-07  Andrés G. Aragoneses  <aaragoneses@novell.com>
