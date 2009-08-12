@@ -1,3 +1,8 @@
+2009-08-12  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/MoonlightA11yProcessor.cs: Look for base methods
+	  in interfaces as well.
+
 2009-08-11  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Yet another
