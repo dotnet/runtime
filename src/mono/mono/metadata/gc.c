@@ -1040,6 +1040,10 @@ finalizer_thread (gpointer unused)
 	return 0;
 }
 
+#ifdef HAVE_SGEN_GC
+#define GC_dont_gc 0
+#endif
+
 void
 mono_gc_init (void)
 {
