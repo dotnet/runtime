@@ -414,9 +414,6 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	data->domain = ad;
 	data->setup = setup;
 	data->friendly_name = g_strdup (friendly_name);
-	// FIXME: The ctor runs in the current domain
-	// FIXME: Initialize null_reference_ex and stack_overflow_ex
-	data->out_of_memory_ex = mono_exception_from_name_domain (data, mono_defaults.corlib, "System", "OutOfMemoryException");
 
 	if (!setup->application_base) {
 		/* Inherit from the root domain since MS.NET does this */
@@ -436,7 +433,10 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	mono_debugger_event_create_appdomain (data, shadow_location);
 	g_free (shadow_location);
 #endif
-	
+
+	// FIXME: Initialize null_reference_ex and stack_overflow_ex
+	data->out_of_memory_ex = mono_exception_from_name_domain (data, mono_defaults.corlib, "System", "OutOfMemoryException");
+
 	return ad;
 }
 

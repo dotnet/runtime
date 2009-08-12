@@ -52,13 +52,18 @@ mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image,
 {
 	MonoClass *klass;
 	MonoObject *o;
+	MonoDomain *caller_domain = mono_domain_get ();
 
 	klass = mono_class_from_name (image, name_space, name);
 
 	o = mono_object_new (domain, klass);
 	g_assert (o != NULL);
-	
+
+	if (domain != caller_domain)
+		mono_domain_set_internal (domain);
 	mono_runtime_object_init (o);
+	if (domain != caller_domain)
+		mono_domain_set_internal (caller_domain);
 
 	return (MonoException *)o;
 }
