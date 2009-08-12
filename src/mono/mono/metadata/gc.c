@@ -908,6 +908,12 @@ mono_gchandle_free_domain (MonoDomain *domain)
 
 }
 
+MonoBoolean
+GCHandle_CheckCurrentDomain (guint32 gchandle)
+{
+	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
+}
+
 #ifndef HAVE_NULL_GC
 
 #ifdef MONO_HAS_SEMAPHORES

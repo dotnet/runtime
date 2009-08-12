@@ -7560,12 +7560,6 @@ custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
 	}
 }
 
-static MonoBoolean
-GCHandle_CheckCurrentDomain (guint32 gchandle)
-{
-	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
-}
-
 static MonoString*
 ves_icall_Mono_Runtime_GetDisplayName (void)
 {

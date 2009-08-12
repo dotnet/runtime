@@ -71,6 +71,9 @@ void    mono_gc_remove_weak_track_handle (guint32 gchandle) MONO_INTERNAL;
 GSList* mono_gc_remove_weak_track_object (MonoDomain *domain, MonoObject *obj) MONO_INTERNAL;
 #endif
 
+MonoBoolean
+GCHandle_CheckCurrentDomain (guint32 gchandle) MONO_INTERNAL;
+
 /* simple interface for data structures needed in the runtime */
 void* mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits) MONO_INTERNAL;
 
