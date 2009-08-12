@@ -91,11 +91,16 @@ namespace Mono.Tuner {
 						MethodDefinition parent = null;
 					
 						//TODO: take in account generic params
-						if (!method.HasGenericParameters)
-							//NOTE: GetOverridenMethod returns null if there is no base method
-							parent = GetOverridenMethod (type, method);
+						if (!method.HasGenericParameters) {
+							
+							/*
+							 * we need to scan base methods because the CoreCLR complains about SC attribs added
+							 * to overriden methods whose base (virtual or interface) method is not marked as SC
+							 * with TypeLoadExceptions
+							 */
+							parent = GetBaseMethod (type, method);
+						}
 
-						//to prevent Type*Exceptions because of having SC attribs in overriden methods of non-SC base methods
 						if (parent == null || HasSecurityAttribute (parent, AttributeType.Critical))
 							AddCriticalAttribute (method);
 				}
@@ -103,12 +108,17 @@ namespace Mono.Tuner {
 			}
 		}
 		
+		MethodDefinition GetBaseMethod (TypeDefinition finalType, MethodDefinition final)
+		{
+			// both GetOverridenMethod and GetInterfaceMethod return null if there is no base method
+			return GetOverridenMethod (finalType, final) ?? GetInterfaceMethod (finalType, final);
+		}
+		
 		//note: will not return abstract methods
 		MethodDefinition GetOverridenMethod (TypeDefinition finalType, MethodDefinition final)
 		{
 			TypeReference baseType = finalType.BaseType;
 			while (baseType != null && baseType.Resolve () != null) {
-				
 				foreach (MethodDefinition method in baseType.Resolve ().Methods) {
 					if (!method.IsVirtual || method.Name != final.Name)
 						continue;
@@ -121,6 +131,21 @@ namespace Mono.Tuner {
 						return method;
 				}
 				baseType = baseType.Resolve().BaseType;
+			}
+			return null;
+		}
+		
+		MethodDefinition GetInterfaceMethod (TypeDefinition finalType, MethodDefinition final)
+		{
+			TypeDefinition baseType = finalType;
+			while (baseType != null) {
+				if (baseType.HasInterfaces)
+					foreach (TypeReference @interface in baseType.Interfaces)
+						foreach (MethodDefinition method in @interface.Resolve ().Methods)
+							if (method.Name == final.Name && HasSameSignature (method, final))
+								return method;
+
+				baseType = baseType.BaseType == null ? null : baseType.BaseType.Resolve ();
 			}
 			return null;
 		}
