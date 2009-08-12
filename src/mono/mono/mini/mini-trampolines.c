@@ -200,16 +200,19 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
  *   This trampoline handles calls from JITted code.
  */
 gpointer
-mono_magic_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp)
+mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 {
 	gpointer addr;
 	gpointer *vtable_slot;
 	gboolean generic_shared = FALSE;
+	MonoMethod *m;
 	MonoMethod *declaring = NULL;
 	MonoMethod *generic_virtual = NULL;
 	int context_used;
 	gboolean proxy = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
+
+	m = arg;
 
 	if (m == MONO_FAKE_VTABLE_METHOD) {
 		int displacement;
