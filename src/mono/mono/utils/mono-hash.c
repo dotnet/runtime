@@ -910,6 +910,9 @@ mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func)
 			}
 		}
 	}
+
+	if (table->gc_type == MONO_HASH_KEY_GC || table->gc_type == MONO_HASH_KEY_VALUE_GC)
+		g_hash_table_resize (table);
 }
 
 #endif
