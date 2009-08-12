@@ -525,6 +525,17 @@ static void thread_cleanup (MonoThread *thread)
 	thread->abort_exc = NULL;
 	thread->current_appcontext = NULL;
 
+	/*
+	 * This is necessary because otherwise we might have
+	 * cross-domain references which will not get cleaned up when
+	 * the target domain is unloaded.
+	 */
+	if (thread->cached_culture_info) {
+		int i;
+		for (i = 0; i < NUM_CACHED_CULTURES * 2; ++i)
+			mono_array_set (thread->cached_culture_info, MonoObject*, i, NULL);
+	}
+
 	/* if the thread is not in the hash it has been removed already */
 	if (!handle_remove (thread))
 		return;
