@@ -8613,6 +8613,12 @@ is_sre_pointer (MonoClass *class)
 	check_corlib_type_cached (class, "System.Reflection.Emit", "PointerType");
 }
 
+static gboolean
+is_sre_generic_instance (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection.Emit", "MOnoGenericClass");
+}
+
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref)
 {
@@ -8657,6 +8663,23 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		g_assert (base);
 		res = &mono_ptr_class_get (base)->byval_arg;
 		sre_pointer->type.type = res;
+		return res;
+	} else if (is_sre_generic_instance (class)) {
+		MonoType *res, **types;
+		MonoReflectionGenericClass *gclass = (MonoReflectionGenericClass*)ref;
+		int i, count;
+
+		count = mono_array_length (gclass->type_arguments);
+		types = g_new0 (MonoType*, count);
+		for (i = 0; i < count; ++i) {
+			MonoReflectionType *t = mono_array_get (gclass->type_arguments, gpointer, i);
+			types [i] = mono_reflection_type_get_handle (t);
+		}
+
+		res = mono_reflection_bind_generic_parameters ((MonoReflectionType*)gclass->type_arguments, count, types);
+		g_free (types);
+		g_assert (res);
+		gclass->type.type = res;
 		return res;
 	}
 
@@ -8880,22 +8903,8 @@ handle_enum:
 			*p++ = 0xFF;
 			break;
 		}
-		k = mono_object_class (arg);
-		if (!mono_object_isinst (arg, mono_defaults.monotype_class) &&
-                        (strcmp (k->name, "TypeBuilder") || strcmp (k->name_space, "System.Reflection.Emit"))) {
-                        MonoReflectionType* rt = mono_reflection_type_get_underlying_system_type ((MonoReflectionType*) arg);
-                        MonoClass *rtc;
-                        
-                        if (rt && (rtc = mono_object_class (rt)) &&
-                                   (mono_object_isinst ((MonoObject *) rt, mono_defaults.monotype_class) ||
-                                    !strcmp (rtc->name, "TypeBuilder") || !strcmp (rtc->name_space, "System.Reflection.Emit"))) {
-                                arg = (MonoObject *) rt;
-                                k = rtc;
-                        } else
-                                g_error ("Only System.Type allowed, not %s.%s", k->name_space, k->name);
-                }
 handle_type:
-		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, NULL);
+		str = type_get_qualified_name (mono_reflection_type_get_handle ((MonoReflectionType*)arg), NULL);
 		slen = strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;

@@ -600,6 +600,7 @@ ICALL(MGENCL_1, "GetConstructors_internal", ves_icall_MonoGenericClass_GetConstr
 ICALL(MGENCL_2, "GetCorrespondingInflatedConstructor", ves_icall_MonoGenericClass_GetCorrespondingInflatedConstructor)
 ICALL(MGENCL_3, "GetCorrespondingInflatedField", ves_icall_MonoGenericClass_GetCorrespondingInflatedField)
 ICALL(MGENCL_4, "GetCorrespondingInflatedMethod", ves_icall_MonoGenericClass_GetCorrespondingInflatedMethod)
+ICALL(MGENCL_16, "GetElementType", ves_icall_MonoType_GetElementType)
 ICALL(MGENCL_5, "GetEvents_internal", ves_icall_MonoGenericClass_GetEvents)
 ICALL(MGENCL_6, "GetFields_internal", ves_icall_MonoGenericClass_GetFields)
 ICALL(MGENCL_7, "GetInterfaces_internal", ves_icall_MonoGenericClass_GetInterfaces)
@@ -607,6 +608,9 @@ ICALL(MGENCL_8, "GetMethods_internal", ves_icall_MonoGenericClass_GetMethods)
 ICALL(MGENCL_9, "GetParentType", ves_icall_MonoGenericClass_GetParentType)
 ICALL(MGENCL_10, "GetProperties_internal", ves_icall_MonoGenericClass_GetProperties)
 ICALL(MGENCL_12, "InflateType_internal", ves_icall_MonoGenericClass_InflateType)
+ICALL(MGENCL_13, "IsByRefImpl", ves_icall_type_isbyref)
+ICALL(MGENCL_14, "IsPointerImpl", ves_icall_type_ispointer)
+ICALL(MGENCL_15, "IsPrimitiveImpl", ves_icall_type_isprimitive)
 ICALL(MGENCL_11, "initialize", mono_reflection_generic_class_initialize)
 
 /* note this is the same as above: unify */
