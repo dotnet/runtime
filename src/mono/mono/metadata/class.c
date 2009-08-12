@@ -5221,13 +5221,28 @@ mono_class_get_field (MonoClass *class, guint32 field_token)
 MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name)
 {
+	return mono_class_get_field_from_name_full (klass, name, NULL);
+}
+
+MonoClassField *
+mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *signature)
+{
 	int i;
 
 	mono_class_setup_fields_locking (klass);
 	while (klass) {
 		for (i = 0; i < klass->field.count; ++i) {
-			if (strcmp (name, mono_field_get_name (&klass->fields [i])) == 0)
-				return &klass->fields [i];
+			MonoClassField *field = &klass->fields [i];
+
+			if (strcmp (name, mono_field_get_name (field)) != 0)
+				continue;
+
+			if (signature) {
+				MonoType *field_type = mono_metadata_get_corresponding_field_from_generic_type_definition (field)->type;
+				if (!mono_metadata_type_equal_full (signature, field_type, TRUE))
+					continue;
+			}
+			return field;
 		}
 		klass = klass->parent;
 	}

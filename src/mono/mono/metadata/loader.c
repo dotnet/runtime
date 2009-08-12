@@ -405,7 +405,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		      MonoGenericContext *context)
 {
 	MonoClass *klass;
-	MonoClassField *field, *sig_field = NULL;
+	MonoClassField *field;
 	MonoTableInfo *tables = image->tables;
 	MonoType *sig_type;
 	guint32 cols[6];
@@ -455,7 +455,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		mono_class_init (klass);
 		if (retklass)
 			*retklass = klass;
-		sig_field = field = mono_class_get_field_from_name (klass, fname);
+		field = mono_class_get_field_from_name_full (klass, fname, sig_type);
 		break;
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
@@ -469,7 +469,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		mono_class_init (klass);
 		if (retklass)
 			*retklass = klass;
-		sig_field = field = mono_class_get_field_from_name (klass, fname);
+		field = mono_class_get_field_from_name_full (klass, fname, sig_type);
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
@@ -477,9 +477,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		mono_class_init (klass);
 		if (retklass)
 			*retklass = klass;
-		field = mono_class_get_field_from_name (klass, fname);
-		if (field)
-			sig_field = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
+		field = mono_class_get_field_from_name_full (klass, fname, sig_type);
 		break;
 	}
 	default:
@@ -489,10 +487,6 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 
 	if (!field)
 		mono_loader_set_error_field_load (klass, fname);
-	else if (sig_field && !mono_metadata_type_equal_full (sig_type, sig_field->type, TRUE)) {
-		mono_loader_set_error_field_load (klass, fname);
-		return NULL;
-	}
 
 	return field;
 }
