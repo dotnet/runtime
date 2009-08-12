@@ -1276,14 +1276,25 @@ static mword obj_references_checked = 0;
  * This section of code deals with detecting the objects no longer in use
  * and reclaiming the memory.
  */
+
+#define COUNT_OBJECT_TYPES do {						\
+	switch (desc & 0x7) {						\
+	case DESC_TYPE_STRING: type_str++; break;			\
+	case DESC_TYPE_RUN_LENGTH: type_rlen++; break;			\
+	case DESC_TYPE_ARRAY: case DESC_TYPE_VECTOR: type_vector++; break; \
+	case DESC_TYPE_SMALL_BITMAP: type_bitmap++; break;		\
+	case DESC_TYPE_LARGE_BITMAP: type_lbit++; break;		\
+	case DESC_TYPE_COMPLEX: type_complex++; break;			\
+	case DESC_TYPE_COMPLEX_ARR: type_complex++; break;		\
+	default: g_assert_not_reached ();				\
+	}								\
+	} while (0)
+
 static void __attribute__((noinline))
 scan_area (char *start, char *end)
 {
 	GCVTable *vt;
-	size_t skip_size;
-	int type;
 	int type_str = 0, type_rlen = 0, type_bitmap = 0, type_vector = 0, type_lbit = 0, type_complex = 0;
-	mword desc;
 	new_obj_references = 0;
 	obj_references_checked = 0;
 	while (start < end) {
@@ -1297,64 +1308,9 @@ scan_area (char *start, char *end)
 			MonoObject *obj = (MonoObject*)start;
 			g_print ("found at %p (0x%zx): %s.%s\n", start, vt->desc, obj->vtable->klass->name_space, obj->vtable->klass->name);
 		}
-		desc = vt->desc;
-		type = desc & 0x7;
-		if (type == DESC_TYPE_STRING) {
-			STRING_SIZE (skip_size, start);
-			start += skip_size;
-			type_str++;
-			continue;
-		} else if (type == DESC_TYPE_RUN_LENGTH) {
-			OBJ_RUN_LEN_SIZE (skip_size, desc, start);
-			g_assert (skip_size);
-			OBJ_RUN_LEN_FOREACH_PTR (desc,start);
-			start += skip_size;
-			type_rlen++;
-			continue;
-		} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			OBJ_VECTOR_FOREACH_PTR (vt, start);
-			start += skip_size;
-			type_vector++;
-			continue;
-		} else if (type == DESC_TYPE_SMALL_BITMAP) {
-			OBJ_BITMAP_SIZE (skip_size, desc, start);
-			g_assert (skip_size);
-			OBJ_BITMAP_FOREACH_PTR (desc,start);
-			start += skip_size;
-			type_bitmap++;
-			continue;
-		} else if (type == DESC_TYPE_LARGE_BITMAP) {
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start);
-			start += skip_size;
-			type_lbit++;
-			continue;
-		} else if (type == DESC_TYPE_COMPLEX) {
-			/* this is a complex object */
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			OBJ_COMPLEX_FOREACH_PTR (vt, start);
-			start += skip_size;
-			type_complex++;
-			continue;
-		} else if (type == DESC_TYPE_COMPLEX_ARR) {
-			/* this is an array of complex structs */
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
-			start += skip_size;
-			type_complex++;
-			continue;
-		} else {
-			g_assert (0);
-		}
+
+#define SCAN_OBJECT_ACTION COUNT_OBJECT_TYPES
+#include "sgen-scan-object.h"
 	}
 	/*printf ("references to new nursery %p-%p (size: %dk): %d, checked: %d\n", old_start, end, (end-old_start)/1024, new_obj_references, obj_references_checked);
 	printf ("\tstrings: %d, runl: %d, vector: %d, bitmaps: %d, lbitmaps: %d, complex: %d\n",
@@ -1395,10 +1351,7 @@ static void __attribute__((noinline))
 scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 {
 	GCVTable *vt;
-	size_t skip_size;
-	int type;
 	gboolean remove;
-	mword desc;
 
 	while (start < end) {
 		if (!*(void**)start) {
@@ -1413,58 +1366,10 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 			if (dislink)
 				mono_gc_register_disappearing_link (NULL, dislink, FALSE);
 		}
-		desc = vt->desc;
-		type = desc & 0x7;
-		if (type == DESC_TYPE_STRING) {
-			STRING_SIZE (skip_size, start);
-			if (remove) memset (start, 0, skip_size);
-			start += skip_size;
-			continue;
-		} else if (type == DESC_TYPE_RUN_LENGTH) {
-			OBJ_RUN_LEN_SIZE (skip_size, desc, start);
-			g_assert (skip_size);
-			if (remove) memset (start, 0, skip_size);
-			start += skip_size;
-			continue;
-		} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			if (remove) memset (start, 0, skip_size);
-			start += skip_size;
-			continue;
-		} else if (type == DESC_TYPE_SMALL_BITMAP) {
-			OBJ_BITMAP_SIZE (skip_size, desc, start);
-			g_assert (skip_size);
-			if (remove) memset (start, 0, skip_size);
-			start += skip_size;
-			continue;
-		} else if (type == DESC_TYPE_LARGE_BITMAP) {
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			if (remove) memset (start, 0, skip_size);
-			start += skip_size;
-			continue;
-		} else if (type == DESC_TYPE_COMPLEX) {
-			/* this is a complex object */
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			if (remove) memset (start, 0, skip_size);
-			start += skip_size;
-			continue;
-		} else if (type == DESC_TYPE_COMPLEX_ARR) {
-			/* this is an array of complex structs */
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			if (remove) memset (start, 0, skip_size);
-			start += skip_size;
-			continue;
-		} else {
-			g_assert (0);
-		}
+
+#define SCAN_OBJECT_NOSCAN
+#define SCAN_OBJECT_ACTION do { if (remove) memset (start, 0, skip_size); } while (0)
+#include "sgen-scan-object.h"
 	}
 }
 
@@ -1731,75 +1636,9 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 static char*
 scan_object (char *start, char* from_start, char* from_end)
 {
-	GCVTable *vt;
-	size_t skip_size;
-	mword desc;
+#include "sgen-scan-object.h"
 
-	vt = (GCVTable*)LOAD_VTABLE (start);
-	//type = vt->desc & 0x7;
-
-	/* gcc should be smart enough to remove the bounds check, but it isn't:( */
-	desc = vt->desc;
-	switch (desc & 0x7) {
-	//if (type == DESC_TYPE_STRING) {
-	case DESC_TYPE_STRING:
-		STRING_SIZE (skip_size, start);
-		return start + skip_size;
-	//} else if (type == DESC_TYPE_RUN_LENGTH) {
-	case DESC_TYPE_RUN_LENGTH:
-		OBJ_RUN_LEN_FOREACH_PTR (desc,start);
-		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
-		g_assert (skip_size);
-		return start + skip_size;
-	//} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
-	case DESC_TYPE_ARRAY:
-	case DESC_TYPE_VECTOR:
-		OBJ_VECTOR_FOREACH_PTR (vt, start);
-		skip_size = safe_object_get_size ((MonoObject*)start);
-#if 0
-		skip_size = (vt->desc >> LOW_TYPE_BITS) & MAX_ELEMENT_SIZE;
-		skip_size *= mono_array_length ((MonoArray*)start);
-		skip_size += sizeof (MonoArray);
-#endif
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
-		return start + skip_size;
-	//} else if (type == DESC_TYPE_SMALL_BITMAP) {
-	case DESC_TYPE_SMALL_BITMAP:
-		OBJ_BITMAP_FOREACH_PTR (desc,start);
-		OBJ_BITMAP_SIZE (skip_size, desc, start);
-		return start + skip_size;
-	//} else if (type == DESC_TYPE_LARGE_BITMAP) {
-	case DESC_TYPE_LARGE_BITMAP:
-		OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start);
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
-		return start + skip_size;
-	//} else if (type == DESC_TYPE_COMPLEX) {
-	case DESC_TYPE_COMPLEX:
-		OBJ_COMPLEX_FOREACH_PTR (vt, start);
-		/* this is a complex object */
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
-		return start + skip_size;
-	//} else if (type == DESC_TYPE_COMPLEX_ARR) {
-	case DESC_TYPE_COMPLEX_ARR:
-		OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
-		/* this is an array of complex structs */
-		skip_size = safe_object_get_size ((MonoObject*)start);
-#if 0
-		skip_size = mono_array_element_size (((MonoObject*)start)->vtable->klass);
-		skip_size *= mono_array_length ((MonoArray*)start);
-		skip_size += sizeof (MonoArray);
-#endif
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
-		return start + skip_size;
-	}
-	g_assert_not_reached ();
-	return NULL;
+	return start;
 }
 
 /*
@@ -5825,10 +5664,7 @@ static void __attribute__((noinline))
 check_remsets_for_area (char *start, char *end)
 {
 	GCVTable *vt;
-	size_t skip_size;
-	int type;
 	int type_str = 0, type_rlen = 0, type_bitmap = 0, type_vector = 0, type_lbit = 0, type_complex = 0;
-	mword desc;
 	new_obj_references = 0;
 	obj_references_checked = 0;
 	while (start < end) {
@@ -5842,64 +5678,9 @@ check_remsets_for_area (char *start, char *end)
 			MonoObject *obj = (MonoObject*)start;
 			g_print ("found at %p (0x%lx): %s.%s\n", start, (long)vt->desc, obj->vtable->klass->name_space, obj->vtable->klass->name);
 		}
-		desc = vt->desc;
-		type = desc & 0x7;
-		if (type == DESC_TYPE_STRING) {
-			STRING_SIZE (skip_size, start);
-			start += skip_size;
-			type_str++;
-			continue;
-		} else if (type == DESC_TYPE_RUN_LENGTH) {
-			OBJ_RUN_LEN_SIZE (skip_size, desc, start);
-			g_assert (skip_size);
-			OBJ_RUN_LEN_FOREACH_PTR (desc,start);
-			start += skip_size;
-			type_rlen++;
-			continue;
-		} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			OBJ_VECTOR_FOREACH_PTR (vt, start);
-			start += skip_size;
-			type_vector++;
-			continue;
-		} else if (type == DESC_TYPE_SMALL_BITMAP) {
-			OBJ_BITMAP_SIZE (skip_size, desc, start);
-			g_assert (skip_size);
-			OBJ_BITMAP_FOREACH_PTR (desc,start);
-			start += skip_size;
-			type_bitmap++;
-			continue;
-		} else if (type == DESC_TYPE_LARGE_BITMAP) {
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start);
-			start += skip_size;
-			type_lbit++;
-			continue;
-		} else if (type == DESC_TYPE_COMPLEX) {
-			/* this is a complex object */
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			OBJ_COMPLEX_FOREACH_PTR (vt, start);
-			start += skip_size;
-			type_complex++;
-			continue;
-		} else if (type == DESC_TYPE_COMPLEX_ARR) {
-			/* this is an array of complex structs */
-			skip_size = safe_object_get_size ((MonoObject*)start);
-			skip_size += (ALLOC_ALIGN - 1);
-			skip_size &= ~(ALLOC_ALIGN - 1);
-			OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
-			start += skip_size;
-			type_complex++;
-			continue;
-		} else {
-			g_assert (0);
-		}
+
+#define SCAN_OBJECT_ACTION COUNT_OBJECT_TYPES
+#include "sgen-scan-object.h"
 	}
 }
 
@@ -5946,60 +5727,12 @@ check_consistency (void)
 char*
 check_object (char *start)
 {
-	GCVTable *vt;
-	size_t skip_size;
-	mword desc;
-
 	if (!start)
 		return NULL;
 
-	vt = (GCVTable*)LOAD_VTABLE (start);
-	//type = vt->desc & 0x7;
+#include "sgen-scan-object.h"
 
-	desc = vt->desc;
-	switch (desc & 0x7) {
-	case DESC_TYPE_STRING:
-		STRING_SIZE (skip_size, start);
-		return start + skip_size;
-	case DESC_TYPE_RUN_LENGTH:
-		OBJ_RUN_LEN_FOREACH_PTR (desc,start);
-		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
-		g_assert (skip_size);
-		return start + skip_size;
-	case DESC_TYPE_ARRAY:
-	case DESC_TYPE_VECTOR:
-		OBJ_VECTOR_FOREACH_PTR (vt, start);
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
-		return start + skip_size;
-	case DESC_TYPE_SMALL_BITMAP:
-		OBJ_BITMAP_FOREACH_PTR (desc,start);
-		OBJ_BITMAP_SIZE (skip_size, desc, start);
-		return start + skip_size;
-	case DESC_TYPE_LARGE_BITMAP:
-		OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start);
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
-		return start + skip_size;
-	case DESC_TYPE_COMPLEX:
-		OBJ_COMPLEX_FOREACH_PTR (vt, start);
-		/* this is a complex object */
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
-		return start + skip_size;
-	case DESC_TYPE_COMPLEX_ARR:
-		OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
-		/* this is an array of complex structs */
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
-		return start + skip_size;
-	}
-	g_assert_not_reached ();
-	return NULL;
+	return start;
 }
 
 /*

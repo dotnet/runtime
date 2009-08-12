@@ -147,6 +147,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-gc.c		\
 	sgen-gc.h		\
 	sgen-archdep.h		\
+	sgen-scan-object.h	\
 	string-icalls.c 	\
 	string-icalls.h 	\
 	sysmath.h		\
