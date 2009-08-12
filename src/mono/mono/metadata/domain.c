@@ -1879,11 +1879,43 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	mono_debug_domain_unload (domain);
 
-	mono_gc_clear_domain (domain);
-
 	mono_appdomains_lock ();
 	appdomains_list [domain->domain_id] = NULL;
 	mono_appdomains_unlock ();
+
+	/*
+	 * We must destroy all these hash tables here because they
+	 * contain references to managed objects belonging to the
+	 * domain.  Once we let the GC clear the domain there must be
+	 * no more such references, or we'll crash if a collection
+	 * occurs.
+	 */
+	mono_g_hash_table_destroy (domain->ldstr_table);
+	domain->ldstr_table = NULL;
+
+	mono_g_hash_table_destroy (domain->env);
+	domain->env = NULL;
+
+	mono_reflection_cleanup_domain (domain);
+
+	if (domain->type_hash) {
+		mono_g_hash_table_destroy (domain->type_hash);
+		domain->type_hash = NULL;
+	}
+	if (domain->type_init_exception_hash) {
+		mono_g_hash_table_destroy (domain->type_init_exception_hash);
+		domain->type_init_exception_hash = NULL;
+	}
+
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *ass = tmp->data;
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s %p, assembly %s %p, refcount=%d\n", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
+		mono_assembly_close (ass);
+	}
+	g_slist_free (domain->domain_assemblies);
+	domain->domain_assemblies = NULL;
+
+	mono_gc_clear_domain (domain);
 
 	/* FIXME: free delegate_hash_table when it's used */
 	if (domain->search_path) {
@@ -1903,18 +1935,9 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		g_hash_table_destroy (domain->special_static_fields);
 		domain->special_static_fields = NULL;
 	}
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly *ass = tmp->data;
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s %p, assembly %s %p, refcount=%d\n", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
-		mono_assembly_close (ass);
-	}
-	g_slist_free (domain->domain_assemblies);
-	domain->domain_assemblies = NULL;
 
 	g_free (domain->friendly_name);
 	domain->friendly_name = NULL;
-	mono_g_hash_table_destroy (domain->env);
-	domain->env = NULL;
 	g_hash_table_destroy (domain->class_vtable_hash);
 	domain->class_vtable_hash = NULL;
 	g_hash_table_destroy (domain->proxy_vtable_hash);
@@ -1924,8 +1947,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		domain->static_data_array = NULL;
 	}
 	mono_internal_hash_table_destroy (&domain->jit_code_hash);
-	mono_g_hash_table_destroy (domain->ldstr_table);
-	domain->ldstr_table = NULL;
 
 	/*
 	 * There might still be jit info tables of this domain which
@@ -1955,16 +1976,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->code_mp = NULL;
 #endif	
 
-	mono_reflection_cleanup_domain (domain);
-	
-	if (domain->type_hash) {
-		mono_g_hash_table_destroy (domain->type_hash);
-		domain->type_hash = NULL;
-	}
-	if (domain->type_init_exception_hash) {
-		mono_g_hash_table_destroy (domain->type_init_exception_hash);
-		domain->type_init_exception_hash = NULL;
-	}
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	domain->finalizable_objects_hash = NULL;
 #ifndef HAVE_SGEN_GC
