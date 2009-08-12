@@ -1002,15 +1002,15 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 
 	/* The IMT method is in v5 */
 
-	/* Only IP is available, but we need at least two free registers */
-	ARM_PUSH1 (code, ARMREG_R1);
+	/* Need at least two free registers, plus a slot for storing the pc */
+	ARM_PUSH (code, (1 << ARMREG_R0)|(1 << ARMREG_R1)|(1 << ARMREG_R2));
 	labels [0] = code;
 	/* Load the parameter from the GOT */
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-	ARM_LDR_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+	ARM_LDR_REG_REG (code, ARMREG_R0, ARMREG_PC, ARMREG_R0);
 
 	labels [1] = code;
-	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_IP, 0);
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_R0, 0);
 	ARM_CMP_REG_REG (code, ARMREG_R1, ARMREG_V5);
 	labels [2] = code;
 	ARM_B_COND (code, ARMCOND_EQ, 0);
@@ -1021,16 +1021,19 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	ARM_B_COND (code, ARMCOND_EQ, 0);
 
 	/* Loop footer */
-	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_IP, sizeof (gpointer) * 2);
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (gpointer) * 2);
 	labels [4] = code;
 	ARM_B (code, 0);
 	arm_patch (labels [4], labels [1]);
 
 	/* Match */
 	arm_patch (labels [2], code);
-	ARM_POP1 (code, ARMREG_R1);
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, 4);
-	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 4);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 0);
+	/* Save it to the third stack slot */
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, 8);
+	/* Restore the registers and branch */
+	ARM_POP (code, (1 << ARMREG_R0)|(1 << ARMREG_R1)|(1 << ARMREG_PC));
 
 	/* No match */
 	arm_patch (labels [3], code);
@@ -1038,7 +1041,7 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 
 	/* Fixup offset */
 	code2 = labels [0];
-	ARM_LDR_IMM (code2, ARMREG_IP, ARMREG_PC, (code - (labels [0] + 8)));
+	ARM_LDR_IMM (code2, ARMREG_R0, ARMREG_PC, (code - (labels [0] + 8)));
 
 	emit_bytes (acfg, buf, code - buf);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + (code - (labels [0] + 8)) - 4);
