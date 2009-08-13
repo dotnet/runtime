@@ -101,7 +101,15 @@ namespace Mono.Tuner {
 							parent = GetBaseMethod (type, method);
 						}
 
-						if (parent == null || HasSecurityAttribute (parent, AttributeType.Critical))
+						//if there's no base method
+						if (parent == null ||
+
+						//if it's our bridge assembly, we're sure it will (finally, at the end of the linking process) have the SC attrib
+						    _assembly.MainModule.Types.Contains (parent.DeclaringType) ||
+
+						//if the type is in the moonlight assemblies, check if it has the SC attrib
+						    HasSecurityAttribute (parent, AttributeType.Critical))
+
 							AddCriticalAttribute (method);
 				}
 				
