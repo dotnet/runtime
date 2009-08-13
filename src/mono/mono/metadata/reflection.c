@@ -8616,7 +8616,7 @@ is_sre_pointer (MonoClass *class)
 static gboolean
 is_sre_generic_instance (MonoClass *class)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "MOnoGenericClass");
+	check_corlib_type_cached (class, "System.Reflection", "MonoGenericClass");
 }
 
 MonoType*
@@ -8676,7 +8676,7 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 			types [i] = mono_reflection_type_get_handle (t);
 		}
 
-		res = mono_reflection_bind_generic_parameters ((MonoReflectionType*)gclass->type_arguments, count, types);
+		res = mono_reflection_bind_generic_parameters ((MonoReflectionType*)gclass->generic_type, count, types);
 		g_free (types);
 		g_assert (res);
 		gclass->type.type = res;
