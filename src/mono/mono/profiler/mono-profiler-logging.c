@@ -24,6 +24,10 @@
 
 #include <dlfcn.h>
 
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+
 #define HAS_OPROFILE 0
 
 #if (HAS_OPROFILE)
@@ -693,6 +697,7 @@ typedef struct _ProfilerExecutableFiles {
 
 #define THREAD_TYPE pthread_t
 #define CREATE_WRITER_THREAD(f) pthread_create (&(profiler->data_writer_thread), NULL, ((void*(*)(void*))f), NULL)
+#define CREATE_USER_THREAD(f) pthread_create (&(profiler->user_thread), NULL, ((void*(*)(void*))f), NULL)
 #define EXIT_THREAD() pthread_exit (NULL);
 #define WAIT_WRITER_THREAD() do {\
 	if (CHECK_WRITER_THREAD ()) {\
@@ -741,13 +746,13 @@ make_pthread_profiler_key (void) {
 #define OPEN_FILE() profiler->file = fopen (profiler->file_name, "wb");
 #define WRITE_BUFFER(b,s) fwrite ((b), 1, (s), profiler->file)
 #define FLUSH_FILE() fflush (profiler->file)
-#define CLOSE_FILE() fclose (profiler->file);
+#define CLOSE_FILE() fclose (profiler->file)
 #else
 #define FILE_HANDLE_TYPE int
 #define OPEN_FILE() profiler->file = open (profiler->file_name, O_WRONLY|O_CREAT|O_TRUNC, 0664);
 #define WRITE_BUFFER(b,s) write (profiler->file, (b), (s))
-#define FLUSH_FILE()
-#define CLOSE_FILE() close (profiler->file);
+#define FLUSH_FILE() fsync (profiler->file)
+#define CLOSE_FILE() close (profiler->file)
 #endif
 
 #else
@@ -875,6 +880,7 @@ struct _MonoProfiler {
 	ProfilerCodeChunks code_chunks;
 	
 	THREAD_TYPE data_writer_thread;
+	THREAD_TYPE user_thread;
 	EVENT_TYPE enable_data_writer_event;
 	EVENT_TYPE wake_data_writer_event;
 	EVENT_TYPE done_data_writer_event;
@@ -889,6 +895,8 @@ struct _MonoProfiler {
 	
 	ProfilerHeapShotWriteJob *heap_shot_write_jobs;
 	ProfilerHeapShotHeapBuffers heap;
+	
+	int command_port;
 	
 	char *heap_shot_command_file_name;
 	int dump_next_heap_snapshots;
@@ -966,6 +974,7 @@ enable_profiler (void) {
 static void
 disable_profiler (void) {
 	profiler->profiler_enabled = FALSE;
+	WRITER_EVENT_RAISE ();
 }
 
 
@@ -1007,11 +1016,17 @@ add_toggle_handler (int signal_number)
 #define DEBUG_CLASS_BITMAPS 0
 #define DEBUG_STATISTICAL_PROFILER 0
 #define DEBUG_WRITER_THREAD 0
+#define DEBUG_USER_THREAD 0
 #define DEBUG_FILE_WRITES 0
 #if (DEBUG_LOGGING_PROFILER || DEBUG_STATISTICAL_PROFILER || DEBUG_HEAP_PROFILER || DEBUG_WRITER_THREAD || DEBUG_FILE_WRITES)
 #define LOG_WRITER_THREAD(m) printf ("WRITER-THREAD-LOG %s\n", m)
 #else
 #define LOG_WRITER_THREAD(m)
+#endif
+#if (DEBUG_LOGGING_PROFILER || DEBUG_STATISTICAL_PROFILER || DEBUG_HEAP_PROFILER || DEBUG_USER_THREAD || DEBUG_FILE_WRITES)
+#define LOG_USER_THREAD(m) printf ("USER-THREAD-LOG %s\n", m)
+#else
+#define LOG_USER_THREAD(m)
 #endif
 
 #if DEBUG_LOGGING_PROFILER
@@ -5217,6 +5232,148 @@ runtime_initialized (MonoProfiler *profiler) {
 	LOG_WRITER_THREAD ("runtime_initialized: initialized internal calls.\n");
 }
 
+
+#define MAX_COMMAND_LENGTH (1024)
+static int server_socket;
+static int command_socket;
+
+static void
+write_user_response (const char *response) {
+	LOG_USER_THREAD ("write_user_response: writing response:");
+	LOG_USER_THREAD (response);
+	send (command_socket, response, strlen (response), 0);
+}
+
+static void
+execute_user_command (char *command) {
+	char *line_feed;
+	
+	LOG_USER_THREAD ("execute_user_command: executing command:");
+	LOG_USER_THREAD (command);
+	
+	/* Ignore leading and trailing '\r' */
+	line_feed = strchr (command, '\r');
+	if (line_feed == command) {
+		command ++;
+		line_feed = strchr (command, '\r');
+	}
+	if ((line_feed != NULL) && (* (line_feed + 1) == 0)) {
+		*line_feed = 0;
+	}
+	
+	if (strcmp (command, "enable") == 0) {
+		LOG_USER_THREAD ("execute_user_command: enabling profiler");
+		enable_profiler ();
+		write_user_response ("DONE\n");
+	} else if (strcmp (command, "disable") == 0) {
+		LOG_USER_THREAD ("execute_user_command: disabling profiler");
+		disable_profiler ();
+		write_user_response ("DONE\n");
+	} else {
+		LOG_USER_THREAD ("execute_user_command: command not recognized");
+		write_user_response ("ERROR\n");
+	}
+}
+
+static gboolean
+process_user_commands (void) {
+	char *command_buffer = malloc (MAX_COMMAND_LENGTH);
+	int command_buffer_current_index = 0;
+	gboolean loop = TRUE;
+	gboolean result = TRUE;
+	
+	while (loop) {
+		int unprocessed_characters;
+		
+		LOG_USER_THREAD ("process_user_commands: reading from socket...");
+		unprocessed_characters = recv (command_socket, command_buffer + command_buffer_current_index, MAX_COMMAND_LENGTH - command_buffer_current_index, 0);
+		
+		if (unprocessed_characters > 0) {
+			char *command_end = NULL;
+			
+			LOG_USER_THREAD ("process_user_commands: received characters.");
+			
+			do {
+				if (command_end != NULL) {
+					*command_end = 0;
+					execute_user_command (command_buffer);
+					unprocessed_characters -= (((command_end - command_buffer) - command_buffer_current_index) + 1);
+					
+					if (unprocessed_characters > 0) {
+						memmove (command_buffer, command_end + 1, unprocessed_characters);
+					}
+					command_buffer_current_index = 0;
+				}
+				
+				command_end = memchr (command_buffer, '\n', command_buffer_current_index + unprocessed_characters);
+			} while (command_end != NULL);
+			
+			command_buffer_current_index += unprocessed_characters;
+			
+		} else if (unprocessed_characters == 0) {
+			LOG_USER_THREAD ("process_user_commands: received no character.");
+			result = TRUE;
+			loop = FALSE;
+		} else {
+			LOG_USER_THREAD ("process_user_commands: received error.");
+			result = FALSE;
+			loop = FALSE;
+		}
+	}
+	
+	free (command_buffer);
+	return result;
+}
+
+static guint32
+user_thread (gpointer nothing) {
+	struct sockaddr_in server_address;
+	
+	server_socket = -1;
+	command_socket = -1;
+	
+	LOG_USER_THREAD ("user_thread: starting up...");
+	
+	server_socket = socket (AF_INET, SOCK_STREAM, 0);
+	if (server_socket < 0) {
+		LOG_USER_THREAD ("user_thread: error creating socket.");
+		return 0;
+	}
+	memset (& server_address, 0, sizeof (server_address));
+	
+	server_address.sin_family = AF_INET;
+	server_address.sin_addr.s_addr = INADDR_ANY;
+	if ((profiler->command_port < 1023) || (profiler->command_port > 65535)) {
+		LOG_USER_THREAD ("user_thread: invalid port number.");
+		return 0;
+	}
+	server_address.sin_port = htons (profiler->command_port);
+	
+	if (bind (server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
+		LOG_USER_THREAD ("user_thread: error binding socket.");
+		close (server_socket);
+		return 0;
+	}
+	
+	LOG_USER_THREAD ("user_thread: listening...\n");
+	listen (server_socket, 1);
+	command_socket = accept (server_socket, NULL, NULL);
+	if (command_socket < 0) {
+		LOG_USER_THREAD ("user_thread: error accepting socket.");
+		close (server_socket);
+		return 0;
+	}
+	
+	LOG_USER_THREAD ("user_thread: processing user commands...");
+	process_user_commands ();
+	
+	LOG_USER_THREAD ("user_thread: exiting cleanly.");
+	close (server_socket);
+	close (command_socket);
+	return 0;
+}
+
+
 /* called at the end of the program */
 static void
 profiler_shutdown (MonoProfiler *prof)
@@ -5464,6 +5621,11 @@ setup_user_options (const char *arguments) {
 				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->dump_next_heap_snapshots = atoi (equals + 1);
+				}
+			} else if (! (strncmp (argument, "command-port", equals_position) && strncmp (argument, "cp", equals_position))) {
+				FAIL_IF_HAS_MINUS;
+				if (strlen (equals + 1) > 0) {
+					profiler->command_port = atoi (equals + 1);
 				}
 #ifndef PLATFORM_WIN32
 			} else if (! (strncmp (argument, "toggle-signal", equals_position) && strncmp (argument, "ts", equals_position))) {
@@ -5717,6 +5879,13 @@ data_writer_thread (gpointer nothing) {
 			
 			UNLOCK_PROFILER ();
 			LOG_WRITER_THREAD ("data_writer_thread: wrote data and released lock");
+		} else {
+			LOG_WRITER_THREAD ("data_writer_thread: acquiring lock and flushing buffers");
+			LOCK_PROFILER ();
+			LOG_WRITER_THREAD ("data_writer_thread: lock acquired, flushing buffers");
+			flush_everything ();
+			UNLOCK_PROFILER ();
+			LOG_WRITER_THREAD ("data_writer_thread: flushed buffers and released lock");
 		}
 		
 		if (profiler->terminate_writer_thread) {
@@ -5778,6 +5947,13 @@ mono_profiler_startup (const char *desc)
 	LOG_WRITER_THREAD ("mono_profiler_startup: creating writer thread");
 	CREATE_WRITER_THREAD (data_writer_thread);
 	LOG_WRITER_THREAD ("mono_profiler_startup: created writer thread");
+	if ((profiler->command_port >= 1024) && (profiler->command_port <= 65535)) {
+		LOG_USER_THREAD ("mono_profiler_startup: creating user thread");
+		CREATE_USER_THREAD (user_thread);
+		LOG_USER_THREAD ("mono_profiler_startup: created user thread");
+	} else {
+		LOG_USER_THREAD ("mono_profiler_startup: skipping user thread creation");
+	}
 
 	ALLOCATE_PROFILER_THREAD_DATA ();
 	
