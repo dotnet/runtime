@@ -798,23 +798,31 @@ mono_method_is_valid_in_context (VerifyContext *ctx, MonoMethod *method)
 
 	
 static MonoClassField*
-verifier_load_field (VerifyContext *ctx, int token, MonoClass **klass, const char *opcode) {
+verifier_load_field (VerifyContext *ctx, int token, MonoClass **out_klass, const char *opcode) {
 	MonoClassField *field;
-	
+	MonoClass *klass = NULL;
+
 	if (!IS_FIELD_DEF_OR_REF (token) || !token_bounds_check (ctx->image, token)) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid field token 0x%x08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
 
-	field = mono_field_from_token (ctx->image, token, klass, ctx->generic_context);
-	if (!field || !field->parent) {
+	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
+	if (!field || !field->parent || !klass) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load field from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
 
-	if (!mono_type_is_valid_in_context (ctx, &field->parent->byval_arg))
+	if (!mono_type_is_valid_in_context (ctx, &klass->byval_arg) || !mono_type_is_valid_in_context (ctx, &field->parent->byval_arg))
 		return NULL;
 
+	if (klass->generic_container || field->parent->generic_container) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot reference a field using the generic type definition for %s at 0x%04x", opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		return NULL;
+	}
+	
+
+	*out_klass = klass;
 	return field;
 }
 
