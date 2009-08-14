@@ -306,8 +306,8 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 	}
 		
 	case MONO_EXCEPTION_MISSING_FIELD: {
-		char *cnspace = g_strdup (*error->klass->name_space ? error->klass->name_space : "");
-		char *cname = g_strdup (error->klass->name);
+		char *cnspace = g_strdup ((error->klass && *error->klass->name_space) ? error->klass->name_space : "");
+		char *cname = g_strdup (error->klass ? error->klass->name : "");
 		char *cmembername = g_strdup (error->member_name);
                 char *class_name;
 
@@ -430,7 +430,8 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	/* we may want to check the signature here... */
 
 	if (*ptr++ != 0x6) {
-		mono_loader_set_error_bad_image (g_strdup_printf ("Bad field signature class token %08x field name %s token %08x", class, fname, token));
+		g_warning ("Bad field signature class token %08x field name %s token %08x", class, fname, token);
+		mono_loader_set_error_field_load (NULL, fname);
 		return NULL;
 	}
 	/* FIXME: This needs a cache, especially for generic instances, since
