@@ -222,6 +222,7 @@ typedef struct {
 	int valid;
 	MonoImage *image;
 	gboolean report_error;
+	gboolean report_warning;
 	int stage;
 
 	DataDirectory data_directories [16];
@@ -240,6 +241,13 @@ typedef struct {
 		(__ctx)->errors = g_slist_prepend ((__ctx)->errors, vinfo);	\
 	} while (0)
 
+#define ADD_WARNING(__ctx, __msg)	\
+	do {	\
+		if ((__ctx)->report_warning) \
+			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_WARNING, MONO_EXCEPTION_INVALID_PROGRAM); \
+		(__ctx)->valid = 0; \
+		return; \
+	} while (0)
 
 #define ADD_ERROR(__ctx, __msg)	\
 	do {	\
@@ -2226,7 +2234,7 @@ verify_method_table (VerifyContext *ctx)
 		}
 
 		if (access == METHOD_ATTRIBUTE_COMPILER_CONTROLLED && (flags & (METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME)))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is CompileControlled and SpecialName or RtSpecialName", i));
+			ADD_WARNING (ctx, g_strdup_printf ("Invalid method row %d is CompileControlled and SpecialName or RtSpecialName", i));
 
 		if ((flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME) && !(flags & METHOD_ATTRIBUTE_SPECIAL_NAME))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is RTSpecialName but not SpecialName", i));
@@ -3292,6 +3300,7 @@ init_verify_context (VerifyContext *ctx, MonoImage *image, GSList **error_list)
 	memset (ctx, 0, sizeof (VerifyContext));
 	ctx->image = image;
 	ctx->report_error = error_list != NULL;
+	ctx->report_warning = FALSE; //export this setting in the API
 	ctx->valid = 1;
 	ctx->size = image->raw_data_len;
 	ctx->data = image->raw_data;
