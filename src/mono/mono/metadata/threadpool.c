@@ -1116,10 +1116,11 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	ares = mono_async_result_new (domain, NULL, ac->state, NULL, (MonoObject*)ac);
 	MONO_OBJECT_SETREF (ares, async_delegate, target);
 
-	if (domain->state == MONO_APPDOMAIN_UNLOADED || domain->state == MONO_APPDOMAIN_UNLOADING)
-		return ares;
-
 	EnterCriticalSection (&ares_lock);
+	if (domain->state == MONO_APPDOMAIN_UNLOADED || domain->state == MONO_APPDOMAIN_UNLOADING) {
+		LeaveCriticalSection (&ares_lock);
+		return ares;
+	}
 	mono_g_hash_table_insert (ares_htable, ares, ares);
 	LeaveCriticalSection (&ares_lock);
 
@@ -1214,11 +1215,26 @@ mono_thread_pool_cleanup (void)
 }
 
 static void
+null_array (MonoArray *a, int first, int last)
+{
+	/* We must null the old array because it might
+	   contain cross-appdomain references, which
+	   will crash the GC when the domains are
+	   unloaded. */
+	memset (mono_array_addr (a, MonoObject*, first), 0, sizeof (MonoObject*) * (last - first));
+}
+
+static void
 append_job (CRITICAL_SECTION *cs, TPQueue *list, MonoObject *ar)
 {
 	threadpool_jobs_inc (ar); 
 
 	EnterCriticalSection (cs);
+	if (ar->vtable->domain->state == MONO_APPDOMAIN_UNLOADING ||
+			ar->vtable->domain->state == MONO_APPDOMAIN_UNLOADED) {
+		LeaveCriticalSection (cs);
+		return;
+	}
 	if (list->array && (list->next_elem < mono_array_length (list->array))) {
 		mono_array_setref (list->array, list->next_elem, ar);
 		list->next_elem++;
@@ -1233,10 +1249,13 @@ append_job (CRITICAL_SECTION *cs, TPQueue *list, MonoObject *ar)
 		/* slide the array or create a larger one if it's full */
 		if (list->first_elem) {
 			mono_array_memcpy_refs (list->array, 0, list->array, list->first_elem, count);
+			null_array (list->array, count, list->next_elem);
 		} else {
+			MonoArray *olda = list->array;
 			MonoArray *newa = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) * 2);
 			mono_array_memcpy_refs (newa, 0, list->array, list->first_elem, count);
 			list->array = newa;
+			null_array (olda, list->first_elem, list->next_elem);
 		}
 		list->first_elem = 0;
 		list->next_elem = count;
@@ -1277,6 +1296,19 @@ clear_queue (CRITICAL_SECTION *cs, TPQueue *list, MonoDomain *domain)
 	LeaveCriticalSection (cs);
 }
 
+static GSList *clear_ares_htable_entries = NULL;
+
+static void
+check_ares_htable_entry_for_domain (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoObject *obj = key;
+	MonoDomain *domain = user_data;
+
+	g_assert (key == value);
+	if (obj->vtable->domain == domain)
+		clear_ares_htable_entries = g_slist_prepend (clear_ares_htable_entries, obj);
+}
+
 /*
  * Clean up the threadpool of all domain jobs.
  * Can only be called as part of the domain unloading process as
@@ -1288,6 +1320,9 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 	HANDLE sem_handle;
 	int result = TRUE;
 	guint32 start_time = 0;
+	GSList *list;
+
+	g_assert (domain->state == MONO_APPDOMAIN_UNLOADING);
 
 	clear_queue (&mono_delegate_section, &async_call_queue, domain);
 	clear_queue (&io_queue_lock, &async_io_queue, domain);
@@ -1318,6 +1353,16 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 
 	domain->cleanup_semaphore = NULL;
 	CloseHandle (sem_handle);
+
+	EnterCriticalSection (&ares_lock);
+	g_assert (!clear_ares_htable_entries);
+	mono_g_hash_table_foreach (ares_htable, check_ares_htable_entry_for_domain, domain);
+	for (list = clear_ares_htable_entries; list; list = list->next)
+		mono_g_hash_table_remove (ares_htable, list->data);
+	g_slist_free (clear_ares_htable_entries);
+	clear_ares_htable_entries = NULL;
+	LeaveCriticalSection (&ares_lock);
+
 	return result;
 }
 
@@ -1339,9 +1384,11 @@ dequeue_job (CRITICAL_SECTION *cs, TPQueue *list)
 	count = list->next_elem - list->first_elem;
 	/* reduce the size of the array if it's mostly empty */
 	if (mono_array_length (list->array) > 16 && count < (mono_array_length (list->array) / 3)) {
+		MonoArray *olda = list->array;
 		MonoArray *newa = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) / 2);
 		mono_array_memcpy_refs (newa, 0, list->array, list->first_elem, count);
 		list->array = newa;
+		null_array (olda, list->first_elem, list->next_elem);
 		list->first_elem = 0;
 		list->next_elem = count;
 	}
@@ -1353,6 +1400,8 @@ dequeue_job (CRITICAL_SECTION *cs, TPQueue *list)
 static void
 free_queue (TPQueue *list)
 {
+	if (list->array)
+		null_array (list->array, list->first_elem, list->next_elem);
 	list->array = NULL;
 	list->first_elem = list->next_elem = 0;
 }
