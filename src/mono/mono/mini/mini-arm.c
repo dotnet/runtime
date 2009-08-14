@@ -2323,7 +2323,8 @@ mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val)
 	} else {
 		if (v7_supported) {
 			ARM_MOVW_REG_IMM (code, dreg, val & 0xffff);
-			ARM_MOVT_REG_IMM (code, dreg, (val >> 16) & 0xffff);
+			if (val >> 16)
+				ARM_MOVT_REG_IMM (code, dreg, (val >> 16) & 0xffff);
 			return code;
 		}
 		if (val & 0xFF) {
