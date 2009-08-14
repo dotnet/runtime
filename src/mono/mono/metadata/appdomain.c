@@ -1992,6 +1992,24 @@ deregister_reflection_info_roots_name_space (gpointer key, gpointer value, gpoin
 }
 
 static void
+deregister_reflection_info_roots_from_list (MonoImage *image)
+{
+	GSList *list = image->reflection_info_unregister_classes;
+
+	while (list) {
+		MonoClass *class = list->data;
+
+		g_assert (class->reflection_info);
+		mono_gc_deregister_root ((char*) &class->reflection_info);
+
+		list = list->next;
+	}
+
+	g_slist_free (image->reflection_info_unregister_classes);
+	image->reflection_info_unregister_classes = NULL;
+}
+
+static void
 deregister_reflection_info_roots (MonoDomain *domain)
 {
 	GSList *list;
@@ -2005,10 +2023,16 @@ deregister_reflection_info_roots (MonoDomain *domain)
 		/*No need to take the image lock here since dynamic images are appdomain bound and at this point the mutator is gone.*/
 		if (image->dynamic && image->name_cache)
 			g_hash_table_foreach (image->name_cache, deregister_reflection_info_roots_name_space, image);
+		deregister_reflection_info_roots_from_list (image);
 		for (i = 0; i < image->module_count; ++i) {
 			MonoImage *module = image->modules [i];
-			if (module && module->dynamic && module->name_cache)
-				g_hash_table_foreach (module->name_cache, deregister_reflection_info_roots_name_space, module);
+			if (module) {
+				if (module->dynamic && module->name_cache) {
+					g_hash_table_foreach (module->name_cache,
+							deregister_reflection_info_roots_name_space, module);
+				}
+				deregister_reflection_info_roots_from_list (module);
+			}
 		}
 	}
 	mono_domain_assemblies_unlock (domain);

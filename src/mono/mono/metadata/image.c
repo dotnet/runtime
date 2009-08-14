@@ -1555,6 +1555,8 @@ mono_image_close (MonoImage *image)
 	if (image->property_hash)
 		mono_property_hash_destroy (image->property_hash);
 
+	g_slist_free (image->reflection_info_unregister_classes);
+
 	if (image->interface_bitset) {
 		mono_unload_interface_ids (image->interface_bitset);
 		mono_bitset_free (image->interface_bitset);

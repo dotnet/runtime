@@ -254,6 +254,8 @@ struct _MonoImage {
 	/* interfaces IDs from this image */
 	MonoBitSet *interface_bitset;
 
+	GSList *reflection_info_unregister_classes;
+
 	/*
 	 * No other runtime locks must be taken while holding this lock.
 	 * It's meant to be used only to mutate and query structures part of this image.

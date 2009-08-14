@@ -10687,6 +10687,9 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 
 	MOVING_GC_REGISTER (&pklass->reflection_info);
 	pklass->reflection_info = gparam; /* FIXME: GC pin gparam */
+	mono_image_lock (image);
+	image->reflection_info_unregister_classes = g_slist_prepend (image->reflection_info_unregister_classes, pklass);
+	mono_image_unlock (image);
 }
 
 MonoArray *
