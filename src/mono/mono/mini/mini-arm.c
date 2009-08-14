@@ -36,6 +36,7 @@ static gint lmf_addr_tls_offset = -1;
 static CRITICAL_SECTION mini_arch_mutex;
 
 static int v5_supported = 0;
+static int v7_supported = 0;
 static int thumb_supported = 0;
 
 /*
@@ -517,9 +518,10 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		while ((line = fgets (buf, 512, file))) {
 			if (strncmp (line, "Processor", 9) == 0) {
 				char *ver = strstr (line, "(v");
-				if (ver && (ver [2] == '5' || ver [2] == '6' || ver [2] == '7')) {
+				if (ver && (ver [2] == '5' || ver [2] == '6' || ver [2] == '7'))
 					v5_supported = TRUE;
-				}
+				if (ver && (ver [2] == '7'))
+					v7_supported = TRUE;
 				continue;
 			}
 			if (strncmp (line, "Features", 8) == 0) {
@@ -2319,6 +2321,11 @@ mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val)
 	} else if ((imm8 = mono_arm_is_rotated_imm8 (~val, &rot_amount)) >= 0) {
 		ARM_MVN_REG_IMM (code, dreg, imm8, rot_amount);
 	} else {
+		if (v7_supported) {
+			ARM_MOVW_REG_IMM (code, dreg, val & 0xffff);
+			ARM_MOVT_REG_IMM (code, dreg, (val >> 16) & 0xffff);
+			return code;
+		}
 		if (val & 0xFF) {
 			ARM_MOV_REG_IMM8 (code, dreg, (val & 0xFF));
 			if (val & 0xFF00) {
