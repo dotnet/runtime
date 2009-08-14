@@ -439,6 +439,10 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	sig_type = find_cached_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	if (!sig_type) {
 		sig_type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+		if (sig_type == NULL) {
+			mono_loader_set_error_field_load (klass, fname);
+			return NULL;
+		}
 		sig_type = cache_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE], sig_type);
 	}
 
@@ -473,7 +477,13 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
-		//FIXME can't klass be null?
+		if (!klass) {
+			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex);
+			g_warning ("missing field %s in class %s (typeref index %d)", fname, name, nindex);
+			mono_loader_set_error_type_load (name, image->assembly_name);
+			g_free (name);
+			return NULL;
+		}
 		mono_class_init (klass);
 		if (retklass)
 			*retklass = klass;
