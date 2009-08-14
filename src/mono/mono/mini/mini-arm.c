@@ -274,7 +274,7 @@ decode_vcall_slot_from_ldr (guint32 ldr, mgreg_t *regs, int *displacement)
 	if (((ldr >> 23) & 1) == 0) /*U bit, 0 means negative and 1 positive*/
 		offset = -offset;
 	/*g_print ("found vcall at r%d + %d for code at %p 0x%x\n", reg, offset, code, *code);*/
-	o = regs [reg];
+	o = (gpointer)regs [reg];
 
 	*displacement = offset;
 	return o;
@@ -951,7 +951,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
-	int frame_reg = ARMREG_FP;
+	int frame_reg = ARMREG_SP;
 
 	/* FIXME: this will change when we use FP as gcc does */
 	cfg->flags |= MONO_CFG_HAS_SPILLUP;
@@ -1998,7 +1998,6 @@ void
 mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 {
 	MonoInst *ins;
-	int vreg;
 
 	if (long_ins->opcode == OP_LNEG) {
 		ins = long_ins;
@@ -3422,7 +3421,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LCONV_TO_OVF_I:
 		case OP_LCONV_TO_OVF_I4_2: {
-			guint32 *high_bit_not_set, *valid_negative, *invalid_negative, *valid_positive;
+			guint8 *high_bit_not_set, *valid_negative, *invalid_negative, *valid_positive;
 			/* 
 			 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
 			 */
