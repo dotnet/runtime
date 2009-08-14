@@ -2001,6 +2001,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	DeleteCriticalSection (&domain->lock);
 	domain->setup = NULL;
 
+	mono_gc_deregister_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED));
+
 	/* FIXME: anything else required ? */
 
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
