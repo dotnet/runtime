@@ -1914,7 +1914,7 @@ register_jump_target_got_slot (MonoDomain *domain, MonoMethod *method, gpointer 
  * METHOD might not be set if the caller only has the image/token info.
  */
 static gpointer
-load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, MonoMethod *method, guint32 token, int method_index)
+load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint32 token, int method_index)
 {
 	MonoClass *klass;
 	gboolean from_plt = method == NULL;
@@ -1928,14 +1928,14 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE)
 		return NULL;
 
-	if ((domain != mono_get_root_domain ()) && (!(aot_module->opts & MONO_OPT_SHARED)))
+	if ((domain != mono_get_root_domain ()) && (!(amodule->opts & MONO_OPT_SHARED)))
 		/* Non shared AOT code can't be used in other appdomains */
 		return NULL;
 
-	if (aot_module->out_of_date)
+	if (amodule->out_of_date)
 		return NULL;
 
-	if (aot_module->code_offsets [method_index] == 0xffffffff) {
+	if (amodule->code_offsets [method_index] == 0xffffffff) {
 		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 			char *full_name;
 
@@ -1948,15 +1948,15 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		return NULL;
 	}
 
-	code = &aot_module->code [aot_module->code_offsets [method_index]];
-	info = &aot_module->method_info [aot_module->method_info_offsets [method_index]];
+	code = &amodule->code [amodule->code_offsets [method_index]];
+	info = &amodule->method_info [amodule->method_info_offsets [method_index]];
 
 	mono_aot_lock ();
-	if (!aot_module->methods_loaded)
-		aot_module->methods_loaded = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 1);
+	if (!amodule->methods_loaded)
+		amodule->methods_loaded = g_new0 (guint32, amodule->info.nmethods + 1);
 	mono_aot_unlock ();
 
-	if ((aot_module->methods_loaded [method_index / 32] >> (method_index % 32)) & 0x1)
+	if ((amodule->methods_loaded [method_index / 32] >> (method_index % 32)) & 0x1)
 		return code;
 
 	if (mono_last_aot_method != -1) {
@@ -1974,12 +1974,12 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 
 	if (method) {
 		klass = method->klass;
-		decode_klass_ref (aot_module, p, &p);
+		decode_klass_ref (amodule, p, &p);
 	} else {
-		klass = decode_klass_ref (aot_module, p, &p);
+		klass = decode_klass_ref (amodule, p, &p);
 	}
 
-	if (aot_module->opts & MONO_OPT_SHARED)
+	if (amodule->opts & MONO_OPT_SHARED)
 		used_strings = decode_value (p, &p);
 	else
 		used_strings = 0;
@@ -1989,7 +1989,7 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		mono_ldstr (mono_get_root_domain (), image, mono_metadata_token_index (token));
 	}
 
-	if (aot_module->opts & MONO_OPT_SHARED)	
+	if (amodule->opts & MONO_OPT_SHARED)	
 		keep_patches = FALSE;
 
 	n_patches = decode_value (p, &p);
@@ -2005,19 +2005,19 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		else
 			mp = mono_mempool_new ();
 
-		patches = load_patch_info (aot_module, mp, n_patches, &got_slots, p, &p);
+		patches = load_patch_info (amodule, mp, n_patches, &got_slots, p, &p);
 		if (patches == NULL)
 			goto cleanup;
 
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
 
-			if (!aot_module->got [got_slots [pindex]]) {
-				aot_module->got [got_slots [pindex]] = mono_resolve_patch_target (method, domain, code, ji, TRUE);
+			if (!amodule->got [got_slots [pindex]]) {
+				amodule->got [got_slots [pindex]] = mono_resolve_patch_target (method, domain, code, ji, TRUE);
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
-					aot_module->got [got_slots [pindex]] = mono_create_ftnptr (domain, aot_module->got [got_slots [pindex]]);
+					amodule->got [got_slots [pindex]] = mono_create_ftnptr (domain, amodule->got [got_slots [pindex]]);
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
-					register_jump_target_got_slot (domain, ji->data.method, &(aot_module->got [got_slots [pindex]]));
+					register_jump_target_got_slot (domain, ji->data.method, &(amodule->got [got_slots [pindex]]));
 			}
 			ji->type = MONO_PATCH_INFO_NONE;
 		}
@@ -2037,8 +2037,8 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		full_name = mono_method_full_name (method, TRUE);
 
 		if (!jinfo) {
-			ex_info = &aot_module->ex_info [aot_module->ex_info_offsets [method_index]];
-			jinfo = decode_exception_debug_info (aot_module, domain, method, ex_info, code);
+			ex_info = &amodule->ex_info [amodule->ex_info_offsets [method_index]];
+			jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code);
 		}
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", full_name, code, code + jinfo->code_size, info);
@@ -2049,12 +2049,12 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 
 	mono_jit_stats.methods_aot++;
 
-	aot_module->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
+	amodule->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
 
-	init_plt (aot_module);
+	init_plt (amodule);
 
 	if (method && method->wrapper_type)
-		g_hash_table_insert (aot_module->method_to_code, method, code);
+		g_hash_table_insert (amodule->method_to_code, method, code);
 
 	mono_aot_unlock ();
 
@@ -2065,7 +2065,7 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 
  cleanup:
 	/* FIXME: The space in domain->mp is wasted */	
-	if (aot_module->opts & MONO_OPT_SHARED)
+	if (amodule->opts & MONO_OPT_SHARED)
 		/* No need to cache patches */
 		mono_mempool_destroy (mp);
 

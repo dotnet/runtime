@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "57"
+#define MONO_AOT_FILE_VERSION "58"
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -124,6 +124,7 @@ typedef struct MonoAotFileInfo
 	guint32 plt_got_offset_base;
 	guint32 got_size;
 	guint32 plt_size;
+	guint32 nmethods;
 
 	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];

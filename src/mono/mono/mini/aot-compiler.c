@@ -2039,6 +2039,14 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 		add_extra_method (acfg, method);
 	}
 
+	if (klass->delegate) {
+		method = mono_get_delegate_invoke (klass);
+
+		method = mono_marshal_get_delegate_invoke (method, NULL);
+
+		add_method (acfg, method);
+	}
+
 	/* 
 	 * For ICollection<T>, where T is a vtype, add instances of the helper methods
 	 * in Array, since a T[] could be cast to ICollection<T>.
@@ -2077,6 +2085,18 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 		}
 
 		g_free (name_prefix);
+	}
+}
+
+static void
+add_array_wrappers (MonoAotCompile *acfg, MonoClass *klass)
+{
+	int i;
+
+	mono_class_setup_methods (klass);
+	for (i = 0; i < klass->method.count; ++i) {
+		if (klass->methods [i]->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED)
+			add_extra_method (acfg, klass->methods [i]);
 	}
 }
 
@@ -2148,6 +2168,17 @@ add_generic_instances (MonoAotCompile *acfg)
 					add_generic_class (acfg, mono_class_from_mono_type (header->locals [j]));
 		}
 	}
+
+	/* Emit the array wrapper methods for arrays of primitive types */
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.byte_class, 1));
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.sbyte_class, 1));
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int16_class, 1));
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.uint16_class, 1));
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int32_class, 1));
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.uint32_class, 1));
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int64_class, 1));
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.single_class, 1));
+	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.double_class, 1));
 
 	if (acfg->image == mono_defaults.corlib) {
 		/* Add GenericComparer<T> instances for primitive types for Enum.ToString () */
@@ -3598,6 +3629,13 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			}
 			break;
 		}
+		case MONO_PATCH_INFO_VTABLE: {
+			MonoClass *klass = patch_info->data.klass;
+
+			if (klass->generic_class && !mono_generic_context_is_sharable (&klass->generic_class->context, FALSE))
+				add_generic_class (acfg, klass);
+			break;
+		}
 		default:
 			break;
 		}
@@ -4751,6 +4789,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
+	emit_int32 (acfg, acfg->nmethods);
 
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->num_trampolines [i]);
