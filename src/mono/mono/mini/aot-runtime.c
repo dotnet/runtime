@@ -134,6 +134,12 @@ static CRITICAL_SECTION aot_mutex;
 static GHashTable *static_aot_modules;
 
 /*
+ * Maps MonoJitInfo* to the aot module they belong to, this can be different
+ * from ji->method->klass->image's aot module for generic instances.
+ */
+static GHashTable *ji_to_amodule;
+
+/*
  * Whenever to AOT compile loaded assemblies on demand and store them in
  * a cache under $HOME/.mono/aot-cache.
  */
@@ -1368,7 +1374,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
  * LOCKING: Acquires the domain lock.
  */
 static MonoJitInfo*
-decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain, 
+decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain, 
 							 MonoMethod *method, guint8* ex_info, guint8 *code)
 {
 	int i, buf_len;
@@ -1451,12 +1457,20 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 		/* This currently contains no data */
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 
-		jinfo->method = decode_method_ref_2 (aot_module, p, &p);
+		jinfo->method = decode_method_ref_2 (amodule, p, &p);
 	}
 
 	/* Load debug info */
 	buf_len = decode_value (p, &p);
 	mono_debug_add_aot_method (domain, method, code, p, buf_len);
+
+	if (amodule != jinfo->method->klass->image->aot_module) {
+		mono_aot_lock ();
+		if (!ji_to_amodule)
+			ji_to_amodule = g_hash_table_new (NULL, NULL);
+		g_hash_table_insert (ji_to_amodule, jinfo, amodule);
+		mono_aot_unlock ();		
+	}
 	
 	return jinfo;
 }
@@ -1471,9 +1485,19 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 {
 	MonoAotModule *amodule = ji->method->klass->image->aot_module;
 	guint8 *p;
+	guint8 *code = ji->code_start;
 
 	g_assert (amodule);
 	g_assert (ji->from_aot);
+
+	if (!(code >= amodule->code && code <= amodule->code_end)) {
+		/* ji belongs to a different aot module than amodule */
+		mono_aot_lock ();
+		g_assert (ji_to_amodule);
+		amodule = g_hash_table_lookup (ji_to_amodule, ji);
+		g_assert (amodule);
+		g_assert (code >= amodule->code && code <= amodule->code_end);
+	}
 
 	p = amodule->unwind_info + ji->used_regs;
 	*unwind_info_len = decode_value (p, &p);
