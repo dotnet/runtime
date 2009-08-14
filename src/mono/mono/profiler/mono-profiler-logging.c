@@ -971,10 +971,12 @@ enable_profiler (void) {
 	profiler->profiler_enabled = TRUE;
 }
 
+static void flush_everything (void);
+
 static void
 disable_profiler (void) {
 	profiler->profiler_enabled = FALSE;
-	WRITER_EVENT_RAISE ();
+	flush_everything ();
 }
 
 
