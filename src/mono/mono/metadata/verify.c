@@ -2061,7 +2061,6 @@ get_boxable_mono_type (VerifyContext* ctx, int token, const char *opcode)
 	if (!(type = verifier_load_type (ctx, token, opcode)))
 		return NULL;
 
-	printf ("Type is %s -- %x\n", mono_type_full_name (type), type->type);
 	if (type->byref && type->type != MONO_TYPE_TYPEDBYREF) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid use of byref type for %s at 0x%04x", opcode, ctx->ip_offset));
 		return NULL;
