@@ -441,7 +441,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	if (!sig_type) {
 		sig_type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 		if (sig_type == NULL) {
-			mono_loader_set_error_field_load (klass, fname);
+			mono_loader_set_error_field_load (NULL, fname);
 			return NULL;
 		}
 		sig_type = cache_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE], sig_type);
