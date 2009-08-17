@@ -428,9 +428,9 @@ mono_gc_add_weak_track_handle (MonoObject *obj, guint32 handle)
 	MonoDomain *domain;
 
 	if (!obj)
-		domain = mono_domain_get ();
-	else
-		domain = mono_object_get_domain (obj);
+		return;
+
+	domain = mono_object_get_domain (obj);
 
 	mono_domain_finalizers_lock (domain);
 
