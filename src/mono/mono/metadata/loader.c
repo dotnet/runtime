@@ -1741,14 +1741,22 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	MonoClass *klass;
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
+	MonoMethodSignature *signature;
 	guint32 idx;
 
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 
-	if (!mono_method_signature (method)->param_count)
+	signature = mono_method_signature (method);
+	/*FIXME this check is somewhat redundant since the caller usally will have to get the signature to figure out the
+	  number of arguments and allocate a properly sized array. */
+	if (signature == NULL)
 		return;
-	for (i = 0; i < mono_method_signature (method)->param_count; ++i)
+
+	if (!signature->param_count)
+		return;
+
+	for (i = 0; i < signature->param_count; ++i)
 		names [i] = "";
 
 	klass = method->klass;
@@ -1784,10 +1792,9 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 			lastp = paramt->rows + 1;
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
-			if (cols [MONO_PARAM_SEQUENCE]) /* skip return param spec */
+			if (cols [MONO_PARAM_SEQUENCE] && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) /* skip return param spec and bounds check*/
 				names [cols [MONO_PARAM_SEQUENCE] - 1] = mono_metadata_string_heap (klass->image, cols [MONO_PARAM_NAME]);
 		}
-		return;
 	}
 }
 
