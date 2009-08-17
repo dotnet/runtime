@@ -758,7 +758,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 }
 
 /*
- * token is the method_ref or method_def token used in a call IL instruction.
+ * token is the method_ref/def/spec token used in a call IL instruction.
  */
 MonoMethodSignature*
 mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context)
@@ -805,7 +805,8 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		ptr = mono_metadata_blob_heap (image, sig_idx);
 		mono_metadata_decode_blob_size (ptr, &ptr);
 		sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
-
+		if (!sig)
+			return NULL;
 		sig = cache_memberref_sig (image, sig_idx, sig);
 	}
 
