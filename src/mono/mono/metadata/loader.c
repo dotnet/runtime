@@ -1833,9 +1833,13 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	MonoClass *klass = method->klass;
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
+	MonoMethodSignature *signature;
 	guint32 idx;
 
-	for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i)
+	signature = mono_method_signature (method);
+	g_assert (signature); /*FIXME there is no way to signal error from this function*/
+
+	for (i = 0; i < signature->param_count + 1; ++i)
 		mspecs [i] = NULL;
 
 	if (method->klass->image->dynamic) {
@@ -1844,7 +1848,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux && method_aux->param_marshall) {
 			MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
-			for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i)
+			for (i = 0; i < signature->param_count + 1; ++i)
 				if (dyn_specs [i]) {
 					mspecs [i] = g_new0 (MonoMarshalSpec, 1);
 					memcpy (mspecs [i], dyn_specs [i], sizeof (MonoMarshalSpec));
@@ -1870,7 +1874,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 
-			if (cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL) {
+			if (cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) {
 				const char *tp;
 				tp = mono_metadata_get_marshal_info (klass->image, i - 1, FALSE);
 				g_assert (tp);
