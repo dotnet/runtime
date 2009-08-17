@@ -2099,14 +2099,19 @@ mono_method_signature (MonoMethod *m)
 
 	/* Verify metadata consistency */
 	if (signature->generic_param_count) {
-		if (!container || !container->is_method)
-			g_error ("Signature claims method has generic parameters, but generic_params table says it doesn't");
-		if (container->type_argc != signature->generic_param_count)
-			g_error ("Inconsistent generic parameter count.  Signature says %d, generic_params table says %d",
-				 signature->generic_param_count, container->type_argc);
-	} else if (container && container->is_method && container->type_argc)
-		g_error ("generic_params table claims method has generic parameters, but signature says it doesn't");
-
+		if (!container || !container->is_method) {
+			g_warning ("Signature claims method has generic parameters, but generic_params table says it doesn't for method 0x%08x from image %s", idx, img->name);
+			return NULL;
+		}
+		if (container->type_argc != signature->generic_param_count) {
+			g_warning ("Inconsistent generic parameter count.  Signature says %d, generic_params table says %dfor method 0x%08x from image %s",
+				 signature->generic_param_count, container->type_argc, idx, img->name);
+			return NULL;
+		}
+	} else if (container && container->is_method && container->type_argc) {
+		g_warning ("generic_params table claims method has generic parameters, but signature says it doesn't for method 0x%08x from image %s", idx, img->name);
+		return NULL;
+	}
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 		signature->pinvoke = 1;
 	else if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
@@ -2134,8 +2139,8 @@ mono_method_signature (MonoMethod *m)
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERIC:
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
 		default:
-			g_warning ("unsupported calling convention : 0x%04x", piinfo->piflags);
-			g_assert_not_reached ();
+			g_warning ("unsupported calling convention : 0x%04x for method 0x%08x from image %s", piinfo->piflags, idx, img->name);
+			return NULL;
 		}
 		signature->call_convention = conv;
 	}
