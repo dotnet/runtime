@@ -1647,17 +1647,19 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	mono_class_init (constrained_class);
 	method = *cil_method;
 	original_sig = sig = mono_method_signature (method);
+	if (sig == NULL)
+		return NULL;
 
 	if (method->is_inflated && sig->generic_param_count) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
-		sig = mono_method_signature (imethod->declaring);
+		sig = mono_method_signature (imethod->declaring); /*We assume that if the inflated method signature is valid, the declaring method is too*/
 		method_context = mono_method_get_context (method);
 
 		original_sig = sig;
 		/*
 		 * We must inflate the signature with the class instantiation to work on
 		 * cases where a class inherit from a generic type and the override replaces
-		 * and type argument which a concrete type. See #325283.
+		 * any type argument which a concrete type. See #325283.
 		 */
 		if (method_context->class_inst) {
 			MonoGenericContext ctx;
@@ -1665,6 +1667,8 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 			ctx.class_inst = method_context->class_inst;
 		
 			sig = inflate_generic_signature (method->klass->image, sig, &ctx);
+			if (sig == NULL)
+				return NULL;
 		}
 	}
 
