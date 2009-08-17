@@ -1455,7 +1455,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		result = mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context);
 		// This checks the memberref type as well
 		if (result && handle_class != mono_defaults.methodhandle_class) {
-			mono_loader_set_error_bad_image (g_strdup ("Bad method token."));
+			mono_loader_set_error_bad_image (g_strdup_printf ("Bad method token 0x%08x on image %s.", token, image->name));
 			return NULL;
 		}
 		return result;
@@ -1466,16 +1466,18 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			if (used_context) *used_context = TRUE;
 			return method_from_methodspec (image, context, idx);
 		}
-		if (table != MONO_TABLE_MEMBERREF)
-			g_print("got wrong token: 0x%08x\n", token);
-		g_assert (table == MONO_TABLE_MEMBERREF);
+		if (table != MONO_TABLE_MEMBERREF) {
+			g_warning ("got wrong token: 0x%08x\n", token);
+			mono_loader_set_error_bad_image (g_strdup_printf ("Bad method token 0x%08x on image %s.", token, image->name));
+			return NULL;
+		}
 		return method_from_memberref (image, idx, context, used_context);
 	}
 
 	if (used_context) *used_context = FALSE;
 
 	if (idx > image->tables [MONO_TABLE_METHOD].rows) {
-		mono_loader_set_error_bad_image (g_strdup ("Bad method token."));
+		mono_loader_set_error_bad_image (g_strdup_printf ("Bad method token 0x%08x on image %s.", token, image->name));
 		return NULL;
 	}
 
