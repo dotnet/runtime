@@ -867,7 +867,7 @@ const char *
 mono_metadata_locate (MonoImage *meta, int table, int idx)
 {
 	/* idx == 0 refers always to NULL */
-	g_return_val_if_fail (idx > 0 && idx <= meta->tables [table].rows, "");
+	g_return_val_if_fail (idx > 0 && idx <= meta->tables [table].rows, ""); /*FIXME shouldn't we return NULL here?*/
 	   
 	return meta->tables [table].base + (meta->tables [table].row_size * (idx - 1));
 }
@@ -924,7 +924,7 @@ mono_metadata_user_string (MonoImage *meta, guint32 index)
 const char *
 mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 {
-	g_return_val_if_fail (index < meta->heap_blob.size, "");
+	g_return_val_if_fail (index < meta->heap_blob.size, "");/*FIXME shouldn't we return NULL and check for index == 0?*/
 	return meta->heap_blob.data + index;
 }
 
@@ -1282,13 +1282,13 @@ mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
 
 	array->numsizes = mono_metadata_decode_value (ptr, &ptr);
 	if (array->numsizes)
-		array->sizes = g_new0 (int, array->numsizes);
+		array->sizes = mono_image_alloc0 (m, sizeof (int) * array->numsizes);
 	for (i = 0; i < array->numsizes; ++i)
 		array->sizes [i] = mono_metadata_decode_value (ptr, &ptr);
 
 	array->numlobounds = mono_metadata_decode_value (ptr, &ptr);
 	if (array->numlobounds)
-		array->lobounds = g_new0 (int, array->numlobounds);
+		array->lobounds = mono_image_alloc0 (m, sizeof (int) * array->numlobounds);
 	for (i = 0; i < array->numlobounds; ++i)
 		array->lobounds [i] = mono_metadata_decode_signed_value (ptr, &ptr);
 
