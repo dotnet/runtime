@@ -5224,8 +5224,21 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 	return mono_class_get_field_from_name_full (klass, name, NULL);
 }
 
+/**
+ * mono_class_get_field_from_name_full:
+ * @klass: the class to lookup the field.
+ * @name: the field name
+ * @type: the type of the fields. This optional.
+ *
+ * Search the class @klass and it's parents for a field with the name @name and type @type.
+ *
+ * If @klass is an inflated generic type, the type comparison is done with the equivalent field
+ * of its generic type definition.
+ *
+ * Returns: the MonoClassField pointer of the named field or NULL
+ */
 MonoClassField *
-mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *signature)
+mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type)
 {
 	int i;
 
@@ -5237,9 +5250,9 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 			if (strcmp (name, mono_field_get_name (field)) != 0)
 				continue;
 
-			if (signature) {
+			if (type) {
 				MonoType *field_type = mono_metadata_get_corresponding_field_from_generic_type_definition (field)->type;
-				if (!mono_metadata_type_equal_full (signature, field_type, TRUE))
+				if (!mono_metadata_type_equal_full (type, field_type, TRUE))
 					continue;
 			}
 			return field;

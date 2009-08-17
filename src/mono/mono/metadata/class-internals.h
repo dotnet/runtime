@@ -1233,6 +1233,6 @@ void
 mono_class_setup_interfaces (MonoClass *klass) MONO_INTERNAL;
 
 MonoClassField*
-mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *signature) MONO_INTERNAL;
+mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
