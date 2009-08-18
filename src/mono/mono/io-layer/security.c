@@ -35,7 +35,7 @@
 gboolean 
 ImpersonateLoggedOnUser (gpointer handle)
 {
-	uid_t token = (uid_t) handle;
+	uid_t token = (uid_t) GPOINTER_TO_INT (handle);
 #ifdef HAVE_SETRESUID
 	if (setresuid (-1, token, getuid ()) < 0)
 		return FALSE;

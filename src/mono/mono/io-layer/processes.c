@@ -1559,7 +1559,7 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 			/* Return a pseudo handle for processes we
 			 * don't have handles for
 			 */
-			return((gpointer)(_WAPI_PROCESS_UNHANDLED + pid));
+			return GINT_TO_POINTER (_WAPI_PROCESS_UNHANDLED + pid);
 		} else {
 #ifdef DEBUG
 			g_message ("%s: Can't find pid %d", __func__, pid);
@@ -1723,6 +1723,7 @@ static gint find_procmodule (gconstpointer a, gconstpointer b)
 
 #ifdef PLATFORM_MACOSX
 #include <mach-o/dyld.h>
+#include <mach-o/getsect.h>
 
 static GSList *load_modules (void)
 {
@@ -1743,8 +1744,8 @@ static GSList *load_modules (void)
 		sec = getsectbynamefromheader (hdr, SEG_DATA, SECT_DATA);
 
 		mod = g_new0 (WapiProcModule, 1);
-		mod->address_start = sec->addr;
-		mod->address_end = sec->addr+sec->size;
+		mod->address_start = GINT_TO_POINTER (sec->addr);
+		mod->address_end = GINT_TO_POINTER (sec->addr+sec->size);
 		mod->perms = g_strdup ("r--p");
 		mod->address_offset = 0;
 		mod->device = makedev (0, 0);
