@@ -8898,7 +8898,6 @@ handle_enum:
 	case MONO_TYPE_CLASS: {
 		char *str;
 		guint32 slen;
-		MonoClass *k;
 		if (!arg) {
 			*p++ = 0xFF;
 			break;
