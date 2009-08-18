@@ -1,3 +1,8 @@
+2009-08-18  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/Makefile.am: Applied patch from Hib Eris (hib@hiberis.nl).
+	Add $(SCRIPT_SUFFIX) to the name of the 'mod' tool.
+
 2009-08-04  Miguel de Icaza  <miguel@novell.com>
 
 	* Start the split between PLATFORM_WIN32 and TARGET_WIN32.  
