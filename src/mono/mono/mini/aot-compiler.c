@@ -2264,6 +2264,30 @@ add_generic_instances (MonoAotCompile *acfg)
 		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int64_class, 1));
 		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.single_class, 1));
 		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.double_class, 1));
+		/* These are not handled by generic sharing */
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.object_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.string_class, 1));
+
+		/* Add instances of Array.GetGenericValueImpl */
+		{
+			MonoGenericContext ctx;
+			MonoType *args [16];
+			MonoMethod *method;
+
+			memset (&ctx, 0, sizeof (ctx));
+
+			/* 
+			 * managed-to-native wrappers are not shared, so have to generate 
+			 * these for ref types too.
+			 */
+			klass = mono_array_class_get (mono_defaults.int_class, 1)->parent;
+			method = mono_class_get_method_from_name (klass, "GetGenericValueImpl", 2);
+
+			/* String */
+			args [0] = &mono_defaults.string_class->byval_arg;
+			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+			add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (method, &ctx), TRUE, TRUE));
+		}
 	}
 }
 
