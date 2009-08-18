@@ -934,9 +934,9 @@ df_visit (MonoBasicBlock *bb, int *dfn, const unsigned char* code)
 		next = tmp->data;
 		if (!next->dfn) {
 			if (!bb->cil_code)
-				fprintf (output, "\t\"DF entry\" -> \"IL_%04x (%d)\"\n", next->cil_code - code, *dfn + 1);
+				fprintf (output, "\t\"DF entry\" -> \"IL_%04x (%d)\"\n", (unsigned int)(next->cil_code - code), *dfn + 1);
 			else
-				fprintf (output, "\t\"IL_%04x (%d)\" -> \"IL_%04x (%d)\"\n", bb->cil_code - code, bb->dfn, next->cil_code - code, *dfn + 1);
+				fprintf (output, "\t\"IL_%04x (%d)\" -> \"IL_%04x (%d)\"\n", (unsigned int)(bb->cil_code - code), bb->dfn, (unsigned int)(next->cil_code - code), *dfn + 1);
 			df_visit (next, dfn, code);
 		}
 	}
@@ -963,7 +963,7 @@ print_method_cfg (MonoMethod *method) {
 			fprintf (output, "\tB%p [shape=record,label=\"end\"]\n", bb);
 		else {
 			code = mono_disasm_code (&graph_dh, method, bb->cil_code, bb->cil_code + bb->cil_length);
-			fprintf (output, "\tB%p [shape=record,label=\"IL_%04x\\n%s\"]\n", bb, bb->cil_code - il_code, code);
+			fprintf (output, "\tB%p [shape=record,label=\"IL_%04x\\n%s\"]\n", bb, (unsigned int)(bb->cil_code - il_code), code);
 			g_free (code);
 		}
 	}
