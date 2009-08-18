@@ -51,7 +51,7 @@
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
  */
-gchar ***_NSGetEnviron();
+gchar ***_NSGetEnviron(void);
 #define environ (*_NSGetEnviron())
 #else
 extern char **environ;
@@ -401,7 +401,7 @@ utf16_concat (const gunichar2 *first, ...)
 static int osx_10_5_or_higher;
 
 static void
-detect_osx_10_5_or_higher ()
+detect_osx_10_5_or_higher (void)
 {
 	struct utsname u;
 	char *p;
@@ -422,7 +422,7 @@ detect_osx_10_5_or_higher ()
 }
 
 static gboolean
-is_macos_10_5_or_higher ()
+is_macos_10_5_or_higher (void)
 {
 	if (osx_10_5_or_higher == 0)
 		detect_osx_10_5_or_higher ();
@@ -1724,7 +1724,7 @@ static gint find_procmodule (gconstpointer a, gconstpointer b)
 #ifdef PLATFORM_MACOSX
 #include <mach-o/dyld.h>
 
-static GSList *load_modules ()
+static GSList *load_modules (void)
 {
 	GSList *ret = NULL;
 	WapiProcModule *mod;
