@@ -4912,7 +4912,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	MonoImage *image;
 	MonoClass *class;
 	MonoClass *parent = NULL;
-	GSList *list, *rootlist;
+	GSList *list, *rootlist = NULL;
 	int nsize;
 	char *name;
 	gboolean corlib_type = FALSE;

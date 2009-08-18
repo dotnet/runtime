@@ -1650,7 +1650,7 @@ mono_profiler_load (const char *desc)
 	}
 #endif
 	{
-		MonoDl *pmodule;
+		MonoDl *pmodule = NULL;
 		const char* col = strchr (desc, ':');
 		char* libname;
 		char* path;
