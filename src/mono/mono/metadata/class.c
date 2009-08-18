@@ -5171,6 +5171,7 @@ mono_class_get_field_idx (MonoClass *class, int idx)
 			 * class->field.first points to the FieldPtr table, while idx points into the
 			 * Field table, so we have to do a search.
 			 */
+			/*FIXME this is broken for types with multiple fields with the same name.*/
 			const char *name = mono_metadata_string_heap (class->image, mono_metadata_decode_row_col (&class->image->tables [MONO_TABLE_FIELD], idx, MONO_FIELD_NAME));
 			int i;
 
