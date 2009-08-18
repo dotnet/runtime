@@ -1906,10 +1906,16 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 
 	for (i = 0; i < method->param_count; ++i) {
 		if (*ptr == MONO_TYPE_SENTINEL) {
-			if (method->call_convention != MONO_CALL_VARARG || def)
-				g_error ("found sentinel for methoddef or no vararg method");
-			if (method->sentinelpos >= 0)
-				g_error ("found sentinel twice in the same signature");
+			if (method->call_convention != MONO_CALL_VARARG || def) {
+				g_warning ("found sentinel for methoddef or no vararg method 0x%08x on image %s", def, m->name);
+				g_free (pattrs);
+				return NULL;
+			}
+			if (method->sentinelpos >= 0) {
+				g_warning ("found sentinel twice in the same signature for method 0x%08x on image %s", def, m->name);
+				g_free (pattrs);
+				return NULL;
+			}
 			method->sentinelpos = i;
 			ptr++;
 		}
