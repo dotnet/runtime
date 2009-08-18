@@ -3418,16 +3418,20 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
  * mono_metadata_interfaces_from_typedef_full:
  * @meta: metadata context
  * @index: typedef token
+ * @interfaces: Out parameter used to store the interface array
+ * @count: Out parameter used to store the number of interfaces
+ * @heap_alloc_result: if TRUE the result array will be g_malloc'd
+ * @context: The generic context
  * 
  * The array of interfaces that the @index typedef token implements is returned in
- * @interfaces. The number of elemnts in the array is returned in @count.
+ * @interfaces. The number of elements in the array is returned in @count. 
  *
  * LOCKING: Assumes the loader lock is held.
  *
  * Returns: TRUE on success, FALSE on failure.
  */
 gboolean
-mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, MonoClass ***interfaces, guint *count, MonoGenericContext *context)
+mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, MonoClass ***interfaces, guint *count, gboolean heap_alloc_result, MonoGenericContext *context)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_INTERFACEIMPL];
 	locator_t loc;
@@ -3466,7 +3470,10 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 		++pos;
 	}
 
-	result = mono_image_alloc0 (meta, sizeof (MonoClass*) * (pos - start));
+	if (heap_alloc_result)
+		result = g_new0 (MonoClass*, pos - start);
+	else
+		result = mono_image_alloc0 (meta, sizeof (MonoClass*) * (pos - start));
 
 	pos = start;
 	while (pos < tdef->rows) {
@@ -3487,6 +3494,20 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 	return TRUE;
 }
 
+/*
+ * @meta: metadata context
+ * @index: typedef token
+ * @count: Out parameter used to store the number of interfaces
+ * 
+ * The array of interfaces that the @index typedef token implements is returned in
+ * @interfaces. The number of elements in the array is returned in @count. The returned
+ * array is g_malloc'd and the caller must free it.
+ *
+ * LOCKING: Acquires the loader lock .
+ *
+ * Returns: the interface array on success, NULL on failure.
+ */
+
 MonoClass**
 mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count)
 {
@@ -3494,7 +3515,7 @@ mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *co
 	gboolean rv;
 
 	mono_loader_lock ();
-	rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, NULL);
+	rv = mono_metadata_interfaces_from_typedef_full (meta, index, &interfaces, count, TRUE, NULL);
 	mono_loader_unlock ();
 	if (rv)
 		return interfaces;

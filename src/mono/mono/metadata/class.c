@@ -4323,7 +4323,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if (!class->enumtype) {
 		if (!mono_metadata_interfaces_from_typedef_full (
-			    image, type_token, &interfaces, &icount, context)){
+			    image, type_token, &interfaces, &icount, FALSE, context)){
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;

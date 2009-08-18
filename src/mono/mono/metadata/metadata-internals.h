@@ -431,6 +431,7 @@ mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
 											 guint32                table_index,
 											 MonoClass           ***interfaces,
 											 guint                 *count,
+											 gboolean               heap_alloc_result,
 											 MonoGenericContext    *context) MONO_INTERNAL;
 
 MonoArrayType *
