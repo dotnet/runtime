@@ -105,14 +105,14 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		      int64val = ((LongFunc)counter->addr) ();
 	      else
 		      int64val = *(gint64*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, int64val);
+	      fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (long long)int64val);
 	      break;
 	case MONO_COUNTER_ULONG:
 	      if (counter->type & MONO_COUNTER_CALLBACK)
 		      uint64val = ((ULongFunc)counter->addr) ();
 	      else
 		      uint64val = *(guint64*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, uint64val);
+	      fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, (unsigned long long)uint64val);
 	      break;
 	case MONO_COUNTER_WORD:
 	      if (counter->type & MONO_COUNTER_CALLBACK)
@@ -122,7 +122,7 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 #if SIZEOF_VOID_P == 8
 	      fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (gint64)wordval);
 #else
-	      fprintf (outfile, ENTRY_FMT "%d\n", counter->name, wordval);
+	      fprintf (outfile, ENTRY_FMT "%d\n", counter->name, (gint)wordval);
 #endif
 	      break;
 	case MONO_COUNTER_DOUBLE:

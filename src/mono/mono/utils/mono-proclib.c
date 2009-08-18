@@ -157,7 +157,6 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 #if USE_SYSCTL
 	int mib [4];
 	int res;
-	char *p;
 	size_t data_len = sizeof (struct kinfo_proc);
 	struct kinfo_proc processi;
 
