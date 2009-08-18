@@ -752,11 +752,11 @@ print_name_space (MonoClass *klass)
 {
 	if (klass->nested_in) {
 		print_name_space (klass->nested_in);
-		g_print (klass->nested_in->name);
+		g_print ("%s", klass->nested_in->name);
 		return "/";
 	}
 	if (klass->name_space [0]) {
-		g_print (klass->name_space);
+		g_print ("%s", klass->name_space);
 		return ".";
 	}
 	return "";

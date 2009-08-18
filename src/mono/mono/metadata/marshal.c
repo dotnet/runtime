@@ -1696,7 +1696,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	default: {
 		char *msg = g_strdup_printf ("marshalling conversion %d not implemented", conv);
 		MonoException *exc = mono_get_exception_not_implemented (msg);
-		g_warning (msg);
+		g_warning ("%s", msg);
 		g_free (msg);
 		mono_raise_exception (exc);
 	}
@@ -5625,7 +5625,7 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (conv == -1) {
 			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
 			MonoException *exc = mono_get_exception_not_implemented (msg);
-			g_warning (msg);
+			g_warning ("%s", msg);
 			g_free (msg);
 			mono_raise_exception (exc);
 		}
@@ -6002,7 +6002,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			else {
 				char *msg = g_strdup_printf ("stringbuilder marshalling conversion %d not implemented", encoding);
 				MonoException *exc = mono_get_exception_not_implemented (msg);
-				g_warning (msg);
+				g_warning ("%s", msg);
 				g_free (msg);
 				mono_raise_exception (exc);
 			}
@@ -6582,7 +6582,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				if (conv == -1) {
 					char *msg = g_strdup_printf ("string/stringbuilder marshalling conversion %d not implemented", encoding);
 					MonoException *exc = mono_get_exception_not_implemented (msg);
-					g_warning (msg);
+					g_warning ("%s", msg);
 					g_free (msg);
 					mono_raise_exception (exc);
 				}
