@@ -2283,10 +2283,12 @@ add_generic_instances (MonoAotCompile *acfg)
 			klass = mono_array_class_get (mono_defaults.int_class, 1)->parent;
 			method = mono_class_get_method_from_name (klass, "GetGenericValueImpl", 2);
 
-			/* String */
-			args [0] = &mono_defaults.string_class->byval_arg;
-			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-			add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (method, &ctx), TRUE, TRUE));
+			if (method) {
+				/* String */
+				args [0] = &mono_defaults.string_class->byval_arg;
+				ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+				add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (method, &ctx), TRUE, TRUE));
+			}
 		}
 	}
 }
