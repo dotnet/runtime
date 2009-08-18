@@ -2169,17 +2169,6 @@ add_generic_instances (MonoAotCompile *acfg)
 		}
 	}
 
-	/* Emit the array wrapper methods for arrays of primitive types */
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.byte_class, 1));
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.sbyte_class, 1));
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int16_class, 1));
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.uint16_class, 1));
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int32_class, 1));
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.uint32_class, 1));
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int64_class, 1));
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.single_class, 1));
-	add_array_wrappers (acfg, mono_array_class_get (mono_defaults.double_class, 1));
-
 	if (acfg->image == mono_defaults.corlib) {
 		/* Add GenericComparer<T> instances for primitive types for Enum.ToString () */
 		MonoClass *klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
@@ -2222,6 +2211,59 @@ add_generic_instances (MonoAotCompile *acfg)
 			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
 		}
+
+		/* Add GenericEqualityComparer<T> instances for primitive types */
+		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericEqualityComparer`1");
+
+		if (klass) {
+			MonoGenericContext ctx;
+			MonoType *args [16];
+
+			memset (&ctx, 0, sizeof (ctx));
+
+			args [0] = &mono_defaults.byte_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.sbyte_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.int16_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.uint16_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.int32_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.uint32_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.int64_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.uint64_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+		}
+
+		/* Emit the array wrapper methods for arrays of primitive types */
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.byte_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.sbyte_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int16_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.uint16_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int32_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.uint32_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int64_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.single_class, 1));
+		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.double_class, 1));
 	}
 }
 
