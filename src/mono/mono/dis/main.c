@@ -1222,7 +1222,7 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 		
                 param = get_generic_param (m, container);
 		if (param) {
-			fprintf (output, param);
+			fprintf (output, "%s", param);
 			g_free (param);
 		}
                 fprintf (output, "\n");
@@ -1236,7 +1236,7 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 
                 param = get_generic_param (m, container);
 		if (param) {
-			fprintf (output, param);
+			fprintf (output, "%s", param);
 			g_free (param);
 		}
 		fprintf (output, "\n");
