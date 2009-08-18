@@ -2735,6 +2735,8 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (!etype)
 			return FALSE;
 		type->data.klass = mono_class_from_mono_type (etype);
+		if (!type->data.klass)
+			return FALSE;
 		break;
 	}
 	case MONO_TYPE_PTR:
@@ -2744,21 +2746,28 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		break;
 	case MONO_TYPE_FNPTR:
 		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr);
+		if (!type->data.method)
+			return FALSE;
 		break;
 	case MONO_TYPE_ARRAY:
 		type->data.array = mono_metadata_parse_array_full (m, container, ptr, &ptr);
+		if (!type->data.array)
+			return FALSE;
 		break;
 	case MONO_TYPE_MVAR:
 		if (container && !container->is_method)
 			return FALSE;
 	case MONO_TYPE_VAR:
 		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr);
+		if (!type->data.generic_param)
+			return FALSE;
 		break;
 	case MONO_TYPE_GENERICINST:
 		ok = do_mono_metadata_parse_generic_class (type, m, container, ptr, &ptr);
 		break;
 	default:
-		g_error ("type 0x%02x not handled in do_mono_metadata_parse_type", type->type);
+		g_warning ("type 0x%02x not handled in do_mono_metadata_parse_type on image %s", type->type, m->name);
+		return FALSE;
 	}
 	
 	if (rptr)
