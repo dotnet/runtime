@@ -2938,7 +2938,7 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 	const char *scope = NULL;
 	guint32 flags;
 
-	if (!method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+	if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return NULL;
 
 	if (!DllImportAttributeClass) {

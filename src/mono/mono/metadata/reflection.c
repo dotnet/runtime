@@ -6825,7 +6825,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 		mono_metadata_decode_row (paramt, i - 1, param_cols, MONO_PARAM_SIZE);
 		paramseq = param_cols [MONO_PARAM_SEQUENCE];
 
-		if (!param_cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_DEFAULT) 
+		if (!(param_cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_DEFAULT))
 			continue;
 
 		crow = mono_metadata_get_constant_index (image, MONO_TOKEN_PARAM_DEF | i, crow + 1);
