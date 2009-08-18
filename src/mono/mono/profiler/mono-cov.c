@@ -124,6 +124,9 @@ cov_method_leave (MonoProfiler *prof, MonoMethod *method)
 {
 }
 
+void
+mono_profiler_startup (const char *desc);
+
 /* the entry point */
 void
 mono_profiler_startup (const char *desc)

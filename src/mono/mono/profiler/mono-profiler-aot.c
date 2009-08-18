@@ -124,6 +124,9 @@ prof_jit_leave (MonoProfiler *prof, MonoMethod *method, int result)
 	data->methods = g_list_append (data->methods, method);
 }
 
+void
+mono_profiler_startup (const char *desc);
+
 /* the entry point */
 void
 mono_profiler_startup (const char *desc)
