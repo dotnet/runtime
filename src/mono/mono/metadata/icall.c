@@ -6556,7 +6556,7 @@ ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
  */
-gchar ***_NSGetEnviron();
+gchar ***_NSGetEnviron(void);
 #define environ (*_NSGetEnviron())
 #else
 extern
