@@ -1122,7 +1122,7 @@ guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle,
 		return (0);
 	}
 
-	g_assert (GPOINTER_TO_INT (thread_handle->id) == GetCurrentThreadId ());
+	g_assert (thread_handle->id == GetCurrentThreadId ());
 	/* No locking/memory barriers are needed here */
 	thread_handle->has_apc = TRUE;
 	return(1);
