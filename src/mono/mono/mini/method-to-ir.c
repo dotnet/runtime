@@ -2382,7 +2382,7 @@ static MonoInst*
 mono_emit_rgctx_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
 		MonoInst **args, MonoInst *this, MonoInst *imt_arg, MonoInst *vtable_arg)
 {
-	int rgctx_reg;
+	int rgctx_reg = 0;
 	MonoInst *ins;
 	MonoCallInst *call;
 
@@ -10297,7 +10297,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 		cfg->cbb = bb;
 		for (; ins; ins = ins->next) {
 			const char *spec = INS_INFO (ins->opcode);
-			int regtype, regindex;
+			int regtype = 0, regindex;
 			gint32 prev_bb;
 
 			if (G_UNLIKELY (cfg->verbose_level > 2))
@@ -10306,7 +10306,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 			g_assert (ins->opcode >= MONO_CEE_LAST);
 
 			for (regindex = 0; regindex < 4; regindex ++) {
-				int vreg;
+				int vreg = 0;
 
 				if (regindex == 0) {
 					regtype = spec [MONO_INST_DEST];
