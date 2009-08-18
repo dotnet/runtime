@@ -1643,7 +1643,7 @@ mono_print_thread_dump (void *sigctx)
 	printf ("\t<Stack traces in thread dumps not supported on this platform>\n");
 #endif
 
-	fprintf (stdout, text->str);
+	fprintf (stdout, "%s", text->str);
 	g_string_free (text, TRUE);
 	fflush (stdout);
 }

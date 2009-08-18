@@ -4692,7 +4692,7 @@ emit_got (MonoAotCompile *acfg)
 	char symbol [256];
 
 	/* Don't make GOT global so accesses to it don't need relocations */
-	sprintf (symbol, acfg->got_symbol);
+	sprintf (symbol, "%s", acfg->got_symbol);
 	emit_section_change (acfg, ".bss", 0);
 	emit_alignment (acfg, 8);
 	emit_local_symbol (acfg, symbol, "got_end", FALSE);
