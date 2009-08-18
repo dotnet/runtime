@@ -813,14 +813,8 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **out_klass, const
 		return NULL;
 	}
 
-	if (!mono_type_is_valid_in_context (ctx, &klass->byval_arg) || !mono_type_is_valid_in_context (ctx, &field->parent->byval_arg))
+	if (!mono_type_is_valid_in_context (ctx, &klass->byval_arg))
 		return NULL;
-
-	if (klass->generic_container || field->parent->generic_container) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot reference a field using the generic type definition for %s at 0x%04x", opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
-		return NULL;
-	}
-	
 
 	*out_klass = klass;
 	return field;
@@ -2077,7 +2071,7 @@ get_boxable_mono_type (VerifyContext* ctx, int token, const char *opcode)
 	if (!(class = mono_class_from_mono_type (type)))
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Could not retrieve type token for %s at 0x%04x", opcode, ctx->ip_offset));
 
-	if (class->generic_container)
+	if (class->generic_container && type->type != MONO_TYPE_GENERICINST)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use the generic type definition in a boxable type position for %s at 0x%04x", opcode, ctx->ip_offset));	
 
 	check_unverifiable_type (ctx, type);
