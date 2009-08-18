@@ -6694,7 +6694,6 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	format = flags & METHOD_HEADER_FORMAT_MASK;
 	switch (format){
 	case METHOD_HEADER_TINY_FORMAT:
-	case METHOD_HEADER_TINY_FORMAT1:
 		local_var_sig_token = 0;
 		break;
 	case METHOD_HEADER_FAT_FORMAT:

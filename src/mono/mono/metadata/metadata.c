@@ -2949,19 +2949,6 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh->code_size = flags >> 2;
 		mh->code = (unsigned char*)ptr;
 		return mh;
-	case METHOD_HEADER_TINY_FORMAT1:
-		mh = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_HEADER);
-		ptr++;
-		mh->max_stack = 8;
-		local_var_sig_tok = 0;
-
-		/*
-		 * The spec claims 3 bits, but the Beta2 is
-		 * incorrect
-		 */
-		mh->code_size = flags >> 2;
-		mh->code = (unsigned char*)ptr;
-		return mh;
 	case METHOD_HEADER_FAT_FORMAT:
 		fat_flags = read16 (ptr);
 		ptr += 2;

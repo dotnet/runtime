@@ -7,9 +7,8 @@
 /*
  * 25.2.1: Method header type values
  */
-#define METHOD_HEADER_FORMAT_MASK   7
+#define METHOD_HEADER_FORMAT_MASK   3
 #define METHOD_HEADER_TINY_FORMAT   2
-#define METHOD_HEADER_TINY_FORMAT1  6
 #define METHOD_HEADER_FAT_FORMAT    3
 
 /*
