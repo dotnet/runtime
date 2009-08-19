@@ -1924,7 +1924,7 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 		if (section_header & METHOD_HEADER_SECTION_EHTABLE) {
 			guint32 i, clauses = section_size / (is_fat ? 24 : 12);
 			if (clauses * (is_fat ? 24 : 12) != section_size)
-				FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid EH section size %d, it's not of the expected size %s", section_size, clauses * (is_fat ? 24 : 12)));
+				FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid EH section size %d, it's not of the expected size %d", section_size, clauses * (is_fat ? 24 : 12)));
 
 			/* only verify the class token is verified as the rest is done by the IL verifier*/
 			for (i = 0; i < clauses; ++i) {
