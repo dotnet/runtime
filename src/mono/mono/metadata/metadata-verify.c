@@ -1923,7 +1923,12 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 
 		if (section_header & METHOD_HEADER_SECTION_EHTABLE) {
 			guint32 i, clauses = section_size / (is_fat ? 24 : 12);
-			if (clauses * (is_fat ? 24 : 12) != section_size)
+			/*
+				LAMEIMPL: MS emits section_size without accounting for header size.
+				Mono does as the spec says. section_size is header + section
+				MS's peverify happily accepts both. 
+			*/
+			if ((clauses * (is_fat ? 24 : 12) != section_size) && (clauses * (is_fat ? 24 : 12) + 4 != section_size))
 				FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid EH section size %d, it's not of the expected size %d", section_size, clauses * (is_fat ? 24 : 12)));
 
 			/* only verify the class token is verified as the rest is done by the IL verifier*/
