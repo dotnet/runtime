@@ -458,6 +458,7 @@ TEST_IL_SRC=			\
 	bug-463303.il	\
 	bug469742.2.il	\
 	bug-528055.il	\
+	constraints-load.il	\
 	bug-481403.il
 
 #	bug-318677.il
