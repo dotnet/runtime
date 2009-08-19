@@ -4655,6 +4655,7 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	const char *ptr;
 	guint32 len;
 	MonoType *type, *type2;
+	MonoType stack_type;
 
 	mono_loader_lock ();
 
@@ -4676,7 +4677,8 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 
 	len = mono_metadata_decode_value (ptr, &ptr);
 
-	type = mono_image_alloc0 (image, MONO_SIZEOF_TYPE);
+	type = &stack_type;
+	memset (type, 0, MONO_SIZEOF_TYPE);
 
 	if (*ptr == MONO_TYPE_BYREF) {
 		type->byref = 1;
@@ -4695,11 +4697,13 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 		return type2;
 	}
 
-	g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type);
+	type2 = mono_image_alloc (image, MONO_SIZEOF_TYPE);
+	memcpy (type2, type, MONO_SIZEOF_TYPE);
+	g_hash_table_insert (image->typespec_cache, GUINT_TO_POINTER (type_spec), type2);
 
 	mono_loader_unlock ();
 
-	return type;
+	return type2;
 }
 
 
