@@ -3744,12 +3744,13 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	int i, len, match, nslots;
 	/*FIXME, use MonoBitSet*/
 	guint32 method_slots_default [8];
-	guint32 *method_slots;
+	guint32 *method_slots = NULL;
 	gchar *mname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	MonoVTable *array_vtable;
+	MonoException *ex;
 	MonoPtrArray tmp_array;
-		
+
 	MONO_ARCH_SAVE_REGS;
 
 	mono_ptr_array_init (tmp_array, 4);
@@ -3775,9 +3776,11 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	/* An optimization for calls made from Delegate:CreateDelegate () */
 	if (klass->delegate && mname && !strcmp (mname, "Invoke") && (bflags == (BFLAGS_Public | BFLAGS_Static | BFLAGS_Instance))) {
 		method = mono_get_delegate_invoke (klass);
+		if (mono_loader_get_last_error ())
+			goto loader_error;
 
 		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
-		
+
 		res = mono_array_new_specific (array_vtable, 1);
 		mono_array_setref (res, 0, member);
 		g_free (mname);
@@ -3785,6 +3788,8 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	}
 
 	mono_class_setup_vtable (klass);
+	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+		goto loader_error;
 
 	if (is_generic_parameter (type->type))
 		nslots = mono_class_get_vtable_size (klass->parent);
@@ -3798,8 +3803,8 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	}
 handle_parent:
 	mono_class_setup_vtable (klass);
-	if (klass->exception_type != MONO_EXCEPTION_NONE)
-		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+		goto loader_error;		
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
@@ -3859,6 +3864,20 @@ handle_parent:
 
 	mono_ptr_array_destroy (tmp_array);
 	return res;
+
+loader_error:
+	g_free (mname);
+	if (method_slots != method_slots_default)
+		g_free (method_slots);
+	mono_ptr_array_destroy (tmp_array);
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		ex = mono_class_get_exception_for_failure (klass);
+	} else {
+		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
+		mono_loader_clear_error ();
+	}
+	mono_raise_exception (ex);
+	return NULL;
 }
 
 static MonoArray*
