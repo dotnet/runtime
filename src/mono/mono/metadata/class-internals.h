@@ -1081,6 +1081,10 @@ void
 mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container);
 
+gboolean
+mono_metadata_load_generic_param_constraints_full (MonoImage *image, guint32 token,
+					      MonoGenericContainer *container) MONO_INTERNAL;
+
 MonoMethodSignature*
 mono_create_icall_signature (const char *sigstr) MONO_INTERNAL;
 

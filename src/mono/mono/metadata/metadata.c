@@ -5134,7 +5134,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
 	guint32 i, token, found;
 	MonoClass *klass, **res;
-	GList *cons = NULL, *tmp;
+	GSList *cons = NULL, *tmp;
 	MonoGenericContext *context = &container->context;
 
 	*constraints = NULL;
@@ -5144,7 +5144,11 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 		if (cols [MONO_GENPARCONSTRAINT_GENERICPAR] == owner) {
 			token = mono_metadata_token_from_dor (cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
 			klass = mono_class_get_full (image, token, context);
-			cons = g_list_append (cons, klass);
+			if (!klass) {
+				g_slist_free (cons);
+				return FALSE;
+			}
+			cons = g_slist_append (cons, klass);
 			++found;
 		} else {
 			/* contiguous list finished */
@@ -5158,7 +5162,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	for (i = 0, tmp = cons; i < found; ++i, tmp = tmp->next) {
 		res [i] = tmp->data;
 	}
-	g_list_free (cons);
+	g_slist_free (cons);
 	*constraints = res;
 	return TRUE;
 }
@@ -5214,8 +5218,27 @@ mono_metadata_has_generic_params (MonoImage *image, guint32 token)
 	return mono_metadata_get_generic_param_row (image, token, &owner);
 }
 
+gboolean
+mono_metadata_load_generic_param_constraints_full (MonoImage *image, guint32 token,
+					      MonoGenericContainer *container)
+{
+
+	guint32 start_row, i, owner;
+	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
+		return TRUE;
+	for (i = 0; i < container->type_argc; i++) {
+		if (!get_constraints (image, start_row + i, &mono_generic_container_get_param_info (container, i)->constraints, container))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /*
  * mono_metadata_load_generic_param_constraints:
+ *
+ * @image: metadata context
+ * @token: metadata token to load the contraints, can be methodef or typedef.
+ * @container: generic container to load into.
  *
  * Load the generic parameter constraints for the newly created generic type or method
  * represented by @token and @container.  The @container is the new container which has
@@ -5225,11 +5248,8 @@ void
 mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container)
 {
-	guint32 start_row, i, owner;
-	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
-		return;
-	for (i = 0; i < container->type_argc; i++)
-		get_constraints (image, start_row + i, &mono_generic_container_get_param_info (container, i)->constraints, container);
+	mono_metadata_load_generic_param_constraints_full (image, token, container);
+	/*FIXME this function can potentially exit with a pending loader error and cause all sort of havok */
 }
 
 /*

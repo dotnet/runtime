@@ -1491,7 +1491,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	mono_stats.method_count ++;
 
-	if (!klass) {
+	if (!klass) { /*FIXME put this before the image alloc*/
 		guint32 type = mono_metadata_typedef_from_method (image, token);
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 		if (klass == NULL)
@@ -1520,8 +1520,9 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (generic_container) {
 		result->is_generic = TRUE;
 		generic_container->owner.method = result;
-
-		mono_metadata_load_generic_param_constraints (image, token, generic_container);
+		/*FIXME put this before the image alloc*/
+		if (!mono_metadata_load_generic_param_constraints_full (image, token, generic_container))
+			return NULL;
 
 		container = generic_container;
 	}

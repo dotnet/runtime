@@ -4393,9 +4393,14 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	 * We must do this after the class has been constructed to make certain recursive scenarios
 	 * work.
 	 */
-	if (class->generic_container)
-		mono_metadata_load_generic_param_constraints (
-			image, type_token, class->generic_container);
+	if (class->generic_container && !mono_metadata_load_generic_param_constraints_full (image, type_token, class->generic_container)){
+		char *class_name = g_strdup_printf("%s.%s", class->name_space, class->name);
+		char *error = concat_two_strings_with_zero (class->image, class_name, class->image->assembly_name);
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, error);
+		g_free (class_name);
+		mono_loader_unlock ();
+		return NULL;
+	}
 
 	if (class->image->assembly_name && !strcmp (class->image->assembly_name, "Mono.Simd") && !strcmp (nspace, "Mono.Simd")) {
 		if (!strncmp (name, "Vector", 6))
