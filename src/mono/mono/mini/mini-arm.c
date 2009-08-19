@@ -4599,6 +4599,8 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 		return (gpointer)ctx->regs [8];
 	else if (reg == ARMREG_LR)
 		return (gpointer)ctx->regs [9];
+	else if (reg == ARMREG_SP)
+		return (gpointer)ctx->esp;
 	else {
 		g_assert_not_reached ();
 		return NULL;
