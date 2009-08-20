@@ -607,6 +607,15 @@ GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
+
+	/* 
+	 * FIXME: Interface calls might go through a static rgctx trampoline which
+	 * sets V5, but it doesn't save it, so we need to save it ourselves, and
+	 * avoid using it.
+	 */
+	if (cfg->flags & MONO_CFG_HAS_CALLS)
+		cfg->uses_rgctx_reg = TRUE;
+
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V1));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V2));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V3));
