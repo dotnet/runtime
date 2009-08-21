@@ -4383,6 +4383,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		if (!enum_basetype) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			mono_loader_unlock ();
+			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;
 		}
 		class->cast_class = class->element_class = mono_class_from_mono_type (enum_basetype);
@@ -4399,6 +4400,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, error);
 		g_free (class_name);
 		mono_loader_unlock ();
+		mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 		return NULL;
 	}
 
