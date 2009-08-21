@@ -124,9 +124,9 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 	start = code = mono_global_codeman_reserve (128);
 
 	restore_regs_from_context (ARMREG_R0, ARMREG_R1, ARMREG_R2);
-	/* restore also the stack pointer, FIXME: handle sp != fp */
-	ARM_LDR_IMM (code, ARMREG_SP, ARMREG_R0, G_STRUCT_OFFSET (MonoContext, ebp));
-	ARM_LDR_IMM (code, ARMREG_FP, ARMREG_R0, G_STRUCT_OFFSET (MonoContext, esp));
+	/* restore also the stack pointer */
+	ARM_LDR_IMM (code, ARMREG_SP, ARMREG_R0, G_STRUCT_OFFSET (MonoContext, esp));
+	ARM_LDR_IMM (code, ARMREG_FP, ARMREG_R0, G_STRUCT_OFFSET (MonoContext, ebp));
 
 	/* jump to the saved IP */
 	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
@@ -459,16 +459,17 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	struct ucontext *uc = sigctx;
 
 	mctx->eip = uc->uc_mcontext.gregs [ARMREG_PC];
-	mctx->ebp = uc->uc_mcontext.gregs [ARMREG_SP];
+	mctx->esp = uc->uc_mcontext.gregs [ARMREG_SP];
 	memcpy (&mctx->regs, &uc->uc_mcontext.gregs [ARMREG_R4], sizeof (gulong) * 8);
 	/* memcpy (&mctx->fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);*/
 #else
 	my_ucontext *my_uc = sigctx;
 
 	mctx->eip = UCONTEXT_REG_PC (my_uc);
-	mctx->ebp = UCONTEXT_REG_SP (my_uc);
+	mctx->esp = UCONTEXT_REG_SP (my_uc);
 	memcpy (&mctx->regs, &UCONTEXT_REG_R4 (my_uc), sizeof (gulong) * 8);
 #endif
+	mctx->ebp = mctx->regs [ARMREG_FP - 4];
 }
 
 void
