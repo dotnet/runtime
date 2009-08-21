@@ -2270,6 +2270,9 @@ profiler_free_write_buffers (void) {
 	profiler->current_write_position ++;\
 } while (0)
 
+#if (DEBUG_FILE_WRITES)
+static int bytes_written = 0;
+#endif
 
 static void
 write_current_block (guint16 code) {
@@ -2299,13 +2302,15 @@ write_current_block (guint16 code) {
 	header [9] = (counter_delta >> 24) & 0xff;
 	
 #if (DEBUG_FILE_WRITES)
-	printf ("write_current_block: writing header (code %d)\n", code);
+	printf ("write_current_block: writing header (code %d) at offset %d\n", code, bytes_written);
+	bytes_written += 10;
 #endif
 	WRITE_BUFFER (& (header [0]), 10);
 	
 	while ((current_buffer != NULL) && (profiler->full_write_buffers > 0)) {
 #if (DEBUG_FILE_WRITES)
 		printf ("write_current_block: writing buffer (size %d)\n", PROFILER_FILE_WRITE_BUFFER_SIZE);
+		bytes_written += PROFILER_FILE_WRITE_BUFFER_SIZE;
 #endif
 		WRITE_BUFFER (& (current_buffer->buffer [0]), PROFILER_FILE_WRITE_BUFFER_SIZE);
 		profiler->full_write_buffers --;
@@ -2314,12 +2319,13 @@ write_current_block (guint16 code) {
 	if (profiler->current_write_position > 0) {
 #if (DEBUG_FILE_WRITES)
 		printf ("write_current_block: writing last buffer (size %d)\n", profiler->current_write_position);
+		bytes_written += profiler->current_write_position;
 #endif
 		WRITE_BUFFER (& (current_buffer->buffer [0]), profiler->current_write_position);
 	}
 	FLUSH_FILE ();
 #if (DEBUG_FILE_WRITES)
-	printf ("write_current_block: buffers flushed\n");
+	printf ("write_current_block: buffers flushed (file size %d)\n", bytes_written);
 #endif
 	
 	profiler->current_write_buffer = profiler->write_buffers;
