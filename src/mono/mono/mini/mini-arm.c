@@ -960,7 +960,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
-	int frame_reg = ARMREG_SP;
+	int frame_reg = ARMREG_FP;
 
 	/* FIXME: this will change when we use FP as gcc does */
 	cfg->flags |= MONO_CFG_HAS_SPILLUP;
