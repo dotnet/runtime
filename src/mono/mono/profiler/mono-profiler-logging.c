@@ -451,6 +451,8 @@ typedef struct _ProfilerPerThreadData {
 	struct _ProfilerPerThreadData* next;
 } ProfilerPerThreadData;
 
+#define MAX_STATISTICAL_CALL_CHAIN_DEPTH 128
+
 typedef struct _ProfilerStatisticalHit {
 	gpointer *address;
 	MonoDomain *domain;
@@ -5578,8 +5580,8 @@ setup_user_options (const char *arguments) {
 				int value = atoi (equals + 1);
 				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
-					if (value > 16) {
-						value = 16;
+					if (value > MAX_STATISTICAL_CALL_CHAIN_DEPTH) {
+						value = MAX_STATISTICAL_CALL_CHAIN_DEPTH;
 					}
 					profiler->statistical_call_chain_depth = value;
 					profiler->flags |= MONO_PROFILE_STATISTICAL;
