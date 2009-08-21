@@ -1079,7 +1079,7 @@ mono_thread_pool_init ()
 	InitializeCriticalSection (&socket_io_data.io_lock);
 	InitializeCriticalSection (&ares_lock);
 	InitializeCriticalSection (&io_queue_lock);
-	ares_htable = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
+	ares_htable = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_VALUE_GC);
 	job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (job_added != NULL);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
