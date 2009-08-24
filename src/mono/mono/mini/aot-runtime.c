@@ -1380,7 +1380,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	int i, buf_len;
 	MonoJitInfo *jinfo;
 	guint code_len, used_int_regs, flags;
-	gboolean has_generic_jit_info, has_dwarf_unwind_info;
+	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses;
 	guint8 *p;
 	MonoMethodHeader *header;
 	int generic_info_size;
@@ -1394,6 +1394,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	flags = decode_value (p, &p);
 	has_generic_jit_info = (flags & 1) != 0;
 	has_dwarf_unwind_info = (flags & 2) != 0;
+	has_clauses = (flags & 4) != 0;
 	if (has_dwarf_unwind_info) {
 		guint32 offset;
 
@@ -1409,12 +1410,14 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		generic_info_size = 0;
 
 	/* Exception table */
-	if (header && header->num_clauses) {
-		jinfo = 
-			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * header->num_clauses) + generic_info_size);
-		jinfo->num_clauses = header->num_clauses;
+	if (has_clauses) {
+		int num_clauses = decode_value (p, &p);
 
-		for (i = 0; i < header->num_clauses; ++i) {
+		jinfo = 
+			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * num_clauses) + generic_info_size);
+		jinfo->num_clauses = num_clauses;
+
+		for (i = 0; i < num_clauses; ++i) {
 			MonoExceptionClause *ec = &header->clauses [i];				
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 
@@ -1423,8 +1426,10 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 				ei->data.filter = code + decode_value (p, &p);
-			else
-				ei->data.catch_class = ec->data.catch_class;
+			else {
+				if (decode_value (p, &p))
+					ei->data.catch_class = decode_klass_ref (amodule, p, &p);
+			}
 
 			ei->try_start = code + decode_value (p, &p);
 			ei->try_end = code + decode_value (p, &p);

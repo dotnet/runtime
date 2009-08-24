@@ -2892,7 +2892,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	use_unwind_ops = cfg->unwind_ops != NULL;
 #endif
 
-	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0);
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0);
 
 	encode_value (jinfo->code_size, p, &p);
 	encode_value (flags, p, &p);
@@ -2913,19 +2913,28 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	/* Exception table */
-	if (header->num_clauses) {
-		for (k = 0; k < header->num_clauses; ++k) {
-			MonoJitExceptionInfo *ei = &jinfo->clauses [k];
+	if (jinfo->num_clauses)
+		encode_value (jinfo->num_clauses, p, &p);
 
-			encode_value (ei->exvar_offset, p, &p);
+	for (k = 0; k < jinfo->num_clauses; ++k) {
+		MonoJitExceptionInfo *ei = &jinfo->clauses [k];
 
-			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-				encode_value ((gint)((guint8*)ei->data.filter - code), p, &p);
+		encode_value (ei->exvar_offset, p, &p);
 
-			encode_value ((gint)((guint8*)ei->try_start - code), p, &p);
-			encode_value ((gint)((guint8*)ei->try_end - code), p, &p);
-			encode_value ((gint)((guint8*)ei->handler_start - code), p, &p);
+		if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+			encode_value ((gint)((guint8*)ei->data.filter - code), p, &p);
+		else {
+			if (ei->data.catch_class) {
+				encode_value (1, p, &p);
+				encode_klass_ref (acfg, ei->data.catch_class, p, &p);
+			} else {
+				encode_value (0, p, &p);
+			}
 		}
+
+		encode_value ((gint)((guint8*)ei->try_start - code), p, &p);
+		encode_value ((gint)((guint8*)ei->try_end - code), p, &p);
+		encode_value ((gint)((guint8*)ei->handler_start - code), p, &p);
 	}
 
 	if (jinfo->has_generic_jit_info) {
