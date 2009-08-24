@@ -3086,6 +3086,22 @@ verify_class_overrides (MonoClass *class, GPtrArray *ifaces, MonoMethod **overri
 			return FALSE;
 		}
 
+		if (!(body->flags & METHOD_ATTRIBUTE_VIRTUAL) || (body->flags & METHOD_ATTRIBUTE_STATIC)) {
+			if (body->flags & METHOD_ATTRIBUTE_STATIC)
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method must not be static to override a base type"));
+			else
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method must be virtual to override a base type"));
+			return FALSE;
+		}
+
+		if (!(decl->flags & METHOD_ATTRIBUTE_VIRTUAL) || (decl->flags & METHOD_ATTRIBUTE_STATIC)) {
+				if (body->flags & METHOD_ATTRIBUTE_STATIC)
+					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cannot override a static method in a base type"));
+				else
+					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cannot override a non virtual method in a base type"));
+				return FALSE;
+			}
+			
 		found = FALSE;
 		/*We can't use mono_class_is_assignable_from since it requires the class to be fully initialized*/
 		if (ifaces) {
