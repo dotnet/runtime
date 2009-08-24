@@ -554,6 +554,7 @@ mono_array_to_lparray (MonoArray *array)
 
 	if (!array)
 		return NULL;
+#ifdef DISABLE_COM
 
 	klass = array->obj.vtable->klass;
 
@@ -562,6 +563,8 @@ mono_array_to_lparray (MonoArray *array)
 		g_assert_not_reached ();
 		break;
 	case MONO_TYPE_CLASS:
+		g_assert_not_reached ();
+		break;
 		nativeArraySize = array->max_length;
 		nativeArray = malloc(sizeof(gpointer) * nativeArraySize);
 		for(i = 0; i < nativeArraySize; ++i) 	
@@ -594,13 +597,14 @@ mono_array_to_lparray (MonoArray *array)
 		g_warning ("type 0x%x not handled", klass->element_class->byval_arg.type);
 		g_assert_not_reached ();
 	}
-
+#endif
 	return array->vector;
 }
 
 void
 mono_free_lparray (MonoArray *array, gpointer* nativeArray)
 {
+#ifdef DISABLE_COM
 	MonoClass *klass;
 	int i = 0;
 
@@ -609,7 +613,6 @@ mono_free_lparray (MonoArray *array, gpointer* nativeArray)
 
 	if (!nativeArray)
 		return;
-
 	klass = array->obj.vtable->klass;
 
 	switch (klass->element_class->byval_arg.type) {
@@ -619,6 +622,7 @@ mono_free_lparray (MonoArray *array, gpointer* nativeArray)
 			free(nativeArray);
 		break;
 	}		
+#endif
 }
 
 static void
