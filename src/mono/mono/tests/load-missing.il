@@ -593,3 +593,76 @@
     } // end of method CCtorClass::foo      
 
   } // end of class CCtorClass
+
+.class interface public auto ansi abstract TestIface
+{
+	.method public virtual  hidebysig  newslot abstract instance default int32 foo ()  cil managed  {}
+}
+
+.class public auto ansi beforefieldinit BadMethodOverride1
+{
+	.method public virtual virtual newslot default int32 foo ()
+	{
+		.override class TestIface::foo
+		ldc.i4.0
+		ret
+	}
+
+	.method public hidebysig  specialname  rtspecialname  instance default void '.ctor' ()  cil managed 
+    {
+		ldarg.0                                
+		call instance void object::'.ctor'()   
+		ret                                    
+	}
+}
+
+.class public auto ansi beforefieldinit RandomBaseClass
+{
+	.method public virtual virtual newslot default int32 foo ()
+	{
+		ldc.i4.0
+		ret
+	}
+
+	.method public hidebysig  specialname  rtspecialname  instance default void '.ctor' ()  cil managed 
+    {
+		ldarg.0                                
+		call instance void object::'.ctor'()   
+		ret                                    
+	}
+}
+
+.class public auto ansi beforefieldinit BadMethodOverride2
+{
+	.method public virtual virtual newslot default int32 foo ()
+	{
+		.override class RandomBaseClass::foo
+		ldc.i4.0
+		ret
+	}
+
+	.method public hidebysig  specialname  rtspecialname  instance default void '.ctor' ()  cil managed 
+    {
+		ldarg.0                                
+		call instance void object::'.ctor'()   
+		ret                                    
+	}
+}
+
+.class public auto ansi beforefieldinit BadOverridesDriver
+{
+	.method public static void bad_override1 ()
+	{
+		newobj instance void BadMethodOverride1::.ctor()
+		pop
+		ret
+	}
+
+	.method public static void bad_override2 ()
+	{
+		newobj instance void BadMethodOverride2::.ctor()
+		pop
+		ret
+	}
+
+}
