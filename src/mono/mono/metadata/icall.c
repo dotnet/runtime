@@ -941,16 +941,21 @@ static void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (MonoType *handle)
 {
 	MonoClass *klass;
-
-	MONO_ARCH_SAVE_REGS;
+	MonoVTable *vtable;
 
 	MONO_CHECK_ARG_NULL (handle);
 
 	klass = mono_class_from_mono_type (handle);
 	MONO_CHECK_ARG (handle, klass);
 
+	vtable = mono_class_vtable (mono_domain_get (), klass);
+	if (klass->exception_type != MONO_EXCEPTION_NONE)
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
+	MONO_CHECK_ARG (handle, vtable);
+
 	/* This will call the type constructor */
-	mono_runtime_class_init (mono_class_vtable (mono_domain_get (), klass));
+	mono_runtime_class_init (vtable);
 }
 
 static void
