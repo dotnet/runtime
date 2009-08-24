@@ -601,7 +601,7 @@
 
 .class public auto ansi beforefieldinit BadMethodOverride1
 {
-	.method public virtual virtual newslot default int32 foo ()
+	.method public virtual newslot default int32 foo ()
 	{
 		.override class TestIface::foo
 		ldc.i4.0
@@ -618,7 +618,13 @@
 
 .class public auto ansi beforefieldinit RandomBaseClass
 {
-	.method public virtual virtual newslot default int32 foo ()
+	.method public virtual newslot default int32 foo ()
+	{
+		ldc.i4.0
+		ret
+	}
+
+	.method public static int32 foo2 ()
 	{
 		ldc.i4.0
 		ret
@@ -634,7 +640,7 @@
 
 .class public auto ansi beforefieldinit BadMethodOverride2
 {
-	.method public virtual virtual newslot default int32 foo ()
+	.method public virtual newslot default int32 foo ()
 	{
 		.override class RandomBaseClass::foo
 		ldc.i4.0
@@ -645,6 +651,40 @@
     {
 		ldarg.0                                
 		call instance void object::'.ctor'()   
+		ret                                    
+	}
+}
+
+.class public auto ansi beforefieldinit BadMethodOverride3 implements TestIface
+{
+	.method public default int32 foo ()
+	{
+		.override class TestIface::foo
+		ldc.i4.0
+		ret
+	}
+
+	.method public hidebysig  specialname  rtspecialname  instance default void '.ctor' ()  cil managed 
+    {
+		ldarg.0                                
+		call instance void object::'.ctor'()   
+		ret                                    
+	}
+}
+
+.class public auto ansi beforefieldinit BadMethodOverride4 extends RandomBaseClass
+{
+	.method public virtual default int32 foo2 ()
+	{
+		.override class RandomBaseClass::foo2
+		ldc.i4.0
+		ret
+	}
+
+	.method public hidebysig  specialname  rtspecialname  instance default void '.ctor' ()  cil managed 
+    {
+		ldarg.0                                
+		call instance void RandomBaseClass::'.ctor'()   
 		ret                                    
 	}
 }
@@ -665,4 +705,17 @@
 		ret
 	}
 
+	.method public static void bad_override3 ()
+	{
+		newobj instance void BadMethodOverride3::.ctor()
+		pop
+		ret
+	}
+
+	.method public static void bad_override4 ()
+	{
+		newobj instance void BadMethodOverride4::.ctor()
+		pop
+		ret
+	}
 }

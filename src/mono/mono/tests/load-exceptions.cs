@@ -266,6 +266,24 @@ public class Tests : LoadMissing {
 		return 0;
 	}
 
+	public static int test_0_bad_method_override3 ()
+	{
+		try {
+			BadOverridesDriver.bad_override3 ();
+			return 1;
+		} catch (TypeLoadException) {}
+		return 0;
+	}
+
+	public static int test_0_bad_method_override4 ()
+	{
+		try {
+			BadOverridesDriver.bad_override4 ();
+			return 1;
+		} catch (TypeLoadException) {}
+		return 0;
+	}
+
 	public static void missing_outer () {
 		new Missing.Foo1.InnerFoo ();
 	}
