@@ -705,6 +705,11 @@ typedef struct {
 
 #define DEBUG(a)
 
+#ifndef __GNUC__
+/*#define __alignof__(a) sizeof(a)*/
+#define __alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
+#endif
+
 static void inline
 add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 {
@@ -718,11 +723,19 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->reg = *gr;
 		}
 	} else {
-		if (*gr == ARMREG_R3
-#ifdef __ARM_EABI__
-				&& 0
+#if defined(__APPLE__) && defined(MONO_CROSS_COMPILE)
+		int i8_align = 4;
+#else
+		int i8_align = __alignof__ (gint64);
 #endif
-					) {
+
+#if __ARM_EABI__
+		gboolean split = i8_align == 4;
+#else
+		gboolean split = TRUE;
+#endif
+		
+		if (*gr == ARMREG_R3 && split) {
 			/* first word in r3 and the second on the stack */
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
@@ -730,8 +743,11 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			*stack_size += 4;
 		} else if (*gr >= ARMREG_R3) {
 #ifdef __ARM_EABI__
-			*stack_size += 7;
-			*stack_size &= ~7;
+			/* darwin aligns longs to 4 byte only */
+			if (i8_align == 8) {
+				*stack_size += 7;
+				*stack_size &= ~7;
+			}
 #endif
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
@@ -739,7 +755,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			*stack_size += 8;
 		} else {
 #ifdef __ARM_EABI__
-			if ((*gr) & 1)
+			if (i8_align == 8 && ((*gr) & 1))
 				(*gr) ++;
 #endif
 			ainfo->reg = *gr;
