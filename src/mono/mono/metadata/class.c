@@ -3071,6 +3071,52 @@ print_unimplemented_interface_method_info (MonoClass *class, MonoClass *ic, Mono
 	}
 }
 
+static gboolean
+verify_class_overrides (MonoClass *class, GPtrArray *ifaces, MonoMethod **overrides, int onum)
+{
+	int i;
+	gboolean found;
+
+	for (i = 0; i < onum; ++i) {
+		MonoMethod *decl = overrides [i * 2];
+		MonoMethod *body = overrides [i * 2 + 1];
+
+		if (mono_class_get_generic_type_definition (body->klass) != mono_class_get_generic_type_definition (class)) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method belongs to a different class than the declared one"));
+			return FALSE;
+		}
+
+		found = FALSE;
+		/*We can't use mono_class_is_assignable_from since it requires the class to be fully initialized*/
+		if (ifaces) {
+			int j;
+			for (j = 0; j < ifaces->len; j++) {
+				MonoClass *ic = g_ptr_array_index (ifaces, j);
+				if (decl->klass == ic) {
+					found = TRUE;
+					break;
+				}
+			}
+		}
+
+		if (!found) {
+			MonoClass *parent = class;
+			while (parent) {
+				if (decl->klass == parent) {
+					found = TRUE;
+					break;
+				}
+				parent = parent->parent;
+			}
+		}
+
+		if (!found) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method overrides a class or interface that extended or implemented by this type"));
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -3093,6 +3139,13 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		return;
 
 	ifaces = mono_class_get_implemented_interfaces (class);
+
+	if (overrides && !verify_class_overrides (class, ifaces, overrides, onum)) {
+		if (ifaces)
+			g_ptr_array_free (ifaces, TRUE);
+		return;
+	}
+
 	if (ifaces) {
 		for (i = 0; i < ifaces->len; i++) {
 			MonoClass *ic = g_ptr_array_index (ifaces, i);
