@@ -2545,6 +2545,8 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	if (ifaces) {
 		for (i = 0; i < ifaces->len; ++i) {
 			ic = g_ptr_array_index (ifaces, i);
+			if (interfaces_full [ic->interface_id] != NULL)
+				continue;
 			interfaces_full [ic->interface_id] = ic;
 			interface_offsets_full [ic->interface_id] = cur_slot;
 			cur_slot += ic->method.count;
