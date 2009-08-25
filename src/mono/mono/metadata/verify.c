@@ -732,6 +732,11 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 {
 	MonoClass *klass;
 
+	if (type == NULL) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid null type at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		return FALSE;
+	}
+
 	if (!is_valid_type_in_context (ctx, type)) {
 		char *str = mono_type_full_name (type);
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic type (%s%s) (argument out of range or %s is not generic) at 0x%04x",
@@ -754,7 +759,7 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 		return FALSE;
 	}
 
-	if (klass->exception_type != MONO_EXCEPTION_NONE || (klass->generic_class && klass->generic_class->container_class->exception_type != MONO_EXCEPTION_NONE)) {
+	if (klass->generic_class && klass->generic_class->container_class->exception_type != MONO_EXCEPTION_NONE) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
@@ -6030,7 +6035,7 @@ mono_verifier_verify_class (MonoClass *class)
 		return FALSE;
 	if (class->generic_class && !mono_class_is_valid_generic_instantiation (NULL, class))
 		return FALSE;
-	if (!verify_class_fields (class))
+	if (class->generic_class == NULL && !verify_class_fields (class))
 		return FALSE;
 	return TRUE;
 }
