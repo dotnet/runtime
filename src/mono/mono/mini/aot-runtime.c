@@ -1382,10 +1382,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	guint code_len, used_int_regs, flags;
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses;
 	guint8 *p;
-	MonoMethodHeader *header;
 	int generic_info_size;
-
-	header = mono_method_get_header (method);
 
 	/* Load the method info from the AOT file */
 
@@ -1418,10 +1415,9 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		jinfo->num_clauses = num_clauses;
 
 		for (i = 0; i < num_clauses; ++i) {
-			MonoExceptionClause *ec = &header->clauses [i];				
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 
-			ei->flags = ec->flags;
+			ei->flags = decode_value (p, &p);
 			ei->exvar_offset = decode_value (p, &p);
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
