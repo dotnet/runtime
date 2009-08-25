@@ -5994,6 +5994,24 @@ verify_class_for_overlapping_reference_fields (MonoClass *class)
 	return TRUE;
 }
 
+static gboolean
+verify_class_fields (MonoClass *class)
+{
+	int i, count;
+	MonoGenericContext *context = mono_class_get_context (class);
+	if (class->generic_container)
+		context = &class->generic_container->context;
+
+	count = class->field.count;
+	for (i = 0; i < count; ++i) {
+		MonoClassField *field = &class->fields [i];
+
+		if (!mono_type_is_valid_type_in_context (field->type, context))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /*
  * Check if the class is verifiable.
  * 
@@ -6010,8 +6028,9 @@ mono_verifier_verify_class (MonoClass *class)
 		return FALSE;
 	if (!verify_class_for_overlapping_reference_fields (class))
 		return FALSE;
-	
 	if (class->generic_class && !mono_class_is_valid_generic_instantiation (NULL, class))
+		return FALSE;
+	if (!verify_class_fields (class))
 		return FALSE;
 	return TRUE;
 }
