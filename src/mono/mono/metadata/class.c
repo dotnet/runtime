@@ -3479,6 +3479,20 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		g_hash_table_destroy (override_map);
 	}
 
+	/* Ensure that all vtable slots are filled with concrete instance methods */
+	if (!(class->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
+		for (i = 0; i < cur_slot; ++i) {
+			if (vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) {
+				char *type_name = mono_type_get_full_name (class);
+				char *method_name = vtable [i] ? mono_method_full_name (vtable [i], TRUE) : g_strdup ("none");
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Type %s has invalid vtable method slot %d with method %s", type_name, i, method_name));
+				g_free (type_name);
+				g_free (method_name);
+				return;
+			}
+		}
+	}
+
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
 
