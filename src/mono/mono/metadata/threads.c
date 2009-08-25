@@ -3148,7 +3148,10 @@ void mono_thread_suspend_all_other_threads (void)
 			 * FIXME: The finalizer thread can still create new threads.
 			 */
 			mono_threads_lock ();
-			starting = mono_g_hash_table_size (threads_starting_up) > 0;
+			if (threads_starting_up)
+				starting = mono_g_hash_table_size (threads_starting_up) > 0;
+			else
+				starting = FALSE;
 			mono_threads_unlock ();
 			if (starting)
 				Sleep (100);
