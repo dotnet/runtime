@@ -2262,8 +2262,12 @@ verify_method_table (VerifyContext *ctx)
 		if ((flags & (METHOD_ATTRIBUTE_FINAL | METHOD_ATTRIBUTE_NEW_SLOT | METHOD_ATTRIBUTE_STRICT)) && !(flags & METHOD_ATTRIBUTE_VIRTUAL))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is (Final, NewSlot or Strict) but not Virtual", i));
 
-		if ((flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (flags & METHOD_ATTRIBUTE_VIRTUAL))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is PinvokeImpl and Virtual", i));
+		if (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+			if (flags & METHOD_ATTRIBUTE_VIRTUAL)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is PinvokeImpl and Virtual", i));
+			if (!(flags & METHOD_ATTRIBUTE_STATIC))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is PinvokeImpl but not Static", i));
+		}
 
 		if (!(flags & METHOD_ATTRIBUTE_ABSTRACT) && !rva && !(flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && 
 				!(implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && code_type != METHOD_IMPL_ATTRIBUTE_RUNTIME)
