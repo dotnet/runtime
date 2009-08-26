@@ -418,6 +418,9 @@ methoddef-table {
 	invalid offset table-row ( 6 10 ) + 6 set-ushort 0x0016
 
 	#TODO do all .ctor and .cctor validation (39, 40)
+
+	#pinvoke must be static
+	invalid offset table-row ( 6 5 ) + 6 set-ushort 0x2086
 }
 
 methoddef-table-global-methods {
