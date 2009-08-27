@@ -1808,12 +1808,14 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 
 	klass = mono_object_get_class (object);
 
+	mono_cominterop_lock ();
 	if (!ccw_hash)
 		ccw_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	if (!ccw_interface_hash)
 		ccw_interface_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	ccw_list = g_hash_table_lookup (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)));
+	mono_cominterop_unlock ();
 
 	ccw_list_item = ccw_list;
 	while (ccw_list_item) {
@@ -1854,7 +1856,9 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 		}
 		else
 			ccw_list = g_list_append (ccw_list, ccw);
+		mono_cominterop_lock ();
 		g_hash_table_insert (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)), ccw_list);
+		mono_cominterop_unlock ();
 		/* register for finalization to clean up ccw */
 		mono_object_register_finalizer (object);
 	}
