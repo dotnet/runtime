@@ -6017,6 +6017,18 @@ verify_class_fields (MonoClass *class)
 	return TRUE;
 }
 
+static gboolean
+verify_interfaces (MonoClass *class)
+{
+	int i;
+	for (i = 0; i < class->interface_count; ++i) {
+		MonoClass *iface = class->interfaces [i];
+		if (!(iface->flags & TYPE_ATTRIBUTE_INTERFACE))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /*
  * Check if the class is verifiable.
  * 
@@ -6036,6 +6048,8 @@ mono_verifier_verify_class (MonoClass *class)
 	if (class->generic_class && !mono_class_is_valid_generic_instantiation (NULL, class))
 		return FALSE;
 	if (class->generic_class == NULL && !verify_class_fields (class))
+		return FALSE;
+	if (!verify_interfaces (class))
 		return FALSE;
 	return TRUE;
 }
