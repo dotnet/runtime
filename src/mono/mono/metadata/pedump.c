@@ -419,8 +419,10 @@ verify_image_file (const char *fname)
 {
 	GSList *errors = NULL, *tmp;
 	MonoImage *image;
+	MonoTableInfo *table;
+	MonoAssembly *assembly;
 	MonoImageOpenStatus status;
-	int count = 0;
+	int i, count = 0;
 	const char* desc [] = {
 		"Ok", "Error", "Warning", NULL, "CLS", NULL, NULL, NULL, "Not Verifiable"
 	};
@@ -455,6 +457,26 @@ verify_image_file (const char *fname)
 	if (!mono_verifier_verify_full_table_data (image, &errors))
 		goto invalid_image;
 
+
+	/*fake an assembly for class loading to work*/
+	assembly = g_new0 (MonoAssembly, 1);
+	assembly->in_gac = FALSE;
+	assembly->image = image;
+	image->assembly = assembly;
+
+	table = &image->tables [MONO_TABLE_TYPEDEF];
+	for (i = 1; i <= table->rows; ++i) {
+		guint32 token = i | MONO_TOKEN_TYPE_DEF;
+		MonoClass *class = mono_class_get (image, token);
+		mono_class_init (class);
+		if (class->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ()) {
+			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, class->name_space, class->name);
+			mono_loader_clear_error ();
+			++count;
+		}
+	}
+	if (count)
+		return 1;
 	return 0;
 
 invalid_image:
