@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/PassManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JITMemoryManager.h>
@@ -200,7 +201,7 @@ void
 mono_llvm_dump_value (LLVMValueRef value)
 {
 	/* Same as LLVMDumpValue (), but print to stdout */
-	cout << (*unwrap<Value> (value));
+	outs () << (*unwrap<Value> (value));
 }
 
 /* Missing overload for building an alloca with an alignment */
@@ -236,13 +237,13 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   mono_mm->alloc_cb = alloc_cb;
   mono_mm->emitted_cb = emitted_cb;
 
-  ExceptionHandling = true;
+  DwarfExceptionHandling = true;
   // PrettyStackTrace installs signal handlers which trip up libgc
   DisablePrettyStackTrace = true;
 
   ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, CodeGenOpt::Default);
   if (!EE) {
-	  cerr << "Unable to create LLVM ExecutionEngine: " << Error << "\n";
+	  errs () << "Unable to create LLVM ExecutionEngine: " << Error << "\n";
 	  g_assert_not_reached ();
   }
   EE->InstallExceptionTableRegister (exception_cb);
@@ -266,7 +267,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
       if (PassInf->getNormalCtor())
 		  P = PassInf->getNormalCtor()();
 	  if (dynamic_cast<MachineFunctionPass*>(P) != 0) {
-		  cerr << PassInf->getPassName () << " is a machine function pass.\n";
+		  errs () << PassInf->getPassName () << " is a machine function pass.\n";
 	  } else {
 		  fpm->add (P);
 	  }

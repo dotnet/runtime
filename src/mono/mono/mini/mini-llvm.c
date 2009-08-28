@@ -8,6 +8,9 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool-internals.h>
 
+#define __STDC_LIMIT_MACROS
+#define __STDC_CONSTANT_MACROS
+
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
