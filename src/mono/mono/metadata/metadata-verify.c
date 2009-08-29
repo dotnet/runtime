@@ -243,10 +243,11 @@ typedef struct {
 
 #define ADD_WARNING(__ctx, __msg)	\
 	do {	\
-		if ((__ctx)->report_warning) \
+		if ((__ctx)->report_warning) { \
 			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_WARNING, MONO_EXCEPTION_INVALID_PROGRAM); \
-		(__ctx)->valid = 0; \
-		return; \
+			(__ctx)->valid = 0; \
+			return; \
+		} \
 	} while (0)
 
 #define ADD_ERROR(__ctx, __msg)	\
@@ -2008,7 +2009,7 @@ verify_typedef_table (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPEDEF];
 	guint32 data [MONO_TYPEDEF_SIZE];
-	guint32 fieldlist = 1, methodlist = 1;
+	guint32 fieldlist = 1, methodlist = 1, visibility;
 	int i;
 
 	if (table->rows == 0)
@@ -2039,6 +2040,11 @@ verify_typedef_table (VerifyContext *ctx)
 
 		if (data [MONO_TYPEDEF_EXTENDS] && !is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
+
+		visibility = data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+		if ((visibility >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visibility <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM) &&
+			search_sorted_table (ctx, MONO_TABLE_NESTEDCLASS, MONO_NESTED_CLASS_NESTED, i + 1) == -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d has nested visibility but no rows in the NestedClass table", i));
 
 		if (data [MONO_TYPEDEF_FIELD_LIST] == 0)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d FieldList be be >= 1", i));
