@@ -1,3 +1,7 @@
+2009-08-29  Jonathan Pryor  <jpryor@novell.com>
+
+	* man/mdoc.5: Document the new <format/> element.
+
 2009-08-18  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/Makefile.am: Applied patch from Hib Eris (hib@hiberis.nl).
