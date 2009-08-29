@@ -108,7 +108,11 @@ cli-cattr-tests.ok: gen-md-tests cli-cattr-tests.md $(TEST_BINARIES)
 	./gen-md-tests cli-cattr-tests.md
 	touch cli-cattr-tests.ok
 
-generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok cli-metadata-tests.ok cli-tables-tests.ok cli-blob-tests.ok cli-cattr-tests.ok
+cli-global-props-tests.ok: gen-md-tests cli-global-props-tests.md $(TEST_BINARIES)
+	./gen-md-tests cli-global-props-tests.md
+	touch cli-global-props-tests.ok
+
+generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok cli-metadata-tests.ok cli-tables-tests.ok cli-blob-tests.ok  cli-cattr-tests.ok cli-global-props-tests.ok
 	touch generate-stamp
 
 clean-stamps:
