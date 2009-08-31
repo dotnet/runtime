@@ -424,9 +424,11 @@ get_throw_exception (gboolean rethrow)
 
 	start = code = mono_global_codeman_reserve (64);
 
+	/* Align the stack on apple, since we push 10 args + the return address */
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
 	x86_push_reg (code, X86_ESP);
-	x86_push_membase (code, X86_ESP, 4); /* IP */
-	x86_push_membase (code, X86_ESP, 12); /* exception */
+	x86_push_membase (code, X86_ESP, 8); /* IP */
+	x86_push_membase (code, X86_ESP, 16); /* exception */
 	x86_push_reg (code, X86_EBP);
 	x86_push_reg (code, X86_EDI);
 	x86_push_reg (code, X86_ESI);
