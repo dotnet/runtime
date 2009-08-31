@@ -749,7 +749,7 @@ verify_metadata_header (VerifyContext *ctx)
 {
 	int i;
 	DataDirectory it = get_data_dir (ctx, CLI_HEADER_IDX);
-	guint32 offset;
+	guint32 offset, section_count;
 	const char *ptr;
 
 	offset = it.translated_offset;
@@ -779,13 +779,14 @@ verify_metadata_header (VerifyContext *ctx)
 
 	ptr = ctx->data + offset; //move to streams header 
 
-	if (read16 (ptr + 2) < 3)
+	section_count = read16 (ptr + 2);
+	if (section_count < 3)
 		ADD_ERROR (ctx, g_strdup_printf ("Metadata root section must have at least 3 streams (#~, #GUID and #Blob"));
 
 	ptr += 4;
 	offset += 4;
 
-	for (i = 0; i < 5; ++i) {
+	for (i = 0; i < section_count; ++i) {
 		guint32 stream_off, stream_size;
 		int string_size, stream_idx;
 
@@ -821,8 +822,12 @@ verify_metadata_header (VerifyContext *ctx)
 			stream_idx = GUID_STREAM;
 		else if (!strncmp ("#~", ptr, 3))
 			stream_idx = TILDE_STREAM;
-		else
-			ADD_ERROR (ctx, g_strdup_printf ("Metadata stream header %d invalid name %s", i, ptr));
+		else {
+			ADD_WARNING (ctx, g_strdup_printf ("Metadata stream header %d invalid name %s", i, ptr));
+			offset = pad4 (offset);
+			ptr = ctx->data + offset;
+			continue;
+		}
 
 		if (ctx->metadata_streams [stream_idx].offset != 0)
 			ADD_ERROR (ctx, g_strdup_printf ("Duplicated metadata stream header %s", ptr));
