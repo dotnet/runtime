@@ -2163,6 +2163,19 @@ mono_get_lmf_addr (void)
 	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
 		return &jit_tls->lmf;
 
+	/*
+	 * When resolving the call to mono_jit_thread_attach full-aot will look
+	 * in the plt, which causes a call into the generic trampoline, which in turn
+	 * tries to resolve the lmf_addr creating a cyclic dependency.  We cannot
+	 * call mono_jit_thread_attach from the native-to-managed wrapper, without
+	 * mono_get_lmf_addr, and mono_get_lmf_addr requires the thread to be attached.
+	 */
+
+	mono_jit_thread_attach (NULL);
+	
+	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
+		return &jit_tls->lmf;
+
 	g_assert_not_reached ();
 	return NULL;
 #endif
