@@ -1,5 +1,9 @@
 2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-global-props-tests.md: Add test for field table.
+
+2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* gen-md-tests.c: Add suppport for badrt mode for metadata
 	tests that require runtime type initialization.
 

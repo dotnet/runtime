@@ -16,3 +16,12 @@ typeref-global-props {
 			offset table-row ( 1 2 ) + 2 set-ushort read.ushort (table-row ( 1 1 ) + 2), #name
 			offset table-row ( 1 2 ) + 4 set-ushort read.ushort (table-row ( 1 1 ) + 4)  #namespace
 }
+
+fielddef-global-props {
+	assembly assembly-with-fields.exe
+
+	#two fields with same name,owner and signature
+	badrt offset table-row (4 1) + 2 set-ushort read.ushort (table-row (4 0) + 2), #name
+		  offset table-row (4 1) + 4 set-ushort read.ushort (table-row (4 0) + 4)  #signature
+
+}
