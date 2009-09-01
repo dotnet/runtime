@@ -1,3 +1,9 @@
+2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-global-props-tests.md: Add test for typeref table.
+
+	* cli-tables-tests.md: Disable test that pass under MS.
+
 2009-08-29  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-global-props-tests.md: New tests for global

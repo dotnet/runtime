@@ -323,7 +323,7 @@ methoddef-table {
 
 	#LAMEIMPL MS doesn't care about this
 	#compilercontrolled | specialname
-	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0800
+	#invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0800
 
 	#LAMEIMPL MS doesn't care about this
 	#compilercontrolled | rtspecialname
