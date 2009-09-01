@@ -50,7 +50,7 @@ test_entry:
 	validity patch (',' patch)*
 
 validity:
-	'valid' | 'invalid'
+	'valid' | 'invalid' | 'badrt'
 
 patch:
 	selector effect
@@ -125,7 +125,8 @@ enum {
 
 enum {
 	TEST_TYPE_VALID,
-	TEST_TYPE_INVALID
+	TEST_TYPE_INVALID,
+	TEST_TYPE_BADRT
 };
 
 enum {
@@ -232,6 +233,8 @@ test_validity_name (int validity)
 		return "valid";
 	case TEST_TYPE_INVALID:
 		return "invalid";
+	case TEST_TYPE_BADRT:
+		return "badrt";
 	default:
 		printf ("Invalid test type %d\n", validity);
 		exit (INVALID_VALIDITY_TEST);
@@ -583,7 +586,7 @@ process_test_entry (test_set_t *test_set, test_entry_t *entry)
 	entry->data_size = test_set->assembly_size;
 	entry->test_set = test_set;
 
-	DEBUG_PARSER (printf("(%d)%s\n", test_set->count, entry->validity == TEST_TYPE_VALID? "valid" : "invalid"));
+	DEBUG_PARSER (printf("(%d)%s\n", test_set->count, test_validity_name (entry->validity)));
 	for (tmp = entry->patches; tmp; tmp = tmp->next)
 		apply_patch (entry, tmp->data);
 
@@ -1009,8 +1012,10 @@ parse_validity (scanner_t *scanner)
 		validity = TEST_TYPE_VALID;
 	else if (!strcmp (name, "invalid"))
 		validity = TEST_TYPE_INVALID;
+	else if (!strcmp (name, "badrt"))
+		validity = TEST_TYPE_BADRT;
 	else {
-		printf ("Expected either 'valid' or 'invalid' but got '%s' at the begining of a test entry at line %d\n", name, scanner_get_line (scanner));
+		printf ("Expected either 'valid', 'invalid' or 'badtr' but got '%s' at the begining of a test entry at line %d\n", name, scanner_get_line (scanner));
 		exit (INVALID_VALIDITY_TEST);
 	}
 

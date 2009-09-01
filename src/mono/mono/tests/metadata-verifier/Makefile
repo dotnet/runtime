@@ -122,15 +122,20 @@ clean-stamps:
 run-test: generate-stamp
 	@for i in *.exe; do \
 		RES=99; \
+		PEDUMP_ARG="metadata" \
 		FIRST=`echo $$i | cut -d '-' -f 1`; \
 		if [ "$$FIRST" == "invalid" ];	then \
+			RES=1; \
+		fi; \
+		if [ "$$FIRST" == "badrt" ];	then \
+			PEDUMP_ARG="metadata,code" \
 			RES=1; \
 		fi; \
 		if [ "$$FIRST" == "valid" ]; then \
 			RES=0; \
 		fi; \
 		if [ $$RES != 99 ]; then \
-			../../metadata/pedump --verify metadata $$i >/dev/null 2>/dev/null; \
+			../../metadata/pedump --verify $$PEDUMP_ARG $$i >/dev/null 2>/dev/null; \
 			R=$$?; \
 			if [ $$R != $$RES ]; then \
 				echo "$$i failed expected $$RES but got $$R"; \
@@ -145,6 +150,9 @@ check_with_peverify: generate-stamp
 		RES=99; \
 		FIRST=`echo $$i | cut -d '-' -f 1`; \
 		if [ "$$FIRST" == "invalid" ];	then \
+			RES=1; \
+		fi; \
+		if [ "$$FIRST" == "badrt" ];	then \
 			RES=1; \
 		fi; \
 		if [ "$$FIRST" == "valid" ]; then \

@@ -1,5 +1,12 @@
 2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* gen-md-tests.c: Add suppport for badrt mode for metadata
+	tests that require runtime type initialization.
+
+	* Makefile: Add support for badrt.
+
+2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-global-props-tests.md: Add test for typeref table.
 
 	* cli-tables-tests.md: Disable test that pass under MS.
