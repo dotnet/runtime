@@ -375,7 +375,7 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 		restore_context = mono_arch_get_restore_context ();
 
 	/* Pop argument and return address */
-	ctx.esp = esp + (2 * sizeof (gpointer));
+	ctx.esp = esp + (3 * sizeof (gpointer));
 	ctx.eip = eip;
 	ctx.ebp = ebp;
 	ctx.edi = edi;
@@ -424,7 +424,10 @@ get_throw_exception (gboolean rethrow)
 
 	start = code = mono_global_codeman_reserve (64);
 
-	/* Align the stack on apple, since we push 10 args + the return address */
+	/* 
+	 * Align the stack on apple, since we push 10 args + the return address, and the
+	 * caller pushed 8 bytes.
+	 */
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
 	x86_push_reg (code, X86_ESP);
 	x86_push_membase (code, X86_ESP, 8); /* IP */
