@@ -3280,7 +3280,35 @@ verify_typedef_table_global_constraints (VerifyContext *ctx)
 		}
 
 		if (g_hash_table_lookup (unique_types, type)) {
-			ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("TypeDef table row %d has duplicate for tupe (%s,%s,%x)", i, type->name, type->name_space, type->resolution_scope));
+			ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("TypeDef table row %d has duplicate for tuple (%s,%s,%x)", i, type->name, type->name_space, type->resolution_scope));
+			g_hash_table_destroy (unique_types);
+			g_free (type);
+			return;
+		}
+		g_hash_table_insert (unique_types, type, GUINT_TO_POINTER (1));
+	}
+
+	g_hash_table_destroy (unique_types);
+}
+
+static void
+verify_typeref_table_global_constraints (VerifyContext *ctx)
+{
+	int i;
+	guint32 data [MONO_TYPEREF_SIZE];
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPEREF];
+	GHashTable *unique_types = g_hash_table_new_full (&typedef_hash, &typedef_equals, g_free, NULL);
+
+	for (i = 0; i < table->rows; ++i) {
+		TypeDefUniqueId *type = g_new (TypeDefUniqueId, 1);
+		mono_metadata_decode_row (table, i, data, MONO_TYPEREF_SIZE);
+
+		type->resolution_scope = data [MONO_TYPEREF_SCOPE];
+		type->name = mono_metadata_string_heap (ctx->image, data [MONO_TYPEREF_NAME]);
+		type->name_space = mono_metadata_string_heap (ctx->image, data [MONO_TYPEREF_NAMESPACE]);
+
+		if (g_hash_table_lookup (unique_types, type)) {
+			ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("TypeRef table row %d has duplicate for tuple (%s,%s,%x)", i, type->name, type->name_space, type->resolution_scope));
 			g_hash_table_destroy (unique_types);
 			g_free (type);
 			return;
@@ -3294,6 +3322,8 @@ verify_typedef_table_global_constraints (VerifyContext *ctx)
 static void
 verify_tables_data_global_constraints (VerifyContext *ctx)
 {
+	verify_typeref_table_global_constraints (ctx);
+	CHECK_ERROR ();
 	verify_typedef_table_global_constraints (ctx);
 }
 	
