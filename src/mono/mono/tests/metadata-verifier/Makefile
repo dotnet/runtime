@@ -66,6 +66,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-typespec.exe \
 	assembly-with-global-method.exe \
 	assembly-with-calli.exe	\
+	assembly-with-fields.exe \
 	simple-assembly.exe
 
 
