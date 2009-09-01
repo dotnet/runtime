@@ -5999,11 +5999,28 @@ verify_class_for_overlapping_reference_fields (MonoClass *class)
 	return TRUE;
 }
 
+static guint
+field_hash (gconstpointer key)
+{
+	const MonoClassField *field = key;
+	return g_str_hash (field->name) ^ mono_metadata_type_hash (field->type); /**/
+}
+
+static gboolean
+field_equals (gconstpointer _a, gconstpointer _b)
+{
+	const MonoClassField *a = _a;
+	const MonoClassField *b = _b;
+	return !strcmp (a->name, b->name) && mono_metadata_type_equal (a->type, b->type);
+}
+
+
 static gboolean
 verify_class_fields (MonoClass *class)
 {
 	int i, count;
 	MonoGenericContext *context = mono_class_get_context (class);
+	GHashTable *unique_fields = g_hash_table_new_full (&field_hash, &field_equals, NULL, NULL);
 	if (class->generic_container)
 		context = &class->generic_container->context;
 
@@ -6011,9 +6028,17 @@ verify_class_fields (MonoClass *class)
 	for (i = 0; i < count; ++i) {
 		MonoClassField *field = &class->fields [i];
 
-		if (!mono_type_is_valid_type_in_context (field->type, context))
+		if (!mono_type_is_valid_type_in_context (field->type, context)) {
+			g_hash_table_destroy (unique_fields);
 			return FALSE;
+		}
+		if (g_hash_table_lookup (unique_fields, field)) {
+			g_hash_table_destroy (unique_fields);
+			return FALSE;
+		}
+		g_hash_table_insert (unique_fields, field, field);
 	}
+	g_hash_table_destroy (unique_fields);
 	return TRUE;
 }
 
