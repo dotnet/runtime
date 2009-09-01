@@ -34,6 +34,9 @@ assembly-with-events.exe: assembly-with-events.cs
 assembly-with-properties.exe: assembly-with-properties.cs
 	gmcs assembly-with-properties.cs
 
+assembly-with-fields.exe: assembly-with-fields.cs
+	gmcs assembly-with-fields.cs
+
 module.netmodule: module.il
 	ilasm2 /dll /output:module.netmodule module.il
 
