@@ -2476,6 +2476,37 @@ find_array_interface (MonoClass *klass, const char *name)
 }
 
 /*
+ * Return the number of virtual methods.
+ * Even for interfaces we can't simply return the number of methods as all CLR types are allowed to have static methods.
+ * FIXME It would be nice if this information could be cached somewhere.
+ */
+static int
+count_virtual_methods (MonoClass *class)
+{
+	int i, count = 0;
+	guint32 flags;
+	class = mono_class_get_generic_type_definition (class); /*We can find this information by looking at the GTD*/
+
+	if (class->methods || !MONO_CLASS_HAS_STATIC_METADATA (class)) {
+		mono_class_setup_methods (class);
+
+		for (i = 0; i < class->method.count; ++i) {
+			flags = class->methods [i]->flags;
+			if (flags & METHOD_ATTRIBUTE_VIRTUAL)
+				++count;
+		}
+	} else {
+		for (i = 0; i < class->method.count; ++i) {
+			flags = mono_metadata_decode_table_row_col (class->image, MONO_TABLE_METHOD, class->method.first + i, MONO_METHOD_FLAGS);
+
+			if (flags & METHOD_ATTRIBUTE_VIRTUAL)
+				++count;
+		}
+	}
+	return count;
+}
+
+/*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
 static int
@@ -2549,7 +2580,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 				continue;
 			interfaces_full [ic->interface_id] = ic;
 			interface_offsets_full [ic->interface_id] = cur_slot;
-			cur_slot += ic->method.count;
+			cur_slot += count_virtual_methods (ic);
 		}
 		g_ptr_array_free (ifaces, TRUE);
 	}
@@ -3149,7 +3180,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	gboolean security_enabled = mono_is_security_manager_active ();
 	MonoMethod *cm;
 	gpointer class_iter;
-	gboolean *is_static_iface_slot;
 #if (DEBUG_INTERFACE_VTABLE_CODE|TRACE_INTERFACE_VTABLE_CODE)
 	int first_non_interface_slot;
 #endif
@@ -3185,8 +3215,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 	vtable = alloca (sizeof (gpointer) * max_vtsize);
 	memset (vtable, 0, sizeof (gpointer) * max_vtsize);
-
-	is_static_iface_slot = g_new0 (gboolean, max_vtsize);
 
 	/* printf ("METAINIT %s.%s\n", class->name_space, class->name); */
 
@@ -3309,10 +3337,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			int im_slot = ic_offset + im->slot;
 			MonoMethod *override_im = (override_map != NULL) ? g_hash_table_lookup (override_map, im) : NULL;
 			
-			if (im->flags & METHOD_ATTRIBUTE_STATIC) {
-				is_static_iface_slot [im_slot] = TRUE;
+			if (im->flags & METHOD_ATTRIBUTE_STATIC)
 				continue;
-			}
 
 			// If there is an explicit implementation, just use it right away,
 			// otherwise look for a matching method
@@ -3487,7 +3513,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	/* Ensure that all vtable slots are filled with concrete instance methods */
 	if (!(class->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
 		for (i = 0; i < cur_slot; ++i) {
-			if ((vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) && !is_static_iface_slot [i]) {
+			if (vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) {
 				char *type_name = mono_type_get_full_name (class);
 				char *method_name = vtable [i] ? mono_method_full_name (vtable [i], TRUE) : g_strdup ("none");
 				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Type %s has invalid vtable method slot %d with method %s", type_name, i, method_name));
@@ -3497,8 +3523,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			}
 		}
 	}
-
-	g_free (is_static_iface_slot);
 
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
