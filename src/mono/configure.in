@@ -2495,6 +2495,7 @@ fi
 
 AC_OUTPUT([
 Makefile
+mono-core.spec
 mono-uninstalled.pc
 scripts/mono-find-provides
 scripts/mono-find-requires
