@@ -2252,6 +2252,8 @@ verify_method_table (VerifyContext *ctx)
 		if (flags & METHOD_ATTRIBUTE_ABSTRACT) {
 			if (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is Abstract and PinvokeImpl", i));
+			if (flags & METHOD_ATTRIBUTE_FINAL)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is Abstract and Final", i));
 			if (!(flags & METHOD_ATTRIBUTE_VIRTUAL))
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is Abstract but not Virtual", i));
 		}

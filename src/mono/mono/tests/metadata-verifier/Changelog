@@ -1,5 +1,10 @@
 2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: New test for method abstract + final.
+	Tests #534175.
+
+2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* Makefile: Fix makefile.
 
 2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>

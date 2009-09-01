@@ -421,6 +421,9 @@ methoddef-table {
 
 	#pinvoke must be static
 	invalid offset table-row ( 6 5 ) + 6 set-ushort 0x2086
+
+	#abstract + final (set to public virtual final newslot abstract)
+	invalid offset table-row ( 6 7 ) + 6 set-ushort 0x0566
 }
 
 methoddef-table-global-methods {
