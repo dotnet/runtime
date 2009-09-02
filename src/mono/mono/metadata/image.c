@@ -328,6 +328,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		return FALSE;
 	image->raw_metadata = image->raw_data + offset;
 
+	/* 24.2.1: Metadata root starts here */
 	ptr = image->raw_metadata;
 
 	if (strncmp (ptr, "BSJB", 4) == 0){
