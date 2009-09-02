@@ -347,6 +347,8 @@ mono_md5_get_digest_from_file (const gchar *filename, guchar digest[16])
 	if (ferror(fp)) {
 		fclose(fp);
 		return;
+	} else {
+		fclose(fp);
 	}
 
 	mono_md5_final (&ctx, digest);

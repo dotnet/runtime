@@ -333,8 +333,10 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		const char *suff;
 		const char *ext;
 		/* This platform does not support dlopen */
-		if (name == NULL)
+		if (name == NULL) {
+			free (module);
 			return NULL;
+		}
 		
 		suff = ".la";
 		ext = strrchr (name, '.');
