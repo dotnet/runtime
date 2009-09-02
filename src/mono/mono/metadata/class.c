@@ -1071,7 +1071,7 @@ mono_class_setup_fields (MonoClass *class)
 	gboolean explicit_size;
 	MonoClassField *field;
 	MonoGenericContainer *container = NULL;
-	MonoClass *gklass = NULL;
+	MonoClass *gtd = class->generic_class ? mono_class_get_generic_type_definition (class) : NULL;
 
 	if (class->size_inited)
 		return;
@@ -1086,12 +1086,16 @@ mono_class_setup_fields (MonoClass *class)
 		return;
 	}
 
-	if (class->generic_class) {
-		MonoClass *gklass = class->generic_class->container_class;
-		mono_class_setup_fields (gklass);
-		top = gklass->field.count;
-		class->field.first = gklass->field.first;
-		class->field.count = gklass->field.count;
+	if (gtd) {
+		mono_class_setup_fields (gtd);
+		if (gtd->exception_type) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			return;
+		}
+
+		top = gtd->field.count;
+		class->field.first = gtd->field.first;
+		class->field.count = gtd->field.count;
 	}
 
 	class->instance_size = 0;
@@ -1149,17 +1153,9 @@ mono_class_setup_fields (MonoClass *class)
 
 	if (class->generic_container) {
 		container = class->generic_container;
-	} else if (class->generic_class) {
-		gklass = class->generic_class->container_class;
-		container = gklass->generic_container;
+	} else if (gtd) {
+		container = gtd->generic_container;
 		g_assert (container);
-
-		mono_class_setup_fields (gklass);
-
-		if (gklass->exception_type) {
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-			return;
-		}
 	}
 
 	/*
@@ -1171,8 +1167,8 @@ mono_class_setup_fields (MonoClass *class)
 
 		field->parent = class;
 
-		if (class->generic_class) {
-			MonoClassField *gfield = &gklass->fields [i];
+		if (gtd) {
+			MonoClassField *gfield = &gtd->fields [i];
 
 			field->name = mono_field_get_name (gfield);
 			/*This memory must come from the image mempool as we don't have a chance to free it.*/
