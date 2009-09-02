@@ -6404,8 +6404,15 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 	guint32 reg;
 	gint32 disp;
 	guint8 rex = 0;
+	MonoJitInfo *ji;
 
-	mono_breakpoint_clean_code (NULL, code, 9, buf, sizeof (buf));
+#ifdef ENABLE_LLVM
+	/* code - 9 might be before the start of the method */
+	/* FIXME: Avoid this expensive call somehow */
+	ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+#endif
+
+	mono_breakpoint_clean_code (ji ? ji->code_start : NULL, code, 9, buf, sizeof (buf));
 	code = buf + 9;
 
 	*displacement = 0;
