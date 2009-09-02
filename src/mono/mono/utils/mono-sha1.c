@@ -256,6 +256,16 @@ mono_sha1_get_digest (const guchar *buffer, gint buffer_size, guchar digest [20]
 	
 }
 
+/**
+ * mono_sha1_get_digest_from_file: get the sha1 hash of a file
+ * @filename: file name
+ * @digest: 20 bytes buffer receiving the hash code.
+ * 
+ * Get the sha1 hash of a file. The result is put in 
+ * the 20 bytes buffer @digest .
+ * 
+ * If an IO error happens the value in @digest is not updated.
+ **/
 void
 mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
 {	
