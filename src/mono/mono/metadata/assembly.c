@@ -1609,6 +1609,10 @@ parse_public_key (const gchar *key, gchar** pubkey)
 	bitlen = read32 (header + 12) >> 3;
 	if ((bitlen + 16 + 4) != pkeylen)
 		return FALSE;
+
+	/* parsing is OK and the public key itself is not requested back */
+	if (!pubkey)
+		return TRUE;
 		
 	/* Encode the size of the blob */
 	offset = 0;

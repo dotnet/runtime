@@ -753,6 +753,7 @@ MonoThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpoi
 	mono_threads_lock ();
 	if (shutting_down) {
 		mono_threads_unlock ();
+		g_free (start_info);
 		return NULL;
 	}
 	if (threads_starting_up == NULL) {
@@ -1009,6 +1010,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		if(this->start_notify==NULL) {
 			LeaveCriticalSection (this->synch_cs);
 			g_warning ("%s: CreateSemaphore error 0x%x", __func__, GetLastError ());
+			g_free (start_info);
 			return(NULL);
 		}
 
@@ -2911,6 +2913,7 @@ void mono_thread_manage (void)
 	if(threads==NULL) {
 		THREAD_DEBUG (g_message("%s: No threads", __func__));
 		mono_threads_unlock ();
+		g_free (wait);
 		return;
 	}
 	mono_threads_unlock ();
