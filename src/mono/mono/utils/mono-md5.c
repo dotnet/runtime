@@ -326,6 +326,8 @@ mono_md5_get_digest (const guchar *buffer, gint buffer_size, guchar digest[16])
  * 
  * Get the md5 hash of a file. The result is put in 
  * the 16 bytes buffer @digest .
+ * 
+ * If an IO error happens the value in @digest is not updated.
  **/
 void
 mono_md5_get_digest_from_file (const gchar *filename, guchar digest[16])
