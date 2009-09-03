@@ -109,7 +109,7 @@ typedef uint16_t       gunichar2;
 /*
  * Allocation
  */
-#define g_free                  free
+void g_free (voir *ptr);
 static inline gpointer g_realloc (gpointer obj, gsize size) { if (!size) {g_free (obj); return 0;} return  realloc (obj, size);}
 static inline gpointer g_malloc (gsize x) {if (x) return malloc (x); else return 0;}
 static inline gpointer g_malloc0 (gsize x) {if (x) return calloc(1,x); else return 0;}

@@ -29,6 +29,13 @@
 #include <string.h>
 #include <glib.h>
 
+void
+g_free (void *ptr)
+{
+	if (ptr != NULL)
+		free (ptr);
+}
+
 gpointer
 g_memdup (gconstpointer mem, guint byte_size)
 {
