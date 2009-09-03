@@ -861,6 +861,30 @@ public class Tests {
 		return mono_test_marshal_array_delegate8 (arr, 2, new ArrayDelegate8 (array_delegate8));
 	}
 
+	/* Array with size param of type long */
+
+	public delegate int ArrayDelegate8_2 (long i, 
+										string j, 
+										[In, MarshalAs(UnmanagedType.LPArray, 
+													   ArraySubType=UnmanagedType.LPStr, SizeParamIndex=0)] string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate_long")]
+	public static extern int mono_test_marshal_array_delegate8_2 (string[] arr, long len, ArrayDelegate8_2 d);
+
+	public static int array_delegate8_2 (long i, string j, string[] arr) {
+		if (arr.Length != 2)
+			return 1;
+		if ((arr [0] != "ABC") || (arr [1] != "DEF"))
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_marshal_array_delegate_long_param () {	
+		string[] arr = new string [] { "ABC", "DEF" };
+		return mono_test_marshal_array_delegate8_2 (arr, arr.Length, new ArrayDelegate8_2 (array_delegate8_2));
+	}
+
+
 	/*
 	 * [Out] blittable arrays
 	 */

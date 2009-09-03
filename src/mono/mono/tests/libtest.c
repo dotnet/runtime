@@ -2020,6 +2020,14 @@ mono_test_marshal_array_delegate (void *arr, int len, ArrayDelegate del)
 	return del (len, NULL, arr);
 }
 
+typedef int (STDCALL *ArrayDelegateLong) (gint64 i, char *j, void *arr);
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_array_delegate_long (void *arr, gint64 len, ArrayDelegateLong del)
+{
+	return del (len, NULL, arr);
+}
+
 LIBTEST_API int STDCALL 
 mono_test_marshal_out_array_delegate (int *arr, int len, ArrayDelegate del)
 {
