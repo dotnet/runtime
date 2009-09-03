@@ -2623,6 +2623,11 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 			import = method_aux->dllentry;
 			scope = method_aux->dll;
 		}
+
+		if (!import || !scope) {
+			mono_raise_exception (mono_get_exception_argument ("method", "System.Reflection.Emit method with invalid pinvoke information"));
+			return NULL;
+		}
 	}
 	else {
 		if (piinfo->implmap_idx) {
