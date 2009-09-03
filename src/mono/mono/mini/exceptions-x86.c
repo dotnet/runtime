@@ -374,8 +374,8 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	if (!restore_context)
 		restore_context = mono_arch_get_restore_context ();
 
-	/* Pop argument and return address */
-	ctx.esp = esp + (3 * sizeof (gpointer));
+	/* Pop alignment added in get_throw_exception (), the return address, plus the argument and the alignment added at the call site */
+	ctx.esp = esp + 8 + MONO_ARCH_FRAME_ALIGNMENT;
 	ctx.eip = eip;
 	ctx.ebp = ebp;
 	ctx.edi = edi;
@@ -384,6 +384,11 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	ctx.edx = edx;
 	ctx.ecx = ecx;
 	ctx.eax = eax;
+
+#ifdef __APPLE__
+	/* The OSX ABI specifies 16 byte alignment at call sites */
+	g_assert ((ctx.esp % MONO_ARCH_FRAME_ALIGNMENT) == 0);
+#endif
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
@@ -412,6 +417,7 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	ctx.eip -= 1;
 
 	mono_handle_exception (&ctx, exc, (gpointer)eip, FALSE);
+
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
@@ -425,8 +431,7 @@ get_throw_exception (gboolean rethrow)
 	start = code = mono_global_codeman_reserve (64);
 
 	/* 
-	 * Align the stack on apple, since we push 10 args + the return address, and the
-	 * caller pushed 8 bytes.
+	 * Align the stack on apple, since we push 10 args, and the call pushed 4 bytes.
 	 */
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
 	x86_push_reg (code, X86_ESP);
@@ -544,18 +549,28 @@ mono_arch_get_throw_corlib_exception (void)
 	inited = 1;
 	code = start = mono_global_codeman_reserve (64);
 
-	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4); /* token */
+	/* 
+	 * Align the stack on apple, the caller doesn't do this to save space,
+	 * two arguments + the return addr are already on the stack.
+	 */
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4 + 4, 4); /* token */
 	x86_alu_reg_imm (code, X86_ADD, X86_EAX, MONO_TOKEN_TYPE_DEF);
+	/* Align the stack on apple */
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
 	x86_push_reg (code, X86_EAX);
 	x86_push_imm (code, mono_defaults.exception_class->image);
 	x86_call_code (code, mono_exception_from_token);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 16);
 	/* Compute caller ip */
-	x86_pop_reg (code, X86_ECX);
-	/* Pop token */
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-	x86_pop_reg (code, X86_EDX);
+	x86_mov_reg_membase (code, X86_ECX, X86_ESP, 4, 4);
+	/* Compute offset */
+	x86_mov_reg_membase (code, X86_EDX, X86_ESP, 4 + 4 + 4, 4);
+	/* Pop everything */
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4 + 4 + 4 + 4);
 	x86_alu_reg_reg (code, X86_SUB, X86_ECX, X86_EDX);
+	/* Align the stack on apple, mirrors the sub in OP_THROW. */
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 4);
 	/* Push exception object */
 	x86_push_reg (code, X86_EAX);
 	/* Push throw IP */
