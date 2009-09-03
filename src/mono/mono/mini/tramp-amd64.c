@@ -173,7 +173,16 @@ void
 mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 {
 	guint8 buf [16];
-	gboolean can_write = mono_breakpoint_clean_code (NULL, code, 7, buf, sizeof (buf));
+	MonoJitInfo *ji = NULL;
+	gboolean can_write;
+
+#ifdef ENABLE_LLVM
+	/* code - 7 might be before the start of the method */
+	/* FIXME: Avoid this expensive call somehow */
+	ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+#endif
+
+	can_write = mono_breakpoint_clean_code (ji ? ji->code_start : NULL, code, 7, buf, sizeof (buf));
 
 	if (!can_write)
 		return;
