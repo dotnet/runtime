@@ -6404,7 +6404,7 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 	guint32 reg;
 	gint32 disp;
 	guint8 rex = 0;
-	MonoJitInfo *ji;
+	MonoJitInfo *ji = NULL;
 
 #ifdef ENABLE_LLVM
 	/* code - 9 might be before the start of the method */
