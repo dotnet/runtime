@@ -6913,15 +6913,15 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		 * from 0.
 		 */
 
-		if (param_num == -1)
+		if (param_num == -1) {
 			mono_mb_emit_icon (mb, num_elem);
-		else {
-			/* FIXME: Add the two together */
+		} else {
 			mono_mb_emit_ldarg (mb, param_num);
 			if (num_elem > 0) {
 				mono_mb_emit_icon (mb, num_elem);
 				mono_mb_emit_byte (mb, CEE_ADD);
 			}
+			mono_mb_emit_byte (mb, CEE_CONV_OVF_I);
 		}
 
 		mono_mb_emit_op (mb, CEE_NEWARR, eklass);
