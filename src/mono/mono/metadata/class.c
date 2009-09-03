@@ -7733,6 +7733,10 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 	if (member_klass->nested_in && !can_access_type (access_klass, member_klass->nested_in))
 		return FALSE;
 
+	/*Non nested type with nested visibility. We just fail it.*/
+	if (access_level >= TYPE_ATTRIBUTE_NESTED_PRIVATE && access_level <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM && member_klass->nested_in == NULL)
+		return FALSE;
+
 	switch (access_level) {
 	case TYPE_ATTRIBUTE_NOT_PUBLIC:
 		return can_access_internals (access_klass->image->assembly, member_klass->image->assembly);
