@@ -5689,9 +5689,8 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 	if (!type) {
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
-		if (inflated)
-			mono_metadata_free_type (type);
 		mono_loader_set_error_type_load (name, assembly);
+		return NULL;
 	}
 
 	if (inflated) {
