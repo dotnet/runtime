@@ -1045,7 +1045,7 @@ start_idle_threads (MonoAsyncResult *data)
 			if (data) 
 				threadpool_jobs_dec ((MonoObject*)data);
 			data = NULL;
-			Sleep (500);
+			SleepEx (500, TRUE);
 		}
 	} while ((needed - existing) > 0);
 
