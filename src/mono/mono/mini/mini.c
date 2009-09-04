@@ -4828,6 +4828,7 @@ mini_init (const char *filename, const char *runtime_version)
 	memset (&callbacks, 0, sizeof (callbacks));
 	callbacks.create_ftnptr = mini_create_ftnptr;
 	callbacks.get_addr_from_ftnptr = mini_get_addr_from_ftnptr;
+	callbacks.get_runtime_build_info = mono_get_runtime_build_info;
 
 	mono_install_callbacks (&callbacks);
 	
