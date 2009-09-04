@@ -482,6 +482,12 @@ mono_install_callbacks (MonoRuntimeCallbacks *cbs)
 	memcpy (&callbacks, cbs, sizeof (*cbs));
 }
 
+MonoRuntimeCallbacks*
+mono_get_runtime_callbacks (void)
+{
+	return &callbacks;
+}
+
 void
 mono_install_trampoline (MonoTrampoline func) 
 {

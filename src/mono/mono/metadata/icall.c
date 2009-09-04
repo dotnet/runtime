@@ -7254,8 +7254,12 @@ custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
 static MonoString*
 ves_icall_Mono_Runtime_GetDisplayName (void)
 {
-	static const char display_name_str [] = "Mono " VERSION;
-	MonoString *display_name = mono_string_new (mono_domain_get (), display_name_str);
+	char *info;
+	MonoString *display_name;
+
+	info = mono_get_runtime_callbacks ()->get_runtime_build_info ();
+	display_name = mono_string_new (mono_domain_get (), info);
+	g_free (info);
 	return display_name;
 }
 

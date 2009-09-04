@@ -507,6 +507,7 @@ typedef struct {
 typedef struct {
 	gpointer (*create_ftnptr) (MonoDomain *domain, gpointer addr);
 	gpointer (*get_addr_from_ftnptr) (gpointer descr);
+	char*    (*get_runtime_build_info) (void);
 } MonoRuntimeCallbacks;
 
 /* used to free a dynamic method */
@@ -577,6 +578,9 @@ mono_install_free_method    (MonoFreeMethodFunc func) MONO_INTERNAL;
 
 void
 mono_install_callbacks      (MonoRuntimeCallbacks *cbs) MONO_INTERNAL;
+
+MonoRuntimeCallbacks*
+mono_get_runtime_callbacks (void) MONO_INTERNAL;
 
 void
 mono_type_initialization_init (void) MONO_INTERNAL;
