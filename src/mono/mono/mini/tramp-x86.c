@@ -333,9 +333,12 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	/* Check for thread interruption */
 	/* This is not perf critical code so no need to check the interrupt flag */
+	/* Align the stack on osx */
+	x86_alu_reg_imm (buf, X86_SUB, X86_ESP, 3 * 4);
 	x86_push_reg (buf, X86_EAX);
 	x86_call_code (buf, (guint8*)mono_thread_force_interruption_checkpoint);
 	x86_pop_reg (buf, X86_EAX);
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 3 * 4);
 
 	/* Restore LMF */
 
