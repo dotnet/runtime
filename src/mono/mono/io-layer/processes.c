@@ -471,6 +471,9 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 			     CREATE_UNICODE_ENVIRONMENT, NULL,
 			     sei->lpDirectory, NULL, &process_info);
 	g_free (args);
+
+	if (!ret && GetLastError () == ERROR_OUTOFMEMORY)
+		return ret;
 	
 	if (!ret) {
 		static char *handler;
@@ -1034,7 +1037,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error creating process handle", __func__);
 
-		SetLastError (ERROR_PATH_NOT_FOUND);
+		ret = FALSE;
+		SetLastError (ERROR_OUTOFMEMORY);
 		goto free_strings;
 	}
 
