@@ -44,7 +44,8 @@ STRESS_TESTS_SRC=	\
 	monitor-stress.cs	\
 	thread-stress.cs	\
 	gc-stress.cs		\
-	exit-stress.cs
+	exit-stress.cs		\
+	process-stress.cs
 
 BASE_TEST_CS_SRC=		\
 	array-init.cs		\
