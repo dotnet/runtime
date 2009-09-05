@@ -3138,6 +3138,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	try_llvm = FALSE;
 #endif
 
+	if (compile_aot)
+		try_llvm = FALSE;
+
  restart_compile:
 	if (try_generic_shared) {
 		MonoMethod *declaring_method;

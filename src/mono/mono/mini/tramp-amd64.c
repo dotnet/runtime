@@ -121,6 +121,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 			}
 		} else {
 			if ((((guint64)(addr)) >> 32) != 0) {
+#ifdef MONO_ARCH_NOMAP32BIT
 				/* Print some diagnostics */
 				MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (char*)orig_code);
 				if (ji)
@@ -130,6 +131,19 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 				if (ji)
 					fprintf (stderr, "Callee: %s\n", mono_method_full_name (ji->method, TRUE));
 				g_assert_not_reached ();
+#else
+				/* 
+				 * This might happen when calling AOTed code. Create a thunk.
+				 */
+				guint8 *thunk_start, *thunk_code;
+
+				thunk_start = thunk_code = mono_domain_code_reserve (mono_domain_get (), 32);
+				amd64_jump_membase (thunk_code, AMD64_RIP, 0);
+				*(guint64*)thunk_code = (guint64)addr;
+				addr = thunk_start;
+				g_assert ((((guint64)(addr)) >> 32) == 0);
+				mono_arch_flush_icache (thunk_start, thunk_code - thunk_start);
+#endif
 			}
 			g_assert ((((guint64)(orig_code)) >> 32) == 0);
 			if (can_write) {
@@ -194,7 +208,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 	 * really careful about the ordering of the cases. Longer sequences
 	 * come first.
 	 */
-	if ((code [-4] == 0x41) && (code [-3] == 0xff) && (code [-2] == 0x15)) {
+	if ((buf [0] == 0x41) && (buf [1] == 0xff) && (buf [2] == 0x15)) {
 		gpointer *vtable_slot;
 
 		/* call *<OFFSET>(%rip) */
@@ -202,7 +216,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 		g_assert (vtable_slot);
 
 		*vtable_slot = nullified_class_init_trampoline;
-	} else if (code [-2] == 0xe8) {
+	} else if (buf [2] == 0xe8) {
 		/* call <TARGET> */
 		//guint8 *buf = code - 2;
 
@@ -220,7 +234,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 		*/
 
 		mono_arch_patch_callsite (code - 2, code - 2 + 5, nullified_class_init_trampoline);
-	} else if ((code [0] == 0x41) && (code [1] == 0xff)) {
+	} else if ((buf [4] == 0x41) && (buf [5] == 0xff)) {
 		/* call <REG> */
 		/* happens on machines without MAP_32BIT like freebsd */
 		/* amd64_set_reg_template is 10 bytes long */
@@ -241,12 +255,12 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 		buf [10] = 0x90;
 		buf [11] = 0x66;
 		buf [12] = 0x90;
-	} else if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66) {
+	} else if (buf [4] == 0x90 || buf [5] == 0xeb || buf [6] == 0x66) {
 		/* Already changed by another thread */
 		;
 	} else {
-		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
-			code [4], code [5], code [6]);
+		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", buf [0], buf [1], buf [2], buf [3],
+			buf [4], buf [5], buf [6]);
 		g_assert_not_reached ();
 	}
 }
