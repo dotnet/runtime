@@ -43,6 +43,7 @@ typedef struct {
 	int sindex, default_index, ex_index;
 	LLVMBuilderRef builder;
 	LLVMValueRef *values, *addresses;
+	MonoType **vreg_cli_types;
 	LLVMCallInfo *linfo;
 	MonoMethodSignature *sig;
 	GSList *builders;
@@ -585,6 +586,32 @@ convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 }
 
 /*
+ * emit_volatile_load:
+ *
+ *   If vreg is volatile, emit a load from its address.
+ */
+static LLVMValueRef
+emit_volatile_load (EmitContext *ctx, int vreg)
+{
+	MonoType *t;
+
+	LLVMValueRef v = LLVMBuildLoad (ctx->builder, ctx->addresses [vreg], "");
+	t = ctx->vreg_cli_types [vreg];
+	if (t && !t->byref) {
+		/* 
+		 * Might have to zero extend since llvm doesn't have 
+		 * unsigned types.
+		 */
+		if (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2)
+			v = LLVMBuildZExt (ctx->builder, v, LLVMInt32Type (), "");
+		else if (t->type == MONO_TYPE_U8)
+			v = LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), "");
+	}
+
+	return v;
+}
+
+/*
  * emit_volatile_store:
  *
  *   If VREG is volatile, emit a store from its value to its address.
@@ -931,6 +958,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 			vtype = type_to_llvm_type (ctx, var->inst_vtype);
 			CHECK_FAILURE (ctx);
 			ctx->addresses [var->dreg] = LLVMBuildAlloca (builder, vtype, "");
+			ctx->vreg_cli_types [var->dreg] = var->inst_vtype;
 		}
 	}
 
@@ -986,6 +1014,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	char *method_name, *debug_name;
 	LLVMValueRef *values, *addresses;
 	LLVMTypeRef *vreg_types;
+	MonoType **vreg_cli_types;
 	int i, max_block_num, pindex;
 	int *pindexes = NULL;
 	GHashTable *phi_nodes;
@@ -1015,11 +1044,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	 */
 	addresses = g_new0 (LLVMValueRef, cfg->next_vreg);
 	vreg_types = g_new0 (LLVMTypeRef, cfg->next_vreg);
+	vreg_cli_types = g_new0 (MonoType*, cfg->next_vreg);
 	phi_nodes = g_hash_table_new (NULL, NULL);
 	phi_values = g_ptr_array_new ();
 
 	ctx->values = values;
 	ctx->addresses = addresses;
+	ctx->vreg_cli_types = vreg_cli_types;
  
 	if (cfg->compile_aot) {
 		ctx->lmodule = &aot_module;
@@ -1207,7 +1238,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
 
 				if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
-					lhs = LLVMBuildLoad (builder, addresses [ins->sreg1], "");
+					lhs = emit_volatile_load (ctx, ins->sreg1);
 				} else {
 					/* It is ok for SETRET to have an uninitialized argument */
 					if (!values [ins->sreg1] && ins->opcode != OP_SETRET)
@@ -1221,7 +1252,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			if (spec [MONO_INST_SRC2] != ' ' && spec [MONO_INST_SRC2] != ' ') {
 				MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
 				if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
-					rhs = LLVMBuildLoad (builder, addresses [ins->sreg2], "");
+					rhs = emit_volatile_load (ctx, ins->sreg2);
 				} else {
 					if (!values [ins->sreg2])
 						LLVM_FAILURE (ctx, "sreg2");
@@ -2044,6 +2075,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 							if (cfg->abs_patches) {
 								MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, call->fptr);
 								if (abs_ji) {
+									if (abs_ji->type == MONO_PATCH_INFO_MONITOR_ENTER || abs_ji->type == MONO_PATCH_INFO_MONITOR_EXIT)
+										/* FIXME: These have their own calling convention */
+										LLVM_FAILURE (ctx, "monitor enter/exit");
 									target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, abs_ji, FALSE);
 									LLVMAddGlobalMapping (ee, callee, target);
 								}
@@ -2547,6 +2581,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	g_free (values);
 	g_free (addresses);
 	g_free (vreg_types);
+	g_free (vreg_cli_types);
 	g_free (pindexes);
 	g_hash_table_destroy (phi_nodes);
 	g_ptr_array_free (phi_values, TRUE);
