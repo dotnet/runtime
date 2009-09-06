@@ -871,6 +871,11 @@ needs_stack_frame (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	gboolean result = FALSE;
 
+#if defined(__APPLE__)
+	/*OSX requires stack frame code to have the correct alignment. */
+	return TRUE;
+#endif
+
 	if (cfg->arch.need_stack_frame_inited)
 		return cfg->arch.need_stack_frame;
 
@@ -4891,6 +4896,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 				/* Compute size of code following the push <OFFSET> */
 				size = 5 + 5;
+
+				/*This is aligned to 16 bytes by the callee. This way we save a few bytes here.*/
 
 				if ((code - cfg->native_code) - throw_ip < 126 - size) {
 					/* Use the shorter form */
