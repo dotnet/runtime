@@ -2476,5 +2476,26 @@ class Tests {
 
 		return 0;
 	}
+
+	public static int test_0_inline_throw () {
+		try {
+			inline_throw1 (5);
+			return 1;
+		} catch {
+			return 0;
+		}
+	}
+
+	// for llvm, the end bblock is unreachable
+	public static int inline_throw1 (int i) {
+		if (i == 0)
+			throw new Exception ();
+		else
+			return inline_throw2 (i);
+	}
+
+	public static int inline_throw2 (int i) {
+		throw new Exception ();
+	}
 }
 
