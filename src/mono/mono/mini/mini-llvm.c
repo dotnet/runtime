@@ -132,7 +132,7 @@ static LLVMExecutionEngineRef ee;
 static guint32 current_cfg_tls_id;
 
 static MonoLLVMModule jit_module, aot_module;
-static GHashTable *plt_entries;
+//static GHashTable *plt_entries;
 
 /*
  * IntPtrType:
@@ -1499,15 +1499,23 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_PHI:
 			case OP_FPHI: {
 				int i;
-
-				/* Created earlier, insert it now */
-				LLVMInsertIntoBuilder (builder, values [ins->dreg]);
+				gboolean empty = TRUE;
 
 				/* Check that all input bblocks really branch to us */
 				for (i = 0; i < bb->in_count; ++i) {
 					if (bb->in_bb [i]->last_ins && bb->in_bb [i]->last_ins->opcode == OP_NOT_REACHED)
 						ins->inst_phi_args [i + 1] = -1;
+					else
+						empty = FALSE;
 				}
+
+				if (empty) {
+					/* LLVM doesn't like phi instructions with zero operands */
+					break;
+				}					
+
+				/* Created earlier, insert it now */
+				LLVMInsertIntoBuilder (builder, values [ins->dreg]);
 
 				// FIXME: If a SWITCH statement branches to the same bblock in more
 				// than once case, the PHI should reference the bblock multiple times
@@ -1521,11 +1529,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					int sreg1 = ins->inst_phi_args [i + 1];
 					LLVMBasicBlockRef in_bb;
 
-					if (sreg1 == -1)
-						continue;
-
 					/* Add incoming values which are already defined */
-					if (FALSE && values [sreg1]) {
+					if (FALSE && sreg1 != -1 && values [sreg1]) {
 						in_bb = get_end_bb (ctx, bb->in_bb [i]);
 
 						g_assert (LLVMTypeOf (values [sreg1]) == LLVMTypeOf (values [ins->dreg]));
@@ -1774,6 +1779,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildSub (builder, LLVMConstInt (LLVMInt64Type (), 0, FALSE), lhs, dname);
 				break;
 			case OP_FNEG:
+				lhs = convert (ctx, lhs, LLVMDoubleType ());
 				values [ins->dreg] = LLVMBuildSub (builder, LLVMConstReal (LLVMDoubleType (), 0.0), lhs, dname);
 				break;
 			case OP_INOT: {
@@ -2245,14 +2251,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_SIN: {
 				LLVMValueRef args [1];
 
-				args [0] = lhs;
+				args [0] = convert (ctx, lhs, LLVMDoubleType ());
 				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.sin.f64"), args, 1, dname);
 				break;
 			}
 			case OP_COS: {
 				LLVMValueRef args [1];
 
-				args [0] = lhs;
+				args [0] = convert (ctx, lhs, LLVMDoubleType ());
 				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.cos.f64"), args, 1, dname);
 				break;
 			}
@@ -2519,20 +2525,21 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	/* Add incoming phi values */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		GSList *ins_list = g_hash_table_lookup (phi_nodes, GUINT_TO_POINTER (bb));
+		GSList *l, *ins_list = g_hash_table_lookup (phi_nodes, GUINT_TO_POINTER (bb));
 
-		while (ins_list) {
-			PhiNode *node = ins_list->data;
+		for (l = ins_list; l; l = l->next) {
+			PhiNode *node = l->data;
 			MonoInst *phi = node->phi;
 			int sreg1 = phi->inst_phi_args [node->index + 1];
 			LLVMBasicBlockRef in_bb;
+
+			if (sreg1 == -1)
+				continue;
 
 			in_bb = get_end_bb (ctx, node->bb->in_bb [node->index]);
 
 			g_assert (LLVMTypeOf (values [sreg1]) == LLVMTypeOf (values [phi->dreg]));
 			LLVMAddIncoming (values [phi->dreg], &values [sreg1], &in_bb, 1);
-
-			ins_list = ins_list->next;
 		}
 	}
 
