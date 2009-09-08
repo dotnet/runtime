@@ -128,7 +128,6 @@ MINI_OP(OP_STOREI8_MEMINDEX,"storei8_memindex", IREG, IREG, IREG)
 MINI_OP(OP_STORER4_MEMINDEX,"storer4_memindex", IREG, IREG, IREG)
 MINI_OP(OP_STORER8_MEMINDEX,"storer8_memindex", IREG, IREG, IREG)
 
-MINI_OP(OP_LOADR8_SPILL_MEMBASE,"loadr8_spill_membase", NONE, NONE, NONE)
 MINI_OP(OP_LOAD_MEM,"load_mem", IREG, NONE, NONE)
 MINI_OP(OP_LOADU1_MEM,"loadu1_mem", IREG, NONE, NONE)
 MINI_OP(OP_LOADU2_MEM,"loadu2_mem", IREG, NONE, NONE)
@@ -480,13 +479,13 @@ MINI_OP(OP_FCGT_UN,"float_cgt_un", IREG, FREG, FREG)
 MINI_OP(OP_FCLT,   "float_clt", IREG, FREG, FREG)
 MINI_OP(OP_FCLT_UN,"float_clt_un", IREG, FREG, FREG)
 
-MINI_OP(OP_FCEQ_MEMBASE,   "float_ceq_membase", NONE, NONE, NONE)
-MINI_OP(OP_FCGT_MEMBASE,   "float_cgt_membase", NONE, NONE, NONE)
-MINI_OP(OP_FCGT_UN_MEMBASE,"float_cgt_un_membase", NONE, NONE, NONE)
-MINI_OP(OP_FCLT_MEMBASE,   "float_clt_membase", NONE, NONE, NONE)
-MINI_OP(OP_FCLT_UN_MEMBASE,"float_clt_un_membase", NONE, NONE, NONE)
+MINI_OP(OP_FCEQ_MEMBASE,   "float_ceq_membase", IREG, FREG, IREG)
+MINI_OP(OP_FCGT_MEMBASE,   "float_cgt_membase", IREG, FREG, IREG)
+MINI_OP(OP_FCGT_UN_MEMBASE,"float_cgt_un_membase", IREG, FREG, IREG)
+MINI_OP(OP_FCLT_MEMBASE,   "float_clt_membase", IREG, FREG, IREG)
+MINI_OP(OP_FCLT_UN_MEMBASE,"float_clt_un_membase", IREG, FREG, IREG)
 
-MINI_OP(OP_FCONV_TO_U,	"float_conv_to_u", NONE, NONE, NONE)
+MINI_OP(OP_FCONV_TO_U,	"float_conv_to_u", IREG, FREG, NONE)
 MINI_OP(OP_CKFINITE, "ckfinite", FREG, FREG, NONE)
 
 /* Return the low 32 bits of a double vreg */
@@ -897,7 +896,7 @@ MINI_OP(OP_X86_FXCH,               "x86_fxch", NONE, NONE, NONE)
 #endif
 
 #if defined(TARGET_AMD64)
-MINI_OP(OP_AMD64_TEST_NULL,              "amd64_test_null", NONE, NONE, NONE)
+MINI_OP(OP_AMD64_TEST_NULL,              "amd64_test_null", NONE, IREG, NONE)
 MINI_OP(OP_AMD64_SET_XMMREG_R4,          "amd64_set_xmmreg_r4", FREG, FREG, NONE)
 MINI_OP(OP_AMD64_SET_XMMREG_R8,          "amd64_set_xmmreg_r8", FREG, FREG, NONE)
 MINI_OP(OP_AMD64_ICOMPARE_MEMBASE_REG,   "amd64_icompare_membase_reg", NONE, IREG, IREG)
@@ -921,12 +920,12 @@ MINI_OP(OP_AMD64_OR_MEMBASE_IMM,         "amd64_or_membase_imm", NONE, IREG, NON
 MINI_OP(OP_AMD64_XOR_MEMBASE_IMM,        "amd64_xor_membase_imm", NONE, IREG, NONE)
 MINI_OP(OP_AMD64_MUL_MEMBASE_IMM,        "amd64_mul_membase_imm", NONE, IREG, NONE)
 
-MINI_OP(OP_AMD64_ADD_REG_MEMBASE,        "amd64_add_reg_membase", NONE, IREG, IREG)
-MINI_OP(OP_AMD64_SUB_REG_MEMBASE,        "amd64_sub_reg_membase", NONE, IREG, IREG)
+MINI_OP(OP_AMD64_ADD_REG_MEMBASE,        "amd64_add_reg_membase", IREG, IREG, IREG)
+MINI_OP(OP_AMD64_SUB_REG_MEMBASE,        "amd64_sub_reg_membase", IREG, IREG, IREG)
 MINI_OP(OP_AMD64_AND_REG_MEMBASE,        "amd64_and_reg_membase", IREG, IREG, IREG)
 MINI_OP(OP_AMD64_OR_REG_MEMBASE,         "amd64_or_reg_membase", IREG, IREG, IREG)
 MINI_OP(OP_AMD64_XOR_REG_MEMBASE,        "amd64_xor_reg_membase", IREG, IREG, IREG)
-MINI_OP(OP_AMD64_MUL_REG_MEMBASE,        "amd64_mul_reg_membase", NONE, IREG, IREG)
+MINI_OP(OP_AMD64_MUL_REG_MEMBASE,        "amd64_mul_reg_membase", IREG, IREG, IREG)
 
 MINI_OP(OP_AMD64_LOADI8_MEMINDEX,        "amd64_loadi8_memindex", IREG, IREG, IREG)
 MINI_OP(OP_AMD64_SAVE_SP_TO_LMF,         "amd64_save_sp_to_lmf", NONE, NONE, NONE)

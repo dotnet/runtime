@@ -183,7 +183,6 @@ loadu4_membase: dest:i src1:b len:8
 loadi8_membase: dest:i src1:b len:4
 loadr4_membase: dest:f src1:b len:4
 loadr8_membase: dest:f src1:b len:4
-loadr8_spill_membase: src1:b len:4
 loadu4_mem: dest:i len:4
 # amd64_loadi8_memindex: dest:i src1:i src2:i len:10
 move: dest:i src1:i len:4

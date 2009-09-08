@@ -114,7 +114,6 @@ compare_imm: src1:i len:13
 icompare_imm: src1:i len:8
 fcompare: src1:f src2:f clob:a len:13
 oparglist: src1:b len:11
-setlret: dest:i src1:i src2:i len:5
 checkthis: src1:b len:5
 call: dest:a clob:c len:32
 voidcall: clob:c len:32
@@ -157,20 +156,12 @@ loadu4_membase: dest:i src1:b len:9
 loadi8_membase: dest:i src1:b len:18
 loadr4_membase: dest:f src1:b len:16
 loadr8_membase: dest:f src1:b len:16
-loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
 amd64_loadi8_memindex: dest:i src1:i src2:i len:10
 move: dest:i src1:i len:3
 add_imm: dest:i src1:i len:8 clob:1
 sub_imm: dest:i src1:i len:8 clob:1
 mul_imm: dest:i src1:i len:11
-# there is no actual support for division or reminder by immediate
-# we simulate them, though (but we need to change the burg rules 
-# to allocate a symbolic reg for src2)
-div_imm: dest:a src1:i src2:i len:16 clob:d
-div_un_imm: dest:a src1:i src2:i len:16 clob:d
-rem_imm: dest:d src1:i src2:i len:16 clob:a
-rem_un_imm: dest:d src1:i src2:i len:16 clob:a
 and_imm: dest:i src1:i len:8 clob:1
 or_imm: dest:i src1:i len:8 clob:1
 xor_imm: dest:i src1:i len:8 clob:1
@@ -194,7 +185,6 @@ cond_exc_nc: len:8
 cond_exc_iov: len:8
 cond_exc_ic: len:8
 
-long_conv_to_ovf_i: dest:i src1:i src2:i len:40
 long_mul_ovf: dest:i src1:i src2:i clob:1 len:16
 long_mul_ovf_un: dest:i src1:i src2:i len:22
 long_shr_imm: dest:i src1:i clob:1 len:11
@@ -314,8 +304,6 @@ abs: dest:f src1:f clob:1 len:32
 tan: dest:f src1:f len:59
 atan: dest:f src1:f len:9
 sqrt: dest:f src1:f len:32
-bigmul: len:3 dest:i src1:a src2:i
-bigmul_un: len:3 dest:i src1:a src2:i
 sext_i1: dest:i src1:i len:4
 sext_i2: dest:i src1:i len:4
 sext_i4: dest:i src1:i len:8
@@ -535,7 +523,7 @@ andpd: dest:x src1:x src2:x len:5 clob:1
 andnpd: dest:x src1:x src2:x len:5 clob:1
 orpd: dest:x src1:x src2:x len:5 clob:1
 xorpd: dest:x src1:x src2:x len:5 clob:1
-sqrtpd: dest:x src1:x src2:x len:5 clob:1
+sqrtpd: dest:x src1:x len:5 clob:1
 
 haddpd: dest:x src1:x src2:x len:6 clob:1
 hsubpd: dest:x src1:x src2:x len:6 clob:1

@@ -3069,10 +3069,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STORER8_MEMBASE_REG:
 			x86_fst_membase (code, ins->inst_destbasereg, ins->inst_offset, TRUE, TRUE);
 			break;
-		case OP_LOADR8_SPILL_MEMBASE:
-			x86_fld_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
-			x86_fxch (code, 1);
-			break;
 		case OP_LOADR8_MEMBASE:
 			x86_fld_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
 			break;

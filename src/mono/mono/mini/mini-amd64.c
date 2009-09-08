@@ -4014,9 +4014,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STORER8_MEMBASE_REG:
 			amd64_sse_movsd_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
 			break;
-		case OP_LOADR8_SPILL_MEMBASE:
-			g_assert_not_reached ();
-			break;
 		case OP_LOADR8_MEMBASE:
 			amd64_sse_movsd_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;

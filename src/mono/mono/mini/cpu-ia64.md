@@ -67,7 +67,6 @@ loadu4_membase: dest:i src1:b len:48
 loadi8_membase: dest:i src1:b len:48
 loadr4_membase: dest:f src1:b len:48
 loadr8_membase: dest:f src1:b len:48
-loadr8_spill_membase: src1:b len:48
 loadu4_mem: dest:i len:48
 move: dest:i src1:i len:48
 add_imm: dest:i src1:i len:48

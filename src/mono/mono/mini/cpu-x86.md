@@ -164,7 +164,6 @@ loadu4_membase: dest:i src1:b len:7
 loadi8_membase: dest:i src1:b
 loadr4_membase: dest:f src1:b len:7
 loadr8_membase: dest:f src1:b len:7
-loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:9
 move: dest:i src1:i len:2
 addcc_imm: dest:i src1:i len:6 clob:1
