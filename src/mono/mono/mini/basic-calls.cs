@@ -307,7 +307,7 @@ class Tests {
 	static int FunNoInline () {
 		int x = 99;
 		if (x > 344 && x < 22)
-			throw new Exception ("333");
+			return 333;
 		return x;
 	}
 
@@ -315,7 +315,7 @@ class Tests {
 		if (b > 0)
 			return a;
 		else if (b < 0 && b > 10)
-			throw new Exception ("444");
+			return 444.0f;
 		return a;
 	}
 
@@ -336,10 +336,8 @@ class Tests {
 
 		res = DoNothingButDontInline ((float)obj, FunNoInline ());
 
-		if (!(res == 1.0f)) {
-			Console.WriteLine ("invalid number {0}", res);
+		if (!(res == 1.0f))
 			return 1;
-		}
 		return 0;
 	}
 }
