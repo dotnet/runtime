@@ -223,22 +223,28 @@ public class Tests
 	[DllImport("libtest")]
 	public static extern int mono_test_marshal_variant_out_safearray_4dim_vt_int ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
 
-	public static int Main() {
+	[DllImport ("libtest")]
+	public static extern bool mono_cominterop_is_supported ();
 
-        bool isWindows = !(((int)Environment.OSVersion.Platform == 4) || 
-            ((int)Environment.OSVersion.Platform == 128));
-		if (isWindows) {
+	public static int Main ()
+	{
+
+		bool isWindows = !(((int)Environment.OSVersion.Platform == 4) ||
+			((int)Environment.OSVersion.Platform == 128));
+
+		if (mono_cominterop_is_supported ())
+		{
 			#region BSTR Tests
 
 			string str;
 			if (mono_test_marshal_bstr_in ("mono_test_marshal_bstr_in") != 0)
 				return 1;
 			if (mono_test_marshal_bstr_out (out str) != 0 || str != "mono_test_marshal_bstr_out")
-                return 2;
-            if (mono_test_marshal_bstr_in_null (null) != 0)
-                return 1;
-            if (mono_test_marshal_bstr_out_null (out str) != 0 || str != null)
-                return 2;
+				return 2;
+			if (mono_test_marshal_bstr_in_null (null) != 0)
+				return 1;
+			if (mono_test_marshal_bstr_out_null (out str) != 0 || str != null)
+				return 2;
 
 			#endregion // BSTR Tests
 
@@ -437,47 +443,49 @@ public class Tests
 			#endregion // COM Callable Wrapper Tests
 
 			#region SAFEARRAY tests
+			
+			if (isWindows) {
+				Array array;
+				if ((mono_test_marshal_variant_out_safearray_1dim_vt_bstr_empty(out array) != 0) || (array.Rank != 1) || (array.Length != 0))
+					return 62;
 
-			Array array;
-			if ((mono_test_marshal_variant_out_safearray_1dim_vt_bstr_empty(out array) != 0) || (array.Rank != 1) || (array.Length != 0))
-				return 62;
-
-			if ((mono_test_marshal_variant_out_safearray_1dim_vt_bstr (out array) != 0) || (array.Rank != 1) || (array.Length != 10))
-				return 63;
-			for (int i = 0; i < 10; ++i) {
-				if (i != Convert.ToInt32(array.GetValue (i)))
-					return 64;
-			}
-
-			if ((mono_test_marshal_variant_out_safearray_2dim_vt_int (out array) != 0) || (array.Rank != 2))
-				return 65;
-			if (   (array.GetLowerBound (0) != 0) || (array.GetUpperBound (0) != 3)
-				|| (array.GetLowerBound (1) != 0) || (array.GetUpperBound (1) != 2))
-				return 66;
-			for (int i = array.GetLowerBound (0); i <= array.GetUpperBound (0); ++i)
-			{
-				for (int j = array.GetLowerBound (1); j <= array.GetUpperBound (1); ++j) {
-					if ((i + 1) * 10 + (j + 1) != (int)array.GetValue (new long[] { i, j }))
-						return 67;
+				if ((mono_test_marshal_variant_out_safearray_1dim_vt_bstr (out array) != 0) || (array.Rank != 1) || (array.Length != 10))
+					return 63;
+				for (int i = 0; i < 10; ++i) {
+					if (i != Convert.ToInt32(array.GetValue (i)))
+						return 64;
 				}
-			}
 
-			if ((mono_test_marshal_variant_out_safearray_4dim_vt_int (out array) != 0) || (array.Rank != 4))
-				return 68;
-			if (   (array.GetLowerBound (0) != 15) || (array.GetUpperBound (0) != 24)
-				|| (array.GetLowerBound (1) != 20) || (array.GetUpperBound (1) != 22)
-				|| (array.GetLowerBound (2) !=  5) || (array.GetUpperBound (2) != 10)
-				|| (array.GetLowerBound (3) != 12) || (array.GetUpperBound (3) != 18) )
-				return 69;
+				if ((mono_test_marshal_variant_out_safearray_2dim_vt_int (out array) != 0) || (array.Rank != 2))
+					return 65;
+				if (   (array.GetLowerBound (0) != 0) || (array.GetUpperBound (0) != 3)
+					|| (array.GetLowerBound (1) != 0) || (array.GetUpperBound (1) != 2))
+					return 66;
+				for (int i = array.GetLowerBound (0); i <= array.GetUpperBound (0); ++i)
+				{
+					for (int j = array.GetLowerBound (1); j <= array.GetUpperBound (1); ++j) {
+						if ((i + 1) * 10 + (j + 1) != (int)array.GetValue (new long[] { i, j }))
+							return 67;
+					}
+				}
 
-			int index = 0;
-			for (int i = array.GetLowerBound (3); i <= array.GetUpperBound (3); ++i) {
-				for (int j = array.GetLowerBound (2); j <= array.GetUpperBound (2); ++j) {
-					for (int k = array.GetLowerBound (1); k <= array.GetUpperBound (1); ++k) {
-						for (int l = array.GetLowerBound (0); l <= array.GetUpperBound (0); ++l) {
-							if (index != (int)array.GetValue (new long[] { l, k, j, i }))
-								return 70;
-							++index;
+				if ((mono_test_marshal_variant_out_safearray_4dim_vt_int (out array) != 0) || (array.Rank != 4))
+					return 68;
+				if (   (array.GetLowerBound (0) != 15) || (array.GetUpperBound (0) != 24)
+					|| (array.GetLowerBound (1) != 20) || (array.GetUpperBound (1) != 22)
+					|| (array.GetLowerBound (2) !=  5) || (array.GetUpperBound (2) != 10)
+					|| (array.GetLowerBound (3) != 12) || (array.GetUpperBound (3) != 18) )
+					return 69;
+
+				int index = 0;
+				for (int i = array.GetLowerBound (3); i <= array.GetUpperBound (3); ++i) {
+					for (int j = array.GetLowerBound (2); j <= array.GetUpperBound (2); ++j) {
+						for (int k = array.GetLowerBound (1); k <= array.GetUpperBound (1); ++k) {
+							for (int l = array.GetLowerBound (0); l <= array.GetUpperBound (0); ++l) {
+								if (index != (int)array.GetValue (new long[] { l, k, j, i }))
+									return 70;
+								++index;
+							}
 						}
 					}
 				}

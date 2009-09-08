@@ -1,3 +1,4 @@
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +51,43 @@ static void* marshal_alloc (gsize size)
 #else
 	return g_malloc (size);
 #endif
+}
+
+
+static gunichar2* marshal_bstr_alloc(const gchar* str)
+{
+#ifdef WIN32
+	gunichar2* ret = NULL;
+	gunichar2* temp = NULL;
+	temp = g_utf8_to_utf16 (str, -1, NULL, NULL, NULL);
+	ret = SysAllocString (temp);
+	g_free (temp);
+	return ret;
+#else
+	gchar* ret = NULL;
+	int slen = strlen (str);
+	gunichar2* temp;
+	/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
+	ret = g_malloc ((slen + 1) * sizeof(gunichar2) + sizeof(guint32));
+	if (ret == NULL)
+		return NULL;
+	temp = g_utf8_to_utf16 (str, -1, NULL, NULL, NULL);
+	memcpy (ret + sizeof(guint32), temp, slen * sizeof(gunichar2));
+	* ((guint32 *) ret) = slen * sizeof(gunichar2);
+	ret [4 + slen * sizeof(gunichar2)] = 0;
+	ret [5 + slen * sizeof(gunichar2)] = 0;
+
+	return (gunichar2*)(ret + 4);
+#endif
+}
+
+LIBTEST_API int STDCALL
+mono_cominterop_is_supported ()
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+	return 1;
+#endif
+	return 0;
 }
 
 LIBTEST_API unsigned short* STDCALL
@@ -2233,25 +2271,123 @@ mono_safe_handle_ref (void **handle)
  * COM INTEROP TESTS
  */
 
-#ifdef WIN32
+#ifndef WIN32
+
+typedef struct {
+	guint16 vt;
+	guint16 wReserved1;
+	guint16 wReserved2;
+	guint16 wReserved3;
+	union {
+		gint64 llVal;
+		gint32 lVal;
+		guint8  bVal;
+		gint16 iVal;
+		float  fltVal;
+		double dblVal;
+		gint16 boolVal;
+		gunichar2* bstrVal;
+		gint8 cVal;
+		guint16 uiVal;
+		guint32 ulVal;
+		guint64 ullVal;
+		struct {
+			gpointer pvRecord;
+			gpointer pRecInfo;
+		};
+	};
+} VARIANT;
+
+typedef enum {
+	VARIANT_TRUE = -1,
+	VARIANT_FALSE = 0
+} VariantBool;
+
+typedef enum {
+	VT_EMPTY = 0,
+	VT_NULL = 1,
+	VT_I2 = 2,
+	VT_I4 = 3,
+	VT_R4 = 4,
+	VT_R8 = 5,
+	VT_CY = 6,
+	VT_DATE = 7,
+	VT_BSTR = 8,
+	VT_DISPATCH = 9,
+	VT_ERROR = 10,
+	VT_BOOL = 11,
+	VT_VARIANT = 12,
+	VT_UNKNOWN = 13,
+	VT_DECIMAL = 14,
+	VT_I1 = 16,
+	VT_UI1 = 17,
+	VT_UI2 = 18,
+	VT_UI4 = 19,
+	VT_I8 = 20,
+	VT_UI8 = 21,
+	VT_INT = 22,
+	VT_UINT = 23,
+	VT_VOID = 24,
+	VT_HRESULT = 25,
+	VT_PTR = 26,
+	VT_SAFEARRAY = 27,
+	VT_CARRAY = 28,
+	VT_USERDEFINED = 29,
+	VT_LPSTR = 30,
+	VT_LPWSTR = 31,
+	VT_RECORD = 36,
+	VT_FILETIME = 64,
+	VT_BLOB = 65,
+	VT_STREAM = 66,
+	VT_STORAGE = 67,
+	VT_STREAMED_OBJECT = 68,
+	VT_STORED_OBJECT = 69,
+	VT_BLOB_OBJECT = 70,
+	VT_CF = 71,
+	VT_CLSID = 72,
+	VT_VECTOR = 4096,
+	VT_ARRAY = 8192,
+	VT_BYREF = 16384
+} VarEnum;
+
+void VariantInit(VARIANT* vt)
+{
+	vt->vt = VT_EMPTY;
+}
+
+typedef struct
+{
+	guint32 a;
+	guint16 b;
+	guint16 c;
+	guint8 d[8];
+} GUID;
+
+#define S_OK 0
+
+#endif
 
 LIBTEST_API int STDCALL 
-mono_test_marshal_bstr_in(BSTR bstr)
+mono_test_marshal_bstr_in(gunichar2* bstr)
 {
-	if (!wcscmp(bstr, L"mono_test_marshal_bstr_in"))
+	gint32 result = 0;
+	gchar* bstr_utf8 = g_utf16_to_utf8 (bstr, -1, NULL, NULL, NULL);
+	result = strcmp("mono_test_marshal_bstr_in", bstr_utf8);
+	g_free(bstr_utf8);
+	if (result == 0)
 		return 0;
 	return 1;
 }
 
 LIBTEST_API int STDCALL 
-mono_test_marshal_bstr_out(BSTR* bstr)
+mono_test_marshal_bstr_out(gunichar2** bstr)
 {
-	*bstr = SysAllocString(L"mono_test_marshal_bstr_out");
+	*bstr = marshal_bstr_alloc ("mono_test_marshal_bstr_out");
 	return 0;
 }
 
 LIBTEST_API int STDCALL 
-mono_test_marshal_bstr_in_null(BSTR bstr)
+mono_test_marshal_bstr_in_null(gunichar2* bstr)
 {
 	if (!bstr)
 		return 0;
@@ -2259,7 +2395,7 @@ mono_test_marshal_bstr_in_null(BSTR bstr)
 }
 
 LIBTEST_API int STDCALL 
-mono_test_marshal_bstr_out_null(BSTR* bstr)
+mono_test_marshal_bstr_out_null(gunichar2** bstr)
 {
 	*bstr = NULL;
 	return 0;
@@ -2348,7 +2484,12 @@ mono_test_marshal_variant_in_double(VARIANT variant)
 LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_bstr(VARIANT variant)
 {
-	if (variant.vt == VT_BSTR && !wcscmp(variant.bstrVal, L"PI"))
+	gint32 result = 0;
+        gchar* bstr_utf8 = g_utf16_to_utf8 (variant.bstrVal, -1, NULL, NULL, NULL);
+        result = strcmp("PI", bstr_utf8);
+        g_free(bstr_utf8);
+
+	if (variant.vt == VT_BSTR && !result)
 		return 0;
 	return 1;
 }
@@ -2463,7 +2604,7 @@ LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bstr(VARIANT* variant)
 {
 	variant->vt = VT_BSTR;
-	variant->bstrVal = SysAllocString(L"PI");
+	variant->bstrVal = marshal_bstr_alloc("PI");
 
 	return 0;
 }
@@ -2584,7 +2725,7 @@ mono_test_marshal_variant_in_bstr_unmanaged(VarFunc func)
 {
 	VARIANT vt;
 	vt.vt = VT_BSTR;
-	vt.bstrVal = SysAllocString(L"PI");
+	vt.bstrVal = marshal_bstr_alloc("PI");
 	return func (VT_BSTR, vt);
 }
 
@@ -2720,9 +2861,16 @@ LIBTEST_API int STDCALL
 mono_test_marshal_variant_out_bstr_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
+	gchar* bstr_utf8;
+ 	gint32 result = 0;
+
+
 	VariantInit (&vt);
 	func (VT_BSTR, &vt);
-	if (vt.vt == VT_BSTR && !wcscmp(vt.bstrVal, L"PI"))
+        bstr_utf8 = g_utf16_to_utf8 (vt.bstrVal, -1, NULL, NULL, NULL);
+        result = strcmp("PI", bstr_utf8);
+        g_free(bstr_utf8);
+	if (vt.vt == VT_BSTR && !result)
 		return 0;
 	return 1;
 }
@@ -2763,8 +2911,8 @@ typedef struct
 	int (STDCALL *UShortIn)(MonoComObject* pUnk, unsigned short a);
 	int (STDCALL *IntIn)(MonoComObject* pUnk, int a);
 	int (STDCALL *UIntIn)(MonoComObject* pUnk, unsigned int a);
-	int (STDCALL *LongIn)(MonoComObject* pUnk, LONGLONG a);
-	int (STDCALL *ULongIn)(MonoComObject* pUnk, ULONGLONG a);
+	int (STDCALL *LongIn)(MonoComObject* pUnk, gint64 a);
+	int (STDCALL *ULongIn)(MonoComObject* pUnk, guint64 a);
 	int (STDCALL *FloatIn)(MonoComObject* pUnk, float a);
 	int (STDCALL *DoubleIn)(MonoComObject* pUnk, double a);
 	int (STDCALL *ITestIn)(MonoComObject* pUnk, MonoComObject* pUnk2);
@@ -2777,13 +2925,14 @@ struct MonoComObject
 	int m_ref;
 };
 
-DEFINE_GUID(IID_ITest, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
-DEFINE_GUID(IID_IMonoUnknown, 0, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
-DEFINE_GUID(IID_IMonoDispatch, 0x00020400, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
+static GUID IID_ITest = {0, 0, 0, {0,0,0,0,0,0,0,1}};
+static GUID IID_IMonoUnknown = {0, 0, 0, {0xc0,0,0,0,0,0,0,0x46}};
+static GUID IID_IMonoDispatch = {0x00020400, 0, 0, {0xc0,0,0,0,0,0,0,0x46}};
 
 LIBTEST_API int STDCALL
 MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
 {
+
 	*ppv = NULL;
 	if (!memcmp(riid, &IID_IMonoUnknown, sizeof(GUID))) {
 		*ppv = pUnk;
@@ -2797,7 +2946,7 @@ MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
 		*ppv = pUnk;
 		return S_OK;
 	}
-	return E_NOINTERFACE;
+	return 0x80004002; //E_NOINTERFACE;
 }
 
 LIBTEST_API int STDCALL 
@@ -2849,13 +2998,13 @@ UIntIn(MonoComObject* pUnk, unsigned int a)
 }
 
 LIBTEST_API int STDCALL 
-LongIn(MonoComObject* pUnk, LONGLONG a)
+LongIn(MonoComObject* pUnk, gint64 a)
 {
 	return S_OK;
 }
 
 LIBTEST_API int STDCALL 
-ULongIn(MonoComObject* pUnk, ULONGLONG a)
+ULongIn(MonoComObject* pUnk, guint64 a)
 {
 	return S_OK;
 }
@@ -2999,10 +3148,6 @@ mono_test_marshal_ccw_itest (MonoComObject *pUnk)
 
 	return 0;
 }
-
-
-#endif //NOT_YET
-
 
 /*
  * mono_method_get_unmanaged_thunk tests
@@ -4077,7 +4222,7 @@ mono_test_marshal_variant_out_safearray_1dim_vt_bstr (SAFEARRAY** safearray)
 	SAFEARRAY *pSA;
 	SAFEARRAYBOUND dimensions [1];
 	long i;
-	wchar_t buffer [20];
+	gchar buffer [20];
 	HRESULT hr = S_OK;
 	long indices [1];
 
@@ -4089,8 +4234,8 @@ mono_test_marshal_variant_out_safearray_1dim_vt_bstr (SAFEARRAY** safearray)
 		VARIANT vOut;
 		VariantInit (&vOut);
 		vOut.vt = VT_BSTR;
-		_ltow (i,buffer,10);
-		vOut.bstrVal= SysAllocString (buffer);
+		_ltoa (i,buffer,10);
+		vOut.bstrVal= marshal_bstr_alloc (buffer);
 		indices [0] = i;
 		if ((hr = SafeArrayPutElement (pSA, indices, &vOut)) != S_OK) {
 			VariantClear (&vOut);
