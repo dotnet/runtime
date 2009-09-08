@@ -52,6 +52,9 @@ public class Test {
 		if (((IVehicle)d1).Turn () != 4)
 			return 2;
 
+		if (((Base)d2).Turn () != 8)
+			return 10;
+
 		if (((IVehicle)d2).Turn () != 7)
 			return 3;
 
