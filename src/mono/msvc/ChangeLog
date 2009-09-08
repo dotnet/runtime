@@ -1,3 +1,7 @@
+2009-09-08  Jonathan Chambers  <joncham@gmail.com>
+
+	* libtest.vcproj: Add toplevel include directory for config.h.
+
 2009-04-24  Bill Holmes  <billholmes54@gmail.com>
 
 	Fixing the glib targets for Winx64.
