@@ -2568,6 +2568,24 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		interface_offsets_full [i] = -1;
 	}
 
+	for (k = class->parent; k ; k = k->parent) {
+		ifaces = mono_class_get_implemented_interfaces (k);
+		if (ifaces) {
+			for (i = 0; i < ifaces->len; ++i) {
+				int io;
+				ic = g_ptr_array_index (ifaces, i);
+				
+				/*Force the sharing of interface offsets between parent and subtypes.*/
+				io = mono_class_interface_offset (k, ic);
+				g_assert (io >= 0);
+				interfaces_full [ic->interface_id] = ic;
+				interface_offsets_full [ic->interface_id] = io;
+			}
+			g_ptr_array_free (ifaces, TRUE);
+		}
+	}
+
+
 	ifaces = mono_class_get_implemented_interfaces (class);
 	if (ifaces) {
 		for (i = 0; i < ifaces->len; ++i) {
@@ -2579,25 +2597,6 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			cur_slot += count_virtual_methods (ic);
 		}
 		g_ptr_array_free (ifaces, TRUE);
-	}
-
-	for (k = class->parent; k ; k = k->parent) {
-		ifaces = mono_class_get_implemented_interfaces (k);
-		if (ifaces) {
-			for (i = 0; i < ifaces->len; ++i) {
-				ic = g_ptr_array_index (ifaces, i);
-
-				if (interface_offsets_full [ic->interface_id] == -1) {
-					int io = mono_class_interface_offset (k, ic);
-
-					g_assert (io >= 0);
-
-					interfaces_full [ic->interface_id] = ic;
-					interface_offsets_full [ic->interface_id] = io;
-				}
-			}
-			g_ptr_array_free (ifaces, TRUE);
-		}
 	}
 
 	if (MONO_CLASS_IS_INTERFACE (class)) {
@@ -2795,9 +2794,11 @@ mono_class_setup_vtable (MonoClass *class)
 #define DEBUG_INTERFACE_VTABLE_CODE 0
 #define TRACE_INTERFACE_VTABLE_CODE 0
 #define VERIFY_INTERFACE_VTABLE_CODE 0
+#define VTABLE_SELECTOR (1)
 
 #if (TRACE_INTERFACE_VTABLE_CODE|DEBUG_INTERFACE_VTABLE_CODE)
 #define DEBUG_INTERFACE_VTABLE(stmt) do {\
+	if (!(VTABLE_SELECTOR)) break; \
 	stmt;\
 } while (0)
 #else
@@ -2806,6 +2807,7 @@ mono_class_setup_vtable (MonoClass *class)
 
 #if TRACE_INTERFACE_VTABLE_CODE
 #define TRACE_INTERFACE_VTABLE(stmt) do {\
+	if (!(VTABLE_SELECTOR)) break; \
 	stmt;\
 } while (0)
 #else
@@ -2814,6 +2816,7 @@ mono_class_setup_vtable (MonoClass *class)
 
 #if VERIFY_INTERFACE_VTABLE_CODE
 #define VERIFY_INTERFACE_VTABLE(stmt) do {\
+	if (!(VTABLE_SELECTOR)) break; \
 	stmt;\
 } while (0)
 #else
@@ -3467,6 +3470,10 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			if (slot >= 0)
 				cm->slot = slot;
 		}
+
+		/*Non final newslot methods must be given a non-interface vtable slot*/
+		if ((cm->flags & METHOD_ATTRIBUTE_NEW_SLOT) && !(cm->flags & METHOD_ATTRIBUTE_FINAL) && cm->slot >= 0)
+			cm->slot = -1;
 
 		if (cm->slot < 0)
 			cm->slot = cur_slot++;
