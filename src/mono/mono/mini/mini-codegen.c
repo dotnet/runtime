@@ -1023,7 +1023,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		desc_to_fixed_reg_inited = TRUE;
 
 		/* Validate the cpu description against the info in mini-ops.h */
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 		for (i = OP_LOAD; i < OP_LAST; ++i) {
 			const char *ispec;
 

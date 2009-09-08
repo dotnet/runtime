@@ -507,8 +507,8 @@ MINI_OP(OP_ENDFILTER,  "endfilter", NONE, IREG, NONE)
 MINI_OP(OP_ENDFINALLY,  "endfinally", NONE, NONE, NONE)
 
 /* inline (long)int * (long)int */
-MINI_OP(OP_BIGMUL, "bigmul", NONE, NONE, NONE)
-MINI_OP(OP_BIGMUL_UN, "bigmul_un", NONE, NONE, NONE)
+MINI_OP(OP_BIGMUL, "bigmul", LREG, IREG, IREG)
+MINI_OP(OP_BIGMUL_UN, "bigmul_un", LREG, IREG, IREG)
 MINI_OP(OP_IMIN_UN, "int_min_un", IREG, IREG, IREG)
 MINI_OP(OP_IMAX_UN, "int_max_un", IREG, IREG, IREG)
 MINI_OP(OP_LMIN_UN, "long_min_un", LREG, LREG, LREG)
