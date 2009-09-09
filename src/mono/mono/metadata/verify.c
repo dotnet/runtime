@@ -4909,19 +4909,13 @@ mono_method_verify (MonoMethod *method, int level)
 	stack_init (&ctx, &ctx.eval);
 
 	for (i = 0; i < ctx.num_locals; ++i) {
-		if (!mono_type_is_valid_in_context (&ctx, ctx.locals [i])) {
-			/*TODO use the last error message to provide better feedback. */
-			ADD_VERIFY_ERROR2 (&ctx, g_strdup_printf ("Invalid local variable %d", i), MONO_EXCEPTION_BAD_IMAGE);
+		if (!mono_type_is_valid_in_context (&ctx, ctx.locals [i]))
 			break;
-		}
 	}
 
 	for (i = 0; i < ctx.max_args; ++i) {
-		if (!mono_type_is_valid_in_context (&ctx, ctx.params [i])) {
-			/*TODO use the last error message to provide better feedback. */
-			ADD_VERIFY_ERROR2 (&ctx, g_strdup_printf ("Invalid parameter %d", i), MONO_EXCEPTION_BAD_IMAGE);
+		if (!mono_type_is_valid_in_context (&ctx, ctx.params [i]))
 			break;
-		}
 	}
 
 	if (!ctx.valid)
@@ -6054,6 +6048,50 @@ verify_interfaces (MonoClass *class)
 	return TRUE;
 }
 
+static gboolean
+verify_valuetype_layout_with_context (MonoClass *class, GHashTable *referenced_types)
+{
+	int i, count, type;
+	if (!class->valuetype)
+		return TRUE;
+
+	type = class->byval_arg.type;
+	/*primitive type fields are not properly decoded*/
+	if (type >= MONO_TYPE_BOOLEAN && type <= MONO_TYPE_R8)
+		return TRUE;
+
+	if (g_hash_table_lookup (referenced_types, class))
+		return FALSE;
+
+	g_hash_table_insert (referenced_types, class, class);
+	count = class->field.count;
+	for (i = 0; i < count; ++i) {
+		MonoClass *field_class;
+		MonoClassField *field = &class->fields [i];
+		if (!field || !field->type)
+			return FALSE;
+
+		if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
+			continue;
+
+		field_class = mono_class_get_generic_type_definition (mono_class_from_mono_type (field->type));
+		if (!verify_valuetype_layout_with_context (field_class, referenced_types))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
+verify_valuetype_layout (MonoClass *class)
+{
+	gboolean res;
+	GHashTable *referenced_types = g_hash_table_new (NULL, NULL);
+	res = verify_valuetype_layout_with_context (class, referenced_types);
+	g_hash_table_destroy (referenced_types);
+	return res;
+}
+
 /*
  * Check if the class is verifiable.
  * 
@@ -6073,6 +6111,8 @@ mono_verifier_verify_class (MonoClass *class)
 	if (class->generic_class && !mono_class_is_valid_generic_instantiation (NULL, class))
 		return FALSE;
 	if (class->generic_class == NULL && !verify_class_fields (class))
+		return FALSE;
+	if (class->valuetype && !verify_valuetype_layout (class))
 		return FALSE;
 	if (!verify_interfaces (class))
 		return FALSE;
