@@ -1,3 +1,7 @@
+2009-09-09  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* badrt-recursive-struct.il: New test for structs with bad layout.
+
 2009-09-01  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: New test for method abstract + final.
