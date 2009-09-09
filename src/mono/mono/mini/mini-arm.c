@@ -3444,7 +3444,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			/* Implemented as helper calls */
 			break;
-		case OP_LCONV_TO_OVF_I:
 		case OP_LCONV_TO_OVF_I4_2: {
 			guint8 *high_bit_not_set, *valid_negative, *invalid_negative, *valid_positive;
 			/* 

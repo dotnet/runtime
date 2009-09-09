@@ -1023,7 +1023,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		desc_to_fixed_reg_inited = TRUE;
 
 		/* Validate the cpu description against the info in mini-ops.h */
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM)
 		for (i = OP_LOAD; i < OP_LAST; ++i) {
 			const char *ispec;
 
@@ -1031,11 +1031,11 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ispec = INS_INFO (i);
 
 			if ((spec [MONO_INST_DEST] && (ispec [MONO_INST_DEST] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC1] && (ispec [MONO_INST_SRC1] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC2] && (ispec [MONO_INST_SRC2] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 		}
 #endif
 	}

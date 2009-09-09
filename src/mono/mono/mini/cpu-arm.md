@@ -132,10 +132,6 @@ fmove: dest:f src1:f len:4
 add_imm: dest:i src1:i len:12
 sub_imm: dest:i src1:i len:12
 mul_imm: dest:i src1:i len:12
-div_imm: dest:i src1:i src2:i len:20
-div_un_imm: dest:i src1:i src2:i len:12
-rem_imm: dest:i src1:i src2:i len:28
-rem_un_imm: dest:i src1:i src2:i len:16
 and_imm: dest:i src1:i len:12
 or_imm: dest:i src1:i len:12
 xor_imm: dest:i src1:i len:12
@@ -252,8 +248,6 @@ add_ovf_carry: dest:i src1:i src2:i len:16
 sub_ovf_carry: dest:i src1:i src2:i len:16
 add_ovf_un_carry: dest:i src1:i src2:i len:16
 sub_ovf_un_carry: dest:i src1:i src2:i len:16
-
-long_conv_to_ovf_i: dest:i src1:i src2:i len:30
 
 arm_rsbs_imm: dest:i src1:i len:4
 arm_rsc_imm: dest:i src1:i len:4
