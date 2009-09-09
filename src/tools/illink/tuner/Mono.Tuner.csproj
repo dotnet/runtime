@@ -45,6 +45,7 @@
     <Compile Include="Mono.Tuner\MoonlightA11yAssemblyStep.cs" />
     <Compile Include="Mono.Tuner\MoonlightA11yUsageInspectionStep.cs" />
     <Compile Include="Mono.Tuner\MoonlightA11yDescriptorGenerator.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yApiMarker.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
