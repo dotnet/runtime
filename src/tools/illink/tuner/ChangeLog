@@ -1,5 +1,14 @@
 2009-09-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
+	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Rather use
+	  the OutputDirectory provided on the command line, and
+	  redirect some progress info or errors to the console.
+
+	* Mono.Tuner/MoonlightA11yUsageInspectionStep.cs: Remove
+	  unnecessary step.
+
+2009-09-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
 	* Mono.Tuner.csproj:
 	* Mono.Tuner.dll.sources: Add new step MoonlightA11yApiMarker.
 
@@ -21,8 +30,8 @@
 	  summary of the troubles encountered:
 	- GetHashCode() -> base method not SC. (r139589+r139649)
 	- Dispose() -> interface method not SC. (r139796)
-	- get_Handle() -> interface method SC while impl not SC. (this
-	  commit)
+	- get_Handle() -> interface method SC while impl not SC.
+	(r139852)
 
 2009-08-12  Andrés G. Aragoneses  <aaragoneses@novell.com>
 

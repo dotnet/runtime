@@ -46,6 +46,7 @@ namespace Mono.Tuner {
 			pipeline.RemoveStep (typeof (LoadI18nAssemblies));
 			pipeline.RemoveStep (typeof (CleanStep));
 			pipeline.RemoveStep (typeof (RegenerateGuidStep));
+			pipeline.RemoveStep (typeof (OutputStep));
 		}
 	}
 }

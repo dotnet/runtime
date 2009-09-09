@@ -53,7 +53,17 @@ namespace Mono.Tuner {
 				return;
 			
 			if (writer == null) {
-				writer = new XmlTextWriter (System.Console.Out);
+				if (!Directory.Exists (Context.OutputDirectory))
+					Directory.CreateDirectory (Context.OutputDirectory);
+				
+				string file_name = "descriptors.xml";
+				FileStream xml_file = 
+				  new FileStream (Path.Combine (Context.OutputDirectory, file_name), 
+				                  FileMode.OpenOrCreate);
+				Console.WriteLine ("Created file {0}", file_name);
+				Console.Write ("Writing contents...");
+
+				writer = new XmlTextWriter (xml_file, System.Text.Encoding.UTF8);
 				writer.Formatting = Formatting.Indented;
 				writer.WriteStartElement("linker");
 			}
@@ -92,12 +102,14 @@ namespace Mono.Tuner {
 				}
 				
 				writer.WriteEndElement ();
+				Console.WriteLine ();
 			}
 			
 		}
 
 		protected override void EndProcess ()
 		{
+			Console.WriteLine ();
 			if (writer != null) {
 				writer.WriteEndElement ();
 				writer.Close ();
@@ -217,10 +229,10 @@ namespace Mono.Tuner {
 
 				return !field.IsPublic;
 			}
-			
+
 			master_info_file = FindMasterInfoFile (type.Module.Assembly.Name.Name);
 			if (master_info_file == null)
-					return IsInternal (member, false);
+				return IsInternal (member, false);
 
 			string xpath_type = GetXPathSearchForType (type);
 			string name;
@@ -276,6 +288,7 @@ namespace Mono.Tuner {
 		//OPTIMIZEME!: maybe hold a dictionary of opened FileStreams?
 		static bool NodeExists (string file, string xpath)
 		{
+			Console.Write (".");
 			//Console.WriteLine ("Looking for node {0} in file {1}", xpath, file.Substring (file.LastIndexOf ("/") + 1));
 			using (FileStream stream = new FileStream (file, FileMode.Open)) {
 				XPathDocument document = new XPathDocument (stream);
