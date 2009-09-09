@@ -620,6 +620,11 @@ Authors:
 %_prefix/lib/mono/2.0/svcutil.exe.mdb
 %_libdir/pkgconfig/wcf.pc
 
+%package -n mono-winfxcore
+Summary: Mono implementation of core WinFX APIs
+Group: Development/Languages/Mono
+Requires: mono-core == %version-%release
+
 %description -n mono-winfxcore
 The Mono Project is an open development initiative that is working to
 develop an open source, Unix version of the .NET development platform.
