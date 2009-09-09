@@ -1355,8 +1355,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			MONO_ADD_INS (cfg->cbb, vtarg);
 		}
 
-		/* if the function returns a struct, the called method already does a ret $0x4 */
-		cinfo->stack_usage -= 4;
+		/* if the function returns a struct on stack, the called method already does a ret $0x4 */
+		if (cinfo->ret.storage != ArgValuetypeInReg)
+			cinfo->stack_usage -= 4;
 	}
 
 	call->stack_usage = cinfo->stack_usage;
