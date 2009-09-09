@@ -26,9 +26,15 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
+using System;
 using System.Collections;
+
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Text;
+
 using System.Xml;
+using System.Xml.XPath;
 
 using Mono.Linker;
 using Mono.Linker.Steps;
@@ -104,7 +110,6 @@ namespace Mono.Tuner {
 		{
 			string @params = "(";
 			if (method.HasParameters) {
-				@params += method.Parameters [0].ParameterType.FullName;
 				for (int i = 0; i < method.Parameters.Count; i++) {
 					if (i > 0)
 						@params += ",";
@@ -123,10 +128,12 @@ namespace Mono.Tuner {
 
 			Hashtable members_used = new Hashtable ();
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
-				if (Annotations.IsMarked (type)) {
-					members_used [type] = ScanType (type);
-					continue;
-				}
+				IList used_providers = FilterPublicMembers (ScanType (type));
+				if (used_providers.Count > 0)
+					members_used [type] = used_providers;
+				else if (IsInternal (type, true) && 
+				         Annotations.IsMarked (type))
+					throw new NotSupportedException (String.Format ("The type {0} is used while its API is not", type.ToString ()));
 			}
 			return members_used;
 		}
@@ -136,20 +143,160 @@ namespace Mono.Tuner {
 			return ExtractUsedProviders (type.Methods, type.Constructors, type.Fields);
 		}
 
-		static IList /*List<IAnnotationProvider>*/ ExtractUsedProviders (IList methods, IList ctors, IList fields)
+		static IList FilterPublicMembers (IList members)
 		{
-			IList used = new ArrayList ();
-			ExtractUsedProviders (methods, used);
-			ExtractUsedProviders (ctors, used);
-			ExtractUsedProviders (fields, used);
-			return used;
+			IList new_list = new ArrayList ();
+			foreach (MemberReference item in members)
+				if (IsInternal (item, true))
+					new_list.Add (item);
+
+			return new_list;
 		}
 
-		static void ExtractUsedProviders (IList members, IList result)
+		static string FindMasterInfoFile (string name)
 		{
-			foreach (IAnnotationProvider provider in members)
-				if (Annotations.IsMarked (provider))
-					result.Add (provider);
+			string [] master_infos = Directory.GetFiles (Environment.CurrentDirectory, "*.info");
+
+			if (master_infos.Length == 0)
+				throw new Exception ("No masterinfo files found in current directory");
+			
+			foreach (string file in master_infos) {
+				if (file.EndsWith (name + ".info"))
+					return file;
+			}
+			
+			return null;
+		}
+
+		const string xpath_init = "assemblies/assembly/namespaces/namespace[@name='{0}']/classes/class[@name='{1}']";
+
+		static string GetXPathSearchForType (TypeDefinition type)
+		{
+			TypeDefinition parent_type = type;
+			string xpath = String.Empty;
+			while (parent_type.DeclaringType != null) {
+				xpath = String.Format ("/classes/class[@name='{0}']", parent_type.Name) + xpath;
+				parent_type = parent_type.DeclaringType;
+			}
+			return String.Format (xpath_init, parent_type.Namespace, parent_type.Name) + xpath;
+		}
+		
+		static bool IsInternal (MemberReference member, bool master_info)
+		{
+			TypeDefinition type = null;
+			string master_info_file = null;
+			
+			if (member is TypeDefinition) {
+				type = member as TypeDefinition;
+				if (!master_info)
+					return (!type.IsNested && !type.IsPublic) ||
+					       (type.IsNested && (!type.IsNestedPublic || IsInternal (type.DeclaringType, false)));
+
+				master_info_file = FindMasterInfoFile (type.Module.Assembly.Name.Name);
+				if (master_info_file == null)
+					return IsInternal (member, false);
+
+				return !NodeExists (master_info_file, GetXPathSearchForType (type));
+			}
+
+			type = member.DeclaringType.Resolve ();
+
+			if (IsInternal (type, master_info))
+				return true;
+
+			MethodDefinition method = member as MethodDefinition;
+			FieldDefinition field = member as FieldDefinition;
+	
+			if (field == null && method == null)
+				throw new System.NotSupportedException ("Members to scan should be methods or fields");
+
+			if (!master_info) {
+
+				if (method != null)
+					return !method.IsPublic;
+
+				return !field.IsPublic;
+			}
+			
+			master_info_file = FindMasterInfoFile (type.Module.Assembly.Name.Name);
+			if (master_info_file == null)
+					return IsInternal (member, false);
+
+			string xpath_type = GetXPathSearchForType (type);
+			string name;
+			if (field != null)
+				name = field.Name;
+			else {
+				name = method.ToString ();
+				
+				//lame, I know...
+				name = WackyOutArgs (WackyCommas (name.Substring (name.IndexOf ("::") + 2)
+				                    .Replace ("/", "+") // nested classes
+				                    .Replace ('<', '[').Replace ('>', ']'))); //generic params
+			}
+
+			if (field != null || !IsPropertyMethod (method))
+				return !NodeExists (master_info_file, xpath_type + String.Format ("/*/*[@name='{0}']", name));
+
+			return !NodeExists (master_info_file, xpath_type + String.Format ("/properties/*/*/*[@name='{0}']", name));
+		}
+		
+		//at some point I want to get rid of this method and ask cecil's maintainer to spew commas in a uniform way...
+		static string WackyCommas (string method)
+		{
+			string outstring = String.Empty;
+			bool square_bracket = false;
+			foreach (char c in method) {
+				if (c == '[')
+					square_bracket = true;
+				else if (c == ']')
+					square_bracket = false;
+
+				outstring = outstring + c;
+
+				if (c == ',' && !square_bracket)
+					outstring = outstring + " ";
+			}
+			return outstring;
+		}
+
+		//ToString() spews & but not 'out' keyword
+		static string WackyOutArgs (string method)
+		{
+			return Regex.Replace (method, @"\w+&", delegate (Match m) { return "out " + m.ToString (); });
+		}
+
+		//copied from MarkStep (violating DRY unless I can put this in a better place... Cecil?)
+		static bool IsPropertyMethod (MethodDefinition md)
+		{
+			return (md.SemanticsAttributes & MethodSemanticsAttributes.Getter) != 0 ||
+				(md.SemanticsAttributes & MethodSemanticsAttributes.Setter) != 0;
+		}
+
+		//OPTIMIZEME!: maybe hold a dictionary of opened FileStreams?
+		static bool NodeExists (string file, string xpath)
+		{
+			//Console.WriteLine ("Looking for node {0} in file {1}", xpath, file.Substring (file.LastIndexOf ("/") + 1));
+			using (FileStream stream = new FileStream (file, FileMode.Open)) {
+				XPathDocument document = new XPathDocument (stream);
+				XPathNavigator navigator = document.CreateNavigator ();
+				XPathNavigator node = navigator.SelectSingleNode (xpath);
+				return (node != null);
+			}
+		}
+
+		static IList /*List<IAnnotationProvider>*/ ExtractUsedProviders (params IList[] members)
+		{
+			IList used = new ArrayList ();
+			if (members == null || members.Length == 0)
+				return used;
+
+			foreach (IList members_list in members)
+				foreach (IAnnotationProvider provider in members_list)
+					if (Annotations.IsMarked (provider))
+						used.Add (provider);
+
+			return used;
 		}
 
 	}

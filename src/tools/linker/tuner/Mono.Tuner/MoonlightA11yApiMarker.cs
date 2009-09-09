@@ -1,5 +1,5 @@
 //
-// MoonlightA11yUsageInspectionStep.cs
+// MoonlightA11yDescriptorGenerator.cs
 //
 // Author:
 //   Andrés G. Aragoneses (aaragoneses@novell.com)
@@ -26,9 +26,9 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
+
 using System.Collections;
-using System.IO;
+using System.Xml;
 
 using Mono.Linker;
 using Mono.Linker.Steps;
@@ -37,15 +37,49 @@ using Mono.Cecil;
 
 namespace Mono.Tuner {
 
-	public class MoonlightA11yUsageInspectionStep : MoonlightAssemblyStep {
+	public class MoonlightA11yApiMarker : MarkStep {
 
-		protected override void CustomizePipeline (Pipeline pipeline)
+		bool IsA11yAssembly (AssemblyDefinition assembly)
 		{
-			pipeline.ReplaceStep (typeof (MarkStep), new MoonlightA11yApiMarker ());
-			pipeline.ReplaceStep (typeof (SweepStep), new MoonlightA11yDescriptorGenerator ());
-			pipeline.RemoveStep (typeof (LoadI18nAssemblies));
-			pipeline.RemoveStep (typeof (CleanStep));
-			pipeline.RemoveStep (typeof (RegenerateGuidStep));
+			return assembly.ToString ().Contains ("DummyEntry") || assembly.ToString ().Contains ("MoonAtkBridge");
+		}
+		
+		protected override void InitializeAssembly (AssemblyDefinition assembly)
+		{
+			if (IsA11yAssembly (assembly))
+				base.InitializeAssembly (assembly);
+		}
+
+		protected override void EnqueueMethod (MethodDefinition method)
+		{
+			if (IsA11yAssembly (method.DeclaringType.Module.Assembly))
+				base.EnqueueMethod (method);
+			else
+				Annotations.Mark (method);
+		}
+
+		protected override void MarkType (TypeReference reference)
+		{
+			if (reference == null)
+				return;
+
+			reference = GetOriginalType (reference);
+
+			if (reference is GenericParameter)
+				return;
+
+			if (IgnoreScope (reference.Scope))
+				return;
+
+			TypeDefinition type = reference.Resolve ();
+
+			if (type == null)
+				throw new ResolutionException (reference);
+
+			if (CheckProcessed (type))
+				return;
+
+			Annotations.Mark (type);
 		}
 	}
 }

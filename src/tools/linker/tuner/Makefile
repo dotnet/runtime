@@ -5,7 +5,7 @@ include ../../build/rules.make
 CECIL = $(topdir)/class/lib/net_1_1/Mono.Cecil.dll
 LINKER = $(topdir)/class/lib/net_2_0/monolinker.exe
 
-LOCAL_MCS_FLAGS = -r:System.Xml.dll -r:$(LINKER) -r:$(CECIL)
+LOCAL_MCS_FLAGS = -r:System.dll -r:System.Xml.dll -r:$(LINKER) -r:$(CECIL)
 
 LIBRARY = Mono.Tuner.dll
 
