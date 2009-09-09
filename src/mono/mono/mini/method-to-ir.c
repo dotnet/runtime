@@ -4603,54 +4603,25 @@ gboolean check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *cal
 }
 
 static MonoMethod*
-method_access_exception (void)
+throw_exception (void)
 {
 	static MonoMethod *method = NULL;
 
 	if (!method) {
 		MonoSecurityManager *secman = mono_security_manager_get_methods ();
-		method = mono_class_get_method_from_name (secman->securitymanager,
-							  "MethodAccessException", 2);
+		method = mono_class_get_method_from_name (secman->securitymanager, "ThrowException", 1);
 	}
 	g_assert (method);
 	return method;
 }
 
 static void
-emit_throw_method_access_exception (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
-				    MonoBasicBlock *bblock, unsigned char *ip)
+emit_throw_exception (MonoCompile *cfg, MonoException *ex)
 {
-	MonoMethod *thrower = method_access_exception ();
-	MonoInst *args [2];
+	MonoMethod *thrower = throw_exception ();
+	MonoInst *args [1];
 
-	EMIT_NEW_METHODCONST (cfg, args [0], caller);
-	EMIT_NEW_METHODCONST (cfg, args [1], callee);
-	mono_emit_method_call (cfg, thrower, args, NULL);
-}
-
-static MonoMethod*
-field_access_exception (void)
-{
-	static MonoMethod *method = NULL;
-
-	if (!method) {
-		MonoSecurityManager *secman = mono_security_manager_get_methods ();
-		method = mono_class_get_method_from_name (secman->securitymanager,
-							  "FieldAccessException", 2);
-	}
-	g_assert (method);
-	return method;
-}
-
-static void
-emit_throw_field_access_exception (MonoCompile *cfg, MonoMethod *caller, MonoClassField *field,
-				    MonoBasicBlock *bblock, unsigned char *ip)
-{
-	MonoMethod *thrower = field_access_exception ();
-	MonoInst *args [2];
-
-	EMIT_NEW_METHODCONST (cfg, args [0], caller);
-	EMIT_NEW_METHODCONST (cfg, args [1], field);
+	EMIT_NEW_PCONST (cfg, args [0], ex);
 	mono_emit_method_call (cfg, thrower, args, NULL);
 }
 
@@ -4687,7 +4658,7 @@ ensure_method_is_allowed_to_access_field (MonoCompile *cfg, MonoMethod *caller, 
 
 	/* caller is Critical! only SafeCritical and Critical callers can access the field, so we throw if caller is Transparent */
 	if (mono_security_core_clr_method_level (caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
-		emit_throw_field_access_exception (cfg, caller, field, bblock, ip);
+		emit_throw_exception (cfg, mono_get_exception_field_access ());
 }
 
 static void
@@ -4705,7 +4676,7 @@ ensure_method_is_allowed_to_call_method (MonoCompile *cfg, MonoMethod *caller, M
 
 	/* caller is Critical! only SafeCritical and Critical callers can call it, so we throw if the caller is Transparent */
 	if (mono_security_core_clr_method_level (caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
-		emit_throw_method_access_exception (cfg, caller, callee, bblock, ip);
+		emit_throw_exception (cfg, mono_get_exception_method_access ());
 }
 
 /*
@@ -5641,12 +5612,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+		/* check if this is native code, e.g. an icall or a p/invoke */
 		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 			MonoMethod *wrapped = mono_marshal_method_from_wrapper (method);
-			if (wrapped && (wrapped->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-				if (!(method->klass && method->klass->image &&
-						mono_security_core_clr_is_platform_image (method->klass->image))) {
-					emit_throw_method_access_exception (cfg, method, wrapped, bblock, ip);
+			if (wrapped) {
+				gboolean pinvk = (wrapped->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
+				gboolean icall = (wrapped->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL);
+
+				/* if this ia a native call then it can only be JITted from platform code */
+				if ((icall || pinvk) && method->klass && method->klass->image) {
+					if (!mono_security_core_clr_is_platform_image (method->klass->image)) {
+						MonoException *ex = icall ? mono_get_exception_security () : 
+							mono_get_exception_method_access ();
+						emit_throw_exception (cfg, ex);
+					}
 				}
 			}
 		}
