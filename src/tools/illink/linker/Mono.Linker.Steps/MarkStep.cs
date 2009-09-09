@@ -58,7 +58,7 @@ namespace Mono.Linker.Steps {
 				InitializeAssembly (assembly);
 		}
 
-		void InitializeAssembly (AssemblyDefinition assembly)
+		protected virtual void InitializeAssembly (AssemblyDefinition assembly)
 		{
 			MarkAssembly (assembly);
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
@@ -109,6 +109,11 @@ namespace Mono.Linker.Steps {
 		bool QueueIsEmpty ()
 		{
 			return _queue.Count == 0;
+		}
+
+		protected virtual void EnqueueMethod (MethodDefinition method)
+		{
+			_queue.Enqueue (method);
 		}
 
 		void MarkMethodBody (MethodBody body)
@@ -213,7 +218,7 @@ namespace Mono.Linker.Steps {
 			MarkType (type);
 		}
 
-		static bool CheckProcessed (IAnnotationProvider provider)
+		protected static bool CheckProcessed (IAnnotationProvider provider)
 		{
 			if (Annotations.IsProcessed (provider))
 				return true;
@@ -254,7 +259,7 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (field);
 		}
 
-		bool IgnoreScope (IMetadataScope scope)
+		protected bool IgnoreScope (IMetadataScope scope)
 		{
 			AssemblyDefinition assembly = ResolveAssembly (scope);
 			return Annotations.GetAction (assembly) != AssemblyAction.Link;
@@ -269,7 +274,7 @@ namespace Mono.Linker.Steps {
 			return fd;
 		}
 
-		void MarkType (TypeReference reference)
+		protected virtual void MarkType (TypeReference reference)
 		{
 			if (reference == null)
 				return;
@@ -410,7 +415,7 @@ namespace Mono.Linker.Steps {
 			return td;
 		}
 
-		TypeReference GetOriginalType (TypeReference type)
+		protected TypeReference GetOriginalType (TypeReference type)
 		{
 			while (type is TypeSpecification) {
 				GenericInstanceType git = type as GenericInstanceType;
@@ -497,7 +502,7 @@ namespace Mono.Linker.Steps {
 
 			Annotations.SetAction (method, MethodAction.Parse);
 
-			_queue.Enqueue (method);
+			EnqueueMethod (method);
 		}
 
 		AssemblyDefinition ResolveAssembly (IMetadataScope scope)
