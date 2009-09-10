@@ -259,7 +259,7 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (field);
 		}
 
-		protected bool IgnoreScope (IMetadataScope scope)
+		protected virtual bool IgnoreScope (IMetadataScope scope)
 		{
 			AssemblyDefinition assembly = ResolveAssembly (scope);
 			return Annotations.GetAction (assembly) != AssemblyAction.Link;
