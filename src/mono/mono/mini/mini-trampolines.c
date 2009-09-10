@@ -819,8 +819,13 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 		 * (ctor_with_method () does this, but it doesn't store the wrapper back into
 		 * delegate->method).
 		 */
-		if (delegate->target && delegate->target->vtable->klass == mono_defaults.transparent_proxy_class)
-			method = mono_marshal_get_remoting_invoke (method);
+		if (delegate->target && delegate->target->vtable->klass == mono_defaults.transparent_proxy_class) {
+#ifndef DISABLE_COM
+			if (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class != mono_defaults.com_object_class && 
+			   !((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class->is_com_object)
+#endif
+				method = mono_marshal_get_remoting_invoke (method);
+		}
 		else if (mono_method_signature (method)->hasthis && method->klass->valuetype)
 			method = mono_marshal_get_unbox_wrapper (method);
 	} else {

@@ -425,6 +425,9 @@ public class Tests
 			if (TestITestPresSig (itest as ITestPresSig) != 0)
 				return 173;
 
+			if (TestITestDelegate (itest) != 0)
+				return 174;
+
 			#endregion // Runtime Callable Wrapper Tests
 
 			#region COM Callable Wrapper Tests
@@ -586,6 +589,19 @@ public class Tests
 		[PreserveSig ()]
 		int ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITestPresSig val);
 	}
+
+	delegate void SByteInDelegate (sbyte val);
+	delegate void ByteInDelegate (byte val);
+	delegate void ShortInDelegate (short val);
+	delegate void UShortInDelegate (ushort val);
+	delegate void IntInDelegate (int val);
+	delegate void UIntInDelegate (uint val);
+	delegate void LongInDelegate (long val);
+	delegate void ULongInDelegate (ulong val);
+	delegate void FloatInDelegate (float val);
+	delegate void DoubleInDelegate (double val);
+	delegate void ITestInDelegate (ITest val);
+	delegate void ITestOutDelegate (out ITest val);
 
 	public class ManagedTestPresSig : ITestPresSig
 	{		// properties need to go first since mcs puts them there
@@ -945,6 +961,42 @@ public class Tests
 			return 1010;
 		if (itest.ITestOut (out itest2) != 0)
 			return 1011;
+		return 0;
+	}
+
+	public static int TestITestDelegate (ITest itest)
+	{
+		try {
+			ITest itest2;
+
+			SByteInDelegate SByteInFcn= itest.SByteIn;
+			ByteInDelegate ByteInFcn = itest.ByteIn;
+			UShortInDelegate UShortInFcn = itest.UShortIn;
+			IntInDelegate IntInFcn = itest.IntIn;
+			UIntInDelegate UIntInFcn = itest.UIntIn;
+			LongInDelegate LongInFcn = itest.LongIn;
+
+			ULongInDelegate ULongInFcn = itest.ULongIn;
+			FloatInDelegate FloatInFcn = itest.FloatIn;
+			DoubleInDelegate DoubleInFcn = itest.DoubleIn;
+			ITestInDelegate ITestInFcn = itest.ITestIn;
+			ITestOutDelegate ITestOutFcn = itest.ITestOut;
+
+			SByteInFcn (-100);
+			ByteInFcn (100);
+			UShortInFcn (100);
+			IntInFcn (-100);
+			UIntInFcn (100);
+			LongInFcn (-100);
+			ULongInFcn (100);
+			FloatInFcn (3.14f);
+			DoubleInFcn (3.14);
+			ITestInFcn (itest);
+			ITestOutFcn (out itest2);
+		}
+		catch (Exception) {
+			return 1;
+		}
 		return 0;
 	}
 }

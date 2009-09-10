@@ -40,6 +40,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
+#include "cominterop.h"
 
 #ifdef HAVE_BOEHM_GC
 #define NEED_TO_ZERO_PTRFREE 1
@@ -2469,8 +2470,14 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 		/* generic methods demand invoke_with_check */
 		if (mono_method_signature (res)->generic_param_count)
 			res = mono_marshal_get_remoting_invoke_with_check (res);
-		else
-			res = mono_marshal_get_remoting_invoke (res);
+		else {
+#ifndef DISABLE_COM
+			if (klass == mono_defaults.com_object_class || klass->is_com_object)
+				res = mono_cominterop_get_invoke (res);
+			else
+#endif
+				res = mono_marshal_get_remoting_invoke (res);
+		}
 	} else {
 		if (method->is_inflated) {
 			/* Have to inflate the result */
