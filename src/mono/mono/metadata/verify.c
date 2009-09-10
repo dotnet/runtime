@@ -6012,16 +6012,14 @@ field_equals (gconstpointer _a, gconstpointer _b)
 static gboolean
 verify_class_fields (MonoClass *class)
 {
-	int i, count;
+	gpointer iter = NULL;
+	MonoClassField *field;
 	MonoGenericContext *context = mono_class_get_context (class);
 	GHashTable *unique_fields = g_hash_table_new_full (&field_hash, &field_equals, NULL, NULL);
 	if (class->generic_container)
 		context = &class->generic_container->context;
 
-	count = class->field.count;
-	for (i = 0; i < count; ++i) {
-		MonoClassField *field = &class->fields [i];
-
+	while ((field = mono_class_get_fields (class, &iter)) != NULL) {
 		if (!mono_type_is_valid_type_in_context (field->type, context)) {
 			g_hash_table_destroy (unique_fields);
 			return FALSE;
@@ -6051,7 +6049,11 @@ verify_interfaces (MonoClass *class)
 static gboolean
 verify_valuetype_layout_with_context (MonoClass *class, GHashTable *referenced_types)
 {
-	int i, count, type;
+	int type;
+	gpointer iter = NULL;
+	MonoClassField *field;
+	MonoClass *field_class;
+
 	if (!class->valuetype)
 		return TRUE;
 
@@ -6064,11 +6066,8 @@ verify_valuetype_layout_with_context (MonoClass *class, GHashTable *referenced_t
 		return FALSE;
 
 	g_hash_table_insert (referenced_types, class, class);
-	count = class->field.count;
-	for (i = 0; i < count; ++i) {
-		MonoClass *field_class;
-		MonoClassField *field = &class->fields [i];
-		if (!field || !field->type)
+	while ((field = mono_class_get_fields (class, &iter)) != NULL) {
+		if (!field->type)
 			return FALSE;
 
 		if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
