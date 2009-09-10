@@ -879,11 +879,11 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	*tramp_size = 24;
 	code = buf;
 	/* Load rgctx value */
-	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8);
-	ARM_LDR_REG_REG (code, MONO_ARCH_RGCTX_REG, ARMREG_PC, ARMREG_R1);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 8);
+	ARM_LDR_REG_REG (code, MONO_ARCH_RGCTX_REG, ARMREG_PC, ARMREG_IP);
 	/* Load branch addr + branch */
-	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 4);
-	ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_R1);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
+	ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_IP);
 
 	g_assert (code - buf == 16);
 
