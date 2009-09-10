@@ -26,7 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
+using System;
 using System.Collections;
 using System.Xml;
 
@@ -43,7 +43,7 @@ namespace Mono.Tuner {
 		{
 			return assembly.ToString ().Contains ("DummyEntry") || assembly.ToString ().Contains ("MoonAtkBridge");
 		}
-		
+
 		protected override void InitializeAssembly (AssemblyDefinition assembly)
 		{
 			if (IsA11yAssembly (assembly))
@@ -58,17 +58,19 @@ namespace Mono.Tuner {
 				Annotations.Mark (method);
 		}
 
+		protected override bool IgnoreScope (IMetadataScope scope)
+		{
+			return false;
+		}
+
 		protected override void MarkType (TypeReference reference)
 		{
 			if (reference == null)
-				return;
+				throw new ArgumentNullException ("reference");
 
 			reference = GetOriginalType (reference);
 
 			if (reference is GenericParameter)
-				return;
-
-			if (IgnoreScope (reference.Scope))
 				return;
 
 			TypeDefinition type = reference.Resolve ();
