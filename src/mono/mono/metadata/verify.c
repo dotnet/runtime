@@ -6047,7 +6047,7 @@ verify_interfaces (MonoClass *class)
 }
 
 static gboolean
-verify_valuetype_layout_with_context (MonoClass *class, GHashTable *referenced_types)
+verify_valuetype_layout_with_target (MonoClass *class, MonoClass *target_class)
 {
 	int type;
 	gpointer iter = NULL;
@@ -6059,13 +6059,9 @@ verify_valuetype_layout_with_context (MonoClass *class, GHashTable *referenced_t
 
 	type = class->byval_arg.type;
 	/*primitive type fields are not properly decoded*/
-	if (type >= MONO_TYPE_BOOLEAN && type <= MONO_TYPE_R8)
+	if ((type >= MONO_TYPE_BOOLEAN && type <= MONO_TYPE_R8) || (type >= MONO_TYPE_I && type <= MONO_TYPE_U))
 		return TRUE;
 
-	if (g_hash_table_lookup (referenced_types, class))
-		return FALSE;
-
-	g_hash_table_insert (referenced_types, class, class);
 	while ((field = mono_class_get_fields (class, &iter)) != NULL) {
 		if (!field->type)
 			return FALSE;
@@ -6074,7 +6070,8 @@ verify_valuetype_layout_with_context (MonoClass *class, GHashTable *referenced_t
 			continue;
 
 		field_class = mono_class_get_generic_type_definition (mono_class_from_mono_type (field->type));
-		if (!verify_valuetype_layout_with_context (field_class, referenced_types))
+
+		if (field_class == target_class || !verify_valuetype_layout_with_target (field_class, target_class))
 			return FALSE;
 	}
 
@@ -6085,9 +6082,7 @@ static gboolean
 verify_valuetype_layout (MonoClass *class)
 {
 	gboolean res;
-	GHashTable *referenced_types = g_hash_table_new (NULL, NULL);
-	res = verify_valuetype_layout_with_context (class, referenced_types);
-	g_hash_table_destroy (referenced_types);
+	res = verify_valuetype_layout_with_target (class, class);
 	return res;
 }
 
