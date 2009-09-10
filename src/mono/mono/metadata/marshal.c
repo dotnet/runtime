@@ -2473,8 +2473,10 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
 
 	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
-	if (ares == NULL)
+	if (ares == NULL) {
 		mono_raise_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingException", "The async result object is null or of an unexpected type."));
+		return NULL;
+	}
 
 	if (ares->async_delegate != (MonoObject*)delegate && mono_framework_version () >= 2) {
 		mono_raise_exception (mono_get_exception_invalid_operation (
