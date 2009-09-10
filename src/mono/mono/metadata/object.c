@@ -5356,7 +5356,7 @@ mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer a
 		method = mono_marshal_get_remoting_invoke (method);
 		delegate->method_ptr = mono_compile_method (method);
 		MONO_OBJECT_SETREF (delegate, target, target);
-	} else if (mono_method_signature (method)->hasthis && method->klass->valuetype) {
+	} else if (method && mono_method_signature (method)->hasthis && method->klass->valuetype) {
 		method = mono_marshal_get_unbox_wrapper (method);
 		delegate->method_ptr = mono_compile_method (method);
 		MONO_OBJECT_SETREF (delegate, target, target);
