@@ -517,7 +517,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 		*retklass = NULL;
 		result = mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context);
 		// This checks the memberref type as well
-		if (result && handle_class != mono_defaults.fieldhandle_class) {
+		if (!result || handle_class != mono_defaults.fieldhandle_class) {
 			mono_loader_set_error_bad_image (g_strdup ("Bad field token."));
 			return NULL;
 		}
