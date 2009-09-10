@@ -3137,6 +3137,8 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 			mono_mb_emit_ldloc (mb, loc_array);
 			mono_mb_emit_icon (mb, complex_count);	/* The array has an additional slot to hold the ret value */
 			mono_mb_emit_ldloc (mb, loc_return);
+
+			g_assert (ret_class); /*FIXME properly fail here*/
 			if (ret_class->valuetype) {
 				mono_mb_emit_op (mb, CEE_BOX, ret_class);
 			}
