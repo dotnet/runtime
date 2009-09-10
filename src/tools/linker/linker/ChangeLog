@@ -1,3 +1,9 @@
+2009-09-10  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Linker.Steps/MarkStep.cs: Make IgnoreScope() virtual to
+	  prevent marking custom attributes of foreign assemblies in a
+	  derived step in the tuner. ( r: jb )
+
 2009-09-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Linker.Steps/MarkStep.cs: Visibility changes needed by
