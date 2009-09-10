@@ -1,3 +1,8 @@
+2009-09-10  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/MoonlightA11yApiMarker.cs: Don't mark attributes
+	  of non-a11y assemblies.
+
 2009-09-09  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Rather use
