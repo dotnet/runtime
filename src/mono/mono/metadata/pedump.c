@@ -468,6 +468,10 @@ verify_image_file (const char *fname)
 	for (i = 1; i <= table->rows; ++i) {
 		guint32 token = i | MONO_TOKEN_TYPE_DEF;
 		MonoClass *class = mono_class_get (image, token);
+		if (!class) {
+			printf ("Could not load class with token %x\n", token);
+			continue;
+		}
 		mono_class_init (class);
 		if (class->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ()) {
 			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, class->name_space, class->name);
