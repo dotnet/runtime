@@ -317,7 +317,7 @@ can_avoid_corlib_reflection_delegate_optimization (MonoMethod *method)
  *	Return TRUE if a delegate can be created on the specified method. 
  *	CoreCLR also affect the binding, so throwOnBindFailure must be 
  * 	FALSE to let this function return (FALSE) normally, otherwise (if
- *	throwOnBindFailure is TRUE) itwill throw an ArgumentException.
+ *	throwOnBindFailure is TRUE) it will throw an ArgumentException.
  *
  *	A MethodAccessException is thrown if the specified method is not
  *	visible from the caller point of view.
@@ -496,12 +496,23 @@ mono_security_core_clr_is_platform_image (MonoImage *image)
 /*
  * default_platform_check:
  *
- *	Default platform check. Always return FALSE.
+ *	Default platform check. Always TRUE for current corlib (minimum 
+ *	trust-able subset) otherwise return FALSE. Any real CoreCLR host
+ *	should provide its own callback to define platform code (i.e.
+ *	this default is meant for test only).
  */
 static gboolean
 default_platform_check (const char *image_name)
 {
-	return FALSE;
+	if (mono_defaults.corlib) {
+		return (strcmp (mono_defaults.corlib->name, image_name) == 0);
+	} else {
+		/* this can get called even before we load corlib (e.g. the EXE itself) */
+		const char *corlib = "mscorlib.dll";
+		int ilen = strlen (image_name);
+		int clen = strlen (corlib);
+		return ((ilen >= clen) && (strcmp ("mscorlib.dll", image_name + ilen - clen) == 0));
+	}
 }
 
 static MonoCoreClrPlatformCB platform_callback = default_platform_check;
