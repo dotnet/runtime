@@ -946,8 +946,12 @@ mono_class_describe_statics (MonoClass* klass)
 	MonoClassField *field;
 	MonoClass *p;
 	const char *field_ptr;
-	const char *addr = mono_class_vtable (mono_domain_get (), klass)->data;
-	if (!addr)
+	MonoVTable *vtable = mono_class_vtable_full (mono_domain_get (), klass, FALSE);
+	const char *addr;
+
+	if (!vtable)
+		return;
+	if (!(addr = vtable->data))
 		return;
 
 	for (p = klass; p != NULL; p = p->parent) {
