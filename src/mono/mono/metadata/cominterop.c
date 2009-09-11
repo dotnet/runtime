@@ -1571,7 +1571,7 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 	 * is called by the corresponding real proxy to create the real RCW.
 	 * Constructor does not need to be called. Will be called later.
 	*/
-	obj = mono_object_new_alloc_specific (mono_class_vtable (domain, klass));
+	obj = mono_object_new_alloc_specific (mono_class_vtable_full (domain, klass, TRUE));
 	return obj;
 }
 
