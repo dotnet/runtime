@@ -262,7 +262,10 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 		mono_image_check_for_module_cctor (klass->image);
 		if (klass->image->has_module_cctor) {
 			MonoClass *module_klass = mono_class_get (klass->image, MONO_TOKEN_TYPE_DEF | 1);
-			mono_runtime_class_init (mono_class_vtable (vtable->domain, module_klass));
+			MonoVTable *module_vtable = mono_class_vtable_full (vtable->domain, module_klass, raise_exception);
+			if (!module_vtable)
+				return NULL;
+			mono_runtime_class_init (module_vtable);
 		}
 	}
 	method = mono_class_get_cctor (klass);
@@ -1750,8 +1753,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		return runtime_info->domain_vtables [domain->domain_id];
 	}
 	if (!class->inited || class->exception_type) {
-		if (!mono_class_init (class) || class->exception_type){
-			MonoException *exc;
+		if (!mono_class_init (class) || class->exception_type) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			if (raise_on_error)
@@ -2010,6 +2012,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	gpointer *interface_offsets;
 
 	vt = mono_class_vtable (domain, class);
+	g_assert (vt); /*FIXME property handle failure*/
 	max_interface_id = vt->max_interface_id;
 	
 	/* Calculate vtable space for extra interfaces */
@@ -2857,6 +2860,12 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		is_static = TRUE;
 		vtable = mono_class_vtable (domain, field->parent);
+		if (!vtable) {
+			char *name = mono_type_get_full_name (field->parent);
+			g_warning ("Could not retrieve the vtable for type %s in mono_field_get_value_object", name);
+			g_free (name);
+			return NULL;
+		}
 		if (!vtable->initialized)
 			mono_runtime_class_init (vtable);
 	}
@@ -3784,12 +3793,17 @@ mono_object_allocate_spec (size_t size, MonoVTable *vtable)
  * looked up using @klass.   This will not invoke any constructors, 
  * so the consumer of this routine has to invoke any constructors on
  * its own to initialize the object.
+ * 
+ * It returns NULL on failure.
  */
 MonoObject *
 mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
 	MONO_ARCH_SAVE_REGS;
-	return mono_object_new_specific (mono_class_vtable (domain, klass));
+	MonoVTable *vtable = mono_class_vtable (domain, klass);
+	if (!vtable)
+		return NULL;
+	return mono_object_new_specific (vtable);
 }
 
 /**
@@ -4179,7 +4193,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size
 	 * Following three lines almost taken from mono_object_new ():
 	 * they need to be kept in sync.
 	 */
-	vtable = mono_class_vtable (domain, array_class);
+	vtable = mono_class_vtable_full (domain, array_class, TRUE);
 	if (!array_class->has_references) {
 		o = mono_object_allocate_ptrfree (byte_len, vtable);
 #if NEED_TO_ZERO_PTRFREE
@@ -4228,7 +4242,7 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, mono_array_size_t n)
 	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac);
 
-	return mono_array_new_specific (mono_class_vtable (domain, ac), n);
+	return mono_array_new_specific (mono_class_vtable_full (domain, ac, TRUE), n);
 }
 
 /**
@@ -4324,6 +4338,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 		mono_gc_out_of_memory (-1);
 
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
+	g_assert (vtable);
 
 	s = mono_object_allocate_ptrfree (size, vtable);
 
@@ -4449,6 +4464,8 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 		return mono_nullable_box (value, class);
 
 	vtable = mono_class_vtable (domain, class);
+	if (!vtable)
+		return NULL;
 	size = mono_class_instance_size (class);
 	res = mono_object_new_alloc_specific (vtable);
 	if (G_UNLIKELY (profile_allocs))
