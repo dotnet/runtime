@@ -2681,12 +2681,17 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 		return method;
 
 	/* this seems to be the best plase to put this, as all remoting invokes seem to get filtered through here */
-	if ((method->klass->is_com_object || method->klass == mono_defaults.com_object_class) && !mono_class_vtable (mono_domain_get (), method->klass)->remote) {
+	if (method->klass->is_com_object || method->klass == mono_defaults.com_object_class) {
+		MonoVTable *vtable = mono_class_vtable (mono_domain_get (), method->klass);
+		g_assert (vtable); /*FIXME do proper error handling*/
+
+		if (!vtable->remote) {
 #ifndef DISABLE_COM
-		return mono_cominterop_get_invoke (method);
+			return mono_cominterop_get_invoke (method);
 #else
-		g_assert_not_reached ();
+			g_assert_not_reached ();
 #endif
+		}
 	}
 
 	sig = mono_signature_no_pinvoke (method);
