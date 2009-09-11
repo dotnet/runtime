@@ -1660,7 +1660,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	mono_domain_unlock (domain);
 }
 
-static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class);
+static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean raise_on_error);
 
 /**
  * mono_class_vtable:
@@ -1674,17 +1674,36 @@ static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoCla
 MonoVTable *
 mono_class_vtable (MonoDomain *domain, MonoClass *class)
 {
+	return mono_class_vtable_full (domain, class, FALSE);
+}
+
+/**
+ * mono_class_vtable_full:
+ * @domain: the application domain
+ * @class: the class to initialize
+ * @raise_on_error if an exception should be raised on failure or not
+ *
+ * VTables are domain specific because we create domain specific code, and 
+ * they contain the domain specific static class data.
+ */
+MonoVTable *
+mono_class_vtable_full (MonoDomain *domain, MonoClass *class, gboolean raise_on_error)
+{
 	MonoClassRuntimeInfo *runtime_info;
 
 	g_assert (class);
+
+	if (class->exception_type) {
+		if (raise_on_error)
+			mono_raise_exception (mono_class_get_exception_for_failure (class));
+		return NULL;
+	}
 
 	/* this check can be inlined in jitted code, too */
 	runtime_info = class->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
 		return runtime_info->domain_vtables [domain->domain_id];
-	if (class->exception_type)
-		return NULL;
-	return mono_class_create_runtime_vtable (domain, class);
+	return mono_class_create_runtime_vtable (domain, class, raise_on_error);
 }
 
 /**
@@ -1709,7 +1728,7 @@ mono_class_try_get_vtable (MonoDomain *domain, MonoClass *class)
 }
 
 static MonoVTable *
-mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
+mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean raise_on_error)
 {
 	MonoVTable *vt;
 	MonoClassRuntimeInfo *runtime_info, *old_info;
@@ -1735,13 +1754,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 			MonoException *exc;
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
-			exc = mono_class_get_exception_for_failure (class);
-			g_assert (exc);
-			mono_raise_exception (exc);
+			if (raise_on_error)
+				mono_raise_exception (mono_class_get_exception_for_failure (class));
+			return NULL;
 		}
 	}
-
-	mono_class_init (class);
 
 	/* 
 	 * For some classes, mono_class_init () already computed class->vtable_size, and 
@@ -1753,6 +1770,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	if (class->exception_type) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
+		if (raise_on_error)
+			mono_raise_exception (mono_class_get_exception_for_failure (class));
 		return NULL;
 	}
 
@@ -1952,16 +1971,15 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	mono_loader_unlock ();
 
 	/* Initialization is now complete, we can throw if the InheritanceDemand aren't satisfied */
-	if (mono_is_security_manager_active () && (class->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND)) {
-		MonoException *exc = mono_class_get_exception_for_failure (class);
-		g_assert (exc);
-		mono_raise_exception (exc);
-	}
+	if (mono_is_security_manager_active () && (class->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND) && raise_on_error)
+		mono_raise_exception (mono_class_get_exception_for_failure (class));
 
 	/* make sure the parent is initialized */
+	/*FIXME shouldn't this fail the current type?*/
 	if (class->parent)
-		mono_class_vtable (domain, class->parent);
+		mono_class_vtable_full (domain, class->parent, raise_on_error);
 
+	/*FIXME check for OOM*/
 	vt->type = mono_type_get_object (domain, &class->byval_arg);
 	if (class->contextbound)
 		vt->remote = 1;
