@@ -688,6 +688,7 @@ static gint32 get_family_hint(void)
 		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4Supported");
 		ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6Supported");
 		vtable = mono_class_vtable (mono_domain_get (), socket_class);
+		g_assert (vtable);
 		mono_runtime_class_init (vtable);
 
 		mono_field_static_get_value (vtable, ipv4_field, &ipv4_enabled);
