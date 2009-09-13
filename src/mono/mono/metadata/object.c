@@ -3799,8 +3799,10 @@ mono_object_allocate_spec (size_t size, MonoVTable *vtable)
 MonoObject *
 mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
+	MonoVTable *vtable;
+
 	MONO_ARCH_SAVE_REGS;
-	MonoVTable *vtable = mono_class_vtable (domain, klass);
+	vtable = mono_class_vtable (domain, klass);
 	if (!vtable)
 		return NULL;
 	return mono_object_new_specific (vtable);
