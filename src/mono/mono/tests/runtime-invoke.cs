@@ -93,6 +93,28 @@ class Tests
 		return 0;
 	}
 
+	public struct Foo
+	{
+		public string ToString2 () {
+			return "FOO";
+		}
+	}
+
+	public static object GetNSObject (IntPtr i) {
+		return i;
+	}
+
+	public static int test_0_vtype_method_sharing () {
+		/* Check sharing of wrappers of vtype methods with static methods having an IntPtr argument */
+		if ((string)(typeof (Foo).GetMethod ("ToString2").Invoke (new Foo (), null)) != "FOO")
+			return 3;
+		object o = typeof (Tests).GetMethod ("GetNSObject").Invoke (null, new object [] { new IntPtr (42) });
+		if (!(o is IntPtr) || ((IntPtr)o != new IntPtr (42)))
+			return 4;
+
+		return 0;
+	}
+
 	public static unsafe int test_0_ptr () {
 		int[] arr = new int [10];
 		fixed (void *p = &arr [5]) {
