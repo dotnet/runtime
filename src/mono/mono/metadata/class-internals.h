@@ -973,7 +973,7 @@ typedef struct {
 	MonoClass *delegate_class;
 	MonoClass *multicastdelegate_class;
 	MonoClass *asyncresult_class;
-	MonoClass *waithandle_class;
+	MonoClass *manualresetevent_class;
 	MonoClass *typehandle_class;
 	MonoClass *fieldhandle_class;
 	MonoClass *methodhandle_class;

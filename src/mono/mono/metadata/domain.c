@@ -1445,9 +1445,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		"AsyncResult");
 	g_assert (mono_defaults.asyncresult_class != 0 );
 
-	mono_defaults.waithandle_class = mono_class_from_name (
-		mono_defaults.corlib, "System.Threading", "WaitHandle");
-	g_assert (mono_defaults.waithandle_class != 0 );
+	mono_defaults.manualresetevent_class = mono_class_from_name (
+		mono_defaults.corlib, "System.Threading", "ManualResetEvent");
+	g_assert (mono_defaults.manualresetevent_class != 0 );
 
 	mono_defaults.typehandle_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "RuntimeTypeHandle");

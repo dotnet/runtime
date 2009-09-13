@@ -1995,7 +1995,10 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			MONO_OBJECT_SETREF (msg, async_result, ares);
 			msg->call_type = CallType_BeginInvoke;
 
+			exc = NULL;
 			mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
+			if (exc)
+				mono_raise_exception ((MonoException *) exc);
 			return ares;
 		}
 	}

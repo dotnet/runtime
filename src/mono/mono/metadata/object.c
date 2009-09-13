@@ -5060,11 +5060,11 @@ mono_wait_handle_new (MonoDomain *domain, HANDLE handle)
 	gpointer params [1];
 	static MonoMethod *handle_set;
 
-	res = (MonoWaitHandle *)mono_object_new (domain, mono_defaults.waithandle_class);
+	res = (MonoWaitHandle *)mono_object_new (domain, mono_defaults.manualresetevent_class);
 
 	/* Even though this method is virtual, it's safe to invoke directly, since the object type matches.  */
 	if (!handle_set)
-		handle_set = mono_class_get_property_from_name (mono_defaults.waithandle_class, "Handle")->set;
+		handle_set = mono_class_get_property_from_name (mono_defaults.manualresetevent_class, "Handle")->set;
 
 	params [0] = &handle;
 	mono_runtime_invoke (handle_set, res, params, NULL);
@@ -5079,8 +5079,8 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 	static MonoClassField *f_safe_handle;
 
 	if (!f_os_handle && !f_safe_handle) {
-		f_os_handle = mono_class_get_field_from_name (mono_defaults.waithandle_class, "os_handle");
-		f_safe_handle = mono_class_get_field_from_name (mono_defaults.waithandle_class, "safe_wait_handle");
+		f_os_handle = mono_class_get_field_from_name (mono_defaults.manualresetevent_class, "os_handle");
+		f_safe_handle = mono_class_get_field_from_name (mono_defaults.manualresetevent_class, "safe_wait_handle");
 	}
 
 	if (f_os_handle) {
