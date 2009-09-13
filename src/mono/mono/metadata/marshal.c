@@ -4090,6 +4090,8 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 			 * Create a new signature to reflect this.
 			 */
 			callsig = signature_dup_add_this (mono_method_signature (method), method->klass);
+			/* Can't share this as it would be shared with static methods taking an IntPtr argument */
+			need_direct_wrapper = TRUE;
 		} else {
 			if (method->dynamic)
 				callsig = signature_dup (method->klass->image, mono_method_signature (method));
