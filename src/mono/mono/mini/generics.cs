@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 class Tests {
 
@@ -442,6 +443,20 @@ class Tests {
 			a = 0;
 		do { idx++; } while (cmp.Compare (idx - 1, a) == 0);
 		return idx;
+	}
+
+	public class XElement {
+		public string Value {
+			get; set;
+		}
+	}
+
+	public static int test_0_fullaot_linq () {
+		var allWords = new XElement [] { new XElement { Value = "one" } };
+		var filteredWords = allWords.Where(kw => kw.Value.StartsWith("T"));
+		Console.WriteLine("{0} filtered words", filteredWords.Count());
+
+		return 0;
 	}
 
 	static int cctor_count = 0;

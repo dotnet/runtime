@@ -2048,12 +2048,11 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 	}
 
 	/* 
-	 * For ICollection<T>, where T is a vtype, add instances of the helper methods
+	 * For ICollection<T>, add instances of the helper methods
 	 * in Array, since a T[] could be cast to ICollection<T>.
 	 */
 	if (klass->image == mono_defaults.corlib && !strcmp (klass->name_space, "System.Collections.Generic") &&
-		(!strcmp(klass->name, "ICollection`1") || !strcmp (klass->name, "IEnumerable`1") || !strcmp (klass->name, "IList`1") || !strcmp (klass->name, "IEnumerator`1")) &&
-		MONO_TYPE_ISSTRUCT (klass->generic_class->context.class_inst->type_argv [0])) {
+		(!strcmp(klass->name, "ICollection`1") || !strcmp (klass->name, "IEnumerable`1") || !strcmp (klass->name, "IList`1") || !strcmp (klass->name, "IEnumerator`1"))) {
 		MonoClass *tclass = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
 		MonoClass *array_class = mono_bounded_array_class_get (tclass, 1, FALSE);
 		gpointer iter;
@@ -2085,6 +2084,31 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 		}
 
 		g_free (name_prefix);
+
+		/* 
+		 * Add instance of Array.GetGenericValueImpl, which is called by the
+		 * array helper methods.
+		 * managed-to-native wrappers are not shared, so have to generate 
+		 * these for ref types too.
+		 */
+		{
+			MonoGenericContext ctx;
+			MonoType *args [16];
+			static MonoMethod *get_method;
+
+			if (get_method == NULL) {
+				MonoClass *array_klass = mono_array_class_get (mono_defaults.int_class, 1)->parent;
+				get_method = mono_class_get_method_from_name (array_klass, "GetGenericValueImpl", 2);
+			}
+
+			if (get_method) {
+				memset (&ctx, 0, sizeof (ctx));
+				args [0] = &tclass->byval_arg;
+				ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+				add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (get_method, &ctx), TRUE, TRUE));
+			}
+		}
+
 	}
 }
 
