@@ -416,7 +416,7 @@ typedef struct _ProfilerHeapShotWriteJob {
 	ProfilerHeapShotWriteBuffer *buffers;
 	ProfilerHeapShotWriteBuffer **last_next;
 	guint32 full_buffers;
-	gboolean heap_shot_was_signalled;
+	gboolean heap_shot_was_requested;
 	guint64 start_counter;
 	guint64 start_time;
 	guint64 end_counter;
@@ -900,10 +900,8 @@ struct _MonoProfiler {
 	
 	int command_port;
 	
-	char *heap_shot_command_file_name;
 	int dump_next_heap_snapshots;
-	guint64 heap_shot_command_file_access_time;
-	gboolean heap_shot_was_signalled;
+	gboolean heap_shot_was_requested;
 	guint32 garbage_collection_counter;
 	
 	ProfilerExecutableMemoryRegions *executable_regions;
@@ -927,47 +925,6 @@ struct _MonoProfiler {
 };
 static MonoProfiler *profiler;
 
-#ifndef PLATFORM_WIN32
-#include <signal.h>
-
-#ifdef MONO_ARCH_USE_SIGACTION
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
-#elif defined(__sparc__)
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *sigctx)
-#else
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
-#endif
-
-static void
-request_heap_snapshot (void) {
-	profiler->heap_shot_was_signalled = TRUE;
-	mono_gc_collect (mono_gc_max_generation ());
-}
-
-static void
-SIG_HANDLER_SIGNATURE (gc_request_handler) {
-	profiler->heap_shot_was_signalled = TRUE;
-	WRITER_EVENT_RAISE ();
-}
-
-static void
-add_gc_request_handler (int signal_number)
-{
-	struct sigaction sa;
-	
-#ifdef MONO_ARCH_USE_SIGACTION
-	sa.sa_sigaction = gc_request_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO;
-#else
-	sa.sa_handler = gc_request_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-#endif
-	
-	g_assert (sigaction (signal_number, &sa, NULL) != -1);
-}
-
 static void
 enable_profiler (void) {
 	profiler->profiler_enabled = TRUE;
@@ -981,37 +938,11 @@ disable_profiler (void) {
 	flush_everything ();
 }
 
-
-
 static void
-SIG_HANDLER_SIGNATURE (toggle_handler) {
-	if (profiler->profiler_enabled) {
-		profiler->profiler_enabled = FALSE;
-	} else {
-		profiler->profiler_enabled = TRUE;
-	}
+request_heap_snapshot (void) {
+	profiler->heap_shot_was_requested = TRUE;
+	mono_gc_collect (mono_gc_max_generation ());
 }
-
-static void
-add_toggle_handler (int signal_number)
-{
-	struct sigaction sa;
-	
-#ifdef MONO_ARCH_USE_SIGACTION
-	sa.sa_sigaction = toggle_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO;
-#else
-	sa.sa_handler = toggle_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-#endif
-	
-	g_assert (sigaction (signal_number, &sa, NULL) != -1);
-}
-#endif
-
-
 
 #define DEBUG_LOAD_EVENTS 0
 #define DEBUG_MAPPING_EVENTS 0
@@ -1702,7 +1633,7 @@ profiler_heap_shot_object_buffer_new (ProfilerPerThreadData *data) {
 }
 
 static ProfilerHeapShotWriteJob*
-profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled, gboolean dump_heap_data, guint32 collection) {
+profiler_heap_shot_write_job_new (gboolean heap_shot_was_requested, gboolean dump_heap_data, guint32 collection) {
 	ProfilerHeapShotWriteJob *job = g_new (ProfilerHeapShotWriteJob, 1);
 	job->next = NULL;
 	job->next_unwritten = NULL;
@@ -1731,7 +1662,7 @@ profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled, gboolean dum
 		job->summary.per_class_data = NULL;
 	}
 
-	job->heap_shot_was_signalled = heap_shot_was_signalled;
+	job->heap_shot_was_requested = heap_shot_was_requested;
 	job->collection = collection;
 	job->dump_heap_data = dump_heap_data;
 #if DEBUG_HEAP_PROFILER
@@ -4805,46 +4736,13 @@ gc_event_kind_from_profiler_event (MonoGCEvent event) {
 	}
 }
 
-#define HEAP_SHOT_COMMAND_FILE_MAX_LENGTH 64
-static void
-profiler_heap_shot_process_command_file (void) {
-	//FIXME: Port to Windows as well
-	struct stat stat_buf;
-	int fd;
-	char buffer [HEAP_SHOT_COMMAND_FILE_MAX_LENGTH + 1];
-	
-	if (profiler->heap_shot_command_file_name == NULL)
-		return;
-	if (stat (profiler->heap_shot_command_file_name, &stat_buf) != 0)
-		return;
-	if (stat_buf.st_size > HEAP_SHOT_COMMAND_FILE_MAX_LENGTH)
-		return;
-	if ((stat_buf.st_mtim.tv_sec * 1000000) < profiler->heap_shot_command_file_access_time)
-		return;
-	
-	fd = open (profiler->heap_shot_command_file_name, O_RDONLY);
-	if (fd < 0) {
-		return;
-	} else {
-		if (read (fd, &(buffer [0]), stat_buf.st_size) != stat_buf.st_size) {
-			return;
-		} else {
-			buffer [stat_buf.st_size] = 0;
-			profiler->dump_next_heap_snapshots = atoi (buffer);
-			MONO_PROFILER_GET_CURRENT_TIME (profiler->heap_shot_command_file_access_time);
-		}
-		close (fd);
-	}
-}
-
 static gboolean
 dump_current_heap_snapshot (void) {
 	gboolean result;
 	
-	if (profiler->heap_shot_was_signalled) {
+	if (profiler->heap_shot_was_requested) {
 		result = TRUE;
 	} else {
-		profiler_heap_shot_process_command_file ();
 		if (profiler->dump_next_heap_snapshots > 0) {
 			profiler->dump_next_heap_snapshots--;
 			result = TRUE;
@@ -5141,8 +5039,8 @@ process_gc_event (MonoProfiler *profiler, gboolean do_heap_profiling, MonoGCEven
 			ProfilerPerThreadData *data;
 			
 			if (heap_shot_write_job_should_be_created (dump_heap_data)) {
-				job = profiler_heap_shot_write_job_new (profiler->heap_shot_was_signalled, dump_heap_data, profiler->garbage_collection_counter);
-				profiler->heap_shot_was_signalled = FALSE;
+				job = profiler_heap_shot_write_job_new (profiler->heap_shot_was_requested, dump_heap_data, profiler->garbage_collection_counter);
+				profiler->heap_shot_was_requested = FALSE;
 				MONO_PROFILER_GET_CURRENT_COUNTER (job->start_counter);
 				MONO_PROFILER_GET_CURRENT_TIME (job->start_time);
 			} else {
@@ -5279,6 +5177,31 @@ execute_user_command (char *command) {
 		LOG_USER_THREAD ("execute_user_command: disabling profiler");
 		disable_profiler ();
 		write_user_response ("DONE\n");
+	} else if (strcmp (command, "heap-snapshot") == 0) {
+		LOG_USER_THREAD ("execute_user_command: taking heap snapshot");
+		profiler->heap_shot_was_requested = TRUE;
+		WRITER_EVENT_RAISE ();
+		write_user_response ("DONE\n");
+	} else if (strstr (command, "heap-snapshot-counter") == 0) {
+		char *equals; 
+		LOG_USER_THREAD ("execute_user_command: changing heap counter");
+		equals = strstr (command, "=");
+		if (equals != NULL) {
+			equals ++;
+			if (strcmp (equals, "all") == 0) {
+				LOG_USER_THREAD ("execute_user_command: heap counter is \"all\"");
+				profiler->garbage_collection_counter = -1;
+			} else if (strcmp (equals, "none") == 0) {
+				LOG_USER_THREAD ("execute_user_command: heap counter is \"none\"");
+				profiler->garbage_collection_counter = 0;
+			} else {
+				profiler->garbage_collection_counter = atoi (equals);
+			}
+			write_user_response ("DONE\n");
+		} else {
+			write_user_response ("ERROR\n");
+		}
+		profiler->heap_shot_was_requested = TRUE;
 	} else {
 		LOG_USER_THREAD ("execute_user_command: command not recognized");
 		write_user_response ("ERROR\n");
@@ -5449,9 +5372,6 @@ profiler_shutdown (MonoProfiler *prof)
 	}
 	
 	profiler_heap_buffers_free (&(profiler->heap));
-	if (profiler->heap_shot_command_file_name != NULL) {
-		g_free (profiler->heap_shot_command_file_name);
-	}
 	
 	profiler_free_write_buffers ();
 	profiler_destroy_heap_shot_write_jobs ();
@@ -5467,31 +5387,6 @@ profiler_shutdown (MonoProfiler *prof)
 	g_free (profiler);
 	profiler = NULL;
 }
-
-#ifndef PLATFORM_WIN32
-static int
-parse_signal_name (const char *signal_name) {
-	if (! strcasecmp (signal_name, "SIGUSR1")) {
-		return SIGUSR1;
-	} else if (! strcasecmp (signal_name, "SIGUSR2")) {
-		return SIGUSR2;
-	} else if (! strcasecmp (signal_name, "SIGPROF")) {
-		return SIGPROF;
-	} else {
-		return atoi (signal_name);
-	}
-}
-static gboolean
-check_signal_number (int signal_number) {
-	if (((signal_number == SIGPROF) && ! (profiler->flags & MONO_PROFILE_STATISTICAL)) ||
-			(signal_number == SIGUSR1) ||
-			(signal_number == SIGUSR2)) {
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-}
-#endif
 
 #define FAIL_ARGUMENT_CHECK(message) do {\
 	failure_message = (message);\
@@ -5512,10 +5407,6 @@ check_signal_number (int signal_number) {
 static void
 setup_user_options (const char *arguments) {
 	gchar **arguments_array, **current_argument;
-#ifndef PLATFORM_WIN32
-	int gc_request_signal_number = 0;
-	int toggle_signal_number = 0;
-#endif
 	detect_fast_timer ();
 	
 	profiler->file_name = NULL;
@@ -5524,10 +5415,8 @@ setup_user_options (const char *arguments) {
 	profiler->statistical_buffer_size = 10000;
 	profiler->statistical_call_chain_depth = 0;
 	profiler->write_buffer_size = 1024;
-	profiler->heap_shot_command_file_name = NULL;
 	profiler->dump_next_heap_snapshots = 0;
-	profiler->heap_shot_command_file_access_time = 0;
-	profiler->heap_shot_was_signalled = FALSE;
+	profiler->heap_shot_was_requested = FALSE;
 	profiler->flags = MONO_PROFILE_APPDOMAIN_EVENTS|
 			MONO_PROFILE_ASSEMBLY_EVENTS|
 			MONO_PROFILE_MODULE_EVENTS|
@@ -5613,7 +5502,7 @@ setup_user_options (const char *arguments) {
 				if (! strcmp (parameter, "all")) {
 					profiler->dump_next_heap_snapshots = -1;
 				} else {
-					gc_request_signal_number = parse_signal_name (parameter);
+					profiler->dump_next_heap_snapshots = atoi (parameter);
 				}
 				FAIL_IF_HAS_MINUS;
 				if (! has_plus) {
@@ -5622,11 +5511,6 @@ setup_user_options (const char *arguments) {
 					profiler->action_flags.allocations_carry_id = TRUE_IF_NOT_MINUS;
 				}
 				profiler->action_flags.heap_shot = TRUE_IF_NOT_MINUS;
-			} else if (! (strncmp (argument, "gc-commands", equals_position) && strncmp (argument, "gc-c", equals_position) && strncmp (argument, "gcc", equals_position))) {
-				FAIL_IF_HAS_MINUS;
-				if (strlen (equals + 1) > 0) {
-					profiler->heap_shot_command_file_name = g_strdup (equals + 1);
-				}
 			} else if (! (strncmp (argument, "gc-dumps", equals_position) && strncmp (argument, "gc-d", equals_position) && strncmp (argument, "gcd", equals_position))) {
 				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
@@ -5637,14 +5521,6 @@ setup_user_options (const char *arguments) {
 				if (strlen (equals + 1) > 0) {
 					profiler->command_port = atoi (equals + 1);
 				}
-#ifndef PLATFORM_WIN32
-			} else if (! (strncmp (argument, "toggle-signal", equals_position) && strncmp (argument, "ts", equals_position))) {
-				FAIL_IF_HAS_MINUS;
-				if (strlen (equals + 1) > 0) {
-					char *signal_name = equals + 1;
-					toggle_signal_number = parse_signal_name (signal_name);
-				}
-#endif
 			} else {
 				FAIL_PARSING_VALUED_ARGUMENT;
 			}
@@ -5730,23 +5606,6 @@ failure_handling:
 	}
 	
 	g_free (arguments_array);
-	
-#ifndef PLATFORM_WIN32
-	if (gc_request_signal_number != 0) {
-		if (check_signal_number (gc_request_signal_number) && (gc_request_signal_number != toggle_signal_number)) {
-			add_gc_request_handler (gc_request_signal_number);
-		} else {
-			g_error ("Cannot use signal %d", gc_request_signal_number);
-		}
-	}
-	if (toggle_signal_number != 0) {
-		if (check_signal_number (toggle_signal_number) && (toggle_signal_number != gc_request_signal_number)) {
-			add_toggle_handler (toggle_signal_number);
-		} else {
-			g_error ("Cannot use signal %d", gc_request_signal_number);
-		}
-	}
-#endif
 	
 	/* Ensure that the profiler flags needed to support required action flags are active */
 	if (profiler->action_flags.jit_time) {
@@ -5843,7 +5702,7 @@ data_writer_thread (gpointer nothing) {
 		WRITER_EVENT_WAIT ();
 		LOG_WRITER_THREAD ("data_writer_thread: just woke up");
 		
-		if (profiler->heap_shot_was_signalled) {
+		if (profiler->heap_shot_was_requested) {
 			MonoDomain * root_domain = mono_get_root_domain ();
 			
 			if (root_domain != NULL) {
