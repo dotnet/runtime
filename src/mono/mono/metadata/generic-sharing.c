@@ -722,12 +722,20 @@ static gpointer
 class_type_info (MonoDomain *domain, MonoClass *class, int info_type)
 {
 	switch (info_type) {
-	case MONO_RGCTX_INFO_STATIC_DATA:
-		return mono_class_vtable (domain, class)->data;
+	case MONO_RGCTX_INFO_STATIC_DATA: {
+		MonoVTable *vtable = mono_class_vtable (domain, class);
+		if (!vtable)
+			mono_raise_exception (mono_class_get_exception_for_failure (class));
+		return vtable->data;
+	}
 	case MONO_RGCTX_INFO_KLASS:
 		return class;
-	case MONO_RGCTX_INFO_VTABLE:
-		return mono_class_vtable (domain, class);
+	case MONO_RGCTX_INFO_VTABLE: {
+		MonoVTable *vtable = mono_class_vtable (domain, class);
+		if (!vtable)
+			mono_raise_exception (mono_class_get_exception_for_failure (class));
+		return vtable;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -791,12 +799,16 @@ instantiate_other_info (MonoDomain *domain, MonoRuntimeGenericContextOtherInfoTe
 		return data;
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
 		MonoMethodInflated *method = data;
+		MonoVTable *vtable;
 
 		g_assert (method->method.method.is_inflated);
 		g_assert (method->context.method_inst);
 
-		return mono_method_lookup_rgctx (mono_class_vtable (domain, method->method.method.klass),
-			method->context.method_inst);
+		vtable = mono_class_vtable (domain, method->method.method.klass);
+		if (!vtable)
+			mono_raise_exception (mono_class_get_exception_for_failure (method->method.method.klass));
+
+		return mono_method_lookup_rgctx (vtable, method->context.method_inst);
 	}
 	case MONO_RGCTX_INFO_METHOD_CONTEXT: {
 		MonoMethodInflated *method = data;

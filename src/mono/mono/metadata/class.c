@@ -3952,8 +3952,10 @@ mono_class_init (MonoClass *class)
 		class->has_cctor = gklass->has_cctor;
 
 		mono_class_setup_vtable (gklass);
-		if (gklass->exception_type)
+		if (gklass->exception_type) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			goto fail;
+		}
 
 		class->vtable_size = gklass->vtable_size;
 	} else {
@@ -4041,12 +4043,20 @@ mono_class_init (MonoClass *class)
 		if (class->parent) {
 			/* This will compute class->parent->vtable_size for some classes */
 			mono_class_init (class->parent);
-			if (class->parent->exception_type || mono_loader_get_last_error ())
+			if (class->parent->exception_type) {
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+				goto fail;
+			}
+			if (mono_loader_get_last_error ())
 				goto fail;
 			if (!class->parent->vtable_size) {
 				/* FIXME: Get rid of this somehow */
 				mono_class_setup_vtable (class->parent);
-				if (class->parent->exception_type || mono_loader_get_last_error ())
+				if (class->parent->exception_type) {
+					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+					goto fail;
+				}
+				if (mono_loader_get_last_error ())
 					goto fail;
 			}
 			setup_interface_offsets (class, class->parent->vtable_size);
