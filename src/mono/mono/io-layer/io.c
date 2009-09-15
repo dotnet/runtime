@@ -1547,7 +1547,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	if (fd == -1 && errno == EISDIR)
 	{
 		/* Try again but don't try to make it writable */
-		fd = open(filename, flags  & ~(O_RDWR|O_WRONLY), perms);
+		fd = _wapi_open (filename, flags & ~(O_RDWR|O_WRONLY), perms);
 	}
 	
 	if (fd == -1) {
@@ -1979,7 +1979,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	
 	if(dest_name==NULL) {
 #ifdef DEBUG
-		g_message("%s: name is NULL", __func__);
+		g_message("%s: dest is NULL", __func__);
 #endif
 
 		g_free (utf8_src);
@@ -2022,16 +2022,15 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	}
 	
 	if (fail_if_exists) {
-		dest_fd = open (utf8_dest, O_WRONLY | O_CREAT | O_EXCL,
-				st.st_mode);
+		dest_fd = _wapi_open (utf8_dest, O_WRONLY | O_CREAT | O_EXCL, st.st_mode);
 	} else {
-		dest_fd = open (utf8_dest, O_WRONLY | O_TRUNC, st.st_mode);
+		/* FIXME: it kinda sucks that this code path potentially scans
+		 * the directory twice due to the weird SetLastError()
+		 * behavior. */
+		dest_fd = _wapi_open (utf8_dest, O_WRONLY | O_TRUNC, st.st_mode);
 		if (dest_fd < 0) {
-			/* O_TRUNC might cause a fail if the file
-			 * doesn't exist
-			 */
-			dest_fd = open (utf8_dest, O_WRONLY | O_CREAT,
-					st.st_mode);
+			/* The file does not exist, try creating it */
+			dest_fd = _wapi_open (utf8_dest, O_WRONLY | O_CREAT | O_TRUNC, st.st_mode);
 		} else {
 			/* Apparently this error is set if we
 			 * overwrite the dest file
@@ -2120,12 +2119,9 @@ ReplaceFile (const gunichar2 *replacedFileName, const gunichar2 *replacementFile
 		_wapi_set_last_path_error_from_errno (NULL, utf8_replacementFileName);
 		_wapi_rename (utf8_backupFileName, utf8_replacedFileName);
 		if (backup_fd != -1 && !fstat (backup_fd, &stBackup)) {
-			replaced_fd = open (utf8_backupFileName, O_WRONLY | O_CREAT | O_TRUNC,
-					     stBackup.st_mode);
-			if (replaced_fd == -1) {
-				replaced_fd = open (utf8_backupFileName, O_WRONLY | O_CREAT,
-					     stBackup.st_mode);
-			}
+			replaced_fd = _wapi_open (utf8_backupFileName, O_WRONLY | O_CREAT | O_TRUNC,
+						  stBackup.st_mode);
+			
 			if (replaced_fd == -1)
 				goto replace_cleanup;
 
