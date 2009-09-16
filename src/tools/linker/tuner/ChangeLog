@@ -1,5 +1,11 @@
 2009-09-16  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
+	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Sort the
+	  descriptors wrt type name, to avoid false negatives at
+	  MoonAtkBridge build time.
+
+2009-09-16  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
 	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Speed up by
 	  two orders of magnitude, thanks to caching XPathNavigator
 	  objects and calling Directory.GetFiles() just once.
