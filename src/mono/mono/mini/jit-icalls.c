@@ -743,7 +743,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 
 	mono_class_init (field->parent);
 
-	vtable = mono_class_vtable (domain, field->parent);
+	vtable = mono_class_vtable_full (domain, field->parent, TRUE);
 	if (!vtable->initialized)
 		mono_runtime_class_init (vtable);
 
