@@ -2497,5 +2497,37 @@ class Tests {
 	public static int inline_throw2 (int i) {
 		throw new Exception ();
 	}
+
+	// bug #539550
+	public static int test_0_lmf_filter () {
+		try {
+			// The invoke calls a runtime-invoke wrapper which has a filter clause
+			typeof (Tests).GetMethod ("lmf_filter").Invoke (null, new object [] { });
+		} catch (TargetInvocationException) {
+		}
+		return 0;
+	}
+
+    public static void lmf_filter () {
+        try {
+            Connect ();
+        }
+        catch {
+            throw new NotImplementedException ();
+        }
+    }
+
+    public static void Connect () {
+        Stop ();
+        throw new Exception();
+    }
+
+    public static void Stop () {
+        try {
+            lock (null) {}
+        }
+        catch {
+        }
+    }
 }
 

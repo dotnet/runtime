@@ -1088,6 +1088,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
 							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							mono_perfcounters->exceptions_finallys++;
+							*(mono_get_lmf_addr ()) = lmf;
 							call_filter (ctx, ei->handler_start);
 						}
 						
