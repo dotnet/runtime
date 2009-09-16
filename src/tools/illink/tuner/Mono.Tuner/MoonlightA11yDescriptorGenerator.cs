@@ -70,13 +70,13 @@ namespace Mono.Tuner {
 				writer.WriteStartElement("linker");
 			}
 
-			IDictionary types = ScanAssembly (assembly);
+			SortedDictionary <TypeDefinition, IList> types = ScanAssembly (assembly);
 			if (types != null && types.Count > 0) {
 				writer.WriteStartElement("assembly");
 				writer.WriteAttributeString ("fullname", assembly.Name.Name);
 				
 				foreach (TypeDefinition type in types.Keys) {
-					IList members = (IList)types [type];
+					IList members = types [type];
 					if (members != null && members.Count > 0) {
 						writer.WriteStartElement("type");
 						writer.WriteAttributeString ("fullname", type.FullName);
@@ -139,12 +139,12 @@ namespace Mono.Tuner {
 			return @params;
 		}
 
-		Hashtable /*Dictionary<TypeDefinition,List<IAnnotationProvider>*/ ScanAssembly (AssemblyDefinition assembly)
+		SortedDictionary<TypeDefinition, IList> /*,List<IAnnotationProvider>>*/ ScanAssembly (AssemblyDefinition assembly)
 		{
 			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
 				return null;
 
-			Hashtable members_used = new Hashtable ();
+			SortedDictionary<TypeDefinition, IList> members_used = new SortedDictionary<TypeDefinition, IList> (new TypeComparer ());
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
 				IList used_providers = FilterPublicMembers (ScanType (type));
 				if (used_providers.Count > 0)
@@ -322,6 +322,15 @@ namespace Mono.Tuner {
 						used.Add (provider);
 
 			return used;
+		}
+
+		class TypeComparer : IComparer <TypeDefinition> {
+
+			public int Compare (TypeDefinition x, TypeDefinition y)
+			{
+				return string.Compare (x.ToString (), y.ToString ());
+			}
+
 		}
 
 	}
