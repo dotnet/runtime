@@ -1,5 +1,5 @@
 //
-// MoonlightA11yDescriptorGenerator.cs
+// MoonlightA11yApiMarker.cs
 //
 // Author:
 //   Andrés G. Aragoneses (aaragoneses@novell.com)

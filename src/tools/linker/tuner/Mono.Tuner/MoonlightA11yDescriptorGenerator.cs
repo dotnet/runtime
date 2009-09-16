@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 using System.IO;
 using System.Text.RegularExpressions;
@@ -51,15 +52,16 @@ namespace Mono.Tuner {
 			if (assembly.Name.Name == "MoonAtkBridge" || assembly.Name.Name == "System.Windows" ||
 			    assembly.Name.Name.Contains ("Dummy"))
 				return;
-			
+
 			if (writer == null) {
 				if (!Directory.Exists (Context.OutputDirectory))
 					Directory.CreateDirectory (Context.OutputDirectory);
-				
+
 				string file_name = "descriptors.xml";
-				FileStream xml_file = 
-				  new FileStream (Path.Combine (Context.OutputDirectory, file_name), 
-				                  FileMode.OpenOrCreate);
+				string file_path = Path.Combine (Context.OutputDirectory, file_name);
+				if (File.Exists (file_path))
+					File.Delete (file_path);
+				FileStream xml_file = new FileStream (file_path, FileMode.OpenOrCreate);
 				Console.WriteLine ("Created file {0}", file_name);
 				Console.Write ("Writing contents...");
 
@@ -72,7 +74,7 @@ namespace Mono.Tuner {
 			if (types != null && types.Count > 0) {
 				writer.WriteStartElement("assembly");
 				writer.WriteAttributeString ("fullname", assembly.Name.Name);
-
+				
 				foreach (TypeDefinition type in types.Keys) {
 					IList members = (IList)types [type];
 					if (members != null && members.Count > 0) {
@@ -110,6 +112,10 @@ namespace Mono.Tuner {
 		protected override void EndProcess ()
 		{
 			Console.WriteLine ();
+
+			foreach (FileStream stream in streams)
+				stream.Close ();
+
 			if (writer != null) {
 				writer.WriteEndElement ();
 				writer.Close ();
@@ -165,10 +171,10 @@ namespace Mono.Tuner {
 			return new_list;
 		}
 
+		static string [] master_infos = Directory.GetFiles (Environment.CurrentDirectory, "*.info");
+
 		static string FindMasterInfoFile (string name)
 		{
-			string [] master_infos = Directory.GetFiles (Environment.CurrentDirectory, "*.info");
-
 			if (master_infos.Length == 0)
 				throw new Exception ("No masterinfo files found in current directory");
 			
@@ -285,17 +291,23 @@ namespace Mono.Tuner {
 				(md.SemanticsAttributes & MethodSemanticsAttributes.Setter) != 0;
 		}
 
-		//OPTIMIZEME!: maybe hold a dictionary of opened FileStreams?
+		static Dictionary<string, XPathNavigator> navs = new Dictionary<string, XPathNavigator> ();
+		static List<FileStream> streams = new List<FileStream> ();
+
 		static bool NodeExists (string file, string xpath)
 		{
 			Console.Write (".");
 			//Console.WriteLine ("Looking for node {0} in file {1}", xpath, file.Substring (file.LastIndexOf ("/") + 1));
-			using (FileStream stream = new FileStream (file, FileMode.Open)) {
+
+			XPathNavigator nav = null;
+			if (!navs.TryGetValue (file, out nav)) {
+				FileStream stream = new FileStream (file, FileMode.Open);
 				XPathDocument document = new XPathDocument (stream);
-				XPathNavigator navigator = document.CreateNavigator ();
-				XPathNavigator node = navigator.SelectSingleNode (xpath);
-				return (node != null);
+				nav = document.CreateNavigator ();
+				streams.Add (stream);
+				navs [file] = nav;
 			}
+			return nav.SelectSingleNode (xpath) != null;
 		}
 
 		static IList /*List<IAnnotationProvider>*/ ExtractUsedProviders (params IList[] members)
