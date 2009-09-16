@@ -595,8 +595,8 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		is_wrapper = TRUE;
 	}
 
-	max_size = 24 + 8 * jit->num_line_numbers +
-		(20 + sizeof (gpointer)) * (1 + jit->num_params + jit->num_locals);
+	max_size = (5 * 5) + 1 + (10 * jit->num_line_numbers) +
+		(25 + sizeof (gpointer)) * (1 + jit->num_params + jit->num_locals);
 
 	if (max_size > BUFSIZ)
 		ptr = oldptr = g_malloc (max_size);
