@@ -3107,7 +3107,6 @@ static gboolean
 verify_class_overrides (MonoClass *class, GPtrArray *ifaces, MonoMethod **overrides, int onum)
 {
 	int i;
-	gboolean found;
 
 	for (i = 0; i < onum; ++i) {
 		MonoMethod *decl = overrides [i * 2];
@@ -3127,38 +3126,14 @@ verify_class_overrides (MonoClass *class, GPtrArray *ifaces, MonoMethod **overri
 		}
 
 		if (!(decl->flags & METHOD_ATTRIBUTE_VIRTUAL) || (decl->flags & METHOD_ATTRIBUTE_STATIC)) {
-				if (body->flags & METHOD_ATTRIBUTE_STATIC)
-					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cannot override a static method in a base type"));
-				else
-					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cannot override a non virtual method in a base type"));
-				return FALSE;
-			}
-			
-		found = FALSE;
-		/*We can't use mono_class_is_assignable_from since it requires the class to be fully initialized*/
-		if (ifaces) {
-			int j;
-			for (j = 0; j < ifaces->len; j++) {
-				MonoClass *ic = g_ptr_array_index (ifaces, j);
-				if (decl->klass == ic) {
-					found = TRUE;
-					break;
-				}
-			}
+			if (body->flags & METHOD_ATTRIBUTE_STATIC)
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cannot override a static method in a base type"));
+			else
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cannot override a non virtual method in a base type"));
+			return FALSE;
 		}
 
-		if (!found) {
-			MonoClass *parent = class;
-			while (parent) {
-				if (decl->klass == parent) {
-					found = TRUE;
-					break;
-				}
-				parent = parent->parent;
-			}
-		}
-
-		if (!found) {
+		if (!mono_class_is_assignable_from_slow (decl->klass, class)) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method overrides a class or interface that extended or implemented by this type"));
 			return FALSE;
 		}
@@ -6271,6 +6246,67 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 
 	return mono_class_has_parent (oklass, klass);
 }	
+
+/*Check if @candidate implements the interface @target*/
+static gboolean
+mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
+{
+	int i;
+
+	do {
+		if (candidate == target)
+			return TRUE;
+
+		/*A TypeBuilder can have more interfaces on tb->interfaces than on candidate->interfaces*/
+		if (candidate->image->dynamic && !candidate->wastypebuilder) {
+			MonoReflectionTypeBuilder *tb = candidate->reflection_info;
+			int j;
+			if (tb->interfaces) {
+				for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
+					MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
+					MonoClass *iface_class = mono_class_from_mono_type (iface->type);
+					if (iface_class == target || mono_class_implement_interface_slow (target, iface_class))
+						return TRUE;
+				}
+			}
+		} else {
+			/*setup_interfaces don't mono_class_init anything*/
+			mono_class_setup_interfaces (candidate);
+			for (i = 0; i < candidate->interface_count; ++i) {
+				if (candidate->interfaces [i] == target || mono_class_implement_interface_slow (target, candidate->interfaces [i]))
+					return TRUE;
+			}
+		}
+		candidate = candidate->parent;
+	} while (candidate);
+
+	return FALSE;
+}
+
+/*
+ * Check if @oklass can be assigned to @klass.
+ * This function does the same as mono_class_is_assignable_from but is safe to be used from mono_class_init context.
+ */
+gboolean
+mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
+{
+	if (candidate == target)
+		return TRUE;
+	if (target == mono_defaults.object_class)
+		return TRUE;
+
+	/*setup_supertypes don't mono_class_init anything */
+	mono_class_setup_supertypes (candidate);
+	mono_class_setup_supertypes (target);
+
+	if (mono_class_has_parent (candidate, target))
+		return TRUE;
+
+	/*If target is not an interface there is no need to check them.*/
+	if (!MONO_CLASS_IS_INTERFACE (target))
+			return FALSE;
+	return mono_class_implement_interface_slow (target, candidate);
+}
 
 /**
  * mono_class_get_cctor:
