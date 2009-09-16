@@ -8782,9 +8782,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
 					} else if (cfg->compile_aot) {
 						if (method->wrapper_type) {
-							/* FIXME: n is not a normal token */
-							cfg->disable_aot = TRUE;
-							EMIT_NEW_PCONST (cfg, ins, NULL);
+							if (mono_class_get (tclass->image, tclass->type_token) == tclass && !generic_context) {
+								/* Special case for static synchronized wrappers */
+								EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, tclass->image, tclass->type_token, generic_context);
+							} else {
+								/* FIXME: n is not a normal token */
+								cfg->disable_aot = TRUE;
+								EMIT_NEW_PCONST (cfg, ins, NULL);
+							}
 						} else {
 							EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
 						}
