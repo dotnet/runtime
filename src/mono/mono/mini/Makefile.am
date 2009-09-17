@@ -578,7 +578,7 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(alpha_sources) cpu-alpha.md \
 	$(hppa_sources) cpu-hppa.md 	\
 	$(windows_sources)		\
-	$(darwin_sources)		\
+	$(darwin_sources) Info.plist	\
 	$(posix_sources)
 
 version.h: Makefile
