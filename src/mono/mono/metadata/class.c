@@ -3104,7 +3104,7 @@ print_unimplemented_interface_method_info (MonoClass *class, MonoClass *ic, Mono
 }
 
 static gboolean
-verify_class_overrides (MonoClass *class, GPtrArray *ifaces, MonoMethod **overrides, int onum)
+verify_class_overrides (MonoClass *class, MonoMethod **overrides, int onum)
 {
 	int i;
 
@@ -3161,13 +3161,10 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	if (class->vtable)
 		return;
 
-	ifaces = mono_class_get_implemented_interfaces (class);
-
-	if (overrides && !verify_class_overrides (class, ifaces, overrides, onum)) {
-		if (ifaces)
-			g_ptr_array_free (ifaces, TRUE);
+	if (overrides && !verify_class_overrides (class, overrides, onum))
 		return;
-	}
+
+	ifaces = mono_class_get_implemented_interfaces (class);
 
 	if (ifaces) {
 		for (i = 0; i < ifaces->len; i++) {
