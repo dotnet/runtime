@@ -2276,6 +2276,23 @@ add_generic_instances (MonoAotCompile *acfg)
 			args [0] = &mono_defaults.uint64_class->byval_arg;
 			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
 			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.char_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.boolean_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.single_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
+			args [0] = &mono_defaults.double_class->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+
 		}
 
 		/* Emit the array wrapper methods for arrays of primitive types */
