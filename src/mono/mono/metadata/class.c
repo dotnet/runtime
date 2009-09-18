@@ -3823,6 +3823,16 @@ mono_class_init (MonoClass *class)
 
 	class->init_pending = 1;
 
+	if (class->byval_arg.type == MONO_TYPE_ARRAY || class->byval_arg.type == MONO_TYPE_SZARRAY) {
+		MonoClass *element_class = class->element_class;
+		if (!element_class->inited) 
+			mono_class_init (element_class);
+		if (element_class->exception_type != MONO_EXCEPTION_NONE) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			goto fail;
+		}
+	}
+
 	/* CAS - SecurityAction.InheritanceDemand */
 	if (mono_is_security_manager_active () && class->parent && (class->parent->flags & TYPE_ATTRIBUTE_HAS_SECURITY)) {
 		mono_secman_inheritancedemand_class (class, class->parent);

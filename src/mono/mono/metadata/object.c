@@ -1762,6 +1762,28 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		}
 	}
 
+	/* Array types require that their element type be valid*/
+	if (class->byval_arg.type == MONO_TYPE_ARRAY || class->byval_arg.type == MONO_TYPE_SZARRAY) {
+		MonoClass *element_class = class->element_class;
+		if (!element_class->inited)
+			mono_class_init (element_class);
+
+		/*mono_class_init can leave the vtable layout to be lazily done and we can't afford this here*/
+		if (element_class->exception_type == MONO_EXCEPTION_NONE && !element_class->vtable_size)
+			mono_class_setup_vtable (element_class);
+		
+		if (element_class->exception_type != MONO_EXCEPTION_NONE) {
+			/*Can happen if element_class only got bad after mono_class_setup_vtable*/
+			if (class->exception_type == MONO_EXCEPTION_NONE)
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_domain_unlock (domain);
+			mono_loader_unlock ();
+			if (raise_on_error)
+				mono_raise_exception (mono_class_get_exception_for_failure (class));
+			return NULL;
+		}
+	}
+
 	/* 
 	 * For some classes, mono_class_init () already computed class->vtable_size, and 
 	 * that is all that is needed because of the vtable trampolines.

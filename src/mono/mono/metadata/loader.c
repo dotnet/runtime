@@ -485,7 +485,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 			g_free (name);
 			return NULL;
 		}
-		mono_class_init (klass);
+		mono_class_init (klass); /*FIXME is this really necessary?*/
 		if (retklass)
 			*retklass = klass;
 		field = mono_class_get_field_from_name_full (klass, fname, sig_type);
