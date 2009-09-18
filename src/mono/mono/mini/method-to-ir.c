@@ -2719,6 +2719,9 @@ emit_get_rgctx_field (MonoCompile *cfg, int context_used,
 	return emit_rgctx_fetch (cfg, rgctx, entry);
 }
 
+/*
+ * On return the caller must check @klass for load errors.
+ */
 static void
 emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 {
@@ -2749,6 +2752,9 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 #endif
 }
 
+/*
+ * On return the caller must check @array_class for load errors
+ */
 static void
 mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_class)
 {
@@ -2777,11 +2783,19 @@ mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_cl
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vtable_ins->dreg);
 	} else {
 		if (cfg->compile_aot) {
-			int vt_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_VTABLECONST (cfg, vt_reg, mono_class_vtable (cfg->domain, array_class));
+			int vt_reg;
+			MonoVTable *vtable;
+
+			if (!(vtable = mono_class_vtable (cfg->domain, array_class)))
+				return;
+			vt_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_VTABLECONST (cfg, vt_reg, vtable);
 			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vt_reg);
 		} else {
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, mono_class_vtable (cfg->domain, array_class));
+			MonoVTable *vtable;
+			if (!(vtable = mono_class_vtable (cfg->domain, array_class)))
+				return;
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vtable);
 		}
 	}
 	
@@ -2900,6 +2914,9 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	return add;
 }
 
+/*
+ * Returns NULL and set the cfg exception on error.
+ */
 static MonoInst*
 handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box)
 {
@@ -2918,12 +2935,18 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box)
 		return mono_emit_jit_icall (cfg, mono_helper_newobj_mscorlib, iargs);
 	} else {
 		MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-#ifdef MONO_CROSS_COMPILE
 		MonoMethod *managed_alloc = NULL;
-#else
-		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
-#endif
 		gboolean pass_lw;
+
+		if (!vtable) {
+			cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
+			cfg->exception_ptr = klass;
+			return NULL;
+		}
+
+#ifndef MONO_CROSS_COMPILE
+		managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
+#endif
 
 		if (managed_alloc) {
 			EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
@@ -2977,6 +3000,9 @@ handle_alloc_from_inst (MonoCompile *cfg, MonoClass *klass, MonoInst *data_inst,
 	return mono_emit_jit_icall (cfg, alloc_ftn, iargs);
 }
 	
+/*
+ * Returns NULL and set the cfg exception on error.
+ */	
 static MonoInst*
 handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass)
 {
@@ -2988,6 +3014,8 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass)
 	}
 
 	alloc = handle_alloc (cfg, klass, TRUE);
+	if (!alloc)
+		return NULL;
 
 	EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, alloc->dreg, sizeof (MonoObject), val->dreg);
 
@@ -3017,6 +3045,9 @@ handle_box_from_inst (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int con
 	}
 }
 
+/*
+ * Returns NULL and set the cfg exception on error.
+ */
 static MonoInst*
 handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 {
@@ -3041,8 +3072,13 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 
 		if (!klass->rank && !cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && (klass->flags & TYPE_ATTRIBUTE_SEALED)) {
 			/* the remoting code is broken, access the class for now */
-			if (0) {
+			if (0) { /*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
 				MonoVTable *vt = mono_class_vtable (cfg->domain, klass);
+				if (!vt) {
+					cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
+					cfg->exception_ptr = klass;
+					return NULL;
+				}
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vt);
 			} else {
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
@@ -3062,6 +3098,9 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	return src;
 }
 
+/*
+ * Returns NULL and set the cfg exception on error.
+ */
 static MonoInst*
 handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 {
@@ -3135,8 +3174,13 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 		} else {
 			if (!cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && (klass->flags & TYPE_ATTRIBUTE_SEALED)) {
 				/* the remoting code is broken, access the class for now */
-				if (0) {
+				if (0) {/*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
 					MonoVTable *vt = mono_class_vtable (cfg->domain, klass);
+					if (!vt) {
+						cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
+						cfg->exception_ptr = klass;
+						return NULL;
+					}
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vt);
 				} else {
 					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
@@ -3333,6 +3377,9 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	return ins;
 }
 
+/*
+ * Returns NULL and set the cfg exception on error.
+ */
 static G_GNUC_UNUSED MonoInst*
 handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, MonoMethod *method)
 {
@@ -3342,6 +3389,8 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	guint8 **code_slot;
 
 	obj = handle_alloc (cfg, klass, FALSE);
+	if (!obj)
+		return NULL;
 
 	/* Inline the contents of mono_delegate_ctor */
 
@@ -3501,6 +3550,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (!(cfg->opt & MONO_OPT_SHARED)) {
 		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
+				/*FIXME it would easier and lazier to just use mono_class_try_get_vtable */
 				if (!method->klass->runtime_info)
 					/* No vtable created yet */
 					return FALSE;
@@ -4112,10 +4162,11 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 		if (strcmp (method->name, "InternalAllocateStr") == 0) {
 			MonoInst *iargs [2];
 			MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
-#ifdef MONO_CROSS_COMPILE
 			MonoMethod *managed_alloc = NULL;
-#else
-			MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, FALSE);
+
+			g_assert (vtable); /*Should not fail since it System.String*/
+#ifndef MONO_CROSS_COMPILE
+			managed_alloc = mono_gc_get_managed_allocator (vtable, FALSE);
 #endif
 			if (!managed_alloc)
 				return NULL;
@@ -4863,7 +4914,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					} else {
 						MonoVTable *vtable = mono_class_vtable (cfg->domain, mono_array_class_get (ins->inst_newa_class, 1));
 
-						g_assert (vtable);
+						g_assert (vtable); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
 						NEW_VTABLECONST (cfg, iargs [0], vtable);
 						MONO_ADD_INS (cfg->cbb, iargs [0]);
 						MONO_INST_NEW (cfg, iargs [1], OP_MOVE);
@@ -6223,6 +6274,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADV_MEMBASE, dreg, sp [0]->dreg, 0);
 					ins->klass = constrained_call;
 					sp [0] = handle_box (cfg, ins, constrained_call);
+					CHECK_CFG_EXCEPTION;
 				} else if (!constrained_call->valuetype) {
 					int dreg = alloc_preg (cfg);
 
@@ -6248,6 +6300,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 */
 			if (cfg->generic_sharing_context && cmethod && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable_impl (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
 				emit_generic_class_init (cfg, cmethod->klass);
+				CHECK_TYPELOAD (cmethod->klass);
 			}
 
 			if (cmethod && ((cmethod->flags & METHOD_ATTRIBUTE_STATIC) || cmethod->klass->valuetype) &&
@@ -6645,6 +6698,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else if (strcmp (cmethod->name, "Address") == 0) { /* array Address */
 					if (!cmethod->klass->element_class->valuetype && !readonly)
 						mini_emit_check_array_type (cfg, sp [0], cmethod->klass);
+					CHECK_TYPELOAD (cmethod->klass);
 					
 					readonly = FALSE;
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, FALSE);
@@ -7566,6 +7620,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					alloc = handle_alloc (cfg, cmethod->klass, FALSE);
 					*sp = alloc;
 				}
+				CHECK_CFG_EXCEPTION; /*for handle_alloc*/
 
 				if (alloc)
 					MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, alloc->dreg);
@@ -7668,6 +7723,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			else {
 				ins = handle_castclass (cfg, klass, *sp);
+				CHECK_CFG_EXCEPTION;
 				bblock = cfg->cbb;
 				*sp ++ = ins;
 				ip += 5;
@@ -7721,6 +7777,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			else {
 				ins = handle_isinst (cfg, klass, *sp);
+				CHECK_CFG_EXCEPTION;
 				bblock = cfg->cbb;
 				*sp ++ = ins;
 				ip += 5;
@@ -7741,7 +7798,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				context_used = mono_class_check_context_used (klass);
 
 			if (generic_class_is_reference_type (cfg, klass)) {
-				/* CASTCLASS */
+				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
 				if (context_used) {
 					MonoInst *iargs [2];
 
@@ -7774,6 +7831,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					inline_costs += costs;
 				} else {
 					ins = handle_castclass (cfg, klass, *sp);
+					CHECK_CFG_EXCEPTION;
 					bblock = cfg->cbb;
 					*sp ++ = ins;
 					ip += 5;
@@ -7880,6 +7938,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp++ = handle_box (cfg, val, klass);
 			}
 
+			CHECK_CFG_EXCEPTION;
 			ip += 5;
 			inline_costs += 1;
 			break;
@@ -8391,6 +8450,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins = mono_emit_jit_icall (cfg, mono_array_new, iargs);
 				} else {
 					/* Decompose later since it is needed by abcrem */
+					MonoClass *array_type = mono_array_class_get (klass, 1);
+					mono_class_vtable (cfg->domain, array_type);
+					CHECK_TYPELOAD (array_type);
+
 					MONO_INST_NEW (cfg, ins, OP_NEWARR);
 					ins->dreg = alloc_preg (cfg);
 					ins->sreg1 = sp [0]->dreg;
@@ -8467,8 +8530,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * to be for correctness. the wrappers are lax with their usage
 			 * so we need to ignore them here
 			 */
-			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE && !readonly)
-				mini_emit_check_array_type (cfg, sp [0], mono_array_class_get (klass, 1));
+			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE && !readonly) {
+				MonoClass *array_class = mono_array_class_get (klass, 1);
+				mini_emit_check_array_type (cfg, sp [0], array_class);
+				CHECK_TYPELOAD (array_class);
+			}
 
 			readonly = FALSE;
 			ins = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1]);
@@ -9324,6 +9390,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						target_ins = sp [-1];
 						sp --;
 						*sp = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod);
+						CHECK_CFG_EXCEPTION;
 						ip += 5;			
 						sp ++;
 						break;
