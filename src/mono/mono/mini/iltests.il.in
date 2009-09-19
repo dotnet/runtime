@@ -2354,5 +2354,14 @@ OK_2:
 		ldc.i4.0
 		ret
 	}
-		
+
+	.method public static default int32 test_0_newarr_i8 () cil managed
+	{
+		ldc.i4 1000
+		conv.i8
+		newarr [mscorlib]System.Boolean
+		pop
+		ldc.i4 0
+		ret
+	}
 }

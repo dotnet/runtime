@@ -8425,6 +8425,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
+			if (sp [0]->type == STACK_I8 || (SIZEOF_VOID_P == 8 && sp [0]->type == STACK_PTR)) {
+				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_I4);
+				ins->sreg1 = sp [0]->dreg;
+				ins->type = STACK_I4;
+				ins->dreg = alloc_ireg (cfg);
+				MONO_ADD_INS (cfg->cbb, ins);
+				*sp = ins;
+			}
+
 			if (context_used) {
 				MonoInst *args [2];
 
