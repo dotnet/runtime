@@ -2155,6 +2155,15 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 	case ArgNone:
 	case ArgInIReg:
 		break;
+	case ArgValuetypeInReg: {
+		ArgInfo *ainfo = &cinfo->ret;
+
+		if (ainfo->pair_storage [0] != ArgNone && ainfo->pair_storage [0] != ArgInIReg)
+			return FALSE;
+		if (ainfo->pair_storage [1] != ArgNone && ainfo->pair_storage [1] != ArgInIReg)
+			return FALSE;
+		break;
+	}
 	default:
 		return FALSE;
 	}
@@ -2342,9 +2351,10 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 void
 mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
-	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
-	MonoMethodSignature *sig = ainfo->sig;
+	ArchDynCallInfo *dinfo = (ArchDynCallInfo*)info;
+	MonoMethodSignature *sig = dinfo->sig;
 	guint8 *ret = ((DynCallArgs*)buf)->ret;
+	mgreg_t res = ((DynCallArgs*)buf)->res;
 
 	switch (mono_type_get_underlying_type (sig->ret)->type) {
 	case MONO_TYPE_VOID:
@@ -2358,44 +2368,56 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
-		*(gpointer*)ret = (gpointer)((DynCallArgs*)buf)->res;
+		*(gpointer*)ret = (gpointer)res;
 		break;
 	case MONO_TYPE_I1:
-		*(gint8*)ret = ((DynCallArgs*)buf)->res;
+		*(gint8*)ret = res;
 		break;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
-		*(guint8*)ret = ((DynCallArgs*)buf)->res;
+		*(guint8*)ret = res;
 		break;
 	case MONO_TYPE_I2:
-		*(gint16*)ret = ((DynCallArgs*)buf)->res;
+		*(gint16*)ret = res;
 		break;
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
-		*(guint16*)ret = ((DynCallArgs*)buf)->res;
+		*(guint16*)ret = res;
 		break;
 	case MONO_TYPE_I4:
-		*(gint32*)ret = ((DynCallArgs*)buf)->res;
+		*(gint32*)ret = res;
 		break;
 	case MONO_TYPE_U4:
-		*(guint32*)ret = ((DynCallArgs*)buf)->res;
+		*(guint32*)ret = res;
 		break;
 	case MONO_TYPE_I8:
-		*(gint64*)ret = ((DynCallArgs*)buf)->res;
+		*(gint64*)ret = res;
 		break;
 	case MONO_TYPE_U8:
-		*(guint64*)ret = ((DynCallArgs*)buf)->res;
+		*(guint64*)ret = res;
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
-			*(gpointer*)ret = (gpointer)((DynCallArgs*)buf)->res;
+			*(gpointer*)ret = (gpointer)res;
 			break;
 		} else {
 			/* Fall through */
 		}
 	case MONO_TYPE_VALUETYPE:
-		g_assert (ainfo->cinfo->vtype_retaddr);
-		/* Nothing to do */
+		if (dinfo->cinfo->vtype_retaddr) {
+			/* Nothing to do */
+		} else {
+			ArgInfo *ainfo = &dinfo->cinfo->ret;
+
+			g_assert (ainfo->storage == ArgValuetypeInReg);
+
+			if (ainfo->pair_storage [0] != ArgNone) {
+				g_assert (ainfo->pair_storage [0] == ArgInIReg);
+				((mgreg_t*)ret)[0] = res;
+			}
+
+			g_assert (ainfo->pair_storage [1] == ArgNone);
+		}
 		break;
 	default:
 		g_assert_not_reached ();
