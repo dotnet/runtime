@@ -4530,7 +4530,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					break;
 				case MONO_TYPE_VALUETYPE:
 					info->ret_box_class = mono_class_from_mono_type (sig->ret);
-					g_assert (info->ret_box_class->enumtype);
 					break;
 				default:
 					g_assert_not_reached ();

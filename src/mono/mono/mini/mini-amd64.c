@@ -2151,15 +2151,12 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 	return FALSE;
 #endif
 
-	if (cinfo->nargs > PARAM_REGS)
-		return FALSE;
-
 	switch (cinfo->ret.storage) {
 	case ArgNone:
 	case ArgInIReg:
-		if (cinfo->vtype_retaddr)
-			/* FIXME: Add an Arg<...> constant for this */
-			return FALSE;
+		/* FIXME: Add an Arg<...> constant for this */
+		//if (cinfo->vtype_retaddr)
+		//return FALSE;
 		break;
 	default:
 		return FALSE;
@@ -2237,9 +2234,10 @@ mono_arch_dyn_call_free (MonoDynCallInfo *info)
 void
 mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, guint8 *buf, int buf_len)
 {
+	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
 	DynCallArgs *p = (DynCallArgs*)buf;
 	int arg_index, greg, i;
-	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
+	MonoMethodSignature *sig = ainfo->sig;
 
 	g_assert (buf_len >= sizeof (DynCallArgs));
 
@@ -2248,6 +2246,10 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 	arg_index = 0;
 	greg = 0;
+
+	if (ainfo->cinfo->vtype_retaddr)
+		p->regs [greg ++] = (mgreg_t)ret;
+
 	if (sig->hasthis) {
 		p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
 	}
@@ -2317,7 +2319,8 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 void
 mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
-	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
+	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
+	MonoMethodSignature *sig = ainfo->sig;
 	guint8 *ret = ((DynCallArgs*)buf)->ret;
 
 	switch (mono_type_get_underlying_type (sig->ret)->type) {
@@ -2362,6 +2365,10 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		break;
 	case MONO_TYPE_U8:
 		*(guint64*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_VALUETYPE:
+		g_assert (ainfo->cinfo->vtype_retaddr);
+		/* Nothing to do */
 		break;
 	default:
 		g_assert_not_reached ();
