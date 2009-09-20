@@ -710,6 +710,8 @@ typedef struct {
 #define __alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
 #endif
 
+#define PARAM_REGS 4
+
 static void inline
 add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 {
@@ -1431,6 +1433,257 @@ gboolean
 mono_arch_is_inst_imm (gint64 imm)
 {
 	return TRUE;
+}
+
+static gboolean
+dyn_call_supported (MonoMethodSignature *sig)
+{
+	int i;
+
+#ifdef PLATFORM_WIN32
+	return FALSE;
+#endif
+
+	if (sig->hasthis + sig->param_count > PARAM_REGS)
+		return FALSE;
+	switch (sig->ret->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		/*
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		*/
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:  
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_PTR:
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (!MONO_TYPE_IS_REFERENCE (sig->ret))
+			return FALSE;
+		break;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		/* assume gshared */
+		break;
+	default:
+		return FALSE;
+	}
+	for (i = 0; i < sig->param_count; ++i) {
+		MonoType *t = sig->params [i];
+
+		if (t->byref)
+			continue;
+
+	handle_enum:
+		switch (t->type) {
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_TYPEDBYREF:
+			return FALSE;
+		case MONO_TYPE_VALUETYPE:
+			if (t->data.klass->enumtype) {
+				t = mono_class_enum_basetype (t->data.klass);
+				goto handle_enum;
+			}
+			return FALSE;
+		case MONO_TYPE_GENERICINST:
+			if (!MONO_TYPE_IS_REFERENCE (t))
+				return FALSE;
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:  
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+			/*
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			*/
+			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			/* assume gshared */
+			break;
+		default:
+			return FALSE;
+			break;
+		}
+	}
+	return TRUE;
+}
+
+typedef struct {
+	MonoMethodSignature *sig;
+} DynCallInfo;
+
+typedef struct {
+	mgreg_t regs [PARAM_REGS];
+	mgreg_t res;
+} DynCallArgs;
+
+MonoDynCallInfo*
+mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
+{
+	DynCallInfo *info;
+
+	if (!dyn_call_supported (sig))
+		return NULL;
+
+	info = g_new0 (DynCallInfo, 1);
+	// FIXME: Preprocess the info to speed up get_dyn_call_args ().
+	info->sig = sig;
+	
+	return (MonoDynCallInfo*)info;
+}
+
+void
+mono_arch_get_dyn_call_args (MonoDynCallInfo *info, gpointer **args, guint8 *buf, int buf_len)
+{
+	DynCallArgs *p = (DynCallArgs*)buf;
+	int arg_index, greg, i;
+	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
+
+	g_assert (buf_len >= sizeof (DynCallArgs));
+
+	p->res = 0;
+
+	arg_index = 0;
+	greg = 0;
+	if (sig->hasthis) {
+		p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+	}
+
+	for (i = 0; i < sig->param_count; i++) {
+		MonoType *t = mono_type_get_underlying_type (sig->params [i]);
+
+		if (t->byref) {
+			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			continue;
+		}
+
+		switch (t->type) {
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:  
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+			/*
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			*/
+			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			break;
+		case MONO_TYPE_GENERICINST:
+			g_assert (MONO_TYPE_IS_REFERENCE (t));
+			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			break;
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U1:
+			p->regs [greg ++] = *(guint8*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_I1:
+			p->regs [greg ++] = *(gint8*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_I2:
+			p->regs [greg ++] = *(gint16*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+			p->regs [greg ++] = *(guint16*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_I4:
+			p->regs [greg ++] = *(gint32*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_U4:
+			p->regs [greg ++] = *(guint32*)(args [arg_index ++]);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	g_assert (greg <= PARAM_REGS);
+}
+
+void
+mono_arch_get_dyn_call_ret (MonoDynCallInfo *info, guint8 *buf, guint8 *ret)
+{
+	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
+
+	switch (sig->ret->type) {
+	case MONO_TYPE_VOID:
+		*(gpointer*)ret = NULL;
+		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:  
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+		*(gpointer*)ret = (gpointer)((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_GENERICINST:
+		*(gpointer*)ret = (gpointer)((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_I1:
+		*(gint8*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		*(guint8*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_I2:
+		*(gint16*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		*(guint16*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_I4:
+		*(gint32*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_U4:
+		*(guint32*)ret = ((DynCallArgs*)buf)->res;
+		break;
+		/*
+	case MONO_TYPE_I8:
+		*(gint64*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_U8:
+		*(guint64*)ret = ((DynCallArgs*)buf)->res;
+		break;
+		*/
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 /*
@@ -3062,6 +3315,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_patch (code - 4, start_loop);
 			}
 			ARM_ADD_REG_IMM8 (code, ins->dreg, ARMREG_SP, alloca_waste);
+			break;
+		}
+		case OP_DYN_CALL: {
+			int i;
+			MonoInst *var = cfg->dyn_call_var;
+
+			g_assert (var->opcode == OP_REGOFFSET);
+			g_assert (arm_is_imm12 (var->inst_offset));
+
+			/* lr = args buffer filled by mono_arch_get_dyn_call_args () */
+			ARM_MOV_REG_REG( code, ARMREG_LR, ins->sreg1);
+			/* ip = ftn */
+			ARM_MOV_REG_REG( code, ARMREG_IP, ins->sreg2);
+
+			/* Save args buffer */
+			ARM_STR_IMM (code, ARMREG_LR, var->inst_basereg, var->inst_offset);
+
+			/* Set argument registers */
+			for (i = 0; i < PARAM_REGS; ++i)
+				ARM_LDR_IMM (code, i, ARMREG_LR, i * sizeof (gpointer));
+			
+			/* Make the call */
+			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+
+			/* Save result */
+			ARM_LDR_IMM (code, ARMREG_IP, var->inst_basereg, var->inst_offset);
+			ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, G_STRUCT_OFFSET (DynCallArgs, res)); 
 			break;
 		}
 		case OP_THROW: {
