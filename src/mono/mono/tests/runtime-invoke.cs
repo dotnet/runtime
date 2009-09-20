@@ -118,12 +118,12 @@ class Tests
 	public static unsafe int test_0_ptr () {
 		int[] arr = new int [10];
 		fixed (void *p = &arr [5]) {
-			object o = typeof (Tests).GetMethod ("Test").Invoke (null, new object [1] { new IntPtr (p) });
+			object o = typeof (Tests).GetMethod ("data_types_ptr").Invoke (null, new object [1] { new IntPtr (p) });
 			void *p2 = Pointer.Unbox (o);
 			if (new IntPtr (p) != new IntPtr (p2))
 				return 1;
 
-			o = typeof (Tests).GetMethod ("Test").Invoke (null, new object [1] { null });
+			o = typeof (Tests).GetMethod ("data_types_ptr").Invoke (null, new object [1] { null });
 			p2 = Pointer.Unbox (o);
 			if (new IntPtr (p2) != IntPtr.Zero)
 				return 1;
@@ -132,8 +132,71 @@ class Tests
 		return 0;
 	}
 
-    public static unsafe int* Test (int *val) {
-		Console.WriteLine (new IntPtr (val));
+	public static int test_42_int () {
+		return (int)typeof (Tests).GetMethod ("data_types_int").Invoke (null, new object [] { Int32.MinValue, UInt32.MaxValue });
+	}
+
+	public static int test_42_short () {
+		return (short)typeof (Tests).GetMethod ("data_types_short").Invoke (null, new object [] { short.MinValue, ushort.MaxValue });
+	}
+
+	public static int test_0_bool_char () {
+		if ((int)typeof (Tests).GetMethod ("data_types_bool_char").Invoke (null, new object [] { true, false, 'A' }) != 0)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_byref_int () {
+		if ((int)typeof (Tests).GetMethod ("data_types_byref_int").Invoke (null, new object [] { 42 }) != 0)
+			return 1;
+		return 0;
+	}
+
+	public class Foo<T> {
+		public T t;
+	}
+
+	public static int test_0_ginst_ref () {
+		Foo<string> f = new Foo<string> { t = "A" };
+		Foo<string> f2 = (Foo<string>)typeof (Tests).GetMethod ("data_types_ginst").MakeGenericMethod (new Type [] { typeof (string) }).Invoke (null, new object [] { f });
+		Console.WriteLine (f2.t);
+		return 0;
+	}
+
+	public static Foo<T> data_types_ginst<T> (Foo<T> f) {
+		return f;
+	}
+
+	public static int data_types_int (int i, uint ui) {
+		if (i == Int32.MinValue && ui == UInt32.MaxValue)
+			return 42;
+		else
+			return 1;
+	}
+
+	public static short data_types_short (short i, ushort ui) {
+		if (i == short.MinValue && ui == ushort.MaxValue)
+			return 42;
+		else
+			return 1;
+	}
+
+	public static int data_types_bool_char (bool b1, bool b2, char c) {
+		if (b1 == true && b2 == false && c == 'A')
+			return 0;
+		else
+			return 1;
+	}
+
+	public static int data_types_byref_int (ref int i) {
+		if (i == 42)
+			return 0;
+		else
+			return 1;
+	}
+
+    public static unsafe int* data_types_ptr (int *val) {
+		//Console.WriteLine (new IntPtr (val));
         return val;
     }
 }
