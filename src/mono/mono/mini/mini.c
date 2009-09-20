@@ -4576,7 +4576,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			dyn_runtime_invoke = mono_jit_compile_method (invoke);
 		}
 
-		/* Convert the arguments to the format expected by get_dyn_call_args */
+		/* Convert the arguments to the format expected by start_dyn_call () */
 		args = g_alloca ((sig->param_count + sig->hasthis) * sizeof (gpointer));
 		pindex = 0;
 		if (sig->hasthis)
@@ -4595,11 +4595,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		//printf ("M: %s\n", mono_method_full_name (method, TRUE));
 
-		mono_arch_get_dyn_call_args (info->dyn_call_info, (gpointer**)args, buf, sizeof (buf));
+		mono_arch_start_dyn_call (info->dyn_call_info, (gpointer**)args, retval, buf, sizeof (buf));
 
 		dyn_runtime_invoke (buf, exc, info->compiled_method);
 
-		mono_arch_get_dyn_call_ret (info->dyn_call_info, buf, retval);
+		mono_arch_finish_dyn_call (info->dyn_call_info, buf);
 
 		if (info->ret_box_class)
 			return mono_value_box (domain, info->ret_box_class, retval);
@@ -4853,6 +4853,8 @@ mini_get_addr_from_ftnptr (gpointer descr)
 	return descr;
 #endif
 }	
+
+static void runtime_invoke_info_free (gpointer value);
  
 static void
 mini_create_jit_domain_info (MonoDomain *domain)
@@ -4865,7 +4867,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->delegate_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->static_rgctx_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	info->runtime_invoke_hash = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, g_free);
+	info->runtime_invoke_hash = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
 
 	domain->runtime_info = info;
 }
@@ -4882,6 +4884,18 @@ dynamic_method_info_free (gpointer key, gpointer value, gpointer user_data)
 	MonoJitDynamicMethodInfo *di = value;
 	mono_code_manager_destroy (di->code_mp);
 	g_free (di);
+}
+
+static void
+runtime_invoke_info_free (gpointer value)
+{
+	RuntimeInvokeInfo *info = (RuntimeInvokeInfo*)value;
+
+#ifdef MONO_ARCH_DYN_CALL_SUPPORTED
+	if (info->dyn_call_info)
+		mono_arch_dyn_call_free (info->dyn_call_info);
+#endif
+	g_free (info);
 }
 
 static void

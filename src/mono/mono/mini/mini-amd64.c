@@ -255,6 +255,7 @@ typedef struct {
 	guint32 reg_usage;
 	guint32 freg_usage;
 	gboolean need_stack_align;
+	gboolean vtype_retaddr;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
@@ -618,6 +619,8 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	else
 		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
+	cinfo->nargs = n;
+
 	gr = 0;
 	fr = 0;
 
@@ -669,9 +672,11 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
 			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
-			if (cinfo->ret.storage == ArgOnStack)
+			if (cinfo->ret.storage == ArgOnStack) {
+				cinfo->vtype_retaddr = TRUE;
 				/* The caller passes the address where the value is stored */
 				add_general (&gr, &stack_size, &cinfo->ret);
+			}
 			break;
 		}
 		case MONO_TYPE_TYPEDBYREF:
@@ -2126,8 +2131,19 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	                x86_branch32 (code, cond, 0, sign); \
 }
 
+typedef struct {
+	MonoMethodSignature *sig;
+	CallInfo *cinfo;
+} ArchDynCallInfo;
+
+typedef struct {
+	mgreg_t regs [PARAM_REGS];
+	mgreg_t res;
+	guint8 *ret;
+} DynCallArgs;
+
 static gboolean
-dyn_call_supported (MonoMethodSignature *sig)
+dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 {
 	int i;
 
@@ -2135,152 +2151,100 @@ dyn_call_supported (MonoMethodSignature *sig)
 	return FALSE;
 #endif
 
-	if (sig->hasthis + sig->param_count > PARAM_REGS)
+	if (cinfo->nargs > PARAM_REGS)
 		return FALSE;
 
-	switch (sig->ret->type) {
-	case MONO_TYPE_VOID:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS:  
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_PTR:
-		break;
-	case MONO_TYPE_GENERICINST:
-		if (!MONO_TYPE_IS_REFERENCE (sig->ret))
+	switch (cinfo->ret.storage) {
+	case ArgNone:
+	case ArgInIReg:
+		if (cinfo->vtype_retaddr)
+			/* FIXME: Add an Arg<...> constant for this */
 			return FALSE;
-		break;
-	case MONO_TYPE_VALUETYPE:
-		if (!sig->ret->data.klass->enumtype)
-			return FALSE;
-		break;
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-		/* assume gshared */
 		break;
 	default:
 		return FALSE;
 	}
-	for (i = 0; i < sig->param_count; ++i) {
-		MonoType *t = sig->params [i];
 
-		if (t->byref)
-			continue;
-
-	handle_enum:
-		switch (t->type) {
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-		case MONO_TYPE_TYPEDBYREF:
-			return FALSE;
-		case MONO_TYPE_VALUETYPE:
-			if (t->data.klass->enumtype) {
-				t = mono_class_enum_basetype (t->data.klass);
-				goto handle_enum;
-			}
-			return FALSE;
-		case MONO_TYPE_GENERICINST:
-			if (!MONO_TYPE_IS_REFERENCE (t))
-				return FALSE;
-			break;
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_CLASS:  
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			break;
-		case MONO_TYPE_VAR:
-		case MONO_TYPE_MVAR:
-			/* assume gshared */
+	for (i = 0; i < cinfo->nargs; ++i) {
+		switch (cinfo->args [i].storage) {
+		case ArgInIReg:
 			break;
 		default:
 			return FALSE;
-			break;
 		}
 	}
+
 	return TRUE;
 }
-
-typedef struct {
-	MonoMethodSignature *sig;
-} DynCallInfo;
-
-typedef struct {
-	mgreg_t regs [PARAM_REGS];
-	mgreg_t res;
-} DynCallArgs;
 
 /*
  * mono_arch_dyn_call_prepare:
  *
- *   Return a pointer to an arch-specific structure in malloc-ed memory which 
- * contains information needed by mono_arch_get_dyn_call_args (). Return NULL
- * if OP_DYN_CALL is not supported for SIG.
+ *   Return a pointer to an arch-specific structure which contains information 
+ * needed by mono_arch_get_dyn_call_args (). Return NULL if OP_DYN_CALL is not
+ * supported for SIG.
  * This function is equivalent to ffi_prep_cif in libffi.
  */
 MonoDynCallInfo*
 mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 {
-	DynCallInfo *info;
+	ArchDynCallInfo *info;
+	CallInfo *cinfo;
 
-	if (!dyn_call_supported (sig))
+	cinfo = get_call_info (NULL, NULL, sig, FALSE);
+
+	if (!dyn_call_supported (sig, cinfo)) {
+		g_free (cinfo);
 		return NULL;
+	}
 
-	info = g_new0 (DynCallInfo, 1);
+	info = g_new0 (ArchDynCallInfo, 1);
 	// FIXME: Preprocess the info to speed up get_dyn_call_args ().
 	info->sig = sig;
+	info->cinfo = cinfo;
 	
 	return (MonoDynCallInfo*)info;
 }
 
 /*
- * mono_arch_get_dyn_call_args:
+ * mono_arch_dyn_call_free:
+ *
+ *   Free a MonoDynCallInfo structure.
+ */
+void
+mono_arch_dyn_call_free (MonoDynCallInfo *info)
+{
+	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
+
+	g_free (ainfo->cinfo);
+	g_free (ainfo);
+}
+
+/*
+ * mono_arch_get_start_dyn_call:
  *
  *   Convert the arguments ARGS to a format which can be passed to OP_DYN_CALL, and
  * store the result into BUF.
  * ARGS should be an array of pointers pointing to the arguments.
+ * RET should point to a memory buffer large enought to hold the result of the
+ * call.
  * This function should be as fast as possible, any work which does not depend
  * on the actual values of the arguments should be done in 
  * mono_arch_dyn_call_prepare ().
- * get_dyn_call_args + OP_DYN_CALL + get_dyn_call_ret is equivalent to ffi_call in
+ * start_dyn_call + OP_DYN_CALL + finish_dyn_call is equivalent to ffi_call in
  * libffi.
  */
 void
-mono_arch_get_dyn_call_args (MonoDynCallInfo *info, gpointer **args, guint8 *buf, int buf_len)
+mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, guint8 *buf, int buf_len)
 {
 	DynCallArgs *p = (DynCallArgs*)buf;
 	int arg_index, greg, i;
-	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
+	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
 
 	g_assert (buf_len >= sizeof (DynCallArgs));
 
 	p->res = 0;
+	p->ret = ret;
 
 	arg_index = 0;
 	greg = 0;
@@ -2342,18 +2306,19 @@ mono_arch_get_dyn_call_args (MonoDynCallInfo *info, gpointer **args, guint8 *buf
 }
 
 /*
- * mono_arch_get_dyn_call_ret:
+ * mono_arch_finish_dyn_call:
  *
- *   Store the result of a dyn call into a buffer pointed to by RET. BUF should
- * point to the buffer returned by get_dyn_call_args ().
+ *   Store the result of a dyn call into the return value buffer passed to
+ * start_dyn_call ().
  * This function should be as fast as possible, any work which does not depend
  * on the actual values of the arguments should be done in 
  * mono_arch_dyn_call_prepare ().
  */
 void
-mono_arch_get_dyn_call_ret (MonoDynCallInfo *info, guint8 *buf, guint8 *ret)
+mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
-	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
+	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
+	guint8 *ret = ((DynCallArgs*)buf)->ret;
 
 	switch (mono_type_get_underlying_type (sig->ret)->type) {
 	case MONO_TYPE_VOID:

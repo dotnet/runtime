@@ -1591,8 +1591,9 @@ void      mono_arch_emit_call                   (MonoCompile *cfg, MonoCallInst 
 void      mono_arch_emit_outarg_vt              (MonoCompile *cfg, MonoInst *ins, MonoInst *src) MONO_INTERNAL;
 void      mono_arch_emit_setret                 (MonoCompile *cfg, MonoMethod *method, MonoInst *val) MONO_INTERNAL;
 MonoDynCallInfo *mono_arch_dyn_call_prepare     (MonoMethodSignature *sig) MONO_INTERNAL;
-void      mono_arch_get_dyn_call_args           (MonoDynCallInfo *info, gpointer **args, guint8 *buf, int buf_len) MONO_INTERNAL;
-void      mono_arch_get_dyn_call_ret            (MonoDynCallInfo *info, guint8 *buf, guint8 *ret) MONO_INTERNAL;
+void      mono_arch_dyn_call_free               (MonoDynCallInfo *info) MONO_INTERNAL;
+void      mono_arch_start_dyn_call              (MonoDynCallInfo *info, gpointer **args, guint8 *ret, guint8 *buf, int buf_len) MONO_INTERNAL;
+void      mono_arch_finish_dyn_call             (MonoDynCallInfo *info, guint8 *buf) MONO_INTERNAL;
 MonoInst *mono_arch_emit_inst_for_method        (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
 void      mono_arch_decompose_opts              (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
 void      mono_arch_decompose_long_opts         (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
