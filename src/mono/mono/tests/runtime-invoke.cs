@@ -158,12 +158,31 @@ class Tests
 
 	public static int test_0_ginst_ref () {
 		Foo<string> f = new Foo<string> { t = "A" };
-		Foo<string> f2 = (Foo<string>)typeof (Tests).GetMethod ("data_types_ginst").MakeGenericMethod (new Type [] { typeof (string) }).Invoke (null, new object [] { f });
-		Console.WriteLine (f2.t);
-		return 0;
+		Foo<string> f2 = (Foo<string>)typeof (Tests).GetMethod ("data_types_ginst_ref").MakeGenericMethod (new Type [] { typeof (string) }).Invoke (null, new object [] { f });
+		if (f2.t != "A")
+			return 1;
+		else
+			return 0;
 	}
 
-	public static Foo<T> data_types_ginst<T> (Foo<T> f) {
+	public static int test_0_ginst_vtype () {
+		FooStruct<string> f = new FooStruct<string> { t = "A" };
+		FooStruct<string> f2 = (FooStruct<string>)typeof (Tests).GetMethod ("data_types_ginst_vtype").MakeGenericMethod (new Type [] { typeof (string) }).Invoke (null, new object [] { f });
+		if (f2.t != "A")
+			return 1;
+		else
+			return 0;
+	}
+
+	public static Foo<T> data_types_ginst_ref<T> (Foo<T> f) {
+		return f;
+	}
+
+	public struct FooStruct<T> {
+		public T t;
+	}
+
+	public static FooStruct<T> data_types_ginst_vtype<T> (FooStruct<T> f) {
 		return f;
 	}
 
