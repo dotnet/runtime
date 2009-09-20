@@ -431,6 +431,8 @@ can_method_ref_match_method (MonoAotModule *module, guint8 *buf, MonoMethod *met
 
 		if (method->wrapper_type != wrapper_type)
 			return FALSE;
+	} else if (image_index == MONO_AOT_METHODREF_WRAPPER_NAME) {
+		return FALSE;
 	} else if (image_index < MONO_AOT_METHODREF_MIN || image_index == MONO_AOT_METHODREF_METHODSPEC || image_index == MONO_AOT_METHODREF_GINST) {
 		if (method->wrapper_type)
 			return FALSE;

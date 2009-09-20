@@ -4401,6 +4401,8 @@ typedef struct {
 	gpointer compiled_method;
 	gpointer runtime_invoke;
 	MonoVTable *vtable;
+	MonoDynCallInfo *dyn_call_info;
+	MonoClass *ret_box_class;
 } RuntimeInvokeInfo;
 
 /**
@@ -4443,7 +4445,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		info = g_new0 (RuntimeInvokeInfo, 1);
 
 		invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-		info->runtime_invoke = mono_jit_compile_method (invoke);
 		info->vtable = mono_class_vtable (domain, method->klass);
 		g_assert (info->vtable);
 
@@ -4473,6 +4474,71 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				info->compiled_method = mono_create_static_rgctx_trampoline (method, info->compiled_method);
 		}
 
+		/*
+		 * We want to avoid AOTing 1000s of runtime-invoke wrappers when running
+		 * in full-aot mode, so we use a slower, but more generic wrapper if
+		 * possible, built on top of the OP_DYN_CALL opcode provided by the JIT.
+		 */
+#ifdef MONO_ARCH_DYN_CALL_SUPPORTED
+		if (mono_aot_only) {
+			MonoMethodSignature *sig = mono_method_signature (method);
+			gboolean supported = TRUE;
+			int i;
+
+			for (i = 0; i < sig->param_count; ++i) {
+				MonoType *t = sig->params [i];
+
+				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+					supported = FALSE;
+			}
+
+			if (method->klass->contextbound || method->klass == mono_defaults.string_class || !info->compiled_method)
+				supported = FALSE;
+
+			if (supported)
+				info->dyn_call_info = mono_arch_dyn_call_prepare (sig);
+
+			if (info->dyn_call_info) {
+				switch (sig->ret->type) {
+				case MONO_TYPE_VOID:
+					break;
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I:
+				case MONO_TYPE_U:
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+				case MONO_TYPE_BOOLEAN:
+				case MONO_TYPE_CHAR:
+					info->ret_box_class = mono_class_from_mono_type (sig->ret);
+					break;
+				case MONO_TYPE_PTR:
+					info->ret_box_class = mono_defaults.int_class;
+					break;
+				case MONO_TYPE_STRING:
+				case MONO_TYPE_CLASS:  
+				case MONO_TYPE_ARRAY:
+				case MONO_TYPE_SZARRAY:
+				case MONO_TYPE_OBJECT:
+					break;
+				case MONO_TYPE_GENERICINST:
+					g_assert (MONO_TYPE_IS_REFERENCE (sig->ret));
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+			}
+		}
+#endif
+
+		if (!info->dyn_call_info)
+			info->runtime_invoke = mono_jit_compile_method (invoke);
+
 		mono_domain_lock (domain);
 		info2 = g_hash_table_lookup (domain_info->runtime_invoke_hash, method);
 		if (info2) {
@@ -4481,7 +4547,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		} else {
 			g_hash_table_insert (domain_info->runtime_invoke_hash, method, info);
 		}
-		mono_domain_unlock (domain);		
+		mono_domain_unlock (domain);
 	}
 
 	runtime_invoke = info->runtime_invoke;
@@ -4491,6 +4557,52 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	 * the helper method in System.Object and not the target class.
 	 */
 	mono_runtime_class_init (info->vtable);
+
+#ifdef MONO_ARCH_DYN_CALL_SUPPORTED
+	if (info->dyn_call_info) {
+		MonoMethodSignature *sig = mono_method_signature (method);
+		gpointer *args;
+		static RuntimeInvokeDynamicFunction dyn_runtime_invoke;
+		int i, pindex;
+		guint8 buf [128];
+		guint8 retval [128];
+
+		if (!dyn_runtime_invoke) {
+			invoke = mono_marshal_get_runtime_invoke_dynamic ();
+			dyn_runtime_invoke = mono_jit_compile_method (invoke);
+		}
+
+		/* Convert the arguments to the format expected by get_dyn_call_args */
+		args = g_alloca ((sig->param_count + sig->hasthis) * sizeof (gpointer));
+		pindex = 0;
+		if (sig->hasthis)
+			args [pindex ++] = &obj;
+		for (i = 0; i < sig->param_count; ++i) {
+			MonoType *t = sig->params [i];
+
+			if (t->byref) {
+				args [pindex ++] = &params [i];
+			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR) {
+				args [pindex ++] = &params [i];
+			} else {
+				args [pindex ++] = params [i];
+			}
+		}
+
+		//printf ("M: %s\n", mono_method_full_name (method, TRUE));
+
+		mono_arch_get_dyn_call_args (info->dyn_call_info, (gpointer**)args, buf, sizeof (buf));
+
+		dyn_runtime_invoke (buf, exc, info->compiled_method);
+
+		mono_arch_get_dyn_call_ret (info->dyn_call_info, buf, retval);
+
+		if (info->ret_box_class)
+			return mono_value_box (domain, info->ret_box_class, retval);
+		else
+			return *(MonoObject**)retval;
+	}
+#endif
 
 	return runtime_invoke (obj, params, exc, info->compiled_method);
 }

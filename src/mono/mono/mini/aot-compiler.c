@@ -1355,7 +1355,9 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	if (method->wrapper_type) {
 		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
 			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			if (mono_marshal_method_from_wrapper (method) != method) {
+			if (strcmp (method->name, "runtime_invoke_dynamic")) {
+				name = mono_aot_wrapper_name (method);
+			} else if (mono_marshal_method_from_wrapper (method) != method) {
 				/* Direct wrapper, encode it normally */
 			} else {
 				name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
@@ -1751,9 +1753,23 @@ add_wrappers (MonoAotCompile *acfg)
 				skip = TRUE;
 		}
 
-		if (!skip)
+#ifdef MONO_ARCH_DYN_CALL_SUPPORTED
+		{
+			MonoDynCallInfo *info = mono_arch_dyn_call_prepare (sig);
+
+			if (info) {
+				/* Supported by the dynamic runtime-invoke wrapper */
+				skip = TRUE;
+				g_free (info);
+			}
+		}
+#endif
+
+		if (!skip) {
+			//printf ("%s\n", mono_method_full_name (method, TRUE));
 			add_method (acfg, mono_marshal_get_runtime_invoke (method, FALSE));
-	}
+		}
+ 	}
 
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
 #ifdef MONO_ARCH_HAVE_TLS_GET
@@ -1815,6 +1831,10 @@ add_wrappers (MonoAotCompile *acfg)
 
 		/* runtime-invoke used by finalizers */
 		add_method (acfg, mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE));
+
+#ifdef MONO_ARCH_DYN_CALL_SUPPORTED
+		add_method (acfg, mono_marshal_get_runtime_invoke_dynamic ());
+#endif
 
 		/* JIT icall wrappers */
 		/* FIXME: locking */
@@ -4200,10 +4220,15 @@ mono_aot_wrapper_name (MonoMethod *method)
 
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
+		if (!strcmp (method->name, "runtime_invoke_dynamic"))
+			name = g_strdup_printf ("(wrapper runtime-invoke-dynamic)");
+		else
+			name = g_strdup_printf ("%s (%s)", method->name, tmpsig);
+		break;
 	case MONO_WRAPPER_DELEGATE_INVOKE:
 	case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
 	case MONO_WRAPPER_DELEGATE_END_INVOKE:
-		/* This is a hack to work around the fact that runtime invoke wrappers get assigned to some random class */
+		/* This is a hack to work around the fact that these wrappers get assigned to some random class */
 		name = g_strdup_printf ("%s (%s)", method->name, tmpsig);
 		break;
 	default:
