@@ -4488,7 +4488,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			for (i = 0; i < sig->param_count; ++i) {
 				MonoType *t = sig->params [i];
 
-				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+				if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
 					supported = FALSE;
 			}
 
@@ -4526,7 +4526,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				case MONO_TYPE_OBJECT:
 					break;
 				case MONO_TYPE_GENERICINST:
-					g_assert (MONO_TYPE_IS_REFERENCE (sig->ret));
+					if (!MONO_TYPE_IS_REFERENCE (sig->ret))
+						info->ret_box_class = mono_class_from_mono_type (sig->ret);
 					break;
 				case MONO_TYPE_VALUETYPE:
 					info->ret_box_class = mono_class_from_mono_type (sig->ret);
