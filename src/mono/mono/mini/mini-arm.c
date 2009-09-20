@@ -678,7 +678,9 @@ mono_arch_flush_icache (guint8 *code, gint size)
 }
 
 enum {
+	RegTypeNone,
 	RegTypeGeneral,
+	RegTypeIRegPair,
 	RegTypeBase,
 	RegTypeBaseGen,
 	RegTypeFP,
@@ -723,6 +725,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->regtype = RegTypeBase;
 			*stack_size += 4;
 		} else {
+			ainfo->regtype = RegTypeGeneral;
 			ainfo->reg = *gr;
 		}
 	} else {
@@ -761,6 +764,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			if (i8_align == 8 && ((*gr) & 1))
 				(*gr) ++;
 #endif
+			ainfo->regtype = RegTypeIRegPair;
 			ainfo->reg = *gr;
 		}
 		(*gr) ++;
@@ -777,6 +781,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	guint32 stack_size = 0;
 	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * n);
 
+	cinfo->nargs = n;
 	gr = ARMREG_R0;
 
 	/* FIXME: handle returning a struct */
@@ -932,27 +937,35 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_STRING:
+			cinfo->ret.regtype = RegTypeGeneral;
 			cinfo->ret.reg = ARMREG_R0;
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
+			cinfo->ret.regtype = RegTypeIRegPair;
 			cinfo->ret.reg = ARMREG_R0;
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
+			cinfo->ret.regtype = RegTypeFP;
 			cinfo->ret.reg = ARMREG_R0;
 			/* FIXME: cinfo->ret.reg = ???;
 			cinfo->ret.regtype = RegTypeFP;*/
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+				cinfo->ret.regtype = RegTypeGeneral;
 				cinfo->ret.reg = ARMREG_R0;
 				break;
 			}
+			cinfo->ret.regtype = RegTypeStructByAddr;
 			break;
 		case MONO_TYPE_VALUETYPE:
+			cinfo->ret.regtype = RegTypeStructByAddr;
 			break;
 		case MONO_TYPE_TYPEDBYREF:
+			cinfo->ret.regtype = RegTypeStructByAddr;
+			break;
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -1192,6 +1205,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		switch (ainfo->regtype) {
 		case RegTypeGeneral:
+		case RegTypeIRegPair:
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
@@ -1455,99 +1469,46 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 {
 	int i;
 
-	/* FIXME: Can't use cinfo as its missing a lot of stuff like reg pairs for I8 etc */
-
 	if (sig->hasthis + sig->param_count > PARAM_REGS + DYN_CALL_STACK_ARGS)
 		return FALSE;
 
-	switch (sig->ret->type) {
-	case MONO_TYPE_VOID:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-		/*
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		*/
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS:  
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_PTR:
-		break;
-	case MONO_TYPE_GENERICINST:
-		if (!MONO_TYPE_IS_REFERENCE (sig->ret))
-			return FALSE;
-		break;
-	case MONO_TYPE_VALUETYPE:
-		break;
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-		/* assume gshared */
+	switch (cinfo->ret.regtype) {
+	case RegTypeNone:
+	case RegTypeGeneral:
+	case RegTypeStructByAddr:
 		break;
 	default:
 		return FALSE;
 	}
+
+	for (i = 0; i < cinfo->nargs; ++i) {
+		switch (cinfo->args [i].regtype) {
+		case RegTypeGeneral:
+		case RegTypeBase:
+			break;
+		default:
+			return FALSE;
+		}
+	}
+
+	// FIXME: Can't use cinfo only as it doesn't contain info about I8/float */
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
 
 		if (t->byref)
 			continue;
 
-	handle_enum:
 		switch (t->type) {
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
-		case MONO_TYPE_TYPEDBYREF:
-			return FALSE;
-		case MONO_TYPE_VALUETYPE:
-			if (t->data.klass->enumtype) {
-				t = mono_class_enum_basetype (t->data.klass);
-				goto handle_enum;
-			}
-			return FALSE;
-		case MONO_TYPE_GENERICINST:
-			if (!MONO_TYPE_IS_REFERENCE (t))
-				return FALSE;
-			break;
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_CLASS:  
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-			/*
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			*/
-			break;
-		case MONO_TYPE_VAR:
-		case MONO_TYPE_MVAR:
-			/* assume gshared */
-			break;
-		default:
 			return FALSE;
+		default:
 			break;
 		}
 	}
+
 	return TRUE;
 }
 
@@ -2723,7 +2684,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 			} else
 				g_assert_not_reached ();
 		} else {
-			if (ainfo->regtype == RegTypeGeneral) {
+			if (ainfo->regtype == RegTypeGeneral || ainfo->regtype == RegTypeIRegPair) {
 				switch (ainfo->size) {
 				case 1:
 				case 2:
@@ -4246,7 +4207,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		} else {
 			/* the argument should be put on the stack: FIXME handle size != word  */
-			if (ainfo->regtype == RegTypeGeneral) {
+			if (ainfo->regtype == RegTypeGeneral || ainfo->regtype == RegTypeIRegPair) {
 				switch (ainfo->size) {
 				case 1:
 					if (arm_is_imm12 (inst->inst_offset))
