@@ -4480,7 +4480,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		 * possible, built on top of the OP_DYN_CALL opcode provided by the JIT.
 		 */
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-		if (mono_aot_only) {
+		if (mono_aot_only || debug_options.dyn_runtime_invoke) {
 			MonoMethodSignature *sig = mono_method_signature (method);
 			gboolean supported = TRUE;
 			int i;
@@ -4527,6 +4527,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					break;
 				case MONO_TYPE_GENERICINST:
 					g_assert (MONO_TYPE_IS_REFERENCE (sig->ret));
+					break;
+				case MONO_TYPE_VALUETYPE:
+					info->ret_box_class = mono_class_from_mono_type (sig->ret);
+					g_assert (info->ret_box_class->enumtype);
 					break;
 				default:
 					g_assert_not_reached ();
@@ -4795,9 +4799,11 @@ mini_parse_debug_options (void)
 			debug_options.suspend_on_sigsegv = TRUE;
 		else if (!strcmp (arg, "dont-free-domains"))
 			mono_dont_free_domains = TRUE;
+		else if (!strcmp (arg, "dyn-runtime-invoke"))
+			debug_options.dyn_runtime_invoke = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'dyn-runtime-invoke'\n");
 			exit (1);
 		}
 	}

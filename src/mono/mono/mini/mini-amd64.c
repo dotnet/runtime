@@ -2137,6 +2137,7 @@ dyn_call_supported (MonoMethodSignature *sig)
 
 	if (sig->hasthis + sig->param_count > PARAM_REGS)
 		return FALSE;
+
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_I1:
@@ -2162,6 +2163,9 @@ dyn_call_supported (MonoMethodSignature *sig)
 		if (!MONO_TYPE_IS_REFERENCE (sig->ret))
 			return FALSE;
 		break;
+	case MONO_TYPE_VALUETYPE:
+		if (!sig->ret->data.klass->enumtype)
+			return FALSE;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* assume gshared */
@@ -2350,7 +2354,7 @@ mono_arch_get_dyn_call_ret (MonoDynCallInfo *info, guint8 *buf, guint8 *ret)
 {
 	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
 
-	switch (sig->ret->type) {
+	switch (mono_type_get_underlying_type (sig->ret)->type) {
 	case MONO_TYPE_VOID:
 		*(gpointer*)ret = NULL;
 		break;
