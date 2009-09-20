@@ -356,6 +356,7 @@ typedef struct {
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1
+#define MONO_ARCH_DYN_CALL_PARAM_AREA 0
 
 #define MONO_ARCH_USE_OP_TAIL_CALL(caller_sig, callee_sig) mono_metadata_signature_equal ((caller_sig), (callee_sig))
 

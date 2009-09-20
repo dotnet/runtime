@@ -2166,6 +2166,7 @@ dyn_call_supported (MonoMethodSignature *sig)
 	case MONO_TYPE_VALUETYPE:
 		if (!sig->ret->data.klass->enumtype)
 			return FALSE;
+		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* assume gshared */

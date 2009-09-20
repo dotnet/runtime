@@ -1435,16 +1435,23 @@ mono_arch_is_inst_imm (gint64 imm)
 	return TRUE;
 }
 
+#define DYN_CALL_STACK_ARGS 4
+
+typedef struct {
+	MonoMethodSignature *sig;
+} DynCallInfo;
+
+typedef struct {
+	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
+	mgreg_t res;
+} DynCallArgs;
+
 static gboolean
 dyn_call_supported (MonoMethodSignature *sig)
 {
 	int i;
 
-#ifdef PLATFORM_WIN32
-	return FALSE;
-#endif
-
-	if (sig->hasthis + sig->param_count > PARAM_REGS)
+	if (sig->hasthis + sig->param_count > PARAM_REGS + DYN_CALL_STACK_ARGS)
 		return FALSE;
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
@@ -1471,6 +1478,10 @@ dyn_call_supported (MonoMethodSignature *sig)
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (!MONO_TYPE_IS_REFERENCE (sig->ret))
+			return FALSE;
+		break;
+	case MONO_TYPE_VALUETYPE:
+		if (!sig->ret->data.klass->enumtype)
 			return FALSE;
 		break;
 	case MONO_TYPE_VAR:
@@ -1534,15 +1545,6 @@ dyn_call_supported (MonoMethodSignature *sig)
 	}
 	return TRUE;
 }
-
-typedef struct {
-	MonoMethodSignature *sig;
-} DynCallInfo;
-
-typedef struct {
-	mgreg_t regs [PARAM_REGS];
-	mgreg_t res;
-} DynCallArgs;
 
 MonoDynCallInfo*
 mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
@@ -1628,7 +1630,7 @@ mono_arch_get_dyn_call_args (MonoDynCallInfo *info, gpointer **args, guint8 *buf
 		}
 	}
 
-	g_assert (greg <= PARAM_REGS);
+	g_assert (greg <= PARAM_REGS + DYN_CALL_STACK_ARGS);
 }
 
 void
@@ -1636,7 +1638,7 @@ mono_arch_get_dyn_call_ret (MonoDynCallInfo *info, guint8 *buf, guint8 *ret)
 {
 	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
 
-	switch (sig->ret->type) {
+	switch (mono_type_get_underlying_type (sig->ret)->type) {
 	case MONO_TYPE_VOID:
 		*(gpointer*)ret = NULL;
 		break;
@@ -3332,10 +3334,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Save args buffer */
 			ARM_STR_IMM (code, ARMREG_LR, var->inst_basereg, var->inst_offset);
 
+			/* Set stack slots using R0 as scratch reg */
+			/* MONO_ARCH_DYN_CALL_PARAM_AREA gives the size of stack space available */
+			for (i = 0; i < DYN_CALL_STACK_ARGS; ++i) {
+				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, (PARAM_REGS + i) * sizeof (gpointer));
+				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, i * sizeof (gpointer));
+			}
+
 			/* Set argument registers */
 			for (i = 0; i < PARAM_REGS; ++i)
 				ARM_LDR_IMM (code, i, ARMREG_LR, i * sizeof (gpointer));
-			
+
 			/* Make the call */
 			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);

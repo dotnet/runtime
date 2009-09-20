@@ -9292,6 +9292,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->sreg2 = sp [1]->dreg;
 				MONO_ADD_INS (bblock, ins);
 
+				cfg->param_area = MAX (cfg->param_area, MONO_ARCH_DYN_CALL_PARAM_AREA);
+
 				ip += 2;
 				inline_costs += 10 * num_calls++;
 
