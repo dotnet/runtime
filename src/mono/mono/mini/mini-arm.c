@@ -698,6 +698,7 @@ typedef struct {
 	int nargs;
 	guint32 stack_usage;
 	guint32 struct_ret;
+	gboolean vtype_retaddr;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
@@ -782,6 +783,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		add_general (&gr, &stack_size, &cinfo->ret, TRUE);
 		cinfo->struct_ret = ARMREG_R0;
+		cinfo->vtype_retaddr = TRUE;
 	}
 
 	n = 0;
@@ -1486,8 +1488,6 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 			return FALSE;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (!sig->ret->data.klass->enumtype)
-			return FALSE;
 		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -1584,9 +1584,10 @@ mono_arch_dyn_call_free (MonoDynCallInfo *info)
 void
 mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, guint8 *buf, int buf_len)
 {
+	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
 	DynCallArgs *p = (DynCallArgs*)buf;
 	int arg_index, greg, i;
-	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
+	MonoMethodSignature *sig = ainfo->sig;
 
 	g_assert (buf_len >= sizeof (DynCallArgs));
 
@@ -1595,9 +1596,12 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 	arg_index = 0;
 	greg = 0;
-	if (sig->hasthis) {
+
+	if (ainfo->cinfo->vtype_retaddr)
+		p->regs [greg ++] = (mgreg_t)ret;
+
+	if (sig->hasthis)
 		p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
-	}
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = mono_type_get_underlying_type (sig->params [i]);
@@ -1657,6 +1661,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 void
 mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
+	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
 	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
 	guint8 *ret = ((DynCallArgs*)buf)->ret;
 
@@ -1705,6 +1710,10 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		*(guint64*)ret = ((DynCallArgs*)buf)->res;
 		break;
 		*/
+	case MONO_TYPE_VALUETYPE:
+		g_assert (ainfo->cinfo->vtype_retaddr);
+		/* Nothing to do */
+		break;
 	default:
 		g_assert_not_reached ();
 	}
