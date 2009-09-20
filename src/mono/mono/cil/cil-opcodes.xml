@@ -307,4 +307,5 @@
 <opcode name="mono_not_taken" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0C" flow="next" />
 <opcode name="mono_tls" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x0D" flow="next" />
 <opcode name="mono_icall_addr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x0E" flow="next" />
+<opcode name="mono_dyn_call" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x0F" flow="next" />
 </opdesc>

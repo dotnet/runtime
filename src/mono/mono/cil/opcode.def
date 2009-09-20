@@ -306,6 +306,7 @@ OPDEF(CEE_MONO_CLASSCONST, "mono_classconst", Pop0, PushI, InlineI, X, 2, 0xF0, 
 OPDEF(CEE_MONO_NOT_TAKEN, "mono_not_taken", Pop0, Push0, InlineNone, X, 2, 0xF0, 0x0C, NEXT)
 OPDEF(CEE_MONO_TLS, "mono_tls", Pop0, PushI, InlineI, X, 2, 0xF0, 0x0D, NEXT)
 OPDEF(CEE_MONO_ICALL_ADDR, "mono_icall_addr", Pop0, PushI, InlineI, X, 2, 0xF0, 0x0E, NEXT)
+OPDEF(CEE_MONO_DYN_CALL, "mono_dyn_call", Pop0, PushI, InlineI, X, 2, 0xF0, 0x0F, NEXT)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)
