@@ -4448,6 +4448,127 @@ handle_enum:
 	return res;	
 }
 
+/*
+ * mono_marshal_get_runtime_invoke_dynamic:
+ *
+ *   Return a method which can be used to invoke managed methods from native code
+ * dynamically.
+ * The signature of the returned method is given by RuntimeInvokeDynamicFunction:
+ * void runtime_invoke (void *args, MonoObject **exc, void *compiled_method)
+ * ARGS should point to an architecture specific structure containing 
+ * the arguments and space for the return value.
+ * The other arguments are the same as for runtime_invoke (), except that
+ * ARGS should contain the this argument too.
+ * This wrapper serves the same purpose as the runtime-invoke wrappers, but there
+ * is only one copy of it, which is useful in full-aot.
+ */
+MonoMethod*
+mono_marshal_get_runtime_invoke_dynamic (void)
+{
+	static MonoMethod *method;
+	MonoMethodSignature *csig;
+	MonoExceptionClause *clause;
+	MonoMethodBuilder *mb;
+	int pos, posna;
+	char *name;
+
+	if (method)
+		return method;
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
+
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	csig->params [0] = &mono_defaults.int_class->byval_arg;
+	csig->params [1] = &mono_defaults.int_class->byval_arg;
+	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->params [3] = &mono_defaults.int_class->byval_arg;
+
+	name = g_strdup ("runtime_invoke_dynamic");
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_RUNTIME_INVOKE);
+	g_free (name);
+
+	/* allocate local 0 (object) tmp */
+	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+	/* allocate local 1 (object) exc */
+	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+	/* cond set *exc to null */
+	mono_mb_emit_byte (mb, CEE_LDARG_1);
+	mono_mb_emit_byte (mb, CEE_BRFALSE_S);
+	mono_mb_emit_byte (mb, 3);	
+	mono_mb_emit_byte (mb, CEE_LDARG_1);
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+	emit_thread_force_interrupt_checkpoint (mb);
+
+	mono_mb_emit_byte (mb, CEE_LDARG_0);
+	mono_mb_emit_byte (mb, CEE_LDARG_2);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_DYN_CALL);
+
+	pos = mono_mb_emit_branch (mb, CEE_LEAVE);
+
+	clause = mono_image_alloc0 (mono_defaults.corlib, sizeof (MonoExceptionClause));
+	clause->flags = MONO_EXCEPTION_CLAUSE_FILTER;
+	clause->try_len = mono_mb_get_label (mb);
+
+	/* filter code */
+	clause->data.filter_offset = mono_mb_get_label (mb);
+	
+	mono_mb_emit_byte (mb, CEE_POP);
+	mono_mb_emit_byte (mb, CEE_LDARG_1);
+	mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+	mono_mb_emit_byte (mb, CEE_PREFIX1);
+	mono_mb_emit_byte (mb, CEE_CGT_UN);
+	mono_mb_emit_byte (mb, CEE_PREFIX1);
+	mono_mb_emit_byte (mb, CEE_ENDFILTER);
+
+	clause->handler_offset = mono_mb_get_label (mb);
+
+	/* handler code */
+	/* store exception */
+	mono_mb_emit_stloc (mb, 1);
+	
+	mono_mb_emit_byte (mb, CEE_LDARG_1);
+	mono_mb_emit_ldloc (mb, 1);
+	mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	mono_mb_emit_stloc (mb, 0);
+
+	/* Check for the abort exception */
+	mono_mb_emit_ldloc (mb, 1);
+	mono_mb_emit_op (mb, CEE_ISINST, mono_defaults.threadabortexception_class);
+	posna = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
+
+	/* Delay the abort exception */
+	mono_mb_emit_icall (mb, ves_icall_System_Threading_Thread_ResetAbort);
+
+	mono_mb_patch_short_branch (mb, posna);
+	mono_mb_emit_branch (mb, CEE_LEAVE);
+
+	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
+
+	mono_mb_set_clauses (mb, 1, clause);
+
+	/* return result */
+	mono_mb_patch_branch (mb, pos);
+	//mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	mono_loader_lock ();
+	/* double-checked locking */
+	if (!method) {
+		method = mono_mb_create_method (mb, csig, 16);
+	}
+	mono_loader_unlock ();
+
+	mono_mb_free (mb);
+
+	return method;
+}
+
 static void
 mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 {
