@@ -158,6 +158,10 @@ typedef struct {
 
 #define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
 
+/* Arch-specific */
+typedef struct {
+} MonoDynCallInfo;
+
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
 	for (b = 0; b < n; b++)\
@@ -1028,6 +1032,9 @@ typedef struct {
 	/*Use to implement simd constructors. This is a vector (16 bytes) var.*/
 	MonoInst *simd_ctor_var;
 
+	/* Used to implement dyn_call */
+	MonoInst *dyn_call_var;
+
 	/* Used by AOT */
 	guint32 got_offset;
 } MonoCompile;
@@ -1582,6 +1589,9 @@ gboolean  mono_arch_print_tree			(MonoInst *tree, int arity) MONO_INTERNAL;
 void      mono_arch_emit_call                   (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
 void      mono_arch_emit_outarg_vt              (MonoCompile *cfg, MonoInst *ins, MonoInst *src) MONO_INTERNAL;
 void      mono_arch_emit_setret                 (MonoCompile *cfg, MonoMethod *method, MonoInst *val) MONO_INTERNAL;
+MonoDynCallInfo *mono_arch_dyn_call_prepare     (MonoMethodSignature *sig) MONO_INTERNAL;
+void      mono_arch_get_dyn_call_args           (MonoDynCallInfo *info, gpointer **args, guint8 *buf, int buf_len) MONO_INTERNAL;
+void      mono_arch_get_dyn_call_ret            (MonoDynCallInfo *info, guint8 *buf, guint8 *ret) MONO_INTERNAL;
 MonoInst *mono_arch_emit_inst_for_method        (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
 void      mono_arch_decompose_opts              (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
 void      mono_arch_decompose_long_opts         (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;

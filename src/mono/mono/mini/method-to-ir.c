@@ -9270,6 +9270,33 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp++ = ins;
 				ip += 6;
 				break;
+			case CEE_MONO_DYN_CALL: {
+				MonoCallInst *call;
+
+				/* It would be easier to call a trampoline, but that would put an
+				 * extra frame on the stack, confusing exception handling. So
+				 * implement it inline using an opcode for now.
+				 */
+
+				if (!cfg->dyn_call_var) {
+					cfg->dyn_call_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+					/* prevent it from being register allocated */
+					cfg->dyn_call_var->flags |= MONO_INST_INDIRECT;
+				}
+
+				/* Has to use a call inst since it local regalloc expects it */
+				MONO_INST_NEW_CALL (cfg, call, OP_DYN_CALL);
+				ins = (MonoInst*)call;
+				sp -= 2;
+				ins->sreg1 = sp [0]->dreg;
+				ins->sreg2 = sp [1]->dreg;
+				MONO_ADD_INS (bblock, ins);
+
+				ip += 2;
+				inline_costs += 10 * num_calls++;
+
+				break;
+			}
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;

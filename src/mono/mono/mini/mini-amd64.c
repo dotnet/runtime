@@ -2126,6 +2126,278 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	                x86_branch32 (code, cond, 0, sign); \
 }
 
+static gboolean
+dyn_call_supported (MonoMethodSignature *sig)
+{
+	int i;
+
+#ifdef PLATFORM_WIN32
+	return FALSE;
+#endif
+
+	if (sig->hasthis + sig->param_count > PARAM_REGS)
+		return FALSE;
+	switch (sig->ret->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:  
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_PTR:
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (!MONO_TYPE_IS_REFERENCE (sig->ret))
+			return FALSE;
+		break;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		/* assume gshared */
+		break;
+	default:
+		return FALSE;
+	}
+	for (i = 0; i < sig->param_count; ++i) {
+		MonoType *t = sig->params [i];
+
+		if (t->byref)
+			continue;
+
+	handle_enum:
+		switch (t->type) {
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_TYPEDBYREF:
+			return FALSE;
+		case MONO_TYPE_VALUETYPE:
+			if (t->data.klass->enumtype) {
+				t = mono_class_enum_basetype (t->data.klass);
+				goto handle_enum;
+			}
+			return FALSE;
+		case MONO_TYPE_GENERICINST:
+			if (!MONO_TYPE_IS_REFERENCE (t))
+				return FALSE;
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:  
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			/* assume gshared */
+			break;
+		default:
+			return FALSE;
+			break;
+		}
+	}
+	return TRUE;
+}
+
+typedef struct {
+	MonoMethodSignature *sig;
+} DynCallInfo;
+
+typedef struct {
+	mgreg_t regs [PARAM_REGS];
+	mgreg_t res;
+} DynCallArgs;
+
+/*
+ * mono_arch_dyn_call_prepare:
+ *
+ *   Return a pointer to an arch-specific structure in malloc-ed memory which 
+ * contains information needed by mono_arch_get_dyn_call_args (). Return NULL
+ * if OP_DYN_CALL is not supported for SIG.
+ * This function is equivalent to ffi_prep_cif in libffi.
+ */
+MonoDynCallInfo*
+mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
+{
+	DynCallInfo *info;
+
+	if (!dyn_call_supported (sig))
+		return NULL;
+
+	info = g_new0 (DynCallInfo, 1);
+	// FIXME: Preprocess the info to speed up get_dyn_call_args ().
+	info->sig = sig;
+	
+	return (MonoDynCallInfo*)info;
+}
+
+/*
+ * mono_arch_get_dyn_call_args:
+ *
+ *   Convert the arguments ARGS to a format which can be passed to OP_DYN_CALL, and
+ * store the result into BUF.
+ * ARGS should be an array of pointers pointing to the arguments.
+ * This function should be as fast as possible, any work which does not depend
+ * on the actual values of the arguments should be done in 
+ * mono_arch_dyn_call_prepare ().
+ * get_dyn_call_args + OP_DYN_CALL + get_dyn_call_ret is equivalent to ffi_call in
+ * libffi.
+ */
+void
+mono_arch_get_dyn_call_args (MonoDynCallInfo *info, gpointer **args, guint8 *buf, int buf_len)
+{
+	DynCallArgs *p = (DynCallArgs*)buf;
+	int arg_index, greg, i;
+	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
+
+	g_assert (buf_len >= sizeof (DynCallArgs));
+
+	p->res = 0;
+
+	arg_index = 0;
+	greg = 0;
+	if (sig->hasthis) {
+		p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+	}
+
+	for (i = 0; i < sig->param_count; i++) {
+		MonoType *t = mono_type_get_underlying_type (sig->params [i]);
+
+		if (t->byref) {
+			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			continue;
+		}
+
+		switch (t->type) {
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:  
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			break;
+		case MONO_TYPE_GENERICINST:
+			g_assert (MONO_TYPE_IS_REFERENCE (t));
+			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			break;
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U1:
+			p->regs [greg ++] = *(guint8*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_I1:
+			p->regs [greg ++] = *(gint8*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_I2:
+			p->regs [greg ++] = *(gint16*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+			p->regs [greg ++] = *(guint16*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_I4:
+			p->regs [greg ++] = *(gint32*)(args [arg_index ++]);
+			break;
+		case MONO_TYPE_U4:
+			p->regs [greg ++] = *(guint32*)(args [arg_index ++]);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	g_assert (greg <= PARAM_REGS);
+}
+
+/*
+ * mono_arch_get_dyn_call_ret:
+ *
+ *   Store the result of a dyn call into a buffer pointed to by RET. BUF should
+ * point to the buffer returned by get_dyn_call_args ().
+ * This function should be as fast as possible, any work which does not depend
+ * on the actual values of the arguments should be done in 
+ * mono_arch_dyn_call_prepare ().
+ */
+void
+mono_arch_get_dyn_call_ret (MonoDynCallInfo *info, guint8 *buf, guint8 *ret)
+{
+	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
+
+	switch (sig->ret->type) {
+	case MONO_TYPE_VOID:
+		*(gpointer*)ret = NULL;
+		break;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:  
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+		*(gpointer*)ret = (gpointer)((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_GENERICINST:
+		*(gpointer*)ret = (gpointer)((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_I1:
+		*(gint8*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		*(guint8*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_I2:
+		*(gint16*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		*(guint16*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_I4:
+		*(gint32*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_U4:
+		*(guint32*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_I8:
+		*(gint64*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	case MONO_TYPE_U8:
+		*(guint64*)ret = ((DynCallArgs*)buf)->res;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 /* emit an exception if condition is fail */
 #define EMIT_COND_SYSTEM_EXCEPTION(cond,signed,exc_name)            \
         do {                                                        \
@@ -3778,6 +4050,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
 			break;
+		case OP_DYN_CALL: {
+			int i;
+			MonoInst *var = cfg->dyn_call_var;
+
+			g_assert (var->opcode == OP_REGOFFSET);
+
+			/* r11 = args buffer filled by mono_arch_get_dyn_call_args () */
+			amd64_mov_reg_reg (code, AMD64_R11, ins->sreg1, 8);
+			/* r10 = ftn */
+			amd64_mov_reg_reg (code, AMD64_R10, ins->sreg2, 8);
+
+			/* Save args buffer */
+			amd64_mov_membase_reg (code, var->inst_basereg, var->inst_offset, AMD64_R11, 8);
+
+			/* Set argument registers */
+			for (i = 0; i < PARAM_REGS; ++i)
+				amd64_mov_reg_membase (code, param_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+			
+			/* Make the call */
+			amd64_call_reg (code, AMD64_R10);
+
+			/* Save result */
+			amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
+			amd64_mov_membase_reg (code, AMD64_R11, G_STRUCT_OFFSET (DynCallArgs, res), AMD64_RAX, 8);
+			break;
+		}
 		case OP_AMD64_SAVE_SP_TO_LMF:
 			amd64_mov_membase_reg (code, cfg->frame_reg, cfg->arch.lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 			break;
