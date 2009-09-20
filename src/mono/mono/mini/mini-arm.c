@@ -1439,20 +1439,25 @@ mono_arch_is_inst_imm (gint64 imm)
 
 typedef struct {
 	MonoMethodSignature *sig;
-} DynCallInfo;
+	CallInfo *cinfo;
+} ArchDynCallInfo;
 
 typedef struct {
 	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
 	mgreg_t res;
+	guint8 *ret;
 } DynCallArgs;
 
 static gboolean
-dyn_call_supported (MonoMethodSignature *sig)
+dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 {
 	int i;
 
+	/* FIXME: Can't use cinfo as its missing a lot of stuff like reg pairs for I8 etc */
+
 	if (sig->hasthis + sig->param_count > PARAM_REGS + DYN_CALL_STACK_ARGS)
 		return FALSE;
+
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_I1:
@@ -1549,28 +1554,44 @@ dyn_call_supported (MonoMethodSignature *sig)
 MonoDynCallInfo*
 mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 {
-	DynCallInfo *info;
+	ArchDynCallInfo *info;
+	CallInfo *cinfo;
 
-	if (!dyn_call_supported (sig))
+	cinfo = get_call_info (sig, FALSE);
+
+	if (!dyn_call_supported (cinfo, sig)) {
+		g_free (cinfo);
 		return NULL;
+	}
 
-	info = g_new0 (DynCallInfo, 1);
-	// FIXME: Preprocess the info to speed up get_dyn_call_args ().
+	info = g_new0 (ArchDynCallInfo, 1);
+	// FIXME: Preprocess the info to speed up start_dyn_call ()
 	info->sig = sig;
+	info->cinfo = cinfo;
 	
 	return (MonoDynCallInfo*)info;
 }
 
 void
-mono_arch_get_dyn_call_args (MonoDynCallInfo *info, gpointer **args, guint8 *buf, int buf_len)
+mono_arch_dyn_call_free (MonoDynCallInfo *info)
+{
+	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
+
+	g_free (ainfo->cinfo);
+	g_free (ainfo);
+}
+
+void
+mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, guint8 *buf, int buf_len)
 {
 	DynCallArgs *p = (DynCallArgs*)buf;
 	int arg_index, greg, i;
-	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
+	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
 
 	g_assert (buf_len >= sizeof (DynCallArgs));
 
 	p->res = 0;
+	p->ret = ret;
 
 	arg_index = 0;
 	greg = 0;
@@ -1634,9 +1655,10 @@ mono_arch_get_dyn_call_args (MonoDynCallInfo *info, gpointer **args, guint8 *buf
 }
 
 void
-mono_arch_get_dyn_call_ret (MonoDynCallInfo *info, guint8 *buf, guint8 *ret)
+mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 {
-	MonoMethodSignature *sig = ((DynCallInfo*)info)->sig;
+	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
+	guint8 *ret = ((DynCallArgs*)buf)->ret;
 
 	switch (mono_type_get_underlying_type (sig->ret)->type) {
 	case MONO_TYPE_VOID:
