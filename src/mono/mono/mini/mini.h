@@ -160,6 +160,7 @@ typedef struct {
 
 /* Arch-specific */
 typedef struct {
+	int dummy;
 } MonoDynCallInfo;
 
 #if 0
