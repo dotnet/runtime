@@ -1,3 +1,7 @@
+2009-08-29  Jonathan Pryor  <jpryor@novell.com>
+
+	* man/mdoc-export-html.1: Document --with-profile, --with-version.
+
 2009-09-08  Zoltan Varga  <vargaz@gmail.com>
 
 	* acinclude.m4 (dolt_supported): Enable this for mips.
