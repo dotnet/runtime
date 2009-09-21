@@ -4485,6 +4485,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			gboolean supported = TRUE;
 			int i;
 
+			if (method->string_ctor)
+				sig = mono_marshal_get_string_ctor_signature (method);
+
 			for (i = 0; i < sig->param_count; ++i) {
 				MonoType *t = sig->params [i];
 
@@ -4492,7 +4495,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					supported = FALSE;
 			}
 
-			if (method->klass->contextbound || method->string_ctor || !info->compiled_method)
+			if (method->klass->contextbound || !info->compiled_method)
 				supported = FALSE;
 
 			if (supported)

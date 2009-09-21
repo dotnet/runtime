@@ -1754,7 +1754,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-		if (!(method->klass->contextbound || method->string_ctor)) {
+		if (!method->klass->contextbound) {
 			MonoDynCallInfo *info = mono_arch_dyn_call_prepare (sig);
 
 			if (info) {
