@@ -4514,6 +4514,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 				case MONO_TYPE_U8:
 				case MONO_TYPE_BOOLEAN:
 				case MONO_TYPE_CHAR:
+				case MONO_TYPE_R4:
+				case MONO_TYPE_R8:
 					info->ret_box_class = mono_class_from_mono_type (sig->ret);
 					break;
 				case MONO_TYPE_PTR:

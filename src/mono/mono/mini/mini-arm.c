@@ -1460,7 +1460,7 @@ typedef struct {
 
 typedef struct {
 	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
-	mgreg_t res;
+	mgreg_t res, res2;
 	guint8 *ret;
 } DynCallArgs;
 
@@ -1475,8 +1475,17 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 	switch (cinfo->ret.regtype) {
 	case RegTypeNone:
 	case RegTypeGeneral:
+	case RegTypeIRegPair:
 	case RegTypeStructByAddr:
 		break;
+	case RegTypeFP:
+#ifdef ARM_FPU_FPA
+		return FALSE;
+#elif defined(ARM_FPU_VFP)
+		break;
+#else
+		return FALSE;
+#endif
 	default:
 		return FALSE;
 	}
@@ -1484,7 +1493,14 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 	for (i = 0; i < cinfo->nargs; ++i) {
 		switch (cinfo->args [i].regtype) {
 		case RegTypeGeneral:
+			break;
+		case RegTypeIRegPair:
+			if ((cinfo->args [i].reg % 2) == 1)
+				return FALSE;
+			break;
 		case RegTypeBase:
+			if (cinfo->args [i].offset >= (DYN_CALL_STACK_ARGS * sizeof (gpointer)))
+				return FALSE;
 			break;
 		default:
 			return FALSE;
@@ -1501,8 +1517,10 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 		switch (t->type) {
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
+			/*
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
+			*/
 			return FALSE;
 		default:
 			break;
@@ -1566,9 +1584,10 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = mono_type_get_underlying_type (sig->params [i]);
+		gpointer *arg = args [arg_index ++];
 
 		if (t->byref) {
-			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			p->regs [greg ++] = (mgreg_t)*arg;
 			continue;
 		}
 
@@ -1581,35 +1600,36 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
-			/*
+			p->regs [greg ++] = (mgreg_t)*arg;
+			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			*/
-			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			p->regs [greg ++] = (mgreg_t)arg [0];
+			p->regs [greg ++] = (mgreg_t)arg [1];
 			break;
 		case MONO_TYPE_GENERICINST:
 			g_assert (MONO_TYPE_IS_REFERENCE (t));
-			p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+			p->regs [greg ++] = (mgreg_t)*arg;
 			break;
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_U1:
-			p->regs [greg ++] = *(guint8*)(args [arg_index ++]);
+			p->regs [greg ++] = *(guint8*)arg;
 			break;
 		case MONO_TYPE_I1:
-			p->regs [greg ++] = *(gint8*)(args [arg_index ++]);
+			p->regs [greg ++] = *(gint8*)arg;
 			break;
 		case MONO_TYPE_I2:
-			p->regs [greg ++] = *(gint16*)(args [arg_index ++]);
+			p->regs [greg ++] = *(gint16*)arg;
 			break;
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
-			p->regs [greg ++] = *(guint16*)(args [arg_index ++]);
+			p->regs [greg ++] = *(guint16*)arg;
 			break;
 		case MONO_TYPE_I4:
-			p->regs [greg ++] = *(gint32*)(args [arg_index ++]);
+			p->regs [greg ++] = *(gint32*)arg;
 			break;
 		case MONO_TYPE_U4:
-			p->regs [greg ++] = *(guint32*)(args [arg_index ++]);
+			p->regs [greg ++] = *(guint32*)arg;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -1625,6 +1645,8 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	ArchDynCallInfo *ainfo = (ArchDynCallInfo*)info;
 	MonoMethodSignature *sig = ((ArchDynCallInfo*)info)->sig;
 	guint8 *ret = ((DynCallArgs*)buf)->ret;
+	mgreg_t res = ((DynCallArgs*)buf)->res;
+	mgreg_t res2 = ((DynCallArgs*)buf)->res2;
 
 	switch (mono_type_get_underlying_type (sig->ret)->type) {
 	case MONO_TYPE_VOID:
@@ -1638,43 +1660,55 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
-		*(gpointer*)ret = (gpointer)((DynCallArgs*)buf)->res;
+		*(gpointer*)ret = (gpointer)res;
 		break;
 	case MONO_TYPE_GENERICINST:
-		*(gpointer*)ret = (gpointer)((DynCallArgs*)buf)->res;
+		*(gpointer*)ret = (gpointer)res;
 		break;
 	case MONO_TYPE_I1:
-		*(gint8*)ret = ((DynCallArgs*)buf)->res;
+		*(gint8*)ret = res;
 		break;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
-		*(guint8*)ret = ((DynCallArgs*)buf)->res;
+		*(guint8*)ret = res;
 		break;
 	case MONO_TYPE_I2:
-		*(gint16*)ret = ((DynCallArgs*)buf)->res;
+		*(gint16*)ret = res;
 		break;
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
-		*(guint16*)ret = ((DynCallArgs*)buf)->res;
+		*(guint16*)ret = res;
 		break;
 	case MONO_TYPE_I4:
-		*(gint32*)ret = ((DynCallArgs*)buf)->res;
+		*(gint32*)ret = res;
 		break;
 	case MONO_TYPE_U4:
-		*(guint32*)ret = ((DynCallArgs*)buf)->res;
+		*(guint32*)ret = res;
 		break;
-		/*
 	case MONO_TYPE_I8:
-		*(gint64*)ret = ((DynCallArgs*)buf)->res;
-		break;
 	case MONO_TYPE_U8:
-		*(guint64*)ret = ((DynCallArgs*)buf)->res;
+		/* This handles endianness as well */
+		((gint32*)ret) [0] = res;
+		((gint32*)ret) [1] = res2;
 		break;
-		*/
 	case MONO_TYPE_VALUETYPE:
 		g_assert (ainfo->cinfo->vtype_retaddr);
 		/* Nothing to do */
 		break;
+#if defined(ARM_FPU_VFP)
+	case MONO_TYPE_R4:
+		*(float*)ret = *(float*)&res;
+		break;
+	case MONO_TYPE_R8: {
+		mgreg_t regs [2];
+
+		regs [0] = res;
+		regs [1] = res2;
+
+		*(double*)ret = *(double*)&regs;
+		break;
+	}
+#endif
 	default:
 		g_assert_not_reached ();
 	}
@@ -3344,6 +3378,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Save result */
 			ARM_LDR_IMM (code, ARMREG_IP, var->inst_basereg, var->inst_offset);
 			ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, G_STRUCT_OFFSET (DynCallArgs, res)); 
+			ARM_STR_IMM (code, ARMREG_R1, ARMREG_IP, G_STRUCT_OFFSET (DynCallArgs, res2)); 
 			break;
 		}
 		case OP_THROW: {
