@@ -132,42 +132,9 @@ class Tests
 		return 0;
 	}
 
-	public static int test_42_int () {
-		return (int)typeof (Tests).GetMethod ("data_types_int").Invoke (null, new object [] { Int32.MinValue, UInt32.MaxValue });
-	}
-
-	public static int test_42_short () {
-		return (short)typeof (Tests).GetMethod ("data_types_short").Invoke (null, new object [] { short.MinValue, ushort.MaxValue });
-	}
-
-	public static int test_0_bool_char () {
-		if ((int)typeof (Tests).GetMethod ("data_types_bool_char").Invoke (null, new object [] { true, false, 'A' }) != 0)
-			return 1;
-		return 0;
-	}
-
-	public static int test_0_byref_int () {
-		if ((int)typeof (Tests).GetMethod ("data_types_byref_int").Invoke (null, new object [] { 42 }) != 0)
-			return 1;
-		return 0;
-	}
-
-	public static int test_0_long () {
-		if ((long)typeof (Tests).GetMethod ("data_types_long").Invoke (null, new object [] { 0x123456789L, (ulong)0x123456789L }) == 0x12345678AL)
-			return 0;
-		else
-			return 1;
-	}
-
-	public static int test_0_float_ret () {
-		if ((float)typeof (Tests).GetMethod ("data_types_float_ret").Invoke (null, new object [] { }) == 0.123f)
-			return 0;
-		else
-			return 1;
-	}
-
-	public static int test_0_double_ret () {
-		if ((double)typeof (Tests).GetMethod ("data_types_double_ret").Invoke (null, new object [] { }) == 0.123f)
+	public static int test_0_string_ctor () {
+		string res = (string)typeof (String).GetConstructor (new Type [] { typeof (char[]) }).Invoke (null, new object [] { new char [] { 'A', 'B', 'C' } });
+		if (res == "ABC")
 			return 0;
 		else
 			return 1;
@@ -205,49 +172,6 @@ class Tests
 
 	public static FooStruct<T> data_types_ginst_vtype<T> (FooStruct<T> f) {
 		return f;
-	}
-
-	public static int data_types_int (int i, uint ui) {
-		if (i == Int32.MinValue && ui == UInt32.MaxValue)
-			return 42;
-		else
-			return 1;
-	}
-
-	public static short data_types_short (short i, ushort ui) {
-		if (i == short.MinValue && ui == ushort.MaxValue)
-			return 42;
-		else
-			return 1;
-	}
-
-	public static int data_types_bool_char (bool b1, bool b2, char c) {
-		if (b1 == true && b2 == false && c == 'A')
-			return 0;
-		else
-			return 1;
-	}
-
-	public static int data_types_byref_int (ref int i) {
-		if (i == 42)
-			return 0;
-		else
-			return 1;
-	}
-
-	public static long data_types_long (long i, ulong ui) {
-		if (i == 0x123456789L && ui == 0x123456789L)
-			return 0x12345678AL;
-		else
-			return 1;
-	}
-
-	public static float data_types_float_ret () {
-		return 0.123f;
-	}
-
-	public static double data_types_double_ret () {
-		return 0.123f;
 	}
 
     public static unsafe int* data_types_ptr (int *val) {
