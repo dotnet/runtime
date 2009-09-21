@@ -200,7 +200,7 @@ mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 	setup_context (&ctx);
 
 	/*printf ("stack in throw: %p\n", esp);*/
-	MONO_CONTEXT_SET_BP (&ctx, esp);
+	MONO_CONTEXT_SET_BP (&ctx, int_regs [ARMREG_FP - 4]);
 	MONO_CONTEXT_SET_SP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
 	memcpy (&ctx.regs, int_regs, sizeof (gulong) * 8);
