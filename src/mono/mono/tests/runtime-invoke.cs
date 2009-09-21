@@ -152,6 +152,27 @@ class Tests
 		return 0;
 	}
 
+	public static int test_0_long () {
+		if ((long)typeof (Tests).GetMethod ("data_types_long").Invoke (null, new object [] { 0x123456789L, (ulong)0x123456789L }) == 0x12345678AL)
+			return 0;
+		else
+			return 1;
+	}
+
+	public static int test_0_float_ret () {
+		if ((float)typeof (Tests).GetMethod ("data_types_float_ret").Invoke (null, new object [] { }) == 0.123f)
+			return 0;
+		else
+			return 1;
+	}
+
+	public static int test_0_double_ret () {
+		if ((double)typeof (Tests).GetMethod ("data_types_double_ret").Invoke (null, new object [] { }) == 0.123f)
+			return 0;
+		else
+			return 1;
+	}
+
 	public class Foo<T> {
 		public T t;
 	}
@@ -212,6 +233,21 @@ class Tests
 			return 0;
 		else
 			return 1;
+	}
+
+	public static long data_types_long (long i, ulong ui) {
+		if (i == 0x123456789L && ui == 0x123456789L)
+			return 0x12345678AL;
+		else
+			return 1;
+	}
+
+	public static float data_types_float_ret () {
+		return 0.123f;
+	}
+
+	public static double data_types_double_ret () {
+		return 0.123f;
 	}
 
     public static unsafe int* data_types_ptr (int *val) {
