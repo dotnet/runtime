@@ -192,6 +192,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual) MONO_INTE
 MonoMethod*
 mono_marshal_get_runtime_invoke_dynamic (void) MONO_INTERNAL;
 
+MonoMethodSignature*
+mono_marshal_get_string_ctor_signature (MonoMethod *method) MONO_INTERNAL;
+
 MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoObject **this_loc) MONO_INTERNAL;
 

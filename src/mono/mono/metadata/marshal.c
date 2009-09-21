@@ -3902,6 +3902,22 @@ add_string_ctor_signature (MonoMethod *method)
 	return callsig;
 }
 
+/*
+ * mono_marshal_get_string_ctor_signature:
+ *
+ *   Return the modified signature used by string ctors (they return the newly created
+ * string).
+ */
+MonoMethodSignature*
+mono_marshal_get_string_ctor_signature (MonoMethod *method)
+{
+	MonoMethodSignature *sig = lookup_string_ctor_signature (mono_method_signature (method));
+	if (!sig)
+		sig = add_string_ctor_signature (method);
+
+	return sig;
+}
+
 static MonoType*
 get_runtime_invoke_type (MonoType *t, gboolean ret)
 {
