@@ -520,7 +520,7 @@ endif
 
 # test_messages fails on the buildbots
 #test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
-test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1
+test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test-runtime-invoke test_2_1
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -639,6 +639,14 @@ test-type-load: TestDriver.dll
 	@$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
 	@echo "Testing load-exception.exe..."
 	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
+
+# Generated tests for runtime invoke
+EXTRA_DIST += gen-runtime-invoke.cs
+test-runtime-invoke: TestDriver.dll gen-runtime-invoke.exe
+	@$(RUNTIME) gen-runtime-invoke.exe > runtime-invoke.gen.cs
+	@$(MCS) -out:runtime-invoke.gen.exe -r:TestDriver.dll runtime-invoke.gen.cs
+	@echo "Testing runtime-invoke.gen.exe..."
+	@$(RUNTIME) runtime-invoke.gen.exe > runtime-invoke.gen.exe.stdout 2> runtime-invoke.gen.exe.stderr
 
 EXTRA_DIST += test-inline-call-stack-library.cs test-inline-call-stack.cs
 test-inline-call-stack-library.dll: TestDriver.dll $(srcdir)/test-inline-call-stack-library.cs
