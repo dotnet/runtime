@@ -1754,7 +1754,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-		if (!(method->klass->contextbound || method->klass == mono_defaults.string_class)) {
+		if (!(method->klass->contextbound || method->string_ctor)) {
 			MonoDynCallInfo *info = mono_arch_dyn_call_prepare (sig);
 
 			if (info) {
@@ -1766,7 +1766,7 @@ add_wrappers (MonoAotCompile *acfg)
 #endif
 
 		if (!skip) {
-			//printf ("%s\n", mono_method_full_name (method, TRUE));
+			printf ("%s\n", mono_method_full_name (method, TRUE));
 			add_method (acfg, mono_marshal_get_runtime_invoke (method, FALSE));
 		}
  	}

@@ -4492,7 +4492,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					supported = FALSE;
 			}
 
-			if (method->klass->contextbound || method->klass == mono_defaults.string_class || !info->compiled_method)
+			if (method->klass->contextbound || method->string_ctor || !info->compiled_method)
 				supported = FALSE;
 
 			if (supported)
