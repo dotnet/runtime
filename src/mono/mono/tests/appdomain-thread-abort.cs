@@ -1,8 +1,34 @@
 using System;
 using System.Threading;
 using System.Runtime.Remoting;
+using System.Reflection;
 
 public class JustSomeClass {
+}
+
+public class Test2 : ContextBoundObject
+{
+	public void Run () {
+		Thread.CurrentThread.Abort ();
+	}
+}
+
+public class Test1 : MarshalByRefObject
+{
+	public bool Run () {
+		AppDomain d = AppDomain.CreateDomain ("foo2");
+
+		var t2 = (Test2)d.CreateInstanceAndUnwrap (Assembly.GetExecutingAssembly().FullName,
+												 "Test2");
+		try {
+			t2.Run ();
+		} catch (ThreadAbortException ex) {
+			Thread.ResetAbort ();
+			return true;
+		}
+
+		return false;
+	}
 }
 
 public class Test : MarshalByRefObject {
@@ -167,6 +193,26 @@ public class main {
 	    Console.WriteLine ("no abort");
 	    return 11;
 	}
+
+	// #539394
+	// Calling Thread.Abort () from a remoting call throws a ThreadAbortException which
+	// cannot be caught because the exception handling code is confused by the domain
+	// transitions
+	bool res = false;
+
+	Thread thread = new Thread (delegate () {
+			AppDomain d = AppDomain.CreateDomain ("foo");
+
+			var t = (Test1)d.CreateInstanceAndUnwrap (Assembly.GetExecutingAssembly().FullName,
+														  "Test1");
+			res = t.Run ();
+		});
+
+	thread.Start ();
+	thread.Join ();
+
+	if (!res)
+		return 12;
 
 	Console.WriteLine ("done");
 
