@@ -79,10 +79,6 @@ static int tp_inited;
 /* started idle threads */
 static int tp_idle_started;
 
-
-/* we use this to store a reference to the AsyncResult to avoid GC */
-static MonoGHashTable *ares_htable = NULL;
-
 static CRITICAL_SECTION ares_lock;
 static CRITICAL_SECTION io_queue_lock;
 static int pending_io_items;
@@ -244,9 +240,6 @@ get_events_from_list (MonoMList *list)
 static void
 unregister_job (MonoAsyncResult *obj)
 {
-	EnterCriticalSection (&ares_lock);
-	mono_g_hash_table_remove (ares_htable, obj);
-	LeaveCriticalSection (&ares_lock);	
 }
 
 static void
@@ -1028,10 +1021,6 @@ mono_async_invoke (MonoAsyncResult *ares)
 		SetEvent ((gpointer)(gsize)ac->wait_event);
 	}
 	mono_monitor_exit ((MonoObject *) ares);
-
-	EnterCriticalSection (&ares_lock);
-	mono_g_hash_table_remove (ares_htable, ares);
-	LeaveCriticalSection (&ares_lock);
 }
 
 static void
@@ -1077,12 +1066,10 @@ mono_thread_pool_init ()
 	if ((int) InterlockedCompareExchange (&tp_inited, 1, 0) == 1)
 		return;
 
-	MONO_GC_REGISTER_ROOT (ares_htable);
 	MONO_GC_REGISTER_ROOT (socket_io_data.sock_to_state);
 	InitializeCriticalSection (&socket_io_data.io_lock);
 	InitializeCriticalSection (&ares_lock);
 	InitializeCriticalSection (&io_queue_lock);
-	ares_htable = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_VALUE_GC);
 	job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (job_added != NULL);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
@@ -1124,7 +1111,6 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 		LeaveCriticalSection (&ares_lock);
 		return ares;
 	}
-	mono_g_hash_table_insert (ares_htable, ares, ares);
 	LeaveCriticalSection (&ares_lock);
 
 #ifndef DISABLE_SOCKETS
@@ -1299,19 +1285,6 @@ clear_queue (CRITICAL_SECTION *cs, TPQueue *list, MonoDomain *domain)
 	LeaveCriticalSection (cs);
 }
 
-static GSList *clear_ares_htable_entries = NULL;
-
-static void
-check_ares_htable_entry_for_domain (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoObject *obj = key;
-	MonoDomain *domain = user_data;
-
-	g_assert (key == value);
-	if (obj->vtable->domain == domain)
-		clear_ares_htable_entries = g_slist_prepend (clear_ares_htable_entries, obj);
-}
-
 /*
  * Clean up the threadpool of all domain jobs.
  * Can only be called as part of the domain unloading process as
@@ -1323,7 +1296,6 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 	HANDLE sem_handle;
 	int result = TRUE;
 	guint32 start_time = 0;
-	GSList *list;
 
 	g_assert (domain->state == MONO_APPDOMAIN_UNLOADING);
 
@@ -1356,16 +1328,6 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 
 	domain->cleanup_semaphore = NULL;
 	CloseHandle (sem_handle);
-
-	EnterCriticalSection (&ares_lock);
-	g_assert (!clear_ares_htable_entries);
-	mono_g_hash_table_foreach (ares_htable, check_ares_htable_entry_for_domain, domain);
-	for (list = clear_ares_htable_entries; list; list = list->next)
-		mono_g_hash_table_remove (ares_htable, list->data);
-	g_slist_free (clear_ares_htable_entries);
-	clear_ares_htable_entries = NULL;
-	LeaveCriticalSection (&ares_lock);
-
 	return result;
 }
 
