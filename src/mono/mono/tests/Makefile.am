@@ -45,7 +45,8 @@ STRESS_TESTS_SRC=	\
 	thread-stress.cs	\
 	gc-stress.cs		\
 	exit-stress.cs		\
-	process-stress.cs
+	process-stress.cs	\
+	assembly-load-stress.cs
 
 BASE_TEST_CS_SRC=		\
 	array-init.cs		\
