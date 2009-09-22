@@ -4551,7 +4551,7 @@ mono_arch_get_vcall_slot (guint8* code, mgreg_t *regs, int *displacement)
 
 		*displacement = (gssize)regs [IA64_R8] - (gssize)regs [IA64_R11];
 
-		return regs [IA64_R11];
+		return (gpointer)regs [IA64_R11];
 	}
 
 	return NULL;
@@ -4589,8 +4589,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	guint8 *start, *buf;
 	Ia64CodegenState code;
 
-	g_assert (!fail_tramp);
-
 	size = count * 256;
 	buf = g_malloc0 (size);
 	ia64_codegen_init (code, buf);
@@ -4602,8 +4600,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		ia64_begin_bundle (code);
 		item->code_target = (guint8*)code.buf + code.nins;
 		if (item->is_equals) {
-			if (item->check_target_idx) {
-				if (!item->compare_done) {
+			gboolean fail_case = !item->check_target_idx && fail_tramp;
+
+			if (item->check_target_idx || fail_case) {
+				if (!item->compare_done || fail_case) {
 					ia64_movl (code, GP_SCRATCH_REG, item->key);
 					ia64_cmp_eq (code, 6, 7, IA64_R9, GP_SCRATCH_REG);
 				}
@@ -4614,6 +4614,15 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
 				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 				ia64_br_cond_reg (code, IA64_B6);
+
+				if (fail_case) {
+					ia64_patch (item->jmp_code, (guint8*)code.buf + code.nins);
+					ia64_movl (code, GP_SCRATCH_REG, fail_tramp);
+					ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
+					ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
+					ia64_br_cond_reg (code, IA64_B6);
+					item->jmp_code = NULL;
+				}
 			} else {
 				/* enable the commented code to assert on wrong method */
 #if ENABLE_WRONG_METHOD_CHECK
@@ -4648,7 +4657,12 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	g_assert (code.buf - buf <= size);
 
 	size = code.buf - buf;
-	start = mono_domain_code_reserve (domain, size);
+	if (fail_tramp) {
+		start = mono_method_alloc_generic_virtual_thunk (domain, size + 16);
+		start = (gpointer)ALIGN_TO (start, 16);
+	} else {
+		start = mono_domain_code_reserve (domain, size);
+	}
 	memcpy (start, buf, size);
 
 	mono_arch_flush_icache (start, size);
@@ -4661,7 +4675,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 MonoMethod*
 mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
-	return regs [IA64_R9];
+	return (MonoMethod*)regs [IA64_R9];
 }
 
 void
