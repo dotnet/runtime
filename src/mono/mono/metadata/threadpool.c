@@ -14,6 +14,7 @@
 
 #define THREADS_PER_CPU	10 /* 20 + THREADS_PER_CPU * number of CPUs */
 #define THREAD_EXIT_TIMEOUT 1000
+#define INITIAL_QUEUE_LENGTH 128
 
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/tabledefs.h>
@@ -834,6 +835,7 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 	char msg [1];
 	MonoMList *list;
 	SocketIOData *data = &socket_io_data;
+	int w;
 
 #if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD) || defined(PLATFORM_WIN32) || defined(PLATFORM_SOLARIS)
 	/* select() for connect() does not work well on the Mac. Bug #75436. */
@@ -863,7 +865,8 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 	LeaveCriticalSection (&data->io_lock);
 	*msg = (char) state->operation;
 #ifndef PLATFORM_WIN32
-	write (data->pipe [1], msg, 1);
+	w = write (data->pipe [1], msg, 1);
+	w = w;
 #else
 	send ((SOCKET) data->pipe [1], msg, 1, 0);
 #endif
@@ -1243,7 +1246,7 @@ append_job (CRITICAL_SECTION *cs, TPQueue *list, MonoObject *ar)
 	}
 	if (!list->array) {
 		MONO_GC_REGISTER_ROOT (list->array);
-		list->array = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, 16);
+		list->array = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, INITIAL_QUEUE_LENGTH);
 	} else {
 		int count = list->next_elem - list->first_elem;
 		/* slide the array or create a larger one if it's full */
@@ -1383,7 +1386,7 @@ dequeue_job (CRITICAL_SECTION *cs, TPQueue *list)
 	list->first_elem++;
 	count = list->next_elem - list->first_elem;
 	/* reduce the size of the array if it's mostly empty */
-	if (mono_array_length (list->array) > 16 && count < (mono_array_length (list->array) / 3)) {
+	if (mono_array_length (list->array) > INITIAL_QUEUE_LENGTH && count < (mono_array_length (list->array) / 3)) {
 		MonoArray *olda = list->array;
 		MonoArray *newa = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) / 2);
 		mono_array_memcpy_refs (newa, 0, list->array, list->first_elem, count);
