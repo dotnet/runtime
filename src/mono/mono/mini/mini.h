@@ -1667,6 +1667,7 @@ void     mono_jit_walk_stack_from_ctx           (MonoStackWalk func, MonoContext
 void     mono_setup_altstack                    (MonoJitTlsData *tls) MONO_INTERNAL;
 void     mono_free_altstack                     (MonoJitTlsData *tls) MONO_INTERNAL;
 gpointer mono_altstack_restore_prot             (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
+MonoJitInfo* mini_jit_info_table_find           (MonoDomain *domain, char *addr) MONO_INTERNAL;
 
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed) MONO_INTERNAL;
 

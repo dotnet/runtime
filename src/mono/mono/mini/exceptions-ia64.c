@@ -256,7 +256,7 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 		res = unw_get_reg (&ctx.cursor, UNW_IA64_SP, &sp);
 		g_assert (res == 0);
 
-		ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)ip);
+		ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)ip);
 
 		//printf ("UN: %s %lx %lx\n", ji ? ji->method->name : "", ip, sp);
 
@@ -535,7 +535,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		if (prev_ji && ((guint8*)ip > (guint8*)prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
 			ji = prev_ji;
 		else
-			ji = mono_jit_info_table_find (domain, (gpointer)ip);
+			ji = mini_jit_info_table_find (domain, (gpointer)ip);
 
 		if (managed)
 			*managed = FALSE;
@@ -611,7 +611,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 		res = unw_get_reg (&ctx.cursor, UNW_IA64_IP, &ip);
 		g_assert (res == 0);
 
-		ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)ip);
+		ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)ip);
 
 		if (ji)
 			break;

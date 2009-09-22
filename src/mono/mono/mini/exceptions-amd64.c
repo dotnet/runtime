@@ -548,7 +548,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
 		ji = prev_ji;
 	else
-		ji = mono_jit_info_table_find (domain, ip);
+		ji = mini_jit_info_table_find (domain, ip);
 
 	if (managed)
 		*managed = FALSE;
@@ -641,7 +641,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			rip = *(guint64*)((*lmf)->rsp - sizeof (gpointer));
 		}
 
-		ji = mono_jit_info_table_find (domain, (gpointer)rip);
+		ji = mini_jit_info_table_find (domain, (gpointer)rip);
 		if (!ji) {
 			// FIXME: This can happen with multiple appdomains (bug #444383)
 			return (gpointer)-1;
@@ -850,7 +850,7 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	MonoException *exc = NULL;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	guint64 *gregs = gregs_from_ucontext (ctx);
-	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)gregs [REG_RIP]);
+	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)gregs [REG_RIP]);
 	gpointer *sp;
 	int frame_size;
 
@@ -1247,7 +1247,7 @@ MONO_GET_RUNTIME_FUNCTION_CALLBACK ( DWORD64 ControlPc, IN PVOID Context )
 	PMonoUnwindInfo targetinfo;
 	MonoDomain *domain = mono_domain_get ();
 
-	ji = mono_jit_info_table_find (domain, (char*)ControlPc);
+	ji = mini_jit_info_table_find (domain, (char*)ControlPc);
 	if (!ji)
 		return 0;
 

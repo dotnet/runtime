@@ -378,7 +378,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
 		ji = prev_ji;
 	else
-		ji = mono_jit_info_table_find (domain, ip);
+		ji = mini_jit_info_table_find (domain, ip);
 
 	if (managed)
 		*managed = FALSE;
@@ -412,7 +412,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		if (!(*lmf)->method)
 			return (gpointer)-1;
 
-		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->ip))) {
+		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->ip))) {
 		} else {
 			memset (res, 0, MONO_SIZEOF_JIT_INFO);
 			res->method = (*lmf)->method;
