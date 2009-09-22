@@ -268,6 +268,7 @@ async_invoke_io_thread (gpointer data)
 	MonoDomain *domain;
 	MonoThread *thread;
 	const gchar *version;
+	int workers_io, min_io;
 
 	thread = mono_thread_current ();
 
@@ -347,13 +348,22 @@ async_invoke_io_thread (gpointer data)
 		}
 
 		if (!data) {
-			if (InterlockedDecrement (&io_worker_threads) < 2) {
-				/* If we have pending items, keep the thread alive */
-				if (InterlockedCompareExchange (&pending_io_items, 0, 0) != 0) {
-					InterlockedIncrement (&io_worker_threads);
-					continue;
-				}
+			workers_io = (int) InterlockedCompareExchange (&io_worker_threads, 0, -1); 
+			min_io = (int) InterlockedCompareExchange (&mono_io_min_worker_threads, 0, -1); 
+	
+			while (!data && workers_io <= min_io) {
+				WaitForSingleObjectEx (io_job_added, INFINITE, TRUE);
+				if (THREAD_WANTS_A_BREAK (thread))
+					mono_thread_interruption_checkpoint ();
+			
+				data = dequeue_job (&io_queue_lock, &async_io_queue);
+				workers_io = (int) InterlockedCompareExchange (&io_worker_threads, 0, -1); 
+				min_io = (int) InterlockedCompareExchange (&mono_io_min_worker_threads, 0, -1); 
 			}
+		}
+	
+		if (!data) {
+			InterlockedDecrement (&io_worker_threads);
 			return;
 		}
 		
@@ -797,10 +807,6 @@ socket_io_init (SocketIOData *data)
 	g_assert (data->pipe [0] != INVALID_SOCKET);
 	closesocket (srv);
 #endif
-	mono_io_max_worker_threads = mono_max_worker_threads / 2;
-	if (mono_io_max_worker_threads < 10)
-		mono_io_max_worker_threads = 10;
-
 	data->sock_to_state = mono_g_hash_table_new_type (g_direct_hash, g_direct_equal, MONO_HASH_VALUE_GC);
 
 	if (data->epoll_disabled) {
@@ -1081,6 +1087,10 @@ mono_thread_pool_init ()
 	cpu_count = mono_cpu_count ();
 	mono_max_worker_threads = 20 + threads_per_cpu * cpu_count;
 	mono_min_worker_threads = cpu_count; /* 1 idle thread per cpu */
+	mono_io_max_worker_threads = mono_max_worker_threads / 2;
+	if (mono_io_max_worker_threads < 16)
+		mono_io_max_worker_threads = 16;
+	mono_io_min_worker_threads = cpu_count;
 
 	async_call_klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
 	g_assert (async_call_klass);
