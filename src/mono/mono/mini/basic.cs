@@ -1325,4 +1325,26 @@ class Tests {
 			return 2;
 		return 0;
 	}
+
+	public static unsafe int test_0_ishr_sign_extend () {
+		// Check that ishr does sign extension from bit 31 on 64 bit platforms
+		uint val = 0xF0000000u;
+
+		uint *a = &val;
+		uint ui = (uint)((int)(*a) >> 2);
+
+		if (ui != 0xfc000000)
+			return 1;
+
+		// Same with non-immediates
+		int amount = 2;
+
+		ui = (uint)((int)(*a) >> amount);
+
+		if (ui != 0xfc000000)
+			return 2;
+
+		return 0;
+	}
+
 }

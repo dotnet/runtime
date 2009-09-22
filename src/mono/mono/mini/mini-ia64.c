@@ -2128,6 +2128,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_shl (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ISHR:
+			ia64_sxt4 (code, GP_SCRATCH_REG, ins->sreg1);
+			ia64_shr (code, ins->dreg, GP_SCRATCH_REG, ins->sreg2);
+			break;
 		case OP_LSHR:
 			ia64_shr (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
@@ -2227,9 +2230,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_shl_imm (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
 		case OP_SHR_IMM:
-		case OP_ISHR_IMM:
 		case OP_LSHR_IMM:
 			ia64_shr_imm (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
+		case OP_ISHR_IMM:
+			g_assert (ins->inst_imm <= 64);
+			ia64_extr (code, ins->dreg, ins->sreg1, ins->inst_imm, 32 - ins->inst_imm);
 			break;
 		case OP_ISHR_UN_IMM:
 			ia64_zxt4 (code, GP_SCRATCH_REG, ins->sreg1);
