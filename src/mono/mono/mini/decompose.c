@@ -1148,7 +1148,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 
 						/* Save the result */
 						if (dest_var->backend.is_pinvoke)
-							size = mono_class_native_size (dest->inst_vtype->data.klass, NULL);
+							size = mono_class_native_size (mono_class_from_mono_type (dest_var->inst_vtype), NULL);
 						else
 							size = mono_type_size (dest_var->inst_vtype, NULL);
 						switch (size) {
