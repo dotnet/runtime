@@ -13,8 +13,6 @@
 
 #include "strenc.h"
 
-#undef DEBUG
-
 static const char trailingBytesForUTF8[256] = {
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -62,10 +60,6 @@ mono_unicode_from_external (const gchar *in, gsize *bytes)
 	
 	encodings=g_strsplit (encoding_list, ":", 0);
 	for(i=0;encodings[i]!=NULL; i++) {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": Trying encoding [%s]",
-			   encodings[i]);
-#endif
 		/* "default_locale" is a special case encoding */
 		if(!strcmp (encodings[i], "default_locale")) {
 			gchar *utf8=g_locale_to_utf8 (in, -1, NULL, NULL, NULL);
@@ -139,10 +133,6 @@ gchar *mono_utf8_from_external (const gchar *in)
 	
 	encodings=g_strsplit (encoding_list, ":", 0);
 	for(i=0;encodings[i]!=NULL; i++) {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": Trying encoding [%s]",
-			   encodings[i]);
-#endif
 		
 		/* "default_locale" is a special case encoding */
 		if(!strcmp (encodings[i], "default_locale")) {

@@ -141,7 +141,7 @@ void
 mono_trace_push (GLogLevelFlags level, MonoTraceMask mask)
 {
 	if(level_stack == NULL)
-		g_error(G_GNUC_PRETTY_FUNCTION ": cannot use mono_trace_push without calling mono_trace_init first.");
+		g_error("%s: cannot use mono_trace_push without calling mono_trace_init first.", __func__);
 	else {
 		MonoLogLevelEntry *entry = g_malloc(sizeof(MonoLogLevelEntry));
 		entry->level	= current_level;
@@ -165,7 +165,7 @@ void
 mono_trace_pop (void)
 {
 	if(level_stack == NULL)
-		g_error(G_GNUC_PRETTY_FUNCTION ": cannot use mono_trace_pop without calling mono_trace_init first.");
+		g_error("%s: cannot use mono_trace_pop without calling mono_trace_init first.", __func__);
 	else {
 		if(!g_queue_is_empty (level_stack)) {
 			MonoLogLevelEntry *entry = (MonoLogLevelEntry*)g_queue_pop_head (level_stack);

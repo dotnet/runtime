@@ -26,7 +26,9 @@
 /* FIXME: fix this code to not depend so much on the inetrnals */
 #include <mono/metadata/class-internals.h>
 
-#undef DEBUG
+#define LOGDEBUG(...)  
+/* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
+
 
 HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 {
@@ -60,8 +62,7 @@ void ves_icall_System_Diagnostics_Process_Process_free_internal (MonoObject *thi
 	MONO_ARCH_SAVE_REGS;
 
 #ifdef THREAD_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Closing process %p, handle %p",
-		   this, process);
+	g_message ("%s: Closing process %p, handle %p", __func__, this, process);
 #endif
 
 	CloseHandle (process);
@@ -91,10 +92,7 @@ static void process_set_field_object (MonoObject *obj, const gchar *fieldname,
 {
 	MonoClassField *field;
 
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Setting field %s to object at %p",
-		   fieldname, data);
-#endif
+	LOGDEBUG (g_message ("%s: Setting field %s to object at %p", __func__, fieldname, data));
 
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
@@ -108,10 +106,7 @@ static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
 	MonoClassField *field;
 	MonoString *string;
 
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Setting field %s to [%s]",
-		   fieldname, g_utf16_to_utf8 (val, len, NULL, NULL, NULL));
-#endif
+	LOGDEBUG (g_message ("%s: Setting field %s to [%s]", __func__, fieldname, g_utf16_to_utf8 (val, len, NULL, NULL, NULL)));
 
 	string=mono_string_new_utf16 (mono_object_domain (obj), val, len);
 	
@@ -126,10 +121,7 @@ static void process_set_field_int (MonoObject *obj, const gchar *fieldname,
 {
 	MonoClassField *field;
 
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Setting field %s to %d",
-		   fieldname, val);
-#endif
+	LOGDEBUG (g_message ("%s: Setting field %s to %d", __func__,fieldname, val));
 	
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
@@ -141,9 +133,7 @@ static void process_set_field_intptr (MonoObject *obj, const gchar *fieldname,
 {
 	MonoClassField *field;
 
-#ifdef DEBUG
-	g_message ("%s: Setting field %s to %p", __func__, fieldname, val);
-#endif
+	LOGDEBUG (g_message ("%s: Setting field %s to %p", __func__, fieldname, val));
 	
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
@@ -155,10 +145,7 @@ static void process_set_field_bool (MonoObject *obj, const gchar *fieldname,
 {
 	MonoClassField *field;
 
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Setting field %s to %s",
-		   fieldname, val?"TRUE":"FALSE");
-#endif
+	LOGDEBUG (g_message ("%s: Setting field %s to %s", __func__, fieldname, val?"TRUE":"FALSE"));
 	
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
@@ -190,17 +177,12 @@ static void process_module_string_read (MonoObject *filever, gpointer data,
 
 	lang_key_utf8 = g_strdup_printf (key, lang_lo, lang_hi, 0x04, 0xb0);
 
-#ifdef DEBUG
-	g_message ("%s: asking for [%s]", __func__, lang_key_utf8);
-#endif
+	LOGDEBUG (g_message ("%s: asking for [%s]", __func__, lang_key_utf8));
 
 	lang_key = g_utf8_to_utf16 (lang_key_utf8, -1, NULL, NULL, NULL);
 
 	if (VerQueryValue (data, lang_key, (gpointer *)&buffer, &chars) && chars > 0) {
-#ifdef DEBUG
-		g_message ("%s: found %d chars of [%s]", __func__, chars,
-			   g_utf16_to_utf8 (buffer, chars, NULL, NULL, NULL));
-#endif
+		LOGDEBUG (g_message ("%s: found %d chars of [%s]", __func__, chars, g_utf16_to_utf8 (buffer, chars, NULL, NULL, NULL)));
 		/* chars includes trailing null */
 		process_set_field_string (filever, fieldname, buffer, chars - 1);
 	} else {
@@ -267,9 +249,7 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 			
 			if (VerQueryValue (data, query, (gpointer *)&ffi,
 			    &ffi_size)) {
-#ifdef DEBUG
-				g_message (G_GNUC_PRETTY_FUNCTION ": recording assembly: FileName [%s] FileVersionInfo [%d.%d.%d.%d]", g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), HIWORD (ffi->dwFileVersionMS), LOWORD (ffi->dwFileVersionMS), HIWORD (ffi->dwFileVersionLS), LOWORD (ffi->dwFileVersionLS));
-#endif
+				LOGDEBUG (g_message ("%s: recording assembly: FileName [%s] FileVersionInfo [%d.%d.%d.%d]", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), HIWORD (ffi->dwFileVersionMS), LOWORD (ffi->dwFileVersionMS), HIWORD (ffi->dwFileVersionLS), LOWORD (ffi->dwFileVersionLS)));
 	
 				process_set_field_int (filever, "filemajorpart", HIWORD (ffi->dwFileVersionMS));
 				process_set_field_int (filever, "fileminorpart", LOWORD (ffi->dwFileVersionMS));
@@ -301,9 +281,7 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 				/* use the first language ID we see
 				 */
 				if (trans_size >= 4) {
-#ifdef DEBUG
-		 			g_message("%s: %s has 0x%0x 0x%0x 0x%0x 0x%0x", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), trans_data[0], trans_data[1], trans_data[2], trans_data[3]);
-#endif
+		 			LOGDEBUG (g_message("%s: %s has 0x%0x 0x%0x 0x%0x 0x%0x", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), trans_data[0], trans_data[1], trans_data[2], trans_data[3]));
 					lang = (trans_data[0]) |
 						(trans_data[1] << 8) |
 						(trans_data[2] << 16) |
@@ -872,9 +850,7 @@ gint32 ves_icall_System_Diagnostics_Process_ExitCode_internal (HANDLE process)
 
 	GetExitCodeProcess (process, &code);
 	
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": process exit code is %d", code);
-#endif
+	LOGDEBUG (g_message ("%s: process exit code is %d", __func__, code));
 	
 	return(code);
 }
@@ -900,10 +876,7 @@ MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE pr
 		return(NULL);
 	}
 	
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": process name is [%s]",
-		   g_utf16_to_utf8 (name, -1, NULL, NULL, NULL));
-#endif
+	LOGDEBUG (g_message ("%s: process name is [%s]", __func__, g_utf16_to_utf8 (name, -1, NULL, NULL, NULL)));
 	
 	string=mono_string_new_utf16 (mono_domain_get (), name, len);
 	
@@ -1024,9 +997,7 @@ ves_icall_System_Diagnostics_Process_ProcessHandle_duplicate (HANDLE process)
 
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef DEBUG
-	g_message ("%s: Duplicating process handle %p", __func__, process);
-#endif
+	LOGDEBUG (g_message ("%s: Duplicating process handle %p", __func__, process));
 	
 	DuplicateHandle (GetCurrentProcess (), process, GetCurrentProcess (),
 			 &ret, THREAD_ALL_ACCESS, TRUE, 0);
@@ -1039,9 +1010,7 @@ ves_icall_System_Diagnostics_Process_ProcessHandle_close (HANDLE process)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef DEBUG
-	g_message ("%s: Closing process handle %p", __func__, process);
-#endif
+	LOGDEBUG (g_message ("%s: Closing process handle %p", __func__, process));
 
 	CloseHandle (process);
 }

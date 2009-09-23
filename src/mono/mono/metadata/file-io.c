@@ -1043,8 +1043,7 @@ ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name)
 	
 	if(ret>0) {
 #ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": Temp path is [%s] (len %d)", name, ret);
+		g_message ("%s: Temp path is [%s] (len %d)", __func__, name, ret);
 #endif
 
 		mono_gc_wbarrier_generic_store ((gpointer) mono_name,

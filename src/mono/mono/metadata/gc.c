@@ -934,7 +934,7 @@ void
 mono_gc_finalize_notify (void)
 {
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": prodding finalizer");
+	g_message ( "%s: prodding finalizer", __func__);
 #endif
 
 #ifdef MONO_HAS_SEMAPHORES
@@ -1093,7 +1093,7 @@ void
 mono_gc_cleanup (void)
 {
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": cleaning up finalizer");
+	g_message ("%s: cleaning up finalizer", __func__);
 #endif
 
 	if (!gc_disabled) {

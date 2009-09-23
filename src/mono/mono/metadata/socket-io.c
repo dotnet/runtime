@@ -83,7 +83,8 @@
 #undef AF_INET6
 #endif
 
-#undef DEBUG
+#define LOGDEBUG(...)  
+/* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
 
 static gint32 convert_family(MonoAddressFamily mono_family)
 {
@@ -772,9 +773,7 @@ void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock,
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": closing 0x%x", sock);
-#endif
+	LOGDEBUG (g_message ("%s: closing 0x%x", __func__, sock));
 
 	*error = 0;
 
@@ -788,9 +787,7 @@ gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(voi
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": returning %d", WSAGetLastError());
-#endif
+	LOGDEBUG (g_message("%s: returning %d", __func__, WSAGetLastError()));
 
 	return(WSAGetLastError());
 }
@@ -1012,9 +1009,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 		return(NULL);
 	}
 	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": bound to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port));
-#endif
+	LOGDEBUG (g_message("%s: bound to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port)));
 
 	return(create_object_from_sockaddr((struct sockaddr *)sa, salen,
 					   error));
@@ -1038,9 +1033,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(S
 		return(NULL);
 	}
 	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": connected to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port));
-#endif
+	LOGDEBUG (g_message("%s: connected to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port)));
 
 	return(create_object_from_sockaddr((struct sockaddr *)sa, salen,
 					   error));
@@ -1173,9 +1166,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 		return;
 	}
 
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": binding to %s port %d", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port));
-#endif
+	LOGDEBUG (g_message("%s: binding to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port)));
 
 	ret = _wapi_bind (sock, sa, sa_size);
 	if(ret==SOCKET_ERROR) {
@@ -1281,9 +1272,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, Mo
 		return;
 	}
 	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": connecting to %s port %d", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port));
-#endif
+	LOGDEBUG (g_message("%s: connecting to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port)));
 
 	ret = _wapi_connect (sock, sa, sa_size);
 	if(ret==SOCKET_ERROR) {
@@ -1321,10 +1310,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Disconnect_internal(SOCKET sock,
 
 	*error = 0;
 	
-#ifdef DEBUG
-	g_message("%s: disconnecting from socket %p (reuse %d)", __func__,
-		  sock, reuse);
-#endif
+	LOGDEBUG (g_message("%s: disconnecting from socket %p (reuse %d)", __func__, sock, reuse));
 
 	/* I _think_ the extension function pointers need to be looked
 	 * up for each socket.  FIXME: check the best way to store
@@ -1519,15 +1505,11 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 		return(0);
 	}
 
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": alen: %d", alen);
-#endif
+	LOGDEBUG (g_message("%s: alen: %d", __func__, alen));
 	
 	buf=mono_array_addr(buffer, guchar, offset);
 
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Sending %d bytes", count);
-#endif
+	LOGDEBUG (g_message("%s: Sending %d bytes", __func__, count));
 
 	sendflags = convert_socketflags (flags);
 	if (sendflags == -1) {
@@ -1596,15 +1578,11 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 		return(0);
 	}
 	
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": alen: %d", alen);
-#endif
+	LOGDEBUG (g_message("%s: alen: %d", __func__, alen));
 	
 	buf=mono_array_addr(buffer, guchar, offset);
 
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Sending %d bytes", count);
-#endif
+	LOGDEBUG (g_message("%s: Sending %d bytes", __func__, count));
 
 	sendflags = convert_socketflags (flags);
 	if (sendflags == -1) {
@@ -3036,14 +3014,12 @@ void mono_network_init(void)
 	
 	err=WSAStartup(MAKEWORD(2,0), &wsadata);
 	if(err!=0) {
-		g_error(G_GNUC_PRETTY_FUNCTION ": Couldn't initialise networking");
+		g_error("%s: Couldn't initialise networking", __func__);
 		exit(-1);
 	}
 
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Using socket library: %s", wsadata.szDescription);
-	g_message(G_GNUC_PRETTY_FUNCTION ": Socket system status: %s", wsadata.szSystemStatus);
-#endif
+	LOGDEBUG (g_message("%s: Using socket library: %s", __func__, wsadata.szDescription));
+	LOGDEBUG (g_message("%s: Socket system status: %s", __func__, wsadata.szSystemStatus));
 }
 
 void mono_network_cleanup(void)
