@@ -37,10 +37,10 @@ declsec_20_get_classname (const char* p, const char **rptr)
 	while ((*a++ != ',') && (apos++ < len));
 
 	if (apos - cpos > 1) {
-		g_string_sprintfa (res, "[%.*s]%.*s", apos - cpos, c, cpos, p);
+		g_string_append_printf (res, "[%.*s]%.*s", apos - cpos, c, cpos, p);
 	} else {
 		/* in-assembly type aren't fully qualified (no comma) */
-		g_string_sprintfa (res, "%.*s", cpos - 1, p);
+		g_string_append_printf (res, "%.*s", cpos - 1, p);
 	}
 
 	p += len;
@@ -80,34 +80,34 @@ declsec_20_write_value (GString *str, char type, const char *value)
 {
 	switch (type) {
 	case MONO_TYPE_U1:
-		g_string_sprintfa (str, "%d", (unsigned char)*value);
+		g_string_append_printf (str, "%d", (unsigned char)*value);
 		return value + 1;
 	case MONO_TYPE_I1:
-		g_string_sprintfa (str, "%d", *value);
+		g_string_append_printf (str, "%d", *value);
 		return value + 1;
 	case MONO_TYPE_BOOLEAN:
-		g_string_sprintfa (str, "%s", *value ? "true" : "false");
+		g_string_append_printf (str, "%s", *value ? "true" : "false");
 		return value + 1;
 	case MONO_TYPE_CHAR:
-		g_string_sprintfa (str, "0x%04X", read16 (value));
+		g_string_append_printf (str, "0x%04X", read16 (value));
 		return value + 2;
 	case MONO_TYPE_U2:
-		g_string_sprintfa (str, "%d", read16 (value));
+		g_string_append_printf (str, "%d", read16 (value));
 		return value + 2;
 	case MONO_TYPE_I2:
-		g_string_sprintfa (str, "%d", (gint16)read16 (value));
+		g_string_append_printf (str, "%d", (gint16)read16 (value));
 		return value + 2;
 	case MONO_TYPE_U4:
-		g_string_sprintfa (str, "%d", read32 (value));
+		g_string_append_printf (str, "%d", read32 (value));
 		return value + 4;
 	case MONO_TYPE_I4:
-		g_string_sprintfa (str, "%d", (gint32)read32 (value));
+		g_string_append_printf (str, "%d", (gint32)read32 (value));
 		return value + 4;
 	case MONO_TYPE_U8:
-		g_string_sprintfa (str, "%lld", (long long)read64 (value));
+		g_string_append_printf (str, "%lld", (long long)read64 (value));
 		return value + 8;
 	case MONO_TYPE_I8:
-		g_string_sprintfa (str, "%lld", (long long)read64 (value));
+		g_string_append_printf (str, "%lld", (long long)read64 (value));
 		return value + 8;
 	case MONO_TYPE_R4: {
 		float val;
@@ -115,13 +115,13 @@ declsec_20_write_value (GString *str, char type, const char *value)
 		readr4 (value, &val);
 		inf = isinf (val);
 		if (inf == -1) 
-			g_string_sprintfa (str, "0xFF800000"); /* negative infinity */
+			g_string_append_printf (str, "0xFF800000"); /* negative infinity */
 		else if (inf == 1)
-			g_string_sprintfa (str, "0x7F800000"); /* positive infinity */
+			g_string_append_printf (str, "0x7F800000"); /* positive infinity */
 		else if (isnan (val))
-			g_string_sprintfa (str, "0xFFC00000"); /* NaN */
+			g_string_append_printf (str, "0xFFC00000"); /* NaN */
 		else
-			g_string_sprintfa (str, "%.8g", val);
+			g_string_append_printf (str, "%.8g", val);
 		return value + 4;
 	}
 	case MONO_TYPE_R8: {
@@ -130,13 +130,13 @@ declsec_20_write_value (GString *str, char type, const char *value)
 		readr8 (value, &val);
 		inf = isinf (val);
 		if (inf == -1) 
-			g_string_sprintfa (str, "0xFFF00000000000000"); /* negative infinity */
+			g_string_append_printf (str, "0xFFF00000000000000"); /* negative infinity */
 		else if (inf == 1)
-			g_string_sprintfa (str, "0x7FFF0000000000000"); /* positive infinity */
+			g_string_append_printf (str, "0x7FFF0000000000000"); /* positive infinity */
 		else if (isnan (val))
-			g_string_sprintfa (str, "0xFFF80000000000000"); /* NaN */
+			g_string_append_printf (str, "0xFFF80000000000000"); /* NaN */
 		else
-			g_string_sprintfa (str, "%.17g", val);
+			g_string_append_printf (str, "%.17g", val);
 		return value + 8;
 	}
 	case MONO_TYPE_STRING:
@@ -145,7 +145,7 @@ declsec_20_write_value (GString *str, char type, const char *value)
 			return value + 1;
 		} else {
 			int len = mono_metadata_decode_value (value, &value);
-			g_string_sprintfa (str, "'%.*s'", len, value);
+			g_string_append_printf (str, "'%.*s'", len, value);
 			return value + len;
 		}
 	case MONO_TYPE_SYSTEM_TYPE: {
@@ -178,7 +178,7 @@ dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 		int len, j, pos = 0, param_len;
 		char *param_start;
 		char *s = declsec_20_get_classname (p, &p);
-		g_string_sprintfa (res, "%s = {", s);
+		g_string_append_printf (res, "%s = {", s);
 		g_free (s);
 
 		/* optional parameters length */
@@ -209,13 +209,13 @@ dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 			if (type == MONO_DECLSEC_ENUM) {
 				s = declsec_20_get_classname (p, &p);
 				len = mono_metadata_decode_value (p, &p);
-				g_string_sprintfa (res, "enum %s '%.*s' = ", s, len, p);
+				g_string_append_printf (res, "enum %s '%.*s' = ", s, len, p);
 				g_free (s);
 				p += len;
 				/* TODO: we must detect the size of the enum element (from the type ? length ?)
 				 * note: ildasm v2 has some problem decoding them too and doesn't
 				 * seems to rely on the type (as the other assembly isn't loaded) */
-				g_string_sprintfa (res, "int32(%d)", read32 (p));
+				g_string_append_printf (res, "int32(%d)", read32 (p));
 				p += 4;
 			} else {
 				int arraytype = 0;
@@ -226,7 +226,7 @@ dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 				declsec_20_write_type (res, type);
 
 				len = mono_metadata_decode_value (p, &p);
-				g_string_sprintfa (res, " '%.*s' = ", len, p);
+				g_string_append_printf (res, " '%.*s' = ", len, p);
 				p += len;
 
 				if (type == MONO_TYPE_SZARRAY) {
@@ -234,7 +234,7 @@ dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 					declsec_20_write_type (res, type);
 					elem = read32 (p);
 					p += 4;
-					g_string_sprintfa (res, "[%d]", elem);
+					g_string_append_printf (res, "[%d]", elem);
 				} else {
 					declsec_20_write_type (res, type);
 					elem = 1;
@@ -250,7 +250,7 @@ dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 				}
 				
 				if (j < pos - 1)
-					g_string_sprintfa (res, ")\n%s", indent);
+					g_string_append_printf (res, ")\n%s", indent);
 				else
 					g_string_append (res, ")");
 			}
@@ -258,7 +258,7 @@ dump_declsec_entry20 (MonoImage *m, const char* p, const char *indent)
 		}
 
 		if (i < num - 1)
-			g_string_sprintfa (res, "},\n%s", indent);
+			g_string_append_printf (res, "},\n%s", indent);
 		else
 			g_string_append (res, "}");
 

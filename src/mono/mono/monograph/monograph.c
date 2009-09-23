@@ -550,9 +550,9 @@ get_signature (MonoMethod *method) {
 
 	res = g_string_new ("");
 	if (include_namespace && *(method->klass->name_space))
-		g_string_sprintfa (res, "%s.", method->klass->name_space);
+		g_string_append_printf (res, "%s.", method->klass->name_space);
 	result = mono_signature_get_desc (mono_method_signature (method), include_namespace);
-	g_string_sprintfa (res, "%s:%s(%s)", method->klass->name, method->name, result);
+	g_string_append_printf (res, "%s:%s(%s)", method->klass->name, method->name, result);
 	g_free (result);
 	g_hash_table_insert (hash, method, res->str);
 
@@ -1147,10 +1147,10 @@ main (int argc, char *argv[]) {
 
 		if (outputfile) {
 			type = strrchr (outputfile, '.');
-			g_string_sprintfa (command, " -o %s", outputfile);
+			g_string_append_printf (command, " -o %s", outputfile);
 		}
 		if (type)
-			g_string_sprintfa (command, " -T%s", type + 1);
+			g_string_append_printf (command, " -T%s", type + 1);
 		output = popen (command->str, "w");
 		if (!output) {
 			g_print ("Cannot run neato: you may need to install the graphviz package.\n");

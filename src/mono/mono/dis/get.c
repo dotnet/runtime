@@ -125,12 +125,12 @@ stringify_array (guint32 rank, guint32 num_sizes, guint32 num_lo_bounds, gint32 
 		if (i)
 			g_string_append_c (res, ',');
 		if (i < num_lo_bounds)
-			g_string_sprintfa (res, "%d...", lo_bounds [i]);
+			g_string_append_printf (res, "%d...", lo_bounds [i]);
 		if (i < num_sizes) {
 			if (i < num_lo_bounds)
-				g_string_sprintfa (res, "%d", lo_bounds [i] + sizes [i] - 1);
+				g_string_append_printf (res, "%d", lo_bounds [i] + sizes [i] - 1);
 			else
-				g_string_sprintfa (res, "%d", sizes [i]);
+				g_string_append_printf (res, "%d", sizes [i]);
 		}
 
 	}
@@ -511,8 +511,8 @@ dis_stringify_modifiers (MonoImage *m, int n, MonoCustomMod *mod)
 	for (i = 0; i < n; ++i) {
 		char *tok = dis_stringify_token (m, mod[i].token);
 		if (i > 0)
-			g_string_sprintfa (s, " ");
-		g_string_sprintfa (s, " %s (%s)", mod[i].required ? "modreq": "modopt", tok);
+			g_string_append_printf (s, " ");
+		g_string_append_printf (s, " %s (%s)", mod[i].required ? "modreq": "modopt", tok);
 		g_free (tok);
 	}
 	g_string_append_c (s, ' ');
@@ -968,11 +968,11 @@ dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, 
 	if (method->hasthis)
 		g_string_append (result_ret, "instance ");
 	g_string_append (result_ret, map (method->call_convention, call_conv_type_map));
-	g_string_sprintfa (result_ret, " %s%s ", retval, ret_marshal_info ? ret_marshal_info :"");
+	g_string_append_printf (result_ret, " %s%s ", retval, ret_marshal_info ? ret_marshal_info :"");
 	g_free (ret_marshal_info);
 	if (type) {
 		char *estype = get_escaped_name (type);
-		g_string_sprintfa (result_ret, "%s::", estype);
+		g_string_append_printf (result_ret, "%s::", estype);
 		g_free (estype);
 		g_free (type);
 	}
@@ -1013,7 +1013,7 @@ dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method)
 	g_string_append (result, map (method->call_convention, call_conv_type_map));
 
 	retval = dis_stringify_param (m, method->ret);
-	g_string_sprintfa (result, " %s ", retval);
+	g_string_append_printf (result, " %s ", retval);
 	g_free (retval);
 
 	g_string_append (result, " *(");
@@ -2527,7 +2527,7 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 		len = mono_metadata_decode_value (val, &val);
 		attr = g_string_new (".custom ");
 		dump = data_dump (val, len, "\t\t");
-		g_string_sprintfa (attr, "%s = %s", method, dump);
+		g_string_append_printf (attr, "%s = %s", method, dump);
 		g_free (dump);
 		list = g_list_append (list, attr->str);
 		g_string_free (attr, FALSE);

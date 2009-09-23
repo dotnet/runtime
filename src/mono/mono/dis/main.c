@@ -1016,7 +1016,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *co
 	if (prop_flags & 0x0400)
 		g_string_append (res, "rtspecialname ");
 	qk = get_escaped_name (name);
-	g_string_sprintfa (res, "%s %s (", blurb, qk);
+	g_string_append_printf (res, "%s %s (", blurb, qk);
 	g_free (qk);
 	g_free (blurb);
 	for (i = 0; i < pcount; i++) {
@@ -1068,7 +1068,7 @@ dis_event_signature (MonoImage *m, guint32 event_idx, MonoGenericContainer *cont
 		g_string_append (res, "specialname ");
 	if (event_flags & 0x0400)
 		g_string_append (res, "rtspecialname ");
-	g_string_sprintfa (res, "%s %s", type, esname);
+	g_string_append_printf (res, "%s %s", type, esname);
 
 	g_free (type);
 	g_free (esname);

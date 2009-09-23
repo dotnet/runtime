@@ -820,43 +820,43 @@ custom_attr_params (MonoImage *m, MonoMethodSignature* sig, const char* value)
 handle_enum:
 		switch (type) {
 		case MONO_TYPE_U1:
-			g_string_sprintfa (res, "%d", (unsigned int)*p);
+			g_string_append_printf (res, "%d", (unsigned int)*p);
 			++p;
 			break;
 		case MONO_TYPE_I1:
-			g_string_sprintfa (res, "%d", *p);
+			g_string_append_printf (res, "%d", *p);
 			++p;
 			break;
 		case MONO_TYPE_BOOLEAN:
-			g_string_sprintfa (res, "%s", *p?"true":"false");
+			g_string_append_printf (res, "%s", *p?"true":"false");
 			++p;
 			break;
 		case MONO_TYPE_CHAR:
-			g_string_sprintfa (res, "'%c'", read16 (p));
+			g_string_append_printf (res, "'%c'", read16 (p));
 			p += 2;
 			break;
 		case MONO_TYPE_U2:
-			g_string_sprintfa (res, "%d", read16 (p));
+			g_string_append_printf (res, "%d", read16 (p));
 			p += 2;
 			break;
 		case MONO_TYPE_I2:
-			g_string_sprintfa (res, "%d", (gint16)read16 (p));
+			g_string_append_printf (res, "%d", (gint16)read16 (p));
 			p += 2;
 			break;
 		case MONO_TYPE_U4:
-			g_string_sprintfa (res, "%d", read32 (p));
+			g_string_append_printf (res, "%d", read32 (p));
 			p += 4;
 			break;
 		case MONO_TYPE_I4:
-			g_string_sprintfa (res, "%d", (gint32)read32 (p));
+			g_string_append_printf (res, "%d", (gint32)read32 (p));
 			p += 4;
 			break;
 		case MONO_TYPE_U8:
-			g_string_sprintfa (res, "%lld", (long long)read64 (p));
+			g_string_append_printf (res, "%lld", (long long)read64 (p));
 			p += 8;
 			break;
 		case MONO_TYPE_I8:
-			g_string_sprintfa (res, "%lld", (long long)read64 (p));
+			g_string_append_printf (res, "%lld", (long long)read64 (p));
 			p += 8;
 			break;
 		case MONO_TYPE_R4: {
@@ -865,13 +865,13 @@ handle_enum:
 			readr4 (p, &val);
 			inf = isinf (val);
 			if (inf == -1) 
-				g_string_sprintfa (res, "(00 00 80 ff)"); /* negative infinity */
+				g_string_append_printf (res, "(00 00 80 ff)"); /* negative infinity */
 			else if (inf == 1)
-				g_string_sprintfa (res, "(00 00 80 7f)"); /* positive infinity */
+				g_string_append_printf (res, "(00 00 80 7f)"); /* positive infinity */
 			else if (isnan (val))
-				g_string_sprintfa (res, "(00 00 c0 ff)"); /* NaN */
+				g_string_append_printf (res, "(00 00 c0 ff)"); /* NaN */
 			else
-				g_string_sprintfa (res, "%g", val);
+				g_string_append_printf (res, "%g", val);
 			p += 4;
 			break;
 		}
@@ -882,13 +882,13 @@ handle_enum:
 			readr8 (p, &val);
 			inf = isinf (val);
 			if (inf == -1) 
-				g_string_sprintfa (res, "(00 00 00 00 00 00 f0 ff)"); /* negative infinity */
+				g_string_append_printf (res, "(00 00 00 00 00 00 f0 ff)"); /* negative infinity */
 			else if (inf == 1)
-				g_string_sprintfa (res, "(00 00 00 00 00 00 f0 7f)"); /* positive infinity */
+				g_string_append_printf (res, "(00 00 00 00 00 00 f0 7f)"); /* positive infinity */
 			else if (isnan (val))
-				g_string_sprintfa (res, "(00 00 00 00 00 00 f8 ff)"); /* NaN */
+				g_string_append_printf (res, "(00 00 00 00 00 00 f8 ff)"); /* NaN */
 			else
-				g_string_sprintfa (res, "%g", val);
+				g_string_append_printf (res, "%g", val);
 			p += 8;
 			break;
 		}
@@ -920,10 +920,10 @@ handle_enum:
 	}
 	slen = read16 (p);
 	if (slen) {
-		g_string_sprintfa (res, " %d named args: (", slen);
+		g_string_append_printf (res, " %d named args: (", slen);
 		slen = len - (p - value) + 1;
 		for (i = 0; i < slen; ++i) {
-			g_string_sprintfa (res, " %02X", (p [i] & 0xff));
+			g_string_append_printf (res, " %02X", (p [i] & 0xff));
 		}
 		g_string_append_c (res, ')');
 	}

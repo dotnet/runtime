@@ -91,32 +91,32 @@ data_dump (const char *data, int len, const char* prefix) {
 	str = g_string_new (" (");
 	for (i = 0; i + 15 < len; i += 16) {
 		if (i == 0)
-			g_string_sprintfa (str, "\n");
-		g_string_sprintfa (str, "%s", prefix);
+			g_string_append_printf (str, "\n");
+		g_string_append_printf (str, "%s", prefix);
 		for (j = 0; j < 16; ++j)
-			g_string_sprintfa (str, "%02X ", (unsigned char) (data [i + j]));
-		g_string_sprintfa (str, i == len - 16? ") // ": "  // ");
+			g_string_append_printf (str, "%02X ", (unsigned char) (data [i + j]));
+		g_string_append_printf (str, i == len - 16? ") // ": "  // ");
 		for (j = 0; j < 16; ++j)
-			g_string_sprintfa (str, "%c", data [i + j] >= 32 && data [i + j] <= 126? data [i + j]: '.');
-		g_string_sprintfa (str, "\n");
+			g_string_append_printf (str, "%c", data [i + j] >= 32 && data [i + j] <= 126? data [i + j]: '.');
+		g_string_append_printf (str, "\n");
 	}
 	if (i == len)
 		return g_string_free (str, FALSE);
 	if (len > 16)
-		g_string_sprintfa (str, "%s", prefix);
+		g_string_append_printf (str, "%s", prefix);
 	j = i;
 	for (; i < len; ++i)
-		g_string_sprintfa (str, "%02X ", (unsigned char) (data [i]));
+		g_string_append_printf (str, "%02X ", (unsigned char) (data [i]));
 	if (len > 16) {
 		/* align */
 		int count = 16 - (len % 16);
 		for (i = 0; i < count; ++i)
-			g_string_sprintfa (str, "   ");
+			g_string_append_printf (str, "   ");
 	}
-	g_string_sprintfa (str, ") // ");
+	g_string_append_printf (str, ") // ");
 	for (i = j; i < len; ++i)
-		g_string_sprintfa (str, "%c", data [i] >= 32 && data [i] <= 126? data [i]: '.');
-	g_string_sprintfa (str, "\n");
+		g_string_append_printf (str, "%c", data [i] >= 32 && data [i] <= 126? data [i]: '.');
+	g_string_append_printf (str, "\n");
 	return g_string_free (str, FALSE);
 }
 

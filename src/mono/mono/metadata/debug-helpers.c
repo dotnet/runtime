@@ -82,8 +82,8 @@ append_class_name (GString *res, MonoClass *class, gboolean include_namespace)
 		g_string_append_c (res, '/');
 	}
 	if (include_namespace && *(class->name_space))
-		g_string_sprintfa (res, "%s.", class->name_space);
-	g_string_sprintfa (res, "%s", class->name);
+		g_string_append_printf (res, "%s.", class->name_space);
+	g_string_append_printf (res, "%s", class->name);
 }
 
 void
@@ -134,7 +134,7 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 		break;
 	case MONO_TYPE_ARRAY:
 		mono_type_get_desc (res, &type->data.array->eklass->byval_arg, include_namespace);
-		g_string_sprintfa (res, "[%d]", type->data.array->rank);
+		g_string_append_printf (res, "[%d]", type->data.array->rank);
 		break;
 	case MONO_TYPE_SZARRAY:
 		mono_type_get_desc (res, &type->data.klass->byval_arg, include_namespace);
@@ -502,12 +502,12 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		g_free (tmp);
 	}
 	if (dh->label_format)
-		g_string_sprintfa (str, dh->label_format, label);
+		g_string_append_printf (str, dh->label_format, label);
 	
 	i = mono_opcode_value (&ip, end);
 	ip++;
 	opcode = &mono_opcodes [i];
-	g_string_sprintfa (str, "%-10s", mono_opcode_name (i));
+	g_string_append_printf (str, "%-10s", mono_opcode_name (i));
 
 	switch (opcode->argument) {
 	case MonoInlineNone:
@@ -523,7 +523,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 			g_string_append (str, tmp);
 			g_free (tmp);
 		} else {
-			g_string_sprintfa (str, "0x%08x", token);
+			g_string_append_printf (str, "0x%08x", token);
 		}
 		ip += 4;
 		break;
@@ -553,35 +553,35 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 				s = g_utf16_to_utf8 ((gunichar2*)blob, len2, NULL, NULL, NULL);
 #endif
 
-			g_string_sprintfa (str, "\"%s\"", s);
+			g_string_append_printf (str, "\"%s\"", s);
 			g_free (s);
 		}
 		ip += 4;
 		break;
 	}
 	case MonoInlineVar:
-		g_string_sprintfa (str, "%d", read16 (ip));
+		g_string_append_printf (str, "%d", read16 (ip));
 		ip += 2;
 		break;
 	case MonoShortInlineVar:
-		g_string_sprintfa (str, "%d", (*ip));
+		g_string_append_printf (str, "%d", (*ip));
 		ip ++;
 		break;
 	case MonoInlineBrTarget:
 		sval = read32 (ip);
 		ip += 4;
 		if (dh->label_target)
-			g_string_sprintfa (str, dh->label_target, ip + sval - il_code);
+			g_string_append_printf (str, dh->label_target, ip + sval - il_code);
 		else
-			g_string_sprintfa (str, "%d", sval);
+			g_string_append_printf (str, "%d", sval);
 		break;
 	case MonoShortInlineBrTarget:
 		sval = *(const signed char*)ip;
 		ip ++;
 		if (dh->label_target)
-			g_string_sprintfa (str, dh->label_target, ip + sval - il_code);
+			g_string_append_printf (str, dh->label_target, ip + sval - il_code);
 		else
-			g_string_sprintfa (str, "%d", sval);
+			g_string_append_printf (str, "%d", sval);
 		break;
 	case MonoInlineSwitch: {
 		const unsigned char *end;
@@ -594,9 +594,9 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 				g_string_append (str, ", ");
 			label = read32 (ip);
 			if (dh->label_target)
-				g_string_sprintfa (str, dh->label_target, end + label - il_code);
+				g_string_append_printf (str, dh->label_target, end + label - il_code);
 			else
-				g_string_sprintfa (str, "%d", label);
+				g_string_append_printf (str, "%d", label);
 			ip += 4;
 		}
 		g_string_append_c (str, ')');
@@ -605,23 +605,23 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	case MonoInlineR: {
 		double r;
 		readr8 (ip, &r);
-		g_string_sprintfa (str, "%g", r);
+		g_string_append_printf (str, "%g", r);
 		ip += 8;
 		break;
 	}
 	case MonoShortInlineR: {
 		float r;
 		readr4 (ip, &r);
-		g_string_sprintfa (str, "%g", r);
+		g_string_append_printf (str, "%g", r);
 		ip += 4;
 		break;
 	}
 	case MonoInlineI:
-		g_string_sprintfa (str, "%d", (gint32)read32 (ip));
+		g_string_append_printf (str, "%d", (gint32)read32 (ip));
 		ip += 4;
 		break;
 	case MonoShortInlineI:
-		g_string_sprintfa (str, "%d", *(const signed char*)ip);
+		g_string_append_printf (str, "%d", *(const signed char*)ip);
 		ip ++;
 		break;
 	case MonoInlineI8:

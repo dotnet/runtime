@@ -833,7 +833,7 @@ dump_stack (stackval *stack, stackval *sp)
 		return g_string_free (str, FALSE);
 	
 	while (s < sp) {
-		g_string_sprintfa (str, "[%lld/0x%0llx] ", s->data.l, s->data.l);
+		g_string_append_printf (str, "[%lld/0x%0llx] ", s->data.l, s->data.l);
 		++s;
 	}
 	return g_string_free (str, FALSE);
@@ -851,7 +851,7 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 	case MONO_TYPE_U4:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_BOOLEAN:
-		g_string_sprintfa (str, "[%d] ", s->data.i);
+		g_string_append_printf (str, "[%d] ", s->data.i);
 		break;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
@@ -861,22 +861,22 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-		g_string_sprintfa (str, "[%p] ", s->data.p);
+		g_string_append_printf (str, "[%p] ", s->data.p);
 		break;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype)
-			g_string_sprintfa (str, "[%d] ", s->data.i);
+			g_string_append_printf (str, "[%d] ", s->data.i);
 		else
-			g_string_sprintfa (str, "[vt:%p] ", s->data.p);
+			g_string_append_printf (str, "[vt:%p] ", s->data.p);
 		break;
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
-		g_string_sprintfa (str, "[%g] ", s->data.f);
+		g_string_append_printf (str, "[%g] ", s->data.f);
 		break;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	default:
-		g_string_sprintfa (str, "[%lld/0x%0llx] ", s->data.l, s->data.l);
+		g_string_append_printf (str, "[%lld/0x%0llx] ", s->data.l, s->data.l);
 		break;
 	}
 }
@@ -892,7 +892,7 @@ dump_args (MonoInvocation *inv)
 		return g_string_free (str, FALSE);
 
 	if (signature->hasthis)
-		g_string_sprintfa (str, "%p ", inv->obj);
+		g_string_append_printf (str, "%p ", inv->obj);
 
 	for (i = 0; i < signature->param_count; ++i)
 		dump_stackval (str, inv->stack_args + i, signature->params [i]);
@@ -947,10 +947,10 @@ dump_frame (MonoInvocation *inv)
 			args = dump_args (inv);
 			name = mono_method_full_name (method, TRUE);
 			if (source)
-				g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s (%s) at %s\n", i, codep, opname,
+				g_string_append_printf (str, "#%d: 0x%05x %-10s in %s (%s) at %s\n", i, codep, opname,
 						   name, args, source);
 			else
-				g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s (%s)\n", i, codep, opname,
+				g_string_append_printf (str, "#%d: 0x%05x %-10s in %s (%s)\n", i, codep, opname,
 						   name, args);
 			g_free (name);
 			g_free (args);
