@@ -1766,7 +1766,7 @@ add_wrappers (MonoAotCompile *acfg)
 #endif
 
 		if (!skip) {
-			printf ("%s\n", mono_method_full_name (method, TRUE));
+			//printf ("%s\n", mono_method_full_name (method, TRUE));
 			add_method (acfg, mono_marshal_get_runtime_invoke (method, FALSE));
 		}
  	}
