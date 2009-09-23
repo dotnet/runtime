@@ -40,6 +40,7 @@ libmonoutils_la_SOURCES = \
 	mono-mmap.h  		\
 	mono-proclib.c		\
 	mono-proclib.h		\
+	mono-string.h		\
 	mono-time.c  		\
 	mono-time.h  		\
 	strtod.h		\

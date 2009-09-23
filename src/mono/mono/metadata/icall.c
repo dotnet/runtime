@@ -72,6 +72,7 @@
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-string.h>
 
 #if defined (PLATFORM_WIN32)
 #include <windows.h>
@@ -3263,7 +3264,7 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 	if (type->type->byref)
 		return NULL;
 
-	compare_func = (bflags & BFLAGS_IgnoreCase) ? g_strcasecmp : strcmp;
+	compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
 
 handle_parent:
 	if (klass->exception_type != MONO_EXCEPTION_NONE)
@@ -3439,7 +3440,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	len = 0;
 	if (name != NULL) {
 		mname = mono_string_to_utf8 (name);
-		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
+		compare_func = (ignore_case) ? mono_utf8_strcasecmp : strcmp;
 	}
 
 	/* An optimization for calls made from Delegate:CreateDelegate () */
@@ -3682,7 +3683,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	klass = startklass = mono_class_from_mono_type (type->type);
 	if (name != NULL) {
 		propname = mono_string_to_utf8 (name);
-		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
+		compare_func = (ignore_case) ? mono_utf8_strcasecmp : strcmp;
 	}
 
 	mono_class_setup_vtable (klass);

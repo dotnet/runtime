@@ -159,7 +159,7 @@ encode_public_tok (const guchar *token, gint32 len)
 gboolean
 mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2)
 {
-	return g_strcasecmp ((char*)pubt1, (char*)pubt2) == 0;
+	return memcmp (pubt1, pubt2, 16) == 0;
 }
 
 static void
