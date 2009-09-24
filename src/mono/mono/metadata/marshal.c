@@ -1364,9 +1364,13 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 	case MONO_MARSHAL_CONV_STR_TBSTR:
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
-	default:
-		g_warning ("marshaling conversion %d not implemented", conv);
-		g_assert_not_reached ();
+	default: {
+		char *msg = g_strdup_printf ("marshaling conversion %d not implemented", conv);
+
+		mono_mb_emit_exception_marshal_directive (mb, msg);
+		g_free (msg);
+		break;
+	}
 	}
 }
 
