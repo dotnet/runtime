@@ -1748,6 +1748,11 @@ static GSList *load_modules (void)
 		hdr = _dyld_get_image_header (i);
 		sec = getsectbynamefromheader (hdr, SEG_DATA, SECT_DATA);
 
+		/* Some dynlibs do not have data sections on osx (#533893) */
+		if (sec == 0) {
+			continue;
+		}
+			
 		mod = g_new0 (WapiProcModule, 1);
 		mod->address_start = GINT_TO_POINTER (sec->addr);
 		mod->address_end = GINT_TO_POINTER (sec->addr+sec->size);
