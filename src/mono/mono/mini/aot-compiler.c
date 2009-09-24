@@ -1708,6 +1708,49 @@ get_runtime_invoke_sig (MonoMethodSignature *sig)
 	return mono_marshal_get_runtime_invoke (m, FALSE);
 }
 
+static gboolean
+can_marshal_struct (MonoClass *klass)
+{
+	MonoClassField *field;
+	gboolean can_marshal = TRUE;
+	gpointer iter = NULL;
+
+	/* Only allow a few field types to avoid asserts in the marshalling code */
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+			continue;
+
+		switch (field->type->type) {
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_STRING:
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (!can_marshal_struct (mono_class_from_mono_type (field->type)))
+				can_marshal = FALSE;
+			break;
+		default:
+			can_marshal = FALSE;
+			break;
+		}
+	}
+
+	return can_marshal;
+}
+
 static void
 add_wrappers (MonoAotCompile *acfg)
 {
@@ -1945,38 +1988,9 @@ add_wrappers (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
 
-		if (klass->valuetype && !klass->generic_container && ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT)) {
-			gboolean can_marshal = TRUE;
-			gpointer iter = NULL;
-			MonoClassField *field;
-
-			/* Only allow a few field types to avoid asserts in the marshalling code */
-			while ((field = mono_class_get_fields (klass, &iter))) {
-				switch (field->type->type) {
-				case MONO_TYPE_I4:
-				case MONO_TYPE_U4:
-				case MONO_TYPE_I1:
-				case MONO_TYPE_U1:
-				case MONO_TYPE_BOOLEAN:
-				case MONO_TYPE_I2:
-				case MONO_TYPE_U2:
-				case MONO_TYPE_CHAR:
-				case MONO_TYPE_I8:
-				case MONO_TYPE_U8:
-				case MONO_TYPE_PTR:
-				case MONO_TYPE_R4:
-				case MONO_TYPE_R8:
-					break;
-				default:
-					can_marshal = FALSE;
-					break;
-				}
-			}
-
-			if (can_marshal) {
-				add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
-				add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
-			}
+		if (klass->valuetype && !klass->generic_container && ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT) && can_marshal_struct (klass)) {
+			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
+			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
 		}
 	}
 }
