@@ -657,8 +657,11 @@ emit_line_number_info_begin (MonoDwarfWriter *w)
 static void
 emit_debug_info_end (MonoDwarfWriter *w)
 {
+	/* This doesn't seem to work/required with recent iphone sdk versions */
+#if 0
 	if (!img_writer_subsections_supported (w->w))
 		fprintf (w->fp, "\n.set %sdebug_info_end,.\n", w->temp_prefix);
+#endif
 }
 
 void
