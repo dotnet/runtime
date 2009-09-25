@@ -844,7 +844,7 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock,
 	*error = 0;
 #ifdef PLATFORM_WIN32
 	{
-		MonoThread* curthread = mono_thread_current ();
+		MonoInternalThread* curthread = mono_thread_current_internal ();
 		curthread->interrupt_on_stop = (gpointer)TRUE;
 		newsock = _wapi_accept (sock, NULL, 0);
 		curthread->interrupt_on_stop = (gpointer)FALSE;
@@ -1186,7 +1186,7 @@ MonoBoolean
 ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 						   gint timeout, gint32 *error)
 {
-	MonoThread *thread = NULL;
+	MonoInternalThread *thread = NULL;
 	mono_pollfd *pfds;
 	int ret;
 	time_t start;
@@ -1222,7 +1222,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 			int leave = 0;
 
 			if (thread == NULL) {
-				thread = mono_thread_current ();
+				thread = mono_thread_internal_current ();
 			}
 			
 			leave = mono_thread_test_state (thread, ThreadState_AbortRequested | ThreadState_StopRequested);
@@ -1391,7 +1391,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 
 #ifdef PLATFORM_WIN32
 	{
-		MonoThread* curthread = mono_thread_current ();
+		MonoInternalThread* curthread = mono_thread_current_internal ();
 		curthread->interrupt_on_stop = (gpointer)TRUE;
 		ret = _wapi_recv (sock, buf, count, recvflags);
 		curthread->interrupt_on_stop = (gpointer)FALSE;
@@ -1614,7 +1614,7 @@ static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 #define POLL_ERRORS (MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)
 void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gint32 timeout, gint32 *error)
 {
-	MonoThread *thread = NULL;
+	MonoInternalThread *thread = NULL;
 	MonoObject *obj;
 	mono_pollfd *pfds;
 	int nfds, idx;
@@ -1670,7 +1670,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 		if (ret == -1 && errno == EINTR) {
 			int leave = 0;
 			if (thread == NULL)
-				thread = mono_thread_current ();
+				thread = mono_thread_internal_current ();
 
 			leave = mono_thread_test_state (thread, ThreadState_AbortRequested | ThreadState_StopRequested);
 			

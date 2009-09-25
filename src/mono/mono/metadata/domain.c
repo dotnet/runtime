@@ -77,8 +77,8 @@ static __thread MonoDomain * tls_appdomain MONO_TLS_FAST;
 
 #endif
 
-#define GET_APPCONTEXT() (mono_thread_current ()->current_appcontext)
-#define SET_APPCONTEXT(x) MONO_OBJECT_SETREF (mono_thread_current (), current_appcontext, (x))
+#define GET_APPCONTEXT() (mono_thread_internal_current ()->current_appcontext)
+#define SET_APPCONTEXT(x) MONO_OBJECT_SETREF (mono_thread_internal_current (), current_appcontext, (x))
 
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
@@ -1481,6 +1481,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
                 mono_defaults.corlib, "System.Threading", "Thread");
 	g_assert (mono_defaults.thread_class != 0);
 
+	mono_defaults.internal_thread_class = mono_class_from_name (
+                mono_defaults.corlib, "System.Threading", "InternalThread");
+	g_assert (mono_defaults.internal_thread_class != 0);
+
 	mono_defaults.appdomain_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "AppDomain");
 	g_assert (mono_defaults.appdomain_class != 0);
@@ -1760,7 +1764,7 @@ mono_domain_get ()
 void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception)
 {
-	MonoThread *thread;
+	MonoInternalThread *thread;
 
 	if (mono_domain_get () == domain)
 		return;
@@ -1769,7 +1773,7 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 	SET_APPCONTEXT (domain->default_context);
 
 	if (migrate_exception) {
-		thread = mono_thread_current ();
+		thread = mono_thread_internal_current ();
 		if (!thread->abort_exc)
 			return;
 

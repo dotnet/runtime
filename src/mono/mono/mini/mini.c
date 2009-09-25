@@ -2277,10 +2277,10 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 static void
 mono_thread_start_cb (gsize tid, gpointer stack_start, gpointer func)
 {
-	MonoThread *thread;
+	MonoInternalThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
-	thread = mono_thread_current ();
-	mono_debugger_thread_created (tid, thread, jit_tls, func);
+	thread = mono_thread_internal_current ();
+	mono_debugger_thread_created (tid, thread->root_domain_thread, jit_tls, func);
 	if (thread)
 		thread->jit_data = jit_tls;
 }
@@ -2299,10 +2299,10 @@ mono_thread_abort_dummy (MonoObject *obj)
 static void
 mono_thread_attach_cb (gsize tid, gpointer stack_start)
 {
-	MonoThread *thread;
+	MonoInternalThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
-	thread = mono_thread_current ();
-	mono_debugger_thread_created (tid, thread, (MonoJitTlsData *) jit_tls, NULL);
+	thread = mono_thread_internal_current ();
+	mono_debugger_thread_created (tid, thread->root_domain_thread, (MonoJitTlsData *) jit_tls, NULL);
 	if (thread)
 		thread->jit_data = jit_tls;
 	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
@@ -2312,7 +2312,8 @@ mono_thread_attach_cb (gsize tid, gpointer stack_start)
 static void
 mini_thread_cleanup (MonoThread *thread)
 {
-	MonoJitTlsData *jit_tls = thread->jit_data;
+	MonoInternalThread *internal = thread->internal_thread;
+	MonoJitTlsData *jit_tls = internal->jit_data;
 
 	if (jit_tls) {
 		mono_debugger_thread_cleanup (jit_tls);
@@ -2321,7 +2322,7 @@ mini_thread_cleanup (MonoThread *thread)
 		mono_free_altstack (jit_tls);
 		g_free (jit_tls->first_lmf);
 		g_free (jit_tls);
-		thread->jit_data = NULL;
+		internal->jit_data = NULL;
 
 		/* We can't clean up tls information if we are on another thread, it will clean up the wrong stuff
 		 * It would be nice to issue a warning when this happens outside of the shutdown sequence. but it's
@@ -2329,7 +2330,7 @@ mini_thread_cleanup (MonoThread *thread)
 		 *
 		 * The current offender is mono_thread_manage which cleanup threads from the outside.
 		 */
-		if (thread == mono_thread_current ()) {
+		if (internal == mono_thread_internal_current ()) {
 			TlsSetValue (mono_jit_tls_id, NULL);
 
 #ifdef HAVE_KW_THREAD
@@ -2371,12 +2372,6 @@ MonoInst*
 mono_get_domain_intrinsic (MonoCompile* cfg)
 {
 	return mono_create_tls_get (cfg, mono_domain_get_tls_offset ());
-}
-
-MonoInst*
-mono_get_thread_intrinsic (MonoCompile* cfg)
-{
-	return mono_create_tls_get (cfg, mono_thread_get_tls_offset ());
 }
 
 void

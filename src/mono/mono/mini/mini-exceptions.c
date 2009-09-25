@@ -861,7 +861,7 @@ MonoJitInfo*
 mini_jit_info_table_find (MonoDomain *domain, char *addr)
 {
 	MonoJitInfo *ji;
-	MonoThread *t = mono_thread_current ();
+	MonoInternalThread *t = mono_thread_internal_current ();
 	GSList *l;
 
 	ji = mono_jit_info_table_find (domain, addr);
@@ -1636,7 +1636,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 void
 mono_print_thread_dump (void *sigctx)
 {
-	MonoThread *thread = mono_thread_current ();
+	MonoInternalThread *thread = mono_thread_internal_current ();
 #if defined(__i386__) || defined(__x86_64__)
 	MonoContext ctx;
 #endif

@@ -5379,31 +5379,6 @@ mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_get_thread_intrinsic                    */
-/*                                                                  */
-/* Function	- 						    */
-/*		                               			    */
-/* Returns	-     						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-MonoInst * 
-mono_arch_get_thread_intrinsic (MonoCompile* cfg)
-{
-	MonoInst *ins;
-
-	if (thread_tls_offset == -1)
-		return NULL;
-	
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->inst_offset = thread_tls_offset;
-	return (ins);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_flush_register_windows                  */
 /*                                                                  */
 /* Function	- 						    */

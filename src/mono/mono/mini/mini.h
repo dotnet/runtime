@@ -1377,7 +1377,6 @@ gint32    mono_get_lmf_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_addr_tls_offset      (void) MONO_INTERNAL;
 MonoInst* mono_get_jit_tls_intrinsic        (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_get_domain_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
-MonoInst* mono_get_thread_intrinsic         (MonoCompile* cfg) MONO_INTERNAL;
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, gboolean sort_end) MONO_INTERNAL;
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type) MONO_INTERNAL;
 void      mono_analyze_liveness             (MonoCompile *cfg) MONO_INTERNAL;
@@ -1630,7 +1629,6 @@ gpointer mono_arch_context_get_int_reg		(MonoContext *ctx, int reg) MONO_INTERNA
 void     mono_arch_flush_register_windows       (void) MONO_INTERNAL;
 gboolean mono_arch_is_inst_imm                  (gint64 imm) MONO_INTERNAL;
 MonoInst* mono_arch_get_domain_intrinsic        (MonoCompile* cfg) MONO_INTERNAL;
-MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg) MONO_INTERNAL;
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info) MONO_INTERNAL;
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg) MONO_INTERNAL;
 guint32  mono_arch_get_patch_offset             (guint8 *code) MONO_INTERNAL;

@@ -435,7 +435,7 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 }
 
 void
-mono_release_type_locks (MonoThread *thread)
+mono_release_type_locks (MonoInternalThread *thread)
 {
 	mono_type_initialization_lock ();
 	g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, (gpointer)(gsize)(thread->tid));
@@ -3395,7 +3395,7 @@ mono_unhandled_exception (MonoObject *exc)
 	g_assert (field);
 
 	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
-		gboolean abort_process = (mono_thread_current () == main_thread) ||
+		gboolean abort_process = (mono_thread_internal_current () == main_thread->internal_thread) ||
 				(mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT);
 		root_appdomain_delegate = *(MonoObject **)(((char *)root_domain->domain) + field->offset);
 		if (current_domain != root_domain && (mono_framework_version () >= 2)) {
@@ -3453,7 +3453,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	int rval;
 	MonoCustomAttrInfo* cinfo;
 	gboolean has_stathread_attribute;
-	MonoThread* thread = mono_thread_current ();
+	MonoInternalThread* thread = mono_thread_internal_current ();
 
 	g_assert (args);
 
@@ -5062,7 +5062,7 @@ mono_raise_exception (MonoException *ex)
 	 */
 
 	if (((MonoObject*)ex)->vtable->klass == mono_defaults.threadabortexception_class) {
-		MonoThread *thread = mono_thread_current ();
+		MonoInternalThread *thread = mono_thread_internal_current ();
 		g_assert (ex->object.vtable->domain == mono_domain_get ());
 		MONO_OBJECT_SETREF (thread, abort_exc, ex);
 	}

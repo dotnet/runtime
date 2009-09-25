@@ -1332,6 +1332,8 @@ static void
 process_object_for_domain_clearing (char *start, MonoDomain *domain)
 {
 	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
+	if (vt->klass == mono_defaults.internal_thread_class)
+		g_assert (mono_object_domain (start) == mono_get_root_domain ());
 	/* The object could be a proxy for an object in the domain
 	   we're deleting. */
 	if (mono_class_has_parent (vt->klass, mono_defaults.real_proxy_class)) {

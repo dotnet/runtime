@@ -359,6 +359,7 @@ BASE_TEST_CS_SRC=		\
 	finalizer-wait.cs	\
 	critical-finalizers.cs	\
 	appdomain-thread-abort.cs \
+	xdomain-threads.cs	\
 	w32message.cs
 
 if AMD64

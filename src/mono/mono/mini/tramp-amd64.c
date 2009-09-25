@@ -842,10 +842,10 @@ mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo
 		jump_sync_null = code;
 		amd64_branch8 (code, X86_CC_Z, -1, 1);
 
-		/* load MonoThread* into RDX */
+		/* load MonoInternalThread* into RDX */
 		code = mono_amd64_emit_tls_get (code, AMD64_RDX, mono_thread_get_tls_offset ());
 		/* load TID into RDX */
-		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, G_STRUCT_OFFSET (MonoThread, tid), 8);
+		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 8);
 
 		/* is synchronization->owner null? */
 		amd64_alu_membase_imm_size (code, X86_CMP, AMD64_RCX, owner_offset, 0, 8);
@@ -962,10 +962,10 @@ mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo 
 
 		/* next case: synchronization is not null */
 		x86_patch (jump_next, code);
-		/* load MonoThread* into RDX */
+		/* load MonoInternalThread* into RDX */
 		code = mono_amd64_emit_tls_get (code, AMD64_RDX, mono_thread_get_tls_offset ());
 		/* load TID into RDX */
-		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, G_STRUCT_OFFSET (MonoThread, tid), 8);
+		amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 8);
 		/* is synchronization->owner == TID */
 		amd64_alu_membase_reg_size (code, X86_CMP, AMD64_RCX, owner_offset, AMD64_RDX, 8);
 		/* if yes, jump to next case */

@@ -56,7 +56,7 @@ static CRITICAL_SECTION finalizer_mutex;
 static GSList *domains_to_finalize= NULL;
 static MonoMList *threads_to_finalize = NULL;
 
-static MonoThread *gc_thread;
+static MonoInternalThread *gc_thread;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
@@ -68,7 +68,7 @@ static HANDLE shutdown_event;
 #endif
 
 static void
-add_thread_to_finalize (MonoThread *thread)
+add_thread_to_finalize (MonoInternalThread *thread)
 {
 	mono_finalizer_lock ();
 	if (!threads_to_finalize)
@@ -137,10 +137,10 @@ mono_gc_run_finalize (void *obj, void *data)
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 
-	if (o->vtable->klass == mono_get_thread_class ()) {
-		MonoThread *t = (MonoThread*)o;
+	if (o->vtable->klass == mono_defaults.internal_thread_class) {
+		MonoInternalThread *t = (MonoInternalThread*)o;
 
-		if (mono_gc_is_finalizer_thread (t))
+		if (mono_gc_is_finalizer_internal_thread (t))
 			/* Avoid finalizing ourselves */
 			return;
 
@@ -228,7 +228,7 @@ void
 mono_gc_finalize_threadpool_threads (void)
 {
 	while (threads_to_finalize) {
-		MonoThread *thread = (MonoThread*) mono_mlist_get_data (threads_to_finalize);
+		MonoInternalThread *thread = (MonoInternalThread*) mono_mlist_get_data (threads_to_finalize);
 
 		/* Force finalization of the thread. */
 		thread->threadpool_thread = FALSE;
@@ -336,7 +336,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	guint32 res;
 	HANDLE done_event;
 
-	if (mono_thread_current () == gc_thread)
+	if (mono_thread_internal_current () == gc_thread)
 		/* We are called from inside a finalizer, not much we can do here */
 		return FALSE;
 
@@ -459,7 +459,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	if (!mono_gc_pending_finalizers ())
 		return;
 
-	if (mono_thread_current () == gc_thread)
+	if (mono_thread_internal_current () == gc_thread)
 		/* Avoid deadlocks */
 		return;
 
@@ -1099,7 +1099,7 @@ mono_gc_cleanup (void)
 	if (!gc_disabled) {
 		ResetEvent (shutdown_event);
 		finished = TRUE;
-		if (mono_thread_current () != gc_thread) {
+		if (mono_thread_internal_current () != gc_thread) {
 			mono_gc_finalize_notify ();
 			/* Finishing the finalizer thread, so wait a little bit... */
 			/* MS seems to wait for about 2 seconds */
@@ -1110,7 +1110,7 @@ mono_gc_cleanup (void)
 				suspend_finalizers = TRUE;
 
 				/* Try to abort the thread, in the hope that it is running managed code */
-				mono_thread_stop (gc_thread);
+				mono_thread_internal_stop (gc_thread);
 
 				/* Wait for it to stop */
 				ret = WaitForSingleObjectEx (gc_thread->handle, 100, TRUE);
@@ -1162,6 +1162,12 @@ void mono_gc_cleanup (void)
 
 #endif
 
+gboolean
+mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread)
+{
+	return thread == gc_thread;
+}
+
 /**
  * mono_gc_is_finalizer_thread:
  * @thread: the thread to test.
@@ -1175,5 +1181,5 @@ void mono_gc_cleanup (void)
 gboolean
 mono_gc_is_finalizer_thread (MonoThread *thread)
 {
-	return thread == gc_thread;
+	return mono_gc_is_finalizer_internal_thread (thread->internal_thread);
 }

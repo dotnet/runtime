@@ -801,7 +801,7 @@ mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit
 
 	if (func)
 		info->thread_flags = MONO_DEBUGGER_THREAD_FLAGS_INTERNAL;
-	if (thread->threadpool_thread)
+	if (thread->internal_thread->threadpool_thread)
 		info->thread_flags |= MONO_DEBUGGER_THREAD_FLAGS_THREADPOOL;
 
 	info->next = mono_debugger_thread_table;

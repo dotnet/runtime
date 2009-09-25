@@ -5412,20 +5412,6 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	return ins;
 }
 
-MonoInst* 
-mono_arch_get_thread_intrinsic (MonoCompile* cfg)
-{
-	MonoInst* ins;
-
-	setup_tls_access ();
-	if (monothread_key == -1)
-		return NULL;
-	
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->inst_offset = monothread_key;
-	return ins;
-}
-
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {

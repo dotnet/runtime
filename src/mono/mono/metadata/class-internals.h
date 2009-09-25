@@ -982,6 +982,7 @@ typedef struct {
 	MonoClass *exception_class;
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
+	MonoClass *internal_thread_class;
 	MonoClass *transparent_proxy_class;
 	MonoClass *real_proxy_class;
 	MonoClass *mono_method_message_class;

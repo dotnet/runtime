@@ -72,7 +72,7 @@
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
  */
-#define MONO_CORLIB_VERSION 82
+#define MONO_CORLIB_VERSION 83
 
 typedef struct
 {
@@ -2208,7 +2208,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 
 	/* Wait for the thread */	
 	while ((res = WaitForSingleObjectEx (thread_handle, INFINITE, TRUE) == WAIT_IO_COMPLETION)) {
-		if (mono_thread_has_appdomain_ref (mono_thread_current (), domain) && (mono_thread_interruption_requested ()))
+		if (mono_thread_internal_has_appdomain_ref (mono_thread_internal_current (), domain) && (mono_thread_interruption_requested ()))
 			/* The unload thread tries to abort us */
 			/* The icall wrapper will execute the abort */
 			CloseHandle (thread_handle);

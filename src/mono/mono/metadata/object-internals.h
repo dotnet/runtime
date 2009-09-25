@@ -6,6 +6,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -309,7 +310,7 @@ typedef struct {
 	MonoString *internal_method_name;
 } MonoStackFrame;
 
-struct _MonoThread {
+struct _MonoInternalThread {
 	MonoObject  obj;
 	int         lock_thread_id; /* to be used as the pre-shifted thread id in thin locks */
 	HANDLE	    handle;
@@ -329,7 +330,6 @@ struct _MonoThread {
 	gpointer lock_data;
 	MonoAppContext *current_appcontext;
 	int stack_size;
-	MonoObject *start_obj;
 	GSList *appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
 	gint32 interruption_requested;
@@ -349,7 +349,7 @@ struct _MonoThread {
 	guint32 small_id; /* A small, unique id, used for the hazard pointer table. */
 	MonoThreadManageCallback manage_callback;
 	MonoException *pending_exception;
-	MonoObject *ec_to_set;
+	MonoThread *root_domain_thread;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to the unmanaged MonoThread structure.
@@ -359,6 +359,13 @@ struct _MonoThread {
 	gpointer unused4;
 	gpointer unused5;
 	gpointer unused6;
+};
+
+struct _MonoThread {
+	MonoObject obj;
+	struct _MonoInternalThread *internal_thread;
+	MonoObject *start_obj;
+	MonoObject *ec_to_set;
 };
 
 typedef struct {
@@ -1319,7 +1326,7 @@ int
 mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value) MONO_INTERNAL;
 
 void
-mono_release_type_locks (MonoThread *thread) MONO_INTERNAL;
+mono_release_type_locks (MonoInternalThread *thread) MONO_INTERNAL;
 
 char *
 mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s) MONO_INTERNAL;

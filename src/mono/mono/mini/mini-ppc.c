@@ -64,7 +64,6 @@ static CRITICAL_SECTION mini_arch_mutex;
 int mono_exc_esp_offset = 0;
 static int tls_mode = TLS_MODE_DETECT;
 static int lmf_pthread_key = -1;
-static int monothread_key = -1;
 static int monodomain_key = -1;
 
 static int
@@ -5639,24 +5638,6 @@ setup_tls_access (void)
 			lmf_pthread_key = ptk;
 		}
 	}
-
-	if ((monothread_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
-		monothread_key = mono_thread_get_tls_offset();
-	}
-	/* if not TLS_MODE_NPTL or local dynamic (as indicated by
-	   mono_get_lmf_addr_tls_offset returning -1) then use keyed access. */
-	if (monothread_key == -1) {
-		ptk = mono_thread_get_tls_key ();
-		if (ptk < 1024) {
-			ptk = mono_pthread_key_for_tls (ptk);
-			if (ptk < 1024) {
-				monothread_key = ptk;
-				/*g_print ("thread inited: %d\n", ptk);*/
-			}
-		} else {
-			/*g_print ("thread not inited yet %d\n", ptk);*/
-		}
-	}
 }
 
 void
@@ -5862,20 +5843,6 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	
 	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
 	ins->inst_offset = monodomain_key;
-	return ins;
-}
-
-MonoInst* 
-mono_arch_get_thread_intrinsic (MonoCompile* cfg)
-{
-	MonoInst* ins;
-
-	setup_tls_access ();
-	if (monothread_key == -1)
-		return NULL;
-	
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->inst_offset = monothread_key;
 	return ins;
 }
 

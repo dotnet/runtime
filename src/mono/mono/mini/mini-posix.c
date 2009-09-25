@@ -159,7 +159,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 {
 	gboolean running_managed;
 	MonoException *exc;
-	MonoThread *thread = mono_thread_current ();
+	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoDomain *domain = mono_domain_get ();
 	void *ji;
 	

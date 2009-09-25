@@ -4677,12 +4677,6 @@ mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	return mono_get_domain_intrinsic (cfg);
 }
 
-MonoInst*
-mono_arch_get_thread_intrinsic (MonoCompile* cfg)
-{
-	return mono_get_thread_intrinsic (cfg);
-}
-
 guint32
 mono_arch_get_patch_offset (guint8 *code)
 {

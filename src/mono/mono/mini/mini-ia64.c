@@ -4811,12 +4811,6 @@ mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	return mono_get_domain_intrinsic (cfg);
 }
 
-MonoInst*
-mono_arch_get_thread_intrinsic (MonoCompile* cfg)
-{
-	return mono_get_thread_intrinsic (cfg);
-}
-
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {

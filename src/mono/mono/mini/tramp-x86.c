@@ -629,10 +629,10 @@ mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo
 		jump_sync_null = buf;
 		x86_branch8 (buf, X86_CC_Z, -1, 1);
 
-		/* load MonoThread* into EDX */
+		/* load MonoInternalThread* into EDX */
 		buf = mono_x86_emit_tls_get (buf, X86_EDX, mono_thread_get_tls_offset ());
 		/* load TID into EDX */
-		x86_mov_reg_membase (buf, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoThread, tid), 4);
+		x86_mov_reg_membase (buf, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 
 		/* is synchronization->owner null? */
 		x86_alu_membase_imm (buf, X86_CMP, X86_ECX, owner_offset, 0);
@@ -740,10 +740,10 @@ mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo 
 
 		/* next case: synchronization is not null */
 		x86_patch (jump_next, buf);
-		/* load MonoThread* into EDX */
+		/* load MonoInternalThread* into EDX */
 		buf = mono_x86_emit_tls_get (buf, X86_EDX, mono_thread_get_tls_offset ());
 		/* load TID into EDX */
-		x86_mov_reg_membase (buf, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoThread, tid), 4);
+		x86_mov_reg_membase (buf, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 		/* is synchronization->owner == TID */
 		x86_alu_membase_reg (buf, X86_CMP, X86_ECX, owner_offset, X86_EDX);
 		/* if yes, jump to next case */

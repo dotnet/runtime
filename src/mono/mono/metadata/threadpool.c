@@ -266,11 +266,11 @@ static void
 async_invoke_io_thread (gpointer data)
 {
 	MonoDomain *domain;
-	MonoThread *thread;
+	MonoInternalThread *thread;
 	const gchar *version;
 	int workers_io, min_io;
 
-	thread = mono_thread_current ();
+	thread = mono_thread_internal_current ();
 
 	version = mono_get_runtime_info ()->framework_version;
 	for (;;) {
@@ -454,9 +454,9 @@ socket_io_poll_main (gpointer p)
 	gint maxfd = 1;
 	gint allocated;
 	gint i;
-	MonoThread *thread;
+	MonoInternalThread *thread;
 
-	thread = mono_thread_current ();
+	thread = mono_thread_internal_current ();
 
 	allocated = INITIAL_POLLFD_SIZE;
 	pfds = g_new0 (mono_pollfd, allocated);
@@ -589,14 +589,14 @@ socket_io_epoll_main (gpointer p)
 {
 	SocketIOData *data;
 	int epollfd;
-	MonoThread *thread;
+	MonoInternalThread *thread;
 	struct epoll_event *events, *evt;
 	const int nevents = 512;
 	int ready = 0, i;
 
 	data = p;
 	epollfd = data->epollfd;
-	thread = mono_thread_current ();
+	thread = mono_thread_internal_current ();
 	events = g_new0 (struct epoll_event, nevents);
 
 	while (1) {
@@ -982,13 +982,11 @@ static void
 mono_async_invoke (MonoAsyncResult *ares)
 {
 	ASyncCall *ac = (ASyncCall *)ares->object_data;
-	MonoThread *thread = NULL;
 	MonoObject *res, *exc = NULL;
 	MonoArray *out_args = NULL;
 
 	if (ares->execution_context) {
 		/* use captured ExecutionContext (if available) */
-		thread = mono_thread_current ();
 		MONO_OBJECT_SETREF (ares, original_context, mono_thread_get_execution_context ());
 		mono_thread_set_execution_context (ares->execution_context);
 	} else {
@@ -1385,11 +1383,11 @@ static void
 async_invoke_thread (gpointer data)
 {
 	MonoDomain *domain;
-	MonoThread *thread;
+	MonoInternalThread *thread;
 	int workers, min;
 	const gchar *version;
  
-	thread = mono_thread_current ();
+	thread = mono_thread_internal_current ();
 	version = mono_get_runtime_info ()->framework_version;
 	for (;;) {
 		MonoAsyncResult *ar;

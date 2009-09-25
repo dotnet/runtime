@@ -11,6 +11,7 @@
 
 #include <glib.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/utils/gc_wrapper.h>
 
 #define mono_domain_finalizers_lock(domain) EnterCriticalSection (&(domain)->finalizable_objects_hash_lock);
@@ -50,6 +51,8 @@ extern gboolean mono_gc_is_gc_thread (void) MONO_INTERNAL;
  * can't cope with this concept - we return FALSE.
  */
 extern gboolean mono_gc_register_thread (void *baseptr) MONO_INTERNAL;
+
+extern gboolean mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread) MONO_INTERNAL;
 
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).

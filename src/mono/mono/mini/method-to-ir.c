@@ -3877,12 +3877,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.thread_class) {
-		if (strcmp (cmethod->name, "get_CurrentThread") == 0 && (ins = mono_arch_get_thread_intrinsic (cfg))) {
-			ins->dreg = alloc_preg (cfg);
-			ins->type = STACK_OBJ;
-			MONO_ADD_INS (cfg->cbb, ins);
-			return ins;
-		} else if (strcmp (cmethod->name, "SpinWait_nop") == 0) {
+		if (strcmp (cmethod->name, "SpinWait_nop") == 0) {
 			MONO_INST_NEW (cfg, ins, OP_RELAXED_NOP);
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
