@@ -531,6 +531,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		const char *blob;
 		char *s;
 		size_t len2;
+		char *blob2 = NULL;
 
 		if (!method->klass->image->dynamic) {
 			token = read32 (ip);
@@ -539,22 +540,32 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 			len2 = mono_metadata_decode_blob_size (blob, &blob);
 			len2 >>= 1;
 
+#ifdef NO_UNALIGNED_ACCESS
+			/* The blob might not be 2 byte aligned */
+			blob2 = g_malloc (len2 * 2);
+			memcpy (blob2, blob, len2 * 2);
+#else
+			blob2 = blob;
+#endif
+
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 			{
 				guint16 *buf = g_new (guint16, len2);
 				int i;
 
 				for (i = 0; i < len2; ++i)
-					buf [i] = GUINT16_FROM_LE (((guint16*)blob) [i]);
+					buf [i] = GUINT16_FROM_LE (((guint16*)blob2) [i]);
 				s = g_utf16_to_utf8 (buf, len2, NULL, NULL, NULL);
 				g_free (buf);
 			}
 #else
-				s = g_utf16_to_utf8 ((gunichar2*)blob, len2, NULL, NULL, NULL);
+				s = g_utf16_to_utf8 ((gunichar2*)blob2, len2, NULL, NULL, NULL);
 #endif
 
 			g_string_append_printf (str, "\"%s\"", s);
 			g_free (s);
+			if (blob != blob2)
+				g_free (blob2);
 		}
 		ip += 4;
 		break;
