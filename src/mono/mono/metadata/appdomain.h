@@ -85,6 +85,9 @@ mono_domain_set_internal   (MonoDomain *domain);
 void
 mono_domain_unload (MonoDomain *domain);
 
+void
+mono_domain_try_unload (MonoDomain *domain, MonoObject **exc);
+
 gboolean
 mono_domain_is_unloading   (MonoDomain *domain);
 
