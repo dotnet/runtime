@@ -1014,26 +1014,6 @@ class Tests {
 		return 0;
 	}
 
-	static long return_5low () {
-		return 5;
-	}
-	
-	static long return_5high () {
-		return 0x500000000;
-	}
-
-	public static int test_3_long_ret () {
-		long val = return_5low ();
-		return (int) (val - 2);
-	}
-
-	public static int test_1_long_ret2 () {
-		long val = return_5high ();
-		if (val > 0xffffffff)
-			return 1;
-		return 0;
-	}
-
 	public static int test_3_byte_cast () {
 		ulong val = 0xff00ff00f0f0f0f0;
 		byte b;

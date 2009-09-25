@@ -276,6 +276,29 @@ class Tests {
 		return 0;
 	}
 
+	public static void use_long_arg (ulong l) {
+		for (int i = 0; i < 10; ++i)
+			l ++;
+	}
+
+	public static ulong return_long_arg (object o, ulong perm) {
+		use_long_arg (perm);
+
+        perm = 0x8000000000000FFF;
+
+		use_long_arg (perm);
+
+		return perm;
+	}
+
+    public static int test_0_sparc_long_ret_regress_541577 () {
+        ulong perm = 0x8000000000000FFF;
+
+        ulong work = return_long_arg (null, perm);
+
+		return work == perm ? 0 : 1;
+	}
+
 	static void doit (double value, out long m) {
 		m = (long) value;
 	}
