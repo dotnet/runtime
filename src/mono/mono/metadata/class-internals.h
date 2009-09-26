@@ -752,6 +752,9 @@ typedef struct {
 	guint32 security_time;
 	guint32 security_depth;
 	guint32 unused;
+	/* Threadpool */
+	guint64 threadpool_workitems;
+	guint64 threadpool_ioworkitems;
 } MonoPerfCounters;
 
 extern MonoPerfCounters *mono_perfcounters MONO_INTERNAL;

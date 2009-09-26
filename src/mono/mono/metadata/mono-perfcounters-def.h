@@ -119,3 +119,9 @@ PERFCTR_COUNTER(SECURITY_LCHECKS, "# Link Time Checks", "", NumberOfItems32, sec
 PERFCTR_COUNTER(SECURITY_PERCTIME, "% Time in RT checks", "", RawFraction, security_time)
 PERFCTR_COUNTER(SECURITY_SWDEPTH, "Stack Walk Depth", "", NumberOfItems32, security_depth)
 
+PERFCTR_CAT(THREADPOOL, "Mono Threadpool", "", MultiInstance, Mono, THREADPOOL_WORKITEMS)
+PERFCTR_COUNTER(THREADPOOL_WORKITEMS, "Work Items Added", "", NumberOfItems64, threadpool_workitems)
+PERFCTR_COUNTER(THREADPOOL_WORKITEMS_PSEC, "Work Items Added/Sec", "", RateOfCountsPerSecond32, threadpool_workitems)
+PERFCTR_COUNTER(THREADPOOL_IOWORKITEMS, "IO Work Items Added", "", NumberOfItems64, threadpool_ioworkitems)
+PERFCTR_COUNTER(THREADPOOL_IOWORKITEMS_PSEC, "IO Work Items Added/Sec", "", RateOfCountsPerSecond32, threadpool_ioworkitems)
+

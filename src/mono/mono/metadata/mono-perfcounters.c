@@ -844,6 +844,16 @@ predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 			return TRUE;
 		}
 		break;
+	case CATEGORY_THREADPOOL:
+		switch (id) {
+		case COUNTER_THREADPOOL_WORKITEMS:
+			sample->rawValue = mono_perfcounters->threadpool_workitems;
+			return TRUE;
+		case COUNTER_THREADPOOL_IOWORKITEMS:
+			sample->rawValue = mono_perfcounters->threadpool_ioworkitems;
+			return TRUE;
+		}
+		break;
 	}
 	return FALSE;
 }
@@ -851,7 +861,8 @@ predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 static gint64
 predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 {
-	guint32 *ptr = NULL;
+	guint32 *volatile ptr = NULL;
+	gint64 *volatile ptr64 = NULL;
 	int cat_id = GPOINTER_TO_INT (vtable->arg);
 	int id = cat_id >> 16;
 	cat_id &= 0xffff;
@@ -862,15 +873,42 @@ predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 		case COUNTER_ASPNET_REQ_TOTAL: ptr = &mono_perfcounters->aspnet_requests; break;
 		}
 		break;
+	case CATEGORY_THREADPOOL:
+		switch (id) {
+		case COUNTER_THREADPOOL_WORKITEMS: ptr64 = (gint64 *) &mono_perfcounters->threadpool_workitems; break;
+		case COUNTER_THREADPOOL_IOWORKITEMS: ptr64 = (gint64 *) &mono_perfcounters->threadpool_ioworkitems; break;
+		}
+		break;
 	}
 	if (ptr) {
 		if (do_incr) {
-			/* FIXME: we need to do this atomically */
+			if (value == 1)
+				return InterlockedIncrement ((gint32 *) ptr); /* FIXME: sign */
+			if (value == -1)
+				return InterlockedDecrement ((gint32 *) ptr); /* FIXME: sign */
+
 			*ptr += value;
 			return *ptr;
 		}
 		/* this can be non-atomic */
 		*ptr = value;
+		return value;
+	} else if (ptr64) {
+		if (do_incr) {
+			/* FIXME: we need to do this atomically */
+			/* No InterlockedIncrement64() yet */
+			/*
+			if (value == 1)
+				return InterlockedIncrement64 (ptr);
+			if (value == -1)
+				return InterlockedDecrement64 (ptr);
+			*/
+
+			*ptr64 += value;
+			return *ptr64;
+		}
+		/* this can be non-atomic */
+		*ptr64 = value;
 		return value;
 	}
 	return 0;
@@ -1042,6 +1080,7 @@ mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString
 	case CATEGORY_INTEROP:
 	case CATEGORY_SECURITY:
 	case CATEGORY_ASPNET:
+	case CATEGORY_THREADPOOL:
 		return predef_writable_get_impl (cdesc->id, counter, instance, type, custom);
 	}
 	return NULL;
