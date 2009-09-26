@@ -829,6 +829,8 @@ void describe_ptr (char *ptr);
 void check_consistency (void);
 char* check_object (char *start);
 
+void mono_gc_scan_for_specific_ref (MonoObject *key);
+
 /*
  * ######################################################################
  * ########  GC descriptors
@@ -1315,6 +1317,147 @@ scan_area (char *start, char *end)
 	/*printf ("references to new nursery %p-%p (size: %dk): %d, checked: %d\n", old_start, end, (end-old_start)/1024, new_obj_references, obj_references_checked);
 	printf ("\tstrings: %d, runl: %d, vector: %d, bitmaps: %d, lbitmaps: %d, complex: %d\n",
 		type_str, type_rlen, type_vector, type_bitmap, type_lbit, type_complex);*/
+}
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj) do {		\
+	if ((MonoObject*)*(ptr) == key) {	\
+	g_print ("found ref to %p in object %p (%s) at offset %d\n",	\
+			key, (obj), safe_name ((obj)), ((char*)(ptr) - (char*)(obj))); \
+	}								\
+	} while (0)
+
+static char*
+scan_object_for_specific_ref (char *start, MonoObject *key)
+{
+	#include "sgen-scan-object.h"
+
+	return start;
+}
+
+static void
+scan_area_for_specific_ref (char *start, char *end, MonoObject *key)
+{
+	while (start < end) {
+		if (!*(void**)start) {
+			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
+			continue;
+		}
+
+		start = scan_object_for_specific_ref (start, key);
+	}
+}
+
+static void
+scan_pinned_object_for_specific_ref_callback (PinnedChunk *chunk, char *obj, size_t size, MonoObject *key)
+{
+	scan_object_for_specific_ref (obj, key);
+}
+
+static void
+check_root_obj_specific_ref (RootRecord *root, MonoObject *key, MonoObject *obj)
+{
+	if (key != obj)
+		return;
+	g_print ("found ref to %p in root record %p\n", key, root);
+}
+
+static MonoObject *check_key = NULL;
+static RootRecord *check_root = NULL;
+
+static void*
+check_root_obj_specific_ref_from_marker (void *obj)
+{
+	check_root_obj_specific_ref (check_root, check_key, obj);
+	return obj;
+}
+
+static void
+scan_roots_for_specific_ref (MonoObject *key, int root_type)
+{
+	int i;
+	RootRecord *root;
+	check_key = key;
+	for (i = 0; i < roots_hash_size [root_type]; ++i) {
+		for (root = roots_hash [root_type][i]; root; root = root->next) {
+			void **start_root = (void**)root->start_root;
+			mword desc = root->root_desc;
+
+			check_root = root;
+
+			switch (desc & ROOT_DESC_TYPE_MASK) {
+			case ROOT_DESC_BITMAP:
+				desc >>= ROOT_DESC_TYPE_SHIFT;
+				while (desc) {
+					if (desc & 1)
+						check_root_obj_specific_ref (root, key, *start_root);
+					desc >>= 1;
+					start_root++;
+				}
+				return;
+			case ROOT_DESC_COMPLEX: {
+				gsize *bitmap_data = complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
+				int bwords = (*bitmap_data) - 1;
+				void **start_run = start_root;
+				bitmap_data++;
+				while (bwords-- > 0) {
+					gsize bmap = *bitmap_data++;
+					void **objptr = start_run;
+					while (bmap) {
+						if (bmap & 1)
+							check_root_obj_specific_ref (root, key, *objptr);
+						bmap >>= 1;
+						++objptr;
+					}
+					start_run += GC_BITS_PER_WORD;
+				}
+				break;
+			}
+			case ROOT_DESC_USER: {
+				MonoGCMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+				marker (start_root, check_root_obj_specific_ref_from_marker);
+				break;
+			}
+			case ROOT_DESC_RUN_LEN:
+				g_assert_not_reached ();
+			default:
+				g_assert_not_reached ();
+			}
+		}
+	}
+	check_key = NULL;
+	check_root = NULL;
+}
+
+void
+mono_gc_scan_for_specific_ref (MonoObject *key)
+{
+	GCMemSection *section;
+	LOSObject *bigobj;
+	RootRecord *root;
+	int i;
+
+	for (section = section_list; section; section = section->next)
+		scan_area_for_specific_ref (section->data, section->end_data, key);
+
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		scan_object_for_specific_ref (bigobj->data, key);
+
+	scan_pinned_objects (scan_pinned_object_for_specific_ref_callback, key);
+
+	scan_roots_for_specific_ref (key, ROOT_TYPE_NORMAL);
+	scan_roots_for_specific_ref (key, ROOT_TYPE_WBARRIER);
+
+	for (i = 0; i < roots_hash_size [ROOT_TYPE_PINNED]; ++i) {
+		for (root = roots_hash [ROOT_TYPE_PINNED][i]; root; root = root->next) {
+			void **ptr = (void**)root->start_root;
+
+			while (ptr < (void**)root->end_root) {
+				check_root_obj_specific_ref (root, *ptr, key);
+				++ptr;
+			}
+		}
+	}
 }
 
 static gboolean
