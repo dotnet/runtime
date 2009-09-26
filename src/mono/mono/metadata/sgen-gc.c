@@ -820,7 +820,8 @@ static void mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void *
 static void clear_remsets (void);
 static void clear_tlabs (void);
 static char *find_tlab_next_from_address (char *addr);
-static void scan_pinned_objects (void (*callback) (PinnedChunk*, char*, size_t, void*), void *callback_data);
+typedef void (*ScanPinnedObjectCallbackFunc) (PinnedChunk*, char*, size_t, void*);
+static void scan_pinned_objects (ScanPinnedObjectCallbackFunc callback, void *callback_data);
 static void sweep_pinned_objects (void);
 static void scan_from_pinned_objects (char *addr_start, char *addr_end);
 static void free_large_object (LOSObject *obj);
@@ -1398,7 +1399,7 @@ check_reference_for_xdomain (gpointer *ptr, char *obj, MonoDomain *domain)
 	}
 
 	if (ref->vtable->klass == mono_defaults.string_class)
-		str = mono_string_to_utf8 (ref);
+		str = mono_string_to_utf8 ((MonoString*)ref);
 	else
 		str = NULL;
 	g_print ("xdomain reference in %p (%s.%s) at offset %d (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
@@ -1560,7 +1561,7 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
 		scan_object_for_specific_ref (bigobj->data, key);
 
-	scan_pinned_objects (scan_pinned_object_for_specific_ref_callback, key);
+	scan_pinned_objects ((ScanPinnedObjectCallbackFunc)scan_pinned_object_for_specific_ref_callback, key);
 
 	scan_roots_for_specific_ref (key, ROOT_TYPE_NORMAL);
 	scan_roots_for_specific_ref (key, ROOT_TYPE_WBARRIER);
@@ -1580,7 +1581,6 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 static gboolean
 need_remove_object_for_domain (char *start, MonoDomain *domain)
 {
-	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
 	if (mono_object_domain (start) == domain) {
 		DEBUG (1, fprintf (gc_debug_file, "Need to cleanup object %p, (%s)\n", start, safe_name (start)));
 		return TRUE;
@@ -1659,7 +1659,7 @@ scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 
 			/* The MonoDomain struct is allowed to hold
 			   references to objects in its own domain. */
-			if (start_root == domain)
+			if (start_root == (void**)domain)
 				continue;
 
 			switch (desc & ROOT_DESC_TYPE_MASK) {
@@ -1782,7 +1782,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	   (pinned objects), but we might need to dereference a
 	   pointer from an object to another object if the first
 	   object is a proxy. */
-	scan_pinned_objects (clear_domain_process_pinned_object_callback, domain);
+	scan_pinned_objects ((ScanPinnedObjectCallbackFunc)clear_domain_process_pinned_object_callback, domain);
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
 		process_object_for_domain_clearing (bigobj->data, domain);
 
@@ -1803,7 +1803,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 		prev = bigobj;
 		bigobj = bigobj->next;
 	}
-	scan_pinned_objects (clear_domain_free_pinned_object_callback, domain);
+	scan_pinned_objects ((ScanPinnedObjectCallbackFunc)clear_domain_free_pinned_object_callback, domain);
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
 		null_links_for_domain (domain, i);
@@ -3385,7 +3385,7 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 }
 
 static void
-scan_pinned_objects (void (*callback) (PinnedChunk*, char*, size_t, void*), void *callback_data)
+scan_pinned_objects (ScanPinnedObjectCallbackFunc callback, void *callback_data)
 {
 	PinnedChunk *chunk;
 	int i, obj_size;
@@ -3445,7 +3445,7 @@ static void
 scan_from_pinned_objects (char *addr_start, char *addr_end)
 {
 	char *data [2] = { addr_start, addr_end };
-	scan_pinned_objects (scan_object_callback, data);
+	scan_pinned_objects ((ScanPinnedObjectCallbackFunc)scan_object_callback, data);
 }
 
 /*
@@ -3799,7 +3799,6 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	/* FIXME: handle OOM */
 	void **p;
 	char *new_next;
-	int dummy;
 	gboolean res;
 	TLAB_ACCESS_INIT;
 
@@ -3809,8 +3808,6 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	g_assert (vtable->gc_descr);
 
 	if (G_UNLIKELY (collect_before_allocs)) {
-		int dummy;
-
 		if (nursery_section) {
 			LOCK_GC;
 
@@ -5099,7 +5096,6 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 static gboolean
 ptr_on_stack (void *ptr)
 {
-	int rs = 0;
 	gpointer stack_start = &stack_start;
 	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
 
@@ -5387,7 +5383,9 @@ gc_register_current_thread (void *addr)
 {
 	int hash;
 	SgenThreadInfo* info = malloc (sizeof (SgenThreadInfo));
+#ifndef HAVE_KW_THREAD
 	SgenThreadInfo *__thread_info__ = info;
+#endif
 
 	if (!info)
 		return NULL;
@@ -5774,7 +5772,7 @@ find_object_for_ptr (char *ptr)
 	}
 
 	found_obj = NULL;
-	scan_pinned_objects (find_object_for_ptr_in_pinned_chunk_callback, ptr);
+	scan_pinned_objects ((ScanPinnedObjectCallbackFunc)find_object_for_ptr_in_pinned_chunk_callback, ptr);
 	return found_obj;
 }
 
@@ -5974,7 +5972,7 @@ describe_ptr (char *ptr)
 	printf ("Class: %s\n", vtable->klass->name);
 
 	desc = ((GCVTable*)vtable)->desc;
-	printf ("Descriptor: %lx\n", desc);
+	printf ("Descriptor: %lx\n", (long)desc);
 
 	type = desc & 0x7;
 	printf ("Descriptor type: %d (%s)\n", type, descriptor_types [type]);
