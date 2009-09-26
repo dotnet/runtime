@@ -844,7 +844,7 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock,
 	*error = 0;
 #ifdef PLATFORM_WIN32
 	{
-		MonoInternalThread* curthread = mono_thread_current_internal ();
+		MonoInternalThread* curthread = mono_thread_internal_current ();
 		curthread->interrupt_on_stop = (gpointer)TRUE;
 		newsock = _wapi_accept (sock, NULL, 0);
 		curthread->interrupt_on_stop = (gpointer)FALSE;
@@ -1391,7 +1391,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 
 #ifdef PLATFORM_WIN32
 	{
-		MonoInternalThread* curthread = mono_thread_current_internal ();
+		MonoInternalThread* curthread = mono_thread_internal_current ();
 		curthread->interrupt_on_stop = (gpointer)TRUE;
 		ret = _wapi_recv (sock, buf, count, recvflags);
 		curthread->interrupt_on_stop = (gpointer)FALSE;

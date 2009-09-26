@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <glib.h>
 
+#include "mono-compiler.h"
 #include "mono-logger.h"
 
 typedef struct {
