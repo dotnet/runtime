@@ -1288,6 +1288,36 @@ lookup_cached_culture (MonoInternalThread *this, MonoDomain *domain, int start_i
 	return NULL;
 }
 
+/* If the array is already in the requested domain, we just return it,
+   otherwise we return a copy in that domain. */
+static MonoArray*
+byte_array_to_domain (MonoArray *arr, MonoDomain *domain)
+{
+	MonoArray *copy;
+
+	if (!arr)
+		return NULL;
+
+	if (mono_object_domain (arr) == domain)
+		return arr;
+
+	copy = mono_array_new (domain, mono_defaults.byte_class, arr->max_length);
+	memcpy (mono_array_addr (copy, guint8, 0), mono_array_addr (arr, guint8, 0), arr->max_length);
+	return copy;
+}
+
+MonoArray*
+ves_icall_System_Threading_Thread_ByteArrayToRootDomain (MonoArray *arr)
+{
+	return byte_array_to_domain (arr, mono_get_root_domain ());
+}
+
+MonoArray*
+ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArray *arr)
+{
+	return byte_array_to_domain (arr, mono_domain_get ());
+}
+
 MonoObject*
 ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoInternalThread *this)
 {
