@@ -11,7 +11,8 @@
  * SCAN_OBJECT_ACTION - is invoked after an object has been scanned.
  * The object's start is "start", its length in bytes (including
  * padding at the end) is "skip_size".  "desc" is the object's GC
- * descriptor.
+ * descriptor.  The action can use the macro
+ * "SCAN" to scan the object.
  */
 
 #ifndef SCAN_OBJECT_ACTION
@@ -31,16 +32,20 @@
 	switch (desc & 0x7) {
 	case DESC_TYPE_STRING:
 		STRING_SIZE (skip_size, start);
+#define SCAN
 		SCAN_OBJECT_ACTION;
+#undef SCAN
 		start += skip_size;
 		break;
 	case DESC_TYPE_RUN_LENGTH:
 		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
 		g_assert (skip_size);
+#define SCAN OBJ_RUN_LEN_FOREACH_PTR (desc, start)
 #ifndef SCAN_OBJECT_NOSCAN
-		OBJ_RUN_LEN_FOREACH_PTR (desc, start);
+		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
+#undef SCAN
 		start += skip_size;
 		break;
 	case DESC_TYPE_ARRAY:
@@ -48,29 +53,35 @@
 		skip_size = safe_object_get_size ((MonoObject*)start);
 		skip_size += (ALLOC_ALIGN - 1);
 		skip_size &= ~(ALLOC_ALIGN - 1);
+#define SCAN OBJ_VECTOR_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
-		OBJ_VECTOR_FOREACH_PTR (vt, start);
+		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
+#undef SCAN
 		start += skip_size;
 		break;
 	case DESC_TYPE_SMALL_BITMAP:
 		OBJ_BITMAP_SIZE (skip_size, desc, start);
 		g_assert (skip_size);
+#define SCAN OBJ_BITMAP_FOREACH_PTR (desc, start)
 #ifndef SCAN_OBJECT_NOSCAN
-		OBJ_BITMAP_FOREACH_PTR (desc, start);
+		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
+#undef SCAN
 		start += skip_size;
 		break;
 	case DESC_TYPE_LARGE_BITMAP:
 		skip_size = safe_object_get_size ((MonoObject*)start);
 		skip_size += (ALLOC_ALIGN - 1);
 		skip_size &= ~(ALLOC_ALIGN - 1);
+#define SCAN OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start)
 #ifndef SCAN_OBJECT_NOSCAN
-		OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start);
+		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
+#undef SCAN
 		start += skip_size;
 		break;
 	case DESC_TYPE_COMPLEX:
@@ -78,10 +89,12 @@
 		skip_size = safe_object_get_size ((MonoObject*)start);
 		skip_size += (ALLOC_ALIGN - 1);
 		skip_size &= ~(ALLOC_ALIGN - 1);
+#define SCAN OBJ_COMPLEX_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
-		OBJ_COMPLEX_FOREACH_PTR (vt, start);
+		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
+#undef SCAN
 		start += skip_size;
 		break;
 	case DESC_TYPE_COMPLEX_ARR:
@@ -89,10 +102,12 @@
 		skip_size = safe_object_get_size ((MonoObject*)start);
 		skip_size += (ALLOC_ALIGN - 1);
 		skip_size &= ~(ALLOC_ALIGN - 1);
+#define SCAN OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
-		OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
+		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
+#undef SCAN
 		start += skip_size;
 		break;
 	default:

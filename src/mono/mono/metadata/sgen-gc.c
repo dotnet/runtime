@@ -148,6 +148,7 @@
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
 #include "metadata/monitor.h"
+#include "metadata/threadpool-internals.h"
 #include "utils/mono-mmap.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
@@ -182,6 +183,8 @@ static FILE* gc_debug_file;
 static gboolean collect_before_allocs = FALSE;
 /* If set, do a heap consistency check before each minor collection */
 static gboolean consistency_check_at_minor_collection = FALSE;
+/* If set, check that there are no references to the domain left at domain unload */
+static gboolean xdomain_checks = FALSE;
 
 /*
 void
@@ -1319,6 +1322,120 @@ scan_area (char *start, char *end)
 		type_str, type_rlen, type_vector, type_bitmap, type_lbit, type_complex);*/
 }
 
+static gboolean
+is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
+{
+	MonoObject *o = (MonoObject*)(obj);
+	MonoObject *ref = (MonoObject*)*(ptr);
+	int offset = (char*)(ptr) - (char*)o;
+
+	if (o->vtable->klass == mono_defaults.thread_class && offset == G_STRUCT_OFFSET (MonoThread, internal_thread))
+		return TRUE;
+	if (o->vtable->klass == mono_defaults.internal_thread_class && offset == G_STRUCT_OFFSET (MonoInternalThread, current_appcontext))
+		return TRUE;
+	if (mono_class_has_parent (o->vtable->klass, mono_defaults.real_proxy_class) &&
+			offset == G_STRUCT_OFFSET (MonoRealProxy, unwrapped_server))
+		return TRUE;
+	/* Thread.cached_culture_info */
+	if (!strcmp (ref->vtable->klass->name_space, "System.Globalization") &&
+			!strcmp (ref->vtable->klass->name, "CultureInfo") &&
+			!strcmp(o->vtable->klass->name_space, "System") &&
+			!strcmp(o->vtable->klass->name, "Object[]"))
+		return TRUE;
+	/*
+	 *  at System.IO.MemoryStream.InternalConstructor (byte[],int,int,bool,bool) [0x0004d] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.IO/MemoryStream.cs:121
+	 * at System.IO.MemoryStream..ctor (byte[]) [0x00017] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.IO/MemoryStream.cs:81
+	 * at (wrapper remoting-invoke-with-check) System.IO.MemoryStream..ctor (byte[]) <IL 0x00020, 0xffffffff>
+	 * at System.Runtime.Remoting.Messaging.CADMethodCallMessage.GetArguments () [0x0000d] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.Runtime.Remoting.Messaging/CADMessages.cs:327
+	 * at System.Runtime.Remoting.Messaging.MethodCall..ctor (System.Runtime.Remoting.Messaging.CADMethodCallMessage) [0x00017] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.Runtime.Remoting.Messaging/MethodCall.cs:87
+	 * at System.AppDomain.ProcessMessageInDomain (byte[],System.Runtime.Remoting.Messaging.CADMethodCallMessage,byte[]&,System.Runtime.Remoting.Messaging.CADMethodReturnMessage&) [0x00018] in /home/schani/Work/novell/trunk/mcs/class/corlib/System/AppDomain.cs:1213
+	 * at (wrapper remoting-invoke-with-check) System.AppDomain.ProcessMessageInDomain (byte[],System.Runtime.Remoting.Messaging.CADMethodCallMessage,byte[]&,System.Runtime.Remoting.Messaging.CADMethodReturnMessage&) <IL 0x0003d, 0xffffffff>
+	 * at System.Runtime.Remoting.Channels.CrossAppDomainSink.ProcessMessageInDomain (byte[],System.Runtime.Remoting.Messaging.CADMethodCallMessage) [0x00008] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.Runtime.Remoting.Channels/CrossAppDomainChannel.cs:198
+	 * at (wrapper runtime-invoke) object.runtime_invoke_CrossAppDomainSink/ProcessMessageRes_object_object (object,intptr,intptr,intptr) <IL 0x0004c, 0xffffffff>
+	 */
+	if (!strcmp (ref->vtable->klass->name_space, "System") &&
+			!strcmp (ref->vtable->klass->name, "Byte[]") &&
+			!strcmp (o->vtable->klass->name_space, "System.IO") &&
+			!strcmp (o->vtable->klass->name, "MemoryStream"))
+		return TRUE;
+	/* append_job() in threadpool.c */
+	if (!strcmp (ref->vtable->klass->name_space, "System.Runtime.Remoting.Messaging") &&
+			!strcmp (ref->vtable->klass->name, "AsyncResult") &&
+			!strcmp (o->vtable->klass->name_space, "System") &&
+			!strcmp (o->vtable->klass->name, "Object[]") &&
+			mono_thread_pool_is_queue_array ((MonoArray*) o))
+		return TRUE;
+	return FALSE;
+}
+
+static void
+check_reference_for_xdomain (gpointer *ptr, char *obj, MonoDomain *domain)
+{
+	MonoObject *o = (MonoObject*)(obj);
+	MonoObject *ref = (MonoObject*)*(ptr);
+	int offset = (char*)(ptr) - (char*)o;
+	MonoClass *class;
+	MonoClassField *field;
+	char *str;
+
+	if (!ref || ref->vtable->domain == domain)
+		return;
+	if (is_xdomain_ref_allowed (ptr, obj, domain))
+		return;
+
+	field = NULL;
+	for (class = o->vtable->klass; class; class = class->parent) {
+		int i;
+
+		for (i = 0; i < class->field.count; ++i) {
+			if (class->fields[i].offset == offset) {
+				field = &class->fields[i];
+				break;
+			}
+		}
+		if (field)
+			break;
+	}
+
+	if (ref->vtable->klass == mono_defaults.string_class)
+		str = mono_string_to_utf8 (ref);
+	else
+		str = NULL;
+	g_print ("xdomain reference in %p (%s.%s) at offset %d (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
+			o, o->vtable->klass->name_space, o->vtable->klass->name,
+			offset, field ? field->name : "",
+			ref, ref->vtable->klass->name_space, ref->vtable->klass->name, str ? str : "");
+	mono_gc_scan_for_specific_ref (o);
+	if (str)
+		g_free (str);
+}
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	check_reference_for_xdomain ((ptr), (obj), domain)
+
+static char*
+scan_object_for_xdomain_refs (char *start)
+{
+	MonoDomain *domain = ((MonoObject*)start)->vtable->domain;
+
+	#include "sgen-scan-object.h"
+
+	return start;
+}
+
+static void
+scan_area_for_xdomain_refs (char *start, char *end)
+{
+	while (start < end) {
+		if (!*(void**)start) {
+			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
+			continue;
+		}
+
+		start = scan_object_for_xdomain_refs (start);
+	}
+}
+
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj) do {		\
 	if ((MonoObject*)*(ptr) == key) {	\
@@ -1513,9 +1630,79 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 		}
 
 #define SCAN_OBJECT_NOSCAN
-#define SCAN_OBJECT_ACTION do { if (remove) memset (start, 0, skip_size); } while (0)
+#define SCAN_OBJECT_ACTION do {						\
+			if (remove) memset (start, 0, skip_size);	\
+		} while (0)
 #include "sgen-scan-object.h"
 	}
+}
+
+static MonoDomain *check_domain = NULL;
+
+static void*
+check_obj_not_in_domain (void *o)
+{
+	g_assert (((MonoObject*)o)->vtable->domain != check_domain);
+	return o;
+}
+
+static void
+scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
+{
+	int i;
+	RootRecord *root;
+	check_domain = domain;
+	for (i = 0; i < roots_hash_size [root_type]; ++i) {
+		for (root = roots_hash [root_type][i]; root; root = root->next) {
+			void **start_root = (void**)root->start_root;
+			mword desc = root->root_desc;
+
+			/* The MonoDomain struct is allowed to hold
+			   references to objects in its own domain. */
+			if (start_root == domain)
+				continue;
+
+			switch (desc & ROOT_DESC_TYPE_MASK) {
+			case ROOT_DESC_BITMAP:
+				desc >>= ROOT_DESC_TYPE_SHIFT;
+				while (desc) {
+					if ((desc & 1) && *start_root)
+						check_obj_not_in_domain (*start_root);
+					desc >>= 1;
+					start_root++;
+				}
+				break;
+			case ROOT_DESC_COMPLEX: {
+				gsize *bitmap_data = complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
+				int bwords = (*bitmap_data) - 1;
+				void **start_run = start_root;
+				bitmap_data++;
+				while (bwords-- > 0) {
+					gsize bmap = *bitmap_data++;
+					void **objptr = start_run;
+					while (bmap) {
+						if ((bmap & 1) && *objptr)
+							check_obj_not_in_domain (*objptr);
+						bmap >>= 1;
+						++objptr;
+					}
+					start_run += GC_BITS_PER_WORD;
+				}
+				break;
+			}
+			case ROOT_DESC_USER: {
+				MonoGCMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+				marker (start_root, check_obj_not_in_domain);
+				break;
+			}
+			case ROOT_DESC_RUN_LEN:
+				g_assert_not_reached ();
+			default:
+				g_assert_not_reached ();
+			}
+		}
+	}
+	check_domain = NULL;
 }
 
 static void
@@ -1529,6 +1716,27 @@ clear_domain_free_pinned_object_callback (PinnedChunk *chunk, char *obj, size_t 
 {
 	if (need_remove_object_for_domain (obj, domain))
 		free_pinned_object (chunk, obj, size);
+}
+
+static void
+scan_pinned_object_for_xdomain_refs_callback (PinnedChunk *chunk, char *obj, size_t size, gpointer dummy)
+{
+	scan_object_for_xdomain_refs (obj);
+}
+
+static void
+check_for_xdomain_refs (void)
+{
+	GCMemSection *section;
+	LOSObject *bigobj;
+
+	for (section = section_list; section; section = section->next)
+		scan_area_for_xdomain_refs (section->data, section->end_data);
+
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		scan_object_for_xdomain_refs (bigobj->data);
+
+	scan_pinned_objects (scan_pinned_object_for_xdomain_refs_callback, NULL);
 }
 
 /*
@@ -1556,6 +1764,12 @@ mono_gc_clear_domain (MonoDomain * domain)
 		for (frag = nursery_fragments; frag; frag = frag->next) {
 			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
 		}
+	}
+
+	if (xdomain_checks && domain != mono_get_root_domain ()) {
+		scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
+		scan_for_registered_roots_in_domain (domain, ROOT_TYPE_WBARRIER);
+		check_for_xdomain_refs ();
 	}
 
 	for (section = section_list; section; section = section->next) {
@@ -2665,6 +2879,9 @@ collect_nursery (size_t requested_size)
 		}
 	}
 
+	if (xdomain_checks)
+		check_for_xdomain_refs ();
+
 	/* 
 	 * not enough room in the old generation to store all the possible data from 
 	 * the nursery in a single continuous space.
@@ -2778,6 +2995,9 @@ major_collection (void)
 			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
 		}
 	}
+
+	if (xdomain_checks)
+		check_for_xdomain_refs ();
 
 	/* 
 	 * FIXME: implement Mark/Compact
@@ -4542,8 +4762,16 @@ signal_desc (int signum)
 	return "unknown";
 }
 
+/*
+ * Define this and use the "xdomain-checks" MONO_GC_DEBUG option to
+ * have cross-domain checks in the write barrier.
+ */
+//#define XDOMAIN_CHECKS_IN_WBARRIER
+
 #define MANAGED_ALLOCATION
+#ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
+#endif
 
 #ifdef MANAGED_ALLOCATION
 static gboolean
@@ -5495,11 +5723,82 @@ mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 	*(rs->store_next++) = count;
 }
 
+static char*
+find_object_for_ptr_in_area (char *ptr, char *start, char *end)
+{
+	while (start < end) {
+		char *old_start;
+
+		if (!*(void**)start) {
+			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
+			continue;
+		}
+
+		old_start = start;
+
+		#define SCAN_OBJECT_NOSCAN
+		#include "sgen-scan-object.h"
+
+		if (ptr >= old_start && ptr < start)
+			return old_start;
+	}
+
+	return NULL;
+}
+
+static char *found_obj;
+
+static void
+find_object_for_ptr_in_pinned_chunk_callback (PinnedChunk *chunk, char *obj, size_t size, char *ptr)
+{
+	if (ptr >= obj && ptr < obj + size) {
+		g_assert (!found_obj);
+		found_obj = obj;
+	}
+}
+
+static char*
+find_object_for_ptr (char *ptr)
+{
+	GCMemSection *section;
+	LOSObject *bigobj;
+
+	for (section = section_list; section; section = section->next) {
+		if (ptr >= section->data && ptr < section->end_data)
+			return find_object_for_ptr_in_area (ptr, section->data, section->end_data);
+	}
+
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
+		if (ptr >= bigobj->data && ptr < bigobj->data + bigobj->size)
+			return bigobj->data;
+	}
+
+	found_obj = NULL;
+	scan_pinned_objects (find_object_for_ptr_in_pinned_chunk_callback, ptr);
+	return found_obj;
+}
+
 void
 mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
+
+#ifdef XDOMAIN_CHECKS_IN_WBARRIER
+	if (xdomain_checks && *(MonoObject**)ptr && ptr_in_heap (ptr)) {
+		char *start = find_object_for_ptr (ptr);
+		MonoObject *value = *(MonoObject**)ptr;
+		LOCK_GC;
+		g_assert (start);
+		if (start) {
+			MonoObject *obj = (MonoObject*)start;
+			if (obj->vtable->domain != value->vtable->domain)
+				g_assert (is_xdomain_ref_allowed (ptr, start, obj->vtable->domain));
+		}
+		UNLOCK_GC;
+	}
+#endif
+
 	if (ptr_in_nursery (ptr) || !ptr_in_heap (ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		return;
@@ -6084,12 +6383,14 @@ mono_gc_base_init (void)
 				collect_before_allocs = TRUE;
 			} else if (!strcmp (opt, "check-at-minor-collections")) {
 				consistency_check_at_minor_collection = TRUE;
+			} else if (!strcmp (opt, "xdomain-checks")) {
+				xdomain_checks = TRUE;
 			} else if (!strcmp (opt, "clear-at-gc")) {
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
-				fprintf (stderr, "Valid options are: collect-before-allocs, check-at-minor-collections, clear-at-gc.\n");
+				fprintf (stderr, "Valid options are: collect-before-allocs, check-at-minor-collections, xdomain-checks, clear-at-gc.\n");
 				exit (1);
 			}
 		}

@@ -1457,6 +1457,12 @@ threadpool_free_queue (ThreadPool *tp)
 	tp->first_elem = tp->next_elem = 0;
 }
 
+gboolean
+mono_thread_pool_is_queue_array (MonoArray *o)
+{
+	return o == async_tp.array || o == async_io_tp.array;
+}
+
 static void
 async_invoke_thread (gpointer data)
 {
