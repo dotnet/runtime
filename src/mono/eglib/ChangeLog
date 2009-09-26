@@ -1,3 +1,7 @@
+2009-09-26 Gonzalo Paniagua Javier <gonzalo@novell.com>
+
+	* src/gqueue.c: add g_queue_push_tail.
+
 2009-06-20  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/glib.h: Add GUINT32_FROM/TO_BE macros.

@@ -71,6 +71,18 @@ g_queue_push_head (GQueue *queue, gpointer head)
 	queue->length ++;
 }
 
+void
+g_queue_push_tail (GQueue *queue, gpointer data)
+{
+	if (!queue)
+		return;
+
+	queue->tail = g_list_append (queue->tail, data);
+	if (queue->head == NULL)
+		queue->head = queue->tail;
+	queue->length++;
+}
+
 GQueue *
 g_queue_new (void)
 {
