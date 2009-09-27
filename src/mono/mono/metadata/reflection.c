@@ -4953,6 +4953,7 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 				g_free ((char*)mono_generic_param_info (param)->name);
 				g_free (param);
 			}
+			mono_gc_deregister_root ((char*) &entry->gparam);
 			g_free (entry);
 		}
 	 	g_ptr_array_free (di->gen_params, TRUE);
