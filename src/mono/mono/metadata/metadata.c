@@ -27,6 +27,7 @@
 #include "verify-internals.h"
 #include "class.h"
 #include "marshal.h"
+#include "gc-internal.h"
 
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 					 const char *ptr, const char **rptr);
@@ -2306,6 +2307,9 @@ free_generic_class (MonoGenericClass *gclass)
 			MonoClassField *field = dgclass->fields + i;
 			mono_metadata_free_type (field->type);
 			g_free ((char*)field->name);
+#if HAVE_SGEN_GC
+			MONO_GC_UNREGISTER_ROOT (dgclass->field_objects [i]);
+#endif
 		}
 		for (i = 0; i < dgclass->count_properties; ++i) {
 			MonoProperty *property = dgclass->properties + i;
