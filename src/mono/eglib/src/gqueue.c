@@ -3,6 +3,7 @@
  *
  * Author:
  *   Duncan Mak (duncan@novell.com)
+ *   Gonzalo Paniagua Javier (gonzalo@novell.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -23,7 +24,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * (C) 2006 Novell, Inc.
+ * Copyright (c) 2006-2009 Novell, Inc.
  *
  */
 
@@ -33,19 +34,23 @@
 gpointer
 g_queue_pop_head (GQueue *queue)
 {
-	gpointer head = NULL;
+	gpointer result;
+	GList *old_head;
 
-	if (queue->length != 0){
-		GList *old_head;
+	if (!queue || queue->length == 0)
+		return NULL;
 
-		old_head = queue->head;
-		head = old_head->data;
-		queue->head = old_head->next;
-		queue->length--;
-		g_list_free_1 (old_head);
-	}
+	result = queue->head->data;
+	old_head = queue->head;
+	queue->head = old_head->next;
+	g_list_free_1 (old_head);
 
-	return head;
+	if (--queue->length)
+		queue->head->prev = NULL;
+	else
+		queue->tail = NULL;
+
+	return result;
 }
 
 gboolean
@@ -80,16 +85,15 @@ g_queue_push_tail (GQueue *queue, gpointer data)
 	queue->tail = g_list_append (queue->tail, data);
 	if (queue->head == NULL)
 		queue->head = queue->tail;
+	else
+		queue->tail = queue->tail->next;
 	queue->length++;
 }
 
 GQueue *
 g_queue_new (void)
 {
-	GQueue *queue = g_new0 (GQueue, 1);
-	queue->length = 0;
-
-	return queue;
+	return g_new0 (GQueue, 1);
 }
 
 void
