@@ -1987,13 +1987,10 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			MonoAsyncResult *ares;
 			MonoObject *exc;
 			MonoArray *out_args;
-			HANDLE handle;
 			method = delegate->method;
 
 			msg = mono_method_call_message_new (mono_marshal_method_from_wrapper (method), params, NULL, &async_callback, &state);
-			handle = CreateEvent (NULL, TRUE, FALSE, NULL);
-			g_assert(handle != NULL);
-			ares = mono_async_result_new (mono_domain_get (), handle, state, handle, NULL);
+			ares = mono_async_result_new (mono_domain_get (), NULL, state, NULL, NULL);
 			MONO_OBJECT_SETREF (ares, async_delegate, (MonoObject *)delegate);
 			MONO_OBJECT_SETREF (ares, async_callback, (MonoObject *)async_callback);
 			MONO_OBJECT_SETREF (msg, async_result, ares);
