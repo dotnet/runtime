@@ -1,3 +1,7 @@
+2009-09-29  Ankit Jain  <jankit@novell.com>
+
+	* mono-core.spec.in: Add Microsoft.WebApplication.targets
+
 2009-08-29  Jonathan Pryor  <jpryor@novell.com>
 
 	* man/mdoc-export-html.1: Document --with-profile, --with-version.

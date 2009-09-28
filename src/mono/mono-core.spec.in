@@ -1004,6 +1004,7 @@ fi
 %_prefix/lib/mono/2.0/Microsoft.Common.targets
 %_prefix/lib/mono/2.0/Microsoft.CSharp.targets
 %_prefix/lib/mono/2.0/Microsoft.VisualBasic.targets
+%_prefix/lib/mono/xbuild/Microsoft/VisualStudio/v9.0/WebApplications/Microsoft.WebApplication.targets
 %_prefix/lib/mono/2.0/MSBuild
 %_prefix/lib/mono/2.0/xbuild.rsp
 # man pages
