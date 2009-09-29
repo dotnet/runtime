@@ -1004,9 +1004,9 @@ fi
 %_prefix/lib/mono/2.0/Microsoft.Common.targets
 %_prefix/lib/mono/2.0/Microsoft.CSharp.targets
 %_prefix/lib/mono/2.0/Microsoft.VisualBasic.targets
-%_prefix/lib/mono/xbuild/Microsoft/VisualStudio/v9.0/WebApplications/Microsoft.WebApplication.targets
 %_prefix/lib/mono/2.0/MSBuild
 %_prefix/lib/mono/2.0/xbuild.rsp
+%_prefix/lib/mono/xbuild
 # man pages
 %_mandir/man1/cert2spc.1%ext_man
 %_mandir/man1/mono-cil-strip.1%ext_man
@@ -1213,7 +1213,7 @@ export CFLAGS=" $RPM_OPT_FLAGS -DKDE_ASSEMBLIES='\"/opt/kde3/%{_lib}\"' -fno-str
 %configure \
   --with-jit=yes \
   --with-ikvm=yes \
-  --with-moonlight=yes
+  --with-moonlight=no
 make
 
 %install
