@@ -172,7 +172,7 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 /* Jump-specific trampoline code fragment size */
 #define JUMP_TRAMPOLINE_SIZE   64
 
-#define GEN_TRAMP_SIZE 192
+#define GEN_TRAMP_SIZE 196
 
 /*
  * Stack frame description when the generic trampoline is called.
