@@ -616,8 +616,7 @@ Authors:
 %_prefix/lib/mono/2.0/System.ServiceModel.dll
 %_prefix/lib/mono/gac/System.ServiceModel.Web
 %_prefix/lib/mono/2.0/System.ServiceModel.Web.dll
-%_prefix/lib/mono/2.0/svcutil.exe
-%_prefix/lib/mono/2.0/svcutil.exe.mdb
+%_prefix/lib/mono/2.0/svcutil.exe*
 %_libdir/pkgconfig/wcf.pc
 
 %package -n mono-winfxcore
