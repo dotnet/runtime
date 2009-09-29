@@ -104,6 +104,7 @@ typedef struct {
 	MonoObject        *res;
 	MonoArray         *out_args;
 	/* This is a HANDLE, we use guint64 so the managed object layout remains constant */
+	/* THIS FIELD IS NOT USED ANY MORE. Remove it when we feel like breaking corlib compatibility with 2.6 */
 	guint64           wait_event;
 } ASyncCall;
 
