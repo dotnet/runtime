@@ -957,8 +957,6 @@ mono_async_invoke (MonoAsyncResult *ares)
 	MonoArray *out_args = NULL;
 	HANDLE wait_event = NULL;
 
-	ares->completed = 1;
-
 	if (ares->execution_context) {
 		/* use captured ExecutionContext (if available) */
 		MONO_OBJECT_SETREF (ares, original_context, mono_thread_get_execution_context ());
@@ -972,6 +970,15 @@ mono_async_invoke (MonoAsyncResult *ares)
 	MONO_OBJECT_SETREF (ac, res, res);
 	MONO_OBJECT_SETREF (ac, msg->exc, exc);
 	MONO_OBJECT_SETREF (ac, out_args, out_args);
+
+	mono_monitor_enter ((MonoObject *) ares);
+	ares->completed = 1;
+	if (ares->handle != NULL)
+		wait_event = mono_wait_handle_get_handle ((MonoWaitHandle *) ares->handle);
+	mono_monitor_exit ((MonoObject *) ares);
+	/* notify listeners */
+	if (wait_event != NULL)
+		SetEvent (wait_event);
 
 	/* call async callback if cb_method != null*/
 	if (ac->cb_method) {
@@ -990,15 +997,6 @@ mono_async_invoke (MonoAsyncResult *ares)
 		ares->original_context = NULL;
 	}
 
-	/* notify listeners */
-	mono_monitor_enter ((MonoObject *) ares);
-	if (ares->handle != NULL) {
-		ac->wait_event = (gsize) mono_wait_handle_get_handle ((MonoWaitHandle *) ares->handle);
-		wait_event = (HANDLE)(gsize) ac->wait_event;
-	}
-	mono_monitor_exit ((MonoObject *) ares);
-	if (wait_event != NULL)
-		SetEvent (wait_event);
 }
 
 static void
@@ -1122,6 +1120,7 @@ MonoObject *
 mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
 {
 	ASyncCall *ac;
+	HANDLE wait_event;
 
 	*exc = NULL;
 	*out_args = NULL;
@@ -1137,23 +1136,23 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	}
 
 	ares->endinvoke_called = 1;
-	ac = (ASyncCall *)ares->object_data;
-
-	g_assert (ac != NULL);
-
 	/* wait until we are really finished */
 	if (!ares->completed) {
 		if (ares->handle == NULL) {
-			ac->wait_event = (gsize)CreateEvent (NULL, TRUE, FALSE, NULL);
-			g_assert(ac->wait_event != 0);
-			MONO_OBJECT_SETREF (ares, handle, (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), (gpointer)(gsize)ac->wait_event));
+			wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+			g_assert(wait_event != 0);
+			MONO_OBJECT_SETREF (ares, handle, (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), wait_event));
+		} else {
+			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle *) ares->handle);
 		}
 		mono_monitor_exit ((MonoObject *) ares);
-		WaitForSingleObjectEx ((gpointer)(gsize)ac->wait_event, INFINITE, TRUE);
+		WaitForSingleObjectEx (wait_event, INFINITE, TRUE);
 	} else {
 		mono_monitor_exit ((MonoObject *) ares);
 	}
 
+	ac = (ASyncCall *) ares->object_data;
+	g_assert (ac != NULL);
 	*exc = ac->msg->exc; /* FIXME: GC add write barrier */
 	*out_args = ac->out_args;
 
@@ -1287,6 +1286,10 @@ threadpool_queue_idle_thread (ThreadPool *tp, IdleThreadData *it)
 	CRITICAL_SECTION *cs = &tp->lock;
 
 	EnterCriticalSection (cs);
+	if (tp->idle_threads == NULL) {
+		it->die = TRUE;
+		return NULL; /* We are shutting down */
+	}
 	/*
 	if (mono_100ns_ticks () - tp->last_sample.timeStamp > 10000 * 1000) {
 		float elapsed_ticks;
@@ -1328,6 +1331,8 @@ threadpool_append_job (ThreadPool *tp, MonoObject *ar)
 	cs = &tp->lock;
 	threadpool_jobs_inc (ar); 
 	EnterCriticalSection (cs);
+	if (tp->idle_threads == NULL)
+		return; /* We are shutting down */
 	if (ar->vtable->domain->state == MONO_APPDOMAIN_UNLOADING ||
 			ar->vtable->domain->state == MONO_APPDOMAIN_UNLOADED) {
 		LeaveCriticalSection (cs);
