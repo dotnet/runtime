@@ -3395,7 +3395,7 @@ mono_unhandled_exception (MonoObject *exc)
 	g_assert (field);
 
 	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
-		gboolean abort_process = (mono_thread_internal_current () == main_thread->internal_thread) ||
+		gboolean abort_process = (main_thread && (mono_thread_internal_current () == main_thread->internal_thread)) ||
 				(mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT);
 		root_appdomain_delegate = *(MonoObject **)(((char *)root_domain->domain) + field->offset);
 		if (current_domain != root_domain && (mono_framework_version () >= 2)) {
