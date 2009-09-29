@@ -811,8 +811,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = cinfo->ret.reg;
 			break;
-		case ArgInIRegPair:
-			if (((sig->ret->type == MONO_TYPE_I8) || (sig->ret->type == MONO_TYPE_U8))) {
+		case ArgInIRegPair: {
+			MonoType *t = mono_type_get_underlying_type (sig->ret);
+			if (((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MonoInst *low = get_vreg_to_inst (cfg, cfg->ret->dreg + 1);
 				MonoInst *high = get_vreg_to_inst (cfg, cfg->ret->dreg + 2);
 
@@ -824,6 +825,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = cinfo->ret.reg;
 			break;
+		}
 		case ArgOnStack:
 #ifdef SPARCV9
 			g_assert_not_reached ();
@@ -1313,6 +1315,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		else
 			arg_type = sig->params [i - sig->hasthis];
 
+		arg_type = mono_type_get_underlying_type (arg_type);
 		if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis])))
 			emit_pass_vtype (cfg, call, cinfo, ainfo, arg_type, in, sig->pinvoke);
 		else if (!arg_type->byref && ((arg_type->type == MONO_TYPE_I8) || (arg_type->type == MONO_TYPE_U8)))
