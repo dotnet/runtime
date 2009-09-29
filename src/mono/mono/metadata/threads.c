@@ -2900,7 +2900,7 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 			return;
 		}
 
-		if (thread == mono_thread_get_main ()->internal_thread) {
+		if (mono_thread_get_main () && (thread == mono_thread_get_main ()->internal_thread)) {
 			THREAD_DEBUG (g_message ("%s: ignoring main thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return;
 		}
