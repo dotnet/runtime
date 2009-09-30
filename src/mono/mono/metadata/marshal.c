@@ -101,6 +101,9 @@ mono_string_to_lpstr (MonoString *string_obj);
 static MonoStringBuilder *
 mono_string_utf8_to_builder2 (char *text);
 
+static MonoStringBuilder *
+mono_string_utf16_to_builder2 (gunichar2 *text);
+
 static void
 mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype, guint32 elnum);
 
@@ -227,6 +230,7 @@ mono_marshal_init (void)
 		register_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_string_utf8_to_builder2, "mono_string_utf8_to_builder2", "object ptr", FALSE);
 		register_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", "void ptr ptr", FALSE);
+		register_icall (mono_string_utf16_to_builder2, "mono_string_utf16_to_builder2", "object ptr", FALSE);
 		register_icall (mono_marshal_free_array, "mono_marshal_free_array", "void ptr int32", FALSE);
 		register_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", "void ptr ptr int32", FALSE);
 		register_icall (mono_string_to_byvalwstr, "mono_string_to_byvalwstr", "void ptr ptr int32", FALSE);
@@ -756,6 +760,45 @@ mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 		;
 
 	sb->length = len;
+}
+
+MonoStringBuilder *
+mono_string_utf16_to_builder2 (gunichar2 *text)
+{
+	int len;
+	MonoStringBuilder *sb;
+	static MonoClass *string_builder_class;
+	static MonoMethod *sb_ctor;
+	void *args [1];
+	MonoObject *exc;
+
+	if (!text)
+		return NULL;
+
+	if (!string_builder_class) {
+		MonoMethodDesc *desc;
+
+		string_builder_class = mono_class_from_name (mono_defaults.corlib, "System.Text", "StringBuilder");
+		g_assert (string_builder_class);
+		desc = mono_method_desc_new (":.ctor(int)", FALSE);
+		sb_ctor = mono_method_desc_search_in_class (desc, string_builder_class);
+		g_assert (sb_ctor);
+		mono_method_desc_free (desc);
+	}
+
+	for (len = 0; text [len] != 0; ++len)
+		;
+
+	sb = (MonoStringBuilder*)mono_object_new (mono_domain_get (), string_builder_class);
+	g_assert (sb);
+	args [0] = &len;
+	mono_runtime_invoke (sb_ctor, sb, args, &exc);
+	g_assert (!exc);
+
+	sb->length = len;
+	memcpy (mono_string_chars (sb->str), text, len * 2);
+
+	return sb;
 }
 
 /**
@@ -6148,7 +6191,14 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			MonoMarshalNative encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 			MonoMarshalConv conv = mono_marshal_get_stringbuilder_to_ptr_conv (m->piinfo, spec);
 			
-			g_assert (!t->byref);
+			if (t->byref) {
+				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
+					char *msg = g_strdup_printf ("Byref marshalling of stringbuilders is not implemented.");
+					mono_mb_emit_exception_marshal_directive (mb, msg);
+				}
+				break;
+			}
+
 			mono_mb_emit_ldarg (mb, argnum);
 
 			if (conv != -1)
@@ -6236,13 +6286,34 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 			conv = mono_marshal_get_ptr_to_stringbuilder_conv (m->piinfo, spec, &need_free);
 
-			g_assert (!t->byref);
 			g_assert (encoding != -1);
 
-			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_ldloc (mb, conv_arg);
+			if (t->byref) {
+				g_assert ((t->attrs & PARAM_ATTRIBUTE_OUT));
 
-			mono_mb_emit_icall (mb, conv_to_icall (conv));
+				need_free = TRUE;
+
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, conv_arg);
+
+				switch (encoding) {
+				case MONO_NATIVE_LPWSTR:
+					mono_mb_emit_icall (mb, mono_string_utf16_to_builder2);
+					break;
+				case MONO_NATIVE_LPSTR:
+					mono_mb_emit_icall (mb, mono_string_utf8_to_builder2);
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+
+				mono_mb_emit_byte (mb, CEE_STIND_REF);
+			} else {
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, conv_arg);
+
+				mono_mb_emit_icall (mb, conv_to_icall (conv));
+			}
 
 			if (need_free) {
 				mono_mb_emit_ldloc (mb, conv_arg);
