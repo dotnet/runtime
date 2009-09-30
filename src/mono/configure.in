@@ -2389,19 +2389,19 @@ AC_CONFIG_FILES([po/mcs/Makefile.in])
 AC_CONFIG_FILES([runtime/mono-wrapper],[chmod +x runtime/mono-wrapper])
 AC_CONFIG_FILES([runtime/monodis-wrapper],[chmod +x runtime/monodis-wrapper])
 
-#AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
-#[   depth=../../../..
-#    case $srcdir in
-#    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-#    .) reldir=$depth ;;
-#    *) reldir=$depth/$srcdir ;;
-#    esac
-#    $ac_aux_dir/install-sh -d runtime/etc/mono/1.0
-#    cd runtime/etc/mono/1.0
-#    rm -f machine.config
-#    $LN_S $reldir/data/net_1_1/machine.config machine.config
-#    cd $depth
-#],[LN_S='$LN_S'])
+AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
+[   depth=../../../..
+    case $srcdir in
+    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+    .) reldir=$depth ;;
+    *) reldir=$depth/$srcdir ;;
+    esac
+    $ac_aux_dir/install-sh -d runtime/etc/mono/1.0
+    cd runtime/etc/mono/1.0
+    rm -f machine.config
+    $LN_S $reldir/data/net_1_1/machine.config machine.config
+    cd $depth
+],[LN_S='$LN_S'])
 
 AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/machine.config],
 [   depth=../../../..
