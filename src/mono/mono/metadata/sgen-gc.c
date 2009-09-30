@@ -2962,6 +2962,37 @@ collect_nursery (size_t requested_size)
 	return invoke_major_gc;
 }
 
+/*
+ * After major collections we try to shorten the to-space so as to
+ * avoid the next to-space to be even bigger.  We are still left with
+ * mostly empty sections which only contain pinned objects.  We should
+ * re-fill those first when we do a major collection and only allocate
+ * a new one if they are all full.  Whether or not we need to shorten
+ * that afterwards remains to be seen.
+ */
+static gboolean
+shorten_to_space (mword size)
+{
+	g_assert (to_space_end == to_space_section->end_data);
+
+	if (to_space_section->next_data - to_space_section->data >= size)
+		return FALSE;
+
+	size += pagesize - 1;
+	size &= ~(pagesize - 1);
+
+	free_os_memory (to_space_section->data + size, to_space_section->size - size);
+	total_alloc -= to_space_section->size - size;
+
+	DEBUG (2, fprintf (gc_debug_file, "Shortening to space from %d bytes to %d bytes\n",
+					to_space_section->size, size));
+	to_space_section->size = size;
+	to_space_section->end_data = to_space_section->data + size;
+	to_space_end = to_space_section->end_data;
+
+	return TRUE;
+}
+
 static void
 major_collection (void)
 {
@@ -3156,6 +3187,13 @@ major_collection (void)
 	 * next allocations.
 	 */
 	build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_end);
+
+	/* One fourth the size of the space originally allocated is a
+	 * figure arrived after a bit of trial and error.  We might
+	 * need to change this to something else, maybe even adjust it
+	 * dynamically.
+	 */
+	shorten_to_space (copy_space_required / 4);
 
 	TV_GETTIME (all_btv);
 	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
