@@ -1,3 +1,7 @@
+2009-09-30  Marek Safar  <marek.safar@gmail.com>
+
+	* runtime/Makefile.am, configure.in: Don't build 1.1 profile
+
 2009-09-29  Ankit Jain  <jankit@novell.com>
 
 	* mono-core.spec.in: Add Microsoft.WebApplication.targets

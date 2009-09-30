@@ -2274,7 +2274,7 @@ case "x$gc" in
 		;;
 esac
 
-AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0 FX (defaults to yes)],                 [], [with_profile2=yes])
+#AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0 FX (defaults to yes)],                 [], [with_profile2=yes])
 AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to no)],                  [], [with_profile4=no])
 AC_ARG_WITH(moonlight, [  --with-moonlight=yes,no         If you want to build the Moonlight 2.1 assemblies (defaults to yes)], [], [with_moonlight=yes])
 AC_ARG_WITH(monotouch, [  --with-monotouch=yes,no         If you want to build the raw MonoTouch 2.1 assemblies (defaults to no)], [], [with_monotouch=no])
@@ -2326,7 +2326,6 @@ AC_SUBST(OPROFILE_LIBS)
 
 libmono_ldflags="$libmono_ldflags $LIBS"
 
-AM_CONDITIONAL(INSTALL_2_0, [test "x$with_profile2" = xyes])
 AM_CONDITIONAL(INSTALL_2_1, [test "x$with_moonlight" = xyes])
 AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
 AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" = xyes])
@@ -2390,19 +2389,19 @@ AC_CONFIG_FILES([po/mcs/Makefile.in])
 AC_CONFIG_FILES([runtime/mono-wrapper],[chmod +x runtime/mono-wrapper])
 AC_CONFIG_FILES([runtime/monodis-wrapper],[chmod +x runtime/monodis-wrapper])
 
-AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
-[   depth=../../../..
-    case $srcdir in
-    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
-    .) reldir=$depth ;;
-    *) reldir=$depth/$srcdir ;;
-    esac
-    $ac_aux_dir/install-sh -d runtime/etc/mono/1.0
-    cd runtime/etc/mono/1.0
-    rm -f machine.config
-    $LN_S $reldir/data/net_1_1/machine.config machine.config
-    cd $depth
-],[LN_S='$LN_S'])
+#AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
+#[   depth=../../../..
+#    case $srcdir in
+#    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+#    .) reldir=$depth ;;
+#    *) reldir=$depth/$srcdir ;;
+#    esac
+#    $ac_aux_dir/install-sh -d runtime/etc/mono/1.0
+#    cd runtime/etc/mono/1.0
+#    rm -f machine.config
+#    $LN_S $reldir/data/net_1_1/machine.config machine.config
+#    cd $depth
+#],[LN_S='$LN_S'])
 
 AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/machine.config],
 [   depth=../../../..
@@ -2660,7 +2659,6 @@ echo "
 	TLS:           $with_tls
 	SIGALTSTACK:   $with_sigaltstack
 	Engine:        $jit_status
-	2.0 Profile:   $with_profile2
 	Moon Profile:  $with_moonlight
 	4.0 Alpha:     $with_profile4
 	MonoTouch:     $with_monotouch
