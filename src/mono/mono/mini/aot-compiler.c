@@ -1715,6 +1715,9 @@ can_marshal_struct (MonoClass *klass)
 	gboolean can_marshal = TRUE;
 	gpointer iter = NULL;
 
+	if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+		return FALSE;
+
 	/* Only allow a few field types to avoid asserts in the marshalling code */
 	while ((field = mono_class_get_fields (klass, &iter))) {
 		if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -1875,6 +1878,11 @@ add_wrappers (MonoAotCompile *acfg)
 		/* runtime-invoke used by finalizers */
 		add_method (acfg, mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE));
 
+		/* This is used by mono_runtime_capture_context () */
+		method = mono_get_context_capture_method ();
+		if (method)
+			add_method (acfg, mono_marshal_get_runtime_invoke (method, FALSE));
+
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 		add_method (acfg, mono_marshal_get_runtime_invoke_dynamic ());
 #endif
@@ -1988,7 +1996,7 @@ add_wrappers (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
 
-		if (klass->valuetype && !klass->generic_container && ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT) && can_marshal_struct (klass)) {
+		if (klass->valuetype && !klass->generic_container && can_marshal_struct (klass)) {
 			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
 		}
