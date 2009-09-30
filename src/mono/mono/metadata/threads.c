@@ -553,12 +553,6 @@ static void thread_cleanup (MonoInternalThread *thread)
 	if (thread == mono_thread_internal_current ())
 		mono_thread_pop_appdomain_ref ();
 
-	if (thread->serialized_culture_info)
-		g_free (thread->serialized_culture_info);
-
-	if (thread->serialized_ui_culture_info)
-		g_free (thread->serialized_ui_culture_info);
-
 	thread->cached_culture_info = NULL;
 
 	mono_gc_free_fixed (thread->static_data);
@@ -1324,27 +1318,6 @@ ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoInternalThread *t
 	return lookup_cached_culture (this, mono_domain_get (), CULTURES_START_IDX);
 }
 
-MonoArray*
-ves_icall_System_Threading_Thread_GetSerializedCurrentCulture (MonoInternalThread *this)
-{
-	MonoArray *res;
-
-	ensure_synch_cs_set (this);
-	
-	EnterCriticalSection (this->synch_cs);
-	
-	if (this->serialized_culture_info) {
-		res = mono_array_new (mono_domain_get (), mono_defaults.byte_class, this->serialized_culture_info_len);
-		memcpy (mono_array_addr (res, guint8, 0), this->serialized_culture_info, this->serialized_culture_info_len);
-	} else {
-		res = NULL;
-	}
-
-	LeaveCriticalSection (this->synch_cs);
-
-	return res;
-}
-
 static void
 cache_culture (MonoInternalThread *this, MonoObject *culture, int start_idx)
 {
@@ -1392,48 +1365,10 @@ ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this, Mon
 	cache_culture (this->internal_thread, culture, CULTURES_START_IDX);
 }
 
-void
-ves_icall_System_Threading_Thread_SetSerializedCurrentCulture (MonoInternalThread *this, MonoArray *arr)
-{
-	ensure_synch_cs_set (this);
-	
-	EnterCriticalSection (this->synch_cs);
-	
-	if (this->serialized_culture_info)
-		g_free (this->serialized_culture_info);
-	this->serialized_culture_info = g_new0 (guint8, mono_array_length (arr));
-	this->serialized_culture_info_len = mono_array_length (arr);
-	memcpy (this->serialized_culture_info, mono_array_addr (arr, guint8, 0), mono_array_length (arr));
-
-	LeaveCriticalSection (this->synch_cs);
-}
-
-
 MonoObject*
 ves_icall_System_Threading_Thread_GetCachedCurrentUICulture (MonoInternalThread *this)
 {
 	return lookup_cached_culture (this, mono_domain_get (), UICULTURES_START_IDX);
-}
-
-MonoArray*
-ves_icall_System_Threading_Thread_GetSerializedCurrentUICulture (MonoInternalThread *this)
-{
-	MonoArray *res;
-
-	ensure_synch_cs_set (this);
-	
-	EnterCriticalSection (this->synch_cs);
-	
-	if (this->serialized_ui_culture_info) {
-		res = mono_array_new (mono_domain_get (), mono_defaults.byte_class, this->serialized_ui_culture_info_len);
-		memcpy (mono_array_addr (res, guint8, 0), this->serialized_ui_culture_info, this->serialized_ui_culture_info_len);
-	} else {
-		res = NULL;
-	}
-
-	LeaveCriticalSection (this->synch_cs);
-
-	return res;
 }
 
 void
@@ -1442,22 +1377,6 @@ ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this, M
 	MonoDomain *domain = mono_object_get_domain (&this->obj);
 	g_assert (domain == mono_domain_get ());
 	cache_culture (this->internal_thread, culture, UICULTURES_START_IDX);
-}
-
-void
-ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture (MonoInternalThread *this, MonoArray *arr)
-{
-	ensure_synch_cs_set (this);
-	
-	EnterCriticalSection (this->synch_cs);
-	
-	if (this->serialized_ui_culture_info)
-		g_free (this->serialized_ui_culture_info);
-	this->serialized_ui_culture_info = g_new0 (guint8, mono_array_length (arr));
-	this->serialized_ui_culture_info_len = mono_array_length (arr);
-	memcpy (this->serialized_ui_culture_info, mono_array_addr (arr, guint8, 0), mono_array_length (arr));
-
-	LeaveCriticalSection (this->synch_cs);
 }
 
 MonoThread *

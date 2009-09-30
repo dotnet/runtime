@@ -337,10 +337,6 @@ struct _MonoInternalThread {
 	gpointer suspended_event;
 	gpointer resume_event;
 	CRITICAL_SECTION *synch_cs;
-	guint8* serialized_culture_info;
-	guint32 serialized_culture_info_len;
-	guint8* serialized_ui_culture_info;
-	guint32 serialized_ui_culture_info_len;
 	MonoBoolean thread_dump_requested;
 	gpointer end_stack; /* This is only used when running in the debugger. */
 	MonoBoolean thread_interrupt_requested;
