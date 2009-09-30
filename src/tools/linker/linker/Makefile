@@ -4,7 +4,7 @@ include ../../build/rules.make
 
 PROGRAM_SNK = ../../class/mono.snk
 
-CECIL = $(topdir)/class/lib/net_1_1/Mono.Cecil.dll
+CECIL = $(topdir)/class/lib/net_2_0/Mono.Cecil.dll
 
 RESOURCES = \
 	Descriptors/mscorlib.xml	\
