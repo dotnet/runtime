@@ -1887,6 +1887,13 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	appdomains_list [domain->domain_id] = NULL;
 	mono_appdomains_unlock ();
 
+	/* must do this early as it accesses fields and types */
+	if (domain->special_static_fields) {
+		mono_alloc_special_static_data_free (domain->special_static_fields);
+		g_hash_table_destroy (domain->special_static_fields);
+		domain->special_static_fields = NULL;
+	}
+
 	/*
 	 * We must destroy all these hash tables here because they
 	 * contain references to managed objects belonging to the
@@ -1914,12 +1921,19 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = tmp->data;
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s %p, assembly %s %p, refcount=%d\n", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
-		mono_assembly_close (ass);
+		if (!mono_assembly_close_except_image_pools (ass))
+			tmp->data = NULL;
+	}
+
+	mono_gc_clear_domain (domain);
+
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *ass = tmp->data;
+		if (ass)
+			mono_assembly_close_finish (ass);
 	}
 	g_slist_free (domain->domain_assemblies);
 	domain->domain_assemblies = NULL;
-
-	mono_gc_clear_domain (domain);
 
 	/* FIXME: free delegate_hash_table when it's used */
 	if (domain->search_path) {
@@ -1933,12 +1947,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->null_reference_ex = NULL;
 	domain->stack_overflow_ex = NULL;
 	domain->entry_assembly = NULL;
-	/* must do this early as it accesses fields and types */
-	if (domain->special_static_fields) {
-		mono_alloc_special_static_data_free (domain->special_static_fields);
-		g_hash_table_destroy (domain->special_static_fields);
-		domain->special_static_fields = NULL;
-	}
 
 	g_free (domain->friendly_name);
 	domain->friendly_name = NULL;

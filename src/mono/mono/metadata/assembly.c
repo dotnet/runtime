@@ -2453,25 +2453,23 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 	return mono_assembly_loaded_full (aname, FALSE);
 }
 
-/**
- * mono_assembly_close:
- * @assembly: the assembly to release.
- *
- * This method releases a reference to the @assembly.  The assembly is
- * only released when all the outstanding references to it are released.
+/*
+ * Returns whether mono_assembly_close_finish() must be called as
+ * well.  See comment for mono_image_close_except_pools() for why we
+ * unload in two steps.
  */
-void
-mono_assembly_close (MonoAssembly *assembly)
+gboolean
+mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 {
 	GSList *tmp;
-	g_return_if_fail (assembly != NULL);
+	g_return_val_if_fail (assembly != NULL, FALSE);
 
 	if (assembly == REFERENCE_MISSING)
-		return;
-	
+		return FALSE;
+
 	/* Might be 0 already */
 	if (InterlockedDecrement (&assembly->ref_count) > 0)
-		return;
+		return FALSE;
 
 	mono_profiler_assembly_event (assembly, MONO_PROFILE_START_UNLOAD);
 
@@ -2485,7 +2483,8 @@ mono_assembly_close (MonoAssembly *assembly)
 
 	assembly->image->assembly = NULL;
 
-	mono_image_close (assembly->image);
+	if (!mono_image_close_except_pools (assembly->image))
+		assembly->image = NULL;
 
 	for (tmp = assembly->friend_assembly_names; tmp; tmp = tmp->next) {
 		MonoAssemblyName *fname = tmp->data;
@@ -2494,13 +2493,39 @@ mono_assembly_close (MonoAssembly *assembly)
 	}
 	g_slist_free (assembly->friend_assembly_names);
 	g_free (assembly->basedir);
+
+	mono_profiler_assembly_event (assembly, MONO_PROFILE_END_UNLOAD);
+
+	return TRUE;
+}
+
+void
+mono_assembly_close_finish (MonoAssembly *assembly)
+{
+	g_assert (assembly && assembly != REFERENCE_MISSING);
+
+	if (assembly->image)
+		mono_image_close_finish (assembly->image);
+
 	if (assembly->dynamic) {
 		g_free ((char*)assembly->aname.culture);
 	} else {
 		g_free (assembly);
 	}
+}
 
-	mono_profiler_assembly_event (assembly, MONO_PROFILE_END_UNLOAD);
+/**
+ * mono_assembly_close:
+ * @assembly: the assembly to release.
+ *
+ * This method releases a reference to the @assembly.  The assembly is
+ * only released when all the outstanding references to it are released.
+ */
+void
+mono_assembly_close (MonoAssembly *assembly)
+{
+	if (mono_assembly_close_except_image_pools (assembly))
+		mono_assembly_close_finish (assembly);
 }
 
 MonoImage*

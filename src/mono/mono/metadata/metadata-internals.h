@@ -413,6 +413,12 @@ mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property
 void
 mono_image_property_remove (MonoImage *image, gpointer subject) MONO_INTERNAL;
 
+gboolean
+mono_image_close_except_pools (MonoImage *image) MONO_INTERNAL;
+
+void
+mono_image_close_finish (MonoImage *image) MONO_INTERNAL;
+
 
 MonoType*
 mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
@@ -498,6 +504,10 @@ void mono_dynamic_stream_reset  (MonoDynamicStream* stream) MONO_INTERNAL;
 void mono_assembly_addref       (MonoAssembly *assembly) MONO_INTERNAL;
 void mono_assembly_load_friends (MonoAssembly* ass) MONO_INTERNAL;
 gboolean mono_assembly_has_skip_verification (MonoAssembly* ass) MONO_INTERNAL;
+
+gboolean mono_assembly_close_except_image_pools (MonoAssembly *assembly) MONO_INTERNAL;
+void mono_assembly_close_finish (MonoAssembly *assembly) MONO_INTERNAL;
+
 
 gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2) MONO_INTERNAL;
 

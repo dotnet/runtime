@@ -1397,21 +1397,21 @@ free_hash (GHashTable *hash)
 		g_hash_table_destroy (hash);
 }
 
-/**
- * mono_image_close:
- * @image: The image file we wish to close
- *
- * Closes an image file, deallocates all memory consumed and
- * unmaps all possible sections of the file
+/*
+ * Returns whether mono_image_close_finish() must be called as well.
+ * We must unload images in two steps because clearing the domain in
+ * SGen requires the class metadata to be intact, but we need to free
+ * the mono_g_hash_tables in case a collection occurs during domain
+ * unloading and the roots would trip up the GC.
  */
-void
-mono_image_close (MonoImage *image)
+gboolean
+mono_image_close_except_pools (MonoImage *image)
 {
 	MonoImage *image2;
 	GHashTable *loaded_images;
 	int i;
 
-	g_return_if_fail (image != NULL);
+	g_return_val_if_fail (image != NULL, FALSE);
 
 	/* 
 	 * Atomically decrement the refcount and remove ourselves from the hash tables, so
@@ -1421,7 +1421,7 @@ mono_image_close (MonoImage *image)
 
 	if (InterlockedDecrement (&image->ref_count) > 0) {
 		mono_images_unlock ();
-		return;
+		return FALSE;
 	}
 
 	loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
@@ -1442,7 +1442,7 @@ mono_image_close (MonoImage *image)
 			/* Image will be closed by _CorDllMain. */
 			FreeLibrary ((HMODULE) image->raw_data);
 			mono_images_unlock ();
-			return;
+			return FALSE;
 		}
 		mono_images_unlock ();
 	}
@@ -1464,12 +1464,16 @@ mono_image_close (MonoImage *image)
 		int i;
 
 		for (i = 0; i < t->rows; i++) {
-			if (image->references [i])
-				mono_assembly_close (image->references [i]);
+			if (image->references [i]) {
+				if (!mono_assembly_close_except_image_pools (image->references [i]))
+					image->references [i] = NULL;
+			}
 		}
-
-		g_free (image->references);
-		image->references = NULL;
+	} else {
+		if (image->references) {
+			g_free (image->references);
+			image->references = NULL;
+		}
 	}
 
 #ifdef PLATFORM_WIN32
@@ -1587,21 +1591,56 @@ mono_image_close (MonoImage *image)
 	}
 
 	for (i = 0; i < image->module_count; ++i) {
-		if (image->modules [i])
-			mono_image_close (image->modules [i]);
+		if (image->modules [i]) {
+			if (!mono_image_close_except_pools (image->modules [i]))
+				image->modules [i] = NULL;
+		}
 	}
-	if (image->modules)
-		g_free (image->modules);
 	if (image->modules_loaded)
 		g_free (image->modules_loaded);
-	if (image->references)
-		g_free (image->references);
-	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (image->mempool);
 
 	DeleteCriticalSection (&image->szarray_cache_lock);
 	DeleteCriticalSection (&image->lock);
 
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
+	if (image->dynamic) {
+		/* Dynamic images are GC_MALLOCed */
+		g_free ((char*)image->module_name);
+		mono_dynamic_image_free ((MonoDynamicImage*)image);
+	}
+
+	mono_profiler_module_event (image, MONO_PROFILE_END_UNLOAD);
+
+	return TRUE;
+}
+
+void
+mono_image_close_finish (MonoImage *image)
+{
+	int i;
+
+	if (image->references && !image->dynamic) {
+		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+		int i;
+
+		for (i = 0; i < t->rows; i++) {
+			if (image->references [i])
+				mono_assembly_close_finish (image->references [i]);
+		}
+
+		g_free (image->references);
+		image->references = NULL;
+	}
+
+	for (i = 0; i < image->module_count; ++i) {
+		if (image->modules [i])
+			mono_image_close_finish (image->modules [i]);
+	}
+	if (image->modules)
+		g_free (image->modules);
+
+	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (image->mempool);
+
 	if (!image->dynamic) {
 		if (debug_assembly_unload)
 			mono_mempool_invalidate (image->mempool);
@@ -1610,16 +1649,25 @@ mono_image_close (MonoImage *image)
 			g_free (image);
 		}
 	} else {
-		/* Dynamic images are GC_MALLOCed */
-		g_free ((char*)image->module_name);
-		mono_dynamic_image_free ((MonoDynamicImage*)image);
 		if (debug_assembly_unload)
 			mono_mempool_invalidate (image->mempool);
 		else
 			mono_mempool_destroy (image->mempool);
 	}
+}
 
-	mono_profiler_module_event (image, MONO_PROFILE_END_UNLOAD);
+/**
+ * mono_image_close:
+ * @image: The image file we wish to close
+ *
+ * Closes an image file, deallocates all memory consumed and
+ * unmaps all possible sections of the file
+ */
+void
+mono_image_close (MonoImage *image)
+{
+	if (mono_image_close_except_pools (image))
+		mono_image_close_finish (image);
 }
 
 /** 
