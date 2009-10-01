@@ -1223,7 +1223,6 @@ rm $RPM_BUILD_ROOT%_libdir/libMonoPosixHelper.la
 rm -f $RPM_BUILD_ROOT%_libdir/libikvm-native.a
 rm -f $RPM_BUILD_ROOT%_libdir/libikvm-native.la
 rm -fr $RPM_BUILD_ROOT%_prefix/lib/mono/gac/Mono.Security.Win32/[12]*
-rm $RPM_BUILD_ROOT%_prefix/lib/mono/1.0/Mono.Security.Win32.dll
 rm $RPM_BUILD_ROOT%_prefix/lib/mono/2.0/Mono.Security.Win32.dll
 rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README
 rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.DGUX386
