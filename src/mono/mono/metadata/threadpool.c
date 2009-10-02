@@ -1289,6 +1289,7 @@ threadpool_queue_idle_thread (ThreadPool *tp, IdleThreadData *it)
 	EnterCriticalSection (cs);
 	if (tp->idle_threads == NULL) {
 		it->die = TRUE;
+		LeaveCriticalSection (cs);
 		return NULL; /* We are shutting down */
 	}
 	/*
