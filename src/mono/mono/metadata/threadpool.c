@@ -1333,8 +1333,10 @@ threadpool_append_job (ThreadPool *tp, MonoObject *ar)
 	cs = &tp->lock;
 	threadpool_jobs_inc (ar); 
 	EnterCriticalSection (cs);
-	if (tp->idle_threads == NULL)
+	if (tp->idle_threads == NULL) { 
+		LeaveCriticalSection (cs);
 		return; /* We are shutting down */
+	}
 	if (ar->vtable->domain->state == MONO_APPDOMAIN_UNLOADING ||
 			ar->vtable->domain->state == MONO_APPDOMAIN_UNLOADED) {
 		LeaveCriticalSection (cs);
