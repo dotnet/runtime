@@ -82,7 +82,7 @@ typedef struct MonoContext {
 typedef struct MonoCompileArch {
 	gint32 lmf_offset;
 	gint32 localloc_offset;
-	gint32 float_spill_slot_offset;
+	void *float_spill_slot;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 

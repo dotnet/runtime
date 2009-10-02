@@ -1019,11 +1019,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 	}
 
-	/* Add a properly aligned dword for use by int<->float conversion opcodes */
-	offset += 8;
-	offset = ALIGN_TO (offset, 8);
-	cfg->arch.float_spill_slot_offset = offset;
-
 	/* 
 	 * spillvars are stored between the normal locals and the storage reserved
 	 * by the ABI.
@@ -1056,6 +1051,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 		low->flags |= MONO_INST_VOLATILE;
 		high->flags |= MONO_INST_VOLATILE;
 	}
+
+	/* Add a properly aligned dword for use by int<->float conversion opcodes */
+	cfg->arch.float_spill_slot = mono_compile_create_var (cfg, &mono_defaults.double_class->byval_arg, OP_ARG);
+	((MonoInst*)cfg->arch.float_spill_slot)->flags |= MONO_INST_VOLATILE;
 }
 
 static void
@@ -1351,17 +1350,22 @@ void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	CallInfo *cinfo = get_call_info (cfg, mono_method_signature (method), FALSE);
+	MonoType *ret = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret);
 
 	switch (cinfo->ret.storage) {
 	case ArgInIReg:
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
 		break;
 	case ArgInIRegPair:
-		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg + 2, val->dreg + 2);
-		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg + 1, val->dreg + 1);
+		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_LMOVE, cfg->ret->dreg, val->dreg);
+		} else {
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg + 2, val->dreg + 2);
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg + 1, val->dreg + 1);
+		}
 		break;
 	case ArgInFReg:
-		if (mono_method_signature (method)->ret->type == MONO_TYPE_R4)
+		if (ret->type == MONO_TYPE_R4)
 			MONO_EMIT_NEW_UNALU (cfg, OP_SETFRET, cfg->ret->dreg, val->dreg);
 		else
 			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
@@ -3431,25 +3435,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ICONV_TO_R4: {
-			gint32 offset = cfg->arch.float_spill_slot_offset;
+			MonoInst *spill = cfg->arch.float_spill_slot;
+			gint32 reg = spill->inst_basereg;
+			gint32 offset = spill->inst_offset;
+
+			g_assert (spill->opcode == OP_REGOFFSET);
 #ifdef SPARCV9
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
-				sparc_stx (code, ins->sreg1, sparc_sp, offset);
-				sparc_lddf (code, sparc_sp, offset, FP_SCRATCH_REG);
+				sparc_stx (code, ins->sreg1, reg, offset);
+				sparc_lddf (code, reg, offset, FP_SCRATCH_REG);
 			} else {
-				sparc_stx_imm (code, ins->sreg1, sparc_sp, offset);
-				sparc_lddf_imm (code, sparc_sp, offset, FP_SCRATCH_REG);
+				sparc_stx_imm (code, ins->sreg1, reg, offset);
+				sparc_lddf_imm (code, reg, offset, FP_SCRATCH_REG);
 			}
 			sparc_fxtos (code, FP_SCRATCH_REG, FP_SCRATCH_REG);
 #else
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
-				sparc_st (code, ins->sreg1, sparc_sp, sparc_o7);
-				sparc_ldf (code, sparc_sp, sparc_o7, FP_SCRATCH_REG);
+				sparc_st (code, ins->sreg1, reg, sparc_o7);
+				sparc_ldf (code, reg, sparc_o7, FP_SCRATCH_REG);
 			} else {
-				sparc_st_imm (code, ins->sreg1, sparc_sp, offset);
-				sparc_ldf_imm (code, sparc_sp, offset, FP_SCRATCH_REG);
+				sparc_st_imm (code, ins->sreg1, reg, offset);
+				sparc_ldf_imm (code, reg, offset, FP_SCRATCH_REG);
 			}
 			sparc_fitos (code, FP_SCRATCH_REG, FP_SCRATCH_REG);
 #endif
@@ -3457,25 +3465,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ICONV_TO_R8: {
-			gint32 offset = cfg->arch.float_spill_slot_offset;
+			MonoInst *spill = cfg->arch.float_spill_slot;
+			gint32 reg = spill->inst_basereg;
+			gint32 offset = spill->inst_offset;
+
+			g_assert (spill->opcode == OP_REGOFFSET);
+
 #ifdef SPARCV9
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
-				sparc_stx (code, ins->sreg1, sparc_sp, sparc_o7);
-				sparc_lddf (code, sparc_sp, sparc_o7, FP_SCRATCH_REG);
+				sparc_stx (code, ins->sreg1, reg, sparc_o7);
+				sparc_lddf (code, reg, sparc_o7, FP_SCRATCH_REG);
 			} else {
-				sparc_stx_imm (code, ins->sreg1, sparc_sp, offset);
-				sparc_lddf_imm (code, sparc_sp, offset, FP_SCRATCH_REG);
+				sparc_stx_imm (code, ins->sreg1, reg, offset);
+				sparc_lddf_imm (code, reg, offset, FP_SCRATCH_REG);
 			}
 			sparc_fxtod (code, FP_SCRATCH_REG, ins->dreg);
 #else
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
-				sparc_st (code, ins->sreg1, sparc_sp, sparc_o7);
-				sparc_ldf (code, sparc_sp, sparc_o7, FP_SCRATCH_REG);
+				sparc_st (code, ins->sreg1, reg, sparc_o7);
+				sparc_ldf (code, reg, sparc_o7, FP_SCRATCH_REG);
 			} else {
-				sparc_st_imm (code, ins->sreg1, sparc_sp, offset);
-				sparc_ldf_imm (code, sparc_sp, offset, FP_SCRATCH_REG);
+				sparc_st_imm (code, ins->sreg1, reg, offset);
+				sparc_ldf_imm (code, reg, offset, FP_SCRATCH_REG);
 			}
 			sparc_fitod (code, FP_SCRATCH_REG, ins->dreg);
 #endif
@@ -3491,15 +3504,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_U4: {
-			gint32 offset = cfg->arch.float_spill_slot_offset;
+			MonoInst *spill = cfg->arch.float_spill_slot;
+			gint32 reg = spill->inst_basereg;
+			gint32 offset = spill->inst_offset;
+
+			g_assert (spill->opcode == OP_REGOFFSET);
+
 			sparc_fdtoi (code, ins->sreg1, FP_SCRATCH_REG);
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
-				sparc_stdf (code, FP_SCRATCH_REG, sparc_sp, sparc_o7);
-				sparc_ld (code, sparc_sp, sparc_o7, ins->dreg);
+				sparc_stdf (code, FP_SCRATCH_REG, reg, sparc_o7);
+				sparc_ld (code, reg, sparc_o7, ins->dreg);
 			} else {
-				sparc_stdf_imm (code, FP_SCRATCH_REG, sparc_sp, offset);
-				sparc_ld_imm (code, sparc_sp, offset, ins->dreg);
+				sparc_stdf_imm (code, FP_SCRATCH_REG, reg, offset);
+				sparc_ld_imm (code, reg, offset, ins->dreg);
 			}
 
 			switch (ins->opcode) {
@@ -3672,14 +3690,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbu, 1, 1);
 			break;
 		case OP_CKFINITE: {
-			gint32 offset = cfg->arch.float_spill_slot_offset;
+			MonoInst *spill = cfg->arch.float_spill_slot;
+			gint32 reg = spill->inst_basereg;
+			gint32 offset = spill->inst_offset;
+
+			g_assert (spill->opcode == OP_REGOFFSET);
+
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
-				sparc_stdf (code, ins->sreg1, sparc_sp, sparc_o7);
-				sparc_lduh (code, sparc_sp, sparc_o7, sparc_o7);
+				sparc_stdf (code, ins->sreg1, reg, sparc_o7);
+				sparc_lduh (code, reg, sparc_o7, sparc_o7);
 			} else {
-				sparc_stdf_imm (code, ins->sreg1, sparc_sp, offset);
-				sparc_lduh_imm (code, sparc_sp, offset, sparc_o7);
+				sparc_stdf_imm (code, ins->sreg1, reg, offset);
+				sparc_lduh_imm (code, reg, offset, sparc_o7);
 			}
 			sparc_srl_imm (code, sparc_o7, 4, sparc_o7);
 			sparc_and_imm (code, FALSE, sparc_o7, 2047, sparc_o7);
