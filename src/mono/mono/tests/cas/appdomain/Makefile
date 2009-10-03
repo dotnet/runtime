@@ -1,8 +1,8 @@
 # Postprocessed with patch-quiet.sh
 RUNTIME = mono --debug
 CAS_RUNTIME = $(RUNTIME) --security
-CSCOMPILE = mcs -debug
-PROFILE = net_1_1
+CSCOMPILE = gmcs -debug
+PROFILE = net_2_0
 
 all:	sandbox.exe whoami.exe quota.exe
 

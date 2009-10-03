@@ -1,23 +1,15 @@
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_1_1
-with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug
-RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper --debug
 
 CAS_RUNTIME = $(RUNTIME) --security
-CAS_RUNTIME2 = $(RUNTIME2) --security
 
-PROFILE = net_1_1
+PROFILE = net_2_0
 
-compiler_defines = -d:NET_1_1
+compiler_defines = -d:NET_2_0
 
-# ifeq ($(PROFILE), net_2_0)
-# CSCOMPILE = gmcs -debug
-# compiler_defines += -d:NET_2_0
-# else
-CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/net_1_1/mcs.exe -debug
+CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -debug
 SN = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug $(mcs_topdir)/tools/security/sn.exe
-# endif
 
 EXTRA_DIST = icall1.cs icall2.cs icall3.cs icall4.cs icall5.cs icall6.cs \
 	aptc1.cs aptc2.cs aptclib.cs \

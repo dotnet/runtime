@@ -1,14 +1,11 @@
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_1_1
-with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug
-RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper --debug
 
 CAS_RUNTIME = $(RUNTIME) --security
-CAS_RUNTIME2 = $(RUNTIME2) --security
 
-CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/net_1_1/mcs.exe -debug
-PROFILE = net_1_1
+CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -debug
+PROFILE = net_2_0
 
 EXTRA_DIST = thread1.cs thread2.cs thread3.cs \
 	tpool1.cs tpool2.cs \
