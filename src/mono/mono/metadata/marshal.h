@@ -279,6 +279,9 @@ mono_marshal_free_array (gpointer *ptr, int size) MONO_INTERNAL;
 gboolean 
 mono_marshal_free_ccw (MonoObject* obj) MONO_INTERNAL;
 
+MonoObject *
+mono_marshal_xdomain_copy_value (MonoObject *val) MONO_INTERNAL;
+
 void
 cominterop_release_all_rcws (void) MONO_INTERNAL; 
 

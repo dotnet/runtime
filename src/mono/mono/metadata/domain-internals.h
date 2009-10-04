@@ -43,10 +43,11 @@ typedef struct {
 	MonoBoolean disallow_code_downloads;
 	MonoObject *activation_arguments; /* it is System.Object in 1.x, ActivationArguments in 2.0 */
 	MonoObject *domain_initializer;
-	MonoArray *domain_initializer_args;
 	MonoObject *application_trust; /* it is System.Object in 1.x, ApplicationTrust in 2.0 */
+	MonoArray *domain_initializer_args;
 	MonoBoolean disallow_appbase_probe;
 	MonoArray *configuration_bytes;
+	MonoArray *serialized_non_primitives;
 } MonoAppDomainSetup;
 
 typedef struct _MonoJitInfoTable MonoJitInfoTable;

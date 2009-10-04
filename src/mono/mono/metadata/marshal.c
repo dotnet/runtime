@@ -119,9 +119,6 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params);
 static MonoObject *
 mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params);
 
-static MonoObject *
-mono_marshal_xdomain_copy_value (MonoObject *val);
-
 static void
 mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst);
 
@@ -2814,7 +2811,7 @@ mono_get_xdomain_marshal_type (MonoType *t)
 /* mono_marshal_xdomain_copy_value
  * Makes a copy of "val" suitable for the current domain.
  */
-static MonoObject *
+MonoObject *
 mono_marshal_xdomain_copy_value (MonoObject *val)
 {
 	MonoDomain *domain;

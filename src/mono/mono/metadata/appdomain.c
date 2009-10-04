@@ -72,7 +72,7 @@
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
  */
-#define MONO_CORLIB_VERSION 85
+#define MONO_CORLIB_VERSION 86
 
 typedef struct
 {
@@ -394,6 +394,43 @@ mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 	return mono_domain_from_appdomain (ad);
 }
 
+static MonoAppDomainSetup*
+copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup)
+{
+	MonoDomain *caller_domain = mono_domain_get ();
+	MonoClass *ads_class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
+	MonoAppDomainSetup *copy = (MonoAppDomainSetup*)mono_object_new (domain, ads_class);
+	gboolean failure;
+	MonoObject *exc;
+
+	mono_domain_set_internal (domain);
+
+	MONO_OBJECT_SETREF (copy, application_base, mono_marshal_xdomain_copy_value ((MonoObject*)setup->application_base));
+	MONO_OBJECT_SETREF (copy, application_name, mono_marshal_xdomain_copy_value ((MonoObject*)setup->application_name));
+	MONO_OBJECT_SETREF (copy, cache_path, mono_marshal_xdomain_copy_value ((MonoObject*)setup->cache_path));
+	MONO_OBJECT_SETREF (copy, configuration_file, mono_marshal_xdomain_copy_value ((MonoObject*)setup->configuration_file));
+	MONO_OBJECT_SETREF (copy, dynamic_base, mono_marshal_xdomain_copy_value ((MonoObject*)setup->dynamic_base));
+	MONO_OBJECT_SETREF (copy, license_file, mono_marshal_xdomain_copy_value ((MonoObject*)setup->license_file));
+	MONO_OBJECT_SETREF (copy, private_bin_path, mono_marshal_xdomain_copy_value ((MonoObject*)setup->private_bin_path));
+	MONO_OBJECT_SETREF (copy, private_bin_path_probe, mono_marshal_xdomain_copy_value ((MonoObject*)setup->private_bin_path_probe));
+	MONO_OBJECT_SETREF (copy, shadow_copy_directories, mono_marshal_xdomain_copy_value ((MonoObject*)setup->shadow_copy_directories));
+	MONO_OBJECT_SETREF (copy, shadow_copy_files, mono_marshal_xdomain_copy_value ((MonoObject*)setup->shadow_copy_files));
+	copy->publisher_policy = setup->publisher_policy;
+	copy->path_changed = setup->path_changed;
+	copy->loader_optimization = setup->loader_optimization;
+	copy->disallow_binding_redirects = setup->disallow_binding_redirects;
+	copy->disallow_code_downloads = setup->disallow_code_downloads;
+	MONO_OBJECT_SETREF (copy, domain_initializer_args, mono_marshal_xdomain_copy_value ((MonoObject*)setup->domain_initializer_args));
+	copy->disallow_appbase_probe = setup->disallow_appbase_probe;
+	MONO_OBJECT_SETREF (copy, application_trust, mono_marshal_xdomain_copy_value ((MonoObject*)setup->application_trust));
+	MONO_OBJECT_SETREF (copy, configuration_bytes, mono_marshal_xdomain_copy_value ((MonoObject*)setup->configuration_bytes));
+	MONO_OBJECT_SETREF (copy, serialized_non_primitives, mono_marshal_xdomain_copy_value ((MonoObject*)setup->serialized_non_primitives));
+
+	mono_domain_set_internal (caller_domain);
+
+	return copy;
+}
+
 static MonoAppDomain *
 mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *setup)
 {
@@ -412,7 +449,6 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	ad = (MonoAppDomain *) mono_object_new (data, adclass);
 	ad->data = data;
 	data->domain = ad;
-	data->setup = setup;
 	data->friendly_name = g_strdup (friendly_name);
 
 	if (!setup->application_base) {
@@ -427,6 +463,8 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	mono_set_private_bin_path_from_config (data);
 	
 	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
+
+	data->setup = copy_app_domain_setup (data, setup);
 
 #ifndef DISABLE_SHADOW_COPY
 	shadow_location = get_shadow_assembly_location_base (data);
