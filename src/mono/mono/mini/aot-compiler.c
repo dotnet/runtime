@@ -2133,7 +2133,7 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 		 * managed-to-native wrappers are not shared, so have to generate 
 		 * these for ref types too.
 		 */
-		{
+		if (acfg->aot_opts.full_aot) {
 			MonoGenericContext ctx;
 			MonoType *args [16];
 			static MonoMethod *get_method;
