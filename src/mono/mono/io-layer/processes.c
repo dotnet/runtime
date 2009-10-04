@@ -35,6 +35,17 @@
 #include <sys/resource.h>
 #endif
 
+#ifdef PLATFORM_SOLARIS
+/* procfs.h cannot be included if this define is set, but it seems to work fine if it is undefined */
+#if _FILE_OFFSET_BITS == 64
+#undef _FILE_OFFSET_BITS
+#include <procfs.h>
+#define _FILE_OFFSET_BITS 64
+#else
+#include <procfs.h>
+#endif
+#endif
+
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
@@ -2075,6 +2086,26 @@ static gchar *get_process_name_from_proc (pid_t pid)
 		fclose (fp);
 	}
 	g_free (filename);
+
+	if (ret != NULL) {
+		return(ret);
+	}
+
+#ifdef PLATFORM_SOLARIS
+	filename = g_strdup_printf ("/proc/%d/psinfo", pid);
+	if ((fp = fopen (filename, "r")) != NULL) {
+		struct psinfo info;
+		int nread;
+
+		nread = fread (&info, sizeof (info), 1, fp);
+		if (nread == 1) {
+			ret = g_strdup (info.pr_fname);
+		}
+		
+		fclose (fp);
+	}
+	g_free (filename);
+#endif
 
 	if (ret != NULL) {
 		return(ret);
