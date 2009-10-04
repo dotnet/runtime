@@ -400,8 +400,6 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetup *setup)
 	MonoDomain *caller_domain = mono_domain_get ();
 	MonoClass *ads_class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	MonoAppDomainSetup *copy = (MonoAppDomainSetup*)mono_object_new (domain, ads_class);
-	gboolean failure;
-	MonoObject *exc;
 
 	mono_domain_set_internal (domain);
 

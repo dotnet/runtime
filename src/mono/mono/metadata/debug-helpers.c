@@ -545,7 +545,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 			blob2 = g_malloc (len2 * 2);
 			memcpy (blob2, blob, len2 * 2);
 #else
-			blob2 = blob;
+			blob2 = (char*)blob;
 #endif
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
