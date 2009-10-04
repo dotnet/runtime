@@ -715,9 +715,9 @@ bug-324535-il.dll : bug-324535-il.il
 bug-324535.exe : bug-324535.cs bug-324535-il.dll
 	$(MCS) -r:bug-324535-il.dll -out:bug-324535.exe $(srcdir)/bug-324535.cs
 
-EXTRA_DIST += make_imt_test.sh
-imt_big_iface_test.cs: $(srcdir)/make_imt_test.sh
-	$(srcdir)/make_imt_test.sh > imt_big_iface_test.cs
+EXTRA_DIST += make-imt-test.cs
+imt_big_iface_test.cs: make-imt-test.exe
+	$(RUNTIME) make-imt-test.exe > imt_big_iface_test.cs
 
 EXTRA_DIST += custom-modifiers.2.cs custom-modifiers-lib.il
 custom-modifiers-lib.dll: custom-modifiers-lib.il
