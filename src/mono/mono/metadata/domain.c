@@ -1483,7 +1483,13 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	mono_defaults.internal_thread_class = mono_class_from_name (
                 mono_defaults.corlib, "System.Threading", "InternalThread");
-	g_assert (mono_defaults.internal_thread_class != 0);
+	if (!mono_defaults.internal_thread_class) {
+		/* This can happen with an old mscorlib */
+		fprintf (stderr, "Corlib too old for this runtime.\n");
+		fprintf (stderr, "Loaded from: %s\n",
+				 mono_defaults.corlib? mono_image_get_filename (mono_defaults.corlib): "unknown");
+		exit (1);
+	}
 
 	mono_defaults.appdomain_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "AppDomain");
