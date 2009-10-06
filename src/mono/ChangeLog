@@ -1,3 +1,7 @@
+2009-10-06  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Bump version to 2.7.
+
 2009-10-01  Raja R Harinath  <harinath@hurrynot.org>
 
 	* scripts/Makefile.am: Use 'mv -f' instead of 'mv'.
