@@ -457,6 +457,11 @@ class Tests {
 		return filteredWords.Count ();
 	}
 
+	public static int test_0_fullaot_comparer_t () {
+		var l = new SortedList <TimeSpan, int> ();
+		return l.Count;
+	}
+
 	static int cctor_count = 0;
 
     public abstract class Beta<TChanged> 
