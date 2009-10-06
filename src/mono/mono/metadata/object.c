@@ -5539,42 +5539,21 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 			arg = mono_array_get (out_args, gpointer, j);
 			type = pt->type;
 
-			switch (type) {
-			case MONO_TYPE_VOID:
-				g_assert_not_reached ();
-				break;
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I1:
-			case MONO_TYPE_BOOLEAN:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_CHAR:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-			case MONO_TYPE_VALUETYPE: {
+			g_assert (type != MONO_TYPE_VOID);
+
+			if (MONO_TYPE_IS_REFERENCE (pt)) {
+				mono_gc_wbarrier_generic_store (*((MonoObject ***)params [i]), (MonoObject *)arg);
+			} else {
 				if (arg) {
-					size = mono_class_value_size (((MonoObject*)arg)->vtable->klass, NULL);
+					MonoClass *class = ((MonoObject*)arg)->vtable->klass;
+					size = mono_class_value_size (class, NULL);
 					memcpy (*((gpointer *)params [i]), arg + sizeof (MonoObject), size); 
-				}
-				else {
+					if (class->has_references)
+						mono_gc_wbarrier_value_copy (*((gpointer *)params [i]), arg + sizeof (MonoObject), 1, class);
+				} else {
 					size = mono_class_value_size (mono_class_from_mono_type (pt), NULL);
 					memset (*((gpointer *)params [i]), 0, size);
 				}
-				break;
-			}
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_CLASS: 
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_OBJECT:
-				**((MonoObject ***)params [i]) = (MonoObject *)arg;
-				break;
-			default:
-				g_assert_not_reached ();
 			}
 
 			j++;
