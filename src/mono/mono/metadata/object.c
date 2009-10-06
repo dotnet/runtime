@@ -2725,7 +2725,7 @@ handle_enum:
 				memset (dest, 0, size);
 			} else {
 				memcpy (dest, value, size);
-				mono_gc_wbarrier_value_copy (dest, value, size, class);
+				mono_gc_wbarrier_value_copy (dest, value, 1, class);
 			}
 		}
 		return;
