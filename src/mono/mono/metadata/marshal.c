@@ -1777,6 +1777,15 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 		return;
 	}
 
+	if (klass != mono_defaults.safehandle_class) {
+		if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+			char *msg = g_strdup_printf ("Type %s which is passed to unmanaged code must have a StructLayout attribute.",
+										 mono_type_full_name (&klass->byval_arg));
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+			return;
+		}
+	}
+
 	for (i = 0; i < info->num_fields; i++) {
 		MonoMarshalNative ntype;
 		MonoMarshalConv conv;
@@ -1811,11 +1820,6 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 						 "reference field at the same offset as another field.",
 						 mono_type_full_name (&klass->byval_arg));
 			}
-			
-			if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
-				g_error ("Type %s which is passed to unmanaged code must have a StructLayout attribute",
-					 mono_type_full_name (&klass->byval_arg));
-			
 		}
 		
 		switch (conv) {
@@ -5574,16 +5578,37 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 					MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
-	MonoClass *klass;
+	MonoClass *klass, *date_time_class;
 	int pos = 0, pos2;
 
 	klass = mono_class_from_mono_type (t);
+
+	date_time_class = mono_class_from_name_cached (mono_defaults.corlib, "System", "DateTime");
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
 			klass->blittable || klass->enumtype)
 			break;
+
+		if (klass == date_time_class) {
+			/* Convert it to an OLE DATE type */
+			static MonoMethod *to_oadate;
+
+			if (!to_oadate)
+				to_oadate = mono_class_get_method_from_name (date_time_class, "ToOADate", 0);
+			g_assert (to_oadate);
+
+			if (t->byref)
+				g_assert_not_reached ();
+
+			conv_arg = mono_mb_add_local (mb, &mono_defaults.double_class->byval_arg);
+
+			mono_mb_emit_ldarg_addr (mb, argnum);
+			mono_mb_emit_managed_call (mb, to_oadate, NULL);
+			mono_mb_emit_stloc (mb, conv_arg);
+			break;
+		}
 
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 			
@@ -5636,6 +5661,11 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
+		if (klass == date_time_class) {
+			mono_mb_emit_ldloc (mb, conv_arg);
+			break;
+		}
+
 		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
 			klass->blittable || klass->enumtype) {
 			mono_mb_emit_ldarg (mb, argnum);
@@ -5683,6 +5713,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_stloc (mb, 3);
 			break;
 		}
+
 		/* load pointer to returned value type */
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
