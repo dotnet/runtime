@@ -2297,6 +2297,13 @@ mono_safe_handle_ref (void **handle)
 
 	*handle = (void *) 0x800d;
 }
+
+LIBTEST_API double STDCALL
+mono_test_marshal_date_time (double d)
+{
+	return d;
+}
+
 /*
  * COM INTEROP TESTS
  */

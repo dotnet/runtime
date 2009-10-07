@@ -1537,5 +1537,17 @@ public class Tests {
 			return 0;
 		}
 	}
+
+	/*
+	 * Marshalling of DateTime to OLE DATE (double)
+	 */
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_date_time")]
+	public static extern double mono_test_marshal_date_time (DateTime d);
+
+	public static int test_0_marshal_date_time () {
+		DateTime d = new DateTime (2009, 12, 6);
+		double d2 = mono_test_marshal_date_time (new DateTime (2009, 12, 6));
+		return  (d2 == 40153.0) ? 0 : 1;
+	}
 }
 
