@@ -250,7 +250,7 @@ BASE_TEST_CS_SRC=		\
 	exists.cs		\
 	handleref.cs	\
 	transparentproxy.cs \
-	imt_big_iface_test.cs \
+	make-imt-test.cs \
 	dbnull-missing.cs	\
 	test-type-ctor.cs 	\
 	soft-float-tests.cs	\
@@ -368,16 +368,13 @@ TEST_CS_SRC_DIST=	\
 	async-exc-compilation.cs \
 	filter-stack.cs
 
-TEST_CS_SRC_GEN=	\
-	imt_big_iface_test.cs
-
 if AMD64
-TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
 else
 if X86
-TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
 else
-TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN)
+TEST_CS_SRC = $(BASE_TEST_CS_SRC)
 endif
 endif
 
@@ -531,7 +528,7 @@ endif
 
 # test_messages fails on the buildbots
 #test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
-test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test-runtime-invoke test_2_1
+test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test-runtime-invoke test-imt-big-iface test_2_1
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -659,6 +656,13 @@ test-runtime-invoke: TestDriver.dll gen-runtime-invoke.exe
 	@echo "Testing runtime-invoke.gen.exe..."
 	@$(RUNTIME) runtime-invoke.gen.exe > runtime-invoke.gen.exe.stdout 2> runtime-invoke.gen.exe.stderr
 
+EXTRA_DIST += make-imt-test.cs
+test-imt-big-iface: TestDriver.dll make-imt-test.exe
+	@$(RUNTIME) make-imt-test.exe > imt_big_iface_test.cs
+	@$(MCS) -out:imt_big_iface_test.exe -r:TestDriver.dll imt_big_iface_test.cs
+	@echo "Testing imt_big_iface_test.exe..."
+	@$(RUNTIME) imt_big_iface_test.exe > imt_big_iface_test.exe.stdout 2> imt_big_iface_test.exe.stderr
+
 EXTRA_DIST += test-inline-call-stack-library.cs test-inline-call-stack.cs
 test-inline-call-stack-library.dll: TestDriver.dll $(srcdir)/test-inline-call-stack-library.cs
 	$(MCS) -t:library -out:test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack-library.cs
@@ -723,10 +727,6 @@ bug-324535-il.dll : bug-324535-il.il
 	$(ILASM) /dll /output:bug-324535-il.dll $(srcdir)/bug-324535-il.il
 bug-324535.exe : bug-324535.cs bug-324535-il.dll
 	$(MCS) -r:bug-324535-il.dll -out:bug-324535.exe $(srcdir)/bug-324535.cs
-
-EXTRA_DIST += make-imt-test.cs
-imt_big_iface_test.cs: make-imt-test.exe
-	$(RUNTIME) make-imt-test.exe > imt_big_iface_test.cs
 
 EXTRA_DIST += custom-modifiers.2.cs custom-modifiers-lib.il
 custom-modifiers-lib.dll: custom-modifiers-lib.il
