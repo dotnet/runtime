@@ -2275,95 +2275,11 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 	LeaveCriticalSection (thread->synch_cs);
 }
 
-static MonoObject*
-serialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
-{
-	static MonoMethod *serialize_method;
-
-	void *params [1];
-	MonoObject *array;
-
-	if (!serialize_method) {
-		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingServices");
-		serialize_method = mono_class_get_method_from_name (klass, "SerializeCallData", -1);
-	}
-
-	if (!serialize_method) {
-		*failure = TRUE;
-		return NULL;
-	}
-
-	g_assert (!obj->vtable->klass->marshalbyref);
-
-	params [0] = obj;
-	*exc = NULL;
-	array = mono_runtime_invoke (serialize_method, NULL, params, exc);
-	if (*exc)
-		*failure = TRUE;
-
-	return array;
-}
-
-static MonoObject*
-deserialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
-{
-	static MonoMethod *deserialize_method;
-
-	void *params [1];
-	MonoObject *result;
-
-	if (!deserialize_method) {
-		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingServices");
-		deserialize_method = mono_class_get_method_from_name (klass, "DeserializeCallData", -1);
-	}
-	if (!deserialize_method) {
-		*failure = TRUE;
-		return NULL;
-	}
-
-	params [0] = obj;
-	*exc = NULL;
-	result = mono_runtime_invoke (deserialize_method, NULL, params, exc);
-	if (*exc)
-		*failure = TRUE;
-
-	return result;
-}
-
-static MonoObject*
-make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
-{
-	static MonoMethod *get_proxy_method;
-
-	MonoDomain *domain = mono_domain_get ();
-	MonoRealProxy *real_proxy;
-	MonoReflectionType *reflection_type;
-	MonoTransparentProxy *transparent_proxy;
-
-	if (!get_proxy_method)
-		get_proxy_method = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
-
-	g_assert (obj->vtable->klass->marshalbyref);
-
-	real_proxy = (MonoRealProxy*) mono_object_new (domain, mono_defaults.real_proxy_class);
-	reflection_type = mono_type_get_object (domain, &obj->vtable->klass->byval_arg);
-
-	real_proxy->class_to_proxy = reflection_type;
-	real_proxy->unwrapped_server = obj;
-
-	*exc = NULL;
-	transparent_proxy = (MonoTransparentProxy*) mono_runtime_invoke (get_proxy_method, real_proxy, NULL, exc);
-	if (*exc)
-		*failure = TRUE;
-
-	return (MonoObject*) transparent_proxy;
-}
-
 MonoObject*
 ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this)
 {
 	MonoInternalThread *thread = this->internal_thread;
-	MonoObject *state, *serialized, *deserialized = NULL, *exc;
+	MonoObject *state, *deserialized = NULL, *exc;
 	MonoDomain *domain;
 	gboolean failure = FALSE;
 
@@ -2374,20 +2290,12 @@ ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this)
 	g_assert (state);
 
 	domain = mono_domain_get ();
-	if (state->vtable->domain == domain)
+	if (mono_object_domain (state) == domain)
 		return state;
 
-	if (state->vtable->klass->marshalbyref) {
-		deserialized = make_transparent_proxy (state, &failure, &exc);
-	} else {
-		mono_domain_set_internal_with_options (state->vtable->domain, FALSE);
-		serialized = serialize_object (state, &failure, &exc);
-		mono_domain_set_internal_with_options (domain, FALSE);
-		if (!failure)
-			deserialized = deserialize_object (serialized, &failure, &exc);
-	}
+	deserialized = mono_object_xdomain_representation (state, domain, &exc);
 
-	if (failure) {
+	if (!deserialized) {
 		MonoException *invalid_op_exc = mono_get_exception_invalid_operation ("Thread.ExceptionState cannot access an ExceptionState from a different AppDomain");
 		if (exc)
 			MONO_OBJECT_SETREF (invalid_op_exc, inner_ex, exc);

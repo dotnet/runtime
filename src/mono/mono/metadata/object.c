@@ -3297,6 +3297,130 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	return result;
 }
 
+static MonoObject*
+serialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
+{
+	static MonoMethod *serialize_method;
+
+	void *params [1];
+	MonoObject *array;
+
+	if (!serialize_method) {
+		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingServices");
+		serialize_method = mono_class_get_method_from_name (klass, "SerializeCallData", -1);
+	}
+
+	if (!serialize_method) {
+		*failure = TRUE;
+		return NULL;
+	}
+
+	g_assert (!mono_object_class (obj)->marshalbyref);
+
+	params [0] = obj;
+	*exc = NULL;
+	array = mono_runtime_invoke (serialize_method, NULL, params, exc);
+	if (*exc)
+		*failure = TRUE;
+
+	return array;
+}
+
+static MonoObject*
+deserialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
+{
+	static MonoMethod *deserialize_method;
+
+	void *params [1];
+	MonoObject *result;
+
+	if (!deserialize_method) {
+		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingServices");
+		deserialize_method = mono_class_get_method_from_name (klass, "DeserializeCallData", -1);
+	}
+	if (!deserialize_method) {
+		*failure = TRUE;
+		return NULL;
+	}
+
+	params [0] = obj;
+	*exc = NULL;
+	result = mono_runtime_invoke (deserialize_method, NULL, params, exc);
+	if (*exc)
+		*failure = TRUE;
+
+	return result;
+}
+
+static MonoObject*
+make_transparent_proxy (MonoObject *obj, gboolean *failure, MonoObject **exc)
+{
+	static MonoMethod *get_proxy_method;
+
+	MonoDomain *domain = mono_domain_get ();
+	MonoRealProxy *real_proxy;
+	MonoReflectionType *reflection_type;
+	MonoTransparentProxy *transparent_proxy;
+
+	if (!get_proxy_method)
+		get_proxy_method = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
+
+	g_assert (obj->vtable->klass->marshalbyref);
+
+	real_proxy = (MonoRealProxy*) mono_object_new (domain, mono_defaults.real_proxy_class);
+	reflection_type = mono_type_get_object (domain, &obj->vtable->klass->byval_arg);
+
+	MONO_OBJECT_SETREF (real_proxy, class_to_proxy, reflection_type);
+	MONO_OBJECT_SETREF (real_proxy, unwrapped_server, obj);
+
+	*exc = NULL;
+	transparent_proxy = (MonoTransparentProxy*) mono_runtime_invoke (get_proxy_method, real_proxy, NULL, exc);
+	if (*exc)
+		*failure = TRUE;
+
+	return (MonoObject*) transparent_proxy;
+}
+
+/**
+ * mono_object_xdomain_representation
+ * @obj: an object
+ * @target_domain: a domain
+ * @exc: pointer to a MonoObject*
+ *
+ * Creates a representation of obj in the domain target_domain.  This
+ * is either a copy of obj arrived through via serialization and
+ * deserialization or a proxy, depending on whether the object is
+ * serializable or marshal by ref.  obj must not be in target_domain.
+ *
+ * If the object cannot be represented in target_domain, NULL is
+ * returned and *exc is set to an appropriate exception.
+ */
+MonoObject*
+mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, MonoObject **exc)
+{
+	MonoObject *deserialized = NULL;
+	gboolean failure = FALSE;
+
+	*exc = NULL;
+
+	if (mono_object_class (obj)->marshalbyref) {
+		deserialized = make_transparent_proxy (obj, &failure, exc);
+	} else {
+		MonoDomain *domain = mono_domain_get ();
+		MonoObject *serialized;
+
+		mono_domain_set_internal_with_options (mono_object_domain (obj), FALSE);
+		serialized = serialize_object (obj, &failure, exc);
+		mono_domain_set_internal_with_options (target_domain, FALSE);
+		if (!failure)
+			deserialized = deserialize_object (serialized, &failure, exc);
+		if (domain != target_domain)
+			mono_domain_set_internal_with_options (domain, FALSE);
+	}
+
+	return deserialized;
+}
+
 /* Used in call_unhandled_exception_delegate */
 static MonoObject *
 create_unhandled_exception_eventargs (MonoObject *exc)
@@ -3330,11 +3454,38 @@ static void
 call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, MonoObject *exc) {
 	MonoObject *e = NULL;
 	gpointer pa [2];
+	MonoDomain *current_domain = mono_domain_get ();
+
+	if (domain != current_domain)
+		mono_domain_set_internal_with_options (domain, FALSE);
+
+	g_assert (domain == mono_object_domain (domain->domain));
+
+	if (mono_object_domain (exc) != domain) {
+		MonoObject *serialization_exc;
+
+		exc = mono_object_xdomain_representation (exc, domain, &serialization_exc);
+		if (!exc) {
+			if (serialization_exc) {
+				MonoObject *dummy;
+				exc = mono_object_xdomain_representation (serialization_exc, domain, &dummy);
+				g_assert (exc);
+			} else {
+				exc = (MonoObject*) mono_exception_from_name_msg (mono_get_corlib (),
+						"System.Runtime.Serialization", "SerializationException",
+						"Could not serialize unhandled exception.");
+			}
+		}
+	}
+	g_assert (mono_object_domain (exc) == domain);
 
 	pa [0] = domain->domain;
 	pa [1] = create_unhandled_exception_eventargs (exc);
 	mono_runtime_delegate_invoke (delegate, pa, &e);
-	
+
+	if (domain != current_domain)
+		mono_domain_set_internal_with_options (current_domain, FALSE);
+
 	if (e) {
 		gchar *msg = mono_string_to_utf8 (((MonoException *) e)->message);
 		g_warning ("exception inside UnhandledException handler: %s\n", msg);

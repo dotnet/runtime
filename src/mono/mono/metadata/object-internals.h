@@ -1433,6 +1433,9 @@ mono_method_clear_object (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 void
 mono_class_compute_gc_descriptor (MonoClass *class) MONO_INTERNAL;
 
+MonoObject*
+mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, MonoObject **exc) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 
