@@ -2281,7 +2281,6 @@ ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this)
 	MonoInternalThread *thread = this->internal_thread;
 	MonoObject *state, *deserialized = NULL, *exc;
 	MonoDomain *domain;
-	gboolean failure = FALSE;
 
 	if (!thread->abort_state_handle)
 		return NULL;
