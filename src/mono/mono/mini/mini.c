@@ -4801,9 +4801,11 @@ mini_parse_debug_options (void)
 			mono_dont_free_domains = TRUE;
 		else if (!strcmp (arg, "dyn-runtime-invoke"))
 			debug_options.dyn_runtime_invoke = TRUE;
+		else if (!strcmp (arg, "gdb"))
+			debug_options.gdb = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'dyn-runtime-invoke'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'dyn-runtime-invoke', 'gdb'\n");
 			exit (1);
 		}
 	}
@@ -4980,10 +4982,17 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mini_gc_init ();
 
+	if (getenv ("MONO_DEBUG") != NULL)
+		mini_parse_debug_options ();
+
 	if (getenv ("MONO_XDEBUG")) {
 		char *xdebug_opts = getenv ("MONO_XDEBUG");
 		mono_xdebug_init (xdebug_opts);
 		/* So methods for multiple domains don't have the same address */
+		mono_dont_free_domains = TRUE;
+		mono_using_xdebug = TRUE;
+	} else if (mini_get_debug_options ()->gdb) {
+		mono_xdebug_init ((char*)"gdb");
 		mono_dont_free_domains = TRUE;
 		mono_using_xdebug = TRUE;
 	}
@@ -4996,9 +5005,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
-
-	if (getenv ("MONO_DEBUG") != NULL)
-		mini_parse_debug_options ();
 
 	mono_gc_base_init ();
 

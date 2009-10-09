@@ -214,6 +214,9 @@ parse_debug_options (const char* p)
 		} else if (!strncmp (p, "mdb-optimizations", 17)) {
 			opt->mdb_optimizations = TRUE;
 			p += 17;
+		} else if (!strncmp (p, "gdb", 3)) {
+			opt->gdb = TRUE;
+			p += 3;
 		} else {
 			fprintf (stderr, "Invalid debug option `%s', use --help-debug for details\n", p);
 			return FALSE;

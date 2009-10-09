@@ -1240,6 +1240,7 @@ typedef struct {
 	gboolean no_gdb_backtrace;
 	gboolean suspend_on_sigsegv;
 	gboolean dyn_runtime_invoke;
+	gboolean gdb;
 } MonoDebugOptions;
 
 enum {
