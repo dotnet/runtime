@@ -4981,7 +4981,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mini_gc_init ();
 
 	if (getenv ("MONO_XDEBUG")) {
-		mono_xdebug_init ();
+		char *xdebug_opts = getenv ("MONO_XDEBUG");
+		mono_xdebug_init (xdebug_opts);
 		/* So methods for multiple domains don't have the same address */
 		mono_dont_free_domains = TRUE;
 		mono_using_xdebug = TRUE;

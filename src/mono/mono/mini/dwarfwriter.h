@@ -20,13 +20,15 @@
 
 typedef struct _MonoDwarfWriter MonoDwarfWriter;
 
-MonoDwarfWriter* mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, gboolean appending) MONO_INTERNAL;
+MonoDwarfWriter* mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_start_line, gboolean appending) MONO_INTERNAL;
 
 void mono_dwarf_writer_destroy (MonoDwarfWriter *w) MONO_INTERNAL;
 
 void mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_program) MONO_INTERNAL;
 
 void mono_dwarf_writer_close (MonoDwarfWriter *w) MONO_INTERNAL;
+
+int mono_dwarf_writer_get_il_file_line_index (MonoDwarfWriter *w) MONO_INTERNAL;
 
 void mono_dwarf_writer_emit_trampoline (MonoDwarfWriter *w, const char *tramp_name, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, GSList *unwind_info) MONO_INTERNAL;
 

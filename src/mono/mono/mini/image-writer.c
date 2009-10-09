@@ -152,6 +152,8 @@ struct _MonoImageWriter {
 	BinReloc *relocations;
 	GHashTable *labels;
 	int num_relocs;
+	guint8 *out_buf;
+	int out_buf_size, out_buf_pos;
 #endif
 	/* Asm writer */
 	char *tmpfname;
@@ -990,6 +992,29 @@ resolve_relocations (MonoImageWriter *acfg)
 
 #endif /* USE_ELF_RELA */
 
+static void
+bin_writer_fwrite (MonoImageWriter *acfg, void *val, size_t size, size_t nmemb)
+{
+	if (acfg->fp)
+		fwrite (val, size, nmemb, acfg->fp);
+	else {
+		g_assert (acfg->out_buf_pos + (size * nmemb) <= acfg->out_buf_size);
+		memcpy (acfg->out_buf + acfg->out_buf_pos, val, size * nmemb);
+		acfg->out_buf_pos += (size * nmemb);
+	}
+}
+
+static void
+bin_writer_fseek (MonoImageWriter *acfg, int offset)
+{
+	if (acfg->fp)
+		fseek (acfg->fp, offset, SEEK_SET);
+	else
+		acfg->out_buf_pos = offset;
+}
+
+static int normal_sections [] = { SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, SECT_DEBUG_ABBREV, SECT_DEBUG_LINE, SECT_DEBUG_LOC };
+
 static int
 bin_writer_emit_writeout (MonoImageWriter *acfg)
 {
@@ -1324,63 +1349,58 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	reloc_symbols (acfg, symtab, secth, &str_table, FALSE);
 	relocs = resolve_relocations (acfg);
 
-	fwrite (&header, sizeof (header), 1, file);
-	fwrite (&progh, sizeof (progh), 1, file);
-	fwrite (hash, sizeof (int) * (hash [0] + hash [1] + 2), 1, file);
-	fwrite (dynsym, sizeof (ElfSymbol) * hash [1], 1, file);
-	fwrite (dyn_str_table.data->str, dyn_str_table.data->len, 1, file);
+	if (!acfg->fp) {
+		acfg->out_buf_size = file_offset + sizeof (secth);
+		acfg->out_buf = g_malloc (acfg->out_buf_size);
+	}
+
+	bin_writer_fwrite (acfg, &header, sizeof (header), 1);
+	bin_writer_fwrite (acfg, &progh, sizeof (progh), 1);
+	bin_writer_fwrite (acfg, hash, sizeof (int) * (hash [0] + hash [1] + 2), 1);
+	bin_writer_fwrite (acfg, dynsym, sizeof (ElfSymbol) * hash [1], 1);
+	bin_writer_fwrite (acfg, dyn_str_table.data->str, dyn_str_table.data->len, 1);
 	/* .rel.dyn */
-	fseek (file, secth [SECT_REL_DYN].sh_offset, SEEK_SET);
-	fwrite (relocs, sizeof (ElfReloc), acfg->num_relocs, file);
+	bin_writer_fseek (acfg, secth [SECT_REL_DYN].sh_offset);
+	bin_writer_fwrite (acfg, relocs, sizeof (ElfReloc), acfg->num_relocs);
 
 	/* .rela.dyn */
-	fseek (file, secth [SECT_RELA_DYN].sh_offset, SEEK_SET);
-	fwrite (relocs, secth [SECT_RELA_DYN].sh_size, 1, file);
+	bin_writer_fseek (acfg, secth [SECT_RELA_DYN].sh_offset);
+	bin_writer_fwrite (acfg, relocs, secth [SECT_RELA_DYN].sh_size, 1);
 
 	/* .text */
 	if (sections [SECT_TEXT]) {
-		fseek (file, secth [SECT_TEXT].sh_offset, SEEK_SET);
-		fwrite (sections [SECT_TEXT]->data, sections [SECT_TEXT]->cur_offset, 1, file);
+		bin_writer_fseek (acfg, secth [SECT_TEXT].sh_offset);
+		bin_writer_fwrite (acfg, sections [SECT_TEXT]->data, sections [SECT_TEXT]->cur_offset, 1);
 	}
 	/* .dynamic */
-	fwrite (dynamic, sizeof (dynamic), 1, file);
+	bin_writer_fwrite (acfg, dynamic, sizeof (dynamic), 1);
 
 	/* .got.plt */
 	size = secth [SECT_DYNAMIC].sh_addr;
-	fwrite (&size, sizeof (size), 1, file);
+	bin_writer_fwrite (acfg, &size, sizeof (size), 1);
 
-	/* .data */
-	if (sections [SECT_DATA]) {
-		fseek (file, secth [SECT_DATA].sh_offset, SEEK_SET);
-		fwrite (sections [SECT_DATA]->data, sections [SECT_DATA]->cur_offset, 1, file);
+	/* normal sections */
+	for (i = 0; i < sizeof (normal_sections) / sizeof (normal_sections [0]); ++i) {
+		int sect = normal_sections [i];
+		if (sections [sect]) {
+			bin_writer_fseek (acfg, secth [sect].sh_offset);
+			bin_writer_fwrite (acfg, sections [sect]->data, sections [sect]->cur_offset, 1);
+		}
 	}
 
-	fseek (file, secth [SECT_DEBUG_FRAME].sh_offset, SEEK_SET);
-	if (sections [SECT_DEBUG_FRAME])
-		fwrite (sections [SECT_DEBUG_FRAME]->data, sections [SECT_DEBUG_FRAME]->cur_offset, 1, file);
-	fseek (file, secth [SECT_DEBUG_INFO].sh_offset, SEEK_SET);
-	if (sections [SECT_DEBUG_INFO])
-		fwrite (sections [SECT_DEBUG_INFO]->data, sections [SECT_DEBUG_INFO]->cur_offset, 1, file);
-	fseek (file, secth [SECT_DEBUG_ABBREV].sh_offset, SEEK_SET);
-	if (sections [SECT_DEBUG_ABBREV])
-		fwrite (sections [SECT_DEBUG_ABBREV]->data, sections [SECT_DEBUG_ABBREV]->cur_offset, 1, file);
-	fseek (file, secth [SECT_DEBUG_LINE].sh_offset, SEEK_SET);
-	if (sections [SECT_DEBUG_LINE])
-		fwrite (sections [SECT_DEBUG_LINE]->data, sections [SECT_DEBUG_LINE]->cur_offset, 1, file);
-	fseek (file, secth [SECT_DEBUG_LINE].sh_offset, SEEK_SET);
-	if (sections [SECT_DEBUG_LOC])
-		fwrite (sections [SECT_DEBUG_LOC]->data, sections [SECT_DEBUG_LOC]->cur_offset, 1, file);
-	fseek (file, secth [SECT_SHSTRTAB].sh_offset, SEEK_SET);
-	fwrite (sh_str_table.data->str, sh_str_table.data->len, 1, file);
-	fseek (file, secth [SECT_SYMTAB].sh_offset, SEEK_SET);
-	fwrite (symtab, sizeof (ElfSymbol) * num_local_syms, 1, file);
-	fseek (file, secth [SECT_STRTAB].sh_offset, SEEK_SET);
-	fwrite (str_table.data->str, str_table.data->len, 1, file);
+	bin_writer_fseek (acfg, secth [SECT_SHSTRTAB].sh_offset);
+	bin_writer_fwrite (acfg, sh_str_table.data->str, sh_str_table.data->len, 1);
+	bin_writer_fseek (acfg, secth [SECT_SYMTAB].sh_offset);
+	bin_writer_fwrite (acfg, symtab, sizeof (ElfSymbol) * num_local_syms, 1);
+	bin_writer_fseek (acfg, secth [SECT_STRTAB].sh_offset);
+	bin_writer_fwrite (acfg, str_table.data->str, str_table.data->len, 1);
 	/*g_print ("file_offset %d vs %d\n", file_offset, ftell (file));*/
 	/*g_assert (file_offset >= ftell (file));*/
-	fseek (file, file_offset, SEEK_SET);
-	fwrite (&secth, sizeof (secth), 1, file);
-	fclose (file);
+	bin_writer_fseek (acfg, file_offset);
+	bin_writer_fwrite (acfg, &secth, sizeof (secth), 1);
+
+	if (acfg->fp)
+		fclose (acfg->fp);
 
 	return 0;
 }
@@ -1958,6 +1978,30 @@ img_writer_emit_unset_mode (MonoImageWriter *acfg)
 }
 
 /*
+ * img_writer_get_output:
+ *
+ *   Return the output buffer of a binary writer emitting to memory. The returned memory
+ * is from malloc, and it is owned by the caller.
+ */
+guint8*
+img_writer_get_output (MonoImageWriter *acfg, guint32 *size)
+{
+#ifdef USE_BIN_WRITER
+	guint8 *buf;
+
+	g_assert (acfg->use_bin_writer);
+
+	buf = acfg->out_buf;
+	*size = acfg->out_buf_size;
+	acfg->out_buf = NULL;
+	return buf;
+#else
+	g_assert_not_reached ();
+	return NULL;
+#endif
+}
+
+/*
  * Return whenever the binary writer is supported on this platform.
  */
 gboolean
@@ -1970,6 +2014,13 @@ bin_writer_supported (void)
 #endif
 }
 
+/*
+ * img_writer_create:
+ *
+ *   Create an image writer writing to FP. If USE_BIN_WRITER is TRUE, FP can be NULL,
+ * in this case the image writer will write to a memory buffer obtainable by calling
+ * img_writer_get_output ().
+ */
 MonoImageWriter*
 img_writer_create (FILE *fp, gboolean use_bin_writer)
 {
@@ -1978,6 +2029,9 @@ img_writer_create (FILE *fp, gboolean use_bin_writer)
 #ifndef USE_BIN_WRITER
 	g_assert (!use_bin_writer);
 #endif
+
+	if (!use_bin_writer)
+		g_assert (fp);
 
 	w->fp = fp;
 	w->use_bin_writer = use_bin_writer;

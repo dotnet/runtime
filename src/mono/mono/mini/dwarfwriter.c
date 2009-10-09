@@ -57,7 +57,7 @@ struct _MonoDwarfWriter
  * debug information.
  */
 MonoDwarfWriter*
-mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, gboolean appending)
+mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_start_line, gboolean appending)
 {
 	MonoDwarfWriter *w = g_new0 (MonoDwarfWriter, 1);
 	
@@ -72,6 +72,7 @@ mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, gboolean appen
 
 	w->w = writer;
 	w->il_file = il_file;
+	w->il_file_line_index = il_file_start_line;
 	w->appending = appending;
 
 	if (appending)
@@ -87,6 +88,12 @@ void
 mono_dwarf_writer_destroy (MonoDwarfWriter *w)
 {
 	g_free (w);
+}
+
+int
+mono_dwarf_writer_get_il_file_line_index (MonoDwarfWriter *w)
+{
+	return w->il_file_line_index;
 }
 
 /* Wrappers around the image writer functions */

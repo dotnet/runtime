@@ -36,6 +36,8 @@ void img_writer_emit_start (MonoImageWriter *w) MONO_INTERNAL;
 
 int img_writer_emit_writeout (MonoImageWriter *w) MONO_INTERNAL;
 
+guint8* img_writer_get_output (MonoImageWriter *acfg, guint32 *size) MONO_INTERNAL;
+
 void img_writer_emit_section_change (MonoImageWriter *w, const char *section_name, int subsection_index) MONO_INTERNAL;
 
 void img_writer_emit_push_section (MonoImageWriter *w, const char *section_name, int subsection) MONO_INTERNAL;
