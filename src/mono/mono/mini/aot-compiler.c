@@ -5624,6 +5624,82 @@ mono_xdebug_init (char *options)
 	mono_dwarf_writer_emit_base_info (xdebug_writer, arch_get_cie_program ());
 }
 
+static void
+xdebug_begin_emit (MonoImageWriter **out_w, MonoDwarfWriter **out_dw)
+{
+	MonoImageWriter *w;
+	MonoDwarfWriter *dw;
+
+	w = img_writer_create (NULL, TRUE);
+
+	img_writer_emit_start (w);
+
+	/* This file will contain the IL code for methods which don't have debug info */
+	if (!il_file)
+		il_file = fopen ("xdb.il", "w");
+
+	dw = mono_dwarf_writer_create (w, il_file, il_file_line_index, FALSE);
+
+	/* Emit something so the file has a text segment */
+	img_writer_emit_section_change (w, ".text", 0);
+	img_writer_emit_string (w, "");
+
+	mono_dwarf_writer_emit_base_info (dw, arch_get_cie_program ());
+
+	*out_w = w;
+	*out_dw = dw;
+}
+
+static void
+xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
+{
+	guint8 *img;
+	guint32 img_size;
+	struct jit_code_entry *entry;
+
+	il_file_line_index = mono_dwarf_writer_get_il_file_line_index (dw);
+	mono_dwarf_writer_close (dw);
+
+	img_writer_emit_writeout (w);
+
+	img = img_writer_get_output (w, &img_size);
+
+	img_writer_destroy (w);
+
+	if (save_symfiles && method) {
+		/* Save the symbol files to help debugging */
+		FILE *fp;
+		char *file_name;
+		static int file_counter;
+
+		file_counter ++;
+		file_name = g_strdup_printf ("xdb-%d.o", file_counter);
+		printf ("%s -> %s\n", mono_method_full_name (method, TRUE), file_name);
+
+		fp = fopen (file_name, "w");
+		fwrite (img, img_size, 1, fp);
+		fclose (fp);
+		g_free (file_name);
+	}
+
+	/* Register the image with GDB */
+
+	entry = g_malloc (sizeof (struct jit_code_entry));
+
+	entry->symfile_addr = (const char*)img;
+	entry->symfile_size = img_size;
+
+	entry->next_entry = __jit_debug_descriptor.first_entry;
+	if (__jit_debug_descriptor.first_entry)
+		__jit_debug_descriptor.first_entry->prev_entry = entry;
+	__jit_debug_descriptor.first_entry = entry;
+	
+	__jit_debug_descriptor.relevant_entry = entry;
+	__jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
+
+	__jit_debug_register_code ();
+}
+
 /*
  * mono_save_xdebug_info:
  *
@@ -5637,69 +5713,14 @@ mono_save_xdebug_info (MonoCompile *cfg)
 	if (use_gdb_interface) {
 		MonoImageWriter *w;
 		MonoDwarfWriter *dw;
-		guint8 *img;
-		guint32 img_size;
-		struct jit_code_entry *entry;
-
-		w = img_writer_create (NULL, TRUE);
-
-		img_writer_emit_start (w);
-
-		/* This file will contain the IL code for methods which don't have debug info */
-		if (!il_file)
-			il_file = fopen ("xdb.il", "w");
 
 		mono_loader_lock ();
 
-		dw = mono_dwarf_writer_create (w, il_file, il_file_line_index, FALSE);
+		xdebug_begin_emit (&w, &dw);
 
-		/* Emit something so the file has a text segment */
-		img_writer_emit_section_change (w, ".text", 0);
-		img_writer_emit_string (w, "");
-
-		mono_dwarf_writer_emit_base_info (dw, arch_get_cie_program ());
 		mono_dwarf_writer_emit_method (dw, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
-		il_file_line_index = mono_dwarf_writer_get_il_file_line_index (dw);
-		mono_dwarf_writer_close (dw);
 
-		img_writer_emit_writeout (w);
-
-		img = img_writer_get_output (w, &img_size);
-
-		img_writer_destroy (w);
-
-		if (save_symfiles) {
-			/* Save the symbol files to help debugging */
-			FILE *fp;
-			char *file_name;
-			static int file_counter;
-
-			file_counter ++;
-			file_name = g_strdup_printf ("xdb-%d.o", file_counter);
-			printf ("%s -> %s\n", mono_method_full_name (cfg->method, TRUE), file_name);
-
-			fp = fopen (file_name, "w");
-			fwrite (img, img_size, 1, fp);
-			fclose (fp);
-			g_free (file_name);
-		}
-
-		/* Register the image with GDB */
-
-		entry = g_malloc (sizeof (struct jit_code_entry));
-
-		entry->symfile_addr = (const char*)img;
-		entry->symfile_size = img_size;
-
-		entry->next_entry = __jit_debug_descriptor.first_entry;
-		if (__jit_debug_descriptor.first_entry)
-			__jit_debug_descriptor.first_entry->prev_entry = entry;
-		__jit_debug_descriptor.first_entry = entry;
-
-		__jit_debug_descriptor.relevant_entry = entry;
-		__jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
-
-		__jit_debug_register_code ();
+		xdebug_end_emit (w, dw, cfg->jit_info->method);
 		
 		mono_loader_unlock ();
 	} else {
@@ -5722,13 +5743,28 @@ mono_save_xdebug_info (MonoCompile *cfg)
 void
 mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info)
 {
-	if (!xdebug_writer)
-		return;
+	if (use_gdb_interface) {
+		MonoImageWriter *w;
+		MonoDwarfWriter *dw;
 
-	mono_loader_lock ();
-	mono_dwarf_writer_emit_trampoline (xdebug_writer, tramp_name, NULL, NULL, code, code_size, unwind_info);
-	fflush (xdebug_fp);
-	mono_loader_unlock ();
+		mono_loader_lock ();
+
+		xdebug_begin_emit (&w, &dw);
+
+		mono_dwarf_writer_emit_trampoline (dw, tramp_name, NULL, NULL, code, code_size, unwind_info);
+
+		xdebug_end_emit (w, dw, NULL);
+		
+		mono_loader_unlock ();
+	} else {
+		if (!xdebug_writer)
+			return;
+
+		mono_loader_lock ();
+		mono_dwarf_writer_emit_trampoline (xdebug_writer, tramp_name, NULL, NULL, code, code_size, unwind_info);
+		fflush (xdebug_fp);
+		mono_loader_unlock ();
+	}
 }
 
 #else
