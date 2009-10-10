@@ -200,7 +200,9 @@ set(test_sources
 	basic-simd.cs)
 
 if(MONO_DEBUGGER_SUPPORTED)
-if(AMD64)
+if(PLATFORM_DARWIN)
+set(mono_debugger_arch_sources mdb-debug-info32-darwin.s)
+elseif(AMD64)
 set(mono_debugger_arch_sources mdb-debug-info64.s)
 elseif(X86)
 set(mono_debugger_arch_sources mdb-debug-info32.s)
@@ -298,14 +300,17 @@ endif()
 
 if(PLATFORM_WIN32)
 set(os_sources ${windows_sources})
+set(monobin_platform_ldflags)
 endif()
 
 if(PLATFORM_SIGPOSIX)
 set(os_sources ${posix_sources})
+set(monobin_platform_ldflags)
 endif()
 
 if(PLATFORM_DARWIN)
 set(os_sources ${darwin_sources} ${posix_sources})
+set(monobin_platform_ldflags "-sectcreate __TEXT __info_plist ${top_srcdir}/mono/mini/Info.plist")
 endif()
 
 #### we don't always use the perl impl because it's an additional
@@ -383,13 +388,13 @@ add_custom_target(libmono.a
 # \ needs to be escaped as \\
 set(top_srcdir ../../)
 file(WRITE create-version.h.sh "
-	if test -d ${top_srcdir}/.git/svn; then svn_info=\"echo \\\"`git log --no-color --first-parent --pretty=format:%b|grep -m1 git-svn-id|sed -e 's,git-svn-id: \\(.*\\)@\\(.*\\) .*,URL: \\1 Revision: \\2,'`\"; fi;
+    if test -d ${top_srcdir}/.git/svn; then svn_info=\"git log --no-color --first-parent -n1 --grep=git-svn-id: --pretty=format:%b | sed -n -e 's,git-svn-id: \\(.*\\)@\\(.*\\) .*,URL: \\1 Revision: \\2,p'\"; fi;
 	if test -d ${srcdir}/.svn; then svn_info='svn info'; fi;
 	if test -n \"$svn_info\"; then
 		(cd ${top_srcdir};
 			LANG=C; export LANG;
-			branch=`$svn_info | grep URL | sed -e 's,.*source/\\(.*\\)/mono.*,/\\1/mono,'`;
-			version=`$svn_info | grep Revision | sed 's/.*: //'`;
+            branch=`eval $$svn_info | sed -n -e '/URL/ s,.*source/\\(.*\\)/mono.*,/\\1/mono,p'`;
+            version=`eval $$svn_info | sed -n -e '/Revision/ s/.*: //p'`;
 			echo \"#define FULL_VERSION \\\"$branch r$version\\\"\";
 		);
 	else
@@ -502,7 +507,7 @@ add_custom_target(aotcheck
 add_custom_target(fullaotcheck
   COMMAND	rm -rf fullaot-tmp
   COMMAND	mkdir fullaot-tmp
-  COMMAND	cp ${CLASS}/mscorlib.dll ${CLASS}/Mono.Simd.dll ${regtests} generics-variant-types.dll TestDriver.dll fullaot-tmp/
+  COMMAND cp ${CLASS}/mscorlib.dll ${CLASS}/System.Core.dll ${CLASS}/System.dll ${CLASS}/Mono.Posix.dll ${CLASS}/System.Configuration.dll ${CLASS}/System.Security.dll ${CLASS}/System.Xml.dll ${CLASS}/Mono.Security.dll ${CLASS}/Mono.Simd.dll ${regtests} generics-variant-types.dll TestDriver.dll fullaot-tmp/
   COMMAND	cp ${regtests} fullaot-tmp/
   COMMAND	MONO_PATH=fullaot-tmp ${top_builddir}/runtime/mono-wrapper --aot=full fullaot-tmp/* || exit 1
   COMMAND   for i in ${regtests}\; do echo $$i\; MONO_PATH=fullaot-tmp ${top_builddir}/runtime/mono-wrapper --full-aot fullaot-tmp/$$i --exclude '!FULLAOT' || exit 1\; done
@@ -612,10 +617,11 @@ add_custom_target(stat3
 ###	${GLIB_LIBS)		\
 ###	${LLVM_LIBS)		\
 ###	-lm	\
-###	${MONO_DTRACE_OBJECT)
+###	${MONO_DTRACE_OBJECT) \
+### ${LLVM_LDFLAGS}
 
 ###mono_LDFLAGS = \
-###	${static_flags} -export-dynamic ${monobinldflags)
+###	${static_flags} -export-dynamic ${monobinldflags) ${monobin_platform_ldflags}
 
 ###if DTRACE_G_REQUIRED
 
@@ -684,5 +690,5 @@ add_custom_target(stat3
 ###	${alpha_sources} cpu-alpha.md \
 ###	${hppa_sources} cpu-hppa.md 	\
 ###	${windows_sources)		\
-###	${darwin_sources)		\
+###	${darwin_sources) Info.plist		\
 ###	${posix_sources)

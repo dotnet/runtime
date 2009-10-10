@@ -40,6 +40,7 @@ set(libmonoutils_la_SOURCES
 	mono-mmap.h  	
 	mono-proclib.c	
 	mono-proclib.h	
+	mono-string.h
 	mono-time.c  	
 	mono-time.h  	
 	strtod.h	
@@ -49,6 +50,8 @@ set(libmonoutils_la_SOURCES
 	mono-uri.c	
 	mono-poll.c	
 	mono-path.c	
+	mono-semaphore.h
+	mono-sigcontext.h
 	mono-stdlib.c 	
 	mono-property-hash.h 
 	mono-property-hash.c 

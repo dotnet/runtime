@@ -1,3 +1,7 @@
+2009-10-10  Zoltan Varga  <vargaz@gmail.com>
+
+	* */CMakeLists.txt: Update this to latest autoconf files.
+
 2009-10-06  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Bump version to 2.7.

@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.6.4)
 
+# To keep this in sync with the autoconf based system:
+# git log -n --format=oneline CMakeLists.txt
+# git diff <commit displayed by previous line>..HEAD configure.in Makefile.am
+
 # FIXME: Sanitize the variables, no need for the duplicate am conditionals
 # - It would be nice to rename 'CMakeFiles' to something like '.cmake'
 # - It would be nice to have a per-target VERBOSE setting
@@ -133,9 +137,8 @@ endfunction()
 
 # The lines commented out using ### are the stuff from configure.in which still 
 # need to be ported to cmake
-# The svn revision of the configure.in used is r132691
 
-set(VERSION 2.5)
+set(VERSION 2.7)
 ac_define_unquoted(VERSION ${VERSION} "Version number of package")
 set(API_VER 1.0)
 ###
@@ -223,7 +226,8 @@ endif()
 ###case "$host" in
 ###	*-*-mingw*|*-*-cygwin*)
 ###		set(platform_win32 yes)
-###		ac_define(PLATFORM_WIN32,1,[Platform is Win32])
+###		AC_DEFINE(PLATFORM_WIN32,1,[Host Platform is Win32])
+###		AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
 ###		ac_define(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
 ###		ac_define(PLATFORM_NO_SYMLINKS,1,[This platform does not support symlinks])
 ###		if test "x$cross_compiling" = "xno"; then
@@ -780,7 +784,8 @@ set(DISABLED_FEATURES none)
 ac_define_unquoted(DISABLED_FEATURES "${DISABLED_FEATURES}" "String of disabled features")
 ###
 ###if test "x$mono_feature_disable_aot" = "xyes"; then
-###	ac_define(DISABLE_AOT, 1, [Disable AOT support])
+###	AC_DEFINE(DISABLE_AOT_COMPILER, 1, [Disable AOT Compiler])
+###	AC_MSG_NOTICE([Disabled AOT compiler])
 ###fi
 ###
 ###if test "x$mono_feature_disable_profiler" = "xyes"; then
@@ -2071,11 +2076,12 @@ set(enable_llvm ${llvm})
 
 ###   set(LLVM_CXXFLAGS `$LLVM_CONFIG --cflags`)
 ###   set(LLVM_LDFLAGS `$LLVM_CONFIG --ldflags`)
-###   set(LLVM_LIBS `$LLVM_CONFIG --libs core engine`)
+###   LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter jit x86codegen`
 ###   set(LLVM_LIBS "$LLVM_LDFLAGS $LLVM_LIBS -lstdc++")
 
 ###   AC_SUBST(LLVM_CXXFLAGS)
 ###   AC_SUBST(LLVM_LIBS)
+###   AC_SUBST(LLVM_LDFLAGS)
 ###   ac_define(ENABLE_LLVM, 1, [Enable the LLVM back end])
 ###fi
 
@@ -2300,6 +2306,14 @@ else()
    ac_define(SIZEOF_REGISTER SIZEOF_VOID_P "size of machine integer registers")
 endif()
 
+###if test "x$target_byte_order" = "xG_BIG_ENDIAN"; then
+###   AC_DEFINE(TARGET_BYTE_ORDER,G_BIG_ENDIAN,[byte order of target])
+###elif test "x$target_byte_order" = "xG_LITTLE_ENDIAN"; then
+###   AC_DEFINE(TARGET_BYTE_ORDER,G_LITTLE_ENDIAN,[byte order of target])
+###else
+###   AC_DEFINE(TARGET_BYTE_ORDER,G_BYTE_ORDER,[byte order of target])
+###fi
+
 ###if (${have_visibility_hidden" = "xyes"; then
 ###   ac_define(HAVE_VISIBILITY_HIDDEN, 1, [Support for the visibility ("hidden") attribute])
 ###fi
@@ -2411,6 +2425,9 @@ if(${TARGET} STREQUAL "AMD64" OR ${TARGET} STREQUAL "X86")
 	if (host MATCHES ".*-.*-.*linux.*")
 	  set(mono_debugger_supported yes)
 	endif()
+	if (host MATCHES ".*86-apple-darwin.*")
+	  set(mono_debugger_supported yes)
+	endif()
   endif()
 endif()
 
@@ -2499,13 +2516,12 @@ endif()
 ###		;;
 ###esac
 
-set(preview yes CACHE BOOL "If you want to install the 2.0 FX preview (defaults to yes)")
-set(PREVIEW ${preview})
-set(moonlight yes CACHE BOOL "If you want to build the Moonlight 2.1 assemblies (defaults to yes)")
-set(MOONLIGHT ${moonlight})
-set(OPROFILE no)
-set(oprofile no CACHE STRING "<oprofile install dir> or 'no' to disable oprofile support (defaults to no)")
-if (NOT oprofile STREQUAL no)
+set(with_moonlight yes CACHE BOOL "If you want to build the Moonlight 2.1 assemblies (defaults to yes)")
+set(with_profile4 no CACHE BOOL "If you want to install the 4.0 FX (defaults to no)")
+set(with_monotouch no CACHE BOOL "If you want to build the raw MonoTouch 2.1 assemblies (defaults to no)")
+set(with_oprofile no)
+set(with_oprofile no CACHE STRING "<oprofile install dir> or 'no' to disable oprofile support (defaults to no)")
+if (NOT with_oprofile STREQUAL no)
 ###	if test x$with_oprofile != xno; then
 ###	    set(oprofile_include $with_oprofile/include)
 ###	    if test ! -f $oprofile_include/opagent.h; then
@@ -2533,7 +2549,7 @@ set(mcs_docs yes CACHE STRING "If you want to build the documentation under mcs 
 if(NOT mcs_docs)
   set(DISABLE_MCS_DOCS yes)
 endif()
-if(OPROFILE)
+if(with_oprofile)
   set(HAVE_OPROFILE yes)
 endif()
 ###AC_SUBST(OPROFILE_CFLAGS)
@@ -2551,6 +2567,10 @@ endif()
 if(MOONLIGHT)
   set(INSTALL_2_1 yes)
 endif()
+
+###AM_CONDITIONAL(INSTALL_2_1, [test "x$with_moonlight" = xyes])
+###AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
+###AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" = xyes])
 
 ###AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
 ###AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
@@ -2674,6 +2694,36 @@ execute_process (COMMAND chmod a+x runtime/mono-wrapper runtime/monodis-wrapper)
 ###    cd $depth
 ###],[set(LN_S '$LN_S']))
 
+ 
+###AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/machine.config],
+###[   depth=../../../..
+###    case $srcdir in
+###    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+###    .) reldir=$depth ;;
+###    *) reldir=$depth/$srcdir ;;
+###    esac
+###    $ac_aux_dir/install-sh -d runtime/etc/mono/4.0
+###    cd runtime/etc/mono/4.0
+###    rm -f machine.config
+###    $LN_S $reldir/data/net_4_0/machine.config machine.config
+###    cd $depth
+###],[LN_S='$LN_S'])
+###
+###AC_CONFIG_COMMANDS([runtime/etc/mono/4.0/web.config],
+###[   depth=../../../..
+###    case $srcdir in
+###    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+###    .) reldir=$depth ;;
+###    *) reldir=$depth/$srcdir ;;
+###    esac
+###    $ac_aux_dir/install-sh -d runtime/etc/mono/4.0
+###    cd runtime/etc/mono/4.0
+###    rm -f web.config
+###    $LN_S $reldir/data/net_4_0/web.config web.config
+###    cd $depth
+###],[LN_S='$LN_S'])
+###
+
 ###if test x$enable_quiet_build = xyes; then
 ###   AC_CONFIG_COMMANDS([quiet], [for i in `find mono libgc support -name Makefile.in | sed -e 's/Makefile.in/Makefile/g'`; do if test -f $i; then $srcdir/scripts/patch-quiet.sh $i; fi; done], [set(shell $SHELL]))
 ###   AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/$echo "copying selected/$show "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
@@ -2750,6 +2800,7 @@ data/config
 )
 
 ###AC_OUTPUT([
+###mono-core.spec
 ###mono-uninstalled.pc
 ###scripts/mono-find-provides
 ###scripts/mono-find-requires
@@ -2786,8 +2837,8 @@ data/config
 ###web/Makefile
 ###docs/Makefile
 ###data/Makefile
-###data/net_1_1/Makefile
 ###data/net_2_0/Makefile
+###data/net_4_0/Makefile
 ###data/net_2_0/Browsers/Makefile
 ###data/mint.pc
 ###data/mono.pc
@@ -2902,12 +2953,13 @@ message(STATUS
 	TLS:           ${with_tls}
 	SIGALTSTACK:   ${with_sigaltstack}
 	Engine:        ${jit_status}
-	2.0 Beta:      ${PREVIEW}
-	2.1 Alpha:     ${MOONLIGHT}
+	Moon Profile:  ${with_moonlight}
+	4.0 Alpha:     ${with_profile4}
+	MonoTouch:     ${with_monotouch}
 	JNI support:   ${jdk_headers_found}
 	libgdiplus:    ${libgdiplus_msg}
 	zlib:          ${zlib_msg}
-	oprofile:      ${OPROFILE}
+	oprofile:      ${with_oprofile}
 	BigArrays:     ${enable_big_arrays}
 	DTrace:        ${enable_dtrace}
 	Parallel Mark: ${enable_parallel_mark}
@@ -2963,8 +3015,7 @@ endif()
 #### Distribute the 'mcs' tree too
 ###dist-hook:
 ###	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
-###	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) PROFILE=net_1_1 distdir=$$d dist-recursive
-###	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) PROFILE=net_2_0 distdir=$$d dist-recursive
+### d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
 
 ###pkgconfigdir = $(libdir)/pkgconfig
 ###noinst_DATA = mono-uninstalled.pc
