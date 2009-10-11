@@ -44,6 +44,8 @@ void img_writer_emit_push_section (MonoImageWriter *w, const char *section_name,
 
 void img_writer_emit_pop_section (MonoImageWriter *w) MONO_INTERNAL;
 
+void img_writer_set_section_addr (MonoImageWriter *acfg, guint64 addr) MONO_INTERNAL;
+
 void img_writer_emit_global (MonoImageWriter *w, const char *name, gboolean func) MONO_INTERNAL;
 
 void img_writer_emit_local_symbol (MonoImageWriter *w, const char *name, const char *end_label, gboolean func) MONO_INTERNAL;

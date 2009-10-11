@@ -213,6 +213,8 @@ struct _BinSection {
 	int file_offset;
 	int virt_offset;
 	int shidx;
+	guint64 addr;
+	gboolean has_addr;
 };
 
 static void
@@ -243,6 +245,13 @@ bin_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 		acfg->sections = section;
 		acfg->cur_section = section;
 	}
+}
+
+static void
+bin_writer_set_section_addr (MonoImageWriter *acfg, guint64 addr)
+{
+	acfg->cur_section->addr = addr;
+	acfg->cur_section->has_addr = TRUE;
 }
 
 static void
@@ -1129,6 +1138,10 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	virt_offset = file_offset;
 	secth [SECT_TEXT].sh_addr = secth [SECT_TEXT].sh_offset = file_offset;
 	if (sections [SECT_TEXT]) {
+		if (sections [SECT_TEXT]->has_addr) {
+			secth [SECT_TEXT].sh_addr = sections [SECT_TEXT]->addr;
+			secth [SECT_TEXT].sh_flags &= ~SHF_ALLOC;
+		}
 		size = sections [SECT_TEXT]->cur_offset;
 		secth [SECT_TEXT].sh_size = size;
 		file_offset += size;
@@ -1749,6 +1762,19 @@ img_writer_emit_pop_section (MonoImageWriter *acfg)
 	g_assert (acfg->stack_pos > 0);
 	acfg->stack_pos --;
 	img_writer_emit_section_change (acfg, acfg->section_stack [acfg->stack_pos], acfg->subsection_stack [acfg->stack_pos]);
+}
+
+void
+img_writer_set_section_addr (MonoImageWriter *acfg, guint64 addr)
+{
+#ifdef USE_BIN_WRITER
+	if (!acfg->use_bin_writer)
+		NOT_IMPLEMENTED;
+	else
+		bin_writer_set_section_addr (acfg, addr);
+#else
+	NOT_IMPLEMENTED;
+#endif
 }
 
 void

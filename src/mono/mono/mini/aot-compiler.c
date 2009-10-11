@@ -5585,6 +5585,7 @@ static MonoDwarfWriter *xdebug_writer;
 static FILE *xdebug_fp, *il_file;
 static gboolean use_gdb_interface, save_symfiles;
 static int il_file_line_index;
+static GHashTable *xdebug_syms;
 
 void
 mono_xdebug_init (char *options)
@@ -5640,10 +5641,6 @@ xdebug_begin_emit (MonoImageWriter **out_w, MonoDwarfWriter **out_dw)
 
 	dw = mono_dwarf_writer_create (w, il_file, il_file_line_index, FALSE);
 
-	/* Emit something so the file has a text segment */
-	img_writer_emit_section_change (w, ".text", 0);
-	img_writer_emit_string (w, "");
-
 	mono_dwarf_writer_emit_base_info (dw, arch_get_cie_program ());
 
 	*out_w = w;
@@ -5674,7 +5671,7 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
 
 		file_counter ++;
 		file_name = g_strdup_printf ("xdb-%d.o", file_counter);
-		printf ("%s -> %s\n", mono_method_full_name (method, TRUE), file_name);
+		//printf ("%s -> %s\n", mono_method_full_name (method, TRUE), file_name);
 
 		fp = fopen (file_name, "w");
 		fwrite (img, img_size, 1, fp);
@@ -5713,12 +5710,29 @@ mono_save_xdebug_info (MonoCompile *cfg)
 	if (use_gdb_interface) {
 		MonoImageWriter *w;
 		MonoDwarfWriter *dw;
+		char *sym;
 
 		mono_loader_lock ();
+
+		if (!xdebug_syms)
+			xdebug_syms = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
 		xdebug_begin_emit (&w, &dw);
 
 		mono_dwarf_writer_emit_method (dw, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+
+		/* 
+		 * Emit a symbol for the code by emitting it at the beginning of the text 
+		 * segment, and setting the text segment to have an absolute address.
+		 * This symbol can be used to set breakpoints in gdb.
+		 */
+		sym = get_debug_sym (cfg->jit_info->method, "", xdebug_syms);
+		img_writer_emit_section_change (w, ".text", 0);
+		img_writer_set_section_addr (w, (gssize)cfg->jit_info->code_start);
+		img_writer_emit_global (w, sym, TRUE);
+		img_writer_emit_label (w, sym);
+		img_writer_emit_bytes (w, cfg->jit_info->code_start, cfg->jit_info->code_size);
+		g_free (sym);
 
 		xdebug_end_emit (w, dw, cfg->jit_info->method);
 		
