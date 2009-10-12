@@ -96,8 +96,7 @@ static void process_set_field_object (MonoObject *obj, const gchar *fieldname,
 
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
-	/* FIXME: moving GC */
-	*(MonoObject **)(((char *)obj) + field->offset)=data;
+	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, data);
 }
 
 static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
@@ -112,8 +111,7 @@ static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
 	
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
-	/* FIXME: moving GC */
-	*(MonoString **)(((char *)obj) + field->offset)=string;
+	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
 }
 
 static void process_set_field_int (MonoObject *obj, const gchar *fieldname,

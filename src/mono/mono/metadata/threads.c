@@ -611,7 +611,7 @@ static MonoThread*
 new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal)
 {
 	MonoThread *thread = (MonoThread*) mono_object_new (domain, mono_defaults.thread_class);
-	thread->internal_thread = internal;
+	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 	return thread;
 }
 
@@ -624,7 +624,7 @@ init_root_domain_thread (MonoInternalThread *thread, MonoThread *candidate)
 		candidate = new_thread_with_internal (domain, thread);
 	set_current_thread_for_domain (domain, thread, candidate);
 	g_assert (!thread->root_domain_thread);
-	thread->root_domain_thread = candidate;
+	MONO_OBJECT_SETREF (thread, root_domain_thread, candidate);
 }
 
 static guint32 WINAPI start_wrapper(void *data)
@@ -805,7 +805,7 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 					      mono_defaults.thread_class);
 	internal = (MonoInternalThread*)mono_object_new (mono_get_root_domain (),
 			mono_defaults.internal_thread_class);
-	thread->internal_thread = internal;
+	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
 	start_info=g_new0 (struct StartInfo, 1);
 	start_info->func = func;
