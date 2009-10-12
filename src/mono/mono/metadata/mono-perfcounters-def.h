@@ -125,3 +125,7 @@ PERFCTR_COUNTER(THREADPOOL_WORKITEMS_PSEC, "Work Items Added/Sec", "", RateOfCou
 PERFCTR_COUNTER(THREADPOOL_IOWORKITEMS, "IO Work Items Added", "", NumberOfItems64, threadpool_ioworkitems)
 PERFCTR_COUNTER(THREADPOOL_IOWORKITEMS_PSEC, "IO Work Items Added/Sec", "", RateOfCountsPerSecond32, threadpool_ioworkitems)
 
+PERFCTR_CAT(NETWORK, "Network Interface", "", MultiInstance, NetworkInterface, NETWORK_BYTESRECSEC)
+PERFCTR_COUNTER(NETWORK_BYTESRECSEC, "Bytes Received/sec", "", RateOfCountsPerSecond64, unused)
+PERFCTR_COUNTER(NETWORK_BYTESSENTSEC, "Bytes Sent/sec", "", RateOfCountsPerSecond64, unused)
+PERFCTR_COUNTER(NETWORK_BYTESTOTALSEC, "Bytes Total/sec", "", RateOfCountsPerSecond64, unused)

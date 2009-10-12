@@ -22,6 +22,7 @@
 #include "utils/mono-time.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-proclib.h"
+#include "utils/mono-networkinterfaces.h"
 #include <mono/io-layer/io-layer.h>
 
 /* map of CounterSample.cs */
@@ -98,6 +99,7 @@ enum {
 	ThreadInstance,
 	CPUInstance,
 	MonoInstance,
+	NetworkInterfaceInstance,
 	CustomInstance
 };
 
@@ -281,6 +283,11 @@ struct _ImplVtable {
 	UpdateFunc update;
 	CleanupFunc cleanup;
 };
+
+typedef struct {
+	int id;
+	char *name;
+} NetworkVtableArg;
 
 typedef struct {
 	ImplVtable vtable;
@@ -686,6 +693,71 @@ cpu_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBoolean 
 }
 
 static MonoBoolean
+get_network_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *sample)
+{
+	MonoNetworkError error = MONO_NETWORK_ERROR_OTHER;
+	NetworkVtableArg *narg = (NetworkVtableArg*) vtable->arg;
+	if (!only_value) {
+		fill_sample (sample);
+	}
+
+	sample->counterType = predef_counters [predef_categories [CATEGORY_NETWORK].first_counter + narg->id].type;
+	switch (narg->id) {
+	case COUNTER_NETWORK_BYTESRECSEC:
+		sample->rawValue = mono_network_get_data (narg->name, MONO_NETWORK_BYTESREC, &error);
+		break;
+	case COUNTER_NETWORK_BYTESSENTSEC:
+		sample->rawValue = mono_network_get_data (narg->name, MONO_NETWORK_BYTESSENT, &error);
+		break;
+	case COUNTER_NETWORK_BYTESTOTALSEC:
+		sample->rawValue = mono_network_get_data (narg->name, MONO_NETWORK_BYTESTOTAL, &error);
+		break;
+	}
+
+	if (error == MONO_NETWORK_ERROR_NONE)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+static void
+network_cleanup (ImplVtable *vtable)
+{
+	NetworkVtableArg *narg;
+
+	if (vtable == NULL)
+		return;
+
+	narg = vtable->arg;
+	if (narg == NULL)
+		return;
+
+	g_free (narg->name);
+	narg->name = NULL;
+	g_free (narg);
+	vtable->arg = NULL;
+}
+
+static void*
+network_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBoolean *custom)
+{
+	const CounterDesc *cdesc;
+	NetworkVtableArg *narg;
+	ImplVtable *vtable;
+	*custom = FALSE;
+	if ((cdesc = get_counter_in_category (&predef_categories [CATEGORY_NETWORK], counter))) {
+		narg = g_new0 (NetworkVtableArg, 1);
+		narg->id = cdesc->id;
+		narg->name = mono_string_to_utf8 (instance);
+		*type = cdesc->type;
+		vtable = create_vtable (narg, get_network_counter, NULL);
+		vtable->cleanup = network_cleanup;
+		return vtable;
+	}
+	return NULL;
+}
+
+static MonoBoolean
 get_process_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *sample)
 {
 	int id = GPOINTER_TO_INT (vtable->arg);
@@ -1071,6 +1143,8 @@ mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString
 		return process_get_impl (counter, instance, type, custom);
 	case CATEGORY_MONO_MEM:
 		return mono_mem_get_impl (counter, instance, type, custom);
+	case CATEGORY_NETWORK:
+		return network_get_impl (counter, instance, type, custom);
 	case CATEGORY_JIT:
 	case CATEGORY_EXC:
 	case CATEGORY_GC:
@@ -1382,6 +1456,20 @@ get_string_array (void **array, int count, gboolean is_process)
 }
 
 static MonoArray*
+get_string_array_of_strings (void **array, int count)
+{
+	int i;
+	MonoDomain *domain = mono_domain_get ();
+	MonoArray * res = mono_array_new (mono_domain_get (), mono_get_string_class (), count);
+	for (i = 0; i < count; ++i) {
+		char* p = array[i];
+		mono_array_setref (res, i, mono_string_new (domain, p));
+	}
+
+	return res;
+}
+
+static MonoArray*
 get_mono_instances (void)
 {
 	int count = 64;
@@ -1428,6 +1516,19 @@ get_processes_instances (void)
 }
 
 static MonoArray*
+get_networkinterface_instances (void)
+{
+	MonoArray *array;
+	int count = 0;
+	void **buf = mono_networkinterface_list (&count);
+	if (!buf)
+		return get_string_array_of_strings (NULL, 0);
+	array = get_string_array_of_strings (buf, count);
+	g_strfreev ((char **) buf);
+	return array;
+}
+
+static MonoArray*
 get_custom_instances (MonoString *category)
 {
 	SharedCategory *scat;
@@ -1464,6 +1565,8 @@ mono_perfcounter_instance_names (MonoString *category, MonoString *machine)
 		return get_cpu_instances ();
 	case ProcessInstance:
 		return get_processes_instances ();
+	case NetworkInterfaceInstance:
+		return get_networkinterface_instances ();
 	case ThreadInstance:
 	default:
 		return mono_array_new (mono_domain_get (), mono_get_string_class (), 0);

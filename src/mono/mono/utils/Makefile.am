@@ -38,6 +38,8 @@ libmonoutils_la_SOURCES = \
 	mono-math.c  		\
 	mono-mmap.c  		\
 	mono-mmap.h  		\
+	mono-networkinterfaces.c		\
+	mono-networkinterfaces.h		\
 	mono-proclib.c		\
 	mono-proclib.h		\
 	mono-string.h		\
