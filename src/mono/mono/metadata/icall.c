@@ -830,9 +830,11 @@ ves_icall_System_Array_SetGenericValueImpl (MonoObject *this, guint32 pos, gpoin
 		mono_gc_wbarrier_generic_store (ea, *(gpointer*)value);
 	} else {
 		g_assert (ec->inited);
+		g_assert (esize == mono_class_value_size (ec, NULL));
 		if (ec->has_references)
 			mono_gc_wbarrier_value_copy (ea, value, 1, ec);
-		memcpy (ea, value, esize);
+		else
+			memcpy (ea, value, esize);
 	}
 }
 
@@ -2908,11 +2910,8 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 					if (field_klass->valuetype) {
 						size = mono_type_size (field->type, &align);
-#ifdef HAVE_SGEN_GC
+						g_assert (size == mono_class_value_size (field_klass, NULL));
 						mono_gc_wbarrier_value_copy ((char *)this + field->offset, (char*)val + sizeof (MonoObject), 1, field_klass);
-#endif
-						memcpy ((char *)this + field->offset, 
-							((char *)val) + sizeof (MonoObject), size);
 					} else {
 						mono_gc_wbarrier_set_field (this, (char*)this + field->offset, val);
 					}

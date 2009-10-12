@@ -96,8 +96,8 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 #define mono_array_memcpy_refs(dest,destidx,src,srcidx,count)	\
 	do {	\
 		gpointer *__p = (gpointer *) mono_array_addr ((dest), gpointer, (destidx));	\
-		mono_gc_wbarrier_arrayref_copy ((dest), __p, (count));	\
-		memmove (__p, mono_array_addr ((src), gpointer, (srcidx)), (count) * sizeof (gpointer));	\
+		gpointer *__s = mono_array_addr ((src), gpointer, (srcidx));	\
+		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
 	} while (0)
 
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
@@ -330,11 +330,11 @@ void         mono_gchandle_free        (guint32 gchandle);
 /* GC write barriers support */
 void mono_gc_wbarrier_set_field     (MonoObject *obj, gpointer field_ptr, MonoObject* value);
 void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
-void mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count);
+void mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count);
 void mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value);
 void mono_gc_wbarrier_generic_nostore (gpointer ptr);
 void mono_gc_wbarrier_value_copy    (gpointer dest, gpointer src, int count, MonoClass *klass);
-void mono_gc_wbarrier_object        (MonoObject* obj);
+void mono_gc_wbarrier_object_copy   (MonoObject* obj, MonoObject *src);
 
 G_END_DECLS
 

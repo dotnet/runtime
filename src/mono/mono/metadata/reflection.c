@@ -7660,6 +7660,7 @@ handle_type:
 		}
 		val = load_cattr_value (image, &subc->byval_arg, p, end);
 		obj = mono_object_new (mono_domain_get (), subc);
+		g_assert (!subc->has_references);
 		memcpy ((char*)obj + sizeof (MonoObject), val, mono_class_value_size (subc, NULL));
 		g_free (val);
 		return obj;

@@ -5693,10 +5693,12 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
+	LOCK_GC;
 	rs = REMEMBERED_SET;
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)field_ptr;
 		*(void**)field_ptr = value;
+		UNLOCK_GC;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
@@ -5707,6 +5709,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 #endif
 	*(rs->store_next++) = (mword)field_ptr;
 	*(void**)field_ptr = value;
+	UNLOCK_GC;
 }
 
 void
@@ -5714,15 +5717,17 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
-	rs = REMEMBERED_SET;
 	if (ptr_in_nursery (slot_ptr)) {
 		*(void**)slot_ptr = value;
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
+	LOCK_GC;
+	rs = REMEMBERED_SET;
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)slot_ptr;
 		*(void**)slot_ptr = value;
+		UNLOCK_GC;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
@@ -5733,20 +5738,26 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 #endif
 	*(rs->store_next++) = (mword)slot_ptr;
 	*(void**)slot_ptr = value;
+	UNLOCK_GC;
 }
 
 void
-mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
+mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
-	rs = REMEMBERED_SET;
-	if (ptr_in_nursery (slot_ptr))
+	LOCK_GC;
+	memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
+	if (ptr_in_nursery (dest_ptr)) {
+		UNLOCK_GC;
 		return;
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", slot_ptr, count));
+	}
+	rs = REMEMBERED_SET;
+	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", dest_ptr, count));
 	if (rs->store_next + 1 < rs->end_set) {
-		*(rs->store_next++) = (mword)slot_ptr | REMSET_RANGE;
+		*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
 		*(rs->store_next++) = count;
+		UNLOCK_GC;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
@@ -5755,8 +5766,9 @@ mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 #ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
-	*(rs->store_next++) = (mword)slot_ptr | REMSET_RANGE;
+	*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
 	*(rs->store_next++) = count;
+	UNLOCK_GC;
 }
 
 static char*
@@ -5821,6 +5833,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	TLAB_ACCESS_INIT;
 
 #ifdef XDOMAIN_CHECKS_IN_WBARRIER
+	/* FIXME: ptr_in_heap must be called with the GC lock held */
 	if (xdomain_checks && *(MonoObject**)ptr && ptr_in_heap (ptr)) {
 		char *start = find_object_for_ptr (ptr);
 		MonoObject *value = *(MonoObject**)ptr;
@@ -5835,14 +5848,17 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	}
 #endif
 
+	LOCK_GC;
 	if (ptr_in_nursery (ptr) || !ptr_in_heap (ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
+		UNLOCK_GC;
 		return;
 	}
 	rs = REMEMBERED_SET;
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)ptr;
+		UNLOCK_GC;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
@@ -5852,6 +5868,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 	*(rs->store_next++) = (mword)ptr;
+	UNLOCK_GC;
 }
 
 void
@@ -5867,11 +5884,11 @@ mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
-	rs = REMEMBERED_SET;
 	if (ptr_in_nursery (ptr))
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding root remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
 
+	rs = REMEMBERED_SET;
 	if (rs->store_next + 2 < rs->end_set) {
 		*(rs->store_next++) = (mword)ptr | REMSET_OTHER;
 		*(rs->store_next++) = (mword)REMSET_ROOT_LOCATION;
@@ -5895,9 +5912,14 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
+	g_assert (klass->valuetype);
+	LOCK_GC;
+	memmove (dest, src, count * mono_class_value_size (klass, NULL));
 	rs = REMEMBERED_SET;
-	if (ptr_in_nursery (dest) || !ptr_in_heap (dest))
+	if (ptr_in_nursery (dest) || !ptr_in_heap (dest)) {
+		UNLOCK_GC;
 		return;
+	}
 	g_assert (klass->gc_descr_inited);
 	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
 
@@ -5906,6 +5928,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		*(rs->store_next++) = (mword)REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		*(rs->store_next++) = (mword)count;
+		UNLOCK_GC;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
@@ -5918,22 +5941,35 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	*(rs->store_next++) = (mword)REMSET_VTYPE;
 	*(rs->store_next++) = (mword)klass->gc_descr;
 	*(rs->store_next++) = (mword)count;
+	UNLOCK_GC;
 }
 
 /**
- * mono_gc_wbarrier_object:
+ * mono_gc_wbarrier_object_copy:
  *
  * Write barrier to call when obj is the result of a clone or copy of an object.
  */
 void
-mono_gc_wbarrier_object (MonoObject* obj)
+mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	RememberedSet *rs;
+	int size;
+
 	TLAB_ACCESS_INIT;
 	rs = REMEMBERED_SET;
 	DEBUG (1, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
+	size = mono_object_class (obj)->instance_size;
+	LOCK_GC;
+	/* do not copy the sync state */
+	memcpy ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+			size - sizeof (MonoObject));
+	if (ptr_in_nursery (obj) || !ptr_in_heap (obj)) {
+		UNLOCK_GC;
+		return;
+	}
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
+		UNLOCK_GC;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
@@ -5943,6 +5979,7 @@ mono_gc_wbarrier_object (MonoObject* obj)
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
+	UNLOCK_GC;
 }
 
 /*
