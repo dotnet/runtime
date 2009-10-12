@@ -1,3 +1,8 @@
+2009-10-12  Zoltan Varga  <vargaz@gmail.com>
+
+	* data/gdb-pre7.0: New directory, containing the mono support files for
+	gdb versions before 7.0.
+
 2009-10-10  Zoltan Varga  <vargaz@gmail.com>
 
 	* */CMakeLists.txt: Update this to latest autoconf files.
@@ -37,7 +42,7 @@
 
 2009-08-04  Miguel de Icaza  <miguel@novell.com>
 
-	* Start the split between PLATFORM_WIN32 and TARGET_WIN32.  
+	* Start the split between PLATFORM_WIN32 and TARGET_WIN32.
 
 	PLATFORM_WIN32 should be used to configure the runtime while
 	building it.   TARGET_WIN32 is used for target execution.
