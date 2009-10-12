@@ -1,5 +1,7 @@
 2009-10-12  Zoltan Varga  <vargaz@gmail.com>
 
+	* data/Makefile.am (gdb_DATA): Install mono-gdb.py alongside the mono executable.
+
 	* data/gdb-pre7.0: New directory, containing the mono support files for
 	gdb versions before 7.0.
 
