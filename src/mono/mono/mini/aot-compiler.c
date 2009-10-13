@@ -5792,7 +5792,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 }
 
 void
-mono_xdebug_init (void)
+mono_xdebug_init (char *options)
 {
 }
 
