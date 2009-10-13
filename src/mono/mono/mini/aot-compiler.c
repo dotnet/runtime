@@ -5588,6 +5588,7 @@ void MONO_NOINLINE __jit_debug_register_code(void) { };
    debugger may check the version before we can set it.  */
 struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
 
+static MonoImageWriter *xdebug_w;
 static MonoDwarfWriter *xdebug_writer;
 static FILE *xdebug_fp, *il_file;
 static gboolean use_gdb_interface, save_symfiles;
@@ -5670,7 +5671,7 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
 
 	img_writer_destroy (w);
 
-	if (save_symfiles && method) {
+	if (TRUE) {
 		/* Save the symbol files to help debugging */
 		FILE *fp;
 		char *file_name;
@@ -5705,6 +5706,23 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
 }
 
 /*
+ * mono_xdebug_flush:
+ *
+ *   This could be called from inside gdb to flush the debugging information not yet
+ * registered with gdb.
+ */
+static void
+mono_xdebug_flush (void)
+{
+	if (xdebug_w)
+		xdebug_end_emit (xdebug_w, xdebug_writer, NULL);
+
+	xdebug_begin_emit (&xdebug_w, &xdebug_writer);
+}
+
+static int xdebug_method_count;
+
+/*
  * mono_save_xdebug_info:
  *
  *   Emit debugging info for METHOD into an assembly file which can be assembled
@@ -5715,33 +5733,40 @@ void
 mono_save_xdebug_info (MonoCompile *cfg)
 {
 	if (use_gdb_interface) {
-		MonoImageWriter *w;
-		MonoDwarfWriter *dw;
-		char *sym;
-
 		mono_loader_lock ();
 
 		if (!xdebug_syms)
 			xdebug_syms = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
-		xdebug_begin_emit (&w, &dw);
+		/*
+		 * gdb is not designed to handle 1000s of symbol files (one per method). So we
+		 * group them into groups of 10.
+		 */
+		if ((xdebug_method_count % 10) == 0)
+			mono_xdebug_flush ();
 
-		mono_dwarf_writer_emit_method (dw, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+		xdebug_method_count ++;
 
+		mono_dwarf_writer_emit_method (xdebug_writer, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+
+#if 0
 		/* 
 		 * Emit a symbol for the code by emitting it at the beginning of the text 
 		 * segment, and setting the text segment to have an absolute address.
 		 * This symbol can be used to set breakpoints in gdb.
+		 * FIXME: This doesn't work when multiple methods are emitted into the same file.
 		 */
 		sym = get_debug_sym (cfg->jit_info->method, "", xdebug_syms);
 		img_writer_emit_section_change (w, ".text", 0);
-		img_writer_set_section_addr (w, (gssize)cfg->jit_info->code_start);
-		img_writer_emit_global (w, sym, TRUE);
+		if (!xdebug_text_addr) {
+			xdebug_text_addr = cfg->jit_info->code_start;
+			img_writer_set_section_addr (w, (gssize)xdebug_text_addr);
+		}
+		img_writer_emit_global_with_size (w, sym, cfg->jit_info->code_size, TRUE);
 		img_writer_emit_label (w, sym);
 		img_writer_emit_bytes (w, cfg->jit_info->code_start, cfg->jit_info->code_size);
 		g_free (sym);
-
-		xdebug_end_emit (w, dw, cfg->jit_info->method);
+#endif
 		
 		mono_loader_unlock ();
 	} else {
