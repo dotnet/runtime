@@ -65,8 +65,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib"
 				OutputFile="$(OutDir)\MonoPosixHelper.dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
 				ModuleDefinitionFile="monoposixhelper.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -146,8 +148,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib"
 				OutputFile="$(OutDir)\MonoPosixHelper.dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
 				ModuleDefinitionFile="monoposixhelper.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -225,8 +229,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib"
 				OutputFile="$(OutDir)\MonoPosixHelper.dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
 				ModuleDefinitionFile="monoposixhelper.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -307,8 +313,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="glib-2.0.lib"
 				OutputFile="$(OutDir)\MonoPosixHelper.dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
 				ModuleDefinitionFile="monoposixhelper.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -389,8 +397,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="eglib.lib"
 				OutputFile="$(OutDir)\MonoPosixHelper.dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="monoposixhelper.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -470,8 +480,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="eglib.lib"
 				OutputFile="$(OutDir)\MonoPosixHelper.dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="monoposixhelper.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -549,8 +561,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="eglib.lib"
 				OutputFile="$(OutDir)\MonoPosixHelper.dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="monoposixhelper.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -631,8 +645,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="eglib.lib"
 				OutputFile="$(OutDir)\MonoPosixHelper.dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="monoposixhelper.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -752,7 +768,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\support\zlib_macros.c"
+				RelativePath="..\support\zlib-helper.c"
 				>
 			</File>
 			<File

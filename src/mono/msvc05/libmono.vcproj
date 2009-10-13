@@ -1516,6 +1516,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\utils\mono-networkinterfaces.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-networkinterfaces.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\mono-path.c"
 				>
 			</File>

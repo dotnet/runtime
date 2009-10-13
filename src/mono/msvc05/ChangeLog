@@ -1,3 +1,10 @@
+2009-10-13  Bill Holmes  <billholmes54@gmail.com>
+
+	* mono.def, monoposixhelper.def, libmono.vcproj, libtest.vcproj,
+	  monoposixhelper.vcproj : Fixing MSVC build.
+
+	Code is contributed under MIT/X11 license.
+
 2009-05-04  Bill Holmes  <billholmes54@gmail.com>
 
 	* eglib.vcproj, genmdesc.vcproj, libgc.vcproj, libmono.vcproj,

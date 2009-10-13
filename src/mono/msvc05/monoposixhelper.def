@@ -92,12 +92,4 @@ Mono_Posix_ToSyslogLevel
 Mono_Posix_ToSyslogOptions
 Mono_Posix_ToWaitOptions
 Mono_Posix_ToXattrFlags
-create_z_stream
-free_z_stream
-z_stream_deflate
-z_stream_get_avail_in
-z_stream_inflate
-z_stream_set_avail_in
-z_stream_set_avail_out
-z_stream_set_next_in
-z_stream_set_next_out
+
