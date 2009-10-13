@@ -4311,6 +4311,24 @@ mono_array_clone (MonoArray *array)
 					 ((guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a)))))
 #endif
 
+gboolean
+mono_array_calc_byte_len (MonoClass *class, mono_array_size_t len, mono_array_size_t *res)
+{
+	mono_array_size_t byte_len;
+
+	byte_len = mono_array_element_size (class);
+	if (CHECK_MUL_OVERFLOW_UN (byte_len, len))
+		return FALSE;
+	byte_len *= len;
+	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
+		return FALSE;
+	byte_len += sizeof (MonoArray);
+
+	*res = byte_len;
+
+	return TRUE;
+}
+
 /**
  * mono_array_new_full:
  * @domain: domain where the object is created
@@ -4327,13 +4345,13 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size
 	mono_array_size_t byte_len, len, bounds_size;
 	MonoObject *o;
 	MonoArray *array;
+	MonoArrayBounds *bounds;
 	MonoVTable *vtable;
 	int i;
 
 	if (!array_class->inited)
 		mono_class_init (array_class);
 
-	byte_len = mono_array_element_size (array_class);
 	len = 1;
 
 	/* A single dimensional array with a 0 lower bound is the same as an szarray */
@@ -4354,12 +4372,9 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size
 		}
 	}
 
-	if (CHECK_MUL_OVERFLOW_UN (byte_len, len))
+	if (!mono_array_calc_byte_len (array_class, len, &byte_len))
 		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
-	byte_len *= len;
-	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
-		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
-	byte_len += sizeof (MonoArray);
+
 	if (bounds_size) {
 		/* align */
 		if (CHECK_ADD_OVERFLOW_UN (byte_len, 3))
@@ -4374,6 +4389,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size
 	 * they need to be kept in sync.
 	 */
 	vtable = mono_class_vtable_full (domain, array_class, TRUE);
+#ifndef HAVE_SGEN_GC
 	if (!array_class->has_references) {
 		o = mono_object_allocate_ptrfree (byte_len, vtable);
 #if NEED_TO_ZERO_PTRFREE
@@ -4389,8 +4405,21 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size
 	array->max_length = len;
 
 	if (bounds_size) {
-		MonoArrayBounds *bounds = (MonoArrayBounds*)((char*)array + byte_len - bounds_size);
+		bounds = (MonoArrayBounds*)((char*)array + byte_len - bounds_size);
 		array->bounds = bounds;
+	}
+#else
+	if (bounds_size)
+		o = mono_gc_alloc_array (vtable, byte_len, len, bounds_size);
+	else
+		o = mono_gc_alloc_vector (vtable, byte_len, len);
+	array = (MonoArray*)o;
+	mono_stats.new_object_count++;
+
+	bounds = array->bounds;
+#endif
+
+	if (bounds_size) {
 		for (i = 0; i < array_class->rank; ++i) {
 			bounds [i].length = lengths [i];
 			if (lower_bounds)
@@ -4438,7 +4467,7 @@ mono_array_new_specific (MonoVTable *vtable, mono_array_size_t n)
 {
 	MonoObject *o;
 	MonoArray *ao;
-	guint32 byte_len, elem_size;
+	guint32 byte_len;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -4446,18 +4475,12 @@ mono_array_new_specific (MonoVTable *vtable, mono_array_size_t n)
 		arith_overflow ();
 		return NULL;
 	}
-	
-	elem_size = mono_array_element_size (vtable->klass);
-	if (CHECK_MUL_OVERFLOW_UN (n, elem_size)) {
+
+	if (!mono_array_calc_byte_len (vtable->klass, n, &byte_len)) {
 		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 		return NULL;
 	}
-	byte_len = n * elem_size;
-	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray))) {
-		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
-		return NULL;
-	}
-	byte_len += sizeof (MonoArray);
+#ifndef HAVE_SGEN_GC
 	if (!vtable->klass->has_references) {
 		o = mono_object_allocate_ptrfree (byte_len, vtable);
 #if NEED_TO_ZERO_PTRFREE
@@ -4473,6 +4496,12 @@ mono_array_new_specific (MonoVTable *vtable, mono_array_size_t n)
 
 	ao = (MonoArray *)o;
 	ao->max_length = n;
+#else
+	o = mono_gc_alloc_vector (vtable, byte_len, n);
+	ao = (MonoArray*)o;
+	mono_stats.new_object_count++;
+#endif
+
 	if (G_UNLIKELY (profile_allocs))
 		mono_profiler_allocation (o, vtable->klass);
 

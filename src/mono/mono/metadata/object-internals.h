@@ -1337,6 +1337,9 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array) MONO_INTERNAL;
 void
 mono_array_full_copy (MonoArray *src, MonoArray *dest) MONO_INTERNAL;
 
+gboolean
+mono_array_calc_byte_len (MonoClass *class, mono_array_size_t len, mono_array_size_t *res) MONO_INTERNAL;
+
 gpointer
 mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy) MONO_INTERNAL;
 

@@ -831,6 +831,12 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 	return mono_gc_get_managed_allocator_by_type (atype);
 }
 
+MonoMethod*
+mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
+{
+	return NULL;
+}
+
 /**
  * mono_gc_get_managed_allocator_id:
  *

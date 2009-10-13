@@ -112,6 +112,8 @@ void     mono_gc_finalize_notify    (void) MONO_INTERNAL;
 
 void* mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size) MONO_INTERNAL;
 void* mono_gc_alloc_obj (MonoVTable *vtable, size_t size) MONO_INTERNAL;
+void* mono_gc_alloc_vector (MonoVTable *vtable, size_t size, mono_array_size_t max_length) MONO_INTERNAL;
+void* mono_gc_alloc_array (MonoVTable *vtable, size_t size, mono_array_size_t max_length, mono_array_size_t bounds_size) MONO_INTERNAL;
 void* mono_gc_make_descr_for_string (gsize *bitmap, int numbits) MONO_INTERNAL;
 void* mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size) MONO_INTERNAL;
 void* mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size) MONO_INTERNAL;
@@ -147,6 +149,7 @@ void  mono_gc_finalize_threadpool_threads (void) MONO_INTERNAL;
 
 /* fast allocation support */
 MonoMethod* mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box) MONO_INTERNAL;
+MonoMethod* mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank) MONO_INTERNAL;
 int mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc) MONO_INTERNAL;
 MonoMethod *mono_gc_get_managed_allocator_by_type (int atype) MONO_INTERNAL;
 

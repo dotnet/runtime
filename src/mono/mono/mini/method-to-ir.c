@@ -4908,6 +4908,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						dest->dreg = ins->dreg;
 					} else {
 						MonoVTable *vtable = mono_class_vtable (cfg->domain, mono_array_class_get (ins->inst_newa_class, 1));
+						MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (vtable, 1);
 
 						g_assert (vtable); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
 						NEW_VTABLECONST (cfg, iargs [0], vtable);
@@ -4915,7 +4916,10 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						MONO_INST_NEW (cfg, iargs [1], OP_MOVE);
 						iargs [1]->dreg = ins->sreg1;
 
-						dest = mono_emit_jit_icall (cfg, mono_array_new_specific, iargs);
+						if (managed_alloc)
+							dest = mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
+						else
+							dest = mono_emit_jit_icall (cfg, mono_array_new_specific, iargs);
 						dest->dreg = ins->dreg;
 					}
 					break;
@@ -8430,18 +8434,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (context_used) {
-				MonoInst *args [2];
+				MonoInst *args [3];
+				MonoClass *array_class = mono_array_class_get (klass, 1);
+				MonoVTable *array_class_vtable = mono_class_vtable (cfg->domain, array_class);
+				MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class_vtable, 1);
 
 				/* FIXME: Decompose later to help abcrem */
 
 				/* vtable */
 				args [0] = emit_get_rgctx_klass (cfg, context_used,
-					mono_array_class_get (klass, 1), MONO_RGCTX_INFO_VTABLE);
-
+					array_class, MONO_RGCTX_INFO_VTABLE);
 				/* array len */
 				args [1] = sp [0];
 
-				ins = mono_emit_jit_icall (cfg, mono_array_new_specific, args);
+				if (managed_alloc)
+					ins = mono_emit_method_call (cfg, managed_alloc, args, NULL);
+				else
+					ins = mono_emit_jit_icall (cfg, mono_array_new_specific, args);
 			} else {
 				if (cfg->opt & MONO_OPT_SHARED) {
 					/* Decompose now to avoid problems with references to the domainvar */
