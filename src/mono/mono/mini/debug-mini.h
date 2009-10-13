@@ -19,7 +19,7 @@ void
 mono_debugger_extended_notification (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
 void
-mono_debugger_trampoline_compiled (MonoMethod *method, const guint8 *code);
+mono_debugger_trampoline_compiled (const guint8 *trampoline, MonoMethod *method, const guint8 *code);
 
 void
 mono_debugger_call_exception_handler (gpointer addr, gpointer stack, MonoObject *exc);

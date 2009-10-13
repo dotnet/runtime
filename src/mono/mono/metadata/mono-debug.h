@@ -129,7 +129,7 @@ struct _MonoDebugVarInfo {
 };
 
 #define MONO_DEBUGGER_MAJOR_VERSION			81
-#define MONO_DEBUGGER_MINOR_VERSION			3
+#define MONO_DEBUGGER_MINOR_VERSION			4
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;

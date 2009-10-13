@@ -432,7 +432,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
-	mono_debugger_trampoline_compiled (m, addr);
+	mono_debugger_trampoline_compiled (code, m, addr);
 
 	if (need_rgctx_tramp)
 		addr = mono_create_static_rgctx_trampoline (m, addr);
@@ -587,7 +587,7 @@ mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *
 		*vtable_slot = mono_get_addr_from_ftnptr (addr);
 	  }
 
-	mono_debugger_trampoline_compiled (m, addr);
+	mono_debugger_trampoline_compiled (NULL, m, addr);
 
 	return addr;
 }
@@ -623,7 +623,7 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
-	mono_debugger_trampoline_compiled (m, addr);
+	mono_debugger_trampoline_compiled (NULL, m, addr);
 
 	return addr;
 }
@@ -853,7 +853,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 			delegate->method_ptr = mono_compile_method (method);
 			if (delegate->method_code)
 				*delegate->method_code = delegate->method_ptr;
-			mono_debugger_trampoline_compiled (method, delegate->method_ptr);
+			mono_debugger_trampoline_compiled (NULL, method, delegate->method_ptr);
 		}
 	}
 
@@ -878,7 +878,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	m = mono_marshal_get_delegate_invoke (invoke, delegate);
 	code = mono_compile_method (m);
 	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
-	mono_debugger_trampoline_compiled (m, delegate->invoke_impl);
+	mono_debugger_trampoline_compiled (NULL, m, delegate->invoke_impl);
 
 	return code;
 }

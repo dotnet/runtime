@@ -40,8 +40,10 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_CREATE_APPDOMAIN,
 	MONO_DEBUGGER_EVENT_UNLOAD_APPDOMAIN,
 
-	/* Extended per-thread notifications */
-	MONO_DEBUGGER_EVENT_TRAMPOLINE			= 256,
+	/* Obsolete, only for backwards compatibility with older debugger versions */
+	MONO_DEBUGGER_EVENT_OLD_TRAMPOLINE		= 256,
+
+	MONO_DEBUGGER_EVENT_TRAMPOLINE			= 512
 } MonoDebuggerEvent;
 
 extern volatile gint32 _mono_debugger_interruption_request;

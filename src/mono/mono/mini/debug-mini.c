@@ -872,10 +872,20 @@ mono_debugger_extended_notification (MonoDebuggerEvent event, guint64 data, guin
 }
 
 void
-mono_debugger_trampoline_compiled (MonoMethod *method, const guint8 *code)
+mono_debugger_trampoline_compiled (const guint8 *trampoline, MonoMethod *method, const guint8 *code)
 {
-	mono_debugger_extended_notification (MONO_DEBUGGER_EVENT_TRAMPOLINE,
+#ifdef MONO_DEBUGGER_SUPPORTED
+	struct {
+		const guint8 * trampoline;
+		MonoMethod *method;
+		const guint8 *code;
+	} info = { trampoline, method, code };
+
+	mono_debugger_extended_notification (MONO_DEBUGGER_EVENT_OLD_TRAMPOLINE,
 					     (guint64) (gsize) method, (guint64) (gsize) code);
+	mono_debugger_extended_notification (MONO_DEBUGGER_EVENT_TRAMPOLINE,
+					     (guint64) (gsize) &info, 0);
+#endif
 }
 
 #if MONO_DEBUGGER_SUPPORTED
