@@ -895,6 +895,12 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 	return NULL;
 }
 
+MonoMethod*
+mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
+{
+	return NULL;
+}
+
 int
 mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
 {
