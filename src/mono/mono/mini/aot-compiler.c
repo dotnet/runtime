@@ -5559,23 +5559,30 @@ struct jit_code_entry
   struct jit_code_entry *next_entry;
   struct jit_code_entry *prev_entry;
   const char *symfile_addr;
-  uint64_t symfile_size;
+  guint64 symfile_size;
 };
 
 struct jit_descriptor
 {
-  uint32_t version;
-  /* This type should be jit_actions_t, but we use uint32_t
+  guint32 version;
+  /* This type should be jit_actions_t, but we use guint32
      to be explicit about the bitwidth.  */
-  uint32_t action_flag;
+  guint32 action_flag;
   struct jit_code_entry *relevant_entry;
   struct jit_code_entry *first_entry;
 };
 
-/* GDB puts a breakpoint in this function.  */
-void __attribute__((noinline)) __jit_debug_register_code(void);
 
-void __attribute__((noinline)) __jit_debug_register_code(void) { };
+#ifdef _MSC_VER
+#define MONO_NOINLINE __declspec (noinline)
+#else
+#define MONO_NOINLINE __attribute__((noinline))
+#endif
+
+/* GDB puts a breakpoint in this function.  */
+void MONO_NOINLINE __jit_debug_register_code(void);
+
+void MONO_NOINLINE __jit_debug_register_code(void) { };
 
 /* Make sure to specify the version statically, because the
    debugger may check the version before we can set it.  */
