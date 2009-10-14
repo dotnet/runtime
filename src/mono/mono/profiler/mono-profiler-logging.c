@@ -3787,7 +3787,7 @@ refresh_memory_regions (void) {
 }
 
 static gboolean
-write_statistical_hit (MonoDomain *domain, gpointer address, gboolean regions_refreshed) {
+write_statistical_hit (gpointer address, gboolean regions_refreshed) {
 	ProfilerCodeBuffer *code_buffer = profiler_code_buffer_from_address (profiler, address);
 	
 	if ((code_buffer != NULL) && (code_buffer->info.type == MONO_PROFILER_CODE_BUFFER_METHOD)) {
@@ -3863,7 +3863,6 @@ flush_all_mappings (void);
 
 static void
 write_statistical_data_block (ProfilerStatisticalData *data) {
-	MonoThread *current_thread = mono_thread_current ();
 	int start_index = data->first_unwritten_index;
 	int end_index = data->next_free_index;
 	gboolean regions_refreshed = FALSE;
@@ -3889,7 +3888,7 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 		ProfilerStatisticalHit hit = data->hits [base_index];
 		int callers_count;
 		
-		regions_refreshed = write_statistical_hit ((current_thread != NULL) ? hit.domain : NULL, hit.address, regions_refreshed);
+		regions_refreshed = write_statistical_hit (hit.address, regions_refreshed);
 		base_index ++;
 		
 		for (callers_count = 0; callers_count < call_chain_depth; callers_count ++) {
@@ -3905,7 +3904,7 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 			for (callers_count = 0; callers_count < call_chain_depth; callers_count ++) {
 				hit = data->hits [base_index + callers_count];
 				if (hit.address != NULL) {
-					regions_refreshed = write_statistical_hit ((current_thread != NULL) ? hit.domain : NULL, hit.address, regions_refreshed);
+					regions_refreshed = write_statistical_hit (hit.address, regions_refreshed);
 				} else {
 					break;
 				}
