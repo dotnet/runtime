@@ -1,3 +1,7 @@
+2009-10-14  Raja R Harinath  <harinath@hurrynot.org>
+
+	* Makefile (CECIL, LINKER): Point to profile-specific assembly.
+
 2009-09-16  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/MoonlightA11yDescriptorGenerator.cs: Sort the
