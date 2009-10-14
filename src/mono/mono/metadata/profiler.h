@@ -71,6 +71,14 @@ typedef enum {
 	MONO_PROFILER_MONITOR_FAIL = 3
 } MonoProfilerMonitorEvent;
 
+typedef enum {
+	MONO_PROFILER_CALL_CHAIN_NONE = 0,
+	MONO_PROFILER_CALL_CHAIN_NATIVE = 1,
+	MONO_PROFILER_CALL_CHAIN_GLIBC = 2,
+	MONO_PROFILER_CALL_CHAIN_MANAGED = 3,
+	MONO_PROFILER_CALL_CHAIN_INVALID = 4
+} MonoProfilerCallChainStrategy;
+
 /*
  * Functions that the runtime will call on the profiler.
  */
@@ -138,7 +146,7 @@ void mono_profiler_install_transition  (MonoProfileMethodResult callback);
 void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
 void mono_profiler_install_monitor     (MonoProfileMonitorFunc callback);
 void mono_profiler_install_statistical (MonoProfileStatFunc callback);
-void mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth);
+void mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth, MonoProfilerCallChainStrategy call_chain_strategy);
 void mono_profiler_install_exception   (MonoProfileExceptionFunc throw_callback, MonoProfileMethodFunc exc_method_leave, MonoProfileExceptionClauseFunc clause_callback);
 void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
 void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);

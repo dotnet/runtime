@@ -62,6 +62,7 @@ static MonoProfileMonitorFunc  monitor_event_cb;
 static MonoProfileStatFunc     statistical_cb;
 static MonoProfileStatCallChainFunc statistical_call_chain_cb;
 static int                     statistical_call_chain_depth;
+static MonoProfilerCallChainStrategy  statistical_call_chain_strategy;
 static MonoProfileMethodFunc   method_enter;
 static MonoProfileMethodFunc   method_leave;
 
@@ -215,11 +216,15 @@ mono_profiler_install_statistical (MonoProfileStatFunc callback)
 }
 
 void 
-mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth) {
+mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth, MonoProfilerCallChainStrategy call_chain_strategy) {
 	statistical_call_chain_cb = callback;
 	statistical_call_chain_depth = call_chain_depth;
 	if (statistical_call_chain_depth > MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH) {
 		statistical_call_chain_depth = MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH;
+	}
+	statistical_call_chain_strategy = call_chain_strategy;
+	if ((statistical_call_chain_strategy >= MONO_PROFILER_CALL_CHAIN_INVALID) || (statistical_call_chain_strategy < MONO_PROFILER_CALL_CHAIN_NONE)) {
+		statistical_call_chain_strategy = MONO_PROFILER_CALL_CHAIN_NONE;
 	}
 }
 
@@ -229,6 +234,15 @@ mono_profiler_stat_get_call_chain_depth (void) {
 		return statistical_call_chain_depth;
 	} else {
 		return 0;
+	}
+}
+
+MonoProfilerCallChainStrategy
+mono_profiler_stat_get_call_chain_strategy (void) {
+	if (statistical_call_chain_cb != NULL) {
+		return statistical_call_chain_strategy;
+	} else {
+		return MONO_PROFILER_CALL_CHAIN_NONE;
 	}
 }
 
