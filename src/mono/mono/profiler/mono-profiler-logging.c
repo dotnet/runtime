@@ -451,8 +451,6 @@ typedef struct _ProfilerPerThreadData {
 	struct _ProfilerPerThreadData* next;
 } ProfilerPerThreadData;
 
-#define MAX_STATISTICAL_CALL_CHAIN_DEPTH 128
-
 typedef struct _ProfilerStatisticalHit {
 	gpointer *address;
 	MonoDomain *domain;
@@ -878,6 +876,7 @@ struct _MonoProfiler {
 	ProfilerStatisticalData *statistical_data_ready;
 	ProfilerStatisticalData *statistical_data_second_buffer;
 	int statistical_call_chain_depth;
+	MonoProfilerCallChainStrategy statistical_call_chain_strategy;
 	
 	ProfilerCodeChunks code_chunks;
 	
@@ -5315,6 +5314,10 @@ profiler_shutdown (MonoProfiler *prof)
 	
 	LOG_WRITER_THREAD ("profiler_shutdown: zeroing relevant flags");
 	mono_profiler_set_events (0);
+	/* During shutdown searching for MonoJitInfo is not possible... */
+	if (profiler->statistical_call_chain_strategy == MONO_PROFILER_CALL_CHAIN_MANAGED) {
+		mono_profiler_install_statistical_call_chain (NULL, 0, MONO_PROFILER_CALL_CHAIN_NONE);
+	}
 	//profiler->flags = 0;
 	//profiler->action_flags.unreachable_objects = FALSE;
 	//profiler->action_flags.heap_shot = FALSE;
@@ -5413,6 +5416,7 @@ setup_user_options (const char *arguments) {
 	profiler->per_thread_buffer_size = 10000;
 	profiler->statistical_buffer_size = 10000;
 	profiler->statistical_call_chain_depth = 0;
+	profiler->statistical_call_chain_strategy = MONO_PROFILER_CALL_CHAIN_NATIVE;
 	profiler->write_buffer_size = 1024;
 	profiler->dump_next_heap_snapshots = 0;
 	profiler->heap_shot_was_requested = FALSE;
@@ -5468,11 +5472,24 @@ setup_user_options (const char *arguments) {
 				int value = atoi (equals + 1);
 				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
-					if (value > MAX_STATISTICAL_CALL_CHAIN_DEPTH) {
-						value = MAX_STATISTICAL_CALL_CHAIN_DEPTH;
+					if (value > MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH) {
+						value = MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH;
 					}
 					profiler->statistical_call_chain_depth = value;
 					profiler->flags |= MONO_PROFILE_STATISTICAL;
+				}
+			} else if (! (strncmp (argument, "call-chain-strategy", equals_position) && strncmp (argument, "ccs", equals_position))) {
+				char *parameter = equals + 1;
+				FAIL_IF_HAS_MINUS;
+				if (! strcmp (parameter, "native")) {
+					profiler->statistical_call_chain_strategy = MONO_PROFILER_CALL_CHAIN_NATIVE;
+				} else if (! strcmp (parameter, "glibc")) {
+					profiler->statistical_call_chain_strategy = MONO_PROFILER_CALL_CHAIN_GLIBC;
+				} else if (! strcmp (parameter, "managed")) {
+					profiler->statistical_call_chain_strategy = MONO_PROFILER_CALL_CHAIN_MANAGED;
+				} else {
+					failure_message = "invalid call chain strategy in argument %s";
+					goto failure_handling;
 				}
 			} else if (! (strncmp (argument, "statistical-thread-buffer-size", equals_position) && strncmp (argument, "sbs", equals_position))) {
 				int value = atoi (equals + 1);
@@ -5847,7 +5864,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_allocation (object_allocated);
 	mono_profiler_install_monitor (monitor_event);
 	mono_profiler_install_statistical (statistical_hit);
-	mono_profiler_install_statistical_call_chain (statistical_call_chain, profiler->statistical_call_chain_depth);
+	mono_profiler_install_statistical_call_chain (statistical_call_chain, profiler->statistical_call_chain_depth, profiler->statistical_call_chain_strategy);
 	mono_profiler_install_gc (gc_event, gc_resize);
 	mono_profiler_install_runtime_initialized (runtime_initialized);
 #if (HAS_OPROFILE)
