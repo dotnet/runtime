@@ -3062,7 +3062,7 @@ if (valgrind_register){
 	} else {
 		mono_domain_code_commit (cfg->domain, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
-	mono_profiler_code_buffer_new (code, cfg->code_len, MONO_PROFILER_CODE_BUFFER_METHOD, cfg->method);
+	mono_profiler_code_buffer_new (cfg->native_code, cfg->code_len, MONO_PROFILER_CODE_BUFFER_METHOD, cfg->method);
 	
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
 
