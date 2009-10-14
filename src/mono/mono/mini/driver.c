@@ -1283,7 +1283,7 @@ mono_main (int argc, char* argv[])
 			mini_verbose++;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
 			char *build = mono_get_runtime_build_info ();
-			g_print ("Mono JIT compiler version %s (%s)\nCopyright (C) 2002-2008 Novell, Inc and Contributors. www.mono-project.com\n", VERSION, build);
+			g_print ("Mono JIT compiler version %s (%s)\nCopyright (C) 2002-2009 Novell, Inc and Contributors. www.mono-project.com\n", VERSION, build);
 			g_free (build);
 			g_print (info);
 			if (mini_verbose) {
