@@ -219,7 +219,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	if (ji == (gpointer)-1)
 		return ji;
 
-	if (managed2 || ji->method->wrapper_type) {
+	if (managed2 || (ji && ji->method->wrapper_type)) {
 		const char *real_ip, *start;
 		gint32 offset;
 
