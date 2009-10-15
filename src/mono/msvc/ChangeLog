@@ -1,3 +1,9 @@
+2009-10-15  Jonathan Chambers  <joncham@gmail.com>
+
+	* profiler-cov.vcproj: Add project.
+	
+	* profiler-logging.vcproj: Add project.
+
 2009-09-08  Jonathan Chambers  <joncham@gmail.com>
 
 	* libtest.vcproj: Add toplevel include directory for config.h.
