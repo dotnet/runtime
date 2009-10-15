@@ -449,7 +449,7 @@ void       g_ptr_array_add                (GPtrArray *array, gpointer data);
 gboolean   g_ptr_array_remove             (GPtrArray *array, gpointer data);
 gpointer   g_ptr_array_remove_index       (GPtrArray *array, guint index);
 gboolean   g_ptr_array_remove_fast        (GPtrArray *array, gpointer data);
-gpointer   g_ptr_array_remove_index_fast  (GPtrArray *array, gpointer data);
+gpointer   g_ptr_array_remove_index_fast  (GPtrArray *array, guint index);
 void       g_ptr_array_sort               (GPtrArray *array, GCompareFunc compare_func);
 void       g_ptr_array_sort_with_data     (GPtrArray *array, GCompareDataFunc compare_func, gpointer user_data);
 void       g_ptr_array_set_size           (GPtrArray *array, gint length);

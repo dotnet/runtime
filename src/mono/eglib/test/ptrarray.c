@@ -170,6 +170,30 @@ RESULT ptrarray_remove_index()
 	return OK;
 }
 
+RESULT ptrarray_remove_index_fast()
+{
+	GPtrArray *array;
+	guint i;
+
+	array = ptrarray_alloc_and_fill(&i);
+
+	g_ptr_array_remove_index_fast(array, 0);
+	if(array->pdata[0] != items[array->len]) {
+		return FAILED("First item is not %s, it is %s", items[array->len],
+			array->pdata[0]);
+	}
+
+	g_ptr_array_remove_index_fast(array, array->len - 1);
+	if(array->pdata[array->len - 1] != items[array->len - 1]) {
+		return FAILED("Last item is not %s, it is %s",
+			items[array->len - 1], array->pdata[array->len - 1]);
+	}
+
+	g_ptr_array_free(array, TRUE);
+
+	return OK;
+}
+
 RESULT ptrarray_remove()
 {
 	GPtrArray *array;
@@ -235,6 +259,7 @@ static Test ptrarray_tests [] = {
 	{"foreach_iterate", ptrarray_foreach_iterate},
 	{"set_size", ptrarray_set_size},
 	{"remove_index", ptrarray_remove_index},
+	{"remove_index_fast", ptrarray_remove_index_fast},
 	{"remove", ptrarray_remove},
 	{"sort", ptrarray_sort},
 	{NULL, NULL}

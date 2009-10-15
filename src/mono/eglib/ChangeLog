@@ -1,5 +1,11 @@
 2009-10-15 Andreia Gaita <avidigal@novell.com>
 
+	* src/gptrarray.c: implement g_ptr_array_remove_index_fast
+	* src/glib.h: fix g_ptr_array_remove_index_fast declaration
+	* test/ptrarray.c: new tests
+
+2009-10-15 Andreia Gaita <avidigal@novell.com>
+
 	* src/garray.c: (g_array_remove_index_fast) only move 1 element
 	and not the whole shebang
 
