@@ -191,7 +191,7 @@ g_array_remove_index_fast (GArray *array,
 
 	memmove (element_offset (priv, index_),
 		 element_offset (priv, array->len - 1),
-		 element_length (priv, array->len - index_));
+		 element_length (priv, 1));
 
 	array->len --;
 
