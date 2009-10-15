@@ -740,6 +740,18 @@ mono_op_imm_to_op (int opcode)
 #else
 		return OP_LAND;
 #endif
+	case OP_OR_IMM:
+#if SIZEOF_REGISTER == 4
+		return OP_IOR;
+#else
+		return OP_LOR;
+#endif
+	case OP_XOR_IMM:
+#if SIZEOF_REGISTER == 4
+		return OP_IXOR;
+#else
+		return OP_LXOR;
+#endif
 	case OP_IAND_IMM:
 		return OP_IAND;
 	case OP_LAND_IMM:
