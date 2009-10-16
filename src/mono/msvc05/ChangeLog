@@ -1,3 +1,10 @@
+2009-10-16  Bill Holmes  <billholmes54@gmail.com>
+
+	* libtest.vcproj : Adding TARGET_X86 and TARGET_AMD64
+	  to the PreprocessorDefinitions.
+
+	Code is contributed under MIT/X11 license.
+
 2009-10-13  Bill Holmes  <billholmes54@gmail.com>
 
 	* mono.def, monoposixhelper.def, libmono.vcproj, libtest.vcproj,
