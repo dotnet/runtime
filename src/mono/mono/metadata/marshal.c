@@ -2013,12 +2013,16 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 {
 	MonoMethodMessage *msg;
 	MonoDelegate *async_callback;
+	MonoMulticastDelegate *mcast_delegate;
 	MonoObject *state;
 	MonoMethod *im;
 	MonoClass *klass;
 	MonoMethod *method = NULL, *method2 = NULL;
 
 	g_assert (delegate);
+	mcast_delegate = (MonoMulticastDelegate *) delegate;
+	if (mcast_delegate->prev != NULL)
+		mono_raise_exception (mono_get_exception_argument (NULL, "The delegate must have only one target"));
 
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
 
