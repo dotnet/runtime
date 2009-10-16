@@ -4452,9 +4452,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	g_assert (table_size < 65000);
 	emit_int32 (acfg, table_size);
-	g_assert (table->len < 65000);
 	for (i = 0; i < table->len; ++i) {
 		HashEntry *entry = g_ptr_array_index (table, i);
 
