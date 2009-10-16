@@ -428,6 +428,11 @@ public class Tests
 			if (TestITestDelegate (itest) != 0)
 				return 174;
 
+			itest = new TestClass ();
+
+			if (TestITest (itest) != 0)
+				return 175;
+
 			#endregion // Runtime Callable Wrapper Tests
 
 			#region COM Callable Wrapper Tests
@@ -589,6 +594,61 @@ public class Tests
 		[PreserveSig ()]
 		int ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITestPresSig val);
 	}
+
+	[System.Runtime.InteropServices.GuidAttribute ("00000000-0000-0000-0000-000000000002")]
+	[System.Runtime.InteropServices.ComImportAttribute ()]
+	[System.Runtime.InteropServices.ClassInterfaceAttribute (ClassInterfaceType.None)]
+	public class _TestClass : ITest
+	{
+		// properties need to go first since mcs puts them there
+		public virtual extern ITest Test
+		{
+			[return: MarshalAs (UnmanagedType.Interface)]
+			[MethodImpl (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime), DispId (5242884)]
+			get;
+		}
+
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void SByteIn (sbyte val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void ByteIn (byte val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void ShortIn (short val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void UShortIn (ushort val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void IntIn (int val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void UIntIn (uint val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void LongIn (long val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void ULongIn (ulong val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void FloatIn (float val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void DoubleIn (double val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void ITestIn ([MarshalAs (UnmanagedType.Interface)]ITest val);
+		[MethodImplAttribute (MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
+		public virtual extern void ITestOut ([MarshalAs (UnmanagedType.Interface)]out ITest val);
+	}
+
+	[System.Runtime.InteropServices.GuidAttribute ("00000000-0000-0000-0000-000000000002")]
+	public class TestClass : _TestClass
+	{
+		static TestClass ()
+		{
+			ExtensibleClassFactory.RegisterObjectCreationCallback (new ObjectCreationDelegate (CreateObject)); ;
+		}
+		private static System.IntPtr CreateObject (System.IntPtr aggr)
+		{
+			IntPtr pUnk3;
+			mono_test_marshal_com_object_create (out pUnk3);
+			return pUnk3;
+		}
+	}
+
 
 	delegate void SByteInDelegate (sbyte val);
 	delegate void ByteInDelegate (byte val);

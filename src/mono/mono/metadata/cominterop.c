@@ -284,11 +284,19 @@ cominterop_get_method_interface (MonoMethod* method)
 		GPtrArray *ifaces = mono_class_get_implemented_interfaces (method->klass);
 		if (ifaces) {
 			int i;
+			mono_class_setup_vtable (method->klass);
 			for (i = 0; i < ifaces->len; ++i) {
-				int offset;
+				int j, offset;
+				gboolean found = FALSE;
 				ic = g_ptr_array_index (ifaces, i);
 				offset = mono_class_interface_offset (method->klass, ic);
-				if (method->slot >= offset && method->slot < offset + ic->method.count)
+				for (j = 0; j < ic->method.count; ++j) {
+					if (method->klass->vtable [j + offset] == method) {
+						found = TRUE;
+						break;
+					}
+				}
+				if (found)
 					break;
 				ic = NULL;
 			}
@@ -296,7 +304,8 @@ cominterop_get_method_interface (MonoMethod* method)
 		}
 	}
 
-	g_assert (ic);
+	if (!ic) 
+		g_assert (ic);
 	g_assert (MONO_CLASS_IS_INTERFACE (ic));
 
 	return ic;
@@ -317,10 +326,17 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 	/* if method is on a class, we need to look up interface method exists on */
 	if (!MONO_CLASS_IS_INTERFACE(ic)) {
 		int offset = 0;
+		int i = 0;
 		ic = cominterop_get_method_interface (method);
 		offset = mono_class_interface_offset (method->klass, ic);
 		g_assert(offset >= 0);
-		slot -= offset;
+		for(i = 0; i < ic->method.count; ++i) {
+			if (method->klass->vtable [i + offset] == method)
+			{
+				slot = ic->methods[i]->slot;
+				break;
+			}
+		}
 	}
 
 	g_assert (ic);
