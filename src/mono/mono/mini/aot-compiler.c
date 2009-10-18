@@ -1751,6 +1751,11 @@ can_marshal_struct (MonoClass *klass)
 		}
 	}
 
+	/* Special cases */
+	/* Its hard to compute whenever these can be marshalled or not */
+	if (!strcmp (klass->name_space, "System.Net.NetworkInformation.MacOsStructs"))
+		return TRUE;
+
 	return can_marshal;
 }
 
