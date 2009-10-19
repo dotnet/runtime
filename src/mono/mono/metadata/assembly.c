@@ -851,7 +851,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		reference = mono_assembly_load (&aname, image->assembly? image->assembly->basedir: NULL, &status);
 
 	if (reference == NULL){
-		char *extra_msg = g_strdup ("");
+		char *extra_msg;
 
 		if (status == MONO_IMAGE_ERROR_ERRNO && errno == ENOENT) {
 			extra_msg = g_strdup_printf ("The assembly was not found in the Global Assembly Cache, a path listed in the MONO_PATH environment variable, or in the location of the executing assembly (%s).\n", image->assembly != NULL ? image->assembly->basedir : "" );
@@ -861,6 +861,8 @@ mono_assembly_load_reference (MonoImage *image, int index)
 			extra_msg = g_strdup ("Cannot find an assembly referenced from this one.\n");
 		} else if (status == MONO_IMAGE_IMAGE_INVALID) {
 			extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
+		} else {
+			extra_msg = g_strdup ("");
 		}
 		
 		g_warning ("The following assembly referenced from %s could not be loaded:\n"
@@ -1629,8 +1631,8 @@ parse_public_key (const gchar *key, gchar** pubkey)
 		arr [i] = g_ascii_xdigit_value (key [j++]) << 4;
 		arr [i] |= g_ascii_xdigit_value (key [j++]);
 	}
-	if (pubkey)
-		*pubkey = arr;
+
+	*pubkey = arr;
 
 	return TRUE;
 }

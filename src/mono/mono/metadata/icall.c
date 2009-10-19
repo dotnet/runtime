@@ -720,6 +720,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 	if (source->bounds || dest->bounds)
 		return FALSE;
 
+	/* there's no integer overflow since mono_array_length returns an unsigned integer */
 	if ((dest_idx + length > mono_array_length (dest)) ||
 		(source_idx + length > mono_array_length (source)))
 		return FALSE;
@@ -2151,7 +2152,6 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	domain = mono_object_domain (type);
 	mono_gc_wbarrier_generic_store (targets, (MonoObject*) mono_array_new (domain, mono_defaults.method_info_class, len));
 	mono_gc_wbarrier_generic_store (methods, (MonoObject*) mono_array_new (domain, mono_defaults.method_info_class, len));
-	iter = NULL;
 	iter = NULL;
 	while ((method = mono_class_get_methods (iclass, &iter))) {
 		member = mono_method_get_object (domain, method, iclass);
