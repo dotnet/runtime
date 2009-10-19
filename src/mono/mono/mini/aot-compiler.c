@@ -3196,7 +3196,6 @@ emit_plt (MonoAotCompile *acfg)
 
 		if (acfg->aot_opts.write_symbols) {
 			MonoJumpInfo *ji = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
-			char *debug_sym = NULL;
 
 			if (ji) {
 				switch (ji->type) {
