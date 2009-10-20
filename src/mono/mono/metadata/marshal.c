@@ -5603,14 +5603,24 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 				to_oadate = mono_class_get_method_from_name (date_time_class, "ToOADate", 0);
 			g_assert (to_oadate);
 
-			if (t->byref)
-				g_assert_not_reached ();
-
 			conv_arg = mono_mb_add_local (mb, &mono_defaults.double_class->byval_arg);
 
-			mono_mb_emit_ldarg_addr (mb, argnum);
-			mono_mb_emit_managed_call (mb, to_oadate, NULL);
-			mono_mb_emit_stloc (mb, conv_arg);
+			if (t->byref) {
+				mono_mb_emit_ldarg (mb, argnum);
+				pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
+			}
+
+			if (!(t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
+				if (!t->byref)
+					m->csig->params [argnum - m->csig->hasthis] = &mono_defaults.double_class->byval_arg;
+
+				mono_mb_emit_ldarg_addr (mb, argnum);
+				mono_mb_emit_managed_call (mb, to_oadate, NULL);
+				mono_mb_emit_stloc (mb, conv_arg);
+			}
+
+			if (t->byref)
+				mono_mb_patch_branch (mb, pos);
 			break;
 		}
 
@@ -5666,7 +5676,10 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		if (klass == date_time_class) {
-			mono_mb_emit_ldloc (mb, conv_arg);
+			if (t->byref)
+				mono_mb_emit_ldloc_addr (mb, conv_arg);
+			else
+				mono_mb_emit_ldloc (mb, conv_arg);
 			break;
 		}
 
@@ -5686,6 +5699,26 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
 			klass->blittable || klass->enumtype)
 			break;
+
+		if (klass == date_time_class) {
+			/* Convert from an OLE DATE type */
+			static MonoMethod *from_oadate;
+
+			if (!t->byref)
+				break;
+
+			if (!((t->attrs & PARAM_ATTRIBUTE_IN) && !(t->attrs & PARAM_ATTRIBUTE_OUT))) {
+				if (!from_oadate)
+					from_oadate = mono_class_get_method_from_name (date_time_class, "FromOADate", 1);
+				g_assert (from_oadate);
+
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_managed_call (mb, from_oadate, NULL);
+				mono_mb_emit_op (mb, CEE_STOBJ, date_time_class);
+			}
+			break;
+		}
 
 		if (t->byref) {
 			/* dst = argument */
