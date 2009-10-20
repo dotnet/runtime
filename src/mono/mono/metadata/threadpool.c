@@ -1068,7 +1068,7 @@ mono_thread_pool_init ()
 	cpu_count = mono_cpu_count ();
 	n = 8 + 2 * cpu_count; /* 8 is minFreeThreads for ASP.NET */
 	threadpool_init (&async_tp, n, n + threads_per_cpu * cpu_count, async_invoke_thread);
-#ifndef DISABLE_SOCKET
+#ifndef DISABLE_SOCKETS
 	threadpool_init (&async_io_tp, 2 * cpu_count, 8 * cpu_count, async_invoke_io_thread);
 #endif
 
