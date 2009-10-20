@@ -2299,8 +2299,9 @@ mono_safe_handle_ref (void **handle)
 }
 
 LIBTEST_API double STDCALL
-mono_test_marshal_date_time (double d)
+mono_test_marshal_date_time (double d, double *d2)
 {
+	*d2 = d;
 	return d;
 }
 
