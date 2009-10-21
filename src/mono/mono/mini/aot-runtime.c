@@ -2300,7 +2300,10 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 
 			//printf ("X: %s %s\n", iname, mname);
 
-			helper_name = g_strdup_printf ("InternalArray__%s_%s", iname, mname);
+			if (!strcmp (iname, "IList"))
+				helper_name = g_strdup_printf ("InternalArray__%s", mname);
+			else
+				helper_name = g_strdup_printf ("InternalArray__%s_%s", iname, mname);
 			m = mono_class_get_method_from_name (mono_defaults.array_class, helper_name, mono_method_signature (method)->param_count);
 			g_assert (m);
 			g_free (helper_name);
