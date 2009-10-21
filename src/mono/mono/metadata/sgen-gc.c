@@ -185,6 +185,8 @@ static gboolean collect_before_allocs = FALSE;
 static gboolean consistency_check_at_minor_collection = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
 static gboolean xdomain_checks = FALSE;
+/* If not null, dump the heap after each collection into this file */
+static FILE *heap_dump_file = NULL;
 
 /*
 void
@@ -2840,6 +2842,93 @@ scan_from_registered_roots (char *addr_start, char *addr_end, int root_type)
 	}
 }
 
+static void
+dump_occupied (char *start, char *end, char *section_start)
+{
+	fprintf (heap_dump_file, "<occupied offset=\"%d\" size=\"%d\"/>\n", start - section_start, end - start);
+}
+
+static void
+dump_section (GCMemSection *section, const char *type)
+{
+	char *start = section->data;
+	char *end = section->data + section->size;
+	char *occ_start = NULL;
+	int pin_slot = 0;
+	GCVTable *vt;
+	char *old_start = NULL;	/* just for debugging */
+
+	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%d\">\n", type, section->size);
+
+	while (start < end) {
+		guint size;
+		MonoClass *class;
+
+		if (!*(void**)start) {
+			if (occ_start) {
+				dump_occupied (occ_start, start, section->data);
+				occ_start = NULL;
+			}
+			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
+			continue;
+		}
+		g_assert (start < section->next_data);
+
+		if (!occ_start)
+			occ_start = start;
+
+		vt = (GCVTable*)LOAD_VTABLE (start);
+		class = vt->klass;
+
+		size = safe_object_get_size ((MonoObject*) start);
+		size += ALLOC_ALIGN - 1;
+		size &= ~(ALLOC_ALIGN - 1);
+
+		/*
+		fprintf (heap_dump_file, "<object offset=\"%d\" class=\"%s.%s\" size=\"%d\"/>\n",
+				start - section->data,
+				vt->klass->name_space, vt->klass->name,
+				size);
+		*/
+
+		old_start = start;
+		start += size;
+	}
+	if (occ_start)
+		dump_occupied (occ_start, start, section->data);
+
+	fprintf (heap_dump_file, "</section>\n");
+}
+
+static void
+dump_heap (const char *type, int num)
+{
+	GCMemSection *section;
+	LOSObject *bigobj;
+
+	fprintf (heap_dump_file, "<collection type=\"%s\" num=\"%d\">\n", type, num);
+
+	dump_section (nursery_section, "nursery");
+
+	for (section = section_list; section; section = section->next) {
+		if (section != nursery_section)
+			dump_section (section, "old");
+	}
+
+	fprintf (heap_dump_file, "<los>\n");
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
+		MonoObject *obj = (MonoObject*) bigobj->data;
+		MonoClass *class = mono_object_class (obj);
+
+		fprintf (heap_dump_file, "<object class=\"%s.%s\" size=\"%d\"/>\n",
+				class->name_space, class->name,
+				safe_object_get_size (obj));
+	}
+	fprintf (heap_dump_file, "</los>\n");
+
+	fprintf (heap_dump_file, "</collection>\n");
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -2950,6 +3039,9 @@ collect_nursery (size_t requested_size)
 
 	TV_GETTIME (all_btv);
 	mono_stats.minor_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
+
+	if (heap_dump_file)
+		dump_heap ("minor", num_minor_gcs - 1);
 
 	/* prepare the pin queue for the next collection */
 	last_num_pinned = next_pin_slot;
@@ -3197,6 +3289,10 @@ major_collection (void)
 
 	TV_GETTIME (all_btv);
 	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
+
+	if (heap_dump_file)
+		dump_heap ("major", num_major_gcs - 1);
+
 	/* prepare the pin queue for the next collection */
 	next_pin_slot = 0;
 	if (fin_ready_list || critical_fin_list) {
@@ -6485,6 +6581,12 @@ mono_gc_base_init (void)
 				xdomain_checks = TRUE;
 			} else if (!strcmp (opt, "clear-at-gc")) {
 				nursery_clear_policy = CLEAR_AT_GC;
+			} else if (g_str_has_prefix (opt, "heap-dump=")) {
+				char *filename = strchr (opt, '=') + 1;
+				nursery_clear_policy = CLEAR_AT_GC;
+				heap_dump_file = fopen (filename, "w");
+				if (heap_dump_file)
+					fprintf (heap_dump_file, "<sgen-dump>\n");
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
