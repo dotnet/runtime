@@ -97,6 +97,6 @@ extern int WSASend (guint32 handle, WapiWSABuf *buffers, guint32 count,
 		    WapiOverlapped *overlapped, WapiOverlappedCB *complete);
 
 gboolean TransmitFile (guint32 socket, gpointer file, guint32 bytes_to_write, guint32 bytes_per_send, WapiOverlapped *ol,
-			WapiTransmitFileBuffers *tb, WapiTransmitFileFlags flags);
+			WapiTransmitFileBuffers *tb, guint32 flags);
 G_END_DECLS
 #endif /* _WAPI_SOCKETS_H_ */

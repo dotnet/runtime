@@ -1123,7 +1123,7 @@ static gboolean wapi_disconnectex (guint32 fd, WapiOverlapped *overlapped,
 
 #define SF_BUFFER_SIZE	16384
 static gint
-wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 bytes_per_send, WapiTransmitFileFlags flags)
+wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 bytes_per_send, guint32 flags)
 {
 #if defined(HAVE_SENDFILE) && (defined(__linux__) || defined(DARWIN))
 	gint file = GPOINTER_TO_INT (fd);
@@ -1190,7 +1190,7 @@ wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 byte
 
 gboolean
 TransmitFile (guint32 socket, gpointer file, guint32 bytes_to_write, guint32 bytes_per_send, WapiOverlapped *ol,
-		WapiTransmitFileBuffers *buffers, WapiTransmitFileFlags flags)
+		WapiTransmitFileBuffers *buffers, guint32 flags)
 {
 	gpointer sock = GUINT_TO_POINTER (socket);
 	gint ret;
