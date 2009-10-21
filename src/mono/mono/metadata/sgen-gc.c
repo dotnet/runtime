@@ -150,6 +150,7 @@
 #include "metadata/monitor.h"
 #include "metadata/threadpool-internals.h"
 #include "utils/mono-mmap.h"
+#include "utils/mono-semaphore.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -4875,10 +4876,8 @@ static SgenThreadInfo* thread_table [THREAD_HASH_SIZE];
 
 #if USE_SIGNAL_BASED_START_STOP_WORLD
 
-#ifndef __APPLE__
-static sem_t suspend_ack_semaphore;
-#endif
-static sem_t *suspend_ack_semaphore_ptr;
+static MonoSemType suspend_ack_semaphore;
+static MonoSemType *suspend_ack_semaphore_ptr;
 static unsigned int global_stop_count = 0;
 #ifdef __APPLE__
 static int suspend_signal_num = SIGXFSZ;
@@ -4946,7 +4945,7 @@ wait_for_suspend_ack (int count)
 	int i, result;
 
 	for (i = 0; i < count; ++i) {
-		while ((result = sem_wait (suspend_ack_semaphore_ptr)) != 0) {
+		while ((result = MONO_SEM_WAIT (suspend_ack_semaphore_ptr)) != 0) {
 			if (errno != EINTR) {
 				g_error ("sem_wait ()");
 			}
@@ -5102,7 +5101,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 		gc_callbacks.thread_suspend_func (info->runtime_data, context);
 
 	/* notify the waiting thread */
-	sem_post (suspend_ack_semaphore_ptr);
+	MONO_SEM_POST (suspend_ack_semaphore_ptr);
 	info->stop_count = stop_count;
 
 	/* wait until we receive the restart signal */
@@ -5112,8 +5111,8 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	} while (info->signal != restart_signal_num);
 
 	/* notify the waiting thread */
-	sem_post (suspend_ack_semaphore_ptr);
-	
+	MONO_SEM_POST (suspend_ack_semaphore_ptr);
+
 	errno = old_errno;
 }
 
@@ -5684,12 +5683,7 @@ typedef struct {
 	void *(*start_routine) (void *);
 	void *arg;
 	int flags;
-#ifdef __APPLE__
-	pthread_mutex_t registered_mutex;
-	pthread_cond_t registered;
-#else
-	sem_t registered;
-#endif
+	MonoSemType registered;
 } SgenThreadStartInfo;
 
 static void*
@@ -5705,13 +5699,7 @@ gc_start_thread (void *arg)
 	LOCK_GC;
 	info = gc_register_current_thread (&result);
 	UNLOCK_GC;
-#ifdef __APPLE__
-	pthread_mutex_lock (&start_info->registered_mutex);
-	post_result = pthread_cond_signal (&start_info->registered);
-	pthread_mutex_unlock (&start_info->registered_mutex);
-#else
-	post_result = sem_post (&(start_info->registered));
-#endif
+	post_result = MONO_SEM_POST (&(start_info->registered));
 	g_assert (!post_result);
 	result = start_func (t_arg);
 	/*
@@ -5733,35 +5721,18 @@ mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void 
 	start_info = malloc (sizeof (SgenThreadStartInfo));
 	if (!start_info)
 		return ENOMEM;
-#ifdef __APPLE__
-	pthread_mutex_init (&start_info->registered_mutex, NULL);
-	pthread_mutex_lock (&start_info->registered_mutex);
-	pthread_cond_init (&start_info->registered, NULL);
-#else
-	result = sem_init (&(start_info->registered), 0, 0);
+	result = MONO_SEM_INIT (&(start_info->registered), 0);
 	g_assert (!result);
-#endif
 	start_info->arg = arg;
 	start_info->start_routine = start_routine;
 
 	result = pthread_create (new_thread, attr, gc_start_thread, start_info);
 	if (result == 0) {
-#ifdef __APPLE__
-		result = pthread_cond_wait (&start_info->registered, &start_info->registered_mutex);
-		g_assert (!result);
-#else
-		while (sem_wait (&(start_info->registered)) != 0) {
+		while (MONO_SEM_WAIT (&(start_info->registered)) != 0) {
 			/*if (EINTR != errno) ABORT("sem_wait failed"); */
 		}
-#endif
 	}
-#ifdef __APPLE__
-	pthread_mutex_unlock (&start_info->registered_mutex);
-	pthread_mutex_destroy (&start_info->registered_mutex);
-	pthread_cond_destroy (&start_info->registered);
-#else
-	sem_destroy (&(start_info->registered));
-#endif
+	MONO_SEM_DESTROY (&(start_info->registered));
 	free (start_info);
 	return result;
 }
@@ -6597,19 +6568,8 @@ mono_gc_base_init (void)
 		g_strfreev (opts);
 	}
 
-#ifdef __APPLE__
-	{
-		char *name = g_strdup_printf ("/mono/%d/suspacksem", getpid ());
-		suspend_ack_semaphore_ptr = sem_open (name, O_CREAT | O_EXCL, S_IRWXU, 0);
-		if (suspend_ack_semaphore_ptr == SEM_FAILED)
-			g_error ("sem_open");
-		sem_unlink (name);
-		g_free (name);
-	}
-#else
 	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
-	sem_init (&suspend_ack_semaphore, 0, 0);
-#endif
+	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
 
 	sigfillset (&sinfo.sa_mask);
 	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;
