@@ -35,6 +35,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/file-io.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-poll.h>
@@ -3005,6 +3006,43 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_
 	*h_name=mono_string_new(mono_domain_get (), hostname);
 
 	return(TRUE);
+}
+
+gboolean
+ves_icall_System_Net_Sockets_Socket_SendFile (SOCKET sock, MonoString *filename, MonoArray *pre_buffer, MonoArray *post_buffer, WapiTransmitFileFlags flags)
+{
+	HANDLE file;
+	gint32 error;
+	WapiTransmitFileBuffers buffers;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (filename == NULL)
+		return FALSE;
+
+	file = ves_icall_System_IO_MonoIO_Open (filename, FileMode_Open, FileAccess_Read, FileShare_Read, 0, &error);
+	if (file == INVALID_HANDLE_VALUE) {
+		SetLastError (error);
+		return FALSE;
+	}
+
+	memset (&buffers, 0, sizeof (buffers));
+	if (pre_buffer != NULL) {
+		buffers.Head = mono_array_addr (pre_buffer, guchar, 0);
+		buffers.HeadLength = mono_array_length (pre_buffer);
+	}
+	if (post_buffer != NULL) {
+		buffers.Tail = mono_array_addr (post_buffer, guchar, 0);
+		buffers.TailLength = mono_array_length (post_buffer);
+	}
+
+	if (!TransmitFile (sock, file, 0, 0, NULL, &buffers, flags)) {
+		CloseHandle (file);
+		return FALSE;
+	}
+
+	CloseHandle (file);
+	return TRUE;
 }
 
 void mono_network_init(void)

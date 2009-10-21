@@ -441,6 +441,7 @@ ICALL(SOCK_12, "Receive_internal(intptr,byte[],int,int,System.Net.Sockets.Socket
 ICALL(SOCK_13, "RecvFrom_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress&,int&)", ves_icall_System_Net_Sockets_Socket_RecvFrom_internal)
 ICALL(SOCK_14, "RemoteEndPoint_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal)
 ICALL(SOCK_15, "Select_internal(System.Net.Sockets.Socket[]&,int,int&)", ves_icall_System_Net_Sockets_Socket_Select_internal)
+ICALL(SOCK_15a, "SendFile(intptr,string,byte[],byte[],System.Net.Sockets.TransmitFileOptions)", ves_icall_System_Net_Sockets_Socket_SendFile)
 ICALL(SOCK_16, "SendTo_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_SendTo_internal)
 ICALL(SOCK_16a, "Send_internal(intptr,System.Net.Sockets.Socket/WSABUF[],System.Net.Sockets.SocketFlags,int&)", ves_icall_System_Net_Sockets_Socket_Send_array_internal)
 ICALL(SOCK_17, "Send_internal(intptr,byte[],int,int,System.Net.Sockets.SocketFlags,int&)", ves_icall_System_Net_Sockets_Socket_Send_internal)
