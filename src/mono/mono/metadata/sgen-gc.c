@@ -4841,16 +4841,8 @@ signal_desc (int signum)
 #define MANAGED_WBARRIER
 #endif
 
-#ifdef MANAGED_ALLOCATION
 static gboolean
 is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip);
-#else
-static gboolean
-is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
-{
-	return FALSE;
-}
-#endif
 
 static void
 wait_for_suspend_ack (int count)
@@ -6773,8 +6765,10 @@ create_allocator (int atype)
 	mono_method_get_header (res)->init_locals = FALSE;
 	return res;
 }
+#endif
 
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
+static MonoMethod *write_barrier_method;
 
 static gboolean
 is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
@@ -6790,12 +6784,13 @@ is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 		return FALSE;
 	method = ji->method;
 
+	if (method == write_barrier_method)
+		return TRUE;
 	for (i = 0; i < ATYPE_NUM; ++i)
 		if (method == alloc_method_cache [i])
 			return TRUE;
 	return FALSE;
 }
-#endif
 
 /*
  * Generate an allocator method implementing the fast path of mono_gc_alloc_obj ().
@@ -6909,7 +6904,6 @@ mono_gc_get_managed_allocator_types (void)
 	return ATYPE_NUM;
 }
 
-static MonoMethod *write_barrier_method;
 
 MonoMethod*
 mono_gc_get_write_barrier (void)
