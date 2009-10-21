@@ -2131,30 +2131,6 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 		}
 
 		g_free (name_prefix);
-
-		/* 
-		 * Add instance of Array.GetGenericValueImpl, which is called by the
-		 * array helper methods.
-		 * managed-to-native wrappers are not shared, so have to generate 
-		 * these for ref types too.
-		 */
-		if (acfg->aot_opts.full_aot) {
-			MonoGenericContext ctx;
-			MonoType *args [16];
-			static MonoMethod *get_method;
-
-			if (get_method == NULL) {
-				MonoClass *array_klass = mono_array_class_get (mono_defaults.int_class, 1)->parent;
-				get_method = mono_class_get_method_from_name (array_klass, "GetGenericValueImpl", 2);
-			}
-
-			if (get_method) {
-				memset (&ctx, 0, sizeof (ctx));
-				args [0] = &tclass->byval_arg;
-				ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-				add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (get_method, &ctx), TRUE, TRUE));
-			}
-		}
 	}
 
 	/* Add an instance of GenericComparer<T> which is created dynamically by Comparer<T> */
@@ -2176,18 +2152,6 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 			g_assert (gcomparer);
 			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx));
 		}
-	}
-}
-
-static void
-add_array_wrappers (MonoAotCompile *acfg, MonoClass *klass)
-{
-	int i;
-
-	mono_class_setup_methods (klass);
-	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED)
-			add_extra_method (acfg, klass->methods [i]);
 	}
 }
 
@@ -2361,42 +2325,25 @@ add_generic_instances (MonoAotCompile *acfg)
 			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
 
 		}
+	}
 
-		/* Emit the array wrapper methods for arrays of primitive types */
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.byte_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.sbyte_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int16_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.uint16_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int32_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.uint32_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.int64_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.single_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.double_class, 1));
-		/* These are not handled by generic sharing */
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.object_class, 1));
-		add_array_wrappers (acfg, mono_array_class_get (mono_defaults.string_class, 1));
+	/* 
+	 * Add a managed-to-native wrapper of Array.GetGenericValueImpl<object>, which is
+	 * used for all instances of GetGenericValueImpl by the AOT runtime.
+	 */
+	{
+		MonoGenericContext ctx;
+		MonoType *args [16];
+		MonoMethod *get_method;
+		MonoClass *array_klass = mono_array_class_get (mono_defaults.object_class, 1)->parent;
 
-		/* Add instances of Array.GetGenericValueImpl */
-		{
-			MonoGenericContext ctx;
-			MonoType *args [16];
-			MonoMethod *method;
+		get_method = mono_class_get_method_from_name (array_klass, "GetGenericValueImpl", 2);
 
+		if (get_method) {
 			memset (&ctx, 0, sizeof (ctx));
-
-			/* 
-			 * managed-to-native wrappers are not shared, so have to generate 
-			 * these for ref types too.
-			 */
-			klass = mono_array_class_get (mono_defaults.int_class, 1)->parent;
-			method = mono_class_get_method_from_name (klass, "GetGenericValueImpl", 2);
-
-			if (method) {
-				/* String */
-				args [0] = &mono_defaults.string_class->byval_arg;
-				ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-				add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (method, &ctx), TRUE, TRUE));
-			}
+			args [0] = &mono_defaults.object_class->byval_arg;
+			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+			add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (get_method, &ctx), TRUE, TRUE));
 		}
 	}
 }

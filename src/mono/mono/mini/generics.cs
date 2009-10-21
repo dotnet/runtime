@@ -462,6 +462,19 @@ class Tests {
 		return l.Count;
 	}
 
+	static void enumerate<T> (IEnumerable<T> arr) {
+		foreach (var o in arr)
+			;
+		int c = ((ICollection<T>)arr).Count;
+	}
+
+	/* Test that treating arrays as generic collections works with full-aot */
+	public static int test_0_fullaot_array_wrappers () {
+		Tests[] arr = new Tests [10];
+		enumerate<Tests> (arr);
+		return 0;
+	}
+
 	static int cctor_count = 0;
 
     public abstract class Beta<TChanged> 

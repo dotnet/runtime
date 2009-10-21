@@ -2278,6 +2278,83 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			return code;
 
 		method_index = find_extra_method (method, &amodule);
+		/*
+		 * Special case the ICollection<T> wrappers for arrays, as they cannot
+		 * be statically enumerated, and each wrapper ends up calling the same
+		 * method in Array.
+		 */
+		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && method->klass->rank && strstr (method->name, "System.Collections.Generic")) {
+			MonoMethod *m;
+			const char *prefix;
+			MonoGenericContext ctx;
+			MonoType *args [16];
+			char *mname, *iname, *s, *s2, *helper_name = NULL;
+
+			prefix = "System.Collections.Generic";
+			s = g_strdup_printf ("%s", method->name + strlen (prefix) + 1);
+			s2 = strstr (s, "`1.");
+			g_assert (s2);
+			s2 [0] = '\0';
+			iname = s;
+			mname = s2 + 3;
+
+			//printf ("X: %s %s\n", iname, mname);
+
+			helper_name = g_strdup_printf ("InternalArray__%s_%s", iname, mname);
+			m = mono_class_get_method_from_name (mono_defaults.array_class, helper_name, mono_method_signature (method)->param_count);
+			g_assert (m);
+			g_free (helper_name);
+			g_free (s);
+
+			if (m->is_generic) {
+				memset (&ctx, 0, sizeof (ctx));
+				args [0] = &method->klass->element_class->byval_arg;
+				ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+				m = mono_class_inflate_generic_method (m, &ctx);
+			}
+
+			code = mono_aot_get_method (domain, m);
+			g_assert (code);
+
+			if (mono_method_needs_static_rgctx_invoke (m, FALSE))
+				code = mono_create_static_rgctx_trampoline (m, code);
+
+			return code;
+		}
+
+		/*
+		 * Special case Array.GetGenericValueImpl which is a generic icall.
+		 * Generic sharing currently can't handle it, but the icall returns data using
+		 * an out parameter, so the managed-to-native wrappers can share the same code.
+		 */
+		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && method->klass == mono_defaults.array_class && !strcmp (method->name, "GetGenericValueImpl")) {
+			MonoMethod *m;
+			MonoGenericContext ctx;
+			MonoType *args [16];
+
+			if (mono_method_signature (method)->params [1]->type == MONO_TYPE_OBJECT)
+				/* Avoid recursion */
+				return NULL;
+
+			m = mono_class_get_method_from_name (mono_defaults.array_class, "GetGenericValueImpl", 2);
+			g_assert (m);
+
+			memset (&ctx, 0, sizeof (ctx));
+			args [0] = &mono_defaults.object_class->byval_arg;
+			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+
+			m = mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (m, &ctx), TRUE, TRUE);
+
+			/* 
+			 * Get the code for the <object> instantiation which should be emitted into
+			 * the mscorlib aot image by the AOT compiler.
+			 */
+			code = mono_aot_get_method (domain, m);
+			g_assert (code);
+
+			return code;
+		}
+
 		if (method_index == 0xffffff) {
 			if (mono_aot_only && mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 				char *full_name;
