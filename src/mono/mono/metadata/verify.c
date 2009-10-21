@@ -2957,11 +2957,16 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 
 	//general tests
 	if (is_first_arg_bound) {
-		if (!verify_stack_type_compatibility_full (ctx, mono_method_signature (method)->params [0], value, FALSE, TRUE))
+		if (mono_method_signature (method)->param_count == 0 || !verify_stack_type_compatibility_full (ctx, mono_method_signature (method)->params [0], value, FALSE, TRUE))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
 	} else {
-		if (!verify_stack_type_compatibility_full (ctx, &method->klass->byval_arg, value, FALSE, TRUE) && !stack_slot_is_null_literal (value))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
+		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+			if (!stack_slot_is_null_literal (value) && !is_first_arg_bound)
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Non-null this args used with static function for delegate creation at 0x%04x", ctx->ip_offset));
+		} else {
+			if (!verify_stack_type_compatibility_full (ctx, &method->klass->byval_arg, value, FALSE, TRUE) && !stack_slot_is_null_literal (value))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
+		}
 	}
 
 	if (stack_slot_get_type (value) != TYPE_COMPLEX)
