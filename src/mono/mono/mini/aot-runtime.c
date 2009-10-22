@@ -2353,9 +2353,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			 * the mscorlib aot image by the AOT compiler.
 			 */
 			code = mono_aot_get_method (domain, m);
-			g_assert (code);
-
-			return code;
+			if (code)
+				return code;
 		}
 
 		if (method_index == 0xffffff) {
