@@ -40,6 +40,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-string.h>
+#include <mono/utils/mono-error-internals.h>
 
 MonoStats mono_stats;
 
@@ -492,8 +493,10 @@ mono_class_is_open_constructed_type (MonoType *t)
 }
 
 static MonoType*
-inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *context)
+inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *context, MonoError *error)
 {
+	mono_error_init (error);
+
 	switch (type->type) {
 	case MONO_TYPE_MVAR: {
 		MonoType *nt;
@@ -503,8 +506,9 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			return NULL;
 		if (num >= inst->type_argc) {
 			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
-			g_error ("MVAR %d (%s) cannot be expanded in this context with %d instantiations",
+			mono_error_set_bad_image (error, image->module_name, "MVAR %d (%s) cannot be expanded in this context with %d instantiations",
 				num, info ? info->name : "", inst->type_argc);
+			return NULL;
 		}
 
 		/*
@@ -525,8 +529,9 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			return NULL;
 		if (num >= inst->type_argc) {
 			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
-			g_error ("VAR %d (%s) cannot be expanded in this context with %d instantiations",
+			mono_error_set_bad_image (error, image->module_name, "VAR %d (%s) cannot be expanded in this context with %d instantiations",
 				num, info ? info->name : "", inst->type_argc);
+			return NULL;
 		}
 		nt = mono_metadata_type_dup (image, inst->type_argv [num]);
 		nt->byref = type->byref;
@@ -535,8 +540,8 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	}
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
-		MonoType *nt, *inflated = inflate_generic_type (NULL, &eclass->byval_arg, context);
-		if (!inflated)
+		MonoType *nt, *inflated = inflate_generic_type (NULL, &eclass->byval_arg, context, error);
+		if (!inflated || !mono_error_ok (error))
 			return NULL;
 		nt = mono_metadata_type_dup (image, type);
 		nt->data.klass = mono_class_from_mono_type (inflated);
@@ -545,8 +550,8 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	}
 	case MONO_TYPE_ARRAY: {
 		MonoClass *eclass = type->data.array->eklass;
-		MonoType *nt, *inflated = inflate_generic_type (NULL, &eclass->byval_arg, context);
-		if (!inflated)
+		MonoType *nt, *inflated = inflate_generic_type (NULL, &eclass->byval_arg, context, error);
+		if (!inflated || !mono_error_ok (error))
 			return NULL;
 		nt = mono_metadata_type_dup (image, type);
 		nt->data.array = g_memdup (nt->data.array, sizeof (MonoArrayType));
@@ -644,6 +649,7 @@ mono_class_get_generic_class (MonoClass *klass)
  * @mempool: a mempool
  * @type: a type
  * @context: a generics context
+ * @error: error context
  *
  * The same as mono_class_inflate_generic_type, but allocates the MonoType
  * from mempool if it is non-NULL.  If it is NULL, the MonoType is
@@ -652,12 +658,14 @@ mono_class_get_generic_class (MonoClass *klass)
  * modified by the caller, and it should be freed using mono_metadata_free_type ().
  */
 MonoType*
-mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context)
+mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context, MonoError *error)
 {
 	MonoType *inflated = NULL; 
 
 	if (context)
-		inflated = inflate_generic_type (image, type, context);
+		inflated = inflate_generic_type (image, type, context, error);
+	if (!mono_error_ok (error))
+		return NULL;
 
 	if (!inflated) {
 		MonoType *shared = mono_metadata_get_shared_type (type);
@@ -682,12 +690,40 @@ mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, 
  * generics context @context.
  *
  * Returns: the instantiated type or a copy of @type. The returned MonoType is allocated
- * on the heap and is owned by the caller.
+ * on the heap and is owned by the caller. Returns NULL on error.
+ *
+ * @deprecated Please use mono_class_inflate_generic_type_checked instead
  */
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
-	return mono_class_inflate_generic_type_with_mempool (NULL, type, context);
+	MonoError error;
+	MonoType *result;
+	result = mono_class_inflate_generic_type_checked (type, context, &error);
+
+	if (!mono_error_ok (&error)) {
+		mono_error_cleanup (&error);
+		return NULL;
+	}
+	return result;
+}
+
+/*
+ * mono_class_inflate_generic_type:
+ * @type: a type
+ * @context: a generics context
+ * @error: error context to use
+ *
+ * If @type is a generic type and @context is not NULL, instantiate it using the 
+ * generics context @context.
+ *
+ * Returns: the instantiated type or a copy of @type. The returned MonoType is allocated
+ * on the heap and is owned by the caller.
+ */
+MonoType*
+mono_class_inflate_generic_type_checked (MonoType *type, MonoGenericContext *context, MonoError *error)
+{
+	return mono_class_inflate_generic_type_with_mempool (NULL, type, context, error);
 }
 
 /*
@@ -699,10 +735,13 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 static MonoType*
 mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoGenericContext *context)
 {
+	MonoError error;
 	MonoType *inflated = NULL; 
 
-	if (context)
-		inflated = inflate_generic_type (image, type, context);
+	if (context) {
+		inflated = inflate_generic_type (image, type, context, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+	}
 
 	if (!inflated)
 		return type;
@@ -719,10 +758,12 @@ mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoG
 MonoClass*
 mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context)
 {
+	MonoError error;
 	MonoClass *res;
 	MonoType *inflated;
 
-	inflated = mono_class_inflate_generic_type (&gklass->byval_arg, context);
+	inflated = mono_class_inflate_generic_type_checked (&gklass->byval_arg, context, &error);
+	g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 
 	res = mono_class_from_mono_type (inflated);
 	mono_metadata_free_type (inflated);
@@ -892,7 +933,11 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		result->klass = klass_hint;
 
 	if (!result->klass) {
-		MonoType *inflated = inflate_generic_type (NULL, &method->klass->byval_arg, context);
+		MonoError error;
+		MonoType *inflated = inflate_generic_type (NULL, &method->klass->byval_arg, context, &error);
+
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+
 		result->klass = inflated ? mono_class_from_mono_type (inflated) : method->klass;
 		if (inflated)
 			mono_metadata_free_type (inflated);
@@ -4983,11 +5028,14 @@ mono_class_from_mono_type (MonoType *type)
 static MonoType *
 mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context, gboolean *did_inflate)
 {
+	MonoError error;
 	MonoType *t = mono_type_create_from_typespec (image, type_spec);
 	if (!t)
 		return NULL;
 	if (context && (context->class_inst || context->method_inst)) {
-		MonoType *inflated = inflate_generic_type (NULL, t, context);
+		MonoType *inflated = inflate_generic_type (NULL, t, context, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+
 		if (inflated) {
 			t = inflated;
 			*did_inflate = TRUE;

@@ -6,6 +6,7 @@
 #include <mono/metadata/mempool.h>
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/mono-error.h"
 
 #define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
 
@@ -944,7 +945,7 @@ MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
 
 MonoType*
-mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context) MONO_INTERNAL;
+mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 
 MonoClass*
 mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context) MONO_INTERNAL;

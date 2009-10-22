@@ -486,6 +486,8 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 static gpointer
 inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, MonoClass *class, gboolean temporary)
 {
+	MonoError error;
+
 	g_assert (data);
 
 	if (data == MONO_RGCTX_SLOT_USED_MARKER)
@@ -497,9 +499,12 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, M
 	case MONO_RGCTX_INFO_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_TYPE:
-	case MONO_RGCTX_INFO_REFLECTION_TYPE:
-		return mono_class_inflate_generic_type_with_mempool (temporary ? NULL : class->image,
-			data, context);
+	case MONO_RGCTX_INFO_REFLECTION_TYPE: {
+		gpointer result = mono_class_inflate_generic_type_with_mempool (temporary ? NULL : class->image,
+			data, context, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+		return result;
+	}
 
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
