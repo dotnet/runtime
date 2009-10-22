@@ -2317,12 +2317,12 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			}
 
 			code = mono_aot_get_method (domain, m);
-			g_assert (code);
+			if (code) {
+				if (mono_method_needs_static_rgctx_invoke (m, FALSE))
+					code = mono_create_static_rgctx_trampoline (m, code);
 
-			if (mono_method_needs_static_rgctx_invoke (m, FALSE))
-				code = mono_create_static_rgctx_trampoline (m, code);
-
-			return code;
+				return code;
+			}
 		}
 
 		/*
