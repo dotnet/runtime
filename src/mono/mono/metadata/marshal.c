@@ -874,6 +874,9 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 		sb->cached_str = NULL;
 	}
 	
+	if (sb->length == 0)
+		*(mono_string_chars (sb->str)) = '\0';
+
 	return mono_string_chars (sb->str);
 }
 
