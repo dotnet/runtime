@@ -4473,6 +4473,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		pos += sizeof (MonoLMF);
 
+		if (cfg->compile_aot)
+			cfg->disable_aot = TRUE;
+
 		/* save the current IP */
 		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
 		x86_push_imm_template (code);
