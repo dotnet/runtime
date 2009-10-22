@@ -2791,6 +2791,24 @@ build_nursery_fragments (int start_pin, int end_pin)
 	clear_tlabs ();
 }
 
+static void
+shorten_section (GCMemSection *section, mword size)
+{
+	size += pagesize - 1;
+	size &= ~(pagesize - 1);
+
+	if (size == section->size)
+		return;
+
+	free_os_memory (section->data + size, section->size - size);
+	total_alloc -= section->size - size;
+
+	DEBUG (2, fprintf (gc_debug_file, "Shortening section %p from %d bytes to %d bytes\n",
+					section, section->size, size));
+	section->size = size;
+	section->end_data = section->data + size;
+}
+
 /* FIXME: later reduce code duplication here with the above
  * We don't keep track of section fragments for non-nursery sections yet, so
  * just memset to 0.
@@ -2824,6 +2842,7 @@ build_section_fragments (GCMemSection *section)
 		frag_start = (char*)pin_queue [i] + frag_size;
 		section->next_data = MAX (section->next_data, frag_start);
 	}
+	shorten_section (section, frag_start - section->data);
 	frag_end = section->end_data;
 	frag_size = frag_end - frag_start;
 	if (frag_size)
@@ -3071,16 +3090,8 @@ shorten_to_space (mword size)
 	if (to_space_section->next_data - to_space_section->data >= size)
 		return FALSE;
 
-	size += pagesize - 1;
-	size &= ~(pagesize - 1);
+	shorten_section (to_space_section, size);
 
-	free_os_memory (to_space_section->data + size, to_space_section->size - size);
-	total_alloc -= to_space_section->size - size;
-
-	DEBUG (2, fprintf (gc_debug_file, "Shortening to space from %d bytes to %d bytes\n",
-					to_space_section->size, size));
-	to_space_section->size = size;
-	to_space_section->end_data = to_space_section->data + size;
 	to_space_end = to_space_section->end_data;
 
 	return TRUE;
