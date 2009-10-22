@@ -1021,6 +1021,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\utils\mono-error.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-error.h"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-error-internals.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\mono-filemap.c"
 				>
 			</File>
