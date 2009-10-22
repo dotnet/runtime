@@ -713,6 +713,20 @@ AC_TRY_COMPILE([], [
    AC_MSG_RESULT(no)
 ])
 
+AC_MSG_CHECKING(for deprecated __attribute__)
+AC_TRY_COMPILE([
+     int doit (void) __attribute__ ((deprecated));
+     int doit (void) { return 0; }
+], [
+	return 0;
+], [
+   have_deprecated=yes
+   AC_MSG_RESULT(yes)
+], [
+   have_deprecated=no
+   AC_MSG_RESULT(no)
+])
+
 AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables GC Parallel Marking], enable_parallel_mark=$enableval, enable_parallel_mark=$parallel_mark)
 if test x$enable_parallel_mark = xyes; then
 	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
@@ -2092,6 +2106,10 @@ fi
 
 if test "x$have_visibility_hidden" = "xyes"; then
    AC_DEFINE(HAVE_VISIBILITY_HIDDEN, 1, [Support for the visibility ("hidden") attribute])
+fi
+
+if test "x$have_deprecated" = "xyes"; then
+   AC_DEFINE(HAVE_DEPRECATED, 1, [Support for the deprecated attribute])
 fi
 
 AC_ARG_WITH(jit, [  --with-jit=yes,no              If you want to build scripts that default to the JIT (defaults to no)],[

@@ -159,5 +159,11 @@
 #define MONO_INTERNAL 
 #endif
 
+#if HAVE_DEPRECATED
+#define MONO_DEPRECATED __attribute__ ((deprecated))
+#else
+#define MONO_DEPRECATED 
+#endif
+
 #endif /* __UTILS_MONO_COMPILER_H__*/
 

@@ -1,3 +1,7 @@
+2009-10-22  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* configure.in: Add check for the deprecated attribute.
+
 2009-10-12  Zoltan Varga  <vargaz@gmail.com>
 
 	* data/Makefile.am (gdb_DATA): Install mono-gdb.py alongside the mono executable.
