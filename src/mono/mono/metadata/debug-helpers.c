@@ -542,7 +542,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 
 #ifdef NO_UNALIGNED_ACCESS
 			/* The blob might not be 2 byte aligned */
-			blob2 = g_malloc (len2 * 2);
+			blob2 = g_malloc ((len2 * 2) + 1);
 			memcpy (blob2, blob, len2 * 2);
 #else
 			blob2 = (char*)blob;
