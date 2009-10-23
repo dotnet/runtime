@@ -67,7 +67,7 @@ libmonoutils_la_SOURCES = \
 	gc_wrapper.h		\
 	mono-error.c	\
 	mono-error.h	\
-	mono-error-internal.h
+	mono-error-internals.h
 
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
