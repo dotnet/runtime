@@ -822,7 +822,7 @@ test-async-exceptions : async-exceptions.exe
 EXTRA_DIST += modules.cs modules-m1.cs
 modules-m1.netmodule: modules-m1.cs
 	$(MCS) -out:$@ /target:module $(srcdir)/modules-m1.cs
-modules.exe: modules.cs modules-m1.netmodule
+modules.exe: modules.cs modules-m1.netmodule TestDriver.dll
 	$(MCS) -out:$@ /addmodule:modules-m1.netmodule -r:TestDriver.dll $(srcdir)/modules.cs
 
 # Useful if mono is compiled with --enable-shared=no
