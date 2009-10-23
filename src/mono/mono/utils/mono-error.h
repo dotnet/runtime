@@ -37,6 +37,8 @@ typedef struct {
     char hidden_2 [128]; /*DON'T TOUCH */
 } MonoError;
 
+G_BEGIN_DECLS
+
 void
 mono_error_init (MonoError *error);
 
@@ -55,4 +57,5 @@ mono_error_get_error_code (MonoError *error);
 const char*
 mono_error_get_message (MonoError *error);
 
+G_END_DECLS
 #endif
