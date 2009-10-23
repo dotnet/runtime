@@ -210,6 +210,13 @@ static void parse_error   (GMarkupParseContext *context,
                            GError              *error,
 			   gpointer             user_data)
 {
+	ParseState *state = user_data;
+	const gchar *msg;
+	const gchar *filename;
+
+	filename = state && state->user_data ? (gchar *) state->user_data : "<unknown>";
+	msg = error && error->message ? error->message : "";
+	g_warning ("Error parsing %s: %s", filename, msg);
 }
 
 static int
@@ -374,15 +381,23 @@ mono_config_parse_xml_with_context (ParseState *state, const char *text, gsize l
 static int
 mono_config_parse_file_with_context (ParseState *state, const char *filename)
 {
-	char *text;
+	gchar *text;
 	gsize len;
+	gint offset;
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_CONFIG,
 			"Config attempting to parse: '%s'.", filename);
 
 	if (!g_file_get_contents (filename, &text, &len, NULL))
 		return 0;
-	mono_config_parse_xml_with_context (state, text, len);
+
+
+	offset = 0;
+	if (len > 3 && text [0] == '\xef' && text [1] == (gchar) '\xbb' && text [2] == '\xbf')
+		offset = 3; /* Skip UTF-8 BOM */
+	if (state->user_data == NULL)
+		state->user_data = (gpointer) filename;
+	mono_config_parse_xml_with_context (state, text + offset, len - offset);
 	g_free (text);
 	return 1;
 }
@@ -397,7 +412,8 @@ void
 mono_config_parse_memory (const char *buffer)
 {
 	ParseState state = {NULL};
-	
+
+	state.user_data = (gpointer) "<buffer>";
 	mono_config_parse_xml_with_context (&state, buffer, strlen (buffer));
 }
 
@@ -405,6 +421,7 @@ static void
 mono_config_parse_file (const char *filename)
 {
 	ParseState state = {NULL};
+	state.user_data = (gpointer) filename;
 	mono_config_parse_file_with_context (&state, filename);
 }
 
@@ -474,8 +491,10 @@ mono_config_for_assembly (MonoImage *assembly)
 	state.assembly = assembly;
 
 	bundled_config = mono_config_string_for_assembly_file (assembly->module_name);
-	if (bundled_config)
+	if (bundled_config) {
+		state.user_data = (gpointer) "<bundled>";
 		mono_config_parse_xml_with_context (&state, bundled_config, strlen (bundled_config));
+	}
 
 	cfg_name = g_strdup_printf ("%s.config", mono_image_get_filename (assembly));
 	mono_config_parse_file_with_context (&state, cfg_name);
