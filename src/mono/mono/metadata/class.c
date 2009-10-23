@@ -660,7 +660,8 @@ mono_class_get_generic_class (MonoClass *klass)
 MonoType*
 mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context, MonoError *error)
 {
-	MonoType *inflated = NULL; 
+	MonoType *inflated = NULL;
+	mono_error_init (error);
 
 	if (context)
 		inflated = inflate_generic_type (image, type, context, error);
