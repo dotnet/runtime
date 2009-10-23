@@ -465,9 +465,15 @@ mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
 static MonoType*
 verifier_inflate_type (VerifyContext *ctx, MonoType *type, MonoGenericContext *context)
 {
-	if (!mono_type_is_valid_type_in_context (type, context))
+	MonoError error;
+	MonoType *result;
+
+	result = mono_class_inflate_generic_type_checked (type, context, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_cleanup (&error);
 		return NULL;
-	return mono_class_inflate_generic_type (type, context);
+	}
+	return NULL;
 }
 /*
  * Test if @candidate is a subtype of @target using the minimal possible information
@@ -512,6 +518,7 @@ mono_class_is_constraint_compatible (MonoClass *candidate, MonoClass *target)
 static gboolean
 is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
 {
+	MonoError error;
 	int i;
 
 	if (ginst->type_argc != gc->type_argc)
@@ -554,7 +561,11 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 			MonoClass *ctr = *constraints;
 			MonoType *inflated;
 
-			inflated = mono_class_inflate_generic_type (&ctr->byval_arg, context);
+			inflated = mono_class_inflate_generic_type_checked (&ctr->byval_arg, context, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_cleanup (&error);
+				return FALSE;
+			}
 			ctr = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 
@@ -2459,7 +2470,17 @@ handle_enum:
 static void
 init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *code, MonoClass *klass)
 {
-	MonoType *type = mono_class_inflate_generic_type (&klass->byval_arg, ctx->generic_context);
+	MonoError error;
+	MonoType *type = mono_class_inflate_generic_type_checked (&klass->byval_arg, ctx->generic_context, &error);
+
+	if (!mono_error_ok (&error)) {
+		char *name = mono_type_get_full_name (klass);
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid class %s used for exception", name));
+		g_free (name);
+		mono_error_cleanup (&error);
+		return;
+	}
+
 	stack_init (ctx, code);
 	set_stack_value (ctx, code->stack, type, FALSE);
 	ctx->exception_types = g_slist_prepend (ctx->exception_types, type);
@@ -4841,6 +4862,7 @@ verify_clause_relationship (VerifyContext *ctx, MonoExceptionClause *clause, Mon
 GSList*
 mono_method_verify (MonoMethod *method, int level)
 {
+	MonoError error;
 	const unsigned char *ip;
 	const unsigned char *end;
 	int i, n, need_merge = 0, start = 0;
@@ -4907,10 +4929,26 @@ mono_method_verify (MonoMethod *method, int level)
 			ctx.generic_context = generic_context = &method->klass->generic_container->context;
 	}
 
-	for (i = 0; i < ctx.num_locals; ++i)
-		ctx.locals [i] = mono_class_inflate_generic_type (ctx.locals [i], ctx.generic_context);
-	for (i = 0; i < ctx.max_args; ++i)
-		ctx.params [i] = mono_class_inflate_generic_type (ctx.params [i], ctx.generic_context);
+	for (i = 0; i < ctx.num_locals; ++i) {
+		ctx.locals [i] = mono_class_inflate_generic_type_checked (ctx.locals [i], ctx.generic_context, &error);
+		if (!mono_error_ok (&error)) {
+			char *name = mono_type_full_name (ctx.locals [i]);
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid local %d of type %s", i, name));
+			g_free (name);
+			mono_error_cleanup (&error);
+			goto cleanup;
+		}
+	}
+	for (i = 0; i < ctx.max_args; ++i) {
+		ctx.params [i] = mono_class_inflate_generic_type_checked (ctx.params [i], ctx.generic_context, &error);
+		if (!mono_error_ok (&error)) {
+			char *name = mono_type_full_name (ctx.locals [i]);
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid parameter %d of type %s", i, name));
+			g_free (name);
+			mono_error_cleanup (&error);
+			goto cleanup;
+		}
+	}
 	stack_init (&ctx, &ctx.eval);
 
 	for (i = 0; i < ctx.num_locals; ++i) {
