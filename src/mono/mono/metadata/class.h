@@ -4,7 +4,6 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader.h>
-#include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>
 
 G_BEGIN_DECLS
@@ -54,7 +53,7 @@ MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar);
 
 MonoType*
-mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context) MONO_DEPRECATED;
+mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context) /* MONO_DEPRECATED */;
 
 MonoType*
 mono_class_inflate_generic_type_checked (MonoType *type, MonoGenericContext *context, MonoError *error);

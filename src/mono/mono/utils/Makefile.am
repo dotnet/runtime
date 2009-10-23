@@ -66,7 +66,6 @@ libmonoutils_la_SOURCES = \
 	dtrace.h			\
 	gc_wrapper.h		\
 	mono-error.c	\
-	mono-error.h	\
 	mono-error-internals.h
 
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
@@ -77,6 +76,7 @@ libmonoutilsinclude_HEADERS = \
 	mono-counters.h	\
 	mono-digest.h	\
 	mono-embed.h	\
+	mono-error.h	\
 	mono-logger.h	\
 	mono-hash.h	\
 	mono-math.h	\
