@@ -745,7 +745,8 @@ mono_if_conversion (MonoCompile *cfg)
 		mono_handle_global_vregs (cfg);
 		if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
 			mono_local_cprop (cfg);
-		mono_local_deadce (cfg);
+		if (cfg->opt & MONO_OPT_DEADCE)
+			mono_local_deadce (cfg);
 	}
 #endif
 }
