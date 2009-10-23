@@ -234,8 +234,12 @@ mono_get_context_capture_method (void)
 MonoBoolean
 ves_icall_System_Security_SecurityManager_get_SecurityEnabled (void)
 {
-	if (!mono_security_manager_activated)
-		return FALSE;
+	if (!mono_security_manager_activated) {
+		/* SecurityManager is internal for Moonlight and SecurityEnabled is used to know if CoreCLR is active
+		 * (e.g. plugin executing in the browser) or not (e.g. smcs compiling source code with corlib 2.1)
+		 */
+		return (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR);
+	}
 	return mono_security_manager_enabled;
 }
 
