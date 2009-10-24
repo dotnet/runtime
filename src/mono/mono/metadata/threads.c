@@ -1221,6 +1221,36 @@ ves_icall_System_Threading_Thread_GetDomainID (void)
 	return mono_domain_get()->domain_id;
 }
 
+/*
+ * mono_thread_get_name:
+ *
+ *   Return the name of the thread. NAME_LEN is set to the length of the name.
+ * Return NULL if the thread has no name. The returned memory is owned by the
+ * caller.
+ */
+gunichar2*
+mono_thread_get_name (MonoInternalThread *this_obj, guint32 *name_len)
+{
+	gunichar2 *res;
+
+	ensure_synch_cs_set (this_obj);
+	
+	EnterCriticalSection (this_obj->synch_cs);
+	
+	if (!this_obj->name) {
+		*name_len = 0;
+		res = NULL;
+	} else {
+		*name_len = this_obj->name_len;
+		res = g_new (gunichar2, this_obj->name_len);
+		memcpy (res, this_obj->name, sizeof (gunichar2) * this_obj->name_len);
+	}
+	
+	LeaveCriticalSection (this_obj->synch_cs);
+
+	return res;
+}
+
 MonoString* 
 ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj)
 {
