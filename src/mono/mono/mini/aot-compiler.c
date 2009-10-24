@@ -5620,7 +5620,7 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
 
 	img_writer_destroy (w);
 
-	if (TRUE) {
+	if (FALSE) {
 		/* Save the symbol files to help debugging */
 		FILE *fp;
 		char *file_name;
