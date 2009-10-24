@@ -855,24 +855,34 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
  * mini_jit_info_table_find:
  *
  *   Same as mono_jit_info_table_find, but search all the domains of the current thread
- * if ADDR is not found in DOMAIN.
+ * if ADDR is not found in DOMAIN. The domain where the method was found is stored into
+ * OUT_DOMAIN if it is not NULL.
  */
 MonoJitInfo*
-mini_jit_info_table_find (MonoDomain *domain, char *addr)
+mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domain)
 {
 	MonoJitInfo *ji;
 	MonoInternalThread *t = mono_thread_internal_current ();
 	GSList *l;
 
+	if (out_domain)
+		*out_domain = NULL;
+
 	ji = mono_jit_info_table_find (domain, addr);
-	if (ji)
+	if (ji) {
+		if (out_domain)
+			*out_domain = domain;
 		return ji;
+	}
 
 	for (l = t->appdomain_refs; l; l = l->next) {
 		if (l->data != domain) {
 			ji = mono_jit_info_table_find ((MonoDomain*)l->data, addr);
-			if (ji)
+			if (ji) {
+				if (out_domain)
+					*out_domain = (MonoDomain*)l->data;
 				return ji;
+			}
 		}
 	}
 
