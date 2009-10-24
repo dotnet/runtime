@@ -205,7 +205,7 @@ typedef struct {
 	int line_base, line_range, max_address_incr;
 	guint8 opcode_base;
 	guint32 last_line, last_file, last_offset;
-	guint32 line, file, offset;
+	int line, file, offset;
 } StatementMachine;
 
 static gboolean
@@ -359,6 +359,138 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
  out_success:
 	mono_debugger_unlock ();
 	return location;
+}
+
+static void
+add_line (StatementMachine *stm, GPtrArray *il_offset_array, GPtrArray *line_number_array)
+{
+	if (stm->line > 0) {
+		g_ptr_array_add (il_offset_array, GUINT_TO_POINTER (stm->offset));
+		g_ptr_array_add (line_number_array, GUINT_TO_POINTER (stm->line));
+	}
+}
+
+/*
+ * mono_debug_symfile_get_line_numbers:
+ *
+ *   All the output parameters can be NULL.
+ */ 
+void
+mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_file, int *n_il_offsets, int **il_offsets, int **line_numbers)
+{
+	// FIXME: Unify this with mono_debug_symfile_lookup_location
+	MonoSymbolFile *symfile;
+	const unsigned char *ptr;
+	StatementMachine stm;
+	guint32 i;
+	GPtrArray *il_offset_array, *line_number_array;
+
+	if (source_file)
+		*source_file = NULL;
+	if (n_il_offsets)
+		*n_il_offsets = 0;
+
+	if ((symfile = minfo->handle->symfile) == NULL)
+		return;
+
+	il_offset_array = g_ptr_array_new ();
+	line_number_array = g_ptr_array_new ();
+
+	stm.line_base = read32 (&symfile->offset_table->_line_number_table_line_base);
+	stm.line_range = read32 (&symfile->offset_table->_line_number_table_line_range);
+	stm.opcode_base = (guint8) read32 (&symfile->offset_table->_line_number_table_opcode_base);
+	stm.max_address_incr = (255 - stm.opcode_base) / stm.line_range;
+
+	mono_debugger_lock ();
+
+	ptr = symfile->raw_contents + minfo->lnt_offset;
+
+	stm.symfile = symfile;
+	stm.offset = stm.last_offset = 0;
+	stm.last_file = 0;
+	stm.last_line = 0;
+	stm.file = 1;
+	stm.line = 1;
+
+	while (TRUE) {
+		guint8 opcode = *ptr++;
+
+		if (opcode == 0) {
+			guint8 size = *ptr++;
+			const unsigned char *end_ptr = ptr + size;
+
+			opcode = *ptr++;
+
+			if (opcode == DW_LNE_end_sequence) {
+				add_line (&stm, il_offset_array, line_number_array);
+				break;
+			} else if (opcode == DW_LNE_MONO_negate_is_hidden) {
+				;
+			} else if ((opcode >= DW_LNE_MONO__extensions_start) &&
+				   (opcode <= DW_LNE_MONO__extensions_end)) {
+				; // reserved for future extensions
+			} else {
+				g_warning ("Unknown extended opcode %x in LNT", opcode);
+			}
+
+			ptr = end_ptr;
+			continue;
+		} else if (opcode < stm.opcode_base) {
+			switch (opcode) {
+			case DW_LNS_copy:
+				add_line (&stm, il_offset_array, line_number_array);
+				break;
+			case DW_LNS_advance_pc:
+				stm.offset += read_leb128 (ptr, &ptr);
+				break;
+			case DW_LNS_advance_line:
+				stm.line += read_leb128 (ptr, &ptr);
+				break;
+			case DW_LNS_set_file:
+				stm.file = read_leb128 (ptr, &ptr);
+				break;
+			case DW_LNS_const_add_pc:
+				stm.offset += stm.max_address_incr;
+				break;
+			default:
+				g_warning ("Unknown standard opcode %x in LNT", opcode);
+				g_assert_not_reached ();
+			}
+		} else {
+			opcode -= stm.opcode_base;
+
+			stm.offset += opcode / stm.line_range;
+			stm.line += stm.line_base + (opcode % stm.line_range);
+
+			add_line (&stm, il_offset_array, line_number_array);
+		}
+	}
+
+	if (stm.file) {
+		int offset = read32(&(stm.symfile->offset_table->_source_table_offset)) +
+			(stm.file - 1) * sizeof (MonoSymbolFileSourceEntry);
+		MonoSymbolFileSourceEntry *se = (MonoSymbolFileSourceEntry *)
+			(stm.symfile->raw_contents + offset);
+
+		if (source_file)
+			*source_file = read_string (stm.symfile->raw_contents + read32(&(se->_data_offset)));
+	}
+
+	if (n_il_offsets)
+		*n_il_offsets = il_offset_array->len;
+	if (il_offsets && line_numbers) {
+		*il_offsets = g_malloc (il_offset_array->len * sizeof (int));
+		*line_numbers = g_malloc (il_offset_array->len * sizeof (int));
+		for (i = 0; i < il_offset_array->len; ++i) {
+			(*il_offsets) [i] = GPOINTER_TO_UINT (g_ptr_array_index (il_offset_array, i));
+			(*line_numbers) [i] = GPOINTER_TO_UINT (g_ptr_array_index (line_number_array, i));
+		}
+	}
+	g_ptr_array_free (il_offset_array, TRUE);
+	g_ptr_array_free (line_number_array, TRUE);
+
+	mono_debugger_unlock ();
+	return;
 }
 
 gint32

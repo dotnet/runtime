@@ -992,6 +992,26 @@ cleanup_and_fail:
 }
 
 /**
+ * mono_debug_il_offset_from_address:
+ *
+ *   Compute the IL offset corresponding to NATIVE_OFFSET inside the native
+ * code of METHOD in DOMAIN.
+ */
+gint32
+mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint32 native_offset)
+{
+	gint32 res;
+
+	mono_debugger_lock ();
+
+	res = il_offset_from_address (method, domain, native_offset);
+
+	mono_debugger_unlock ();
+
+	return res;
+}
+
+/**
  * mono_debug_lookup_source_location:
  * @address: Native offset within the @method's machine code.
  *

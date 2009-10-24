@@ -181,6 +181,9 @@ mono_debug_lookup_locals (MonoMethod *method, char ***names, int **indexes);
 MonoDebugSourceLocation *
 mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDomain *domain);
 
+gint32
+mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint32 native_offset);
+
 void
 mono_debug_free_source_location (MonoDebugSourceLocation *location);
 
