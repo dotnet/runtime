@@ -154,6 +154,14 @@ static MonoClass *async_call_klass;
 static MonoClass *socket_async_call_klass;
 static MonoClass *process_async_call_klass;
 
+/* Hooks */
+static MonoThreadPoolFunc tp_start_func;
+static MonoThreadPoolFunc tp_finish_func;
+static gpointer tp_hooks_user_data;
+static MonoThreadPoolItemFunc tp_item_begin_func;
+static MonoThreadPoolItemFunc tp_item_end_func;
+static gpointer tp_item_user_data;
+
 #define INIT_POLLFD(a, b, c) {(a)->fd = b; (a)->events = c; (a)->revents = 0;}
 enum {
 	AIO_OP_FIRST,
@@ -284,6 +292,8 @@ async_invoke_io_thread (gpointer data)
 	idle_data.wait_handle = CreateEvent (NULL, FALSE, FALSE, NULL);
 
 	thread = mono_thread_internal_current ();
+	if (tp_start_func)
+		tp_start_func (tp_hooks_user_data);
 
 	version = mono_get_runtime_info ()->framework_version;
 	for (;;) {
@@ -320,11 +330,15 @@ async_invoke_io_thread (gpointer data)
 					continue;
 				}
 				if (mono_domain_set (domain, FALSE)) {
-					ASyncCall *ac;
+					/* ASyncCall *ac; */
 
+					if (tp_item_begin_func)
+						tp_item_begin_func (tp_item_user_data);
 					mono_async_invoke (ar);
-					ac = (ASyncCall *) ar->object_data;
+					if (tp_item_end_func)
+						tp_item_end_func (tp_item_user_data);
 					/*
+					ac = (ASyncCall *) ar->object_data;
 					if (ac->msg->exc != NULL)
 						mono_unhandled_exception (ac->msg->exc);
 					*/
@@ -356,6 +370,8 @@ async_invoke_io_thread (gpointer data)
 			InterlockedDecrement (&async_io_tp.nthreads);
 			CloseHandle (idle_data.wait_handle);
 			idle_data.wait_handle = NULL;
+			if (tp_finish_func)
+				tp_finish_func (tp_hooks_user_data);
 			return;
 		}
 		
@@ -1484,6 +1500,8 @@ async_invoke_thread (gpointer data)
 	idle_data.wait_handle = CreateEvent (NULL, FALSE, FALSE, NULL);
  
 	thread = mono_thread_internal_current ();
+	if (tp_start_func)
+		tp_start_func (tp_hooks_user_data);
 	version = mono_get_runtime_info ()->framework_version;
 	for (;;) {
 		MonoAsyncResult *ar;
@@ -1508,11 +1526,15 @@ async_invoke_thread (gpointer data)
 				}
 
 				if (mono_domain_set (domain, FALSE)) {
-					ASyncCall *ac;
+					/* ASyncCall *ac; */
 
+					if (tp_item_begin_func)
+						tp_item_begin_func (tp_item_user_data);
 					mono_async_invoke (ar);
-					ac = (ASyncCall *) ar->object_data;
+					if (tp_item_end_func)
+						tp_item_end_func (tp_item_user_data);
 					/*
+					ac = (ASyncCall *) ar->object_data;
 					if (ac->msg->exc != NULL)
 						mono_unhandled_exception (ac->msg->exc);
 					*/
@@ -1543,6 +1565,8 @@ async_invoke_thread (gpointer data)
 			InterlockedDecrement (&async_tp.nthreads);
 			CloseHandle (idle_data.wait_handle);
 			idle_data.wait_handle = NULL;
+			if (tp_finish_func)
+				tp_finish_func (tp_hooks_user_data);
 			return;
 		}
 		
@@ -1627,4 +1651,40 @@ ves_icall_System_Threading_ThreadPool_SetMaxThreads (gint workerThreads, gint co
 	InterlockedExchange (&async_io_tp.max_threads, completionPortThreads);
 	return TRUE;
 }
+
+/**
+ * mono_install_threadpool_thread_hooks
+ * @start_func: the function to be called right after a new threadpool thread is created. Can be NULL.
+ * @finish_func: the function to be called right before a thredpool thread is exiting. Can be NULL.
+ * @user_data: argument passed to @start_func and @finish_func.
+ *
+ * @start_fun will be called right after a threadpool thread is created and @finish_func right before a threadpool thread exits.
+ * The calls will be made from the thread itself.
+ */
+void
+mono_install_threadpool_thread_hooks (MonoThreadPoolFunc start_func, MonoThreadPoolFunc finish_func, gpointer user_data)
+{
+	tp_start_func = start_func;
+	tp_finish_func = finish_func;
+	tp_hooks_user_data = user_data;
+}
+
+/**
+ * mono_install_threadpool_item_hooks
+ * @begin_func: the function to be called before a threadpool work item processing starts.
+ * @end_func: the function to be called after a threadpool work item is finished.
+ * @user_data: argument passed to @begin_func and @end_func.
+ *
+ * The calls will be made from the thread itself and from the same AppDomain
+ * where the work item was executed.
+ *
+ */
+void
+mono_install_threadpool_item_hooks (MonoThreadPoolItemFunc begin_func, MonoThreadPoolItemFunc end_func, gpointer user_data)
+{
+	tp_item_begin_func = begin_func;
+	tp_item_end_func = end_func;
+	tp_item_user_data = user_data;
+}
+
 
