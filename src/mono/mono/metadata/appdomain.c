@@ -1360,8 +1360,7 @@ private_file_needs_copying (const char *src, struct stat *sbuf_src, char *dest)
 	if (stat (src, sbuf_src) == -1 || stat (dest, &sbuf_dest) == -1)
 		return TRUE;
 
-	if (sbuf_src->st_mode == sbuf_dest.st_mode &&
-	    sbuf_src->st_size == sbuf_dest.st_size &&
+	if (sbuf_src->st_size == sbuf_dest.st_size &&
 	    sbuf_src->st_mtime == sbuf_dest.st_mtime)
 		return FALSE;
 
