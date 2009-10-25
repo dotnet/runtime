@@ -680,8 +680,6 @@ static guint32 WINAPI start_wrapper(void *data)
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Setting current_object_key to %p", __func__, GetCurrentThreadId (), thread));
 
-	mono_profiler_thread_start (tid);
-
 	/* On 2.0 profile (and higher), set explicitly since state might have been
 	   Unknown */
 	if (mono_framework_version () != 1) {
@@ -710,6 +708,13 @@ static guint32 WINAPI start_wrapper(void *data)
 
 	mono_thread_set_execution_context (thread->ec_to_set);
 	thread->ec_to_set = NULL;
+
+	/* 
+	 * Call this after calling start_notify, since the profiler callback might want
+	 * to lock the thread, and the lock is held by thread_start () which waits for
+	 * start_notify.
+	 */
+	mono_profiler_thread_start (tid);
 
 	/* start_func is set only for unmanaged start functions */
 	if (start_func) {
