@@ -347,8 +347,17 @@ add_signal_handler (int signo, gpointer handler)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO;
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	if (signo == SIGSEGV)
+	if (signo == SIGSEGV) {
 		sa.sa_flags |= SA_ONSTACK;
+
+		/* 
+		 * libgc will crash when trying to do stack marking for threads which are on
+		 * an altstack, so delay the suspend signal after the signal handler has
+		 * executed.
+		 */
+		if (GC_get_suspend_signal () != -1)
+			sigaddset (&sa.sa_mask, GC_get_suspend_signal ());
+	}
 #endif
 #else
 	sa.sa_handler = handler;

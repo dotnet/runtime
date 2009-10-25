@@ -361,7 +361,8 @@ BASE_TEST_CS_SRC=		\
 	appdomain-thread-abort.cs \
 	xdomain-threads.cs	\
 	w32message.cs	\
-	bug-544446.cs
+	bug-544446.cs	\
+	gc-altstack.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
