@@ -697,7 +697,8 @@ static guint32 WINAPI start_wrapper(void *data)
 	}
 
 	mono_threads_lock ();
-	mono_g_hash_table_remove (thread_start_args, thread);
+	if (thread_start_args)
+		mono_g_hash_table_remove (thread_start_args, thread);
 	mono_threads_unlock ();
 
 	g_free (start_info);
