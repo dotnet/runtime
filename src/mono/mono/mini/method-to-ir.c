@@ -7186,7 +7186,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #endif
 					}
 					else
-						ins->inst_p1 = (gpointer)(gssize)(sp [1]->inst_c0);
+						ins->inst_imm = (gssize)(sp [1]->inst_c0);
 					ins->sreg2 = -1;
 
 					/* Might be followed by an instruction added by ADD_WIDEN_OP */

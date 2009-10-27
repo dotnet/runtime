@@ -159,7 +159,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         MONO_INST_NEW ((cfg), (dest), (op)); \
         (dest)->dreg = dr; \
         (dest)->sreg1 = sr; \
-        (dest)->inst_p1 = (gpointer)(gssize)(imm); \
+        (dest)->inst_imm = (imm); \
 	} while (0)
 
 #ifdef MONO_ARCH_NEED_GOT_VAR
@@ -562,7 +562,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         MONO_INST_NEW ((cfg), (inst), (op)); \
         inst->dreg = dr; \
         inst->sreg1 = sr; \
-        inst->inst_p1 = (gpointer)(gssize)(imm); \
+        inst->inst_imm = (mgreg_t)(imm);		\
 	    MONO_ADD_INS (cfg->cbb, inst); \
 	} while (0)
 
@@ -570,7 +570,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         MonoInst *inst; \
         MONO_INST_NEW ((cfg), (inst), (OP_COMPARE_IMM)); \
         inst->sreg1 = sr1; \
-        inst->inst_p1 = (gpointer)imm; \
+        inst->inst_imm = (imm);			 \
 	    MONO_ADD_INS ((cfg)->cbb, inst); \
 	} while (0)
 
@@ -578,7 +578,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         MonoInst *inst; \
         MONO_INST_NEW ((cfg), (inst), sizeof (void*) == 8 ? OP_ICOMPARE_IMM : OP_COMPARE_IMM); \
         inst->sreg1 = sr1; \
-        inst->inst_p1 = (gpointer)imm; \
+        inst->inst_imm = (imm);			 \
 	    MONO_ADD_INS ((cfg)->cbb, inst); \
 	} while (0)
 
@@ -607,7 +607,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         MONO_INST_NEW ((cfg), (inst), (op)); \
         inst->inst_destbasereg = base; \
         inst->inst_offset = offset; \
-        inst->inst_p1 = (gpointer)(gssize)imm; \
+        inst->inst_imm = (mgreg_t)(imm); \
         MONO_ADD_INS ((cfg)->cbb, inst); \
 	} while (0)
 
