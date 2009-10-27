@@ -32,7 +32,9 @@ struct MonoLMF {
 	MonoMethod *method;
 	gulong     ebp;
 	gulong     eip;
-	gulong     iregs [MONO_SAVED_GREGS]; /* 13..31 */
+	/* Add a dummy field to force iregs to be aligned when cross compiling from x86 */
+	gulong     dummy;
+	mgreg_t    iregs [MONO_SAVED_GREGS]; /* 13..31 */
 	gdouble    fregs [MONO_SAVED_FREGS]; /* 14..31 */
 };
 
@@ -45,7 +47,7 @@ struct MonoLMF {
 typedef struct {
 	gulong sc_ir;          // pc 
 	gulong sc_sp;          // r1
-	gulong regs [MONO_SAVED_GREGS];
+	mgreg_t regs [MONO_SAVED_GREGS];
 	double fregs [MONO_SAVED_FREGS];
 } MonoContext;
 
@@ -55,9 +57,19 @@ typedef struct MonoCompileArch {
 
 /*
  * ILP32 uses a version of the ppc64 abi with sizeof(void*)==sizeof(long)==4.
- * To support this, code which needs the size of a pointer needs to use 
- * sizeof (gpointer), while code which needs the size of a register/stack slot 
- * needs to use SIZEOF_REGISTER.
+ * To support this, code needs to follow the following conventions:
+ * - for the size of a pointer use sizeof (gpointer)
+ * - for the size of a register/stack slot use SIZEOF_REGISTER.
+ * - for variables which contain values of registers, use mgreg_t.
+ * - for loading/saving pointers/ints, use the normal ppc_load_reg/ppc_save_reg ()
+ *   macros.
+ * - for loading/saving register sized quantities, use the ppc_ldr/ppc_str 
+ *   macros.
+ * - make sure to not mix the two kinds of macros for the same memory location, 
+ *   since ppc is big endian, so a 8 byte store followed by a 4 byte load will
+ *   load the upper 32 bit of the value.
+ * - use OP_LOADR_MEMBASE/OP_STORER_MEMBASE to load/store register sized
+ *   quantities.
  */
 
 #ifdef __mono_ppc64__
@@ -228,11 +240,11 @@ typedef struct {
 #else
 
 typedef struct {
-	unsigned long sp;
+	mgreg_t sp;
 #ifdef __mono_ppc64__
-	unsigned long cr;
+	mgreg_t cr;
 #endif
-	unsigned long lr;
+	mgreg_t lr;
 } MonoPPCStackFrame;
 
 #ifdef G_COMPILER_CODEWARRIOR
@@ -292,7 +304,7 @@ void
 mono_ppc_patch (guchar *code, const guchar *target) MONO_INTERNAL;
 
 void
-mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs, gboolean rethrow) MONO_INTERNAL;
+mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow) MONO_INTERNAL;
 
 #ifdef __mono_ppc64__
 #define MONO_PPC_32_64_CASE(c32,c64)	c64

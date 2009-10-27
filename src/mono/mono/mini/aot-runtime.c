@@ -1764,12 +1764,15 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	}
 	case MONO_PATCH_INFO_R8: {
 		guint32 val [2];
+		guint64 v;
 
 		ji->data.target = mono_domain_alloc0 (mono_domain_get (), sizeof (double));
 
 		val [0] = decode_value (p, &p);
 		val [1] = decode_value (p, &p);
-		*(double*)ji->data.target = *(double*)val;
+		// FIXME: Is this correct ?
+		v = ((guint64)val [1] << 32) | ((guint64)val [0]);
+		*(double*)ji->data.target = *(double*)&v;
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR:
@@ -2485,7 +2488,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	guint8 *p, *target, *plt_entry;
 	MonoJumpInfo ji;
 	MonoAotModule *module = (MonoAotModule*)aot_module;
-	gboolean res;
+	gboolean res, no_ftnptr = FALSE;
 	MonoMemPool *mp;
 
 	//printf ("DYN: %p %d\n", aot_module, plt_info_offset);
@@ -2508,8 +2511,17 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	if (mono_aot_only && ji.type == MONO_PATCH_INFO_METHOD && !ji.data.method->is_generic && !mono_method_check_context_used (ji.data.method) && !(ji.data.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) &&
 		!mono_method_needs_static_rgctx_invoke (ji.data.method, FALSE)) {
 		target = mono_jit_compile_method (ji.data.method);
+		no_ftnptr = TRUE;
 	} else {
 		target = mono_resolve_patch_target (NULL, mono_domain_get (), NULL, &ji, TRUE);
+	}
+
+	// FIXME: Clean this up, but how ?
+	if (ji.type != MONO_PATCH_INFO_ABS && ji.type != MONO_PATCH_INFO_INTERNAL_METHOD && ji.type != MONO_PATCH_INFO_CLASS_INIT && ji.type != MONO_PATCH_INFO_GENERIC_CLASS_INIT && ji.type != MONO_PATCH_INFO_ICALL_ADDR && ji.type != MONO_PATCH_INFO_JIT_ICALL_ADDR && !no_ftnptr) {
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+		g_assert (((gpointer*)target) [2] != 0);
+#endif
+		target = mono_create_ftnptr (mono_domain_get (), target);
 	}
 
 	mono_mempool_destroy (mp);

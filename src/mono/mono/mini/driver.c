@@ -1512,6 +1512,10 @@ mono_main (int argc, char* argv[])
 		   fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.");
 		   exit (1);
        }
+#if SIZEOF_VOID_P == 8 && defined(TARGET_ARM)
+       fprintf (stderr, "Can't cross-compile on 64 bit platforms to arm.\n");
+       exit (1);
+#endif
 #endif
 
 	if ((action == DO_EXEC) && mono_debug_using_mono_debugger ())

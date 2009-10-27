@@ -63,7 +63,7 @@
 /*
  * Defines for the directives used by different assemblers
  */
-#if defined(__ppc__) || defined(__powerpc__) || defined(__MACH__)
+#if defined(TARGET_POWERPC) || defined(__MACH__)
 #define AS_STRING_DIRECTIVE ".asciz"
 #else
 #define AS_STRING_DIRECTIVE ".string"
@@ -1450,9 +1450,7 @@ static void
 asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name, int subsection_index)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if defined(PLATFORM_WIN32)
-	fprintf (acfg->fp, ".section %s\n", section_name);
-#elif defined(TARGET_ASM_APPLE)
+#if defined(TARGET_ASM_APPLE)
 	if (strcmp(section_name, ".bss") == 0)
 		fprintf (acfg->fp, "%s\n", ".data");
 	else if (strstr (section_name, ".debug") == section_name) {
@@ -1468,6 +1466,8 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 		fprintf (acfg->fp, ".section \"%s\"\n", section_name);
 		fprintf (acfg->fp, ".subsection %d\n", subsection_index);
 	}
+#elif defined(PLATFORM_WIN32)
+	fprintf (acfg->fp, ".section %s\n", section_name);
 #else
 	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data") || !strcmp (section_name, ".bss")) {
 		fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);

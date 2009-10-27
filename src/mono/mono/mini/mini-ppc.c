@@ -173,7 +173,7 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 {
 	/* unrolled, use the counter in big */
 	if (size > sizeof (gpointer) * 5) {
-		long shifted = size >> MONO_PPC_32_64_CASE (2, 3);
+		long shifted = size / SIZEOF_VOID_P;
 		guint8 *copy_loop_start, *copy_loop_jump;
 
 		ppc_load (code, ppc_r0, shifted);
@@ -207,8 +207,8 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 		}
 	}
 	while (size >= 8) {
-		ppc_ldptr (code, ppc_r0, soffset, sreg);
-		ppc_stptr (code, ppc_r0, doffset, dreg);
+		ppc_ldr (code, ppc_r0, soffset, sreg);
+		ppc_str (code, ppc_r0, doffset, dreg);
 		size -= 8;
 		soffset += 8;
 		doffset += 8;
@@ -367,6 +367,7 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 	char *o = NULL;
 	int reg, offset = 0;
 	guint32* code = (guint32*)code_ptr;
+	mgreg_t *r = (mgreg_t*)regs;
 
 	*displacement = 0;
 
@@ -399,13 +400,7 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 			reg = (*code >> 16) & 0x1f;
 			g_assert (reg != ppc_r1);
 			/*g_print ("patching reg is %d\n", reg);*/
-			if (reg >= 13) {
-				MonoLMF *lmf = (MonoLMF*)((char*)regs + (14 * sizeof (double)) + (13 * sizeof (gpointer)));
-				/* saved in the MonoLMF structure */
-				o = (gpointer)lmf->iregs [reg - 13];
-			} else {
-				o = (gpointer)regs [reg];
-			}
+			o = (gpointer)(gsize)r [reg];
 			break;
 		}
 	}
@@ -431,7 +426,8 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		ppc_ldptr (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* it's a function descriptor */
-		ppc_ldx (code, ppc_r0, 0, ppc_r0);
+		/* Can't use ldptr as it doesn't work with r0 */
+		ppc_ldptr_indexed (code, ppc_r0, 0, ppc_r0);
 #endif
 		ppc_mtctr (code, ppc_r0);
 		ppc_ldptr (code, ppc_r3, G_STRUCT_OFFSET (MonoDelegate, target), ppc_r3);
@@ -451,7 +447,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		ppc_ldptr (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* it's a function descriptor */
-		ppc_ldx (code, ppc_r0, 0, ppc_r0);
+		ppc_ldptr_indexed (code, ppc_r0, 0, ppc_r0);
 #endif
 		ppc_mtctr (code, ppc_r0);
 		/* slide down the arguments */
@@ -546,10 +542,12 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 gpointer
 mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
 {
+	mgreg_t *r = (mgreg_t*)regs;
+
 	/* FIXME: handle returning a struct */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
-		return (gpointer)regs [ppc_r4];
-	return (gpointer)regs [ppc_r3];
+		return (gpointer)(gsize)r [ppc_r4];
+	return (gpointer)(gsize)r [ppc_r3];
 }
 
 typedef struct {
@@ -665,6 +663,7 @@ mono_arch_cpu_init (void)
 
 	if (mono_cpu_count () > 1)
 		cpu_hw_caps |= PPC_SMP_CAPABLE;
+	cpu_hw_caps = 0;
 }
 
 /*
@@ -900,6 +899,7 @@ typedef struct {
 	gint32  offset;
 	guint32 vtsize; /* in param area */
 	guint8  reg;
+	guint8  vtregs; /* number of registers used to pass a RegTypeStructByVal */
 	guint8  regtype : 4; /* 0 general, 1 basereg, 2 floating point register, see RegType* */
 	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
 	guint8  bytes   : 4; /* size in bytes - only valid for
@@ -1062,14 +1062,19 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				break;
 			}
 			/* Fall through */
-		case MONO_TYPE_VALUETYPE: {
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_TYPEDBYREF: {
 			gint size;
 			MonoClass *klass;
+
 			klass = mono_class_from_mono_type (sig->params [i]);
-			if (is_pinvoke)
+			if (simpletype == MONO_TYPE_TYPEDBYREF)
+				size = sizeof (MonoTypedRef);
+			else if (is_pinvoke)
 			    size = mono_class_native_size (klass, NULL);
 			else
 			    size = mono_class_value_size (klass, NULL);
+
 #if defined(__APPLE__) || defined(__mono_ppc64__)
 			if ((size == 4 || size == 8) && has_only_a_r48_field (klass)) {
 				cinfo->args [n].size = size;
@@ -1095,32 +1100,33 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 #endif
 			DEBUG(printf ("load %d bytes struct\n",
 				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
+
 #if PPC_PASS_STRUCTS_BY_VALUE
 			{
 				int align_size = size;
-				int nwords = 0;
+				int nregs = 0;
 				int rest = PPC_LAST_ARG_REG - gr + 1;
 				int n_in_regs;
+
 				align_size += (sizeof (gpointer) - 1);
 				align_size &= ~(sizeof (gpointer) - 1);
-				nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-				n_in_regs = MIN (rest, nwords);
-				cinfo->args [n].regtype = RegTypeStructByVal;
-				if (gr > PPC_LAST_ARG_REG
+				nregs = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+				n_in_regs = MIN (rest, nregs);
+				if (n_in_regs < 0)
+					n_in_regs = 0;
 #ifdef __APPLE__
-				    		/* FIXME: check this */
-						|| (size >= 3 && size % 4 != 0)
+				/* FIXME: check this */
+				if (size >= 3 && size % 4 != 0)
+					n_in_regs = 0;
 #endif
-						) {
-					cinfo->args [n].size = 0;
-					cinfo->args [n].vtsize = nwords;
-				} else {
-					cinfo->args [n].size = n_in_regs;
-					cinfo->args [n].vtsize = nwords - n_in_regs;
-					cinfo->args [n].reg = gr;
-				}
+				cinfo->args [n].regtype = RegTypeStructByVal;
+				cinfo->args [n].vtregs = n_in_regs;
+				cinfo->args [n].size = n_in_regs;
+				cinfo->args [n].vtsize = nregs - n_in_regs;
+				cinfo->args [n].reg = gr;
+
 #ifdef __mono_ppc64__
-				if (nwords == 1 && is_pinvoke)
+				if (nregs == 1 && is_pinvoke)
 					cinfo->args [n].bytes = size;
 				else
 #endif
@@ -1128,43 +1134,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				gr += n_in_regs;
 				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
 				/*g_print ("offset for arg %d at %d\n", n, PPC_STACK_PARAM_OFFSET + stack_size);*/
-				stack_size += nwords * sizeof (gpointer);
-			}
-#else
-			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
-			cinfo->args [n].regtype = RegTypeStructByAddr;
-			cinfo->args [n].vtsize = size;
-#endif
-			n++;
-			break;
-		}
-		case MONO_TYPE_TYPEDBYREF: {
-			int size = sizeof (MonoTypedRef);
-			/* keep in sync or merge with the valuetype case */
-#if PPC_PASS_STRUCTS_BY_VALUE
-			{
-				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-				cinfo->args [n].regtype = RegTypeStructByVal;
-				if (gr <= PPC_LAST_ARG_REG) {
-					int rest = PPC_LAST_ARG_REG - gr + 1;
-					int n_in_regs = rest >= nwords? nwords: rest;
-					cinfo->args [n].size = n_in_regs;
-					cinfo->args [n].vtsize = nwords - n_in_regs;
-					cinfo->args [n].reg = gr;
-					gr += n_in_regs;
-				} else {
-					cinfo->args [n].size = 0;
-					cinfo->args [n].vtsize = nwords;
-				}
-#ifdef __mono_ppc64__
-				if (nwords == 1 && is_pinvoke)
-					cinfo->args [n].bytes = size;
-				else
-#endif
-					cinfo->args [n].bytes = 0;
-				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
-				/*g_print ("offset for arg %d at %d\n", n, PPC_STACK_PARAM_OFFSET + stack_size);*/
-				stack_size += nwords * sizeof (gpointer);
+				stack_size += nregs * sizeof (gpointer);
 			}
 #else
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
@@ -1711,7 +1681,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg, FALSE);
 		} else
 #endif
-			for (i = 0; i < ainfo->size; ++i) {
+			for (i = 0; i < ainfo->vtregs; ++i) {
 				int antipadding = 0;
 				if (ainfo->bytes) {
 					g_assert (i == 0);
@@ -1802,7 +1772,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 {
 	guchar *code = p;
 
-	ppc_load (code, ppc_r3, cfg->method);
+	ppc_load_ptr (code, ppc_r3, cfg->method);
 	ppc_li (code, ppc_r4, 0); /* NULL ebp for now */
 	ppc_load_func (code, ppc_r0, func);
 	ppc_mtlr (code, ppc_r0);
@@ -1901,7 +1871,7 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 		break;
 	}
 
-	ppc_load (code, ppc_r3, cfg->method);
+	ppc_load_ptr (code, ppc_r3, cfg->method);
 	ppc_load_func (code, ppc_r0, func);
 	ppc_mtlr (code, ppc_r0);
 	ppc_blrl (code);
@@ -1998,6 +1968,7 @@ static int
 normalize_opcode (int opcode)
 {
 	switch (opcode) {
+#ifndef __mono_ilp32__
 	case MONO_PPC_32_64_CASE (OP_LOADI4_MEMBASE, OP_LOADI8_MEMBASE):
 		return OP_LOAD_MEMBASE;
 	case MONO_PPC_32_64_CASE (OP_LOADI4_MEMINDEX, OP_LOADI8_MEMINDEX):
@@ -2008,6 +1979,7 @@ normalize_opcode (int opcode)
 		return OP_STORE_MEMBASE_IMM;
 	case MONO_PPC_32_64_CASE (OP_STOREI4_MEMINDEX, OP_STOREI8_MEMINDEX):
 		return OP_STORE_MEMINDEX;
+#endif
 	case MONO_PPC_32_64_CASE (OP_ISHR_IMM, OP_LSHR_IMM):
 		return OP_SHR_IMM;
 	case MONO_PPC_32_64_CASE (OP_ISHR_UN_IMM, OP_LSHR_UN_IMM):
@@ -2525,7 +2497,7 @@ loop_start:
 		case OP_XOR_IMM: {
 			gboolean is_imm = ((ins->inst_imm & 0xffff0000) && (ins->inst_imm & 0xffff));
 #ifdef __mono_ppc64__
-			if (ins->inst_imm & 0xffffffff00000000UL)
+			if (ins->inst_imm & 0xffffffff00000000ULL)
 				is_imm = TRUE;
 #endif
 			if (is_imm) {
@@ -2693,7 +2665,7 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 	if (ppc_is_imm16 (offset + sub_offset)) {
 		ppc_stfd (code, ppc_f0, offset, cfg->frame_reg);
 		if (size == 8)
-			ppc_ldptr (code, dreg, offset + sub_offset, cfg->frame_reg);
+			ppc_ldr (code, dreg, offset + sub_offset, cfg->frame_reg);
 		else
 			ppc_lwz (code, dreg, offset + sub_offset, cfg->frame_reg);
 	} else {
@@ -2701,7 +2673,7 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		ppc_add (code, dreg, dreg, cfg->frame_reg);
 		ppc_stfd (code, ppc_f0, 0, dreg);
 		if (size == 8)
-			ppc_ldptr (code, dreg, sub_offset, dreg);
+			ppc_ldr (code, dreg, sub_offset, dreg);
 		else
 			ppc_lwz (code, dreg, sub_offset, dreg);
 	}
@@ -2830,14 +2802,14 @@ handle_thunk (int absolute, guchar *code, const guchar *target) {
 static void
 patch_ins (guint8 *code, guint32 ins)
 {
-	*(guint32*)code = ins;
+	*(guint32*)code = GUINT32_TO_BE (ins);
 	mono_arch_flush_icache (code, 4);
 }
 
 void
 ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 {
-	guint32 ins = *(guint32*)code;
+	guint32 ins = GUINT32_FROM_BE (*(guint32*)code);
 	guint32 prim = ins >> 26;
 	guint32 ovf;
 
@@ -2945,7 +2917,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 
 		/* FIXME: make this thread safe */
 		/* FIXME: we're assuming we're using r11 here */
-		ppc_load_sequence (code, ppc_r11, target);
+		ppc_load_ptr_sequence (code, ppc_r11, target);
 		mono_arch_flush_icache ((guint8*)seq, 28);
 #else
 		guint32 *seq;
@@ -3110,7 +3082,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 				NOT_IMPLEMENTED;
 			} else
 #endif
-				for (j = 0; j < ainfo->size; ++j) {
+				for (j = 0; j < ainfo->vtregs; ++j) {
 					ppc_ldptr (code, ainfo->reg + j,
 							inst->inst_offset + j * sizeof (gpointer),
 							inst->inst_basereg);
@@ -3347,6 +3319,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
+#ifdef __mono_ilp32__
+		case OP_STOREI8_MEMBASE_REG:
+			if (ppc_is_imm16 (ins->inst_offset)) {
+				ppc_str (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+			} else {
+				ppc_load (code, ppc_r0, ins->inst_offset);
+				ppc_str_indexed (code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+			}
+			break;
+#endif
 		case OP_STOREI1_MEMINDEX:
 			ppc_stbx (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
 			break;
@@ -3442,6 +3424,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
+#ifdef __mono_ilp32__
+		case OP_LOADI8_MEMBASE:
+			if (ppc_is_imm16 (ins->inst_offset)) {
+				ppc_ldr (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+			} else {
+				ppc_load (code, ppc_r0, ins->inst_offset);
+				ppc_ldr_indexed (code, ins->dreg, ins->inst_basereg, ppc_r0);
+			}
+			break;
+#endif
 		case OP_LOAD_MEMINDEX:
 			ppc_ldptr_indexed (code, ins->dreg, ins->inst_basereg, ins->sreg2);
 			break;
@@ -3485,7 +3477,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE:
 		case OP_ICOMPARE:
 		CASE_PPC64 (OP_LCOMPARE)
-			L = (sizeof (gpointer) == 4 || ins->opcode == OP_ICOMPARE) ? 0 : 1;
+			L = (sizeof (mgreg_t) == 4 || ins->opcode == OP_ICOMPARE) ? 0 : 1;
 			next = ins->next;
 			if (next && compare_opcode_is_unsigned (next->opcode))
 				ppc_cmpl (code, 0, L, ins->sreg1, ins->sreg2);
@@ -3495,7 +3487,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE_IMM:
 		case OP_ICOMPARE_IMM:
 		CASE_PPC64 (OP_LCOMPARE_IMM)
-			L = (sizeof (gpointer) == 4 || ins->opcode == OP_ICOMPARE_IMM) ? 0 : 1;
+			L = (sizeof (mgreg_t) == 4 || ins->opcode == OP_ICOMPARE_IMM) ? 0 : 1;
 			next = ins->next;
 			if (next && compare_opcode_is_unsigned (next->opcode)) {
 				if (ppc_is_uimm16 (ins->inst_imm)) {
@@ -3806,9 +3798,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_multiply (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ICONST:
-		CASE_PPC64 (OP_I8CONST)
 			ppc_load (code, ins->dreg, ins->inst_c0);
 			break;
+		case OP_I8CONST: {
+			ppc_load (code, ins->dreg, ins->inst_l);
+			break;
+		}
 		case OP_LOAD_GOTADDR:
 			/* The PLT implementation depends on this */
 			g_assert (ins->dreg == ppc_r30);
@@ -4418,7 +4413,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_JUMP_TABLE:
 			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
 #ifdef __mono_ppc64__
-			ppc_load_sequence (code, ins->dreg, (gulong)0x0f0f0f0f0f0f0f0fL);
+			ppc_load_sequence (code, ins->dreg, (guint64)0x0f0f0f0f0f0f0f0fLL);
 #else
 			ppc_load_sequence (code, ins->dreg, (gulong)0x0f0f0f0fL);
 #endif
@@ -4448,7 +4443,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cpu_hw_caps & PPC_MOVE_FPR_GPR) {
 				ppc_mffgpr (code, ins->dreg, tmp);
 			} else {
-				ppc_stptr (code, tmp, -8, ppc_r1);
+				ppc_str (code, tmp, -8, ppc_r1);
 				ppc_lfd (code, ins->dreg, -8, ppc_r1);
 			}
 			ppc_fcfid (code, ins->dreg, ins->dreg);
@@ -4610,10 +4605,11 @@ mono_arch_register_lowlevel_calls (void)
 #ifdef __mono_ppc64__
 #define patch_load_sequence(ip,val) do {\
 		guint16 *__load = (guint16*)(ip);	\
-		__load [1] = (((guint64)(val)) >> 48) & 0xffff;	\
-		__load [3] = (((guint64)(val)) >> 32) & 0xffff;	\
-		__load [7] = (((guint64)(val)) >> 16) & 0xffff;	\
-		__load [9] =  ((guint64)(val))        & 0xffff;	\
+		g_assert (sizeof (val) == sizeof (gsize)); \
+		__load [1] = (((guint64)(gsize)(val)) >> 48) & 0xffff;	\
+		__load [3] = (((guint64)(gsize)(val)) >> 32) & 0xffff;	\
+		__load [7] = (((guint64)(gsize)(val)) >> 16) & 0xffff;	\
+		__load [9] =  ((guint64)(gsize)(val))        & 0xffff;	\
 	} while (0)
 #else
 #define patch_load_sequence(ip,val) do {\
@@ -4791,7 +4787,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
 		ppc_mflr (code, ppc_r0);
 		ppc_str (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-
 		mono_emit_unwind_op_offset (cfg, code, ppc_lr, PPC_RET_ADDR_OFFSET);
 	}
 
@@ -4801,7 +4796,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (!method->save_lmf) {
 		for (i = 31; i >= 13; --i) {
 			if (cfg->used_int_regs & (1 << i)) {
-				pos += sizeof (gulong);
+				pos += sizeof (mgreg_t);
 			}
 		}
 	} else {
@@ -4894,7 +4889,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			else if (ainfo->regtype == RegTypeFP)
 				ppc_fmr (code, inst->dreg, ainfo->reg);
 			else if (ainfo->regtype == RegTypeBase) {
-				ppc_ldptr (code, ppc_r11, 0, ppc_sp);
+				ppc_ldr (code, ppc_r11, 0, ppc_sp);
 				ppc_ldptr (code, inst->dreg, ainfo->offset, ppc_r11);
 			} else
 				g_assert_not_reached ();
@@ -4945,6 +4940,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						}
 					}
 					break;
+				case 8:
+					if (ppc_is_imm16 (inst->inst_offset)) {
+						ppc_str (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					} else {
+						ppc_load (code, ppc_r11, inst->inst_offset);
+						ppc_str_indexed (code, ainfo->reg, ppc_r11, inst->inst_basereg);
+					}
+					break;
 #else
 				case 8:
 					if (ppc_is_imm16 (inst->inst_offset + 4)) {
@@ -4975,7 +4978,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			} else if (ainfo->regtype == RegTypeBase) {
 				g_assert (ppc_is_imm16 (ainfo->offset));
 				/* load the previous stack pointer in r11 */
-				ppc_ldptr (code, ppc_r11, 0, ppc_sp);
+				ppc_ldr (code, ppc_r11, 0, ppc_sp);
 				ppc_ldptr (code, ppc_r0, ainfo->offset, ppc_r11);
 				switch (ainfo->size) {
 				case 1:
@@ -5016,6 +5019,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 							ppc_load (code, ppc_r11, inst->inst_offset);
 							ppc_stwx (code, ppc_r0, inst->inst_basereg, ppc_r11);
 						}
+					}
+					break;
+				case 8:
+					if (ppc_is_imm16 (inst->inst_offset)) {
+						ppc_str (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					} else {
+						ppc_load (code, ppc_r11, inst->inst_offset);
+						ppc_str_indexed (code, ainfo->reg, ppc_r11, inst->inst_basereg);
 					}
 					break;
 #else
@@ -5063,11 +5074,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int cur_reg;
 				int size = 0;
 				g_assert (ppc_is_imm16 (inst->inst_offset));
-				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
+				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (gpointer)));
 				/* FIXME: what if there is no class? */
 				if (sig->pinvoke && mono_class_from_mono_type (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
-				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
+				for (cur_reg = 0; cur_reg < ainfo->vtregs; ++cur_reg) {
 #if __APPLE__
 					/*
 					 * Darwin handles 1 and 2 byte
@@ -5104,7 +5115,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					if (ainfo->bytes)
 						NOT_IMPLEMENTED;
 					/* load the previous stack pointer in r11 (r0 gets overwritten by the memcpy) */
-					ppc_ldptr (code, ppc_r11, 0, ppc_sp);
+					ppc_ldr (code, ppc_r11, 0, ppc_sp);
 					if ((size & MONO_PPC_32_64_CASE (3, 7)) != 0) {
 						code = emit_memcpy (code, size - soffset,
 							inst->inst_basereg, doffset,
@@ -5119,7 +5130,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				/* if it was originally a RegTypeBase */
 				if (ainfo->offset) {
 					/* load the previous stack pointer in r11 */
-					ppc_ldptr (code, ppc_r11, 0, ppc_sp);
+					ppc_ldr (code, ppc_r11, 0, ppc_sp);
 					ppc_ldptr (code, ppc_r11, ainfo->offset, ppc_r11);
 				} else {
 					ppc_mr (code, ppc_r11, ainfo->reg);
@@ -5144,13 +5155,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		ppc_load (code, ppc_r3, cfg->domain);
+		ppc_load_ptr (code, ppc_r3, cfg->domain);
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 		if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 			ppc_load_func (code, ppc_r0, 0);
 			ppc_mtlr (code, ppc_r0);
 			ppc_blrl (code);
 		} else {
+			// FIXME: AOT
 			ppc_bl (code, 0);
 		}
 	}
@@ -5161,6 +5173,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (tls_mode != TLS_MODE_NPTL && G_STRUCT_OFFSET (MonoJitTlsData, lmf))
 				ppc_addi (code, ppc_r3, ppc_r3, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
 		} else {
+			if (cfg->compile_aot) {
+				/* Compute the got address which is needed by the PLT entry */
+				code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
+			}
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 				     (gpointer)"mono_get_lmf_addr");
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
@@ -5191,7 +5207,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			// FIXME:
 			ppc_load (code, ppc_r0, 0);
 		else
-			ppc_load (code, ppc_r0, method);
+			ppc_load_ptr (code, ppc_r0, method);
 		ppc_stptr (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
 		ppc_stptr (code, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
 		/* save the current IP */
@@ -5201,7 +5217,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		} else {
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
 #ifdef __mono_ppc64__
-			ppc_load_sequence (code, ppc_r0, (gulong)0x0101010101010101L);
+			ppc_load_sequence (code, ppc_r0, (guint64)0x0101010101010101LL);
 #else
 			ppc_load_sequence (code, ppc_r0, (gulong)0x01010101L);
 #endif
@@ -5269,7 +5285,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		 * we didn't actually change them (idea from Zoltan).
 		 */
 		/* restore iregs */
-		ppc_load_multiple_regs (code, ppc_r13, G_STRUCT_OFFSET(MonoLMF, iregs), ppc_r11);
+		ppc_ldr_multiple (code, ppc_r13, G_STRUCT_OFFSET(MonoLMF, iregs), ppc_r11);
 		/* restore fregs */
 		/*for (i = 14; i < 32; i++) {
 			ppc_lfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
@@ -5277,7 +5293,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		g_assert (ppc_is_imm16 (cfg->stack_usage + PPC_RET_ADDR_OFFSET));
 		/* use the saved copy of the frame reg in r8 */
 		if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
-			ppc_ldptr (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, ppc_r8);
+			ppc_ldr (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, ppc_r8);
 			ppc_mtlr (code, ppc_r0);
 		}
 		ppc_addic (code, ppc_sp, ppc_r8, cfg->stack_usage);
@@ -5285,10 +5301,10 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
 			long return_offset = cfg->stack_usage + PPC_RET_ADDR_OFFSET;
 			if (ppc_is_imm16 (return_offset)) {
-				ppc_ldptr (code, ppc_r0, return_offset, cfg->frame_reg);
+				ppc_ldr (code, ppc_r0, return_offset, cfg->frame_reg);
 			} else {
 				ppc_load (code, ppc_r11, return_offset);
-				ppc_ldptr_indexed (code, ppc_r0, cfg->frame_reg, ppc_r11);
+				ppc_ldr_indexed (code, ppc_r0, cfg->frame_reg, ppc_r11);
 			}
 			ppc_mtlr (code, ppc_r0);
 		}
@@ -5296,15 +5312,15 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			int offset = cfg->stack_usage;
 			for (i = 13; i <= 31; i++) {
 				if (cfg->used_int_regs & (1 << i))
-					offset -= sizeof (gulong);
+					offset -= sizeof (mgreg_t);
 			}
 			if (cfg->frame_reg != ppc_sp)
 				ppc_mr (code, ppc_r11, cfg->frame_reg);
 			/* note r31 (possibly the frame register) is restored last */
 			for (i = 13; i <= 31; i++) {
 				if (cfg->used_int_regs & (1 << i)) {
-					ppc_ldptr (code, i, offset, cfg->frame_reg);
-					offset += sizeof (gulong);
+					ppc_ldr (code, i, offset, cfg->frame_reg);
+					offset += sizeof (mgreg_t);
 				}
 			}
 			if (cfg->frame_reg != ppc_sp)
@@ -5317,8 +5333,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
 				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
-						pos += sizeof (gulong);
-						ppc_ldptr (code, i, -pos, ppc_r11);
+						pos += sizeof (mgreg_t);
+						ppc_ldr (code, i, -pos, ppc_r11);
 					}
 				}
 				ppc_mr (code, ppc_sp, ppc_r11);
@@ -5513,6 +5529,10 @@ setup_tls_access (void)
 	/* FIXME for darwin */
 	guint32 *ins, *code;
 	guint32 cmplwi_1023, li_0x48, blr_ins;
+#endif
+
+#ifdef TARGET_PS3
+	tls_mode = TLS_MODE_FAILED;
 #endif
 
 	if (tls_mode == TLS_MODE_FAILED)
@@ -5731,7 +5751,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				item->jmp_code = code;
 				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 				if (item->has_target_code) {
-					ppc_load (code, ppc_r0, item->value.target_code);
+					ppc_load_ptr (code, ppc_r0, item->value.target_code);
 				} else {
 					ppc_ldptr (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
 					ppc_ldptr (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
@@ -5745,16 +5765,16 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					item->jmp_code = code;
 					ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 					if (item->has_target_code) {
-						ppc_load (code, ppc_r0, item->value.target_code);
+						ppc_load_ptr (code, ppc_r0, item->value.target_code);
 					} else {
 						g_assert (vtable);
-						ppc_load (code, ppc_r0, & (vtable->vtable [item->value.vtable_slot]));
+						ppc_load_ptr (code, ppc_r0, & (vtable->vtable [item->value.vtable_slot]));
 						ppc_ldptr_indexed (code, ppc_r0, 0, ppc_r0);
 					}
 					ppc_mtctr (code, ppc_r0);
 					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 					ppc_patch (item->jmp_code, code);
-					ppc_load (code, ppc_r0, fail_tramp);
+					ppc_load_ptr (code, ppc_r0, fail_tramp);
 					ppc_mtctr (code, ppc_r0);
 					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 					item->jmp_code = NULL;
@@ -5804,7 +5824,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 MonoMethod*
 mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
-	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
+	mgreg_t *r = (mgreg_t*)regs;
+
+	return (MonoMethod*)(gsize) r [MONO_ARCH_IMT_REG];
 }
 
 MonoObject*
@@ -5817,7 +5839,9 @@ mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericShar
 MonoVTable*
 mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 {
-	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
+	mgreg_t *r = (mgreg_t*)regs;
+
+	return (MonoVTable*)(gsize) r [MONO_ARCH_RGCTX_REG];
 }
 
 MonoInst*
@@ -5854,7 +5878,7 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 
 	g_assert (reg >= ppc_r13);
 
-	return (gpointer)ctx->regs [reg - ppc_r13];
+	return (gpointer)(gsize)ctx->regs [reg - ppc_r13];
 }
 
 guint32
