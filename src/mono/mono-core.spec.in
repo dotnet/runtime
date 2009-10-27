@@ -980,6 +980,7 @@ fi
 %_prefix/lib/mono/1.0/ilasm.exe*
 %_prefix/lib/mono/2.0/ilasm.exe*
 %_prefix/lib/mono/1.0/installvst.exe*
+%_prefix/lib/mono/2.0/lc.exe*
 %_prefix/lib/mono/1.0/mkbundle.exe*
 %_prefix/lib/mono/2.0/mkbundle.exe*
 %_prefix/lib/mono/1.0/monop.exe*
@@ -1013,6 +1014,7 @@ fi
 %_mandir/man1/genxs.1%ext_man
 %_mandir/man1/httpcfg.1%ext_man
 %_mandir/man1/ilasm.1%ext_man
+%_mandir/man1/lc.1%ext_man
 %_mandir/man1/macpack.1%ext_man
 %_mandir/man1/makecert.1%ext_man
 %_mandir/man1/mkbundle.1%ext_man
