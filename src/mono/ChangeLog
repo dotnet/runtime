@@ -1,3 +1,7 @@
+2009-10-27  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add support for cross-compiling to ppc.
+
 2009-10-22  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* configure.in: Add check for the deprecated attribute.

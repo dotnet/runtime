@@ -829,6 +829,23 @@ dnl
 dnl End of libgc checks
 dnl
 
+dnl *************************************
+dnl *** Checks for zero length arrays ***
+dnl *************************************
+AC_MSG_CHECKING(whether $CC supports zero length arrays)
+AC_TRY_COMPILE([
+	struct s {
+		int  length;
+		char data [0];
+	};
+], [], [
+	AC_MSG_RESULT(yes)
+	AC_DEFINE_UNQUOTED(MONO_ZERO_LEN_ARRAY, 0, [Length of zero length arrays])
+], [
+	AC_MSG_RESULT(no)
+	AC_DEFINE_UNQUOTED(MONO_ZERO_LEN_ARRAY, 1, [Length of zero length arrays])
+])
+
 if test x$platform_win32 = xno; then
 
 	dnl hires monotonic clock support
@@ -1141,23 +1158,6 @@ if test x$platform_win32 = xno; then
 		   mono_cv_sizeof_sunpath=0)])dnl
 	AC_MSG_RESULT($mono_cv_sizeof_sunpath)
 	AC_DEFINE_UNQUOTED(MONO_SIZEOF_SUNPATH, $mono_cv_sizeof_sunpath, [Sizeof sock_un.sun_path])
-
-	dnl *************************************
-	dnl *** Checks for zero length arrays ***
-	dnl *************************************
-	AC_MSG_CHECKING(whether $CC supports zero length arrays)
-	AC_TRY_COMPILE([
-                struct s {
-                        int  length;
-                        char data [0];
-                };
-        ], [], [
-		AC_MSG_RESULT(yes)
-		AC_DEFINE_UNQUOTED(MONO_ZERO_ARRAY_LENGTH, 0, [Length of zero length arrays])
-	], [
-		AC_MSG_RESULT(no)
-		AC_DEFINE_UNQUOTED(MONO_ZERO_ARRAY_LENGTH, 1, [Length of zero length arrays])
-	])
 
 	dnl *****************************
 	dnl *** Checks for libxnet    ***
@@ -2067,6 +2067,25 @@ case "$host" in
 		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
 		;;
 esac
+
+if test "x$host" != "x$target"; then
+   case "$target" in
+   powerpc64-ps3-linux-gnu)
+		TARGET=POWERPC64
+		arch_target=powerpc64
+		AC_DEFINE(TARGET_PS3, 1, [...])
+		AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
+		# It would be better to just use TARGET_POWERPC64, but lots of code already
+		# uses this define
+		AC_DEFINE(__mono_ppc64__, 1, [...])
+		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
+		sizeof_register=8
+		target_byte_order=G_BIG_ENDIAN
+		;;
+	*)
+		AC_MSG_ERROR([Cross compiling is only supported for targets matching 'powerpc64-ps3-linux-gnu'])
+	esac
+fi
 
 # FIXME: Define the others as well
 case "$TARGET" in
