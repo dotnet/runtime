@@ -355,8 +355,8 @@ add_signal_handler (int signo, gpointer handler)
 		 * an altstack, so delay the suspend signal after the signal handler has
 		 * executed.
 		 */
-		if (GC_get_suspend_signal () != -1)
-			sigaddset (&sa.sa_mask, GC_get_suspend_signal ());
+		if (mono_gc_get_suspend_signal () != -1)
+			sigaddset (&sa.sa_mask, mono_gc_get_suspend_signal ());
 	}
 #endif
 #else

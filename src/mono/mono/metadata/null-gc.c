@@ -255,5 +255,11 @@ mono_gc_clear_domain (MonoDomain *domain)
 {
 }
 
+int
+mono_gc_get_suspend_signal (void)
+{
+	return -1;
+}
+
 #endif
 

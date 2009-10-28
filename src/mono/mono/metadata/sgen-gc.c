@@ -6611,6 +6611,12 @@ mono_gc_base_init (void)
 	mono_gc_register_thread (&sinfo);
 }
 
+int
+mono_gc_get_suspend_signal (void)
+{
+	return suspend_signal_num;
+}
+
 enum {
 	ATYPE_NORMAL,
 	ATYPE_VECTOR,

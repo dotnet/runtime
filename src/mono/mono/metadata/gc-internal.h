@@ -204,5 +204,9 @@ void *mono_gc_scan_object (void *obj) MONO_INTERNAL;
 /* Return the bitmap encoded by a descriptor */
 gsize* mono_gc_get_bitmap_for_descr (void *descr, int *numbits) MONO_INTERNAL;
 
+/* Return the suspend signal number used by the GC to suspend threads,
+   or -1 if not applicable. */
+int mono_gc_get_suspend_signal (void) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 
