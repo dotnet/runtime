@@ -698,7 +698,6 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
  *
  * Returns a bitmask corresponding to all supported versions.
  * 
- * TODO detect other versions like SSE4a.
  */
 guint32
 mono_arch_cpu_enumerate_simd_versions (void)
@@ -720,6 +719,20 @@ mono_arch_cpu_enumerate_simd_versions (void)
 		if (ecx & (1 << 20))
 			sse_opts |= 1 << SIMD_VERSION_SSE42;
 	}
+
+	/* Yes, all this needs to be done to check for sse4a.
+	   See: "Amd: CPUID Specification"
+	 */
+	if (cpuid (0x80000000, &eax, &ebx, &ecx, &edx)) {
+		/* eax greater or equal than 0x80000001, ebx = 'htuA', ecx = DMAc', edx = 'itne'*/
+		if ((((unsigned int) eax) >= 0x80000001) && (ebx == 0x68747541) && (ecx == 0x444D4163) && (edx == 0x69746E65)) {
+			cpuid (0x80000001, &eax, &ebx, &ecx, &edx);
+			if (ecx & (1 << 6))
+				sse_opts |= 1 << SIMD_VERSION_SSE4a;
+		}
+	}
+
+
 	return sse_opts;	
 }
 
