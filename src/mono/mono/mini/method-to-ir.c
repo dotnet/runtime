@@ -6262,15 +6262,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * We have the `constrained.' prefix opcode.
 				 */
 				if (constrained_call->valuetype && !cmethod->klass->valuetype) {
-					int dreg;
-
 					/*
 					 * The type parameter is instantiated as a valuetype,
 					 * but that type doesn't override the method we're
 					 * calling, so we need to box `this'.
 					 */
-					dreg = alloc_dreg (cfg, STACK_VTYPE);
-					EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADV_MEMBASE, dreg, sp [0]->dreg, 0);
+					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
 					ins->klass = constrained_call;
 					sp [0] = handle_box (cfg, ins, constrained_call);
 					CHECK_CFG_EXCEPTION;
