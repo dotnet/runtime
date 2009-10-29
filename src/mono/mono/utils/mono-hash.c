@@ -892,23 +892,23 @@ mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func)
 		for (i = 0; i < table->size; i++) {
 			for (node = table->nodes [i]; node; node = node->next) {
 				if (node->key)
-					SET_NODE_KEY (node, table->gc_type, mark_func (node->key));
+					node->key = mark_func (node->key);
 			}
 		}
 	} else if (table->gc_type == MONO_HASH_VALUE_GC) {
 		for (i = 0; i < table->size; i++) {
 			for (node = table->nodes [i]; node; node = node->next) {
 				if (node->value)
-					SET_NODE_VALUE (node, table->gc_type, mark_func (node->value));
+					node->value = mark_func (node->value);
 			}
 		}
 	} else if (table->gc_type == MONO_HASH_KEY_VALUE_GC) {
 		for (i = 0; i < table->size; i++) {
 			for (node = table->nodes [i]; node; node = node->next) {
 				if (node->key)
-					SET_NODE_KEY (node, table->gc_type, mark_func (node->key));
+					node->key = mark_func (node->key);
 				if (node->value)
-					SET_NODE_VALUE (node, table->gc_type, mark_func (node->value));
+					node->value = mark_func (node->value);
 			}
 		}
 	}
