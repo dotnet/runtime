@@ -195,6 +195,11 @@ class Tests {
 		return b % 1;
 	}
 
+	public static int test_0_rem_imm_0_neg () {
+		int b = -2;
+		return b % 1;
+	}
+
 	public static int test_4_rem_big_imm () {
 		int b = 10004;
 		return b % 10000;

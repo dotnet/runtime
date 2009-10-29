@@ -2434,6 +2434,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				 */
 				x86_alu_reg_reg (code, X86_XOR, X86_EAX, X86_EDX);
 				x86_alu_reg_reg (code, X86_SUB, X86_EAX, X86_EDX);
+			} else if (power == 0) {
+				x86_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
 			} else {
 				/* Based on gcc code */
 
