@@ -697,8 +697,7 @@ static guint32 WINAPI start_wrapper(void *data)
 	}
 
 	mono_threads_lock ();
-	if (thread_start_args)
-		mono_g_hash_table_remove (thread_start_args, thread);
+	mono_g_hash_table_remove (thread_start_args, thread);
 	mono_threads_unlock ();
 
 	g_free (start_info);
@@ -799,6 +798,24 @@ gpointer mono_create_thread (WapiSecurityAttributes *security,
 	return res;
 }
 
+/* 
+ * The thread start argument may be an object reference, and there is
+ * no ref to keep it alive when the new thread is started but not yet
+ * registered with the collector. So we store it in a GC tracked hash
+ * table.
+ *
+ * LOCKING: Assumes the threads lock is held.
+ */
+static void
+register_thread_start_argument (MonoThread *thread, struct StartInfo *start_info)
+{
+	if (thread_start_args == NULL) {
+		MONO_GC_REGISTER_ROOT (thread_start_args);
+		thread_start_args = mono_g_hash_table_new (NULL, NULL);
+	}
+	mono_g_hash_table_insert (thread_start_args, thread, start_info->start_arg);
+}
+
 MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread)
 {
 	MonoThread *thread;
@@ -828,17 +845,9 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 		MONO_GC_REGISTER_ROOT (threads_starting_up);
 		threads_starting_up = mono_g_hash_table_new (NULL, NULL);
 	}
-	if (thread_start_args == NULL) {
-		MONO_GC_REGISTER_ROOT (thread_start_args);
-		thread_start_args = mono_g_hash_table_new (NULL, NULL);
-	}
+
+	register_thread_start_argument (thread, start_info);
  	mono_g_hash_table_insert (threads_starting_up, thread, thread);
-	/* 
-	 * The argument may be an object reference, and there is no ref to keep it alive
-	 * when the new thread is started but not yet registered with the collector. So
-	 * we store it in a GC tracked hash table.
-	 */
-	mono_g_hash_table_insert (thread_start_args, thread, start_info->start_arg);
 	mono_threads_unlock ();	
 
 	/* Create suspended, so we can do some housekeeping before the thread
@@ -1103,6 +1112,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		}
 
 		mono_threads_lock ();
+		register_thread_start_argument (this, start_info);
 		if (threads_starting_up == NULL) {
 			MONO_GC_REGISTER_ROOT (threads_starting_up);
 			threads_starting_up = mono_g_hash_table_new (NULL, NULL);
