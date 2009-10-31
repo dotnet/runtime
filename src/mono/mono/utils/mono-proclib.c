@@ -402,7 +402,8 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 	FILE *f = fopen ("/proc/stat", "r");
 	if (!f)
 		return;
-	hz *= mono_cpu_count ();
+	if (cpu_id < 0)
+		hz *= mono_cpu_count ();
 	while ((s = fgets (buf, sizeof (buf), f))) {
 		char *data = NULL;
 		if (cpu_id < 0 && strncmp (s, "cpu", 3) == 0 && g_ascii_isspace (s [3])) {

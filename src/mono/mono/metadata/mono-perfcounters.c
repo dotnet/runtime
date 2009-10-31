@@ -1493,12 +1493,14 @@ get_cpu_instances (void)
 	void **buf = NULL;
 	int i, count;
 	MonoArray *array;
-	count = mono_cpu_count ();
+
+	count = mono_cpu_count () + 1; /* +1 for "_Total" */
 	buf = g_new (void*, count);
 	for (i = 0; i < count; ++i)
-		buf [i] = GINT_TO_POINTER (i);
+		buf [i] = GINT_TO_POINTER (i - 1); /* -1 => _Total */
 	array = get_string_array (buf, count, FALSE);
 	g_free (buf);
+	mono_array_setref (array, 0, mono_string_new (mono_domain_get (), "_Total"));
 	return array;
 }
 
