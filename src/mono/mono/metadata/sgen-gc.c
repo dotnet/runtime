@@ -2921,12 +2921,15 @@ dump_section (GCMemSection *section, const char *type)
 }
 
 static void
-dump_heap (const char *type, int num)
+dump_heap (const char *type, int num, const char *reason)
 {
 	GCMemSection *section;
 	LOSObject *bigobj;
 
-	fprintf (heap_dump_file, "<collection type=\"%s\" num=\"%d\">\n", type, num);
+	fprintf (heap_dump_file, "<collection type=\"%s\" num=\"%d\"", type, num);
+	if (reason)
+		fprintf (heap_dump_file, " reason=\"%s\"", reason);
+	fprintf (heap_dump_file, ">\n");
 
 	dump_section (nursery_section, "nursery");
 
@@ -3061,7 +3064,7 @@ collect_nursery (size_t requested_size)
 	mono_stats.minor_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 
 	if (heap_dump_file)
-		dump_heap ("minor", num_minor_gcs - 1);
+		dump_heap ("minor", num_minor_gcs - 1, NULL);
 
 	/* prepare the pin queue for the next collection */
 	last_num_pinned = next_pin_slot;
@@ -3098,7 +3101,7 @@ shorten_to_space (mword size)
 }
 
 static void
-major_collection (void)
+major_collection (const char *reason)
 {
 	GCMemSection *section, *prev_section;
 	LOSObject *bigobj, *prevbo;
@@ -3303,7 +3306,7 @@ major_collection (void)
 	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 
 	if (heap_dump_file)
-		dump_heap ("major", num_major_gcs - 1);
+		dump_heap ("major", num_major_gcs - 1, reason);
 
 	/* prepare the pin queue for the next collection */
 	next_pin_slot = 0;
@@ -3387,7 +3390,7 @@ minor_collect_or_expand_inner (size_t size)
 	if (do_minor_collection) {
 		stop_world ();
 		if (collect_nursery (size))
-			major_collection ();
+			major_collection ("minor overflow");
 		DEBUG (2, fprintf (gc_debug_file, "Heap size: %zd, LOS size: %zd\n", total_alloc, los_memory_usage));
 		restart_world ();
 		/* this also sets the proper pointers for the next allocation */
@@ -3846,7 +3849,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %zu, limit: %zu)\n", size, los_memory_usage, next_los_collection));
 		just_did_major_gc = TRUE;
 		stop_world ();
-		major_collection ();
+		major_collection ("LOS overflow");
 		restart_world ();
 		/* later increase based on a percent of the heap size */
 		next_los_collection = los_memory_usage + 5*1024*1024;
@@ -6369,7 +6372,7 @@ mono_gc_collect (int generation)
 	if (generation == 0) {
 		collect_nursery (0);
 	} else {
-		major_collection ();
+		major_collection ("user request");
 	}
 	restart_world ();
 	UNLOCK_GC;
