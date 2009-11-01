@@ -1,5 +1,7 @@
 2009-11-01  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Make the LLVM warning a bit more up-to-date.
+
 	* configure.in: Pass -mno-cygwin to CXX too on windows. Enable AC_PROG_CXX
 	since it now works on windows too.
 

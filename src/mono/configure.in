@@ -2725,6 +2725,6 @@ fi
 
 if test x$enable_llvm = xyes; then
    echo IMPORTANT:
-   echo IMPORTANT: The LLVM Back End is experimental and does not work yet.
+   echo IMPORTANT: The LLVM Back End is experimental and has known problems.
    echo IMPORTANT:
 fi
