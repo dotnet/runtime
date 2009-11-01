@@ -82,8 +82,10 @@ case "$host" in
 		AC_DEFINE(PLATFORM_NO_SYMLINKS,1,[This platform does not support symlinks])
 		if test "x$cross_compiling" = "xno"; then
 			CC="gcc -mno-cygwin -g"
+			CXX="g++ -mno-cygwin -g"
 			# So libgc configure gets -mno-cygwin
 			export CC
+			export CXX
 		fi
 		HOST_CC="gcc"
 		# Windows 2000 is required that includes Internet Explorer 5.01
@@ -234,8 +236,7 @@ AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
-# Disabled for now to fix the windows build
-#AC_PROG_CXX
+AC_PROG_CXX
 AM_PROG_AS
 AM_PROG_CC_STDC
 AC_PROG_INSTALL
