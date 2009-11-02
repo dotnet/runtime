@@ -310,6 +310,10 @@ typedef struct {
 	MonoString *internal_method_name;
 } MonoStackFrame;
 
+typedef enum {
+	MONO_THREAD_FLAG_DONT_MANAGE = 1, // Don't wait for or abort this thread
+} MonoThreadFlags;
+
 struct _MonoInternalThread {
 	MonoObject  obj;
 	int         lock_thread_id; /* to be used as the pre-shifted thread id in thin locks */
@@ -346,12 +350,12 @@ struct _MonoInternalThread {
 	MonoThreadManageCallback manage_callback;
 	MonoException *pending_exception;
 	MonoThread *root_domain_thread;
+	gpointer interrupt_on_stop;
+	gsize    flags;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to the unmanaged MonoThread structure.
 	 */
-	gpointer interrupt_on_stop;
-	gpointer unused3;
 	gpointer unused4;
 	gpointer unused5;
 	gpointer unused6;

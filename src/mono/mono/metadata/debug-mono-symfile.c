@@ -213,7 +213,7 @@ check_line (StatementMachine *stm, int offset, MonoDebugSourceLocation **locatio
 {
 	gchar *source_file = NULL;
 
-	if ((offset > 0) && (stm->offset <= offset)) {
+	if (stm->offset <= offset) {
 		stm->last_offset = stm->offset;
 		stm->last_file = stm->file;
 		if (stm->line != 0xfeefee)

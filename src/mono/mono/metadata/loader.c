@@ -63,6 +63,12 @@ static guint32 memberref_sig_cache_size;
  */
 guint32 loader_error_thread_id;
 
+/*
+ * This TLS variable holds how many times the current thread has acquired the loader 
+ * lock.
+ */
+guint32 loader_lock_nest_id;
+
 void
 mono_loader_init ()
 {
@@ -72,6 +78,7 @@ mono_loader_init ()
 		InitializeCriticalSection (&loader_mutex);
 
 		loader_error_thread_id = TlsAlloc ();
+		loader_lock_nest_id = TlsAlloc ();
 
 		mono_counters_register ("Inflated signatures size",
 								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
@@ -86,6 +93,7 @@ void
 mono_loader_cleanup (void)
 {
 	TlsFree (loader_error_thread_id);
+	TlsFree (loader_lock_nest_id);
 
 	/*DeleteCriticalSection (&loader_mutex);*/
 }
@@ -1992,6 +2000,8 @@ mono_method_get_last_managed (void)
 	return m;
 }
 
+static gboolean loader_lock_track_ownership = FALSE;
+
 /**
  * mono_loader_lock:
  *
@@ -2001,12 +2011,45 @@ void
 mono_loader_lock (void)
 {
 	mono_locks_acquire (&loader_mutex, LoaderLock);
+	if (G_UNLIKELY (loader_lock_track_ownership)) {
+		TlsSetValue (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (TlsGetValue (loader_lock_nest_id)) + 1));
+	}
 }
 
 void
 mono_loader_unlock (void)
 {
 	mono_locks_release (&loader_mutex, LoaderLock);
+	if (G_UNLIKELY (loader_lock_track_ownership)) {
+		TlsSetValue (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (TlsGetValue (loader_lock_nest_id)) - 1));
+	}
+}
+
+/*
+ * mono_loader_lock_track_ownership:
+ *
+ *   Set whenever the runtime should track ownership of the loader lock. If set to TRUE,
+ * the mono_loader_lock_is_owned_by_self () can be called to query whenever the current
+ * thread owns the loader lock. 
+ */
+void
+mono_loader_lock_track_ownership (gboolean track)
+{
+	loader_lock_track_ownership = track;
+}
+
+/*
+ * mono_loader_lock_is_owned_by_self:
+ *
+ *   Return whenever the current thread owns the loader lock.
+ * This is useful to avoid blocking operations while holding the loader lock.
+ */
+gboolean
+mono_loader_lock_is_owned_by_self (void)
+{
+	g_assert (loader_lock_track_ownership);
+
+	return GPOINTER_TO_UINT (TlsGetValue (loader_lock_nest_id)) > 0;
 }
 
 /**

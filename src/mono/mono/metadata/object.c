@@ -2579,10 +2579,20 @@ static MonoInvokeFunc default_mono_runtime_invoke = dummy_mono_runtime_invoke;
 MonoObject*
 mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
+	MonoObject *result;
+
 	if (mono_runtime_get_no_exec ())
 		g_warning ("Invoking method '%s' when running in no-exec mode.\n", mono_method_full_name (method, TRUE));
 
-	return default_mono_runtime_invoke (method, obj, params, exc);
+	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
+		mono_profiler_method_start_invoke (method);
+
+	result = default_mono_runtime_invoke (method, obj, params, exc);
+
+	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
+		mono_profiler_method_end_invoke (method);
+
+	return result;
 }
 
 /**

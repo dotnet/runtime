@@ -142,6 +142,7 @@ void mono_profiler_install_class       (MonoProfileClassFunc start_load, MonoPro
 void mono_profiler_install_jit_compile (MonoProfileMethodFunc start, MonoProfileMethodResult end);
 void mono_profiler_install_jit_end (MonoProfileJitResult end);
 void mono_profiler_install_method_free (MonoProfileMethodFunc callback);
+void mono_profiler_install_method_invoke (MonoProfileMethodFunc start, MonoProfileMethodFunc end);
 void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave);
 void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);

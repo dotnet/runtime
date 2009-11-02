@@ -1016,6 +1016,9 @@ mono_thread_attach (MonoDomain *domain)
 			mono_thread_attach_cb (tid, staddr + stsize);
 	}
 
+	// FIXME: Need a separate callback
+	mono_profiler_thread_start (tid);
+
 	return current_thread;
 }
 
@@ -2777,6 +2780,11 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 			return;
 		}
 
+		if (thread->flags & MONO_THREAD_FLAG_DONT_MANAGE) {
+			THREAD_DEBUG (g_message ("%s: ignoring thread %" G_GSIZE_FORMAT "with DONT_MANAGE flag set.", __func__, (gsize)thread->tid));
+			return;
+		}
+
 		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
 		if (handle == NULL) {
 			THREAD_DEBUG (g_message ("%s: ignoring unopenable thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
@@ -2814,7 +2822,8 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 		return FALSE;
 
 	/* The finalizer thread is not a background thread */
-	if (thread->tid != self && (thread->state & ThreadState_Background) != 0) {
+	if (thread->tid != self && (thread->state & ThreadState_Background) != 0 &&
+		!(thread->flags & MONO_THREAD_FLAG_DONT_MANAGE)) {
 	
 		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
 		if (handle == NULL)
