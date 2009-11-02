@@ -1,3 +1,7 @@
+2009-11-02 Gonzalo Paniagua Javier <gonzalo@novell.com>
+
+	* configure.in: add a few missing header file checks.
+
 2009-11-01  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Make the LLVM warning a bit more up-to-date.
