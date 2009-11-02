@@ -264,7 +264,7 @@ namespace Mono.Linker.Steps {
 			MarkMethod (type, meth, signature);
 		}
 
-		private void MarkMethod (TypeDefinition type, MethodDefinition method, string signature)
+		void MarkMethod (TypeDefinition type, MethodDefinition method, string signature)
 		{
 			if (method != null) {
 				Annotations.Mark (method);

@@ -45,6 +45,11 @@ namespace Mono.Linker.Steps {
 			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
 				return;
 
+			if (!IsMarkedAssembly (assembly)) {
+				RemoveAssembly (assembly);
+				return;
+			}
+
 			foreach (TypeDefinition type in Clone (assembly.MainModule.Types)) {
 				if (Annotations.IsMarked (type)) {
 					SweepType (type);
@@ -53,6 +58,37 @@ namespace Mono.Linker.Steps {
 
 				assembly.MainModule.Types.Remove (type);
 				SweepReferences (assembly, type);
+			}
+		}
+
+		static bool IsMarkedAssembly (AssemblyDefinition assembly)
+		{
+			return Annotations.IsMarked (assembly.MainModule);
+		}
+
+		void RemoveAssembly (AssemblyDefinition assembly)
+		{
+			Annotations.SetAction (assembly, AssemblyAction.Delete);
+
+			SweepReferences (assembly);
+		}
+
+		void SweepReferences (AssemblyDefinition target)
+		{
+			foreach (var assembly in Context.GetAssemblies ())
+				SweepReferences (assembly, target);
+		}
+
+		void SweepReferences (AssemblyDefinition assembly, AssemblyDefinition target)
+		{
+			var references = assembly.MainModule.AssemblyReferences;
+			for (int i = 0; i < references.Count; i++) {
+				var reference = references [i];
+				if (reference.FullName != target.Name.FullName)
+					continue;
+
+				references.RemoveAt (i);
+				return;
 			}
 		}
 
@@ -78,9 +114,11 @@ namespace Mono.Linker.Steps {
 
 		static void SweepMemberReferences (ModuleDefinition module, TypeReference reference)
 		{
-			foreach (MemberReference member in Clone (module.MemberReferences)) {
-				if (member.DeclaringType == reference)
-					module.MemberReferences.Remove (member);
+			var references = module.MemberReferences;
+
+			for (int i = 0; i < references.Count; i++) {
+				if (references [i].DeclaringType == reference)
+					references.RemoveAt (i--);
 			}
 		}
 
@@ -95,16 +133,21 @@ namespace Mono.Linker.Steps {
 
 		static void SweepType (TypeDefinition type)
 		{
-			SweepCollection (type.Fields);
-			SweepCollection (type.Constructors);
-			SweepCollection (type.Methods);
+			if (type.HasFields)
+				SweepCollection (type.Fields);
+
+			if (type.HasConstructors)
+				SweepCollection (type.Constructors);
+
+			if (type.HasMethods)
+				SweepCollection (type.Methods);
 		}
 
 		static void SweepCollection (IList list)
 		{
-			foreach (IAnnotationProvider provider in Clone (list))
-				if (!Annotations.IsMarked (provider))
-					list.Remove (provider);
+			for (int i = 0; i < list.Count; i++)
+				if (!Annotations.IsMarked ((IAnnotationProvider) list [i]))
+					list.RemoveAt (i--);
 		}
 	}
 }

@@ -1,3 +1,45 @@
+2009-11-02  Jb Evain  <jbevain@novell.com>
+
+	Merge the MonoTouch Linker branch.
+
+	* monolinker.exe.sources: update
+
+	* Mono.Linker/Annotations.cs:
+		- add an preserved methods annotation on a type.
+		- add an annotation to get the base methods of a method.
+		- add an annotation to get the overriden method of a method.
+
+	* Mono.Linker/AssemblyAction.cs:
+		add a Delete action to remove an assembly from the output set.
+
+	* Mono.Linker.Steps/TypeMapStep.cs:
+		new step that create a map of virtual methods implementation.
+
+	* Mono.Linker.Steps/MarkStep.cs:
+		- removal of virtual methods.
+		- fix for custom attributes assigning properties and field
+			defined in a base type.
+		- mark scopes.
+		- mark default constructors of types used as a generic instance
+			of a generic parameter constrained with new().
+		- apply preserved methods.
+
+	* Mono.Linker.Steps/SweepStep.cs: remove unused assemblies.
+
+	* Mono.Linker.Steps/LoadI18nAssemblies.cs:
+		fix linking of i18n assemblies.
+
+	* Mono.Linker.Steps/OutputStep.cs:
+		fix the copied assemblies when the output directory
+		is the same as the origin of the assemblies.
+
+	* Mono.Linker.Steps/ResolveFromXmlStep.cs
+	* Mono.Linker.Steps/ResolveFromAssemblyStep.cs
+	* Mono.Linker.Steps/BaseStep.cs
+	* Mono.Linker/Driver.cs
+	* Mono.Linker/Pipeline.cs:
+		Cosmetics.
+
 2009-09-10  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Linker.Steps/MarkStep.cs: Make IgnoreScope() virtual to

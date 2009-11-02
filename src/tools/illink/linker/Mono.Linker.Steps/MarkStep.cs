@@ -37,11 +37,13 @@ namespace Mono.Linker.Steps {
 	public class MarkStep : IStep {
 
 		LinkContext _context;
-		Queue _queue;
+		Queue _methods;
+		ArrayList _virtual_methods;
 
 		public MarkStep ()
 		{
-			_queue = new Queue ();
+			_methods = new Queue ();
+			_virtual_methods = new ArrayList ();
 		}
 
 		public void Process (LinkContext context)
@@ -92,7 +94,7 @@ namespace Mono.Linker.Steps {
 		{
 			foreach (MethodDefinition method in methods)
 				if (Annotations.IsMarked (method))
-					_queue.Enqueue (method);
+					EnqueueMethod (method);
 		}
 
 		void Process ()
@@ -101,19 +103,58 @@ namespace Mono.Linker.Steps {
 				throw new InvalidOperationException ("No entry methods");
 
 			while (!QueueIsEmpty ()) {
-				MethodDefinition method = (MethodDefinition) _queue.Dequeue ();
+				ProcessQueue ();
+				ProcessVirtualMethods ();
+			}
+		}
+
+		void ProcessQueue ()
+		{
+			while (!QueueIsEmpty ()) {
+				MethodDefinition method = (MethodDefinition) _methods.Dequeue ();
 				ProcessMethod (method);
 			}
 		}
 
 		bool QueueIsEmpty ()
 		{
-			return _queue.Count == 0;
+			return _methods.Count == 0;
 		}
 
 		protected virtual void EnqueueMethod (MethodDefinition method)
 		{
-			_queue.Enqueue (method);
+			_methods.Enqueue (method);
+		}
+
+		void ProcessVirtualMethods ()
+		{
+			foreach (MethodDefinition method in _virtual_methods)
+				ProcessVirtualMethod (method);
+		}
+
+		void ProcessVirtualMethod (MethodDefinition method)
+		{
+			IList overrides = Annotations.GetOverrides (method);
+			if (overrides == null)
+				return;
+
+			foreach (MethodDefinition @override in overrides)
+				ProcessOverride (@override);
+		}
+
+		void ProcessOverride (MethodDefinition method)
+		{
+			if (!Annotations.IsMarked (method.DeclaringType))
+				return;
+
+			if (Annotations.IsProcessed (method))
+				return;
+
+			if (Annotations.IsMarked (method))
+				return;
+
+			MarkMethod (method);
+			ProcessVirtualMethod (method);
 		}
 
 		void MarkMethodBody (MethodBody body)
@@ -176,14 +217,26 @@ namespace Mono.Linker.Steps {
 			foreach (DictionaryEntry de in ca.Properties) {
 				string propertyname = (string) de.Key;
 
-				PropertyDefinition [] properties = attribute.Properties.GetProperties (propertyname);
-
-				if (properties != null && properties.Length != 0 && properties [0].SetMethod != null)
-					MarkMethod (properties [0].SetMethod);
+				PropertyDefinition property = GetProperty (attribute, propertyname);
+				if (property != null)
+					MarkMethod (property.SetMethod);
 
 				TypeReference propType = ca.GetPropertyType (propertyname);
 				MarkIfType (propType, de.Value);
 			}
+		}
+
+		PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
+		{
+			while (type != null) {
+				PropertyDefinition [] properties = type.Properties.GetProperties (propertyname);
+				if (properties != null && properties.Length != 0 && properties [0].SetMethod != null)
+					return properties [0];
+
+				type = type.BaseType != null ? ResolveTypeDefinition (type.BaseType) : null;
+			}
+
+			return null;
 		}
 
 		void MarkCustomAttributeFields (CustomAttribute ca, TypeDefinition attribute)
@@ -191,13 +244,26 @@ namespace Mono.Linker.Steps {
 			foreach (DictionaryEntry de in ca.Fields) {
 				string fieldname = (string) de.Key;
 
-				FieldDefinition field = attribute.Fields.GetField (fieldname);
+				FieldDefinition field = GetField (attribute, fieldname);
 				if (field != null)
 					MarkField (field);
 
 				TypeReference fieldType = ca.GetFieldType (fieldname);
 				MarkIfType (fieldType, de.Value);
 			}
+		}
+
+		FieldDefinition GetField (TypeDefinition type, string fieldname)
+		{
+			while (type != null) {
+				FieldDefinition field = type.Fields.GetField (fieldname);
+				if (field != null)
+					return field;
+
+				type = type.BaseType != null ? ResolveTypeDefinition (type.BaseType) : null;
+			}
+
+			return null;
 		}
 
 		void MarkCustomAttributeParameters (CustomAttribute ca)
@@ -240,8 +306,8 @@ namespace Mono.Linker.Steps {
 
 		void MarkField (FieldReference reference)
 		{
-			if (IgnoreScope (reference.DeclaringType.Scope))
-				return;
+//			if (IgnoreScope (reference.DeclaringType.Scope))
+//				return;
 
 			FieldDefinition field = ResolveFieldDefinition (reference);
 
@@ -274,6 +340,15 @@ namespace Mono.Linker.Steps {
 			return fd;
 		}
 
+		void MarkScope (IMetadataScope scope)
+		{
+			IAnnotationProvider provider = scope as IAnnotationProvider;
+			if (provider == null)
+				return;
+
+			Annotations.Mark (provider);
+		}
+
 		protected virtual void MarkType (TypeReference reference)
 		{
 			if (reference == null)
@@ -284,8 +359,8 @@ namespace Mono.Linker.Steps {
 			if (reference is GenericParameter)
 				return;
 
-			if (IgnoreScope (reference.Scope))
-				return;
+//			if (IgnoreScope (reference.Scope))
+//				return;
 
 			TypeDefinition type = ResolveTypeDefinition (reference);
 
@@ -295,12 +370,15 @@ namespace Mono.Linker.Steps {
 			if (CheckProcessed (type))
 				return;
 
+			MarkScope (type.Scope);
 			MarkType (type.BaseType);
 			MarkType (type.DeclaringType);
-			MarkCustomAttributes(type);
+			MarkCustomAttributes (type);
 
-			if (IsMulticastDelegate (type))
+			if (IsMulticastDelegate (type)) {
 				MarkMethodCollection (type.Constructors);
+				MarkMethodCollection (type.Methods);
+			}
 
 			if (IsSerializable (type) && type.HasConstructors) {
 				MarkMethodsIf (type.Constructors, IsDefaultConstructorPredicate);
@@ -317,11 +395,11 @@ namespace Mono.Linker.Steps {
 					MarkType (iface);
 			}
 
+			if (type.HasMethods)
+				MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
+
 			if (type.HasConstructors)
 				MarkMethodsIf (type.Constructors, IsStaticConstructorPredicate);
-
-			if (type.HasMethods)
-				MarkMethodsIf (type.Methods, IsVirtualPredicate);
 
 			Annotations.Mark (type);
 
@@ -342,6 +420,26 @@ namespace Mono.Linker.Steps {
 			MarkCustomAttributes (parameter);
 			foreach (TypeReference constraint in parameter.Constraints)
 				MarkType (constraint);
+		}
+
+		bool IsVirtualAndHasPreservedParent (MethodDefinition method)
+		{
+			if (!method.IsVirtual)
+				return false;
+
+			var base_list = Annotations.GetBaseMethods (method);
+			if (base_list == null)
+				return false;
+
+			foreach (MethodDefinition @base in base_list) {
+				if (IgnoreScope (@base.DeclaringType.Scope))
+					return true;
+
+				if (IsVirtualAndHasPreservedParent (@base))
+					return true;
+			}
+
+			return false;
 		}
 
 		static MethodPredicate IsSpecialSerializationConstructorPredicate = new MethodPredicate (IsSpecialSerializationConstructor);
@@ -379,13 +477,6 @@ namespace Mono.Linker.Steps {
 		{
 			return method.Name == MethodDefinition.Ctor && method.IsSpecialName &&
 				method.IsRuntimeSpecialName;
-		}
-
-		static MethodPredicate IsVirtualPredicate = new MethodPredicate (IsVirtual);
-
-		static bool IsVirtual (MethodDefinition method)
-		{
-			return method.IsVirtual;
 		}
 
 		static MethodPredicate IsStaticConstructorPredicate = new MethodPredicate (IsStaticConstructor);
@@ -441,10 +532,55 @@ namespace Mono.Linker.Steps {
 		{
 			foreach (TypeReference argument in instance.GenericArguments)
 				MarkType (argument);
+
+			MarkGenericArgumentConstructors (instance);
+		}
+
+		void MarkGenericArgumentConstructors (IGenericInstance instance)
+		{
+			var arguments = instance.GenericArguments;
+
+			var generic_element = GetGenericProviderFromInstance (instance);
+			if (generic_element == null)
+				return;
+
+			var parameters = generic_element.GenericParameters;
+
+			if (arguments.Count != parameters.Count)
+				return;
+
+			for (int i = 0; i < arguments.Count; i++) {
+				var argument = arguments [i];
+				var parameter = parameters [i];
+
+				if (!parameter.HasDefaultConstructorConstraint)
+					continue;
+
+				var argument_definition = ResolveTypeDefinition (argument);
+				if (argument_definition == null)
+					continue;
+
+				MarkMethodsIf (argument_definition.Constructors, ctor => !ctor.IsStatic && !ctor.HasParameters);
+			}
+		}
+
+		IGenericParameterProvider GetGenericProviderFromInstance (IGenericInstance instance)
+		{
+			var method = instance as GenericInstanceMethod;
+			if (method != null)
+				return method.ElementMethod;
+
+			var type = instance as GenericInstanceType;
+			if (type != null)
+				return type.ElementType;
+
+			return null;
 		}
 
 		void ApplyPreserveInfo (TypeDefinition type)
 		{
+			ApplyPreserveMethods (type);
+
 			if (!Annotations.IsPreserved (type))
 				return;
 
@@ -460,6 +596,16 @@ namespace Mono.Linker.Steps {
 				MarkMethods (type);
 				break;
 			}
+		}
+
+		void ApplyPreserveMethods (TypeDefinition type)
+		{
+			var list = Annotations.GetPreservedMethods (type);
+			if (list == null)
+				return;
+
+			foreach (MethodDefinition method in list)
+				MarkMethod (method);
 		}
 
 		void MarkFields (TypeDefinition type)
@@ -492,15 +638,16 @@ namespace Mono.Linker.Steps {
 			if (reference.DeclaringType is ArrayType)
 				return;
 
-			if (IgnoreScope (reference.DeclaringType.Scope))
-				return;
+//			if (IgnoreScope (reference.DeclaringType.Scope))
+//				return;
 
 			MethodDefinition method = ResolveMethodDefinition (reference);
 
 			if (method == null)
 				throw new ResolutionException (reference);
 
-			Annotations.SetAction (method, MethodAction.Parse);
+			if (Annotations.GetAction (method) == MethodAction.Nothing)
+				Annotations.SetAction (method, MethodAction.Parse);
 
 			EnqueueMethod (method);
 		}
@@ -562,6 +709,11 @@ namespace Mono.Linker.Steps {
 					MarkMethod (ov);
 			}
 
+			if (method.IsVirtual)
+				_virtual_methods.Add (method);
+
+			MarkBaseMethods (method);
+
 			MarkType (method.ReturnType.ReturnType);
 			MarkCustomAttributes (method.ReturnType);
 			MarkMarshalSpec (method.ReturnType);
@@ -570,6 +722,18 @@ namespace Mono.Linker.Steps {
 				MarkMethodBody (method.Body);
 
 			Annotations.Mark (method);
+		}
+
+		void MarkBaseMethods (MethodDefinition method)
+		{
+			IList base_methods = Annotations.GetBaseMethods (method);
+			if (base_methods == null)
+				return;
+
+			foreach (MethodDefinition base_method in base_methods) {
+				MarkMethod (base_method);
+				MarkBaseMethods (base_method);
+			}
 		}
 
 		bool ShouldParseMethodBody (MethodDefinition method)

@@ -61,7 +61,7 @@ namespace Mono.Linker {
 				}
 			}
 		}
-		
+
 		public void ReplaceStep (Type target, IStep step)
 		{
 			AddStepBefore (target, step);

@@ -77,7 +77,7 @@ namespace Mono.Linker.Steps {
 		void LoadAssembly (AssemblyNameReference name)
 		{
 			AssemblyDefinition assembly = Context.Resolve (name);
-			Annotations.SetAction (assembly, AssemblyAction.Copy);
+			ResolveFromAssemblyStep.ProcessLibrary (assembly);
 		}
 
 		AssemblyNameReference GetAssemblyName (I18nAssemblies assembly)

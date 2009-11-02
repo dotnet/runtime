@@ -24,4 +24,5 @@
 ./Mono.Linker.Steps/MarkStep.cs
 ./Mono.Linker.Steps/BlacklistStep.cs
 ./Mono.Linker.Steps/OutputStep.cs
+./Mono.Linker.Steps/TypeMapStep.cs
 ./Mono.Linker.Steps/IStep.cs
