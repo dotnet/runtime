@@ -268,7 +268,11 @@ typedef struct {
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 //#define MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE 1
+#ifndef PLATFORM_WIN32
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
+#else
+#define DISABLE_DEBUGGER_AGENT 1
+#endif
 #define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 
 /* Used for optimization, not complete */
