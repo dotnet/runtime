@@ -55,6 +55,7 @@
 #include <ctype.h>
 #include <locale.h>
 #include "version.h"
+#include "debugger-agent.h"
 
 static FILE *mini_stats_fd = NULL;
 
@@ -1105,6 +1106,7 @@ mini_usage (void)
 		"Development:\n"
 		"    --aot                  Compiles the assembly to native code\n"
 		"    --debug[=<options>]    Enable debugging support, use --help-debug for details\n"
+ 		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
 		"    --help-devel           Shows more options available to developers\n"
@@ -1441,6 +1443,12 @@ mono_main (int argc, char* argv[])
 			enable_debugging = TRUE;
 			if (!parse_debug_options (argv [i] + 8))
 				return 1;
+ 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
+			MonoDebugOptions *opt = mini_get_debug_options ();
+
+ 			mono_debugger_agent_parse_options (argv [i] + 17);
+			opt->mdb_optimizations = TRUE;
+			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
 			mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
 			mono_security_set_mode (MONO_SECURITY_MODE_CAS);

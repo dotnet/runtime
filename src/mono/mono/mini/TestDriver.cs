@@ -53,7 +53,7 @@ public class TestDriver {
 		for (int iter = 0; iter < iterations; ++iter) {
 			for (i = 0; i < methods.Length; ++i) {
 				name = methods [i].Name;
-				if (!name.StartsWith ("test_"))
+				if (!name.StartsWith ("test_", StringComparison.Ordinal))
 					continue;
 				if (new_args.Count > 0) {
 					bool found = false;

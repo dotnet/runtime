@@ -22,6 +22,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-mmap.h>
 
 #include "trace.h"
 #include "mini-x86.h"
@@ -63,6 +64,15 @@ static CRITICAL_SECTION mini_arch_mutex;
 
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
+
+/*
+ * The code generated for sequence points reads from this location, which is
+ * made read-only when single stepping is enabled.
+ */
+static gpointer ss_trigger_page;
+
+/* Enabled breakpoints read from this trigger page */
+static gpointer bp_trigger_page;
 
 const char*
 mono_arch_regname (int reg)
@@ -648,6 +658,10 @@ void
 mono_arch_init (void)
 {
 	InitializeCriticalSection (&mini_arch_mutex);
+
+	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ);
+	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
+	mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
 }
 
 /*
@@ -2340,6 +2354,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
  		case OP_NOT_REACHED:
  		case OP_NOT_NULL:
  			break;
+		case OP_SEQ_POINT: {
+			int i, il_offset;
+
+			/* 
+			 * Read from the single stepping trigger page. This will cause a
+			 * SIGSEGV when single stepping is enabled.
+			 * We do this _before_ the breakpoint, so single stepping after
+			 * a breakpoint is hit will step to the next IL offset.
+			 */
+			if (ins->flags & MONO_INST_SINGLE_STEP_LOC)
+				x86_alu_reg_mem (code, X86_CMP, X86_EAX, (guint32)ss_trigger_page);
+
+			il_offset = ins->inst_imm;
+
+			if (!cfg->seq_points)
+				cfg->seq_points = g_ptr_array_new ();
+			g_ptr_array_add (cfg->seq_points, GUINT_TO_POINTER (il_offset));
+			g_ptr_array_add (cfg->seq_points, GUINT_TO_POINTER (code - cfg->native_code));
+			/* 
+			 * A placeholder for a possible breakpoint inserted by
+			 * mono_arch_set_breakpoint ().
+			 */
+			for (i = 0; i < 6; ++i)
+				x86_nop (code);
+			break;
+		}
 		case OP_ADDCC:
 		case OP_IADDCC:
 		case OP_IADD:
@@ -5704,3 +5744,156 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 #endif /* MONO_ARCH_SIMD_INTRINSICS */
 }
 
+#if __APPLE__
+#define DBG_SIGNAL SIGBUS
+#else
+#define DBG_SIGNAL SIGSEGV
+#endif
+
+/*
+ * mono_arch_set_breakpoint:
+ *
+ *   Set a breakpoint at the native code corresponding to JI at NATIVE_OFFSET.
+ * The location should contain code emitted by OP_SEQ_POINT.
+ */
+void
+mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+
+	/* 
+	 * In production, we will use int3 (has to fix the size in the md 
+	 * file). But that could confuse gdb, so during development, we emit a SIGSEGV
+	 * instead.
+	 */
+	g_assert (code [0] == 0x90);
+	x86_alu_reg_mem (code, X86_CMP, X86_EAX, (guint32)bp_trigger_page);
+}
+
+/*
+ * mono_arch_clear_breakpoint:
+ *
+ *   Clear the breakpoint at IP.
+ */
+void
+mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+	int i;
+
+	for (i = 0; i < 6; ++i)
+		x86_nop (code);
+}
+	
+/*
+ * mono_arch_start_single_stepping:
+ *
+ *   Start single stepping.
+ */
+void
+mono_arch_start_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), 0);
+}
+	
+/*
+ * mono_arch_stop_single_stepping:
+ *
+ *   Stop single stepping.
+ */
+void
+mono_arch_stop_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), MONO_MMAP_READ);
+}
+
+/*
+ * mono_arch_is_single_step_event:
+ *
+ *   Return whenever the machine state in SIGCTX corresponds to a single
+ * step event.
+ */
+gboolean
+mono_arch_is_single_step_event (siginfo_t *info, void *sigctx)
+{
+	/* Sometimes the address is off by 4 */
+	if (info->si_signo == DBG_SIGNAL && (info->si_addr >= ss_trigger_page && (guint8*)info->si_addr <= (guint8*)ss_trigger_page + 128))
+		return TRUE;
+	else
+		return FALSE;
+}
+
+gboolean
+mono_arch_is_breakpoint_event (siginfo_t *info, void *sigctx)
+{
+	/* Sometimes the address is off by 4 */
+	if (info->si_signo == DBG_SIGNAL && (info->si_addr >= bp_trigger_page && (guint8*)info->si_addr <= (guint8*)bp_trigger_page + 128))
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*
+ * mono_arch_get_ip_for_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+guint8*
+mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+
+	return ip;
+}
+
+#define BREAKPOINT_SIZE 6
+
+/*
+ * mono_arch_get_ip_for_single_step:
+ *
+ *   See mini-amd64.c for docs.
+ */
+guint8*
+mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+
+	/* Size of x86_alu_reg_imm */
+	ip += 6;
+
+	return ip;
+}
+
+/*
+ * mono_arch_skip_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_skip_breakpoint (MonoContext *ctx)
+{
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + BREAKPOINT_SIZE);
+}
+
+/*
+ * mono_arch_skip_single_step:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_skip_single_step (MonoContext *ctx)
+{
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 6);
+}
+
+/*
+ * mono_arch_get_seq_point_info:
+ *
+ *   See mini-amd64.c for docs.
+ */
+gpointer
+mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}

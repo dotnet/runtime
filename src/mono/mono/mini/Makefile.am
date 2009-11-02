@@ -284,7 +284,9 @@ common_sources = \
 	dwarfwriter.h	\
 	dwarfwriter.c	\
 	mini-gc.h		\
-	mini-gc.c
+	mini-gc.c		\
+	debugger-agent.h \
+	debugger-agent.c
 
 test_sources = 			\
 	basic-calls.cs 		\
@@ -598,3 +600,6 @@ version.h: Makefile
 patch-libtool:
 	sed -e 's,if (for obj in $$oldobjs,if (for obj in "",g' < ../../libtool > 2; mv 2 ../../libtool
 	chmod a+x ../../libtool
+
+tags:
+	etags -o TAGS `find .. -name "*.h" -o -name "*.c"`

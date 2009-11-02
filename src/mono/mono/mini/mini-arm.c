@@ -12,6 +12,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/utils/mono-mmap.h>
 
 #include "mini-arm.h"
 #include "cpu-arm.h"
@@ -38,6 +39,22 @@ static CRITICAL_SECTION mini_arch_mutex;
 static int v5_supported = 0;
 static int v7_supported = 0;
 static int thumb_supported = 0;
+
+/*
+ * The code generated for sequence points reads from this location, which is
+ * made read-only when single stepping is enabled.
+ */
+static gpointer ss_trigger_page;
+
+/* Enabled breakpoints read from this trigger page */
+static gpointer bp_trigger_page;
+
+/* Structure used by the sequence points in AOTed code */
+typedef struct {
+	gpointer ss_trigger_page;
+	gpointer bp_trigger_page;
+	guint8* bp_addrs [MONO_ZERO_LEN_ARRAY];
+} SeqPointInfo;
 
 /*
  * TODO:
@@ -489,7 +506,11 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	InitializeCriticalSection (&mini_arch_mutex);	
+	InitializeCriticalSection (&mini_arch_mutex);
+
+	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
+	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
+	mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
 }
 
 /*
@@ -1170,6 +1191,17 @@ mono_arch_create_vars (MonoCompile *cfg)
 			printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
 		}
+	}
+
+	if (cfg->gen_seq_points && cfg->compile_aot) {
+	    MonoInst *ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		ins->flags |= MONO_INST_VOLATILE;
+		cfg->arch.seq_point_info_var = ins;
+
+		/* Allocate a separate variable for this to save 1 load per seq point */
+	    ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		ins->flags |= MONO_INST_VOLATILE;
+		cfg->arch.ss_trigger_page_var = ins;
 	}
 }
 
@@ -3032,6 +3064,95 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_NOT_REACHED:
 		case OP_NOT_NULL:
 			break;
+		case OP_SEQ_POINT: {
+			int i, il_offset;
+			MonoInst *info_var = cfg->arch.seq_point_info_var;
+			MonoInst *ss_trigger_page_var = cfg->arch.ss_trigger_page_var;
+			MonoInst *var;
+			int dreg = ARMREG_LR;
+
+			/*
+			 * For AOT, we use one got slot per method, which will point to a
+			 * SeqPointInfo structure, containing all the information required
+			 * by the code below.
+			 */
+			if (cfg->compile_aot) {
+				g_assert (info_var);
+				g_assert (info_var->opcode == OP_REGOFFSET);
+				g_assert (arm_is_imm12 (info_var->inst_offset));
+			}
+
+			/* 
+			 * Read from the single stepping trigger page. This will cause a
+			 * SIGSEGV when single stepping is enabled.
+			 * We do this _before_ the breakpoint, so single stepping after
+			 * a breakpoint is hit will step to the next IL offset.
+			 */
+			g_assert (((guint64)(gsize)ss_trigger_page >> 32) == 0);
+
+			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
+				if (cfg->compile_aot) {
+					/* Load the trigger page addr from the variable initialized in the prolog */
+					var = ss_trigger_page_var;
+					g_assert (var);
+					g_assert (var->opcode == OP_REGOFFSET);
+					g_assert (arm_is_imm12 (var->inst_offset));
+					ARM_LDR_IMM (code, dreg, var->inst_basereg, var->inst_offset);
+				} else {
+					ARM_LDR_IMM (code, dreg, ARMREG_PC, 0);
+					ARM_B (code, 0);
+					*(int*)code = (int)ss_trigger_page;
+					code += 4;
+				}
+				ARM_LDR_IMM (code, dreg, dreg, 0);
+			}
+
+			il_offset = ins->inst_imm;
+
+			if (!cfg->seq_points)
+				cfg->seq_points = g_ptr_array_new ();
+			g_ptr_array_add (cfg->seq_points, GUINT_TO_POINTER (il_offset));
+			g_ptr_array_add (cfg->seq_points, GUINT_TO_POINTER (code - cfg->native_code));
+
+			if (cfg->compile_aot) {
+				guint32 offset = code - cfg->native_code;
+				guint32 val;
+
+				ARM_LDR_IMM (code, dreg, info_var->inst_basereg, info_var->inst_offset);
+				/* Add the offset */
+				val = ((offset / 4) * sizeof (guint8*)) + G_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
+				ARM_ADD_REG_IMM (code, dreg, dreg, (val & 0xFF), 0);
+				/* 
+				 * Have to emit nops to keep the difference between the offset
+				 * stored in seq_points and breakpoint instruction constant,
+				 * mono_arch_get_ip_for_breakpoint () depends on this.
+				 */
+				if (val & 0xFF00)
+					ARM_ADD_REG_IMM (code, dreg, dreg, (val & 0xFF00) >> 8, 24);
+				else
+					ARM_NOP (code);
+				if (val & 0xFF0000)
+					ARM_ADD_REG_IMM (code, dreg, dreg, (val & 0xFF0000) >> 16, 16);
+				else
+					ARM_NOP (code);
+				g_assert (!(val & 0xFF000000));
+				/* Load the info->bp_addrs [offset], which is either 0 or the address of a trigger page */
+				ARM_LDR_IMM (code, dreg, dreg, 0);
+
+				/* What is faster, a branch or a load ? */
+				ARM_CMP_REG_IMM (code, dreg, 0, 0);
+				/* The breakpoint instruction */
+				ARM_LDR_IMM_COND (code, dreg, dreg, 0, ARMCOND_NE);
+			} else {
+				/* 
+				 * A placeholder for a possible breakpoint inserted by
+				 * mono_arch_set_breakpoint ().
+				 */
+				for (i = 0; i < 4; ++i)
+					ARM_NOP (code);
+			}
+			break;
+		}
 		case OP_ADDCC:
 		case OP_IADDCC:
 			ARM_ADDS_REG_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -4466,6 +4587,44 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (tracing)
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
+	if (cfg->arch.seq_point_info_var) {
+		MonoInst *ins = cfg->arch.seq_point_info_var;
+
+		/* Initialize the variable from a GOT slot */
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_SEQ_POINT_INFO, cfg->method);
+		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+		ARM_B (code, 0);
+		*(gpointer*)code = NULL;
+		code += 4;
+		ARM_LDR_REG_REG (code, ARMREG_R0, ARMREG_PC, ARMREG_R0);
+
+		g_assert (ins->opcode == OP_REGOFFSET);
+
+		if (arm_is_imm12 (ins->inst_offset)) {
+			ARM_STR_IMM (code, ARMREG_R0, ins->inst_basereg, ins->inst_offset);
+		} else {
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
+			ARM_STR_REG_REG (code, ARMREG_R0, ins->inst_basereg, ARMREG_LR);
+		}
+	}
+
+	/* Initialize ss_trigger_page_var */
+	{
+		MonoInst *info_var = cfg->arch.seq_point_info_var;
+		MonoInst *ss_trigger_page_var = cfg->arch.ss_trigger_page_var;
+		int dreg = ARMREG_LR;
+
+		if (info_var) {
+			g_assert (info_var->opcode == OP_REGOFFSET);
+			g_assert (arm_is_imm12 (info_var->inst_offset));
+
+			ARM_LDR_IMM (code, dreg, info_var->inst_basereg, info_var->inst_offset);
+			/* Load the trigger page addr */
+			ARM_LDR_IMM (code, dreg, dreg, G_STRUCT_OFFSET (SeqPointInfo, ss_trigger_page));
+			ARM_STR_IMM (code, dreg, ss_trigger_page_var->inst_basereg, ss_trigger_page_var->inst_offset);
+		}
+	}
+
 	cfg->code_len = code - cfg->native_code;
 	g_assert (cfg->code_len < cfg->code_size);
 	g_free (cinfo);
@@ -4979,4 +5138,215 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 		g_assert_not_reached ();
 		return NULL;
 	}
+}
+
+/*
+ * mono_arch_set_breakpoint:
+ *
+ *   Set a breakpoint at the native code corresponding to JI at NATIVE_OFFSET.
+ * The location should contain code emitted by OP_SEQ_POINT.
+ */
+void
+mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+	guint32 native_offset = ip - (guint8*)ji->code_start;
+
+	if (ji->from_aot) {
+		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), ji->code_start);
+
+		g_assert (native_offset % 4 == 0);
+		g_assert (info->bp_addrs [native_offset / 4] == 0);
+		info->bp_addrs [native_offset / 4] = bp_trigger_page;
+	} else {
+		int dreg = ARMREG_LR;
+
+		/* Read from another trigger page */
+		ARM_LDR_IMM (code, dreg, ARMREG_PC, 0);
+		ARM_B (code, 0);
+		*(int*)code = (int)bp_trigger_page;
+		code += 4;
+		ARM_LDR_IMM (code, dreg, dreg, 0);
+
+		mono_arch_flush_icache (code - 16, 16);
+
+#if 0
+		/* This is currently implemented by emitting an SWI instruction, which 
+		 * qemu/linux seems to convert to a SIGILL.
+		 */
+		*(int*)code = (0xef << 24) | 8;
+		code += 4;
+		mono_arch_flush_icache (code - 4, 4);
+#endif
+	}
+}
+
+/*
+ * mono_arch_clear_breakpoint:
+ *
+ *   Clear the breakpoint at IP.
+ */
+void
+mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+	int i;
+
+	if (ji->from_aot) {
+		guint32 native_offset = ip - (guint8*)ji->code_start;
+		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), ji->code_start);
+
+		g_assert (native_offset % 4 == 0);
+		g_assert (info->bp_addrs [native_offset / 4] == bp_trigger_page);
+		info->bp_addrs [native_offset / 4] = 0;
+	} else {
+		for (i = 0; i < 4; ++i)
+			ARM_NOP (code);
+
+		mono_arch_flush_icache (ip, code - ip);
+	}
+}
+	
+/*
+ * mono_arch_start_single_stepping:
+ *
+ *   Start single stepping.
+ */
+void
+mono_arch_start_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), 0);
+}
+	
+/*
+ * mono_arch_stop_single_stepping:
+ *
+ *   Stop single stepping.
+ */
+void
+mono_arch_stop_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), MONO_MMAP_READ);
+}
+
+#if __APPLE__
+#define DBG_SIGNAL SIGBUS
+#else
+#define DBG_SIGNAL SIGSEGV
+#endif
+
+/*
+ * mono_arch_is_single_step_event:
+ *
+ *   Return whenever the machine state in SIGCTX corresponds to a single
+ * step event.
+ */
+gboolean
+mono_arch_is_single_step_event (siginfo_t *info, void *sigctx)
+{
+	/* Sometimes the address is off by 4 */
+	if (info->si_addr >= ss_trigger_page && (guint8*)info->si_addr <= (guint8*)ss_trigger_page + 128)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*
+ * mono_arch_is_breakpoint_event:
+ *
+ *   Return whenever the machine state in SIGCTX corresponds to a breakpoint event.
+ */
+gboolean
+mono_arch_is_breakpoint_event (siginfo_t *info, void *sigctx)
+{
+	if (info->si_signo == DBG_SIGNAL) {
+		/* Sometimes the address is off by 4 */
+		if (info->si_addr >= bp_trigger_page && (guint8*)info->si_addr <= (guint8*)bp_trigger_page + 128)
+			return TRUE;
+		else
+			return FALSE;
+	} else {
+		return FALSE;
+	}
+}
+
+guint8*
+mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+
+	if (ji->from_aot)
+		ip -= 6 * 4;
+	else
+		ip -= 12;
+
+	return ip;
+}
+
+guint8*
+mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+
+	ip += 4;
+
+	return ip;
+}
+
+/*
+ * mono_arch_skip_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_skip_breakpoint (MonoContext *ctx)
+{
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 4);
+}
+
+/*
+ * mono_arch_skip_single_step:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_skip_single_step (MonoContext *ctx)
+{
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 4);
+}
+
+/*
+ * mono_arch_get_seq_point_info:
+ *
+ *   See mini-amd64.c for docs.
+ */
+gpointer
+mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+{
+	SeqPointInfo *info;
+	MonoJitInfo *ji;
+
+	// FIXME: Add a free function
+
+	mono_domain_lock (domain);
+	info = g_hash_table_lookup (domain_jit_info (domain)->arch_seq_points, 
+								code);
+	mono_domain_unlock (domain);
+
+	if (!info) {
+		ji = mono_jit_info_table_find (domain, (char*)code);
+		g_assert (ji);
+
+		info = g_malloc0 (sizeof (SeqPointInfo) + ji->code_size);
+
+		info->ss_trigger_page = ss_trigger_page;
+		info->bp_trigger_page = bp_trigger_page;
+
+		mono_domain_lock (domain);
+		g_hash_table_insert (domain_jit_info (domain)->arch_seq_points,
+							 code, info);
+		mono_domain_unlock (domain);
+	}
+
+	return info;
 }

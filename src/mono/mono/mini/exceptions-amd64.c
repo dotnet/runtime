@@ -528,30 +528,27 @@ mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji
 	return start;
 }
 
-/* mono_arch_find_jit_info:
+/*
+ * mono_arch_find_jit_info_ext:
  *
- * This function is used to gather information from @ctx. It return the 
- * MonoJitInfo of the corresponding function, unwinds one stack frame and
- * stores the resulting context into @new_ctx. It also stores a string 
- * describing the stack location into @trace (if not NULL), and modifies
- * the @lmf if necessary. @native_offset return the IP offset from the 
- * start of the function or -1 if that info is not available.
+ * This function is used to gather information from @ctx, and store it in @frame_info.
+ * It unwinds one stack frame, and stores the resulting context into @new_ctx. @lmf
+ * is modified if needed.
+ * Returns TRUE on success, FALSE otherwise.
+ * This function is a version of mono_arch_find_jit_info () where all the results are
+ * returned in a StackFrameInfo structure.
  */
-MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
-			 MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
+gboolean
+mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+							 MonoJitInfo *ji, MonoContext *ctx, 
+							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 StackFrameInfo *frame)
 {
-	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 
-	/* Avoid costly table lookup during stack overflow */
-	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
-		ji = prev_ji;
-	else
-		ji = mini_jit_info_table_find (domain, ip, NULL);
-
-	if (managed)
-		*managed = FALSE;
+	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->ji = ji;
+	frame->managed = FALSE;
 
 	*new_ctx = *ctx;
 
@@ -561,9 +558,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
 
-		if (managed)
-			if (!ji->method->wrapper_type)
-				*managed = TRUE;
+		frame->type = FRAME_TYPE_MANAGED;
+
+		if (!ji->method->wrapper_type || ji->method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+			frame->managed = TRUE;
 
 		if (ji->from_aot)
 			unwind_info = mono_aot_get_unwind_info (ji, &unwind_info_len);
@@ -610,7 +608,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		if (*lmf && ((*lmf) != jit_tls->first_lmf) && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->rsp)) {
 			/* remove any unused lmf */
-			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~1);
+			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~3);
 		}
 
 #ifndef MONO_AMD64_NO_PUSHES
@@ -623,16 +621,34 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		}
 #endif
 
-		return ji;
+		return TRUE;
 	} else if (*lmf) {
 		guint64 rip;
+
+		if (((guint64)(*lmf)->previous_lmf) & 2) {
+			/* 
+			 * This LMF entry is created by the soft debug code to mark transitions to
+			 * managed code done during invokes.
+			 */
+			MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
+
+			g_assert (ext->debugger_invoke);
+
+			memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
+
+			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~3);
+
+			frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
+
+			return TRUE;
+		}
 
 		if (((guint64)(*lmf)->previous_lmf) & 1) {
 			/* This LMF has the rip field set */
 			rip = (*lmf)->rip;
 		} else if ((*lmf)->rsp == 0) {
 			/* Top LMF entry */
-			return (gpointer)-1;
+			return FALSE;
 		} else {
 			/* 
 			 * The rsp field is set just before the call which transitioned to native 
@@ -644,8 +660,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		ji = mini_jit_info_table_find (domain, (gpointer)rip, NULL);
 		if (!ji) {
 			// FIXME: This can happen with multiple appdomains (bug #444383)
-			return (gpointer)-1;
+			return FALSE;
 		}
+
+		frame->ji = ji;
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 
 		new_ctx->rip = rip;
 		new_ctx->rbp = (*lmf)->rbp;
@@ -661,12 +680,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		new_ctx->rsi = (*lmf)->rsi;
 #endif
 
-		*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~1);
+		*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~3);
 
-		return ji ? ji : res;
+		return TRUE;
 	}
 
-	return NULL;
+	return FALSE;
 }
 
 /**

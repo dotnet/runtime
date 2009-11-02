@@ -359,6 +359,12 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         (dest)->klass = mono_class_from_mono_type (ltype); \
 	} while (0)
 
+#define NEW_SEQ_POINT(cfg,dest,il_offset,ss_loc) do {	 \
+	MONO_INST_NEW ((cfg), (dest), OP_SEQ_POINT); \
+	(dest)->inst_imm = (il_offset); \
+	(dest)->flags = ss_loc ? MONO_INST_SINGLE_STEP_LOC : 0; \
+	} while (0)
+
 /*
  * Variants which do an emit as well.
  */

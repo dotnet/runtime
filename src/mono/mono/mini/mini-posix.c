@@ -59,6 +59,7 @@
 #include <ctype.h>
 #include "trace.h"
 #include "version.h"
+#include "debugger-agent.h"
 
 #include "jit-icalls.h"
 
@@ -184,6 +185,9 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	 */
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
 	running_managed = ji != NULL;
+
+	if (mono_debugger_agent_thread_interrupt (ji))
+		return;
 	
 	exc = mono_thread_request_interruption (running_managed); 
 	if (!exc)
@@ -359,6 +363,15 @@ add_signal_handler (int signo, gpointer handler)
 			sigaddset (&sa.sa_mask, mono_gc_get_suspend_signal ());
 	}
 #endif
+	if (signo == SIGSEGV) {
+		/* 
+		 * Delay abort signals while handling SIGSEGVs since they could go unnoticed.
+		 */
+		sigset_t block_mask;
+     
+		sigemptyset (&block_mask);
+		sigaddset (&sa.sa_mask, mono_thread_get_abort_signal ());
+	}
 #else
 	sa.sa_handler = handler;
 	sigemptyset (&sa.sa_mask);

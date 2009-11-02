@@ -1382,7 +1382,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	int i, buf_len;
 	MonoJitInfo *jinfo;
 	guint code_len, used_int_regs, flags;
-	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses;
+	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points;
 	guint8 *p;
 	int generic_info_size;
 
@@ -1394,6 +1394,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	has_generic_jit_info = (flags & 1) != 0;
 	has_dwarf_unwind_info = (flags & 2) != 0;
 	has_clauses = (flags & 4) != 0;
+	has_seq_points = (flags & 8) != 0;
 	if (has_dwarf_unwind_info) {
 		guint32 offset;
 
@@ -1461,6 +1462,30 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 
 		jinfo->method = decode_method_ref_2 (amodule, p, &p);
+	}
+
+	if (has_seq_points) {
+		GPtrArray *seq_points;
+		int il_offset, native_offset, last_il_offset, last_native_offset;
+
+		int len = decode_value (p, &p);
+
+		seq_points = g_ptr_array_new ();
+		last_il_offset = last_native_offset = 0;
+		for (i = 0; i < len; i += 2) {
+			il_offset = last_il_offset + decode_value (p, &p);
+			native_offset = last_native_offset + decode_value (p, &p);
+
+			g_ptr_array_add (seq_points, GINT_TO_POINTER (il_offset));
+			g_ptr_array_add (seq_points, GINT_TO_POINTER (native_offset));
+
+			last_il_offset = il_offset;
+			last_native_offset = native_offset;
+		}
+
+		mono_domain_lock (domain);
+		g_hash_table_insert (domain_jit_info (domain)->seq_points, method, seq_points);
+		mono_domain_unlock (domain);
 	}
 
 	/* Load debug info */
@@ -1829,6 +1854,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.rgctx_entry = entry;
 		break;
 	}
+	case MONO_PATCH_INFO_SEQ_POINT_INFO:
+		break;
 	default:
 		g_warning ("unhandled type %d", ji->type);
 		g_assert_not_reached ();
@@ -2063,6 +2090,19 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		g_hash_table_insert (amodule->method_to_code, method, code);
 
 	mono_aot_unlock ();
+
+	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION) {
+		MonoJitInfo *jinfo;
+
+		if (!method) {
+			method = mono_get_method (image, token, NULL);
+			g_assert (method);
+		}
+		mono_profiler_method_jit (method);
+		jinfo = mono_jit_info_table_find (domain, (char*)code);
+		g_assert (jinfo);
+		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+	}
 
 	if (from_plt && klass && !klass->generic_container)
 		mono_runtime_class_init (mono_class_vtable (domain, klass));

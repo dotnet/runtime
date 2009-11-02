@@ -53,6 +53,7 @@ break: len:4
 jmp: len:92
 br: len:4
 switch: src1:i len:8
+seq_point: len:38
 
 throw: src1:i len:24
 rethrow: src1:i len:20

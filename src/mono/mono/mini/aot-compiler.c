@@ -96,6 +96,7 @@ typedef struct MonoAotOptions {
 	gboolean asm_only;
 	gboolean asm_writer;
 	gboolean nodebug;
+	gboolean soft_debug;
 	int nthreads;
 	int ntrampolines;
 	gboolean print_skipped_methods;
@@ -121,6 +122,7 @@ typedef struct MonoAotCompile {
 	GHashTable *patch_to_plt_offset;
 	GHashTable *plt_offset_to_patch;
 	GHashTable *patch_to_got_offset;
+	GHashTable **patch_to_got_offset_by_type;
 	GPtrArray *got_patches;
 	GHashTable *image_hash;
 	GHashTable *method_to_cfg;
@@ -1607,7 +1609,7 @@ get_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 {
 	guint32 got_offset;
 
-	got_offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_got_offset, ji));
+	got_offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_got_offset_by_type [ji->type], ji));
 	if (got_offset)
 		return got_offset - 1;
 
@@ -1618,6 +1620,7 @@ get_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 	acfg->stats.got_slot_types [ji->type] ++;
 
 	g_hash_table_insert (acfg->patch_to_got_offset, ji, GUINT_TO_POINTER (got_offset + 1));
+	g_hash_table_insert (acfg->patch_to_got_offset_by_type [ji->type], ji, GUINT_TO_POINTER (got_offset + 1));
 	g_ptr_array_add (acfg->got_patches, ji);
 
 	return got_offset;
@@ -2748,6 +2751,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
+	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 		break;
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
@@ -2915,7 +2919,7 @@ static void
 emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 {
 	MonoMethod *method;
-	int k, buf_size, method_index;
+	int i, k, buf_size, method_index;
 	guint32 debug_info_size;
 	guint8 *code;
 	char symbol [128];
@@ -2924,6 +2928,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	MonoJitInfo *jinfo = cfg->jit_info;
 	guint32 flags;
 	gboolean use_unwind_ops = FALSE;
+	GPtrArray *seq_points;
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
@@ -2941,14 +2946,16 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		debug_info_size = 0;
 	}
 
-	buf_size = header->num_clauses * 256 + debug_info_size + 1024;
+	buf_size = header->num_clauses * 256 + debug_info_size + 1024 + (cfg->seq_points ? (cfg->seq_points->len * 16) : 0);
 	p = buf = g_malloc (buf_size);
 
 #ifdef MONO_ARCH_HAVE_XP_UNWIND
 	use_unwind_ops = cfg->unwind_ops != NULL;
 #endif
 
-	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0);
+	seq_points = cfg->seq_points;
+
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0);
 
 	encode_value (jinfo->code_size, p, &p);
 	encode_value (flags, p, &p);
@@ -3007,6 +3014,22 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		 */
 		encode_method_ref (acfg, jinfo->method, p, &p);
 	}
+
+	if (seq_points) {
+		int il_offset, native_offset, last_il_offset, last_native_offset;
+
+		encode_value (seq_points->len, p, &p);
+		last_il_offset = last_native_offset = 0;
+		for (i = 0; i < seq_points->len; i += 2) {
+			il_offset = GPOINTER_TO_INT (g_ptr_array_index (seq_points, i));
+			native_offset = GPOINTER_TO_INT (g_ptr_array_index (seq_points, i + 1));
+			encode_value (il_offset - last_il_offset, p, &p);
+			encode_value (native_offset - last_native_offset, p, &p);
+			last_il_offset = il_offset;
+			last_native_offset = native_offset;
+		}
+	}
+		
 
 	g_assert (debug_info_size < buf_size);
 
@@ -3506,6 +3529,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "autoreg")) {
 			opts->autoreg = TRUE;
+		} else if (str_begins_with (arg, "soft-debug")) {
+			opts->soft_debug = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -4164,7 +4189,11 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [0] = mono_aot_str_hash (klass->name);
 		hashes [1] = mono_aot_str_hash (klass->name_space);
 	}
-	hashes [2] = mono_aot_str_hash (method->name);
+	if (method->wrapper_type == MONO_WRAPPER_STFLD || method->wrapper_type == MONO_WRAPPER_LDFLD || method->wrapper_type == MONO_WRAPPER_LDFLDA)
+		/* The method name includes a stringified pointer */
+		hashes [2] = 0;
+	else
+		hashes [2] = mono_aot_str_hash (method->name);
 	hashes [3] = method->wrapper_type;
 	hashes [4] = mono_aot_type_hash (sig->ret);
 	for (i = 0; i < sig->param_count; i++) {
@@ -5047,6 +5076,21 @@ collect_methods (MonoAotCompile *acfg)
 			method = wrapper;
 		}
 
+		/* FIXME: Some mscorlib methods don't have debug info */
+		/*
+		if (acfg->aot_opts.soft_debug && !method->wrapper_type) {
+			if (!((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+				  (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+				  (method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
+				  (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))) {
+				if (!mono_debug_lookup_method (method)) {
+					fprintf (stderr, "Method %s has no debug info, probably the .mdb file for the assembly is missing.\n", mono_method_full_name (method, TRUE));
+					exit (1);
+				}
+			}
+		}
+		*/
+
 		/* Since we add the normal methods first, their index will be equal to their zero based token index */
 		add_method_with_index (acfg, method, i, FALSE);
 		acfg->method_index ++;
@@ -5240,6 +5284,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 {
 	MonoImage *image = ass->image;
 	MonoAotCompile *acfg;
+	int i;
 
 	acfg = g_new0 (MonoAotCompile, 1);
 	acfg->methods = g_ptr_array_new ();
@@ -5247,6 +5292,9 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
 	acfg->patch_to_plt_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->patch_to_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
+	acfg->patch_to_got_offset_by_type = g_new0 (GHashTable*, MONO_PATCH_INFO_NUM);
+	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
+		acfg->patch_to_got_offset_by_type [i] = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->got_patches = g_ptr_array_new ();
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
 	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, g_free);
@@ -5292,6 +5340,9 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->image_hash);
 	g_hash_table_destroy (acfg->unwind_info_offsets);
 	g_hash_table_destroy (acfg->method_label_hash);
+	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
+		g_hash_table_destroy (acfg->patch_to_got_offset_by_type [i]);
+	g_free (acfg->patch_to_got_offset_by_type);
 	mono_mempool_destroy (acfg->mempool);
 	g_free (acfg);
 }
@@ -5330,6 +5381,18 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	if (acfg->aot_opts.static_link)
 		acfg->aot_opts.asm_writer = TRUE;
+
+	if (acfg->aot_opts.soft_debug) {
+		MonoDebugOptions *opt = mini_get_debug_options ();
+
+		opt->mdb_optimizations = TRUE;
+		opt->gen_seq_points = TRUE;
+
+		if (mono_debug_format == MONO_DEBUG_FORMAT_NONE) {
+			fprintf (stderr, "The soft-debug AOT option requires the --debug option.\n");
+			return 1;
+		}
+	}
 
 	load_profile_files (acfg);
 

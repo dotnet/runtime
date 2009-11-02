@@ -57,6 +57,7 @@
 #include "ir-emit.h"
 
 #include "jit-icalls.h"
+#include "debugger-agent.h"
 
 #define BRANCH_COST 100
 #define INLINE_LENGTH_LIMIT 20
@@ -5345,7 +5346,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	GSList *class_inits = NULL;
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
 	int context_used;
-	gboolean init_locals;
+	gboolean init_locals, seq_points;
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
@@ -5372,6 +5373,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	end = ip + header->code_size;
 	mono_jit_stats.cil_code_size += header->code_size;
 	init_locals = header->init_locals;
+
+	seq_points = cfg->gen_seq_points && cfg->method == method;
 
 	/* 
 	 * Methods without init_locals set could cause asserts in various passes
@@ -5781,6 +5784,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_slist_free (class_inits);
 				class_inits = NULL;
 			}
+		}
+
+		/*
+		 * Sequence points are points where the debugger can place a breakpoint.
+		 * Currently, we generate these automatically at points where the IL
+		 * stack is empty.
+		 */
+		if (seq_points && sp == stack_start) {
+			NEW_SEQ_POINT (cfg, ins, ip - header->code, TRUE);
+			MONO_ADD_INS (cfg->cbb, ins);
 		}
 
 		bblock->real_offset = cfg->real_offset;
@@ -8021,7 +8034,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						    field->offset);
 					iargs [4] = sp [1];
 
-					if (cfg->opt & MONO_OPT_INLINE) {
+					if (cfg->opt & MONO_OPT_INLINE || cfg->compile_aot) {
 						costs = inline_method (cfg, stfld_wrapper, mono_method_signature (stfld_wrapper), 
 								       iargs, ip, cfg->real_offset, dont_inline, TRUE);
 						g_assert (costs > 0);
@@ -9845,6 +9858,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
 			}
 		}
+	}
+
+	/* Add a sequence point for method entry/exit events */
+	if (seq_points) {
+		NEW_SEQ_POINT (cfg, ins, METHOD_ENTRY_IL_OFFSET, FALSE);
+		MONO_ADD_INS (init_localsbb, ins);
+		NEW_SEQ_POINT (cfg, ins, METHOD_EXIT_IL_OFFSET, FALSE);
+		MONO_ADD_INS (cfg->bb_exit, ins);
 	}
 
 	cfg->ip = NULL;

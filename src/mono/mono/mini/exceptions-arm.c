@@ -351,30 +351,24 @@ mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji
 	return mono_arch_get_throw_exception_generic (168, TRUE, FALSE, code_size, ji, aot);
 }	
 
-/* mono_arch_find_jit_info:
+/* 
+ * mono_arch_find_jit_info_ext:
  *
- * This function is used to gather information from @ctx. It return the 
- * MonoJitInfo of the corresponding function, unwinds one stack frame and
- * stores the resulting context into @new_ctx. It also stores a string 
- * describing the stack location into @trace (if not NULL), and modifies
- * the @lmf if necessary. @native_offset return the IP offset from the 
- * start of the function or -1 if that info is not available.
+ * See exceptions-amd64.c for docs;
  */
-MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji,
-			 MonoContext *ctx, MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
+gboolean
+mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+							 MonoJitInfo *ji, MonoContext *ctx, 
+							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 StackFrameInfo *frame)
 {
-	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 
-	/* Avoid costly table lookup during stack overflow */
-	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
-		ji = prev_ji;
-	else
-		ji = mini_jit_info_table_find (domain, ip, NULL);
+	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->ji = ji;
+	frame->managed = FALSE;
 
-	if (managed)
-		*managed = FALSE;
+	*new_ctx = *ctx;
 
 	if (ji != NULL) {
 		int i;
@@ -383,11 +377,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
 
-		*new_ctx = *ctx;
+		frame->type = FRAME_TYPE_MANAGED;
 
-		if (managed)
-			if (!ji->method->wrapper_type)
-				*managed = TRUE;
+		if (!ji->method->wrapper_type || ji->method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+			frame->managed = TRUE;
 
 		if (ji->from_aot)
 			unwind_info = mono_aot_get_unwind_info (ji, &unwind_info_len);
@@ -419,23 +412,41 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
-			*lmf = (*lmf)->previous_lmf;
+			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->eip--;
 
-		return ji;
+		return TRUE;
 	} else if (*lmf) {
-		
-		*new_ctx = *ctx;
 
+		if (((gsize)(*lmf)->previous_lmf) & 2) {
+			/* 
+			 * This LMF entry is created by the soft debug code to mark transitions to
+			 * managed code done during invokes.
+			 */
+			MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
+
+			g_assert (ext->debugger_invoke);
+
+			memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
+
+			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
+
+			frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
+
+			return TRUE;
+		}
+
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
+		
 		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL))) {
+			frame->ji = ji;
 		} else {
 			if (!(*lmf)->method)
-				return (gpointer)-1;
-			memset (res, 0, MONO_SIZEOF_JIT_INFO);
-			res->method = (*lmf)->method;
+				return FALSE;
+			frame->method = (*lmf)->method;
 		}
 
 		memcpy (&new_ctx->regs [0], &(*lmf)->iregs [4], sizeof (gulong) * MONO_SAVED_GREGS);
@@ -444,12 +455,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		new_ctx->eip = (*lmf)->iregs [13];
 		new_ctx->ebp = new_ctx->esp;
 
-		*lmf = (*lmf)->previous_lmf;
+		*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 
-		return ji ? ji : res;
+		return TRUE;
 	}
 
-	return NULL;
+	return FALSE;
 }
 
 void
@@ -459,6 +470,7 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	struct ucontext *uc = sigctx;
 
 	mctx->eip = uc->uc_mcontext.gregs [ARMREG_PC];
+	mctx->ebp = uc->uc_mcontext.gregs [ARMREG_SP];
 	mctx->esp = uc->uc_mcontext.gregs [ARMREG_SP];
 	memcpy (&mctx->regs, &uc->uc_mcontext.gregs [ARMREG_R4], sizeof (gulong) * 8);
 	/* memcpy (&mctx->fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);*/

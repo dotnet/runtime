@@ -65,6 +65,7 @@
 
 #include "debug-mini.h"
 #include "mini-gc.h"
+#include "debugger-agent.h"
 
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
 
@@ -2193,6 +2194,16 @@ mono_get_lmf_addr (void)
 #endif
 }
 
+void
+mono_set_lmf (MonoLMF *lmf)
+{
+#if defined(HAVE_KW_THREAD) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	mono_lmf = lmf;
+#endif
+
+	(*mono_get_lmf_addr ()) = lmf;
+}
+
 /* Called by native->managed wrappers */
 void
 mono_jit_thread_attach (MonoDomain *domain)
@@ -2489,6 +2500,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
+	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 		return (ji->type << 8) | (gssize)ji->data.target;
 	default:
 		return (ji->type << 8);
@@ -2533,7 +2545,6 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 
 		return e1->method == e2->method && e1->in_mrgctx == e2->in_mrgctx && e1->info_type == e2->info_type && mono_patch_info_equal (e1->data, e2->data);
 	}
-
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;
@@ -2767,6 +2778,15 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 		target = mono_create_monitor_exit_trampoline ();
 		break;
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+	case MONO_PATCH_INFO_SEQ_POINT_INFO:
+		if (!run_cctors)
+			/* AOT, not needed */
+			target = NULL;
+		else
+			target = mono_arch_get_seq_point_info (domain, code);
+		break;
+#endif
 	default:
 		g_assert_not_reached ();
 	}
@@ -3189,6 +3209,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->compile_aot = compile_aot;
 	cfg->skip_visibility = method->skip_visibility;
 	cfg->orig_method = method;
+	cfg->gen_seq_points = debug_options.gen_seq_points;
 	if (try_generic_shared)
 		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
 	cfg->compile_llvm = try_llvm;
@@ -3198,6 +3219,16 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->exception_type = MONO_EXCEPTION_GENERIC_SHARING_FAILED;
 		return cfg;
 	}
+
+	if (cfg->generic_sharing_context) {
+		MonoGenericContext object_context = mono_method_construct_object_context (method_to_compile);
+
+		method_to_register = mono_class_inflate_generic_method (method_to_compile, &object_context);
+	} else {
+		g_assert (method == method_to_compile);
+		method_to_register = method;
+	}
+	cfg->method_to_register = method_to_register;
 
 	/* No way to obtain the location info for 'this' */
 	if (try_generic_shared) {
@@ -3219,6 +3250,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		 * not yet initialized.
 		 */
 		cfg->disable_initlocals_opt = TRUE;
+
+		cfg->extend_live_ranges = TRUE;
 
 		/* Temporarily disable this when running in the debugger until we have support
 		 * for this in the debugger. */
@@ -3266,8 +3299,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
-		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
-			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
 		return cfg;
 	}
 
@@ -3379,8 +3410,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
-		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
-			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
 		/* cfg contains the details of the failure, so let the caller cleanup */
 		return cfg;
 	}
@@ -3785,15 +3814,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 				generic_info_size);
 	}
 
-	if (cfg->generic_sharing_context) {
-		MonoGenericContext object_context = mono_method_construct_object_context (method_to_compile);
-
-		method_to_register = mono_class_inflate_generic_method (method_to_compile, &object_context);
-	} else {
-		g_assert (method == method_to_compile);
-		method_to_register = method;
-	}
-
 	jinfo->method = method_to_register;
 	jinfo->code_start = cfg->native_code;
 	jinfo->code_size = cfg->code_len;
@@ -3916,6 +3936,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_save_xdebug_info (cfg);
 
 	mini_gc_create_gc_map (cfg);
+ 
+	if (cfg->seq_points) {
+		// FIXME: dynamic methods
+		mono_domain_lock (domain);
+		g_hash_table_insert (domain_jit_info (domain)->seq_points, method_to_register, cfg->seq_points);
+		mono_domain_unlock (domain);
+	}
 
 	if (!cfg->compile_aot) {
 		mono_domain_lock (cfg->domain);
@@ -3946,8 +3973,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
-	if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
-		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
 
 	return cfg;
 }
@@ -4009,12 +4034,13 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 {
 	MonoCompile *cfg;
 	gpointer code = NULL;
-	MonoJitInfo *info;
+	MonoJitInfo *jinfo, *info;
 	MonoVTable *vtable;
 	MonoException *ex = NULL;
+	guint32 prof_options;
 
 #ifdef MONO_USE_AOT_COMPILER
-	if ((opt & MONO_OPT_AOT) && !(mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)) {
+	if (opt & MONO_OPT_AOT) {
 		MonoDomain *domain = mono_domain_get ();
 
 		mono_class_init (method->klass);
@@ -4023,6 +4049,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			vtable = mono_class_vtable (domain, method->klass);
 			g_assert (vtable);
 			mono_runtime_class_init (vtable);
+
 			return code;
 		}
 	}
@@ -4172,6 +4199,10 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	if (ex) {
 		mono_destroy_compile (cfg);
 		*jit_ex = ex;
+
+		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
+			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
+
 		return NULL;
 	}
 
@@ -4203,6 +4234,10 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_domain_jit_code_hash_unlock (target_domain);
 	}
 
+	jinfo = cfg->jit_info;
+
+	prof_options = cfg->prof_options;
+
 	mono_destroy_compile (cfg);
 
 	if (domain_jit_info (target_domain)->jump_target_hash) {
@@ -4231,6 +4266,10 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		g_assert (exc);
 		mono_raise_exception (exc);
 	}
+
+	if (prof_options & MONO_PROFILE_JIT_COMPILATION)
+		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+
 	mono_runtime_class_init (vtable);
 	return code;
 }
@@ -4681,6 +4720,16 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 
 	GET_CONTEXT;
 
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+	if (mono_arch_is_single_step_event (info, ctx)) {
+		mono_debugger_agent_single_step_event (ctx);
+		return;
+	} else if (mono_arch_is_breakpoint_event (info, ctx)) {
+		mono_debugger_agent_breakpoint_hit (ctx);
+		return;
+	}
+#endif
+
 	/* The thread might no be registered with the runtime */
 	if (!mono_domain_get () || !jit_tls) {
 		if (mono_chain_signal (SIG_HANDLER_PARAMS))
@@ -4887,6 +4936,8 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->static_rgctx_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->runtime_invoke_hash = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
+	info->seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	domain->runtime_info = info;
 }
@@ -4943,6 +4994,9 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
 	g_hash_table_destroy (info->runtime_invoke_hash);
+
+	if (info->agent_info)
+		mono_debugger_agent_free_domain_info (domain);
 
 	g_free (domain->runtime_info);
 	domain->runtime_info = NULL;
@@ -5030,6 +5084,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (default_opt & MONO_OPT_AOT)
 		mono_aot_init ();
+
+	mono_debugger_agent_init ();
 
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	mono_set_generic_sharing_supported (TRUE);
@@ -5494,6 +5550,12 @@ mono_set_defaults (int verbose_level, guint32 opts)
 	mini_verbose = verbose_level;
 	default_opt = opts;
 	default_opt_set = TRUE;
+}
+
+void
+mono_disable_optimizations (guint32 opts)
+{
+	default_opt &= ~opts;
 }
 
 /*

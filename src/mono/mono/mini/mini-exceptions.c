@@ -48,6 +48,7 @@
 #include "mini.h"
 #include "debug-mini.h"
 #include "trace.h"
+#include "debugger-agent.h"
 
 #ifndef MONO_ARCH_CONTEXT_DEF
 #define MONO_ARCH_CONTEXT_DEF
@@ -187,6 +188,69 @@ mono_get_throw_corlib_exception (void)
 	return throw_corlib_exception_func;
 }
 
+#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
+
+/*
+ * find_jit_info_no_ext:
+ *
+ * If the target has the find_jit_info_ext version of this function, define the old
+ * version here which translates between the old and new APIs.
+ */
+static MonoJitInfo *
+find_jit_info_no_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
+			   MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
+{
+	StackFrameInfo frame;
+	MonoJitInfo *ji;
+	gboolean err;
+	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
+
+	/* Avoid costly table lookup during stack overflow */
+	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
+		ji = prev_ji;
+	else
+		ji = mini_jit_info_table_find (domain, ip, NULL);
+
+	if (managed)
+		*managed = FALSE;
+
+	err = mono_arch_find_jit_info_ext (domain, jit_tls, ji, ctx, new_ctx, lmf, &frame);
+	if (!err)
+		return (gpointer)-1;
+
+	/* Convert between the new and the old APIs */
+	switch (frame.type) {
+	case FRAME_TYPE_MANAGED:
+		if (managed)
+			*managed = TRUE;
+		return ji;
+	case FRAME_TYPE_MANAGED_TO_NATIVE:
+		if (frame.ji)
+			return frame.ji;
+		else {
+			memset (res, 0, sizeof (MonoJitInfo));
+			res->method = frame.method;
+			return res;
+		}
+	case FRAME_TYPE_DEBUGGER_INVOKE: {
+		MonoContext tmp_ctx;
+
+		/*
+		 * The normal exception handling code can't handle this frame, so just
+		 * skip it.
+		 */
+		ji = find_jit_info_no_ext (domain, jit_tls, res, NULL, new_ctx, &tmp_ctx, lmf, managed);
+		memcpy (new_ctx, &tmp_ctx, sizeof (MonoContext));
+		return ji;
+	}
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
+#endif
+
 /* mono_find_jit_info:
  *
  * This function is used to gather information from @ctx. It return the 
@@ -214,7 +278,11 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	if (managed)
 		*managed = FALSE;
 
+#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
+	ji = find_jit_info_no_ext (domain, jit_tls, res, prev_ji, ctx, new_ctx, lmf, &managed2);
+#else
 	ji = mono_arch_find_jit_info (domain, jit_tls, res, prev_ji, ctx, new_ctx, lmf, &managed2);
+#endif
 
 	if (ji == (gpointer)-1)
 		return ji;
@@ -254,6 +322,76 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 
 	return ji;
 }
+
+#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
+
+/*
+ * mono_find_jit_info_ext:
+ *
+ *   A version of mono_find_jit_info which returns all data in the StackFrameInfo
+ * structure.
+ */
+static gboolean
+mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+						MonoJitInfo *prev_ji, MonoContext *ctx,
+						MonoContext *new_ctx, char **trace, MonoLMF **lmf,
+						StackFrameInfo *frame)
+{
+	gboolean err;
+	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
+	MonoJitInfo *ji;
+	MonoDomain *target_domain;
+
+	if (trace)
+		*trace = NULL;
+
+	/* Avoid costly table lookup during stack overflow */
+	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
+		ji = prev_ji;
+	else
+		ji = mini_jit_info_table_find (domain, ip, &target_domain);
+
+	if (!target_domain)
+		target_domain = domain;
+
+	err = mono_arch_find_jit_info_ext (target_domain, jit_tls, ji, ctx, new_ctx, lmf, frame);
+	if (!err)
+		return FALSE;
+
+	frame->native_offset = -1;
+	frame->domain = target_domain;
+
+	ji = frame->ji;
+
+	if (ji && (frame->managed || ji->method->wrapper_type)) {
+		const char *real_ip, *start;
+
+		start = (const char *)ji->code_start;
+		if (!frame->managed)
+			/* ctx->ip points into native code */
+			real_ip = (const char*)MONO_CONTEXT_GET_IP (new_ctx);
+		else
+			real_ip = (const char*)ip;
+
+		if ((real_ip >= start) && (real_ip <= start + ji->code_size))
+			frame->native_offset = real_ip - start;
+		else
+			frame->native_offset = -1;
+
+		if (trace)
+			*trace = mono_debug_print_stack_frame (ji->method, frame->native_offset, domain);
+	} else {
+		if (trace && frame->method) {
+			char *fname = mono_method_full_name (frame->method, TRUE);
+			*trace = g_strdup_printf ("in (unmanaged) %s", fname);
+			g_free (fname);
+		}
+	}
+
+	return TRUE;
+}
+
+#endif /* MONO_ARCH_HAVE_FIND_JIT_INFO_EXT */
 
 static gpointer
 get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
@@ -561,6 +699,72 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 {
 	mono_jit_walk_stack_from_ctx (func, NULL, do_il_offset, user_data);
 }
+
+void
+mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, gboolean do_il_offset, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data)
+{
+	MonoJitTlsData *jit_tls = thread->jit_data;
+	gint il_offset;
+	MonoContext ctx, new_ctx;
+	StackFrameInfo frame;
+#ifndef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
+	gint native_offset;
+	gboolean managed;
+	MonoJitInfo *ji, rji;
+#else
+	gboolean res;
+#endif
+	
+	MONO_ARCH_CONTEXT_DEF
+
+	mono_arch_flush_register_windows ();
+
+	if (start_ctx) {
+		memcpy (&ctx, start_ctx, sizeof (MonoContext));
+	} else {
+#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
+		MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
+#else
+		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, mono_jit_walk_stack_from_ctx);
+#endif
+		g_assert (thread == mono_thread_internal_current ());
+	}
+
+	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
+#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
+		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
+		if (!res)
+			return;
+#else
+		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		g_assert (ji);
+		frame.type = FRAME_TYPE_MANAGED;
+		frame.ji = ji;
+		frame.managed = managed;
+		frame.native_offset = native_offset;
+
+		if (ji == (gpointer)-1)
+			return;
+#endif
+
+		if (do_il_offset && frame.ji) {
+			MonoDebugSourceLocation *source;
+
+			source = mono_debug_lookup_source_location (frame.ji->method, frame.native_offset, domain);
+			il_offset = source ? source->il_offset : -1;
+			mono_debug_free_source_location (source);
+		} else
+			il_offset = -1;
+
+		frame.il_offset = il_offset;
+
+		if (func (&frame, &ctx, user_data))
+			return;
+		
+		ctx = new_ctx;
+	}
+}
+
 
 MonoBoolean
 ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
@@ -922,6 +1126,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		obj = (MonoObject *)ex;
 	} 
 
+	if (!test_only)
+		mono_debugger_agent_handle_exception (obj, ctx);
+
 	/*
 	 * Allocate a new exception object instead of the preconstructed ones.
 	 */
@@ -1282,6 +1489,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 {
 	if (!test_only)
 		mono_perfcounters->exceptions_thrown++;
+
 	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, NULL, NULL);
 }
 

@@ -149,6 +149,12 @@ typedef struct
 	GHashTable *method_code_hash;
 	/* Maps methods to a RuntimeInvokeInfo structure */
 	GHashTable *runtime_invoke_hash;
+	/* Maps MonoMethod to a GPtrArray containing sequence point locations */
+	GHashTable *seq_points;
+	/* Debugger agent data */
+	gpointer agent_info;
+	/* Maps MonoMethod to an arch-specific structure */
+	GHashTable *arch_seq_points;
 } MonoJitDomainInfo;
 
 typedef struct {
@@ -162,6 +168,42 @@ typedef struct {
 typedef struct {
 	int dummy;
 } MonoDynCallInfo;
+
+/*
+ * Possible frame types returned by the stack walker.
+ */
+typedef enum {
+	/* Normal managed frames */
+	FRAME_TYPE_MANAGED = 0,
+	/* Pseudo frame marking the start of a method invocation done by the soft debugger */
+	FRAME_TYPE_DEBUGGER_INVOKE = 1,
+	/* Frame for transitioning to native code */
+	FRAME_TYPE_MANAGED_TO_NATIVE = 2,
+	FRAME_TYPE_SENTINEL = 3
+} StackFrameType;
+
+/*
+ * Information about a stack frame
+ */
+typedef struct {
+	StackFrameType type;
+	/* 
+	 * For FRAME_TYPE_MANAGED.
+	 * For FRAME_TYPE_MANAGED_TO_NATIVE, the ji for the method which transitioned to
+	 * native code, if there is one, else NULL.
+	 */
+	MonoJitInfo *ji;
+	/*
+	 * For FRAME_TYPE_MANAGED_TO_NATIVE, it is either the method which transitioned 
+	 * to native code, or the method which was JITted.
+	 */
+	MonoMethod *method;
+	/* The domain containing the code executed by this frame */
+	MonoDomain *domain;
+	gboolean managed;
+	int native_offset;
+	int il_offset;
+} StackFrameInfo;
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
@@ -617,6 +659,7 @@ enum {
 	/* temp local created by a DUP: used only within a BB */
 	MONO_INST_IS_TEMP    = 1,
 	MONO_INST_INIT       = 1, /* in localloc */
+	MONO_INST_SINGLE_STEP_LOC = 1, /* in SEQ_POINT */
 	MONO_INST_IS_DEAD    = 2,
 	MONO_INST_TAILCALL   = 4,
 	MONO_INST_VOLATILE   = 4,
@@ -627,7 +670,7 @@ enum {
 	MONO_INST_DEFINITION_HAS_SIDE_EFFECTS = 8,
 	/* the address of the variable has been taken */
 	MONO_INST_INDIRECT   = 16,
-	MONO_INST_NORANGECHECK   = 16
+	MONO_INST_NORANGECHECK   = 16,
 };
 
 #define inst_c0 data.op[0].const_val
@@ -902,6 +945,7 @@ typedef struct {
 	MonoInst        **args;
 	MonoType        **arg_types;
 	MonoMethod      *current_method; /* The method currently processed by method_to_ir () */
+	MonoMethod      *method_to_register; /* The method to register in JIT info tables */
 	MonoGenericContext *generic_context;
 
 	/* 
@@ -980,6 +1024,7 @@ typedef struct {
 	guint            uses_vtable_reg : 1;
 	guint            uses_simd_intrinsics : 1;
 	guint            keep_cil_nops : 1;
+	guint            gen_seq_points : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;
@@ -1035,6 +1080,14 @@ typedef struct {
 
 	/* Used to implement dyn_call */
 	MonoInst *dyn_call_var;
+
+	/*
+	 * List of sequence points represented as IL offset+native offset pairs.
+	 * Allocated using glib.
+	 * IL offset can be -1 or 0xffffff to refer to the sequence points
+	 * inside the prolog and epilog used to implement method entry/exit events.
+	 */
+	GPtrArray *seq_points;
 
 	/* Used by AOT */
 	guint32 got_offset;
@@ -1241,6 +1294,7 @@ typedef struct {
 	gboolean suspend_on_sigsegv;
 	gboolean dyn_runtime_invoke;
 	gboolean gdb;
+	gboolean gen_seq_points;
 } MonoDebugOptions;
 
 enum {
@@ -1308,6 +1362,7 @@ MonoDebugOptions *mini_get_debug_options   (void) MONO_INTERNAL;
 char*       mono_get_runtime_build_info    (void) MONO_INTERNAL;
 
 /* helper methods */
+void      mono_disable_optimizations       (guint32 opts) MONO_INTERNAL;
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token) MONO_INTERNAL;
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context) MONO_INTERNAL;
 MonoInst* mono_find_spvar_for_region        (MonoCompile *cfg, int region) MONO_INTERNAL;
@@ -1371,6 +1426,7 @@ gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *met
 gpointer  mono_jit_compile_method           (MonoMethod *method) MONO_INTERNAL;
 MonoLMF * mono_get_lmf                      (void) MONO_INTERNAL;
 MonoLMF** mono_get_lmf_addr                 (void) MONO_INTERNAL;
+void      mono_set_lmf                      (MonoLMF *lmf) MONO_INTERNAL;
 void      mono_jit_thread_attach            (MonoDomain *domain);
 guint32   mono_get_jit_tls_key              (void) MONO_INTERNAL;
 gint32    mono_get_jit_tls_offset           (void) MONO_INTERNAL;
@@ -1604,6 +1660,19 @@ LLVMCallInfo* mono_arch_get_llvm_call_info      (MonoCompile *cfg, MonoMethodSig
 guint8*   mono_arch_emit_load_got_addr          (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji) MONO_INTERNAL;
 guint8*   mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target) MONO_INTERNAL;
 
+/* Soft Debug support */
+void      mono_arch_set_breakpoint              (MonoJitInfo *ji, guint8 *ip) MONO_INTERNAL;
+void      mono_arch_clear_breakpoint            (MonoJitInfo *ji, guint8 *ip) MONO_INTERNAL;
+void      mono_arch_start_single_stepping       (void) MONO_INTERNAL;
+void      mono_arch_stop_single_stepping        (void) MONO_INTERNAL;
+gboolean  mono_arch_is_single_step_event        (siginfo_t *info, void *sigctx) MONO_INTERNAL;
+gboolean  mono_arch_is_breakpoint_event (siginfo_t *info, void *sigctx) MONO_INTERNAL;
+guint8*   mono_arch_get_ip_for_single_step      (MonoJitInfo *ji, MonoContext *ctx) MONO_INTERNAL;
+guint8*   mono_arch_get_ip_for_breakpoint       (MonoJitInfo *ji, MonoContext *ctx) MONO_INTERNAL;
+void     mono_arch_skip_breakpoint              (MonoContext *ctx) MONO_INTERNAL;
+void     mono_arch_skip_single_step             (MonoContext *ctx) MONO_INTERNAL;
+gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code) MONO_INTERNAL;
+
 MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain, 
 						 MonoJitTlsData *jit_tls, 
 						 MonoJitInfo *res, 
@@ -1612,6 +1681,11 @@ MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain,
 						 MonoContext *new_ctx, 
 						 MonoLMF **lmf, 
 						 gboolean *managed) MONO_INTERNAL;
+gboolean
+mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+							 MonoJitInfo *ji, MonoContext *ctx, 
+							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 StackFrameInfo *frame_info) MONO_INTERNAL;
 gpointer mono_arch_get_call_filter              (void) MONO_INTERNAL;
 gpointer mono_arch_get_restore_context          (void) MONO_INTERNAL;
 gpointer mono_arch_get_call_filter_full         (guint32 *code_size, MonoJumpInfo **ji, gboolean aot) MONO_INTERNAL;
@@ -1658,6 +1732,10 @@ gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain 
 void    mono_arch_notify_pending_exc            (void) MONO_INTERNAL;
 
 /* Exception handling */
+
+/* Same as MonoStackWalk, but pass the context/frame type as well */
+typedef gboolean (*MonoJitStackWalk)            (StackFrameInfo *frame, MonoContext *ctx, gpointer data);
+
 void     mono_exceptions_init                   (void) MONO_INTERNAL;
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
 						 gpointer original_ip, gboolean test_only) MONO_INTERNAL;
@@ -1665,10 +1743,11 @@ void     mono_handle_native_sigsegv             (int signal, void *sigctx) MONO_
 void     mono_print_thread_dump                 (void *sigctx);
 void     mono_jit_walk_stack                    (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) MONO_INTERNAL;
 void     mono_jit_walk_stack_from_ctx           (MonoStackWalk func, MonoContext *ctx, gboolean do_il_offset, gpointer user_data) MONO_INTERNAL;
+void     mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, gboolean do_il_offset, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data) MONO_INTERNAL;
 void     mono_setup_altstack                    (MonoJitTlsData *tls) MONO_INTERNAL;
 void     mono_free_altstack                     (MonoJitTlsData *tls) MONO_INTERNAL;
 gpointer mono_altstack_restore_prot             (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
-MonoJitInfo* mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domain) MONO_INTERNAL;
+MonoJitInfo* mini_jit_info_table_find           (MonoDomain *domain, char *addr, MonoDomain **out_domain) MONO_INTERNAL;
 
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed) MONO_INTERNAL;
 

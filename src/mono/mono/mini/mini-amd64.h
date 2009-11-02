@@ -136,6 +136,8 @@ struct MonoLMF {
 	 * If the lowest bit is set to 1, then this LMF has the rip field set. Otherwise,
 	 * the rip field is not set, and the rsp field points to the stack location where
 	 * the caller ip is saved.
+	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
+	 * the other fields are not valid.
 	 */
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
@@ -222,6 +224,15 @@ typedef struct {
 	} while (0)
 
 #endif
+
+/*
+ * This structure is an extension of MonoLMF and contains extra information.
+ */
+typedef struct {
+	struct MonoLMF lmf;
+	gboolean debugger_invoke;
+	MonoContext ctx; /* if debugger_invoke is TRUE */
+} MonoLMFExt;
 
 /*
  * some icalls like mono_array_new_va needs to be called using a different 
@@ -343,6 +354,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
+#define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
+#define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 
 #if !defined(PLATFORM_WIN32) || defined(__sun)
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1

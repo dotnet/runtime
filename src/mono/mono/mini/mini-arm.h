@@ -93,6 +93,10 @@ mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsign
 
 /* keep the size of the structure a multiple of 8 */
 struct MonoLMF {
+	/* 
+	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
+	 * the other fields are not valid.
+	 */
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
@@ -122,6 +126,7 @@ typedef struct {
 
 typedef struct MonoCompileArch {
 	int dummy;
+	gpointer seq_point_info_var, ss_trigger_page_var;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
@@ -158,6 +163,9 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1
 #define MONO_ARCH_DYN_CALL_PARAM_AREA 24
 
+#define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
+#define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
+
 /* ARM doesn't have too many registers, so we have to use a callee saved one */
 #define MONO_ARCH_RGCTX_REG ARMREG_V5
 /* First argument reg */
@@ -187,6 +195,15 @@ typedef struct MonoCompileArch {
 	#define UCONTEXT_REG_SP(ctx) ((ctx)->sig_ctx.arm_sp)
 	#define UCONTEXT_REG_R4(ctx) ((ctx)->sig_ctx.arm_r4)
 #endif
+
+/*
+ * This structure is an extension of MonoLMF and contains extra information.
+ */
+typedef struct {
+	struct MonoLMF lmf;
+	gboolean debugger_invoke;
+	MonoContext ctx; /* if debugger_invoke is TRUE */
+} MonoLMFExt;
 
 void
 mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
