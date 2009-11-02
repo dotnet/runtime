@@ -1,3 +1,7 @@
+2009-11-02  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/MoonlightAssemblyStep.cs: adapt to the MT linker merge.
+
 2009-10-14  Raja R Harinath  <harinath@hurrynot.org>
 
 	* Makefile (CECIL, LINKER): Point to profile-specific assembly.
