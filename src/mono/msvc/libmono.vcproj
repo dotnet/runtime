@@ -6153,6 +6153,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\mono\mini\debugger-agent.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\mini\debugger-agent.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\mini\declsec.c"
 				>
 			</File>
