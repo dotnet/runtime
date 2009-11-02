@@ -1405,6 +1405,9 @@ mono_debugger_agent_thread_interrupt (MonoJitInfo *ji)
 {
 	DebuggerTlsData *tls;
 
+	if (!agent_config.enabled)
+		return FALSE;
+
 	tls = TlsGetValue (debugger_tls_id);
 	if (!tls)
 		return FALSE;
