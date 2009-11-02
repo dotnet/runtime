@@ -5197,11 +5197,6 @@ mono_debugger_agent_cleanup (void)
 }
 
 void
-mono_debugger_agent_event (MonoDebuggerAgentEvent event, gpointer arg)
-{
-}
-
-void
 mono_debugger_agent_breakpoint_hit (void *sigctx)
 {
 }
