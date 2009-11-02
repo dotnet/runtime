@@ -1661,6 +1661,7 @@ guint8*   mono_arch_emit_load_got_addr          (guint8 *start, guint8 *code, Mo
 guint8*   mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target) MONO_INTERNAL;
 
 /* Soft Debug support */
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 void      mono_arch_set_breakpoint              (MonoJitInfo *ji, guint8 *ip) MONO_INTERNAL;
 void      mono_arch_clear_breakpoint            (MonoJitInfo *ji, guint8 *ip) MONO_INTERNAL;
 void      mono_arch_start_single_stepping       (void) MONO_INTERNAL;
@@ -1672,6 +1673,7 @@ guint8*   mono_arch_get_ip_for_breakpoint       (MonoJitInfo *ji, MonoContext *c
 void     mono_arch_skip_breakpoint              (MonoContext *ctx) MONO_INTERNAL;
 void     mono_arch_skip_single_step             (MonoContext *ctx) MONO_INTERNAL;
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code) MONO_INTERNAL;
+#endif
 
 MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain, 
 						 MonoJitTlsData *jit_tls, 
