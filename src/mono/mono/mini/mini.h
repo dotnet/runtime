@@ -1483,6 +1483,7 @@ gpointer          mono_create_monitor_enter_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_monitor_exit_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr) MONO_INTERNAL;
 gpointer          mono_create_llvm_vcall_trampoline (MonoMethod *method) MONO_INTERNAL;
+gpointer          mono_create_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offset) MONO_INTERNAL;
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 guint32           mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 gpointer          mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp) MONO_INTERNAL;
@@ -1640,6 +1641,7 @@ void     mono_arch_save_unwind_info             (MonoCompile *cfg) MONO_INTERNAL
 void     mono_arch_register_lowlevel_calls      (void) MONO_INTERNAL;
 gpointer mono_arch_get_unbox_trampoline         (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr) MONO_INTERNAL;
 gpointer mono_arch_get_static_rgctx_trampoline  (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr) MONO_INTERNAL;
+gpointer  mono_arch_get_llvm_imt_trampoline     (MonoDomain *domain, MonoMethod *method, int vt_offset) MONO_INTERNAL;
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_patch_plt_entry              (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, mgreg_t *regs) MONO_INTERNAL;

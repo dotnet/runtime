@@ -574,6 +574,9 @@ mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
+	if (mono_method_needs_static_rgctx_invoke (m, 0))
+		addr = mono_create_static_rgctx_trampoline (m, addr);
+
 	if (m->klass->valuetype)
 		addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr, need_rgctx_tramp);
 
@@ -1315,6 +1318,19 @@ mono_create_llvm_vcall_trampoline (MonoMethod *method)
 	mono_domain_unlock (domain);
 
 	return res;
+}
+
+/*
+ * mono_create_llvm_imt_trampoline:
+ *
+ *   LLVM compiled code can't pass in the IMT argument, so we use this trampoline, which
+ * sets the IMT argument, then branches to the contents of the vtable slot given by
+ * vt_offset in the vtable which is obtained from the argument list.
+ */
+gpointer
+mono_create_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offset)
+{
+	return mono_arch_get_llvm_imt_trampoline (domain, m, vt_offset);
 }
 #endif
 
