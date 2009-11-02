@@ -103,21 +103,22 @@ mono_win32_get_handle_stackoverflow (void)
 static void 
 win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, struct sigcontext *sctx) 
 {
-    SYSTEM_INFO si;
-    DWORD page_size;
+	SYSTEM_INFO si;
+	DWORD page_size;
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji, rji;
+	MonoJitInfo rji;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;		
 	MonoContext initial_ctx;
 	MonoContext ctx;
 	guint32 free_stack = 0;
+	StackFrameInfo frame;
 
 	/* convert sigcontext to MonoContext (due to reuse of stack walking helpers */
 	mono_arch_sigctx_to_monoctx (sctx, &ctx);
 	
 	/* get our os page size */
-    GetSystemInfo(&si);
+	GetSystemInfo(&si);
 	page_size = si.dwPageSize;
 
 	/* Let's walk the stack to recover
@@ -132,19 +133,19 @@ win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, struct sigcontext *sctx)
 	do {
 		MonoContext new_ctx;
 
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, &ctx, &new_ctx, &lmf, NULL);
-		if (!ji) {
+		mono_arch_find_jit_info_ext (domain, jit_tls, &rji, &rji, &ctx, &new_ctx, &lmf, &frame);
+		if (!frame.ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
 		}
 
-		if (ji != (gpointer)-1) {
+		if (frame.ji != (gpointer)-1) {
 			free_stack = (guint8*)(MONO_CONTEXT_GET_BP (&ctx)) - (guint8*)(MONO_CONTEXT_GET_BP (&initial_ctx));
 		}
 
 		/* todo: we should call abort if ji is -1 */
 		ctx = new_ctx;
-	} while (free_stack < 64 * 1024 && ji != (gpointer) -1);
+	} while (free_stack < 64 * 1024 && frame.ji != (gpointer) -1);
 
 	/* convert into sigcontext to be used in mono_arch_handle_exception */
 	mono_arch_monoctx_to_sigctx (&ctx, sctx);
