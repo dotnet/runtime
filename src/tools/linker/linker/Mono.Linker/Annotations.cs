@@ -26,6 +26,9 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.Collections;
+
 using Mono.Cecil;
 
 namespace Mono.Linker {
@@ -36,8 +39,11 @@ namespace Mono.Linker {
 		private static readonly object _markedKey = new object ();
 		private static readonly object _processedKey = new object ();
 		private static readonly object _preservedKey = new object ();
+		private static readonly object _preservedMethodsKey = new object ();
 		private static readonly object _publicKey = new object ();
 		private static readonly object _symbolsKey = new object ();
+		private static readonly object _overrideKey = new object ();
+		private static readonly object _baseKey = new object ();
 
 		public static AssemblyAction GetAction (AssemblyDefinition assembly)
 		{
@@ -46,7 +52,8 @@ namespace Mono.Linker {
 
 		public static MethodAction GetAction (MethodDefinition method)
 		{
-			return (MethodAction) GetAction (AsProvider (method));
+			var action = GetAction (AsProvider (method));
+			return action == null ? MethodAction.Nothing : (MethodAction) action;
 		}
 
 		static object GetAction (IAnnotationProvider provider)
@@ -132,6 +139,54 @@ namespace Mono.Linker {
 		public static void SetHasSymbols (AssemblyDefinition assembly)
 		{
 			AsProvider (assembly).Annotations [_symbolsKey] = _symbolsKey;
+		}
+
+		public static void AddOverride (MethodDefinition @base, MethodDefinition @override)
+		{
+			ArrayList methods = (ArrayList) GetOverrides (@base);
+			if (methods == null) {
+				methods = new ArrayList ();
+				AsProvider (@base).Annotations.Add (_overrideKey, methods);
+			}
+
+			methods.Add (@override);
+		}
+
+		public static IList GetOverrides (MethodDefinition method)
+		{
+			return (IList) AsProvider (method).Annotations [_overrideKey];
+		}
+
+		public static void AddBaseMethod (MethodDefinition method, MethodDefinition @base)
+		{
+			ArrayList methods = (ArrayList) GetBaseMethods (method);
+			if (methods == null) {
+				methods = new ArrayList ();
+				AsProvider (method).Annotations.Add (_baseKey, methods);
+			}
+
+			methods.Add (@base);
+		}
+
+		public static IList GetBaseMethods (MethodDefinition method)
+		{
+			return (IList) AsProvider (method).Annotations [_baseKey];
+		}
+
+		public static IList GetPreservedMethods (TypeDefinition type)
+		{
+			return (IList) AsProvider (type).Annotations [_preservedMethodsKey];
+		}
+
+		public static void AddPreservedMethod (TypeDefinition type, MethodDefinition method)
+		{
+			ArrayList methods = (ArrayList) GetPreservedMethods (type);
+			if (methods == null) {
+				methods = new ArrayList ();
+				AsProvider (type).Annotations.Add (_preservedMethodsKey, methods);
+			}
+
+			methods.Add (method);
 		}
 
 		private Annotations ()

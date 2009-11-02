@@ -163,7 +163,7 @@ namespace Mono.Linker {
 
 			foreach (string custom_step in custom_steps)
 				AddCustomStep (p, custom_step);
-			
+
 			p.AddStepAfter (typeof (LoadReferencesStep), new LoadI18nAssemblies (assemblies));
 
 			p.Process (context);
@@ -310,6 +310,7 @@ namespace Mono.Linker {
 			Pipeline p = new Pipeline ();
 			p.AppendStep (new LoadReferencesStep ());
 			p.AppendStep (new BlacklistStep ());
+			p.AppendStep (new TypeMapStep ());
 			p.AppendStep (new MarkStep ());
 			p.AppendStep (new SweepStep ());
 			p.AppendStep (new CleanStep ());

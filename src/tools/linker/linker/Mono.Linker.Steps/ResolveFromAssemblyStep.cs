@@ -54,7 +54,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		static void ProcessLibrary (AssemblyDefinition assembly)
+		public static void ProcessLibrary (AssemblyDefinition assembly)
 		{
 			Annotations.SetAction (assembly, AssemblyAction.Copy);
 

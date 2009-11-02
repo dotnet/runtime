@@ -31,6 +31,7 @@ namespace Mono.Linker {
 	public enum AssemblyAction {
 		Skip,
 		Copy,
-		Link
+		Link,
+		Delete,
 	}
 }
