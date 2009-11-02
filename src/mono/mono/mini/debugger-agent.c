@@ -42,6 +42,10 @@
 #include "debugger-agent.h"
 #include "mini.h"
 
+#ifndef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+#define DISABLE_DEBUGGER_AGENT 1
+#endif
+
 #ifndef DISABLE_DEBUGGER_AGENT
 
 typedef struct {
