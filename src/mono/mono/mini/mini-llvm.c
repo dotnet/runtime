@@ -91,7 +91,14 @@ llvm_ins_info[] = {
 
 #define LLVM_INS_INFO(opcode) (&llvm_ins_info [((opcode) - OP_START - 1) * 4])
 
+#if 1
+#define TRACE_FAILURE(msg) do { printf ("%s\n", msg); } while (0)
+#else
+#define TRACE_FAILURE(msg)
+#endif
+
 #define LLVM_FAILURE(ctx, reason) do { \
+	TRACE_FAILURE (reason); \
 	(ctx)->cfg->exception_message = g_strdup (reason); \
 	(ctx)->cfg->disable_llvm = TRUE; \
 	goto FAILURE; \
@@ -1903,6 +1910,23 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = v;
 				break;
 			}
+			case OP_LOCALLOC: {
+				LLVMValueRef v;
+
+				v = mono_llvm_build_alloca (builder, LLVMInt8Type (), lhs, MONO_ARCH_FRAME_ALIGNMENT, "");
+
+				if (ins->flags & MONO_INST_INIT) {
+					LLVMValueRef args [4];
+
+					args [0] = v;
+					args [1] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
+					args [2] = LLVMBuildAnd (builder, LLVMBuildAdd (builder, lhs, LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT - 1, FALSE), ""), LLVMConstInt (LLVMInt32Type (), ~ (MONO_ARCH_FRAME_ALIGNMENT - 1), FALSE), "");
+					args [3] = LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT, FALSE);
+					LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memset.i32"), args, 4, "");
+				}
+				break;
+			}
+
 			case OP_LOADI1_MEMBASE:
 			case OP_LOADU1_MEMBASE:
 			case OP_LOADI2_MEMBASE:

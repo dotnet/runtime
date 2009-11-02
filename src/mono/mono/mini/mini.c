@@ -3205,6 +3205,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->disable_llvm = TRUE;
 	}
 
+	if (cfg->method->save_lmf) {
+		cfg->exception_message = g_strdup ("lmf");
+		cfg->disable_llvm = TRUE;
+	}
+
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mono_debug_using_mono_debugger () || debug_options.mdb_optimizations) {
 		cfg->disable_reuse_registers = TRUE;
