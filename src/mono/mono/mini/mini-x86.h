@@ -254,6 +254,7 @@ typedef struct {
 #endif
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
+#define MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE 1
 
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)

@@ -78,6 +78,33 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 	return start;
 }
 
+gpointer
+mono_arch_get_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offset)
+{
+	guint8 *code, *start;
+	int buf_len;
+	int this_reg;
+
+	buf_len = 32;
+
+	start = code = mono_domain_code_reserve (domain, buf_len);
+
+	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (m), NULL, NULL);
+
+	/* Set imt arg */
+	x86_mov_reg_imm (code, MONO_ARCH_IMT_REG, m);
+	/* Load vtable address */
+	x86_mov_reg_membase (code, X86_EAX, this_reg, 0, 8);
+	x86_jump_membase (code, X86_EAX, vt_offset);
+	x86_ret (code);
+
+	g_assert ((code - start) < buf_len);
+
+	mono_arch_flush_icache (start, code - start);
+
+	return start;
+}
+
 void
 mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 {
