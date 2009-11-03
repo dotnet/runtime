@@ -1617,8 +1617,9 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
+/*field_image is the image to which the eventual custom mods have been encoded against*/
 static guint32
-fieldref_encode_signature (MonoDynamicImage *assembly, MonoType *type)
+fieldref_encode_signature (MonoDynamicImage *assembly, MonoImage *field_image, MonoType *type)
 {
 	SigBuffer buf;
 	guint32 idx, i;
@@ -1630,14 +1631,14 @@ fieldref_encode_signature (MonoDynamicImage *assembly, MonoType *type)
 	
 	sigbuffer_add_value (&buf, 0x06);
 	/* encode custom attributes before the type */
-	/* FIXME: This should probably go in encode_type () */
 	if (type->num_mods) {
 		for (i = 0; i < type->num_mods; ++i) {
+			MonoClass *class = mono_class_get (field_image, type->modifiers [i].token);
 			if (type->modifiers [i].required)
 				sigbuffer_add_byte (&buf, MONO_TYPE_CMOD_REQD);
 			else
 				sigbuffer_add_byte (&buf, MONO_TYPE_CMOD_OPT);
-			sigbuffer_add_value (&buf, type->modifiers [i].token);
+			sigbuffer_add_value (&buf, mono_image_typedef_or_ref (assembly, &class->byval_arg));
 		}
 	}
 	encode_type (assembly, type, &buf);
@@ -2624,7 +2625,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 	}
 	token = mono_image_get_memberref_token (assembly, &f->field->parent->byval_arg, 
 											mono_field_get_name (f->field),  
-											fieldref_encode_signature (assembly, type));
+											fieldref_encode_signature (assembly, field->parent->image, type));
 	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER(token));
 	return token;
 }
@@ -3007,10 +3008,10 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	/* FIXME: We should do this in one place when a fieldbuilder is created */
 	if (fb->modreq || fb->modopt) {
 		custom = add_custom_modifiers (assembly, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type), fb->modreq, fb->modopt);
-		sig = fieldref_encode_signature (assembly, custom);
+		sig = fieldref_encode_signature (assembly, (MonoImage*)assembly, custom);
 		g_free (custom);
 	} else {
-		sig = fieldref_encode_signature (assembly, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type));
+		sig = fieldref_encode_signature (assembly, (MonoImage*)assembly, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type));
 	}
 
 	parent = create_generic_typespec (assembly, (MonoReflectionTypeBuilder *) fb->typeb);
