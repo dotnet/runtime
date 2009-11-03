@@ -1,3 +1,9 @@
+2009-11-03  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/CheckVisibility.cs: detect a throw_on_visibility_error
+	linker parameter to decide whether or not throw when an error
+	have been encountered.
+
 2009-11-02  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/MoonlightAssemblyStep.cs: adapt to the MT linker merge.
