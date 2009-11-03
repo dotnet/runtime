@@ -5198,7 +5198,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 MonoMethod *
 mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func, gboolean check_exceptions)
 {
-	MonoMethodSignature *csig;
+	MonoMethodSignature *csig, *csig2;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int i;
@@ -5209,7 +5209,11 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 
 	mb->method->save_lmf = 1;
 
-	/* we copy the signature, so that we can modify it */
+	/* Add an explicit this argument */
+	if (sig->hasthis)
+		csig2 = signature_dup_add_this (sig, mono_defaults.object_class);
+	else
+		csig2 = signature_dup (mono_defaults.corlib, sig);
 
 	if (sig->hasthis)
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
@@ -5217,7 +5221,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-	mono_mb_emit_native_call (mb, sig, (gpointer) func);
+	mono_mb_emit_native_call (mb, csig2, (gpointer) func);
 	if (check_exceptions)
 		emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -8164,13 +8168,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
+		if (sig->hasthis)
+			csig = signature_dup_add_this (sig, method->klass);
+		else
+			csig = signature_dup (method->klass->image, sig);
 
 		/* hack - string constructors returns a value */
-		if (method->string_ctor) {
-			csig = signature_dup (method->klass->image, sig);
+		if (method->string_ctor)
 			csig->ret = &mono_defaults.string_class->byval_arg;
-		} else
-			csig = sig;
 
 		if (sig->hasthis)
 			mono_mb_emit_byte (mb, CEE_LDARG_0);
