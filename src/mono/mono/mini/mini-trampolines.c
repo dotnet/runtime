@@ -551,6 +551,8 @@ mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *
 	this = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (m), regs, code);
 	g_assert (this);
 
+	g_assert (this->vtable->klass->vtable [mono_method_get_vtable_slot (m)] == m);
+
 	vt = this->vtable;
 
 	g_assert (!m->is_generic);

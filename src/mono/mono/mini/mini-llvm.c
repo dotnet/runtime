@@ -91,7 +91,7 @@ llvm_ins_info[] = {
 
 #define LLVM_INS_INFO(opcode) (&llvm_ins_info [((opcode) - OP_START - 1) * 4])
 
-#if 1
+#if 0
 #define TRACE_FAILURE(msg) do { printf ("%s\n", msg); } while (0)
 #else
 #define TRACE_FAILURE(msg)
