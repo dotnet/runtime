@@ -1,3 +1,7 @@
+2009-11-03  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Check for netinet/in.h.
+
 2009-11-02 Gonzalo Paniagua Javier <gonzalo@novell.com>
 
 	* configure.in: add a few missing header file checks.
