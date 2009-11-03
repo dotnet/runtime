@@ -40,6 +40,22 @@ namespace Mono.Tuner {
 
 	public class CheckVisibility : BaseStep {
 
+		bool throw_on_error;
+
+		protected override void Process ()
+		{
+			throw_on_error = GetThrowOnVisibilityErrorParameter ();
+		}
+
+		bool GetThrowOnVisibilityErrorParameter ()
+		{
+			try {
+				return bool.Parse (Context.GetParameter ("throw_on_visibility_error"));
+			} catch {
+				return false;
+			}
+		}
+
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			if (assembly.Name.Name == "mscorlib" || assembly.Name.Name == "smcs")
@@ -58,7 +74,7 @@ namespace Mono.Tuner {
 		void CheckType (TypeDefinition type)
 		{
 			if (!IsVisibleFrom (type, type.BaseType)) {
-				Report ("Base type `{0}` of type `{1}` is not visible",
+				ReportError ("Base type `{0}` of type `{1}` is not visible",
 					type.BaseType, type);
 			}
 
@@ -73,7 +89,7 @@ namespace Mono.Tuner {
 		{
 			foreach (TypeReference iface in type.Interfaces) {
 				if (!IsVisibleFrom (type, iface)) {
-					Report ("Interface `{0}` implemented by `{1}` is not visible",
+					ReportError ("Interface `{0}` implemented by `{1}` is not visible",
 						iface, type);
 				}
 			}
@@ -264,11 +280,19 @@ namespace Mono.Tuner {
 			Console.WriteLine ("[check] " + pattern, parameters);
 		}
 
+		void ReportError (string pattern, params object [] parameters)
+		{
+			Report (pattern, parameters);
+
+			if (throw_on_error)
+				throw new VisibilityErrorException (string.Format (pattern, parameters));
+		}
+
 		void CheckFields (TypeDefinition type)
 		{
 			foreach (FieldDefinition field in type.Fields) {
 				if (!IsVisibleFrom (type, field.FieldType)) {
-					Report ("Field `{0}` of type `{1}` is not visible from `{2}`",
+					ReportError ("Field `{0}` of type `{1}` is not visible from `{2}`",
 						field.Name, field.FieldType, type);
 				}
 			}
@@ -288,13 +312,13 @@ namespace Mono.Tuner {
 		{
 			foreach (MethodDefinition method in methods) {
 				if (!IsVisibleFrom (type, method.ReturnType.ReturnType)) {
-					Report ("Method return type `{0}` in method `{1}` is not visible",
+					ReportError ("Method return type `{0}` in method `{1}` is not visible",
 						method.ReturnType.ReturnType, method);
 				}
 
 				foreach (ParameterDefinition parameter in method.Parameters) {
 					if (!IsVisibleFrom (type, parameter.ParameterType)) {
-						Report ("Parameter `{0}` of type `{1}` in method `{2}` is not visible.",
+						ReportError ("Parameter `{0}` of type `{1}` in method `{2}` is not visible.",
 							parameter.Sequence, parameter.ParameterType, method);
 					}
 				}
@@ -310,7 +334,7 @@ namespace Mono.Tuner {
 
 			foreach (VariableDefinition variable in method.Body.Variables) {
 				if (!IsVisibleFrom ((TypeDefinition) method.DeclaringType, variable.VariableType)) {
-					Report ("Variable `{0}` of type `{1}` from method `{2}` is not visible",
+					ReportError ("Variable `{0}` of type `{1}` from method `{2}` is not visible",
 						variable.Index, variable.VariableType, method);
 				}
 			}
@@ -335,7 +359,7 @@ namespace Mono.Tuner {
 						error = !IsVisibleFrom (type, field_ref);
 
 					if (error) {
-						Report ("Operand `{0}` of type {1} at offset 0x{2} in method `{3}` is not visible",
+						ReportError ("Operand `{0}` of type {1} at offset 0x{2} in method `{3}` is not visible",
 							instr.Operand, instr.OpCode.OperandType, instr.Offset.ToString ("x4"), method);
 					}
 
@@ -343,6 +367,14 @@ namespace Mono.Tuner {
 				default:
 					continue;
 				}
+			}
+		}
+
+		class VisibilityErrorException : Exception {
+
+			public VisibilityErrorException (string message)
+				: base (message)
+			{
 			}
 		}
 	}
