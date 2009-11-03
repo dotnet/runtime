@@ -7369,6 +7369,9 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	}
 }
 
+/* Soft Debug support */
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+
 /*
  * mono_arch_set_breakpoint:
  *
@@ -7525,3 +7528,5 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 	NOT_IMPLEMENTED;
 	return NULL;
 }
+
+#endif

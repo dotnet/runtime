@@ -354,7 +354,11 @@ typedef struct {
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
+#ifndef PLATFORM_WIN32
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
+#else
+#define DISABLE_DEBUGGER_AGENT 1
+#endif
 #define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 
 #if !defined(PLATFORM_WIN32) || defined(__sun)
