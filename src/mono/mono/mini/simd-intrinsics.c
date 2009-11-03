@@ -974,9 +974,10 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	MonoInst *ins;
 	MonoMethodSignature *sig = mono_method_signature (cmethod);
 	int size, align;
-	size = mono_type_size (sig->params [0], &align); 
 	gboolean indirect;
 	int dreg;
+
+	size = mono_type_size (sig->params [0], &align); 
 
 	if (size == 2 || size == 4 || size == 8) {
 		MONO_INST_NEW (cfg, ins, mono_type_to_slow_insert_op (sig->params [0]));
