@@ -2130,8 +2130,10 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 
 		iter = NULL;
 		while ((method = mono_class_get_methods (array_class, &iter))) {
-			if (strstr (method->name, name_prefix))
-				add_extra_method (acfg, method);
+			if (strstr (method->name, name_prefix)) {
+				MonoMethod *m = mono_aot_get_array_helper_from_wrapper (method);
+				add_extra_method (acfg, m);
+			}
 		}
 
 		g_free (name_prefix);
@@ -2156,6 +2158,22 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 			g_assert (gcomparer);
 			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx));
 		}
+	}
+}
+
+static void
+add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int ninsts)
+{
+	int i;
+	MonoGenericContext ctx;
+	MonoType *args [16];
+
+	memset (&ctx, 0, sizeof (ctx));
+
+	for (i = 0; i < ninsts; ++i) {
+		args [0] = insts [i];
+		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+		add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
 	}
 }
 
@@ -2229,106 +2247,40 @@ add_generic_instances (MonoAotCompile *acfg)
 	}
 
 	if (acfg->image == mono_defaults.corlib) {
+		MonoClass *klass;
+		MonoType *insts [256];
+		int ninsts = 0;
+
+		insts [ninsts ++] = &mono_defaults.byte_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.sbyte_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.int16_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.uint16_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.int32_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.uint32_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.int64_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.uint64_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.single_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.double_class->byval_arg;
+
 		/* Add GenericComparer<T> instances for primitive types for Enum.ToString () */
-		MonoClass *klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
-
-		if (klass) {
-			MonoGenericContext ctx;
-			MonoType *args [16];
-
-			memset (&ctx, 0, sizeof (ctx));
-
-			args [0] = &mono_defaults.byte_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.sbyte_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.int16_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.uint16_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.int32_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.uint32_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.int64_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.uint64_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-		}
-
-		/* Add GenericEqualityComparer<T> instances for primitive types */
+		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
+		if (klass)
+			add_instances_of (acfg, klass, insts, ninsts);
 		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericEqualityComparer`1");
+		if (klass)
+			add_instances_of (acfg, klass, insts, ninsts);
 
-		if (klass) {
-			MonoGenericContext ctx;
-			MonoType *args [16];
-
-			memset (&ctx, 0, sizeof (ctx));
-
-			args [0] = &mono_defaults.byte_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.sbyte_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.int16_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.uint16_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.int32_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.uint32_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.int64_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.uint64_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.char_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.boolean_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.single_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-			args [0] = &mono_defaults.double_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
-
-		}
+		/* Add instances of the array generic interfaces for primitive types */
+		/* This will add instances of the InternalArray_ helper methods in Array too */
+		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "ICollection`1");
+		if (klass)
+			add_instances_of (acfg, klass, insts, ninsts);
+		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IList`1");
+		if (klass)
+			add_instances_of (acfg, klass, insts, ninsts);
+		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IEnumerable`1");
+		if (klass)
+			add_instances_of (acfg, klass, insts, ninsts);
 	}
 
 	/* 
@@ -4266,6 +4218,49 @@ mono_aot_wrapper_name (MonoMethod *method)
 	g_free (tmpsig);
 
 	return name;
+}
+
+/*
+ * mono_aot_get_array_helper_from_wrapper;
+ *
+ * Get the helper method in Array called by an array wrapper method.
+ */
+MonoMethod*
+mono_aot_get_array_helper_from_wrapper (MonoMethod *method)
+{
+	MonoMethod *m;
+	const char *prefix;
+	MonoGenericContext ctx;
+	MonoType *args [16];
+	char *mname, *iname, *s, *s2, *helper_name = NULL;
+
+	prefix = "System.Collections.Generic";
+	s = g_strdup_printf ("%s", method->name + strlen (prefix) + 1);
+	s2 = strstr (s, "`1.");
+	g_assert (s2);
+	s2 [0] = '\0';
+	iname = s;
+	mname = s2 + 3;
+
+	//printf ("X: %s %s\n", iname, mname);
+
+	if (!strcmp (iname, "IList"))
+		helper_name = g_strdup_printf ("InternalArray__%s", mname);
+	else
+		helper_name = g_strdup_printf ("InternalArray__%s_%s", iname, mname);
+	m = mono_class_get_method_from_name (mono_defaults.array_class, helper_name, mono_method_signature (method)->param_count);
+	g_assert (m);
+	g_free (helper_name);
+	g_free (s);
+
+	if (m->is_generic) {
+		memset (&ctx, 0, sizeof (ctx));
+		args [0] = &method->klass->element_class->byval_arg;
+		ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+		m = mono_class_inflate_generic_method (m, &ctx);
+	}
+
+	return m;
 }
 
 /*
