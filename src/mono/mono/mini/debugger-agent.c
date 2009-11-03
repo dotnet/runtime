@@ -20,6 +20,9 @@
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
