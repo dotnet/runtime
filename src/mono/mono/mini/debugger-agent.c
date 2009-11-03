@@ -175,7 +175,8 @@ typedef enum {
 	MOD_KIND_THREAD_ONLY = 3,
 	MOD_KIND_LOCATION_ONLY = 7,
 	MOD_KIND_EXCEPTION_ONLY = 8,
-	MOD_KIND_STEP = 10
+	MOD_KIND_STEP = 10,
+	MOD_KIND_ASSEMBLY_ONLY = 11
 } ModifierKind;
 
 typedef enum {
@@ -311,6 +312,7 @@ typedef struct {
 		int count; /* For kind == MOD_KIND_COUNT */
 		MonoInternalThread *thread; /* For kind == MOD_KIND_THREAD_ONLY */
 		MonoClass *exc_class; /* For kind == MONO_KIND_EXCEPTION_ONLY */
+		MonoAssembly **assemblies; /* For kind == MONO_KIND_ASSEMBLY_ONLY */
 	} data;
 } Modifier;
 
@@ -1835,7 +1837,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
  * LOCKING: Assumes the loader lock is held.
  */
 static GSList*
-create_event_list (EventKind event, GPtrArray *reqs, MonoException *exc, int *suspend_policy)
+create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, MonoException *exc, int *suspend_policy)
 {
 	int i, j;
 	GSList *events = NULL;
@@ -1855,20 +1857,32 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoException *exc, int *su
 
 			/* Apply filters */
 			for (j = 0; j < req->nmodifiers; ++j) {
-				if (req->modifiers [j].kind == MOD_KIND_COUNT) {
+				Modifier *mod = &req->modifiers [j];
+
+				if (mod->kind == MOD_KIND_COUNT) {
 					filtered = TRUE;
-					if (req->modifiers [j].data.count > 0) {
-						if (req->modifiers [j].data.count > 0) {
-							req->modifiers [j].data.count --;
-							if (req->modifiers [j].data.count == 0)
+					if (mod->data.count > 0) {
+						if (mod->data.count > 0) {
+							mod->data.count --;
+							if (mod->data.count == 0)
 								filtered = FALSE;
 						}
 					}
-				} else if (req->modifiers [j].kind == MOD_KIND_THREAD_ONLY) {
-					if (req->modifiers [j].data.thread != mono_thread_internal_current ())
+				} else if (mod->kind == MOD_KIND_THREAD_ONLY) {
+					if (mod->data.thread != mono_thread_internal_current ())
 						filtered = TRUE;
-				} else if (req->modifiers [j].kind == MOD_KIND_EXCEPTION_ONLY && exc) {
-					if (req->modifiers [j].data.exc_class && !mono_class_is_assignable_from (req->modifiers [j].data.exc_class, exc->object.vtable->klass))
+				} else if (mod->kind == MOD_KIND_EXCEPTION_ONLY && exc) {
+					if (mod->data.exc_class && !mono_class_is_assignable_from (mod->data.exc_class, exc->object.vtable->klass))
+						filtered = TRUE;
+				} else if (mod->kind == MOD_KIND_ASSEMBLY_ONLY && ji) {
+					int k;
+					gboolean found = FALSE;
+					MonoAssembly **assemblies = mod->data.assemblies;
+
+					for (k = 0; assemblies [k]; ++k)
+						if (assemblies [k] == ji->method->klass->image->assembly)
+							found = TRUE;
+					if (!found)
 						filtered = TRUE;
 				}
 			}
@@ -2062,7 +2076,7 @@ process_profiler_event (EventKind event, gpointer arg)
 	GSList *events;
 
 	mono_loader_lock ();
-	events = create_event_list (event, NULL, NULL, &suspend_policy);
+	events = create_event_list (event, NULL, NULL, NULL, &suspend_policy);
 	mono_loader_unlock ();
 
 	process_event (event, arg, 0, NULL, events, suspend_policy);
@@ -2640,9 +2654,9 @@ process_breakpoint_inner (MonoContext *ctx)
 	}
 	
 	if (reqs->len > 0)
-		events = create_event_list (EVENT_KIND_BREAKPOINT, reqs, NULL, &suspend_policy);
+		events = create_event_list (EVENT_KIND_BREAKPOINT, reqs, ji, NULL, &suspend_policy);
 	else if (kind != EVENT_KIND_BREAKPOINT)
-		events = create_event_list (kind, NULL, NULL, &suspend_policy);
+		events = create_event_list (kind, NULL, ji, NULL, &suspend_policy);
 
 	g_ptr_array_free (reqs, TRUE);
 
@@ -2849,7 +2863,7 @@ process_single_step_inner (MonoContext *ctx)
 
 	g_ptr_array_add (reqs, ss_req->req);
 
-	events = create_event_list (EVENT_KIND_STEP, reqs, NULL, &suspend_policy);
+	events = create_event_list (EVENT_KIND_STEP, reqs, ji, NULL, &suspend_policy);
 
 	g_ptr_array_free (reqs, TRUE);
 
@@ -3022,7 +3036,7 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 		return;
 
 	mono_loader_lock ();
-	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, exc, &suspend_policy);
+	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, NULL, exc, &suspend_policy);
 	mono_loader_unlock ();
 
 	process_event (EVENT_KIND_EXCEPTION, exc, 0, ctx, events, suspend_policy);
@@ -3760,6 +3774,18 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					if (!mono_class_is_assignable_from (mono_defaults.exception_class, exc_class)) {
 						g_free (req);
 						return ERR_INVALID_ARGUMENT;
+					}
+				}
+			} else if (mod == MOD_KIND_ASSEMBLY_ONLY) {
+				int n = decode_int (p, &p, end);
+				int j;
+
+				req->modifiers [i].data.assemblies = g_new0 (MonoAssembly*, n);
+				for (j = 0; j < n; ++j) {
+					req->modifiers [i].data.assemblies [j] = decode_assemblyid (p, &p, end, &domain, &err);
+					if (err) {
+						g_free (req->modifiers [i].data.assemblies);
+						return err;
 					}
 				}
 			} else {
