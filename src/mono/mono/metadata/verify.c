@@ -473,7 +473,7 @@ verifier_inflate_type (VerifyContext *ctx, MonoType *type, MonoGenericContext *c
 		mono_error_cleanup (&error);
 		return NULL;
 	}
-	return NULL;
+	return result;
 }
 /*
  * Test if @candidate is a subtype of @target using the minimal possible information
