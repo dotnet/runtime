@@ -484,7 +484,7 @@
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src;..\..\mono\eglib\src"
-				PreprocessorDefinitions="_DEBUG;__x86_64__;WIN64;_WIN64;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;PLATFORM_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;GC_NOT_DLL;HAVE_CONFIG_H;WINVER=0x0500;_WIN32_WINNT=0x0500;_WIN32_IE=0x0501;WIN32_THREADS;FD_SETSIZE=1024"
+				PreprocessorDefinitions="_DEBUG;__x86_64__;TARGET_AMD64;WIN64;_WIN64;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;PLATFORM_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;GC_NOT_DLL;HAVE_CONFIG_H;WINVER=0x0500;_WIN32_WINNT=0x0500;_WIN32_IE=0x0501;WIN32_THREADS;FD_SETSIZE=1024"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -509,7 +509,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -1021,15 +1021,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\utils\mono-error-internals.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\mono-error.c"
 				>
 			</File>
 			<File
 				RelativePath="..\mono\utils\mono-error.h"
-				>
-			</File>
-			<File
-				RelativePath="..\mono\utils\mono-error-internals.h"
 				>
 			</File>
 			<File

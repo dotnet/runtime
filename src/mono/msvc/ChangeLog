@@ -1,8 +1,12 @@
-2009-10-15  Jonathan Chambers  <joncham@gmail.com>
+2009-11-02 Jonathan Chambers <joncham@gmail.com>
 
-	* profiler-cov.vcproj: Add project.
+	* genmdesc.vcproj: Fix amd64 build.
 	
-	* profiler-logging.vcproj: Add project.
+	* libmono.vcproj: Fix amd64 build.
+	
+	* mono.vcproj: Fix amd64 build.
+	
+	* mono.sln: Fix amd64 build.
 
 2009-09-08  Jonathan Chambers  <joncham@gmail.com>
 
