@@ -5815,9 +5815,9 @@ mono_save_xdebug_info (MonoCompile *cfg)
 
 		/*
 		 * gdb is not designed to handle 1000s of symbol files (one per method). So we
-		 * group them into groups of 10.
+		 * group them into groups of 100.
 		 */
-		if ((xdebug_method_count % 10) == 0)
+		if ((xdebug_method_count % 100) == 0)
 			mono_xdebug_flush ();
 
 		xdebug_method_count ++;
