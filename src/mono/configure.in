@@ -90,6 +90,7 @@ case "$host" in
 		HOST_CC="gcc"
 		# Windows 2000 is required that includes Internet Explorer 5.01
 		CPPFLAGS="$CPPFLAGS -DWINVER=0x0500 -D_WIN32_WINNT=0x0500 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
+		LDFLAGS="$LDFLAGS -lmswsock"
 		libmono_cflags="-mno-cygwin -mms-bitfields -mwindows"
 		libmono_ldflags="-mno-cygwin -mms-bitfields -mwindows"
 		libdl=
