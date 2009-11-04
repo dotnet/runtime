@@ -950,6 +950,9 @@ mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, 
 MonoClass*
 mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context) MONO_INTERNAL;
 
+MonoType*
+mono_class_inflate_generic_type_checked (MonoType *type, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+
 void
 mono_metadata_free_inflated_signature (MonoMethodSignature *sig);
 
