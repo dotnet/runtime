@@ -1,7 +1,10 @@
+//
+// thread6.cs: Thread abort tests
+//
 using System;
 using System.Threading;
 
-public class MultiThreadExceptionTest {
+public class Tests {
 
 	public static int result = 0;
 	public static object started = new object ();
@@ -91,6 +94,10 @@ public class MultiThreadExceptionTest {
 	}
 	
 	public static int Main() {
+		return TestDriver.RunTests (typeof (Tests));
+	}
+
+	public static int test_0_abort_current () {
 		// Check aborting the current thread
 		bool aborted = false;
 		try {
@@ -103,11 +110,15 @@ public class MultiThreadExceptionTest {
 		if (!aborted)
 			return 2;
 
+		return 0;
+	}
+
+	public static int test_0_test_1 () {
 		Thread t1 = null;
 
 		lock (started) {
 			t1 = new Thread(new ThreadStart
-							(MultiThreadExceptionTest.ThreadStart1));
+							(Tests.ThreadStart1));
 			t1.Name = "Thread 1";
 
 			Thread.Sleep (100);
@@ -128,7 +139,10 @@ public class MultiThreadExceptionTest {
 			return 1;
 		}
 
-		// Test from #68552
+		return 0;
+	}
+
+	public static int test_0_regress_68552 () {
 		try {
 			try {
 				Run ();
@@ -141,7 +155,10 @@ public class MultiThreadExceptionTest {
 			Thread.ResetAbort ();
 		}
 
-		// Test from #78024
+		return 0;
+	}
+
+	public static int test_0_regress_78024 () {
 		try {
 			regress_78024 ();
 			return 3;
@@ -151,6 +168,34 @@ public class MultiThreadExceptionTest {
 		}
 
 		return 0;
+	}
+
+	public class CBO : ContextBoundObject {
+		public void Run () {
+			Thread.CurrentThread.Abort ("FOO");
+		}
+	}
+
+	public static int test_0_regress_539394 () {
+		// Check that a ThreadAbortException thrown through remoting retains its
+		// abort state
+		AppDomain d = AppDomain.CreateDomain ("test");
+		CBO obj = (CBO)d.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "Tests/CBO");
+		bool success = false;
+
+		Thread t = new Thread (delegate () {
+				try {
+					obj.Run ();
+				} catch (ThreadAbortException ex) {
+					if ((string)ex.ExceptionState == "FOO")
+						success = true;
+				}
+			});
+
+		t.Start ();
+		t.Join ();
+
+		return success ? 0 : 1;
 	}
 
 	public static void Run ()
