@@ -42,7 +42,6 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-semaphore.h>
-#include <mono/io-layer/mono-mutex.h>
 #include "debugger-agent.h"
 #include "mini.h"
 
@@ -51,6 +50,7 @@
 #endif
 
 #ifndef DISABLE_DEBUGGER_AGENT
+#include <mono/io-layer/mono-mutex.h>
 
 typedef struct {
 	gboolean enabled;
