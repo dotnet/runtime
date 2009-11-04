@@ -976,7 +976,6 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	int size, align;
 	gboolean indirect;
 	int dreg;
-	size = mono_type_size (sig->params [0], &align); 
 
 	size = mono_type_size (sig->params [0], &align); 
 
