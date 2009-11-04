@@ -1,6 +1,6 @@
 /*
  * This file contains the default set of the mono internal calls.
- * Each type that ahs internal call methods must be declared here
+ * Each type that has internal call methods must be declared here
  * with the ICALL_TYPE macro as follows:
  *
  * 	ICALL_TYPE(typeid, typename, first_icall_id)
@@ -551,8 +551,7 @@ ICALL(TYPEB_7, "setup_internal_class", mono_reflection_setup_internal_class)
 ICALL_TYPE(FIELDI, "System.Reflection.FieldInfo", FILEDI_1)
 ICALL(FILEDI_1, "GetTypeModifiers", ves_icall_System_Reflection_FieldInfo_GetTypeModifiers)
 ICALL(FILEDI_2, "GetUnmanagedMarshal", ves_icall_System_Reflection_FieldInfo_GetUnmanagedMarshal)
-ICALL(FILEDI_3, "internal_from_handle", ves_icall_System_Reflection_FieldInfo_internal_from_handle)
-ICALL(FILEDI_4, "internal_from_handle_type", ves_icall_System_Reflection_FieldInfo_internal_from_handle_type)
+ICALL(FILEDI_3, "internal_from_handle_type", ves_icall_System_Reflection_FieldInfo_internal_from_handle_type)
 
 ICALL_TYPE(MEMBERI, "System.Reflection.MemberInfo", MEMBERI_1)
 ICALL(MEMBERI_1, "get_MetadataToken", mono_reflection_get_token)
@@ -785,20 +784,9 @@ ICALL(STRING_6, ".ctor(sbyte*)", ves_icall_System_String_ctor_RedirectToCreateSt
 ICALL(STRING_7, ".ctor(sbyte*,int,int)", ves_icall_System_String_ctor_RedirectToCreateString)
 ICALL(STRING_8, ".ctor(sbyte*,int,int,System.Text.Encoding)", ves_icall_System_String_ctor_RedirectToCreateString)
 ICALL(STRING_9, "InternalAllocateStr", ves_icall_System_String_InternalAllocateStr)
-ICALL(STRING_11, "InternalCopyTo", ves_icall_System_String_InternalCopyTo)
-ICALL(STRING_14, "InternalIntern", ves_icall_System_String_InternalIntern)
-ICALL(STRING_15, "InternalIsInterned", ves_icall_System_String_InternalIsInterned)
-ICALL(STRING_16, "InternalJoin", ves_icall_System_String_InternalJoin)
-ICALL(STRING_17, "InternalLastIndexOfAny", ves_icall_System_String_InternalLastIndexOfAny)
-ICALL(STRING_18, "InternalPad", ves_icall_System_String_InternalPad)
-ICALL(STRING_21, "InternalReplace(string,string,System.Globalization.CompareInfo)", ves_icall_System_String_InternalReplace_Str_Comp)
-ICALL(STRING_22, "InternalSplit", ves_icall_System_String_InternalSplit)
-ICALL(STRING_23, "InternalStrcpy(string,int,char[])", ves_icall_System_String_InternalStrcpy_Chars)
-ICALL(STRING_24, "InternalStrcpy(string,int,char[],int,int)", ves_icall_System_String_InternalStrcpy_CharsN)
-ICALL(STRING_25, "InternalStrcpy(string,int,string)", ves_icall_System_String_InternalStrcpy_Str)
-ICALL(STRING_26, "InternalStrcpy(string,int,string,int,int)", ves_icall_System_String_InternalStrcpy_StrN)
-ICALL(STRING_27, "InternalTrim", ves_icall_System_String_InternalTrim)
-ICALL(STRING_28, "get_Chars", ves_icall_System_String_get_Chars)
+ICALL(STRING_10, "InternalIntern", ves_icall_System_String_InternalIntern)
+ICALL(STRING_11, "InternalIsInterned", ves_icall_System_String_InternalIsInterned)
+ICALL(STRING_12, "InternalSplit", ves_icall_System_String_InternalSplit)
 
 ICALL_TYPE(TENC, "System.Text.Encoding", TENC_1)
 ICALL(TENC_1, "InternalCodePage", ves_icall_System_Text_Encoding_InternalCodePage)

@@ -1623,16 +1623,6 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 	return mono_field_get_object (mono_domain_get (), klass, handle);
 }
 
-static MonoReflectionField*
-ves_icall_System_Reflection_FieldInfo_internal_from_handle (MonoClassField *handle)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	g_assert (handle);
-
-	return mono_field_get_object (mono_domain_get (), handle->parent, handle);
-}
-
 static MonoArray*
 ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionField *field, MonoBoolean optional)
 {
