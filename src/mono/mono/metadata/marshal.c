@@ -139,8 +139,6 @@ mono_marshal_set_last_error_windows (int error);
 
 static void init_safe_handle (void);
 
-static void runtime_invoke_reset_abort (MonoException *ex);
-
 /* MonoMethod pointers to SafeHandle::DangerousAddRef and ::DangerousRelease */
 static MonoMethod *sh_dangerous_add_ref;
 static MonoMethod *sh_dangerous_release;
@@ -247,7 +245,6 @@ mono_marshal_init (void)
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
-		register_icall (runtime_invoke_reset_abort, "runtime_invoke_reset_abort", "void object", FALSE);
 
 		mono_cominterop_init ();
 	}
@@ -4075,13 +4072,6 @@ get_wrapper_target_class (MonoImage *image)
 	return klass;
 }
 
-static void
-runtime_invoke_reset_abort (MonoException *ex)
-{
-	if (ex->object.vtable->klass == mono_defaults.threadabortexception_class)
-		ves_icall_System_Threading_Thread_ResetAbort ();
-}
-
 /*
  * generates IL code for the runtime invoke function 
  * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc, void* method)
@@ -4464,11 +4454,6 @@ handle_enum:
 
 	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_stloc (mb, 0);
-
-	/* Check and reset abort exception */
-	/* Done in a separate function to reduce code size */
-	mono_mb_emit_ldloc (mb, 1);
-	mono_mb_emit_icall (mb, runtime_invoke_reset_abort);
 
 	mono_mb_emit_branch (mb, CEE_LEAVE);
 
