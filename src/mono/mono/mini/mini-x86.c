@@ -5817,23 +5817,35 @@ mono_arch_stop_single_stepping (void)
  * step event.
  */
 gboolean
-mono_arch_is_single_step_event (siginfo_t *info, void *sigctx)
+mono_arch_is_single_step_event (void *info, void *sigctx)
 {
+#ifdef PLATFORM_WIN32
+	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;
+	return FALSE;
+#else
+	siginfo_t* sinfo = (siginfo_t*) info;
 	/* Sometimes the address is off by 4 */
-	if (info->si_signo == DBG_SIGNAL && (info->si_addr >= ss_trigger_page && (guint8*)info->si_addr <= (guint8*)ss_trigger_page + 128))
+	if (sinfo->si_signo == DBG_SIGNAL && (sinfo->si_addr >= ss_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)ss_trigger_page + 128))
 		return TRUE;
 	else
 		return FALSE;
+#endif
 }
 
 gboolean
-mono_arch_is_breakpoint_event (siginfo_t *info, void *sigctx)
+mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
+#ifdef PLATFORM_WIN32
+	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;
+	return FALSE;
+#else
+	siginfo_t* sinfo = (siginfo_t*)info;
 	/* Sometimes the address is off by 4 */
-	if (info->si_signo == DBG_SIGNAL && (info->si_addr >= bp_trigger_page && (guint8*)info->si_addr <= (guint8*)bp_trigger_page + 128))
+	if (sinfo->si_signo == DBG_SIGNAL && (sinfo->si_addr >= bp_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)bp_trigger_page + 128))
 		return TRUE;
 	else
 		return FALSE;
+#endif
 }
 
 /*

@@ -4672,7 +4672,7 @@ SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 {
 	MonoException *exc = NULL;
 	MonoJitInfo *ji;
-#ifndef MONO_ARCH_USE_SIGACTION
+#if !(defined(MONO_ARCH_USE_SIGACTION) || defined(PLATFORM_WIN32))
 	void *info = NULL;
 #endif
 	GET_CONTEXT;

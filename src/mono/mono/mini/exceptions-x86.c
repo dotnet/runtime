@@ -37,7 +37,7 @@ static MonoW32ExceptionHandler segv_handler;
 static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 
 #define W32_SEH_HANDLE_EX(_ex) \
-	if (_ex##_handler) _ex##_handler((int)sctx)
+	if (_ex##_handler) _ex##_handler(0, er, sctx)
 
 /*
  * mono_win32_get_handle_stackoverflow (void):

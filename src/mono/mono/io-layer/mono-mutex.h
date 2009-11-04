@@ -12,10 +12,14 @@
 #define __MONO_MUTEX_H__
 
 #include <glib.h>
+#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include <time.h>
 
 G_BEGIN_DECLS
+
+#ifndef PLATFORM_WIN32
 
 typedef struct {
 	pthread_mutex_t mutex;
@@ -113,9 +117,11 @@ int mono_cond_timedwait (pthread_cond_t *cond, mono_mutex_t *mutex, const struct
 
 typedef pthread_mutex_t mono_mutex_t;
 typedef pthread_mutexattr_t mono_mutexattr_t;
+typedef pthread_cond_t mono_cond_t;
 
 #define MONO_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 #define MONO_RECURSIVE_MUTEX_INITIALIZER PTHREAD_RECURSIVE_MUTEX_INITIALIZER
+#define MONO_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 
 #define mono_mutexattr_init(attr) pthread_mutexattr_init (attr)
 #define mono_mutexattr_settype(attr,type) pthread_mutexattr_settype (attr, type)
@@ -151,6 +157,25 @@ static inline int mono_mutex_unlock_in_cleanup (mono_mutex_t *mutex)
 {
 	return(mono_mutex_unlock (mutex));
 }
+
+#else
+
+typedef HANDLE mono_mutex_t;
+typedef HANDLE mono_cond_t;
+
+#define mono_mutex_lock(mutex) do { WaitForSingleObject ((mutex), INFINITE);} while (0)
+#define mono_mutex_unlock(mutex) ReleaseMutex ((mutex))
+
+
+#define mono_cond_init(cond,attr) pthread_cond_init (cond,attr)
+#define mono_cond_wait(cond,mutex) WaitForSingleObject (cond, INFINITE)
+#define mono_cond_timedwait(cond,mutex,timeout) pthread_cond_timedwait (cond, mutex, timeout)
+#define mono_cond_signal(cond) SetEvent (cond)
+#define mono_cond_broadcast(cond) SetEvent (cond)
+
+#define MONO_MUTEX_INITIALIZER NULL
+#define MONO_COND_INITIALIZER NULL
+#endif
 
 G_END_DECLS
 

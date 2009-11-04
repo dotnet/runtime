@@ -23,7 +23,7 @@ struct sigcontext {
 	unsigned int eip;
 };
 
-typedef void (* MonoW32ExceptionHandler) (int);
+typedef void (* MonoW32ExceptionHandler) (int _dummy, EXCEPTION_RECORD *info, void *context);
 void win32_seh_init(void);
 void win32_seh_cleanup(void);
 void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler);

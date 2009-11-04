@@ -42,6 +42,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-semaphore.h>
+#include <mono/io-layer/mono-mutex.h>
 #include "debugger-agent.h"
 #include "mini.h"
 
@@ -199,7 +200,7 @@ typedef enum {
 	TOKEN_TYPE_FIELD = 2,
 	TOKEN_TYPE_METHOD = 3,
 	TOKEN_TYPE_UNKNOWN = 4
-} TokenType;
+} DebuggerTokenType;
 
 typedef enum {
 	VALUE_TYPE_ID_NULL = 0xf0,
@@ -344,6 +345,7 @@ typedef struct {
 
 /* Dummy structure used for the profiler callbacks */
 typedef struct {
+	void* dummy;
 } DebuggerProfiler;
 
 #define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; fflush (log_file); } } while (0)
@@ -399,10 +401,10 @@ static GPtrArray *pending_assembly_loads;
 static gboolean debugger_thread_exited;
 
 /* Cond variable used to wait for debugger_thread_exited becoming true */
-static pthread_cond_t debugger_thread_exited_cond = PTHREAD_COND_INITIALIZER;
+static mono_cond_t debugger_thread_exited_cond = MONO_COND_INITIALIZER;
 
 /* Mutex for the cond var above */
-static pthread_mutex_t debugger_thread_exited_mutex = PTHREAD_MUTEX_INITIALIZER;
+static mono_mutex_t debugger_thread_exited_mutex = MONO_MUTEX_INITIALIZER;
 
 static DebuggerProfiler debugger_profiler;
 
@@ -623,7 +625,11 @@ mono_debugger_agent_cleanup (void)
 
 	/* This will interrupt the agent thread */
 	/* Close the read part only so it can still send back replies */
+#ifdef PLATFORM_WIN32
+	shutdown (conn_fd, SD_RECEIVE);
+#else
 	shutdown (conn_fd, SHUT_RD);
+#endif
 
 	/* 
 	 * Wait for the thread to exit.
@@ -635,10 +641,10 @@ mono_debugger_agent_cleanup (void)
 	 */
 	//WaitForSingleObject (debugger_thread_handle, INFINITE);
 	if (GetCurrentThreadId () != debugger_thread_id) {
-		pthread_mutex_lock (&debugger_thread_exited_mutex);
+		mono_mutex_lock (&debugger_thread_exited_mutex);
 		if (!debugger_thread_exited)
-			pthread_cond_wait (&debugger_thread_exited_cond, &debugger_thread_exited_mutex);
-		pthread_mutex_unlock (&debugger_thread_exited_mutex);
+			mono_cond_wait (&debugger_thread_exited_cond, &debugger_thread_exited_mutex);
+		mono_mutex_unlock (&debugger_thread_exited_mutex);
 	}
 
 	breakpoints_cleanup ();
@@ -1386,10 +1392,10 @@ static gint32 suspend_count;
  */
 static gint32 threads_suspend_count;
 
-static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
+static mono_mutex_t suspend_mutex = MONO_MUTEX_INITIALIZER;
 
 /* Cond variable used to wait for suspend_count becoming 0 */
-static pthread_cond_t suspend_cond = PTHREAD_COND_INITIALIZER;
+static mono_cond_t suspend_cond = MONO_COND_INITIALIZER;
 
 /* Semaphore used to wait for a thread becoming suspended */
 static MonoSemType suspend_sem;
@@ -1468,7 +1474,11 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 		 * of things like breaking waits etc. which we don't want.
 		 */
 		InterlockedIncrement (&tls->interrupt_count);
+#ifdef PLATFORM_WIN32
+		/*FIXME: Abort thread */
+#else
 		pthread_kill ((pthread_t) tid, mono_thread_get_abort_signal ());
+#endif
 	}
 }
 
@@ -1483,7 +1493,7 @@ suspend_vm (void)
 {
 	mono_loader_lock ();
 
-	pthread_mutex_lock (&suspend_mutex);
+	mono_mutex_lock (&suspend_mutex);
 
 	suspend_count ++;
 
@@ -1495,7 +1505,7 @@ suspend_vm (void)
 		mono_g_hash_table_foreach (thread_to_tls, notify_thread, NULL);
 	}
 
-	pthread_mutex_unlock (&suspend_mutex);
+	mono_mutex_unlock (&suspend_mutex);
 
 	mono_loader_unlock ();
 }
@@ -1515,7 +1525,7 @@ resume_vm (void)
 
 	mono_loader_lock ();
 
-	pthread_mutex_lock (&suspend_mutex);
+	mono_mutex_lock (&suspend_mutex);
 
 	g_assert (suspend_count > 0);
 	suspend_count --;
@@ -1525,11 +1535,11 @@ resume_vm (void)
 	if (suspend_count == 0) {
 		// FIXME: Is it safe to call this inside the lock ?
 		stop_single_stepping ();
-		err = pthread_cond_broadcast (&suspend_cond);
+		err = mono_cond_broadcast (&suspend_cond);
 		g_assert (err == 0);
 	}
 
-	err = pthread_mutex_unlock (&suspend_mutex);
+	err = mono_mutex_unlock (&suspend_mutex);
 	g_assert (err == 0);
 
 	mono_loader_unlock ();
@@ -1579,7 +1589,7 @@ suspend_current (void)
  	tls = TlsGetValue (debugger_tls_id);
 	g_assert (tls);
 
-	pthread_mutex_lock (&suspend_mutex);
+	mono_mutex_lock (&suspend_mutex);
 
 	if (!tls->suspended) {
 		tls->suspended = TRUE;
@@ -1589,7 +1599,7 @@ suspend_current (void)
 	DEBUG(1, fprintf (log_file, "[%p] Suspended.\n", (gpointer)GetCurrentThreadId ()));
 
 	while (suspend_count > 0) {
-		err = pthread_cond_wait (&suspend_cond, &suspend_mutex);
+		err = mono_cond_wait (&suspend_cond, &suspend_mutex);
 		g_assert (err == 0);
 	}
 
@@ -1597,7 +1607,7 @@ suspend_current (void)
 
 	threads_suspend_count --;
 
-	pthread_mutex_unlock (&suspend_mutex);
+	mono_mutex_unlock (&suspend_mutex);
 
 	DEBUG(1, fprintf (log_file, "[%p] Resumed.\n", (gpointer)GetCurrentThreadId ()));
 
@@ -2219,8 +2229,13 @@ static void
 end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 {
 	int i;
+#ifdef PLATFORM_WIN32
+	gpointer stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));
+#else
+	gpointer stackptr = __builtin_frame_address (0);
+#endif
 
-	if (ss_req == NULL || ss_req->start_sp > __builtin_frame_address (0) || ss_req->thread != mono_thread_internal_current ())
+	if (ss_req == NULL || ss_req->start_sp > stackptr || ss_req->thread != mono_thread_internal_current ())
 		return;
 
 	/*
@@ -3669,7 +3684,11 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		mono_thread_suspend_all_other_threads ();
 		DEBUG(1, fprintf (log_file, "Shutting down the runtime...\n"));
 		mono_runtime_quit ();
+#ifdef PLATFORM_WIN32
+		shutdown (conn_fd, SD_BOTH);
+#else
 		shutdown (conn_fd, SHUT_RDWR);
+#endif
 		DEBUG(1, fprintf (log_file, "Exiting...\n"));
 
 		exit (exit_code);
@@ -5204,12 +5223,16 @@ debugger_thread (void *arg)
 			break;
 	}
 
-	pthread_mutex_lock (&debugger_thread_exited_mutex);
+	mono_mutex_lock (&debugger_thread_exited_mutex);
 	debugger_thread_exited = TRUE;
-	pthread_cond_signal (&debugger_thread_exited_cond);
-	pthread_mutex_unlock (&debugger_thread_exited_mutex);	
+	mono_cond_signal (&debugger_thread_exited_cond);
+	mono_mutex_unlock (&debugger_thread_exited_mutex);
 
+#ifdef PLATFORM_WIN32
+	shutdown (conn_fd, SD_BOTH);
+#else
 	shutdown (conn_fd, SHUT_RDWR);
+#endif
 
 	return 0;
 }

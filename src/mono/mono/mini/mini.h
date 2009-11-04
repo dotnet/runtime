@@ -1667,8 +1667,8 @@ void      mono_arch_set_breakpoint              (MonoJitInfo *ji, guint8 *ip) MO
 void      mono_arch_clear_breakpoint            (MonoJitInfo *ji, guint8 *ip) MONO_INTERNAL;
 void      mono_arch_start_single_stepping       (void) MONO_INTERNAL;
 void      mono_arch_stop_single_stepping        (void) MONO_INTERNAL;
-gboolean  mono_arch_is_single_step_event        (siginfo_t *info, void *sigctx) MONO_INTERNAL;
-gboolean  mono_arch_is_breakpoint_event (siginfo_t *info, void *sigctx) MONO_INTERNAL;
+gboolean  mono_arch_is_single_step_event        (void *info, void *sigctx) MONO_INTERNAL;
+gboolean  mono_arch_is_breakpoint_event         (void *info, void *sigctx) MONO_INTERNAL;
 guint8*   mono_arch_get_ip_for_single_step      (MonoJitInfo *ji, MonoContext *ctx) MONO_INTERNAL;
 guint8*   mono_arch_get_ip_for_breakpoint       (MonoJitInfo *ji, MonoContext *ctx) MONO_INTERNAL;
 void     mono_arch_skip_breakpoint              (MonoContext *ctx) MONO_INTERNAL;
@@ -1934,7 +1934,7 @@ gboolean mono_gdb_render_native_backtraces (void) MONO_INTERNAL;
 #ifndef GET_CONTEXT
 #ifdef PLATFORM_WIN32
 #define GET_CONTEXT \
-	struct sigcontext *ctx = (struct sigcontext*)_dummy;
+    void *ctx = context;
 #else
 #ifdef MONO_ARCH_USE_SIGACTION
 #define GET_CONTEXT \
@@ -1952,6 +1952,9 @@ gboolean mono_gdb_render_native_backtraces (void) MONO_INTERNAL;
 
 #ifdef MONO_ARCH_USE_SIGACTION
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
+#define SIG_HANDLER_PARAMS _dummy, info, context
+#elif defined(PLATFORM_WIN32)
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, EXCEPTION_RECORD *info, void *context)
 #define SIG_HANDLER_PARAMS _dummy, info, context
 #elif defined(__sparc__)
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *sigctx)
