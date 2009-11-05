@@ -1152,8 +1152,13 @@ mono_class_setup_fields (MonoClass *class)
 	if (class->parent) {
 		/* For generic instances, class->parent might not have been initialized */
 		mono_class_init (class->parent);
-		if (!class->parent->size_inited)
+		if (!class->parent->size_inited) {
 			mono_class_setup_fields (class->parent);
+			if (class->parent->exception_type) {
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+				return;
+			}
+		}
 		class->instance_size += class->parent->instance_size;
 		class->min_align = class->parent->min_align;
 		/* we use |= since it may have been set already */
@@ -1263,8 +1268,13 @@ mono_class_setup_fields (MonoClass *class)
 				blittable = FALSE;
 			} else {
 				MonoClass *field_class = mono_class_from_mono_type (field->type);
-				if (field_class)
+				if (field_class) {
 					mono_class_setup_fields (field_class);
+					if (field_class->exception_type) {
+						mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+						break;
+					}
+				}
 				if (!field_class || !field_class->blittable)
 					blittable = FALSE;
 			}
@@ -5187,6 +5197,9 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		mono_class_init (eclass);
 	if (!eclass->size_inited)
 		mono_class_setup_fields (eclass);
+	if (eclass->exception_type) /*FIXME we fail the array type, but we have to let other fields be set.*/
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+
 	class->has_references = MONO_TYPE_IS_REFERENCE (&eclass->byval_arg) || eclass->has_references? TRUE: FALSE;
 
 	class->rank = rank;
@@ -5340,6 +5353,8 @@ static MonoClassField *
 mono_class_get_field_idx (MonoClass *class, int idx)
 {
 	mono_class_setup_fields_locking (class);
+	if (class->exception_type)
+		return NULL;
 
 	while (class) {
 		if (class->image->uncompressed_metadata) {
@@ -5420,6 +5435,9 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 	int i;
 
 	mono_class_setup_fields_locking (klass);
+	if (klass->exception_type)
+		return NULL;
+
 	while (klass) {
 		for (i = 0; i < klass->field.count; ++i) {
 			MonoClassField *field = &klass->fields [i];
@@ -5455,6 +5473,9 @@ mono_class_get_field_token (MonoClassField *field)
 	int i;
 
 	mono_class_setup_fields_locking (klass);
+	if (klass->exception_type)
+		return 0;
+
 	while (klass) {
 		for (i = 0; i < klass->field.count; ++i) {
 			if (&klass->fields [i] == field) {
