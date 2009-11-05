@@ -60,6 +60,7 @@ typedef struct {
 	char *log_file;
 	gboolean suspend;
 	gboolean server;
+	int timeout;
 } AgentConfig;
 
 typedef struct
@@ -418,7 +419,7 @@ static MonoSingleStepReq *ss_req = NULL;
 static int ss_count;
 #endif
 
-static void transport_connect (char *host, int port);
+static void transport_connect (const char *host, int port);
 
 static guint32 WINAPI debugger_thread (void *arg);
 
@@ -494,6 +495,7 @@ print_usage (void)
 	fprintf (stderr, "  loglevel=<n>\t\t\tLog level (defaults to 0)\n");
 	fprintf (stderr, "  logfile=<file>\t\tFile to log to (defaults to stdout)\n");
 	fprintf (stderr, "  suspend=y/n\t\t\tWhenever to suspend after startup.\n");
+	fprintf (stderr, "  timeout=<n>\t\t\tTimeout for connecting in milliseconds.\n");
 	fprintf (stderr, "  help\t\t\t\tPrint this help.\n");
 }
 
@@ -553,6 +555,8 @@ mono_debugger_agent_parse_options (char *options)
 		} else if (strncmp (arg, "help", 4) == 0) {
 			print_usage ();
 			exit (0);
+		} else if (strncmp (arg, "timeout=", 8) == 0) {
+			agent_config.timeout = atoi (arg + 8);
 		} else {
 			print_usage ();
 			exit (1);
@@ -697,7 +701,7 @@ mono_debugger_agent_cleanup (void)
  *   Connect/Listen on HOST:PORT. If HOST is NULL, generate an address and listen on it.
  */
 static void
-transport_connect (char *host, int port)
+transport_connect (const char *host, int port)
 {
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
@@ -748,12 +752,12 @@ transport_connect (char *host, int port)
 			res = getsockname (sfd, &addr, &addrlen);
 			g_assert (res == 0);
 
+			host = "127.0.0.1";
+			port = ntohs (addr.sin_port);
+
 			/* Emit the address to stdout */
 			/* FIXME: Should print another interface, not localhost */
-			printf ("127.0.0.1:%d\n", ntohs (addr.sin_port));
-
-			conn_fd = accept (sfd, NULL, NULL);
-			g_assert (conn_fd != -1);
+			printf ("%s:%d\n", host, port);
 		} else {
 			/* Listen on the provided address */
 			for (rp = result; rp != NULL; rp = rp->ai_next) {
@@ -769,23 +773,39 @@ transport_connect (char *host, int port)
 				res = listen (sfd, 16);
 				if (res == -1)
 					continue;
-
-				DEBUG (1, fprintf (log_file, "Listening on %s:%d...\n", host, port));
-				conn_fd = accept (sfd, NULL, NULL);
-				if (conn_fd != -1)
-					break;
+				break;
 			}
 
 			freeaddrinfo (result);
+		}
 
-			if (rp == 0) {
-				fprintf (stderr, "debugger-agent: Unable to listen on %s:%d\n", host, port);
+		DEBUG (1, fprintf (log_file, "Listening on %s:%d (timeout=%d ms)...\n", host, port, agent_config.timeout));
+
+		if (agent_config.timeout) {
+			fd_set readfds;
+			struct timeval tv;
+
+			tv.tv_sec = 0;
+			tv.tv_usec = agent_config.timeout * 1000;
+			FD_ZERO (&readfds);
+			FD_SET (sfd, &readfds);
+			res = select (sfd + 1, &readfds, NULL, NULL, &tv);
+			if (res == 0) {
+				fprintf (stderr, "debugger-agent: Timed out waiting to connect.\n");
 				exit (1);
 			}
 		}
 
+		conn_fd = accept (sfd, NULL, NULL);
+		if (conn_fd == -1) {
+			fprintf (stderr, "debugger-agent: Unable to listen on %s:%d\n", host, port);
+			exit (1);
+		}
+
 		DEBUG (1, fprintf (log_file, "Accepted connection from client, socket fd=%d.\n", conn_fd));
 	} else {
+		/* Connect to the specified address */
+		/* FIXME: Respect the timeout */
 		for (rp = result; rp != NULL; rp = rp->ai_next) {
 			sfd = socket (rp->ai_family, rp->ai_socktype,
 						  rp->ai_protocol);
