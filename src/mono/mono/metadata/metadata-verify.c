@@ -881,7 +881,7 @@ verify_tables_schema (VerifyContext *ctx)
  		  Unused: 0x1E 0x1F 0x2D-0x3F
  		  We don't care about the MS extensions.*/
 		if (i == 0x3 || i == 0x5 || i == 0x7 || i == 0x13 || i == 0x16)
-			ADD_ERROR (ctx, g_strdup_printf ("The metadata verifies doesn't support MS specific table %x", i));
+			ADD_ERROR (ctx, g_strdup_printf ("The metadata verifier doesn't support MS specific table %x", i));
 		if (i == 0x1E || i == 0x1F || i >= 0x2D)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid table %x", i));
 		++count;
