@@ -4210,8 +4210,8 @@ mono_aot_wrapper_name (MonoMethod *method)
 		break;
 	default:
 		klass_desc = mono_type_full_name (&method->klass->byval_arg);
-
 		name = g_strdup_printf ("%s:%s (%s)", klass_desc, method->name, tmpsig);
+		g_free (klass_desc);
 		break;
 	}
 
