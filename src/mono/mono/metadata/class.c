@@ -4284,6 +4284,30 @@ mono_class_setup_mono_type (MonoClass *class)
 }
 
 /*
+ * COM initialization (using mono_init_com_types) is delayed until needed. 
+ * However when a [ComImport] attribute is present on a type it will trigger
+ * the initialization. This is not a problem unless the BCL being executed 
+ * lacks the types that COM depends on (e.g. Variant on Silverlight).
+ */
+static void
+init_com_from_comimport (MonoClass *class)
+{
+	/* we don't always allow COM initialization under the CoreCLR (e.g. Moonlight does not require it) */
+	if ((mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)) {
+		/* but some other CoreCLR user could requires it for their platform (i.e. trusted) code */
+		if (!mono_security_core_clr_determine_platform_image (class->image)) {
+			/* but it can not be made available for application (i.e. user code) since all COM calls
+			 * are considered native calls. In this case we fail with a TypeLoadException (just like
+			 * Silverlight 2 does */
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			return;
+		}
+	}
+	/* FIXME : we should add an extra checks to ensure COM can be initialized properly before continuing */
+	mono_init_com_types ();
+}
+
+/*
  * LOCKING: this assumes the loader lock is held
  */
 void
@@ -4309,7 +4333,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 	if (!MONO_CLASS_IS_INTERFACE (class)) {
 		/* Imported COM Objects always derive from __ComObject. */
 		if (MONO_CLASS_IS_IMPORT (class)) {
-			mono_init_com_types ();
+			init_com_from_comimport (class);
 			if (parent == mono_defaults.object_class)
 				parent = mono_defaults.com_object_class;
 		}
@@ -4360,7 +4384,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 	} else {
 		/* initialize com types if COM interfaces are present */
 		if (MONO_CLASS_IS_IMPORT (class))
-			mono_init_com_types ();
+			init_com_from_comimport (class);
 		class->parent = NULL;
 	}
 
