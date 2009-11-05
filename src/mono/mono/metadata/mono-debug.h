@@ -199,4 +199,7 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 int             mono_debugger_method_has_breakpoint       (MonoMethod *method);
 int             mono_debugger_insert_breakpoint           (const gchar *method_name, gboolean include_namespace);
 
+void mono_set_is_debugger_attached (gboolean attached);
+gboolean mono_is_debugger_attached (void);
+
 #endif /* __MONO_DEBUG_H__ */

@@ -1175,3 +1175,18 @@ mono_debug_list_remove (MonoDebugList **list, gconstpointer data)
 		break;
 	}
 }
+
+static gboolean is_attached = FALSE;
+
+void
+mono_set_is_debugger_attached (gboolean attached)
+{
+	is_attached = attached;
+}
+
+gboolean
+mono_is_debugger_attached (void)
+{
+	return is_attached;
+}
+
