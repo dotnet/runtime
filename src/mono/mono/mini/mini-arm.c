@@ -5242,10 +5242,12 @@ mono_arch_stop_single_stepping (void)
  * step event.
  */
 gboolean
-mono_arch_is_single_step_event (siginfo_t *info, void *sigctx)
+mono_arch_is_single_step_event (void *info, void *sigctx)
 {
+	siginfo_t *sinfo = info;
+
 	/* Sometimes the address is off by 4 */
-	if (info->si_addr >= ss_trigger_page && (guint8*)info->si_addr <= (guint8*)ss_trigger_page + 128)
+	if (sinfo->si_addr >= ss_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)ss_trigger_page + 128)
 		return TRUE;
 	else
 		return FALSE;
@@ -5257,11 +5259,13 @@ mono_arch_is_single_step_event (siginfo_t *info, void *sigctx)
  *   Return whenever the machine state in SIGCTX corresponds to a breakpoint event.
  */
 gboolean
-mono_arch_is_breakpoint_event (siginfo_t *info, void *sigctx)
+mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
-	if (info->si_signo == DBG_SIGNAL) {
+	siginfo_t *sinfo = info;
+
+	if (sinfo->si_signo == DBG_SIGNAL) {
 		/* Sometimes the address is off by 4 */
-		if (info->si_addr >= bp_trigger_page && (guint8*)info->si_addr <= (guint8*)bp_trigger_page + 128)
+		if (sinfo->si_addr >= bp_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)bp_trigger_page + 128)
 			return TRUE;
 		else
 			return FALSE;
