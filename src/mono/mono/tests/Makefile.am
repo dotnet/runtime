@@ -827,6 +827,18 @@ modules-m1.netmodule: modules-m1.cs
 modules.exe: modules.cs modules-m1.netmodule TestDriver.dll
 	$(MCS) -out:$@ /addmodule:modules-m1.netmodule -r:TestDriver.dll $(srcdir)/modules.cs
 
+EXTRA_DIST += dtest.cs dtest-app.cs
+
+dcheck: dtest.dll dtest-app.exe
+	@echo "Testing soft-debugger..."
+	@nunit-console2 -labels dtest.dll > dcheck.stdout 2> dcheck.stderr
+
+dtest.dll:
+	$(MCS) -r:Mono.Debugger.Soft.dll -pkg:mono-nunit /target:library -r:`pkg-config --variable Libraries cecil` /debug $(srcdir)/dtest.cs
+
+dtest-app.exe:
+	$(MCS) /debug /unsafe $(srcdir)/dtest-app.cs
+
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
 	cp "../../libtool" .
