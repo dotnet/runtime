@@ -192,14 +192,10 @@ char*
 mono_type_full_name (MonoType *type)
 {
 	GString *str;
-	char *res;
 
 	str = g_string_new ("");
 	mono_type_get_desc (str, type, TRUE);
-
-	res = g_strdup (str->str);
-	g_string_free (str, TRUE);
-	return res;
+	return g_string_free (str, FALSE);
 }
 
 char*
