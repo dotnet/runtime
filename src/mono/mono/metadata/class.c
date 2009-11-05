@@ -5865,6 +5865,7 @@ mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 {
 	GHashTable *nspace_table;
 	GHashTable *name_cache;
+	guint32 old_index;
 
 	mono_image_lock (image);
 
@@ -5876,6 +5877,10 @@ mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 		nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
 		g_hash_table_insert (name_cache, (char *)nspace, (char *)nspace_table);
 	}
+
+	if ((old_index = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, (char*) name))))
+		g_error ("overrwritting old token %x on image %s for type %s::%s", old_index, image->name, nspace, name);
+
 	g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (index));
 
 	mono_image_unlock (image);

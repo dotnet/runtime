@@ -9315,11 +9315,18 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	klass->element_class = klass;
 
-	MOVING_GC_REGISTER (&klass->reflection_info);
-	klass->reflection_info = tb;
+	if (klass->reflection_info == NULL) {
 
-	/* Put into cache so mono_class_get () will find it */
-	mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
+		MOVING_GC_REGISTER (&klass->reflection_info);
+		klass->reflection_info = tb;
+
+		/* Put into cache so mono_class_get () will find it.
+		Skip nested types as those should not be available on the global scope. */
+		if (!tb->nesting_type)
+			mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
+	} else {
+		g_assert (klass->reflection_info == tb);
+	}
 
 	mono_g_hash_table_insert (tb->module->dynamic_image->tokens,
 		GUINT_TO_POINTER (MONO_TOKEN_TYPE_DEF | tb->table_idx), tb);
