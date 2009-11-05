@@ -9,6 +9,7 @@ typedef struct {
 	unsigned short error_code;
     unsigned short flags;
 
+	/*These name are suggestions of their content. MonoError internals might use them for something else.*/
 	const char *type_name;
 	const char *assembly_name;
 	const char *member_name;
@@ -50,9 +51,15 @@ void
 mono_error_set_out_of_memory (MonoError *error, const char *msg_format, ...) MONO_INTERNAL;
 
 void
+mono_error_set_argument (MonoError *error, const char *argument, const char *msg_format, ...) MONO_INTERNAL;
+
+void
 mono_error_set_generic_error (MonoError *error, const char * name_space, const char *name, const char *msg_format, ...) MONO_INTERNAL;
 
 MonoException*
 mono_error_prepare_exception (MonoError *error, MonoError *error_out) MONO_INTERNAL;
+
+void
+mono_error_raise_exception (MonoError *error) MONO_INTERNAL;
 
 #endif

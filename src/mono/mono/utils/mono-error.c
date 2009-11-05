@@ -267,6 +267,18 @@ mono_error_set_out_of_memory (MonoError *oerror, const char *msg_format, ...)
 	va_end (args);
 }
 
+void
+mono_error_set_argument (MonoError *oerror, const char *argument, const char *msg_format, ...)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+	mono_error_prepare (error);
+
+	error->error_code = MONO_ERROR_ARGUMENT;
+	error->type_name = argument; /*use the first available string slot*/
+
+	set_error_message ();
+}
+
 static MonoString*
 get_type_name_as_mono_string (MonoErrorInternal *error, MonoDomain *domain, MonoError *error_out)
 {
@@ -297,6 +309,7 @@ set_message_on_exception (MonoException *exception, MonoErrorInternal *error, Mo
 		mono_error_set_out_of_memory (error_out, "Could not allocate exception object");
 }
 
+/*Can fail with out-of-memory*/
 MonoException*
 mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 {
@@ -306,6 +319,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	MonoString *assembly_name = NULL, *type_name = NULL, *method_name = NULL, *field_name = NULL, *msg = NULL;
 	MonoDomain *domain = mono_domain_get ();
 
+	mono_error_init (error_out);
 
 	switch (error->error_code) {
 	case MONO_ERROR_NONE:
@@ -406,6 +420,10 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		exception = mono_get_exception_out_of_memory ();
 		break;
 
+	case MONO_ERROR_ARGUMENT:
+		exception = mono_get_exception_argument (error->type_name, mono_internal_error_get_message (error));
+		break;
+
 	case MONO_ERROR_GENERIC:
 		if (!error->exception_name_space || !error->exception_name)
 			mono_error_set_generic_error (error_out, "System", "ExecutionEngineException", "MonoError with generic error but no exception name was supplied");
@@ -422,4 +440,33 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	if (!exception)
 		mono_error_set_out_of_memory (error_out, "Could not allocate exception object");
 	return exception;
+}
+
+/*
+Raises the exception of @error.
+Does nothing if @error has a success error code.
+Aborts in case of a double fault. This happens when it can't recover from an error caused by trying
+to construct the first exception object.
+The error object @error is cleaned up. 
+*/
+void
+mono_error_raise_exception (MonoError *target_error)
+{
+	MonoError error;
+
+	if (mono_error_ok (target_error))
+		return;
+
+	MonoException *ex = mono_error_prepare_exception (target_error, &error);
+	if (!mono_error_ok (&error)) {
+		MonoError second_chance;
+		/*Try to produce the exception for the second error. FIXME maybe we should log about the original one*/
+		ex = mono_error_prepare_exception (&error, &second_chance);
+
+		g_assert (mono_error_ok (&second_chance)); /*We can't reasonable handle double faults, maybe later.*/
+		mono_error_cleanup (&error);
+	}
+	mono_error_cleanup (target_error);
+
+	mono_raise_exception (ex);	
 }

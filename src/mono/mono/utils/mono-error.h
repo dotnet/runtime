@@ -21,11 +21,12 @@ enum {
 	MONO_ERROR_FILE_NOT_FOUND = 4,
 	MONO_ERROR_BAD_IMAGE = 5,
 	MONO_ERROR_OUT_OF_MEMORY = 6,
+	MONO_ERROR_ARGUMENT = 7,
 	/*
 	 * This is a generic error mechanism is you need to raise an arbitrary corlib exception.
 	 * You must pass the exception name otherwise prepare_exception will fail with internal execution. 
 	 */
-	MONO_ERROR_GENERIC = 7
+	MONO_ERROR_GENERIC = 8
 };
 
 /*Keep in sync with MonoErrorInternal*/
