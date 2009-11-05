@@ -5358,6 +5358,8 @@ debugger_thread (void *arg)
 
 	mono_thread_internal_current ()->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
 
+	mono_set_is_debugger_attached (TRUE);
+
 	while (TRUE) {
 		res = read (conn_fd, header, HEADER_LENGTH);
 
@@ -5445,6 +5447,8 @@ debugger_thread (void *arg)
 		if (command_set == CMD_SET_VM && command == CMD_VM_DISPOSE)
 			break;
 	}
+
+	mono_set_is_debugger_attached (FALSE);
 
 	mono_mutex_lock (&debugger_thread_exited_mutex);
 	debugger_thread_exited = TRUE;
