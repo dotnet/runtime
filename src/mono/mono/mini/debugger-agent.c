@@ -58,6 +58,8 @@ typedef struct {
 	char *address;
 	int log_level;
 	char *log_file;
+	gboolean suspend;
+	gboolean server;
 } AgentConfig;
 
 typedef struct
@@ -489,8 +491,21 @@ print_usage (void)
 	fprintf (stderr, "Available options:\n");
 	fprintf (stderr, "  transport=<transport>\t\tTransport to use for connecting to the debugger (mandatory, possible values: 'dt_socket')\n");
 	fprintf (stderr, "  address=<hostname>:<port>\tAddress to connect to (mandatory)\n");
-	fprintf (stderr, "  loglevel=<n>\tLog level (defaults to 0)\n");
-	fprintf (stderr, "  logfile=<file>\tFile to log to (defaults to stdout)\n");
+	fprintf (stderr, "  loglevel=<n>\t\t\tLog level (defaults to 0)\n");
+	fprintf (stderr, "  logfile=<file>\t\tFile to log to (defaults to stdout)\n");
+	fprintf (stderr, "  suspend=y/n\t\t\tWhenever to suspend after startup.\n");
+	fprintf (stderr, "  help\t\t\t\tPrint this help.\n");
+}
+
+static int
+parse_flag (char *flag)
+{
+	if (!strcmp (flag, "y"))
+		return TRUE;
+	else if (!strcmp (flag, "n"))
+		return FALSE;
+	else
+		return -1;
 }
 
 void
@@ -506,6 +521,8 @@ mono_debugger_agent_parse_options (char *options)
 #endif
 
 	agent_config.enabled = TRUE;
+	agent_config.suspend = TRUE;
+	agent_config.server = FALSE;
 
 	args = g_strsplit (options, ",", -1);
 	for (ptr = args; ptr && *ptr; ptr ++) {
@@ -519,6 +536,23 @@ mono_debugger_agent_parse_options (char *options)
 			agent_config.log_level = atoi (arg + 9);
 		} else if (strncmp (arg, "logfile=", 8) == 0) {
 			agent_config.log_file = g_strdup (arg + 8);
+		} else if (strncmp (arg, "suspend=", 8) == 0) {
+			int flag = parse_flag (arg + 8);
+			if (flag == -1) {
+				fprintf (stderr, "debugger-agent: The valid values for the 'suspend' option are 'y' and 'n'.\n");
+				exit (1);
+			}
+			agent_config.suspend = flag ? TRUE : FALSE;
+		} else if (strncmp (arg, "server=", 7) == 0) {
+			int flag = parse_flag (arg + 7);
+			if (flag == -1) {
+				fprintf (stderr, "debugger-agent: The valid values for the 'server' option are 'y' and 'n'.\n");
+				exit (1);
+			}
+			agent_config.server = flag ? TRUE : FALSE;
+		} else if (strncmp (arg, "help", 4) == 0) {
+			print_usage ();
+			exit (0);
 		} else {
 			print_usage ();
 			exit (1);
@@ -534,12 +568,12 @@ mono_debugger_agent_parse_options (char *options)
 		exit (1);
 	}
 
-	if (agent_config.address == NULL) {
+	if (agent_config.address == NULL && !agent_config.server) {
 		fprintf (stderr, "debugger-agent: The 'address' option is mandatory.\n");
 		exit (1);
 	}
 
-	if (parse_address (agent_config.address, &host, &port)) {
+	if (agent_config.address && parse_address (agent_config.address, &host, &port)) {
 		fprintf (stderr, "debugger-agent: The format of the 'address' options is '<host>:<port>'\n");
 		exit (1);
 	}
@@ -583,8 +617,13 @@ mono_debugger_agent_init (void)
 	loaded_classes = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	pending_assembly_loads = g_ptr_array_new ();
 
-	res = parse_address (agent_config.address, &host, &port);
-	g_assert (res == 0);
+	if (agent_config.address) {
+		res = parse_address (agent_config.address, &host, &port);
+		g_assert (res == 0);
+	} else {
+		host = NULL;
+		port = 0;
+	}
 
 	log_level = agent_config.log_level;
 
@@ -652,6 +691,11 @@ mono_debugger_agent_cleanup (void)
 	ids_cleanup ();
 }
 
+/*
+ * transport_connect:
+ *
+ *   Connect/Listen on HOST:PORT. If HOST is NULL, generate an address and listen on it.
+ */
 static void
 transport_connect (char *host, int port)
 {
@@ -662,53 +706,115 @@ transport_connect (char *host, int port)
 	char handshake_msg [128];
 	guint8 buf [128];
 
-	sprintf (port_string, "%d", port);
+	conn_fd = -1;
 
-	/* Obtain address(es) matching host/port */
+	if (host) {
+		sprintf (port_string, "%d", port);
 
-	memset (&hints, 0, sizeof (struct addrinfo));
-	hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
-	hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
-	hints.ai_flags = 0;
-	hints.ai_protocol = 0;          /* Any protocol */
+		/* Obtain address(es) matching host/port */
 
-	s = getaddrinfo (host, port_string, &hints, &result);
-	if (s != 0) {
-		fprintf (stderr, "debugger-agent: Unable to connect to %s:%d: %s\n", host, port, gai_strerror (s));
-		exit (1);
+		memset (&hints, 0, sizeof (struct addrinfo));
+		hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+		hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
+		hints.ai_flags = 0;
+		hints.ai_protocol = 0;          /* Any protocol */
+
+		s = getaddrinfo (host, port_string, &hints, &result);
+		if (s != 0) {
+			fprintf (stderr, "debugger-agent: Unable to connect to %s:%d: %s\n", host, port, gai_strerror (s));
+			exit (1);
+		}
 	}
 
-	/* getaddrinfo() returns a list of address structures.
-	   Try each address until we successfully connect().
-	   If socket() (or connect()) fails, we (close the socket
-	   and) try the next address. */
+	if (agent_config.server) {
+		/* Wait for a connection */
+		if (!host) {
+			struct sockaddr_in addr;
+			socklen_t addrlen;
 
-	for (rp = result; rp != NULL; rp = rp->ai_next) {
-		sfd = socket (rp->ai_family, rp->ai_socktype,
-					  rp->ai_protocol);
-		if (sfd == -1)
-			continue;
+			/* No address, generate one */
+			sfd = socket (AF_INET, SOCK_STREAM, 0);
+			g_assert (sfd);
 
-		if (connect (sfd, rp->ai_addr, rp->ai_addrlen) != -1)
-			break;       /* Success */
+			/* This will bind the socket to a random port */
+			res = listen (sfd, 16);
+			if (res == -1) {
+				fprintf (stderr, "debugger-agent: Unable to setup listening socket: %s\n", strerror (errno));
+				exit (1);
+			}
 
-		close (sfd);
-	}
-	
-	freeaddrinfo (result);
+			addrlen = sizeof (addr);
+			memset (&addr, 0, sizeof (addr));
+			res = getsockname (sfd, &addr, &addrlen);
+			g_assert (res == 0);
 
-	if (rp == 0) {
-		fprintf (stderr, "debugger-agent: Unable to connect to %s:%d\n", host, port);
-		exit (1);
+			/* Emit the address to stdout */
+			/* FIXME: Should print another interface, not localhost */
+			printf ("127.0.0.1:%d\n", ntohs (addr.sin_port));
+
+			conn_fd = accept (sfd, NULL, NULL);
+			g_assert (conn_fd != -1);
+		} else {
+			/* Listen on the provided address */
+			for (rp = result; rp != NULL; rp = rp->ai_next) {
+				sfd = socket (rp->ai_family, rp->ai_socktype,
+							  rp->ai_protocol);
+				if (sfd == -1)
+					continue;
+
+				res = bind (sfd, rp->ai_addr, rp->ai_addrlen);
+				if (res == -1)
+					continue;
+
+				res = listen (sfd, 16);
+				if (res == -1)
+					continue;
+
+				DEBUG (1, fprintf (log_file, "Listening on %s:%d...\n", host, port));
+				conn_fd = accept (sfd, NULL, NULL);
+				if (conn_fd != -1)
+					break;
+			}
+
+			freeaddrinfo (result);
+
+			if (rp == 0) {
+				fprintf (stderr, "debugger-agent: Unable to listen on %s:%d\n", host, port);
+				exit (1);
+			}
+		}
+
+		DEBUG (1, fprintf (log_file, "Accepted connection from client, socket fd=%d.\n", conn_fd));
+	} else {
+		for (rp = result; rp != NULL; rp = rp->ai_next) {
+			sfd = socket (rp->ai_family, rp->ai_socktype,
+						  rp->ai_protocol);
+			if (sfd == -1)
+				continue;
+
+			if (connect (sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+				break;       /* Success */
+			
+			close (sfd);
+		}
+
+		conn_fd = sfd;
+
+		freeaddrinfo (result);
+
+		if (rp == 0) {
+			fprintf (stderr, "debugger-agent: Unable to connect to %s:%d\n", host, port);
+			exit (1);
+		}
 	}
 	
 	/* Write handshake message */
 	sprintf (handshake_msg, "DWP-Handshake");
-	res = write (sfd, handshake_msg, strlen (handshake_msg));
+	res = write (conn_fd, handshake_msg, strlen (handshake_msg));
 	g_assert (res != -1);
 
 	/* Read answer */
-	res = read (sfd, buf, strlen (handshake_msg));
+	res = read (conn_fd, buf, strlen (handshake_msg));
 	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg) != 0))) {
 		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
 		exit (1);
@@ -720,15 +826,13 @@ transport_connect (char *host, int port)
 	 */
 	{
 		int flag = 1;
-		int result = setsockopt(sfd,
+		int result = setsockopt(conn_fd,
                                  IPPROTO_TCP,
                                  TCP_NODELAY,
                                  (char *) &flag,
                                  sizeof(int));
 		g_assert (result >= 0);
 	}
-
-	conn_fd = sfd;
 }
 
 static gboolean
@@ -2033,7 +2137,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	}
 
 	if (event == EVENT_KIND_VM_START) {
-		suspend_policy = SUSPEND_POLICY_ALL;
+		suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;
 		start_debugger_thread ();
 	}
    
