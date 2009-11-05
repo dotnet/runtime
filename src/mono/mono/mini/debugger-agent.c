@@ -61,6 +61,7 @@ typedef struct {
 	gboolean suspend;
 	gboolean server;
 	int timeout;
+	char *launch;
 } AgentConfig;
 
 typedef struct
@@ -557,6 +558,8 @@ mono_debugger_agent_parse_options (char *options)
 			exit (0);
 		} else if (strncmp (arg, "timeout=", 8) == 0) {
 			agent_config.timeout = atoi (arg + 8);
+		} else if (strncmp (arg, "launch=", 7) == 0) {
+			agent_config.launch = g_strdup (arg + 7);
 		} else {
 			print_usage ();
 			exit (1);
@@ -656,6 +659,24 @@ mono_debugger_agent_init (void)
 	mono_disable_optimizations (MONO_OPT_LINEARS);
 
 	inited = TRUE;
+
+	if (agent_config.launch) {
+		char *argv [16];
+
+		// FIXME: Generated address
+		// FIXME: Races with transport_connect ()
+
+		argv [0] = agent_config.launch;
+		argv [1] = agent_config.transport;
+		argv [2] = agent_config.address;
+		argv [3] = NULL;
+
+		res = g_spawn_async_with_pipes (NULL, argv, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		if (!res) {
+			fprintf (stderr, "Failed to execute '%s'.\n", agent_config.launch);
+			exit (1);
+		}
+	}
 
 	transport_connect (host, port);
 }
