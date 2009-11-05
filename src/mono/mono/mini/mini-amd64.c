@@ -3496,6 +3496,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SEQ_POINT: {
 			int i, il_offset;
 
+			if (cfg->compile_aot)
+				NOT_IMPLEMENTED;
+
 			/* 
 			 * Read from the single stepping trigger page. This will cause a
 			 * SIGSEGV when single stepping is enabled.
