@@ -1450,6 +1450,9 @@ mono_class_compute_gc_descriptor (MonoClass *class) MONO_INTERNAL;
 MonoObject*
 mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, MonoObject **exc) MONO_INTERNAL;
 
+char *
+mono_string_to_utf8_checked (MonoString *s, MonoError *error) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 

@@ -40,6 +40,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-error-internals.h>
 #include "cominterop.h"
 
 #ifdef HAVE_BOEHM_GC
@@ -5081,13 +5082,28 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
  *
  * Return the UTF8 representation for @s.
  * the resulting buffer nedds to be freed with g_free().
+ *
+ * @deprecated Use mono_string_to_utf8_checked to avoid having an exception arbritraly raised.
  */
 char *
 mono_string_to_utf8 (MonoString *s)
 {
+	MonoError error;
+	char *result = mono_string_to_utf8_checked (s, &error);
+	
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+	return result;
+}
+
+char *
+mono_string_to_utf8_checked (MonoString *s, MonoError *error)
+{
 	long written = 0;
 	char *as;
-	GError *error = NULL;
+	GError *gerror = NULL;
+
+	mono_error_init (error);
 
 	if (s == NULL)
 		return NULL;
@@ -5095,11 +5111,11 @@ mono_string_to_utf8 (MonoString *s)
 	if (!s->length)
 		return g_strdup ("");
 
-	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, &written, &error);
-	if (error) {
-		MonoException *exc = mono_get_exception_argument ("string", error->message);
-		g_error_free (error);
-		mono_raise_exception(exc);
+	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, &written, &gerror);
+	if (gerror) {
+		mono_error_set_argument (error, "string", "%s", gerror->message);
+		g_error_free (gerror);
+		return NULL;
 	}
 	/* g_utf16_to_utf8  may not be able to complete the convertion (e.g. NULL values were found, #335488) */
 	if (s->length > written) {
