@@ -2537,6 +2537,8 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req)
 	bp->req = req;
 	bp->children = g_ptr_array_new ();
 
+	DEBUG(1, fprintf (log_file, "[dbg] Setting breakpoint at %s:0x%x.\n", mono_method_full_name (method, TRUE), (int)il_offset));
+
 	domain = mono_domain_get ();
 	mono_domain_lock (domain);
 	if (method) {
