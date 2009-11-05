@@ -61,6 +61,7 @@ typedef struct {
 	gboolean suspend;
 	gboolean server;
 	gboolean onuncaught;
+	GSList *onthrow;
 	int timeout;
 	char *launch;
 } AgentConfig;
@@ -560,6 +561,9 @@ mono_debugger_agent_parse_options (char *options)
 			agent_config.server = parse_flag ("server", arg + 7);
 		} else if (strncmp (arg, "onuncaught=", 11) == 0) {
 			agent_config.onuncaught = parse_flag ("onuncaught", arg + 11);
+		} else if (strncmp (arg, "onthrow=", 8) == 0) {
+			/* We support multiple onthrow= options */
+			agent_config.onthrow = g_slist_append (agent_config.onthrow, g_strdup (arg + 8));
 		} else if (strncmp (arg, "help", 4) == 0) {
 			print_usage ();
 			exit (0);
@@ -653,7 +657,7 @@ mono_debugger_agent_init (void)
 	/* This is needed because we can't set local variables in registers yet */
 	mono_disable_optimizations (MONO_OPT_LINEARS);
 
-	if (!agent_config.onuncaught)
+	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
 }
 
@@ -3224,6 +3228,33 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 {
 	int suspend_policy;
 	GSList *events;
+
+	/* Just-In-Time debugging */
+	if (agent_config.onthrow && !inited) {
+		GSList *l;
+		gboolean found = FALSE;
+
+		for (l = agent_config.onthrow; l; l = l->next) {
+			char *ex_type = l->data;
+			char *f = mono_type_full_name (&exc->object.vtable->klass->byval_arg);
+
+			if (!strcmp (ex_type, f))
+				found = TRUE;
+
+			g_free (f);
+		}
+
+		if (found) {
+			finish_agent_init (FALSE);
+
+			/*
+			 * Send an unsolicited EXCEPTION event with a dummy request id.
+			 */
+			events = g_slist_append (NULL, GUINT_TO_POINTER (0xffffff));
+			process_event (EVENT_KIND_EXCEPTION, exc, 0, ctx, events, SUSPEND_POLICY_ALL);
+			return;
+		}
+	}
 
 	if (!inited)
 		return;
