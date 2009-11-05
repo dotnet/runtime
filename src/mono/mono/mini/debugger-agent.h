@@ -27,4 +27,7 @@ gboolean mono_debugger_agent_thread_interrupt (MonoJitInfo *ji) MONO_INTERNAL;
 void
 mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *ctx) MONO_INTERNAL;
 
+void
+mono_debugger_agent_handle_unhandled_exception (MonoException *ext, MonoContext *ctx) MONO_INTERNAL;
+
 #endif

@@ -60,6 +60,7 @@ typedef struct {
 	char *log_file;
 	gboolean suspend;
 	gboolean server;
+	gboolean onuncaught;
 	int timeout;
 	char *launch;
 } AgentConfig;
@@ -360,7 +361,14 @@ typedef struct {
 
 static AgentConfig agent_config;
 
-static gboolean inited;
+/* 
+ * Whenever the agent is fully initialized.
+ * When using the onuncaught or onthrow options, only some parts of the agent are
+ * initialized on startup, and the full initialization which includes connection
+ * establishment and the startup of the agent thread is only done in response to
+ * an event.
+ */
+static gint32 inited;
 
 static int conn_fd;
 
@@ -469,6 +477,10 @@ static void suspend_init (void);
 static ErrorCode ss_start (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req);
 static void ss_stop (EventRequest *req);
 
+static void start_debugger_thread (void);
+
+static void finish_agent_init (gboolean on_startup);
+
 static int
 parse_address (char *address, char **host, int *port)
 {
@@ -500,15 +512,18 @@ print_usage (void)
 	fprintf (stderr, "  help\t\t\t\tPrint this help.\n");
 }
 
-static int
-parse_flag (char *flag)
+static gboolean
+parse_flag (const char *option, char *flag)
 {
 	if (!strcmp (flag, "y"))
 		return TRUE;
 	else if (!strcmp (flag, "n"))
 		return FALSE;
-	else
-		return -1;
+	else {
+		fprintf (stderr, "debugger-agent: The valid values for the '%s' option are 'y' and 'n'.\n", option);
+		exit (1);
+		return FALSE;
+	}
 }
 
 void
@@ -540,19 +555,11 @@ mono_debugger_agent_parse_options (char *options)
 		} else if (strncmp (arg, "logfile=", 8) == 0) {
 			agent_config.log_file = g_strdup (arg + 8);
 		} else if (strncmp (arg, "suspend=", 8) == 0) {
-			int flag = parse_flag (arg + 8);
-			if (flag == -1) {
-				fprintf (stderr, "debugger-agent: The valid values for the 'suspend' option are 'y' and 'n'.\n");
-				exit (1);
-			}
-			agent_config.suspend = flag ? TRUE : FALSE;
+			agent_config.suspend = parse_flag ("suspend", arg + 8);
 		} else if (strncmp (arg, "server=", 7) == 0) {
-			int flag = parse_flag (arg + 7);
-			if (flag == -1) {
-				fprintf (stderr, "debugger-agent: The valid values for the 'server' option are 'y' and 'n'.\n");
-				exit (1);
-			}
-			agent_config.server = flag ? TRUE : FALSE;
+			agent_config.server = parse_flag ("server", arg + 7);
+		} else if (strncmp (arg, "onuncaught=", 11) == 0) {
+			agent_config.onuncaught = parse_flag ("onuncaught", arg + 11);
 		} else if (strncmp (arg, "help", 4) == 0) {
 			print_usage ();
 			exit (0);
@@ -589,10 +596,6 @@ mono_debugger_agent_parse_options (char *options)
 void
 mono_debugger_agent_init (void)
 {
-	char *host;
-	int port;
-	int res;
-
 	if (!agent_config.enabled)
 		return;
 
@@ -624,14 +627,6 @@ mono_debugger_agent_init (void)
 	loaded_classes = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	pending_assembly_loads = g_ptr_array_new ();
 
-	if (agent_config.address) {
-		res = parse_address (agent_config.address, &host, &port);
-		g_assert (res == 0);
-	} else {
-		host = NULL;
-		port = 0;
-	}
-
 	log_level = agent_config.log_level;
 
 	if (agent_config.log_file) {
@@ -658,7 +653,26 @@ mono_debugger_agent_init (void)
 	/* This is needed because we can't set local variables in registers yet */
 	mono_disable_optimizations (MONO_OPT_LINEARS);
 
-	inited = TRUE;
+	if (!agent_config.onuncaught)
+		finish_agent_init (TRUE);
+}
+
+/*
+ * finish_agent_init:
+ *
+ *   Finish the initialization of the agent. This involves connecting the transport
+ * and starting the agent thread. This is either done at startup, or
+ * in response to some event like an unhandled exception.
+ */
+static void
+finish_agent_init (gboolean on_startup)
+{
+	char *host;
+	int port;
+	int res;
+
+	if (InterlockedCompareExchange (&inited, 1, 0) == 1)
+		return;
 
 	if (agent_config.launch) {
 		char *argv [16];
@@ -678,13 +692,27 @@ mono_debugger_agent_init (void)
 		}
 	}
 
+	if (agent_config.address) {
+		res = parse_address (agent_config.address, &host, &port);
+		g_assert (res == 0);
+	} else {
+		host = NULL;
+		port = 0;
+	}
+
 	transport_connect (host, port);
+
+	if (!on_startup) {
+		/* Do some which is usually done after sending the VMStart () event */
+		vm_start_event_sent = TRUE;
+		start_debugger_thread ();
+	}
 }
 
 static void
 mono_debugger_agent_cleanup (void)
 {
-	if (!agent_config.enabled)
+	if (!inited)
 		return;
 
 	/* This will interrupt the agent thread */
@@ -1561,7 +1589,7 @@ mono_debugger_agent_thread_interrupt (MonoJitInfo *ji)
 {
 	DebuggerTlsData *tls;
 
-	if (!agent_config.enabled)
+	if (!inited)
 		return FALSE;
 
 	tls = TlsGetValue (debugger_tls_id);
@@ -2100,7 +2128,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	MonoDomain *domain = mono_domain_get ();
 	MonoThread *thread;
 
-	if (!agent_config.enabled)
+	if (!inited)
 		return;
 
 	if (!vm_start_event_sent && event != EVENT_KIND_VM_START)
@@ -3197,7 +3225,7 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 	int suspend_policy;
 	GSList *events;
 
-	if (!agent_config.enabled)
+	if (!inited)
 		return;
 
 	mono_loader_lock ();
@@ -3205,6 +3233,23 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 	mono_loader_unlock ();
 
 	process_event (EVENT_KIND_EXCEPTION, exc, 0, ctx, events, suspend_policy);
+}
+
+void
+mono_debugger_agent_handle_unhandled_exception (MonoException *exc, MonoContext *ctx)
+{
+	GSList *events;
+
+	if (!agent_config.onuncaught)
+		return;
+
+	finish_agent_init (FALSE);
+
+	/*
+	 * Send an unsolicited EXCEPTION event with a dummy request id.
+	 */
+	events = g_slist_append (NULL, GUINT_TO_POINTER (0xffffff));
+	process_event (EVENT_KIND_EXCEPTION, exc, 0, ctx, events, SUSPEND_POLICY_ALL);
 }
 
 /*
