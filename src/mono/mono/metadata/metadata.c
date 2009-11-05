@@ -183,7 +183,7 @@ const static unsigned char TableSchemas [] = {
 #define EVENT_SCHEMA_OFFSET EVENTMAP_SCHEMA_OFFSET + 3
 	MONO_MT_UINT16,     /* "EventFlags#EventAttribute" }, */
 	MONO_MT_STRING_IDX, /* "Name" }, */
-	MONO_MT_TABLE_IDX,  /* "EventType" }, TypeDef or TypeRef  */
+	MONO_MT_TDOR_IDX,  /* "EventType" }, TypeDef or TypeRef or TypeSpec  */
 	MONO_MT_END,
 
 #define EVENT_POINTER_SCHEMA_OFFSET EVENT_SCHEMA_OFFSET + 4
@@ -536,7 +536,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			case MONO_TABLE_ASSEMBLYREFOS:
 				g_assert (i == 3);
 				field_size = idx_size (MONO_TABLE_ASSEMBLYREF); break;
-			case MONO_TABLE_ASSEMBLYPROCESSOR:
+			case MONO_TABLE_ASSEMBLYREFPROCESSOR:
 				g_assert (i == 1);
 				field_size = idx_size (MONO_TABLE_ASSEMBLYREF); break;
 			case MONO_TABLE_CLASSLAYOUT:
@@ -546,13 +546,6 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				g_assert (i == 0 || i == 1);
 				field_size = i ? idx_size (MONO_TABLE_EVENT):
 					idx_size(MONO_TABLE_TYPEDEF); 
-				break;
-			case MONO_TABLE_EVENT:
-				g_assert (i == 2);
-				n = MAX (meta->tables [MONO_TABLE_TYPEDEF].rows, meta->tables [MONO_TABLE_TYPEREF].rows);
-				n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
-				/*This is a coded token for 3 tables, so takes 2 bits */
-				field_size = rtsize (n, 16 - MONO_TYPEDEFORREF_BITS);
 				break;
 			case MONO_TABLE_EVENT_POINTER:
 				g_assert (i == 0);
@@ -608,24 +601,18 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 					idx_size(MONO_TABLE_METHOD);
 				break;
 			case MONO_TABLE_GENERICPARAM:
-				g_assert (i == 2 || i == 4 || i == 5);
-				if (i == 2) {
-					n = MAX (meta->tables [MONO_TABLE_METHOD].rows, meta->tables [MONO_TABLE_TYPEDEF].rows);
-					/*This is a coded token for 2 tables, so takes 1 bit */
-					field_size = rtsize (n, 16 - MONO_TYPEORMETHOD_BITS);
-				} else if (i == 4)
-					field_size = idx_size (MONO_TABLE_TYPEDEF);
-				else if (i == 5)
-					field_size = idx_size (MONO_TABLE_TYPEDEF);
+				g_assert (i == 2);
+				n = MAX (meta->tables [MONO_TABLE_METHOD].rows, meta->tables [MONO_TABLE_TYPEDEF].rows);
+				/*This is a coded token for 2 tables, so takes 1 bit */
+				field_size = rtsize (n, 16 - MONO_TYPEORMETHOD_BITS);
 				break;
-
 			case MONO_TABLE_GENERICPARAMCONSTRAINT:
 				g_assert (i == 0);
 				field_size = idx_size (MONO_TABLE_GENERICPARAM);
 				break;
 				
 			default:
-				g_assert_not_reached ();
+				g_error ("Can't handle MONO_MT_TABLE_IDX for table %d element %d", tableindex, i);
 			}
 			break;
 
