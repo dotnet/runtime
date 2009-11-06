@@ -36,6 +36,10 @@
 #include <pthread.h>
 #endif
 
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
+
 #ifdef PLATFORM_ANDROID
 #include <linux/in.h>
 #include <linux/tcp.h>
@@ -2889,28 +2893,38 @@ process_breakpoint (void)
 	g_assert_not_reached ();
 }
 
-void
-mono_debugger_agent_breakpoint_hit (void *sigctx)
+static void
+resume_from_signal_handler (void *sigctx, void *func)
 {
 	DebuggerTlsData *tls;
 	MonoContext ctx;
 
+	/* Save the original context in TLS */
+	// FIXME: This might not work on an altstack ?
+	tls = TlsGetValue (debugger_tls_id);
+	g_assert (tls);
+
+	// FIXME: MonoContext usually doesn't include the fp registers, so these are 
+	// clobbered by a single step/breakpoint event. If this turns out to be a problem,
+	// clob:c could be added to op_seq_point.
+
+	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+	memcpy (&tls->handler_ctx, &ctx, sizeof (MonoContext));
+	MONO_CONTEXT_SET_IP (&ctx, func);
+
+	mono_arch_monoctx_to_sigctx (&ctx, sigctx);
+}
+
+void
+mono_debugger_agent_breakpoint_hit (void *sigctx)
+{
 	/*
 	 * We are called from a signal handler, and running code there causes all kinds of
 	 * problems, like the original signal is disabled, libgc can't handle altstack, etc.
 	 * So set up the signal context to return to the real breakpoint handler function.
 	 */
 
-	// FIXME: This might not work on an altstack ?
-	tls = TlsGetValue (debugger_tls_id);
-	g_assert (tls);
-
-	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
-	memcpy (&tls->handler_ctx, &ctx, sizeof (MonoContext));
-	
-	MONO_CONTEXT_SET_IP (&ctx, process_breakpoint);
-
-	mono_arch_monoctx_to_sigctx (&ctx, sigctx);
+	resume_from_signal_handler (sigctx, process_breakpoint);
 }
 
 static void
@@ -3103,25 +3117,13 @@ process_single_step (void)
 void
 mono_debugger_agent_single_step_event (void *sigctx)
 {
-	DebuggerTlsData *tls;
-	MonoContext ctx;
-
 	/* Resume to process_single_step through the signal context */
 
 	// FIXME: Since step out/over is implemented using step in, the step in case should
 	// be as fast as possible. Move the relevant code from process_single_step_inner ()
 	// here
 
-	/* Save the original context in TLS */
-	// FIXME: This might not work on an altstack ?
-	tls = TlsGetValue (debugger_tls_id);
-	g_assert (tls);
-	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
-	memcpy (&tls->handler_ctx, &ctx, sizeof (MonoContext));
-	
-	MONO_CONTEXT_SET_IP (&ctx, process_single_step);
-
-	mono_arch_monoctx_to_sigctx (&ctx, sigctx);
+	resume_from_signal_handler (sigctx, process_single_step);
 }
 
 /*
