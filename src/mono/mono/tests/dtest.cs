@@ -1757,7 +1757,8 @@ public class DebuggerTests
 
 		e = vm.GetNextEvent ();
 		Assert.IsInstanceOfType (typeof (ThreadStartEvent), e);
-		Assert.AreEqual (ThreadState.Running, e.Thread.ThreadState);
+		var state = e.Thread.ThreadState;
+		Assert.IsTrue (state == ThreadState.Running || state == ThreadState.Unstarted);
 
 		vm.Resume ();
 
