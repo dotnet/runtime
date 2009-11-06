@@ -2485,9 +2485,12 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 }
 
 static void
-handle_thunk (int absolute, guchar *code, const guchar *target) {
-	MonoDomain *domain = mono_domain_get ();
+handle_thunk (MonoDomain *domain, int absolute, guchar *code, const guchar *target)
+{
 	PatchData pdata;
+
+	if (!domain)
+		domain = mono_domain_get ();
 
 	pdata.code = code;
 	pdata.target = target;
@@ -2509,8 +2512,8 @@ handle_thunk (int absolute, guchar *code, const guchar *target) {
 	g_assert (pdata.found == 1);
 }
 
-void
-arm_patch (guchar *code, const guchar *target)
+static void
+arm_patch_general (MonoDomain *domain, guchar *code, const guchar *target)
 {
 	guint32 *code32 = (void*)code;
 	guint32 ins = *code32;
@@ -2556,7 +2559,7 @@ arm_patch (guchar *code, const guchar *target)
 			}
 		}
 		
-		handle_thunk (TRUE, code, target);
+		handle_thunk (domain, TRUE, code, target);
 		return;
 	}
 
@@ -2654,6 +2657,12 @@ arm_patch (guchar *code, const guchar *target)
 		g_assert_not_reached ();
 	}
 //	g_print ("patched with 0x%08x\n", ins);
+}
+
+void
+arm_patch (guchar *code, const guchar *target)
+{
+	arm_patch_general (NULL, code, target);
 }
 
 /* 
@@ -4232,7 +4241,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		default:
 			break;
 		}
-		arm_patch (ip, target);
+		arm_patch_general (domain, ip, target);
 	}
 }
 
