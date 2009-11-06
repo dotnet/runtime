@@ -9322,8 +9322,12 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 		/* Put into cache so mono_class_get () will find it.
 		Skip nested types as those should not be available on the global scope. */
-		if (!tb->nesting_type)
+		if (!tb->nesting_type) {
 			mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name, tb->table_idx);
+		} else {
+			klass->image->reflection_info_unregister_classes =
+				g_slist_prepend (klass->image->reflection_info_unregister_classes, klass);
+		}
 	} else {
 		g_assert (klass->reflection_info == tb);
 	}
