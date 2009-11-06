@@ -685,7 +685,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 		"svc     0x00000000\n"
 		:
 		:	"r" (code), "r" (code + size), "r" (syscall)
-		:	"r0", "r1", "r7"
+		:	"r0", "r1", "r7", "r2"
 		);
 #else
 	__asm __volatile ("mov r0, %0\n"

@@ -568,6 +568,7 @@ mono_runtime_syscall_fork ()
 	return (pid_t) syscall (SYS_fork);
 #else
 	g_assert_not_reached ();
+	return;
 #endif
 }
 

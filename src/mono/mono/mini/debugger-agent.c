@@ -36,6 +36,12 @@
 #include <pthread.h>
 #endif
 
+#ifdef PLATFORM_ANDROID
+#include <linux/in.h>
+#include <linux/tcp.h>
+#include <sys/endian.h>
+#endif
+
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/debug-mono-symfile.h>
