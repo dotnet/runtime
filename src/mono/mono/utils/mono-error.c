@@ -453,11 +453,12 @@ void
 mono_error_raise_exception (MonoError *target_error)
 {
 	MonoError error;
+	MonoException *ex;
 
 	if (mono_error_ok (target_error))
 		return;
 
-	MonoException *ex = mono_error_prepare_exception (target_error, &error);
+	ex = mono_error_prepare_exception (target_error, &error);
 	if (!mono_error_ok (&error)) {
 		MonoError second_chance;
 		/*Try to produce the exception for the second error. FIXME maybe we should log about the original one*/
