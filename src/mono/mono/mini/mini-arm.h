@@ -46,7 +46,7 @@
 #define MONO_SAVED_GREGS 10 /* r4-411, ip, lr */
 #define MONO_SAVED_FREGS 8
 
-/* r4-r11, ip, lr: registers saved in the LMF and MonoContext  */
+/* r4-r11, ip, lr: registers saved in the LMF  */
 #define MONO_ARM_REGSAVE_MASK 0x5ff0
 
 /* Parameters used by the register allocator */
@@ -120,7 +120,7 @@ typedef struct {
 	gulong eip;          // pc 
 	gulong ebp;          // fp
 	gulong esp;          // sp
-	gulong regs [MONO_SAVED_GREGS];
+	gulong regs [16];
 	double fregs [MONO_SAVED_FREGS];
 } MonoContext;
 
@@ -189,11 +189,11 @@ typedef struct MonoCompileArch {
 #if __APPLE__
 	#define UCONTEXT_REG_PC(ctx) ((ctx)->uc_mcontext->__ss.__pc)
 	#define UCONTEXT_REG_SP(ctx) ((ctx)->uc_mcontext->__ss.__sp)
-	#define UCONTEXT_REG_R4(ctx) ((ctx)->uc_mcontext->__ss.__r[4])
+	#define UCONTEXT_REG_R0(ctx) ((ctx)->uc_mcontext->__ss.__r[0])
 #else
 	#define UCONTEXT_REG_PC(ctx) ((ctx)->sig_ctx.arm_pc)
 	#define UCONTEXT_REG_SP(ctx) ((ctx)->sig_ctx.arm_sp)
-	#define UCONTEXT_REG_R4(ctx) ((ctx)->sig_ctx.arm_r4)
+	#define UCONTEXT_REG_R0(ctx) ((ctx)->sig_ctx.arm_r0)
 #endif
 
 /*
