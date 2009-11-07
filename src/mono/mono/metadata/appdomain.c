@@ -763,6 +763,7 @@ mono_parser = {
 void
 mono_set_private_bin_path_from_config (MonoDomain *domain)
 {
+	MonoError error;
 	gchar *config_file, *text;
 	gsize len;
 	GMarkupParseContext *context;
@@ -771,7 +772,11 @@ mono_set_private_bin_path_from_config (MonoDomain *domain)
 	if (!domain || !domain->setup || !domain->setup->configuration_file)
 		return;
 
-	config_file = mono_string_to_utf8 (domain->setup->configuration_file);
+	config_file = mono_string_to_utf8_checked (domain->setup->configuration_file, &error); 
+	if (!mono_error_ok (&error)) {
+		mono_error_cleanup (&error);
+		return;
+	}
 
 	if (!g_file_get_contents (config_file, &text, &len, NULL)) {
 		g_free (config_file);
@@ -989,13 +994,14 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 static void
 set_domain_search_path (MonoDomain *domain)
 {
+	MonoError error;
 	MonoAppDomainSetup *setup;
 	gchar **tmp;
 	gchar *search_path = NULL;
 	gint i;
 	gint npaths = 0;
 	gchar **pvt_split = NULL;
-	GError *error = NULL;
+	GError *gerror = NULL;
 	gint appbaselen = -1;
 
 	/* 
@@ -1021,8 +1027,15 @@ set_domain_search_path (MonoDomain *domain)
 
 	npaths++;
 	
-	if (setup->private_bin_path)
-		search_path = mono_string_to_utf8 (setup->private_bin_path);
+	if (setup->private_bin_path) {
+		search_path = mono_string_to_utf8_checked (setup->private_bin_path, &error);
+		if (!mono_error_ok (&error)) { /*FIXME maybe we should bubble up the error.*/
+			g_warning ("Could not decode AppDomain search path since it contains invalid caracters");
+			mono_error_cleanup (&error);
+			mono_domain_assemblies_unlock (domain);
+			return;
+		}
+	}
 	
 	if (domain->private_bin_path) {
 		if (search_path == NULL)
@@ -1077,10 +1090,20 @@ set_domain_search_path (MonoDomain *domain)
 	if (domain->search_path)
 		g_strfreev (domain->search_path);
 
-	domain->search_path = tmp = g_malloc ((npaths + 1) * sizeof (gchar *));
+	tmp = g_malloc ((npaths + 1) * sizeof (gchar *));
 	tmp [npaths] = NULL;
 
-	*tmp = mono_string_to_utf8 (setup->application_base);
+	*tmp = mono_string_to_utf8_checked (setup->application_base, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_cleanup (&error);
+		g_strfreev (pvt_split);
+		g_free (tmp);
+
+		mono_domain_assemblies_unlock (domain);
+		return;
+	}
+
+	domain->search_path = tmp;
 
 	/* FIXME: is this needed? */
 	if (strncmp (*tmp, "file://", 7) == 0) {
@@ -1093,15 +1116,15 @@ set_domain_search_path (MonoDomain *domain)
 
 		tmpuri = uri;
 		uri = mono_escape_uri_string (tmpuri);
-		*tmp = g_filename_from_uri (uri, NULL, &error);
+		*tmp = g_filename_from_uri (uri, NULL, &gerror);
 		g_free (uri);
 
 		if (tmpuri != file)
 			g_free (tmpuri);
 
-		if (error != NULL) {
-			g_warning ("%s\n", error->message);
-			g_error_free (error);
+		if (gerror != NULL) {
+			g_warning ("%s\n", gerror->message);
+			g_error_free (gerror);
 			*tmp = file;
 		} else {
 			g_free (file);
@@ -1216,7 +1239,7 @@ get_shadow_assembly_location_base (MonoDomain *domain)
 	
 	setup = domain->setup;
 	if (setup->cache_path != NULL && setup->application_name != NULL) {
-		cache_path = mono_string_to_utf8 (setup->cache_path);
+		cache_path = mono_string_to_utf8 (setup->cache_path); //FIXME
 #ifndef PLATFORM_WIN32
 		{
 			gint i;
@@ -1226,7 +1249,7 @@ get_shadow_assembly_location_base (MonoDomain *domain)
 		}
 #endif
 
-		appname = mono_string_to_utf8 (setup->application_name);
+		appname = mono_string_to_utf8 (setup->application_name);//FIXME
 		location = g_build_filename (cache_path, appname, "assembly", "shadow", NULL);
 		g_free (appname);
 		g_free (cache_path);
