@@ -33,6 +33,9 @@ mono_set_signal_chaining   (gboolean chain_signals);
 void
 mono_jit_set_aot_only      (gboolean aot_only);
 
+void
+mono_jit_parse_options     (int argc, char * argv[]);
+
 G_END_DECLS
 
 #endif

@@ -1216,6 +1216,41 @@ BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 }
 #endif
 
+static gboolean enable_debugging;
+
+/*
+ * mono_jit_parse_options:
+ *
+ *   Process the command line options in ARGV as done by the runtime executable. 
+ * This should be called before mono_jit_init ().
+ */
+void
+mono_jit_parse_options (int argc, char * argv[])
+{
+	int i;
+
+	/* 
+	 * Some options have no effect here, since they influence the behavior of 
+	 * mono_main ().
+	 */
+
+	/* FIXME: Avoid code duplication */
+	for (i = 0; i < argc; ++i) {
+		if (argv [i] [0] != '-')
+			break;
+ 		if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
+			MonoDebugOptions *opt = mini_get_debug_options ();
+
+ 			mono_debugger_agent_parse_options (argv [i] + 17);
+			opt->mdb_optimizations = TRUE;
+			enable_debugging = TRUE;
+		} else {
+			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
+			exit (1);
+		}
+	}
+}
+
 int
 mono_main (int argc, char* argv[])
 {
@@ -1229,7 +1264,6 @@ mono_main (int argc, char* argv[])
 	const char* aname, *mname = NULL;
 	char *config_file = NULL;
 	int i, count = 1;
-	int enable_debugging = FALSE;
 	guint32 opt, action = DO_EXEC;
 	MonoGraphOptions mono_graph_options = 0;
 	int mini_verbose = 0;
