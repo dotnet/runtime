@@ -125,8 +125,8 @@ typedef struct {
 } MonoContext;
 
 typedef struct MonoCompileArch {
-	int dummy;
 	gpointer seq_point_info_var, ss_trigger_page_var;
+	gpointer cinfo;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1

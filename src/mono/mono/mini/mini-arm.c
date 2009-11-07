@@ -698,7 +698,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 #endif
 }
 
-enum {
+typedef enum {
 	RegTypeNone,
 	RegTypeGeneral,
 	RegTypeIRegPair,
@@ -707,13 +707,13 @@ enum {
 	RegTypeFP,
 	RegTypeStructByVal,
 	RegTypeStructByAddr
-};
+} ArgStorage;
 
 typedef struct {
 	gint32  offset;
 	guint16 vtsize; /* in param area */
 	guint8  reg;
-	guint8  regtype : 4; /* 0 general, 1 basereg, 2 floating point register, see RegType* */
+	ArgStorage  storage;
 	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
 } ArgInfo;
 
@@ -743,10 +743,10 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 		if (*gr > ARMREG_R3) {
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
-			ainfo->regtype = RegTypeBase;
+			ainfo->storage = RegTypeBase;
 			*stack_size += 4;
 		} else {
-			ainfo->regtype = RegTypeGeneral;
+			ainfo->storage = RegTypeGeneral;
 			ainfo->reg = *gr;
 		}
 	} else {
@@ -766,7 +766,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			/* first word in r3 and the second on the stack */
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
-			ainfo->regtype = RegTypeBaseGen;
+			ainfo->storage = RegTypeBaseGen;
 			*stack_size += 4;
 		} else if (*gr >= ARMREG_R3) {
 #ifdef __ARM_EABI__
@@ -778,14 +778,14 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 #endif
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
-			ainfo->regtype = RegTypeBase;
+			ainfo->storage = RegTypeBase;
 			*stack_size += 8;
 		} else {
 #ifdef __ARM_EABI__
 			if (i8_align == 8 && ((*gr) & 1))
 				(*gr) ++;
 #endif
-			ainfo->regtype = RegTypeIRegPair;
+			ainfo->storage = RegTypeIRegPair;
 			ainfo->reg = *gr;
 		}
 		(*gr) ++;
@@ -794,22 +794,33 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 }
 
 static CallInfo*
-get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint i, gr;
 	int n = sig->hasthis + sig->param_count;
 	MonoType *simpletype;
 	guint32 stack_size = 0;
-	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * n);
+	CallInfo *cinfo;
+
+	if (mp)
+		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+	else
+		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
 	cinfo->nargs = n;
 	gr = ARMREG_R0;
 
 	/* FIXME: handle returning a struct */
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		add_general (&gr, &stack_size, &cinfo->ret, TRUE);
-		cinfo->struct_ret = ARMREG_R0;
-		cinfo->vtype_retaddr = TRUE;
+		guint32 align;
+
+		if (is_pinvoke && mono_class_native_size (mono_class_from_mono_type (sig->ret), &align) <= sizeof (gpointer)) {
+			cinfo->ret.storage = RegTypeStructByVal;
+		} else {
+			add_general (&gr, &stack_size, &cinfo->ret, TRUE);
+			cinfo->struct_ret = ARMREG_R0;
+			cinfo->vtype_retaddr = TRUE;
+		}
 	}
 
 	n = 0;
@@ -901,7 +912,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			align_size += (sizeof (gpointer) - 1);
 			align_size &= ~(sizeof (gpointer) - 1);
 			nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-			cinfo->args [n].regtype = RegTypeStructByVal;
+			cinfo->args [n].storage = RegTypeStructByVal;
 			/* FIXME: align stack_size if needed */
 #ifdef __ARM_EABI__
 			if (align >= 8 && (gr & 1))
@@ -958,34 +969,32 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_STRING:
-			cinfo->ret.regtype = RegTypeGeneral;
+			cinfo->ret.storage = RegTypeGeneral;
 			cinfo->ret.reg = ARMREG_R0;
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-			cinfo->ret.regtype = RegTypeIRegPair;
+			cinfo->ret.storage = RegTypeIRegPair;
 			cinfo->ret.reg = ARMREG_R0;
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
-			cinfo->ret.regtype = RegTypeFP;
+			cinfo->ret.storage = RegTypeFP;
 			cinfo->ret.reg = ARMREG_R0;
 			/* FIXME: cinfo->ret.reg = ???;
-			cinfo->ret.regtype = RegTypeFP;*/
+			cinfo->ret.storage = RegTypeFP;*/
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
-				cinfo->ret.regtype = RegTypeGeneral;
+				cinfo->ret.storage = RegTypeGeneral;
 				cinfo->ret.reg = ARMREG_R0;
 				break;
 			}
-			cinfo->ret.regtype = RegTypeStructByAddr;
-			break;
+			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
-			cinfo->ret.regtype = RegTypeStructByAddr;
-			break;
 		case MONO_TYPE_TYPEDBYREF:
-			cinfo->ret.regtype = RegTypeStructByAddr;
+			if (cinfo->ret.storage != RegTypeStructByVal)
+				cinfo->ret.storage = RegTypeStructByAddr;
 			break;
 		case MONO_TYPE_VOID:
 			break;
@@ -1015,6 +1024,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
 	int frame_reg = ARMREG_FP;
+	CallInfo *cinfo;
+
+	sig = mono_method_signature (cfg->method);
+
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig, sig->pinvoke);
+	cinfo = cfg->arch.cinfo;
 
 	/* FIXME: this will change when we use FP as gcc does */
 	cfg->flags |= MONO_CFG_HAS_SPILLUP;
@@ -1045,12 +1061,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* V5 is reserved for passing the vtable/rgctx/IMT method */
 		cfg->used_int_regs |= (1 << ARMREG_V5);
 
-	sig = mono_method_signature (cfg->method);
-	
 	offset = 0;
 	curinst = 0;
 	if (!MONO_TYPE_ISSTRUCT (sig->ret)) {
-		/* FIXME: handle long and FP values */
 		switch (mini_type_get_underlying_type (NULL, sig->ret)->type) {
 		case MONO_TYPE_VOID:
 			break;
@@ -1088,15 +1101,23 @@ mono_arch_allocate_vars (MonoCompile *cfg)
         }
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		inst = cfg->vret_addr;
-		offset += sizeof(gpointer) - 1;
-		offset &= ~(sizeof(gpointer) - 1);
-		inst->inst_offset = offset;
-		inst->opcode = OP_REGOFFSET;
-		inst->inst_basereg = frame_reg;
-		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			printf ("vret_addr =");
-			mono_print_ins (cfg->vret_addr);
+		if (cinfo->ret.storage == RegTypeStructByVal) {
+			cfg->ret->opcode = OP_REGOFFSET;
+			cfg->ret->inst_basereg = cfg->frame_reg;
+			offset += sizeof (gpointer) - 1;
+			offset &= ~(sizeof (gpointer) - 1);
+			cfg->ret->inst_offset = - offset;
+		} else {
+			inst = cfg->vret_addr;
+			offset += sizeof(gpointer) - 1;
+			offset &= ~(sizeof(gpointer) - 1);
+			inst->inst_offset = offset;
+			inst->opcode = OP_REGOFFSET;
+			inst->inst_basereg = frame_reg;
+			if (G_UNLIKELY (cfg->verbose_level > 1)) {
+				printf ("vret_addr =");
+				mono_print_ins (cfg->vret_addr);
+			}
 		}
 		offset += sizeof(gpointer);
 		if (sig->call_convention == MONO_CALL_VARARG)
@@ -1185,10 +1206,18 @@ void
 mono_arch_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
+	CallInfo *cinfo;
 
 	sig = mono_method_signature (cfg->method);
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig, sig->pinvoke);
+	cinfo = cfg->arch.cinfo;
+
+	if (cinfo->ret.storage == RegTypeStructByVal)
+		cfg->ret_var_is_local = TRUE;
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage != RegTypeStructByVal) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
@@ -1219,7 +1248,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	
-	cinfo = get_call_info (sig, sig->pinvoke);
+	cinfo = get_call_info (NULL, sig, sig->pinvoke);
 
 	for (i = 0; i < n; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
@@ -1238,7 +1267,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		in = call->args [i];
 
-		switch (ainfo->regtype) {
+		switch (ainfo->storage) {
 		case RegTypeGeneral:
 		case RegTypeIRegPair:
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
@@ -1394,12 +1423,17 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoInst *vtarg;
 
-		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
-		vtarg->sreg1 = call->vret_var->dreg;
-		vtarg->dreg = mono_alloc_preg (cfg);
-		MONO_ADD_INS (cfg->cbb, vtarg);
+		if (cinfo->ret.storage == RegTypeStructByVal) {
+			/* The JIT will transform this into a normal call */
+			call->vret_in_reg = TRUE;
+		} else {
+			MONO_INST_NEW (cfg, vtarg, OP_MOVE);
+			vtarg->sreg1 = call->vret_var->dreg;
+			vtarg->dreg = mono_alloc_preg (cfg);
+			MONO_ADD_INS (cfg->cbb, vtarg);
 
-		mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
+			mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
+		}
 	}
 
 	call->stack_usage = cinfo->stack_usage;
@@ -1507,7 +1541,7 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 	if (sig->hasthis + sig->param_count > PARAM_REGS + DYN_CALL_STACK_ARGS)
 		return FALSE;
 
-	switch (cinfo->ret.regtype) {
+	switch (cinfo->ret.storage) {
 	case RegTypeNone:
 	case RegTypeGeneral:
 	case RegTypeIRegPair:
@@ -1526,7 +1560,7 @@ dyn_call_supported (CallInfo *cinfo, MonoMethodSignature *sig)
 	}
 
 	for (i = 0; i < cinfo->nargs; ++i) {
-		switch (cinfo->args [i].regtype) {
+		switch (cinfo->args [i].storage) {
 		case RegTypeGeneral:
 			break;
 		case RegTypeIRegPair:
@@ -1578,7 +1612,7 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 	ArchDynCallInfo *info;
 	CallInfo *cinfo;
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (NULL, sig, FALSE);
 
 	if (!dyn_call_supported (cinfo, sig)) {
 		g_free (cinfo);
@@ -1630,9 +1664,9 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		ArgInfo *ainfo = &dinfo->cinfo->args [i + sig->hasthis];
 		int slot = -1;
 
-		if (ainfo->regtype == RegTypeGeneral || ainfo->regtype == RegTypeIRegPair || ainfo->regtype == RegTypeStructByVal)
+		if (ainfo->storage == RegTypeGeneral || ainfo->storage == RegTypeIRegPair || ainfo->storage == RegTypeStructByVal)
 			slot = ainfo->reg;
-		else if (ainfo->regtype == RegTypeBase)
+		else if (ainfo->storage == RegTypeBase)
 			slot = PARAM_REGS + (ainfo->offset / 4);
 		else
 			g_assert_not_reached ();
@@ -1693,7 +1727,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 				/* Fall though */
 			}
 		case MONO_TYPE_VALUETYPE:
-			g_assert (ainfo->regtype == RegTypeStructByVal);
+			g_assert (ainfo->storage == RegTypeStructByVal);
 
 			if (ainfo->size == 0)
 				slot = PARAM_REGS + (ainfo->offset / 4);
@@ -2768,7 +2802,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	pos = 0;
 
-	cinfo = get_call_info (sig, sig->pinvoke);
+	cinfo = get_call_info (NULL, sig, sig->pinvoke);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -2781,13 +2815,13 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 		inst = cfg->args [pos];
 		
 		if (cfg->verbose_level > 2)
-			g_print ("Loading argument %d (type: %d)\n", i, ainfo->regtype);
+			g_print ("Loading argument %d (type: %d)\n", i, ainfo->storage);
 		if (inst->opcode == OP_REGVAR) {
-			if (ainfo->regtype == RegTypeGeneral)
+			if (ainfo->storage == RegTypeGeneral)
 				ARM_MOV_REG_REG (code, inst->dreg, ainfo->reg);
-			else if (ainfo->regtype == RegTypeFP) {
+			else if (ainfo->storage == RegTypeFP) {
 				g_assert_not_reached ();
-			} else if (ainfo->regtype == RegTypeBase) {
+			} else if (ainfo->storage == RegTypeBase) {
 				// FIXME:
 				NOT_IMPLEMENTED;
 				/*
@@ -2801,7 +2835,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 			} else
 				g_assert_not_reached ();
 		} else {
-			if (ainfo->regtype == RegTypeGeneral || ainfo->regtype == RegTypeIRegPair) {
+			if (ainfo->storage == RegTypeGeneral || ainfo->storage == RegTypeIRegPair) {
 				switch (ainfo->size) {
 				case 1:
 				case 2:
@@ -2823,14 +2857,14 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 					}
 					break;
 				}
-			} else if (ainfo->regtype == RegTypeBaseGen) {
+			} else if (ainfo->storage == RegTypeBaseGen) {
 				// FIXME:
 				NOT_IMPLEMENTED;
-			} else if (ainfo->regtype == RegTypeBase) {
+			} else if (ainfo->storage == RegTypeBase) {
 				/* Nothing to do */
-			} else if (ainfo->regtype == RegTypeFP) {
+			} else if (ainfo->storage == RegTypeFP) {
 				g_assert_not_reached ();
-			} else if (ainfo->regtype == RegTypeStructByVal) {
+			} else if (ainfo->storage == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 				int soffset = 0;
 				int cur_reg;
@@ -2850,7 +2884,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 				if (ainfo->vtsize)
 					// FIXME:
 					NOT_IMPLEMENTED;
-			} else if (ainfo->regtype == RegTypeStructByAddr) {
+			} else if (ainfo->storage == RegTypeStructByAddr) {
 			} else {
 				// FIXME:
 				NOT_IMPLEMENTED;
@@ -4381,9 +4415,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* load arguments allocated to register from the stack */
 	pos = 0;
 
-	cinfo = get_call_info (sig, sig->pinvoke);
+	cinfo = get_call_info (NULL, sig, sig->pinvoke);
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage != RegTypeStructByVal) {
 		ArgInfo *ainfo = &cinfo->ret;
 		inst = cfg->vret_addr;
 		g_assert (arm_is_imm12 (inst->inst_offset));
@@ -4394,13 +4428,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		inst = cfg->args [pos];
 		
 		if (cfg->verbose_level > 2)
-			g_print ("Saving argument %d (type: %d)\n", i, ainfo->regtype);
+			g_print ("Saving argument %d (type: %d)\n", i, ainfo->storage);
 		if (inst->opcode == OP_REGVAR) {
-			if (ainfo->regtype == RegTypeGeneral)
+			if (ainfo->storage == RegTypeGeneral)
 				ARM_MOV_REG_REG (code, inst->dreg, ainfo->reg);
-			else if (ainfo->regtype == RegTypeFP) {
+			else if (ainfo->storage == RegTypeFP) {
 				g_assert_not_reached ();
-			} else if (ainfo->regtype == RegTypeBase) {
+			} else if (ainfo->storage == RegTypeBase) {
 				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
 					ARM_LDR_IMM (code, inst->dreg, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 				} else {
@@ -4414,7 +4448,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
 		} else {
 			/* the argument should be put on the stack: FIXME handle size != word  */
-			if (ainfo->regtype == RegTypeGeneral || ainfo->regtype == RegTypeIRegPair) {
+			if (ainfo->storage == RegTypeGeneral || ainfo->storage == RegTypeIRegPair) {
 				switch (ainfo->size) {
 				case 1:
 					if (arm_is_imm12 (inst->inst_offset))
@@ -4447,13 +4481,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					}
 					break;
 				}
-			} else if (ainfo->regtype == RegTypeBaseGen) {
+			} else if (ainfo->storage == RegTypeBaseGen) {
 				g_assert (arm_is_imm12 (prev_sp_offset + ainfo->offset));
 				g_assert (arm_is_imm12 (inst->inst_offset));
 				ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 				ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
 				ARM_STR_IMM (code, ARMREG_R3, inst->inst_basereg, inst->inst_offset);
-			} else if (ainfo->regtype == RegTypeBase) {
+			} else if (ainfo->storage == RegTypeBase) {
 				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
 					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 				} else {
@@ -4507,9 +4541,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					}
 					break;
 				}
-			} else if (ainfo->regtype == RegTypeFP) {
+			} else if (ainfo->storage == RegTypeFP) {
 				g_assert_not_reached ();
-			} else if (ainfo->regtype == RegTypeStructByVal) {
+			} else if (ainfo->storage == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 				int soffset = 0;
 				int cur_reg;
@@ -4530,7 +4564,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					//g_print ("emit_memcpy (prev_sp_ofs: %d, ainfo->offset: %d, soffset: %d)\n", prev_sp_offset, ainfo->offset, soffset);
 					code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, doffset, ARMREG_SP, prev_sp_offset + ainfo->offset);
 				}
-			} else if (ainfo->regtype == RegTypeStructByAddr) {
+			} else if (ainfo->storage == RegTypeStructByAddr) {
 				g_assert_not_reached ();
 				/* FIXME: handle overrun! with struct sizes not multiple of 4 */
 				code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, inst->inst_offset, ainfo->reg, 0);
@@ -4651,6 +4685,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	int pos, i, rot_amount;
 	int max_epilog_size = 16 + 20*4;
 	guint8 *code;
+	CallInfo *cinfo;
 
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
@@ -4676,6 +4711,19 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 	}
 	pos = 0;
+
+	/* Load returned vtypes into registers if needed */
+	cinfo = cfg->arch.cinfo;
+	if (cinfo->ret.storage == RegTypeStructByVal) {
+		MonoInst *ins = cfg->ret;
+
+		if (arm_is_imm12 (ins->inst_offset)) {
+			ARM_LDR_IMM (code, ARMREG_R0, ins->inst_basereg, ins->inst_offset);
+		} else {
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
+			ARM_LDR_REG_REG (code, ARMREG_R0, ins->inst_basereg, ARMREG_LR);
+		}
+	}
 
 	if (method->save_lmf) {
 		int lmf_offset;
