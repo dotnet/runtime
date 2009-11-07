@@ -20,6 +20,9 @@ public class Tests
 			// Struct with 1 long field
 			w.WriteLine ("public struct FooStruct2 { public long i; public static bool operator == (FooStruct2 f1, FooStruct2 f2) { return f1.i == f2.i; } public static bool operator != (FooStruct2 f1, FooStruct2 f2) { return f1.i != f2.i; } public override bool Equals (object obj) { return this == (FooStruct2)obj; } public override int GetHashCode () { return 0; } }");
 
+			// Struct with 2 bool fields
+			w.WriteLine ("public struct FooStruct3 { public bool i, j; public static bool operator == (FooStruct3 f1, FooStruct3 f2) { return f1.i == f2.i && f1.j == f2.j; } public static bool operator != (FooStruct3 f1, FooStruct3 f2) { return f1.i != f2.i || f1.j != f2.j; } public override bool Equals (object obj) { return this == (FooStruct3)obj; } public override int GetHashCode () { return 0; } }");
+
 			w.WriteLine ("public class Tests {");
 			w.WriteLine ("    public static int Main (String[] args) {");
 			w.WriteLine ("        return TestDriver.RunTests (typeof (Tests), args);");
@@ -57,6 +60,9 @@ public class Tests
 
 			// vtype entirely on the stack on arm
 			GenCase (w, "void", "", new string [] { "int", "int", "int", "int", "FooStruct" }, new string [] { "1", "2", "3", "4", "new FooStruct () { i = 1, j = 2 }" });
+
+			// vtype with size 2 in a register on arm
+			GenCase (w, "FooStruct3", "new FooStruct3 () { i = true, j = false }", new string [] { "FooStruct3" }, new string [] { "new FooStruct3 () { i = true, j = false }" });
 
 			// float
 			GenCase (w, "void", "", new string [] { "float" }, new string [] { "0.123f" });
