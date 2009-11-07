@@ -1160,6 +1160,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			 */
 			if (align < 4 && size >= 4)
 				align = 4;
+			/* The code in the prolog () stores words when storing vtypes received in a register */
+			if (MONO_TYPE_ISSTRUCT (sig->params [i]))
+				align = 4;
 			offset += align - 1;
 			offset &= ~(align - 1);
 			inst->inst_offset = offset;
