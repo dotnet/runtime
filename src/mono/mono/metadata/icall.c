@@ -73,6 +73,8 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-string.h>
+#include <mono/utils/mono-error-internals.h>
+
 
 #if defined (PLATFORM_WIN32)
 #include <windows.h>
@@ -6338,6 +6340,8 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 static void
 ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, MonoString *value)
 {
+	MonoError error;
+
 #ifdef PLATFORM_WIN32
 	gunichar2 *utf16_name, *utf16_value;
 #else
@@ -6369,7 +6373,11 @@ ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, M
 		return;
 	}
 
-	utf8_value = mono_string_to_utf8 (value);
+	utf8_value = mono_string_to_utf8_checked (value, &error);
+	if (!mono_error_ok (&error)) {
+		g_free (utf8_name);
+		mono_error_raise_exception (&error);
+	}
 	g_setenv (utf8_name, utf8_value, TRUE);
 
 	g_free (utf8_name);
