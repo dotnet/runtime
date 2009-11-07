@@ -4364,7 +4364,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 						g_assert_not_reached ();
 					}
 
-					buffer_add_cattr_arg (buf, t, domain, val);
+					buffer_add_cattr_arg (buf, arginfo [j].type, domain, val);
 				}
 			} else {
 				buffer_add_int (buf, 0);
