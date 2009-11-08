@@ -1,3 +1,9 @@
+2009-11-08  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* configure.in: Add check for FreeBSD/ppc64.
+
+	Patch by Justin Hibbits <chmeeedalf@gmail.com>.
+
 2009-11-05  Miguel de Icaza  <miguel@novell.com>
 
 	* Add configure check for xbox360
