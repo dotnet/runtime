@@ -1175,7 +1175,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
-			size = mono_type_size (sig->params [i], &align);
+			size = mini_type_stack_size_full (NULL, sig->params [i], NULL, sig->pinvoke);
 			/* FIXME: if a structure is misaligned, our memcpy doesn't work,
 			 * since it loads/stores misaligned words, which don't do the right thing.
 			 */
