@@ -295,6 +295,8 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 #define MONO_ARCH_USE_SIGACTION 1
 #elif defined(__NetBSD__)
 #define MONO_ARCH_USE_SIGACTION 1
+#elif defined(__FreeBSD__)
+#define MONO_ARCH_USE_SIGACTION 1
 #else
 /* For other operating systems, we pull the definition from an external file */
 #include "mini-ppc-os.h"
