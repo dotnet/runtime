@@ -17,7 +17,6 @@ MINI_OP(OP_ICOMPARE_IMM,	"icompare_imm", NONE, IREG, NONE)
 MINI_OP(OP_LCOMPARE_IMM,	"lcompare_imm", NONE, LREG, NONE)
 MINI_OP(OP_LOCAL,	"local", NONE, NONE, NONE)
 MINI_OP(OP_ARG,		"arg", NONE, NONE, NONE)
-MINI_OP(OP_ARGLIST,	"oparglist", NONE, IREG, NONE)
 MINI_OP(OP_OUTARG_VT,	"outarg_vt", NONE, VREG, NONE)
 MINI_OP(OP_OUTARG_VTRETADDR, "outarg_vtretaddr", IREG, NONE, NONE)
 MINI_OP(OP_SETRET,	"setret", NONE, IREG, NONE)
@@ -65,6 +64,23 @@ MINI_OP(OP_LABEL,	"label", NONE, NONE, NONE)
 MINI_OP(OP_SWITCH,  "switch", NONE, IREG, NONE)
 MINI_OP(OP_THROW, "throw", NONE, IREG, NONE)
 MINI_OP(OP_RETHROW,	"rethrow", NONE, IREG, NONE)
+
+/*
+ * Vararg calls are implemented as follows:
+ * - the caller emits a hidden argument just before the varargs argument. this
+ *   'signature cookie' argument contains the signature describing the the call.
+ * - all implicit arguments are passed in memory right after the signature cookie, i.e.
+ *   the stack will look like this:
+ *   <argn>
+ *   ..
+ *   <arg1>
+ *   <sig cookie>
+ * - the OP_ARGLIST opcode in the callee computes the address of the sig cookie argument
+ *   on the stack and saves it into its sreg1.
+ * - mono_ArgIterator_Setup receives this value and uses it to find the signature and
+ *   the arguments.
+ */
+MINI_OP(OP_ARGLIST,	"oparglist", NONE, IREG, NONE)
 
 /* MONO_IS_STORE_MEMBASE depends on the order here */
 MINI_OP(OP_STORE_MEMBASE_REG,"store_membase_reg", IREG, IREG, NONE)

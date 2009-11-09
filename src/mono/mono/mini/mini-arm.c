@@ -83,6 +83,27 @@ int mono_exc_esp_offset = 0;
 #define ADD_LR_PC_4 ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 25) | (1 << 23) | (ARMREG_PC << 16) | (ARMREG_LR << 12) | 4)
 #define MOV_LR_PC ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 24) | (0xa << 20) |  (ARMREG_LR << 12) | ARMREG_PC)
 #define DEBUG_IMT 0
+ 
+/* A variant of ARM_LDR_IMM which can handle large offsets */
+#define ARM_LDR_IMM_GENERAL(code, dreg, basereg, offset, scratch_reg) do { \
+	if (arm_is_imm12 ((offset))) { \
+		ARM_LDR_IMM (code, (dreg), (basereg), (offset));	\
+	} else {												\
+		g_assert ((scratch_reg) != (basereg));					   \
+		code = mono_arm_emit_load_imm (code, (scratch_reg), (offset));	\
+		ARM_LDR_REG_REG (code, (dreg), (basereg), (scratch_reg));		\
+	}																	\
+	} while (0)
+
+#define ARM_STR_IMM_GENERAL(code, dreg, basereg, offset, scratch_reg) do {	\
+	if (arm_is_imm12 ((offset))) { \
+		ARM_STR_IMM (code, (dreg), (basereg), (offset));	\
+	} else {												\
+		g_assert ((scratch_reg) != (basereg));					   \
+		code = mono_arm_emit_load_imm (code, (scratch_reg), (offset));	\
+		ARM_STR_REG_REG (code, (dreg), (basereg), (scratch_reg));		\
+	}																	\
+	} while (0)
 
 const char*
 mono_arch_regname (int reg)
@@ -831,13 +852,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
         DEBUG(printf("params: %d\n", sig->param_count));
 	for (i = 0; i < sig->param_count; ++i) {
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-                        /* Prevent implicit arguments and sig_cookie from
+			/* Prevent implicit arguments and sig_cookie from
 			   being passed in registers */
-                        gr = ARMREG_R3 + 1;
-                        /* Emit the signature cookie just before the implicit arguments */
-                        add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
-                }
-                DEBUG(printf("param %d: ", i));
+			gr = ARMREG_R3 + 1;
+			/* Emit the signature cookie just before the implicit arguments */
+			add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
+		}
+		DEBUG(printf("param %d: ", i));
 		if (sig->params [i]->byref) {
                         DEBUG(printf("byref\n"));
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
@@ -947,6 +968,15 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 		default:
 			g_error ("Can't trampoline 0x%x", sig->params [i]->type);
 		}
+	}
+
+	/* Handle the case where there are no implicit arguments */
+	if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+		/* Prevent implicit arguments and sig_cookie from
+		   being passed in registers */
+		gr = ARMREG_R3 + 1;
+		/* Emit the signature cookie just before the implicit arguments */
+		add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
 	}
 
 	{
@@ -1095,11 +1125,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += 8;
 
 	/* the MonoLMF structure is stored just below the stack pointer */
-
-	if (sig->call_convention == MONO_CALL_VARARG) {
-                cfg->sig_cookie = 0;
-        }
-
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		if (cinfo->ret.storage == RegTypeStructByVal) {
 			cfg->ret->opcode = OP_REGOFFSET;
@@ -1120,8 +1145,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			}
 		}
 		offset += sizeof(gpointer);
-		if (sig->call_convention == MONO_CALL_VARARG)
-			cfg->sig_cookie += sizeof (gpointer);
 	}
 
 	curinst = cfg->locals_start;
@@ -1164,14 +1187,24 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset &= ~(sizeof (gpointer) - 1);
 			inst->inst_offset = offset;
 			offset += sizeof (gpointer);
-			if (sig->call_convention == MONO_CALL_VARARG)
-				cfg->sig_cookie += sizeof (gpointer);
 		}
 		curinst++;
 	}
 
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		size = 4;
+		align = 4;
+
+		/* Allocate a local slot to hold the sig cookie address */
+		offset += align - 1;
+		offset &= ~(align - 1);
+		cfg->sig_cookie = offset;
+		offset += size;
+	}			
+
 	for (i = 0; i < sig->param_count; ++i) {
 		inst = cfg->args [curinst];
+
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
@@ -1188,8 +1221,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset &= ~(align - 1);
 			inst->inst_offset = offset;
 			offset += size;
-			if ((sig->call_convention == MONO_CALL_VARARG) && (i < sig->sentinelpos)) 
-				cfg->sig_cookie += size;
 		}
 		curinst++;
 	}
@@ -1237,6 +1268,39 @@ mono_arch_create_vars (MonoCompile *cfg)
 	}
 }
 
+static void
+emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
+{
+	MonoMethodSignature *tmp_sig;
+	MonoInst *sig_arg;
+
+	if (call->tail_call)
+		NOT_IMPLEMENTED;
+
+	/* FIXME: Add support for signature tokens to AOT */
+	cfg->disable_aot = TRUE;
+
+	g_assert (cinfo->sig_cookie.storage == RegTypeBase);
+			
+	/*
+	 * mono_ArgIterator_Setup assumes the signature cookie is 
+	 * passed first and all the arguments which were before it are
+	 * passed on the stack after the signature. So compensate by 
+	 * passing a different signature.
+	 */
+	tmp_sig = mono_metadata_signature_dup (call->signature);
+	tmp_sig->param_count -= call->signature->sentinelpos;
+	tmp_sig->sentinelpos = 0;
+	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
+
+	MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
+	sig_arg->dreg = mono_alloc_ireg (cfg);
+	sig_arg->inst_p0 = tmp_sig;
+	MONO_ADD_INS (cfg->cbb, sig_arg);
+
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, cinfo->sig_cookie.offset, sig_arg->dreg);
+}
+
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
@@ -1261,8 +1325,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		t = mini_type_get_underlying_type (NULL, t);
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-			/* FIXME: */
-			NOT_IMPLEMENTED;
+			/* Emit the signature cookie just before the implicit arguments */
+			emit_sig_cookie (cfg, call, cinfo);
 		}
 
 		in = call->args [i];
@@ -1419,6 +1483,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			g_assert_not_reached ();
 		}
 	}
+
+	/* Handle the case where there are no implicit arguments */
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos))
+		emit_sig_cookie (cfg, call, cinfo);
 
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoInst *vtarg;
@@ -3459,15 +3527,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_LDR_IMM (code, ARMREG_LR, ins->sreg1, 0);
 			break;
 		case OP_ARGLIST: {
-#if ARM_PORT
-			if (ppc_is_imm16 (cfg->sig_cookie + cfg->stack_usage)) {
-				ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->sig_cookie + cfg->stack_usage);
-			} else {
-				ppc_load (code, ppc_r11, cfg->sig_cookie + cfg->stack_usage);
-				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
-			}
-			ppc_stw (code, ppc_r11, 0, ins->sreg1);
-#endif
+			g_assert (cfg->sig_cookie < 128);
+			ARM_LDR_IMM (code, ARMREG_IP, cfg->frame_reg, cfg->sig_cookie);
+			ARM_STR_IMM (code, ARMREG_IP, ins->sreg1, 0);
 			break;
 		}
 		case OP_FCALL:
@@ -4423,6 +4485,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		g_assert (arm_is_imm12 (inst->inst_offset));
 		ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 	}
+
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		ArgInfo *cookie = &cinfo->sig_cookie;
+
+		/* Save the sig cookie address */
+		g_assert (cookie->storage == RegTypeBase);
+
+		g_assert (arm_is_imm12 (prev_sp_offset + cookie->offset));
+		g_assert (arm_is_imm12 (cfg->sig_cookie));
+		ARM_ADD_REG_IMM8 (code, ARMREG_IP, cfg->frame_reg, prev_sp_offset + cookie->offset);
+		ARM_STR_IMM (code, ARMREG_IP, cfg->frame_reg, cfg->sig_cookie);
+	}
+
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		inst = cfg->args [pos];
