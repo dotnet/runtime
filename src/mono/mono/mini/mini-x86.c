@@ -5433,6 +5433,29 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 	return (gpointer)regs [reg];
 }
 
+/*
+ * mono_x86_get_this_arg_offset:
+ *
+ *   Return the offset of the stack location where this is passed during a virtual
+ * call.
+ */
+guint32
+mono_x86_get_this_arg_offset (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig)
+{
+	CallInfo *cinfo = NULL;
+	int offset;
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		cinfo = get_call_info (gsctx, NULL, sig, FALSE);
+
+		offset = cinfo->args [0].offset;
+	} else {
+		offset = 0;
+	}
+
+	return offset;
+}
+
 gpointer
 mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig,
 		mgreg_t *regs, guint8 *code)

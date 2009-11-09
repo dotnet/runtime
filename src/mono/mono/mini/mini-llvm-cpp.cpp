@@ -98,6 +98,14 @@ public:
 	void endExceptionTable(const Function *F, unsigned char *TableStart,
 						   unsigned char *TableEnd, 
 						   unsigned char* FrameRegister);
+
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION >= 7
+	virtual void deallocateFunctionBody(void*) {
+	}
+
+	virtual void deallocateExceptionTable(void*) {
+	}
+#endif
 };
 
 MonoJITMemoryManager::MonoJITMemoryManager ()

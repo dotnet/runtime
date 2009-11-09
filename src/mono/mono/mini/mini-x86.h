@@ -267,7 +267,7 @@ typedef struct {
 #endif
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
-//#define MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE 1
+#define MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE 1
 #ifndef PLATFORM_WIN32
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #else
@@ -297,6 +297,9 @@ extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
 guint8*
 mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
+
+guint32
+mono_x86_get_this_arg_offset (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_X86_H__ */  
 
