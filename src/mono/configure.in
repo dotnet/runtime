@@ -2013,7 +2013,6 @@ case "$host" in
 		;;
 	hppa*linux*)
 		TARGET=HPPA;
-		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=hppa; 
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
@@ -2029,7 +2028,6 @@ case "$host" in
 			TARGET=POWERPC;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__"
 		fi
-		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=ppc;
 		JIT_SUPPORTED=yes
 		jit_wanted=true
@@ -2037,7 +2035,6 @@ case "$host" in
 	arm*-darwin*)
 		TARGET=ARM;
 		arch_target=arm;
-		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -DARM_FPU_NONE=1"
@@ -2046,14 +2043,12 @@ case "$host" in
 	arm*-linux*)
 		TARGET=ARM;
 		arch_target=arm;
-		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		;;
 	s390-*-linux*)
 		TARGET=S390;
-		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=s390;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
@@ -2063,7 +2058,6 @@ case "$host" in
 		;;
 	s390x-*-linux*)
 		TARGET=S390x;
-		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=s390x;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
