@@ -1,3 +1,7 @@
+2009-11-09  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in (MONO_ARCH_REGPARMS): Set MONO_ARCH_REGPARS on ARM.
+
 2009-11-08  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* configure.in: Add check for FreeBSD/ppc64.
