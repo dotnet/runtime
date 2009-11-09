@@ -399,6 +399,10 @@ if POWERPC
 PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
 endif
 
+if ARM
+PLATFORM_DISABLED_TESTS=filter-stack.exe
+endif
+
 # The two finalizer tests only work under sgen
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
