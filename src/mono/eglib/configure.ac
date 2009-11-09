@@ -24,9 +24,17 @@ AC_SUBST(GNUC_UNUSED)
 AC_SUBST(GNUC_NORETURN)
 AC_SUBST(BREAKPOINT)
 
+# We use a separate variable to pass down CPPFLAGS and CFLAGS from the main mono 
+# configure, because of autoconf brokeness
+if test "x$CPPFLAGS_FOR_EGLIB" != "x"; then
+   CPPFLAGS=$CPPFLAGS_FOR_EGLIB
+fi
+if test "x$CFLAGS_FOR_EGLIB" != "x"; then
+   CFLAGS=$CFLAGS_FOR_EGLIB
+fi
+
 AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
 AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
-AC_SUBST(ORDER)
 
 case $host in
 *-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
@@ -45,8 +53,12 @@ case $target in
 arm*-darwin*)
     CFLAGS="$CFLAGS -U_FORTIFY_SOURCE"
     ;;
+i*86-*-darwin*)
+    ORDER=G_LITTLE_ENDIAN
+    ;;
 esac
 
+AC_SUBST(ORDER)
 AC_SUBST(CFLAGS)
 AC_SUBST(PATHSEP)
 AC_SUBST(SEARCHSEP)
