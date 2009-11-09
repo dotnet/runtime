@@ -37,6 +37,7 @@ Recommends:     libgdiplus0
 %else
 Requires:       libgdiplus0
 %endif
+BuildRequires:  gcc-c++
 BuildRequires:  glib2-devel zlib-devel
 #######  distro specific changes  ########
 #####
