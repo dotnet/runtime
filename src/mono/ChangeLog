@@ -1,5 +1,8 @@
 2009-11-09  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Define LLVM_MAJOR/MINOR_VERSION defines to allow working
+	around changes in LLVM APIs.
+	
 	* configure.in: Remove the MONO_ARCH_REGPARMS define.
 
 	* configure.in (MONO_ARCH_REGPARMS): Set MONO_ARCH_REGPARS on ARM.
