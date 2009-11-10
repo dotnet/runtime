@@ -1340,7 +1340,7 @@ char *
 mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error) MONO_INTERNAL;
 
 char *
-mono_string_to_utf8_image (MonoImage *image, MonoString *s) MONO_INTERNAL;
+mono_string_to_utf8_image (MonoImage *image, MonoString *s, MonoError *error) MONO_INTERNAL;
 
 
 MonoArray*

@@ -5231,10 +5231,9 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
  * Same as mono_string_to_utf8, but allocate the string from the image mempool.
  */
 char *
-mono_string_to_utf8_image (MonoImage *image, MonoString *s)
+mono_string_to_utf8_image (MonoImage *image, MonoString *s, MonoError *error)
 {
-	MonoError error;
-	return mono_string_to_utf8_internal (NULL, image, s, &error);
+	return mono_string_to_utf8_internal (NULL, image, s, error);
 }
 
 /**

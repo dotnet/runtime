@@ -39,6 +39,8 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-string.h>
+#include <mono/utils/mono-error-internals.h>
+
 
 #if HAVE_SGEN_GC
 static void* reflection_info_desc = NULL;
@@ -9269,6 +9271,7 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 void
 mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 {
+	MonoError error;
 	MonoClass *klass, *parent;
 
 	MONO_ARCH_SAVE_REGS;
@@ -9306,8 +9309,12 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	klass->image = &tb->module->dynamic_image->image;
 
 	klass->inited = 1; /* we lie to the runtime */
-	klass->name = mono_string_to_utf8_image (klass->image, tb->name);
-	klass->name_space = mono_string_to_utf8_image (klass->image, tb->nspace);
+	klass->name = mono_string_to_utf8_image (klass->image, tb->name, &error);
+	if (!mono_error_ok (&error))
+		goto failure;
+	klass->name_space = mono_string_to_utf8_image (klass->image, tb->nspace, &error);
+	if (!mono_error_ok (&error))
+		goto failure;
 	klass->type_token = MONO_TOKEN_TYPE_DEF | tb->table_idx;
 	klass->flags = tb->attrs;
 	
@@ -9373,6 +9380,11 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
 	
 	mono_loader_unlock ();
+	return;
+
+failure:
+	mono_loader_unlock ();
+	mono_error_raise_exception (&error);
 }
 
 /*
@@ -9582,6 +9594,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					 ReflectionMethodBuilder *rmb,
 					 MonoMethodSignature *sig)
 {
+	MonoError error;
 	MonoMethod *m;
 	MonoMethodNormal *pm;
 	MonoMarshalSpec **specs;
@@ -9590,6 +9603,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	gboolean dynamic;
 	int i;
 
+	mono_error_init (&error);
 	/*
 	 * Methods created using a MethodBuilder should have their memory allocated
 	 * inside the image mempool, while dynamic methods should have their memory
@@ -9617,7 +9631,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	m->slot = -1;
 	m->flags = rmb->attrs;
 	m->iflags = rmb->iattrs;
-	m->name = mono_string_to_utf8_image (image, rmb->name);
+	m->name = mono_string_to_utf8_image (image, rmb->name, &error);
+	g_assert (mono_error_ok (&error));
 	m->klass = klass;
 	m->signature = sig;
 	m->skip_visibility = rmb->skip_visibility;
@@ -9634,8 +9649,10 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 		method_aux = image_g_new0 (image, MonoReflectionMethodAux, 1);
 
-		method_aux->dllentry = rmb->dllentry ? mono_string_to_utf8_image (image, rmb->dllentry) : image_strdup (image, m->name);
-		method_aux->dll = mono_string_to_utf8_image (image, rmb->dll);
+		method_aux->dllentry = rmb->dllentry ? mono_string_to_utf8_image (image, rmb->dllentry, &error) : image_strdup (image, m->name);
+		g_assert (mono_error_ok (&error));
+		method_aux->dll = mono_string_to_utf8_image (image, rmb->dll, &error);
+		g_assert (mono_error_ok (&error));
 		
 		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 0) | rmb->extra_flags;
 
@@ -9777,8 +9794,10 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					memcpy ((gpointer)method_aux->param_defaults [i], p, len);
 				}
 
-				if (pb->name)
-					method_aux->param_names [i] = mono_string_to_utf8_image (image, pb->name);
+				if (pb->name) {
+					method_aux->param_names [i] = mono_string_to_utf8_image (image, pb->name, &error);
+					g_assert (mono_error_ok (&error));
+				}
 				if (pb->cattrs) {
 					if (!method_aux->param_cattr)
 						method_aux->param_cattr = image_g_new0 (image, MonoCustomAttrInfo*, m->signature->param_count + 1);
@@ -10376,7 +10395,7 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 }
 
 static void
-typebuilder_setup_fields (MonoClass *klass)
+typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 {
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionFieldBuilder *fb;
@@ -10388,6 +10407,8 @@ typebuilder_setup_fields (MonoClass *klass)
 
 	klass->field.count = tb->num_fields;
 	klass->field.first = 0;
+
+	mono_error_init (error);
 
 	if (tb->class_size) {
 		g_assert ((tb->packing_size & 0xfffffff0) == 0);
@@ -10407,7 +10428,9 @@ typebuilder_setup_fields (MonoClass *klass)
 	for (i = 0; i < klass->field.count; ++i) {
 		fb = mono_array_get (tb->fields, gpointer, i);
 		field = &klass->fields [i];
-		field->name = mono_string_to_utf8_image (image, fb->name);
+		field->name = mono_string_to_utf8_image (image, fb->name, error);
+		if (!mono_error_ok (error))
+			return;
 		if (fb->attrs) {
 			field->type = mono_metadata_type_dup (klass->image, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type));
 			field->type->attrs = fb->attrs;
@@ -10440,13 +10463,15 @@ typebuilder_setup_fields (MonoClass *klass)
 }
 
 static void
-typebuilder_setup_properties (MonoClass *klass)
+typebuilder_setup_properties (MonoClass *klass, MonoError *error)
 {
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionPropertyBuilder *pb;
 	MonoImage *image = klass->image;
 	MonoProperty *properties;
 	int i;
+
+	mono_error_init (error);
 
 	if (!klass->ext)
 		klass->ext = image_g_new0 (image, MonoClassExt, 1);
@@ -10460,7 +10485,9 @@ typebuilder_setup_properties (MonoClass *klass)
 		pb = mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i);
 		properties [i].parent = klass;
 		properties [i].attrs = pb->attrs;
-		properties [i].name = mono_string_to_utf8_image (image, pb->name);
+		properties [i].name = mono_string_to_utf8_image (image, pb->name, error);
+		if (!mono_error_ok (error))
+			return;
 		if (pb->get_method)
 			properties [i].get = pb->get_method->mhandle;
 		if (pb->set_method)
@@ -10503,13 +10530,15 @@ mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, Mon
 }
 
 static void
-typebuilder_setup_events (MonoClass *klass)
+typebuilder_setup_events (MonoClass *klass, MonoError *error)
 {
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionEventBuilder *eb;
 	MonoImage *image = klass->image;
 	MonoEvent *events;
 	int i, j;
+
+	mono_error_init (error);
 
 	if (!klass->ext)
 		klass->ext = image_g_new0 (image, MonoClassExt, 1);
@@ -10523,7 +10552,9 @@ typebuilder_setup_events (MonoClass *klass)
 		eb = mono_array_get (tb->events, MonoReflectionEventBuilder*, i);
 		events [i].parent = klass;
 		events [i].attrs = eb->attrs;
-		events [i].name = mono_string_to_utf8_image (image, eb->name);
+		events [i].name = mono_string_to_utf8_image (image, eb->name, error);
+		if (!mono_error_ok (error))
+			return;
 		if (eb->add_method)
 			events [i].add = eb->add_method->mhandle;
 		if (eb->remove_method)
@@ -10573,6 +10604,7 @@ check_array_for_usertypes (MonoArray *arr)
 MonoReflectionType*
 mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoDomain* domain;
 	MonoReflectionType* res;
@@ -10696,12 +10728,17 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	}
 
 	/* FIXME: handle packing_size and instance_size */
-	typebuilder_setup_fields (klass);
+	typebuilder_setup_fields (klass, &error);
+	if (!mono_error_ok (&error))
+		goto failure;
+	typebuilder_setup_properties (klass, &error);
+	if (!mono_error_ok (&error))
+		goto failure;
 
-	typebuilder_setup_properties (klass);
+	typebuilder_setup_events (klass, &error);
+	if (!mono_error_ok (&error))
+		goto failure;
 
-	typebuilder_setup_events (klass);
-	
 	klass->wastypebuilder = TRUE;
 
 	/* 
@@ -10724,6 +10761,14 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	g_assert (res != (MonoReflectionType*)tb);
 
 	return res;
+
+failure:
+	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	klass->wastypebuilder = TRUE;
+	mono_domain_unlock (domain);
+	mono_loader_unlock ();
+	mono_error_raise_exception (&error);
+	return NULL;
 }
 
 void
