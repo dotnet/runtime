@@ -449,8 +449,8 @@ typedef struct {
 	ARM_DEF_COND(cond)
 
 
-#define ARM_LDMIA(p, base, regs) ARM_EMIT(p, ARM_DEF_MRT(regs, base, 1, 0, 0, 1, 0, ARMCOND_AL))
-#define ARM_STMIA(p, base, regs) ARM_EMIT(p, ARM_DEF_MRT(regs, base, 0, 0, 0, 1, 0, ARMCOND_AL))
+#define ARM_LDM(p, base, regs) ARM_EMIT(p, ARM_DEF_MRT(regs, base, 1, 0, 0, 1, 0, ARMCOND_AL))
+#define ARM_STM(p, base, regs) ARM_EMIT(p, ARM_DEF_MRT(regs, base, 0, 0, 0, 1, 0, ARMCOND_AL))
 
 /* stmdb sp!, {regs} */
 #define ARM_PUSH(p, regs) ARM_EMIT(p, ARM_DEF_MRT(regs, ARMREG_SP, 0, 1, 0, 0, 1, ARMCOND_AL))
