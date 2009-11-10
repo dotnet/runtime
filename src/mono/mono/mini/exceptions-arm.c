@@ -134,7 +134,7 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 
 	/* restore everything */
 	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET(MonoContext, regs));
-	ARM_LDMIA (code, ARMREG_IP, 0xffff);
+	ARM_LDM (code, ARMREG_IP, 0xffff);
 
 	/* never reached */
 	ARM_DBRK (code);
@@ -175,7 +175,7 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 	ctx_reg = ARMREG_R0;
 	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, eip));
 	ARM_ADD_REG_IMM8 (code, ARMREG_LR, ctx_reg, G_STRUCT_OFFSET(MonoContext, regs) + (4 * 4));
-	ARM_LDMIA (code, ARMREG_LR, MONO_ARM_REGSAVE_MASK);
+	ARM_LDM (code, ARMREG_LR, MONO_ARM_REGSAVE_MASK);
 	/* call handler at eip (r1) and set the first arg with the exception (r2) */
 	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_R2);
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
