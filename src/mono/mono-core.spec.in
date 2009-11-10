@@ -1260,7 +1260,6 @@ rm $RPM_BUILD_ROOT%_datadir/libgc-mono/scale.html
 rm $RPM_BUILD_ROOT%_datadir/libgc-mono/simple_example.html
 rm $RPM_BUILD_ROOT%_datadir/libgc-mono/tree.html
 rm $RPM_BUILD_ROOT%_mandir/man1/cilc.1
-rm $RPM_BUILD_ROOT%_mandir/man1/monostyle.1
 rm $RPM_BUILD_ROOT%_mandir/man1/mint.1
 # Things we don't ship.
 # cilc
