@@ -17,12 +17,14 @@
 #endif
 #include "metadata/mono-perfcounters.h"
 #include "metadata/appdomain.h"
+#include "metadata/object-internals.h"
 /* for mono_stats */
 #include "metadata/class-internals.h"
 #include "utils/mono-time.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-proclib.h"
 #include "utils/mono-networkinterfaces.h"
+#include "utils/mono-error-internals.h"
 #include <mono/io-layer/io-layer.h>
 
 /* map of CounterSample.cs */
@@ -744,11 +746,14 @@ network_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBool
 	const CounterDesc *cdesc;
 	NetworkVtableArg *narg;
 	ImplVtable *vtable;
+	char *instance_name;
+
 	*custom = FALSE;
 	if ((cdesc = get_counter_in_category (&predef_categories [CATEGORY_NETWORK], counter))) {
+		instance_name = mono_string_to_utf8 (instance);
 		narg = g_new0 (NetworkVtableArg, 1);
 		narg->id = cdesc->id;
-		narg->name = mono_string_to_utf8 (instance);
+		narg->name = instance_name;
 		*type = cdesc->type;
 		vtable = create_vtable (narg, get_network_counter, NULL);
 		vtable->cleanup = network_cleanup;
@@ -1271,27 +1276,37 @@ typedef struct {
 MonoBoolean
 mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoArray *items)
 {
+	MonoError error;
 	int result = FALSE;
 	int i, size;
 	int num_counters = mono_array_length (items);
 	int counters_data_size;
-	char *name;
-	char *chelp;
-	char **counter_info;
+	char *name = NULL;
+	char *chelp = NULL;
+	char **counter_info = NULL;
 	unsigned char *ptr;
 	char *p;
 	SharedCategory *cat;
 
 	/* FIXME: ensure there isn't a category created already */
-	name = mono_string_to_utf8 (category);
-	chelp = mono_string_to_utf8 (help);
+	mono_error_init (&error);
+	name = mono_string_to_utf8_checked (category, &error);
+	if (!mono_error_ok (&error))
+		goto failure;
+	chelp = mono_string_to_utf8_checked (help, &error);
+	if (!mono_error_ok (&error))
+		goto failure;
 	counter_info = g_new0 (char*, num_counters * 2);
 	/* calculate the size we need structure size + name/help + 2 0 string terminators */
 	size = G_STRUCT_OFFSET (SharedCategory, name) + strlen (name) + strlen (chelp) + 2;
 	for (i = 0; i < num_counters; ++i) {
 		CounterCreationData *data = mono_array_get (items, CounterCreationData*, i);
-		counter_info [i * 2] = mono_string_to_utf8 (data->name);
-		counter_info [i * 2 + 1] = mono_string_to_utf8 (data->help);
+		counter_info [i * 2] = mono_string_to_utf8_checked (data->name, &error);
+		if (!mono_error_ok (&error))
+			goto failure;
+		counter_info [i * 2 + 1] = mono_string_to_utf8_checked (data->help, &error);
+		if (!mono_error_ok (&error))
+			goto failure;
 		size += sizeof (SharedCounter) + 1; /* 1 is for the help 0 terminator */
 	}
 	for (i = 0; i < num_counters * 2; ++i) {
@@ -1336,12 +1351,15 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 	perfctr_unlock ();
 	result = TRUE;
 failure:
-	for (i = 0; i < num_counters * 2; ++i) {
-		g_free (counter_info [i]);
+	if (counter_info) {
+		for (i = 0; i < num_counters * 2; ++i) {
+			g_free (counter_info [i]);
+		}
+		g_free (counter_info);
 	}
-	g_free (counter_info);
 	g_free (name);
 	g_free (chelp);
+	mono_error_cleanup (&error);
 	return result;
 }
 
