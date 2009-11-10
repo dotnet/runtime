@@ -344,8 +344,8 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 		return(NULL);
 	}
 
+	utf8_path = mono_string_to_utf8 (path); /*If this raises there is not memory to release*/
 	names = g_ptr_array_new ();
-	utf8_path = mono_string_to_utf8 (path);
 
 	do {
 		if ((data.cFileName[0] == '.' && data.cFileName[1] == 0) ||
