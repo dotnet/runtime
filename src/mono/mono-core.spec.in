@@ -130,40 +130,26 @@ Authors:
 %_bindir/chktrust
 %_bindir/csharp
 %_bindir/gacutil
-%_bindir/gacutil1
 %_bindir/gacutil2
 %_bindir/gmcs
 %_bindir/mono-test-install
 %_bindir/mcs
-%_bindir/mcs1
 %_bindir/mozroots
 %_bindir/setreg
 %_bindir/sn
 # exes
-%_prefix/lib/mono/1.0/certmgr.exe*
-%_prefix/lib/mono/1.0/chktrust.exe*
-%_prefix/lib/mono/1.0/gacutil.exe*
 %_prefix/lib/mono/2.0/gacutil.exe*
 %_prefix/lib/mono/2.0/csharp.exe*
 %_prefix/lib/mono/2.0/gmcs.exe*
-%_prefix/lib/mono/1.0/mcs.exe*
-%_prefix/lib/mono/1.0/mozroots.exe*
-%_prefix/lib/mono/1.0/setreg.exe*
-%_prefix/lib/mono/1.0/sn.exe*
 %_prefix/lib/mono/gac/cscompmgd
-%_prefix/lib/mono/1.0/cscompmgd.dll
 %_prefix/lib/mono/2.0/cscompmgd.dll
 %_prefix/lib/mono/gac/I18N.West
-%_prefix/lib/mono/1.0/I18N.West.dll
 %_prefix/lib/mono/2.0/I18N.West.dll
 %_prefix/lib/mono/gac/I18N
-%_prefix/lib/mono/1.0/I18N.dll
 %_prefix/lib/mono/2.0/I18N.dll
 %_prefix/lib/mono/gac/Mono.CompilerServices.SymbolWriter
-%_prefix/lib/mono/1.0/Mono.CompilerServices.SymbolWriter.dll
 %_prefix/lib/mono/2.0/Mono.CompilerServices.SymbolWriter.dll
 %_prefix/lib/mono/gac/Mono.GetOptions
-%_prefix/lib/mono/1.0/Mono.GetOptions.dll
 %_prefix/lib/mono/2.0/Mono.GetOptions.dll
 %_prefix/lib/mono/gac/Mono.Simd
 %_prefix/lib/mono/2.0/Mono.Simd.dll
@@ -172,33 +158,25 @@ Authors:
 %_prefix/lib/mono/gac/Mono.Tasklets
 %_prefix/lib/mono/2.0/Mono.Tasklets.dll
 %_prefix/lib/mono/gac/Mono.Security
-%_prefix/lib/mono/1.0/Mono.Security.dll
 %_prefix/lib/mono/2.0/Mono.Security.dll
 %_prefix/lib/mono/gac/System.Security
-%_prefix/lib/mono/1.0/System.Security.dll
 %_prefix/lib/mono/2.0/System.Security.dll
 %_prefix/lib/mono/gac/System.Xml
-%_prefix/lib/mono/1.0/System.Xml.dll
 %_prefix/lib/mono/2.0/System.Xml.dll
 %_prefix/lib/mono/gac/System.Xml.Linq
 %_prefix/lib/mono/2.0/System.Xml.Linq.dll
 %_prefix/lib/mono/gac/System
-%_prefix/lib/mono/1.0/System.dll
 %_prefix/lib/mono/2.0/System.dll
 %_prefix/lib/mono/gac/System.Configuration
 %_prefix/lib/mono/2.0/System.Configuration.dll
-%_prefix/lib/mono/1.0/mscorlib.dll*
 %_prefix/lib/mono/2.0/mscorlib.dll*
 %dir %_sysconfdir/mono
-%dir %_sysconfdir/mono/1.0
 %dir %_sysconfdir/mono/2.0
 %dir %_prefix/lib/mono
-%dir %_prefix/lib/mono/1.0
 %dir %_prefix/lib/mono/2.0
 %dir %_prefix/lib/mono/3.5
 %dir %_prefix/lib/mono/gac
 %config %_sysconfdir/mono/config
-%config %_sysconfdir/mono/1.0/machine.config
 %config %_sysconfdir/mono/2.0/machine.config
 %config %_sysconfdir/mono/2.0/settings.map
 %_prefix/lib/mono/gac/Mono.C5
@@ -206,38 +184,28 @@ Authors:
 # ikvm helper
 %_prefix/%_lib/libikvm-native.so
 %_prefix/lib/mono/gac/System.Drawing
-%_prefix/lib/mono/1.0/System.Drawing.dll
 %_prefix/lib/mono/2.0/System.Drawing.dll
 %_libdir/libMonoPosixHelper.so*
 %_prefix/lib/mono/gac/Mono.Posix
-%_prefix/lib/mono/1.0/Mono.Posix.dll
 %_prefix/lib/mono/2.0/Mono.Posix.dll
 %_prefix/lib/mono/gac/Mono.Cairo
-%_prefix/lib/mono/1.0/Mono.Cairo.dll
 %_prefix/lib/mono/2.0/Mono.Cairo.dll
 %_prefix/lib/mono/gac/ICSharpCode.SharpZipLib
-%_prefix/lib/mono/1.0/ICSharpCode.SharpZipLib.dll
 %_prefix/lib/mono/2.0/ICSharpCode.SharpZipLib.dll
-%_prefix/lib/mono/compat-1.0/ICSharpCode.SharpZipLib.dll
 %_prefix/lib/mono/compat-2.0/ICSharpCode.SharpZipLib.dll
 %_prefix/lib/mono/gac/Microsoft.VisualC
-%_prefix/lib/mono/1.0/Microsoft.VisualC.dll
 %_prefix/lib/mono/2.0/Microsoft.VisualC.dll
 %_prefix/lib/mono/gac/Commons.Xml.Relaxng
-%_prefix/lib/mono/1.0/Commons.Xml.Relaxng.dll
 %_prefix/lib/mono/2.0/Commons.Xml.Relaxng.dll
 %_prefix/lib/mono/gac/CustomMarshalers
-%_prefix/lib/mono/1.0/CustomMarshalers.dll
 %_prefix/lib/mono/2.0/CustomMarshalers.dll
 %_prefix/lib/mono/gac/OpenSystem.C
-%_prefix/lib/mono/1.0/OpenSystem.C.dll
 %_prefix/lib/mono/2.0/OpenSystem.C.dll
 %_prefix/lib/mono/gac/System.Core
 %_prefix/lib/mono/2.0/System.Core.dll
 %_prefix/lib/mono/gac/Mono.CSharp
 %_prefix/lib/mono/2.0/Mono.CSharp.dll
 %_prefix/lib/mono/gac/Mono.Cecil
-%_prefix/lib/mono/gac/Mono.Cecil.Mdb
 # localizations?
 #%_datadir/locale/*/LC_MESSAGES/mcs.mo
 # Not sure if autobuild allows this...
@@ -275,9 +243,8 @@ Authors:
 %files -n mono-jscript
 %defattr(-, root, root)
 %_bindir/mjs
-%_prefix/lib/mono/1.0/mjs.exe*
+%_prefix/lib/mono/2.0/mjs.exe*
 %_prefix/lib/mono/gac/Microsoft.JScript
-%_prefix/lib/mono/1.0/Microsoft.JScript.dll
 %_prefix/lib/mono/2.0/Microsoft.JScript.dll
 
 %package -n mono-locale-extras
@@ -306,16 +273,12 @@ Authors:
 %files -n mono-locale-extras
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/I18N.MidEast
-%_prefix/lib/mono/1.0/I18N.MidEast.dll
 %_prefix/lib/mono/2.0/I18N.MidEast.dll
 %_prefix/lib/mono/gac/I18N.Rare
-%_prefix/lib/mono/1.0/I18N.Rare.dll
 %_prefix/lib/mono/2.0/I18N.Rare.dll
 %_prefix/lib/mono/gac/I18N.CJK
-%_prefix/lib/mono/1.0/I18N.CJK.dll
 %_prefix/lib/mono/2.0/I18N.CJK.dll
 %_prefix/lib/mono/gac/I18N.Other
-%_prefix/lib/mono/1.0/I18N.Other.dll
 %_prefix/lib/mono/2.0/I18N.Other.dll
 
 %package -n mono-data
@@ -355,27 +318,21 @@ Authors:
 %_bindir/sqlsharp
 %_mandir/man1/sqlsharp.1%ext_man
 %_prefix/lib/mono/gac/System.Data
-%_prefix/lib/mono/1.0/System.Data.dll
 %_prefix/lib/mono/2.0/System.Data.dll
 %_prefix/lib/mono/gac/System.Data.Linq
 %_prefix/lib/mono/2.0/System.Data.Linq.dll
+%_prefix/lib/mono/gac/System.Data.Services
 %_prefix/lib/mono/gac/Mono.Data
-%_prefix/lib/mono/1.0/Mono.Data.dll
 %_prefix/lib/mono/2.0/Mono.Data.dll
 %_prefix/lib/mono/gac/Mono.Data.Tds
-%_prefix/lib/mono/1.0/Mono.Data.Tds.dll
 %_prefix/lib/mono/2.0/Mono.Data.Tds.dll
 %_prefix/lib/mono/gac/Mono.Data.TdsClient
-%_prefix/lib/mono/1.0/Mono.Data.TdsClient.dll
 %_prefix/lib/mono/2.0/Mono.Data.TdsClient.dll
 %_prefix/lib/mono/gac/System.EnterpriseServices
-%_prefix/lib/mono/1.0/System.EnterpriseServices.dll
 %_prefix/lib/mono/2.0/System.EnterpriseServices.dll
 %_prefix/lib/mono/gac/Novell.Directory.Ldap
-%_prefix/lib/mono/1.0/Novell.Directory.Ldap.dll
 %_prefix/lib/mono/2.0/Novell.Directory.Ldap.dll
 %_prefix/lib/mono/gac/System.DirectoryServices
-%_prefix/lib/mono/1.0/System.DirectoryServices.dll
 %_prefix/lib/mono/2.0/System.DirectoryServices.dll
 %_prefix/lib/mono/gac/System.Transactions
 %_prefix/lib/mono/2.0/System.Transactions.dll
@@ -410,19 +367,13 @@ Authors:
 %files -n mono-winforms
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/System.Windows.Forms
-%_prefix/lib/mono/1.0/System.Windows.Forms.dll
 %_prefix/lib/mono/2.0/System.Windows.Forms.dll
 %_prefix/lib/mono/gac/Accessibility
-%_prefix/lib/mono/1.0/Accessibility.dll
 %_prefix/lib/mono/2.0/Accessibility.dll
 %_prefix/lib/mono/gac/System.Design
-%_prefix/lib/mono/1.0/System.Design.dll
 %_prefix/lib/mono/2.0/System.Design.dll
 %_prefix/lib/mono/gac/System.Drawing.Design
-%_prefix/lib/mono/1.0/System.Drawing.Design.dll
 %_prefix/lib/mono/2.0/System.Drawing.Design.dll
-# TODO: Post 1.2.5:
-%_prefix/lib/mono/1.0/Mono.WebBrowser.dll
 %_prefix/lib/mono/2.0/Mono.WebBrowser.dll
 %_prefix/lib/mono/gac/Mono.WebBrowser
 
@@ -452,7 +403,6 @@ Authors:
 %files -n ibm-data-db2
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/IBM.Data.DB2
-%_prefix/lib/mono/1.0/IBM.Data.DB2.dll
 %_prefix/lib/mono/2.0/IBM.Data.DB2.dll
 
 %package -n mono-extras
@@ -485,35 +435,25 @@ Authors:
 %_mandir/man1/mono-service.1%ext_man
 %_bindir/mono-service
 %_bindir/mono-service2
-%_prefix/lib/mono/1.0/installutil.exe*
 %_prefix/lib/mono/2.0/installutil.exe*
 # These are errors because they should be symlinks, but they are copies, so rpmlint detects duplicate files
 %_prefix/lib/mono/gac/mono-service
-%_prefix/lib/mono/1.0/mono-service.exe*
 %_prefix/lib/mono/2.0/mono-service.exe*
 %_prefix/lib/mono/gac/System.Management
-%_prefix/lib/mono/1.0/System.Management.dll
 %_prefix/lib/mono/2.0/System.Management.dll
 %_prefix/lib/mono/gac/RabbitMQ.Client
-%_prefix/lib/mono/1.0/RabbitMQ.Client.dll
 %_prefix/lib/mono/2.0/RabbitMQ.Client.dll
 %_prefix/lib/mono/gac/System.Messaging
-%_prefix/lib/mono/1.0/System.Messaging.dll
 %_prefix/lib/mono/2.0/System.Messaging.dll
 %_prefix/lib/mono/gac/Mono.Messaging
-%_prefix/lib/mono/1.0/Mono.Messaging.dll
 %_prefix/lib/mono/2.0/Mono.Messaging.dll
 %_prefix/lib/mono/gac/Mono.Messaging.RabbitMQ
-%_prefix/lib/mono/1.0/Mono.Messaging.RabbitMQ.dll
 %_prefix/lib/mono/2.0/Mono.Messaging.RabbitMQ.dll
 %_prefix/lib/mono/gac/System.ServiceProcess
-%_prefix/lib/mono/1.0/System.ServiceProcess.dll
 %_prefix/lib/mono/2.0/System.ServiceProcess.dll
 %_prefix/lib/mono/gac/System.Configuration.Install
-%_prefix/lib/mono/1.0/System.Configuration.Install.dll
 %_prefix/lib/mono/2.0/System.Configuration.Install.dll
 %_prefix/lib/mono/gac/Microsoft.Vsa
-%_prefix/lib/mono/1.0/Microsoft.Vsa.dll
 %_prefix/lib/mono/2.0/Microsoft.Vsa.dll
 
 %package -n mono-data-sqlite
@@ -545,10 +485,8 @@ Authors:
 %files -n mono-data-sqlite
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/Mono.Data.SqliteClient
-%_prefix/lib/mono/1.0/Mono.Data.SqliteClient.dll
 %_prefix/lib/mono/2.0/Mono.Data.SqliteClient.dll
 %_prefix/lib/mono/gac/Mono.Data.Sqlite
-%_prefix/lib/mono/1.0/Mono.Data.Sqlite.dll
 %_prefix/lib/mono/2.0/Mono.Data.Sqlite.dll
 
 %package -n mono-data-sybase
@@ -578,7 +516,6 @@ Authors:
 %files -n mono-data-sybase
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/Mono.Data.SybaseClient
-%_prefix/lib/mono/1.0/Mono.Data.SybaseClient.dll
 %_prefix/lib/mono/2.0/Mono.Data.SybaseClient.dll
 
 %package -n mono-wcf
@@ -680,21 +617,16 @@ Authors:
 %files -n mono-web
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/Mono.Http
-%_prefix/lib/mono/1.0/Mono.Http.dll
 %_prefix/lib/mono/2.0/Mono.Http.dll
 %_prefix/lib/mono/gac/Mono.Web
 %_prefix/lib/mono/2.0/Mono.Web.dll
 %_prefix/lib/mono/gac/System.Runtime.Remoting
-%_prefix/lib/mono/1.0/System.Runtime.Remoting.dll
 %_prefix/lib/mono/2.0/System.Runtime.Remoting.dll
 %_prefix/lib/mono/gac/System.Web
-%_prefix/lib/mono/1.0/System.Web.dll
 %_prefix/lib/mono/2.0/System.Web.dll
 %_prefix/lib/mono/gac/System.Runtime.Serialization.Formatters.Soap
-%_prefix/lib/mono/1.0/System.Runtime.Serialization.Formatters.Soap.dll
 %_prefix/lib/mono/2.0/System.Runtime.Serialization.Formatters.Soap.dll
 %_prefix/lib/mono/gac/System.Web.Services
-%_prefix/lib/mono/1.0/System.Web.Services.dll
 %_prefix/lib/mono/2.0/System.Web.Services.dll
 %_prefix/lib/mono/gac/System.Web.Abstractions
 %_prefix/lib/mono/2.0/System.Web.Abstractions.dll
@@ -719,11 +651,9 @@ Authors:
 %_libdir/pkgconfig/system.web.extensions.design_1.0.pc
 %_libdir/pkgconfig/system.web.mvc.pc
 # exes
-%_prefix/lib/mono/1.0/disco.exe*
-%_prefix/lib/mono/1.0/soapsuds.exe*
-%_prefix/lib/mono/1.0/wsdl.exe*
+%_prefix/lib/mono/2.0/disco.exe*
+%_prefix/lib/mono/2.0/soapsuds.exe*
 %_prefix/lib/mono/2.0/wsdl.exe*
-%_prefix/lib/mono/1.0/xsd.exe*
 %_prefix/lib/mono/2.0/xsd.exe*
 %_prefix/lib/mono/2.0/mconfig.exe*
 # shell wrappers
@@ -731,10 +661,8 @@ Authors:
 %_bindir/mconfig
 %_bindir/soapsuds
 %_bindir/wsdl
-%_bindir/wsdl1
 %_bindir/wsdl2
 %_bindir/xsd
-%_bindir/xsd2
 # man pages
 %_mandir/man1/disco.1%ext_man
 %_mandir/man1/soapsuds.1%ext_man
@@ -744,7 +672,6 @@ Authors:
 %config %_sysconfdir/mono/browscap.ini
 %dir %_sysconfdir/mono/mconfig
 %config %_sysconfdir/mono/mconfig/config.xml
-%config %_sysconfdir/mono/1.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/2.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/2.0/web.config
 %config %_sysconfdir/mono/2.0/Browsers
@@ -776,7 +703,6 @@ Authors:
 %files -n mono-data-oracle
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/System.Data.OracleClient
-%_prefix/lib/mono/1.0/System.Data.OracleClient.dll
 %_prefix/lib/mono/2.0/System.Data.OracleClient.dll
 
 %package -n mono-data-postgresql
@@ -806,7 +732,6 @@ Authors:
 %files -n mono-data-postgresql
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/Npgsql
-%_prefix/lib/mono/1.0/Npgsql.dll
 %_prefix/lib/mono/2.0/Npgsql.dll
 
 %package -n bytefx-data-mysql
@@ -836,7 +761,6 @@ Authors:
 %files -n bytefx-data-mysql
 %defattr(-, root, root)
 %_prefix/lib/mono/gac/ByteFX.Data
-%_prefix/lib/mono/1.0/ByteFX.Data.dll
 %_prefix/lib/mono/2.0/ByteFX.Data.dll
 
 %package -n mono-nunit
@@ -844,29 +768,6 @@ License:        LGPL v2.1 only
 Summary:        NUnit Testing Framework
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
-
-%package -n mono-data-firebird
-License:        LGPL v2.1 only
-Summary:        Database connectivity for Mono
-Group:          Development/Languages/Mono
-Requires:       mono-core == %version-%release
-Requires:       mono-data == %version-%release
-
-%description -n mono-data-firebird
-The Mono Project is an open development initiative that is working to
-develop an open source, Unix version of the .NET development platform.
-Its objective is to enable Unix developers to build and deploy
-cross-platform .NET applications. The project will implement various
-technologies that have been submitted to the ECMA for standardization.
-
-Database connectivity for Mono.
-
-
-
-%files -n mono-data-firebird
-%defattr(-, root, root)
-%_prefix/lib/mono/gac/FirebirdSql.Data.Firebird
-%_prefix/lib/mono/1.0/FirebirdSql.Data.Firebird.dll
 
 %description -n mono-nunit
 NUnit is a unit-testing framework for all .Net languages.  Initially
@@ -889,31 +790,22 @@ Authors:
 %defattr(-, root, root)
 %_prefix/bin/nunit-console
 %_prefix/bin/nunit-console2
-%_prefix/lib/mono/1.0/nunit-console.exe*
 %_prefix/lib/mono/2.0/nunit-console.exe*
 %_prefix/lib/mono/gac/nunit.util
-%_prefix/lib/mono/1.0/nunit.util.dll
 %_prefix/lib/mono/2.0/nunit.util.dll
 %_prefix/lib/mono/gac/nunit.core
-%_prefix/lib/mono/1.0/nunit.core.dll
 %_prefix/lib/mono/2.0/nunit.core.dll
 %_prefix/lib/mono/gac/nunit.core.extensions
-%_prefix/lib/mono/1.0/nunit.core.extensions.dll
 %_prefix/lib/mono/2.0/nunit.core.extensions.dll
 %_prefix/lib/mono/gac/nunit.core.interfaces
-%_prefix/lib/mono/1.0/nunit.core.interfaces.dll
 %_prefix/lib/mono/2.0/nunit.core.interfaces.dll
 %_prefix/lib/mono/gac/nunit.framework
-%_prefix/lib/mono/1.0/nunit.framework.dll
 %_prefix/lib/mono/2.0/nunit.framework.dll
 %_prefix/lib/mono/gac/nunit.framework.extensions
-%_prefix/lib/mono/1.0/nunit.framework.extensions.dll
 %_prefix/lib/mono/2.0/nunit.framework.extensions.dll
 %_prefix/lib/mono/gac/nunit.mocks
-%_prefix/lib/mono/1.0/nunit.mocks.dll
 %_prefix/lib/mono/2.0/nunit.mocks.dll
 %_prefix/lib/mono/gac/nunit-console-runner
-%_prefix/lib/mono/1.0/nunit-console-runner.dll
 %_prefix/lib/mono/2.0/nunit-console-runner.dll
 
 %_libdir/pkgconfig/mono-nunit.pc
@@ -952,11 +844,7 @@ Authors:
     Paolo Molaro <lupus@ximian.com>
     Dietmar Maurer <dietmar@ximian.com>
 
-%post -n mono-devel
-/sbin/ldconfig
-if [ ! -d /opt/gnome ]; then
-sed -i 's:/opt/gnome:/usr:g' %_libdir/libmono.la
-fi
+%post -n mono-devel -p /sbin/ldconfig
 
 %postun -n mono-devel -p /sbin/ldconfig
 
@@ -965,37 +853,24 @@ fi
 # libs
 %_libdir/libmono.so
 %_libdir/libmono.a
-%verify(not size md5 mtime) %_libdir/libmono.la
 # exes
-%_prefix/lib/mono/1.0/makecert.exe*
 %_prefix/lib/mono/2.0/mono-api-info.exe*
-%_prefix/lib/mono/1.0/al.exe*
 %_prefix/lib/mono/2.0/al.exe*
-%_prefix/lib/mono/1.0/caspol.exe*
-%_prefix/lib/mono/1.0/cert2spc.exe*
-%_prefix/lib/mono/1.0/mono-cil-strip.exe*
-%_prefix/lib/mono/1.0/dtd2xsd.exe*
-%_prefix/lib/mono/1.0/genxs.exe*
-%_prefix/lib/mono/2.0/httpcfg.exe*
-%_prefix/lib/mono/1.0/ictool.exe*
-%_prefix/lib/mono/1.0/ilasm.exe*
+%_prefix/lib/mono/2.0/mono-cil-strip.exe*
+%_prefix/lib/mono/2.0/dtd2xsd.exe*
+%_prefix/lib/mono/2.0/genxs.exe*
+%_prefix/lib/mono/2.0/ictool.exe*
 %_prefix/lib/mono/2.0/ilasm.exe*
-%_prefix/lib/mono/1.0/installvst.exe*
+%_prefix/lib/mono/2.0/installvst.exe*
 %_prefix/lib/mono/2.0/lc.exe*
-%_prefix/lib/mono/1.0/mkbundle.exe*
 %_prefix/lib/mono/2.0/mkbundle.exe*
-%_prefix/lib/mono/1.0/monop.exe*
 %_prefix/lib/mono/2.0/monop.exe*
-%_prefix/lib/mono/1.0/permview.exe*
-%_prefix/lib/mono/1.0/resgen.exe*
 %_prefix/lib/mono/2.0/resgen.exe*
-%_prefix/lib/mono/1.0/secutil.exe*
 %_prefix/lib/mono/2.0/sgen.exe*
-%_prefix/lib/mono/1.0/signcode.exe*
-%_prefix/lib/mono/1.0/prj2make.exe*
-%_prefix/lib/mono/1.0/macpack.exe*
+%_prefix/lib/mono/2.0/prj2make.exe*
+%_prefix/lib/mono/2.0/macpack.exe*
 %_prefix/lib/mono/2.0/mono-shlib-cop.exe*
-%_prefix/lib/mono/1.0/dtd2rng.exe*
+%_prefix/lib/mono/2.0/dtd2rng.exe*
 %_prefix/lib/mono/2.0/mono-xmltool.exe*
 %_prefix/lib/mono/2.0/pdb2mdb.exe*
 # xbuild related files
@@ -1034,28 +909,25 @@ fi
 %_mandir/man1/xbuild.1%ext_man
 # Shell wrappers
 %_bindir/al
-%_bindir/al1
 %_bindir/al2
 %_bindir/caspol
 %_bindir/cert2spc
 %_bindir/dtd2xsd
 %_bindir/dtd2rng
 %_bindir/genxs
-%_bindir/genxs1
 %_bindir/httpcfg
 %_bindir/ilasm
-%_bindir/ilasm1
 %_bindir/ilasm2
 %_bindir/installvst
+%_bindir/lc
 %_bindir/macpack
 %_bindir/makecert
 %_bindir/mkbundle
-%_bindir/mkbundle1
 %_bindir/mkbundle2
+%_bindir/mono-gdb.py
 %_bindir/monodis
 %_bindir/monolinker
 %_bindir/monop
-%_bindir/monop1
 %_bindir/monop2
 %_bindir/mono-api-info
 %_bindir/mono-cil-strip
@@ -1068,7 +940,6 @@ fi
 %_bindir/permview
 %_bindir/prj2make
 %_bindir/resgen
-%_bindir/resgen1
 %_bindir/resgen2
 %_bindir/secutil
 %_bindir/sgen
@@ -1076,9 +947,10 @@ fi
 %_bindir/xbuild
 %_mandir/man1/monolinker.1%ext_man
 %_prefix/lib/mono/gac/PEAPI
-%_prefix/lib/mono/1.0/PEAPI.dll
 %_prefix/lib/mono/2.0/monolinker.*
 %_prefix/lib/mono/2.0/PEAPI.dll
+%_prefix/lib/mono/gac/Mono.Debugger.Soft
+%_prefix/lib/mono/2.0/Mono.Debugger.Soft.dll
 %_prefix/lib/mono/gac/Microsoft.Build.Tasks
 %_prefix/lib/mono/2.0/Microsoft.Build.Tasks.dll
 %_prefix/lib/mono/gac/Microsoft.Build.Tasks.v3.5
@@ -1128,7 +1000,7 @@ Monodoc-core contains documentation tools for C#.
 %files -n monodoc-core
 %defattr(-, root, root)
 %{_prefix}/lib/mono/2.0/mdoc.exe*
-%{_prefix}/lib/mono/1.0/mod.exe*
+%{_prefix}/lib/mono/2.0/mod.exe*
 %{_prefix}/lib/mono/gac/monodoc
 %{_prefix}/lib/mono/monodoc
 %{_bindir}/mdassembler
@@ -1198,7 +1070,6 @@ Authors:
 %defattr(-, root, root)
 # Directories
 # Put dir files here so we don't have an empty package
-%dir %_prefix/lib/mono/compat-1.0
 %dir %_prefix/lib/mono/compat-2.0
 
 %prep
@@ -1220,69 +1091,22 @@ make
 
 %install
 make install DESTDIR=%buildroot
-# Remove unused files
-rm $RPM_BUILD_ROOT%_libdir/libMonoPosixHelper.a
-rm $RPM_BUILD_ROOT%_libdir/libMonoPosixHelper.la
-rm -f $RPM_BUILD_ROOT%_libdir/libikvm-native.a
-rm -f $RPM_BUILD_ROOT%_libdir/libikvm-native.la
-rm -fr $RPM_BUILD_ROOT%_prefix/lib/mono/gac/Mono.Security.Win32/[12]*
-rm $RPM_BUILD_ROOT%_prefix/lib/mono/2.0/Mono.Security.Win32.dll
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.DGUX386
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.Mac
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.MacOSX
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.OS2
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.amiga
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.arm.cross
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.autoconf
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.changes
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.contributors
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.cords
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.darwin
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.dj
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.environment
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.ews4800
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.hp
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.linux
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.macros
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.rs6000
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.sgi
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.solaris2
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.uts
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/README.win32
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/barrett_diagram
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/debugging.html
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/gc.man
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/gcdescr.html
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/gcinterface.html
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/leak.html
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/scale.html
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/simple_example.html
-rm $RPM_BUILD_ROOT%_datadir/libgc-mono/tree.html
-rm $RPM_BUILD_ROOT%_mandir/man1/cilc.1
-rm $RPM_BUILD_ROOT%_mandir/man1/mint.1
-# Things we don't ship.
-# cilc
-rm $RPM_BUILD_ROOT%_bindir/cilc
-#rm $RPM_BUILD_ROOT%_prefix/lib/mono/1.0/cilc*
-# jay
-#rm $RPM_BUILD_ROOT%_bindir/jay
-#rm -R $RPM_BUILD_ROOT%_datadir/jay
-#rm $RPM_BUILD_ROOT%_mandir/man1/jay.1
-#rm $RPM_BUILD_ROOT%_prefix/lib/mono/1.0/browsercaps-updater.exe*
-# New files to delete in 1.1.9.2
-rm -f $RPM_BUILD_ROOT%_libdir/libMonoSupportW.a
-rm -f $RPM_BUILD_ROOT%_libdir/libMonoSupportW.la
-rm -f $RPM_BUILD_ROOT%_libdir/libMonoSupportW.so
-# 1.1.17 updates:
-# This file moved to mono-basic
-rm -f $RPM_BUILD_ROOT%_bindir/mbas
-# 1.2.4 changes
-rm -f $RPM_BUILD_ROOT%_prefix/lib/mono/2.0/culevel.exe*
-# Post 1.2.5
-rm -f $RPM_BUILD_ROOT%_prefix/lib/mono/2.0/transform.exe
-# Post 2.2
-rm -f $RPM_BUILD_ROOT%_mandir/man1/monoburg.*
+# remove .la files (they are generally bad news)
+rm -f %buildroot%_libdir/*.la
+# remove Windows-only stuff
+rm -rf %buildroot%_prefix/lib/mono/*/Mono.Security.Win32*
+rm -f %buildroot%_libdir/libMonoSupportW.*
+# remove .a files for libraries that are really only for us
+rm -f %buildroot%_libdir/libMonoPosixHelper.a
+rm -f %buildroot%_libdir/libikvm-native.a
+# remove libgc cruft
+rm -rf %buildroot%_datadir/libgc-mono
+# remove stuff that we don't package
+rm -f %buildroot%_prefix/lib/mono/2.0/browsercaps-updater.exe*
+rm -f %buildroot%_bindir/cilc
+rm -f %buildroot%_mandir/man1/cilc.1*
+rm -f %buildroot%_prefix/lib/mono/2.0/cilc.exe*
+rm -f %buildroot%_prefix/lib/mono/2.0/culevel.exe*
 # brp-compress doesn't search _mandir
 # so we cheat it
 ln -s . %buildroot%_prefix/usr
