@@ -1,3 +1,9 @@
+2009-11-10  Jonathan Chambers  <joncham@gmail.com>
+
+	* winconfig.h: Bump version string to 2.7.
+
+	Contributed under MIT/X11 license.
+
 2009-11-09  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Define LLVM_MAJOR/MINOR_VERSION defines to allow working
