@@ -35,11 +35,6 @@
 #include <sys/wait.h>  /* for WIFEXITED, WEXITSTATUS */
 #endif
 
-// FIXME:
-#ifdef __linux__
-#define HAVE_DL_ITERATE_PHDR
-#endif
-
 #ifdef HAVE_DL_ITERATE_PHDR
 #include <link.h>
 #endif
