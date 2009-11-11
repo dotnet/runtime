@@ -1,3 +1,7 @@
+2009-11-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add checks for link.h and dl_iterate_phdr.
+
 2009-11-10  Jonathan Chambers  <joncham@gmail.com>
 
 	* winconfig.h: Bump version string to 2.7.
