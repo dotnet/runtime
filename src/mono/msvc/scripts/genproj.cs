@@ -606,12 +606,8 @@ class MsbuildGenerator {
 			mcs = mcs.Substring (10);
 		
 		var compiler = mcs.Substring (mcs.LastIndexOf (' ') + 1);
-		if (compiler.EndsWith ("class/lib/basic/mcs.exe"))
-			compiler = "basic";
-		else if (compiler.EndsWith ("class/lib/net_1_1_bootstrap/mcs.exe"))
-			compiler = "net_1_1_bootstrap";
-		else if (compiler.EndsWith ("class/lib/net_1_1/mcs.exe"))
-			compiler = "net_1_1";
+		if (compiler.EndsWith ("class/lib/basic/gmcs.exe"))
+			compiler = "gmcs";
 		else if (compiler.EndsWith ("class/lib/net_2_0_bootstrap/gmcs.exe"))
 			compiler = "net_2_0_bootstrap";
 		else if (compiler.EndsWith ("mcs/gmcs.exe"))
