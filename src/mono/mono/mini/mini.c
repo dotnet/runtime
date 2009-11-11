@@ -3169,9 +3169,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	try_llvm = FALSE;
 #endif
 
-	if (compile_aot)
-		try_llvm = FALSE;
-
  restart_compile:
 	if (try_generic_shared) {
 		MonoMethod *declaring_method;
@@ -3747,7 +3744,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		if (!inited) {
 			mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_with_llvm);	
-			mono_counters_register ("Methods JITted without using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_without_llvm);
+			mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_without_llvm);
 			inited = TRUE;
 		}
 
@@ -3782,7 +3779,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		InterlockedIncrement (&methods_with_llvm);
 
-		if (cfg->verbose_level > 0) {
+		if (cfg->verbose_level > 0 && !cfg->compile_aot) {
 			nm = mono_method_full_name (cfg->method, TRUE);
 			g_print ("LLVM Method %s emitted at %p to %p (code length %d) [%s]\n", 
 					 nm, 
@@ -4818,7 +4815,7 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 }
 
 #ifdef MONO_ARCH_HAVE_IMT
-static gpointer
+static G_GNUC_UNUSED gpointer
 mini_get_imt_trampoline (void)
 {
 	static gpointer tramp = NULL;

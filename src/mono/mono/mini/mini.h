@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "59"
+#define MONO_AOT_FILE_VERSION "60"
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1488,6 +1488,11 @@ char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
 MonoAotTrampInfo* mono_aot_tramp_info_create (const char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
 guint    mono_aot_str_hash                  (gconstpointer v1) MONO_INTERNAL;
 MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method) MONO_INTERNAL;
+guint32  mono_aot_get_got_offset            (MonoJumpInfo *ji) MONO_INTERNAL;
+char*    mono_aot_get_method_name           (MonoCompile *cfg) MONO_INTERNAL;
+char*    mono_aot_get_plt_symbol            (MonoJumpInfoType type, gconstpointer data) MONO_INTERNAL;
+char*    mono_aot_get_method_debug_name     (MonoCompile *cfg) MONO_INTERNAL;
+MonoJumpInfo* mono_aot_patch_info_dup       (MonoJumpInfo* ji) MONO_INTERNAL;
 
 /* This is an exported function */
 void     mono_aot_register_globals          (gpointer *globals);
@@ -1505,6 +1510,8 @@ void     mono_llvm_init                     (void) MONO_INTERNAL;
 void     mono_llvm_cleanup                  (void) MONO_INTERNAL;
 void     mono_llvm_emit_method              (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
+void     mono_llvm_create_aot_module        (const char *got_symbol) MONO_INTERNAL;
+void     mono_llvm_emit_aot_module          (const char *filename, int got_size) MONO_INTERNAL;
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;

@@ -42,6 +42,9 @@ LLVMValueRef
 mono_llvm_build_volatile_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 							   const char *Name);
 
+void
+mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  

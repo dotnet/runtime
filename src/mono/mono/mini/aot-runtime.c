@@ -35,6 +35,15 @@
 #include <sys/wait.h>  /* for WIFEXITED, WEXITSTATUS */
 #endif
 
+// FIXME:
+#ifdef __linux__
+#define HAVE_DL_ITERATE_PHDR
+#endif
+
+#ifdef HAVE_DL_ITERATE_PHDR
+#include <link.h>
+#endif
+
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -93,15 +102,16 @@ typedef struct MonoAotModule {
 	guint8 *code_end;
 	guint8 *plt;
 	guint8 *plt_end;
-	guint32 *code_offsets;
+	gint32 *code_offsets;
+	/* This contains <offset, index> pairs sorted by offset */
+	/* This is needed because LLVM emitted methods can be in any order */
+	gint32 *sorted_code_offsets;
 	guint8 *method_info;
 	guint32 *method_info_offsets;
 	guint8 *got_info;
 	guint32 *got_info_offsets;
 	guint8 *ex_info;
 	guint32 *ex_info_offsets;
-	guint32 *method_order;
-	guint32 *method_order_end;
 	guint8 *class_info;
 	guint32 *class_info_offsets;
 	guint32 *methods_loaded;
@@ -110,6 +120,9 @@ typedef struct MonoAotModule {
 	guint32 *extra_method_info_offsets;
 	guint8 *extra_method_info;
 	guint8 *unwind_info;
+
+	/* Points to the the GNU .eh_frame_hdr section, if it exists */
+	guint8 *eh_frame_hdr;
 
 	/* Points to the trampolines */
 	guint8 *trampolines [MONO_AOT_TRAMP_NUM];
@@ -837,6 +850,25 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 	}
 }
 
+#ifdef HAVE_DL_ITERATE_PHDR
+static int
+dl_callback (struct dl_phdr_info *info, size_t size, void *data)
+{
+	int j;
+	MonoAotModule *amodule = data;
+
+	if (!strcmp (amodule->aot_name, info->dlpi_name)) {
+		for (j = 0; j < info->dlpi_phnum; j++) {
+			if (info->dlpi_phdr [j].p_type == PT_GNU_EH_FRAME)
+				amodule->eh_frame_hdr = (guint8*)(info->dlpi_addr + info->dlpi_phdr [j].p_vaddr);
+		}
+		return 1;
+	} else {
+		return 0;
+	}
+}
+#endif
+
 static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
@@ -1027,8 +1059,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "method_info", (gpointer*)&amodule->method_info);
 	find_symbol (sofile, globals, "ex_info_offsets", (gpointer*)&amodule->ex_info_offsets);
 	find_symbol (sofile, globals, "ex_info", (gpointer*)&amodule->ex_info);
-	find_symbol (sofile, globals, "method_order", (gpointer*)&amodule->method_order);
-	find_symbol (sofile, globals, "method_order_end", (gpointer*)&amodule->method_order_end);
 	find_symbol (sofile, globals, "class_info", (gpointer*)&amodule->class_info);
 	find_symbol (sofile, globals, "class_info_offsets", (gpointer*)&amodule->class_info_offsets);
 	find_symbol (sofile, globals, "class_name_table", (gpointer *)&amodule->class_name_table);
@@ -1076,6 +1106,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_jit_info_add_aot_module (assembly->image, amodule->code, amodule->code_end);
 
 	assembly->image->aot_module = amodule;
+ 
+#ifdef HAVE_DL_ITERATE_PHDR
+	/* Lookup the address of the .eh_frame_hdr () section if available */
+	dl_iterate_phdr (dl_callback, amodule);
+#endif	
 
 	if (mono_aot_only) {
 		if (mono_defaults.corlib) {
@@ -1372,12 +1407,113 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	return TRUE;
 }
 
+#define DW_EH_PE_omit	0xff
+#define DW_EH_PE_uleb128 0x01
+#define DW_EH_PE_udata2	0x02
+#define DW_EH_PE_udata4	0x03
+#define DW_EH_PE_udata8	0x04
+#define DW_EH_PE_sleb128 0x09
+#define DW_EH_PE_sdata2	0x0A
+#define DW_EH_PE_sdata4	0x0B
+#define DW_EH_PE_sdata8	0x0C
+
+#define DW_EH_PE_absptr	0x00
+#define DW_EH_PE_pcrel	0x10
+#define DW_EH_PE_datarel 0x30
+#define DW_EH_PE_omit	0xff
+
+typedef struct
+{
+	guint8 version;
+	guint8 eh_frame_ptr_enc;
+	guint8 fde_count_enc;
+	guint8 table_enc;
+	guint8 rest;
+} eh_frame_hdr;
+
+/*
+ * decode_eh_frame:
+ *
+ *   Decode the exception handling information in the .eh_frame section of the AOT
+ * file belong to CODE, and construct a MonoJitInfo structure from it.
+ * LOCKING: Acquires the domain lock.
+ */
+static void
+decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain, 
+				 MonoMethod *method, guint8 *code, MonoJitInfo *jinfo)
+{
+	eh_frame_hdr *hdr;
+	guint8 *p;
+	guint8 *eh_frame, *unwind_info;
+	guint32 eh_frame_ptr;
+	int fde_count;
+	gint32 *table;
+	int pos, left, right, offset, offset1, offset2;
+	guint32 unw_len, code_len;
+
+	g_assert (amodule->eh_frame_hdr);
+
+	// http://refspecs.freestandards.org/LSB_1.3.0/gLSB/gLSB/ehframehdr.html
+	hdr = (eh_frame_hdr*)amodule->eh_frame_hdr;
+	g_assert (hdr->version == 1);
+	g_assert (hdr->eh_frame_ptr_enc == (DW_EH_PE_pcrel | DW_EH_PE_sdata4));
+	g_assert (hdr->fde_count_enc == DW_EH_PE_udata4);
+	g_assert (hdr->table_enc == (DW_EH_PE_datarel | DW_EH_PE_sdata4));
+
+	p = &(hdr->rest);
+	eh_frame_ptr = *(guint32*)p;
+	p += 4;
+	fde_count = *(guint32*)p;
+	p += 4;
+	table = (gint32*)p;
+
+	/* Binary search in the table to find the entry for code */
+	offset = code - amodule->eh_frame_hdr;
+
+	left = 0;
+	right = fde_count;
+	while (TRUE) {
+		pos = (left + right) / 2;
+
+		offset1 = table [(pos * 2)];
+		if (pos + 1 == fde_count)
+			/* FIXME: */
+			offset2 = amodule->code_end - amodule->code;
+		else
+			offset2 = table [(pos + 1) * 2];
+
+		if (offset < offset1)
+			right = pos;
+		else if (offset >= offset2)
+			left = pos + 1;
+		else
+			break;
+	}
+
+	g_assert (code >= amodule->eh_frame_hdr + table [(pos * 2)]);
+	if (pos < fde_count)
+		g_assert (code < amodule->eh_frame_hdr + table [(pos * 2) + 2]);
+
+	eh_frame = amodule->eh_frame_hdr + table [(pos * 2) + 1];
+
+	unwind_info = mono_unwind_get_ops_from_fde (eh_frame, &unw_len, &code_len);
+
+	jinfo->code_size = code_len;
+	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);
+	jinfo->method = method;
+	jinfo->code_start = code;
+	jinfo->domain_neutral = 0;
+	/* This signals that used_regs points to a normal cached unwind info */
+	jinfo->from_aot = 0;
+}
+
 /*
  * LOCKING: Acquires the domain lock.
  */
 static MonoJitInfo*
 decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain, 
-							 MonoMethod *method, guint8* ex_info, guint8 *code)
+							 MonoMethod *method, guint8* ex_info, guint8 *addr,
+							 guint8 *code)
 {
 	int i, buf_len;
 	MonoJitInfo *jinfo;
@@ -1439,12 +1575,18 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		jinfo = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + generic_info_size);
 	}
 
-	jinfo->code_size = code_len;
-	jinfo->used_regs = used_int_regs;
-	jinfo->method = method;
-	jinfo->code_start = code;
-	jinfo->domain_neutral = 0;
-	jinfo->from_aot = 1;
+ 	if (code_len == 0) {
+		/* LLVM compiled method */
+		/* The info is in the .eh_frame section */
+		decode_eh_frame (amodule, domain, method, code, jinfo);
+ 	} else {
+		jinfo->code_size = code_len;
+		jinfo->used_regs = used_int_regs;
+		jinfo->method = method;
+		jinfo->code_start = code;
+		jinfo->domain_neutral = 0;
+		jinfo->from_aot = 1;
+	}
 
 	if (has_generic_jit_info) {
 		MonoGenericJitInfo *gi;
@@ -1532,18 +1674,26 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 	return p;
 }
 
+static int
+compare_ints (const void *a, const void *b)
+{
+	return *(gint32*)a - *(gint32*)b;
+}
+
 MonoJitInfo *
 mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
-	int pos, left, right, offset, offset1, offset2, last_offset, new_offset;
-	int page_index, method_index, table_len, is_wrapper;
+	int pos, left, right, offset, offset1, offset2;
+	int method_index, table_len, is_wrapper;
 	guint32 token;
 	MonoAotModule *amodule = image->aot_module;
 	MonoMethod *method;
 	MonoJitInfo *jinfo;
 	guint8 *code, *ex_info, *p;
-	guint32 *table, *ptr;
-	gboolean found;
+	guint32 *table;
+	int nmethods = amodule->info.nmethods;
+	gint32 *code_offsets;
+	int i;
 
 	if (!amodule)
 		return NULL;
@@ -1554,71 +1704,36 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	offset = (guint8*)addr - amodule->code;
 
-	/* First search through the index */
-	ptr = amodule->method_order;
-	last_offset = 0;
-	page_index = 0;
-	found = FALSE;
-
-	if (*ptr == 0xffffff)
-		return NULL;
-	ptr ++;
-
-	while (*ptr != 0xffffff) {
-		guint32 method_index = ptr [0];
-		new_offset = amodule->code_offsets [method_index];
-
-		if (offset >= last_offset && offset < new_offset) {
-			found = TRUE;
-			break;
+	/* Compute a sorted table mapping code offsets to method indexes. */
+	if (!amodule->sorted_code_offsets) {
+		code_offsets = g_new0 (gint32, nmethods * 2);
+		for (i = 0; i < nmethods; ++i) {
+			code_offsets [(i * 2)] = amodule->code_offsets [i];
+			code_offsets [(i *2) + 1] = i;
 		}
+		/* FIXME: Use a merge sort as this is mostly sorted */
+		qsort (code_offsets, nmethods, sizeof (gint32) * 2, compare_ints);
+		for (i = 0; i < nmethods -1; ++i)
+			g_assert (code_offsets [(i * 2)] <= code_offsets [(i + 1) * 2]);
 
-		ptr ++;
-		last_offset = new_offset;
-		page_index ++;
+		if (InterlockedCompareExchangePointer ((gpointer*)&amodule->sorted_code_offsets, code_offsets, NULL) != NULL)
+			/* Somebody got in before us */
+			g_free (code_offsets);
 	}
 
-	/* Skip rest of index */
-	while (*ptr != 0xffffff)
-		ptr ++;
-	ptr ++;
+	code_offsets = amodule->sorted_code_offsets;
 
-	table = ptr;
-	table_len = amodule->method_order_end - table;
-
-	g_assert (table <= amodule->method_order_end);
-
-	if (found) {
-		left = (page_index * 1024);
-		right = left + 1024;
-
-		if (right > table_len)
-			right = table_len;
-
-		offset1 = amodule->code_offsets [table [left]];
-		g_assert (offset1 <= offset);
-
-		//printf ("Found in index: 0x%x 0x%x 0x%x\n", offset, last_offset, new_offset);
-	}
-	else {
-		//printf ("Not found in index: 0x%x\n", offset);
-		left = 0;
-		right = table_len;
-	}
-
-	/* Binary search inside the method_order table to find the method */
+	/* Binary search in the sorted_code_offsets table */
+	left = 0;
+	right = nmethods;
 	while (TRUE) {
 		pos = (left + right) / 2;
 
-		g_assert (table + pos <= amodule->method_order_end);
-
-		//printf ("Pos: %5d < %5d < %5d Offset: 0x%05x < 0x%05x < 0x%05x\n", left, pos, right, amodule->code_offsets [table [left]], offset, amodule->code_offsets [table [right]]);
-
-		offset1 = amodule->code_offsets [table [pos]];
-		if (table + pos + 1 >= amodule->method_order_end)
+		offset1 = code_offsets [(pos * 2)];
+		if (pos + 1 == nmethods)
 			offset2 = amodule->code_end - amodule->code;
 		else
-			offset2 = amodule->code_offsets [table [pos + 1]];
+			offset2 = code_offsets [(pos + 1) * 2];
 
 		if (offset < offset1)
 			right = pos;
@@ -1628,7 +1743,10 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 			break;
 	}
 
-	method_index = table [pos];
+	g_assert (offset >= code_offsets [(pos * 2)]);
+	if (pos + 1 < nmethods)
+		g_assert (offset < code_offsets [((pos + 1) * 2)]);
+	method_index = code_offsets [(pos * 2) + 1];
 
 	/* Might be a wrapper/extra method */
 	if (amodule->extra_methods) {
@@ -1684,7 +1802,9 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	code = &amodule->code [amodule->code_offsets [method_index]];
 	ex_info = &amodule->ex_info [amodule->ex_info_offsets [method_index]];
 
-	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code);
+	g_assert ((guint8*)code <= (guint8*)addr);
+	
+	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, addr, code);
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 	g_assert ((guint8*)addr < (guint8*)jinfo->code_start + jinfo->code_size);
@@ -2071,7 +2191,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 		if (!jinfo) {
 			ex_info = &amodule->ex_info [amodule->ex_info_offsets [method_index]];
-			jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code);
+			jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code, code);
 		}
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", full_name, code, code + jinfo->code_size, info);

@@ -13,6 +13,8 @@
 
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
+#include "llvm-c/BitWriter.h"
+#include "llvm-c/Analysis.h"
 
 #include "mini-llvm-cpp.h"
 
@@ -24,6 +26,8 @@ typedef struct {
 	LLVMValueRef throw, throw_corlib_exception;	
 	GHashTable *llvm_types;
 	LLVMValueRef got_var;
+	const char *got_symbol;
+	GHashTable *plt_entries;
 } MonoLLVMModule;
 
 /*
@@ -139,7 +143,6 @@ static LLVMExecutionEngineRef ee;
 static guint32 current_cfg_tls_id;
 
 static MonoLLVMModule jit_module, aot_module;
-//static GHashTable *plt_entries;
 
 /*
  * IntPtrType:
@@ -629,6 +632,7 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
 
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
+		g_assert (ctx->addresses [vreg]);
 		LLVMBuildStore (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]);
 	}
 }
@@ -784,8 +788,18 @@ create_builder (EmitContext *ctx)
 static LLVMValueRef
 get_plt_entry (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
 {
-	NOT_IMPLEMENTED;
-	return NULL;
+	char *callee_name = mono_aot_get_plt_symbol (type, data);
+	LLVMValueRef callee;
+
+	// FIXME: Locking
+	callee = g_hash_table_lookup (ctx->lmodule->plt_entries, callee_name);
+	if (!callee) {
+		callee = LLVMAddFunction (ctx->module, callee_name, llvm_sig);
+
+		g_hash_table_insert (ctx->lmodule->plt_entries, (char*)callee_name, callee);
+	}
+
+	return callee;
 }
 
 static void
@@ -1017,8 +1031,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	MonoBasicBlock *bb;
 	LLVMTypeRef method_type;
-	LLVMValueRef method = NULL;
-	char *method_name, *debug_name;
+	LLVMValueRef method = NULL, debug_alias = NULL;
+	char *method_name, *debug_name = NULL;
 	LLVMValueRef *values, *addresses;
 	LLVMTypeRef *vreg_types;
 	MonoType **vreg_cli_types;
@@ -1030,6 +1044,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	LLVMCallInfo *linfo;
 	GSList *l;
 	LLVMModuleRef module;
+	gboolean *is_dead;
 
 	/* The code below might acquire the loader lock, so use it for global locking */
 	mono_loader_lock ();
@@ -1054,6 +1069,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	vreg_cli_types = g_new0 (MonoType*, cfg->next_vreg);
 	phi_nodes = g_hash_table_new (NULL, NULL);
 	phi_values = g_ptr_array_new ();
+	/* 
+	 * This signals whenever the vreg was defined by a phi node with no input vars
+	 * (i.e. all its input bblocks end with NOT_REACHABLE).
+	 */
+	is_dead = g_new0 (gboolean, cfg->next_vreg);
 
 	ctx->values = values;
 	ctx->addresses = addresses;
@@ -1061,7 +1081,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
  
 	if (cfg->compile_aot) {
 		ctx->lmodule = &aot_module;
-		NOT_IMPLEMENTED;
+		method_name = mono_aot_get_method_name (cfg);
+		debug_name = mono_aot_get_method_debug_name (cfg);
 	} else {
 		ctx->lmodule = &jit_module;
 		method_name = mono_method_full_name (cfg->method, TRUE);
@@ -1098,7 +1119,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
-	g_free (method_name);
 
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
@@ -1349,7 +1369,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					break;
 				}
 
-				if (!lhs) {
+				if (!lhs || is_dead [ins->sreg1]) {
 					/* 
 					 * The method did not set its return value, probably because it
 					 * ends with a throw.
@@ -1518,6 +1538,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				if (empty) {
 					/* LLVM doesn't like phi instructions with zero operands */
+					is_dead [ins->dreg] = TRUE;
 					break;
 				}					
 
@@ -1799,6 +1820,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildXor (builder, LLVMConstInt (LLVMInt64Type (), v, FALSE), lhs, dname);
 				break;
 			}
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 			case OP_X86_LEA: {
 				LLVMValueRef v1, v2;
 
@@ -1807,6 +1829,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildAdd (builder, v2, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), dname);
 				break;
 			}
+#endif
 
 			case OP_ICONV_TO_I1:
 			case OP_ICONV_TO_I2:
@@ -2133,6 +2156,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 					if (call->method && call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 #ifdef MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE
+						if (cfg->compile_aot)
+							LLVM_FAILURE (ctx, "imt");
 						callee = LLVMAddFunction (module, "", llvm_sig);
 						target = mono_create_llvm_imt_trampoline (cfg->domain, call->method, call->inst.inst_offset);
 						LLVMAddGlobalMapping (ee, callee, target);
@@ -2234,14 +2259,32 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				}
 				break;
 			}
-			case OP_GOT_ENTRY: {
-				LLVMValueRef indexes [2];
+			case OP_AOTCONST: {
+				guint32 got_offset;
+ 				LLVMValueRef indexes [2];
+				MonoJumpInfo *ji;
 
-				indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-				indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)ins->inst_p0, FALSE);
-				values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->lmodule->got_var, indexes, 2, ""), dname);
-				break;
-			}
+				/* 
+				 * FIXME: Can't allocate from the cfg mempool since that is freed if
+				 * the LLVM compile fails.
+				 */
+				ji = g_new0 (MonoJumpInfo, 1);
+				ji->type = (MonoJumpInfoType)ins->inst_i1;
+				ji->data.target = ins->inst_p0;
+
+				ji = mono_aot_patch_info_dup (ji);
+
+				ji->next = cfg->patch_info;
+				cfg->patch_info = ji;
+				   
+				//mono_add_patch_info (cfg, 0, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+				got_offset = mono_aot_get_got_offset (cfg->patch_info);
+ 
+ 				indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+				indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
+ 				values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->lmodule->got_var, indexes, 2, ""), dname);
+ 				break;
+ 			}
 			case OP_THROW: {
 				MonoMethodSignature *throw_sig;
 				LLVMValueRef callee, arg;
@@ -2579,7 +2622,17 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	if (cfg->compile_aot) {
 		/* Don't generate native code, keep the LLVM IR */
-		NOT_IMPLEMENTED;
+
+		/* Can't delete the method if it has an alias, so only add it if successful */
+		if (debug_name) {
+			debug_alias = LLVMAddAlias (module, LLVMTypeOf (method), method, debug_name);
+			LLVMSetVisibility (debug_alias, LLVMHiddenVisibility);
+		}
+
+		if (cfg->compile_aot && cfg->verbose_level)
+			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), method_name);
+
+		//LLVMVerifyFunction(method, 0);
 	} else {
 		mono_llvm_optimize_method (method);
 
@@ -2621,10 +2674,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	g_free (vreg_types);
 	g_free (vreg_cli_types);
 	g_free (pindexes);
+	g_free (debug_name);
 	g_hash_table_destroy (phi_nodes);
 	g_ptr_array_free (phi_values, TRUE);
 	g_free (ctx->bblocks);
 	g_free (ctx->end_bblocks);
+	g_free (method_name);
 
 	for (l = ctx->builders; l; l = l->next) {
 		LLVMBuilderRef builder = l->data;
@@ -2805,7 +2860,7 @@ add_intrinsics (LLVMModuleRef module)
 	}
 }
 
- void
+void
 mono_llvm_init (void)
 {
 	current_cfg_tls_id = TlsAlloc ();
@@ -2825,6 +2880,80 @@ mono_llvm_cleanup (void)
 	mono_llvm_dispose_ee (ee);
 
 	g_hash_table_destroy (jit_module.llvm_types);
+}
+
+void
+mono_llvm_create_aot_module (const char *got_symbol)
+{
+	/* Delete previous module */
+	if (aot_module.plt_entries)
+		g_hash_table_destroy (aot_module.plt_entries);
+
+	memset (&aot_module, 0, sizeof (aot_module));
+
+	aot_module.module = LLVMModuleCreateWithName ("aot");
+	aot_module.got_symbol = got_symbol;
+
+	add_intrinsics (aot_module.module);
+
+	/* Add GOT */
+	/*
+	 * We couldn't compute the type of the LLVM global representing the got because
+	 * its size is only known after all the methods have been emitted. So create
+	 * a dummy variable, and replace all uses it with the real got variable when
+	 * its size is known in mono_llvm_emit_aot_module ().
+	 */
+	{
+		LLVMTypeRef got_type = LLVMArrayType (IntPtrType (), 0);
+
+		aot_module.got_var = LLVMAddGlobal (aot_module.module, got_type, "mono_dummy_got");
+		LLVMSetInitializer (aot_module.got_var, LLVMConstNull (got_type));
+	}
+
+	/* Add a method to generate the 'methods' symbol needed by the AOT compiler */
+	{
+		LLVMValueRef methods_method = LLVMAddFunction (aot_module.module, "methods", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
+		LLVMBasicBlockRef bb = LLVMAppendBasicBlock (methods_method, "BB_ENTRY");
+		LLVMBuilderRef builder = LLVMCreateBuilder ();
+		LLVMPositionBuilderAtEnd (builder, bb);
+		LLVMBuildRetVoid (builder);
+	}
+
+	aot_module.llvm_types = g_hash_table_new (NULL, NULL);
+	aot_module.plt_entries = g_hash_table_new (g_str_hash, g_str_equal);
+}
+
+/*
+ * Emit the aot module into the LLVM bitcode file FILENAME.
+ */
+void
+mono_llvm_emit_aot_module (const char *filename, int got_size)
+{
+	LLVMTypeRef got_type;
+	LLVMValueRef real_got;
+
+	/* 
+	 * Create the real got variable and replace all uses of the dummy variable with
+	 * the real one.
+	 */
+	got_type = LLVMArrayType (IntPtrType (), got_size);
+	real_got = LLVMAddGlobal (aot_module.module, got_type, aot_module.got_symbol);
+	LLVMSetInitializer (real_got, LLVMConstNull (got_type));
+	LLVMSetLinkage (real_got, LLVMInternalLinkage);
+
+	mono_llvm_replace_uses_of (aot_module.got_var, real_got);
+
+#if 0
+	{
+		char *verifier_err;
+
+		if (LLVMVerifyModule (aot_module.module, LLVMReturnStatusAction, &verifier_err)) {
+			g_assert_not_reached ();
+		}
+	}
+#endif
+
+	LLVMWriteBitcodeToFile (aot_module.module, filename);
 }
 
 /*
@@ -2916,6 +3045,13 @@ mono_llvm_cleanup (void)
     This is made easier because the IR is already in SSA form.
     An additional problem is that our IR is not consistent with types, i.e. i32/ia64 
 	types are frequently used incorrectly.
+*/
+
+/*
+  AOT SUPPORT:
+  Emit LLVM bytecode into a .bc file, compile it using llc into a .s file, then 
+  append the AOT data structures to that file. For methods which cannot be
+  handled by LLVM, the normal JIT compiled versions are used.
 */
 
 /* FIXME: Normalize some aspects of the mono IR to allow easier translation, like:

@@ -228,6 +228,13 @@ mono_llvm_build_volatile_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 	return wrap(unwrap(builder)->CreateLoad(unwrap(PointerVal), true, Name));
 }
 
+void
+mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
+{
+	Value *V = ConstantExpr::getTruncOrBitCast (unwrap<Constant> (v), unwrap (var)->getType ());
+	unwrap (var)->replaceAllUsesWith (V);
+}
+
 static cl::list<const PassInfo*, bool, PassNameParser>
 PassList(cl::desc("Optimizations available:"));
 
