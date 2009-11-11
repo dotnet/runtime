@@ -1,3 +1,10 @@
+2009-11-12  Mark Probst  <mark.probst@gmail.com>
+
+	* scripts/mono-heapviz: New script for generating SGen heap
+	visualizations.
+
+	* scripts/Makefile.am: mono-heapviz added.
+
 2009-11-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add checks for link.h and dl_iterate_phdr.
