@@ -1934,16 +1934,18 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				break;
 			}
 			case OP_LOCALLOC: {
-				LLVMValueRef v;
+				LLVMValueRef v, size;
+				
+				size = LLVMBuildAnd (builder, LLVMBuildAdd (builder, lhs, LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT - 1, FALSE), ""), LLVMConstInt (LLVMInt32Type (), ~ (MONO_ARCH_FRAME_ALIGNMENT - 1), FALSE), "");
 
-				v = mono_llvm_build_alloca (builder, LLVMInt8Type (), lhs, MONO_ARCH_FRAME_ALIGNMENT, "");
+				v = mono_llvm_build_alloca (builder, LLVMInt8Type (), size, MONO_ARCH_FRAME_ALIGNMENT, "");
 
 				if (ins->flags & MONO_INST_INIT) {
 					LLVMValueRef args [4];
 
 					args [0] = v;
 					args [1] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
-					args [2] = LLVMBuildAnd (builder, LLVMBuildAdd (builder, lhs, LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT - 1, FALSE), ""), LLVMConstInt (LLVMInt32Type (), ~ (MONO_ARCH_FRAME_ALIGNMENT - 1), FALSE), "");
+					args [2] = size;
 					args [3] = LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT, FALSE);
 					LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memset.i32"), args, 4, "");
 				}
