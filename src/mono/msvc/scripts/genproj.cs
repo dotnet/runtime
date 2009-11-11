@@ -620,6 +620,10 @@ class MsbuildGenerator {
 			compiler = "net_2_1_bootstrap";
 		else if (compiler.EndsWith ("class/lib/net_2_1_raw/smcs.exe"))
 			compiler = "net_2_1_raw";
+		else if (compiler.EndsWith ("class/lib/net_4_0_bootstrap/dmcs.exe"))
+			compiler = "net_4_0_bootstrap";
+		else if (compiler.EndsWith ("class/lib/net_4_0/dmcs.exe"))
+			compiler = "dmcs";
 		else {
 			Console.WriteLine ("Can not determine compiler from {0}", compiler);
 			Environment.Exit (1);
