@@ -727,7 +727,7 @@ public class Driver {
 			Environment.Exit (1);
 		}
 
-        var sln_gen = new SlnGenerator ();
+		var sln_gen = new SlnGenerator ();
 		XDocument doc = XDocument.Load ("order.xml");
 		foreach (XElement project in doc.Root.Elements ()){
 			string dir = project.Attribute ("dir").Value;
@@ -753,7 +753,7 @@ public class Driver {
 				Console.WriteLine ("Error in {0}\n{1}", dir, e);
 			}
 		}
-        sln_gen.Write ("mcs_full.sln");
+		sln_gen.Write ("mcs_full.sln");
     }
 
 }

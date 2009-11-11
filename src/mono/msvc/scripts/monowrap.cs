@@ -89,6 +89,7 @@ namespace csc
 				compiler = root_mcs + "\\class\\lib\\net_2_0_bootstrap\\gmcs.exe";
 				break;
 				
+			case "gmcs":
 			case "mcs":
 				compiler = root_mcs + "\\mcs\\gmcs.exe";
 				break;
