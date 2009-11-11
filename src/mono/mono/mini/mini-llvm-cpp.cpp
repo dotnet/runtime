@@ -67,16 +67,18 @@ public:
     unsigned char *getGOTBase() const {
 		return mm->getGOTBase ();
     }
-    
+
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 7
     void *getDlsymTable() const {
 		return mm->getDlsymTable ();
     }
 
+	void SetDlsymTable(void *ptr);
+#endif
+
 	void setPoisonMemory(bool) {
 	}
-      
-	void SetDlsymTable(void *ptr);
-  
+
 	unsigned char *startFunctionBody(const Function *F, 
 									 uintptr_t &ActualSize);
   
@@ -133,13 +135,15 @@ MonoJITMemoryManager::AllocateGOT()
 {
 	mm->AllocateGOT ();
 }
-  
+
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 7  
 void
 MonoJITMemoryManager::SetDlsymTable(void *ptr)
 {
 	mm->SetDlsymTable (ptr);
 }
-  
+#endif
+
 unsigned char *
 MonoJITMemoryManager::startFunctionBody(const Function *F, 
 					uintptr_t &ActualSize)
