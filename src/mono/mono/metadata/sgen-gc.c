@@ -5541,8 +5541,17 @@ find_tlab_next_from_address (char *addr)
 
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
-			if (addr >= *info->tlab_start_addr && addr < *info->tlab_next_addr)
-				return *info->tlab_next_addr;
+			/*
+			 * The allocator increments tlab_next before
+			 * checking whether that address is still in
+			 * the TLAB, so we have to check here.
+			 */
+			char *next_addr = *info->tlab_next_addr;
+			char *end_addr = *info->tlab_real_end_addr;
+			if (next_addr > end_addr)
+				next_addr = end_addr;
+			if (addr >= *info->tlab_start_addr && addr < next_addr)
+				return next_addr;
 		}
 	}
 
