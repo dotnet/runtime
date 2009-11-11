@@ -1,2 +1,42 @@
+
+The scripts in this directory are used to:
+
+	* Extract the order, compiler and compilation flags for all
+	  managed code in Mono.
+
+	* Generate csproj files from the previous step
+
+	* Support the generated csproj file
+
+The idea is to ensure that we do not miss any compilation flag,
+define, resource, reference, icon or any other element that might be
+necessary to build the Mono class libraries.
+
+* Extracting the Compilation Metadata
+
+	The first step is to extract the compilation metadata from the
+	existing Makefiles.  This is done in stages, first a fully
+	working Mono compilation setup is required, and second the data
+	is extracted.
+
+	The extraction is done like this, from the toplevel Mono
+	directory run:
+
+		  make update-csproj
+
+	With this input, it is possible to generate an XML file, to do
+	this do:
+
+	     	  make package-inputs
+
+	This will generate order.xml, this contains the ordered list in
+	which directories must be compiled as well as the command line
+	options used to build it.
+
+* Generate csproj files
+
+	
+
+
 To generate the "order" file, run the command: make csproj in the mcs directory on a fully
 configured Mono setup (Linux or Cygwin)
