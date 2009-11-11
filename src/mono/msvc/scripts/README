@@ -1,0 +1,2 @@
+To generate the "order" file, run the command: make csproj in the mcs directory on a fully
+configured Mono setup (Linux or Cygwin)
