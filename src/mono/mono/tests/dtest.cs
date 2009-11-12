@@ -4,6 +4,7 @@ using System.Threading;
 using System.Net;
 using Mono.Cecil.Cil;
 using Mono.Debugger;
+using Diag = System.Diagnostics;
 
 using NUnit.Framework;
 
@@ -33,7 +34,14 @@ public class DebuggerTests
 
 	void Start (string[] args) {
 		if (!listening) {
-			vm = VirtualMachineManager.Launch (args, new LaunchOptions { Runtime = runtime != null ? runtime : null, AgentArgs = "loglevel=0" });
+			var pi = new Diag.ProcessStartInfo ();
+
+			if (runtime != null)
+				pi.FileName = runtime;
+			else
+				pi.FileName = "mono";
+			pi.Arguments = String.Join (" ", args);
+			vm = VirtualMachineManager.Launch (pi, new LaunchOptions { AgentArgs = "loglevel=0" });
 		} else {
 			Console.WriteLine ("Listening...");
 			vm = VirtualMachineManager.Listen (new IPEndPoint (IPAddress.Any, 10000));
