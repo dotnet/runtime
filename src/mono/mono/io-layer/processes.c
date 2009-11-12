@@ -1908,21 +1908,30 @@ static GSList *load_modules (FILE *fp)
 static gboolean match_procname_to_modulename (gchar *procname, gchar *modulename)
 {
 	char* lastsep = NULL;
+	char* pname = NULL;
+	char* mname = NULL;
+	gboolean result = FALSE;
 
 	if (procname == NULL || modulename == NULL)
 		return (FALSE);
 
-	if (!strcmp (procname, modulename))
-		return (TRUE);
+	pname = mono_path_resolve_symlinks (procname);
+	mname = mono_path_resolve_symlinks (modulename);
 
-	lastsep = strrchr (modulename, '/');
-	if (lastsep) {
-		if (!strcmp (lastsep+1, procname))
-			return (TRUE);
-		return (FALSE);
+	if (!strcmp (pname, mname))
+		result = TRUE;
+
+	if (!result) {
+		lastsep = strrchr (mname, '/');
+		if (lastsep)
+			if (!strcmp (lastsep+1, pname))
+				result = TRUE;
 	}
 
-	return (FALSE);
+	g_free (pname);
+	g_free (mname);
+
+	return result;
 }
 
 FILE *open_process_map (int pid, const char *mode)
