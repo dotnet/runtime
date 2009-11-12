@@ -1302,6 +1302,54 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, cinfo->sig_cookie.offset, sig_arg->dreg);
 }
 
+#ifdef ENABLE_LLVM
+LLVMCallInfo*
+mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
+{
+	int i, n;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	LLVMCallInfo *linfo;
+
+	n = sig->param_count + sig->hasthis;
+
+	cinfo = get_call_info (cfg->mempool, sig, sig->pinvoke);
+
+	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
+
+	/*
+	 * LLVM always uses the native ABI while we use our own ABI, the
+	 * only difference is the handling of vtypes:
+	 * - we only pass/receive them in registers in some cases, and only 
+	 *   in 1 or 2 integer registers.
+	 */
+	if (cinfo->ret.storage != RegTypeGeneral && cinfo->ret.storage != RegTypeNone && cinfo->ret.storage != RegTypeFP) {
+		cfg->exception_message = g_strdup ("unknown ret conv");
+		cfg->disable_llvm = TRUE;
+		return linfo;
+	}
+
+	for (i = 0; i < n; ++i) {
+		ainfo = cinfo->args + i;
+
+		linfo->args [i].storage = LLVMArgNone;
+
+		switch (ainfo->storage) {
+		case RegTypeGeneral:
+		case RegTypeIRegPair:
+			linfo->args [i].storage = LLVMArgInIReg;
+			break;
+		default:
+			cfg->exception_message = g_strdup_printf ("ainfo->storage (%d)", ainfo->storage);
+			cfg->disable_llvm = TRUE;
+			break;
+		}
+	}
+
+	return linfo;
+}
+#endif
+
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {

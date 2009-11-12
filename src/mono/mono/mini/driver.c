@@ -1551,7 +1551,7 @@ mono_main (int argc, char* argv[])
 
 #ifdef MONO_CROSS_COMPILE
        if (!mono_compile_aot) {
-		   fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.");
+		   fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.\n");
 		   exit (1);
        }
 #if SIZEOF_VOID_P == 8 && defined(TARGET_ARM)

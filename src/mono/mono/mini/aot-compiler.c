@@ -2291,25 +2291,25 @@ add_generic_instances (MonoAotCompile *acfg)
 		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IEnumerable`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts);
+	}
 
-		/* 
-		 * Add a managed-to-native wrapper of Array.GetGenericValueImpl<object>, which is
-		 * used for all instances of GetGenericValueImpl by the AOT runtime.
-		 */
-		{
-			MonoGenericContext ctx;
-			MonoType *args [16];
-			MonoMethod *get_method;
-			MonoClass *array_klass = mono_array_class_get (mono_defaults.object_class, 1)->parent;
+	/* 
+	 * Add a managed-to-native wrapper of Array.GetGenericValueImpl<object>, which is
+	 * used for all instances of GetGenericValueImpl by the AOT runtime.
+	 */
+	{
+		MonoGenericContext ctx;
+		MonoType *args [16];
+		MonoMethod *get_method;
+		MonoClass *array_klass = mono_array_class_get (mono_defaults.object_class, 1)->parent;
 
-			get_method = mono_class_get_method_from_name (array_klass, "GetGenericValueImpl", 2);
+		get_method = mono_class_get_method_from_name (array_klass, "GetGenericValueImpl", 2);
 
-			if (get_method) {
-				memset (&ctx, 0, sizeof (ctx));
-				args [0] = &mono_defaults.object_class->byval_arg;
-				ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-				add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (get_method, &ctx), TRUE, TRUE));
-			}
+		if (get_method) {
+			memset (&ctx, 0, sizeof (ctx));
+			args [0] = &mono_defaults.object_class->byval_arg;
+			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+			add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (get_method, &ctx), TRUE, TRUE));
 		}
 	}
 }

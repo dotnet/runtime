@@ -586,6 +586,13 @@ convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind)
 			return LLVMBuildPtrToInt (ctx->builder, v, dtype, "");
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+		if (stype == LLVMInt32Type () && dtype == LLVMFloatType ())
+			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
+		if (stype == LLVMInt32Type () && dtype == LLVMDoubleType ())
+			return LLVMBuildBitCast (ctx->builder, LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), ""), dtype, "");
+#endif
+
 		LLVMDumpValue (v);
 		LLVMDumpValue (LLVMConstNull (dtype));
 		g_assert_not_reached ();
@@ -2722,6 +2729,9 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	call->cinfo = mono_arch_get_llvm_call_info (cfg, sig);
 
+	if (cfg->disable_llvm)
+		return;
+
 	if (sig->call_convention == MONO_CALL_VARARG) {
 		cfg->exception_message = g_strdup ("varargs");
 		cfg->disable_llvm = TRUE;
@@ -2754,6 +2764,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			ins->klass = mono_class_from_mono_type (sig->params [i - sig->hasthis]);
 			break;
 		default:
+			call->cinfo = mono_arch_get_llvm_call_info (cfg, sig);
 			cfg->exception_message = g_strdup ("ainfo->storage");
 			cfg->disable_llvm = TRUE;
 			return;

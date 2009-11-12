@@ -1332,7 +1332,11 @@ mono_create_llvm_vcall_trampoline (MonoMethod *method)
 gpointer
 mono_create_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offset)
 {
+#ifdef MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE
 	return mono_arch_get_llvm_imt_trampoline (domain, m, vt_offset);
+#else
+	g_assert_not_reached ();
+#endif
 }
 #endif
 

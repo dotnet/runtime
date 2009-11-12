@@ -3611,7 +3611,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 #ifdef MONO_ARCH_SOFT_FLOAT
-	mono_decompose_soft_float (cfg);
+	if (!COMPILE_LLVM (cfg))
+		mono_decompose_soft_float (cfg);
 #endif
 	if (!COMPILE_LLVM (cfg))
 		mono_decompose_vtype_opts (cfg);

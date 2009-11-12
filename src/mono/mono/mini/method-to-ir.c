@@ -5102,6 +5102,9 @@ mono_decompose_soft_float (MonoCompile *cfg)
 						EMIT_NEW_VARLOADA_VREG (cfg, iargs [0], call2->inst.dreg, &mono_defaults.int32_class->byval_arg);
 						conv = mono_emit_jit_icall (cfg, mono_fload_r4, iargs);
 						conv->dreg = ins->dreg;
+
+						/* The call sequence might include fp ins */
+						restart = TRUE;
 					} else {
 						switch (ins->opcode) {
 						case OP_FCALL:
@@ -10497,6 +10500,9 @@ mono_handle_global_vregs (MonoCompile *cfg)
 						switch (regtype) {
 						case 'i':
 							mono_compile_create_var_for_vreg (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL, vreg);
+							break;
+						case 'l':
+							mono_compile_create_var_for_vreg (cfg, &mono_defaults.int64_class->byval_arg, OP_LOCAL, vreg);
 							break;
 						case 'f':
 							mono_compile_create_var_for_vreg (cfg, &mono_defaults.double_class->byval_arg, OP_LOCAL, vreg);
