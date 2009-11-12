@@ -81,6 +81,18 @@ public class main {
 				return 1;
 		}
 
+		/* A test for rebuilding generic virtual thunks */
+		for (i = 0; i < 1000; ++i) {
+			object o = ga.newArr<string> ();
+			if (!(o is string[]))
+				return 2;
+		}
+		for (i = 0; i < 1000; ++i) {
+			object o = ga.newArr<object> ();
+			if (!(o is object[]))
+				return 2;
+		}
+
 		return 0;
 	}
 }
