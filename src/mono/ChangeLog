@@ -1,3 +1,7 @@
+2009-11-12  Zoltan Varga  <vargaz@gmail.com>
+
+	* acinclude.m4 (dolt_supported): Handle 'i686-pc-cygwin' too.
+
 2009-11-12  Mark Probst  <mark.probst@gmail.com>
 
 	* scripts/mono-heapviz: New script for generating SGen heap

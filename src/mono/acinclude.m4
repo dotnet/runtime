@@ -26,7 +26,7 @@ i?86-*-linux*|x86_64-*-linux*|powerpc-*-linux*|powerpc64-*-linux* \
 |amd64-*-freebsd*|i?86-*-freebsd*|ia64-*-freebsd*|arm*-*-linux*|sparc*-*-linux*|mips*-*-linux*)
     pic_options='-fPIC'
     ;;
-?86-pc-cygwin*)
+?86-pc-cygwin*|i?86-pc-cygwin*)
     pic_options='-DDLL_EXPORT'
     ;;
 i?86-apple-darwin*)
