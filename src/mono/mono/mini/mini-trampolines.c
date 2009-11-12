@@ -1336,6 +1336,7 @@ mono_create_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offse
 	return mono_arch_get_llvm_imt_trampoline (domain, m, vt_offset);
 #else
 	g_assert_not_reached ();
+	return NULL;
 #endif
 }
 #endif
