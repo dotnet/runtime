@@ -138,9 +138,14 @@ Authors:
 %_bindir/setreg
 %_bindir/sn
 # exes
+%_prefix/lib/mono/2.0/certmgr.exe*
+%_prefix/lib/mono/2.0/chktrust.exe*
 %_prefix/lib/mono/2.0/gacutil.exe*
 %_prefix/lib/mono/2.0/csharp.exe*
 %_prefix/lib/mono/2.0/gmcs.exe*
+%_prefix/lib/mono/2.0/mozroots.exe*
+%_prefix/lib/mono/2.0/setreg.exe*
+%_prefix/lib/mono/2.0/sn.exe*
 %_prefix/lib/mono/gac/cscompmgd
 %_prefix/lib/mono/2.0/cscompmgd.dll
 %_prefix/lib/mono/gac/I18N.West
@@ -854,19 +859,26 @@ Authors:
 %_libdir/libmono.so
 %_libdir/libmono.a
 # exes
+%_prefix/lib/mono/2.0/makecert.exe*
 %_prefix/lib/mono/2.0/mono-api-info.exe*
 %_prefix/lib/mono/2.0/al.exe*
+%_prefix/lib/mono/2.0/caspol.exe*
+%_prefix/lib/mono/2.0/cert2spc.exe*
 %_prefix/lib/mono/2.0/mono-cil-strip.exe*
 %_prefix/lib/mono/2.0/dtd2xsd.exe*
 %_prefix/lib/mono/2.0/genxs.exe*
+%_prefix/lib/mono/2.0/httpcfg.exe*
 %_prefix/lib/mono/2.0/ictool.exe*
 %_prefix/lib/mono/2.0/ilasm.exe*
 %_prefix/lib/mono/2.0/installvst.exe*
 %_prefix/lib/mono/2.0/lc.exe*
 %_prefix/lib/mono/2.0/mkbundle.exe*
 %_prefix/lib/mono/2.0/monop.exe*
+%_prefix/lib/mono/2.0/permview.exe*
 %_prefix/lib/mono/2.0/resgen.exe*
+%_prefix/lib/mono/2.0/secutil.exe*
 %_prefix/lib/mono/2.0/sgen.exe*
+%_prefix/lib/mono/2.0/signcode.exe*
 %_prefix/lib/mono/2.0/prj2make.exe*
 %_prefix/lib/mono/2.0/macpack.exe*
 %_prefix/lib/mono/2.0/mono-shlib-cop.exe*
@@ -933,6 +945,7 @@ Authors:
 %_bindir/mono-cil-strip
 %_bindir/mono-find-provides
 %_bindir/mono-find-requires
+%_bindir/mono-heapviz
 %_bindir/mono-shlib-cop
 %_bindir/mono-xmltool
 %_bindir/pdb2mdb
