@@ -1746,6 +1746,9 @@ public class DebuggerTests
 			if (!finished)
 				Monitor.Wait (wait);
 		}
+
+		// Check InvokeOptions.DisableBreakpoints flag
+		o.InvokeMethod (e.Thread, m, null, InvokeOptions.DisableBreakpoints);
 	}
 
 	[Test]
