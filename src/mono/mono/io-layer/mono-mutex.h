@@ -100,6 +100,7 @@ int mono_cond_wait (pthread_cond_t *cond, mono_mutex_t *mutex);
 int mono_cond_timedwait (pthread_cond_t *cond, mono_mutex_t *mutex, const struct timespec *timeout);
 #define mono_cond_signal(cond) pthread_cond_signal (cond)
 #define mono_cond_broadcast(cond) pthread_cond_broadcast (cond)
+#define mono_cond_destroy(cond)
 
 #else /* system is equipped with a fully-functional pthread mutex library */
 
@@ -146,6 +147,7 @@ typedef pthread_cond_t mono_cond_t;
 #define mono_cond_timedwait(cond,mutex,timeout) pthread_cond_timedwait (cond, mutex, timeout)
 #define mono_cond_signal(cond) pthread_cond_signal (cond)
 #define mono_cond_broadcast(cond) pthread_cond_broadcast (cond)
+#define mono_cond_destroy(cond)
 
 #endif /* USE_MONO_MUTEX */
 
@@ -160,18 +162,21 @@ static inline int mono_mutex_unlock_in_cleanup (mono_mutex_t *mutex)
 
 #else
 
-typedef HANDLE mono_mutex_t;
+typedef CRITICAL_SECTION mono_mutex_t;
 typedef HANDLE mono_cond_t;
 
-#define mono_mutex_lock(mutex) do { WaitForSingleObject ((mutex), INFINITE);} while (0)
-#define mono_mutex_unlock(mutex) ReleaseMutex ((mutex))
+#define mono_mutex_init(mutex,attr) InitializeCriticalSection((mutex))
+#define mono_mutex_lock(mutex) EnterCriticalSection((mutex))
+#define mono_mutex_unlock(mutex)  LeaveCriticalSection((mutex))
+#define mono_mutex_destroy(mutex) DeleteCriticalSection((mutex))
 
 
-#define mono_cond_init(cond,attr) pthread_cond_init (cond,attr)
-#define mono_cond_wait(cond,mutex) WaitForSingleObject (cond, INFINITE)
-#define mono_cond_timedwait(cond,mutex,timeout) pthread_cond_timedwait (cond, mutex, timeout)
-#define mono_cond_signal(cond) SetEvent (cond)
-#define mono_cond_broadcast(cond) SetEvent (cond)
+#define mono_cond_init(cond,attr) do{*(cond) = CreateEvent(NULL,FALSE,FALSE,NULL); } while (0)
+#define mono_cond_wait(cond,mutex) WaitForSingleObject(*(cond),INFINITE)
+#define mono_cond_timedwait(cond,mutex,timeout) WaitForSingleObject(*(cond),timeout)
+#define mono_cond_signal(cond) SetEvent(*(cond))
+#define mono_cond_broadcast(cond) (!SetEvent(*(cond)))
+#define mono_cond_destroy(cond) CloseHandle(*(cond))
 
 #define MONO_MUTEX_INITIALIZER NULL
 #define MONO_COND_INITIALIZER NULL

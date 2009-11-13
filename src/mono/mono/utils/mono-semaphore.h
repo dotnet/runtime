@@ -37,10 +37,10 @@ typedef sem_t MonoSemType;
 #elif defined(PLATFORM_WIN32)
 #  define MONO_HAS_SEMAPHORES
 typedef HANDLE MonoSemType;
-#    define MONO_SEM_INIT(addr,value) do {*(addr) = CreateSemaphore( NULL, (value), 10, NULL);} while(0)
-#    define MONO_SEM_WAIT(sem) WaitForSingleObject ((sem), INFINITE)
-#    define MONO_SEM_POST(sem) ReleaseSemaphore ((sem), 1, NULL)
-#    define MONO_SEM_DESTROY(sem) CloseHandle ((sem))
+#    define MONO_SEM_INIT(addr,value) do {*(addr) = CreateSemaphore ( NULL,(value),10,NULL);} while(0)
+#    define MONO_SEM_WAIT(sem) WaitForSingleObjectEx (*(sem),INFINITE, TRUE)
+#    define MONO_SEM_POST(sem) (!(ReleaseSemaphore (*(sem),1,NULL)))
+#    define MONO_SEM_DESTROY(sem) CloseHandle (*(sem))
 #endif
 
 #endif /* _MONO_SEMAPHORE_H_ */
