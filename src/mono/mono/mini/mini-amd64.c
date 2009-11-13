@@ -2570,6 +2570,10 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 		near_call = FALSE;
 #endif
 
+		/* The 64bit XEN kernel does not honour the MAP_32BIT flag. (#522894) */
+		if (optimize_for_xen)
+			near_call = FALSE;
+
 		if (near_call) {
 			/* 
 			 * Align the call displacement to an address divisible by 4 so it does
