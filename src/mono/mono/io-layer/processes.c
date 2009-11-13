@@ -54,6 +54,7 @@
 #include <mono/io-layer/process-private.h>
 #include <mono/io-layer/threads.h>
 #include <mono/utils/strenc.h>
+#include <mono/utils/mono-path.h>
 #include <mono/io-layer/timefuncs-private.h>
 
 /* The process' environment strings */
