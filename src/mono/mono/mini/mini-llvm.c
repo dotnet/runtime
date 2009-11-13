@@ -798,6 +798,9 @@ get_plt_entry (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gc
 	char *callee_name = mono_aot_get_plt_symbol (type, data);
 	LLVMValueRef callee;
 
+	if (!callee_name)
+		return NULL;
+
 	// FIXME: Locking
 	callee = g_hash_table_lookup (ctx->lmodule->plt_entries, callee_name);
 	if (!callee) {
@@ -2111,6 +2114,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					} else {
 						if (cfg->compile_aot) {
 							callee = get_plt_entry (ctx, llvm_sig, MONO_PATCH_INFO_METHOD, call->method);
+							if (!callee)
+								LLVM_FAILURE (ctx, "can't encode patch");
 						} else {
 							callee = LLVMAddFunction (module, "", llvm_sig);
  
@@ -2135,6 +2140,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 						*/
 						if (cfg->compile_aot) {
 							callee = get_plt_entry (ctx, llvm_sig, MONO_PATCH_INFO_INTERNAL_METHOD, (char*)info->name);
+							if (!callee)
+								LLVM_FAILURE (ctx, "can't encode patch");
 						} else {
 							callee = LLVMAddFunction (module, "", llvm_sig);
 							target = (gpointer)mono_icall_get_wrapper (info);
@@ -2147,6 +2154,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 								MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, call->fptr);
 								if (abs_ji) {
 									callee = get_plt_entry (ctx, llvm_sig, abs_ji->type, abs_ji->data.target);
+									if (!callee)
+										LLVM_FAILURE (ctx, "can't encode patch");
 								}
  							}
 							if (!callee)
@@ -2183,11 +2192,17 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 					if (call->method && call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 #ifdef MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE
-						if (cfg->compile_aot)
-							LLVM_FAILURE (ctx, "imt");
-						callee = LLVMAddFunction (module, "", llvm_sig);
-						target = mono_create_llvm_imt_trampoline (cfg->domain, call->method, call->inst.inst_offset);
-						LLVMAddGlobalMapping (ee, callee, target);
+						if (cfg->compile_aot) {
+							MonoJumpInfoImtTramp *imt_tramp = g_new0 (MonoJumpInfoImtTramp, 1);
+							imt_tramp->method = call->method;
+							imt_tramp->vt_offset = call->inst.inst_offset;
+
+							callee = get_plt_entry (ctx, llvm_sig, MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE, imt_tramp);
+						} else {
+							callee = LLVMAddFunction (module, "", llvm_sig);
+							target = mono_create_llvm_imt_trampoline (cfg->domain, call->method, call->inst.inst_offset);
+							LLVMAddGlobalMapping (ee, callee, target);
+						}
 #else
 						/* No support for passing the IMT argument */
 						LLVM_FAILURE (ctx, "imt");

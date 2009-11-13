@@ -1971,6 +1971,15 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	}
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 		break;
+	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE: {
+		MonoJumpInfoImtTramp *imt_tramp = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoImtTramp));
+
+		imt_tramp->method = decode_method_ref_2 (aot_module, p, &p);
+		imt_tramp->vt_offset = decode_value (p, &p);
+		
+		ji->data.imt_tramp = imt_tramp;
+		break;
+	}
 	default:
 		g_warning ("unhandled type %d", ji->type);
 		g_assert_not_reached ();

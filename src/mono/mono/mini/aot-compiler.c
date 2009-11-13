@@ -1565,6 +1565,7 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
+	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2716,6 +2717,10 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 		break;
+	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
+		encode_method_ref (acfg, patch_info->data.imt_tramp->method, p, &p);
+		encode_value (patch_info->data.imt_tramp->vt_offset, p, &p);
+		break;
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
 		g_assert_not_reached ();
@@ -3517,6 +3522,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->autoreg = TRUE;
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
+		} else if (str_begins_with (arg, "print-skipped")) {
+			opts->print_skipped_methods = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -4006,6 +4013,9 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 
 	ji->type = type;
 	ji->data.target = data;
+
+	if (!can_encode_patch (llvm_acfg, ji))
+		return NULL;
 
 	offset = get_plt_offset (llvm_acfg, ji);
 

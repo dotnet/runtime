@@ -818,6 +818,12 @@ typedef struct MonoJumpInfoBBTable {
 
 typedef struct MonoJumpInfoRgctxEntry MonoJumpInfoRgctxEntry;
 
+/* Contains information describing an LLVM IMT trampoline */
+typedef struct MonoJumpInfoImtTramp {
+	MonoMethod *method;
+	int vt_offset;
+} MonoJumpInfoImtTramp;
+
 typedef struct MonoJumpInfo MonoJumpInfo;
 struct MonoJumpInfo {
 	MonoJumpInfo *next;
@@ -846,6 +852,7 @@ struct MonoJumpInfo {
 		MonoJumpInfoToken  *token;
 		MonoJumpInfoBBTable *table;
 		MonoJumpInfoRgctxEntry *rgctx_entry;
+		MonoJumpInfoImtTramp *imt_tramp;
 	} data;
 };
  

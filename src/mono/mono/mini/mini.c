@@ -2787,6 +2787,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			target = mono_arch_get_seq_point_info (domain, code);
 		break;
 #endif
+	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
+#ifdef ENABLE_LLVM
+		target = mono_create_llvm_imt_trampoline (domain, patch_info->data.imt_tramp->method, patch_info->data.imt_tramp->vt_offset);
+#else
+		g_assert_not_reached ();
+#endif
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -3767,7 +3774,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
 		if (cfg->disable_llvm) {
-			if (cfg->verbose_level >= 2) {
+			if (cfg->verbose_level >= 1) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
 				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 				//g_free (nm);
