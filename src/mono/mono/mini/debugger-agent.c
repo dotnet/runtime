@@ -3123,6 +3123,20 @@ mono_debugger_agent_single_step_event (void *sigctx)
 	// be as fast as possible. Move the relevant code from process_single_step_inner ()
 	// here
 
+	if (GetCurrentThreadId () == debugger_thread_id) {
+		/* 
+		 * This could happen despite our best effors when the runtime calls 
+		 * assembly/type resolve hooks.
+		 * FIXME: Breakpoints too.
+		 */
+		MonoContext ctx;
+
+		mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+		mono_arch_skip_single_step (&ctx);
+		mono_arch_monoctx_to_sigctx (&ctx, sigctx);
+		return;
+	}
+
 	resume_from_signal_handler (sigctx, process_single_step);
 }
 
