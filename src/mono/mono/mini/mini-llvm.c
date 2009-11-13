@@ -985,7 +985,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || MONO_TYPE_ISSTRUCT (var->inst_vtype)) {
 			vtype = type_to_llvm_type (ctx, var->inst_vtype);
 			CHECK_FAILURE (ctx);
-			ctx->addresses [var->dreg] = LLVMBuildAlloca (builder, vtype, "");
+			/* Could be already created by an OP_VPHI */
+			if (!ctx->addresses [var->dreg])
+				ctx->addresses [var->dreg] = LLVMBuildAlloca (builder, vtype, "");
 			ctx->vreg_cli_types [var->dreg] = var->inst_vtype;
 		}
 	}
@@ -1197,10 +1199,17 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		for (ins = bb->code; ins; ins = ins->next) {
 			switch (ins->opcode) {
 			case OP_PHI:
-			case OP_FPHI: {
+			case OP_FPHI:
+			case OP_VPHI: {
 				LLVMTypeRef phi_type = llvm_type_to_stack_type (type_to_llvm_type (ctx, &ins->klass->byval_arg));
 
 				CHECK_FAILURE (ctx);
+
+				if (ins->opcode == OP_VPHI) {
+					/* Treat valuetype PHI nodes as operating on the address itself */
+					g_assert (ins->klass);
+					phi_type = LLVMPointerType (type_to_llvm_type (ctx, &ins->klass->byval_arg), 0);
+				}
 
 				/* 
 				 * Have to precreate these, as they can be referenced by
@@ -1209,6 +1218,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				sprintf (dname_buf, "t%d", ins->dreg);
 				dname = dname_buf;
 				values [ins->dreg] = LLVMBuildPhi (builder, phi_type, dname);
+
+				if (ins->opcode == OP_VPHI)
+					addresses [ins->dreg] = values [ins->dreg];
 
 				g_ptr_array_add (phi_values, values [ins->dreg]);
 
@@ -1531,7 +1543,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				break;
 			}
 			case OP_PHI:
-			case OP_FPHI: {
+			case OP_FPHI:
+			case OP_VPHI: {
 				int i;
 				gboolean empty = TRUE;
 
@@ -2598,8 +2611,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			}
 
 			/* Convert the value to the type required by phi nodes */
-			if (spec [MONO_INST_DEST] != ' ' && !MONO_IS_STORE_MEMBASE (ins) && vreg_types [ins->dreg])
-				values [ins->dreg] = convert (ctx, values [ins->dreg], vreg_types [ins->dreg]);
+			if (spec [MONO_INST_DEST] != ' ' && !MONO_IS_STORE_MEMBASE (ins) && vreg_types [ins->dreg]) {
+				if (!values [ins->dreg])
+					/* vtypes */
+					values [ins->dreg] = addresses [ins->dreg];
+				else
+					values [ins->dreg] = convert (ctx, values [ins->dreg], vreg_types [ins->dreg]);
+			}
 
 			/* Add stores for volatile variables */
 			if (spec [MONO_INST_DEST] != ' ' && spec [MONO_INST_DEST] != 'v' && !MONO_IS_STORE_MEMBASE (ins))
