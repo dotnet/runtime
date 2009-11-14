@@ -22,7 +22,7 @@ mono_debugger_agent_single_step_event (void *sigctx) MONO_INTERNAL;
 void
 mono_debugger_agent_free_domain_info (MonoDomain *domain) MONO_INTERNAL;
 
-gboolean mono_debugger_agent_thread_interrupt (MonoJitInfo *ji) MONO_INTERNAL;
+gboolean mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji) MONO_INTERNAL;
 
 void
 mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *ctx) MONO_INTERNAL;

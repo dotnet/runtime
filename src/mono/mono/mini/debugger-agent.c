@@ -1564,6 +1564,12 @@ static void invoke_method (void);
  * SUSPEND/RESUME
  */
 
+/*
+ * save_thread_context:
+ *
+ *   Set CTX as the current threads context which is used for computing stack traces.
+ * This function is signal-safe.
+ */
 static void
 save_thread_context (MonoContext *ctx)
 {
@@ -1619,7 +1625,7 @@ suspend_init (void)
  *   Called by the abort signal handler.
  */
 gboolean
-mono_debugger_agent_thread_interrupt (MonoJitInfo *ji)
+mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 {
 	DebuggerTlsData *tls;
 
@@ -1655,6 +1661,17 @@ mono_debugger_agent_thread_interrupt (MonoJitInfo *ji)
 		 */
 		//printf ("S2: %p\n", GetCurrentThreadId ());
 		if (!tls->suspended) {
+			MonoContext ctx;
+
+			/* 
+			 * FIXME: This is dangerous as the thread is not really suspended, but
+			 * without this, we can't print stack traces for threads executing
+			 * native code.
+			 * Maybe do a stack walk now, and save its result ?
+			 */
+			mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+			save_thread_context (&ctx);
+
 			tls->suspended = TRUE;
 			MONO_SEM_POST (&suspend_sem);
 		}

@@ -186,7 +186,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
 	running_managed = ji != NULL;
 
-	if (mono_debugger_agent_thread_interrupt (ji))
+	if (mono_debugger_agent_thread_interrupt (ctx, ji))
 		return;
 	
 	exc = mono_thread_request_interruption (running_managed); 
