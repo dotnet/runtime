@@ -159,6 +159,8 @@ public class Tests : TestsBase
 			domains ();
 		if (args.Length > 0 && args [0] == "ref-emit-test")
 			ref_emit ();
+		if (args.Length > 0 && args [0] == "frames-in-native")
+			frames_in_native ();
 		return 3;
 	}
 
@@ -576,6 +578,11 @@ public class Tests : TestsBase
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static void ref_emit_call (string s) {
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void frames_in_native () {
+		Thread.Sleep (500);
 	}
 }
 

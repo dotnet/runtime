@@ -2026,4 +2026,36 @@ public class DebuggerTests
 
 		AssertValue (true, entry_point.DeclaringType.GetValue (f));
 	}
+
+	[Test]
+	public void StackTraceInNative () {
+		// Check that stack traces can be produced for threads in native code
+		vm.Dispose ();
+
+		Start (new string [] { "dtest-app.exe", "frames-in-native" });
+
+		var e = run_until ("frames_in_native");
+
+		// FIXME: This is racy
+		vm.Resume ();
+
+		Thread.Sleep (100);
+
+		vm.Suspend ();
+
+		StackFrame[] frames = e.Thread.GetFrames ();
+
+		int frame_index = -1;
+		for (int i = 0; i < frames.Length; ++i) {
+			if (frames [i].Method.Name == "Sleep") {
+				frame_index = i;
+				break;
+			}
+		}
+
+		Assert.IsTrue (frame_index != -1);
+		Assert.AreEqual ("Sleep", frames [frame_index].Method.Name);
+		Assert.AreEqual ("frames_in_native", frames [frame_index + 1].Method.Name);
+		Assert.AreEqual ("Main", frames [frame_index + 2].Method.Name);
+	}
 }
