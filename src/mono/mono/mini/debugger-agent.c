@@ -51,6 +51,7 @@
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/socket-io.h>
 #include <mono/utils/mono-semaphore.h>
 #include "debugger-agent.h"
 #include "mini.h"
@@ -90,6 +91,7 @@ typedef struct
 typedef struct
 {
 	int id;
+	int flags;
 	guint8 *p;
 	guint8 *endp;
 	/* This is the context which needs to be restored after the invoke */
@@ -140,7 +142,7 @@ typedef struct {
 
 #define HEADER_LENGTH 11
 
-#define MAJOR_VERSION 1
+#define MAJOR_VERSION 2
 #define MINOR_VERSION 0
 
 typedef enum {
@@ -3695,7 +3697,6 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 #ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
 	MonoLMFExt ext;
 #endif
-	InvokeFlags flags;
 
 	m = decode_methodid (p, &p, end, &domain, &err);
 	if (err)
@@ -3761,8 +3762,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 	if (i < nargs)
 		return err;
 
-	flags = decode_int (p, &p, end);
-	if (flags & INVOKE_FLAG_DISABLE_BPS)
+	if (invoke->flags & INVOKE_FLAG_DISABLE_BPS)
 		tls->disable_breakpoints = TRUE;
 	else
 		tls->disable_breakpoints = FALSE;
@@ -3990,11 +3990,13 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		int objid = decode_objid (p, &p, end);
 		MonoThread *thread;
 		DebuggerTlsData *tls;
-		int err;
+		int err, flags;
 
 		err = get_object (objid, (MonoObject**)&thread);
 		if (err)
 			return err;
+
+		flags = decode_int (p, &p, end);
 
 		// Wait for suspending if it already started
 		if (suspend_count)
@@ -4015,6 +4017,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			NOT_IMPLEMENTED;
 		tls->invoke = g_new0 (InvokeData, 1);
 		tls->invoke->id = id;
+		tls->invoke->flags = flags;
 		tls->invoke->p = g_malloc (end - p);
 		memcpy (tls->invoke->p, p, end - p);
 		tls->invoke->endp = tls->invoke->p + (end - p);
