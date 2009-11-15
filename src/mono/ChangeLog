@@ -1,3 +1,10 @@
+2009-11-15  Andreas Faerber  <andreas.faerber@web.de>
+
+	* configure.in (DTrace): Add missing -s switch for dtrace -h.
+	Fixes BNC #445074.
+	
+	Contributed under MIT/X11 license.
+
 2009-11-12  Zoltan Varga  <vargaz@gmail.com>
 
 	* acinclude.m4 (dolt_supported): Handle 'i686-pc-cygwin' too.
