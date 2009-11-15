@@ -129,7 +129,7 @@ mono_path_resolve_symlinks (const char *path)
 	return mono_path_canonicalize (path);
 #else
 	gchar **split = g_strsplit (path, G_DIR_SEPARATOR_S, -1);
-	gchar *p = g_strdup_printf ("");
+	gchar *p = g_strdup ("");
 	int i;
 
 	for (i = 0; split [i] != NULL; i++) {
