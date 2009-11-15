@@ -95,7 +95,10 @@ mono_gc_base_init (void)
 	}
 #endif
 
+#if !defined(PLATFORM_ANDROID)
+	/* If GC_no_dls is set to true, GC_find_limit is not called. This causes a seg fault on Android. */
 	GC_no_dls = TRUE;
+#endif
 	GC_init ();
 	GC_oom_fn = mono_gc_out_of_memory;
 	GC_set_warn_proc (mono_gc_warning);
