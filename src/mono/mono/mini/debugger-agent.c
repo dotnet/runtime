@@ -5590,7 +5590,7 @@ mono_debugger_agent_free_domain_info (MonoDomain *domain)
 {
 }
 
-gboolean mono_debugger_agent_thread_interrupt (MonoJitInfo *ji)
+gboolean mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 {
 }
 
