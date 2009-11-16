@@ -362,7 +362,8 @@ BASE_TEST_CS_SRC=		\
 	xdomain-threads.cs	\
 	w32message.cs	\
 	bug-544446.cs	\
-	gc-altstack.cs
+	gc-altstack.cs	\
+	large-gc-bitmap.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\

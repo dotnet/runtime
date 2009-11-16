@@ -626,8 +626,10 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 		max_size = mono_class_data_size (class) / sizeof (gpointer);
 	else
 		max_size = class->instance_size / sizeof (gpointer);
-	if (max_size >= size) {
-		bitmap = g_malloc0 (sizeof (gsize) * ((max_size) + 1));
+	if (max_size > size) {
+		g_assert (offset <= 0);
+		bitmap = g_malloc0 ((max_size + BITMAP_EL_SIZE - 1) / BITMAP_EL_SIZE * sizeof (gsize));
+		size = max_size;
 	}
 
 	for (p = class; p != NULL; p = p->parent) {
@@ -676,6 +678,7 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_ARRAY:
 				g_assert ((field->offset % sizeof(gpointer)) == 0);
 
+				g_assert (pos < size || pos <= max_size);
 				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
 				*max_set = MAX (*max_set, pos);
 				break;
