@@ -129,6 +129,10 @@ typedef struct {
 	 * native code.
 	 */
 	gboolean suspended;
+	/*
+	 * Set to TRUE if this thread is suspended in suspend_current ().
+	 */
+	gboolean really_suspended;
 	/* Used to pass the context to the breakpoint/single step handler */
 	MonoContext handler_ctx;
 	/* Whenever thread_stop () was called for this thread */
@@ -1831,6 +1835,7 @@ suspend_current (void)
 
 	if (!tls->suspended) {
 		tls->suspended = TRUE;
+		tls->really_suspended = TRUE;
 		MONO_SEM_POST (&suspend_sem);
 	}
 
@@ -1854,6 +1859,7 @@ suspend_current (void)
 	}
 
 	tls->suspended = FALSE;
+	tls->really_suspended = FALSE;
 
 	threads_suspend_count --;
 
