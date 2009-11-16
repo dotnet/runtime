@@ -8642,13 +8642,13 @@ mono_reflection_get_custom_attrs_data (MonoObject *obj)
 static MonoReflectionType*
 mono_reflection_type_get_underlying_system_type (MonoReflectionType* t)
 {
-        MonoMethod *method_get_underlying_system_type;
+	static MonoMethod *method_get_underlying_system_type = NULL;
+	MonoMethod *usertype_method;
 
-        method_get_underlying_system_type = mono_object_get_virtual_method ((MonoObject *) t,
-                                                                            mono_class_get_method_from_name (mono_object_class (t),
-                                                                                                             "get_UnderlyingSystemType",
-                                                                                                             0));
-        return (MonoReflectionType *) mono_runtime_invoke (method_get_underlying_system_type, t, NULL, NULL);
+	if (!method_get_underlying_system_type)
+		method_get_underlying_system_type = mono_class_get_method_from_name (mono_defaults.systemtype_class, "get_UnderlyingSystemType", 0);
+	usertype_method = mono_object_get_virtual_method ((MonoObject *) t, method_get_underlying_system_type);
+        return (MonoReflectionType *) mono_runtime_invoke (usertype_method, t, NULL, NULL);
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
