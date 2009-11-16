@@ -63,6 +63,11 @@
 #ifndef DISABLE_DEBUGGER_AGENT
 #include <mono/io-layer/mono-mutex.h>
 
+/* Definitions to make backporting to 2.6 easier */
+//#define MonoInternalThread MonoThread
+//#define mono_thread_internal_current mono_thread_current
+#define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
+
 typedef struct {
 	gboolean enabled;
 	char *transport;
@@ -4022,7 +4027,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			return ERR_NOT_SUSPENDED;
 
 		mono_loader_lock ();
-		tls = mono_g_hash_table_lookup (thread_to_tls, thread->internal_thread);
+		tls = mono_g_hash_table_lookup (thread_to_tls, THREAD_TO_INTERNAL (thread));
 		mono_loader_unlock ();
 		g_assert (tls);
 
@@ -4059,9 +4064,9 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		EventRequest *req;
 		int i, event_kind, suspend_policy, nmodifiers, mod;
 		MonoMethod *method;
-		long location;
+		long location = 0;
 		MonoThread *step_thread;
-		int size, depth, step_thread_id;
+		int size = 0, depth = 0, step_thread_id = 0;
 		MonoDomain *domain;
 
 		event_kind = decode_byte (p, &p, end);
@@ -4142,7 +4147,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return err;
 			}
 
-			err = ss_start (step_thread->internal_thread, size, depth, req);
+			err = ss_start (THREAD_TO_INTERNAL (step_thread), size, depth, req);
 			if (err) {
 				g_free (req);
 				return err;
@@ -4972,7 +4977,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (err)
 		return err;
 
-	thread = thread_obj->internal_thread;
+	thread = THREAD_TO_INTERNAL (thread_obj);
 	   
 	switch (command) {
 	case CMD_THREAD_GET_NAME: {
@@ -5066,7 +5071,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (err)
 		return err;
 
-	thread = thread_obj->internal_thread;
+	thread = THREAD_TO_INTERNAL (thread_obj);
 
 	id = decode_id (p, &p, end);
 
