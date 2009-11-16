@@ -155,11 +155,20 @@ get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean
 		if ((*kname == 'A') && (strcmp (kname, "Activator") == 0))
 			return FALSE;
 
-		// the security check on the delegate is made at creation time, not at invoke time
+		/* unlike most Invoke* cases InvokeMember is not inside System.Reflection[.Emit] but is SecuritySafeCritical */
+		if (((*kname == 'T') && (strcmp (kname, "Type") == 0)) || 
+			((*kname == 'M') && (strcmp (kname, "MonoType")) == 0)) {
+
+			/* if calling InvokeMember then we can't stop the stackwalk here and need to look at the caller */
+			if (strcmp (m->name, "InvokeMember") == 0)
+				return FALSE;
+		}
+
+		/* the security check on the delegate is made at creation time, not at invoke time */
 		if (((*kname == 'D') && (strcmp (kname, "Delegate") == 0)) || 
 			((*kname == 'M') && (strcmp (kname, "MulticastDelegate")) == 0)) {
 
-			// if we're invoking then we can stop our stack walk
+			/* if we're invoking then we can stop our stack walk */
 			if (strcmp (m->name, "DynamicInvoke") != 0)
 				return FALSE;
 		}
