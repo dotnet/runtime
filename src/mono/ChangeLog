@@ -1,3 +1,7 @@
+2009-11-17  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add a --enable-minimal=soft-debug option.
+
 2009-11-15  Andreas Faerber  <andreas.faerber@web.de>
 
 	* configure.in (DTrace): Add missing -s switch for dtrace -h.
