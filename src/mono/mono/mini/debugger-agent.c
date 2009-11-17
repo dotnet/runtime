@@ -60,6 +60,10 @@
 #define DISABLE_DEBUGGER_AGENT 1
 #endif
 
+#ifdef DISABLE_SOFT_DEBUG
+#define DISABLE_DEBUGGER_AGENT 1
+#endif
+
 #ifndef DISABLE_DEBUGGER_AGENT
 #include <mono/io-layer/mono-mutex.h>
 
