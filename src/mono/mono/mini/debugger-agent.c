@@ -3323,6 +3323,7 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 {
 	int suspend_policy;
 	GSList *events;
+	MonoJitInfo *ji;
 
 	/* Just-In-Time debugging */
 	if (agent_config.onthrow && !inited) {
@@ -3354,8 +3355,10 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 	if (!inited)
 		return;
 
+	ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+
 	mono_loader_lock ();
-	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, NULL, exc, &suspend_policy);
+	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, ji, exc, &suspend_policy);
 	mono_loader_unlock ();
 
 	process_event (EVENT_KIND_EXCEPTION, exc, 0, ctx, events, suspend_policy);
