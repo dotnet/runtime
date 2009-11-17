@@ -574,8 +574,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_SP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
 		if (ji->method->save_lmf) {
-			memcpy (&new_ctx->fregs, (char*)sframe->sp - sizeof (double) * MONO_SAVED_FREGS, sizeof (double) * MONO_SAVED_FREGS);
-			memcpy (&new_ctx->regs, (char*)sframe->sp - sizeof (double) * MONO_SAVED_FREGS - sizeof (mgreg_t) * MONO_SAVED_GREGS, sizeof (mgreg_t) * MONO_SAVED_GREGS);
+			/* sframe->sp points just past the end of the LMF */
+			guint8 *lmf_addr = (guint8*)sframe->sp - sizeof (MonoLMF);
+			memcpy (&new_ctx->fregs, lmf_addr + G_STRUCT_OFFSET (MonoLMF, fregs), sizeof (double) * MONO_SAVED_FREGS);
+			memcpy (&new_ctx->regs, lmf_addr + G_STRUCT_OFFSET (MonoLMF, iregs), sizeof (mgreg_t) * MONO_SAVED_GREGS);
 		} else if (ji->used_regs) {
 			/* keep updated with emit_prolog in mini-ppc.c */
 			offset = 0;
