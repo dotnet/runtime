@@ -2272,6 +2272,8 @@ add_generic_instances (MonoAotCompile *acfg)
 		insts [ninsts ++] = &mono_defaults.uint64_class->byval_arg;
 		insts [ninsts ++] = &mono_defaults.single_class->byval_arg;
 		insts [ninsts ++] = &mono_defaults.double_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.char_class->byval_arg;
+		insts [ninsts ++] = &mono_defaults.boolean_class->byval_arg;
 
 		/* Add GenericComparer<T> instances for primitive types for Enum.ToString () */
 		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
