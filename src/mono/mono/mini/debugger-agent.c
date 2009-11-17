@@ -5586,11 +5586,6 @@ mono_debugger_agent_init (void)
 }
 
 void
-mono_debugger_agent_cleanup (void)
-{
-}
-
-void
 mono_debugger_agent_breakpoint_hit (void *sigctx)
 {
 }
@@ -5605,8 +5600,10 @@ mono_debugger_agent_free_domain_info (MonoDomain *domain)
 {
 }
 
-gboolean mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
+gboolean
+mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 {
+	return FALSE;
 }
 
 void
