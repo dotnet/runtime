@@ -1,3 +1,7 @@
+2009-11-18  Mark Probst  <mark.probst@gmail.com>
+
+	* configure.in: Allow SGen without __thread.
+
 2009-11-17  Marek Habersack  <mhabersack@novell.com>
 
 	* runtime/Makefile.am (TEST_SUPPORT_FILES): added bin/al2 - needed
