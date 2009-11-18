@@ -749,7 +749,7 @@ ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 	*error=ERROR_SUCCESS;
 	
 	offset_hi = offset >> 32;
-	offset = SetFilePointer (handle, offset & 0xFFFFFFFF, &offset_hi,
+	offset = SetFilePointer (handle, (gint32) (offset & 0xFFFFFFFF), &offset_hi,
 				 convert_seekorigin (origin));
 
 	if(offset==INVALID_SET_FILE_POINTER) {
