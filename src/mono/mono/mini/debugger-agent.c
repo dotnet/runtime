@@ -1696,7 +1696,7 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 static void CALLBACK notify_thread_apc (ULONG_PTR param)
 {
 	//DebugBreak ();
-	mono_debugger_agent_thread_interrupt (NULL);
+	mono_debugger_agent_thread_interrupt (NULL, NULL);
 }
 #endif /* PLATFORM_WIN32 */
 
