@@ -1,5 +1,9 @@
 2009-11-18  Mark Probst  <mark.probst@gmail.com>
 
+	* scripts/Makefile.am: Put mono-heapviz into EXTRA_DIST as well.
+
+2009-11-18  Mark Probst  <mark.probst@gmail.com>
+
 	* scripts/Makefile.am: mono-heapviz is not a managed executable.
 
 2009-11-18  Mark Probst  <mark.probst@gmail.com>
