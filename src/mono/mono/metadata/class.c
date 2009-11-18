@@ -7811,6 +7811,14 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 		return TRUE;
 	if (!accessed || !accessing)
 		return FALSE;
+
+	/* extra safety under CoreCLR - the runtime does not verify the strongname signatures
+	 * anywhere so untrusted friends are not safe to access platform's code internals */
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+		if (!mono_security_core_clr_can_access_internals (accessing->image, accessed->image))
+			return FALSE;
+	}
+
 	mono_assembly_load_friends (accessed);
 	for (tmp = accessed->friend_assembly_names; tmp; tmp = tmp->next) {
 		MonoAssemblyName *friend = tmp->data;

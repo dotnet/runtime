@@ -397,6 +397,31 @@ mono_security_core_clr_ensure_dynamic_method_resolved_object (gpointer ref, Mono
 }
 
 /*
+ * mono_security_core_clr_can_access_internals
+ *
+ *	Check if we allow [InternalsVisibleTo] to work between two images.
+ */
+gboolean
+mono_security_core_clr_can_access_internals (MonoImage *accessing, MonoImage* accessed)
+{
+	/* are we trying to access internals of a platform assembly ? if not this is acceptable */
+	if (!mono_security_core_clr_is_platform_image (accessed))
+		return TRUE;
+
+	/* we can't let everyone with the right name and public key token access the internals of platform code.
+	 * (Silverlight can rely on the strongname signature of the assemblies, but Mono does not verify them)
+	 * However platform code is fully trusted so it can access the internals of other platform code assemblies */
+	if (mono_security_core_clr_is_platform_image (accessing))
+		return TRUE;
+
+	/* catch-22: System.Xml needs access to mscorlib's internals (e.g. ArrayList) but is not considered platform code.
+	 * Promoting it to platform code would create another issue since (both Mono/Moonlight or MS version of) 
+	 * System.Xml.Linq.dll (an SDK, not platform, assembly) needs access to System.Xml.dll internals (either ). 
+	 * The solution is to trust, even transparent code, in the plugin directory to access platform code internals */
+	return (strcmp (accessed->assembly->basedir, accessing->assembly->basedir) == 0);
+}
+
+/*
  * mono_security_core_clr_level_from_cinfo:
  *
  *	Return the MonoSecurityCoreCLRLevel that match the attribute located

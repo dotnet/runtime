@@ -30,6 +30,8 @@ extern void mono_security_core_clr_ensure_reflection_access_method (MonoMethod *
 extern gboolean mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure) MONO_INTERNAL;
 extern MonoException* mono_security_core_clr_ensure_dynamic_method_resolved_object (gpointer ref, MonoClass *handle_class) MONO_INTERNAL;
 
+extern gboolean mono_security_core_clr_can_access_internals (MonoImage *accessing, MonoImage* accessed) MONO_INTERNAL;
+
 extern MonoSecurityCoreCLRLevel mono_security_core_clr_class_level (MonoClass *class) MONO_INTERNAL;
 extern MonoSecurityCoreCLRLevel mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_level) MONO_INTERNAL;
 
