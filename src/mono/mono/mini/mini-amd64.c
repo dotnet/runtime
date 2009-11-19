@@ -1568,9 +1568,12 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				if (cfg->arch.omit_fp) {
 					ins->inst_offset = offset;
 					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+					// Arguments are yet supported by the stack map creation code
+					//cfg->locals_max_stack_offset = MAX (cfg->locals_max_stack_offset, offset);
 				} else {
 					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
 					ins->inst_offset = - offset;
+					//cfg->locals_min_stack_offset = MIN (cfg->locals_min_stack_offset, offset);
 				}
 			}
 		}

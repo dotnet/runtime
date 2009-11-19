@@ -17,7 +17,7 @@
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-#if 0
+#if 1
 #define DEBUG(s) do { s; } while (0)
 #else
 #define DEBUG(s)
@@ -102,8 +102,9 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	GCMap *map;
 	guint8* fp, *locals_start, *locals_end;
 	int i, pc_offset;
+	int scanned = 0;
 
-	if (mono_thread_current () == NULL) {
+	if (mono_thread_internal_current () == NULL) {
 		if (!precise)
 			mono_gc_conservatively_scan_area (stack_start, stack_end);			
 		return;
@@ -116,7 +117,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	/* This is one past the last address which we have scanned */
 	stack_limit = stack_start;
 
-	//DEBUG (printf ("*** %s stack marking %p-%p ***\n", precise ? "Precise" : "Conservative", stack_start, stack_end));
+	DEBUG (printf ("*** %s stack marking %p-%p ***\n", precise ? "Precise" : "Conservative", stack_start, stack_end));
 
 	if (!tls->has_context) {
 		memset (&new_ctx, 0, sizeof (ctx));
@@ -173,7 +174,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 			pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 			g_assert (pc_offset >= 0);
 
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark: %s offset: 0x%x limit: %p fp: %p locals: %p-%p%s\n", fname, pc_offset, stack_limit, fp, locals_start, locals_end, map->pin ? ", conservative" : ""); g_free (fname));
+			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s offset: 0x%x limit: %p fp: %p locals: %p-%p (%d)%s\n", precise, fname, pc_offset, stack_limit, fp, locals_start, locals_end, (int)(locals_end - locals_start), map->pin ? ", conservative" : ""); g_free (fname));
 
 			/* 
 			 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
@@ -190,16 +191,21 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 					if (!precise) {
 						DEBUG (printf ("\tConservative scan of %p-%p.\n", stack_limit, locals_start));
 						mono_gc_conservatively_scan_area (stack_limit, locals_start);
+						scanned += locals_start - stack_limit;
 					}
 				}
 
 				if (map->pin) {
 					DEBUG (printf ("\tConservative scan of %p-%p.\n", locals_start, locals_end));
 					mono_gc_conservatively_scan_area (locals_start, locals_end);
+					scanned += locals_end - locals_start;
 				}
 
 				stack_limit = locals_end;
 			} else {
+				if (!map->pin)
+					scanned += locals_end - locals_start;
+
 				if (!map->pin && map->gc_refs) {
 					int loffset = 0;
 
@@ -229,14 +235,18 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		if (stack_limit < stack_end && !precise) {
 			DEBUG (printf ("\tConservative scan of %p-%p.\n", stack_limit, stack_end));
 			mono_gc_conservatively_scan_area (stack_limit, stack_end);
+			scanned += stack_end - stack_limit;
 		}
 	} else {
 		// FIXME:
 		if (!precise) {
 			DEBUG (printf ("\tConservative scan of %p-%p.\n", stack_start, stack_end));
 			mono_gc_conservatively_scan_area (stack_start, stack_end);
+			scanned += stack_end - stack_start;
 		}
 	}
+
+	DEBUG (printf ("Scanned %d out of %d bytes %s.\n", scanned, (int)(stack_end - stack_start), precise ? "precisely" : "conversatively"));
 
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
 }
@@ -250,8 +260,13 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	gboolean pin = FALSE, norefs = FALSE;
 	guint32 *live_range_start, *live_range_end;
 
+#ifdef TARGET_AMD64
 	min_offset = ALIGN_TO (cfg->locals_min_stack_offset, sizeof (gpointer));
 	max_offset = cfg->locals_max_stack_offset;
+#else
+	/* min/max stack offset needs to be computed in mono_arch_allocate_vars () */
+	NOT_IMPLEMENTED;
+#endif
 
 	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
@@ -394,7 +409,7 @@ mini_gc_init (void)
 	cb.thread_attach_func = thread_attach_func;
 	cb.thread_suspend_func = thread_suspend_func;
 	/* Comment this out to disable precise stack marking */
-	//cb.thread_mark_func = thread_mark_func;
+	cb.thread_mark_func = thread_mark_func;
 	mono_gc_set_gc_callbacks (&cb);
 
 	mono_counters_register ("GC Maps size",
