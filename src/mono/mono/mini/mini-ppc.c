@@ -663,7 +663,6 @@ mono_arch_cpu_init (void)
 
 	if (mono_cpu_count () > 1)
 		cpu_hw_caps |= PPC_SMP_CAPABLE;
-	cpu_hw_caps = 0;
 }
 
 /*
@@ -5023,10 +5022,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				case 8:
 					if (ppc_is_imm16 (inst->inst_offset)) {
-						ppc_str (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+						ppc_str (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
 					} else {
 						ppc_load (code, ppc_r11, inst->inst_offset);
-						ppc_str_indexed (code, ainfo->reg, ppc_r11, inst->inst_basereg);
+						ppc_str_indexed (code, ppc_r0, ppc_r11, inst->inst_basereg);
 					}
 					break;
 #else
