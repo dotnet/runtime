@@ -291,6 +291,7 @@ typedef enum {
 	CMD_ASSEMBLY_GET_MANIFEST_MODULE = 3,
 	CMD_ASSEMBLY_GET_OBJECT = 4,
 	CMD_ASSEMBLY_GET_TYPE = 5,
+	CMD_ASSEMBLY_GET_NAME = 6
 } CmdAssembly;
 
 typedef enum {
@@ -4356,6 +4357,22 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		mono_reflection_free_type_info (&info);
 		g_free (s);
 
+		break;
+	}
+	case CMD_ASSEMBLY_GET_NAME: {
+		gchar *name;
+		MonoAssembly *mass = ass;
+
+		name = g_strdup_printf (
+		  "%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
+		  mass->aname.name,
+		  mass->aname.major, mass->aname.minor, mass->aname.build, mass->aname.revision,
+		  mass->aname.culture && *mass->aname.culture? mass->aname.culture: "neutral",
+		  mass->aname.public_key_token [0] ? (char *)mass->aname.public_key_token : "null",
+		  (mass->aname.flags & ASSEMBLYREF_RETARGETABLE_FLAG) ? ", Retargetable=Yes" : "");
+
+		buffer_add_string (buf, name);
+		g_free (name);
 		break;
 	}
 	default:
