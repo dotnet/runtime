@@ -351,8 +351,7 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 	}
 }
 
-static void process_add_module (GPtrArray *modules, HANDLE process, HMODULE mod,
-				gunichar2 *filename, gunichar2 *modulename)
+static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename)
 {
 	MonoClass *proc_class, *filever_class;
 	MonoObject *item, *filever;
@@ -391,50 +390,47 @@ static void process_add_module (GPtrArray *modules, HANDLE process, HMODULE mod,
 				  unicode_chars (modulename));
 	process_set_field_object (item, "version_info", filever);
 
-	/* FIXME: moving GC */
-	g_ptr_array_add (modules, item);
+	return item;
 }
 
 /* Returns an array of System.Diagnostics.ProcessModule */
 MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this, HANDLE process)
 {
-	GPtrArray *modules_list=g_ptr_array_new ();
+	MonoArray *temp_arr = NULL;
 	MonoArray *arr;
 	HMODULE mods[1024];
 	gunichar2 filename[MAX_PATH];
 	gunichar2 modname[MAX_PATH];
 	DWORD needed;
-	guint32 count;
-	guint32 i;
-	
-	MONO_ARCH_SAVE_REGS;
+	guint32 count = 0;
+	guint32 i, num_added = 0;
 
 	STASH_SYS_ASS (this);
 
 	if (EnumProcessModules (process, mods, sizeof(mods), &needed)) {
 		count = needed / sizeof(HMODULE);
+		temp_arr = mono_array_new (mono_domain_get (), mono_get_object_class (), count);
 		for (i = 0; i < count; i++) {
-			if (GetModuleBaseName (process, mods[i], modname,
-					       MAX_PATH) &&
-			    GetModuleFileNameEx (process, mods[i], filename,
-						 MAX_PATH)) {
-				process_add_module (modules_list, process,
-						    mods[i], filename, modname);
+			if (GetModuleBaseName (process, mods[i], modname, MAX_PATH) &&
+					GetModuleFileNameEx (process, mods[i], filename, MAX_PATH)) {
+				MonoObject *module = process_add_module (process, mods[i],
+						filename, modname);
+				mono_array_setref (temp_arr, num_added++, module);
 			}
 		}
 	}
 
-	/* Build a MonoArray out of modules_list */
-	arr=mono_array_new (mono_domain_get (), mono_get_object_class (),
-			    modules_list->len);
-	
-	for(i=0; i<modules_list->len; i++) {
-		mono_array_setref (arr, i, g_ptr_array_index (modules_list, i));
+	if (count == num_added) {
+		arr = temp_arr;
+	} else {
+		/* shorter version of the array */
+		arr = mono_array_new (mono_domain_get (), mono_get_object_class (), num_added);
+
+		for (i = 0; i < num_added; i++)
+			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));
 	}
-	
-	g_ptr_array_free (modules_list, TRUE);
-	
-	return(arr);
+
+	return arr;
 }
 
 void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this, MonoString *filename)
