@@ -1210,10 +1210,13 @@ public class DebuggerTests
 	}
 
 	[Test]
-	public void Modules () {
+	public void AssemblyInfo () {
 		Event e = run_until ("single_stepping");
 
 		StackFrame frame = e.Thread.GetFrames () [0];
+
+		var aname = frame.Method.DeclaringType.Assembly.GetName ();
+		Assert.AreEqual ("dtest-app, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null", aname.ToString ());
 
 		ModuleMirror m = frame.Method.DeclaringType.Module;
 
