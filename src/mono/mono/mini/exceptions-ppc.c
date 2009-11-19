@@ -527,49 +527,43 @@ mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji
 	return mono_arch_get_throw_exception_generic (size, code_size, ji, TRUE, FALSE, aot);
 }
 
-/* mono_arch_find_jit_info:
+/*
+ * mono_arch_find_jit_info_ext:
  *
- * This function is used to gather information from @ctx. It return the 
- * MonoJitInfo of the corresponding function, unwinds one stack frame and
- * stores the resulting context into @new_ctx. It also stores a string 
- * describing the stack location into @trace (if not NULL), and modifies
- * the @lmf if necessary. @native_offset return the IP offset from the 
- * start of the function or -1 if that info is not available.
+ * See exceptions-amd64.c for docs.
  */
-MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx,
-						 MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
+gboolean
+mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+							 MonoJitInfo *ji, MonoContext *ctx, 
+							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 StackFrameInfo *frame)
 {
-	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 	MonoPPCStackFrame *sframe;
 
-	/* Avoid costly table lookup during stack overflow */
-	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
-		ji = prev_ji;
-	else
-		ji = mini_jit_info_table_find (domain, ip, NULL);
+	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->ji = ji;
+	frame->managed = FALSE;
 
-	if (managed)
-		*managed = FALSE;
+	*new_ctx = *ctx;
+	setup_context (new_ctx);
 
 	if (ji != NULL) {
-		gint32 address;
-		int offset, i;
+		int i;
+		gssize regs [ppc_lr + 1];
+		guint8 *cfa;
+		guint32 unwind_info_len;
+		guint8 *unwind_info;
 
-		*new_ctx = *ctx;
-		setup_context (new_ctx);
+		frame->type = FRAME_TYPE_MANAGED;
 
-		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->ebp)) {
-			/* remove any unused lmf */
-			*lmf = (*lmf)->previous_lmf;
-		}
+		if (!ji->method->wrapper_type || ji->method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+			frame->managed = TRUE;
 
-		address = (char *)ip - (char *)ji->code_start;
-
-		if (managed)
-			if (!ji->method->wrapper_type)
-				*managed = TRUE;
+		if (ji->from_aot)
+			unwind_info = mono_aot_get_unwind_info (ji, &unwind_info_len);
+		else
+			unwind_info = mono_get_cached_unwind_info (ji->used_regs, &unwind_info_len);
 
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_SP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
@@ -578,41 +572,43 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			guint8 *lmf_addr = (guint8*)sframe->sp - sizeof (MonoLMF);
 			memcpy (&new_ctx->fregs, lmf_addr + G_STRUCT_OFFSET (MonoLMF, fregs), sizeof (double) * MONO_SAVED_FREGS);
 			memcpy (&new_ctx->regs, lmf_addr + G_STRUCT_OFFSET (MonoLMF, iregs), sizeof (mgreg_t) * MONO_SAVED_GREGS);
-		} else if (ji->used_regs) {
-			/* keep updated with emit_prolog in mini-ppc.c */
-			offset = 0;
-			/* FIXME handle floating point args 
-			for (i = 31; i >= 14; --i) {
-				if (ji->used_fregs & (1 << i)) {
-					offset += sizeof (double);
-					new_ctx->fregs [i - 14] = *(gulong*)((char*)sframe->sp - offset);
-				}
-			}*/
-			for (i = 31; i >= 13; --i) {
-				if (ji->used_regs & (1 << i)) {
-					offset += sizeof (mgreg_t);
-					new_ctx->regs [i - 13] = *(mgreg_t*)((char*)sframe->sp - offset);
-				}
-			}
-		}
-		/* the calling IP is in the parent frame */
-		sframe = (MonoPPCStackFrame*)sframe->sp;
-		/* we substract 4, so that the IP points into the call instruction */
-		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr - 4);
+			/* the calling IP is in the parent frame */
+			sframe = (MonoPPCStackFrame*)sframe->sp;
+			/* we substract 4, so that the IP points into the call instruction */
+			MONO_CONTEXT_SET_IP (new_ctx, sframe->lr - 4);
+		} else {
+			regs [ppc_lr] = ctx->sc_ir;
+			regs [ppc_sp] = ctx->sc_sp;
+			for (i = 0; i < MONO_SAVED_GREGS; ++i)
+				regs [ppc_r13 + i] = ctx->regs [i];
 
-		return ji;
+			mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
+							   (guint8*)ji->code_start + ji->code_size,
+							   ip, regs, MONO_MAX_IREGS + 1, &cfa);
+
+			/* we substract 4, so that the IP points into the call instruction */
+			MONO_CONTEXT_SET_IP (new_ctx, regs [ppc_lr] - 4);
+			MONO_CONTEXT_SET_BP (new_ctx, cfa);
+
+			for (i = 0; i < MONO_SAVED_GREGS; ++i)
+				new_ctx->regs [i] = regs [ppc_r13 + i];
+		}
+
+		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->ebp)) {
+			/* remove any unused lmf */
+			*lmf = (*lmf)->previous_lmf;
+		}
+
+		return TRUE;
 	} else if (*lmf) {
 		
-		*new_ctx = *ctx;
-		setup_context (new_ctx);
-
 		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL))) {
 		} else {
 			if (!(*lmf)->method)
-				return (gpointer)-1;
+				return FALSE;
 
-			memset (res, 0, MONO_SIZEOF_JIT_INFO);
-			res->method = (*lmf)->method;
+			/* Trampoline lmf frame */
+			frame->method = (*lmf)->method;
 		}
 
 		/*sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_SP (ctx);
@@ -623,14 +619,17 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		memcpy (&new_ctx->regs, (*lmf)->iregs, sizeof (mgreg_t) * MONO_SAVED_GREGS);
 		memcpy (&new_ctx->fregs, (*lmf)->fregs, sizeof (double) * MONO_SAVED_FREGS);
 
+		frame->ji = ji;
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
+
 		/* FIXME: what about trampoline LMF frames?  see exceptions-x86.c */
 
 		*lmf = (*lmf)->previous_lmf;
 
-		return ji ? ji : res;
+		return TRUE;
 	}
 
-	return NULL;
+	return FALSE;
 }
 
 /*

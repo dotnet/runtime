@@ -104,10 +104,13 @@ init_reg_map (void)
 	int i;
 
 	g_assert (NUM_REGS > 0);
-	g_assert (sizeof (map_hw_reg_to_dwarf_reg) / sizeof (int) == NUM_REGS);
-	for (i = 0; i < NUM_REGS; ++i) {
+	for (i = 0; i < sizeof (map_hw_reg_to_dwarf_reg) / sizeof (int); ++i) {
 		map_dwarf_reg_to_hw_reg [mono_hw_reg_to_dwarf_reg (i)] = i;
 	}
+
+#ifdef TARGET_POWERPC
+	map_dwarf_reg_to_hw_reg [DWARF_PC_REG] = ppc_lr;
+#endif
 
 	mono_memory_barrier ();
 	dwarf_reg_to_hw_reg_inited = TRUE;
@@ -322,13 +325,13 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				   int nregs, guint8 **out_cfa) 
 {
 	Loc locations [NUM_REGS];
-	int i, pos, reg, cfa_reg, cfa_offset, offset;
+	int i, pos, reg, cfa_reg, cfa_offset;
 	guint8 *p;
 	guint8 *cfa_val;
 
 	g_assert (nregs <= NUM_REGS);
 
-	for (i = 0; i < nregs; ++i)
+	for (i = 0; i < NUM_REGS; ++i)
 		locations [i].loc_type = LOC_SAME;
 
 	p = unwind_info;
@@ -345,7 +348,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 			p ++;
 			break;
 		case DW_CFA_offset:
-			reg = mono_dwarf_reg_to_hw_reg (*p & 0x3f);
+			reg = *p & 0x3f;
 			p ++;
 			locations [reg].loc_type = LOC_OFFSET;
 			locations [reg].offset = decode_uleb128 (p, &p) * DWARF_DATA_ALIGN;
@@ -355,18 +358,19 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 			p ++;
 			switch (ext_op) {
 			case DW_CFA_def_cfa:
-				cfa_reg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
+				cfa_reg = decode_uleb128 (p, &p);
 				cfa_offset = decode_uleb128 (p, &p);
 				break;
 			case DW_CFA_def_cfa_offset:
 				cfa_offset = decode_uleb128 (p, &p);
 				break;
 			case DW_CFA_def_cfa_register:
-				cfa_reg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
+				cfa_reg = decode_uleb128 (p, &p);
 				break;
 			case DW_CFA_offset_extended_sf:
-				reg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
-				offset = decode_sleb128 (p, &p) * DWARF_DATA_ALIGN;
+				reg = decode_uleb128 (p, &p);
+				locations [reg].loc_type = LOC_OFFSET;
+				locations [reg].offset = decode_sleb128 (p, &p) * DWARF_DATA_ALIGN;
 				break;
 			case DW_CFA_advance_loc4:
 				pos += *(guint32*)p;
@@ -382,10 +386,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 		}
 	}
 
-	cfa_val = (guint8*)regs [cfa_reg] + cfa_offset;
-	for (i = 0; i < nregs; ++i) {
+	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
+	for (i = 0; i < NUM_REGS; ++i) {
 		if (locations [i].loc_type == LOC_OFFSET)
-			regs [i] = *(gssize*)(cfa_val + locations [i].offset);
+			regs [mono_dwarf_reg_to_hw_reg (i)] = *(gssize*)(cfa_val + locations [i].offset);
 	}
 
 	*out_cfa = cfa_val;
