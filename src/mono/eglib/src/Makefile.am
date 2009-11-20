@@ -8,7 +8,7 @@ unix_files = \
 	gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c	\
 	gmodule-unix.c gtimer-unix.c
 
-if PLATFORM_WIN32
+if HOST_WIN32
 os_files = $(win_files)
 else
 os_files = $(unix_files)
@@ -46,7 +46,7 @@ libeglib_la_CFLAGS = -Wall -D_FORTIFY_SOURCE=2
 
 INCLUDES = -I$(srcdir)
 
-if PLATFORM_WIN32
+if HOST_WIN32
 libeglib_la_LIBADD = -lm -liconv -lpsapi
 else
 libeglib_la_LIBADD = -lm
