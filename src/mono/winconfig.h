@@ -566,7 +566,7 @@
 #define PACKAGE_VERSION "6.6"
 
 /* Platform is Win32 */
-#define PLATFORM_WIN32 1
+#define HOST_WIN32 1
 #define TARGET_WIN32 1
 
 /* pthread_t is a pointer */
