@@ -2153,9 +2153,11 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, MonoExcept
 					gboolean found = FALSE;
 					MonoAssembly **assemblies = mod->data.assemblies;
 
-					for (k = 0; assemblies [k]; ++k)
-						if (assemblies [k] == ji->method->klass->image->assembly)
-							found = TRUE;
+					if (assemblies) {
+						for (k = 0; assemblies [k]; ++k)
+							if (assemblies [k] == ji->method->klass->image->assembly)
+								found = TRUE;
+					}
 					if (!found)
 						filtered = TRUE;
 				}
