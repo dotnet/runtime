@@ -27,7 +27,7 @@
 #include "tasklets.h"
 #include "debug-mini.h"
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 static void (*restore_stack) (void *);
 
 static MonoW32ExceptionHandler fpe_handler;
@@ -253,7 +253,7 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 	}
 }
 
-#endif /* PLATFORM_WIN32 */
+#endif /* TARGET_WIN32 */
 
 /*
  * mono_arch_get_restore_context:

@@ -54,7 +54,7 @@ static gboolean optimize_for_xen = TRUE;
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 /* Under windows, the calling convention is never stdcall */
 #define CALLCONV_IS_STDCALL(call_conv) (FALSE)
 #else
@@ -81,7 +81,7 @@ static gpointer ss_trigger_page;
 /* Enabled breakpoints read from this trigger page */
 static gpointer bp_trigger_page;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 /* On Win64 always reserve first 32 bytes for first four arguments */
 #define ARGS_OFFSET 48
 #else
@@ -276,7 +276,7 @@ typedef struct {
 
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #define PARAM_REGS 4
 
 static AMD64_Reg_No param_regs [] = { AMD64_RCX, AMD64_RDX, AMD64_R8, AMD64_R9 };
@@ -306,7 +306,7 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
     }
 }
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #define FLOAT_PARAM_REGS 4
 #else
 #define FLOAT_PARAM_REGS 8
@@ -370,7 +370,7 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 		break;
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		class2 = ARG_CLASS_INTEGER;
 #else
 		class2 = ARG_CLASS_SSE;
@@ -437,7 +437,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 
 	klass = mono_class_from_mono_type (type);
 	size = mini_type_stack_size_full (gsctx, &klass->byval_arg, NULL, sig->pinvoke);
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	if (!sig->pinvoke && !disable_vtypes_in_regs && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
 		/* We pass and return vtypes of size 8 in a register */
 	} else if (!sig->pinvoke || (size == 0) || (size > 16)) {
@@ -485,7 +485,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 		info = mono_marshal_load_type_info (klass);
 		g_assert (info);
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 		if (info->native_size > 16) {
 			ainfo->offset = *stack_size;
 			*stack_size += ALIGN_TO (info->native_size, 8);
@@ -720,7 +720,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 		MonoType *ptype;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		/* The float param registers and other param registers must be the same index on Windows x64.*/
 		if (gr > fr)
 			fr = gr;
@@ -782,7 +782,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 #else
 			stack_size += sizeof (MonoTypedRef);
@@ -812,7 +812,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		add_general (&gr, &stack_size, &cinfo->sig_cookie);
 	}
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	// There always is 32 bytes reserved on the stack when calling on Winx64
 	stack_size += 0x20;
 #endif
@@ -1130,7 +1130,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 		regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R14);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R15);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		regs = g_list_prepend (regs, (gpointer)AMD64_RDI);
 		regs = g_list_prepend (regs, (gpointer)AMD64_RSI);
 #endif
@@ -2018,7 +2018,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 	}
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	if (call->inst.opcode != OP_JMP && OP_TAILCALL != call->inst.opcode) {
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 0x20);
 	}
@@ -2179,7 +2179,7 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 {
 	int i;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	return FALSE;
 #endif
 
@@ -2601,12 +2601,12 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 static inline guint8*
 emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data, gboolean win64_adjust_stack)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	if (win64_adjust_stack)
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 32);
 #endif
 	code = emit_call_body (cfg, code, patch_type, data);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	if (win64_adjust_stack)
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 32);
 #endif	
@@ -2931,7 +2931,7 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 	int sreg = tree->sreg1;
 	int need_touch = FALSE;
 
-#if defined(PLATFORM_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+#if defined(HOST_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 	if (!tree->flags & MONO_INST_INIT)
 		need_touch = TRUE;
 #endif
@@ -3095,7 +3095,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 guint8*
 mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	g_assert (tls_offset < 64);
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_reg_mem (code, dreg, (tls_offset * 8) + 0x1480, 8);
@@ -5670,14 +5670,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 		mono_emit_unwind_op_offset (cfg, code, AMD64_RBP, - cfa_offset);
 		async_exc_point (code);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		mono_arch_unwindinfo_add_push_nonvol (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
 #endif
 		
 		amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
 		mono_emit_unwind_op_def_cfa_reg (cfg, code, AMD64_RBP);
 		async_exc_point (code);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		mono_arch_unwindinfo_add_set_fpreg (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
 #endif
 	}
@@ -5725,7 +5725,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* Allocate stack frame */
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
-#if defined(PLATFORM_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+#if defined(HOST_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		guint32 remaining_size = alloc_size;
 		while (remaining_size >= 0x1000) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
@@ -5734,7 +5734,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
  				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 			}
 			async_exc_point (code);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 			if (cfg->arch.omit_fp) 
 				mono_arch_unwindinfo_add_alloc_stack (&cfg->arch.unwindinfo, cfg->native_code, code, 0x1000);
 #endif
@@ -5749,7 +5749,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
  				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 				async_exc_point (code);
 			}
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 			if (cfg->arch.omit_fp) 
 				mono_arch_unwindinfo_add_alloc_stack (&cfg->arch.unwindinfo, cfg->native_code, code, remaining_size);
 #endif
@@ -5793,7 +5793,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			case AMD64_R13: offset = G_STRUCT_OFFSET (MonoLMF, r13); break;
 			case AMD64_R14: offset = G_STRUCT_OFFSET (MonoLMF, r14); break;
 			case AMD64_R15: offset = G_STRUCT_OFFSET (MonoLMF, r15); break;
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 			case AMD64_RDI: offset = G_STRUCT_OFFSET (MonoLMF, rdi); break;
 			case AMD64_RSI: offset = G_STRUCT_OFFSET (MonoLMF, rsi); break;
 #endif
@@ -6022,7 +6022,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					  (gpointer)"mono_jit_thread_attach", TRUE);
 			amd64_patch (buf, code);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
 			/* FIXME: Add a separate key for LMF to avoid this */
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
@@ -6068,7 +6068,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (lmf_addr_tls_offset != -1) {
 				/* Load lmf quicky using the FS register */
 				code = mono_amd64_emit_tls_get (code, AMD64_RAX, lmf_addr_tls_offset);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 				/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
 				/* FIXME: Add a separate key for LMF to avoid this */
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
@@ -6256,7 +6256,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		if (cfg->used_int_regs & (1 << AMD64_R15)) {
 			amd64_mov_reg_membase (code, AMD64_R15, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), 8);
 		}
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		if (cfg->used_int_regs & (1 << AMD64_RDI)) {
 			amd64_mov_reg_membase (code, AMD64_RDI, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), 8);
 		}
@@ -6930,7 +6930,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 			/* We have to shift the arguments left */
 			amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
 			for (i = 0; i < param_count; ++i) {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 				if (i < 3)
 					amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
 				else
@@ -7044,7 +7044,7 @@ void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
 	if (!tls_offset_inited) {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		/* 
 		 * We need to init this multiple times, since when we are first called, the key might not
 		 * be initialized yet.
@@ -7453,7 +7453,7 @@ mono_arch_stop_single_stepping (void)
 gboolean
 mono_arch_is_single_step_event (void *info, void *sigctx)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;
 	return FALSE;
 #else
@@ -7469,7 +7469,7 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 gboolean
 mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;
 	return FALSE;
 #else

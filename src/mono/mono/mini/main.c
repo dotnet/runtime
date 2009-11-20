@@ -1,10 +1,10 @@
 #include <config.h>
 #include "mini.h"
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include "buildver.h"
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 
 int
 main ()

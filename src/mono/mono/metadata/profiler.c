@@ -1546,7 +1546,7 @@ simple_shutdown (MonoProfiler *prof)
 	char *str;
 	gint32 see_shutdown_done;
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	mono_thread_attach(mono_get_root_domain());
 #endif
 

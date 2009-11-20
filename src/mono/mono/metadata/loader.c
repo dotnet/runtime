@@ -1258,7 +1258,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 				continue;
 			break;
 		default:
-#ifndef PLATFORM_WIN32
+#ifndef TARGET_WIN32
 			if (!g_ascii_strcasecmp ("user32.dll", new_scope) ||
 			    !g_ascii_strcasecmp ("kernel32.dll", new_scope) ||
 			    !g_ascii_strcasecmp ("user32", new_scope) ||
@@ -1267,7 +1267,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			} else
 #endif
 				    continue;
-#ifndef PLATFORM_WIN32
+#ifndef TARGET_WIN32
 			break;
 #endif
 		}
@@ -1348,7 +1348,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		int mangle_charset;
 		int mangle_stdcall;
 		int mangle_param_count;
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		int param_count;
 #endif
 
@@ -1358,7 +1358,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		for (mangle_charset = 0; mangle_charset <= 1; mangle_charset ++) {
 			for (mangle_stdcall = 0; mangle_stdcall <= 1; mangle_stdcall ++) {
 				gboolean need_param_count = FALSE;
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 				if (mangle_stdcall > 0)
 					need_param_count = TRUE;
 #endif
@@ -1375,7 +1375,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 							mangled_name = g_strconcat (import, "W", NULL);
 						break;
 					case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 						if (mangle_charset == 0)
 							mangled_name = g_strconcat (import, "W", NULL);
 #else
@@ -1392,7 +1392,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 						break;
 					}
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 					if (mangle_param_count == 0)
 						param_count = mono_method_signature (method)->param_count * sizeof (gpointer);
 					else
@@ -1541,7 +1541,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		/* IJW is P/Invoke with a predefined function pointer. */
 		if (image->is_module_handle && (cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 			piinfo->addr = mono_image_rva_map (image, cols [0]);

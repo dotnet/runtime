@@ -3,7 +3,7 @@
 
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/utils/mono-sigcontext.h>
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #include <windows.h>
 /* use SIG* defines if possible */
 #ifdef HAVE_SIGNAL_H
@@ -42,7 +42,7 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler);
 
 LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
 #define MONO_ARCH_USE_SIGACTION

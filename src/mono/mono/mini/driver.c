@@ -61,7 +61,7 @@ static FILE *mini_stats_fd = NULL;
 
 static void mini_usage (void);
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 /* Need this to determine whether to detach console */
 #include <mono/metadata/cil-coff.h>
 /* This turns off command line globbing under win32 */
@@ -1197,7 +1197,7 @@ static const char info[] =
 #define error_if_aot_unsupported()
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
 	if (!GC_DllMain (module_handle, reason, reserved))
@@ -1712,7 +1712,7 @@ mono_main (int argc, char* argv[])
 			exit (1);
 		}
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		/* Detach console when executing IMAGE_SUBSYSTEM_WINDOWS_GUI on win32 */
 		if (!enable_debugging && !mono_compile_aot && ((MonoCLIImageInfo*)(mono_assembly_get_image (assembly)->image_info))->cli_header.nt.pe_subsys_required == IMAGE_SUBSYSTEM_WINDOWS_GUI)
 			FreeConsole ();

@@ -17,7 +17,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/io-layer/io-layer.h>
 
-#if !defined(PLATFORM_WIN32) && defined(HAVE_SYS_UTSNAME_H)
+#if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
 #endif
 
@@ -37,7 +37,7 @@ void mono_environment_exitcode_set (gint32 value)
 MonoString*
 ves_icall_System_Environment_GetOSVersionString (void)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	OSVERSIONINFO verinfo;
 
 	MONO_ARCH_SAVE_REGS;

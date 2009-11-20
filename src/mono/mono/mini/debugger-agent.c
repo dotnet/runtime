@@ -757,7 +757,7 @@ mono_debugger_agent_cleanup (void)
 
 	/* This will interrupt the agent thread */
 	/* Close the read part only so it can still send back replies */
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	shutdown (conn_fd, SD_RECEIVE);
 #else
 	shutdown (conn_fd, SHUT_RD);
@@ -1693,13 +1693,13 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 	}
 }
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 static void CALLBACK notify_thread_apc (ULONG_PTR param)
 {
 	//DebugBreak ();
 	mono_debugger_agent_thread_interrupt (NULL, NULL);
 }
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 /*
  * notify_thread:
@@ -1842,7 +1842,7 @@ suspend_current (void)
 	DEBUG(1, fprintf (log_file, "[%p] Suspended.\n", (gpointer)GetCurrentThreadId ()));
 
 	while (suspend_count > 0) {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		if (WAIT_TIMEOUT == WaitForSingleObject(suspend_cond, 0))
 		{
 			mono_mutex_unlock (&suspend_mutex);
@@ -2487,7 +2487,7 @@ static void
 end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 {
 	int i;
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	gpointer stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));
 #else
 	gpointer stackptr = __builtin_frame_address (0);
@@ -4010,7 +4010,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		mono_thread_suspend_all_other_threads ();
 		DEBUG(1, fprintf (log_file, "Shutting down the runtime...\n"));
 		mono_runtime_quit ();
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		shutdown (conn_fd, SD_BOTH);
 #else
 		shutdown (conn_fd, SHUT_RDWR);
@@ -5580,7 +5580,7 @@ debugger_thread (void *arg)
 	mono_cond_signal (&debugger_thread_exited_cond);
 	mono_mutex_unlock (&debugger_thread_exited_mutex);
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	shutdown (conn_fd, SD_BOTH);
 #else
 	shutdown (conn_fd, SHUT_RDWR);

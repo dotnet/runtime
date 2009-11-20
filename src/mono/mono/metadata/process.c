@@ -450,7 +450,7 @@ static gchar *
 quote_path (const gchar *path)
 {
 	gchar *res = g_shell_quote (path);
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	{
 	gchar *q = res;
 	while (*q) {
@@ -471,7 +471,7 @@ complete_path (const gunichar2 *appname, gchar **completed)
 	gchar *found;
 
 	utf8appmemory = utf8app = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
-#ifdef PLATFORM_WIN32 // Should this happen on all platforms? 
+#ifdef TARGET_WIN32 // Should this happen on all platforms? 
 	{
 		// remove the quotes around utf8app.
 		size_t len;
@@ -512,7 +512,7 @@ complete_path (const gunichar2 *appname, gchar **completed)
 
 #ifndef HAVE_GETPROCESSID
 /* Run-time GetProcessId detection for Windows */
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #define HAVE_GETPROCESSID
 
 typedef DWORD (WINAPI *GETPROCESSID_PROC) (HANDLE);
@@ -577,7 +577,7 @@ static DWORD WINAPI GetProcessId_detect (HANDLE process)
 	GetProcessId = &GetProcessId_stub;
 	return GetProcessId (process);
 }
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 #endif /* !HAVE_GETPROCESSID */
 
 MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoProcessStartInfo *proc_start_info, MonoProcInfo *process_info)
@@ -664,7 +664,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 		process_info->pid = -ERROR_FILE_NOT_FOUND;
 		return FALSE;
 	}
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	/* Seems like our CreateProcess does not work as the windows one.
 	 * This hack is needed to deal with paths containing spaces */
 	shell_path = NULL;

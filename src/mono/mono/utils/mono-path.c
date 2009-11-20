@@ -44,7 +44,7 @@ mono_path_canonicalize (const char *path)
 		g_free (tmpdir);
 	}
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	g_strdelimit (abspath, "/", '\\');
 #endif
 	abspath = g_strreverse (abspath);
@@ -73,7 +73,7 @@ mono_path_canonicalize (const char *path)
 		pos = strchr (lastpos, G_DIR_SEPARATOR);
 	}
 
-#ifdef PLATFORM_WIN32 /* For UNC paths the first '\' is removed. */
+#ifdef HOST_WIN32 /* For UNC paths the first '\' is removed. */
 	if (*(lastpos-1) == G_DIR_SEPARATOR && *(lastpos-2) == G_DIR_SEPARATOR)
 		lastpos = lastpos-1;
 #endif

@@ -948,7 +948,7 @@ MonoBoolean ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_ha
 gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar ()
 {
-#if defined (PLATFORM_WIN32)
+#if defined (TARGET_WIN32)
 	return (gunichar2) ':';	/* colon */
 #else
 	return (gunichar2) '/';	/* forward slash */
@@ -958,7 +958,7 @@ ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar ()
 gunichar2 
 ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar ()
 {
-#if defined (PLATFORM_WIN32)
+#if defined (TARGET_WIN32)
 	return (gunichar2) '\\';	/* backslash */
 #else
 	return (gunichar2) '/';	/* forward slash */
@@ -968,7 +968,7 @@ ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar ()
 gunichar2 
 ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar ()
 {
-#if defined (PLATFORM_WIN32)
+#if defined (TARGET_WIN32)
 	return (gunichar2) '/';	/* forward slash */
 #else
 	return (gunichar2) '/';	/* slash, same as DirectorySeparatorChar */
@@ -978,7 +978,7 @@ ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar ()
 gunichar2 
 ves_icall_System_IO_MonoIO_get_PathSeparator ()
 {
-#if defined (PLATFORM_WIN32)
+#if defined (TARGET_WIN32)
 	return (gunichar2) ';';	/* semicolon */
 #else
 	return (gunichar2) ':';	/* colon */
@@ -987,7 +987,7 @@ ves_icall_System_IO_MonoIO_get_PathSeparator ()
 
 static const gunichar2
 invalid_path_chars [] = {
-#if defined (PLATFORM_WIN32)
+#if defined (TARGET_WIN32)
 	0x0022,				/* double quote, which seems allowed in MS.NET but should be rejected */
 	0x003c,				/* less than */
 	0x003e,				/* greater than */

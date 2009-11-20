@@ -36,7 +36,7 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 		if (fd < 0)
 			continue;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		if (nexc >= FD_SETSIZE) {
 			ufds [i].revents = MONO_POLLNVAL;
 			return 1;
@@ -64,7 +64,7 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 
 	affected = select (maxfd + 1, &rfds, &wfds, &efds, tvptr);
 	if (affected == -1) {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		int error = WSAGetLastError ();
 		switch (error) {
 		case WSAEFAULT: errno = EFAULT; break;

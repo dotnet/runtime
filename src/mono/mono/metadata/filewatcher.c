@@ -16,7 +16,7 @@
 #include <mono/metadata/filewatcher.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-dl.h>
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 
 /*
  * TODO:

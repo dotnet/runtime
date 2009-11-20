@@ -4148,7 +4148,7 @@ test_load_class (MonoImage* image)
 static void
 add_signal_handler (int signo, void (*handler)(int))
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	signal (signo, handler);
 #else
 	struct sigaction sa;

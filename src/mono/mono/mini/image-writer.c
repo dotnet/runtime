@@ -102,7 +102,7 @@
 #define USE_ELF_RELA 1
 #endif
 
-#if defined(TARGET_X86) && !defined(PLATFORM_WIN32)
+#if defined(TARGET_X86) && !defined(TARGET_WIN32)
 #define USE_ELF_WRITER 1
 #endif
 

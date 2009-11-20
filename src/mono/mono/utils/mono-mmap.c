@@ -9,7 +9,7 @@
 
 #include "config.h"
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #include <windows.h>
 #include <io.h>
 #else
@@ -62,7 +62,7 @@ malloc_shared_area (int pid)
 	return sarea;
 }
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 
 int
 mono_pagesize (void)
@@ -607,4 +607,4 @@ mono_shared_area_instances (void **array, int count)
 
 #endif // HAVE_SHM_OPEN
 
-#endif // PLATFORM_WIN32
+#endif // HOST_WIN32

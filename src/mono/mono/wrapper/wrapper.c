@@ -161,7 +161,7 @@ mono_wrapper_environ ()
 int
 mono_wrapper_mkdir (const char *path, int mode)
 {
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	if (mkdir (path, mode) == -1)
 		return -errno;
 #endif
@@ -187,7 +187,7 @@ mono_wrapper_rename (const char *src, const char *dst)
 int
 mono_wrapper_utime (const char *path, int atime, int mtime)
 {
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	struct utimbuf buf;
 
 	buf.actime = atime;

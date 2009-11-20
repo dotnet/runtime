@@ -1,4 +1,4 @@
-if(PLATFORM_WIN32)
+if(HOST_WIN32)
 ###export HOST_CC
 endif()
 

@@ -40,7 +40,7 @@ static gboolean optimize_for_xen = TRUE;
 #define optimize_for_xen 0
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 static gboolean is_win32 = TRUE;
 #else
 static gboolean is_win32 = FALSE;
@@ -55,7 +55,7 @@ static CRITICAL_SECTION mini_arch_mutex;
 
 #define ARGS_OFFSET 8
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 /* Under windows, the default pinvoke calling convention is stdcall */
 #define CALLCONV_IS_STDCALL(sig) ((((sig)->call_convention) == MONO_CALL_STDCALL) || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_DEFAULT))
 #else
@@ -180,7 +180,7 @@ typedef struct {
 
 static X86_Reg_No param_regs [] = { 0 };
 
-#if defined(PLATFORM_WIN32) || defined(__APPLE__) || defined(__FreeBSD__)
+#if defined(TARGET_WIN32) || defined(__APPLE__) || defined(__FreeBSD__)
 #define SMALL_STRUCTS_IN_REGS
 static X86_Reg_No return_regs [] = { X86_EAX, X86_EDX };
 #endif
@@ -1890,7 +1890,7 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 	int sreg = tree->sreg1;
 	int need_touch = FALSE;
 
-#if defined(PLATFORM_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+#if defined(TARGET_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 	need_touch = TRUE;
 #endif
 
@@ -2025,7 +2025,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 guint8*
 mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	/* 
 	 * See the Under the Hood article in the May 1996 issue of Microsoft Systems 
 	 * Journal and/or a disassembly of the TlsGet () function.
@@ -4514,7 +4514,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			x86_patch (buf, code);
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
 			/* FIXME: Add a separate key for LMF to avoid this */
 			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
@@ -4577,7 +4577,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (lmf_addr_tls_offset != -1) {
 				/* Load lmf quicky using the GS register */
 				code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 				/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
 				/* FIXME: Add a separate key for LMF to avoid this */
 				x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
@@ -4634,7 +4634,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
-#if defined(PLATFORM_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+#if defined(TARGET_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		guint32 remaining_size = alloc_size;
 		while (remaining_size >= 0x1000) {
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x1000);
@@ -5027,7 +5027,7 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
 	if (!tls_offset_inited) {
 		if (!getenv ("MONO_NO_TLS")) {
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 			/* 
 			 * We need to init this multiple times, since when we are first called, the key might not
 			 * be initialized yet.
@@ -5845,7 +5845,7 @@ mono_arch_stop_single_stepping (void)
 gboolean
 mono_arch_is_single_step_event (void *info, void *sigctx)
 {
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;	/* Sometimes the address is off by 4 */
 	if ((einfo->ExceptionInformation[1] >= ss_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)ss_trigger_page + 128))
 		return TRUE;
@@ -5864,7 +5864,7 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 gboolean
 mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;	/* Sometimes the address is off by 4 */
 	if ((einfo->ExceptionInformation[1] >= bp_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)bp_trigger_page + 128))
 		return TRUE;

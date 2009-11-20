@@ -2,7 +2,7 @@ lib_LTLIBRARIES = libmonowrapper.la
 
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
-if PLATFORM_WIN32
+if HOST_WIN32
 # glob.c doesnt build under windows
 SRC=			\
 	wrapper.c	\

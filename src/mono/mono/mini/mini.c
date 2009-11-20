@@ -1163,7 +1163,7 @@ mono_get_array_new_va_signature (int arity)
 	res->call_convention = MONO_CALL_VARARG;
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	res->call_convention = MONO_CALL_C;
 #endif
 
@@ -4085,7 +4085,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 				piinfo->addr = mono_lookup_internal_call (method);
 			else if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono in modules loaded from byte arrays. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), method->klass->image->name);
 #else
 				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), method->klass->image->name);
@@ -4693,7 +4693,7 @@ SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 {
 	MonoException *exc = NULL;
 	MonoJitInfo *ji;
-#if !(defined(MONO_ARCH_USE_SIGACTION) || defined(PLATFORM_WIN32))
+#if !(defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32))
 	void *info = NULL;
 #endif
 	GET_CONTEXT;

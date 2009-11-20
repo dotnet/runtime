@@ -7,7 +7,7 @@
 #include <ctype.h>
 #include <mono/metadata/opcodes.h>
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <unistd.h>
 #endif
 
@@ -114,7 +114,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	GHashTable *offset_to_bb_hash = NULL;
 	int i, cindex, bb_num;
 	FILE *ofd;
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	const char *tmp = g_get_tmp_dir ();
 #endif
 	const char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
@@ -122,7 +122,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	char *o_file;
 	char *cmd;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	as_file = g_strdup_printf ("%s/test.s", tmp);    
 
 	if (!(ofd = fopen (as_file, "w")))
@@ -211,7 +211,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #define AS_CMD "as"
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	o_file = g_strdup_printf ("%s/test.o", tmp);
 #else	
 	i = g_file_open_tmp (NULL, &o_file, NULL);
@@ -238,7 +238,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	system (cmd);
 	g_free (cmd);
 	
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	unlink (o_file);
 	unlink (as_file);
 #endif

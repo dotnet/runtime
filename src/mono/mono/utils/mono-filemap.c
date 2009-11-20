@@ -49,7 +49,7 @@ mono_file_map_close (MonoFileMap *fmap)
 	return fclose ((FILE*)fmap);
 }
 
-#if !defined(HAVE_MMAP) && !defined (PLATFORM_WIN32)
+#if !defined(HAVE_MMAP) && !defined (HOST_WIN32)
 
 static mono_file_map_alloc_fn alloc_fn = (mono_file_map_alloc_fn) malloc;
 static mono_file_map_release_fn release_fn = (mono_file_map_release_fn) free;

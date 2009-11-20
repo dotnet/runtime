@@ -33,7 +33,7 @@
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 static MonoW32ExceptionHandler fpe_handler;
 static MonoW32ExceptionHandler ill_handler;
 static MonoW32ExceptionHandler segv_handler;
@@ -144,7 +144,7 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 	}
 }
 
-#endif /* PLATFORM_WIN32 */
+#endif /* TARGET_WIN32 */
 
 /*
  * mono_arch_get_restore_context:
@@ -252,7 +252,7 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 	amd64_mov_reg_membase (code, AMD64_R13, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r13), 8);
 	amd64_mov_reg_membase (code, AMD64_R14, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r14), 8);
 	amd64_mov_reg_membase (code, AMD64_R15, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r15), 8);
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rdi), 8);
 	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rsi), 8);
 #endif
@@ -386,7 +386,7 @@ get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, g
 	/* Exception */
 	amd64_push_reg (code, AMD64_ARG_REG1);
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	/* align stack */
 	amd64_push_imm (code, 0);
 	amd64_push_imm (code, 0);
@@ -489,11 +489,11 @@ mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji
 		amd64_mov_reg_imm (code, AMD64_ARG_REG1, mono_defaults.exception_class->image);
 		amd64_mov_reg_imm (code, AMD64_R11, mono_exception_from_token);
 	}
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 32);
 #endif
 	amd64_call_reg (code, AMD64_R11);
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 32);
 #endif
 
@@ -675,7 +675,7 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->r13 = (*lmf)->r13;
 		new_ctx->r14 = (*lmf)->r14;
 		new_ctx->r15 = (*lmf)->r15;
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		new_ctx->rdi = (*lmf)->rdi;
 		new_ctx->rsi = (*lmf)->rsi;
 #endif
@@ -1069,7 +1069,7 @@ mono_arch_exceptions_init (void)
 	}
 }
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 
 /*
  * The mono_arch_unwindinfo* methods are used to build and add
@@ -1348,7 +1348,7 @@ mono_tasklets_arch_restore (void)
 	amd64_mov_reg_membase (code, AMD64_R13, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r13), 8);
 	amd64_mov_reg_membase (code, AMD64_R14, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r14), 8);
 	amd64_mov_reg_membase (code, AMD64_R15, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r15), 8);
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rdi), 8);
 	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rsi), 8);
 #endif

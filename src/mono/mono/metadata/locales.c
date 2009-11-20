@@ -379,7 +379,7 @@ get_current_locale_name (void)
 	const gchar *p;
         gchar *c;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	locale = g_win32_getlocale ();
 #else	
 	locale = get_posix_locale ();

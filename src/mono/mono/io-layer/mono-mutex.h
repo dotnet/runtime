@@ -19,7 +19,7 @@
 
 G_BEGIN_DECLS
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 
 typedef struct {
 	pthread_mutex_t mutex;

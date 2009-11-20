@@ -47,13 +47,13 @@
 #		error have boehm GC without headers, you probably need to install them by hand
 #	endif
 
-#if defined(PLATFORM_WIN32)
+#if defined(HOST_WIN32)
 #define CreateThread GC_CreateThread
 #endif
 
 #elif defined(HAVE_SGEN_GC)
 
-#if defined(PLATFORM_WIN32)
+#if defined(HOST_WIN32)
 #define CreateThread mono_gc_CreateThread
 #else
 /* pthread function wrappers */

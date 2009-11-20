@@ -298,7 +298,7 @@ set(arch_built cpu-hppa.h)
 set(arch_define __hppa__)
 endif()
 
-if(PLATFORM_WIN32)
+if(HOST_WIN32)
 set(os_sources ${windows_sources})
 set(monobin_platform_ldflags)
 endif()

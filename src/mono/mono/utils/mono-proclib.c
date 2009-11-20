@@ -8,7 +8,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #include <windows.h>
 #endif
 
@@ -381,7 +381,7 @@ mono_cpu_count (void)
 			return count;
 	}
 #endif
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	{
 		SYSTEM_INFO info;
 		GetSystemInfo (&info);

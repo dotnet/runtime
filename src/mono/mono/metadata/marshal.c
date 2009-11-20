@@ -882,7 +882,7 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 static gpointer
 mono_string_to_lpstr (MonoString *s)
 {
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	char *as, *tmp;
 	glong len;
 	GError *error = NULL;
@@ -1296,7 +1296,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		mono_mb_emit_icall (mb, mono_string_from_utf16);
 #else
 		mono_mb_emit_icall (mb, mono_string_new_wrapper);
@@ -2164,7 +2164,7 @@ mono_marshal_get_string_encoding (MonoMethodPInvoke *piinfo, MonoMarshalSpec *sp
 	case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 		return MONO_NATIVE_LPWSTR;
 	case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		return MONO_NATIVE_LPWSTR;
 #else
 		return MONO_NATIVE_LPSTR;
@@ -7931,7 +7931,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 			get_last_error_sig->pinvoke = 1;
 		}
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		/* 
 		 * Have to call GetLastError () early and without a wrapper, since various runtime components could
 		 * clobber its value.
@@ -8447,7 +8447,7 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 	MonoMethodSignature *sig;
 	int i;
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	/* 
 	 * Under windows, delegates passed to native code must use the STDCALL
 	 * calling convention.
@@ -9529,7 +9529,7 @@ mono_marshal_alloc (gulong size)
 {
 	gpointer res;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	res = CoTaskMemAlloc (size);
 #else
 	res = g_try_malloc ((gulong)size);
@@ -9542,7 +9542,7 @@ mono_marshal_alloc (gulong size)
 void
 mono_marshal_free (gpointer ptr)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	CoTaskMemFree (ptr);
 #else
 	g_free (ptr);
@@ -10011,7 +10011,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	char* tres, *ret;
 	size_t len;
 	tres = mono_string_to_utf8 (string);
@@ -10037,7 +10037,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString 
 	if (string == NULL)
 		return NULL;
 	else {
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		gunichar2 *res = ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal 
 			((mono_string_length (string) + 1) * 2);
 #else
@@ -10082,7 +10082,7 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 			/* We assume this field points inside a MonoString */
 			break;
 		case MONO_MARSHAL_CONV_STR_LPTSTR:
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 			/* We assume this field points inside a MonoString 
 			 * on Win32 */
 			break;
@@ -10126,7 +10126,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size)
 		/* This returns a valid pointer for size 0 on MS.NET */
 		size = 4;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	res = GlobalAlloc (GMEM_FIXED, (gulong)size);
 #else
 	res = g_try_malloc ((gulong)size);
@@ -10147,7 +10147,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, i
 		return NULL;
 	}
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	res = GlobalReAlloc (ptr, (gulong)size, GMEM_MOVEABLE);
 #else
 	res = g_try_realloc (ptr, (gulong)size);
@@ -10163,7 +10163,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	GlobalFree (ptr);
 #else
 	g_free (ptr);
@@ -10175,7 +10175,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	return CoTaskMemAlloc (size);
 #else
 	return g_try_malloc ((gulong)size);
@@ -10187,7 +10187,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	CoTaskMemFree (ptr);
 #else
 	g_free (ptr);
@@ -10199,7 +10199,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr,
 {
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	return CoTaskMemRealloc (ptr, size);
 #else
 	return g_try_realloc (ptr, (gulong)size);

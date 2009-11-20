@@ -17,7 +17,7 @@
 #include <string.h>
 #include <glib.h>
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 #define SOPREFIX ""
 static const char suffixes [][5] = {
 	".dll"
@@ -41,7 +41,7 @@ static const char suffixes [][4] = {
 };
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 
 #include <windows.h>
 #include <psapi.h>
@@ -105,7 +105,7 @@ struct _MonoDl {
 	int main_module;
 };
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 
 static char*
 w32_dlerror (void)

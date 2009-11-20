@@ -133,7 +133,7 @@ typedef enum {
 
 static gboolean use_fast_timer = FALSE;
 
-#if (defined(__i386__) || defined(__x86_64__)) && ! defined(PLATFORM_WIN32)
+#if (defined(__i386__) || defined(__x86_64__)) && ! defined(HOST_WIN32)
 
 #if defined(__i386__)
 static const guchar cpuid_impl [] = {
@@ -674,7 +674,7 @@ typedef struct _ProfilerExecutableFiles {
 #define CLEANUP_WRITER_THREAD() do {profiler->writer_thread_terminated = TRUE;} while (0)
 #define CHECK_WRITER_THREAD() (! profiler->writer_thread_terminated)
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>

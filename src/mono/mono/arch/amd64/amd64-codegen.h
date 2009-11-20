@@ -67,7 +67,7 @@ typedef enum
   AMD64_REX_W = 8  /* Opeartion is 64-bits instead of 32 (default) or 16 (with 0x66 prefix) */
 } AMD64_REX_Bits;
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 #define AMD64_ARG_REG1 AMD64_RCX
 #define AMD64_ARG_REG2 AMD64_RDX
 #define AMD64_ARG_REG3 AMD64_R8
@@ -79,7 +79,7 @@ typedef enum
 #define AMD64_ARG_REG4 AMD64_RCX
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 #define AMD64_CALLEE_REGS ((1<<AMD64_RAX) | (1<<AMD64_RCX) | (1<<AMD64_RDX) | (1<<AMD64_R8) | (1<<AMD64_R9) | (1<<AMD64_R10))
 #define AMD64_IS_CALLEE_REG(reg)  (AMD64_CALLEE_REGS & (1 << (reg)))
 

@@ -1952,7 +1952,7 @@ gboolean mono_gdb_render_native_backtraces (void) MONO_INTERNAL;
 #endif
 
 #ifndef GET_CONTEXT
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #define GET_CONTEXT \
     void *ctx = context;
 #else
@@ -1973,7 +1973,7 @@ gboolean mono_gdb_render_native_backtraces (void) MONO_INTERNAL;
 #ifdef MONO_ARCH_USE_SIGACTION
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
 #define SIG_HANDLER_PARAMS _dummy, info, context
-#elif defined(PLATFORM_WIN32)
+#elif defined(HOST_WIN32)
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, EXCEPTION_RECORD *info, void *context)
 #define SIG_HANDLER_PARAMS _dummy, info, context
 #elif defined(__sparc__)

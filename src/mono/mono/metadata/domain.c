@@ -49,7 +49,7 @@ static guint32 appdomain_thread_id = -1;
  * Avoid calling TlsSetValue () if possible, since in the io-layer, it acquires
  * a global lock (!) so it is a contention point.
  */
-#if (defined(__i386__) || defined(__x86_64__)) && !defined(PLATFORM_WIN32)
+#if (defined(__i386__) || defined(__x86_64__)) && !defined(HOST_WIN32)
 #define NO_TLS_SET_VALUE
 #endif
  
@@ -1253,7 +1253,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	if (domain)
 		g_assert_not_reached ();
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	/* Avoid system error message boxes. */
 	SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
 
@@ -1295,7 +1295,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		 * exe_image, and close it during shutdown.
 		 */
 		get_runtimes_from_exe (exe_filename, &exe_image, runtimes);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		if (!exe_image) {
 			exe_image = mono_assembly_open_from_bundle (exe_filename, NULL, FALSE);
 			if (!exe_image)
