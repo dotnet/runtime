@@ -380,7 +380,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 
 	/* Arg 3: trampoline argument */
 	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
-		ppc_ldr (buf, ppc_r5, GREGS_OFFSET + PPC_FIRST_ARG_REG * sizeof (mgreg_t), ppc_r1);
+		ppc_ldr (buf, ppc_r5, GREGS_OFFSET + MONO_ARCH_VTABLE_REG * sizeof (mgreg_t), ppc_r1);
 	else
 		ppc_ldr (buf, ppc_r5, GREGS_OFFSET, ppc_r1);
 
@@ -687,7 +687,7 @@ mono_arch_create_generic_class_init_trampoline_full (guint32 *code_size, MonoJum
 	if (byte_offset < 0)
 		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
 
-	ppc_lbz (code, ppc_r4, byte_offset, PPC_FIRST_ARG_REG);
+	ppc_lbz (code, ppc_r4, byte_offset, MONO_ARCH_VTABLE_REG);
 	ppc_andid (code, ppc_r4, ppc_r4, bitmask);
 	jump = code;
 	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
