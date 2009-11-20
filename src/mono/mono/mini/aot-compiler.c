@@ -164,6 +164,7 @@ typedef struct MonoAotCompile {
 	const char *temp_prefix;
 	guint32 label_generator;
 	gboolean llvm;
+	MonoAotFileFlags flags;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -5116,6 +5117,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
 	emit_int32 (acfg, acfg->nmethods);
+	emit_int32 (acfg, acfg->flags);
 
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->num_trampolines [i]);
@@ -5506,6 +5508,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef ENABLE_LLVM
 	acfg->llvm = TRUE;
  	acfg->aot_opts.asm_writer = TRUE;
+	acfg->flags |= MONO_AOT_FILE_FLAG_WITH_LLVM;
 #endif
 
 	load_profile_files (acfg);

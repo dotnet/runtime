@@ -958,6 +958,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 	g_free (build_info);
 
+	find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&file_info);
+	g_assert (file_info);
+
 	{
 		char *full_aot_str;
 
@@ -976,6 +979,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		usable = FALSE;
 	}
 
+	if ((((MonoAotFileInfo*)file_info)->flags & MONO_AOT_FILE_FLAG_WITH_LLVM) && !mono_use_llvm) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled with LLVM.\n", aot_name);
+		usable = FALSE;
+	}
+
 	if (!usable) {
 		if (mono_aot_only) {
 			fprintf (stderr, "Failed to load AOT module '%s' while running in aot-only mode.\n", aot_name);
@@ -987,9 +995,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		assembly->image->aot_module = NULL;
 		return;
 	}
-
-	find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&file_info);
-	g_assert (file_info);
 
 	amodule = g_new0 (MonoAotModule, 1);
 	amodule->aot_name = aot_name;

@@ -527,7 +527,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 	return addr;
 }
  
-#ifdef ENABLE_LLVM
+#ifdef MONO_ARCH_LLVM_SUPPORTED
 /*
  * mono_llvm_vcall_trampoline:
  *
@@ -927,7 +927,7 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 		return mono_monitor_enter_trampoline;
 	case MONO_TRAMPOLINE_MONITOR_EXIT:
 		return mono_monitor_exit_trampoline;
-#ifdef ENABLE_LLVM
+#ifdef MONO_ARCH_LLVM_SUPPORTED
 	case MONO_TRAMPOLINE_LLVM_VCALL:
 		return mono_llvm_vcall_trampoline;
 #endif
@@ -961,7 +961,7 @@ mono_trampolines_init (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
 	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_ENTER] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
 	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_EXIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
-#ifdef ENABLE_LLVM
+#ifdef MONO_ARCH_LLVM_SUPPORTED
 	mono_trampoline_code [MONO_TRAMPOLINE_LLVM_VCALL] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_LLVM_VCALL);
 #endif
 }
@@ -1286,7 +1286,7 @@ mono_create_monitor_exit_trampoline (void)
 	return code;
 }
  
-#ifdef ENABLE_LLVM
+#ifdef MONO_ARCH_LLVM_SUPPORTED
 /*
  * mono_create_llvm_vcall_trampoline:
  *

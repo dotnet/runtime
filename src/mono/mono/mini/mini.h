@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "60"
+#define MONO_AOT_FILE_VERSION "61"
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -118,6 +118,10 @@ typedef enum {
 	MONO_AOT_TRAMP_NUM = 3
 } MonoAotTrampoline;
 
+typedef enum {
+	MONO_AOT_FILE_FLAG_WITH_LLVM = 1
+} MonoAotFileFlags;
+
 /* This structure is stored in the AOT file */
 typedef struct MonoAotFileInfo
 {
@@ -125,6 +129,7 @@ typedef struct MonoAotFileInfo
 	guint32 got_size;
 	guint32 plt_size;
 	guint32 nmethods;
+	guint32 flags;
 
 	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
@@ -376,6 +381,7 @@ extern gboolean mono_dont_free_global_codeman;
 extern gboolean mono_do_x86_stack_align;
 extern const char *mono_build_date;
 extern gboolean mono_do_signal_chaining;
+extern gboolean mono_use_llvm;
 
 #define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 4])
 
@@ -877,7 +883,7 @@ typedef enum {
 	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
 	MONO_TRAMPOLINE_MONITOR_ENTER,
 	MONO_TRAMPOLINE_MONITOR_EXIT,
-#ifdef ENABLE_LLVM
+#ifdef MONO_ARCH_LLVM_SUPPORTED
 	MONO_TRAMPOLINE_LLVM_VCALL,
 #endif
 	MONO_TRAMPOLINE_NUM

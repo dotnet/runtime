@@ -1123,6 +1123,7 @@ mini_usage (void)
 		"                           mode is one of cas, core-clr, verifiable or validil\n"
 		"    --attach=OPTIONS       Pass OPTIONS to the attach agent in the runtime.\n"
 		"                           Currently the only supported option is 'disable'.\n"
+		"    --llvm                 Controls whenever the runtime uses LLVM compiled code.\n"
 	  );
 }
 
@@ -1534,6 +1535,13 @@ mono_main (int argc, char* argv[])
 #ifdef MONO_JIT_INFO_TABLE_TEST
 		} else if (strcmp (argv [i], "--test-jit-info-table") == 0) {
 			test_jit_info_table = TRUE;
+#endif
+		} else if (strcmp (argv [i], "--llvm") == 0) {
+#ifndef MONO_ARCH_LLVM_SUPPORTED
+			fprintf (stderr, "--llvm not supported on this platform.\n");
+			return 1;
+#else
+			mono_use_llvm = TRUE;
 #endif
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);

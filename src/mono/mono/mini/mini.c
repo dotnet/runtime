@@ -112,6 +112,21 @@ static int mini_verbose = 0;
 static int methods_with_llvm, methods_without_llvm;
 #endif
 
+/*
+ * This flag controls whenever the runtime uses LLVM compiled code.
+ * Enabling this causes different/slower code paths to be used, which is why it
+ * defaults to FALSE if ENABLE_LLVM is not defined, i.e. the runtime is only capable of
+ * running AOT code compiled by LLVM.
+ * Changes when this flag is set include:
+ * - a per method vtable trampoline is used to handle virtual calls, instead of only
+ *   one trampoline.
+ */
+#ifdef ENABLE_LLVM
+gboolean mono_use_llvm = TRUE;
+#else
+gboolean mono_use_llvm = FALSE;
+#endif
+
 #define mono_jit_lock() EnterCriticalSection (&jit_mutex)
 #define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
 static CRITICAL_SECTION jit_mutex;
@@ -2788,7 +2803,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 #endif
 	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
-#ifdef ENABLE_LLVM
+#ifdef MONO_ARCH_LLVM_SUPPORTED
+		g_assert (mono_use_llvm);
 		target = mono_create_llvm_imt_trampoline (domain, patch_info->data.imt_tramp->method, patch_info->data.imt_tramp->vt_offset);
 #else
 		g_assert_not_reached ();
@@ -5115,9 +5131,12 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef JIT_TRAMPOLINES_WORK
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_free_method (mono_jit_free_method);
-#ifdef ENABLE_LLVM
-	/* The runtime currently only uses this for filling out vtables */
-	mono_install_trampoline (mono_create_llvm_vcall_trampoline);
+#ifdef MONO_ARCH_LLVM_SUPPORTED
+	if (mono_use_llvm)
+		/* The runtime currently only uses this for filling out vtables */
+		mono_install_trampoline (mono_create_llvm_vcall_trampoline);
+	else
+		mono_install_trampoline (mono_create_jit_trampoline);
 #else
 	mono_install_trampoline (mono_create_jit_trampoline);
 #endif
@@ -5152,15 +5171,15 @@ mini_init (const char *filename, const char *runtime_version)
 			mono_install_imt_thunk_builder (mono_aot_get_imt_thunk);
 		else
 			mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
-#ifndef ENABLE_LLVM
-		/* LLVM needs a per-method vtable trampoline */
-		mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
-		/* 
-		 * The imt code in mono_magic_trampoline () can't handle LLVM code. By disabling
-		 * this, we force iface calls to go through the llvm vcall trampoline.
-		 */
-		mono_install_imt_trampoline (mini_get_imt_trampoline ());
-#endif
+		if (!mono_use_llvm) {
+			/* LLVM needs a per-method vtable trampoline */
+			mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
+			/* 
+			 * The imt code in mono_magic_trampoline () can't handle LLVM code. By disabling
+			 * this, we force iface calls to go through the llvm vcall trampoline.
+			 */
+			mono_install_imt_trampoline (mini_get_imt_trampoline ());
+		}
 	}
 #endif
 
