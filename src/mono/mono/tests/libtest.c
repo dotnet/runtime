@@ -3952,7 +3952,7 @@ mono_test_Winx64_struct5_ret_managed (managed_struct5_ret_delegate func)
 
 LIBTEST_API int STDCALL 
 mono_test_marshal_bool_in (int arg, unsigned int expected, unsigned int bDefaultMarsh, unsigned int bBoolCustMarsh,
-			   char bI1CustMarsh, unsigned char bU1CustMarsh, unsigned short bVBCustMarsh)
+			   char bI1CustMarsh, unsigned char bU1CustMarsh, short bVBCustMarsh)
 {
 	switch (arg) {
 	case 1:	

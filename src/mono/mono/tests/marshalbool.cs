@@ -154,11 +154,12 @@ public class marshalbool
 	unsafe public static int test_0_VariantBool_In_Native ()
 	{
 		int ret;
+		int m1 = -1;
 
 		ret = mono_test_marshal_bool_in (5, 0, false, false, false, false, false);
 		if (ret != 0)
 			return 0x0100 + ret;
-		ret = mono_test_marshal_bool_in (5, 0xFFFF, false, false, false, false, true);
+		ret = mono_test_marshal_bool_in (5, (uint)m1, false, false, false, false, true);
 		if (ret != 0)
 			return 0x0200 + ret;
 
@@ -166,7 +167,7 @@ public class marshalbool
 		bool* ptestVal = &testVal;
 
 		Marshal.WriteByte ((IntPtr)ptestVal, 0x22);
-		ret = mono_test_marshal_bool_in (5, 0xFFFF, false, false, false, false, testVal);
+		ret = mono_test_marshal_bool_in (5, (uint)m1, false, false, false, false, testVal);
 		if (ret != 0)
 			return 0x0300 + ret;
 
