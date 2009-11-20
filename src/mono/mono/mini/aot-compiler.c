@@ -5046,7 +5046,7 @@ emit_autoreg (MonoAotCompile *acfg)
 	img_writer_emit_unset_mode (acfg->w);
 
 	fprintf (acfg->fp,
-#if  1 
+#ifdef _MSC_VER  
 			 ".section	.ctors,\"aw\",@progbits\n"
 			 ".align 2\n"
 			 ".globl	%s\n"
@@ -5092,7 +5092,7 @@ emit_autoreg (MonoAotCompile *acfg)
 			 "mr 1,11\n"
 			 "blr\n"
 			 );
-#if 1
+#ifdef _MSC_VER
 		fprintf (acfg->fp,
 			 ".size	.%s,.-.%s\n", symbol, symbol);
 #else
