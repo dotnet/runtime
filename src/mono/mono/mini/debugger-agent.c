@@ -1720,12 +1720,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 		 * of things like breaking waits etc. which we don't want.
 		 */
 		InterlockedIncrement (&tls->interrupt_count);
-#ifdef PLATFORM_WIN32
-	//	g_assert_not_reached ();
-		QueueUserAPC (notify_thread_apc, thread->handle, NULL);
-#else
-		pthread_kill ((pthread_t) tid, mono_thread_get_abort_signal ());
-#endif
+		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 	}
 }
 

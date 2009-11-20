@@ -1313,7 +1313,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		runtimes [0] = default_runtime;
 		runtimes [1] = NULL;
 		g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
-		g_print ("Using default runtime: %s\n", default_runtime->runtime_version);
+		g_print ("Using default runtime: %s\n", default_runtime->runtime_version); 
 	}
 
 	/* The selected runtime will be the first one for which there is a mscrolib.dll */

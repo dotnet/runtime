@@ -44,7 +44,7 @@ typedef void (*MonoThreadNotifyPendingExcFunc) (void);
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 typedef SECURITY_ATTRIBUTES WapiSecurityAttributes;
 typedef LPTHREAD_START_ROUTINE WapiThreadStart;
 #endif

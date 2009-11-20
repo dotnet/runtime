@@ -560,12 +560,14 @@ mono_array_to_lparray (MonoArray *array)
 	case MONO_TYPE_VOID:
 		g_assert_not_reached ();
 		break;
+#ifndef DISABLE_COM
 	case MONO_TYPE_CLASS:
 		nativeArraySize = array->max_length;
 		nativeArray = malloc(sizeof(gpointer) * nativeArraySize);
 		for(i = 0; i < nativeArraySize; ++i) 	
 			nativeArray[i] = ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal(((gpointer*)array->vector)[i]);
 		return nativeArray;
+#endif
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
@@ -1425,7 +1427,7 @@ conv_to_icall (MonoMarshalConv conv)
 	case MONO_MARSHAL_CONV_LPSTR_STR:
 		return mono_string_new_wrapper;
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		return mono_marshal_string_to_utf16;
 #else
 		return mono_string_to_lpstr;
@@ -1442,7 +1444,7 @@ conv_to_icall (MonoMarshalConv conv)
 	case MONO_MARSHAL_CONV_SB_LPSTR:
 		return mono_string_builder_to_utf8;
 	case MONO_MARSHAL_CONV_SB_LPTSTR:
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		return mono_string_builder_to_utf16;
 #else
 		return mono_string_builder_to_utf8;
@@ -1462,7 +1464,7 @@ conv_to_icall (MonoMarshalConv conv)
 	case MONO_MARSHAL_CONV_LPSTR_SB:
 		return mono_string_utf8_to_builder;
 	case MONO_MARSHAL_CONV_LPTSTR_SB:
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 		return mono_string_utf16_to_builder;
 #else
 		return mono_string_utf8_to_builder;

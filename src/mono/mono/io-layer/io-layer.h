@@ -45,6 +45,6 @@
 #else	/* EVERYONE ELSE */
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 #endif /* _MONO_IOLAYER_IOLAYER_H_ */

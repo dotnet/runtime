@@ -19,7 +19,9 @@
 #include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger.h"
 
-#if defined(__linux__)
+#if defined(TARGET_PS3)
+#define CONFIG_OS "CellOS"
+#elif defined(__linux__)
 #define CONFIG_OS "linux"
 #elif defined(__APPLE__)
 #define CONFIG_OS "osx"
@@ -37,8 +39,6 @@
 #define CONFIG_OS "aix"
 #elif defined(__hpux)
 #define CONFIG_OS "hpux"
-#elif defined(SN_TARGET_PS3)
-#define CONFIG_OS "CellOS"
 #else
 #warning Unknown operating system
 #define CONFIG_OS "unknownOS"
@@ -54,9 +54,9 @@
 #elif defined(sparc) || defined(__sparc__)
 #define CONFIG_CPU "sparc"
 #define CONFIG_WORDSIZE "32"
-#elif defined(__ppc64__) || defined(__powerpc64__)
+#elif defined(__ppc64__) || defined(__powerpc64__) || defined(TARGET_POWERPC)
 #define CONFIG_WORDSIZE "64"
-#ifdef __mono_ppc_ilp32__
+#ifdef __mono_ppc_ilp32__ 
 #   define CONFIG_CPU "ppc64ilp32"
 #else
 #   define CONFIG_CPU "ppc64"
@@ -86,7 +86,7 @@
 #define CONFIG_CPU "mips"
 #define CONFIG_WORDSIZE "32"
 #else
-#warning Unknown CPU
+#error Unknown CPU
 #define CONFIG_CPU "unknownCPU"
 #endif
 #endif
@@ -509,7 +509,7 @@ mono_config_for_assembly (MonoImage *assembly)
 		got_it += mono_config_parse_file_with_context (&state, cfg);
 		g_free (cfg);
 
-#ifndef PLATFORM_WIN32
+#if defined(PLATFORM_WIN32) && !defined(TARGET_PPC)
 		cfg = g_build_filename (home, ".mono", "assemblies", aname, cfg_name, NULL);
 		got_it += mono_config_parse_file_with_context (&state, cfg);
 		g_free (cfg);

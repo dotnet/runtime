@@ -24,7 +24,7 @@ typedef struct pollfd mono_pollfd;
 
 #else
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #include <windows.h>
 #endif
 #define MONO_POLLIN		1

@@ -2361,7 +2361,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		} else {
 			slot_reg = vtable_reg;
 			call->inst.inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) +
-				(mono_method_get_vtable_index (method) * SIZEOF_VOID_P);
+				((mono_method_get_vtable_index (method)) * (SIZEOF_VOID_P));
 #ifdef MONO_ARCH_HAVE_IMT
 			if (imt_arg) {
 				g_assert (mono_method_signature (method)->generic_param_count);
@@ -4119,7 +4119,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		if (cmethod->name [0] == 'g' && strcmp (cmethod->name, "get_IsRunningOnWindows") == 0
 				&& strcmp (cmethod->klass->name, "Environment") == 0) {
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 	                EMIT_NEW_ICONST (cfg, ins, 1);
 #else
 	                EMIT_NEW_ICONST (cfg, ins, 0);

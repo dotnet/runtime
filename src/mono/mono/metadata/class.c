@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#if !PLATFORM_WIN32
+#if !HOST_WIN32
 #include <mono/io-layer/atomic.h>
 #endif
 #include <mono/metadata/image.h>
@@ -4524,7 +4524,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_UNICODE_CLASS)
 		class->unicode = 1;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_AUTO_CLASS)
 		class->unicode = 1;
 #endif
@@ -8254,6 +8254,7 @@ mono_class_generic_sharing_enabled (MonoClass *class)
 	default:
 		g_assert_not_reached ();
 	}
+	return FALSE;
 }
 
 /*

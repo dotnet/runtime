@@ -20,7 +20,7 @@
 #define socklen_t int
 #endif
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #define _wapi_accept accept 
 #define _wapi_bind bind 
 #define _wapi_connect connect 
@@ -87,5 +87,5 @@ extern int _wapi_FD_ISSET(guint32 handle, fd_set *set);
 extern void _wapi_FD_SET(guint32 handle, fd_set *set);
 #endif
 
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 

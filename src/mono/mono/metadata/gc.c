@@ -29,7 +29,7 @@
 #include <mono/metadata/attach.h>
 #include <mono/utils/mono-semaphore.h>
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <pthread.h>
 #endif
 

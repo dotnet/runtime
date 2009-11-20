@@ -21,7 +21,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strenc.h>
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 
 #include <aclapi.h>
 #include <accctrl.h>
@@ -59,12 +59,12 @@
 
 #endif /* defined(__GNUC__) */
 
-#endif /* not PLATFORM_WIN32 */
+#endif /* not HOST_WIN32 */
 
 
 /* internal functions - reuse driven */
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 
 /* ask a server to translate a SID into a textual representation */
 static gunichar2*
@@ -113,7 +113,7 @@ GetSidName (gunichar2 *server, PSID sid, gint32 *size)
 }
 
 
-#else /* not PLATFORM_WIN32 */
+#else /* not HOST_WIN32 */
 
 #define MONO_SYSCONF_DEFAULT_SIZE	((size_t) 1024)
 
@@ -267,7 +267,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
 
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	/* Note: This isn't a copy of the Token - we must not close it!!!
 	 * http://www.develop.com/kbrown/book/html/whatis_windowsprincipal.html
 	 */
@@ -291,7 +291,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 	gunichar2 *uniname = NULL;
 	gint32 size = 0;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	MONO_ARCH_SAVE_REGS;
 
 	GetTokenInformation (token, TokenUser, NULL, size, (PDWORD)&size);
@@ -312,7 +312,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 		uniname = g_utf8_to_utf16 (uname, size, NULL, NULL, NULL);
 		g_free (uname);
 	}
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 	if (size > 0) {
 		result = mono_string_new_utf16 (mono_domain_get (), uniname, size);
@@ -330,7 +330,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 gpointer
 ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	gpointer token = NULL;
 
 	MONO_ARCH_SAVE_REGS;
@@ -341,7 +341,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 	 */
 	g_warning ("Unsupported on Win32 (anyway requires W2K3 minimum)");
 
-#else /* PLATFORM_WIN32*/
+#else /* HOST_WIN32*/
 
 #ifdef HAVE_GETPWNAM_R
 	struct passwd pwd;
@@ -395,7 +395,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 {
 	MonoArray *array = NULL;
 	MonoDomain *domain = mono_domain_get (); 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	gint32 size = 0;
 
 	MONO_ARCH_SAVE_REGS;
@@ -444,7 +444,7 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken (gpoi
 
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	result = (CloseHandle (token) != 0);
 #endif
 	return result;
@@ -458,7 +458,7 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (
 
 	MONO_ARCH_SAVE_REGS;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	if (DuplicateToken (token, SecurityImpersonation, &dupe) == 0) {
 		dupe = NULL;
 	}
@@ -496,13 +496,13 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 {
 	gboolean result = FALSE;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	MONO_ARCH_SAVE_REGS;
 
 	/* The convertion from an ID to a string is done in managed code for Windows */
 	g_warning ("IsMemberOfGroupId should never be called on Win32");
 
-#else /* PLATFORM_WIN32 */
+#else /* HOST_WIN32 */
 
 #ifdef HAVE_GETGRGID_R
 	struct group grp;
@@ -537,7 +537,7 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 	g_free (fbuf);
 #endif
 
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 	return result;
 }
@@ -548,14 +548,14 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 {
 	gboolean result = FALSE;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 
 	MONO_ARCH_SAVE_REGS;
 
 	/* Windows version use a cache built using WindowsIdentity._GetRoles */
 	g_warning ("IsMemberOfGroupName should never be called on Win32");
 
-#else /* PLATFORM_WIN32 */
+#else /* HOST_WIN32 */
 	gchar *utf8_groupname;
 
 	MONO_ARCH_SAVE_REGS;
@@ -590,7 +590,7 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 #endif
 		g_free (utf8_groupname);
 	}
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 	return result;
 }
@@ -598,7 +598,7 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 
 /* Mono.Security.Cryptography IO related internal calls */
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 
 static PSID
 GetAdministratorsSid (void) 
@@ -847,13 +847,13 @@ Protect (MonoString *path, gint32 file_mode, gint32 add_dir_mode)
 	return result;
 }
 
-#endif /* not PLATFORM_WIN32 */
+#endif /* not HOST_WIN32 */
 
 
 MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *root)
 {
-#if PLATFORM_WIN32
+#if HOST_WIN32
 	gint32 flags;
 
 	MONO_ARCH_SAVE_REGS;
@@ -878,7 +878,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (Mono
 	MONO_ARCH_SAVE_REGS;
 
 	/* no one, but the owner, should have write access to the directory */
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	ret = IsMachineProtected (mono_string_chars (path));
 #else
 	ret = IsProtected (path, (S_IWGRP | S_IWOTH));
@@ -895,7 +895,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoStr
 	MONO_ARCH_SAVE_REGS;
 
 	/* no one, but the user, should have access to the directory */
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	ret = IsUserProtected (mono_string_chars (path));
 #else
 	ret = IsProtected (path, (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH));
@@ -912,7 +912,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoStri
 	MONO_ARCH_SAVE_REGS;
 
 	/* read/write to owner, read to everyone else */
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	ret = ProtectMachine (mono_string_chars (path));
 #else
 	ret = Protect (path, (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH), (S_IXUSR | S_IXGRP | S_IXOTH));
@@ -929,7 +929,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString 
 	MONO_ARCH_SAVE_REGS;
 
 	/* read/write to user, no access to everyone else */
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	ret = ProtectUser (mono_string_chars (path));
 #else
 	ret = Protect (path, (S_IRUSR | S_IWUSR), S_IXUSR);

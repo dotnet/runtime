@@ -41,7 +41,7 @@ AM_CFLAGS = \
 
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) $(GLIB_CFLAGS)
 
-if PLATFORM_WIN32
+if HOST_WIN32
 export HOST_CC
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
@@ -59,7 +59,7 @@ monoldflags=-Wl,-version-script=$(srcdir)/ldscript $(export_ldflags)
 monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono $(export_ldflags)
 endif
 
-if PLATFORM_WIN32
+if HOST_WIN32
 libmono_la_LDFLAGS=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
 else
 libmono_la_LDFLAGS=$(monoldflags)
@@ -67,7 +67,7 @@ endif
 
 if JIT_SUPPORTED
 
-if PLATFORM_WIN32
+if HOST_WIN32
 bin_PROGRAMS = mono monow
 else
 bin_PROGRAMS = mono
@@ -133,7 +133,7 @@ mono-dtrace.$(OBJEXT): $(top_srcdir)/data/mono.d mini.lo $(monodir)/mono/metadat
 endif
 
 # Create monow.exe, linked for the 'windows' subsystem
-if PLATFORM_WIN32
+if HOST_WIN32
 monow_LDADD = $(mono_LDADD)
 monow_LDFLAGS = $(mono_LDFLAGS) -mwindows
 monow_SOURCES = $(mono_SOURCES)
@@ -405,7 +405,7 @@ arch_built = cpu-hppa.h
 arch_define=__hppa__
 endif
 
-if PLATFORM_WIN32
+if HOST_WIN32
 os_sources = $(windows_sources)
 monobin_platform_ldflags=
 endif

@@ -10,7 +10,7 @@
 #include <config.h>
 #include <glib.h>
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #define DISABLE_ATTACH
 #endif
 #ifndef DISABLE_ATTACH

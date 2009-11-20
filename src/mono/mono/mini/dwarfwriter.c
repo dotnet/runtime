@@ -23,7 +23,7 @@
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/utils/mono-compiler.h>
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <mono/utils/freebsd-elf32.h>
 #include <mono/utils/freebsd-elf64.h>
 #endif

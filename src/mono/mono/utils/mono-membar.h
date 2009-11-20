@@ -186,6 +186,18 @@ static inline void mono_memory_write_barrier (void)
 {
         mono_memory_barrier ();
 }
+#elif defined(MONO_CROSS_COMPILE)
+static inline void mono_memory_barrier (void)
+{
+}
+
+static inline void mono_memory_read_barrier (void)
+{
+}
+
+static inline void mono_memory_write_barrier (void)
+{
+}
 #endif
 
 #endif	/* _MONO_UTILS_MONO_MEMBAR_H_ */

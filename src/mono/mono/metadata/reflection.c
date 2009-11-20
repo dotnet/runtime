@@ -55,6 +55,9 @@ static void* reflection_info_desc = NULL;
 #define MOVING_GC_REGISTER(addr)
 #endif
 
+static gboolean is_usertype (MonoReflectionType *ref);
+static MonoReflectionType *mono_reflection_type_resolve_user_types (MonoReflectionType *type);
+
 typedef struct {
 	char *p;
 	char *buf;
@@ -8659,13 +8662,6 @@ is_corlib_type (MonoClass *class)
 	return class->image == mono_defaults.corlib;
 }
 
-static gboolean
-is_usertype (MonoReflectionType *ref)
-{
-	MonoClass *class = mono_object_class (ref);
-	return class->image != mono_defaults.corlib || strcmp ("TypeDelegator", class->name) == 0;
-}
-
 #define check_corlib_type_cached(_class, _namespace, _name) do { \
 	static MonoClass *cached_class; \
 	if (cached_class) \
@@ -8769,20 +8765,7 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 	return NULL;
 }
 
-static MonoReflectionType*
-mono_reflection_type_resolve_user_types (MonoReflectionType *type)
-{
-	if (!type || type->type)
-		return type;
 
-	if (is_usertype (type)) {
-		type = mono_reflection_type_get_underlying_system_type (type);
-		if (is_usertype (type))
-			mono_raise_exception (mono_get_exception_not_supported ("User defined subclasses of System.Type are not yet supported22"));
-	}
-
-	return type;
-}
 
 void
 mono_reflection_create_unmanaged_type (MonoReflectionType *type)
@@ -8880,6 +8863,27 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
 }
 #endif /* !DISABLE_REFLECTION_EMIT */
 
+static gboolean
+is_usertype (MonoReflectionType *ref)
+{
+	MonoClass *class = mono_object_class (ref);
+	return class->image != mono_defaults.corlib || strcmp ("TypeDelegator", class->name) == 0;
+}
+
+static MonoReflectionType*
+mono_reflection_type_resolve_user_types (MonoReflectionType *type)
+{
+	if (!type || type->type)
+		return type;
+
+	if (is_usertype (type)) {
+		type = mono_reflection_type_get_underlying_system_type (type);
+		if (is_usertype (type))
+			mono_raise_exception (mono_get_exception_not_supported ("User defined subclasses of System.Type are not yet supported22"));
+	}
+
+	return type;
+}
 /*
  * Encode a value in a custom attribute stream of bytes.
  * The value to encode is either supplied as an object in argument val

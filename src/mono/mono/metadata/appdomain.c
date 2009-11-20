@@ -58,8 +58,7 @@
 #include <mono/utils/mono-stdlib.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/mono-error-internals.h>
-
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #include <direct.h>
 #endif
 
@@ -326,7 +325,7 @@ mono_runtime_cleanup (MonoDomain *domain)
 
 	mono_monitor_cleanup ();
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	_wapi_cleanup ();
 #endif
 }
@@ -1065,7 +1064,7 @@ set_domain_search_path (MonoDomain *domain)
 		 * The issue was reported in bug #81446
 		 */
 
-#ifndef PLATFORM_WIN32
+#ifndef TARGET_WIN32
 		gint slen;
 
 		slen = strlen (search_path);
@@ -1250,7 +1249,7 @@ get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error)
 		cache_path = mono_string_to_utf8_checked (setup->cache_path, error);
 		if (!mono_error_ok (error))
 			return NULL;
-#ifndef PLATFORM_WIN32
+#ifndef TARGET_WIN32
 		{
 			gint i;
 			for (i = strlen (cache_path) - 1; i >= 0; i--)
@@ -1310,7 +1309,7 @@ get_shadow_assembly_location (const char *filename, MonoError *error)
 static gboolean
 ensure_directory_exists (const char *filename)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	gchar *dir_utf8 = g_path_get_dirname (filename);
 	gunichar2 *p;
 	gunichar2 *dir_utf16 = NULL;

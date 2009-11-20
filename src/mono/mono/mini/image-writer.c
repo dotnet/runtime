@@ -20,7 +20,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <sys/time.h>
 #else
 #include <winsock2.h>
@@ -36,7 +36,7 @@
 
 #include "image-writer.h"
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <mono/utils/freebsd-elf32.h>
 #include <mono/utils/freebsd-elf64.h>
 #endif
@@ -97,7 +97,7 @@
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
-#if defined(TARGET_AMD64) && !defined(PLATFORM_WIN32)
+#if defined(TARGET_AMD64) && !defined(HOST_WIN32)
 #define USE_ELF_WRITER 1
 #define USE_ELF_RELA 1
 #endif
@@ -1466,7 +1466,7 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 		fprintf (acfg->fp, ".section \"%s\"\n", section_name);
 		fprintf (acfg->fp, ".subsection %d\n", subsection_index);
 	}
-#elif defined(PLATFORM_WIN32)
+#elif defined(HOST_WIN32)
 	fprintf (acfg->fp, ".section %s\n", section_name);
 #else
 	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data") || !strcmp (section_name, ".bss")) {
@@ -1504,8 +1504,6 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 
 #elif defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
-#elif defined(PLATFORM_WIN32)
-
 #else
 	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
 #endif
@@ -1515,7 +1513,7 @@ static void
 asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if  (defined(__ppc__) && defined(TARGET_ASM_APPLE)) || defined(PLATFORM_WIN32)
+#if  (defined(__ppc__) && defined(TARGET_ASM_APPLE)) || (defined(HOST_WIN32) && !defined(MONO_CROSS_COMPILE))
     // mach-o always uses a '_' prefix.
 	fprintf (acfg->fp, "\t.globl _%s\n", name);
 #else
@@ -1551,16 +1549,16 @@ static void
 asm_writer_emit_label (MonoImageWriter *acfg, const char *name)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if defined(PLATFORM_WIN32)
+#if defined(HOST_WIN32) && (defined(TARGET_X86) || defined(TARGET_AMD64))
 	fprintf (acfg->fp, "_%s:\n", name);
+#if defined(HOST_WIN32)
+	/* Emit a normal label too */
+	fprintf (acfg->fp, "%s:\n", name);
+#endif
 #else
 	fprintf (acfg->fp, "%s:\n", get_label (name));
 #endif
 
-#if defined(PLATFORM_WIN32)
-	/* Emit a normal label too */
-	fprintf (acfg->fp, "%s:\n", name);
-#endif
 }
 
 static void

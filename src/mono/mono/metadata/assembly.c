@@ -32,7 +32,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -479,7 +479,7 @@ mono_set_dirs (const char *assembly_dir, const char *config_dir)
 	mono_set_config_dir (config_dir);
 }
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 
 static char *
 compute_base (char *path)
@@ -538,7 +538,7 @@ set_dirs (char *exe)
 	g_free (mono);
 }
 
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 /**
  * mono_set_rootdir:
@@ -549,7 +549,7 @@ set_dirs (char *exe)
 void
 mono_set_rootdir (void)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	gchar *bindir, *installdir, *root, *name, *config;
 
 	name = mono_get_module_file_name ((HMODULE) &__ImageBase);
@@ -1442,7 +1442,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		return NULL;
 	}
 
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 	{
 		gchar *tmp_fn;
 		int i;
@@ -1522,7 +1522,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 	mono_assemblies_unlock ();
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	if (image->is_module_handle)
 		mono_image_fixup_vtable (image);
 #endif

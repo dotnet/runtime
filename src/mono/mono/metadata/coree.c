@@ -9,7 +9,7 @@
 
 #include <config.h>
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 
 #if _WIN32_WINNT < 0x0501
 /* Required for ACTCTX. */
@@ -923,4 +923,4 @@ mono_fixup_exe_image (MonoImage* image)
 		MonoFixupExe ((HMODULE) image->raw_data);
 }
 
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */

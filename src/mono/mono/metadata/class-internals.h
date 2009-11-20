@@ -440,7 +440,7 @@ struct MonoVTable {
 	guint32     imt_collisions_bitmap;
 	MonoRuntimeGenericContext *runtime_generic_context;
 	/* do not add any fields after vtable, the structure is dynamically extended */
-        gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
+	gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
 
 #define MONO_SIZEOF_VTABLE (sizeof (MonoVTable) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)

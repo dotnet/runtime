@@ -28,7 +28,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
 #include <mono/io-layer/io-layer.h>
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <mono/io-layer/threads.h>
 #endif
 #include <mono/metadata/object-internals.h>
@@ -785,7 +785,7 @@ gpointer mono_create_thread (WapiSecurityAttributes *security,
 {
 	gpointer res;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	DWORD real_tid;
 
 	res = CreateThread (security, stacksize, start, param, create, &real_tid);
@@ -905,7 +905,7 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
 	return;
 	/* FIXME: simplify the mess below */
-#elif !defined(PLATFORM_WIN32)
+#elif !defined(HOST_WIN32)
 	pthread_attr_t attr;
 	guint8 *current = (guint8*)&attr;
 
@@ -2179,7 +2179,7 @@ void mono_thread_current_check_pending_interrupt ()
 int  
 mono_thread_get_abort_signal (void)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	return -1;
 #else
 #ifndef	SIGRTMIN
@@ -2205,16 +2205,16 @@ mono_thread_get_abort_signal (void)
 	/* fallback to the old way */
 	return SIGRTMIN;
 #endif
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 }
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 static void CALLBACK interruption_request_apc (ULONG_PTR param)
 {
 	MonoException* exc = mono_thread_request_interruption (FALSE);
 	if (exc) mono_raise_exception (exc);
 }
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 /*
  * signal_thread_state_change
@@ -2231,7 +2231,7 @@ static void signal_thread_state_change (MonoInternalThread *thread)
 			mono_raise_exception (exc);
 	}
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	QueueUserAPC ((PAPCFUNC)interruption_request_apc, thread->handle, NULL);
 #else
 	/* fixme: store the state somewhere */
@@ -2249,7 +2249,7 @@ static void signal_thread_state_change (MonoInternalThread *thread)
 	 * make it return.
 	 */
 	wapi_interrupt_thread (thread->handle);
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 }
 
 void
@@ -2594,7 +2594,7 @@ void mono_thread_cleanup (void)
 {
 	mono_thread_hazardous_try_free_all ();
 
-#if !defined(PLATFORM_WIN32) && !defined(RUN_IN_SUBTHREAD)
+#if !defined(HOST_WIN32) && !defined(RUN_IN_SUBTHREAD)
 	/* The main thread must abandon any held mutexes (particularly
 	 * important for named mutexes as they are shared across
 	 * processes, see bug 74680.)  This will happen when the
@@ -2973,7 +2973,7 @@ void mono_thread_manage (void)
 	 * to get correct user and system times from getrusage/wait/time(1)).
 	 * This could be removed if we avoid pthread_detach() and use pthread_join().
 	 */
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	sched_yield ();
 #endif
 
@@ -3713,7 +3713,7 @@ mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local)
 	}
 }
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 static void CALLBACK dummy_apc (ULONG_PTR param)
 {
 }
@@ -3741,7 +3741,7 @@ static MonoException* mono_thread_execute_interruption (MonoInternalThread *thre
 		/* this will consume pending APC calls */
 		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
 		InterlockedDecrement (&thread_interruption_requested);
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 		/* Clear the interrupted flag of the thread so it can wait again */
 		wapi_clear_interruption ();
 #endif
@@ -3831,7 +3831,7 @@ mono_thread_request_interruption (gboolean running_managed)
 	if (thread == NULL) 
 		return NULL;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	if (thread->interrupt_on_stop && 
 		thread->state & ThreadState_StopRequested && 
 		thread->state & ThreadState_Background)
@@ -3982,7 +3982,7 @@ gint32* mono_thread_interruption_request_flag ()
 void 
 mono_thread_init_apartment_state (void)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	MonoInternalThread* thread = mono_thread_internal_current ();
 
 	/* Positive return value indicates success, either
@@ -4002,7 +4002,7 @@ mono_thread_init_apartment_state (void)
 void 
 mono_thread_cleanup_apartment_state (void)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	MonoInternalThread* thread = mono_thread_internal_current ();
 
 	if (thread && thread->apartment_state != ThreadApartmentState_Unknown) {

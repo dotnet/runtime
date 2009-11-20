@@ -75,14 +75,17 @@ case "$host" in
 	;;
 esac
 
+host_win32=no
+target_win32=no
 case "$host" in
 	*-*-mingw*|*-*-cygwin*)
-		platform_win32=yes
-		AC_DEFINE(PLATFORM_WIN32,1,[Host Platform is Win32])
-		AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
+		AC_DEFINE(HOST_WIN32,1,[Host Platform is Win32])
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
 		AC_DEFINE(PLATFORM_NO_SYMLINKS,1,[This platform does not support symlinks])
+		host_win32=yes
 		if test "x$cross_compiling" = "xno"; then
+			target_win32=yes
+			AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
 			CC="gcc -mno-cygwin -g"
 			CXX="g++ -mno-cygwin -g"
 			# So libgc configure gets -mno-cygwin
@@ -104,7 +107,7 @@ case "$host" in
 		libgc_configure_args="$libgc_configure_args --enable-win32-dllmain=yes"
 		;;
 	*-*-*netbsd*)
-		platform_win32=no
+		host_win32=no
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DGC_NETBSD_THREADS -D_GNU_SOURCE"
 		libmono_cflags="-D_REENTRANT"
 		LDFLAGS="$LDFLAGS -pthread"
@@ -117,7 +120,7 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-*freebsd*)
-		platform_win32=no
+		host_win32=no
 		if test "x$PTHREAD_CFLAGS" = "x"; then
 			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
 			libmono_cflags=
@@ -146,7 +149,7 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-*openbsd*)
-		platform_win32=no
+		host_win32=no
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_FREEBSD_THREADS -DPLATFORM_BSD"
 		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
@@ -158,7 +161,7 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-linux*)
-		platform_win32=no
+		host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
 			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
@@ -171,7 +174,7 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-hpux*)
-	        platform_win32=no
+	        host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
 		# +ESdbgasm only valid on bundled cc on RISC
 		# silently ignored for ia64
@@ -190,7 +193,7 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-solaris*)
-		platform_win32=no
+		host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DPLATFORM_SOLARIS"
 		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
@@ -202,7 +205,7 @@ case "$host" in
 		;;
 	*-*-darwin*)
 		parallel_mark="Disabled_Currently_Hangs_On_MacOSX"
-		platform_win32=no
+		host_win32=no
 		platform_darwin=yes
 		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE -DGC_MACOSX_THREADS -DPLATFORM_MACOSX -DUSE_MMAP -DUSE_MUNMAP"
 		CPPFLAGS="$CPPFLAGS -DGetCurrentProcess=MonoGetCurrentProcess -DGetCurrentThread=MonoGetCurrentThread -DCreateEvent=MonoCreateEvent"
@@ -238,7 +241,7 @@ case "$host" in
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])
-		platform_win32=no
+		host_win32=no
 		libdl="-ldl"
 		;;
 esac
@@ -248,7 +251,8 @@ if test x$need_link_unlink = xyes; then
    AC_DEFINE(NEED_LINK_UNLINK, 1, [Define if Unix sockets cannot be created in an anonymous namespace])
 fi
 
-AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
+AM_CONDITIONAL(HOST_WIN32, test x$host_win32 = xyes)
+AM_CONDITIONAL(TARGET_WIN32, test x$target_win32 = xyes)
 AM_CONDITIONAL(PLATFORM_LINUX, echo x$target_os | grep -q linux)
 AM_CONDITIONAL(PLATFORM_DARWIN, test x$platform_darwin = xyes)
 AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
@@ -290,7 +294,7 @@ AC_SUBST(HOST_CC)
 AC_SUBST(BUILD_EXEEXT)
 
 AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
-AM_CONDITIONAL(USE_BATCH_FILES, [test x$platform_win32 = xyes -a x$cross_compiling = xyes])
+AM_CONDITIONAL(USE_BATCH_FILES, [test x$host_win32 = xyes -a x$cross_compiling = xyes])
 
 # Set STDC_HEADERS
 AC_HEADER_STDC
@@ -542,7 +546,7 @@ AC_SUBST(BUILD_GLIB_CFLAGS)
 AC_SUBST(BUILD_GLIB_LIBS)
 AC_SUBST(eglib_dir)
 
-if test x$cross_compiling$platform_win32 = xnoyes; then
+if test x$cross_compiling$host_win32 = xnoyes; then
    AC_MSG_CHECKING(for cygwin glib2-dev package)
    if [ cygcheck --f /usr/lib/libglib-2.0.dll.a | grep -q glib2-devel ]; then
       AC_MSG_RESULT(found)
@@ -579,7 +583,7 @@ if test "x$enable_static" = "xno"; then
    with_static_mono=no
 fi
 
-if test "x$platform_win32" = "xyes"; then
+if test "x$host_win32" = "xyes"; then
    # Boehm GC requires the runtime to be in its own dll
    with_static_mono=no
 fi
@@ -871,7 +875,7 @@ AC_TRY_COMPILE([
 	AC_DEFINE_UNQUOTED(MONO_ZERO_LEN_ARRAY, 1, [Length of zero length arrays])
 ])
 
-if test x$platform_win32 = xno; then
+if test x$target_win32 = xno; then
 
 	dnl hires monotonic clock support
 	AC_SEARCH_LIBS(clock_gettime, rt)
@@ -1765,12 +1769,12 @@ else
     AC_MSG_RESULT(has been disabled)
 fi
 
-if test "x$platform_win32" = "xyes"; then
+if test "x$host_win32" = "xyes"; then
     AC_DEFINE(HAVE_CRYPT_RNG)
 fi
 
 if test "x$ac_cv_have_dev_random" = "xno" \
-    && test "x$platform_win32" = "xno"; then
+    && test "x$host_win32" = "xno"; then
     AC_MSG_WARN([[
 ***
 *** A system-provided entropy source was not found on this system.
@@ -2449,7 +2453,7 @@ fi
 AC_SUBST(mono_runtime)
 
 mono_cfg_root=$mono_build_root/runtime
-if test x$platform_win32 = xyes; then
+if test x$host_win32 = xyes; then
   if test "x$cross_compiling" = "xno"; then
     mono_cfg_dir=`cygpath -w -a $mono_cfg_root`\\etc
   else
@@ -2640,7 +2644,7 @@ msvc/Makefile
 po/Makefile
 ])
 
-if test x$platform_win32 = xyes; then
+if test x$host_win32 = xyes; then
    # Get rid of 'cyg' prefixes in library names
    sed -e "s/\/cyg\//\/\//" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
    # libtool seems to inherit -mno-cygwin from our CFLAGS, and uses it to compile its executable
@@ -2696,7 +2700,7 @@ fi
 	echo "PLATFORM = darwin" >> $srcdir/$mcsdir/build/config.make
   fi
 
-  if test x$TARGET = xAMD64 -a x$platform_win32 = xno -a "x$AOT_SUPPORTED" = "xyes"; then
+  if test x$TARGET = xAMD64 -a x$host_win32 = xno -a "x$AOT_SUPPORTED" = "xyes"; then
   	 echo "ENABLE_AOT = 1" >> $srcdir/$mcsdir/build/config.make
   fi
 
@@ -2748,7 +2752,7 @@ echo "
 	$disabled
 
 "
-if test x$with_static_mono = xno -a "x$platform_win32" != "xyes"; then
+if test x$with_static_mono = xno -a "x$host_win32" != "xyes"; then
    AC_MSG_WARN(Turning off static Mono is a risk, you might run into unexpected bugs)
 fi
 

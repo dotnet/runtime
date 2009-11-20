@@ -21,7 +21,6 @@
  *   - every shared method has a MonoGenericJitInfo structure which is only really
  *     used for handling catch clauses with open types, not a very common use case.
  */
-
 #include "config.h"
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
@@ -33,7 +32,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #include <sys/time.h>
 #else
 #include <winsock2.h>
@@ -42,6 +41,7 @@
 
 #include <errno.h>
 #include <sys/stat.h>
+
 
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
@@ -72,7 +72,7 @@
 #define TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define TV_ELAPSED(start,end) (((end) - (start)) / 10)
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 #define SHARED_EXT ".dll"
 #elif defined(__ppc__) && defined(__MACH__)
 #define SHARED_EXT ".dylib"
@@ -3519,6 +3519,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->nodebug = TRUE;
 		} else if (str_begins_with (arg, "ntrampolines=")) {
 			opts->ntrampolines = atoi (arg + strlen ("ntrampolines="));
+		} else if (str_begins_with (arg, "autoreg")) {
+			opts->autoreg = TRUE;
 		} else if (str_begins_with (arg, "tool-prefix=")) {
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "autoreg")) {
@@ -5044,6 +5046,20 @@ emit_autoreg (MonoAotCompile *acfg)
 	img_writer_emit_unset_mode (acfg->w);
 
 	fprintf (acfg->fp,
+#if  1 
+			 ".section	.ctors,\"aw\",@progbits\n"
+			 ".align 2\n"
+			 ".globl	%s\n"
+			 ".long	%s\n"
+			 ".section	.opd,\"aw\"\n"
+			 ".align 2\n"
+			 "%s:\n"
+			 ".long	.%s,.TOC.@tocbase32\n"
+			 ".size	%s,.-%s\n"
+			 ".section .text\n"
+			 ".type	.%s,@function\n"
+			 ".%s:\n", symbol, symbol, symbol, symbol, symbol, symbol, symbol, symbol);
+#else
 			 ".section	.ctors,\"aw\",@progbits\n"
 			 ".align 2\n"
 			 ".globl	%1$s\n"
@@ -5055,8 +5071,9 @@ emit_autoreg (MonoAotCompile *acfg)
 			 ".size	%1$s,.-%1$s\n"
 			 ".section .text\n"
 			 ".type	.%1$s,@function\n"
-			 ".%1$s:\n"
-			 , symbol);
+			 ".%1$s:\n", symbol);
+#endif
+
 
 	fprintf (acfg->fp,
 			 "stdu 1,-128(1)\n"
@@ -5075,9 +5092,13 @@ emit_autoreg (MonoAotCompile *acfg)
 			 "mr 1,11\n"
 			 "blr\n"
 			 );
-
+#if 1
+		fprintf (acfg->fp,
+			 ".size	.%s,.-.%s\n", symbol, symbol);
+#else
 	fprintf (acfg->fp,
 			 ".size	.%1$s,.-.%1$s\n", symbol);
+#endif
 #else
 	g_assert_not_reached ();
 #endif
@@ -5339,7 +5360,7 @@ compile_asm (MonoAotCompile *acfg)
 	command = g_strdup_printf ("ld -shared -G -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(__ppc__) && defined(__MACH__)
 	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-#elif defined(PLATFORM_WIN32)
+#elif defined(HOST_WIN32)
 	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #else
 	command = g_strdup_printf ("%sld %s %s -shared -o %s %s.o", tool_prefix, EH_LD_OPTIONS, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);

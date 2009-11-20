@@ -188,7 +188,7 @@ socket_io_cleanup (SocketIOData *data)
 
 	EnterCriticalSection (&data->io_lock);
 	data->inited = 0;
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	closesocket (data->pipe [0]);
 	closesocket (data->pipe [1]);
 #else
@@ -515,7 +515,7 @@ socket_io_poll_main (gpointer p)
 				for (; i < allocated; i++)
 					INIT_POLLFD (&pfds [i], -1, 0);
 			}
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 			nread = read (data->pipe [0], one, 1);
 #else
 			nread = recv ((SOCKET) data->pipe [0], one, 1, 0);
@@ -709,7 +709,7 @@ mono_thread_pool_remove_socket (int sock)
 	}
 }
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 static void
 connect_hack (gpointer x)
 {
@@ -729,7 +729,7 @@ connect_hack (gpointer x)
 static void
 socket_io_init (SocketIOData *data)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	struct sockaddr_in server;
 	struct sockaddr_in client;
 	SOCKET srv;
@@ -762,7 +762,7 @@ socket_io_init (SocketIOData *data)
 	data->epoll_disabled = TRUE;
 #endif
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	if (data->epoll_disabled) {
 		if (pipe (data->pipe) != 0) {
 			int err = errno;
@@ -824,7 +824,7 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 	SocketIOData *data = &socket_io_data;
 	int w;
 
-#if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD) || defined(PLATFORM_WIN32) || defined(PLATFORM_SOLARIS)
+#if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD) || defined(HOST_WIN32) || defined(PLATFORM_SOLARIS)
 	/* select() for connect() does not work well on the Mac. Bug #75436. */
 	/* Bug #77637 for the BSD 6 case */
 	/* Bug #78888 for the Windows case */
@@ -851,7 +851,7 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 	mono_g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (state->handle), list);
 	LeaveCriticalSection (&data->io_lock);
 	*msg = (char) state->operation;
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	w = write (data->pipe [1], msg, 1);
 	w = w;
 #else

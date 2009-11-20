@@ -299,6 +299,16 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 #define MONO_ARCH_USE_SIGACTION 1
 #elif defined(__FreeBSD__)
 #define MONO_ARCH_USE_SIGACTION 1
+#elif defined(MONO_CROSS_COMPILE)
+	typedef MonoContext ucontext_t;
+/*	typedef struct {
+		int dummy;
+	} ucontext_t;*/
+	#define UCONTEXT_REG_Rn(ctx, n)
+	#define UCONTEXT_REG_FPRn(ctx, n)
+	#define UCONTEXT_REG_NIP(ctx)
+	#define UCONTEXT_REG_LNK(ctx)
+
 #else
 /* For other operating systems, we pull the definition from an external file */
 #include "mini-ppc-os.h"
@@ -312,7 +322,7 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 
 #ifdef __mono_ppc64__
 #define MONO_PPC_32_64_CASE(c32,c64)	c64
-extern void mono_ppc_emitted (guint8 *code, ssize_t length, const char *format, ...);
+extern void mono_ppc_emitted (guint8 *code, gint64 length, const char *format, ...);
 #else
 #define MONO_PPC_32_64_CASE(c32,c64)	c32
 #endif

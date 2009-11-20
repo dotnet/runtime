@@ -3,7 +3,7 @@ INCLUDES = 				\
 	$(LIBGC_CFLAGS)			\
 	$(GLIB_CFLAGS)
 
-if PLATFORM_WIN32
+if HOST_WIN32
 export HOST_CC
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them

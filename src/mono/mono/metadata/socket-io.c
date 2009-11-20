@@ -20,7 +20,7 @@
 #include <errno.h>
 
 #include <sys/types.h>
-#ifndef PLATFORM_WIN32 
+#ifndef HOST_WIN32 
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
@@ -69,7 +69,7 @@
 
 #include "mono/io-layer/socket-wrappers.h"
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 /* This is a kludge to make this file build under cygwin:
  * w32api/ws2tcpip.h has definitions for some AF_INET6 values and
  * prototypes for some but not all required functions (notably
@@ -843,7 +843,7 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock,
 	MONO_ARCH_SAVE_REGS;
 
 	*error = 0;
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	{
 		MonoInternalThread* curthread = mono_thread_internal_current ();
 		curthread->interrupt_on_stop = (gpointer)TRUE;
@@ -1240,7 +1240,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1) {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		*error = WSAGetLastError ();
 #else
 		*error = errno_to_WSA (errno, __func__);
@@ -1390,7 +1390,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 		return (0);
 	}
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	{
 		MonoInternalThread* curthread = mono_thread_internal_current ();
 		curthread->interrupt_on_stop = (gpointer)TRUE;
@@ -1688,7 +1688,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 	} while (ret == -1 && errno == EINTR);
 	
 	if (ret == -1) {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		*error = WSAGetLastError ();
 #else
 		*error = errno_to_WSA (errno, __func__);

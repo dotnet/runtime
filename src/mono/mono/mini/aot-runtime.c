@@ -19,7 +19,7 @@
 #include <sys/mman.h>
 #endif
 
-#if PLATFORM_WIN32
+#if HOST_WIN32
 #include <winsock2.h>
 #include <windows.h>
 #endif
@@ -61,7 +61,7 @@
 
 #ifndef DISABLE_AOT
 
-#ifdef PLATFORM_WIN32
+#ifdef TARGET_WIN32
 #define SHARED_EXT ".dll"
 #elif ((defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__)) || defined(__MACH__)) && !defined(__linux__)
 #define SHARED_EXT ".dylib"
@@ -715,7 +715,7 @@ create_cache_structure (void)
 	tmp = g_build_filename (home, ".mono", NULL);
 	if (!g_file_test (tmp, G_FILE_TEST_IS_DIR)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT creating directory %s", tmp);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		err = mkdir (tmp);
 #else
 		err = mkdir (tmp, 0777);
@@ -730,7 +730,7 @@ create_cache_structure (void)
 	tmp = g_build_filename (home, ".mono", "aot-cache", NULL);
 	if (!g_file_test (tmp, G_FILE_TEST_IS_DIR)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT creating directory %s", tmp);
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 		err = mkdir (tmp);
 #else
 		err = mkdir (tmp, 0777);
@@ -799,7 +799,7 @@ load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
 
 			res = g_spawn_command_line_sync (cmd, &out, &err, &exit_status, NULL);
 
-#if !defined(PLATFORM_WIN32) && !defined(__ppc__) && !defined(__ppc64__) && !defined(__powerpc__)
+#if !defined(HOST_WIN32) && !defined(__ppc__) && !defined(__ppc64__) && !defined(__powerpc__)
 			if (res) {
 				if (!WIFEXITED (exit_status) && (WEXITSTATUS (exit_status) == 0))
 					mono_trace (G_LOG_LEVEL_MESSAGE, MONO_TRACE_AOT, "AOT failed: %s.", err);
@@ -1079,7 +1079,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "plt_end", (gpointer*)&amodule->plt_end);
 
 	if (make_unreadable) {
-#ifndef PLATFORM_WIN32
+#ifndef TARGET_WIN32
 		guint8 *addr;
 		guint8 *page_start;
 		int pages, err, len;

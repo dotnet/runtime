@@ -653,8 +653,9 @@ mono_arch_cpu_init (void)
 #elif defined(G_COMPILER_CODEWARRIOR)
 	cachelinesize = 32;
 	cachelineinc = 32;
+#elif defined(MONO_CROSS_COMPILE)
 #else
-#warning Need a way to get cache line size
+//#error Need a way to get cache line size
 #endif
 	if (!cachelinesize)
 		cachelinesize = 32;
@@ -5548,7 +5549,7 @@ setup_tls_access (void)
 		conf_size = confstr ( _CS_GNU_LIBPTHREAD_VERSION, confbuf, sizeof(confbuf));
 		if ((conf_size > 4) && (strncmp (confbuf, "NPTL", 4) == 0))
 			tls_mode = TLS_MODE_NPTL;
-#else
+#elif !defined(TARGET_PS3)
 		ins = (guint32*)pthread_getspecific;
 		/* uncond branch to the real method */
 		if ((*ins >> 26) == 18) {
@@ -5622,6 +5623,7 @@ setup_tls_access (void)
 		}
 #endif
 	}
+#ifndef TARGET_PS3
 	if (tls_mode == TLS_MODE_DETECT)
 		tls_mode = TLS_MODE_FAILED;
 	if (tls_mode == TLS_MODE_FAILED)
@@ -5657,6 +5659,7 @@ setup_tls_access (void)
 			lmf_pthread_key = ptk;
 		}
 	}
+#endif
 }
 
 void

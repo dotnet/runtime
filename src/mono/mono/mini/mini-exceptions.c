@@ -1768,7 +1768,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 
 	/* Try to get more meaningful information using gdb */
 
-#if !defined(PLATFORM_WIN32) && defined(HAVE_SYS_SYSCALL_H) && defined(SYS_fork)
+#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && defined(SYS_fork)
 	if (!mini_get_debug_options ()->no_gdb_backtrace && !mono_debug_using_mono_debugger ()) {
 		/* From g_spawn_command_line_sync () in eglib */
 		int res;
@@ -1874,7 +1874,7 @@ mono_print_thread_dump (void *sigctx)
 	else
 		g_string_append (text, "\n\"<unnamed thread>\"");
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	wapi_desc = wapi_current_thread_desc ();
 	g_string_append_printf (text, " tid=0x%p this=0x%p %s\n", (gpointer)(gsize)thread->tid, thread,  wapi_desc);
 	free (wapi_desc);

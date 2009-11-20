@@ -24,7 +24,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 #include <stdlib.h>
 #endif
 
@@ -75,8 +75,7 @@
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 
-
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 #include <windows.h>
 #include <shlobj.h>
 #endif
@@ -4182,7 +4181,7 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 
 	replace_shadow_path (domain, dirname, &absolute);
 	g_free (dirname);
-#if PLATFORM_WIN32
+#if HOST_WIN32
 	{
 		gint i;
 		for (i = strlen (absolute) - 1; i >= 0; i--)
@@ -4194,7 +4193,7 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 		uri = g_filename_to_uri (absolute, NULL, NULL);
 	} else {
 		const char *prepend = "file://";
-#if PLATFORM_WIN32
+#if HOST_WIN32
 		if (*absolute == '/' && *(absolute + 1) == '/') {
 			prepend = "file:";
 		} else {
@@ -4870,7 +4869,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 
 		codebase = g_strdup (absolute);
 
-#if PLATFORM_WIN32
+#if HOST_WIN32
 		{
 			gint i;
 			for (i = strlen (codebase) - 1; i >= 0; i--)
@@ -5281,7 +5280,7 @@ ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModule *module
 static gpointer
 ves_icall_System_Reflection_Module_GetHINSTANCE (MonoReflectionModule *module)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	if (module->image && module->image->is_module_handle)
 		return module->image->raw_data;
 #endif
@@ -5763,7 +5762,7 @@ ves_icall_System_Delegate_SetMulticastInvoke (MonoDelegate *this)
  */
 #define FILETIME_ADJUST ((guint64)504911232000000000LL)
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 /* convert a SYSTEMTIME which is of the form "last thursday in october" to a real date */
 static void
 convert_to_absolute_date(SYSTEMTIME *date)
@@ -5793,7 +5792,7 @@ convert_to_absolute_date(SYSTEMTIME *date)
 }
 #endif
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 /*
  * Return's the offset from GMT of a local time.
  * 
@@ -5833,7 +5832,7 @@ gmt_offset(struct tm *tm, time_t t)
 static guint32
 ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray **data, MonoArray **names)
 {
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	MonoDomain *domain = mono_domain_get ();
 	struct tm start, tt;
 	time_t t;
@@ -6137,7 +6136,7 @@ ves_icall_System_Environment_get_UserName (void)
 static MonoString *
 ves_icall_System_Environment_get_MachineName (void)
 {
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 	gunichar2 *buf;
 	guint32 len;
 	MonoString *result;
@@ -6169,7 +6168,7 @@ ves_icall_System_Environment_get_MachineName (void)
 static int
 ves_icall_System_Environment_get_Platform (void)
 {
-#if defined (PLATFORM_WIN32)
+#if defined (TARGET_WIN32)
 	/* Win32NT */
 	return 2;
 #elif defined(__MACH__)
@@ -6197,7 +6196,7 @@ ves_icall_System_Environment_get_NewLine (void)
 {
 	MONO_ARCH_SAVE_REGS;
 
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 	return mono_string_new (mono_domain_get (), "\r\n");
 #else
 	return mono_string_new (mono_domain_get (), "\n");
@@ -6248,7 +6247,7 @@ char **environ;
 static MonoArray *
 ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	MonoArray *names;
 	MonoDomain *domain;
 	MonoString *str;
@@ -6341,8 +6340,8 @@ static void
 ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, MonoString *value)
 {
 	MonoError error;
+#ifdef HOST_WIN32
 
-#ifdef PLATFORM_WIN32
 	gunichar2 *utf16_name, *utf16_value;
 #else
 	gchar *utf8_name, *utf8_value;
@@ -6350,7 +6349,7 @@ ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, M
 
 	MONO_ARCH_SAVE_REGS;
 	
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	utf16_name = mono_string_to_utf16 (name);
 	if ((value == NULL) || (mono_string_length (value) == 0) || (mono_string_chars (value)[0] == 0)) {
 		SetEnvironmentVariable (utf16_name, NULL);
@@ -6412,7 +6411,7 @@ ves_icall_System_Environment_GetGacPath (void)
 static MonoString*
 ves_icall_System_Environment_GetWindowsFolderPath (int folder)
 {
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 	#ifndef CSIDL_FLAG_CREATE
 		#define CSIDL_FLAG_CREATE	0x8000
 	#endif
@@ -6585,7 +6584,7 @@ ves_icall_System_Environment_get_HasShutdownStarted (void)
 static void
 ves_icall_System_Environment_BroadcastSettingChange (void)
 {
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	SendMessageTimeout (HWND_BROADCAST, WM_SETTINGCHANGE, NULL, L"Environment", SMTO_ABORTIFHUNG, 2000, 0);
 #endif
 }
@@ -6764,7 +6763,7 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 
 	path = g_build_path (G_DIR_SEPARATOR_S, mono_get_config_dir (), "mono", mono_get_runtime_info ()->framework_version, "machine.config", NULL);
 
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 	/* Avoid mixing '/' and '\\' */
 	{
 		gint i;
@@ -6804,7 +6803,7 @@ ves_icall_System_Web_Util_ICalls_get_machine_install_dir (void)
 
 	path = g_path_get_dirname (mono_get_config_dir ());
 
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 	/* Avoid mixing '/' and '\\' */
 	{
 		gint i;
@@ -6856,10 +6855,10 @@ ves_icall_System_Diagnostics_Debugger_IsAttached_internal (void)
 static void
 ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (MonoString *message)
 {
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 	OutputDebugString (mono_string_chars (message));
 #else
-	g_warning ("WriteWindowsDebugString called and PLATFORM_WIN32 not defined!\n");
+	g_warning ("WriteWindowsDebugString called and HOST_WIN32 not defined!\n");
 #endif
 }
 
@@ -7818,7 +7817,7 @@ mono_create_icall_signature (const char *sigstr)
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, len - 1);
 	res->pinvoke = 1;
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	/* 
 	 * Under windows, the default pinvoke calling convention is STDCALL but
 	 * we need CDECL.

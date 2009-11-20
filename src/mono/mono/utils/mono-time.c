@@ -10,7 +10,7 @@
 
 #define MTICKS_PER_SEC 10000000
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #include <windows.h>
 
 guint32

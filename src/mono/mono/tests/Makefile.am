@@ -389,7 +389,7 @@ endif
 
 if X86
 
-if PLATFORM_WIN32
+if HOST_WIN32
 PLATFORM_DISABLED_TESTS=async-exc-compilation.exe
 endif
 
@@ -512,7 +512,7 @@ test_platform:	testbundle
 else
 # Can't use mkbundle on win32 since there is no static build there
 # Can't run test-unhandled-exception on Windows because of all the debug popups...
-if PLATFORM_WIN32
+if HOST_WIN32
 test_platform:
 else
 test_platform:	testbundle test-iomap-regression
@@ -855,7 +855,7 @@ noinst_LTLIBRARIES = libtest.la
 
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
 
-if PLATFORM_WIN32
+if HOST_WIN32
 # gcc-3.4.4 emits incorrect code when making indirect calls to stdcall functions using a tail call
 # This shows up when compiling mono_test_marshal_delegate ()
 libtest_la_CFLAGS=-fno-optimize-sibling-calls

@@ -222,7 +222,7 @@ mono_gc_register_thread (void *baseptr)
 #else
 	if (mono_gc_is_gc_thread())
 		return TRUE;
-#if defined(USE_INCLUDED_LIBGC) && !defined(PLATFORM_WIN32)
+#if defined(USE_INCLUDED_LIBGC) && !defined(HOST_WIN32)
 	return GC_thread_register_foreign (baseptr);
 #else
 	return FALSE;
@@ -302,7 +302,7 @@ mono_gc_register_root (char *start, size_t size, void *descr)
 void
 mono_gc_deregister_root (char* addr)
 {
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	/* FIXME: libgc doesn't define this work win32 for some reason */
 	/* FIXME: No size info */
 	GC_remove_roots (addr, addr + sizeof (gpointer) + 1);

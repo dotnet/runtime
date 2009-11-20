@@ -104,7 +104,7 @@ static int array_size = 16;
 static __thread gsize tls_pthread_self MONO_TLS_FAST;
 #endif
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #ifdef HAVE_KW_THREAD
 #define GetCurrentThreadId() tls_pthread_self
 #else
@@ -136,7 +136,7 @@ mono_monitor_cleanup (void)
 void
 mono_monitor_init_tls (void)
 {
-#if !defined(PLATFORM_WIN32) && defined(HAVE_KW_THREAD)
+#if !defined(HOST_WIN32) && defined(HAVE_KW_THREAD)
 	tls_pthread_self = pthread_self ();
 #endif
 }
