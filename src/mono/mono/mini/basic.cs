@@ -1352,4 +1352,11 @@ class Tests {
 		return 0;
 	}
 
+	public static unsafe int test_0_ishr_sign_extend_cfold () {
+		int i = 32768;
+		int j = i << 16;
+		int k = j >> 16;
+
+		return k == -32768 ? 0 : 1;
+	}
 }
