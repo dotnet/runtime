@@ -564,7 +564,7 @@ BUILT_SOURCES = version.h
 endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
-EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
+EXTRA_DIST = $(common_BURGSRC) TestDriver.cs ldscript ldscript.mono \
 	genmdesc.pl	\
 	$(test_sources) \
 	$(x86_sources) cpu-x86.md \
