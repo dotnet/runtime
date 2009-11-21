@@ -120,6 +120,7 @@ static int methods_with_llvm, methods_without_llvm;
  * Changes when this flag is set include:
  * - a per method vtable trampoline is used to handle virtual calls, instead of only
  *   one trampoline.
+ * - fast generic virtual calls are not supported.
  */
 #ifdef ENABLE_LLVM
 gboolean mono_use_llvm = TRUE;
