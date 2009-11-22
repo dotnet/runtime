@@ -3508,6 +3508,9 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (cfg->generic_sharing_context)
 		return FALSE;
 
+	if (cfg->inline_depth > 10)
+		return FALSE;
+
 #ifdef MONO_ARCH_HAVE_LMF_OPS
 	if (((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 		 (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) &&
@@ -4328,6 +4331,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_inlined_method = cfg->inlined_method;
 	cfg->inlined_method = cmethod;
 	cfg->ret_var_set = FALSE;
+	cfg->inline_depth ++;
 	prev_real_offset = cfg->real_offset;
 	prev_cbb_hash = cfg->cbb_hash;
 	prev_cil_offset_to_bb = cfg->cil_offset_to_bb;
@@ -4354,6 +4358,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->current_method = prev_current_method;
 	cfg->generic_context = prev_generic_context;
 	cfg->ret_var_set = prev_ret_var_set;
+	cfg->inline_depth --;
 
 	if ((costs >= 0 && costs < 60) || inline_allways) {
 		if (cfg->verbose_level > 2)
