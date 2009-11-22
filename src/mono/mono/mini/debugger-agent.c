@@ -40,6 +40,18 @@
 #include <ucontext.h>
 #endif
 
+#ifdef HOST_WIN32
+#include <ws2tcpip.h>
+#ifdef __GNUC__
+/* cygwin's headers do not seem to define these */
+void WSAAPI freeaddrinfo (struct addrinfo*);
+int WSAAPI getaddrinfo (const char*,const char*,const struct addrinfo*,
+                        struct addrinfo**);
+int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
+                       char*,DWORD,int);
+#endif
+#endif
+
 #ifdef PLATFORM_ANDROID
 #include <linux/in.h>
 #include <linux/tcp.h>
@@ -2487,7 +2499,7 @@ static void
 end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 {
 	int i;
-#ifdef HOST_WIN32
+#if defined(HOST_WIN32) && !defined(__GNUC__)
 	gpointer stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));
 #else
 	gpointer stackptr = __builtin_frame_address (0);
