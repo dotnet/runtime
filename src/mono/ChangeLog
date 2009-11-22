@@ -1,3 +1,7 @@
+2009-11-22  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Disable visibility attributes on cygwin.
+
 2009-11-18  Mark Probst  <mark.probst@gmail.com>
 
 	* scripts/Makefile.am: Put mono-heapviz into EXTRA_DIST as well.
