@@ -128,11 +128,11 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 extern MonoString *
 ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 				      MonoString *path_with_pattern,
-				      gint attrs, gint mask,
+				      gint32 *result_mask,
 				      gint32 *error,
 				      gpointer *handle) MONO_INTERNAL;
 extern MonoString *
-ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_mask, gint32 *error) MONO_INTERNAL;
 
 extern int
 ves_icall_System_IO_MonoIO_FindClose (gpointer handle) MONO_INTERNAL;

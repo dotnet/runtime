@@ -387,7 +387,6 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 
 typedef struct {
 	MonoDomain *domain;
-	gint attrs, mask;
 	gchar *utf8_path;
 	HANDLE find_handle;
 } IncrementalFind;
@@ -401,9 +400,6 @@ incremental_find_check_match (IncrementalFind *handle, WIN32_FIND_DATA *data, Mo
 	if ((data->cFileName[0] == '.' && data->cFileName[1] == 0) || (data->cFileName[0] == '.' && data->cFileName[1] == '.' && data->cFileName[2] == 0))
 		return FALSE;
 
-	if ((data->dwFileAttributes & handle->mask) != handle->attrs)
-		return FALSE;
-	
 	utf8_result = g_utf16_to_utf8 (data->cFileName, -1, NULL, NULL, NULL);
 	if (utf8_result == NULL) 
 		return FALSE;
@@ -419,8 +415,7 @@ incremental_find_check_match (IncrementalFind *handle, WIN32_FIND_DATA *data, Mo
 MonoString *
 ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 				      MonoString *path_with_pattern,
-				      gint attrs, gint mask,
-				      gint32 *error,
+				      gint32 *result_attr, gint32 *error,
 				      gpointer *handle)
 {
 	WIN32_FIND_DATA data;
@@ -429,7 +424,6 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 	MonoString *result;
 	
 	*error = ERROR_SUCCESS;
-	mask = convert_attrs (mask);
 	
 	find_handle = FindFirstFile (mono_string_chars (path_with_pattern), &data);
 	
@@ -446,8 +440,6 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 
 	ifh = g_new (IncrementalFind, 1);
 	ifh->find_handle = find_handle;
-	ifh->mask = mask;
-	ifh->attrs = attrs;
 	ifh->utf8_path = mono_string_to_utf8 (path);
 	ifh->domain = mono_domain_get ();
 	*handle = ifh;
@@ -460,12 +452,13 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 			return NULL;
 		}
 	}
-
+	*result_attr = data.dwFileAttributes;
+	
 	return result;
 }
 
 MonoString *
-ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *error)
+ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_attr, gint32 *error)
 {
 	IncrementalFind *ifh = handle;
 	WIN32_FIND_DATA data;
@@ -481,6 +474,7 @@ ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *error)
 		}
 	} while (incremental_find_check_match (ifh, &data, &result) == 0);
 
+	*result_attr = data.dwFileAttributes;
 	return result;
 }
 
