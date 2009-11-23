@@ -195,28 +195,29 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 #endif
 
 /**
- * mono_magic_trampoline:
+ * common_call_trampoline:
  *
- *   This trampoline handles calls from JITted code.
+ *   The code to handle normal, virtual, and interface method calls and jumps, both
+ * from JITted and LLVM compiled code.
  */
-gpointer
-mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
+static gpointer
+common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp, MonoVTable *vt, gpointer *vtable_slot, gboolean need_rgctx_tramp)
 {
 	gpointer addr;
-	gpointer *vtable_slot;
 	gboolean generic_shared = FALSE;
 	MonoMethod *m;
 	MonoMethod *declaring = NULL;
 	MonoMethod *generic_virtual = NULL;
 	int context_used;
 	gboolean proxy = FALSE;
-	gboolean need_rgctx_tramp = FALSE;
+	gpointer *orig_vtable_slot;
 
 	m = arg;
 
+	orig_vtable_slot = vtable_slot;
+
 	if (m == MONO_FAKE_VTABLE_METHOD) {
 		int displacement;
-		MonoVTable *vt = mono_arch_get_vcall_slot (code, regs, &displacement);
 		if (!vt) {
 			int i;
 			MonoJitInfo *ji;
@@ -230,13 +231,13 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 			printf ("\n");
 			g_assert (vt);
 		}
+		displacement = (guint8*)vtable_slot - (guint8*)vt;
 		if (displacement > 0) {
-			displacement -= G_STRUCT_OFFSET (MonoVTable, vtable);
-			g_assert (displacement >= 0);
-			displacement /= sizeof (gpointer);
+			int slot = (displacement - G_STRUCT_OFFSET (MonoVTable, vtable)) / sizeof (gpointer);
+			g_assert (slot >= 0);
 
 			/* Avoid loading metadata or creating a generic vtable if possible */
-			addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, displacement);
+			addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot);
 			if (addr)
 				addr = mono_create_ftnptr (mono_domain_get (), addr);
 			if (addr && !vt->klass->valuetype) {
@@ -248,7 +249,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 				return addr;
 			}
 
-			m = mono_class_get_vtable_entry (vt->klass, displacement);
+			m = mono_class_get_vtable_entry (vt->klass, slot);
 			if (mono_method_needs_static_rgctx_invoke (m, FALSE))
 				need_rgctx_tramp = TRUE;
 
@@ -271,7 +272,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 		 * needs the signature to be able to find the this argument
 		 */
 		m = mono_arch_find_imt_method (regs, code);
-		vtable_slot = mono_get_vcall_slot_addr (code, regs);
+		vtable_slot = orig_vtable_slot;
 		g_assert (vtable_slot);
 
 		gsctx = mono_get_generic_context_from_code (code);
@@ -358,7 +359,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 				mono_get_generic_context_from_code (code));
 
 			vt = this_argument->vtable;
-			vtable_slot = mono_get_vcall_slot_addr (code, regs);
+			vtable_slot = orig_vtable_slot;
 
 			g_assert (this_argument->vtable->klass->inited);
 			//mono_class_init (this_argument->vtable->klass);
@@ -438,10 +439,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 		addr = mono_create_static_rgctx_trampoline (m, addr);
 
 	if (generic_virtual) {
-		int displacement;
- 		MonoVTable *vt = mono_arch_get_vcall_slot (code, regs, &displacement);
-
-		vtable_slot = mono_get_vcall_slot_addr (code, regs);
+		vtable_slot = orig_vtable_slot;
 		g_assert (vtable_slot);
 
 		if (vt->klass->valuetype)
@@ -482,7 +480,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 		return addr;
 	}
 
-	vtable_slot = mono_get_vcall_slot_addr (code, regs);
+	vtable_slot = orig_vtable_slot;
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
@@ -526,7 +524,31 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 
 	return addr;
 }
- 
+
+/**
+ * mono_magic_trampoline:
+ *
+ *   This trampoline handles calls from JITted code.
+ */
+gpointer
+mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
+{
+	gpointer *vtable_slot;
+	int displacement;
+	MonoVTable *vt;
+
+	if (code)
+		vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	else
+		vt = NULL;
+	if (vt)
+		vtable_slot = (gpointer*)((char*)vt + displacement);
+	else
+		vtable_slot = NULL;
+
+	return common_call_trampoline (regs, code, arg, tramp, vt, vtable_slot, FALSE);
+}
+
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 /*
  * mono_llvm_vcall_trampoline:
@@ -537,11 +559,8 @@ static gpointer
 mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
 {
 	MonoObject *this;
-	gpointer addr;
 	MonoVTable *vt;
 	gpointer *vtable_slot;
-	gboolean proxy = FALSE;
-	gboolean need_rgctx_tramp = FALSE;
 
 	/* 
 	 * We have the method which is called, we need to obtain the vtable slot without
@@ -557,44 +576,9 @@ mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *
 
 	g_assert (!m->is_generic);
 
-	/* This is a simplified version of mono_magic_trampoline () */
-	/* FIXME: Avoid code duplication */
-
-	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
-		MonoJitInfo *ji;
-
-		if (code)
-			ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
-		else
-			ji = NULL;
-
-		/* Avoid recursion */
-		if (!(ji && ji->method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED))
-			m = mono_marshal_get_synchronized_wrapper (m);
-	}
-
-	addr = mono_compile_method (m);
-	g_assert (addr);
-
-	if (mono_method_needs_static_rgctx_invoke (m, 0))
-		addr = mono_create_static_rgctx_trampoline (m, addr);
-
-	if (m->klass->valuetype)
-		addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr, need_rgctx_tramp);
-
 	vtable_slot = &(vt->vtable [mono_method_get_vtable_slot (m)]);
-	g_assert (*vtable_slot);
 
-	if (!proxy && (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))) {
-#ifdef MONO_ARCH_HAVE_IMT
-		vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, regs, code, m, NULL, &need_rgctx_tramp);
-#endif
-		*vtable_slot = mono_get_addr_from_ftnptr (addr);
-	  }
-
-	mono_debugger_trampoline_compiled (NULL, m, addr);
-
-	return addr;
+	return common_call_trampoline (regs, code, m, tramp, vt, vtable_slot, mono_method_needs_static_rgctx_invoke (m, 0));
 }
 #endif
 
