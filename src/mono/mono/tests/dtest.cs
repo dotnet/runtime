@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Net;
+using System.Reflection;
 using Mono.Cecil.Cil;
 using Mono.Debugger;
 using Diag = System.Diagnostics;
+using System.Linq;
 
 using NUnit.Framework;
 
@@ -31,6 +33,7 @@ public class DebuggerTests
 	// No other way to pass arguments to the tests ?
 	public static bool listening = Environment.GetEnvironmentVariable ("DBG_SUSPEND") != null;
 	public static string runtime = Environment.GetEnvironmentVariable ("DBG_RUNTIME");
+	public static string agent_args = Environment.GetEnvironmentVariable ("DBG_AGENT_ARGS");
 
 	void Start (string[] args) {
 		if (!listening) {
@@ -41,7 +44,7 @@ public class DebuggerTests
 			else
 				pi.FileName = "mono";
 			pi.Arguments = String.Join (" ", args);
-			vm = VirtualMachineManager.Launch (pi, new LaunchOptions { AgentArgs = "loglevel=0" });
+			vm = VirtualMachineManager.Launch (pi, new LaunchOptions { AgentArgs = agent_args });
 		} else {
 			Console.WriteLine ("Listening...");
 			vm = VirtualMachineManager.Listen (new IPEndPoint (IPAddress.Any, 10000));
@@ -907,7 +910,7 @@ public class DebuggerTests
 		// reference types
 		t = frame.Method.GetParameters ()[7].ParameterType;
 		Assert.AreEqual ("Tests", t.Name);
-		var nested = t.GetNestedTypes ();
+		var nested = (from nt in t.GetNestedTypes () where nt.IsNestedPublic select nt).ToArray ();
 		Assert.AreEqual (1, nested.Length);
 		Assert.AreEqual ("NestedClass", nested [0].Name);
 		Assert.IsTrue (t.BaseType.IsAssignableFrom (t));
@@ -1755,6 +1758,31 @@ public class DebuggerTests
 	}
 
 	[Test]
+	[Category ("only")]
+	public void InvokeSingleThreaded () {
+		vm.Dispose ();
+
+		Start (new string [] { "dtest-app.exe", "invoke-single-threaded" });
+
+		Event e = run_until ("invoke_single_threaded_2");
+
+		StackFrame f = e.Thread.GetFrames ()[0];
+
+		var obj = f.GetThis () as ObjectMirror;
+
+		// Check that the counter value incremented by the other thread does not increase
+		// during the invoke.
+		object counter1 = (obj.GetValue (obj.Type.GetField ("counter")) as PrimitiveValue).Value;
+
+		var m = obj.Type.GetMethod ("invoke_return_void");
+		obj.InvokeMethod (e.Thread, m, null, InvokeOptions.SingleThreaded);
+
+	    object counter2 = (obj.GetValue (obj.Type.GetField ("counter")) as PrimitiveValue).Value;
+
+		Assert.AreEqual ((int)counter1, (int)counter2);
+	}
+
+	[Test]
 	public void GetThreads () {
 		vm.GetThreads ();
 	}
@@ -1920,7 +1948,6 @@ public class DebuggerTests
 	}
 
 	[Test]
-	[Category ("only")]
 	public void Domains () {
 		vm.Dispose ();
 

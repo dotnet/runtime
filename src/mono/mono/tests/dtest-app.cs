@@ -112,7 +112,7 @@ public class Tests : TestsBase
 
 #pragma warning restore 0414
 
-	class NestedClass {
+	public class NestedClass {
 	}
 
 	public int IntProperty {
@@ -161,6 +161,8 @@ public class Tests : TestsBase
 			ref_emit ();
 		if (args.Length > 0 && args [0] == "frames-in-native")
 			frames_in_native ();
+		if (args.Length >0 && args [0] == "invoke-single-threaded")
+			new Tests ().invoke_single_threaded ();
 		return 3;
 	}
 
@@ -447,6 +449,29 @@ public class Tests : TestsBase
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public void invoke2 () {
+	}
+
+	int counter;
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public void invoke_single_threaded () {
+		// Spawn a thread incrementing a counter
+		bool finished = false;
+
+		new Thread (delegate () {
+				while (!finished)
+					counter ++;
+		}).Start ();
+
+		Thread.Sleep (100);
+
+		invoke_single_threaded_2 ();
+
+		finished = true;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public void invoke_single_threaded_2 () {
 	}
 
 	public void invoke_return_void () {
