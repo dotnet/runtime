@@ -385,6 +385,121 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	return result;
 }
 
+typedef struct {
+	MonoDomain *domain;
+	gint attrs, mask;
+	gchar *utf8_path;
+	HANDLE find_handle;
+} IncrementalFind;
+	
+static gboolean
+incremental_find_check_match (IncrementalFind *handle, WIN32_FIND_DATA *data, MonoString **result)
+{
+	gchar *utf8_result;
+	gchar *full_name;
+	
+	if ((data->cFileName[0] == '.' && data->cFileName[1] == 0) || (data->cFileName[0] == '.' && data->cFileName[1] == '.' && data->cFileName[2] == 0))
+		return FALSE;
+
+	if ((data->dwFileAttributes & handle->mask) != handle->attrs)
+		return FALSE;
+	
+	utf8_result = g_utf16_to_utf8 (data->cFileName, -1, NULL, NULL, NULL);
+	if (utf8_result == NULL) 
+		return FALSE;
+	
+	full_name = g_build_filename (handle->utf8_path, utf8_result, NULL);
+	g_free (utf8_result);
+	*result = mono_string_new (mono_domain_get (), full_name);
+	g_free (full_name);
+	
+	return TRUE;
+}
+
+MonoString *
+ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
+				      MonoString *path_with_pattern,
+				      gint attrs, gint mask,
+				      gint32 *error,
+				      gpointer *handle)
+{
+	WIN32_FIND_DATA data;
+	HANDLE find_handle;
+	IncrementalFind *ifh;
+	MonoString *result;
+	
+	*error = ERROR_SUCCESS;
+	mask = convert_attrs (mask);
+	
+	find_handle = FindFirstFile (mono_string_chars (path_with_pattern), &data);
+	
+	if (find_handle == INVALID_HANDLE_VALUE) {
+		gint32 find_error = GetLastError ();
+		*handle = NULL;
+		
+		if (find_error == ERROR_FILE_NOT_FOUND) 
+			return NULL;
+		
+		*error = find_error;
+		return NULL;
+	}
+
+	ifh = g_new (IncrementalFind, 1);
+	ifh->find_handle = find_handle;
+	ifh->mask = mask;
+	ifh->attrs = attrs;
+	ifh->utf8_path = mono_string_to_utf8 (path);
+	ifh->domain = mono_domain_get ();
+	*handle = ifh;
+
+	while (incremental_find_check_match (ifh, &data, &result) == 0){
+		if (FindNextFile (find_handle, &data) == FALSE){
+			int e = GetLastError ();
+			if (e != ERROR_NO_MORE_FILES)
+				*error = e;
+			return NULL;
+		}
+	}
+
+	return result;
+}
+
+MonoString *
+ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *error)
+{
+	IncrementalFind *ifh = handle;
+	WIN32_FIND_DATA data;
+	MonoString *result;
+
+	error = ERROR_SUCCESS;
+	do {
+		if (FindNextFile (ifh->find_handle, &data) == FALSE){
+			int e = GetLastError ();
+			if (e != ERROR_NO_MORE_FILES)
+				*error = e;
+			return NULL;
+		}
+	} while (incremental_find_check_match (ifh, &data, &result) == 0);
+
+	return result;
+}
+
+int
+ves_icall_System_IO_MonoIO_FindClose (gpointer handle)
+{
+	IncrementalFind *ifh = handle;
+	gint32 error;
+	
+	if (FindClose (ifh->find_handle) == FALSE){
+		error = GetLastError ();
+	} else
+		error = ERROR_SUCCESS;
+	g_free (ifh->utf8_path);
+	g_free (ifh);
+
+	return error;
+}
+
 MonoString *
 ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
 {
