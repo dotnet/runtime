@@ -282,6 +282,12 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 		buf [10] = 0x90;
 		buf [11] = 0x66;
 		buf [12] = 0x90;
+	} else if ((buf [5] == 0xff) && (buf [6] == 0xd0)) {
+		/* call *%rax */
+		/* Used by the LLVM JIT */
+		/* FIXME: Not thread safe */
+		buf [0] = 0x90;
+		buf [1] = 0x90;
 	} else if (buf [4] == 0x90 || buf [5] == 0xeb || buf [6] == 0x66) {
 		/* Already changed by another thread */
 		;
