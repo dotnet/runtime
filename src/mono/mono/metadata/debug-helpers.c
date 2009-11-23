@@ -181,6 +181,9 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 			g_string_append (res, "<unknown>");
 		}
 		break;
+	case MONO_TYPE_TYPEDBYREF:
+		g_string_append (res, "typedbyref");
+		break;
 	default:
 		break;
 	}
