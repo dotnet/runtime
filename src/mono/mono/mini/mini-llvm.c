@@ -58,7 +58,8 @@ typedef struct {
 typedef struct {
 	MonoBasicBlock *bb;
 	MonoInst *phi;
-	int index;
+	MonoBasicBlock *in_bb;
+	int sreg;
 } PhiNode;
 
 /*
@@ -227,14 +228,15 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		if (!mono_type_generic_inst_is_valuetype (t))
 			return IntPtrType ();
 		/* Fall through */
-	case MONO_TYPE_VALUETYPE: {
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_TYPEDBYREF: {
 		MonoClass *klass;
 		LLVMTypeRef ltype;
 
 		klass = mono_class_from_mono_type (t);
 
 		if (klass->enumtype)
-			return type_to_llvm_type (ctx, mono_class_enum_basetype (t->data.klass));
+			return type_to_llvm_type (ctx, mono_class_enum_basetype (klass));
 		ltype = g_hash_table_lookup (ctx->lmodule->llvm_types, klass);
 		if (!ltype) {
 			int i, size;
@@ -254,6 +256,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	}
 
 	default:
+		printf ("X: %d\n", t->type);
 		ctx->cfg->exception_message = g_strdup_printf ("type %s", mono_type_full_name (t));
 		ctx->cfg->disable_llvm = TRUE;
 		return NULL;
@@ -1048,7 +1051,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	LLVMValueRef *values, *addresses;
 	LLVMTypeRef *vreg_types;
 	MonoType **vreg_cli_types;
-	int i, max_block_num, pindex;
+	int i, max_block_num, pindex, bb_index;
 	int *pindexes = NULL;
 	GHashTable *phi_nodes;
 	gboolean last = FALSE;
@@ -1057,6 +1060,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	GSList *l;
 	LLVMModuleRef module;
 	gboolean *is_dead;
+	gboolean *unreachable;
 
 	/* The code below might acquire the loader lock, so use it for global locking */
 	mono_loader_lock ();
@@ -1086,6 +1090,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	 * (i.e. all its input bblocks end with NOT_REACHABLE).
 	 */
 	is_dead = g_new0 (gboolean, cfg->next_vreg);
+	/* Whenever the bblock is unreachable */
+	unreachable = g_new0 (gboolean, cfg->max_block_num);
 
 	ctx->values = values;
 	ctx->addresses = addresses;
@@ -1248,13 +1254,17 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	/*
 	 * Second pass: generate code.
 	 */
-	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+	for (bb_index = 0; bb_index < cfg->num_bblocks; ++bb_index) {
+
+		//for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
 		LLVMBasicBlockRef cbb;
 		LLVMBuilderRef builder;
 		gboolean has_terminator;
 		LLVMValueRef v;
 		LLVMValueRef lhs, rhs;
+
+		bb = cfg->bblocks [bb_index];
 
 		if (!(bb == cfg->bb_entry || bb->in_count > 0))
 			continue;
@@ -1568,32 +1578,34 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				/* Created earlier, insert it now */
 				LLVMInsertIntoBuilder (builder, values [ins->dreg]);
 
-				// FIXME: If a SWITCH statement branches to the same bblock in more
-				// than once case, the PHI should reference the bblock multiple times
-				for (i = 0; i < bb->in_count; ++i)
-					if (bb->in_bb [i]->last_ins && bb->in_bb [i]->last_ins->opcode == OP_SWITCH) {
-						LLVM_FAILURE (ctx, "switch + phi");
-						break;
-					}
-
 				for (i = 0; i < ins->inst_phi_args [0]; i++) {
 					int sreg1 = ins->inst_phi_args [i + 1];
-					LLVMBasicBlockRef in_bb;
+					int count, j;
 
-					/* Add incoming values which are already defined */
-					if (FALSE && sreg1 != -1 && values [sreg1]) {
-						in_bb = get_end_bb (ctx, bb->in_bb [i]);
+					/* 
+					 * Count the number of times the incoming bblock branches to us,
+					 * since llvm requires a separate entry for each.
+					 */
+					if (bb->in_bb [i]->last_ins && bb->in_bb [i]->last_ins->opcode == OP_SWITCH) {
+						MonoInst *switch_ins = bb->in_bb [i]->last_ins;
 
-						g_assert (LLVMTypeOf (values [sreg1]) == LLVMTypeOf (values [ins->dreg]));
-						LLVMAddIncoming (values [ins->dreg], &values [sreg1], &in_bb, 1);
+						count = 0;
+						for (j = 0; j < GPOINTER_TO_UINT (switch_ins->klass); ++j) {
+							if (switch_ins->inst_many_bb [j] == bb)
+								count ++;
+						}
 					} else {
-						/* Remember for later */
-						//LLVM_FAILURE (ctx, "phi incoming value");
+						count = 1;
+					}
+
+					/* Remember for later */
+					for (j = 0; j < count; ++j) {
 						GSList *node_list = g_hash_table_lookup (phi_nodes, GUINT_TO_POINTER (bb->in_bb [i]));
 						PhiNode *node = mono_mempool_alloc0 (ctx->mempool, sizeof (PhiNode));
 						node->bb = bb;
 						node->phi = ins;
-						node->index = i;
+						node->in_bb = bb->in_bb [i];
+						node->sreg = sreg1;
 						node_list = g_slist_prepend_mempool (ctx->mempool, node_list, node);
 						g_hash_table_insert (phi_nodes, GUINT_TO_POINTER (bb->in_bb [i]), node_list);
 					}
@@ -1741,7 +1753,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_ADD_IMM:
 			case OP_AND_IMM:
 			case OP_MUL_IMM:
-			case OP_SHL_IMM: {
+			case OP_SHL_IMM:
+			case OP_SHR_IMM: {
 				LLVMValueRef imm;
 
 				if (spec [MONO_INST_SRC1] == 'l') {
@@ -1807,6 +1820,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					break;
 				case OP_ISHR_IMM:
 				case OP_LSHR_IMM:
+				case OP_SHR_IMM:
 					values [ins->dreg] = LLVMBuildAShr (builder, lhs, imm, dname);
 					break;
 				case OP_ISHR_UN_IMM:
@@ -1972,6 +1986,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					args [3] = LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT, FALSE);
 					LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memset.i32"), args, 4, "");
 				}
+				values [ins->dreg] = v;
 				break;
 			}
 
@@ -2077,7 +2092,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_CALL_MEMBASE:
 			case OP_LCALL_MEMBASE:
 			case OP_FCALL_MEMBASE:
-			case OP_VCALL_MEMBASE: {
+			case OP_VCALL_MEMBASE:
+			case OP_VOIDCALL_REG:
+			case OP_CALL_REG:
+			case OP_LCALL_REG:
+			case OP_FCALL_REG:
+			case OP_VCALL_REG: {
 				MonoCallInst *call = (MonoCallInst*)ins;
 				MonoMethodSignature *sig = call->signature;
 				LLVMValueRef callee, lcall;
@@ -2089,7 +2109,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMTypeRef llvm_sig;
 				gpointer target;
 				int *pindexes;
-				gboolean virtual;
+				gboolean virtual, calli;
 
 				cinfo = call->cinfo;
 
@@ -2103,6 +2123,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				}
 
 				virtual = (ins->opcode == OP_VOIDCALL_MEMBASE || ins->opcode == OP_CALL_MEMBASE || ins->opcode == OP_VCALL_MEMBASE || ins->opcode == OP_LCALL_MEMBASE || ins->opcode == OP_FCALL_MEMBASE);
+				calli = (ins->opcode == OP_VOIDCALL_REG || ins->opcode == OP_CALL_REG || ins->opcode == OP_VCALL_REG || ins->opcode == OP_LCALL_REG || ins->opcode == OP_FCALL_REG);
 
 				pindexes = mono_mempool_alloc0 (cfg->mempool, sig->param_count + 2);
 
@@ -2125,6 +2146,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 							LLVMAddGlobalMapping (ee, callee, target);
 						}
 					}
+				} else if (calli) {
 				} else {
 					MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
 
@@ -2210,6 +2232,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					} else {
 						callee = convert (ctx, LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (LLVMPointerType (IntPtrType (), 0), 0)), &index, 1, ""), ""), LLVMPointerType (llvm_sig, 0));
 					}
+				} else if (calli) {
+					callee = convert (ctx, values [ins->sreg1], LLVMPointerType (llvm_sig, 0));
 				} else {
 					if (ins->flags & MONO_INST_HAS_METHOD) {
 					}
@@ -2354,6 +2378,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_NOT_REACHED:
 				LLVMBuildUnreachable (builder);
 				has_terminator = TRUE;
+				g_assert (bb->block_num < cfg->max_block_num);
+				unreachable [bb->block_num] = TRUE;
 				/* Might have instructions after this */
 				while (ins->next) {
 					MonoInst *next = ins->next;
@@ -2486,7 +2512,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memory.barrier"), args, 5, "");
 				break;
 			}
-
+			case OP_RELAXED_NOP: {
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+				/* No way to get LLVM to emit this */
+				LLVM_FAILURE (ctx, "relaxed_nop");
+#else
+				break;
+#endif
+			}
 			case OP_TLS_GET: {
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 #ifdef TARGET_AMD64
@@ -2653,13 +2686,18 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		for (l = ins_list; l; l = l->next) {
 			PhiNode *node = l->data;
 			MonoInst *phi = node->phi;
-			int sreg1 = phi->inst_phi_args [node->index + 1];
+			int sreg1 = node->sreg;
 			LLVMBasicBlockRef in_bb;
 
 			if (sreg1 == -1)
 				continue;
 
-			in_bb = get_end_bb (ctx, node->bb->in_bb [node->index]);
+			in_bb = get_end_bb (ctx, node->in_bb);
+
+			if (unreachable [node->in_bb->block_num])
+				continue;
+
+			g_assert (values [sreg1]);
 
 			g_assert (LLVMTypeOf (values [sreg1]) == LLVMTypeOf (values [phi->dreg]));
 			LLVMAddIncoming (values [phi->dreg], &values [sreg1], &in_bb, 1);

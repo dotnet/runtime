@@ -3488,6 +3488,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	/* Depth-first ordering on basic blocks */
 	cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
 
+	cfg->max_block_num = cfg->num_bblocks;
+
 	dfn = 0;
 	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
 	if (cfg->num_bblocks != dfn + 1) {

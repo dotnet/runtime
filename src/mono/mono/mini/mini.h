@@ -937,7 +937,7 @@ typedef struct {
 	MonoJumpInfo    *patch_info;
 	MonoJitInfo     *jit_info;
 	MonoJitDynamicMethodInfo *dynamic_info;
-	guint            num_bblocks;
+	guint            num_bblocks, max_block_num;
 	guint            locals_start;
 	guint            num_varinfo; /* used items in varinfo */
 	guint            varinfo_count; /* total storage in varinfo */

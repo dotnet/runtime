@@ -537,7 +537,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 	int displacement;
 	MonoVTable *vt;
 
-	if (code)
+	if (code && !mono_use_llvm)
 		vt = mono_arch_get_vcall_slot (code, regs, &displacement);
 	else
 		vt = NULL;
