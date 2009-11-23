@@ -159,6 +159,14 @@ typedef struct {
 
 	/* Whenever to disable breakpoints (used during invokes) */
 	gboolean disable_breakpoints;
+
+	/* Whenever this thread should be resumed without resuming the others */
+	gboolean resume_one;
+
+	/*
+	 * Number of times this thread has been resumed using resume_thread ().
+	 */
+	guint32 resume_count;
 } DebuggerTlsData;
 
 /* 
@@ -258,7 +266,8 @@ typedef enum {
 } StackFrameFlags;
 
 typedef enum {
-	INVOKE_FLAG_DISABLE_BPS = 1
+	INVOKE_FLAG_DISABLE_BREAKPOINTS = 1,
+	INVOKE_FLAG_SINGLE_THREADED = 2
 } InvokeFlags;
 
 typedef enum {
@@ -1804,6 +1813,46 @@ resume_vm (void)
 	mono_loader_unlock ();
 }
 
+/*
+ * resume_thread:
+ *
+ *   Resume just one thread.
+ */
+static void
+resume_thread (MonoInternalThread *thread)
+{
+	int err;
+	DebuggerTlsData *tls;
+
+	g_assert (debugger_thread_id == GetCurrentThreadId ());
+
+	mono_loader_lock ();
+
+	tls = mono_g_hash_table_lookup (thread_to_tls, thread);
+	g_assert (tls);
+	
+	mono_mutex_lock (&suspend_mutex);
+
+	g_assert (suspend_count > 0);
+
+	DEBUG(1, fprintf (log_file, "[%p] Resuming thread...\n", (gpointer)thread->tid));
+
+	tls->resume_one = TRUE;
+	tls->resume_count ++;
+
+	/* 
+	 * Signal suspend_count without decreasing suspend_count, the threads will wake up
+	 * but only the one whose resume_one field is set will be resumed.
+	 */
+	err = mono_cond_broadcast (&suspend_cond);
+	g_assert (err == 0);
+
+	mono_mutex_unlock (&suspend_mutex);
+	//g_assert (err == 0);
+
+	mono_loader_unlock ();
+}
+
 static void
 invalidate_frames (DebuggerTlsData *tls)
 {
@@ -1873,6 +1922,9 @@ suspend_current (void)
 		err = mono_cond_wait (&suspend_cond, &suspend_mutex);
 		g_assert (err == 0);
 #endif
+
+		if (tls->resume_one)
+			break;
 	}
 
 	tls->suspended = FALSE;
@@ -1883,6 +1935,13 @@ suspend_current (void)
 	mono_mutex_unlock (&suspend_mutex);
 
 	DEBUG(1, fprintf (log_file, "[%p] Resumed.\n", (gpointer)GetCurrentThreadId ()));
+
+	if (tls->resume_one) {
+		/* The thread should be resumed to do an invoke. */
+		g_assert (tls->invoke);
+		g_assert (tls->invoke->flags & INVOKE_FLAG_SINGLE_THREADED);
+		tls->resume_one = FALSE;
+	}
 
 	if (tls->invoke) {
 		/* Save the original context */
@@ -3016,7 +3075,7 @@ mono_debugger_agent_breakpoint_hit (void *sigctx)
 }
 
 static void
-process_single_step_inner (MonoContext *ctx)
+process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 {
 	MonoJitInfo *ji;
 	guint8 *ip;
@@ -3037,6 +3096,16 @@ process_single_step_inner (MonoContext *ctx)
 			return;
 
 		DEBUG(1, fprintf (log_file, "[%p] Received single step event for suspending.\n", (gpointer)GetCurrentThreadId ()));
+
+		if (suspend_count - tls->resume_count == 0) {
+			/* 
+			 * We are executing a single threaded invoke but the single step for 
+			 * suspending is still active.
+			 * FIXME: This slows down single threaded invokes.
+			 */
+			DEBUG(1, fprintf (log_file, "[%p] Ignored during single threaded invoke.\n", (gpointer)GetCurrentThreadId ()));
+			return;
+		}
 
 		ji = mono_jit_info_table_find (mono_domain_get (), (char*)ip);
 
@@ -3190,7 +3259,7 @@ process_single_step (void)
 	tls = TlsGetValue (debugger_tls_id);
 	memcpy (&ctx, &tls->handler_ctx, sizeof (MonoContext));
 
-	process_single_step_inner (&ctx);
+	process_single_step_inner (tls, &ctx);
 
 	/* This is called when resuming from a signal handler, so it shouldn't return */
 	restore_context (&ctx);
@@ -3812,7 +3881,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 	if (i < nargs)
 		return err;
 
-	if (invoke->flags & INVOKE_FLAG_DISABLE_BPS)
+	if (invoke->flags & INVOKE_FLAG_DISABLE_BREAKPOINTS)
 		tls->disable_breakpoints = TRUE;
 	else
 		tls->disable_breakpoints = FALSE;
@@ -3927,7 +3996,8 @@ invoke_method (void)
 	err = do_invoke_method (tls, &buf, invoke);
 
 	/* Start suspending before sending the reply */
-	suspend_vm ();
+	if (!(invoke->flags & INVOKE_FLAG_SINGLE_THREADED))
+		suspend_vm ();
 
 	send_reply_packet (id, err, &buf);
 	
@@ -3940,6 +4010,11 @@ invoke_method (void)
 
 	g_free (invoke->p);
 	g_free (invoke);
+
+	if (invoke->flags & INVOKE_FLAG_SINGLE_THREADED) {
+		g_assert (tls->resume_count);
+		tls->resume_count --;
+	}
 
 	suspend_current ();
 }
@@ -4072,7 +4147,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		memcpy (tls->invoke->p, p, end - p);
 		tls->invoke->endp = tls->invoke->p + (end - p);
 
-		resume_vm ();
+		if (flags & INVOKE_FLAG_SINGLE_THREADED)
+			resume_thread (thread->internal_thread);
+		else
+			resume_vm ();
 		break;
 	}
 	default:
