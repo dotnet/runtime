@@ -4148,7 +4148,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		tls->invoke->endp = tls->invoke->p + (end - p);
 
 		if (flags & INVOKE_FLAG_SINGLE_THREADED)
-			resume_thread (thread->internal_thread);
+			resume_thread (THREAD_TO_INTERNAL (thread));
 		else
 			resume_vm ();
 		break;
