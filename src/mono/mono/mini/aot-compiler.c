@@ -4085,8 +4085,8 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * - 'constmerge'/'globaldce', which seems to remove our got symbol.
 	 * - 'tailcallelim'
 	 */
-	opts = g_strdup ("");
-#if 0
+	opts = g_strdup ("-instcombine -simplifycfg");
+#if 1
 	command = g_strdup_printf ("opt -f %s -o temp.bc temp.bc", opts);
 	printf ("Executing opt: %s\n", command);
 	if (system (command) != 0) {
