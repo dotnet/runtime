@@ -1,3 +1,8 @@
+2009-11-23  Jb Evain  <jbevain@novell.com>
+
+	* Descriptors/mscorlib.xml: protect the InternalThread class.
+	Fixes #555871.
+
 2009-11-02  Jb Evain  <jbevain@novell.com>
 
 	Merge the MonoTouch Linker branch.
