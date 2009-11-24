@@ -1915,7 +1915,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 
 		val [0] = decode_value (p, &p);
 		val [1] = decode_value (p, &p);
-		// FIXME: Is this correct ?
 		v = ((guint64)val [1] << 32) | ((guint64)val [0]);
 		*(double*)ji->data.target = *(double*)&v;
 		break;
