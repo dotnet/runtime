@@ -214,6 +214,7 @@ static inline void print_report (const gchar *report)
 
 static inline void append_report (GString **report, const gchar *format, ...)
 {
+#if GLIB_CHECK_VERSION(2,14,0)
 	va_list ap;
 	if (!*report)
 		*report = g_string_new ("");
@@ -221,6 +222,9 @@ static inline void append_report (GString **report, const gchar *format, ...)
 	va_start (ap, format);
 	g_string_append_vprintf (*report, format, ap);
 	va_end (ap);
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists)
