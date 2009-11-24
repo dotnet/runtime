@@ -322,14 +322,12 @@ print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *location
 void
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, mgreg_t *regs, 
-				   int nregs, guint8 **out_cfa) 
+				   int nregs, guint8 **out_cfa)
 {
 	Loc locations [NUM_REGS];
 	int i, pos, reg, cfa_reg, cfa_offset;
 	guint8 *p;
 	guint8 *cfa_val;
-
-	g_assert (nregs <= NUM_REGS);
 
 	for (i = 0; i < NUM_REGS; ++i)
 		locations [i].loc_type = LOC_SAME;
@@ -388,8 +386,11 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 
 	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
 	for (i = 0; i < NUM_REGS; ++i) {
-		if (locations [i].loc_type == LOC_OFFSET)
-			regs [mono_dwarf_reg_to_hw_reg (i)] = *(gssize*)(cfa_val + locations [i].offset);
+		if (locations [i].loc_type == LOC_OFFSET) {
+			int hreg = mono_dwarf_reg_to_hw_reg (i);
+			g_assert (hreg < nregs);
+			regs [hreg] = *(gssize*)(cfa_val + locations [i].offset);
+		}
 	}
 
 	*out_cfa = cfa_val;
