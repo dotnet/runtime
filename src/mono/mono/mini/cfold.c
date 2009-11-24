@@ -137,7 +137,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_BINOPC2_IMM (OP_ISHL_IMM, <<, gint32);
 				FOLD_BINOPC2_IMM (OP_ISHR_IMM, >>, gint32);
 				FOLD_BINOPC2_IMM (OP_ISHR_UN_IMM, >>, guint32);
-				FOLD_BINOPC2_IMM (OP_SHL_IMM, <<, gint32);
+				FOLD_BINOP2_IMM (OP_SHL_IMM, <<);
 			}
 			dest->opcode = OP_ICONST;
 			MONO_INST_NULLIFY_SREGS (dest);
