@@ -146,6 +146,11 @@ typedef struct {
 	 */
 	gboolean suspended;
 	/*
+	 * Signals whenever the thread is in the process of suspending, i.e. it will suspend
+	 * within a finite amount of time.
+	 */
+	gboolean suspending;
+	/*
 	 * Set to TRUE if this thread is suspended in suspend_current ().
 	 */
 	gboolean really_suspended;
@@ -1655,6 +1660,7 @@ suspend_init (void)
  * mono_debugger_agent_thread_interrupt:
  *
  *   Called by the abort signal handler.
+ * Should be signal safe.
  */
 gboolean
 mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
@@ -1684,15 +1690,16 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 
 	if (ji) {
 		/* Running managed code, will be suspended by the single step code */
-		//printf ("S1: %p\n", GetCurrentThreadId ());
+		DEBUG (1, printf ("[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)GetCurrentThreadId (), ji->method->name, mono_arch_ip_from_context (sigctx)));
 		return TRUE;
 	} else {
 		/* 
 		 * Running native code, will be suspended when it returns to/enters 
 		 * managed code. Treat it as already suspended.
+		 * This might interrupt the code in process_single_step_inner (), we use the
+		 * tls->suspending flag to avoid races when that happens.
 		 */
-		//printf ("S2: %p\n", GetCurrentThreadId ());
-		if (!tls->suspended) {
+		if (!tls->suspended && !tls->suspending) {
 			MonoContext ctx;
 
 			/* 
@@ -1702,6 +1709,9 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			 * Maybe do a stack walk now, and save its result ?
 			 */
 			mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+			// FIXME: printf is not signal safe, but this is only used during
+			// debugger debugging
+			DEBUG (1, printf ("[%p] Received interrupt while at %p, treating as suspended.\n", (gpointer)GetCurrentThreadId (), mono_arch_ip_from_context (sigctx)));
 			save_thread_context (&ctx);
 
 			tls->suspended = TRUE;
@@ -1745,6 +1755,42 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 		pthread_kill ((pthread_t) tid, mono_thread_get_abort_signal ());
 #endif
 	}
+}
+
+static void
+process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+	MonoJitInfo *ji;
+
+	if (debugger_thread_id == GetCurrentThreadId ())
+		return;
+
+	/* Prevent races with mono_debugger_agent_thread_interrupt () */
+	if (suspend_count - tls->resume_count > 0)
+		tls->suspending = TRUE;
+
+	DEBUG(1, fprintf (log_file, "[%p] Received single step event for suspending.\n", (gpointer)GetCurrentThreadId ()));
+
+	if (suspend_count - tls->resume_count == 0) {
+		/* 
+		 * We are executing a single threaded invoke but the single step for 
+		 * suspending is still active.
+		 * FIXME: This slows down single threaded invokes.
+		 */
+		DEBUG(1, fprintf (log_file, "[%p] Ignored during single threaded invoke.\n", (gpointer)GetCurrentThreadId ()));
+		return;
+	}
+
+	ji = mono_jit_info_table_find (mono_domain_get (), (char*)ip);
+
+	/* Can't suspend in these methods */
+	if (ji->method->klass == mono_defaults.string_class && (!strcmp (ji->method->name, "memset") || strstr (ji->method->name, "memcpy")))
+		return;
+
+	save_thread_context (ctx);
+
+	suspend_current ();
 }
 
 /*
@@ -1894,6 +1940,8 @@ suspend_current (void)
 	g_assert (tls);
 
 	mono_mutex_lock (&suspend_mutex);
+
+	tls->suspending = FALSE;
 
 	if (!tls->suspended) {
 		tls->suspended = TRUE;
@@ -3078,29 +3126,7 @@ process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	mono_arch_skip_single_step (ctx);
 
 	if (suspend_count > 0) {
-		if (debugger_thread_id == GetCurrentThreadId ())
-			return;
-
-		DEBUG(1, fprintf (log_file, "[%p] Received single step event for suspending.\n", (gpointer)GetCurrentThreadId ()));
-
-		if (suspend_count - tls->resume_count == 0) {
-			/* 
-			 * We are executing a single threaded invoke but the single step for 
-			 * suspending is still active.
-			 * FIXME: This slows down single threaded invokes.
-			 */
-			DEBUG(1, fprintf (log_file, "[%p] Ignored during single threaded invoke.\n", (gpointer)GetCurrentThreadId ()));
-			return;
-		}
-
-		ji = mono_jit_info_table_find (mono_domain_get (), (char*)ip);
-
-		/* See the comment below */
-		if (ji->method->klass == mono_defaults.string_class && (!strcmp (ji->method->name, "memset") || strstr (ji->method->name, "memcpy")))
-			return;
-
-		save_thread_context (ctx);
-		suspend_current ();
+		process_suspend (tls, ctx);
 		return;
 	}
 
@@ -3329,8 +3355,10 @@ ss_start (MonoInternalThread *thread, StepSize size, StepDepth depth, EventReque
 	wait_for_suspend ();
 
 	// FIXME: Multiple requests
-	if (ss_req)
+	if (ss_req) {
+		DEBUG (0, printf ("Received a single step request while the previous one was still active.\n"));
 		return ERR_NOT_IMPLEMENTED;
+	}
 
 	ss_req = g_new0 (MonoSingleStepReq, 1);
 	ss_req->req = req;
