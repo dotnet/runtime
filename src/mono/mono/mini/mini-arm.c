@@ -2896,6 +2896,12 @@ mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val)
 	return code;
 }
 
+gboolean
+mono_arm_thumb_supported (void)
+{
+	return thumb_supported;
+}
+
 /*
  * emit_load_volatile_arguments:
  *

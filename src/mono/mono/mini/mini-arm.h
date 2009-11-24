@@ -211,5 +211,8 @@ mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 void
 mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
 
+gboolean
+mono_arm_thumb_supported (void);
+
 #endif /* __MONO_MINI_ARM_H__ */
 

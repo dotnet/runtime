@@ -40,6 +40,16 @@ branch_for_target_reachable (guint8 *branch, guint8 *target)
 	return 0;
 }
 
+static inline guint8*
+emit_bx (guint8* code, int reg)
+{
+	if (mono_arm_thumb_supported ())
+		ARM_BX (code, reg);
+	else
+		ARM_MOV_REG_REG (code, ARMREG_PC, reg);
+	return code;
+}
+
 /*
  * mono_arch_get_unbox_trampoline:
  * @gsctx: the generic sharing context
@@ -64,7 +74,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
 	ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+	code = emit_bx (code, ARMREG_IP);
 	*(guint32*)code = (guint32)addr;
 	code += 4;
 	mono_arch_flush_icache (start, code - start);
@@ -266,7 +276,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		code += 4;
 	}
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R0);
+	code = emit_bx (code, ARMREG_R0);
 
 	/* we build the MonoLMF structure on the stack - see mini-arm.h
 	 * The pointer to the struct is put in r1.
@@ -331,7 +341,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	}
 
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+	code = emit_bx (code, ARMREG_IP);
 	
 	/* OK, code address is now on r0. Move it to the place on the stack
 	 * where IP was saved (it is now no more useful to us and it can be
@@ -359,7 +369,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		code += 4;
 	}
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+	code = emit_bx (code, ARMREG_IP);
 
 	/*
 	 * Now we restore the MonoLMF (see emit_epilogue in mini-arm.c)
@@ -388,9 +398,9 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	/* do we need to set sp? */
 	ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (14 * 4));
 	if ((tramp_type == MONO_TRAMPOLINE_CLASS_INIT) || (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) || (tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH))
-		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_LR);
+		code = emit_bx (code, ARMREG_LR);
 	else
-		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+		code = emit_bx (code, ARMREG_IP);
 
 	constants = (gpointer*)code;
 	constants [0] = mono_get_lmf_addr;
@@ -431,7 +441,7 @@ mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
 
 	code = buf = mono_global_codeman_reserve (16);
 
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_LR);
+	code = emit_bx (code, ARMREG_LR);
 
 	mono_arch_flush_icache (buf, code - buf);
 
@@ -481,7 +491,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	} else {
 		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8); /* temp reg */
 		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+		code = emit_bx (code, ARMREG_R1);
 
 		constants = (gpointer*)code;
 		constants [0] = arg1;
@@ -586,7 +596,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 	ARM_B_COND (code, ARMCOND_EQ, 0);
 	/* otherwise return, result is in R1 */
 	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_R1);
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_LR);
+	code = emit_bx (code, ARMREG_LR);
 
 	g_assert (njumps <= depth + 2);
 	for (i = 0; i < njumps; ++i)
@@ -610,7 +620,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 
 		/* Jump to the actual trampoline */
 		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
-		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+		code = emit_bx (code, ARMREG_R1);
 		*(gpointer*)code = tramp;
 		code += 4;
 	}
@@ -683,7 +693,7 @@ mono_arch_create_generic_class_init_trampoline_full (guint32 *code_size, MonoJum
 
 		/* Jump to the actual trampoline */
 		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
-		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+		code = emit_bx (code, ARMREG_R1);
 		*(gpointer*)code = tramp;
 		code += 4;
 	}
