@@ -1780,6 +1780,20 @@ public class DebuggerTests
 	    object counter2 = (obj.GetValue (obj.Type.GetField ("counter")) as PrimitiveValue).Value;
 
 		Assert.AreEqual ((int)counter1, (int)counter2);
+
+		// Test multiple invokes done in succession
+		m = obj.Type.GetMethod ("invoke_return_void");
+		obj.InvokeMethod (e.Thread, m, null, InvokeOptions.SingleThreaded);
+
+		// Test events during single-threaded invokes
+		vm.EnableEvents (EventType.TypeLoad);
+		m = obj.Type.GetMethod ("invoke_type_load");
+		obj.BeginInvokeMethod (e.Thread, m, null, InvokeOptions.SingleThreaded, delegate {
+				vm.Resume ();
+			}, null);
+
+		e = vm.GetNextEvent ();
+		Assert.AreEqual (EventType.TypeLoad, e.EventType);
 	}
 
 	[Test]

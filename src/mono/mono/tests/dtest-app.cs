@@ -489,6 +489,13 @@ public class Tests : TestsBase
 		return 42;
 	}
 
+	public void invoke_type_load () {
+		new Class3 ();
+	}
+
+	class Class3 {
+	}
+
 	public long invoke_pass_primitive (byte ub, sbyte sb, short ss, ushort us, int i, uint ui, long l, ulong ul, char c, bool b, float f, double d) {
 		return ub + sb + ss + us + i + ui + l + (long)ul + (int)c + (b ? 1 : 0) + (int)f + (int)d;
 	}
