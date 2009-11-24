@@ -117,6 +117,7 @@ typedef struct MonoAotCompile {
 	MonoImage *image;
 	GPtrArray *methods;
 	GHashTable *method_indexes;
+	GHashTable *method_depth;
 	MonoCompile **cfgs;
 	int cfgs_size;
 	GHashTable *patch_to_plt_offset;
@@ -1664,7 +1665,7 @@ get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 }
 
 static int
-add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra)
+add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra, int depth)
 {
 	int index;
 
@@ -1678,6 +1679,8 @@ add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra)
 	/* FIXME: Fix quadratic behavior */
 	acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (index));
 
+	g_hash_table_insert (acfg->method_depth, method, GUINT_TO_POINTER (depth));
+
 	acfg->method_index ++;
 
 	return index;
@@ -1686,13 +1689,19 @@ add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra)
 static int
 add_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-	return add_method_full (acfg, method, FALSE);
+	return add_method_full (acfg, method, FALSE, 0);
 }
 
 static void
 add_extra_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-	add_method_full (acfg, method, TRUE);
+	add_method_full (acfg, method, TRUE, 0);
+}
+
+static void
+add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
+{
+	add_method_full (acfg, method, TRUE, depth);
 }
 
 static void
@@ -3644,7 +3653,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	MonoCompile *cfg;
 	MonoJumpInfo *patch_info;
 	gboolean skip;
-	int index;
+	int index, depth;
 	MonoMethod *wrapped;
 
 	if (acfg->aot_opts.metadata_only)
@@ -3768,34 +3777,41 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	/* Adds generic instances referenced by this method */
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_METHOD: {
-			MonoMethod *m = patch_info->data.method;
-			if (m->is_inflated) {
-				if (!(mono_class_generic_sharing_enabled (m->klass) &&
-					  mono_method_is_generic_sharable_impl (m, FALSE)) &&
-					!method_has_type_vars (m)) {
-					if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-						if (acfg->aot_opts.full_aot)
-							add_extra_method (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE));
-					} else {
-						add_extra_method (acfg, m);
+	/* 
+	 * The depth is used to avoid infinite loops when generic virtual recursion is 
+	 * encountered.
+	 */
+	depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
+	if (depth < 32) {
+		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+			switch (patch_info->type) {
+			case MONO_PATCH_INFO_METHOD: {
+				MonoMethod *m = patch_info->data.method;
+				if (m->is_inflated) {
+					if (!(mono_class_generic_sharing_enabled (m->klass) &&
+						  mono_method_is_generic_sharable_impl (m, FALSE)) &&
+						!method_has_type_vars (m)) {
+						if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+							if (acfg->aot_opts.full_aot)
+								add_extra_method_with_depth (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE), depth + 1);
+						} else {
+							add_extra_method_with_depth (acfg, m, depth + 1);
+						}
 					}
+					add_generic_class (acfg, m->klass);
 				}
-				add_generic_class (acfg, m->klass);
+				break;
 			}
-			break;
-		}
-		case MONO_PATCH_INFO_VTABLE: {
-			MonoClass *klass = patch_info->data.klass;
+			case MONO_PATCH_INFO_VTABLE: {
+				MonoClass *klass = patch_info->data.klass;
 
-			if (klass->generic_class && !mono_generic_context_is_sharable (&klass->generic_class->context, FALSE))
-				add_generic_class (acfg, klass);
-			break;
-		}
-		default:
-			break;
+				if (klass->generic_class && !mono_generic_context_is_sharable (&klass->generic_class->context, FALSE))
+					add_generic_class (acfg, klass);
+				break;
+			}
+			default:
+				break;
+			}
 		}
 	}
 
@@ -5440,6 +5456,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg = g_new0 (MonoAotCompile, 1);
 	acfg->methods = g_ptr_array_new ();
 	acfg->method_indexes = g_hash_table_new (NULL, NULL);
+	acfg->method_depth = g_hash_table_new (NULL, NULL);
 	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
 	acfg->patch_to_plt_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->patch_to_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
@@ -5483,6 +5500,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_ptr_array_free (acfg->globals, TRUE);
 	g_ptr_array_free (acfg->unwind_ops, TRUE);
 	g_hash_table_destroy (acfg->method_indexes);
+	g_hash_table_destroy (acfg->method_depth);
 	g_hash_table_destroy (acfg->plt_offset_to_patch);
 	g_hash_table_destroy (acfg->patch_to_plt_offset);
 	g_hash_table_destroy (acfg->patch_to_got_offset);
