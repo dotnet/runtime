@@ -534,7 +534,8 @@ mono_image_load_module (MonoImage *image, int idx)
 	GList *list_iter, *valid_modules = NULL;
 	MonoImageOpenStatus status;
 
-	g_assert (idx <= image->module_count);
+	if ((image->module_count == 0) || (idx > image->module_count))
+		return NULL;
 	if (image->modules_loaded [idx - 1])
 		return image->modules [idx - 1];
 
