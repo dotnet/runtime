@@ -1846,9 +1846,11 @@ resume_vm (void)
 	if (suspend_count == 0) {
 		// FIXME: Is it safe to call this inside the lock ?
 		stop_single_stepping ();
-		err = mono_cond_broadcast (&suspend_cond);
-		g_assert (err == 0);
 	}
+
+	/* Signal this even when suspend_count > 0, since some threads might have resume_count > 0 */
+	err = mono_cond_broadcast (&suspend_cond);
+	g_assert (err == 0);
 
 	mono_mutex_unlock (&suspend_mutex);
 	//g_assert (err == 0);
@@ -4022,13 +4024,15 @@ invoke_method (void)
 	if (invoke->has_ctx)
 		save_thread_context (&restore_ctx);
 
-	g_free (invoke->p);
-	g_free (invoke);
-
 	if (invoke->flags & INVOKE_FLAG_SINGLE_THREADED) {
 		g_assert (tls->resume_count);
 		tls->resume_count --;
 	}
+
+	DEBUG (1, printf ("[%p] Invoke finished, resume_count = %d.\n", (gpointer)GetCurrentThreadId (), tls->resume_count));
+
+	g_free (invoke->p);
+	g_free (invoke);
 
 	suspend_current ();
 }
