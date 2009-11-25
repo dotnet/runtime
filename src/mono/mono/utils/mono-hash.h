@@ -87,6 +87,9 @@ guint	    mono_g_hash_table_foreach_remove	   (MonoGHashTable	   *hash_table,
 guint	    mono_g_hash_table_foreach_steal	   (MonoGHashTable	   *hash_table,
 					    GHRFunc	    func,
 					    gpointer	    user_data);
+gpointer    mono_g_hash_table_find (MonoGHashTable *hash_table,
+									GHRFunc predicate,
+									gpointer user_data);
 guint	    mono_g_hash_table_size		   (MonoGHashTable	   *hash_table);
 
 void        mono_g_hash_table_remap (MonoGHashTable *hash_table,

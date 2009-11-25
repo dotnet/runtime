@@ -730,6 +730,23 @@ mono_g_hash_table_foreach (MonoGHashTable *hash_table,
       (* func) (node->key, node->value, user_data);
 }
 
+gpointer
+mono_g_hash_table_find (MonoGHashTable *hash_table, GHRFunc predicate, gpointer user_data)
+{
+	int i;
+	MonoGHashNode *node;
+	
+	g_return_val_if_fail (hash_table != NULL, NULL);
+	g_return_val_if_fail (predicate != NULL, NULL);
+
+	for (i = 0; i < hash_table->size; i++){
+		for (node = hash_table->nodes[i]; node; node = node->next)
+			if ((*predicate)(node->key, node->value, user_data))
+				return node->value;
+	}
+	return NULL;
+}
+
 /**
  * g_hash_table_size:
  * @hash_table: a #GHashTable.
