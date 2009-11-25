@@ -29,7 +29,6 @@
 	<Copy installeronly="true" source="C:\svn\monoexternal\Mono Project Website.url" destination="{sourcedir}\build\Mono Project Website.url" />
 
 	<Copy source="{sourcedir}\mono\msvc\jaystuff.bat" destination="{sourcedir}\jaystuff.bat" />
-	<Copy enabled="false" source="C:\svn\PatternParser.jay" destination="{sourcedir}\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" />
 
 	<Copy source="{sourcedir}\mcs\class\System.XML\System.Xml.XPath\Parser.jay" destination="{sourcedir}\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" />
 	<Regex source="{sourcedir}\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" pattern="%start Expr" replacement="%start Pattern" />
@@ -1426,39 +1425,6 @@
       <Source>/resource:resources/ws-addr.xsd</Source>
     </Sources>
   </Assembly>
-  <Assembly name="System.Web.Extensions_1.0" enabled="false" destination="{destdir}\lib\mono\2.0\System.Web.Extensions_1.0.dll">
-		<References>
-			<Reference>mscorlib</Reference>
-			<Reference>System</Reference>
-			<Reference>System.Core</Reference>
-			<Reference>System.Drawing</Reference>
-			<Reference>System.Data</Reference>
-			<Reference>System.Xml</Reference>
-			<Reference>System.Web</Reference>
-			<Reference>System.Web.Services</Reference>
-			<Reference>System.Configuration</Reference>
-      <Reference>System.EnterpriseServices</Reference>
-    </References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0;SYSTEM_WEB_EXTENSIONS</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Web.Extensions_1.0\</SourcePath>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<Sources>
-			<Source type="list">System.Web.Extensions_1.0.dll.sources</Source>
-		</Sources>
-	</Assembly>
-	<Assembly name="System.Web.Extensions.Design_1.0" enabled="false" destination="{destdir}\lib\mono\2.0\System.Web.Extensions.Design_1.0.dll">
-		<References>
-			<Reference>System</Reference>
-			<Reference>System.Design</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Web.Extensions.Design_1.0\</SourcePath>
-		<Sources>
-			<Source type="list">System.Web.Extensions.Design_1.0.dll.sources</Source>
-		</Sources>
-	</Assembly>
 	<Assembly name="System.Web.Extensions" destination="{destdir}\lib\mono\2.0\System.Web.Extensions.dll">
 		<References>
 			<Reference>mscorlib</Reference>
@@ -1522,18 +1488,6 @@
 		<SourcePath>{sourcedir}\mcs\class\Mono.Management\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Management.dll.sources</Source>
-		</Sources>
-	</Assembly>
-	<Assembly name="Mono.Options" enabled="false" destination="{destdir}\lib\mono\2.0\Mono.Options.dll">
-		<References>
-			<Reference>mscorlib</Reference>
-			<Reference>System</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Options\</SourcePath>
-		<Sources>
-			<Source type="list">Mono.Options.dll.sources</Source>
 		</Sources>
 	</Assembly>
 	<Assembly name="Mono.Simd" destination="{destdir}\lib\mono\2.0\Mono.Simd.dll">
@@ -1721,8 +1675,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.Linq.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Abstractions.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Routing.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign enabled="false" assembly="{destdir}\lib\mono\2.0\System.Web.Extensions_1.0.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign enabled="false" assembly="{destdir}\lib\mono\2.0\System.Web.Extensions.Design_1.0.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Extensions.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Extensions.Design.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Runtime.Serialization.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1731,7 +1683,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\System.ServiceModel.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.ServiceModel.Web.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Management.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign enabled="false" assembly="{destdir}\lib\mono\2.0\Mono.Options.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Simd.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Messaging.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1813,8 +1764,6 @@
 	<Gac>{destdir}\lib\mono\2.0\System.Data.Linq.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Web.Abstractions.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Web.Routing.dll</Gac>
-	<Gac enabled="false">{destdir}\lib\mono\2.0\System.Web.Extensions_1.0.dll</Gac>
-	<Gac enabled="false">{destdir}\lib\mono\2.0\System.Web.Extensions.Design_1.0.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Web.Extensions.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Web.Extensions.Design.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Runtime.Serialization.dll</Gac>
@@ -1823,7 +1772,6 @@
 	<Gac>{destdir}\lib\mono\2.0\System.ServiceModel.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.ServiceModel.Web.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Management.dll</Gac>
-	<Gac enabled="false">{destdir}\lib\mono\2.0\Mono.Options.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Simd.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Messaging.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll</Gac>
