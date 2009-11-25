@@ -671,7 +671,6 @@
 	</Assembly>
 
 	<Culevel source="{sourcedir}\mcs\class\System.Web\UplevelHelperDefinitions.xml" destination="{sourcedir}\mcs\class\System.Web\System.Web\UplevelHelper.cs" />
-	<Copy source="C:\svn\System.Web.dll.resources" destination="{sourcedir}\mcs\class\System.Web\System.Web.dll.resources" />
 	<Resgen workingdir="{sourcedir}\mcs\class\System.Web">{sourcedir}\mcs\class\System.Web\resources\TranslationResources.resx</Resgen>
 
 	<Assembly name="System.Web" destination="{destdir}\lib\mono\2.0\System.Web.dll">
@@ -693,7 +692,6 @@
 		<SourcePath>{sourcedir}\mcs\class\System.Web\</SourcePath>
 		<Sources>
 			<Source type="list">System.Web.dll.sources</Source>
-			<Source type="list">System.Web.dll.resources</Source>
 			<Source>System.Web/UplevelHelper.cs</Source>
 		</Sources>
 	</Assembly>
@@ -754,8 +752,53 @@
 		<SourcePath>{sourcedir}\mcs\class\System.Web\</SourcePath>
 		<Sources>
 			<Source type="list">System.Web.dll.sources</Source>
-			<Source type="list">System.Web.dll.resources</Source>
 			<Source>System.Web/UplevelHelper.cs</Source>
+			<Source>-resource:resources/TranslationResources.resources</Source>
+			<Source>-resource:resources/WebUIValidation.js</Source>
+			<Source>-resource:resources/folder.gif</Source>
+			<Source>-resource:resources/file.gif</Source>
+			<Source>-resource:resources/computer.gif</Source>
+			<Source>-resource:resources/arrow_minus.gif</Source>
+			<Source>-resource:resources/arrow_noexpand.gif</Source>
+			<Source>-resource:resources/arrow_plus.gif</Source>
+			<Source>-resource:resources/arrow_up.gif</Source>
+			<Source>-resource:resources/arrow_down.gif</Source>
+			<Source>-resource:resources/box_full.gif</Source>
+			<Source>-resource:resources/box_empty.gif</Source>
+			<Source>-resource:resources/box_minus.gif</Source>
+			<Source>-resource:resources/box_noexpand.gif</Source>
+			<Source>-resource:resources/box_plus.gif</Source>
+			<Source>-resource:resources/contact.gif</Source>
+			<Source>-resource:resources/dot_empty.gif</Source>
+			<Source>-resource:resources/dot_full.gif</Source>
+			<Source>-resource:resources/dots.gif</Source>
+			<Source>-resource:resources/inbox.gif</Source>
+			<Source>-resource:resources/star_empty.gif</Source>
+			<Source>-resource:resources/star_full.gif</Source>
+			<Source>-resource:resources/warning.gif</Source>
+			<Source>-resource:resources/TreeView_noexpand.gif</Source>
+			<Source>-resource:resources/TreeView_dash.gif</Source>
+			<Source>-resource:resources/TreeView_dashminus.gif</Source>
+			<Source>-resource:resources/TreeView_dashplus.gif</Source>
+			<Source>-resource:resources/TreeView_i.gif</Source>
+			<Source>-resource:resources/TreeView_l.gif</Source>
+			<Source>-resource:resources/TreeView_lminus.gif</Source>
+			<Source>-resource:resources/TreeView_lplus.gif</Source>
+			<Source>-resource:resources/TreeView_minus.gif</Source>
+			<Source>-resource:resources/TreeView_plus.gif</Source>
+			<Source>-resource:resources/TreeView_r.gif</Source>
+			<Source>-resource:resources/TreeView_rminus.gif</Source>
+			<Source>-resource:resources/TreeView_rplus.gif</Source>
+			<Source>-resource:resources/TreeView_t.gif</Source>
+			<Source>-resource:resources/TreeView_tminus.gif</Source>
+			<Source>-resource:resources/TreeView_tplus.gif</Source>
+			<Source>-resource:resources/transparent.gif</Source>
+			<Source>-resource:resources/webform.js</Source>
+			<Source>-resource:resources/WebUIValidation_2.0.js</Source>
+			<Source>-resource:System.Web.UI.WebControls/GridView.js</Source>
+			<Source>-resource:System.Web.UI.WebControls/DetailsView.js</Source>
+			<Source>-resource:System.Web.UI.WebControls/TreeView.js</Source>
+			<Source>-resource:System.Web.UI.WebControls/Menu.js</Source>
 		</Sources>
 	</Assembly>
 
