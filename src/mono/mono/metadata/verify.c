@@ -4936,22 +4936,28 @@ mono_method_verify (MonoMethod *method, int level)
 	}
 
 	for (i = 0; i < ctx.num_locals; ++i) {
+		MonoType *uninflated = ctx.locals [i];
 		ctx.locals [i] = mono_class_inflate_generic_type_checked (ctx.locals [i], ctx.generic_context, &error);
 		if (!mono_error_ok (&error)) {
-			char *name = mono_type_full_name (ctx.locals [i]);
+			char *name = mono_type_full_name (ctx.locals [i] ? ctx.locals [i] : uninflated);
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid local %d of type %s", i, name));
 			g_free (name);
 			mono_error_cleanup (&error);
+			/* we must not free (in cleanup) what was not yet allocated (but only copied) */
+			ctx.num_locals = i;
 			goto cleanup;
 		}
 	}
 	for (i = 0; i < ctx.max_args; ++i) {
+		MonoType *uninflated = ctx.params [i];
 		ctx.params [i] = mono_class_inflate_generic_type_checked (ctx.params [i], ctx.generic_context, &error);
 		if (!mono_error_ok (&error)) {
-			char *name = mono_type_full_name (ctx.locals [i]);
+			char *name = mono_type_full_name (ctx.params [i] ? ctx.params [i] : uninflated);
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid parameter %d of type %s", i, name));
 			g_free (name);
 			mono_error_cleanup (&error);
+			/* we must not free (in cleanup) what was not yet allocated (but only copied) */
+			ctx.max_args = i;
 			goto cleanup;
 		}
 	}
@@ -5925,10 +5931,14 @@ cleanup:
 		mono_metadata_free_type (tmp->data);
 	g_slist_free (ctx.exception_types);
 
-	for (i = 0; i < ctx.num_locals; ++i)
-		mono_metadata_free_type (ctx.locals [i]);
-	for (i = 0; i < ctx.max_args; ++i)
-		mono_metadata_free_type (ctx.params [i]);
+	for (i = 0; i < ctx.num_locals; ++i) {
+		if (ctx.locals [i])
+			mono_metadata_free_type (ctx.locals [i]);
+	}
+	for (i = 0; i < ctx.max_args; ++i) {
+		if (ctx.params [i])
+			mono_metadata_free_type (ctx.params [i]);
+	}
 
 	if (ctx.eval.stack)
 		g_free (ctx.eval.stack);
