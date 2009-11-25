@@ -42,7 +42,6 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
@@ -69,6 +68,7 @@
 #include <mach/exception.h>
 #include <mach/task.h>
 #include <pthread.h>
+#include <dlfcn.h>
 
 #ifdef HAVE_SGEN_GC
 #undef pthread_create
@@ -196,6 +196,21 @@ mono_runtime_install_handlers (void)
 {
 	macosx_register_exception_handler ();
 	mono_runtime_posix_install_handlers ();
+
+	/* Snow Leopard has a horrible bug: http://openradar.appspot.com/7209349
+	 * This causes obscure SIGTRAP's for any application that comes across this built on
+	 * Snow Leopard.  This is a horrible hack to ensure that the private __CFInitialize
+	 * is run on the main thread, so that we don't get SIGTRAPs later
+	 */
+#if defined (__APPLE__) && (defined (__i386__) || defined (__x86_64__))
+	{
+		void *handle = dlopen ("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation", RTLD_LAZY);
+		if (handle == NULL)
+			return;
+
+		dlclose (handle);
+	}
+#endif
 }
 
 pid_t
