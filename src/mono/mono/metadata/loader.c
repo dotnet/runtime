@@ -621,17 +621,21 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoMethod *m = klass->methods [i];
+		MonoMethodSignature *msig;
 
 		if (!((fqname && !strcmp (m->name, fqname)) ||
 		      (qname && !strcmp (m->name, qname)) ||
 		      (name && !strcmp (m->name, name))))
 			continue;
+		msig = mono_method_signature (m);
+		if (!msig)
+			continue;
 
 		if (sig->call_convention == MONO_CALL_VARARG) {
-			if (mono_metadata_signature_vararg_match (sig, mono_method_signature (m)))
+			if (mono_metadata_signature_vararg_match (sig, msig))
 				break;
 		} else {
-			if (mono_metadata_signature_equal (sig, mono_method_signature (m)))
+			if (mono_metadata_signature_equal (sig, msig))
 				break;
 		}
 	}
