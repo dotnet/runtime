@@ -118,6 +118,11 @@ typedef struct
 	/* This is the context which needs to be restored after the invoke */
 	MonoContext ctx;
 	gboolean has_ctx;
+	/*
+	 * If this is set, invoke this method with the arguments given by ARGS.
+	 */
+	MonoMethod *method;
+	gpointer *args;
 } InvokeData;
 
 typedef struct {
@@ -806,6 +811,11 @@ mono_debugger_agent_cleanup (void)
 	objrefs_cleanup ();
 	ids_cleanup ();
 
+#ifdef HOST_WIN32
+	shutdown (conn_fd, SD_BOTH);
+#else
+	shutdown (conn_fd, SHUT_RDWR);
+#endif
 	
 	mono_mutex_destroy (&debugger_thread_exited_mutex);
 	mono_cond_destroy (&debugger_thread_exited_cond);
@@ -3833,6 +3843,16 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 	MonoLMFExt ext;
 #endif
 
+	if (invoke->method) {
+		/* 
+		 * Invoke this method directly, currently only Environment.Exit () is supported.
+		 */
+		this = NULL;
+		DEBUG (1, printf ("[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (invoke->method, TRUE), this ? this->vtable->klass->name : "<null>"));
+		mono_runtime_invoke (invoke->method, NULL, invoke->args, &exc);
+		g_assert_not_reached ();
+	}
+
 	m = decode_methodid (p, &p, end, &domain, &err);
 	if (err)
 		return err;
@@ -4037,6 +4057,22 @@ invoke_method (void)
 	suspend_current ();
 }
 
+static gboolean
+is_really_suspended (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoThread *thread = value;
+	DebuggerTlsData *tls;
+	gboolean res;
+
+	mono_loader_lock ();
+	tls = mono_g_hash_table_lookup (thread_to_tls, thread);
+	g_assert (tls);
+	res = tls->really_suspended;
+	mono_loader_unlock ();
+
+	return res;
+}
+
 static ErrorCode
 vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -4086,7 +4122,14 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		disconnected = TRUE;
 		break;
 	case CMD_VM_EXIT: {
-		int exit_code = decode_int (p, &p, end);
+		MonoInternalThread *thread;
+		DebuggerTlsData *tls;
+		MonoClass *env_class;
+		MonoMethod *exit_method;
+		gpointer *args;
+		int exit_code;
+
+		exit_code = decode_int (p, &p, end);
 
 		// FIXME: What if there is a VM_DEATH event request with SUSPEND_ALL ?
 
@@ -4102,32 +4145,67 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		mono_loader_unlock ();
 
-		/* FIXME: Races with normal shutdown */
-		while (suspend_count > 0)
-			resume_vm ();
-
 		/*
 		 * The JDWP documentation says that the shutdown is not orderly. It doesn't
 		 * specify whenever a VM_DEATH event is sent. We currently do an orderly
-		 * shutdown similar to Environment.Exit ().
+		 * shutdown by hijacking a thread to execute Environment.Exit (). This is
+		 * better than doing the shutdown ourselves, since it avoids various races.
 		 */
-		mono_runtime_set_shutting_down ();
 
-		mono_threads_set_shutting_down ();
+		suspend_vm ();
+		wait_for_suspend ();
 
-		/* Suspend all managed threads since the runtime is going away */
-		DEBUG(1, fprintf (log_file, "Suspending all threads...\n"));
-		mono_thread_suspend_all_other_threads ();
-		DEBUG(1, fprintf (log_file, "Shutting down the runtime...\n"));
-		mono_runtime_quit ();
+		env_class = mono_class_from_name (mono_defaults.corlib, "System", "Environment");
+		g_assert (env_class);
+		exit_method = mono_class_get_method_from_name (env_class, "Exit", 1);
+		g_assert (exit_method);
+
+		mono_loader_lock ();
+		thread = mono_g_hash_table_find (tid_to_thread, is_really_suspended, NULL);
+		mono_loader_unlock ();
+
+		if (thread) {
+			mono_loader_lock ();
+			tls = mono_g_hash_table_lookup (thread_to_tls, thread);
+			mono_loader_unlock ();
+
+			args = g_new0 (gpointer, 1);
+			args [0] = g_malloc (sizeof (int));
+			*(int*)(args [0]) = exit_code;
+
+			tls->invoke = g_new0 (InvokeData, 1);
+			tls->invoke->method = exit_method;
+			tls->invoke->args = args;
+
+			while (suspend_count > 0)
+				resume_vm ();
+		} else {
+			/* 
+			 * No thread found, do it ourselves.
+			 * FIXME: This can race with normal shutdown etc.
+			 */
+			while (suspend_count > 0)
+				resume_vm ();
+
+			mono_runtime_set_shutting_down ();
+
+			mono_threads_set_shutting_down ();
+
+			/* Suspend all managed threads since the runtime is going away */
+			DEBUG(1, fprintf (log_file, "Suspending all threads...\n"));
+			mono_thread_suspend_all_other_threads ();
+			DEBUG(1, fprintf (log_file, "Shutting down the runtime...\n"));
+			mono_runtime_quit ();
 #ifdef HOST_WIN32
-		shutdown (conn_fd, SD_BOTH);
+			shutdown (conn_fd, SD_BOTH);
 #else
-		shutdown (conn_fd, SHUT_RDWR);
+			shutdown (conn_fd, SHUT_RDWR);
 #endif
-		DEBUG(1, fprintf (log_file, "Exiting...\n"));
+			DEBUG(1, fprintf (log_file, "Exiting...\n"));
 
-		exit (exit_code);
+			exit (exit_code);
+		}
+		break;
 	}		
 	case CMD_VM_INVOKE_METHOD: {
 		int objid = decode_objid (p, &p, end);
@@ -5693,11 +5771,7 @@ debugger_thread (void *arg)
 	mono_cond_signal (&debugger_thread_exited_cond);
 	mono_mutex_unlock (&debugger_thread_exited_mutex);
 
-#ifdef HOST_WIN32
-	shutdown (conn_fd, SD_BOTH);
-#else
-	shutdown (conn_fd, SHUT_RDWR);
-#endif
+	DEBUG (1, printf ("[dbg] Debugger thread exited.\n"));
 
 	return 0;
 }
