@@ -4945,6 +4945,7 @@ mono_method_verify (MonoMethod *method, int level)
 			mono_error_cleanup (&error);
 			/* we must not free (in cleanup) what was not yet allocated (but only copied) */
 			ctx.num_locals = i;
+			ctx.max_args = 0;
 			goto cleanup;
 		}
 	}
