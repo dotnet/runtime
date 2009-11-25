@@ -2020,6 +2020,7 @@ check_unverifiable_type (VerifyContext *ctx, MonoType *type)
 static ILStackDesc *
 stack_push (VerifyContext *ctx)
 {
+	g_assert (ctx->eval.size < ctx->max_stack);
 	return & ctx->eval.stack [ctx->eval.size++];
 }
 
@@ -2035,7 +2036,9 @@ stack_push_val (VerifyContext *ctx, int stype, MonoType *type)
 static ILStackDesc *
 stack_pop (VerifyContext *ctx)
 {
-	ILStackDesc *ret = ctx->eval.stack + --ctx->eval.size;
+	ILStackDesc *ret;
+	g_assert (ctx->eval.size > 0);	
+	ret = ctx->eval.stack + --ctx->eval.size;
 	if ((ret->stype & UNINIT_THIS_MASK) == UNINIT_THIS_MASK)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Found use of uninitialized 'this ptr' ref at 0x%04x", ctx->ip_offset));
 	return ret;
@@ -2047,6 +2050,7 @@ stack_pop (VerifyContext *ctx)
 static ILStackDesc *
 stack_pop_safe (VerifyContext *ctx)
 {
+	g_assert (ctx->eval.size > 0);
 	return ctx->eval.stack + --ctx->eval.size;
 }
 
@@ -3473,6 +3477,8 @@ do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 {
 	MonoClassField *field;
 	MonoClass *klass;
+	if (!check_overflow (ctx))
+		return;
 	if (!take_addr)
 		CLEAR_PREFIX (ctx, PREFIX_VOLATILE);
 
