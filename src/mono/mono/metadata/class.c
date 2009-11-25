@@ -506,7 +506,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			return NULL;
 		if (num >= inst->type_argc) {
 			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
-			mono_error_set_bad_image (error, image->module_name, "MVAR %d (%s) cannot be expanded in this context with %d instantiations",
+			mono_error_set_bad_image (error, image, "MVAR %d (%s) cannot be expanded in this context with %d instantiations",
 				num, info ? info->name : "", inst->type_argc);
 			return NULL;
 		}
@@ -529,7 +529,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			return NULL;
 		if (num >= inst->type_argc) {
 			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
-			mono_error_set_bad_image (error, image->module_name, "VAR %d (%s) cannot be expanded in this context with %d instantiations",
+			mono_error_set_bad_image (error, image, "VAR %d (%s) cannot be expanded in this context with %d instantiations",
 				num, info ? info->name : "", inst->type_argc);
 			return NULL;
 		}

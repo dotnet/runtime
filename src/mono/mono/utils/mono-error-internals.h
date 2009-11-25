@@ -45,7 +45,10 @@ void
 mono_error_set_field_load (MonoError *error, MonoClass *klass, const char *field_name, const char *msg_format, ...) MONO_INTERNAL;
 
 void
-mono_error_set_bad_image (MonoError *error, const char *file_name, const char *msg_format, ...) MONO_INTERNAL;
+mono_error_set_bad_image (MonoError *error, MonoImage *image, const char *msg_format, ...) MONO_INTERNAL;
+
+void
+mono_error_set_bad_image_name (MonoError *error, const char *file_name, const char *msg_format, ...) MONO_INTERNAL;
 
 void
 mono_error_set_out_of_memory (MonoError *error, const char *msg_format, ...) MONO_INTERNAL;

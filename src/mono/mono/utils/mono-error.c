@@ -233,13 +233,24 @@ mono_error_set_field_load (MonoError *oerror, MonoClass *klass, const char *fiel
 }
 
 void
-mono_error_set_bad_image (MonoError *oerror, const char *assembly_name, const char *msg_format, ...)
+mono_error_set_bad_image_name (MonoError *oerror, const char *assembly_name, const char *msg_format, ...)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
 	error->error_code = MONO_ERROR_BAD_IMAGE;
 	mono_error_set_assembly_name (oerror, assembly_name);
+	set_error_message ();
+}
+
+void
+mono_error_set_bad_image (MonoError *oerror, MonoImage *image, const char *msg_format, ...)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+	mono_error_prepare (error);
+
+	error->error_code = MONO_ERROR_BAD_IMAGE;
+	error->assembly_name = image ? mono_image_get_name (image) : "<no_image>";
 	set_error_message ();
 }
 
