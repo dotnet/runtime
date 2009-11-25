@@ -21,14 +21,14 @@
 	<Copy source="{sourcedir}\mono\data\browscap.ini" destination="{destdir}\etc\mono\browscap.ini" />
 
 	<!-- Bring in xulrunner -->
-	<Copy type="directory" source="C:\svn\xulrunner\" destination="{destdir}\xulrunner\" />
+	<Copy installeronly="true" type="directory" source="C:\svn\xulrunner\" destination="{destdir}\xulrunner\" />
 
-	<Copy source="C:\svn\monoexternal\mono.ico" destination="{sourcedir}\build\mono.ico" />
-	<Copy source="C:\svn\monoexternal\Mono Command Prompt.lnk" destination="{sourcedir}\build\Mono Command Prompt.lnk" />
-	<Copy source="C:\svn\monoexternal\Mono Online Documentation.url" destination="{sourcedir}\build\Mono Online Documentation.url" />
-	<Copy source="C:\svn\monoexternal\Mono Project Website.url" destination="{sourcedir}\build\Mono Project Website.url" />
+	<Copy installeronly="true" source="C:\svn\monoexternal\mono.ico" destination="{sourcedir}\build\mono.ico" />
+	<Copy installeronly="true" source="C:\svn\monoexternal\Mono Command Prompt.lnk" destination="{sourcedir}\build\Mono Command Prompt.lnk" />
+	<Copy installeronly="true" source="C:\svn\monoexternal\Mono Online Documentation.url" destination="{sourcedir}\build\Mono Online Documentation.url" />
+	<Copy installeronly="true" source="C:\svn\monoexternal\Mono Project Website.url" destination="{sourcedir}\build\Mono Project Website.url" />
 
-	<Copy source="C:\svn\jaystuff.bat" destination="{sourcedir}\jaystuff.bat" />
+	<Copy source="{sourcedir}\mono\msvc\jaystuff.bat" destination="{sourcedir}\jaystuff.bat" />
 	<Copy enabled="false" source="C:\svn\PatternParser.jay" destination="{sourcedir}\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" />
 
 	<Copy source="{sourcedir}\mcs\class\System.XML\System.Xml.XPath\Parser.jay" destination="{sourcedir}\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" />
@@ -1968,5 +1968,5 @@
 	<Delete type="file">{destdir}\y.output</Delete>
 
 	<!-- Build the wix includes files -->
-	<WixInclude root="{destdir}" wixfiles="{destdir}\Files.wxi" wixcomponents="{destdir}\Components.wxi"/>
+	<WixInclude installeronly="true" root="{destdir}" wixfiles="{destdir}\Files.wxi" wixcomponents="{destdir}\Components.wxi"/>
 </Assemblies>
