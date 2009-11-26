@@ -1921,7 +1921,6 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 void
 mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, gboolean no_throw)
 {
-#ifndef DISABLE_JIT
 	MonoJitICallInfo *info;
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
@@ -1934,7 +1933,6 @@ mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr
 	info = mono_register_jit_icall (func, name, sig, no_throw);
 
 	emul_opcode_map [opcode] = info;
-#endif
 }
 
 static void
