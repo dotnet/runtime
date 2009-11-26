@@ -7041,12 +7041,12 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 		}
 
 		for (i = start_index; i < klass->method.count; ++i) {
-			guint32 cols [MONO_METHOD_SIZE];
+			guint32 flags;
 
 			/* class->method.first points into the methodptr table */
-			mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
+			flags = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, klass->method.first + i, MONO_METHOD_FLAGS);
 
-			if (cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_VIRTUAL)
+			if (flags & METHOD_ATTRIBUTE_VIRTUAL)
 				break;
 		}
 
