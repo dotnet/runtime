@@ -1220,6 +1220,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->has_references = (flags >> 5) & 0x1;
 	info->has_static_refs = (flags >> 6) & 0x1;
 	info->no_special_static_fields = (flags >> 7) & 0x1;
+	info->is_generic_container = (flags >> 8) & 0x1;
 
 	if (info->has_cctor) {
 		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, NULL, NULL, buf, &buf);
