@@ -243,6 +243,24 @@ mono_g_hash_table_foreach (MonoGHashTable *hash, GHFunc func, gpointer user_data
 	}
 }
 
+gpointer
+mono_g_hash_table_find (GHashTable *hash, GHRFunc predicate, gpointer user_data)
+{
+	int i;
+	
+	g_return_val_if_fail (hash != NULL, NULL);
+	g_return_val_if_fail (predicate != NULL, NULL);
+
+	for (i = 0; i < hash->table_size; i++){
+		Slot *s;
+
+		for (s = hash->table [i]; s != NULL; s = s->next)
+			if ((*predicate)(s->key, s->value, user_data))
+				return s->value;
+	}
+	return NULL;
+}
+
 gboolean
 mono_g_hash_table_remove (MonoGHashTable *hash, gconstpointer key)
 {
