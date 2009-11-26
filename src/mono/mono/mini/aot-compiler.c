@@ -4976,6 +4976,108 @@ emit_got (MonoAotCompile *acfg)
 	emit_pointer (acfg, acfg->got_symbol);
 }
 
+typedef struct GlobalsTableEntry {
+	guint32 value, index;
+	struct GlobalsTableEntry *next;
+} GlobalsTableEntry;
+
+static void
+emit_globals_table (MonoAotCompile *acfg)
+{
+	int i, table_size;
+	guint32 hash;
+	GPtrArray *table;
+	char symbol [256];
+	GlobalsTableEntry *entry, *new_entry;
+
+	/*
+	 * Construct a chained hash table for mapping global names to their index in
+	 * the globals table.
+	 */
+	table_size = g_spaced_primes_closest ((int)(acfg->globals->len * 1.5));
+	table = g_ptr_array_sized_new (table_size);
+	for (i = 0; i < table_size; ++i)
+		g_ptr_array_add (table, NULL);
+	for (i = 0; i < acfg->globals->len; ++i) {
+		char *name = g_ptr_array_index (acfg->globals, i);
+
+		hash = mono_aot_str_hash (name) % table_size;
+
+		/* FIXME: Allocate from the mempool */
+		new_entry = g_new0 (GlobalsTableEntry, 1);
+		new_entry->value = i;
+
+		entry = g_ptr_array_index (table, hash);
+		if (entry == NULL) {
+			new_entry->index = hash;
+			g_ptr_array_index (table, hash) = new_entry;
+		} else {
+			while (entry->next)
+				entry = entry->next;
+			
+			entry->next = new_entry;
+			new_entry->index = table->len;
+			g_ptr_array_add (table, new_entry);
+		}
+	}
+
+	/* Emit the table */
+	sprintf (symbol, ".Lglobals_hash");
+	emit_section_change (acfg, ".text", 0);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+
+	/* FIXME: Optimize memory usage */
+	g_assert (table_size < 65000);
+	emit_int16 (acfg, table_size);
+	for (i = 0; i < table->len; ++i) {
+		GlobalsTableEntry *entry = g_ptr_array_index (table, i);
+
+		if (entry == NULL) {
+			emit_int16 (acfg, 0);
+			emit_int16 (acfg, 0);
+		} else {
+			emit_int16 (acfg, entry->value + 1);
+			if (entry->next)
+				emit_int16 (acfg, entry->next->index);
+			else
+				emit_int16 (acfg, 0);
+		}
+	}
+
+	/* Emit the names */
+	for (i = 0; i < acfg->globals->len; ++i) {
+		char *name = g_ptr_array_index (acfg->globals, i);
+
+		sprintf (symbol, "name_%d", i);
+		emit_section_change (acfg, ".text", 1);
+		emit_label (acfg, symbol);
+		emit_string (acfg, name);
+	}
+
+	/* Emit the globals table */
+	sprintf (symbol, ".Lglobals");
+	emit_section_change (acfg, ".data", 0);
+	/* This is not a global, since it is accessed by the init function */
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+
+	emit_pointer (acfg, ".Lglobals_hash");
+
+	for (i = 0; i < acfg->globals->len; ++i) {
+		char *name = g_ptr_array_index (acfg->globals, i);
+
+		sprintf (symbol, "name_%d", i);
+		emit_pointer (acfg, symbol);
+
+		sprintf (symbol, "%s", name);
+		emit_pointer (acfg, symbol);
+	}
+	/* Null terminate the table */
+	emit_int32 (acfg, 0);
+	emit_int32 (acfg, 0);
+}
+
 static void
 emit_globals (MonoAotCompile *acfg)
 {
@@ -5004,42 +5106,13 @@ emit_globals (MonoAotCompile *acfg)
 	 * When static linking, we emit a global which will point to the symbol table.
 	 */
 	if (acfg->aot_opts.static_link) {
-		int i;
 		char symbol [256];
 		char *p;
 
 		/* Emit a string holding the assembly name */
 		emit_string_symbol (acfg, "mono_aot_assembly_name", acfg->image->assembly->aname.name);
 
-		/* Emit the names */
-		for (i = 0; i < acfg->globals->len; ++i) {
-			char *name = g_ptr_array_index (acfg->globals, i);
-
-			sprintf (symbol, "name_%d", i);
-			emit_section_change (acfg, ".text", 1);
-			emit_label (acfg, symbol);
-			emit_string (acfg, name);
-		}
-
-		/* Emit the globals table */
-		sprintf (symbol, ".Lglobals");
-		emit_section_change (acfg, ".data", 0);
-		/* This is not a global, since it is accessed by the init function */
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-
-		for (i = 0; i < acfg->globals->len; ++i) {
-			char *name = g_ptr_array_index (acfg->globals, i);
-
-			sprintf (symbol, "name_%d", i);
-			emit_pointer (acfg, symbol);
-
-			sprintf (symbol, "%s", name);
-			emit_pointer (acfg, symbol);
-		}
-		/* Null terminate the table */
-		emit_int32 (acfg, 0);
-		emit_int32 (acfg, 0);
+		emit_globals_table (acfg);
 
 		/* 
 		 * Emit a global symbol which can be passed by an embedding app to
@@ -5138,7 +5211,6 @@ emit_autoreg (MonoAotCompile *acfg)
 			 ".size	.%1$s,.-.%1$s\n", symbol);
 #endif
 #else
-	g_assert_not_reached ();
 #endif
 
 	g_free (symbol);

@@ -831,15 +831,46 @@ static void
 find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *value)
 {
 	if (globals) {
-		int i = 0;
+		int global_index;
+		guint16 *table, *entry;
+		guint16 table_size;
+		guint32 hash;		
 
-		*value = NULL;
-		for (i = 0; globals [i]; i+= 2) {
-			if (strcmp (globals [i], name) == 0) {
-				*value = globals [i + 1];
+		/* The first entry points to the hash */
+		table = globals [0];
+		globals ++;
+
+		table_size = table [0];
+		table ++;
+
+		hash = mono_aot_str_hash (name) % table_size;
+
+		entry = &table [hash * 2];
+
+		/* Search the hash for the index into the globals table */
+		global_index = -1;
+		while (entry [0] != 0) {
+			guint32 index = entry [0] - 1;
+			guint32 next = entry [1];
+
+			//printf ("X: %s %s\n", (char*)globals [index * 2], name);
+
+			if (!strcmp (globals [index * 2], name)) {
+				global_index = index;
+				break;
+			}
+
+			if (next != 0) {
+				entry = &table [next * 2];
+			} else {
 				break;
 			}
 		}
+
+		if (global_index != -1)
+			*value = globals [global_index * 2 + 1];
+		else
+			*value = NULL;
 	} else {
 		mono_dl_symbol (module, name, value);
 	}
