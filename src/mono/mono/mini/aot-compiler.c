@@ -100,6 +100,7 @@ typedef struct MonoAotOptions {
 	int nthreads;
 	int ntrampolines;
 	gboolean print_skipped_methods;
+	gboolean stats;
 	char *tool_prefix;
 	gboolean autoreg;
 } MonoAotOptions;
@@ -3538,6 +3539,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->soft_debug = TRUE;
 		} else if (str_begins_with (arg, "print-skipped")) {
 			opts->print_skipped_methods = TRUE;
+		} else if (str_begins_with (arg, "stats")) {
+			opts->stats = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -5773,12 +5776,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	printf ("Methods without GOT slots: %d (%d%%)\n", acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100);
 	printf ("Direct calls: %d (%d%%)\n", acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
 
-	/*
-	printf ("GOT slot distribution:\n");
-	for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
-		if (acfg->stats.got_slot_types [i])
-			printf ("\t%s: %d\n", get_patch_name (i), acfg->stats.got_slot_types [i]);
-	*/
+	if (acfg->aot_opts.stats) {
+		int i;
+
+		printf ("GOT slot distribution:\n");
+		for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
+			if (acfg->stats.got_slot_types [i])
+				printf ("\t%s: %d\n", get_patch_name (i), acfg->stats.got_slot_types [i]);
+	}
 
 	printf ("JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
 
