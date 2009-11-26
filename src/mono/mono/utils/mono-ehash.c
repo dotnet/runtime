@@ -244,7 +244,7 @@ mono_g_hash_table_foreach (MonoGHashTable *hash, GHFunc func, gpointer user_data
 }
 
 gpointer
-mono_g_hash_table_find (GHashTable *hash, GHRFunc predicate, gpointer user_data)
+mono_g_hash_table_find (MonoGHashTable *hash, GHRFunc predicate, gpointer user_data)
 {
 	int i;
 	
