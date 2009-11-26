@@ -2286,6 +2286,8 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		this_reg = this->dreg;
 
+		MONO_EMIT_NULL_CHECK (cfg, this_reg);
+
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 		if ((method->klass->parent == mono_defaults.multicastdelegate_class) && (!strcmp (method->name, "Invoke"))) {
 			/* Make a call to delegate->invoke_impl */
@@ -2877,6 +2879,7 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	int rank_reg = alloc_dreg (cfg ,STACK_I4);
 
 	obj_reg = sp [0]->dreg;
+	MONO_EMIT_NULL_CHECK (cfg, obj_reg);
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
 
@@ -3827,6 +3830,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "GetType") == 0) {
 			int dreg = alloc_preg (cfg);
 			int vt_reg = alloc_preg (cfg);
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg);
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vt_reg, args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, vt_reg, G_STRUCT_OFFSET (MonoVTable, type));
 			type_from_op (ins, NULL, NULL);
@@ -3856,6 +3860,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "get_Rank") == 0) {
 			int dreg = alloc_ireg (cfg);
 			int vtable_reg = alloc_preg (cfg);
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, vtable_reg, 
 										   args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU1_MEMBASE, dreg,
@@ -3866,6 +3871,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else if (strcmp (cmethod->name, "get_Length") == 0) {
 			int dreg = alloc_ireg (cfg);
 
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg);
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg, 
 								   args [0]->dreg, G_STRUCT_OFFSET (MonoArray, max_length));
 			type_from_op (ins, NULL, NULL);
@@ -4896,11 +4902,13 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 			for (ins = bb->code; ins; ins = ins->next) {
 				switch (ins->opcode) {
 				case OP_LDLEN:
+					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1);
 					NEW_LOAD_MEMBASE (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
 									  G_STRUCT_OFFSET (MonoArray, max_length));
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
 				case OP_BOUNDS_CHECK:
+					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1); \
 					MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2);
 					break;
 				case OP_NEWARR:
@@ -4930,6 +4938,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					}
 					break;
 				case OP_STRLEN:
+					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1);
 					NEW_LOAD_MEMBASE (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg,
 									  ins->sreg1, G_STRUCT_OFFSET (MonoString, length));
 					MONO_ADD_INS (cfg->cbb, dest);
@@ -8058,6 +8067,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					MonoInst *store;
 
+					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
+
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
 
 #if HAVE_WRITE_BARRIERS
@@ -8119,6 +8130,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					EMIT_NEW_VARLOADA (cfg, ins, var, &var->klass->byval_arg);
 					sp [0] = ins;
 				}
+
+				MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
 
 				if (*ip == CEE_LDFLDA) {
 					dreg = alloc_preg (cfg);

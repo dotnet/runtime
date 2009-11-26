@@ -1038,6 +1038,7 @@ typedef struct {
 	guint            uses_simd_intrinsics : 1;
 	guint            keep_cil_nops : 1;
 	guint            gen_seq_points : 1;
+	guint            explicit_null_checks : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;
@@ -1309,6 +1310,7 @@ typedef struct {
 	gboolean dyn_runtime_invoke;
 	gboolean gdb;
 	gboolean gen_seq_points;
+	gboolean explicit_null_checks;
 } MonoDebugOptions;
 
 enum {

@@ -3231,6 +3231,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->skip_visibility = method->skip_visibility;
 	cfg->orig_method = method;
 	cfg->gen_seq_points = debug_options.gen_seq_points;
+	cfg->explicit_null_checks = debug_options.explicit_null_checks;
 	if (try_generic_shared)
 		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
 	cfg->compile_llvm = try_llvm;
@@ -4893,9 +4894,11 @@ mini_parse_debug_options (void)
 			debug_options.dyn_runtime_invoke = TRUE;
 		else if (!strcmp (arg, "gdb"))
 			debug_options.gdb = TRUE;
+		else if (!strcmp (arg, "explicit-null-checks"))
+			debug_options.explicit_null_checks = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'dyn-runtime-invoke', 'gdb'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks'\n");
 			exit (1);
 		}
 	}

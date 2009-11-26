@@ -736,6 +736,13 @@ static int ccount = 0;
 	} while (0)
 #endif
 
+#define MONO_EMIT_NULL_CHECK(cfg, reg) do { \
+		if (cfg->explicit_null_checks) {							  \
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0); \
+			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException"); \
+		}																\
+	} while (0)
+
 /* cfg is the MonoCompile been used
  * array_reg is the vreg holding the array object
  * array_type is a struct (usually MonoArray or MonoString)
@@ -743,18 +750,19 @@ static int ccount = 0;
  * index_reg is the vreg holding the index
  */
 #define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
-            if (!(cfg->opt & MONO_OPT_ABCREM)) { \
-                MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
-            } else { \
-                MonoInst *ins; \
-                MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK); \
-                ins->sreg1 = array_reg; \
-                ins->sreg2 = index_reg; \
-                ins->inst_imm = G_STRUCT_OFFSET (array_type, array_length_field); \
-                MONO_ADD_INS ((cfg)->cbb, ins); \
-			    (cfg)->flags |= MONO_CFG_HAS_ARRAY_ACCESS; \
-                (cfg)->cbb->has_array_access = TRUE; \
-            } \
+		if (!(cfg->opt & MONO_OPT_ABCREM)) {							\
+			MONO_EMIT_NULL_CHECK (cfg, array_reg);						\
+			MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
+		} else {														\
+			MonoInst *ins;												\
+			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);				\
+			ins->sreg1 = array_reg;										\
+			ins->sreg2 = index_reg;										\
+			ins->inst_imm = G_STRUCT_OFFSET (array_type, array_length_field); \
+			MONO_ADD_INS ((cfg)->cbb, ins);								\
+			(cfg)->flags |= MONO_CFG_HAS_ARRAY_ACCESS;					\
+			(cfg)->cbb->has_array_access = TRUE;						\
+		}																\
     } while (0)
 
 G_END_DECLS
