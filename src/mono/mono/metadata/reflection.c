@@ -2601,16 +2601,29 @@ is_field_on_inst (MonoClassField *field)
 static MonoType*
 get_field_on_inst_generic_type (MonoClassField *field)
 {
+	MonoClass *class, *gtd;
 	MonoDynamicGenericClass *dgclass;
 	int field_index;
 
 	g_assert (is_field_on_inst (field));
 
 	dgclass = (MonoDynamicGenericClass*)field->parent->generic_class;
-	field_index = field - dgclass->fields;
 
-	g_assert (field_index >= 0 && field_index < dgclass->count_fields);
-	return dgclass->field_generic_types [field_index];
+	if (field >= dgclass->fields && field - dgclass->fields < dgclass->count_fields) {
+		field_index = field - dgclass->fields;
+		return dgclass->field_generic_types [field_index];		
+	}
+
+	class = field->parent;
+	gtd = class->generic_class->container_class;
+
+	if (field >= class->fields && field - class->fields < class->field.count) {
+		field_index = field - class->fields;
+		return gtd->fields [field_index].type;
+	}
+
+	g_assert_not_reached ();
+	return 0;
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
@@ -10263,6 +10276,7 @@ static void
 ensure_generic_class_runtime_vtable (MonoClass *klass)
 {
 	MonoClass *gklass = klass->generic_class->container_class;
+	MonoDynamicGenericClass *dgclass;
 	int i;
 
 	if (klass->wastypebuilder)
@@ -10270,24 +10284,44 @@ ensure_generic_class_runtime_vtable (MonoClass *klass)
 
 	ensure_runtime_vtable (gklass);
 
-	klass->method.count = gklass->method.count;
-	klass->methods = mono_image_alloc (klass->image, sizeof (MonoMethod*) * (klass->method.count + 1));
+	dgclass = (MonoDynamicGenericClass *)  klass->generic_class;
 
-	for (i = 0; i < klass->method.count; i++) {
-		klass->methods [i] = mono_class_inflate_generic_method_full (
-			gklass->methods [i], klass, mono_class_get_context (klass));
+	if (!dgclass->initialized)
+		return;
+
+	if (klass->method.count != gklass->method.count) {
+		klass->method.count = gklass->method.count;
+		klass->methods = mono_image_alloc (klass->image, sizeof (MonoMethod*) * (klass->method.count + 1));
+
+		for (i = 0; i < klass->method.count; i++) {
+			klass->methods [i] = mono_class_inflate_generic_method_full (
+				gklass->methods [i], klass, mono_class_get_context (klass));
+		}
 	}
 
-	klass->interface_count = gklass->interface_count;
-	klass->interfaces = mono_image_alloc (klass->image, sizeof (MonoClass*) * klass->interface_count);
-	for (i = 0; i < klass->interface_count; ++i) {
-		MonoType *iface_type = mono_class_inflate_generic_type (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass));
-		klass->interfaces [i] = mono_class_from_mono_type (iface_type);
-		mono_metadata_free_type (iface_type);
+	if (klass->interface_count != gklass->interface_count) {
+		klass->interface_count = gklass->interface_count;
+		klass->interfaces = mono_image_alloc (klass->image, sizeof (MonoClass*) * klass->interface_count);
+		for (i = 0; i < klass->interface_count; ++i) {
+			MonoType *iface_type = mono_class_inflate_generic_type (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass));
+			klass->interfaces [i] = mono_class_from_mono_type (iface_type);
+			mono_metadata_free_type (iface_type);
 
-		ensure_runtime_vtable (klass->interfaces [i]);
+			ensure_runtime_vtable (klass->interfaces [i]);
+		}
+		klass->interfaces_inited = 1;
 	}
-	klass->interfaces_inited = 1;
+
+	if (klass->field.count != gklass->field.count) {
+		klass->field.count = gklass->field.count;
+		klass->fields = image_g_new0 (klass->image, MonoClassField, klass->field.count);
+
+		for (i = 0; i < klass->field.count; i++) {
+			klass->fields [i] = gklass->fields [i];
+			klass->fields [i].parent = klass;
+			klass->fields [i].type = mono_class_inflate_generic_type (gklass->fields [i].type, mono_class_get_context (klass));
+		}
+	}
 
 	/*We can only finish with this klass once it's parent has as well*/
 	if (gklass->wastypebuilder)
@@ -10588,16 +10622,17 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 }
 
 static gboolean
-remove_instantiations_of (gpointer key,
+remove_instantiations_of_and_ensure_contents (gpointer key,
 						  gpointer value,
 						  gpointer user_data)
 {
 	MonoType *type = (MonoType*)key;
 	MonoClass *klass = (MonoClass*)user_data;
 
-	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass))
+	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass)) {
+		ensure_runtime_vtable (mono_class_from_mono_type (type)); //Make sure the vtable is complete
 		return TRUE;
-	else
+	} else
 		return FALSE;
 }
 
@@ -10757,9 +10792,11 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * If we are a generic TypeBuilder, there might be instantiations in the type cache
 	 * which have type System.Reflection.MonoGenericClass, but after the type is created, 
 	 * we want to return normal System.MonoType objects, so clear these out from the cache.
+	 *
+	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
 	if (domain->type_hash && klass->generic_container)
-		mono_g_hash_table_foreach_remove (domain->type_hash, remove_instantiations_of, klass);
+		mono_g_hash_table_foreach_remove (domain->type_hash, remove_instantiations_of_and_ensure_contents, klass);
 
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
