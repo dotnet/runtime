@@ -609,6 +609,7 @@ typedef struct MonoCachedClassInfo {
 	guint has_references : 1;
 	guint has_static_refs : 1;
 	guint no_special_static_fields : 1;
+	guint is_generic_container : 1;
 	guint32 cctor_token;
 	MonoImage *finalize_image;
 	guint32 finalize_token;
