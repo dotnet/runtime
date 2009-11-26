@@ -206,7 +206,12 @@ mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace)
 {
 	int i;
 	char *result;
-	GString *res = g_string_new ("");
+	GString *res;
+
+	if (!sig)
+		return g_strdup ("<invalid signature>");
+
+	res = g_string_new ("");
 
 	for (i = 0; i < sig->param_count; ++i) {
 		if (i > 0)
