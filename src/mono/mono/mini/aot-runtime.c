@@ -97,23 +97,19 @@ typedef struct MonoAotModule {
 	guint8 *code_end;
 	guint8 *plt;
 	guint8 *plt_end;
+	guint8 *blob;
 	gint32 *code_offsets;
 	/* This contains <offset, index> pairs sorted by offset */
 	/* This is needed because LLVM emitted methods can be in any order */
 	gint32 *sorted_code_offsets;
-	guint8 *method_info;
 	guint32 *method_info_offsets;
-	guint8 *got_info;
 	guint32 *got_info_offsets;
-	guint8 *ex_info;
 	guint32 *ex_info_offsets;
-	guint8 *class_info;
 	guint32 *class_info_offsets;
 	guint32 *methods_loaded;
 	guint16 *class_name_table;
 	guint32 *extra_method_table;
 	guint32 *extra_method_info_offsets;
-	guint8 *extra_method_info;
 	guint8 *unwind_info;
 
 	/* Points to the the GNU .eh_frame_hdr section, if it exists */
@@ -235,6 +231,48 @@ decode_value (guint8 *ptr, guint8 **rptr)
 
 	//printf ("DECODE: %d.\n", len);
 	return len;
+}
+
+/*
+ * mono_aot_get_method:
+ *
+ *   Decode an offset table emitted by emit_offset_table (), returning the INDEXth
+ * entry.
+ */
+static guint32
+mono_aot_get_offset (guint32 *table, int index)
+{
+	int i, group, ngroups, index_entry_size;
+	int start_offset, offset, noffsets, group_size;
+	guint8 *data_start, *p;
+	guint32 *index32 = NULL;
+	guint16 *index16 = NULL;
+	
+	noffsets = table [0];
+	group_size = table [1];
+	ngroups = table [2];
+	index_entry_size = table [3];
+	group = index / group_size;
+
+	if (index_entry_size == 2) {
+		index16 = (guint16*)&table [4];
+		data_start = (guint8*)&index16 [ngroups];
+		p = data_start + index16 [group];
+	} else {
+		index32 = (guint32*)&table [4];
+		data_start = (guint8*)&index32 [ngroups];
+		p = data_start + index32 [group];
+	}
+
+	/* offset will contain the value of offsets [group * group_size] */
+	offset = start_offset = decode_value (p, &p);
+	for (i = group * group_size + 1; i <= index; ++i) {
+		offset += decode_value (p, &p);
+	}
+
+	//printf ("Offset lookup: %d -> %d, start=%d, p=%d\n", index, offset, start_offset, table [3 + group]);
+
+	return offset;
 }
 
 static MonoMethod*
@@ -1087,16 +1125,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "methods", (gpointer*)&amodule->code);
 	find_symbol (sofile, globals, "methods_end", (gpointer*)&amodule->code_end);
 	find_symbol (sofile, globals, "method_info_offsets", (gpointer*)&amodule->method_info_offsets);
-	find_symbol (sofile, globals, "method_info", (gpointer*)&amodule->method_info);
 	find_symbol (sofile, globals, "ex_info_offsets", (gpointer*)&amodule->ex_info_offsets);
-	find_symbol (sofile, globals, "ex_info", (gpointer*)&amodule->ex_info);
-	find_symbol (sofile, globals, "class_info", (gpointer*)&amodule->class_info);
+	find_symbol (sofile, globals, "blob", (gpointer*)&amodule->blob);
 	find_symbol (sofile, globals, "class_info_offsets", (gpointer*)&amodule->class_info_offsets);
 	find_symbol (sofile, globals, "class_name_table", (gpointer *)&amodule->class_name_table);
 	find_symbol (sofile, globals, "extra_method_table", (gpointer *)&amodule->extra_method_table);
-	find_symbol (sofile, globals, "extra_method_info", (gpointer *)&amodule->extra_method_info);
 	find_symbol (sofile, globals, "extra_method_info_offsets", (gpointer *)&amodule->extra_method_info_offsets);
-	find_symbol (sofile, globals, "got_info", (gpointer*)&amodule->got_info);
 	find_symbol (sofile, globals, "got_info_offsets", (gpointer*)&amodule->got_info_offsets);
 	find_symbol (sofile, globals, "specific_trampolines", (gpointer*)&(amodule->trampolines [MONO_AOT_TRAMP_SPECIFIC]));
 	find_symbol (sofile, globals, "static_rgctx_trampolines", (gpointer*)&(amodule->trampolines [MONO_AOT_TRAMP_STATIC_RGCTX]));
@@ -1290,7 +1324,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !aot_module)
 		return NULL;
 
-	info = &aot_module->class_info [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
+	info = &aot_module->blob [mono_aot_get_offset (aot_module->class_info_offsets, mono_metadata_token_index (klass->type_token) - 1)];
 	p = info;
 
 	err = decode_cached_class_info (aot_module, &class_info, p, &p);
@@ -1322,7 +1356,7 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 	if (klass->rank || !aot_module)
 		return FALSE;
 
-	p = (guint8*)&aot_module->class_info [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
+	p = (guint8*)&aot_module->blob [mono_aot_get_offset (aot_module->class_info_offsets, mono_metadata_token_index (klass->type_token) - 1)];
 
 	err = decode_cached_class_info (aot_module, res, p, &p);
 	if (!err)
@@ -1815,7 +1849,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 					break;
 			}
 
-			p = amodule->extra_method_info + table [(pos * 2) + 1];
+			p = amodule->blob + table [(pos * 2) + 1];
 			is_wrapper = decode_value (p, &p);
 			g_assert (!is_wrapper);
 			method = decode_method_ref_2 (amodule, p, &p);
@@ -1832,7 +1866,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
 	code = &amodule->code [amodule->code_offsets [method_index]];
-	ex_info = &amodule->ex_info [amodule->ex_info_offsets [method_index]];
+	ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
 
 	g_assert ((guint8*)code <= (guint8*)addr);
 	
@@ -2056,7 +2090,7 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 			/* Already loaded */
 			//printf ("HIT!\n");
 		} else {
-			shared_p = aot_module->got_info + aot_module->got_info_offsets [got_offset];
+			shared_p = aot_module->blob + mono_aot_get_offset (aot_module->got_info_offsets, got_offset);
 
 			ji->type = decode_value (shared_p, &shared_p);
 
@@ -2142,7 +2176,8 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	}
 
 	code = &amodule->code [amodule->code_offsets [method_index]];
-	info = &amodule->method_info [amodule->method_info_offsets [method_index]];
+
+	info = &amodule->blob [mono_aot_get_offset (amodule->method_info_offsets, method_index)];
 
 	mono_aot_lock ();
 	if (!amodule->methods_loaded)
@@ -2230,7 +2265,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		full_name = mono_method_full_name (method, TRUE);
 
 		if (!jinfo) {
-			ex_info = &amodule->ex_info [amodule->ex_info_offsets [method_index]];
+			ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
 			jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code, code);
 		}
 
@@ -2317,7 +2352,7 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 		guint8 *p;
 		int is_wrapper_name;
 
-		p = amodule->extra_method_info + key;
+		p = amodule->blob + key;
 		is_wrapper_name = decode_value (p, &p);
 		if (is_wrapper_name) {
 			int wrapper_type = decode_value (p, &p);
@@ -2663,7 +2698,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 
 	//printf ("DYN: %p %d\n", aot_module, plt_info_offset);
 
-	p = &module->got_info [plt_info_offset];
+	p = &module->blob [plt_info_offset];
 
 	ji.type = decode_value (p, &p);
 

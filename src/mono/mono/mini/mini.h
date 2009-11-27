@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "62"
+#define MONO_AOT_FILE_VERSION "63"
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1105,7 +1105,7 @@ typedef struct {
 	GPtrArray *seq_points;
 
 	/* Used by AOT */
-	guint32 got_offset;
+	guint32 got_offset, ex_info_offset, method_info_offset;
 } MonoCompile;
 
 typedef enum {
