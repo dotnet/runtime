@@ -10630,7 +10630,7 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 	MonoClass *klass = (MonoClass*)user_data;
 
 	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass)) {
-		ensure_runtime_vtable (mono_class_from_mono_type (type)); //Make sure the vtable is complete
+		//ensure_runtime_vtable (mono_class_from_mono_type (type)); //Make sure the vtable is complete
 		return TRUE;
 	} else
 		return FALSE;
