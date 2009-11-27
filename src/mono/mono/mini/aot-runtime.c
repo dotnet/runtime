@@ -74,8 +74,6 @@
 
 typedef struct MonoAotModule {
 	char *aot_name;
-	/* Optimization flags used to compile the module */
-	guint32 opts;
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
 	GHashTable *name_cache;
@@ -1030,14 +1028,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&file_info);
 	g_assert (file_info);
 
-	{
-		char *full_aot_str;
-
-		find_symbol (sofile, globals, "mono_aot_full_aot", (gpointer *)&full_aot_str);
-
-		if (full_aot_str && !strcmp (full_aot_str, "TRUE"))
-			full_aot = TRUE;
-	}
+	full_aot = ((MonoAotFileInfo*)file_info)->flags & MONO_AOT_FILE_FLAG_FULL_AOT;
 
 	if (mono_aot_only && !full_aot) {
 		fprintf (stderr, "Can't use AOT image '%s' in aot-only mode because it is not compiled with --aot=full.\n", aot_name);
@@ -1076,8 +1067,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->globals = globals;
 	amodule->sofile = sofile;
 	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
-	sscanf (opt_flags, "%d", &amodule->opts);		
 
 	/* Read image table */
 	{
@@ -1121,7 +1110,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	/* Read method and method_info tables */
-	find_symbol (sofile, globals, "method_offsets", (gpointer*)&amodule->code_offsets);
+	find_symbol (sofile, globals, "code_offsets", (gpointer*)&amodule->code_offsets);
 	find_symbol (sofile, globals, "methods", (gpointer*)&amodule->code);
 	find_symbol (sofile, globals, "methods_end", (gpointer*)&amodule->code_end);
 	find_symbol (sofile, globals, "method_info_offsets", (gpointer*)&amodule->method_info_offsets);
@@ -2155,7 +2144,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE)
 		return NULL;
 
-	if ((domain != mono_get_root_domain ()) && (!(amodule->opts & MONO_OPT_SHARED)))
+	if ((domain != mono_get_root_domain ()) && (!(amodule->info.opts & MONO_OPT_SHARED)))
 		/* Non shared AOT code can't be used in other appdomains */
 		return NULL;
 
@@ -2207,7 +2196,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		klass = decode_klass_ref (amodule, p, &p);
 	}
 
-	if (amodule->opts & MONO_OPT_SHARED)
+	if (amodule->info.opts & MONO_OPT_SHARED)
 		used_strings = decode_value (p, &p);
 	else
 		used_strings = 0;
@@ -2217,7 +2206,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		mono_ldstr (mono_get_root_domain (), image, mono_metadata_token_index (token));
 	}
 
-	if (amodule->opts & MONO_OPT_SHARED)	
+	if (amodule->info.opts & MONO_OPT_SHARED)	
 		keep_patches = FALSE;
 
 	n_patches = decode_value (p, &p);
@@ -2306,7 +2295,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
  cleanup:
 	/* FIXME: The space in domain->mp is wasted */	
-	if (amodule->opts & MONO_OPT_SHARED)
+	if (amodule->info.opts & MONO_OPT_SHARED)
 		/* No need to cache patches */
 		mono_mempool_destroy (mp);
 

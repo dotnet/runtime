@@ -119,7 +119,8 @@ typedef enum {
 } MonoAotTrampoline;
 
 typedef enum {
-	MONO_AOT_FILE_FLAG_WITH_LLVM = 1
+	MONO_AOT_FILE_FLAG_WITH_LLVM = 1,
+	MONO_AOT_FILE_FLAG_FULL_AOT = 2
 } MonoAotFileFlags;
 
 /* This structure is stored in the AOT file */
@@ -130,6 +131,8 @@ typedef struct MonoAotFileInfo
 	guint32 plt_size;
 	guint32 nmethods;
 	guint32 flags;
+	/* Optimization flags used to compile the module */
+	guint32 opts;
 
 	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];

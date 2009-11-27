@@ -4270,7 +4270,7 @@ emit_code (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	sprintf (symbol, "method_offsets");
+	sprintf (symbol, "code_offsets");
 	emit_section_change (acfg, ".text", 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
@@ -5132,18 +5132,11 @@ emit_globals_table (MonoAotCompile *acfg)
 static void
 emit_globals (MonoAotCompile *acfg)
 {
-	char *opts_str;
 	char *build_info;
 
 	emit_string_symbol (acfg, "mono_assembly_guid" , acfg->image->guid);
 
 	emit_string_symbol (acfg, "mono_aot_version", MONO_AOT_FILE_VERSION);
-
-	opts_str = g_strdup_printf ("%d", acfg->opts);
-	emit_string_symbol (acfg, "mono_aot_opt_flags", opts_str);
-	g_free (opts_str);
-
-	emit_string_symbol (acfg, "mono_aot_full_aot", acfg->aot_opts.full_aot ? "TRUE" : "FALSE");
 
 	if (acfg->aot_opts.bind_to_runtime_version) {
 		build_info = mono_get_runtime_build_info ();
@@ -5301,6 +5294,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, acfg->plt_offset);
 	emit_int32 (acfg, acfg->nmethods);
 	emit_int32 (acfg, acfg->flags);
+	emit_int32 (acfg, acfg->opts);
 
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->num_trampolines [i]);
@@ -5709,6 +5703,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
  	acfg->aot_opts.asm_writer = TRUE;
 	acfg->flags |= MONO_AOT_FILE_FLAG_WITH_LLVM;
 #endif
+
+	if (acfg->aot_opts.full_aot)
+		acfg->flags |= MONO_AOT_FILE_FLAG_FULL_AOT;
 
 	load_profile_files (acfg);
 
