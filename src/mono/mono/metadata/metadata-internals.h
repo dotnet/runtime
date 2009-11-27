@@ -158,7 +158,7 @@ struct _MonoImage {
 	/*
 	 * Indexed by method tokens and typedef tokens.
 	 */
-	MonoValueHashTable *method_cache; /*protected by the image lock*/
+	GHashTable *method_cache; /*protected by the image lock*/
 	MonoInternalHashTable class_cache;
 
 	/* Indexed by memberref + methodspec tokens */

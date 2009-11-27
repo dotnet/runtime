@@ -1574,8 +1574,8 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD) {
 		if (!image->method_cache)
-			image->method_cache = mono_value_hash_table_new (NULL, NULL, get_method_token);
-		result = mono_value_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token));
+			image->method_cache = g_hash_table_new (NULL, NULL);
+		result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)));
 	} else {
 		if (!image->methodref_cache)
 			image->methodref_cache = g_hash_table_new (NULL, NULL);
@@ -1594,7 +1594,7 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 	if (!used_context && !result->is_inflated) {
 		MonoMethod *result2;
 		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-			result2 = mono_value_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token));
+			result2 = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)));
 		else
 			result2 = g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
 
@@ -1604,7 +1604,7 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		}
 
 		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-			mono_value_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+			g_hash_table_insert (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)), result);
 		else
 			g_hash_table_insert (image->methodref_cache, GINT_TO_POINTER (token), result);
 	}
