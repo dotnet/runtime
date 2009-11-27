@@ -1553,14 +1553,6 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	return mono_get_method_full (image, token, klass, NULL);
 }
 
-static gpointer
-get_method_token (gpointer value)
-{
-	MonoMethod *m = (MonoMethod*)value;
-
-	return GUINT_TO_POINTER (m->token);
-}
-
 MonoMethod *
 mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		      MonoGenericContext *context)
