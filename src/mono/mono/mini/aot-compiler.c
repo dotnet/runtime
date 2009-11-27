@@ -5062,7 +5062,8 @@ emit_globals_table (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	emit_pointer (acfg, ".Lglobals_hash");
+	sprintf (symbol, "%sglobals_hash", acfg->temp_prefix);
+	emit_pointer (acfg, symbol);
 
 	for (i = 0; i < acfg->globals->len; ++i) {
 		char *name = g_ptr_array_index (acfg->globals, i);
@@ -5134,7 +5135,8 @@ emit_globals (MonoAotCompile *acfg)
 		emit_global_inner (acfg, symbol, FALSE);
 		emit_alignment (acfg, 8);
 		emit_label (acfg, symbol);
-		emit_pointer (acfg, ".Lglobals");
+		sprintf (symbol, "%sglobals", acfg->temp_prefix);
+		emit_pointer (acfg, symbol);
 	}
 }
 
