@@ -3227,6 +3227,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 #if (DEBUG_INTERFACE_VTABLE_CODE|TRACE_INTERFACE_VTABLE_CODE)
 	int first_non_interface_slot;
 #endif
+	GSList *virt_methods, *l;
 
 	if (class->vtable)
 		return;
@@ -3349,6 +3350,21 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	TRACE_INTERFACE_VTABLE (print_overrides (override_map, "AFTER OVERRIDING INTERFACE METHODS"));
 	TRACE_INTERFACE_VTABLE (print_vtable_full (class, vtable, cur_slot, first_non_interface_slot, "AFTER OVERRIDING INTERFACE METHODS", FALSE));
 
+	/*
+	 * Create a list of virtual methods to avoid calling 
+	 * mono_class_get_virtual_methods () which is slow because of the metadata
+	 * optimization.
+	 */
+	{
+		gpointer iter = NULL;
+		MonoMethod *cm;
+
+		virt_methods = NULL;
+		while ((cm = mono_class_get_virtual_methods (class, &iter))) {
+			virt_methods = g_slist_prepend (virt_methods, cm);
+		}
+	}
+	
 	// Loop on all implemented interfaces...
 	for (i = 0; i < class->interface_offsets_count; i++) {
 		MonoClass *parent = class->parent;
@@ -3393,7 +3409,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 				// First look for a suitable method among the class methods
 				iter = NULL;
-				while ((cm = mono_class_get_virtual_methods (class, &iter))) {
+				for (l = virt_methods; l; l = l->next) {
+					cm = l->data;
 					TRACE_INTERFACE_VTABLE (printf ("    For slot %d ('%s'.'%s':'%s'), trying method '%s'.'%s':'%s'... [EXPLICIT IMPLEMENTATION = %d][SLOT IS NULL = %d]", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL)));
 					if (check_interface_method_override (class, im, cm, TRUE, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL), security_enabled)) {
 						TRACE_INTERFACE_VTABLE (printf ("[check ok]: ASSIGNING"));
@@ -3471,7 +3488,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 	TRACE_INTERFACE_VTABLE (print_vtable_full (class, vtable, cur_slot, first_non_interface_slot, "AFTER SETTING UP INTERFACE METHODS", FALSE));
 	class_iter = NULL;
-	while ((cm = mono_class_get_virtual_methods (class, &class_iter))) {
+	for (l = virt_methods; l; l = l->next) {
+		cm = l->data;
 		/*
 		 * If the method is REUSE_SLOT, we must check in the
 		 * base class for a method to override.
@@ -3561,6 +3579,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 		g_hash_table_destroy (override_map);
 	}
+
+	g_slist_free (virt_methods);
 
 	/* Ensure that all vtable slots are filled with concrete instance methods */
 	if (!(class->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
