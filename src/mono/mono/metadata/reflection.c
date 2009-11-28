@@ -10273,7 +10273,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 }
 
 static void
-ensure_generic_class_runtime_vtable (MonoClass *klass)
+fix_partial_generic_class (MonoClass *klass)
 {
 	MonoClass *gklass = klass->generic_class->container_class;
 	MonoDynamicGenericClass *dgclass;
@@ -10281,8 +10281,6 @@ ensure_generic_class_runtime_vtable (MonoClass *klass)
 
 	if (klass->wastypebuilder)
 		return;
-
-	ensure_runtime_vtable (gklass);
 
 	dgclass = (MonoDynamicGenericClass *)  klass->generic_class;
 
@@ -10299,10 +10297,12 @@ ensure_generic_class_runtime_vtable (MonoClass *klass)
 		}
 	}
 
-	if (klass->interface_count != gklass->interface_count) {
+	if (klass->interface_count && klass->interface_count != gklass->interface_count) {
 		klass->interface_count = gklass->interface_count;
-		klass->interfaces = mono_image_alloc (klass->image, sizeof (MonoClass*) * klass->interface_count);
-		for (i = 0; i < klass->interface_count; ++i) {
+		klass->interfaces = mono_image_alloc (klass->image, sizeof (MonoClass*) * gklass->interface_count);
+		klass->interfaces_packed = NULL; /*make setup_interface_offsets happy*/
+
+		for (i = 0; i < gklass->interface_count; ++i) {
 			MonoType *iface_type = mono_class_inflate_generic_type (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass));
 			klass->interfaces [i] = mono_class_from_mono_type (iface_type);
 			mono_metadata_free_type (iface_type);
@@ -10327,6 +10327,16 @@ ensure_generic_class_runtime_vtable (MonoClass *klass)
 	if (gklass->wastypebuilder)
 		klass->wastypebuilder = TRUE;
 	return;
+}
+
+static void
+ensure_generic_class_runtime_vtable (MonoClass *klass)
+{
+	MonoClass *gklass = klass->generic_class->container_class;
+
+	ensure_runtime_vtable (gklass);	
+
+	fix_partial_generic_class (klass);
 }
 
 static void
@@ -10371,6 +10381,7 @@ ensure_runtime_vtable (MonoClass *klass)
 		for (i = 0; i < klass->method.count; ++i)
 			klass->methods [i]->slot = i;
 		
+		klass->interfaces_packed = NULL; /*make setup_interface_offsets happy*/
 		mono_class_setup_interface_offsets (klass);
 		mono_class_setup_interface_id (klass);
 	}
@@ -10630,7 +10641,7 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 	MonoClass *klass = (MonoClass*)user_data;
 
 	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass)) {
-		//ensure_runtime_vtable (mono_class_from_mono_type (type)); //Make sure the vtable is complete
+		fix_partial_generic_class (mono_class_from_mono_type (type)); //Ensure it's safe to use it.
 		return TRUE;
 	} else
 		return FALSE;
