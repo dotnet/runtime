@@ -2488,8 +2488,13 @@ loop_start:
 			gboolean swap = FALSE;
 			int reg;
 
+			if (!ins->next) {
+				/* Optimized away */
+				NULLIFY_INS (ins);
+				break;
+			}
+
 			/* Some fp compares require swapped operands */
-			g_assert (ins->next);
 			switch (ins->next->opcode) {
 			case OP_FBGT:
 				ins->next->opcode = OP_FBLT;
