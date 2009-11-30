@@ -3042,7 +3042,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	seq_points = cfg->seq_points;
 
-	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0);
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0);
 
 	if (cfg->compile_llvm) {
 		/* Emitted by LLVM into the .eh_frame section */

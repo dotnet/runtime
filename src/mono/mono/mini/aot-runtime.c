@@ -1568,24 +1568,28 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 static MonoJitInfo*
 decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain, 
 							 MonoMethod *method, guint8* ex_info, guint8 *addr,
-							 guint8 *code)
+							 guint8 *code, guint32 code_len)
 {
 	int i, buf_len;
 	MonoJitInfo *jinfo;
-	guint code_len, used_int_regs, flags;
+	guint info_code_len, used_int_regs, flags;
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points;
+	gboolean from_llvm;
 	guint8 *p;
 	int generic_info_size;
 
 	/* Load the method info from the AOT file */
 
 	p = ex_info;
-	code_len = decode_value (p, &p);
+	/* No longer used, the caller computes it */
+	/* FIXME: Avoid emitting this */
+	info_code_len = decode_value (p, &p);
 	flags = decode_value (p, &p);
 	has_generic_jit_info = (flags & 1) != 0;
 	has_dwarf_unwind_info = (flags & 2) != 0;
 	has_clauses = (flags & 4) != 0;
 	has_seq_points = (flags & 8) != 0;
+	from_llvm = (flags & 16) != 0;
 	if (has_dwarf_unwind_info) {
 		guint32 offset;
 
@@ -1630,7 +1634,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		jinfo = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + generic_info_size);
 	}
 
- 	if (code_len == 0) {
+ 	if (from_llvm) {
 		/* LLVM compiled method */
 		/* The info is in the .eh_frame section */
 		decode_eh_frame (amodule, domain, method, code, jinfo);
@@ -1738,7 +1742,7 @@ compare_ints (const void *a, const void *b)
 MonoJitInfo *
 mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
-	int pos, left, right, offset, offset1, offset2;
+	int pos, left, right, offset, offset1, offset2, code_len;
 	int method_index, table_len, is_wrapper;
 	guint32 token;
 	MonoAotModule *amodule = image->aot_module;
@@ -1803,6 +1807,16 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 		g_assert (offset < code_offsets [((pos + 1) * 2)]);
 	method_index = code_offsets [(pos * 2) + 1];
 
+	code = &amodule->code [amodule->code_offsets [method_index]];
+	ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
+
+	if (pos == nmethods - 1)
+		code_len = amodule->code_end - code;
+	else
+		code_len = code_offsets [(pos + 1) * 2] - code_offsets [pos * 2];
+
+	g_assert ((guint8*)code <= (guint8*)addr && (guint8*)addr < (guint8*)code + code_len);
+
 	/* Might be a wrapper/extra method */
 	if (amodule->extra_methods) {
 		mono_aot_lock ();
@@ -1853,13 +1867,8 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	g_assert (method);
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
-
-	code = &amodule->code [amodule->code_offsets [method_index]];
-	ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
-
-	g_assert ((guint8*)code <= (guint8*)addr);
 	
-	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, addr, code);
+	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, addr, code, code_len);
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 	g_assert ((guint8*)addr < (guint8*)jinfo->code_start + jinfo->code_size);
@@ -2137,7 +2146,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	MonoMemPool *mp;
 	int i, pindex, n_patches, used_strings;
 	gboolean keep_patches = TRUE;
-	guint8 *p, *ex_info;
+	guint8 *p;
 	MonoJitInfo *jinfo = NULL;
 	guint8 *code, *info;
 
@@ -2253,10 +2262,8 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 		full_name = mono_method_full_name (method, TRUE);
 
-		if (!jinfo) {
-			ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
-			jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code, code);
-		}
+		if (!jinfo)
+			jinfo = mono_aot_find_jit_info (domain, method->klass->image, code);
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", full_name, code, code + jinfo->code_size, info);
 		g_free (full_name);
