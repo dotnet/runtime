@@ -1572,7 +1572,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 {
 	int i, buf_len;
 	MonoJitInfo *jinfo;
-	guint info_code_len, used_int_regs, flags;
+	guint used_int_regs, flags;
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points;
 	gboolean from_llvm;
 	guint8 *p;
@@ -1581,9 +1581,6 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	/* Load the method info from the AOT file */
 
 	p = ex_info;
-	/* No longer used, the caller computes it */
-	/* FIXME: Avoid emitting this */
-	info_code_len = decode_value (p, &p);
 	flags = decode_value (p, &p);
 	has_generic_jit_info = (flags & 1) != 0;
 	has_dwarf_unwind_info = (flags & 2) != 0;

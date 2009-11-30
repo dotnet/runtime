@@ -3044,12 +3044,6 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0);
 
-	if (cfg->compile_llvm) {
-		/* Emitted by LLVM into the .eh_frame section */
-		encode_value (0, p, &p);
-	} else {
-		encode_value (jinfo->code_size, p, &p);
-	}
 	encode_value (flags, p, &p);
 
 	if (use_unwind_ops) {
