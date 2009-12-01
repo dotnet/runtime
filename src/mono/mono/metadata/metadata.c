@@ -1676,67 +1676,63 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 	return mono_metadata_parse_type_full (m, NULL, mode, opt_attrs, ptr, rptr);
 }
 
+gboolean
+mono_metadata_method_has_param_attrs (MonoImage *m, int def)
+{
+	MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
+	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
+	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
+
+	if (def < methodt->rows)
+		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
+	else
+		lastp = m->tables [MONO_TABLE_PARAM].rows + 1;
+
+	for (i = param_index; i < lastp; ++i) {
+		guint32 flags = mono_metadata_decode_row_col (paramt, i - 1, MONO_PARAM_FLAGS);
+		if (flags)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 /*
  * mono_metadata_get_param_attrs:
  *
  * @m The image to loader parameter attributes from
  * @def method def token (one based)
+ * @param_count number of params to decode including the return value
  *
  *   Return the parameter attributes for the method whose MethodDef index is DEF. The 
  * returned memory needs to be freed by the caller. If all the param attributes are
  * 0, then NULL is returned.
  */
 int*
-mono_metadata_get_param_attrs (MonoImage *m, int def)
-{
-	MonoError error;
-	int* res = mono_metadata_get_param_attrs_checked (m, def, &error);
-	if (!mono_error_ok (&error)) {
-		g_warning (mono_error_get_message (&error));
-		mono_error_cleanup (&error);
-	}
-	return res;
-}
-/*
- * mono_metadata_get_param_attrs_checked:
- *
- *
- *   Return the parameter attributes for the method whose MethodDef index is DEF. The 
- * returned memory needs to be freed by the caller. If all the param attributes are
- * 0, then NULL is returned.
- *
- * Check @error for success.
- */
-
-int*
-mono_metadata_get_param_attrs_checked (MonoImage *m, int def, MonoError *error)
+mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 {
 	MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
 	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_PARAM_SIZE];
-	guint lastp, i, param_index = mono_metadata_decode_row_col (&m->tables [MONO_TABLE_METHOD], def - 1, MONO_METHOD_PARAMLIST);
+	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
 	int *pattrs = NULL;
 
-	mono_error_init (error);
-
 	if (def < methodt->rows)
-		lastp = mono_metadata_decode_row_col (&m->tables [MONO_TABLE_METHOD], def, MONO_METHOD_PARAMLIST);
+		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 	else
 		lastp = paramt->rows + 1;
 
 	for (i = param_index; i < lastp; ++i) {
-		mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], i - 1, cols, MONO_PARAM_SIZE);
+		mono_metadata_decode_row (paramt, i - 1, cols, MONO_PARAM_SIZE);
 		if (cols [MONO_PARAM_FLAGS]) {
-			guint32 cindex = cols [MONO_PARAM_SEQUENCE];
 			if (!pattrs)
-				pattrs = g_new0 (int, 1 + (lastp - param_index));
-			if (cindex < 1 + (lastp - param_index)) {
-				pattrs [cindex] = cols [MONO_PARAM_FLAGS];
-			} else {
-				g_free (pattrs);
-				mono_error_set_bad_image (error, m, "Invalid parameter sequence number for parameter %d of method %08x", i, def);
-				return NULL;
-			}
+				pattrs = g_new0 (int, param_count);
+			/* at runtime we just ignore this kind of malformed file:
+			* the verifier can signal the error to the user
+			*/
+			if (cols [MONO_PARAM_SEQUENCE] >= param_count)
+				continue;
+			pattrs [cols [MONO_PARAM_SEQUENCE]] = cols [MONO_PARAM_FLAGS];
 		}
 	}
 
@@ -1892,7 +1888,6 @@ MonoMethodSignature *
 mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *container,
 					   int def, const char *ptr, const char **rptr)
 {
-	MonoError error;
 	MonoMethodSignature *method;
 	int i, *pattrs = NULL;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
@@ -1911,13 +1906,9 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 		gen_param_count = mono_metadata_decode_value (ptr, &ptr);
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
-	if (def) {
-		pattrs = mono_metadata_get_param_attrs_checked (m, def, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_cleanup (&error);
-			return NULL;
-		}
-	}
+	if (def)
+		pattrs = mono_metadata_get_param_attrs (m, def, param_count + 1); /*Must be + 1 since signature's param count doesn't account for the return value */
+
 	method = mono_metadata_signature_alloc (m, param_count);
 	method->hasthis = hasthis;
 	method->explicit_this = explicit_this;
