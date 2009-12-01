@@ -270,7 +270,7 @@ mono_arch_get_restore_context (void)
 		return start;
 
 	/* restore_contect (MonoContext *ctx) */
-	/* we do not restore X86_EAX, X86_EDX */
+	/* we do not restore X86_EDX */
 
 	start = code = mono_global_codeman_reserve (128);
 	
@@ -289,6 +289,8 @@ mono_arch_get_restore_context (void)
 	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esp), 4);
 	/* restore EBP */
 	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebp), 4);
+	/* restore EAX */
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eax), 4);
 
 	/* jump to the saved IP */
 	x86_jump_reg (code, X86_EDX);
