@@ -1954,7 +1954,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 {
 	gchar *utf8_src, *utf8_dest;
 	int src_fd, dest_fd;
-	struct stat st;
+	struct stat st, dest_st;
 	gboolean ret = TRUE;
 	
 	if(name==NULL) {
@@ -2019,6 +2019,20 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 		close (src_fd);
 		
 		return(FALSE);
+	}
+
+	/* Before trying to open/create the dest, we need to report a 'file busy'
+	 * error if src and dest are actually the same file. We do the check here to take
+	 * advantage of the IOMAP capability */
+	if (!_wapi_stat (utf8_dest, &dest_st) && st.st_dev == dest_st.st_dev && 
+			st.st_ino == dest_st.st_ino) {
+
+		g_free (utf8_src);
+		g_free (utf8_dest);
+		close (src_fd);
+
+		SetLastError (ERROR_SHARING_VIOLATION);
+		return (FALSE);
 	}
 	
 	if (fail_if_exists) {
