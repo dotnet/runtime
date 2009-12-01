@@ -3365,7 +3365,13 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		MonoMethod *decl = overrides [i*2];
 		if (MONO_CLASS_IS_INTERFACE (decl->klass)) {
 			int dslot;
-			dslot = mono_method_get_vtable_slot (decl) + mono_class_interface_offset (class, decl->klass);
+			dslot = mono_method_get_vtable_slot (decl);
+			if (dslot == -1) {
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+				return;
+			}
+
+			dslot += mono_class_interface_offset (class, decl->klass);
 			vtable [dslot] = overrides [i*2 + 1];
 			vtable [dslot]->slot = dslot;
 			if (!override_map)
@@ -3554,6 +3560,11 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 							mono_security_core_clr_check_override (class, cm, m1);
 
 						slot = mono_method_get_vtable_slot (m1);
+						if (slot == -1) {
+							mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+							return;
+						}
+
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
 							override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -3702,14 +3713,18 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 /*
  * mono_method_get_vtable_slot:
  *
- *   Returns method->slot, computing it if neccesary.
+ *   Returns method->slot, computing it if neccesary. Return -1 on failure.
  * LOCKING: Acquires the loader lock.
+ *
+ * FIXME Use proper MonoError machinery here.
  */
 int
 mono_method_get_vtable_slot (MonoMethod *method)
 {
 	if (method->slot == -1) {
 		mono_class_setup_vtable (method->klass);
+		if (method->klass->exception_type)
+			return -1;
 		g_assert (method->slot != -1);
 	}
 	return method->slot;
@@ -3721,7 +3736,9 @@ mono_method_get_vtable_slot (MonoMethod *method)
  *
  * Returns the index into the runtime vtable to access the method or,
  * in the case of a virtual generic method, the virtual generic method
- * thunk.
+ * thunk. Returns -1 on failure.
+ *
+ * FIXME Use proper MonoError machinery here.
  */
 int
 mono_method_get_vtable_index (MonoMethod *method)
