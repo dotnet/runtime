@@ -4815,6 +4815,7 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 {
 	MonoClass *klass, **ptr;
 	int count, pos, i;
+	MonoGenericContainer *container = mono_generic_param_owner (param);
 
 	if (!image)
 		/* FIXME: */
@@ -4831,7 +4832,18 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 		sprintf ((char*)klass->name, "%d", n);
 	}
 
-	klass->name_space = "";
+	if (container) {
+		if (is_mvar) {
+			MonoMethod *omethod = container->owner.method;
+			klass->name_space = (omethod && omethod->klass) ? omethod->klass->name_space : "";
+		} else {
+			MonoClass *oklass = container->owner.klass;
+			klass->name_space = oklass ? oklass->name_space : "";
+		}
+	} else {
+		klass->name_space = "";
+	}
+
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
 	count = 0;
