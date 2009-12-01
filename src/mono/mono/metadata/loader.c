@@ -2039,6 +2039,7 @@ mono_loader_lock_is_owned_by_self (void)
 MonoMethodSignature*
 mono_method_signature (MonoMethod *m)
 {
+	MonoError error;
 	int idx;
 	int size;
 	MonoImage* img;
@@ -2091,7 +2092,12 @@ mono_method_signature (MonoMethod *m)
 	can_cache_signature = !(m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && !(m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && !container;
 
 	/* If the method has parameter attributes, that can modify the signature */
-	pattrs = mono_metadata_get_param_attrs (img, idx);
+	pattrs = mono_metadata_get_param_attrs_checked (img, idx, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_cleanup (&error);
+		g_warning (mono_error_get_message (&error)); /*Since the error message is been swallowed let's produce a warning at least.*/
+		return NULL;
+	}
 	if (pattrs) {
 		can_cache_signature = FALSE;
 		g_free (pattrs);

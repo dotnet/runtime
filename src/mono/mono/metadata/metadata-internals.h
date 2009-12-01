@@ -572,5 +572,7 @@ void mono_image_load_names (MonoImage *image) MONO_INTERNAL;
 
 MonoImage *mono_image_open_raw (const char *fname, MonoImageOpenStatus *status) MONO_INTERNAL;
 
+int* mono_metadata_get_param_attrs_checked (MonoImage *m, int def, MonoError *error) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

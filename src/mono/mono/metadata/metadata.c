@@ -28,6 +28,8 @@
 #include "class.h"
 #include "marshal.h"
 #include "gc-internal.h"
+#include <mono/utils/mono-error-internals.h>
+
 
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 					 const char *ptr, const char **rptr);
@@ -1677,6 +1679,9 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 /*
  * mono_metadata_get_param_attrs:
  *
+ * @m The image to loader parameter attributes from
+ * @def method def token (one based)
+ *
  *   Return the parameter attributes for the method whose MethodDef index is DEF. The 
  * returned memory needs to be freed by the caller. If all the param attributes are
  * 0, then NULL is returned.
@@ -1684,11 +1689,35 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 int*
 mono_metadata_get_param_attrs (MonoImage *m, int def)
 {
+	MonoError error;
+	int* res = mono_metadata_get_param_attrs_checked (m, def, &error);
+	if (!mono_error_ok (&error)) {
+		g_warning (mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+	}
+	return res;
+}
+/*
+ * mono_metadata_get_param_attrs_checked:
+ *
+ *
+ *   Return the parameter attributes for the method whose MethodDef index is DEF. The 
+ * returned memory needs to be freed by the caller. If all the param attributes are
+ * 0, then NULL is returned.
+ *
+ * Check @error for success.
+ */
+
+int*
+mono_metadata_get_param_attrs_checked (MonoImage *m, int def, MonoError *error)
+{
 	MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
 	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_PARAM_SIZE];
 	guint lastp, i, param_index = mono_metadata_decode_row_col (&m->tables [MONO_TABLE_METHOD], def - 1, MONO_METHOD_PARAMLIST);
 	int *pattrs = NULL;
+
+	mono_error_init (error);
 
 	if (def < methodt->rows)
 		lastp = mono_metadata_decode_row_col (&m->tables [MONO_TABLE_METHOD], def, MONO_METHOD_PARAMLIST);
@@ -1698,9 +1727,16 @@ mono_metadata_get_param_attrs (MonoImage *m, int def)
 	for (i = param_index; i < lastp; ++i) {
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], i - 1, cols, MONO_PARAM_SIZE);
 		if (cols [MONO_PARAM_FLAGS]) {
+			guint32 cindex = cols [MONO_PARAM_SEQUENCE];
 			if (!pattrs)
 				pattrs = g_new0 (int, 1 + (lastp - param_index));
-			pattrs [cols [MONO_PARAM_SEQUENCE]] = cols [MONO_PARAM_FLAGS];
+			if (cindex < 1 + (lastp - param_index)) {
+				pattrs [cindex] = cols [MONO_PARAM_FLAGS];
+			} else {
+				g_free (pattrs);
+				mono_error_set_bad_image (error, m, "Invalid parameter sequence number for parameter %d of method %08x", i, def);
+				return NULL;
+			}
 		}
 	}
 
@@ -1856,6 +1892,7 @@ MonoMethodSignature *
 mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *container,
 					   int def, const char *ptr, const char **rptr)
 {
+	MonoError error;
 	MonoMethodSignature *method;
 	int i, *pattrs = NULL;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
@@ -1874,8 +1911,13 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 		gen_param_count = mono_metadata_decode_value (ptr, &ptr);
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
-	if (def)
-		pattrs = mono_metadata_get_param_attrs (m, def);
+	if (def) {
+		pattrs = mono_metadata_get_param_attrs_checked (m, def, &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_cleanup (&error);
+			return NULL;
+		}
+	}
 	method = mono_metadata_signature_alloc (m, param_count);
 	method->hasthis = hasthis;
 	method->explicit_this = explicit_this;
