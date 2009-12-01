@@ -2101,5 +2101,14 @@ public class DebuggerTests
 		Assert.AreEqual ("Sleep", frames [frame_index].Method.Name);
 		Assert.AreEqual ("frames_in_native", frames [frame_index + 1].Method.Name);
 		Assert.AreEqual ("Main", frames [frame_index + 2].Method.Name);
+
+		// Check that invokes are disabled for such threads
+		TypeMirror t = frames [frame_index + 1].Method.DeclaringType;
+
+		// return void
+		var m = t.GetMethod ("invoke_static_return_void");
+		AssertThrows<InvalidOperationException> (delegate {
+				t.InvokeMethod (e.Thread, m, null);
+			});
 	}
 }

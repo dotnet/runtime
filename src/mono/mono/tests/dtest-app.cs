@@ -512,6 +512,9 @@ public class Tests : TestsBase
 		return s;
 	}
 
+	public static void invoke_static_return_void () {
+	}
+
 	public static void invoke_throws () {
 		throw new Exception ();
 	}
