@@ -1099,6 +1099,26 @@ mono_class_find_enum_basetype (MonoClass *class)
 	return NULL;
 }
 
+/*
+ * Checks for MonoClass::exception_type without resolving all MonoType's into MonoClass'es
+ * It doesn't resolve generic instances, only check the GTD.
+ */
+static gboolean
+mono_type_has_exceptions (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_SZARRAY:
+		return type->data.klass->exception_type;
+	case MONO_TYPE_ARRAY:
+		return type->data.array->eklass->exception_type;
+	case MONO_TYPE_GENERICINST:
+		return type->data.generic_class->container_class->exception_type;
+	}
+	return FALSE;
+}
+
 /** 
  * mono_class_setup_fields:
  * @class: The class to initialize
@@ -1285,6 +1305,16 @@ mono_class_setup_fields (MonoClass *class)
 			blittable = class->element_class->blittable;
 		}
 
+		if (mono_type_has_exceptions (field->type)) {
+			char *class_name = mono_type_get_full_name (class);
+			char *type_name = mono_type_full_name (field->type);
+
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			g_warning ("Invalid type %s for instance field %s:%s", type_name, class_name, field->name);
+			g_free (class_name);
+			g_free (type_name);
+			break;
+		}
 		/* The def_value of fields is compute lazily during vtable creation */
 	}
 
@@ -6776,7 +6806,7 @@ MonoType*
 mono_class_enum_basetype (MonoClass *klass)
 {
 	if (klass->element_class == klass)
-		/* SRE */
+		/* SRE or broken types */
 		return NULL;
 	else
 		return &klass->element_class->byval_arg;
