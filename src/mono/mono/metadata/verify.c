@@ -5022,6 +5022,11 @@ mono_method_verify (MonoMethod *method, int level)
 			ctx.code [clause->handler_offset + clause->handler_len].flags |= IL_CODE_FLAG_WAS_TARGET;
 
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
+			if (!clause->data.catch_class) {
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Catch clause %d with invalid type", i));
+				break;
+			}
+		
 			init_stack_with_value_at_exception_boundary (&ctx, ctx.code + clause->handler_offset, clause->data.catch_class);
 		}
 		else if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
