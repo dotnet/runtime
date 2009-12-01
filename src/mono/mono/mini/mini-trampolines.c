@@ -178,7 +178,11 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 		}
 		g_assert (imt_slot < MONO_IMT_SIZE);
 		if (vt->imt_collisions_bitmap & (1 << imt_slot)) {
-			int vtable_offset = interface_offset + mono_method_get_vtable_index (imt_method);
+			int slot = mono_method_get_vtable_index (imt_method);
+			int vtable_offset;
+
+			g_assert (slot != -1);
+			vtable_offset = interface_offset + slot;
 			gpointer *vtable_slot = & (vt->vtable [vtable_offset]);
 #if DEBUG_IMT
 			printf ("mono_convert_imt_slot_to_vtable_slot: slot %p[%d] is in the IMT, and colliding becomes %p[%d] (interface_offset = %d, method->slot = %d)\n", slot, imt_slot, vtable_slot, vtable_offset, interface_offset, imt_method->slot);
@@ -561,6 +565,7 @@ mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *
 	MonoObject *this;
 	MonoVTable *vt;
 	gpointer *vtable_slot;
+	int slot;
 
 	/* 
 	 * We have the method which is called, we need to obtain the vtable slot without
@@ -570,13 +575,17 @@ mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *
 	this = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (m), regs, code);
 	g_assert (this);
 
-	g_assert (this->vtable->klass->vtable [mono_method_get_vtable_slot (m)] == m);
+	slot = mono_method_get_vtable_slot (m);
+
+	g_assert (slot != -1);
+
+	g_assert (this->vtable->klass->vtable [slot] == m);
 
 	vt = this->vtable;
 
 	g_assert (!m->is_generic);
 
-	vtable_slot = &(vt->vtable [mono_method_get_vtable_slot (m)]);
+	vtable_slot = &(vt->vtable [slot]);
 
 	return common_call_trampoline (regs, code, m, tramp, vt, vtable_slot, mono_method_needs_static_rgctx_invoke (m, 0));
 }
