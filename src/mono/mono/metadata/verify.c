@@ -113,6 +113,19 @@ enum {
 				(__ctx)->valid = 0; \
 		} \
 	} while (0)
+
+#define CHECK_ADD4_OVERFLOW_UN(a, b) ((guint32)(0xFFFFFFFFU) - (guint32)(b) < (guint32)(a))
+#define CHECK_ADD8_OVERFLOW_UN(a, b) ((guint64)(0xFFFFFFFFFFFFFFFFUL) - (guint64)(b) < (guint64)(a))
+
+#if SIZEOF_VOID_P == 4
+#define CHECK_ADDP_OVERFLOW_UN(a,b) CHECK_ADD4_OVERFLOW_UN(a, b)
+#else
+#define CHECK_ADDP_OVERFLOW_UN(a,b) CHECK_ADD8_OVERFLOW_UN(a, b)
+#endif
+
+#define ADDP_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADDP_OVERFLOW_UN (a, b))
+#define ADD_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADD4_OVERFLOW_UN (a, b))
+
 /*Flags to be used with ILCodeDesc::flags */
 enum {
 	/*Instruction has not been processed.*/
@@ -4855,7 +4868,7 @@ verify_clause_relationship (VerifyContext *ctx, MonoExceptionClause *clause, Mon
 }
 
 #define code_bounds_check(size) \
-	if (ip + size > end) {\
+	if (ADDP_IS_GREATER_OR_OVF (ip, size, end)) {\
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Code overrun starting with 0x%x at 0x%04x", *ip, ctx.ip_offset)); \
 		break; \
 	} \
@@ -5383,16 +5396,22 @@ mono_method_verify (MonoMethod *method, int level)
 			need_merge = 1;
 			break;
 
-		case CEE_SWITCH:
+		case CEE_SWITCH: {
+			guint32 entries;
 			code_bounds_check (5);
-			n = read32 (ip + 1);
-			code_bounds_check (5 + sizeof (guint32) * n);
-			
-			do_switch (&ctx, n, (ip + 5));
-			start = 1;
-			ip += 5 + sizeof (guint32) * n;
-			break;
+			entries = read32 (ip + 1);
 
+			if (entries > 0xFFFFFFFFU / sizeof (guint32))
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Too many switch entries %x at 0x%04x", entries, ctx.ip_offset));
+
+			ip += 5;
+			code_bounds_check (sizeof (guint32) * entries);
+			
+			do_switch (&ctx, entries, ip);
+			start = 1;
+			ip += sizeof (guint32) * entries;
+			break;
+		}
 		case CEE_LDIND_I1:
 		case CEE_LDIND_U1:
 		case CEE_LDIND_I2:
