@@ -123,6 +123,7 @@ store_memindex: dest:b src1:i src2:i len:4
 storei1_memindex: dest:b src1:i src2:i len:4
 storei2_memindex: dest:b src1:i src2:i len:4
 storei4_memindex: dest:b src1:i src2:i len:4
+storei8_memindex: dest:b src1:i src2:i len:4
 storer4_memindex: dest:b src1:i src2:i len:8
 storer8_memindex: dest:b src1:i src2:i len:4
 loadu4_mem: dest:i len:8
