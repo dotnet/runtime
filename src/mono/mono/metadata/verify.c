@@ -2390,9 +2390,7 @@ handle_enum:
 		}
 
 	default:
-		VERIFIER_DEBUG ( printf ("unknown type %02x in eval stack type\n", type->type); );
-		g_assert_not_reached ();
-		return 0;
+		return TYPE_INV;
 	}
 }
 
@@ -5007,11 +5005,25 @@ mono_method_verify (MonoMethod *method, int level)
 	for (i = 0; i < ctx.num_locals; ++i) {
 		if (!mono_type_is_valid_in_context (&ctx, ctx.locals [i]))
 			break;
+		if (get_stack_type (ctx.locals [i]) == TYPE_INV) {
+			char *name = mono_type_full_name (ctx.locals [i]);
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid local %i of type %s", i, name));
+			g_free (name);
+			break;
+		}
+		
 	}
 
 	for (i = 0; i < ctx.max_args; ++i) {
 		if (!mono_type_is_valid_in_context (&ctx, ctx.params [i]))
 			break;
+
+		if (get_stack_type (ctx.params [i]) == TYPE_INV) {
+			char *name = mono_type_full_name (ctx.params [i]);
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid parameter %i of type %s", i, name));
+			g_free (name);
+			break;
+		}
 	}
 
 	if (!ctx.valid)
