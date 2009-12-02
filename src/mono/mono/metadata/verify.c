@@ -413,6 +413,7 @@ mono_class_has_default_constructor (MonoClass *klass)
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
 		if (mono_method_is_constructor (method) &&
+			mono_method_signature (method) &&
 			mono_method_signature (method)->param_count == 0 &&
 			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC)
 			return TRUE;
@@ -2960,6 +2961,20 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	invoke = mono_get_delegate_invoke (delegate);
 	method = funptr->method;
 
+	if (!method || !mono_method_signature (method)) {
+		char *name = mono_type_get_full_name (delegate);
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid method on stack to create delegate %s construction at 0x%04x", name, ctx->ip_offset));
+		g_free (name);
+		return;
+	}
+
+	if (!invoke || !mono_method_signature (invoke)) {
+		char *name = mono_type_get_full_name (delegate);
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Delegate type %s with bad Invoke method at 0x%04x", name, ctx->ip_offset));
+		g_free (name);
+		return;
+	}
+
 	is_static_ldftn = (ip_offset > 5 && IS_LOAD_FUN_PTR (CEE_LDFTN)) && method->flags & METHOD_ATTRIBUTE_STATIC;
 
 	if (is_static_ldftn)
@@ -3962,6 +3977,11 @@ do_newobj (VerifyContext *ctx, int token)
 
 	//FIXME use mono_method_get_signature_full
 	sig = mono_method_signature (method);
+	if (!sig) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid constructor signature to newobj at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
 	if (!check_underflow (ctx, sig->param_count))
 		return;
 
