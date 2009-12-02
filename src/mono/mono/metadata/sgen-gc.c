@@ -5321,7 +5321,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 	case REMSET_LOCATION:
 		ptr = (void**)(*p);
 		//__builtin_prefetch (ptr);
-		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery) && ptr_in_heap (ptr)) {
+		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
 			*ptr = copy_object (*ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
@@ -5338,7 +5338,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		return p + 1;
 	case REMSET_RANGE:
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
+		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
@@ -5351,7 +5351,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		return p + 2;
 	case REMSET_OBJECT:
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
+		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 1;
 		scan_object ((char*)ptr, start_nursery, end_nursery);
 		return p + 1;
@@ -5360,7 +5360,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 
 		switch (p [1]) {
 		case REMSET_VTYPE:
-			if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
+			if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 				return p + 4;
 			desc = p [2];
 			count = p [3];
@@ -5964,7 +5964,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 #endif
 
 	LOCK_GC;
-	if (ptr_in_nursery (ptr) || !ptr_in_heap (ptr)) {
+	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		UNLOCK_GC;
 		return;
@@ -6031,7 +6031,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	LOCK_GC;
 	memmove (dest, src, count * mono_class_value_size (klass, NULL));
 	rs = REMEMBERED_SET;
-	if (ptr_in_nursery (dest) || !ptr_in_heap (dest)) {
+	if (ptr_in_nursery (dest) || ptr_on_stack (dest)) {
 		UNLOCK_GC;
 		return;
 	}
@@ -6078,7 +6078,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	/* do not copy the sync state */
 	memcpy ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 			size - sizeof (MonoObject));
-	if (ptr_in_nursery (obj) || !ptr_in_heap (obj)) {
+	if (ptr_in_nursery (obj) || ptr_on_stack (obj)) {
 		UNLOCK_GC;
 		return;
 	}

@@ -2099,6 +2099,16 @@ clear_cached_vtable (gpointer key, gpointer value, gpointer user_data)
 		mono_gc_free_fixed (vtable->data);
 }
 
+static void
+zero_static_data (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoClass *klass = (MonoClass*)key;
+	MonoVTable *vtable = value;
+
+	if (vtable->data && klass->has_static_refs)
+		memset (vtable->data, 0, mono_class_data_size (klass));
+}
+
 typedef struct unload_data {
 	MonoDomain *domain;
 	char *failure_reason;
@@ -2208,6 +2218,19 @@ unload_thread_main (void *arg)
 
 	mono_loader_lock ();
 	mono_domain_lock (domain);
+#ifdef HAVE_SGEN_GC
+	/*
+	 * We need to make sure that we don't have any remsets
+	 * pointing into static data of the to-be-freed domain because
+	 * at the next collections they would be invalid.  So what we
+	 * do is we first zero all static data and then do a minor
+	 * collection.  Because all references in the static data will
+	 * now be null we won't do any unnecessary copies and after
+	 * the collection there won't be any more remsets.
+	 */
+	g_hash_table_foreach (domain->class_vtable_hash, zero_static_data, domain);
+	mono_gc_collect (0);
+#endif
 	g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable, domain);
 #ifdef HAVE_SGEN_GC
 	deregister_reflection_info_roots (domain);
