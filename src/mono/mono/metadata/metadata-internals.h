@@ -497,9 +497,7 @@ mono_metadata_lookup_generic_class          (MonoClass		   *gclass,
 					     MonoGenericInst	   *inst,
 					     gboolean		    is_dynamic) MONO_INTERNAL;
 
-MonoGenericInst *
-mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,
-					     MonoGenericContext    *context) MONO_INTERNAL;
+MonoGenericInst * mono_metadata_inflate_generic_inst  (MonoGenericInst *ginst, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 
 void mono_dynamic_stream_reset  (MonoDynamicStream* stream) MONO_INTERNAL;
 void mono_assembly_addref       (MonoAssembly *assembly) MONO_INTERNAL;

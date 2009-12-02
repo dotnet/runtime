@@ -568,7 +568,9 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!gclass->context.class_inst->is_open)
 			return NULL;
 
-		inst = mono_metadata_inflate_generic_inst (gclass->context.class_inst, context);
+		inst = mono_metadata_inflate_generic_inst (gclass->context.class_inst, context, error);
+		if (!mono_error_ok (error))
+			return NULL;
 		if (inst != gclass->context.class_inst)
 			gclass = mono_metadata_lookup_generic_class (gclass->container_class, inst, gclass->is_dynamic);
 
@@ -591,7 +593,9 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			return NULL;
 
 		/* We can't use context->class_inst directly, since it can have more elements */
-		inst = mono_metadata_inflate_generic_inst (container->context.class_inst, context);
+		inst = mono_metadata_inflate_generic_inst (container->context.class_inst, context, error);
+		if (!mono_error_ok (error))
+			return NULL;
 		if (inst == container->context.class_inst)
 			return NULL;
 
@@ -777,15 +781,20 @@ mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context
 static MonoGenericContext
 inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with)
 {
+	MonoError error;
 	MonoGenericInst *class_inst = NULL;
 	MonoGenericInst *method_inst = NULL;
 	MonoGenericContext res;
 
-	if (context->class_inst)
-		class_inst = mono_metadata_inflate_generic_inst (context->class_inst, inflate_with);
+	if (context->class_inst) {
+		class_inst = mono_metadata_inflate_generic_inst (context->class_inst, inflate_with, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME do proper error handling*/
+	}
 
-	if (context->method_inst)
-		method_inst = mono_metadata_inflate_generic_inst (context->method_inst, inflate_with);
+	if (context->method_inst) {
+		method_inst = mono_metadata_inflate_generic_inst (context->method_inst, inflate_with, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME do proper error handling*/
+	}
 
 	res.class_inst = class_inst;
 	res.method_inst = method_inst;

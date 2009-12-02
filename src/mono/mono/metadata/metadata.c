@@ -2524,26 +2524,34 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
  * mono_metadata_inflate_generic_inst:
  *
  * Instantiate the generic instance @ginst with the context @context.
+ * Check @error for success.
  *
  */
 MonoGenericInst *
-mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *context)
+mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *context, MonoError *error)
 {
 	MonoType **type_argv;
-	MonoGenericInst *nginst;
-	int i;
+	MonoGenericInst *nginst = NULL;
+	int i, count = 0;
+
+	mono_error_init (error);
 
 	if (!ginst->is_open)
 		return ginst;
 
 	type_argv = g_new0 (MonoType*, ginst->type_argc);
 
-	for (i = 0; i < ginst->type_argc; i++)
-		type_argv [i] = mono_class_inflate_generic_type (ginst->type_argv [i], context);
+	for (i = 0; i < ginst->type_argc; i++) {
+		type_argv [i] = mono_class_inflate_generic_type_checked (ginst->type_argv [i], context, error);
+		if (!mono_error_ok (error))
+			goto cleanup;
+		++count;
+	}
 
 	nginst = mono_metadata_get_generic_inst (ginst->type_argc, type_argv);
 
-	for (i = 0; i < ginst->type_argc; i++)
+cleanup:
+	for (i = 0; i < count; i++)
 		mono_metadata_free_type (type_argv [i]);
 	g_free (type_argv);
 

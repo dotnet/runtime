@@ -990,6 +990,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 static MonoMethod *
 method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx)
 {
+	MonoError error;
 	MonoMethod *method;
 	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
@@ -1014,8 +1015,13 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	g_assert (param_count);
 
 	inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
-	if (context && inst->is_open)
-		inst = mono_metadata_inflate_generic_inst (inst, context);
+	if (context && inst->is_open) {
+		inst = mono_metadata_inflate_generic_inst (inst, context, &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_cleanup (&error); /*FIXME don't swallow error message.*/
+			return NULL;
+		}
+	}
 
 	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
 		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context);
