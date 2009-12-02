@@ -3395,6 +3395,13 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 	if (!(sig = mono_method_get_signature_full (method, ctx->image, method_token, ctx->generic_context)))
 		sig = mono_method_get_signature (method, ctx->image, method_token);
 
+	if (!sig) {
+		char *name = mono_type_get_full_name (method->klass);
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Could not resolve signature of %s:%s at 0x%04x", name, method->name, ctx->ip_offset));
+		g_free (name);
+		return;
+	}
+
 	param_count = sig->param_count + sig->hasthis;
 	if (!check_underflow (ctx, param_count))
 		return;
