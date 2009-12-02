@@ -1494,6 +1494,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if (!klass) { /*FIXME put this before the image alloc*/
 		guint32 type = mono_metadata_typedef_from_method (image, token);
+		if (!type)
+			return NULL;
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 		if (klass == NULL)
 			return NULL;

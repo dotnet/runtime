@@ -878,8 +878,13 @@ dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, 
 
 	if (methoddef_row) {
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], methoddef_row -1, cols, MONO_METHOD_SIZE);
-		if (fully_qualified)
-			type = get_typedef (m, mono_metadata_typedef_from_method (m, methoddef_row));
+		if (fully_qualified) {
+			guint32 type_idx = mono_metadata_typedef_from_method (m, methoddef_row);
+			if (type_idx)
+				type = get_typedef (m, type_idx);
+			else
+				type = g_strdup ("<invalid>");
+		}
 		method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 		param_index = cols [MONO_METHOD_PARAMLIST];
 		if (!method) {
@@ -1787,6 +1792,11 @@ get_field (MonoImage *m, guint32 token, MonoGenericContainer *container)
 	 * the TypeDef table.  LAME!
 	 */
 	type_idx = mono_metadata_typedef_from_field (m, idx);
+	if (!type_idx) {
+		res = g_strdup_printf ("<invalid> %s", sig);
+		g_free (sig);
+		return res;
+	}
 
 	type = get_typedef (m, type_idx);
 	estype = get_escaped_name (type);

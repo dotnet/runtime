@@ -6720,6 +6720,8 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	case MONO_TOKEN_FIELD_DEF: {
 		MonoClass *class;
 		guint32 type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
+		if (!type)
+			return NULL;
 		if (handle_class)
 			*handle_class = mono_defaults.fieldhandle_class;
 		class = mono_class_get_full (image, MONO_TOKEN_TYPE_DEF | type, context);
