@@ -1335,8 +1335,8 @@ mono_class_setup_fields (MonoClass *class)
 	class->blittable = blittable;
 
 	if (class->enumtype && !mono_class_enum_basetype (class)) {
-		if (!((strcmp (class->name, "Enum") == 0) && (strcmp (class->name_space, "System") == 0)))
-			G_BREAKPOINT ();
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+		return;
 	}
 	if (explicit_size && real_size) {
 		class->instance_size = MAX (real_size, class->instance_size);
