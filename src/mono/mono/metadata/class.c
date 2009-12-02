@@ -4542,14 +4542,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	guint32 field_last, method_last;
 	guint32 nesting_tokeen;
 
+	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > tt->rows)
+		return NULL;
+
 	mono_loader_lock ();
 
 	if ((class = mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
 		mono_loader_unlock ();
 		return class;
 	}
-
-	g_assert (mono_metadata_token_table (type_token) == MONO_TABLE_TYPEDEF);
 
 	mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
 	
@@ -4603,8 +4604,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	}
 
 	/* do this early so it's available for interfaces in setup_mono_type () */
-	if ((nesting_tokeen = mono_metadata_nested_in_typedef (image, type_token)))
+	if ((nesting_tokeen = mono_metadata_nested_in_typedef (image, type_token))) {
 		class->nested_in = mono_class_create_from_typedef (image, nesting_tokeen);
+		if (!class->nested_in) {
+			mono_internal_hash_table_remove (&image->class_cache, GUINT_TO_POINTER (type_token));
+			mono_loader_unlock ();
+			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+			return NULL;
+		}
+	}
 
 	mono_class_setup_parent (class, parent);
 
@@ -5747,6 +5755,9 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 		MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 		guint tidx = mono_metadata_token_index (type_token);
 
+		if (tidx > tt->rows)
+			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
+
 		mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
@@ -5759,8 +5770,11 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 	case MONO_TOKEN_TYPE_REF: {
 		guint32 cols [MONO_TYPEREF_SIZE];
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
+		guint tidx = mono_metadata_token_index (type_token);
 
-		mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+		if (tidx > t->rows)
+			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
+		mono_metadata_decode_row (t, tidx-1, cols, MONO_TYPEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
 		if (strlen (nspace) == 0)
@@ -5772,10 +5786,8 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 	case MONO_TOKEN_TYPE_SPEC:
 		return g_strdup_printf ("Typespec 0x%08x", type_token);
 	default:
-		g_assert_not_reached ();
+		return g_strdup_printf ("Invalid type token 0x%08x", type_token);
 	}
-
-	return NULL;
 }
 
 static char *
@@ -5792,9 +5804,12 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 		MonoAssemblyName aname;
 		guint32 cols [MONO_TYPEREF_SIZE];
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
-		guint32 idx;
+		guint32 idx = mono_metadata_token_index (type_token);
+
+		if (idx > t->rows)
+			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
 	
-		mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+		mono_metadata_decode_row (t, idx-1, cols, MONO_TYPEREF_SIZE);
 
 		idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLTION_SCOPE_BITS;
 		switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLTION_SCOPE_MASK) {
@@ -7335,6 +7350,8 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 				guint32 cols [MONO_NESTED_CLASS_SIZE];
 				mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
 				nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
+				if (!nclass)
+					continue;
 				mono_class_alloc_ext (klass);
 				klass->ext->nested_classes = g_list_prepend_image (klass->image, klass->ext->nested_classes, nclass);
 
