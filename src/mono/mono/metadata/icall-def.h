@@ -617,7 +617,7 @@ ICALL(MMETH_4, "InternalInvoke", ves_icall_InternalInvoke)
 ICALL(MMETH_5, "MakeGenericMethod_impl", mono_reflection_bind_generic_method_parameters)
 ICALL(MMETH_6, "get_IsGenericMethod", ves_icall_MonoMethod_get_IsGenericMethod)
 ICALL(MMETH_7, "get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGenericMethodDefinition)
-ICALL(MMETH_8, "get_base_definition", ves_icall_MonoMethod_get_base_definition)
+ICALL(MMETH_8, "get_base_method", ves_icall_MonoMethod_get_base_method)
 ICALL(MMETH_9, "get_name", ves_icall_MonoMethod_get_name)
 
 ICALL_TYPE(MMETHI, "System.Reflection.MonoMethodInfo", MMETHI_1)

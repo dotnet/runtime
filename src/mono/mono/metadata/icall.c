@@ -6882,7 +6882,7 @@ ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionType *type)
 }
 
 static MonoReflectionMethod *
-ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
+ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definition)
 {
 	MonoClass *klass, *parent;
 	MonoMethod *method = m->method;
@@ -6902,13 +6902,19 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
 
-	/* At the end of the loop, klass points to the eldest class that has this virtual function slot. */
-	for (parent = klass->parent; parent != NULL; parent = parent->parent) {
-		mono_class_setup_vtable (parent);
-		if (parent->vtable_size <= method->slot)
-			break;
-		klass = parent;
-	}		
+	if (definition) {
+		/* At the end of the loop, klass points to the eldest class that has this virtual function slot. */
+		for (parent = klass->parent; parent != NULL; parent = parent->parent) {
+			mono_class_setup_vtable (parent);
+			if (parent->vtable_size <= method->slot)
+				break;
+			klass = parent;
+		}
+	} else {
+		klass = klass->parent;
+		if (!klass)
+			return m;
+	}
 
 	if (klass == method->klass)
 		return m;
