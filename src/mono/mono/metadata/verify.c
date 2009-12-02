@@ -5021,20 +5021,23 @@ mono_method_verify (MonoMethod *method, int level)
 		MonoExceptionClause *clause = ctx.header->clauses + i;
 		VERIFIER_DEBUG (printf ("clause try %x len %x filter at %x handler at %x len %x\n", clause->try_offset, clause->try_len, clause->data.filter_offset, clause->handler_offset, clause->handler_len); );
 
-		if (clause->try_offset > ctx.code_size || clause->try_offset + clause->try_len > ctx.code_size)
+		if (clause->try_offset > ctx.code_size || ADD_IS_GREATER_OR_OVF (clause->try_offset, clause->try_len, ctx.code_size))
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause out of bounds at 0x%04x", clause->try_offset));
 
 		if (clause->try_len <= 0)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
 
-		if (clause->handler_offset > ctx.code_size || clause->handler_offset + clause->handler_len > ctx.code_size)
+		if (clause->handler_offset > ctx.code_size || ADD_IS_GREATER_OR_OVF (clause->handler_offset, clause->handler_len, ctx.code_size))
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("handler clause out of bounds at 0x%04x", clause->try_offset));
 
 		if (clause->handler_len <= 0)
-			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("handler clause len <= 0 at 0x%04x", clause->try_offset));
 
-		if (clause->try_offset < clause->handler_offset && clause->try_offset + clause->try_len > HANDLER_START (clause))
+		if (clause->try_offset < clause->handler_offset && ADD_IS_GREATER_OR_OVF (clause->try_offset, clause->try_len, HANDLER_START (clause)))
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try block (at 0x%04x) includes handler block (at 0x%04x)", clause->try_offset, clause->handler_offset));
+
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER && clause->data.filter_offset > ctx.code_size)
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("filter clause out of bounds at 0x%04x", clause->try_offset));
 
 		for (n = i + 1; n < ctx.header->num_clauses && ctx.valid; ++n)
 			verify_clause_relationship (&ctx, clause, ctx.header->clauses + n);
