@@ -68,6 +68,8 @@ static int generic_array_methods (MonoClass *class);
 static void setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, MonoMethod **methods, int pos);
 
 static MonoMethod* mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter);
+static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token);
+
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
 void (*mono_debugger_class_loaded_methods_func) (MonoClass *klass) = NULL;
@@ -5160,15 +5162,25 @@ mono_class_from_mono_type (MonoType *type)
  * @context: the generic context used to evaluate generic instantiations in
  */
 static MonoType *
-mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context, gboolean *did_inflate)
+mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context, gboolean *did_inflate, MonoError *error)
 {
-	MonoError error;
 	MonoType *t = mono_type_create_from_typespec (image, type_spec);
-	if (!t)
+
+	mono_error_init (error);
+	*did_inflate = FALSE;
+
+	if (!t) {
+		char *name = mono_class_name_from_token (image, type_spec);
+		char *assembly = mono_assembly_name_from_token (image, type_spec);
+		mono_error_set_type_load_name (error, name, assembly, "Could not resolve typespec token %08x", type_spec);
 		return NULL;
+	}
+
 	if (context && (context->class_inst || context->method_inst)) {
-		MonoType *inflated = inflate_generic_type (NULL, t, context, &error);
-		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+		MonoType *inflated = inflate_generic_type (NULL, t, context, error);
+
+		if (!mono_error_ok (error))
+			return NULL;
 
 		if (inflated) {
 			t = inflated;
@@ -5185,12 +5197,12 @@ mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGener
  * @context: the generic context used to evaluate generic instantiations in
  */
 static MonoClass *
-mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context)
+mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context, MonoError *error)
 {
 	MonoClass *ret;
 	gboolean inflated = FALSE;
-	MonoType *t = mono_type_retrieve_from_typespec (image, type_spec, context, &inflated);
-	if (!t)
+	MonoType *t = mono_type_retrieve_from_typespec (image, type_spec, context, &inflated, error);
+	if (!mono_error_ok (error))
 		return NULL;
 	ret = mono_class_from_mono_type (t);
 	if (inflated)
@@ -5815,6 +5827,7 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 MonoClass *
 mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
 {
+	MonoError error;
 	MonoClass *class = NULL;
 
 	if (image->dynamic) {
@@ -5835,7 +5848,11 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 		class = mono_class_from_typeref (image, type_token);
 		break;
 	case MONO_TOKEN_TYPE_SPEC:
-		class = mono_class_create_from_typespec (image, type_token, context);
+		class = mono_class_create_from_typespec (image, type_token, context, &error);
+		if (!mono_error_ok (&error)) {
+			/*FIXME don't swallow the error message*/
+			mono_error_cleanup (&error);
+		}
 		break;
 	default:
 		g_warning ("unknown token type %x", type_token & 0xff000000);
@@ -5865,6 +5882,7 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 MonoType *
 mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
 {
+	MonoError error;
 	MonoType *type = NULL;
 	gboolean inflated = FALSE;
 
@@ -5877,11 +5895,14 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 		return class ? mono_class_get_type (class) : NULL;
 	}
 
-	type = mono_type_retrieve_from_typespec (image, type_token, context, &inflated);
+	type = mono_type_retrieve_from_typespec (image, type_token, context, &inflated, &error);
 
-	if (!type) {
+	if (!mono_error_ok (&error)) {
+		/*FIXME don't swalloc the error message.*/
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
+
+		mono_error_cleanup (&error);
 		mono_loader_set_error_type_load (name, assembly);
 		return NULL;
 	}
