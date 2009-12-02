@@ -76,9 +76,7 @@ struct _MonoGHashTable
 static void		g_hash_table_resize	  (MonoGHashTable	  *hash_table);
 static MonoGHashNode**	g_hash_table_lookup_node  (MonoGHashTable     *hash_table,
                                                    gconstpointer   key);
-static MonoGHashNode*	g_hash_node_new		  (gpointer	   key,
-                                                   gpointer        value,
-						   gint            gc_type);
+static MonoGHashNode*	g_hash_node_new		  (gint            gc_type);
 static void		g_hash_node_destroy	  (MonoGHashNode	  *hash_node,
 						   MonoGHashGCType type,
                                                    GDestroyNotify  key_destroy_func,
@@ -110,25 +108,8 @@ static void *node_gc_descs [4] = {NULL};
 static MonoGHashNode *node_free_lists [4] = {NULL};
 #endif
 
-#ifdef HAVE_SGEN_GC
-#define SET_NODE_KEY(node, gc_type, val) do { \
-	gpointer __val = (val); \
-	if (gc_type == MONO_HASH_KEY_GC || gc_type == MONO_HASH_KEY_VALUE_GC) \
-		MONO_ROOT_SETREF ((node), key, __val); \
-	else \
-	  (node)->key = __val; \
-	} while (0)
-#define SET_NODE_VALUE(node, gc_type, val) do { \
-	gpointer __val = (val); \
-	if (gc_type == MONO_HASH_VALUE_GC || gc_type == MONO_HASH_KEY_VALUE_GC) \
-		MONO_ROOT_SETREF ((node), value, __val); \
-	else \
-	  (node)->value = __val; \
-	} while (0)
-#else
 #define SET_NODE_KEY(node, gc_type, val) do { (node)->key = (val); } while (0)
 #define SET_NODE_VALUE(node, gc_type, val) do { (node)->value = (val); } while (0)
-#endif
 
 /**
  * g_hash_table_new:
@@ -363,9 +344,7 @@ mono_g_hash_table_lookup_extended (MonoGHashTable    *hash_table,
 }
 
 static inline MonoGHashNode*
-g_hash_node_new (gpointer key,
-		 gpointer value,
-		 gint gc_type)
+g_hash_node_new (gint gc_type)
 {
   MonoGHashNode *hash_node = NULL;
 
@@ -431,8 +410,8 @@ g_hash_node_new (gpointer key,
   G_UNLOCK (g_hash_global);
 #endif
 
-  SET_NODE_KEY (hash_node, gc_type, key);
-  SET_NODE_VALUE (hash_node, gc_type, value);
+  hash_node->key = NULL;
+  hash_node->value = NULL;
   hash_node->next = NULL;
   
   return hash_node;
@@ -481,9 +460,12 @@ mono_g_hash_table_insert (MonoGHashTable *hash_table,
     }
   else
     {
-      *node = g_hash_node_new (key, value, hash_table->gc_type);
-      hash_table->nnodes++;
-      G_HASH_TABLE_RESIZE (hash_table);
+	    gint gc_type = hash_table->gc_type;
+	    *node = g_hash_node_new (gc_type);
+	    SET_NODE_KEY (*node, gc_type, key);
+	    SET_NODE_VALUE (*node, gc_type, value);
+	    hash_table->nnodes++;
+	    G_HASH_TABLE_RESIZE (hash_table);
     }
 }
 
@@ -524,9 +506,12 @@ mono_g_hash_table_replace (MonoGHashTable *hash_table,
     }
   else
     {
-      *node = g_hash_node_new (key, value, hash_table->gc_type);
-      hash_table->nnodes++;
-      G_HASH_TABLE_RESIZE (hash_table);
+	    gint gc_type = hash_table->gc_type;
+	    *node = g_hash_node_new (gc_type);
+	    SET_NODE_KEY (*node, gc_type, key);
+	    SET_NODE_VALUE (*node, gc_type, value);
+	    hash_table->nnodes++;
+	    G_HASH_TABLE_RESIZE (hash_table);
     }
 }
 
