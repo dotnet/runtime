@@ -35,6 +35,12 @@
 #include <sys/resource.h>
 #endif
 
+#ifdef PLATFORM_MACOSX
+#include <sys/proc.h>
+#include <sys/sysctl.h>
+#include <sys/utsname.h>
+#endif
+
 #ifdef PLATFORM_SOLARIS
 /* procfs.h cannot be included if this define is set, but it seems to work fine if it is undefined */
 #if _FILE_OFFSET_BITS == 64
@@ -408,7 +414,6 @@ utf16_concat (const gunichar2 *first, ...)
 }
 
 #ifdef PLATFORM_MACOSX
-#include <sys/utsname.h>
 
 /* 0 = no detection; -1 = not 10.5 or higher;  1 = 10.5 or higher */
 static int osx_10_5_or_higher;
@@ -1489,6 +1494,60 @@ static gboolean process_enum (gpointer handle, gpointer user_data)
 }
 #endif /* UNUSED_CODE */
 
+#ifdef PLATFORM_MACOSX
+
+gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
+{
+	guint32 count, fit, i, j;
+	gint32 err;
+	gboolean done;
+	struct kinfo_proc *result;
+	size_t proclength;
+	static const int name[] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
+	
+	mono_once (&process_current_once, process_set_current);
+	
+	result = NULL;
+	done = FALSE;
+	
+	do {
+		proclength = 0;
+		err = sysctl ((int *)name, (sizeof(name) / sizeof(*name)) - 1, NULL, &proclength, NULL, 0);
+
+		if (err == 0) {
+			result = malloc (proclength);
+			if (result == NULL)
+				return FALSE;
+			
+			err = sysctl ((int *) name, (sizeof(name) / sizeof(*name)) - 1, result, &proclength, NULL, 0);
+
+			if (err == 0) 
+				done = TRUE;
+			else
+				free (result);
+		}
+	} while (err == 0 && !done);
+	
+	if (err != 0) {
+ 		if (result != NULL) {
+			free (result);
+			result = NULL;
+		}
+		return(FALSE);
+	}	
+	
+	count = proclength / sizeof(struct kinfo_proc);
+	fit = len / sizeof(guint32);
+	for (i = 0, j = 0; j< fit && i < count; i++) {
+		pids [j++] = result [i].kp_proc.p_pid;
+	}
+	free (result);
+	result = NULL;
+	*needed = j * sizeof(guint32);
+	
+	return(TRUE);
+}
+#else
 gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 {
 	GArray *processes = g_array_new (FALSE, FALSE, sizeof(pid_t));
@@ -1528,6 +1587,7 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	
 	return(TRUE);
 }
+#endif
 
 static gboolean process_open_compare (gpointer handle, gpointer user_data)
 {
@@ -2050,9 +2110,28 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	gchar *ret = NULL;
 	gchar buf[256];
 	FILE *fp;
-	
+
+#if defined(PLATFORM_SOLARIS)
+	filename = g_strdup_printf ("/proc/%d/psinfo", pid);
+	if ((fp = fopen (filename, "r")) != NULL) {
+		struct psinfo info;
+		int nread;
+
+		nread = fread (&info, sizeof (info), 1, fp);
+		if (nread == 1) {
+			ret = g_strdup (info.pr_fname);
+		}
+
+		fclose (fp);
+	}
+	g_free (filename);
+#elif defined(PLATFORM_MACOSX)
 	memset (buf, '\0', sizeof(buf));
-	
+	proc_name (pid, buf, sizeof(buf));
+	if (strlen (buf) > 0)
+		ret = g_strdup (buf);
+#else
+	memset (buf, '\0', sizeof(buf));
 	filename = g_strdup_printf ("/proc/%d/exe", pid);
 	if (readlink (filename, buf, 255) > 0) {
 		ret = g_strdup (buf);
@@ -2062,7 +2141,7 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	if (ret != NULL) {
 		return(ret);
 	}
-	
+
 	filename = g_strdup_printf ("/proc/%d/cmdline", pid);
 	if ((fp = fopen (filename, "r")) != NULL) {
 		if (fgets (buf, 256, fp) != NULL) {
@@ -2091,25 +2170,6 @@ static gchar *get_process_name_from_proc (pid_t pid)
 							 end - start - 1);
 				}
 			}
-		}
-		
-		fclose (fp);
-	}
-	g_free (filename);
-
-	if (ret != NULL) {
-		return(ret);
-	}
-
-#ifdef PLATFORM_SOLARIS
-	filename = g_strdup_printf ("/proc/%d/psinfo", pid);
-	if ((fp = fopen (filename, "r")) != NULL) {
-		struct psinfo info;
-		int nread;
-
-		nread = fread (&info, sizeof (info), 1, fp);
-		if (nread == 1) {
-			ret = g_strdup (info.pr_fname);
 		}
 		
 		fclose (fp);
