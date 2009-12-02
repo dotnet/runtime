@@ -56,6 +56,9 @@ libmonoruntime_static_la_LIBADD = $(bundle_obj) $(libmonoruntime_la_LIBADD)
 null_sources = \
 	console-null.c
 
+sgen_sources = \
+	sgen-gray.c
+
 libmonoruntime_la_SOURCES = \
 	$(platform_sources)	\
 	appdomain.c		\
@@ -212,5 +215,5 @@ pedump_SOURCES =		\
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(PEDUMP_DTRACE_OBJECT)
 
-EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources)
+EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) $(sgen_sources)
 

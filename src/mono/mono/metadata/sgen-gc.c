@@ -758,17 +758,9 @@ static Fragment *fragment_freelist = NULL;
 
 /* 
  * used when moving the objects
- * When the nursery is collected, objects are copied to to_space.
- * The area between gray_first and gray_objects is used as a stack
- * of objects that need their fields checked for more references
- * to be copied.
- * We should optimize somehow this mechanism to avoid rescanning
- * ptr-free objects. The order is also probably not optimal: need to
- * test cache misses and other graph traversal orders.
  */
 static char *to_space = NULL;
-static char *gray_first = NULL;
-static char *gray_objects = NULL;
+static char *to_space_bumper = NULL;
 static char *to_space_end = NULL;
 static GCMemSection *to_space_section = NULL;
 
@@ -1860,6 +1852,8 @@ add_to_global_remset (gpointer ptr, gboolean root)
 	}
 }
 
+#include "sgen-gray.c"
+
 /*
  * This is how the copying happens from the nursery to the old generation.
  * We assume that at this time all the pinned objects have been identified and
@@ -1907,7 +1901,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		objsize = safe_object_get_size ((MonoObject*)obj);
 		objsize += ALLOC_ALIGN - 1;
 		objsize &= ~(ALLOC_ALIGN - 1);
-		DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", gray_objects, ((MonoObject*)obj)->vtable->klass->name, objsize));
+		DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", to_space_bumper, ((MonoObject*)obj)->vtable->klass->name, objsize));
 		/* FIXME: handle pinned allocs:
 		 * Large objects are simple, at least until we always follow the rule:
 		 * if objsize >= MAX_SMALL_OBJ_SIZE, pin the object and return it.
@@ -1922,7 +1916,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		/* ok, the object is not pinned, we can move it */
 		/* use a optimized memcpy here */
 		if (objsize <= sizeof (gpointer) * 8) {
-			mword *dest = (mword*)gray_objects;
+			mword *dest = (mword*)to_space_bumper;
 			goto *copy_labels [objsize / sizeof (gpointer)];
 		LAB_8:
 			(dest) [7] = ((mword*)obj) [7];
@@ -1947,7 +1941,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		{
 			int ecx;
 			char* esi = obj;
-			char* edi = gray_objects;
+			char* edi = to_space_bumper;
 			__asm__ __volatile__(
 				"rep; movsl"
 				: "=&c" (ecx), "=&D" (edi), "=&S" (esi)
@@ -1956,23 +1950,25 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 			);
 		}
 #else
-		memcpy (gray_objects, obj, objsize);
+		memcpy (to_space_bumper, obj, objsize);
 #endif
 		}
 		/* adjust array->bounds */
 		vt = ((MonoObject*)obj)->vtable;
 		g_assert (vt->gc_descr);
 		if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
-			MonoArray *array = (MonoArray*)gray_objects;
-			array->bounds = (MonoArrayBounds*)((char*)gray_objects + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
+			MonoArray *array = (MonoArray*)to_space_bumper;
+			array->bounds = (MonoArrayBounds*)((char*)to_space_bumper + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
 			DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %zd, rank: %d, length: %d\n", array, objsize, vt->rank, mono_array_length (array)));
 		}
 		/* set the forwarding pointer */
-		forward_object (obj, gray_objects);
-		obj = gray_objects;
+		forward_object (obj, to_space_bumper);
+		obj = to_space_bumper;
 		to_space_section->scan_starts [((char*)obj - (char*)to_space_section->data)/SCAN_START_SIZE] = obj;
-		gray_objects += objsize;
-		DEBUG (8, g_assert (gray_objects <= to_space_end));
+		to_space_bumper += objsize;
+		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
+		gray_object_enqueue (obj);
+		DEBUG (8, g_assert (to_space_bumper <= to_space_end));
 		return obj;
 	}
 	return obj;
@@ -2013,14 +2009,12 @@ scan_object (char *start, char* from_start, char* from_end)
 static void inline
 drain_gray_stack (char *start_addr, char *end_addr)
 {
-	char *gray_start = gray_first;
+	char *obj;
 
-	while (gray_start < gray_objects) {
-		DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
-		gray_start = scan_object (gray_start, start_addr, end_addr);
+	while ((obj = gray_object_dequeue ())) {
+		DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
+		scan_object (obj, start_addr, end_addr);
 	}
-
-	gray_first = gray_start;
 }
 
 /*
@@ -2645,7 +2639,6 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 	int fin_ready, bigo_scanned_num;
-	char *gray_start;
 
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
@@ -2660,11 +2653,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	gray_start = gray_first;
-	while (gray_start < gray_objects) {
-		DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
-		gray_start = scan_object (gray_start, start_addr, end_addr);
-	}
+	drain_gray_stack (start_addr, end_addr);
 	TV_GETTIME (atv);
 	//scan_old_generation (start_addr, end_addr);
 	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
@@ -2683,11 +2672,8 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 		bigo_scanned_num = scan_needed_big_objects (start_addr, end_addr);
 
 		/* drain the new stack that might have been created */
-		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin: %p-%p, size: %d\n", gray_start, gray_objects, (int)(gray_objects - gray_start)));
-		while (gray_start < gray_objects) {
-			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
-			gray_start = scan_object (gray_start, start_addr, end_addr);
-		}
+		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
+		drain_gray_stack (start_addr, end_addr);
 	} while (fin_ready != num_ready_finalizers || bigo_scanned_num);
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan for %s generation: %d usecs\n", generation_name (generation), TV_ELAPSED (atv, btv)));
@@ -2700,23 +2686,19 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 * GC a finalized object my lose the monitor because it is cleared before the finalizer is
 	 * called.
 	 */
-	g_assert (gray_start == gray_objects);
+	g_assert (gray_object_queue_is_empty ());
 	for (;;) {
 		null_link_in_range (start_addr, end_addr, generation);
 		if (generation == GENERATION_OLD)
 			null_link_in_range (start_addr, end_addr, GENERATION_NURSERY);
-		if (gray_start == gray_objects)
+		if (gray_object_queue_is_empty ())
 			break;
-		while (gray_start < gray_objects) {
-			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
-			gray_start = scan_object (gray_start, start_addr, end_addr);
-		}
+		drain_gray_stack (start_addr, end_addr);
 	}
 
-	g_assert (gray_start == gray_objects);
-	DEBUG (2, fprintf (gc_debug_file, "Copied from %s to old space: %d bytes (%p-%p)\n", generation_name (generation), (int)(gray_objects - to_space), to_space, gray_objects));
-	to_space = gray_start;
-	to_space_section->next_data = to_space;
+	g_assert (gray_object_queue_is_empty ());
+	DEBUG (2, fprintf (gc_debug_file, "Copied from %s to old space: %d bytes (%p-%p)\n", generation_name (generation), (int)(to_space_bumper - to_space), to_space, to_space_bumper));
+	to_space_section->next_data = to_space = to_space_bumper;
 }
 
 static int last_num_pinned = 0;
@@ -3000,17 +2982,19 @@ collect_nursery (size_t requested_size)
 	 * We reset to_space if we allocated objects in degraded mode.
 	 */
 	if (to_space_section)
-		to_space = gray_objects = gray_first = to_space_section->next_data;
+		to_space = to_space_bumper = to_space_section->next_data;
 	if ((to_space_end - to_space) < max_garbage_amount) {
 		section = alloc_section (nursery_section->size * 4);
 		g_assert (nursery_section->size >= max_garbage_amount);
-		to_space = gray_objects = gray_first = section->next_data;
+		to_space = to_space_bumper = section->next_data;
 		to_space_end = section->end_data;
 		to_space_section = section;
 		invoke_major_gc = TRUE;
 	}
 	DEBUG (2, fprintf (gc_debug_file, "To space setup: %p-%p in section %p\n", to_space, to_space_end, to_space_section));
 	nursery_section->next_data = nursery_next;
+
+	gray_object_queue_init ();
 
 	num_minor_gcs++;
 	mono_stats.minor_gc_count ++;
@@ -3073,6 +3057,8 @@ collect_nursery (size_t requested_size)
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
+
+	g_assert (gray_object_queue_is_empty ());
 
 	return invoke_major_gc;
 }
@@ -3201,9 +3187,11 @@ major_collection (const char *reason)
 	/* allocate the big to space */
 	DEBUG (4, fprintf (gc_debug_file, "Allocate tospace for size: %zd\n", copy_space_required));
 	section = alloc_section (copy_space_required);
-	to_space = gray_objects = gray_first = section->next_data;
+	to_space = to_space_bumper = section->next_data;
 	to_space_end = section->end_data;
 	to_space_section = section;
+
+	gray_object_queue_init ();
 
 	/* the old generation doesn't need to be scanned (no remembered sets or card
 	 * table needed either): the only objects that must survive are those pinned and
@@ -3314,6 +3302,8 @@ major_collection (const char *reason)
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
+
+	g_assert (gray_object_queue_is_empty ());
 }
 
 /*
