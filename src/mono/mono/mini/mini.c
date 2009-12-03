@@ -4513,19 +4513,25 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	mono_domain_unlock (domain);		
 
 	if (!info) {
-		mono_class_setup_vtable (method->klass);
-		if (method->klass->exception_type != MONO_EXCEPTION_NONE) {
-			if (exc)
-				*exc = (MonoObject*)mono_class_get_exception_for_failure (method->klass);
-			else
-				mono_raise_exception (mono_class_get_exception_for_failure (method->klass));
-			return NULL;
+		if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+			/* 
+			 * This might be redundant since mono_class_vtable () already does this,
+			 * but keep it just in case for moonlight.
+			 */
+			mono_class_setup_vtable (method->klass);
+			if (method->klass->exception_type != MONO_EXCEPTION_NONE) {
+				if (exc)
+					*exc = (MonoObject*)mono_class_get_exception_for_failure (method->klass);
+				else
+					mono_raise_exception (mono_class_get_exception_for_failure (method->klass));
+				return NULL;
+			}
 		}
 
 		info = g_new0 (RuntimeInvokeInfo, 1);
 
 		invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-		info->vtable = mono_class_vtable (domain, method->klass);
+		info->vtable = mono_class_vtable_full (domain, method->klass, TRUE);
 		g_assert (info->vtable);
 
 		if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
