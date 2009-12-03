@@ -1819,6 +1819,9 @@ add_to_global_remset (gpointer ptr, gboolean root)
 
 	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
 
+	g_assert (!root);
+	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
+
 	/* 
 	 * FIXME: If an object remains pinned, we need to add it at every minor collection.
 	 * To avoid uncontrolled growth of the global remset, only add each pointer once.
@@ -1977,10 +1980,11 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		void *__old = *(ptr);	\
+		void *__copy;		\
 		if (__old) {	\
-			*(ptr) = copy_object (__old, from_start, from_end);	\
-			DEBUG (9, if (__old != *(ptr)) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
-			if (G_UNLIKELY (*(ptr) >= (void*)from_start && *(ptr) < (void*)from_end) && !ptr_in_nursery (ptr)) \
+			*(ptr) = __copy = copy_object (__old, from_start, from_end);	\
+			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
+			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
 				add_to_global_remset ((ptr), FALSE);							\
 		}	\
 	} while (0)
