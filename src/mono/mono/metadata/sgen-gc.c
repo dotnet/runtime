@@ -2637,6 +2637,75 @@ get_finalize_entry_hash_table (int generation)
 	}
 }
 
+static gboolean
+to_space_setup (size_t max_garbage_amount, size_t allocate_amount, gboolean must_allocate)
+{
+	gboolean did_allocate = FALSE;
+
+	/*
+	 * not enough room in the old generation to store all the possible data from
+	 * the nursery in a single continuous space.
+	 * We reset to_space if we allocated objects in degraded mode.
+	 */
+	if (!must_allocate && to_space_section)
+		to_space = to_space_bumper = to_space_section->next_data;
+	if (must_allocate || (to_space_end - to_space) < max_garbage_amount) {
+		to_space_section = alloc_section (allocate_amount);
+		to_space = to_space_bumper = to_space_section->next_data;
+		to_space_end = to_space_section->end_data;
+		did_allocate = TRUE;
+	}
+	DEBUG (2, fprintf (gc_debug_file, "To space setup: %p-%p in section %p\n", to_space, to_space_end, to_space_section));
+	return did_allocate;
+}
+
+static void
+shorten_section (GCMemSection *section, mword size)
+{
+	size += pagesize - 1;
+	size &= ~(pagesize - 1);
+
+	if (size == section->size)
+		return;
+
+	free_os_memory (section->data + size, section->size - size);
+	total_alloc -= section->size - size;
+
+	DEBUG (2, fprintf (gc_debug_file, "Shortening section %p from %d bytes to %d bytes\n",
+					section, section->size, size));
+	section->size = size;
+	section->end_data = section->data + size;
+}
+
+/*
+ * After major collections we try to shorten the to-space so as to
+ * avoid the next to-space to be even bigger.  We are still left with
+ * mostly empty sections which only contain pinned objects.  We should
+ * re-fill those first when we do a major collection and only allocate
+ * a new one if they are all full.  Whether or not we need to shorten
+ * that afterwards remains to be seen.
+ */
+static gboolean
+to_space_shorten (mword size)
+{
+	g_assert (to_space_end == to_space_section->end_data);
+
+	if (to_space_section->next_data - to_space_section->data >= size)
+		return FALSE;
+
+	shorten_section (to_space_section, size);
+
+	to_space_end = to_space_section->end_data;
+
+	return TRUE;
+}
+
+static void
+to_space_set_next_data (char *next_data)
+{
+	to_space_section->next_data = to_space;
+}
+
 static void
 finish_gray_stack (char *start_addr, char *end_addr, int generation)
 {
@@ -2702,7 +2771,8 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 
 	g_assert (gray_object_queue_is_empty ());
 	DEBUG (2, fprintf (gc_debug_file, "Copied from %s to old space: %d bytes (%p-%p)\n", generation_name (generation), (int)(to_space_bumper - to_space), to_space, to_space_bumper));
-	to_space_section->next_data = to_space = to_space_bumper;
+	to_space = to_space_bumper;
+	to_space_set_next_data (to_space);
 }
 
 static int last_num_pinned = 0;
@@ -2775,24 +2845,6 @@ build_nursery_fragments (int start_pin, int end_pin)
 
 	/* Clear TLABs for all threads */
 	clear_tlabs ();
-}
-
-static void
-shorten_section (GCMemSection *section, mword size)
-{
-	size += pagesize - 1;
-	size &= ~(pagesize - 1);
-
-	if (size == section->size)
-		return;
-
-	free_os_memory (section->data + size, section->size - size);
-	total_alloc -= section->size - size;
-
-	DEBUG (2, fprintf (gc_debug_file, "Shortening section %p from %d bytes to %d bytes\n",
-					section, section->size, size));
-	section->size = size;
-	section->end_data = section->data + size;
 }
 
 /* FIXME: later reduce code duplication here with the above
@@ -2945,7 +2997,6 @@ dump_heap (const char *type, int num, const char *reason)
 static gboolean
 collect_nursery (size_t requested_size)
 {
-	GCMemSection *section;
 	size_t max_garbage_amount;
 	int i;
 	char *orig_nursery_next;
@@ -2967,6 +3018,7 @@ collect_nursery (size_t requested_size)
 
 	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", num_minor_gcs, nursery_start, nursery_next, (int)(nursery_next - nursery_start)));
 	max_garbage_amount = nursery_next - nursery_start;
+	g_assert (nursery_section->size >= max_garbage_amount);
 
 	/* Clear all remaining nursery fragments, pinning depends on this */
 	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
@@ -2980,22 +3032,10 @@ collect_nursery (size_t requested_size)
 	if (xdomain_checks)
 		check_for_xdomain_refs ();
 
-	/* 
-	 * not enough room in the old generation to store all the possible data from 
-	 * the nursery in a single continuous space.
-	 * We reset to_space if we allocated objects in degraded mode.
-	 */
-	if (to_space_section)
-		to_space = to_space_bumper = to_space_section->next_data;
-	if ((to_space_end - to_space) < max_garbage_amount) {
-		section = alloc_section (nursery_section->size * 4);
-		g_assert (nursery_section->size >= max_garbage_amount);
-		to_space = to_space_bumper = section->next_data;
-		to_space_end = section->end_data;
-		to_space_section = section;
+	if (to_space_setup (max_garbage_amount, nursery_section->size * 4, FALSE))
 		invoke_major_gc = TRUE;
-	}
 	DEBUG (2, fprintf (gc_debug_file, "To space setup: %p-%p in section %p\n", to_space, to_space_end, to_space_section));
+
 	nursery_section->next_data = nursery_next;
 
 	gray_object_queue_init ();
@@ -3065,29 +3105,6 @@ collect_nursery (size_t requested_size)
 	g_assert (gray_object_queue_is_empty ());
 
 	return invoke_major_gc;
-}
-
-/*
- * After major collections we try to shorten the to-space so as to
- * avoid the next to-space to be even bigger.  We are still left with
- * mostly empty sections which only contain pinned objects.  We should
- * re-fill those first when we do a major collection and only allocate
- * a new one if they are all full.  Whether or not we need to shorten
- * that afterwards remains to be seen.
- */
-static gboolean
-shorten_to_space (mword size)
-{
-	g_assert (to_space_end == to_space_section->end_data);
-
-	if (to_space_section->next_data - to_space_section->data >= size)
-		return FALSE;
-
-	shorten_section (to_space_section, size);
-
-	to_space_end = to_space_section->end_data;
-
-	return TRUE;
 }
 
 static void
@@ -3189,11 +3206,7 @@ major_collection (const char *reason)
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
 	/* allocate the big to space */
-	DEBUG (4, fprintf (gc_debug_file, "Allocate tospace for size: %zd\n", copy_space_required));
-	section = alloc_section (copy_space_required);
-	to_space = to_space_bumper = section->next_data;
-	to_space_end = section->end_data;
-	to_space_section = section;
+	to_space_setup (-1, copy_space_required, TRUE);
 
 	gray_object_queue_init ();
 
@@ -3292,7 +3305,7 @@ major_collection (const char *reason)
 	 * need to change this to something else, maybe even adjust it
 	 * dynamically.
 	 */
-	shorten_to_space (copy_space_required / 4);
+	to_space_shorten (copy_space_required / 4);
 
 	TV_GETTIME (all_btv);
 	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
