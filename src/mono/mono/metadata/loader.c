@@ -585,6 +585,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 			guint32 cols [MONO_METHOD_SIZE];
 			MonoMethod *method;
 			const char *m_name;
+			MonoMethodSignature *other_sig;
 
 			mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
 
@@ -596,7 +597,8 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 				continue;
 
 			method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
-			if (method && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, mono_method_signature (method)))
+			other_sig = mono_method_signature (method);
+			if (method && other_sig && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, other_sig))
 				return method;
 		}
 	}
