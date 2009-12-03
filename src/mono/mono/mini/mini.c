@@ -266,7 +266,7 @@ mono_print_method_from_ip (void *ip)
 	MonoDomain *domain = mono_domain_get ();
 	FindTrampUserData user_data;
 	
-	ji = mono_jit_info_table_find (domain, ip);
+	ji = mini_jit_info_table_find (domain, ip, &domain);
 	if (!ji) {
 		user_data.ip = ip;
 		user_data.method = NULL;

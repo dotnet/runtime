@@ -211,6 +211,7 @@ typedef struct {
 	gboolean managed;
 	int native_offset;
 	int il_offset;
+	gpointer lmf;
 } StackFrameInfo;
 
 #if 0

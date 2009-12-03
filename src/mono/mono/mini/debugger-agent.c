@@ -107,6 +107,11 @@ typedef struct
 	MonoContext ctx;
 	MonoDebugMethodJitInfo *jit;
 	int flags;
+	/*
+	 * Whenever ctx is set. This is FALSE for the last frame of running threads, since
+	 * the frame can become invalid.
+	 */
+	gboolean has_ctx;
 } StackFrame;
 
 typedef struct
@@ -174,6 +179,26 @@ typedef struct {
 	 * Number of times this thread has been resumed using resume_thread ().
 	 */
 	guint32 resume_count;
+
+	MonoInternalThread *thread;
+
+	/*
+	 * Information about the frame which transitioned to native code for running
+	 * threads.
+	 */
+	StackFrameInfo async_last_frame;
+
+	/*
+	 * The context where the stack walk can be started for running threads.
+	 */
+	MonoContext async_ctx;
+
+	gboolean has_async_ctx;
+
+	/*
+	 * The lmf where the stack walk can be started for running threads.
+	 */
+	gpointer async_lmf;
 } DebuggerTlsData;
 
 /* 
@@ -1666,6 +1691,36 @@ suspend_init (void)
 	MONO_SEM_INIT (&suspend_sem, 0);
 }
 
+typedef struct
+{
+	StackFrameInfo last_frame;
+	gboolean last_frame_set;
+	MonoContext ctx;
+	gpointer lmf;
+} GetLastFrameUserData;
+
+static gboolean
+get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
+{
+	GetLastFrameUserData *data = user_data;
+
+	if (info->type == FRAME_TYPE_MANAGED_TO_NATIVE)
+		return FALSE;
+
+	if (!data->last_frame_set) {
+		/* Store the last frame */
+		memcpy (&data->last_frame, info, sizeof (StackFrameInfo));
+		data->last_frame_set = TRUE;
+		return FALSE;
+	} else {
+		/* Store the context/lmf for the frame above the last frame */
+		memcpy (&data->ctx, ctx, sizeof (MonoContext));
+		data->lmf = info->lmf;
+
+		return TRUE;
+	}
+}
+
 /*
  * mono_debugger_agent_thread_interrupt:
  *
@@ -1711,18 +1766,40 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 		 */
 		if (!tls->suspended && !tls->suspending) {
 			MonoContext ctx;
+			GetLastFrameUserData data;
 
-			/* 
-			 * FIXME: This is dangerous as the thread is not really suspended, but
-			 * without this, we can't print stack traces for threads executing
-			 * native code.
-			 * Maybe do a stack walk now, and save its result ?
-			 */
 			mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 			// FIXME: printf is not signal safe, but this is only used during
 			// debugger debugging
 			DEBUG (1, printf ("[%p] Received interrupt while at %p, treating as suspended.\n", (gpointer)GetCurrentThreadId (), mono_arch_ip_from_context (sigctx)));
-			save_thread_context (&ctx);
+			//save_thread_context (&ctx);
+
+			if (!tls->thread)
+				/* Already terminated */
+				return TRUE;
+
+			/*
+			 * We are in a difficult position: we want to be able to provide stack
+			 * traces for this thread, but we can't use the current ctx+lmf, since
+			 * the thread is still running, so it might return to managed code,
+			 * making these invalid.
+			 * So we start a stack walk and save the first frame, along with the
+			 * parent frame's ctx+lmf. This (hopefully) works because the thread will be 
+			 * suspended when it returns to managed code, so the parent's ctx should
+			 * remain valid.
+			 */
+			data.last_frame_set = FALSE;
+			mono_jit_walk_stack_from_ctx_in_thread (get_last_frame, mono_domain_get (), &ctx, FALSE, tls->thread, mono_get_lmf (), &data);
+			if (data.last_frame_set) {
+				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
+				memcpy (&tls->async_ctx, &data.ctx, sizeof (MonoContext));
+				tls->async_lmf = data.lmf;
+				tls->has_async_ctx = TRUE;
+				tls->domain = mono_domain_get ();
+				memcpy (&tls->ctx, &ctx, sizeof (MonoContext));
+			} else {
+				tls->has_async_ctx = FALSE;
+			}
 
 			tls->suspended = TRUE;
 			MONO_SEM_POST (&suspend_sem);
@@ -1999,6 +2076,7 @@ suspend_current (void)
 
 	/* The frame info becomes invalid after a resume */
 	tls->has_context = FALSE;
+	tls->has_async_ctx = FALSE;
 	invalidate_frames (NULL);
 }
 
@@ -2149,7 +2227,10 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	frame = g_new0 (StackFrame, 1);
 	frame->method = method;
 	frame->il_offset = info->il_offset;
-	frame->ctx = *ctx;
+	if (ctx) {
+		frame->ctx = *ctx;
+		frame->has_ctx = TRUE;
+	}
 	frame->domain = info->domain;
 
 	ud->frames = g_slist_append (ud->frames, frame);
@@ -2173,7 +2254,14 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 
 	user_data.tls = tls;
 	user_data.frames = NULL;
-	if (tls->has_context) {
+	if (tls->terminated) {
+		tls->frame_count = 0;
+		return;
+	} if (!tls->really_suspended && tls->has_async_ctx) {
+		/* Have to use the state saved by the signal handler */
+		process_frame (&tls->async_last_frame, NULL, &user_data);
+		mono_jit_walk_stack_from_ctx_in_thread (process_frame, tls->domain, &tls->async_ctx, FALSE, thread, tls->async_lmf, &user_data);
+	} else if (tls->has_context) {
 		mono_jit_walk_stack_from_ctx_in_thread (process_frame, tls->domain, &tls->ctx, FALSE, thread, tls->lmf, &user_data);
 	} else {
 		// FIXME:
@@ -2531,6 +2619,8 @@ thread_startup (MonoProfiler *prof, gsize tid)
 	// FIXME: Free this somewhere
 	tls = g_new0 (DebuggerTlsData, 1);
 	tls->resume_event = CreateEvent (NULL, FALSE, FALSE, NULL);
+	MONO_GC_REGISTER_ROOT (tls->thread);
+	tls->thread = thread;
 	TlsSetValue (debugger_tls_id, tls);
 
 	DEBUG (1, fprintf (log_file, "[%p] Thread started, obj=%p, tls=%p.\n", (gpointer)tid, thread, tls));
@@ -2563,6 +2653,8 @@ thread_end (MonoProfiler *prof, gsize tid)
 		tls->terminated = TRUE;
 		mono_g_hash_table_remove (tid_to_thread_obj, (gpointer)tid);
 		/* Can't remove from tid_to_thread, as that would defeat the check in thread_start () */
+		MONO_GC_UNREGISTER_ROOT (tls->thread);
+		tls->thread = NULL;
 	}
 	mono_loader_unlock ();
 
@@ -5314,6 +5406,10 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return ERR_INVALID_FRAMEID;
 
 	frame = tls->frames [i];
+
+	if (!frame->has_ctx)
+		// FIXME:
+		return ERR_INVALID_FRAMEID;
 
 	if (!frame->jit) {
 		frame->jit = mono_debug_find_method (frame->method, frame->domain);

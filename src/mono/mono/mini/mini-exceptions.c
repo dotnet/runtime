@@ -731,6 +731,7 @@ mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domai
 	}
 
 	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
+		frame.lmf = lmf;
 #ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
 		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
 		if (!res)
