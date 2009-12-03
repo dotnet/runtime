@@ -3680,6 +3680,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		g_list_free (regs);
 	}
 
+	/*
+	 * Have to call this again to process variables added since the first call.
+	 */
+	mono_liveness_handle_exception_clauses (cfg);
+
 	if (cfg->globalra) {
 		MonoBasicBlock *bb;
 
