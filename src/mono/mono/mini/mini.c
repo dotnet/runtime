@@ -1012,7 +1012,6 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 void
 mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index) {
 	memset (dest, 0, sizeof (MonoInst));
-	dest->ssa_op = MONO_SSA_LOAD;
 	dest->inst_i0 = cfg->varinfo [var_index];
 	dest->opcode = mini_type_to_ldind (cfg, dest->inst_i0->inst_vtype);
 	type_to_eval_stack_type (cfg, dest->inst_i0->inst_vtype, dest);

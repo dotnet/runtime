@@ -282,7 +282,6 @@ enum {
         (ins)->opcode = OP_NOP; \
         (ins)->dreg = -1;				\
 	MONO_INST_NULLIFY_SREGS ((ins));		\
-		(ins)->ssa_op = MONO_SSA_NOP; \
     } while (0)
 
 /* Remove INS from BB */
@@ -568,8 +567,7 @@ typedef struct {
 struct MonoInst {
  	guint16 opcode;
 	guint8  type; /* stack type */
-	guint   ssa_op : 3;
-	guint8  flags  : 5;
+	guint8  flags;
 	
 	/* used by the register allocator */
 	gint32 dreg, sreg1, sreg2, sreg3;
@@ -1155,19 +1153,6 @@ typedef struct {
 } MonoJitStats;
 
 extern MonoJitStats mono_jit_stats;
-
-/* values for MonoInst.ssa_op */
-enum {
-	MONO_SSA_NOP = 0,
-	MONO_SSA_ADDRESS_TAKEN = 1,
-	MONO_SSA_LOAD = 2,
-	MONO_SSA_STORE = 4,
-	MONO_SSA_LOAD_STORE = MONO_SSA_LOAD|MONO_SSA_STORE,
-	MONO_SSA_INDIRECT_LOAD = MONO_SSA_LOAD|MONO_SSA_ADDRESS_TAKEN,
-	MONO_SSA_INDIRECT_STORE = MONO_SSA_STORE|MONO_SSA_ADDRESS_TAKEN,
-	MONO_SSA_INDIRECT_LOAD_STORE =
-	MONO_SSA_LOAD|MONO_SSA_STORE|MONO_SSA_ADDRESS_TAKEN
-};
 
 /* opcodes: value assigned after all the CIL opcodes */
 #ifdef MINI_OP
