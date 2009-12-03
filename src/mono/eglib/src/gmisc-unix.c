@@ -110,6 +110,8 @@ const char *
 g_get_user_name (void)
 {
 	const char *retName = g_getenv ("USER");
+	if (!retName)
+		retName = "somebody";
 	return retName;
 }
 
