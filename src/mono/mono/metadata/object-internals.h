@@ -1216,7 +1216,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	MonoReflectionGenericClass *inst;
+	MonoReflectionType *inst;
 	MonoReflectionMethodBuilder *mb;
 	MonoArray *method_args;
 	MonoReflectionMethodBuilder *generic_method_definition;

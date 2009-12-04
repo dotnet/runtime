@@ -186,7 +186,7 @@ static gboolean is_sre_byref (MonoClass *class);
 static gboolean is_sre_pointer (MonoClass *class);
 static guint32 mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method);
 static guint32 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m);
-static MonoMethod * inflate_method (MonoReflectionGenericClass *type, MonoObject *obj);
+static MonoMethod * inflate_method (MonoReflectionType *type, MonoObject *obj);
 
 #define RESOLVE_TYPE(type) do { type = (void*)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type); } while (0)
 #define RESOLVE_ARRAY_TYPE_ELEMENT(array, index) do {	\
@@ -10117,9 +10117,8 @@ inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
 }
 
 static MonoMethod *
-inflate_method (MonoReflectionGenericClass *_type, MonoObject *obj)
+inflate_method (MonoReflectionType *type, MonoObject *obj)
 {
-	MonoReflectionType *type = (MonoReflectionType *)_type;
 	MonoMethod *method;
 	MonoClass *gklass;
 
@@ -10196,13 +10195,13 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	for (i = 0; i < dgclass->count_methods; i++) {
 		MonoObject *obj = mono_array_get (methods, gpointer, i);
 
-		dgclass->methods [i] = inflate_method (type, obj);
+		dgclass->methods [i] = inflate_method ((MonoReflectionType*)type, obj);
 	}
 
 	for (i = 0; i < dgclass->count_ctors; i++) {
 		MonoObject *obj = mono_array_get (ctors, gpointer, i);
 
-		dgclass->ctors [i] = inflate_method (type, obj);
+		dgclass->ctors [i] = inflate_method ((MonoReflectionType*)type, obj);
 	}
 
 	for (i = 0; i < dgclass->count_fields; i++) {
@@ -10244,9 +10243,9 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 			property->attrs = pb->attrs;
 			property->name = mono_string_to_utf8 (pb->name);
 			if (pb->get_method)
-				property->get = inflate_method (type, (MonoObject *) pb->get_method);
+				property->get = inflate_method ((MonoReflectionType*)type, (MonoObject *) pb->get_method);
 			if (pb->set_method)
-				property->set = inflate_method (type, (MonoObject *) pb->set_method);
+				property->set = inflate_method ((MonoReflectionType*)type, (MonoObject *) pb->set_method);
 		} else if (!strcmp (obj->vtable->klass->name, "MonoProperty")) {
 			*property = *((MonoReflectionProperty *) obj)->property;
 			property->name = g_strdup (property->name);
@@ -10270,9 +10269,9 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 			event->attrs = eb->attrs;
 			event->name = mono_string_to_utf8 (eb->name);
 			if (eb->add_method)
-				event->add = inflate_method (type, (MonoObject *) eb->add_method);
+				event->add = inflate_method ((MonoReflectionType*)type, (MonoObject *) eb->add_method);
 			if (eb->remove_method)
-				event->remove = inflate_method (type, (MonoObject *) eb->remove_method);
+				event->remove = inflate_method ((MonoReflectionType*)type, (MonoObject *) eb->remove_method);
 		} else if (!strcmp (obj->vtable->klass->name, "MonoEvent")) {
 			*event = *((MonoReflectionMonoEvent *) obj)->event;
 			event->name = g_strdup (event->name);
