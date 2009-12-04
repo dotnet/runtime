@@ -3433,21 +3433,25 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
 	 * store it, and we fill it after the method has been compiled.
 	 */
-	if (!cfg->compile_aot && !method->dynamic && !context_used) {
+	if (!cfg->compile_aot && !method->dynamic) {
 		MonoInst *code_slot_ins;
 
-		domain = mono_domain_get ();
-		mono_domain_lock (domain);
-		if (!domain_jit_info (domain)->method_code_hash)
-			domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
-		code_slot = g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, method);
-		if (!code_slot) {
-			code_slot = mono_domain_alloc0 (domain, sizeof (gpointer));
-			g_hash_table_insert (domain_jit_info (domain)->method_code_hash, method, code_slot);
-		}
-		mono_domain_unlock (domain);
+		if (context_used) {
+			code_slot_ins = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_METHOD_DELEGATE_CODE);
+		} else {
+			domain = mono_domain_get ();
+			mono_domain_lock (domain);
+			if (!domain_jit_info (domain)->method_code_hash)
+				domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
+			code_slot = g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, method);
+			if (!code_slot) {
+				code_slot = mono_domain_alloc0 (domain, sizeof (gpointer));
+				g_hash_table_insert (domain_jit_info (domain)->method_code_hash, method, code_slot);
+			}
+			mono_domain_unlock (domain);
 
-		EMIT_NEW_PCONST (cfg, code_slot_ins, code_slot);
+			EMIT_NEW_PCONST (cfg, code_slot_ins, code_slot);
+		}
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);		
 	}
 
