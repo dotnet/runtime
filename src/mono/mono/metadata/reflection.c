@@ -8710,6 +8710,12 @@ is_sre_generic_instance (MonoClass *class)
 	check_corlib_type_cached (class, "System.Reflection", "MonoGenericClass");
 }
 
+static gboolean
+is_sre_type_builder (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection.Emit", "TypeBuilder");
+}
+
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref)
 {
@@ -10111,12 +10117,22 @@ inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
 }
 
 static MonoMethod *
-inflate_method (MonoReflectionGenericClass *type, MonoObject *obj)
+inflate_method (MonoReflectionGenericClass *_type, MonoObject *obj)
 {
+	MonoReflectionType *type = (MonoReflectionType *)_type;
 	MonoMethod *method;
 	MonoClass *gklass;
 
-	gklass = mono_class_from_mono_type (mono_reflection_type_get_handle ((MonoReflectionType*)type->generic_type));
+	MonoClass *type_class = mono_object_class (type);
+
+	if (is_sre_generic_instance (type_class)) {
+		MonoReflectionGenericClass *mgc = (MonoReflectionGenericClass*)type;
+		gklass = mono_class_from_mono_type (mono_reflection_type_get_handle ((MonoReflectionType*)mgc->generic_type));
+	} else if (is_sre_type_builder (type_class)) {
+		gklass = mono_class_from_mono_type (mono_reflection_type_get_handle (type));
+	} else {
+		g_error ("Can't handle type %s", mono_type_get_full_name (mono_object_class (type)));
+	}
 
 	if (!strcmp (obj->vtable->klass->name, "MethodBuilder"))
 		if (((MonoReflectionMethodBuilder*)obj)->mhandle)
