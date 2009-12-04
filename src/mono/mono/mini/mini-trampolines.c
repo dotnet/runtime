@@ -47,6 +47,32 @@ get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer 
 }
 
 #ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+
+typedef struct {
+	MonoMethod *m;
+	gpointer addr;
+} RgctxTrampInfo;
+
+static gint
+rgctx_tramp_info_equal (gconstpointer ka, gconstpointer kb)
+{
+	const RgctxTrampInfo *i1 = ka;
+	const RgctxTrampInfo *i2 = kb;
+
+	if (i1->m == i2->m && i1->addr == i2->addr)
+		return 1;
+	else
+		return 0;
+}
+
+static guint
+rgctx_tramp_info_hash (gconstpointer data)
+{
+	const RgctxTrampInfo *info = data;
+
+	return GPOINTER_TO_UINT (info->m) ^ GPOINTER_TO_UINT (info->addr);
+}
+
 /*
  * mono_create_static_rgctx_trampoline:
  *
@@ -66,29 +92,42 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	gpointer ctx;
 	gpointer res;
 	MonoDomain *domain;
+	RgctxTrampInfo tmp_info;
+	RgctxTrampInfo *info;
 
 	if (mini_method_get_context (m)->method_inst)
 		ctx = mono_method_lookup_rgctx (mono_class_vtable (mono_domain_get (), m->klass), mini_method_get_context (m)->method_inst);
 	else
 		ctx = mono_class_vtable (mono_domain_get (), m->klass);
 
-	if (mono_aot_only)
-		return mono_aot_get_static_rgctx_trampoline (ctx, addr);
-
 	domain = mono_domain_get ();
 
+	/* 
+	 * In the AOT case, addr might point to either the method, or to an unbox trampoline,
+	 * so make the hash keyed on the m+addr pair.
+	 */
 	mono_domain_lock (domain);
+	if (!domain_jit_info (domain)->static_rgctx_trampoline_hash)
+		domain_jit_info (domain)->static_rgctx_trampoline_hash = g_hash_table_new (rgctx_tramp_info_hash, rgctx_tramp_info_equal);
+	tmp_info.m = m;
+	tmp_info.addr = addr;
 	res = g_hash_table_lookup (domain_jit_info (domain)->static_rgctx_trampoline_hash,
-							   m);
+							   &tmp_info);
 	mono_domain_unlock (domain);
 	if (res)
 		return res;
 
-	res = mono_arch_get_static_rgctx_trampoline (m, ctx, addr);
+	if (mono_aot_only)
+		res = mono_aot_get_static_rgctx_trampoline (ctx, addr);
+	else
+		res = mono_arch_get_static_rgctx_trampoline (m, ctx, addr);
 
 	mono_domain_lock (domain);
 	/* Duplicates inserted while we didn't hold the lock are OK */
-	g_hash_table_insert (domain_jit_info (domain)->static_rgctx_trampoline_hash, m, res);
+	info = mono_domain_alloc (domain, sizeof (RgctxTrampInfo));
+	info->m = m;
+	info->addr = addr;
+	g_hash_table_insert (domain_jit_info (domain)->static_rgctx_trampoline_hash, info, res);
 	mono_domain_unlock (domain);
 
 	return res;
