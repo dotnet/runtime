@@ -541,6 +541,20 @@ class Tests {
 			return 1;
 	}
 
+	// Creating a delegate from a generic method from gshared code
+	public static int test_0_gshared_delegate_from_gshared () {
+		if (gshared_delegate_from_gshared <object> () != 0)
+			return 1;
+		if (gshared_delegate_from_gshared <string> () != 0)
+			return 2;
+		return 0;
+	}
+
+	public static int gshared_delegate_from_gshared <T> () {
+		Func<Type> t = new Func<Type> (get_type<T>);
+
+		return t () == typeof (T) ? 0 : 1;
+	}
 
 	public static void VirtualInterfaceCallFromGenericMethod <T> (IFoo f) {
 		f.Bar <T> ();
