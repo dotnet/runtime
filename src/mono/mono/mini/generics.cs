@@ -528,6 +528,20 @@ class Tests {
 		return cctor_count;
 	}
 
+	public static Type get_type<T> () {
+		return typeof (T);
+	}
+
+	public static int test_0_gshared_delegate_rgctx () {
+		Func<Type> t = new Func<Type> (get_type<string>);
+
+		if (t () == typeof (string))
+			return 0;
+		else
+			return 1;
+	}
+
+
 	public static void VirtualInterfaceCallFromGenericMethod <T> (IFoo f) {
 		f.Bar <T> ();
 	}

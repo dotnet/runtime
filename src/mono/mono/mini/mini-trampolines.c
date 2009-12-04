@@ -889,14 +889,16 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 			delegate->method_ptr = *delegate->method_code;
 		} else {
 			delegate->method_ptr = mono_compile_method (method);
+			if (need_rgctx_tramp)
+				delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
 			if (delegate->method_code)
 				*delegate->method_code = delegate->method_ptr;
 			mono_debugger_trampoline_compiled (NULL, method, delegate->method_ptr);
 		}
+	} else {
+		if (need_rgctx_tramp)
+			delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
 	}
-
-	if (need_rgctx_tramp)
-		delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
 	if (!multicast && !callvirt) {
