@@ -2702,14 +2702,35 @@ emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
 	return emit_rgctx_fetch (cfg, rgctx, entry);
 }
 
+/*
+ * emit_get_rgctx_method:
+ *
+ *   Emit IR to load the property RGCTX_TYPE of CMETHOD. If context_used is 0, emit
+ * normal constants, else emit a load from the rgctx.
+ */
 static MonoInst*
 emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 					   MonoMethod *cmethod, int rgctx_type)
 {
-	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_METHODCONST, cmethod, rgctx_type);
-	MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
+	if (!context_used) {
+		MonoInst *ins;
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+		switch (rgctx_type) {
+		case MONO_RGCTX_INFO_METHOD:
+			EMIT_NEW_METHODCONST (cfg, ins, cmethod);
+			return ins;
+		case MONO_RGCTX_INFO_METHOD_RGCTX:
+			EMIT_NEW_METHOD_RGCTX_CONST (cfg, ins, cmethod);
+			return ins;
+		default:
+			g_assert_not_reached ();
+		}
+	} else {
+		MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_METHODCONST, cmethod, rgctx_type);
+		MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
+
+		return emit_rgctx_fetch (cfg, rgctx, entry);
+	}
 }
 
 static MonoInst*
@@ -6403,11 +6424,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (pass_mrgctx) {
 				g_assert (!vtable_arg);
 
-				if (context_used) {
-					vtable_arg = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
-				} else {
-					EMIT_NEW_METHOD_RGCTX_CONST (cfg, vtable_arg, cmethod);
-				}
+				vtable_arg = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 
 				if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 						MONO_METHOD_IS_FINAL (cmethod)) {
@@ -6451,14 +6468,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* The llvm vcall trampolines doesn't support generic virtual calls yet */
 				if (cmethod->wrapper_type == MONO_WRAPPER_NONE && mono_use_imt && !mono_use_llvm) {
 					g_assert (!imt_arg);
-					if (context_used) {
-						imt_arg = emit_get_rgctx_method (cfg, context_used,
-							cmethod, MONO_RGCTX_INFO_METHOD);
-
-					} else {
+					if (!context_used)
 						g_assert (cmethod->is_inflated);
-						EMIT_NEW_METHODCONST (cfg, imt_arg, cmethod);
-					}
+					imt_arg = emit_get_rgctx_method (cfg, context_used,
+													 cmethod, MONO_RGCTX_INFO_METHOD);
 					ins = mono_emit_method_call_full (cfg, cmethod, fsig, sp, sp [0], imt_arg);
 				} else
 #endif
@@ -6471,17 +6484,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					this_arg_temp = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
 					EMIT_NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
-					if (context_used) {
-						iargs [1] = emit_get_rgctx_method (cfg, context_used,
-							cmethod, MONO_RGCTX_INFO_METHOD);
-						EMIT_NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
-						addr = mono_emit_jit_icall (cfg,
-								mono_helper_compile_generic_method, iargs);
-					} else {
-						EMIT_NEW_METHODCONST (cfg, iargs [1], cmethod);
-						EMIT_NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
-						addr = mono_emit_jit_icall (cfg, mono_helper_compile_generic_method, iargs);
-					}
+					iargs [1] = emit_get_rgctx_method (cfg, context_used,
+													   cmethod, MONO_RGCTX_INFO_METHOD);
+					EMIT_NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
+					addr = mono_emit_jit_icall (cfg,
+												mono_helper_compile_generic_method, iargs);
 
 					EMIT_NEW_TEMPLOAD (cfg, sp [0], this_arg_temp->inst_c0);
 
@@ -7503,12 +7510,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cmethod->klass->valuetype && mono_class_generic_sharing_enabled (cmethod->klass) &&
 					mono_method_is_generic_sharable_impl (cmethod, TRUE)) {
 				if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) {
-					if (context_used) {
-						vtable_arg = emit_get_rgctx_method (cfg, context_used,
-							cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
-					} else {
-						EMIT_NEW_METHOD_RGCTX_CONST (cfg, vtable_arg, cmethod);
-					}
+					vtable_arg = emit_get_rgctx_method (cfg, context_used,
+														cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 				} else {
 					if (context_used) {
 						vtable_arg = emit_get_rgctx_klass (cfg, context_used,
@@ -7579,12 +7582,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mini_class_is_system_array (cmethod->klass)) {
 				g_assert (!vtable_arg);
 
-				if (context_used) {
-					*sp = emit_get_rgctx_method (cfg, context_used,
-						cmethod, MONO_RGCTX_INFO_METHOD);
-				} else {
-					EMIT_NEW_METHODCONST (cfg, *sp, cmethod);
-				}
+				*sp = emit_get_rgctx_method (cfg, context_used,
+											 cmethod, MONO_RGCTX_INFO_METHOD);
 
 				/* Avoid varargs in the common case */
 				if (fsig->param_count == 1)
@@ -9486,11 +9485,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 #endif
 
-				if (context_used) {
-					argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
-				} else {
-					EMIT_NEW_METHODCONST (cfg, argconst, cmethod);
-				}
+				argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
 				ins = mono_emit_jit_icall (cfg, mono_ldftn, &argconst);
 				*sp++ = ins;
 				
@@ -9523,14 +9518,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 				args [0] = *sp;
 
-				if (context_used) {
-					args [1] = emit_get_rgctx_method (cfg, context_used,
-						cmethod, MONO_RGCTX_INFO_METHOD);
+				args [1] = emit_get_rgctx_method (cfg, context_used,
+												  cmethod, MONO_RGCTX_INFO_METHOD);
+
+				if (context_used)
 					*sp++ = mono_emit_jit_icall (cfg, mono_ldvirtfn_gshared, args);
-				} else {
-					EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
+				else
 					*sp++ = mono_emit_jit_icall (cfg, mono_ldvirtfn, args);
-				}
 
 				ip += 6;
 				inline_costs += 10 * num_calls++;
