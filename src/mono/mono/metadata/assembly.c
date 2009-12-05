@@ -1211,7 +1211,7 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 	mono_assemblies_lock ();
 	for (i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, name) == 0) {
-			image = mono_image_open_from_data_full ((char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly);
+			image = mono_image_open_from_data_with_name ((char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, name);
 			break;
 		}
 	}

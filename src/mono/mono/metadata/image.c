@@ -1067,7 +1067,7 @@ register_image (MonoImage *image)
 }
 
 MonoImage *
-mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly)
+mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, const char *name)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -1093,7 +1093,7 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 	image->raw_data = datac;
 	image->raw_data_len = data_len;
 	image->raw_data_allocated = need_copy;
-	image->name = g_strdup_printf ("data-%p", datac);
+	image->name = (name == NULL) ? g_strdup_printf ("data-%p", datac) : g_strdup(name);
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->ref_only = refonly;
@@ -1103,6 +1103,12 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 		return NULL;
 
 	return register_image (image);
+}
+
+MonoImage *
+mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly)
+{
+  return mono_image_open_from_data_with_name (data, data_len, need_copy, status, refonly, NULL);
 }
 
 MonoImage *

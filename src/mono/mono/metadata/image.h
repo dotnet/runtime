@@ -45,6 +45,8 @@ MonoImage    *mono_image_open_from_data (char *data, guint32 data_len, gboolean 
                                          MonoImageOpenStatus *status);
 MonoImage    *mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy,
                                          MonoImageOpenStatus *status, gboolean refonly);
+MonoImage    *mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need_copy,
+                                                   MonoImageOpenStatus *status, gboolean refonly, const char *name);
 void          mono_image_fixup_vtable (MonoImage *image);
 MonoImage    *mono_image_loaded   (const char *name);
 MonoImage    *mono_image_loaded_full   (const char *name, gboolean refonly);
