@@ -264,6 +264,27 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 }
 
 /*
+ * type_is_unsigned:
+ *
+ *   Return whenever T is an unsigned int type.
+ */
+static gboolean
+type_is_unsigned (EmitContext *ctx, MonoType *t)
+{
+	if (t->byref)
+		return FALSE;
+	switch (t->type) {
+	case MONO_TYPE_U1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_U8:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+/*
  * type_to_llvm_arg_type:
  *
  *   Same as type_to_llvm_type, but treat i8/i16 as i32.
@@ -554,24 +575,30 @@ resolve_patch (MonoCompile *cfg, MonoJumpInfoType type, gconstpointer target)
 }
 
 /*
- * convert:
+ * convert_full:
  *
  *   Emit code to convert the LLVM value V to DTYPE.
  */
 static LLVMValueRef
-convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
+convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_unsigned)
 {
 	LLVMTypeRef stype = LLVMTypeOf (v);
 
 	if (stype != dtype) {
+		gboolean ext = FALSE;
+
 		/* Extend */
 		if (dtype == LLVMInt64Type () && (stype == LLVMInt32Type () || stype == LLVMInt16Type () || stype == LLVMInt8Type ()))
-			return LLVMBuildSExt (ctx->builder, v, dtype, "");
+			ext = TRUE;
 		else if (dtype == LLVMInt32Type () && (stype == LLVMInt16Type () || stype == LLVMInt8Type ()))
-			return LLVMBuildSExt (ctx->builder, v, dtype, "");
+			ext = TRUE;
 		else if (dtype == LLVMInt16Type () && (stype == LLVMInt8Type ()))
-			return LLVMBuildSExt (ctx->builder, v, dtype, "");
-		else if (dtype == LLVMDoubleType () && stype == LLVMFloatType ())
+			ext = TRUE;
+
+		if (ext)
+			return is_unsigned ? LLVMBuildZExt (ctx->builder, v, dtype, "") : LLVMBuildSExt (ctx->builder, v, dtype, "");
+
+		if (dtype == LLVMDoubleType () && stype == LLVMFloatType ())
 			return LLVMBuildFPExt (ctx->builder, v, dtype, "");
 
 		/* Trunc */
@@ -603,6 +630,12 @@ convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 	} else {
 		return v;
 	}
+}
+
+static LLVMValueRef
+convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
+{
+	return convert_full (ctx, v, dtype, FALSE);
 }
 
 /*
@@ -2323,7 +2356,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					
 					emit_reg_to_vtype (ctx, builder, sig->ret, addresses [ins->dreg], &cinfo->ret, regs);
 				} else if (sig->ret->type != MONO_TYPE_VOID && !vretaddr) {
-					values [ins->dreg] = convert (ctx, lcall, llvm_type_to_stack_type (type_to_llvm_type (ctx, sig->ret)));
+					/* If the method returns an unsigned value, need to zext it */
+
+					values [ins->dreg] = convert_full (ctx, lcall, llvm_type_to_stack_type (type_to_llvm_type (ctx, sig->ret)), type_is_unsigned (ctx, sig->ret));
 				}
 				break;
 			}
