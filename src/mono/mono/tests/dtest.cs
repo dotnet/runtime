@@ -776,8 +776,14 @@ public class DebuggerTests
 		TestSetValue (o, "static_i", 23);
 		TestSetValue (o, "field_s", "CDEF");
 
-		// enums
 		Value f;
+
+		// intptrs
+		f = o.GetValue (o.Type.GetField ("field_intptr"));
+		Assert.IsInstanceOfType (typeof (StructMirror), f);
+		AssertValue (Int32.MaxValue - 5, (f as StructMirror).Fields [0]);
+
+		// enums
 
 		f = o.GetValue (o.Type.GetField ("field_enum"));
 		(f as EnumMirror).Value = 5;

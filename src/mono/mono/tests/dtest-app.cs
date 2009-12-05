@@ -98,6 +98,7 @@ public class Tests : TestsBase
 	float field_float;
 	double field_double;
 	Thread field_class;
+	IntPtr field_intptr;
 	static int static_i = 55;
 	static string static_s = "A";
 	public const int literal_i = 56;
@@ -291,7 +292,7 @@ public class Tests : TestsBase
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static void objects () {
-		Tests t = new Tests () { field_i = 42, field_bool1 = true, field_bool2 = false, field_char = 'A', field_byte = 129, field_sbyte = -33, field_short = Int16.MaxValue - 5, field_ushort = UInt16.MaxValue - 5, field_long = Int64.MaxValue - 5, field_ulong = UInt64.MaxValue - 5, field_float = 3.14f, field_double = 3.14f, field_s = "S", base_field_i = 43, base_field_s = "T", field_enum = AnEnum.B, field_class = null };
+		Tests t = new Tests () { field_i = 42, field_bool1 = true, field_bool2 = false, field_char = 'A', field_byte = 129, field_sbyte = -33, field_short = Int16.MaxValue - 5, field_ushort = UInt16.MaxValue - 5, field_long = Int64.MaxValue - 5, field_ulong = UInt64.MaxValue - 5, field_float = 3.14f, field_double = 3.14f, field_s = "S", base_field_i = 43, base_field_s = "T", field_enum = AnEnum.B, field_class = null, field_intptr = new IntPtr (Int32.MaxValue - 5) };
 		t.o1 (new Tests2 () { field_j = 43 }, new GClass <int> { field = 42 }, new GClass <string> { field = "FOO" });
 		o2 (new string [] { "BAR", "BAZ" }, new int[] { 42, 43 }, new int [,] { { 1, 2 }, { 3, 4 }}, (int[,])Array.CreateInstance (typeof (int), new int [] { 2, 2}, new int [] { 1, 3}), new int[] { 0 });
 	}
