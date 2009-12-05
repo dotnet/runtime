@@ -3629,6 +3629,8 @@ buffer_add_value (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain)
 		break;
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+		/* Treat it as a vtype */
+		goto handle_vtype;
 	case MONO_TYPE_PTR: {
 		gssize val = *(gssize*)addr;
 		
