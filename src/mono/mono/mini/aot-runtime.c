@@ -110,8 +110,12 @@ typedef struct MonoAotModule {
 	guint32 *extra_method_info_offsets;
 	guint8 *unwind_info;
 
-	/* Points to the the GNU .eh_frame_hdr section, if it exists */
+	/* Points to the GNU .eh_frame_hdr section, if it exists */
 	guint8 *eh_frame_hdr;
+
+	/* Points to the .ARM.exidx section, if it exists */
+	guint8 *arm_exidx;
+	guint32 arm_exidx_size;
 
 	/* Points to the trampolines */
 	guint8 *trampolines [MONO_AOT_TRAMP_NUM];
@@ -912,6 +916,10 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 	}
 }
 
+#ifndef SHT_ARM_EXIDX
+#define SHT_ARM_EXIDX 0x70000001
+#endif
+
 #ifdef HAVE_DL_ITERATE_PHDR
 static int
 dl_callback (struct dl_phdr_info *info, size_t size, void *data)
@@ -923,6 +931,10 @@ dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 		for (j = 0; j < info->dlpi_phnum; j++) {
 			if (info->dlpi_phdr [j].p_type == PT_GNU_EH_FRAME)
 				amodule->eh_frame_hdr = (guint8*)(info->dlpi_addr + info->dlpi_phdr [j].p_vaddr);
+			if (info->dlpi_phdr [j].p_type == SHT_ARM_EXIDX) {
+				amodule->arm_exidx = (guint8*)(info->dlpi_addr + info->dlpi_phdr [j].p_vaddr);
+				amodule->arm_exidx_size = info->dlpi_phdr [j].p_filesz;
+			}
 		}
 		return 1;
 	} else {
@@ -1493,7 +1505,7 @@ typedef struct
  * file belong to CODE, and construct a MonoJitInfo structure from it.
  * LOCKING: Acquires the domain lock.
  */
-static void
+static G_GNUC_UNUSED void
 decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain, 
 				 MonoMethod *method, guint8 *code, MonoJitInfo *jinfo)
 {
@@ -1561,6 +1573,175 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	/* This signals that used_regs points to a normal cached unwind info */
 	jinfo->from_aot = 0;
 }
+ 
+#ifdef TARGET_ARM
+
+/* The offsets in the table are 31 bits long, have to extend them to 32 */
+#define EXTEND_PREL31(val) ((((gint32)(val)) << 1) >> 1)
+
+/*
+ * decode_arm_exidx:
+ *
+ *   Decode the exception handling information in the .ARM.exidx section of the AOT
+ * file belong to CODE, and construct a MonoJitInfo structure from it.
+ * LOCKING: Acquires the domain lock.
+ */
+static void
+decode_arm_exidx (MonoAotModule *amodule, MonoDomain *domain, 
+				  MonoMethod *method, guint8 *code, guint32 code_len, MonoJitInfo *jinfo)
+{
+	guint32 *table;
+	guint8 *base, *code1, *code2;
+	int i, pos, left, right, offset, offset1, offset2, count, nops, cfa_reg, cfa_offset;
+	int vsp_offset;
+	guint32 entry;
+	guint8 unwind_ops [4];
+	GSList *ops;
+	guint8 *unwind_info;
+	guint32 unw_len;
+	gint32 *reg_offsets;
+
+	g_assert (amodule->arm_exidx);
+
+	table = (guint32*)amodule->arm_exidx;
+
+	/* 
+	 * The table format is described in:
+	 * infocenter.arm.com/help/topic/com.arm.doc.../IHI0038A_ehabi.pdf
+	 */
+
+	base = amodule->arm_exidx;
+	count = amodule->arm_exidx_size / 8;
+
+	/* Binary search in the table to find the entry for code */
+	offset = code - base;
+
+	left = 0;
+	right = count;
+	while (TRUE) {
+		pos = (left + right) / 2;
+
+		offset1 = EXTEND_PREL31 (table [(pos * 2)]);
+		code1 = (guint8*)&(table [pos * 2]) + offset1;
+		if (pos + 1 == count)
+			/* FIXME: */
+			offset2 = amodule->code_end - amodule->code;
+		else
+			offset2 = EXTEND_PREL31 (table [(pos + 1) * 2]);
+		code2 = (guint8*)&(table [(pos + 1) * 2]) + offset2;
+
+		if (code < code1)
+			right = pos;
+		else if (code >= code2)
+			left = pos + 1;
+		else
+			break;
+	}
+
+	/* 
+	 * The linker might merge duplicate unwind table entries, so
+	 * offset1 and offset2 might point to another method, but this is not a problem.
+	 */
+	code1 = (guint8*)&(table [pos * 2]) + offset1;
+	code2 = (guint8*)&(table [(pos + 1) * 2]) + offset2;
+
+	g_assert (code >= code1);
+	if (pos < count)
+		g_assert (code < code2);
+
+	entry = table [(pos * 2) + 1];
+
+	/* compact model, personality routine 0 */
+	g_assert ((entry & 0xff000000) == 0x80000000);
+
+	unwind_ops [0] = (entry & 0x00ff0000) >> 16;
+	unwind_ops [1] = (entry & 0x0000ff00) >> 8;
+	unwind_ops [2] = (entry & 0x000000ff) >> 0;
+
+	ops = NULL;
+
+	/*
+	 * Have to convert the ARM unwind info into DWARF unwind info.
+	 * The ARM unwind opcodes manipulate a virtual stack pointer (vsp). After all
+	 * the opcodes have been executed, vsp should be equal to the value of the
+	 * DWARF cfa.
+	 */
+
+	/* The offsets from the initial value of vsp */
+	reg_offsets = g_new0 (gint32, 16);
+	for (i = 0; i < 16; ++i)
+		reg_offsets [i] = -1;
+
+	/* The ARM unwind info is not instruction precise */
+	cfa_reg = ARMREG_SP;
+	cfa_offset = 0;
+	vsp_offset = 0;
+
+	/* section 9.3 in the ehabi doc */
+	nops = 3;
+	for (i = 0; i < nops; ++i) {
+		guint8 op = unwind_ops [i];
+
+		if ((op >> 6) == 0) {
+			/* vsp = vsp + (xxxxxx << 2) + 4. */
+			vsp_offset += ((op & 0xfff) << 2) + 4;
+		} else if (op >= 0x80 && op <= 0x8f) {
+			/* pop registers */
+			guint8 op2;
+			GSList *regs;
+			int j;
+
+			/* FIXME: */
+			g_assert (i == 0 || i == 1);
+
+			g_assert (i + 1 < nops);
+			op2 = unwind_ops [i + 1];
+
+			regs = NULL;
+			for (j = 0; j < 8; ++j)
+				if (op2 & (0x1 << j))
+					regs = g_slist_append (regs, GUINT_TO_POINTER (ARMREG_R4 + j));
+			for (j = 0; j < 4; ++j)
+				if (op & (0x1 << j))
+					regs = g_slist_append (regs, GUINT_TO_POINTER (ARMREG_R12 + j));
+			g_assert (regs);
+
+			for (j = 0; j < g_slist_length (regs); ++j)
+				reg_offsets [GPOINTER_TO_UINT (g_slist_nth (regs, j)->data)] = vsp_offset + (j * 4);
+
+			vsp_offset += g_slist_length (regs) * 4;
+
+			g_slist_free (regs);
+
+			i ++;
+		} else if (op == 0xb0) {
+			/* finish */
+			break;
+		} else {
+			printf ("%x\n", entry & 0x00ffffff);
+			g_assert_not_reached ();
+		}
+	}
+
+	/* sp + vsp_offset = CFA */
+	mono_add_unwind_op_def_cfa (ops, code, code, ARMREG_SP, vsp_offset);			
+	for (i = 0; i < 16; ++i) {
+		if (reg_offsets [i] != -1)
+			/* The reg is saved at sp + reg_offset [i] == CFA - (vsp_offset - reg_offset [i]) */
+			mono_add_unwind_op_offset (ops, code, code, i, - (vsp_offset - reg_offsets [i]));
+	}
+
+	unwind_info = mono_unwind_ops_encode (ops, &unw_len);
+
+	jinfo->code_size = code_len;
+	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);
+	jinfo->method = method;
+	jinfo->code_start = code;
+	jinfo->domain_neutral = 0;
+	/* This signals that used_regs points to a normal cached unwind info */
+	jinfo->from_aot = 0;
+}
+#endif
 
 /*
  * LOCKING: Acquires the domain lock.
@@ -1634,7 +1815,11 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
  	if (from_llvm) {
 		/* LLVM compiled method */
 		/* The info is in the .eh_frame section */
-		decode_eh_frame (amodule, domain, method, code, jinfo);
+#ifdef TARGET_ARM
+		decode_arm_exidx (amodule, domain, method, code, code_len, jinfo);
+#else
+ 		decode_eh_frame (amodule, domain, method, code, jinfo);
+#endif
  	} else {
 		jinfo->code_size = code_len;
 		jinfo->used_regs = used_int_regs;
