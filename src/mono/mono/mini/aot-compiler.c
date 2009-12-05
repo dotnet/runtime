@@ -3397,7 +3397,7 @@ emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code,
 {
 	char start_symbol [256];
 	char symbol [256];
-	guint32 buf_size;
+	guint32 buf_size, info_offset;
 	MonoJumpInfo *patch_info;
 	guint8 *buf, *p;
 	GPtrArray *patches;
@@ -3440,11 +3440,13 @@ emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code,
 
 	sprintf (symbol, "%s_p", name);
 
+	info_offset = add_to_blob (acfg, buf, p - buf);
+
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, symbol, FALSE);
 	emit_label (acfg, symbol);
-		
-	emit_bytes (acfg, buf, p - buf);
+
+	emit_int32 (acfg, info_offset);
 
 	/* Emit debug info */
 	if (unwind_ops) {

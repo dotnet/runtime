@@ -2932,6 +2932,8 @@ load_function (MonoAotModule *amodule, const char *name)
 		/* Nothing to patch */
 		return code;
 
+	p = amodule->blob + *(guint32*)p;
+
 	/* Similar to mono_aot_load_method () */
 
 	n_patches = decode_value (p, &p);
