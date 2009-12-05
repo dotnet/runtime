@@ -5585,10 +5585,6 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
-		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype)
-			break;
-
 		if (klass == date_time_class) {
 			/* Convert it to an OLE DATE type */
 			static MonoMethod *to_oadate;
@@ -5617,6 +5613,10 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_patch_branch (mb, pos);
 			break;
 		}
+
+		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			klass->blittable || klass->enumtype)
+			break;
 
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 			
@@ -5690,10 +5690,6 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
-		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			klass->blittable || klass->enumtype)
-			break;
-
 		if (klass == date_time_class) {
 			/* Convert from an OLE DATE type */
 			static MonoMethod *from_oadate;
@@ -5713,6 +5709,10 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 			break;
 		}
+
+		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			klass->blittable || klass->enumtype)
+			break;
 
 		if (t->byref) {
 			/* dst = argument */
