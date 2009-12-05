@@ -6446,6 +6446,12 @@ mono_gc_enable (void)
 	UNLOCK_GC;
 }
 
+int
+mono_gc_get_los_limit (void)
+{
+	return MAX_SMALL_OBJ_SIZE;
+}
+
 gboolean
 mono_object_is_alive (MonoObject* o)
 {

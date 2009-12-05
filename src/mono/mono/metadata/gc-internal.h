@@ -208,5 +208,9 @@ gsize* mono_gc_get_bitmap_for_descr (void *descr, int *numbits) MONO_INTERNAL;
    or -1 if not applicable. */
 int mono_gc_get_suspend_signal (void) MONO_INTERNAL;
 
+#ifdef HAVE_SGEN_GC
+int mono_gc_get_los_limit (void) MONO_INTERNAL;
+#endif
+
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 
