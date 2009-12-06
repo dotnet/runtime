@@ -2841,9 +2841,12 @@ build_nursery_fragments (int start_pin, int end_pin)
 	size_t frag_size;
 	int i;
 
-	/* FIXME: handle non-NULL fragment_freelist */
-	fragment_freelist = nursery_fragments;
-	nursery_fragments = NULL;
+	while (nursery_fragments) {
+		Fragment *next = nursery_fragments->next;
+		nursery_fragments->next = fragment_freelist;
+		fragment_freelist = nursery_fragments;
+		nursery_fragments = next;
+	}
 	frag_start = nursery_start;
 	fragment_total = 0;
 	/* clear scan starts */
