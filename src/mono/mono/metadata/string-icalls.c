@@ -234,8 +234,6 @@ ves_icall_System_String_GetLOSLimit (void)
 #ifdef HAVE_SGEN_GC
 	int limit = mono_gc_get_los_limit ();
 
-	g_print ("los limit %d\n", (limit - 2 - sizeof (MonoString)) / 2);
-
 	return (limit - 2 - sizeof (MonoString)) / 2;
 #else
 	return G_MAXINT;
