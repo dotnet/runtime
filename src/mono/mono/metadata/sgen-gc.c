@@ -209,15 +209,19 @@ mono_gc_flush_info (void)
 enum {
 	MEMORY_ROLE_GEN0,
 	MEMORY_ROLE_GEN1,
-	MEMORY_ROLE_GEN2,
-	MEMORY_ROLE_FIXED,
-	MEMORY_ROLE_INTERNAL
+	MEMORY_ROLE_PINNED
+};
+
+typedef struct _Block Block;
+struct _Block {
+	void *next;
+	unsigned char role;
 };
 
 /* each request from the OS ends up in a GCMemSection */
 typedef struct _GCMemSection GCMemSection;
 struct _GCMemSection {
-	GCMemSection *next;
+	Block block;
 	char *data;
 	mword size;
 	/* pointer where more data could be allocated if it fits */
@@ -232,7 +236,6 @@ struct _GCMemSection {
 	int pin_queue_start;
 	int pin_queue_end;
 	unsigned short num_scan_start;
-	unsigned char role;
 	gboolean is_to_space;
 };
 
@@ -296,7 +299,7 @@ struct _LOSObject {
 #define PINNED_CHUNK_MIN_SIZE (4096*8)
 typedef struct _PinnedChunk PinnedChunk;
 struct _PinnedChunk {
-	PinnedChunk *next;
+	Block block;
 	int num_pages;
 	int *page_sizes; /* a 0 means the page is still unused */
 	void **free_list;
@@ -504,7 +507,8 @@ static int num_major_gcs = 0;
 /* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
 #define DEFAULT_NURSERY_BITS 20
 #define MAJOR_SECTION_SIZE	(128*1024)
-#define MAJOR_SECTION_FOR_OBJECT(o)   ((GCMemSection*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
+#define BLOCK_FOR_OBJECT(o)		((Block*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
+#define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
 #define DEFAULT_MINOR_COLLECTION_SECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 3 / MAJOR_SECTION_SIZE)
 #define DEFAULT_LOS_COLLECTION_TARGET (DEFAULT_NURSERY_SIZE * 2)
 /* to quickly find the head of an object pinned by a conservative address
@@ -626,12 +630,7 @@ static PinnedChunk *internal_chunk_list = NULL;
 static gboolean
 obj_is_from_pinned_alloc (char *p)
 {
-	PinnedChunk *chunk = pinned_chunk_list;
-	for (; chunk; chunk = chunk->next) {
-		if (p >= (char*)chunk->start_data && p < ((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE))
-			return TRUE;
-	}
-	return FALSE;
+	return BLOCK_FOR_OBJECT (p)->role == MEMORY_ROLE_PINNED;
 }
 
 static int slot_for_size (size_t size);
@@ -1555,7 +1554,7 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 	RootRecord *root;
 	int i;
 
-	for (section = section_list; section; section = section->next)
+	for (section = section_list; section; section = section->block.next)
 		scan_area_for_specific_ref (section->data, section->end_data, key);
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
@@ -1730,7 +1729,7 @@ check_for_xdomain_refs (void)
 	GCMemSection *section;
 	LOSObject *bigobj;
 
-	for (section = section_list; section; section = section->next)
+	for (section = section_list; section; section = section->block.next)
 		scan_area_for_xdomain_refs (section->data, section->end_data);
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
@@ -1772,7 +1771,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 		check_for_xdomain_refs ();
 	}
 
-	for (section = section_list; section; section = section->next) {
+	for (section = section_list; section; section = section->block.next) {
 		scan_area_for_domain (domain, section->data, section->end_data);
 	}
 
@@ -1960,7 +1959,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 	 * give them a flag then we could identify them in constant
 	 * time here.
 	 */
-	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || (obj >= min_pinned_chunk_addr && obj < max_pinned_chunk_addr && obj_is_from_pinned_alloc (obj)))) {
+	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
 		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
 		pin_object (obj);
 		return obj;
@@ -2578,10 +2577,10 @@ alloc_nursery (void)
 	scan_starts = alloc_size / SCAN_START_SIZE;
 	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts);
 	section->num_scan_start = scan_starts;
-	section->role = MEMORY_ROLE_GEN0;
+	section->block.role = MEMORY_ROLE_GEN0;
 
 	/* add to the section list */
-	section->next = section_list;
+	section->block.next = section_list;
 	section_list = section;
 
 	nursery_section = section;
@@ -2617,8 +2616,8 @@ scan_old_generation (char *start, char* end)
 	GCMemSection *section;
 	LOSObject *big_object;
 	char *p;
-	
-	for (section = section_list; section; section = section->next) {
+
+	for (section = section_list; section; section = section->block.next) {
 		if (section == nursery_section)
 			continue;
 		DEBUG (2, fprintf (gc_debug_file, "Scan of old section: %p-%p, size: %d\n", section->data, section->next_data, (int)(section->next_data - section->data)));
@@ -2757,7 +2756,7 @@ object_is_in_to_space (char *obj)
 		return FALSE;
 
 	/* pinned chunk */
-	if (obj >= min_pinned_chunk_addr && obj < max_pinned_chunk_addr && obj_is_from_pinned_alloc (obj))
+	if (obj_is_from_pinned_alloc (obj))
 		return FALSE;
 
 	/* now we know it's in a major heap section */
@@ -3030,7 +3029,7 @@ dump_heap (const char *type, int num, const char *reason)
 
 	dump_section (nursery_section, "nursery");
 
-	for (section = section_list; section; section = section->next) {
+	for (section = section_list; section; section = section->block.next) {
 		if (section != nursery_section)
 			dump_section (section, "old");
 	}
@@ -3146,7 +3145,7 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %zd bytes available\n", TV_ELAPSED (btv, atv), fragment_total));
 
-	for (section = section_list; section; section = section->next) {
+	for (section = section_list; section; section = section->block.next) {
 		if (section->is_to_space)
 			section->is_to_space = FALSE;
 	}
@@ -3178,7 +3177,7 @@ count_major_sections (void)
 	GCMemSection *section;
 	int count = 0;
 
-	for (section = section_list; section; section = section->next)
+	for (section = section_list; section; section = section->block.next)
 		if (section != nursery_section)
 			++count;
 	return count;
@@ -3242,7 +3241,7 @@ major_collection (const char *reason)
 	/* world must be stopped already */
 	TV_GETTIME (atv);
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
-	for (section = section_list; section; section = section->next) {
+	for (section = section_list; section; section = section->block.next) {
 		DEBUG (6, fprintf (gc_debug_file, "Pinning from section %p (%p-%p)\n", section, section->data, section->end_data));
 		section->pin_queue_start = count = section->pin_queue_end = next_pin_slot;
 		pin_from_roots (section->data, section->end_data);
@@ -3269,7 +3268,7 @@ major_collection (const char *reason)
 	}
 	/* look for pinned addresses for pinned-alloc objects */
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from pinned-alloc objects\n"));
-	for (chunk = pinned_chunk_list; chunk; chunk = chunk->next) {
+	for (chunk = pinned_chunk_list; chunk; chunk = chunk->block.next) {
 		count = next_pin_slot;
 		pin_from_roots (chunk->start_data, (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE);
 		/* FIXME: this is only valid until we don't optimize the pin queue midway */
@@ -3350,18 +3349,18 @@ major_collection (const char *reason)
 			if (section->is_to_space)
 				section->is_to_space = FALSE;
 			prev_section = section;
-			section = section->next;
+			section = section->block.next;
 			continue;
 		}
 		/* no pinning object, so the section is free */
 		if (section->pin_queue_start == section->pin_queue_end) {
 			GCMemSection *to_free;
 			if (prev_section)
-				prev_section->next = section->next;
+				prev_section->block.next = section->block.next;
 			else
-				section_list = section->next;
+				section_list = section->block.next;
 			to_free = section;
-			section = section->next;
+			section = section->block.next;
 			free_major_section (to_free);
 			continue;
 		} else {
@@ -3369,7 +3368,7 @@ major_collection (const char *reason)
 			build_section_fragments (section);
 		}
 		prev_section = section;
-		section = section->next;
+		section = section->block.next;
 	}
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
@@ -3417,11 +3416,11 @@ alloc_major_section (void)
 	scan_starts = section->size / SCAN_START_SIZE;
 	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts);
 	section->num_scan_start = scan_starts;
-	section->role = MEMORY_ROLE_GEN1;
+	section->block.role = MEMORY_ROLE_GEN1;
 	section->is_to_space = TRUE;
 
 	/* add to the section list */
-	section->next = section_list;
+	section->block.next = section_list;
 	section_list = section;
 
 	++sections_alloced;
@@ -3546,12 +3545,12 @@ report_internal_mem_usage (void) {
 	int i;
 	printf ("Internal memory usage:\n");
 	i = 0;
-	for (chunk = internal_chunk_list; chunk; chunk = chunk->next) {
+	for (chunk = internal_chunk_list; chunk; chunk = chunk->block.next) {
 		report_pinned_chunk (chunk, i++);
 	}
 	printf ("Pinned memory usage:\n");
 	i = 0;
-	for (chunk = pinned_chunk_list; chunk; chunk = chunk->next) {
+	for (chunk = pinned_chunk_list; chunk; chunk = chunk->block.next) {
 		report_pinned_chunk (chunk, i++);
 	}
 }
@@ -3607,7 +3606,7 @@ scan_pinned_objects (ScanPinnedObjectCallbackFunc callback, void *callback_data)
 	char *p, *endp;
 	void **ptr;
 	void *end_chunk;
-	for (chunk = pinned_chunk_list; chunk; chunk = chunk->next) {
+	for (chunk = pinned_chunk_list; chunk; chunk = chunk->block.next) {
 		end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
 		DEBUG (6, fprintf (gc_debug_file, "Scanning pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk));
 		for (i = 0; i < chunk->num_pages; ++i) {
@@ -3704,17 +3703,15 @@ build_freelist (PinnedChunk *chunk, int slot, int size, char *start_page, char *
 }
 
 static PinnedChunk*
-alloc_pinned_chunk (size_t size)
+alloc_pinned_chunk (void)
 {
 	PinnedChunk *chunk;
 	int offset;
+	int size = MAJOR_SECTION_SIZE;
 
-	size += pagesize; /* at least one page */
-	size += pagesize - 1;
-	size &= ~(pagesize - 1);
-	if (size < PINNED_CHUNK_MIN_SIZE * 2)
-		size = PINNED_CHUNK_MIN_SIZE * 2;
-	chunk = get_os_memory (size, TRUE);
+	chunk = get_os_memory_aligned (size, TRUE);
+	chunk->block.role = MEMORY_ROLE_PINNED;
+
 	UPDATE_HEAP_BOUNDARIES (chunk, ((char*)chunk + size));
 	total_alloc += size;
 
@@ -3778,7 +3775,7 @@ alloc_from_freelist (size_t size)
 	slot = slot_for_size (size);
 	/*g_print ("using slot %d for size %d (slot size: %d)\n", slot, size, freelist_sizes [slot]);*/
 	g_assert (size <= freelist_sizes [slot]);
-	for (pchunk = pinned_chunk_list; pchunk; pchunk = pchunk->next) {
+	for (pchunk = pinned_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		void **p = pchunk->free_list [slot];
 		if (p) {
 			/*g_print ("found freelist for slot %d in chunk %p, returning %p, next %p\n", slot, pchunk, p, *p);*/
@@ -3786,14 +3783,14 @@ alloc_from_freelist (size_t size)
 			return p;
 		}
 	}
-	for (pchunk = pinned_chunk_list; pchunk; pchunk = pchunk->next) {
+	for (pchunk = pinned_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		res = get_chunk_freelist (pchunk, slot);
 		if (res)
 			return res;
 	}
-	pchunk = alloc_pinned_chunk (size);
+	pchunk = alloc_pinned_chunk ();
 	/* FIXME: handle OOM */
-	pchunk->next = pinned_chunk_list;
+	pchunk->block.next = pinned_chunk_list;
 	pinned_chunk_list = pchunk;
 	res = get_chunk_freelist (pchunk, slot);
 	return res;
@@ -3822,7 +3819,7 @@ get_internal_mem (size_t size)
 
 	slot = slot_for_size (size);
 	g_assert (size <= freelist_sizes [slot]);
-	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->next) {
+	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		void **p = pchunk->free_list [slot];
 		if (p) {
 			pchunk->free_list [slot] = *p;
@@ -3830,16 +3827,16 @@ get_internal_mem (size_t size)
 			return p;
 		}
 	}
-	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->next) {
+	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		res = get_chunk_freelist (pchunk, slot);
 		if (res) {
 			memset (res, 0, size);
 			return res;
 		}
 	}
-	pchunk = alloc_pinned_chunk (size);
+	pchunk = alloc_pinned_chunk ();
 	/* FIXME: handle OOM */
-	pchunk->next = internal_chunk_list;
+	pchunk->block.next = internal_chunk_list;
 	internal_chunk_list = pchunk;
 	res = get_chunk_freelist (pchunk, slot);
 	memset (res, 0, size);
@@ -3853,7 +3850,7 @@ free_internal_mem (void *addr)
 	LargeInternalMemHeader *mh;
 	if (!addr)
 		return;
-	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->next) {
+	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		/*printf ("trying to free %p in %p (pages: %d)\n", addr, pchunk, pchunk->num_pages);*/
 		if (addr >= (void*)pchunk && (char*)addr < (char*)pchunk + pchunk->num_pages * FREELIST_PAGESIZE) {
 			int offset = (char*)addr - (char*)pchunk;
@@ -3985,7 +3982,7 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 	GCMemSection *section;
 	void **p = NULL;
 	g_assert (size <= MAX_SMALL_OBJ_SIZE);
-	for (section = section_list; section; section = section->next) {
+	for (section = section_list; section; section = section->block.next) {
 		if (section != nursery_section && (section->end_data - section->next_data) >= size) {
 			p = (void**)section->next_data;
 			break;
@@ -5362,7 +5359,7 @@ ptr_in_heap (void* ptr)
 	if (ptr_on_stack (ptr))
 		return FALSE;
 
-	for (section = section_list; section; section = section->next) {
+	for (section = section_list; section; section = section->block.next) {
 		if (ptr >= (gpointer)section->data && ptr < (gpointer)(section->data + section->size))
 			return TRUE;
 	}
@@ -5995,7 +5992,7 @@ find_object_for_ptr (char *ptr)
 	GCMemSection *section;
 	LOSObject *bigobj;
 
-	for (section = section_list; section; section = section->next) {
+	for (section = section_list; section; section = section->block.next) {
 		if (ptr >= section->data && ptr < section->end_data)
 			return find_object_for_ptr_in_area (ptr, section->data, section->end_data);
 	}
@@ -6197,7 +6194,7 @@ describe_ptr (char *ptr)
 		for (section = section_list; section;) {
 			if (ptr >= section->data && ptr < section->data + section->size)
 				break;
-			section = section->next;
+			section = section->block.next;
 		}
 
 		if (section) {
@@ -6401,8 +6398,8 @@ check_consistency (void)
 	DEBUG (1, fprintf (gc_debug_file, "Begin heap consistency check...\n"));
 
 	// Check that oldspace->newspace pointers are registered with the collector
-	for (section = section_list; section; section = section->next) {
-		if (section->role == MEMORY_ROLE_GEN0)
+	for (section = section_list; section; section = section->block.next) {
+		if (section->block.role == MEMORY_ROLE_GEN0)
 			continue;
 		DEBUG (2, fprintf (gc_debug_file, "Scan of old section: %p-%p, size: %d\n", section->data, section->next_data, (int)(section->next_data - section->data)));
 		check_remsets_for_area (section->data, section->next_data);
@@ -6477,7 +6474,7 @@ mono_gc_get_used_size (void)
 	GCMemSection *section;
 	LOCK_GC;
 	tot = los_memory_usage;
-	for (section = section_list; section; section = section->next) {
+	for (section = section_list; section; section = section->block.next) {
 		/* this is approximate... */
 		tot += section->next_data - section->data;
 	}
