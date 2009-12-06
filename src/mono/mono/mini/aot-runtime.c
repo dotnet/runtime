@@ -1579,86 +1579,13 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 /* The offsets in the table are 31 bits long, have to extend them to 32 */
 #define EXTEND_PREL31(val) ((((gint32)(val)) << 1) >> 1)
 
-/*
- * decode_arm_exidx:
- *
- *   Decode the exception handling information in the .ARM.exidx section of the AOT
- * file belong to CODE, and construct a MonoJitInfo structure from it.
- * LOCKING: Acquires the domain lock.
- */
-static void
-decode_arm_exidx (MonoAotModule *amodule, MonoDomain *domain, 
-				  MonoMethod *method, guint8 *code, guint32 code_len, MonoJitInfo *jinfo)
+static GSList*
+decode_arm_eh_ops (guint8 *unwind_ops, int nops)
 {
-	guint32 *table;
-	guint8 *base, *code1, *code2;
-	int i, pos, left, right, offset, offset1, offset2, count, nops, cfa_reg, cfa_offset;
+	int i, cfa_reg, cfa_offset;
 	int vsp_offset;
-	guint32 entry;
-	guint8 unwind_ops [4];
 	GSList *ops;
-	guint8 *unwind_info;
-	guint32 unw_len;
 	gint32 *reg_offsets;
-
-	g_assert (amodule->arm_exidx);
-
-	table = (guint32*)amodule->arm_exidx;
-
-	/* 
-	 * The table format is described in:
-	 * infocenter.arm.com/help/topic/com.arm.doc.../IHI0038A_ehabi.pdf
-	 */
-
-	base = amodule->arm_exidx;
-	count = amodule->arm_exidx_size / 8;
-
-	/* Binary search in the table to find the entry for code */
-	offset = code - base;
-
-	left = 0;
-	right = count;
-	while (TRUE) {
-		pos = (left + right) / 2;
-
-		offset1 = EXTEND_PREL31 (table [(pos * 2)]);
-		code1 = (guint8*)&(table [pos * 2]) + offset1;
-		if (pos + 1 == count)
-			/* FIXME: */
-			offset2 = amodule->code_end - amodule->code;
-		else
-			offset2 = EXTEND_PREL31 (table [(pos + 1) * 2]);
-		code2 = (guint8*)&(table [(pos + 1) * 2]) + offset2;
-
-		if (code < code1)
-			right = pos;
-		else if (code >= code2)
-			left = pos + 1;
-		else
-			break;
-	}
-
-	/* 
-	 * The linker might merge duplicate unwind table entries, so
-	 * offset1 and offset2 might point to another method, but this is not a problem.
-	 */
-	code1 = (guint8*)&(table [pos * 2]) + offset1;
-	code2 = (guint8*)&(table [(pos + 1) * 2]) + offset2;
-
-	g_assert (code >= code1);
-	if (pos < count)
-		g_assert (code < code2);
-
-	entry = table [(pos * 2) + 1];
-
-	/* compact model, personality routine 0 */
-	g_assert ((entry & 0xff000000) == 0x80000000);
-
-	unwind_ops [0] = (entry & 0x00ff0000) >> 16;
-	unwind_ops [1] = (entry & 0x0000ff00) >> 8;
-	unwind_ops [2] = (entry & 0x000000ff) >> 0;
-
-	ops = NULL;
 
 	/*
 	 * Have to convert the ARM unwind info into DWARF unwind info.
@@ -1678,7 +1605,6 @@ decode_arm_exidx (MonoAotModule *amodule, MonoDomain *domain,
 	vsp_offset = 0;
 
 	/* section 9.3 in the ehabi doc */
-	nops = 3;
 	for (i = 0; i < nops; ++i) {
 		guint8 op = unwind_ops [i];
 
@@ -1714,24 +1640,165 @@ decode_arm_exidx (MonoAotModule *amodule, MonoDomain *domain,
 			g_slist_free (regs);
 
 			i ++;
+		} else if (op >= 0xa8 && op <= 0xaf) {
+			GSList *regs;
+			int j;
+
+			/* pop r4-r[4 + nnn], r14 */
+			/* FIXME: */
+			g_assert (i == 0 || i == 1);
+
+			regs = NULL;
+			for (j = 0; j <= (op & 0x7); ++j)
+				regs = g_slist_append (regs, GUINT_TO_POINTER (ARMREG_R4 + j));
+			regs = g_slist_append (regs, GUINT_TO_POINTER (ARMREG_R14));
+
+			for (j = 0; j < g_slist_length (regs); ++j)
+				reg_offsets [GPOINTER_TO_UINT (g_slist_nth (regs, j)->data)] = vsp_offset + (j * 4);
+
+			vsp_offset += g_slist_length (regs) * 4;
+
+			g_slist_free (regs);
 		} else if (op == 0xb0) {
 			/* finish */
 			break;
 		} else {
-			printf ("%x\n", entry & 0x00ffffff);
+			for (i = 0; i < nops; ++i)
+				printf ("%x ", unwind_ops [i]);
+			printf ("\n");
 			g_assert_not_reached ();
 		}
 	}
 
+	ops = NULL;
+
 	/* sp + vsp_offset = CFA */
-	mono_add_unwind_op_def_cfa (ops, code, code, ARMREG_SP, vsp_offset);			
+	mono_add_unwind_op_def_cfa (ops, (guint8*)NULL, (guint8*)NULL, ARMREG_SP, vsp_offset);			
 	for (i = 0; i < 16; ++i) {
 		if (reg_offsets [i] != -1)
 			/* The reg is saved at sp + reg_offset [i] == CFA - (vsp_offset - reg_offset [i]) */
-			mono_add_unwind_op_offset (ops, code, code, i, - (vsp_offset - reg_offsets [i]));
+			mono_add_unwind_op_offset (ops, (guint8*)NULL, (guint8*)NULL, i, - (vsp_offset - reg_offsets [i]));
 	}
 
-	unwind_info = mono_unwind_ops_encode (ops, &unw_len);
+	return ops;
+}
+
+/*
+ * decode_arm_exidx:
+ *
+ *   Decode the exception handling information in the .ARM.exidx section of the AOT
+ * file belong to CODE, and construct a MonoJitInfo structure from it.
+ * LOCKING: Acquires the domain lock.
+ */
+static void
+decode_arm_exidx (MonoAotModule *amodule, MonoDomain *domain, 
+				  MonoMethod *method, guint8 *code, guint32 code_len, MonoJitInfo *jinfo)
+{
+	guint32 *table;
+	guint8 *base, *code1, *code2;
+	int i, pos, left, right, offset, offset1, offset2, count, nwords, nops;
+	guint32 entry;
+	guint8 unwind_ops [64];
+	GSList *ops;
+	guint8 *unwind_info;
+	guint32 unw_len;
+
+	g_assert (amodule->arm_exidx);
+
+	table = (guint32*)amodule->arm_exidx;
+
+	/* 
+	 * The table format is described in:
+	 * infocenter.arm.com/help/topic/com.arm.doc.../IHI0038A_ehabi.pdf
+	 */
+
+	base = amodule->arm_exidx;
+	count = amodule->arm_exidx_size / 8;
+
+	/* Binary search in the table to find the entry for code */
+	offset = code - base;
+
+	left = 0;
+	right = count;
+	while (TRUE) {
+		pos = (left + right) / 2;
+
+		if (left == right)
+			break;
+
+		offset1 = EXTEND_PREL31 (table [(pos * 2)]);
+		code1 = (guint8*)&(table [pos * 2]) + offset1;
+		if (pos + 1 == count)
+			/* FIXME: */
+			offset2 = amodule->code_end - amodule->code;
+		else
+			offset2 = EXTEND_PREL31 (table [(pos + 1) * 2]);
+		code2 = (guint8*)&(table [(pos + 1) * 2]) + offset2;
+
+		if (code < code1)
+			right = pos;
+		else if (code >= code2)
+			left = pos + 1;
+		else
+			break;
+	}
+
+	if (code >= code1) {
+		/* 
+		 * The linker might merge duplicate unwind table entries, so
+		 * offset1 and offset2 might point to another method, but this is not a problem.
+		 */
+		code1 = (guint8*)&(table [pos * 2]) + offset1;
+		code2 = (guint8*)&(table [(pos + 1) * 2]) + offset2;
+
+		g_assert (code >= code1);
+		if (pos < count)
+			g_assert (code < code2);
+
+		entry = table [(pos * 2) + 1];
+
+		/* inline entry, compact model, personality routine 0 */
+		if ((entry & 0xff000000) == 0x80000000) {
+			nops = 3;
+			unwind_ops [0] = (entry & 0x00ff0000) >> 16;
+			unwind_ops [1] = (entry & 0x0000ff00) >> 8;
+			unwind_ops [2] = (entry & 0x000000ff) >> 0;
+
+			ops = decode_arm_eh_ops (unwind_ops, nops);
+		} else if ((entry & 0x80000000) == 0) {
+			/* non-inline entry */
+			guint8 *data = (guint8*)&table [(pos * 2) + 1] + EXTEND_PREL31 (entry);
+
+			entry = *(guint32*)data;
+
+			/* compact model, personality routine 1 */
+			g_assert ((entry & 0xff000000) == 0x81000000);
+
+			nwords = (entry & 0x00ff0000) >> 16;
+			nops = nwords * 4 + 2;
+			g_assert (nops < 64);
+
+			unwind_ops [0] = (entry & 0x0000ff00) >> 8;
+			unwind_ops [1] = (entry & 0x000000ff) >> 0;
+
+			for (i = 0; i < nwords; ++i) {
+				unwind_ops [(i * 4) + 2] = (entry & 0xff000000) >> 24;
+				unwind_ops [(i * 4) + 2 + 1] = (entry & 0x00ff0000) >> 16;
+				unwind_ops [(i * 4) + 2 + 2] = (entry & 0x0000ff00) >> 8;
+				unwind_ops [(i * 4) + 2 + 3] = (entry & 0x000000ff) >> 0;
+			}
+
+			ops = decode_arm_eh_ops (unwind_ops, nops);
+		} else {
+			NOT_IMPLEMENTED;
+		}
+
+		unwind_info = mono_unwind_ops_encode (ops, &unw_len);
+	} else {
+		/* The method has no unwind info */
+		unwind_info = NULL;
+		unw_len = 0;
+	}
 
 	jinfo->code_size = code_len;
 	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);
@@ -2445,7 +2512,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		full_name = mono_method_full_name (method, TRUE);
 
 		if (!jinfo)
-			jinfo = mono_aot_find_jit_info (domain, method->klass->image, code);
+			jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", full_name, code, code + jinfo->code_size, info);
 		g_free (full_name);
