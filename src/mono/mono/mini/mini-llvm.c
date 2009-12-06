@@ -1022,6 +1022,10 @@ emit_vtype_to_reg (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMVa
 
 	size = get_vtype_size (t);
 
+	if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (t))) {
+		address = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (LLVMInt8Type (), 0), "");
+	}
+
 	for (j = 0; j < 2; ++j) {
 		LLVMValueRef index [2], addr;
 		int partsize = size > sizeof (gpointer) ? sizeof (gpointer) : size;
@@ -1029,9 +1033,14 @@ emit_vtype_to_reg (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMVa
 		if (ainfo->pair_storage [j] == LLVMArgNone)
 			continue;
 
-		index [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-		index [1] = LLVMConstInt (LLVMInt32Type (), j * sizeof (gpointer), FALSE);				
-		addr = LLVMBuildGEP (builder, address, index, 2, "");
+		if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (t))) {
+			index [0] = LLVMConstInt (LLVMInt32Type (), j * sizeof (gpointer), FALSE);
+			addr = LLVMBuildGEP (builder, address, index, 1, "");
+		} else {
+			index [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			index [1] = LLVMConstInt (LLVMInt32Type (), j * sizeof (gpointer), FALSE);				
+			addr = LLVMBuildGEP (builder, address, index, 2, "");
+		}
 		switch (ainfo->pair_storage [j]) {
 		case LLVMArgInIReg:
 			regs [pindex ++] = convert (ctx, LLVMBuildLoad (builder, LLVMBuildBitCast (ctx->builder, addr, LLVMPointerType (LLVMIntType (partsize * 8), 0), ""), ""), IntPtrType ());
@@ -1045,6 +1054,20 @@ emit_vtype_to_reg (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMVa
 	}
 
 	*nregs = pindex;
+}
+
+static LLVMValueRef
+build_alloca (EmitContext *ctx, MonoType *t)
+{
+	MonoClass *k = mono_class_from_mono_type (t);
+	int align;
+
+	if (MONO_CLASS_IS_SIMD (ctx->cfg, k))
+		align = 16;
+	else
+		align = mono_class_min_align (k);
+
+	return mono_llvm_build_alloca (ctx->builder, type_to_llvm_type (ctx, t), NULL, align, "");
 }
 
 /*
@@ -1073,7 +1096,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 			CHECK_FAILURE (ctx);
 			/* Could be already created by an OP_VPHI */
 			if (!ctx->addresses [var->dreg])
-				ctx->addresses [var->dreg] = LLVMBuildAlloca (builder, vtype, "");
+				ctx->addresses [var->dreg] = build_alloca (ctx, var->inst_vtype);
 			ctx->vreg_cli_types [var->dreg] = var->inst_vtype;
 		}
 	}
@@ -1096,7 +1119,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 			else
 				regs [1] = NULL;
 
-			ctx->addresses [reg] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &(mono_class_from_mono_type (sig->params [i])->byval_arg)), "");
+			ctx->addresses [reg] = build_alloca (ctx, sig->params [i]);
 
 			emit_reg_to_vtype (ctx, builder, sig->params [i], ctx->addresses [reg], ainfo, regs);
 		} else if (ainfo->storage == LLVMArgVtypeByVal) {
@@ -2331,7 +2354,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				pindex = 0;
 				if (vretaddr) {
 					if (!addresses [call->inst.dreg])
-						addresses [call->inst.dreg] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &(mono_class_from_mono_type (sig->ret)->byval_arg)), "");
+						addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
 					args [pindex ++] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
 				}
 
@@ -2398,7 +2421,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					LLVMValueRef regs [2];
 
 					if (!addresses [ins->dreg])
-						addresses [ins->dreg] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &(mono_class_from_mono_type (sig->ret)->byval_arg)), "");
+						addresses [ins->dreg] = build_alloca (ctx, sig->ret);
 
 					regs [0] = LLVMBuildExtractValue (builder, lcall, 0, "");
 					if (cinfo->ret.pair_storage [1] != LLVMArgNone)
@@ -2675,7 +2698,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				}
 
 				if (!addresses [ins->dreg])
-					addresses [ins->dreg] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &klass->byval_arg), "");
+					addresses [ins->dreg] = build_alloca (ctx, &klass->byval_arg);
 				args [0] = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
 				args [1] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
 				args [2] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
@@ -2713,15 +2736,15 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					break;
 				case OP_LOADV_MEMBASE:
 					if (!addresses [ins->dreg])
-						addresses [ins->dreg] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &klass->byval_arg), "");
+						addresses [ins->dreg] = build_alloca (ctx, &klass->byval_arg);
 					src = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_basereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (LLVMInt8Type (), 0));
 					dst = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
 					break;
 				case OP_VMOVE:
 					if (!addresses [ins->sreg1])
-						addresses [ins->sreg1] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &klass->byval_arg), "");
+						addresses [ins->sreg1] = build_alloca (ctx, &klass->byval_arg);
 					if (!addresses [ins->dreg])
-						addresses [ins->dreg] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &klass->byval_arg), "");
+						addresses [ins->dreg] = build_alloca (ctx, &klass->byval_arg);
 					src = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (LLVMInt8Type (), 0), "");
 					dst = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
 					break;
@@ -2743,7 +2766,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			}
 			case OP_LLVM_OUTARG_VT:
 				if (!addresses [ins->sreg1]) {
-					addresses [ins->sreg1] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &ins->klass->byval_arg), "");
+					addresses [ins->sreg1] = build_alloca (ctx, &ins->klass->byval_arg);
 					g_assert (values [ins->sreg1]);
 					LLVMBuildStore (builder, values [ins->sreg1], addresses [ins->sreg1]);
 				}
