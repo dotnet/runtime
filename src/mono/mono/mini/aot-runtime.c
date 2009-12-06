@@ -1579,30 +1579,55 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 /* The offsets in the table are 31 bits long, have to extend them to 32 */
 #define EXTEND_PREL31(val) ((((gint32)(val)) << 1) >> 1)
 
+static inline guint32
+decode_uleb128 (guint8 *buf, guint8 **endbuf)
+{
+	guint8 *p = buf;
+	guint32 res = 0;
+	int shift = 0;
+
+	while (TRUE) {
+		guint8 b = *p;
+		p ++;
+
+		res = res | (((int)(b & 0x7f)) << shift);
+		if (!(b & 0x80))
+			break;
+		shift += 7;
+	}
+
+	*endbuf = p;
+
+	return res;
+}
+
 static GSList*
 decode_arm_eh_ops (guint8 *unwind_ops, int nops)
 {
-	int i, cfa_reg, cfa_offset;
-	int vsp_offset;
+	int i, vsp_reg, vsp_offset;
 	GSList *ops;
 	gint32 *reg_offsets;
 
 	/*
 	 * Have to convert the ARM unwind info into DWARF unwind info.
-	 * The ARM unwind opcodes manipulate a virtual stack pointer (vsp). After all
-	 * the opcodes have been executed, vsp should be equal to the value of the
-	 * DWARF cfa.
+	 * The ARM unwind info specifies a simple set of instructions which need to be
+	 * executed during unwinding. It manipulates a virtual stack pointer (vsp). The
+	 * connection with DWARF unwind info is the following: after all ARM unwind
+	 * opcodes have been executed, the stack should be completely unwound, i.e.
+	 * vsp == DWARF CFA. This allows us to construct the DWARF opcodes corresponding
+	 * to the ARM opcodes.
+	 * The ARM unwind info is not instruction precise, i. e. it can't handle
+	 * async exceptions etc.
 	 */
+	/* The reg used to compute the initial value of vsp */
+	vsp_reg = ARMREG_SP;
+	/* The offset between vsp_reg and the CFA */
+	vsp_offset = 0;
 
-	/* The offsets from the initial value of vsp */
+	/* The register save offsets from the initial value of vsp */
 	reg_offsets = g_new0 (gint32, 16);
 	for (i = 0; i < 16; ++i)
 		reg_offsets [i] = -1;
-
-	/* The ARM unwind info is not instruction precise */
-	cfa_reg = ARMREG_SP;
-	cfa_offset = 0;
-	vsp_offset = 0;
 
 	/* section 9.3 in the ehabi doc */
 	for (i = 0; i < nops; ++i) {
@@ -1610,15 +1635,22 @@ decode_arm_eh_ops (guint8 *unwind_ops, int nops)
 
 		if ((op >> 6) == 0) {
 			/* vsp = vsp + (xxxxxx << 2) + 4. */
-			vsp_offset += ((op & 0xfff) << 2) + 4;
+			vsp_offset += ((op & 0x3f) << 2) + 4;
+		} else if ((op >> 6) == 1) {
+			/* vsp = vsp - (xxxxxx << 2) - 4. */
+			vsp_offset -= ((op & 0x3f) << 2) + 4;
+		} else if (op == 0xb2) {
+			/* vsp = vsp = vsp + 0x204 + (uleb128 << 2) */
+			guint8 *p = unwind_ops + i + 1;
+			guint32 v = decode_uleb128 (p, &p);
+
+			vsp_offset += 0x204 + (v << 2);
+			i = (p - unwind_ops) - 1;
 		} else if (op >= 0x80 && op <= 0x8f) {
 			/* pop registers */
 			guint8 op2;
 			GSList *regs;
 			int j;
-
-			/* FIXME: */
-			g_assert (i == 0 || i == 1);
 
 			g_assert (i + 1 < nops);
 			op2 = unwind_ops [i + 1];
@@ -1645,8 +1677,6 @@ decode_arm_eh_ops (guint8 *unwind_ops, int nops)
 			int j;
 
 			/* pop r4-r[4 + nnn], r14 */
-			/* FIXME: */
-			g_assert (i == 0 || i == 1);
 
 			regs = NULL;
 			for (j = 0; j <= (op & 0x7); ++j)
@@ -1662,21 +1692,28 @@ decode_arm_eh_ops (guint8 *unwind_ops, int nops)
 		} else if (op == 0xb0) {
 			/* finish */
 			break;
+		} else if (op >= 0x90 && op <= 0x9f && op != 0x9d && op != 0x9f) {
+			/* vsp = <reg> */
+			vsp_reg = op & 0xf;
+			vsp_offset = 0;
 		} else {
-			for (i = 0; i < nops; ++i)
-				printf ("%x ", unwind_ops [i]);
-			printf ("\n");
+			int j;
+
+			for (j = 0; j < nops; ++j)
+				printf ("%x ", unwind_ops [j]);
+			printf (" / %d\n", i);
 			g_assert_not_reached ();
 		}
 	}
 
 	ops = NULL;
 
-	/* sp + vsp_offset = CFA */
-	mono_add_unwind_op_def_cfa (ops, (guint8*)NULL, (guint8*)NULL, ARMREG_SP, vsp_offset);			
+	/* vsp_reg + vsp_offset = CFA */
+	mono_add_unwind_op_def_cfa (ops, (guint8*)NULL, (guint8*)NULL, vsp_reg, vsp_offset);
+
 	for (i = 0; i < 16; ++i) {
 		if (reg_offsets [i] != -1)
-			/* The reg is saved at sp + reg_offset [i] == CFA - (vsp_offset - reg_offset [i]) */
+			/* The reg is saved at vsp_reg + reg_offset [i] == CFA - (vsp_offset - reg_offset [i]) */
 			mono_add_unwind_op_offset (ops, (guint8*)NULL, (guint8*)NULL, i, - (vsp_offset - reg_offsets [i]));
 	}
 
@@ -1769,7 +1806,7 @@ decode_arm_exidx (MonoAotModule *amodule, MonoDomain *domain,
 			/* non-inline entry */
 			guint8 *data = (guint8*)&table [(pos * 2) + 1] + EXTEND_PREL31 (entry);
 
-			entry = *(guint32*)data;
+			entry = ((guint32*)data) [0];
 
 			/* compact model, personality routine 1 */
 			g_assert ((entry & 0xff000000) == 0x81000000);
@@ -1782,6 +1819,7 @@ decode_arm_exidx (MonoAotModule *amodule, MonoDomain *domain,
 			unwind_ops [1] = (entry & 0x000000ff) >> 0;
 
 			for (i = 0; i < nwords; ++i) {
+				entry = ((guint32*)data) [1 + i];
 				unwind_ops [(i * 4) + 2] = (entry & 0xff000000) >> 24;
 				unwind_ops [(i * 4) + 2 + 1] = (entry & 0x00ff0000) >> 16;
 				unwind_ops [(i * 4) + 2 + 2] = (entry & 0x0000ff00) >> 8;
