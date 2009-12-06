@@ -76,6 +76,8 @@ typedef uint16_t       gunichar2;
 #define FALSE                0
 #define TRUE                 1
 
+#define G_MAXINT             INT_MAX
+#define G_MININT             INT_MIN
 #define G_MAXINT32           INT32_MAX
 #define G_MININT32           INT32_MIN
 #define G_MININT64           INT64_MIN
