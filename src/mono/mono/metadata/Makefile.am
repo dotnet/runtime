@@ -57,7 +57,8 @@ null_sources = \
 	console-null.c
 
 sgen_sources = \
-	sgen-gray.c
+	sgen-gray.c	\
+	sgen-pinning.c
 
 libmonoruntime_la_SOURCES = \
 	$(platform_sources)	\

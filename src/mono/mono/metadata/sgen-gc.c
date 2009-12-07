@@ -811,6 +811,7 @@ static MonoGCCallbacks gc_callbacks;
 		if ((mword)(high) > highest_heap_address)	\
 			highest_heap_address = (mword)(high);	\
 	} while (0)
+#define ADDR_IN_HEAP_BOUNDARIES(addr) ((p) >= lowest_heap_address && (p) < highest_heap_address)
 
 inline static void*
 align_pointer (void *ptr)
@@ -2151,9 +2152,11 @@ scan_vtype (char *start, mword desc, char* from_start, char* from_end)
 }
 
 /*
- * Addresses from start to end are already sorted. This function finds the object header
- * for each address and pins the object. The addresses must be inside the passed section.
- * Return the number of pinned objects.
+ * Addresses from start to end are already sorted. This function finds
+ * the object header for each address and pins the object. The
+ * addresses must be inside the passed section.  The (start of the)
+ * address array is overwritten with the addresses of the actually
+ * pinned objects.  Return the number of pinned objects.
  */
 static int
 pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery)
@@ -2320,6 +2323,28 @@ optimize_pin_queue (int start_slot)
 	
 }
 
+static int
+optimized_pin_queue_search (void *addr)
+{
+	int first = 0, last = next_pin_slot;
+	while (first < last) {
+		int middle = first + ((last - first) >> 1);
+		if (addr <= pin_queue [middle])
+			last = middle;
+		else
+			first = middle + 1;
+	}
+	g_assert (first == last);
+	return first;
+}
+
+static void
+find_optimized_pin_queue_area (void *start, void *end, int *first, int *last)
+{
+	*first = optimized_pin_queue_search (start);
+	*last = optimized_pin_queue_search (end);
+}
+
 static void
 realloc_pin_queue (void)
 {
@@ -2331,6 +2356,8 @@ realloc_pin_queue (void)
 	pin_queue_size = new_size;
 	DEBUG (4, fprintf (gc_debug_file, "Reallocated pin queue to size: %d\n", new_size));
 }
+
+#include "sgen-pinning.c"
 
 /* 
  * Scan the memory between start and end and queue values which could be pointers
@@ -2362,24 +2389,14 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 			 */
 			mword addr = (mword)*start;
 			addr &= ~(ALLOC_ALIGN - 1);
-			if (next_pin_slot >= pin_queue_size)
-				realloc_pin_queue ();
-			pin_queue [next_pin_slot++] = (void*)addr;
+			if (addr >= (mword)start_nursery && addr < (mword)end_nursery)
+				pin_stage_ptr ((void*)addr);
 			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p\n", (void*)addr));
 			count++;
 		}
 		start++;
 	}
 	DEBUG (7, if (count) fprintf (gc_debug_file, "found %d potential pinned heap pointers\n", count));
-
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-	/*
-	 * The pinning addresses might come from undefined memory, this is normal. Since they
-	 * are used in lots of functions, we make the memory defined here instead of having
-	 * to add a supression for those functions.
-	 */
-	VALGRIND_MAKE_MEM_DEFINED (pin_queue, next_pin_slot * sizeof (pin_queue [0]));
-#endif
 }
 
 /* 
@@ -2453,6 +2470,8 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 	 * *) pointers slots in managed frames
 	 */
 	scan_thread_data (start_nursery, end_nursery, FALSE);
+
+	evacuate_pin_staging_area ();
 }
 
 /* Copy function called from user defined mark functions */
@@ -3129,6 +3148,7 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (all_atv);
 	TV_GETTIME (atv);
 	/* pin from pinned handles */
+	init_pinning ();
 	pin_from_roots (nursery_start, nursery_next);
 	/* identify pinned objects */
 	optimize_pin_queue (0);
@@ -3210,6 +3230,13 @@ count_major_sections (void)
 }
 
 static void
+scan_from_pinned_chunk_if_marked (PinnedChunk *chunk, char *obj, void *dummy)
+{
+	if (object_is_pinned (obj))
+		scan_object (obj, NULL, (char*)-1);
+}
+
+static void
 major_collection (const char *reason)
 {
 	GCMemSection *section, *prev_section;
@@ -3266,28 +3293,40 @@ major_collection (const char *reason)
 	clear_remsets ();
 	/* world must be stopped already */
 	TV_GETTIME (atv);
+	init_pinning ();
+	DEBUG (6, fprintf (gc_debug_file, "Collecting pinned addresses\n"));
+	pin_from_roots (lowest_heap_address, highest_heap_address);
+	optimize_pin_queue (0);
+
+	/*
+	 * pin_queue now contains all candidate pointers, sorted and
+	 * uniqued.  We must do two passes now to figure out which
+	 * objects are pinned.
+	 *
+	 * The first is to find within the pin_queue the area for each
+	 * section.  This requires that the pin_queue be sorted.  We
+	 * also process the LOS objects and pinned chunks here.
+	 *
+	 * The second, destructive, pass is to reduce the section
+	 * areas to pointers to the actually pinned objects.
+	 */
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
+	/* first pass for the sections */
 	for (section = section_list; section; section = section->block.next) {
+		int start, end;
 		DEBUG (6, fprintf (gc_debug_file, "Pinning from section %p (%p-%p)\n", section, section->data, section->end_data));
-		section->pin_queue_start = count = section->pin_queue_end = next_pin_slot;
-		pin_from_roots (section->data, section->end_data);
-		if (count != next_pin_slot) {
-			int reduced_to;
-			optimize_pin_queue (count);
-			DEBUG (6, fprintf (gc_debug_file, "Found %d pinning addresses in section %p (%d-%d)\n", next_pin_slot - count, section, count, next_pin_slot));
-			reduced_to = pin_objects_from_addresses (section, pin_queue + count, pin_queue + next_pin_slot, section->data, section->next_data);
-			section->pin_queue_end = next_pin_slot = count + reduced_to;
-		}
-		copy_space_required += (char*)section->next_data - (char*)section->data;
+		find_optimized_pin_queue_area (section->data, section->end_data, &start, &end);
+		DEBUG (6, fprintf (gc_debug_file, "Found %d pinning addresses in section %p (%d-%d)\n",
+						end - start, section, start, end));
+		section->pin_queue_start = start;
+		section->pin_queue_end = end;
 	}
 	/* identify possible pointers to the insize of large objects */
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from large objects\n"));
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
-		count = next_pin_slot;
-		pin_from_roots (bigobj->data, (char*)bigobj->data + bigobj->size);
-		/* FIXME: this is only valid until we don't optimize the pin queue midway */
-		if (next_pin_slot != count) {
-			next_pin_slot = count;
+		int start, end;
+		find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &start, &end);
+		if (start != end) {
 			pin_object (bigobj->data);
 			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %zd from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
 		}
@@ -3295,13 +3334,23 @@ major_collection (const char *reason)
 	/* look for pinned addresses for pinned-alloc objects */
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from pinned-alloc objects\n"));
 	for (chunk = pinned_chunk_list; chunk; chunk = chunk->block.next) {
-		count = next_pin_slot;
-		pin_from_roots (chunk->start_data, (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE);
-		/* FIXME: this is only valid until we don't optimize the pin queue midway */
-		if (next_pin_slot != count) {
-			mark_pinned_from_addresses (chunk, pin_queue + count, pin_queue + next_pin_slot);
-			next_pin_slot = count;
+		int start, end;
+		find_optimized_pin_queue_area (chunk->start_data, (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE, &start, &end);
+		if (start != end)
+			mark_pinned_from_addresses (chunk, pin_queue + start, pin_queue + end);
+	}
+	/* second pass for the sections */
+	for (section = section_list; section; section = section->block.next) {
+		int start = section->pin_queue_start;
+		int end = section->pin_queue_end;
+		if (start != end) {
+			int reduced_to;
+			reduced_to = pin_objects_from_addresses (section, pin_queue + start, pin_queue + end,
+					section->data, section->next_data);
+			section->pin_queue_start = start;
+			section->pin_queue_end = start + reduced_to;
 		}
+		copy_space_required += (char*)section->next_data - (char*)section->data;
 	}
 
 	TV_GETTIME (btv);
@@ -3318,10 +3367,21 @@ major_collection (const char *reason)
 	 * move all the objects.
 	 */
 	/* the pinned objects are roots (big objects are included in this list, too) */
-	for (i = 0; i < next_pin_slot; ++i) {
-		DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of pinned %p (%s)\n", i, pin_queue [i], safe_name (pin_queue [i])));
-		scan_object (pin_queue [i], heap_start, heap_end);
+	for (section = section_list; section; section = section->block.next) {
+		for (i = section->pin_queue_start; i < section->pin_queue_end; ++i) {
+			DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of pinned %p (%s)\n",
+							i, pin_queue [i], safe_name (pin_queue [i])));
+			scan_object (pin_queue [i], heap_start, heap_end);
+		}
 	}
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
+		if (object_is_pinned (bigobj->data)) {
+			DEBUG (6, fprintf (gc_debug_file, "Precise object scan pinned LOS object %p (%s)\n",
+							bigobj->data, safe_name (bigobj->data)));
+			scan_object (bigobj->data, heap_start, heap_end);
+		}
+	}
+	scan_pinned_objects (scan_from_pinned_chunk_if_marked, NULL);
 	/* registered roots, this includes static fields */
 	scan_from_registered_roots (heap_start, heap_end, ROOT_TYPE_NORMAL);
 	scan_from_registered_roots (heap_start, heap_end, ROOT_TYPE_WBARRIER);
@@ -5376,7 +5436,7 @@ ptr_in_heap (void* ptr)
 	LOSObject *bigobj;
 	GCMemSection *section;
 
-	if (p < lowest_heap_address || p >= highest_heap_address)
+	if (!ADDR_IN_HEAP_BOUNDARIES (p))
 		return FALSE;
 
 	if (ptr_in_nursery (ptr))
