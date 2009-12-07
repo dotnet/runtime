@@ -239,6 +239,8 @@ struct _GCMemSection {
 	gboolean is_to_space;
 };
 
+#define SIZEOF_GC_MEM_SECTION	((sizeof (GCMemSection) + 7) & ~7)
+
 /* large object space struct: 64+ KB */
 /* we could make this limit much smaller to avoid memcpy copy
  * and potentially have more room in the GC descriptor: need to measure
@@ -2601,7 +2603,7 @@ alloc_nursery (void)
 	 * objects in the existing nursery.
 	 */
 	/* FIXME: handle OOM */
-	section = get_internal_mem (sizeof (GCMemSection));
+	section = get_internal_mem (SIZEOF_GC_MEM_SECTION);
 
 	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
 	alloc_size = nursery_size;
@@ -3492,9 +3494,9 @@ alloc_major_section (void)
 	int scan_starts;
 
 	section = get_os_memory_aligned (MAJOR_SECTION_SIZE, TRUE);
-	section->next_data = section->data = (char*)section + sizeof (GCMemSection);
+	section->next_data = section->data = (char*)section + SIZEOF_GC_MEM_SECTION;
 	g_assert (!((mword)section->data & 7));
-	section->size = MAJOR_SECTION_SIZE - sizeof (GCMemSection);
+	section->size = MAJOR_SECTION_SIZE - SIZEOF_GC_MEM_SECTION;
 	section->end_data = section->data + section->size;
 	UPDATE_HEAP_BOUNDARIES (section->data, section->end_data);
 	total_alloc += section->size;
@@ -3520,7 +3522,7 @@ free_major_section (GCMemSection *section)
 	DEBUG (3, fprintf (gc_debug_file, "Freed major section %p (%p-%p)\n", section, section->data, section->end_data));
 	free_internal_mem (section->scan_starts);
 	free_os_memory (section, MAJOR_SECTION_SIZE);
-	total_alloc -= MAJOR_SECTION_SIZE - sizeof (GCMemSection);
+	total_alloc -= MAJOR_SECTION_SIZE - SIZEOF_GC_MEM_SECTION;
 }
 
 /*
