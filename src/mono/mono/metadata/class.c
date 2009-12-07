@@ -156,6 +156,11 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		break;
 	}
 
+	if (idx > image->tables [MONO_TABLE_ASSEMBLYREF].rows) {
+		mono_loader_set_error_bad_image (g_strdup_printf ("Image %s with invalid assemblyref token %08x.", image->name, idx));
+		return NULL;
+	}
+
 	if (!image->references || !image->references [idx - 1])
 		mono_assembly_load_reference (image, idx - 1);
 	g_assert (image->references [idx - 1]);
