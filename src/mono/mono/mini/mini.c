@@ -3297,21 +3297,33 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->disable_llvm = TRUE;
 	}
 
-	/* 
-	 * Check for methods which cannot be compiled by LLVM early, to avoid
-	 * the extra compilation pass.
-	 */
-	if (COMPILE_LLVM (cfg) && cfg->disable_llvm) {
-		if (cfg->verbose_level >= 1) {
-			//nm = mono_method_full_name (cfg->method, TRUE);
-			printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
-			//g_free (nm);
+#ifdef ENABLE_LLVM
+	{
+		static gboolean inited;
+
+		if (!inited) {
+			mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_with_llvm);	
+			mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_without_llvm);
+			inited = TRUE;
 		}
-		InterlockedIncrement (&methods_without_llvm);
-		mono_destroy_compile (cfg);
-		try_llvm = FALSE;
-		goto restart_compile;
+	
+		/* 
+		 * Check for methods which cannot be compiled by LLVM early, to avoid
+		 * the extra compilation pass.
+		 */
+		if (COMPILE_LLVM (cfg) && cfg->disable_llvm) {
+			if (cfg->verbose_level >= 1) {
+				//nm = mono_method_full_name (cfg->method, TRUE);
+				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
+				//g_free (nm);
+			}
+			InterlockedIncrement (&methods_without_llvm);
+			mono_destroy_compile (cfg);
+			try_llvm = FALSE;
+			goto restart_compile;
+		}
 	}
+#endif
 
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mono_debug_using_mono_debugger () || debug_options.mdb_optimizations) {
@@ -3822,13 +3834,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (COMPILE_LLVM (cfg)) {
 #ifdef ENABLE_LLVM
 		char *nm;
-		static gboolean inited;
-
-		if (!inited) {
-			mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_with_llvm);	
-			mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_without_llvm);
-			inited = TRUE;
-		}
 
 		/* The IR has to be in SSA form for LLVM */
 		if (!(cfg->comp_done & MONO_COMP_SSA)) {
