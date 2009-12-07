@@ -6187,7 +6187,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 #endif
 
 	LOCK_GC;
-	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr)) {
+	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr) || !ptr_in_nursery (*(gpointer*)ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		UNLOCK_GC;
 		return;
