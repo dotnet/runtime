@@ -4263,14 +4263,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * FIXME: Experiment with adding optimizations, the -std-compile-opts set takes
 	 * a lot of time, and doesn't seem to save much space.
 	 * The following optimizations cannot be enabled:
-	 * - 'globalopt', which seems to remove our methods, even though they have a global
-	 *   alias pointing at them.
-	 * - 'constmerge'/'globaldce', which seems to remove our got symbol.
 	 * - 'tailcallelim'
 	 */
 	opts = g_strdup ("-instcombine -simplifycfg");
 #if 1
-	command = g_strdup_printf ("opt -f %s -o temp.bc temp.bc", opts);
+	command = g_strdup_printf ("opt -f %s -o temp.opt.bc temp.bc", opts);
 	printf ("Executing opt: %s\n", command);
 	if (system (command) != 0) {
 		exit (1);
@@ -4279,7 +4276,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	g_free (opts);
 
 	//command = g_strdup_printf ("llc -march=arm -mtriple=arm-linux-gnueabi -f -relocation-model=pic -unwind-tables temp.bc");
-	command = g_strdup_printf ("llc -f -relocation-model=pic -unwind-tables -o temp.s temp.bc");
+	command = g_strdup_printf ("llc -f -relocation-model=pic -unwind-tables -o temp.s temp.opt.bc");
 	printf ("Executing llc: %s\n", command);
 
 	if (system (command) != 0) {

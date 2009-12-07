@@ -1071,6 +1071,23 @@ build_alloca (EmitContext *ctx, MonoType *t)
 }
 
 /*
+ * Put the global into the 'llvm.used' array to prevent it from being optimized away.
+ */
+static void
+mark_as_used (LLVMModuleRef module, LLVMValueRef global)
+{
+	LLVMTypeRef used_type;
+	LLVMValueRef used, used_elem;
+		
+	used_type = LLVMArrayType (LLVMPointerType (LLVMInt8Type (), 0), 1);
+	used = LLVMAddGlobal (module, used_type, "llvm.used");
+	used_elem = LLVMConstBitCast (global, LLVMPointerType (LLVMInt8Type (), 0));
+	LLVMSetInitializer (used, LLVMConstArray (LLVMPointerType (LLVMInt8Type (), 0), &used_elem, 1));
+	LLVMSetLinkage (used, LLVMAppendingLinkage);
+	LLVMSetSection (used, "llvm.metadata");
+}
+
+/*
  * emit_entry_bb:
  *
  *   Emit code to load/convert arguments.
@@ -2883,6 +2900,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (cfg->verbose_level > 1)
 		mono_llvm_dump_value (method);
 
+	mark_as_used (module, method);
+
 	if (cfg->compile_aot) {
 		/* Don't generate native code, keep the LLVM IR */
 
@@ -3209,6 +3228,8 @@ mono_llvm_emit_aot_module (const char *filename, int got_size)
 	LLVMSetLinkage (real_got, LLVMInternalLinkage);
 
 	mono_llvm_replace_uses_of (aot_module.got_var, real_got);
+
+	mark_as_used (aot_module.module, real_got);
 
 #if 0
 	{
