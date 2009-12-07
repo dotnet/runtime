@@ -3271,9 +3271,46 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->disable_llvm = TRUE;
 	}
 
-	if (cfg->method->save_lmf) {
-		cfg->exception_message = g_strdup ("lmf");
+	/* FIXME: */
+	if (cfg->method->dynamic) {
+		cfg->exception_message = g_strdup ("dynamic.");
 		cfg->disable_llvm = TRUE;
+	}
+
+	header = mono_method_get_header (method_to_compile);
+	if (!header) {
+		MonoLoaderError *error;
+
+		if ((error = mono_loader_get_last_error ())) {
+			cfg->exception_type = error->exception_type;
+		} else {
+			cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
+			cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
+		}
+		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
+		return cfg;
+	}
+
+	if (header->clauses) {
+		cfg->exception_message = g_strdup ("clauses");
+		cfg->disable_llvm = TRUE;
+	}
+
+	/* 
+	 * Check for methods which cannot be compiled by LLVM early, to avoid
+	 * the extra compilation pass.
+	 */
+	if (COMPILE_LLVM (cfg) && cfg->disable_llvm) {
+		if (cfg->verbose_level >= 1) {
+			//nm = mono_method_full_name (cfg->method, TRUE);
+			printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
+			//g_free (nm);
+		}
+		InterlockedIncrement (&methods_without_llvm);
+		mono_destroy_compile (cfg);
+		try_llvm = FALSE;
+		goto restart_compile;
 	}
 
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
@@ -3320,26 +3357,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (COMPILE_LLVM (cfg)) {
 		cfg->opt |= MONO_OPT_ABCREM;
-	}
-
-	header = mono_method_get_header (method_to_compile);
-	if (!header) {
-		MonoLoaderError *error;
-
-		if ((error = mono_loader_get_last_error ())) {
-			cfg->exception_type = error->exception_type;
-		} else {
-			cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-			cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
-		}
-		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
-			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
-		return cfg;
-	}
-
-	if (header->clauses) {
-		cfg->exception_message = g_strdup ("clauses");
-		cfg->disable_llvm = TRUE;
 	}
 
 	if (getenv ("MONO_VERBOSE_METHOD")) {
@@ -3816,12 +3833,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		/* The IR has to be in SSA form for LLVM */
 		if (!(cfg->comp_done & MONO_COMP_SSA)) {
 			cfg->exception_message = g_strdup ("SSA disabled.");
-			cfg->disable_llvm = TRUE;
-		}
-
-		/* FIXME: */
-		if (cfg->method->dynamic) {
-			cfg->exception_message = g_strdup ("dynamic.");
 			cfg->disable_llvm = TRUE;
 		}
 
