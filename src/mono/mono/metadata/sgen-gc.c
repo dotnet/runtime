@@ -372,6 +372,21 @@ struct _RememberedSet {
 	mword data [MONO_ZERO_LEN_ARRAY];
 };
 
+/*
+ * We're never actually using the first element.  It's always set to
+ * NULL to simplify the elimination of consecutive duplicate
+ * entries.
+ */
+#define STORE_REMSET_BUFFER_SIZE	1024
+
+typedef struct _GenericStoreRememberedSet GenericStoreRememberedSet;
+struct _GenericStoreRememberedSet {
+	GenericStoreRememberedSet *next;
+	/* We need one entry less because the first entry of store
+	   remset buffers is always a dummy and we don't copy it. */
+	gpointer data [STORE_REMSET_BUFFER_SIZE - 1];
+};
+
 /* we have 4 possible values in the low 2 bits */
 enum {
 	REMSET_LOCATION, /* just a pointer to the exact location */
@@ -394,6 +409,7 @@ static pthread_key_t remembered_set_key;
 static RememberedSet *global_remset;
 static RememberedSet *freed_thread_remsets;
 //static int store_to_global_remset = 0;
+static GenericStoreRememberedSet *generic_store_remsets = NULL;
 
 /* FIXME: later choose a size that takes into account the RememberedSet struct
  * and doesn't waste any alloc paddin space.
@@ -698,6 +714,8 @@ struct _SgenThreadInfo {
 	char **tlab_start_addr;
 	char **tlab_temp_end_addr;
 	char **tlab_real_end_addr;
+	gpointer **store_remset_buffer_addr;
+	int *store_remset_buffer_index_addr;
 	RememberedSet *remset;
 	gpointer runtime_data;
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
@@ -708,6 +726,8 @@ struct _SgenThreadInfo {
 	char *tlab_next;
 	char *tlab_temp_end;
 	char *tlab_real_end;
+	gpointer *store_remset_buffer;
+	int store_remset_buffer_index;
 #endif
 };
 
@@ -718,6 +738,8 @@ struct _SgenThreadInfo {
 #define TLAB_TEMP_END	tlab_temp_end
 #define TLAB_REAL_END	tlab_real_end
 #define REMEMBERED_SET	remembered_set
+#define STORE_REMSET_BUFFER	store_remset_buffer
+#define STORE_REMSET_BUFFER_INDEX	store_remset_buffer_index
 #else
 static pthread_key_t thread_info_key;
 #define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = pthread_getspecific (thread_info_key)
@@ -726,6 +748,8 @@ static pthread_key_t thread_info_key;
 #define TLAB_TEMP_END	(__thread_info__->tlab_temp_end)
 #define TLAB_REAL_END	(__thread_info__->tlab_real_end)
 #define REMEMBERED_SET	(__thread_info__->remset)
+#define STORE_REMSET_BUFFER	(__thread_info__->store_remset_buffer)
+#define STORE_REMSET_BUFFER_INDEX	(__thread_info__->store_remset_buffer_index)
 #endif
 
 /*
@@ -737,6 +761,8 @@ static __thread char *tlab_start;
 static __thread char *tlab_next;
 static __thread char *tlab_temp_end;
 static __thread char *tlab_real_end;
+static __thread gpointer *store_remset_buffer;
+static __thread int store_remset_buffer_index;
 /* Used by the managed allocator */
 static __thread char **tlab_next_addr;
 static __thread char *stack_end;
@@ -5458,11 +5484,19 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 }
 
 static void
+clear_thread_store_remset_buffer (SgenThreadInfo *info)
+{
+	*info->store_remset_buffer_index_addr = 0;
+	memset (*info->store_remset_buffer_addr, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+}
+
+static void
 scan_from_remsets (void *start_nursery, void *end_nursery)
 {
 	int i;
 	SgenThreadInfo *info;
-	RememberedSet *remset, *next;
+	RememberedSet *remset;
+	GenericStoreRememberedSet *store_remset;
 	mword *p, *next_p, *store_pos;
 
 	/* the global one */
@@ -5497,9 +5531,28 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 		remset->store_next = store_pos;
 	}
 
+	/* the generic store ones */
+	store_remset = generic_store_remsets;
+	while (store_remset) {
+		GenericStoreRememberedSet *next = store_remset->next;
+
+		for (i = 0; i < STORE_REMSET_BUFFER_SIZE - 1; ++i) {
+			gpointer addr = store_remset->data [i];
+			if (addr)
+				handle_remset ((mword*)&addr, start_nursery, end_nursery, FALSE);
+		}
+
+		free_internal_mem (store_remset);
+
+		store_remset = next;
+	}
+	generic_store_remsets = NULL;
+
 	/* the per-thread ones */
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
+			RememberedSet *next;
+			int j;
 			for (remset = info->remset; remset; remset = next) {
 				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %zd\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
 				for (p = remset->data; p < remset->store_next;) {
@@ -5513,11 +5566,15 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 					free_internal_mem (remset);
 				}
 			}
+			for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
+				handle_remset ((mword*)*info->store_remset_buffer_addr + j + 1, start_nursery, end_nursery, FALSE);
+			clear_thread_store_remset_buffer (info);
 		}
 	}
 
 	/* the freed thread ones */
 	while (freed_thread_remsets) {
+		RememberedSet *next;
 		remset = freed_thread_remsets;
 		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
 		for (p = remset->data; p < remset->store_next;) {
@@ -5552,6 +5609,12 @@ clear_remsets (void)
 			free_internal_mem (remset);
 		}
 	}
+	/* the generic store ones */
+	while (generic_store_remsets) {
+		GenericStoreRememberedSet *gs_next = generic_store_remsets->next;
+		free_internal_mem (generic_store_remsets);
+		generic_store_remsets = gs_next;
+	}
 	/* the per-thread ones */
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
@@ -5564,6 +5627,7 @@ clear_remsets (void)
 					free_internal_mem (remset);
 				}
 			}
+			clear_thread_store_remset_buffer (info);
 		}
 	}
 
@@ -5653,6 +5717,8 @@ gc_register_current_thread (void *addr)
 	info->tlab_next_addr = &TLAB_NEXT;
 	info->tlab_temp_end_addr = &TLAB_TEMP_END;
 	info->tlab_real_end_addr = &TLAB_REAL_END;
+	info->store_remset_buffer_addr = &STORE_REMSET_BUFFER;
+	info->store_remset_buffer_index_addr = &STORE_REMSET_BUFFER_INDEX;
 	info->stopped_ip = NULL;
 	info->stopped_domain = NULL;
 	info->stopped_regs = NULL;
@@ -5699,12 +5765,25 @@ gc_register_current_thread (void *addr)
 #ifdef HAVE_KW_THREAD
 	remembered_set = info->remset;
 #endif
+
+	STORE_REMSET_BUFFER = get_internal_mem (sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+	STORE_REMSET_BUFFER_INDEX = 0;
+
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) (hash: %d)\n", info, (gpointer)info->id, hash));
 
 	if (gc_callbacks.thread_attach_func)
 		info->runtime_data = gc_callbacks.thread_attach_func ();
 
 	return info;
+}
+
+static void
+add_generic_store_remset_from_buffer (gpointer *buffer)
+{
+	GenericStoreRememberedSet *remset = get_internal_mem (sizeof (GenericStoreRememberedSet));
+	memcpy (remset->data, buffer + 1, sizeof (gpointer) * (STORE_REMSET_BUFFER_SIZE - 1));
+	remset->next = generic_store_remsets;
+	generic_store_remsets = remset;
 }
 
 static void
@@ -5739,6 +5818,9 @@ unregister_current_thread (void)
 			freed_thread_remsets = p->remset;
 		}
 	}
+	if (*p->store_remset_buffer_index_addr)
+		add_generic_store_remset_from_buffer (*p->store_remset_buffer_addr);
+	free_internal_mem (*p->store_remset_buffer_addr);
 	free (p);
 }
 
@@ -6007,10 +6089,25 @@ find_object_for_ptr (char *ptr)
 	return found_obj;
 }
 
+static void
+evacuate_remset_buffer (void)
+{
+	gpointer *buffer;
+	TLAB_ACCESS_INIT;
+
+	buffer = STORE_REMSET_BUFFER;
+
+	add_generic_store_remset_from_buffer (buffer);
+	memset (buffer, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+
+	STORE_REMSET_BUFFER_INDEX = 0;
+}
+
 void
 mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
-	RememberedSet *rs;
+	gpointer *buffer;
+	int index;
 	TLAB_ACCESS_INIT;
 
 #ifdef XDOMAIN_CHECKS_IN_WBARRIER
@@ -6035,20 +6132,29 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 		UNLOCK_GC;
 		return;
 	}
-	rs = REMEMBERED_SET;
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
-	if (rs->store_next < rs->end_set) {
-		*(rs->store_next++) = (mword)ptr;
+
+	buffer = STORE_REMSET_BUFFER;
+	index = STORE_REMSET_BUFFER_INDEX;
+	/* This simple optimization eliminates a sizable portion of
+	   entries.  Comparing it to the last but one entry as well
+	   doesn't eliminate significantly more entries. */
+	if (buffer [index] == ptr) {
 		UNLOCK_GC;
 		return;
 	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
-#endif
-	*(rs->store_next++) = (mword)ptr;
+
+	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
+
+	++index;
+	if (index >= STORE_REMSET_BUFFER_SIZE) {
+		evacuate_remset_buffer ();
+		index = STORE_REMSET_BUFFER_INDEX;
+		g_assert (index == 0);
+		++index;
+	}
+	buffer [index] = ptr;
+	STORE_REMSET_BUFFER_INDEX = index;
+
 	UNLOCK_GC;
 }
 
