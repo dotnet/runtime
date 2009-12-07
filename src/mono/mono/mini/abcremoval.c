@@ -986,6 +986,9 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 		printf ("\nProcessing block %d [dfn %d]...\n", bb->block_num, bb->dfn);
 	}
 
+	if (bb->region)
+		return;
+
 	get_relations_from_previous_bb (area, bb, &additional_relations);
 	if (TRACE_ABC_REMOVAL) {
 		if (additional_relations.relation1.relation.relation != MONO_ANY_RELATION) {

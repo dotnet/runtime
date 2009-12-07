@@ -340,8 +340,6 @@ mono_ssa_compute (MonoCompile *cfg)
 
 	g_assert (!(cfg->comp_done & MONO_COMP_SSA));
 
-	/* we dont support methods containing exception clauses */
-	g_assert (mono_method_get_header (cfg->method)->num_clauses == 0);
 	g_assert (!cfg->disable_ssa);
 
 	if (cfg->verbose_level >= 4)
@@ -1168,6 +1166,15 @@ mono_ssa_cprop (MonoCompile *cfg)
 			info->cpstate = 2;
 	}
 
+	for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
+		/*
+		 * FIXME: This should be bb->flags & BB_FLAG_EXCEPTION_HANDLER, but
+		 * that would still allow unreachable try's to be removed.
+		 */
+		if (bb->region)
+			add_cprop_bb (cfg, bb, &bblock_list);
+	}
+
 	cvars = NULL;
 
 	while (bblock_list) {
@@ -1179,11 +1186,13 @@ mono_ssa_cprop (MonoCompile *cfg)
 
 		g_assert (bb->flags &  BB_REACHABLE);
 
-		if (bb->out_count == 1) {
-			if (!(bb->out_bb [0]->flags &  BB_REACHABLE)) {
-				bb->out_bb [0]->flags |= BB_REACHABLE;
-				bblock_list = g_list_prepend (bblock_list, bb->out_bb [0]);
-			}
+		/* 
+		 * Some bblocks are linked to 2 others even through they fall through to the
+		 * next bblock.
+		 */
+		if (!(bb->last_ins && MONO_IS_BRANCH_OP (bb->last_ins))) {
+			for (i = 0; i < bb->out_count; ++i)
+				add_cprop_bb (cfg, bb->out_bb [i], &bblock_list);
 		}
 
 		if (cfg->verbose_level > 1)

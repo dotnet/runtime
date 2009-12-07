@@ -3271,6 +3271,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->disable_llvm = TRUE;
 	}
 
+	if (cfg->method->save_lmf) {
+		cfg->exception_message = g_strdup ("lmf");
+		cfg->disable_llvm = TRUE;
+	}
+
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mono_debug_using_mono_debugger () || debug_options.mdb_optimizations) {
 		cfg->disable_reuse_registers = TRUE;
@@ -3330,6 +3335,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 		return cfg;
+	}
+
+	if (header->clauses) {
+		cfg->exception_message = g_strdup ("clauses");
+		cfg->disable_llvm = TRUE;
 	}
 
 	if (getenv ("MONO_VERBOSE_METHOD")) {
@@ -3482,6 +3492,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	 * r1 <- 1
 	 * <something which throws>
 	 * r1 <- 2
+	 * This also allows SSA to be run on methods containing exception clauses, since
+	 * SSA will ignore variables marked VOLATILE.
 	 */
 	mono_liveness_handle_exception_clauses (cfg);
 
@@ -3533,6 +3545,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 				if (cfg->verbose_level > 1)
 					g_print ("found unreachable code in BB%d\n", bb->block_num);
 				bb->code = bb->last_ins = NULL;
+				while (bb->out_count)
+					mono_unlink_bblock (cfg, bb, bb->out_bb [0]);
 			}
 		}
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
@@ -3561,11 +3575,16 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
+	/*
+	if (header->num_clauses)
+		cfg->disable_ssa = TRUE;
+	*/
+
 //#define DEBUGSSA "logic_run"
 #define DEBUGSSA_CLASS "Tests"
 #ifdef DEBUGSSA
 
-	if (!header->num_clauses && !cfg->disable_ssa) {
+	if (!cfg->disable_ssa) {
 		mono_local_cprop (cfg);
 
 #ifndef DISABLE_SSA
@@ -3574,7 +3593,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 #else 
 	if (cfg->opt & MONO_OPT_SSA) {
-		if (!(cfg->comp_done & MONO_COMP_SSA) && !header->num_clauses && !cfg->disable_ssa) {
+		if (!(cfg->comp_done & MONO_COMP_SSA) && !cfg->disable_ssa) {
 #ifndef DISABLE_SSA
 			mono_ssa_compute (cfg);
 #endif
