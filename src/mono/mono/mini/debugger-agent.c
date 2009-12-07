@@ -1741,6 +1741,17 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 		return FALSE;
 
 	/*
+	 * OSX can (and will) coalesce signals, so sending multiple pthread_kills does not
+	 * guarantee the signal handler will be called that many times.  Instead of tracking
+	 * interrupt_count on osx, we use this as a boolean flag to determine if a interrupt
+	 * has been requested that hasn't been handled yet, otherwise we can have threads
+	 * refuse to die when VM_EXIT is called
+	 */
+#if defined(__APPLE__)
+	if (InterlockedCompareExchange (&tls->interrupt_count, 0, 1) == 0)
+		return FALSE;
+#else
+	/*
 	 * We use interrupt_count to determine whenever this interrupt should be processed
 	 * by us or the normal interrupt processing code in the signal handler.
 	 * There is no race here with notify_thread (), since the signal is sent after
@@ -1750,6 +1761,7 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 		return FALSE;
 
 	InterlockedDecrement (&tls->interrupt_count);
+#endif
 
 	// FIXME: Races when the thread leaves managed code before hitting a single step
 	// event.
@@ -1818,6 +1830,20 @@ static void CALLBACK notify_thread_apc (ULONG_PTR param)
 #endif /* HOST_WIN32 */
 
 /*
+ * reset_native_thread_suspend_state:
+ * 
+ *   Reset the suspended flag on native threads
+ */
+static void
+reset_native_thread_suspend_state (gpointer key, gpointer value, gpointer user_data)
+{
+	DebuggerTlsData *tls = value;
+
+	if (!tls->really_suspended && tls->suspended)
+		tls->suspended = FALSE;
+}
+
+/*
  * notify_thread:
  *
  *   Notify a thread that it needs to suspend.
@@ -1831,11 +1857,25 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 	if (GetCurrentThreadId () != tid) {
 		DEBUG(1, fprintf (log_file, "[%p] Interrupting %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid));
+
+		/*
+		 * OSX can (and will) coalesce signals, so sending multiple pthread_kills does not
+		 * guarantee the signal handler will be called that many times.  Instead of tracking
+		 * interrupt_count on osx, we use this as a boolean flag to determine if a interrupt
+		 * has been requested that hasn't been handled yet, otherwise we can have threads
+		 * refuse to die when VM_EXIT is called
+		 */
+#if defined(__APPLE__)
+		if (InterlockedCompareExchange (&tls->interrupt_count, 1, 0) == 1)
+			return;
+#else
 		/*
 		 * Maybe we could use the normal interrupt infrastructure, but that does a lot
 		 * of things like breaking waits etc. which we don't want.
 		 */
 		InterlockedIncrement (&tls->interrupt_count);
+#endif
+
 		/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
 #ifdef HOST_WIN32
 		QueueUserAPC (notify_thread_apc, thread->handle, NULL);
@@ -1934,6 +1974,7 @@ resume_vm (void)
 	if (suspend_count == 0) {
 		// FIXME: Is it safe to call this inside the lock ?
 		stop_single_stepping ();
+		mono_g_hash_table_foreach (thread_to_tls, reset_native_thread_suspend_state, NULL);
 	}
 
 	/* Signal this even when suspend_count > 0, since some threads might have resume_count > 0 */
