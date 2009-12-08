@@ -28,7 +28,7 @@ gray_object_alloc_queue_section (void)
 		gray_queue_section_free_list = gray_queue_section_free_list->next;
 		--gray_queue_free_list_length;
 	} else {
-		section = get_internal_mem (sizeof (GrayQueueSection));
+		section = get_internal_mem (sizeof (GrayQueueSection), INTERNAL_MEM_GRAY_QUEUE);
 		++num_gray_queue_sections;
 	}
 
@@ -83,7 +83,7 @@ gray_object_dequeue (void)
 	if (gray_queue_start->start == gray_queue_start->end) {
 		GrayQueueSection *section = gray_queue_start->next;
 		if (gray_queue_free_list_length >= GRAY_QUEUE_LENGTH_LIMIT) {
-			free_internal_mem (gray_queue_start);
+			free_internal_mem (gray_queue_start, INTERNAL_MEM_GRAY_QUEUE);
 		} else {
 			gray_queue_start->next = gray_queue_section_free_list;
 			gray_queue_section_free_list = gray_queue_start;

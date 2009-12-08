@@ -58,7 +58,8 @@ null_sources = \
 
 sgen_sources = \
 	sgen-gray.c	\
-	sgen-pinning.c
+	sgen-pinning.c	\
+	sgen-pinning-stats.c
 
 libmonoruntime_la_SOURCES = \
 	$(platform_sources)	\

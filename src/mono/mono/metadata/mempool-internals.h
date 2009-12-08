@@ -13,4 +13,7 @@ g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data) MONO_INTER
 GList*
 g_list_prepend_mempool (MonoMemPool *mp, GList *list, gpointer data) MONO_INTERNAL;
 
+long
+mono_mempool_get_bytes_allocated (void) MONO_INTERNAL;
+
 #endif

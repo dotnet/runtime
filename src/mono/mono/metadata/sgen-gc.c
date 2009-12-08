@@ -149,8 +149,10 @@
 #include "metadata/profiler-private.h"
 #include "metadata/monitor.h"
 #include "metadata/threadpool-internals.h"
+#include "metadata/mempool-internals.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-semaphore.h"
+#include "utils/mono-counters.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -188,6 +190,74 @@ static gboolean consistency_check_at_minor_collection = FALSE;
 static gboolean xdomain_checks = FALSE;
 /* If not null, dump the heap after each collection into this file */
 static FILE *heap_dump_file = NULL;
+
+/*
+ * Turning on heavy statistics will turn off the managed allocator and
+ * the managed write barrier.
+ */
+//#define HEAVY_STATISTICS
+
+#ifdef HEAVY_STATISTICS
+#define HEAVY_STAT(x)	x
+#else
+#define HEAVY_STAT(x)
+#endif
+
+#ifdef HEAVY_STATISTICS
+static long stat_objects_alloced = 0;
+static long stat_copy_object_called_nursery = 0;
+static long stat_objects_copied_nursery = 0;
+static long stat_copy_object_called_major = 0;
+static long stat_objects_copied_major = 0;
+
+static long stat_copy_object_failed_from_space = 0;
+static long stat_copy_object_failed_forwarded = 0;
+static long stat_copy_object_failed_pinned = 0;
+static long stat_copy_object_failed_large_pinned = 0;
+static long stat_copy_object_failed_to_space = 0;
+
+static long stat_store_remsets = 0;
+static long stat_store_remsets_unique = 0;
+static long stat_saved_remsets_1 = 0;
+static long stat_saved_remsets_2 = 0;
+static long stat_global_remsets_added = 0;
+static long stat_global_remsets_processed = 0;
+
+static long num_copy_object_called = 0;
+static long num_objects_copied = 0;
+
+static int stat_wbarrier_set_field = 0;
+static int stat_wbarrier_set_arrayref = 0;
+static int stat_wbarrier_arrayref_copy = 0;
+static int stat_wbarrier_generic_store = 0;
+static int stat_wbarrier_generic_store_remset = 0;
+static int stat_wbarrier_set_root = 0;
+static int stat_wbarrier_value_copy = 0;
+static int stat_wbarrier_object_copy = 0;
+#endif
+
+static long pinned_chunk_bytes_alloced = 0;
+static long large_internal_bytes_alloced = 0;
+
+enum {
+	INTERNAL_MEM_PIN_QUEUE,
+	INTERNAL_MEM_FRAGMENT,
+	INTERNAL_MEM_SECTION,
+	INTERNAL_MEM_SCAN_STARTS,
+	INTERNAL_MEM_FIN_TABLE,
+	INTERNAL_MEM_FINALIZE_ENTRY,
+	INTERNAL_MEM_DISLINK_TABLE,
+	INTERNAL_MEM_DISLINK,
+	INTERNAL_MEM_ROOTS_TABLE,
+	INTERNAL_MEM_ROOT_RECORD,
+	INTERNAL_MEM_STATISTICS,
+	INTERNAL_MEM_REMSET,
+	INTERNAL_MEM_GRAY_QUEUE,
+	INTERNAL_MEM_STORE_REMSET,
+	INTERNAL_MEM_MAX
+};
+
+static long small_internal_mem_bytes [INTERNAL_MEM_MAX];
 
 /*
 void
@@ -825,8 +895,8 @@ align_pointer (void *ptr)
 }
 
 /* forward declarations */
-static void* get_internal_mem          (size_t size);
-static void  free_internal_mem         (void *addr);
+static void* get_internal_mem          (size_t size, int type);
+static void  free_internal_mem         (void *addr, int type);
 static void* get_os_memory             (size_t size, int activate);
 static void  free_os_memory            (void *addr, size_t size);
 static G_GNUC_UNUSED void  report_internal_mem_usage (void);
@@ -1855,6 +1925,8 @@ add_to_global_remset (gpointer ptr, gboolean root)
 	g_assert (!root);
 	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
 
+	HEAVY_STAT (++stat_global_remsets_added);
+
 	/* 
 	 * FIXME: If an object remains pinned, we need to add it at every minor collection.
 	 * To avoid uncontrolled growth of the global remset, only add each pointer once.
@@ -1919,9 +1991,12 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 	mword objsize;
 	MonoVTable *vt;
 
+	HEAVY_STAT (++num_copy_object_called);
+
 	if (!(obj >= from_space_start && obj < from_space_end)) {
 		DEBUG (9, fprintf (gc_debug_file, "Not copying %p because it's not in from space (%p-%p)\n",
 						obj, from_space_start, from_space_end));
+		HEAVY_STAT (++stat_copy_object_failed_from_space);
 		return obj;
 	}
 
@@ -1955,11 +2030,13 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 	if ((forwarded = object_is_forwarded (obj))) {
 		g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr);
 		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
+		HEAVY_STAT (++stat_copy_object_failed_forwarded);
 		return forwarded;
 	}
 	if (object_is_pinned (obj)) {
 		g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr);
 		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
+		HEAVY_STAT (++stat_copy_object_failed_pinned);
 		return obj;
 	}
 
@@ -1980,33 +2057,34 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 	 * the los list and if the object is pinned, it is marked,
 	 * otherwise it can be freed.
 	 *
-	 * Objects from pinned chunks (3) are identified very
-	 * inefficiently - we might have to walk the whole
-	 * pinned_chunk_list until we find or not find it.  At this
-	 * point we know the object is either in 3, 4 or 5, so if we
-	 * lay out pinned chunks in the same way as GCMemSections and
-	 * give them a flag then we could identify them in constant
-	 * time here.
+	 * Pinned chunks (3) and major heap sections (4, 5) both
+	 * reside in blocks, which are always aligned, so once we've
+	 * eliminated LOS objects, we can just access the block and
+	 * see whether it's a pinned chunk or a major heap section.
 	 */
 	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
 		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
 		pin_object (obj);
+		HEAVY_STAT (++stat_copy_object_failed_large_pinned);
 		return obj;
 	}
 
 	/*
 	 * Now we know the object is in a major heap section.  All we
-	 * need to do is check whether it's already in to-space or
-	 * not.
+	 * need to do is check whether it's already in to-space (5) or
+	 * not (4).
 	 */
 	if (MAJOR_SECTION_FOR_OBJECT (obj)->is_to_space) {
 		g_assert (objsize <= MAX_SMALL_OBJ_SIZE);
 		DEBUG (9, fprintf (gc_debug_file, " (already copied)\n"));
+		HEAVY_STAT (++stat_copy_object_failed_to_space);
 		return obj;
 	}
 
  copy:
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", to_space_bumper, ((MonoObject*)obj)->vtable->klass->name, objsize));
+
+	HEAVY_STAT (++num_objects_copied);
 
 	/* Make sure we have enough space available */
 	if (to_space_bumper + objsize > to_space_top) {
@@ -2153,6 +2231,8 @@ scan_vtype (char *start, mword desc, char* from_start, char* from_end)
 	return NULL;
 }
 
+#include "sgen-pinning-stats.c"
+
 /*
  * Addresses from start to end are already sorted. This function finds
  * the object header for each address and pins the object. The
@@ -2215,6 +2295,8 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 				if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
 					DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
 					pin_object (search_start);
+					if (heap_dump_file)
+						pin_stats_register_object (search_start, last_obj_size);
 					definitely_pinned [count] = search_start;
 					count++;
 					break;
@@ -2351,9 +2433,9 @@ static void
 realloc_pin_queue (void)
 {
 	int new_size = pin_queue_size? pin_queue_size + pin_queue_size/2: 1024;
-	void **new_pin = get_internal_mem (sizeof (void*) * new_size);
+	void **new_pin = get_internal_mem (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
 	memcpy (new_pin, pin_queue, sizeof (void*) * next_pin_slot);
-	free_internal_mem (pin_queue);
+	free_internal_mem (pin_queue, INTERNAL_MEM_PIN_QUEUE);
 	pin_queue = new_pin;
 	pin_queue_size = new_size;
 	DEBUG (4, fprintf (gc_debug_file, "Reallocated pin queue to size: %d\n", new_size));
@@ -2367,7 +2449,7 @@ realloc_pin_queue (void)
  * Typically used for thread stacks.
  */
 static void
-conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery)
+conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery, int pin_type)
 {
 	int count = 0;
 	while (start < end) {
@@ -2393,6 +2475,8 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 			addr &= ~(ALLOC_ALIGN - 1);
 			if (addr >= (mword)start_nursery && addr < (mword)end_nursery)
 				pin_stage_ptr ((void*)addr);
+			if (heap_dump_file)
+				pin_stats_register_address ((char*)addr, pin_type);
 			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p\n", (void*)addr));
 			count++;
 		}
@@ -2461,7 +2545,7 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 	for (i = 0; i < roots_hash_size [ROOT_TYPE_PINNED]; ++i) {
 		for (root = roots_hash [ROOT_TYPE_PINNED][i]; root; root = root->next) {
 			DEBUG (6, fprintf (gc_debug_file, "Pinned roots %p-%p\n", root->start_root, root->end_root));
-			conservatively_pin_objects_from ((void**)root->start_root, (void**)root->end_root, start_nursery, end_nursery);
+			conservatively_pin_objects_from ((void**)root->start_root, (void**)root->end_root, start_nursery, end_nursery, PIN_TYPE_OTHER);
 		}
 	}
 	/* now deal with the thread stacks
@@ -2556,7 +2640,7 @@ alloc_fragment (void)
 		frag->next = NULL;
 		return frag;
 	}
-	frag = get_internal_mem (sizeof (Fragment));
+	frag = get_internal_mem (sizeof (Fragment), INTERNAL_MEM_FRAGMENT);
 	frag->next = NULL;
 	return frag;
 }
@@ -2603,7 +2687,7 @@ alloc_nursery (void)
 	 * objects in the existing nursery.
 	 */
 	/* FIXME: handle OOM */
-	section = get_internal_mem (SIZEOF_GC_MEM_SECTION);
+	section = get_internal_mem (SIZEOF_GC_MEM_SECTION, INTERNAL_MEM_SECTION);
 
 	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
 	alloc_size = nursery_size;
@@ -2622,7 +2706,7 @@ alloc_nursery (void)
 	section->size = alloc_size;
 	section->end_data = nursery_real_end;
 	scan_starts = alloc_size / SCAN_START_SIZE;
-	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts);
+	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN0;
 
@@ -3066,13 +3150,27 @@ dump_section (GCMemSection *section, const char *type)
 static void
 dump_heap (const char *type, int num, const char *reason)
 {
+	static char *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
+					       "fin-table", "finalize-entry", "dislink-table",
+					       "dislink", "roots-table", "root-record", "statistics",
+					       "remset", "gray-queue", "store-remset" };
+
 	GCMemSection *section;
 	LOSObject *bigobj;
+	int i;
 
 	fprintf (heap_dump_file, "<collection type=\"%s\" num=\"%d\"", type, num);
 	if (reason)
 		fprintf (heap_dump_file, " reason=\"%s\"", reason);
 	fprintf (heap_dump_file, ">\n");
+	fprintf (heap_dump_file, "<other-mem-usage type=\"pinned-chunks\" size=\"%ld\"/>\n", pinned_chunk_bytes_alloced);
+	fprintf (heap_dump_file, "<other-mem-usage type=\"large-internal\" size=\"%ld\"/>\n", large_internal_bytes_alloced);
+	fprintf (heap_dump_file, "<other-mem-usage type=\"mempools\" size=\"%ld\"/>\n", mono_mempool_get_bytes_allocated ());
+	for (i = 0; i < INTERNAL_MEM_MAX; ++i)
+		fprintf (heap_dump_file, "<other-mem-usage type=\"%s\" size=\"%ld\"/>\n", internal_mem_names [i], small_internal_mem_bytes [i]);
+	fprintf (heap_dump_file, "<pinned type=\"stack\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_STACK]);
+	/* fprintf (heap_dump_file, "<pinned type=\"static-data\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_STATIC_DATA]); */
+	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_OTHER]);
 
 	dump_section (nursery_section, "nursery");
 
@@ -3095,6 +3193,67 @@ dump_heap (const char *type, int num, const char *reason)
 	fprintf (heap_dump_file, "</collection>\n");
 }
 
+static void
+init_stats (void)
+{
+	static gboolean inited = FALSE;
+
+#ifdef HEAVY_STATISTICS
+	num_copy_object_called = 0;
+	num_objects_copied = 0;
+#endif
+
+	if (inited)
+		return;
+
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_field);
+	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_arrayref);
+	mono_counters_register ("WBarrier arrayref copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_arrayref_copy);
+	mono_counters_register ("WBarrier generic store called", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store);
+	mono_counters_register ("WBarrier generic store stored", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store_remset);
+	mono_counters_register ("WBarrier set root", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_root);
+	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_value_copy);
+	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_object_copy);
+
+	mono_counters_register ("# objects allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_alloced);
+	mono_counters_register ("# copy_object() called (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_called_nursery);
+	mono_counters_register ("# objects copied (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_copied_nursery);
+	mono_counters_register ("# copy_object() called (major)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_called_major);
+	mono_counters_register ("# objects copied (major)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_copied_major);
+
+	mono_counters_register ("# copy_object() failed from space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_from_space);
+	mono_counters_register ("# copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_forwarded);
+	mono_counters_register ("# copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_pinned);
+	mono_counters_register ("# copy_object() failed large or pinned chunk", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_large_pinned);
+	mono_counters_register ("# copy_object() failed to space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_to_space);
+
+	mono_counters_register ("Store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets);
+	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
+	mono_counters_register ("Saved remsets 1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_1);
+	mono_counters_register ("Saved remsets 2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_2);
+	mono_counters_register ("Global remsets added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_added);
+	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
+#endif
+
+	inited = TRUE;
+}
+
+static void
+commit_stats (int generation)
+{
+#ifdef HEAVY_STATISTICS
+	if (generation == GENERATION_NURSERY) {
+		stat_copy_object_called_nursery += num_copy_object_called;
+		stat_objects_copied_nursery += num_objects_copied;
+	} else {
+		g_assert (generation == GENERATION_OLD);
+		stat_copy_object_called_major += num_copy_object_called;
+		stat_objects_copied_major += num_objects_copied;
+	}
+#endif
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -3111,6 +3270,8 @@ collect_nursery (size_t requested_size)
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
+
+	init_stats ();
 
 	degraded_mode = 0;
 	orig_nursery_next = nursery_next;
@@ -3211,8 +3372,11 @@ collect_nursery (size_t requested_size)
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
+	pin_stats_reset ();
 
 	g_assert (gray_object_queue_is_empty ());
+
+	commit_stats (GENERATION_NURSERY);
 
 	minor_collection_sections_alloced += sections_alloced;
 
@@ -3257,6 +3421,8 @@ major_collection (const char *reason)
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
 	size_t copy_space_required = 0;
+
+	init_stats ();
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
@@ -3330,6 +3496,8 @@ major_collection (const char *reason)
 		find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &start, &end);
 		if (start != end) {
 			pin_object (bigobj->data);
+			if (heap_dump_file)
+				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size (bigobj->data));
 			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %zd from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
 		}
 	}
@@ -3477,8 +3645,11 @@ major_collection (const char *reason)
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
+	pin_stats_reset ();
 
 	g_assert (gray_object_queue_is_empty ());
+
+	commit_stats (GENERATION_OLD);
 
 	minor_collection_sections_alloced = 0;
 	minor_collection_section_allowance = MAX (DEFAULT_MINOR_COLLECTION_SECTION_ALLOWANCE, count_major_sections () / 3);
@@ -3502,7 +3673,7 @@ alloc_major_section (void)
 	total_alloc += section->size;
 	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %zd\n", section->data, section->end_data, total_alloc));
 	scan_starts = section->size / SCAN_START_SIZE;
-	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts);
+	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN1;
 	section->is_to_space = TRUE;
@@ -3520,7 +3691,7 @@ static void
 free_major_section (GCMemSection *section)
 {
 	DEBUG (3, fprintf (gc_debug_file, "Freed major section %p (%p-%p)\n", section, section->data, section->end_data));
-	free_internal_mem (section->scan_starts);
+	free_internal_mem (section->scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	free_os_memory (section, MAJOR_SECTION_SIZE);
 	total_alloc -= MAJOR_SECTION_SIZE - SIZEOF_GC_MEM_SECTION;
 }
@@ -3681,6 +3852,8 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 		/* if the vtable is inside the chunk it's on the freelist, so skip */
 		if (*ptr && (*ptr < (void*)chunk->start_data || *ptr > (void*)((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE))) {
 			pin_object (addr);
+			if (heap_dump_file)
+				pin_stats_register_object ((char*) addr, safe_object_get_size (addr));
 			DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
 		}
 	}
@@ -3802,6 +3975,7 @@ alloc_pinned_chunk (void)
 
 	UPDATE_HEAP_BOUNDARIES (chunk, ((char*)chunk + size));
 	total_alloc += size;
+	pinned_chunk_bytes_alloced += size;
 
 	/* setup the bookeeping fields */
 	chunk->num_pages = size / FREELIST_PAGESIZE;
@@ -3889,7 +4063,7 @@ alloc_from_freelist (size_t size)
  * in the chunk.
  */
 static void*
-get_internal_mem (size_t size)
+get_internal_mem (size_t size, int type)
 {
 	int slot;
 	void *res = NULL;
@@ -3902,11 +4076,17 @@ get_internal_mem (size_t size)
 		mh = get_os_memory (size, TRUE);
 		mh->magic = LARGE_INTERNAL_MEM_HEADER_MAGIC;
 		mh->size = size;
+
+		large_internal_bytes_alloced += size;
+
 		return mh->data;
 	}
 
 	slot = slot_for_size (size);
 	g_assert (size <= freelist_sizes [slot]);
+
+	small_internal_mem_bytes [type] += freelist_sizes [slot];
+
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		void **p = pchunk->free_list [slot];
 		if (p) {
@@ -3932,7 +4112,7 @@ get_internal_mem (size_t size)
 }
 
 static void
-free_internal_mem (void *addr)
+free_internal_mem (void *addr, int type)
 {
 	PinnedChunk *pchunk;
 	LargeInternalMemHeader *mh;
@@ -3947,11 +4127,15 @@ free_internal_mem (void *addr)
 			void **p = addr;
 			*p = pchunk->free_list [slot];
 			pchunk->free_list [slot] = p;
+
+			small_internal_mem_bytes [type] -= freelist_sizes [slot];
+
 			return;
 		}
 	}
 	mh = (LargeInternalMemHeader*)((char*)addr - G_STRUCT_OFFSET (LargeInternalMemHeader, data));
 	g_assert (mh->magic == LARGE_INTERNAL_MEM_HEADER_MAGIC);
+	large_internal_bytes_alloced -= mh->size;
 	free_os_memory (mh, mh->size);
 }
 
@@ -4105,6 +4289,8 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	char *new_next;
 	gboolean res;
 	TLAB_ACCESS_INIT;
+
+	HEAVY_STAT (++stat_objects_alloced);
 
 	size += ALLOC_ALIGN - 1;
 	size &= ~(ALLOC_ALIGN - 1);
@@ -4380,7 +4566,7 @@ rehash_fin_table (FinalizeEntryHashTable *hash_table)
 	FinalizeEntry *entry, *next;
 	int new_size = g_spaced_primes_closest (hash_table->num_registered);
 
-	new_hash = get_internal_mem (new_size * sizeof (FinalizeEntry*));
+	new_hash = get_internal_mem (new_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
 	for (i = 0; i < finalizable_hash_size; ++i) {
 		for (entry = finalizable_hash [i]; entry; entry = next) {
 			hash = mono_object_hash (entry->object) % new_size;
@@ -4389,7 +4575,7 @@ rehash_fin_table (FinalizeEntryHashTable *hash_table)
 			new_hash [hash] = entry;
 		}
 	}
-	free_internal_mem (finalizable_hash);
+	free_internal_mem (finalizable_hash, INTERNAL_MEM_FIN_TABLE);
 	hash_table->table = new_hash;
 	hash_table->size = new_size;
 }
@@ -4505,7 +4691,7 @@ null_link_in_range (char *start, char *end, int generation)
 						disappearing_link_hash [i] = entry->next;
 					DEBUG (5, fprintf (gc_debug_file, "Dislink nullified at %p to GCed object %p\n", p, object));
 					old = entry->next;
-					free_internal_mem (entry);
+					free_internal_mem (entry, INTERNAL_MEM_DISLINK);
 					entry = old;
 					hash->num_links--;
 					continue;
@@ -4529,7 +4715,7 @@ null_link_in_range (char *start, char *end, int generation)
 						else
 							disappearing_link_hash [i] = entry->next;
 						old = entry->next;
-						free_internal_mem (entry);
+						free_internal_mem (entry, INTERNAL_MEM_DISLINK);
 						entry = old;
 						hash->num_links--;
 
@@ -4587,7 +4773,7 @@ null_links_for_domain (MonoDomain *domain, int generation)
 					*(entry->link) = NULL;
 					g_warning ("Disappearing link %p not freed", entry->link);
 				} else {
-					free_internal_mem (entry);
+					free_internal_mem (entry, INTERNAL_MEM_DISLINK);
 				}
 
 				entry = next;
@@ -4695,7 +4881,7 @@ register_for_finalization (MonoObject *obj, void *user_data, int generation)
 					finalizable_hash [hash] = entry->next;
 				hash_table->num_registered--;
 				DEBUG (5, fprintf (gc_debug_file, "Removed finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
-				free_internal_mem (entry);
+				free_internal_mem (entry, INTERNAL_MEM_FINALIZE_ENTRY);
 			}
 			UNLOCK_GC;
 			return;
@@ -4707,7 +4893,7 @@ register_for_finalization (MonoObject *obj, void *user_data, int generation)
 		UNLOCK_GC;
 		return;
 	}
-	entry = get_internal_mem (sizeof (FinalizeEntry));
+	entry = get_internal_mem (sizeof (FinalizeEntry), INTERNAL_MEM_FINALIZE_ENTRY);
 	entry->object = obj;
 	entry->next = finalizable_hash [hash];
 	finalizable_hash [hash] = entry;
@@ -4736,7 +4922,7 @@ rehash_dislink (DisappearingLinkHashTable *hash_table)
 	DisappearingLink *entry, *next;
 	int new_size = g_spaced_primes_closest (hash_table->num_links);
 
-	new_hash = get_internal_mem (new_size * sizeof (DisappearingLink*));
+	new_hash = get_internal_mem (new_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		for (entry = disappearing_link_hash [i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->link) % new_size;
@@ -4745,7 +4931,7 @@ rehash_dislink (DisappearingLinkHashTable *hash_table)
 			new_hash [hash] = entry;
 		}
 	}
-	free_internal_mem (disappearing_link_hash);
+	free_internal_mem (disappearing_link_hash, INTERNAL_MEM_DISLINK_TABLE);
 	hash_table->table = new_hash;
 	hash_table->size = new_size;
 }
@@ -4780,7 +4966,7 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, i
 					disappearing_link_hash [hash] = entry->next;
 				hash_table->num_links--;
 				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s table\n", entry, hash_table->num_links, generation_name (generation)));
-				free_internal_mem (entry);
+				free_internal_mem (entry, INTERNAL_MEM_DISLINK);
 				*link = NULL;
 			} else {
 				*link = HIDE_POINTER (obj, track); /* we allow the change of object */
@@ -4791,7 +4977,7 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, i
 	}
 	if (obj == NULL)
 		return;
-	entry = get_internal_mem (sizeof (DisappearingLink));
+	entry = get_internal_mem (sizeof (DisappearingLink), INTERNAL_MEM_DISLINK);
 	*link = HIDE_POINTER (obj, track);
 	entry->link = link;
 	entry->next = disappearing_link_hash [hash];
@@ -4839,7 +5025,7 @@ mono_gc_invoke_finalizers (void)
 					e = e->next;
 				e->next = entry->next;
 			}
-			free_internal_mem (entry);
+			free_internal_mem (entry, INTERNAL_MEM_FINALIZE_ENTRY);
 			entry = NULL;
 		}
 
@@ -4909,7 +5095,7 @@ rehash_roots (gboolean pinned)
 	int new_size;
 
 	new_size = g_spaced_primes_closest (num_roots_entries [pinned]);
-	new_hash = get_internal_mem (new_size * sizeof (RootRecord*));
+	new_hash = get_internal_mem (new_size * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
 	for (i = 0; i < roots_hash_size [pinned]; ++i) {
 		for (entry = roots_hash [pinned][i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->start_root) % new_size;
@@ -4918,7 +5104,7 @@ rehash_roots (gboolean pinned)
 			new_hash [hash] = entry;
 		}
 	}
-	free_internal_mem (roots_hash [pinned]);
+	free_internal_mem (roots_hash [pinned], INTERNAL_MEM_ROOTS_TABLE);
 	roots_hash [pinned] = new_hash;
 	roots_hash_size [pinned] = new_size;
 }
@@ -4968,7 +5154,7 @@ mono_gc_register_root_inner (char *start, size_t size, void *descr, int root_typ
 			return TRUE;
 		}
 	}
-	new_root = get_internal_mem (sizeof (RootRecord));
+	new_root = get_internal_mem (sizeof (RootRecord), INTERNAL_MEM_ROOT_RECORD);
 	if (new_root) {
 		new_root->start_root = start;
 		new_root->end_root = new_root->start_root + size;
@@ -5020,7 +5206,7 @@ mono_gc_deregister_root (char* addr)
 				roots_size -= (tmp->end_root - tmp->start_root);
 				num_roots_entries [root_type]--;
 				DEBUG (3, fprintf (gc_debug_file, "Removed root %p for range: %p-%p\n", tmp, tmp->start_root, tmp->end_root));
-				free_internal_mem (tmp);
+				free_internal_mem (tmp, INTERNAL_MEM_ROOT_RECORD);
 				break;
 			}
 			prev = tmp;
@@ -5099,9 +5285,11 @@ signal_desc (int signum)
  */
 //#define XDOMAIN_CHECKS_IN_WBARRIER
 
+#ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
 #ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
+#endif
 #endif
 
 static gboolean
@@ -5355,7 +5543,8 @@ static void *scan_area_arg_start, *scan_area_arg_end;
 void
 mono_gc_conservatively_scan_area (void *start, void *end)
 {
-	conservatively_pin_objects_from (start, end, scan_area_arg_start, scan_area_arg_end);
+	g_assert_not_reached ();
+	conservatively_pin_objects_from (start, end, scan_area_arg_start, scan_area_arg_end, PIN_TYPE_OTHER);
 }
 
 void*
@@ -5386,11 +5575,11 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 			if (gc_callbacks.thread_mark_func)
 				gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
 			else if (!precise)
-				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery);
+				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
 
 			if (!precise)
 				conservatively_pin_objects_from (info->stopped_regs, info->stopped_regs + ARCH_NUM_REGS,
-						start_nursery, end_nursery);
+						start_nursery, end_nursery, PIN_TYPE_STACK);
 		}
 	}
 }
@@ -5470,6 +5659,9 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 	mword count;
 	mword desc;
 
+	if (global)
+		HEAVY_STAT (++stat_global_remsets_processed);
+
 	/* FIXME: exclude stack locations */
 	switch ((*p) & REMSET_TYPE_MASK) {
 	case REMSET_LOCATION:
@@ -5545,6 +5737,108 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 	return NULL;
 }
 
+#ifdef HEAVY_STATISTICS
+static mword*
+collect_store_remsets (RememberedSet *remset, mword *bumper)
+{
+	mword *p = remset->data;
+	mword last = 0;
+	mword last1 = 0;
+	mword last2 = 0;
+
+	while (p < remset->store_next) {
+		switch ((*p) & REMSET_TYPE_MASK) {
+		case REMSET_LOCATION:
+			*bumper++ = *p;
+			if (*p == last)
+				++stat_saved_remsets_1;
+			last = *p;
+			if (*p == last1 || *p == last2) {
+				++stat_saved_remsets_2;
+			} else {
+				last2 = last1;
+				last1 = *p;
+			}
+			p += 1;
+			break;
+		case REMSET_RANGE:
+			p += 2;
+			break;
+		case REMSET_OBJECT:
+			p += 1;
+			break;
+		case REMSET_OTHER:
+			switch (p [1]) {
+			case REMSET_VTYPE:
+				p += 4;
+				break;
+			case REMSET_ROOT_LOCATION:
+				p += 2;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	return bumper;
+}
+
+static void
+remset_stats (void)
+{
+	RememberedSet *remset;
+	int size = 0;
+	SgenThreadInfo *info;
+	int i;
+	mword *addresses, *bumper, *p, *r;
+
+	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
+		for (info = thread_table [i]; info; info = info->next) {
+			for (remset = info->remset; remset; remset = remset->next)
+				size += remset->store_next - remset->data;
+		}
+	}
+	for (remset = freed_thread_remsets; remset; remset = remset->next)
+		size += remset->store_next - remset->data;
+	for (remset = global_remset; remset; remset = remset->next)
+		size += remset->store_next - remset->data;
+
+	bumper = addresses = get_internal_mem (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
+
+	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
+		for (info = thread_table [i]; info; info = info->next) {
+			for (remset = info->remset; remset; remset = remset->next)
+				bumper = collect_store_remsets (remset, bumper);
+		}
+	}
+	for (remset = global_remset; remset; remset = remset->next)
+		bumper = collect_store_remsets (remset, bumper);
+	for (remset = freed_thread_remsets; remset; remset = remset->next)
+		bumper = collect_store_remsets (remset, bumper);
+
+	g_assert (bumper <= addresses + size);
+
+	stat_store_remsets += bumper - addresses;
+
+	sort_addresses ((void**)addresses, bumper - addresses);
+	p = addresses;
+	r = addresses + 1;
+	while (r < bumper) {
+		if (*r != *p)
+			*++p = *r;
+		++r;
+	}
+
+	stat_store_remsets_unique += p - addresses;
+
+	free_internal_mem (addresses, INTERNAL_MEM_STATISTICS);
+}
+#endif
+
 static void
 clear_thread_store_remset_buffer (SgenThreadInfo *info)
 {
@@ -5560,6 +5854,10 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 	RememberedSet *remset;
 	GenericStoreRememberedSet *store_remset;
 	mword *p, *next_p, *store_pos;
+
+#ifdef HEAVY_STATISTICS
+	remset_stats ();
+#endif
 
 	/* the global one */
 	for (remset = global_remset; remset; remset = remset->next) {
@@ -5604,7 +5902,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 				handle_remset ((mword*)&addr, start_nursery, end_nursery, FALSE);
 		}
 
-		free_internal_mem (store_remset);
+		free_internal_mem (store_remset, INTERNAL_MEM_STORE_REMSET);
 
 		store_remset = next;
 	}
@@ -5625,7 +5923,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 				remset->next = NULL;
 				if (remset != info->remset) {
 					DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-					free_internal_mem (remset);
+					free_internal_mem (remset, INTERNAL_MEM_REMSET);
 				}
 			}
 			for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
@@ -5644,7 +5942,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 		}
 		next = remset->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-		free_internal_mem (remset);
+		free_internal_mem (remset, INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }
@@ -5668,13 +5966,13 @@ clear_remsets (void)
 		remset->next = NULL;
 		if (remset != global_remset) {
 			DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-			free_internal_mem (remset);
+			free_internal_mem (remset, INTERNAL_MEM_REMSET);
 		}
 	}
 	/* the generic store ones */
 	while (generic_store_remsets) {
 		GenericStoreRememberedSet *gs_next = generic_store_remsets->next;
-		free_internal_mem (generic_store_remsets);
+		free_internal_mem (generic_store_remsets, INTERNAL_MEM_STORE_REMSET);
 		generic_store_remsets = gs_next;
 	}
 	/* the per-thread ones */
@@ -5686,7 +5984,7 @@ clear_remsets (void)
 				remset->next = NULL;
 				if (remset != info->remset) {
 					DEBUG (1, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-					free_internal_mem (remset);
+					free_internal_mem (remset, INTERNAL_MEM_REMSET);
 				}
 			}
 			clear_thread_store_remset_buffer (info);
@@ -5697,7 +5995,7 @@ clear_remsets (void)
 	while (freed_thread_remsets) {
 		next = freed_thread_remsets->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", freed_thread_remsets->data));
-		free_internal_mem (freed_thread_remsets);
+		free_internal_mem (freed_thread_remsets, INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }
@@ -5828,7 +6126,7 @@ gc_register_current_thread (void *addr)
 	remembered_set = info->remset;
 #endif
 
-	STORE_REMSET_BUFFER = get_internal_mem (sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+	STORE_REMSET_BUFFER = get_internal_mem (sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE, INTERNAL_MEM_STORE_REMSET);
 	STORE_REMSET_BUFFER_INDEX = 0;
 
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) (hash: %d)\n", info, (gpointer)info->id, hash));
@@ -5842,7 +6140,7 @@ gc_register_current_thread (void *addr)
 static void
 add_generic_store_remset_from_buffer (gpointer *buffer)
 {
-	GenericStoreRememberedSet *remset = get_internal_mem (sizeof (GenericStoreRememberedSet));
+	GenericStoreRememberedSet *remset = get_internal_mem (sizeof (GenericStoreRememberedSet), INTERNAL_MEM_STORE_REMSET);
 	memcpy (remset->data, buffer + 1, sizeof (gpointer) * (STORE_REMSET_BUFFER_SIZE - 1));
 	remset->next = generic_store_remsets;
 	generic_store_remsets = remset;
@@ -5882,7 +6180,7 @@ unregister_current_thread (void)
 	}
 	if (*p->store_remset_buffer_index_addr)
 		add_generic_store_remset_from_buffer (*p->store_remset_buffer_addr);
-	free_internal_mem (*p->store_remset_buffer_addr);
+	free_internal_mem (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
 	free (p);
 }
 
@@ -5898,7 +6196,9 @@ gboolean
 mono_gc_register_thread (void *baseptr)
 {
 	SgenThreadInfo *info;
+
 	LOCK_GC;
+	init_stats ();
 	info = thread_info_lookup (ARCH_GET_THREAD ());
 	if (info == NULL)
 		info = gc_register_current_thread (baseptr);
@@ -5992,7 +6292,7 @@ mono_gc_pthread_detach (pthread_t thread)
 
 static RememberedSet*
 alloc_remset (int size, gpointer id) {
-	RememberedSet* res = get_internal_mem (sizeof (RememberedSet) + (size * sizeof (gpointer)));
+	RememberedSet* res = get_internal_mem (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
 	res->store_next = res->data;
 	res->end_set = res->data + size;
 	res->next = NULL;
@@ -6013,6 +6313,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
+	HEAVY_STAT (++stat_wbarrier_set_field);
 	if (ptr_in_nursery (field_ptr)) {
 		*(void**)field_ptr = value;
 		return;
@@ -6042,6 +6343,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
+	HEAVY_STAT (++stat_wbarrier_set_arrayref);
 	if (ptr_in_nursery (slot_ptr)) {
 		*(void**)slot_ptr = value;
 		return;
@@ -6071,6 +6373,7 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
+	HEAVY_STAT (++stat_wbarrier_arrayref_copy);
 	LOCK_GC;
 	memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
 	if (ptr_in_nursery (dest_ptr)) {
@@ -6172,6 +6475,8 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	int index;
 	TLAB_ACCESS_INIT;
 
+	HEAVY_STAT (++stat_wbarrier_generic_store);
+
 #ifdef XDOMAIN_CHECKS_IN_WBARRIER
 	/* FIXME: ptr_in_heap must be called with the GC lock held */
 	if (xdomain_checks && *(MonoObject**)ptr && ptr_in_heap (ptr)) {
@@ -6206,6 +6511,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	}
 
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
+	HEAVY_STAT (++stat_wbarrier_generic_store_remset);
 
 	++index;
 	if (index >= STORE_REMSET_BUFFER_SIZE) {
@@ -6225,7 +6531,8 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	DEBUG (8, fprintf (gc_debug_file, "Wbarrier store at %p to %p (%s)\n", ptr, value, value ? safe_name (value) : "null"));
 	*(void**)ptr = value;
-	mono_gc_wbarrier_generic_nostore (ptr);
+	if (ptr_in_nursery (value))
+		mono_gc_wbarrier_generic_nostore (ptr);
 }
 
 void
@@ -6233,6 +6540,7 @@ mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value)
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
+	HEAVY_STAT (++stat_wbarrier_set_root);
 	if (ptr_in_nursery (ptr))
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding root remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
@@ -6261,6 +6569,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 {
 	RememberedSet *rs;
 	TLAB_ACCESS_INIT;
+	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
 	LOCK_GC;
 	memmove (dest, src, count * mono_class_value_size (klass, NULL));
@@ -6305,6 +6614,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	int size;
 
 	TLAB_ACCESS_INIT;
+	HEAVY_STAT (++stat_wbarrier_object_copy);
 	rs = REMEMBERED_SET;
 	DEBUG (1, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
 	size = mono_object_class (obj)->instance_size;

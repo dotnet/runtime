@@ -60,6 +60,8 @@ struct _MonoMemPool {
 };
 #endif
 
+static long total_bytes_allocated = 0;
+
 /**
  * mono_mempool_new:
  *
@@ -86,6 +88,7 @@ mono_mempool_new_size (int initial_size)
 	pool->pos = (guint8*)pool + sizeof (MonoMemPool);
 	pool->end = pool->pos + initial_size - sizeof (MonoMemPool);
 	pool->d.allocated = pool->size = initial_size;
+	total_bytes_allocated += initial_size;
 	return pool;
 #endif
 }
@@ -105,6 +108,8 @@ mono_mempool_destroy (MonoMemPool *pool)
 	g_free (pool);
 #else
 	MonoMemPool *p, *n;
+
+	total_bytes_allocated -= pool->d.allocated;
 
 	p = pool;
 	while (p) {
@@ -289,6 +294,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			np->size = sizeof (MonoMemPool) + size;
 			np->end = np->pos + np->size - sizeof (MonoMemPool);
 			pool->d.allocated += sizeof (MonoMemPool) + size;
+			total_bytes_allocated += sizeof (MonoMemPool) + size;
 			return (guint8*)np + sizeof (MonoMemPool);
 		} else {
 			int new_size = get_next_size (pool, size);
@@ -301,6 +307,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			np->end = np->pos;
 			pool->end = pool->pos + new_size - sizeof (MonoMemPool);
 			pool->d.allocated += new_size;
+			total_bytes_allocated += new_size;
 
 			rval = pool->pos;
 			pool->pos += size;
@@ -465,4 +472,15 @@ g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
 		return list;
 	} else
 		return new_list;
+}
+
+/**
+ * mono_mempool_get_bytes_allocated:
+ *
+ * Return the number of bytes currently allocated for mempools.
+ */
+long
+mono_mempool_get_bytes_allocated (void)
+{
+	return total_bytes_allocated;
 }
