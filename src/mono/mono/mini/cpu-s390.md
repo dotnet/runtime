@@ -61,7 +61,7 @@ br: len:6
 br_reg: src1:i len:8
 break: len:6
 call: dest:o len:6 clob:c
-call_handler: len:12
+call_handler: len:12 clob:c
 call_membase: dest:o src1:b len:12 clob:c
 call_reg: dest:o src1:i len:8 clob:c
 ceq: dest:i len:12

@@ -1194,7 +1194,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->dreg = -1;
 		}
 
-		if (spec [MONO_INST_CLOB] == 'c') {
+		if (spec [MONO_INST_CLOB] == 'c' && MONO_IS_CALL (ins)) {
 			/* A call instruction implicitly uses all registers in call->out_ireg_args */
 
 			MonoCallInst *call = (MonoCallInst*)ins;
@@ -1679,7 +1679,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		/*
 		 * TRACK ARGUMENT REGS
 		 */
-		if (spec [MONO_INST_CLOB] == 'c') {
+		if (spec [MONO_INST_CLOB] == 'c' && MONO_IS_CALL (ins)) {
 			MonoCallInst *call = (MonoCallInst*)ins;
 			GSList *list;
 

@@ -264,9 +264,10 @@ mono_print_method_from_ip (void *ip)
 	char *method;
 	MonoDebugSourceLocation *source;
 	MonoDomain *domain = mono_domain_get ();
+	MonoDomain *target_domain = mono_domain_get ();
 	FindTrampUserData user_data;
 	
-	ji = mini_jit_info_table_find (domain, ip, &domain);
+	ji = mini_jit_info_table_find (domain, ip, &target_domain);
 	if (!ji) {
 		user_data.ip = ip;
 		user_data.method = NULL;
@@ -283,9 +284,9 @@ mono_print_method_from_ip (void *ip)
 		return;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
-	source = mono_debug_lookup_source_location (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
+	source = mono_debug_lookup_source_location (ji->method, (guint32)((guint8*)ip - (guint8*)ji->code_start), target_domain);
 
-	g_print ("IP %p at offset 0x%x of method %s (%p %p)[domain %p - %s]\n", ip, (int)((char*)ip - (char*)ji->code_start), method, ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
+	g_print ("IP %p at offset 0x%x of method %s (%p %p)[domain %p - %s]\n", ip, (int)((char*)ip - (char*)ji->code_start), method, ji->code_start, (char*)ji->code_start + ji->code_size, target_domain, target_domain->friendly_name);
 
 	if (source)
 		g_print ("%s:%d\n", source->source_file, source->row);
@@ -3604,9 +3605,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	// FIXME: This doesn't work yet (test failures on x86)
-	if (header->num_clauses)
-		cfg->disable_ssa = TRUE;
+	/*
+	  if (header->num_clauses)
+	  cfg->disable_ssa = TRUE;
+	*/
 
 //#define DEBUGSSA "logic_run"
 #define DEBUGSSA_CLASS "Tests"

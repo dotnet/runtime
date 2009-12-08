@@ -234,7 +234,7 @@ float_cgt_un: dest:y src1:f src2:f len:37
 float_clt: dest:y src1:f src2:f len:25
 float_clt_un: dest:y src1:f src2:f len:32
 float_conv_to_u: dest:i src1:f len:36
-call_handler: len:11
+call_handler: len:11 clob:c
 aot_const: dest:i len:5
 load_gotaddr: dest:i len:64
 got_entry: dest:i src1:b len:7

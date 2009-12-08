@@ -146,7 +146,7 @@ float_clt_membase: dest:i src1:f src2:b len:48
 float_clt_un_membase: dest:i src1:f src2:b len:48
 float_conv_to_u: dest:i src1:f len:48
 fmove: dest:f src1:f len:48
-call_handler: len:96
+call_handler: len:96 clob:c
 start_handler: len:96
 endfilter: len:96
 endfinally: len:96

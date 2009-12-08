@@ -59,7 +59,7 @@ throw: src1:i len:24
 rethrow: src1:i len:20
 start_handler: len:20
 endfinally: len:20
-call_handler: len:12
+call_handler: len:12 clob:c
 endfilter: src1:i len:16
 
 ckfinite: dest:f src1:f len:64

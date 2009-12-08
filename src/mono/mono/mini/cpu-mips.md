@@ -364,7 +364,7 @@ float_cgt_un: dest:i src1:f src2:f len:20
 float_clt: dest:i src1:f src2:f len:20
 float_clt_un: dest:i src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
-call_handler: len:20
+call_handler: len:20 clob:c
 endfilter: src1:i len:16
 aot_const: dest:i len:8
 sqrt: dest:f src1:f len:4

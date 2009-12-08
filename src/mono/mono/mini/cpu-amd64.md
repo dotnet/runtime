@@ -246,7 +246,7 @@ float_clt_membase: dest:i src1:f src2:b len:35
 float_clt_un_membase: dest:i src1:f src2:b len:42
 float_conv_to_u: dest:i src1:f len:46
 fmove: dest:f src1:f len:8
-call_handler: len:14
+call_handler: len:14 clob:c
 aot_const: dest:i len:10
 x86_test_null: src1:i len:5
 x86_compare_membase_reg: src1:b src2:i len:9
