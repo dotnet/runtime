@@ -200,6 +200,11 @@ typedef struct {
 	 * The lmf where the stack walk can be started for running threads.
 	 */
 	gpointer async_lmf;
+
+	/*
+ 	 * The callee address of the last mono_runtime_invoke call
+	 */
+	gpointer invoke_addr;
 } DebuggerTlsData;
 
 /* 
@@ -510,6 +515,7 @@ static DebuggerProfiler debugger_profiler;
 
 /* The single step request instance */
 static MonoSingleStepReq *ss_req = NULL;
+static gpointer ss_invoke_addr = NULL;
 
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 /* Number of single stepping operations in progress */
@@ -2737,6 +2743,20 @@ assembly_unload (MonoProfiler *prof, MonoAssembly *assembly)
 static void
 start_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 {
+#if defined(HOST_WIN32) && !defined(__GNUC__)
+	gpointer stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));
+#else
+	gpointer stackptr = __builtin_frame_address (1);
+#endif
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	DebuggerTlsData *tls;
+
+	mono_loader_lock ();
+	
+	tls = mono_g_hash_table_lookup (thread_to_tls, thread);
+	tls->invoke_addr = stackptr;
+
+	mono_loader_unlock ();
 }
 
 static void
@@ -2746,10 +2766,10 @@ end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 #if defined(HOST_WIN32) && !defined(__GNUC__)
 	gpointer stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));
 #else
-	gpointer stackptr = __builtin_frame_address (0);
+	gpointer stackptr = __builtin_frame_address (1);
 #endif
 
-	if (ss_req == NULL || ss_req->start_sp > stackptr || ss_req->thread != mono_thread_internal_current ())
+	if (ss_req == NULL || stackptr != ss_invoke_addr || ss_req->thread != mono_thread_internal_current ())
 		return;
 
 	/*
@@ -2757,6 +2777,8 @@ end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 	 * a step out, it may return to native code, and thus never end.
 	 */
 	mono_loader_lock ();
+	ss_invoke_addr = NULL;
+
 	for (i = 0; i < event_requests->len; ++i) {
 		EventRequest *req = g_ptr_array_index (event_requests, i);
 
@@ -2768,7 +2790,6 @@ end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 		}
 	}
 	mono_loader_unlock ();
-
 }
 
 static void
@@ -3469,6 +3490,17 @@ start_single_stepping (void)
 
 	if (val == 1)
 		mono_arch_start_single_stepping ();
+
+	if (ss_req != NULL && ss_invoke_addr == NULL) {
+		DebuggerTlsData *tls;
+	
+		mono_loader_lock ();
+	
+ 		tls = mono_g_hash_table_lookup (thread_to_tls, ss_req->thread);
+		ss_invoke_addr = tls->invoke_addr;
+		
+		mono_loader_unlock ();
+	}
 #else
 	g_assert_not_reached ();
 #endif
