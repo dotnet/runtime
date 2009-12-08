@@ -859,6 +859,14 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 		if (method->klass->generic_container)
 			continue;
 		sig = mono_method_signature (method);
+		if (!sig) {
+			char * desc = mono_method_full_name (method, TRUE);
+			g_print ("Could not retrieve method signature for %s\n", desc);
+			g_free (desc);
+			fail_count ++;
+			continue;
+		}
+
 		if (sig->has_type_parameters)
 			continue;
 
