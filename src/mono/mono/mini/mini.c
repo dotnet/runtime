@@ -3604,10 +3604,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	/*
+	// FIXME: This doesn't work yet (test failures on x86)
 	if (header->num_clauses)
 		cfg->disable_ssa = TRUE;
-	*/
 
 //#define DEBUGSSA "logic_run"
 #define DEBUGSSA_CLASS "Tests"
