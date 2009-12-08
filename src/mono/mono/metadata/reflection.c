@@ -10129,6 +10129,9 @@ inflate_method (MonoReflectionType *type, MonoObject *obj)
 		gklass = mono_class_from_mono_type (mono_reflection_type_get_handle ((MonoReflectionType*)mgc->generic_type));
 	} else if (is_sre_type_builder (type_class)) {
 		gklass = mono_class_from_mono_type (mono_reflection_type_get_handle (type));
+	} else if (type->type) {
+		gklass = mono_class_from_mono_type (type->type);
+		gklass = mono_class_get_generic_type_definition (gklass);
 	} else {
 		g_error ("Can't handle type %s", mono_type_get_full_name (mono_object_class (type)));
 	}
