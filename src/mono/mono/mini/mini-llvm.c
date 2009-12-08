@@ -561,6 +561,36 @@ ovf_op_to_intrins (int opcode)
 	}
 }
 
+static const char*
+simd_op_to_intrins (int opcode)
+{
+	switch (opcode) {
+	case OP_MINPD:
+		return "llvm.x86.sse2.min.pd";
+	case OP_MINPS:
+		return "llvm.x86.sse2.min.ps";
+	case OP_PMIND_UN:
+		return "llvm.x86.sse41.pminud";
+	case OP_PMINW_UN:
+		return "llvm.x86.sse41.pminuw";
+	case OP_PMINB_UN:
+		return "llvm.x86.sse41.pminub";
+	case OP_MAXPD:
+		return "llvm.x86.sse2.max.pd";
+	case OP_MAXPS:
+		return "llvm.x86.sse2.max.ps";
+	case OP_PMAXD_UN:
+		return "llvm.x86.sse41.pmaxud";
+	case OP_PMAXW_UN:
+		return "llvm.x86.sse41.pmaxuw";
+	case OP_PMAXB_UN:
+		return "llvm.x86.sse41.pmaxub";
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
 /*
  * get_bb:
  *
@@ -2832,15 +2862,121 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_PAND:
 				values [ins->dreg] = LLVMBuildAnd (builder, lhs, rhs, "");
 				break;
+			case OP_POR:
+				values [ins->dreg] = LLVMBuildOr (builder, lhs, rhs, "");
+				break;
+			case OP_PXOR:
+				values [ins->dreg] = LLVMBuildXor (builder, lhs, rhs, "");
+				break;
+			case OP_ANDPS:
+			case OP_ANDNPS:
+			case OP_ORPS:
+			case OP_XORPS:
+			case OP_ANDPD:
+			case OP_ANDNPD:
+			case OP_ORPD:
+			case OP_XORPD: {
+				LLVMTypeRef t, rt;
+				LLVMValueRef v;
+
+				switch (ins->opcode) {
+				case OP_ANDPS:
+				case OP_ANDNPS:
+				case OP_ORPS:
+				case OP_XORPS:
+					t = LLVMVectorType (LLVMInt32Type (), 4);
+					rt = LLVMVectorType (LLVMFloatType (), 4);
+					break;
+				case OP_ANDPD:
+				case OP_ANDNPD:
+				case OP_ORPD:
+				case OP_XORPD:
+					t = LLVMVectorType (LLVMInt64Type (), 2);
+					rt = LLVMVectorType (LLVMDoubleType (), 2);
+					break;
+				default:
+					t = LLVMInt32Type ();
+					rt = LLVMInt32Type ();
+					g_assert_not_reached ();
+				}
+
+				lhs = LLVMBuildBitCast (builder, lhs, t, "");
+				rhs = LLVMBuildBitCast (builder, rhs, t, "");
+				switch (ins->opcode) {
+				case OP_ANDPS:
+				case OP_ANDPD:
+					v = LLVMBuildAnd (builder, lhs, rhs, "");
+					break;
+				case OP_ORPS:
+				case OP_ORPD:
+					v = LLVMBuildOr (builder, lhs, rhs, "");
+					break;
+				case OP_XORPS:
+				case OP_XORPD:
+					v = LLVMBuildXor (builder, lhs, rhs, "");
+					break;
+				case OP_ANDNPS:
+				case OP_ANDNPD:
+					v = LLVMBuildAnd (builder, lhs, LLVMBuildNot (builder, rhs, ""), "");
+					break;
+				}
+				values [ins->dreg] = LLVMBuildBitCast (builder, v, rt, "");
+				break;
+			}
+			case OP_MINPD:
+			case OP_MINPS:
+			case OP_MAXPD:
+			case OP_MAXPS:
+			case OP_PMIND_UN:
+			case OP_PMINW_UN:
+			case OP_PMINB_UN:
+			case OP_PMAXD_UN:
+			case OP_PMAXW_UN:
+			case OP_PMAXB_UN: {
+				LLVMValueRef args [2];
+
+				args [0] = lhs;
+				args [1] = rhs;
+
+				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, simd_op_to_intrins (ins->opcode)), args, 2, dname);
+				break;
+			}
 			case OP_EXTRACT_R8:
 			case OP_EXTRACT_I8:
 			case OP_EXTRACT_I4:
 			case OP_EXTRACT_I2:
 			case OP_EXTRACT_U2:
 			case OP_EXTRACT_I1:
-			case OP_EXTRACT_U1:
+			case OP_EXTRACT_U1: {
+				LLVMTypeRef t;
+
+				switch (ins->opcode) {
+				case OP_EXTRACT_R8:
+					t = LLVMVectorType (LLVMDoubleType (), 2);
+					break;
+				case OP_EXTRACT_I8:
+					t = LLVMVectorType (LLVMInt64Type (), 2);
+					break;
+				case OP_EXTRACT_I4:
+					t = LLVMVectorType (LLVMInt32Type (), 4);
+					break;
+				case OP_EXTRACT_I2:
+				case OP_EXTRACT_U2:
+					t = LLVMVectorType (LLVMInt16Type (), 8);
+					break;
+				case OP_EXTRACT_I1:
+				case OP_EXTRACT_U1:
+					t = LLVMVectorType (LLVMInt8Type (), 16);
+					break;
+				default:
+					t = LLVMInt32Type ();
+					g_assert_not_reached ();
+				}
+
+				lhs = LLVMBuildBitCast (builder, lhs, t, "");
 				values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), "");
 				break;
+			}
 
 			default: {
 				char reason [128];
@@ -3143,6 +3279,41 @@ add_intrinsics (LLVMModuleRef module)
 		LLVMAddFunction (module, "llvm.usub.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
 		LLVMAddFunction (module, "llvm.smul.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
 		LLVMAddFunction (module, "llvm.umul.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
+	}
+
+	/* SSE intrinsics */
+	{
+		LLVMTypeRef vector_type, arg_types [2];
+
+		vector_type = LLVMVectorType (LLVMInt32Type (), 4);
+		arg_types [0] = vector_type;
+		arg_types [1] = vector_type;
+		LLVMAddFunction (module, "llvm.x86.sse41.pminud", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse41.pmaxud", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+
+		vector_type = LLVMVectorType (LLVMInt16Type (), 8);
+		arg_types [0] = vector_type;
+		arg_types [1] = vector_type;
+		LLVMAddFunction (module, "llvm.x86.sse41.pminuw", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse41.pmaxuw", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+
+		vector_type = LLVMVectorType (LLVMInt8Type (), 16);
+		arg_types [0] = vector_type;
+		arg_types [1] = vector_type;
+		LLVMAddFunction (module, "llvm.x86.sse41.pminub", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse41.pmaxub", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+
+		vector_type = LLVMVectorType (LLVMDoubleType (), 2);
+		arg_types [0] = vector_type;
+		arg_types [1] = vector_type;
+		LLVMAddFunction (module, "llvm.x86.sse2.min.pd", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse2.max.pd", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+
+		vector_type = LLVMVectorType (LLVMFloatType (), 4);
+		arg_types [0] = vector_type;
+		arg_types [1] = vector_type;
+		LLVMAddFunction (module, "llvm.x86.sse2.min.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse2.max.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
 	}
 }
 
