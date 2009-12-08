@@ -6905,7 +6905,7 @@ static MonoMethod*
 create_allocator (int atype)
 {
 	int p_var, size_var;
-	guint32 slowpath_branch;
+	guint32 slowpath_branch, max_size_branch;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoMethodSignature *csig;
@@ -7017,6 +7017,11 @@ create_allocator (int atype)
 	mono_mb_emit_byte (mb, CEE_AND);
 	mono_mb_emit_stloc (mb, size_var);
 
+	/* if (size > MAX_SMALL_OBJ_SIZE) goto slowpath */
+	mono_mb_emit_ldloc (mb, size_var);
+	mono_mb_emit_icon (mb, MAX_SMALL_OBJ_SIZE);
+	max_size_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BGT_S);
+
 	/*
 	 * We need to modify tlab_next, but the JIT only supports reading, so we read
 	 * another tls var holding its address instead.
@@ -7052,6 +7057,8 @@ create_allocator (int atype)
 	slowpath_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BLT_UN_S);
 
 	/* Slowpath */
+
+	mono_mb_patch_short_branch (mb, max_size_branch);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
