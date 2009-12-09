@@ -4702,7 +4702,8 @@ ves_icall_GetCurrentMethod (void)
 {
 	MonoMethod *m = mono_method_get_last_managed ();
 
-	MONO_ARCH_SAVE_REGS;
+	while (m->is_inflated)
+		m = ((MonoMethodInflated*)m)->declaring;
 
 	return mono_method_get_object (mono_domain_get (), m, NULL);
 }
