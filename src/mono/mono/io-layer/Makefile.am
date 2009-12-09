@@ -134,6 +134,10 @@ libwapi_la_SOURCES = $(OTHER_SRC)
 endif
 libwapiinclude_HEADERS = $(OTHER_H)
 endif
+if PLATFORM_DARWIN
+libwapi_la_LIBADD = -lproc
+endif
+
 
 EXTRA_DIST =	\
 	$(WINDOWS_SRC)	\
