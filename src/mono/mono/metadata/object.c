@@ -38,6 +38,7 @@
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/mono-debug-debugger.h"
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -5047,10 +5048,13 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (image->dynamic)
+	if (image->dynamic) {
 		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL);
-	else
+	} else {
+		if (!mono_verifier_verify_string_signature (image, idx, NULL))
+			return NULL; /*FIXME we should probably be raising an exception here*/
 		return mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx));
+	}
 }
 
 /**
@@ -5066,7 +5070,7 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 	const char *str = sig;
 	MonoString *o, *interned;
 	size_t len2;
-	
+
 	len2 = mono_metadata_decode_blob_size (str, &str);
 	len2 >>= 1;
 

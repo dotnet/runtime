@@ -1733,7 +1733,7 @@ is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
-is_valid_methodspec_blog (VerifyContext *ctx, guint32 offset)
+is_valid_methodspec_blob (VerifyContext *ctx, guint32 offset)
 {
 	int size = 0;
 	const char *ptr = NULL, *end;
@@ -3205,7 +3205,7 @@ verify_method_spec_table_full (VerifyContext *ctx)
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, data, MONO_METHODSPEC_SIZE);
 
-		if (!is_valid_methodspec_blog (ctx, data [MONO_METHODSPEC_SIGNATURE]))
+		if (!is_valid_methodspec_blob (ctx, data [MONO_METHODSPEC_SIGNATURE]))
 			ADD_ERROR (ctx, g_strdup_printf ("MethodSpec table row %d has invalid Instantiation token %08x", i, data [MONO_METHODSPEC_SIGNATURE]));
 	}
 }
@@ -3667,9 +3667,47 @@ mono_verifier_verify_methodspec_signature (MonoImage *image, guint32 offset, GSL
 	init_verify_context (&ctx, image, error_list);
 	ctx.stage = STAGE_TABLES;
 
-	is_valid_methodspec_blog (&ctx, offset);
+	is_valid_methodspec_blob (&ctx, offset);
 	return cleanup_context (&ctx, error_list);
 }
+
+static void
+verify_user_string (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize heap_us = get_metadata_stream (ctx, &ctx->image->heap_us);
+	guint32 entry_size, bytes;
+
+	if (heap_us.size < offset)
+		ADD_ERROR (ctx, g_strdup ("User string offset beyond heap_us size"));
+
+	if (!decode_value (ctx->data + offset + heap_us.offset, heap_us.size - heap_us.offset, &entry_size, &bytes))
+		ADD_ERROR (ctx, g_strdup ("Could not decode user string blob size"));
+
+	if (CHECK_ADD4_OVERFLOW_UN (entry_size, bytes))
+		ADD_ERROR (ctx, g_strdup ("User string size overflow"));
+
+	entry_size += bytes;
+
+	if (ADD_IS_GREATER_OR_OVF (offset, entry_size, heap_us.size))
+		ADD_ERROR (ctx, g_strdup ("User string oveflow heap_us"));
+}
+
+gboolean
+mono_verifier_verify_string_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_TABLES;
+
+	verify_user_string (&ctx, offset);
+
+	return cleanup_context (&ctx, error_list);
+}
+
 
 #else
 gboolean
@@ -3737,5 +3775,12 @@ mono_verifier_verify_methodspec_signature (MonoImage *image, guint32 offset, GSL
 {
 	return TRUE;
 }
+
+gboolean
+mono_verifier_verify_string_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	return TRUE;
+}
+
 
 #endif /* DISABLE_VERIFIER */

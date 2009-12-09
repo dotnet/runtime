@@ -39,6 +39,7 @@ gboolean mono_verifier_verify_memberref_signature (MonoImage *image, guint32 off
 gboolean mono_verifier_verify_standalone_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_verify_typespec_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_verify_methodspec_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
+gboolean mono_verifier_verify_string_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
 
 G_END_DECLS
 
