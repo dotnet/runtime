@@ -2754,7 +2754,9 @@ start_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 	mono_loader_lock ();
 	
 	tls = mono_g_hash_table_lookup (thread_to_tls, thread);
-	tls->invoke_addr = stackptr;
+	/* Could be the debugger thread with assembly/type load hooks */
+	if (tls)
+		tls->invoke_addr = stackptr;
 
 	mono_loader_unlock ();
 }
