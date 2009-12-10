@@ -8,7 +8,7 @@
  */
 
 #include "mini.h"
-#include "unwind.h"
+#include "mini-unwind.h"
 
 #include <mono/utils/mono-counters.h>
 #include <mono/metadata/threads-types.h>
