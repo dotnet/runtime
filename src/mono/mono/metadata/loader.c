@@ -2130,15 +2130,18 @@ mono_method_signature (MonoMethod *m)
 	if (signature->generic_param_count) {
 		if (!container || !container->is_method) {
 			g_warning ("Signature claims method has generic parameters, but generic_params table says it doesn't for method 0x%08x from image %s", idx, img->name);
+			mono_loader_unlock ();
 			return NULL;
 		}
 		if (container->type_argc != signature->generic_param_count) {
-			g_warning ("Inconsistent generic parameter count.  Signature says %d, generic_params table says %dfor method 0x%08x from image %s",
+			g_warning ("Inconsistent generic parameter count.  Signature says %d, generic_params table says %d for method 0x%08x from image %s",
 				 signature->generic_param_count, container->type_argc, idx, img->name);
+			mono_loader_unlock ();
 			return NULL;
 		}
 	} else if (container && container->is_method && container->type_argc) {
 		g_warning ("generic_params table claims method has generic parameters, but signature says it doesn't for method 0x%08x from image %s", idx, img->name);
+		mono_loader_unlock ();
 		return NULL;
 	}
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
@@ -2169,6 +2172,7 @@ mono_method_signature (MonoMethod *m)
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
 		default:
 			g_warning ("unsupported calling convention : 0x%04x for method 0x%08x from image %s", piinfo->piflags, idx, img->name);
+			mono_loader_unlock ();
 			return NULL;
 		}
 		signature->call_convention = conv;
