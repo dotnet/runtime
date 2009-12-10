@@ -1680,7 +1680,7 @@ static gboolean
 need_remove_object_for_domain (char *start, MonoDomain *domain)
 {
 	if (mono_object_domain (start) == domain) {
-		DEBUG (1, fprintf (gc_debug_file, "Need to cleanup object %p, (%s)\n", start, safe_name (start)));
+		DEBUG (1, fprintf (gc_debug_file, "Need to cleanup object %p\n", start));
 		return TRUE;
 	}
 	return FALSE;
@@ -1700,8 +1700,8 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 		/* The server could already have been zeroed out, so
 		   we need to check for that, too. */
 		if (server && (!LOAD_VTABLE (server) || mono_object_domain (server) == domain)) {
-			DEBUG (1, fprintf (gc_debug_file, "Cleaning up remote pointer in %p to object %p (%s)\n",
-					start, server, LOAD_VTABLE (server) ? safe_name (server) : "null"));
+			DEBUG (1, fprintf (gc_debug_file, "Cleaning up remote pointer in %p to object %p\n",
+					start, server));
 			((MonoRealProxy*)start)->unwrapped_server = NULL;
 		}
 	}
@@ -1893,8 +1893,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 			else
 				los_object_list = bigobj->next;
 			bigobj = bigobj->next;
-			DEBUG (1, fprintf (gc_debug_file, "Freeing large object %p (%s)\n",
-					bigobj->data, safe_name (bigobj->data)));
+			DEBUG (1, fprintf (gc_debug_file, "Freeing large object %p\n",
+					bigobj->data));
 			free_large_object (to_free);
 			continue;
 		}
