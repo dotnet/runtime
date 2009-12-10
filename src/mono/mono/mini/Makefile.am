@@ -277,7 +277,7 @@ common_sources = \
 	tasklets.c		\
 	tasklets.h		\
 	simd-intrinsics.c	\
-	unwind.h		\
+	mini-unwind.h		\
 	unwind.c		\
 	image-writer.h	\
 	image-writer.c	\

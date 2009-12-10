@@ -33,7 +33,7 @@ typedef gint64 mgreg_t;
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "declsec.h"
-#include "unwind.h"
+#include "mini-unwind.h"
 
 #ifndef G_LIKELY
 #define G_LIKELY(a) (a)
