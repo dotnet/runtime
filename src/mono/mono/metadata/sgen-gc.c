@@ -6785,6 +6785,7 @@ find_in_remsets (char *addr)
 	int i;
 	SgenThreadInfo *info;
 	RememberedSet *remset;
+	GenericStoreRememberedSet *store_remset;
 	mword *p;
 	gboolean found = FALSE;
 
@@ -6797,9 +6798,19 @@ find_in_remsets (char *addr)
 				return TRUE;
 		}
 	}
+
+	/* the generic store ones */
+	for (store_remset = generic_store_remsets; store_remset; store_remset = store_remset->next) {
+		for (i = 0; i < STORE_REMSET_BUFFER_SIZE - 1; ++i) {
+			if (store_remset->data [i] == addr)
+				return TRUE;
+		}
+	}
+
 	/* the per-thread ones */
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
+			int j;
 			for (remset = info->remset; remset; remset = remset->next) {
 				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %zd\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
 				for (p = remset->data; p < remset->store_next;) {
@@ -6807,6 +6818,10 @@ find_in_remsets (char *addr)
 					if (found)
 						return TRUE;
 				}
+			}
+			for (j = 0; j < *info->store_remset_buffer_index_addr; ++j) {
+				if ((*info->store_remset_buffer_addr) [j + 1] == addr)
+					return TRUE;
 			}
 		}
 	}
