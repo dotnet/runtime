@@ -2319,7 +2319,6 @@ free_generic_class (MonoGenericClass *gclass)
 			g_free (class->ext->properties);
 		/* Allocated in mono_generic_class_get_class () */
 		g_free (class->interfaces);
-		g_free (class);
 	} else if (gclass->is_dynamic) {
 		MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass *)gclass;
 
@@ -2347,8 +2346,6 @@ free_generic_class (MonoGenericClass *gclass)
 		g_free (dgclass->events);
 		g_free (dgclass->field_objects);
 		g_free (dgclass->field_generic_types);
-		if (!mono_generic_class_is_generic_type_definition (gclass))
-			g_free (gclass->cached_class);
 	}
 	g_free (gclass);
 }

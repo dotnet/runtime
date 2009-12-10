@@ -4751,10 +4751,10 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		return gclass->cached_class;
 	}
 
-	gclass->cached_class = g_malloc0 (sizeof (MonoClass));
-	klass = gclass->cached_class;
-
 	gklass = gclass->container_class;
+
+	gclass->cached_class = mono_image_alloc0 (gklass->image, sizeof (MonoClass));
+	klass = gclass->cached_class;
 
 	if (gklass->nested_in) {
 		/* 
