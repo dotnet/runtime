@@ -752,6 +752,7 @@ static guint32 WINAPI start_wrapper(void *data)
 	 * to TLS data.)
 	 */
 	SET_CURRENT_OBJECT (NULL);
+	mono_domain_unset ();
 
 	return(0);
 }
@@ -1032,6 +1033,7 @@ mono_thread_detach (MonoThread *thread)
 	thread_cleanup (thread->internal_thread);
 
 	SET_CURRENT_OBJECT (NULL);
+	mono_domain_unset ();
 
 	/* Don't need to CloseHandle this thread, even though we took a
 	 * reference in mono_thread_attach (), because the GC will do it
@@ -1048,6 +1050,7 @@ mono_thread_exit ()
 
 	thread_cleanup (thread);
 	SET_CURRENT_OBJECT (NULL);
+	mono_domain_unset ();
 
 	/* we could add a callback here for embedders to use. */
 	if (thread == mono_thread_get_main ()->internal_thread)

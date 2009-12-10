@@ -2194,9 +2194,10 @@ unload_thread_main (void *arg)
 {
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
+	MonoThread *thread;
 
 	/* Have to attach to the runtime so shutdown can wait for this thread */
-	mono_thread_attach (mono_get_root_domain ());
+	thread = mono_thread_attach (mono_get_root_domain ());
 
 	/* 
 	 * FIXME: Abort our parent thread last, so we can return a failure 
@@ -2257,6 +2258,8 @@ unload_thread_main (void *arg)
 	mono_domain_free (domain, FALSE);
 
 	mono_gc_collect (mono_gc_max_generation ());
+
+	mono_thread_detach  (thread);
 
 	return 0;
 }

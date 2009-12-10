@@ -1768,6 +1768,12 @@ mono_domain_get ()
 }
 
 void
+mono_domain_unset (void)
+{
+	SET_APPDOMAIN (NULL);
+}
+
+void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception)
 {
 	MonoInternalThread *thread;

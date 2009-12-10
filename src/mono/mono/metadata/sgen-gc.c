@@ -6187,6 +6187,7 @@ unregister_current_thread (void)
 static void
 unregister_thread (void *k)
 {
+	g_assert (!mono_domain_get ());
 	LOCK_GC;
 	unregister_current_thread ();
 	UNLOCK_GC;
@@ -6235,6 +6236,7 @@ gc_start_thread (void *arg)
 	post_result = MONO_SEM_POST (&(start_info->registered));
 	g_assert (!post_result);
 	result = start_func (t_arg);
+	g_assert (!mono_domain_get ());
 	/*
 	 * this is done by the pthread key dtor
 	LOCK_GC;

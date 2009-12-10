@@ -361,6 +361,9 @@ void
 mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data) MONO_INTERNAL;
 
 void
+mono_domain_unset (void) MONO_INTERNAL;
+
+void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception) MONO_INTERNAL;
 
 /* 
