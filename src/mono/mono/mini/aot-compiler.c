@@ -2185,7 +2185,7 @@ add_wrappers (MonoAotCompile *acfg)
 		token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		method = mono_get_method (acfg->image, token, NULL);
 
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED && !method->is_generic)
 			add_method (acfg, mono_marshal_get_synchronized_wrapper (method));
 	}
 
