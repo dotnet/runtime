@@ -114,8 +114,6 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	gboolean can_write = mono_breakpoint_clean_code (method_start, orig_code, 8, buf, sizeof (buf));
 
 	code = buf + 8;
-	if (mono_running_on_valgrind ())
-		can_write = FALSE;
 
 	/* go to the start of the call instruction
 	 *
@@ -132,7 +130,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 				/* Tell valgrind to recompile the patched code */
-				//VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
+				VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, code + 6);
 #endif
 		}
 	} else if (code [1] == 0xe9) {
