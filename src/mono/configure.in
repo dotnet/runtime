@@ -948,6 +948,31 @@ if test x$target_win32 = xno; then
 
 	AC_CHECK_FUNCS(sched_setaffinity)
 
+	dnl ****************************************************************
+	dnl *** Check for sched_setaffinity from glibc versions before   ***
+	dnl *** 2.3.4. The older versions of the function only take 2    ***
+	dnl *** parameters, not 3.                                       ***
+	dnl ***                                                          ***
+	dnl *** Because the interface change was not made in a minor     ***
+	dnl *** version rev, the __GLIBC__ and __GLIBC_MINOR__ macros    ***
+	dnl *** won't always indicate the interface sched_affinity has.  ***
+	dnl ****************************************************************
+	AC_MSG_CHECKING(for sched_setaffinity from glibc < 2.3.4)
+	AC_TRY_COMPILE([#include <sched.h>], [
+		int main() {
+            int mask = 1; 
+            sched_setaffinity(0, &mask);
+        }
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY, 1, [Have GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY])
+	], [
+		# We have the new, three-parameter version
+		AC_MSG_RESULT(no)
+	])
+
+
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
 	dnl *** (If we were using autoconf 2.50 we'd use AC_SYS_LARGEFILE) ***

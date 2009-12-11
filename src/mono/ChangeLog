@@ -1,3 +1,9 @@
+2009-12-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Applied patch from Matt McClellan (matt@mc-c.net). Add a check
+	for 2 parameter sched_setaffinity in older glibc versions. Fixes
+	#564000.
+
 2009-11-22  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Disable visibility attributes on cygwin.
