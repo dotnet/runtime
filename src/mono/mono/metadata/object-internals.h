@@ -1294,6 +1294,8 @@ void mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb) MO
 
 void        mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam) MONO_INTERNAL;
 void        mono_reflection_create_unmanaged_type (MonoReflectionType *type) MONO_INTERNAL;
+void        mono_reflection_register_with_runtime (MonoReflectionType *type) MONO_INTERNAL;
+
 void        mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArray **typed_args, MonoArray **named_args, CattrNamedArg **named_arg_info) MONO_INTERNAL;
 
 MonoArray* mono_param_get_objects_internal  (MonoDomain *domain, MonoMethod *method, MonoClass *refclass) MONO_INTERNAL;

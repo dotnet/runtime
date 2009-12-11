@@ -604,6 +604,7 @@ ICALL(MGENCL_2, "IsByRefImpl", ves_icall_type_isbyref)
 ICALL(MGENCL_3, "IsPointerImpl", ves_icall_type_ispointer)
 ICALL(MGENCL_4, "IsPrimitiveImpl", ves_icall_type_isprimitive)
 ICALL(MGENCL_5, "initialize", mono_reflection_generic_class_initialize)
+ICALL(MGENCL_6, "register_with_runtime", mono_reflection_register_with_runtime)
 
 /* note this is the same as above: unify */
 ICALL_TYPE(MGENM, "System.Reflection.MonoGenericMethod", MGENM_1)

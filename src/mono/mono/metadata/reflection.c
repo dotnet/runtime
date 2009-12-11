@@ -6197,6 +6197,10 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 	MonoArray *type_args;
 	int i;
 
+
+	/*This will only be fixed once we do full managed inflate of system types*/
+	/*g_assert (!geninst->byref);*/
+
 	if (!System_Reflection_MonoGenericClass) {
 		System_Reflection_MonoGenericClass = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "MonoGenericClass");
@@ -8792,6 +8796,24 @@ mono_reflection_create_unmanaged_type (MonoReflectionType *type)
 	mono_reflection_type_get_handle (type);
 }
 
+void
+mono_reflection_register_with_runtime (MonoReflectionType *type)
+{
+	MonoType *res = mono_reflection_type_get_handle (type);
+	MonoDomain *domain = mono_object_domain ((MonoObject*)type);
+
+	mono_loader_lock (); /*same locking as mono_type_get_object*/
+	mono_domain_lock (domain);
+
+	if (!domain->type_hash)
+		domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mymono_metadata_type_hash, 
+				(GCompareFunc)mymono_metadata_type_equal, MONO_HASH_VALUE_GC);
+	mono_g_hash_table_insert (domain->type_hash, res, type);
+
+	mono_domain_unlock (domain);
+	mono_loader_unlock ();
+}
+
 /**
  * LOCKING: Assumes the loader lock is held.
  */
@@ -10018,6 +10040,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 
 	MONO_ARCH_SAVE_REGS;
 
+	/*FIXME but this no longer should happen*/
 	if (!strcmp (rmethod->object.vtable->klass->name, "MethodBuilder")) {
 #ifndef DISABLE_REFLECTION_EMIT
 		MonoReflectionMethodBuilder *mb = NULL;
@@ -10060,6 +10083,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	inflated = mono_class_inflate_generic_method (method, &tmp_context);
 	imethod = (MonoMethodInflated *) inflated;
 
+	/*FIXME but I think this is no longer necessary*/
 	if (method->klass->image->dynamic) {
 		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
 		/*
