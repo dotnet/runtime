@@ -5049,7 +5049,10 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	MONO_ARCH_SAVE_REGS;
 
 	if (image->dynamic) {
-		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL);
+		MonoString *str = mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL);
+		if (mono_profiler_events & MONO_PROFILE_STRING_ALLOC)
+			mono_profiler_string_allocation (domain, str);
+		return str;
 	} else {
 		if (!mono_verifier_verify_string_signature (image, idx, NULL))
 			return NULL; /*FIXME we should probably be raising an exception here*/
@@ -5095,6 +5098,9 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 	o = mono_string_get_pinned (o);
 	mono_g_hash_table_insert (domain->ldstr_table, o, o);
 	ldstr_unlock ();
+
+	if (mono_profiler_events & MONO_PROFILE_STRING_ALLOC)
+		mono_profiler_string_allocation (domain, o);
 
 	return o;
 }

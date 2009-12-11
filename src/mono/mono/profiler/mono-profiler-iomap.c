@@ -22,6 +22,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/io-layer/mono-mutex.h>
 
+#define LOCATION_INDENT "        "
 #define BACKTRACE_SIZE 64
 
 typedef struct _MonoStackBacktraceInfo 
@@ -94,13 +95,14 @@ static void mismatched_stats_foreach_func (gpointer key, gpointer value, gpointe
 	StringLocation *location;
 	MonoProfiler *prof = (MonoProfiler*)user_data;
 	guint32 hash;
+	gboolean bannerShown = FALSE;
 
 	hash = do_calc_string_hash (0, stats->requestedName);
 	fprintf (stdout,
 		 "    Count: %u\n"
-		 "Requested: %s (hash: 0x%X)\n"
-		 "   Actual: %s (hash: 0x%X)\n",
-		 stats->count, stats->requestedName, hash, stats->actualName, do_calc_string_hash (0, stats->actualName));
+		 "Requested: %s\n"
+		 "   Actual: %s\n",
+		 stats->count, stats->requestedName, stats->actualName);
 
 	if (!prof->may_have_locations) {
 		fprintf (stdout, "\n");
@@ -108,12 +110,17 @@ static void mismatched_stats_foreach_func (gpointer key, gpointer value, gpointe
 	}
 
 	location = g_hash_table_lookup (prof->string_locations_hash, &hash);
-	if (location)
-		fprintf (stdout, "Locations:\n");
-
 	while (location) {
-		fprintf (stdout, "    %s", location->hint);
+		if (location->hint && strlen (location->hint) > 0) {
+			if (!bannerShown) {
+				fprintf (stdout, "Locations:\n");
+				bannerShown = TRUE;
+			}
+			fprintf (stdout, "%s", location->hint);
+		}
 		location = location->next;
+		if (location)
+			fprintf (stdout, LOCATION_INDENT "--\n");
 	}
 
 	fprintf (stdout, "\n");
@@ -349,10 +356,10 @@ static inline gchar *build_hint_from_stack (MonoDomain *domain, void **stack, gi
 			methodName = mono_method_full_name (method, TRUE);
 
 			if (location) {
-				append_report (&trace, "        %s in %s:%u\n", methodName, location->source_file, location->row);
+				append_report (&trace, LOCATION_INDENT "%s in %s:%u\n", methodName, location->source_file, location->row);
 				mono_debug_free_source_location (location);
 			} else
-				append_report (&trace, "        %s\n", methodName);
+				append_report (&trace, LOCATION_INDENT "%s\n", methodName);
 			g_free (methodName);
 		}
 
@@ -367,10 +374,10 @@ static inline gchar *build_hint_from_stack (MonoDomain *domain, void **stack, gi
 		methodName = mono_method_full_name (selectedMethod, TRUE);
 
 		if (location) {
-			hint = g_strdup_printf ("%s in %s:%u\n", methodName, location->source_file, location->row);
+			hint = g_strdup_printf (LOCATION_INDENT "%s in %s:%u\n", methodName, location->source_file, location->row);
 			mono_debug_free_source_location (location);
 		} else
-			hint = g_strdup_printf ("%s\n", methodName);
+			hint = g_strdup_printf (LOCATION_INDENT "%s\n", methodName);
 		g_free (methodName);
 	}
 
@@ -439,25 +446,19 @@ static void mono_portability_remember_string (MonoProfiler *prof, MonoDomain *do
 {
 	SavedString *head, *entry;
 
-	/* fprintf (stdout, "%s (%p, %p, %p)\n", __func__, prof, str, klass); */
-	if (!str || !domain || !runtime_initialized) {
-		/* fprintf (stdout, "\truntime not initialized or str null\n"); */
-		/* fflush (stdout); */
+	if (!str || !domain || !runtime_initialized)
 		return;
-	}
 
 	entry = (SavedString*)g_malloc0 (sizeof (SavedString));
 	entry->string = str;
 	entry->domain = domain;
 	entry->stack_entries = mono_stack_backtrace (prof, domain, entry->stack, BACKTRACE_SIZE);
-	/* fprintf (stdout, "\tstack_entries == %u\n", entry->stack_entries); */
-	/* fflush (stdout); */
 	if (entry->stack_entries == 0) {
 		g_free (entry);
 		return;
 	}
-	
-	//mono_mutex_lock (&mismatched_files_section);
+
+	mono_mutex_lock (&mismatched_files_section);
 	head = (SavedString*)g_hash_table_lookup (prof->saved_strings_hash, (gpointer)str);
 	if (head) {
 		while (head->next)
@@ -465,7 +466,7 @@ static void mono_portability_remember_string (MonoProfiler *prof, MonoDomain *do
 		head->next = entry;
 	} else
 		g_hash_table_insert (prof->saved_strings_hash, (gpointer)str, (gpointer)entry);
-	//mono_mutex_unlock (&mismatched_files_section);
+	mono_mutex_unlock (&mismatched_files_section);
 }
 
 static void mono_portability_iomap_event (MonoProfiler *prof, const char *report, const char *pathname, const char *new_pathname)
