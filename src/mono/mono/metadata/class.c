@@ -5931,6 +5931,8 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
 
+		g_warning ("Error loading type %s from %s due to %s", name, assembly, mono_error_get_message (&error));
+
 		mono_error_cleanup (&error);
 		mono_loader_set_error_type_load (name, assembly);
 		return NULL;
