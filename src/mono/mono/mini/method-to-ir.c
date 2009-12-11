@@ -49,6 +49,8 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/profiler-private.h>
+#include <mono/metadata/profiler.h>
 #include <mono/utils/mono-compiler.h>
 
 #include "mini.h"
@@ -4189,7 +4191,7 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 {
 	if (method->klass == mono_defaults.string_class) {
 		/* managed string allocation support */
-		if (strcmp (method->name, "InternalAllocateStr") == 0) {
+		if (strcmp (method->name, "InternalAllocateStr") == 0 && !(mono_profiler_events & MONO_PROFILE_STRING_ALLOC)) {
 			MonoInst *iargs [2];
 			MonoVTable *vtable = mono_class_vtable (cfg->domain, method->klass);
 			MonoMethod *managed_alloc = NULL;

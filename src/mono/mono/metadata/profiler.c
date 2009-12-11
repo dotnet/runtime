@@ -60,6 +60,7 @@ static MonoProfileMethodFunc   method_start_invoke;
 static MonoProfileMethodFunc   method_end_invoke;
 static MonoProfileMethodResult man_unman_transition;
 static MonoProfileAllocFunc    allocation_cb;
+static MonoProfileStringAllocFunc string_allocation_cb;
 static MonoProfileMonitorFunc  monitor_event_cb;
 static MonoProfileStatFunc     statistical_cb;
 static MonoProfileStatCallChainFunc statistical_call_chain_cb;
@@ -71,6 +72,8 @@ static MonoProfileMethodFunc   method_leave;
 static MonoProfileExceptionFunc	exception_throw_cb;
 static MonoProfileMethodFunc exception_method_leave_cb;
 static MonoProfileExceptionClauseFunc exception_clause_cb;
+
+static MonoProfileIomapFunc iomap_cb;
 
 static MonoProfileThreadFunc   thread_start;
 static MonoProfileThreadFunc   thread_end;
@@ -210,6 +213,12 @@ void
 mono_profiler_install_allocation (MonoProfileAllocFunc callback)
 {
 	allocation_cb = callback;
+}
+
+void 
+mono_profiler_install_string_allocation (MonoProfileStringAllocFunc callback)
+{
+	string_allocation_cb = callback;
 }
 
 void
@@ -377,6 +386,13 @@ mono_profiler_allocation (MonoObject *obj, MonoClass *klass)
 }
 
 void
+mono_profiler_string_allocation (MonoDomain *domain, MonoString *str)
+{
+	if ((mono_profiler_events & MONO_PROFILE_STRING_ALLOC) && string_allocation_cb)
+		string_allocation_cb (current_profiler, domain, str);
+}
+
+void
 mono_profiler_monitor_event      (MonoObject *obj, MonoProfilerMonitorEvent event) {
 	if ((mono_profiler_events & MONO_PROFILE_MONITOR_EVENTS) && monitor_event_cb) {
 		monitor_event_cb (current_profiler, obj, event);
@@ -461,6 +477,12 @@ mono_profiler_assembly_loaded (MonoAssembly *assembly, int result)
 {
 	if ((mono_profiler_events & MONO_PROFILE_ASSEMBLY_EVENTS) && assembly_end_load)
 		assembly_end_load (current_profiler, assembly, result);
+}
+
+void mono_profiler_iomap (char *report, const char *pathname, const char *new_pathname)
+{
+	if ((mono_profiler_events && MONO_PROFILE_IOMAP_EVENTS) && iomap_cb)
+		iomap_cb (current_profiler, report, pathname, new_pathname);
 }
 
 void 
@@ -624,6 +646,13 @@ void
 mono_profiler_install_code_buffer_new (MonoProfilerCodeBufferNew callback) {
 	code_buffer_new = callback;
 }
+
+void
+mono_profiler_install_iomap (MonoProfileIomapFunc callback)
+{
+	iomap_cb = callback;
+}
+
 void
 mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeBufferType type, void *data) {
 	if (code_buffer_new)

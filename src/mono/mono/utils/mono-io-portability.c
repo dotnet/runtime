@@ -12,6 +12,8 @@
 #include <mono/metadata/object.h>
 #include <mono/utils/mono-hash.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/profiler.h>
+#include <mono/metadata/profiler-private.h>
 
 #ifdef DISABLE_PORTABILITY
 int __mono_io_portability_helpers = PORTABILITY_NONE;
@@ -30,62 +32,11 @@ mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 
 #else
 
-typedef struct 
-{
-	guint32 count;
-	gchar *requestedName;
-	gchar *actualName;
-} MismatchedFilesStats;
-
-static CRITICAL_SECTION mismatched_files_section;
-static MonoGHashTable *mismatched_files_hash = NULL;
-
-static inline gchar *mono_portability_find_file_internal (GString **report, gboolean *differs, const gchar *pathname, gboolean last_exists);
-static inline void append_report (GString **report, const gchar *format, ...);
-static inline void print_report (const gchar *report);
-static inline guint32 calc_strings_hash (const gchar *str1, const gchar *str2);
-static void print_mismatched_stats_at_exit (void);
-
 #include <dirent.h>
 
 int __mono_io_portability_helpers = PORTABILITY_UNKNOWN;
 
-static void mismatched_stats_foreach_func (gpointer key, gpointer value, gpointer user_data)
-{
-	MismatchedFilesStats *stats = (MismatchedFilesStats*)value;
-
-	fprintf (stdout,
-		 "    Count: %u\n"
-		 "Requested: %s\n"
-		 "   Actual: %s\n\n",
-		 stats->count, stats->requestedName, stats->actualName);
-}
-
-static void print_mismatched_stats_at_exit (void)
-{
-	if (!mismatched_files_hash || mono_g_hash_table_size (mismatched_files_hash) == 0)
-		return;
-
-	fprintf (stdout, "\n-=-=-=-=-=-=-= MONO_IOMAP Stats -=-=-=-=-=-=-=\n");
-	mono_g_hash_table_foreach (mismatched_files_hash, mismatched_stats_foreach_func, NULL);
-	fflush (stdout);
-}
-
-static guint mismatched_files_guint32_hash (gconstpointer key)
-{
-	if (!key)
-		return 0;
-
-	return *((guint32*)key);
-}
-
-static gboolean mismatched_files_guint32_equal (gconstpointer key1, gconstpointer key2)
-{
-	if (!key1 || !key2)
-		return FALSE;
-
-	return (gboolean)(*((guint32*)key1) == *((guint32*)key2));
-}
+static inline gchar *mono_portability_find_file_internal (GString **report, const gchar *pathname, gboolean last_exists);
 
 void mono_portability_helpers_init (void)
 {
@@ -120,17 +71,8 @@ void mono_portability_helpers_init (void)
                                 __mono_io_portability_helpers |= PORTABILITY_CASE;
                         } else if (!strncasecmp (options[i], "all", 3)) {
                                 __mono_io_portability_helpers |= (PORTABILITY_DRIVE | PORTABILITY_CASE);
-			} else if (!strncasecmp (options[i], "report", 7)) {
-				__mono_io_portability_helpers |= PORTABILITY_REPORT;
 			}
                 }
-	}
-
-	if (IS_PORTABILITY_REPORT) {
-		InitializeCriticalSection (&mismatched_files_section);
-		MONO_GC_REGISTER_ROOT (mismatched_files_hash);
-		mismatched_files_hash = mono_g_hash_table_new (mismatched_files_guint32_hash, mismatched_files_guint32_equal);
-		g_atexit (print_mismatched_stats_at_exit);
 	}
 }
 
@@ -171,47 +113,6 @@ static gchar *find_in_dir (DIR *current, const gchar *name)
 	return(NULL);
 }
 
-static inline guint32 do_calc_string_hash (guint32 hash, const gchar *str)
-{
-	guint32 ret = hash;
-	gchar *cc = (gchar*)str;
-	gchar *end = (gchar*)(str + strlen (str) - 1);
-
-	for (; cc < end; cc += 2) {
-		ret = (ret << 5) - ret + *cc;
-		ret = (ret << 5) - ret + cc [1];
-	}
-	end++;
-	if (cc < end)
-		ret = (ret << 5) - ret + *cc;
-
-	return ret;
-}
-
-static inline guint32 calc_strings_hash (const gchar *str1, const gchar *str2)
-{
-	return do_calc_string_hash (do_calc_string_hash (0, str1), str2);
-}
-
-static inline void print_report (const gchar *report)
-{
-	MonoClass *klass;
-	MonoProperty *prop;
-	MonoString *str;
-	char *stack_trace;
-
-	fprintf (stdout, "-=-=-=-=-=-=- MONO_IOMAP REPORT -=-=-=-=-=-=-\n%s\n", report);
-	klass = mono_class_from_name (mono_defaults.corlib, "System", "Environment");
-	mono_class_init (klass);
-	prop = mono_class_get_property_from_name (klass, "StackTrace");
-	str = (MonoString*)mono_property_get_value (prop, NULL, NULL, NULL);
-	stack_trace = mono_string_to_utf8 (str);
-
-	fprintf (stdout, "-= Stack Trace =-\n%s\n\n", stack_trace);
-	g_free (stack_trace);
-	fflush (stdout);
-}
-
 static inline void append_report (GString **report, const gchar *format, ...)
 {
 #if GLIB_CHECK_VERSION(2,14,0)
@@ -227,32 +128,43 @@ static inline void append_report (GString **report, const gchar *format, ...)
 #endif
 }
 
+static inline void do_mono_profiler_iomap (GString **report, const char *pathname, const char *new_pathname)
+{
+	char *rep = NULL;
+	GString *tmp = report ? *report : NULL;
+
+	if (tmp) {
+		if (tmp->len > 0)
+			rep = g_string_free (tmp, FALSE);
+		else
+			g_string_free (tmp, TRUE);
+		*report = NULL;
+	}
+
+	mono_profiler_iomap (rep, pathname, new_pathname);
+	g_free (rep);
+}
+
 gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 {
 	GString *report = NULL;
-	gboolean differs = FALSE;
-	gchar *ret =  mono_portability_find_file_internal (&report, &differs, pathname, last_exists);
-	if (report) {
-		if (report->len && differs) {
-			char *rep = g_string_free (report, FALSE);
-			print_report (rep);
-			g_free (rep);
-		} else
-			g_string_free (report, TRUE);
-	}
+	gchar *ret = mono_portability_find_file_internal (&report, pathname, last_exists);
+
+	if (report)
+		g_string_free (report, TRUE);
 
 	return ret;
 }
 
 /* Returns newly-allocated string or NULL on failure */
-static inline gchar *mono_portability_find_file_internal (GString **report, gboolean *differs, const gchar *pathname, gboolean last_exists)
+static inline gchar *mono_portability_find_file_internal (GString **report, const gchar *pathname, gboolean last_exists)
 {
 	gchar *new_pathname, **components, **new_components;
 	int num_components = 0, component = 0;
 	DIR *scanning = NULL;
 	size_t len;
-	gboolean do_report = IS_PORTABILITY_REPORT;
 	gboolean drive_stripped = FALSE;
+	gboolean do_report = (mono_profiler_get_events () & MONO_PROFILE_IOMAP_EVENTS) != 0;
 
 	if (IS_PORTABILITY_NONE) {
 		return(NULL);
@@ -260,6 +172,7 @@ static inline gchar *mono_portability_find_file_internal (GString **report, gboo
 
 	if (do_report)
 		append_report (report, " - Requested file path: '%s'\n", pathname);
+
 	new_pathname = g_strdup (pathname);
 	
 #ifdef DEBUG
@@ -316,7 +229,7 @@ static inline gchar *mono_portability_find_file_internal (GString **report, gboo
 		g_message ("%s: Found it\n", __func__);
 #endif
 		if (do_report && drive_stripped)
-			*differs = TRUE;
+			do_mono_profiler_iomap (report, pathname, new_pathname);
 
 		return(new_pathname);
 	}
@@ -487,38 +400,13 @@ static inline gchar *mono_portability_find_file_internal (GString **report, gboo
 	if ((last_exists &&
 	     access (new_pathname, F_OK) == 0) ||
 	    (!last_exists)) {
-		if (do_report && strcmp (pathname, new_pathname) != 0) {
-			guint32 hash;
-			MismatchedFilesStats *stats;
+		if (do_report && strcmp (pathname, new_pathname) != 0)
+			do_mono_profiler_iomap (report, pathname, new_pathname);
 
-			EnterCriticalSection (&mismatched_files_section);
-			hash = calc_strings_hash (pathname, new_pathname);
-			stats = (MismatchedFilesStats*)mono_g_hash_table_lookup (mismatched_files_hash, &hash);
-			if (stats == NULL) {
-				guint32 *hashptr;
-
-				stats = (MismatchedFilesStats*) g_malloc (sizeof (MismatchedFilesStats));
-				stats->count = 1;
-				stats->requestedName = g_strdup (pathname);
-				stats->actualName = g_strdup (new_pathname);
-				hashptr = (guint32*)g_malloc (sizeof (guint32));
-				*hashptr = hash;
-				mono_g_hash_table_insert (mismatched_files_hash, (gpointer)hashptr, stats);
-
-				*differs = TRUE;
-				append_report (report, " - Found file path: '%s'\n", new_pathname);
-			} else {
-				stats->count++;
-				LeaveCriticalSection (&mismatched_files_section);
-			}
-		}
-		
 		return(new_pathname);
 	}
-	
+
 	g_free (new_pathname);
 	return(NULL);
 }
-
-
 #endif

@@ -22,6 +22,8 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/profiler.h>
+#include <mono/metadata/profiler-private.h>
 
 /* Internal helper methods */
 
@@ -209,7 +211,14 @@ ves_icall_System_String_InternalAllocateStr (gint32 length)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return mono_string_new_size(mono_domain_get (), length);
+	if (mono_profiler_events & MONO_PROFILE_STRING_ALLOC) {
+		MonoDomain *domain = mono_domain_get ();
+		MonoString *str = mono_string_new_size (domain, length);
+
+		mono_profiler_string_allocation (domain, str);
+		return str;
+	} else
+		return mono_string_new_size(mono_domain_get (), length);
 }
 
 MonoString  *
