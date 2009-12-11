@@ -324,10 +324,17 @@ mono_gc_weak_link_remove (void **link_addr)
 	*link_addr = NULL;
 }
 
+static gpointer
+reveal_link (gpointer link_addr)
+{
+	void **link_a = link_addr;
+	return REVEAL_POINTER (*link_a);
+}
+
 MonoObject*
 mono_gc_weak_link_get (void **link_addr)
 {
-	MonoObject *obj = REVEAL_POINTER (*link_addr);
+	MonoObject *obj = GC_call_with_alloc_lock (reveal_link, link_addr);
 	if (obj == (MonoObject *) -1)
 		return NULL;
 	return obj;
