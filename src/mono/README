@@ -396,6 +396,19 @@ This is Mono.
 			framework, and the various SSA-based
 		  	optimizations.
 
+	--enable-llvm
+
+		This enables the use of LLVM as a code generation engine
+		for Mono.  The LLVM code generator and optimizer will be 
+		used instead of Mono's built-in code generator for both
+		Just in Time and Ahead of Time compilations.
+
+		See the http://www.mono-project.com/Mono_LLVM for the 
+		full details and up-to-date information on this feature.
+
+		You will need to have an LLVM built that Mono can link
+		against
+
 	--enable-big-arrays
 
 		This enables the use arrays whose indexes are larger
