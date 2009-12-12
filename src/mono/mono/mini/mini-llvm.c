@@ -2278,7 +2278,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				virtual = (ins->opcode == OP_VOIDCALL_MEMBASE || ins->opcode == OP_CALL_MEMBASE || ins->opcode == OP_VCALL_MEMBASE || ins->opcode == OP_LCALL_MEMBASE || ins->opcode == OP_FCALL_MEMBASE);
 				calli = (ins->opcode == OP_VOIDCALL_REG || ins->opcode == OP_CALL_REG || ins->opcode == OP_VCALL_REG || ins->opcode == OP_LCALL_REG || ins->opcode == OP_FCALL_REG);
 
-				pindexes = mono_mempool_alloc0 (cfg->mempool, sig->param_count + 2);
+				pindexes = mono_mempool_alloc0 (cfg->mempool, (sig->param_count + 2) * sizeof (guint32));
 
 				/* FIXME: Avoid creating duplicate methods */
 
