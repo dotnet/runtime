@@ -3660,18 +3660,45 @@ mono_debugger_agent_handle_unhandled_exception (MonoException *exc, MonoContext 
 }
 
 /*
- * buffer_add_value:
+ * buffer_add_value_full:
  *
  *   Add the encoding of the value at ADDR described by T to the buffer.
+ * AS_VTYPE determines whenever to treat primitive types as primitive types or
+ * vtypes.
  */
 static void
-buffer_add_value (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain)
+buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
+					   gboolean as_vtype)
 {
 	MonoObject *obj;
 
 	if (t->byref) {
 		g_assert (*(void**)addr);
 		addr = *(void**)addr;
+	}
+
+	if (as_vtype) {
+		switch (t->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+			goto handle_vtype;
+			break;
+		default:
+			break;
+		}
 	}
 
 	switch (t->type) {
@@ -3766,7 +3793,7 @@ buffer_add_value (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain)
 				continue;
 			if (mono_field_is_deleted (f))
 				continue;
-			buffer_add_value (buf, f->type, (guint8*)addr + f->offset - sizeof (MonoObject), domain);
+			buffer_add_value_full (buf, f->type, (guint8*)addr + f->offset - sizeof (MonoObject), domain, FALSE);
 		}
 		break;
 	}
@@ -3780,6 +3807,12 @@ buffer_add_value (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain)
 	default:
 		NOT_IMPLEMENTED;
 	}
+}
+
+static void
+buffer_add_value (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain)
+{
+	buffer_add_value_full (buf, t, addr, domain, FALSE);
 }
 
 static ErrorCode
@@ -3896,7 +3929,7 @@ decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 }
 
 static void
-add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domain)
+add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domain, gboolean as_vtype)
 {
 	guint32 flags;
 	int reg;
@@ -3910,7 +3943,7 @@ add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, Mono
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
 		reg_val = mono_arch_context_get_int_reg (ctx, reg);
 
-		buffer_add_value (buf, t, &reg_val, domain);
+		buffer_add_value_full (buf, t, &reg_val, domain, as_vtype);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 		addr = mono_arch_context_get_int_reg (ctx, reg);
@@ -3918,7 +3951,7 @@ add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, Mono
 
 		//printf ("[R%d+%d] = %p\n", reg, var->offset, addr);
 
-		buffer_add_value (buf, t, addr, domain);
+		buffer_add_value_full (buf, t, addr, domain, as_vtype);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		NOT_IMPLEMENTED;
@@ -5513,13 +5546,13 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 				var = &jit->params [pos];
 
-				add_var (buf, sig->params [pos], &jit->params [pos], &frame->ctx, frame->domain);
+				add_var (buf, sig->params [pos], &jit->params [pos], &frame->ctx, frame->domain, FALSE);
 			} else {
 				g_assert (pos >= 0 && pos < jit->num_locals);
 
 				var = &jit->locals [pos];
 				
-				add_var (buf, header->locals [pos], &jit->locals [pos], &frame->ctx, frame->domain);
+				add_var (buf, header->locals [pos], &jit->locals [pos], &frame->ctx, frame->domain, FALSE);
 			}
 		}
 		break;
@@ -5530,14 +5563,14 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				MonoObject *p = NULL;
 				buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &p, frame->domain);
 			} else {
-				add_var (buf, &frame->method->klass->this_arg, jit->this_var, &frame->ctx, frame->domain);
+				add_var (buf, &frame->method->klass->this_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
 			}
 		} else {
 			if (!sig->hasthis) {
 				MonoObject *p = NULL;
 				buffer_add_value (buf, &frame->method->klass->byval_arg, &p, frame->domain);
 			} else {
-				add_var (buf, &frame->method->klass->byval_arg, jit->this_var, &frame->ctx, frame->domain);
+				add_var (buf, &frame->method->klass->byval_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
 			}
 		}
 		break;
