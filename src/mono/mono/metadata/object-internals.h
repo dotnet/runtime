@@ -1104,7 +1104,7 @@ struct _MonoReflectionGenericClass {
 	MonoReflectionType type;
 	/* From System.MonoType */
 	MonoObject *type_info;
-	MonoReflectionTypeBuilder *generic_type;
+	MonoReflectionType *generic_type; /*Can be either a MonoType or a TypeBuilder*/
 	MonoArray *type_arguments;
 	guint32 initialized;
 };
@@ -1205,19 +1205,19 @@ typedef struct {
 typedef struct {
 	MonoObject object;
 	MonoReflectionGenericClass *inst;
-	MonoReflectionFieldBuilder *fb;
+	MonoObject *fb; /*can be either a MonoField or a FieldBuilder*/
 } MonoReflectionFieldOnTypeBuilderInst;
 
 typedef struct {
 	MonoObject object;
 	MonoReflectionGenericClass *inst;
-	MonoReflectionCtorBuilder *cb;
+	MonoObject *cb; /*can be either a MonoCMethod or ConstructorBuilder*/
 } MonoReflectionCtorOnTypeBuilderInst;
 
 typedef struct {
 	MonoObject object;
 	MonoReflectionType *inst;
-	MonoReflectionMethodBuilder *mb;
+	MonoObject *mb; /*can be either a MonoMethod or MethodBuilder*/
 	MonoArray *method_args;
 	MonoReflectionMethodBuilder *generic_method_definition;
 } MonoReflectionMethodOnTypeBuilderInst;
