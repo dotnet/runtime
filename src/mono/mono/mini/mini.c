@@ -500,8 +500,14 @@ mono_find_block_region_notry (MonoCompile *cfg, int offset)
 	return -1;
 }
 
-MonoInst *
-mono_find_spvar_for_region (MonoCompile *cfg, int region)
+/*
+ * mono_get_block_region_notry:
+ *
+ *   Return the region corresponding to REGION, ignoring try clauses nested inside
+ * finally clauses.
+ */
+int
+mono_get_block_region_notry (MonoCompile *cfg, int region)
 {
 	if ((region & (0xf << 4)) == MONO_REGION_TRY) {
 		MonoMethodHeader *header = mono_method_get_header (cfg->method);
@@ -515,13 +521,15 @@ mono_find_spvar_for_region (MonoCompile *cfg, int region)
 		region = mono_find_block_region_notry (cfg, header->clauses [clause_index].try_offset);
 	}
 
-	return g_hash_table_lookup (cfg->spvars, GINT_TO_POINTER (region));
+	return region;
 }
 
-static MonoInst *
-mono_find_exvar_for_offset (MonoCompile *cfg, int offset)
+MonoInst *
+mono_find_spvar_for_region (MonoCompile *cfg, int region)
 {
-	return g_hash_table_lookup (cfg->exvars, GINT_TO_POINTER (offset));
+	region = mono_get_block_region_notry (cfg, region);
+
+	return g_hash_table_lookup (cfg->spvars, GINT_TO_POINTER (region));
 }
 
 static void
@@ -3847,6 +3855,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
+		if (!cfg->disable_llvm && header->num_clauses && cfg->llvm_ex_info_len != header->num_clauses) {
+			cfg->exception_message = g_strdup ("clause num mismatch.");
+			cfg->disable_llvm = TRUE;
+		}
 		if (cfg->disable_llvm) {
 			if (cfg->verbose_level >= 1) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
@@ -3971,17 +3983,24 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 				ei->data.catch_class = ec->data.catch_class;
 			}
 
-			tblock = cfg->cil_offset_to_bb [ec->try_offset];
-			g_assert (tblock);
-			ei->try_start = cfg->native_code + tblock->native_offset;
-			g_assert (tblock->native_offset);
-			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
-			g_assert (tblock);
-			ei->try_end = cfg->native_code + tblock->native_offset;
-			g_assert (tblock->native_offset);
-			tblock = cfg->cil_offset_to_bb [ec->handler_offset];
-			g_assert (tblock);
-			ei->handler_start = cfg->native_code + tblock->native_offset;
+			if (COMPILE_LLVM (cfg)) {
+				g_assert (cfg->llvm_ex_info && i < cfg->llvm_ex_info_len);
+				ei->try_start = cfg->llvm_ex_info [i].try_start;
+				ei->try_end = cfg->llvm_ex_info [i].try_end;
+				ei->handler_start = cfg->llvm_ex_info [i].handler_start;
+			} else {
+				tblock = cfg->cil_offset_to_bb [ec->try_offset];
+				g_assert (tblock);
+				ei->try_start = cfg->native_code + tblock->native_offset;
+				g_assert (tblock->native_offset);
+				tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
+				g_assert (tblock);
+				ei->try_end = cfg->native_code + tblock->native_offset;
+				g_assert (tblock->native_offset);
+				tblock = cfg->cil_offset_to_bb [ec->handler_offset];
+				g_assert (tblock);
+				ei->handler_start = cfg->native_code + tblock->native_offset;
+			}
 		}
 	}
 

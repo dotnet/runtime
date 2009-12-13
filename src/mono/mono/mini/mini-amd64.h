@@ -195,6 +195,8 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->rbp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->rsp))
 
+#define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->rax = (gsize)exc; } while (0)
+
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 #ifdef _MSC_VER

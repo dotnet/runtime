@@ -532,7 +532,7 @@ mono_create_spvar_for_region (MonoCompile *cfg, int region)
 	g_hash_table_insert (cfg->spvars, GINT_TO_POINTER (region), var);
 }
 
-static MonoInst *
+MonoInst *
 mono_find_exvar_for_offset (MonoCompile *cfg, int offset)
 {
 	return g_hash_table_lookup (cfg->exvars, GINT_TO_POINTER (offset));
@@ -9059,6 +9059,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->inst_target_bb = tblock;
 					MONO_ADD_INS (bblock, ins);
 					bblock->has_call_handler = 1;
+					if (COMPILE_LLVM (cfg)) {
+						MonoBasicBlock *target_bb;
+
+						/* 
+						 * Link the finally bblock with the target, since it will
+						 * conceptually branch there.
+						 * FIXME: Have to link the bblock containing the endfinally.
+						 */
+						GET_BBLOCK (cfg, target_bb, target);
+						link_bblock (cfg, tblock, target_bb);
+					}
 				}
 				g_list_free (handlers);
 			} 

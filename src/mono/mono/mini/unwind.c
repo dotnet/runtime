@@ -607,15 +607,28 @@ decode_cie_op (guint8 *p, guint8 **endp)
 	*endp = p;
 }
 
+/* Pointer Encoding in the .eh_frame */
+enum {
+    DW_EH_PE_absptr = 0x00,
+    DW_EH_PE_omit = 0xff,
+
+    DW_EH_PE_udata4 = 0x03,
+	DW_EH_PE_sdata4 = 0x0b,
+	DW_EH_PE_sdata8 = 0x0c,
+	DW_EH_PE_pcrel = 0x10
+};
+
 /*
- * mono_unwind_get_ops_from_fde:
+ * mono_unwind_decode_fde:
  *
- *   Return the unwind opcodes encoded in a DWARF FDE entry.
+ *   Decode a DWARF FDE entry, returning the unwind opcodes.
+ * If not NULL, EX_INFO is set to a malloc-ed array of MonoJitExceptionInfo structures,
+ * only try_start, try_end and handler_start is set.
  */
 guint8*
-mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len, guint32 *code_len)
+mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len)
 {
-	guint8 *p, *cie, *code, *fde_cfi, *cie_cfi;
+	guint8 *p, *cie, *fde_current, *fde_aug, *code, *fde_cfi, *cie_cfi;
 	gint32 fde_len, cie_offset, pc_begin, pc_range, aug_len, fde_data_len;
 	gint32 cie_len, cie_id, cie_version, code_align, data_align, return_reg;
 	gint32 i, cie_aug_len, buf_len;
@@ -636,18 +649,7 @@ mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len, guint32 *code_len)
 	cie_offset = *(guint32*)p;
 	cie = p - cie_offset;
 	p += 4;
-	pc_begin = *(gint32*)p;
-	code = p + pc_begin;
-	p += 4;
-	pc_range = *(guint32*)p;
-	p += 4;
-	aug_len = decode_uleb128 (p, &p);
-	g_assert (aug_len == 0);
-	fde_cfi = p;
-	fde_data_len = fde + 4 + fde_len - p;
-
-	if (code_len)
-		*code_len = pc_range;
+	fde_current = p;
 
 	/* Decode CIE */
 	p = cie;
@@ -666,9 +668,137 @@ mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len, guint32 *code_len)
 	return_reg = decode_uleb128 (p, &p);
 	if (strstr (cie_aug_str, "z")) {
 		cie_aug_len = decode_uleb128 (p, &p);
+
+		g_assert (!strcmp (cie_aug_str, "zR") || !strcmp (cie_aug_str, "zPLR"));
+
+		/* Check that the augmention is what we expect */
+		if (!strcmp (cie_aug_str, "zPLR")) {
+			guint8 *cie_aug = p;
+
+			g_assert (cie_aug_len == sizeof (gpointer) + 3);
+			/* P */
+			/* FIXME: 32 bit */
+			g_assert (cie_aug [0] == DW_EH_PE_sdata8);
+			/* L */
+			g_assert (cie_aug [1 + sizeof (gpointer)] == (DW_EH_PE_sdata4|DW_EH_PE_pcrel));
+			/* R */
+			g_assert (cie_aug [1 + sizeof (gpointer) + 1] == (DW_EH_PE_sdata4|DW_EH_PE_pcrel));
+		}
 		p += cie_aug_len;
 	}
 	cie_cfi = p;
+
+	/* Continue decoding FDE */
+	p = fde_current;
+	/* DW_EH_PE_sdata4|DW_EH_PE_pcrel encoding */
+	pc_begin = *(gint32*)p;
+	code = p + pc_begin;
+	p += 4;
+	pc_range = *(guint32*)p;
+	p += 4;
+	aug_len = decode_uleb128 (p, &p);
+	fde_aug = p;
+	p += aug_len;
+	fde_cfi = p;
+	fde_data_len = fde + 4 + fde_len - p;
+
+	if (code_len)
+		*code_len = pc_range;
+
+	if (ex_info) {
+		*ex_info = NULL;
+		*ex_info_len = 0;
+	}
+
+	/* Decode FDE augmention */
+	if (aug_len) {
+		gint32 lsda_offset, cio_offset, call_site_length;
+		gint32 call_site_encoding;
+		guint8 *lsda, *class_info, *action_table, *call_site, *p;
+		int i, ncall_sites;
+
+		/* 
+		 * For some reason, this is 8 bytes long, even through it only includes
+		 * the offset to the LSDA which is encoded as an sdata4.
+		 */
+		g_assert (aug_len == 8);
+		/* sdata|pcrel encoding */
+		lsda_offset = *(gint32*)fde_aug;
+		if (lsda_offset != 0) {
+			lsda = fde_aug + *(gint32*)fde_aug;
+
+			/*
+			 * LLVM generates a c++ style LSDA, which can be decoded by looking at
+			 * eh_personality.cc in gcc.
+			 */
+			p = lsda;
+
+			/* Read @LPStart */
+			g_assert (*p == DW_EH_PE_omit);
+			p ++;
+
+			/* Read @TType */
+			g_assert (*p == DW_EH_PE_absptr);
+			p ++;
+			cio_offset = decode_uleb128 (p, &p);
+			class_info = lsda + cio_offset;
+
+			/* Read call-site table */
+			call_site_encoding = *p;
+			g_assert (call_site_encoding == DW_EH_PE_udata4);
+			p ++;
+			call_site_length = decode_uleb128 (p, &p);
+			call_site = p;
+			p += call_site_length;
+			action_table = p;
+
+			/* Calculate the size of our table */
+			ncall_sites = 0;
+			p = call_site;
+			while (p < action_table) {
+				int block_start_offset, block_size, landing_pad, action_offset;
+
+				block_start_offset = ((guint32*)p) [0];
+				block_size = ((guint32*)p) [1];
+				landing_pad = ((guint32*)p) [2];
+				p += 3 * sizeof (guint32);
+				action_offset = decode_uleb128 (p, &p);
+
+				/* landing_pad == 0 means the region has no landing pad */
+				if (landing_pad)
+					ncall_sites ++;
+			}
+
+			if (ex_info) {
+				*ex_info = g_malloc0 (ncall_sites * sizeof (MonoJitExceptionInfo));
+				*ex_info_len = ncall_sites;
+			}
+
+			p = call_site;
+			i = 0;
+			while (p < action_table) {
+				int block_start_offset, block_size, landing_pad, action_offset;
+
+				block_start_offset = ((guint32*)p) [0];
+				block_size = ((guint32*)p) [1];
+				landing_pad = ((guint32*)p) [2];
+				p += 3 * sizeof (guint32);
+				action_offset = decode_uleb128 (p, &p);
+
+				if (landing_pad) {
+					//printf ("BLOCK: %p-%p %p, %d\n", code + block_start_offset, code + block_start_offset + block_size, code + landing_pad, action_offset);
+
+					if (ex_info) {
+						(*ex_info)[i].try_start = code + block_start_offset;
+						(*ex_info)[i].try_end = code + block_start_offset + block_size;
+						(*ex_info)[i].handler_start = code + landing_pad;
+					}
+					i ++;
+				}
+			}
+		}
+	}
+
 
 	/* Make sure the FDE uses the same constants as we do */
 	g_assert (code_align == 1);

@@ -1101,9 +1101,10 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
  * @test_only: only test if the exception is caught, but dont call handlers
  * @out_filter_idx: out parameter. if test_only is true, set to the index of 
  * the first filter clause which caught the exception.
+ * @resume: whenever to resume unwinding based on the state in MonoJitTlsData.
  */
 static gboolean
-mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, gint32 *out_filter_idx, MonoJitInfo **out_ji)
+mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, gboolean resume, gint32 *out_filter_idx, MonoJitInfo **out_ji)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
@@ -1175,7 +1176,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		if (mono_trace_is_enabled ())
 			g_print ("[%p:] EXCEPTION handling: %s\n", (void*)GetCurrentThreadId (), mono_object_class (obj)->name);
 		mono_profiler_exception_thrown (obj);
-		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, &first_filter_idx, out_ji)) {
+		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, FALSE, &first_filter_idx, out_ji)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
 			// FIXME: This runs managed code so it might cause another stack overflow when
@@ -1268,8 +1269,16 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						MonoClass *catch_class = get_exception_catch_class (ei, ji, ctx);
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
-							/* store the exception object in bp + ei->exvar_offset */
-							*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = obj;
+							if (ji->from_llvm) {
+#ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
+								MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, obj);
+#else
+								g_assert_not_reached ();
+#endif
+							} else {
+								/* store the exception object in bp + ei->exvar_offset */
+								*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = obj;
+							}
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
@@ -1336,7 +1345,23 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							mono_perfcounters->exceptions_finallys++;
 							*(mono_get_lmf_addr ()) = lmf;
-							call_filter (ctx, ei->handler_start);
+							if (ji->from_llvm) {
+								/* 
+								 * LLVM compiled finally handlers follow the design
+								 * of the c++ ehabi, i.e. they call a resume function
+								 * at the end instead of returning to the caller.
+								 * So save the exception handling state,
+								 * mono_resume_unwind () will call us again to continue
+								 * the unwinding.
+								 */
+								MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
+								*(mono_get_lmf_addr ()) = lmf;
+								jit_tls->ex_ctx = new_ctx;
+								jit_tls->ex_obj = obj;
+								return 0;
+							} else {
+								call_filter (ctx, ei->handler_start);
+							}
 						}
 						
 					}
@@ -1413,7 +1438,7 @@ mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj)
 		 * The debugger wants us to stop only if this exception is user-unhandled.
 		 */
 
-		ret = mono_handle_exception_internal (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), TRUE, NULL, &ji);
+		ret = mono_handle_exception_internal (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), TRUE, FALSE, NULL, &ji);
 		if (ret && (ji != NULL) && (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
 			/*
 			 * The exception is handled in a runtime-invoke wrapper, that means that it's unhandled
@@ -1492,7 +1517,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 	if (!test_only)
 		mono_perfcounters->exceptions_thrown++;
 
-	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, NULL, NULL);
+	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, FALSE, NULL, NULL);
 }
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
@@ -1895,4 +1920,27 @@ mono_print_thread_dump (void *sigctx)
 	fprintf (stdout, "%s", text->str);
 	g_string_free (text, TRUE);
 	fflush (stdout);
+}
+
+/*
+ * mono_resume_unwind:
+ *
+ *   This is called by code at the end of LLVM compiled finally clauses to continue
+ * unwinding.
+ */
+void
+mono_resume_unwind (void)
+{
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	static void (*restore_context) (MonoContext *);
+	MonoContext ctx;
+
+	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
+
+	mono_handle_exception_internal (&ctx, jit_tls->ex_obj, NULL, FALSE, TRUE, NULL, NULL);
+
+	if (!restore_context)
+		restore_context = mono_get_restore_context ();
+
+	restore_context (&ctx);
 }

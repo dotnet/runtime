@@ -798,6 +798,11 @@ typedef struct {
 	void            (*abort_func) (MonoObject *object);
 	/* Used to implement --debug=casts */
 	MonoClass       *class_cast_from, *class_cast_to;
+
+	/* Stores state needed by mono_resume_unwind () */
+	MonoContext     ex_ctx;
+	/* FIXME: GC */
+	gpointer        ex_obj;
 } MonoJitTlsData;
 
 typedef enum {
@@ -1108,6 +1113,9 @@ typedef struct {
 
 	/* Used by AOT */
 	guint32 got_offset, ex_info_offset, method_info_offset;
+
+	MonoJitExceptionInfo *llvm_ex_info;
+	guint32 llvm_ex_info_len;
 } MonoCompile;
 
 typedef enum {
@@ -1371,6 +1379,9 @@ void      mono_disable_optimizations       (guint32 opts) MONO_INTERNAL;
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token) MONO_INTERNAL;
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context) MONO_INTERNAL;
 MonoInst* mono_find_spvar_for_region        (MonoCompile *cfg, int region) MONO_INTERNAL;
+MonoInst* mono_find_exvar_for_offset        (MonoCompile *cfg, int offset) MONO_INTERNAL;
+int       mono_get_block_region_notry       (MonoCompile *cfg, int region) MONO_INTERNAL;
+
 void      mono_precompile_assemblies        (void) MONO_INTERNAL;
 int       mono_parse_default_optimizations  (const char* p);
 void      mono_bblock_add_inst              (MonoBasicBlock *bb, MonoInst *inst) MONO_INTERNAL;
@@ -1763,6 +1774,7 @@ void     mono_setup_altstack                    (MonoJitTlsData *tls) MONO_INTER
 void     mono_free_altstack                     (MonoJitTlsData *tls) MONO_INTERNAL;
 gpointer mono_altstack_restore_prot             (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
 MonoJitInfo* mini_jit_info_table_find           (MonoDomain *domain, char *addr, MonoDomain **out_domain) MONO_INTERNAL;
+void     mono_resume_unwind                     (void) MONO_INTERNAL;
 
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed) MONO_INTERNAL;
 
