@@ -117,6 +117,7 @@ extern MonoMethodSignature *helper_sig_domain_get;
 extern MonoMethodSignature *helper_sig_generic_class_init_trampoline;
 extern MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 extern MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline;
+extern MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm;
 
 /*
  * Instruction metadata
@@ -3923,19 +3924,31 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "Enter") == 0) {
 			MonoCallInst *call;
 
-			call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_MONITOR_ENTER,
-					NULL, helper_sig_monitor_enter_exit_trampoline, NULL);
-			mono_call_inst_add_outarg_reg (cfg, call, args [0]->dreg,
-					MONO_ARCH_MONITOR_OBJECT_REG, FALSE);
+			if (COMPILE_LLVM (cfg)) {
+				/* 
+				 * Pass the argument normally, the LLVM backend will handle the
+				 * calling convention problems.
+				 */
+				call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_MONITOR_ENTER, NULL, helper_sig_monitor_enter_exit_trampoline_llvm, args);
+			} else {
+				call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_MONITOR_ENTER,
+					    NULL, helper_sig_monitor_enter_exit_trampoline, NULL);
+				mono_call_inst_add_outarg_reg (cfg, call, args [0]->dreg,
+											   MONO_ARCH_MONITOR_OBJECT_REG, FALSE);
+			}
 
 			return (MonoInst*)call;
 		} else if (strcmp (cmethod->name, "Exit") == 0) {
 			MonoCallInst *call;
 
-			call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_MONITOR_EXIT,
-					NULL, helper_sig_monitor_enter_exit_trampoline, NULL);
-			mono_call_inst_add_outarg_reg (cfg, call, args [0]->dreg,
-					MONO_ARCH_MONITOR_OBJECT_REG, FALSE);
+			if (COMPILE_LLVM (cfg)) {
+				call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_MONITOR_EXIT, NULL, helper_sig_monitor_enter_exit_trampoline_llvm, args);
+			} else {
+				call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_MONITOR_EXIT,
+					    NULL, helper_sig_monitor_enter_exit_trampoline, NULL);
+				mono_call_inst_add_outarg_reg (cfg, call, args [0]->dreg,
+											   MONO_ARCH_MONITOR_OBJECT_REG, FALSE);
+			}
 
 			return (MonoInst*)call;
 		}

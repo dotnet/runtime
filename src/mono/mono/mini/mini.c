@@ -76,6 +76,7 @@ MonoMethodSignature *helper_sig_domain_get = NULL;
 MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
 MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
 MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline = NULL;
+MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm = NULL;
 
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
@@ -1308,6 +1309,7 @@ create_helper_signature (void)
 	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
 	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
+	helper_sig_monitor_enter_exit_trampoline_llvm = mono_create_icall_signature ("void object");
 }
 
 static gconstpointer
