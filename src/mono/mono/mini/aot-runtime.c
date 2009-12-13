@@ -1515,8 +1515,10 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint32 eh_frame_ptr;
 	int fde_count;
 	gint32 *table;
-	int pos, left, right, offset, offset1, offset2;
+	int i, pos, left, right, offset, offset1, offset2;
 	guint32 unw_len, code_len;
+	MonoJitExceptionInfo *ei;
+	guint32 ei_len;
 
 	g_assert (amodule->eh_frame_hdr);
 
@@ -1563,7 +1565,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	eh_frame = amodule->eh_frame_hdr + table [(pos * 2) + 1];
 
-	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, NULL, NULL);
+	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len);
 
 	jinfo->code_size = code_len;
 	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);
@@ -1572,6 +1574,15 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	jinfo->domain_neutral = 0;
 	/* This signals that used_regs points to a normal cached unwind info */
 	jinfo->from_aot = 0;
+
+	g_assert (ei_len == jinfo->num_clauses);
+	for (i = 0; i < jinfo->num_clauses; ++i) {
+		MonoJitExceptionInfo *jei = &jinfo->clauses [i];
+
+		jei->try_start = ei [i].try_start;
+		jei->try_end = ei [i].try_end;
+		jei->handler_start = ei [i].handler_start;
+	}
 }
  
 #ifdef TARGET_ARM

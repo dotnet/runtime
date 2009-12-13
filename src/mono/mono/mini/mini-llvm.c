@@ -1583,9 +1583,15 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 			eh_selector = LLVMGetNamedFunction (module, "llvm.eh.selector");
 
-			personality = LLVMGetNamedFunction (module, "mono_personality");
-			if (InterlockedCompareExchange (&mapping_inited, 1, 0) == 0)
-				LLVMAddGlobalMapping (ee, personality, mono_personality);
+			if (cfg->compile_aot) {
+				/* Use a dummy personality function */
+				personality = LLVMGetNamedFunction (module, "mono_aot_personality");
+				g_assert (personality);
+			} else {
+				personality = LLVMGetNamedFunction (module, "mono_personality");
+				if (InterlockedCompareExchange (&mapping_inited, 1, 0) == 0)
+					LLVMAddGlobalMapping (ee, personality, mono_personality);
+			}
 
 			i8ptr = LLVMPointerType (LLVMInt8Type (), 0);
 			args [0] = LLVMConstNull (i8ptr);
@@ -3685,6 +3691,20 @@ mono_llvm_create_aot_module (const char *got_symbol)
 		LLVMBuilderRef builder = LLVMCreateBuilder ();
 		LLVMPositionBuilderAtEnd (builder, bb);
 		LLVMBuildRetVoid (builder);
+	}
+
+	/* Add a dummy personality function */
+	{
+		LLVMBasicBlockRef lbb;
+		LLVMBuilderRef lbuilder;
+		LLVMValueRef personality;
+
+		personality = LLVMAddFunction (aot_module.module, "mono_aot_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
+		LLVMSetLinkage (personality, LLVMPrivateLinkage);
+		lbb = LLVMAppendBasicBlock (personality, "BB0");
+		lbuilder = LLVMCreateBuilder ();
+		LLVMPositionBuilderAtEnd (lbuilder, lbb);
+		LLVMBuildRetVoid (lbuilder);
 	}
 
 	aot_module.llvm_types = g_hash_table_new (NULL, NULL);
