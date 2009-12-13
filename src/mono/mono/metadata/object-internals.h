@@ -1102,8 +1102,6 @@ typedef struct {
 typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;
 struct _MonoReflectionGenericClass {
 	MonoReflectionType type;
-	/* From System.MonoType */
-	MonoObject *type_info;
 	MonoReflectionType *generic_type; /*Can be either a MonoType or a TypeBuilder*/
 	MonoArray *type_arguments;
 	guint32 initialized;
