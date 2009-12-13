@@ -3302,6 +3302,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if (header->clauses) {
+		/* 
+		 * Cannot be enabled until LLVM supports implicit exceptions, or we use
+		 * explicit checks, or we disable this for methods which might throw implicit
+		 * exceptions inside clauses.
+		 */
 		cfg->exception_message = g_strdup ("clauses");
 		cfg->disable_llvm = TRUE;
 	}

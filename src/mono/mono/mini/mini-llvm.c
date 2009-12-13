@@ -1410,8 +1410,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	header = mono_method_get_header (cfg->method);
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
-			LLVM_FAILURE (ctx, "non-finally clause.");
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
+			LLVM_FAILURE (ctx, "non-finally/catch clause.");
 	}
 
 	/* 
@@ -1532,7 +1532,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		if (bb->region != -1 && !MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY) && !bblocks [bb->block_num].added)
+		if (!bblocks [bb->block_num].added)
 			g_ptr_array_add (bblock_list, bb);
 	}
 
