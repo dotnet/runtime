@@ -834,8 +834,17 @@ mono_debugger_agent_cleanup (void)
 	//WaitForSingleObject (debugger_thread_handle, INFINITE);
 	if (GetCurrentThreadId () != debugger_thread_id) {
 		mono_mutex_lock (&debugger_thread_exited_mutex);
-		if (!debugger_thread_exited)
+		if (!debugger_thread_exited) {
+#ifdef HOST_WIN32
+			if (WAIT_TIMEOUT == WaitForSingleObject(debugger_thread_exited_cond, 0)) {
+				mono_mutex_unlock (&debugger_thread_exited_mutex);
+				Sleep(0);
+				mono_mutex_lock (&debugger_thread_exited_mutex);
+			}
+#else
 			mono_cond_wait (&debugger_thread_exited_cond, &debugger_thread_exited_mutex);
+#endif
+		}
 		mono_mutex_unlock (&debugger_thread_exited_mutex);
 	}
 
@@ -1787,7 +1796,6 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			MonoContext ctx;
 			GetLastFrameUserData data;
 
-			mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 			// FIXME: printf is not signal safe, but this is only used during
 			// debugger debugging
 			DEBUG (1, printf ("[%p] Received interrupt while at %p, treating as suspended.\n", (gpointer)GetCurrentThreadId (), mono_arch_ip_from_context (sigctx)));
@@ -1808,7 +1816,10 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			 * remain valid.
 			 */
 			data.last_frame_set = FALSE;
-			mono_jit_walk_stack_from_ctx_in_thread (get_last_frame, mono_domain_get (), &ctx, FALSE, tls->thread, mono_get_lmf (), &data);
+			if (sigctx) {
+				mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+				mono_jit_walk_stack_from_ctx_in_thread (get_last_frame, mono_domain_get (), &ctx, FALSE, tls->thread, mono_get_lmf (), &data);
+			}
 			if (data.last_frame_set) {
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
 				memcpy (&tls->async_ctx, &data.ctx, sizeof (MonoContext));
