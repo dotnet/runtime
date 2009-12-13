@@ -2517,9 +2517,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 							if (cfg->abs_patches) {
 								MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, call->fptr);
 								if (abs_ji) {
+#ifndef TARGET_AMD64
+									/*
+									 * The monitor entry/exit trampolines have their
+									 * own calling convention, except on amd64.
+									 */
 									if (abs_ji->type == MONO_PATCH_INFO_MONITOR_ENTER || abs_ji->type == MONO_PATCH_INFO_MONITOR_EXIT)
-										/* FIXME: These have their own calling convention */
 										LLVM_FAILURE (ctx, "monitor enter/exit");
+#endif
 									target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, abs_ji, FALSE);
 									LLVMAddGlobalMapping (ee, callee, target);
 								}
