@@ -725,6 +725,20 @@ static int ccount = 0;
 	    (cfg)->cbb = (bblock); \
     } while (0)
 
+/* This marks a place in code where an implicit exception could be thrown */
+#define MONO_EMIT_NEW_IMPLICIT_EXCEPTION(cfg) do { \
+		if (COMPILE_LLVM ((cfg))) {									\
+			MONO_EMIT_NEW_UNALU (cfg, OP_IMPLICIT_EXCEPTION, -1, -1);	\
+		} \
+	} while (0)
+
+#define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
+	cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
+	MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg); \
+	MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
+	MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg);	\
+	} while (0)
+
 /*Object Model related macros*/
 
 #ifndef MONO_ARCH_EMIT_BOUNDS_CHECK
@@ -741,6 +755,7 @@ static int ccount = 0;
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0); \
 			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException"); \
 		}																\
+		MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg); \
 	} while (0)
 
 /* cfg is the MonoCompile been used

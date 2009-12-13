@@ -2314,11 +2314,8 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 				method = call->method = mono_marshal_get_remoting_invoke_with_check (method);
 			}
 
-			if (!method->string_ctor) {
-				cfg->flags |= MONO_CFG_HAS_CHECK_THIS;
-				MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, this_reg);
-				MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, this_reg);
-			}
+			if (!method->string_ctor)
+				MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
 
 			call->inst.opcode = callvirt_to_call (call->inst.opcode);
 
@@ -2333,9 +2330,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			 * it's class or the method itself are sealed.
 			 * But first we need to ensure it's not a null reference.
 			 */
-			cfg->flags |= MONO_CFG_HAS_CHECK_THIS;
-			MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, this_reg);
-			MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, this_reg);
+			MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
 
 			call->inst.opcode = callvirt_to_call (call->inst.opcode);
 			MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
@@ -5767,9 +5762,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		NEW_ARGLOAD (cfg, arg_ins, 0);
 		MONO_ADD_INS (cfg->cbb, arg_ins);
-		cfg->flags |= MONO_CFG_HAS_CHECK_THIS;
-		MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, arg_ins->dreg);
-		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, arg_ins->dreg);
+		MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
 	}
 
 	/* we use a spare stack slot in SWITCH and NEWOBJ and others */
@@ -6448,13 +6441,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod, MONO_RGCTX_INFO_METHOD);
 			}
 
-			if (check_this) {
-				MonoInst *check;
-
-				MONO_INST_NEW (cfg, check, OP_CHECK_THIS);
-				check->sreg1 = sp [0]->dreg;
-				MONO_ADD_INS (cfg->cbb, check);
-			}
+			if (check_this)
+				MONO_EMIT_NEW_CHECK_THIS (cfg, sp [0]->dreg);
 
 			/* Calling virtual generic methods */
 			if (cmethod && virtual && 

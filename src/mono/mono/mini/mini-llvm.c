@@ -1258,6 +1258,8 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 		}
 	}
 
+	if (cfg->vret_addr)
+		emit_volatile_store (ctx, cfg->vret_addr->dreg);
 	if (sig->hasthis)
 		emit_volatile_store (ctx, cfg->args [0]->dreg);
 	for (i = 0; i < sig->param_count; ++i)
@@ -3143,6 +3145,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			/*
 			 * EXCEPTION HANDLING
 			 */
+			case OP_IMPLICIT_EXCEPTION:
+				/* This marks a place where an implicit exception can happen */
+				if (bb->region != -1)
+					LLVM_FAILURE (ctx, "implicit-exception");
+				break;
 			case OP_THROW: {
 				MonoMethodSignature *throw_sig;
 				LLVMValueRef callee, arg;
