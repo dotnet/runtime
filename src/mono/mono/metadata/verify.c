@@ -5365,8 +5365,8 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 2;
 			break;
 
-		/* FIXME: warn/error instead? */
 		case CEE_UNUSED99:
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Use of the `unused' opcode"));
 			++ip;
 			break; 
 
@@ -5557,7 +5557,8 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_UNUSED58:
 		case CEE_UNUSED1:
-			++ip; /* warn, error ? */
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Use of the `unused' opcode"));
+			++ip;
 			break;
 
 		case CEE_UNBOX:
@@ -5811,10 +5812,6 @@ mono_method_verify (MonoMethod *method, int level)
 				ip += 5;
 				break;
 
-			case CEE_UNUSED56:
-				++ip;
-				break;
-
 			case CEE_LDARG:
 			case CEE_LDARGA:
 				code_bounds_check (3);
@@ -5834,7 +5831,11 @@ mono_method_verify (MonoMethod *method, int level)
 				++ip;
 				break;
 
+			case CEE_UNUSED56:
 			case CEE_UNUSED57:
+			case CEE_UNUSED70:
+			case CEE_UNUSED:
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Use of the `unused' opcode"));
 				++ip;
 				break;
 			case CEE_ENDFILTER:
@@ -5900,9 +5901,6 @@ mono_method_verify (MonoMethod *method, int level)
 					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("rethrow must be used inside a catch handler at 0x%04x", ctx.ip_offset));
 				ctx.eval.size = 0;
 				start = 1;
-				++ip;
-				break;
-			case CEE_UNUSED:
 				++ip;
 				break;
 
