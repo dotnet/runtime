@@ -6252,9 +6252,7 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 	MonoArray *type_args;
 	int i;
 
-
-	/*This will only be fixed once we do full managed inflate of system types*/
-	/*g_assert (!geninst->byref);*/
+	g_assert (0); /*This code path should not be taken anymore, all MGC instantiation must happen in managed code*/
 
 	if (!System_Reflection_MonoGenericClass) {
 		System_Reflection_MonoGenericClass = mono_class_from_name (
@@ -8908,14 +8906,14 @@ mono_reflection_register_with_runtime (MonoReflectionType *type)
 	mono_loader_lock (); /*same locking as mono_type_get_object*/
 	mono_domain_lock (domain);
 
-	if (!class->image->dynamic)
+	if (!class->image->dynamic) {
 		mono_class_setup_supertypes (class);
-
-	if (!domain->type_hash)
-		domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mymono_metadata_type_hash, 
-				(GCompareFunc)mymono_metadata_type_equal, MONO_HASH_VALUE_GC);
-	mono_g_hash_table_insert (domain->type_hash, res, type);
-
+	} else {
+		if (!domain->type_hash)
+			domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mymono_metadata_type_hash, 
+					(GCompareFunc)mymono_metadata_type_equal, MONO_HASH_VALUE_GC);
+		mono_g_hash_table_insert (domain->type_hash, res, type);
+	}
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 }
@@ -11455,7 +11453,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		type = mono_class_inflate_generic_type (mono_reflection_type_get_handle ((MonoReflectionType*)f->inst), context);
 		inflated = mono_class_from_mono_type (type);
 
-		result = mono_class_get_field_from_name (inflated, mono_field_get_name (field));
+		result = field = mono_class_get_field_from_name (inflated, mono_field_get_name (field));
+		ensure_complete_type (field->parent);
 		g_assert (result);
 		mono_metadata_free_type (type);
 		*handle_class = mono_defaults.fieldhandle_class;
