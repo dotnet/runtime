@@ -39,7 +39,9 @@ static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolea
 static gboolean mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only);
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
+static GSList* free_generic_inst_dependents (MonoGenericInst *ginst);
 static void free_generic_inst (MonoGenericInst *ginst);
+static GSList* free_generic_class_dependents (MonoGenericClass *ginst);
 static void free_generic_class (MonoGenericClass *ginst);
 static void free_inflated_method (MonoMethodInflated *method);
 static void mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, MonoMarshalSpec **marshal_spec, gboolean alloc_from_image);
@@ -2237,17 +2239,15 @@ inflated_signature_in_image (gpointer key, gpointer value, gpointer data)
 		(sig->context.method_inst && ginst_in_image (sig->context.method_inst, image));
 }	
 
-void
+GSList*
 mono_metadata_clean_for_image (MonoImage *image)
 {
 	CleanForImageUserData ginst_data, gclass_data;
-	GSList *l;
-
+	GSList *l, *free_list = NULL;
 	/* The data structures could reference each other so we delete them in two phases */
 	ginst_data.image = gclass_data.image = image;
 	ginst_data.list = gclass_data.list = NULL;
-
-	mono_loader_lock ();	
+	mono_loader_lock ();
 	/* Collect the items to delete and remove them from the hash table */
 	g_hash_table_foreach_steal (generic_inst_cache, steal_ginst_in_image, &ginst_data);
 	g_hash_table_foreach_steal (generic_class_cache, steal_gclass_in_image, &gclass_data);
@@ -2257,13 +2257,15 @@ mono_metadata_clean_for_image (MonoImage *image)
 		g_hash_table_foreach_remove (generic_signature_cache, inflated_signature_in_image, image);
 	/* Delete the removed items */
 	for (l = ginst_data.list; l; l = l->next)
-		free_generic_inst (l->data);
+		free_list = g_slist_concat (free_generic_inst_dependents (l->data), free_list);
 	for (l = gclass_data.list; l; l = l->next)
-		free_generic_class (l->data);
+		free_list = g_slist_concat (free_generic_class_dependents (l->data), free_list);
 	g_slist_free (ginst_data.list);
 	g_slist_free (gclass_data.list);
 	mono_class_unregister_image_generic_subclasses (image);
 	mono_loader_unlock ();
+
+	return free_list;
 }
 
 static void
@@ -2294,19 +2296,34 @@ free_inflated_method (MonoMethodInflated *imethod)
 }
 
 static void
-free_generic_inst (MonoGenericInst *ginst)
+free_list_with_data (GSList *l)
+{
+	while (l) {
+		g_free (l->data);
+		l = g_slist_delete_link (l, l);
+	}
+}
+
+static GSList*
+free_generic_inst_dependents (MonoGenericInst *ginst)
 {
 	int i;
 
 	for (i = 0; i < ginst->type_argc; ++i)
 		mono_metadata_free_type (ginst->type_argv [i]);
-	g_free (ginst);
+	return g_slist_prepend (NULL, ginst);
 }
 
-
 static void
-free_generic_class (MonoGenericClass *gclass)
+free_generic_inst (MonoGenericInst *ginst)
 {
+	free_list_with_data (free_generic_inst_dependents (ginst));
+}
+
+static GSList*
+free_generic_class_dependents (MonoGenericClass *gclass)
+{
+	GSList *l = NULL;
 	int i;
 
 	/* FIXME: The dynamic case */
@@ -2319,6 +2336,7 @@ free_generic_class (MonoGenericClass *gclass)
 			g_free (class->ext->properties);
 		/* Allocated in mono_generic_class_get_class () */
 		g_free (class->interfaces);
+		l = g_slist_prepend (l, class);
 	} else if (gclass->is_dynamic) {
 		MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass *)gclass;
 
@@ -2346,8 +2364,16 @@ free_generic_class (MonoGenericClass *gclass)
 		g_free (dgclass->events);
 		g_free (dgclass->field_objects);
 		g_free (dgclass->field_generic_types);
+		if (!mono_generic_class_is_generic_type_definition (gclass))
+			l = g_slist_prepend (l, gclass->cached_class);
 	}
-	g_free (gclass);
+	return g_slist_prepend (l, gclass);
+}
+
+static void
+free_generic_class (MonoGenericClass *gclass)
+{
+	free_list_with_data (free_generic_class_dependents (gclass));
 }
 
 static void

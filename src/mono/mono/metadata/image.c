@@ -1417,6 +1417,7 @@ mono_image_close_except_pools (MonoImage *image)
 	MonoImage *image2;
 	GHashTable *loaded_images;
 	int i;
+	GSList *free_list;
 
 	g_return_val_if_fail (image != NULL, FALSE);
 
@@ -1459,7 +1460,7 @@ mono_image_close_except_pools (MonoImage *image)
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
 
-	mono_metadata_clean_for_image (image);
+	free_list = mono_metadata_clean_for_image (image);
 
 	/*
 	 * The caches inside a MonoImage might refer to metadata which is stored in referenced 
@@ -1582,6 +1583,7 @@ mono_image_close_except_pools (MonoImage *image)
 		mono_property_hash_destroy (image->property_hash);
 
 	g_slist_free (image->reflection_info_unregister_classes);
+	image->reflection_info_unregister_classes = free_list;
 
 	if (image->interface_bitset) {
 		mono_unload_interface_ids (image->interface_bitset);
@@ -1625,6 +1627,12 @@ void
 mono_image_close_finish (MonoImage *image)
 {
 	int i;
+	GSList *l;
+
+	for (l = image->reflection_info_unregister_classes; l; l = l->next)
+		g_free (l->data);
+	g_slist_free (image->reflection_info_unregister_classes);
+	image->reflection_info_unregister_classes = NULL;
 
 	if (image->references && !image->dynamic) {
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];

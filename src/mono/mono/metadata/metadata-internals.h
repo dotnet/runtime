@@ -254,6 +254,8 @@ struct _MonoImage {
 	/* interfaces IDs from this image */
 	MonoBitSet *interface_bitset;
 
+	/* when the image is being closed, this is abused as a list of
+	   malloc'ed regions to be freed. */
 	GSList *reflection_info_unregister_classes;
 
 	/*
@@ -423,8 +425,11 @@ mono_image_close_finish (MonoImage *image) MONO_INTERNAL;
 MonoType*
 mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
 
-void
+GSList*
 mono_metadata_clean_for_image (MonoImage *image) MONO_INTERNAL;
+
+void
+mono_metadata_clean_generic_classes_for_image (MonoImage *image) MONO_INTERNAL;
 
 void
 mono_metadata_cleanup (void);
