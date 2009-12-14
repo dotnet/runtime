@@ -2383,7 +2383,9 @@ static MonoInst*
 mono_emit_rgctx_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
 		MonoInst **args, MonoInst *this, MonoInst *imt_arg, MonoInst *vtable_arg)
 {
+#ifdef MONO_ARCH_RGCTX_REG
 	int rgctx_reg = 0;
+#endif
 	MonoInst *ins;
 	MonoCallInst *call;
 
