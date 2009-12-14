@@ -2249,12 +2249,12 @@ mono_method_get_header (MonoMethod *method)
 	idx = mono_metadata_token_index (method->token);
 	img = method->klass->image;
 	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
-	loc = mono_image_rva_map (img, rva);
-
-	g_assert (loc);
 
 	if (!mono_verifier_verify_method_header (img, rva, NULL))
 		return NULL;
+
+	loc = mono_image_rva_map (img, rva);
+	g_assert (loc);
 
 	header = mono_metadata_parse_mh_full (img, mono_method_get_generic_container (method), loc);
 
