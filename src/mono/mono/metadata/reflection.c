@@ -8823,7 +8823,8 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 
 	if (is_usertype (ref)) {
 		ref = mono_reflection_type_get_underlying_system_type (ref);
-		g_assert (!is_usertype (ref)); /*FIXME fail better*/
+		if (ref == NULL || is_usertype (ref))
+			return NULL;
 		if (ref->type)
 			return ref->type;
 	}
@@ -8867,6 +8868,10 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		for (i = 0; i < count; ++i) {
 			MonoReflectionType *t = mono_array_get (gclass->type_arguments, gpointer, i);
 			types [i] = mono_reflection_type_get_handle (t);
+			if (!types[i]) {
+				g_free (types);
+				return NULL;
+			}
 		}
 
 		res = mono_reflection_bind_generic_parameters (gclass->generic_type, count, types);
@@ -8893,8 +8898,12 @@ mono_reflection_register_with_runtime (MonoReflectionType *type)
 {
 	MonoType *res = mono_reflection_type_get_handle (type);
 	MonoDomain *domain = mono_object_domain ((MonoObject*)type);
-	MonoClass *class = mono_class_from_mono_type (res);
+	MonoClass *class;
 
+	if (!res)
+		mono_raise_exception (mono_get_exception_argument (NULL, "Invalid generic instantiation, one or more arguments are not proper user types"));
+
+	class = mono_class_from_mono_type (res);
 
 	mono_loader_lock (); /*same locking as mono_type_get_object*/
 	mono_domain_lock (domain);
