@@ -11,6 +11,7 @@
 /semantic.cache
 /*.exe
 /*.stderr
+/*.aotlog
 /*.dll
 /*.mdb
 /*.o
