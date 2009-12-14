@@ -103,6 +103,7 @@ typedef struct {
 	GSList *onthrow;
 	int timeout;
 	char *launch;
+	gboolean embedding;
 } AgentConfig;
 
 typedef struct
@@ -534,6 +535,8 @@ static HANDLE debugger_thread_handle;
 
 static int log_level;
 
+static gboolean embedding;
+
 static FILE *log_file;
 
 /* Classes whose class load event has been sent */
@@ -727,6 +730,8 @@ mono_debugger_agent_parse_options (char *options)
 			agent_config.timeout = atoi (arg + 8);
 		} else if (strncmp (arg, "launch=", 7) == 0) {
 			agent_config.launch = g_strdup (arg + 7);
+		} else if (strncmp (arg, "embedding=", 9) == 0) {
+			agent_config.embedding = atoi (arg + 9) == 1;
 		} else {
 			print_usage ();
 			exit (1);
@@ -793,6 +798,8 @@ mono_debugger_agent_init (void)
 	domains = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	log_level = agent_config.log_level;
+
+	embedding = agent_config.embedding;
 
 	if (agent_config.log_file) {
 		log_file = fopen (agent_config.log_file, "w+");
@@ -3000,7 +3007,7 @@ end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 	gpointer stackptr = __builtin_frame_address (1);
 #endif
 
-	if (ss_req == NULL || stackptr != ss_invoke_addr || ss_req->thread != mono_thread_internal_current ())
+	if (!embedding || ss_req == NULL || stackptr != ss_invoke_addr || ss_req->thread != mono_thread_internal_current ())
 		return;
 
 	/*
