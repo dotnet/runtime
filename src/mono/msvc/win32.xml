@@ -161,6 +161,21 @@
 			<Source type="list">Mono.CompilerServices.SymbolWriter.dll.sources</Source>
 		</Sources>
 	</Assembly>
+  <Assembly name="System.Core" destination="{destdir}\lib\mono\2.0\System.Core.dll">
+    <References>
+      <Reference>mscorlib</Reference>
+      <Reference>System</Reference>
+      <Reference>Mono.Posix</Reference>
+    </References>
+    <OutputType>library</OutputType>
+    <DefineConstants>NET_1_1;NET_2_0;NET_3_5;LIBC</DefineConstants>
+    <SourcePath>{sourcedir}\mcs\class\System.Core\</SourcePath>
+    <IgnoreWarnings>1720</IgnoreWarnings>
+    <Debug>false</Debug>
+    <Sources>
+      <Source type="list">System.Core.dll.sources</Source>
+    </Sources>
+  </Assembly>
 
 	<!-- This is the second pass, where we build the basic assemblies with our built mono/basic assemblies -->
 	<Assembly name="gmcs" destination="{destdir}\temp\gmcs.exe">
