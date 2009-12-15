@@ -37,6 +37,7 @@ gboolean dump_data = TRUE;
 gboolean verify_pe = FALSE;
 gboolean verify_metadata = FALSE;
 gboolean verify_code = FALSE;
+gboolean verify_partial_md = FALSE;
 
 /* unused
 static void
@@ -454,9 +455,8 @@ verify_image_file (const char *fname)
 
 	mono_image_load_names (image);
 
-	if (!mono_verifier_verify_full_table_data (image, &errors))
+	if (!verify_partial_md && !mono_verifier_verify_full_table_data (image, &errors))
 		goto invalid_image;
-
 
 	/*fake an assembly for class loading to work*/
 	assembly = g_new0 (MonoAssembly, 1);
@@ -601,6 +601,7 @@ pedump_assembly_search_hook (MonoAssemblyName *aname, gpointer user_data)
 #define VALID_ONLY_FLAG 0x08000000
 #define VERIFY_CODE_ONLY MONO_VERIFY_ALL + 1 
 #define VERIFY_METADATA_ONLY VERIFY_CODE_ONLY + 1
+#define VERIFY_PARTIAL_METADATA VERIFY_CODE_ONLY + 2
 
 int
 main (int argc, char *argv [])
@@ -609,8 +610,8 @@ main (int argc, char *argv [])
 	char *file = NULL;
 	char *flags = NULL;
 	MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_VERIFIABLE;
-	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", "fail-on-verifiable", "non-strict", "valid-only", "metadata", NULL};
-	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, VERIFY_CODE_ONLY, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT, VALID_ONLY_FLAG, VERIFY_METADATA_ONLY, 0};
+	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", "fail-on-verifiable", "non-strict", "valid-only", "metadata", "partial-md", NULL};
+	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, VERIFY_CODE_ONLY, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT, VALID_ONLY_FLAG, VERIFY_METADATA_ONLY, VERIFY_PARTIAL_METADATA, 0};
 	int i, verify_flags = MONO_VERIFY_REPORT_ALL_ERRORS, run_new_metadata_verifier = 0;
 	
 	for (i = 1; i < argc; i++){
@@ -656,6 +657,8 @@ main (int argc, char *argv [])
 					} else if(flag_vals [i] == VERIFY_METADATA_ONLY) {
 						verify_metadata = 0;
 						run_new_metadata_verifier = 1;
+					} else if(flag_vals [i] == VERIFY_PARTIAL_METADATA) {
+						verify_partial_md = 1;
 					}
 					if (flag_vals [i] == VALID_ONLY_FLAG)
 						verifier_mode = MONO_VERIFIER_MODE_VALID;
