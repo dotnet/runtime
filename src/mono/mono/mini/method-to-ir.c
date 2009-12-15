@@ -1707,6 +1707,9 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 	if (align == 0)
 		align = 4;
 
+	/*FIXME arbitrary hack to avoid unbound code expansion.*/
+	g_assert (size < 10000);
+
 	if (align < 4) {
 		/* This could be optimized further if neccesary */
 		while (size >= 1) {
