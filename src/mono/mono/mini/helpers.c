@@ -62,8 +62,8 @@ opnames[] = {
 #define emit_debug_info  FALSE
 #endif
 
-//#define ARCH_PREFIX ""
-#define ARCH_PREFIX "powerpc64-linux-gnu-"
+#define ARCH_PREFIX ""
+//#define ARCH_PREFIX "powerpc64-linux-gnu-"
 
 const char*
 mono_inst_name (int op) {
