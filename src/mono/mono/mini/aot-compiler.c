@@ -3697,8 +3697,6 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->autoreg = TRUE;
 		} else if (str_begins_with (arg, "tool-prefix=")) {
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
-		} else if (str_begins_with (arg, "autoreg")) {
-			opts->autoreg = TRUE;
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
 		} else if (str_begins_with (arg, "print-skipped")) {
