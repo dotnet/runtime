@@ -1350,6 +1350,10 @@ mono_class_setup_fields (MonoClass *class)
 	if (class->exception_type)
 		return;
 	mono_class_layout_fields (class);
+
+	/*valuetypes can't be bigger than 1Mb.*/
+	if (class->valuetype && class->instance_size > 0x100000)
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 }
 
 /** 
