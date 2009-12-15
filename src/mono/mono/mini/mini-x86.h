@@ -123,6 +123,9 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_RETREG1 X86_EAX
 #define MONO_ARCH_RETREG2 X86_EDX
 
+/*This is the max size of the locals area of a given frame. I think 1MB is a safe default for now*/
+#define MONO_ARCH_MAX_FRAME_SIZE 100000
+
 struct MonoLMF {
 	/* 
 	 * If the lowest bit is set to 1, then this is a trampoline LMF frame.

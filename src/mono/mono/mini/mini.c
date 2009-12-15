@@ -3789,8 +3789,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
     //print_dfn (cfg);
 	
 	/* variables are allocated after decompose, since decompose could create temps */
-	if (!cfg->globalra && !COMPILE_LLVM (cfg))
+	if (!cfg->globalra && !COMPILE_LLVM (cfg)) {
 		mono_arch_allocate_vars (cfg);
+		if (cfg->exception_type)
+			return cfg;
+	}
 
 	{
 		MonoBasicBlock *bb;

@@ -1423,6 +1423,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* Allocate locals */
 	if (!cfg->globalra) {
 		offsets = mono_allocate_stack_slots_full (cfg, cfg->arch.omit_fp ? FALSE: TRUE, &locals_stack_size, &locals_stack_align);
+		if (locals_stack_size > MONO_ARCH_MAX_FRAME_SIZE) {
+			char *mname = mono_method_full_name (cfg->method, TRUE);
+			cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
+			cfg->exception_message = g_strdup_printf ("Method %s stack is too big.", mname);
+			g_free (mname);
+			return;
+		}
+		
 		if (locals_stack_align) {
 			offset += (locals_stack_align - 1);
 			offset &= ~(locals_stack_align - 1);
@@ -5727,6 +5735,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* See mono_emit_stack_alloc */
 #if defined(HOST_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		guint32 remaining_size = alloc_size;
+		/*FIXME handle unbounded code expansion, we should use a loop in case of more than X interactions*/
+		guint32 required_code_size = ((remaining_size / 0x1000) + 1) * 10; /*10 is the max size of amd64_alu_reg_imm + amd64_test_membase_reg*/
+		guint32 offset = code - cfg->native_code;
+		if (G_UNLIKELY (required_code_size >= (cfg->code_size - offset))) {
+			while (required_code_size >= (cfg->code_size - offset))
+				cfg->code_size *= 2;
+			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+			code = cfg->native_code + offset;
+			mono_jit_stats.code_reallocs++;
+		}
+
 		while (remaining_size >= 0x1000) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
  			if (cfg->arch.omit_fp) {
