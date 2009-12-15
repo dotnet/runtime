@@ -294,7 +294,35 @@
 			<Source type="list">System.Configuration.dll.sources</Source>
 		</Sources>
 	</Assembly>
-
+  <Assembly name="Mono.Posix" destination="{destdir}\lib\mono\2.0\Mono.Posix.dll">
+    <References>
+      <Reference>mscorlib</Reference>
+      <Reference>System</Reference>
+    </References>
+    <OutputType>library</OutputType>
+    <DefineConstants>NET_1_1;NET_2_0</DefineConstants>
+    <IgnoreWarnings>618,612</IgnoreWarnings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SourcePath>{sourcedir}\mcs\class\Mono.Posix\</SourcePath>
+    <Sources>
+      <Source type="list">Mono.Posix.dll.sources</Source>
+    </Sources>
+  </Assembly>
+  <Assembly name="System.Core" destination="{destdir}\temp\System.Core.dll">
+    <References>
+      <Reference>mscorlib</Reference>
+      <Reference>System</Reference>
+      <Reference>Mono.Posix</Reference>
+    </References>
+    <OutputType>library</OutputType>
+    <DefineConstants>NET_1_1;NET_2_0;NET_3_5;LIBC</DefineConstants>
+    <SourcePath>{sourcedir}\mcs\class\System.Core\</SourcePath>
+    <IgnoreWarnings>1720</IgnoreWarnings>
+    <Sources>
+      <Source type="list">System.Core.dll.sources</Source>
+    </Sources>
+  </Assembly>
+  
 	<!-- Build some tools -->
 	<Assembly name="sn" destination="{destdir}\lib\mono\2.0\sn.exe">
 		<References>
@@ -319,25 +347,28 @@
 	<Sign assembly="{destdir}\temp\Mono.Security.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\temp\System.Xml.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\temp\System.Security.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\temp\System.Configuration.dll" key="{sourcedir}\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\temp\System.Configuration.dll" key="{sourcedir}\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\temp\System.Core.dll" key="{sourcedir}\mcs\class\mono.snk" />
 
-	<!-- Copy our new assemblies to the bin/lib locations -->
+  <!-- Copy our new assemblies to the bin/lib locations -->
 	<Copy source="{destdir}\temp\gmcs.exe" destination="{destdir}\lib\mono\2.0\gmcs.exe" />
 	<Copy source="{destdir}\temp\System.dll" destination="{destdir}\lib\mono\2.0\System.dll" />
 	<Copy source="{destdir}\temp\mscorlib.dll" destination="{destdir}\lib\mono\2.0\mscorlib.dll" />
 	<Copy source="{destdir}\temp\Mono.Security.dll" destination="{destdir}\lib\mono\2.0\Mono.Security.dll" />
 	<Copy source="{destdir}\temp\System.Xml.dll" destination="{destdir}\lib\mono\2.0\System.Xml.dll" />
 	<Copy source="{destdir}\temp\System.Security.dll" destination="{destdir}\lib\mono\2.0\System.Security.dll" />
-	<Copy source="{destdir}\temp\System.Configuration.dll" destination="{destdir}\lib\mono\2.0\System.Configuration.dll" />
-	<Copy source="{destdir}\temp\gmcs.exe.mdb" destination="{destdir}\lib\mono\2.0\gmcs.exe.mdb" />
+  <Copy source="{destdir}\temp\System.Configuration.dll" destination="{destdir}\lib\mono\2.0\System.Configuration.dll" />
+  <Copy source="{destdir}\temp\System.Core.dll" destination="{destdir}\lib\mono\2.0\System.Core.dll" />
+  <Copy source="{destdir}\temp\gmcs.exe.mdb" destination="{destdir}\lib\mono\2.0\gmcs.exe.mdb" />
 	<Copy source="{destdir}\temp\System.dll.mdb" destination="{destdir}\lib\mono\2.0\System.dll.mdb" />
 	<Copy source="{destdir}\temp\mscorlib.dll.mdb" destination="{destdir}\lib\mono\2.0\mscorlib.dll.mdb" />
 	<Copy source="{destdir}\temp\Mono.Security.dll.mdb" destination="{destdir}\lib\mono\2.0\Mono.Security.dll.mdb" />
 	<Copy source="{destdir}\temp\System.Xml.dll.mdb" destination="{destdir}\lib\mono\2.0\System.Xml.dll.mdb" />
 	<Copy source="{destdir}\temp\System.Security.dll.mdb" destination="{destdir}\lib\mono\2.0\System.Security.dll.mdb" />
-	<Copy source="{destdir}\temp\System.Configuration.dll.mdb" destination="{destdir}\lib\mono\2.0\System.Configuration.dll.mdb" />
+  <Copy source="{destdir}\temp\System.Configuration.dll.mdb" destination="{destdir}\lib\mono\2.0\System.Configuration.dll.mdb" />
+  <Copy source="{destdir}\temp\System.Core.dll.mdb" destination="{destdir}\lib\mono\2.0\System.Core.dll.mdb" />
 
-	<!-- Delete our temp directory -->
+  <!-- Delete our temp directory -->
 	<Delete type="directory">{destdir}\temp</Delete>
 
 	<!-- Build some more tools -->
@@ -577,34 +608,6 @@
 			<Source type="list">Mono.GetOptions.dll.sources</Source>
 		</Sources>
 	</Assembly>
-	<Assembly name="Mono.Posix" destination="{destdir}\lib\mono\2.0\Mono.Posix.dll">
-		<References>
-			<Reference>mscorlib</Reference>
-			<Reference>System</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<IgnoreWarnings>618,612</IgnoreWarnings>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Posix\</SourcePath>
-		<Sources>
-			<Source type="list">Mono.Posix.dll.sources</Source>
-		</Sources>
-	</Assembly>
-  <Assembly name="System.Core" destination="{destdir}\lib\mono\2.0\System.Core.dll">
-    <References>
-      <Reference>mscorlib</Reference>
-      <Reference>System</Reference>
-      <Reference>Mono.Posix</Reference>
-    </References>
-    <OutputType>library</OutputType>
-    <DefineConstants>NET_1_1;NET_2_0;NET_3_5;LIBC</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\System.Core\</SourcePath>
-    <IgnoreWarnings>1720</IgnoreWarnings>
-    <Sources>
-      <Source type="list">System.Core.dll.sources</Source>
-    </Sources>
-  </Assembly>
   <Assembly name="Accessibility" destination="{destdir}\lib\mono\2.0\Accessibility.dll">
 		<References>
 			<Reference>mscorlib</Reference>
