@@ -161,7 +161,7 @@
 			<Source type="list">Mono.CompilerServices.SymbolWriter.dll.sources</Source>
 		</Sources>
 	</Assembly>
-  <Assembly name="System.Core" destination="{destdir}\lib\mono\2.0\System.Core.dll">
+  <Assembly name="System.Core" destination="{destdir}\lib\mono\2.0\System.Core.dll" mono="install">
     <References>
       <Reference>mscorlib</Reference>
       <Reference>System</Reference>
