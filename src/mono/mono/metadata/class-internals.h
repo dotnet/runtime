@@ -516,10 +516,6 @@ struct _MonoDynamicGenericClass {
 	MonoMethod **ctors;
 	int count_fields;
 	MonoClassField *fields;
-	int count_properties;
-	MonoProperty *properties;
-	int count_events;
-	MonoEvent *events;
 	guint initialized;
 	/* The non-inflated types of the fields */
 	MonoType **field_generic_types;

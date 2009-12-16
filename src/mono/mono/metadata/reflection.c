@@ -10338,14 +10338,10 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	dgclass->count_methods = methods ? mono_array_length (methods) : 0;
 	dgclass->count_ctors = ctors ? mono_array_length (ctors) : 0;
 	dgclass->count_fields = fields ? mono_array_length (fields) : 0;
-	dgclass->count_properties = properties ? mono_array_length (properties) : 0;
-	dgclass->count_events = events ? mono_array_length (events) : 0;
 
 	dgclass->methods = g_new0 (MonoMethod *, dgclass->count_methods);
 	dgclass->ctors = g_new0 (MonoMethod *, dgclass->count_ctors);
 	dgclass->fields = g_new0 (MonoClassField, dgclass->count_fields);
-	dgclass->properties = g_new0 (MonoProperty, dgclass->count_properties);
-	dgclass->events = g_new0 (MonoEvent, dgclass->count_events);
 	dgclass->field_objects = g_new0 (MonoObject*, dgclass->count_fields);
 	dgclass->field_generic_types = g_new0 (MonoType*, dgclass->count_fields);
 
@@ -10387,58 +10383,6 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		} else {
 			dgclass->fields [i].name = g_strdup (dgclass->fields [i].name);
 		}
-	}
-
-	for (i = 0; i < dgclass->count_properties; i++) {
-		MonoObject *obj = mono_array_get (properties, gpointer, i);
-		MonoProperty *property = &dgclass->properties [i];
-
-		if (!strcmp (obj->vtable->klass->name, "PropertyBuilder")) {
-			MonoReflectionPropertyBuilder *pb = (MonoReflectionPropertyBuilder *) obj;
-
-			property->parent = klass;
-			property->attrs = pb->attrs;
-			property->name = mono_string_to_utf8 (pb->name);
-			if (pb->get_method)
-				property->get = inflate_method ((MonoReflectionType*)type, (MonoObject *) pb->get_method);
-			if (pb->set_method)
-				property->set = inflate_method ((MonoReflectionType*)type, (MonoObject *) pb->set_method);
-		} else if (!strcmp (obj->vtable->klass->name, "MonoProperty")) {
-			*property = *((MonoReflectionProperty *) obj)->property;
-			property->name = g_strdup (property->name);
-
-			if (property->get)
-				property->get = inflate_mono_method (klass, property->get, NULL);
-			if (property->set)
-				property->set = inflate_mono_method (klass, property->set, NULL);
-		} else
-			g_assert_not_reached ();
-	}
-
-	for (i = 0; i < dgclass->count_events; i++) {
-		MonoObject *obj = mono_array_get (events, gpointer, i);
-		MonoEvent *event = &dgclass->events [i];
-
-		if (!strcmp (obj->vtable->klass->name, "EventBuilder")) {
-			MonoReflectionEventBuilder *eb = (MonoReflectionEventBuilder *) obj;
-
-			event->parent = klass;
-			event->attrs = eb->attrs;
-			event->name = mono_string_to_utf8 (eb->name);
-			if (eb->add_method)
-				event->add = inflate_method ((MonoReflectionType*)type, (MonoObject *) eb->add_method);
-			if (eb->remove_method)
-				event->remove = inflate_method ((MonoReflectionType*)type, (MonoObject *) eb->remove_method);
-		} else if (!strcmp (obj->vtable->klass->name, "MonoEvent")) {
-			*event = *((MonoReflectionMonoEvent *) obj)->event;
-			event->name = g_strdup (event->name);
-
-			if (event->add)
-				event->add = inflate_mono_method (klass, event->add, NULL);
-			if (event->remove)
-				event->remove = inflate_mono_method (klass, event->remove, NULL);
-		} else
-			g_assert_not_reached ();
 	}
 
 	dgclass->initialized = TRUE;

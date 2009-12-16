@@ -2348,20 +2348,10 @@ free_generic_class_dependents (MonoGenericClass *gclass)
 			MONO_GC_UNREGISTER_ROOT (dgclass->field_objects [i]);
 #endif
 		}
-		for (i = 0; i < dgclass->count_properties; ++i) {
-			MonoProperty *property = dgclass->properties + i;
-			g_free ((char*)property->name);
-		}
-		for (i = 0; i < dgclass->count_events; ++i) {
-			MonoEvent *event = dgclass->events + i;
-			g_free ((char*)event->name);
-		}
-		
+
 		g_free (dgclass->methods);
 		g_free (dgclass->ctors);
 		g_free (dgclass->fields);
-		g_free (dgclass->properties);
-		g_free (dgclass->events);
 		g_free (dgclass->field_objects);
 		g_free (dgclass->field_generic_types);
 		if (!mono_generic_class_is_generic_type_definition (gclass))
