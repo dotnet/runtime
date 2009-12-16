@@ -2597,7 +2597,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 
 	switch (patch_info->type) {
 	case MONO_PATCH_INFO_BB:
-		g_assert (patch_info->data.bb->native_offset);
+		/* 
+		 * FIXME: This could be hit for methods without a prolog. Should use -1
+		 * but too much code depends on a 0 initial value.
+		 */
+		//g_assert (patch_info->data.bb->native_offset);
 		target = patch_info->data.bb->native_offset + code;
 		break;
 	case MONO_PATCH_INFO_ABS:
