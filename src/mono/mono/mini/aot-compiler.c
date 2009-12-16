@@ -1130,6 +1130,7 @@ arch_emit_autoreg (MonoAotCompile *acfg, char *symbol)
 			 ".size	%s,.-%s\n"
 			 ".section .text\n"
 			 ".type	.%s,@function\n"
+			 ".align 2\n"
 			 ".%s:\n", symbol, symbol, symbol, symbol, symbol, symbol, symbol, symbol);
 #else
 			 ".section	.ctors,\"aw\",@progbits\n"
@@ -1143,6 +1144,7 @@ arch_emit_autoreg (MonoAotCompile *acfg, char *symbol)
 			 ".size	%1$s,.-%1$s\n"
 			 ".section .text\n"
 			 ".type	.%1$s,@function\n"
+			 ".align 2\n"
 			 ".%1$s:\n", symbol);
 #endif
 
