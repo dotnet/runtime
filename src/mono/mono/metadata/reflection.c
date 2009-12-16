@@ -8496,6 +8496,8 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 
 		/* Need to copy since it will be freed later */
 		ainfo = aux->param_cattr [param];
+		if (!ainfo)
+			return NULL;
 		size = MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * ainfo->num_attrs;
 		res = g_malloc0 (size);
 		memcpy (res, ainfo, size);
