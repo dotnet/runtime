@@ -6377,9 +6377,28 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	}
 
 	if (klass->reflection_info && !klass->wastypebuilder) {
+		gboolean is_type_done = TRUE;
+		/* Generic parameters have reflection_info set but they are not finished together with their enclosing type.
+		 * We must ensure that once a type is finished we don't return a GenericTypeParameterBuilder.
+		 * We can't simply close the types as this will interfere with other parts of the generics machinery.
+		*/
+		if (klass->byval_arg.type == MONO_TYPE_MVAR || klass->byval_arg.type == MONO_TYPE_VAR) {
+			MonoGenericParam *gparam = klass->byval_arg.data.generic_param;
+
+			if (gparam->owner && gparam->owner->is_method) {
+				MonoMethod *method = gparam->owner->owner.method;
+				if (mono_class_get_generic_type_definition (method->klass)->wastypebuilder)
+					is_type_done = FALSE;
+			} else if (gparam->owner && !gparam->owner->is_method) {
+				MonoClass *klass = gparam->owner->owner.klass;
+				if (mono_class_get_generic_type_definition (klass)->wastypebuilder)
+					is_type_done = FALSE;
+			}
+		} 
+
 		/* g_assert_not_reached (); */
 		/* should this be considered an error condition? */
-		if (!type->byref) {
+		if (is_type_done && !type->byref) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			return klass->reflection_info;
