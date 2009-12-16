@@ -6387,11 +6387,11 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 
 			if (gparam->owner && gparam->owner->is_method) {
 				MonoMethod *method = gparam->owner->owner.method;
-				if (mono_class_get_generic_type_definition (method->klass)->wastypebuilder)
+				if (method && mono_class_get_generic_type_definition (method->klass)->wastypebuilder)
 					is_type_done = FALSE;
 			} else if (gparam->owner && !gparam->owner->is_method) {
 				MonoClass *klass = gparam->owner->owner.klass;
-				if (mono_class_get_generic_type_definition (klass)->wastypebuilder)
+				if (klass && mono_class_get_generic_type_definition (klass)->wastypebuilder)
 					is_type_done = FALSE;
 			}
 		} 
