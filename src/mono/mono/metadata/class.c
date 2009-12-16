@@ -5329,8 +5329,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	class->type_token = 0;
 	/* all arrays are marked serializable and sealed, bug #42779 */
-	class->flags = TYPE_ATTRIBUTE_CLASS | TYPE_ATTRIBUTE_SERIALIZABLE | TYPE_ATTRIBUTE_SEALED |
-		(eclass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
+	class->flags = TYPE_ATTRIBUTE_CLASS | TYPE_ATTRIBUTE_SERIALIZABLE | TYPE_ATTRIBUTE_SEALED | TYPE_ATTRIBUTE_PUBLIC;
 	class->parent = parent;
 	class->instance_size = mono_class_instance_size (class->parent);
 
