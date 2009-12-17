@@ -11366,13 +11366,14 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		sig->explicit_this = helper->call_conv & 64 ? 1 : 0;
 		sig->hasthis = helper->call_conv & 32 ? 1 : 0;
 
-		if (helper->call_conv == 0) /* unmanaged */
+		if (helper->unmanaged_call_conv) { /* unmanaged */
 			sig->call_convention = helper->unmanaged_call_conv - 1;
-		else
-			if (helper->call_conv & 0x02)
-				sig->call_convention = MONO_CALL_VARARG;
-		else
+			sig->pinvoke = TRUE;
+		} else if (helper->call_conv & 0x02) {
+			sig->call_convention = MONO_CALL_VARARG;
+		} else {
 			sig->call_convention = MONO_CALL_DEFAULT;
+		}
 
 		sig->param_count = nargs;
 		/* TODO: Copy type ? */
