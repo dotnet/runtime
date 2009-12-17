@@ -990,3 +990,18 @@ mono_object_castclass (MonoObject *obj, MonoClass *klass)
 
 	return NULL;
 }
+
+gpointer
+mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpointer func)
+{
+	MonoMarshalSpec **mspecs;
+	MonoMethodPInvoke piinfo;
+	MonoMethod *m;
+
+	mspecs = g_new0 (MonoMarshalSpec*, sig->param_count + 1);
+	memset (&piinfo, 0, sizeof (piinfo));
+
+	m = mono_marshal_get_native_func_wrapper (image, sig, &piinfo, mspecs, func);
+
+	return mono_compile_method (m);
+}

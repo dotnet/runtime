@@ -6235,6 +6235,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					fsig = mono_metadata_parse_signature (image, token);
 
 				n = fsig->param_count + fsig->hasthis;
+
+				if (method->dynamic && fsig->pinvoke) {
+					MonoInst *args [3];
+
+					/*
+					 * This is a call through a function pointer using a pinvoke
+					 * signature. Have to create a wrapper and call that instead.
+					 * FIXME: This is very slow, need to create a wrapper at JIT time
+					 * instead based on the signature.
+					 */
+					EMIT_NEW_IMAGECONST (cfg, args [0], method->klass->image);
+					EMIT_NEW_PCONST (cfg, args [1], fsig);
+					args [2] = addr;
+					addr = mono_emit_jit_icall (cfg, mono_get_native_calli_wrapper, args);
+				}
 			} else {
 				MonoMethod *cil_method;
 				

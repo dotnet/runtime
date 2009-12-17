@@ -159,5 +159,7 @@ MonoException *mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, 
 
 MonoObject* mono_object_castclass (MonoObject *obj, MonoClass *klass) MONO_INTERNAL;
 
+gpointer mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpointer func) MONO_INTERNAL;
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 

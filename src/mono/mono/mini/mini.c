@@ -5482,6 +5482,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_create_corlib_exception_2, "mono_create_corlib_exception_2", "object int object object", TRUE);
 	register_icall (mono_array_new_1, "mono_array_new_1", "object ptr int", FALSE);
 	register_icall (mono_array_new_2, "mono_array_new_2", "object ptr int int", FALSE);
+	register_icall (mono_get_native_calli_wrapper, "mono_get_native_calli_wrapper", "ptr ptr ptr ptr", FALSE);
 #endif
 
 	mono_generic_sharing_init ();
