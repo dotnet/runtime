@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Reflection.Emit;
 
 public class Tests {
 
@@ -1554,5 +1555,46 @@ public class Tests {
 			return 2;
 		return 0;
 	}
+
+	/*
+	 * Calling pinvoke functions dynamically using calli
+	 */
+	
+	[DllImport("libtest")]
+	private static extern IntPtr mono_test_marshal_lookup_symbol (string fileName);
+
+	delegate void CalliDel (IntPtr a, int[] f);
+
+	public static int test_0_calli_dynamic () {
+		IntPtr func = mono_test_marshal_lookup_symbol ("mono_test_marshal_inout_array");
+
+		DynamicMethod dm = new DynamicMethod ("calli", typeof (void), new Type [] { typeof (IntPtr), typeof (int[]) });
+
+		var il = dm.GetILGenerator ();
+		var signature = SignatureHelper.GetMethodSigHelper (CallingConvention.Cdecl, typeof (void));
+
+		il.Emit (OpCodes.Ldarg, 1);
+		signature.AddArgument (typeof (byte[]));
+
+		il.Emit (OpCodes.Ldarg_0);
+
+		il.Emit (OpCodes.Calli, signature);
+		il.Emit (OpCodes.Ret);
+
+		var f = (CalliDel)dm.CreateDelegate (typeof (CalliDel));
+
+		int[] arr = new int [1000];
+		for (int i = 0; i < 50; ++i)
+			arr [i] = (int)i;
+		f (func, arr);
+		if (arr.Length != 1000)
+			return 1;
+		for (int i = 0; i < 50; ++i)
+			if (arr [i] != 50 - i)
+				return 2;
+
+		return 0;
+	}
+
 }
 
