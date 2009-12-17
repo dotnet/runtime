@@ -68,6 +68,8 @@ typedef struct {
 	MonoMethodSignature *sig;
 	GSList *builders;
 	GHashTable *region_to_handler;
+	LLVMBuilderRef alloca_builder;
+	LLVMValueRef last_alloca;
 
 	char temp_name [32];
 } EmitContext;
@@ -458,6 +460,7 @@ op_to_llvm_type (int opcode)
 	case OP_IMUL_OVF_UN:
 		return LLVMInt32Type ();
 	case OP_LADD_OVF:
+	case OP_LADD_OVF_UN:
 	case OP_LSUB_OVF:
 	case OP_LSUB_OVF_UN:
 	case OP_LMUL_OVF:
@@ -1178,7 +1181,14 @@ build_alloca (EmitContext *ctx, MonoType *t)
 	while (mono_is_power_of_two (align) == -1)
 		align ++;
 
-	return mono_llvm_build_alloca (ctx->builder, type_to_llvm_type (ctx, t), NULL, align, "");
+	/*
+	 * Have to place all alloca's at the end of the entry bb, since otherwise they would
+	 * get executed every time control reaches them.
+	 */
+	LLVMPositionBuilder (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry), ctx->last_alloca);
+
+	ctx->last_alloca = mono_llvm_build_alloca (ctx->alloca_builder, type_to_llvm_type (ctx, t), NULL, align, "");
+	return ctx->last_alloca;
 }
 
 /*
@@ -1211,6 +1221,8 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 	MonoMethodSignature *sig = ctx->sig;
 	LLVMCallInfo *linfo = ctx->linfo;
 	MonoBasicBlock *bb;
+
+	ctx->alloca_builder = create_builder (ctx);
 
 	/*
 	 * Handle indirect/volatile variables by allocating memory for them
@@ -2877,6 +2889,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_IMUL_OVF_UN:
 #if SIZEOF_VOID_P == 8
 			case OP_LADD_OVF:
+			case OP_LADD_OVF_UN:
 			case OP_LSUB_OVF:
 			case OP_LSUB_OVF_UN:
 			case OP_LMUL_OVF:
@@ -3287,6 +3300,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 		if (bb == cfg->bb_exit && sig->ret->type == MONO_TYPE_VOID)
 			LLVMBuildRetVoid (builder);
+
+		if (bb == cfg->bb_entry)
+			ctx->last_alloca = LLVMGetLastInstruction (get_bb (ctx, cfg->bb_entry));
 	}
 
 	/* Add incoming phi values */
