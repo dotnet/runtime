@@ -3473,7 +3473,8 @@ handle_parent:
 			g_assert (method->slot < nslots);
 			if (method_slots [method->slot >> 5] & (1 << (method->slot & 0x1f)))
 				continue;
-			method_slots [method->slot >> 5] |= 1 << (method->slot & 0x1f);
+			if (!(method->flags & METHOD_ATTRIBUTE_NEW_SLOT))
+				method_slots [method->slot >> 5] |= 1 << (method->slot & 0x1f);
 		}
 
 		if (method->name [0] == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0))
