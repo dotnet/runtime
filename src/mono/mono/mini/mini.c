@@ -5694,9 +5694,9 @@ char*
 mono_get_runtime_build_info (void)
 {
 	if (mono_build_date)
-		return g_strdup_printf ("%s %s", FULL_VERSION, mono_build_date);
+		return g_strdup_printf ("%s (%s %s)", VERSION, FULL_VERSION, mono_build_date);
 	else
-		return g_strdup_printf ("%s", FULL_VERSION);
+		return g_strdup_printf ("%s (%s)", VERSION, FULL_VERSION);
 }
 
 static void
