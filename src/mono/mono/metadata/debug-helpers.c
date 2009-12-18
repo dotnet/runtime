@@ -554,7 +554,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 			{
-				guint16 *buf = g_new (guint16, len2);
+				guint16 *buf = g_new (guint16, len2 + 1);
 				int i;
 
 				for (i = 0; i < len2; ++i)
