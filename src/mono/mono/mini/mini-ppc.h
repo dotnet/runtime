@@ -345,4 +345,6 @@ gboolean mono_ppc_is_direct_call_sequence (guint32 *code) MONO_INTERNAL;
 
 void mono_ppc_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr) MONO_INTERNAL;
 
+void mono_ppc_set_func_into_sigctx (void *sigctx, void *func) MONO_INTERNAL;
+
 #endif /* __MONO_MINI_PPC_H__ */

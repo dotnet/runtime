@@ -57,7 +57,7 @@ enum {
 	PPC_HW_CAP_END
 };
 
-#define BREAKPOINT_SIZE 12
+#define BREAKPOINT_SIZE (PPC_LOAD_SEQUENCE_LENGTH + 4)
 
 /* This mutex protects architecture specific caches */
 #define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
@@ -3292,8 +3292,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * We do this _before_ the breakpoint, so single stepping after
 			 * a breakpoint is hit will step to the next IL offset.
 			 */
-			g_assert (((guint64)(gsize)ss_trigger_page >> 32) == 0);
-
 			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
 				ppc_load (code, ppc_r11, (gsize)ss_trigger_page);
 				ppc_ldptr (code, ppc_r11, 0, ppc_r11);
@@ -6006,9 +6004,7 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 	guint8 *code = ip;
 	guint8 *orig_code = code;
 
-	g_assert (((guint64)(gsize)bp_trigger_page >> 32) == 0);
-
-	ppc_load32 (code, ppc_r11, (gsize)bp_trigger_page);
+	ppc_load_sequence (code, ppc_r11, (gsize)bp_trigger_page);
 	ppc_ldptr (code, ppc_r11, 0, ppc_r11);
 
 	g_assert (code - orig_code == BREAKPOINT_SIZE);
@@ -6060,7 +6056,7 @@ mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
 	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
 
 	/* ip points at the ldptr instruction */
-	ip -= 2 * 4;
+	ip -= PPC_LOAD_SEQUENCE_LENGTH;
 
 	return ip;
 }
