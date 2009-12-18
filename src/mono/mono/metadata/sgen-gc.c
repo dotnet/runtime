@@ -154,9 +154,7 @@
 #include "utils/mono-semaphore.h"
 #include "utils/mono-counters.h"
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-#include <valgrind/memcheck.h>
-#endif
+#include <mono/utils/memcheck.h>
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,

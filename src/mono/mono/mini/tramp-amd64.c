@@ -18,9 +18,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/arch/amd64/amd64-codegen.h>
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-#include <valgrind/memcheck.h>
-#endif
+#include <mono/utils/memcheck.h>
 
 #include "mini.h"
 #include "mini-amd64.h"
@@ -142,9 +140,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 		if (code [-5] != 0xe8) {
 			if (can_write) {
 				InterlockedExchangePointer ((gpointer*)(orig_code - 11), addr);
-#ifdef HAVE_VALGRIND_MEMCHECK_H
 				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 11, sizeof (gpointer));
-#endif
 			}
 		} else {
 			if ((((guint64)(addr)) >> 32) != 0) {
@@ -175,9 +171,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 			g_assert ((((guint64)(orig_code)) >> 32) == 0);
 			if (can_write) {
 				InterlockedExchange ((gint32*)(orig_code - 4), ((gint64)addr - (gint64)orig_code));
-#ifdef HAVE_VALGRIND_MEMCHECK_H
 				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, 4);
-#endif
 			}
 		}
 	}
@@ -186,9 +180,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 		gpointer *got_entry = (gpointer*)((guint8*)orig_code + (*(guint32*)(orig_code - 4)));
 		if (can_write) {
 			InterlockedExchangePointer (got_entry, addr);
-#ifdef HAVE_VALGRIND_MEMCHECK_H
 			VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, sizeof (gpointer));
-#endif
 		}
 	}
 }

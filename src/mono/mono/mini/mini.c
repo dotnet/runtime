@@ -21,9 +21,7 @@
 #include <sys/time.h>
 #endif
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-#include <valgrind/memcheck.h>
-#endif
+#include <mono/utils/memcheck.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
@@ -163,17 +161,13 @@ gboolean mono_dont_free_global_codeman;
 gboolean
 mono_running_on_valgrind (void)
 {
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-		if (RUNNING_ON_VALGRIND){
+	if (RUNNING_ON_VALGRIND){
 #ifdef VALGRIND_JIT_REGISTER_MAP
-			valgrind_register = TRUE;
+		valgrind_register = TRUE;
 #endif
-			return TRUE;
-		} else
-			return FALSE;
-#else
+		return TRUE;
+	} else
 		return FALSE;
-#endif
 }
 
 typedef struct {

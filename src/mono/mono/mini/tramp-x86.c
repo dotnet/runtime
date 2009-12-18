@@ -19,9 +19,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/arch/x86/x86-codegen.h>
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-#include <valgrind/memcheck.h>
-#endif
+#include <mono/utils/memcheck.h>
 
 #include "mini.h"
 #include "mini-x86.h"
@@ -128,10 +126,8 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 		if (can_write) {
 			InterlockedExchange ((gint32*)(orig_code + 2), (guint)addr - ((guint)orig_code + 1) - 5);
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-				/* Tell valgrind to recompile the patched code */
-				VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, code + 6);
-#endif
+			/* Tell valgrind to recompile the patched code */
+			VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, code + 6);
 		}
 	} else if (code [1] == 0xe9) {
 		/* A PLT entry: jmp <DISP> */
@@ -186,12 +182,10 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 			/* Then atomically change the first 4 bytes to a nop as well */
 			ops = 0x90909090;
 			InterlockedExchange ((gint32*)code, ops);
-#ifdef HAVE_VALGRIND_MEMCHECK_H
 			/* FIXME: the calltree skin trips on the self modifying code above */
 
 			/* Tell valgrind to recompile the patched code */
 			//VALGRIND_DISCARD_TRANSLATIONS (code, code + 8);
-#endif
 		}
 	} else if (code [0] == 0x90 || code [0] == 0xeb) {
 		/* Already changed by another thread */

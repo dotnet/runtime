@@ -8,10 +8,6 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/utils/mono-counters.h>
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-#include <valgrind/memcheck.h>
-#endif
-
 #include "mini.h"
 #include "debug-mini.h"
 

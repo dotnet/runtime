@@ -2283,8 +2283,6 @@ esac
 
 AC_SUBST(libsuffix)
 
-AC_CHECK_HEADERS(valgrind/memcheck.h)
-
 if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
 	if test "x$with_tls" = "x__thread"; then
 		#

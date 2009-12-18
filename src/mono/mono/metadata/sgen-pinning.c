@@ -16,14 +16,12 @@ evacuate_pin_staging_area (void)
 
 	g_assert (pin_staging_area_index > 0 && pin_staging_area_index <= PIN_STAGING_AREA_SIZE);
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
 	/*
 	 * The pinning addresses might come from undefined memory, this is normal. Since they
 	 * are used in lots of functions, we make the memory defined here instead of having
 	 * to add a supression for those functions.
 	 */
 	VALGRIND_MAKE_MEM_DEFINED (pin_staging_area, pin_staging_area_index * sizeof (void*));
-#endif
 
 	sort_addresses (pin_staging_area, pin_staging_area_index);
 

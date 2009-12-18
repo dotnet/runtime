@@ -1,3 +1,8 @@
+2009-12-18  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Remove the check for valgrind/memcheck.h, we include the file
+	in our sources now.
+
 2009-12-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Applied patch from Matt McClellan (matt@mc-c.net). Add a check

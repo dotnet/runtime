@@ -20,9 +20,7 @@
 #include <mono/metadata/mono-debug-debugger.h>
 #include "debug-mini.h"
 
-#ifdef HAVE_VALGRIND_H
-#include <valgrind/valgrind.h>
-#endif
+#include <mono/utils/valgrind.h>
 
 #ifdef MONO_DEBUGGER_SUPPORTED
 #include <libgc/include/libgc-mono-debugger.h>

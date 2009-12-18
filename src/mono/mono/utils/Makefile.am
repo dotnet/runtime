@@ -66,7 +66,9 @@ libmonoutils_la_SOURCES = \
 	dtrace.h			\
 	gc_wrapper.h		\
 	mono-error.c	\
-	mono-error-internals.h
+	mono-error-internals.h	\
+	valgrind.h	\
+	memcheck.h
 
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
