@@ -127,7 +127,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 			InterlockedExchange ((gint32*)(orig_code + 2), (guint)addr - ((guint)orig_code + 1) - 5);
 
 			/* Tell valgrind to recompile the patched code */
-			VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, code + 6);
+			VALGRIND_DISCARD_TRANSLATIONS (orig_code + 2, 4);
 		}
 	} else if (code [1] == 0xe9) {
 		/* A PLT entry: jmp <DISP> */
@@ -185,7 +185,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 			/* FIXME: the calltree skin trips on the self modifying code above */
 
 			/* Tell valgrind to recompile the patched code */
-			//VALGRIND_DISCARD_TRANSLATIONS (code, code + 8);
+			//VALGRIND_DISCARD_TRANSLATIONS (code, 8);
 		}
 	} else if (code [0] == 0x90 || code [0] == 0xeb) {
 		/* Already changed by another thread */
