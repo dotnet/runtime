@@ -27,6 +27,10 @@ void ppc_patch (guchar *code, const guchar *target);
 void ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd);
 
 struct MonoLMF {
+	/*
+	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
+	 * the other fields are not valid.
+	 */
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
@@ -50,6 +54,15 @@ typedef struct {
 	mgreg_t regs [MONO_SAVED_GREGS];
 	double fregs [MONO_SAVED_FREGS];
 } MonoContext;
+
+/*
+ * This structure is an extension of MonoLMF and contains extra information.
+ */
+typedef struct {
+	struct MonoLMF lmf;
+	gboolean debugger_invoke;
+	MonoContext ctx; /* if debugger_invoke is TRUE */
+} MonoLMFExt;
 
 typedef struct MonoCompileArch {
 	int fp_conv_var_offset;
@@ -201,6 +214,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_AOT_SUPPORTED 1
 #define MONO_ARCH_NEED_GOT_VAR 1
+#define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
 #define PPC_NUM_REG_FPARGS (PPC_LAST_FPARG_REG-PPC_FIRST_FPARG_REG+1)

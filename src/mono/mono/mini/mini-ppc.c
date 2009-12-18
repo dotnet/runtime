@@ -15,6 +15,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-mmap.h>
 
 #include "mini-ppc.h"
 #ifdef TARGET_POWERPC64
@@ -56,6 +57,8 @@ enum {
 	PPC_HW_CAP_END
 };
 
+#define BREAKPOINT_SIZE 12
+
 /* This mutex protects architecture specific caches */
 #define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
 #define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
@@ -65,6 +68,15 @@ int mono_exc_esp_offset = 0;
 static int tls_mode = TLS_MODE_DETECT;
 static int lmf_pthread_key = -1;
 static int monodomain_key = -1;
+
+/*
+ * The code generated for sequence points reads from this location, which is
+ * made read-only when single stepping is enabled.
+ */
+static gpointer ss_trigger_page;
+
+/* Enabled breakpoints read from this trigger page */
+static gpointer bp_trigger_page;
 
 static int
 offsets_from_pthread_key (guint32 key, int *offset2)
@@ -672,7 +684,11 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	InitializeCriticalSection (&mini_arch_mutex);	
+	InitializeCriticalSection (&mini_arch_mutex);
+
+	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
+	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
+	mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
 }
 
 /*
@@ -3264,6 +3280,39 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_NOT_REACHED:
 		case OP_NOT_NULL:
 			break;
+		case OP_SEQ_POINT: {
+			int i, il_offset;
+
+			if (cfg->compile_aot)
+				NOT_IMPLEMENTED;
+
+			/* 
+			 * Read from the single stepping trigger page. This will cause a
+			 * SIGSEGV when single stepping is enabled.
+			 * We do this _before_ the breakpoint, so single stepping after
+			 * a breakpoint is hit will step to the next IL offset.
+			 */
+			g_assert (((guint64)(gsize)ss_trigger_page >> 32) == 0);
+
+			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
+				ppc_load (code, ppc_r11, (gsize)ss_trigger_page);
+				ppc_ldptr (code, ppc_r11, 0, ppc_r11);
+			}
+
+			il_offset = ins->inst_imm;
+
+			if (!cfg->seq_points)
+				cfg->seq_points = g_ptr_array_new ();
+			g_ptr_array_add (cfg->seq_points, GUINT_TO_POINTER (il_offset));
+			g_ptr_array_add (cfg->seq_points, GUINT_TO_POINTER (code - cfg->native_code));
+			/* 
+			 * A placeholder for a possible breakpoint inserted by
+			 * mono_arch_set_breakpoint ().
+			 */
+			for (i = 0; i < BREAKPOINT_SIZE / 4; ++i)
+				ppc_nop (code);
+			break;
+		}
 		case OP_TLS_GET:
 			emit_tls_access (code, ins->dreg, ins->inst_offset);
 			break;
@@ -5938,3 +5987,174 @@ mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, in
 
 	return code;
 }
+
+/* Soft Debug support */
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+
+/*
+ * BREAKPOINTS
+ */
+
+/*
+ * mono_arch_set_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+	guint8 *orig_code = code;
+
+	g_assert (((guint64)(gsize)bp_trigger_page >> 32) == 0);
+
+	ppc_load32 (code, ppc_r11, (gsize)bp_trigger_page);
+	ppc_ldptr (code, ppc_r11, 0, ppc_r11);
+
+	g_assert (code - orig_code == BREAKPOINT_SIZE);
+
+	mono_arch_flush_icache (orig_code, code - orig_code);
+}
+
+/*
+ * mono_arch_clear_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
+{
+	guint8 *code = ip;
+	int i;
+
+	for (i = 0; i < BREAKPOINT_SIZE / 4; ++i)
+		ppc_nop (code);
+
+	mono_arch_flush_icache (ip, code - ip);
+}
+
+/*
+ * mono_arch_is_breakpoint_event:
+ *
+ *   See mini-amd64.c for docs.
+ */
+gboolean
+mono_arch_is_breakpoint_event (void *info, void *sigctx)
+{
+	siginfo_t* sinfo = (siginfo_t*) info;
+	/* Sometimes the address is off by 4 */
+	if (sinfo->si_addr >= bp_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)bp_trigger_page + 128)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*
+ * mono_arch_get_ip_for_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+guint8*
+mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+
+	/* ip points at the ldptr instruction */
+	ip -= 2 * 4;
+
+	return ip;
+}
+
+/*
+ * mono_arch_skip_breakpoint:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_skip_breakpoint (MonoContext *ctx)
+{
+	/* skip the ldptr */
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 4);
+}
+
+/*
+ * SINGLE STEPPING
+ */
+	
+/*
+ * mono_arch_start_single_stepping:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_start_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), 0);
+}
+	
+/*
+ * mono_arch_stop_single_stepping:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_stop_single_stepping (void)
+{
+	mono_mprotect (ss_trigger_page, mono_pagesize (), MONO_MMAP_READ);
+}
+
+/*
+ * mono_arch_is_single_step_event:
+ *
+ *   See mini-amd64.c for docs.
+ */
+gboolean
+mono_arch_is_single_step_event (void *info, void *sigctx)
+{
+	siginfo_t* sinfo = (siginfo_t*) info;
+	/* Sometimes the address is off by 4 */
+	if (sinfo->si_addr >= ss_trigger_page && (guint8*)sinfo->si_addr <= (guint8*)ss_trigger_page + 128)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/*
+ * mono_arch_get_ip_for_single_step:
+ *
+ *   See mini-amd64.c for docs.
+ */
+guint8*
+mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
+{
+	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
+
+	/* ip points after the ldptr instruction */
+	return ip;
+}
+
+/*
+ * mono_arch_skip_single_step:
+ *
+ *   See mini-amd64.c for docs.
+ */
+void
+mono_arch_skip_single_step (MonoContext *ctx)
+{
+	/* skip the ldptr */
+	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 4);
+}
+
+/*
+ * mono_arch_create_seq_point_info:
+ *
+ *   See mini-amd64.c for docs.
+ */
+gpointer
+mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}
+
+#endif

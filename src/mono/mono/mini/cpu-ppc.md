@@ -49,6 +49,7 @@ memory_barrier: len:4
 nop: len:4
 relaxed_nop: len:4
 break: len:4
+seq_point: len:24
 jmp: len:108
 call: dest:a clob:c len:16
 br: len:4
