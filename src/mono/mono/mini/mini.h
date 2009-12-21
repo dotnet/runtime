@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "65"
+#define MONO_AOT_FILE_VERSION "66"
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -213,6 +213,19 @@ typedef struct {
 	int il_offset;
 	gpointer lmf;
 } StackFrameInfo;
+
+typedef struct {
+	int il_offset, native_offset;
+	/* Indexes of successor sequence points */
+	int *next;
+	/* Number of entries in next */
+	int next_len;
+} SeqPoint;
+
+typedef struct {
+	int len;
+	SeqPoint seq_points [MONO_ZERO_LEN_ARRAY];
+} MonoSeqPointInfo;
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
@@ -359,7 +372,6 @@ typedef struct MonoInstList MonoInstList;
 typedef struct MonoInst MonoInst;
 typedef struct MonoCallInst MonoCallInst;
 typedef struct MonoCallArgParm MonoCallArgParm;
-typedef struct MonoEdge MonoEdge;
 typedef struct MonoMethodVar MonoMethodVar;
 typedef struct MonoBasicBlock MonoBasicBlock;
 typedef struct MonoLMF MonoLMF;
@@ -401,12 +413,6 @@ extern const gint8 ins_sreg_counts [];
 #define MONO_BB_FOR_EACH_INS_REVERSE_SAFE(bb, p, ins) for ((ins) = (bb)->last_ins, p = (ins) ? (ins)->prev : NULL; (ins); (ins) = (p), (p) = (ins) ? (ins)->prev : NULL)
 
 #define mono_bb_first_ins(bb) (bb)->code
-
-struct MonoEdge {
-	MonoEdge *next;
-	MonoBasicBlock *bb;
-	/* add edge type? */
-};
 
 struct MonoSpillInfo {
 	int offset;
@@ -470,7 +476,6 @@ struct MonoBasicBlock {
 	GSList *dominated;
 	/* fast dominator algorithm */
 	MonoBasicBlock *df_parent, *ancestor, *child, *label;
-	MonoEdge *bucket;
 	int size, sdom, idomn;
 	
 	/* loop nesting and recognition */
@@ -507,6 +512,9 @@ struct MonoBasicBlock {
 
 	/* we use that to prevent merging of bblocks covered by different clauses*/
 	guint real_offset;
+
+	GSList *seq_points;
+	MonoInst *last_seq_point;
 
 	/*
 	 * The region encodes whether the basic block is inside
@@ -1111,6 +1119,9 @@ typedef struct {
 	 */
 	GPtrArray *seq_points;
 
+	/* The encoded sequence point info */
+	MonoSeqPointInfo *seq_point_info;
+
 	/* Used by AOT */
 	guint32 got_offset, ex_info_offset, method_info_offset;
 
@@ -1465,6 +1476,7 @@ void	  mono_print_ins (MonoInst *ins) MONO_INTERNAL;
 gboolean  mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 gboolean  mini_method_verify (MonoCompile *cfg, MonoMethod *method) MONO_INTERNAL;
 MonoInst *mono_get_got_var (MonoCompile *cfg) MONO_INTERNAL;
+void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int native_offset) MONO_INTERNAL;
 
 gboolean  mini_class_is_system_array (MonoClass *klass) MONO_INTERNAL;
 MonoMethodSignature *mono_get_element_address_signature (int arity) MONO_INTERNAL;

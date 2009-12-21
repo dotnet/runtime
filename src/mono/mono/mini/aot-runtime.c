@@ -1964,19 +1964,25 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	}
 
 	if (has_seq_points) {
-		GPtrArray *seq_points;
-		int il_offset, native_offset, last_il_offset, last_native_offset;
+		MonoSeqPointInfo *seq_points;
+		int il_offset, native_offset, last_il_offset, last_native_offset, j;
 
 		int len = decode_value (p, &p);
 
-		seq_points = g_ptr_array_new ();
+		seq_points = g_malloc0 (sizeof (MonoSeqPointInfo) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (SeqPoint));
 		last_il_offset = last_native_offset = 0;
-		for (i = 0; i < len; i += 2) {
+		for (i = 0; i < len; ++i) {
+			SeqPoint *sp = &seq_points->seq_points [i];
 			il_offset = last_il_offset + decode_value (p, &p);
 			native_offset = last_native_offset + decode_value (p, &p);
 
-			g_ptr_array_add (seq_points, GINT_TO_POINTER (il_offset));
-			g_ptr_array_add (seq_points, GINT_TO_POINTER (native_offset));
+			sp->il_offset = il_offset;
+			sp->native_offset = native_offset;
+			
+			sp->next_len = decode_value (p, &p);
+			sp->next = g_new (int, sp->next_len);
+			for (j = 0; j < sp->next_len; ++j)
+				sp->next [j] = decode_value (p, &p);
 
 			last_il_offset = il_offset;
 			last_native_offset = native_offset;

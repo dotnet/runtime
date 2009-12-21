@@ -3509,7 +3509,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_NOT_NULL:
 			break;
 		case OP_SEQ_POINT: {
-			int i, il_offset;
+			int i;
 
 			if (cfg->compile_aot)
 				NOT_IMPLEMENTED;
@@ -3525,12 +3525,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->flags & MONO_INST_SINGLE_STEP_LOC)
 				amd64_mov_reg_mem (code, AMD64_R11, (guint64)ss_trigger_page, 4);
 
-			il_offset = ins->inst_imm;
+			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 
-			if (!cfg->seq_points)
-				cfg->seq_points = g_ptr_array_new ();
-			g_ptr_array_add (cfg->seq_points, GUINT_TO_POINTER (il_offset));
-			g_ptr_array_add (cfg->seq_points, GUINT_TO_POINTER (code - cfg->native_code));
 			/* 
 			 * A placeholder for a possible breakpoint inserted by
 			 * mono_arch_set_breakpoint ().

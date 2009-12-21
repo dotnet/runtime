@@ -439,7 +439,11 @@ typedef struct {
 	gpointer start_sp;
 	MonoMethod *last_method;
 	int last_line;
-} MonoSingleStepReq;
+	/* Whenever single stepping is performed using start/stop_single_stepping () */
+	gboolean global;
+	/* The list of breakpoints used to implement step-over */
+	GSList *bps;
+} SingleStepReq;
 
 /* Dummy structure used for the profiler callbacks */
 typedef struct {
@@ -514,7 +518,7 @@ static mono_mutex_t debugger_thread_exited_mutex;
 static DebuggerProfiler debugger_profiler;
 
 /* The single step request instance */
-static MonoSingleStepReq *ss_req = NULL;
+static SingleStepReq *ss_req = NULL;
 static gpointer ss_invoke_addr = NULL;
 
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
@@ -568,8 +572,9 @@ static void ids_cleanup (void);
 
 static void suspend_init (void);
 
-static ErrorCode ss_start (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req);
-static void ss_stop (EventRequest *req);
+static void ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info);
+static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req);
+static void ss_destroy (SingleStepReq *req);
 
 static void start_debugger_thread (void);
 
@@ -2204,6 +2209,60 @@ is_suspended (void)
 }
 
 /*
+ * find_seq_point_for_native_offset:
+ *
+ *   Find the sequence point corresponding to the native offset NATIVE_OFFSET, which
+ * should be the location of a sequence point.
+ */
+static SeqPoint*
+find_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info)
+{
+	MonoSeqPointInfo *seq_points;
+	int i;
+
+	mono_domain_lock (domain);
+	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
+	mono_domain_unlock (domain);
+	g_assert (seq_points);
+
+	*info = seq_points;
+
+	for (i = 0; i < seq_points->len; ++i) {
+		if (seq_points->seq_points [i].native_offset == native_offset)
+			return &seq_points->seq_points [i];
+	}
+
+	return NULL;
+}
+
+/*
+ * find_seq_point:
+ *
+ *   Find the sequence point corresponding to the IL offset IL_OFFSET, which
+ * should be the location of a sequence point.
+ */
+static SeqPoint*
+find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info)
+{
+	MonoSeqPointInfo *seq_points;
+	int i;
+
+	mono_domain_lock (domain);
+	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
+	mono_domain_unlock (domain);
+	g_assert (seq_points);
+
+	*info = seq_points;
+
+	for (i = 0; i < seq_points->len; ++i) {
+		if (seq_points->seq_points [i].il_offset == il_offset)
+			return &seq_points->seq_points [i];
+	}
+
+	return NULL;
+}
+
+/*
  * compute_il_offset:
  *
  *    Compute the IL offset corresponding to NATIVE_OFFSET, which should be
@@ -2214,7 +2273,7 @@ is_suspended (void)
 static gint32
 compute_il_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset)
 {
-	GPtrArray *seq_points;
+	MonoSeqPointInfo *seq_points;
 	int i, last_il_offset, seq_il_offset, seq_native_offset;
 
 	mono_domain_lock (domain);
@@ -2225,9 +2284,9 @@ compute_il_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset)
 	last_il_offset = -1;
 
 	/* Find the sequence point */
-	for (i = 0; i < seq_points->len; i += 2) {
-		seq_il_offset = GPOINTER_TO_UINT (g_ptr_array_index (seq_points, i));
-		seq_native_offset = GPOINTER_TO_UINT (g_ptr_array_index (seq_points, i + 1));
+	for (i = 0; i < seq_points->len; ++i) {
+		seq_il_offset = seq_points->seq_points [i].il_offset;
+		seq_native_offset = seq_points->seq_points [i].native_offset;
 
 		if (seq_native_offset > native_offset)
 			break;
@@ -2796,9 +2855,9 @@ end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 		EventRequest *req = g_ptr_array_index (event_requests, i);
 
 		if (req->event_kind == EVENT_KIND_STEP) {
-			ss_stop (req);
-                        g_ptr_array_remove_index_fast (event_requests, i);
-                        g_free (req);
+			ss_destroy (req->info);
+			g_ptr_array_remove_index_fast (event_requests, i);
+			g_free (req);
 			break;
 		}
 	}
@@ -2917,16 +2976,16 @@ breakpoints_cleanup (void)
  * JI.
  */
 static void
-insert_breakpoint (GPtrArray *seq_points, MonoJitInfo *ji, MonoBreakpoint *bp)
+insert_breakpoint (MonoSeqPointInfo *seq_points, MonoJitInfo *ji, MonoBreakpoint *bp)
 {
 	int i, count;
 	gint32 il_offset, native_offset;
 	BreakpointInstance *inst;
 
 	native_offset = 0;
-	for (i = 0; i < seq_points->len; i += 2) {
-		il_offset = GPOINTER_TO_INT (g_ptr_array_index (seq_points, i));
-		native_offset = GPOINTER_TO_INT (g_ptr_array_index (seq_points, i + 1));
+	for (i = 0; i < seq_points->len; ++i) {
+		il_offset = seq_points->seq_points [i].il_offset;
+		native_offset = seq_points->seq_points [i].native_offset;
 
 		if (il_offset == bp->il_offset)
 			break;
@@ -2990,7 +3049,7 @@ static void
 add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 {
 	int i;
-	GPtrArray *seq_points;
+	MonoSeqPointInfo *seq_points;
 	MonoDomain *domain;
 
 	if (!breakpoints)
@@ -3020,7 +3079,7 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 }
 
 static void
-set_bp_in_method (MonoDomain *domain, MonoMethod *method, GPtrArray *seq_points, MonoBreakpoint *bp)
+set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_points, MonoBreakpoint *bp)
 {
 	gpointer code;
 	MonoJitInfo *ji;
@@ -3042,7 +3101,7 @@ static void
 set_bp_in_method_cb (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoMethod *method = key;
-	GPtrArray *seq_points = value;
+	MonoSeqPointInfo *seq_points = value;
 	MonoBreakpoint *bp = user_data;
 	MonoDomain *domain = mono_domain_get ();
 
@@ -3068,7 +3127,7 @@ set_bp_in_method_cb (gpointer key, gpointer value, gpointer user_data)
 static MonoBreakpoint*
 set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req)
 {
-	GPtrArray *seq_points;
+	MonoSeqPointInfo *seq_points;
 	MonoDomain *domain;
 	MonoBreakpoint *bp;
 
@@ -3085,7 +3144,7 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req)
 	bp->req = req;
 	bp->children = g_ptr_array_new ();
 
-	DEBUG(1, fprintf (log_file, "[dbg] Setting breakpoint at %s:0x%x.\n", method ? mono_method_full_name (method, TRUE) : "<all>", (int)il_offset));
+	DEBUG(1, fprintf (log_file, "[dbg] Setting %sbreakpoint at %s:0x%x.\n", (req->event_kind == EVENT_KIND_STEP) ? "single step " : "", method ? mono_method_full_name (method, TRUE) : "<all>", (int)il_offset));
 
 	domain = mono_domain_get ();
 	mono_domain_lock (domain);
@@ -3145,8 +3204,8 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	guint32 native_offset;
 	MonoBreakpoint *bp;
 	BreakpointInstance *inst;
-	GPtrArray *reqs;
-	GSList *events = NULL;
+	GPtrArray *bp_reqs, *ss_reqs_orig, *ss_reqs;
+	GSList *bp_events = NULL, *ss_events = NULL, *enter_leave_events = NULL;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
 
 	// FIXME: Speed this up
@@ -3172,7 +3231,9 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	if (ji->method->wrapper_type || tls->disable_breakpoints)
 		return;
 
-	reqs = g_ptr_array_new ();
+	bp_reqs = g_ptr_array_new ();
+	ss_reqs = g_ptr_array_new ();
+	ss_reqs_orig = g_ptr_array_new ();
 
 	DEBUG(1, fprintf (log_file, "[%p] Breakpoint hit, method=%s, offset=0x%x.\n", (gpointer)GetCurrentThreadId (), ji->method->name, native_offset));
 
@@ -3187,12 +3248,17 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 
 		for (j = 0; j < bp->children->len; ++j) {
 			inst = g_ptr_array_index (bp->children, j);
-			if (inst->ji == ji && inst->native_offset == native_offset)
-				g_ptr_array_add (reqs, bp->req);
+			if (inst->ji == ji && inst->native_offset == native_offset) {
+				if (bp->req->event_kind == EVENT_KIND_STEP) {
+					g_ptr_array_add (ss_reqs_orig, bp->req);
+				} else {
+					g_ptr_array_add (bp_reqs, bp->req);
+				}
+			}
 		}
 	}
-	if (reqs->len == 0) {
-		GPtrArray *seq_points;
+	if (bp_reqs->len == 0 && ss_reqs_orig->len == 0) {
+		MonoSeqPointInfo *seq_points;
 		int seq_il_offset, seq_native_offset;
 		MonoDomain *domain = mono_domain_get ();
 
@@ -3207,9 +3273,9 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 		}
 		g_assert (seq_points);
 
-		for (i = 0; i < seq_points->len; i += 2) {
-			seq_il_offset = GPOINTER_TO_INT (g_ptr_array_index (seq_points, i));
-			seq_native_offset = GPOINTER_TO_INT (g_ptr_array_index (seq_points, i + 1));
+		for (i = 0; i < seq_points->len; ++i) {
+			seq_il_offset = seq_points->seq_points [i].il_offset;
+			seq_native_offset = seq_points->seq_points [i].native_offset;
 
 			if (native_offset == seq_native_offset) {
 				if (seq_il_offset == METHOD_ENTRY_IL_OFFSET)
@@ -3220,18 +3286,68 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 			}
 		}
 	}
-	
-	if (reqs->len > 0)
-		events = create_event_list (EVENT_KIND_BREAKPOINT, reqs, ji, NULL, &suspend_policy);
-	else if (kind != EVENT_KIND_BREAKPOINT)
-		events = create_event_list (kind, NULL, ji, NULL, &suspend_policy);
 
-	g_ptr_array_free (reqs, TRUE);
+	/* Process single step requests */
+	for (i = 0; i < ss_reqs_orig->len; ++i) {
+		EventRequest *req = g_ptr_array_index (ss_reqs_orig, i);
+		SingleStepReq *ss_req = bp->req->info;
+		gboolean hit = TRUE;
+		MonoSeqPointInfo *info;
+		SeqPoint *sp;
+
+		sp = find_seq_point_for_native_offset (mono_domain_get (), ji->method, native_offset, &info);
+		g_assert (sp);
+
+		if (ss_req->size == STEP_SIZE_LINE) {
+			/* Have to check whenever a different source line was reached */
+			MonoDebugMethodInfo *minfo;
+			MonoDebugSourceLocation *loc = NULL;
+
+			minfo = mono_debug_lookup_method (ji->method);
+
+			if (minfo)
+				loc = mono_debug_symfile_lookup_location (minfo, sp->il_offset);
+
+			if (!loc || (loc && ji->method == ss_req->last_method && loc->row == ss_req->last_line))
+				/* Have to continue single stepping */
+				hit = FALSE;
+				
+			if (loc) {
+				ss_req->last_method = ji->method;
+				ss_req->last_line = loc->row;
+				mono_debug_free_source_location (loc);
+			}
+		}
+
+		if (hit)
+			g_ptr_array_add (ss_reqs, req);
+
+		/* Start single stepping again from the current sequence point */
+		ss_start (ss_req, ji->method, sp, info);
+	}
+	
+	if (ss_reqs->len > 0)
+		ss_events = create_event_list (EVENT_KIND_STEP, ss_reqs, ji, NULL, &suspend_policy);
+	if (bp_reqs->len > 0)
+		bp_events = create_event_list (EVENT_KIND_BREAKPOINT, bp_reqs, ji, NULL, &suspend_policy);
+	if (kind != EVENT_KIND_BREAKPOINT)
+		enter_leave_events = create_event_list (kind, NULL, ji, NULL, &suspend_policy);
 
 	mono_loader_unlock ();
 
-	if (events)
-		process_event (kind, ji->method, 0, ctx, events, suspend_policy);
+	g_ptr_array_free (bp_reqs, TRUE);
+	g_ptr_array_free (ss_reqs, TRUE);
+
+	/* 
+	 * FIXME: The first event will suspend, so the second will only be sent after the
+	 * resume.
+	 */
+	if (ss_events)
+		process_event (EVENT_KIND_STEP, ji->method, 0, ctx, ss_events, suspend_policy);
+	if (bp_events)
+		process_event (kind, ji->method, 0, ctx, bp_events, suspend_policy);
+	if (enter_leave_events)
+		process_event (kind, ji->method, 0, ctx, enter_leave_events, suspend_policy);
 }
 
 static void
@@ -3536,12 +3652,82 @@ stop_single_stepping (void)
 }
 
 /*
+ * ss_stop:
+ *
+ *   Stop the single stepping operation given by SS_REQ.
+ */
+static void
+ss_stop (SingleStepReq *ss_req)
+{
+	gboolean use_bps = FALSE;
+
+	if (ss_req->bps) {
+		GSList *l;
+
+		use_bps = TRUE;
+
+		for (l = ss_req->bps; l; l = l->next) {
+			clear_breakpoint (l->data);
+		}
+		g_slist_free (ss_req->bps);
+		ss_req->bps = NULL;
+	}
+
+	if (ss_req->global) {
+		stop_single_stepping ();
+		ss_req->global = FALSE;
+	}
+}
+
+/*
+ * ss_start:
+ *
+ *   Start the single stepping operation given by SS_REQ from the sequence point SP.
+ */
+static void
+ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info)
+{
+	gboolean use_bp = FALSE;
+	int i;
+	SeqPoint *next_sp;
+	MonoBreakpoint *bp;
+
+	/* Stop the previous operation */
+	ss_stop (ss_req);
+
+	/*
+	 * Implement single stepping using breakpoints if possible.
+	 */
+	if (ss_req->depth == STEP_DEPTH_OVER) {
+		if (sp->next_len > 0) {
+			use_bp = TRUE;
+			for (i = 0; i < sp->next_len; ++i) {
+				next_sp = &info->seq_points [sp->next [i]];
+
+				bp = set_breakpoint (method, next_sp->il_offset, ss_req->req);
+				ss_req->bps = g_slist_append (ss_req->bps, bp);
+			}
+		}
+	}
+
+	if (!ss_req->bps) {
+		ss_req->global = TRUE;
+		start_single_stepping ();
+	} else {
+		ss_req->global = FALSE;
+	}
+}
+
+/*
  * Start single stepping of thread THREAD
  */
 static ErrorCode
-ss_start (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req)
+ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req)
 {
 	DebuggerTlsData *tls;
+	MonoSeqPointInfo *info;
+	SeqPoint *sp = NULL;
+	MonoMethod *method = NULL;
 
 	if (suspend_count == 0)
 		return ERR_NOT_SUSPENDED;
@@ -3554,7 +3740,7 @@ ss_start (MonoInternalThread *thread, StepSize size, StepDepth depth, EventReque
 		return ERR_NOT_IMPLEMENTED;
 	}
 
-	ss_req = g_new0 (MonoSingleStepReq, 1);
+	ss_req = g_new0 (SingleStepReq, 1);
 	ss_req->req = req;
 	ss_req->thread = thread;
 	ss_req->size = size;
@@ -3592,22 +3778,37 @@ ss_start (MonoInternalThread *thread, StepSize size, StepDepth depth, EventReque
 		}
 	}
 
-	start_single_stepping ();
+	if (ss_req->depth == STEP_DEPTH_OVER) {
+		StackFrame *frame;
+
+		compute_frame_info (thread, tls);
+
+		g_assert (tls->frame_count);
+		frame = tls->frames [0];
+
+		if (frame->il_offset != -1) {
+			/* FIXME: Sort the table and use a binary search */
+			sp = find_seq_point (frame->domain, frame->method, frame->il_offset, &info);
+			g_assert (sp);
+			method = frame->method;
+		}
+	}
+
+	ss_start (ss_req, method, sp, info);
 
 	return 0;
 }
 
 static void
-ss_stop (EventRequest *req)
+ss_destroy (SingleStepReq *req)
 {
 	// FIXME: Locking
-	g_assert (ss_req);
-	g_assert (ss_req->req == req);
+	g_assert (ss_req == req);
+
+	ss_stop (ss_req);
 
 	g_free (ss_req);
 	ss_req = NULL;
-
-	stop_single_stepping ();
 }
 
 void
@@ -4025,7 +4226,7 @@ clear_event_request (int req_id, int etype)
 			if (req->event_kind == EVENT_KIND_BREAKPOINT)
 				clear_breakpoint (req->info);
 			if (req->event_kind == EVENT_KIND_STEP)
-				ss_stop (req);
+				ss_destroy (req->info);
 			if (req->event_kind == EVENT_KIND_METHOD_ENTRY)
 				clear_breakpoint (req->info);
 			if (req->event_kind == EVENT_KIND_METHOD_EXIT)
@@ -4580,7 +4781,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return err;
 			}
 
-			err = ss_start (THREAD_TO_INTERNAL (step_thread), size, depth, req);
+			err = ss_create (THREAD_TO_INTERNAL (step_thread), size, depth, req);
 			if (err) {
 				g_free (req);
 				return err;
