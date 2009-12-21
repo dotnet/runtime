@@ -296,18 +296,12 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
  * For x86 win32, see ???.
  */
 static CallInfo*
-get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
 	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
-	CallInfo *cinfo;
-
-	if (mp)
-		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
-	else
-		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
 	gr = 0;
 	fr = 0;
@@ -485,6 +479,20 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	return cinfo;
 }
 
+static CallInfo*
+get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
+{
+	int n = sig->hasthis + sig->param_count;
+	CallInfo *cinfo;
+
+	if (mp)
+		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+	else
+		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+
+	return get_call_info_internal (gsctx, cinfo, sig, is_pinvoke);
+}
+
 /*
  * mono_arch_get_argument_info:
  * @csig:  a method signature
@@ -495,6 +503,9 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
  * padding. arg_info should be large enought to hold param_count + 1 entries. 
  *
  * Returns the size of the argument area on the stack.
+ * This should be signal safe, since it is called from
+ * mono_arch_find_jit_info_ext ().
+ * FIXME: The metadata calls might not be signal safe.
  */
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
@@ -505,7 +516,10 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	int offset = 8;
 	CallInfo *cinfo;
 
-	cinfo = get_call_info (NULL, NULL, csig, FALSE);
+	/* Avoid g_malloc as it is not signal safe */
+	cinfo = (CallInfo*)g_newa (guint8*, sizeof (CallInfo) + (sizeof (ArgInfo) * (csig->param_count + 1)));
+
+	cinfo = get_call_info_internal (NULL, cinfo, csig, FALSE);
 
 	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
 		args_size += sizeof (gpointer);
@@ -543,8 +557,6 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		align = 4;
 	args_size += pad = (align - (args_size & (align - 1))) & (align - 1);
 	arg_info [k].pad = pad;
-
-	g_free (cinfo);
 
 	return args_size;
 }
