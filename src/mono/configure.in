@@ -1909,7 +1909,9 @@ if test "x$enable_llvm" = "xyes"; then
    	  AC_MSG_ERROR([llvm-config not found.])
    fi
 
-   LLVM_CXXFLAGS=`$LLVM_CONFIG --cflags`
+   # The output of --cflags seems to include optimizations flags too
+   LLVM_CFLAGS=`$LLVM_CONFIG --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
+   LLVM_CXXFLAGS=`$LLVM_CONFIG --cxxflags`
    LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
    LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter jit x86codegen`
    LLVM_LIBS="$LLVM_LDFLAGS $LLVM_LIBS -lstdc++"
@@ -1926,6 +1928,7 @@ if test "x$enable_llvm" = "xyes"; then
    # llvm's config.h
    LLVM_CXXFLAGS="$LLVM_CXXFLAGS -DLLVM_MAJOR_VERSION=$major_version -DLLVM_MINOR_VERSION=$minor_version"
 
+   AC_SUBST(LLVM_CFLAGS)
    AC_SUBST(LLVM_CXXFLAGS)
    AC_SUBST(LLVM_LIBS)
    AC_SUBST(LLVM_LDFLAGS)

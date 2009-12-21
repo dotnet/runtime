@@ -1,3 +1,7 @@
+2009-12-21  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add an LLVM_CFLAGS automake variable.
+
 2009-12-18  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Remove the check for valgrind/memcheck.h, we include the file
