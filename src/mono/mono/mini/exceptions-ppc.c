@@ -679,7 +679,9 @@ mono_arch_ip_from_context (void *sigctx)
 void
 mono_ppc_set_func_into_sigctx (void *sigctx, void *func)
 {
-#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif defined(PPC_USES_FUNCTION_DESCRIPTOR)
 	/* Have to set both the ip and the TOC reg */
 	os_ucontext *uc = sigctx;
 
