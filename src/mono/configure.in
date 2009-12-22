@@ -2485,7 +2485,7 @@ if test x$host_win32 = xyes; then
   if test "x$cross_compiling" = "xno"; then
     mono_cfg_dir=`cygpath -w -a $mono_cfg_root`\\etc
   else
-    mono_cfg_dir=`echo $mono_cfg_root | tr '/' '\\\'`\\etc
+    mono_cfg_dir=`echo $mono_cfg_root | tr '/' '\\'`\\etc
   fi
 else
   mono_cfg_dir=$mono_cfg_root/etc
