@@ -730,8 +730,8 @@ mono_debugger_agent_parse_options (char *options)
 			agent_config.timeout = atoi (arg + 8);
 		} else if (strncmp (arg, "launch=", 7) == 0) {
 			agent_config.launch = g_strdup (arg + 7);
-		} else if (strncmp (arg, "embedding=", 9) == 0) {
-			agent_config.embedding = atoi (arg + 9) == 1;
+		} else if (strncmp (arg, "embedding=", 10) == 0) {
+			agent_config.embedding = atoi (arg + 10) == 1;
 		} else {
 			print_usage ();
 			exit (1);
