@@ -218,6 +218,7 @@ public class Tests : TestsBase
 		ss1 ();
 		ss2 ();
 		ss3 ();
+		ss3_2 ();
 		ss4 ();
 		ss5 (new int [] { 1, 2, 3 }, new Func<int, bool> (is_even));
 	}
@@ -238,6 +239,15 @@ public class Tests : TestsBase
 			sum += i;
 
 		return sum;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void ss3_2 () {
+		ss3_2_2 ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void ss3_2_2 () {
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]

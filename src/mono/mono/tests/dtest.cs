@@ -293,7 +293,7 @@ public class DebuggerTests
 		Assert.IsTrue (e is StepEvent);
 		Assert.AreEqual ("single_stepping", (e as StepEvent).Method.Name);
 
-		// Change to step over
+		// Change to step into
 		req.Disable ();
 		req.Depth = StepDepth.Into;
 		req.Enable ();
@@ -315,6 +315,39 @@ public class DebuggerTests
 		Assert.IsTrue (e is StepEvent);
 		Assert.AreEqual ("single_stepping", (e as StepEvent).Method.Name);
 
+		// Change to step into
+		req.Disable ();
+		req.Depth = StepDepth.Into;
+		req.Enable ();
+
+		// Step into ss3_2 ()
+		vm.Resume ();
+		e = vm.GetNextEvent ();
+		Assert.IsTrue (e is StepEvent);
+		Assert.AreEqual ("ss3_2", (e as StepEvent).Method.Name);
+
+		// Change to step over
+		req.Disable ();
+		req.Depth = StepDepth.Over;
+		req.Enable ();
+
+		// Step over ss3_2_2 ()
+		vm.Resume ();
+		e = vm.GetNextEvent ();
+		Assert.IsTrue (e is StepEvent);
+		Assert.AreEqual ("ss3_2", (e as StepEvent).Method.Name);
+
+		// Recreate the request
+		req.Disable ();
+		req.Enable ();
+
+		// Step back into single_stepping () with the new request
+		vm.Resume ();
+		e = vm.GetNextEvent ();
+		Assert.IsTrue (e is StepEvent);
+		Assert.AreEqual ("single_stepping", (e as StepEvent).Method.Name);
+
+		// Change to step into
 		req.Disable ();
 		req.Depth = StepDepth.Into;
 		req.Enable ();
