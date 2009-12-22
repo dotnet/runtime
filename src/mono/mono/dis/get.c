@@ -1276,7 +1276,11 @@ get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGen
 	case MONO_TYPE_CLASS: {
 		guint32 token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		MonoClass *klass = mono_class_get (m, token);
-		char *temp = dis_stringify_object_with_class (m, klass, TRUE, FALSE);
+		char *temp;
+		if (klass)
+			temp = dis_stringify_object_with_class (m, klass, TRUE, FALSE);
+ 		else
+			temp = g_strdup_printf ("<BROKEN CLASS token_%8x>", token);
 
 		if (show_tokens) {
 			*result = g_strdup_printf ("%s/*%08x*/", temp, token);
