@@ -3708,6 +3708,33 @@ mono_verifier_verify_string_signature (MonoImage *image, guint32 offset, GSList 
 	return cleanup_context (&ctx, error_list);
 }
 
+gboolean
+mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMethodSignature *signature)
+{
+	MonoMethodSignature *original_sig;
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	original_sig = mono_method_signature (method);
+	if (original_sig->call_convention == MONO_CALL_VARARG) {
+		if (original_sig->hasthis != signature->hasthis)
+			return FALSE;
+		if (original_sig->call_convention != signature->call_convention)
+			return FALSE;
+		if (original_sig->explicit_this != signature->explicit_this)
+			return FALSE;
+		if (original_sig->call_convention != signature->call_convention)
+			return FALSE;
+		if (original_sig->pinvoke != signature->pinvoke)
+			return FALSE;
+		if (original_sig->sentinelpos != signature->sentinelpos)
+			return FALSE;
+	} else if (!mono_metadata_signature_equal (signature, original_sig)) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
 
 #else
 gboolean
@@ -3778,6 +3805,12 @@ mono_verifier_verify_methodspec_signature (MonoImage *image, guint32 offset, GSL
 
 gboolean
 mono_verifier_verify_string_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	return TRUE;
+}
+
+gboolean
+mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMethodSignature *signature)
 {
 	return TRUE;
 }

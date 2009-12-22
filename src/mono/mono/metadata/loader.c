@@ -807,6 +807,14 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		sig = cache_memberref_sig (image, sig_idx, sig);
 	}
 
+	if (!mono_verifier_is_sig_compatible (image, method, sig)) {
+		guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
+		const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
+
+		mono_loader_set_error_bad_image (g_strdup_printf ("Incompatible method signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
+		return NULL;
+	}
+
 	if (context) {
 		MonoMethodSignature *cached;
 
