@@ -3046,7 +3046,10 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		last = NULL;
 		for (l = bb_seq_points; l; l = l->next) {
 			MonoInst *ins = l->data;
-				
+
+			if (!(ins->flags & MONO_INST_SINGLE_STEP_LOC))
+				continue;
+
 			if (last != NULL) {
 				/* Link with the previous seq point in the same bb */
 				next [last->backend.size] = g_slist_append (next [last->backend.size], GUINT_TO_POINTER (ins->backend.size));

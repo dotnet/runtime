@@ -572,7 +572,7 @@ static void ids_cleanup (void);
 
 static void suspend_init (void);
 
-static void ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info);
+static void ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls);
 static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req);
 static void ss_destroy (SingleStepReq *req);
 
@@ -3323,7 +3323,7 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 			g_ptr_array_add (ss_reqs, req);
 
 		/* Start single stepping again from the current sequence point */
-		ss_start (ss_req, ji->method, sp, info);
+		ss_start (ss_req, ji->method, sp, info, ctx, NULL);
 	}
 	
 	if (ss_reqs->len > 0)
@@ -3685,10 +3685,10 @@ ss_stop (SingleStepReq *ss_req)
  *   Start the single stepping operation given by SS_REQ from the sequence point SP.
  */
 static void
-ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info)
+ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls)
 {
 	gboolean use_bp = FALSE;
-	int i;
+	int i, frame_index;
 	SeqPoint *next_sp;
 	MonoBreakpoint *bp;
 
@@ -3699,7 +3699,25 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 	 * Implement single stepping using breakpoints if possible.
 	 */
 	if (ss_req->depth == STEP_DEPTH_OVER) {
-		if (sp->next_len > 0) {
+		frame_index = 1;
+		/*
+		 * Find the first sequence point in the current or in a previous frame which
+		 * is not the last in its method.
+		 */
+		while (sp && sp->next_len == 0) {
+			sp = NULL;
+			if (tls && frame_index < tls->frame_count) {
+				StackFrame *frame = tls->frames [frame_index];
+
+				method = frame->method;
+				if (frame->il_offset != -1) {
+					sp = find_seq_point (frame->domain, frame->method, frame->il_offset, &info);
+				}
+				frame_index ++;
+			}
+		}
+
+		if (sp && sp->next_len > 0) {
 			use_bp = TRUE;
 			for (i = 0; i < sp->next_len; ++i) {
 				next_sp = &info->seq_points [sp->next [i]];
@@ -3794,7 +3812,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		}
 	}
 
-	ss_start (ss_req, method, sp, info);
+	ss_start (ss_req, method, sp, info, NULL, tls);
 
 	return 0;
 }
