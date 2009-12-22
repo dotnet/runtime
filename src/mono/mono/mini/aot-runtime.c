@@ -362,6 +362,8 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				MonoType *type;
 
 				gclass = decode_klass_ref (module, p, &p);
+				if (!gclass)
+					return NULL;
 				g_assert (gclass->generic_container);
 
 				memset (&ctx, 0, sizeof (ctx));
