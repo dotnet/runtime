@@ -27,7 +27,8 @@
  */
 #include <stdio.h>
 #include <glib.h>
-
+#include <time.h>
+#include <errno.h>
 #include <sys/time.h>
 
 void
@@ -39,4 +40,16 @@ g_get_current_time (GTimeVal *result)
 	gettimeofday (&tv, NULL);
 	result->tv_sec = tv.tv_sec;
 	result->tv_usec = tv.tv_usec;
+}
+
+void
+g_usleep (gulong microseconds)
+{
+	struct timespec req, rem;
+
+	req.tv_sec = microseconds / 1000000;
+	req.tv_nsec = (microseconds % 1000000) * 1000;
+	
+	while (nanosleep (&req, &rem) == -1 && errno == EINTR)
+		req = rem;
 }

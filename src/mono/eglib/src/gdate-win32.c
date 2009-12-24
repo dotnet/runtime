@@ -42,3 +42,8 @@ g_get_current_time (GTimeVal *result)
 	result->tv_usec = (l % 1000) * 1000;
 }
 
+void
+g_usleep (gulong microseconds)
+{
+	Sleep (microseconds/1000);
+}

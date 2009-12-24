@@ -689,6 +689,7 @@ typedef struct {
 } GTimeVal;
 
 void g_get_current_time (GTimeVal *result);
+void g_usleep (gulong microseconds);
 
 /*
  * File
