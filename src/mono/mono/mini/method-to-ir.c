@@ -7515,6 +7515,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cmethod)
 				goto load_error;
 			fsig = mono_method_get_signature (cmethod, image, token);
+			if (!fsig)
+				goto load_error;
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
