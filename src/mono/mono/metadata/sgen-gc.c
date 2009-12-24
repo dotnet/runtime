@@ -2848,6 +2848,17 @@ get_finalize_entry_hash_table (int generation)
 }
 
 static void
+new_to_space_section (void)
+{
+	/* FIXME: if the current to_space_section is empty, we don't
+	   have to allocate a new one */
+
+	to_space_section = alloc_major_section ();
+	to_space_bumper = to_space_section->next_data;
+	to_space_top = to_space_section->end_data;
+}
+
+static void
 to_space_expand (void)
 {
 	if (to_space_section) {
@@ -2857,15 +2868,27 @@ to_space_expand (void)
 		to_space_section->next_data = to_space_bumper;
 	}
 
-	to_space_section = alloc_major_section ();
-	to_space_bumper = to_space_section->next_data;
-	to_space_top = to_space_section->end_data;
+	new_to_space_section ();
 }
 
 static void
 to_space_set_next_data (void)
 {
+	g_assert (to_space_bumper >= to_space_section->next_data && to_space_bumper < to_space_section->end_data);
 	to_space_section->next_data = to_space_bumper;
+}
+
+static void
+unset_to_space (void)
+{
+	/* between collections the to_space_bumper is invalidated
+	   because degraded allocations might occur, so we set it to
+	   NULL, just to make it explicit */
+	to_space_bumper = NULL;
+
+	/* don't unset to_space_section if we implement the FIXME in
+	   new_to_space_section */
+	to_space_section = NULL;
 }
 
 static gboolean
@@ -3301,7 +3324,7 @@ collect_nursery (size_t requested_size)
 
 	sections_alloced = 0;
 
-	to_space_expand ();
+	new_to_space_section ();
 	gray_object_queue_init ();
 
 	num_minor_gcs++;
@@ -3344,6 +3367,8 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY);
+
+	unset_to_space ();
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
@@ -3526,7 +3551,7 @@ major_collection (const char *reason)
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
-	to_space_expand ();
+	new_to_space_section ();
 	gray_object_queue_init ();
 
 	/* the old generation doesn't need to be scanned (no remembered sets or card
@@ -3571,6 +3596,8 @@ major_collection (const char *reason)
 	scan_needed_big_objects (heap_start, heap_end);
 	/* all the objects in the heap */
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD);
+
+	unset_to_space ();
 
 	/* sweep the big objects list */
 	prevbo = NULL;
