@@ -2565,12 +2565,12 @@ mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMe
 	if (mb->generic_params && create_methodspec) 
 		return mono_image_get_methodspec_token_for_generic_method_definition (assembly, mb);
 
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, mb));
+	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, mb));
 	if (token)
 		return token;
 
 	token = mono_image_get_methodref_token_for_methodbuilder (assembly, mb);
-	g_hash_table_insert (assembly->handleref, mb, GUINT_TO_POINTER(token));
+	mono_g_hash_table_insert (assembly->handleref_managed, mb, GUINT_TO_POINTER(token));
 	return token;
 }
 
@@ -2581,7 +2581,7 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 	ReflectionMethodBuilder rmb;
 	char *name;
 	
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, mb));
+	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, mb));
 	if (token)
 		return token;
 
@@ -2592,7 +2592,7 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 		name, method_builder_encode_signature (assembly, &rmb));
 
 	g_free (name);
-	g_hash_table_insert (assembly->handleref, mb, GUINT_TO_POINTER(token));
+	mono_g_hash_table_insert (assembly->handleref_managed, mb, GUINT_TO_POINTER(token));
 	return token;
 }
 #endif
@@ -2642,7 +2642,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 	guint32 token;
 	MonoClassField *field;
 
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, f));
+	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, f));
 	if (token)
 		return token;
 	g_assert (f->field->parent);
@@ -2660,7 +2660,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 	token = mono_image_get_memberref_token (assembly, &f->field->parent->byval_arg, 
 											mono_field_get_name (f->field),  
 											fieldref_encode_signature (assembly, field->parent->image, type));
-	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER(token));
+	mono_g_hash_table_insert (assembly->handleref_managed, f, GUINT_TO_POINTER(token));
 	return token;
 }
 
@@ -2674,7 +2674,7 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 	MonoType *type;
 	char *name;
 
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, f));
+	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, f));
 	if (token)
 		return token;
 	if (is_sre_field_builder (mono_object_class (f->fb))) {
@@ -2703,7 +2703,7 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 		g_error ("mono_image_get_method_on_inst_token: don't know how to handle %s", name);
 	}
 
-	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER (token));
+	mono_g_hash_table_insert (assembly->handleref_managed, f, GUINT_TO_POINTER (token));
 	return token;
 }
 
@@ -2717,7 +2717,7 @@ mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCto
 
 	/* A ctor cannot be a generic method, so we can ignore create_methodspec */
 
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, c));
+	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, c));
 	if (token)
 		return token;
 
@@ -2756,7 +2756,7 @@ mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCto
 	}
 
 
-	g_hash_table_insert (assembly->handleref, c, GUINT_TO_POINTER (token));
+	mono_g_hash_table_insert (assembly->handleref_managed, c, GUINT_TO_POINTER (token));
 	return token;
 }
 
@@ -2812,7 +2812,7 @@ mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionM
 		return token;
 	}
 
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, m));
+	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, m));
 	if (token)
 		return token;
 
@@ -2848,7 +2848,7 @@ mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionM
 		g_error ("mono_image_get_method_on_inst_token: don't know how to handle %s", name);
 	}
 
-	g_hash_table_insert (assembly->handleref, m, GUINT_TO_POINTER (token));
+	mono_g_hash_table_insert (assembly->handleref_managed, m, GUINT_TO_POINTER (token));
 	return token;
 }
 
@@ -3078,7 +3078,7 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	guint32 token, pclass, parent, sig;
 	gchar *name;
 
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, fb));
+	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, fb));
 	if (token)
 		return token;
 
@@ -3113,7 +3113,7 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 
 	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
 	table->next_idx ++;
-	g_hash_table_insert (assembly->handleref, fb, GUINT_TO_POINTER(token));
+	mono_g_hash_table_insert (assembly->handleref_managed, fb, GUINT_TO_POINTER(token));
 	g_free (name);
 	return token;
 }
@@ -4948,6 +4948,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->field_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->method_aux_hash = g_hash_table_new (NULL, NULL);
 	image->handleref = g_hash_table_new (NULL, NULL);
+	image->handleref_managed = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC);
 	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 	image->generic_def_objects = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 	image->methodspec = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC);
@@ -5010,6 +5011,8 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		g_hash_table_destroy (di->typeref);
 	if (di->handleref)
 		g_hash_table_destroy (di->handleref);
+	if (di->handleref_managed)
+		mono_g_hash_table_destroy (di->handleref_managed);
 	if (di->tokens)
 		mono_g_hash_table_destroy (di->tokens);
 	if (di->generic_def_objects)
