@@ -431,7 +431,6 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		g_assert_not_reached ();
 	}
 	g_assert (klass);
-	mono_class_init (klass);
 
 	*endbuf = p;
 	return klass;
