@@ -409,6 +409,8 @@ mono_class_has_default_constructor (MonoClass *klass)
 	int i;
 
 	mono_class_setup_methods (klass);
+	if (klass->exception_type)
+		return FALSE;
 
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];

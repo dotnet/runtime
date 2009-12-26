@@ -4728,6 +4728,8 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 	}
 
 	mono_class_setup_methods (method->klass);
+	if (method->klass->exception_type)
+		return NULL;
 	for (i = 0; i < method->klass->method.count; ++i) {
 		if (method->klass->methods [i] == method) {
 			offset = i;
@@ -4735,6 +4737,8 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 		}	
 	}
 	mono_class_setup_methods (klass);
+	if (klass->exception_type)
+		return NULL;
 	g_assert (offset >= 0 && offset < klass->method.count);
 	return klass->methods [offset];
 }
@@ -4747,8 +4751,11 @@ ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType (MonoMeth
 		klass = mono_class_from_mono_type (type);
 		if (mono_class_get_generic_type_definition (method->klass) != mono_class_get_generic_type_definition (klass)) 
 			return NULL;
-		if (method->klass != klass)
+		if (method->klass != klass) {
 			method = mono_method_get_equivalent_method (method, klass);
+			if (!method)
+				return NULL;
+		}
 	} else
 		klass = method->klass;
 	return mono_method_get_object (mono_domain_get (), method, klass);

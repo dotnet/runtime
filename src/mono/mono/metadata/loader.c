@@ -604,6 +604,13 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 	}
 
 	mono_class_setup_methods (klass);
+	/*
+	We can't fail lookup of methods otherwise the runtime will fail with MissingMethodException instead of TypeLoadException.
+	See mono/tests/generic-type-load-exception.2.il
+	FIXME we should better report this error to the caller
+	 */
+	if (!klass->methods)
+		return NULL;
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoMethod *m = klass->methods [i];
 		MonoMethodSignature *msig;
@@ -844,7 +851,7 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 	int i;
 
 	mono_class_setup_methods (klass);
-
+	g_assert (!klass->exception_type); /*FIXME this should not fail, right?*/
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoMethod *method = klass->methods [i];
 		if (strcmp (method->name, name) == 0 && sig->param_count == method->signature->param_count)
@@ -2302,6 +2309,8 @@ mono_method_get_index (MonoMethod *method) {
 		return mono_metadata_token_index (method->token);
 
 	mono_class_setup_methods (klass);
+	if (klass->exception_type)
+		return 0;
 	for (i = 0; i < klass->method.count; ++i) {
 		if (method == klass->methods [i]) {
 			if (klass->image->uncompressed_metadata)
