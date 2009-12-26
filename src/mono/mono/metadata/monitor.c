@@ -237,6 +237,14 @@ mon_new (gsize id)
 			for (i = 0; i < marray->num_monitors; ++i) {
 				if (marray->monitors [i].data == NULL) {
 					new = &marray->monitors [i];
+					if (new->wait_list) {
+						/* Orphaned events left by aborted threads */
+						while (new->wait_list) {
+							LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d): Closing orphaned event %d", GetCurrentThreadId (), new->wait_list->data));
+							CloseHandle (new->wait_list->data);
+							new->wait_list = g_slist_remove (new->wait_list, new->wait_list->data);
+						}
+					}
 					new->data = monitor_freelist;
 					monitor_freelist = new;
 				}
@@ -1339,7 +1347,14 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
 	if (mono_thread_interruption_requested ()) {
-		CloseHandle (event);
+		/* 
+		 * Can't remove the event from wait_list, since the monitor is not locked by
+		 * us. So leave it there, mon_new () will delete it when the mon structure
+		 * is placed on the free list.
+		 * FIXME: The caller expects to hold the lock after the wait returns, but it
+		 * doesn't happen in this case:
+		 * http://connect.microsoft.com/VisualStudio/feedback/ViewFeedback.aspx?FeedbackID=97268
+		 */
 		return FALSE;
 	}
 
