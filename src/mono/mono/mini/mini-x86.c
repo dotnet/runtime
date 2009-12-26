@@ -5218,28 +5218,6 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
 	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
 }
-
-MonoObject*
-mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
-{
-	MonoMethodSignature *sig = mono_method_signature (method);
-	CallInfo *cinfo = get_call_info (gsctx, NULL, sig, FALSE);
-	int this_argument_offset;
-	MonoObject *this_argument;
-
-	/* 
-	 * this is the offset of the this arg from esp as saved at the start of 
-	 * mono_arch_create_trampoline_code () in tramp-x86.c.
-	 */
-	this_argument_offset = 5;
-	if (MONO_TYPE_ISSTRUCT (sig->ret) && (cinfo->ret.storage == ArgOnStack))
-		this_argument_offset++;
-
-	this_argument = * (MonoObject**) (((guint8*) regs [X86_ESP]) + this_argument_offset * sizeof (gpointer));
-
-	g_free (cinfo);
-	return this_argument;
-}
 #endif
 
 MonoVTable*

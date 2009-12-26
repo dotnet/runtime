@@ -5100,12 +5100,6 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 		return (MonoMethod*) code_ptr [1];
 }
 
-MonoObject*
-mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
-{
-	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
-}
-
 MonoVTable*
 mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 {

@@ -240,7 +240,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	/* Put all registers into an array on the stack
 	 * If this code is changed, make sure to update the offset value in
-	 * mono_arch_find_this_argument () in mini-x86.c.
+	 * mono_arch_get_this_arg_from_call () in mini-x86.c.
 	 */
 	x86_push_reg (buf, X86_EDI);
 	x86_push_reg (buf, X86_ESI);

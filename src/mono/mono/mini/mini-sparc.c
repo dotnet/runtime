@@ -2452,8 +2452,8 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 	return (MonoMethod*)regs [sparc_g1];
 }
 
-MonoObject*
-mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
+gpointer
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
 {
 	mono_sparc_flushw ();
 

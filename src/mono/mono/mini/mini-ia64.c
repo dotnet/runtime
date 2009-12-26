@@ -4697,12 +4697,6 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 	return (gpointer)regs [IA64_R10];
 }
 
-MonoObject*
-mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
-{
-	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
-}
-
 gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {

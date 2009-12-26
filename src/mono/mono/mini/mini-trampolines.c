@@ -156,8 +156,7 @@ mono_get_vcall_slot_addr (guint8* code, mgreg_t *regs)
 static gpointer*
 mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method, gboolean *need_rgctx_tramp)
 {
-	MonoGenericSharingContext *gsctx = mono_get_generic_context_from_code (code);
-	MonoObject *this_argument = mono_arch_find_this_argument (regs, method, gsctx);
+	MonoObject *this_argument = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (method), regs, code);
 	MonoVTable *vt = this_argument->vtable;
 	int displacement = slot - ((gpointer*)vt);
 
@@ -305,7 +304,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 #ifdef MONO_ARCH_HAVE_IMT
 	if (m == MONO_FAKE_IMT_METHOD) {
 		MonoMethod *impl_method;
-		MonoGenericSharingContext *gsctx;
 		MonoObject *this_arg;
 
 		/* we get the interface method because mono_convert_imt_slot_to_vtable_slot ()
@@ -315,8 +313,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 		vtable_slot = orig_vtable_slot;
 		g_assert (vtable_slot);
 
-		gsctx = mono_get_generic_context_from_code (code);
-		this_arg = mono_arch_find_this_argument (regs, m, gsctx);
+		this_arg = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (m), regs, code);
 
 		if (this_arg->vtable->klass == mono_defaults.transparent_proxy_class) {
 			/* Use the slow path for now */
@@ -395,8 +392,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 #endif
 		} else {
 #ifdef MONO_ARCH_HAVE_IMT
-			MonoObject *this_argument = mono_arch_find_this_argument (regs, m,
-				mono_get_generic_context_from_code (code));
+			MonoObject *this_argument = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (m), regs, code);
 
 			vt = this_argument->vtable;
 			vtable_slot = orig_vtable_slot;
