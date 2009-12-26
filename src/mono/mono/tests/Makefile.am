@@ -363,7 +363,8 @@ BASE_TEST_CS_SRC=		\
 	w32message.cs	\
 	bug-544446.cs	\
 	gc-altstack.cs	\
-	large-gc-bitmap.cs
+	large-gc-bitmap.cs	\
+	bug-561239.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
