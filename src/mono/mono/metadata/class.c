@@ -784,26 +784,29 @@ mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context
 }
 
 static MonoGenericContext
-inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with)
+inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with, MonoError *error)
 {
-	MonoError error;
 	MonoGenericInst *class_inst = NULL;
 	MonoGenericInst *method_inst = NULL;
-	MonoGenericContext res;
+	MonoGenericContext res = { NULL, NULL };
+
+	mono_error_init (error);
 
 	if (context->class_inst) {
-		class_inst = mono_metadata_inflate_generic_inst (context->class_inst, inflate_with, &error);
-		g_assert (mono_error_ok (&error)); /*FIXME do proper error handling*/
+		class_inst = mono_metadata_inflate_generic_inst (context->class_inst, inflate_with, error);
+		if (!mono_error_ok (error))
+			goto fail;
 	}
 
 	if (context->method_inst) {
-		method_inst = mono_metadata_inflate_generic_inst (context->method_inst, inflate_with, &error);
-		g_assert (mono_error_ok (&error)); /*FIXME do proper error handling*/
+		method_inst = mono_metadata_inflate_generic_inst (context->method_inst, inflate_with, error);
+		if (!mono_error_ok (error))
+			goto fail;
 	}
 
 	res.class_inst = class_inst;
 	res.method_inst = method_inst;
-
+fail:
 	return res;
 }
 
@@ -832,18 +835,38 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 MonoMethod*
 mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context)
 {
+	MonoError error;
+	MonoMethod *res = mono_class_inflate_generic_method_full_checked (method, klass_hint, context, &error);
+	if (!mono_error_ok (&error))
+		/*FIXME do proper error handling - on this case, kill this function. */
+		g_error ("Could not inflate generic method due to %s", mono_error_get_message (&error)); 
+
+	return res;
+}
+
+/**
+ * mono_class_inflate_generic_method_full_checked:
+ * Same as mono_class_inflate_generic_method_full but return failure using @error.
+ */
+MonoMethod*
+mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error)
+{
 	MonoMethod *result;
 	MonoMethodInflated *iresult, *cached;
 	MonoMethodSignature *sig;
 	MonoGenericContext tmp_context;
 	gboolean is_mb_open = FALSE;
 
+	mono_error_init (error);
+
 	/* The `method' has already been instantiated before => we need to peel out the instantiation and create a new context */
 	while (method->is_inflated) {
 		MonoGenericContext *method_context = mono_method_get_context (method);
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
-		tmp_context = inflate_generic_context (method_context, context);
+		tmp_context = inflate_generic_context (method_context, context, error);
+		if (!mono_error_ok (error))
+			return NULL;
 		context = &tmp_context;
 
 		if (mono_metadata_generic_context_equal (method_context, context))
@@ -918,6 +941,13 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	inflated_methods_size += sizeof (MonoMethodInflated);
 
 	sig = mono_method_signature (method);
+	if (!sig) {
+		char *name = mono_type_get_full_name (method->klass);
+		mono_error_set_bad_image (error, method->klass->image, "Could not resolve signature of method %s:%s", name, method->name);
+		g_free (name);
+		goto fail;
+	}
+
 	if (sig->pinvoke) {
 		memcpy (&iresult->method.pinvoke, method, sizeof (MonoMethodPInvoke));
 	} else {
@@ -950,10 +980,9 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		result->klass = klass_hint;
 
 	if (!result->klass) {
-		MonoError error;
-		MonoType *inflated = inflate_generic_type (NULL, &method->klass->byval_arg, context, &error);
-
-		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+		MonoType *inflated = inflate_generic_type (NULL, &method->klass->byval_arg, context, error);
+		if (!mono_error_ok (error)) 
+			goto fail;
 
 		result->klass = inflated ? mono_class_from_mono_type (inflated) : method->klass;
 		if (inflated)
@@ -963,6 +992,11 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	mono_method_inflated_lookup (iresult, TRUE);
 	mono_loader_unlock ();
 	return result;
+
+fail:
+	mono_loader_unlock ();
+	g_free (iresult);
+	return NULL;
 }
 
 /**
