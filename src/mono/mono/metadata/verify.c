@@ -2499,6 +2499,11 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 		return;
 	}
 
+	if (!ctx->max_stack) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Stack overflow at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
 	stack_init (ctx, code);
 	set_stack_value (ctx, code->stack, type, FALSE);
 	ctx->exception_types = g_slist_prepend (ctx->exception_types, type);
