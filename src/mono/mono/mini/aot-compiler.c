@@ -2017,8 +2017,14 @@ add_wrappers (MonoAotCompile *acfg)
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 		if (!method->klass->contextbound) {
 			MonoDynCallInfo *info = mono_arch_dyn_call_prepare (sig);
+			gboolean has_nullable = FALSE;
 
-			if (info) {
+			for (j = 0; j < sig->param_count; j++) {
+				if (sig->params [j]->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (sig->params [j])))
+					has_nullable = TRUE;
+			}
+
+			if (info && !has_nullable) {
 				/* Supported by the dynamic runtime-invoke wrapper */
 				skip = TRUE;
 				g_free (info);
