@@ -6454,6 +6454,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (pass_mrgctx) {
 				g_assert (!vtable_arg);
 
+				mono_class_vtable (cfg->domain, cmethod->klass);
+				CHECK_TYPELOAD (cmethod->klass);
+
 				vtable_arg = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 
 				if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
@@ -7537,6 +7540,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cmethod->klass->valuetype && mono_class_generic_sharing_enabled (cmethod->klass) &&
 					mono_method_is_generic_sharable_impl (cmethod, TRUE)) {
 				if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) {
+					mono_class_vtable (cfg->domain, cmethod->klass);
+					CHECK_TYPELOAD (cmethod->klass);
+
 					vtable_arg = emit_get_rgctx_method (cfg, context_used,
 														cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 				} else {
