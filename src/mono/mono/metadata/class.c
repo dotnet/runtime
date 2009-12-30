@@ -1750,6 +1750,7 @@ mono_class_setup_methods (MonoClass *class)
 	}
 
 	if (class->generic_class) {
+		MonoError error;
 		MonoClass *gklass = class->generic_class->container_class;
 
 		mono_class_init (gklass);
@@ -1767,8 +1768,17 @@ mono_class_setup_methods (MonoClass *class)
 		methods = g_new0 (MonoMethod *, class->method.count + 1);
 
 		for (i = 0; i < class->method.count; i++) {
-			methods [i] = mono_class_inflate_generic_method_full (
-				gklass->methods [i], class, mono_class_get_context (class));
+			methods [i] = mono_class_inflate_generic_method_full_checked (
+				gklass->methods [i], class, mono_class_get_context (class), &error);
+			if (!mono_error_ok (&error)) {
+				char *method = mono_method_full_name (gklass->methods [i], TRUE);
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not inflate method %s due to %s", method, mono_error_get_message (&error)));
+
+				g_free (method);
+				mono_error_cleanup (&error);
+				mono_loader_unlock ();
+				return;				
+			}
 		}
 	} else if (class->rank) {
 		MonoMethod *amethod;
