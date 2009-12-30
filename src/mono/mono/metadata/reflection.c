@@ -9902,16 +9902,16 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 	if (rmb->generic_params) {
 		int count = mono_array_length (rmb->generic_params);
-		MonoGenericContainer *container;
+		MonoGenericContainer *container = rmb->generic_container;
 
-		container = rmb->generic_container;
-		if (container) {
-			m->is_generic = TRUE;
-			mono_method_set_generic_container (m, container);
-		}
+		g_assert (container);
+
 		container->type_argc = count;
 		container->type_params = image_g_new0 (image, MonoGenericParamFull, count);
 		container->owner.method = m;
+
+		m->is_generic = TRUE;
+		mono_method_set_generic_container (m, container);
 
 		for (i = 0; i < count; i++) {
 			MonoReflectionGenericParam *gp =
