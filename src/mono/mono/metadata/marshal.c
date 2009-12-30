@@ -2603,7 +2603,7 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 		mono_mb_emit_byte (mb, mono_type_to_ldind (return_type));
 		break;
 	case MONO_TYPE_GENERICINST:
-		if (!mono_type_generic_inst_is_valuetype (return_type))
+		if (!mono_type_generic_inst_is_valuetype (t))
 			break;
 		/* fall through */
 	case MONO_TYPE_VALUETYPE: {
@@ -4297,6 +4297,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 			continue;
 		}
 
+		/*FIXME 'this doesn't handle generic enums. Shouldn't we?*/
 		type = sig->params [i]->type;
 handle_enum:
 		switch (type) {

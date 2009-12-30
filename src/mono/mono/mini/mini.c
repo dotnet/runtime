@@ -649,7 +649,9 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	if (type->byref)
 		return OP_LOAD_MEMBASE;
 
-	switch (mono_type_get_underlying_type (type)->type) {
+	type = mono_type_get_underlying_type (type);
+
+	switch (type->type) {
 	case MONO_TYPE_I1:
 		return OP_LOADI1_MEMBASE;
 	case MONO_TYPE_U1:

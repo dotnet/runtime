@@ -4422,7 +4422,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gbool
        cinfo->ret.reg = alpha_f0;
        break;
      case MONO_TYPE_GENERICINST:
-       if (!mono_type_generic_inst_is_valuetype (sig->ret))
+       if (!mono_type_generic_inst_is_valuetype (ret_type))
 	 {
 	   cinfo->ret.storage = ArgInIReg;
 	   cinfo->ret.reg = alpha_r0;
@@ -4525,7 +4525,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gbool
 	 add_general (pgr, &stack_size, ainfo);
 	 break;
        case MONO_TYPE_GENERICINST:
-	 if (!mono_type_generic_inst_is_valuetype (sig->params [i]))
+	 if (!mono_type_generic_inst_is_valuetype (ptype))
 	   {
 	     add_general (pgr, &stack_size, ainfo);
 	     break;

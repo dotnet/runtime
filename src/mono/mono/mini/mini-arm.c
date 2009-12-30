@@ -902,7 +902,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 			n++;
 			break;
 		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+			if (!mono_type_generic_inst_is_valuetype (simpletype)) {
 				cinfo->args [n].size = sizeof (gpointer);
 				add_general (&gr, &stack_size, cinfo->args + n, TRUE);
 				n++;
@@ -1015,7 +1015,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 			cinfo->ret.storage = RegTypeFP;*/
 			break;
 		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+			if (!mono_type_generic_inst_is_valuetype (simpletype)) {
 				cinfo->ret.storage = RegTypeGeneral;
 				cinfo->ret.reg = ARMREG_R0;
 				break;

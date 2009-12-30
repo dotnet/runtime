@@ -1436,7 +1436,7 @@ enum_retvalue:
 			sz->code_size += 4;
 			break;
 		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+			if (!mono_type_generic_inst_is_valuetype (ret_type)) {
 				cinfo->ret.reg = s390_r2;
 				sz->code_size += 4;
 				break;
@@ -1560,7 +1560,7 @@ enum_retvalue:
 			nParm++;
 			break;
 		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+			if (!mono_type_generic_inst_is_valuetype (ptype)) {
 				cinfo->args[nParm].size = sizeof(gpointer);
 				add_general (&gr, sz, cinfo->args+nParm, TRUE);
 				nParm++;

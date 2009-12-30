@@ -1098,7 +1098,8 @@ type_from_stack_type (MonoInst *ins) {
 static G_GNUC_UNUSED int
 type_to_stack_type (MonoType *t)
 {
-	switch (mono_type_get_underlying_type (t)->type) {
+	t = mono_type_get_underlying_type (t);
+	switch (t->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:

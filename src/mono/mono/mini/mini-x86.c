@@ -342,7 +342,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			cinfo->ret.storage = ArgOnDoubleFpStack;
 			break;
 		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
+			if (!mono_type_generic_inst_is_valuetype (ret_type)) {
 				cinfo->ret.storage = ArgInIReg;
 				cinfo->ret.reg = X86_EAX;
 				break;
@@ -431,7 +431,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			add_general (&gr, &stack_size, ainfo);
 			break;
 		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
+			if (!mono_type_generic_inst_is_valuetype (ptype)) {
 				add_general (&gr, &stack_size, ainfo);
 				break;
 			}
@@ -1505,8 +1505,9 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 	guchar *code = p;
 	int arg_size = 0, stack_usage = 0, save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
-	
-	switch (mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret)->type) {
+	MonoType *ret_type = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret);
+
+	switch (ret_type->type) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
 		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class) {
@@ -1526,7 +1527,7 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 		stack_usage = enable_arguments ? 16 : 8;
 		break;
 	case MONO_TYPE_GENERICINST:
-		if (!mono_type_generic_inst_is_valuetype (mono_method_signature (method)->ret)) {
+		if (!mono_type_generic_inst_is_valuetype (ret_type)) {
 			save_mode = SAVE_EAX;
 			stack_usage = enable_arguments ? 8 : 4;
 			break;
