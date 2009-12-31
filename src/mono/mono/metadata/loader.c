@@ -779,9 +779,9 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		return mono_method_signature (method);
 
 	if (table == MONO_TABLE_METHODSPEC) {
-		g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
-			  mono_method_signature (method));
-		g_assert (method->is_inflated);
+		/* the verifier (do_invoke_method) will turn the NULL into a verifier error */
+		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || !method->is_inflated)
+			return NULL;
 
 		return mono_method_signature (method);
 	}
