@@ -150,7 +150,7 @@ mono_path_resolve_symlinks (const char *path)
 		}
 	}
 
-	g_free (split);
+	g_strfreev (split);
 	return p;
 #endif
 }
