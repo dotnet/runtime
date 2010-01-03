@@ -258,12 +258,37 @@ struct _MonoImage {
 	   malloc'ed regions to be freed. */
 	GSList *reflection_info_unregister_classes;
 
+	/* List of image sets containing this image */
+	GSList *image_sets;
+
 	/*
 	 * No other runtime locks must be taken while holding this lock.
 	 * It's meant to be used only to mutate and query structures part of this image.
 	 */
 	CRITICAL_SECTION    lock;
 };
+
+/*
+ * Generic instances depend on many images, and they need to be deleted if one
+ * of the images they depend on is unloaded. For example,
+ * List<Foo> depends on both List's image and Foo's image.
+ * A MonoImageSet is the owner of all generic instances depending on the same set of
+ * images.
+ */
+typedef struct {
+	int nimages;
+	MonoImage **images;
+
+	GHashTable *gclass_cache, *ginst_cache, *gmethod_cache, *gsignature_cache;
+
+	CRITICAL_SECTION    lock;
+
+	/*
+	 * Memory for generic instances owned by this image set should be allocated from
+	 * this mempool, using the mono_image_set_alloc family of functions.
+	 */
+	MonoMemPool         *mempool;
+} MonoImageSet;
 
 enum {
 	MONO_SECTION_TEXT,
