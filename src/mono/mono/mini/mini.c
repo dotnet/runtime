@@ -5149,7 +5149,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->delegate_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->runtime_invoke_hash = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
-	info->seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, g_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	domain->runtime_info = info;
@@ -5208,6 +5208,8 @@ mini_free_jit_domain_info (MonoDomain *domain)
 		g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
 	g_hash_table_destroy (info->runtime_invoke_hash);
+	g_hash_table_destroy (info->seq_points);
+	g_hash_table_destroy (info->arch_seq_points);
 
 	if (info->agent_info)
 		mono_debugger_agent_free_domain_info (domain);
