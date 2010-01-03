@@ -303,7 +303,10 @@ construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
 	if (entry->lcid != entry->specific_lcid)
 		entry = culture_info_entry_from_lcid (entry->specific_lcid);
 
-	return construct_culture (ci, entry);
+	if (entry)
+		return construct_culture (ci, entry);
+	else
+		return FALSE;
 }
 
 static const CultureInfoEntry*
