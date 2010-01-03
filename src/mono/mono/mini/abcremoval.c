@@ -12,6 +12,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/opcodes.h>
+#include <mono/metadata/mempool-internals.h>
 
 #ifndef DISABLE_JIT
 
@@ -211,27 +212,6 @@ print_evaluation_area_contexts (MonoVariableRelationsEvaluationArea *area) {
 	}
 }
 #endif
-
-static inline GSList*
-g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
-{
-	GSList *new_list;
-	GSList *last;
-	
-	new_list = mono_mempool_alloc (mp, sizeof (GSList));
-	new_list->data = data;
-	new_list->next = NULL;
-	
-	if (list) {
-		last = list;
-		while (last->next)
-			last = last->next;
-		last->next = new_list;
-		
-		return list;
-	} else
-		return new_list;
-}
 
 /*
  * Check if the delta of an integer variable value is safe with respect

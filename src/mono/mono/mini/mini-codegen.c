@@ -14,6 +14,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/mempool-internals.h>
 #include <mono/utils/mono-math.h>
 
 #include "mini.h"
@@ -111,27 +112,6 @@ static const int regbank_spill_var_size[] = {
 };
 
 #define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 3, a;)
-
-static inline GSList*
-g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
-{
-	GSList *new_list;
-	GSList *last;
-	
-	new_list = mono_mempool_alloc (mp, sizeof (GSList));
-	new_list->data = data;
-	new_list->next = NULL;
-	
-	if (list) {
-		last = list;
-		while (last->next)
-			last = last->next;
-		last->next = new_list;
-		
-		return list;
-	} else
-		return new_list;
-}
 
 static inline void
 mono_regstate_assign (MonoRegState *rs)
