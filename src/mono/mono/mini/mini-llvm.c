@@ -2760,6 +2760,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			}
 				*/
 
+			case OP_ABS: {
+				LLVMValueRef args [1];
+
+				args [0] = lhs;
+				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "fabs"), args, 1, dname);
+				break;
+			}
+
 			case OP_IMIN:
 			case OP_LMIN: {
 				LLVMValueRef v = LLVMBuildICmp (builder, LLVMIntSLE, lhs, rhs, "");
@@ -3564,6 +3572,9 @@ add_intrinsics (LLVMModuleRef module)
 		LLVMAddFunction (module, "llvm.sin.f64", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
 		LLVMAddFunction (module, "llvm.cos.f64", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
 		LLVMAddFunction (module, "llvm.sqrt.f64", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
+
+		/* This isn't an intrinsic, instead llvm seems to special case it by name */
+		LLVMAddFunction (module, "fabs", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
 	}
 
 	{
