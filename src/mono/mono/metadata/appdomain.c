@@ -2118,7 +2118,7 @@ clear_cached_vtable (gpointer key, gpointer value, gpointer user_data)
 		mono_gc_free_fixed (vtable->data);
 }
 
-static void
+static G_GNUC_UNUSED void
 zero_static_data (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoClass *klass = (MonoClass*)key;
