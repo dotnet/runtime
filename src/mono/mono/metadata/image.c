@@ -1573,9 +1573,6 @@ mono_image_close_except_pools (MonoImage *image)
 	g_hash_table_destroy (image->helper_signatures);
 	g_hash_table_destroy (image->method_signatures);
 
-	if (image->generic_class_cache)
-		g_hash_table_destroy (image->generic_class_cache);
-
 	if (image->rgctx_template_hash)
 		g_hash_table_destroy (image->rgctx_template_hash);
 

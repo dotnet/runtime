@@ -232,11 +232,6 @@ struct _MonoImage {
 	GHashTable *proxy_isinst_cache;
 	GHashTable *rgctx_template_hash; /* LOCKING: templates lock */
 
-	/*
-	 * indexed by token and MonoGenericContext pointer
-	 */
-	GHashTable *generic_class_cache;
-
 	/* Contains rarely used fields of runtime structures belonging to this image */
 	MonoPropertyHash *property_hash;
 
