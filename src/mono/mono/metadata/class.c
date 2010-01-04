@@ -2671,6 +2671,7 @@ find_array_interface (MonoClass *klass, const char *name)
 /*
  * Return the number of virtual methods.
  * Even for interfaces we can't simply return the number of methods as all CLR types are allowed to have static methods.
+ * Return -1 on failure.
  * FIXME It would be nice if this information could be cached somewhere.
  */
 static int
@@ -2682,7 +2683,8 @@ count_virtual_methods (MonoClass *class)
 
 	if (class->methods || !MONO_CLASS_HAS_STATIC_METADATA (class)) {
 		mono_class_setup_methods (class);
-		g_assert (!class->exception_type); /*FIXME do proper error handling*/
+		if (class->exception_type)
+			return -1;
 
 		for (i = 0; i < class->method.count; ++i) {
 			flags = class->methods [i]->flags;
@@ -2702,6 +2704,7 @@ count_virtual_methods (MonoClass *class)
 
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
+ * Return -1 on failure and set exception_type
  */
 static int
 setup_interface_offsets (MonoClass *class, int cur_slot)
@@ -2787,12 +2790,20 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	ifaces = mono_class_get_implemented_interfaces (class);
 	if (ifaces) {
 		for (i = 0; i < ifaces->len; ++i) {
+			int count;
 			ic = g_ptr_array_index (ifaces, i);
 			if (interfaces_full [ic->interface_id] != NULL)
 				continue;
 			interfaces_full [ic->interface_id] = ic;
 			interface_offsets_full [ic->interface_id] = cur_slot;
-			cur_slot += count_virtual_methods (ic);
+			count = count_virtual_methods (ic);
+			if (count == -1) {
+				char *name = mono_type_get_full_name (ic);
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Error calculating interface offset of %s", name));
+				g_free (name);
+				goto fail;
+			}
+			cur_slot += count;
 		}
 		g_ptr_array_free (ifaces, TRUE);
 	}
@@ -2878,6 +2889,11 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	//print_implemented_interfaces (class);
  
  	return cur_slot;
+fail:
+	g_free (interfaces_full);
+	g_free (interface_offsets_full);
+	g_free (array_interfaces);
+	return -1;
 }
 
 /*
@@ -2888,6 +2904,8 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
  * - class->interfaces_packed
  * - class->interface_offsets_packed
  * - class->interface_bitmap
+ *
+ * This function can fail @class.
  */
 void
 mono_class_setup_interface_offsets (MonoClass *class)
@@ -3394,6 +3412,14 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	if (class->parent) {
 		mono_class_init (class->parent);
 		mono_class_setup_vtable (class->parent);
+
+		if (class->parent->exception_type) {
+			char *name = mono_type_get_full_name (class->parent);
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Parent %s failed to load", name));
+			g_free (name);
+			return;
+		}
+
 		max_vtsize += class->parent->vtable_size;
 		cur_slot = class->parent->vtable_size;
 	}
@@ -3406,6 +3432,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	/* printf ("METAINIT %s.%s\n", class->name_space, class->name); */
 
 	cur_slot = setup_interface_offsets (class, cur_slot);
+	if (cur_slot == -1) /*setup_interface_offsets fails the type.*/
+		return;
+
 	max_iid = class->max_interface_id;
 	DEBUG_INTERFACE_VTABLE (first_non_interface_slot = cur_slot);
 
@@ -4072,7 +4101,6 @@ mono_class_init (MonoClass *class)
 	int i;
 	MonoCachedClassInfo cached_info;
 	gboolean has_cached_info;
-	int class_init_ok = TRUE;
 	
 	g_assert (class);
 
@@ -4101,7 +4129,7 @@ mono_class_init (MonoClass *class)
 
 	if (mono_verifier_is_enabled_for_class (class) && !mono_verifier_verify_class (class)) {
 		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, concat_two_strings_with_zero (class->image, class->name, class->image->assembly_name));
-		goto fail;
+		goto leave;
 	}
 
 
@@ -4111,7 +4139,7 @@ mono_class_init (MonoClass *class)
 			mono_class_init (element_class);
 		if (element_class->exception_type != MONO_EXCEPTION_NONE) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-			goto fail;
+			goto leave;
 		}
 	}
 
@@ -4139,7 +4167,7 @@ mono_class_init (MonoClass *class)
 			mono_class_setup_methods (gklass);
 		if (gklass->exception_type) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Generic Type Defintion failed to init"));
-			goto fail;
+			goto leave;
 		}
 
 		if (MONO_CLASS_IS_INTERFACE (class))
@@ -4170,10 +4198,8 @@ mono_class_init (MonoClass *class)
 	else
 		if (!class->size_inited){
 			mono_class_setup_fields (class);
-			if (class->exception_type || mono_loader_get_last_error ()){
-				class_init_ok = FALSE;
+			if (class->exception_type || mono_loader_get_last_error ())
 				goto leave;
-			}
 		}
 				
 	/* Initialize arrays */
@@ -4223,7 +4249,7 @@ mono_class_init (MonoClass *class)
 		mono_class_setup_vtable (gklass);
 		if (gklass->exception_type) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-			goto fail;
+			goto leave;
 		}
 
 		class->vtable_size = gklass->vtable_size;
@@ -4255,7 +4281,7 @@ mono_class_init (MonoClass *class)
 					/* FIXME: Optimize this */
 					mono_class_setup_vtable (class);
 					if (class->exception_type || mono_loader_get_last_error ())
-						goto fail;
+						goto leave;
 					cmethod = class->vtable [finalize_slot];
 				}
 
@@ -4263,7 +4289,7 @@ mono_class_init (MonoClass *class)
 					/* Check that this is really the finalizer method */
 					mono_class_setup_vtable (class);
 					if (class->exception_type || mono_loader_get_last_error ())
-						goto fail;
+						goto leave;
 
 					g_assert (class->vtable_size > finalize_slot);
 
@@ -4293,7 +4319,7 @@ mono_class_init (MonoClass *class)
 			} else {
 				mono_class_setup_methods (class);
 				if (class->exception_type)
-					goto fail;
+					goto leave;
 
 				for (i = 0; i < class->method.count; ++i) {
 					MonoMethod *method = class->methods [i];
@@ -4319,19 +4345,19 @@ mono_class_init (MonoClass *class)
 			mono_class_init (class->parent);
 			if (class->parent->exception_type) {
 				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-				goto fail;
+				goto leave;
 			}
 			if (mono_loader_get_last_error ())
-				goto fail;
+				goto leave;
 			if (!class->parent->vtable_size) {
 				/* FIXME: Get rid of this somehow */
 				mono_class_setup_vtable (class->parent);
 				if (class->parent->exception_type) {
 					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-					goto fail;
+					goto leave;
 				}
 				if (mono_loader_get_last_error ())
-					goto fail;
+					goto leave;
 			}
 			setup_interface_offsets (class, class->parent->vtable_size);
 		} else {
@@ -4346,9 +4372,6 @@ mono_class_init (MonoClass *class)
 
 	goto leave;
 
- fail:
-	class_init_ok = FALSE;
-
  leave:
 	/* Because of the double-checking locking pattern */
 	mono_memory_barrier ();
@@ -4356,9 +4379,9 @@ mono_class_init (MonoClass *class)
 	class->init_pending = 0;
 
 	if (mono_loader_get_last_error ()) {
-		if (class->exception_type == MONO_EXCEPTION_NONE)
+		if (class->exception_type == MONO_EXCEPTION_NONE) {
 			set_failure_from_loader_error (class, mono_loader_get_last_error ());
-
+		}
 		mono_loader_clear_error ();
 	}
 
@@ -4367,7 +4390,7 @@ mono_class_init (MonoClass *class)
 	if (mono_debugger_class_init_func)
 		mono_debugger_class_init_func (class);
 
-	return class_init_ok;
+	return class->exception_type == MONO_EXCEPTION_NONE;
 }
 
 static gboolean
