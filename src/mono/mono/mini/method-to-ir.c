@@ -6455,8 +6455,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (pass_mrgctx) {
 				g_assert (!vtable_arg);
 
-				mono_class_vtable (cfg->domain, cmethod->klass);
-				CHECK_TYPELOAD (cmethod->klass);
+				if (!cfg->compile_aot) {
+					/* 
+					 * emit_get_rgctx_method () calls mono_class_vtable () so check 
+					 * for type load errors before.
+					 */
+					mono_class_vtable (cfg->domain, cmethod->klass);
+					CHECK_TYPELOAD (cmethod->klass);
+				}
 
 				vtable_arg = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 
