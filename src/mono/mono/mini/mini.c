@@ -3386,21 +3386,23 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 	cfg->method_to_register = method_to_register;
 
-	/* No way to obtain the location info for 'this' */
-	if (try_generic_shared) {
-		cfg->exception_message = g_strdup ("gshared");
-		cfg->disable_llvm = TRUE;
-	}
+	if (cfg->compile_llvm) {
+		/* No way to obtain the location info for 'this' */
+		if (try_generic_shared) {
+			cfg->exception_message = g_strdup ("gshared");
+			cfg->disable_llvm = TRUE;
+		}
 
-	if (cfg->method->save_lmf) {
-		cfg->exception_message = g_strdup ("lmf");
-		cfg->disable_llvm = TRUE;
-	}
+		if (cfg->method->save_lmf) {
+			cfg->exception_message = g_strdup ("lmf");
+			cfg->disable_llvm = TRUE;
+		}
 
-	/* FIXME: */
-	if (cfg->method->dynamic) {
-		cfg->exception_message = g_strdup ("dynamic.");
-		cfg->disable_llvm = TRUE;
+		/* FIXME: */
+		if (cfg->method->dynamic) {
+			cfg->exception_message = g_strdup ("dynamic.");
+			cfg->disable_llvm = TRUE;
+		}
 	}
 
 	header = mono_method_get_header (method_to_compile);
