@@ -6213,7 +6213,7 @@ verify_valuetype_layout_with_target (MonoClass *class, MonoClass *target_class)
 
 		field_class = mono_class_get_generic_type_definition (mono_class_from_mono_type (field->type));
 
-		if (field_class == target_class || !verify_valuetype_layout_with_target (field_class, target_class))
+		if (field_class == target_class || class == field_class || !verify_valuetype_layout_with_target (field_class, target_class))
 			return FALSE;
 	}
 
