@@ -1297,6 +1297,22 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 	return FALSE;
 }
 
+/*Returns true is something went wrong*/
+static gboolean
+mono_compile_is_broken (MonoCompile *cfg)
+{
+	MonoMethod *method = cfg->method;
+	MonoMethod *method_definition = method;
+	gboolean dont_verify = mini_assembly_can_skip_verification (cfg->domain, method);
+
+	while (method_definition->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
+		method_definition = imethod->declaring;
+	}
+
+	return !dont_verify && mini_method_verify (cfg, method_definition);
+}
+
 static void
 create_helper_signature (void)
 {
@@ -3568,6 +3584,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	 * created by this.
 	 */
 	//cfg->enable_extended_bblocks = TRUE;
+
+	/*We must verify the method before doing any IR generation as mono_compile_create_vars can assert.*/
+	if (mono_compile_is_broken (cfg))
+		return cfg;
 
 	/*
 	 * create MonoInst* which represents arguments and local variables
