@@ -4200,6 +4200,8 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 	if (need_direct_wrapper) {
 		/* Already searched at the start */
 	} else {
+		MonoMethodSignature *tmp_sig;
+
 		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
 
 		cache = get_cache (&target_klass->image->runtime_invoke_cache, 
@@ -4216,7 +4218,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 			return res;
 		}
 
-		// FIXME: When to free callsig ?
+		/* Make a copy of the signature from the image mempool */
+		tmp_sig = callsig;
+		callsig = mono_metadata_signature_dup_full (target_klass->image, callsig);
+		g_free (tmp_sig);
 	}
 
 	/* to make it work with our special string constructors */
