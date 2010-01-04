@@ -1304,6 +1304,7 @@ mono_compile_is_broken (MonoCompile *cfg)
 	MonoMethod *method = cfg->method;
 	MonoMethod *method_definition = method;
 	gboolean dont_verify = mini_assembly_can_skip_verification (cfg->domain, method);
+	dont_verify |= method->klass->image->assembly->corlib_internal;
 
 	while (method_definition->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
