@@ -6240,6 +6240,10 @@ verify_valuetype_layout (MonoClass *class)
 gboolean
 mono_verifier_verify_class (MonoClass *class)
 {
+	if (!class->parent && class != mono_defaults.object_class)
+		return FALSE;
+	if (MONO_CLASS_IS_INTERFACE (class->parent))
+		return FALSE;
 	if (class->generic_container && (class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
 		return FALSE;
 	if (!verify_class_for_overlapping_reference_fields (class))

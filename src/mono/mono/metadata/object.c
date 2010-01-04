@@ -715,7 +715,7 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CHAR:
 				break;
 			default:
-				g_assert_not_reached ();
+				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (field->parent), field->name);
 				break;
 			}
 		}

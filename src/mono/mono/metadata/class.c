@@ -4099,6 +4099,12 @@ mono_class_init (MonoClass *class)
 
 	class->init_pending = 1;
 
+	if (mono_verifier_is_enabled_for_class (class) && !mono_verifier_verify_class (class)) {
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, concat_two_strings_with_zero (class->image, class->name, class->image->assembly_name));
+		goto fail;
+	}
+
+
 	if (class->byval_arg.type == MONO_TYPE_ARRAY || class->byval_arg.type == MONO_TYPE_SZARRAY) {
 		MonoClass *element_class = class->element_class;
 		if (!element_class->inited) 
@@ -4257,11 +4263,14 @@ mono_class_init (MonoClass *class)
 					/* Check that this is really the finalizer method */
 					mono_class_setup_vtable (class);
 					if (class->exception_type || mono_loader_get_last_error ())
-					goto fail;
+						goto fail;
+
+					g_assert (class->vtable_size > finalize_slot);
 
 					class->has_finalize = 0;
 					if (class->parent) { 
 						cmethod = class->vtable [finalize_slot];
+						g_assert (cmethod);
 						if (cmethod->is_inflated)
 							cmethod = ((MonoMethodInflated*)cmethod)->declaring;
 						if (cmethod != default_finalize) {
@@ -4333,11 +4342,6 @@ mono_class_init (MonoClass *class)
 
 		if (MONO_CLASS_IS_INTERFACE (class))
 			setup_interface_offsets (class, 0);
-	}
-
-	if (mono_verifier_is_enabled_for_class (class) && !mono_verifier_verify_class (class)) {
-		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, concat_two_strings_with_zero (class->image, class->name, class->image->assembly_name));
-		class_init_ok = FALSE;
 	}
 
 	goto leave;
