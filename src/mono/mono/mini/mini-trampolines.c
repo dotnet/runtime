@@ -197,7 +197,7 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 				context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
 				impl = mono_class_inflate_generic_method (impl, &context);
 			} else {
-				impl = mono_class_get_vtable_entry (vt->klass, interface_offset + imt_method->slot);
+				impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_vtable_slot (imt_method));
 			}
 
 			if (mono_method_needs_static_rgctx_invoke (impl, FALSE))
