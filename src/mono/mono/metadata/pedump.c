@@ -480,7 +480,7 @@ verify_image_file (const char *fname)
 		}
 	}
 	if (count)
-		return 1;
+		return 5;
 	return 0;
 
 invalid_image:
@@ -606,6 +606,7 @@ pedump_assembly_search_hook (MonoAssemblyName *aname, gpointer user_data)
 int
 main (int argc, char *argv [])
 {
+	int image_result = 0;
 	MonoImage *image;
 	char *file = NULL;
 	char *flags = NULL;
@@ -689,12 +690,11 @@ main (int argc, char *argv [])
 	}
 	
 	if (run_new_metadata_verifier) {
-		int res;
 		mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
 
-		res = verify_image_file (file);
-		if (res || !verify_code)
-			return res;
+		image_result = verify_image_file (file);
+		if (image_result == 1 || !verify_code)
+			return image_result;
 	}
 
 	image = mono_image_open (file, NULL);
@@ -709,6 +709,7 @@ main (int argc, char *argv [])
 		MonoAssembly *assembly;
 		MonoImage *image;
 		MonoImageOpenStatus status;
+		int code_result;
 
 		mono_verifier_set_mode (verifier_mode);
 
@@ -726,7 +727,8 @@ main (int argc, char *argv [])
 			return 4;
 		}
 
-		return dump_verify_info (assembly->image, verify_flags);
+		code_result = dump_verify_info (assembly->image, verify_flags);
+		return code_result ? code_result : image_result;
 	} else
 		mono_image_close (image);
 	
