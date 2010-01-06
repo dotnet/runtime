@@ -1566,7 +1566,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	eh_frame = amodule->eh_frame_hdr + table [(pos * 2) + 1];
 
-	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len);
+	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, NULL);
 
 	jinfo->code_size = code_len;
 	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);

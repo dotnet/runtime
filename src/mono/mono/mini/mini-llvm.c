@@ -1588,6 +1588,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			LLVMValueRef eh_selector, eh_exception, personality, args [4];
 			MonoInst *exvar;
 			static gint32 mapping_inited;
+			static int ti_generator;
+			char ti_name [128];
+			MonoClass **ti;
+			LLVMValueRef type_info;
+			int clause_index;
 
 			if (!bblocks [bb->block_num].invoke_target) {
 				/*
@@ -1609,11 +1614,29 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					LLVMAddGlobalMapping (ee, personality, mono_personality);
 			}
 
+			if (cfg->compile_aot)
+				// Can't encode the type info yet
+				LLVM_FAILURE (ctx, "aot+clauses");
+
 			i8ptr = LLVMPointerType (LLVMInt8Type (), 0);
+
+			clause_index = (mono_get_block_region_notry (cfg, bb->region) >> 8) - 1;
+
+			/*
+			 * Create the type info, exception_cb will decode this.
+			 */
+			ti = g_malloc (sizeof (MonoExceptionClause));
+			memcpy (ti, &mono_method_get_header (cfg->method)->clauses [clause_index], sizeof (MonoExceptionClause));
+			sprintf (ti_name, "type_info_%d", ti_generator);
+			ti_generator ++;
+
+			type_info = LLVMAddGlobal (module, i8ptr, ti_name);
+
+			LLVMAddGlobalMapping (ee, type_info, ti);
+
 			args [0] = LLVMConstNull (i8ptr);
 			args [1] = LLVMConstBitCast (personality, i8ptr);
-			args [2] = LLVMConstNull (i8ptr);
-			args [3] = LLVMConstNull (LLVMInt32Type ());
+			args [2] = type_info;
 			LLVMBuildCall (builder, eh_selector, args, 3, "");
 
 			/* Store the exception into the exvar */
@@ -3531,7 +3554,8 @@ exception_cb (void *data)
 {
 	MonoCompile *cfg;
 	MonoJitExceptionInfo *ei;
-	guint32 ei_len;
+	guint32 ei_len, i;
+	gpointer *type_info;
 
 	cfg = TlsGetValue (current_cfg_tls_id);
 	g_assert (cfg);
@@ -3542,11 +3566,19 @@ exception_cb (void *data)
 	 * An alternative would be to save it directly, and modify our unwinder to work
 	 * with it.
 	 */
-	cfg->encoded_unwind_ops = mono_unwind_decode_fde ((guint8*)data, &cfg->encoded_unwind_ops_len, NULL, &ei, &ei_len);
+	cfg->encoded_unwind_ops = mono_unwind_decode_fde ((guint8*)data, &cfg->encoded_unwind_ops_len, NULL, &ei, &ei_len, &type_info);
 
 	cfg->llvm_ex_info = mono_mempool_alloc0 (cfg->mempool, ei_len * sizeof (MonoJitExceptionInfo));
 	cfg->llvm_ex_info_len = ei_len;
 	memcpy (cfg->llvm_ex_info, ei, ei_len * sizeof (MonoJitExceptionInfo));
+	/* Fill the rest of the information from the type info */
+	for (i = 0; i < ei_len; ++i) {
+		MonoExceptionClause *clause = type_info [i];
+
+		cfg->llvm_ex_info [i].flags = clause->flags;
+		cfg->llvm_ex_info [i].data.catch_class = clause->data.catch_class;
+	}
+
 	g_free (ei);
 }
 

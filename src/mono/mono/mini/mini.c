@@ -3292,7 +3292,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	guint8 *ip;
 	MonoCompile *cfg;
 	MonoJitInfo *jinfo;
-	int dfn, i, code_size_ratio;
+	int dfn, i, code_size_ratio, num_clauses;
 	gboolean deadce_has_run = FALSE;
 	gboolean try_generic_shared, try_llvm;
 	MonoMethod *method_to_compile, *method_to_register;
@@ -3421,7 +3421,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	if (header->clauses) {
+	if (FALSE && header->clauses) {
 		/* 
 		 * Cannot be enabled until LLVM supports implicit exceptions, or we use
 		 * explicit checks, or we disable this for methods which might throw implicit
@@ -3987,10 +3987,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
-		if (!cfg->disable_llvm && header->num_clauses && !cfg->compile_aot && cfg->llvm_ex_info_len != header->num_clauses) {
-			cfg->exception_message = g_strdup ("clause num mismatch.");
-			cfg->disable_llvm = TRUE;
-		}
 		if (cfg->disable_llvm) {
 			if (cfg->verbose_level >= 1) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
@@ -4028,12 +4024,17 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	else
 		generic_info_size = 0;
 
+	if (COMPILE_LLVM (cfg))
+		num_clauses = cfg->llvm_ex_info_len;
+	else
+		num_clauses = header->num_clauses;
+
 	if (cfg->method->dynamic) {
-		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (header->num_clauses * sizeof (MonoJitExceptionInfo)) +
+		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (num_clauses * sizeof (MonoJitExceptionInfo)) +
 				generic_info_size);
 	} else {
 		jinfo = mono_domain_alloc0 (cfg->domain, MONO_SIZEOF_JIT_INFO +
-				(header->num_clauses * sizeof (MonoJitExceptionInfo)) +
+				(num_clauses * sizeof (MonoJitExceptionInfo)) +
 				generic_info_size);
 	}
 
@@ -4043,7 +4044,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	jinfo->used_regs = cfg->used_int_regs;
 	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
 	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
-	jinfo->num_clauses = header->num_clauses;
+	jinfo->num_clauses = num_clauses;
 	if (COMPILE_LLVM (cfg))
 		jinfo->from_llvm = TRUE;
 
@@ -4093,7 +4094,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 	}
 
-	if (header->num_clauses) {
+	if (COMPILE_LLVM (cfg)) {
+		if (num_clauses)
+			memcpy (&jinfo->clauses [0], &cfg->llvm_ex_info [0], num_clauses * sizeof (MonoJitExceptionInfo));
+	} else if (header->num_clauses) {
 		int i;
 
 		for (i = 0; i < header->num_clauses; i++) {
@@ -4115,26 +4119,17 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 				ei->data.catch_class = ec->data.catch_class;
 			}
 
-			if (COMPILE_LLVM (cfg)) {
-				if (!cfg->compile_aot) {
-					g_assert (cfg->llvm_ex_info && i < cfg->llvm_ex_info_len);
-					ei->try_start = cfg->llvm_ex_info [i].try_start;
-					ei->try_end = cfg->llvm_ex_info [i].try_end;
-					ei->handler_start = cfg->llvm_ex_info [i].handler_start;
-				}
-			} else {
-				tblock = cfg->cil_offset_to_bb [ec->try_offset];
-				g_assert (tblock);
-				ei->try_start = cfg->native_code + tblock->native_offset;
-				g_assert (tblock->native_offset);
-				tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
-				g_assert (tblock);
-				ei->try_end = cfg->native_code + tblock->native_offset;
-				g_assert (tblock->native_offset);
-				tblock = cfg->cil_offset_to_bb [ec->handler_offset];
-				g_assert (tblock);
-				ei->handler_start = cfg->native_code + tblock->native_offset;
-			}
+			tblock = cfg->cil_offset_to_bb [ec->try_offset];
+			g_assert (tblock);
+			ei->try_start = cfg->native_code + tblock->native_offset;
+			g_assert (tblock->native_offset);
+			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
+			g_assert (tblock);
+			ei->try_end = cfg->native_code + tblock->native_offset;
+			g_assert (tblock->native_offset);
+			tblock = cfg->cil_offset_to_bb [ec->handler_offset];
+			g_assert (tblock);
+			ei->handler_start = cfg->native_code + tblock->native_offset;
 		}
 	}
 
