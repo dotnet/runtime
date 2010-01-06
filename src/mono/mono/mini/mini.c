@@ -3273,6 +3273,150 @@ compute_reachable (MonoBasicBlock *bb)
 	}
 }
 
+static MonoJitInfo*
+create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
+{
+	MonoMethodHeader *header;
+	MonoJitInfo *jinfo;
+	int num_clauses;
+	int generic_info_size;
+
+	header = mono_method_get_header (method_to_compile);
+
+	if (cfg->generic_sharing_context)
+		generic_info_size = sizeof (MonoGenericJitInfo);
+	else
+		generic_info_size = 0;
+
+	if (COMPILE_LLVM (cfg))
+		num_clauses = cfg->llvm_ex_info_len;
+	else
+		num_clauses = header->num_clauses;
+
+	if (cfg->method->dynamic) {
+		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (num_clauses * sizeof (MonoJitExceptionInfo)) +
+				generic_info_size);
+	} else {
+		jinfo = mono_domain_alloc0 (cfg->domain, MONO_SIZEOF_JIT_INFO +
+				(num_clauses * sizeof (MonoJitExceptionInfo)) +
+				generic_info_size);
+	}
+
+	jinfo->method = cfg->method_to_register;
+	jinfo->code_start = cfg->native_code;
+	jinfo->code_size = cfg->code_len;
+	jinfo->used_regs = cfg->used_int_regs;
+	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
+	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
+	jinfo->num_clauses = num_clauses;
+	if (COMPILE_LLVM (cfg))
+		jinfo->from_llvm = TRUE;
+
+	if (cfg->generic_sharing_context) {
+		MonoInst *inst;
+		MonoGenericJitInfo *gi;
+
+		jinfo->has_generic_jit_info = 1;
+
+		gi = mono_jit_info_get_generic_jit_info (jinfo);
+		g_assert (gi);
+
+		gi->generic_sharing_context = cfg->generic_sharing_context;
+
+		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
+				mini_method_get_context (method_to_compile)->method_inst ||
+				method_to_compile->klass->valuetype) {
+			g_assert (cfg->rgctx_var);
+		}
+
+		gi->has_this = 1;
+
+		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
+				mini_method_get_context (method_to_compile)->method_inst ||
+				method_to_compile->klass->valuetype) {
+			inst = cfg->rgctx_var;
+			g_assert (inst->opcode == OP_REGOFFSET);
+		} else {
+			inst = cfg->args [0];
+		}
+
+		if (inst->opcode == OP_REGVAR) {
+			gi->this_in_reg = 1;
+			gi->this_reg = inst->dreg;
+		} else {
+			g_assert (inst->opcode == OP_REGOFFSET);
+#ifdef TARGET_X86
+			g_assert (inst->inst_basereg == X86_EBP);
+#elif defined(TARGET_AMD64)
+			g_assert (inst->inst_basereg == X86_EBP || inst->inst_basereg == X86_ESP);
+#endif
+			g_assert (inst->inst_offset >= G_MININT32 && inst->inst_offset <= G_MAXINT32);
+
+			gi->this_in_reg = 0;
+			gi->this_reg = inst->inst_basereg;
+			gi->this_offset = inst->inst_offset;
+		}
+	}
+
+	if (COMPILE_LLVM (cfg)) {
+		if (num_clauses)
+			memcpy (&jinfo->clauses [0], &cfg->llvm_ex_info [0], num_clauses * sizeof (MonoJitExceptionInfo));
+	} else if (header->num_clauses) {
+		int i;
+
+		for (i = 0; i < header->num_clauses; i++) {
+			MonoExceptionClause *ec = &header->clauses [i];
+			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
+			MonoBasicBlock *tblock;
+			MonoInst *exvar;
+
+			ei->flags = ec->flags;
+
+			exvar = mono_find_exvar_for_offset (cfg, ec->handler_offset);
+			ei->exvar_offset = exvar ? exvar->inst_offset : 0;
+
+			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+				tblock = cfg->cil_offset_to_bb [ec->data.filter_offset];
+				g_assert (tblock);
+				ei->data.filter = cfg->native_code + tblock->native_offset;
+			} else {
+				ei->data.catch_class = ec->data.catch_class;
+			}
+
+			tblock = cfg->cil_offset_to_bb [ec->try_offset];
+			g_assert (tblock);
+			ei->try_start = cfg->native_code + tblock->native_offset;
+			g_assert (tblock->native_offset);
+			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
+			g_assert (tblock);
+			ei->try_end = cfg->native_code + tblock->native_offset;
+			g_assert (tblock->native_offset);
+			tblock = cfg->cil_offset_to_bb [ec->handler_offset];
+			g_assert (tblock);
+			ei->handler_start = cfg->native_code + tblock->native_offset;
+		}
+	}
+
+	/* 
+	 * Its possible to generate dwarf unwind info for xdebug etc, but not actually
+	 * using it during runtime, hence the define.
+	 */
+#ifdef MONO_ARCH_HAVE_XP_UNWIND
+	if (cfg->encoded_unwind_ops) {
+		jinfo->used_regs = mono_cache_unwind_info (cfg->encoded_unwind_ops, cfg->encoded_unwind_ops_len);
+		g_free (cfg->encoded_unwind_ops);
+	} else if (cfg->unwind_ops) {
+		guint32 info_len;
+		guint8 *unwind_info = mono_unwind_ops_encode (cfg->unwind_ops, &info_len);
+
+		jinfo->used_regs = mono_cache_unwind_info (unwind_info, info_len);
+		g_free (unwind_info);
+	}
+#endif
+
+	return jinfo;
+}
+
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -3291,12 +3435,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	MonoMethodHeader *header;
 	guint8 *ip;
 	MonoCompile *cfg;
-	MonoJitInfo *jinfo;
-	int dfn, i, code_size_ratio, num_clauses;
+	int dfn, i, code_size_ratio;
 	gboolean deadce_has_run = FALSE;
 	gboolean try_generic_shared, try_llvm;
 	MonoMethod *method_to_compile, *method_to_register;
-	int generic_info_size;
 
 	mono_jit_stats.methods_compiled++;
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
@@ -4019,138 +4161,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		g_free (id);
 	}
 
-	if (cfg->generic_sharing_context)
-		generic_info_size = sizeof (MonoGenericJitInfo);
-	else
-		generic_info_size = 0;
-
-	if (COMPILE_LLVM (cfg))
-		num_clauses = cfg->llvm_ex_info_len;
-	else
-		num_clauses = header->num_clauses;
-
-	if (cfg->method->dynamic) {
-		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size);
-	} else {
-		jinfo = mono_domain_alloc0 (cfg->domain, MONO_SIZEOF_JIT_INFO +
-				(num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size);
-	}
-
-	jinfo->method = method_to_register;
-	jinfo->code_start = cfg->native_code;
-	jinfo->code_size = cfg->code_len;
-	jinfo->used_regs = cfg->used_int_regs;
-	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
-	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
-	jinfo->num_clauses = num_clauses;
-	if (COMPILE_LLVM (cfg))
-		jinfo->from_llvm = TRUE;
-
-	if (cfg->generic_sharing_context) {
-		MonoInst *inst;
-		MonoGenericJitInfo *gi;
-
-		jinfo->has_generic_jit_info = 1;
-
-		gi = mono_jit_info_get_generic_jit_info (jinfo);
-		g_assert (gi);
-
-		gi->generic_sharing_context = cfg->generic_sharing_context;
-
-		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
-				mini_method_get_context (method_to_compile)->method_inst ||
-				method_to_compile->klass->valuetype) {
-			g_assert (cfg->rgctx_var);
-		}
-
-		gi->has_this = 1;
-
-		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
-				mini_method_get_context (method_to_compile)->method_inst ||
-				method_to_compile->klass->valuetype) {
-			inst = cfg->rgctx_var;
-			g_assert (inst->opcode == OP_REGOFFSET);
-		} else {
-			inst = cfg->args [0];
-		}
-
-		if (inst->opcode == OP_REGVAR) {
-			gi->this_in_reg = 1;
-			gi->this_reg = inst->dreg;
-		} else {
-			g_assert (inst->opcode == OP_REGOFFSET);
-#ifdef TARGET_X86
-			g_assert (inst->inst_basereg == X86_EBP);
-#elif defined(TARGET_AMD64)
-			g_assert (inst->inst_basereg == X86_EBP || inst->inst_basereg == X86_ESP);
-#endif
-			g_assert (inst->inst_offset >= G_MININT32 && inst->inst_offset <= G_MAXINT32);
-
-			gi->this_in_reg = 0;
-			gi->this_reg = inst->inst_basereg;
-			gi->this_offset = inst->inst_offset;
-		}
-	}
-
-	if (COMPILE_LLVM (cfg)) {
-		if (num_clauses)
-			memcpy (&jinfo->clauses [0], &cfg->llvm_ex_info [0], num_clauses * sizeof (MonoJitExceptionInfo));
-	} else if (header->num_clauses) {
-		int i;
-
-		for (i = 0; i < header->num_clauses; i++) {
-			MonoExceptionClause *ec = &header->clauses [i];
-			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
-			MonoBasicBlock *tblock;
-			MonoInst *exvar;
-
-			ei->flags = ec->flags;
-
-			exvar = mono_find_exvar_for_offset (cfg, ec->handler_offset);
-			ei->exvar_offset = exvar ? exvar->inst_offset : 0;
-
-			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-				tblock = cfg->cil_offset_to_bb [ec->data.filter_offset];
-				g_assert (tblock);
-				ei->data.filter = cfg->native_code + tblock->native_offset;
-			} else {
-				ei->data.catch_class = ec->data.catch_class;
-			}
-
-			tblock = cfg->cil_offset_to_bb [ec->try_offset];
-			g_assert (tblock);
-			ei->try_start = cfg->native_code + tblock->native_offset;
-			g_assert (tblock->native_offset);
-			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
-			g_assert (tblock);
-			ei->try_end = cfg->native_code + tblock->native_offset;
-			g_assert (tblock->native_offset);
-			tblock = cfg->cil_offset_to_bb [ec->handler_offset];
-			g_assert (tblock);
-			ei->handler_start = cfg->native_code + tblock->native_offset;
-		}
-	}
-
-	/* 
-	 * Its possible to generate dwarf unwind info for xdebug etc, but not actually
-	 * using it during runtime, hence the define.
-	 */
-#ifdef MONO_ARCH_HAVE_XP_UNWIND
-	if (cfg->encoded_unwind_ops) {
-		jinfo->used_regs = mono_cache_unwind_info (cfg->encoded_unwind_ops, cfg->encoded_unwind_ops_len);
-		g_free (cfg->encoded_unwind_ops);
-	} else if (cfg->unwind_ops) {
-		guint32 info_len;
-		guint8 *unwind_info = mono_unwind_ops_encode (cfg->unwind_ops, &info_len);
-
-		jinfo->used_regs = mono_cache_unwind_info (unwind_info, info_len);
-		g_free (unwind_info);
-	}
-#endif
-
-	cfg->jit_info = jinfo;
+	cfg->jit_info = create_jit_info (cfg, method_to_compile);
 
 #ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
 	if (cfg->extend_live_ranges) {
@@ -4168,10 +4179,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (!cfg->compile_aot) {
 		mono_domain_lock (cfg->domain);
-		mono_jit_info_table_add (cfg->domain, jinfo);
+		mono_jit_info_table_add (cfg->domain, cfg->jit_info);
 
 		if (cfg->method->dynamic)
-			mono_dynamic_code_hash_lookup (cfg->domain, cfg->method)->ji = jinfo;
+			mono_dynamic_code_hash_lookup (cfg->domain, cfg->method)->ji = cfg->jit_info;
 		mono_domain_unlock (cfg->domain);
 	}
 
