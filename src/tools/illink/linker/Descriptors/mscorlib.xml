@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <linker>
 	<assembly fullname="mscorlib">
-		<namespace fullname="System.Security.Cryptography" />
-		<type fullname="Mono.Interop.ComInteropProxy" />
-		<type fullname="Mono.Interop.IDispatch" />
-		<type fullname="Mono.Interop.IUnknown" />
-		<type fullname="System.Activator" />
-		<type fullname="System.AppDomain" />
-		<type fullname="System.AppDomainSetup" />
+	
+		<type fullname="System.AppDomain" preserve="fields">
+			<method name="DoDomainUnload" />
+			<method name="DoTypeResolve" />
+			<method name="DoAssemblyResolve" />
+			<method name="DoAssemblyLoad" />
+			<method name="DoDomainUnload" />
+			<method name="InternalSetContext" />
+		</type>
+
+		<type fullname="System.AppDomainSetup" preserve="fields" />
 		<type fullname="System.AppDomainUnloadedException" />
 		<type fullname="System.ApplicationException" />
 		<type fullname="System.ArgIterator" />
@@ -15,67 +19,66 @@
 		<type fullname="System.ArgumentNullException" />
 		<type fullname="System.ArgumentOutOfRangeException" />
 		<type fullname="System.ArithmeticException" />
-		<type fullname="System.Array" />
-		<type fullname="System.Array/InternalArray`1" />
+		<type fullname="System.Array">
+			<method name="InternalArray__ICollection_get_Count" />
+			<method name="InternalArray__ICollection_get_IsReadOnly" />
+			<method name="InternalArray__IEnumerable_GetEnumerator" />
+			<method name="InternalArray__ICollection_Clear" />
+			<method name="InternalArray__ICollection_Add" />
+			<method name="InternalArray__ICollection_Remove" />
+			<method name="InternalArray__ICollection_Contains" />
+			<method name="InternalArray__ICollection_CopyTo" />
+			<method name="InternalArray__Insert" />
+			<method name="InternalArray__RemoveAt" />
+			<method name="InternalArray__IndexOf" />
+			<method name="InternalArray__get_Item" />
+			<method name="InternalArray__set_Item" />
+		</type>
 		<type fullname="System.ArrayTypeMismatchException" />
 		<type fullname="System.Attribute" />
 		<type fullname="System.BadImageFormatException" />
-		<type fullname="System.Boolean" />
-		<type fullname="System.Buffer" />
-		<type fullname="System.Byte" />
+		<type fullname="System.Boolean" preserve="fields" />
+		<type fullname="System.Byte" preserve="fields" />
 		<type fullname="System.CannotUnloadAppDomainException" />
-		<type fullname="System.Char" />
-		<type fullname="System.Collections.Generic.ICollection`1" />
-		<type fullname="System.Collections.Generic.IEnumerable`1" />
-		<type fullname="System.Collections.Generic.GenericEqualityComparer`1" />
-		<type fullname="System.Collections.Generic.IList`1" />
-		<type fullname="System.Console" />
-		<type fullname="System.ConsoleDriver" />
-		<type fullname="System.ContextBoundObject" />
-		<type fullname="System.Convert" />
+		<type fullname="System.Char" preserve="fields" />
+		<type fullname="System.Console" preserve="fields" />
+		<type fullname="System.ConsoleDriver" preserve="fields" />
+		<type fullname="System.ContextBoundObject" preserve="fields" />
+		<!-- <type fullname="System.Convert" /> -->
 		<type fullname="System.CurrentSystemTimeZone" />
-		<type fullname="System.DateTime" />
-		<type fullname="System.DBNull" />
-		<type fullname="System.Decimal" />
-		<type fullname="System.Delegate" />
+		<type fullname="System.DateTime" preserve="fields" />
+		<type fullname="System.DBNull" preserve="fields" />
+		<type fullname="System.Decimal" preserve="fields" />
+		<type fullname="System.Delegate" preserve="fields" />
 		<type fullname="System.Diagnostics.StackFrame" />
 		<type fullname="System.Diagnostics.StackTrace" />
 		<type fullname="System.DivideByZeroException" />
 		<type fullname="System.DllNotFoundException" />
-		<type fullname="System.Double" />
-		<type fullname="System.Enum" />
+		<type fullname="System.Double" preserve="fields" />
+		<type fullname="System.Enum" preserve="fields">
+			<method name="GetValues" />
+		</type>
 		<type fullname="System.EntryPointNotFoundException" />
-		<type fullname="System.Environment" />
+		<type fullname="System.Environment">
+			<field name="mono_corlib_version" />
+			<method name="get_StackTrace" />
+		</type>
 		<type fullname="System.Exception" />
 		<type fullname="System.ExecutionEngineException" />
 		<type fullname="System.FieldAccessException" />
 		<type fullname="System.FormatException" />
 		<type fullname="System.GC" />
-		<type fullname="System.Globalization.DateTimeFormatInfo" preserve="fields" />
-		<type fullname="System.Globalization.CompareInfo" preserve="fields" />
-		<type fullname="System.Globalization.CultureInfo" preserve="all" />
-		<type fullname="System.Globalization.NumberFormatInfo" preserve="fields" />
-		<type fullname="System.Globalization.RegionInfo" preserve="fields" />
-		<type fullname="System.Globalization.SortKey" preserve="fields" />
-		<type fullname="System.IO.FileMode" />
-		<type fullname="System.IO.FileNotFoundException" />
-		<type fullname="System.IO.FileLoadException" />
-		<type fullname="System.IO.FileStreamAsyncResult" />
-		<type fullname="System.IO.IOException" />
-		<type fullname="System.IO.MonoIO" preserve="fields" />
-		<type fullname="System.IO.Path" />
-		<type fullname="System.IO.StreamReader" />
 		<type fullname="System.IndexOutOfRangeException" />
-		<type fullname="System.Int16" />
-		<type fullname="System.Int32" />
-		<type fullname="System.Int64" />
-		<type fullname="System.IntPtr" />
+		<type fullname="System.Int16" preserve="fields" />
+		<type fullname="System.Int32" preserve="fields" />
+		<type fullname="System.Int64" preserve="fields" />
+		<type fullname="System.IntPtr" preserve="fields" />
 		<type fullname="System.InvalidCastException" />
 		<type fullname="System.InvalidOperationException" />
 		<type fullname="System.InvalidProgramException" />
-		<type fullname="System.MarshalByRefObject" />
-		<type fullname="System.Math" />
+		<type fullname="System.MarshalByRefObject" preserve="fields" feature="remoting" />
 		<type fullname="System.MethodAccessException" />
+		<type fullname="System.Missing" preserve="fields" />
 		<type fullname="System.MissingFieldException" />
 		<type fullname="System.MissingMethodException" />
 		<type fullname="System.MonoAsyncCall" preserve="fields" />
@@ -88,37 +91,89 @@
 		<type fullname="System.NotImplementedException" />
 		<type fullname="System.NotSupportedException" />
 		<type fullname="System.NullReferenceException" />
-		<type fullname="System.Nullable`1" />
+		<type fullname="System.Nullable`1" preserve="fields">
+			<method name="Box" />
+			<method name="Unbox" />
+		</type>
 		<type fullname="System.Object" />
 		<type fullname="System.OutOfMemoryException" />
-		<type fullname="System.Reflection.Assembly" preserve="all" />
+		<type fullname="System.RuntimeArgumentHandle" preserve="fields" />
+		<type fullname="System.RuntimeFieldHandle" preserve="fields" />
+		<type fullname="System.RuntimeMethodHandle" preserve="fields" />
+		<type fullname="System.RuntimeTypeHandle" preserve="fields" />
+		<type fullname="System.SByte" preserve="fields" />
+		<type fullname="System.Single" preserve="fields" />
+		<type fullname="System.StackOverflowException" />
+		<type fullname="System.STAThreadAttribute" />
+		<type fullname="System.String" preserve="fields">
+			<method name="CreateString" />
+			<method name="InternalAllocateStr" />
+			<method name="memcpy" />
+			<method name="memset" />
+		</type>
+		<type fullname="System.SystemException" />
+		<type fullname="System.Type" preserve="fields">
+			<method name="GetTypeFromHandle" />
+		</type>
+		<type fullname="System.TypeInitializationException" />
+		<type fullname="System.TypeLoadException" />
+		<type fullname="System.TypedReference" preserve="fields" />
+		<type fullname="System.UInt16" preserve="fields" />
+		<type fullname="System.UInt32" preserve="fields" />
+		<type fullname="System.UInt64" preserve="fields" />
+		<type fullname="System.UIntPtr" preserve="fields" />
+		<type fullname="System.UnhandledExceptionEventArgs" />
+		<type fullname="System.ValueType" preserve="fields" />
+		<type fullname="System.Variant" preserve="fields" feature="com">
+			<method name="Clear" />
+		</type>
+		<type fullname="System.Version" />
+		<type fullname="System.Void" />
+		<type fullname="System.__ComObject" feature="com" />
+
+		<type fullname="System.Collections.Generic.ICollection`1" />
+		<type fullname="System.Collections.Generic.IEnumerable`1" />
+		<type fullname="System.Collections.Generic.IList`1" />
+		<type fullname="System.Collections.Generic.GenericEqualityComparer`1">
+			<method name=".ctor" />
+		</type>
+		<type fullname="System.Collections.Generic.GenericComparer`1">
+			<method name=".ctor" />
+		</type>
+
+		<type fullname="System.Globalization.DateTimeFormatInfo" preserve="fields" />
+		<type fullname="System.Globalization.CompareInfo" preserve="fields" />
+		<type fullname="System.Globalization.CultureInfo" preserve="fields">
+			<method name="CreateCulture" />
+		</type>
+		<type fullname="System.Globalization.NumberFormatInfo" preserve="fields" />
+		<type fullname="System.Globalization.RegionInfo" preserve="fields" />
+		<type fullname="System.Globalization.SortKey" preserve="fields" />
+
+		<!--
+		<type fullname="System.IO.FileMode" />
+		<type fullname="System.IO.FileNotFoundException" />
+		<type fullname="System.IO.FileLoadException" />
+		<type fullname="System.IO.FileStreamAsyncResult" />
+		<type fullname="System.IO.IOException" />
+		<type fullname="System.IO.MonoIO" preserve="fields" />
+		<type fullname="System.IO.Path" />
+		<type fullname="System.IO.StreamReader" />
+		-->
+
+		<type fullname="System.Reflection.Assembly" preserve="fields">
+			<method name="MonoDebugger_GetMethodToken" feature="sre" />
+			<method name="GetNamespaces" feature="sre" />
+		</type>
 		<type fullname="System.Reflection.AssemblyName" preserve="fields" />
 		<type fullname="System.Reflection.ConstructorInfo" preserve="fields" />
 		<type fullname="System.Reflection.CustomAttributeData" preserve="fields" />
-		<type fullname="System.Reflection.CustomAttributeNamedArgument" />
-		<type fullname="System.Reflection.CustomAttributeTypedArgument" />
-		<type fullname="System.Reflection.Emit.AssemblyBuilder" />
-		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.CustomAttributeBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.DynamicMethod" preserve="fields" />
-		<type fullname="System.Reflection.Emit.EnumBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.EventBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.FieldBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" />
-		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" />
-		<type fullname="System.Reflection.Emit.ILGenerator" preserve="all" />
-		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="all" />
-		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="all" />
-		<type fullname="System.Reflection.Emit.MonoResource" preserve="fields" />
-		<type fullname="System.Reflection.Emit.MonoWin32Resource" preserve="fields" />
-		<type fullname="System.Reflection.Emit.ParameterBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.PropertyBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.SignatureHelper" preserve="fields" />
-		<type fullname="System.Reflection.Emit.TypeBuilder" preserve="fields" />
-		<type fullname="System.Reflection.Emit.UnmanagedMarshal" preserve="fields" />
-		<type fullname="System.Reflection.EventInfo" preserve="all" />
+		<type fullname="System.Reflection.CustomAttributeNamedArgument" preserve="fields" />
+		<type fullname="System.Reflection.CustomAttributeTypedArgument" preserve="fields" />
+		<type fullname="System.Reflection.EventInfo" preserve="fields">
+			<method name="AddEventFrame" />
+			<method name="StaticAddEventAdapterFrame" />
+		</type>
 		<type fullname="System.Reflection.ExceptionHandlingClause" preserve="fields" />
 		<type fullname="System.Reflection.FieldInfo" preserve="fields" />
 		<type fullname="System.Reflection.LocalVariableInfo" preserve="fields" />
@@ -126,7 +181,9 @@
 		<type fullname="System.Reflection.MethodBase" preserve="fields" />
 		<type fullname="System.Reflection.MethodBody" preserve="fields" />
 		<type fullname="System.Reflection.MethodInfo" preserve="fields" />
-		<type fullname="System.Reflection.Module" preserve="all" />
+		<type fullname="System.Reflection.Module" preserve="fields">
+			<method name="Mono_GetGuid" feature="sre" />
+		</type>
 		<type fullname="System.Reflection.MonoArrayMethod" preserve="fields" />
 		<type fullname="System.Reflection.MonoCMethod" preserve="fields" />
 		<type fullname="System.Reflection.MonoEvent" preserve="fields" />
@@ -138,97 +195,160 @@
 		<type fullname="System.Reflection.MonoMethod" preserve="fields" />
 		<type fullname="System.Reflection.MonoMethodInfo" preserve="fields" />
 		<type fullname="System.Reflection.MonoPropertyInfo" preserve="fields" />
-		<type fullname="System.Reflection.MonoProperty" preserve="all" />
+		<type fullname="System.Reflection.MonoProperty" preserve="fields">
+			<method name="GetterAdapterFrame" />
+			<method name="StaticGetterAdapterFrame" />
+		</type>
 		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<type fullname="System.Reflection.PropertyInfo" preserve="fields" />
 		<type fullname="System.Reflection.ReflectionTypeLoadException" />
 		<type fullname="System.Reflection.TargetException" />
 		<type fullname="System.Reflection.TargetParameterCountException" />
-		<type fullname="System.Resources.ResourceSet" />
+
+		<type fullname="System.Reflection.Emit.AssemblyBuilder" preserve="fields">
+			<method name="AddPermissionRequests" />
+			<method name="AddModule" />
+			<method name="DefineIconResource" />
+			<method name="AddTypeForwarder" />
+			<method name="EmbedResourceFile" />
+		</type>
+		<type fullname="System.Reflection.Emit.ConstructorBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.CustomAttributeBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.DynamicMethod" preserve="fields" />
+		<type fullname="System.Reflection.Emit.EnumBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.EventBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.FieldBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ILGenerator" preserve="fields" />
+		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="fields">
+			<method name="Mono_GetLocalIndex" />
+		</type>
+		<type fullname="System.Reflection.Emit.MethodBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ModuleBuilder" preserve="fields">
+			<method name="Mono_GetGuid" />
+		</type>
+		<type fullname="System.Reflection.Emit.MonoResource" preserve="fields" />
+		<type fullname="System.Reflection.Emit.MonoWin32Resource" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ParameterBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.PropertyBuilder" preserve="fields" />
+		<type fullname="System.Reflection.Emit.SignatureHelper" preserve="fields" />
+		<type fullname="System.Reflection.Emit.TypeBuilder" preserve="fields">
+			<method name="SetCharSet" />
+		</type>
+		<type fullname="System.Reflection.Emit.UnmanagedMarshal" preserve="fields">
+			<method name="DefineCustom" />
+			<method name="DefineLPArrayInternal" />
+		</type>
+-
+		<!--
 		<type fullname="System.Runtime.CompilerServices.CallConvCdecl" />
 		<type fullname="System.Runtime.CompilerServices.CallConvStdcall" />
 		<type fullname="System.Runtime.CompilerServices.CallConvFastcall" />
 		<type fullname="System.Runtime.CompilerServices.CallConvThiscall" />
+		-->
+
 		<type fullname="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
-		<type fullname="System.Runtime.CompilerServices.RequiredAttributeAttribute" />
+		<!-- <type fullname="System.Runtime.CompilerServices.RequiredAttributeAttribute" />
 		<type fullname="System.Runtime.CompilerServices.RuntimeHelpers" />
-		<type fullname="System.Runtime.CompilerServices.TypeForwardedToAttribute" />
-		<type fullname="System.Runtime.InteropServices.DllImportAttribute" />
+		<type fullname="System.Runtime.CompilerServices.TypeForwardedToAttribute" /> -->
+
+		<!-- <type fullname="System.Runtime.InteropServices.DllImportAttribute" /> -->
 		<type fullname="System.Runtime.InteropServices.GCHandle" />
-		<type fullname="System.Runtime.InteropServices.GuidAttribute" />
+		<!-- <type fullname="System.Runtime.InteropServices.GuidAttribute" /> -->
 		<type fullname="System.Runtime.InteropServices.HandleRef" />
 		<type fullname="System.Runtime.InteropServices.ICustomMarshaler" />
-		<type fullname="System.Runtime.InteropServices.InterfaceTypeAttribute" />
+		<!--<type fullname="System.Runtime.InteropServices.InterfaceTypeAttribute" /> -->
 		<type fullname="System.Runtime.InteropServices.Marshal" />
-		<type fullname="System.Runtime.InteropServices.MarshalDirectiveException" />
+		<!-- <type fullname="System.Runtime.InteropServices.MarshalDirectiveException" />
 		<type fullname="System.Runtime.InteropServices.SafeHandle" />
 		<type fullname="System.Runtime.InteropServices.StructLayoutAttribute" />
-		<type fullname="System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute" />
-		<type fullname="System.Runtime.Remoting.Activation.ActivationServices" />
-		<type fullname="System.Runtime.Remoting.Contexts.Context" />
+		<type fullname="System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute" />-->
+
+		<!-- <type fullname="System.Runtime.Remoting.Activation.ActivationServices" /> -->
+		<type fullname="System.Runtime.Remoting.Contexts.Context" preserve="fields">
+			<method name="get_NeedsContextSink" />
+		</type>
 		<type fullname="System.Runtime.Remoting.Channels.CrossAppDomainSink" />
-		<type fullname="System.Runtime.Remoting.IRemotingTypeInfo" />
+		<type fullname="System.Runtime.Remoting.IRemotingTypeInfo">
+			<method name="CanCastTo" />
+		</type>
 		<type fullname="System.Runtime.Remoting.Messaging.AsyncResult" />
-		<type fullname="System.Runtime.Remoting.Messaging.CallContext" />
-		<type fullname="System.Runtime.Remoting.Messaging.MonoMethodMessage" />
-		<type fullname="System.Runtime.Remoting.Proxies.RealProxy" />
-		<type fullname="System.Runtime.Remoting.Proxies.TransparentProxy" />
-		<type fullname="System.Runtime.Remoting.RemotingServices" />
+		<type fullname="System.Runtime.Remoting.Messaging.CallContext">
+			<method name="SetCurrentCallContext" />
+		</type>
+		<type fullname="System.Runtime.Remoting.Messaging.MonoMethodMessage" preserve="fields" />
+		<type fullname="System.Runtime.Remoting.Proxies.RealProxy" preserve="fields">
+			<method name="PrivateInvoke" />
+			<method name="GetAppDomainTarget" />
+		</type>
+		<type fullname="System.Runtime.Remoting.Proxies.TransparentProxy" preserve="fields" />
+		<type fullname="System.Runtime.Remoting.RemotingServices">
+			<method name="SerializeCallData" />
+			<method name="DeserializeCallData" />
+			<method name="SerializeExceptionData" />
+		</type>
+
+		<!--
 		<type fullname="System.Runtime.Serialization.ISerializable" />
 		<type fullname="System.Runtime.Serialization.SerializationException" />
 		<type fullname="System.Runtime.Serialization.SerializationInfo" />
 		<type fullname="System.Runtime.Serialization.StreamingContext" />
-		<type fullname="System.RuntimeArgumentHandle" />
-		<type fullname="System.RuntimeFieldHandle" />
-		<type fullname="System.RuntimeMethodHandle" />
-		<type fullname="System.RuntimeTypeHandle" />
-		<type fullname="System.SByte" />
+		-->
+
+		<type fullname="System.Threading.ExecutionContext" />
+		<type fullname="System.Threading.Interlocked">
+			<method name="CompareExchange" />
+		</type>
+		<type fullname="System.Threading.Monitor">
+			<method name="Enter" />
+			<method name="Exit" />
+		</type>
+
+		<!--
+		<type fullname="System.Threading.Mutex" />
+		<type fullname="System.Threading.NativeEventCalls" />
+		<type fullname="System.Threading.Semaphore" />
+		-->
+
+		<type fullname="System.Threading.SynchronisationLockException" />
+		<type fullname="System.Threading.Thread" preserve="fields">
+			<method name="get_CurrentContext" />
+		</type>
+		<type fullname="System.Threading.InternalThread" preserve="fields" />
+		<type fullname="System.Threading.ThreadAbortException" />
+		<type fullname="System.Threading.ThreadInterruptedException" />
+		<!--<type fullname="System.Threading.ThreadPool" />-->
+		<type fullname="System.Threading.ThreadState" preserve="fields" />
+		<type fullname="System.Threading.ThreadStateException" />
+		<type fullname="System.Threading.WaitHandle" preserve="fields">
+			<method name="set_Handle" />
+		</type>
+
+		<type fullname="System.Text.StringBuilder" preserve="fields" />
+
 		<type fullname="System.Security.AllowPartiallyTrustedCallersAttribute" />
-		<type fullname="System.Security.Cryptography.RandomNumberGenerator" />
-		<type fullname="System.Security.Cryptography.RNGCryptoServiceProvider" />
 		<type fullname="System.Security.Policy.Evidence" />
+		<!--
 		<type fullname="System.Security.Principal.WindowsIdentity" />
 		<type fullname="System.Security.Principal.WindowsImpersonationContext" />
 		<type fullname="System.Security.Principal.WindowsPrincipal" />
 		<type fullname="System.Security.RuntimeSecurityFrame" />
 		<type fullname="System.Security.SecurityCriticalAttribute" />
 		<type fullname="System.Security.SecurityException" />
+		-->
 		<type fullname="System.Security.SecurityManager" />
+		<!--
 		<type fullname="System.Security.SuppressUnmanagedCodeSecurityAttribute" />
 		<type fullname="System.Security.VerificationException" />
-		<type fullname="System.Single" />
-		<type fullname="System.StackOverflowException" />
-		<type fullname="System.STAThreadAttribute" />
-		<type fullname="System.String" />
-		<type fullname="System.SystemException" />
-		<type fullname="System.Text.StringBuilder" />
-		<type fullname="System.Threading.ExecutionContext" />
-		<type fullname="System.Threading.Interlocked" />
-		<type fullname="System.Threading.Monitor" />
-		<type fullname="System.Threading.Mutex" />
-		<type fullname="System.Threading.NativeEventCalls" />
-		<type fullname="System.Threading.Semaphore" />
-		<type fullname="System.Threading.SynchronisationLockException" />
-		<type fullname="System.Threading.Thread" />
-		<type fullname="System.Threading.InternalThread" />
-		<type fullname="System.Threading.ThreadAbortException" />
-		<type fullname="System.Threading.ThreadPool" />
-		<type fullname="System.Threading.ThreadState" />
-		<type fullname="System.Threading.ThreadStateException" />
-		<type fullname="System.Threading.WaitHandle" />
-		<type fullname="System.Type" />
-		<type fullname="System.TypeInitializationException" />
-		<type fullname="System.TypeLoadException" />
-		<type fullname="System.TypedReference" />
-		<type fullname="System.UInt16" />
-		<type fullname="System.UInt32" />
-		<type fullname="System.UInt64" />
-		<type fullname="System.UIntPtr" />
-		<type fullname="System.UnhandledExceptionEventArgs" />
-		<type fullname="System.ValueType" />
-		<type fullname="System.Variant" />
-		<type fullname="System.Version" />
-		<type fullname="System.Void" />
-		<type fullname="System.__ComObject" />
+		-->
+
+		<namespace fullname="System.Security.Cryptography" feature="crypto" />
+
+		<type fullname="Mono.Interop.ComInteropProxy" feature="com" />
+		<type fullname="Mono.Interop.IDispatch" feature="com" />
+		<type fullname="Mono.Interop.IUnknown" feature="com" />
+
 	</assembly>
 </linker>

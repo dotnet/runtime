@@ -1,3 +1,7 @@
+2010-12-06  Jb Evain  <jbevain@novell.com>
+
+	* Descriptors/mscorlib.xml: optimize descriptor.
+
 2009-11-23  Jb Evain  <jbevain@novell.com>
 
 	* Descriptors/mscorlib.xml: protect the InternalThread class.
