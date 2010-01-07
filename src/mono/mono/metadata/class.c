@@ -69,6 +69,7 @@ static void setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, Mono
 
 static MonoMethod* mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter);
 static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token);
+static gboolean mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass);
 
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
@@ -2359,6 +2360,7 @@ compare_interface_ids (const void *p_key, const void *p_element) {
 	return (key->interface_id - element->interface_id);
 }
 
+/*FIXME verify all callers if they should switch to mono_class_interface_offset_with_variance*/
 int
 mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
 	MonoClass **result = bsearch (
@@ -2372,6 +2374,34 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
 	} else {
 		return -1;
 	}
+}
+
+/*
+ * mono_class_interface_offset_with_variance:
+ * 
+ * Return the interface offset of @itf in @klass.
+ * If @itf is an interface with generic variant arguments, try to find the compatible one.
+ *
+ * Note that this function is responsible for resolving ambiguities. Right now we use whatever ordering interfaces_packed gives us.
+ *
+ * FIXME figure out MS disambiguation rules and fix this function.
+ */
+int
+mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf) {
+	int i = mono_class_interface_offset (klass, itf);
+	if (i >= 0)
+		return i;
+	
+	if (!mono_class_has_variant_generic_params (itf))
+		return -1;
+
+	for (i = 0; i < klass->interface_offsets_count; i++) {
+		if (mono_class_is_variant_compatible (itf, klass->interfaces_packed [i])) {
+			return klass->interface_offsets_packed [i];
+		}
+	}
+
+	return -1;
 }
 
 static void
@@ -6539,11 +6569,19 @@ mono_class_has_variant_generic_params (MonoClass *klass)
  * Return true if @klass can be assigned to a @klass variable
  */
 static gboolean
-mono_class_is_variant_compatible (MonoGenericContainer *container, MonoClass *klass, MonoClass *oklass)
+mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass)
 {
 	int j;
-	MonoType **klass_argv = &klass->generic_class->context.class_inst->type_argv [0];
-	MonoType **oklass_argv = &oklass->generic_class->context.class_inst->type_argv [0];
+	MonoType **klass_argv, **oklass_argv;
+	MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
+	MonoGenericContainer *container = klass_gtd->generic_container;
+
+	/*Viable candidates are instances of the same generic interface*/
+	if (mono_class_get_generic_type_definition (oklass) != klass_gtd)
+		return FALSE;
+
+	klass_argv = &klass->generic_class->context.class_inst->type_argv [0];
+	oklass_argv = &oklass->generic_class->context.class_inst->type_argv [0];
 
 	for (j = 0; j < container->type_argc; ++j) {
 		MonoClass *param1_class = mono_class_from_mono_type (klass_argv [j]);
@@ -6609,21 +6647,13 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 
 		if (mono_class_has_variant_generic_params (klass)) {
 			int i;
-			MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
-			MonoGenericContainer *container = klass_gtd->generic_container;
-
-			g_assert (container);
-
 			mono_class_setup_interfaces (oklass);
 
 			/*klass is a generic variant interface, We need to extract from oklass a list of ifaces which are viable candidates.*/
 			for (i = 0; i < oklass->interface_offsets_count; ++i) {
 				MonoClass *iface = oklass->interfaces_packed [i];
-				/*Viable candidates are instances of the same generic interface*/
-				if (mono_class_get_generic_type_definition (iface) != klass_gtd)
-					continue;
 
-				if (mono_class_is_variant_compatible (container, klass, iface))
+				if (mono_class_is_variant_compatible (klass, iface))
 					return TRUE;
 			}
 		}

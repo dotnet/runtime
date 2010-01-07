@@ -1130,13 +1130,14 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 static void
 print_imt_entry (const char* message, MonoImtBuilderEntry *e, int num) {
 	if (e != NULL) {
+		MonoMethod *method = e->key;
 		printf ("  * %s [%d]: (%p) '%s.%s.%s'\n",
 				message,
 				num,
-				e->method,
-				e->method->klass->name_space,
-				e->method->klass->name,
-				e->method->name);
+				method,
+				method->klass->name_space,
+				method->klass->name,
+				method->name);
 	} else {
 		printf ("  * %s: NULL\n", message);
 	}
@@ -1253,12 +1254,13 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 	gboolean has_generic_virtual = FALSE;
 
 #if DEBUG_IMT
-	printf ("Building IMT for class %s.%s\n", klass->name_space, klass->name);
+	printf ("Building IMT for class %s.%s slot %d\n", klass->name_space, klass->name, slot_num);
 #endif
 	for (i = 0; i < klass->interface_offsets_count; ++i) {
 		MonoClass *iface = klass->interfaces_packed [i];
 		int interface_offset = klass->interface_offsets_packed [i];
 		int method_slot_in_interface;
+
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 			MonoMethod *method;
 
@@ -1278,6 +1280,10 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 				has_generic_virtual = TRUE;
 				continue;
 			}
+
+			/*FIXME (interface_offset + method_slot_in_interface) is wrong for interfaces with static methods.*/
+			g_assert ((method->flags & METHOD_ATTRIBUTE_STATIC) == 0);
+
 			add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface, slot_num);
 		}
 	}
@@ -1328,10 +1334,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 			} else {
 				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], NULL);
 			}
-		}
 #if DEBUG_IMT
-		printf ("initialize_imt_slot[%d]: %p\n", i, imt [i]);
+			printf ("initialize_imt_slot[%d]: %p methods %d\n", i, imt [i], imt_builder [i]->children + 1);
 #endif
+		}
+
 		if (imt_builder [i] != NULL) {
 			int methods_in_slot = imt_builder [i]->children + 1;
 			if (methods_in_slot > mono_stats.imt_max_collisions_in_slot) {

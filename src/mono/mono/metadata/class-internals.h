@@ -418,6 +418,7 @@ struct _MonoClass {
 
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && ((k)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
 int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
+int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf) MONO_INTERNAL;
 
 typedef gpointer MonoRuntimeGenericContext;
 
