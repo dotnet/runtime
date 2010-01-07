@@ -25,6 +25,7 @@
 #include <llvm/PassManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JITMemoryManager.h>
+#include <llvm/ExecutionEngine/JITEventListener.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Target/TargetData.h>
 #include <llvm/Analysis/Verifier.h>
@@ -34,6 +35,7 @@
 #include "llvm/Support/PrettyStackTrace.h"
 #include <llvm/CodeGen/Passes.h>
 #include <llvm/CodeGen/MachineFunctionPass.h>
+#include <llvm/CodeGen/MachineFunction.h>
 //#include <llvm/LinkAllPasses.h>
 
 #include "llvm-c/Core.h"
@@ -242,6 +244,32 @@ mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 static cl::list<const PassInfo*, bool, PassNameParser>
 PassList(cl::desc("Optimizations available:"));
 
+class MonoJITEventListener : public JITEventListener {
+	virtual void NotifyFunctionEmitted(const Function &F,
+									   void *Code, size_t Size,
+									   const EmittedFunctionDetails &Details) {
+		/*
+		 * X86TargetMachine::setCodeModelForJIT() sets the code model to Large on amd64,
+		 * which means the JIT will generate calls of the form
+		 * mov reg, <imm>
+		 * call *reg
+		 * Our trampoline code can't patch this. Passing CodeModel::Small to createJIT
+		 * doesn't seem to work, we need Default. A discussion is here:
+		 * http://lists.cs.uiuc.edu/pipermail/llvmdev/2009-December/027999.html
+		 * There seems to no way to get the TargeMachine used by an EE either, so we
+		 * install a profiler hook and reset the code model here.
+		 * This should be inside an ifdef, but we can't include our config.h either,
+		 * since its definitions conflict with LLVM's config.h.
+		 *
+		 */
+		//#if defined(TARGET_X86) || defined(TARGET_AMD64)
+		if (Details.MF->getTarget ().getCodeModel () == CodeModel::Large) {
+			Details.MF->getTarget ().setCodeModel (CodeModel::Default);
+		}
+		//#endif
+	}	
+};
+
 LLVMExecutionEngineRef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb)
 {
@@ -266,6 +294,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	  g_assert_not_reached ();
   }
   EE->InstallExceptionTableRegister (exception_cb);
+  EE->RegisterJITEventListener (new MonoJITEventListener ());
 
   fpm = new FunctionPassManager (unwrap (MP));
 
