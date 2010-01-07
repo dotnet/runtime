@@ -7767,7 +7767,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp ++ = ins;
 				ip += 5;
 				inline_costs += 2;
-			} else if (MONO_CLASS_IS_INTERFACE (klass) && mono_class_has_variant_generic_params (klass)) {
+			} else if (mono_class_has_variant_generic_params (klass)) {
 				MonoInst *args [2];
 
 				/* obj */
@@ -7834,7 +7834,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				sp++;
 				ip += 5;
 				inline_costs += 2;
-			} else if (MONO_CLASS_IS_INTERFACE (klass) && mono_class_has_variant_generic_params (klass)) {
+			} else if (mono_class_has_variant_generic_params (klass)) {
 				MonoInst *args [2];
 
 				/* obj */

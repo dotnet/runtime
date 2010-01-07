@@ -1120,9 +1120,12 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 	}
 	imt_builder [imt_slot] = entry;
 #if DEBUG_IMT
-	printf ("Added IMT slot for method (%p) %s.%s.%s: imt_slot = %d, vtable_slot = %d, colliding with other %d entries\n",
-			method, method->klass->name_space, method->klass->name,
-			method->name, imt_slot, vtable_slot, entry->children);
+	{
+	char *method_name = mono_method_full_name (method, TRUE);
+	printf ("Added IMT slot for method (%p) %s: imt_slot = %d, vtable_slot = %d, colliding with other %d entries\n",
+			method, method_name, imt_slot, vtable_slot, entry->children);
+	g_free (method_name);
+	}
 #endif
 }
 
@@ -1251,7 +1254,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 	MonoImtBuilderEntry **imt_builder = calloc (MONO_IMT_SIZE, sizeof (MonoImtBuilderEntry*));
 	int method_count = 0;
 	gboolean record_method_count_for_max_collisions = FALSE;
-	gboolean has_generic_virtual = FALSE;
+	gboolean has_generic_virtual = FALSE, has_variant_iface = FALSE;
 
 #if DEBUG_IMT
 	printf ("Building IMT for class %s.%s slot %d\n", klass->name_space, klass->name, slot_num);
@@ -1260,6 +1263,9 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 		MonoClass *iface = klass->interfaces_packed [i];
 		int interface_offset = klass->interface_offsets_packed [i];
 		int method_slot_in_interface;
+
+		if (mono_class_has_variant_generic_params (iface))
+			has_variant_iface = TRUE;
 
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 			MonoMethod *method;
@@ -1312,15 +1318,21 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 					MonoImtBuilderEntry *entry;
 
 					/* Link entries with imt_builder [i] */
-					for (entry = entries; entry->next; entry = entry->next)
-						;						
+					for (entry = entries; entry->next; entry = entry->next) {
+#if DEBUG_IMT
+						MonoMethod *method = (MonoMethod*)entry->key;
+						char *method_name = mono_method_full_name (method, TRUE);
+						printf ("Added extra entry for method (%p) %s: imt_slot = %d\n", method, method_name, i);
+						g_free (method_name);
+#endif
+					}
 					entry->next = imt_builder [i];
 					entries->children += imt_builder [i]->children + 1;
 				}
 				imt_builder [i] = entries;
 			}
 
-			if (has_generic_virtual) {
+			if (has_generic_virtual || has_variant_iface) {
 				/*
 				 * There might be collisions later when the the thunk is expanded.
 				 */

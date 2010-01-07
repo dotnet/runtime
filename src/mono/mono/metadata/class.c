@@ -2379,7 +2379,7 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
 /*
  * mono_class_interface_offset_with_variance:
  * 
- * Return the interface offset of @itf in @klass.
+ * Return the interface offset of @itf in @klass. Sets @non_exact_match to TRUE if the match required variance check
  * If @itf is an interface with generic variant arguments, try to find the compatible one.
  *
  * Note that this function is responsible for resolving ambiguities. Right now we use whatever ordering interfaces_packed gives us.
@@ -2387,8 +2387,9 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
  * FIXME figure out MS disambiguation rules and fix this function.
  */
 int
-mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf) {
+mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match) {
 	int i = mono_class_interface_offset (klass, itf);
+	*non_exact_match = FALSE;
 	if (i >= 0)
 		return i;
 	
@@ -2397,6 +2398,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf) {
 
 	for (i = 0; i < klass->interface_offsets_count; i++) {
 		if (mono_class_is_variant_compatible (itf, klass->interfaces_packed [i])) {
+			*non_exact_match = TRUE;
 			return klass->interface_offsets_packed [i];
 		}
 	}
@@ -6658,7 +6660,10 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			}
 		}
 		return FALSE;
-	} else if (klass->rank) {
+	} else if (klass->delegate) {
+		if (mono_class_has_variant_generic_params (klass) && mono_class_is_variant_compatible (klass, oklass))
+			return TRUE;
+	}else if (klass->rank) {
 		MonoClass *eclass, *eoclass;
 
 		if (oklass->rank != klass->rank)
