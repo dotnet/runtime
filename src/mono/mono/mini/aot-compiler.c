@@ -6146,7 +6146,7 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
  *   This could be called from inside gdb to flush the debugging information not yet
  * registered with gdb.
  */
-static void
+void
 mono_xdebug_flush (void)
 {
 	if (xdebug_w)

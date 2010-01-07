@@ -1531,7 +1531,7 @@ void     mono_xdebug_init                   (char *xdebug_opts) MONO_INTERNAL;
 void     mono_save_xdebug_info              (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_save_trampoline_xdebug_info   (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info) MONO_INTERNAL;
 /* This is an exported function */
-void     mono_xdebug_emit                   (void) MONO_INTERNAL;
+void     mono_xdebug_flush                  (void) MONO_INTERNAL;
 
 /* LLVM backend */
 void     mono_llvm_init                     (void) MONO_INTERNAL;
