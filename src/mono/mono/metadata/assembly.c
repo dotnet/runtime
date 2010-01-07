@@ -186,6 +186,7 @@ check_path_env (void)
 	if (g_getenv ("MONO_DEBUG") == NULL)
 		return;
 
+	splitted = assemblies_path;
 	while (*splitted) {
 		if (**splitted && !g_file_test (*splitted, G_FILE_TEST_IS_DIR))
 			g_warning ("'%s' in MONO_PATH doesn't exist or has wrong permissions.", *splitted);
