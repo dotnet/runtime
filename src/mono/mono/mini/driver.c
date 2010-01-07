@@ -1112,7 +1112,7 @@ mini_usage (void)
 		"Usage is: mono [options] program [program-options]\n"
 		"\n"
 		"Development:\n"
-		"    --aot                  Compiles the assembly to native code\n"
+		"    --aot[=<options>]      Compiles the assembly to native code\n"
 		"    --debug[=<options>]    Enable debugging support, use --help-debug for details\n"
  		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
