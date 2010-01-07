@@ -7767,6 +7767,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp ++ = ins;
 				ip += 5;
 				inline_costs += 2;
+			} else if (MONO_CLASS_IS_INTERFACE (klass) && mono_class_has_variant_generic_params (klass)) {
+				MonoInst *args [2];
+
+				/* obj */
+				args [0] = *sp;
+
+				/* klass */
+				EMIT_NEW_CLASSCONST (cfg, args [1], klass);
+
+				ins = mono_emit_jit_icall (cfg, mono_object_castclass, args);
+				*sp ++ = ins;
+				ip += 5;
+				inline_costs += 2;
 			} else if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				MonoMethod *mono_castclass;
 				MonoInst *iargs [1];
@@ -7816,6 +7829,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				/* klass */
 				args [1] = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+
+				*sp = mono_emit_jit_icall (cfg, mono_object_isinst, args);
+				sp++;
+				ip += 5;
+				inline_costs += 2;
+			} else if (MONO_CLASS_IS_INTERFACE (klass) && mono_class_has_variant_generic_params (klass)) {
+				MonoInst *args [2];
+
+				/* obj */
+				args [0] = *sp;
+
+				/* klass */
+				EMIT_NEW_CLASSCONST (cfg, args [1], klass);
 
 				*sp = mono_emit_jit_icall (cfg, mono_object_isinst, args);
 				sp++;
