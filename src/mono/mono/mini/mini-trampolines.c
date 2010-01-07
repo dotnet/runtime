@@ -250,6 +250,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 	int context_used;
 	gboolean proxy = FALSE;
 	gpointer *orig_vtable_slot;
+	MonoJitInfo *ji = NULL;
 
 	m = arg;
 
@@ -333,6 +334,20 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 			} else {
 				m = impl_method;
 			}
+		}
+	}
+#endif
+
+#ifdef MONO_ARCH_LLVM_SUPPORTED
+	if (!vtable_slot && code && !need_rgctx_tramp && mono_method_needs_static_rgctx_invoke (m, FALSE)) {
+		/*
+		 * Call this only if the called method is shared, cause it is slow/loads a lot of
+		 * data in AOT.
+		 */
+		ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+		if (ji && ji->from_llvm) {
+			/* LLVM can't pass an rgctx arg */
+			need_rgctx_tramp = TRUE;
 		}
 	}
 #endif
@@ -548,10 +563,11 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 			if (plt_entry) {
 
 			} else {
-				MonoJitInfo *ji = 
-					mono_jit_info_table_find (mono_domain_get (), (char*)code);
 				MonoJitInfo *target_ji = 
 					mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
+
+				if (!ji)
+					ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
 
 				if (mono_method_same_domain (ji, target_ji))
 					mono_arch_patch_callsite (ji->code_start, code, addr);

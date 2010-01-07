@@ -2498,10 +2498,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				llvm_sig = sig_to_llvm_sig (ctx, sig, cinfo);
 				CHECK_FAILURE (ctx);
 
-				if (call->rgctx_reg) {
-					LLVM_FAILURE (ctx, "rgctx reg");
-				}
-
 				virtual = (ins->opcode == OP_VOIDCALL_MEMBASE || ins->opcode == OP_CALL_MEMBASE || ins->opcode == OP_VCALL_MEMBASE || ins->opcode == OP_LCALL_MEMBASE || ins->opcode == OP_FCALL_MEMBASE);
 				calli = (ins->opcode == OP_VOIDCALL_REG || ins->opcode == OP_CALL_REG || ins->opcode == OP_VCALL_REG || ins->opcode == OP_LCALL_REG || ins->opcode == OP_FCALL_REG);
 
