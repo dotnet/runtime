@@ -2048,6 +2048,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		GPtrArray *ifaces;
 		int method_count;
 
+		/*FIXME test for interfaces with variant generic arguments*/
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (class, iclass->interface_id))
 			continue;	/* interface implemented by the class */
 		if (g_slist_find (extra_interfaces, iclass))
@@ -2061,6 +2062,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		if (ifaces) {
 			for (i = 0; i < ifaces->len; ++i) {
 				MonoClass *ic = g_ptr_array_index (ifaces, i);
+				/*FIXME test for interfaces with variant generic arguments*/
 				if (MONO_CLASS_IMPLEMENTS_INTERFACE (class, ic->interface_id))
 					continue;	/* interface implemented by the class */
 				if (g_slist_find (extra_interfaces, ic))
@@ -4858,7 +4860,7 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) 
+	if (klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_INTERFACE))
 		return mono_object_isinst_mbyref (obj, klass);
 
 	if (!obj)
@@ -4881,6 +4883,10 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, klass->interface_id)) {
 			return obj;
 		}
+
+		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
+		if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from (klass, obj->vtable->klass))
+			return obj;
 	} else {
 		MonoClass *oklass = vt->klass;
 		if ((oklass == mono_defaults.transparent_proxy_class))

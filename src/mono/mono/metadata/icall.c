@@ -2135,6 +2135,7 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	mono_class_setup_vtable (class);
 
 	/* type doesn't implement iface: the exception is thrown in managed code */
+	/*FIXME test for interfaces with variant generic arguments*/
 	if (! MONO_CLASS_IMPLEMENTS_INTERFACE (class, iclass->interface_id))
 			return;
 

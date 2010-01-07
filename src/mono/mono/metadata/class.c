@@ -6480,6 +6480,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	return class;
 }
 
+/*FIXME test for interfaces with variant generic arguments*/
 gboolean
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
 			   gboolean check_interfaces)
