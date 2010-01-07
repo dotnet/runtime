@@ -1562,7 +1562,8 @@ typedef struct _GenericVirtualCase {
 /*
  * get_generic_virtual_entries:
  *
- *   Return IMT entries for the generic virtual method instances for vtable slot
+ *   Return IMT entries for the generic virtual method instances and
+ *   variant interface methods for vtable slot
  * VTABLE_SLOT.
  */ 
 static MonoImtBuilderEntry*
@@ -1608,7 +1609,7 @@ get_generic_virtual_entries (MonoDomain *domain, gpointer *vtable_slot)
  * @code: the method's code
  *
  * Registers a call via unmanaged code to a generic virtual method
- * instantiation.  If the number of calls reaches a threshold
+ * instantiation or variant interface method.  If the number of calls reaches a threshold
  * (THUNK_THRESHOLD), the method is added to the vtable slot's generic
  * virtual method thunk.
  */
