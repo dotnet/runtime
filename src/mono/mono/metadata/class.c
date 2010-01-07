@@ -6511,7 +6511,7 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 	return FALSE;
 }
 
-static gboolean
+gboolean
 mono_class_has_variant_generic_params (MonoClass *klass)
 {
 	int i;
@@ -6527,6 +6527,46 @@ mono_class_has_variant_generic_params (MonoClass *klass)
 			return TRUE;
 
 	return FALSE;
+}
+
+/**
+ * @container the generic container from the GTD
+ * @klass: the class to be assigned to
+ * @oklass: the source class
+ * 
+ * Both klass and oklass must be instances of the same generic interface.
+ * Return true if @klass can be assigned to a @klass variable
+ */
+static gboolean
+mono_class_is_variant_compatible (MonoGenericContainer *container, MonoClass *klass, MonoClass *oklass)
+{
+	int j;
+	MonoType **klass_argv = &klass->generic_class->context.class_inst->type_argv [0];
+	MonoType **oklass_argv = &oklass->generic_class->context.class_inst->type_argv [0];
+
+	for (j = 0; j < container->type_argc; ++j) {
+		MonoClass *param1_class = mono_class_from_mono_type (klass_argv [j]);
+		MonoClass *param2_class = mono_class_from_mono_type (oklass_argv [j]);
+
+		if (param1_class->valuetype != param2_class->valuetype)
+			return FALSE;
+
+		/*
+		 * The _VARIANT and _COVARIANT constants should read _COVARIANT and
+		 * _CONTRAVARIANT, but they are in a public header so we can't fix it.
+		 */
+		if (param1_class != param2_class) {
+			if (mono_generic_container_get_param_info (container, j)->flags & MONO_GEN_PARAM_VARIANT) {
+				if (!mono_class_is_assignable_from (param1_class, param2_class))
+					return FALSE;
+			} else if (mono_generic_container_get_param_info (container, j)->flags & MONO_GEN_PARAM_COVARIANT) {
+				if (!mono_class_is_assignable_from (param2_class, param1_class))
+					return FALSE;
+			} else
+				return FALSE;
+		}
+	}
+	return TRUE;
 }
 
 /**
@@ -6567,56 +6607,26 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			return TRUE;
 
 		if (mono_class_has_variant_generic_params (klass)) {
-			if (oklass->generic_class) {
-				int i;
-				gboolean match = FALSE;
-				MonoClass *container_class1 = klass->generic_class->container_class;
-				MonoClass *container_class2 = oklass->generic_class->container_class;
+			int i;
+			MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
+			MonoGenericContainer *container = klass_gtd->generic_container;
 
-				/* 
-				 * Check whenever the generic definition of oklass implements the 
-				 * generic definition of klass. The IMPLEMENTS_INTERFACE stuff is not usable
-				 * here since the relevant tables are not set up.
-				 */
-				for (i = 0; i < container_class2->interface_offsets_count; ++i)
-					if ((container_class2->interfaces_packed [i] == container_class1) || (container_class2->interfaces_packed [i]->generic_class && (container_class2->interfaces_packed [i]->generic_class->container_class == container_class1)))
-						match = TRUE;
+			g_assert (container);
 
-				if (match) {
-					MonoGenericContainer *container;
+			mono_class_setup_interfaces (oklass);
 
-					container = klass->generic_class->container_class->generic_container;
+			/*klass is a generic variant interface, We need to extract from oklass a list of ifaces which are viable candidates.*/
+			for (i = 0; i < oklass->interface_offsets_count; ++i) {
+				MonoClass *iface = oklass->interfaces_packed [i];
+				/*Viable candidates are instances of the same generic interface*/
+				if (mono_class_get_generic_type_definition (iface) != klass_gtd)
+					continue;
 
-					match = TRUE;
-					for (i = 0; i < container->type_argc; ++i) {
-						MonoClass *param1_class = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [i]);
-						MonoClass *param2_class = mono_class_from_mono_type (oklass->generic_class->context.class_inst->type_argv [i]);
-
-						if (param1_class->valuetype != param2_class->valuetype) {
-							match = FALSE;
-							break;
-						}
-						/*
-						 * The _VARIANT and _COVARIANT constants should read _COVARIANT and
-						 * _CONTRAVARIANT, but they are in a public header so we can't fix it.
-						 */
-						if (param1_class != param2_class) {
-							if ((mono_generic_container_get_param_info (container, i)->flags & MONO_GEN_PARAM_VARIANT) && mono_class_is_assignable_from (param1_class, param2_class))
-								;
-							else if (((mono_generic_container_get_param_info (container, i)->flags & MONO_GEN_PARAM_COVARIANT) && mono_class_is_assignable_from (param2_class, param1_class)))
-								;
-							else {
-								match = FALSE;
-								break;
-							}
-						}
-					}
-
-					if (match)
-						return TRUE;
-				}
+				if (mono_class_is_variant_compatible (container, klass, iface))
+					return TRUE;
 			}
 		}
+		return FALSE;
 	} else if (klass->rank) {
 		MonoClass *eclass, *eoclass;
 
