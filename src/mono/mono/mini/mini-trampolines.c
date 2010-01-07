@@ -171,7 +171,8 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 		int interface_offset;
 		int imt_slot = MONO_IMT_SIZE + displacement;
 
-		interface_offset = mono_class_interface_offset (vt->klass, imt_method->klass);
+		/*This has to be variance aware since imt_method can be from an interface that vt->klass doesn't directly implement*/
+		interface_offset = mono_class_interface_offset_with_variance (vt->klass, imt_method->klass);
 
 		if (interface_offset < 0) {
 			g_print ("%s doesn't implement interface %s\n", mono_type_get_name_full (&vt->klass->byval_arg, 0), mono_type_get_name_full (&imt_method->klass->byval_arg, 0));

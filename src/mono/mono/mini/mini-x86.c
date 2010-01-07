@@ -5097,6 +5097,7 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 #define BR_LARGE_SIZE 5
 #define JUMP_IMM_SIZE 6
 #define ENABLE_WRONG_METHOD_CHECK 0
+#define DEBUG_IMT 0
 
 static int
 imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
@@ -5211,6 +5212,15 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	if (!fail_tramp)
 		mono_stats.imt_thunks_size += code - start;
 	g_assert (code - start <= size);
+
+#if DEBUG_IMT
+	{
+		char *buff = g_strdup_printf ("thunk_for_class_%s_%s_entries_%d", vtable->klass->name_space, vtable->klass->name, count);
+		mono_disassemble_code (NULL, (guint8*)start, code - start, buff);
+		g_free (buff);
+	}
+#endif
+
 	return start;
 }
 

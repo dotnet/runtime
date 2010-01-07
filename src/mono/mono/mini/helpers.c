@@ -158,7 +158,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 
 	cindex = 0;
 	for (i = 0; i < size; ++i) {
-		if (emit_debug_info) {
+		if (emit_debug_info && cfg != NULL) {
 			bb_num = GPOINTER_TO_INT (g_hash_table_lookup (offset_to_bb_hash, GINT_TO_POINTER (i)));
 			if (bb_num) {
 				fprintf (ofd, "\n.stabd 68,0,%d\n", bb_num - 1);
