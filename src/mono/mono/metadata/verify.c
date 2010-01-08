@@ -423,23 +423,6 @@ mono_class_has_default_constructor (MonoClass *klass)
 	return FALSE;
 }
 
-static gboolean
-mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *iface)
-{
-	int i;
-	do {
-		if (candidate == iface)
-			return TRUE;
-		mono_class_setup_interfaces (candidate);
-		for (i = 0; i < candidate->interface_count; ++i) {
-			if (candidate->interfaces [i] == iface || mono_class_interface_implements_interface (candidate->interfaces [i], iface))
-				return TRUE;
-		}
-		candidate = candidate->parent;
-	} while (candidate);
-	return FALSE;
-}
-
 /*
  * Verify if @type is valid for the given @ctx verification context.
  * this function checks for VAR and MVAR types that are invalid under the current verifier,
@@ -491,45 +474,7 @@ verifier_inflate_type (VerifyContext *ctx, MonoType *type, MonoGenericContext *c
 	}
 	return result;
 }
-/*
- * Test if @candidate is a subtype of @target using the minimal possible information
- * TODO move the code for non finished TypeBuilders to here.
- */
-static gboolean
-mono_class_is_constraint_compatible (MonoClass *candidate, MonoClass *target)
-{
-	if (candidate == target)
-		return TRUE;
-	if (target == mono_defaults.object_class)
-			return TRUE;
 
-	//setup_supertypes don't mono_class_init anything
-	mono_class_setup_supertypes (candidate);
-	mono_class_setup_supertypes (target);
-
-	if (mono_class_has_parent (candidate, target))
-		return TRUE;
-
-	//if target is not a supertype it must be an interface
-	if (!MONO_CLASS_IS_INTERFACE (target))
-			return FALSE;
-
-	if (candidate->image->dynamic && !candidate->wastypebuilder) {
-		MonoReflectionTypeBuilder *tb = candidate->reflection_info;
-		int j;
-		if (tb->interfaces) {
-			for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
-				MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
-				MonoClass *ifaceClass = mono_class_from_mono_type (iface->type);
-				if (mono_class_is_constraint_compatible (ifaceClass, target)) {
-					return TRUE;
-				}
-			}
-		}
-		return FALSE;
-	}
-	return mono_class_interface_implements_interface (candidate, target);
-}
 
 static gboolean
 is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
@@ -585,7 +530,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 			ctr = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 
-			if (!mono_class_is_constraint_compatible (paramClass, ctr))
+			if (!mono_class_is_assignable_from_slow (ctr, paramClass))
 				return FALSE;
 		}
 	}
