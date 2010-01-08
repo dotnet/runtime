@@ -1614,25 +1614,37 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					LLVMAddGlobalMapping (ee, personality, mono_personality);
 			}
 
-			if (cfg->compile_aot)
-				// Can't encode the type info yet
-				LLVM_FAILURE (ctx, "aot+clauses");
-
 			i8ptr = LLVMPointerType (LLVMInt8Type (), 0);
 
 			clause_index = (mono_get_block_region_notry (cfg, bb->region) >> 8) - 1;
 
 			/*
-			 * Create the type info, exception_cb will decode this.
+			 * Create the type info
 			 */
-			ti = g_malloc (sizeof (MonoExceptionClause));
-			memcpy (ti, &mono_method_get_header (cfg->method)->clauses [clause_index], sizeof (MonoExceptionClause));
 			sprintf (ti_name, "type_info_%d", ti_generator);
 			ti_generator ++;
 
-			type_info = LLVMAddGlobal (module, i8ptr, ti_name);
+			if (cfg->compile_aot) {
+				/* decode_eh_frame () in aot-runtime.c will decode this */
+				type_info = LLVMAddGlobal (module, LLVMInt32Type (), ti_name);
+				LLVMSetInitializer (type_info, LLVMConstInt (LLVMInt32Type (), clause_index, FALSE));
 
-			LLVMAddGlobalMapping (ee, type_info, ti);
+				/* 
+				 * FIXME: llc currently generates incorrect data in the LSDA:
+				 * 	.byte	0x9B                                        # @TType format (indirect pcrel sdata4)
+				 * and later:
+				 * .quad	type_info_1                                 # TypeInfo
+				 */
+				LLVM_FAILURE (ctx, "aot+clauses");
+			} else {
+				/* exception_cb will decode this */
+				ti = g_malloc (sizeof (MonoExceptionClause));
+				memcpy (ti, &mono_method_get_header (cfg->method)->clauses [clause_index], sizeof (MonoExceptionClause));
+
+				type_info = LLVMAddGlobal (module, i8ptr, ti_name);
+
+				LLVMAddGlobalMapping (ee, type_info, ti);
+			}
 
 			args [0] = LLVMConstNull (i8ptr);
 			args [1] = LLVMConstBitCast (personality, i8ptr);

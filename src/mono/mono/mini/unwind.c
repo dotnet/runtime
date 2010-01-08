@@ -609,13 +609,20 @@ decode_cie_op (guint8 *p, guint8 **endp)
 
 /* Pointer Encoding in the .eh_frame */
 enum {
-    DW_EH_PE_absptr = 0x00,
-    DW_EH_PE_omit = 0xff,
+	DW_EH_PE_absptr = 0x00,
+	DW_EH_PE_omit = 0xff,
 
-    DW_EH_PE_udata4 = 0x03,
+	DW_EH_PE_udata4 = 0x03,
 	DW_EH_PE_sdata4 = 0x0b,
 	DW_EH_PE_sdata8 = 0x0c,
-	DW_EH_PE_pcrel = 0x10
+
+	DW_EH_PE_pcrel = 0x10,
+	DW_EH_PE_textrel = 0x20,
+	DW_EH_PE_datarel = 0x30,
+	DW_EH_PE_funcrel = 0x40,
+	DW_EH_PE_aligned = 0x50,
+
+	DW_EH_PE_indirect = 0x80
 };
 
 static gint64
