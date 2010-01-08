@@ -759,7 +759,6 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 	if (!res) {
 		if (mono_loader_get_last_error ())
 			mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
-	} else {
 		// FIXME: Error handling (how ?)
 		g_assert (res);
 	}
