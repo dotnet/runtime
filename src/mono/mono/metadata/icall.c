@@ -2122,6 +2122,7 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 static void
 ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType *iface, MonoArray **targets, MonoArray **methods)
 {
+	gboolean variance_used;
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	MonoClass *iclass = mono_class_from_mono_type (iface->type);
 	MonoReflectionMethod *member;
@@ -2134,13 +2135,11 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 
 	mono_class_setup_vtable (class);
 
-	/* type doesn't implement iface: the exception is thrown in managed code */
-	/*FIXME test for interfaces with variant generic arguments*/
-	if (! MONO_CLASS_IMPLEMENTS_INTERFACE (class, iclass->interface_id))
-			return;
+	ioffset = mono_class_interface_offset_with_variance (class, iclass, &variance_used);
+	if (ioffset == -1)
+		return;
 
 	len = mono_class_num_methods (iclass);
-	ioffset = mono_class_interface_offset (class, iclass);
 	domain = mono_object_domain (type);
 	mono_gc_wbarrier_generic_store (targets, (MonoObject*) mono_array_new (domain, mono_defaults.method_info_class, len));
 	mono_gc_wbarrier_generic_store (methods, (MonoObject*) mono_array_new (domain, mono_defaults.method_info_class, len));
