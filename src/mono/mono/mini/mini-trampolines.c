@@ -753,8 +753,18 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 						 guint8* tramp)
 {
 	guint32 plt_info_offset = mono_aot_get_plt_info_offset (regs, code);
+	gpointer res;
 
-	return mono_aot_plt_resolve (aot_module, plt_info_offset, code);
+	res = mono_aot_plt_resolve (aot_module, plt_info_offset, code);
+	if (!res) {
+		if (mono_loader_get_last_error ())
+			mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+	} else {
+		// FIXME: Error handling (how ?)
+		g_assert (res);
+	}
+
+	return res;
 }
 #endif
 

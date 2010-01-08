@@ -174,36 +174,47 @@ init_plt (MonoAotModule *info);
 /*                 AOT RUNTIME                       */
 /*****************************************************/
 
+/*
+ * load_image:
+ *
+ *   Load one of the images referenced by AMODULE. Returns NULL if the image is not
+ * found, and sets the loader error if SET_ERROR is TRUE.
+ */
 static MonoImage *
-load_image (MonoAotModule *module, int index)
+load_image (MonoAotModule *amodule, int index, gboolean set_error)
 {
 	MonoAssembly *assembly;
 	MonoImageOpenStatus status;
 
-	g_assert (index < module->image_table_len);
+	g_assert (index < amodule->image_table_len);
 
-	if (module->image_table [index])
-		return module->image_table [index];
-	if (module->out_of_date)
+	if (amodule->image_table [index])
+		return amodule->image_table [index];
+	if (amodule->out_of_date)
 		return NULL;
 
-	assembly = mono_assembly_load (&module->image_names [index], NULL, &status);
+	assembly = mono_assembly_load (&amodule->image_names [index], NULL, &status);
 	if (!assembly) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable because dependency %s is not found.\n", module->aot_name, module->image_names [index].name);
-		module->out_of_date = TRUE;
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable because dependency %s is not found.\n", amodule->aot_name, amodule->image_names [index].name);
+		amodule->out_of_date = TRUE;
+
+		if (set_error) {
+			char *full_name = mono_stringify_assembly_name (&amodule->image_names [index]);
+			mono_loader_set_error_assembly_load (full_name, FALSE);
+			g_free (full_name);
+		}
 		return NULL;
 	}
 
-	if (strcmp (assembly->image->guid, module->image_guids [index])) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is out of date (Older than dependency %s).\n", module->aot_name, module->image_names [index].name);
-		module->out_of_date = TRUE;
+	if (strcmp (assembly->image->guid, amodule->image_guids [index])) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is out of date (Older than dependency %s).\n", amodule->aot_name, amodule->image_names [index].name);
+		amodule->out_of_date = TRUE;
 		return NULL;
 	}
 
-	module->image_table [index] = assembly->image;
+	amodule->image_table [index] = assembly->image;
 	return assembly->image;
 }
-
 
 static inline gint32
 decode_value (guint8 *ptr, guint8 **rptr)
@@ -348,7 +359,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		return NULL;
 	}
 	if (mono_metadata_token_table (token) == 0) {
-		image = load_image (module, decode_value (p, &p));
+		image = load_image (module, decode_value (p, &p), TRUE);
 		if (!image)
 			return NULL;
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + token);
@@ -414,14 +425,14 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				g_assert_not_reached ();
 			}
 		} else {
-			image = load_image (module, decode_value (p, &p));
+			image = load_image (module, decode_value (p, &p), TRUE);
 			if (!image)
 				return NULL;
 			klass = mono_class_get (image, token);
 		}
 	} else if (token == MONO_TOKEN_TYPE_DEF) {
 		/* Array */
-		image = load_image (module, decode_value (p, &p));
+		image = load_image (module, decode_value (p, &p), TRUE);
 		if (!image)
 			return NULL;
 		rank = decode_value (p, &p);
@@ -622,7 +633,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		image_index = decode_value (p, &p);
 		*token = decode_value (p, &p);
 
-		image = load_image (module, image_index);
+		image = load_image (module, image_index, TRUE);
 		if (!image)
 			return NULL;
 	} else if (image_index == MONO_AOT_METHODREF_GINST) {
@@ -640,7 +651,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		image_index = decode_value (p, &p);
 		*token = decode_value (p, &p);
 
-		image = load_image (module, image_index);
+		image = load_image (module, image_index, TRUE);
 		if (!image)
 			return NULL;
 
@@ -695,7 +706,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		g_assert (image_index < MONO_AOT_METHODREF_MIN);
 		*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
-		image = load_image (module, image_index);
+		image = load_image (module, image_index, TRUE);
 		if (!image)
 			return NULL;
 	}
@@ -1197,7 +1208,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	 * non-lazily, since we can't handle out-of-date errors later.
 	 */
 	for (i = 0; i < amodule->image_table_len; ++i)
-		load_image (amodule, i);
+		load_image (amodule, i, FALSE);
 
 	if (amodule->out_of_date) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s is unusable because a dependency is out-of-date.\n", assembly->image->name);
@@ -2250,7 +2261,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			goto cleanup;
 		break;
 	case MONO_PATCH_INFO_IMAGE:
-		ji->data.image = load_image (aot_module, decode_value (p, &p));
+		ji->data.image = load_image (aot_module, decode_value (p, &p), TRUE);
 		if (!ji->data.image)
 			goto cleanup;
 		break;
@@ -2290,7 +2301,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR:
-		image = load_image (aot_module, decode_value (p, &p));
+		image = load_image (aot_module, decode_value (p, &p), TRUE);
 		if (!image)
 			goto cleanup;
 		ji->data.token = mono_jump_info_token_new (mp, image, MONO_TOKEN_STRING + decode_value (p, &p));
@@ -2300,7 +2311,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 		/* Shared */
-		image = load_image (aot_module, decode_value (p, &p));
+		image = load_image (aot_module, decode_value (p, &p), TRUE);
 		if (!image)
 			goto cleanup;
 		ji->data.token = mono_jump_info_token_new (mp, image, decode_value (p, &p));
@@ -2988,6 +2999,7 @@ find_aot_module (guint8 *code)
  *
  *   This function is called by the entries in the PLT to resolve the actual method that
  * needs to be called. It returns a trampoline to the method and patches the PLT entry.
+ * Returns NULL if the something cannot be loaded.
  */
 gpointer
 mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code)
@@ -3007,8 +3019,11 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 
 	mp = mono_mempool_new_size (512);
 	res = decode_patch (module, mp, &ji, p, &p);
-	// FIXME: Error handling (how ?)
-	g_assert (res);
+
+	if (!res) {
+		mono_mempool_destroy (mp);
+		return NULL;
+	}
 
 	/* 
 	 * Avoid calling resolve_patch_target in the full-aot case if possible, since
