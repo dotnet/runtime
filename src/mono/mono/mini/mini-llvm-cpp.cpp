@@ -202,8 +202,6 @@ static MonoJITMemoryManager *mono_mm;
 
 static FunctionPassManager *fpm;
 
-static LLVMContext ctx;
-
 void
 mono_llvm_optimize_method (LLVMValueRef method)
 {
