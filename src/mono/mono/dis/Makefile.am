@@ -33,6 +33,7 @@ monodis_SOURCES =	\
 monodis_LDADD = 			\
 	libmonodis.a			\
 	$(runtime_lib)			\
+	$(LLVM_LIBS)			\
 	$(GLIB_LIBS) 
 
 man_MANS = monodis.1
