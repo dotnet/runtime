@@ -1937,6 +1937,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 #else
  		decode_eh_frame (amodule, domain, method, code, jinfo);
 #endif
+		jinfo->from_llvm = 1;
  	} else {
 		jinfo->code_size = code_len;
 		jinfo->used_regs = used_int_regs;
