@@ -6700,11 +6700,57 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	return mono_class_has_parent (oklass, klass);
 }	
 
+/*Check if @oklass is variant compatible with @klass.*/
+static gboolean
+mono_class_is_variant_compatible_slow (MonoClass *klass, MonoClass *oklass)
+{
+	int j;
+	MonoType **klass_argv, **oklass_argv;
+	MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
+	MonoGenericContainer *container = klass_gtd->generic_container;
+
+	/*Viable candidates are instances of the same generic interface*/
+	if (mono_class_get_generic_type_definition (oklass) != klass_gtd)
+		return FALSE;
+
+	klass_argv = &klass->generic_class->context.class_inst->type_argv [0];
+	oklass_argv = &oklass->generic_class->context.class_inst->type_argv [0];
+
+	for (j = 0; j < container->type_argc; ++j) {
+		MonoClass *param1_class = mono_class_from_mono_type (klass_argv [j]);
+		MonoClass *param2_class = mono_class_from_mono_type (oklass_argv [j]);
+
+		if (param1_class->valuetype != param2_class->valuetype)
+			return FALSE;
+
+		/*
+		 * The _VARIANT and _COVARIANT constants should read _COVARIANT and
+		 * _CONTRAVARIANT, but they are in a public header so we can't fix it.
+		 */
+		if (param1_class != param2_class) {
+			if (mono_generic_container_get_param_info (container, j)->flags & MONO_GEN_PARAM_VARIANT) {
+				if (!mono_class_is_assignable_from_slow (param1_class, param2_class))
+					return FALSE;
+			} else if (mono_generic_container_get_param_info (container, j)->flags & MONO_GEN_PARAM_COVARIANT) {
+				if (!mono_class_is_assignable_from_slow (param2_class, param1_class))
+					return FALSE;
+			} else
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
 /*Check if @candidate implements the interface @target*/
 static gboolean
 mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 {
 	int i;
+	gboolean is_variant = mono_class_has_variant_generic_params (target);
+
+	if (is_variant && MONO_CLASS_IS_INTERFACE (candidate)) {
+		if (mono_class_is_variant_compatible_slow (target, candidate))
+			return TRUE;
+	}
 
 	do {
 		if (candidate == target)
@@ -6718,7 +6764,11 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 				for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
 					MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
 					MonoClass *iface_class = mono_class_from_mono_type (iface->type);
-					if (iface_class == target || mono_class_implement_interface_slow (target, iface_class))
+					if (iface_class == target)
+						return TRUE;
+					if (is_variant && mono_class_is_variant_compatible_slow (target, iface_class))
+						return TRUE;
+					if (mono_class_implement_interface_slow (target, iface_class))
 						return TRUE;
 				}
 			}
@@ -6726,7 +6776,13 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 			/*setup_interfaces don't mono_class_init anything*/
 			mono_class_setup_interfaces (candidate);
 			for (i = 0; i < candidate->interface_count; ++i) {
-				if (candidate->interfaces [i] == target || mono_class_implement_interface_slow (target, candidate->interfaces [i]))
+				if (candidate->interfaces [i] == target)
+					return TRUE;
+				
+				if (is_variant && mono_class_is_variant_compatible_slow (target, candidate->interfaces [i]))
+					return TRUE;
+
+				 if (mono_class_implement_interface_slow (target, candidate->interfaces [i]))
 					return TRUE;
 			}
 		}
@@ -6756,9 +6812,15 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 		return TRUE;
 
 	/*If target is not an interface there is no need to check them.*/
-	if (!MONO_CLASS_IS_INTERFACE (target))
-			return FALSE;
-	return mono_class_implement_interface_slow (target, candidate);
+	if (MONO_CLASS_IS_INTERFACE (target))
+		return mono_class_implement_interface_slow (target, candidate);
+
+ 	if (target->delegate && mono_class_has_variant_generic_params (target))
+		return mono_class_is_variant_compatible (target, candidate);
+
+	/*FIXME properly handle nullables and arrays */
+
+	return FALSE;
 }
 
 /**
