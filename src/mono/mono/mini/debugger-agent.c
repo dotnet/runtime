@@ -950,7 +950,15 @@ transport_connect (const char *host, int port)
 				break;
 			}
 
+#ifndef PLATFORM_WIN32
+			/*
+			 * this function is not present on win2000 which we still support, and the
+			 * workaround described here:
+			 * http://msdn.microsoft.com/en-us/library/ms737931(VS.85).aspx
+			 * only works with MSVC.
+			 */
 			freeaddrinfo (result);
+#endif
 		}
 
 		DEBUG (1, fprintf (log_file, "Listening on %s:%d (timeout=%d ms)...\n", host, port, agent_config.timeout));
@@ -994,7 +1002,10 @@ transport_connect (const char *host, int port)
 
 		conn_fd = sfd;
 
+#ifndef PLATFORM_WIN32
+		/* See the comment above */
 		freeaddrinfo (result);
+#endif
 
 		if (rp == 0) {
 			fprintf (stderr, "debugger-agent: Unable to connect to %s:%d\n", host, port);
