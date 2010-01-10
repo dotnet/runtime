@@ -1778,6 +1778,7 @@ gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
 						 gpointer original_ip, gboolean test_only) MONO_INTERNAL;
 void     mono_handle_native_sigsegv             (int signal, void *sigctx) MONO_INTERNAL;
 void     mono_print_thread_dump                 (void *sigctx);
+void     mono_print_thread_dump_from_ctx        (MonoContext *ctx);
 void     mono_jit_walk_stack                    (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) MONO_INTERNAL;
 void     mono_jit_walk_stack_from_ctx           (MonoStackWalk func, MonoContext *ctx, gboolean do_il_offset, gpointer user_data) MONO_INTERNAL;
 void     mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, gboolean do_il_offset, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data) MONO_INTERNAL;
