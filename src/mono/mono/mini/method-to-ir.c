@@ -2308,12 +2308,17 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		if ((!cfg->compile_aot || enable_for_aot) && 
 			(!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
 			 (MONO_METHOD_IS_FINAL (method) &&
-			  method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK))) {
+			  method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
+			!(method->klass->marshalbyref && context_used)) {
 			/* 
 			 * the method is not virtual, we just need to ensure this is not null
 			 * and then we can call the method directly.
 			 */
 			if (method->klass->marshalbyref || method->klass == mono_defaults.object_class) {
+				/* 
+				 * The check above ensures method is not gshared, this is needed since
+				 * gshared methods can't have wrappers.
+				 */
 				method = call->method = mono_marshal_get_remoting_invoke_with_check (method);
 			}
 

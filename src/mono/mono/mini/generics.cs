@@ -556,6 +556,30 @@ class Tests {
 		return t () == typeof (T) ? 0 : 1;
 	}
 
+	public static int test_0_marshalbyref_call_from_gshared_virt_elim () {
+		/* Calling a virtual method from gshared code which is changed to a nonvirt call */
+		Class1<object> o = new Class1<object> ();
+		o.Do (new Class2<object> ());
+		return 0;
+	}
+
+    public class Class1<T> {
+		public virtual void Do (Class2<T> t) {
+			t.Foo ();
+		}
+	}
+
+	public interface IFace1<T> {
+		void Foo ();
+	}
+
+	public class Class2<T> : MarshalByRefObject, IFace1<T> {
+		public void Foo () {
+		}
+	}
+
+
+
 	public static void VirtualInterfaceCallFromGenericMethod <T> (IFoo f) {
 		f.Bar <T> ();
 	}
