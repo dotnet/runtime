@@ -1118,7 +1118,7 @@ arch_emit_autoreg (MonoAotCompile *acfg, char *symbol)
 	img_writer_emit_unset_mode (acfg->w);
 
 	fprintf (acfg->fp,
-#ifdef _MSC_VER  
+#if defined(_MSC_VER) || defined(MONO_CROSS_COMPILE) 
 			 ".section	.ctors,\"aw\",@progbits\n"
 			 ".align 2\n"
 			 ".globl	%s\n"
@@ -1166,7 +1166,7 @@ arch_emit_autoreg (MonoAotCompile *acfg, char *symbol)
 			 "mr 1,11\n"
 			 "blr\n"
 			 );
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(MONO_CROSS_COMPILE) 
 		fprintf (acfg->fp,
 			 ".size	.%s,.-.%s\n", symbol, symbol);
 #else
