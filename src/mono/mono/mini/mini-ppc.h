@@ -214,7 +214,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_AOT_SUPPORTED 1
 #define MONO_ARCH_NEED_GOT_VAR 1
-#ifndef MONO_CROSS_COMPILE
+#if !defined(MONO_CROSS_COMPILE) && !defined(TARGET_PS3)
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #endif
 
