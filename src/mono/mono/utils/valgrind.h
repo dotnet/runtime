@@ -3659,6 +3659,9 @@ typedef
    is, 0 if running natively, 1 if running under Valgrind, 2 if
    running under Valgrind which is running under another Valgrind,
    etc. */
+#if defined(HOST_WIN32) || defined(TARGET_WIN32)
+#define RUNNING_ON_VALGRIND 0
+#else
 #define RUNNING_ON_VALGRIND  __extension__                        \
    ({unsigned int _qzz_res;                                       \
     VALGRIND_DO_CLIENT_REQUEST(_qzz_res, 0 /* if not */,          \
@@ -3666,7 +3669,7 @@ typedef
                                0, 0, 0, 0, 0);                    \
     _qzz_res;                                                     \
    })
-
+#endif
 
 /* Discard translation of code in the range [_qzz_addr .. _qzz_addr +
    _qzz_len - 1].  Useful if you are debugging a JITter or some such,
