@@ -838,7 +838,7 @@ static __thread ProfilerPerThreadData * tls_profiler_per_thread_data;
 #define PROFILER_FILE_WRITE_BUFFER_SIZE (profiler->write_buffer_size)
 typedef struct _ProfilerFileWriteBuffer {
 	struct _ProfilerFileWriteBuffer *next;
-	guint8 buffer [];
+	guint8 buffer [MONO_ZERO_LEN_ARRAY];
 } ProfilerFileWriteBuffer;
 
 #define CHECK_PROFILER_ENABLED() do {\
