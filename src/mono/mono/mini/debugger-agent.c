@@ -662,6 +662,8 @@ mono_debugger_agent_parse_options (char *options)
 		} else if (strncmp (arg, "onthrow=", 8) == 0) {
 			/* We support multiple onthrow= options */
 			agent_config.onthrow = g_slist_append (agent_config.onthrow, g_strdup (arg + 8));
+		} else if (strncmp (arg, "onthrow", 7) == 0) {
+			agent_config.onthrow = g_slist_append (agent_config.onthrow, g_strdup (""));
 		} else if (strncmp (arg, "help", 4) == 0) {
 			print_usage ();
 			exit (0);
@@ -3856,7 +3858,7 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 			char *ex_type = l->data;
 			char *f = mono_type_full_name (&exc->object.vtable->klass->byval_arg);
 
-			if (!strcmp (ex_type, f))
+			if (!strcmp (ex_type, "") || !strcmp (ex_type, f))
 				found = TRUE;
 
 			g_free (f);
