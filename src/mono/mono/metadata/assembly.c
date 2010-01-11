@@ -38,6 +38,10 @@
 #include <sys/stat.h>
 #endif
 
+#ifdef PLATFORM_MACOSX
+#include <mach-o/dyld.h>
+#endif
+
 /* AssemblyVersionMap: an assembly name and the assembly version set on which it is based */
 typedef struct  {
 	const char* assembly_name;
@@ -550,10 +554,35 @@ set_dirs (char *exe)
 void
 mono_set_rootdir (void)
 {
-#ifdef HOST_WIN32
+#if defined(HOST_WIN32) || (defined(PLATFORM_MACOSX) && !defined(TARGET_ARM))
 	gchar *bindir, *installdir, *root, *name, *config;
 
+#ifdef HOST_WIN32
 	name = mono_get_module_file_name ((HMODULE) &__ImageBase);
+#else
+ 	{
+		/* 
+		 * _NSGetExecutablePath may return -1 to indicate buf is not large
+		 *  enough, but we ignore that case to avoid having to do extra dynamic
+		 *  allocation for the path and hope that 4096 is enough - this is 
+		 *  ok in the Linux/Solaris case below at least...
+		 */
+ 		
+		gchar buf[4096];
+ 		guint buf_size = sizeof (buf);
+ 
+ 		name = NULL;
+ 		if (_NSGetExecutablePath (buf, &buf_size) == 0) {
+ 			name = realpath (buf, NULL);
+ 		}
+ 
+ 		if (name == NULL) {
+ 			fallback ();
+ 			return;
+ 		}
+ 	}
+#endif
+
 	bindir = g_path_get_dirname (name);
 	installdir = g_path_get_dirname (bindir);
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
