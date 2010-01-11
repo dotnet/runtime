@@ -915,6 +915,9 @@ mono_install_get_class_from_name (MonoGetClassFromName func) MONO_INTERNAL;
 MonoGenericContext*
 mono_class_get_context (MonoClass *class) MONO_INTERNAL;
 
+MonoMethodSignature*
+mono_method_signature_checked (MonoMethod *m, MonoError *err) MONO_INTERNAL;
+
 MonoGenericContext*
 mono_method_get_context_general (MonoMethod *method, gboolean uninflated) MONO_INTERNAL;
 
