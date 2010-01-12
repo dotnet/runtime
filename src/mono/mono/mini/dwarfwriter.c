@@ -1345,7 +1345,10 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 
 	g_assert (code_size);
 
-#ifndef _EGLIB_MAJOR
+#ifdef _EGLIB_MAJOR
+	/* g_array is not implemented in eglib */
+	return;
+#else
 	ln_array = g_array_sized_new (FALSE, FALSE, sizeof (MonoDebugLineNumberEntry), 
 								  debug_info->num_line_numbers);
 	g_array_append_vals (ln_array, debug_info->line_numbers, debug_info->num_line_numbers);
