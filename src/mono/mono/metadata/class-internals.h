@@ -1253,7 +1253,7 @@ void
 mono_class_alloc_ext (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_class_setup_interfaces (MonoClass *klass) MONO_INTERNAL;
+mono_class_setup_interfaces (MonoClass *klass, MonoError *error) MONO_INTERNAL;
 
 MonoClassField*
 mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type) MONO_INTERNAL;

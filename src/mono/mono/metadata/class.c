@@ -763,6 +763,21 @@ mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoG
 	return inflated;
 }
 
+static MonoClass*
+mono_class_inflate_generic_class_checked (MonoClass *gklass, MonoGenericContext *context, MonoError *error)
+{
+	MonoClass *res;
+	MonoType *inflated;
+
+	inflated = mono_class_inflate_generic_type_checked (&gklass->byval_arg, context, error);
+	if (!mono_error_ok (error))
+		return NULL;
+
+	res = mono_class_from_mono_type (inflated);
+	mono_metadata_free_type (inflated);
+
+	return res;
+}
 /*
  * mono_class_inflate_generic_class:
  *
@@ -773,16 +788,14 @@ mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context
 {
 	MonoError error;
 	MonoClass *res;
-	MonoType *inflated;
 
-	inflated = mono_class_inflate_generic_type_checked (&gklass->byval_arg, context, &error);
+	res = mono_class_inflate_generic_class_checked (gklass, context, &error);
 	g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
-
-	res = mono_class_from_mono_type (inflated);
-	mono_metadata_free_type (inflated);
 
 	return res;
 }
+
+
 
 static MonoGenericContext
 inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with, MonoError *error)
@@ -1782,6 +1795,7 @@ mono_class_setup_methods (MonoClass *class)
 			}
 		}
 	} else if (class->rank) {
+		MonoError error;
 		MonoMethod *amethod;
 		MonoMethodSignature *sig;
 		int count_generic = 0, first_generic = 0;
@@ -1789,7 +1803,8 @@ mono_class_setup_methods (MonoClass *class)
 
 		class->method.count = 3 + (class->rank > 1? 2: 1);
 
-		mono_class_setup_interfaces (class);
+		mono_class_setup_interfaces (class, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME can this fail for array types?*/
 
 		if (class->interface_count) {
 			count_generic = generic_array_methods (class);
@@ -2324,13 +2339,15 @@ mono_get_unique_iid (MonoClass *class)
 }
 
 static void
-collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res)
+collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, MonoError *error)
 {
 	int i;
 	MonoClass *ic;
 
-	mono_class_setup_interfaces (klass);
-	
+	mono_class_setup_interfaces (klass, error);
+	if (!mono_error_ok (error))
+		return;
+
 	for (i = 0; i < klass->interface_count; i++) {
 		ic = klass->interfaces [i];
 
@@ -2339,16 +2356,20 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res)
 		g_ptr_array_add (*res, ic);
 		mono_class_init (ic);
 
-		collect_implemented_interfaces_aux (ic, res);
+		collect_implemented_interfaces_aux (ic, res, error);
+		if (!mono_error_ok (error))
+			return;
 	}
 }
 
 GPtrArray*
 mono_class_get_implemented_interfaces (MonoClass *klass)
 {
+	MonoError error;
 	GPtrArray *res = NULL;
 
-	collect_implemented_interfaces_aux (klass, &res);
+	collect_implemented_interfaces_aux (klass, &res, &error);
+	g_assert (mono_error_ok (&error));
 	return res;
 }
 
@@ -6648,8 +6669,13 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			return TRUE;
 
 		if (mono_class_has_variant_generic_params (klass)) {
+			MonoError error;
 			int i;
-			mono_class_setup_interfaces (oklass);
+			mono_class_setup_interfaces (oklass, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_cleanup (&error);
+				return FALSE;
+			}
 
 			/*klass is a generic variant interface, We need to extract from oklass a list of ifaces which are viable candidates.*/
 			for (i = 0; i < oklass->interface_offsets_count; ++i) {
@@ -6744,6 +6770,7 @@ mono_class_is_variant_compatible_slow (MonoClass *klass, MonoClass *oklass)
 static gboolean
 mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 {
+	MonoError error;
 	int i;
 	gboolean is_variant = mono_class_has_variant_generic_params (target);
 
@@ -6774,7 +6801,12 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 			}
 		} else {
 			/*setup_interfaces don't mono_class_init anything*/
-			mono_class_setup_interfaces (candidate);
+			mono_class_setup_interfaces (candidate, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_cleanup (&error);
+				return FALSE;
+			}
+
 			for (i = 0; i < candidate->interface_count; ++i) {
 				if (candidate->interfaces [i] == target)
 					return TRUE;
@@ -7567,14 +7599,20 @@ mono_class_get_events (MonoClass* klass, gpointer *iter)
 MonoClass*
 mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 {
+	MonoError error;
 	MonoClass** iface;
 	if (!iter)
 		return NULL;
 	if (!*iter) {
 		if (!klass->inited)
 			mono_class_init (klass);
-		if (!klass->interfaces_inited)
-			mono_class_setup_interfaces (klass);
+		if (!klass->interfaces_inited) {
+			mono_class_setup_interfaces (klass, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_cleanup (&error);
+				return NULL;
+			}
+		}
 		/* start from the first */
 		if (klass->interface_count) {
 			*iter = &klass->interfaces [0];
@@ -8721,11 +8759,14 @@ mono_class_alloc_ext (MonoClass *klass)
  *
  *   Initialize class->interfaces/interfaces_count.
  * LOCKING: Acquires the loader lock.
+ * This function can fail the type.
  */
 void
-mono_class_setup_interfaces (MonoClass *klass)
+mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 {
 	int i;
+
+	mono_error_init (error);
 
 	if (klass->interfaces_inited)
 		return;
@@ -8752,8 +8793,15 @@ mono_class_setup_interfaces (MonoClass *klass)
 
 		klass->interface_count = gklass->interface_count;
 		klass->interfaces = g_new0 (MonoClass *, klass->interface_count);
-		for (i = 0; i < klass->interface_count; i++)
-			klass->interfaces [i] = mono_class_inflate_generic_class (gklass->interfaces [i], mono_generic_class_get_context (klass->generic_class));
+		for (i = 0; i < klass->interface_count; i++) {
+			klass->interfaces [i] = mono_class_inflate_generic_class_checked (gklass->interfaces [i], mono_generic_class_get_context (klass->generic_class), error);
+			if (!mono_error_ok (error)) {
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not setup the interfaces"));
+				g_free (klass->interfaces);
+				klass->interfaces = NULL;
+				return;
+			}
+		}
 	}
 
 	mono_memory_barrier ();
