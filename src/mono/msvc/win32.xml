@@ -1118,7 +1118,7 @@
 			<Source>/resource:System.Messaging/MessageQueue.resx</Source>
 		</Sources>
 	</Assembly>
-	<Assembly name="RabbitMQ.Client" destination="{destdir}\lib\mono\2.0\RabbitMQ.Client.dll">
+	<Assembly enabled="false" name="RabbitMQ.Client" destination="{destdir}\lib\mono\2.0\RabbitMQ.Client.dll">
 		<References>
 			<Reference>System</Reference>
 			<Reference>System.Xml</Reference>
@@ -1130,7 +1130,7 @@
 			<Source type="list">RabbitMQ.Client.dll.sources</Source>
 		</Sources>
 	</Assembly>
-	<Assembly name="Mono.Messaging.RabbitMQ" destination="{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll">
+  <Assembly enabled="false" name="Mono.Messaging.RabbitMQ" destination="{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll">
 		<References>
 			<Reference>System</Reference>
 			<Reference>System.Messaging</Reference>
@@ -1746,8 +1746,8 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Management.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Simd.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Messaging.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\RabbitMQ.Client.dll" key="{sourcedir}\mcs\class\mono.snk" />
+  <Sign enabled="false" assembly="{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll" key="{sourcedir}\mcs\class\mono.snk" />
+  <Sign enabled="false" assembly="{destdir}\lib\mono\2.0\RabbitMQ.Client.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.ComponentModel.DataAnnotations.dll" key="{sourcedir}\mcs\class\mono.snk" />
   <Sign assembly="{destdir}\lib\mono\2.0\System.Web.DynamicData.dll" key="{sourcedir}\mcs\class\mono.snk" />
   <Sign assembly="{destdir}\lib\mono\2.0\System.Web.Mvc.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1835,8 +1835,8 @@
 	<Gac>{destdir}\lib\mono\2.0\Mono.Management.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Simd.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Messaging.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\RabbitMQ.Client.dll</Gac>
+  <Gac enabled="false">{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll</Gac>
+  <Gac enabled="false">{destdir}\lib\mono\2.0\RabbitMQ.Client.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.ComponentModel.DataAnnotations.dll</Gac>
   <Gac>{destdir}\lib\mono\2.0\System.Web.DynamicData.dll</Gac>
   <Gac>{destdir}\lib\mono\2.0\System.Web.Mvc.dll</Gac>
