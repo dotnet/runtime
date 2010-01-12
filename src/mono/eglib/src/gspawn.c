@@ -35,6 +35,7 @@
 #include <glib.h>
 
 #ifdef HAVE_UNISTD_H
+#define __USE_GNU
 #include <unistd.h>
 #endif
 
