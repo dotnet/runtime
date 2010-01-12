@@ -138,13 +138,13 @@ mono_runtime_load (const char *filename, const char *runtime_version)
 	return load_function (filename, runtime_version);
 }
 
-/*
+/**
  * mono_runtime_set_no_exec:
  *
- *   Instructs the runtime to operate in static mode, i.e. avoid/do not allow managed
- * code execution. This is useful for running the AOT compiler on platforms which
- * allow full-aot execution only.
- * This should be called before mono_runtime_init ().
+ * Instructs the runtime to operate in static mode, i.e. avoid/do not
+ * allow managed code execution. This is useful for running the AOT
+ * compiler on platforms which allow full-aot execution only.  This
+ * should be called before mono_runtime_init ().
  */
 void
 mono_runtime_set_no_exec (gboolean val)
@@ -152,6 +152,11 @@ mono_runtime_set_no_exec (gboolean val)
 	no_exec = val;
 }
 
+/**
+ * mono_runtime_get_no_exec:
+ *
+ * If true, then the runtime will not allow managed code execution.
+ */
 gboolean
 mono_runtime_get_no_exec (void)
 {
@@ -291,6 +296,14 @@ mono_get_corlib_version (void)
 	return *(gint32*)((gchar*)value + sizeof (MonoObject));
 }
 
+/**
+ * mono_check_corlib_version
+ *
+ * Checks that the corlib that is loaded matches the version of this runtime.
+ *
+ * Returns: NULL if the runtime will work with the corlib, or a g_malloc
+ * allocated string with the error otherwise.
+ */
 const char*
 mono_check_corlib_version (void)
 {
@@ -301,6 +314,12 @@ mono_check_corlib_version (void)
 		return NULL;
 }
 
+/**
+ * mono_context_init:
+ * @domain: The domain where the System.Runtime.Remoting.Context.Context is initialized
+ *
+ * Initializes the @domain's default System.Runtime.Remoting's Context.
+ */
 void
 mono_context_init (MonoDomain *domain)
 {
