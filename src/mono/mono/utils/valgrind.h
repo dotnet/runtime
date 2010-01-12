@@ -73,6 +73,8 @@
 #ifndef __VALGRIND_H
 #define __VALGRIND_H
 
+#ifdef __GNUC__
+
 #include <stdarg.h>
 
 /* Nb: this file might be included in a file compiled with -ansi.  So
@@ -4020,4 +4022,7 @@ VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
 #undef PLAT_ppc32_aix5
 #undef PLAT_ppc64_aix5
 
+#else /* __GNUC__ */
+#define RUNNING_ON_VALGRIND 0
+#endif
 #endif   /* __VALGRIND_H */

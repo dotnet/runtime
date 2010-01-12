@@ -78,7 +78,9 @@ extern char **environ;
 #undef DEBUG
 
 static guint32 process_wait (gpointer handle, guint32 timeout);
-FILE *open_process_map (int pid, const char *mode);
+
+static FILE *
+open_process_map (int pid, const char *mode);
 
 struct _WapiHandleOps _wapi_process_ops = {
 	NULL,				/* close_shared */
@@ -1995,7 +1997,8 @@ static gboolean match_procname_to_modulename (gchar *procname, gchar *modulename
 	return result;
 }
 
-FILE *open_process_map (int pid, const char *mode)
+static FILE *
+open_process_map (int pid, const char *mode)
 {
 	FILE *fp = NULL;
 	const gchar *proc_path[] = {

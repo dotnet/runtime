@@ -1,4 +1,4 @@
-
+ 
 /*
    ----------------------------------------------------------------
 
@@ -60,6 +60,7 @@
 #ifndef __MEMCHECK_H
 #define __MEMCHECK_H
 
+#ifdef __GNUC__
 
 /* This file is for inclusion into client (your!) code.
 
@@ -304,6 +305,13 @@ typedef
                             czza, czzvbits, zznbytes, 0, 0 );    \
     _qzz_res;                                                    \
    }))
+
+#else /* __GNUC__ */
+
+#define RUNNING_ON_VALGRIND 0
+#define VALGRIND_DISCARD_TRANSLATIONS(x,y) do { } while (0)
+
+#endif /* __GNUC__ */
 
 #endif
 
