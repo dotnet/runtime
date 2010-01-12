@@ -26,8 +26,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#define _GNU_SOURCE
-
 #include <config.h>
 #include <stdlib.h>
 #include <stdio.h>
