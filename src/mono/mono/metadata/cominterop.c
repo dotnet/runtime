@@ -277,11 +277,13 @@ cominterop_get_com_slot_begin (MonoClass* klass)
 static MonoClass*
 cominterop_get_method_interface (MonoMethod* method)
 {
+	MonoError error;
 	MonoClass *ic = method->klass;
 
 	/* if method is on a class, we need to look up interface method exists on */
 	if (!MONO_CLASS_IS_INTERFACE(method->klass)) {
-		GPtrArray *ifaces = mono_class_get_implemented_interfaces (method->klass);
+		GPtrArray *ifaces = mono_class_get_implemented_interfaces (method->klass, &error);
+		g_assert (mono_error_ok (&error));
 		if (ifaces) {
 			int i;
 			mono_class_setup_vtable (method->klass);
@@ -378,6 +380,7 @@ static gboolean
 cominterop_com_visible (MonoClass* klass)
 {
 	static MonoClass *ComVisibleAttribute = NULL;
+	MonoError error;
 	MonoCustomAttrInfo *cinfo;
 	GPtrArray *ifaces;
 	MonoBoolean visible = 0;
@@ -398,7 +401,8 @@ cominterop_com_visible (MonoClass* klass)
 			return TRUE;
 	}
 
-	ifaces = mono_class_get_implemented_interfaces (klass);
+	ifaces = mono_class_get_implemented_interfaces (klass, &error);
+	g_assert (mono_error_ok (&error));
 	if (ifaces) {
 		int i;
 		for (i = 0; i < ifaces->len; ++i) {
@@ -2317,6 +2321,7 @@ cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpoin
 static int STDCALL 
 cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* ppv)
 {
+	MonoError error;
 	GPtrArray *ifaces;
 	MonoClass *itf = NULL;
 	int i;
@@ -2361,7 +2366,8 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 #endif
 	klass_iter = klass;
 	while (klass_iter && klass_iter != mono_defaults.object_class) {
-		ifaces = mono_class_get_implemented_interfaces (klass_iter);
+		ifaces = mono_class_get_implemented_interfaces (klass_iter, &error);
+		g_assert (mono_error_ok (&error));
 		if (ifaces) {
 			for (i = 0; i < ifaces->len; ++i) {
 				MonoClass *ic = NULL;

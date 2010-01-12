@@ -2051,6 +2051,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 static MonoVTable *
 mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRemotingTarget target_type)
 {
+	MonoError error;
 	MonoVTable *vt, *pvt;
 	int i, j, vtsize, max_interface_id, extra_interface_vtsize = 0;
 	MonoClass *k;
@@ -2078,7 +2079,8 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		
 		method_count = mono_class_num_methods (iclass);
 	
-		ifaces = mono_class_get_implemented_interfaces (iclass);
+		ifaces = mono_class_get_implemented_interfaces (iclass, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME do proper error handling*/
 		if (ifaces) {
 			for (i = 0; i < ifaces->len; ++i) {
 				MonoClass *ic = g_ptr_array_index (ifaces, i);

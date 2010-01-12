@@ -2061,6 +2061,7 @@ ves_icall_get_event_info (MonoReflectionMonoEvent *event, MonoEventInfo *info)
 static MonoArray*
 ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 {
+	MonoError error;
 	MonoDomain *domain = mono_object_domain (type); 
 	MonoArray *intf;
 	GPtrArray *ifaces = NULL;
@@ -2082,8 +2083,12 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	slots = mono_bitset_new (class->max_interface_id + 1, 0);
 
 	for (parent = class; parent; parent = parent->parent) {
-		GPtrArray *tmp_ifaces = mono_class_get_implemented_interfaces (parent);
-		if (tmp_ifaces) {
+		GPtrArray *tmp_ifaces = mono_class_get_implemented_interfaces (parent, &error);
+		if (!mono_error_ok (&error)) {
+			mono_bitset_free (slots);
+			mono_error_raise_exception (&error);
+			return NULL;
+		} else if (tmp_ifaces) {
 			for (i = 0; i < tmp_ifaces->len; ++i) {
 				MonoClass *ic = g_ptr_array_index (tmp_ifaces, i);
 

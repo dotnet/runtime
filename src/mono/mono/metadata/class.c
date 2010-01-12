@@ -2363,13 +2363,16 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, MonoError
 }
 
 GPtrArray*
-mono_class_get_implemented_interfaces (MonoClass *klass)
+mono_class_get_implemented_interfaces (MonoClass *klass, MonoError *error)
 {
-	MonoError error;
 	GPtrArray *res = NULL;
 
-	collect_implemented_interfaces_aux (klass, &res, &error);
-	g_assert (mono_error_ok (&error));
+	collect_implemented_interfaces_aux (klass, &res, error);
+	if (!mono_error_ok (error)) {
+		if (res)
+			g_ptr_array_free (res, TRUE);
+		return NULL;
+	}
 	return res;
 }
 
@@ -2429,6 +2432,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 
 static void
 print_implemented_interfaces (MonoClass *klass) {
+	MonoError error;
 	GPtrArray *ifaces = NULL;
 	int i;
 	int ancestor_level = 0;
@@ -2454,8 +2458,11 @@ print_implemented_interfaces (MonoClass *klass) {
 	printf ("\n");
 	while (klass != NULL) {
 		printf ("[LEVEL %d] Implemented interfaces by class %s:\n", ancestor_level, klass->name);
-		ifaces = mono_class_get_implemented_interfaces (klass);
-		if (ifaces) {
+		ifaces = mono_class_get_implemented_interfaces (klass, &error);
+		if (!mono_error_ok (&error)) {
+			printf ("  Type failed due to %s\n", mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+		} else if (ifaces) {
 			for (i = 0; i < ifaces->len; i++) {
 				MonoClass *ic = g_ptr_array_index (ifaces, i);
 				printf ("  [UIID %d] interface %s\n", ic->interface_id, ic->name);
@@ -2762,13 +2769,14 @@ count_virtual_methods (MonoClass *class)
 static int
 setup_interface_offsets (MonoClass *class, int cur_slot)
 {
+	MonoError error;
 	MonoClass *k, *ic;
 	int i, max_iid;
-	MonoClass **interfaces_full;
-	int *interface_offsets_full;
+	MonoClass **interfaces_full = NULL;
+	int *interface_offsets_full = NULL;
 	GPtrArray *ifaces;
 	int interface_offsets_count;
-	MonoClass **array_interfaces;
+	MonoClass **array_interfaces = NULL;
 	int num_array_interfaces;
 	int is_enumerator = FALSE;
 
@@ -2791,7 +2799,14 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			if (max_iid < ic->interface_id)
 				max_iid = ic->interface_id;
 		}
-		ifaces = mono_class_get_implemented_interfaces (k);
+		ifaces = mono_class_get_implemented_interfaces (k, &error);
+		if (!mono_error_ok (&error)) {
+			char *name = mono_type_get_full_name (k);
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Error getting the interfaces of %s due to %s", name, mono_error_get_message (&error)));
+			g_free (name);
+			mono_error_cleanup (&error);
+			goto fail;
+		}
 		if (ifaces) {
 			for (i = 0; i < ifaces->len; ++i) {
 				ic = g_ptr_array_index (ifaces, i);
@@ -2823,7 +2838,9 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	}
 
 	for (k = class->parent; k ; k = k->parent) {
-		ifaces = mono_class_get_implemented_interfaces (k);
+		ifaces = mono_class_get_implemented_interfaces (k, &error);
+		g_assert (mono_error_ok (&error));/*FIXME we perform the same thing above, so not failing there but here is VERY wrong.*/
+
 		if (ifaces) {
 			for (i = 0; i < ifaces->len; ++i) {
 				int io;
@@ -2840,8 +2857,14 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	}
 
 
-	ifaces = mono_class_get_implemented_interfaces (class);
-	if (ifaces) {
+	ifaces = mono_class_get_implemented_interfaces (class, &error);
+	if (!mono_error_ok (&error)) {
+		char *name = mono_type_get_full_name (class);
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Error getting the interfaces of %s due to %s", name, mono_error_get_message (&error)));
+		g_free (name);
+		mono_error_cleanup (&error);
+		goto fail;
+	} else if (ifaces) {
 		for (i = 0; i < ifaces->len; ++i) {
 			int count;
 			ic = g_ptr_array_index (ifaces, i);
@@ -3432,6 +3455,7 @@ verify_class_overrides (MonoClass *class, MonoMethod **overrides, int onum)
 void
 mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int onum)
 {
+	MonoError error;
 	MonoClass *k, *ic;
 	MonoMethod **vtable;
 	int i, max_vtsize = 0, max_iid, cur_slot = 0;
@@ -3451,9 +3475,14 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	if (overrides && !verify_class_overrides (class, overrides, onum))
 		return;
 
-	ifaces = mono_class_get_implemented_interfaces (class);
-
-	if (ifaces) {
+	ifaces = mono_class_get_implemented_interfaces (class, &error);
+	if (!mono_error_ok (&error)) {
+		char *name = mono_type_get_full_name (class);
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not resolve %s interfaces due to %s", name, mono_error_get_message (&error)));
+		g_free (name);
+		mono_error_cleanup (&error);
+		return;
+	} else if (ifaces) {
 		for (i = 0; i < ifaces->len; i++) {
 			MonoClass *ic = g_ptr_array_index (ifaces, i);
 			max_vtsize += ic->method.count;
