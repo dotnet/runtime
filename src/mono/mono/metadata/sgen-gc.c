@@ -131,12 +131,6 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/time.h>
-#include <time.h>
-#include <fcntl.h>
 #include "metadata/metadata-internals.h"
 #include "metadata/class-internals.h"
 #include "metadata/gc-internal.h"
@@ -151,6 +145,7 @@
 #include "metadata/threadpool-internals.h"
 #include "metadata/mempool-internals.h"
 #include "utils/mono-mmap.h"
+#include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
 #include "utils/mono-counters.h"
 
@@ -268,9 +263,9 @@ mono_gc_flush_info (void)
 #define MAX_DEBUG_LEVEL 8
 #define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
-#define TV_DECLARE(name) struct timeval name
-#define TV_GETTIME(tv) gettimeofday (&(tv), NULL)
-#define TV_ELAPSED(start,end) (int)((((end).tv_sec - (start).tv_sec) * 1000000) + end.tv_usec - start.tv_usec)
+#define TV_DECLARE(name) gint64 name
+#define TV_GETTIME(tv) tv = mono_100ns_ticks ()
+#define TV_ELAPSED(start,end) (int)((end-start) / 10)
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
@@ -3789,7 +3784,7 @@ get_os_memory (size_t size, int activate)
 static void
 free_os_memory (void *addr, size_t size)
 {
-	munmap (addr, size);
+	mono_vfree (addr, size);
 }
 
 /*

@@ -24,6 +24,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/gc-internal.h>
 
 /* Internal helper methods */
 
