@@ -2869,7 +2869,7 @@ to_space_expand (void)
 static void
 to_space_set_next_data (void)
 {
-	g_assert (to_space_bumper >= to_space_section->next_data && to_space_bumper < to_space_section->end_data);
+	g_assert (to_space_bumper >= to_space_section->next_data && to_space_bumper <= to_space_section->end_data);
 	to_space_section->next_data = to_space_bumper;
 }
 
