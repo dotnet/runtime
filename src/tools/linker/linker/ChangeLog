@@ -1,4 +1,9 @@
-2010-12-06  Jb Evain  <jbevain@novell.com>
+2010-01-13  Jb Evain  <jbevain@novell.com>
+
+	* MarkStep.cs: preserve methods specified by the
+	XmlSchemaProvider attribute.
+
+2010-01-06  Jb Evain  <jbevain@novell.com>
 
 	* Descriptors/mscorlib.xml: optimize descriptor.
 
