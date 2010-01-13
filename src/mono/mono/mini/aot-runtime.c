@@ -1206,6 +1206,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	 * referenced assemblies, we depend on the exact versions of the referenced assemblies.
 	 * MS calls this 'hard binding'. This means we have to load all referenced assemblies
 	 * non-lazily, since we can't handle out-of-date errors later.
+	 * The cached class info also depends on the exact assemblies.
 	 */
 	for (i = 0; i < amodule->image_table_len; ++i)
 		load_image (amodule, i, FALSE);
