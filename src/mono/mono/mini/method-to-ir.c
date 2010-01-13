@@ -57,6 +57,7 @@
 #include "ir-emit.h"
 
 #include "jit-icalls.h"
+#include "jit.h"
 #include "debugger-agent.h"
 
 #define BRANCH_COST 100
@@ -3798,6 +3799,53 @@ mini_emit_ldelema_ins (MonoCompile *cfg, MonoMethod *cmethod, MonoInst **sp, uns
 	return addr;
 }
 
+static MonoBreakPolicy
+always_insert_breakpoint (MonoMethod *method)
+{
+	return MONO_BREAK_POLICY_ALWAYS;
+}
+
+static MonoBreakPolicyFunc break_policy_func = always_insert_breakpoint;
+
+/**
+ * mono_set_break_policy:
+ * policy_callback: the new callback function
+ *
+ * Allow embedders to decide wherther to actually obey breakpoint instructions
+ * (both break IL instructions and Debugger.Break () method calls), for example
+ * to not allow an app to be aborted by a perfectly valid IL opcode when executing
+ * untrusted or semi-trusted code.
+ *
+ * @policy_callback will be called every time a break point instruction needs to
+ * be inserted with the method argument being the method that calls Debugger.Break()
+ * or has the IL break instruction. The callback should return #MONO_BREAK_POLICY_NEVER
+ * if it wants the breakpoint to not be effective in the given method.
+ * #MONO_BREAK_POLICY_ALWAYS is the default.
+ */
+void
+mono_set_break_policy (MonoBreakPolicyFunc policy_callback)
+{
+	if (policy_callback)
+		break_policy_func = policy_callback;
+	else
+		break_policy_func = always_insert_breakpoint;
+}
+
+static gboolean
+should_insert_brekpoint (MonoMethod *method) {
+	switch (break_policy_func (method)) {
+	case MONO_BREAK_POLICY_ALWAYS:
+		return TRUE;
+	case MONO_BREAK_POLICY_NEVER:
+		return FALSE;
+	case MONO_BREAK_POLICY_ON_DBG:
+		return mono_debug_using_mono_debugger ();
+	default:
+		g_warning ("Incorrect value returned from break policy callback");
+		return FALSE;
+	}
+}
+
 static MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -4166,7 +4214,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass->image == mono_defaults.corlib) {
 		if (cmethod->name [0] == 'B' && strcmp (cmethod->name, "Break") == 0
 				&& strcmp (cmethod->klass->name, "Debugger") == 0) {
-			MONO_INST_NEW (cfg, ins, OP_BREAK);
+			if (should_insert_brekpoint (cfg->method))
+				MONO_INST_NEW (cfg, ins, OP_BREAK);
+			else
+				MONO_INST_NEW (cfg, ins, OP_NOP);
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		}
@@ -5886,7 +5937,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_ADD_INS (bblock, ins);
 			break;
 		case CEE_BREAK:
-			MONO_INST_NEW (cfg, ins, OP_BREAK);
+			if (should_insert_brekpoint (cfg->method))
+				MONO_INST_NEW (cfg, ins, OP_BREAK);
+			else
+				MONO_INST_NEW (cfg, ins, OP_NOP);
 			ip++;
 			MONO_ADD_INS (bblock, ins);
 			break;
