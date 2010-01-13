@@ -385,6 +385,8 @@ namespace Mono.Linker.Steps {
 				MarkMethodsIf (type.Constructors, IsSpecialSerializationConstructorPredicate);
 			}
 
+			MarkXmlSchemaProvider (type);
+
 			MarkGenericParameterProvider (type);
 
 			if (type.IsValueType)
@@ -404,6 +406,49 @@ namespace Mono.Linker.Steps {
 			Annotations.Mark (type);
 
 			ApplyPreserveInfo (type);
+		}
+
+		void MarkXmlSchemaProvider (TypeDefinition type)
+		{
+			if (!type.HasCustomAttributes)
+				return;
+
+			foreach (CustomAttribute attribute in type.CustomAttributes) {
+				if (!IsXmlSchemaProvider (attribute))
+					continue;
+
+				MarkXmlSchemaProvider (type, attribute);
+			}
+		}
+
+		void MarkXmlSchemaProvider (TypeDefinition type, CustomAttribute attribute)
+		{
+			if (!attribute.Resolved || attribute.ConstructorParameters.Count < 1)
+				return;
+
+			var method_name = attribute.ConstructorParameters [0] as string;
+			if (method_name == null)
+				return;
+
+			MarkNamedMethod (type, method_name);
+		}
+
+		void MarkNamedMethod (TypeDefinition type, string method_name)
+		{
+			if (!type.HasMethods)
+				return;
+
+			foreach (MethodDefinition method in type.Methods) {
+				if (method.Name != method_name)
+					continue;
+
+				MarkMethod (method);
+			}
+		}
+
+		static bool IsXmlSchemaProvider (CustomAttribute attribute)
+		{
+			return attribute.Constructor.DeclaringType.FullName == "System.Xml.Serialization.XmlSchemaProviderAttribute";
 		}
 
 		void MarkGenericParameterProvider (IGenericParameterProvider provider)
