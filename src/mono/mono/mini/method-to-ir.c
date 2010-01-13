@@ -2570,8 +2570,12 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 			if (context_used) {
 				iargs [2] = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
 			} else {
-				EMIT_NEW_PCONST (cfg, iargs [2], klass);
-				mono_class_compute_gc_descriptor (klass);
+				if (cfg->compile_aot) {
+					EMIT_NEW_CLASSCONST (cfg, iargs [2], klass);
+				} else {
+					EMIT_NEW_PCONST (cfg, iargs [2], klass);
+					mono_class_compute_gc_descriptor (klass);
+				}
 			}
 
 			mono_emit_jit_icall (cfg, mono_value_copy, iargs);
