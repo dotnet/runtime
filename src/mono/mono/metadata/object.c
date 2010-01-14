@@ -1262,11 +1262,12 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 	for (i = 0; i < klass->interface_offsets_count; ++i) {
 		MonoClass *iface = klass->interfaces_packed [i];
 		int interface_offset = klass->interface_offsets_packed [i];
-		int method_slot_in_interface;
+		int method_slot_in_interface, vt_slot;
 
 		if (mono_class_has_variant_generic_params (iface))
 			has_variant_iface = TRUE;
 
+		vt_slot = interface_offset;
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 			MonoMethod *method;
 
@@ -1287,11 +1288,10 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 				continue;
 			}
 
-			/*FIXME (interface_offset + method_slot_in_interface) is wrong for interfaces with static methods.*/
-			if (method->flags & METHOD_ATTRIBUTE_STATIC)
-				continue;
-
-			add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface, slot_num);
+			if (!(method->flags & METHOD_ATTRIBUTE_STATIC)) {
+				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
+				vt_slot ++;
+			}
 		}
 	}
 	if (extra_interfaces) {
