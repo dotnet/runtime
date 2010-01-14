@@ -1165,7 +1165,6 @@ mono_class_find_enum_basetype (MonoClass *class)
 
 /*
  * Checks for MonoClass::exception_type without resolving all MonoType's into MonoClass'es
- * It doesn't resolve generic instances, only check the GTD.
  */
 static gboolean
 mono_type_has_exceptions (MonoType *type)
@@ -1178,7 +1177,7 @@ mono_type_has_exceptions (MonoType *type)
 	case MONO_TYPE_ARRAY:
 		return type->data.array->eklass->exception_type;
 	case MONO_TYPE_GENERICINST:
-		return type->data.generic_class->container_class->exception_type;
+		return mono_generic_class_get_class (type->data.generic_class)->exception_type;
 	}
 	return FALSE;
 }
@@ -1340,9 +1339,15 @@ mono_class_setup_fields (MonoClass *class)
 				guint32 offset;
 				mono_metadata_field_info (m, idx, &offset, NULL, NULL);
 				field->offset = offset;
-				if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-					g_warning ("%s not initialized correctly (missing field layout info for %s)",
-							   class->name, mono_field_get_name (field));
+
+				if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Missing field layout info for %s", field->name));
+					break;
+				}
+				if (field->offset < -1) { /*-1 is used to encode special static fields */
+					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Invalid negative field offset %d for %s", field->offset, field->name));
+					break;
+				}
 			}
 		}
 
@@ -1399,8 +1404,8 @@ mono_class_setup_fields (MonoClass *class)
 		return;
 	mono_class_layout_fields (class);
 
-	/*valuetypes can't be bigger than 1Mb.*/
-	if (class->valuetype && class->instance_size > 0x100000)
+	/*valuetypes can't be neither bigger than 1Mb or empty. */
+	if (class->valuetype && (class->instance_size <= 0 || class->instance_size > (0x100000 + sizeof (MonoObject))))
 		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 }
 
@@ -1705,6 +1710,11 @@ mono_class_layout_fields (MonoClass *class)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
+
+		if (mono_type_has_exceptions (field->type)) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			break;
+		}
 
 		size = mono_type_size (field->type, &align);
 		field->offset = class->sizes.class_size;
