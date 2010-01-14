@@ -1323,7 +1323,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	 * - we only pass/receive them in registers in some cases, and only 
 	 *   in 1 or 2 integer registers.
 	 */
-	if (cinfo->ret.storage != RegTypeGeneral && cinfo->ret.storage != RegTypeNone && cinfo->ret.storage != RegTypeFP) {
+	if (cinfo->ret.storage != RegTypeGeneral && cinfo->ret.storage != RegTypeNone && cinfo->ret.storage != RegTypeFP && cinfo->ret.storage != RegTypeIRegPair) {
 		cfg->exception_message = g_strdup ("unknown ret conv");
 		cfg->disable_llvm = TRUE;
 		return linfo;
@@ -1337,6 +1337,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		switch (ainfo->storage) {
 		case RegTypeGeneral:
 		case RegTypeIRegPair:
+		case RegTypeBase:
 			linfo->args [i].storage = LLVMArgInIReg;
 			break;
 		default:
@@ -1588,10 +1589,14 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
 			MonoInst *ins;
 
-			MONO_INST_NEW (cfg, ins, OP_SETLRET);
-			ins->sreg1 = val->dreg + 1;
-			ins->sreg2 = val->dreg + 2;
-			MONO_ADD_INS (cfg->cbb, ins);
+			if (COMPILE_LLVM (cfg)) {
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
+			} else {
+				MONO_INST_NEW (cfg, ins, OP_SETLRET);
+				ins->sreg1 = val->dreg + 1;
+				ins->sreg2 = val->dreg + 2;
+				MONO_ADD_INS (cfg->cbb, ins);
+			}
 			return;
 		}
 #ifdef MONO_ARCH_SOFT_FLOAT
@@ -4310,8 +4315,10 @@ mono_arch_register_lowlevel_calls (void)
 	mono_register_jit_icall (mono_arm_throw_exception, "mono_arm_throw_exception", mono_create_icall_signature ("void"), TRUE);
 	mono_register_jit_icall (mono_arm_throw_exception_by_token, "mono_arm_throw_exception_by_token", mono_create_icall_signature ("void"), TRUE);
 
+#ifndef MONO_CROSS_COMPILE
 #ifdef HAVE_AEABI_READ_TP
 	mono_register_jit_icall (__aeabi_read_tp, "__aeabi_read_tp", mono_create_icall_signature ("void"), TRUE);
+#endif
 #endif
 }
 
