@@ -9032,6 +9032,12 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
 		*type = f->field->type;
 	}
 }
+#else
+void
+mono_reflection_register_with_runtime (MonoReflectionType *type)
+{
+	/* This is empty */
+}
 #endif /* !DISABLE_REFLECTION_EMIT */
 
 static gboolean
