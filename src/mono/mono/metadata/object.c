@@ -1279,12 +1279,15 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 				 * add_imt_builder_entry anyway.
 				 */
 				method = mono_class_get_method_by_index (iface->generic_class->container_class, method_slot_in_interface);
-				if (mono_method_get_imt_slot (method) != slot_num)
+				if (mono_method_get_imt_slot (method) != slot_num) {
+					vt_slot ++;
 					continue;
+				}
 			}
 			method = mono_class_get_method_by_index (iface, method_slot_in_interface);
 			if (method->is_generic) {
 				has_generic_virtual = TRUE;
+				vt_slot ++;
 				continue;
 			}
 
