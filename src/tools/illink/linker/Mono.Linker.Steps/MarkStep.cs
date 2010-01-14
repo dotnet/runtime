@@ -385,7 +385,7 @@ namespace Mono.Linker.Steps {
 				MarkMethodsIf (type.Constructors, IsSpecialSerializationConstructorPredicate);
 			}
 
-			MarkXmlSchemaProvider (type);
+			MarkTypeSpecialCustomAttributes (type);
 
 			MarkGenericParameterProvider (type);
 
@@ -408,29 +408,53 @@ namespace Mono.Linker.Steps {
 			ApplyPreserveInfo (type);
 		}
 
-		void MarkXmlSchemaProvider (TypeDefinition type)
+		void MarkTypeSpecialCustomAttributes (TypeDefinition type)
 		{
 			if (!type.HasCustomAttributes)
 				return;
 
 			foreach (CustomAttribute attribute in type.CustomAttributes) {
-				if (!IsXmlSchemaProvider (attribute))
-					continue;
+				switch (attribute.Constructor.DeclaringType.FullName) {
+				case "System.Xml.Serialization.XmlSchemaProviderAttribute":
+					MarkXmlSchemaProvider (type, attribute);
+					break;
+				}
+			}
+		}
 
-				MarkXmlSchemaProvider (type, attribute);
+		void MarkMethodSpecialCustomAttributes (MethodDefinition method)
+		{
+			if (!method.HasCustomAttributes)
+				return;
+
+			foreach (CustomAttribute attribute in method.CustomAttributes) {
+				switch (attribute.Constructor.DeclaringType.FullName) {
+				case "System.Web.Services.Protocols.SoapHeaderAttribute":
+					MarkSoapHeader (method, attribute);
+					break;
+				}
 			}
 		}
 
 		void MarkXmlSchemaProvider (TypeDefinition type, CustomAttribute attribute)
 		{
-			if (!attribute.Resolved || attribute.ConstructorParameters.Count < 1)
-				return;
-
-			var method_name = attribute.ConstructorParameters [0] as string;
-			if (method_name == null)
+			string method_name;
+			if (!TryGetStringArgument (attribute, out method_name))
 				return;
 
 			MarkNamedMethod (type, method_name);
+		}
+
+		static bool TryGetStringArgument (CustomAttribute attribute, out string argument)
+		{
+			argument = null;
+
+			if (!attribute.Resolved || attribute.ConstructorParameters.Count < 1)
+				return false;
+
+			argument = attribute.ConstructorParameters [0] as string;
+
+			return argument != null;
 		}
 
 		void MarkNamedMethod (TypeDefinition type, string method_name)
@@ -446,9 +470,26 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		static bool IsXmlSchemaProvider (CustomAttribute attribute)
+		void MarkSoapHeader (MethodDefinition method, CustomAttribute attribute)
 		{
-			return attribute.Constructor.DeclaringType.FullName == "System.Xml.Serialization.XmlSchemaProviderAttribute";
+			string field_name;
+			if (!TryGetStringArgument (attribute, out field_name))
+				return;
+
+			MarkNamedField (method.DeclaringType, field_name);
+		}
+
+		void MarkNamedField (TypeDefinition type, string field_name)
+		{
+			if (!type.HasFields)
+				return;
+
+			foreach (FieldDefinition field in type.Fields) {
+				if (field.Name != field_name)
+					continue;
+
+				MarkField (field);
+			}
 		}
 
 		void MarkGenericParameterProvider (IGenericParameterProvider provider)
@@ -753,6 +794,8 @@ namespace Mono.Linker.Steps {
 				foreach (MethodReference ov in method.Overrides)
 					MarkMethod (ov);
 			}
+
+			MarkMethodSpecialCustomAttributes (method);
 
 			if (method.IsVirtual)
 				_virtual_methods.Add (method);
