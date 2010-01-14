@@ -1,3 +1,8 @@
+2010-01-14  Jb Evain  <jbevain@novell.com>
+
+	* MarkStep.cs: preserve fields specified by the
+	SoapHeader attribute.
+
 2010-01-13  Jb Evain  <jbevain@novell.com>
 
 	* MarkStep.cs: preserve methods specified by the
