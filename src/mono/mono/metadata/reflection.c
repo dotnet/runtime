@@ -9032,12 +9032,27 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
 		*type = f->field->type;
 	}
 }
-#else
+
+#else /* DISABLE_REFLECTION_EMIT */
+
 void
 mono_reflection_register_with_runtime (MonoReflectionType *type)
 {
 	/* This is empty */
 }
+
+static gboolean
+is_sre_type_builder (MonoClass *class)
+{
+	return FALSE;
+}
+
+static gboolean
+is_sre_generic_instance (MonoClass *class)
+{
+	FALSE;
+}
+
 #endif /* !DISABLE_REFLECTION_EMIT */
 
 static gboolean
