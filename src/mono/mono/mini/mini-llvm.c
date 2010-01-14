@@ -589,6 +589,7 @@ static const char*
 simd_op_to_intrins (int opcode)
 {
 	switch (opcode) {
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	case OP_MINPD:
 		return "llvm.x86.sse2.min.pd";
 	case OP_MINPS:
@@ -609,6 +610,7 @@ simd_op_to_intrins (int opcode)
 		return "llvm.x86.sse41.pmaxuw";
 	case OP_PMAXB_UN:
 		return "llvm.x86.sse41.pmaxub";
+#endif
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -3051,6 +3053,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			/* 
 			 * SIMD
 			 */
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 			case OP_XZERO: {
 				values [ins->dreg] = LLVMConstNull (type_to_llvm_type (ctx, &ins->klass->byval_arg));
 				break;
@@ -3205,6 +3208,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), "");
 				break;
 			}
+#endif
 
 			case OP_DUMMY_USE:
 				break;
