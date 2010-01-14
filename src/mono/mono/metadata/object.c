@@ -1288,7 +1288,8 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 			}
 
 			/*FIXME (interface_offset + method_slot_in_interface) is wrong for interfaces with static methods.*/
-			g_assert ((method->flags & METHOD_ATTRIBUTE_STATIC) == 0);
+			if (method->flags & METHOD_ATTRIBUTE_STATIC)
+				continue;
 
 			add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface, slot_num);
 		}
