@@ -3048,9 +3048,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	 */
 	if (ji.type == MONO_PATCH_INFO_ABS || ji.type == MONO_PATCH_INFO_INTERNAL_METHOD || ji.type == MONO_PATCH_INFO_CLASS_INIT || ji.type == MONO_PATCH_INFO_ICALL_ADDR || ji.type == MONO_PATCH_INFO_JIT_ICALL_ADDR || ji.type == MONO_PATCH_INFO_RGCTX_FETCH) {
 		/* These should already have a function descriptor */
-#ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		g_assert (((gpointer*)target) [2] == 0);
-#endif
+		/* Empty */
 	} else if (!no_ftnptr) {
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		g_assert (((gpointer*)target) [2] != 0);
