@@ -1,3 +1,8 @@
+2010-01-15  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/get-cygwin-deps.sh: New file. Contains a script to download and setup
+	the dependencies needed for compiling mono on cygwin.
+
 2010-01-06  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* scripts/Makefile.am: Add peverify script.
