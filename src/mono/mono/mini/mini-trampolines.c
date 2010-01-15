@@ -1095,7 +1095,8 @@ mono_create_generic_class_init_trampoline (void)
 
 	if (!code) {
 		if (mono_aot_only)
-			code = mono_aot_get_named_code ("generic_class_init_trampoline");
+			/* get_named_code () might return an ftnptr, but our caller expects a direct pointer */
+			code = mono_get_addr_from_ftnptr (mono_aot_get_named_code ("generic_class_init_trampoline"));
 		else
 			code = mono_arch_create_generic_class_init_trampoline ();
 	}

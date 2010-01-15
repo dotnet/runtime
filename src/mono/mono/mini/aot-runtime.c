@@ -3048,6 +3048,11 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	 */
 	if (ji.type == MONO_PATCH_INFO_ABS || ji.type == MONO_PATCH_INFO_INTERNAL_METHOD || ji.type == MONO_PATCH_INFO_CLASS_INIT || ji.type == MONO_PATCH_INFO_ICALL_ADDR || ji.type == MONO_PATCH_INFO_JIT_ICALL_ADDR || ji.type == MONO_PATCH_INFO_RGCTX_FETCH) {
 		/* These should already have a function descriptor */
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+		/* Our function descriptors have a 0 environment, gcc created ones don't */
+		if (ji.type != MONO_PATCH_INFO_INTERNAL_METHOD && ji.type != MONO_PATCH_INFO_JIT_ICALL_ADDR && ji.type != MONO_PATCH_INFO_ICALL_ADDR)
+			g_assert (((gpointer*)target) [2] == 0);
+#endif
 		/* Empty */
 	} else if (!no_ftnptr) {
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
@@ -3510,7 +3515,8 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	symbol = g_strdup_printf ("rgctx_fetch_trampoline_%u", slot);
 	code = load_function (mono_defaults.corlib->aot_module, symbol);
 	g_free (symbol);
-	return code;
+	/* The caller expects an ftnptr */
+	return mono_create_ftnptr (mono_domain_get (), code);
 }
 
 gpointer
