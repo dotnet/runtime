@@ -9050,7 +9050,7 @@ is_sre_type_builder (MonoClass *class)
 static gboolean
 is_sre_generic_instance (MonoClass *class)
 {
-	FALSE;
+	return FALSE;
 }
 
 #endif /* !DISABLE_REFLECTION_EMIT */
