@@ -582,7 +582,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define	MONO_EMIT_NEW_ICOMPARE_IMM(cfg,sr1,imm) do { \
         MonoInst *inst; \
-        MONO_INST_NEW ((cfg), (inst), sizeof (void*) == 8 ? OP_ICOMPARE_IMM : OP_COMPARE_IMM); \
+        MONO_INST_NEW ((cfg), (inst), sizeof (mgreg_t) == 8 ? OP_ICOMPARE_IMM : OP_COMPARE_IMM); \
         inst->sreg1 = sr1; \
         inst->inst_imm = (imm);			 \
 	    MONO_ADD_INS ((cfg)->cbb, inst); \
