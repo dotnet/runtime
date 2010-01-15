@@ -1,5 +1,9 @@
 2010-01-15  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Don't define TARGET_WIN32 when --target is used.
+
+2010-01-15  Zoltan Varga  <vargaz@gmail.com>
+
 	* scripts/get-cygwin-deps.sh: New file. Contains a script to download and setup
 	the dependencies needed for compiling mono on cygwin.
 

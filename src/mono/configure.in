@@ -85,7 +85,9 @@ case "$host" in
 		host_win32=yes
 		if test "x$cross_compiling" = "xno"; then
 			target_win32=yes
-			AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
+			if test "x$host" == "x$target"; then
+				AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
+			fi
 			CC="gcc -mno-cygwin -g"
 			CXX="g++ -mno-cygwin -g"
 			# So libgc configure gets -mno-cygwin
