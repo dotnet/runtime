@@ -389,7 +389,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 		if (locations [i].loc_type == LOC_OFFSET) {
 			int hreg = mono_dwarf_reg_to_hw_reg (i);
 			g_assert (hreg < nregs);
-			regs [hreg] = *(gssize*)(cfa_val + locations [i].offset);
+			regs [hreg] = *(mgreg_t*)(cfa_val + locations [i].offset);
 		}
 	}
 
