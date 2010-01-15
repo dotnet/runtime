@@ -5431,13 +5431,12 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
      
 	/* 
 	 * make sure we have enough space for exceptions
-	 * 28 is the simulated call to throw_corlib_exception
 	 */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC) {
 			i = exception_id_by_name (patch_info->data.target);
 			if (!exc_throw_found [i]) {
-				max_epilog_size += 28;
+				max_epilog_size += (2 * PPC_LOAD_SEQUENCE_LENGTH) + 5 * 4;
 				exc_throw_found [i] = TRUE;
 			}
 		} else if (patch_info->type == MONO_PATCH_INFO_BB_OVF)
@@ -5446,7 +5445,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			MonoOvfJump *ovfj = (MonoOvfJump*)patch_info->data.target;
 			i = exception_id_by_name (ovfj->data.exception);
 			if (!exc_throw_found [i]) {
-				max_epilog_size += 28;
+				max_epilog_size += (2 * PPC_LOAD_SEQUENCE_LENGTH) + 5 * 4;
 				exc_throw_found [i] = TRUE;
 			}
 			max_epilog_size += 8;
