@@ -732,10 +732,21 @@ static int ccount = 0;
 		} \
 	} while (0)
 
+/* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
+#define MONO_EMIT_NULL_CHECK(cfg, reg) do { \
+		if (cfg->explicit_null_checks) {							  \
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0); \
+			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException"); \
+		}																\
+		MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg); \
+	} while (0)
+
 #define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
 	cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
-	MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg); \
-	MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
+	if (cfg->explicit_null_checks) \
+		MONO_EMIT_NULL_CHECK (cfg, sreg); \
+	else \
+		MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
 	MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg);	\
 	} while (0)
 
@@ -749,14 +760,6 @@ static int ccount = 0;
 			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
 	} while (0)
 #endif
-
-#define MONO_EMIT_NULL_CHECK(cfg, reg) do { \
-		if (cfg->explicit_null_checks) {							  \
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0); \
-			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException"); \
-		}																\
-		MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg); \
-	} while (0)
 
 /* cfg is the MonoCompile been used
  * array_reg is the vreg holding the array object
