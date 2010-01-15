@@ -512,7 +512,7 @@ complete_path (const gunichar2 *appname, gchar **completed)
 
 #ifndef HAVE_GETPROCESSID
 /* Run-time GetProcessId detection for Windows */
-#ifdef HOST_WIN32
+#ifdef TARGET_WIN32
 #define HAVE_GETPROCESSID
 
 typedef DWORD (WINAPI *GETPROCESSID_PROC) (HANDLE);
@@ -624,7 +624,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 		/* It appears that there's no way to get the pid from a
 		 * process handle before windows xp.  Really.
 		 */
-#ifdef HAVE_GETPROCESSID
+#if defined(HAVE_GETPROCESSID) && !defined(MONO_CROSS_COMPILE)
 		process_info->pid = GetProcessId (shellex.hProcess);
 #else
 		process_info->pid = 0;
