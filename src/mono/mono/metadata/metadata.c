@@ -4382,10 +4382,33 @@ mono_metadata_generic_context_equal (const MonoGenericContext *g1, const MonoGen
 }
 
 /*
+ * mono_metadata_str_hash:
+ *
+ *   This should be used instead of g_str_hash for computing hash codes visible
+ * outside this module, since g_str_hash () is not guaranteed to be stable
+ * (its not the same in eglib for example).
+ */
+guint
+mono_metadata_str_hash (gconstpointer v1)
+{
+	/* Same as g_str_hash () in glib */
+	char *p = (char *) v1;
+	guint hash = *p;
+
+	while (*p++) {
+		if (*p)
+			hash = (hash << 5) - hash + *p;
+	}
+
+	return hash;
+} 
+
+/*
  * mono_metadata_type_hash:
  * @t1: a type
  *
  * Computes an hash value for @t1 to be used in GHashTable.
+ * The returned hash is guaranteed to be the same across executions.
  */
 guint
 mono_metadata_type_hash (MonoType *t1)
@@ -4398,7 +4421,7 @@ mono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 		/* check if the distribution is good enough */
-		return ((hash << 5) - hash) ^ g_str_hash (t1->data.klass->name);
+		return ((hash << 5) - hash) ^ mono_metadata_str_hash (t1->data.klass->name);
 	case MONO_TYPE_PTR:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_ARRAY:
