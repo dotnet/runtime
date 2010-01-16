@@ -4067,8 +4067,11 @@ decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 	int err;
 	int type = decode_byte (buf, &buf, limit);
 
-	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t)) {
-		DEBUG(1, fprintf (log_file, "Expected value of type %d, got %d.\n", t->type, type));
+	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
+		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
+		!(t->type == MONO_TYPE_U && type == MONO_TYPE_VALUETYPE) &&
+		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8)) {
+		DEBUG(1, fprintf (log_file, "[%p] Expected value of type 0x%0x, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), t->type, type));
 		return ERR_INVALID_ARGUMENT;
 	}
 
@@ -4109,6 +4112,16 @@ decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 	case MONO_TYPE_R8:
 		*(guint64*)addr = decode_long (buf, &buf, limit);
 		break;
+	case MONO_TYPE_PTR:
+		/* We send these as I8, so we get them back as such */
+		g_assert (type == MONO_TYPE_I8);
+		*(gssize*)addr = decode_long (buf, &buf, limit);
+		break;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		/* We send these as vtypes, so we get them back as such */
+		g_assert (type == MONO_TYPE_VALUETYPE);
+		/* Fall through */
 	case MONO_TYPE_VALUETYPE: {
 		gboolean is_enum = decode_byte (buf, &buf, limit);
 		MonoClass *klass;
