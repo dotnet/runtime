@@ -139,6 +139,12 @@ typedef struct {
 } GMemVTable;
 
 #define g_mem_set_vtable(x)
+
+struct _GMemChunk {
+	guint alloc_size;
+};
+
+typedef struct _GMemChunk GMemChunk;
 /*
  * Misc.
  */
