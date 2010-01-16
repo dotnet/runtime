@@ -500,6 +500,8 @@ public class DebuggerTests
 		if (expected is string) {
 			Assert.IsTrue (val is StringMirror);
 			Assert.AreEqual (expected, (val as StringMirror).Value);
+		} else if (val is StructMirror && (val as StructMirror).Type.Name == "IntPtr") {
+			AssertValue (expected, (val as StructMirror).Fields [0]);
 		} else {
 			Assert.IsTrue (val is PrimitiveValue);
 			Assert.AreEqual (expected, (val as PrimitiveValue).Value);
@@ -1717,6 +1719,7 @@ public class DebuggerTests
 	}
 
 	[Test]
+	[Category ("only")]
 	public void InvokeVType () {
 		Event e = run_until ("invoke1");
 
@@ -1729,10 +1732,15 @@ public class DebuggerTests
 		MethodMirror m;
 		Value v;
 
-		// return void
+		// Pass struct as this, receive int
 		m = t.GetMethod ("invoke_return_int");
 		v = s.InvokeMethod (e.Thread, m, null);
 		AssertValue (42, v);
+
+		// Pass struct as this, receive intptr
+		m = t.GetMethod ("invoke_return_intptr");
+		v = s.InvokeMethod (e.Thread, m, null);
+		AssertValue (43, v);
 	}
 
 	[Test]
@@ -1797,7 +1805,6 @@ public class DebuggerTests
 	}
 
 	[Test]
-	[Category ("only")]
 	public void InvokeSingleThreaded () {
 		vm.Dispose ();
 

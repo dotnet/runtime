@@ -51,6 +51,7 @@ public struct AStruct {
 	public int i;
 	public string s;
 	public byte k;
+	public IntPtr j;
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public int foo (int val) {
@@ -65,6 +66,11 @@ public struct AStruct {
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public int invoke_return_int () {
 		return i;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public IntPtr invoke_return_intptr () {
+		return j;
 	}
 }
 
@@ -450,7 +456,7 @@ public class Tests : TestsBase
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static void invoke () {
-		new Tests ().invoke1 (new Tests2 (), new AStruct () { i = 42 });
+		new Tests ().invoke1 (new Tests2 (), new AStruct () { i = 42, j = (IntPtr)43 });
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
