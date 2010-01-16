@@ -2180,7 +2180,10 @@ get_image_set (MonoImage **images, int nimages)
 	if (nimages == 1 && images [0] == mono_defaults.corlib && mscorlib_image_set)
 		return mscorlib_image_set;
 
-	g_assert (nimages > 0);
+	/* Happens with empty generic instances */
+	if (nimages == 0)
+		return mscorlib_image_set;
+
 	if (images [0] == mono_defaults.corlib && nimages > 1)
 		l = images [1]->image_sets;
 	else
