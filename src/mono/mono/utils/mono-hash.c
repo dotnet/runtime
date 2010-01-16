@@ -392,6 +392,19 @@ g_hash_node_new (gint gc_type)
 	  }
   }
 #else
+#ifdef _EGLIB_MAJOR
+  G_LOCK (g_hash_global);
+  if (node_free_list)
+    {
+      hash_node = node_free_list;
+      node_free_list = node_free_list->next;
+    }
+  else
+    {
+      hash_node = g_new0 (MonoGHashNode, 1);
+    }
+  G_UNLOCK (g_hash_global);
+#else
   G_LOCK (g_hash_global);
   if (node_free_list)
     {
@@ -408,6 +421,7 @@ g_hash_node_new (gint gc_type)
       hash_node = g_chunk_new (MonoGHashNode, node_mem_chunk);
     }
   G_UNLOCK (g_hash_global);
+  #endif
 #endif
 
   hash_node->key = NULL;
