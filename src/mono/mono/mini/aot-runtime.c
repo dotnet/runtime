@@ -895,7 +895,7 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 		table_size = table [0];
 		table ++;
 
-		hash = mono_aot_str_hash (name) % table_size;
+		hash = mono_metadata_str_hash (name) % table_size;
 
 		entry = &table [hash * 2];
 
@@ -1435,7 +1435,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 			full_name = g_strdup_printf ("%s.%s", name_space, name);
 		}
 	}
-	hash = mono_aot_str_hash (full_name) % table_size;
+	hash = mono_metadata_str_hash (full_name) % table_size;
 	if (full_name != full_name_buf)
 		g_free (full_name);
 

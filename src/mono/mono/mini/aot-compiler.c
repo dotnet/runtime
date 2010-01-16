@@ -4395,27 +4395,6 @@ emit_info (MonoAotCompile *acfg)
 
 #endif /* #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
 
-/*
- * mono_aot_str_hash:
- *
- * Hash function for strings which we use to hash strings for things which are
- * saved in the AOT image, since g_str_hash () can change.
- */
-guint
-mono_aot_str_hash (gconstpointer v1)
-{
-	/* Same as g_str_hash () in glib */
-	char *p = (char *) v1;
-	guint hash = *p;
-
-	while (*p++) {
-		if (*p)
-			hash = (hash << 5) - hash + *p;
-	}
-
-	return hash;
-} 
-
 #define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
 #define mix(a,b,c) { \
 	a -= c;  a ^= rot(c, 4);  c += b; \
@@ -4446,11 +4425,11 @@ mono_aot_type_hash (MonoType *t1)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 		/* check if the distribution is good enough */
-		return ((hash << 5) - hash) ^ mono_aot_str_hash (t1->data.klass->name);
+		return ((hash << 5) - hash) ^ mono_metadata_str_hash (t1->data.klass->name);
 	case MONO_TYPE_PTR:
-		return ((hash << 5) - hash) ^ mono_aot_type_hash (t1->data.type);
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_ARRAY:
-		return ((hash << 5) - hash) ^ mono_aot_type_hash (&t1->data.array->eklass->byval_arg);
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (&t1->data.array->eklass->byval_arg);
 	case MONO_TYPE_GENERICINST:
 		return ((hash << 5) - hash) ^ 0;
 	}
@@ -4489,18 +4468,18 @@ mono_aot_method_hash (MonoMethod *method)
 	if (!method->wrapper_type) {
 		char *full_name = mono_type_full_name (&klass->byval_arg);
 
-		hashes [0] = mono_aot_str_hash (full_name);
+		hashes [0] = mono_metadata_str_hash (full_name);
 		hashes [1] = 0;
 		g_free (full_name);
 	} else {
-		hashes [0] = mono_aot_str_hash (klass->name);
-		hashes [1] = mono_aot_str_hash (klass->name_space);
+		hashes [0] = mono_metadata_str_hash (klass->name);
+		hashes [1] = mono_metadata_str_hash (klass->name_space);
 	}
 	if (method->wrapper_type == MONO_WRAPPER_STFLD || method->wrapper_type == MONO_WRAPPER_LDFLD || method->wrapper_type == MONO_WRAPPER_LDFLDA)
 		/* The method name includes a stringified pointer */
 		hashes [2] = 0;
 	else
-		hashes [2] = mono_aot_str_hash (method->name);
+		hashes [2] = mono_metadata_str_hash (method->name);
 	hashes [3] = method->wrapper_type;
 	hashes [4] = mono_aot_type_hash (sig->ret);
 	for (i = 0; i < sig->param_count; i++) {
@@ -4919,7 +4898,7 @@ emit_class_name_table (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
 		full_name = mono_type_get_name_full (mono_class_get_type (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
-		hash = mono_aot_str_hash (full_name) % table_size;
+		hash = mono_metadata_str_hash (full_name) % table_size;
 		g_free (full_name);
 
 		/* FIXME: Allocate from the mempool */
@@ -5123,7 +5102,7 @@ emit_globals_table (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->globals->len; ++i) {
 		char *name = g_ptr_array_index (acfg->globals, i);
 
-		hash = mono_aot_str_hash (name) % table_size;
+		hash = mono_metadata_str_hash (name) % table_size;
 
 		/* FIXME: Allocate from the mempool */
 		new_entry = g_new0 (GlobalsTableEntry, 1);

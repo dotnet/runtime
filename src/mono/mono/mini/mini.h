@@ -1514,7 +1514,6 @@ guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_in
 guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
 char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
 MonoAotTrampInfo* mono_aot_tramp_info_create (const char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
-guint    mono_aot_str_hash                  (gconstpointer v1) MONO_INTERNAL;
 MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method) MONO_INTERNAL;
 guint32  mono_aot_get_got_offset            (MonoJumpInfo *ji) MONO_INTERNAL;
 char*    mono_aot_get_method_name           (MonoCompile *cfg) MONO_INTERNAL;
