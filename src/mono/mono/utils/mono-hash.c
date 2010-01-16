@@ -98,8 +98,8 @@ G_LOCK_DEFINE_STATIC (g_hash_global);
 
 #if defined(HAVE_NULL_GC)
 static GMemChunk *node_mem_chunk = NULL;
-#endif
-#if defined(HAVE_SGEN_GC)
+static MonoGHashNode *node_free_list = NULL;
+#elif defined(HAVE_SGEN_GC)
 static MonoGHashNode *node_free_lists [4] = {NULL};
 static void *hash_descr = NULL;
 static GMemChunk *node_mem_chunk = NULL;
