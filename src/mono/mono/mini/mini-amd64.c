@@ -2572,11 +2572,6 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 			/* These methods are allocated using malloc */
 			near_call = FALSE;
 
-		if (cfg->compile_aot) {
-			near_call = TRUE;
-			no_patch = TRUE;
-		}
-
 #ifdef MONO_ARCH_NOMAP32BIT
 		near_call = FALSE;
 #endif
@@ -2584,6 +2579,11 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 		/* The 64bit XEN kernel does not honour the MAP_32BIT flag. (#522894) */
 		if (optimize_for_xen)
 			near_call = FALSE;
+
+		if (cfg->compile_aot) {
+			near_call = TRUE;
+			no_patch = TRUE;
+		}
 
 		if (near_call) {
 			/* 
