@@ -2841,8 +2841,11 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 
 			code = mono_aot_get_method (domain, m);
 			if (code) {
-				if (mono_method_needs_static_rgctx_invoke (m, FALSE))
-					code = mono_create_static_rgctx_trampoline (m, code);
+				if (mono_method_needs_static_rgctx_invoke (m, FALSE)) {
+					code = mono_create_static_rgctx_trampoline (m, mono_create_ftnptr (domain, code));
+					/* The call above returns an ftnptr */
+					code = mono_get_addr_from_ftnptr (code);
+				}
 
 				return code;
 			}

@@ -81,6 +81,7 @@ rgctx_tramp_info_hash (gconstpointer data)
  * methods code. These trampolines are similar to the unbox trampolines, they
  * perform the same task as the static rgctx wrappers, but they are smaller/faster,
  * and can be made to work with full AOT.
+ * On PPC addr should be an ftnptr and the return value is an ftnptr too.
  */
 gpointer
 mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
@@ -90,6 +91,10 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	MonoDomain *domain;
 	RgctxTrampInfo tmp_info;
 	RgctxTrampInfo *info;
+
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	g_assert (((gpointer*)addr) [2] == 0);
+#endif
 
 	if (mini_method_get_context (m)->method_inst)
 		ctx = mono_method_lookup_rgctx (mono_class_vtable (mono_domain_get (), m->klass), mini_method_get_context (m)->method_inst);
