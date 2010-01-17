@@ -14,7 +14,7 @@ evacuate_pin_staging_area (void)
 {
 	int i;
 
-	g_assert (pin_staging_area_index > 0 && pin_staging_area_index <= PIN_STAGING_AREA_SIZE);
+	g_assert (pin_staging_area_index >= 0 && pin_staging_area_index <= PIN_STAGING_AREA_SIZE);
 
 	/*
 	 * The pinning addresses might come from undefined memory, this is normal. Since they

@@ -5564,8 +5564,7 @@ static void *scan_area_arg_start, *scan_area_arg_end;
 void
 mono_gc_conservatively_scan_area (void *start, void *end)
 {
-	g_assert_not_reached ();
-	conservatively_pin_objects_from (start, end, scan_area_arg_start, scan_area_arg_end, PIN_TYPE_OTHER);
+	conservatively_pin_objects_from (start, end, scan_area_arg_start, scan_area_arg_end, PIN_TYPE_STACK);
 }
 
 void*
