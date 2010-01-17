@@ -7261,6 +7261,7 @@ create_allocator (int atype)
 	static gboolean registered = FALSE;
 	int tlab_next_addr_var, new_next_var;
 	int num_params, i;
+	const char *name = NULL;
 
 #ifdef HAVE_KW_THREAD
 	int tlab_next_addr_offset = -1;
@@ -7279,19 +7280,22 @@ create_allocator (int atype)
 		registered = TRUE;
 	}
 
-	if (atype == ATYPE_NORMAL)
+	if (atype == ATYPE_NORMAL) {
 		num_params = 1;
-	else if (atype == ATYPE_VECTOR)
+		name = "Alloc";
+	} else if (atype == ATYPE_VECTOR) {
 		num_params = 2;
-	else
+		name = "AllocVector";
+	} else {
 		g_assert_not_reached ();
+	}
 
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, num_params);
 	csig->ret = &mono_defaults.object_class->byval_arg;
 	for (i = 0; i < num_params; ++i)
 		csig->params [i] = &mono_defaults.int_class->byval_arg;
 
-	mb = mono_mb_new (mono_defaults.object_class, "Alloc", MONO_WRAPPER_ALLOC);
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
 	size_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
 	if (atype == ATYPE_NORMAL) {
 		/* size = vtable->klass->instance_size; */
@@ -7306,9 +7310,16 @@ create_allocator (int atype)
 		mono_mb_emit_stloc (mb, size_var);
 	} else if (atype == ATYPE_VECTOR) {
 		MonoExceptionClause *clause;
-		int pos_leave;
+		int pos, pos_leave;
 		MonoClass *oom_exc_class;
 		MonoMethod *ctor;
+
+		/* n > 	MONO_ARRAY_MAX_INDEX -> OverflowException */
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_icon (mb, MONO_ARRAY_MAX_INDEX);
+		pos = mono_mb_emit_short_branch (mb, CEE_BLE_UN_S);
+		mono_mb_emit_exception (mb, "OverflowException", NULL);
+		mono_mb_patch_short_branch (mb, pos);
 
 		clause = mono_image_alloc0 (mono_defaults.corlib, sizeof (MonoExceptionClause));
 		clause->try_offset = mono_mb_get_label (mb);
@@ -7346,6 +7357,7 @@ create_allocator (int atype)
 		ctor = mono_class_get_method_from_name (oom_exc_class, ".ctor", 0);
 		g_assert (ctor);
 
+		mono_mb_emit_byte (mb, CEE_POP);
 		mono_mb_emit_op (mb, CEE_NEWOBJ, ctor);
 		mono_mb_emit_byte (mb, CEE_THROW);
 
