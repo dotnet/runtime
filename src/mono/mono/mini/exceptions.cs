@@ -2551,5 +2551,22 @@ class Tests {
 	  }
 	  return 0;
 	}
+
+	public static int test_0_except_opt_two_clauses () {
+		int size;
+		size = -1;
+		uint ui = (uint)size;
+		try {
+			checked {
+				uint v = ui * (uint)4;
+			}
+		} catch (OverflowException e) {
+			return 0;
+		} catch (Exception) {
+			return 1;
+		}
+
+		return 2;
+	}
 }
 
