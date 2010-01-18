@@ -183,6 +183,8 @@ static gboolean consistency_check_at_minor_collection = FALSE;
 static gboolean xdomain_checks = FALSE;
 /* If not null, dump the heap after each collection into this file */
 static FILE *heap_dump_file = NULL;
+/* If set, mark stacks conservatively, even if precise marking is possible */
+static gboolean conservative_stack_mark = FALSE;
 
 /*
  * Turning on heavy statistics will turn off the managed allocator and
@@ -1158,7 +1160,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 	switch (d & 0x7) {
 	case DESC_TYPE_RUN_LENGTH: {		
 		int first_set = (d >> 16) & 0xff;
-		int num_set = (d >> 16) & 0xff;
+		int num_set = (d >> 24) & 0xff;
 		int i;
 
 		bitmap = g_new0 (gsize, (first_set + num_set + 7) / 8);
@@ -5592,7 +5594,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 				continue;
 			}
 			DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %zd, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
-			if (gc_callbacks.thread_mark_func)
+			if (gc_callbacks.thread_mark_func && !conservative_stack_mark)
 				gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
 			else if (!precise)
 				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
@@ -7163,6 +7165,8 @@ mono_gc_base_init (void)
 				xdomain_checks = TRUE;
 			} else if (!strcmp (opt, "clear-at-gc")) {
 				nursery_clear_policy = CLEAR_AT_GC;
+			} else if (!strcmp (opt, "conservative-stack-mark")) {
+				conservative_stack_mark = TRUE;
 			} else if (g_str_has_prefix (opt, "heap-dump=")) {
 				char *filename = strchr (opt, '=') + 1;
 				nursery_clear_policy = CLEAR_AT_GC;
