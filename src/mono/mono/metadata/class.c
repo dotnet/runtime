@@ -123,9 +123,15 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 			return NULL;
 		}
 	case MONO_RESOLTION_SCOPE_TYPEREF: {
-		MonoClass *enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
+		MonoClass *enclosing;
 		GList *tmp;
 
+		if (idx == mono_metadata_token_index (type_token)) {
+			mono_loader_set_error_bad_image (g_strdup_printf ("Image %s with self-referencing typeref token %08x.", image->name, type_token));
+			return NULL;
+		}
+
+		enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
 		if (!enclosing)
 			return NULL;
 
