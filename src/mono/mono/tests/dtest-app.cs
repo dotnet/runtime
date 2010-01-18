@@ -227,6 +227,10 @@ public class Tests : TestsBase
 		ss3_2 ();
 		ss4 ();
 		ss5 (new int [] { 1, 2, 3 }, new Func<int, bool> (is_even));
+		try {
+			ss6 (true);
+		} catch {
+		}
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
@@ -267,6 +271,18 @@ public class Tests : TestsBase
 	public static void ss5 (int[] arr, Func<int, bool> selector) {
 		// Call into linq which calls back into this assembly
 		arr.Count (selector);
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void ss6 (bool b) {
+		if (b) {
+			ss7 ();
+			throw new Exception ();
+		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void ss7 () {
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]

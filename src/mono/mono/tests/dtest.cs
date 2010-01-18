@@ -397,6 +397,24 @@ public class DebuggerTests
 		// FIXME: Check that single stepping works with lock (obj)
 		
 		req.Disable ();
+
+		// Run until ss6
+		e = run_until ("ss6");
+
+		req = vm.CreateStepRequest (e.Thread);
+		req.Depth = StepDepth.Over;
+		req.Enable ();
+
+		// Check that single stepping works in out-of-line bblocks
+		vm.Resume ();
+		e = vm.GetNextEvent ();
+		Assert.IsTrue (e is StepEvent);
+		vm.Resume ();
+		e = vm.GetNextEvent ();
+		Assert.IsTrue (e is StepEvent);
+		Assert.AreEqual ("ss6", (e as StepEvent).Method.Name);
+
+		req.Disable ();
 	}
 
 	[Test]
