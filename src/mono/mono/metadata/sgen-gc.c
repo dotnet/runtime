@@ -782,7 +782,7 @@ struct _SgenThreadInfo {
 	char **tlab_temp_end_addr;
 	char **tlab_real_end_addr;
 	gpointer **store_remset_buffer_addr;
-	int *store_remset_buffer_index_addr;
+	long *store_remset_buffer_index_addr;
 	RememberedSet *remset;
 	gpointer runtime_data;
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
@@ -794,7 +794,7 @@ struct _SgenThreadInfo {
 	char *tlab_temp_end;
 	char *tlab_real_end;
 	gpointer *store_remset_buffer;
-	int store_remset_buffer_index;
+	long store_remset_buffer_index;
 #endif
 };
 
@@ -829,11 +829,11 @@ static __thread char *tlab_next;
 static __thread char *tlab_temp_end;
 static __thread char *tlab_real_end;
 static __thread gpointer *store_remset_buffer;
-static __thread int store_remset_buffer_index;
+static __thread long store_remset_buffer_index;
 /* Used by the managed allocator/wbarrier */
 static __thread char **tlab_next_addr;
 static __thread char *stack_end;
-static __thread int *store_remset_buffer_index_addr;
+static __thread long *store_remset_buffer_index_addr;
 #endif
 static char *nursery_next = NULL;
 static char *nursery_frag_real_end = NULL;
@@ -7690,7 +7690,7 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_stloc (mb, buffer_var);
 
 		// buffer_index = STORE_REMSET_BUFFER_INDEX;
-		buffer_index_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+		buffer_index_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		EMIT_TLS_ACCESS (mb, store_remset_buffer_index, store_remset_buffer_index_offset);
 		mono_mb_emit_stloc (mb, buffer_index_var);
 
@@ -7729,7 +7729,7 @@ mono_gc_get_write_barrier (void)
 		// STORE_REMSET_BUFFER_INDEX = buffer_index;
 		EMIT_TLS_ACCESS (mb, store_remset_buffer_index_addr, store_remset_buffer_index_addr_offset);
 		mono_mb_emit_ldloc (mb, buffer_index_var);
-		mono_mb_emit_byte (mb, CEE_STIND_I4);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
 
 		// return;
 		mono_mb_patch_branch (mb, label_no_wb_1);
