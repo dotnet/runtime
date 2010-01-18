@@ -4430,11 +4430,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 
 	if (ex) {
-		mono_destroy_compile (cfg);
-		*jit_ex = ex;
-
 		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
 			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
+
+		mono_destroy_compile (cfg);
+		*jit_ex = ex;
 
 		return NULL;
 	}
