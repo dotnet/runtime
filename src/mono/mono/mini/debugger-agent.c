@@ -41,6 +41,9 @@
 #endif
 
 #ifdef HOST_WIN32
+#ifdef _MSC_VER
+#include <winsock2.h>
+#endif
 #include <ws2tcpip.h>
 #ifdef __GNUC__
 /* cygwin's headers do not seem to define these */
@@ -952,7 +955,7 @@ transport_connect (const char *host, int port)
 				break;
 			}
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 			/*
 			 * this function is not present on win2000 which we still support, and the
 			 * workaround described here:
@@ -1004,7 +1007,7 @@ transport_connect (const char *host, int port)
 
 		conn_fd = sfd;
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 		/* See the comment above */
 		freeaddrinfo (result);
 #endif

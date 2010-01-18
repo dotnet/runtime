@@ -1,3 +1,10 @@
+2010-01-18  Bill Holmes  <billholmes54@gmail.com>
+
+	* libmono.vcproj : Adding a link to Mswsock.lib and adding files
+	  mono-error and debugger-agent.
+
+	Code is contributed under MIT/X11 license.
+
 2009-10-16  Bill Holmes  <billholmes54@gmail.com>
 
 	* libtest.vcproj : Adding TARGET_X86 and TARGET_AMD64

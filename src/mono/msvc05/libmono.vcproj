@@ -71,7 +71,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib Mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -157,7 +157,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib Mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -246,7 +246,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib Mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -336,7 +336,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib Mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -427,7 +427,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib Mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -517,7 +517,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib Mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -605,7 +605,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib Mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -691,7 +691,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib Mswsock.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -1033,6 +1033,14 @@
 			</File>
 			<File
 				RelativePath="..\mono\utils\mono-dl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-error.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-error.h"
 				>
 			</File>
 			<File
@@ -6154,6 +6162,14 @@
 						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\mono\mini\debugger-agent.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\mini\debugger-agent.h"
+				>
 			</File>
 			<File
 				RelativePath="..\mono\mini\declsec.c"

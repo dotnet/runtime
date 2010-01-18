@@ -154,7 +154,7 @@ struct MonoLMF {
 	guint64     r13;
 	guint64     r14;
 	guint64     r15;
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	guint64     rdi;
 	guint64     rsi;
 #endif
@@ -169,7 +169,7 @@ typedef struct MonoCompileArch {
 	gpointer cinfo;
 	gint32 async_point_count;
 	gpointer vret_addr_loc;
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 	gpointer	unwindinfo;
 #endif
 } MonoCompileArch;
@@ -245,7 +245,7 @@ typedef struct {
  */
 #define MONO_ARCH_VARARG_ICALLS 1
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 
 #define MONO_ARCH_USE_SIGACTION 1
 
@@ -259,7 +259,7 @@ typedef struct {
 #undef MONO_ARCH_USE_SIGACTION
 #endif
 
-#endif /* PLATFORM_WIN32 */
+#endif /* HOST_WIN32 */
 
 #if defined (__NetBSD__)
 
@@ -311,7 +311,7 @@ typedef struct {
 
 #endif /* __FreeBSD__ */
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 #define MONO_AMD64_ARG_REG1 AMD64_RCX
 #define MONO_AMD64_ARG_REG2 AMD64_RDX
 #else
@@ -353,26 +353,26 @@ typedef struct {
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_XP_UNWIND 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
-#if !defined(PLATFORM_WIN32) && !defined(HAVE_MOVING_COLLECTOR)
+#if !defined(HOST_WIN32) && !defined(HAVE_MOVING_COLLECTOR)
 #define MONO_ARCH_MONITOR_OBJECT_REG MONO_AMD64_ARG_REG1
 #endif
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #else
 #define DISABLE_DEBUGGER_AGENT 1
 #endif
 #define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 
-#if !defined(PLATFORM_WIN32) || defined(__sun)
+#if !defined(HOST_WIN32) || defined(__sun)
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
 #endif
 
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 #define MONO_AMD64_NO_PUSHES 1
 #endif
 
@@ -423,7 +423,7 @@ typedef struct {
 
 extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
-#ifdef PLATFORM_WIN32
+#ifdef HOST_WIN32
 
 void mono_arch_unwindinfo_add_push_nonvol (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
 void mono_arch_unwindinfo_add_set_fpreg (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
