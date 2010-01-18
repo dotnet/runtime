@@ -11,6 +11,7 @@
 #include "mini-gc.h"
 
 #if 0
+//#ifdef HAVE_SGEN_GC
 
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-counters.h>
@@ -23,7 +24,7 @@
 #define DEBUG(s)
 #endif
 
-#if 0
+#if 1
 #define DEBUG_GC_MAP(s) do { s; fflush (stdout); } while (0)
 #else
 #define DEBUG_GC_MAP(s)
@@ -43,6 +44,15 @@ typedef struct {
 	MonoJitTlsData *jit_tls;
 } TlsData;
 
+typedef enum {
+	/* Stack slot doesn't contain a reference */
+	SLOT_NOREF = 0,
+	/* Stack slot contains a reference */
+	SLOT_REF = 1,
+	/* No info, slot needs to be scanned conservatively */
+	SLOT_PIN = 2
+} StackSlotType;
+
 /* 
  * Contains information needed to mark a stack frame.
  * FIXME: Optimize the memory usage.
@@ -52,17 +62,15 @@ typedef struct {
 	int frame_reg;
 	/* The offset of the local variable area in the stack frame relative to the frame pointer */
 	int locals_offset;
-	/* The size of the locals area. Can't use gc_refs->size as it includes padding */
+	/* The size of the locals area. Can't use nslots as it includes padding */
 	int locals_size;
+	/* The number of stack slots */
+	int nslots;
 	/* 
-	 * If this is set, then the frame contains references which we can't
-	 * process precisely.
+	 * The gc map itself.
 	 */
-	guint8 pin;
-	/* A bitmap indicating which stack slots contain a GC ref */
-	/* If no stack slots contain GC refs, then this is NULL */
-	MonoBitSet *gc_refs;
-	/* A pair of low pc offset-high pc offset for each 1 bit in gc_refs */
+	StackSlotType *slots;
+	/* A pair of low pc offset-high pc offset for each SLOT_REF value in gc_refs */
 	guint32 live_ranges [MONO_ZERO_LEN_ARRAY];
 } GCMap;
 
@@ -102,13 +110,20 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	GCMap *map;
 	guint8* fp, *locals_start, *locals_end;
 	int i, pc_offset;
-	int scanned = 0;
+	int scanned = 0, scanned_precisely, scanned_conservatively;
 
 	if (mono_thread_internal_current () == NULL) {
 		if (!precise)
 			mono_gc_conservatively_scan_area (stack_start, stack_end);			
 		return;
 	}
+
+	/* Number of bytes scanned based on GC map data */
+	scanned = 0;
+	/* Number of bytes scanned precisely based on GC map data */
+	scanned_precisely = 0;
+	/* Number of bytes scanned conservatively based on GC map data */
+	scanned_conservatively = 0;
 
 	/* FIXME: sgen-gc.c calls this multiple times for each major collection from pin_from_roots */
 
@@ -156,6 +171,12 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 			 */
 
 			map = ji->gc_info;
+
+			if (!map) {
+				DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): No GC map for %s\n", precise, fname); g_free (fname));
+				continue;
+			}
+
 #ifdef __x86_64__
 			if (map->frame_reg == AMD64_RSP)
 				fp = (guint8*)ctx.rsp;
@@ -174,12 +195,14 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 			pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 			g_assert (pc_offset >= 0);
 
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s offset: 0x%x limit: %p fp: %p locals: %p-%p (%d)%s\n", precise, fname, pc_offset, stack_limit, fp, locals_start, locals_end, (int)(locals_end - locals_start), map->pin ? ", conservative" : ""); g_free (fname));
+			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s+0x%x (%p) limit=%p fp=%p locals=%p-%p (%d)\n", precise, fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, locals_start, locals_end, (int)(locals_end - locals_start)); g_free (fname));
 
 			/* 
 			 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
 			 * call for each object.
 			 */
+
+			scanned += locals_end - locals_start;
 
 			/* Pinning needs to be done first, then the precise scan later */
 
@@ -188,44 +211,49 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 				if (locals_start > stack_limit) {
 					/* This scans the previously skipped frames as well */
-					if (!precise) {
-						DEBUG (printf ("\tConservative scan of %p-%p.\n", stack_limit, locals_start));
-						mono_gc_conservatively_scan_area (stack_limit, locals_start);
-						scanned += locals_start - stack_limit;
-					}
+					DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, locals_start));
+					mono_gc_conservatively_scan_area (stack_limit, locals_start);
 				}
 
-				if (map->pin) {
-					DEBUG (printf ("\tConservative scan of %p-%p.\n", locals_start, locals_end));
-					mono_gc_conservatively_scan_area (locals_start, locals_end);
-					scanned += locals_end - locals_start;
+				if (map->slots) {
+					guint8 *p;
+
+					p = locals_start;
+					for (i = 0; i < map->nslots; ++i) {
+						if (map->slots [i] == SLOT_PIN) {
+							DEBUG (printf ("\tscan slot %s0x%x(fp)=%p.\n", (guint8*)p > (guint8*)fp ? "" : "-", ABS ((int)((gssize)p - (gssize)fp)), p));
+							mono_gc_conservatively_scan_area (p, p + sizeof (gpointer));
+							scanned_conservatively += sizeof (gpointer);
+						}
+						p += sizeof (gpointer);
+					}
 				}
 
 				stack_limit = locals_end;
 			} else {
-				if (!map->pin)
-					scanned += locals_end - locals_start;
-
-				if (!map->pin && map->gc_refs) {
+				if (map->slots) {
 					int loffset = 0;
 
-					for (i = 0; i < mono_bitset_size (map->gc_refs); ++i) {
-						if (mono_bitset_test_fast (map->gc_refs, i)) {
+					for (i = 0; i < map->nslots; ++i) {
+						if (map->slots [i] == SLOT_REF) {
 							MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
 							MonoObject *obj = *ptr;
 
 							if (pc_offset >= map->live_ranges [loffset] && pc_offset < map->live_ranges [loffset + 1]) {
 								if (obj) {
 									*ptr = mono_gc_scan_object (obj);
-									DEBUG (printf ("\tObjref at %p + 0x%x: %p -> %p.\n", locals_start, (int)(i * sizeof (gpointer)), obj, *ptr));
+									DEBUG (printf ("\tref %s0x%x(fp)=%p: %p -> %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj, *ptr));
 								} else {
-									DEBUG (printf ("\tObjref at %p: %p.\n", ptr, obj));
+									DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
 								}
 							} else {
-								DEBUG (printf ("\tDead Objref at %p.\n", ptr));
+									DEBUG (printf ("\tref %s0x%x(fp)=%p: dead\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr));
 							}
 
 							loffset += 2;
+							scanned_precisely += sizeof (gpointer);
+						} else if (map->slots [i] == SLOT_NOREF) {
+							scanned_precisely += sizeof (gpointer);
 						}
 					}
 				}
@@ -233,32 +261,56 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		}
 
 		if (stack_limit < stack_end && !precise) {
-			DEBUG (printf ("\tConservative scan of %p-%p.\n", stack_limit, stack_end));
+			DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, stack_end));
 			mono_gc_conservatively_scan_area (stack_limit, stack_end);
-			scanned += stack_end - stack_limit;
 		}
 	} else {
 		// FIXME:
 		if (!precise) {
-			DEBUG (printf ("\tConservative scan of %p-%p.\n", stack_start, stack_end));
+			DEBUG (printf ("\tno context, scan area %p-%p.\n", stack_start, stack_end));
 			mono_gc_conservatively_scan_area (stack_start, stack_end);
-			scanned += stack_end - stack_start;
 		}
 	}
 
-	DEBUG (printf ("Scanned %d out of %d bytes %s.\n", scanned, (int)(stack_end - stack_start), precise ? "precisely" : "conversatively"));
+	DEBUG (printf ("Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
 
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
 }
+
+#define set_slot(slots, nslots, pos, val) do {	\
+		g_assert ((pos) < (nslots));		   \
+		(slots) [(pos)] = (val);			   \
+	} while (0)
 
 void
 mini_gc_create_gc_map (MonoCompile *cfg)
 {
 	GCMap *map;
 	int i, nslots, alloc_size, loffset, min_offset, max_offset;
-	MonoBitSet *gc_refs = NULL;
-	gboolean pin = FALSE, norefs = FALSE;
+	StackSlotType *slots = NULL;
+	gboolean norefs = FALSE;
 	guint32 *live_range_start, *live_range_end;
+
+	/*
+	 * This doesn't work yet, because the live ranges used to calculate the GC map
+	 * are not concrete/precise enough for several reasons:
+	 * - the current calculation of MonoMethodVar->live_range_start/end is incorrect,
+	 * it doesn't take into account loops etc. It needs to use the results of the
+	 * liveness analysis pass.
+	 * - the current liveness analysis pass is too conservative, ie. the live_in/out
+	 * sets computed by it are sometimes include too many variables, for example because
+	 * of the bogus links between bblocks. This means the live_in/out sets cannot be
+	 * used to reliably compute precise live ranges.
+	 * - stack slots are shared, which means the live ranges of stack slots have holes
+	 * in them.
+	 * - the live ranges of variables used in out-of-line bblocks also have holes in
+	 * them.
+	 */
+	NOT_IMPLEMENTED;
+
+	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
+		/* Without liveness info, the live ranges are not precise enough */
+		return;
 
 #ifdef TARGET_AMD64
 	min_offset = ALIGN_TO (cfg->locals_min_stack_offset, sizeof (gpointer));
@@ -274,6 +326,8 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 		if ((MONO_TYPE_ISSTRUCT (t) && ins->klass->has_references))
 			break;
+		if (MONO_TYPE_ISSTRUCT (t))
+			break;
 		if (t->byref || t->type == MONO_TYPE_PTR)
 			break;
 		if (ins && ins->opcode == OP_REGOFFSET && MONO_TYPE_IS_REFERENCE (ins->inst_vtype))
@@ -283,12 +337,15 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	if (i == cfg->num_varinfo)
 		norefs = TRUE;
 
-	DEBUG_GC_MAP (printf ("GC Map for %s: 0x%x-0x%x\n", mono_method_full_name (cfg->method, TRUE), min_offset, max_offset));
+	if (cfg->verbose_level > 1)
+		printf ("GC Map for %s: 0x%x-0x%x\n", mono_method_full_name (cfg->method, TRUE), min_offset, max_offset);
 
 	nslots = (max_offset - min_offset) / sizeof (gpointer);
 	if (!norefs) {
-		alloc_size = mono_bitset_alloc_size (nslots, 0);
-		gc_refs = mono_bitset_mem_new (mono_domain_alloc0 (cfg->domain, alloc_size), (max_offset - min_offset) / sizeof (gpointer), 0);
+		alloc_size = nslots * sizeof (StackSlotType);
+		slots = mono_domain_alloc0 (cfg->domain, alloc_size);
+		for (i = 0; i < nslots; ++i)
+			slots [i] = SLOT_NOREF;
 		gc_maps_size += alloc_size;
 	}
 	live_range_start = g_new (guint32, nslots);
@@ -304,76 +361,113 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		MonoInst *ins = cfg->varinfo [i];
 		MonoType *t = ins->inst_vtype;
 		MonoMethodVar *vmv;
+		guint32 pos;
+
+		if (norefs)
+			continue;
 
 		vmv = MONO_VARINFO (cfg, i);
+
+		if (ins->opcode != OP_REGOFFSET)
+			continue;
+
+		if (ins->inst_offset % sizeof (gpointer) != 0)
+			continue;
+
+		pos = (ins->inst_offset - min_offset) / sizeof (gpointer);
+
+		if ((MONO_TYPE_ISSTRUCT (t) && !ins->klass->has_references))
+			continue;
 
 		if ((MONO_TYPE_ISSTRUCT (t) && ins->klass->has_references)) {
 			int numbits, j;
 			gsize *bitmap;
+			gboolean pin;
 
-			mono_class_compute_gc_descriptor (ins->klass);
-
-			bitmap = mono_gc_get_bitmap_for_descr (ins->klass->gc_descr, &numbits);
-
-			if (bitmap) {
-				int base_bit_offset = (ins->inst_offset - min_offset) / sizeof (gpointer);
-				for (j = 0; j < numbits; ++j) {
-					if (bitmap [j / GC_BITS_PER_WORD] & (1 << (j % GC_BITS_PER_WORD)))
-						/* The descriptor is for the boxed object */
-						mono_bitset_set_fast (gc_refs, base_bit_offset + j - (sizeof (MonoObject) / sizeof (gpointer)));
-				}
-				g_free (bitmap);
-
-				DEBUG_GC_MAP (printf ("\tVType: %s -> 0x%x\n", mono_type_full_name (ins->inst_vtype), (int)ins->inst_offset));
-
-				// FIXME: These have no live range
+			if (ins->klass->generic_container || mono_class_is_open_constructed_type (t)) {
+				/* FIXME: Generic sharing */
 				pin = TRUE;
 			} else {
-				// FIXME:
-				pin = TRUE;
+				mono_class_compute_gc_descriptor (ins->klass);
+
+				bitmap = mono_gc_get_bitmap_for_descr (ins->klass->gc_descr, &numbits);
+
+				if (bitmap) {
+					for (j = 0; j < numbits; ++j) {
+						if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
+							/* The descriptor is for the boxed object */
+							set_slot (slots, nslots, (pos + j - (sizeof (MonoObject) / sizeof (gpointer))), SLOT_REF);
+						}
+					}
+					g_free (bitmap);
+
+					if (cfg->verbose_level > 1)
+						printf ("\tvtype at fp+0x%x: %s -> 0x%x\n", (int)ins->inst_offset, mono_type_full_name (ins->inst_vtype), (int)ins->inst_offset);
+
+					// FIXME: These have no live range
+					pin = TRUE;
+				} else {
+					// FIXME:
+					pin = TRUE;
+				}
 			}
 
+			if (ins->backend.is_pinvoke)
+				pin = TRUE;
+
+			if (pin) {
+				int size;
+
+				if (ins->backend.is_pinvoke)
+					size = mono_class_native_size (ins->klass, NULL);
+				else
+					size = mono_class_value_size (ins->klass, NULL);
+				for (j = 0; j < size / sizeof (gpointer); ++j)
+					set_slot (slots, nslots, pos + j, SLOT_PIN);
+			}
 			continue;
 		}
-		if (t->byref || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_I || t->type == MONO_TYPE_U)
-			pin = TRUE;
-		if (vmv && !vmv->live_range_start)
-			pin = TRUE;
-		if (pin)
-			break;
 
-		if (ins && ins->opcode == OP_REGOFFSET && MONO_TYPE_IS_REFERENCE (ins->inst_vtype)) {
-			guint32 pos = (ins->inst_offset - min_offset) / sizeof (gpointer);
+		if (ins->inst_offset < min_offset || ins->inst_offset >= max_offset)
+			/* Vret addr etc. */
+			continue;
 
-			g_assert (ins->inst_offset % sizeof (gpointer) == 0);
-			g_assert (ins->inst_offset >= min_offset && ins->inst_offset < max_offset);
-			mono_bitset_set_fast (gc_refs, pos);
+		if (t->byref || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_I || t->type == MONO_TYPE_U) {
+			slots [pos] = SLOT_PIN;
+			continue;
+		}
+		if (vmv && !vmv->live_range_start) {
+			g_assert (pos >= 0 && pos < nslots);
+			slots [pos] = SLOT_PIN;
+			continue;
+		}
 
-			/* 
-			 * If stack slots are shared, the live range will be the union of
-			 * the live range of variables stored in it. This might cause some
-			 * objects to outlive their live ranges.
-			 */
-			live_range_start [pos] = MIN (live_range_start [pos], vmv->live_range_start);
-			live_range_end [pos] = MAX (live_range_end [pos], vmv->live_range_end);
+		if (MONO_TYPE_IS_REFERENCE (ins->inst_vtype)) {
+			set_slot (slots, nslots, pos, SLOT_REF);
 
-			DEBUG_GC_MAP (printf ("\tRef: %s -> 0x%x [0x%x - 0x%x]\n", mono_type_full_name (ins->inst_vtype), (int)ins->inst_offset, vmv->live_range_start, vmv->live_range_end));
+			/* Stack slots holding refs shouldn't be shared */
+			g_assert (!live_range_end [pos]);
+			live_range_start [pos] = vmv->live_range_start;
+			live_range_end [pos] = vmv->live_range_end;
+
+			if (cfg->verbose_level > 1)
+				printf ("\tref at %s0x%x(fp) (slot=%d): %s [0x%x - 0x%x]\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype), vmv->live_range_start, vmv->live_range_end);
 		}
 	}
 
-	alloc_size = sizeof (GCMap) + (norefs ? 0 : ((mono_bitset_count (gc_refs) - MONO_ZERO_LEN_ARRAY) * sizeof (guint32) * 2));
+	alloc_size = sizeof (GCMap) + (norefs ? 0 : (nslots - MONO_ZERO_LEN_ARRAY) * sizeof (guint32) * 2);
 	map = mono_domain_alloc0 (cfg->domain, alloc_size);
 	gc_maps_size += alloc_size;
 
 	map->frame_reg = cfg->frame_reg;
 	map->locals_offset = min_offset;
 	map->locals_size = ALIGN_TO (max_offset - min_offset, sizeof (gpointer));
-	map->gc_refs = gc_refs;
-	map->pin = pin;
+	map->nslots = nslots;
+	map->slots = slots;
 	loffset = 0;
 	if (!norefs) {
-		for (i = 0; i < mono_bitset_size (gc_refs); ++i) {
-			if (mono_bitset_test_fast (gc_refs, i)) {
+		for (i = 0; i < nslots; ++i) {
+			if (map->slots [i] == SLOT_REF) {
 				map->live_ranges [loffset ++] = live_range_start [i];
 				map->live_ranges [loffset ++] = live_range_end [i];
 			}
@@ -384,12 +478,16 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	{
 		static int precise_count;
 
-		precise_count ++;
-		if (getenv ("PRECISE_COUNT")) {
-			if (precise_count == atoi (getenv ("PRECISE_COUNT")))
-				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-			if (precise_count > atoi (getenv ("PRECISE_COUNT")))
-				map->pin = TRUE;
+		if (map->slots) {
+			precise_count ++;
+			if (getenv ("MONO_PRECISE_COUNT")) {
+				if (precise_count == atoi (getenv ("MONO_PRECISE_COUNT")))
+					printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+				if (precise_count > atoi (getenv ("MONO_PRECISE_COUNT"))) {
+					for (i = 0; i < nslots; ++i)
+						map->slots [i] = SLOT_PIN;
+				}
+			}
 		}
 	}
 #endif

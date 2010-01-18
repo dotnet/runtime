@@ -157,4 +157,127 @@ class Tests {
 			(int)b.o26 + (int)b.o27 + (int)b.o28 + (int)b.o29 + (int)b.o30 +
 			(int)b.o31 + (int)b.o32;
 	}
+
+	static void cond (bool b) {
+		if (b) {
+			/* Exhaust all registers so 'o' is stack allocated */
+			int sum = 0, i, j, k, l, m;
+			for (i = 0; i < 100; ++i)
+				sum ++;
+			for (j = 0; j < 100; ++j)
+				sum ++;
+			for (k = 0; k < 100; ++k)
+				sum ++;
+			for (l = 0; l < 100; ++l)
+				sum ++;
+			for (m = 0; m < 100; ++m)
+				sum ++;
+
+			object o = new object ();
+			sum += i + j + k;
+			if (b) {
+				throw new Exception (o.ToString ());
+			}
+		}
+		GC.Collect (1);
+	}
+
+	/* 
+	 * Tests liveness of object references which are initialized conditionally,
+	 * used in an out-of-line bblock, and the initlocals assignment is optimized away.
+	 */
+	/* FIXME: This doesn't work yet
+	public static int test_0_liveness_out_of_line_bblocks () {
+		cond (false);
+		return 0;
+	}
+	*/
+
+	/*
+	 * Test liveness and loops.
+	 */
+	public static int test_0_liveness_2 () {
+		object o = new object ();
+		for (int n = 0; n < 10; ++n) {
+			/* Exhaust all registers so 'o' is stack allocated */
+			int sum = 0, i, j, k, l, m;
+			for (i = 0; i < 100; ++i)
+				sum ++;
+			for (j = 0; j < 100; ++j)
+				sum ++;
+			for (k = 0; k < 100; ++k)
+				sum ++;
+			for (l = 0; l < 100; ++l)
+				sum ++;
+			for (m = 0; m < 100; ++m)
+				sum ++;
+
+			if (o != null)
+				o.ToString ();
+
+			GC.Collect (1);
+
+			if (o != null)
+				o.ToString ();
+
+			sum += i + j + k;
+
+			GC.Collect (1);
+		}
+
+		return 0;
+	}
+
+	/*
+	 * Test liveness and stack slot sharing
+	 * This doesn't work yet, its hard to make the JIT share the stack slots of the
+	 * two 'o' variables.
+	 */
+	public static int test_0_liveness_3 () {
+		bool b = false;
+		bool b2 = true;
+
+		/* Exhaust all registers so 'o' is stack allocated */
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+
+		if (b) {
+			object o = new object ();
+
+			/* Make sure o is global */
+			if (b2)
+				Console.WriteLine ();
+
+			o.ToString ();
+		}
+
+		GC.Collect (1);
+
+		if (b) {
+			object o = new object ();
+
+			/* Make sure o is global */
+			if (b2)
+				Console.WriteLine ();
+
+			o.ToString ();
+		}
+
+		sum += i + j + k + l + m + n + s;
+
+		return 0;
+	}
 }
