@@ -592,7 +592,7 @@ static int num_major_gcs = 0;
 #define MAJOR_SECTION_SIZE	(128*1024)
 #define BLOCK_FOR_OBJECT(o)		((Block*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
 #define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
-#define DEFAULT_MINOR_COLLECTION_SECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 3 / MAJOR_SECTION_SIZE)
+#define MIN_MINOR_COLLECTION_SECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 3 / MAJOR_SECTION_SIZE)
 #define DEFAULT_LOS_COLLECTION_TARGET (DEFAULT_NURSERY_SIZE * 2)
 /* to quickly find the head of an object pinned by a conservative address
  * we keep track of the objects allocated for each SCAN_START_SIZE memory
@@ -610,9 +610,9 @@ static mword nursery_size = DEFAULT_NURSERY_SIZE;
 static int section_size_used = 0;
 static int degraded_mode = 0;
 
-static int minor_collection_section_allowance = DEFAULT_MINOR_COLLECTION_SECTION_ALLOWANCE;
+static int minor_collection_section_allowance = MIN_MINOR_COLLECTION_SECTION_ALLOWANCE;
 static int minor_collection_sections_alloced = 0;
-static int sections_alloced = 0; /* will be reset frequently */
+static int num_major_sections = 0;
 
 static LOSObject *los_object_list = NULL;
 static mword los_memory_usage = 0;
@@ -3285,6 +3285,8 @@ collect_nursery (size_t requested_size)
 	char *orig_nursery_next;
 	Fragment *frag;
 	GCMemSection *section;
+	int old_num_major_sections = num_major_sections;
+	int sections_alloced;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
@@ -3318,8 +3320,6 @@ collect_nursery (size_t requested_size)
 		check_for_xdomain_refs ();
 
 	nursery_section->next_data = nursery_next;
-
-	sections_alloced = 0;
 
 	new_to_space_section ();
 	gray_object_queue_init ();
@@ -3399,21 +3399,10 @@ collect_nursery (size_t requested_size)
 
 	commit_stats (GENERATION_NURSERY);
 
+	sections_alloced = num_major_sections - old_num_major_sections;
 	minor_collection_sections_alloced += sections_alloced;
 
 	return minor_collection_sections_alloced > minor_collection_section_allowance;
-}
-
-static int
-count_major_sections (void)
-{
-	GCMemSection *section;
-	int count = 0;
-
-	for (section = section_list; section; section = section->block.next)
-		if (section != nursery_section)
-			++count;
-	return count;
 }
 
 static void
@@ -3442,6 +3431,8 @@ major_collection (const char *reason)
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
 	size_t copy_space_required = 0;
+	int old_num_major_sections = num_major_sections;
+	int num_major_sections_saved, save_target, allowance_target;
 
 	init_stats ();
 
@@ -3674,8 +3665,20 @@ major_collection (const char *reason)
 
 	commit_stats (GENERATION_OLD);
 
+	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 1);
+
+	save_target = num_major_sections / 2;
+	allowance_target = save_target * minor_collection_sections_alloced / num_major_sections_saved;
+
+	minor_collection_section_allowance = MAX (MIN (allowance_target, num_major_sections), MIN_MINOR_COLLECTION_SECTION_ALLOWANCE);
+
+	/*
+	printf ("alloced %d  saved %d  target %d  allowance %d\n",
+			minor_collection_sections_alloced, num_major_sections_saved, allowance_target,
+			minor_collection_section_allowance);
+	*/
+
 	minor_collection_sections_alloced = 0;
-	minor_collection_section_allowance = MAX (DEFAULT_MINOR_COLLECTION_SECTION_ALLOWANCE, count_major_sections () / 3);
 }
 
 /*
@@ -3705,7 +3708,7 @@ alloc_major_section (void)
 	section->block.next = section_list;
 	section_list = section;
 
-	++sections_alloced;
+	++num_major_sections;
 
 	return section;
 }
@@ -3717,6 +3720,8 @@ free_major_section (GCMemSection *section)
 	free_internal_mem (section->scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	free_os_memory (section, MAJOR_SECTION_SIZE);
 	total_alloc -= MAJOR_SECTION_SIZE - SIZEOF_GC_MEM_SECTION;
+
+	--num_major_sections;
 }
 
 /*
