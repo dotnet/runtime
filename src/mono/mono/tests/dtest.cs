@@ -4,7 +4,7 @@ using System.Threading;
 using System.Net;
 using System.Reflection;
 using Mono.Cecil.Cil;
-using Mono.Debugger;
+using Mono.Debugger.Soft;
 using Diag = System.Diagnostics;
 using System.Linq;
 
