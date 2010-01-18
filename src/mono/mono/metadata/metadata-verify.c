@@ -217,7 +217,7 @@ typedef struct {
 
 typedef struct {
 	const char *data;
-	guint32 size;
+	guint32 size, token;
 	GSList *errors;
 	int valid;
 	MonoImage *image;
@@ -1319,6 +1319,11 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 	
 		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
 			FAIL (ctx, g_strdup_printf ("Type: invalid TypeDefOrRef token %x", token));
+		if (ctx->token) {
+			if (mono_metadata_token_index (ctx->token) == get_coded_index_token (TYPEDEF_OR_REF_DESC, token) &&
+				mono_metadata_token_table (ctx->token) == get_coded_index_table (TYPEDEF_OR_REF_DESC, token))
+				FAIL (ctx, g_strdup_printf ("Type: Recurside type specification (%x). A type signature can't reference itself", ctx->token));
+		}
 		break;
 
 	case MONO_TYPE_VAR:
@@ -2901,10 +2906,11 @@ verify_typespec_table_full (VerifyContext *ctx)
 
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, data, MONO_TYPESPEC_SIZE);
-
+		ctx->token = (i + 1) | MONO_TOKEN_TYPE_SPEC;
 		if (!is_valid_typespec_blob (ctx, data [MONO_TYPESPEC_SIGNATURE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid TypeSpec row %d Signature field %08x", i, data [MONO_TYPESPEC_SIGNATURE]));
 	}
+	ctx->token = 0;
 }
 
 #define INVALID_IMPLMAP_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 6) | (1 << 8) | (1 << 9) | (1 << 10))
@@ -3642,7 +3648,7 @@ mono_verifier_verify_standalone_signature (MonoImage *image, guint32 offset, GSL
 }
 
 gboolean
-mono_verifier_verify_typespec_signature (MonoImage *image, guint32 offset, GSList **error_list)
+mono_verifier_verify_typespec_signature (MonoImage *image, guint32 offset, guint32 token, GSList **error_list)
 {
 	VerifyContext ctx;
 
@@ -3651,6 +3657,7 @@ mono_verifier_verify_typespec_signature (MonoImage *image, guint32 offset, GSLis
 
 	init_verify_context (&ctx, image, error_list);
 	ctx.stage = STAGE_TABLES;
+	ctx.token = token;
 
 	is_valid_typespec_blob (&ctx, offset);
 	return cleanup_context (&ctx, error_list);
@@ -3792,7 +3799,7 @@ mono_verifier_verify_standalone_signature (MonoImage *image, guint32 offset, GSL
 }
 
 gboolean
-mono_verifier_verify_typespec_signature (MonoImage *image, guint32 offset, GSList **error_list)
+mono_verifier_verify_typespec_signature (MonoImage *image, guint32 offset, guint32 token, GSList **error_list)
 {
 	return TRUE;
 }
