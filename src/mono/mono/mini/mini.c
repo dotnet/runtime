@@ -3630,6 +3630,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->opt &= ~MONO_OPT_COPYPROP;
 		cfg->opt &= ~MONO_OPT_CONSPROP;
 		cfg->opt &= ~MONO_OPT_GSHARED;
+
+		/* This is needed for the soft debugger, which doesn't like code after the epilog */
+		cfg->disable_out_of_line_bblocks = TRUE;
 	}
 
 	if (mono_using_xdebug) {

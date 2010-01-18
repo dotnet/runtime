@@ -1046,6 +1046,7 @@ typedef struct {
 	guint            disable_omit_fp : 1;
 	guint            disable_vreg_to_lvreg : 1;
 	guint            disable_deadce_vars : 1;
+	guint            disable_out_of_line_bblocks : 1;
 	guint            extend_live_ranges : 1;
 	guint            has_got_slots : 1;
 	guint            uses_rgctx_reg : 1;
