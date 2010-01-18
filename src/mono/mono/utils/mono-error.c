@@ -20,6 +20,8 @@
 	va_list args; \
 	va_start (args, msg_format); \
 	if (g_vsnprintf (error->message, sizeof (error->message), msg_format, args) >= sizeof (error->message)) {\
+		va_end (args); \
+		va_start (args, msg_format); \
 		if (!(error->full_message = g_strdup_vprintf (msg_format, args))) \
 			error->flags |= MONO_ERROR_INCOMPLETE; \
 	} \
