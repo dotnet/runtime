@@ -418,6 +418,8 @@ mono_security_core_clr_can_access_internals (MonoImage *accessing, MonoImage* ac
 	 * Promoting it to platform code would create another issue since (both Mono/Moonlight or MS version of) 
 	 * System.Xml.Linq.dll (an SDK, not platform, assembly) needs access to System.Xml.dll internals (either ). 
 	 * The solution is to trust, even transparent code, in the plugin directory to access platform code internals */
+	if (!accessed->assembly->basedir || !accessing->assembly->basedir)
+		return FALSE;
 	return (strcmp (accessed->assembly->basedir, accessing->assembly->basedir) == 0);
 }
 
