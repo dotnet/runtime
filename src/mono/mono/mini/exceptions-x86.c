@@ -545,6 +545,7 @@ mono_arch_get_throw_corlib_exception (void)
 	static guint8* start;
 	static int inited = 0;
 	guint8 *code;
+	GSList *unwind_ops = NULL;
 
 	if (inited)
 		return start;
@@ -581,6 +582,11 @@ mono_arch_get_throw_corlib_exception (void)
 	x86_jump_code (code, mono_arch_get_throw_exception ());
 
 	g_assert ((code - start) < 64);
+
+	mono_add_unwind_op_def_cfa (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_ESP, 4);
+	mono_add_unwind_op_offset (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_NREG, -4);
+
+	mono_save_trampoline_xdebug_info ("arch_throw_corlib_exception_trampoline", start, code - start, unwind_ops);
 
 	return start;
 }
@@ -656,12 +662,18 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 
 		/* Pop arguments off the stack */
+		/* 
+		 * FIXME: LLVM doesn't push these, we can't use ji->from_llvm as it describes
+		 * the caller.
+		 */
+#ifndef ENABLE_LLVM
 		{
 			MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (ji->method)->param_count + 1);
 
 			guint32 stack_to_pop = mono_arch_get_argument_info (mono_method_signature (ji->method), mono_method_signature (ji->method)->param_count, arg_info);
 			new_ctx->esp += stack_to_pop;
 		}
+#endif
 
 		return TRUE;
 	} else if (*lmf) {
@@ -710,6 +722,7 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			/* Pop arguments off the stack */
 			/* FIXME: Handle the delegate case too ((*lmf)->method == NULL) */
 			/* FIXME: Handle the IMT/vtable case too */
+#ifndef ENABLE_LLVM
 			if ((*lmf)->method && (*lmf)->method != MONO_FAKE_IMT_METHOD && (*lmf)->method != MONO_FAKE_VTABLE_METHOD) {
 				MonoMethod *method = (*lmf)->method;
 				MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (method)->param_count + 1);
@@ -717,6 +730,7 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				guint32 stack_to_pop = mono_arch_get_argument_info (mono_method_signature (method), mono_method_signature (method)->param_count, arg_info);
 				new_ctx->esp += stack_to_pop;
 			}
+#endif
 		}
 		else
 			/* the lmf is always stored on the stack, so the following

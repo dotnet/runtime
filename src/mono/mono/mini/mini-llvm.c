@@ -1011,6 +1011,14 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 	return lcall;
 }
 
+#ifdef TARGET_X86
+static void
+x86_ex_abort (void)
+{
+	g_assert (0 && "Exception handling is not yet supported on LLVM+x86.");
+}
+#endif
+
 /*
  * emit_cond_system_exception:
  *
@@ -1051,14 +1059,26 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		} else {
 			callee = LLVMAddFunction (ctx->module, "throw_corlib_exception", sig_to_llvm_sig (ctx, throw_sig, NULL));
  
+#ifdef TARGET_X86
+			/* 
+			 * The throw trampoline assumes that the caller pushes the arguments, but
+			 * LLVM generated code doesn't do that.
+			 */
+			LLVMAddGlobalMapping (ee, callee, x86_ex_abort);
+#else
 			LLVMAddGlobalMapping (ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_corlib_exception"));
+#endif
 		}
 
 		mono_memory_barrier ();
 		ctx->lmodule->throw_corlib_exception = callee;
 	}
 
+#ifdef TARGET_X86
+	args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token - MONO_TOKEN_TYPE_DEF, FALSE);
+#else
 	args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token, FALSE);
+#endif
 	/*
 	 * FIXME: The offset is 0, this is not a problem for exception handling
 	 * in general, because we don't llvm compile methods with handlers, its only
