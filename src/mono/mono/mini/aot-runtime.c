@@ -623,6 +623,19 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			*method = mono_marshal_get_runtime_invoke (m, FALSE);
 			break;
 		}
+		case MONO_WRAPPER_MANAGED_TO_MANAGED: {
+			int subtype = decode_value (p, &p);
+
+			if (subtype == MONO_AOT_WRAPPER_ELEMENT_ADDR) {
+				int rank = decode_value (p, &p);
+				int elem_size = decode_value (p, &p);
+
+				*method = mono_marshal_get_array_address (rank, elem_size);
+			} else {
+				g_assert_not_reached ();
+			}
+			break;
+		}
 		default:
 			g_assert_not_reached ();
 		}

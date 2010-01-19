@@ -1633,6 +1633,18 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			encode_method_ref (acfg, m, p, &p);
 			break;
 		}
+		case MONO_WRAPPER_MANAGED_TO_MANAGED:
+			if (!strcmp (method->name, "ElementAddr")) {
+				ElementAddrWrapperInfo *info = mono_marshal_wrapper_info_from_wrapper (method);
+
+				g_assert (info);
+				encode_value (MONO_AOT_WRAPPER_ELEMENT_ADDR, p, &p);
+				encode_value (info->rank, p, &p);
+				encode_value (info->elem_size, p, &p);
+			} else {
+				g_assert_not_reached ();
+			}
+			break;
 		default:
 			g_assert_not_reached ();
 		}
@@ -3775,6 +3787,11 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			case MONO_WRAPPER_REMOTING_INVOKE:
 			case MONO_WRAPPER_UNKNOWN:
 				break;
+			case MONO_WRAPPER_MANAGED_TO_MANAGED:
+				if (!strcmp (method->name, "ElementAddr"))
+					return TRUE;
+				else
+					return FALSE;
 			default:
 				//printf ("Skip (wrapper call): %d -> %s\n", patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
 				return FALSE;
@@ -3978,6 +3995,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 					}
 					add_generic_class (acfg, m->klass);
 				}
+				if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && !strcmp (m->name, "ElementAddr"))
+					add_extra_method_with_depth (acfg, m, depth + 1);
 				break;
 			}
 			case MONO_PATCH_INFO_VTABLE: {

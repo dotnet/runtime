@@ -437,6 +437,13 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_100_3_dimensional_arrays () {
+        int[,,] test = new int[10, 10, 10];
+
+		test [1, 1, 1] = 100;
+		return test [1, 1, 1];
+	}
+
 	public static int test_0_bug_71454 () {
 		int[,] a = new int[4,4];
 		int[,] b = new int[4,4];
