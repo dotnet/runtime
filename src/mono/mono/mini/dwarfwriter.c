@@ -1408,7 +1408,10 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 
 		loc = mono_debug_symfile_lookup_location (minfo, il_offset);
 
-		if (loc) {
+		// Added the loc->source_file check as otherwise we can
+		// crash, see the sample in bug 553191 that makes this code
+		// crash when we call strcmp on loc->source_file below
+		if (loc && loc->source_file) {
 			int line_diff = (gint32)loc->row - (gint32)prev_line;
 			int addr_diff = i - prev_native_offset;
 
