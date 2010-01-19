@@ -3225,6 +3225,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				MonoMethodSignature *throw_sig;
 				LLVMValueRef callee, arg;
 
+#ifdef TARGET_X86
+				/* throw_exception () pops the argument, but LLVM doesn't push it */
+				LLVM_FAILURE (ctx, "x86+throw");
+#endif
+
 				if (!ctx->lmodule->throw) {
 					throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 					throw_sig->ret = &mono_defaults.void_class->byval_arg;

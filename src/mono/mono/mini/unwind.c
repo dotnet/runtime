@@ -855,7 +855,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 		 * For some reason, this is 8 bytes long, even through it only includes
 		 * the offset to the LSDA which is encoded as an sdata4.
 		 */
-		g_assert (aug_len == 8);
+		g_assert (aug_len == sizeof (gpointer));
 		/* sdata|pcrel encoding */
 		lsda_offset = *(gint32*)fde_aug;
 		if (lsda_offset != 0) {
