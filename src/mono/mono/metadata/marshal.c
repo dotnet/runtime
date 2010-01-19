@@ -2456,6 +2456,12 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	return res;
 }
 
+gpointer
+mono_marshal_wrapper_info_from_wrapper (MonoMethod *wrapper)
+{
+	return mono_method_get_wrapper_data (wrapper, 1);
+}
+
 MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 {
@@ -9516,6 +9522,8 @@ mono_marshal_get_array_address (int rank, int elem_size)
 		}
 	}
 	if (!cached) {
+		ElementAddrWrapperInfo *info;
+
 		if (elem_addr_cache_next >= elem_addr_cache_size) {
 			int new_size = elem_addr_cache_size + 4;
 			ArrayElemAddr *new_array = g_new0 (ArrayElemAddr, new_size);
@@ -9527,6 +9535,12 @@ mono_marshal_get_array_address (int rank, int elem_size)
 		elem_addr_cache [elem_addr_cache_next].rank = rank;
 		elem_addr_cache [elem_addr_cache_next].elem_size = elem_size;
 		elem_addr_cache [elem_addr_cache_next].method = ret;
+
+		info = mono_image_alloc0 (mono_defaults.corlib, sizeof (ElementAddrWrapperInfo));
+		info->rank = rank;
+		info->elem_size = elem_size;
+
+		mono_marshal_method_set_wrapper_data (ret, info);
 	}
 	mono_marshal_unlock ();
 	return ret;

@@ -76,6 +76,10 @@ typedef enum {
 	MARSHAL_ACTION_MANAGED_CONV_RESULT
 } MarshalAction;
 
+typedef struct {
+	guint32 rank, elem_size;
+} ElementAddrWrapperInfo;
+
 G_BEGIN_DECLS
 
 /*type of the function pointer of methods returned by mono_marshal_get_runtime_invoke*/
@@ -164,6 +168,9 @@ mono_type_to_stind (MonoType *type) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper) MONO_INTERNAL;
+
+gpointer
+mono_marshal_wrapper_info_from_wrapper (MonoMethod *wrapper) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method) MONO_INTERNAL;
