@@ -6661,7 +6661,9 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 	vtable = klass->vtable;
 
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		int offs = mono_class_interface_offset (klass, method->klass);
+		gboolean variance_used = FALSE;
+		/*MS fails with variant interfaces but it's the right thing to do anyway.*/
+		int offs = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
 		if (offs >= 0)
 			res = vtable [offs + method->slot];
 	} else {
