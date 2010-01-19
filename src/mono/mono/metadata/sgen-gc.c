@@ -607,7 +607,6 @@ static int num_major_gcs = 0;
 
 static mword pagesize = 4096;
 static mword nursery_size = DEFAULT_NURSERY_SIZE;
-static int section_size_used = 0;
 static int degraded_mode = 0;
 
 static int minor_collection_section_allowance = MIN_MINOR_COLLECTION_SECTION_ALLOWANCE;
@@ -1356,27 +1355,6 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		}	\
 	} while (0)
 
-static mword new_obj_references = 0;
-static mword obj_references_checked = 0;
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
-			new_obj_references++;	\
-			/*printf ("bogus ptr %p found at %p in object %p (%s.%s)\n", *(ptr), (ptr), o, o->vtable->klass->name_space, o->vtable->klass->name);*/	\
-		} else {	\
-			obj_references_checked++;	\
-		}	\
-	} while (0)
-
-/*
- * ######################################################################
- * ########  Detecting and removing garbage.
- * ######################################################################
- * This section of code deals with detecting the objects no longer in use
- * and reclaiming the memory.
- */
-
 #define COUNT_OBJECT_TYPES do {						\
 	switch (desc & 0x7) {						\
 	case DESC_TYPE_STRING: type_str++; break;			\
@@ -1388,6 +1366,29 @@ static mword obj_references_checked = 0;
 	case DESC_TYPE_COMPLEX_ARR: type_complex++; break;		\
 	default: g_assert_not_reached ();				\
 	}								\
+	} while (0)
+
+
+/*
+ * ######################################################################
+ * ########  Detecting and removing garbage.
+ * ######################################################################
+ * This section of code deals with detecting the objects no longer in use
+ * and reclaiming the memory.
+ */
+
+#if 0
+static mword new_obj_references = 0;
+static mword obj_references_checked = 0;
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
+			new_obj_references++;	\
+			/*printf ("bogus ptr %p found at %p in object %p (%s.%s)\n", *(ptr), (ptr), o, o->vtable->klass->name_space, o->vtable->klass->name);*/	\
+		} else {	\
+			obj_references_checked++;	\
+		}	\
 	} while (0)
 
 static void __attribute__((noinline))
@@ -1416,6 +1417,7 @@ scan_area (char *start, char *end)
 	printf ("\tstrings: %d, runl: %d, vector: %d, bitmaps: %d, lbitmaps: %d, complex: %d\n",
 		type_str, type_rlen, type_vector, type_bitmap, type_lbit, type_complex);*/
 }
+#endif
 
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
@@ -1534,7 +1536,7 @@ scan_area_for_xdomain_refs (char *start, char *end)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj) do {		\
 	if ((MonoObject*)*(ptr) == key) {	\
-	g_print ("found ref to %p in object %p (%s) at offset %d\n",	\
+	g_print ("found ref to %p in object %p (%s) at offset %zd\n",	\
 			key, (obj), safe_name ((obj)), ((char*)(ptr) - (char*)(obj))); \
 	}								\
 	} while (0)
@@ -3111,7 +3113,7 @@ scan_from_registered_roots (char *addr_start, char *addr_end, int root_type)
 static void
 dump_occupied (char *start, char *end, char *section_start)
 {
-	fprintf (heap_dump_file, "<occupied offset=\"%d\" size=\"%d\"/>\n", start - section_start, end - start);
+	fprintf (heap_dump_file, "<occupied offset=\"%zd\" size=\"%zd\"/>\n", start - section_start, end - start);
 }
 
 static void
@@ -3120,11 +3122,10 @@ dump_section (GCMemSection *section, const char *type)
 	char *start = section->data;
 	char *end = section->data + section->size;
 	char *occ_start = NULL;
-	int pin_slot = 0;
 	GCVTable *vt;
 	char *old_start = NULL;	/* just for debugging */
 
-	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%d\">\n", type, section->size);
+	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%zu\">\n", type, section->size);
 
 	while (start < end) {
 		guint size;
@@ -3169,10 +3170,10 @@ dump_section (GCMemSection *section, const char *type)
 static void
 dump_heap (const char *type, int num, const char *reason)
 {
-	static char *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
-					       "fin-table", "finalize-entry", "dislink-table",
-					       "dislink", "roots-table", "root-record", "statistics",
-					       "remset", "gray-queue", "store-remset" };
+	static char const *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
+						     "fin-table", "finalize-entry", "dislink-table",
+						     "dislink", "roots-table", "root-record", "statistics",
+						     "remset", "gray-queue", "store-remset" };
 
 	GCMemSection *section;
 	LOSObject *bigobj;
@@ -3187,9 +3188,9 @@ dump_heap (const char *type, int num, const char *reason)
 	fprintf (heap_dump_file, "<other-mem-usage type=\"mempools\" size=\"%ld\"/>\n", mono_mempool_get_bytes_allocated ());
 	for (i = 0; i < INTERNAL_MEM_MAX; ++i)
 		fprintf (heap_dump_file, "<other-mem-usage type=\"%s\" size=\"%ld\"/>\n", internal_mem_names [i], small_internal_mem_bytes [i]);
-	fprintf (heap_dump_file, "<pinned type=\"stack\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_STACK]);
+	fprintf (heap_dump_file, "<pinned type=\"stack\" bytes=\"%zu\"/>\n", pinned_byte_counts [PIN_TYPE_STACK]);
 	/* fprintf (heap_dump_file, "<pinned type=\"static-data\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_STATIC_DATA]); */
-	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_OTHER]);
+	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%zu\"/>\n", pinned_byte_counts [PIN_TYPE_OTHER]);
 
 	dump_section (nursery_section, "nursery");
 
@@ -3406,7 +3407,7 @@ collect_nursery (size_t requested_size)
 }
 
 static void
-scan_from_pinned_chunk_if_marked (PinnedChunk *chunk, char *obj, void *dummy)
+scan_from_pinned_chunk_if_marked (PinnedChunk *chunk, char *obj, size_t size, void *dummy)
 {
 	if (object_is_pinned (obj))
 		scan_object (obj, NULL, (char*)-1);
@@ -3420,7 +3421,6 @@ major_collection (const char *reason)
 	int i;
 	PinnedChunk *chunk;
 	Fragment *frag;
-	int count;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
@@ -3475,7 +3475,7 @@ major_collection (const char *reason)
 	TV_GETTIME (atv);
 	init_pinning ();
 	DEBUG (6, fprintf (gc_debug_file, "Collecting pinned addresses\n"));
-	pin_from_roots (lowest_heap_address, highest_heap_address);
+	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address);
 	optimize_pin_queue (0);
 
 	/*
@@ -3509,7 +3509,7 @@ major_collection (const char *reason)
 		if (start != end) {
 			pin_object (bigobj->data);
 			if (heap_dump_file)
-				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size (bigobj->data));
+				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %zd from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
 		}
 	}
@@ -3881,7 +3881,7 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 		if (*ptr && (*ptr < (void*)chunk->start_data || *ptr > (void*)((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE))) {
 			pin_object (addr);
 			if (heap_dump_file)
-				pin_stats_register_object ((char*) addr, safe_object_get_size (addr));
+				pin_stats_register_object ((char*) addr, safe_object_get_size ((MonoObject*) addr));
 			DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
 		}
 	}
@@ -4021,7 +4021,7 @@ alloc_pinned_chunk (void)
 	/* allocate the first page to the freelist */
 	chunk->page_sizes [0] = PINNED_FIRST_SLOT_SIZE;
 	build_freelist (chunk, slot_for_size (PINNED_FIRST_SLOT_SIZE), PINNED_FIRST_SLOT_SIZE, chunk->start_data, ((char*)chunk + FREELIST_PAGESIZE));
-	DEBUG (4, fprintf (gc_debug_file, "Allocated pinned chunk %p, size: %zd\n", chunk, size));
+	DEBUG (4, fprintf (gc_debug_file, "Allocated pinned chunk %p, size: %d\n", chunk, size));
 	min_pinned_chunk_addr = MIN (min_pinned_chunk_addr, (char*)chunk->start_data);
 	max_pinned_chunk_addr = MAX (max_pinned_chunk_addr, ((char*)chunk + size));
 	return chunk;
@@ -5646,39 +5646,6 @@ ptr_on_stack (void *ptr)
 	return FALSE;
 }
 
-/* return TRUE if ptr points inside the managed heap */
-static gboolean
-ptr_in_heap (void* ptr)
-{
-	mword p = (mword)ptr;
-	LOSObject *bigobj;
-	GCMemSection *section;
-
-	if (!ADDR_IN_HEAP_BOUNDARIES (p))
-		return FALSE;
-
-	if (ptr_in_nursery (ptr))
-		return TRUE;
-
-	if (ptr_on_stack (ptr))
-		return FALSE;
-
-	for (section = section_list; section; section = section->block.next) {
-		if (ptr >= (gpointer)section->data && ptr < (gpointer)(section->data + section->size))
-			return TRUE;
-	}
-
-	if (obj_is_from_pinned_alloc (ptr))
-		return TRUE;
-
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
-		if (ptr >= (gpointer)bigobj->data && ptr < (gpointer)(bigobj->data + bigobj->size))
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
 static mword*
 handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global)
 {
@@ -6463,7 +6430,9 @@ find_object_for_ptr_in_pinned_chunk_callback (PinnedChunk *chunk, char *obj, siz
 	}
 }
 
-static char*
+/* for use in the debugger */
+char* find_object_for_ptr (char *ptr);
+char*
 find_object_for_ptr (char *ptr)
 {
 	GCMemSection *section;
@@ -6886,8 +6855,6 @@ check_remsets_for_area (char *start, char *end)
 {
 	GCVTable *vt;
 	int type_str = 0, type_rlen = 0, type_bitmap = 0, type_vector = 0, type_lbit = 0, type_complex = 0;
-	new_obj_references = 0;
-	obj_references_checked = 0;
 	while (start < end) {
 		if (!*(void**)start) {
 			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
