@@ -212,18 +212,58 @@ public class Tests
 	public static extern int mono_test_marshal_ccw_itest ([MarshalAs (UnmanagedType.Interface)]ITestPresSig itest);
 
 	[DllImport("libtest")]
-	public static extern int mono_test_marshal_variant_out_safearray_1dim_vt_bstr_empty([MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
+	public static extern int mono_test_marshal_safearray_out_1dim_vt_bstr_empty ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
 
 	[DllImport("libtest")]
-	public static extern int mono_test_marshal_variant_out_safearray_1dim_vt_bstr ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
+	public static extern int mono_test_marshal_safearray_out_1dim_vt_bstr ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
 
 	[DllImport("libtest")]
-	public static extern int mono_test_marshal_variant_out_safearray_2dim_vt_int ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
+	public static extern int mono_test_marshal_safearray_out_2dim_vt_i4 ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
 
 	[DllImport("libtest")]
-	public static extern int mono_test_marshal_variant_out_safearray_4dim_vt_int ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
+	public static extern int mono_test_marshal_safearray_out_4dim_vt_i4 ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
 
-	[DllImport ("libtest")]
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_byval_1dim_empty ([In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_byval_1dim_vt_i4 ([In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_byval_1dim_vt_mixed ([In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_byval_2dim_vt_i4 ([In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_byval_3dim_vt_bstr ([In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_byref_3dim_vt_bstr ([In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_out_byref_1dim_empty ([In, Out, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_out_byref_3dim_vt_bstr ([In, Out, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_out_byref_1dim_vt_i4 ([In, Out, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_out_byval_1dim_vt_i4 ([In, Out, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_in_out_byval_3dim_vt_bstr ([In, Out, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array);
+
+	[DllImport("libtest")]
+	public static extern int mono_test_marshal_safearray_mixed (
+		[In, Out, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array1,
+		[MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] out Array array2,
+		[In, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] Array array3,
+		[In, Out, MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array array4);
+
+	[DllImport("libtest")]
 	public static extern bool mono_cominterop_is_supported ();
 
 	public static int Main ()
@@ -232,7 +272,7 @@ public class Tests
 		bool isWindows = !(((int)Environment.OSVersion.Platform == 4) ||
 			((int)Environment.OSVersion.Platform == 128));
 
-		if (mono_cominterop_is_supported ())
+		if (mono_cominterop_is_supported () || isWindows)
 		{
 			#region BSTR Tests
 
@@ -453,18 +493,21 @@ public class Tests
 			#region SAFEARRAY tests
 			
 			if (isWindows) {
+
+				/* out */
+
 				Array array;
-				if ((mono_test_marshal_variant_out_safearray_1dim_vt_bstr_empty(out array) != 0) || (array.Rank != 1) || (array.Length != 0))
+				if ((mono_test_marshal_safearray_out_1dim_vt_bstr_empty (out array) != 0) || (array.Rank != 1) || (array.Length != 0))
 					return 62;
 
-				if ((mono_test_marshal_variant_out_safearray_1dim_vt_bstr (out array) != 0) || (array.Rank != 1) || (array.Length != 10))
+				if ((mono_test_marshal_safearray_out_1dim_vt_bstr (out array) != 0) || (array.Rank != 1) || (array.Length != 10))
 					return 63;
 				for (int i = 0; i < 10; ++i) {
-					if (i != Convert.ToInt32(array.GetValue (i)))
+					if (i != Convert.ToInt32 (array.GetValue (i)))
 						return 64;
 				}
 
-				if ((mono_test_marshal_variant_out_safearray_2dim_vt_int (out array) != 0) || (array.Rank != 2))
+				if ((mono_test_marshal_safearray_out_2dim_vt_i4 (out array) != 0) || (array.Rank != 2))
 					return 65;
 				if (   (array.GetLowerBound (0) != 0) || (array.GetUpperBound (0) != 3)
 					|| (array.GetLowerBound (1) != 0) || (array.GetUpperBound (1) != 2))
@@ -477,7 +520,7 @@ public class Tests
 					}
 				}
 
-				if ((mono_test_marshal_variant_out_safearray_4dim_vt_int (out array) != 0) || (array.Rank != 4))
+				if ((mono_test_marshal_safearray_out_4dim_vt_i4 (out array) != 0) || (array.Rank != 4))
 					return 68;
 				if (   (array.GetLowerBound (0) != 15) || (array.GetUpperBound (0) != 24)
 					|| (array.GetLowerBound (1) != 20) || (array.GetUpperBound (1) != 22)
@@ -496,6 +539,117 @@ public class Tests
 							}
 						}
 					}
+				}
+
+				/* in */
+
+				array = new object[] { };
+				if (mono_test_marshal_safearray_in_byval_1dim_empty (array) != 0)
+					return 71;
+
+				array = new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+				if (mono_test_marshal_safearray_in_byval_1dim_vt_i4 (array) != 0)
+					return 72;
+
+				array = new object[] { 0, "1", 2, "3", 4, "5", 6, "7", 8, "9", 10, "11", 12 };
+				if (mono_test_marshal_safearray_in_byval_1dim_vt_mixed (array) != 0)
+					return 73;
+				if ((int)array.GetValue (0) != 0)
+					return 74;
+
+				array = new object[,] { { 11, 12, 13, 14 }, { 21, 22, 23, 24 } };
+				if (mono_test_marshal_safearray_in_byval_2dim_vt_i4 (array) != 0)
+					return 75;
+				if ((int)array.GetValue (new int[] { 0, 0 }) != 11)
+					return 76;
+
+				array = new object[,,] { { { "111", "112", "113" }, { "121", "122", "123" } }, { { "211", "212", "213" }, { "221", "222", "223" } } };
+				if (mono_test_marshal_safearray_in_byval_3dim_vt_bstr (array) != 0)
+					return 77;
+				if ((string)array.GetValue (new int[] { 0, 0, 0 }) != "111")
+					return 78;
+
+				array = new object[,,] { { { "111", "112", "113" }, { "121", "122", "123" } }, { { "211", "212", "213" }, { "221", "222", "223" } } };
+				if ((mono_test_marshal_safearray_in_byref_3dim_vt_bstr (ref array) != 0) || (array.Rank != 3) || (array.Length != 12))
+					return 79;
+				if ((string)array.GetValue (new int[] { 0, 0, 0 }) != "111")
+					return 80;
+
+				/* in, out, byref */
+
+				array = new object[] { };
+				if ((mono_test_marshal_safearray_in_out_byref_1dim_empty (ref array) != 0) || (array.Rank != 1) || (array.Length != 8))
+					return 81;
+				for (int i = 0; i < 8; ++i)
+				{
+					if (i != Convert.ToInt32 (array.GetValue (i)))
+						return 82;
+				}
+
+				array = new object[,,] { { { "111", "112", "113" }, { "121", "122", "123" } }, { { "211", "212", "213" }, { "221", "222", "223" } } };
+				if ((mono_test_marshal_safearray_in_out_byref_3dim_vt_bstr (ref array) != 0) || (array.Rank != 1) || (array.Length != 8))
+					return 83;
+				for (int i = 0; i < 8; ++i)
+				{
+					if (i != Convert.ToInt32 (array.GetValue (i)))
+						return 84;
+				}
+
+				array = new object[] { 1 };
+				if ((mono_test_marshal_safearray_in_out_byref_1dim_vt_i4 (ref array) != 0) || (array.Rank != 1) || (array.Length != 1))
+				{
+				    return 85;
+				}
+				if (Convert.ToInt32 (array.GetValue (0)) != -1)
+				    return 86;
+
+				/* in, out, byval */
+
+				array = new object[] { 1 };
+				if ((mono_test_marshal_safearray_in_out_byval_1dim_vt_i4 (array) != 0) || (array.Rank != 1) || (array.Length != 1))
+				{
+					return 87;
+				}
+				if (Convert.ToInt32 (array.GetValue (0)) != 12345)
+					return 88;
+
+				array = new object[,,] { { { "111", "112", "113" }, { "121", "122", "123" } }, { { "211", "212", "213" }, { "221", "222", "223" } } };
+				if ((mono_test_marshal_safearray_in_out_byval_3dim_vt_bstr (array) != 0) || (array.Rank != 3) || (array.Length != 12))
+				{
+				    return 89;
+				}
+				if (Convert.ToInt32 (array.GetValue (new int[] { 1, 1, 1 })) != 111)
+					return 90;
+				if (Convert.ToInt32 (array.GetValue (new int[] { 1, 1, 2 })) != 333)
+					return 91;
+				if (Convert.ToString(array.GetValue (new int[] { 0, 1, 0 })) != "ABCDEFG")
+					return 92;
+
+				/* Multiple safearray parameters with various types and options */
+
+				Array array1 = new object[] { 1 };
+				Array array2 = new object[,] { { 11, 12, 13, 14 }, { 21, 22, 23, 24 } };
+				Array array3 = new object[] { 0, "1", 2, "3", 4, "5", 6, "7", 8, "9", 10, "11", 12 };
+				Array array4 = new object[,,] { { { "111", "112", "113" }, { "121", "122", "123" } }, { { "211", "212", "213" }, { "221", "222", "223" } } };
+				if (    (mono_test_marshal_safearray_mixed (array1, out array2, array3, ref array4) != 0)
+					 || (array1.Rank != 1) || (array1.Length != 1) || (Convert.ToInt32 (array1.GetValue (0)) != 12345)
+					 || (array2.Rank != 1) || (array2.Length != 10)
+					 || (array4.Rank != 1) || (array4.Length != 8)
+					)
+				{
+					return 93;
+				}
+				for (int i = 0; i < 10; ++i)
+				{
+					if (i != Convert.ToInt32 (array2.GetValue (i)))
+						return 94;
+				}
+				if ((int)array3.GetValue (0) != 0)
+					return 95;
+				for (int i = 0; i < 8; ++i)
+				{
+					if (i != Convert.ToInt32 (array4.GetValue (i)))
+						return 96;
 				}
 			}
 			#endregion // SafeArray Tests

@@ -7795,7 +7795,7 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 			return mono_cominterop_emit_marshal_com_interface (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		if (spec && (spec->native == MONO_NATIVE_SAFEARRAY) && 
 			(spec->data.safearray_data.elem_type == MONO_VARIANT_VARIANT) && 
-			(action == MARSHAL_ACTION_CONV_OUT))
+			((action == MARSHAL_ACTION_CONV_OUT) || (action == MARSHAL_ACTION_CONV_IN) || (action == MARSHAL_ACTION_PUSH)))
 			return mono_cominterop_emit_marshal_safearray (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 #endif
 
