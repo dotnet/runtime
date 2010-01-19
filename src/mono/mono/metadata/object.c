@@ -2549,8 +2549,12 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 	/* check method->slot is a valid index: perform isinstance? */
 	if (method->slot != -1) {
 		if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-			if (!is_proxy)
-				res = vtable [mono_class_interface_offset (klass, method->klass) + method->slot];
+			if (!is_proxy) {
+				gboolean variance_used = FALSE;
+				int iface_offset = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
+				g_assert (iface_offset > 0);
+				res = vtable [iface_offset + method->slot];
+			}
 		} else {
 			res = vtable [method->slot];
 		}
