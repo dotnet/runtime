@@ -4,7 +4,7 @@
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)
  *
- * (C) 20010 Novell, Inc.
+ * (C) 2010 Novell, Inc.
  */
 
 /*
