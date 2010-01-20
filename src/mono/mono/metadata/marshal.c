@@ -2462,6 +2462,38 @@ mono_marshal_wrapper_info_from_wrapper (MonoMethod *wrapper)
 	return mono_method_get_wrapper_data (wrapper, 1);
 }
 
+/*
+ * get_wrapper_target_class:
+ *
+ *   Return the class where a wrapper method should be placed.
+ */
+static MonoClass*
+get_wrapper_target_class (MonoImage *image)
+{
+	MonoClass *klass;
+
+	/*
+	 * Notes:
+	 * - can't put all wrappers into an mscorlib class, because they reference
+	 *   metadata (signature) so they should be put into the same image as the 
+	 *   method they wrap, so they are unloaded together.
+	 * - putting them into a class with a type initalizer could cause the 
+	 *   initializer to be executed which can be a problem if the wrappers are 
+	 *   shared.
+	 * - putting them into an inflated class can cause problems if the the 
+	 *   class is deleted because it references an image which is unloaded.
+	 * To avoid these problems, we put the wrappers into the <Module> class of 
+	 * the image.
+	 */
+	if (image->dynamic)
+		klass = ((MonoDynamicImage*)image)->wrappers_type;
+	else
+		klass = mono_class_get (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, 1));
+	g_assert (klass);
+
+	return klass;
+}
+
 MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 {
@@ -2486,7 +2518,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	g_assert (sig->hasthis);
 
 	name = mono_signature_to_name (sig, "begin_invoke");
-	mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
+	mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
 	g_free (name);
 
 	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
@@ -2650,7 +2682,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	g_assert (sig->hasthis);
 
 	name = mono_signature_to_name (sig, "end_invoke");
-	mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_END_INVOKE);
+	mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_END_INVOKE);
 	g_free (name);
 
 	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
@@ -3770,7 +3802,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	static_sig->hasthis = 0;
 
 	name = mono_signature_to_name (sig, "invoke");
-	mb = mono_mb_new (method->klass, name,  MONO_WRAPPER_DELEGATE_INVOKE);
+	mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name,  MONO_WRAPPER_DELEGATE_INVOKE);
 	g_free (name);
 
 	/* allocate local 0 (object) */
@@ -4046,38 +4078,6 @@ runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *
 		return FALSE;
 	else
 		return mono_metadata_signature_equal (sig1, sig2);
-}
-
-/*
- * get_wrapper_target_class:
- *
- *   Return the class where a wrapper method should be placed.
- */
-static MonoClass*
-get_wrapper_target_class (MonoImage *image)
-{
-	MonoClass *klass;
-
-	/*
-	 * Notes:
-	 * - can't put all wrappers into an mscorlib class, because they reference
-	 *   metadata (signature) so they should be put into the same image as the 
-	 *   method they wrap, so they are unloaded together.
-	 * - putting them into a class with a type initalizer could cause the 
-	 *   initializer to be executed which can be a problem if the wrappers are 
-	 *   shared.
-	 * - putting them into an inflated class can cause problems if the the 
-	 *   class is deleted because it references an image which is unloaded.
-	 * To avoid these problems, we put the wrappers into the <Module> class of 
-	 * the image.
-	 */
-	if (image->dynamic)
-		klass = ((MonoDynamicImage*)image)->wrappers_type;
-	else
-		klass = mono_class_get (image, mono_metadata_make_token (MONO_TABLE_TYPEDEF, 1));
-	g_assert (klass);
-
-	return klass;
 }
 
 /*
