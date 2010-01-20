@@ -9569,7 +9569,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *argconst;
 				MonoMethod *cil_method;
 				gboolean needs_static_rgctx_invoke;
-				int invoke_context_used = 0;
 
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
@@ -9608,6 +9607,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (ctor_method && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
 						MonoInst *target_ins;
 						MonoMethod *invoke;
+						int invoke_context_used = 0;
 
 						invoke = mono_get_delegate_invoke (ctor_method->klass);
 						if (!invoke || !mono_method_signature (invoke))
