@@ -460,8 +460,16 @@ get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean
 
 	start = code = mono_global_codeman_reserve (128);
 
-	/* The + 4 aligns the stack on apple */
-	stack_size = 128 + 4;
+	stack_size = 128;
+
+	/* 
+	 * On apple, the stack is misaligned by the pushing of the return address.
+	 */
+	if (!llvm && corlib)
+		/* On OSX, we don't generate alignment code to save space */
+		stack_size += 4;
+	else
+		stack_size += MONO_ARCH_FRAME_ALIGNMENT - 4;
 
 	/*
 	 * The stack looks like this:
@@ -492,12 +500,20 @@ get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean
 		/* LLVM doesn't push the arguments */
 		stack_offset = stack_size + 4;
 	} else {
-		if (corlib)
+		if (corlib) {
 			/* Two arguments */
 			stack_offset = stack_size + 4 + 8;
-		else
+#ifdef __APPLE__
+			/* We don't generate stack alignment code on osx to save space */
+#endif
+		} else {
 			/* One argument */
 			stack_offset = stack_size + 4 + 4;
+#ifdef __APPLE__
+			/* Pop the alignment added by OP_THROW too */
+			stack_offset += MONO_ARCH_FRAME_ALIGNMENT - 4;
+#endif
+		}
 	}
 	/* Save ESP */
 	x86_lea_membase (code, X86_EAX, X86_ESP, stack_offset);
