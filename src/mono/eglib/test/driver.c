@@ -31,7 +31,9 @@
 #include "tests.h"
 
 #include <stdio.h>
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
@@ -110,7 +112,8 @@ gint main(gint argc, gchar **argv)
 	gboolean global_failure = FALSE;
 	gboolean no_final_time_labels = FALSE;
 	gboolean debug = FALSE;
-	
+
+#if HAVE_GETOPT_H
 	static struct option long_options [] = {
 		{"help",       no_argument,       0, 'h'},
 		{"time",       no_argument,       0, 't'},
@@ -150,6 +153,7 @@ gint main(gint argc, gchar **argv)
 
 		tests_to_run = string_array_append(tests_to_run, argv[i]);
 	}
+#endif
 
 	time_start = get_timestamp();
 	
