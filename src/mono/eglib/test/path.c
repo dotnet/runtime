@@ -264,6 +264,7 @@ test_ppath2 ()
 	return OK;
 }
 
+#ifdef DISABLE_FILESYSTEM_TESTS
 gchar *
 test_cwd ()
 {
@@ -288,6 +289,13 @@ test_cwd ()
 	
 	return OK;
 }
+#else
+gchar *
+test_cwd ()
+{
+	return OK;
+}
+#endif
 
 gchar *
 test_misc ()

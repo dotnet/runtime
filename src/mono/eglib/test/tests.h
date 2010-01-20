@@ -38,15 +38,19 @@ static Group test_groups [] = {
 	{"path",      path_tests_init},
 	{"shell",     shell_tests_init},
 	{"markup",    markup_tests_init},
+#if !DISABLE_PROCESS_TESTS 
 	{"spawn",     spawn_tests_init},
-	{"timer",     timer_tests_init},
+	{"module",    module_tests_init},
+#endif
+#if !DISABLE_FILESYSTEM_TESTS
 	{"file",      file_tests_init},
+#endif
+	{"timer",     timer_tests_init},
 	{"pattern",   pattern_tests_init},
 	{"dir",       dir_tests_init},
 	{"unicode",   unicode_tests_init},
 	{"utf8",      utf8_tests_init},
 	{"endian",    endian_tests_init},
-	{"module",    module_tests_init},
 	{"memory",    memory_tests_init},
 	{NULL, NULL}
 };
