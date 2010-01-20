@@ -1599,7 +1599,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_LDFLDA:
 		case MONO_WRAPPER_STFLD:
 		case MONO_WRAPPER_ISINST: {
-			MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (method);
+			MonoClass *proxy_class = mono_marshal_wrapper_info_from_wrapper (method);
 			encode_klass_ref (acfg, proxy_class, p, &p);
 			break;
 		}
@@ -4556,12 +4556,6 @@ mono_aot_wrapper_name (MonoMethod *method)
 			name = g_strdup_printf ("(wrapper runtime-invoke-dynamic)");
 		else
 			name = g_strdup_printf ("%s (%s)", method->name, tmpsig);
-		break;
-	case MONO_WRAPPER_DELEGATE_INVOKE:
-	case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-	case MONO_WRAPPER_DELEGATE_END_INVOKE:
-		/* This is a hack to work around the fact that these wrappers get assigned to some random class */
-		name = g_strdup_printf ("%s (%s)", method->name, tmpsig);
 		break;
 	default:
 		klass_desc = mono_type_full_name (&method->klass->byval_arg);
