@@ -556,35 +556,6 @@ mono_arch_get_rethrow_exception (void)
 }
 
 /**
- * mono_arch_get_throw_exception_by_name:
- *
- * Returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (gpointer ip, char *exc_name); 
- * For example to raise an arithmetic exception you can use:
- *
- * x86_push_imm (code, "ArithmeticException"); 
- * x86_push_imm (code, <IP>)
- * x86_jump_code (code, arch_get_throw_exception_by_name ()); 
- *
- */
-gpointer 
-mono_arch_get_throw_exception_by_name (void)
-{
-	guint8* start;
-	guint8 *code;
-
-	start = code = mono_global_codeman_reserve (32);
-
-	/* Not used */
-	x86_breakpoint (code);
-
-	mono_arch_flush_icache (start, code - start);
-
-	return start;
-}
-
-/**
  * mono_arch_get_throw_corlib_exception:
  *
  * Returns a function pointer which can be used to raise 

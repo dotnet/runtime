@@ -386,26 +386,6 @@ mono_arch_get_rethrow_exception (void)
 	return start;
 }
 
-gpointer 
-mono_arch_get_throw_exception_by_name (void)
-{	
-	guint8* start;
-	Ia64CodegenState code;
-
-	start = mono_global_codeman_reserve (64);
-
-	/* Not used on ia64 */
-	ia64_codegen_init (code, start);
-	ia64_break_i (code, 1001);
-	ia64_codegen_close (code);
-
-	g_assert ((code.buf - start) <= 256);
-
-	mono_arch_flush_icache (start, code.buf - start);
-
-	return start;
-}
-
 /**
  * mono_arch_get_throw_corlib_exception:
  *

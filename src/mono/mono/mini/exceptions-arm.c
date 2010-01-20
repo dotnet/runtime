@@ -324,24 +324,6 @@ mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 	return mono_arch_get_throw_exception_generic (132, FALSE, FALSE, code_size, ji, aot);
 }
 
-gpointer 
-mono_arch_get_throw_exception_by_name_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
-{	
-	guint8* start;
-	guint8 *code;
-
-	*ji = NULL;
-
-	start = code = mono_global_codeman_reserve (64);
-
-	/* Not used on ARM */
-	ARM_DBRK (code);
-
-	*code_size = code - start;
-
-	return start;
-}
-
 /**
  * mono_arch_get_throw_corlib_exception:
  *

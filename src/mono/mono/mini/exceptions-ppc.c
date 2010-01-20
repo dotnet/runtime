@@ -482,34 +482,6 @@ mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 }
 
 /**
- * arch_get_throw_exception_by_name:
- *
- * Returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (char *exc_name); 
- * For example to raise an arithmetic exception you can use:
- *
- * x86_push_imm (code, "ArithmeticException"); 
- * x86_call_code (code, arch_get_throw_exception_by_name ()); 
- *
- */
-gpointer
-mono_arch_get_throw_exception_by_name_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
-{
-	guint8 *start, *code;
-	int size = 64;
-
-	*ji = NULL;
-
-	/* Not used on PPC */	
-	start = code = mono_global_codeman_reserve (size);
-	ppc_break (code);
-	mono_arch_flush_icache (start, code - start);
-	*code_size = code - start;
-	return start;
-}
-
-/**
  * mono_arch_get_throw_corlib_exception:
  *
  * Returns a function pointer which can be used to raise 

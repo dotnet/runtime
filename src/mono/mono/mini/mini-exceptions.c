@@ -129,6 +129,8 @@ mono_get_restore_context (void)
 gpointer
 mono_get_throw_exception_by_name (void)
 {
+#ifdef MONO_ARCH_HAVE_THROW_EXCEPTION_BY_NAME
+
 	gpointer code = NULL;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	guint32 code_size;
@@ -151,6 +153,13 @@ mono_get_throw_exception_by_name (void)
 	mono_memory_barrier ();
 
 	throw_exception_by_name_func = code;
+
+#else
+
+	throw_exception_by_name_func = NULL;
+
+	g_assert_not_reached ();
+#endif
 
 	return throw_exception_by_name_func;
 }

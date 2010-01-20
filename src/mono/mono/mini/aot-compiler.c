@@ -3545,8 +3545,10 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_trampoline (acfg, "throw_exception", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_get_rethrow_exception_full (&code_size, &ji, TRUE);
 		emit_trampoline (acfg, "rethrow_exception", code, code_size, acfg->got_offset, ji, NULL);
+#ifdef MONO_ARCH_HAVE_THROW_EXCEPTION_BY_NAME
 		code = mono_arch_get_throw_exception_by_name_full (&code_size, &ji, TRUE);
 		emit_trampoline (acfg, "throw_exception_by_name", code, code_size, acfg->got_offset, ji, NULL);
+#endif
 		code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
 		emit_trampoline (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji, NULL);
 

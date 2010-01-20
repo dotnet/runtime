@@ -434,26 +434,6 @@ mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gbo
 	return get_throw_trampoline (TRUE, code_size, ji, aot);
 }
 
-gpointer 
-mono_arch_get_throw_exception_by_name_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
-{	
-	guint8* start;
-	guint8 *code;
-
-	start = code = mono_global_codeman_reserve (64);
-
-	*ji = NULL;
-
-	/* Not used on amd64 */
-	amd64_breakpoint (code);
-
-	mono_arch_flush_icache (start, code - start);
-
-	*code_size = code - start;
-
-	return start;
-}
-
 /**
  * mono_arch_get_throw_corlib_exception:
  *
