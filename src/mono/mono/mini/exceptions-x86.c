@@ -366,76 +366,14 @@ mono_arch_get_call_filter (void)
 	return start;
 }
 
-static void
-throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsigned long ebx,
-		 unsigned long esi, unsigned long edi, unsigned long ebp, MonoObject *exc,
-		 unsigned long eip,  unsigned long esp, gboolean rethrow)
-{
-	static void (*restore_context) (MonoContext *);
-	MonoContext ctx;
-
-	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
-
-	/* Pop alignment added in get_throw_exception (), the return address, plus the argument and the alignment added at the call site */
-	ctx.esp = esp + 8 + MONO_ARCH_FRAME_ALIGNMENT;
-	ctx.eip = eip;
-	ctx.ebp = ebp;
-	ctx.edi = edi;
-	ctx.esi = esi;
-	ctx.ebx = ebx;
-	ctx.edx = edx;
-	ctx.ecx = ecx;
-	ctx.eax = eax;
-
-#ifdef __APPLE__
-	/* The OSX ABI specifies 16 byte alignment at call sites */
-	g_assert ((ctx.esp % MONO_ARCH_FRAME_ALIGNMENT) == 0);
-#endif
-
-	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
-		MonoException *mono_ex = (MonoException*)exc;
-		if (!rethrow)
-			mono_ex->stack_trace = NULL;
-	}
-
-	if (mono_debug_using_mono_debugger ()) {
-		guint8 buf [16], *code;
-
-		mono_breakpoint_clean_code (NULL, (gpointer)eip, 8, buf, sizeof (buf));
-		code = buf + 8;
-
-		if (buf [3] == 0xe8) {
-			MonoContext ctx_cp = ctx;
-			ctx_cp.eip = eip - 5;
-
-			if (mono_debugger_handle_exception (&ctx_cp, exc)) {
-				restore_context (&ctx_cp);
-				g_assert_not_reached ();
-			}
-		}
-	}
-
-	/* adjust eip so that it point into the call instruction */
-	ctx.eip -= 1;
-
-	mono_handle_exception (&ctx, exc, (gpointer)eip, FALSE);
-
-	restore_context (&ctx);
-
-	g_assert_not_reached ();
-}
-
 /*
- * mono_x86_llvm_throw_exception:
+ * mono_x86_throw_exception:
  *
- *   Same as throw_exception, but called from LLVM compiled code.
- * Moved into a separate function to avoid breaking the alignment stuff in
- * throw_exception, which is hard to test.
+ *   C function called from the throw trampolines.
  */
 static void
-mono_x86_llvm_throw_exception (mgreg_t *regs, MonoObject *exc, 
-							   mgreg_t eip, gboolean rethrow)
+mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 
+						  mgreg_t eip, gboolean rethrow)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
@@ -443,7 +381,6 @@ mono_x86_llvm_throw_exception (mgreg_t *regs, MonoObject *exc,
 	if (!restore_context)
 		restore_context = mono_arch_get_restore_context ();
 
-	/* Pop alignment added in get_throw_exception (), the return address, plus the argument and the alignment added at the call site */
 	ctx.esp = regs [X86_ESP];
 	ctx.eip = eip;
 	ctx.ebp = regs [X86_EBP];
@@ -493,71 +430,44 @@ mono_x86_llvm_throw_exception (mgreg_t *regs, MonoObject *exc,
 }
 
 static void
-mono_x86_llvm_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index, 
-									  mgreg_t eip, guint32 pc_offset)
+mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index, 
+								 mgreg_t eip, gint32 pc_offset)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
 	MonoException *ex;
 
 	ex = mono_exception_from_token (mono_defaults.exception_class->image, ex_token);
 
-	eip += pc_offset;
+	eip -= pc_offset;
 
-	mono_x86_llvm_throw_exception (regs, (MonoObject*)ex, eip, FALSE);
-}
-
-static guint8*
-get_throw_exception (gboolean rethrow)
-{
-	guint8 *start, *code;
-
-	start = code = mono_global_codeman_reserve (64);
-
-	/* 
-	 * Align the stack on apple, since we push 10 args, and the call pushed 4 bytes.
-	 */
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-	x86_push_reg (code, X86_ESP);
-	x86_push_membase (code, X86_ESP, 8); /* IP */
-	x86_push_membase (code, X86_ESP, 16); /* exception */
-	x86_push_reg (code, X86_EBP);
-	x86_push_reg (code, X86_EDI);
-	x86_push_reg (code, X86_ESI);
-	x86_push_reg (code, X86_EBX);
-	x86_push_reg (code, X86_EDX);
-	x86_push_reg (code, X86_ECX);
-	x86_push_reg (code, X86_EAX);
-	x86_call_code (code, throw_exception);
-	/* we should never reach this breakpoint */
-	x86_breakpoint (code);
-
-	g_assert ((code - start) < 64);
-
-	return start;
+	mono_x86_throw_exception (regs, (MonoObject*)ex, eip, FALSE);
 }
 
 /*
- * get_llvm_throw_exception:
+ * get_throw_exception:
  *
- *  Generate a call to mono_x86_llvm_throw_exception/
- * mono_x86_llvm_throw_corlib_exception.
+ *  Generate a call to mono_x86_throw_exception/
+ * mono_x86_throw_corlib_exception.
+ * If LLVM is true, generate code which assumes the caller is LLVM generated code, 
+ * which doesn't push the arguments.
  */
 static guint8*
-get_llvm_throw_exception (gboolean rethrow, gboolean corlib)
+get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean corlib)
 {
 	guint8 *start, *code;
 	GSList *unwind_ops = NULL;
-	int i, stack_size, arg_offsets [5], regs_offset;
+	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
 
 	start = code = mono_global_codeman_reserve (128);
 
-	stack_size = 128;
+	/* The + 4 aligns the stack on apple */
+	stack_size = 128 + 4;
 
 	/*
 	 * The stack looks like this:
 	 * <pc offset> (only if corlib is TRUE)
 	 * <exception object>/<type token>
-	 * <return addr> <- esp
+	 * <return addr> <- esp (unaligned on apple)
 	 */
 
 	mono_add_unwind_op_def_cfa (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_ESP, 4);
@@ -577,9 +487,20 @@ get_llvm_throw_exception (gboolean rethrow, gboolean corlib)
 	for (i = 0; i < X86_NREG; ++i)
 		if (i != X86_ESP)
 			x86_mov_membase_reg (code, X86_ESP, regs_offset + (i * 4), i, 4);
+	/* Calculate the offset between the current sp and the sp of the caller */
+	if (llvm) {
+		/* LLVM doesn't push the arguments */
+		stack_offset = stack_size + 4;
+	} else {
+		if (corlib)
+			/* Two arguments */
+			stack_offset = stack_size + 4 + 8;
+		else
+			/* One argument */
+			stack_offset = stack_size + 4 + 4;
+	}
 	/* Save ESP */
-	/* LLVM doesn't push the exception object */
-	x86_lea_membase (code, X86_EAX, X86_ESP, stack_size + 4);
+	x86_lea_membase (code, X86_EAX, X86_ESP, stack_offset);
 	x86_mov_membase_reg (code, X86_ESP, regs_offset + (X86_ESP * 4), X86_EAX, 4);
 
 	/* Set arg1 == regs */
@@ -600,7 +521,7 @@ get_llvm_throw_exception (gboolean rethrow, gboolean corlib)
 		x86_mov_membase_imm (code, X86_ESP, arg_offsets [3], rethrow, 4);
 	}
 	/* Make the call */
-	x86_call_code (code, corlib ? (gpointer)mono_x86_llvm_throw_corlib_exception : (gpointer)mono_x86_llvm_throw_exception);
+	x86_call_code (code, corlib ? (gpointer)mono_x86_throw_corlib_exception : (gpointer)mono_x86_throw_exception);
 	x86_breakpoint (code);
 
 	g_assert ((code - start) < 128);
@@ -625,33 +546,13 @@ get_llvm_throw_exception (gboolean rethrow, gboolean corlib)
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 *start;
-	static int inited = 0;
-
-	if (inited)
-		return start;
-
-	start = get_throw_exception (FALSE);
-
-	inited = 1;
-
-	return start;
+	return get_throw_exception ("throw_exception_trampoline", FALSE, FALSE, FALSE);
 }
 
 gpointer 
 mono_arch_get_rethrow_exception (void)
 {
-	static guint8 *start;
-	static int inited = 0;
-
-	if (inited)
-		return start;
-
-	start = get_throw_exception (TRUE);
-
-	inited = 1;
-
-	return start;
+	return get_throw_exception ("rethrow_exception_trampoline", TRUE, FALSE, FALSE);
 }
 
 /**
@@ -696,53 +597,7 @@ mono_arch_get_throw_exception_by_name (void)
 gpointer 
 mono_arch_get_throw_corlib_exception (void)
 {
-	static guint8* start;
-	static int inited = 0;
-	guint8 *code;
-	GSList *unwind_ops = NULL;
-
-	if (inited)
-		return start;
-
-	inited = 1;
-	code = start = mono_global_codeman_reserve (64);
-
-	/* 
-	 * Align the stack on apple, the caller doesn't do this to save space,
-	 * two arguments + the return addr are already on the stack.
-	 */
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4 + 4, 4); /* token */
-	x86_alu_reg_imm (code, X86_ADD, X86_EAX, MONO_TOKEN_TYPE_DEF);
-	/* Align the stack on apple */
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
-	x86_push_reg (code, X86_EAX);
-	x86_push_imm (code, mono_defaults.exception_class->image);
-	x86_call_code (code, mono_exception_from_token);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 16);
-	/* Compute caller ip */
-	x86_mov_reg_membase (code, X86_ECX, X86_ESP, 4, 4);
-	/* Compute offset */
-	x86_mov_reg_membase (code, X86_EDX, X86_ESP, 4 + 4 + 4, 4);
-	/* Pop everything */
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4 + 4 + 4 + 4);
-	x86_alu_reg_reg (code, X86_SUB, X86_ECX, X86_EDX);
-	/* Align the stack on apple, mirrors the sub in OP_THROW. */
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 4);
-	/* Push exception object */
-	x86_push_reg (code, X86_EAX);
-	/* Push throw IP */
-	x86_push_reg (code, X86_ECX);
-	x86_jump_code (code, mono_arch_get_throw_exception ());
-
-	g_assert ((code - start) < 64);
-
-	mono_add_unwind_op_def_cfa (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_ESP, 4);
-	mono_add_unwind_op_offset (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_NREG, -4);
-
-	mono_save_trampoline_xdebug_info ("throw_corlib_exception_trampoline", start, code - start, unwind_ops);
-
-	return start;
+	return get_throw_exception ("throw_corlib_exception_trampoline", FALSE, FALSE, TRUE);
 }
 
 void
@@ -750,11 +605,12 @@ mono_arch_exceptions_init (void)
 {
 	guint8 *tramp;
 
-	tramp = get_llvm_throw_exception (FALSE, FALSE);
+	/* LLVM needs different throw trampolines */
+	tramp = get_throw_exception ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE);
 
 	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_exception", NULL, TRUE);
 
-	tramp = get_llvm_throw_exception (FALSE, TRUE);
+	tramp = get_throw_exception ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE);
 
 	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
 }
