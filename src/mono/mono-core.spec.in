@@ -132,9 +132,10 @@ Authors:
 %_bindir/gacutil
 %_bindir/gacutil2
 %_bindir/gmcs
-%_bindir/mono-test-install
 %_bindir/mcs
+%_bindir/mono-test-install
 %_bindir/mozroots
+%_bindir/peverify
 %_bindir/setreg
 %_bindir/sn
 # exes
@@ -448,6 +449,7 @@ Authors:
 %_prefix/lib/mono/2.0/System.Management.dll
 %_prefix/lib/mono/gac/RabbitMQ.Client
 %_prefix/lib/mono/2.0/RabbitMQ.Client.dll
+%_prefix/lib/mono/2.0/RabbitMQ.Client.Apigen.exe*
 %_prefix/lib/mono/gac/System.Messaging
 %_prefix/lib/mono/2.0/System.Messaging.dll
 %_prefix/lib/mono/gac/Mono.Messaging
@@ -981,8 +983,9 @@ Authors:
 %_prefix/lib/mono-source-libs
 %_bindir/monograph
 %_prefix/include/mono-1.0
-%_libdir/libmono-profiler-cov.*
 %_libdir/libmono-profiler-aot.*
+%_libdir/libmono-profiler-cov.*
+%_libdir/libmono-profiler-iomap.*
 %_libdir/libmono-profiler-logging.*
 %_libdir/pkgconfig/mono.pc
 %_libdir/pkgconfig/dotnet.pc
