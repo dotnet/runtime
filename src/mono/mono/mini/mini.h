@@ -1694,7 +1694,8 @@ void      mono_arch_decompose_long_opts         (MonoCompile *cfg, MonoInst *ins
 GSList*   mono_arch_get_delegate_invoke_impls   (void) MONO_INTERNAL;
 LLVMCallInfo* mono_arch_get_llvm_call_info      (MonoCompile *cfg, MonoMethodSignature *sig) MONO_INTERNAL;
 guint8*   mono_arch_emit_load_got_addr          (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji) MONO_INTERNAL;
-guint8*   mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target) MONO_INTERNAL;
+guint8*   mono_arch_emit_load_aotconst          (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target) MONO_INTERNAL;
+GSList*   mono_arch_get_cie_program             (void) MONO_INTERNAL;
 
 /* Soft Debug support */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED

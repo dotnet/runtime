@@ -287,7 +287,8 @@ common_sources = \
 	mini-gc.h		\
 	mini-gc.c		\
 	debugger-agent.h \
-	debugger-agent.c
+	debugger-agent.c	\
+	xdebug.c
 
 test_sources = 			\
 	basic-calls.cs 		\
