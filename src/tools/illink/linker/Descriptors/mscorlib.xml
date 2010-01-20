@@ -221,7 +221,9 @@
 		<type fullname="System.Reflection.Emit.GenericTypeParameterBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ILExceptionBlock" preserve="fields" />
 		<type fullname="System.Reflection.Emit.ILExceptionInfo" preserve="fields" />
-		<type fullname="System.Reflection.Emit.ILGenerator" preserve="fields" />
+		<type fullname="System.Reflection.Emit.ILGenerator" preserve="fields">
+			<method name="Mono_GetCurrentOffset" />
+		</type>
 		<type fullname="System.Reflection.Emit.LocalBuilder" preserve="fields">
 			<method name="Mono_GetLocalIndex" />
 		</type>
