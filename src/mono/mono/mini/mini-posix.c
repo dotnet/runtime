@@ -144,10 +144,11 @@ SIG_HANDLER_SIGNATURE (mono_chain_signal)
 static void
 SIG_HANDLER_SIGNATURE (sigabrt_signal_handler)
 {
-	MonoJitInfo *ji;
+	MonoJitInfo *ji = NULL;
 	GET_CONTEXT;
 
-	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
+	if (mono_thread_internal_current ())
+		ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
 	if (!ji) {
         if (mono_chain_signal (SIG_HANDLER_PARAMS))
 			return;

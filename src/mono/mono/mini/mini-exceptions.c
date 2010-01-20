@@ -1766,7 +1766,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	handling_sigsegv = TRUE;
 
 	/* !jit_tls means the thread was not registered with the runtime */
-	if (jit_tls) {
+	if (jit_tls && mono_thread_internal_current ()) {
 		fprintf (stderr, "Stacktrace:\n\n");
 
 		mono_jit_walk_stack (print_stack_frame, TRUE, stderr);

@@ -1011,14 +1011,6 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 	return lcall;
 }
 
-#ifdef TARGET_X86
-static void
-x86_ex_abort (void)
-{
-	g_assert (0 && "Exception handling is not yet supported on LLVM+x86.");
-}
-#endif
-
 /*
  * emit_cond_system_exception:
  *
@@ -1058,13 +1050,13 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 			callee = get_plt_entry (ctx, sig, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_corlib_exception");
 		} else {
 			callee = LLVMAddFunction (ctx->module, "throw_corlib_exception", sig_to_llvm_sig (ctx, throw_sig, NULL));
- 
-#ifdef TARGET_X86
+
+#ifdef TARGET_X86 
 			/* 
-			 * The throw trampoline assumes that the caller pushes the arguments, but
-			 * LLVM generated code doesn't do that.
+			 * LLVM generated code doesn't push the arguments, so we need another
+			 * throw trampoline.
 			 */
-			LLVMAddGlobalMapping (ee, callee, x86_ex_abort);
+			LLVMAddGlobalMapping (ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_llvm_throw_corlib_exception"));
 #else
 			LLVMAddGlobalMapping (ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_corlib_exception"));
 #endif
@@ -3245,11 +3237,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				MonoMethodSignature *throw_sig;
 				LLVMValueRef callee, arg;
 
-#ifdef TARGET_X86
-				/* throw_exception () pops the argument, but LLVM doesn't push it */
-				LLVM_FAILURE (ctx, "x86+throw");
-#endif
-
 				if (!ctx->lmodule->throw) {
 					throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 					throw_sig->ret = &mono_defaults.void_class->byval_arg;
@@ -3258,7 +3245,16 @@ mono_llvm_emit_method (MonoCompile *cfg)
 						callee = get_plt_entry (ctx, sig_to_llvm_sig (ctx, throw_sig, NULL), MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception");
 					} else {
 						callee = LLVMAddFunction (module, "mono_arch_throw_exception", sig_to_llvm_sig (ctx, throw_sig, NULL));
+
+#ifdef TARGET_X86
+						/* 
+						 * LLVM doesn't push the exception argument, so we need a different
+						 * trampoline.
+						 */
+						LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_llvm_throw_exception"));
+#else
 						LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception"));
+#endif
 					}
 
 					mono_memory_barrier ();
