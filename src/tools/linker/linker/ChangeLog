@@ -1,3 +1,8 @@
+2010-01-20  Rolf Bjarne Kvinge  <RKvinge@novell.com>
+
+	* Makefile: Fetch Mono.Cecil.dll from whatever profile we happen to be
+	building in.
+
 2010-01-14  Jb Evain  <jbevain@novell.com>
 
 	* MarkStep.cs: preserve fields specified by the
