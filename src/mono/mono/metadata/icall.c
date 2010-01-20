@@ -1319,18 +1319,26 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 		 *        Dec 10, 2005 - Martin.
 		 */
 
-		if (dest)
+		if (dest) {
 			assembly = dest->klass->image->assembly;
-		else {
+			type_resolve = TRUE;
+		} else {
 			g_warning (G_STRLOC);
 		}
 	}
 
-	if (assembly)
+	if (assembly) {
+		/* When loading from the current assembly, AppDomain.TypeResolve will not be called yet */
 		type = mono_reflection_get_type (assembly->image, &info, ignoreCase, &type_resolve);
-	
+	}
+
 	if (!info.assembly.name && !type) /* try mscorlib */
 		type = mono_reflection_get_type (NULL, &info, ignoreCase, &type_resolve);
+
+	if (assembly && !type && type_resolve) {
+		type_resolve = FALSE; /* This will invoke TypeResolve if not done in the first 'if' */
+		type = mono_reflection_get_type (assembly->image, &info, ignoreCase, &type_resolve);
+	}
 
 	mono_reflection_free_type_info (&info);
 	g_free (temp_str);
