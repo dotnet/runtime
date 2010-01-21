@@ -2217,7 +2217,7 @@ mono_method_signature (MonoMethod *m)
 
 	sig = mono_method_signature_checked (m, &err);
 	if (!sig) {
-		g_warning (mono_error_get_message (&err));
+		g_warning ("Could not load signature due to: %s", mono_error_get_message (&err));
 		mono_error_cleanup (&err);
 	}
 
