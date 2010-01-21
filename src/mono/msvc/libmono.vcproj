@@ -6157,6 +6157,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\mini\xdebug.c"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\mini\debugger-agent.h"
 				>
 			</File>
