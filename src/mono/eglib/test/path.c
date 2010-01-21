@@ -264,7 +264,7 @@ test_ppath2 ()
 	return OK;
 }
 
-#ifdef DISABLE_FILESYSTEM_TESTS
+#ifndef DISABLE_FILESYSTEM_TESTS
 gchar *
 test_cwd ()
 {
