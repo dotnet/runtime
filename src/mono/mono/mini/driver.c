@@ -1131,9 +1131,7 @@ mini_usage (void)
 		"                           mode is one of cas, core-clr, verifiable or validil\n"
 		"    --attach=OPTIONS       Pass OPTIONS to the attach agent in the runtime.\n"
 		"                           Currently the only supported option is 'disable'.\n"
-#ifdef MONO_ARCH_LLVM_SUPPORTED
 		"    --llvm                 Controls whenever the runtime uses LLVM compiled code.\n"
-#endif
 	  );
 }
 
@@ -1199,6 +1197,9 @@ static const char info[] =
 #endif
         "\tArchitecture:  " ARCHITECTURE "\n"
 	"\tDisabled:      " DISABLED_FEATURES "\n"
+#ifdef MONO_ARCH_LLVM_SUPPORTED
+	"\tLLVM supported\n"
+#endif
 	"";
 
 #ifndef MONO_ARCH_AOT_SUPPORTED
@@ -1552,8 +1553,7 @@ mono_main (int argc, char* argv[])
 #endif
 		} else if (strcmp (argv [i], "--llvm") == 0) {
 #ifndef MONO_ARCH_LLVM_SUPPORTED
-			fprintf (stderr, "--llvm not supported on this platform.\n");
-			return 1;
+			fprintf (stderr, "Mono Warning: --llvm not supported on this platform.\n");
 #else
 			mono_use_llvm = TRUE;
 #endif
