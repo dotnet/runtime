@@ -1131,7 +1131,9 @@ mini_usage (void)
 		"                           mode is one of cas, core-clr, verifiable or validil\n"
 		"    --attach=OPTIONS       Pass OPTIONS to the attach agent in the runtime.\n"
 		"                           Currently the only supported option is 'disable'.\n"
+#ifdef MONO_ARCH_LLVM_SUPPORTED
 		"    --llvm                 Controls whenever the runtime uses LLVM compiled code.\n"
+#endif
 	  );
 }
 
