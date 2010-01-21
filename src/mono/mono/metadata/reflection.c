@@ -10623,6 +10623,14 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 	klass->fields = image_g_new0 (image, MonoClassField, klass->field.count);
 	mono_class_alloc_ext (klass);
 	klass->ext->field_def_values = image_g_new0 (image, MonoFieldDefaultValue, klass->field.count);
+	/*
+	This is, guess what, a hack.
+	The issue is that the runtime doesn't know how to setup the fields of a typebuider and crash.
+	On the static path no field class is resolved, only types are built. This is the right thing to do
+	but we suck.
+	Setting size_inited is harmless because we're doing the same job as mono_class_setup_fields anyway.
+	*/
+	klass->size_inited = 1;
 
 	for (i = 0; i < klass->field.count; ++i) {
 		fb = mono_array_get (tb->fields, gpointer, i);
