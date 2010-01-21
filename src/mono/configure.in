@@ -2134,7 +2134,7 @@ esac
 
 if test "x$host" != "x$target"; then
    case "$target" in
-   powerpc64-ps3-linux-gnu)
+   powerpc64-ps3-linux*)
 		TARGET=POWERPC64
 		arch_target=powerpc64
 		AC_DEFINE(TARGET_PS3, 1, [...])
@@ -2147,7 +2147,7 @@ if test "x$host" != "x$target"; then
 		target_byte_order=G_BIG_ENDIAN
 		;;
 
-   powerpc64-xbox360-linux-gnu)
+   powerpc64-xbox360-linux*)
 		TARGET=POWERPC64
 		arch_target=powerpc64
 		AC_DEFINE(TARGET_XBOX360, 1, [...])
@@ -2158,7 +2158,7 @@ if test "x$host" != "x$target"; then
 		target_byte_order=G_BIG_ENDIAN
 		;;
 	*)
-		AC_MSG_ERROR([Cross compiling is only supported for targets matching 'powerpc64-{ps3,xbox360}-linux-gnu'])
+		AC_MSG_ERROR([Cross compiling is only supported for targets matching 'powerpc64-{ps3,xbox360}-linux'])
 	esac
 fi
 
