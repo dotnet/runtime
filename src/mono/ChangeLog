@@ -1,3 +1,7 @@
+2010-01-20  Rolf Bjarne Kvinge  <RKvinge@novell.com>
+
+	* configure.in: Add support for disabling mdb support.
+
 2010-01-15  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Don't define TARGET_WIN32 when --target is used.

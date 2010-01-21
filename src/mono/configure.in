@@ -2308,16 +2308,19 @@ if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
 fi
 
 mono_debugger_supported=no
-if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86" -o "x$TARGET" = "xALPHA"; then
-	if test x$use_included_gc = xyes; then
-		case "$host" in
-		*-*-*linux*)
-			mono_debugger_supported=yes
-			;;
-		*86-apple-darwin*)
-			mono_debugger_supported=yes
-			;;		
-		esac
+AC_ARG_ENABLE(mono-debugger, [  --disable-mono-debugger disable support for the mdb debugger], try_mono_debugger=$enableval, try_mono_debugger=yes)
+if test "x$try_mono_debugger" = "xyes"; then
+	if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86" -o "x$TARGET" = "xALPHA"; then
+		if test x$use_included_gc = xyes; then
+			case "$host" in
+			*-*-*linux*)
+				mono_debugger_supported=yes
+				;;
+			*86-apple-darwin*)
+				mono_debugger_supported=yes
+				;;		
+			esac
+		fi
 	fi
 fi
 
