@@ -4621,9 +4621,13 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
 	g_assert (vtable);
 
+#ifndef HAVE_SGEN_GC
 	s = mono_object_allocate_ptrfree (size, vtable);
 
 	s->length = len;
+#else
+	s = mono_gc_alloc_string (vtable, size, len);
+#endif
 #if NEED_TO_ZERO_PTRFREE
 	s->chars [len] = 0;
 #endif

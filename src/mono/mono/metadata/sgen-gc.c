@@ -561,19 +561,6 @@ safe_object_get_size (MonoObject* o)
 	}
 }
 
-static inline gboolean
-is_maybe_half_constructed (MonoObject *o)
-{
-	MonoClass *klass;
-
-	klass = ((MonoVTable*)LOAD_VTABLE (o))->klass;
-	if ((klass == mono_defaults.string_class && mono_string_length ((MonoString*)o) == 0) ||
-		(klass->rank && mono_array_length ((MonoArray*)o) == 0))
-		return TRUE;
-	else
-		return FALSE;
-}
-
 /*
  * ######################################################################
  * ########  Global data.
@@ -911,7 +898,6 @@ static gboolean search_fragment_for_size (size_t size);
 static void mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end);
 static void clear_remsets (void);
 static void clear_tlabs (void);
-static char *find_tlab_next_from_address (char *addr);
 typedef void (*ScanPinnedObjectCallbackFunc) (PinnedChunk*, char*, size_t, void*);
 static void scan_pinned_objects (ScanPinnedObjectCallbackFunc callback, void *callback_data);
 static void sweep_pinned_objects (void);
@@ -3014,30 +3000,6 @@ build_nursery_fragments (int start_pin, int end_pin)
 		frag_size += ALLOC_ALIGN - 1;
 		frag_size &= ~(ALLOC_ALIGN - 1);
 		frag_start = (char*)pin_queue [i] + frag_size;
-		/* 
-		 * pin_queue [i] might point to a half-constructed string or vector whose
-		 * length field is not set. In that case, frag_start points inside the 
-		 * (zero initialized) object. Find the end of the object by scanning forward.
-		 * 
-		 */
-		if (is_maybe_half_constructed (pin_queue [i])) {
-			char *tlab_end;
-
-			/* This is also hit for zero length arrays/strings */
-
-			/* Find the end of the TLAB which contained this allocation */
-			tlab_end = find_tlab_next_from_address (pin_queue [i]);
-
-			if (tlab_end) {
-				while ((frag_start < tlab_end) && *(mword*)frag_start == 0)
-					frag_start += sizeof (mword);
-			} else {
-				/*
-				 * FIXME: The object is either not allocated in a TLAB, or it isn't a
-				 * half constructed object.
-				 */
-			}
-		}
 	}
 	nursery_last_pinned_end = frag_start;
 	frag_end = nursery_real_end;
@@ -4517,6 +4479,21 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, mono_array_size_t max_leng
 	UNLOCK_GC;
 
 	return arr;
+}
+
+void*
+mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
+{
+	MonoString *str;
+
+	LOCK_GC;
+
+	str = mono_gc_alloc_obj_nolock (vtable, size);
+	str->length = len;
+
+	UNLOCK_GC;
+
+	return str;
 }
 
 /*
@@ -6013,34 +5990,6 @@ clear_tlabs (void)
 			*info->tlab_real_end_addr = NULL;
 		}
 	}
-}
-
-/*
- * Find the tlab_next value of the TLAB which contains ADDR.
- */
-static char*
-find_tlab_next_from_address (char *addr)
-{
-	SgenThreadInfo *info;
-	int i;
-
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			/*
-			 * The allocator increments tlab_next before
-			 * checking whether that address is still in
-			 * the TLAB, so we have to check here.
-			 */
-			char *next_addr = *info->tlab_next_addr;
-			char *end_addr = *info->tlab_real_end_addr;
-			if (next_addr > end_addr)
-				next_addr = end_addr;
-			if (addr >= *info->tlab_start_addr && addr < next_addr)
-				return next_addr;
-		}
-	}
-
-	return NULL;
 }
 
 /* LOCKING: assumes the GC lock is held */
