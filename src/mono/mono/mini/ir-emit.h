@@ -737,8 +737,9 @@ static int ccount = 0;
 		if (cfg->explicit_null_checks) {							  \
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0); \
 			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException"); \
+		} else {														\
+			MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg);						\
 		}																\
-		MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg); \
 	} while (0)
 
 #define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
