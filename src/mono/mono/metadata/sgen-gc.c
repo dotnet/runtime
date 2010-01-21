@@ -3322,7 +3322,10 @@ collect_nursery (size_t requested_size)
 
 	nursery_section->next_data = nursery_next;
 
-	new_to_space_section ();
+	if (!to_space_section)
+		new_to_space_section ();
+	else
+		to_space_section->is_to_space = TRUE;
 	gray_object_queue_init ();
 
 	num_minor_gcs++;
@@ -3365,8 +3368,6 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY);
-
-	unset_to_space ();
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
