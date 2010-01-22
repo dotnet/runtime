@@ -261,6 +261,7 @@ AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
+AC_CHECK_TOOL(CXX, g++, g++)
 AC_PROG_CXX
 AM_PROG_AS
 AM_PROG_CC_STDC
@@ -272,6 +273,14 @@ dnl We should use AM_PROG_AS, but it's not available on automake/aclocal 1.4
 : ${CCASFLAGS='$(CFLAGS)'}
 AC_SUBST(CCAS)
 AC_SUBST(CCASFLAGS)
+
+# AC_PROG_CXX helpfully sets CXX to g++ even if no c++ compiler is found so check
+# GXX instead
+if test "$GXX" != "yes"; then
+   # automake/libtool is so broken, it requires g++ even if the c++ sources
+   # are inside automake conditionals
+   AC_MSG_ERROR([You need to install g++])
+fi
 
 AC_CHECK_PROG(BISON, bison,yes,no)
 if test "x$BISON" = "xno";
