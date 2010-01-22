@@ -1,3 +1,8 @@
+2010-01-22  Andrés G. Aragoneses  <knocte@gmail.com>
+
+	* configure.in: Improve r150055 by checking for CXX=g++ as well, according to
+	http://lists.gnu.org/archive/html/bug-autoconf/2002-04/msg00077.html
+
 2010-01-22  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Disable the solaris tar check on !solaris platforms.
@@ -6,6 +11,7 @@
 
 	* configure.in: Check whenever g++ is installed, since libtool requires it
 	even if no c++ files will be compiled.
+	See BNC#572871.
 
 2010-01-22  Zoltan Varga  <vargaz@gmail.com>
 
