@@ -1,5 +1,9 @@
 2010-01-22  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Disable the solaris tar check on !solaris platforms.
+
+2010-01-22  Zoltan Varga  <vargaz@gmail.com>
+
 	* configure.in: Check whenever g++ is installed, since libtool requires it
 	even if no c++ files will be compiled.
 
