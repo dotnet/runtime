@@ -69,7 +69,7 @@ typedef gint64 mgreg_t;
 #ifdef MONO_ARCH_SOFT_FLOAT
 #define COMPILE_SOFT_FLOAT(cfg) (!COMPILE_LLVM ((cfg)))
 #else
-#define COMPILE_SOFT_FLOAT(cfg) 1
+#define COMPILE_SOFT_FLOAT(cfg) 0
 #endif
 
 #define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
