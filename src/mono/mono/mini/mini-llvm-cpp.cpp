@@ -265,7 +265,7 @@ class MonoJITEventListener : public JITEventListener {
 			Details.MF->getTarget ().setCodeModel (CodeModel::Default);
 		}
 		//#endif
-	}	
+	}
 };
 
 LLVMExecutionEngineRef
@@ -312,11 +312,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
       if (PassInf->getNormalCtor())
 		  P = PassInf->getNormalCtor()();
-	  if (dynamic_cast<MachineFunctionPass*>(P) != 0) {
-		  errs () << PassInf->getPassName () << " is a machine function pass.\n";
-	  } else {
-		  fpm->add (P);
-	  }
+	  fpm->add (P);
   }
 
   return wrap(EE);
