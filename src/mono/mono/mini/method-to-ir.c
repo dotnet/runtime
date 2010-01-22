@@ -2160,30 +2160,32 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 		call->inst.dreg = alloc_dreg (cfg, call->inst.type);
 
 #ifdef MONO_ARCH_SOFT_FLOAT
-	/* 
-	 * If the call has a float argument, we would need to do an r8->r4 conversion using 
-	 * an icall, but that cannot be done during the call sequence since it would clobber
-	 * the call registers + the stack. So we do it before emitting the call.
-	 */
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		MonoType *t;
-		MonoInst *in = call->args [i];
+	if (COMPILE_SOFT_FLOAT (cfg)) {
+		/* 
+		 * If the call has a float argument, we would need to do an r8->r4 conversion using 
+		 * an icall, but that cannot be done during the call sequence since it would clobber
+		 * the call registers + the stack. So we do it before emitting the call.
+		 */
+		for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+			MonoType *t;
+			MonoInst *in = call->args [i];
 
-		if (i >= sig->hasthis)
-			t = sig->params [i - sig->hasthis];
-		else
-			t = &mono_defaults.int_class->byval_arg;
-		t = mono_type_get_underlying_type (t);
+			if (i >= sig->hasthis)
+				t = sig->params [i - sig->hasthis];
+			else
+				t = &mono_defaults.int_class->byval_arg;
+			t = mono_type_get_underlying_type (t);
 
-		if (!t->byref && t->type == MONO_TYPE_R4) {
-			MonoInst *iargs [1];
-			MonoInst *conv;
+			if (!t->byref && t->type == MONO_TYPE_R4) {
+				MonoInst *iargs [1];
+				MonoInst *conv;
 
-			iargs [0] = in;
-			conv = mono_emit_jit_icall (cfg, mono_fload_r4_arg, iargs);
+				iargs [0] = in;
+				conv = mono_emit_jit_icall (cfg, mono_fload_r4_arg, iargs);
 
-			/* The result will be in an int vreg */
-			call->args [i] = conv;
+				/* The result will be in an int vreg */
+				call->args [i] = conv;
+			}
 		}
 	}
 #endif
@@ -6911,7 +6913,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						}
 					} else {
 #ifdef MONO_ARCH_SOFT_FLOAT
-						if (!ret_type->byref && ret_type->type == MONO_TYPE_R4) {
+						if (COMPILE_SOFT_FLOAT (cfg) && !ret_type->byref && ret_type->type == MONO_TYPE_R4) {
 							MonoInst *iargs [1];
 							MonoInst *conv;
 
@@ -10840,11 +10842,12 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 		if ((ins->opcode != OP_REGVAR) && !(ins->flags & MONO_INST_IS_DEAD)) {
 			switch (ins->type) {
-#ifdef MONO_ARCH_SOFT_FLOAT
 			case STACK_R8:
-#endif
 			case STACK_I8: {
 				MonoInst *tree;
+
+				if (ins->type == STACK_R8 && !COMPILE_SOFT_FLOAT (cfg))
+					break;
 
 				g_assert (ins->opcode == OP_REGOFFSET);
 
@@ -11031,12 +11034,10 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 					lvreg = 0;
 
-#ifdef MONO_ARCH_SOFT_FLOAT
-					if (store_opcode == OP_STORER8_MEMBASE_REG) {
+					if (COMPILE_SOFT_FLOAT (cfg) && store_opcode == OP_STORER8_MEMBASE_REG) {
 						regtype = 'l';
 						store_opcode = OP_STOREI8_MEMBASE_REG;
 					}
-#endif
 
 					ins->dreg = alloc_dreg (cfg, stacktypes [regtype]);
 

@@ -2520,10 +2520,15 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		if (mono_jit_stats.methods_aot >= mono_last_aot_method)
 				return NULL;
 		else if (mono_jit_stats.methods_aot == mono_last_aot_method - 1) {
-			if (method)
-				printf ("LAST AOT METHOD: %s%s%s.%s.\n", method->klass->name_space, method->klass->name_space [0] ? "." : "", method->klass->name, method->name);
-			else
+			if (!method)
+				method = mono_get_method (image, token, NULL);
+			if (method) {
+				char *name = mono_method_full_name (method, TRUE);
+				printf ("LAST AOT METHOD: %s.\n", name);
+				g_free (name);
+			} else {
 				printf ("LAST AOT METHOD: %p %d\n", code, method_index);
+			}
 		}
 	}
 

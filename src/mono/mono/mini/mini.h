@@ -66,6 +66,12 @@ typedef gint64 mgreg_t;
 #define LLVM_ENABLED FALSE
 #endif
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+#define COMPILE_SOFT_FLOAT(cfg) (!COMPILE_LLVM ((cfg)))
+#else
+#define COMPILE_SOFT_FLOAT(cfg) 1
+#endif
+
 #define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
 
 /* for 32 bit systems */

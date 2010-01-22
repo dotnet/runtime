@@ -417,7 +417,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
  */
 
 #define EMIT_NEW_VARLOAD_SFLOAT(cfg,dest,var,vartype) do { \
-        if (!(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+		if (COMPILE_SOFT_FLOAT ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
              MonoInst *iargs [1]; \
              EMIT_NEW_VARLOADA (cfg, iargs [0], (var), (vartype)); \
              (dest) = mono_emit_jit_icall (cfg, mono_fload_r4, iargs); \
@@ -427,7 +427,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
     } while (0)
 
 #define EMIT_NEW_VARSTORE_SFLOAT(cfg,dest,var,vartype,inst) do {	\
-        if (!(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+		if (COMPILE_SOFT_FLOAT ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
              MonoInst *iargs [2]; \
              iargs [0] = (inst); \
              EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \
