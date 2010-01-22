@@ -305,7 +305,7 @@ get_dl_name_from_libtool (const char *libtool_file)
  * from the module to the shared namespace. The MONO_DL_LAZY bit can be set
  * to lazily load the symbols instead of resolving everithing at load time.
  * @error_msg points to a string where an error message will be stored in
- * case of failure.
+ * case of failure.   The error must be released with g_free.
  *
  * Returns: a MonoDl pointer on success, NULL on failure.
  */
@@ -549,6 +549,6 @@ _LL_SO_SYMBOL (void *handle, const char *symbol)
 char *
 LL_SO_ERROR (void)
 {
-	return ll_last_error;
+	return g_strdup (ll_last_error);
 }
 #endif
