@@ -1,3 +1,7 @@
+2010-01-22  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add -fno-rrti to CXXFLAGS.
+
 2010-01-20  Rolf Bjarne Kvinge  <RKvinge@novell.com>
 
 	* configure.in: Add support for disabling mdb support.
