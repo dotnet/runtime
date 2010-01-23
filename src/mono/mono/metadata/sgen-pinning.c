@@ -16,6 +16,9 @@ evacuate_pin_staging_area (void)
 
 	g_assert (pin_staging_area_index >= 0 && pin_staging_area_index <= PIN_STAGING_AREA_SIZE);
 
+	if (pin_staging_area_index == 0)
+		return;
+
 	/*
 	 * The pinning addresses might come from undefined memory, this is normal. Since they
 	 * are used in lots of functions, we make the memory defined here instead of having
