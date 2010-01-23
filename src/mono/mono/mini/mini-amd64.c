@@ -5790,6 +5790,27 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 #endif
 
+#ifndef TARGET_WIN32
+	if (mini_get_debug_options ()->init_stacks) {
+		/* Fill the stack frame with a dummy value to force deterministic behavior */
+	
+		/* Save registers to the red zone */
+		amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDI, 8);
+		amd64_mov_membase_reg (code, AMD64_RSP, -16, AMD64_RCX, 8);
+
+		amd64_mov_reg_imm (code, AMD64_RAX, 0x2a2a2a2a2a2a2a2a);
+		amd64_mov_reg_imm (code, AMD64_RCX, alloc_size / 8);
+		amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RSP, 8);
+
+		amd64_cld (code);
+		amd64_prefix (code, X86_REP_PREFIX);
+		amd64_stosl (code);
+
+		amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RSP, -8, 8);
+		amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RSP, -16, 8);
+	}
+#endif	
+
 	/* Save LMF */
 	if (method->save_lmf) {
 		/* 

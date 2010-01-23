@@ -1326,6 +1326,11 @@ typedef struct {
 	gboolean gdb;
 	gboolean gen_seq_points;
 	gboolean explicit_null_checks;
+	/*
+	 * Fill stack frames with 0x2a in method prologs. This helps with the
+	 * debugging of the stack marking code in the GC.
+	 */
+	gboolean init_stacks;
 } MonoDebugOptions;
 
 enum {
