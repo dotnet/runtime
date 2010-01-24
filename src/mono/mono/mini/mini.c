@@ -133,8 +133,7 @@ static CRITICAL_SECTION jit_mutex;
 
 static MonoCodeManager *global_codeman = NULL;
 
-/* FIXME: Make this static again */
-GHashTable *jit_icall_name_hash = NULL;
+static GHashTable *jit_icall_name_hash = NULL;
 
 static MonoDebugOptions debug_options;
 
@@ -1439,6 +1438,7 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 	StackSlotInfo *scalar_stack_slots, *vtype_stack_slots, *slot_info;
 	MonoType *t;
 	int nvtypes;
+	gboolean reuse_slot;
 
 	LSCAN_DEBUG (printf ("Allocate Stack Slots 2 for %s:\n", mono_method_full_name (cfg->method, TRUE)));
 
@@ -1498,6 +1498,10 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 				align = 16;
 		}
 
+		reuse_slot = TRUE;
+		if (cfg->disable_reuse_stack_slots)
+			reuse_slot = FALSE;
+
 		t = mono_type_get_underlying_type (inst->inst_vtype);
 		switch (t->type) {
 		case MONO_TYPE_GENERICINST:
@@ -1520,6 +1524,8 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 				slot_info = &vtype_stack_slots [nvtypes];
 				nvtypes ++;
 			}
+			if (cfg->disable_reuse_ref_stack_slots)
+				reuse_slot = FALSE;
 			break;
 
 		case MONO_TYPE_PTR:
@@ -1544,6 +1550,8 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 		case MONO_TYPE_STRING:
 			/* Share non-float stack slots of the same size */
 			slot_info = &scalar_stack_slots [MONO_TYPE_CLASS];
+			if (cfg->disable_reuse_ref_stack_slots)
+				reuse_slot = FALSE;
 			break;
 
 		default:
@@ -1663,6 +1671,9 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 
 		LSCAN_DEBUG (printf ("R%d %s -> 0x%x\n", inst->dreg, mono_type_full_name (t), slot));
 
+		if (!reuse_slot)
+			slot = 0xffffff;
+
 		if (slot == 0xffffff) {
 			/*
 			 * Allways allocate valuetypes to sizeof (gpointer) to allow more
@@ -1730,6 +1741,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 	StackSlotInfo *scalar_stack_slots, *vtype_stack_slots, *slot_info;
 	MonoType *t;
 	int nvtypes;
+	gboolean reuse_slot;
 
 	if ((cfg->num_varinfo > 0) && MONO_VARINFO (cfg, 0)->interval)
 		return mono_allocate_stack_slots_full2 (cfg, backward, stack_size, stack_align);
@@ -1773,6 +1785,10 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 				align = 16;
 		}
 
+		reuse_slot = TRUE;
+		if (cfg->disable_reuse_stack_slots)
+			reuse_slot = FALSE;
+
 		t = mono_type_get_underlying_type (inst->inst_vtype);
 		if (t->byref) {
 			slot_info = &scalar_stack_slots [MONO_TYPE_I];
@@ -1798,6 +1814,8 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 					slot_info = &vtype_stack_slots [nvtypes];
 					nvtypes ++;
 				}
+				if (cfg->disable_reuse_ref_stack_slots)
+					reuse_slot = FALSE;
 				break;
 
 			case MONO_TYPE_PTR:
@@ -1822,6 +1840,8 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 			case MONO_TYPE_STRING:
 				/* Share non-float stack slots of the same size */
 				slot_info = &scalar_stack_slots [MONO_TYPE_CLASS];
+				if (cfg->disable_reuse_ref_stack_slots)
+					reuse_slot = FALSE;
 				break;
 
 			default:
@@ -1880,7 +1900,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 			*/
 		}
 
-		if (cfg->disable_reuse_stack_slots)
+		if (!reuse_slot)
 			slot = 0xffffff;
 
 		if (slot == 0xffffff) {
@@ -3644,15 +3664,30 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->disable_reuse_registers = TRUE;
 		cfg->disable_reuse_stack_slots = TRUE;
 		cfg->extend_live_ranges = TRUE;
+		cfg->compute_precise_live_ranges = TRUE;
 	}
+
+	mini_gc_init_gc_map (cfg);
 
 	if (COMPILE_LLVM (cfg)) {
 		cfg->opt |= MONO_OPT_ABCREM;
 	}
 
 	if (getenv ("MONO_VERBOSE_METHOD")) {
-		if (strcmp (cfg->method->name, getenv ("MONO_VERBOSE_METHOD")) == 0)
-			cfg->verbose_level = 4;
+		char *name = getenv ("MONO_VERBOSE_METHOD");
+
+		if (strchr (name, '.') || strchr (name, ':')) {
+			MonoMethodDesc *desc;
+			
+			desc = mono_method_desc_new (name, TRUE);
+			if (mono_method_desc_full_match (desc, cfg->method)) {
+				cfg->verbose_level = 4;
+			}
+			mono_method_desc_free (desc);
+		} else {
+			if (strcmp (cfg->method->name, getenv ("MONO_VERBOSE_METHOD")) == 0)
+				cfg->verbose_level = 4;
+		}
 	}
 
 	ip = (guint8 *)header->code;

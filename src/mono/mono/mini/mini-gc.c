@@ -98,6 +98,11 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 	tls->jit_tls = TlsGetValue (mono_jit_tls_id);
 }
 
+static int precise_frame_count [2], precise_frame_limit = -1;
+static gboolean precise_frame_limit_inited;
+
+#define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
+
 static void
 thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise)
 {
@@ -177,6 +182,23 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 				continue;
 			}
 
+			/*
+			 * Debugging aid to control the number of frames scanned precisely
+			 */
+			if (!precise_frame_limit_inited) {
+				if (getenv ("MONO_PRECISE_COUNT"))
+					precise_frame_limit = atoi (getenv ("MONO_PRECISE_COUNT"));
+				precise_frame_limit_inited = TRUE;
+			}
+				
+			if (precise_frame_limit != -1) {
+				if (precise_frame_count [precise] == precise_frame_limit)
+					printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (ji->method, TRUE));
+				if (precise_frame_count [precise] > precise_frame_limit)
+					continue;
+			}
+			precise_frame_count [precise] ++;
+
 #ifdef __x86_64__
 			if (map->frame_reg == AMD64_RSP)
 				fp = (guint8*)ctx.rsp;
@@ -239,15 +261,25 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 							MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
 							MonoObject *obj = *ptr;
 
-							if (pc_offset >= map->live_ranges [loffset] && pc_offset < map->live_ranges [loffset + 1]) {
+							if (pc_offset >= map->live_ranges [loffset] && pc_offset < map->live_ranges [loffset + 1] && obj != DEAD_REF) {
 								if (obj) {
+									DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
 									*ptr = mono_gc_scan_object (obj);
-									DEBUG (printf ("\tref %s0x%x(fp)=%p: %p -> %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj, *ptr));
+									DEBUG (printf (" %p.\n", *ptr));
 								} else {
 									DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
 								}
 							} else {
-									DEBUG (printf ("\tref %s0x%x(fp)=%p: dead\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr));
+								DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+								/*
+								 * This serves two purposes:
+								 * - fail fast if the live range is incorrect, and
+								 * the JITted code tries to access this object
+								 * - it avoids problems when a dead slot becomes live
+								 * again due to a backward branch 
+								 * (see test_0_liveness_6).
+								 */
+								*ptr = DEAD_REF;
 							}
 
 							loffset += 2;
@@ -283,6 +315,27 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	} while (0)
 
 void
+mini_gc_init_gc_map (MonoCompile *cfg)
+{
+	if (COMPILE_LLVM (cfg))
+		return;
+
+	/* See mini_gc_create_gc_map () for comments as to why these are needed */
+
+	/* Extend the live ranges using the liveness information */
+	cfg->compute_precise_live_ranges = TRUE;
+	/* Is this still needed ? */
+	cfg->disable_reuse_ref_stack_slots = TRUE;
+	/* 
+	 * Initialize all variables holding refs to null in the initlocals bblock, not just
+	 *  variables representing IL locals.
+	 */
+	cfg->init_ref_vars = TRUE;
+	/* Prevent these initializations from being optimized away */
+	cfg->disable_initlocals_opt_refs = TRUE;
+}
+
+void
 mini_gc_create_gc_map (MonoCompile *cfg)
 {
 	GCMap *map;
@@ -292,8 +345,10 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	guint32 *live_range_start, *live_range_end;
 
 	/*
-	 * This doesn't work yet, because the live ranges used to calculate the GC map
-	 * are not concrete/precise enough for several reasons:
+	 * Since we currently don't use GC safe points, we need to create GC maps which
+	 * are precise at every instruction within a method. We use the live ranges
+	 * calculated by the JIT in mono_spill_global_vars () for this. Unfortunately by 
+	 * default these are not precise enought for several reasons:
 	 * - the current calculation of MonoMethodVar->live_range_start/end is incorrect,
 	 * it doesn't take into account loops etc. It needs to use the results of the
 	 * liveness analysis pass.
@@ -305,8 +360,22 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	 * in them.
 	 * - the live ranges of variables used in out-of-line bblocks also have holes in
 	 * them.
+	 * - the live ranges of variables used for handling stack args also have holes in
+	 * them:
+	 *   if (A)
+     *     x = <ref>
+	 *   else
+	 *     x = <ref>
+	 *   <use x>
+	 * Here x is not live between the first and the second assignment.
+	 *
+	 * To work around these problems, we set a few cfg flags in mini_init_gc_maps ()
+	 * which guarantee that the live range of stack slots have no holes, i.e. they hold
+	 * a valid value (or null) during their entire live range.
+	 * FIXME: This doesn't completely work yet, see test_0_liveness_6 (), where
+	 * a variable becomes dead, then alive again.
 	 */
-	NOT_IMPLEMENTED;
+	//NOT_IMPLEMENTED;
 
 	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
 		/* Without liveness info, the live ranges are not precise enough */
@@ -433,16 +502,21 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			continue;
 
 		if (t->byref || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_I || t->type == MONO_TYPE_U) {
-			slots [pos] = SLOT_PIN;
-			continue;
-		}
-		if (vmv && !vmv->live_range_start) {
-			g_assert (pos >= 0 && pos < nslots);
-			slots [pos] = SLOT_PIN;
+			set_slot (slots, nslots, pos, SLOT_PIN);
 			continue;
 		}
 
 		if (MONO_TYPE_IS_REFERENCE (ins->inst_vtype)) {
+			if (vmv && !vmv->live_range_start) {
+				set_slot (slots, nslots, pos, SLOT_PIN);
+				continue;
+			}
+
+			if (ins->flags & (MONO_INST_VOLATILE | MONO_INST_INDIRECT)) {
+				set_slot (slots, nslots, pos, SLOT_PIN);
+				continue;
+			}
+
 			set_slot (slots, nslots, pos, SLOT_REF);
 
 			/* Stack slots holding refs shouldn't be shared */
@@ -480,10 +554,10 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 		if (map->slots) {
 			precise_count ++;
-			if (getenv ("MONO_PRECISE_COUNT")) {
-				if (precise_count == atoi (getenv ("MONO_PRECISE_COUNT")))
+			if (getenv ("MONO_GCMAP_COUNT")) {
+				if (precise_count == atoi (getenv ("MONO_GCMAP_COUNT")))
 					printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-				if (precise_count > atoi (getenv ("MONO_PRECISE_COUNT"))) {
+				if (precise_count > atoi (getenv ("MONO_GCMAP_COUNT"))) {
 					for (i = 0; i < nslots; ++i)
 						map->slots [i] = SLOT_PIN;
 				}
@@ -518,6 +592,11 @@ mini_gc_init (void)
 
 void
 mini_gc_init (void)
+{
+}
+
+void
+mini_gc_init_gc_map (MonoCompile *cfg)
 {
 }
 

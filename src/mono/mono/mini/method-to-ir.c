@@ -159,8 +159,6 @@ const gint8 ins_sreg_counts[] = {
 #undef MINI_OP
 #undef MINI_OP3
 
-extern GHashTable *jit_icall_name_hash;
-
 #define MONO_INIT_VARINFO(vi,id) do { \
 	(vi)->range.first_use.pos.bid = 0xffff; \
 	(vi)->reg = -1; \
@@ -10040,6 +10038,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
+	if (cfg->init_ref_vars && cfg->method == method) {
+		/* Emit initialization for ref vars */
+		// FIXME: Avoid duplication initialization for IL locals.
+		for (i = 0; i < cfg->num_varinfo; ++i) {
+			MonoInst *ins = cfg->varinfo [i];
+
+			if (ins->opcode == OP_LOCAL && ins->type == STACK_OBJ)
+				MONO_EMIT_NEW_PCONST (cfg, ins->dreg, NULL);
+		}
+	}
+
 	/* Add a sequence point for method entry/exit events */
 	if (seq_points) {
 		NEW_SEQ_POINT (cfg, ins, METHOD_ENTRY_IL_OFFSET, FALSE);
@@ -10890,6 +10899,10 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	 * don't split live ranges, these will precisely describe the live range of
 	 * the variable, i.e. the instruction range where a valid value can be found
 	 * in the variables location.
+	 * The live range is computed using the liveness info computed by the liveness pass.
+	 * We can't use vmv->range, since that is an abstract live range, and we need
+	 * one which is instruction precise.
+	 * FIXME: Variables used in out-of-line bblocks have a hole in their live range.
 	 */
 	/* FIXME: Only do this if debugging info is requested */
 	live_range_start = g_new0 (MonoInst*, cfg->next_vreg);
@@ -11241,6 +11254,29 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 			if (cfg->verbose_level > 2)
 				mono_print_ins_index (1, ins);
 		}
+
+		/* Extend the live range based on the liveness info */
+		if (cfg->compute_precise_live_ranges && bb->live_out_set && bb->code) {
+			for (i = 0; i < cfg->num_varinfo; i ++) {
+				MonoMethodVar *vi = MONO_VARINFO (cfg, i);
+
+				if (vreg_is_volatile (cfg, vi->vreg))
+					/* The liveness info is incomplete */
+					continue;
+
+				if (mono_bitset_test_fast (bb->live_in_set, i) && !live_range_start [vi->vreg]) {
+					/* Live from at least the first ins of this bb */
+					live_range_start [vi->vreg] = bb->code;
+					live_range_start_bb [vi->vreg] = bb;
+				}
+
+				if (mono_bitset_test_fast (bb->live_out_set, i)) {
+					/* Live at least until the last ins of this bb */
+					live_range_end [vi->vreg] = bb->last_ins;
+					live_range_end_bb [vi->vreg] = bb;
+				}
+			}
+		}
 	}
 	
 #ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
@@ -11248,21 +11284,26 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	 * Emit LIVERANGE_START/LIVERANGE_END opcodes, the backend will implement them
 	 * by storing the current native offset into MonoMethodVar->live_range_start/end.
 	 */
-	for (i = 0; i < cfg->num_varinfo; ++i) {
-		int vreg = MONO_VARINFO (cfg, i)->vreg;
-		MonoInst *ins;
+	if (cfg->compute_precise_live_ranges && cfg->comp_done & MONO_COMP_LIVENESS) {
+		for (i = 0; i < cfg->num_varinfo; ++i) {
+			int vreg = MONO_VARINFO (cfg, i)->vreg;
+			MonoInst *ins;
 
-		if (live_range_start [vreg]) {
-			MONO_INST_NEW (cfg, ins, OP_LIVERANGE_START);
-			ins->inst_c0 = i;
-			ins->inst_c1 = vreg;
-			mono_bblock_insert_after_ins (live_range_start_bb [vreg], live_range_start [vreg], ins);
-		}
-		if (live_range_end [vreg]) {
-			MONO_INST_NEW (cfg, ins, OP_LIVERANGE_END);
-			ins->inst_c0 = i;
-			ins->inst_c1 = vreg;
-			mono_bblock_insert_after_ins (live_range_end_bb [vreg], live_range_end [vreg], ins);
+			if (live_range_start [vreg]) {
+				MONO_INST_NEW (cfg, ins, OP_LIVERANGE_START);
+				ins->inst_c0 = i;
+				ins->inst_c1 = vreg;
+				mono_bblock_insert_after_ins (live_range_start_bb [vreg], live_range_start [vreg], ins);
+			}
+			if (live_range_end [vreg]) {
+				MONO_INST_NEW (cfg, ins, OP_LIVERANGE_END);
+				ins->inst_c0 = i;
+				ins->inst_c1 = vreg;
+				if (live_range_end [vreg] == live_range_end_bb [vreg]->last_ins)
+					mono_add_ins_to_end (live_range_end_bb [vreg], ins);
+				else
+					mono_bblock_insert_after_ins (live_range_end_bb [vreg], live_range_end [vreg], ins);
+			}
 		}
 	}
 #endif

@@ -5,6 +5,8 @@
 
 void mini_gc_init (void) MONO_INTERNAL;
 
+void mini_gc_init_gc_map (MonoCompile *cfg) MONO_INTERNAL;
+
 void mini_gc_create_gc_map (MonoCompile *cfg) MONO_INTERNAL;
 
 #endif

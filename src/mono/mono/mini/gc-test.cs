@@ -1,26 +1,9 @@
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 /*
- * Regression tests for the mono JIT.
- *
- * Each test needs to be of the form:
- *
- * static int test_<result>_<name> ();
- *
- * where <result> is an integer (the value that needs to be returned by
- * the method to make it pass.
- * <name> is a user-displayed name used to identify the test.
- *
- * The tests can be driven in two ways:
- * *) running the program directly: Main() uses reflection to find and invoke
- * 	the test methods (this is useful mostly to check that the tests are correct)
- * *) with the --regression switch of the jit (this is the preferred way since
- * 	all the tests will be run with optimizations on and off)
- *
- * The reflection logic could be moved to a .dll since we need at least another
- * regression test file written in IL code to have better control on how
- * the IL code looks.
+ * Regression tests for the GC support in the JIT
  */
 
 class Tests {
@@ -186,12 +169,10 @@ class Tests {
 	 * Tests liveness of object references which are initialized conditionally,
 	 * used in an out-of-line bblock, and the initlocals assignment is optimized away.
 	 */
-	/* FIXME: This doesn't work yet
 	public static int test_0_liveness_out_of_line_bblocks () {
 		cond (false);
 		return 0;
 	}
-	*/
 
 	/*
 	 * Test liveness and loops.
@@ -274,6 +255,143 @@ class Tests {
 				Console.WriteLine ();
 
 			o.ToString ();
+		}
+
+		sum += i + j + k + l + m + n + s;
+
+		return 0;
+	}
+
+	/*
+	 * Test liveness of variables used to handle items on the IL stack.
+	 */
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static string call1 () {
+		return "A";
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static string call2 () {
+		GC.Collect (1);
+		return "A";
+	}
+
+	public static int test_0_liveness_4 () {
+		bool b = false;
+		bool b2 = true;
+
+		/* Exhaust all registers so 'o' is stack allocated */
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+
+		string o = b ? call1 () : call2 ();
+
+		GC.Collect (1);
+
+		sum += i + j + k + l + m + n + s;
+
+		return 0;
+	}
+
+
+	/*
+	 * Test liveness of volatile variables
+	 */
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void liveness_5_1 (out object o) {
+		o = new object ();
+	}
+
+	public static int test_0_liveness_5 () {
+		bool b = false;
+		bool b2 = true;
+
+		/* Exhaust all registers so 'o' is stack allocated */
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+
+		object o;
+
+		liveness_5_1 (out o);
+
+		for (int x = 0; x < 10; ++x) {
+
+			o.ToString ();
+
+			GC.Collect (1);
+		}
+
+		sum += i + j + k + l + m + n + s;
+
+		return 0;
+	}
+
+	/*
+	 * Test the case when a stack slot becomes dead, then live again due to a backward
+	 * branch.
+	 */
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static object liveness_6_1 () {
+		return new object ();
+	}
+
+	public static int test_0_liveness_6 () {
+		bool b = false;
+		bool b2 = true;
+
+		/* Exhaust all registers so 'o' is stack allocated */
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+
+		for (int x = 0; x < 10; ++x) {
+
+			GC.Collect (1);
+
+			object o = liveness_6_1 ();
+
+			o.ToString ();
+
+			GC.Collect (1);
 		}
 
 		sum += i + j + k + l + m + n + s;

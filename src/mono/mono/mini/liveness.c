@@ -558,6 +558,8 @@ optimize_initlocals (MonoCompile *cfg)
 
 			if (var && !mono_bitset_test_fast (used, ins->dreg) && !mono_bitset_test_fast (initlocals_bb->live_out_set, var->inst_c0) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
 				//printf ("DEAD: "); mono_print_ins (ins);
+				if (cfg->disable_initlocals_opt_refs && var->type == STACK_OBJ)
+					continue;
 				if ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST)) {
 					NULLIFY_INS (ins);
 					MONO_VARINFO (cfg, var->inst_c0)->spill_costs -= 1;
