@@ -259,6 +259,11 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	ea = (gpointer*)((char*)this->vector + (pos * esize));
 	va = (gpointer*)((char*)value + sizeof (MonoObject));
 
+	if (mono_class_is_nullable (ec)) {
+		mono_nullable_init ((guint8*)ea, value, ec);
+		return;
+	}
+
 	if (!value) {
 		memset (ea, 0,  esize);
 		return;
