@@ -318,6 +318,62 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 
 		/* FIXME: Add more opcodes */
 	default:
+		/* These opcodes are not currently handled while running SciMark, first
+		 * column is the number of times the warning was shown:
+		 *
+		 *       1 add_imm
+		 *       1 float_conv_to_i8
+		 *       1 int_mul_ovf_un
+		 *       1 int_neg
+		 *       1 int_or
+		 *       1 int_shr_un
+		 *       1 localloc
+		 *       1 long_ceq
+		 *       1 long_rem
+		 *       1 long_sub
+		 *       2 int_ceq
+		 *       2 int_conv_to_i2
+		 *       2 int_min
+		 *       2 lcall
+		 *       2 long_div
+		 *       3 int_conv_to_u2
+		 *       3 long_shr_imm
+		 *       4 int_rem
+		 *       4 int_rem_imm
+		 *       4 loadi1_membase
+		 *       4 loadu4_membase
+		 *       5 int_div
+		 *       5 shl_imm
+		 *       6 int_div_imm
+		 *       6 int_mul
+		 *       9 int_mul_imm
+		 *       9 zext_i4
+		 *      10 int_shr_imm
+		 *      12 int_shr_un_imm
+		 *      12 long_add_imm
+		 *      12 outarg_vtretaddr
+		 *      12 strlen
+		 *      13 int_or_imm
+		 *      23 call_membase
+		 *      23 int_conv_to_u1
+		 *      23 long_add
+		 *      24 int_and_imm
+		 *      24 int_shl_imm
+		 *      24 loadu2_membase
+		 *      29 loadi8_membase
+		 *      31 llvm_outarg_vt
+		 *      34 int_sub
+		 *      34 loadu1_membase
+		 *      42 int_add
+		 *      85 ldaddr
+		 *     116 loadi4_membase
+		 *     159 x86_lea
+		 *     179 sext_i4
+		 *     291 load_membase
+		 *     462 i8const
+		 *     472 call
+		 */
+		
 		break;
 	}
 	return value_kind;
