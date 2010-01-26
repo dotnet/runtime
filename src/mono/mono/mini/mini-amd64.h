@@ -172,6 +172,7 @@ typedef struct MonoCompileArch {
 #ifdef HOST_WIN32
 	gpointer	unwindinfo;
 #endif
+	gpointer ss_trigger_page_var;
 } MonoCompileArch;
 
 typedef struct {
