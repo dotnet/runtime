@@ -1964,7 +1964,7 @@ can_marshal_struct (MonoClass *klass)
 		case MONO_TYPE_STRING:
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (!mono_class_from_mono_type (field->type)->enumtype && can_marshal_struct (mono_class_from_mono_type (field->type)))
+			if (!mono_class_from_mono_type (field->type)->enumtype && !can_marshal_struct (mono_class_from_mono_type (field->type)))
 				can_marshal = FALSE;
 			break;
 		default:
