@@ -1068,6 +1068,9 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 				tdie = ".LDIE_I4";
 			}
 			break;
+		case MONO_TYPE_PTR:
+			tdie = ".LDIE_I";
+			break;
 		default:
 			tdie = ".LDIE_I4";
 			break;
