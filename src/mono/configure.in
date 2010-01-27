@@ -1927,7 +1927,7 @@ if test "x$enable_llvm" = "xyes"; then
    LLVM_CFLAGS=`$LLVM_CONFIG --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
    # LLVM is compiled with -fno-rtti, so we need this too, since our classes inherit
    # from LLVM classes.
-   LLVM_CXXFLAGS=`$LLVM_CONFIG --cxxflags` -fno-rtti
+   LLVM_CXXFLAGS="`$LLVM_CONFIG --cxxflags` -fno-rtti"
    LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
    LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter jit x86codegen`
    LLVM_LIBS="$LLVM_LDFLAGS $LLVM_LIBS -lstdc++"

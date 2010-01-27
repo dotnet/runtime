@@ -1,3 +1,7 @@
+2010-01-27  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Fix the setting of LLVM_CXXFLAGS.
+
 2010-01-22  Andrés G. Aragoneses  <knocte@gmail.com>
 
 	* configure.in: Improve r150055 by checking for CXX=g++ as well, according to
