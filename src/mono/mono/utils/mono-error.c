@@ -292,6 +292,21 @@ mono_error_set_argument (MonoError *oerror, const char *argument, const char *ms
 	set_error_message ();
 }
 
+void
+mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char *msg_format, ...)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+	mono_error_prepare (error);
+
+	error->error_code = MONO_ERROR_NOT_VERIFIABLE;
+	mono_error_set_class (oerror, method->klass);
+	if (method)
+		mono_error_set_member_name (oerror, mono_method_full_name (method, 1));
+
+	set_error_message ();
+}
+
+
 static MonoString*
 get_type_name_as_mono_string (MonoErrorInternal *error, MonoDomain *domain, MonoError *error_out)
 {
@@ -437,6 +452,26 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		exception = mono_get_exception_argument (error->type_name, mono_internal_error_get_message (error));
 		break;
 
+	case MONO_ERROR_NOT_VERIFIABLE: {
+		char *type_name = NULL, *message;
+		if (error->klass) {
+			type_name = mono_type_get_full_name (error->klass);
+			if (!type_name) {
+				mono_error_set_out_of_memory (error_out, "Could not allocate message");
+				break;
+			}
+		}
+		message = g_strdup_printf ("Error in %s:%s %s", type_name, error->member_name, mono_internal_error_get_message (error));
+		if (!message) {
+			g_free (type_name);
+			mono_error_set_out_of_memory (error_out, "Could not allocate message");
+			break;	
+		}
+		exception = mono_exception_from_name_msg (mono_defaults.corlib, "System.Security", "VerificationException", message);
+		g_free (message);
+		g_free (type_name);
+		break;
+	}
 	case MONO_ERROR_GENERIC:
 		if (!error->exception_name_space || !error->exception_name)
 			mono_error_set_generic_error (error_out, "System", "ExecutionEngineException", "MonoError with generic error but no exception name was supplied");
