@@ -367,6 +367,8 @@ dump_verify_info (MonoImage *image, int flags)
 
 		for (i = 0; i < m->rows; ++i) {
 			MonoMethod *method;
+			mono_loader_clear_error ();
+
 			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i+1), NULL);
 			if (!method) {
 				g_print ("Warning: Cannot lookup method with token 0x%08x\n", i + 1);
