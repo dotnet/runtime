@@ -2860,6 +2860,26 @@ mono_vtable_get_static_field_data (MonoVTable *vt)
 	return vt->data;
 }
 
+static guint8*
+mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
+{
+	guint8 *src;
+
+	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+		if (field->offset == -1) {
+			/* Special static */
+			gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+			src = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
+		} else {
+			src = (guint8*)vt->data + field->offset;
+		}
+	} else {
+		src = (guint8*)obj + field->offset;
+	}
+
+	return src;
+}
+
 /**
  * mono_field_get_value:
  * @obj: Object instance
@@ -2966,6 +2986,10 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 
 	/* boxed value type */
 	klass = mono_class_from_mono_type (field->type);
+
+	if (mono_class_is_nullable (klass))
+		return mono_nullable_box (mono_field_get_addr (obj, vtable, field), klass);
+
 	o = mono_object_new (domain, klass);
 	v = ((gchar *) o) + sizeof (MonoObject);
 	if (is_static) {
