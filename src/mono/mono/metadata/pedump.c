@@ -692,7 +692,7 @@ main (int argc, char *argv [])
 	}
 	
 	if (run_new_metadata_verifier) {
-		mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
+		mono_verifier_set_mode (verifier_mode);
 
 		image_result = verify_image_file (file);
 		if (image_result == 1 || !verify_code)
