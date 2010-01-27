@@ -5007,7 +5007,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
 				case OP_BOUNDS_CHECK:
-					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1); \
+					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1);
 					MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2);
 					break;
 				case OP_NEWARR:
