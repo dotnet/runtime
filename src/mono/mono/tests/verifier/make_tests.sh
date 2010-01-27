@@ -327,7 +327,7 @@ do
     I=`expr $I + 1`
   done
 
-  ./make_unary_test.sh conv_op_${J}_${I} badmd $OP "$TYPE" "typedref&"
+  ./make_unary_test.sh conv_op_${J}_${I} invalid $OP "typedref&"
   J=`expr $J + 1`
   I=1
 done
@@ -435,7 +435,7 @@ do
   ./make_store_test.sh coercion_78_${I} unverifiable "$OP" typedref 'native int'
   ./make_store_test.sh coercion_89_${I} unverifiable "$OP" typedref int64
   ./make_store_test.sh coercion_80_${I} unverifiable "$OP" typedref float64
-  ./make_store_test.sh coercion_81_${I} badmd "$OP" typedref 'typedref&'
+  ./make_store_test.sh coercion_81_${I} invalid "$OP" typedref 'typedref&'
   ./make_store_test.sh coercion_82_${I} unverifiable "$OP" typedref object
   I=`expr $I + 1`
 done
@@ -2222,13 +2222,18 @@ done
 #for T1 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2" "int32 *" "valuetype MyStruct *" "method int32 *(int32)"
 for T1 in "native int" "int8*" "typedref" 
 do
-	for T2 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2"   "int32 *" "valuetype MyStruct *" "method int32 *(int32)" "native int"  "typedref" "typedref\&" "class Template\`1<object>" "valuetype StructTemplate\`1<object>" "valuetype StructTemplate2\`1<object>"
+	for T2 in "int8" "int64" "float64" "object" "string" "class Class" "int32[]" "int32[,]" "valuetype MyStruct" "valuetype MyStruct2"   "int32 *" "valuetype MyStruct *" "method int32 *(int32)" "native int"  "typedref" "class Template\`1<object>" "valuetype StructTemplate\`1<object>" "valuetype StructTemplate2\`1<object>"
 	do 
 		./make_ldobj_test.sh ldobj_${I} unverifiable "${T1}" "${T2}"
 		I=`expr $I + 1`
 	done
 done
 
+for T1 in "native int" "int8*" "typedref" 
+do
+	./make_ldobj_test.sh ldobj_${I} invalid "${T1}" "typedref\&"
+	I=`expr $I + 1`
+done
 
 
 
@@ -3665,15 +3670,15 @@ do
 done
 
 
-for TYPE in "int32*" "typedref" "method int32 *(int32)"
+for TYPE in "int32*" "method int32 *(int32)"
 do
 	./make_stobj_test.sh stobj_simple_${I} unverifiable "$TYPE" "$TYPE\&" "$TYPE" 
 	I=`expr $I + 1`
 done
 
-for TYPE in "int32\&" "void"
+for TYPE in "int32\&" "void" "typedref"
 do
-	./make_stobj_test.sh stobj_simple_${I} badmd "$TYPE" "$TYPE\&" "$TYPE" 
+	./make_stobj_test.sh stobj_simple_${I} invalid "$TYPE" "$TYPE\&" "$TYPE" 
 	I=`expr $I + 1`
 done
 
@@ -3789,16 +3794,16 @@ do
 done
 
 #should be able to use unmanaged types
-for TYPE in "int32*" "typedref" "method int32 *(int32)"
+for TYPE in "int32*" "method int32 *(int32)"
 do
 	./make_cpobj_test.sh cpobj_simple_${I} unverifiable "${TYPE}\&" "${TYPE}\&" "${TYPE}"
 	I=`expr $I + 1`
 done
 
 #should be able to use invalid types
-for TYPE in "int32\&" "void"
+for TYPE in "int32\&" "void" "typedref"
 do
-	./make_cpobj_test.sh cpobj_simple_${I} badmd "${TYPE}\&" "${TYPE}\&" "${TYPE}"
+	./make_cpobj_test.sh cpobj_simple_${I} invalid "${TYPE}\&" "${TYPE}\&" "${TYPE}"
 	I=`expr $I + 1`
 done
 
@@ -4142,7 +4147,8 @@ done
 
 #call conv
 ./make_delegate_compat_test.sh delegate_bad_cconv_1 unverifiable int32 int32 int32 int32 "default" "vararg"
-./make_delegate_compat_test.sh delegate_bad_cconv_2 unverifiable int32 int32 int32 int32 "vararg" "	"
+#This is invalid because we don't properly decode memberref signatures
+./make_delegate_compat_test.sh delegate_bad_cconv_2 invalid int32 int32 int32 int32 "vararg" "	"
 
 #return type
 

@@ -1,14 +1,19 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_OP=$3
 TEST_TYPE1=$4
 
-TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | sed -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
+TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | $SED -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
 echo $TEST_FILE
-TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
-sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/LOAD_OPCODE/${TEST_LOAD_OP}/g" > $TEST_FILE <<//EOF
+TEST_TYPE1=`echo $TEST_TYPE1 | $SED -s 's/&/\\\&/'`
+$SED -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/LOAD_OPCODE/${TEST_LOAD_OP}/g" > $TEST_FILE <<//EOF
 
 // VALIDITY CIL which breaks the ECMA-335 rules. 
 // this CIL should fail verification by a conforming CLI verifier.
@@ -47,7 +52,6 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${
     .field [0] private int32 privateIntVal
     .field [0] public int32 publicIntVal
     .field [4] public int32 intVal
-    //.field [4] public object objVal
 }
 
 .method public static int32 Main() cil managed
