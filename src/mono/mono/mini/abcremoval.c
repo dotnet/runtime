@@ -1022,7 +1022,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 		printf ("\nProcessing block %d [dfn %d]...\n", bb->block_num, bb->dfn);
 	}
 
-	if (bb->region)
+	if (bb->region != -1)
 		return;
 
 	get_relations_from_previous_bb (area, bb, &additional_relations);

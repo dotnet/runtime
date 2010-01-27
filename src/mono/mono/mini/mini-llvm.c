@@ -970,7 +970,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 	LLVMBuilderRef builder = *builder_ref;
 
 	// FIXME: Nested clauses
-	if (bb->region && MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
+	if (bb->region != -1 && MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
 		MonoMethodHeader *header = mono_method_get_header (cfg->method);
 		// FIXME: Add a macro for this
 		int clause_index = (bb->region >> 8) - 1;
