@@ -520,7 +520,6 @@ LL_SO_OPEN (const char *file, int flag)
 		
 	mappings = g_hash_table_lookup (mono_dls, file);
 	ll_last_error = mappings == NULL ? "File not registered" : "";
-	printf ("Returning mappings=0x%p\n", mappings);
 	return mappings;
 }
 
@@ -535,7 +534,6 @@ _LL_SO_SYMBOL (void *handle, const char *symbol)
 {
 	MonoDlMapping *mappings = (MonoDlMapping *) handle;
 	
-	printf ("During lookup: 0x%p\n", handle);
 	for (;mappings->name; mappings++){
 		if (strcmp (symbol, mappings->name) == 0){
 			ll_last_error = "";
