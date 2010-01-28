@@ -3049,28 +3049,9 @@ mono_postprocess_patches (MonoCompile *cfg)
 }
 
 static void
-collect_pred_seq_points (MonoBasicBlock *bb, MonoInst *ins, GSList **next, int depth)
-{
-	int i;
-	MonoBasicBlock *in_bb;
-
-	for (i = 0; i < bb->in_count; ++i) {
-		in_bb = bb->in_bb [i];
-
-		if (in_bb->last_seq_point) {
-			next [in_bb->last_seq_point->backend.size] = g_slist_append (next [in_bb->last_seq_point->backend.size], GUINT_TO_POINTER (ins->backend.size));
-		} else {
-			/* Have to look at its predecessors */
-			if (depth < 5)
-				collect_pred_seq_points (in_bb, ins, next, depth + 1);
-		}
-	}
-}
-
-static void
 mono_save_seq_point_info (MonoCompile *cfg)
 {
-	MonoBasicBlock *bb;
+	MonoBasicBlock *bb, *in_bb;
 	GSList *bb_seq_points, *l;
 	MonoInst *last;
 	MonoDomain *domain = cfg->domain;
@@ -3094,9 +3075,6 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		ins->backend.size = i;
 	}
 
-	if (strcmp (cfg->method->name, "Foo") == 0)
-		printf ("HIT!\n");
-
 	/*
 	 * For each sequence point, compute the list of sequence points immediately
 	 * following it, this is needed to implement 'step over' in the debugger agent.
@@ -3116,37 +3094,32 @@ mono_save_seq_point_info (MonoCompile *cfg)
 				next [last->backend.size] = g_slist_append (next [last->backend.size], GUINT_TO_POINTER (ins->backend.size));
 			} else {
 				/* Link with the last bb in the previous bblocks */
-				collect_pred_seq_points (bb, ins, next, 0);
+				/* 
+				 * FIXME: What if the prev bb doesn't have a seq point, but
+				 * one of its predecessors has ?
+				 */
+				for (i = 0; i < bb->in_count; ++i) {
+					in_bb = bb->in_bb [i];
+
+					if (in_bb->last_seq_point)
+						next [in_bb->last_seq_point->backend.size] = g_slist_append (next [in_bb->last_seq_point->backend.size], GUINT_TO_POINTER (ins->backend.size));
+				}
 			}
 
 			last = ins;
 		}
 	}
 
-	if (cfg->verbose_level > 2) {
-		printf ("\nSEQ POINT MAP: \n");
-	}
-
 	for (i = 0; i < cfg->seq_points->len; ++i) {
 		SeqPoint *sp = &info->seq_points [i];
 		GSList *l;
-		int j, next_index;
+		int j;
 
 		sp->next_len = g_slist_length (next [i]);
 		sp->next = g_new (int, sp->next_len);
 		j = 0;
-		if (cfg->verbose_level > 2 && next [i]) {
-			printf ("\t0x%x ->", sp->il_offset);
-			for (l = next [i]; l; l = l->next) {
-				next_index = GPOINTER_TO_UINT (l->data);
-				printf (" 0x%x", info->seq_points [next_index].il_offset);
-			}
-			printf ("\n");
-		}
-		for (l = next [i]; l; l = l->next) {
-			next_index = GPOINTER_TO_UINT (l->data);
-			sp->next [j ++] = next_index;
-		}
+		for (l = next [i]; l; l = l->next)
+			sp->next [j ++] = GPOINTER_TO_UINT (l->data);
 		g_slist_free (next [i]);
 	}
 	g_free (next);
