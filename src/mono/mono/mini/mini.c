@@ -3094,9 +3094,6 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		ins->backend.size = i;
 	}
 
-	if (strcmp (cfg->method->name, "Foo") == 0)
-		printf ("HIT!\n");
-
 	/*
 	 * For each sequence point, compute the list of sequence points immediately
 	 * following it, this is needed to implement 'step over' in the debugger agent.
