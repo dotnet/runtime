@@ -1890,9 +1890,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_UNLOAD);
 
-	if (free_domain_hook)
-		free_domain_hook (domain);
-
 	mono_debug_domain_unload (domain);
 
 	mono_appdomains_lock ();
@@ -1946,6 +1943,15 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 	g_slist_free (domain->domain_assemblies);
 	domain->domain_assemblies = NULL;
+
+	/* 
+	 * Send this after the assemblies have been unloaded and the domain is still in a 
+	 * usable state.
+	 */
+	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
+
+	if (free_domain_hook)
+		free_domain_hook (domain);
 
 	/* FIXME: free delegate_hash_table when it's used */
 	if (domain->search_path) {
@@ -2028,8 +2034,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_gc_deregister_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED));
 
 	/* FIXME: anything else required ? */
-
-	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
 
 	mono_gc_free_fixed (domain);
 
