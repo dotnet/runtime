@@ -717,7 +717,7 @@ mono_debugger_agent_init (void)
 	mono_profiler_install ((MonoProfiler*)&debugger_profiler, runtime_shutdown);
 	mono_profiler_set_events (MONO_PROFILE_APPDOMAIN_EVENTS | MONO_PROFILE_THREADS | MONO_PROFILE_ASSEMBLY_EVENTS | MONO_PROFILE_JIT_COMPILATION | MONO_PROFILE_METHOD_EVENTS);
 	mono_profiler_install_runtime_initialized (runtime_initialized);
-	mono_profiler_install_appdomain (NULL, appdomain_load, appdomain_unload, NULL);
+	mono_profiler_install_appdomain (NULL, appdomain_load, NULL, appdomain_unload);
 	mono_profiler_install_thread (thread_startup, thread_end);
 	mono_profiler_install_assembly (NULL, assembly_load, assembly_unload, NULL);
 	mono_profiler_install_jit_end (jit_end);
