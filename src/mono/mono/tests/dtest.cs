@@ -77,6 +77,65 @@ public class DebuggerTests
 		}
 	}
 
+	BreakpointEvent run_until (string name) {
+		// String
+		MethodMirror m = entry_point.DeclaringType.GetMethod (name);
+		Assert.IsNotNull (m);
+		vm.SetBreakpoint (m, 0);
+
+		Event e = null;
+
+		while (true) {
+			vm.Resume ();
+			e = vm.GetNextEvent ();
+			if (e is BreakpointEvent)
+				break;
+		}
+
+		Assert.IsInstanceOfType (typeof (BreakpointEvent), e);
+		Assert.AreEqual (m, (e as BreakpointEvent).Method);
+
+		return (e as BreakpointEvent);
+	}
+
+	Event single_step (ThreadMirror t) {
+		var req = vm.CreateStepRequest (t);
+		req.Enable ();
+
+		vm.Resume ();
+		Event e = vm.GetNextEvent ();
+		Assert.IsTrue (e is StepEvent);
+
+		req.Disable ();
+
+		return e;
+	}
+
+	void check_arg_val (StackFrame frame, int pos, Type type, object eval) {
+		object val = frame.GetArgument (pos);
+		Assert.IsTrue (val is PrimitiveValue);
+		object v = (val as PrimitiveValue).Value;
+		Assert.AreEqual (type, v.GetType ());
+		if (eval is float)
+			Assert.IsTrue (Math.Abs ((float)eval - (float)v) < 0.0001);
+		else if (eval is double)
+			Assert.IsTrue (Math.Abs ((double)eval - (double)v) < 0.0001);
+		else
+			Assert.AreEqual (eval, v);
+	}
+
+	void AssertValue (object expected, object val) {
+		if (expected is string) {
+			Assert.IsTrue (val is StringMirror);
+			Assert.AreEqual (expected, (val as StringMirror).Value);
+		} else if (val is StructMirror && (val as StructMirror).Type.Name == "IntPtr") {
+			AssertValue (expected, (val as StructMirror).Fields [0]);
+		} else {
+			Assert.IsTrue (val is PrimitiveValue);
+			Assert.AreEqual (expected, (val as PrimitiveValue).Value);
+		}
+	}
+
 	[SetUp]
 	public void SetUp () {
 		Start (new string [] { "dtest-app.exe" });
@@ -465,65 +524,6 @@ public class DebuggerTests
 		Assert.IsTrue (e is BreakpointEvent);
 
 		req1.Disable ();
-	}
-
-	BreakpointEvent run_until (string name) {
-		// String
-		MethodMirror m = entry_point.DeclaringType.GetMethod (name);
-		Assert.IsNotNull (m);
-		vm.SetBreakpoint (m, 0);
-
-		Event e = null;
-
-		while (true) {
-			vm.Resume ();
-			e = vm.GetNextEvent ();
-			if (e is BreakpointEvent)
-				break;
-		}
-
-		Assert.IsInstanceOfType (typeof (BreakpointEvent), e);
-		Assert.AreEqual (m, (e as BreakpointEvent).Method);
-
-		return (e as BreakpointEvent);
-	}
-
-	Event single_step (ThreadMirror t) {
-		var req = vm.CreateStepRequest (t);
-		req.Enable ();
-
-		vm.Resume ();
-		Event e = vm.GetNextEvent ();
-		Assert.IsTrue (e is StepEvent);
-
-		req.Disable ();
-
-		return e;
-	}
-
-	void check_arg_val (StackFrame frame, int pos, Type type, object eval) {
-		object val = frame.GetArgument (pos);
-		Assert.IsTrue (val is PrimitiveValue);
-		object v = (val as PrimitiveValue).Value;
-		Assert.AreEqual (type, v.GetType ());
-		if (eval is float)
-			Assert.IsTrue (Math.Abs ((float)eval - (float)v) < 0.0001);
-		else if (eval is double)
-			Assert.IsTrue (Math.Abs ((double)eval - (double)v) < 0.0001);
-		else
-			Assert.AreEqual (eval, v);
-	}
-
-	void AssertValue (object expected, object val) {
-		if (expected is string) {
-			Assert.IsTrue (val is StringMirror);
-			Assert.AreEqual (expected, (val as StringMirror).Value);
-		} else if (val is StructMirror && (val as StructMirror).Type.Name == "IntPtr") {
-			AssertValue (expected, (val as StructMirror).Fields [0]);
-		} else {
-			Assert.IsTrue (val is PrimitiveValue);
-			Assert.AreEqual (expected, (val as PrimitiveValue).Value);
-		}
 	}
 
 	[Test]
@@ -2031,7 +2031,7 @@ public class DebuggerTests
 
 		Start (new string [] { "dtest-app.exe", "domain-test" });
 
-		vm.EnableEvents (EventType.AppDomainCreate, EventType.AppDomainUnload);
+		vm.EnableEvents (EventType.AppDomainCreate, EventType.AppDomainUnload, EventType.AssemblyUnload);
 
 		Event e = run_until ("domains");
 
@@ -2069,9 +2069,15 @@ public class DebuggerTests
 		Assert.AreEqual ("domain", domain.FriendlyName);
 
 		// Run until the unload
-		vm.Resume ();
-
-		e = vm.GetNextEvent ();
+		while (true) {
+			vm.Resume ();
+			e = vm.GetNextEvent ();
+			if (e is AssemblyUnloadEvent) {
+				continue;
+			} else {
+				break;
+			}
+		}
 		Assert.IsInstanceOfType (typeof (AppDomainUnloadEvent), e);
 		Assert.AreEqual (domain, (e as AppDomainUnloadEvent).Domain);
 
