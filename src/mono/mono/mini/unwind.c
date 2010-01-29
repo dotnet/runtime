@@ -810,7 +810,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 			read_encoded_val (p_encoding, p, &p);
 
 			/* L */
-			g_assert (*p == (DW_EH_PE_sdata4|DW_EH_PE_pcrel));
+			g_assert ((*p == (DW_EH_PE_sdata4|DW_EH_PE_pcrel)) || (*p == (DW_EH_PE_sdata8|DW_EH_PE_pcrel)));
 			p ++;
 			/* R */
 			g_assert (*p == (DW_EH_PE_sdata4|DW_EH_PE_pcrel));
@@ -851,13 +851,12 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 		gint32 lsda_offset;
 		guint8 *lsda;
 
-		/* 
-		 * For some reason, this is 8 bytes long, even through it only includes
-		 * the offset to the LSDA which is encoded as an sdata4.
-		 */
 		g_assert (aug_len == sizeof (gpointer));
 		/* sdata|pcrel encoding */
-		lsda_offset = *(gint32*)fde_aug;
+		if (sizeof (gpointer) == 8)
+			lsda_offset = *(gint64*)fde_aug;
+		else
+			lsda_offset = *(gint32*)fde_aug;
 		if (lsda_offset != 0) {
 			lsda = fde_aug + *(gint32*)fde_aug;
 
