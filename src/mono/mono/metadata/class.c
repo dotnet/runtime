@@ -5136,6 +5136,7 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	if (count - pos > 0) {
 		klass->interface_count = count - pos;
 		klass->interfaces = mono_image_alloc0 (image, sizeof (MonoClass *) * (count - pos));
+		klass->interfaces_inited = TRUE;
 		for (i = pos; i < count; i++)
 			klass->interfaces [i - pos] = pinfo->constraints [i];
 	}
@@ -5154,6 +5155,12 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	klass->sizes.generic_param_token = pinfo ? pinfo->token : 0;
 
 	mono_class_setup_supertypes (klass);
+
+	if (count - pos > 0) {
+		mono_class_setup_vtable (klass->parent);
+		g_assert (!klass->parent->exception_type);
+		setup_interface_offsets (klass, klass->parent->vtable_size);
+	}
 
 	return klass;
 }
