@@ -2292,10 +2292,10 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		this_reg = this->dreg;
 
-		MONO_EMIT_NULL_CHECK (cfg, this_reg);
-
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 		if ((method->klass->parent == mono_defaults.multicastdelegate_class) && (!strcmp (method->name, "Invoke"))) {
+			MONO_EMIT_NULL_CHECK (cfg, this_reg);
+
 			/* Make a call to delegate->invoke_impl */
 			call->inst.opcode = callvirt_to_call_membase (call->inst.opcode);
 			call->inst.inst_basereg = this_reg;
@@ -2350,7 +2350,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		call->inst.opcode = callvirt_to_call_membase (call->inst.opcode);
 
 		vtable_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 		if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 			slot_reg = -1;
 #ifdef MONO_ARCH_HAVE_IMT
@@ -2912,8 +2912,7 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 	int rank_reg = alloc_dreg (cfg ,STACK_I4);
 
 	obj_reg = sp [0]->dreg;
-	MONO_EMIT_NULL_CHECK (cfg, obj_reg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
 
 	/* FIXME: generics */
@@ -3914,8 +3913,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "GetType") == 0) {
 			int dreg = alloc_preg (cfg);
 			int vt_reg = alloc_preg (cfg);
-			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg);
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vt_reg, args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
+			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, vt_reg, G_STRUCT_OFFSET (MonoVTable, type));
 			type_from_op (ins, NULL, NULL);
 
@@ -3944,9 +3942,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "get_Rank") == 0) {
 			int dreg = alloc_ireg (cfg);
 			int vtable_reg = alloc_preg (cfg);
-			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg);
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, vtable_reg, 
-										   args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOAD_MEMBASE, vtable_reg, 
+												 args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU1_MEMBASE, dreg,
 								   vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
 			type_from_op (ins, NULL, NULL);
@@ -3955,9 +3952,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else if (strcmp (cmethod->name, "get_Length") == 0) {
 			int dreg = alloc_ireg (cfg);
 
-			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg);
-			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg, 
-								   args [0]->dreg, G_STRUCT_OFFSET (MonoArray, max_length));
+			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOADI4_MEMBASE, dreg, 
+										 args [0]->dreg, G_STRUCT_OFFSET (MonoArray, max_length));
 			type_from_op (ins, NULL, NULL);
 
 			return ins;
@@ -5001,9 +4997,8 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 			for (ins = bb->code; ins; ins = ins->next) {
 				switch (ins->opcode) {
 				case OP_LDLEN:
-					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1);
-					NEW_LOAD_MEMBASE (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
-									  G_STRUCT_OFFSET (MonoArray, max_length));
+					NEW_LOAD_MEMBASE_FAULT (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
+											G_STRUCT_OFFSET (MonoArray, max_length));
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
 				case OP_BOUNDS_CHECK:
@@ -5037,10 +5032,8 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					}
 					break;
 				case OP_STRLEN:
-					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1);
-					NEW_LOAD_MEMBASE (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg,
-									  ins->sreg1, G_STRUCT_OFFSET (MonoString, length));
-					MONO_ADD_INS (cfg->cbb, dest);
+					MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOADI4_MEMBASE, ins->dreg,
+														 ins->sreg1, G_STRUCT_OFFSET (MonoString, length));
 					break;
 				default:
 					break;
@@ -8275,6 +8268,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, field->type, sp [0]->dreg, foffset);
 					load->flags |= ins_flag;
+					load->flags |= MONO_INST_FAULT;
 					*sp++ = load;
 				}
 			}

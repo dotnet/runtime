@@ -226,10 +226,10 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 }
 
 LLVMValueRef 
-mono_llvm_build_volatile_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
-							   const char *Name)
+mono_llvm_build_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+					  const char *Name, gboolean is_volatile)
 {
-	return wrap(unwrap(builder)->CreateLoad(unwrap(PointerVal), true, Name));
+	return wrap(unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name));
 }
 
 void

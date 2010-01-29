@@ -135,6 +135,15 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         (dest)->type = STACK_I4; \
 	} while (0)
 
+#define NEW_LOAD_MEMBASE_FLAGS(cfg,dest,op,dr,base,offset,ins_flags) do {	\
+        MONO_INST_NEW ((cfg), (dest), (op)); \
+        (dest)->dreg = (dr); \
+        (dest)->inst_basereg = (base); \
+        (dest)->inst_offset = (offset); \
+        (dest)->type = STACK_I4; \
+		(dest)->flags = (ins_flags); \
+	} while (0)
+
 #define NEW_LOAD_MEM(cfg,dest,op,dr,mem) do { \
         MONO_INST_NEW ((cfg), (dest), (op)); \
         (dest)->dreg = (dr); \
@@ -599,6 +608,16 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define MONO_EMIT_NEW_LOAD_MEMBASE(cfg,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP ((cfg), (OP_LOAD_MEMBASE), (dr), (base), (offset))
 
+#define MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS(cfg,op,dr,base,offset,ins_flags) do { \
+        MonoInst *inst; \
+        MONO_INST_NEW ((cfg), (inst), (op)); \
+        inst->dreg = dr; \
+        inst->inst_basereg = base; \
+        inst->inst_offset = offset; \
+		inst->flags = (ins_flags); \
+	    MONO_ADD_INS (cfg->cbb, inst); \
+    } while (0)
+
 #define MONO_EMIT_NEW_STORE_MEMBASE(cfg,op,base,offset,sr) do { \
         MonoInst *inst; \
         MONO_INST_NEW ((cfg), (inst), (op)); \
@@ -744,12 +763,33 @@ static int ccount = 0;
 
 #define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
 	cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
-	if (cfg->explicit_null_checks) \
+	if (cfg->explicit_null_checks) {	   \
 		MONO_EMIT_NULL_CHECK (cfg, sreg); \
-	else \
+	} else {												\
 		MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
+		MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg);				\
+		} \
 	MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg);	\
 	} while (0)
+
+/* A load which can cause a nullref */
+#define NEW_LOAD_MEMBASE_FAULT(cfg,dest,op,dr,base,offset) do { \
+		MONO_EMIT_NULL_CHECK ((cfg), (base));							\
+		NEW_LOAD_MEMBASE_FLAGS ((cfg), (dest), (op), (dr), (base), (offset), MONO_INST_FAULT); \
+	} while (0)
+
+#define EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dest,op,dr,base,offset) do { \
+		MONO_EMIT_NULL_CHECK ((cfg), (base));							\
+		NEW_LOAD_MEMBASE_FLAGS ((cfg), (dest), (op), (dr), (base), (offset), MONO_INST_FAULT); \
+		MONO_ADD_INS ((cfg)->cbb, (dest)); \
+	} while (0)
+
+#define MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT(cfg,op,dr,base,offset) do { \
+		MONO_EMIT_NULL_CHECK (cfg, base);								\
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS ((cfg), (op), (dr), (base), (offset), MONO_INST_FAULT); \
+	} while (0)
+
+#define MONO_EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT ((cfg), (OP_LOAD_MEMBASE), (dr), (base), (offset))
 
 /*Object Model related macros*/
 

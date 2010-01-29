@@ -693,6 +693,8 @@ enum {
 	/* the address of the variable has been taken */
 	MONO_INST_INDIRECT   = 16,
 	MONO_INST_NORANGECHECK   = 16,
+	/* On loads, the source address can be null */
+	MONO_INST_FAULT = 32
 };
 
 #define inst_c0 data.op[0].const_val

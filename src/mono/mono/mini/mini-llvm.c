@@ -2416,6 +2416,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMValueRef index;
 				LLVMTypeRef t;
 				gboolean sext = FALSE, zext = FALSE;
+				gboolean is_volatile = (ins->flags & MONO_INST_FAULT) || getenv ("VOL");
 
 				t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -2423,19 +2424,18 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					dname = (char*)"";
 
 				/* 
-				 * We emit volatile loads because otherwise LLVM will
-				 * generate invalid code when encountering a load from a
+				 * We emit volatile loads for loads which can fault, because otherwise
+				 * LLVM will generate invalid code when encountering a load from a
 				 * NULL address.
-				 * FIXME: Avoid this somehow.
 				 */
 				g_assert (ins->inst_offset % size == 0);
 				if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM) || (ins->opcode == OP_LOADI4_MEM) || (ins->opcode == OP_LOADU4_MEM) || (ins->opcode == OP_LOADU1_MEM) || (ins->opcode == OP_LOADU2_MEM)) {
-					values [ins->dreg] = mono_llvm_build_volatile_load (builder, convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), LLVMPointerType (t, 0)), dname);
+					values [ins->dreg] = mono_llvm_build_load (builder, convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), LLVMPointerType (t, 0)), dname, is_volatile);
 				} else if (ins->inst_offset == 0) {
-					values [ins->dreg] = mono_llvm_build_volatile_load (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), dname);
+					values [ins->dreg] = mono_llvm_build_load (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), dname, is_volatile);
 				} else {
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-					values [ins->dreg] = mono_llvm_build_volatile_load (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), dname);
+					values [ins->dreg] = mono_llvm_build_load (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), dname, is_volatile);
 				}
 				if (sext)
 					values [ins->dreg] = LLVMBuildSExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
@@ -2485,7 +2485,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			}
 
 			case OP_CHECK_THIS:
-				mono_llvm_build_volatile_load (builder, convert (ctx, values [ins->sreg1], LLVMPointerType (IntPtrType (), 0)), "");
+				mono_llvm_build_load (builder, convert (ctx, values [ins->sreg1], LLVMPointerType (IntPtrType (), 0)), "", TRUE);
 				break;
 			case OP_OUTARG_VTRETADDR:
 				break;
