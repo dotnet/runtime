@@ -2221,6 +2221,69 @@ add_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
 		}
 	}
+ 
+	/* native-to-managed wrappers */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		MonoMethod *method;
+		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		MonoCustomAttrInfo *cattr;
+		int j;
+
+		method = mono_get_method (acfg->image, token, NULL);
+
+		/* 
+		 * Only generate native-to-managed wrappers for methods which have an
+		 * attribute named MonoPInvokeCallbackAttribute. We search for the attribute by
+		 * name to avoid defining a new assembly to contain it.
+		 */
+		cattr = mono_custom_attrs_from_method (method);
+
+		if (cattr) {
+			for (j = 0; j < cattr->num_attrs; ++j)
+				if (cattr->attrs [j].ctor && !strcmp (cattr->attrs [j].ctor->klass->name, "MonoPInvokeCallbackAttribute"))
+					break;
+			if (j < cattr->num_attrs) {
+				MonoCustomAttrEntry *e = &cattr->attrs [j];
+				MonoMethodSignature *sig = mono_method_signature (e->ctor);
+				const char *p = (const char*)e->data;
+				int slen;
+				char *n;
+				MonoType *t;
+				MonoClass *klass;
+
+				g_assert (method->flags & METHOD_ATTRIBUTE_STATIC);
+
+				g_assert (sig->param_count == 1);
+				g_assert (sig->params [0]->type == MONO_TYPE_CLASS && !strcmp (mono_class_from_mono_type (sig->params [0])->name, "Type"));
+
+				/* 
+				 * Decode the cattr manually since we can't create objects
+				 * during aot compilation.
+				 */
+					
+				/* Skip prolog */
+				p += 2;
+
+				/* From load_cattr_value () in reflection.c */
+				slen = mono_metadata_decode_value (p, &p);
+				n = g_memdup (p, slen + 1);
+				n [slen] = 0;
+				t = mono_reflection_type_from_name (n, acfg->image);
+				g_assert (t);
+				g_free (n);
+
+				klass = mono_class_from_mono_type (t);
+				g_assert (klass->parent == mono_defaults.multicastdelegate_class);
+
+				add_method (acfg, mono_marshal_get_managed_wrapper (method, klass, NULL));
+			}
+		}
+
+		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+			(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
+		}
+	}
 
 	/* StructureToPtr/PtrToStructure wrappers */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
