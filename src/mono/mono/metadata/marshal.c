@@ -8553,26 +8553,73 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 	/* The attribute is only available in Net 2.0 */
 	if (UnmanagedFunctionPointerAttribute) {
-		MonoReflectionUnmanagedFunctionPointerAttribute *attr;
 		MonoCustomAttrInfo *cinfo;
+		MonoCustomAttrEntry *attr;
 
 		/* 
-		 * The pinvoke attributes are stored in a real custom attribute so we have to
-		 * construct it.
+		 * The pinvoke attributes are stored in a real custom attribute. Obtain the
+		 * contents of the attribute without constructing it, as that might not be
+		 * possible when running in cross-compiling mode.
 		 */
 		cinfo = mono_custom_attrs_from_class (delegate_klass);
+		attr = NULL;
 		if (cinfo) {
-			attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr (cinfo, UnmanagedFunctionPointerAttribute);
-			if (attr) {
-				memset (&piinfo, 0, sizeof (piinfo));
-				m.piinfo = &piinfo;
-				piinfo.piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
-
-				csig->call_convention = attr->call_conv - 1;
+			for (i = 0; i < cinfo->num_attrs; ++i) {
+				if (mono_class_has_parent (cinfo->attrs [i].ctor->klass, UnmanagedFunctionPointerAttribute)) {
+					attr = &cinfo->attrs [i];
+					break;
+				}
 			}
-			if (!cinfo->cached)
-				mono_custom_attrs_free (cinfo);
 		}
+		if (attr) {
+			MonoArray *typed_args, *named_args;
+			CattrNamedArg *arginfo;
+			MonoObject *o;
+			gint32 call_conv;
+			gint32 charset = 0;
+			MonoBoolean set_last_error = 0;
+			MonoBoolean best_fit_mapping = 0;
+			MonoBoolean throw_on_unmappable = 0;
+
+			mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo);
+
+			g_assert (mono_array_length (typed_args) == 1);
+
+			/* typed args */
+			o = mono_array_get (typed_args, MonoObject*, 0);
+			call_conv = *(gint32*)mono_object_unbox (o);
+
+			/* named args */
+			for (i = 0; i < mono_array_length (named_args); ++i) {
+				CattrNamedArg *narg = &arginfo [i];
+
+				o = mono_array_get (named_args, MonoObject*, i);
+
+				g_assert (narg->field);
+				if (!strcmp (narg->field->name, "CharSet")) {
+					charset = *(gint32*)mono_object_unbox (o);
+				} else if (!strcmp (narg->field->name, "SetLastError")) {
+					set_last_error = *(MonoBoolean*)mono_object_unbox (o);
+				} else if (!strcmp (narg->field->name, "BestFitMapping")) {
+					best_fit_mapping = *(MonoBoolean*)mono_object_unbox (o);
+				} else if (!strcmp (narg->field->name, "ThrowOnUnmappableChar")) {
+					throw_on_unmappable = *(MonoBoolean*)mono_object_unbox (o);
+				} else {
+					g_assert_not_reached ();
+				}
+			}
+
+			g_free (arginfo);
+
+			memset (&piinfo, 0, sizeof (piinfo));
+			m.piinfo = &piinfo;
+			piinfo.piflags = (call_conv << 8) | (charset ? (charset - 1) * 2 : 1) | set_last_error;
+
+			csig->call_convention = call_conv - 1;
+		}
+
+		if (cinfo && !cinfo->cached)
+			mono_custom_attrs_free (cinfo);
 	}
 
 	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, this_loc);
