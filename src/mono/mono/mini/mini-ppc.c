@@ -5198,14 +5198,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		ppc_load_ptr (code, ppc_r3, cfg->domain);
+		if (cfg->compile_aot)
+			/* AOT code is only used in the root domain */
+			ppc_load_ptr (code, ppc_r3, 0);
+		else
+			ppc_load_ptr (code, ppc_r3, cfg->domain);
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 		if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 			ppc_load_func (code, ppc_r0, 0);
 			ppc_mtlr (code, ppc_r0);
 			ppc_blrl (code);
 		} else {
-			// FIXME: AOT
 			ppc_bl (code, 0);
 		}
 	}
