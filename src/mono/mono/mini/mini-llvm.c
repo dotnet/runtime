@@ -2416,7 +2416,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMValueRef index;
 				LLVMTypeRef t;
 				gboolean sext = FALSE, zext = FALSE;
-				gboolean is_volatile = (ins->flags & MONO_INST_FAULT) || getenv ("VOL");
+				gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
 
 				t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
