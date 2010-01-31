@@ -2741,6 +2741,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				guint32 got_offset;
  				LLVMValueRef indexes [2];
 				MonoJumpInfo *ji;
+				LLVMValueRef got_entry_addr;
 
 				/* 
 				 * FIXME: Can't allocate from the cfg mempool since that is freed if
@@ -2760,7 +2761,25 @@ mono_llvm_emit_method (MonoCompile *cfg)
  
  				indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 				indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
- 				values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->lmodule->got_var, indexes, 2, ""), dname);
+				got_entry_addr = LLVMBuildGEP (builder, ctx->lmodule->got_var, indexes, 2, "");
+
+				// FIXME: This doesn't work right now, because it must be
+				// paired with an invariant.end, and even then, its only in effect
+				// inside its basic block
+#if 0
+				{
+					LLVMValueRef args [3];
+					LLVMValueRef ptr, val;
+
+					ptr = LLVMBuildBitCast (builder, got_entry_addr, LLVMPointerType (LLVMInt8Type (), 0), "ptr");
+
+					args [0] = LLVMConstInt (LLVMInt64Type (), sizeof (gpointer), FALSE);
+					args [1] = ptr;
+					val = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.invariant.start"), args, 2, "");
+				}
+#endif
+
+				values [ins->dreg] = LLVMBuildLoad (builder, got_entry_addr, dname);
  				break;
  			}
 			case OP_NOT_REACHED:
@@ -3676,6 +3695,16 @@ add_intrinsics (LLVMModuleRef module)
 		LLVMAddFunction (module, "llvm.usub.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
 		LLVMAddFunction (module, "llvm.smul.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
 		LLVMAddFunction (module, "llvm.umul.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
+	}
+
+	{
+		LLVMTypeRef struct_ptr = LLVMPointerType (LLVMStructType (NULL, 0, FALSE), 0);
+		LLVMTypeRef invariant_start_params [] = { LLVMInt64Type (), LLVMPointerType (LLVMInt8Type (), 0) };
+		LLVMTypeRef invariant_end_params [] = { struct_ptr, LLVMInt64Type (), LLVMPointerType (LLVMInt8Type (), 0) };
+
+		LLVMAddFunction (module, "llvm.invariant.start", LLVMFunctionType (struct_ptr, invariant_start_params, 2, FALSE));
+
+		LLVMAddFunction (module, "llvm.invariant.end", LLVMFunctionType (LLVMVoidType (), invariant_end_params, 3, FALSE));
 	}
 
 	/* EH intrinsics */
