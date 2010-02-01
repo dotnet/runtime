@@ -22,6 +22,38 @@ my %table =();
 my %template_table =();
 my @opcodes = ();
 
+sub parse_file
+{
+	my ($define, $file) = @_;
+	my @enabled = (1);
+	my $i = 0;
+	open (OPS, $file) || die "Cannot open $file: $!";
+	while (<OPS>) {
+		if (/^\s*#\s*if\s+(.*)/) {
+			my $defines = $1;
+			die "fix the genmdesc.pl cpp parser to handle all operators" if /(&&)|([!<>=])/;
+			unshift @enabled, scalar ($defines =~ /defined\s*\(\s*$define\s*\)/);
+			next;
+		}
+		if (/^\s*#\s*ifdef\s+(\S+)/) {
+			my $defines = $1;
+			unshift @enabled, $defines eq $define;
+			next;
+		}
+		if (/^\s*#\s*endif/) {
+			shift @enabled;
+			next;
+		}
+		next unless $enabled [0];
+		next unless /MINI_OP3?\s*\(\s*(\S+?)\s*,\s*"(.*?)"/;
+		my ($sym, $name) = ($1, $2);
+		push @opcodes, [$sym, $name];
+		$table{$name} = {num => $i, name => $name};
+		$i++;
+	}
+	close (OPS);
+}
+
 sub load_opcodes
 {
 	my ($srcdir, $arch) = @_;
@@ -48,7 +80,9 @@ sub load_opcodes
 	if ($arch =~ "__arm__") {
 		$arch_define = "TARGET_ARM";
 	}
-		
+
+	parse_file ($arch_define, "$srcdir/mini-ops.h");
+	return;
 	$cpp .= " -D$arch_define $srcdir/mini-ops.h|";
 	#print "Running: $cpp\n";
 	open (OPS, $cpp) || die "Cannot execute cpp: $!";
