@@ -788,8 +788,14 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	if (cfg->frame_reg != ppc_sp)
 		top = 31;
 	/* ppc_r13 is used by the system on PPC EABI */
-	for (i = 14; i < top; ++i)
-		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
+	for (i = 14; i < top; ++i) {
+		/*
+		 * Reserve r29 for holding the vtable address for virtual calls in AOT mode,
+		 * since the trampolines can clobber r11.
+		 */
+		if (!(cfg->compile_aot && i == 29))
+			regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
+	}
 
 	return regs;
 }
@@ -4015,7 +4021,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
-			ppc_ldptr (code, ppc_r0, ins->inst_offset, ins->sreg1);
+			if (cfg->compile_aot && ins->sreg1 == ppc_r11) {
+				/* The trampolines clobber this */
+				ppc_mr (code, ppc_r29, ins->sreg1);
+				ppc_ldptr (code, ppc_r0, ins->inst_offset, ppc_r29);
+			} else {
+				ppc_ldptr (code, ppc_r0, ins->inst_offset, ins->sreg1);
+			}
 			ppc_mtlr (code, ppc_r0);
 			ppc_blrl (code);
 			/* FIXME: this should be handled somewhere else in the new jit */

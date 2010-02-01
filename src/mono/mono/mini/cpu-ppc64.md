@@ -77,18 +77,18 @@ setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
 voidcall: len:36 clob:c
 voidcall_reg: src1:i len:16 clob:c
-voidcall_membase: src1:b len:12 clob:c
+voidcall_membase: src1:b len:16 clob:c
 fcall: dest:g len:36 clob:c
 fcall_reg: dest:g src1:i len:16 clob:c
-fcall_membase: dest:g src1:b len:12 clob:c
+fcall_membase: dest:g src1:b len:16 clob:c
 lcall: dest:a len:36 clob:c
 lcall_reg: dest:a src1:i len:16 clob:c
-lcall_membase: dest:a src1:b len:12 clob:c
+lcall_membase: dest:a src1:b len:16 clob:c
 vcall: len:16 clob:c
 vcall_reg: src1:i len:16 clob:c
 vcall_membase: src1:b len:12 clob:c
 call_reg: dest:a src1:i len:16 clob:c
-call_membase: dest:a src1:b len:12 clob:c
+call_membase: dest:a src1:b len:16 clob:c
 iconst: dest:i len:20
 i8const: dest:i len:20
 r4const: dest:f len:12
@@ -376,7 +376,7 @@ lcompare_imm: src1:i len:12
 
 vcall2: len:36 clob:c
 vcall2_reg: src1:i len:16 clob:c
-vcall2_membase: src1:b len:12 clob:c
+vcall2_membase: src1:b len:16 clob:c
 
 jump_table: dest:i len:20
 
