@@ -2844,23 +2844,21 @@ new_to_space_section (void)
 }
 
 static void
-to_space_expand (void)
-{
-	if (to_space_section) {
-		g_assert (to_space_top == to_space_section->end_data);
-		g_assert (to_space_bumper >= to_space_section->next_data && to_space_bumper <= to_space_top);
-
-		to_space_section->next_data = to_space_bumper;
-	}
-
-	new_to_space_section ();
-}
-
-static void
 to_space_set_next_data (void)
 {
 	g_assert (to_space_bumper >= to_space_section->next_data && to_space_bumper <= to_space_section->end_data);
 	to_space_section->next_data = to_space_bumper;
+}
+
+static void
+to_space_expand (void)
+{
+	if (to_space_section) {
+		g_assert (to_space_top == to_space_section->end_data);
+		to_space_set_next_data ();
+	}
+
+	new_to_space_section ();
 }
 
 static void
@@ -3284,10 +3282,16 @@ collect_nursery (size_t requested_size)
 
 	nursery_section->next_data = nursery_next;
 
-	if (!to_space_section)
+	if (!to_space_section) {
 		new_to_space_section ();
-	else
+	} else {
+		/* we might have done degraded allocation since the
+		   last collection */
+		g_assert (to_space_bumper <= to_space_section->next_data);
+		to_space_bumper = to_space_section->next_data;
+
 		to_space_section->is_to_space = TRUE;
+	}
 	gray_object_queue_init ();
 
 	num_minor_gcs++;
