@@ -3678,8 +3678,13 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 
 #if SIZEOF_REGISTER == 8
 	/* The array reg is 64 bits but the index reg is only 32 */
-	index2_reg = alloc_preg (cfg);
-	MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, index_reg);
+	if (COMPILE_LLVM (cfg)) {
+		/* Not needed */
+		index2_reg = index_reg;
+	} else {
+		index2_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, index_reg);
+	}
 #else
 	if (index->type == STACK_I8) {
 		index2_reg = alloc_preg (cfg);
