@@ -1875,6 +1875,18 @@ free_slist (gpointer key, gpointer value, gpointer user_data)
 	g_slist_free (value);
 }
 
+#if HAVE_SGEN_GC
+static void
+unregister_vtable_reflection_type (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoVTable *vtable = value;
+	MonoObject *type = vtable->type;
+
+	if (type->vtable->klass != mono_defaults.monotype_class)
+		mono_gc_deregister_root ((char*)&vtable->type);
+}
+#endif
+
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
 {
@@ -1933,6 +1945,11 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		if (!mono_assembly_close_except_image_pools (ass))
 			tmp->data = NULL;
 	}
+
+#if HAVE_SGEN_GC
+	if (domain->class_vtable_hash)
+		g_hash_table_foreach (domain->class_vtable_hash, unregister_vtable_reflection_type, NULL);
+#endif
 
 	mono_gc_clear_domain (domain);
 

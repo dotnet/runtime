@@ -2042,6 +2042,21 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 
 	/*FIXME check for OOM*/
 	vt->type = mono_type_get_object (domain, &class->byval_arg);
+#if HAVE_SGEN_GC
+	if (mono_object_get_class (vt->type) != mono_defaults.monotype_class) {
+		static void *type_desc = NULL;
+
+		if (!type_desc) {
+			gsize bmap = 1;
+			type_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);
+		}
+
+		/* This is unregistered in
+		   unregister_vtable_reflection_type() in
+		   domain.c. */
+		mono_gc_register_root ((char*)&vt->type, sizeof (gpointer), type_desc);
+	}
+#endif
 	if (class->contextbound)
 		vt->remote = 1;
 	else
