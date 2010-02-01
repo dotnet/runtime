@@ -472,11 +472,12 @@ namespace Mono.Linker.Steps {
 
 		void MarkSoapHeader (MethodDefinition method, CustomAttribute attribute)
 		{
-			string field_name;
-			if (!TryGetStringArgument (attribute, out field_name))
+			string member_name;
+			if (!TryGetStringArgument (attribute, out member_name))
 				return;
 
-			MarkNamedField (method.DeclaringType, field_name);
+			MarkNamedField (method.DeclaringType, member_name);
+			MarkNamedProperty (method.DeclaringType, member_name);
 		}
 
 		void MarkNamedField (TypeDefinition type, string field_name)
@@ -489,6 +490,20 @@ namespace Mono.Linker.Steps {
 					continue;
 
 				MarkField (field);
+			}
+		}
+
+		void MarkNamedProperty (TypeDefinition type, string property_name)
+		{
+			if (!type.HasProperties)
+				return;
+
+			foreach (PropertyDefinition property in type.Properties) {
+				if (property.Name != property_name)
+					continue;
+
+				MarkMethod (property.GetMethod);
+				MarkMethod (property.SetMethod);
 			}
 		}
 
