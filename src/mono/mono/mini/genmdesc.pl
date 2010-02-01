@@ -19,6 +19,7 @@ sub INST_MAX   () {return 6;}
 my @defines = qw (__i386__ __x86_64__ __ppc__ __powerpc__ __ppc64__ __arm__ 
 	__sparc__ sparc __s390__ s390 __ia64__ __alpha__ __mips__);
 my %table =();
+my %template_table =();
 my @opcodes = ();
 
 sub load_opcodes
@@ -68,6 +69,7 @@ sub load_file {
 
 	open (DESC, $name) || die "Cannot open $name: $!";
 	while (<DESC>) {
+		my $is_template = 0;
 		$line++;
 		next if /^\s*$/;
 		if (/^\s*(#.*)?$/) {
@@ -77,10 +79,16 @@ sub load_file {
 		my @values = split (/\s+/);
 		next unless ($values [0] =~ /(\S+?):/);
 		my $name = $1;
-		my $desc = $table {$name};
+		my $desc;
+		if ($name eq "template") {
+			$is_template = 1;
+			$desc = {};
+		} else {
+			$desc = $table {$name};
+			die "Invalid opcode $name at line $line\n" unless defined $desc;
+			die "Duplicated opcode $name at line $line\n" if $desc->{"desc"};
+		}
 		shift @values;
-		die "Invalid opcode $name at line $line\n" unless defined $desc;
-		die "Duplicated opcode $name at line $line\n" if $desc->{"desc"};
 		$desc->{"desc"} = $_;
 		$desc->{"comment"} = $comment;
 		$desc->{"spec"} = {};
@@ -88,9 +96,22 @@ sub load_file {
 		#print "values for $name: " . join (' ', @values) . " num: " . int(@values), "\n";
 		for my $val (@values) {
 			if ($val =~ /(\S+):(.*)/) {
-				$desc->{"spec"}->{$1} = $2;
+				if ($1 eq "name") {
+					die "name tag only valid in templates at line $line\n" unless $is_template;
+					die "Duplicated name tag in template $desc->{'name'} at line $line\n" if defined $desc->{'name'};
+					die "Duplicated template $2 at line $line\n" if defined $template_table {$2};
+					$desc->{'name'} = $2;
+					$template_table {$2} = $desc;
+				} elsif ($1 eq "template") {
+					my $tdesc = $template_table {$2};
+					die "Invalid template name $2 at line $line\n" unless defined $tdesc;
+					$desc->{"spec"} = {%{$tdesc->{"spec"}}};
+				} else {
+					$desc->{"spec"}->{$1} = $2;
+				}
 			}
 		}
+		die "Template without name at line $1" if ($is_template && !defined ($desc->{'name'}));
 	}
 	close (DESC);
 }

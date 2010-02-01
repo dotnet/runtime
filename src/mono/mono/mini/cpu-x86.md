@@ -55,6 +55,11 @@
 # the required specifiers are: len, clob (if registers are clobbered), the registers
 # specifiers if the registers are actually used, flags (when scheduling is implemented).
 #
+# Templates can be defined by using the 'template' keyword instead of an opcode name.
+# The template name is assigned from a (required) 'name' specifier.
+# To apply a template to an opcode, just use the template:template_name specifier: any value
+# defined by the template can be overridden by adding more specifiers after the template.
+#
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
 break: len:1
@@ -75,16 +80,18 @@ int_ble_un: len:6
 int_blt_un: len:6
 label: len:0
 
-int_add: dest:i src1:i src2:i len:2 clob:1
-int_sub: dest:i src1:i src2:i len:2 clob:1
-int_mul: dest:i src1:i src2:i len:3 clob:1
+template: name:ibalu dest:i src1:i src2:i clob:1 len:2
+
+int_add: template:ibalu
+int_sub: template:ibalu
+int_mul: template:ibalu len:3
 int_div: dest:a src1:a src2:i len:15 clob:d
 int_div_un: dest:a src1:a src2:i len:15 clob:d
 int_rem: dest:d src1:a src2:i len:15 clob:a
 int_rem_un: dest:d src1:a src2:i len:15 clob:a
-int_and: dest:i src1:i src2:i len:2 clob:1
-int_or: dest:i src1:i src2:i len:2 clob:1
-int_xor: dest:i src1:i src2:i len:2 clob:1
+int_and: template:ibalu
+int_or: template:ibalu
+int_xor: template:ibalu
 int_shl: dest:i src1:i src2:s clob:1 len:2
 int_shr: dest:i src1:i src2:s clob:1 len:2
 int_shr_un: dest:i src1:i src2:s clob:1 len:2
