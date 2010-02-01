@@ -520,8 +520,6 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_R4CONST:
 		printf (" [%f]", *(float*)ins->inst_p0);
 		break;
-	case CEE_CALL:
-	case CEE_CALLVIRT:
 	case OP_CALL:
 	case OP_CALL_MEMBASE:
 	case OP_CALL_REG:
@@ -580,16 +578,6 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_CALL_HANDLER:
 		printf (" [B%d]", ins->inst_target_bb->block_num);
 		break;
-	case CEE_BNE_UN:
-	case CEE_BEQ:
-	case CEE_BLT:
-	case CEE_BLT_UN:
-	case CEE_BGT:
-	case CEE_BGT_UN:
-	case CEE_BGE:
-	case CEE_BGE_UN:
-	case CEE_BLE:
-	case CEE_BLE_UN:
 	case OP_IBNE_UN:
 	case OP_IBEQ:
 	case OP_IBLT:
@@ -2152,7 +2140,6 @@ CompRelation
 mono_opcode_to_cond (int opcode)
 {
 	switch (opcode) {
-	case CEE_BEQ:
 	case OP_CEQ:
 	case OP_IBEQ:
 	case OP_ICEQ:
@@ -2165,7 +2152,6 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_IEQ:
 	case OP_CMOV_LEQ:
 		return CMP_EQ;
-	case CEE_BNE_UN:
 	case OP_IBNE_UN:
 	case OP_LBNE_UN:
 	case OP_FBNE_UN:
@@ -2174,21 +2160,18 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_INE_UN:
 	case OP_CMOV_LNE_UN:
 		return CMP_NE;
-	case CEE_BLE:
 	case OP_IBLE:
 	case OP_LBLE:
 	case OP_FBLE:
 	case OP_CMOV_ILE:
 	case OP_CMOV_LLE:
 		return CMP_LE;
-	case CEE_BGE:
 	case OP_IBGE:
 	case OP_LBGE:
 	case OP_FBGE:
 	case OP_CMOV_IGE:
 	case OP_CMOV_LGE:
 		return CMP_GE;
-	case CEE_BLT:
 	case OP_CLT:
 	case OP_IBLT:
 	case OP_ICLT:
@@ -2201,7 +2184,6 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_ILT:
 	case OP_CMOV_LLT:
 		return CMP_LT;
-	case CEE_BGT:
 	case OP_CGT:
 	case OP_IBGT:
 	case OP_ICGT:
@@ -2215,7 +2197,6 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_LGT:
 		return CMP_GT;
 
-	case CEE_BLE_UN:
 	case OP_IBLE_UN:
 	case OP_LBLE_UN:
 	case OP_FBLE_UN:
@@ -2224,14 +2205,12 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_ILE_UN:
 	case OP_CMOV_LLE_UN:
 		return CMP_LE_UN;
-	case CEE_BGE_UN:
 	case OP_IBGE_UN:
 	case OP_LBGE_UN:
 	case OP_FBGE_UN:
 	case OP_CMOV_IGE_UN:
 	case OP_CMOV_LGE_UN:
 		return CMP_GE_UN;
-	case CEE_BLT_UN:
 	case OP_CLT_UN:
 	case OP_IBLT_UN:
 	case OP_ICLT_UN:
@@ -2244,7 +2223,6 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_ILT_UN:
 	case OP_CMOV_LLT_UN:
 		return CMP_LT_UN;
-	case CEE_BGT_UN:
 	case OP_CGT_UN:
 	case OP_IBGT_UN:
 	case OP_ICGT_UN:
@@ -2296,9 +2274,7 @@ mono_negate_cond (CompRelation cond)
 CompType
 mono_opcode_to_type (int opcode, int cmp_opcode)
 {
-	if ((opcode >= CEE_BEQ) && (opcode <= CEE_BLT_UN))
-		return CMP_TYPE_L;
-	else if ((opcode >= OP_CEQ) && (opcode <= OP_CLT_UN))
+	if ((opcode >= OP_CEQ) && (opcode <= OP_CLT_UN))
 		return CMP_TYPE_L;
 	else if ((opcode >= OP_IBEQ) && (opcode <= OP_IBLT_UN))
 		return CMP_TYPE_I;
