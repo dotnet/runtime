@@ -11494,6 +11494,33 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 			mono_metadata_free_type (type);
 		}
 		*handle_class = mono_defaults.methodhandle_class;
+	} else if (strcmp (obj->vtable->klass->name, "MonoArrayMethod") == 0) {
+		MonoReflectionArrayMethod *m = (MonoReflectionArrayMethod*)obj;
+		MonoType *mtype;
+		MonoClass *klass;
+		MonoMethod *method;
+		gpointer iter;
+		char *name;
+
+		mtype = mono_reflection_type_get_handle (m->parent);
+		klass = mono_class_from_mono_type (mtype);
+
+		/* Find the method */
+
+		name = mono_string_to_utf8 (m->name);
+		iter = NULL;
+		while ((method = mono_class_get_methods (klass, &iter))) {
+			if (!strcmp (method->name, name))
+				break;
+		}
+		g_free (name);
+
+		// FIXME:
+		g_assert (method);
+		// FIXME: Check parameters/return value etc. match
+
+		result = method;
+		*handle_class = mono_defaults.methodhandle_class;
 	} else if (is_sre_array (mono_object_get_class(obj)) ||
 				is_sre_byref (mono_object_get_class(obj)) ||
 				is_sre_pointer (mono_object_get_class(obj))) {
