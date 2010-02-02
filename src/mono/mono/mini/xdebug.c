@@ -23,9 +23,10 @@
  * GDB 7.0 and later has a JIT interface.
  */
 
+#include "config.h"
+
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 
-#include "config.h"
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
