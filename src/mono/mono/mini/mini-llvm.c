@@ -2468,8 +2468,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
-				g_assert (ins->inst_offset % size == 0);
-
 				if (ins->inst_offset % size != 0) {
 					/* Unaligned store */
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset, FALSE);
