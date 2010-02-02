@@ -2462,15 +2462,23 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_STORER8_MEMBASE_REG:
 			case OP_STORE_MEMBASE_REG: {
 				int size = 8;
-				LLVMValueRef index;
+				LLVMValueRef index, addr;
 				LLVMTypeRef t;
 				gboolean sext = FALSE, zext = FALSE;
 
 				t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
 				g_assert (ins->inst_offset % size == 0);
-				index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], t), LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, ""));
+
+				if (ins->inst_offset % size != 0) {
+					/* Unaligned store */
+					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset, FALSE);
+					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
+				} else {
+					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
+					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, "");
+				}
+				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], t), convert (ctx, addr, LLVMPointerType (t, 0)));
 				break;
 			}
 
@@ -2480,15 +2488,21 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_STOREI8_MEMBASE_IMM:
 			case OP_STORE_MEMBASE_IMM: {
 				int size = 8;
-				LLVMValueRef index;
+				LLVMValueRef index, addr;
 				LLVMTypeRef t;
 				gboolean sext = FALSE, zext = FALSE;
 
 				t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
-				g_assert (ins->inst_offset % size == 0);
-				index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-				LLVMBuildStore (builder, convert (ctx, LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE), t), LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, ""));
+				if (ins->inst_offset % size != 0) {
+					/* Unaligned store */
+					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset, FALSE);
+					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
+				} else {
+					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
+					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, "");
+				}
+				LLVMBuildStore (builder, convert (ctx, LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE), t), addr);
 				break;
 			}
 
