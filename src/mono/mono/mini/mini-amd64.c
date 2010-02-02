@@ -5858,7 +5858,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* 
 		 * The ip field is not set, the exception handling code will obtain it from the stack location pointed to by the sp field.
 		 */
-		/* sp is saved right before calls */
+		/* 
+		 * sp is saved right before calls but we need to save it here too so
+		 * async stack walks would work.
+		 */
+		amd64_mov_membase_reg (code, cfg->frame_reg, cfg->arch.lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 		/* Skip method (only needed for trampoline LMF frames) */
 		/* Save callee saved regs */
 		for (i = 0; i < MONO_MAX_IREGS; ++i) {

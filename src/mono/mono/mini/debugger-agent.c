@@ -1852,6 +1852,8 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 				tls->has_async_ctx = FALSE;
 			}
 
+			mono_memory_barrier ();
+
 			tls->suspended = TRUE;
 			MONO_SEM_POST (&suspend_sem);
 		}
