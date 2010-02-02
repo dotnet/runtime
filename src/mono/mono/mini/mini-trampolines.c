@@ -247,7 +247,7 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 static gpointer
 common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp, MonoVTable *vt, gpointer *vtable_slot, gboolean need_rgctx_tramp)
 {
-	gpointer addr;
+	gpointer addr, compiled_method;
 	gboolean generic_shared = FALSE;
 	MonoMethod *m;
 	MonoMethod *declaring = NULL;
@@ -487,7 +487,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 	if (!code && mono_method_needs_static_rgctx_invoke (m, FALSE))
 		need_rgctx_tramp = TRUE;
 
-	addr = mono_compile_method (m);
+	addr = compiled_method = mono_compile_method (m);
 	g_assert (addr);
 
 	mono_debugger_trampoline_compiled (code, m, addr);
@@ -572,7 +572,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 
 			} else {
 				MonoJitInfo *target_ji = 
-					mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
+					mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method));
 
 				if (!ji)
 					ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
