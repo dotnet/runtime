@@ -2413,7 +2413,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_LOADU4_MEM:
 			case OP_LOAD_MEM: {
 				int size = 8;
-				LLVMValueRef index;
+				LLVMValueRef index, addr;
 				LLVMTypeRef t;
 				gboolean sext = FALSE, zext = FALSE;
 				gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
@@ -2428,15 +2428,23 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				 * LLVM will generate invalid code when encountering a load from a
 				 * NULL address.
 				 */
-				g_assert (ins->inst_offset % size == 0);
 				if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM) || (ins->opcode == OP_LOADI4_MEM) || (ins->opcode == OP_LOADU4_MEM) || (ins->opcode == OP_LOADU1_MEM) || (ins->opcode == OP_LOADU2_MEM)) {
-					values [ins->dreg] = mono_llvm_build_load (builder, convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), LLVMPointerType (t, 0)), dname, is_volatile);
+					addr = LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE);
 				} else if (ins->inst_offset == 0) {
-					values [ins->dreg] = mono_llvm_build_load (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), dname, is_volatile);
+					addr = values [ins->inst_basereg];
+				} else if (ins->inst_offset % size != 0) {
+					/* Unaligned load */
+					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset, FALSE);
+					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
 				} else {
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-					values [ins->dreg] = mono_llvm_build_load (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), dname, is_volatile);
+					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, "");
 				}
+
+				addr = convert (ctx, addr, LLVMPointerType (t, 0));
+
+				values [ins->dreg] = mono_llvm_build_load (builder, addr, dname, is_volatile);
+
 				if (sext)
 					values [ins->dreg] = LLVMBuildSExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
 				else if (zext)
