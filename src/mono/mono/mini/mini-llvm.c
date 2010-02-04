@@ -1643,6 +1643,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				type_info = LLVMAddGlobal (module, LLVMInt32Type (), ti_name);
 				LLVMSetInitializer (type_info, LLVMConstInt (LLVMInt32Type (), clause_index, FALSE));
 
+				LLVMSetLinkage (type_info, LLVMPrivateLinkage);
+				LLVMSetVisibility (type_info, LLVMHiddenVisibility);
+
 				/* 
 				 * FIXME: llc currently generates incorrect data in the LSDA:
 				 * 	.byte	0x9B                                        # @TType format (indirect pcrel sdata4)

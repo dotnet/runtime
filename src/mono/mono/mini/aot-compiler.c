@@ -4331,6 +4331,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	char *command, *opts;
 	int i;
 	MonoJumpInfo *patch_info;
+	char *llc_target_args;
 
 	/*
 	 * When using LLVM, we let llvm emit the got since the LLVM IL needs to refer
@@ -4375,7 +4376,16 @@ emit_llvm_file (MonoAotCompile *acfg)
 	g_free (opts);
 
 	//command = g_strdup_printf ("llc -march=arm -mtriple=arm-linux-gnueabi -f -relocation-model=pic -unwind-tables temp.bc");
-	command = g_strdup_printf ("llc -f -relocation-model=pic -unwind-tables -o temp.s temp.opt.bc");
+
+#ifdef TARGET_ARM
+	llc_target_args = g_strdup ("-march=arm -mtriple=arm-linux-gnueabi -soft-float");
+#else
+	llc_target_args = g_strdup ("");
+#endif
+
+	command = g_strdup_printf ("llc %s -f -relocation-model=pic -unwind-tables -o %s temp.opt.bc", llc_target_args, acfg->tmpfname);
+	g_free (llc_target_args);
+
 	printf ("Executing llc: %s\n", command);
 
 	if (system (command) != 0) {
@@ -5845,6 +5855,17 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	TV_GETTIME (atv);
 
 #ifdef ENABLE_LLVM
+	if (acfg->llvm) {
+		if (acfg->aot_opts.asm_only) {
+			if (acfg->aot_opts.outfile)
+				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+			else
+				acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
+		} else {
+			acfg->tmpfname = g_strdup ("temp.s");
+		}
+	}
+
 	emit_llvm_file (acfg);
 #endif
 
@@ -5872,8 +5893,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		if (acfg->llvm) {
 			/* Append to the .s file created by llvm */
 			/* FIXME: Use multiple files instead */
-			acfg->tmpfname = g_strdup ("temp.s");
-			acfg->fp = fopen (acfg->tmpfname, "a");
+			acfg->fp = fopen (acfg->tmpfname, "a+");
 		} else {
 			if (acfg->aot_opts.asm_only) {
 				if (acfg->aot_opts.outfile)
