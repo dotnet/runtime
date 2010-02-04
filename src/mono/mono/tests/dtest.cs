@@ -850,6 +850,11 @@ public class DebuggerTests
 		f = o.GetValue (o.Type.GetField ("field_s"));
 		AssertValue (null, f);
 
+		// vtype instances
+		field = o.Type.GetField ("generic_field_struct");
+		f = o.GetValue (field);
+		o.SetValue (field, f);
+
 		// Argument checking
 		AssertThrows<ArgumentNullException> (delegate () {
 				o.SetValues (null, new Value [0]);
