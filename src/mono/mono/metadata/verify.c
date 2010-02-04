@@ -23,6 +23,7 @@
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/mono-basic-block.h>
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
@@ -4864,6 +4865,20 @@ verify_clause_relationship (VerifyContext *ctx, MonoExceptionClause *clause, Mon
 		break; \
 	} \
 
+static gboolean
+mono_opcode_is_prefix (int op)
+{
+	switch (op) {
+	case MONO_CEE_UNALIGNED_:
+	case MONO_CEE_VOLATILE_:
+	case MONO_CEE_TAIL_:
+	case MONO_CEE_CONSTRAINED_:
+	case MONO_CEE_READONLY_:
+		return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * FIXME: need to distinguish between valid and verifiable.
  * Need to keep track of types on the stack.
@@ -4873,8 +4888,10 @@ GSList*
 mono_method_verify (MonoMethod *method, int level)
 {
 	MonoError error;
-	const unsigned char *ip;
+	const unsigned char *ip, *code_start;
 	const unsigned char *end;
+	MonoSimpleBasicBlock *bb = NULL;
+
 	int i, n, need_merge = 0, start = 0;
 	guint token, ip_offset = 0, prefix = 0;
 	MonoGenericContext *generic_context = NULL;
@@ -4902,7 +4919,7 @@ mono_method_verify (MonoMethod *method, int level)
 		return ctx.list;
 	}
 	ctx.method = method;
-	ip = ctx.header->code;
+	code_start = ip = ctx.header->code;
 	end = ip + ctx.header->code_size;
 	ctx.image = image = method->klass->image;
 
@@ -5014,8 +5031,13 @@ mono_method_verify (MonoMethod *method, int level)
 		if (clause->try_offset < clause->handler_offset && ADD_IS_GREATER_OR_OVF (clause->try_offset, clause->try_len, HANDLER_START (clause)))
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try block (at 0x%04x) includes handler block (at 0x%04x)", clause->try_offset, clause->handler_offset));
 
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER && clause->data.filter_offset > ctx.code_size)
-			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("filter clause out of bounds at 0x%04x", clause->try_offset));
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			if (clause->data.filter_offset > ctx.code_size)
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("filter clause out of bounds at 0x%04x", clause->try_offset));
+
+			if (clause->data.filter_offset >= clause->handler_offset)
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("filter clause must come before the handler clause at 0x%04x", clause->data.filter_offset));
+		}
 
 		for (n = i + 1; n < ctx.header->num_clauses && ctx.valid; ++n)
 			verify_clause_relationship (&ctx, clause, ctx.header->clauses + n);
@@ -5043,8 +5065,54 @@ mono_method_verify (MonoMethod *method, int level)
 		}
 	}
 
+	bb = mono_basic_block_split (method, &error);
+	if (!mono_error_ok (&error)) {
+		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid branch target: %s", mono_error_get_message (&error)));
+		mono_error_cleanup (&error);
+		goto cleanup;
+	}
+	g_assert (bb);
+
 	while (ip < end && ctx.valid) {
-		ctx.ip_offset = ip_offset = ip - ctx.header->code;
+		ip_offset = ip - code_start;
+		{
+			const unsigned char *ip_copy = ip;
+			int size, op;
+
+			if (ip_offset > bb->end) {
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or EH block at [0x%04x] targets middle instruction at 0x%04x", bb->end, ip_offset));
+				goto cleanup;
+			}
+
+			if (ip_offset == bb->end)
+				bb = bb->next;
+	
+			size = mono_opcode_value_and_size (&ip_copy, end, &op);
+			if (size == -1) {
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction %x at 0x%04x", *ip, ip_offset));
+				goto cleanup;
+			}
+
+			if (ADD_IS_GREATER_OR_OVF (ip_offset, size, bb->end)) {
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or EH block targets middle of instruction at 0x%04x", ip_offset));
+				goto cleanup;
+			}
+
+			/*Last Instruction*/
+			if (ip_offset + size == bb->end && mono_opcode_is_prefix (op)) {
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or EH block targets between prefix '%s' and instruction at 0x%04x", mono_opcode_name (op), ip_offset));
+				goto cleanup;
+			}
+
+			if (bb->dead) {
+				/*FIXME remove this once we move all bad branch checking code to use BB only*/
+				ctx.code [ip_offset].flags |= IL_CODE_FLAG_SEEN;
+				ip += size;
+				continue;
+			}
+		}
+
+		ctx.ip_offset = ip_offset = ip - code_start;
 
 		/*We need to check against fallthrou in and out of protected blocks.
 		 * For fallout we check the once a protected block ends, if the start flag is not set.
@@ -5977,6 +6045,7 @@ cleanup:
 		g_free (ctx.code);
 	g_free (ctx.locals);
 	g_free (ctx.params);
+	mono_basic_block_free (bb);
 
 	return ctx.list;
 }
