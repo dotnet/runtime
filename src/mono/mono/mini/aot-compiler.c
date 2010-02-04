@@ -161,10 +161,12 @@ typedef struct MonoAotCompile {
 	GHashTable *unwind_info_offsets;
 	GPtrArray *unwind_ops;
 	guint32 unwind_info_offset;
+	char *got_symbol_base;
 	char *got_symbol;
 	char *plt_symbol;
 	GHashTable *method_label_hash;
 	const char *temp_prefix;
+	const char *llvm_label_prefix;
 	guint32 label_generator;
 	gboolean llvm;
 	MonoAotFileFlags flags;
@@ -452,6 +454,23 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #else
 #define PPC_LD_OP "lwz"
 #define PPC_LDX_OP "lwzx"
+#endif
+
+//#define TARGET_ARM
+
+#ifdef TARGET_ARM
+#define LLVM_LABEL_PREFIX "_"
+#else
+#define LLVM_LABEL_PREFIX ""
+#endif
+
+#ifdef TARGET_ARM
+/* iphone */
+#define LLC_TARGET_ARGS "-march=arm -mattr=+v6 -mtriple=arm-apple-darwin"
+/* ELF */
+//#define LLC_TARGET_ARGS "-march=arm -mtriple=arm-linux-gnueabi -soft-float"
+#else
+#define LLC_TARGET_ARGS ""
 #endif
 
 /*
@@ -2690,7 +2709,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
 						//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
 						direct_call = TRUE;
-						sprintf (direct_call_target, "%sm_%x", acfg->temp_prefix, get_method_index (acfg, callee_cfg->orig_method));
+						sprintf (direct_call_target, callee_cfg->asm_symbol);
 						patch_info->type = MONO_PATCH_INFO_NONE;
 						acfg->stats.direct_calls ++;
 					}
@@ -2835,13 +2854,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		emit_global (acfg, symbol, TRUE);
 		emit_label (acfg, symbol);
 
-		sprintf (call_target, "%sm_%x", acfg->temp_prefix, method_index);
+		sprintf (call_target, "%s", cfg->asm_symbol);
 
 		arch_emit_unbox_trampoline (acfg, cfg->orig_method, cfg->generic_sharing_context, call_target);
 	}
 
 	/* Make the labels local */
-	sprintf (symbol, "%sm_%x", acfg->temp_prefix, method_index);
+	sprintf (symbol, "%s", cfg->asm_symbol);
 
 	emit_section_change (acfg, ".text", 0);
 	emit_alignment (acfg, func_alignment);
@@ -4278,7 +4297,6 @@ mono_aot_get_method_name (MonoCompile *cfg)
 {
 	guint32 method_index = get_method_index (llvm_acfg, cfg->orig_method);
 
-	/* LLVM converts these to .Lm_%x */
 	return g_strdup_printf ("m_%x", method_index);
 }
 
@@ -4375,13 +4393,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 #endif
 	g_free (opts);
 
-	//command = g_strdup_printf ("llc -march=arm -mtriple=arm-linux-gnueabi -f -relocation-model=pic -unwind-tables temp.bc");
-
-#ifdef TARGET_ARM
-	llc_target_args = g_strdup ("-march=arm -mtriple=arm-linux-gnueabi -soft-float");
-#else
-	llc_target_args = g_strdup ("");
-#endif
+	llc_target_args = g_strdup (LLC_TARGET_ARGS);
 
 	command = g_strdup_printf ("llc %s -f -relocation-model=pic -unwind-tables -o %s temp.opt.bc", llc_target_args, acfg->tmpfname);
 	g_free (llc_target_args);
@@ -4399,6 +4411,7 @@ emit_code (MonoAotCompile *acfg)
 {
 	int i;
 	char symbol [256];
+	char end_symbol [256];
 	GList *l;
 
 #if defined(TARGET_POWERPC64)
@@ -4448,10 +4461,10 @@ emit_code (MonoAotCompile *acfg)
 
 	acfg->stats.offsets_size += acfg->nmethods * 4;
 
+	sprintf (end_symbol, "%smethods", acfg->llvm_label_prefix);
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			sprintf (symbol, "%sm_%x", acfg->temp_prefix, i);
-			emit_symbol_diff (acfg, symbol, "methods", 0);
+			emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, end_symbol, 0);
 		} else {
 			emit_int32 (acfg, 0xffffffff);
 		}
@@ -5420,7 +5433,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 		if (cfg->compile_llvm)
 			continue;
 
-		sprintf (symbol, "%sm_%x", acfg->temp_prefix, i);
+		sprintf (symbol, "%s", cfg->asm_symbol);
 		sprintf (symbol2, "%sme_%x", acfg->temp_prefix, i);
 
 		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, symbol, symbol2, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
@@ -5739,7 +5752,7 @@ int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	MonoImage *image = ass->image;
-	int res;
+	int i, res;
 	MonoAotCompile *acfg;
 	char *outfile_name, *tmp_outfile_name, *p;
 	TV_DECLARE (atv);
@@ -5800,11 +5813,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #endif
 	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? 128 : 0;
 
-	acfg->got_symbol = g_strdup_printf ("mono_aot_%s_got", acfg->image->assembly->aname.name);
+	acfg->got_symbol_base = g_strdup_printf ("mono_aot_%s_got", acfg->image->assembly->aname.name);
 	acfg->plt_symbol = g_strdup_printf ("mono_aot_%s_plt", acfg->image->assembly->aname.name);
 
 	/* Get rid of characters which cannot occur in symbols */
-	for (p = acfg->got_symbol; *p; ++p) {
+	for (p = acfg->got_symbol_base; *p; ++p) {
 		if (!(isalnum (*p) || *p == '_'))
 			*p = '_';
 	}
@@ -5825,7 +5838,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 #ifdef ENABLE_LLVM
 	llvm_acfg = acfg;
-	mono_llvm_create_aot_module (acfg->got_symbol);
+	mono_llvm_create_aot_module (acfg->got_symbol_base);
 #endif
 
 	/* GOT offset 0 is reserved for the address of the current assembly */
@@ -5914,6 +5927,28 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 
 	acfg->temp_prefix = img_writer_get_temp_label_prefix (acfg->w);
+
+	/*
+	 * The prefix LLVM likes to put in front of symbol names on darwin.
+	 * The mach-os specs require this for globals, but LLVM puts them in front of all
+	 * symbols. We need to handle this, since we need to refer to LLVM generated
+	 * symbols.
+	 */
+	acfg->llvm_label_prefix = "";
+	if (acfg->llvm)
+		acfg->llvm_label_prefix = LLVM_LABEL_PREFIX;
+
+	acfg->got_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, acfg->got_symbol_base);
+
+	/* Compute symbols for methods */
+	for (i = 0; i < acfg->nmethods; ++i) {
+		if (acfg->cfgs [i]) {
+			MonoCompile *cfg = acfg->cfgs [i];
+			int method_index = get_method_index (llvm_acfg, cfg->orig_method);
+
+			cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", llvm_acfg->temp_prefix, LLVM_LABEL_PREFIX, method_index);
+		}
+	}
 
 	if (!acfg->aot_opts.nodebug)
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, FALSE);

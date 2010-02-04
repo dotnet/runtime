@@ -1137,6 +1137,8 @@ typedef struct {
 
 	/* Used by AOT */
 	guint32 got_offset, ex_info_offset, method_info_offset;
+	/* Symbol used to refer to this method in generated assembly */
+	char *asm_symbol;
 
 	MonoJitExceptionInfo *llvm_ex_info;
 	guint32 llvm_ex_info_len;

@@ -92,6 +92,17 @@
 #define AS_SKIP_DIRECTIVE ".skip"
 #endif
 
+#if defined(TARGET_ASM_APPLE)
+#define AS_GLOBAL_PREFIX "_"
+#else
+#define AS_GLOBAL_PREFIX ""
+#endif
+
+#ifdef TARGET_ASM_APPLE
+#define AS_TEMP_LABEL_PREFIX "L"
+#else
+#define AS_TEMP_LABEL_PREFIX ".L"
+#endif
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
@@ -1517,7 +1528,7 @@ asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
     // mach-o always uses a '_' prefix.
 	fprintf (acfg->fp, "\t.globl _%s\n", name);
 #else
-	fprintf (acfg->fp, "\t.globl %s\n", name);
+	fprintf (acfg->fp, "\t.%sglobl %s\n", AS_GLOBAL_PREFIX, name);
 #endif
 
 	asm_writer_emit_symbol_type (acfg, name, func);
@@ -2091,9 +2102,5 @@ img_writer_get_fp (MonoImageWriter *acfg)
 const char *
 img_writer_get_temp_label_prefix (MonoImageWriter *acfg)
 {
-#ifdef TARGET_ASM_APPLE
-	return "L";
-#else
-	return ".L";
-#endif
+	return AS_TEMP_LABEL_PREFIX;
 }
