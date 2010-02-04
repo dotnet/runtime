@@ -17,9 +17,9 @@ BB_00:
 BB_01:
 
 BB_02:
-		pop
-		ldc.i4.0
-		endfilter
+		nop
+		nop
+		br END
 BB_03:
 
 BB_04:

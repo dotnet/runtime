@@ -1,4 +1,8 @@
 #! /bin/sh
+SED="sed"
+if [ `which gsed` ] ; then 
+	SED="gsed"
+fi
 
 TEST_NAME=$1
 TEST_VALIDITY=$2
@@ -7,7 +11,7 @@ TEST_FILTER_EXTRAS=$4
 
 for I in {2..5};
 do
-	declare LEAVE_${I}="leave END"
+	declare LEAVE_${I}="leave NEXT_${I}"
 done
 
 declare OPCODE_${TEST_POS}="endfilter"
@@ -20,7 +24,7 @@ declare EXTRAS_${TEST_POS}="ldc.i4.0"
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/FILTER_EXTRAS/${TEST_FILTER_EXTRAS}/g"   > $TEST_FILE <<//EOF
+$SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/FILTER_EXTRAS/${TEST_FILTER_EXTRAS}/g"   > $TEST_FILE <<//EOF
 // VALIDITY
 
 .assembly '${TEST_NAME}_generated'
@@ -48,6 +52,10 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/FILTER_EXTRAS/${TEST_FILTER_EXTRAS}
 		${LEAVE_3}
         }
 
+NEXT_2:
+NEXT_3:
+
+TRY_2:
 	.try {
 		.try
 		{
@@ -69,8 +77,9 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/FILTER_EXTRAS/${TEST_FILTER_EXTRAS}
 	{
 		pop
 		leave END
-        }
+	}
 
+NEXT_4:
 	.try 
 	{
 		newobj instance void class [mscorlib]System.Exception::.ctor()
@@ -98,6 +107,8 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/FILTER_EXTRAS/${TEST_FILTER_EXTRAS}
 		nop
 		${LEAVE_5}
 	}
+
+NEXT_5:
 
 END:
 	ldc.i4.0

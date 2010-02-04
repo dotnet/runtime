@@ -1,5 +1,10 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_BLOCK=$3
@@ -14,7 +19,7 @@ declare OPCODE_${TEST_POS}="endfinally"
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g"  -e "s/BLOCK/${TEST_BLOCK}/g" -e "s/EXTRA_OPS/${TEST_EXTRA_OPS}/g"  > $TEST_FILE <<//EOF
+$SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g"  -e "s/BLOCK/${TEST_BLOCK}/g" -e "s/EXTRA_OPS/${TEST_EXTRA_OPS}/g"  > $TEST_FILE <<//EOF
 // VALIDITY
 
 .assembly '${TEST_NAME}_generated'
@@ -32,20 +37,22 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g"  -e "s/BLOCK
 	{
 		nop
 		${OPCODE_2}
-		leave END
+		leave TRY_2
         }
         catch [mscorlib]System.NullReferenceException 
 	{
 		pop
 		${OPCODE_3}
 		leave END
-        }
+	}
+
+TRY_2:
 
 	.try
 	{
 		nop
 		${OPCODE_4}
-		leave END
+		leave TRY_3
 	}
 
 	BLOCK
@@ -56,11 +63,12 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g"  -e "s/BLOCK
 		endfinally
 	}
 
+TRY_3:
 	.try {
 		.try
 		{
 			nop
-			leave END
+			leave TRY_4
 		}
 		catch [mscorlib]System.NullReferenceException 
 		{
@@ -75,6 +83,8 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g"  -e "s/BLOCK
 		${OPCODE_9}
 		endfinally
 	}
+
+TRY_4:
 
 	.try 
 	{
