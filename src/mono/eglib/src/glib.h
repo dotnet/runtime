@@ -23,6 +23,10 @@
 
 #define __EGLIB_X11 1
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 /*
  * Basic data types
  */
@@ -893,6 +897,10 @@ glong     g_utf8_strlen        (const gchar *str, gssize max);
  
 #define GLIB_CHECK_VERSION(a,b,c) ((a < _EGLIB_MAJOR) || (a == _EGLIB_MAJOR && (b < _EGLIB_MIDDLE || (b == _EGLIB_MIDDLE && c <= _EGLIB_MINOR))))
  
+#ifdef  __cplusplus
+}
+#endif
+
 #endif
 
 
