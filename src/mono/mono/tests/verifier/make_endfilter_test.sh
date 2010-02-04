@@ -41,8 +41,8 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/FILTER_EXTRAS/${TEST_FILTER_EXTRAS
 
 	.try
 	{
-		newobj instance void class [mscorlib]System.Exception::.ctor()
-		throw 
+		nop
+		nop 
 
 		${LEAVE_2}
         }
@@ -59,8 +59,8 @@ TRY_2:
 	.try {
 		.try
 		{
-			newobj instance void class [mscorlib]System.Exception::.ctor()
-			throw 
+			nop
+			nop
 
 			${LEAVE_4}
 		}
@@ -82,8 +82,8 @@ TRY_2:
 NEXT_4:
 	.try 
 	{
-		newobj instance void class [mscorlib]System.Exception::.ctor()
-		throw 
+		nop
+		nop
 
 
  		leave END
