@@ -3882,6 +3882,9 @@ mono_llvm_emit_aot_module (const char *filename, int got_size)
 
 	mark_as_used (aot_module.module, real_got);
 
+	/* Delete the dummy got so it doesn't become a global */
+	LLVMDeleteGlobal (aot_module.got_var);
+
 #if 0
 	{
 		char *verifier_err;
