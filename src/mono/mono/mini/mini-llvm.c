@@ -945,6 +945,8 @@ get_plt_entry (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gc
 	if (!callee) {
 		callee = LLVMAddFunction (ctx->module, callee_name, llvm_sig);
 
+		LLVMSetVisibility (callee, LLVMHiddenVisibility);
+
 		g_hash_table_insert (ctx->lmodule->plt_entries, (char*)callee_name, callee);
 	}
 
