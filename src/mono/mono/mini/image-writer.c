@@ -1528,7 +1528,7 @@ asm_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
     // mach-o always uses a '_' prefix.
 	fprintf (acfg->fp, "\t.globl _%s\n", name);
 #else
-	fprintf (acfg->fp, "\t.%sglobl %s\n", AS_GLOBAL_PREFIX, name);
+	fprintf (acfg->fp, "\t.globl %s%s\n", AS_GLOBAL_PREFIX, name);
 #endif
 
 	asm_writer_emit_symbol_type (acfg, name, func);
