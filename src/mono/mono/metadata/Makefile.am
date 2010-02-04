@@ -114,6 +114,8 @@ libmonoruntime_la_SOURCES = \
 	metadata-internals.h	\
 	method-builder.h 	\
 	method-builder.c 	\
+	mono-basic-block.c	\
+	mono-basic-block.h	\
 	mono-config.c		\
 	mono-debug.h		\
 	mono-debug.c		\
