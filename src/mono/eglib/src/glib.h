@@ -24,8 +24,14 @@
 #define __EGLIB_X11 1
 
 #ifdef  __cplusplus
-extern "C" {
+#define G_BEGIN_DECLS  extern "C" {
+#define G_END_DECLS    }
+#else
+#define G_BEGIN_DECLS
+#define G_END_DECLS
 #endif
+
+G_BEGIN_DECLS
 
 /*
  * Basic data types
@@ -102,14 +108,6 @@ typedef uint16_t       gunichar2;
 #define EGLIB_TOSTRING(x) EGLIB_STRINGIFY(x)
 #define G_STRLOC __FILE__ ":" EGLIB_TOSTRING(__LINE__) ":"
 
-#ifdef  __cplusplus
-#define G_BEGIN_DECLS  extern "C" {
-#define G_END_DECLS    }
-#else
-#define G_BEGIN_DECLS
-#define G_END_DECLS
-#endif
- 
 #define G_CONST_RETURN const
 
 /*
@@ -897,9 +895,7 @@ glong     g_utf8_strlen        (const gchar *str, gssize max);
  
 #define GLIB_CHECK_VERSION(a,b,c) ((a < _EGLIB_MAJOR) || (a == _EGLIB_MAJOR && (b < _EGLIB_MIDDLE || (b == _EGLIB_MIDDLE && c <= _EGLIB_MINOR))))
  
-#ifdef  __cplusplus
-}
-#endif
+G_END_DECLS
 
 #endif
 
