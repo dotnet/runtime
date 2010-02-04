@@ -3416,7 +3416,7 @@ emit_plt (MonoAotCompile *acfg)
 		char *debug_sym = NULL;
 		MonoJumpInfo *ji;
 
-		sprintf (label, "%sp_%d", acfg->temp_prefix, i);
+		sprintf (label, "%s%sp_%d", acfg->llvm_label_prefix, acfg->temp_prefix, i);
 
 		if (acfg->llvm) {
 			/*
@@ -3429,7 +3429,7 @@ emit_plt (MonoAotCompile *acfg)
 			ji = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
 			if (ji && is_direct_callable (acfg, NULL, ji) && !acfg->use_bin_writer) {
 				MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, ji->data.method);
-				fprintf (acfg->fp, "\n.set %s, .Lm_%x\n", label, get_method_index (acfg, callee_cfg->orig_method));
+				fprintf (acfg->fp, "\n.set %s, %s\n", label, callee_cfg->asm_symbol);
 				continue;
 			}
 		}
@@ -4320,7 +4320,7 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 
 	offset = get_plt_offset (llvm_acfg, ji);
 
-	return g_strdup_printf (".Lp_%d", offset);
+	return g_strdup_printf ("%sp_%d", llvm_acfg->temp_prefix, offset);
 }
 
 MonoJumpInfo*
@@ -5826,6 +5826,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			*p = '_';
 	}
 
+	acfg->temp_prefix = img_writer_get_temp_label_prefix (NULL);
+
 	acfg->method_index = 1;
 
 	collect_methods (acfg);
@@ -5925,8 +5927,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		tmp_outfile_name = NULL;
 		outfile_name = NULL;
 	}
-
-	acfg->temp_prefix = img_writer_get_temp_label_prefix (acfg->w);
 
 	/*
 	 * The prefix LLVM likes to put in front of symbol names on darwin.
