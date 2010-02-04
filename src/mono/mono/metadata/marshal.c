@@ -8178,8 +8178,20 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (method->string_ctor)
 			csig->ret = &mono_defaults.string_class->byval_arg;
 
-		if (sig->hasthis)
+		if (sig->hasthis) {
+			int pos;
+
+			/*
+			 * Add a null check since public icalls can be called with 'call' which
+			 * does no such check.
+			 */
+			mono_mb_emit_byte (mb, CEE_LDARG_0);			
+			pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+			mono_mb_emit_exception (mb, "NullReferenceException", NULL);
+			mono_mb_patch_branch (mb, pos);
+
 			mono_mb_emit_byte (mb, CEE_LDARG_0);
+		}
 
 		for (i = 0; i < sig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i + sig->hasthis);
