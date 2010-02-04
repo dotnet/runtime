@@ -1278,15 +1278,19 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 		for (tmp = res; tmp; tmp = tmp->next) {
 			MonoVerifyInfoExtended *info = (MonoVerifyInfoExtended *)tmp->data;
 			if (info->info.status == MONO_VERIFY_ERROR) {
+				char *method_name = mono_method_full_name (method, TRUE);
 				cfg->exception_type = info->exception_type;
-				cfg->exception_message = g_strdup (info->info.message);
+				cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
 				mono_free_verify_list (res);
+				g_free (method_name);
 				return TRUE;
 			}
 			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && (!is_fulltrust || info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)) {
+				char *method_name = mono_method_full_name (method, TRUE);
 				cfg->exception_type = info->exception_type;
-				cfg->exception_message = g_strdup (info->info.message);
+				cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
 				mono_free_verify_list (res);
+				g_free (method_name);
 				return TRUE;
 			}
 		}
