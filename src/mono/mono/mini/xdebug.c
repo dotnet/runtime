@@ -24,9 +24,10 @@
  */
 
 #include "config.h"
+#include <glib.h>
+#include "mini.h"
 
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
-
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -47,7 +48,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#include "mini.h"
 #include "image-writer.h"
 #include "dwarfwriter.h"
 
