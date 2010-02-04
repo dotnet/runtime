@@ -5204,6 +5204,8 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			b |= (1 << 2);
 		if (type->type == MONO_TYPE_VALUETYPE)
 			b |= (1 << 3);
+		if (klass->enumtype)
+			b |= (1 << 4);
 		buffer_add_byte (buf, b);
 		nnested = 0;
 		iter = NULL;
