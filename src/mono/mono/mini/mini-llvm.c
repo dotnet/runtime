@@ -167,6 +167,9 @@ static LLVMExecutionEngineRef ee;
 static guint32 current_cfg_tls_id;
 
 static MonoLLVMModule jit_module, aot_module;
+static gboolean jit_module_inited;
+
+static void init_jit_module (void);
 
 /*
  * IntPtrType:
@@ -1401,6 +1404,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		method_name = mono_aot_get_method_name (cfg);
 		debug_name = mono_aot_get_method_debug_name (cfg);
 	} else {
+		init_jit_module ();
 		ctx->lmodule = &jit_module;
 		method_name = mono_method_full_name (cfg->method, TRUE);
 		debug_name = NULL;
@@ -3787,6 +3791,20 @@ void
 mono_llvm_init (void)
 {
 	current_cfg_tls_id = TlsAlloc ();
+}
+
+static void
+init_jit_module (void)
+{
+	if (jit_module_inited)
+		return;
+
+	mono_loader_lock ();
+
+	if (jit_module_inited) {
+		mono_loader_unlock ();
+		return;
+	}
 
 	jit_module.module = LLVMModuleCreateWithName ("mono");
 
@@ -3797,14 +3815,20 @@ mono_llvm_init (void)
 	jit_module.llvm_types = g_hash_table_new (NULL, NULL);
 
 	LLVMAddGlobalMapping (ee, LLVMGetNamedFunction (jit_module.module, "mono_resume_unwind"), mono_resume_unwind);
+
+	jit_module_inited = TRUE;
+
+	mono_loader_unlock ();
 }
 
 void
 mono_llvm_cleanup (void)
 {
-	mono_llvm_dispose_ee (ee);
+	if (ee)
+		mono_llvm_dispose_ee (ee);
 
-	g_hash_table_destroy (jit_module.llvm_types);
+	if (jit_module.llvm_types)
+		g_hash_table_destroy (jit_module.llvm_types);
 }
 
 void
