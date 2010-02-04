@@ -5946,7 +5946,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			MonoCompile *cfg = acfg->cfgs [i];
 			int method_index = get_method_index (llvm_acfg, cfg->orig_method);
 
-			cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", llvm_acfg->temp_prefix, LLVM_LABEL_PREFIX, method_index);
+			cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, LLVM_LABEL_PREFIX, method_index);
 		}
 	}
 
