@@ -2722,7 +2722,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					if (plt_offset != -1) {
 						/* This patch has a PLT entry, so we must emit a call to the PLT entry */
 						direct_call = TRUE;
-						sprintf (direct_call_target, "%sp_%d", acfg->temp_prefix, plt_offset);
+						sprintf (direct_call_target, "%s%sp_%d", acfg->llvm_label_prefix, acfg->temp_prefix, plt_offset);
 		
 						/* Nullify the patch */
 						patch_info->type = MONO_PATCH_INFO_NONE;
