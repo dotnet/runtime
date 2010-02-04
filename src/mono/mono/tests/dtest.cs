@@ -838,10 +838,11 @@ public class DebuggerTests
 
 		// enums
 
-		f = o.GetValue (o.Type.GetField ("field_enum"));
+		FieldInfoMirror field = o.Type.GetField ("field_enum");
+		f = o.GetValue (field);
 		(f as EnumMirror).Value = 5;
-		o.SetValue (o.Type.GetField ("field_enum"), f);
-		f = o.GetValue (o.Type.GetField ("field_enum"));
+		o.SetValue (field, f);
+		f = o.GetValue (field);
 		Assert.AreEqual (5, (f as EnumMirror).Value);
 
 		// null
@@ -978,6 +979,11 @@ public class DebuggerTests
 		// generic instances
 		t = frame.Method.GetParameters ()[9].ParameterType;
 		Assert.AreEqual ("GClass`1", t.Name);
+
+		// enums
+		t = frame.Method.GetParameters ()[10].ParameterType;
+		Assert.AreEqual ("AnEnum", t.Name);
+		Assert.IsTrue (t.IsEnum);
 
 		// properties
 		t = frame.Method.GetParameters ()[7].ParameterType;
@@ -2181,4 +2187,43 @@ public class DebuggerTests
 				t.InvokeMethod (e.Thread, m, null);
 			});
 	}
+
+	[Test]
+	public void VirtualMachine_CreateEnumMirror () {
+		var e = run_until ("o1");
+		var frame = e.Thread.GetFrames () [0];
+
+		object val = frame.GetThis ();
+		Assert.IsTrue (val is ObjectMirror);
+		Assert.AreEqual ("Tests", (val as ObjectMirror).Type.Name);
+		ObjectMirror o = (val as ObjectMirror);
+
+		FieldInfoMirror field = o.Type.GetField ("field_enum");
+		Value f = o.GetValue (field);
+		TypeMirror enumType = (f as EnumMirror).Type;
+
+		o.SetValue (field, vm.CreateEnumMirror (enumType, vm.CreateValue (1)));
+		f = o.GetValue (field);
+		Assert.AreEqual (1, (f as EnumMirror).Value);
+
+		// Argument checking
+		AssertThrows<ArgumentNullException> (delegate () {
+				vm.CreateEnumMirror (enumType, null);
+			});
+
+		AssertThrows<ArgumentNullException> (delegate () {
+				vm.CreateEnumMirror (null, vm.CreateValue (1));
+			});
+
+		// null value
+		AssertThrows<ArgumentException> (delegate () {
+				vm.CreateEnumMirror (enumType, vm.CreateValue (null));
+			});
+
+		// value of a wrong type
+		AssertThrows<ArgumentException> (delegate () {
+				vm.CreateEnumMirror (enumType, vm.CreateValue ((long)1));
+			});
+	}
+
 }
