@@ -50,6 +50,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/metadata/mono-basic-block.h>
 
 #include "mini.h"
 #include "trace.h"
@@ -5035,8 +5036,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		   MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
 		   guint inline_offset, gboolean is_virtual_call)
 {
+	MonoError error;
 	MonoInst *ins, **sp, **stack_start;
 	MonoBasicBlock *bblock, *tblock = NULL, *init_localsbb = NULL;
+	MonoSimpleBasicBlock *bb = NULL;
 	MonoMethod *cmethod, *method_definition;
 	MonoInst **arg_array;
 	MonoMethodHeader *header;
@@ -5060,7 +5063,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	GSList *class_inits = NULL;
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
 	int context_used;
-	gboolean init_locals, seq_points;
+	gboolean init_locals, seq_points, skip_dead_blocks;
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
@@ -5440,6 +5443,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
 	}
 
+	skip_dead_blocks = !dont_verify;
+	if (skip_dead_blocks) {
+		bb = mono_basic_block_split (method, &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_cleanup (&error);
+			UNVERIFIED;
+		}
+		g_assert (bb);
+	}
+
 	/* we use a spare stack slot in SWITCH and NEWOBJ and others */
 	stack_start = sp = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * (header->max_stack + 1));
 
@@ -5447,7 +5460,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	start_new_bblock = 0;
 	cfg->cbb = bblock;
 	while (ip < end) {
-
 		if (cfg->method == method)
 			cfg->real_offset = ip - header->code;
 		else
@@ -5498,6 +5510,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 		}
 
+		if (skip_dead_blocks) {
+			int ip_offset = ip - header->code;
+
+			if (ip_offset == bb->end)
+				bb = bb->next;
+
+			if (bb->dead) {
+				int op_size = mono_opcode_size (ip, end);
+				g_assert (op_size > 0); /*The BB formation pass must catch all bad ops*/
+
+				if (cfg->verbose_level > 3) printf ("SKIPPING DEAD OP at %x\n", ip_offset);
+
+				if (ip_offset + op_size == bb->end) {
+					MONO_INST_NEW (cfg, ins, OP_NOP);
+					MONO_ADD_INS (bblock, ins);
+					start_new_bblock = 1;
+				}
+
+				ip += op_size;
+				continue;
+			}
+		}
 		/*
 		 * Sequence points are points where the debugger can place a breakpoint.
 		 * Currently, we generate these automatically at points where the IL
@@ -9691,22 +9725,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  exception_exit:
 	g_assert (cfg->exception_type != MONO_EXCEPTION_NONE);
 	g_slist_free (class_inits);
+	mono_basic_block_free (bb);
 	dont_inline = g_list_remove (dont_inline, method);
 	return -1;
 
  inline_failure:
 	g_slist_free (class_inits);
+	mono_basic_block_free (bb);
 	dont_inline = g_list_remove (dont_inline, method);
 	return -1;
 
  load_error:
 	g_slist_free (class_inits);
+	mono_basic_block_free (bb);
 	dont_inline = g_list_remove (dont_inline, method);
 	cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
 	return -1;
 
  unverified:
 	g_slist_free (class_inits);
+	mono_basic_block_free (bb);
 	dont_inline = g_list_remove (dont_inline, method);
 	set_exception_type_from_invalid_il (cfg, method, ip);
 	return -1;
