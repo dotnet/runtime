@@ -984,6 +984,7 @@ public class DebuggerTests
 		t = frame.Method.GetParameters ()[10].ParameterType;
 		Assert.AreEqual ("AnEnum", t.Name);
 		Assert.IsTrue (t.IsEnum);
+		Assert.AreEqual ("Int32", t.EnumUnderlyingType.Name);
 
 		// properties
 		t = frame.Method.GetParameters ()[7].ParameterType;
