@@ -631,8 +631,8 @@ ICALL(MPROPI_1, "GetTypeModifiers", property_info_get_type_modifiers)
 ICALL(MPROPI_2, "get_property_info", ves_icall_get_property_info)
 
 ICALL_TYPE(PARAMI, "System.Reflection.ParameterInfo", PARAMI_1)
-ICALL(PARAMI_1, "GetTypeModifiers", param_info_get_type_modifiers)
-ICALL(PARAMI_2, "get_MetadataToken", mono_reflection_get_token)
+ICALL(PARAMI_1, "GetMetadataToken", mono_reflection_get_token)
+ICALL(PARAMI_2, "GetTypeModifiers", param_info_get_type_modifiers)
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
 ICALL(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue)
