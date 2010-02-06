@@ -3129,7 +3129,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		klass_inst = emit_get_rgctx_klass (cfg, context_used,
 										   klass, MONO_RGCTX_INFO_KLASS);
 
-		if ((klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_SEALED) {
+		if ((klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_SEALED) || mono_class_has_variant_generic_params (klass)) {
 			/* Complex case, handle by an icall */
 
 			/* obj */
@@ -3196,7 +3196,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 	if (context_used) {
 		klass_inst = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
 
-		if ((klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_SEALED) {
+		if ((klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_SEALED) || mono_class_has_variant_generic_params (klass)) {
 			MonoInst *args [2];
 
 			/* Complex case, handle by an icall */
