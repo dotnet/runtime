@@ -3859,15 +3859,6 @@ mono_llvm_create_aot_module (const char *got_symbol)
 		LLVMSetInitializer (aot_module.got_var, LLVMConstNull (got_type));
 	}
 
-	/* Add a method to generate the 'methods' symbol needed by the AOT compiler */
-	{
-		LLVMValueRef methods_method = LLVMAddFunction (aot_module.module, "methods", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
-		LLVMBasicBlockRef bb = LLVMAppendBasicBlock (methods_method, "BB_ENTRY");
-		LLVMBuilderRef builder = LLVMCreateBuilder ();
-		LLVMPositionBuilderAtEnd (builder, bb);
-		LLVMBuildRetVoid (builder);
-	}
-
 	/* Add a dummy personality function */
 	{
 		LLVMBasicBlockRef lbb;

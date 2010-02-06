@@ -4422,11 +4422,26 @@ emit_code (MonoAotCompile *acfg)
 	emit_pointer (acfg, acfg->got_symbol);
 #endif
 
-	if (!acfg->llvm) {
-		sprintf (symbol, "methods");
-		emit_section_change (acfg, ".text", 0);
-		emit_global (acfg, symbol, TRUE);
-		emit_alignment (acfg, 8);
+	/* 
+	 * This global symbol is used to compute the address of each method using the
+	 * code_offsets array. It is also used to compute the memory ranges occupied by
+	 * AOT code, so it must be equal to the address of the first emitted method.
+	 */
+	sprintf (symbol, "methods");
+	emit_section_change (acfg, ".text", 0);
+	emit_global (acfg, symbol, TRUE);
+	emit_alignment (acfg, 8);
+	if (acfg->llvm) {
+		for (i = 0; i < acfg->nmethods; ++i) {
+			if (acfg->cfgs [i] && acfg->cfgs [i]->compile_llvm) {
+				fprintf (acfg->fp, "\n.set methods, %s\n", acfg->cfgs [i]->asm_symbol);	
+				break;
+			}
+		}
+		if (i == acfg->nmethods)
+			/* No LLVM compiled methods */
+			emit_label (acfg, symbol);
+	} else {
 		emit_label (acfg, symbol);
 	}
 
