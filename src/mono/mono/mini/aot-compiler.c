@@ -1840,10 +1840,11 @@ get_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 	if (got_offset)
 		return got_offset - 1;
 
-	g_assert (!acfg->final_got_size);
-
 	got_offset = acfg->got_offset;
 	acfg->got_offset ++;
+
+	if (acfg->final_got_size)
+		g_assert (got_offset < acfg->final_got_size);
 
 	acfg->stats.got_slots ++;
 	acfg->stats.got_slot_types [ji->type] ++;
@@ -3586,7 +3587,7 @@ emit_trampolines (MonoAotCompile *acfg)
 	
 	g_assert (acfg->image->assembly);
 
-	/* Currently, we only emit most trampolines into the mscorlib AOT image. */
+	/* Currently, we emit most trampolines into the mscorlib AOT image. */
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 		/*
@@ -4369,7 +4370,25 @@ emit_llvm_file (MonoAotCompile *acfg)
 			}
 		}
 	}
+
 	acfg->final_got_size = acfg->got_offset + acfg->plt_offset;
+
+	if (acfg->aot_opts.full_aot) {
+		int ntype;
+
+		/* 
+		 * Need to add the got entries used by the trampolines.
+		 * This is only a conservative approximation.
+		 */
+		if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+			/* For the generic + rgctx trampolines */
+			acfg->final_got_size += 200;
+			/* For the specific trampolines */
+			for (ntype = 0; ntype < MONO_AOT_TRAMP_NUM; ++ntype)
+				acfg->final_got_size += acfg->num_trampolines [ntype] * 2;
+		}
+	}
+
 
 	mono_llvm_emit_aot_module ("temp.bc", acfg->final_got_size);
 
@@ -6017,7 +6036,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->stats.gen_time = TV_ELAPSED (atv, btv);
 
 	if (acfg->llvm)
-		g_assert (acfg->got_offset == acfg->final_got_size);
+		g_assert (acfg->got_offset <= acfg->final_got_size);
 
 	printf ("Code: %d Info: %d Ex Info: %d Unwind Info: %d Class Info: %d PLT: %d GOT Info: %d GOT: %d Offsets: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.unwind_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, (int)(acfg->got_offset * sizeof (gpointer)), acfg->stats.offsets_size);
 
