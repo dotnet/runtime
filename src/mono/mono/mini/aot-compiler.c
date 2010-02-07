@@ -1618,7 +1618,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_LDFLDA:
 		case MONO_WRAPPER_STFLD:
 		case MONO_WRAPPER_ISINST: {
-			MonoClass *proxy_class = mono_marshal_wrapper_info_from_wrapper (method);
+			MonoClass *proxy_class = mono_marshal_get_wrapper_info (method);
 			encode_klass_ref (acfg, proxy_class, p, &p);
 			break;
 		}
@@ -1626,9 +1626,10 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_STFLD_REMOTE:
 			break;
 		case MONO_WRAPPER_ALLOC: {
-			int alloc_type = mono_gc_get_managed_allocator_type (method);
-			g_assert (alloc_type != -1);
-			encode_value (alloc_type, p, &p);
+			AllocatorWrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+			g_assert (info->alloc_type != -1);
+			encode_value (info->alloc_type, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_STELEMREF:
@@ -1654,7 +1655,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		}
 		case MONO_WRAPPER_MANAGED_TO_MANAGED:
 			if (!strcmp (method->name, "ElementAddr")) {
-				ElementAddrWrapperInfo *info = mono_marshal_wrapper_info_from_wrapper (method);
+				ElementAddrWrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
 				g_assert (info);
 				encode_value (MONO_AOT_WRAPPER_ELEMENT_ADDR, p, &p);
