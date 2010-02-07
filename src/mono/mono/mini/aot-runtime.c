@@ -586,6 +586,9 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			*method = mono_gc_get_managed_allocator_by_type (atype);
 			break;
 		}
+		case MONO_WRAPPER_WRITE_BARRIER:
+			*method = mono_gc_get_write_barrier ();
+			break;
 		case MONO_WRAPPER_STELEMREF:
 			*method = mono_marshal_get_stelemref ();
 			break;

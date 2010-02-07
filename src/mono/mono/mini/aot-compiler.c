@@ -1632,6 +1632,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			encode_value (info->alloc_type, p, &p);
 			break;
 		}
+		case MONO_WRAPPER_WRITE_BARRIER:
+			break;
 		case MONO_WRAPPER_STELEMREF:
 			break;
 		case MONO_WRAPPER_UNKNOWN:
@@ -3872,6 +3874,7 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			case MONO_WRAPPER_ALLOC:
 			case MONO_WRAPPER_REMOTING_INVOKE:
 			case MONO_WRAPPER_UNKNOWN:
+			case MONO_WRAPPER_WRITE_BARRIER:
 				break;
 			case MONO_WRAPPER_MANAGED_TO_MANAGED:
 				if (!strcmp (method->name, "ElementAddr"))
