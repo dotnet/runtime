@@ -269,6 +269,8 @@ mono_gc_flush_info (void)
 #define TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define TV_ELAPSED(start,end) (int)((end-start) / 10)
 
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
 enum {
@@ -7150,6 +7152,7 @@ mono_gc_get_suspend_signal (void)
 enum {
 	ATYPE_NORMAL,
 	ATYPE_VECTOR,
+	ATYPE_SMALL,
 	ATYPE_NUM
 };
 
@@ -7209,7 +7212,10 @@ create_allocator (int atype)
 		registered = TRUE;
 	}
 
-	if (atype == ATYPE_NORMAL) {
+	if (atype == ATYPE_SMALL) {
+		num_params = 1;
+		name = "AllocSmall";
+	} else if (atype == ATYPE_NORMAL) {
 		num_params = 1;
 		name = "Alloc";
 	} else if (atype == ATYPE_VECTOR) {
@@ -7226,7 +7232,7 @@ create_allocator (int atype)
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
 	size_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
-	if (atype == ATYPE_NORMAL) {
+	if (atype == ATYPE_NORMAL || atype == ATYPE_SMALL) {
 		/* size = vtable->klass->instance_size; */
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
@@ -7308,9 +7314,11 @@ create_allocator (int atype)
 	mono_mb_emit_stloc (mb, size_var);
 
 	/* if (size > MAX_SMALL_OBJ_SIZE) goto slowpath */
-	mono_mb_emit_ldloc (mb, size_var);
-	mono_mb_emit_icon (mb, MAX_SMALL_OBJ_SIZE);
-	max_size_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BGT_S);
+	if (atype != ATYPE_SMALL) {
+		mono_mb_emit_ldloc (mb, size_var);
+		mono_mb_emit_icon (mb, MAX_SMALL_OBJ_SIZE);
+		max_size_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BGT_S);
+	}
 
 	/*
 	 * We need to modify tlab_next, but the JIT only supports reading, so we read
@@ -7347,8 +7355,8 @@ create_allocator (int atype)
 	slowpath_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BLT_UN_S);
 
 	/* Slowpath */
-
-	mono_mb_patch_short_branch (mb, max_size_branch);
+	if (atype != ATYPE_SMALL)
+		mono_mb_patch_short_branch (mb, max_size_branch);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
@@ -7356,7 +7364,7 @@ create_allocator (int atype)
 	/* FIXME: mono_gc_alloc_obj takes a 'size_t' as an argument, not an int32 */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldloc (mb, size_var);
-	if (atype == ATYPE_NORMAL) {
+	if (atype == ATYPE_NORMAL || atype == ATYPE_SMALL) {
 		mono_mb_emit_icall (mb, mono_gc_alloc_obj);
 	} else if (atype == ATYPE_VECTOR) {
 		mono_mb_emit_ldarg (mb, 1);
@@ -7454,7 +7462,10 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 	if (collect_before_allocs)
 		return NULL;
 
-	return mono_gc_get_managed_allocator_by_type (ATYPE_NORMAL);
+	if (ALIGN_TO (klass->instance_size, ALLOC_ALIGN) < MAX_SMALL_OBJ_SIZE)
+		return mono_gc_get_managed_allocator_by_type (ATYPE_SMALL);
+	else
+		return mono_gc_get_managed_allocator_by_type (ATYPE_NORMAL);
 #else
 	return NULL;
 #endif
