@@ -611,6 +611,7 @@ create_allocator (int atype, int offset)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoMethodSignature *csig;
+	AllocatorWrapperInfo *info;
 
 	if (atype == ATYPE_STRING) {
 		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
@@ -798,6 +799,11 @@ create_allocator (int atype, int offset)
 	res = mono_mb_create_method (mb, csig, 8);
 	mono_mb_free (mb);
 	mono_method_get_header (res)->init_locals = FALSE;
+
+	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (AllocatorWrapperInfo));
+	info->alloc_type = atype;
+	mono_marshal_set_wrapper_info (res, info);
+
 	return res;
 }
 
@@ -858,30 +864,6 @@ mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 }
 
 /**
- * mono_gc_get_managed_allocator_id:
- *
- *   Return a type for the managed allocator method MANAGED_ALLOC which can later be passed
- * to mono_gc_get_managed_allocator_by_type () to get back this allocator method. This can be
- * used by the AOT code to encode references to managed allocator methods.
- */
-int
-mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
-{
-	int i;
-
-	mono_loader_lock ();
-	for (i = 0; i < ATYPE_NUM; ++i) {
-		if (alloc_method_cache [i] == managed_alloc) {
-			mono_loader_unlock ();
-			return i;
-		}
-	}
-	mono_loader_unlock ();
-
-	return -1;
-}
-
-/**
  * mono_gc_get_managed_allocator_by_type:
  *
  *   Return a managed allocator method corresponding to allocator type ATYPE.
@@ -919,12 +901,6 @@ MonoMethod*
 mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 {
 	return NULL;
-}
-
-int
-mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
-{
-	return -1;
 }
 
 MonoMethod*

@@ -144,6 +144,7 @@
 #include "metadata/monitor.h"
 #include "metadata/threadpool-internals.h"
 #include "metadata/mempool-internals.h"
+#include "metadata/marshal.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
@@ -7194,6 +7195,7 @@ create_allocator (int atype)
 	int tlab_next_addr_var, new_next_var;
 	int num_params, i;
 	const char *name = NULL;
+	AllocatorWrapperInfo *info;
 
 #ifdef HAVE_KW_THREAD
 	int tlab_next_addr_offset = -1;
@@ -7399,6 +7401,11 @@ create_allocator (int atype)
 	res = mono_mb_create_method (mb, csig, 8);
 	mono_mb_free (mb);
 	mono_method_get_header (res)->init_locals = FALSE;
+
+	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (AllocatorWrapperInfo));
+	info->alloc_type = atype;
+	mono_marshal_set_wrapper_info (res, info);
+
 	return res;
 }
 #endif
@@ -7501,20 +7508,6 @@ mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 #else
 	return NULL;
 #endif
-}
-
-int
-mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
-{
-#ifdef MANAGED_ALLOCATION
-	int i;
-
-	for (i = 0; i < ATYPE_NUM; ++i)
-		if (managed_alloc == alloc_method_cache [i])
-			return i;
-#endif
-	g_assert_not_reached ();
-	return -1;
 }
 
 MonoMethod*

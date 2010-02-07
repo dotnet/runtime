@@ -2327,18 +2327,6 @@ mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
 	return res;
 }
 
-static void
-mono_marshal_method_set_wrapper_data (MonoMethod *method, gpointer data)
-{
-	void **datav;
-	/* assert */
-	if (method->wrapper_type == MONO_WRAPPER_NONE || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
-		return;
-
-	datav = ((MonoMethodWrapper *)method)->method_data;
-	datav [1] = data;
-}
-
 /* Create the method from the builder and place it in the cache */
 MonoMethod*
 mono_mb_create_and_cache (GHashTable *cache, gpointer key,
@@ -2358,7 +2346,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 		if (!res) {
 			res = newm;
 			g_hash_table_insert (cache, key, res);
-			mono_marshal_method_set_wrapper_data (res, key);
+			mono_marshal_set_wrapper_info (res, key);
 			mono_marshal_unlock ();
 		} else {
 			mono_marshal_unlock ();
@@ -2431,7 +2419,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 		mono_marshal_lock ();
 		if (!*res) {
 			*res = newm;
-			mono_marshal_method_set_wrapper_data (*res, key);
+			mono_marshal_set_wrapper_info (*res, key);
 			mono_marshal_unlock ();
 		} else {
 			mono_marshal_unlock ();
@@ -2456,10 +2444,36 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	return res;
 }
 
+/*
+ * mono_marshal_get_wrapper_info:
+ *
+ *   Retrieve the pointer stored by mono_marshal_set_wrapper_info.
+ */
 gpointer
-mono_marshal_wrapper_info_from_wrapper (MonoMethod *wrapper)
+mono_marshal_get_wrapper_info (MonoMethod *wrapper)
 {
+	g_assert (wrapper->wrapper_type);
+
 	return mono_method_get_wrapper_data (wrapper, 1);
+}
+
+/*
+ * mono_marshal_set_wrapper_info:
+ *
+ *   Store an arbitrary pointer inside the wrapper which is retrievable by 
+ * mono_marshal_get_wrapper_info. The format of the data depends on the type of the
+ * wrapper (method->wrapper_type).
+ */
+void
+mono_marshal_set_wrapper_info (MonoMethod *method, gpointer data)
+{
+	void **datav;
+	/* assert */
+	if (method->wrapper_type == MONO_WRAPPER_NONE || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+		return;
+
+	datav = ((MonoMethodWrapper *)method)->method_data;
+	datav [1] = data;
 }
 
 /*
@@ -3905,7 +3919,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 			new_key->sig = sig;
 			new_key->method = target_method;
 			g_hash_table_insert (cache, new_key, res);
-			mono_marshal_method_set_wrapper_data (res, new_key);
+			mono_marshal_set_wrapper_info (res, new_key);
 			mono_marshal_unlock ();
 		} else {
 			mono_marshal_unlock ();
@@ -9599,7 +9613,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 		info->rank = rank;
 		info->elem_size = elem_size;
 
-		mono_marshal_method_set_wrapper_data (ret, info);
+		mono_marshal_set_wrapper_info (ret, info);
 	}
 	mono_marshal_unlock ();
 	return ret;

@@ -149,9 +149,14 @@ void mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value) MONO_INTERNAL;
 void  mono_gc_finalize_threadpool_threads (void) MONO_INTERNAL;
 
 /* fast allocation support */
+
+/* Accessible using mono_marshal_wrapper_info_from_wrapper () */
+typedef struct {
+	int alloc_type;
+} AllocatorWrapperInfo;
+
 MonoMethod* mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box) MONO_INTERNAL;
 MonoMethod* mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank) MONO_INTERNAL;
-int mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc) MONO_INTERNAL;
 MonoMethod *mono_gc_get_managed_allocator_by_type (int atype) MONO_INTERNAL;
 
 guint32 mono_gc_get_managed_allocator_types (void) MONO_INTERNAL;

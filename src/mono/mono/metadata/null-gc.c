@@ -211,12 +211,6 @@ mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 	return NULL;
 }
 
-int
-mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
-{
-	return -1;
-}
-
 MonoMethod*
 mono_gc_get_managed_allocator_by_type (int atype)
 {

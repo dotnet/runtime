@@ -169,8 +169,11 @@ mono_type_to_stind (MonoType *type) MONO_INTERNAL;
 MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper) MONO_INTERNAL;
 
+void
+mono_marshal_set_wrapper_info (MonoMethod *method, gpointer data) MONO_INTERNAL;
+
 gpointer
-mono_marshal_wrapper_info_from_wrapper (MonoMethod *wrapper) MONO_INTERNAL;
+mono_marshal_get_wrapper_info (MonoMethod *wrapper) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method) MONO_INTERNAL;
