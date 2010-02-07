@@ -6597,6 +6597,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cfg->ret) {
 					MonoType *ret_type = mono_method_signature (method)->ret;
 
+					if (seq_points) {
+						/* 
+						 * Place a seq point here too even through the IL stack is not
+						 * empty, so a step over on
+						 * call <FOO>
+						 * ret
+						 * will work correctly.
+						 */
+						NEW_SEQ_POINT (cfg, ins, ip - header->code, TRUE);
+						MONO_ADD_INS (cfg->cbb, ins);
+					}
+
 					g_assert (!return_var);
 					CHECK_STACK (1);
 					--sp;
