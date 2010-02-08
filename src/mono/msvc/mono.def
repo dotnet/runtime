@@ -717,3 +717,7 @@ mono_verify_corlib
 mono_vfree
 mono_vtable_get_static_field_data
 mono_walk_stack
+mono_basic_block_free
+mono_basic_block_split
+mono_opcode_value_and_size
+mono_opcode_size

@@ -4288,7 +4288,15 @@
 				RelativePath="..\mono\metadata\mono-debug-debugger.h"
 				>
 			</File>
-			<File
+      <File
+				RelativePath="..\mono\metadata\mono-basic-block.c"
+				>
+      </File>
+      <File
+				RelativePath="..\mono\metadata\mono-basic-block.h"
+				>
+      </File>
+      <File
 				RelativePath="..\mono\metadata\mono-debug.c"
 				>
 				<FileConfiguration
