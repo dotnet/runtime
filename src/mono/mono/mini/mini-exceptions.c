@@ -1089,6 +1089,16 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
 		return ji;
 	}
 
+	/* maybe it is shared code, so we also search in the root domain */
+	if (domain != mono_get_root_domain ()) {
+		ji = mono_jit_info_table_find (mono_get_root_domain (), addr);
+		if (ji) {
+			if (out_domain)
+				*out_domain = mono_get_root_domain ();
+			return ji;
+		}
+	}
+
 	for (l = t->appdomain_refs; l; l = l->next) {
 		if (l->data != domain) {
 			ji = mono_jit_info_table_find ((MonoDomain*)l->data, addr);

@@ -23,7 +23,7 @@
 MonoGenericSharingContext*
 mono_get_generic_context_from_code (guint8 *code)
 {
-	MonoJitInfo *jit_info = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+	MonoJitInfo *jit_info = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
 
 	g_assert (jit_info);
 

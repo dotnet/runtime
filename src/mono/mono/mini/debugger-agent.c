@@ -1950,7 +1950,7 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 		return;
 	}
 
-	ji = mono_jit_info_table_find (mono_domain_get (), (char*)ip);
+	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, NULL);
 
 	/* Can't suspend in these methods */
 	if (ji->method->klass == mono_defaults.string_class && (!strcmp (ji->method->name, "memset") || strstr (ji->method->name, "memcpy")))
@@ -3229,7 +3229,7 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	// FIXME: Speed this up
 
 	orig_ip = ip = MONO_CONTEXT_GET_IP (ctx);
-	ji = mono_jit_info_table_find (mono_domain_get (), (char*)ip);
+	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, NULL);
 	g_assert (ji);
 	g_assert (ji->method);
 
@@ -3432,7 +3432,7 @@ process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	guint8 *ip;
 	GPtrArray *reqs;
 	int il_offset, suspend_policy;
-	MonoDomain *domain = mono_domain_get ();
+	MonoDomain *domain;
 	GSList *events;
 
 	// FIXME: Speed this up
@@ -3457,7 +3457,7 @@ process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	if (log_level > 0) {
 		const char *depth = NULL;
 
-		ji = mono_jit_info_table_find (mono_domain_get (), (char*)ip);
+		ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
 
 		switch (ss_req->depth) {
 		case STEP_DEPTH_OVER:
@@ -3494,7 +3494,7 @@ process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 		ss_req->last_sp = MONO_CONTEXT_GET_SP (ctx);
 	}
 
-	ji = mono_jit_info_table_find (mono_domain_get (), (char*)ip);
+	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
 	g_assert (ji);
 	g_assert (ji->method);
 
