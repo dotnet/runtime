@@ -16,6 +16,7 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/marshal.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/dtrace.h>
@@ -889,6 +890,13 @@ mono_gc_get_managed_allocator_types (void)
 	return ATYPE_NUM;
 }
 
+MonoMethod*
+mono_gc_get_write_barrier (void)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 #else
 
 MonoMethod*
@@ -913,6 +921,13 @@ guint32
 mono_gc_get_managed_allocator_types (void)
 {
 	return 0;
+}
+
+MonoMethod*
+mono_gc_get_write_barrier (void)
+{
+	g_assert_not_reached ();
+	return NULL;
 }
 
 #endif

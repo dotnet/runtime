@@ -255,5 +255,12 @@ mono_gc_get_suspend_signal (void)
 	return -1;
 }
 
+MonoMethod*
+mono_gc_get_write_barrier (void)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 #endif
 
