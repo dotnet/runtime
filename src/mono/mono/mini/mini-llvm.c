@@ -1286,6 +1286,11 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 			ctx->addresses [reg] = build_alloca (ctx, sig->params [i]);
 
 			emit_reg_to_vtype (ctx, builder, sig->params [i], ctx->addresses [reg], ainfo, regs);
+
+			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (sig->params [i]))) {
+				/* Treat these as normal values */
+				ctx->values [reg] = LLVMBuildLoad (builder, ctx->addresses [reg], "");
+			}
 		} else if (ainfo->storage == LLVMArgVtypeByVal) {
 			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindexes [i]);
 		} else {
