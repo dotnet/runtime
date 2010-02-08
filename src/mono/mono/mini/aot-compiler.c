@@ -4450,14 +4450,14 @@ emit_code (MonoAotCompile *acfg)
 	 * code_offsets array. It is also used to compute the memory ranges occupied by
 	 * AOT code, so it must be equal to the address of the first emitted method.
 	 */
-	sprintf (symbol, "methods");
+	sprintf (symbol, "%smethods", acfg->llvm_label_prefix);
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, symbol, TRUE);
 	emit_alignment (acfg, 8);
 	if (acfg->llvm) {
 		for (i = 0; i < acfg->nmethods; ++i) {
 			if (acfg->cfgs [i] && acfg->cfgs [i]->compile_llvm) {
-				fprintf (acfg->fp, "\n.set methods, %s\n", acfg->cfgs [i]->asm_symbol);	
+				fprintf (acfg->fp, "\n.set %smethods, %s\n", acfg->llvm_label_prefix, acfg->cfgs [i]->asm_symbol);
 				break;
 			}
 		}
