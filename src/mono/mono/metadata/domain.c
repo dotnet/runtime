@@ -379,6 +379,7 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 	MonoJitInfo *ji;
 	int chunk_pos, pos;
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+	MonoImage *image;
 
 	++mono_stats.jit_info_table_lookup_count;
 
@@ -436,17 +437,12 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 	mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
 	mono_hazard_pointer_clear (hp, JIT_INFO_HAZARD_INDEX);
 
-	/* maybe it is shared code, so we also search in the root domain */
 	ji = NULL;
-	if (domain != mono_root_domain)
-		ji = mono_jit_info_table_find (mono_root_domain, addr);
 
-	if (ji == NULL) {
-		/* Maybe its an AOT module */
-		MonoImage *image = mono_jit_info_find_aot_module ((guint8*)addr);
-		if (image)
-			ji = jit_info_find_in_aot_func (domain, image, addr);
-	}
+	/* Maybe its an AOT module */
+	image = mono_jit_info_find_aot_module ((guint8*)addr);
+	if (image)
+		ji = jit_info_find_in_aot_func (domain, image, addr);
 	
 	return ji;
 }

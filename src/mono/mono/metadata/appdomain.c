@@ -169,8 +169,10 @@ create_exceptions (MonoDomain *domain)
 	MonoDomain *old_domain = mono_domain_get ();
 	MonoString *arg;
 
-	if (domain != old_domain)
+	if (domain != old_domain) {
+		mono_thread_push_appdomain_ref (domain);
 		mono_domain_set_internal_with_options (domain, FALSE);
+	}
 
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
@@ -187,8 +189,10 @@ create_exceptions (MonoDomain *domain)
 	arg = mono_string_new (domain, "The requested operation caused a stack overflow.");
 	domain->stack_overflow_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL);
 
-	if (domain != old_domain)
+	if (domain != old_domain) {
+		mono_thread_pop_appdomain_ref ();
 		mono_domain_set_internal_with_options (old_domain, FALSE);
+	}
 
 	/* 
 	 * This class is used during exception handling, so initialize it here, to prevent
