@@ -386,7 +386,7 @@ mono_type_get_underlying_type_any (MonoType *type)
 	return type;
 }
 
-static const char*
+static G_GNUC_UNUSED const char*
 mono_type_get_stack_name (MonoType *type)
 {
 	return type_names [get_stack_type (type) & TYPE_MASK];
