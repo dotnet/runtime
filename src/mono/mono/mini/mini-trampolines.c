@@ -20,6 +20,7 @@ guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 static GHashTable *class_init_hash_addr = NULL;
 static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
 static GHashTable *rgctx_lazy_fetch_trampoline_hash_addr = NULL;
+static guint32 trampoline_calls;
 
 #define mono_trampolines_lock() EnterCriticalSection (&trampolines_mutex)
 #define mono_trampolines_unlock() LeaveCriticalSection (&trampolines_mutex)
@@ -598,6 +599,8 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 	int displacement;
 	MonoVTable *vt;
 
+	trampoline_calls ++;
+
 	if (code && !mono_use_llvm)
 		vt = mono_arch_get_vcall_slot (code, regs, &displacement);
 	else
@@ -623,6 +626,8 @@ mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *
 	MonoVTable *vt;
 	gpointer *vtable_slot;
 	int slot;
+
+	trampoline_calls ++;
 
 	/* 
 	 * We have the method which is called, we need to obtain the vtable slot without
@@ -654,6 +659,8 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 	MonoGenericContext context = { NULL, NULL };
 	MonoMethod *imt_method, *declaring;
 	gpointer addr;
+
+	trampoline_calls ++;
 
 	g_assert (m->is_generic);
 
@@ -702,6 +709,8 @@ mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info,
 	gboolean is_got_entry;
 	guint8 *plt_entry;
 	gboolean need_rgctx_tramp = FALSE;
+
+	trampoline_calls ++;
 
 	image = *(gpointer*)(gpointer)token_info;
 	token_info += sizeof (gpointer);
@@ -760,6 +769,8 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 	guint32 plt_info_offset = mono_aot_get_plt_info_offset (regs, code);
 	gpointer res;
 
+	trampoline_calls ++;
+
 	res = mono_aot_plt_resolve (aot_module, plt_info_offset, code);
 	if (!res) {
 		if (mono_loader_get_last_error ())
@@ -783,6 +794,8 @@ mono_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, gui
 {
 	guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
+	trampoline_calls ++;
+
 	mono_runtime_class_init (vtable);
 
 	if (plt_entry) {
@@ -801,6 +814,8 @@ mono_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, gui
 void
 mono_generic_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
+	trampoline_calls ++;
+
 	mono_runtime_class_init (vtable);
 }
 
@@ -815,6 +830,8 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 	gpointer arg = (gpointer)(gssize)r [MONO_ARCH_VTABLE_REG];
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
 	gboolean mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
+
+	trampoline_calls ++;
 
 	if (!inited) {
 		mono_counters_register ("RGCTX unmanaged lookups", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_lookups);
@@ -865,6 +882,8 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	MonoMethod *invoke = tramp_data [0];
 	guint8 *impl_this = tramp_data [1];
 	guint8 *impl_nothis = tramp_data [2];
+
+	trampoline_calls ++;
 
 	/* Obtain the delegate object according to the calling convention */
 
@@ -1026,6 +1045,8 @@ mono_trampolines_init (void)
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 	mono_trampoline_code [MONO_TRAMPOLINE_LLVM_VCALL] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_LLVM_VCALL);
 #endif
+
+	mono_counters_register ("Calls to trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &trampoline_calls);
 }
 
 void
