@@ -2843,26 +2843,6 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	method_index = get_method_index (acfg, method);
 
-	/* Emit unbox trampoline */
-	if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-		char call_target [256];
-
-		if (!method->wrapper_type && !method->is_inflated) {
-			g_assert (method->token);
-			sprintf (symbol, "ut_%d", mono_metadata_token_index (method->token) - 1);
-		} else {
-			sprintf (symbol, "ut_e_%d", get_method_index (acfg, method));
-		}
-
-		emit_section_change (acfg, ".text", 0);
-		emit_global (acfg, symbol, TRUE);
-		emit_label (acfg, symbol);
-
-		sprintf (call_target, "%s", cfg->asm_symbol);
-
-		arch_emit_unbox_trampoline (acfg, cfg->orig_method, cfg->generic_sharing_context, call_target);
-	}
-
 	/* Make the labels local */
 	sprintf (symbol, "%s", cfg->asm_symbol);
 
@@ -4475,14 +4455,42 @@ emit_code (MonoAotCompile *acfg)
 	emit_zero_bytes (acfg, 16);
 
 	for (l = acfg->method_order; l != NULL; l = l->next) {
+		MonoCompile *cfg;
+		MonoMethod *method;
+
 		i = GPOINTER_TO_UINT (l->data);
 
-		if (acfg->cfgs [i]) {
-			if (acfg->cfgs [i]->compile_llvm)
-				acfg->stats.llvm_count ++;
-			else
-				emit_method_code (acfg, acfg->cfgs [i]);
+		cfg = acfg->cfgs [i];
+
+		if (!cfg)
+			continue;
+
+		method = cfg->orig_method;
+
+		/* Emit unbox trampoline */
+		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+			char call_target [256];
+
+			if (!method->wrapper_type && !method->is_inflated) {
+				g_assert (method->token);
+				sprintf (symbol, "ut_%d", mono_metadata_token_index (method->token) - 1);
+			} else {
+				sprintf (symbol, "ut_e_%d", get_method_index (acfg, method));
+			}
+
+			emit_section_change (acfg, ".text", 0);
+			emit_global (acfg, symbol, TRUE);
+			emit_label (acfg, symbol);
+
+			sprintf (call_target, "%s", cfg->asm_symbol);
+
+			arch_emit_unbox_trampoline (acfg, cfg->orig_method, cfg->generic_sharing_context, call_target);
 		}
+
+		if (cfg->compile_llvm)
+			acfg->stats.llvm_count ++;
+		else
+			emit_method_code (acfg, cfg);
 	}
 
 	sprintf (symbol, "methods_end");
