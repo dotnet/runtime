@@ -3470,6 +3470,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		/* Can't delete the method if it has an alias, so only add it if successful */
 		if (debug_name) {
 			debug_alias = LLVMAddAlias (module, LLVMTypeOf (method), method, debug_name);
+			LLVMSetLinkage (debug_alias, LLVMInternalLinkage);
 			LLVMSetVisibility (debug_alias, LLVMHiddenVisibility);
 		}
 
