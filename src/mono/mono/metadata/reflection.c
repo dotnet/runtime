@@ -190,7 +190,10 @@ static gboolean is_sre_ctor_builder (MonoClass *class);
 static gboolean is_sre_field_builder (MonoClass *class);
 static gboolean is_sr_mono_method (MonoClass *class);
 static gboolean is_sr_mono_cmethod (MonoClass *class);
+static gboolean is_sr_mono_generic_method (MonoClass *class);
+static gboolean is_sr_mono_generic_cmethod (MonoClass *class);
 static gboolean is_sr_mono_field (MonoClass *class);
+static gboolean is_sr_mono_property (MonoClass *class);
 
 static guint32 mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method);
 static guint32 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m);
@@ -7624,6 +7627,8 @@ mono_reflection_get_token (MonoObject *obj)
 		token = mono_class_get_event_token (p->event);
 	} else if (strcmp (klass->name, "ParameterInfo") == 0) {
 		MonoReflectionParameter *p = (MonoReflectionParameter*)obj;
+		MonoClass *member_class = mono_object_class (p->MemberImpl);
+		g_assert (mono_class_is_reflection_method_or_constructor (member_class));
 
 		token = mono_method_get_param_token (((MonoReflectionMethod*)p->MemberImpl)->method, p->PositionImpl);
 	} else if (strcmp (klass->name, "Module") == 0) {
@@ -8637,8 +8642,26 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 		cinfo = mono_custom_attrs_from_method (rmethod->method);
 	} else if (strcmp ("ParameterInfo", klass->name) == 0) {
 		MonoReflectionParameter *param = (MonoReflectionParameter*)obj;
-		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)param->MemberImpl;
-		cinfo = mono_custom_attrs_from_param (rmethod->method, param->PositionImpl + 1);
+		MonoClass *member_class = mono_object_class (param->MemberImpl);
+		if (mono_class_is_reflection_method_or_constructor (member_class)) {
+			MonoReflectionMethod *rmethod = (MonoReflectionMethod*)param->MemberImpl;
+			cinfo = mono_custom_attrs_from_param (rmethod->method, param->PositionImpl + 1);
+		} else if (is_sr_mono_property (member_class)) {
+			MonoReflectionProperty *prop = (MonoReflectionProperty *)param->MemberImpl;
+			MonoMethod *method;
+			if (!(method = prop->property->get))
+				method = prop->property->set;
+			g_assert (method);
+
+			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
+		} else {
+			char *type_name = mono_type_get_full_name (member_class);
+			char *msg = g_strdup_printf ("Custom attributes on a ParamInfo with member %s are not supported", type_name);
+			MonoException *ex = mono_get_exception_not_supported  (msg);
+			g_free (type_name);
+			g_free (msg);
+			mono_raise_exception (ex);
+		}
 	} else if (strcmp ("AssemblyBuilder", klass->name) == 0) {
 		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)obj;
 		cinfo = mono_custom_attrs_from_builders (NULL, assemblyb->assembly.assembly->image, assemblyb->cattrs);
@@ -8830,11 +8853,34 @@ is_sr_mono_cmethod (MonoClass *class)
 }
 
 static gboolean
+is_sr_mono_generic_method (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoGenericMethod");
+}
+
+static gboolean
+is_sr_mono_generic_cmethod (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoGenericCMethod");
+}
+
+static gboolean
 is_sr_mono_field (MonoClass *class)
 {
 	check_corlib_type_cached (class, "System.Reflection", "MonoField");
 }
 
+static gboolean
+is_sr_mono_property (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoProperty");
+}
+
+gboolean
+mono_class_is_reflection_method_or_constructor (MonoClass *class)
+{
+	return is_sr_mono_method (class) || is_sr_mono_cmethod (class) || is_sr_mono_generic_method (class) || is_sr_mono_generic_cmethod (class);
+}
 
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref)
