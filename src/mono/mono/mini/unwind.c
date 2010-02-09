@@ -12,6 +12,7 @@
 
 #include <mono/utils/mono-counters.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/mono-endian.h>
 
 typedef enum {
 	LOC_SAME,
@@ -371,7 +372,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				locations [reg].offset = decode_sleb128 (p, &p) * DWARF_DATA_ALIGN;
 				break;
 			case DW_CFA_advance_loc4:
-				pos += *(guint32*)p;
+				pos += read32 (p);
 				p += 4;
 				break;
 			default:
