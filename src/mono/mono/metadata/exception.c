@@ -591,7 +591,7 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
  * mono_get_exception_synchronization_lock:
  * @inner: the inner exception.
  *
- * Returns: a new instance of the System.TypeInitializationException
+ * Returns: a new instance of the System.SynchronizationLockException
  */
 MonoException *
 mono_get_exception_synchronization_lock (const char *msg)
