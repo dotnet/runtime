@@ -3116,13 +3116,6 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 	int vtable_reg = alloc_preg (cfg);
 	MonoInst *klass_inst = NULL;
 
-	NEW_BBLOCK (cfg, is_null_bb);
-
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
-
-	save_cast_details (cfg, klass, obj_reg);
-
 	if (context_used) {
 		MonoInst *args [2];
 
@@ -3144,6 +3137,13 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 			/* Simple case, handled by the code below */
 		}
 	}
+
+	NEW_BBLOCK (cfg, is_null_bb);
+
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
+
+	save_cast_details (cfg, klass, obj_reg);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
