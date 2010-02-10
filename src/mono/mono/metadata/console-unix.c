@@ -430,6 +430,10 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	mono_attr.c_iflag &= ~(IXON|IXOFF);
 	mono_attr.c_cc [VMIN] = 1;
 	mono_attr.c_cc [VTIME] = 0;
+#ifdef VDSUSP
+	/* Disable C-y being used as a suspend character on OSX */
+	mono_attr.c_cc [VDSUSP] = 255;
+#endif
 	if (tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr) == -1)
 		return FALSE;
 
