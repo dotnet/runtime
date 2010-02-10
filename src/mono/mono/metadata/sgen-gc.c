@@ -6819,16 +6819,20 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 			switch (desc & 0x7) {
 			case DESC_TYPE_RUN_LENGTH:
 				OBJ_RUN_LEN_SIZE (skip_size, desc, ptr);
-				/* The descriptor includes the size of MonoObject */
-				skip_size -= sizeof (MonoObject);
-				skip_size *= count;
-				if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
-					*found = TRUE;
+				break;
+			case DESC_TYPE_SMALL_BITMAP:
+				OBJ_BITMAP_SIZE (skip_size, desc, start);
 				break;
 			default:
 				// FIXME:
 				g_assert_not_reached ();
 			}
+
+			/* The descriptor includes the size of MonoObject */
+			skip_size -= sizeof (MonoObject);
+			skip_size *= count;
+			if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
+				*found = TRUE;
 
 			return p + 4;
 		case REMSET_ROOT_LOCATION:
