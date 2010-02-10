@@ -3294,9 +3294,6 @@ collect_nursery (size_t requested_size)
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, nursery_real_end);
 
-	if (consistency_check_at_minor_collection)
-		check_consistency ();
-
 	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", num_minor_gcs, nursery_start, nursery_next, (int)(nursery_next - nursery_start)));
 	max_garbage_amount = nursery_next - nursery_start;
 	g_assert (nursery_section->size >= max_garbage_amount);
@@ -3341,6 +3338,9 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
+
+	if (consistency_check_at_minor_collection)
+		check_consistency ();
 
 	/* 
 	 * walk all the roots and copy the young objects to the old generation,
@@ -6913,10 +6913,16 @@ find_in_remsets (char *addr)
 
 static gboolean missing_remsets;
 
+/*
+ * We let a missing remset slide if the target object is pinned,
+ * because the store might have happened but the remset not yet added,
+ * but in that case the target must be pinned.  We might theoretically
+ * miss some missing remsets this way, but it's very unlikely.
+ */
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
-            if (!find_in_remsets ((char*)(ptr))) { \
+		if (!object_is_pinned (*(ptr)) && !find_in_remsets ((char*)(ptr))) { \
                 fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
                 missing_remsets = TRUE;					\
             } \
