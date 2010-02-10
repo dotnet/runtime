@@ -6911,12 +6911,14 @@ find_in_remsets (char *addr)
 	return FALSE;
 }
 
+static gboolean missing_remsets;
+
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
             if (!find_in_remsets ((char*)(ptr))) { \
                 fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
-                g_assert_not_reached (); \
+                missing_remsets = TRUE;					\
             } \
         } \
 	} while (0)
@@ -6960,6 +6962,8 @@ check_consistency (void)
 	// Need to add more checks
 	// FIXME: Create a general heap enumeration function and use that
 
+	missing_remsets = FALSE;
+
 	DEBUG (1, fprintf (gc_debug_file, "Begin heap consistency check...\n"));
 
 	// Check that oldspace->newspace pointers are registered with the collector
@@ -6971,6 +6975,8 @@ check_consistency (void)
 	}
 
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
+
+	g_assert (!missing_remsets);
 }
 
 /* Check that the reference is valid */
