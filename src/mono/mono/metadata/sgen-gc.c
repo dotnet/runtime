@@ -186,6 +186,9 @@ static gboolean xdomain_checks = FALSE;
 static FILE *heap_dump_file = NULL;
 /* If set, mark stacks conservatively, even if precise marking is possible */
 static gboolean conservative_stack_mark = FALSE;
+/* If set, do a plausibility check on the scan_starts before and after
+   each collection */
+static gboolean do_scan_starts_check = FALSE;
 
 /*
  * Turning on heavy statistics will turn off the managed allocator and
@@ -2979,6 +2982,23 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	to_space_set_next_data ();
 }
 
+static void
+check_scan_starts (void)
+{
+	GCMemSection *section;
+	int i;
+	if (!do_scan_starts_check)
+		return;
+	for (section = section_list; section; section = section->block.next) {
+		for (i = 0; i < section->num_scan_start; ++i) {
+			if (section->scan_starts [i]) {
+				guint size = safe_object_get_size ((MonoObject*) section->scan_starts [i]);
+				g_assert (size >= sizeof (MonoObject) && size <= MAX_SMALL_OBJ_SIZE);
+			}
+		}
+	}
+}
+
 static int last_num_pinned = 0;
 
 static void
@@ -3266,6 +3286,7 @@ collect_nursery (size_t requested_size)
 	TV_DECLARE (btv);
 
 	init_stats ();
+	check_scan_starts ();
 
 	degraded_mode = 0;
 	orig_nursery_next = nursery_next;
@@ -3379,6 +3400,8 @@ collect_nursery (size_t requested_size)
 
 	commit_stats (GENERATION_NURSERY);
 
+	check_scan_starts ();
+
 	sections_alloced = num_major_sections - old_num_major_sections;
 	minor_collection_sections_alloced += sections_alloced;
 
@@ -3414,6 +3437,7 @@ major_collection (const char *reason)
 	int num_major_sections_saved, save_target, allowance_target;
 
 	init_stats ();
+	check_scan_starts ();
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
@@ -3658,6 +3682,8 @@ major_collection (const char *reason)
 	*/
 
 	minor_collection_sections_alloced = 0;
+
+	check_scan_starts ();
 }
 
 /*
@@ -7184,6 +7210,8 @@ mono_gc_base_init (void)
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "conservative-stack-mark")) {
 				conservative_stack_mark = TRUE;
+			} else if (!strcmp (opt, "check-scan-starts")) {
+				do_scan_starts_check = TRUE;
 			} else if (g_str_has_prefix (opt, "heap-dump=")) {
 				char *filename = strchr (opt, '=') + 1;
 				nursery_clear_policy = CLEAR_AT_GC;
