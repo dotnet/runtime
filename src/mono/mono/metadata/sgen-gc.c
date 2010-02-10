@@ -2257,6 +2257,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 				continue;
 			}
 			idx = ((char*)addr - (char*)section->data) / SCAN_START_SIZE;
+			g_assert (idx < section->num_scan_start);
 			search_start = (void*)section->scan_starts [idx];
 			if (!search_start || search_start > addr) {
 				while (idx) {
@@ -2700,7 +2701,7 @@ alloc_nursery (void)
 	section->data = section->next_data = data;
 	section->size = alloc_size;
 	section->end_data = nursery_real_end;
-	scan_starts = alloc_size / SCAN_START_SIZE;
+	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
 	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN0;
@@ -3676,7 +3677,7 @@ alloc_major_section (void)
 	UPDATE_HEAP_BOUNDARIES (section->data, section->end_data);
 	total_alloc += section->size;
 	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %zd\n", section->data, section->end_data, total_alloc));
-	scan_starts = section->size / SCAN_START_SIZE;
+	scan_starts = (section->size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
 	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN1;
