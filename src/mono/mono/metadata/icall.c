@@ -1957,6 +1957,7 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
 
 	def_value = mono_class_get_field_default_value (field, &def_type);
 
+	/*FIXME unify this with reflection.c:mono_get_object_from_blob*/
 	switch (def_type) {
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
@@ -7262,6 +7263,55 @@ property_info_get_type_modifiers (MonoReflectionProperty *property, MonoBoolean 
 	if (!type)
 		return NULL;
 	return type_array_from_modifiers (image, type, optional);
+}
+
+/*
+ *Construct a MonoType suited to be used to decode a constant blob object.
+ *
+ * @type is the target type which will be constructed
+ * @blob_type is the blob type, for example, that comes from the constant table
+ * @real_type is the expected constructed type.
+ */
+static void
+mono_type_from_blob_type (MonoType *type, MonoTypeEnum blob_type, MonoType *real_type)
+{
+	type->type = blob_type;
+	type->data.klass = NULL;
+	if (blob_type == MONO_TYPE_CLASS)
+		type->data.klass = mono_defaults.object_class;
+	else if (real_type->type == MONO_TYPE_VALUETYPE && real_type->data.klass->enumtype) {
+		/* For enums, we need to use the base type */
+		type->type = MONO_TYPE_VALUETYPE;
+		type->data.klass = mono_class_from_mono_type (real_type);
+	} else
+		type->data.klass = mono_class_from_mono_type (real_type);
+}
+
+static MonoObject*
+property_info_get_default_value (MonoReflectionProperty *property)
+{
+	MonoType blob_type;
+	MonoProperty *prop = property->property;
+	MonoType *type = get_property_type (prop);
+	MonoImage *image = property->klass->image;
+	MonoDomain *domain = mono_object_domain (property); 
+	MonoTypeEnum def_type;
+	const char *def_value;
+	MonoObject *o;
+
+	g_assert (!prop->parent->image->dynamic);
+
+	mono_class_init (prop->parent);
+
+	if (!(prop->attrs & PROPERTY_ATTRIBUTE_HAS_DEFAULT))
+		mono_raise_exception (mono_get_exception_invalid_operation (NULL));
+
+	def_value = mono_class_get_property_default_value (prop, &def_type);
+
+	mono_type_from_blob_type (&blob_type, def_type, type);
+	o = mono_get_object_from_blob (domain, &blob_type, def_value);
+
+	return o;
 }
 
 static MonoBoolean

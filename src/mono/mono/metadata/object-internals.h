@@ -1457,6 +1457,9 @@ mono_string_to_utf8_checked (MonoString *s, MonoError *error) MONO_INTERNAL;
 gboolean
 mono_class_is_reflection_method_or_constructor (MonoClass *class) MONO_INTERNAL;
 
+MonoObject *
+mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 

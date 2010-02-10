@@ -628,6 +628,7 @@ ICALL(MMETHI_3, "get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval
 
 ICALL_TYPE(MPROPI, "System.Reflection.MonoPropertyInfo", MPROPI_1)
 ICALL(MPROPI_1, "GetTypeModifiers", property_info_get_type_modifiers)
+ICALL(MPROPI_3, "get_default_value", property_info_get_default_value)
 ICALL(MPROPI_2, "get_property_info", ves_icall_get_property_info)
 
 ICALL_TYPE(PARAMI, "System.Reflection.ParameterInfo", PARAMI_1)
