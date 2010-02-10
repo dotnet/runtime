@@ -5945,6 +5945,30 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 	return klass->ext->field_def_values [field_index].data;
 }
 
+/*
+ * mono_class_get_property_default_value:
+ *
+ * Return the default value of the field as a pointer into the metadata blob.
+ */
+const char*
+mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def_type)
+{
+	guint32 cindex;
+	guint32 constant_cols [MONO_CONSTANT_SIZE];
+	MonoClass *klass = property->parent;
+
+	g_assert (property->attrs & PROPERTY_ATTRIBUTE_HAS_DEFAULT);
+	/*We don't cache here because it is not used by C# so it's quite rare.*/
+
+	cindex = mono_metadata_get_constant_index (klass->image, mono_class_get_property_token (property), 0);
+	if (!cindex)
+		return NULL;
+
+	mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
+	*def_type = constant_cols [MONO_CONSTANT_TYPE];
+	return (gpointer)mono_metadata_blob_heap (klass->image, constant_cols [MONO_CONSTANT_VALUE]);
+}
+
 guint32
 mono_class_get_event_token (MonoEvent *event)
 {

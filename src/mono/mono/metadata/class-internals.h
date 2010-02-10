@@ -879,6 +879,9 @@ mono_class_has_special_static_fields (MonoClass *klass) MONO_INTERNAL;
 const char*
 mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_type) MONO_INTERNAL;
 
+const char*
+mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def_type) MONO_INTERNAL;
+
 void
 mono_install_trampoline (MonoTrampoline func) MONO_INTERNAL;
 
