@@ -763,6 +763,7 @@ struct _SgenThreadInfo {
 	unsigned int stop_count; /* to catch duplicate signals */
 	int signal;
 	int skip;
+	volatile int in_critical_region;
 	void *stack_end;
 	void *stack_start;
 	void *stack_start_limit;
@@ -796,6 +797,7 @@ struct _SgenThreadInfo {
 #define REMEMBERED_SET	remembered_set
 #define STORE_REMSET_BUFFER	store_remset_buffer
 #define STORE_REMSET_BUFFER_INDEX	store_remset_buffer_index
+#define IN_CRITICAL_REGION thread_info->in_critical_region
 #else
 static pthread_key_t thread_info_key;
 #define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = pthread_getspecific (thread_info_key)
@@ -806,13 +808,19 @@ static pthread_key_t thread_info_key;
 #define REMEMBERED_SET	(__thread_info__->remset)
 #define STORE_REMSET_BUFFER	(__thread_info__->store_remset_buffer)
 #define STORE_REMSET_BUFFER_INDEX	(__thread_info__->store_remset_buffer_index)
+#define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
 #endif
+
+/* we use the memory barrier only to prevent compiler reordering (a memory constraint may be enough) */
+#define ENTER_CRITICAL_REGION do {IN_CRITICAL_REGION = 1;mono_memory_barrier ();} while (0)
+#define EXIT_CRITICAL_REGION  do {IN_CRITICAL_REGION = 0;mono_memory_barrier ();} while (0)
 
 /*
  * FIXME: What is faster, a TLS variable pointing to a structure, or separate TLS 
  * variables for next+temp_end ?
  */
 #ifdef HAVE_KW_THREAD
+static __thread SgenThreadInfo *thread_info;
 static __thread char *tlab_start;
 static __thread char *tlab_next;
 static __thread char *tlab_temp_end;
@@ -4444,10 +4452,61 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	return p;
 }
 
+static void*
+mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
+{
+	void **p;
+	char *new_next;
+	TLAB_ACCESS_INIT;
+
+	size += ALLOC_ALIGN - 1;
+	size &= ~(ALLOC_ALIGN - 1);
+
+	g_assert (vtable->gc_descr);
+	if (size <= MAX_SMALL_OBJ_SIZE) {
+		/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
+
+		p = (void**)TLAB_NEXT;
+		/* FIXME: handle overflow */
+		new_next = (char*)p + size;
+		TLAB_NEXT = new_next;
+
+		if (G_LIKELY (new_next < TLAB_TEMP_END)) {
+			/* Fast path */
+
+			/* 
+			 * FIXME: We might need a memory barrier here so the change to tlab_next is 
+			 * visible before the vtable store.
+			 */
+
+			HEAVY_STAT (++stat_objects_alloced);
+
+			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+			g_assert (*p == NULL);
+			*p = vtable;
+
+			g_assert (TLAB_NEXT == new_next);
+
+			return p;
+		}
+	}
+	return NULL;
+}
+
 void*
 mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 {
 	void *res;
+#ifndef DISABLE_CRITICAL_REGION
+	TLAB_ACCESS_INIT;
+	ENTER_CRITICAL_REGION;
+	res = mono_gc_try_alloc_obj_nolock (vtable, size);
+	if (res) {
+		EXIT_CRITICAL_REGION;
+		return res;
+	}
+	EXIT_CRITICAL_REGION;
+#endif
 	LOCK_GC;
 	res = mono_gc_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;
@@ -4458,6 +4517,17 @@ void*
 mono_gc_alloc_vector (MonoVTable *vtable, size_t size, mono_array_size_t max_length)
 {
 	MonoArray *arr;
+#ifndef DISABLE_CRITICAL_REGION
+	TLAB_ACCESS_INIT;
+	ENTER_CRITICAL_REGION;
+	arr = mono_gc_try_alloc_obj_nolock (vtable, size);
+	if (arr) {
+		arr->max_length = max_length;
+		EXIT_CRITICAL_REGION;
+		return arr;
+	}
+	EXIT_CRITICAL_REGION;
+#endif
 
 	LOCK_GC;
 
@@ -4492,6 +4562,17 @@ void*
 mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 {
 	MonoString *str;
+#ifndef DISABLE_CRITICAL_REGION
+	TLAB_ACCESS_INIT;
+	ENTER_CRITICAL_REGION;
+	str = mono_gc_try_alloc_obj_nolock (vtable, size);
+	if (str) {
+		str->length = len;
+		EXIT_CRITICAL_REGION;
+		return str;
+	}
+	EXIT_CRITICAL_REGION;
+#endif
 
 	LOCK_GC;
 
@@ -5371,7 +5452,7 @@ restart_threads_until_none_in_managed_allocator (void)
 			for (info = thread_table [i]; info; info = info->next) {
 				if (info->skip)
 					continue;
-				if (!info->stack_start ||
+				if (!info->stack_start || info->in_critical_region ||
 						is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
 					result = pthread_kill (info->id, restart_signal_num);
 					if (result == 0) {
@@ -5469,6 +5550,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	if (gc_callbacks.thread_suspend_func)
 		gc_callbacks.thread_suspend_func (info->runtime_data, context);
 
+	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for suspend from %p %p\n", info, (gpointer)ARCH_GET_THREAD ()));
 	/* notify the waiting thread */
 	MONO_SEM_POST (suspend_ack_semaphore_ptr);
 	info->stop_count = stop_count;
@@ -5479,6 +5561,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 		sigsuspend (&suspend_signal_mask);
 	} while (info->signal != restart_signal_num);
 
+	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for resume from %p %p\n", info, (gpointer)ARCH_GET_THREAD ()));
 	/* notify the waiting thread */
 	MONO_SEM_POST (suspend_ack_semaphore_ptr);
 
@@ -5493,6 +5576,7 @@ restart_handler (int sig)
 
 	info = thread_info_lookup (pthread_self ());
 	info->signal = restart_signal_num;
+	DEBUG (4, fprintf (gc_debug_file, "Restart handler in %p %p\n", info, (gpointer)ARCH_GET_THREAD ()));
 
 	errno = old_errno;
 }
@@ -6012,11 +6096,14 @@ gc_register_current_thread (void *addr)
 	if (!info)
 		return NULL;
 
+	memset (info, 0, sizeof (SgenThreadInfo));
 #ifndef HAVE_KW_THREAD
 	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
 
 	g_assert (!pthread_getspecific (thread_info_key));
 	pthread_setspecific (thread_info_key, info);
+#else
+	thread_info = info;
 #endif
 
 	info->id = ARCH_GET_THREAD ();
