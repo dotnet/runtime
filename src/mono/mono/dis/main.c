@@ -614,46 +614,6 @@ pinvoke_flags (guint32 f)
 	return s;
 }
 
-static dis_map_t method_impl_map [] = {
-	{ METHOD_IMPL_ATTRIBUTE_IL,              "cil " },
-	{ METHOD_IMPL_ATTRIBUTE_NATIVE,          "native " },
-	{ METHOD_IMPL_ATTRIBUTE_OPTIL,           "optil " },
-	{ METHOD_IMPL_ATTRIBUTE_RUNTIME,         "runtime " },
-	{ 0, NULL }
-};
-
-static dis_map_t managed_type_map [] = {
-	{ METHOD_IMPL_ATTRIBUTE_UNMANAGED,       "unmanaged " },
-	{ METHOD_IMPL_ATTRIBUTE_MANAGED,         "managed " },
-	{ 0, NULL }
-};
-
-static dis_map_t managed_impl_flags [] = {
-	{ METHOD_IMPL_ATTRIBUTE_FORWARD_REF,     "fwdref " },
-	{ METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG,    "preservesig " },
-	{ METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL,   "internalcall " },
-	{ METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED,    "synchronized " },
-	{ METHOD_IMPL_ATTRIBUTE_NOINLINING,      "noinlining " },
-	{ 0, NULL }
-};
-
-static char *
-method_impl_flags (guint32 f)
-{
-	GString *str = g_string_new ("");
-	char *s;
-	int code_type = f & METHOD_IMPL_ATTRIBUTE_CODE_TYPE_MASK;
-	int managed_type = f & METHOD_IMPL_ATTRIBUTE_MANAGED_MASK;
-
-	g_string_append (str, map (code_type, method_impl_map));
-	g_string_append (str, map (managed_type, managed_type_map));
-	g_string_append (str, flags (f, managed_impl_flags));
-	
-	s = str->str;
-	g_string_free (str, FALSE);
-	return s;
-}
-
 static void
 dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr) 
 {
@@ -885,7 +845,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 
 		flags = method_flags (cols [MONO_METHOD_FLAGS]);
-		impl_flags = method_impl_flags (cols [MONO_METHOD_IMPLFLAGS]);
+		impl_flags = get_method_impl_flags (cols [MONO_METHOD_IMPLFLAGS]);
 
 		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);

@@ -49,6 +49,8 @@ char *dis_stringify_marshal_spec (MonoMarshalSpec *spec);
 
 guint32 method_dor_to_token (guint32 idx);
 
+char *get_method_impl_flags (guint32 f);
+
 /*
  * These functions are used during the decoding of streams in the
  * metadata heaps (a simple parsing).
