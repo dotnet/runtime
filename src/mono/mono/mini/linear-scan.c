@@ -10,6 +10,8 @@
 #include "mini.h"
 #include <mono/metadata/debug-helpers.h>
 
+#ifndef DISABLE_JIT
+
 static void mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_mask);
 
 GList *
@@ -507,3 +509,5 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 	g_list_free (active);
 	g_list_free (inactive);
 }
+
+#endif /* #ifndef DISABLE_JIT */

@@ -2887,6 +2887,8 @@ mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int nat
 	bb->last_seq_point = ins;
 }
 
+#ifndef DISABLE_JIT
+
 static void
 mono_compile_create_vars (MonoCompile *cfg)
 {
@@ -2946,6 +2948,8 @@ mono_compile_create_vars (MonoCompile *cfg)
 
 	mono_arch_create_vars (cfg);
 }
+
+#endif /* #ifndef DISABLE_JIT */
 
 void
 mono_print_code (MonoCompile *cfg, const char* msg)
@@ -5948,7 +5952,11 @@ void mono_precompile_assemblies ()
 	g_hash_table_destroy (assemblies);
 }
 
+#ifndef DISABLE_JIT
+
 void*
 mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) {
 	return mono_arch_instrument_epilog_full (cfg, func, p, enable_arguments, FALSE);
 }
+
+#endif
