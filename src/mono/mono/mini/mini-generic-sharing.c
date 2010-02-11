@@ -153,12 +153,14 @@ mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *ty
 /*
  * mini_type_get_underlying_type:
  *
- *   Return the underlying type of TYPE, taking into account enums and generic
+ *   Return the underlying type of TYPE, taking into account enums, byref and generic
  * sharing.
  */
 MonoType*
 mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type)
 {
+	if (type->byref)
+		return &mono_defaults.int_class->byval_arg;
 	return mono_type_get_basic_type_from_generic (mono_type_get_underlying_type (type));
 }
 
