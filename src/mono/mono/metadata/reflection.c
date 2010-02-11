@@ -11304,7 +11304,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 static void
 ensure_complete_type (MonoClass *klass)
 {
-	if (klass->image->dynamic && !klass->wastypebuilder) {
+	if (klass->image->dynamic && !klass->wastypebuilder && klass->reflection_info) {
 		MonoReflectionTypeBuilder *tb = klass->reflection_info;
 
 		mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
