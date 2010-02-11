@@ -1303,7 +1303,7 @@ public class DebuggerTests
 
 		Assert.AreEqual ("Assembly", frame.Method.DeclaringType.Assembly.GetAssemblyObject ().Type.Name);
 
-		TypeMirror t = vm.RootDomain.Corlib.GetType ("System.Diagnostics.DebuggerDisplayAttribute", false, false);
+		TypeMirror t = vm.RootDomain.Corlib.GetType ("System.Diagnostics.DebuggerDisplayAttribute");
 		Assert.AreEqual ("DebuggerDisplayAttribute", t.Name);
 	}
 
@@ -2009,7 +2009,7 @@ public class DebuggerTests
 
 		// exception type filter
 
-		req = vm.CreateExceptionRequest (vm.RootDomain.Corlib.GetType ("System.ArgumentException", false, false));
+		req = vm.CreateExceptionRequest (vm.RootDomain.Corlib.GetType ("System.ArgumentException"));
 		req.Enable ();
 
 		// Skip the throwing of the second OverflowException	   
@@ -2018,6 +2018,17 @@ public class DebuggerTests
 		e = vm.GetNextEvent ();
 		Assert.IsInstanceOfType (typeof (ExceptionEvent), e);
 		Assert.AreEqual ("ArgumentException", (e as ExceptionEvent).Exception.Type.Name);
+		req.Disable ();
+
+		// exception type filter for subclasses
+		req = vm.CreateExceptionRequest (vm.RootDomain.Corlib.GetType ("System.Exception"));
+		req.Enable ();
+
+		vm.Resume ();
+
+		e = vm.GetNextEvent ();
+		Assert.IsInstanceOfType (typeof (ExceptionEvent), e);
+		Assert.AreEqual ("OverflowException", (e as ExceptionEvent).Exception.Type.Name);
 		req.Disable ();
 
 		// Implicit exceptions
@@ -2231,5 +2242,4 @@ public class DebuggerTests
 				vm.CreateEnumMirror (enumType, vm.CreateValue ((long)1));
 			});
 	}
-
 }

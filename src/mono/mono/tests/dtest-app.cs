@@ -566,6 +566,10 @@ public class Tests : TestsBase
 			throw new ArgumentException ();
 		} catch (Exception) {
 		}
+		try {
+			throw new OverflowException ();
+		} catch (Exception) {
+		}
 
 		object o = null;
 		try {
