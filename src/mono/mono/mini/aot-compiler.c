@@ -100,6 +100,7 @@ typedef struct MonoAotOptions {
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
+	int nimt_trampolines;
 	gboolean print_skipped_methods;
 	gboolean stats;
 	char *tool_prefix;
@@ -3786,6 +3787,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->ntrampolines = atoi (arg + strlen ("ntrampolines="));
 		} else if (str_begins_with (arg, "nrgctx-trampolines=")) {
 			opts->nrgctx_trampolines = atoi (arg + strlen ("nrgctx-trampolines="));
+		} else if (str_begins_with (arg, "nimt-trampolines=")) {
+			opts->nimt_trampolines = atoi (arg + strlen ("nimt-trampolines="));
 		} else if (str_begins_with (arg, "autoreg")) {
 			opts->autoreg = TRUE;
 		} else if (str_begins_with (arg, "tool-prefix=")) {
@@ -5812,6 +5815,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->aot_opts.write_symbols = TRUE;
 	acfg->aot_opts.ntrampolines = 1024;
 	acfg->aot_opts.nrgctx_trampolines = 1024;
+	acfg->aot_opts.nimt_trampolines = 128;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
@@ -5857,7 +5861,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
 	acfg->num_trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = acfg->aot_opts.full_aot ? acfg->aot_opts.nrgctx_trampolines : 0;
 #endif
-	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? 128 : 0;
+	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? acfg->aot_opts.nimt_trampolines : 0;
 
 	acfg->got_symbol_base = g_strdup_printf ("mono_aot_%s_got", acfg->image->assembly->aname.name);
 	acfg->plt_symbol = g_strdup_printf ("mono_aot_%s_plt", acfg->image->assembly->aname.name);
