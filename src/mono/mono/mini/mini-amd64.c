@@ -747,10 +747,6 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_general (&gr, &stack_size, &cinfo->sig_cookie);
 		}
 
-		if (sig->params [i]->byref) {
-			add_general (&gr, &stack_size, ainfo);
-			continue;
-		}
 		ptype = mini_type_get_underlying_type (gsctx, sig->params [i]);
 		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
@@ -2174,17 +2170,15 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_type_get_underlying_type (NULL, mono_method_signature (method)->ret);
 
-	if (!ret->byref) {
-		if (ret->type == MONO_TYPE_R4) {
-			if (COMPILE_LLVM (cfg))
-				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
-			else
-				MONO_EMIT_NEW_UNALU (cfg, OP_AMD64_SET_XMMREG_R4, cfg->ret->dreg, val->dreg);
-			return;
-		} else if (ret->type == MONO_TYPE_R8) {
+	if (ret->type == MONO_TYPE_R4) {
+		if (COMPILE_LLVM (cfg))
 			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
-			return;
-		}
+		else
+			MONO_EMIT_NEW_UNALU (cfg, OP_AMD64_SET_XMMREG_R4, cfg->ret->dreg, val->dreg);
+		return;
+	} else if (ret->type == MONO_TYPE_R8) {
+		MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
+		return;
 	}
 			
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
