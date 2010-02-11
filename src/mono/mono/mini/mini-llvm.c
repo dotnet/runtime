@@ -1666,8 +1666,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVM_FAILURE (ctx, "aot+clauses");
 			} else {
 				/* exception_cb will decode this */
-				ti = g_malloc (sizeof (MonoExceptionClause));
-				memcpy (ti, &mono_method_get_header (cfg->method)->clauses [clause_index], sizeof (MonoExceptionClause));
+				ti = g_malloc (sizeof (gint32));
+				*(gint32*)ti = clause_index;
 
 				type_info = LLVMAddGlobal (module, i8ptr, ti_name);
 
@@ -3660,7 +3660,8 @@ exception_cb (void *data)
 	memcpy (cfg->llvm_ex_info, ei, ei_len * sizeof (MonoJitExceptionInfo));
 	/* Fill the rest of the information from the type info */
 	for (i = 0; i < ei_len; ++i) {
-		MonoExceptionClause *clause = type_info [i];
+		gint32 clause_index = *(gint32*)type_info [i];
+		MonoExceptionClause *clause = &mono_method_get_header (cfg->method)->clauses [clause_index];
 
 		cfg->llvm_ex_info [i].flags = clause->flags;
 		cfg->llvm_ex_info [i].data.catch_class = clause->data.catch_class;
