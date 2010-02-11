@@ -165,10 +165,10 @@ static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 static guint32 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method);
 static guint32 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context);
 static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
-#endif
-
 static void reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb);
 static void reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb);
+#endif
+
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
 static guint32 mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec);
 static void    mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly);
@@ -1404,6 +1404,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 	}
 }
 
+#ifndef DISABLE_REFLECTION_EMIT
 static void
 reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb)
 {
@@ -1476,7 +1477,6 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoRe
 	rmb->refs = NULL;
 }
 
-#ifndef DISABLE_REFLECTION_EMIT
 static void
 reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb)
 {
@@ -1541,6 +1541,7 @@ mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuild
 	values [MONO_METHODIMPL_DECLARATION] = tok;
 }
 
+#ifndef DISABLE_REFLECTION_EMIT
 static void
 mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *assembly)
 {
@@ -1604,6 +1605,7 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 	mono_image_basic_method (&rmb, assembly);
 	mb->table_idx = *rmb.table_idx;
 }
+#endif
 
 static char*
 type_get_fully_qualified_name (MonoType *type)
@@ -3278,7 +3280,6 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	m->table_idx = am->token & 0xffffff;
 	return am->token;
 }
-#endif
 
 /*
  * Insert into the metadata tables all the info about the TypeBuilder tb.
@@ -3442,6 +3443,7 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		}
 	}
 }
+#endif
 
 static void
 collect_types (GPtrArray *types, MonoReflectionTypeBuilder *type)
