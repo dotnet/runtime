@@ -977,6 +977,29 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor (M
 	}
 }
 
+static MonoBoolean
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void)
+{
+	guint8 *stack_addr;
+	guint8 *current;
+	size_t stack_size;
+	/* later make this configurable and per-arch */
+	int min_size = 4096 * 4 * sizeof (void*);
+	mono_thread_get_stack_bounds (&stack_addr, &stack_size);
+	/* if we have no info we are optimistic and assume there is enough room */
+	if (!stack_addr)
+		return TRUE;
+	current = (guint8 *)&stack_addr;
+	if (current > stack_addr) {
+		if ((current - stack_addr) < min_size)
+			return FALSE;
+	} else {
+		if (current - (stack_addr - stack_size) < min_size)
+			return FALSE;
+	}
+	return TRUE;
+}
+
 static MonoObject *
 ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 {
