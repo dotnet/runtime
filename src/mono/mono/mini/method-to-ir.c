@@ -3636,6 +3636,11 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	else
 		header = mono_method_get_header (method);
 
+	if (mono_loader_get_last_error ()) {
+		mono_loader_clear_error ();
+		return FALSE;
+	}
+
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
