@@ -2000,6 +2000,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		int len = decode_value (p, &p);
 
 		seq_points = g_malloc0 (sizeof (MonoSeqPointInfo) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (SeqPoint));
+		seq_points->len = len;
 		last_il_offset = last_native_offset = 0;
 		for (i = 0; i < len; ++i) {
 			SeqPoint *sp = &seq_points->seq_points [i];
