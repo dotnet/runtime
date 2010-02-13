@@ -873,6 +873,24 @@ mono_debugger_agent_cleanup (void)
 }
 
 /*
+ * recv_length:
+ *
+ * recv() + handle incomplete reads and EINTR
+ */
+static int
+recv_length (int fd, void *buf, int len, int flags)
+{
+	int res;
+	int total = 0;
+
+	do {
+		res = recv (fd, (char *) buf + total, len - total, flags);
+		if (res > 0)
+			total += res;
+	} while ((res > 0 && total < len) || (res == -1 && errno == EINTR));
+	return total;
+}
+/*
  * transport_connect:
  *
  *   Connect/Listen on HOST:PORT. If HOST is NULL, generate an address and listen on it.
@@ -1020,11 +1038,13 @@ transport_connect (const char *host, int port)
 	
 	/* Write handshake message */
 	sprintf (handshake_msg, "DWP-Handshake");
-	res = send (conn_fd, handshake_msg, strlen (handshake_msg), 0);
+	do {
+		res = send (conn_fd, handshake_msg, strlen (handshake_msg), 0);
+	} while (res == -1 && errno == EINTR);
 	g_assert (res != -1);
 
 	/* Read answer */
-	res = recv (conn_fd, buf, strlen (handshake_msg), 0);
+	res = recv_length (conn_fd, buf, strlen (handshake_msg), 0);
 	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg) != 0))) {
 		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
 		exit (1);
@@ -1050,7 +1070,9 @@ transport_send (guint8 *data, int len)
 {
 	int res;
 
-	res = send (conn_fd, data, len, 0);
+	do {
+		res = send (conn_fd, data, len, 0);
+	} while (res == -1 && errno == EINTR);
 	if (res != len)
 		return FALSE;
 	else
@@ -6172,7 +6194,7 @@ debugger_thread (void *arg)
 	mono_set_is_debugger_attached (TRUE);
 
 	while (TRUE) {
-		res = recv (conn_fd, header, HEADER_LENGTH, 0);
+		res = recv_length (conn_fd, header, HEADER_LENGTH, 0);
 
 		/* This will break if the socket is closed during shutdown too */
 		if (res != HEADER_LENGTH)
@@ -6194,7 +6216,7 @@ debugger_thread (void *arg)
 		data = g_malloc (len - HEADER_LENGTH);
 		if (len - HEADER_LENGTH > 0)
 		{
-			res = recv (conn_fd, data, len - HEADER_LENGTH, 0);
+			res = recv_length (conn_fd, data, len - HEADER_LENGTH, 0);
 			if (res != len - HEADER_LENGTH)
 				break;
 		}
