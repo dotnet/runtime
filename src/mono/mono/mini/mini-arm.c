@@ -1060,7 +1060,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
-	MonoInst *inst;
+	MonoInst *ins;
 	int i, offset, size, align, curinst;
 	int frame_reg = ARMREG_FP;
 	CallInfo *cinfo;
@@ -1143,12 +1143,12 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset &= ~(sizeof (gpointer) - 1);
 			cfg->ret->inst_offset = - offset;
 		} else {
-			inst = cfg->vret_addr;
+			ins = cfg->vret_addr;
 			offset += sizeof(gpointer) - 1;
 			offset &= ~(sizeof(gpointer) - 1);
-			inst->inst_offset = offset;
-			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = frame_reg;
+			ins->inst_offset = offset;
+			ins->opcode = OP_REGOFFSET;
+			ins->inst_basereg = frame_reg;
 			if (G_UNLIKELY (cfg->verbose_level > 1)) {
 				printf ("vret_addr =");
 				mono_print_ins (cfg->vret_addr);
@@ -1157,20 +1157,46 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += sizeof(gpointer);
 	}
 
+	/* Allocate these first so they have a small offset, OP_SEQ_POINT depends on this */
+	if (cfg->arch.seq_point_info_var) {
+		MonoInst *ins;
+
+		ins = cfg->arch.seq_point_info_var;
+
+		size = 4;
+		align = 4;
+		offset += align - 1;
+		offset &= ~(align - 1);
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_basereg = frame_reg;
+		ins->inst_offset = offset;
+		offset += size;
+
+		ins = cfg->arch.ss_trigger_page_var;
+		size = 4;
+		align = 4;
+		offset += align - 1;
+		offset &= ~(align - 1);
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_basereg = frame_reg;
+		ins->inst_offset = offset;
+		offset += size;
+	}
+
 	curinst = cfg->locals_start;
 	for (i = curinst; i < cfg->num_varinfo; ++i) {
-		inst = cfg->varinfo [i];
-		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR)
+		ins = cfg->varinfo [i];
+		if ((ins->flags & MONO_INST_IS_DEAD) || ins->opcode == OP_REGVAR || ins->opcode == OP_REGOFFSET)
 			continue;
 
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
-		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF) {
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &ualign);
+		if (ins->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (ins->inst_vtype) && ins->inst_vtype->type != MONO_TYPE_TYPEDBYREF) {
+			size = mono_class_native_size (mono_class_from_mono_type (ins->inst_vtype), &ualign);
 			align = ualign;
 		}
 		else
-			size = mono_type_size (inst->inst_vtype, &align);
+			size = mono_type_size (ins->inst_vtype, &align);
 
 		/* FIXME: if a structure is misaligned, our memcpy doesn't work,
 		 * since it loads/stores misaligned words, which don't do the right thing.
@@ -1179,22 +1205,22 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			align = 4;
 		offset += align - 1;
 		offset &= ~(align - 1);
-		inst->inst_offset = offset;
-		inst->opcode = OP_REGOFFSET;
-		inst->inst_basereg = frame_reg;
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_offset = offset;
+		ins->inst_basereg = frame_reg;
 		offset += size;
 		//g_print ("allocating local %d to %d\n", i, inst->inst_offset);
 	}
 
 	curinst = 0;
 	if (sig->hasthis) {
-		inst = cfg->args [curinst];
-		if (inst->opcode != OP_REGVAR) {
-			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = frame_reg;
+		ins = cfg->args [curinst];
+		if (ins->opcode != OP_REGVAR) {
+			ins->opcode = OP_REGOFFSET;
+			ins->inst_basereg = frame_reg;
 			offset += sizeof (gpointer) - 1;
 			offset &= ~(sizeof (gpointer) - 1);
-			inst->inst_offset = offset;
+			ins->inst_offset = offset;
 			offset += sizeof (gpointer);
 		}
 		curinst++;
@@ -1212,11 +1238,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}			
 
 	for (i = 0; i < sig->param_count; ++i) {
-		inst = cfg->args [curinst];
+		ins = cfg->args [curinst];
 
-		if (inst->opcode != OP_REGVAR) {
-			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = frame_reg;
+		if (ins->opcode != OP_REGVAR) {
+			ins->opcode = OP_REGOFFSET;
+			ins->inst_basereg = frame_reg;
 			size = mini_type_stack_size_full (NULL, sig->params [i], &ualign, sig->pinvoke);
 			align = ualign;
 			/* FIXME: if a structure is misaligned, our memcpy doesn't work,
@@ -1229,7 +1255,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				align = 4;
 			offset += align - 1;
 			offset &= ~(align - 1);
-			inst->inst_offset = offset;
+			ins->inst_offset = offset;
 			offset += size;
 		}
 		curinst++;
