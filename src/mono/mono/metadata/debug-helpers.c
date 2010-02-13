@@ -86,6 +86,31 @@ append_class_name (GString *res, MonoClass *class, gboolean include_namespace)
 	g_string_append_printf (res, "%s", class->name);
 }
 
+static MonoClass*
+find_system_class (const char *name)
+{
+	if (!strcmp (name, "void")) 
+		return mono_defaults.void_class;
+	else if (!strcmp (name, "char")) return mono_defaults.char_class;
+	else if (!strcmp (name, "bool")) return mono_defaults.boolean_class;
+	else if (!strcmp (name, "byte")) return mono_defaults.byte_class;
+	else if (!strcmp (name, "sbyte")) return mono_defaults.sbyte_class;
+	else if (!strcmp (name, "uint16")) return mono_defaults.uint16_class;
+	else if (!strcmp (name, "int16")) return mono_defaults.int16_class;
+	else if (!strcmp (name, "uint")) return mono_defaults.uint32_class;
+	else if (!strcmp (name, "int")) return mono_defaults.int32_class;
+	else if (!strcmp (name, "ulong")) return mono_defaults.uint64_class;
+	else if (!strcmp (name, "long")) return mono_defaults.int64_class;
+	else if (!strcmp (name, "uintptr")) return mono_defaults.uint_class;
+	else if (!strcmp (name, "intptr")) return mono_defaults.int_class;
+	else if (!strcmp (name, "single")) return mono_defaults.single_class;
+	else if (!strcmp (name, "double")) return mono_defaults.double_class;
+	else if (!strcmp (name, "string")) return mono_defaults.string_class;
+	else if (!strcmp (name, "object")) return mono_defaults.object_class;
+	else
+		return NULL;
+}
+
 void
 mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 {
@@ -284,6 +309,9 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 	class_nspace = g_strdup (name);
 	use_args = strchr (class_nspace, '(');
 	if (use_args) {
+		/* Allow a ' ' between the method name and the signature */
+		if (use_args > class_nspace && use_args [-1] == ' ')
+			use_args [-1] = 0;
 		*use_args++ = 0;
 		end = strchr (use_args, ')');
 		if (!end) {
@@ -465,6 +493,13 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 	const MonoTableInfo *methods;
 	MonoMethod *method;
 	int i;
+
+	/* Handle short names for system classes */
+	if (!desc->namespace && image == mono_defaults.corlib) {
+		klass = find_system_class (desc->klass);
+		if (klass)
+			return mono_method_desc_search_in_class (desc, klass);
+	}
 
 	if (desc->namespace && desc->klass) {
 		klass = mono_class_from_name (image, desc->namespace, desc->klass);
