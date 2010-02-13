@@ -7316,7 +7316,6 @@ property_info_get_default_value (MonoReflectionProperty *property)
 	MonoType blob_type;
 	MonoProperty *prop = property->property;
 	MonoType *type = get_property_type (prop);
-	MonoImage *image = property->klass->image;
 	MonoDomain *domain = mono_object_domain (property); 
 	MonoTypeEnum def_type;
 	const char *def_value;
