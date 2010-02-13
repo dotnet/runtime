@@ -162,6 +162,7 @@ static gint32 mono_last_aot_method = -1;
 
 static gboolean make_unreadable = FALSE;
 static guint32 name_table_accesses = 0;
+static guint32 n_pagefaults = 0;
 
 /* Used to speed-up find_aot_module () */
 static gsize aot_code_low_addr = (gssize)-1;
@@ -1175,17 +1176,19 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	if (make_unreadable) {
 #ifndef TARGET_WIN32
 		guint8 *addr;
-		guint8 *page_start;
-		int pages, err, len;
+		guint8 *page_start, *page_end;
+		int err, len;
 
 		addr = amodule->mem_begin;
 		len = amodule->mem_end - amodule->mem_begin;
 
 		/* Round down in both directions to avoid modifying data which is not ours */
 		page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
-		pages = ((addr + len - page_start + mono_pagesize () - 1) / mono_pagesize ()) - 1;
-		err = mono_mprotect (page_start, pages * mono_pagesize (), MONO_MMAP_NONE);
-		g_assert (err == 0);
+		page_end = (guint8 *) (((gssize) (addr + len)) & ~ (mono_pagesize () - 1));
+		if (page_end > page_start) {
+			err = mono_mprotect (page_start, (page_end - page_start), MONO_MMAP_NONE);
+			g_assert (err == 0);
+		}
 #endif
 	}
 
@@ -3573,6 +3576,98 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	amodule->got [got_offset] = buf;
 
 	return code;
+}
+ 
+/*
+ * mono_aot_set_make_unreadable:
+ *
+ *   Set whenever to make all mmaped memory unreadable. In conjuction with a
+ * SIGSEGV handler, this is useful to find out which pages the runtime tries to read.
+ */
+void
+mono_aot_set_make_unreadable (gboolean unreadable)
+{
+	static int inited;
+
+	make_unreadable = unreadable;
+
+	if (make_unreadable && !inited) {
+		mono_counters_register ("AOT pagefaults", MONO_COUNTER_JIT | MONO_COUNTER_INT, &n_pagefaults);
+	}		
+}
+
+typedef struct {
+	MonoAotModule *module;
+	guint8 *ptr;
+} FindMapUserData;
+
+static void
+find_map (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoAotModule *module = (MonoAotModule*)value;
+	FindMapUserData *data = (FindMapUserData*)user_data;
+
+	if (!data->module)
+		if ((data->ptr >= module->mem_begin) && (data->ptr < module->mem_end))
+			data->module = module;
+}
+
+static MonoAotModule*
+find_module_for_addr (void *ptr)
+{
+	FindMapUserData data;
+
+	if (!make_unreadable)
+		return NULL;
+
+	data.module = NULL;
+	data.ptr = (guint8*)ptr;
+
+	mono_aot_lock ();
+	g_hash_table_foreach (aot_modules, (GHFunc)find_map, &data);
+	mono_aot_unlock ();
+
+	return data.module;
+}
+
+/*
+ * mono_aot_is_pagefault:
+ *
+ *   Should be called from a SIGSEGV signal handler to find out whenever @ptr is
+ * within memory allocated by this module.
+ */
+gboolean
+mono_aot_is_pagefault (void *ptr)
+{
+	if (!make_unreadable)
+		return FALSE;
+
+	/* 
+	 * Not signal safe, but SIGSEGV's are synchronous, and
+	 * this is only turned on by a MONO_DEBUG option.
+	 */
+	return find_module_for_addr (ptr) != NULL;
+}
+
+/*
+ * mono_aot_handle_pagefault:
+ *
+ *   Handle a pagefault caused by an unreadable page by making it readable again.
+ */
+void
+mono_aot_handle_pagefault (void *ptr)
+{
+#ifndef PLATFORM_WIN32
+	guint8* start = (guint8*)ROUND_DOWN (((gssize)ptr), mono_pagesize ());
+	int res;
+
+	mono_aot_lock ();
+	res = mono_mprotect (start, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC);
+	g_assert (res == 0);
+
+	n_pagefaults ++;
+	mono_aot_unlock ();
+#endif
 }
 
 #else

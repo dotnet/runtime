@@ -4570,8 +4570,13 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_raise_exception (exc);
 	}
 
-	if (prof_options & MONO_PROFILE_JIT_COMPILATION)
-		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+	if (prof_options & MONO_PROFILE_JIT_COMPILATION) {
+		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+			/* The profiler doesn't know about wrappers, so pass the original icall method */
+			mono_profiler_method_end_jit (mono_marshal_method_from_wrapper (method), jinfo, MONO_PROFILE_OK);
+		else
+			mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+	}
 
 	mono_runtime_class_init (vtable);
 	return code;
@@ -5039,6 +5044,11 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 	}
 #endif
 
+	if (mono_aot_is_pagefault (info->si_addr)) {
+		mono_aot_handle_pagefault (info->si_addr);
+		return;
+	}
+
 	/* The thread might no be registered with the runtime */
 	if (!mono_domain_get () || !jit_tls) {
 		if (mono_chain_signal (SIG_HANDLER_PARAMS))
@@ -5450,6 +5460,10 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
+
+	if (debug_options.collect_pagefault_stats) {
+		mono_aot_set_make_unreadable (TRUE);
+	}
 
 	if (runtime_version)
 		domain = mono_init_version (filename, runtime_version);
