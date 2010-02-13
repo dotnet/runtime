@@ -4225,7 +4225,7 @@ load_profile_files (MonoAotCompile *acfg)
 
 	file_index = 0;
 	while (TRUE) {
-		tmp = g_strdup_printf ("%s/.mono/aot-profile-data/%s-%s-%d", g_get_home_dir (), acfg->image->assembly_name, acfg->image->guid, file_index);
+		tmp = g_strdup_printf ("%s/.mono/aot-profile-data/%s-%d", g_get_home_dir (), acfg->image->assembly_name, file_index);
 
 		if (!g_file_test (tmp, G_FILE_TEST_IS_REGULAR)) {
 			g_free (tmp);
@@ -4241,21 +4241,38 @@ load_profile_files (MonoAotCompile *acfg)
 		file_index ++;
 
 		res = fscanf (infile, "%32s\n", ver);
-		if ((res != 1) || strcmp (ver, "#VER:1") != 0) {
+		if ((res != 1) || strcmp (ver, "#VER:2") != 0) {
 			printf ("Profile file has wrong version or invalid.\n");
 			fclose (infile);
 			continue;
 		}
 
 		while (TRUE) {
-			res = fscanf (infile, "%d\n", &token);
-			if (res < 1)
+			char name [1024];
+			MonoMethodDesc *desc;
+			MonoMethod *method;
+
+			if (fgets (name, 1023, infile) == NULL)
 				break;
 
-			method_index = mono_metadata_token_index (token) - 1;
+			/* Kill the newline */
+			if (strlen (name) > 0)
+				name [strlen (name) - 1] = '\0';
 
-			if (!g_list_find (acfg->method_order, GUINT_TO_POINTER (method_index)))
-				acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (method_index));
+			desc = mono_method_desc_new (name, TRUE);
+
+			method = mono_method_desc_search_in_image (desc, acfg->image);
+
+			if (method && mono_method_get_token (method)) {
+				token = mono_method_get_token (method);
+				method_index = mono_metadata_token_index (token) - 1;
+
+				if (!g_list_find (acfg->method_order, GUINT_TO_POINTER (method_index))) {
+					acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (method_index));
+				}
+			} else {
+				//printf ("No method found matching '%s'.\n", name);
+			}
 		}
 		fclose (infile);
 	}
