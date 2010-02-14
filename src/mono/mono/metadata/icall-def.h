@@ -240,6 +240,7 @@ ICALL(ENV_3, "GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvi
 ICALL(ENV_4, "GetLogicalDrivesInternal", ves_icall_System_Environment_GetLogicalDrives )
 ICALL(ENV_5, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
 ICALL(ENV_6, "GetOSVersionString", ves_icall_System_Environment_GetOSVersionString)
+ICALL(ENV_6a, "GetPageSize", mono_pagesize)
 ICALL(ENV_7, "GetWindowsFolderPath", ves_icall_System_Environment_GetWindowsFolderPath)
 ICALL(ENV_8, "InternalSetEnvironmentVariable", ves_icall_System_Environment_InternalSetEnvironmentVariable)
 ICALL(ENV_9, "get_ExitCode", mono_environment_exitcode_get)
