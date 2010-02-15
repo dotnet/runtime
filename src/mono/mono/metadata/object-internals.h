@@ -516,6 +516,7 @@ typedef struct {
 	gpointer (*create_ftnptr) (MonoDomain *domain, gpointer addr);
 	gpointer (*get_addr_from_ftnptr) (gpointer descr);
 	char*    (*get_runtime_build_info) (void);
+	gpointer (*get_vtable_trampoline) (int slot_index);
 } MonoRuntimeCallbacks;
 
 /* used to free a dynamic method */
@@ -1408,9 +1409,6 @@ mono_install_imt_thunk_builder (MonoImtThunkBuilder func) MONO_INTERNAL;
 
 void
 mono_install_imt_trampoline (gpointer tramp) MONO_INTERNAL;
-
-void
-mono_install_vtable_trampoline (gpointer tramp) MONO_INTERNAL;
 
 void
 mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot) MONO_INTERNAL;

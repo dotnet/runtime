@@ -993,14 +993,6 @@ mono_install_imt_trampoline (gpointer tramp_code)
 	imt_trampoline = tramp_code;
 }
 
-static gpointer vtable_trampoline = NULL;
-
-void
-mono_install_vtable_trampoline (gpointer tramp_code)
-{
-	vtable_trampoline = tramp_code;
-}
-
 #define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
 #define mix(a,b,c) { \
 	a -= c;  a ^= rot(c, 4);  c += b; \
@@ -1670,6 +1662,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 
 	if (++gvc->count == THUNK_THRESHOLD) {
 		gpointer *old_thunk = *vtable_slot;
+		gpointer vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline ((gpointer*)vtable_slot - (gpointer*)vtable) : NULL;
 
 		if ((gpointer)vtable_slot < (gpointer)vtable)
 			/* Force the rebuild of the thunk at the next call */
@@ -2001,10 +1994,10 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	}
 
 	/* Initialize vtable */
-	if (vtable_trampoline) {
+	if (callbacks.get_vtable_trampoline) {
 		// This also covers the AOT case
 		for (i = 0; i < class->vtable_size; ++i) {
-			vt->vtable [i] = vtable_trampoline;
+			vt->vtable [i] = callbacks.get_vtable_trampoline (i);
 		}
 	} else {
 		mono_class_setup_vtable (class);
@@ -2013,7 +2006,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 			MonoMethod *cm;
 
 			if ((cm = class->vtable [i]))
-				vt->vtable [i] = vtable_trampoline? vtable_trampoline: arch_create_jit_trampoline (cm);
+				vt->vtable [i] = arch_create_jit_trampoline (cm);
 		}
 	}
 
