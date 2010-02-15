@@ -5148,9 +5148,10 @@ mini_get_imt_trampoline (void)
 #endif
 
 gpointer
-mini_get_vtable_trampoline (void)
+mini_get_vtable_trampoline (int slot_index)
 {
 	static gpointer tramp = NULL;
+
 	if (!tramp)
 		tramp = mono_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
 	return tramp;
@@ -5370,6 +5371,15 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.get_addr_from_ftnptr = mini_get_addr_from_ftnptr;
 	callbacks.get_runtime_build_info = mono_get_runtime_build_info;
 
+#ifdef MONO_ARCH_HAVE_IMT
+	if (mono_use_imt) {
+		if (!mono_use_llvm) {
+			/* LLVM needs a per-method vtable trampoline */
+			callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
+		}
+	}
+#endif
+
 	mono_install_callbacks (&callbacks);
 	
 	mono_arch_cpu_init ();
@@ -5482,8 +5492,6 @@ mini_init (const char *filename, const char *runtime_version)
 		else
 			mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 		if (!mono_use_llvm) {
-			/* LLVM needs a per-method vtable trampoline */
-			mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
 			/* 
 			 * The imt code in mono_magic_trampoline () can't handle LLVM code. By disabling
 			 * this, we force iface calls to go through the llvm vcall trampoline.

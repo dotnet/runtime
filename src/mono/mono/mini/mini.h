@@ -1615,7 +1615,7 @@ void              mono_generic_class_init_trampoline (mgreg_t *regs, guint8 *cod
 void              mono_monitor_enter_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 void              mono_monitor_exit_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
-gpointer          mini_get_vtable_trampoline (void) MONO_INTERNAL;
+gpointer          mini_get_vtable_trampoline (int slot_index) MONO_INTERNAL;
 gpointer*         mono_get_vcall_slot_addr (guint8* code, mgreg_t *regs) MONO_INTERNAL;
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;
