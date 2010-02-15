@@ -350,7 +350,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 		 * Call this only if the called method is shared, cause it is slow/loads a lot of
 		 * data in AOT.
 		 */
-		ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+		ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
 		if (ji && ji->from_llvm) {
 			/* LLVM can't pass an rgctx arg */
 			need_rgctx_tramp = TRUE;
@@ -475,7 +475,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 		MonoJitInfo *ji;
 
 		if (code)
-			ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+			ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
 		else
 			ji = NULL;
 
