@@ -726,11 +726,21 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 		action = action_table + action_offset - 1;
 
 		type_offset = decode_sleb128 (action, &action);
-		g_assert (ttype_encoding == DW_EH_PE_absptr);
-		tinfo = *(gpointer*)(ttype - (type_offset * sizeof (gpointer)));
 
 		if (landing_pad) {
 			//printf ("BLOCK: %p-%p %p, %d\n", code + block_start_offset, code + block_start_offset + block_size, code + landing_pad, action_offset);
+
+			if (ttype_encoding == DW_EH_PE_absptr) {
+				guint8 *ttype_entry = (ttype - (type_offset * sizeof (gpointer)));
+				tinfo = *(gpointer*)ttype_entry;
+			} else if (ttype_encoding == (DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4)) {
+				guint8 *ttype_entry = (ttype - (type_offset * 4));
+				gint32 offset = *(gint32*)ttype_entry;
+				guint8 *stub = ttype_entry + offset;
+				tinfo = *(gpointer*)stub;
+			} else {
+				g_assert_not_reached ();
+			}
 
 			if (ex_info) {
 				if (*type_info)
@@ -852,12 +862,13 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 		gint32 lsda_offset;
 		guint8 *lsda;
 
-		g_assert (aug_len == sizeof (gpointer));
 		/* sdata|pcrel encoding */
-		if (sizeof (gpointer) == 8)
+		if (aug_len == 4)
 			lsda_offset = *(gint64*)fde_aug;
-		else
+		else if (aug_len == 8)
 			lsda_offset = *(gint32*)fde_aug;
+		else
+			g_assert_not_reached ();
 		if (lsda_offset != 0) {
 			lsda = fde_aug + *(gint32*)fde_aug;
 

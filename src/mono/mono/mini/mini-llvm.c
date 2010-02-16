@@ -1658,10 +1658,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMSetVisibility (type_info, LLVMHiddenVisibility);
 
 				/* 
-				 * FIXME: llc currently generates incorrect data in the LSDA:
-				 * 	.byte	0x9B                                        # @TType format (indirect pcrel sdata4)
-				 * and later:
-				 * .quad	type_info_1                                 # TypeInfo
+				 * Enabling this causes llc to crash:
+				 * http://llvm.org/bugs/show_bug.cgi?id=6102
 				 */
 				LLVM_FAILURE (ctx, "aot+clauses");
 			} else {

@@ -3214,29 +3214,49 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	/* Exception table */
-	if (jinfo->num_clauses)
-		encode_value (jinfo->num_clauses, p, &p);
+	if (cfg->compile_llvm) {
+		/* The assembly might be CIL stripped so emit the data ourselves */
+		if (header->num_clauses)
+			encode_value (header->num_clauses, p, &p);
 
-	for (k = 0; k < jinfo->num_clauses; ++k) {
-		MonoJitExceptionInfo *ei = &jinfo->clauses [k];
+		for (k = 0; k < header->num_clauses; ++k) {
+			MonoExceptionClause *clause;
 
-		encode_value (ei->flags, p, &p);
-		encode_value (ei->exvar_offset, p, &p);
+			clause = &header->clauses [k];
 
-		if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-			encode_value ((gint)((guint8*)ei->data.filter - code), p, &p);
-		else {
-			if (ei->data.catch_class) {
+			encode_value (clause->flags, p, &p);
+			if (clause->data.catch_class) {
 				encode_value (1, p, &p);
-				encode_klass_ref (acfg, ei->data.catch_class, p, &p);
+				encode_klass_ref (acfg, clause->data.catch_class, p, &p);
 			} else {
 				encode_value (0, p, &p);
 			}
 		}
+	} else {
+		if (jinfo->num_clauses)
+			encode_value (jinfo->num_clauses, p, &p);
 
-		encode_value ((gint)((guint8*)ei->try_start - code), p, &p);
-		encode_value ((gint)((guint8*)ei->try_end - code), p, &p);
-		encode_value ((gint)((guint8*)ei->handler_start - code), p, &p);
+		for (k = 0; k < jinfo->num_clauses; ++k) {
+			MonoJitExceptionInfo *ei = &jinfo->clauses [k];
+
+			encode_value (ei->flags, p, &p);
+			encode_value (ei->exvar_offset, p, &p);
+
+			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+				encode_value ((gint)((guint8*)ei->data.filter - code), p, &p);
+			else {
+				if (ei->data.catch_class) {
+					encode_value (1, p, &p);
+					encode_klass_ref (acfg, ei->data.catch_class, p, &p);
+				} else {
+					encode_value (0, p, &p);
+				}
+			}
+
+			encode_value ((gint)((guint8*)ei->try_start - code), p, &p);
+			encode_value ((gint)((guint8*)ei->try_end - code), p, &p);
+			encode_value ((gint)((guint8*)ei->handler_start - code), p, &p);
+		}
 	}
 
 	if (jinfo->has_generic_jit_info) {
@@ -4406,7 +4426,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * then removing tailcallelim + the global opts, and adding a second gvn.
 	 */
 	opts = g_strdup ("-instcombine -simplifycfg");
-	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -prune-eh -inline -functionattrs -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -jump-threading -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -jump-threading -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify");
+	opts = g_strdup ("");//-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -prune-eh -inline -functionattrs -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -jump-threading -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -jump-threading -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify");
 #if 1
 	command = g_strdup_printf ("opt -f %s -o temp.opt.bc temp.bc", opts);
 	printf ("Executing opt: %s\n", command);

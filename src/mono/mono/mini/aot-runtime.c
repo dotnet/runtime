@@ -1537,9 +1537,10 @@ typedef struct
  * file belong to CODE, and construct a MonoJitInfo structure from it.
  * LOCKING: Acquires the domain lock.
  */
-static G_GNUC_UNUSED void
+static G_GNUC_UNUSED MonoJitInfo*
 decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain, 
-				 MonoMethod *method, guint8 *code, MonoJitInfo *jinfo)
+				 MonoMethod *method, guint8 *code, MonoJitInfo *orig_jinfo,
+				 int extra_size)
 {
 	eh_frame_hdr *hdr;
 	guint8 *p;
@@ -1551,6 +1552,8 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint32 unw_len, code_len;
 	MonoJitExceptionInfo *ei;
 	guint32 ei_len;
+	gpointer *type_info;
+	MonoJitInfo *jinfo;
 
 	g_assert (amodule->eh_frame_hdr);
 
@@ -1597,7 +1600,18 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	eh_frame = amodule->eh_frame_hdr + table [(pos * 2) + 1];
 
-	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, NULL);
+	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, &type_info);
+
+	/*
+	 * LLVM might represent one IL region with multiple regions, so have to
+	 * allocate a new JI.
+	 */
+	if (ei_len) {
+		jinfo = 
+			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * ei_len) + extra_size);
+	} else {
+		jinfo = orig_jinfo;
+	}
 
 	jinfo->code_size = code_len;
 	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);
@@ -1606,15 +1620,28 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	jinfo->domain_neutral = 0;
 	/* This signals that used_regs points to a normal cached unwind info */
 	jinfo->from_aot = 0;
+	jinfo->num_clauses = ei_len;
 
-	g_assert (ei_len == jinfo->num_clauses);
-	for (i = 0; i < jinfo->num_clauses; ++i) {
+	for (i = 0; i < ei_len; ++i) {
+		/*
+		 * orig_jinfo contains the original IL exception info saved by the AOT
+		 * compiler, we have to combine that with the information produced by LLVM
+		 */
+		/* The type_info entries contain IL clause indexes */
+		int clause_index = *(gint32*)type_info [i];
 		MonoJitExceptionInfo *jei = &jinfo->clauses [i];
+		MonoJitExceptionInfo *orig_jei = &orig_jinfo->clauses [clause_index];
+
+		g_assert (clause_index < orig_jinfo->num_clauses);
+		jei->flags = orig_jei->flags;
+		jei->data.catch_class = orig_jei->data.catch_class;
 
 		jei->try_start = ei [i].try_start;
 		jei->try_end = ei [i].try_end;
 		jei->handler_start = ei [i].handler_start;
 	}
+
+	return jinfo;
 }
  
 #ifdef TARGET_ARM
@@ -1942,6 +1969,15 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 
 			ei->flags = decode_value (p, &p);
+
+			if (from_llvm) {
+				if (decode_value (p, &p))
+					ei->data.catch_class = decode_klass_ref (amodule, p, &p);
+
+				/* The rest of the info is in the DWARF EH section */
+				continue;
+			}
+
 			ei->exvar_offset = decode_value (p, &p);
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
@@ -1966,7 +2002,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 #ifdef TARGET_ARM
 		decode_arm_exidx (amodule, domain, method, code, code_len, jinfo);
 #else
- 		decode_eh_frame (amodule, domain, method, code, jinfo);
+ 		jinfo = decode_eh_frame (amodule, domain, method, code, jinfo, generic_info_size);
 #endif
 		jinfo->from_llvm = 1;
  	} else {
