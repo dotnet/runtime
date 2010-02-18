@@ -353,12 +353,15 @@ get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, g
 {
 	guint8* start;
 	guint8 *code;
+	GSList *unwind_ops;
 
 	start = code = mono_global_codeman_reserve (64);
 
 	code = start;
 
 	*ji = NULL;
+
+	unwind_ops = mono_arch_get_cie_program ();
 
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, 8);
 
@@ -386,6 +389,8 @@ get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, g
 	/* Exception */
 	amd64_push_reg (code, AMD64_ARG_REG1);
 
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, (15 + 1) * sizeof (gpointer));
+
 #ifdef TARGET_WIN32
 	/* align stack */
 	amd64_push_imm (code, 0);
@@ -410,6 +415,8 @@ get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, g
 	g_assert ((code - start) < 64);
 
 	*code_size = code - start;
+
+	mono_save_trampoline_xdebug_info ("throw_exception_trampoline", start, code - start, unwind_ops);
 
 	return start;
 }
