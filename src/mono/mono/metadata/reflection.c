@@ -193,6 +193,8 @@ static gboolean is_sr_mono_generic_method (MonoClass *class);
 static gboolean is_sr_mono_generic_cmethod (MonoClass *class);
 static gboolean is_sr_mono_field (MonoClass *class);
 static gboolean is_sr_mono_property (MonoClass *class);
+static gboolean is_sre_method_on_tb_inst (MonoClass *class);
+static gboolean is_sre_ctor_on_tb_inst (MonoClass *class);
 
 static guint32 mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method);
 static guint32 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m);
@@ -2789,6 +2791,9 @@ mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderI
 	method = inflate_method (m->inst, (MonoObject*)m->mb);
 
 	klass = method->klass;
+
+	if (m->method_args == NULL)
+		return method;
 
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
@@ -8667,6 +8672,20 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 			g_assert (method);
 
 			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
+		} else if (is_sre_method_on_tb_inst (member_class)) {/*XXX This is a workaround for Compiler Context*/
+			MonoMethod *method = mono_reflection_method_on_tb_inst_get_handle ((MonoReflectionMethodOnTypeBuilderInst*)param->MemberImpl);
+			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
+		} else if (is_sre_ctor_on_tb_inst (member_class)) { /*XX This is a workaround for Compiler Context*/
+		MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)param->MemberImpl;
+			MonoMethod *method = NULL;
+			if (is_sre_ctor_builder (mono_object_class (c->cb)))
+				method = ((MonoReflectionCtorBuilder *)c->cb)->mhandle;
+			else if (is_sr_mono_cmethod (mono_object_class (c->cb)))
+				method = ((MonoReflectionMethod *)c->cb)->method;
+			else
+				g_error ("mono_reflection_get_custom_attrs_info:: can't handle a CTBI with base_method of type %s", mono_type_get_full_name (member_class));
+
+			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
 		} else {
 			char *type_name = mono_type_get_full_name (member_class);
 			char *msg = g_strdup_printf ("Custom attributes on a ParamInfo with member %s are not supported", type_name);
@@ -8887,6 +8906,18 @@ static gboolean
 is_sr_mono_property (MonoClass *class)
 {
 	check_corlib_type_cached (class, "System.Reflection", "MonoProperty");
+}
+
+static gboolean
+is_sre_method_on_tb_inst (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection.Emit", "MethodOnTypeBuilderInst");
+}
+
+static gboolean
+is_sre_ctor_on_tb_inst (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection.Emit", "ConstructorOnTypeBuilderInst");
 }
 
 gboolean
