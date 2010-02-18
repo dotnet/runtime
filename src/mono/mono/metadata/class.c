@@ -6942,6 +6942,14 @@ mono_class_get_cctor (MonoClass *klass)
 {
 	MonoCachedClassInfo cached_info;
 
+	if (klass->image->dynamic) {
+		/* 
+		 * has_cctor is not set for these classes because mono_class_init () is
+		 * not run for them.
+		 */
+		return mono_class_get_method_from_name_flags (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME);
+	}
+
 	if (!klass->has_cctor)
 		return NULL;
 
