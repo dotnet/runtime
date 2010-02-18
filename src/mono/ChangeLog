@@ -1,3 +1,9 @@
+2010-02-18  Marek Habersack  <mhabersack@novell.com>
+
+	* scripts/mono-configuration-crypto.in: added
+
+	* scripts/Makefile.am: added mono-configuration-crypto targets
+
 2010-01-27  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Fix the setting of LLVM_CXXFLAGS.
