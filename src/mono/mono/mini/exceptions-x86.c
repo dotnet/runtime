@@ -270,15 +270,14 @@ mono_arch_get_restore_context (void)
 		return start;
 
 	/* restore_contect (MonoContext *ctx) */
-	/* we do not restore X86_EDX */
 
 	start = code = mono_global_codeman_reserve (128);
 	
 	/* load ctx */
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
 
-	/* get return address, stored in EDX */
-	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eip), 4);
+	/* get return address, stored in ECX */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eip), 4);
 	/* restore EBX */
 	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebx), 4);
 	/* restore EDI */
@@ -287,13 +286,19 @@ mono_arch_get_restore_context (void)
 	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esi), 4);
 	/* restore ESP */
 	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esp), 4);
+	/* save the return addr to the restored stack */
+	x86_push_reg (code, X86_ECX);
 	/* restore EBP */
 	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebp), 4);
+	/* restore ECX */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ecx), 4);
+	/* restore EDX */
+	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, edx), 4);
 	/* restore EAX */
 	x86_mov_reg_membase (code, X86_EAX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eax), 4);
 
 	/* jump to the saved IP */
-	x86_jump_reg (code, X86_EDX);
+	x86_ret (code);
 
 	return start;
 }
