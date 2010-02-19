@@ -128,8 +128,6 @@ static MonoAotModuleInfoTable *aot_modules = NULL;
 /* This is the list of runtime versions supported by this JIT.
  */
 static const MonoRuntimeInfo supported_runtimes[] = {
-	{"v1.0.3705", "1.0", { {1,0,5000,0}, {7,0,5000,0} }	},
-	{"v1.1.4322", "1.0", { {1,0,5000,0}, {7,0,5000,0} }	},
 	{"v2.0.50215","2.0", { {2,0,0,0},    {8,0,0,0} }	},
 	{"v2.0.50727","2.0", { {2,0,0,0},    {8,0,0,0} }	},
 	{"v4.0.21006","4.0", { {4,0,0,0},    {10,0,0,0} }   },
