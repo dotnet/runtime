@@ -614,7 +614,7 @@ mono_opcode_value_and_size (const unsigned char **ip, const unsigned char *end, 
 		g_error ("Invalid opcode %d argument %d max opcode %d\n", i, mono_opcodes [i].argument, MONO_CEE_LAST);
 	}
 
-	if (ADD_IS_GREATER_OR_OVF (p, size, end))
+	if (ADDP_IS_GREATER_OR_OVF (p, size, end))
 		return -1;
 
 	return (p - start) + size;
