@@ -2565,6 +2565,12 @@ event_to_string (EventKind event)
 	}
 }
 
+typedef struct {
+	/* For EVENT_KIND_EXCEPTION */
+	MonoObject *exc;
+	MonoContext catch_ctx;
+} EventInfo;
+
 /*
  * process_event:
  *
@@ -2650,9 +2656,11 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			break;
 		case EVENT_KIND_VM_DEATH:
 			break;
-		case EVENT_KIND_EXCEPTION:
-			buffer_add_objid (&buf, (MonoObject*)arg);
+		case EVENT_KIND_EXCEPTION: {
+			EventInfo *ei = arg;
+			buffer_add_objid (&buf, ei->exc);
 			break;
+		}
 		default:
 			g_assert_not_reached ();
 		}
@@ -3870,14 +3878,30 @@ ss_destroy (SingleStepReq *req)
 }
 
 void
-mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
+mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx, 
+									  MonoContext *catch_ctx)
 {
 	int suspend_policy;
 	GSList *events;
 	MonoJitInfo *ji;
+	EventInfo ei;
+
+	memset (&ei, 0, sizeof (EventInfo));
 
 	/* Just-In-Time debugging */
-	if (agent_config.onthrow && !inited) {
+	if (!catch_ctx) {
+		if (agent_config.onuncaught && !inited) {
+			finish_agent_init (FALSE);
+
+			/*
+			 * Send an unsolicited EXCEPTION event with a dummy request id.
+			 */
+			events = g_slist_append (NULL, GUINT_TO_POINTER (0xffffff));
+			ei.exc = (MonoObject*)exc;
+			process_event (EVENT_KIND_EXCEPTION, &ei, 0, throw_ctx, events, SUSPEND_POLICY_ALL);
+			return;
+		}
+	} else if (agent_config.onthrow && !inited) {
 		GSList *l;
 		gboolean found = FALSE;
 
@@ -3898,7 +3922,8 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 			 * Send an unsolicited EXCEPTION event with a dummy request id.
 			 */
 			events = g_slist_append (NULL, GUINT_TO_POINTER (0xffffff));
-			process_event (EVENT_KIND_EXCEPTION, exc, 0, ctx, events, SUSPEND_POLICY_ALL);
+			ei.exc = (MonoObject*)exc;
+			process_event (EVENT_KIND_EXCEPTION, &ei, 0, throw_ctx, events, SUSPEND_POLICY_ALL);
 			return;
 		}
 	}
@@ -3906,30 +3931,14 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *ctx)
 	if (!inited)
 		return;
 
-	ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (throw_ctx), NULL);
 
 	mono_loader_lock ();
 	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, ji, exc, &suspend_policy);
 	mono_loader_unlock ();
 
-	process_event (EVENT_KIND_EXCEPTION, exc, 0, ctx, events, suspend_policy);
-}
-
-void
-mono_debugger_agent_handle_unhandled_exception (MonoException *exc, MonoContext *ctx)
-{
-	GSList *events;
-
-	if (!agent_config.onuncaught)
-		return;
-
-	finish_agent_init (FALSE);
-
-	/*
-	 * Send an unsolicited EXCEPTION event with a dummy request id.
-	 */
-	events = g_slist_append (NULL, GUINT_TO_POINTER (0xffffff));
-	process_event (EVENT_KIND_EXCEPTION, exc, 0, ctx, events, SUSPEND_POLICY_ALL);
+	ei.exc = (MonoObject*)exc;
+	process_event (EVENT_KIND_EXCEPTION, &ei, 0, throw_ctx, events, suspend_policy);
 }
 
 /*
@@ -6331,14 +6340,9 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 }
 
 void
-mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *ctx)
+mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *throw_ctx,
+									  MonoContext *catch_ctx)
 {
-}
-
-void
-mono_debugger_agent_handle_unhandled_exception (MonoException *exc, MonoContext *ctx)
-{
-	
 }
 #endif
 

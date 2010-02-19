@@ -25,9 +25,6 @@ mono_debugger_agent_free_domain_info (MonoDomain *domain) MONO_INTERNAL;
 gboolean mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji) MONO_INTERNAL;
 
 void
-mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *ctx) MONO_INTERNAL;
-
-void
-mono_debugger_agent_handle_unhandled_exception (MonoException *ext, MonoContext *ctx) MONO_INTERNAL;
+mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *throw_ctx, MonoContext *catch_ctx) MONO_INTERNAL;
 
 #endif

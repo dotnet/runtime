@@ -1147,9 +1147,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		obj = (MonoObject *)ex;
 	} 
 
-	if (!test_only)
-		mono_debugger_agent_handle_exception (obj, ctx);
-
 	/*
 	 * Allocate a new exception object instead of the preconstructed ones.
 	 */
@@ -1198,10 +1195,12 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, FALSE, &first_filter_idx, out_ji)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
+			mono_debugger_agent_handle_exception (obj, ctx, NULL);
 			// FIXME: This runs managed code so it might cause another stack overflow when
 			// we are handling a stack overflow
-			mono_debugger_agent_handle_unhandled_exception (obj, ctx);
 			mono_unhandled_exception (obj);
+		} else {
+			mono_debugger_agent_handle_exception (obj, ctx, &ctx_cp);
 		}
 	}
 
