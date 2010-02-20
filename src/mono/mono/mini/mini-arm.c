@@ -5092,6 +5092,8 @@ mono_arch_flush_register_windows (void)
 
 #ifdef MONO_ARCH_HAVE_IMT
 
+#ifndef DISABLE_JIT
+
 void
 mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 {
@@ -5134,6 +5136,8 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt
 		}
 	}
 }
+
+#endif /* DISABLE_JIT */
 
 MonoMethod*
 mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)

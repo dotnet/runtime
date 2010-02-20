@@ -956,6 +956,8 @@ get_callee_mask (const char spec)
 static gint8 desc_to_fixed_reg [256];
 static gboolean desc_to_fixed_reg_inited = FALSE;
 
+#ifndef DISABLE_JIT
+
 /*
  * Local register allocation.
  * We first scan the list of instructions and we save the liveness info of
@@ -2305,6 +2307,8 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 	}
 }
 
+#endif /* DISABLE_JIT */
+
 gboolean
 mono_is_regsize_var (MonoType *t)
 {
@@ -2344,6 +2348,8 @@ mono_is_regsize_var (MonoType *t)
 	}
 	return FALSE;
 }
+
+#ifdef DISABLE_JIT
 
 /*
  * mono_peephole_ins:
@@ -2502,3 +2508,4 @@ mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins)
 	}
 }
 
+#endif /* DISABLE_JIT */
