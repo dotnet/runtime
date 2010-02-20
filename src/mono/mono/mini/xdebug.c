@@ -155,7 +155,7 @@ mono_xdebug_init (char *options)
 	img_writer_emit_section_change (w, ".text", 0);
 	img_writer_emit_string (w, "");
 
-	mono_dwarf_writer_emit_base_info (xdebug_writer, mono_arch_get_cie_program ());
+	mono_dwarf_writer_emit_base_info (xdebug_writer, mono_unwind_get_cie_program ());
 }
 
 static void
@@ -174,7 +174,7 @@ xdebug_begin_emit (MonoImageWriter **out_w, MonoDwarfWriter **out_dw)
 
 	dw = mono_dwarf_writer_create (w, il_file, il_file_line_index, FALSE);
 
-	mono_dwarf_writer_emit_base_info (dw, mono_arch_get_cie_program ());
+	mono_dwarf_writer_emit_base_info (dw, mono_unwind_get_cie_program ());
 
 	*out_w = w;
 	*out_dw = dw;

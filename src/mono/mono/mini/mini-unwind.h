@@ -113,4 +113,6 @@ guint8* mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len) MO
 
 guint8* mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len, gpointer **type_info) MONO_INTERNAL;
 
+GSList* mono_unwind_get_cie_program (void) MONO_INTERNAL;
+
 #endif

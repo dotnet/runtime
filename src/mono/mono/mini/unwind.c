@@ -911,3 +911,24 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 
 	return g_realloc (buf, i);
 }
+
+/*
+ * mono_unwind_get_cie_program:
+ *
+ *   Get the unwind bytecode for the DWARF CIE.
+ */
+GSList*
+mono_unwind_get_cie_program (void)
+{
+#ifdef TARGET_AMD64
+	return mono_arch_get_cie_program ();
+#elif defined(TARGET_POWERPC)
+	GSList *l = NULL;
+
+	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, ppc_r1, 0);
+
+	return l;
+#else
+	return NULL;
+#endif
+}

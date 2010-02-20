@@ -1013,6 +1013,8 @@ mono_arch_cpu_enumerate_simd_versions (void)
 	return sse_opts;	
 }
 
+#ifndef DISABLE_JIT
+
 GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
@@ -2183,6 +2185,8 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
 }
+
+#endif /* DISABLE_JIT */
 
 #define EMIT_COND_BRANCH(ins,cond,sign) \
         if (ins->inst_true_bb->native_offset) { \
@@ -5623,6 +5627,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	}
 }
 
+#ifndef DISABLE_JIT
+
 static int
 get_max_epilog_size (MonoCompile *cfg)
 {
@@ -6565,6 +6571,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 }
 
+#endif /* DISABLE_JIT */
+
 void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
@@ -7344,6 +7352,17 @@ MonoVTable*
 mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 {
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
+}
+
+GSList*
+mono_arch_get_cie_program (void)
+{
+	GSList *l = NULL;
+
+	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, AMD64_RSP, 8);
+	mono_add_unwind_op_offset (l, (guint8*)NULL, (guint8*)NULL, AMD64_RIP, -8);
+
+	return l;
 }
 
 MonoInst*

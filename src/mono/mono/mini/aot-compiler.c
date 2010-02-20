@@ -1197,32 +1197,6 @@ arch_emit_autoreg (MonoAotCompile *acfg, char *symbol)
 #endif
 }
 
-/*
- * mono_arch_get_cie_program:
- *
- *   Get the unwind bytecode for the DWARF CIE.
- */
-GSList*
-mono_arch_get_cie_program (void)
-{
-#ifdef TARGET_AMD64
-	GSList *l = NULL;
-
-	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, AMD64_RSP, 8);
-	mono_add_unwind_op_offset (l, (guint8*)NULL, (guint8*)NULL, AMD64_RIP, -8);
-
-	return l;
-#elif defined(TARGET_POWERPC)
-	GSList *l = NULL;
-
-	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, ppc_r1, 0);
-
-	return l;
-#else
-	return NULL;
-#endif
-}
-
 /* END OF ARCH SPECIFIC CODE */
 
 static guint32
@@ -6043,7 +6017,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	img_writer_emit_start (acfg->w);
 
 	if (acfg->dwarf)
-		mono_dwarf_writer_emit_base_info (acfg->dwarf, mono_arch_get_cie_program ());
+		mono_dwarf_writer_emit_base_info (acfg->dwarf, mono_unwind_get_cie_program ());
 
 	emit_code (acfg);
 
