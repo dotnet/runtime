@@ -1023,15 +1023,16 @@ guint32
 VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 {
 	int primary, secondary;
-	
+	const char *name = NULL;
+
 	primary = lang & 0x3FF;
 	secondary = (lang >> 10) & 0x3F;
-	
+
 	switch(primary) {
 	case 0x00:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Process Default Language"));
+			name = "Process Default Language";
 			break;
 		}
 		break;
@@ -1039,72 +1040,72 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Arabic (Saudi Arabia)"));
+			name = "Arabic (Saudi Arabia)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Arabic (Iraq)"));
+			name = "Arabic (Iraq)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "Arabic (Egypt)"));
+			name = "Arabic (Egypt)";
 			break;
 		case 0x04:
-			return(copy_lang (lang_out, lang_len, "Arabic (Libya)"));
+			name = "Arabic (Libya)";
 			break;
 		case 0x05:
-			return(copy_lang (lang_out, lang_len, "Arabic (Algeria)"));
+			name = "Arabic (Algeria)";
 			break;
 		case 0x06:
-			return(copy_lang (lang_out, lang_len, "Arabic (Morocco)"));
+			name = "Arabic (Morocco)";
 			break;
 		case 0x07:
-			return(copy_lang (lang_out, lang_len, "Arabic (Tunisia)"));
+			name = "Arabic (Tunisia)";
 			break;
 		case 0x08:
-			return(copy_lang (lang_out, lang_len, "Arabic (Oman)"));
+			name = "Arabic (Oman)";
 			break;
 		case 0x09:
-			return(copy_lang (lang_out, lang_len, "Arabic (Yemen)"));
+			name = "Arabic (Yemen)";
 			break;
 		case 0x0a:
-			return(copy_lang (lang_out, lang_len, "Arabic (Syria)"));
+			name = "Arabic (Syria)";
 			break;
 		case 0x0b:
-			return(copy_lang (lang_out, lang_len, "Arabic (Jordan)"));
+			name = "Arabic (Jordan)";
 			break;
 		case 0x0c:
-			return(copy_lang (lang_out, lang_len, "Arabic (Lebanon)"));
+			name = "Arabic (Lebanon)";
 			break;
 		case 0x0d:
-			return(copy_lang (lang_out, lang_len, "Arabic (Kuwait)"));
+			name = "Arabic (Kuwait)";
 			break;
 		case 0x0e:
-			return(copy_lang (lang_out, lang_len, "Arabic (U.A.E.)"));
+			name = "Arabic (U.A.E.)";
 			break;
 		case 0x0f:
-			return(copy_lang (lang_out, lang_len, "Arabic (Bahrain)"));
+			name = "Arabic (Bahrain)";
 			break;
 		case 0x10:
-			return(copy_lang (lang_out, lang_len, "Arabic (Qatar)"));
+			name = "Arabic (Qatar)";
 			break;
 		}
 		break;
 	case 0x02:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Bulgarian (Bulgaria)"));
+			name = "Bulgarian (Bulgaria)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Bulgarian"));
+			name = "Bulgarian";
 			break;
 		}
 		break;
 	case 0x03:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Catalan (Spain)"));
+			name = "Catalan (Spain)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Catalan"));
+			name = "Catalan";
 			break;
 		}
 		break;
@@ -1112,39 +1113,39 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Chinese (Taiwan)"));
+			name = "Chinese (Taiwan)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Chinese (PRC)"));
+			name = "Chinese (PRC)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "Chinese (Hong Kong S.A.R.)"));
+			name = "Chinese (Hong Kong S.A.R.)";
 			break;
 		case 0x04:
-			return(copy_lang (lang_out, lang_len, "Chinese (Singapore)"));
+			name = "Chinese (Singapore)";
 			break;
 		case 0x05:
-			return(copy_lang (lang_out, lang_len, "Chinese (Macau S.A.R.)"));
+			name = "Chinese (Macau S.A.R.)";
 			break;
 		}
 		break;
 	case 0x05:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Czech (Czech Republic)"));
+			name = "Czech (Czech Republic)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Czech"));
+			name = "Czech";
 			break;
 		}
 		break;
 	case 0x06:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Danish (Denmark)"));
+			name = "Danish (Denmark)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Danish"));
+			name = "Danish";
 			break;
 		}
 		break;
@@ -1152,29 +1153,29 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "German (Germany)"));
+			name = "German (Germany)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "German (Switzerland)"));
+			name = "German (Switzerland)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "German (Austria)"));
+			name = "German (Austria)";
 			break;
 		case 0x04:
-			return(copy_lang (lang_out, lang_len, "German (Luxembourg)"));
+			name = "German (Luxembourg)";
 			break;
 		case 0x05:
-			return(copy_lang (lang_out, lang_len, "German (Liechtenstein)"));
+			name = "German (Liechtenstein)";
 			break;
 		}
 		break;
 	case 0x08:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Greek (Greece)"));
+			name = "Greek (Greece)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Greek"));
+			name = "Greek";
 			break;
 		}
 		break;
@@ -1182,132 +1183,132 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "English (United States)"));
+			name = "English (United States)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "English (United Kingdom)"));
+			name = "English (United Kingdom)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "English (Australia)"));
+			name = "English (Australia)";
 			break;
 		case 0x04:
-			return(copy_lang (lang_out, lang_len, "English (Canada)"));
+			name = "English (Canada)";
 			break;
 		case 0x05:
-			return(copy_lang (lang_out, lang_len, "English (New Zealand)"));
+			name = "English (New Zealand)";
 			break;
 		case 0x06:
-			return(copy_lang (lang_out, lang_len, "English (Ireland)"));
+			name = "English (Ireland)";
 			break;
 		case 0x07:
-			return(copy_lang (lang_out, lang_len, "English (South Africa)"));
+			name = "English (South Africa)";
 			break;
 		case 0x08:
-			return(copy_lang (lang_out, lang_len, "English (Jamaica)"));
+			name = "English (Jamaica)";
 			break;
 		case 0x09:
-			return(copy_lang (lang_out, lang_len, "English (Caribbean)"));
+			name = "English (Caribbean)";
 			break;
 		case 0x0a:
-			return(copy_lang (lang_out, lang_len, "English (Belize)"));
+			name = "English (Belize)";
 			break;
 		case 0x0b:
-			return(copy_lang (lang_out, lang_len, "English (Trinidad and Tobago)"));
+			name = "English (Trinidad and Tobago)";
 			break;
 		case 0x0c:
-			return(copy_lang (lang_out, lang_len, "English (Zimbabwe)"));
+			name = "English (Zimbabwe)";
 			break;
 		case 0x0d:
-			return(copy_lang (lang_out, lang_len, "English (Philippines)"));
+			name = "English (Philippines)";
 			break;
 		case 0x10:
-			return(copy_lang (lang_out, lang_len, "English (India)"));
+			name = "English (India)";
 			break;
 		case 0x11:
-			return(copy_lang (lang_out, lang_len, "English (Malaysia)"));
+			name = "English (Malaysia)";
 			break;
 		case 0x12:
-			return(copy_lang (lang_out, lang_len, "English (Singapore)"));
+			name = "English (Singapore)";
 			break;
 		}
 		break;
 	case 0x0a:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Spanish (Spain)"));
+			name = "Spanish (Spain)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Spanish (Traditional Sort)"));
+			name = "Spanish (Traditional Sort)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Spanish (Mexico)"));
+			name = "Spanish (Mexico)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "Spanish (International Sort)"));
+			name = "Spanish (International Sort)";
 			break;
 		case 0x04:
-			return(copy_lang (lang_out, lang_len, "Spanish (Guatemala)"));
+			name = "Spanish (Guatemala)";
 			break;
 		case 0x05:
-			return(copy_lang (lang_out, lang_len, "Spanish (Costa Rica)"));
+			name = "Spanish (Costa Rica)";
 			break;
 		case 0x06:
-			return(copy_lang (lang_out, lang_len, "Spanish (Panama)"));
+			name = "Spanish (Panama)";
 			break;
 		case 0x07:
-			return(copy_lang (lang_out, lang_len, "Spanish (Dominican Republic)"));
+			name = "Spanish (Dominican Republic)";
 			break;
 		case 0x08:
-			return(copy_lang (lang_out, lang_len, "Spanish (Venezuela)"));
+			name = "Spanish (Venezuela)";
 			break;
 		case 0x09:
-			return(copy_lang (lang_out, lang_len, "Spanish (Colombia)"));
+			name = "Spanish (Colombia)";
 			break;
 		case 0x0a:
-			return(copy_lang (lang_out, lang_len, "Spanish (Peru)"));
+			name = "Spanish (Peru)";
 			break;
 		case 0x0b:
-			return(copy_lang (lang_out, lang_len, "Spanish (Argentina)"));
+			name = "Spanish (Argentina)";
 			break;
 		case 0x0c:
-			return(copy_lang (lang_out, lang_len, "Spanish (Ecuador)"));
+			name = "Spanish (Ecuador)";
 			break;
 		case 0x0d:
-			return(copy_lang (lang_out, lang_len, "Spanish (Chile)"));
+			name = "Spanish (Chile)";
 			break;
 		case 0x0e:
-			return(copy_lang (lang_out, lang_len, "Spanish (Uruguay)"));
+			name = "Spanish (Uruguay)";
 			break;
 		case 0x0f:
-			return(copy_lang (lang_out, lang_len, "Spanish (Paraguay)"));
+			name = "Spanish (Paraguay)";
 			break;
 		case 0x10:
-			return(copy_lang (lang_out, lang_len, "Spanish (Bolivia)"));
+			name = "Spanish (Bolivia)";
 			break;
 		case 0x11:
-			return(copy_lang (lang_out, lang_len, "Spanish (El Salvador)"));
+			name = "Spanish (El Salvador)";
 			break;
 		case 0x12:
-			return(copy_lang (lang_out, lang_len, "Spanish (Honduras)"));
+			name = "Spanish (Honduras)";
 			break;
 		case 0x13:
-			return(copy_lang (lang_out, lang_len, "Spanish (Nicaragua)"));
+			name = "Spanish (Nicaragua)";
 			break;
 		case 0x14:
-			return(copy_lang (lang_out, lang_len, "Spanish (Puerto Rico)"));
+			name = "Spanish (Puerto Rico)";
 			break;
 		case 0x15:
-			return(copy_lang (lang_out, lang_len, "Spanish (United States)"));
+			name = "Spanish (United States)";
 			break;
 		}
 		break;
 	case 0x0b:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Finnish (Finland)"));
+			name = "Finnish (Finland)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Finnish"));
+			name = "Finnish";
 			break;
 		}
 		break;
@@ -1315,52 +1316,52 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "French (France)"));
+			name = "French (France)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "French (Belgium)"));
+			name = "French (Belgium)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "French (Canada)"));
+			name = "French (Canada)";
 			break;
 		case 0x04:
-			return(copy_lang (lang_out, lang_len, "French (Switzerland)"));
+			name = "French (Switzerland)";
 			break;
 		case 0x05:
-			return(copy_lang (lang_out, lang_len, "French (Luxembourg)"));
+			name = "French (Luxembourg)";
 			break;
 		case 0x06:
-			return(copy_lang (lang_out, lang_len, "French (Monaco)"));
+			name = "French (Monaco)";
 			break;
 		}
 		break;
 	case 0x0d:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Hebrew (Israel)"));
+			name = "Hebrew (Israel)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Hebrew"));
+			name = "Hebrew";
 			break;
 		}
 		break;
 	case 0x0e:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Hungarian (Hungary)"));
+			name = "Hungarian (Hungary)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Hungarian"));
+			name = "Hungarian";
 			break;
 		}
 		break;
 	case 0x0f:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Icelandic (Iceland)"));
+			name = "Icelandic (Iceland)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Icelandic"));
+			name = "Icelandic";
 			break;
 		}
 		break;
@@ -1368,30 +1369,30 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Italian (Italy)"));
+			name = "Italian (Italy)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Italian (Switzerland)"));
+			name = "Italian (Switzerland)";
 			break;
 		}
 		break;
 	case 0x11:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Japanese (Japan)"));
+			name = "Japanese (Japan)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Japanese"));
+			name = "Japanese";
 			break;
 		}
 		break;
 	case 0x12:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Korean (Korea)"));
+			name = "Korean (Korea)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Korean"));
+			name = "Korean";
 			break;
 		}
 		break;
@@ -1399,10 +1400,10 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Dutch (Netherlands)"));
+			name = "Dutch (Netherlands)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Dutch (Belgium)"));
+			name = "Dutch (Belgium)";
 			break;
 		}
 		break;
@@ -1410,20 +1411,20 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Norwegian (Bokmal)"));
+			name = "Norwegian (Bokmal)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Norwegian (Nynorsk)"));
+			name = "Norwegian (Nynorsk)";
 			break;
 		}
 		break;
 	case 0x15:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Polish (Poland)"));
+			name = "Polish (Poland)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Polish"));
+			name = "Polish";
 			break;
 		}
 		break;
@@ -1431,402 +1432,402 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Portuguese (Brazil)"));
+			name = "Portuguese (Brazil)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Portuguese (Portugal)"));
+			name = "Portuguese (Portugal)";
 			break;
 		}
 		break;
 	case 0x17:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Romansh (Switzerland)"));
+			name = "Romansh (Switzerland)";
 			break;
 		}
 		break;
 	case 0x18:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Romanian (Romania)"));
+			name = "Romanian (Romania)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Romanian"));
+			name = "Romanian";
 			break;
 		}
 		break;
 	case 0x19:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Russian (Russia)"));
+			name = "Russian (Russia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Russian"));
+			name = "Russian";
 			break;
 		}
 		break;
 	case 0x1a:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Croatian (Croatia)"));
+			name = "Croatian (Croatia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Croatian"));
+			name = "Croatian";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Serbian (Latin)"));
+			name = "Serbian (Latin)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "Serbian (Cyrillic)"));
+			name = "Serbian (Cyrillic)";
 			break;
 		case 0x04:
-			return(copy_lang (lang_out, lang_len, "Croatian (Bosnia and Herzegovina)"));
+			name = "Croatian (Bosnia and Herzegovina)";
 			break;
 		case 0x05:
-			return(copy_lang (lang_out, lang_len, "Bosnian (Latin, Bosnia and Herzegovina)"));
+			name = "Bosnian (Latin, Bosnia and Herzegovina)";
 			break;
 		case 0x06:
-			return(copy_lang (lang_out, lang_len, "Serbian (Latin, Bosnia and Herzegovina)"));
+			name = "Serbian (Latin, Bosnia and Herzegovina)";
 			break;
 		case 0x07:
-			return(copy_lang (lang_out, lang_len, "Serbian (Cyrillic, Bosnia and Herzegovina)"));
+			name = "Serbian (Cyrillic, Bosnia and Herzegovina)";
 			break;
 		case 0x08:
-			return(copy_lang (lang_out, lang_len, "Bosnian (Cyrillic, Bosnia and Herzegovina)"));
+			name = "Bosnian (Cyrillic, Bosnia and Herzegovina)";
 			break;
 		}
 		break;
 	case 0x1b:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Slovak (Slovakia)"));
+			name = "Slovak (Slovakia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Slovak"));
+			name = "Slovak";
 			break;
 		}
 		break;
 	case 0x1c:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Albanian (Albania)"));
+			name = "Albanian (Albania)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Albanian"));
+			name = "Albanian";
 			break;
 		}
 		break;
 	case 0x1d:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Swedish (Sweden)"));
+			name = "Swedish (Sweden)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Swedish"));
+			name = "Swedish";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Swedish (Finland)"));
+			name = "Swedish (Finland)";
 			break;
 		}
 		break;
 	case 0x1e:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Thai (Thailand)"));
+			name = "Thai (Thailand)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Thai"));
+			name = "Thai";
 			break;
 		}
 		break;
 	case 0x1f:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Turkish (Turkey)"));
+			name = "Turkish (Turkey)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Turkish"));
+			name = "Turkish";
 			break;
 		}
 		break;
 	case 0x20:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Urdu (Islamic Republic of Pakistan)"));
+			name = "Urdu (Islamic Republic of Pakistan)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Urdu"));
+			name = "Urdu";
 			break;
 		}
 		break;
 	case 0x21:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Indonesian (Indonesia)"));
+			name = "Indonesian (Indonesia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Indonesian"));
+			name = "Indonesian";
 			break;
 		}
 		break;
 	case 0x22:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Ukrainian (Ukraine)"));
+			name = "Ukrainian (Ukraine)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Ukrainian"));
+			name = "Ukrainian";
 			break;
 		}
 		break;
 	case 0x23:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Belarusian (Belarus)"));
+			name = "Belarusian (Belarus)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Belarusian"));
+			name = "Belarusian";
 			break;
 		}
 		break;
 	case 0x24:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Slovenian (Slovenia)"));
+			name = "Slovenian (Slovenia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Slovenian"));
+			name = "Slovenian";
 			break;
 		}
 		break;
 	case 0x25:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Estonian (Estonia)"));
+			name = "Estonian (Estonia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Estonian"));
+			name = "Estonian";
 			break;
 		}
 		break;
 	case 0x26:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Latvian (Latvia)"));
+			name = "Latvian (Latvia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Latvian"));
+			name = "Latvian";
 			break;
 		}
 		break;
 	case 0x27:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Lithuanian (Lithuania)"));
+			name = "Lithuanian (Lithuania)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Lithuanian"));
+			name = "Lithuanian";
 			break;
 		}
 		break;
 	case 0x28:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Tajik (Tajikistan)"));
+			name = "Tajik (Tajikistan)";
 			break;
 		}
 		break;
 	case 0x29:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Farsi (Iran)"));
+			name = "Farsi (Iran)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Farsi"));
+			name = "Farsi";
 			break;
 		}
 		break;
 	case 0x2a:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Vietnamese (Viet Nam)"));
+			name = "Vietnamese (Viet Nam)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Vietnamese"));
+			name = "Vietnamese";
 			break;
 		}
 		break;
 	case 0x2b:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Armenian (Armenia)"));
+			name = "Armenian (Armenia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Armenian"));
+			name = "Armenian";
 			break;
 		}
 		break;
 	case 0x2c:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Azeri (Latin) (Azerbaijan)"));
+			name = "Azeri (Latin) (Azerbaijan)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Azeri (Latin)"));
+			name = "Azeri (Latin)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Azeri (Cyrillic)"));
+			name = "Azeri (Cyrillic)";
 			break;
 		}
 		break;
 	case 0x2d:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Basque (Spain)"));
+			name = "Basque (Spain)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Basque"));
+			name = "Basque";
 			break;
 		}
 		break;
 	case 0x2e:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Upper Sorbian (Germany)"));
+			name = "Upper Sorbian (Germany)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Lower Sorbian (Germany)"));
+			name = "Lower Sorbian (Germany)";
 			break;
 		}
 		break;
 	case 0x2f:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "FYRO Macedonian (Former Yugoslav Republic of Macedonia)"));
+			name = "FYRO Macedonian (Former Yugoslav Republic of Macedonia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "FYRO Macedonian"));
+			name = "FYRO Macedonian";
 			break;
 		}
 		break;
 	case 0x32:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Tswana (South Africa)"));
+			name = "Tswana (South Africa)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Tswana"));
+			name = "Tswana";
 			break;
 		}
 		break;
 	case 0x34:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Xhosa (South Africa)"));
+			name = "Xhosa (South Africa)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Xhosa"));
+			name = "Xhosa";
 			break;
 		}
 		break;
 	case 0x35:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Zulu (South Africa)"));
+			name = "Zulu (South Africa)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Zulu"));
+			name = "Zulu";
 			break;
 		}
 		break;
 	case 0x36:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Afrikaans (South Africa)"));
+			name = "Afrikaans (South Africa)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Afrikaans"));
+			name = "Afrikaans";
 			break;
 		}
 		break;
 	case 0x37:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Georgian (Georgia)"));
+			name = "Georgian (Georgia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Georgian"));
+			name = "Georgian";
 			break;
 		}
 		break;
 	case 0x38:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Faroese (Faroe Islands)"));
+			name = "Faroese (Faroe Islands)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Faroese"));
+			name = "Faroese";
 			break;
 		}
 		break;
 	case 0x39:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Hindi (India)"));
+			name = "Hindi (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Hindi"));
+			name = "Hindi";
 			break;
 		}
 		break;
 	case 0x3a:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Maltese (Malta)"));
+			name = "Maltese (Malta)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Maltese"));
+			name = "Maltese";
 			break;
 		}
 		break;
 	case 0x3b:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Sami (Northern) (Norway)"));
+			name = "Sami (Northern) (Norway)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Sami, Northern (Norway)"));
+			name = "Sami, Northern (Norway)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Sami, Northern (Sweden)"));
+			name = "Sami, Northern (Sweden)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "Sami, Northern (Finland)"));
+			name = "Sami, Northern (Finland)";
 			break;
 		case 0x04:
-			return(copy_lang (lang_out, lang_len, "Sami, Lule (Norway)"));
+			name = "Sami, Lule (Norway)";
 			break;
 		case 0x05:
-			return(copy_lang (lang_out, lang_len, "Sami, Lule (Sweden)"));
+			name = "Sami, Lule (Sweden)";
 			break;
 		case 0x06:
-			return(copy_lang (lang_out, lang_len, "Sami, Southern (Norway)"));
+			name = "Sami, Southern (Norway)";
 			break;
 		case 0x07:
-			return(copy_lang (lang_out, lang_len, "Sami, Southern (Sweden)"));
+			name = "Sami, Southern (Sweden)";
 			break;
 		case 0x08:
-			return(copy_lang (lang_out, lang_len, "Sami, Skolt (Finland)"));
+			name = "Sami, Skolt (Finland)";
 			break;
 		case 0x09:
-			return(copy_lang (lang_out, lang_len, "Sami, Inari (Finland)"));
+			name = "Sami, Inari (Finland)";
 			break;
 		}
 		break;
 	case 0x3c:
 		switch(secondary) {
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Irish (Ireland)"));
+			name = "Irish (Ireland)";
 			break;
 		}
 		break;
@@ -1834,70 +1835,70 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Malay (Malaysia)"));
+			name = "Malay (Malaysia)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Malay (Brunei Darussalam)"));
+			name = "Malay (Brunei Darussalam)";
 			break;
 		}
 		break;
 	case 0x3f:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Kazakh (Kazakhstan)"));
+			name = "Kazakh (Kazakhstan)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Kazakh"));
+			name = "Kazakh";
 			break;
 		}
 		break;
 	case 0x40:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Kyrgyz (Kyrgyzstan)"));
+			name = "Kyrgyz (Kyrgyzstan)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Kyrgyz (Cyrillic)"));
+			name = "Kyrgyz (Cyrillic)";
 			break;
 		}
 		break;
 	case 0x41:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Swahili (Kenya)"));
+			name = "Swahili (Kenya)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Swahili"));
+			name = "Swahili";
 			break;
 		}
 		break;
 	case 0x42:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Turkmen (Turkmenistan)"));
+			name = "Turkmen (Turkmenistan)";
 			break;
 		}
 		break;
 	case 0x43:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Uzbek (Latin) (Uzbekistan)"));
+			name = "Uzbek (Latin) (Uzbekistan)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Uzbek (Latin)"));
+			name = "Uzbek (Latin)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Uzbek (Cyrillic)"));
+			name = "Uzbek (Cyrillic)";
 			break;
 		}
 		break;
 	case 0x44:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Tatar (Russia)"));
+			name = "Tatar (Russia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Tatar"));
+			name = "Tatar";
 			break;
 		}
 		break;
@@ -1905,57 +1906,57 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Bengali (India)"));
+			name = "Bengali (India)";
 			break;
 		}
 		break;
 	case 0x46:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Punjabi (India)"));
+			name = "Punjabi (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Punjabi"));
+			name = "Punjabi";
 			break;
 		}
 		break;
 	case 0x47:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Gujarati (India)"));
+			name = "Gujarati (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Gujarati"));
+			name = "Gujarati";
 			break;
 		}
 		break;
 	case 0x49:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Tamil (India)"));
+			name = "Tamil (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Tamil"));
+			name = "Tamil";
 			break;
 		}
 		break;
 	case 0x4a:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Telugu (India)"));
+			name = "Telugu (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Telugu"));
+			name = "Telugu";
 			break;
 		}
 		break;
 	case 0x4b:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Kannada (India)"));
+			name = "Kannada (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Kannada"));
+			name = "Kannada";
 			break;
 		}
 		break;
@@ -1963,194 +1964,194 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Malayalam (India)"));
+			name = "Malayalam (India)";
 			break;
 		}
 		break;
 	case 0x4d:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Assamese (India)"));
+			name = "Assamese (India)";
 			break;
 		}
 		break;
 	case 0x4e:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Marathi (India)"));
+			name = "Marathi (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Marathi"));
+			name = "Marathi";
 			break;
 		}
 		break;
 	case 0x4f:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Sanskrit (India)"));
+			name = "Sanskrit (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Sanskrit"));
+			name = "Sanskrit";
 			break;
 		}
 		break;
 	case 0x50:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Mongolian (Mongolia)"));
+			name = "Mongolian (Mongolia)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Mongolian (Cyrillic)"));
+			name = "Mongolian (Cyrillic)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Mongolian (PRC)"));
+			name = "Mongolian (PRC)";
 			break;
 		}
 		break;
 	case 0x51:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Tibetan (PRC)"));
+			name = "Tibetan (PRC)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Tibetan (Bhutan)"));
+			name = "Tibetan (Bhutan)";
 			break;
 		}
 		break;
 	case 0x52:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Welsh (United Kingdom)"));
+			name = "Welsh (United Kingdom)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Welsh"));
+			name = "Welsh";
 			break;
 		}
 		break;
 	case 0x53:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Khmer (Cambodia)"));
+			name = "Khmer (Cambodia)";
 			break;
 		}
 		break;
 	case 0x54:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Lao (Lao PDR)"));
+			name = "Lao (Lao PDR)";
 			break;
 		}
 		break;
 	case 0x56:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Galician (Spain)"));
+			name = "Galician (Spain)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Galician"));
+			name = "Galician";
 			break;
 		}
 		break;
 	case 0x57:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Konkani (India)"));
+			name = "Konkani (India)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Konkani"));
+			name = "Konkani";
 			break;
 		}
 		break;
 	case 0x5a:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Syriac (Syria)"));
+			name = "Syriac (Syria)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Syriac"));
+			name = "Syriac";
 			break;
 		}
 		break;
 	case 0x5b:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Sinhala (Sri Lanka)"));
+			name = "Sinhala (Sri Lanka)";
 			break;
 		}
 		break;
 	case 0x5d:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Inuktitut (Syllabics, Canada)"));
+			name = "Inuktitut (Syllabics, Canada)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Inuktitut (Latin, Canada)"));
+			name = "Inuktitut (Latin, Canada)";
 			break;
 		}
 		break;
 	case 0x5e:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Amharic (Ethiopia)"));
+			name = "Amharic (Ethiopia)";
 			break;
 		}
 		break;
 	case 0x5f:
 		switch(secondary) {
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Tamazight (Algeria, Latin)"));
+			name = "Tamazight (Algeria, Latin)";
 			break;
 		}
 		break;
 	case 0x61:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Nepali (Nepal)"));
+			name = "Nepali (Nepal)";
 			break;
 		}
 		break;
 	case 0x62:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Frisian (Netherlands)"));
+			name = "Frisian (Netherlands)";
 			break;
 		}
 		break;
 	case 0x63:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Pashto (Afghanistan)"));
+			name = "Pashto (Afghanistan)";
 			break;
 		}
 		break;
 	case 0x64:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Filipino (Philippines)"));
+			name = "Filipino (Philippines)";
 			break;
 		}
 		break;
 	case 0x65:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Divehi (Maldives)"));
+			name = "Divehi (Maldives)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Divehi"));
+			name = "Divehi";
 			break;
 		}
 		break;
 	case 0x68:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Hausa (Nigeria, Latin)"));
+			name = "Hausa (Nigeria, Latin)";
 			break;
 		}
 		break;
 	case 0x6a:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Yoruba (Nigeria)"));
+			name = "Yoruba (Nigeria)";
 			break;
 		}
 		break;
@@ -2158,153 +2159,156 @@ VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 		switch(secondary) {
 		case 0x00:
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Quechua (Bolivia)"));
+			name = "Quechua (Bolivia)";
 			break;
 		case 0x02:
-			return(copy_lang (lang_out, lang_len, "Quechua (Ecuador)"));
+			name = "Quechua (Ecuador)";
 			break;
 		case 0x03:
-			return(copy_lang (lang_out, lang_len, "Quechua (Peru)"));
+			name = "Quechua (Peru)";
 			break;
 		}
 		break;
 	case 0x6c:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Northern Sotho (South Africa)"));
+			name = "Northern Sotho (South Africa)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Northern Sotho"));
+			name = "Northern Sotho";
 			break;
 		}
 		break;
 	case 0x6d:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Bashkir (Russia)"));
+			name = "Bashkir (Russia)";
 			break;
 		}
 		break;
 	case 0x6e:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Luxembourgish (Luxembourg)"));
+			name = "Luxembourgish (Luxembourg)";
 			break;
 		}
 		break;
 	case 0x6f:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Greenlandic (Greenland)"));
+			name = "Greenlandic (Greenland)";
 			break;
 		}
 		break;
 	case 0x78:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Yi (PRC)"));
+			name = "Yi (PRC)";
 			break;
 		}
 		break;
 	case 0x7a:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Mapudungun (Chile)"));
+			name = "Mapudungun (Chile)";
 			break;
 		}
 		break;
 	case 0x7c:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Mohawk (Mohawk)"));
+			name = "Mohawk (Mohawk)";
 			break;
 		}
 		break;
 	case 0x7e:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Breton (France)"));
+			name = "Breton (France)";
 			break;
 		}
 		break;
 	case 0x7f:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Invariant Language (Invariant Country)"));
+			name = "Invariant Language (Invariant Country)";
 			break;
 		}
 		break;
 	case 0x80:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Uighur (PRC)"));
+			name = "Uighur (PRC)";
 			break;
 		}
 		break;
 	case 0x81:
 		switch(secondary) {
 		case 0x00:
-			return(copy_lang (lang_out, lang_len, "Maori (New Zealand)"));
+			name = "Maori (New Zealand)";
 			break;
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Maori"));
+			name = "Maori";
 			break;
 		}
 		break;
 	case 0x83:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Corsican (France)"));
+			name = "Corsican (France)";
 			break;
 		}
 		break;
 	case 0x84:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Alsatian (France)"));
+			name = "Alsatian (France)";
 			break;
 		}
 		break;
 	case 0x85:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Yakut (Russia)"));
+			name = "Yakut (Russia)";
 			break;
 		}
 		break;
 	case 0x86:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "K'iche (Guatemala)"));
+			name = "K'iche (Guatemala)";
 			break;
 		}
 		break;
 	case 0x87:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Kinyarwanda (Rwanda)"));
+			name = "Kinyarwanda (Rwanda)";
 			break;
 		}
 		break;
 	case 0x88:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Wolof (Senegal)"));
+			name = "Wolof (Senegal)";
 			break;
 		}
 		break;
 	case 0x8c:
 		switch(secondary) {
 		case 0x01:
-			return(copy_lang (lang_out, lang_len, "Dari (Afghanistan)"));
+			name = "Dari (Afghanistan)";
 			break;
 		}
 		break;
 
 	default:
-		return(copy_lang (lang_out, lang_len, "Language Neutral"));
+		name = "Language Neutral";
 
 	}
 	
-	return(copy_lang (lang_out, lang_len, "Language Neutral"));
+	if (!name)
+		name = "Language Neutral";
+
+	return copy_lang (lang_out, lang_len, name);
 }
