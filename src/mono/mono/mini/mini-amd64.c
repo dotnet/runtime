@@ -2666,6 +2666,8 @@ store_membase_imm_to_store_membase_reg (int opcode)
 	return -1;
 }
 
+#ifndef DISABLE_JIT
+
 #define INST_IGNORES_CFLAGS(opcode) (!(((opcode) == OP_ADC) || ((opcode) == OP_ADC_IMM) || ((opcode) == OP_IADC) || ((opcode) == OP_IADC_IMM) || ((opcode) == OP_SBB) || ((opcode) == OP_SBB_IMM) || ((opcode) == OP_ISBB) || ((opcode) == OP_ISBB_IMM)))
 
 /*
@@ -3116,6 +3118,8 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 
 	return code;
 }
+
+#endif /* DISABLE_JIT */
 
 /*
  * mono_amd64_emit_tls_get:
