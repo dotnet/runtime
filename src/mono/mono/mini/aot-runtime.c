@@ -2100,6 +2100,7 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 		amodule = g_hash_table_lookup (ji_to_amodule, ji);
 		g_assert (amodule);
 		g_assert (code >= amodule->code && code <= amodule->code_end);
+		mono_aot_unlock ();
 	}
 
 	p = amodule->unwind_info + ji->used_regs;
