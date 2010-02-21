@@ -26,6 +26,9 @@
 
 
 #include <locale.h>
+#if defined(__APPLE__)
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 #undef DEBUG
 
@@ -374,6 +377,39 @@ get_posix_locale (void)
 	return g_strdup (posix_locale);
 }
 
+#if defined (__APPLE__)
+static gchar*
+get_darwin_locale (void)
+{
+	const gchar *darwin_locale = NULL;
+	gchar *cur_locale = NULL;
+	int i;
+	CFLocaleRef locale = NULL;
+	CFStringRef locale_cfstr = NULL;
+
+	locale = CFLocaleCopyCurrent ();
+
+	if (locale) {
+		locale_cfstr = CFLocaleGetIdentifier (locale);
+
+		if (locale_cfstr) {
+			darwin_locale = CFStringGetCStringPtr (locale_cfstr, kCFStringEncodingMacRoman);
+
+			cur_locale = g_strdup (darwin_locale);
+
+			for (i = 0; i < strlen (cur_locale); i++)
+				if (cur_locale [i] == '_')
+					cur_locale [i] = '-';
+		}
+
+
+		CFRelease (locale);
+	}
+
+	return cur_locale;
+}
+#endif
+
 static gchar*
 get_current_locale_name (void)
 {
@@ -384,7 +420,11 @@ get_current_locale_name (void)
 
 #ifdef HOST_WIN32
 	locale = g_win32_getlocale ();
-#else	
+#elif defined (__APPLE__)	
+	locale = get_darwin_locale ();
+	if (!locale)
+		locale = get_posix_locale ();
+#else
 	locale = get_posix_locale ();
 #endif	
 

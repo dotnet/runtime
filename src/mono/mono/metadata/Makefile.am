@@ -219,5 +219,9 @@ pedump_SOURCES =		\
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(PEDUMP_DTRACE_OBJECT)
 
+if PLATFORM_DARWIN
+pedump_LDFLAGS=-framework CoreFoundation
+endif
+
 EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) $(sgen_sources)
 
