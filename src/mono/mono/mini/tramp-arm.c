@@ -83,6 +83,38 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 
 #ifndef DISABLE_JIT
 
+#define arm_is_imm12(v) ((int)(v) > -4096 && (int)(v) < 4096)
+
+/*
+ * Return the instruction to jump from code to target, 0 if not
+ * reachable with a single instruction
+ */
+static guint32
+branch_for_target_reachable (guint8 *branch, guint8 *target)
+{
+	gint diff = target - branch - 8;
+	g_assert ((diff & 3) == 0);
+	if (diff >= 0) {
+		if (diff <= 33554431)
+			return (ARMCOND_AL << ARMCOND_SHIFT) | (ARM_BR_TAG) | (diff >> 2);
+	} else {
+		/* diff between 0 and -33554432 */
+		if (diff >= -33554432)
+			return (ARMCOND_AL << ARMCOND_SHIFT) | (ARM_BR_TAG) | ((diff >> 2) & ~0xff000000);
+	}
+	return 0;
+}
+
+static inline guint8*
+emit_bx (guint8* code, int reg)
+{
+	if (mono_arm_thumb_supported ())
+		ARM_BX (code, reg);
+	else
+		ARM_MOV_REG_REG (code, ARMREG_PC, reg);
+	return code;
+}
+
 /* Stack size for trampoline function 
  */
 #define STACK (sizeof (MonoLMF))
@@ -419,38 +451,6 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 		*code_len = code - buf;
 
 	return buf;
-}
-
-#define arm_is_imm12(v) ((int)(v) > -4096 && (int)(v) < 4096)
-
-/*
- * Return the instruction to jump from code to target, 0 if not
- * reachable with a single instruction
- */
-static guint32
-branch_for_target_reachable (guint8 *branch, guint8 *target)
-{
-	gint diff = target - branch - 8;
-	g_assert ((diff & 3) == 0);
-	if (diff >= 0) {
-		if (diff <= 33554431)
-			return (ARMCOND_AL << ARMCOND_SHIFT) | (ARM_BR_TAG) | (diff >> 2);
-	} else {
-		/* diff between 0 and -33554432 */
-		if (diff >= -33554432)
-			return (ARMCOND_AL << ARMCOND_SHIFT) | (ARM_BR_TAG) | ((diff >> 2) & ~0xff000000);
-	}
-	return 0;
-}
-
-static inline guint8*
-emit_bx (guint8* code, int reg)
-{
-	if (mono_arm_thumb_supported ())
-		ARM_BX (code, reg);
-	else
-		ARM_MOV_REG_REG (code, ARMREG_PC, reg);
-	return code;
 }
 
 /*
