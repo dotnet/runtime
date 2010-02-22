@@ -1864,11 +1864,13 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 	return ass;
 }
 
+#ifndef HAVE_SGEN_GC
 static void
 free_slist (gpointer key, gpointer value, gpointer user_data)
 {
 	g_slist_free (value);
 }
+#endif
 
 #if HAVE_SGEN_GC
 static void
