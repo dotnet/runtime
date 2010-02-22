@@ -1240,8 +1240,9 @@ class Tests {
 
 		// Avoid cfolding this
 		i = 0;
-		for (int j = 0; j < 1234567; ++j)
+		for (int j = 0; j < 567; ++j)
 			i ++;
+		i += 1234000;
 		if ((i / 2) != 617283)
 			return 1;
 		if ((i / 4) != 308641)
@@ -1253,8 +1254,9 @@ class Tests {
 
 		// Avoid cfolding this
 		i = 0;
-		for (int j = 0; j < 1234567; ++j)
+		for (int j = 0; j < 567; ++j)
 			i --;
+		i -= 1234000;
 		if ((i / 2) != -617283)
 			return 5;
 		if ((i / 4) != -308641)
