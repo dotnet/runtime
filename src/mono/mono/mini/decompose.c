@@ -468,6 +468,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 			case OP_LCONV_TO_U8:
 			case OP_LCONV_TO_I8:
 			case OP_LCONV_TO_OVF_U8_UN:
+			case OP_LCONV_TO_OVF_I8:
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1 + 1);
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 2, tree->sreg1 + 2);
 				break;
