@@ -5125,7 +5125,7 @@ int
 mono_gc_invoke_finalizers (void)
 {
 	FinalizeEntry *entry = NULL;
-	gboolean entry_is_critical;
+	gboolean entry_is_critical = FALSE;
 	int count = 0;
 	void *obj;
 	/* FIXME: batch to reduce lock contention */
