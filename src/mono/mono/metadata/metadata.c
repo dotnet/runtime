@@ -3306,6 +3306,77 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 }
 
 /*
+ * mono_method_get_header_summary:
+ * @method: The method to get the header.
+ * @summary: Where to store the header
+ *
+ *
+ * Returns: true if the header was properly decoded.
+ */
+gboolean
+mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary)
+{
+	int idx;
+	guint32 rva;
+	MonoImage* img;
+	const char *ptr;
+	unsigned char flags, format;
+	guint16 fat_flags;
+
+	/*Only the GMD has a pointer to the metadata.*/
+	while (method->is_inflated)
+		method = ((MonoMethodInflated*)method)->declaring;
+
+	summary->code_size = 0;
+	summary->has_clauses = FALSE;
+
+	/*FIXME extract this into a MACRO and share it with mono_method_get_header*/
+	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+		return FALSE;
+
+	if (method->klass->image->dynamic || ((MonoMethodNormal*) method)->header) {
+		MonoMethodHeader *header = mono_method_get_header (method);
+		if (!header)
+			return FALSE;
+		summary->code_size = header->code_size;
+		summary->has_clauses = header->num_clauses > 0;
+		return TRUE;
+	}
+
+
+	idx = mono_metadata_token_index (method->token);
+	img = method->klass->image;
+	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+
+	/*We must run the verifier since we'll be decoding it.*/
+	if (!mono_verifier_verify_method_header (img, rva, NULL))
+		return FALSE;
+
+	ptr = mono_image_rva_map (img, rva);
+	g_assert (ptr);
+
+	flags = *(const unsigned char *)ptr;
+	format = flags & METHOD_HEADER_FORMAT_MASK;
+
+	switch (format) {
+	case METHOD_HEADER_TINY_FORMAT:
+		ptr++;
+		summary->code_size = flags >> 2;
+		break;
+	case METHOD_HEADER_FAT_FORMAT:
+		fat_flags = read16 (ptr);
+		ptr += 4;
+		summary->code_size = read32 (ptr);
+		if (fat_flags & METHOD_HEADER_MORE_SECTS)
+			summary->has_clauses = TRUE;
+		break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
+/*
  * mono_metadata_parse_mh_full:
  * @m: metadata context
  * @generic_context: generics context

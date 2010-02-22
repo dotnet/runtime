@@ -399,6 +399,11 @@ struct _MonoMethodHeader {
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 };
 
+typedef struct {
+	guint32      code_size;
+	gboolean     has_clauses;
+} MonoMethodHeaderSummary;
+
 #define MONO_SIZEOF_METHOD_HEADER (sizeof (struct _MonoMethodHeader) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
@@ -497,6 +502,9 @@ MonoMethodHeader *
 mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     const char            *ptr);
+
+gboolean
+mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary) MONO_INTERNAL;
 
 int* mono_metadata_get_param_attrs          (MonoImage *m, int def, int param_count) MONO_INTERNAL;
 gboolean mono_metadata_method_has_param_attrs (MonoImage *m, int def) MONO_INTERNAL;
