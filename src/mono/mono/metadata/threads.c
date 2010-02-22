@@ -1052,7 +1052,7 @@ mono_thread_exit ()
 	mono_domain_unset ();
 
 	/* we could add a callback here for embedders to use. */
-	if (thread == mono_thread_get_main ()->internal_thread)
+	if (mono_thread_get_main () && (thread == mono_thread_get_main ()->internal_thread))
 		exit (mono_environment_exitcode_get ());
 	ExitThread (-1);
 }
