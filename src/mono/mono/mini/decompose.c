@@ -325,6 +325,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U_UN:
 	case OP_LCONV_TO_OVF_U8_UN:
+	case OP_LCONV_TO_OVF_I8:
 		ins->opcode = OP_MOVE;
 		break;
 	case OP_LCONV_TO_OVF_I_UN:
