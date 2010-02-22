@@ -3610,7 +3610,7 @@ static gboolean inline_limit_inited;
 static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
-	MonoMethodHeader *header;
+	MonoMethodHeaderSummary header;
 	MonoVTable *vtable;
 #ifdef MONO_ARCH_SOFT_FLOAT
 	MonoMethodSignature *sig = mono_method_signature (method);
@@ -3630,24 +3630,15 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		return TRUE;
 #endif
 
-	if (method->is_inflated)
-		/* Avoid inflating the header */
-		header = mono_method_get_header (((MonoMethodInflated*)method)->declaring);
-	else
-		header = mono_method_get_header (method);
 
-	if (mono_loader_get_last_error ()) {
-		mono_loader_clear_error ();
+	if (!mono_method_get_header_summary (method, &header))
 		return FALSE;
-	}
 
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
+	/*runtime, icall and pinvoke are checked by summary call*/
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->klass->marshalbyref) ||
-	    !header || header->num_clauses)
+	    header.has_clauses)
 		return FALSE;
 
 	/* also consider num_locals? */
@@ -3659,7 +3650,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			inline_limit = INLINE_LENGTH_LIMIT;
 		inline_limit_inited = TRUE;
 	}
-	if (header->code_size >= inline_limit)
+	if (header.code_size >= inline_limit)
 		return FALSE;
 
 	/*
