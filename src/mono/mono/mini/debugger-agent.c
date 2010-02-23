@@ -217,7 +217,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 0
+#define MINOR_VERSION 1
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -419,6 +419,7 @@ typedef struct {
 		MonoClass *exc_class; /* For kind == MONO_KIND_EXCEPTION_ONLY */
 		MonoAssembly **assemblies; /* For kind == MONO_KIND_ASSEMBLY_ONLY */
 	} data;
+	gboolean caught, uncaught; /* For kind == MOD_KIND_EXCEPTION_ONLY */
 } Modifier;
 
 typedef struct{
@@ -447,6 +448,16 @@ typedef struct {
 	/* The list of breakpoints used to implement step-over */
 	GSList *bps;
 } SingleStepReq;
+
+/*
+ * Contains additional information for an event
+ */
+typedef struct {
+	/* For EVENT_KIND_EXCEPTION */
+	MonoObject *exc;
+	MonoContext catch_ctx;
+	gboolean caught;
+} EventInfo;
 
 /* Dummy structure used for the profiler callbacks */
 typedef struct {
@@ -2474,7 +2485,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
  * LOCKING: Assumes the loader lock is held.
  */
 static GSList*
-create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, MonoException *exc, int *suspend_policy)
+create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo *ei, int *suspend_policy)
 {
 	int i, j;
 	GSList *events = NULL;
@@ -2508,8 +2519,12 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, MonoExcept
 				} else if (mod->kind == MOD_KIND_THREAD_ONLY) {
 					if (mod->data.thread != mono_thread_internal_current ())
 						filtered = TRUE;
-				} else if (mod->kind == MOD_KIND_EXCEPTION_ONLY && exc) {
-					if (mod->data.exc_class && !mono_class_is_assignable_from (mod->data.exc_class, exc->object.vtable->klass))
+				} else if (mod->kind == MOD_KIND_EXCEPTION_ONLY && ei) {
+					if (mod->data.exc_class && !mono_class_is_assignable_from (mod->data.exc_class, ei->exc->vtable->klass))
+						filtered = TRUE;
+					if (ei->caught && !mod->caught)
+						filtered = TRUE;
+					if (!ei->caught && !mod->uncaught)
 						filtered = TRUE;
 				} else if (mod->kind == MOD_KIND_ASSEMBLY_ONLY && ji) {
 					int k;
@@ -2564,12 +2579,6 @@ event_to_string (EventKind event)
 		g_assert_not_reached ();
 	}
 }
-
-typedef struct {
-	/* For EVENT_KIND_EXCEPTION */
-	MonoObject *exc;
-	MonoContext catch_ctx;
-} EventInfo;
 
 /*
  * process_event:
@@ -3933,11 +3942,13 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 
 	ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (throw_ctx), NULL);
 
+	ei.exc = (MonoObject*)exc;
+	ei.caught = catch_ctx != NULL;
+
 	mono_loader_lock ();
-	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, ji, exc, &suspend_policy);
+	events = create_event_list (EVENT_KIND_EXCEPTION, NULL, ji, &ei, &suspend_policy);
 	mono_loader_unlock ();
 
-	ei.exc = (MonoObject*)exc;
 	process_event (EVENT_KIND_EXCEPTION, &ei, 0, throw_ctx, events, suspend_policy);
 }
 
@@ -4833,6 +4844,8 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 				if (err)
 					return err;
+				req->modifiers [i].caught = decode_byte (p, &p, end);
+				req->modifiers [i].uncaught = decode_byte (p, &p, end);
 				if (exc_class) {
 					req->modifiers [i].data.exc_class = exc_class;
 
