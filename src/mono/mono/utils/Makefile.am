@@ -42,6 +42,7 @@ libmonoutils_la_SOURCES = \
 	mono-networkinterfaces.h		\
 	mono-proclib.c		\
 	mono-proclib.h		\
+	mono-publib.c		\
 	mono-string.h		\
 	mono-time.c  		\
 	mono-time.h  		\
@@ -68,12 +69,6 @@ libmonoutils_la_SOURCES = \
 	gc_wrapper.h		\
 	mono-error.c	\
 	mono-error-internals.h	\
-	valgrind.h	\
-	memcheck.h
-
-libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
-
-libmonoutilsinclude_HEADERS = \
 	monobitset.h	\
 	mono-codeman.h	\
 	mono-counters.h	\
@@ -87,6 +82,13 @@ libmonoutilsinclude_HEADERS = \
 	mono-path.h	\
 	mono-poll.h	\
 	mono-uri.h	\
-	mono-stdlib.h
+	mono-stdlib.h	\
+	valgrind.h	\
+	memcheck.h
+
+libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
+
+libmonoutilsinclude_HEADERS = \
+	mono-publib.h
 
 EXTRA_DIST = ChangeLog mono-hash.c mono-hash.h mono-ehash.c
