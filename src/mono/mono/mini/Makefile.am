@@ -61,9 +61,9 @@ monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono $(export_ldflags)
 endif
 
 if HOST_WIN32
-libmono_la_LDFLAGS=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
+libmono_2_0_la_LDFLAGS=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
 else
-libmono_la_LDFLAGS=$(monoldflags)
+libmono_2_0_la_LDFLAGS=$(monoldflags) -version-info 1:0:0 -release $(API_VER)
 endif
 
 if JIT_SUPPORTED
@@ -76,7 +76,7 @@ endif
 
 noinst_PROGRAMS = genmdesc
 
-lib_LTLIBRARIES = libmono.la
+lib_LTLIBRARIES = libmono-2.0.la
 noinst_LTLIBRARIES = libmono-static.la
 endif
 
@@ -423,9 +423,9 @@ os_sources = $(darwin_sources) $(posix_sources)
 monobin_platform_ldflags=-framework CoreFoundation
 endif
 
-libmono_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
+libmono_2_0_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
 
-libmono_static_la_SOURCES = $(libmono_la_SOURCES)
+libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
 libmono_static_la_LDFLAGS = -static
 libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
@@ -436,7 +436,7 @@ libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
 libmonoinclude_HEADERS = jit.h
 
-libmono_la_LIBADD = \
+libmono_2_0_la_LIBADD = \
 	$(libs) $(LIBMONO_DTRACE_OBJECT)
 
 basic-simd.exe: basic-simd.cs

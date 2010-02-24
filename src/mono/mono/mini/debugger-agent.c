@@ -548,9 +548,9 @@ static void runtime_initialized (MonoProfiler *prof);
 
 static void runtime_shutdown (MonoProfiler *prof);
 
-static void thread_startup (MonoProfiler *prof, gsize tid);
+static void thread_startup (MonoProfiler *prof, intptr_t tid);
 
-static void thread_end (MonoProfiler *prof, gsize tid);
+static void thread_end (MonoProfiler *prof, intptr_t tid);
 
 static void appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result);
 
@@ -2754,7 +2754,7 @@ runtime_shutdown (MonoProfiler *prof)
 }
 
 static void
-thread_startup (MonoProfiler *prof, gsize tid)
+thread_startup (MonoProfiler *prof, intptr_t tid)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoInternalThread *old_thread;
@@ -2816,7 +2816,7 @@ thread_startup (MonoProfiler *prof, gsize tid)
 }
 
 static void
-thread_end (MonoProfiler *prof, gsize tid)
+thread_end (MonoProfiler *prof, intptr_t tid)
 {
 	MonoInternalThread *thread;
 	DebuggerTlsData *tls = NULL;

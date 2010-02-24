@@ -2370,7 +2370,7 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 }
 
 static void
-mono_thread_start_cb (gsize tid, gpointer stack_start, gpointer func)
+mono_thread_start_cb (intptr_t tid, gpointer stack_start, gpointer func)
 {
 	MonoInternalThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
@@ -2392,7 +2392,7 @@ mono_thread_abort_dummy (MonoObject *obj)
 }
 
 static void
-mono_thread_attach_cb (gsize tid, gpointer stack_start)
+mono_thread_attach_cb (intptr_t tid, gpointer stack_start)
 {
 	MonoInternalThread *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
