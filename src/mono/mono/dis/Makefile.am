@@ -5,7 +5,7 @@ export HOST_CC
 endif
 
 if JIT_SUPPORTED
-runtime_lib=../mini/libmono.la
+runtime_lib=../mini/libmono-$(API_VER).la
 else
 runtime_lib=../interpreter/libmint.la
 endif
