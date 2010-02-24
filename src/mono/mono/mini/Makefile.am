@@ -63,7 +63,7 @@ endif
 if HOST_WIN32
 libmono_2_0_la_LDFLAGS=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
 else
-libmono_2_0_la_LDFLAGS=$(monoldflags) -version-info 1:0:0 -release $(API_VER)
+libmono_2_0_la_LDFLAGS=$(monoldflags) -version-info 1:0:0
 endif
 
 if JIT_SUPPORTED
