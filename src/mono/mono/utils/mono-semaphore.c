@@ -14,7 +14,7 @@
 /* sem_* or semaphore_* functions in use */
 #  ifdef USE_MACH_SEMA
 #    define TIMESPEC mach_timespec_t
-#    define WAIT_BLOCK(a,b) semaphore_timedwait (a, b)
+#    define WAIT_BLOCK(a,b) semaphore_timedwait (*(a), *(b))
 #  else
 #    define TIMESPEC struct timespec
 #    define WAIT_BLOCK(a,b) sem_timedwait (a, b)
