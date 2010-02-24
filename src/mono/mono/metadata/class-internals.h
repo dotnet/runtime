@@ -639,6 +639,20 @@ typedef struct {
 #define mono_class_has_parent(klass,parent) (((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent)))
 
 typedef struct {
+	MonoVTable *default_vtable;
+	MonoVTable *xdomain_vtable;
+	MonoClass *proxy_class;
+	char* proxy_class_name;
+	uint32_t interface_count;
+	MonoClass *interfaces [MONO_ZERO_LEN_ARRAY];
+} MonoRemoteClass;
+
+#define MONO_SIZEOF_REMOTE_CLASS (sizeof (MonoRemoteClass) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
+MonoRemoteClass*
+mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class) MONO_INTERNAL;
+
+typedef struct {
 	gulong new_object_count;
 	gulong initialized_class_count;
 	gulong generic_vtable_count;

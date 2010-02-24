@@ -13,17 +13,6 @@ typedef struct _MonoClassField MonoClassField;
 typedef struct _MonoProperty MonoProperty;
 typedef struct _MonoEvent MonoEvent;
 
-typedef struct {
-	MonoVTable *default_vtable;
-	MonoVTable *xdomain_vtable;
-	MonoClass *proxy_class;
-	char* proxy_class_name;
-	uint32_t interface_count;
-	MonoClass *interfaces [MONO_ZERO_LEN_ARRAY];
-} MonoRemoteClass;
-
-#define MONO_SIZEOF_REMOTE_CLASS (sizeof (MonoRemoteClass) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
-
 MonoClass *
 mono_class_get             (MonoImage *image, uint32_t type_token);
 
