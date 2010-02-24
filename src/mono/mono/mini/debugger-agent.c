@@ -1928,34 +1928,35 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 	DebuggerTlsData *tls = value;
 	gsize tid = thread->tid;
 
-	if (GetCurrentThreadId () != tid) {
-		DEBUG(1, fprintf (log_file, "[%p] Interrupting %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid));
+	if (GetCurrentThreadId () == tid || tls->terminated)
+		return;
 
-		/*
-		 * OSX can (and will) coalesce signals, so sending multiple pthread_kills does not
-		 * guarantee the signal handler will be called that many times.  Instead of tracking
-		 * interrupt_count on osx, we use this as a boolean flag to determine if a interrupt
-		 * has been requested that hasn't been handled yet, otherwise we can have threads
-		 * refuse to die when VM_EXIT is called
-		 */
+	DEBUG(1, fprintf (log_file, "[%p] Interrupting %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid));
+
+	/*
+	 * OSX can (and will) coalesce signals, so sending multiple pthread_kills does not
+	 * guarantee the signal handler will be called that many times.  Instead of tracking
+	 * interrupt_count on osx, we use this as a boolean flag to determine if a interrupt
+	 * has been requested that hasn't been handled yet, otherwise we can have threads
+	 * refuse to die when VM_EXIT is called
+	 */
 #if defined(__APPLE__)
-		if (InterlockedCompareExchange (&tls->interrupt_count, 1, 0) == 1)
-			return;
+	if (InterlockedCompareExchange (&tls->interrupt_count, 1, 0) == 1)
+		return;
 #else
-		/*
-		 * Maybe we could use the normal interrupt infrastructure, but that does a lot
-		 * of things like breaking waits etc. which we don't want.
-		 */
-		InterlockedIncrement (&tls->interrupt_count);
+	/*
+	 * Maybe we could use the normal interrupt infrastructure, but that does a lot
+	 * of things like breaking waits etc. which we don't want.
+	 */
+	InterlockedIncrement (&tls->interrupt_count);
 #endif
 
-		/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
+	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
 #ifdef HOST_WIN32
-		QueueUserAPC (notify_thread_apc, thread->handle, NULL);
+	QueueUserAPC (notify_thread_apc, thread->handle, NULL);
 #else
-		pthread_kill ((pthread_t) tid, mono_thread_get_abort_signal ());
+	pthread_kill ((pthread_t) tid, mono_thread_get_abort_signal ());
 #endif
-	}
 }
 
 static void
