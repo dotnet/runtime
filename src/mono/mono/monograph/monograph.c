@@ -1,6 +1,7 @@
 #include <glib.h>
 #include <string.h>
 #include <math.h>
+#include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/tokentype.h"
