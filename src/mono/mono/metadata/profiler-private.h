@@ -4,6 +4,7 @@
 
 #include <mono/metadata/profiler.h>
 #include "mono/utils/mono-compiler.h"
+#include <glib.h>
 
 extern MonoProfileFlags mono_profiler_events;
 

@@ -12,10 +12,35 @@
 #include "mono/utils/monobitset.h"
 #include "mono/utils/mono-property-hash.h"
 #include "mono/utils/mono-value-hash.h"
+#include <mono/utils/mono-error.h>
 
 #define MONO_SECMAN_FLAG_INIT(x)		(x & 0x2)
 #define MONO_SECMAN_FLAG_GET_VALUE(x)		(x & 0x1)
 #define MONO_SECMAN_FLAG_SET_VALUE(x,y)		do { x = ((y) ? 0x3 : 0x2); } while (0)
+
+#define MONO_PUBLIC_KEY_TOKEN_LENGTH	17
+
+struct _MonoAssemblyName {
+	const char *name;
+	const char *culture;
+	const char *hash_value;
+	const mono_byte* public_key;
+	// string of 16 hex chars + 1 NULL
+	mono_byte public_key_token [MONO_PUBLIC_KEY_TOKEN_LENGTH];
+	uint32_t hash_alg;
+	uint32_t hash_len;
+	uint32_t flags;
+	uint16_t major, minor, build, revision;
+};
+
+struct MonoTypeNameParse {
+	char *name_space;
+	char *name;
+	MonoAssemblyName assembly;
+	GList *modifiers; /* 0 -> byref, -1 -> pointer, > 0 -> array rank */
+	GPtrArray *type_arguments;
+	GList *nested;
+};
 
 struct _MonoAssembly {
 	/* 
@@ -406,6 +431,23 @@ typedef struct {
 
 #define MONO_SIZEOF_METHOD_HEADER (sizeof (struct _MonoMethodHeader) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
+struct _MonoMethodSignature {
+	unsigned int  hasthis : 1;
+	unsigned int  explicit_this   : 1;
+	unsigned int  call_convention : 6;
+	unsigned int  pinvoke   : 1;
+	unsigned int  ref_count : 23;
+	guint16       param_count;
+	gint16        sentinelpos;
+	unsigned int  generic_param_count : 30;
+	unsigned int  is_inflated         : 1;
+	unsigned int  has_type_parameters : 1;
+	MonoType     *ret;
+	MonoType     *params [MONO_ZERO_LEN_ARRAY];
+};
+
+#define MONO_SIZEOF_METHOD_SIGNATURE (sizeof (struct _MonoMethodSignature) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
+
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr) MONO_INTERNAL;
 
@@ -568,6 +610,8 @@ mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
 
 int
 mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open) MONO_INTERNAL;
+
+void            mono_type_get_desc (GString *res, MonoType *type, mono_bool include_namespace);
 
 gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only) MONO_INTERNAL;

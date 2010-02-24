@@ -6,7 +6,8 @@
 #ifndef __MONO_DEBUG_H__
 #define __MONO_DEBUG_H__
 
-#include <glib.h>
+#include <glib.h> /* GHashTable dep below */
+#include <mono/utils/mono-publib.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/appdomain.h>
 
@@ -43,13 +44,13 @@ typedef enum {
 */
 struct _MonoDebugList {
 	MonoDebugList *next;
-	gconstpointer data;
+	const void* data;
 };
 
 struct _MonoSymbolTable {
 	guint64 magic;
-	guint32 version;
-	guint32 total_size;
+	uint32_t version;
+	uint32_t total_size;
 
 	/*
 	 * Corlib and metadata info.
@@ -65,7 +66,7 @@ struct _MonoSymbolTable {
 };
 
 struct _MonoDebugHandle {
-	guint32 index;
+	uint32_t index;
 	char *image_file;
 	MonoImage *image;
 	MonoDebugDataTable *type_table;
@@ -73,30 +74,30 @@ struct _MonoDebugHandle {
 };
 
 struct _MonoDebugMethodJitInfo {
-	const guint8 *code_start;
-	guint32 code_size;
-	guint32 prologue_end;
-	guint32 epilogue_begin;
-	const guint8 *wrapper_addr;
-	guint32 num_line_numbers;
+	const mono_byte *code_start;
+	uint32_t code_size;
+	uint32_t prologue_end;
+	uint32_t epilogue_begin;
+	const mono_byte *wrapper_addr;
+	uint32_t num_line_numbers;
 	MonoDebugLineNumberEntry *line_numbers;
-	guint32 num_params;
+	uint32_t num_params;
 	MonoDebugVarInfo *this_var;
 	MonoDebugVarInfo *params;
-	guint32 num_locals;
+	uint32_t num_locals;
 	MonoDebugVarInfo *locals;
 };
 
 struct _MonoDebugMethodAddressList {
-	guint32 size;
-	guint32 count;
-	guint8 data [MONO_ZERO_LEN_ARRAY];
+	uint32_t size;
+	uint32_t count;
+	mono_byte data [MONO_ZERO_LEN_ARRAY];
 };
 
 struct _MonoDebugSourceLocation {
-	gchar *source_file;
-	guint32 row, column;
-	guint32 il_offset;
+	char *source_file;
+	uint32_t row, column;
+	uint32_t il_offset;
 };
 
 /*
@@ -120,11 +121,11 @@ struct _MonoDebugSourceLocation {
 #define MONO_DEBUG_VAR_ADDRESS_MODE_DEAD		0x30000000
 
 struct _MonoDebugVarInfo {
-	guint32 index;
-	guint32 offset;
-	guint32 size;
-	guint32 begin_scope;
-	guint32 end_scope;
+	uint32_t index;
+	uint32_t offset;
+	uint32_t size;
+	uint32_t begin_scope;
+	uint32_t end_scope;
 	MonoType *type;
 };
 
@@ -135,14 +136,14 @@ struct _MonoDebugVarInfo {
 extern MonoSymbolTable *mono_symbol_table;
 extern MonoDebugFormat mono_debug_format;
 extern GHashTable *mono_debug_handles;
-extern gint32 mono_debug_debugger_version;
-extern gint32 _mono_debug_using_mono_debugger;
+extern int32_t mono_debug_debugger_version;
+extern int32_t _mono_debug_using_mono_debugger;
 
-void mono_debug_list_add (MonoDebugList **list, gconstpointer data);
-void mono_debug_list_remove (MonoDebugList **list, gconstpointer data);
+void mono_debug_list_add (MonoDebugList **list, const void* data);
+void mono_debug_list_remove (MonoDebugList **list, const void* data);
 
 void mono_debug_init (MonoDebugFormat format);
-void mono_debug_open_image_from_memory (MonoImage *image, const guint8 *raw_contents, int size);
+void mono_debug_open_image_from_memory (MonoImage *image, const mono_byte *raw_contents, int size);
 void mono_debug_cleanup (void);
 
 void mono_debug_close_image (MonoImage *image);
@@ -150,7 +151,7 @@ void mono_debug_close_image (MonoImage *image);
 void mono_debug_domain_unload (MonoDomain *domain);
 void mono_debug_domain_create (MonoDomain *domain);
 
-gboolean mono_debug_using_mono_debugger (void);
+mono_bool mono_debug_using_mono_debugger (void);
 
 MonoDebugMethodAddress *
 mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain);
@@ -169,7 +170,7 @@ mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit);
 
 
 void
-mono_debug_add_delegate_trampoline (gpointer code, int size);
+mono_debug_add_delegate_trampoline (void* code, int size);
 
 int
 mono_debug_lookup_locals (MonoMethod *method, char ***names, int **indexes);
@@ -179,16 +180,16 @@ mono_debug_lookup_locals (MonoMethod *method, char ***names, int **indexes);
  */
 
 MonoDebugSourceLocation *
-mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDomain *domain);
+mono_debug_lookup_source_location (MonoMethod *method, uint32_t address, MonoDomain *domain);
 
-gint32
-mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint32 native_offset);
+int32_t
+mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, uint32_t native_offset);
 
 void
 mono_debug_free_source_location (MonoDebugSourceLocation *location);
 
-gchar *
-mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDomain *domain);
+char *
+mono_debug_print_stack_frame (MonoMethod *method, uint32_t native_offset, MonoDomain *domain);
 
 /*
  * Mono Debugger support functions
@@ -197,9 +198,9 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
  */
 
 int             mono_debugger_method_has_breakpoint       (MonoMethod *method);
-int             mono_debugger_insert_breakpoint           (const gchar *method_name, gboolean include_namespace);
+int             mono_debugger_insert_breakpoint           (const char *method_name, mono_bool include_namespace);
 
-void mono_set_is_debugger_attached (gboolean attached);
-gboolean mono_is_debugger_attached (void);
+void mono_set_is_debugger_attached (mono_bool attached);
+mono_bool mono_is_debugger_attached (void);
 
 #endif /* __MONO_DEBUG_H__ */

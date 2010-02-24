@@ -5,6 +5,7 @@
 #define __MONO_METADATA_DOMAIN_INTERNALS_H__
 
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/mempool.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-hash.h>
@@ -477,9 +478,6 @@ mono_runtime_get_no_exec (void) MONO_INTERNAL;
 
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname) MONO_INTERNAL;
-
-void
-mono_assembly_name_free (MonoAssemblyName *aname) MONO_INTERNAL;
 
 MonoImage *mono_assembly_open_from_bundle (const char *filename,
 					   MonoImageOpenStatus *status,

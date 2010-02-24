@@ -1,7 +1,9 @@
 #ifndef _MONO_MEMPOOL_H_
 #define _MONO_MEMPOOL_H_
 
-G_BEGIN_DECLS
+#include <mono/utils/mono-publib.h>
+
+MONO_BEGIN_DECLS
 
 typedef struct _MonoMemPool MonoMemPool;
 
@@ -23,25 +25,21 @@ mono_mempool_empty         (MonoMemPool *pool);
 void
 mono_mempool_stats         (MonoMemPool *pool);
 
-gpointer
-mono_mempool_alloc         (MonoMemPool *pool, 
-			    guint        size);
+void*
+mono_mempool_alloc         (MonoMemPool *pool, unsigned int size);
 
-gpointer
-mono_mempool_alloc0        (MonoMemPool *pool, 
-			    guint        size);
+void*
+mono_mempool_alloc0        (MonoMemPool *pool, unsigned int size);
 
-gboolean
-mono_mempool_contains_addr (MonoMemPool *pool,
-			    gpointer addr);
+mono_bool
+mono_mempool_contains_addr (MonoMemPool *pool, void* addr);
 
 char*
-mono_mempool_strdup        (MonoMemPool *pool,
-							const char *s);
+mono_mempool_strdup        (MonoMemPool *pool, const char *s);
 
-guint32
+uint32_t
 mono_mempool_get_allocated (MonoMemPool *pool);
 
-G_END_DECLS
+MONO_END_DECLS
 
 #endif

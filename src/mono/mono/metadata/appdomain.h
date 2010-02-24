@@ -10,22 +10,21 @@
 #ifndef _MONO_METADATA_APPDOMAIN_H_
 #define _MONO_METADATA_APPDOMAIN_H_
 
-#include <glib.h>
+#include <mono/utils/mono-publib.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
-#include <mono/metadata/mempool.h>
 
-G_BEGIN_DECLS
+MONO_BEGIN_DECLS
 
-typedef void (*MonoThreadStartCB) (gsize tid, gpointer stack_start,
-				   gpointer func);
-typedef void (*MonoThreadAttachCB) (gsize tid, gpointer stack_start);
+typedef void (*MonoThreadStartCB) (intptr_t tid, void* stack_start,
+				   void* func);
+typedef void (*MonoThreadAttachCB) (intptr_t tid, void* stack_start);
 
 typedef struct _MonoAppDomain MonoAppDomain;
 typedef struct _MonoJitInfo MonoJitInfo;
 
-typedef void (*MonoDomainFunc) (MonoDomain *domain, gpointer user_data);
+typedef void (*MonoDomainFunc) (MonoDomain *domain, void* user_data);
 
 MonoDomain*
 mono_init                  (const char *filename);
@@ -55,7 +54,7 @@ mono_runtime_quit (void);
 void
 mono_runtime_set_shutting_down (void);
 
-gboolean
+mono_bool
 mono_runtime_is_shutting_down (void);
 
 const char*
@@ -71,13 +70,13 @@ MonoDomain *
 mono_domain_get            (void);
 
 MonoDomain *
-mono_domain_get_by_id      (gint32 domainid);
+mono_domain_get_by_id      (int32_t domainid);
 
-gint32
+int32_t
 mono_domain_get_id         (MonoDomain *domain);
 
-gboolean
-mono_domain_set            (MonoDomain *domain, gboolean force);
+mono_bool
+mono_domain_set            (MonoDomain *domain, mono_bool force);
 
 void
 mono_domain_set_internal   (MonoDomain *domain);
@@ -88,32 +87,32 @@ mono_domain_unload (MonoDomain *domain);
 void
 mono_domain_try_unload (MonoDomain *domain, MonoObject **exc);
 
-gboolean
+mono_bool
 mono_domain_is_unloading   (MonoDomain *domain);
 
 MonoDomain *
 mono_domain_from_appdomain (MonoAppDomain *appdomain);
 
 void
-mono_domain_foreach        (MonoDomainFunc func, gpointer user_data);
+mono_domain_foreach        (MonoDomainFunc func, void* user_data);
 
 MonoAssembly *
 mono_domain_assembly_open  (MonoDomain *domain, const char *name);
 
-gboolean
-mono_domain_finalize       (MonoDomain *domain, guint32 timeout);
+mono_bool
+mono_domain_finalize       (MonoDomain *domain, uint32_t timeout);
 
 void
-mono_domain_free           (MonoDomain *domain, gboolean force);
+mono_domain_free           (MonoDomain *domain, mono_bool force);
 
-gboolean
+mono_bool
 mono_domain_has_type_resolve (MonoDomain *domain);
 
 MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb);
 
-gboolean
-mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot);
+mono_bool
+mono_domain_owns_vtable_slot (MonoDomain *domain, void* vtable_slot);
 
 void
 mono_context_init 				   (MonoDomain *domain);
@@ -129,7 +128,7 @@ mono_jit_info_table_find   (MonoDomain *domain, char *addr);
 
 /* MonoJitInfo accessors */
 
-gpointer
+void*
 mono_jit_info_get_code_start (MonoJitInfo* ji);
 
 int
@@ -208,11 +207,12 @@ mono_get_exception_class    (void);
 void
 mono_security_enable_core_clr (void);
 
-typedef gboolean (*MonoCoreClrPlatformCB) (const char *image_name);
+typedef mono_bool (*MonoCoreClrPlatformCB) (const char *image_name);
 
 void
 mono_security_set_core_clr_platform_callback (MonoCoreClrPlatformCB callback);
 
-G_END_DECLS
+MONO_END_DECLS
+
 #endif /* _MONO_METADATA_APPDOMAIN_H_ */
 

@@ -3,9 +3,9 @@
 
 #include <mono/metadata/class.h>
 
-G_BEGIN_DECLS
+MONO_BEGIN_DECLS
 
-typedef guchar MonoBoolean;
+typedef mono_byte MonoBoolean;
 
 typedef struct _MonoReflectionMethod MonoReflectionMethod;
 typedef struct _MonoReflectionAssembly MonoReflectionAssembly;
@@ -29,15 +29,15 @@ typedef struct {
 } MonoObject;
 
 #ifdef MONO_BIG_ARRAYS
-typedef guint64 mono_array_size_t;
-typedef gint64 mono_array_lower_bound_t;
+typedef uint64_t mono_array_size_t;
+typedef int64_t mono_array_lower_bound_t;
 #define MONO_ARRAY_MAX_INDEX G_MAXINT64
 #define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
 #else
-typedef guint32 mono_array_size_t;
-typedef gint32 mono_array_lower_bound_t;
-#define MONO_ARRAY_MAX_INDEX ((gint32) 0x7fffffff)
-#define MONO_ARRAY_MAX_SIZE  ((guint32) 0xffffffff)
+typedef uint32_t mono_array_size_t;
+typedef int32_t mono_array_lower_bound_t;
+#define MONO_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
+#define MONO_ARRAY_MAX_SIZE  ((uint32_t) 0xffffffff)
 #endif
 
 typedef struct {
@@ -57,13 +57,13 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	gint32 length;
-	gunichar2 chars [MONO_ZERO_LEN_ARRAY];
+	int32_t length;
+	mono_unichar2 chars [MONO_ZERO_LEN_ARRAY];
 } MonoString;
 
 typedef MonoObject* (*MonoInvokeFunc)	     (MonoMethod *method, void *obj, void **params, MonoObject **exc);
-typedef gpointer    (*MonoCompileFunc)	     (MonoMethod *method);
-typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
+typedef void*    (*MonoCompileFunc)	     (MonoMethod *method);
+typedef void	    (*MonoMainThreadFunc)    (void* user_data);
 
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
 #define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
@@ -79,7 +79,7 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
     } while (0)
 
 #define mono_array_length(array) ((array)->max_length)
-#define mono_array_addr(array,type,index) ((type*)(gpointer) mono_array_addr_with_size (array, sizeof (type), index))
+#define mono_array_addr(array,type,index) ((type*)(void*) mono_array_addr_with_size (array, sizeof (type), index))
 #define mono_array_addr_with_size(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
 #define mono_array_get(array,type,index) ( *(type*)mono_array_addr ((array), type, (index)) ) 
 #define mono_array_set(array,type,index,value)	\
@@ -89,18 +89,18 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 	} while (0)
 #define mono_array_setref(array,index,value)	\
 	do {	\
-		gpointer *__p = (gpointer *) mono_array_addr ((array), gpointer, (index));	\
+		void **__p = (void **) mono_array_addr ((array), void*, (index));	\
 		mono_gc_wbarrier_set_arrayref ((array), __p, (MonoObject*)(value));	\
 		/* *__p = (value);*/	\
 	} while (0)
 #define mono_array_memcpy_refs(dest,destidx,src,srcidx,count)	\
 	do {	\
-		gpointer *__p = (gpointer *) mono_array_addr ((dest), gpointer, (destidx));	\
-		gpointer *__s = mono_array_addr ((src), gpointer, (srcidx));	\
+		void **__p = (void **) mono_array_addr ((dest), void*, (destidx));	\
+		void **__s = mono_array_addr ((src), void*, (srcidx));	\
 		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
 	} while (0)
 
-#define mono_string_chars(s) ((gunichar2*)(s)->chars)
+#define mono_string_chars(s) ((mono_unichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
 
 MonoObject *
@@ -117,7 +117,7 @@ MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable);
 
 MonoObject *
-mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token);
+mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, uint32_t token);
 
 MonoArray*
 mono_array_new		    (MonoDomain *domain, MonoClass *eclass, mono_array_size_t n);
@@ -133,13 +133,13 @@ MonoArray*
 mono_array_clone	    (MonoArray *array);
 
 MonoString*
-mono_string_new_utf16	    (MonoDomain *domain, const guint16 *text, gint32 len);
+mono_string_new_utf16	    (MonoDomain *domain, const mono_unichar2 *text, int32_t len);
 
 MonoString*
-mono_string_new_size	    (MonoDomain *domain, gint32 len);
+mono_string_new_size	    (MonoDomain *domain, int32_t len);
 
 MonoString*
-mono_ldstr		    (MonoDomain *domain, MonoImage *image, guint32 str_index);
+mono_ldstr		    (MonoDomain *domain, MonoImage *image, uint32_t str_index);
 
 MonoString*
 mono_string_is_interned	    (MonoString *str);
@@ -154,34 +154,34 @@ MonoString*
 mono_string_new_wrapper	    (const char *text);
 
 MonoString*
-mono_string_new_len	    (MonoDomain *domain, const char *text, guint length);
+mono_string_new_len	    (MonoDomain *domain, const char *text, unsigned int length);
 
 char *
 mono_string_to_utf8	    (MonoString *string_obj);
 
-gunichar2 *
+mono_unichar2 *
 mono_string_to_utf16	    (MonoString *string_obj);
 
 MonoString *
-mono_string_from_utf16	    (gunichar2 *data);
+mono_string_from_utf16	    (mono_unichar2 *data);
 
-gboolean
+mono_bool
 mono_string_equal           (MonoString *s1, MonoString *s2);
 
-guint
+unsigned int
 mono_string_hash            (MonoString *s);
 
 int
 mono_object_hash            (MonoObject* obj);
 
 MonoObject *
-mono_value_box		    (MonoDomain *domain, MonoClass *klass, gpointer val);
+mono_value_box		    (MonoDomain *domain, MonoClass *klass, void* val);
 
 void
-mono_value_copy             (gpointer dest, gpointer src, MonoClass *klass);
+mono_value_copy             (void* dest, void* src, MonoClass *klass);
 
 void
-mono_value_copy_array       (MonoArray *dest, int dest_idx, gpointer src, int count);
+mono_value_copy_array       (MonoArray *dest, int dest_idx, void* src, int count);
 
 MonoDomain*
 mono_object_get_domain      (MonoObject *obj);
@@ -189,7 +189,7 @@ mono_object_get_domain      (MonoObject *obj);
 MonoClass*
 mono_object_get_class       (MonoObject *obj);
 
-gpointer
+void*
 mono_object_unbox	    (MonoObject *obj);
 
 MonoObject *
@@ -204,13 +204,13 @@ mono_object_isinst_mbyref   (MonoObject *obj, MonoClass *klass);
 MonoObject *
 mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass);
 
-gboolean 
-mono_monitor_try_enter       (MonoObject *obj, guint32 ms);
+mono_bool 
+mono_monitor_try_enter       (MonoObject *obj, uint32_t ms);
 
-gboolean
+mono_bool
 mono_monitor_enter           (MonoObject *obj);
 
-guint
+unsigned int
 mono_object_get_size         (MonoObject *o);
 
 void 
@@ -243,7 +243,7 @@ MonoObject*
 mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 			     MonoObject **exc);
 
-gpointer
+void*
 mono_method_get_unmanaged_thunk (MonoMethod *method);
 
 MonoArray*
@@ -252,7 +252,7 @@ mono_runtime_get_main_args  (void);
 void
 mono_runtime_exec_managed_code (MonoDomain *domain,
 				MonoMainThreadFunc main_func,
-				gpointer main_args);
+				void* main_args);
 
 int
 mono_runtime_run_main	    (MonoMethod *method, int argc, char* argv[], 
@@ -262,14 +262,14 @@ int
 mono_runtime_exec_main	    (MonoMethod *method, MonoArray *args,
 			     MonoObject **exc);
 
-gpointer
-mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer *res);
+void*
+mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res);
 
 MonoObject *
 mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field);
 
 void
-mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer val);
+mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val);
 
 void
 mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg);
@@ -280,7 +280,7 @@ mono_unhandled_exception    (MonoObject *exc);
 void
 mono_print_unhandled_exception (MonoObject *exc);
 
-gpointer 
+void* 
 mono_compile_method	   (MonoMethod *method);
 
 MonoRemoteClass*
@@ -322,21 +322,21 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * mono_gchandle_get_target () can be used to get the object referenced by both kinds
  * of handle: for a weakref handle, if an object has been collected, it will return NULL.
  */
-guint32      mono_gchandle_new         (MonoObject *obj, gboolean pinned);
-guint32      mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection);
-MonoObject*  mono_gchandle_get_target  (guint32 gchandle);
-void         mono_gchandle_free        (guint32 gchandle);
+uint32_t      mono_gchandle_new         (MonoObject *obj, mono_bool pinned);
+uint32_t      mono_gchandle_new_weakref (MonoObject *obj, mono_bool track_resurrection);
+MonoObject*  mono_gchandle_get_target  (uint32_t gchandle);
+void         mono_gchandle_free        (uint32_t gchandle);
 
 /* GC write barriers support */
-void mono_gc_wbarrier_set_field     (MonoObject *obj, gpointer field_ptr, MonoObject* value);
-void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
-void mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count);
-void mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value);
-void mono_gc_wbarrier_generic_nostore (gpointer ptr);
-void mono_gc_wbarrier_value_copy    (gpointer dest, gpointer src, int count, MonoClass *klass);
+void mono_gc_wbarrier_set_field     (MonoObject *obj, void* field_ptr, MonoObject* value);
+void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, void* slot_ptr, MonoObject* value);
+void mono_gc_wbarrier_arrayref_copy (void* dest_ptr, void* src_ptr, int count);
+void mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value);
+void mono_gc_wbarrier_generic_nostore (void* ptr);
+void mono_gc_wbarrier_value_copy    (void* dest, void* src, int count, MonoClass *klass);
 void mono_gc_wbarrier_object_copy   (MonoObject* obj, MonoObject *src);
 
-G_END_DECLS
+MONO_END_DECLS
 
 #endif
 

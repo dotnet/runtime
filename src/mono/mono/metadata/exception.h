@@ -7,7 +7,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/image.h>
 
-G_BEGIN_DECLS
+MONO_BEGIN_DECLS
 
 extern MonoException *
 mono_exception_from_name               (MonoImage *image, 
@@ -15,7 +15,7 @@ mono_exception_from_name               (MonoImage *image,
 					const char *name);
 
 MonoException *
-mono_exception_from_token              (MonoImage *image, guint32 token);
+mono_exception_from_token              (MonoImage *image, uint32_t token);
 
 MonoException *
 mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
@@ -26,8 +26,8 @@ mono_exception_from_name_msg	       (MonoImage *image, const char *name_space,
 					const char *name, const char *msg);
 
 MonoException *
-mono_exception_from_token_two_strings (MonoImage *image, guint32 token,
-									   MonoString *a1, MonoString *a2);
+mono_exception_from_token_two_strings (MonoImage *image, uint32_t token,
+						   MonoString *a1, MonoString *a2);
 
 extern MonoException *
 mono_exception_from_name_domain        (MonoDomain *domain, MonoImage *image, 
@@ -110,7 +110,7 @@ MonoException *
 mono_get_exception_file_not_found2       (const char *msg, MonoString *fname);
 
 MonoException *
-mono_get_exception_type_initialization (const gchar *type_name, MonoException *inner);
+mono_get_exception_type_initialization (const char *type_name, MonoException *inner);
 
 MonoException *
 mono_get_exception_synchronization_lock (const char *msg);
@@ -142,6 +142,6 @@ mono_get_exception_method_access (void);
 MonoException *
 mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions);
 
-G_END_DECLS
+MONO_END_DECLS
 
 #endif /* _MONO_METADATA_EXCEPTION_H_ */

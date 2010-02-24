@@ -108,6 +108,7 @@ libmonoruntime_la_SOURCES = \
 	marshal.c		\
 	marshal.h		\
 	mempool.c		\
+	mempool.h		\
 	mempool-internals.h	\
 	metadata.c		\
 	metadata-verify.c	\
@@ -188,7 +189,6 @@ libmonoruntimeinclude_HEADERS = \
 	exception.h		\
 	image.h			\
 	loader.h		\
-	mempool.h		\
 	metadata.h		\
 	mono-config.h		\
 	mono-debug.h		\

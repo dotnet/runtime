@@ -13,6 +13,7 @@
 
 #include <mono/metadata/exception.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <string.h>
 

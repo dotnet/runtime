@@ -4,7 +4,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 
-G_BEGIN_DECLS
+MONO_BEGIN_DECLS
 
 #define MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH 128
 
@@ -108,23 +108,23 @@ typedef void (*MonoProfileAssemblyResult) (MonoProfiler *prof, MonoAssembly *ass
 
 typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *parent, MonoMethod *child, int *ok);
 
-typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, gsize tid);
+typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, intptr_t tid);
 typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
 typedef void (*MonoProfileStringAllocFunc) (MonoProfiler *prof, MonoDomain *domain, MonoString *str);
-typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, guchar *ip, void *context);
-typedef void (*MonoProfileStatCallChainFunc) (MonoProfiler *prof, int call_chain_depth, guchar **ip, void *context);
+typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, mono_byte *ip, void *context);
+typedef void (*MonoProfileStatCallChainFunc) (MonoProfiler *prof, int call_chain_depth, mono_byte **ip, void *context);
 typedef void (*MonoProfileGCFunc)         (MonoProfiler *prof, MonoGCEvent event, int generation);
-typedef void (*MonoProfileGCResizeFunc)   (MonoProfiler *prof, gint64 new_size);
+typedef void (*MonoProfileGCResizeFunc)   (MonoProfiler *prof, int64_t new_size);
 
 typedef void (*MonoProfileIomapFunc) (MonoProfiler *prof, const char *report, const char *pathname, const char *new_pathname);
 
-typedef gboolean (*MonoProfileCoverageFilterFunc)   (MonoProfiler *prof, MonoMethod *method);
+typedef mono_bool (*MonoProfileCoverageFilterFunc)   (MonoProfiler *prof, MonoMethod *method);
 
 typedef void (*MonoProfileCoverageFunc)   (MonoProfiler *prof, const MonoProfileCoverageEntry *entry);
 
-typedef void (*MonoProfilerCodeChunkNew) (MonoProfiler *prof, gpointer chunk, int size);
-typedef void (*MonoProfilerCodeChunkDestroy) (MonoProfiler *prof, gpointer chunk);
-typedef void (*MonoProfilerCodeBufferNew) (MonoProfiler *prof, gpointer buffer, int size, MonoProfilerCodeBufferType type, void *data);
+typedef void (*MonoProfilerCodeChunkNew) (MonoProfiler *prof, void* chunk, int size);
+typedef void (*MonoProfilerCodeChunkDestroy) (MonoProfiler *prof, void* chunk);
+typedef void (*MonoProfilerCodeBufferNew) (MonoProfiler *prof, void* buffer, int size, MonoProfilerCodeBufferType type, void *data);
 
 /*
  * Function the profiler may call.
@@ -169,7 +169,7 @@ void mono_profiler_install_iomap (MonoProfileIomapFunc callback);
 
 void mono_profiler_load             (const char *desc);
 
-G_END_DECLS
+MONO_END_DECLS
 
 #endif /* __MONO_PROFILER_H__ */
 

@@ -4,6 +4,7 @@
 #include <glib.h>
 
 #include "mono/utils/mono-compiler.h"
+#include "mono/metadata/mempool.h"
 
 static inline GList*
 g_list_prepend_mempool (MonoMemPool *mp, GList *list, gpointer data)

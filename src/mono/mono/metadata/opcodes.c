@@ -37,7 +37,7 @@ static const struct msgstr_t {
 #include "mono/cil/opcode.def"
 #undef OPDEF
 };
-static const gint16 opidx [] = {
+static const int16_t opidx [] = {
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) [MONO_ ## a] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "mono/cil/opcode.def"
 #undef OPDEF
@@ -66,10 +66,10 @@ mono_opcode_name (int opcode)
 #endif
 
 MonoOpcodeEnum
-mono_opcode_value (const guint8 **ip, const guint8 *end)
+mono_opcode_value (const mono_byte **ip, const mono_byte *end)
 {
 	MonoOpcodeEnum res;
-	const guint8 *p = *ip;
+	const mono_byte *p = *ip;
 
 	if (p >= end)
 		return -1;

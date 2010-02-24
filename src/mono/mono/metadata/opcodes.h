@@ -10,9 +10,9 @@
  * (C) 2002 Ximian, Inc.
  */
 
-#include <glib.h>
+#include <mono/utils/mono-publib.h>
 
-G_BEGIN_DECLS
+MONO_BEGIN_DECLS
 
 #define MONO_CUSTOM_PREFIX 0xf0
 
@@ -68,8 +68,9 @@ const char*
 mono_opcode_name (int opcode);
 
 MonoOpcodeEnum
-mono_opcode_value (const guint8 **ip, const guint8 *end);
+mono_opcode_value (const mono_byte **ip, const mono_byte *end);
 
-G_END_DECLS
+MONO_END_DECLS
 
 #endif /* __MONO_METADATA_OPCODES_H__ */
+

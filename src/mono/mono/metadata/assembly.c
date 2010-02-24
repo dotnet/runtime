@@ -1886,6 +1886,57 @@ mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
 	return mono_assembly_name_parse_full (name, aname, FALSE, NULL, NULL);
 }
 
+/**
+ * mono_assembly_name_new:
+ * @name: name to parse
+ *
+ * Allocate a new MonoAssemblyName and fill its values from the
+ * passed @name.
+ *
+ * Returns: a newly allocated structure or NULL if there was any failure.
+ */
+MonoAssemblyName*
+mono_assembly_name_new (const char *name)
+{
+	MonoAssemblyName *aname = g_new0 (MonoAssemblyName, 1);
+	if (mono_assembly_name_parse (name, aname))
+		return aname;
+	g_free (aname);
+	return NULL;
+}
+
+const char*
+mono_assembly_name_get_name (MonoAssemblyName *aname)
+{
+	return aname->name;
+}
+
+const char*
+mono_assembly_name_get_culture (MonoAssemblyName *aname)
+{
+	return aname->culture;
+}
+
+mono_byte*
+mono_assembly_name_get_pubkeytoken (MonoAssemblyName *aname)
+{
+	if (aname->public_key_token [0])
+		return aname->public_key_token;
+	return NULL;
+}
+
+uint16_t
+mono_assembly_name_get_version (MonoAssemblyName *aname, uint16_t *minor, uint16_t *build, uint16_t *revision)
+{
+	if (minor)
+		*minor = aname->minor;
+	if (build)
+		*build = aname->build;
+	if (revision)
+		*revision = aname->revision;
+	return aname->major;
+}
+
 static MonoAssembly*
 probe_for_partial_name (const char *basepath, const char *fullname, MonoAssemblyName *aname, MonoImageOpenStatus *status)
 {

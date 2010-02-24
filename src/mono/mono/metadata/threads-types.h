@@ -16,6 +16,7 @@
 
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/mono-membar.h"
 
 /* This is a copy of System.Threading.ThreadState */
 typedef enum {

@@ -3,23 +3,14 @@
 
 #include <mono/metadata/object.h>
 
-G_BEGIN_DECLS
+MONO_BEGIN_DECLS
 
 typedef struct MonoTypeNameParse MonoTypeNameParse;
 
-struct MonoTypeNameParse {
-	char *name_space;
-	char *name;
-	MonoAssemblyName assembly;
-	GList *modifiers; /* 0 -> byref, -1 -> pointer, > 0 -> array rank */
-	GPtrArray *type_arguments;
-	GList *nested;
-};
-
 typedef struct {
 	MonoMethod *ctor;
-	guint32     data_size;
-	const guchar* data;
+	uint32_t     data_size;
+	const mono_byte* data;
 } MonoCustomAttrEntry;
 
 typedef struct {
@@ -39,8 +30,8 @@ typedef struct {
 	char **param_names;
 	MonoMarshalSpec **param_marshall;
 	MonoCustomAttrInfo **param_cattr;
-	guint8** param_defaults;
-	guint32 *param_default_types;
+	uint8_t** param_defaults;
+	uint32_t *param_default_types;
 	char *dllentry, *dll;
 } MonoReflectionMethodAux;
 
@@ -51,10 +42,10 @@ typedef enum {
 } MonoResolveTokenError;
 
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
-MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
+MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, mono_bool ignorecase, mono_bool *type_resolve);
 void          mono_reflection_free_type_info (MonoTypeNameParse *info);
 MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
-guint32       mono_reflection_get_token (MonoObject *obj);
+uint32_t      mono_reflection_get_token (MonoObject *obj);
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
 MonoReflectionModule*   mono_module_get_object   (MonoDomain *domain, MonoImage *image);
@@ -77,15 +68,15 @@ MonoArray*  mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assem
 
 MonoCustomAttrInfo* mono_reflection_get_custom_attrs_info (MonoObject *obj);
 MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
-MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, guint32 idx);
+MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, uint32_t idx);
 MonoCustomAttrInfo* mono_custom_attrs_from_method   (MonoMethod *method);
 MonoCustomAttrInfo* mono_custom_attrs_from_class    (MonoClass *klass);
 MonoCustomAttrInfo* mono_custom_attrs_from_assembly (MonoAssembly *assembly);
 MonoCustomAttrInfo* mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property);
 MonoCustomAttrInfo* mono_custom_attrs_from_event    (MonoClass *klass, MonoEvent *event);
 MonoCustomAttrInfo* mono_custom_attrs_from_field    (MonoClass *klass, MonoClassField *field);
-MonoCustomAttrInfo* mono_custom_attrs_from_param    (MonoMethod *method, guint32 param);
-gboolean            mono_custom_attrs_has_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);
+MonoCustomAttrInfo* mono_custom_attrs_from_param    (MonoMethod *method, uint32_t param);
+mono_bool           mono_custom_attrs_has_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);
 MonoObject*         mono_custom_attrs_get_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);
 void                mono_custom_attrs_free          (MonoCustomAttrInfo *ainfo);
 
@@ -114,16 +105,16 @@ enum {
 	MONO_DECLSEC_FLAG_DEMAND_CHOICE			= 0x00020000
 };
 
-guint32 mono_declsec_flags_from_method (MonoMethod *method);
-guint32 mono_declsec_flags_from_class (MonoClass *klass);
-guint32 mono_declsec_flags_from_assembly (MonoAssembly *assembly);
+uint32_t mono_declsec_flags_from_method (MonoMethod *method);
+uint32_t mono_declsec_flags_from_class (MonoClass *klass);
+uint32_t mono_declsec_flags_from_assembly (MonoAssembly *assembly);
 
 /* this structure MUST be kept in synch with RuntimeDeclSecurityEntry
  * located in /mcs/class/corlib/System.Security/SecurityFrame.cs */
 typedef struct {
 	char *blob;				/* pointer to metadata blob */
-	guint32 size;				/* size of the metadata blob */
-	guint32 index;
+	uint32_t size;				/* size of the metadata blob */
+	uint32_t index;
 } MonoDeclSecurityEntry;
 
 typedef struct {
@@ -137,10 +128,10 @@ MonoBoolean mono_declsec_get_linkdemands (MonoMethod *callee, MonoDeclSecurityAc
 MonoBoolean mono_declsec_get_inheritdemands_class (MonoClass *klass, MonoDeclSecurityActions* demands);
 MonoBoolean mono_declsec_get_inheritdemands_method (MonoMethod *callee, MonoDeclSecurityActions* demands);
 
-MonoBoolean mono_declsec_get_method_action (MonoMethod *method, guint32 action, MonoDeclSecurityEntry *entry);
-MonoBoolean mono_declsec_get_class_action (MonoClass *klass, guint32 action, MonoDeclSecurityEntry *entry);
-MonoBoolean mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDeclSecurityEntry *entry);
+MonoBoolean mono_declsec_get_method_action (MonoMethod *method, uint32_t action, MonoDeclSecurityEntry *entry);
+MonoBoolean mono_declsec_get_class_action (MonoClass *klass, uint32_t action, MonoDeclSecurityEntry *entry);
+MonoBoolean mono_declsec_get_assembly_action (MonoAssembly *assembly, uint32_t action, MonoDeclSecurityEntry *entry);
 
-G_END_DECLS
+MONO_END_DECLS
 
 #endif /* __METADATA_REFLECTION_H__ */
