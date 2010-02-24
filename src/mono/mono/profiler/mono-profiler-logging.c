@@ -9,6 +9,7 @@
 #include <config.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/class.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>

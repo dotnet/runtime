@@ -10,6 +10,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <string.h>
+#include <glib.h>
 
 /*
  * Coverage profiler. Compile with:

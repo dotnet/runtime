@@ -19,6 +19,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <glib.h>
 #include <sys/stat.h>
 
 struct _MonoProfiler {
