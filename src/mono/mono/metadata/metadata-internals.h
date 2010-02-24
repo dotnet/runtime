@@ -14,6 +14,25 @@
 #include "mono/utils/mono-value-hash.h"
 #include <mono/utils/mono-error.h>
 
+struct _MonoType {
+	union {
+		MonoClass *klass; /* for VALUETYPE and CLASS */
+		MonoType *type;   /* for PTR */
+		MonoArrayType *array; /* for ARRAY */
+		MonoMethodSignature *method;
+		MonoGenericParam *generic_param; /* for VAR and MVAR */
+		MonoGenericClass *generic_class; /* for GENERICINST */
+	} data;
+	unsigned int attrs    : 16; /* param attributes or field flags */
+	MonoTypeEnum type     : 8;
+	unsigned int num_mods : 6;  /* max 64 modifiers follow at the end */
+	unsigned int byref    : 1;
+	unsigned int pinned   : 1;  /* valid when included in a local var signature */
+	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
+};
+
+#define MONO_SIZEOF_TYPE (offsetof (struct _MonoType, modifiers))
+
 #define MONO_SECMAN_FLAG_INIT(x)		(x & 0x2)
 #define MONO_SECMAN_FLAG_GET_VALUE(x)		(x & 0x1)
 #define MONO_SECMAN_FLAG_SET_VALUE(x,y)		do { x = ((y) ? 0x3 : 0x2); } while (0)

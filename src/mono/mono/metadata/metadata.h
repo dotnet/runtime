@@ -329,28 +329,6 @@ struct _MonoArrayType {
 	int *lobounds;
 };
 
-/* This structure is internal to the runtime: use the mono_type*
- * accessors below, because it will soon ago away from the public header file.
- */
-struct _MonoType {
-	union {
-		MonoClass *klass; /* for VALUETYPE and CLASS */
-		MonoType *type;   /* for PTR */
-		MonoArrayType *array; /* for ARRAY */
-		MonoMethodSignature *method;
-		MonoGenericParam *generic_param; /* for VAR and MVAR */
-		MonoGenericClass *generic_class; /* for GENERICINST */
-	} data;
-	unsigned int attrs    : 16; /* param attributes or field flags */
-	MonoTypeEnum type     : 8;
-	unsigned int num_mods : 6;  /* max 64 modifiers follow at the end */
-	unsigned int byref    : 1;
-	unsigned int pinned   : 1;  /* valid when included in a local var signature */
-	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
-};
-
-#define MONO_SIZEOF_TYPE (offsetof (struct _MonoType, modifiers))
-
 typedef struct _MonoMethodHeader MonoMethodHeader;
 
 typedef enum {
