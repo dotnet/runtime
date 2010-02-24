@@ -122,17 +122,15 @@ HPPA_SRC = \
 	hppa_atomic.S
 
 if HOST_WIN32
-libwapi_la_SOURCES = $(WINDOWS_SRC)
-libwapiinclude_HEADERS = $(WINDOWS_H)
+libwapi_la_SOURCES = $(WINDOWS_SRC) $(WINDOWS_H)
 else
 if HPPA
 libwapi_la_SOURCES = $(OTHER_SRC) $(HPPA_SRC)
 # to enable pick up of config.h
 libwapi_la_CCASFLAGS = -I$(top_builddir)
 else
-libwapi_la_SOURCES = $(OTHER_SRC)
+libwapi_la_SOURCES = $(OTHER_SRC) $(OTHER_H)
 endif
-libwapiinclude_HEADERS = $(OTHER_H)
 endif
 if PLATFORM_DARWIN
 libwapi_la_LIBADD = -lproc
