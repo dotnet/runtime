@@ -9,7 +9,7 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono,2.7)
 AM_MAINTAINER_MODE
 
-API_VER=1.0
+API_VER=2.0
 AC_SUBST(API_VER)
 
 AC_PROG_LN_S
@@ -2667,7 +2667,7 @@ data/net_2_0/Makefile
 data/net_4_0/Makefile
 data/net_2_0/Browsers/Makefile
 data/mint.pc
-data/mono.pc
+data/mono-2.pc
 data/mono-cairo.pc
 data/mono-nunit.pc
 data/mono-options.pc

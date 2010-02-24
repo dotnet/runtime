@@ -1,3 +1,9 @@
+
+Wed Feb 24 15:47:16 CET 2010 Paolo Molaro <lupus@ximian.com>
+
+	* confiure.in, data/mono-2.pc.in, data/Makefile.am,
+	samples/embed/*: increase the API version.
+
 2010-02-18  Marek Habersack  <mhabersack@novell.com>
 
 	* scripts/mono-configuration-crypto.in: added
