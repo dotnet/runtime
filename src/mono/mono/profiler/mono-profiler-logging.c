@@ -4463,7 +4463,7 @@ method_free (MonoProfiler *profiler, MonoMethod *method) {
 }
 
 static void
-thread_start (MonoProfiler *profiler, gsize tid) {
+thread_start (MonoProfiler *profiler, intptr_t tid) {
 	ProfilerPerThreadData *data;
 	ProfilerEventData *event;
 	GET_PROFILER_THREAD_DATA (data);
@@ -4472,7 +4472,7 @@ thread_start (MonoProfiler *profiler, gsize tid) {
 	COMMIT_RESERVED_EVENTS (data);
 }
 static void
-thread_end (MonoProfiler *profiler, gsize tid) {
+thread_end (MonoProfiler *profiler, intptr_t tid) {
 	ProfilerPerThreadData *data;
 	ProfilerEventData *event;
 	GET_PROFILER_THREAD_DATA (data);
