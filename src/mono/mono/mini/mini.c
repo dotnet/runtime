@@ -2469,6 +2469,12 @@ mono_get_domain_intrinsic (MonoCompile* cfg)
 	return mono_create_tls_get (cfg, mono_domain_get_tls_offset ());
 }
 
+MonoInst*
+mono_get_thread_intrinsic (MonoCompile* cfg)
+{
+	return mono_create_tls_get (cfg, mono_thread_get_tls_offset ());
+}
+
 void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
 {
