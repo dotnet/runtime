@@ -8027,8 +8027,53 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			is_special_static = mono_class_field_is_special_static (field);
 
 			/* Generate IR to compute the field address */
+			if (is_special_static && ((gsize)addr & 0x80000000) == 0 && mono_get_thread_intrinsic (cfg) && !(cfg->opt & MONO_OPT_SHARED) && !context_used) {
+				/*
+				 * Fast access to TLS data
+				 * Inline version of get_thread_static_data () in
+				 * threads.c.
+				 */
+				guint32 offset;
+				int idx, static_data_reg, array_reg, dreg;
+				MonoInst *thread_ins;
 
-			if ((cfg->opt & MONO_OPT_SHARED) ||
+				// offset &= 0x7fffffff;
+				// idx = (offset >> 24) - 1;
+				//	return ((char*) thread->static_data [idx]) + (offset & 0xffffff);
+
+				thread_ins = mono_get_thread_intrinsic (cfg);
+				MONO_ADD_INS (cfg->cbb, thread_ins);
+				static_data_reg = alloc_ireg (cfg);
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, G_STRUCT_OFFSET (MonoInternalThread, static_data));
+
+				if (cfg->compile_aot) {
+					int offset_reg, offset2_reg, idx_reg;
+
+					/* For TLS variables, this will return the TLS offset */
+					EMIT_NEW_SFLDACONST (cfg, ins, field);
+					offset_reg = ins->dreg;
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset_reg, offset_reg, 0x7fffffff);
+					idx_reg = alloc_ireg (cfg);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, idx_reg, offset_reg, 24);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, idx_reg, idx_reg, 1);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, idx_reg, idx_reg, sizeof (gpointer) == 8 ? 3 : 2);
+					MONO_EMIT_NEW_BIALU (cfg, OP_PADD, static_data_reg, static_data_reg, idx_reg);
+					array_reg = alloc_ireg (cfg);
+					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, 0);
+					offset2_reg = alloc_ireg (cfg);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset2_reg, offset_reg, 0xffffff);
+					dreg = alloc_ireg (cfg);
+					EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, array_reg, offset2_reg);
+				} else {
+					offset = (gsize)addr & 0x7fffffff;
+					idx = (offset >> 24) - 1;
+
+					array_reg = alloc_ireg (cfg);
+					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, idx * sizeof (gpointer));
+					dreg = alloc_ireg (cfg);
+					EMIT_NEW_BIALU_IMM (cfg, ins, OP_ADD_IMM, dreg, array_reg, (offset & 0xffffff));
+				}
+			} else if ((cfg->opt & MONO_OPT_SHARED) ||
 					(cfg->compile_aot && is_special_static) ||
 					(context_used && is_special_static)) {
 				MonoInst *iargs [2];
@@ -8127,38 +8172,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					else
 						EMIT_NEW_PCONST (cfg, ins, addr);
 				} else {
-					/* 
-					 * insert call to mono_threads_get_static_data (GPOINTER_TO_UINT (addr)) 
-					 * This could be later optimized to do just a couple of
-					 * memory dereferences with constant offsets.
-					 */
-					if (!cfg->compile_aot && ((gsize)addr & 0x80000000) == 0 && mono_get_thread_intrinsic (cfg)) {
-						/*
-						 * Fast access to TLS data
-						 * Inline version of get_thread_static_data () in
-						 * threads.c.
-						 */
-						guint32 offset;
-						int idx, static_data_reg, array_reg, dreg;
-						MonoInst *thread_ins;
-
-						offset = (gsize)addr & 0x7fffffff;
-						idx = (offset >> 24) - 1;
-
-						//	return ((char*) thread->static_data [idx]) + (offset & 0xffffff);
-						thread_ins = mono_get_thread_intrinsic (cfg);
-						MONO_ADD_INS (cfg->cbb, thread_ins);
-						static_data_reg = alloc_ireg (cfg);
-						MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, G_STRUCT_OFFSET (MonoInternalThread, static_data));
-						array_reg = alloc_ireg (cfg);
-						MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, idx * sizeof (gpointer));
-						dreg = alloc_ireg (cfg);
-						EMIT_NEW_BIALU_IMM (cfg, ins, OP_ADD_IMM, dreg, array_reg, (offset & 0xffffff));
-					} else {
-						MonoInst *iargs [1];
-						EMIT_NEW_ICONST (cfg, iargs [0], GPOINTER_TO_UINT (addr));
-						ins = mono_emit_jit_icall (cfg, mono_get_special_static_data, iargs);
-					}
+					MonoInst *iargs [1];
+					EMIT_NEW_ICONST (cfg, iargs [0], GPOINTER_TO_UINT (addr));
+					ins = mono_emit_jit_icall (cfg, mono_get_special_static_data, iargs);
 				}
 			}
 

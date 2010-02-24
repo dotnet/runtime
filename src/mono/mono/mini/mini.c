@@ -2729,6 +2729,17 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_SFLDA: {
 		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
 
+		if (mono_class_field_is_special_static (patch_info->data.field)) {
+			gpointer addr;
+
+			mono_domain_lock (domain);
+			if (domain->special_static_fields)
+				addr = g_hash_table_lookup (domain->special_static_fields, patch_info->data.field);
+			mono_domain_unlock (domain);
+			g_assert (addr);
+			return addr;
+		}
+
 		g_assert (vtable);
 		if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && (method && mono_class_needs_cctor_run (vtable->klass, method)))
 			/* Done by the generated code */
