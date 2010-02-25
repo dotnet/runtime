@@ -4,7 +4,7 @@
 #include <glib.h>
 
 #include "mono-compiler.h"
-#include "mono-logger.h"
+#include "mono-logger-internal.h"
 
 typedef struct {
 	GLogLevelFlags	level;
@@ -206,10 +206,10 @@ mono_trace_set_level_string (const char *value)
 }
 
 void 
-mono_trace_set_mask_string (char *value)
+mono_trace_set_mask_string (const char *value)
 {
 	int i;
-	char *tok;
+	const char *tok;
 	guint32 flags = 0;
 
 	const char *valid_flags[] = {"asm", "type", "dll", "gc", "cfg", "aot", "all", NULL};
@@ -219,26 +219,28 @@ mono_trace_set_mask_string (char *value)
 	if(!value)
 		return;
 
-	tok	= strtok (value, ",");
+	tok = value;
 
-	if(!tok)
-		tok = value;
-
-	while (tok) {
+	while (*tok) {
+		if (*tok == ',') {
+			tok++;
+			continue;
+		}
 		for (i = 0; valid_flags[i]; i++) {
-			if (strcmp (tok, valid_flags[i]) == 0) {
+			int len = strlen (valid_flags[i]);
+			if (strncmp (tok, valid_flags[i], len) == 0 && (tok[len] == 0 || tok[len] == ',')) {
 				flags |= valid_masks[i];
+				tok += len;
 				break;
 			}
 		}
-		if (!valid_flags[i])
+		if (!valid_flags[i]) {
 			g_print("Unknown trace flag: %s\n", tok);
-
-		tok = strtok (NULL, ",");
+			break;
+		}
 	}
 
-	if(flags)
-		mono_trace_set_mask (flags);
+	mono_trace_set_mask (flags);
 }
 
 /*

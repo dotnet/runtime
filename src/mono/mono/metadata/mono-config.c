@@ -17,7 +17,7 @@
 #include "mono/metadata/mono-config.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/object-internals.h"
-#include "mono/utils/mono-logger.h"
+#include "mono/utils/mono-logger-internal.h"
 
 #if defined(TARGET_PS3)
 #define CONFIG_OS "CellOS"

@@ -17,7 +17,7 @@
 #include <mono/metadata/gc-internal.h>
 
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-logger.h>
+#include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/metadata/object.h>

@@ -27,7 +27,7 @@
 #include "marshal.h"
 #include "coree.h"
 #include <mono/io-layer/io-layer.h>
-#include <mono/utils/mono-logger.h>
+#include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-io-portability.h>

@@ -22,6 +22,7 @@ libmonoutils_la_SOURCES = \
 	mono-md5.c		\
 	mono-sha1.c		\
 	mono-logger.c		\
+	mono-logger-internal.h	\
 	mono-codeman.c		\
 	dlmalloc.h      	\
 	dlmalloc.c      	\
@@ -75,7 +76,6 @@ libmonoutils_la_SOURCES = \
 	mono-digest.h	\
 	mono-embed.h	\
 	mono-error.h	\
-	mono-logger.h	\
 	mono-hash.h	\
 	mono-math.h	\
 	mono-membar.h	\
@@ -89,6 +89,7 @@ libmonoutils_la_SOURCES = \
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
 libmonoutilsinclude_HEADERS = \
+	mono-logger.h	\
 	mono-publib.h
 
 EXTRA_DIST = ChangeLog mono-hash.c mono-hash.h mono-ehash.c
