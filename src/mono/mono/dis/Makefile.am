@@ -36,6 +36,10 @@ monodis_LDADD = 			\
 	$(LLVM_LIBS)			\
 	$(GLIB_LIBS) 
 
+if PLATFORM_DARWIN
+monodis_LDFLAGS=-framework CoreFoundation
+endif
+
 man_MANS = monodis.1
 
 EXTRA_DIST = $(man_MANS)
