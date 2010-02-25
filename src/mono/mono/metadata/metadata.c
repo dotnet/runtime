@@ -5937,6 +5937,38 @@ mono_type_get_modifiers (MonoType *type, gboolean *is_required, gpointer *iter)
 	return NULL;
 }
 
+mono_bool
+mono_type_is_struct (MonoType *type)
+{
+	return (!type->byref && ((type->type == MONO_TYPE_VALUETYPE &&
+		!type->data.klass->enumtype) || (type->type == MONO_TYPE_TYPEDBYREF) ||
+		((type->type == MONO_TYPE_GENERICINST) && 
+		mono_metadata_generic_class_is_valuetype (type->data.generic_class) &&
+		!type->data.generic_class->container_class->enumtype)));
+}
+
+mono_bool
+mono_type_is_void (MonoType *type)
+{
+	return (type && (type->type == MONO_TYPE_VOID) && !type->byref);
+}
+
+mono_bool
+mono_type_is_pointer (MonoType *type)
+{
+	return (type && ((type->byref || (type->type == MONO_TYPE_I) || type->type == MONO_TYPE_STRING) || (type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) || (type->type == MONO_TYPE_CLASS) || (type->type == MONO_TYPE_OBJECT) || (type->type == MONO_TYPE_ARRAY) || (type->type == MONO_TYPE_PTR)));
+}
+
+mono_bool
+mono_type_is_reference (MonoType *type)
+{
+	return (type && (((type->type == MONO_TYPE_STRING) ||
+		(type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) ||
+		(type->type == MONO_TYPE_OBJECT) || (type->type == MONO_TYPE_ARRAY)) ||
+		((type->type == MONO_TYPE_GENERICINST) &&
+		!mono_metadata_generic_class_is_valuetype (type->data.generic_class))));
+}
+
 MonoType*
 mono_signature_get_return_type (MonoMethodSignature *sig)
 {

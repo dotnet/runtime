@@ -23,21 +23,10 @@ MONO_BEGIN_DECLS
 #endif
 #endif
 
-#define MONO_TYPE_ISSTRUCT(t) (!(t)->byref && (((t)->type == MONO_TYPE_VALUETYPE && \
-	!(t)->data.klass->enumtype) || ((t)->type == MONO_TYPE_TYPEDBYREF) || \
-	(((t)->type == MONO_TYPE_GENERICINST) && mono_metadata_generic_class_is_valuetype ((t)->data.generic_class) && !(t)->data.generic_class->container_class->enumtype)))
-
-#define MONO_TYPE_IS_VOID(t) ((t) && ((t)->type == MONO_TYPE_VOID) && !(t)->byref)
-#define MONO_TYPE_IS_POINTER(t) ((t) && (((t)->byref || ((t)->type == MONO_TYPE_I) || (t)->type == MONO_TYPE_STRING) || ((t)->type == MONO_TYPE_SZARRAY) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_OBJECT) || ((t)->type == MONO_TYPE_ARRAY) || ((t)->type == MONO_TYPE_PTR)))
-
-#define MONO_TYPE_IS_REFERENCE(t) ((t) &&					\
-				   ((((t)->type == MONO_TYPE_STRING) ||		\
-				     ((t)->type == MONO_TYPE_SZARRAY) ||	\
-				     ((t)->type == MONO_TYPE_CLASS) ||		\
-				     ((t)->type == MONO_TYPE_OBJECT) ||		\
-				     ((t)->type == MONO_TYPE_ARRAY)) ||		\
-				    (((t)->type == MONO_TYPE_GENERICINST) &&	\
-				     !mono_metadata_generic_class_is_valuetype ((t)->data.generic_class))))
+#define MONO_TYPE_ISSTRUCT(t) mono_type_is_struct (t)
+#define MONO_TYPE_IS_VOID(t) mono_type_is_void (t)
+#define MONO_TYPE_IS_POINTER(t) mono_type_is_pointer (t)
+#define MONO_TYPE_IS_REFERENCE(t) mono_type_is_reference (t)
 
 #define MONO_CLASS_IS_INTERFACE(c) ((c->flags & TYPE_ATTRIBUTE_INTERFACE) || (c->byval_arg.type == MONO_TYPE_VAR) || (c->byval_arg.type == MONO_TYPE_MVAR))
 
@@ -363,6 +352,11 @@ mono_type_get_ptr_type (MonoType *type);
 
 MonoClass*
 mono_type_get_modifiers  (MonoType *type, mono_bool *is_required, void **iter);
+
+mono_bool mono_type_is_struct    (MonoType *type);
+mono_bool mono_type_is_void      (MonoType *type);
+mono_bool mono_type_is_pointer   (MonoType *type);
+mono_bool mono_type_is_reference (MonoType *type);
 
 MonoType*
 mono_signature_get_return_type (MonoMethodSignature *sig);
