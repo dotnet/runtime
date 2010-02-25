@@ -46,13 +46,6 @@ MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
 
-/*
- * Controls whenever mono_class_init () constructs a generic vtable. This is TRUE by
- * default to avoid breaking embedding apps, but set to FALSE by the runtime executable
- * startup code.
- */
-gboolean mono_setup_vtable_in_class_init = TRUE;
-
 /* Statistics */
 guint32 inflated_classes, inflated_classes_size, inflated_methods_size;
 guint32 classes_size, class_ext_size;
@@ -4431,41 +4424,28 @@ mono_class_init (MonoClass *class)
 		}
 	}
 
-	if (!mono_setup_vtable_in_class_init) {
-		/*
-		 * This is an embedding API break, since the caller might assume that 
-		 * mono_class_init () constructs a generic vtable, so vtable construction errors
-		 * are visible right after the mono_class_init (), and not after 
-		 * mono_class_vtable ().
-		 */
-		if (class->parent) {
-			/* This will compute class->parent->vtable_size for some classes */
-			mono_class_init (class->parent);
+	if (class->parent) {
+		/* This will compute class->parent->vtable_size for some classes */
+		mono_class_init (class->parent);
+		if (class->parent->exception_type) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			goto leave;
+		}
+		if (mono_loader_get_last_error ())
+			goto leave;
+		if (!class->parent->vtable_size) {
+			/* FIXME: Get rid of this somehow */
+			mono_class_setup_vtable (class->parent);
 			if (class->parent->exception_type) {
 				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 				goto leave;
 			}
 			if (mono_loader_get_last_error ())
 				goto leave;
-			if (!class->parent->vtable_size) {
-				/* FIXME: Get rid of this somehow */
-				mono_class_setup_vtable (class->parent);
-				if (class->parent->exception_type) {
-					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-					goto leave;
-				}
-				if (mono_loader_get_last_error ())
-					goto leave;
-			}
-			setup_interface_offsets (class, class->parent->vtable_size);
-		} else {
-			setup_interface_offsets (class, 0);
 		}
+		setup_interface_offsets (class, class->parent->vtable_size);
 	} else {
-		mono_class_setup_vtable (class);
-
-		if (MONO_CLASS_IS_INTERFACE (class))
-			setup_interface_offsets (class, 0);
+		setup_interface_offsets (class, 0);
 	}
 
 	goto leave;
