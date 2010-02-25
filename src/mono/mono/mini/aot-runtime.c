@@ -100,6 +100,7 @@ typedef struct MonoAotModule {
 	/* This contains <offset, index> pairs sorted by offset */
 	/* This is needed because LLVM emitted methods can be in any order */
 	gint32 *sorted_code_offsets;
+	gint32 sorted_code_offsets_len;
 	guint32 *method_info_offsets;
 	guint32 *got_info_offsets;
 	guint32 *ex_info_offsets;
@@ -2108,10 +2109,64 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 	return p;
 }
 
-static int
+static G_GNUC_UNUSED int
 compare_ints (const void *a, const void *b)
 {
 	return *(gint32*)a - *(gint32*)b;
+}
+
+static void
+msort_code_offsets_internal (gint32 *array, int lo, int hi, gint32 *scratch)
+{
+	int mid = (lo + hi) / 2;
+	int i, t_lo, t_hi;
+
+	if (lo >= hi)
+		return;
+
+	if (hi - lo < 32) {
+		for (i = lo; i < hi; ++i)
+			if (array [(i * 2)] > array [(i * 2) + 2])
+				break;
+		if (i == hi)
+			/* Already sorted */
+			return;
+	}
+
+	msort_code_offsets_internal (array, lo, mid, scratch);
+	msort_code_offsets_internal (array, mid + 1, hi, scratch);
+
+	if (array [mid * 2] < array [(mid + 1) * 2])
+		return;
+
+	/* Merge */
+	t_lo = lo;
+	t_hi = mid + 1;
+	for (i = lo; i <= hi; i ++) {
+		if (t_lo <= mid && ((t_hi > hi) || array [t_lo * 2] < array [t_hi * 2])) {
+			scratch [(i * 2)] = array [t_lo * 2];
+			scratch [(i * 2) + 1] = array [(t_lo *2) + 1];
+			t_lo ++;
+		} else {
+			scratch [(i * 2)] = array [t_hi * 2];
+			scratch [(i * 2) + 1] = array [(t_hi *2) + 1];
+			t_hi ++;
+		}
+	}
+	for (i = lo; i <= hi; ++i) {
+		array [(i * 2)] = scratch [i * 2];
+		array [(i * 2) + 1] = scratch [(i * 2) + 1];
+	}
+}
+
+static void
+msort_code_offsets (gint32 *array, int len)
+{
+	gint32 *scratch;
+
+	scratch = g_new (gint32, len * 2);
+	msort_code_offsets_internal (array, 0, len - 1, scratch);
+	g_free (scratch);
 }
 
 MonoJitInfo *
@@ -2127,7 +2182,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	guint32 *table;
 	int nmethods = amodule->info.nmethods;
 	gint32 *code_offsets;
-	int i;
+	int offsets_len, i;
 
 	if (!amodule)
 		return NULL;
@@ -2140,31 +2195,40 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	/* Compute a sorted table mapping code offsets to method indexes. */
 	if (!amodule->sorted_code_offsets) {
+
 		code_offsets = g_new0 (gint32, nmethods * 2);
+		offsets_len = 0;
 		for (i = 0; i < nmethods; ++i) {
-			code_offsets [(i * 2)] = amodule->code_offsets [i];
-			code_offsets [(i *2) + 1] = i;
+			/* Skip the -1 entries to speed up sorting */
+			if (amodule->code_offsets [i] == 0xffffffff)
+				continue;
+			code_offsets [(offsets_len * 2)] = amodule->code_offsets [i];
+			code_offsets [(offsets_len *2) + 1] = i;
+			offsets_len ++;
 		}
-		/* FIXME: Use a merge sort as this is mostly sorted */
-		qsort (code_offsets, nmethods, sizeof (gint32) * 2, compare_ints);
-		for (i = 0; i < nmethods -1; ++i)
+		/* Use a merge sort as this is mostly sorted */
+		msort_code_offsets (code_offsets, offsets_len);
+		//qsort (code_offsets, offsets_len, sizeof (gint32) * 2, compare_ints);
+		for (i = 0; i < offsets_len -1; ++i)
 			g_assert (code_offsets [(i * 2)] <= code_offsets [(i + 1) * 2]);
 
 		if (InterlockedCompareExchangePointer ((gpointer*)&amodule->sorted_code_offsets, code_offsets, NULL) != NULL)
 			/* Somebody got in before us */
 			g_free (code_offsets);
+		amodule->sorted_code_offsets_len = offsets_len;
 	}
 
 	code_offsets = amodule->sorted_code_offsets;
+	offsets_len = amodule->sorted_code_offsets_len;
 
 	/* Binary search in the sorted_code_offsets table */
 	left = 0;
-	right = nmethods;
+	right = offsets_len;
 	while (TRUE) {
 		pos = (left + right) / 2;
 
 		offset1 = code_offsets [(pos * 2)];
-		if (pos + 1 == nmethods)
+		if (pos + 1 == offsets_len)
 			offset2 = amodule->code_end - amodule->code;
 		else
 			offset2 = code_offsets [(pos + 1) * 2];
@@ -2178,14 +2242,14 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	}
 
 	g_assert (offset >= code_offsets [(pos * 2)]);
-	if (pos + 1 < nmethods)
+	if (pos + 1 < offsets_len)
 		g_assert (offset < code_offsets [((pos + 1) * 2)]);
 	method_index = code_offsets [(pos * 2) + 1];
 
 	code = &amodule->code [amodule->code_offsets [method_index]];
 	ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
 
-	if (pos == nmethods - 1)
+	if (pos == offsets_len - 1)
 		code_len = amodule->code_end - code;
 	else
 		code_len = code_offsets [(pos + 1) * 2] - code_offsets [pos * 2];
