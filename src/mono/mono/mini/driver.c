@@ -1631,7 +1631,6 @@ mono_main (int argc, char* argv[])
 #endif
 
 	mono_set_defaults (mini_verbose, opt);
-	mono_setup_vtable_in_class_init = FALSE;
 	domain = mini_init (argv [i], forced_version);
 
 	if (agents) {
