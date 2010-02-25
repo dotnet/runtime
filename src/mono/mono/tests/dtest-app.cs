@@ -69,6 +69,11 @@ public struct AStruct {
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int invoke_static () {
+		return 5;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public IntPtr invoke_return_intptr () {
 		return j;
 	}

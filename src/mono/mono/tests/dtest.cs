@@ -1771,6 +1771,11 @@ public class DebuggerTests
 		m = t.GetMethod ("invoke_return_intptr");
 		v = s.InvokeMethod (e.Thread, m, null);
 		AssertValue (43, v);
+
+		// Static method
+		m = t.GetMethod ("invoke_static");
+		v = t.InvokeMethod (e.Thread, m, null);
+		AssertValue (5, v);
 	}
 
 	[Test]
