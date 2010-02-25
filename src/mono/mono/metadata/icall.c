@@ -82,6 +82,8 @@
 #endif
 #include "decimal.h"
 
+extern MonoString* ves_icall_System_Environment_GetOSVersionString (void) MONO_INTERNAL;
+
 static MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
 
 static MonoArray*

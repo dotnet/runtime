@@ -15,7 +15,10 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/exception.h>
+#include <mono/utils/mono-compiler.h>
 #include <mono/io-layer/io-layer.h>
+
+extern MonoString* ves_icall_System_Environment_GetOSVersionString (void) MONO_INTERNAL;
 
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
