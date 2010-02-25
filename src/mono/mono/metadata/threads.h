@@ -22,21 +22,10 @@ typedef void (*MonoThreadCleanupFunc) (MonoThread* thread);
 /* This callback should return TRUE if the runtime must wait for the thread, FALSE otherwise */
 typedef mono_bool (*MonoThreadManageCallback) (MonoThread* thread);
 
-extern int  mono_thread_get_abort_signal (void);
-
 extern void mono_thread_init (MonoThreadStartCB start_cb,
 			      MonoThreadAttachCB attach_cb);
 extern void mono_thread_cleanup (void);
 extern void mono_thread_manage(void);
-extern void mono_thread_abort_all_other_threads (void);
-extern void mono_thread_suspend_all_other_threads (void);
-
-extern void mono_thread_push_appdomain_ref (MonoDomain *domain);
-extern void mono_thread_pop_appdomain_ref (void);
-extern mono_bool mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain);
-
-extern mono_bool mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
-extern void mono_threads_clear_cached_culture (MonoDomain *domain);
 
 extern MonoThread *mono_thread_current (void);
 
@@ -61,12 +50,6 @@ uint32_t  mono_alloc_special_static_data (uint32_t static_type, uint32_t size, u
 void* mono_get_special_static_data   (uint32_t offset);
 
 void mono_threads_request_thread_dump (void);
-
-extern MonoException* mono_thread_request_interruption (mono_bool running_managed);
-extern mono_bool mono_thread_interruption_requested (void);
-extern void mono_thread_interruption_checkpoint (void);
-extern void mono_thread_force_interruption_checkpoint (void);
-extern int32_t* mono_thread_interruption_request_flag (void);
 
 MONO_END_DECLS
 
