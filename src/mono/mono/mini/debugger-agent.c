@@ -4120,7 +4120,9 @@ decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 		!(t->type == MONO_TYPE_U && type == MONO_TYPE_VALUETYPE) &&
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE)) {
-		DEBUG(1, fprintf (log_file, "[%p] Expected value of type 0x%0x, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), t->type, type));
+		char *name = mono_type_full_name (t);
+		DEBUG(1, fprintf (log_file, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), name, type));
+		g_free (name);
 		return ERR_INVALID_ARGUMENT;
 	}
 
@@ -4387,9 +4389,17 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 		this_buf = g_alloca (mono_class_instance_size (m->klass));
 	else
 		this_buf = g_alloca (sizeof (MonoObject*));
-	err = decode_value (&m->klass->byval_arg, domain, this_buf, p, &p, end);
-	if (err)
-		return err;
+	if (m->klass->valuetype && (m->flags & METHOD_ATTRIBUTE_STATIC)) {
+		/* Should be null */
+		int type = decode_byte (p, &p, end);
+		if (type != VALUE_TYPE_ID_NULL)
+			return ERR_INVALID_ARGUMENT;
+		memset (this_buf, 0, mono_class_instance_size (m->klass));
+	} else {
+		err = decode_value (&m->klass->byval_arg, domain, this_buf, p, &p, end);
+		if (err)
+			return err;
+	}
 
 	if (!m->klass->valuetype)
 		this = *(MonoObject**)this_buf;
