@@ -1910,6 +1910,49 @@ MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip
 
 /* Generic sharing */
 
+
+void
+mono_set_generic_sharing_supported (gboolean supported) MONO_INTERNAL;
+
+gboolean
+mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
+
+gpointer
+mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot) MONO_INTERNAL;
+
+gpointer
+mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot) MONO_INTERNAL;
+
+MonoMethodRuntimeGenericContext*
+mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst) MONO_INTERNAL;
+
+gboolean
+mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;
+
+int
+mono_class_rgctx_get_array_size (int n, gboolean mrgctx) MONO_INTERNAL;
+
+guint32
+mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
+	int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
+
+MonoGenericContext
+mono_method_construct_object_context (MonoMethod *method) MONO_INTERNAL;
+
+int
+mono_generic_context_check_used (MonoGenericContext *context) MONO_INTERNAL;
+
+int
+mono_class_check_context_used (MonoClass *class) MONO_INTERNAL;
+
+gboolean
+mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars) MONO_INTERNAL;
+
+gboolean
+mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
+gboolean
+mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;
+
 MonoGenericSharingContext* mono_get_generic_context_from_code (guint8 *code) MONO_INTERNAL;
 
 MonoGenericContext* mini_method_get_context (MonoMethod *method) MONO_INTERNAL;
