@@ -2624,6 +2624,11 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 		int idepth = eclass->idepth;
 		if (!internal_enumerator)
 			idepth--;
+
+		// FIXME: This doesn't seem to work/required for generic params
+		if (!(eclass->this_arg.type == MONO_TYPE_VAR || eclass->this_arg.type == MONO_TYPE_MVAR))
+			mono_class_setup_interface_offsets (eclass);
+
 		interface_count = all_interfaces? eclass->interface_offsets_count: eclass->interface_count;
 		/* we add object for interfaces and the supertypes for the other
 		 * types. The last of the supertypes is the element class itself which we
