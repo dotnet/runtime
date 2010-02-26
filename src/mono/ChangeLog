@@ -1,7 +1,14 @@
+2010-02-26  Miguel de Icaza  <miguel@novell.com>
+
+	* Make the scripts default to 4.0 now.
+
+2009-05-21  Miguel de Icaza  <miguel@novell.com>
+
+	* Check for sys/select.h as well
 
 Wed Feb 24 15:47:16 CET 2010 Paolo Molaro <lupus@ximian.com>
 
-	* confiure.in, data/mono-2.pc.in, data/Makefile.am,
+	* configure.in, data/mono-2.pc.in, data/Makefile.am,
 	samples/embed/*: increase the API version.
 
 2010-02-18  Marek Habersack  <mhabersack@novell.com>
