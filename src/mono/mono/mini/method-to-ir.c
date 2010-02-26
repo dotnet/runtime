@@ -4480,13 +4480,21 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		mono_jit_stats.inlineable_methods++;
 		cmethod->inline_info = 1;
 	}
+
+	/* allocate local variables */
+	cheader = mono_method_get_header (cmethod);
+
+	if (cheader == NULL || mono_loader_get_last_error ()) {
+		mono_loader_clear_error ();
+		return 0;
+	}
+
 	/* allocate space to store the return value */
 	if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 		rvar = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
 	}
 
-	/* allocate local variables */
-	cheader = mono_method_get_header (cmethod);
+
 	prev_locals = cfg->locals;
 	cfg->locals = mono_mempool_alloc0 (cfg->mempool, cheader->num_locals * sizeof (MonoInst*));	
 	for (i = 0; i < cheader->num_locals; ++i)
