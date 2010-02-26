@@ -77,7 +77,7 @@ struct _MonoDebuggerThreadInfo {
 	MonoDebuggerExceptionState exception_state;
 
 	MonoJitTlsData *jit_tls;
-	MonoThread *thread;
+	MonoInternalThread *thread;
 };
 
 typedef struct {
@@ -788,7 +788,7 @@ mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit
 
 	info = g_new0 (MonoDebuggerThreadInfo, 1);
 	info->tid = tid;
-	info->thread = thread;
+	info->thread = thread->internal_thread;
 	info->stack_start = (guint64) (gsize) staddr;
 	info->signal_stack_start = (guint64) (gsize) jit_tls->signal_stack;
 	info->stack_size = stsize;
@@ -846,7 +846,7 @@ mono_debugger_extended_notification (MonoDebuggerEvent event, guint64 data, guin
 {
 #ifdef MONO_DEBUGGER_SUPPORTED
 	MonoDebuggerThreadInfo **ptr;
-	MonoThread *thread = mono_thread_current ();
+	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	if (!mono_debug_using_mono_debugger ())
 		return;
@@ -888,7 +888,7 @@ mono_debugger_trampoline_compiled (const guint8 *trampoline, MonoMethod *method,
 
 #if MONO_DEBUGGER_SUPPORTED
 static MonoDebuggerThreadInfo *
-find_debugger_thread_info (MonoThread *thread)
+find_debugger_thread_info (MonoInternalThread *thread)
 {
 	MonoDebuggerThreadInfo **ptr;
 
@@ -915,7 +915,7 @@ _mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc)
 
 	mono_debugger_lock ();
 
-	thread_info = find_debugger_thread_info (mono_thread_current ());
+	thread_info = find_debugger_thread_info (mono_thread_internal_current ());
 	if (!thread_info) {
 		mono_debugger_unlock ();
 		return MONO_DEBUGGER_EXCEPTION_ACTION_NONE;
@@ -985,7 +985,7 @@ _mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *e
 
 	mono_debugger_lock ();
 
-	thread_info = find_debugger_thread_info (mono_thread_current ());
+	thread_info = find_debugger_thread_info (mono_thread_internal_current ());
 	if (!thread_info) {
 		mono_debugger_unlock ();
 		return FALSE;
@@ -1031,7 +1031,7 @@ mono_debugger_call_exception_handler (gpointer addr, gpointer stack, MonoObject 
 
 	mono_debugger_lock ();
 
-	thread_info = find_debugger_thread_info (mono_thread_current ());
+	thread_info = find_debugger_thread_info (mono_thread_internal_current ());
 	if (!thread_info) {
 		mono_debugger_unlock ();
 		return;
@@ -1102,7 +1102,7 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 
 	mono_debugger_lock ();
 
-	thread_info = find_debugger_thread_info (mono_thread_current ());
+	thread_info = find_debugger_thread_info (mono_thread_internal_current ());
 	if (!thread_info) {
 		mono_debugger_unlock ();
 		return NULL;
@@ -1125,7 +1125,7 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 
 	mono_debugger_lock ();
 
-	thread_info = find_debugger_thread_info (mono_thread_current ());
+	thread_info = find_debugger_thread_info (mono_thread_internal_current ());
 	if (thread_info)
 		thread_info->exception_state = saved_exception_state;
 
