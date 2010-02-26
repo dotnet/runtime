@@ -96,7 +96,6 @@ libmonoruntime_la_SOURCES = \
 	filewatcher.h		\
 	gc.c			\
 	gc-internal.h		\
-	generic-sharing.c	\
 	icall.c			\
 	icall-def.h		\
 	image.c			\
