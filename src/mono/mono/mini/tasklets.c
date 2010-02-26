@@ -85,10 +85,14 @@ continuation_store (MonoContinuation *cont, int state, MonoException **e)
 	MonoLMF *lmf = mono_get_lmf ();
 	gsize num_bytes;
 
-	if (!cont->domain)
+	if (!cont->domain) {
 		*e =  mono_get_exception_argument ("cont", "Continuation not initialized");
-	if (cont->domain != mono_domain_get () || cont->thread_id != GetCurrentThreadId ())
+		return 0;
+	}
+	if (cont->domain != mono_domain_get () || cont->thread_id != GetCurrentThreadId ()) {
 		*e = mono_get_exception_argument ("cont", "Continuation from another thread or domain");
+		return 0;
+	}
 
 	cont->lmf = lmf;
 	cont->return_ip = __builtin_return_address (0);
