@@ -30,6 +30,9 @@ mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj);
 MonoObject *
 mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 
+gboolean
+mono_debugger_abort_runtime_invoke (void);
+
 /*
  * Internal exception API.
  */

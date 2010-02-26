@@ -50,6 +50,8 @@ static guint64 debugger_register_class_init_callback (guint64 image_argument, gu
 static void debugger_remove_class_init_callback (guint64 index, G_GNUC_UNUSED guint64 dummy);
 static guint64 debugger_get_method_signature (guint64 argument1, G_GNUC_UNUSED guint64 argument2);
 
+static guint64 debugger_abort_runtime_invoke (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2);
+
 #define EXECUTABLE_CODE_BUFFER_SIZE 4096
 static guint8 *debugger_executable_code_buffer = NULL;
 
@@ -167,8 +169,16 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	debugger_event_handler,
 
 	&_mono_debug_using_mono_debugger,
-	(gint32*)&_mono_debugger_interruption_request
+	(gint32*)&_mono_debugger_interruption_request,
+
+	&debugger_abort_runtime_invoke
 };
+
+static guint64
+debugger_abort_runtime_invoke (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2)
+{
+	return mono_debugger_abort_runtime_invoke ();
+}
 
 static guint64
 debugger_compile_method (guint64 method_arg)

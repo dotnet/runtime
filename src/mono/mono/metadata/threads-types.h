@@ -153,6 +153,8 @@ void mono_thread_internal_stop (MonoInternalThread *thread) MONO_INTERNAL;
 
 gboolean mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, MonoDomain *domain) MONO_INTERNAL;
 
+void mono_thread_internal_reset_abort (MonoInternalThread *thread) MONO_INTERNAL;
+
 void mono_alloc_special_static_data_free (GHashTable *special_static_fields) MONO_INTERNAL;
 void mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local) MONO_INTERNAL;
 void mono_thread_current_check_pending_interrupt (void) MONO_INTERNAL;

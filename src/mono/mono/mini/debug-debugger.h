@@ -90,6 +90,8 @@ struct _MonoDebuggerInfo {
 	void (*debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 	gint32 *using_mono_debugger;
 	gint32 *interruption_request;
+
+	guint64 (*abort_runtime_invoke) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2);
 };
 
 struct _MonoDebuggerMetadataInfo {
