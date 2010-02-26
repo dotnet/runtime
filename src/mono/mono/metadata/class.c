@@ -2626,7 +2626,7 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 			idepth--;
 
 		// FIXME: This doesn't seem to work/required for generic params
-		if (!(eclass->this_arg.type == MONO_TYPE_VAR || eclass->this_arg.type == MONO_TYPE_MVAR))
+		if (!(eclass->this_arg.type == MONO_TYPE_VAR || eclass->this_arg.type == MONO_TYPE_MVAR || (eclass->image->dynamic && !eclass->wastypebuilder)))
 			mono_class_setup_interface_offsets (eclass);
 
 		interface_count = all_interfaces? eclass->interface_offsets_count: eclass->interface_count;
