@@ -285,6 +285,17 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			mono_type_initialization_unlock ();
 			return NULL;
 		}
+		if (vtable->init_aborted) {
+			/*
+			 * The current thread was aborting while running the .cctor the last time,
+			 * so let's try again.
+			 *
+			 * The Mono Debugger calls Thread.Abort() on the current thread to abort a
+			 * method call (after an expression evaluation timeout, for instance).
+			 */
+			vtable->init_aborted = 0;
+			vtable->init_failed = 0;
+		}
 		if (vtable->init_failed) {
 			mono_type_initialization_unlock ();
 
@@ -363,6 +374,20 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 					full_name = g_strdup (klass->name);
 				exc_to_throw = mono_get_exception_type_initialization (full_name, exc);
 				g_free (full_name);
+
+				if (exc) {
+					MonoClass *exc_klass = exc->object.vtable->klass;
+
+					if (exc_klass->image == mono_defaults.corlib &&
+					    !strcmp (exc_klass->name_space, "System.Threading") &&
+					    !strcmp (exc_klass->name, "ThreadAbortException")) {
+						/*
+						 * Set `init_aborted' in addition to `init_failed' if the
+						 * current thread was aborted while running the .cctor.
+						 */
+						vtable->init_aborted = 1;
+					}
+				}
 
 				/* 
 				 * Store the exception object so it could be thrown on subsequent 
