@@ -509,6 +509,10 @@ mono_image_close_except_pools (MonoImage *image) MONO_INTERNAL;
 void
 mono_image_close_finish (MonoImage *image) MONO_INTERNAL;
 
+typedef void  (*MonoImageUnloadFunc) (MonoImage *image, gpointer user_data);
+
+void
+mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MONO_INTERNAL;
 
 MonoType*
 mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;

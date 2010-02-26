@@ -1233,9 +1233,6 @@ mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
 gboolean
 mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;
 
-void
-mono_class_unregister_image_generic_subclasses (MonoImage *image) MONO_INTERNAL;
-
 gboolean
 mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, MonoClass *context_klass) MONO_INTERNAL;
 

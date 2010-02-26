@@ -2561,7 +2561,6 @@ mono_metadata_clean_for_image (MonoImage *image)
 		free_list = g_slist_concat (free_generic_class_dependents (l->data), free_list);
 	g_slist_free (ginst_data.list);
 	g_slist_free (gclass_data.list);
-	mono_class_unregister_image_generic_subclasses (image);
 	/* delete_image_set () modifies the lists so make a copy */
 	set_list = g_slist_copy (image->image_sets);
 	for (l = set_list; l; l = l->next) {

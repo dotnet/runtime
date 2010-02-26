@@ -57,6 +57,39 @@ static gboolean debug_assembly_unload = FALSE;
 static gboolean mutex_inited;
 static CRITICAL_SECTION images_mutex;
 
+typedef struct ImageUnloadHook ImageUnloadHook;
+struct ImageUnloadHook {
+	ImageUnloadHook *next;
+	MonoImageUnloadFunc func;
+	gpointer user_data;
+};
+
+ImageUnloadHook *image_unload_hook = NULL;
+
+void
+mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data)
+{
+	ImageUnloadHook *hook;
+	
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (ImageUnloadHook, 1);
+	hook->func = func;
+	hook->user_data = user_data;
+	hook->next = image_unload_hook;
+	image_unload_hook = hook;
+}
+
+static void
+mono_image_invoke_unload_hook (MonoImage *image)
+{
+	ImageUnloadHook *hook;
+
+	for (hook = image_unload_hook; hook; hook = hook->next) {
+		hook->func (image, hook->user_data);
+	}
+}
+
 /* returns offset relative to image->raw_data */
 guint32
 mono_cli_rva_image_map (MonoImage *image, guint32 addr)
@@ -1459,6 +1492,8 @@ mono_image_close_except_pools (MonoImage *image)
 	mono_profiler_module_event (image, MONO_PROFILE_START_UNLOAD);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
+
+	mono_image_invoke_unload_hook (image);
 
 	free_list = mono_metadata_clean_for_image (image);
 

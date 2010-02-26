@@ -27,6 +27,9 @@
 #include "tabledefs.h"
 #include "mempool-internals.h"
 
+static void
+mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
+
 static int
 type_check_context_used (MonoType *type, gboolean recursive)
 {
@@ -243,6 +246,12 @@ register_generic_subclass (MonoClass *class)
 	MonoClass *parent = class->parent;
 	MonoClass *subclass;
 	MonoRuntimeGenericContextTemplate *rgctx_template = class_lookup_rgctx_template (class);
+	static gboolean hook_installed;
+
+	if (!hook_installed) {
+		mono_install_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
+		hook_installed = TRUE;
+	}
 
 	g_assert (rgctx_template);
 
@@ -300,8 +309,8 @@ move_subclasses_not_in_image_foreach_func (MonoClass *class, MonoClass *subclass
  * Removes all classes of the image from the generic subclass hash.
  * Must be called when an image is unloaded.
  */
-void
-mono_class_unregister_image_generic_subclasses (MonoImage *image)
+static void
+mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data)
 {
 	GHashTable *old_hash;
 
