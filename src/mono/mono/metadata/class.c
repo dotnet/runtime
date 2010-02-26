@@ -5150,7 +5150,7 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	return klass;
 }
 
-#define FAST_CACHE_SIZE 1024
+#define FAST_CACHE_SIZE 16
 static MonoClass *var_cache_fast [FAST_CACHE_SIZE];
 static MonoClass *mvar_cache_fast [FAST_CACHE_SIZE];
 static GHashTable *var_cache_slow;
