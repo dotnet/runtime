@@ -15,6 +15,7 @@
 #ifdef HAVE_SEMAPHORE_H
 #include <semaphore.h>
 #endif
+#include <mono/io-layer/io-layer.h>
 
 #if defined (HAVE_SEMAPHORE_H) || defined (USE_MACH_SEMA)
 #  define MONO_HAS_SEMAPHORES
