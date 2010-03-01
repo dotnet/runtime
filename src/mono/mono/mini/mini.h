@@ -2025,6 +2025,18 @@ MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, Mo
 guint32     mono_arch_cpu_enumerate_simd_versions (void) MONO_INTERNAL;
 void        mono_simd_intrinsics_init (void) MONO_INTERNAL;
 
+#ifdef __linux111111111__
+/* maybe enable also for other systems? */
+#define ENABLE_JIT_MAP 1
+void mono_enable_jit_map (void) MONO_INTERNAL;
+void mono_emit_jit_map   (MonoJitInfo *jinfo) MONO_INTERNAL;
+void mono_emit_jit_tramp (void *start, int size, const char *desc) MONO_INTERNAL;
+#else
+#define mono_enable_jit_map()
+#define mono_emit_jit_map(ji)
+#define mono_emit_jit_tramp(s,z,d)
+#endif
+
 /*
  * Per-OS implementation functions.
  */

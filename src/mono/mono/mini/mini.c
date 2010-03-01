@@ -4349,6 +4349,38 @@ lookup_method (MonoDomain *domain, MonoMethod *method)
 	return info;
 }
 
+#if ENABLE_JIT_MAP
+static FILE* perf_map_file = NULL;
+
+void
+mono_enable_jit_map (void)
+{
+	if (!perf_map_file) {
+		char name [64];
+		g_snprintf (name, sizeof (name), "/tmp/perf-%d.map", getpid ());
+		unlink (name);
+		perf_map_file = fopen (name, "w");
+	}
+}
+
+void
+mono_emit_jit_tramp (void *start, int size, const char *desc)
+{
+	if (perf_map_file)
+		fprintf (perf_map_file, "%llx %x %s\n", (uint64_t)(gsize)start, size, desc);
+}
+
+void
+mono_emit_jit_map (MonoJitInfo *jinfo)
+{
+	if (perf_map_file) {
+		char *name = mono_method_full_name (jinfo->method, TRUE);
+		mono_emit_jit_tramp (jinfo->code_start, jinfo->code_size, name);
+		g_free (name);
+	}
+}
+#endif
+
 static gpointer
 mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt, MonoException **jit_ex)
 {
@@ -4576,6 +4608,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		g_slist_free (list);
 	}
 
+	mono_emit_jit_map (jinfo);
 	mono_domain_unlock (target_domain);
 	mono_loader_unlock ();
 

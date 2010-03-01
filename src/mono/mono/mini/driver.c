@@ -1117,6 +1117,7 @@ mini_usage (void)
  		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
+		"    --jitmap               Output a jit method map to /tmp/perf-PID.map\n"
 		"    --help-devel           Shows more options available to developers\n"
 		"\n"
 		"Runtime:\n"
@@ -1449,6 +1450,8 @@ mono_main (int argc, char* argv[])
 			action = DO_COMPILE;
 		} else if (strncmp (argv [i], "--runtime=", 10) == 0) {
 			forced_version = &argv [i][10];
+		} else if (strcmp (argv [i], "--jitmap") == 0) {
+			mono_enable_jit_map ();
 		} else if (strcmp (argv [i], "--profile") == 0) {
 			enable_profile = TRUE;
 			profile_options = NULL;
