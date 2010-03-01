@@ -5461,7 +5461,10 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (val);
 				return err;
 			}
-			mono_field_static_set_value (vtable, f, val);
+			if (MONO_TYPE_IS_REFERENCE (f->type))
+				mono_field_static_set_value (vtable, f, *(gpointer*)val);
+			else
+				mono_field_static_set_value (vtable, f, val);
 			g_free (val);
 		}
 		break;
