@@ -4650,6 +4650,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		major_version = decode_int (p, &p, end);
 		minor_version = decode_int (p, &p, end);
 		protocol_version_set = TRUE;
+		DEBUG(1, fprintf (log_file, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version));
 		break;
 	}
 	case CMD_VM_ALL_THREADS: {
