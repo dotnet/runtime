@@ -1,11 +1,15 @@
+2010-03-01  Robert Jordan  <robertj@gmx.net>
+
+	* libmono.vcproj: Track changes.
+
 2009-11-02 Jonathan Chambers <joncham@gmail.com>
 
 	* genmdesc.vcproj: Fix amd64 build.
-	
+
 	* libmono.vcproj: Fix amd64 build.
-	
+
 	* mono.vcproj: Fix amd64 build.
-	
+
 	* mono.sln: Fix amd64 build.
 
 2009-09-08  Jonathan Chambers  <joncham@gmail.com>
