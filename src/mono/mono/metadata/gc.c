@@ -626,9 +626,20 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 
 		/* resize and copy the entries */
 		if (handles->type > HANDLE_WEAK_TRACK) {
+			gsize *gc_bitmap;
 			gpointer *entries;
-			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, NULL);
+			void *descr;
+
+			/* Create a GC descriptor */
+			gc_bitmap = g_malloc (new_size / 8);
+			memset (gc_bitmap, 0xff, new_size / 8);
+			descr = mono_gc_make_descr_from_bitmap (gc_bitmap, new_size);
+			g_free (gc_bitmap);
+
+			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, descr);
 			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
+
+			mono_gc_free_fixed (handles->entries);
 			handles->entries = entries;
 		} else {
 			gpointer *entries;

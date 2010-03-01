@@ -5570,9 +5570,9 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	class->instance_size = mono_class_instance_size (class->parent);
 
 	if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
-		if (!eclass->reflection_info || eclass->wastypebuilder) {
+		if (!eclass->ref_info_handle || eclass->wastypebuilder) {
 			g_warning ("Only incomplete TypeBuilder objects are allowed to be an enum without base_type");
-			g_assert (eclass->reflection_info && !eclass->wastypebuilder);
+			g_assert (eclass->ref_info_handle && !eclass->wastypebuilder);
 		}
 		/* element_size -1 is ok as this is not an instantitable type*/
 		class->sizes.element_size = -1;
@@ -6717,7 +6717,7 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			return FALSE;
 
 		/* interface_offsets might not be set for dynamic classes */
-		if (oklass->reflection_info && !oklass->interface_bitmap)
+		if (oklass->ref_info_handle && !oklass->interface_bitmap)
 			/* 
 			 * oklass might be a generic type parameter but they have 
 			 * interface_offsets set.
@@ -6846,7 +6846,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 
 		/*A TypeBuilder can have more interfaces on tb->interfaces than on candidate->interfaces*/
 		if (candidate->image->dynamic && !candidate->wastypebuilder) {
-			MonoReflectionTypeBuilder *tb = candidate->reflection_info;
+			MonoReflectionTypeBuilder *tb = mono_class_get_ref_info (candidate);
 			int j;
 			if (tb->interfaces) {
 				for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {

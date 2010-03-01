@@ -2448,9 +2448,12 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 	}
 	if (klass->generic_class) {
 		MonoClass *generic_class = klass->generic_class->container_class;
+		gpointer tb;
 
-		if (generic_class->wastypebuilder && generic_class->reflection_info)
-			return generic_class->reflection_info;
+		tb = mono_class_get_ref_info (generic_class);
+
+		if (generic_class->wastypebuilder && tb)
+			return tb;
 		else
 			return mono_type_get_object (mono_object_domain (type), &generic_class->byval_arg);
 	}

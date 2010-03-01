@@ -1015,9 +1015,10 @@ static int user_descriptors_next = 0;
 static int
 alloc_complex_descriptor (gsize *bitmap, int numbits)
 {
-	int nwords = numbits/GC_BITS_PER_WORD + 2;
-	int res;
-	int i;
+	int nwords, res, i;
+
+	numbits = ALIGN_TO (numbits, GC_BITS_PER_WORD);
+	nwords = numbits / GC_BITS_PER_WORD + 1;
 
 	LOCK_GC;
 	res = complex_descriptors_next;
@@ -7137,7 +7138,7 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 	if (numbits < ((sizeof (*bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) {
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_BITMAP, bitmap [0]);
 	} else {
-		mword complex = alloc_complex_descriptor (bitmap, numbits + 1);
+		mword complex = alloc_complex_descriptor (bitmap, numbits);
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_COMPLEX, complex);
 	}
 }

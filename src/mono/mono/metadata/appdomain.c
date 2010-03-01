@@ -2182,8 +2182,7 @@ deregister_reflection_info_roots_nspace_table (gpointer key, gpointer value, gpo
 
 	g_assert (class);
 
-	if (class->reflection_info)
-		mono_gc_deregister_root ((char*) &class->reflection_info);
+	mono_class_free_ref_info (class);
 }
 
 static void
@@ -2200,8 +2199,7 @@ deregister_reflection_info_roots_from_list (MonoImage *image)
 	while (list) {
 		MonoClass *class = list->data;
 
-		g_assert (class->reflection_info);
-		mono_gc_deregister_root ((char*) &class->reflection_info);
+		mono_class_free_ref_info (class);
 
 		list = list->next;
 	}

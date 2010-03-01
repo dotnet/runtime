@@ -382,6 +382,9 @@ struct _MonoClass {
 		guint32 first, count;
 	} field, method;
 
+	/* A GC handle pointing to the corresponding type builder/generic param builder */
+	guint32 ref_info_handle;
+
 	/* loaded on demand */
 	MonoMarshalType *marshal_info;
 
@@ -398,8 +401,6 @@ struct _MonoClass {
 
 	MonoGenericClass *generic_class;
 	MonoGenericContainer *generic_container;
-
-	void *reflection_info;
 
 	void *gc_descr;
 
