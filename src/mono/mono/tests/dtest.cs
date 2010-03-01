@@ -1622,6 +1622,24 @@ public class DebuggerTests
 	}
 
 	[Test]
+	[Category ("only")]
+	public void CreateBoxedValue () {
+		ObjectMirror o = vm.RootDomain.CreateBoxedValue (new PrimitiveValue (vm, 42));
+
+		Assert.AreEqual ("Int32", o.Type.Name);
+		//AssertValue (42, m.GetValue (o.Type.GetField ("m_value")));
+
+		// Argument checking
+		AssertThrows <ArgumentNullException> (delegate () {
+				vm.RootDomain.CreateBoxedValue (null);
+			});
+
+		AssertThrows <ArgumentException> (delegate () {
+				vm.RootDomain.CreateBoxedValue (o);
+			});
+	}
+
+	[Test]
 	public void Invoke () {
 		Event e = run_until ("invoke1");
 
