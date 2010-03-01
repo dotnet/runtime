@@ -21,7 +21,7 @@ g_convert_error_quark ()
 	return error_quark;
 }
 
-gunichar*
+static gunichar*
 utf8_case_conv (const gchar *str, gssize len, gboolean upper)
 {
 	glong i, u16len, u32len;

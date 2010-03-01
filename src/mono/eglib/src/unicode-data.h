@@ -40,7 +40,7 @@ static const CodePointRange unicode_category_ranges [] = {
 {0x02F800, 0x02FA40},
 {0x0E0000, 0x0E0200},
 {0, 0}};
-const GUnicodeType unicode_category_table0 [] = {
+static const GUnicodeType unicode_category_table0 [] = {
 	/* ==== 0-3400 ==== */
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -875,14 +875,14 @@ const GUnicodeType unicode_category_table0 [] = {
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	0};
-const GUnicodeType unicode_category_table1 [] = {
+static const GUnicodeType unicode_category_table1 [] = {
 	/* ==== 4DC0-4E00 ==== */
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	0};
-const GUnicodeType unicode_category_table2 [] = {
+static const GUnicodeType unicode_category_table2 [] = {
 	/* ==== A000-AA80 ==== */
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
 	7,7,7,7,7,6,7,7,7,7,7,7,7,7,7,7,
@@ -1051,7 +1051,7 @@ const GUnicodeType unicode_category_table2 [] = {
 	7,7,7,12,7,7,7,7,7,7,7,7,12,10,0,0,
 	13,13,13,13,13,13,13,13,13,13,0,0,21,21,21,21,
 	0};
-const GUnicodeType unicode_category_table3 [] = {
+static const GUnicodeType unicode_category_table3 [] = {
 	/* ==== F900-10000 ==== */
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -1165,7 +1165,7 @@ const GUnicodeType unicode_category_table3 [] = {
 	0,0,7,7,7,7,7,7,0,0,7,7,7,0,0,0,
 	23,23,25,24,26,23,23,0,26,25,25,25,25,26,26,0,
 	0,0,0,0,0,0,0,0,0,1,1,1,26,26,0};
-const GUnicodeType unicode_category_table4 [] = {
+static const GUnicodeType unicode_category_table4 [] = {
 	/* ==== 10000-104C0 ==== */
 	7,7,7,7,7,7,7,7,7,7,7,7,0,7,7,7,
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -1242,7 +1242,7 @@ const GUnicodeType unicode_category_table4 [] = {
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,0,0,
 	13,13,13,13,13,13,13,13,13,13,0};
-const GUnicodeType unicode_category_table5 [] = {
+static const GUnicodeType unicode_category_table5 [] = {
 	/* ==== 10800-10A80 ==== */
 	7,7,7,7,7,7,0,0,7,0,7,7,7,7,7,7,
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -1282,7 +1282,7 @@ const GUnicodeType unicode_category_table5 [] = {
 	7,7,7,7,0,0,0,0,12,12,12,0,0,0,0,12,
 	15,15,15,15,15,15,15,15,0,0,0,0,0,0,0,0,
 	21,21,21,21,21,21,21,21,21,0};
-const GUnicodeType unicode_category_table6 [] = {
+static const GUnicodeType unicode_category_table6 [] = {
 	/* ==== 12000-12480 ==== */
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -1356,7 +1356,7 @@ const GUnicodeType unicode_category_table6 [] = {
 	14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
 	14,14,14,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	21,21,21,21,0};
-const GUnicodeType unicode_category_table7 [] = {
+static const GUnicodeType unicode_category_table7 [] = {
 	/* ==== 1D000-1D800 ==== */
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
@@ -1487,7 +1487,7 @@ const GUnicodeType unicode_category_table7 [] = {
 	13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,
 	13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,
 	0};
-const GUnicodeType unicode_category_table8 [] = {
+static const GUnicodeType unicode_category_table8 [] = {
 	/* ==== 1F000-1F0C0 ==== */
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
@@ -1499,7 +1499,7 @@ const GUnicodeType unicode_category_table8 [] = {
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
 	26,26,26,26,0};
-const GUnicodeType unicode_category_table9 [] = {
+static const GUnicodeType unicode_category_table9 [] = {
 	/* ==== 2F800-2FA40 ==== */
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -1535,7 +1535,7 @@ const GUnicodeType unicode_category_table9 [] = {
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,0};
-const GUnicodeType unicode_category_table10 [] = {
+static const GUnicodeType unicode_category_table10 [] = {
 	/* ==== E0000-E0200 ==== */
 	0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

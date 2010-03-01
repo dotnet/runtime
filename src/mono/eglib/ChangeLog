@@ -1,3 +1,8 @@
+
+Mon Mar 1 17:12:24 CET 2010 Paolo Molaro <lupus@ximian.com>
+
+	* src/unicode-data.h, src/gutf8.c: don't export private symbols.
+
 2009-12-03  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/gmisc-unix.c (g_get_user_name): Avoid returning NULL if the env
