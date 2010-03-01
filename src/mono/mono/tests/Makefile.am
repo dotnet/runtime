@@ -100,6 +100,7 @@ BASE_TEST_CS_SRC=		\
 	invoke2.cs		\
 	runtime-invoke.cs		\
 	invoke-string-ctors.cs		\
+	abort-invoke.cs		\
 	reinit.cs		\
 	box.cs			\
 	array.cs		\
