@@ -553,6 +553,14 @@ guint32
 mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
+	const char *cpu_arch = getenv ("MONO_CPU_ARCH");
+	if (cpu_arch != NULL) {
+		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
+		if (strncmp (cpu_arch, "armv", 4) == 0) {
+			v5_supported = cpu_arch [4] >= '5';
+			v7_supported = cpu_arch [4] >= '7';
+		}
+	} else {
 #if __APPLE__
 	thumb_supported = TRUE;
 	v5_supported = TRUE;
@@ -584,6 +592,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		/*printf ("features: v5: %d, thumb: %d\n", v5_supported, thumb_supported);*/
 	}
 #endif
+	}
 
 	/* no arm-specific optimizations yet */
 	*exclude_mask = 0;
