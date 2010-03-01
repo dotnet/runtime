@@ -344,7 +344,8 @@ typedef enum {
 	CMD_APPDOMAIN_GET_ASSEMBLIES = 3,
 	CMD_APPDOMAIN_GET_ENTRY_ASSEMBLY = 4,
 	CMD_APPDOMAIN_CREATE_STRING = 5,
-	CMD_APPDOMAIN_GET_CORLIB = 6
+	CMD_APPDOMAIN_GET_CORLIB = 6,
+	CMD_APPDOMAIN_CREATE_BOXED_VALUE = 7,
 } CmdAppDomain;
 
 typedef enum {
@@ -5023,6 +5024,30 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		o = mono_string_new (domain, s);
 		buffer_add_objid (buf, (MonoObject*)o);
+		break;
+	}
+	case CMD_APPDOMAIN_CREATE_BOXED_VALUE: {
+		MonoClass *klass;
+		MonoDomain *domain2;
+		MonoObject *o;
+
+		domain = decode_domainid (p, &p, end, NULL, &err);
+		if (err)
+			return err;
+		klass = decode_typeid (p, &p, end, &domain2, &err);
+		if (err)
+			return err;
+
+		// FIXME:
+		g_assert (domain == domain2);
+
+		o = mono_object_new (domain, klass);
+
+		err = decode_value (&klass->byval_arg, domain, mono_object_unbox (o), p, &p, end);
+		if (err)
+			return err;
+
+		buffer_add_objid (buf, o);
 		break;
 	}
 	default:
