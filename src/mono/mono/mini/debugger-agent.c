@@ -318,7 +318,8 @@ typedef enum {
 	CMD_VM_RESUME = 4,
 	CMD_VM_EXIT = 5,
 	CMD_VM_DISPOSE = 6,
-	CMD_VM_INVOKE_METHOD = 7
+	CMD_VM_INVOKE_METHOD = 7,
+	CMD_VM_SET_PROTOCOL_VERSION = 8
 } CmdVM;
 
 typedef enum {
@@ -540,6 +541,12 @@ static gpointer ss_invoke_addr = NULL;
 /* Number of single stepping operations in progress */
 static int ss_count;
 #endif
+
+/* The protocol version of the client */
+static int major_version, minor_version;
+
+/* Whenever the variables above are set by the client */
+static gboolean protocol_version_set;
 
 static void transport_connect (const char *host, int port);
 
@@ -1061,6 +1068,14 @@ transport_connect (const char *host, int port)
 		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
 		exit (1);
 	}
+
+	/*
+	 * To support older clients, the client sends its protocol version after connecting
+	 * using a command. Until that is received, default to our protocol version.
+	 */
+	major_version = MAJOR_VERSION;
+	minor_version = MINOR_VERSION;
+	protocol_version_set = FALSE;
 
 	/* 
 	 * Set TCP_NODELAY on the socket so the client receives events/command
@@ -4629,6 +4644,12 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_int (buf, MINOR_VERSION);
 		g_free (build_info);
 		g_free (version);
+		break;
+	}
+	case CMD_VM_SET_PROTOCOL_VERSION: {
+		major_version = decode_int (p, &p, end);
+		minor_version = decode_int (p, &p, end);
+		protocol_version_set = TRUE;
 		break;
 	}
 	case CMD_VM_ALL_THREADS: {
