@@ -90,6 +90,13 @@ public class GClass<T> {
 
 public struct GStruct<T> {
 	public T i;
+
+	public int j;
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public int invoke_return_int () {
+		return j;
+	}
 }
 
 public class Tests : TestsBase
@@ -477,11 +484,11 @@ public class Tests : TestsBase
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static void invoke () {
-		new Tests ().invoke1 (new Tests2 (), new AStruct () { i = 42, j = (IntPtr)43 });
+		new Tests ().invoke1 (new Tests2 (), new AStruct () { i = 42, j = (IntPtr)43 }, new GStruct<int> { j = 42 });
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	public void invoke1 (Tests2 t, AStruct s) {
+	public void invoke1 (Tests2 t, AStruct s, GStruct<int> g) {
 		invoke2 ();
 	}
 

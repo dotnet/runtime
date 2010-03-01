@@ -1798,6 +1798,13 @@ public class DebuggerTests
 		m = t.GetMethod ("invoke_static");
 		v = t.InvokeMethod (e.Thread, m, null);
 		AssertValue (5, v);
+
+		// Pass generic struct as this
+		s = frame.GetArgument (2) as StructMirror;
+		t = s.Type;
+		m = t.GetMethod ("invoke_return_int");
+		v = s.InvokeMethod (e.Thread, m, null);
+		AssertValue (42, v);
 	}
 
 	[Test]
