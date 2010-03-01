@@ -5936,6 +5936,13 @@ mono_type_get_modifiers (MonoType *type, gboolean *is_required, gpointer *iter)
 	return NULL;
 }
 
+/**
+ * mono_type_is_struct:
+ * @type: the MonoType operated on
+ *
+ * Returns: #TRUE is @type is a struct, that is a ValueType but not en enum
+ * or a basic type like System.Int32. #FALSE otherwise.
+ */
 mono_bool
 mono_type_is_struct (MonoType *type)
 {
@@ -5946,18 +5953,40 @@ mono_type_is_struct (MonoType *type)
 		!type->data.generic_class->container_class->enumtype)));
 }
 
+/**
+ * mono_type_is_void:
+ * @type: the MonoType operated on
+ *
+ * Returns: #TRUE is @type is System.Void. #FALSE otherwise.
+ */
 mono_bool
 mono_type_is_void (MonoType *type)
 {
 	return (type && (type->type == MONO_TYPE_VOID) && !type->byref);
 }
 
+/**
+ * mono_type_is_pointer:
+ * @type: the MonoType operated on
+ *
+ * Returns: #TRUE is @type is a managed or unmanaged pointer type. #FALSE otherwise.
+ */
 mono_bool
 mono_type_is_pointer (MonoType *type)
 {
-	return (type && ((type->byref || (type->type == MONO_TYPE_I) || type->type == MONO_TYPE_STRING) || (type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) || (type->type == MONO_TYPE_CLASS) || (type->type == MONO_TYPE_OBJECT) || (type->type == MONO_TYPE_ARRAY) || (type->type == MONO_TYPE_PTR)));
+	return (type && ((type->byref || (type->type == MONO_TYPE_I) || type->type == MONO_TYPE_STRING)
+		|| (type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) ||
+		(type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_OBJECT) ||
+		(type->type == MONO_TYPE_ARRAY) || (type->type == MONO_TYPE_PTR) ||
+		(type->type == MONO_TYPE_FNPTR)));
 }
 
+/**
+ * mono_type_is_reference:
+ * @type: the MonoType operated on
+ *
+ * Returns: #TRUE is @type represents an object reference . #FALSE otherwise.
+ */
 mono_bool
 mono_type_is_reference (MonoType *type)
 {
@@ -5968,12 +5997,31 @@ mono_type_is_reference (MonoType *type)
 		!mono_metadata_generic_class_is_valuetype (type->data.generic_class))));
 }
 
+/**
+ * mono_signature_get_return_type:
+ * @sig: the method signature inspected
+ *
+ * Returns: the return type of the method signature @sig
+ */
 MonoType*
 mono_signature_get_return_type (MonoMethodSignature *sig)
 {
 	return sig->ret;
 }
 
+/**
+ * mono_signature_get_params:
+ * @sig: the method signature inspected
+ * #iter: pointer to an iterator
+ *
+ * Iterates over the parameters for the method signature @sig.
+ * A void* pointer must be initualized to #NULL to start the iteration
+ * and it's address is passed to this function repeteadly until it returns
+ * #NULL.
+ *
+ * Returns: the next parameter type of the method signature @sig,
+ * #NULL when finished.
+ */
 MonoType*
 mono_signature_get_params (MonoMethodSignature *sig, gpointer *iter)
 {
@@ -5999,30 +6047,63 @@ mono_signature_get_params (MonoMethodSignature *sig, gpointer *iter)
 	return NULL;
 }
 
+/**
+ * mono_signature_get_param_count:
+ * @sig: the method signature inspected
+ *
+ * Returns: the number of parameters in the method signature @sig.
+ */
 guint32
 mono_signature_get_param_count (MonoMethodSignature *sig)
 {
 	return sig->param_count;
 }
 
+/**
+ * mono_signature_get_call_conv:
+ * @sig: the method signature inspected
+ *
+ * Returns: the call convention of the method signature @sig.
+ */
 guint32
 mono_signature_get_call_conv (MonoMethodSignature *sig)
 {
 	return sig->call_convention;
 }
 
+/**
+ * mono_signature_vararg_start:
+ * @sig: the method signature inspected
+ *
+ * Returns: the number of the first vararg parameter in the
+ * method signature @sig. -1 if this is not a vararg signature.
+ */
 int
 mono_signature_vararg_start (MonoMethodSignature *sig)
 {
 	return sig->sentinelpos;
 }
 
+/**
+ * mono_signature_is_instance:
+ * @sig: the method signature inspected
+ *
+ * Returns: #TRUE if this the method signature @sig has an implicit
+ * first instance argument. #FALSE otherwise.
+ */
 gboolean
 mono_signature_is_instance (MonoMethodSignature *sig)
 {
 	return sig->hasthis;
 }
 
+/**
+ * mono_signature_explicit_this:
+ * @sig: the method signature inspected
+ *
+ * Returns: #TRUE if this the method signature @sig has an explicit
+ * instance argument. #FALSE otherwise.
+ */
 gboolean
 mono_signature_explicit_this (MonoMethodSignature *sig)
 {
