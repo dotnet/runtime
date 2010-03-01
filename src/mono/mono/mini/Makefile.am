@@ -107,7 +107,7 @@ if STATIC_MONO
 # This leads to higher performance, especially with TLS
 MONO_LIB=libmono-static.la
 else 
-MONO_LIB=libmono.la
+MONO_LIB=libmono-2.0.la
 endif
 
 mono_LDADD = \
