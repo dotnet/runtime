@@ -885,6 +885,7 @@ public class DebuggerTests
 	}
 
 	[Test]
+	[Category ("only")]
 	public void Type_SetValue () {
 		var e = run_until ("o1");
 		var frame = e.Thread.GetFrames () [0];
@@ -900,6 +901,10 @@ public class DebuggerTests
 		o.Type.SetValue (o.Type.GetField ("static_i"), vm.CreateValue (55));
 		f = o.Type.GetValue (o.Type.GetField ("static_i"));
 		AssertValue (55, f);
+
+		o.Type.SetValue (o.Type.GetField ("static_s"), vm.RootDomain.CreateString ("B"));
+		f = o.Type.GetValue (o.Type.GetField ("static_s"));
+		AssertValue ("B", f);
 
 		// Argument checking
 		AssertThrows<ArgumentNullException> (delegate () {
@@ -1749,7 +1754,6 @@ public class DebuggerTests
 	}
 
 	[Test]
-	[Category ("only")]
 	public void InvokeVType () {
 		Event e = run_until ("invoke1");
 
