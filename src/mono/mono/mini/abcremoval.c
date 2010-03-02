@@ -14,6 +14,8 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/mempool-internals.h>
 
+#include <config.h>
+
 #ifndef DISABLE_JIT
 
 #include "abcremoval.h"
