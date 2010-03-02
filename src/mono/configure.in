@@ -2685,6 +2685,7 @@ support/Makefile
 data/config
 tools/Makefile
 tools/locale-builder/Makefile
+tools/sgen/Makefile
 runtime/Makefile
 msvc/Makefile
 po/Makefile
