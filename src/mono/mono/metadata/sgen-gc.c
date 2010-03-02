@@ -1675,11 +1675,15 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 	}
 }
 
+//#define BINARY_PROTOCOL
+#include "sgen-protocol.c"
+
 static gboolean
 need_remove_object_for_domain (char *start, MonoDomain *domain)
 {
 	if (mono_object_domain (start) == domain) {
 		DEBUG (1, fprintf (gc_debug_file, "Need to cleanup object %p\n", start));
+		binary_protocol_cleanup (start, (gpointer)LOAD_VTABLE (start), safe_object_get_size ((MonoObject*)start));
 		return TRUE;
 	}
 	return FALSE;
@@ -1920,6 +1924,7 @@ add_to_global_remset (gpointer ptr, gboolean root)
 	RememberedSet *rs;
 
 	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
+	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (*(gpointer*)ptr));
 
 	g_assert (!root);
 	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
@@ -2063,6 +2068,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 	 */
 	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
 		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
+		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
 		HEAVY_STAT (++stat_copy_object_failed_large_pinned);
 		return obj;
@@ -2082,6 +2088,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 
  copy:
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", to_space_bumper, ((MonoObject*)obj)->vtable->klass->name, objsize));
+	binary_protocol_copy (obj, to_space_bumper, ((MonoObject*)obj)->vtable, objsize);
 
 	HEAVY_STAT (++num_objects_copied);
 
@@ -2294,6 +2301,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 				DEBUG (8, fprintf (gc_debug_file, "Pinned try match %p (%s), size %zd\n", last_obj, safe_name (last_obj), last_obj_size));
 				if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
 					DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
+					binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
 					pin_object (search_start);
 					if (heap_dump_file)
 						pin_stats_register_object (search_start, last_obj_size);
@@ -2784,6 +2792,7 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 {
 	Fragment *fragment;
 	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
+	binary_protocol_empty (frag_start, frag_size);
 	/* memsetting just the first chunk start is bound to provide better cache locality */
 	if (nursery_clear_policy == CLEAR_AT_GC)
 		memset (frag_start, 0, frag_size);
@@ -3076,8 +3085,10 @@ build_section_fragments (GCMemSection *section)
 			section->scan_starts [((char*)frag_end - (char*)section->data)/SCAN_START_SIZE] = frag_end;
 		}
 		frag_size = frag_end - frag_start;
-		if (frag_size)
+		if (frag_size) {
+			binary_protocol_empty (frag_start, frag_size);
 			memset (frag_start, 0, frag_size);
+		}
 		frag_size = safe_object_get_size ((MonoObject*)pin_queue [i]);
 		frag_size += ALLOC_ALIGN - 1;
 		frag_size &= ~(ALLOC_ALIGN - 1);
@@ -3086,8 +3097,10 @@ build_section_fragments (GCMemSection *section)
 	}
 	frag_end = section->end_data;
 	frag_size = frag_end - frag_start;
-	if (frag_size)
+	if (frag_size) {
+		binary_protocol_empty (frag_start, frag_size);
 		memset (frag_start, 0, frag_size);
+	}
 }
 
 static void
@@ -3287,6 +3300,7 @@ collect_nursery (size_t requested_size)
 	TV_DECLARE (btv);
 
 	init_stats ();
+	binary_protocol_collection (GENERATION_NURSERY);
 	check_scan_starts ();
 
 	degraded_mode = 0;
@@ -3438,6 +3452,7 @@ major_collection (const char *reason)
 	int num_major_sections_saved, save_target, allowance_target;
 
 	init_stats ();
+	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
 
 	degraded_mode = 0;
@@ -3885,6 +3900,7 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 		ptr = (void**)addr;
 		/* if the vtable is inside the chunk it's on the freelist, so skip */
 		if (*ptr && (*ptr < (void*)chunk->start_data || *ptr > (void*)((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE))) {
+			binary_protocol_pin (addr, (gpointer)LOAD_VTABLE (addr), safe_object_get_size ((MonoObject*)addr));
 			pin_object (addr);
 			if (heap_dump_file)
 				pin_stats_register_object ((char*) addr, safe_object_get_size ((MonoObject*) addr));
@@ -4190,6 +4206,7 @@ free_large_object (LOSObject *obj)
 {
 	size_t size = obj->size;
 	DEBUG (4, fprintf (gc_debug_file, "Freed large object %p, size %zd\n", obj->data, obj->size));
+	binary_protocol_empty (obj->data, obj->size);
 
 	los_memory_usage -= size;
 	size += sizeof (LOSObject);
@@ -4241,6 +4258,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_memory_usage += size;
 	los_num_objects++;
 	DEBUG (4, fprintf (gc_debug_file, "Allocated large object %p, vtable: %p (%s), size: %zd\n", obj->data, vtable, vtable->klass->name, size));
+	binary_protocol_alloc (obj->data, vtable, size);
 	return obj->data;
 }
 
@@ -4373,6 +4391,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			 */
 
 			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+			binary_protocol_alloc (p , vtable, size);
 			g_assert (*p == NULL);
 			*p = vtable;
 
@@ -4475,6 +4494,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	}
 
 	DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+	binary_protocol_alloc (p, vtable, size);
 	*p = vtable;
 
 	return p;
@@ -4510,6 +4530,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			HEAVY_STAT (++stat_objects_alloced);
 
 			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+			binary_protocol_alloc (p, vtable, size);
 			g_assert (*p == NULL);
 			*p = vtable;
 
@@ -4632,6 +4653,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		memset (p, 0, size);
 	}
 	DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+	binary_protocol_alloc (p, vtable, size);
 	*p = vtable;
 	UNLOCK_GC;
 	return p;
@@ -5383,6 +5405,7 @@ update_current_thread_stack (void *start)
 {
 	void *ptr = cur_thread_regs;
 	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
+	
 	info->stack_start = align_pointer (&ptr);
 	g_assert (info->stack_start >= info->stack_start_limit && info->stack_start < info->stack_end);
 	ARCH_STORE_REGS (ptr);
@@ -5482,6 +5505,7 @@ restart_threads_until_none_in_managed_allocator (void)
 					continue;
 				if (!info->stack_start || info->in_critical_region ||
 						is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
+					binary_protocol_thread_restart ((gpointer)info->id);
 					result = pthread_kill (info->id, restart_signal_num);
 					if (result == 0) {
 						++restart_count;
@@ -5759,8 +5783,11 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		ptr = (void**)(*p);
 		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
+			gpointer old = *ptr;
 			*ptr = copy_object (*ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
+			if (old)
+				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), safe_object_get_size (*ptr));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
 				/*
 				 * If the object is pinned, each reference to it from nonpinned objects
@@ -6149,6 +6176,8 @@ gc_register_current_thread (void *addr)
 	info->stopped_domain = NULL;
 	info->stopped_regs = NULL;
 
+	binary_protocol_thread_register ((gpointer)info->id);
+
 #ifdef HAVE_KW_THREAD
 	tlab_next_addr = &tlab_next;
 	store_remset_buffer_index_addr = &store_remset_buffer_index;
@@ -6221,6 +6250,8 @@ unregister_current_thread (void)
 	SgenThreadInfo *p;
 	RememberedSet *rset;
 	ARCH_THREAD_TYPE id = ARCH_GET_THREAD ();
+
+	binary_protocol_thread_unregister ((gpointer)id);
 
 	hash = HASH_PTHREAD_T (id) % THREAD_HASH_SIZE;
 	p = thread_table [hash];
@@ -6565,6 +6596,10 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 #endif
 
 	LOCK_GC;
+
+	if (*(gpointer*)ptr)
+		binary_protocol_wbarrier (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (*(gpointer*)ptr));
+
 	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr) || !ptr_in_nursery (*(gpointer*)ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		UNLOCK_GC;
@@ -6923,9 +6958,11 @@ static gboolean missing_remsets;
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
-		if (!object_is_pinned (*(ptr)) && !find_in_remsets ((char*)(ptr))) { \
+		if (!find_in_remsets ((char*)(ptr))) { \
                 fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
-                missing_remsets = TRUE;					\
+		binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
+		if (!object_is_pinned (*(ptr)))				\
+			missing_remsets = TRUE;				\
             } \
         } \
 	} while (0)
@@ -6983,7 +7020,10 @@ check_consistency (void)
 
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 
-	g_assert (!missing_remsets);
+#ifdef BINARY_PROTOCOL
+	if (!binary_protocol_file)
+#endif
+		g_assert (!missing_remsets);
 }
 
 /* Check that the reference is valid */
@@ -7235,6 +7275,11 @@ mono_gc_base_init (void)
 				heap_dump_file = fopen (filename, "w");
 				if (heap_dump_file)
 					fprintf (heap_dump_file, "<sgen-dump>\n");
+#ifdef BINARY_PROTOCOL
+			} else if (g_str_has_prefix (opt, "binary-protocol=")) {
+				char *filename = strchr (opt, '=') + 1;
+				binary_protocol_file = fopen (filename, "w");
+#endif
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
