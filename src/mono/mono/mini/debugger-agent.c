@@ -564,6 +564,8 @@ static void appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result);
 
 static void appdomain_unload (MonoProfiler *prof, MonoDomain *domain);
 
+static void invalidate_each_thread (gpointer key, gpointer value, gpointer user_data);
+
 static void assembly_load (MonoProfiler *prof, MonoAssembly *assembly, int result);
 
 static void assembly_unload (MonoProfiler *prof, MonoAssembly *assembly);
@@ -2866,7 +2868,21 @@ appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result)
 static void
 appdomain_unload (MonoProfiler *prof, MonoDomain *domain)
 {
+	/* Invalidate each thread's frame stack */
+	mono_g_hash_table_foreach (thread_to_tls, invalidate_each_thread, NULL);
 	process_profiler_event (EVENT_KIND_APPDOMAIN_UNLOAD, domain);
+}
+
+/*
+ * invalidate_each_thread:
+ *
+ *   A GHFunc to invalidate frames.
+ *   value must be a DebuggerTlsData*
+ */
+static void
+invalidate_each_thread (gpointer key, gpointer value, gpointer user_data)
+{
+	invalidate_frames (value);
 }
 
 static void
