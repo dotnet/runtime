@@ -1,6 +1,9 @@
 if CROSS_COMPILING
-SUBDIRS = utils io-layer cil metadata arch interpreter mini dis
+SUBDIRS = utils io-layer cil metadata arch $(interpreter_dir) mini dis
 else
-SUBDIRS = utils io-layer cil metadata \
-      arch interpreter mini dis monograph tests benchmark profiler
+if MOONLIGHT
+SUBDIRS = utils io-layer     metadata arch $(interpreter_dir) mini
+else
+SUBDIRS = utils io-layer cil metadata arch $(interpreter_dir) mini dis monograph tests benchmark profiler
+endif
 endif

@@ -529,7 +529,7 @@ test_messages: w32message.exe
 	> test_messages.zero
 	$(JITTEST_PROG_RUN) w32message.exe >& w32message.allout && cmp test_messages.zero w32message.allout
 
-if INSTALL_2_1
+if MOONLIGHT
 test_2_1 : test-coreclr-security
 else
 test_2_1 :
@@ -751,7 +751,7 @@ bug-382986.exe: bug-382986.cs bug-382986-lib.dll
 
 EXTRA_DIST += coreclr-security.cs
 
-if INSTALL_2_1
+if MOONLIGHT
 coreclr-security.exe : coreclr-security.cs
 	$(SMCS) -out:coreclr-security.exe $(srcdir)/coreclr-security.cs
 

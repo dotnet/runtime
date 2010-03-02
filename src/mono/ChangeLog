@@ -1,3 +1,15 @@
+2010-03-02  Rolf Bjarne Kvinge  <RKvinge@novell.com>
+
+	* Makefile.am:
+	* mono/Makefile.am: Only build some subdirs when configured for
+	moonlight.
+
+	* configure.in: If configured --with-moonlight=yes, define MOONLIGHT and
+	use that variable instead of INSTALL_2_1.
+
+	* runtime/Makefile.am: If configured for moonlight, only build
+	net_2_1_raw.
+
 2010-03-02  Mark Probst  <mark.probst@gmail.com>
 
 	* tools/sgen-grep-binprot.c: Tool for searching through the binary
@@ -5383,5 +5395,3 @@ Wed Jul 11 00:36:36 CEST 2001 Paolo Molaro <lupus@ximian.com>
 2001-05-30  Miguel de Icaza  <miguel@ximian.com>
 
 	* NEWS: 
-
-

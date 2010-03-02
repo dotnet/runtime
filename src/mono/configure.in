@@ -2402,7 +2402,6 @@ esac
 
 #AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0 FX (defaults to yes)],                 [], [with_profile2=yes])
 AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to yes)],                  [], [with_profile4=yes])
-AC_ARG_WITH(moonlight, [  --with-moonlight=yes,no         If you want to build the Moonlight 2.1 assemblies (defaults to yes)], [], [with_moonlight=yes])
 AC_ARG_WITH(monotouch, [  --with-monotouch=yes,no         If you want to build the raw MonoTouch 2.1 assemblies (defaults to no)], [], [with_monotouch=no])
 
 OPROFILE=no
@@ -2435,6 +2434,16 @@ AC_ARG_WITH(mcs_docs,[  --with-mcs-docs=yes,no         If you want to build the 
 	fi
 ])
 
+MOONLIGHT=no
+AC_ARG_WITH(moonlight, [  --with-moonlight=yes,no         If you want to build Mono for Moonlight (defaults to no - the resulting mono build is useless for anything but moonlight)],[
+	if test x$with_moonlight = xyes; then
+		MOONLIGHT=yes
+		AC_DEFINE(MOONLIGHT,1,[Building for Moonlight])
+	fi
+])
+
+
+
 dnl
 dnl Consistency settings
 dnl
@@ -2452,7 +2461,7 @@ AC_SUBST(OPROFILE_LIBS)
 
 libmono_ldflags="$libmono_ldflags $LIBS"
 
-AM_CONDITIONAL(INSTALL_2_1, [test "x$with_moonlight" = xyes])
+AM_CONDITIONAL(MOONLIGHT, [test "x$with_moonlight" = xyes])
 AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
 AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" = xyes])
 
@@ -2763,14 +2772,15 @@ fi
       echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$olivedir/build/config.make
       echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$olivedir/build/config.make
       echo "MONO_VERSION = $myver" >> $srcdir/$olivedir/build/config.make
-      if test x$with_moonlight = xyes; then
-        echo "WITH_MOONLIGHT = yes" >> $srcdir/$olivedir/build/config.make
-      fi
     fi
   fi
 
   if test x$DISABLE_MCS_DOCS = xyes; then
 	echo "DISABLE_MCS_DOCS = yes" >> $srcdir/$mcsdir/build/config.make
+  fi
+
+  if test x$with_moonlight = xyes; then
+	echo "MOONLIGHT = 1" >> $srcdir/$mcsdir/build/config.make
   fi
 )
 
