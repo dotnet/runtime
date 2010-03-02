@@ -49,14 +49,17 @@ namespace Mono.Linker.Steps {
 
 		static void CleanMemberReferences (ModuleDefinition module)
 		{
-			foreach (MemberReference reference in new ArrayList (module.MemberReferences)) {
+			var references = module.MemberReferences;
+
+			for (int i = 0; i < references.Count; i++) {
+				var reference = references [i];
 				GenericInstanceType git = reference.DeclaringType as GenericInstanceType;
 				if (git == null)
 					continue;
 
 				foreach (TypeReference arg in git.GenericArguments)
 					if (!CheckType (module, arg))
-						module.MemberReferences.Remove (reference);
+						references.RemoveAt (i--);
 			}
 		}
 
@@ -75,16 +78,23 @@ namespace Mono.Linker.Steps {
 
 		static void CleanType (TypeDefinition type)
 		{
-			CleanNestedTypes (type);
-			CleanProperties (type);
-			CleanEvents (type);
+			if (type.HasNestedTypes)
+				CleanNestedTypes (type);
+			if (type.HasProperties)
+				CleanProperties (type);
+			if (type.HasEvents)
+				CleanEvents (type);
 		}
 
 		static void CleanNestedTypes (TypeDefinition type)
 		{
-			foreach (TypeDefinition nested in new ArrayList (type.NestedTypes))
-				if (!type.Module.Types.Contains (nested))
-					type.NestedTypes.Remove (nested);
+			var nested_types = type.NestedTypes;
+
+			for (int i = 0; i < nested_types.Count; i++) {
+				var nested_type = nested_types [i];
+				if (!type.Module.Types.Contains (nested_type))
+					nested_types.RemoveAt (i--);
+			}
 		}
 
 		static MethodDefinition CheckMethod (TypeDefinition type, MethodDefinition method)
@@ -97,13 +107,16 @@ namespace Mono.Linker.Steps {
 
 		static void CleanEvents (TypeDefinition type)
 		{
-			foreach (EventDefinition evt in new ArrayList (type.Events)) {
+			var events = type.Events;
+
+			for (int i = 0; i < events.Count; i++) {
+				var evt = events [i];
 				evt.AddMethod = CheckMethod (type, evt.AddMethod);
 				evt.InvokeMethod = CheckMethod (type, evt.InvokeMethod);
 				evt.RemoveMethod = CheckMethod (type, evt.RemoveMethod);
 
 				if (!IsEventUsed (evt))
-					type.Events.Remove (evt);
+					events.RemoveAt (i--);
 			}
 		}
 
@@ -114,12 +127,15 @@ namespace Mono.Linker.Steps {
 
 		static void CleanProperties (TypeDefinition type)
 		{
-			foreach (PropertyDefinition prop in new ArrayList (type.Properties)) {
+			var properties = type.Properties;
+
+			for (int i = 0; i < properties.Count; i++) {
+				var prop = properties [i];
 				prop.GetMethod = CheckMethod (type, prop.GetMethod);
 				prop.SetMethod = CheckMethod (type, prop.SetMethod);
 
 				if (!IsPropertyUsed (prop))
-					type.Properties.Remove (prop);
+					properties.RemoveAt (i--);
 			}
 		}
 

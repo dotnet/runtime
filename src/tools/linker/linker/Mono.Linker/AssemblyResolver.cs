@@ -35,15 +35,20 @@ namespace Mono.Linker {
 
 	public class AssemblyResolver : BaseAssemblyResolver {
 
-		Hashtable _assemblies;
+		IDictionary _assemblies;
 
 		public IDictionary AssemblyCache {
 			get { return _assemblies; }
 		}
 
 		public AssemblyResolver ()
+			: this (new Hashtable ())
 		{
-			_assemblies = new Hashtable ();
+		}
+
+		public AssemblyResolver (IDictionary assembly_cache)
+		{
+			_assemblies = assembly_cache;
 		}
 
 		public override AssemblyDefinition Resolve (AssemblyNameReference name)
