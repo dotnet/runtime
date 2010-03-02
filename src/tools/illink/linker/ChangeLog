@@ -1,3 +1,21 @@
+2010-03-02  Jb Evain  <jbevain@novell.com>
+
+	Merge the MonoTouch Linker branch.
+
+	* Mono.Linker/LinkContext.cs:
+		Allow creation with a custom resolver.
+
+	* Mono.Linker/AssemblyResolver.cs:
+		Allow creation with a custom assembly cache.
+
+	* Mono.Linker.Steps/ResolveFromAssemblyStep.cs:
+		- Mark fields for copied assemblied.
+		- Now can take an assembly directly.
+
+	* Mono.Linker.Steps/SweepStep.cs
+	* Mono.Linker.Steps/CleanStep.cs:
+		Optimizations.
+
 2010-02-01  Jb Evain  <jbevain@novell.com>
 
 	* MarkStep.cs: SoapHeader can either take a field or a property.

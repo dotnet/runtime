@@ -33,11 +33,15 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps {
 
-	public class SweepStep : BaseStep {
+	public class SweepStep : IStep {
 
-		protected override void ProcessAssembly (AssemblyDefinition assembly)
+		AssemblyDefinition [] assemblies;
+
+		public void Process (LinkContext context)
 		{
-			SweepAssembly (assembly);
+			assemblies = context.GetAssemblies ();
+			foreach (var assembly in assemblies)
+				SweepAssembly (assembly);
 		}
 
 		void SweepAssembly (AssemblyDefinition assembly)
@@ -50,13 +54,18 @@ namespace Mono.Linker.Steps {
 				return;
 			}
 
-			foreach (TypeDefinition type in Clone (assembly.MainModule.Types)) {
+			var types = assembly.MainModule.Types;
+			var cloned_types = Clone (types);
+
+			types.Clear ();
+
+			foreach (TypeDefinition type in cloned_types) {
 				if (Annotations.IsMarked (type)) {
 					SweepType (type);
+					types.Add (type);
 					continue;
 				}
 
-				assembly.MainModule.Types.Remove (type);
 				SweepReferences (assembly, type);
 			}
 		}
@@ -75,7 +84,7 @@ namespace Mono.Linker.Steps {
 
 		void SweepReferences (AssemblyDefinition target)
 		{
-			foreach (var assembly in Context.GetAssemblies ())
+			foreach (var assembly in assemblies)
 				SweepReferences (assembly, target);
 		}
 
@@ -84,7 +93,7 @@ namespace Mono.Linker.Steps {
 			var references = assembly.MainModule.AssemblyReferences;
 			for (int i = 0; i < references.Count; i++) {
 				var reference = references [i];
-				if (reference.FullName != target.Name.FullName)
+				if (!AreSameReference (reference, target.Name))
 					continue;
 
 				references.RemoveAt (i);
@@ -99,7 +108,7 @@ namespace Mono.Linker.Steps {
 
 		void SweepReferences (AssemblyDefinition assembly, TypeDefinition type)
 		{
-			foreach (AssemblyDefinition asm in Context.GetAssemblies ()) {
+			foreach (AssemblyDefinition asm in assemblies) {
 				ModuleDefinition module = asm.MainModule;
 				if (!module.TypeReferences.Contains (type))
 					continue;
@@ -128,7 +137,7 @@ namespace Mono.Linker.Steps {
 			if (reference == null)
 				return false;
 
-			return assembly.Name.FullName == reference.FullName;
+			return AreSameReference (assembly.Name, reference);
 		}
 
 		static void SweepType (TypeDefinition type)
@@ -148,6 +157,20 @@ namespace Mono.Linker.Steps {
 			for (int i = 0; i < list.Count; i++)
 				if (!Annotations.IsMarked ((IAnnotationProvider) list [i]))
 					list.RemoveAt (i--);
+		}
+
+		static bool AreSameReference (AssemblyNameReference a, AssemblyNameReference b)
+		{
+			if (a == b)
+				return true;
+
+			if (a.Name != b.Name)
+				return false;
+
+			if (a.Version != b.Version)
+				return false;
+
+			return true;
 		}
 	}
 }

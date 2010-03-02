@@ -71,9 +71,14 @@ namespace Mono.Linker {
 		}
 
 		public LinkContext (Pipeline pipeline)
+			: this (pipeline, new AssemblyResolver ())
+		{
+		}
+
+		public LinkContext (Pipeline pipeline, AssemblyResolver resolver)
 		{
 			_pipeline = pipeline;
-			_resolver = new AssemblyResolver ();
+			_resolver = resolver;
 			_actions = new Hashtable ();
 			_parameters = new Hashtable ();
 		}
@@ -124,7 +129,7 @@ namespace Mono.Linker {
 			return assembly;
 		}
 
-		void SafeLoadSymbols (AssemblyDefinition assembly)
+		public void SafeLoadSymbols (AssemblyDefinition assembly)
 		{
 			if (!_linkSymbols)
 				return;
