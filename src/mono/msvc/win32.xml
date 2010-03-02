@@ -582,20 +582,6 @@
 			<Source>Mono.Data.SqlExpressions/Parser.cs</Source>
 		</Sources>
 	</Assembly>
-	<Assembly name="Mono.Data" destination="{destdir}\lib\mono\2.0\Mono.Data.dll">
-		<References>
-			<Reference>mscorlib</Reference>
-			<Reference>System</Reference>
-			<Reference>System.Xml</Reference>
-			<Reference>System.Data</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Data\</SourcePath>
-		<Sources>
-			<Source type="list">Mono.Data.dll.sources</Source>
-		</Sources>
-	</Assembly>
 	<Assembly name="Mono.GetOptions" destination="{destdir}\lib\mono\2.0\Mono.GetOptions.dll">
 		<References>
 			<Reference>System</Reference>
@@ -878,38 +864,6 @@
 			<Source type="list">System.Management.dll.sources</Source>
 		</Sources>
 	</Assembly>
-	<Assembly name="Mono.Data.SybaseClient" destination="{destdir}\lib\mono\2.0\Mono.Data.SybaseClient.dll">
-		<References>
-			<Reference>mscorlib</Reference>
-			<Reference>System</Reference>
-			<Reference>System.Xml</Reference>
-			<Reference>System.EnterpriseServices</Reference>
-			<Reference>System.Data</Reference>
-			<Reference>Mono.Data.Tds</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Data.SybaseClient\</SourcePath>
-		<Sources>
-			<Source type="list">Mono.Data.SybaseClient.dll.sources</Source>
-		</Sources>
-	</Assembly>
-	<Assembly name="Mono.Data.TdsClient" destination="{destdir}\lib\mono\2.0\Mono.Data.TdsClient.dll">
-		<References>
-			<Reference>mscorlib</Reference>
-			<Reference>System</Reference>
-			<Reference>System.Xml</Reference>
-			<Reference>System.EnterpriseServices</Reference>
-			<Reference>System.Data</Reference>
-			<Reference>Mono.Data.Tds</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Data.TdsClient\</SourcePath>
-		<Sources>
-			<Source type="list">Mono.Data.TdsClient.dll.sources</Source>
-		</Sources>
-	</Assembly>
 	<Assembly name="System.Data.OracleClient" destination="{destdir}\lib\mono\2.0\System.Data.OracleClient.dll">
 		<References>
 			<Reference>mscorlib</Reference>
@@ -1008,28 +962,6 @@
 		<SourcePath>{sourcedir}\mcs\class\ICSharpCode.SharpZipLib\</SourcePath>
 		<Sources>
 			<Source type="list">ICSharpCode.SharpZipLib.dll.sources</Source>
-		</Sources>
-	</Assembly>
-	<Assembly name="ByteFX.Data" destination="{destdir}\lib\mono\2.0\ByteFX.Data.dll">
-		<References>
-			<Reference>mscorlib</Reference>
-			<Reference>System</Reference>
-			<Reference>System.Xml</Reference>
-			<Reference>System.Data</Reference>
-			<Reference>ICSharpCode.SharpZipLib</Reference>
-			<Reference>System.Design</Reference>
-			<Reference>System.Drawing</Reference>
-			<Reference>System.Windows.Forms</Reference>
-			<Reference>Mono.Posix</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\ByteFX.Data\</SourcePath>
-		<Sources>
-			<Source type="list">ByteFX.Data.dll.sources</Source>
-			<Source>/res:mysqlclient/Designers/command.bmp</Source>
-			<Source>/res:mysqlclient/Designers/connection.bmp</Source>
-			<Source>/res:mysqlclient/Designers/dataadapter.bmp</Source>
 		</Sources>
 	</Assembly>
 	<Assembly name="Commons.Xml.Relaxng" destination="{destdir}\lib\mono\2.0\Commons.Xml.Relaxng.dll">
@@ -1242,18 +1174,6 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Sources>
 			<Source type="list">IBM.Data.DB2.dll.sources</Source>
-		</Sources>
-	</Assembly>
-	<Assembly name="Microsoft.JScript" destination="{destdir}\lib\mono\2.0\Microsoft.JScript.dll">
-		<References>
-			<Reference>System</Reference>
-			<Reference>Microsoft.Vsa</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Microsoft.JScript\</SourcePath>
-		<Sources>
-			<Source type="list">Microsoft.JScript.dll.sources</Source>
 		</Sources>
 	</Assembly>
 	<Assembly name="CustomMarshalers" destination="{destdir}\lib\mono\2.0\CustomMarshalers.dll">
@@ -1686,7 +1606,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.C5.dll" key="{sourcedir}\mcs\class\Mono.C5\c5.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.Tds.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.GetOptions.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Posix.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Accessibility.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1701,8 +1620,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Runtime.Remoting.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Configuration.Install.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Management.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.SybaseClient.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.TdsClient.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.OracleClient.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.VisualC.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Cscompmgd.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1710,7 +1627,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\PEAPI.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Npgsql.dll" key="{sourcedir}\mcs\class\Npgsql\Npgsql\Npgsql.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\ICSharpCode.SharpZipLib.dll" key="{sourcedir}\mcs\class\ICSharpCode.SharpZipLib\SharpZipLib.key" />
-	<Sign assembly="{destdir}\lib\mono\2.0\ByteFX.Data.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Commons.Xml.Relaxng.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Novell.Directory.Ldap.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Security.Win32.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1723,7 +1639,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Vsa.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Cairo.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\IBM.Data.DB2.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.JScript.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\CustomMarshalers.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\OpenSystem.C.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Framework.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1775,7 +1690,6 @@
 	<Gac>{destdir}\lib\mono\2.0\Mono.C5.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Data.Tds.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Data.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\Mono.Data.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.GetOptions.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Posix.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Accessibility.dll</Gac>
@@ -1790,8 +1704,6 @@
 	<Gac>{destdir}\lib\mono\2.0\System.Runtime.Remoting.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Configuration.Install.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Management.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\Mono.Data.SybaseClient.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\Mono.Data.TdsClient.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Data.OracleClient.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Microsoft.VisualC.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Cscompmgd.dll</Gac>
@@ -1799,7 +1711,6 @@
 	<Gac>{destdir}\lib\mono\2.0\PEAPI.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Npgsql.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\ICSharpCode.SharpZipLib.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\ByteFX.Data.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Commons.Xml.Relaxng.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Novell.Directory.Ldap.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Security.Win32.dll</Gac>
@@ -1812,7 +1723,6 @@
 	<Gac>{destdir}\lib\mono\2.0\Microsoft.Vsa.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Cairo.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\IBM.Data.DB2.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\Microsoft.JScript.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\CustomMarshalers.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\OpenSystem.C.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Microsoft.Build.Framework.dll</Gac>
