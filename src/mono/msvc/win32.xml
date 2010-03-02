@@ -660,19 +660,6 @@
 			<Source>-resource:resources/SR.resources</Source>
 		</Sources>
 	</Assembly>
-	<Assembly name="Mono.Data.SqliteClient" destination="{destdir}\lib\mono\2.0\Mono.Data.SqliteClient.dll">
-		<References>
-			<Reference>System</Reference>
-			<Reference>System.Data</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Data.SqliteClient\</SourcePath>
-		<Sources>
-			<Source type="list">Mono.Data.SqliteClient.dll.sources</Source>
-		</Sources>
-	</Assembly>
 
 	<Culevel source="{sourcedir}\mcs\class\System.Web\UplevelHelperDefinitions.xml" destination="{sourcedir}\mcs\class\System.Web\System.Web\UplevelHelper.cs" />
 	<Resgen workingdir="{sourcedir}\mcs\class\System.Web">{sourcedir}\mcs\class\System.Web\resources\TranslationResources.resx</Resgen>
@@ -1140,17 +1127,6 @@
 			<Source type="list">Mono.Http.dll.sources</Source>
 		</Sources>
 	</Assembly>
-	<Assembly name="Microsoft.Vsa" destination="{destdir}\lib\mono\2.0\Microsoft.Vsa.dll">
-		<References>
-			<Reference>System</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Microsoft.Vsa\</SourcePath>
-		<Sources>
-			<Source type="list">Microsoft.Vsa.dll.sources</Source>
-		</Sources>
-	</Assembly>
 	<Assembly name="Mono.Cairo" destination="{destdir}\lib\mono\2.0\Mono.Cairo.dll">
 		<References>
 		</References>
@@ -1612,7 +1588,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.WebBrowser.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Windows.Forms.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.Sqlite.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.SqliteClient.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Web.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Services.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1636,7 +1611,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Drawing.Design.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Design.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Http.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Vsa.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Cairo.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\IBM.Data.DB2.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\CustomMarshalers.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1696,7 +1670,6 @@
 	<Gac>{destdir}\lib\mono\2.0\Mono.WebBrowser.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Windows.Forms.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Data.Sqlite.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\Mono.Data.SqliteClient.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Web.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Web.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Web.Services.dll</Gac>
@@ -1720,7 +1693,6 @@
 	<Gac>{destdir}\lib\mono\2.0\System.Drawing.Design.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Design.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Http.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\Microsoft.Vsa.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Cairo.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\IBM.Data.DB2.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\CustomMarshalers.dll</Gac>
