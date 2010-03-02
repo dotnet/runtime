@@ -167,6 +167,7 @@ static guint32 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGeneri
 static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
 static void reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb);
 static void reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb);
+static guint32 create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb);
 #endif
 
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
@@ -2385,21 +2386,13 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
-/*
- * Insert a memberef row into the metadata: the token that point to the memberref
- * is returned. Caching is done in the caller (mono_image_get_methodref_token() or
- * mono_image_get_fieldref_token()).
- * The sig param is an index to an already built signature.
- */
 static guint32
-mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, const char *name, guint32 sig)
+mono_image_add_memberef_row (MonoDynamicImage *assembly, guint32 parent, const char *name, guint32 sig)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, pclass;
-	guint32 parent;
 
-	parent = mono_image_typedef_or_ref (assembly, type);
 	switch (parent & MONO_TYPEDEFORREF_MASK) {
 	case MONO_TYPEDEFORREF_TYPEREF:
 		pclass = MONO_MEMBERREF_PARENT_TYPEREF;
@@ -2432,6 +2425,20 @@ mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, cons
 
 	return token;
 }
+
+/*
+ * Insert a memberef row into the metadata: the token that point to the memberref
+ * is returned. Caching is done in the caller (mono_image_get_methodref_token() or
+ * mono_image_get_fieldref_token()).
+ * The sig param is an index to an already built signature.
+ */
+static guint32
+mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, const char *name, guint32 sig)
+{
+	guint32 parent = mono_image_typedef_or_ref (assembly, type);
+	return mono_image_add_memberef_row (assembly, parent, name, sig);
+}
+
 
 static guint32
 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec)
@@ -2491,9 +2498,10 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, 
 static guint32
 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method)
 {
-	guint32 token;
+	guint32 token, parent, sig;
 	ReflectionMethodBuilder rmb;
 	char *name;
+	MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)method->type;
 	
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
 	if (token)
@@ -2508,8 +2516,15 @@ mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, Mo
 	*/
 	if ((rmb.call_conv & ~0x60) != MONO_CALL_DEFAULT && (rmb.call_conv & ~0x60) != MONO_CALL_VARARG)
 		rmb.call_conv = (rmb.call_conv & 0x60) | MONO_CALL_DEFAULT;
-	token = mono_image_get_memberref_token (assembly, mono_reflection_type_get_handle ((MonoReflectionType*)rmb.type),
-					name, method_builder_encode_signature (assembly, &rmb));
+
+	sig = method_builder_encode_signature (assembly, &rmb);
+
+	if (tb->generic_params)
+		parent = create_generic_typespec (assembly, tb);
+	else
+		parent = mono_image_typedef_or_ref (assembly, mono_reflection_type_get_handle ((MonoReflectionType*)rmb.type));
+
+	token = mono_image_add_memberef_row (assembly, parent, name, sig);
 
 	g_free (name);
 	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
@@ -2609,7 +2624,7 @@ static guint32
 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb, gboolean create_methodspec)
 {
 	guint32 token;
-	
+
 	if (mb->generic_params && create_methodspec) 
 		return mono_image_get_methodspec_token_for_generic_method_definition (assembly, mb);
 
@@ -2625,19 +2640,24 @@ mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMe
 static guint32
 mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *mb)
 {
-	guint32 token;
+	guint32 token, parent, sig;
 	ReflectionMethodBuilder rmb;
 	char *name;
+	MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mb->type;
 	
 	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->handleref_managed, mb));
 	if (token)
 		return token;
 
+	g_assert (tb->generic_params);
+
 	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
 
+	parent = create_generic_typespec (assembly, tb);
 	name = mono_string_to_utf8 (rmb.name);
-	token = mono_image_get_memberref_token (assembly, mono_reflection_type_get_handle ((MonoReflectionType*)rmb.type),
-		name, method_builder_encode_signature (assembly, &rmb));
+	sig = method_builder_encode_signature (assembly, &rmb);
+
+	token = mono_image_add_memberef_row (assembly, parent, name, sig);
 
 	g_free (name);
 	mono_g_hash_table_insert (assembly->handleref_managed, mb, GUINT_TO_POINTER(token));
