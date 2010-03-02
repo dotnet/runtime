@@ -254,7 +254,7 @@ arm_rsbs_imm: dest:i src1:i len:4
 arm_rsc_imm: dest:i src1:i len:4
 
 # Linear IR opcodes
-dummy_use: len:0
+dummy_use: src1:i len:0
 dummy_store: len:0
 not_reached: len:0
 not_null: src1:i len:0
