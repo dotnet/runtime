@@ -2602,6 +2602,9 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 				}
 			}
 
+			/* FIXME: this does the memcpy as well (or
+			   should), so we don't need the memcpy
+			   afterwards */
 			mono_emit_jit_icall (cfg, mono_value_copy, iargs);
 		}
 	}
@@ -4239,8 +4242,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if HAVE_WRITE_BARRIERS
 			if (is_ref) {
+				MonoInst *dummy_use;
 				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 				mono_emit_method_call (cfg, write_barrier, &args [0], NULL);
+				EMIT_NEW_DUMMY_USE (cfg, dummy_use, args [1]);
 			}
 #endif
 		}
@@ -4277,8 +4282,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 #if HAVE_WRITE_BARRIERS
 			if (is_ref) {
+				MonoInst *dummy_use;
 				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 				mono_emit_method_call (cfg, write_barrier, &args [0], NULL);
+				EMIT_NEW_DUMMY_USE (cfg, dummy_use, args [1]);
 			}
 #endif
 		}
@@ -6964,9 +6971,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 #if HAVE_WRITE_BARRIERS
 			if (*ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !((sp [1]->opcode == OP_PCONST) && (sp [1]->inst_p0 == 0))) {
+				MonoInst *dummy_use;
 				/* insert call to write barrier */
 				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 				mono_emit_method_call (cfg, write_barrier, sp, NULL);
+				EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
 			}
 #endif
 
@@ -7902,13 +7911,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
 					/* insert call to write barrier */
 					MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-					MonoInst *iargs [2];
+					MonoInst *iargs [2], *dummy_use;
 					int dreg;
 
 					dreg = alloc_preg (cfg);
 					EMIT_NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
 					iargs [1] = sp [1];
 					mono_emit_method_call (cfg, write_barrier, iargs, NULL);
+
+					EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
 				}
 #endif
 
