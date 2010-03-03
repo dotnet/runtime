@@ -469,6 +469,15 @@ static void mono_portability_remember_string (MonoProfiler *prof, MonoDomain *do
 	mono_mutex_unlock (&mismatched_files_section);
 }
 
+static MonoClass *string_class = NULL;
+
+static void mono_portability_remember_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
+{
+	if (klass != string_class)
+		return;
+	mono_portability_remember_string (prof, mono_object_domain (obj), (MonoString*)obj);
+}
+
 static void mono_portability_iomap_event (MonoProfiler *prof, const char *report, const char *pathname, const char *new_pathname)
 {
 	guint32 hash, pathnameHash;
@@ -507,6 +516,7 @@ static void mono_portability_iomap_event (MonoProfiler *prof, const char *report
 static void runtime_initialized_cb (MonoProfiler *prof)
 {
 	runtime_initialized = TRUE;
+	string_class = mono_get_string_class ();
 }
 
 static void profiler_shutdown (MonoProfiler *prof)
@@ -527,7 +537,7 @@ void mono_profiler_startup (const char *desc)
 	mono_profiler_install (prof, profiler_shutdown);
 	mono_profiler_install_runtime_initialized (runtime_initialized_cb);
 	mono_profiler_install_iomap (mono_portability_iomap_event);
-	mono_profiler_install_string_allocation (mono_portability_remember_string);
+	mono_profiler_install_allocation (mono_portability_remember_alloc);
 
-	mono_profiler_set_events (MONO_PROFILE_STRING_ALLOC | MONO_PROFILE_IOMAP_EVENTS);
+	mono_profiler_set_events (MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_IOMAP_EVENTS);
 }
