@@ -60,7 +60,6 @@ static MonoProfileMethodFunc   method_start_invoke;
 static MonoProfileMethodFunc   method_end_invoke;
 static MonoProfileMethodResult man_unman_transition;
 static MonoProfileAllocFunc    allocation_cb;
-static MonoProfileStringAllocFunc string_allocation_cb;
 static MonoProfileMonitorFunc  monitor_event_cb;
 static MonoProfileStatFunc     statistical_cb;
 static MonoProfileStatCallChainFunc statistical_call_chain_cb;
@@ -213,12 +212,6 @@ void
 mono_profiler_install_allocation (MonoProfileAllocFunc callback)
 {
 	allocation_cb = callback;
-}
-
-void 
-mono_profiler_install_string_allocation (MonoProfileStringAllocFunc callback)
-{
-	string_allocation_cb = callback;
 }
 
 void
@@ -383,13 +376,6 @@ mono_profiler_allocation (MonoObject *obj, MonoClass *klass)
 {
 	if ((mono_profiler_events & MONO_PROFILE_ALLOCATIONS) && allocation_cb)
 		allocation_cb (current_profiler, obj, klass);
-}
-
-void
-mono_profiler_string_allocation (MonoDomain *domain, MonoString *str)
-{
-	if ((mono_profiler_events & MONO_PROFILE_STRING_ALLOC) && string_allocation_cb)
-		string_allocation_cb (current_profiler, domain, str);
 }
 
 void

@@ -210,16 +210,7 @@ string_icall_is_in_array (MonoArray *chars, gint32 arraylength, gunichar2 chr)
 MonoString *
 ves_icall_System_String_InternalAllocateStr (gint32 length)
 {
-	MONO_ARCH_SAVE_REGS;
-
-	if (mono_profiler_events & MONO_PROFILE_STRING_ALLOC) {
-		MonoDomain *domain = mono_domain_get ();
-		MonoString *str = mono_string_new_size (domain, length);
-
-		mono_profiler_string_allocation (domain, str);
-		return str;
-	} else
-		return mono_string_new_size(mono_domain_get (), length);
+	return mono_string_new_size(mono_domain_get (), length);
 }
 
 MonoString  *
