@@ -1964,6 +1964,10 @@ add_to_global_remset (gpointer ptr, gboolean root)
 	}
 }
 
+#define MOVED_OBJECTS_NUM 64
+static void *moved_objects [MOVED_OBJECTS_NUM];
+static int moved_objects_idx = 0;
+
 #include "sgen-gray.c"
 
 /*
@@ -2146,6 +2150,14 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 	}
 	/* set the forwarding pointer */
 	forward_object (obj, to_space_bumper);
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES)) {
+		if (moved_objects_idx == MOVED_OBJECTS_NUM) {
+			mono_profiler_gc_moves (moved_objects, moved_objects_idx);
+			moved_objects_idx = 0;
+		}
+		moved_objects [moved_objects_idx++] = obj;
+		moved_objects [moved_objects_idx++] = to_space_bumper;
+	}
 	obj = to_space_bumper;
 	to_space_section->scan_starts [((char*)obj - (char*)to_space_section->data)/SCAN_START_SIZE] = obj;
 	to_space_bumper += objsize;
@@ -5663,6 +5675,13 @@ restart_world (void)
 	TV_DECLARE (end_sw);
 	unsigned long usec;
 
+	/* notify the profiler of the leftovers */
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES)) {
+		if (moved_objects_idx) {
+			mono_profiler_gc_moves (moved_objects, moved_objects_idx);
+			moved_objects_idx = 0;
+		}
+	}
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
 			info->stack_start = NULL;

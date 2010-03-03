@@ -28,7 +28,8 @@ typedef enum {
 	MONO_PROFILE_STATISTICAL      = 1 << 15,
 	MONO_PROFILE_METHOD_EVENTS    = 1 << 16,
 	MONO_PROFILE_MONITOR_EVENTS   = 1 << 17,
-	MONO_PROFILE_IOMAP_EVENTS     = 1 << 18
+	MONO_PROFILE_IOMAP_EVENTS     = 1 << 18, /* this should likely be removed, too */
+	MONO_PROFILE_GC_MOVES         = 1 << 19
 } MonoProfileFlags;
 
 typedef enum {
@@ -112,6 +113,7 @@ typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, 
 typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, mono_byte *ip, void *context);
 typedef void (*MonoProfileStatCallChainFunc) (MonoProfiler *prof, int call_chain_depth, mono_byte **ip, void *context);
 typedef void (*MonoProfileGCFunc)         (MonoProfiler *prof, MonoGCEvent event, int generation);
+typedef void (*MonoProfileGCMoveFunc)     (MonoProfiler *prof, void **objects, int num);
 typedef void (*MonoProfileGCResizeFunc)   (MonoProfiler *prof, int64_t new_size);
 
 typedef void (*MonoProfileIomapFunc) (MonoProfiler *prof, const char *report, const char *pathname, const char *new_pathname);
@@ -156,6 +158,7 @@ void mono_profiler_install_exception   (MonoProfileExceptionFunc throw_callback,
 void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
 void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
 void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
+void mono_profiler_install_gc_moves    (MonoProfileGCMoveFunc callback);
 void mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback);
 
 void mono_profiler_install_code_chunk_new (MonoProfilerCodeChunkNew callback);

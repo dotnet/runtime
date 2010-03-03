@@ -83,6 +83,7 @@ static MonoProfileFunc shutdown_callback;
 
 static MonoProfileGCFunc        gc_event;
 static MonoProfileGCResizeFunc  gc_heap_resize;
+static MonoProfileGCMoveFunc    gc_moves;
 
 static MonoProfileFunc          runtime_initialized_event;
 
@@ -586,11 +587,38 @@ mono_profiler_gc_event (MonoGCEvent event, int generation)
 }
 
 void
+mono_profiler_gc_moves (void **objects, int num)
+{
+	if ((mono_profiler_events & MONO_PROFILE_GC_MOVES) && gc_moves)
+		gc_moves (current_profiler, objects, num);
+}
+
+void
 mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
 {
 	mono_gc_enable_events ();
 	gc_event = callback;
 	gc_heap_resize = heap_resize_callback;
+}
+
+/**
+ * mono_profiler_install_gc_moves:
+ * @callback: callback function
+ *
+ * Install the @callback function that the GC will call when moving objects.
+ * The callback receives an array of pointers and the number of elements
+ * in the array. Every even element in the array is the original object location
+ * and the following odd element is the new location of the object in memory.
+ * So the number of elements argument will always be a multiple of 2.
+ * Since this callback happens during the GC, it is a restricted environment:
+ * no locks can be taken and the object pointers can be inspected only once
+ * the GC is finished (of course the original location pointers will not
+ * point to valid objects anymore).
+ */
+void
+mono_profiler_install_gc_moves (MonoProfileGCMoveFunc callback)
+{
+	gc_moves = callback;
 }
 
 void
@@ -1128,6 +1156,13 @@ output_callers (MethodProfile *p) {
 	}
 }
 
+static int moved_objects = 0;
+static void
+simple_gc_move (MonoProfiler *prof, void **objects, int num)
+{
+	moved_objects += num / 2;
+}
+
 static void
 output_newobj_profile (GList *proflist)
 {
@@ -1175,6 +1210,7 @@ output_newobj_profile (GList *proflist)
 		output_callers (mp);
 	}
 	fprintf (poutput, "Total memory allocated: %" G_GUINT64_FORMAT " KB\n", total / 1024);
+	fprintf (poutput, "Objects copied: %d\n", moved_objects);
 }
 
 static void
@@ -1649,6 +1685,8 @@ mono_profiler_install_simple (const char *desc)
 		}
 	}
 	if (flags & MONO_PROFILE_ALLOCATIONS)
+		flags |= MONO_PROFILE_GC_MOVES;
+	if (flags & MONO_PROFILE_ALLOCATIONS)
 		flags |= MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_EXCEPTIONS;
 	if (!flags)
 		flags = MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_JIT_COMPILATION | MONO_PROFILE_EXCEPTIONS;
@@ -1668,6 +1706,7 @@ mono_profiler_install_simple (const char *desc)
 	mono_profiler_install_allocation (simple_allocation);
 	mono_profiler_install_appdomain (NULL, simple_appdomain_load, simple_appdomain_unload, NULL);
 	mono_profiler_install_statistical (simple_stat_hit);
+	mono_profiler_install_gc_moves (simple_gc_move);
 	mono_profiler_set_events (flags);
 }
 
