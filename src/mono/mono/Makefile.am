@@ -7,3 +7,4 @@ else
 SUBDIRS = utils io-layer cil metadata arch $(interpreter_dir) mini dis monograph tests benchmark profiler
 endif
 endif
+DIST_SUBDIRS = utils io-layer cil metadata arch interpreter mini dis monograph tests benchmark profiler
