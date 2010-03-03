@@ -767,6 +767,34 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
     return normalize128(pclo, pchi, pScale, roundFlag, roundBit);
 }
 
+guint32 rest;
+static void trimExcessScale(guint64* pclo, guint64* pchi, int* pScale)
+{
+	guint64 ilo = *pclo, lastlo;
+	guint64 ihi = *pchi, lasthi;
+	int scale = *pScale;
+	int i = 0, roundBit;
+	
+	while (scale > 0) {
+		scale--;
+		i++;
+		lastlo = ilo;
+		lasthi = ihi;
+		
+		roundBit = div128by32(&ilo, &ihi, 10, &rest);
+		if (rest != 0){
+			i--;
+			if (i == 0)
+				return;
+
+			*pclo = lastlo;
+			*pchi = lasthi;
+			*pScale = scale+1;
+			return;
+		}
+	}
+}
+
 /* performs a += b */
 gint32 mono_decimalIncr(/*[In, Out]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 {
@@ -948,6 +976,14 @@ gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits)
         }
     }
 
+    //
+    // Turn the double 0.6 which at this point is:
+    // 0.6000000000000000
+    // into:
+    // 0.6
+    //
+    trimExcessScale (&alo, &ahi, &scale);
+    
     return pack128toDecimal(pA, alo, ahi, scale, sign);
 }
 
