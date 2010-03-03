@@ -12,6 +12,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-internal-hash.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/metadata/mempool-internals.h>
 
 extern CRITICAL_SECTION mono_delegate_section;
 extern CRITICAL_SECTION mono_strtod_mutex;
@@ -269,6 +270,10 @@ struct _MonoDomain {
 
 	/* Contains the compiled method used by async resylt creation to capture thread context*/
 	gpointer            capture_context_method;
+
+	/* Assembly bindings, the per-domain part */
+	GSList *assembly_bindings;
+	gboolean assembly_bindings_parsed;
 };
 
 typedef struct  {

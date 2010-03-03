@@ -1186,6 +1186,8 @@ mono_domain_create (void)
 	domain->code_mp = mono_code_manager_new ();
 	domain->env = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal, MONO_HASH_KEY_VALUE_GC);
 	domain->domain_assemblies = NULL;
+	domain->assembly_bindings = NULL;
+	domain->assembly_bindings_parsed = FALSE;
 	domain->class_vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	domain->static_data_array = NULL;

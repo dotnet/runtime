@@ -145,6 +145,12 @@ struct MonoParseHandler {
 };
 
 typedef struct {
+	MonoAssemblyBindingInfo *info;
+	void (*info_parsed)(MonoAssemblyBindingInfo *info, void *user_data);
+	void *user_data;
+} ParserUserData;
+
+typedef struct {
 	MonoParseHandler *current;
 	void *user_data;
 	MonoImage *assembly;
@@ -593,16 +599,42 @@ mono_get_machine_config (void)
 }
 
 static void
+assembly_binding_end (gpointer user_data, const char *element_name)
+{
+	ParserUserData *pud = user_data;
+
+	if (!strcmp (element_name, "dependentAssembly")) {
+		if (pud->info_parsed && pud->info) {
+			pud->info_parsed (pud->info, pud->user_data);
+			g_free (pud->info->name);
+			g_free (pud->info->culture);
+		}
+	}
+}
+
+static void
 publisher_policy_start (gpointer user_data,
 		const gchar *element_name,
 		const gchar **attribute_names,
 		const gchar **attribute_values)
 {
+	ParserUserData *pud;
 	MonoAssemblyBindingInfo *info;
 	int n;
 
-	info = user_data;
-	if (!strcmp (element_name, "assemblyIdentity")) {
+	pud = user_data;
+	info = pud->info;
+	if (!strcmp (element_name, "dependentAssembly")) {
+		info->name = NULL;
+		info->culture = NULL;
+		info->has_old_version_bottom = FALSE;
+		info->has_old_version_top = FALSE;
+		info->has_new_version = FALSE;
+		info->is_valid = FALSE;
+		memset (&info->old_version_bottom, 0, sizeof (info->old_version_bottom));
+		memset (&info->old_version_top, 0, sizeof (info->old_version_top));
+		memset (&info->new_version, 0, sizeof (info->new_version));
+	} if (!strcmp (element_name, "assemblyIdentity")) {
 		for (n = 0; attribute_names [n]; n++) {
 			const gchar *attribute_name = attribute_names [n];
 			
@@ -706,13 +738,50 @@ publisher_policy_parser = {
 void
 mono_config_parse_publisher_policy (const gchar *filename, MonoAssemblyBindingInfo *info)
 {
+	ParserUserData user_data = {
+		info,
+		NULL,
+		NULL
+	};
 	ParseState state = {
 		&publisher_policy_parser, /* MonoParseHandler */
-		info, /* user_data */
+		&user_data, /* user_data */
 		NULL, /* MonoImage (we don't need it right now)*/
 		TRUE /* We are already inited */
 	};
 	
+	mono_config_parse_file_with_context (&state, filename);
+}
+
+static MonoParseHandler
+config_assemblybinding_parser = {
+	"", /* We don't need to use declare an xml element */
+	NULL,
+	publisher_policy_start,
+	NULL,
+	assembly_binding_end,
+	NULL
+};
+
+void
+mono_config_parse_assembly_bindings (const char *filename, int amajor, int aminor, void *user_data, void (*infocb)(MonoAssemblyBindingInfo *info, void *user_data))
+{
+	MonoAssemblyBindingInfo info = {
+		.major = amajor,
+		.minor = aminor
+	};
+	ParserUserData pud = {
+		&info,
+		infocb,
+		user_data
+	};
+	ParseState state = {
+		&config_assemblybinding_parser, /* MonoParseHandler */
+		&pud, /* user_data */
+		NULL, /* MonoImage (we don't need it right now)*/
+		TRUE /* We are already inited */
+	};
+
 	mono_config_parse_file_with_context (&state, filename);
 }
 

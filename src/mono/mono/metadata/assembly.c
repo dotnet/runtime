@@ -233,13 +233,16 @@ check_extra_gac_path_env (void) {
 static gboolean
 assembly_binding_maps_name (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname)
 {
+	if (!info || !info->name)
+		return FALSE;
+
 	if (strcmp (info->name, aname->name))
 		return FALSE;
 
 	if (info->major != aname->major || info->minor != aname->minor)
 		return FALSE;
 
-	if ((info->culture != NULL) != (aname->culture != NULL))
+	if ((info->culture != NULL && info->culture [0]) != (aname->culture != NULL && aname->culture [0])) 
 		return FALSE;
 	
 	if (info->culture && strcmp (info->culture, aname->culture))
@@ -254,6 +257,9 @@ assembly_binding_maps_name (MonoAssemblyBindingInfo *info, MonoAssemblyName *ana
 static void
 mono_assembly_binding_info_free (MonoAssemblyBindingInfo *info)
 {
+	if (!info)
+		return;
+
 	g_free (info->name);
 	g_free (info->culture);
 }
@@ -2225,17 +2231,135 @@ search_binding_loaded (MonoAssemblyName *aname)
 	return NULL;
 }
 
+static inline gboolean
+info_compare_versions (AssemblyVersionSet *left, AssemblyVersionSet *right)
+{
+	if (left->major != right->major || left->minor != right->minor ||
+	    left->build != right->build || left->revision != right->revision)
+		return FALSE;
+
+	return TRUE;
+}
+
+static inline gboolean
+info_versions_equal (MonoAssemblyBindingInfo *left, MonoAssemblyBindingInfo *right)
+{
+	if (left->has_old_version_bottom != right->has_old_version_bottom)
+		return FALSE;
+
+	if (left->has_old_version_top != right->has_old_version_top)
+		return FALSE;
+
+	if (left->has_new_version != right->has_new_version)
+		return FALSE;
+
+	if (left->has_old_version_bottom && !info_compare_versions (&left->old_version_bottom, &right->old_version_bottom))
+		return FALSE;
+
+	if (left->has_old_version_top && !info_compare_versions (&left->old_version_top, &right->old_version_top))
+		return FALSE;
+
+	if (left->has_new_version && !info_compare_versions (&left->new_version, &right->new_version))
+		return FALSE;
+
+	return TRUE;
+}
+
+/* LOCKING: assumes all the necessary locks are held */
+static void
+assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
+{
+	MonoAssemblyBindingInfo *info_copy;
+	GSList *tmp;
+	MonoAssemblyBindingInfo *info_tmp;
+	MonoDomain *domain = (MonoDomain*)user_data;
+
+	if (!domain)
+		return;
+
+	for (tmp = domain->assembly_bindings; tmp; tmp = tmp->next) {
+		info_tmp = tmp->data;
+		if (strcmp (info->name, info_tmp->name) == 0 && info_versions_equal (info, info_tmp))
+			return;
+	}
+
+	info_copy = mono_mempool_alloc0 (domain->mp, sizeof (MonoAssemblyBindingInfo));
+	memcpy (info_copy, info, sizeof (MonoAssemblyBindingInfo));
+	if (info->name)
+		info_copy->name = mono_mempool_strdup (domain->mp, info->name);
+	if (info->culture)
+		info_copy->culture = mono_mempool_strdup (domain->mp, info->culture);
+
+	domain->assembly_bindings = g_slist_append_mempool (domain->mp, domain->assembly_bindings, info_copy);
+}
+
+static inline gboolean
+info_major_minor_in_range (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname)
+{
+	if (!info->has_old_version_bottom)
+		return FALSE;
+
+	if (info->old_version_bottom.major > aname->major || info->old_version_bottom.minor > aname->minor)
+		return FALSE;
+
+	if (info->has_old_version_top && (info->old_version_top.major < aname->major || info->old_version_top.minor < aname->minor))
+		return FALSE;
+
+	/* This is not the nicest way to do it, but it's a by-product of the way parsing is done */
+	info->major = aname->major;
+	info->minor = aname->minor;
+
+	return TRUE;
+}
+
+/* LOCKING: Assumes that we are already locked - both loader and domain locks */
+static MonoAssemblyBindingInfo*
+get_per_domain_assembly_binding_info (MonoDomain *domain, MonoAssemblyName *aname)
+{
+	MonoAssemblyBindingInfo *info;
+	GSList *list;
+
+	if (!domain->assembly_bindings)
+		return NULL;
+
+	info = NULL;
+	for (list = domain->assembly_bindings; list; list = list->next) {
+		info = list->data;
+		if (info && !strcmp (aname->name, info->name) && info_major_minor_in_range (info, aname))
+			break;
+		info = NULL;
+	}
+
+	if (info) {
+		if (info->name && info->public_key_token [0] && info->has_old_version_bottom &&
+		    info->has_new_version && assembly_binding_maps_name (info, aname))
+			info->is_valid = TRUE;
+		else
+			info->is_valid = FALSE;
+	}
+
+	return info;
+}
+
 static MonoAssemblyName*
 mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_name)
 {
 	MonoAssemblyBindingInfo *info, *info2;
 	MonoImage *ppimage;
+	MonoDomain *domain;
 
 	if (aname->public_key_token [0] == 0)
 		return aname;
 
+	domain = mono_domain_get ();
 	mono_loader_lock ();
 	info = search_binding_loaded (aname);
+	if (!info) {
+		mono_domain_lock (domain);
+		info = get_per_domain_assembly_binding_info (domain, aname);
+		mono_domain_unlock (domain);
+	}
+
 	mono_loader_unlock ();
 	if (info) {
 		if (!check_policy_versions (info, aname))
@@ -2245,14 +2369,36 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		return dest_name;
 	}
 
-	info = g_new0 (MonoAssemblyBindingInfo, 1);
-	info->major = aname->major;
-	info->minor = aname->minor;
-	
-	ppimage = mono_assembly_load_publisher_policy (aname);
-	if (ppimage) {
-		get_publisher_policy_info (ppimage, aname, info);
-		mono_image_close (ppimage);
+	if (domain && domain->setup && domain->setup->configuration_file) {
+		mono_domain_lock (domain);
+		if (!domain->assembly_bindings_parsed) {
+			gchar *domain_config_file = mono_string_to_utf8 (domain->setup->configuration_file);
+
+			mono_config_parse_assembly_bindings (domain_config_file, aname->major, aname->minor, domain, assembly_binding_info_parsed);
+			domain->assembly_bindings_parsed = TRUE;
+			g_free (domain_config_file);
+		}
+		mono_domain_unlock (domain);
+
+		mono_loader_lock ();
+		mono_domain_lock (domain);
+		info = get_per_domain_assembly_binding_info (domain, aname);
+		mono_domain_unlock (domain);
+		mono_loader_unlock ();
+	}
+
+	if (!info) {
+		info = g_new0 (MonoAssemblyBindingInfo, 1);
+		info->major = aname->major;
+		info->minor = aname->minor;
+	}
+
+	if (!info->is_valid) {
+		ppimage = mono_assembly_load_publisher_policy (aname);
+		if (ppimage) {
+			get_publisher_policy_info (ppimage, aname, info);
+			mono_image_close (ppimage);
+		}
 	}
 
 	/* Define default error value if needed */
