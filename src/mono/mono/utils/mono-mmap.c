@@ -471,7 +471,7 @@ mono_shared_area_instances_helper (void **array, int count, gboolean cleanup)
 			else
 				break;
 		}
-		if (curpid != pid && kill (pid, SIGCONT) == -1 && errno == ESRCH) {
+		if (curpid != pid && kill (pid, 0) == -1 && (errno == ESRCH || errno == ENOMEM)) {
 			char buf [128];
 			g_snprintf (buf, sizeof (buf), "/mono.%d", pid);
 			shm_unlink (buf);
