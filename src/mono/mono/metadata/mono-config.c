@@ -766,21 +766,21 @@ config_assemblybinding_parser = {
 void
 mono_config_parse_assembly_bindings (const char *filename, int amajor, int aminor, void *user_data, void (*infocb)(MonoAssemblyBindingInfo *info, void *user_data))
 {
-	MonoAssemblyBindingInfo info = {
-		.major = amajor,
-		.minor = aminor
-	};
-	ParserUserData pud = {
-		&info,
-		infocb,
-		user_data
-	};
-	ParseState state = {
-		&config_assemblybinding_parser, /* MonoParseHandler */
-		&pud, /* user_data */
-		NULL, /* MonoImage (we don't need it right now)*/
-		TRUE /* We are already inited */
-	};
+	MonoAssemblyBindingInfo info;
+	ParserUserData pud;
+	ParseState state;
+
+	info.major = amajor;
+	info.minor = aminor;
+
+	pud.info = &info;
+	pud.info_parsed = infocb;
+	pud.user_data = user_data;
+
+	state.current = &config_assemblybinding_parser;  /* MonoParseHandler */
+	state.user_data = &pud;
+	state.assembly = NULL; /* MonoImage (we don't need it right now)*/
+	state.inited = TRUE; /* We are already inited */
 
 	mono_config_parse_file_with_context (&state, filename);
 }
