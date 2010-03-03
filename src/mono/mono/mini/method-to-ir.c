@@ -6242,7 +6242,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * emit_get_rgctx_method () calls mono_class_vtable () so check 
 					 * for type load errors before.
 					 */
-					mono_class_vtable (cfg->domain, cmethod->klass);
+					mono_class_setup_vtable (cmethod->klass);
 					CHECK_TYPELOAD (cmethod->klass);
 				}
 
