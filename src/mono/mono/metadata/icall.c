@@ -4897,6 +4897,13 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full
 	return res;
 }
 
+static int
+vell_icall_MonoType_get_core_clr_security_level (MonoReflectionType *this)
+{
+	MonoClass *klass = mono_class_from_mono_type (this->type);
+	return mono_security_core_clr_class_level (klass);
+}
+
 static void
 fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version, gboolean default_publickey, gboolean default_token)
 {

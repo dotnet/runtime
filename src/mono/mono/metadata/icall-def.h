@@ -419,6 +419,7 @@ ICALL(MTYPE_28, "get_Name", ves_icall_MonoType_get_Name)
 ICALL(MTYPE_29, "get_Namespace", ves_icall_MonoType_get_Namespace)
 ICALL(MTYPE_30, "get_UnderlyingSystemType", ves_icall_MonoType_get_UnderlyingSystemType)
 ICALL(MTYPE_31, "get_attributes", ves_icall_get_attributes)
+ICALL(MTYPE_33, "get_core_clr_security_level", vell_icall_MonoType_get_core_clr_security_level)
 ICALL(MTYPE_32, "type_from_obj", mono_type_type_from_obj)
 
 #ifndef DISABLE_SOCKETS
