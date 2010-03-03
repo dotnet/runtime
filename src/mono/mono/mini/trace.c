@@ -132,6 +132,10 @@ get_token (void)
 		get_string ();
 		return TOKEN_CLASS;
 	}
+	if (*input == '-'){
+		input++;
+		return TOKEN_EXCLUDE;
+	}
 	if (is_filenamechar (*input)){
 		get_string ();
 		if (strcmp (value, "all") == 0)
@@ -141,10 +145,6 @@ get_token (void)
 		if (strcmp (value, "disabled") == 0)
 			return TOKEN_DISABLED;
 		return TOKEN_STRING;
-	}
-	if (*input == '-'){
-		input++;
-		return TOKEN_EXCLUDE;
 	}
 	if (*input == ','){
 		input++;
