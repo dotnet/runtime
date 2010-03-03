@@ -26,6 +26,40 @@
 static MonoTraceSpec trace_spec;
 
 gboolean
+mono_trace_eval_exception (MonoClass *klass)
+{
+	int include = 0;
+	int i;
+
+	if (!klass)
+		return FALSE;
+
+	for (i = 0; i < trace_spec.len; i++) {
+		MonoTraceOperation *op = &trace_spec.ops [i];
+		int inc = 0;
+		
+		switch (op->op){
+		case MONO_TRACEOP_EXCEPTION:
+			if (strcmp ("", op->data) == 0 && strcmp ("all", op->data2) == 0)
+				inc = 1;
+			else if (strcmp ("", op->data) == 0 || strcmp (klass->name_space, op->data) == 0)
+				if (strcmp (klass->name, op->data2) == 0)
+					inc = 1;
+			break;
+		default:
+			break;
+		}
+		if (op->exclude){
+			if (inc)
+				include = 0;
+		} else if (inc)
+			include = 1;
+	}
+
+	return include;
+}
+
+gboolean
 mono_trace_eval (MonoMethod *method)
 {
 	int include = 0;
@@ -55,6 +89,8 @@ mono_trace_eval (MonoMethod *method)
 		case MONO_TRACEOP_NAMESPACE:
 			if (strcmp (method->klass->name_space, op->data) == 0)
 				inc = 1;
+		case MONO_TRACEOP_EXCEPTION:
+			break;
 		}
 		if (op->exclude){
 			if (inc)
@@ -99,6 +135,7 @@ enum Token {
 	TOKEN_CLASS,
 	TOKEN_ALL,
 	TOKEN_PROGRAM,
+	TOKEN_EXCEPTION,
 	TOKEN_NAMESPACE,
 	TOKEN_STRING,
 	TOKEN_EXCLUDE,
@@ -131,6 +168,11 @@ get_token (void)
 		input += 2;
 		get_string ();
 		return TOKEN_CLASS;
+	}
+	if (input [0] == 'E' && input [1] == ':'){
+		input += 2;
+		get_string ();
+		return TOKEN_EXCEPTION;
 	}
 	if (*input == '-'){
 		input++;
@@ -195,7 +237,7 @@ get_spec (int *last)
 	else if (token == TOKEN_NAMESPACE){
 		trace_spec.ops [*last].op = MONO_TRACEOP_NAMESPACE;
 		trace_spec.ops [*last].data = g_strdup (value);
-	} else if (token == TOKEN_CLASS){
+	} else if (token == TOKEN_CLASS || token == TOKEN_EXCEPTION){
 		char *p = strrchr (value, '.');
 		if (p) {
 			*p++ = 0;
@@ -206,7 +248,7 @@ get_spec (int *last)
 			trace_spec.ops [*last].data = g_strdup ("");
 			trace_spec.ops [*last].data2 = g_strdup (value);
 		}
-		trace_spec.ops [*last].op = MONO_TRACEOP_CLASS;
+		trace_spec.ops [*last].op = token == TOKEN_CLASS ? MONO_TRACEOP_CLASS : MONO_TRACEOP_EXCEPTION;
 	} else if (token == TOKEN_STRING){
 		trace_spec.ops [*last].op = MONO_TRACEOP_ASSEMBLY;
 		trace_spec.ops [*last].data = g_strdup (value);
@@ -613,4 +655,3 @@ mono_trace_is_enabled ()
 {
 	return trace_spec.enabled;
 }
-

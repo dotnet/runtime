@@ -1189,8 +1189,30 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 	if (!test_only) {
 		MonoContext ctx_cp = *ctx;
-		if (mono_trace_is_enabled ())
-			g_print ("[%p:] EXCEPTION handling: %s\n", (void*)GetCurrentThreadId (), mono_object_class (obj)->name);
+		if (mono_trace_is_enabled ()) {
+			MonoMethod *system_exception_get_message = mono_class_get_method_from_name (mono_defaults.exception_class, "get_Message", 0);
+			MonoMethod *get_message = system_exception_get_message == NULL ? NULL : mono_object_get_virtual_method (obj, system_exception_get_message);
+			MonoObject *message;
+			const char *type_name = mono_class_get_name (mono_object_class (mono_ex));
+			char *msg = NULL;
+			MonoObject *exc = NULL;
+			if (get_message == NULL) {
+				message = NULL;
+			} else if (!strcmp (type_name, "OutOfMemoryException") || !strcmp (type_name, "StackOverflowException")) {
+				message = NULL;
+				msg = g_strdup_printf ("(No exception message for: %s)\n", type_name);
+			} else {
+				message = mono_runtime_invoke (get_message, obj, NULL, &exc);
+				
+			}
+			if (msg == NULL) {
+				msg = message ? mono_string_to_utf8 ((MonoString *) message) : g_strdup ("(System.Exception.Message property not available)");
+			}
+			g_print ("[%p:] EXCEPTION handling: %s.%s: %s\n", (void*)GetCurrentThreadId (), mono_object_class (obj)->name_space, mono_object_class (obj)->name, msg);
+			g_free (msg);
+			if (mono_ex && mono_trace_eval_exception (mono_object_class (mono_ex)))
+				mono_print_thread_dump_from_ctx (ctx);
+		}
 		mono_profiler_exception_thrown (obj);
 		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, FALSE, &first_filter_idx, out_ji)) {
 			if (mono_break_on_exc)

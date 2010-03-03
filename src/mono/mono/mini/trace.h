@@ -9,7 +9,8 @@ typedef enum {
 	MONO_TRACEOP_METHOD,
 	MONO_TRACEOP_ASSEMBLY,
 	MONO_TRACEOP_CLASS,
-	MONO_TRACEOP_NAMESPACE
+	MONO_TRACEOP_NAMESPACE,
+	MONO_TRACEOP_EXCEPTION,
 } MonoTraceOpcode;
 
 typedef struct {
@@ -36,6 +37,7 @@ mono_trace_leave_method (MonoMethod *method, ...) MONO_INTERNAL;
 
 void mono_trace_enable (gboolean enable) MONO_INTERNAL;
 gboolean mono_trace_is_enabled (void) MONO_INTERNAL;
+gboolean mono_trace_eval_exception (MonoClass *klass) MONO_INTERNAL;
 
 G_END_DECLS
 
