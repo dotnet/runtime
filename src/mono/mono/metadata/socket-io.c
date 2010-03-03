@@ -2905,7 +2905,6 @@ inet_pton (int family, const char *address, void *inaddrp)
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	char *address;
-	gboolean v1;
 	
 #ifdef AF_INET6
 	struct sockaddr_in saddr;
@@ -2919,8 +2918,6 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	struct hostent *he;
 	gboolean ret;
 #endif
-
-	v1 = mono_framework_version () == 1;
 
 	address = mono_string_to_utf8 (addr);
 
@@ -2942,10 +2939,6 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	}
 	g_free(address);
 
-	if (v1) {
-		flags = NI_NAMEREQD;
-	}
-	
 	if(family == AF_INET) {
 #if HAVE_SOCKADDR_IN_SIN_LEN
 		saddr.sin_len = sizeof (saddr);
@@ -2983,12 +2976,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	}
 
 	if ((he = gethostbyaddr ((char *) &inaddr, sizeof (inaddr), AF_INET)) == NULL) {
-		if (v1) {
-			ret = FALSE;
-		} else {
-			ret = ipaddr_to_IPHostEntry (address, h_name,
-						     h_aliases, h_addr_list);
-		}
+		ret = ipaddr_to_IPHostEntry (address, h_name, h_aliases, h_addr_list);
 	} else {
 		ret = hostent_to_IPHostEntry (he, h_name, h_aliases,
 					      h_addr_list, FALSE);

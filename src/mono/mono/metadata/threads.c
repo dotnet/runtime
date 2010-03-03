@@ -681,10 +681,8 @@ static guint32 WINAPI start_wrapper(void *data)
 
 	/* On 2.0 profile (and higher), set explicitly since state might have been
 	   Unknown */
-	if (mono_framework_version () != 1) {
-		if (internal->apartment_state == ThreadApartmentState_Unknown)
-			internal->apartment_state = ThreadApartmentState_MTA;
-	}
+	if (internal->apartment_state == ThreadApartmentState_Unknown)
+		internal->apartment_state = ThreadApartmentState_MTA;
 
 	mono_thread_init_apartment_state ();
 

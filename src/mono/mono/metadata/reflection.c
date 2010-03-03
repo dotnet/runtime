@@ -4057,13 +4057,8 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	*int32val = GUINT32_TO_LE (0); /* reserved */
 	p += 4;
 
-	if (mono_framework_version () > 1) {
-		*p++ = 2; /* version */
-		*p++ = 0;
-	} else {
-		*p++ = 1; /* version */
-		*p++ = 0;
-	}
+	*p++ = 2; /* version */
+	*p++ = 0;
 
 	if (meta->idx_string_wide)
 		*p |= 0x01;
@@ -5731,10 +5726,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
 	cli_header = (MonoCLIHeader*)(assembly->code.data + assembly->cli_header_offset);
 	cli_header->ch_size = GUINT32_FROM_LE (72);
 	cli_header->ch_runtime_major = GUINT16_FROM_LE (2);
-	if (mono_framework_version () > 1)
-		cli_header->ch_runtime_minor = GUINT16_FROM_LE (5);
-	else 
-		cli_header->ch_runtime_minor = GUINT16_FROM_LE (0);
+	cli_header->ch_runtime_minor = GUINT16_FROM_LE (5);
 	cli_header->ch_flags = GUINT32_FROM_LE (assemblyb->pe_kind);
 	if (assemblyb->entry_point) {
 		guint32 table_idx = 0;

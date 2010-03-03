@@ -1518,7 +1518,6 @@ gboolean
 mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 {
 	MonoError error;
-	const char *version;
 	MonoAppDomainSetup *setup;
 	gchar *all_dirs;
 	gchar **dir_ptr;
@@ -1535,21 +1534,14 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	if (setup == NULL || setup->shadow_copy_files == NULL)
 		return FALSE;
 
-	version = mono_get_runtime_info ()->framework_version;
-
-	/* For 1.x, not NULL is enough. In 2.0 it has to be "true" */
-	if (*version <= '1') {
-		shadow_enabled = TRUE;
-	} else {
-		shadow_status_string = mono_string_to_utf8_checked (setup->shadow_copy_files, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_cleanup (&error);
-			return FALSE;
-		}
-		shadow_enabled = !g_ascii_strncasecmp (shadow_status_string, "true", 4);
-		g_free (shadow_status_string);
+	shadow_status_string = mono_string_to_utf8_checked (setup->shadow_copy_files, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_cleanup (&error);
+		return FALSE;
 	}
-		
+	shadow_enabled = !g_ascii_strncasecmp (shadow_status_string, "true", 4);
+	g_free (shadow_status_string);
+
 	if (!shadow_enabled)
 		return FALSE;
 

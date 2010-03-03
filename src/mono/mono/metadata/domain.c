@@ -1320,11 +1320,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	}
 	
-	/* Now that we have a runtime, set the policy for unhandled exceptions */
-	if (mono_framework_version () < 2) {
-		mono_runtime_unhandled_exception_policy_set (MONO_UNHANDLED_POLICY_LEGACY);
-	}
-
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
 		case MONO_IMAGE_ERROR_ERRNO: {

@@ -285,7 +285,6 @@ async_invoke_io_thread (gpointer data)
 {
 	MonoDomain *domain;
 	MonoInternalThread *thread;
-	const gchar *version;
 	IdleThreadData idle_data = {0};
   
 	idle_data.timeout = INFINITE;
@@ -295,7 +294,6 @@ async_invoke_io_thread (gpointer data)
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);
 
-	version = mono_get_runtime_info ()->framework_version;
 	for (;;) {
 		MonoSocketAsyncResult *state;
 		MonoAsyncResult *ar;
@@ -347,7 +345,7 @@ async_invoke_io_thread (gpointer data)
 				mono_thread_pop_appdomain_ref ();
 				InterlockedDecrement (&async_io_tp.busy_threads);
 				/* If the callee changes the background status, set it back to TRUE */
-				if (*version != '1' && !mono_thread_test_state (thread , ThreadState_Background))
+				if (!mono_thread_test_state (thread , ThreadState_Background))
 					ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 			}
 		}
@@ -1493,7 +1491,6 @@ async_invoke_thread (gpointer data)
 {
 	MonoDomain *domain;
 	MonoInternalThread *thread;
-	const gchar *version;
 	IdleThreadData idle_data = {0};
   
 	idle_data.timeout = INFINITE;
@@ -1502,7 +1499,6 @@ async_invoke_thread (gpointer data)
 	thread = mono_thread_internal_current ();
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);
-	version = mono_get_runtime_info ()->framework_version;
 	for (;;) {
 		MonoAsyncResult *ar;
 
@@ -1543,7 +1539,7 @@ async_invoke_thread (gpointer data)
 				mono_thread_pop_appdomain_ref ();
 				InterlockedDecrement (&async_tp.busy_threads);
 				/* If the callee changes the background status, set it back to TRUE */
-				if (*version != '1' && !mono_thread_test_state (thread , ThreadState_Background))
+				if (!mono_thread_test_state (thread , ThreadState_Background))
 					ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 			}
 		}
