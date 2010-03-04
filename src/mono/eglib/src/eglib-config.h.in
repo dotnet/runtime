@@ -25,4 +25,8 @@ typedef signed   @GSIZE@ gssize;
 #define G_GSIZE_FORMAT   @GSIZE_FORMAT@
 #define G_GUINT64_FORMAT @G_GUINT64_FORMAT@
 
+#if @G_HAVE_ISO_VARARGS@ == 1
+#define G_HAVE_ISO_VARARGS
+#endif
+
 #endif

@@ -1,5 +1,7 @@
 2010-03-04  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.ac: Add a check for ISO varargs.
+
 	* test/test.c: Fix the build.
 
 	* src/glib.h src/goutput.c: Emit asserts through a g_assertion_message ()
