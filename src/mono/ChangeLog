@@ -1,5 +1,7 @@
 2010-03-04  Zoltan Varga  <vargaz@gmail.com>
 
+	* Makefile.am (DIST_SUBDIRS): Add eglib.
+
 	* autogen.sh: Run eglib's autogen.sh too.
 
 2010-03-02  Rolf Bjarne Kvinge  <RKvinge@novell.com>
