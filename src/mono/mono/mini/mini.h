@@ -678,8 +678,6 @@ struct MonoCallArgParm {
  */
 enum {
 	MONO_INST_HAS_METHOD = 1,
-	/* temp local created by a DUP: used only within a BB */
-	MONO_INST_IS_TEMP    = 1,
 	MONO_INST_INIT       = 1, /* in localloc */
 	MONO_INST_SINGLE_STEP_LOC = 1, /* in SEQ_POINT */
 	MONO_INST_IS_DEAD    = 2,
