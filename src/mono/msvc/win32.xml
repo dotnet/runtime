@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Assemblies>
 	<!-- Delete previous builds -->
 	<Delete type="directory">{destdir}\bin</Delete>
@@ -580,18 +580,6 @@
 		<Sources>
 			<Source type="list">System.Data.dll.sources</Source>
 			<Source>Mono.Data.SqlExpressions/Parser.cs</Source>
-		</Sources>
-	</Assembly>
-	<Assembly name="Mono.GetOptions" destination="{destdir}\lib\mono\2.0\Mono.GetOptions.dll">
-		<References>
-			<Reference>System</Reference>
-		</References>
-		<OutputType>library</OutputType>
-		<IgnoreWarnings>618</IgnoreWarnings>
-		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.GetOptions\</SourcePath>
-		<Sources>
-			<Source type="list">Mono.GetOptions.dll.sources</Source>
 		</Sources>
 	</Assembly>
   <Assembly name="Accessibility" destination="{destdir}\lib\mono\2.0\Accessibility.dll">
@@ -1582,7 +1570,6 @@
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.C5.dll" key="{sourcedir}\mcs\class\Mono.C5\c5.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.Tds.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.GetOptions.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Posix.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Accessibility.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\Mono.WebBrowser.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1664,7 +1651,6 @@
 	<Gac>{destdir}\lib\mono\2.0\Mono.C5.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Data.Tds.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\System.Data.dll</Gac>
-	<Gac>{destdir}\lib\mono\2.0\Mono.GetOptions.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.Posix.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Accessibility.dll</Gac>
 	<Gac>{destdir}\lib\mono\2.0\Mono.WebBrowser.dll</Gac>
