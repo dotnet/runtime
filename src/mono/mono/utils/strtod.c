@@ -21,9 +21,7 @@
 #define freedtoa __freedtoa
 #define dtoa __dtoa
 
-/* malloc/free should be good enough */
-#define USE_MALLOC
-
+#define Omit_Private_Memory
 #define MULTIPLE_THREADS 1
 /* Lock 0 is not used because of USE_MALLOC, Lock 1 protects a lazy-initialized table */
 #define ACQUIRE_DTOA_LOCK(n)
@@ -517,13 +515,6 @@ Bigint {
 
  typedef struct Bigint Bigint;
 
-#ifdef USE_MALLOC
-
-#define Balloc(k) malloc ((sizeof (Bigint) + ((1 << k) - 1) * sizeof (ULong)))
-#define Bfree(p) free (p)
-
-#else
-
  static Bigint *freelist[Kmax+1];
 
  static Bigint *
@@ -574,15 +565,17 @@ Bfree
 	(Bigint *v)
 #endif
 {
+#ifdef Omit_Private_Memory
+	free (v);
+#else
 	if (v) {
 		ACQUIRE_DTOA_LOCK(0);
 		v->next = freelist[v->k];
 		freelist[v->k] = v;
 		FREE_DTOA_LOCK(0);
-		}
 	}
-
-#endif /* #ifdef USE_MALLOC */
+#endif
+}
 
 #define Bcopy(x,y) memcpy((char *)&x->sign, (char *)&y->sign, \
 y->wds*sizeof(Long) + 2*sizeof(int))
