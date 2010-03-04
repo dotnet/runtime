@@ -942,7 +942,10 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 		else
 			*value = NULL;
 	} else {
-		mono_dl_symbol (module, name, value);
+		char *err = mono_dl_symbol (module, name, value);
+
+		if (err)
+			g_free (err);
 	}
 }
 
@@ -2397,7 +2400,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_SWITCH:
 		ji->data.table = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoBBTable));
 		ji->data.table->table_size = decode_value (p, &p);
-		table = g_new (gpointer, ji->data.table->table_size);
+		table = mono_domain_alloc (mono_domain_get (), sizeof (gpointer) * ji->data.table->table_size);
 		ji->data.table->table = (MonoBasicBlock**)table;
 		for (i = 0; i < ji->data.table->table_size; i++)
 			table [i] = (gpointer)(gssize)decode_value (p, &p);
