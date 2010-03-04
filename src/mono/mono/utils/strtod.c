@@ -21,11 +21,13 @@
 #define freedtoa __freedtoa
 #define dtoa __dtoa
 
-G_LOCK_DEFINE_STATIC(str_mutex0);
-G_LOCK_DEFINE_STATIC(str_mutex1);
+/* malloc/free should be good enough */
+#define USE_MALLOC
+
 #define MULTIPLE_THREADS 1
-#define ACQUIRE_DTOA_LOCK(n)	G_LOCK (str_mutex##n)
-#define FREE_DTOA_LOCK(n)		G_UNLOCK (str_mutex##n)
+/* Lock 0 is not used because of USE_MALLOC, Lock 1 protects a lazy-initialized table */
+#define ACQUIRE_DTOA_LOCK(n)
+#define FREE_DTOA_LOCK(n)
 
 /* Please send bug reports to David M. Gay (dmg at acm dot org,
  * with " at " changed at "@" and " dot " changed to ".").	*/
@@ -515,6 +517,13 @@ Bigint {
 
  typedef struct Bigint Bigint;
 
+#ifdef USE_MALLOC
+
+#define Balloc(k) malloc ((sizeof (Bigint) + ((1 << k) - 1) * sizeof (ULong)))
+#define Bfree(p) free (p)
+
+#else
+
  static Bigint *freelist[Kmax+1];
 
  static Bigint *
@@ -572,6 +581,8 @@ Bfree
 		FREE_DTOA_LOCK(0);
 		}
 	}
+
+#endif /* #ifdef USE_MALLOC */
 
 #define Bcopy(x,y) memcpy((char *)&x->sign, (char *)&y->sign, \
 y->wds*sizeof(Long) + 2*sizeof(int))
