@@ -7385,6 +7385,12 @@ ves_icall_Mono_Runtime_GetDisplayName (void)
 	return display_name;
 }
 
+static MonoObject *
+ves_icall_Mono_Runtime_NewObject (MonoType *t)
+{
+	return mono_object_new (mono_domain_get (), mono_class_from_mono_type (t));
+}
+
 static MonoString*
 ves_icall_System_ComponentModel_Win32Exception_W32ErrorMessage (guint32 code)
 {
