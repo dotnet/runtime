@@ -2730,7 +2730,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
-			gpointer addr;
+			gpointer addr = NULL;
 
 			mono_domain_lock (domain);
 			if (domain->special_static_fields)
