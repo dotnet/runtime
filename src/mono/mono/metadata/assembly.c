@@ -592,7 +592,10 @@ mono_set_rootdir (void)
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
 
 	config = g_build_filename (root, "..", "etc", NULL);
-	mono_set_dirs (root, config);
+	if (g_file_test (root, G_FILE_TEST_EXISTS) && g_file_test (config, G_FILE_TEST_EXISTS))
+		mono_set_dirs (root, config);
+	else
+		fallback ();
 
 	g_free (config);
 	g_free (root);
