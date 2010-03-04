@@ -1,3 +1,7 @@
+2010-03-04  Zoltan Varga  <vargaz@gmail.com>
+
+	* autogen.sh: Run eglib's autogen.sh too.
+
 2010-03-02  Rolf Bjarne Kvinge  <RKvinge@novell.com>
 
 	* Makefile.am:

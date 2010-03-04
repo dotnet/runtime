@@ -130,6 +130,12 @@ if test -d $srcdir/libgc; then
   echo Done running libgc/autogen.sh ...
 fi
 
+if test -d $srcdir/eglib; then
+  echo Running eglib/autogen.sh ...
+  (cd $srcdir/eglib ; NOCONFIGURE=1 ./autogen.sh "$@")
+  echo Done running eglib/autogen.sh ...
+fi
+
 
 conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
 
