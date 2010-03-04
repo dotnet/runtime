@@ -4367,7 +4367,7 @@ void
 mono_emit_jit_tramp (void *start, int size, const char *desc)
 {
 	if (perf_map_file)
-		fprintf (perf_map_file, "%llx %x %s\n", (uint64_t)(gsize)start, size, desc);
+		fprintf (perf_map_file, "%llx %x %s\n", (long long unsigned int)(gsize)start, size, desc);
 }
 
 void
