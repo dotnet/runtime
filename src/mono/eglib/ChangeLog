@@ -1,3 +1,10 @@
+
+Thu Mar 4 16:18:34 CET 2010 Paolo Molaro <lupus@ximian.com>
+
+	* src/eglib-remap.h, src/glib.h: header file to remap the symbols
+	so there is no clash with system glib.
+	* src/Makefile.am: build static lib as well.
+
 2010-03-04  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.ac: Add a check for ISO varargs.

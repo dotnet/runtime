@@ -16,6 +16,9 @@
 #endif
 
 #include <eglib-config.h>
+#ifndef EGLIB_NO_REMAP
+#include <eglib-remap.h>
+#endif
 
 #ifndef offsetof
 #   define offsetof(s_name,n_name) (size_t)(char *)&(((s_name*)0)->m_name)
