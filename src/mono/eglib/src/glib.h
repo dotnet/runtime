@@ -204,8 +204,8 @@ guint    g_int_hash     (gconstpointer v1);
 gboolean g_str_equal    (gconstpointer v1, gconstpointer v2);
 guint    g_str_hash     (gconstpointer v1);
 
-#define  g_assert(x)     G_STMT_START { if (!(x)) g_error ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x);  } G_STMT_END
-#define  g_assert_not_reached() G_STMT_START { g_error ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } G_STMT_END
+#define  g_assert(x)     G_STMT_START { if (!(x)) g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x);  } G_STMT_END
+#define  g_assert_not_reached() G_STMT_START { g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } G_STMT_END
 
 /*
  * Errors
@@ -511,6 +511,7 @@ GLogLevelFlags g_log_set_always_fatal (GLogLevelFlags fatal_mask);
 GLogLevelFlags g_log_set_fatal_mask   (const gchar *log_domain, GLogLevelFlags fatal_mask);
 void           g_logv                 (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args);
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
+void           g_assertion_message    (const gchar *format, ...) G_GNUC_NORETURN;
 
 #ifdef HAVE_C99_SUPPORT
 #define g_error(format, ...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, __VA_ARGS__)
@@ -530,6 +531,7 @@ void           g_log                  (const gchar *log_domain, GLogLevelFlags l
 #define g_printerr(...) fprintf (stderr, __VA_ARGS__)
 #endif
 #define g_log_set_handler(a,b,c,d)
+
 /*
  * Conversions
  */

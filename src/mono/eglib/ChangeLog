@@ -1,3 +1,10 @@
+2010-03-04  Zoltan Varga  <vargaz@gmail.com>
+
+	* test/test.c: Fix the build.
+
+	* src/glib.h src/goutput.c: Emit asserts through a g_assertion_message ()
+	function which is decorated with G_GNUC_NORETURN, to fix many warnings when using
+	the eglib build.
 
 Mon Mar 1 17:12:24 CET 2010 Paolo Molaro <lupus@ximian.com>
 
