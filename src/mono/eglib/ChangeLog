@@ -1,4 +1,8 @@
 
+Thu Mar 4 16:34:37 CET 2010 Paolo Molaro <lupus@ximian.com>
+
+	* src/unicode-data.h: save 70 KB.
+
 Thu Mar 4 16:18:34 CET 2010 Paolo Molaro <lupus@ximian.com>
 
 	* src/eglib-remap.h, src/glib.h: header file to remap the symbols
