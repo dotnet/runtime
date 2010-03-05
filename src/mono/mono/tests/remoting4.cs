@@ -171,6 +171,11 @@ namespace RemotingTest
 				return 5;
 			if (iface.Foo <string> () != null)
 				return 6;
+
+			// Test type identity (#504886, comment #10 ff.)
+
+			if (typeof (R1) != myobj.GetType ())
+				return 7;
 	
 			Console.WriteLine("test-ok");
 			return 0;
