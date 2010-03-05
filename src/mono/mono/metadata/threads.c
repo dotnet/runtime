@@ -192,7 +192,11 @@ static int highest_small_id = -1;
 static MonoInternalThread **small_id_table = NULL;
 
 /* The hazard table */
+#if MONO_SMALL_CONFIG
+#define HAZARD_TABLE_MAX_SIZE	256
+#else
 #define HAZARD_TABLE_MAX_SIZE	16384 /* There cannot be more threads than this number. */
+#endif
 static volatile int hazard_table_size = 0;
 static MonoThreadHazardPointers * volatile hazard_table = NULL;
 
@@ -348,7 +352,12 @@ small_id_alloc (MonoInternalThread *thread)
 	if (small_id_next > small_id_table_size)
 		small_id_next = 0;
 
+	g_assert (id < HAZARD_TABLE_MAX_SIZE);
 	if (id >= hazard_table_size) {
+#if MONO_SMALL_CONFIG
+		hazard_table = g_malloc0 (sizeof (MonoThreadHazardPointers) * HAZARD_TABLE_MAX_SIZE);
+		hazard_table_size = HAZARD_TABLE_MAX_SIZE;
+#else
 		gpointer page_addr;
 		int pagesize = mono_pagesize ();
 		int num_pages = (hazard_table_size * sizeof (MonoThreadHazardPointers) + pagesize - 1) / pagesize;
@@ -362,15 +371,13 @@ small_id_alloc (MonoInternalThread *thread)
 		g_assert (hazard_table != NULL);
 		page_addr = (guint8*)hazard_table + num_pages * pagesize;
 
-		g_assert (id < HAZARD_TABLE_MAX_SIZE);
-
 		mono_mprotect (page_addr, pagesize, MONO_MMAP_READ | MONO_MMAP_WRITE);
 
 		++num_pages;
 		hazard_table_size = num_pages * pagesize / sizeof (MonoThreadHazardPointers);
 
+#endif
 		g_assert (id < hazard_table_size);
-
 		hazard_table [id].hazard_pointers [0] = NULL;
 		hazard_table [id].hazard_pointers [1] = NULL;
 	}
@@ -3438,11 +3445,17 @@ mono_thread_get_undeniable_exception (void)
 	return NULL;
 }
 
+#if MONO_SMALL_CONFIG
+#define NUM_STATIC_DATA_IDX 4
+static const int static_data_size [NUM_STATIC_DATA_IDX] = {
+	64, 256, 1024, 4096
+};
+#else
 #define NUM_STATIC_DATA_IDX 8
 static const int static_data_size [NUM_STATIC_DATA_IDX] = {
 	1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216
 };
-
+#endif
 
 /*
  *  mono_alloc_static_data
