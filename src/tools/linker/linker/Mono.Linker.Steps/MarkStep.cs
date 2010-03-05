@@ -279,7 +279,11 @@ namespace Mono.Linker.Steps {
 			if (slotType.FullName != Constants.Type)
 				return;
 
-			TypeDefinition type = _context.GetType ((string) value);
+			string type_name = (string) value;
+
+			TypeDefinition type = _context.GetType (slotType.Module, type_name);
+			if (type == null)
+				type = _context.GetType (type_name);
 
 			MarkType (type);
 		}

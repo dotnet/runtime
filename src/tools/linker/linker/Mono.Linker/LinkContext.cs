@@ -83,6 +83,11 @@ namespace Mono.Linker {
 			_parameters = new Hashtable ();
 		}
 
+		public TypeDefinition GetType (ModuleDefinition module, string type)
+		{
+			return module.Types [type.Replace ('+', '/')];
+		}
+
 		public TypeDefinition GetType (string type)
 		{
 			int pos = type.IndexOf (",");
