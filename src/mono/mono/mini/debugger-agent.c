@@ -117,7 +117,9 @@ typedef struct
 	gboolean has_ctx;
 } StackFrame;
 
-typedef struct
+typedef struct _InvokeData InvokeData;
+
+struct _InvokeData
 {
 	int id;
 	int flags;
@@ -132,7 +134,9 @@ typedef struct
 	MonoMethod *method;
 	gpointer *args;
 	guint32 suspend_count;
-} InvokeData;
+
+	InvokeData *last_invoke;
+};
 
 typedef struct {
 	MonoContext ctx;
@@ -153,7 +157,7 @@ typedef struct {
 	 * Points to data about a pending invoke which needs to be executed after the thread
 	 * resumes.
 	 */
-	InvokeData *invoke;
+	InvokeData *pending_invoke;
 	/*
 	 * Set to TRUE if this thread is suspended in suspend_current () or it is executing
 	 * native code.
@@ -208,6 +212,13 @@ typedef struct {
  	 * The callee address of the last mono_runtime_invoke call
 	 */
 	gpointer invoke_addr;
+
+	gboolean abort_requested;
+
+	/*
+	 * The current mono_runtime_invoke invocation.
+	 */
+	InvokeData *invoke;
 } DebuggerTlsData;
 
 /* 
@@ -266,7 +277,8 @@ typedef enum {
 	ERR_NOT_IMPLEMENTED = 100,
 	ERR_NOT_SUSPENDED = 101,
 	ERR_INVALID_ARGUMENT = 102,
-	ERR_UNLOADED = 103
+	ERR_UNLOADED = 103,
+	ERR_NO_INVOCATION = 104
 } ErrorCode;
 
 typedef enum {
@@ -319,7 +331,8 @@ typedef enum {
 	CMD_VM_EXIT = 5,
 	CMD_VM_DISPOSE = 6,
 	CMD_VM_INVOKE_METHOD = 7,
-	CMD_VM_SET_PROTOCOL_VERSION = 8
+	CMD_VM_SET_PROTOCOL_VERSION = 8,
+	CMD_VM_ABORT_INVOKE = 9
 } CmdVM;
 
 typedef enum {
@@ -2200,10 +2213,10 @@ suspend_current (void)
 
 	DEBUG(1, fprintf (log_file, "[%p] Resumed.\n", (gpointer)GetCurrentThreadId ()));
 
-	if (tls->invoke) {
+	if (tls->pending_invoke) {
 		/* Save the original context */
-		tls->invoke->has_ctx = TRUE;
-		memcpy (&tls->invoke->ctx, &tls->ctx, sizeof (MonoContext));
+		tls->pending_invoke->has_ctx = TRUE;
+		memcpy (&tls->pending_invoke->ctx, &tls->ctx, sizeof (MonoContext));
 
 		invoke_method ();
 	}
@@ -2382,7 +2395,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		if (info->type == FRAME_TYPE_DEBUGGER_INVOKE) {
 			/* Mark the last frame as an invoke frame */
 			if (ud->frames)
-				((StackFrame*)ud->frames->data)->flags |= FRAME_FLAG_DEBUGGER_INVOKE;
+				((StackFrame*)g_slist_last (ud->frames)->data)->flags |= FRAME_FLAG_DEBUGGER_INVOKE;
 		}
 		return FALSE;
 	}
@@ -3921,12 +3934,24 @@ ss_destroy (SingleStepReq *req)
 
 void
 mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx, 
-									  MonoContext *catch_ctx)
+				      MonoContext *catch_ctx)
 {
 	int suspend_policy;
 	GSList *events;
 	MonoJitInfo *ji;
 	EventInfo ei;
+
+	if (thread_to_tls != NULL) {
+		MonoInternalThread *thread = mono_thread_internal_current ();
+		DebuggerTlsData *tls;
+
+		mono_loader_lock ();
+		tls = mono_g_hash_table_lookup (thread_to_tls, thread);
+		mono_loader_unlock ();
+
+		if (tls && tls->abort_requested)
+			return;
+	}
 
 	memset (&ei, 0, sizeof (EventInfo));
 
@@ -4572,7 +4597,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 /*
  * invoke_method:
  *
- *   Invoke the method given by tls->invoke in the current thread.
+ *   Invoke the method given by tls->pending_invoke in the current thread.
  */
 static void
 invoke_method (void)
@@ -4591,9 +4616,21 @@ invoke_method (void)
 	tls = TlsGetValue (debugger_tls_id);
 	g_assert (tls);
 
-	invoke = tls->invoke;
+	/*
+	 * Store the `InvokeData *' in `tls->invoke' until we're done with
+	 * the invocation, so CMD_VM_ABORT_INVOKE can check it.
+	 */
+
+	mono_loader_lock ();
+
+	invoke = tls->pending_invoke;
 	g_assert (invoke);
-	tls->invoke = NULL;
+	tls->pending_invoke = NULL;
+
+	invoke->last_invoke = tls->invoke;
+	tls->invoke = invoke;
+
+	mono_loader_unlock ();
 
 	tls->frames_up_to_date = FALSE;
 
@@ -4622,6 +4659,24 @@ invoke_method (void)
 	}
 
 	DEBUG (1, printf ("[%p] Invoke finished, resume_count = %d.\n", (gpointer)GetCurrentThreadId (), tls->resume_count));
+
+	/*
+	 * Take the loader lock to avoid race conditions with CMD_VM_ABORT_INVOKE:
+	 *
+	 * It is possible that ves_icall_System_Threading_Thread_Abort () was called
+	 * after the mono_runtime_invoke() already returned, but it doesn't matter
+	 * because we reset the abort here.
+	 */
+
+	mono_loader_lock ();
+
+	if (tls->abort_requested)
+		mono_thread_internal_reset_abort (tls->thread);
+
+	tls->invoke = tls->invoke->last_invoke;
+	tls->abort_requested = FALSE;
+
+	mono_loader_unlock ();
 
 	g_free (invoke->p);
 	g_free (invoke);
@@ -4752,9 +4807,9 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			args [0] = g_malloc (sizeof (int));
 			*(int*)(args [0]) = exit_code;
 
-			tls->invoke = g_new0 (InvokeData, 1);
-			tls->invoke->method = exit_method;
-			tls->invoke->args = args;
+			tls->pending_invoke = g_new0 (InvokeData, 1);
+			tls->pending_invoke->method = exit_method;
+			tls->pending_invoke->args = args;
 
 			while (suspend_count > 0)
 				resume_vm ();
@@ -4817,15 +4872,15 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		 * Store the invoke data into tls, the thread will execute it after it is
 		 * resumed.
 		 */
-		if (tls->invoke)
+		if (tls->pending_invoke)
 			NOT_IMPLEMENTED;
-		tls->invoke = g_new0 (InvokeData, 1);
-		tls->invoke->id = id;
-		tls->invoke->flags = flags;
-		tls->invoke->p = g_malloc (end - p);
-		memcpy (tls->invoke->p, p, end - p);
-		tls->invoke->endp = tls->invoke->p + (end - p);
-		tls->invoke->suspend_count = suspend_count;
+		tls->pending_invoke = g_new0 (InvokeData, 1);
+		tls->pending_invoke->id = id;
+		tls->pending_invoke->flags = flags;
+		tls->pending_invoke->p = g_malloc (end - p);
+		memcpy (tls->pending_invoke->p, p, end - p);
+		tls->pending_invoke->endp = tls->pending_invoke->p + (end - p);
+		tls->pending_invoke->suspend_count = suspend_count;
 
 		if (flags & INVOKE_FLAG_SINGLE_THREADED)
 			resume_thread (THREAD_TO_INTERNAL (thread));
@@ -4833,6 +4888,50 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			resume_vm ();
 		break;
 	}
+	case CMD_VM_ABORT_INVOKE: {
+		int objid = decode_objid (p, &p, end);
+		MonoThread *thread;
+		DebuggerTlsData *tls;
+		int invoke_id, err, flags;
+		int i, invoke_frame = -1;
+
+		err = get_object (objid, (MonoObject**)&thread);
+		if (err)
+			return err;
+
+		invoke_id = decode_int (p, &p, end);
+
+		mono_loader_lock ();
+		tls = mono_g_hash_table_lookup (thread_to_tls, THREAD_TO_INTERNAL (thread));
+		g_assert (tls);
+
+		if (tls->abort_requested) {
+			mono_loader_unlock ();
+			break;
+		}
+
+		/*
+		 * Check whether we're still inside the mono_runtime_invoke() and that it's
+		 * actually the correct invocation.
+		 *
+		 * Careful, we do not stop the thread that's doing the invocation, so we can't
+		 * inspect its stack.  However, invoke_method() also acquires the loader lock
+		 * when it's done, so we're safe here.
+		 *
+		 */
+
+		if (!tls->invoke || (tls->invoke->id != invoke_id)) {
+			mono_loader_unlock ();
+			return ERR_NO_INVOCATION;
+		}
+
+		tls->abort_requested = TRUE;
+
+		ves_icall_System_Threading_Thread_Abort (THREAD_TO_INTERNAL (thread), NULL);
+		mono_loader_unlock ();
+		break;
+	}
+
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
