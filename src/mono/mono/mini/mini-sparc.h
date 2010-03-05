@@ -100,14 +100,7 @@ typedef struct MonoCompileArch {
 		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
 	} while (0)
 
-#ifndef __linux__
-/* 
- * Can't use sigaction on sparc/linux, since it doesn't support SA_SIGINFO. Instead, we
- * have to use the obsolete sigcontext parameter:
- * http://www.ussg.iu.edu/hypermail/linux/kernel/0110.3/1531.html.
- */
 #define MONO_ARCH_USE_SIGACTION 1
-#endif
 
 #ifdef HAVE_WORKING_SIGALTSTACK
 /*#define MONO_ARCH_SIGSEGV_ON_ALTSTACK*/
