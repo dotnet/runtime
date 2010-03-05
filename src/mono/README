@@ -259,6 +259,17 @@ This is Mono.
 
 		This value is set to `no' by default.
 
+	--enable-small-config=yes,no
+
+		Enable some tweaks to reduce memory usage and disk footprint at
+		the expense of some capabilities. Typically this means that the
+		number of threads that can be created is limited (256), that the
+		maxmimum heap size is also reduced (256 MB) and other such limitations
+		that still make mono useful, but more suitable to embedded devices
+		(like mobile phones).
+
+		This value is set to `no' by default.
+
 	--with-ikvm-native=yes,no
 
 		Controls whether the IKVM JNI interface library is

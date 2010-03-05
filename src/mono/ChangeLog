@@ -1,3 +1,9 @@
+
+Fri Mar 5 18:58:15 CET 2010 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: introduce the --enable-small-config option
+	to reduce runtime requirements (and capabilities).
+
 2010-03-04  Zoltan Varga  <vargaz@gmail.com>
 
 	* Makefile.am (DIST_SUBDIRS): Add eglib.
