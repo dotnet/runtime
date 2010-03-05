@@ -210,3 +210,12 @@
 #define g_utf8_to_utf16 monoeg_g_utf8_to_utf16
 #define g_utf8_validate monoeg_g_utf8_validate
 #define g_win32_getlocale monoeg_g_win32_getlocale
+#define g_assertion_message monoeg_assertion_message
+#define g_malloc monoeg_malloc
+#define g_malloc0 monoeg_malloc0
+#define g_ptr_array_grow monoeg_ptr_array_grow
+#define g_realloc monoeg_realloc
+#define g_strdup monoeg_strdup
+#define g_ucs4_to_utf16_len monoeg_ucs4_to_utf16_len
+#define g_utf16_to_ucs4_len monoeg_utf16_to_ucs4_len
+
