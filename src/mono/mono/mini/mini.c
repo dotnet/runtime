@@ -1218,18 +1218,6 @@ mini_class_is_system_array (MonoClass *klass)
 		return FALSE;
 }
 
-static MonoJitICallInfo **emul_opcode_map = NULL;
-
-MonoJitICallInfo *
-mono_find_jit_opcode_emulation (int opcode)
-{
-	g_assert (opcode >= 0 && opcode <= OP_LAST);
-	if  (emul_opcode_map)
-		return emul_opcode_map [opcode];
-	else
-		return NULL;
-}
-
 gboolean
 mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 {
@@ -1974,21 +1962,50 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 	return mono_allocate_stack_slots_full (m, TRUE, stack_size, stack_align);
 }
 
+#define EMUL_HIT_SHIFT 3
+#define EMUL_HIT_MASK ((1 << EMUL_HIT_SHIFT) - 1)
+/* small hit bitmap cache */
+static mono_byte emul_opcode_hit_cache [(OP_LAST>>EMUL_HIT_SHIFT) + 1] = {0};
+static short emul_opcode_num = 0;
+static short emul_opcode_alloced = 0;
+static short *emul_opcode_opcodes = NULL;
+static MonoJitICallInfo **emul_opcode_map = NULL;
+
+MonoJitICallInfo *
+mono_find_jit_opcode_emulation (int opcode)
+{
+	g_assert (opcode >= 0 && opcode <= OP_LAST);
+	if (emul_opcode_hit_cache [opcode >> (EMUL_HIT_SHIFT + 3)] & (1 << (opcode & EMUL_HIT_MASK))) {
+		int i;
+		for (i = 0; i < emul_opcode_num; ++i) {
+			if (emul_opcode_opcodes [i] == opcode)
+				return emul_opcode_map [i];
+		}
+	}
+	return NULL;
+}
+
 void
 mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, gboolean no_throw)
 {
 	MonoJitICallInfo *info;
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
-	if (!emul_opcode_map)
-		emul_opcode_map = g_new0 (MonoJitICallInfo*, OP_LAST + 1);
-
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
 	info = mono_register_jit_icall (func, name, sig, no_throw);
 
-	emul_opcode_map [opcode] = info;
+	if (emul_opcode_num >= emul_opcode_alloced) {
+		int incr = emul_opcode_alloced? emul_opcode_alloced/2: 16;
+		emul_opcode_alloced += incr;
+		emul_opcode_map = g_realloc (emul_opcode_map, sizeof (emul_opcode_map [0]) * emul_opcode_alloced);
+		emul_opcode_opcodes = g_realloc (emul_opcode_opcodes, sizeof (emul_opcode_opcodes [0]) * emul_opcode_alloced);
+	}
+	emul_opcode_map [emul_opcode_num] = info;
+	emul_opcode_opcodes [emul_opcode_num] = opcode;
+	emul_opcode_num++;
+	emul_opcode_hit_cache [opcode >> (EMUL_HIT_SHIFT + 3)] |= (1 << (opcode & EMUL_HIT_MASK));
 }
 
 static void
@@ -5923,6 +5940,7 @@ mini_cleanup (MonoDomain *domain)
 		mono_code_manager_destroy (global_codeman);
 	g_hash_table_destroy (jit_icall_name_hash);
 	g_free (emul_opcode_map);
+	g_free (emul_opcode_opcodes);
 
 	mono_arch_cleanup ();
 
