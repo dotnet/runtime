@@ -721,7 +721,7 @@ mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo 
 {
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
 	guint8 *code, *buf;
-	guint8 *jump_obj_null, *jump_have_waiters;
+	guint8 *jump_obj_null, *jump_have_waiters, *jump_sync_null, *jump_not_owned;
 	guint8 *jump_next;
 	int tramp_size;
 	int owner_offset, nest_offset, entry_count_offset;
@@ -752,28 +752,22 @@ mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo 
 		x86_mov_reg_membase (buf, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
 		/* is synchronization null? */
 		x86_test_reg_reg (buf, X86_ECX, X86_ECX);
-		/* if not, jump to next case */
-		jump_next = buf;
-		x86_branch8 (buf, X86_CC_NZ, -1, 1);
-		/* if yes, just return */
-		x86_ret (buf);
+		/* if yes, jump to actual trampoline */
+		jump_sync_null = buf;
+		x86_branch8 (buf, X86_CC_Z, -1, 1);
 
 		/* next case: synchronization is not null */
-		x86_patch (jump_next, buf);
 		/* load MonoInternalThread* into EDX */
 		buf = mono_x86_emit_tls_get (buf, X86_EDX, mono_thread_get_tls_offset ());
 		/* load TID into EDX */
 		x86_mov_reg_membase (buf, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 		/* is synchronization->owner == TID */
 		x86_alu_membase_reg (buf, X86_CMP, X86_ECX, owner_offset, X86_EDX);
-		/* if yes, jump to next case */
-		jump_next = buf;
-		x86_branch8 (buf, X86_CC_Z, -1, 1);
-		/* if not, just return */
-		x86_ret (buf);
+		/* if no, jump to actual trampoline */
+		jump_not_owned = buf;
+		x86_branch8 (buf, X86_CC_NZ, -1, 1);
 
 		/* next case: synchronization->owner == TID */
-		x86_patch (jump_next, buf);
 		/* is synchronization->nest == 1 */
 		x86_alu_membase_imm (buf, X86_CMP, X86_ECX, nest_offset, 1);
 		/* if not, jump to next case */
@@ -797,6 +791,9 @@ mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo 
 		/* push obj and jump to the actual trampoline */
 		x86_patch (jump_obj_null, buf);
 		x86_patch (jump_have_waiters, buf);
+		x86_patch (jump_not_owned, buf);
+		x86_patch (jump_sync_null, buf);
+
 		x86_push_reg (buf, X86_EAX);
 		x86_jump_code (buf, tramp);
 	} else {
