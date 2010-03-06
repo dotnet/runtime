@@ -1427,7 +1427,11 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
  * entry points to the last element.  That way appending and removing
  * the first element are both O(1) operations.
  */
+#ifdef MONO_SMALL_CONFIG
+#define NUM_FREE_LISTS		6
+#else
 #define NUM_FREE_LISTS		12
+#endif
 #define FIRST_FREE_LIST_SIZE	64
 #define MAX_WAIT_LENGTH 	50
 #define THUNK_THRESHOLD		10

@@ -1371,7 +1371,11 @@ mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass) MONO_INTER
 MonoObject*
 mono_nullable_box (guint8 *buf, MonoClass *klass) MONO_INTERNAL;
 
+#ifdef MONO_SMALL_CONFIG
+#define MONO_IMT_SIZE 9
+#else
 #define MONO_IMT_SIZE 19
+#endif
 
 typedef union {
 	int vtable_slot;

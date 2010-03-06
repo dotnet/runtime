@@ -10842,7 +10842,6 @@ mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, Mon
 {
 	MonoEvent *event = g_new0 (MonoEvent, 1);
 	MonoClass *klass;
-	int j;
 
 	klass = mono_class_from_mono_type (mono_reflection_type_get_handle ((MonoReflectionType*)tb));
 
@@ -10856,7 +10855,9 @@ mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, Mon
 	if (eb->raise_method)
 		event->raise = eb->raise_method->mhandle;
 
+#ifndef MONO_SMALL_CONFIG
 	if (eb->other_methods) {
+		int j;
 		event->other = g_new0 (MonoMethod*, mono_array_length (eb->other_methods) + 1);
 		for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
 			MonoReflectionMethodBuilder *mb = 
@@ -10865,6 +10866,7 @@ mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, Mon
 			event->other [j] = mb->mhandle;
 		}
 	}
+#endif
 
 	return mono_event_get_object (mono_object_domain (tb), klass, event);
 }
@@ -10876,7 +10878,7 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 	MonoReflectionEventBuilder *eb;
 	MonoImage *image = klass->image;
 	MonoEvent *events;
-	int i, j;
+	int i;
 
 	mono_error_init (error);
 
@@ -10902,7 +10904,9 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 		if (eb->raise_method)
 			events [i].raise = eb->raise_method->mhandle;
 
+#ifndef MONO_SMALL_CONFIG
 		if (eb->other_methods) {
+			int j;
 			events [i].other = image_g_new0 (image, MonoMethod*, mono_array_length (eb->other_methods) + 1);
 			for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
 				MonoReflectionMethodBuilder *mb = 
@@ -10911,6 +10915,7 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 				events [i].other [j] = mb->mhandle;
 			}
 		}
+#endif
 		mono_save_custom_attrs (klass->image, &events [i], eb->cattrs);
 	}
 }

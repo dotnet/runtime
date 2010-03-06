@@ -12,9 +12,14 @@
 #include <config.h>
 #include <glib.h>
 
+#ifdef MONO_SMALL_CONFIG
+#define THREADS_PER_CPU	2 /* 8 + THREADS_PER_CPU * number of CPUs = max threads */
+#define INITIAL_QUEUE_LENGTH 16
+#else
 #define THREADS_PER_CPU	10 /* 8 + THREADS_PER_CPU * number of CPUs = max threads */
-#define THREAD_EXIT_TIMEOUT 1000
 #define INITIAL_QUEUE_LENGTH 128
+#endif
+#define THREAD_EXIT_TIMEOUT 1000
 
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/tabledefs.h>
@@ -434,7 +439,11 @@ mark_bad_fds (mono_pollfd *pfds, int nfds)
 static void
 socket_io_poll_main (gpointer p)
 {
+#if MONO_SMALL_CONFIG
+#define INITIAL_POLLFD_SIZE	128
+#else
 #define INITIAL_POLLFD_SIZE	1024
+#endif
 #define POLL_ERRORS (MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)
 	SocketIOData *data = p;
 	mono_pollfd *pfds;

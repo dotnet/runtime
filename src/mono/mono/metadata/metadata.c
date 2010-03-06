@@ -1409,12 +1409,14 @@ mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b
 {
 	int i;
 
+#ifndef MONO_SMALL_CONFIG
 	if (a->id && b->id) {
 		if (a->id == b->id)
 			return TRUE;
 		if (!signature_only)
 			return FALSE;
 	}
+#endif
 
 	if (a->is_open != b->is_open || a->type_argc != b->type_argc)
 		return FALSE;
@@ -2771,7 +2773,9 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	is_open = (i < type_argc);
 
 	ginst = alloca (size);
+#ifndef MONO_SMALL_CONFIG
 	ginst->id = 0;
+#endif
 	ginst->is_open = is_open;
 	ginst->type_argc = type_argc;
 	memcpy (ginst->type_argv, type_argv, type_argc * sizeof (MonoType *));
@@ -2789,7 +2793,9 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	ginst = g_hash_table_lookup (set->ginst_cache, ginst);
 	if (!ginst) {
 		ginst = g_malloc (size);
+#ifndef MONO_SMALL_CONFIG
 		ginst->id = ++next_generic_inst_id;
+#endif
 		ginst->is_open = is_open;
 		ginst->type_argc = type_argc;
 

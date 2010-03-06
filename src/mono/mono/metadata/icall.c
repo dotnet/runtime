@@ -2087,6 +2087,7 @@ ves_icall_get_event_info (MonoReflectionMonoEvent *event, MonoEventInfo *info)
 	MONO_STRUCT_SETREF (info, remove_method, event->event->remove ? mono_method_get_object (domain, event->event->remove, NULL): NULL);
 	MONO_STRUCT_SETREF (info, raise_method, event->event->raise ? mono_method_get_object (domain, event->event->raise, NULL): NULL);
 
+#ifndef MONO_SMALL_CONFIG
 	if (event->event->other) {
 		int i, n = 0;
 		while (event->event->other [n])
@@ -2096,6 +2097,7 @@ ves_icall_get_event_info (MonoReflectionMonoEvent *event, MonoEventInfo *info)
 		for (i = 0; i < n; i++)
 			mono_array_setref (info->other_methods, i, mono_method_get_object (domain, event->event->other [i], NULL));
 	}		
+#endif
 }
 
 static MonoArray*

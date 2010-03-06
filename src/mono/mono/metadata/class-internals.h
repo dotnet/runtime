@@ -177,7 +177,9 @@ struct _MonoEvent {
 	MonoMethod *add;
 	MonoMethod *remove;
 	MonoMethod *raise;
+#ifndef MONO_SMALL_CONFIG
 	MonoMethod **other;
+#endif
 	guint32 attrs;
 };
 
@@ -261,7 +263,11 @@ typedef struct {
  */
 typedef struct {
 	struct {
+#if MONO_SMALL_CONFIG
+		guint16 first, count;
+#else
 		guint32 first, count;
+#endif
 	} property, event;
 
 	/* Initialized by a call to mono_class_setup_properties () */
@@ -379,7 +385,11 @@ struct _MonoClass {
 	 */
 	guint32    flags;
 	struct {
+#if MONO_SMALL_CONFIG
+		guint16 first, count;
+#else
 		guint32 first, count;
+#endif
 	} field, method;
 
 	/* A GC handle pointing to the corresponding type builder/generic param builder */
@@ -460,7 +470,9 @@ struct MonoVTable {
  * instantiations here.
  */
 struct _MonoGenericInst {
+#ifndef MONO_SMALL_CONFIG
 	guint id;			/* unique ID for debugging */
+#endif
 	guint type_argc    : 22;	/* number of type arguments */
 	guint is_open      :  1;	/* if this is an open type */
 	MonoType *type_argv [MONO_ZERO_LEN_ARRAY];

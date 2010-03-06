@@ -29,8 +29,13 @@
 
 #define MEM_ALIGN 8
 
+#if MONO_SMALL_CONFIG
+#define MONO_MEMPOOL_PAGESIZE 4096
+#define MONO_MEMPOOL_MINSIZE 256
+#else
 #define MONO_MEMPOOL_PAGESIZE 8192
 #define MONO_MEMPOOL_MINSIZE 512
+#endif
 
 #ifndef G_LIKELY
 #define G_LIKELY(a) (a)
@@ -239,10 +244,8 @@ get_next_size (MonoMemPool *pool, int size)
 	while (target < size) {
 		target += target / 2;
 	}
-	if (target > MONO_MEMPOOL_PAGESIZE)
+	if (target > MONO_MEMPOOL_PAGESIZE && size <= MONO_MEMPOOL_PAGESIZE)
 		target = MONO_MEMPOOL_PAGESIZE;
-	/* we are called with size smaller than 4096 */
-	g_assert (size <= MONO_MEMPOOL_PAGESIZE);
 	return target;
 }
 #endif

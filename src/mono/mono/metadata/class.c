@@ -2186,7 +2186,9 @@ mono_class_setup_events (MonoClass *class)
 			event->add = gevent->add ? mono_class_inflate_generic_method_full (gevent->add, class, context) : NULL;
 			event->remove = gevent->remove ? mono_class_inflate_generic_method_full (gevent->remove, class, context) : NULL;
 			event->raise = gevent->raise ? mono_class_inflate_generic_method_full (gevent->raise, class, context) : NULL;
+#ifndef MONO_SMALL_CONFIG
 			event->other = gevent->other ? inflate_method_listz (gevent->other, class, context) : NULL;
+#endif
 			event->attrs = gevent->attrs;
 		}
 
@@ -2239,6 +2241,7 @@ mono_class_setup_events (MonoClass *class)
 				event->raise = method;
 				break;
 			case METHOD_SEMANTIC_OTHER: {
+#ifndef MONO_SMALL_CONFIG
 				int n = 0;
 
 				if (event->other == NULL) {
@@ -2251,6 +2254,7 @@ mono_class_setup_events (MonoClass *class)
 				event->other [n] = method;
 				/* NULL terminated */
 				event->other [n + 1] = NULL;
+#endif
 				break;
 			}
 			default:
@@ -2330,6 +2334,7 @@ mono_get_unique_iid (MonoClass *class)
 	}
 	mono_bitset_set (class->image->interface_bitset, iid);
 
+#ifndef MONO_SMALL_CONFIG
 	if (mono_print_vtable) {
 		int generic_id;
 		char *type_name = mono_type_full_name (&class->byval_arg);
@@ -2342,6 +2347,7 @@ mono_get_unique_iid (MonoClass *class)
 		printf ("Interface: assigned id %d to %s|%s|%d\n", iid, class->image->name, type_name, generic_id);
 		g_free (type_name);
 	}
+#endif
 
 	g_assert (iid <= 65535);
 	return iid;
