@@ -2136,11 +2136,10 @@ mono_domain_is_unloading (MonoDomain *domain)
 }
 
 static void
-clear_cached_vtable (gpointer key, gpointer value, gpointer user_data)
+clear_cached_vtable (MonoVTable *vtable)
 {
-	MonoClass *klass = (MonoClass*)key;
-	MonoVTable *vtable = value;
-	MonoDomain *domain = (MonoDomain*)user_data;
+	MonoClass *klass = vtable->klass;
+	MonoDomain *domain = vtable->domain;
 	MonoClassRuntimeInfo *runtime_info;
 
 	runtime_info = klass->runtime_info;
@@ -2151,10 +2150,9 @@ clear_cached_vtable (gpointer key, gpointer value, gpointer user_data)
 }
 
 static G_GNUC_UNUSED void
-zero_static_data (gpointer key, gpointer value, gpointer user_data)
+zero_static_data (MonoVTable *vtable)
 {
-	MonoClass *klass = (MonoClass*)key;
-	MonoVTable *vtable = value;
+	MonoClass *klass = vtable->klass;
 
 	if (vtable->data && klass->has_static_refs)
 		memset (vtable->data, 0, mono_class_data_size (klass));
@@ -2237,6 +2235,7 @@ unload_thread_main (void *arg)
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
 	MonoThread *thread;
+	int i;
 
 	/* Have to attach to the runtime so shutdown can wait for this thread */
 	thread = mono_thread_attach (mono_get_root_domain ());
@@ -2278,10 +2277,12 @@ unload_thread_main (void *arg)
 	 * now be null we won't do any unnecessary copies and after
 	 * the collection there won't be any more remsets.
 	 */
-	g_hash_table_foreach (domain->class_vtable_hash, zero_static_data, domain);
+	for (i = 0; i < domain->class_vtable_array->len; ++i)
+		zero_static_data (g_ptr_array_index (domain->class_vtable_array, i));
 	mono_gc_collect (0);
 #endif
-	g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable, domain);
+	for (i = 0; i < domain->class_vtable_array->len; ++i)
+		clear_cached_vtable (g_ptr_array_index (domain->class_vtable_array, i));
 #ifdef HAVE_SGEN_GC
 	deregister_reflection_info_roots (domain);
 #endif

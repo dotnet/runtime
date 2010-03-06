@@ -1958,11 +1958,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		}
 	}
 
-	/* FIXME: class_vtable_hash is basically obsolete now: remove as soon
-	 * as we change the code in appdomain.c to invalidate vtables by
-	 * looking at the possible MonoClasses created for the domain.
+	/*  class_vtable_array keeps an array of created vtables
 	 */
-	g_hash_table_insert (domain->class_vtable_hash, class, vt);
+	g_ptr_array_add (domain->class_vtable_array, vt);
 	/* class->runtime_info is protected by the loader lock, both when
 	 * it it enlarged and when it is stored info.
 	 */

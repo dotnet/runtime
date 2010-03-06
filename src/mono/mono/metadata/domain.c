@@ -1188,7 +1188,7 @@ mono_domain_create (void)
 	domain->domain_assemblies = NULL;
 	domain->assembly_bindings = NULL;
 	domain->assembly_bindings_parsed = FALSE;
-	domain->class_vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	domain->class_vtable_array = g_ptr_array_new ();
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	domain->static_data_array = NULL;
 	mono_jit_code_hash_init (&domain->jit_code_hash);
@@ -1871,9 +1871,8 @@ free_slist (gpointer key, gpointer value, gpointer user_data)
 
 #if HAVE_SGEN_GC
 static void
-unregister_vtable_reflection_type (gpointer key, gpointer value, gpointer user_data)
+unregister_vtable_reflection_type (MonoVTable *vtable)
 {
-	MonoVTable *vtable = value;
 	MonoObject *type = vtable->type;
 
 	if (type->vtable->klass != mono_defaults.monotype_class)
@@ -1941,8 +1940,11 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 
 #if HAVE_SGEN_GC
-	if (domain->class_vtable_hash)
-		g_hash_table_foreach (domain->class_vtable_hash, unregister_vtable_reflection_type, NULL);
+	if (domain->class_vtable_array) {
+		int i;
+		for (i = 0; i < domain->class_vtable_array->len; ++i)
+			unregister_vtable_reflection_type (g_ptr_array_index (domain->class_vtable_array, i));
+	}
 #endif
 
 	mono_gc_clear_domain (domain);
@@ -1979,8 +1981,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	g_free (domain->friendly_name);
 	domain->friendly_name = NULL;
-	g_hash_table_destroy (domain->class_vtable_hash);
-	domain->class_vtable_hash = NULL;
+	g_ptr_array_free (domain->class_vtable_array, TRUE);
+	domain->class_vtable_array = NULL;
 	g_hash_table_destroy (domain->proxy_vtable_hash);
 	domain->proxy_vtable_hash = NULL;
 	if (domain->static_data_array) {
