@@ -456,6 +456,19 @@ static const gunichar2 *utf16_space = utf16_space_bytes;
 static const gunichar2 utf16_quote_bytes [2] = { 0x22, 0 };
 static const gunichar2 *utf16_quote = utf16_quote_bytes;
 
+#ifdef DEBUG
+/* Useful in gdb */
+void
+print_utf16 (gunichar2 *str)
+{
+	gchar *res;
+
+	res = g_utf16_to_utf8 (str, -1, NULL, NULL, NULL);
+	g_print ("%s\n", res);
+	g_free (res);
+}
+#endif
+
 /* Implemented as just a wrapper around CreateProcess () */
 gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 {
@@ -481,7 +494,7 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 	 * into and back out of utf8 is because there is no
 	 * g_strdup_printf () equivalent for gunichar2 :-(
 	 */
-	args = utf16_concat (sei->lpFile, sei->lpParameters == NULL ? NULL : utf16_space, sei->lpParameters, NULL);
+	args = utf16_concat (utf16_quote, sei->lpFile, utf16_quote, sei->lpParameters == NULL ? NULL : utf16_space, sei->lpParameters, NULL);
 	if (args == NULL){
 		SetLastError (ERROR_INVALID_DATA);
 		return (FALSE);
@@ -853,6 +866,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	} else {
 		gchar *token = NULL;
 		char quote;
+		gint token_len;
 		
 		/* Dig out the first token from args, taking quotation
 		 * marks into account
@@ -873,10 +887,10 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		if (args[0] == '\"' || args [0] == '\'') {
 			quote = args [0];
 			for (i = 1; args[i] != '\0' && args[i] != quote; i++);
-			if (g_ascii_isspace (args[i+1])) {
+			if (args [i + 1] == '\0' || g_ascii_isspace (args[i+1])) {
 				/* We found the first token */
 				token = g_strndup (args+1, i-1);
-				args_after_prog = args + i;
+				args_after_prog = g_strchug (args + i + 1);
 			} else {
 				/* Quotation mark appeared in the
 				 * middle of the token.  Just give the
@@ -916,7 +930,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* Turn all the slashes round the right way. Only for
 		 * the prg. name
 		 */
-		for (i = 0; i < strlen (token); i++) {
+		token_len = strlen (token);
+		for (i = 0; i < token_len; i++) {
 			if (token[i] == '\\') {
 				token[i] = '/';
 			}
@@ -1033,8 +1048,10 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 
 	ret = g_shell_parse_argv (full_prog, NULL, &argv, &gerr);
 	if (ret == FALSE) {
-		/* FIXME: Could do something with the GError here
-		 */
+		g_message ("CreateProcess: %s\n", gerr->message);
+		g_error_free (gerr);
+		gerr = NULL;
+		goto free_strings;
 	}
 
 	if (startup != NULL && startup->dwFlags & STARTF_USESTDHANDLES) {
