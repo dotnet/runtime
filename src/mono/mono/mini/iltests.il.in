@@ -2380,4 +2380,30 @@ OK_2:
 		ldc.i4 0
 		ret
 	}
+
+	.method public static specialname 
+    	       default int32 return_1_noinline ()  cil managed noinlining 
+	{
+		.maxstack 0
+
+		ldc.i4.1
+		ret 
+   	}
+
+	// Only happens with -O=-deadce,cmov
+	.method public static default int32 test_0_cmov_unused_582322 () cil managed
+	{
+        .maxstack 2                                                   
+        .locals init (                                                
+				int32 V_0
+		)				
+		call int32 Tests::return_1_noinline ()
+		ldc.i4.1
+		bne.un L0
+		ldloc.s 0
+		pop
+	L0:
+		ldc.i4.0
+		ret
+	}
 }

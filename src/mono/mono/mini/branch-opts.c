@@ -535,6 +535,13 @@ mono_if_conversion (MonoCompile *cfg)
 			if (cfg->ret && ins1->dreg == cfg->ret->dreg)
 				continue;
 
+			if (!(cfg->opt & MONO_OPT_DEADCE))
+				/* 
+				 * It is possible that dreg is never set before, so we can't use
+				 * it as an sreg of the cmov instruction (#582322).
+				 */
+				continue;
+
 			if (cfg->verbose_level > 2) {
 				printf ("\tBranch -> CMove optimization (2) in BB%d on\n", bb->block_num);
 				printf ("\t\t"); mono_print_ins (compare);
