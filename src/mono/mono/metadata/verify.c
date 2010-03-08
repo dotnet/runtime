@@ -4890,7 +4890,7 @@ mono_method_verify (MonoMethod *method, int level)
 	MonoError error;
 	const unsigned char *ip, *code_start;
 	const unsigned char *end;
-	MonoSimpleBasicBlock *bb = NULL;
+	MonoSimpleBasicBlock *bb = NULL, *original_bb = NULL;
 
 	int i, n, need_merge = 0, start = 0;
 	guint token, ip_offset = 0, prefix = 0;
@@ -5065,7 +5065,7 @@ mono_method_verify (MonoMethod *method, int level)
 		}
 	}
 
-	bb = mono_basic_block_split (method, &error);
+	original_bb = bb = mono_basic_block_split (method, &error);
 	if (!mono_error_ok (&error)) {
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid branch target: %s", mono_error_get_message (&error)));
 		mono_error_cleanup (&error);
@@ -6045,7 +6045,7 @@ cleanup:
 		g_free (ctx.code);
 	g_free (ctx.locals);
 	g_free (ctx.params);
-	mono_basic_block_free (bb);
+	mono_basic_block_free (original_bb);
 	mono_metadata_free_mh (ctx.header);
 
 	return ctx.list;
