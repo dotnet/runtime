@@ -698,14 +698,11 @@ mono_monitor_exit (MonoObject *obj)
 	}
 #endif
 	if (G_UNLIKELY (mon == NULL)) {
-		/* No one ever used Enter */
-		/* MS throws starting from net 2.0 */
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+		/* No one ever used Enter. Just ignore the Exit request as MS does */
+		return;
 	}
 	if (G_UNLIKELY (mon->owner != GetCurrentThreadId ())) {
-		/* This also catches the case where the object is not locked */
-		/* MS throws starting from net 2.0 */
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+		return;
 	}
 	
 	nest = mon->nest - 1;
