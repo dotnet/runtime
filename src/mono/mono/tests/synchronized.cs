@@ -68,7 +68,7 @@ class Tests {
 			b.test_exception ();
 		}
 		catch (SynchronizationLockException ex) {
-			// OK, this exception is thrown by the synchronized finalizer
+			return 1;
 		}
 		catch (Exception ex) {
 			// OK
@@ -105,7 +105,7 @@ class Tests {
 			d ();
 		}
 		catch (SynchronizationLockException ex) {
-			// OK, this exception is thrown by the synchronized finalizer
+			return 2;
 		}
 		catch (Exception ex) {
 			// OK
@@ -113,27 +113,6 @@ class Tests {
 		if (is_synchronized (b))
 			return 1;
 
-		// Monitor tests
-		
-		// Never locked
-		try {
-			Monitor.Exit (locker);
-			return 3;
-		} catch (SynchronizationLockException) {
-		}			
-
-		// Not locked
-		Monitor.Enter (locker2);
-		Monitor.Exit (locker2);
-		try {
-			Monitor.Exit (locker2);
-			return 4;
-		} catch (SynchronizationLockException) {
-		}
-
 		return 0;
 	}
-
-	static object locker = new object ();
-	static object locker2 = new object ();
 }
