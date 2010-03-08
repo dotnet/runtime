@@ -432,8 +432,12 @@ typedef struct _MonoAssemblyBindingInfo {
 } MonoAssemblyBindingInfo;
 
 struct _MonoMethodHeader {
-	guint32      code_size;
 	const unsigned char  *code;
+#ifdef MONO_SMALL_CONFIG
+	guint16      code_size;
+#else
+	guint32      code_size;
+#endif
 	guint16      max_stack;
 	unsigned int num_clauses : 15;
 	/* if num_locals != 0, then the following apply: */
@@ -451,17 +455,22 @@ typedef struct {
 #define MONO_SIZEOF_METHOD_HEADER (sizeof (struct _MonoMethodHeader) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 struct _MonoMethodSignature {
-	unsigned int  hasthis : 1;
-	unsigned int  explicit_this   : 1;
-	unsigned int  call_convention : 6;
-	unsigned int  pinvoke   : 1;
-	unsigned int  ref_count : 23;
+	MonoType     *ret;
+#ifdef MONO_SMALL_CONFIG
+	guint8        param_count;
+	gint8         sentinelpos;
+	unsigned int  generic_param_count : 5;
+#else
 	guint16       param_count;
 	gint16        sentinelpos;
-	unsigned int  generic_param_count : 30;
+	unsigned int  generic_param_count : 16;
+#endif
+	unsigned int  call_convention     : 6;
+	unsigned int  hasthis             : 1;
+	unsigned int  explicit_this       : 1;
+	unsigned int  pinvoke             : 1;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
-	MonoType     *ret;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 
