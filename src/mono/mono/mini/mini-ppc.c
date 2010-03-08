@@ -1338,7 +1338,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	if (m->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
 
-	header = mono_method_get_header (m->method);
+	header = m->header;
 
 	/* 
 	 * We use the frame register also for any method that has

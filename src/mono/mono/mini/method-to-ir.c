@@ -464,8 +464,7 @@ mono_link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 static int
 mono_find_block_region (MonoCompile *cfg, int offset)
 {
-	MonoMethod *method = cfg->method;
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
 	int i;
 
@@ -494,8 +493,7 @@ mono_find_block_region (MonoCompile *cfg, int offset)
 static GList*
 mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *target, int type)
 {
-	MonoMethod *method = cfg->method;
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
 	MonoBasicBlock *handler;
 	int i;
@@ -1192,7 +1190,7 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
 	int pos, vnum;
 
 	/* inlining can result in deeper stacks */ 
-	if (slot >= mono_method_get_header (cfg->method)->max_stack)
+	if (slot >= cfg->header->max_stack)
 		return mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
 
 	pos = ins->type - 1 + slot * STACK_MAX;
@@ -4493,6 +4491,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cheader = mono_method_get_header (cmethod);
 
 	if (cheader == NULL || mono_loader_get_last_error ()) {
+		if (cheader)
+			mono_metadata_free_mh (cheader);
 		mono_loader_clear_error ();
 		return 0;
 	}
@@ -4623,6 +4623,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			EMIT_NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
 			*sp++ = ins;
 		}
+		mono_metadata_free_mh (cheader);
 		return costs + 1;
 	} else {
 		if (cfg->verbose_level > 2)
@@ -4633,6 +4634,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		/* This gets rid of the newly added bblocks */
 		cfg->cbb = prev_cbb;
 	}
+	mono_metadata_free_mh (cheader);
 	return 0;
 }
 
@@ -5011,8 +5013,9 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
 {
 	char *method_fname = mono_method_full_name (method, TRUE);
 	char *method_code;
+	MonoMethodHeader *header = mono_method_get_header (method);
 
-	if (mono_method_get_header (method)->code_size == 0)
+	if (header->code_size == 0)
 		method_code = g_strdup ("method body is empty.");
 	else
 		method_code = mono_disasm_code_one (NULL, method, ip, NULL);
@@ -5020,6 +5023,7 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
  	cfg->exception_message = g_strdup_printf ("Invalid IL code in %s: %s\n", method_fname, method_code);
  	g_free (method_fname);
  	g_free (method_code);
+	mono_metadata_free_mh (header);
 }
 
 static void
@@ -9853,39 +9857,36 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 		cfg->exception_message = g_strdup_printf ("Method %s is too complex.", mname);
 		g_free (mname);
+		mono_metadata_free_mh (header);
 		return -1;
 	}
 
 	if ((cfg->verbose_level > 2) && (cfg->method == method)) 
 		mono_print_code (cfg, "AFTER METHOD-TO-IR");
 
+	mono_metadata_free_mh (header);
 	return inline_costs;
  
  exception_exit:
 	g_assert (cfg->exception_type != MONO_EXCEPTION_NONE);
-	g_slist_free (class_inits);
-	mono_basic_block_free (bb);
-	dont_inline = g_list_remove (dont_inline, method);
-	return -1;
+	goto cleanup;
 
  inline_failure:
-	g_slist_free (class_inits);
-	mono_basic_block_free (bb);
-	dont_inline = g_list_remove (dont_inline, method);
-	return -1;
+	goto cleanup;
 
  load_error:
-	g_slist_free (class_inits);
-	mono_basic_block_free (bb);
-	dont_inline = g_list_remove (dont_inline, method);
 	cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
-	return -1;
+	goto cleanup;
 
  unverified:
+	set_exception_type_from_invalid_il (cfg, method, ip);
+	goto cleanup;
+
+ cleanup:
 	g_slist_free (class_inits);
 	mono_basic_block_free (bb);
 	dont_inline = g_list_remove (dont_inline, method);
-	set_exception_type_from_invalid_il (cfg, method, ip);
+	mono_metadata_free_mh (header);
 	return -1;
 }
 

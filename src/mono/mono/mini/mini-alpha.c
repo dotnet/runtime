@@ -5053,7 +5053,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 
    CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_get_allocatable_int_vars");
 
-   header = mono_method_get_header (cfg->method);
+   header = cfg->header;
 
    sig = mono_method_signature (cfg->method);
 
@@ -5453,7 +5453,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
    
    CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_allocate_vars");
    
-   header = mono_method_get_header (cfg->method);
+   header = cfg->header;
    
    sig = mono_method_signature (cfg->method);
    

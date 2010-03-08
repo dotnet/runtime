@@ -1190,7 +1190,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* a0-a3 always present */
 	cfg->param_area = MAX (cfg->param_area, MIPS_STACK_PARAM_OFFSET);
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 	

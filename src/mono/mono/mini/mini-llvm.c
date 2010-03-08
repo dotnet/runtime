@@ -976,7 +976,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 
 	// FIXME: Nested clauses
 	if (bb->region != -1 && MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
-		MonoMethodHeader *header = mono_method_get_header (cfg->method);
+		MonoMethodHeader *header = cfg->header;
 		// FIXME: Add a macro for this
 		int clause_index = (bb->region >> 8) - 1;
 		MonoExceptionClause *ec = &header->clauses [clause_index];
@@ -1454,7 +1454,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (sig->pinvoke)
 		LLVM_FAILURE (ctx, "pinvoke signature");
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
@@ -3659,7 +3659,7 @@ exception_cb (void *data)
 	/* Fill the rest of the information from the type info */
 	for (i = 0; i < ei_len; ++i) {
 		gint32 clause_index = *(gint32*)type_info [i];
-		MonoExceptionClause *clause = &mono_method_get_header (cfg->method)->clauses [clause_index];
+		MonoExceptionClause *clause = &cfg->header->clauses [clause_index];
 
 		cfg->llvm_ex_info [i].flags = clause->flags;
 		cfg->llvm_ex_info [i].data.catch_class = clause->data.catch_class;

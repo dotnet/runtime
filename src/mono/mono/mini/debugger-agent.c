@@ -5631,6 +5631,7 @@ method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			buffer_add_int (buf, header->code_size);
 			buffer_add_string (buf, "");
 			buffer_add_int (buf, 0);
+			mono_metadata_free_mh (header);
 			break;
 		}
 
@@ -5647,6 +5648,7 @@ method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		g_free (source_file);
 		g_free (il_offsets);
 		g_free (line_numbers);
+		mono_metadata_free_mh (header);
 		break;
 	}
 	case CMD_METHOD_GET_PARAM_INFO: {
@@ -5709,6 +5711,7 @@ method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			buffer_add_int (buf, 0);
 			buffer_add_int (buf, header->code_size);
 		}
+		mono_metadata_free_mh (header);
 
 		break;
 	}
@@ -5728,6 +5731,7 @@ method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			for (i = 0; i < header->code_size; ++i)
 				buffer_add_byte (buf, header->code [i]);
 		}
+		mono_metadata_free_mh (header);
 		break;
 	}
 	case CMD_METHOD_RESOLVE_TOKEN: {
@@ -5958,6 +5962,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				add_var (buf, header->locals [pos], &jit->locals [pos], &frame->ctx, frame->domain, FALSE);
 			}
 		}
+		mono_metadata_free_mh (header);
 		break;
 	}
 	case CMD_STACK_FRAME_GET_THIS: {
@@ -6013,6 +6018,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 			set_var (t, var, &frame->ctx, frame->domain, val_buf);
 		}
+		mono_metadata_free_mh (header);
 		break;
 	}
 	default:

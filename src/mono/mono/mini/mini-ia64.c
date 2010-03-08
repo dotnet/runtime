@@ -612,7 +612,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	CallInfo *cinfo;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 
@@ -670,7 +670,7 @@ mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 
 	cinfo = get_call_info (cfg, cfg->mempool, mono_method_signature (cfg->method), FALSE);
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	
 	/* Some registers are reserved for use by the prolog/epilog */
 	reserved_regs = header->num_clauses ? 4 : 3;
@@ -756,7 +756,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	gint32 *offsets;
 	CallInfo *cinfo;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 

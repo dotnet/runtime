@@ -1192,7 +1192,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	int i, top = 13;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
 		cfg->frame_reg = s390_r11;
 
@@ -1728,7 +1728,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	int frame_reg = STK_BASE;
 	int sArg, eArg;
 
-	header  = mono_method_get_header (cfg->method);
+	header  = cfg->header;
 
 	cfg->flags |= MONO_CFG_HAS_SPILLUP;
 

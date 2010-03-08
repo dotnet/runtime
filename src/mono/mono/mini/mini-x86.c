@@ -917,7 +917,7 @@ needs_stack_frame (MonoCompile *cfg)
 	if (cfg->arch.need_stack_frame_inited)
 		return cfg->arch.need_stack_frame;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	sig = mono_method_signature (cfg->method);
 
 	if (cfg->disable_omit_fp)
@@ -962,7 +962,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	gint32 *offsets;
 	CallInfo *cinfo;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	sig = mono_method_signature (cfg->method);
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
@@ -4480,7 +4480,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint8 *code;
 	gboolean need_stack_frame;
 
-	cfg->code_size = MAX (mono_method_get_header (method)->code_size * 4, 10240);
+	cfg->code_size = MAX (cfg->header->code_size * 4, 10240);
 
 	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		cfg->code_size += 512;

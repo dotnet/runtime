@@ -1258,6 +1258,7 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 	token_handler_ip = NULL;
 
 	*endip = ip;
+	mono_metadata_free_mh (header);
 	return dis;
 }
 
@@ -1339,8 +1340,10 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	GArray *ln_array;
 	int *native_to_il_offset = NULL;
 
-	if (!w->emit_line)
+	if (!w->emit_line) {
+		mono_metadata_free_mh (header);
 		return;
+	}
 
 	minfo = mono_debug_lookup_method (method);
 
@@ -1349,6 +1352,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	g_assert (code_size);
 
 #ifdef _EGLIB_MAJOR
+	mono_metadata_free_mh (header);
 	/* g_array is not implemented in eglib */
 	return;
 #else
@@ -1555,6 +1559,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 		fflush (w->il_file);
 		g_free (il_to_line);
 	}
+	mono_metadata_free_mh (header);
 }
 
 static MonoMethodVar*
@@ -1761,6 +1766,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		emit_line_number_info (w, method, start_symbol, end_symbol, code, code_size, debug_info);
 
 	emit_line (w);
+	mono_metadata_free_mh (header);
 }
 
 void

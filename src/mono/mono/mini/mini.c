@@ -470,8 +470,7 @@ mono_bblocks_linked (MonoBasicBlock *bb1, MonoBasicBlock *bb2)
 static int
 mono_find_block_region_notry (MonoCompile *cfg, int offset)
 {
-	MonoMethod *method = cfg->method;
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
 	int i;
 
@@ -504,7 +503,7 @@ int
 mono_get_block_region_notry (MonoCompile *cfg, int region)
 {
 	if ((region & (0xf << 4)) == MONO_REGION_TRY) {
-		MonoMethodHeader *header = mono_method_get_header (cfg->method);
+		MonoMethodHeader *header = cfg->header;
 		
 		/*
 		 * This can happen if a try clause is nested inside a finally clause.
@@ -2169,6 +2168,8 @@ mono_verify_cfg (MonoCompile *cfg)
 void
 mono_destroy_compile (MonoCompile *cfg)
 {
+	if (cfg->header)
+		mono_metadata_free_mh (cfg->header);
 	//mono_mempool_stats (cfg->mempool);
 	mono_free_loop_info (cfg);
 	if (cfg->rs)
@@ -2930,7 +2931,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	int i;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 	
@@ -3367,7 +3368,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	int num_clauses;
 	int generic_info_size;
 
-	header = mono_method_get_header (method_to_compile);
+	g_assert (method_to_compile == cfg->method);
+	header = cfg->header;
 
 	if (cfg->generic_sharing_context)
 		generic_info_size = sizeof (MonoGenericJitInfo);
@@ -3581,6 +3583,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	cfg = g_new0 (MonoCompile, 1);
 	cfg->method = method_to_compile;
+	cfg->header = mono_method_get_header (cfg->method);
 	cfg->mempool = mono_mempool_new ();
 	cfg->opt = opts;
 	cfg->prof_options = mono_profiler_get_events ();
@@ -3634,7 +3637,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 	}
 
-	header = mono_method_get_header (method_to_compile);
+	header = cfg->header;
 	if (!header) {
 		MonoLoaderError *error;
 
@@ -4300,7 +4303,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		g_free (mono_jit_stats.biggest_method);
 		mono_jit_stats.biggest_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
 	}
-	code_size_ratio = (code_size_ratio * 100) / mono_method_get_header (method)->code_size;
+	code_size_ratio = (code_size_ratio * 100) / header->code_size;
 	if (code_size_ratio > mono_jit_stats.max_code_size_ratio && mono_jit_stats.enabled) {
 		mono_jit_stats.max_code_size_ratio = code_size_ratio;
 		g_free (mono_jit_stats.max_ratio_method);

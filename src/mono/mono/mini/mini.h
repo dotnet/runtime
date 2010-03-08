@@ -943,6 +943,7 @@ enum {
  */
 typedef struct {
 	MonoMethod      *method;
+	MonoMethodHeader *header;
 	MonoMemPool     *mempool;
 	MonoInst       **varinfo;
 	MonoMethodVar   *vars;

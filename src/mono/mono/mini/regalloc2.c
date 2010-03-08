@@ -1197,7 +1197,7 @@ linear_scan (MonoCompile *cfg, MonoRegallocContext *ctx)
 
 	LSCAN_DEBUG (printf ("\nLINEAR SCAN 2 for %s:\n", mono_method_full_name (cfg->method, TRUE)));
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 

@@ -521,7 +521,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	DEBUG_FUNC_ENTER();
 	m->flags |= MONO_CFG_HAS_SPILLUP;
 
-	header = mono_method_get_header (m->method);
+	header = m->header;
 
 	sig = mono_method_signature (m->method);
 	DEBUG (printf ("Allocating locals - incoming params:\n"));

@@ -1061,7 +1061,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	if (cfg->arch.omit_fp_computed)
 		return;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 
@@ -1257,7 +1257,7 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 	int i;
 	CallInfo *cinfo;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 
@@ -1337,7 +1337,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	gint32 *offsets;
 	CallInfo *cinfo;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 

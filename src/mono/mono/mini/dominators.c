@@ -143,7 +143,7 @@ compute_dominators (MonoCompile *cfg)
 
 #ifdef DEBUG_DOMINATORS
 	printf ("DTREE %s %d\n", mono_method_full_name (cfg->method, TRUE), 
-		mono_method_get_header (cfg->method)->num_clauses);
+		cfg->header->num_clauses);
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 		printf ("BB%d(dfn=%d) (IDOM=BB%d): ", bb->block_num, bb->dfn, bb->idom ? bb->idom->block_num : -1);

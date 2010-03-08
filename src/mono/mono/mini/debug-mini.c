@@ -136,7 +136,7 @@ mono_debug_open_method (MonoCompile *cfg)
 
 	mono_class_init (cfg->method->klass);
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	g_assert (header);
 	
 	info->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
@@ -259,6 +259,7 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 
 	g_free (addresses);
 	g_free (lines);
+	mono_metadata_free_mh (header);
 #endif /* VALGRIND_ADD_LINE_INFO */
 }
 
@@ -281,7 +282,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	}
 
 	method = cfg->method;
-	header = mono_method_get_header (method);
+	header = cfg->header;
 	sig = mono_method_signature (method);
 
 	jit = info->jit;
@@ -334,7 +335,7 @@ mono_debug_record_line_number (MonoCompile *cfg, MonoInst *ins, guint32 address)
 	if (!info || !info->jit || !ins->cil_code)
 		return;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	g_assert (header);
 
 	if ((ins->cil_code < header->code) ||
@@ -361,7 +362,7 @@ mono_debug_open_block (MonoCompile *cfg, MonoBasicBlock *bb, guint32 address)
 	if (!info || !info->jit || !bb->cil_code)
 		return;
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	g_assert (header);
 
 	if ((bb->cil_code < header->code) ||
@@ -589,6 +590,7 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 		prev_native_offset = native_offset;
 	}
 
+	mono_metadata_free_mh (header);
 	return jit;
 }
 

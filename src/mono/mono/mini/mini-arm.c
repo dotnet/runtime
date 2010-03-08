@@ -1088,7 +1088,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
 		cfg->param_area = MAX (cfg->param_area, sizeof (gpointer)*8);
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 
 	/* 
 	 * We use the frame register also for any method that has
