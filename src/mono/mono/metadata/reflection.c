@@ -6926,6 +6926,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	}
 
 	CACHE_OBJECT (MonoReflectionMethodBody *, method, ret, NULL);
+	mono_metadata_free_mh (header);
 	return ret;
 }
 

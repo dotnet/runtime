@@ -6046,6 +6046,7 @@ cleanup:
 	g_free (ctx.locals);
 	g_free (ctx.params);
 	mono_basic_block_free (bb);
+	mono_metadata_free_mh (ctx.header);
 
 	return ctx.list;
 }

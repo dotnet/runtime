@@ -668,6 +668,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 			wrapper->method_name = mono_method_full_name (declaring, TRUE);
 			wrapper->cil_code = mono_disasm_code (
 				NULL, declaring, il_code, il_code + il_codesize);
+			mono_metadata_free_mh (mheader);
 		}
 	} else {
 		address->header.wrapper_data = header->wrapper_data;

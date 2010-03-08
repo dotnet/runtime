@@ -2296,7 +2296,8 @@ mono_method_get_header (MonoMethod *method)
 		return NULL;
 
 	loc = mono_image_rva_map (img, rva);
-	g_assert (loc);
+	if (!loc)
+		return NULL;
 
 	header = mono_metadata_parse_mh_full (img, mono_method_get_generic_container (method), loc);
 

@@ -550,9 +550,11 @@ mono_basic_block_split (MonoMethod *method, MonoError *error)
 	dump_bb_list (bb, &root, g_strdup_printf("AFTER LIVENESS %s", mono_method_full_name (method, TRUE)));
 #endif
 
+	mono_metadata_free_mh (header);
 	return bb;
 
 fail:
+	mono_metadata_free_mh (header);
 	mono_basic_block_free (bb);
 	return NULL;
 }

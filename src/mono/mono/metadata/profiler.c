@@ -955,6 +955,7 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 			g_free (fname);
 		}
 	}
+	mono_metadata_free_mh (header);
 }
 
 #ifndef DISABLE_PROFILER

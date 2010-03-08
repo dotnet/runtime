@@ -683,6 +683,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	if (dh->newline)
 		g_string_append (str, dh->newline);
 
+	mono_metadata_free_mh (header);
 	return ip;
 }
 
