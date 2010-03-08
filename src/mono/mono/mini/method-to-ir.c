@@ -8774,59 +8774,37 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 			} else {
-				gboolean use_slow_path = TRUE;
 				if ((ip + 5 < end) && ip_in_bb (cfg, bblock, ip + 5) && 
 					((ip [5] == CEE_CALL) || (ip [5] == CEE_CALLVIRT)) && 
-					(cmethod = mini_get_method (cfg, method, read32 (ip + 6), NULL, generic_context))) {
+					(cmethod = mini_get_method (cfg, method, read32 (ip + 6), NULL, generic_context)) &&
+					(cmethod->klass == mono_defaults.monotype_class->parent) &&
+					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
+					MonoClass *tclass = mono_class_from_mono_type (handle);
 
-					if ((cmethod->klass == mono_defaults.monotype_class->parent) && (strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
-						MonoClass *tclass = mono_class_from_mono_type (handle);
-
-						mono_class_init (tclass);
-						if (context_used) {
-							ins = emit_get_rgctx_klass (cfg, context_used,
-								tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
-						} else if (cfg->compile_aot) {
-							if (method->wrapper_type) {
-								if (mono_class_get (tclass->image, tclass->type_token) == tclass && !generic_context) {
-									/* Special case for static synchronized wrappers */
-									EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, tclass->image, tclass->type_token, generic_context);
-								} else {
-									/* FIXME: n is not a normal token */
-									cfg->disable_aot = TRUE;
-									EMIT_NEW_PCONST (cfg, ins, NULL);
-								}
+					mono_class_init (tclass);
+					if (context_used) {
+						ins = emit_get_rgctx_klass (cfg, context_used,
+							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
+					} else if (cfg->compile_aot) {
+						if (method->wrapper_type) {
+							if (mono_class_get (tclass->image, tclass->type_token) == tclass && !generic_context) {
+								/* Special case for static synchronized wrappers */
+								EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, tclass->image, tclass->type_token, generic_context);
 							} else {
-								EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
+								/* FIXME: n is not a normal token */
+								cfg->disable_aot = TRUE;
+								EMIT_NEW_PCONST (cfg, ins, NULL);
 							}
 						} else {
-							EMIT_NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
+							EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
 						}
-						ins->type = STACK_OBJ;
-						ins->klass = cmethod->klass;
-						ip += 5;
-						use_slow_path = FALSE;
-					} else if (cmethod->klass->image == mono_defaults.corlib &&
-								!strcmp ("Mono", cmethod->klass->name_space) &&
-								!strcmp ("Runtime", cmethod->klass->name) &&
-								!strcmp ("NewObject", cmethod->name)) {
-
-						/*FIXME relax those restrictions if it's worth the trouble*/
-						if (!context_used && !cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED)) {
-							MonoClass *klass = mono_class_from_mono_type (handle);
-							gpointer vtable = mono_class_vtable (cfg->domain, klass);
-							MonoInst *iargs [1];
-
-							EMIT_NEW_PCONST (cfg, iargs [0], vtable);
-							ins = mono_emit_jit_icall (cfg, mono_object_new_specific, iargs);
-
-							ip += 5;
-							use_slow_path = FALSE;
-						}
+					} else {
+						EMIT_NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
 					}
-				}
-
-				if (use_slow_path) {
+					ins->type = STACK_OBJ;
+					ins->klass = cmethod->klass;
+					ip += 5;
+				} else {
 					MonoInst *addr, *vtvar;
 
 					vtvar = mono_compile_create_var (cfg, &handle_class->byval_arg, OP_LOCAL);
