@@ -2833,6 +2833,7 @@ scan_needed_big_objects (char *start_addr, char *end_addr)
 		if (!big_object->scanned && object_is_pinned (big_object->data)) {
 			DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %zd\n", big_object->data, safe_name (big_object->data), big_object->size));
 			scan_object (big_object->data, start_addr, end_addr);
+			drain_gray_stack (start_addr, end_addr);
 			big_object->scanned = TRUE;
 			count++;
 		}
