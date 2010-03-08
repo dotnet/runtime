@@ -1198,6 +1198,20 @@ static const char info[] =
 #endif
         "\tArchitecture:  " ARCHITECTURE "\n"
 	"\tDisabled:      " DISABLED_FEATURES "\n"
+	"\tMisc:          "
+#ifdef MONO_SMALL_CONFIG
+	"smallconfig "
+#endif
+#ifdef MONO_BIG_ARRAYS
+	"bigarrays "
+#endif
+#ifdef MONO_DEBUGGER_SUPPORTED
+	"debugger "
+#endif
+#if defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED) && !defined(DISABLE_SOFT_DEBUG)
+	"softdebug "
+#endif
+		"\n"
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 	"\tLLVM supported\n"
 #endif
