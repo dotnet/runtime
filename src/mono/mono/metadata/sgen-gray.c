@@ -1,4 +1,4 @@
-#define GRAY_QUEUE_SECTION_SIZE	(128 - 4)
+#define GRAY_QUEUE_SECTION_SIZE	(128 - 3)
 #define GRAY_QUEUE_LENGTH_LIMIT	64
 
 /*
@@ -7,7 +7,6 @@
  */
 typedef struct _GrayQueueSection GrayQueueSection;
 struct _GrayQueueSection {
-	int start;
 	int end;
 	GrayQueueSection *next, *prev;
 	char *objects [GRAY_QUEUE_SECTION_SIZE];
@@ -27,12 +26,12 @@ gray_object_alloc_queue_section (void)
 	/* Use the previously allocated queue sections if possible */
 	if (!gray_queue_end && gray_queue_start) {
 		gray_queue_end = gray_queue_start;
-		gray_queue_end->start = gray_queue_end->end = 0;
+		gray_queue_end->end = 0;
 		return;
 	}
 	if (gray_queue_end && gray_queue_end->next) {
 		gray_queue_end = gray_queue_end->next;
-		gray_queue_end->start = gray_queue_end->end = 0;
+		gray_queue_end->end = 0;
 		return;
 	}
 
@@ -40,7 +39,7 @@ gray_object_alloc_queue_section (void)
 	section = get_internal_mem (sizeof (GrayQueueSection), INTERNAL_MEM_GRAY_QUEUE);
 	++num_gray_queue_sections;
 
-	section->start = section->end = 0;
+	section->end = 0;
 	section->next = NULL;
 	section->prev = NULL;
 
@@ -61,6 +60,11 @@ gray_object_free_queue_section (GrayQueueSection *section)
 	free_internal_mem (section, INTERNAL_MEM_GRAY_QUEUE);
 	--num_gray_queue_sections;
 }
+
+/* 
+ * The following three functions are called in the inner loops of the collector, so they
+ * need to be as fast as possible.
+ */
 
 static inline void
 gray_object_enqueue (char *obj)
@@ -88,11 +92,11 @@ gray_object_dequeue (void)
 	if (gray_object_queue_is_empty ())
 		return NULL;
 
-	g_assert (gray_queue_end->start < gray_queue_end->end);
+	g_assert (gray_queue_end->end);
 
 	obj = gray_queue_end->objects [--gray_queue_end->end];
 
-	if (G_UNLIKELY (gray_queue_end->start == gray_queue_end->end))
+	if (G_UNLIKELY (gray_queue_end->end == 0))
 		gray_queue_end = gray_queue_end->prev;
 
 	--gray_queue_balance;
