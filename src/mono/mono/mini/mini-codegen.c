@@ -2496,7 +2496,7 @@ mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins)
 		 * OP_MOVE sreg, dreg 
 		 * OP_MOVE dreg, sreg
 		 */
-		if (last_ins && last_ins->opcode == OP_MOVE &&
+		if (last_ins && last_ins->opcode == ins->opcode &&
 			ins->sreg1 == last_ins->dreg &&
 			ins->dreg == last_ins->sreg1) {
 			MONO_DELETE_INS (bb, ins);

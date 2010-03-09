@@ -2406,4 +2406,46 @@ OK_2:
 		ldc.i4.0
 		ret
 	}
+
+    .method public static  hidebysig 
+           default int32 test_0_regress_586664 ()  cil managed 
+    {                                        
+        // Method begins at RVA 0x20f4       
+        // Code size 76 (0x4c)               
+        .maxstack 6                          
+        .locals init (                       
+                float64 V_0,                 
+                float64[]       V_1)         
+        IL_0000:  ldc.r8 1.                  
+        IL_0009:  ldc.r8 2.                  
+        IL_0012:  ldc.r8 1.                  
+        IL_001b:  call float64 class [mscorlib]System.Math::Pow(float64, float64)
+        IL_0020:  div                                                            
+        IL_0021:  stloc.0                                                        
+        IL_0022:  ldc.i4.2                                                       
+        IL_0023:  newarr [mscorlib]System.Double                                 
+        IL_0028:  dup                                                            
+        IL_0029:  ldc.i4.0                                                       
+        IL_002a:  ldloc.0                                                        
+        IL_002b:  neg                                                            
+        IL_002c:  stelem.r8                                                      
+        IL_002d:  dup                                                            
+        IL_002e:  ldc.i4.1                                                       
+        IL_002f:  ldloc.0
+        IL_0030:  neg
+        IL_0031:  stelem.r8
+        IL_0032:  stloc.1
+        IL_0033:  ldloc.1
+        IL_0034:  ldc.i4.0
+        IL_0035:  ldelem.r8
+        IL_0036:  ldc.r8 -0.5
+        IL_003f:  bne.un IL_004a
+
+        IL_0044:  ldc.i4.0
+        IL_0045:  br IL_004b
+
+        IL_004a:  ldc.i4.1
+        IL_004b:  ret
+    }
+
 }
