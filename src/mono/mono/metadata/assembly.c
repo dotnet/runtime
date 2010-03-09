@@ -245,7 +245,7 @@ assembly_binding_maps_name (MonoAssemblyBindingInfo *info, MonoAssemblyName *ana
 	if ((info->culture != NULL && info->culture [0]) != (aname->culture != NULL && aname->culture [0])) 
 		return FALSE;
 	
-	if (info->culture && strcmp (info->culture, aname->culture))
+	if (info->culture && aname->culture && strcmp (info->culture, aname->culture))
 		return FALSE;
 	
 	if (!mono_public_tokens_are_equal (info->public_key_token, aname->public_key_token))
