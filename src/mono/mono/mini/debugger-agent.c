@@ -4892,8 +4892,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		int objid = decode_objid (p, &p, end);
 		MonoThread *thread;
 		DebuggerTlsData *tls;
-		int invoke_id, err, flags;
-		int i, invoke_frame = -1;
+		int invoke_id, err;
 
 		err = get_object (objid, (MonoObject**)&thread);
 		if (err)
