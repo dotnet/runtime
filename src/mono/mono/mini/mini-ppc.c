@@ -2154,7 +2154,11 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
 	switch (ins->opcode) {
 	case OP_ICONV_TO_R_UN: {
+#if G_BYTE_ORDER == G_BIG_ENDIAN
 		static const guint64 adjust_val = 0x4330000000000000ULL;
+#else
+		static const guint64 adjust_val = 0x0000000000003043ULL;
+#endif
 		int msw_reg = mono_alloc_ireg (cfg);
 		int adj_reg = mono_alloc_freg (cfg);
 		int tmp_reg = mono_alloc_freg (cfg);
