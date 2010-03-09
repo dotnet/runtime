@@ -28,7 +28,7 @@
  */
 #ifdef _G_BOOLEAN_EXPR
 #undef _G_BOOLEAN_EXPR
-#define _G_BOOLEAN_EXPR(expr) (gsize)(expr)
+#define _G_BOOLEAN_EXPR(expr) ((gsize)(expr) != 0)
 #endif
 
 #if 1
