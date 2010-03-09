@@ -555,7 +555,7 @@ safe_object_get_size (MonoObject* o)
 		return sizeof (MonoString) + 2 * mono_string_length ((MonoString*) o) + 2;
 	} else if (klass->rank) {
 		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + mono_array_element_size (klass) * mono_array_length (array);
+		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length (array);
 		if (G_UNLIKELY (array->bounds)) {
 			size += sizeof (mono_array_size_t) - 1;
 			size &= ~(sizeof (mono_array_size_t) - 1);
