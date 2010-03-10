@@ -5649,6 +5649,8 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 			if (minfo) {
 				mono_debug_symfile_get_line_numbers (minfo, &source_file, NULL, NULL, NULL);
+				if (!source_file)
+					continue;
 
 				for (i = 0; i < files->len; ++i)
 					if (!strcmp (g_ptr_array_index (files, i), source_file))
