@@ -1188,7 +1188,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
 #define STRING_SIZE(size,str) do {	\
-		(size) = sizeof (MonoString) + 2 * (mono_string_length ((MonoString*)(str)) + 2);	\
+		(size) = sizeof (MonoString) + 2 * mono_string_length ((MonoString*)(str)) + 2;	\
 		(size) += (ALLOC_ALIGN - 1);	\
 		(size) &= ~(ALLOC_ALIGN - 1);	\
 	} while (0)
