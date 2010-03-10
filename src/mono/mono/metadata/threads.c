@@ -564,7 +564,15 @@ static void thread_cleanup (MonoInternalThread *thread)
 	mono_gc_free_fixed (thread->static_data);
 	thread->static_data = NULL;
 
-	if (mono_thread_cleanup_fn)
+	/*
+	 * FIXME: The check for shutting_down here is a kludge and
+	 * should be removed.  The reason we need it here is because
+	 * mono_thread_manage() does not wait for finalizer threads,
+	 * so we might still be at this point in a finalizer thread
+	 * after the main thread has cleared the root domain, so
+	 * thread could have been zeroed out.
+	 */
+	if (mono_thread_cleanup_fn && !shutting_down)
 		mono_thread_cleanup_fn (thread->root_domain_thread);
 
 	small_id_free (thread->small_id);
