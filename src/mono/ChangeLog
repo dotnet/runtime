@@ -1,3 +1,7 @@
+2010-03-10  Andrew Jorgensen  <ajorgensen@novell.com>
+
+	* configure.in: configure eglib even when we are not building
+	it (fixes dist)
 
 Fri Mar 5 18:58:15 CET 2010 Paolo Molaro <lupus@ximian.com>
 

@@ -520,6 +520,9 @@ AC_ARG_WITH([glib],
 
 eglib_dir=
 
+ac_configure_args="$ac_configure_args \"CPPFLAGS_FOR_EGLIB=$EGLIB_CPPFLAGS\" \"CFLAGS_FOR_EGLIB=$CFLAGS_FOR_EGLIB\""
+AC_CONFIG_SUBDIRS(eglib)
+
 case $with_glib in
 embedded) 
   GLIB_CFLAGS='-I$(top_srcdir)/eglib/src -I$(top_builddir)/eglib/src'
@@ -529,8 +532,6 @@ embedded)
   GMODULE_CFLAGS="$GLIB_CFLAGS"
   GMODULE_LIBS="$GLIB_LIBS"
   eglib_dir=eglib
-  ac_configure_args="$ac_configure_args \"CPPFLAGS_FOR_EGLIB=$EGLIB_CPPFLAGS\" \"CFLAGS_FOR_EGLIB=$CFLAGS_FOR_EGLIB\""
-  AC_CONFIG_SUBDIRS(eglib)
   ;;
 system)
   if test "x$cross_compiling" = "xyes"; then
