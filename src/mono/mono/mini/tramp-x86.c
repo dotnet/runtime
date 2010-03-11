@@ -636,75 +636,75 @@ mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo
 	if (mono_thread_get_tls_offset () != -1) {
 		/* MonoObject* obj is in EAX */
 		/* is obj null? */
-		x86_test_reg_reg (buf, X86_EAX, X86_EAX);
+		x86_test_reg_reg (code, X86_EAX, X86_EAX);
 		/* if yes, jump to actual trampoline */
-		jump_obj_null = buf;
-		x86_branch8 (buf, X86_CC_Z, -1, 1);
+		jump_obj_null = code;
+		x86_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load obj->synchronization to ECX */
-		x86_mov_reg_membase (buf, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
+		x86_mov_reg_membase (code, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
 		/* is synchronization null? */
-		x86_test_reg_reg (buf, X86_ECX, X86_ECX);
+		x86_test_reg_reg (code, X86_ECX, X86_ECX);
 		/* if yes, jump to actual trampoline */
-		jump_sync_null = buf;
-		x86_branch8 (buf, X86_CC_Z, -1, 1);
+		jump_sync_null = code;
+		x86_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load MonoInternalThread* into EDX */
-		buf = mono_x86_emit_tls_get (buf, X86_EDX, mono_thread_get_tls_offset ());
+		code = mono_x86_emit_tls_get (code, X86_EDX, mono_thread_get_tls_offset ());
 		/* load TID into EDX */
-		x86_mov_reg_membase (buf, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
+		x86_mov_reg_membase (code, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 
 		/* is synchronization->owner null? */
-		x86_alu_membase_imm (buf, X86_CMP, X86_ECX, owner_offset, 0);
+		x86_alu_membase_imm (code, X86_CMP, X86_ECX, owner_offset, 0);
 		/* if not, jump to next case */
-		jump_tid = buf;
-		x86_branch8 (buf, X86_CC_NZ, -1, 1);
+		jump_tid = code;
+		x86_branch8 (code, X86_CC_NZ, -1, 1);
 
 		/* if yes, try a compare-exchange with the TID */
 		/* free up register EAX, needed for the zero */
-		x86_push_reg (buf, X86_EAX);
+		x86_push_reg (code, X86_EAX);
 		/* zero EAX */
-		x86_alu_reg_reg (buf, X86_XOR, X86_EAX, X86_EAX);
+		x86_alu_reg_reg (code, X86_XOR, X86_EAX, X86_EAX);
 		/* compare and exchange */
-		x86_prefix (buf, X86_LOCK_PREFIX);
-		x86_cmpxchg_membase_reg (buf, X86_ECX, owner_offset, X86_EDX);
+		x86_prefix (code, X86_LOCK_PREFIX);
+		x86_cmpxchg_membase_reg (code, X86_ECX, owner_offset, X86_EDX);
 		/* if not successful, jump to actual trampoline */
-		jump_cmpxchg_failed = buf;
-		x86_branch8 (buf, X86_CC_NZ, -1, 1);
+		jump_cmpxchg_failed = code;
+		x86_branch8 (code, X86_CC_NZ, -1, 1);
 		/* if successful, pop and return */
-		x86_pop_reg (buf, X86_EAX);
-		x86_ret (buf);
+		x86_pop_reg (code, X86_EAX);
+		x86_ret (code);
 
 		/* next case: synchronization->owner is not null */
-		x86_patch (jump_tid, buf);
+		x86_patch (jump_tid, code);
 		/* is synchronization->owner == TID? */
-		x86_alu_membase_reg (buf, X86_CMP, X86_ECX, owner_offset, X86_EDX);
+		x86_alu_membase_reg (code, X86_CMP, X86_ECX, owner_offset, X86_EDX);
 		/* if not, jump to actual trampoline */
-		jump_other_owner = buf;
-		x86_branch8 (buf, X86_CC_NZ, -1, 1);
+		jump_other_owner = code;
+		x86_branch8 (code, X86_CC_NZ, -1, 1);
 		/* if yes, increment nest */
-		x86_inc_membase (buf, X86_ECX, nest_offset);
+		x86_inc_membase (code, X86_ECX, nest_offset);
 		/* return */
-		x86_ret (buf);
+		x86_ret (code);
 
 		/* push obj */
-		x86_patch (jump_obj_null, buf);
-		x86_patch (jump_sync_null, buf);
-		x86_patch (jump_other_owner, buf);
-		x86_push_reg (buf, X86_EAX);
+		x86_patch (jump_obj_null, code);
+		x86_patch (jump_sync_null, code);
+		x86_patch (jump_other_owner, code);
+		x86_push_reg (code, X86_EAX);
 		/* jump to the actual trampoline */
-		x86_patch (jump_cmpxchg_failed, buf);
-		x86_jump_code (buf, tramp);
+		x86_patch (jump_cmpxchg_failed, code);
+		x86_jump_code (code, tramp);
 	} else {
 		/* push obj and jump to the actual trampoline */
-		x86_push_reg (buf, X86_EAX);
-		x86_jump_code (buf, tramp);
+		x86_push_reg (code, X86_EAX);
+		x86_jump_code (code, tramp);
 	}
 
-	mono_arch_flush_icache (buf, buf - code);
-	g_assert (buf - code <= tramp_size);
+	mono_arch_flush_icache (buf, code - buf);
+	g_assert (code - buf <= tramp_size);
 
-	return code;
+	return buf;
 }
 
 gpointer
@@ -743,69 +743,69 @@ mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo 
 	if (mono_thread_get_tls_offset () != -1) {
 		/* MonoObject* obj is in EAX */
 		/* is obj null? */
-		x86_test_reg_reg (buf, X86_EAX, X86_EAX);
+		x86_test_reg_reg (code, X86_EAX, X86_EAX);
 		/* if yes, jump to actual trampoline */
-		jump_obj_null = buf;
-		x86_branch8 (buf, X86_CC_Z, -1, 1);
+		jump_obj_null = code;
+		x86_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* load obj->synchronization to ECX */
-		x86_mov_reg_membase (buf, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
+		x86_mov_reg_membase (code, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
 		/* is synchronization null? */
-		x86_test_reg_reg (buf, X86_ECX, X86_ECX);
+		x86_test_reg_reg (code, X86_ECX, X86_ECX);
 		/* if yes, jump to actual trampoline */
-		jump_sync_null = buf;
-		x86_branch8 (buf, X86_CC_Z, -1, 1);
+		jump_sync_null = code;
+		x86_branch8 (code, X86_CC_Z, -1, 1);
 
 		/* next case: synchronization is not null */
 		/* load MonoInternalThread* into EDX */
-		buf = mono_x86_emit_tls_get (buf, X86_EDX, mono_thread_get_tls_offset ());
+		code = mono_x86_emit_tls_get (code, X86_EDX, mono_thread_get_tls_offset ());
 		/* load TID into EDX */
-		x86_mov_reg_membase (buf, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
+		x86_mov_reg_membase (code, X86_EDX, X86_EDX, G_STRUCT_OFFSET (MonoInternalThread, tid), 4);
 		/* is synchronization->owner == TID */
-		x86_alu_membase_reg (buf, X86_CMP, X86_ECX, owner_offset, X86_EDX);
+		x86_alu_membase_reg (code, X86_CMP, X86_ECX, owner_offset, X86_EDX);
 		/* if no, jump to actual trampoline */
-		jump_not_owned = buf;
-		x86_branch8 (buf, X86_CC_NZ, -1, 1);
+		jump_not_owned = code;
+		x86_branch8 (code, X86_CC_NZ, -1, 1);
 
 		/* next case: synchronization->owner == TID */
 		/* is synchronization->nest == 1 */
-		x86_alu_membase_imm (buf, X86_CMP, X86_ECX, nest_offset, 1);
+		x86_alu_membase_imm (code, X86_CMP, X86_ECX, nest_offset, 1);
 		/* if not, jump to next case */
-		jump_next = buf;
-		x86_branch8 (buf, X86_CC_NZ, -1, 1);
+		jump_next = code;
+		x86_branch8 (code, X86_CC_NZ, -1, 1);
 		/* if yes, is synchronization->entry_count zero? */
-		x86_alu_membase_imm (buf, X86_CMP, X86_ECX, entry_count_offset, 0);
+		x86_alu_membase_imm (code, X86_CMP, X86_ECX, entry_count_offset, 0);
 		/* if not, jump to actual trampoline */
-		jump_have_waiters = buf;
-		x86_branch8 (buf, X86_CC_NZ, -1 , 1);
+		jump_have_waiters = code;
+		x86_branch8 (code, X86_CC_NZ, -1 , 1);
 		/* if yes, set synchronization->owner to null and return */
-		x86_mov_membase_imm (buf, X86_ECX, owner_offset, 0, 4);
-		x86_ret (buf);
+		x86_mov_membase_imm (code, X86_ECX, owner_offset, 0, 4);
+		x86_ret (code);
 
 		/* next case: synchronization->nest is not 1 */
-		x86_patch (jump_next, buf);
+		x86_patch (jump_next, code);
 		/* decrease synchronization->nest and return */
-		x86_dec_membase (buf, X86_ECX, nest_offset);
-		x86_ret (buf);
+		x86_dec_membase (code, X86_ECX, nest_offset);
+		x86_ret (code);
 
 		/* push obj and jump to the actual trampoline */
-		x86_patch (jump_obj_null, buf);
-		x86_patch (jump_have_waiters, buf);
-		x86_patch (jump_not_owned, buf);
-		x86_patch (jump_sync_null, buf);
+		x86_patch (jump_obj_null, code);
+		x86_patch (jump_have_waiters, code);
+		x86_patch (jump_not_owned, code);
+		x86_patch (jump_sync_null, code);
 
-		x86_push_reg (buf, X86_EAX);
-		x86_jump_code (buf, tramp);
+		x86_push_reg (code, X86_EAX);
+		x86_jump_code (code, tramp);
 	} else {
 		/* push obj and jump to the actual trampoline */
-		x86_push_reg (buf, X86_EAX);
-		x86_jump_code (buf, tramp);
+		x86_push_reg (code, X86_EAX);
+		x86_jump_code (code, tramp);
 	}
 
-	mono_arch_flush_icache (buf, buf - code);
-	g_assert (buf - code <= tramp_size);
+	mono_arch_flush_icache (buf, code - buf);
+	g_assert (code - buf <= tramp_size);
 
-	return code;
+	return buf;
 }
 #else
 gpointer
