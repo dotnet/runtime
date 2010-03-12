@@ -3407,7 +3407,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		copy.stype &= ~POINTER_MASK;
 
 		if (virt_check_this && !stack_slot_is_this_pointer (value) && !(method->klass->valuetype || stack_slot_is_boxed_value (value)))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a non-final virtual method from an objet diferent thant the this pointer at 0x%04x", ctx->ip_offset));
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use the call opcode with a non-final virtual method on an object diferent thant the this pointer at 0x%04x", ctx->ip_offset));
 
 		if (constrained && virtual) {
 			if (!stack_slot_is_managed_pointer (value))
