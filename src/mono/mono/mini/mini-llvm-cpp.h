@@ -42,6 +42,10 @@ LLVMValueRef
 mono_llvm_build_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 					  const char *Name, gboolean is_volatile);
 
+LLVMValueRef 
+mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+							  const char *Name, gboolean is_volatile, int alignment);
+
 void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v);
 

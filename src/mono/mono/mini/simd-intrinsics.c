@@ -1030,7 +1030,7 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 
 	vreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 
-	if (intrinsic->opcode >> shift_bits) {
+	if ((intrinsic->opcode >> shift_bits) && !cfg->compile_llvm) {
 		MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
 		ins->klass = cmethod->klass;
 		ins->sreg1 = vreg;
@@ -1045,7 +1045,10 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	ins->sreg1 = vreg;
 	ins->type = STACK_I4;
 	ins->dreg = vreg = alloc_ireg (cfg);
-	ins->inst_c0 = intrinsic->opcode & ((1 << shift_bits) - 1);
+	if (cfg->compile_llvm)
+		ins->inst_c0 = intrinsic->opcode;
+	else
+		ins->inst_c0 = intrinsic->opcode & ((1 << shift_bits) - 1);
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	if (sig->ret->type == MONO_TYPE_R4) {

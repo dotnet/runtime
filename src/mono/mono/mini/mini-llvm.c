@@ -602,7 +602,7 @@ simd_op_to_intrins (int opcode)
 	case OP_PMINW_UN:
 		return "llvm.x86.sse41.pminuw";
 	case OP_PMINB_UN:
-		return "llvm.x86.sse41.pminub";
+		return "llvm.x86.sse2.pminu.b";
 	case OP_MAXPD:
 		return "llvm.x86.sse2.max.pd";
 	case OP_MAXPS:
@@ -612,7 +612,7 @@ simd_op_to_intrins (int opcode)
 	case OP_PMAXW_UN:
 		return "llvm.x86.sse41.pmaxuw";
 	case OP_PMAXB_UN:
-		return "llvm.x86.sse41.pmaxub";
+		return "llvm.x86.sse2.pmaxu.b";
 #endif
 	default:
 		g_assert_not_reached ();
@@ -3126,7 +3126,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMValueRef src;
 
 				src = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_basereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (t, 0));
-				values [ins->dreg] = LLVMBuildLoad (builder, src, "");
+				values [ins->dreg] = mono_llvm_build_aligned_load (builder, src, "", FALSE, 1);
 				break;
 			}
 			case OP_ADDPD:
@@ -3211,7 +3211,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					break;
 				case OP_ANDNPS:
 				case OP_ANDNPD:
-					v = LLVMBuildAnd (builder, lhs, LLVMBuildNot (builder, rhs, ""), "");
+					v = LLVMBuildAnd (builder, rhs, LLVMBuildNot (builder, lhs, ""), "");
 					break;
 				}
 				values [ins->dreg] = LLVMBuildBitCast (builder, v, rt, "");
@@ -3243,6 +3243,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_EXTRACT_I1:
 			case OP_EXTRACT_U1: {
 				LLVMTypeRef t;
+				gboolean zext = FALSE;
 
 				switch (ins->opcode) {
 				case OP_EXTRACT_R8:
@@ -3255,12 +3256,18 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					t = LLVMVectorType (LLVMInt32Type (), 4);
 					break;
 				case OP_EXTRACT_I2:
-				case OP_EXTRACT_U2:
 					t = LLVMVectorType (LLVMInt16Type (), 8);
 					break;
+				case OP_EXTRACT_U2:
+					t = LLVMVectorType (LLVMInt16Type (), 8);
+					zext = TRUE;
+					break;
 				case OP_EXTRACT_I1:
+					t = LLVMVectorType (LLVMInt8Type (), 16);
+					break;
 				case OP_EXTRACT_U1:
 					t = LLVMVectorType (LLVMInt8Type (), 16);
+					zext = TRUE;
 					break;
 				default:
 					t = LLVMInt32Type ();
@@ -3269,6 +3276,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				lhs = LLVMBuildBitCast (builder, lhs, t, "");
 				values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), "");
+				if (zext)
+					values [ins->dreg] = LLVMBuildZExt (builder, values [ins->dreg], LLVMInt32Type (), "");
 				break;
 			}
 #endif
@@ -3775,8 +3784,8 @@ add_intrinsics (LLVMModuleRef module)
 		vector_type = LLVMVectorType (LLVMInt8Type (), 16);
 		arg_types [0] = vector_type;
 		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse41.pminub", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
-		LLVMAddFunction (module, "llvm.x86.sse41.pmaxub", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse2.pminu.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse2.pmaxu.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
 
 		vector_type = LLVMVectorType (LLVMDoubleType (), 2);
 		arg_types [0] = vector_type;

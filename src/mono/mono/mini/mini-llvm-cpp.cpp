@@ -232,6 +232,18 @@ mono_llvm_build_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 	return wrap(unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name));
 }
 
+LLVMValueRef 
+mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+							  const char *Name, gboolean is_volatile, int alignment)
+{
+	LoadInst *ins;
+
+	ins = unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name);
+	ins->setAlignment (alignment);
+
+	return wrap(ins);
+}
+
 void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 {
