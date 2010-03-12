@@ -3785,11 +3785,10 @@ add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *a
 	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
 	values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
 
-	res = (table->next_idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_EXP_TYPE;
-
 	table->next_idx++;
 
-	return res;
+	while ((nested = mono_class_get_nested_types (klass, &iter)))
+		add_exported_type (assemblyb, assembly, nested, current_idx);
 }
 
 static void
@@ -3812,7 +3811,7 @@ mono_image_fill_export_table_from_type_forwarders (MonoReflectionAssemblyBuilder
 
 		klass = mono_class_from_mono_type (type);
 
-		add_exported_type (assemblyb, assembly, klass);
+		add_exported_type (assemblyb, assembly, klass, 0);
 	}
 }
 
