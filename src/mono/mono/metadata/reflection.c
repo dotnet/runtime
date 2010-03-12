@@ -3755,29 +3755,32 @@ mono_image_fill_export_table_from_module (MonoDomain *domain, MonoReflectionModu
 	}
 }
 
-static guint32
-add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *assembly, MonoClass *klass)
+static void
+add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *assembly, MonoClass *klass, guint32 parent_index)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	guint32 scope, idx, res, impl;
+	guint32 scope, scope_idx, impl, current_idx;
 	gboolean forwarder = TRUE;
+	gpointer iter = NULL;
+	MonoClass *nested;
 
 	if (klass->nested_in) {
-		impl = add_exported_type (assemblyb, assembly, klass->nested_in);
+		impl = (parent_index << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_EXP_TYPE;
 		forwarder = FALSE;
 	} else {
 		scope = resolution_scope_from_image (assembly, klass->image);
 		g_assert ((scope & MONO_RESOLTION_SCOPE_MASK) == MONO_RESOLTION_SCOPE_ASSEMBLYREF);
-		idx = scope >> MONO_RESOLTION_SCOPE_BITS;
-		impl = (idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_ASSEMBLYREF;
+		scope_idx = scope >> MONO_RESOLTION_SCOPE_BITS;
+		impl = (scope_idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_ASSEMBLYREF;
 	}
 
 	table = &assembly->tables [MONO_TABLE_EXPORTEDTYPE];
 
 	table->rows++;
 	alloc_table (table, table->rows);
-	values = table->values + table->next_idx * MONO_EXP_TYPE_SIZE;
+	current_idx = table->next_idx;
+	values = table->values + current_idx * MONO_EXP_TYPE_SIZE;
 
 	values [MONO_EXP_TYPE_FLAGS] = forwarder ? TYPE_ATTRIBUTE_FORWARDER : 0;
 	values [MONO_EXP_TYPE_TYPEDEF] = 0;
