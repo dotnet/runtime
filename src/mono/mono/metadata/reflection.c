@@ -9937,6 +9937,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	MonoError error;
 	MonoMethod *m;
 	MonoMethodNormal *pm;
+	MonoMethodWrapper *wrapperm;
 	MonoMarshalSpec **specs;
 	MonoReflectionMethodAux *method_aux;
 	MonoImage *image;
@@ -9960,12 +9961,11 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	if ((rmb->attrs & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 			(rmb->iattrs & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		m = (MonoMethod *)image_g_new0 (image, MonoMethodPInvoke, 1);
-	else if (rmb->refs)
-		m = (MonoMethod *)image_g_new0 (image, MonoMethodWrapper, 1);
 	else
-		m = (MonoMethod *)image_g_new0 (image, MonoMethodNormal, 1);
+		m = (MonoMethod *)image_g_new0 (image, MonoMethodWrapper, 1);
 
 	pm = (MonoMethodNormal*)m;
+	wrapperm = (MonoMethodWrapper*)m;
 
 	m->dynamic = dynamic;
 	m->slot = -1;
@@ -9975,6 +9975,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	g_assert (mono_error_ok (&error));
 	m->klass = klass;
 	m->signature = sig;
+	m->sre_method = TRUE;
 	m->skip_visibility = rmb->skip_visibility;
 	if (rmb->table_idx)
 		m->token = MONO_TOKEN_METHOD_DEF | (*rmb->table_idx);
@@ -10054,7 +10055,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				 rmb->ilgen, num_clauses);
 		}
 
-		pm->header = header;
+		wrapperm->header = header;
 	}
 
 	if (rmb->generic_params) {

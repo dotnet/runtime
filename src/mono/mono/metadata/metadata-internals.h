@@ -438,7 +438,8 @@ struct _MonoMethodHeader {
 #else
 	guint32      code_size;
 #endif
-	guint16      max_stack;
+	guint16      max_stack   : 15;
+	unsigned int is_transient: 1; /* mono_metadata_free_mh () will actually free this header */
 	unsigned int num_clauses : 15;
 	/* if num_locals != 0, then the following apply: */
 	unsigned int init_locals : 1;

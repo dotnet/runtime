@@ -1737,12 +1737,12 @@ mono_free_method  (MonoMethod *method)
 		mono_image_property_remove (method->klass->image, method);
 
 		g_free ((char*)method->name);
-		if (mw->method.header) {
-			g_free ((char*)mw->method.header->code);
-			for (i = 0; i < mw->method.header->num_locals; ++i)
-				g_free (mw->method.header->locals [i]);
-			g_free (mw->method.header->clauses);
-			g_free (mw->method.header);
+		if (mw->header) {
+			g_free ((char*)mw->header->code);
+			for (i = 0; i < mw->header->num_locals; ++i)
+				g_free (mw->header->locals [i]);
+			g_free (mw->header->clauses);
+			g_free (mw->header);
 		}
 		g_free (mw->method_data);
 		g_free (method->signature);
@@ -2252,40 +2252,39 @@ mono_method_get_header (MonoMethod *method)
 	guint32 rva;
 	MonoImage* img;
 	gpointer loc;
-	MonoMethodNormal* mn = (MonoMethodNormal*) method;
 	MonoMethodHeader *header;
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return NULL;
 
-#ifdef G_LIKELY
-	if (G_LIKELY (mn->header))
-#else
-	if (mn->header)
-#endif
-		return mn->header;
+	if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
+		MonoMethodWrapper *mw = (MonoMethodWrapper *)method;
+		g_assert (mw->header);
+		return mw->header;
+	}
 
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 		MonoMethodHeader *header;
 
-		header = mono_method_get_header (imethod->declaring);
-
 		mono_loader_lock ();
 
-		if (mn->header) {
+		if (imethod->header) {
 			mono_loader_unlock ();
-			return mn->header;
+			return imethod->header;
 		}
 
-		mn->header = inflate_generic_header (header, mono_method_get_context (method));
+		header = mono_method_get_header (imethod->declaring);
+
+		imethod->header = inflate_generic_header (header, mono_method_get_context (method));
 		mono_loader_unlock ();
-		return mn->header;
+		mono_metadata_free_mh (header);
+		return imethod->header;
 	}
 
 	/* 
-	 * Do most of the work outside the loader lock, to avoid assembly loader hook
-	 * deadlocks.
+	 * We don't need locks here: the new header is allocated from malloc memory
+	 * and is not stored anywhere in the runtime, the user needs to free it.
 	 */
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
@@ -2301,20 +2300,7 @@ mono_method_get_header (MonoMethod *method)
 
 	header = mono_metadata_parse_mh_full (img, mono_method_get_generic_container (method), loc);
 
-	mono_loader_lock ();
-
-	if (mn->header) {
-		/* header is allocated from the image mempool, no need to free it */
-		mono_loader_unlock ();
-		return mn->header;
-	}
-
-	mono_memory_barrier ();
-
-	mn->header = header;
-
-	mono_loader_unlock ();
-	return mn->header;
+	return header;
 }
 
 guint32

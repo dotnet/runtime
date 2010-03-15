@@ -2589,8 +2589,7 @@ free_inflated_method (MonoMethodInflated *imethod)
 		mono_metadata_free_inflated_signature (method->signature);
 
 	if (!((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))) {
-		MonoMethodNormal* mn = (MonoMethodNormal*) method;
-		MonoMethodHeader *header = mn->header;
+		MonoMethodHeader *header = imethod->header;
 
 		if (header) {
 			/* Allocated in inflate_generic_header () */
@@ -3233,16 +3232,16 @@ hex_dump (const char *buffer, int base, int count)
 #endif
 
 /** 
- * @mh: The Method header
  * @ptr: Points to the beginning of the Section Data (25.3)
  */
-static void
-parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr)
+static MonoExceptionClause*
+parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr)
 {
 	unsigned char sect_data_flags;
 	const unsigned char *sptr;
 	int is_fat;
 	guint32 sect_data_len;
+	MonoExceptionClause* clauses = NULL;
 	
 	while (1) {
 		/* align on 32-bit boundary */
@@ -3269,11 +3268,11 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 		if (sect_data_flags & METHOD_HEADER_SECTION_EHTABLE) {
 			const unsigned char *p = dword_align (ptr);
 			int i;
-			mh->num_clauses = is_fat ? sect_data_len / 24: sect_data_len / 12;
+			*num_clauses = is_fat ? sect_data_len / 24: sect_data_len / 12;
 			/* we could just store a pointer if we don't need to byteswap */
-			mh->clauses = mono_image_alloc0 (m, sizeof (MonoExceptionClause) * mh->num_clauses);
-			for (i = 0; i < mh->num_clauses; ++i) {
-				MonoExceptionClause *ec = &mh->clauses [i];
+			clauses = g_malloc0 (sizeof (MonoExceptionClause) * (*num_clauses));
+			for (i = 0; i < *num_clauses; ++i) {
+				MonoExceptionClause *ec = &clauses [i];
 				guint32 tof_value;
 				if (is_fat) {
 					ec->flags = read32 (p);
@@ -3306,7 +3305,7 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 		if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS)
 			ptr += sect_data_len - 4; /* LAMESPEC: it seems the size includes the header */
 		else
-			return;
+			return clauses;
 	}
 }
 
@@ -3339,8 +3338,8 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return FALSE;
 
-	if (method->klass->image->dynamic || ((MonoMethodNormal*) method)->header) {
-		MonoMethodHeader *header = mono_method_get_header (method);
+	if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
+		MonoMethodHeader *header =  ((MonoMethodWrapper *)method)->header;
 		if (!header)
 			return FALSE;
 		summary->code_size = header->code_size;
@@ -3404,15 +3403,19 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	guint16 fat_flags;
 	guint32 local_var_sig_tok, max_stack, code_size, init_locals;
 	const unsigned char *code;
-	int hsize;
-	
+	MonoExceptionClause* clauses = NULL;
+	int hsize, num_clauses = 0;
+	MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
+	guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
+
 	g_return_val_if_fail (ptr != NULL, NULL);
 
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
-		mh = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_HEADER);
+		mh = g_malloc0 (MONO_SIZEOF_METHOD_HEADER);
 		ptr++;
 		mh->max_stack = 8;
+		mh->is_transient = TRUE;
 		local_var_sig_tok = 0;
 		mh->code_size = flags >> 2;
 		mh->code = (unsigned char*)ptr;
@@ -3446,17 +3449,21 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	default:
 		return NULL;
 	}
-		       
-	if (local_var_sig_tok) {
-		MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
-		const char *locals_ptr;
-		guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
-		int len=0, i, bsize;
 
-		mono_metadata_decode_row (t, (local_var_sig_tok & 0xffffff)-1, cols, 1);
+	if (local_var_sig_tok) {
+		int idx = (local_var_sig_tok & 0xffffff)-1;
+		if (idx >= t->rows)
+			return NULL;
+		mono_metadata_decode_row (t, idx, cols, 1);
 
 		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], NULL))
 			return NULL;
+	}
+	if (fat_flags & METHOD_HEADER_MORE_SECTS)
+		clauses = parse_section_data (m, &num_clauses, (const unsigned char*)ptr);
+	if (local_var_sig_tok) {
+		const char *locals_ptr;
+		int len=0, i, bsize;
 
 		locals_ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
 		bsize = mono_metadata_decode_blob_size (locals_ptr, &locals_ptr);
@@ -3464,24 +3471,31 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			g_warning ("wrong signature for locals blob");
 		locals_ptr++;
 		len = mono_metadata_decode_value (locals_ptr, &locals_ptr);
-		mh = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_HEADER + len * sizeof (MonoType*));
+		mh = g_malloc0 (MONO_SIZEOF_METHOD_HEADER + len * sizeof (MonoType*) + num_clauses * sizeof (MonoExceptionClause));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
 			mh->locals [i] = mono_metadata_parse_type_full (
 				m, container, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
 			if (!mh->locals [i]) {
+				g_free (clauses);
 				return NULL;
 			}
 		}
 	} else {
-		mh = mono_image_alloc0 (m, MONO_SIZEOF_METHOD_HEADER);
+		mh = g_malloc0 (MONO_SIZEOF_METHOD_HEADER + num_clauses * sizeof (MonoExceptionClause));
 	}
 	mh->code = code;
 	mh->code_size = code_size;
 	mh->max_stack = max_stack;
+	mh->is_transient = TRUE;
 	mh->init_locals = init_locals;
-	if (fat_flags & METHOD_HEADER_MORE_SECTS)
-		parse_section_data (m, mh, (const unsigned char*)ptr);
+	if (clauses) {
+		MonoExceptionClause* clausesp = (MonoExceptionClause*)&mh->locals [mh->num_locals];
+		memcpy (clausesp, clauses, num_clauses * sizeof (MonoExceptionClause));
+		g_free (clauses);
+		mh->clauses = clausesp;
+		mh->num_clauses = num_clauses;
+	}
 	return mh;
 }
 
@@ -3515,12 +3529,16 @@ mono_metadata_parse_mh (MonoImage *m, const char *ptr)
  * @mh: a method header
  *
  * Free the memory allocated for the method header.
- * This is a Mono runtime internal function.
  */
 void
 mono_metadata_free_mh (MonoMethodHeader *mh)
 {
-	/* Allocated from the mempool */
+	/* If it is not transient it means it's part of a wrapper method,
+	 * or a SRE-generated method, so the lifetime in that case is
+	 * dictated by the method's own lifetime
+	 */
+	if (mh->is_transient)
+		g_free (mh);
 }
 
 /*

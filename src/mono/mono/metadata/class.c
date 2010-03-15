@@ -965,12 +965,12 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 		memcpy (&iresult->method.pinvoke, method, sizeof (MonoMethodPInvoke));
 	} else {
 		memcpy (&iresult->method.normal, method, sizeof (MonoMethodNormal));
-		iresult->method.normal.header = NULL;
 	}
 
 	result = (MonoMethod *) iresult;
 	result->is_inflated = TRUE;
 	result->is_generic = FALSE;
+	result->sre_method = FALSE;
 	result->signature = NULL;
 	result->is_mb_open = is_mb_open;
 

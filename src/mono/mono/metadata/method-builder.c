@@ -142,11 +142,12 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	mono_loader_lock (); /*FIXME I think this lock can go.*/
 	if (mb->dynamic) {
 		method = mb->method;
+		mw = (MonoMethodWrapper*)method;
 
 		method->name = mb->name;
 		method->dynamic = TRUE;
 
-		((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
+		mw->header = header = (MonoMethodHeader *) 
 			g_malloc0 (MONO_SIZEOF_METHOD_HEADER + mb->locals * sizeof (MonoType *));
 
 		header->code = mb->code;
@@ -159,13 +160,14 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 		method = mono_image_alloc0 (image, sizeof (MonoMethodWrapper));
 		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
+		mw = (MonoMethodWrapper*) method;
 
 		if (mb->no_dup_name)
 			method->name = mb->name;
 		else
 			method->name = mono_image_strdup (image, mb->name);
 
-		((MonoMethodNormal *)method)->header = header = (MonoMethodHeader *) 
+		mw->header = header = (MonoMethodHeader *) 
 			mono_image_alloc0 (image, MONO_SIZEOF_METHOD_HEADER + mb->locals * sizeof (MonoType *));
 
 		header->code = mono_image_alloc (image, mb->pos);
@@ -192,7 +194,6 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	method->skip_visibility = mb->skip_visibility;
 
-	mw = (MonoMethodWrapper*) mb->method;
 	i = g_list_length (mw->method_data);
 	if (i) {
 		GList *tmp;
@@ -210,7 +211,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		}
 		g_list_free (l);
 
-		((MonoMethodWrapper*)method)->method_data = data;
+		mw->method_data = data;
 	}
 	/*{
 		static int total_code = 0;
