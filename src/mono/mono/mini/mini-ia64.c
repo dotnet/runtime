@@ -3809,7 +3809,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 
-	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 512);
+	cfg->code_size =  MAX (cfg->header->code_size * 4, 512);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		cfg->code_size += 1024;

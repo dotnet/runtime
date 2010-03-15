@@ -5679,7 +5679,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	gboolean args_clobbered = FALSE;
 	gboolean trace = FALSE;
 
-	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 10240);
+	cfg->code_size =  MAX (cfg->header->code_size * 4, 10240);
 
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
