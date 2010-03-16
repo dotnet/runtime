@@ -637,8 +637,8 @@ mono_array_new_va (MonoMethod *cm, ...)
 {
 	MonoDomain *domain = mono_domain_get ();
 	va_list ap;
-	guint32 *lengths;
-	guint32 *lower_bounds;
+	uintptr_t *lengths;
+	intptr_t *lower_bounds;
 	int pcount;
 	int rank;
 	int i, d;
@@ -650,22 +650,22 @@ mono_array_new_va (MonoMethod *cm, ...)
 
 	va_start (ap, cm);
 	
-	lengths = alloca (sizeof (guint32) * pcount);
+	lengths = alloca (sizeof (uintptr_t) * pcount);
 	for (i = 0; i < pcount; ++i)
 		lengths [i] = d = va_arg(ap, int);
 
 	if (rank == pcount) {
 		/* Only lengths provided. */
 		if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-			lower_bounds = alloca (sizeof (guint32) * rank);
-			memset (lower_bounds, 0, sizeof (guint32) * rank);
+			lower_bounds = alloca (sizeof (intptr_t) * rank);
+			memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 		} else {
 			lower_bounds = NULL;
 		}
 	} else {
 		g_assert (pcount == (rank * 2));
 		/* lower bounds are first. */
-		lower_bounds = lengths;
+		lower_bounds = (intptr_t*)lengths;
 		lengths += rank;
 	}
 	va_end(ap);
@@ -678,8 +678,8 @@ MonoArray *
 mono_array_new_1 (MonoMethod *cm, guint32 length)
 {
 	MonoDomain *domain = mono_domain_get ();
-	guint32 lengths [1];
-	guint32 *lower_bounds;
+	uintptr_t lengths [1];
+	intptr_t *lower_bounds;
 	int pcount;
 	int rank;
 
@@ -693,8 +693,8 @@ mono_array_new_1 (MonoMethod *cm, guint32 length)
 	g_assert (rank == pcount);
 
 	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-		lower_bounds = alloca (sizeof (guint32) * rank);
-		memset (lower_bounds, 0, sizeof (guint32) * rank);
+		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
 		lower_bounds = NULL;
 	}
@@ -706,8 +706,8 @@ MonoArray *
 mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 {
 	MonoDomain *domain = mono_domain_get ();
-	guint32 lengths [2];
-	guint32 *lower_bounds;
+	uintptr_t lengths [2];
+	intptr_t *lower_bounds;
 	int pcount;
 	int rank;
 
@@ -722,8 +722,8 @@ mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 	g_assert (rank == pcount);
 
 	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-		lower_bounds = alloca (sizeof (guint32) * rank);
-		memset (lower_bounds, 0, sizeof (guint32) * rank);
+		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
 		lower_bounds = NULL;
 	}
@@ -735,8 +735,8 @@ MonoArray *
 mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3)
 {
 	MonoDomain *domain = mono_domain_get ();
-	guint32 lengths [3];
-	guint32 *lower_bounds;
+	uintptr_t lengths [3];
+	intptr_t *lower_bounds;
 	int pcount;
 	int rank;
 
@@ -752,8 +752,8 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	g_assert (rank == pcount);
 
 	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
-		lower_bounds = alloca (sizeof (guint32) * rank);
-		memset (lower_bounds, 0, sizeof (guint32) * rank);
+		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
 		lower_bounds = NULL;
 	}
