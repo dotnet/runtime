@@ -1508,7 +1508,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodPInvoke));
 	else
-		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodNormal));
+		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethod));
 
 	mono_stats.method_count ++;
 

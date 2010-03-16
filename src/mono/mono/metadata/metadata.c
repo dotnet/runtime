@@ -1504,7 +1504,7 @@ mono_metadata_cleanup (void)
  *
  * To parse a generic type, `generic_container' points to the current class'es
  * (the `generic_container' field in the MonoClass) or the current generic method's
- * (the `generic_container' field in the MonoMethodNormal) generic container.
+ * (stored in image->property_hash) generic container.
  * When we encounter any MONO_TYPE_VAR or MONO_TYPE_MVAR's, they're looked up in
  * this MonoGenericContainer.
  * This is a Mono runtime internal function.
@@ -3007,7 +3007,7 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
 
 /* 
  * mono_metadata_parse_generic_param:
- * @generic_container: Our MonoClass's or MonoMethodNormal's MonoGenericContainer;
+ * @generic_container: Our MonoClass's or MonoMethod's MonoGenericContainer;
  *                     see mono_metadata_parse_type_full() for details.
  * Internal routine to parse a generic type parameter.
  * LOCKING: Acquires the loader lock

@@ -964,7 +964,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	if (sig->pinvoke) {
 		memcpy (&iresult->method.pinvoke, method, sizeof (MonoMethodPInvoke));
 	} else {
-		memcpy (&iresult->method.normal, method, sizeof (MonoMethodNormal));
+		memcpy (&iresult->method.method, method, sizeof (MonoMethod));
 	}
 
 	result = (MonoMethod *) iresult;

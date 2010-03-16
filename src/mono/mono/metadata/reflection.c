@@ -6847,7 +6847,6 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	static MonoClass *System_Reflection_LocalVariableInfo = NULL;
 	static MonoClass *System_Reflection_ExceptionHandlingClause = NULL;
 	MonoReflectionMethodBody *ret;
-	MonoMethodNormal *mn;
 	MonoMethodHeader *header;
 	guint32 method_rva, local_var_sig_token;
     char *ptr;
@@ -6868,7 +6867,6 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return NULL;
-	mn = (MonoMethodNormal *)method;
 	header = mono_method_get_header (method);
 	
 	/* Obtain local vars signature token */
@@ -9936,7 +9934,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 {
 	MonoError error;
 	MonoMethod *m;
-	MonoMethodNormal *pm;
 	MonoMethodWrapper *wrapperm;
 	MonoMarshalSpec **specs;
 	MonoReflectionMethodAux *method_aux;
@@ -9964,7 +9961,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	else
 		m = (MonoMethod *)image_g_new0 (image, MonoMethodWrapper, 1);
 
-	pm = (MonoMethodNormal*)m;
 	wrapperm = (MonoMethodWrapper*)m;
 
 	m->dynamic = dynamic;

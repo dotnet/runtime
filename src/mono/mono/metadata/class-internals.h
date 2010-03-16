@@ -19,7 +19,6 @@ extern gboolean mono_print_vtable;
 
 typedef void     (*MonoStackWalkImpl) (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
 
-typedef struct _MonoMethodNormal MonoMethodNormal;
 typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;
 typedef struct _MonoMethodPInvoke MonoMethodPInvoke;
@@ -83,12 +82,8 @@ struct _MonoMethod {
 	 */
 };
 
-struct _MonoMethodNormal {
-	MonoMethod method;
-};
-
 struct _MonoMethodWrapper {
-	MonoMethodNormal method;
+	MonoMethod method;
 	MonoMethodHeader *header;
 	void *method_data;
 };
@@ -500,7 +495,6 @@ struct _MonoGenericContext {
 struct _MonoMethodInflated {
 	union {
 		MonoMethod method;
-		MonoMethodNormal normal;
 		MonoMethodPInvoke pinvoke;
 	} method;
 	MonoMethodHeader *header;
