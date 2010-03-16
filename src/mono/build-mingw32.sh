@@ -8,7 +8,7 @@ CROSS_PKG_CONFIG_DIR=$CROSS_DIR/$MINGW/lib/pkgconfig
 COPY_DLLS="libgio*.dll libglib*.dll libgmodule*.dll libgthread*.dll libgobject*.dll"
 PATH=$CROSS_BIN_DIR:$PATH
 INSTALL_DESTDIR="$CURDIR/mono-win32"
-PROFILES="default net_2_0 net_2_1 net_3_5"
+PROFILES="default net_2_0 moonlight net_3_5"
 
 export PATH
 

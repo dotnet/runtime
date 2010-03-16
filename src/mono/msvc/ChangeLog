@@ -1,3 +1,8 @@
+2010-03-16  Jb Evain  <jbevain@novell.com>
+
+	* scripts/monowrap.cs, scripts/genproj.cs: rename
+	the net_2_1 profile to moonlight.
+
 2010-03-01  Robert Jordan  <robertj@gmx.net>
 
 	* libmono.vcproj: Track changes.

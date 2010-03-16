@@ -24,14 +24,14 @@
 //    net_1_1           -> class/lib/net_1_1/mcs.exe
 //    net_2_0_bootstrap -> class/lib/net_2_0_bootstrap/gmcs.exe
 //    gmcs              -> mcs/gmcs.exe
-//    net_2_1_bootstrap -> class/lib/net_2_1_bootstrap/smcs.exe
-//    net_2_1_raw       -> class/lib/net_2_1_raw/smcs.exe
+//    moonlight_bootstrap -> class/lib/moonlight_bootstrap/smcs.exe
+//    moonlight_raw       -> class/lib/moonlight_raw/smcs.exe
 //
 // So for example:
-// net_2_1_bootstrap-net_2_0-net_2_1_bootstrap
+// moonlight_bootstrap-net_2_0-moonlight_bootstrap
 //
-// Will set MONO_PATH to "%MCS_ROOT%\class\lib\net_2_1_bootstrap;%MCS_ROOT\class\lib\net_2_0"
-// and run the compiler in %MCS_ROOT%\class\lib\net_2_1_bootstrap
+// Will set MONO_PATH to "%MCS_ROOT%\class\lib\moonlight_bootstrap;%MCS_ROOT\class\lib\net_2_0"
+// and run the compiler in %MCS_ROOT%\class\lib\moonlight_bootstrap
 //
 
 using System;
@@ -94,12 +94,12 @@ namespace csc
 				compiler = root_mcs + "\\mcs\\gmcs.exe";
 				break;
 				
-			case "net_2_1_bootstrap":
-				compiler = root_mcs + "\\class\\lib\\net_2_1_bootstrap\\smcs.exe";
+			case "moonlight_bootstrap":
+				compiler = root_mcs + "\\class\\lib\\moonlight_bootstrap\\smcs.exe";
 				break;
 				
-			case "net_2_1_raw":
-				compiler = root_mcs + "\\class\\lib\\net_2_1_raw\\smcs.exe";
+			case "moonlight_raw":
+				compiler = root_mcs + "\\class\\lib\\moonlight_raw\\smcs.exe";
 				break;
 
 			default:

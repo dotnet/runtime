@@ -612,10 +612,10 @@ class MsbuildGenerator {
 			compiler = "net_2_0_bootstrap";
 		else if (compiler.EndsWith ("mcs/gmcs.exe"))
 			compiler = "gmcs";
-		else if (compiler.EndsWith ("class/lib/net_2_1_bootstrap/smcs.exe"))
-			compiler = "net_2_1_bootstrap";
-		else if (compiler.EndsWith ("class/lib/net_2_1_raw/smcs.exe"))
-			compiler = "net_2_1_raw";
+		else if (compiler.EndsWith ("class/lib/moonlight_bootstrap/smcs.exe"))
+			compiler = "moonlight_bootstrap";
+		else if (compiler.EndsWith ("class/lib/moonlight_raw/smcs.exe"))
+			compiler = "moonlight_raw";
 		else if (compiler.EndsWith ("class/lib/net_4_0_bootstrap/dmcs.exe"))
 			compiler = "net_4_0_bootstrap";
 		else if (compiler.EndsWith ("class/lib/net_4_0/dmcs.exe"))
@@ -743,7 +743,7 @@ public class Driver {
 			// Do not do 2.1, it is not working yet
 			// Do not do basic, as there is no point (requires a system mcs to be installed).
 			//
-			if (library.Contains ("net_2_1") || library.Contains ("-basic"))
+			if (library.Contains ("moonlight") || library.Contains ("-basic"))
 				continue;
 			
 			var gen = new MsbuildGenerator (dir);

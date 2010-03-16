@@ -1,3 +1,7 @@
+2010-03-16  Jb Evain  <jbevain@novell.com>
+
+	* setup-solution.bat: rename the net_2_1 profile to moonlight.
+
 2010-01-18  Bill Holmes  <billholmes54@gmail.com>
 
 	* libmono.vcproj : Adding a link to Mswsock.lib and adding files
