@@ -2448,4 +2448,72 @@ OK_2:
         IL_004b:  ret
     }
 
+	.method public static int32 test_2_leave_multiple_blocks_from_end ()
+	{
+		.locals init (int32 V_0)
+
+		.try {
+			.try {
+				nop
+				nop
+				leave END
+			} finally {
+				ldloc.0
+				ldc.i4.1
+				add
+				stloc.0
+				endfinally
+			}
+			nop
+			leave END
+		} finally {
+			ldloc.0
+			ldc.i4.1
+			add
+			stloc.0
+			endfinally
+		}
+END:
+		ldloc.0
+		ret
+	}
+
+	.method public static int32 test_3_leave_multiple_blocks_from_hole ()
+	{
+		.locals init (int32 V_0)
+
+		.try {
+			.try {
+				ldloc.0
+				brtrue REST
+				leave BEFORE_END
+REST:
+				nop
+				nop
+				leave END
+			} finally {
+				ldloc.0
+				ldc.i4.1
+				add
+				stloc.0
+				endfinally
+			}
+			nop
+			leave END
+		} finally {
+			ldloc.0
+			ldc.i4.1
+			add
+			stloc.0
+			endfinally
+		}
+BEFORE_END:
+		ldloc.0
+		ldc.i4.1
+		add
+		stloc.0
+END:
+		ldloc.0
+		ret
+	}
 }
