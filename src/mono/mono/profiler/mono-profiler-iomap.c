@@ -5,6 +5,9 @@
  *   Marek Habersack <mhabersack@novell.com>
  *
  * Copyright (c) 2009 Novell, Inc (http://novell.com)
+ *
+ * Note: this profiler is completely unsafe wrt handling managed objects,
+ * don't use and don't copy code from here.
  */
 #include "config.h"
 
@@ -225,7 +228,7 @@ static gboolean saved_strings_find_func (gpointer key, gpointer value, gpointer 
 	gchar *utf_str;
 	guint32 hash;
 
-	if (!info || !saved || saved->string->length != info->len)
+	if (!info || !saved || mono_string_length (saved->string) != info->len)
 		return FALSE;
 
 	utf_str = mono_string_to_utf8 (saved->string);
@@ -475,7 +478,7 @@ static void mono_portability_remember_alloc (MonoProfiler *prof, MonoObject *obj
 {
 	if (klass != string_class)
 		return;
-	mono_portability_remember_string (prof, mono_object_domain (obj), (MonoString*)obj);
+	mono_portability_remember_string (prof, mono_object_get_domain (obj), (MonoString*)obj);
 }
 
 static void mono_portability_iomap_event (MonoProfiler *prof, const char *report, const char *pathname, const char *new_pathname)
