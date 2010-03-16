@@ -170,6 +170,12 @@ mono_running_on_valgrind (void)
 }
 
 typedef struct {
+	MonoExceptionClause *clause;
+	MonoBasicBlock *basic_block;
+	int start_offset;
+} TryBlockHole;
+
+typedef struct {
 	void *ip;
 	MonoMethod *method;
 } FindTrampUserData;
@@ -3244,6 +3250,7 @@ mono_codegen (MonoCompile *cfg)
 		bb->native_offset = cfg->code_len;
 		//if ((bb == cfg->bb_entry) || !(bb->region == -1 && !bb->dfn))
 			mono_arch_output_basic_block (cfg, bb);
+		bb->native_length = cfg->code_len - bb->native_offset;
 
 		if (bb == cfg->bb_exit) {
 			cfg->epilog_begin = cfg->code_len;
@@ -3363,10 +3370,12 @@ compute_reachable (MonoBasicBlock *bb)
 static MonoJitInfo*
 create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 {
+	GSList *tmp;
 	MonoMethodHeader *header;
 	MonoJitInfo *jinfo;
 	int num_clauses;
 	int generic_info_size;
+	int holes_size = 0, num_holes = 0;
 
 	g_assert (method_to_compile == cfg->method);
 	header = cfg->header;
@@ -3376,6 +3385,24 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	else
 		generic_info_size = 0;
 
+	if (cfg->try_block_holes) {
+		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
+			TryBlockHole *hole = tmp->data;
+			MonoExceptionClause *ec = hole->clause;
+			int hole_end = hole->basic_block->native_offset + hole->basic_block->native_length;
+			MonoBasicBlock *clause_last_bb = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
+			g_assert (clause_last_bb);
+
+			/* Holes at the end of a try region can be represented by simply reducing the size of the block itself.*/
+			if (clause_last_bb->native_offset != hole_end)
+				++num_holes;
+		}
+		if (num_holes)
+			holes_size = sizeof (MonoTryBlockHoleTableJitInfo) + num_holes * sizeof (MonoTryBlockHoleJitInfo);
+		if (G_UNLIKELY (cfg->verbose_level >= 4))
+			printf ("Number of try block holes %d\n", num_holes);
+	}
+
 	if (COMPILE_LLVM (cfg))
 		num_clauses = cfg->llvm_ex_info_len;
 	else
@@ -3383,11 +3410,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	if (cfg->method->dynamic) {
 		jinfo = g_malloc0 (MONO_SIZEOF_JIT_INFO + (num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size);
+				generic_info_size + holes_size);
 	} else {
 		jinfo = mono_domain_alloc0 (cfg->domain, MONO_SIZEOF_JIT_INFO +
 				(num_clauses * sizeof (MonoJitExceptionInfo)) +
-				generic_info_size);
+				generic_info_size + holes_size);
 	}
 
 	jinfo->method = cfg->method_to_register;
@@ -3446,6 +3473,58 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		}
 	}
 
+	if (num_holes) {
+		MonoTryBlockHoleTableJitInfo *table;
+		int i;
+
+		jinfo->has_try_block_holes = 1;
+		table = mono_jit_info_get_try_block_hole_table_info (jinfo);
+		table->num_holes = (guint16)num_holes;
+		i = 0;
+		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
+			MonoTryBlockHoleJitInfo *hole;
+			TryBlockHole *hole_data = tmp->data;
+			MonoExceptionClause *ec = hole_data->clause;
+			int hole_end = hole_data->basic_block->native_offset + hole_data->basic_block->native_length;
+			MonoBasicBlock *clause_last_bb = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
+			g_assert (clause_last_bb);
+
+			/* Holes at the end of a try region can be represented by simply reducing the size of the block itself.*/
+			if (clause_last_bb->native_offset == hole_end)
+				continue;
+
+			hole = &table->holes [i++];
+			hole->clause = hole_data->clause - &header->clauses [0];
+			hole->offset = (guint32)hole_data->start_offset;
+			hole->length = (guint16)(hole_data->basic_block->native_length - hole_data->start_offset);
+		}
+		g_assert (i == num_holes);
+	}
+
+	if (G_UNLIKELY (header->num_clauses && cfg->verbose_level >= 4)) {
+		GSList *tmp;
+		int i;
+		printf ("\nException Handling Data\n");
+		for (i = 0; i < header->num_clauses; i++) {
+			MonoExceptionClause *ec = &header->clauses [i];
+			int try_start = cfg->cil_offset_to_bb [ec->try_offset]->native_offset;
+			int try_end  = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len]->native_offset;
+			int handler_start = cfg->cil_offset_to_bb [ec->handler_offset]->native_offset;
+			int handler_end = cfg->cil_offset_to_bb [ec->handler_offset + ec->handler_len]->native_offset;
+
+			printf ("EH clause %d flags %x try IL %x-%x NATIVE %x-%x handler IL %x-%x NATIVE %x-%x\n",
+				i, ec->flags,
+				ec->try_offset, ec->try_offset + ec->try_len, try_start, try_end,
+				ec->handler_offset, ec->handler_offset + ec->handler_len, handler_start, handler_end);
+		}
+		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
+			TryBlockHole *hole = tmp->data;
+			int block = hole->clause - &header->clauses [0];
+			printf ("try block hole at eh clause %d range %x-%x\n",
+				block, hole->start_offset, hole->basic_block->native_offset + hole->basic_block->native_length);
+		}
+	}
+
 	if (COMPILE_LLVM (cfg)) {
 		if (num_clauses)
 			memcpy (&jinfo->clauses [0], &cfg->llvm_ex_info [0], num_clauses * sizeof (MonoJitExceptionInfo));
@@ -3482,7 +3561,26 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			tblock = cfg->cil_offset_to_bb [ec->handler_offset];
 			g_assert (tblock);
 			ei->handler_start = cfg->native_code + tblock->native_offset;
+
+			for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
+				TryBlockHole *hole = tmp->data;
+				gpointer hole_end = cfg->native_code + (hole->basic_block->native_offset + hole->basic_block->native_length);
+				if (hole->clause == ec && hole_end == ei->try_end) {
+					if (G_UNLIKELY (cfg->verbose_level >= 4))
+						printf ("\tShortening try block %d from %p to %p\n", i, ei->try_end, cfg->native_code + hole->start_offset);
+					ei->try_end = cfg->native_code + hole->start_offset;
+					break;
+				}
+			}
 		}
+
+		if (G_UNLIKELY (cfg->verbose_level >= 4)) {
+			for (i = 0; i < jinfo->num_clauses; i++) {
+				MonoJitExceptionInfo *ei = &jinfo->clauses [i];
+				printf ("JitInfo EH clause %d flags %x try %p-%p handler %p\n", i, ei->flags, ei->try_start, ei->try_end, ei->handler_start);
+			}
+		}
+
 	}
 
 	/* 
@@ -6052,6 +6150,17 @@ void mono_precompile_assemblies ()
 void*
 mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) {
 	return mono_arch_instrument_epilog_full (cfg, func, p, enable_arguments, FALSE);
+}
+
+void
+mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb)
+{
+	TryBlockHole *hole = mono_mempool_alloc (cfg->mempool, sizeof (TryBlockHole));
+	hole->clause = clause;
+	hole->start_offset = start - cfg->native_code;
+	hole->basic_block = bb;
+
+	cfg->try_block_holes = g_slist_append_mempool (cfg->mempool, cfg->try_block_holes, hole);
 }
 
 #endif

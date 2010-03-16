@@ -495,7 +495,6 @@ mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *targe
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
-	MonoBasicBlock *handler;
 	int i;
 	GList *res = NULL;
 
@@ -503,11 +502,8 @@ mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *targe
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, (ip - header->code)) && 
 		    (!MONO_OFFSET_IN_CLAUSE (clause, (target - header->code)))) {
-			if (clause->flags == type) {
-				handler = cfg->cil_offset_to_bb [clause->handler_offset];
-				g_assert (handler);
-				res = g_list_append (res, handler);
-			}
+			if (clause->flags == type)
+				res = g_list_append (res, clause);
 		}
 	}
 	return res;
@@ -8930,11 +8926,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if ((handlers = mono_find_final_block (cfg, ip, target, MONO_EXCEPTION_CLAUSE_FINALLY))) {
 				GList *tmp;
+				MonoExceptionClause *clause;
+
 				for (tmp = handlers; tmp; tmp = tmp->next) {
-					tblock = tmp->data;
+					clause = tmp->data;
+					tblock = cfg->cil_offset_to_bb [clause->handler_offset];
+					g_assert (tblock);
 					link_bblock (cfg, bblock, tblock);
 					MONO_INST_NEW (cfg, ins, OP_CALL_HANDLER);
 					ins->inst_target_bb = tblock;
+					ins->inst_eh_block = clause;
 					MONO_ADD_INS (bblock, ins);
 					bblock->has_call_handler = 1;
 					if (COMPILE_LLVM (cfg)) {

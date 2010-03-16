@@ -197,6 +197,34 @@ mono_get_throw_corlib_exception (void)
 	return throw_corlib_exception_func;
 }
 
+static gboolean
+is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
+{
+	MonoTryBlockHoleTableJitInfo *table;
+	int i;
+	guint32 offset;
+	guint16 clause;
+
+	/*FIXME check if under s390 it should be ei->try_start >= ip*/
+	if (ei->try_start > ip || ip >= ei->try_end)
+		return FALSE;
+
+	if (!ji->has_try_block_holes)
+		return TRUE;
+
+	table = mono_jit_info_get_try_block_hole_table_info (ji);
+	offset = (guint32)((char*)ip - (char*)ji->code_start);
+	clause = (guint16)(ei - ji->clauses);
+	g_assert (clause < ji->num_clauses);
+
+	for (i = 0; i < table->num_holes; ++i) {
+		MonoTryBlockHoleJitInfo *hole = &table->holes [i];
+		if (hole->clause == clause && hole->offset <= offset && hole->offset + hole->length > offset)
+			return FALSE;
+	}
+	return TRUE;
+}
+
 #ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
 
 /*
@@ -1302,7 +1330,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					 */
 					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && 
 #else
-					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
+					if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
 #endif
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
 						/* catch block */
@@ -1367,8 +1395,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 							return 0;
 						}
-						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
-						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
+						if (!test_only && is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
 						    (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT)) {
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
@@ -1376,8 +1403,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							call_filter (ctx, ei->handler_start);
 						}
-						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
-						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
+						if (!test_only && is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
 						    (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
@@ -1537,8 +1563,7 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 	for (i = 0; i < ji->num_clauses; i++) {
 		MonoJitExceptionInfo *ei = &ji->clauses [i];
 
-		if ((ei->try_start <= MONO_CONTEXT_GET_IP (&ctx)) && 
-		    (MONO_CONTEXT_GET_IP (&ctx) < ei->try_end) &&
+		if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (&ctx)) &&
 		    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 			call_filter (&ctx, ei->handler_start);
 		}

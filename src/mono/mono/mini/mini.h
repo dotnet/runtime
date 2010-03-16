@@ -465,8 +465,9 @@ struct MonoBasicBlock {
 	/* Length of the CIL block */
 	gint32 cil_length;
 
-	/* The address of the generated code, used for fixups */
+	/* The offset of the generated code, used for fixups */
 	int native_offset;
+	int native_length;
 	int max_offset;
 	int max_length;
 
@@ -609,6 +610,7 @@ struct MonoInst {
 			MonoClass *klass;
 			int *phi_args;
 			MonoCallInst *call_inst;
+			MonoExceptionClause *exception_clause;
 		} op [2];
 		gint64 i8const;
 		double r8const;
@@ -730,6 +732,7 @@ enum {
 #define inst_call   data.op[1].call_inst
 
 #define inst_phi_args   data.op[1].phi_args
+#define inst_eh_block	 data.op[1].exception_clause
 
 /* instruction description for use in regalloc/scheduling */
 enum {
@@ -1141,6 +1144,8 @@ typedef struct {
 
 	MonoJitExceptionInfo *llvm_ex_info;
 	guint32 llvm_ex_info_len;
+
+	GSList *try_block_holes;
 } MonoCompile;
 
 typedef enum {
@@ -1976,6 +1981,8 @@ int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *al
 int mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke) MONO_INTERNAL;
 void type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst) MONO_INTERNAL;
 guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
+
+void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb) MONO_INTERNAL;
 
 /* wapihandles.c */
 int mini_wapi_hps (int argc, char **argv) MONO_INTERNAL;
