@@ -1771,6 +1771,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	ArgInfo *ainfo;
 	int j;
 	LLVMCallInfo *linfo;
+	MonoType *t;
 
 	n = sig->param_count + sig->hasthis;
 
@@ -1804,6 +1805,11 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
+		if (i >= sig->hasthis)
+			t = sig->params [i - sig->hasthis];
+		else
+			t = &mono_defaults.int_class->byval_arg;
+
 		linfo->args [i].storage = LLVMArgNone;
 
 		switch (ainfo->storage) {
@@ -1815,16 +1821,15 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->args [i].storage = LLVMArgInFPReg;
 			break;
 		case ArgOnStack:
-			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
+			if (MONO_TYPE_ISSTRUCT (t)) {
 				linfo->args [i].storage = LLVMArgVtypeByVal;
 			} else {
 				linfo->args [i].storage = LLVMArgInIReg;
-				if (!sig->params [i - sig->hasthis]->byref) {
-					if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R4) {
+				if (!t->byref) {
+					if (t->type == MONO_TYPE_R4)
 						linfo->args [i].storage = LLVMArgInFPReg;
-					} else if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8) {
+					else if (t->type == MONO_TYPE_R8)
 						linfo->args [i].storage = LLVMArgInFPReg;
-					}
 				}
 			}
 			break;
