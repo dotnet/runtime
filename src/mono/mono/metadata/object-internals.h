@@ -148,6 +148,48 @@
 
 #endif
 
+#ifdef MONO_BIG_ARRAYS
+typedef uint64_t mono_array_size_t;
+typedef int64_t mono_array_lower_bound_t;
+#define MONO_ARRAY_MAX_INDEX G_MAXINT64
+#define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
+#else
+typedef uint32_t mono_array_size_t;
+typedef int32_t mono_array_lower_bound_t;
+#define MONO_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
+#define MONO_ARRAY_MAX_SIZE  ((uint32_t) 0xffffffff)
+#endif
+
+typedef struct {
+	mono_array_size_t length;
+	mono_array_lower_bound_t lower_bound;
+} MonoArrayBounds;
+
+struct _MonoArray {
+	MonoObject obj;
+	/* bounds is NULL for szarrays */
+	MonoArrayBounds *bounds;
+	/* total number of elements of the array */
+	mono_array_size_t max_length; 
+	/* we use double to ensure proper alignment on platforms that need it */
+	double vector [MONO_ZERO_LEN_ARRAY];
+};
+
+struct _MonoString {
+	MonoObject object;
+	int32_t length;
+	mono_unichar2 chars [MONO_ZERO_LEN_ARRAY];
+};
+
+#define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
+#define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
+
+#define mono_string_chars_fast(s) ((mono_unichar2*)(s)->chars)
+#define mono_string_length_fast(s) ((s)->length)
+
+#define mono_array_length_fast(array) ((array)->max_length)
+#define mono_array_addr_with_size_fast(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
+
 typedef struct {
 	MonoObject obj;
 	MonoObject *identity;
@@ -1351,7 +1393,7 @@ void
 mono_array_full_copy (MonoArray *src, MonoArray *dest) MONO_INTERNAL;
 
 gboolean
-mono_array_calc_byte_len (MonoClass *class, mono_array_size_t len, mono_array_size_t *res) MONO_INTERNAL;
+mono_array_calc_byte_len (MonoClass *class, uintptr_t len, uintptr_t *res) MONO_INTERNAL;
 
 gpointer
 mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy) MONO_INTERNAL;

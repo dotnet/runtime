@@ -4298,7 +4298,7 @@ mono_object_clone (MonoObject *obj)
 void
 mono_array_full_copy (MonoArray *src, MonoArray *dest)
 {
-	mono_array_size_t size;
+	uintptr_t size;
 	MonoClass *klass = src->obj.vtable->klass;
 
 	MONO_ARCH_SAVE_REGS;
@@ -4334,8 +4334,8 @@ MonoArray*
 mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 {
 	MonoArray *o;
-	mono_array_size_t size, i;
-	mono_array_size_t *sizes;
+	uintptr_t size, i;
+	uintptr_t *sizes;
 	MonoClass *klass = array->obj.vtable->klass;
 
 	MONO_ARCH_SAVE_REGS;
@@ -4360,14 +4360,14 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 		return o;
 	}
 	
-	sizes = alloca (klass->rank * sizeof(mono_array_size_t) * 2);
+	sizes = alloca (klass->rank * sizeof(intptr_t) * 2);
 	size = mono_array_element_size (klass);
 	for (i = 0; i < klass->rank; ++i) {
 		sizes [i] = array->bounds [i].length;
 		size *= array->bounds [i].length;
 		sizes [i + klass->rank] = array->bounds [i].lower_bound;
 	}
-	o = mono_array_new_full (domain, klass, sizes, sizes + klass->rank);
+	o = mono_array_new_full (domain, klass, sizes, (intptr_t*)sizes + klass->rank);
 #ifdef HAVE_SGEN_GC
 	if (klass->element_class->valuetype) {
 		if (klass->element_class->has_references)
@@ -4416,9 +4416,9 @@ mono_array_clone (MonoArray *array)
 #endif
 
 gboolean
-mono_array_calc_byte_len (MonoClass *class, mono_array_size_t len, mono_array_size_t *res)
+mono_array_calc_byte_len (MonoClass *class, uintptr_t len, uintptr_t *res)
 {
-	mono_array_size_t byte_len;
+	uintptr_t byte_len;
 
 	byte_len = mono_array_element_size (class);
 	if (CHECK_MUL_OVERFLOW_UN (byte_len, len))
@@ -4444,9 +4444,9 @@ mono_array_calc_byte_len (MonoClass *class, mono_array_size_t len, mono_array_si
  * lower bounds and type.
  */
 MonoArray*
-mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size_t *lengths, mono_array_size_t *lower_bounds)
+mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds)
 {
-	mono_array_size_t byte_len, len, bounds_size;
+	uintptr_t byte_len, len, bounds_size;
 	MonoObject *o;
 	MonoArray *array;
 	MonoArrayBounds *bounds;
@@ -4546,7 +4546,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size
  * This routine creates a new szarray with @n elements of type @eclass.
  */
 MonoArray *
-mono_array_new (MonoDomain *domain, MonoClass *eclass, mono_array_size_t n)
+mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 {
 	MonoClass *ac;
 
@@ -4567,11 +4567,11 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, mono_array_size_t n)
  * can be sure about the domain it operates in.
  */
 MonoArray *
-mono_array_new_specific (MonoVTable *vtable, mono_array_size_t n)
+mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 {
 	MonoObject *o;
 	MonoArray *ao;
-	guint32 byte_len;
+	uintptr_t byte_len;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -5243,7 +5243,7 @@ mono_string_to_utf8_checked (MonoString *s, MonoError *error)
  * This is a temporary helper until our string implementation
  * is reworked to always include the null terminating char.
  */
-gunichar2 *
+mono_unichar2*
 mono_string_to_utf16 (MonoString *s)
 {
 	char *as;
@@ -6144,7 +6144,6 @@ mono_get_addr_from_ftnptr (gpointer descr)
 	return callbacks.get_addr_from_ftnptr (descr);
 }	
 
-#if 0
 /**
  * mono_string_chars:
  * @s: a MonoString
@@ -6152,9 +6151,9 @@ mono_get_addr_from_ftnptr (gpointer descr)
  * Returns a pointer to the UCS16 characters stored in the MonoString
  */
 gunichar2 *
-mono_string_chars(MonoString *s)
+mono_string_chars (MonoString *s)
 {
-	/* This method is here only for documentation extraction, this is a macro */
+	return s->chars;
 }
 
 /**
@@ -6166,7 +6165,33 @@ mono_string_chars(MonoString *s)
 int
 mono_string_length (MonoString *s)
 {
-	/* This method is here only for documentation extraction, this is a macro */
+	return s->length;
 }
 
-#endif
+/**
+ * mono_array_length:
+ * @array: a MonoArray*
+ *
+ * Returns the total number of elements in the array. This works for
+ * both vectors and multidimensional arrays.
+ */
+uintptr_t
+mono_array_length (MonoArray *array)
+{
+	return array->max_length;
+}
+
+/**
+ * mono_array_addr_with_size:
+ * @array: a MonoArray*
+ * @size: size of the array elements
+ * @idx: index into the array
+ *
+ * Returns the address of the @idx element in the array.
+ */
+char*
+mono_array_addr_with_size (MonoArray *array, int size, uintptr_t idx)
+{
+	return ((char*)(array)->vector) + size * idx;
+}
+

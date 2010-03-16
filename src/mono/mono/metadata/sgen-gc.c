@@ -4579,7 +4579,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 }
 
 void*
-mono_gc_alloc_vector (MonoVTable *vtable, size_t size, mono_array_size_t max_length)
+mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 {
 	MonoArray *arr;
 #ifndef DISABLE_CRITICAL_REGION
@@ -4605,7 +4605,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, mono_array_size_t max_len
 }
 
 void*
-mono_gc_alloc_array (MonoVTable *vtable, size_t size, mono_array_size_t max_length, mono_array_size_t bounds_size)
+mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uintptr_t bounds_size)
 {
 	MonoArray *arr;
 	MonoArrayBounds *bounds;

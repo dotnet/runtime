@@ -2946,8 +2946,8 @@ static gboolean
 mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *indices, gpointer empty, gpointer parameter, gboolean allocateNewArray)
 {
 	int dim;
-	mono_array_size_t *sizes;
-	mono_array_size_t *bounds;
+	uintptr_t *sizes;
+	intptr_t *bounds;
 	MonoClass *aklass;
 	int i;
 	gboolean bounded = FALSE;
@@ -2973,8 +2973,8 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 
 			*indices = g_malloc (dim * sizeof(int));
 
-			sizes = alloca (dim * sizeof(mono_array_size_t));
-			bounds = alloca (dim * sizeof(mono_array_size_t));
+			sizes = alloca (dim * sizeof(uintptr_t));
+			bounds = alloca (dim * sizeof(intptr_t));
 
 			for (i=0; i<dim; ++i) {
 				glong lbound, ubound;

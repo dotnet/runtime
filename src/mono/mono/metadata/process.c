@@ -13,7 +13,7 @@
 #include <glib.h>
 #include <string.h>
 
-#include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/process.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>

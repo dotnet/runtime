@@ -559,7 +559,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 {
 	MonoClass *aklass;
 	MonoArray *array;
-	mono_array_size_t *sizes, i;
+	uintptr_t *sizes, i;
 	gboolean bounded = FALSE;
 
 	MONO_ARCH_SAVE_REGS;
@@ -583,7 +583,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 
 	aklass = mono_bounded_array_class_get (mono_class_from_mono_type (type->type), mono_array_length (lengths), bounded);
 
-	sizes = alloca (aklass->rank * sizeof(mono_array_size_t) * 2);
+	sizes = alloca (aklass->rank * sizeof(intptr_t) * 2);
 	for (i = 0; i < aklass->rank; ++i) {
 		sizes [i] = mono_array_get (lengths, guint32, i);
 		if (bounds)
@@ -592,7 +592,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 			sizes [i + aklass->rank] = 0;
 	}
 
-	array = mono_array_new_full (mono_object_domain (type), aklass, sizes, sizes + aklass->rank);
+	array = mono_array_new_full (mono_object_domain (type), aklass, sizes, (intptr_t*)sizes + aklass->rank);
 
 	return array;
 }
@@ -602,7 +602,7 @@ ves_icall_System_Array_CreateInstanceImpl64 (MonoReflectionType *type, MonoArray
 {
 	MonoClass *aklass;
 	MonoArray *array;
-	mono_array_size_t *sizes, i;
+	uintptr_t *sizes, i;
 	gboolean bounded = FALSE;
 
 	MONO_ARCH_SAVE_REGS;
@@ -627,7 +627,7 @@ ves_icall_System_Array_CreateInstanceImpl64 (MonoReflectionType *type, MonoArray
 
 	aklass = mono_bounded_array_class_get (mono_class_from_mono_type (type->type), mono_array_length (lengths), bounded);
 
-	sizes = alloca (aklass->rank * sizeof(mono_array_size_t) * 2);
+	sizes = alloca (aklass->rank * sizeof(intptr_t) * 2);
 	for (i = 0; i < aklass->rank; ++i) {
 		sizes [i] = mono_array_get (lengths, guint64, i);
 		if (bounds)
@@ -636,7 +636,7 @@ ves_icall_System_Array_CreateInstanceImpl64 (MonoReflectionType *type, MonoArray
 			sizes [i + aklass->rank] = 0;
 	}
 
-	array = mono_array_new_full (mono_object_domain (type), aklass, sizes, sizes + aklass->rank);
+	array = mono_array_new_full (mono_object_domain (type), aklass, sizes, (intptr_t*)sizes + aklass->rank);
 
 	return array;
 }
@@ -653,7 +653,7 @@ static gint32
 ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 {
 	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
-	mono_array_size_t length;
+	uintptr_t length;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2854,12 +2854,13 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	
 	if (m->klass->rank && !strcmp (m->name, ".ctor")) {
 		int i;
-		mono_array_size_t *lengths;
-		mono_array_size_t *lower_bounds;
+		uintptr_t *lengths;
+		intptr_t *lower_bounds;
 		pcount = mono_array_length (params);
-		lengths = alloca (sizeof (mono_array_size_t) * pcount);
+		lengths = alloca (sizeof (uintptr_t) * pcount);
+		/* Note: the synthetized array .ctors have int32 as argument type */
 		for (i = 0; i < pcount; ++i)
-			lengths [i] = *(mono_array_size_t*) ((char*)mono_array_get (params, gpointer, i) + sizeof (MonoObject));
+			lengths [i] = *(int32_t*) ((char*)mono_array_get (params, gpointer, i) + sizeof (MonoObject));
 
 		if (m->klass->rank == pcount) {
 			/* Only lengths provided. */
@@ -2867,7 +2868,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		} else {
 			g_assert (pcount == (m->klass->rank * 2));
 			/* lower bounds are first. */
-			lower_bounds = lengths;
+			lower_bounds = (intptr_t*)lengths;
 			lengths += m->klass->rank;
 		}
 

@@ -7,6 +7,8 @@ MONO_BEGIN_DECLS
 
 typedef mono_byte MonoBoolean;
 
+typedef struct _MonoString MonoString;
+typedef struct _MonoArray MonoArray;
 typedef struct _MonoReflectionMethod MonoReflectionMethod;
 typedef struct _MonoReflectionAssembly MonoReflectionAssembly;
 typedef struct _MonoReflectionModule MonoReflectionModule;
@@ -28,45 +30,9 @@ typedef struct {
 	MonoThreadsSync *synchronisation;
 } MonoObject;
 
-#ifdef MONO_BIG_ARRAYS
-typedef uint64_t mono_array_size_t;
-typedef int64_t mono_array_lower_bound_t;
-#define MONO_ARRAY_MAX_INDEX G_MAXINT64
-#define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
-#else
-typedef uint32_t mono_array_size_t;
-typedef int32_t mono_array_lower_bound_t;
-#define MONO_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
-#define MONO_ARRAY_MAX_SIZE  ((uint32_t) 0xffffffff)
-#endif
-
-typedef struct {
-	mono_array_size_t length;
-	mono_array_lower_bound_t lower_bound;
-} MonoArrayBounds;
-
-typedef struct {
-	MonoObject obj;
-	/* bounds is NULL for szarrays */
-	MonoArrayBounds *bounds;
-	/* total number of elements of the array */
-	mono_array_size_t max_length; 
-	/* we use double to ensure proper alignment on platforms that need it */
-	double vector [MONO_ZERO_LEN_ARRAY];
-} MonoArray;
-
-typedef struct {
-	MonoObject object;
-	int32_t length;
-	mono_unichar2 chars [MONO_ZERO_LEN_ARRAY];
-} MonoString;
-
 typedef MonoObject* (*MonoInvokeFunc)	     (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 typedef void*    (*MonoCompileFunc)	     (MonoMethod *method);
 typedef void	    (*MonoMainThreadFunc)    (void* user_data);
-
-#define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
-#define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
 
 #define MONO_OBJECT_SETREF(obj,fieldname,value) do {	\
 		mono_gc_wbarrier_set_field ((MonoObject*)(obj), &((obj)->fieldname), (MonoObject*)value);	\
@@ -78,9 +44,7 @@ typedef void	    (*MonoMainThreadFunc)    (void* user_data);
         mono_gc_wbarrier_generic_store (&((s)->field), (MonoObject*)(value)); \
     } while (0)
 
-#define mono_array_length(array) ((array)->max_length)
 #define mono_array_addr(array,type,index) ((type*)(void*) mono_array_addr_with_size (array, sizeof (type), index))
-#define mono_array_addr_with_size(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
 #define mono_array_get(array,type,index) ( *(type*)mono_array_addr ((array), type, (index)) ) 
 #define mono_array_set(array,type,index,value)	\
 	do {	\
@@ -100,8 +64,8 @@ typedef void	    (*MonoMainThreadFunc)    (void* user_data);
 		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
 	} while (0)
 
-#define mono_string_chars(s) ((mono_unichar2*)(s)->chars)
-#define mono_string_length(s) ((s)->length)
+mono_unichar2 *mono_string_chars  (MonoString *s);
+int            mono_string_length (MonoString *s);
 
 MonoObject *
 mono_object_new		    (MonoDomain *domain, MonoClass *klass);
@@ -120,17 +84,23 @@ MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, uint32_t token);
 
 MonoArray*
-mono_array_new		    (MonoDomain *domain, MonoClass *eclass, mono_array_size_t n);
+mono_array_new		    (MonoDomain *domain, MonoClass *eclass, uintptr_t n);
 
 MonoArray*
 mono_array_new_full	    (MonoDomain *domain, MonoClass *array_class,
-			     mono_array_size_t *lengths, mono_array_size_t *lower_bounds);
+			     uintptr_t *lengths, intptr_t *lower_bounds);
 
 MonoArray *
-mono_array_new_specific	    (MonoVTable *vtable, mono_array_size_t n);
+mono_array_new_specific	    (MonoVTable *vtable, uintptr_t n);
 
 MonoArray*
 mono_array_clone	    (MonoArray *array);
+
+char*
+mono_array_addr_with_size   (MonoArray *array, int size, uintptr_t idx);
+
+uintptr_t
+mono_array_length           (MonoArray *array);
 
 MonoString*
 mono_string_new_utf16	    (MonoDomain *domain, const mono_unichar2 *text, int32_t len);

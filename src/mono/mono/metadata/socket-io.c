@@ -1633,7 +1633,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 	MonoClass *sock_arr_class;
 	MonoArray *socks;
 	time_t start;
-	mono_array_size_t socks_size;
+	uintptr_t socks_size;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -1712,7 +1712,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 	}
 
 	sock_arr_class= ((MonoObject *)*sockets)->vtable->klass;
-	socks_size = ((mono_array_size_t)ret) + 3; /* space for the NULL delimiters */
+	socks_size = ((uintptr_t)ret) + 3; /* space for the NULL delimiters */
 	socks = mono_array_new_full (mono_domain_get (), sock_arr_class, &socks_size, NULL);
 
 	mode = idx = 0;
