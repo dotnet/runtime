@@ -3018,7 +3018,6 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo, int result)
 typedef struct {
 	long il_offset, native_offset;
 	guint8 *ip;
-	gboolean pending, entry;
 	MonoJitInfo *ji;
 } BreakpointInstance;
 
@@ -3034,7 +3033,6 @@ typedef struct {
 	 */
 	MonoMethod *method;
 	long il_offset;
-	gboolean pending, entry;
 	EventRequest *req;
 	/* 
 	 * A list of BreakpointInstance structures describing where the breakpoint
@@ -3143,6 +3141,12 @@ remove_breakpoint (BreakpointInstance *inst)
 #endif
 }	
 
+static inline gboolean
+bp_matches_method (MonoBreakpoint *bp, MonoMethod *method)
+{
+	return (!bp->method || method == bp->method || (method->is_inflated && ((MonoMethodInflated*)method)->declaring == bp->method));
+}
+
 /*
  * add_pending_breakpoints:
  *
@@ -3151,7 +3155,7 @@ remove_breakpoint (BreakpointInstance *inst)
 static void
 add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 {
-	int i;
+	int i, j;
 	MonoSeqPointInfo *seq_points;
 	MonoDomain *domain;
 
@@ -3164,8 +3168,19 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 
 	for (i = 0; i < breakpoints->len; ++i) {
 		MonoBreakpoint *bp = g_ptr_array_index (breakpoints, i);
+		gboolean found = FALSE;
 
-		if (bp->pending && (bp->method == method || !bp->method || (method->is_inflated && ((MonoMethodInflated*)method)->declaring == bp->method))) {
+		if (!bp_matches_method (bp, method))
+			continue;
+
+		for (j = 0; j < bp->children->len; ++j) {
+			BreakpointInstance *inst = g_ptr_array_index (bp->children, j);
+
+			if (inst->ji == ji)
+				found = TRUE;
+		}
+
+		if (!found) {
 			mono_domain_lock (domain);
 			seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, ji->method);
 			mono_domain_unlock (domain);
@@ -3208,15 +3223,8 @@ set_bp_in_method_cb (gpointer key, gpointer value, gpointer user_data)
 	MonoBreakpoint *bp = user_data;
 	MonoDomain *domain = mono_domain_get ();
 
-	if (bp->method) {
-		if (method->is_inflated && ((MonoMethodInflated*)method)->declaring == bp->method) {
-			/* Generic instance */
-			set_bp_in_method (domain, method, seq_points, bp);
-		}
-	} else {
-		/* Method entry/exit */
+	if (bp_matches_method (bp, method))
 		set_bp_in_method (domain, method, seq_points, bp);
-	}
 }
 
 /*
@@ -3230,13 +3238,11 @@ set_bp_in_method_cb (gpointer key, gpointer value, gpointer user_data)
 static MonoBreakpoint*
 set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req)
 {
-	MonoSeqPointInfo *seq_points;
 	MonoDomain *domain;
 	MonoBreakpoint *bp;
 
 	// FIXME: 
 	// - suspend/resume the vm to prevent code patching problems
-	// - appdomains
 	// - multiple breakpoints on the same location
 	// - dynamic methods
 	// - races
@@ -3251,22 +3257,7 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req)
 
 	domain = mono_domain_get ();
 	mono_domain_lock (domain);
-	if (method) {
-		seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
-		if (seq_points) {
-			set_bp_in_method (domain, method, seq_points, bp);
-		} else {
-			if (method->is_generic)
-				/* There might be already JITted instances */
-				g_hash_table_foreach (domain_jit_info (domain)->seq_points, set_bp_in_method_cb, bp);
-
-			/* Not yet JITted */
-			bp->pending = TRUE;
-		}
-	} else {
-		g_hash_table_foreach (domain_jit_info (domain)->seq_points, set_bp_in_method_cb, bp);
-		bp->pending = TRUE;
-	}
+	g_hash_table_foreach (domain_jit_info (domain)->seq_points, set_bp_in_method_cb, bp);
 	mono_domain_unlock (domain);
 
 	mono_loader_lock ();
