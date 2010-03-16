@@ -105,6 +105,42 @@ typedef struct
 	gboolean this_in_reg:1;
 } MonoGenericJitInfo;
 
+/*
+A try block hole is used to represent a non-contiguous part of
+of a segment of native code protected by a given .try block.
+Usually, a try block is defined as a contiguous segment of code.
+But in some cases it's needed to have some parts of it to not be protected.
+For example, given "try {} finally {}", the code in the .try block to call
+the finally part looks like:
+
+try {
+    ...
+	call finally_block
+	adjust stack
+	jump outside try block
+	...
+} finally {
+	...
+}
+
+The instructions between the call and the jump should not be under the try block since they happen
+after the finally block executes, which means if an async exceptions happens at that point we would
+execute the finally clause twice. So, to avoid this, we introduce a hole in the try block to signal
+that those instructions are not protected.
+*/
+typedef struct
+{
+	guint32 offset;
+	guint16 clause;
+	guint16 length;
+} MonoTryBlockHoleJitInfo;
+
+typedef struct
+{
+	guint16 num_holes;
+	MonoTryBlockHoleJitInfo holes [MONO_ZERO_LEN_ARRAY];
+} MonoTryBlockHoleTableJitInfo;
+
 struct _MonoJitInfo {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the
@@ -127,6 +163,7 @@ struct _MonoJitInfo {
 	gboolean    cas_method_deny:1;
 	gboolean    cas_method_permitonly:1;
 	gboolean    has_generic_jit_info:1;
+	gboolean    has_try_block_holes:1;
 	gboolean    from_aot:1;
 	gboolean    from_llvm:1;
 #ifdef HAVE_SGEN_GC
@@ -135,6 +172,7 @@ struct _MonoJitInfo {
 #endif
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 	/* There is an optional MonoGenericJitInfo after the clauses */
+	/* There is an optional MonoTryBlockHoleTableJitInfo after MonoGenericJitInfo clauses*/
 };
 
 #define MONO_SIZEOF_JIT_INFO (offsetof (struct _MonoJitInfo, clauses))
@@ -371,6 +409,9 @@ mono_domain_unset (void) MONO_INTERNAL;
 
 void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception) MONO_INTERNAL;
+
+MonoTryBlockHoleTableJitInfo*
+mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji) MONO_INTERNAL;
 
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside

@@ -1020,7 +1020,19 @@ mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingCo
 
 	gi->generic_sharing_context = gsctx;
 }
- 
+
+MonoTryBlockHoleTableJitInfo*
+mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji)
+{
+	if (ji->has_try_block_holes) {
+		char *ptr = (char*)&ji->clauses [ji->num_clauses];
+		if (ji->has_generic_jit_info)
+			ptr += sizeof (MonoGenericJitInfo);
+		return (MonoTryBlockHoleTableJitInfo*)ptr;
+	} else {
+		return NULL;
+	}
+}
 void
 mono_install_create_domain_hook (MonoCreateDomainFunc func)
 {
