@@ -5782,26 +5782,26 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 		size += item->chunk_size;
 	}
+	/* the initial load of the vtable address */
+	size += PPC_LOAD_SEQUENCE_LENGTH + LOADSTORE_SIZE;
 	if (fail_tramp) {
 		code = mono_method_alloc_generic_virtual_thunk (domain, size);
 	} else {
-		/* the initial load of the vtable address */
-		size += PPC_LOAD_SEQUENCE_LENGTH + LOADSTORE_SIZE;
 		code = mono_domain_code_reserve (domain, size);
 	}
 	start = code;
-	if (!fail_tramp) {
-		/*
-		 * We need to save and restore r11 because it might be
-		 * used by the caller as the vtable register, so
-		 * clobbering it will trip up the magic trampoline.
-		 *
-		 * FIXME: Get rid of this by making sure that r11 is
-		 * not used as the vtable register in interface calls.
-		 */
-		ppc_stptr (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
-		ppc_load (code, ppc_r11, (gsize)(& (vtable->vtable [0])));
-	}
+
+	/*
+	 * We need to save and restore r11 because it might be
+	 * used by the caller as the vtable register, so
+	 * clobbering it will trip up the magic trampoline.
+	 *
+	 * FIXME: Get rid of this by making sure that r11 is
+	 * not used as the vtable register in interface calls.
+	 */
+	ppc_stptr (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_load (code, ppc_r11, (gsize)(& (vtable->vtable [0])));
+
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
