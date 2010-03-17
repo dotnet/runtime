@@ -30,7 +30,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms)
 		return (!sem_trywait (sem));
 #endif
 
-	tv.tv_sec = timeout_ms / 1000;
+	tv.tv_sec = time (NULL) + timeout_ms / 1000;
 	tv.tv_nsec = (timeout_ms % 1000) * 1000000;
 	return (!WAIT_BLOCK (sem, &tv));
 }
