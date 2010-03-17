@@ -2413,7 +2413,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		info->il_offset = mono_debug_il_offset_from_address (method, info->domain, info->native_offset);
 	}
 
-	DEBUG (1, fprintf (stderr, "\tFrame: %s %d %d %d\n", mono_method_full_name (method, TRUE), info->native_offset, info->il_offset, info->managed));
+	DEBUG (1, fprintf (log_file, "\tFrame: %s %d %d %d\n", mono_method_full_name (method, TRUE), info->native_offset, info->il_offset, info->managed));
 
 	if (!info->managed && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD) {
 		/*
@@ -3116,6 +3116,8 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoJitInfo *ji, MonoBreakpoint
 		NOT_IMPLEMENTED;
 #endif
 	}
+
+	DEBUG(1, fprintf (log_file, "[dbg] Inserted breakpoint at %s:0x%x.\n", mono_method_full_name (ji->method, TRUE), (int)il_offset));	
 }
 
 static void
