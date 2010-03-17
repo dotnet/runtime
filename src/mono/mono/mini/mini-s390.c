@@ -3778,6 +3778,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, code-cfg->native_code, 
 					     MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			s390_brasl (code, s390_r14, 0);
+			mono_cfg_add_try_hole (cfg, ins->inst_eh_block, code, bb);
 		}
 			break;
 		case OP_LABEL: {

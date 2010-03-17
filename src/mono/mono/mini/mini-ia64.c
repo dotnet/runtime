@@ -3007,6 +3007,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_movl (code, GP_SCRATCH_REG2, 0);
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
 			ia64_br_cond_reg (code, IA64_B6);
+			mono_cfg_add_try_hole (cfg, ins->inst_eh_block, code, bb);
 			ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 			break;
 		case OP_START_HANDLER: {
