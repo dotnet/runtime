@@ -1,6 +1,8 @@
 /Makefile.in
 /Makefile
 /*.stdout
+/*.stderr
+/*.aotlog
 /.deps
 /.libs
 /libtest.la
