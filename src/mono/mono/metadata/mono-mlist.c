@@ -11,7 +11,7 @@
 #include "mono/metadata/appdomain.h"
 #include "mono/metadata/class-internals.h"
 
-/* matches the System.MonoListItem objcet*/
+/* matches the System.MonoListItem object*/
 struct _MonoMList {
 	MonoObject object;
 	MonoMList *next;
@@ -70,6 +70,23 @@ void
 mono_mlist_set_data (MonoMList* list, MonoObject *data)
 {
 	MONO_OBJECT_SETREF (list, data, data);
+}
+
+/**
+ * mono_mlist_set_next:
+ * @list: a managed list node
+ * @next: list node that will be next for the @list node.
+ *
+ * Set next node for @list to @next.
+ */
+MonoMList *
+mono_mlist_set_next (MonoMList* list, MonoMList *next)
+{
+	if (!list)
+		return next;
+
+	MONO_OBJECT_SETREF (list, next, next);
+	return list;
 }
 
 /**
@@ -175,7 +192,7 @@ find_prev (MonoMList* list, MonoMList *item)
 /**
  * mono_mlist_remove_item:
  * @list: the managed list
- * @data: the object to add to the list
+ * @data: the object to remove from the list
  *
  * Remove the list node @item from the managed list @list.
  * Since managed lists are singly-linked, this operation can take O(n) time.
