@@ -358,7 +358,7 @@ cominterop_get_com_slot_for_method (MonoMethod* method)
 
 
 static void
-cominterop_mono_string_to_guid (const MonoString* string, guint8 *guid);
+cominterop_mono_string_to_guid (MonoString* string, guint8 *guid);
 
 static gboolean
 cominterop_class_guid (MonoClass* klass, guint8* guid)
@@ -2241,7 +2241,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
  * to a 16 byte Microsoft GUID.
  */
 static void
-cominterop_mono_string_to_guid (const MonoString* string, guint8 *guid) {
+cominterop_mono_string_to_guid (MonoString* string, guint8 *guid) {
 	gunichar2 * chars = mono_string_chars (string);
 	int i = 0;
 	static guint8 indexes[16] = {7, 5, 3, 1, 12, 10, 17, 15, 20, 22, 25, 27, 29, 31, 33, 35};
