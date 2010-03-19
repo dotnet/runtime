@@ -1,3 +1,7 @@
+2010-03-19  Zoltan Varga  <vargaz@gmail.com>
+
+	* autogen.sh: Pass -Wno-portability to automake to quiet some warnings.
+
 2010-03-16  Jb Evain  <jbevain@novell.com>
 
 	* runtime/Makefile.am, build-mingw32.sh: rename
