@@ -560,8 +560,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 
 		if (plt_entry) {
 			mono_arch_patch_plt_entry (plt_entry, NULL, regs, addr);
-		} else if (!generic_shared || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-				   (m->is_inflated && mono_domain_lookup_shared_generic (mono_domain_get (), m))) {
+		} else {
 			if (generic_shared) {
 				if (m->wrapper_type != MONO_WRAPPER_NONE)
 					m = mono_marshal_method_from_wrapper (m);
