@@ -1618,6 +1618,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 		/* mprotect can fail for the main thread stack */
 		gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED);
 		g_assert (gaddr == tls->stack_ovf_guard_base);
+		tls->stack_ovf_valloced = TRUE;
 	}
 
 	/*
@@ -1654,6 +1655,10 @@ mono_free_altstack (MonoJitTlsData *tls)
 
 	if (tls->signal_stack)
 		mono_vfree (tls->signal_stack, MONO_ARCH_SIGNAL_STACK_SIZE);
+	if (tls->stack_ovf_valloced)
+		mono_vfree (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size);
+	else
+		mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
 }
 
 #else /* !MONO_ARCH_SIGSEGV_ON_ALTSTACK */
