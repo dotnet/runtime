@@ -482,7 +482,7 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 		class = generic_info;
 	}
 
-	g_assert (!ji->method->klass->generic_container);
+	//g_assert (!ji->method->klass->generic_container);
 	if (ji->method->klass->generic_class)
 		method_container_class = ji->method->klass->generic_class->container_class;
 	else

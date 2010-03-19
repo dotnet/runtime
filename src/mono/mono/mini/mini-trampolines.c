@@ -561,7 +561,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 		if (plt_entry) {
 			mono_arch_patch_plt_entry (plt_entry, NULL, regs, addr);
 		} else if (!generic_shared || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-			mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
+				   (m->is_inflated && mono_domain_lookup_shared_generic (mono_domain_get (), m))) {
 			if (generic_shared) {
 				if (m->wrapper_type != MONO_WRAPPER_NONE)
 					m = mono_marshal_method_from_wrapper (m);
@@ -569,9 +569,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 			}
 
 			/* Patch calling code */
-			if (plt_entry) {
-
-			} else {
+			{
 				MonoJitInfo *target_ji = 
 					mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method));
 

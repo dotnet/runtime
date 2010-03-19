@@ -2948,7 +2948,11 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	g_assert (klass->inited);
 
 	/* Find method index */
-	if (method->is_inflated && mono_method_is_generic_sharable_impl (method, FALSE)) {
+	if (method->is_inflated && mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE)) {
+		/* 
+		 * For generic methods, we store the fully shared instance in place of the
+		 * original method.
+		 */
 		method = mono_method_get_declaring_generic_method (method);
 		method_index = mono_metadata_token_index (method->token) - 1;
 	} else if (method->is_inflated || !method->token) {
@@ -3010,6 +3014,11 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			code = mono_aot_get_method (domain, m);
 			if (code)
 				return code;
+		}
+
+		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_impl_full (method, FALSE, TRUE)) {
+			/* Partial sharing */
+			method_index = find_extra_method (mini_get_shared_method_to_register (method), &amodule);
 		}
 
 		if (method_index == 0xffffff) {

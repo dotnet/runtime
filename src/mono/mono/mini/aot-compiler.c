@@ -2360,7 +2360,7 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-		if (mono_method_is_generic_sharable_impl (method, FALSE))
+		if (mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE))
 			/* Already added */
 			continue;
 
@@ -2481,18 +2481,98 @@ add_generic_instances (MonoAotCompile *acfg)
 		token = MONO_TOKEN_METHOD_SPEC | (i + 1);
 		method = mono_get_method (acfg->image, token, NULL);
 
-		context = mono_method_get_context (method);
-		if (context && ((context->class_inst && context->class_inst->is_open) ||
-						(context->method_inst && context->method_inst->is_open)))
-			continue;
-
 		if (method->klass->image != acfg->image)
 			continue;
 
-		if (mono_method_is_generic_sharable_impl (method, FALSE))
-			/* Already added */
+		context = mono_method_get_context (method);
+
+		if (context && ((context->class_inst && context->class_inst->is_open)))
 			continue;
 
+		/*
+		 * For open methods, create an instantiation which can be passed to the JIT.
+		 * FIXME: Handle class_inst as well.
+		 */
+		if (context && context->method_inst && context->method_inst->is_open) {
+			MonoGenericContext shared_context;
+			MonoGenericInst *inst;
+			MonoType **type_argv;
+			int i;
+			MonoMethod *declaring_method;
+			gboolean supported = TRUE;
+
+			/* Check that the context doesn't contain open constructed types */
+			if (context->class_inst) {
+				inst = context->class_inst;
+				for (i = 0; i < inst->type_argc; ++i) {
+					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+						continue;
+					if (mono_class_is_open_constructed_type (inst->type_argv [i]))
+						supported = FALSE;
+				}
+			}
+			if (context->method_inst) {
+				inst = context->method_inst;
+				for (i = 0; i < inst->type_argc; ++i) {
+					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+						continue;
+					if (mono_class_is_open_constructed_type (inst->type_argv [i]))
+						supported = FALSE;
+				}
+			}
+
+			if (!supported)
+				continue;
+
+			memset (&shared_context, 0, sizeof (MonoGenericContext));
+
+			inst = context->class_inst;
+			if (inst) {
+				type_argv = g_new0 (MonoType*, inst->type_argc);
+				for (i = 0; i < inst->type_argc; ++i) {
+					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+						type_argv [i] = &mono_defaults.object_class->byval_arg;
+					else
+						type_argv [i] = inst->type_argv [i];
+				}
+				
+				shared_context.class_inst = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
+				g_free (type_argv);
+			}
+
+			inst = context->method_inst;
+			if (inst) {
+				type_argv = g_new0 (MonoType*, inst->type_argc);
+				for (i = 0; i < inst->type_argc; ++i) {
+					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+						type_argv [i] = &mono_defaults.object_class->byval_arg;
+					else
+						type_argv [i] = inst->type_argv [i];
+				}
+
+				shared_context.method_inst = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
+				g_free (type_argv);
+			}
+
+			if (method->is_generic || method->klass->generic_container)
+				declaring_method = method;
+			else
+				declaring_method = mono_method_get_declaring_generic_method (method);
+
+			method = mono_class_inflate_generic_method (declaring_method, &shared_context);
+		}
+
+		/* 
+		 * If the method is fully sharable, it was already added in place of its
+		 * generic definition.
+		 */
+		if (mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE))
+			continue;
+
+		/*
+		 * FIXME: Partially shared methods are not shared here, so we end up with
+		 * many identical methods.
+		 */
 		add_extra_method (acfg, method);
 	}
 
@@ -4820,6 +4900,8 @@ emit_extra_methods (MonoAotCompile *acfg)
 		p = buf = g_malloc (buf_size);
 
 		nmethods ++;
+
+		method = cfg->method_to_register;
 
 		name = NULL;
 		if (method->wrapper_type) {

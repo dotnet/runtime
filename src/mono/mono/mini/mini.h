@@ -1953,9 +1953,19 @@ gboolean
 mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars) MONO_INTERNAL;
 
 gboolean
+mono_generic_context_is_sharable_full (MonoGenericContext *context, gboolean allow_type_vars, gboolean allow_partial) MONO_INTERNAL;
+
+gboolean
 mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
+
 gboolean
 mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;
+
+gboolean
+mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_type_vars, gboolean allow_partial) MONO_INTERNAL;
+
+gboolean
+mono_is_partially_sharable_inst (MonoGenericInst *inst) MONO_INTERNAL;
 
 MonoGenericSharingContext* mono_get_generic_context_from_code (guint8 *code) MONO_INTERNAL;
 
@@ -1976,6 +1986,8 @@ MonoGenericContext* mini_class_get_context (MonoClass *class) MONO_INTERNAL;
 
 MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type) MONO_INTERNAL;
 MonoType* mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type) MONO_INTERNAL;
+MonoMethod* mini_get_shared_method (MonoMethod *method) MONO_INTERNAL;
+MonoMethod* mini_get_shared_method_to_register (MonoMethod *method) MONO_INTERNAL;
 
 int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align) MONO_INTERNAL;
 int mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke) MONO_INTERNAL;

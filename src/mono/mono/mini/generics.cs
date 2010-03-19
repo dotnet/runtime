@@ -563,6 +563,41 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_partial_sharing () {
+		if (PartialShared1 (new List<string> (), 1) != typeof (string))
+			return 1;
+		if (PartialShared1 (new List<Tests> (), 1) != typeof (Tests))
+			return 2;
+		if (PartialShared2 (new List<string> (), 1) != typeof (int))
+			return 3;
+		if (PartialShared2 (new List<Tests> (), 1) != typeof (int))
+			return 4;
+		return 0;
+	}
+
+	public static int test_6_partial_sharing_linq () {
+		var messages = new List<Message> ();
+
+		messages.Add (new Message () { MessageID = 5 });
+		messages.Add (new Message () { MessageID = 6 });
+
+		return messages.Max(i => i.MessageID);
+	}
+
+	class Message {
+		public int MessageID {
+			get; set;
+		}
+	}
+
+	public static Type PartialShared1<T, K> (List<T> list, K k) {
+		return typeof (T);
+	}
+
+	public static Type PartialShared2<T, K> (List<T> list, K k) {
+		return typeof (K);
+	}
+
     public class Class1<T> {
 		public virtual void Do (Class2<T> t) {
 			t.Foo ();

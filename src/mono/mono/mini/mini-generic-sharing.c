@@ -14,6 +14,9 @@
 
 #include "mini.h"
 
+//#define ALLOW_PARTIAL_SHARING TRUE
+#define ALLOW_PARTIAL_SHARING FALSE
+
 static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
 
@@ -582,7 +585,84 @@ free_inflated_info (int info_type, gpointer info)
 }
 
 static MonoRuntimeGenericContextOtherInfoTemplate
-class_get_rgctx_template_oti (MonoClass *class, int type_argc, guint32 slot, gboolean temporary, gboolean *do_free);
+class_get_rgctx_template_oti (MonoClass *class, int type_argc, guint32 slot, gboolean temporary, gboolean shared, gboolean *do_free);
+ 
+static MonoClass*
+class_uninstantiated (MonoClass *class)
+{
+	if (class->generic_class)
+		return class->generic_class->container_class;
+	return class;
+}
+
+/*
+ * mono_is_partially_sharable_inst:
+ *
+ *   Return TRUE if INST has ref and non-ref type arguments.
+ */
+gboolean
+mono_is_partially_sharable_inst (MonoGenericInst *inst)
+{
+	int i;
+	gboolean has_refs = FALSE, has_non_refs = FALSE;
+
+	for (i = 0; i < inst->type_argc; ++i) {
+		if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+			has_refs = TRUE;
+		else
+			has_non_refs = TRUE;
+	}
+
+	return has_refs && has_non_refs;
+}
+
+/*
+ * get_shared_class:
+ *
+ *   Return the class used to store information when using generic sharing.
+ * For fully shared classes, it is the generic definition, for partially shared
+ * classes, it is an instance with all ref type arguments replaced by the type parameters
+ * of its generic definition.
+ */
+static MonoClass*
+get_shared_class (MonoClass *class)
+{
+	/*
+	 * FIXME: This conflicts with normal instances. Also, some code in this file
+	 * like class_get_rgctx_template_oti treats these as normal generic instances
+	 * instead of generic classes.
+	 */
+	//g_assert_not_reached ();
+
+	if (class->is_inflated) {
+		MonoGenericContext *context = &class->generic_class->context;
+		MonoGenericContext *container_context;
+		MonoGenericContext shared_context;
+		MonoGenericInst *inst;
+		MonoType **type_argv;
+		int i;
+
+		inst = context->class_inst;
+		if (mono_is_partially_sharable_inst (inst)) {
+			container_context = &class->generic_class->container_class->generic_container->context;
+			type_argv = g_new0 (MonoType*, inst->type_argc);
+			for (i = 0; i < inst->type_argc; ++i) {
+				if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+					type_argv [i] = container_context->class_inst->type_argv [i];
+				else
+					type_argv [i] = inst->type_argv [i];
+			}
+
+			memset (&shared_context, 0, sizeof (MonoGenericContext));
+			shared_context.class_inst = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
+			g_free (type_argv);
+
+			return mono_class_inflate_generic_class (class->generic_class->container_class, &shared_context);
+		}
+	}
+
+	return class_uninstantiated (class);
+}
 
 /*
  * mono_class_get_runtime_generic_context_template:
@@ -597,14 +677,14 @@ mono_class_get_runtime_generic_context_template (MonoClass *class)
 	MonoRuntimeGenericContextTemplate *parent_template, *template;
 	guint32 i;
 
-	g_assert (!class->generic_class);
-
 	mono_loader_lock ();
 	template = class_lookup_rgctx_template (class);
 	mono_loader_unlock ();
 
 	if (template)
 		return template;
+
+	g_assert (get_shared_class (class) == class);
 
 	template = alloc_template (class);
 
@@ -627,7 +707,7 @@ mono_class_get_runtime_generic_context_template (MonoClass *class)
 				for (i = 0; i < num_entries; ++i) {
 					MonoRuntimeGenericContextOtherInfoTemplate oti;
 
-					oti = class_get_rgctx_template_oti (class->parent, type_argc, i, FALSE, NULL);
+					oti = class_get_rgctx_template_oti (class->parent, type_argc, i, FALSE, FALSE, NULL);
 					if (oti.data && oti.data != MONO_RGCTX_SLOT_USED_MARKER) {
 						rgctx_template_set_other_slot (class->image, template, type_argc, i,
 							oti.data, oti.info_type);
@@ -679,16 +759,16 @@ mono_class_get_runtime_generic_context_template (MonoClass *class)
  * LOCKING: loader lock
  */
 static MonoRuntimeGenericContextOtherInfoTemplate
-class_get_rgctx_template_oti (MonoClass *class, int type_argc, guint32 slot, gboolean temporary, gboolean *do_free)
+class_get_rgctx_template_oti (MonoClass *class, int type_argc, guint32 slot, gboolean temporary, gboolean shared, gboolean *do_free)
 {
 	g_assert ((temporary && do_free) || (!temporary && !do_free));
 
-	if (class->generic_class) {
+	if (class->generic_class && !shared) {
 		MonoRuntimeGenericContextOtherInfoTemplate oti;
 		gboolean tmp_do_free;
 
 		oti = class_get_rgctx_template_oti (class->generic_class->container_class,
-			type_argc, slot, TRUE, &tmp_do_free);
+											type_argc, slot, TRUE, FALSE, &tmp_do_free);
 		if (oti.data) {
 			gpointer info = oti.data;
 			oti.data = inflate_other_info (&oti, &class->generic_class->context, class, temporary);
@@ -712,14 +792,6 @@ class_get_rgctx_template_oti (MonoClass *class, int type_argc, guint32 slot, gbo
 
 		return *oti;
 	}
-}
-
-static MonoClass*
-class_uninstantiated (MonoClass *class)
-{
-	if (class->generic_class)
-		return class->generic_class->container_class;
-	return class;
 }
 
 static gpointer
@@ -840,8 +912,6 @@ fill_in_rgctx_template_slot (MonoClass *class, int type_argc, int index, gpointe
 	MonoRuntimeGenericContextTemplate *template = mono_class_get_runtime_generic_context_template (class);
 	MonoClass *subclass;
 
-	g_assert (!class->generic_class);
-
 	rgctx_template_set_other_slot (class->image, template, type_argc, index, data, info_type);
 
 	/* Recurse for all subclasses */
@@ -857,7 +927,7 @@ fill_in_rgctx_template_slot (MonoClass *class, int type_argc, int index, gpointe
 		g_assert (!subclass->generic_class);
 		g_assert (subclass_template);
 
-		subclass_oti = class_get_rgctx_template_oti (subclass->parent, type_argc, index, FALSE, NULL);
+		subclass_oti = class_get_rgctx_template_oti (subclass->parent, type_argc, index, FALSE, FALSE, NULL);
 		g_assert (subclass_oti.data);
 
 		fill_in_rgctx_template_slot (subclass, type_argc, index, subclass_oti.data, info_type);
@@ -949,9 +1019,6 @@ lookup_or_register_other_info (MonoClass *class, int type_argc, gpointer data, i
 		mono_class_get_runtime_generic_context_template (class);
 	MonoRuntimeGenericContextOtherInfoTemplate *oti_list, *oti;
 	int i;
-
-	g_assert (!class->generic_class);
-	g_assert (class->generic_container || type_argc);
 
 	mono_loader_lock ();
 
@@ -1134,8 +1201,8 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 
 	mono_domain_unlock (domain);
 
-	oti = class_get_rgctx_template_oti (class_uninstantiated (class),
-			method_inst ? method_inst->type_argc : 0, slot, TRUE, &do_free);
+	oti = class_get_rgctx_template_oti (get_shared_class (class),
+										method_inst ? method_inst->type_argc : 0, slot, TRUE, TRUE, &do_free);
 	/* This might take the loader lock */
 	info = instantiate_other_info (domain, &oti, &context, class);
 
@@ -1290,19 +1357,32 @@ mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst
 }
 
 static gboolean
-generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars)
+generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
+						  gboolean allow_partial)
 {
+	gboolean has_refs;
 	int i;
 
+	has_refs = FALSE;
 	for (i = 0; i < inst->type_argc; ++i) {
 		MonoType *type = inst->type_argv [i];
-		int type_type;
 
-		if (MONO_TYPE_IS_REFERENCE (type))
+		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
+			has_refs = TRUE;
+	}
+ 
+	for (i = 0; i < inst->type_argc; ++i) {
+		MonoType *type = inst->type_argv [i];
+
+		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
 			continue;
-
-		type_type = mono_type_get_type (type);
-		if (allow_type_vars && (type_type == MONO_TYPE_VAR || type_type == MONO_TYPE_MVAR))
+ 
+		/*
+		 * Allow non ref arguments, if there is at least one ref argument
+		 * (partial sharing).
+		 * FIXME: Allow more types
+		 */
+		if (!type->byref && type->type == MONO_TYPE_I4 && has_refs && allow_partial)
 			continue;
 
 		return FALSE;
@@ -1312,24 +1392,33 @@ generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars)
 }
 
 /*
- * mono_generic_context_is_sharable:
+ * mono_generic_context_is_sharable_full:
  * @context: a generic context
  *
  * Returns whether the generic context is sharable.  A generic context
- * is sharable iff all of its type arguments are reference type.
+ * is sharable iff all of its type arguments are reference type, or some of them have a
+ * reference type, and ALLOW_PARTIAL is TRUE.
  */
 gboolean
-mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars)
+mono_generic_context_is_sharable_full (MonoGenericContext *context,
+									   gboolean allow_type_vars,
+									   gboolean allow_partial)
 {
 	g_assert (context->class_inst || context->method_inst);
 
-	if (context->class_inst && !generic_inst_is_sharable (context->class_inst, allow_type_vars))
+	if (context->class_inst && !generic_inst_is_sharable (context->class_inst, allow_type_vars, allow_partial))
 		return FALSE;
 
-	if (context->method_inst && !generic_inst_is_sharable (context->method_inst, allow_type_vars))
+	if (context->method_inst && !generic_inst_is_sharable (context->method_inst, allow_type_vars, allow_partial))
 		return FALSE;
 
 	return TRUE;
+}
+
+gboolean
+mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars)
+{
+	return mono_generic_context_is_sharable_full (context, allow_type_vars, ALLOW_PARTIAL_SHARING);
 }
 
 /*
@@ -1375,16 +1464,18 @@ has_constraints (MonoGenericContainer *container)
 }
 
 /*
- * mono_method_is_generic_sharable_impl:
+ * mono_method_is_generic_sharable_impl_full:
  * @method: a method
  * @allow_type_vars: whether to regard type variables as reference types
+ * @alloc_partial: whether to allow partial sharing
  *
  * Returns TRUE iff the method is inflated or part of an inflated
  * class, its context is sharable and it has no constraints on its
  * type parameters.  Otherwise returns FALSE.
  */
 gboolean
-mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars)
+mono_method_is_generic_sharable_impl_full (MonoMethod *method, gboolean allow_type_vars,
+										   gboolean allow_partial)
 {
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
@@ -1393,7 +1484,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_va
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
 		MonoGenericContext *context = &inflated->context;
 
-		if (!mono_generic_context_is_sharable (context, allow_type_vars))
+		if (!mono_generic_context_is_sharable_full (context, allow_type_vars, allow_partial))
 			return FALSE;
 
 		g_assert (inflated->declaring);
@@ -1405,7 +1496,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_va
 	}
 
 	if (method->klass->generic_class) {
-		if (!mono_generic_context_is_sharable (&method->klass->generic_class->context, allow_type_vars))
+		if (!mono_generic_context_is_sharable_full (&method->klass->generic_class->context, allow_type_vars, allow_partial))
 			return FALSE;
 
 		g_assert (method->klass->generic_class->container_class &&
@@ -1419,6 +1510,12 @@ mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_va
 		return FALSE;
 
 	return TRUE;
+}
+
+gboolean
+mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars)
+{
+	return mono_method_is_generic_sharable_impl_full (method, allow_type_vars, ALLOW_PARTIAL_SHARING);
 }
 
 gboolean
@@ -1484,46 +1581,6 @@ mono_method_construct_object_context (MonoMethod *method)
 	g_assert (object_context.class_inst || object_context.method_inst);
 
 	return object_context;
-}
-
-/*
- * mono_domain_lookup_shared_generic:
- * @domain: a domain
- * @open_method: an open generic method
- *
- * Looks up the jit info for method via the domain's jit code hash.
- */
-MonoJitInfo*
-mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *open_method)
-{
-	static gboolean inited = FALSE;
-	static int lookups = 0;
-	static int failed_lookups = 0;
-
-	MonoGenericContext object_context;
-	MonoMethod *object_method;
-	MonoJitInfo *ji;
-
-	object_context = mono_method_construct_object_context (open_method);
-	object_method = mono_class_inflate_generic_method (open_method, &object_context);
-
-	mono_domain_jit_code_hash_lock (domain);
-	ji = mono_internal_hash_table_lookup (&domain->jit_code_hash, object_method);
-	if (ji && !ji->has_generic_jit_info)
-		ji = NULL;
-	mono_domain_jit_code_hash_unlock (domain);
-
-	if (!inited) {
-		mono_counters_register ("Shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &lookups);
-		mono_counters_register ("Failed shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &failed_lookups);
-		inited = TRUE;
-	}
-
-	++lookups;
-	if (!ji)
-		++failed_lookups;
-
-	return ji;
 }
 
 static gboolean gshared_supported;

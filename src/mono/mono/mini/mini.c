@@ -3604,6 +3604,77 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 }
 
 /*
+ * mini_get_shared_method:
+ *
+ *   Return the method which is actually compiled/registered when doing generic sharing.
+ */
+MonoMethod*
+mini_get_shared_method (MonoMethod *method)
+{
+	MonoGenericContext shared_context;
+	MonoMethod *declaring_method, *res;
+	int i;
+	gboolean partial = FALSE;
+
+	if (method->is_generic || method->klass->generic_container)
+		declaring_method = method;
+	else
+		declaring_method = mono_method_get_declaring_generic_method (method);
+
+	if (declaring_method->is_generic)
+		shared_context = mono_method_get_generic_container (declaring_method)->context;
+	else
+		shared_context = declaring_method->klass->generic_container->context;
+
+	/* Handle partial sharing */
+	if (method != declaring_method && method->is_inflated && !mono_method_is_generic_sharable_impl_full (method, FALSE, FALSE)) {
+		MonoGenericContext *context = mono_method_get_context (method);
+		MonoGenericInst *inst;
+		MonoType **type_argv;
+
+		/* 
+		 * Create the shared context by replacing the ref type arguments with
+		 * type parameters, and keeping the rest.
+		 */
+		partial = TRUE;
+		inst = context->class_inst;
+		if (inst) {
+			type_argv = g_new0 (MonoType*, inst->type_argc);
+			for (i = 0; i < inst->type_argc; ++i) {
+				if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+					type_argv [i] = shared_context.class_inst->type_argv [i];
+				else
+					type_argv [i] = inst->type_argv [i];
+			}
+
+			shared_context.class_inst = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
+			g_free (type_argv);
+		}
+
+		inst = context->method_inst;
+		if (inst) {
+			type_argv = g_new0 (MonoType*, inst->type_argc);
+			for (i = 0; i < inst->type_argc; ++i) {
+				if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+					type_argv [i] = shared_context.method_inst->type_argv [i];
+				else
+					type_argv [i] = inst->type_argv [i];
+			}
+
+			shared_context.method_inst = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
+			g_free (type_argv);
+		}
+	}
+
+    res = mono_class_inflate_generic_method (declaring_method, &shared_context);
+	if (!partial) {
+		/* The result should be an inflated method whose parent is not inflated */
+		g_assert (!res->klass->is_inflated);
+	}
+	return res;
+}
+
+/*
  * mini_method_compile:
  * @method: the method to compile
  * @opts: the optimization flags to use
@@ -3633,9 +3704,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		MONO_PROBE_METHOD_COMPILE_BEGIN (method);
  
 	if (compile_aot)
-		/* We are passed the original generic method definition */
+		/* 
+		 * We might get passed the original generic method definition or
+		 * instances with type parameters.
+		 * FIXME: Remove the method->klass->generic_class limitation.
+		 */
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
-			(opts & MONO_OPT_GSHARED) && (method->is_generic || method->klass->generic_container);
+			(opts & MONO_OPT_GSHARED) && ((method->is_generic || method->klass->generic_container) || (!method->klass->generic_class && mono_method_is_generic_sharable_impl (method, TRUE)));
 	else
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
 			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method, FALSE);
@@ -3655,25 +3730,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
  restart_compile:
 	if (try_generic_shared) {
-		MonoMethod *declaring_method;
-		MonoGenericContext *shared_context;
-
-		if (compile_aot) {
-			declaring_method = method;
-		} else {
-			declaring_method = mono_method_get_declaring_generic_method (method);
-			if (method->klass->generic_class)
-				g_assert (method->klass->generic_class->container_class == declaring_method->klass);
-			else
-				g_assert (method->klass == declaring_method->klass);
-		}
-
-		if (declaring_method->is_generic)
-			shared_context = &(mono_method_get_generic_container (declaring_method)->context);
-		else
-			shared_context = &declaring_method->klass->generic_container->context;
-
-		method_to_compile = mono_class_inflate_generic_method (declaring_method, shared_context);
+		method_to_compile = mini_get_shared_method (method);
 		g_assert (method_to_compile);
 	} else {
 		method_to_compile = method;
@@ -3707,9 +3764,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if (cfg->generic_sharing_context) {
-		MonoGenericContext object_context = mono_method_construct_object_context (method_to_compile);
-
-		method_to_register = mono_class_inflate_generic_method (method_to_compile, &object_context);
+		method_to_register = method_to_compile;
 	} else {
 		g_assert (method == method_to_compile);
 		method_to_register = method;
@@ -3843,7 +3898,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (getenv ("MONO_VERBOSE_METHOD")) {
 		char *name = getenv ("MONO_VERBOSE_METHOD");
 
-		if (strchr (name, '.') || strchr (name, ':')) {
+		if ((strchr (name, '.') > name) || strchr (name, ':')) {
 			MonoMethodDesc *desc;
 			
 			desc = mono_method_desc_new (name, TRUE);
@@ -3865,7 +3920,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		if (COMPILE_LLVM (cfg))
 			g_print ("converting llvm method %s\n", mono_method_full_name (method, TRUE));
 		else if (cfg->generic_sharing_context)
-			g_print ("converting shared method %s\n", mono_method_full_name (method, TRUE));
+			g_print ("converting shared method %s\n", mono_method_full_name (method_to_compile, TRUE));
 		else
 			g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
 	}
@@ -4426,17 +4481,29 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 #endif /* DISABLE_JIT */
 
-static MonoJitInfo*
-lookup_generic_method (MonoDomain *domain, MonoMethod *method)
+MonoJitInfo*
+mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method)
 {
-	MonoMethod *open_method;
+	static gboolean inited = FALSE;
+	static int lookups = 0;
+	static int failed_lookups = 0;
+	MonoJitInfo *ji;
 
-	if (!mono_method_is_generic_sharable_impl (method, FALSE))
-		return NULL;
+	ji = mono_internal_hash_table_lookup (&domain->jit_code_hash, mini_get_shared_method (method));
+	if (ji && !ji->has_generic_jit_info)
+		ji = NULL;
 
- 	open_method = mono_method_get_declaring_generic_method (method);
+	if (!inited) {
+		mono_counters_register ("Shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &lookups);
+		mono_counters_register ("Failed shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &failed_lookups);
+		inited = TRUE;
+	}
 
-	return mono_domain_lookup_shared_generic (domain, open_method);
+	++lookups;
+	if (!ji)
+		++failed_lookups;
+
+	return ji;
 }
 
 /*
@@ -4450,7 +4517,9 @@ lookup_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (ji)
 		return ji;
 
-	return lookup_generic_method (domain, method);
+	if (!mono_method_is_generic_sharable_impl (method, FALSE))
+		return NULL;
+	return mono_domain_lookup_shared_generic (domain, method);
 }
 
 static MonoJitInfo*
