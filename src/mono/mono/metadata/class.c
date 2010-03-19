@@ -2782,6 +2782,64 @@ count_virtual_methods (MonoClass *class)
 	return count;
 }
 
+static int
+find_interface (int num_ifaces, MonoClass **interfaces_full, MonoClass *ic)
+{
+	int m, l = 0;
+	if (!num_ifaces)
+		return -1;
+	while (1) {
+		if (l > num_ifaces)
+			return -1;
+		m = (l + num_ifaces) / 2;
+		if (interfaces_full [m] == ic)
+			return m;
+		if (l == num_ifaces)
+			return -1;
+		if (!interfaces_full [m] || interfaces_full [m]->interface_id > ic->interface_id) {
+			num_ifaces = m - 1;
+		} else {
+			l =  m + 1;
+		}
+	}
+}
+
+static int
+find_interface_offset (int num_ifaces, MonoClass **interfaces_full, int *interface_offsets_full, MonoClass *ic)
+{
+	int i = find_interface (num_ifaces, interfaces_full, ic);
+	if (ic >= 0)
+		return interface_offsets_full [i];
+	return -1;
+}
+
+static mono_bool
+set_interface_and_offset (int num_ifaces, MonoClass **interfaces_full, int *interface_offsets_full, MonoClass *ic, int offset, mono_bool force_set)
+{
+	int i = find_interface (num_ifaces, interfaces_full, ic);
+	if (i >= 0) {
+		if (!force_set)
+			return TRUE;
+		interface_offsets_full [i] = offset;
+		return FALSE;
+	}
+	for (i = 0; i < num_ifaces; ++i) {
+		if (interfaces_full [i]) {
+			int end;
+			if (interfaces_full [i]->interface_id < ic->interface_id)
+				continue;
+			end = i + 1;
+			while (end < num_ifaces && interfaces_full [end]) end++;
+			memmove (interfaces_full + i + 1, interfaces_full + i, sizeof (MonoClass*) * (end - i));
+			memmove (interface_offsets_full + i + 1, interface_offsets_full + i, sizeof (int) * (end - i));
+		}
+		interfaces_full [i] = ic;
+		interface_offsets_full [i] = offset;
+		break;
+	}
+	return FALSE;
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  * Return -1 on failure and set exception_type
@@ -2791,15 +2849,17 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 {
 	MonoError error;
 	MonoClass *k, *ic;
-	int i, max_iid;
+	int i, j, max_iid, num_ifaces;
 	MonoClass **interfaces_full = NULL;
 	int *interface_offsets_full = NULL;
 	GPtrArray *ifaces;
+	GPtrArray **ifaces_array = NULL;
 	int interface_offsets_count;
 	MonoClass **array_interfaces = NULL;
 	int num_array_interfaces;
 	int is_enumerator = FALSE;
 
+	mono_class_setup_supertypes (class);
 	/* 
 	 * get the implicit generic interfaces for either the arrays or for System.Array/InternalEnumerator<T>
 	 * implicit interfaces have the property that they are assigned the same slot in the
@@ -2809,7 +2869,11 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 
 	/* compute maximum number of slots and maximum interface id */
 	max_iid = 0;
-	for (k = class; k ; k = k->parent) {
+	num_ifaces = num_array_interfaces; /* this can include duplicated ones */
+	ifaces_array = g_new0 (GPtrArray *, class->idepth);
+	for (j = 0; j < class->idepth; j++) {
+		k = class->supertypes [j];
+		num_ifaces += k->interface_count;
 		for (i = 0; i < k->interface_count; i++) {
 			ic = k->interfaces [i];
 
@@ -2825,17 +2889,20 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Error getting the interfaces of %s due to %s", name, mono_error_get_message (&error)));
 			g_free (name);
 			mono_error_cleanup (&error);
-			goto fail;
+			cur_slot = -1;
+			goto end;
 		}
 		if (ifaces) {
+			num_ifaces += ifaces->len;
 			for (i = 0; i < ifaces->len; ++i) {
 				ic = g_ptr_array_index (ifaces, i);
 				if (max_iid < ic->interface_id)
 					max_iid = ic->interface_id;
 			}
-			g_ptr_array_free (ifaces, TRUE);
+			ifaces_array [j] = ifaces;
 		}
 	}
+
 	for (i = 0; i < num_array_interfaces; ++i) {
 		ic = array_interfaces [i];
 		mono_class_init (ic);
@@ -2844,22 +2911,23 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	}
 
 	if (MONO_CLASS_IS_INTERFACE (class)) {
+		num_ifaces++;
 		if (max_iid < class->interface_id)
 			max_iid = class->interface_id;
 	}
 	class->max_interface_id = max_iid;
 	/* compute vtable offset for interfaces */
-	interfaces_full = g_malloc (sizeof (MonoClass*) * (max_iid + 1));
-	interface_offsets_full = g_malloc (sizeof (int) * (max_iid + 1));
+	interfaces_full = g_malloc0 (sizeof (MonoClass*) * num_ifaces);
+	interface_offsets_full = g_malloc (sizeof (int) * num_ifaces);
 
-	for (i = 0; i <= max_iid; i++) {
-		interfaces_full [i] = NULL;
+	for (i = 0; i < num_ifaces; i++) {
 		interface_offsets_full [i] = -1;
 	}
 
-	for (k = class->parent; k ; k = k->parent) {
-		ifaces = mono_class_get_implemented_interfaces (k, &error);
-		g_assert (mono_error_ok (&error));/*FIXME we perform the same thing above, so not failing there but here is VERY wrong.*/
+	/* skip the current class */
+	for (j = 0; j < class->idepth - 1; j++) {
+		k = class->supertypes [j];
+		ifaces = ifaces_array [j];
 
 		if (ifaces) {
 			for (i = 0; i < ifaces->len; ++i) {
@@ -2869,56 +2937,43 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 				/*Force the sharing of interface offsets between parent and subtypes.*/
 				io = mono_class_interface_offset (k, ic);
 				g_assert (io >= 0);
-				interfaces_full [ic->interface_id] = ic;
-				interface_offsets_full [ic->interface_id] = io;
+				set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, io, TRUE);
 			}
-			g_ptr_array_free (ifaces, TRUE);
 		}
 	}
 
-
-	ifaces = mono_class_get_implemented_interfaces (class, &error);
-	if (!mono_error_ok (&error)) {
-		char *name = mono_type_get_full_name (class);
-		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Error getting the interfaces of %s due to %s", name, mono_error_get_message (&error)));
-		g_free (name);
-		mono_error_cleanup (&error);
-		goto fail;
-	} else if (ifaces) {
+	g_assert (class == class->supertypes [class->idepth - 1]);
+	ifaces = ifaces_array [class->idepth - 1];
+	if (ifaces) {
 		for (i = 0; i < ifaces->len; ++i) {
 			int count;
 			ic = g_ptr_array_index (ifaces, i);
-			if (interfaces_full [ic->interface_id] != NULL)
+			if (set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, cur_slot, FALSE))
 				continue;
-			interfaces_full [ic->interface_id] = ic;
-			interface_offsets_full [ic->interface_id] = cur_slot;
 			count = count_virtual_methods (ic);
 			if (count == -1) {
 				char *name = mono_type_get_full_name (ic);
 				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Error calculating interface offset of %s", name));
 				g_free (name);
-				goto fail;
+				cur_slot = -1;
+				goto end;
 			}
 			cur_slot += count;
 		}
-		g_ptr_array_free (ifaces, TRUE);
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (class)) {
-		interfaces_full [class->interface_id] = class;
-		interface_offsets_full [class->interface_id] = cur_slot;
-	}
+	if (MONO_CLASS_IS_INTERFACE (class))
+		set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, class, cur_slot, TRUE);
 
 	if (num_array_interfaces) {
 		if (is_enumerator) {
-			int ienumerator_offset;
 			int ienumerator_idx = find_array_interface (class, "IEnumerator`1");
-			ienumerator_offset = interface_offsets_full [class->interfaces [ienumerator_idx]->interface_id];
+			int ienumerator_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, class->interfaces [ienumerator_idx]);
+			g_assert (ienumerator_offset >= 0);
 			for (i = 0; i < num_array_interfaces; ++i) {
 				ic = array_interfaces [i];
-				interfaces_full [ic->interface_id] = ic;
 				if (strcmp (ic->name, "IEnumerator`1") == 0)
-					interface_offsets_full [ic->interface_id] = ienumerator_offset;
+					set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, ienumerator_offset, TRUE);
 				else
 					g_assert_not_reached ();
 				/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, interface_offsets_full [ic->interface_id], class->interfaces [0]->name);*/
@@ -2926,29 +2981,31 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		} else {
 			int ilist_offset, icollection_offset, ienumerable_offset;
 			int ilist_iface_idx = find_array_interface (class, "IList`1");
-			int icollection_iface_idx = find_array_interface (class->interfaces [ilist_iface_idx], "ICollection`1");
-			int ienumerable_iface_idx = find_array_interface (class->interfaces [ilist_iface_idx], "IEnumerable`1");
-			ilist_offset = interface_offsets_full [class->interfaces [ilist_iface_idx]->interface_id];
-			icollection_offset = interface_offsets_full [class->interfaces [ilist_iface_idx]->interfaces [icollection_iface_idx]->interface_id];
-			ienumerable_offset = interface_offsets_full [class->interfaces [ilist_iface_idx]->interfaces [ienumerable_iface_idx]->interface_id];
+			MonoClass* ilist_class = class->interfaces [ilist_iface_idx];
+			int icollection_iface_idx = find_array_interface (ilist_class, "ICollection`1");
+			int ienumerable_iface_idx = find_array_interface (ilist_class, "IEnumerable`1");
+			ilist_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, class->interfaces [ilist_iface_idx]);
+			icollection_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, ilist_class->interfaces [icollection_iface_idx]);
+			ienumerable_offset = find_interface_offset (num_ifaces, interfaces_full, interface_offsets_full, ilist_class->interfaces [ienumerable_iface_idx]);
 			g_assert (ilist_offset >= 0 && icollection_offset >= 0 && ienumerable_offset >= 0);
 			for (i = 0; i < num_array_interfaces; ++i) {
+				int offset;
 				ic = array_interfaces [i];
-				interfaces_full [ic->interface_id] = ic;
 				if (ic->generic_class->container_class == mono_defaults.generic_ilist_class)
-					interface_offsets_full [ic->interface_id] = ilist_offset;
+					offset = ilist_offset;
 				else if (strcmp (ic->name, "ICollection`1") == 0)
-					interface_offsets_full [ic->interface_id] = icollection_offset;
+					offset = icollection_offset;
 				else if (strcmp (ic->name, "IEnumerable`1") == 0)
-					interface_offsets_full [ic->interface_id] = ienumerable_offset;
+					offset = ienumerable_offset;
 				else
 					g_assert_not_reached ();
-				/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, interface_offsets_full [ic->interface_id], class->interfaces [0]->name);*/
+				set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, offset, TRUE);
+				/*g_print ("type %s has %s offset at %d (%s)\n", class->name, ic->name, offset, class->interfaces [0]->name);*/
 			}
 		}
 	}
 
-	for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
+	for (interface_offsets_count = 0, i = 0; i < num_ifaces; i++) {
 		if (interface_offsets_full [i] != -1) {
 			interface_offsets_count ++;
 		}
@@ -2965,31 +3022,31 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		class->interfaces_packed = mono_image_alloc (class->image, sizeof (MonoClass*) * interface_offsets_count);
 		class->interface_offsets_packed = mono_image_alloc (class->image, sizeof (guint16) * interface_offsets_count);
 		class->interface_bitmap = mono_image_alloc0 (class->image, (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0));
-		for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
-			if (interface_offsets_full [i] != -1) {
-				class->interface_bitmap [i >> 3] |= (1 << (i & 7));
-				class->interfaces_packed [interface_offsets_count] = interfaces_full [i];
-				class->interface_offsets_packed [interface_offsets_count] = interface_offsets_full [i];
-				/*if (num_array_interfaces)
-				  g_print ("type %s has %s offset at %d\n", mono_type_get_name_full (&class->byval_arg, 0), mono_type_get_name_full (&interfaces_full [i]->byval_arg, 0), interface_offsets_full [i]);*/
-				interface_offsets_count ++;
-			}
+		for (i = 0; i < interface_offsets_count; i++) {
+			int id = interfaces_full [i]->interface_id;
+			class->interface_bitmap [id >> 3] |= (1 << (id & 7));
+			class->interfaces_packed [i] = interfaces_full [i];
+			class->interface_offsets_packed [i] = interface_offsets_full [i];
+			/*if (num_array_interfaces)
+			  g_print ("type %s has %s offset at %d\n", mono_type_get_name_full (&class->byval_arg, 0), mono_type_get_name_full (&interfaces_full [i]->byval_arg, 0), interface_offsets_full [i]);*/
 		}
 	}
-	
+
+end:
 	g_free (interfaces_full);
 	g_free (interface_offsets_full);
 	g_free (array_interfaces);
+	for (i = 0; i < class->idepth; i++) {
+		ifaces = ifaces_array [i];
+		if (ifaces)
+			g_ptr_array_free (ifaces, TRUE);
+	}
+	g_free (ifaces_array);
 	
 	//printf ("JUST DONE: ");
 	//print_implemented_interfaces (class);
  
  	return cur_slot;
-fail:
-	g_free (interfaces_full);
-	g_free (interface_offsets_full);
-	g_free (array_interfaces);
-	return -1;
 }
 
 /*
