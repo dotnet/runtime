@@ -985,17 +985,17 @@ mono_arch_cpu_enumerate_simd_versions (void)
 
 	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
 		if (edx & (1 << 25))
-			sse_opts |= 1 << SIMD_VERSION_SSE1;
+			sse_opts |= SIMD_VERSION_SSE1;
 		if (edx & (1 << 26))
-			sse_opts |= 1 << SIMD_VERSION_SSE2;
+			sse_opts |= SIMD_VERSION_SSE2;
 		if (ecx & (1 << 0))
-			sse_opts |= 1 << SIMD_VERSION_SSE3;
+			sse_opts |= SIMD_VERSION_SSE3;
 		if (ecx & (1 << 9))
-			sse_opts |= 1 << SIMD_VERSION_SSSE3;
+			sse_opts |= SIMD_VERSION_SSSE3;
 		if (ecx & (1 << 19))
-			sse_opts |= 1 << SIMD_VERSION_SSE41;
+			sse_opts |= SIMD_VERSION_SSE41;
 		if (ecx & (1 << 20))
-			sse_opts |= 1 << SIMD_VERSION_SSE42;
+			sse_opts |= SIMD_VERSION_SSE42;
 	}
 
 	/* Yes, all this needs to be done to check for sse4a.
@@ -1006,7 +1006,7 @@ mono_arch_cpu_enumerate_simd_versions (void)
 		if ((((unsigned int) eax) >= 0x80000001) && (ebx == 0x68747541) && (ecx == 0x444D4163) && (edx == 0x69746E65)) {
 			cpuid (0x80000001, &eax, &ebx, &ecx, &edx);
 			if (ecx & (1 << 6))
-				sse_opts |= 1 << SIMD_VERSION_SSE4a;
+				sse_opts |= SIMD_VERSION_SSE4a;
 		}
 	}
 
