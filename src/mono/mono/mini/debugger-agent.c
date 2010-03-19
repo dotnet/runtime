@@ -597,6 +597,8 @@ static void stop_single_stepping (void);
 
 static void suspend_current (void);
 
+static void clear_event_requests_for_assembly (MonoAssembly *assembly);
+
 /* Submodule init/cleanup */
 static void breakpoints_init (void);
 static void breakpoints_cleanup (void);
@@ -2911,6 +2913,8 @@ static void
 assembly_unload (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	process_profiler_event (EVENT_KIND_ASSEMBLY_UNLOAD, assembly);
+
+	clear_event_requests_for_assembly (assembly);
 }
 
 static void
@@ -3289,6 +3293,12 @@ clear_breakpoint (MonoBreakpoint *bp)
 
 	g_ptr_array_free (bp->children, TRUE);
 	g_free (bp);
+}
+
+static gboolean
+breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
+{
+	return bp->method && bp->method->klass->image->assembly == assembly;
 }
 
 static void
@@ -4389,6 +4399,44 @@ clear_event_request (int req_id, int etype)
 			g_ptr_array_remove_index_fast (event_requests, i);
 			g_free (req);
 			break;
+		}
+	}
+	mono_loader_unlock ();
+}
+
+static gboolean
+event_req_matches_assembly (EventRequest *req, MonoAssembly *assembly)
+{
+	if (req->event_kind == EVENT_KIND_BREAKPOINT)
+		return breakpoint_matches_assembly (req->info, assembly);
+	else
+		// FIXME:
+		return FALSE;
+}
+
+/*
+ * clear_event_requests_for_assembly:
+ *
+ *   Clear all events requests which reference ASSEMBLY.
+ */
+static void
+clear_event_requests_for_assembly (MonoAssembly *assembly)
+{
+	int i;
+	gboolean found;
+
+	mono_loader_lock ();
+	found = TRUE;
+	while (found) {
+		found = FALSE;
+		for (i = 0; i < event_requests->len; ++i) {
+			EventRequest *req = g_ptr_array_index (event_requests, i);
+
+			if (event_req_matches_assembly (req, assembly)) {
+				clear_event_request (req->id, req->event_kind);
+				found = TRUE;
+				break;
+			}
 		}
 	}
 	mono_loader_unlock ();
