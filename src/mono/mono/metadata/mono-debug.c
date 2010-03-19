@@ -72,7 +72,7 @@ struct _MonoDebugDataTable {
 
 typedef struct {
 	const gchar *method_name;
-	const gchar *cil_code;
+	const gchar *obsolete_cil_code;
 	guint32 wrapper_type;
 } MonoDebugWrapperData;
 
@@ -159,7 +159,6 @@ free_header_data (gpointer key, gpointer value, gpointer user_data)
 
 	if (header->wrapper_data) {
 		g_free ((gpointer)header->wrapper_data->method_name);
-		g_free ((gpointer)header->wrapper_data->cil_code);
 		g_slist_free (header->address_list);
 		g_free (header->wrapper_data);
 	}
@@ -666,8 +665,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 
 			wrapper->wrapper_type = method->wrapper_type;
 			wrapper->method_name = mono_method_full_name (declaring, TRUE);
-			wrapper->cil_code = mono_disasm_code (
-				NULL, declaring, il_code, il_code + il_codesize);
+			wrapper->obsolete_cil_code = "";
 			mono_metadata_free_mh (mheader);
 		}
 	} else {
