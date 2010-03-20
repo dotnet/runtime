@@ -1370,17 +1370,13 @@ mini_emit_load_intf_reg_vtable (MonoCompile *cfg, int intf_reg, int vtable_reg, 
 	}
 }
 
-/* 
- * Emit code which loads into "intf_bit_reg" a nonzero value if the MonoClass
- * stored in "klass_reg" implements the interface "klass".
- */
 static void
-mini_emit_load_intf_bit_reg_class (MonoCompile *cfg, int intf_bit_reg, int klass_reg, MonoClass *klass)
+mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_reg, int offset, MonoClass *klass)
 {
 	int ibitmap_reg = alloc_preg (cfg);
 	int ibitmap_byte_reg = alloc_preg (cfg);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ibitmap_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_bitmap));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ibitmap_reg, base_reg, offset);
 
 	if (cfg->compile_aot) {
 		int iid_reg = alloc_preg (cfg);
@@ -1404,36 +1400,23 @@ mini_emit_load_intf_bit_reg_class (MonoCompile *cfg, int intf_bit_reg, int klass
 }
 
 /* 
+ * Emit code which loads into "intf_bit_reg" a nonzero value if the MonoClass
+ * stored in "klass_reg" implements the interface "klass".
+ */
+static void
+mini_emit_load_intf_bit_reg_class (MonoCompile *cfg, int intf_bit_reg, int klass_reg, MonoClass *klass)
+{
+	mini_emit_interface_bitmap_check (cfg, intf_bit_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_bitmap), klass);
+}
+
+/* 
  * Emit code which loads into "intf_bit_reg" a nonzero value if the MonoVTable
  * stored in "vtable_reg" implements the interface "klass".
  */
 static void
 mini_emit_load_intf_bit_reg_vtable (MonoCompile *cfg, int intf_bit_reg, int vtable_reg, MonoClass *klass)
 {
-	int ibitmap_reg = alloc_preg (cfg);
-	int ibitmap_byte_reg = alloc_preg (cfg);
- 
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ibitmap_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, interface_bitmap));
-
-	if (cfg->compile_aot) {
-		int iid_reg = alloc_preg (cfg);
-		int shifted_iid_reg = alloc_preg (cfg);
-		int ibitmap_byte_address_reg = alloc_preg (cfg);
-		int masked_iid_reg = alloc_preg (cfg);
-		int iid_one_bit_reg = alloc_preg (cfg);
-		int iid_bit_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_AOTCONST (cfg, iid_reg, klass, MONO_PATCH_INFO_IID);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, shifted_iid_reg, iid_reg, 3);
-		MONO_EMIT_NEW_BIALU (cfg, OP_PADD, ibitmap_byte_address_reg, ibitmap_reg, shifted_iid_reg);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, ibitmap_byte_reg, ibitmap_byte_address_reg, 0);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, masked_iid_reg, iid_reg, 7);
-		MONO_EMIT_NEW_ICONST (cfg, iid_one_bit_reg, 1);
-		MONO_EMIT_NEW_BIALU (cfg, OP_ISHL, iid_bit_reg, iid_one_bit_reg, masked_iid_reg);
-		MONO_EMIT_NEW_BIALU (cfg, OP_IAND, intf_bit_reg, ibitmap_byte_reg, iid_bit_reg);
-	} else {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, ibitmap_byte_reg, ibitmap_reg, klass->interface_id >> 3);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, intf_bit_reg, ibitmap_byte_reg, 1 << (klass->interface_id & 7));
-	}
+	mini_emit_interface_bitmap_check (cfg, intf_bit_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, interface_bitmap), klass);
 }
 
 /* 
