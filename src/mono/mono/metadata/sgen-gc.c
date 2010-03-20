@@ -7746,6 +7746,10 @@ mono_gc_get_write_barrier (void)
 	MonoMethodSignature *sig;
 #ifdef MANAGED_WBARRIER
 	int label_no_wb_1, label_no_wb_2, label_no_wb_3, label_no_wb_4, label_need_wb, label_slow_path;
+#ifndef ALIGN_NURSERY
+	int label_continue_1, label_continue_2, label_no_wb_5;
+	int dereferenced_var;
+#endif
 	int buffer_var, buffer_index_var, dummy_var;
 
 #ifdef HAVE_KW_THREAD
@@ -7797,10 +7801,41 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
 		label_no_wb_2 = mono_mb_emit_branch (mb, CEE_BNE_UN);
 #else
-		// FIXME:
-		g_assert_not_reached ();
-#endif
 
+		// if (ptr < (nursery_start)) goto continue;
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ptr (mb, (gpointer) nursery_start);
+		label_continue_1 = mono_mb_emit_branch (mb, CEE_BLT);
+
+		// if (ptr >= nursery_real_end)) goto continue;
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ptr (mb, (gpointer) nursery_real_end);
+		label_continue_2 = mono_mb_emit_branch (mb, CEE_BGE);
+
+		// Otherwise return
+		label_no_wb_1 = mono_mb_emit_branch (mb, CEE_BR);
+
+		// continue:
+		mono_mb_patch_branch (mb, label_continue_1);
+		mono_mb_patch_branch (mb, label_continue_2);
+
+		// Dereference and store in local var
+		dereferenced_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_stloc (mb, dereferenced_var);
+
+		// if (*ptr < nursery_start) return;
+		mono_mb_emit_ldloc (mb, dereferenced_var);
+		mono_mb_emit_ptr (mb, (gpointer) nursery_start);
+		label_no_wb_2 = mono_mb_emit_branch (mb, CEE_BLT);
+
+		// if (*ptr >= nursery_end) return;
+		mono_mb_emit_ldloc (mb, dereferenced_var);
+		mono_mb_emit_ptr (mb, (gpointer) nursery_real_end);
+		label_no_wb_5 = mono_mb_emit_branch (mb, CEE_BGE);
+
+#endif 
 		// if (ptr >= stack_end) goto need_wb;
 		mono_mb_emit_ldarg (mb, 0);
 		EMIT_TLS_ACCESS (mb, stack_end, stack_end_offset);
@@ -7867,6 +7902,9 @@ mono_gc_get_write_barrier (void)
 		mono_mb_patch_branch (mb, label_no_wb_2);
 		mono_mb_patch_branch (mb, label_no_wb_3);
 		mono_mb_patch_branch (mb, label_no_wb_4);
+#ifndef ALIGN_NURSERY
+		mono_mb_patch_branch (mb, label_no_wb_5);
+#endif
 		mono_mb_emit_byte (mb, CEE_RET);
 
 		// slow path
