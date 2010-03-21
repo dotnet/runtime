@@ -5260,18 +5260,19 @@ SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
+#if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
+#define HAVE_SIG_INFO
+#endif
+
 void
 SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 {
-#ifndef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	MonoException *exc = NULL;
-#endif
 	MonoJitInfo *ji;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 
 	GET_CONTEXT;
 
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+#if defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED) && defined(HAVE_SIG_INFO)
 	if (mono_arch_is_single_step_event (info, ctx)) {
 		mono_debugger_agent_single_step_event (ctx);
 		return;
@@ -5281,7 +5282,7 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 	}
 #endif
 
-#ifndef HOST_WIN32
+#if !defined(HOST_WIN32) && defined(HAVE_SIG_INFO)
 	if (mono_aot_is_pagefault (info->si_addr)) {
 		mono_aot_handle_pagefault (info->si_addr);
 		return;
@@ -5331,7 +5332,7 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
 	}
 			
-	mono_arch_handle_exception (ctx, exc, FALSE);
+	mono_arch_handle_exception (ctx, NULL, FALSE);
 #endif
 }
 
