@@ -141,11 +141,15 @@ static gint32 convert_family(MonoAddressFamily mono_family)
 		break;
 		
 	case AddressFamily_Sna:
+#ifdef AF_SNA
 		family=AF_SNA;
+#endif
 		break;
 		
 	case AddressFamily_DecNet:
+#ifdef AF_DECnet
 		family=AF_DECnet;
+#endif
 		break;
 		
 	case AddressFamily_AppleTalk:
@@ -192,13 +196,17 @@ static MonoAddressFamily convert_to_mono_family(guint16 af_family)
 		break;
 #endif
 		
+#ifdef AF_SNA
 	case AF_SNA:
 		family=AddressFamily_Sna;
 		break;
+#endif
 		
+#ifdef AF_DECnet
 	case AF_DECnet:
 		family=AddressFamily_DecNet;
 		break;
+#endif
 		
 	case AF_APPLETALK:
 		family=AddressFamily_AppleTalk;
@@ -240,7 +248,9 @@ static gint32 convert_type(MonoSocketType mono_type)
 		break;
 
 	case SocketType_Rdm:
+#ifdef SOCK_RDM
 		type=SOCK_RDM;
+#endif
 		break;
 
 	case SocketType_Seqpacket:
