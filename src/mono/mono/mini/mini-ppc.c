@@ -5524,7 +5524,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
 			i = exception_id_by_name (patch_info->data.target);
-			if (exc_throw_pos [i]) {
+			if (exc_throw_pos [i] && !(ip > exc_throw_pos [i] && ip - exc_throw_pos [i] > 50000)) {
 				ppc_patch (ip, exc_throw_pos [i]);
 				patch_info->type = MONO_PATCH_INFO_NONE;
 				break;
