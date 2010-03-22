@@ -1770,6 +1770,7 @@ mono_main (int argc, char* argv[])
 	 * shut down), it will crash:
 	 * http://mail-archives.apache.org/mod_mbox/harmony-dev/200801.mbox/%3C200801130327.41572.gshimansky@apache.org%3E
 	 * Testcase: tests/main-exit-background-change.exe.
+	 * Testcase: test/main-returns-background-abort-resetabort.exe.
 	 * To make this race less frequent, we avoid freeing the global code manager.
 	 * Since mono_main () is hopefully only used by the runtime executable, this 
 	 * will only cause a shutdown leak. This workaround also has the advantage
@@ -1777,8 +1778,11 @@ mono_main (int argc, char* argv[])
 	 * FIXME: Fix this properly by waiting for threads to really exit using 
 	 * pthread_join (). This cannot be done currently as the io-layer calls
 	 * pthread_detach ().
+	 *
+	 * This used to be an amd64 only crash, but it looks like now most glibc targets do unwinding
+	 * that requires reading the target code.
 	 */
-#ifdef __x86_64__
+#ifdef __linux__
 		mono_dont_free_global_codeman = TRUE;
 #endif
 
