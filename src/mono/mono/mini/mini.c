@@ -5907,6 +5907,10 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_isfinite, "mono_isfinite", "uint32 double", FALSE);
 #endif
 
+#ifdef COMPRESSED_INTERFACE_BITMAP
+	register_icall (mono_class_interface_match, "mono_class_interface_match", "uint32 ptr int32", TRUE);
+#endif
+
 #if SIZEOF_REGISTER == 4
 	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", "uint32 double", mono_fconv_u4, TRUE);
 #endif

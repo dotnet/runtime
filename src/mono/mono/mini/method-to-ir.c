@@ -1374,6 +1374,19 @@ static void
 mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_reg, int offset, MonoClass *klass)
 {
 	int ibitmap_reg = alloc_preg (cfg);
+#ifdef COMPRESSED_INTERFACE_BITMAP
+	MonoInst *args [2];
+	MonoInst *res, *ins;
+	NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, ibitmap_reg, base_reg, offset);
+	MONO_ADD_INS (cfg->cbb, ins);
+	args [0] = ins;
+	if (cfg->compile_aot)
+		EMIT_NEW_AOTCONST (cfg, args [1], MONO_PATCH_INFO_IID, klass);
+	else
+		EMIT_NEW_ICONST (cfg, args [1], klass->interface_id);
+	res = mono_emit_jit_icall (cfg, mono_class_interface_match, args);
+	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, intf_bit_reg, res->dreg);
+#else
 	int ibitmap_byte_reg = alloc_preg (cfg);
 
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ibitmap_reg, base_reg, offset);
@@ -1397,6 +1410,7 @@ mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_r
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, ibitmap_byte_reg, ibitmap_reg, klass->interface_id >> 3);
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, intf_bit_reg, ibitmap_byte_reg, 1 << (klass->interface_id & 7));
 	}
+#endif
 }
 
 /* 
