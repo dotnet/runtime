@@ -80,6 +80,20 @@
 
 #ifdef __FreeBSD__
 #define UCONTEXT_GREGS(ctx)	&(((ucontext_t*)(ctx))->uc_mcontext)
+#elif defined(__OpenBSD__)
+	#define UCONTEXT_REG_RAX(ctx) ((ctx)->sc_rax)
+	#define UCONTEXT_REG_RBX(ctx) ((ctx)->sc_rbx)
+	#define UCONTEXT_REG_RCX(ctx) ((ctx)->sc_rcx)
+	#define UCONTEXT_REG_RDX(ctx) ((ctx)->sc_rdx)
+	#define UCONTEXT_REG_RBP(ctx) ((ctx)->sc_rbp)
+	#define UCONTEXT_REG_RSP(ctx) ((ctx)->sc_rsp)
+	#define UCONTEXT_REG_RSI(ctx) ((ctx)->sc_rsi)
+	#define UCONTEXT_REG_RDI(ctx) ((ctx)->sc_rdi)
+	#define UCONTEXT_REG_RIP(ctx) ((ctx)->sc_rip)
+	#define UCONTEXT_REG_R12(ctx) ((ctx)->sc_r12)
+	#define UCONTEXT_REG_R13(ctx) ((ctx)->sc_r13)
+	#define UCONTEXT_REG_R14(ctx) ((ctx)->sc_r14)
+	#define UCONTEXT_REG_R15(ctx) ((ctx)->sc_r15)
 #else
 #define UCONTEXT_GREGS(ctx)	&(((ucontext_t*)(ctx))->uc_mcontext.gregs)
 #endif
