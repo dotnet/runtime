@@ -1328,11 +1328,10 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					 * a call which causes an exception. Testcase: tests/exception8.cs.
 					 * FIXME: Clean this up.
 					 */
-					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && 
+					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) {
 #else
-					if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
+					if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx))) {
 #endif
-					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
 						/* catch block */
 						MonoClass *catch_class = get_exception_catch_class (ei, ji, ctx);
 

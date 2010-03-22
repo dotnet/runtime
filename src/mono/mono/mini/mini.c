@@ -3510,7 +3510,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			int try_start = cfg->cil_offset_to_bb [ec->try_offset]->native_offset;
 			int try_end  = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len]->native_offset;
 			int handler_start = cfg->cil_offset_to_bb [ec->handler_offset]->native_offset;
-			int handler_end = cfg->cil_offset_to_bb [ec->handler_offset + ec->handler_len]->native_offset;
+			int handler_end;
+			if (ec->handler_offset + ec->handler_len < header->code_size)
+				handler_end =  cfg->cil_offset_to_bb [ec->handler_offset + ec->handler_len]->native_offset;
+			else
+				handler_end = cfg->epilog_begin;
 
 			printf ("EH clause %d flags %x try IL %x-%x NATIVE %x-%x handler IL %x-%x NATIVE %x-%x\n",
 				i, ec->flags,
