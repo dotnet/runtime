@@ -2468,8 +2468,20 @@ print_implemented_interfaces (MonoClass *klass) {
 			printf ("(%d,F)", i);
 	printf ("\n");
 	printf ("Dump interface flags:");
+#ifdef COMPRESSED_INTERFACE_BITMAP
+	{
+		const uint8_t* p = klass->interface_bitmap;
+		i = klass->max_interface_id;
+		while (i > 0) {
+			printf (" %d x 00 %02X", p [0], p [1]);
+			i -= p [0] * 8;
+			i -= 8;
+		}
+	}
+#else
 	for (i = 0; i < ((((klass->max_interface_id + 1) >> 3)) + (((klass->max_interface_id + 1) & 7)? 1 :0)); i++)
 		printf (" %02X", klass->interface_bitmap [i]);
+#endif
 	printf ("\n");
 	while (klass != NULL) {
 		printf ("[LEVEL %d] Implemented interfaces by class %s:\n", ancestor_level, klass->name);
@@ -2840,6 +2852,112 @@ set_interface_and_offset (int num_ifaces, MonoClass **interfaces_full, int *inte
 	return FALSE;
 }
 
+#ifdef COMPRESSED_INTERFACE_BITMAP
+
+/*
+ * Compressed interface bitmap design.
+ *
+ * Interface bitmaps take a large amount of memory, because their size is
+ * linear with the maximum interface id assigned in the process (each interface
+ * is assigned a unique id as it is loaded). The number of interface classes
+ * is high because of the many implicit interfaces implemented by arrays (we'll
+ * need to lazy-load them in the future).
+ * Most classes implement a very small number of interfaces, so the bitmap is
+ * sparse. This bitmap needs to be checked by interface casts, so access to the
+ * needed bit must be fast and doable with few jit instructions.
+ *
+ * The current compression format is as follows:
+ * *) it is a sequence of one or more two-byte elements
+ * *) the first byte in the element is the count of empty bitmap bytes
+ * at the current bitmap position
+ * *) the second byte in the element is an actual bitmap byte at the current
+ * bitmap position
+ *
+ * As an example, the following compressed bitmap bytes:
+ * 	0x07 0x01 0x00 0x7
+ * correspond to the following bitmap:
+ * 	0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x01 0x07
+ *
+ * Each two-byte element can represent up to 2048 bitmap bits, but as few as a single
+ * bitmap byte for non-sparse sequences. In practice the interface bitmaps created
+ * during a gmcs bootstrap are reduced to less tha 5% of the original size.
+ */
+
+/**
+ * mono_compress_bitmap:
+ * @dest: destination buffer
+ * @bitmap: bitmap buffer
+ * @size: size of @bitmap in bytes
+ *
+ * This is a mono internal function.
+ * The @bitmap data is compressed into a format that is small but
+ * still searchable in few instructions by the JIT and runtime.
+ * The compressed data is stored in the buffer pointed to by the
+ * @dest array. Passing a #NULL value for @dest allows to just compute
+ * the size of the buffer.
+ * This compression algorithm assumes the bits set in the bitmap are
+ * few and far between, like in interface bitmaps.
+ * Returns: the size of the compressed bitmap in bytes.
+ */
+int
+mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
+{
+	int numz = 0;
+	int res = 0;
+	const uint8_t *end = bitmap + size;
+	while (bitmap < end) {
+		if (*bitmap || numz == 255) {
+			if (dest) {
+				*dest++ = numz;
+				*dest++ = *bitmap;
+			}
+			res += 2;
+			numz = 0;
+			bitmap++;
+			continue;
+		}
+		bitmap++;
+		numz++;
+	}
+	if (numz) {
+		res += 2;
+		if (dest) {
+			*dest++ = numz;
+			*dest++ = 0;
+		}
+	}
+	return res;
+}
+
+/**
+ * mono_class_interface_match:
+ * @bitmap: a compressed bitmap buffer
+ * @id: the index to check in the bitmap
+ *
+ * This is a mono internal function.
+ * Checks if a bit is set in a compressed interface bitmap. @id must
+ * be already checked for being smaller than the maximum id encoded in the
+ * bitmap.
+ *
+ * Returns: a non-zero value if bit @id is set in the bitmap @bitmap,
+ * #FALSE otherwise.
+ */
+int
+mono_class_interface_match (const uint8_t *bitmap, int id)
+{
+	while (TRUE) {
+		id -= bitmap [0] * 8;
+		if (id < 8) {
+			if (id < 0)
+				return 0;
+			return bitmap [1] & (1 << id);
+		}
+		bitmap += 2;
+		id -= 8;
+	}
+}
+#endif
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  * Return -1 on failure and set exception_type
@@ -3018,18 +3136,33 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	if (class->interfaces_packed) {
 		g_assert (class->interface_offsets_count == interface_offsets_count);
 	} else {
+		uint8_t *bitmap;
+		int bsize;
 		class->interface_offsets_count = interface_offsets_count;
 		class->interfaces_packed = mono_image_alloc (class->image, sizeof (MonoClass*) * interface_offsets_count);
 		class->interface_offsets_packed = mono_image_alloc (class->image, sizeof (guint16) * interface_offsets_count);
-		class->interface_bitmap = mono_image_alloc0 (class->image, (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0));
+		bsize = (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0);
+#ifdef COMPRESSED_INTERFACE_BITMAP
+		bitmap = g_malloc0 (bsize);
+#else
+		bitmap = mono_image_alloc0 (class->image, bsize);
+#endif
 		for (i = 0; i < interface_offsets_count; i++) {
 			int id = interfaces_full [i]->interface_id;
-			class->interface_bitmap [id >> 3] |= (1 << (id & 7));
+			bitmap [id >> 3] |= (1 << (id & 7));
 			class->interfaces_packed [i] = interfaces_full [i];
 			class->interface_offsets_packed [i] = interface_offsets_full [i];
 			/*if (num_array_interfaces)
 			  g_print ("type %s has %s offset at %d\n", mono_type_get_name_full (&class->byval_arg, 0), mono_type_get_name_full (&interfaces_full [i]->byval_arg, 0), interface_offsets_full [i]);*/
 		}
+#ifdef COMPRESSED_INTERFACE_BITMAP
+		i = mono_compress_bitmap (NULL, bitmap, bsize);
+		class->interface_bitmap = mono_image_alloc0 (class->image, i);
+		mono_compress_bitmap (class->interface_bitmap, bitmap, bsize);
+		g_free (bitmap);
+#else
+		class->interface_bitmap = bitmap;
+#endif
 	}
 
 end:

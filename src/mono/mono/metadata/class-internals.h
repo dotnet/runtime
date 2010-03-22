@@ -366,8 +366,12 @@ struct _MonoClass {
 	guint16     interface_offsets_count;
 	MonoClass **interfaces_packed;
 	guint16    *interface_offsets_packed;
+/* enabled only with small config for now: we might want to do it unconditionally */
+#ifdef MONO_SMALL_CONFIG
+#define COMPRESSED_INTERFACE_BITMAP 1
+#endif
 	guint8     *interface_bitmap;
-	
+
 	MonoClass **interfaces;
 
 	union {
@@ -422,7 +426,16 @@ struct _MonoClass {
 	MonoClassExt *ext;
 };
 
-#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && ((k)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
+#ifdef COMPRESSED_INTERFACE_BITMAP
+int mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size) MONO_INTERNAL;
+int mono_class_interface_match (const uint8_t *bitmap, int id) MONO_INTERNAL;
+#else
+#define mono_class_interface_match(bmap,uiid) ((bmap) [(uiid) >> 3] & (1 << ((uiid)&7)))
+#endif
+
+#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && mono_class_interface_match ((k)->interface_bitmap, (uiid)))
+
+
 int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match) MONO_INTERNAL;
 
@@ -453,7 +466,7 @@ struct MonoVTable {
 
 #define MONO_SIZEOF_VTABLE (sizeof (MonoVTable) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
-#define MONO_VTABLE_IMPLEMENTS_INTERFACE(vt,uiid) (((uiid) <= (vt)->max_interface_id) && ((vt)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
+#define MONO_VTABLE_IMPLEMENTS_INTERFACE(vt,uiid) (((uiid) <= (vt)->max_interface_id) && mono_class_interface_match ((vt)->interface_bitmap, (uiid)))
 
 /*
  * Generic instantiation data type encoding.

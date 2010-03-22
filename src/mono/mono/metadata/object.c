@@ -2080,6 +2080,8 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	GSList *extra_interfaces = NULL;
 	MonoClass *class = remote_class->proxy_class;
 	gpointer *interface_offsets;
+	uint8_t *bitmap;
+	int bsize, bcsize;
 
 	vt = mono_class_vtable (domain, class);
 	g_assert (vt); /*FIXME property handle failure*/
@@ -2167,7 +2169,12 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 
 	pvt->max_interface_id = max_interface_id;
-	pvt->interface_bitmap = mono_domain_alloc0 (domain, sizeof (guint8) * (max_interface_id/8 + 1 ));
+	bsize = sizeof (guint8) * (max_interface_id/8 + 1 );
+#ifdef COMPRESSED_INTERFACE_BITMAP
+	bitmap = g_malloc0 (bsize);
+#else
+	bitmap = mono_domain_alloc0 (domain, bsize);
+#endif
 
 	if (! ARCH_USE_IMT) {
 		/* initialize interface offsets */
@@ -2179,7 +2186,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 	for (i = 0; i < class->interface_offsets_count; ++i) {
 		int interface_id = class->interfaces_packed [i]->interface_id;
-		pvt->interface_bitmap [interface_id >> 3] |= (1 << (interface_id & 7));
+		bitmap [interface_id >> 3] |= (1 << (interface_id & 7));
 	}
 
 	if (extra_interfaces) {
@@ -2196,7 +2203,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			if (! ARCH_USE_IMT) {
 				interface_offsets [max_interface_id - interf->interface_id] = &pvt->vtable [slot];
 			}
-			pvt->interface_bitmap [interf->interface_id >> 3] |= (1 << (interf->interface_id & 7));
+			bitmap [interf->interface_id >> 3] |= (1 << (interf->interface_id & 7));
 
 			iter = NULL;
 			j = 0;
@@ -2218,6 +2225,14 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		}
 	}
 
+#ifdef COMPRESSED_INTERFACE_BITMAP
+	bcsize = mono_compress_bitmap (NULL, bitmap, bsize);
+	pvt->interface_bitmap = mono_domain_alloc0 (domain, bcsize);
+	mono_compress_bitmap (pvt->interface_bitmap, bitmap, bsize);
+	g_free (bitmap);
+#else
+	pvt->interface_bitmap = bitmap;
+#endif
 	return pvt;
 }
 
