@@ -653,20 +653,13 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		g_hash_table_insert (table->method_hash, declaring, header);
 
 		if (is_wrapper) {
-			const unsigned char* il_code;
-			MonoMethodHeader *mheader;
 			MonoDebugWrapperData *wrapper;
-			guint32 il_codesize;
-
-			mheader = mono_method_get_header (declaring);
-			il_code = mono_method_header_get_code (mheader, &il_codesize, NULL);
 
 			header->wrapper_data = wrapper = g_new0 (MonoDebugWrapperData, 1);
 
 			wrapper->wrapper_type = method->wrapper_type;
 			wrapper->method_name = mono_method_full_name (declaring, TRUE);
 			wrapper->obsolete_cil_code = "";
-			mono_metadata_free_mh (mheader);
 		}
 	} else {
 		address->header.wrapper_data = header->wrapper_data;
