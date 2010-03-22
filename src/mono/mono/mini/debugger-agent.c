@@ -4412,9 +4412,23 @@ event_req_matches_assembly (EventRequest *req, MonoAssembly *assembly)
 {
 	if (req->event_kind == EVENT_KIND_BREAKPOINT)
 		return breakpoint_matches_assembly (req->info, assembly);
-	else
-		// FIXME:
-		return FALSE;
+	else {
+		int i, j;
+
+		for (i = 0; i < req->nmodifiers; ++i) {
+			Modifier *m = &req->modifiers [i];
+
+			if (m->kind == MOD_KIND_EXCEPTION_ONLY && m->data.exc_class && m->data.exc_class->image->assembly == assembly)
+				return TRUE;
+			if (m->kind == MOD_KIND_ASSEMBLY_ONLY && m->data.assemblies) {
+				for (j = 0; m->data.assemblies [j]; ++j)
+					if (m->data.assemblies [j] == assembly)
+						return TRUE;
+			}
+		}
+	}
+
+	return FALSE;
 }
 
 /*
