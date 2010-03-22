@@ -2469,6 +2469,9 @@ dnl Consistency settings
 dnl
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS=yes
+fi
+
+if test x$DISABLE_MCS_DOCS = xyes; then
    docs_dir=""
 else
    docs_dir=docs

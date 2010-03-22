@@ -1,3 +1,7 @@
+2010-03-22  Andreia Gaita  <avidigal@gmail.com>
+
+	* configure.in: fix build when doing with-mcs-docs=no on a clean tree
+
 2010-03-19  Zoltan Varga  <vargaz@gmail.com>
 
 	* autogen.sh: Pass -Wno-portability to automake to quiet some warnings.
