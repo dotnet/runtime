@@ -381,11 +381,14 @@ get_posix_locale (void)
 static gchar*
 get_darwin_locale (void)
 {
-	const gchar *darwin_locale = NULL;
-	gchar *cur_locale = NULL;
-	int i;
+	static gchar *darwin_locale = NULL;
 	CFLocaleRef locale = NULL;
 	CFStringRef locale_cfstr = NULL;
+	CFIndex len;
+	int i;
+
+	if (darwin_locale != NULL)
+		return g_strdup (darwin_locale);
 
 	locale = CFLocaleCopyCurrent ();
 
@@ -393,20 +396,24 @@ get_darwin_locale (void)
 		locale_cfstr = CFLocaleGetIdentifier (locale);
 
 		if (locale_cfstr) {
-			darwin_locale = CFStringGetCStringPtr (locale_cfstr, kCFStringEncodingMacRoman);
+			len = CFStringGetMaximumSizeForEncoding (CFStringGetLength (locale_cfstr), kCFStringEncodingMacRoman) + 1;
+			darwin_locale = (char *) malloc (len);
+			if (!CFStringGetCString (locale_cfstr, darwin_locale, len, kCFStringEncodingMacRoman)) {
+				free (darwin_locale);
+				CFRelease (locale);
+				darwin_locale = NULL;
+				return NULL;
+			}
 
-			cur_locale = g_strdup (darwin_locale);
-
-			for (i = 0; i < strlen (cur_locale); i++)
-				if (cur_locale [i] == '_')
-					cur_locale [i] = '-';
+			for (i = 0; i < strlen (darwin_locale); i++)
+				if (darwin_locale [i] == '_')
+					darwin_locale [i] = '-';
 		}
-
 
 		CFRelease (locale);
 	}
 
-	return cur_locale;
+	return g_strdup (darwin_locale);
 }
 #endif
 
@@ -416,7 +423,7 @@ get_current_locale_name (void)
 	gchar *locale;
 	gchar *corrected = NULL;
 	const gchar *p;
-        gchar *c;
+	gchar *c;
 
 #ifdef HOST_WIN32
 	locale = g_win32_getlocale ();
