@@ -698,7 +698,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	return TRUE;
 }
 
-#ifdef MONO_ARCH_USE_SIGACTION
+#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
 static inline guint64*
 gregs_from_ucontext (ucontext_t *ctx)
 {
@@ -708,7 +708,7 @@ gregs_from_ucontext (ucontext_t *ctx)
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-#ifdef MONO_ARCH_USE_SIGACTION
+#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
     guint64 *gregs = gregs_from_ucontext (ctx);
@@ -726,6 +726,22 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->r13 = gregs [REG_R13];
 	mctx->r14 = gregs [REG_R14];
 	mctx->r15 = gregs [REG_R15];
+#elif defined(MONO_ARCH_USE_SIGACTION)
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+
+	mctx->rax = UCONTEXT_REG_RAX (ctx);
+	mctx->rbx = UCONTEXT_REG_RBX (ctx);
+	mctx->rcx = UCONTEXT_REG_RCX (ctx);
+	mctx->rdx = UCONTEXT_REG_RDX (ctx);
+	mctx->rbp = UCONTEXT_REG_RBP (ctx);
+	mctx->rsp = UCONTEXT_REG_RSP (ctx);
+	mctx->rsi = UCONTEXT_REG_RSI (ctx);
+	mctx->rdi = UCONTEXT_REG_RDI (ctx);
+	mctx->rip = UCONTEXT_REG_RIP (ctx);
+	mctx->r12 = UCONTEXT_REG_R12 (ctx);
+	mctx->r13 = UCONTEXT_REG_R13 (ctx);
+	mctx->r14 = UCONTEXT_REG_R14 (ctx);
+	mctx->r15 = UCONTEXT_REG_R15 (ctx);
 #else
 	MonoContext *ctx = (MonoContext *)sigctx;
 
@@ -748,7 +764,7 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
-#ifdef MONO_ARCH_USE_SIGACTION
+#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
     guint64 *gregs = gregs_from_ucontext (ctx);
@@ -766,6 +782,22 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	gregs [REG_R13] = mctx->r13;
 	gregs [REG_R14] = mctx->r14;
 	gregs [REG_R15] = mctx->r15;
+#elif defined(MONO_ARCH_USE_SIGACTION)
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+
+	UCONTEXT_REG_RAX (ctx) = mctx->rax;
+	UCONTEXT_REG_RBX (ctx) = mctx->rbx;
+	UCONTEXT_REG_RCX (ctx) = mctx->rcx;
+	UCONTEXT_REG_RDX (ctx) = mctx->rdx;
+	UCONTEXT_REG_RBP (ctx) = mctx->rbp;
+	UCONTEXT_REG_RSP (ctx) = mctx->rsp;
+	UCONTEXT_REG_RSI (ctx) = mctx->rsi;
+	UCONTEXT_REG_RDI (ctx) = mctx->rdi;
+	UCONTEXT_REG_RIP (ctx) = mctx->rip;
+	UCONTEXT_REG_R12 (ctx) = mctx->r12;
+	UCONTEXT_REG_R13 (ctx) = mctx->r13;
+	UCONTEXT_REG_R14 (ctx) = mctx->r14;
+	UCONTEXT_REG_R15 (ctx) = mctx->r15;
 #else
 	MonoContext *ctx = (MonoContext *)sigctx;
 
@@ -788,14 +820,16 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-	
-#ifdef MONO_ARCH_USE_SIGACTION
-
+#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
     guint64 *gregs = gregs_from_ucontext (ctx);
 
 	return (gpointer)gregs [REG_RIP];
+#elif defined(MONO_ARCH_USE_SIGACTION)
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+
+	return (gpointer)UCONTEXT_REG_RIP (ctx);
 #else
 	MonoContext *ctx = sigctx;
 	return (gpointer)ctx->rip;
@@ -852,7 +886,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 void
 mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean stack_ovf)
 {
-#ifdef MONO_ARCH_USE_SIGACTION
+#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
 	MonoException *exc = NULL;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	guint64 *gregs = gregs_from_ucontext (ctx);
