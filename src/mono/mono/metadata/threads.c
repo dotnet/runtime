@@ -3935,8 +3935,10 @@ mono_thread_resume_interruption (void)
 	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1)
 		return NULL;
 	InterlockedIncrement (&thread_interruption_requested);
-	wapi_self_interrupt ();
 
+#ifndef HOST_WIN32
+	wapi_self_interrupt ();
+#endif
 	return mono_thread_execute_interruption (thread);
 }
 
