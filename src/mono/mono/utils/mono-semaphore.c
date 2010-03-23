@@ -33,6 +33,8 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms)
 	if (timeout_ms == 0)
 		return (!sem_trywait (sem));
 #endif
+	if (timeout_ms == (guint32) 0xFFFFFFFF)
+		return MONO_SEM_WAIT (sem);
 
 	t.tv_sec = 0;
 	t.tv_usec = 0;
