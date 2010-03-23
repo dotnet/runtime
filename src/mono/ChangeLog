@@ -1,3 +1,7 @@
+2010-03-23  Neale Ferguson <neale@sinenomine.net>
+
+	* configure.in: Change ACCESS_UNALINGED to "yes" for s390/s390x.
+
 2010-03-22  Andreia Gaita  <avidigal@gmail.com>
 
 	* configure.in: fix build when doing with-mcs-docs=no on a clean tree

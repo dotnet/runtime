@@ -773,7 +773,6 @@ typedef struct {
 #define s390_stey(c, r, x, b, d)	S390_RXY(c, 0xed66, r, x, b, d)
 #define s390_stfpc(c, b, d)		S390_S(c, 0xb29c, b, d)
 #define s390_stg(c, r, x, b, d)		S390_RXY(c, 0xe324, r, x, b, d)
-#define s390_stg(c, r, x, b, d)		S390_RXY(c, 0xe324, r, x, b, d)
 #define s390_sth(c, r, x, b, d)		S390_RX(c, 0x40, r, x, b, d)
 #define s390_sthy(c, r, x, b, d)	S390_RXY(c, 0xe370, r, x, b, d)
 #define s390_stm(c, r1, r2, b, d)	S390_RS_1(c, 0x90, r1, r2, b, d)

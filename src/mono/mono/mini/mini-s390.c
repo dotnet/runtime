@@ -107,21 +107,18 @@ if (ins->inst_target_bb->native_offset) { 					\
                 MonoInst *inst; 						\
 		int tmpr = 0;							\
 		int sReg, dReg;							\
-		MONO_INST_NEW (cfg, inst, OP_NOP);								\
+		MONO_INST_NEW (cfg, inst, OP_NOP);				\
 		if (size > 256) {						\
-			tmpr = mono_alloc_preg (cfg); \
-			MONO_EMIT_NEW_ICONST(cfg,tmpr,size);			\
 			inst->dreg	  = dest;				\
 			inst->inst_offset = offset;				\
 			inst->sreg1	  = src;				\
 			inst->inst_imm	  = imm;				\
-			inst->sreg2	  = tmpr;				\
 		} else {							\
 			if (s390_is_uimm12(offset)) {				\
 				inst->dreg	  = dest;			\
 				inst->inst_offset = offset;			\
 			} else {						\
-				dReg = mono_alloc_preg (cfg); \
+				dReg = mono_alloc_preg (cfg); 			\
 				MONO_EMIT_NEW_BIALU_IMM(cfg, OP_ADD_IMM,	\
 					dReg, dest, offset);			\
 				inst->dreg	  = dReg;			\
@@ -131,16 +128,16 @@ if (ins->inst_target_bb->native_offset) { 					\
 				inst->sreg1	  = src; 			\
 				inst->inst_imm    = imm;   			\
 			} else {						\
-				sReg = mono_alloc_preg (cfg); \
+				sReg = mono_alloc_preg (cfg); 			\
 				MONO_EMIT_NEW_BIALU_IMM(cfg, OP_ADD_IMM,	\
 					sReg, src, imm);   			\
 				inst->sreg1	  = sReg;			\
 				inst->inst_imm    = 0;				\
 			}							\
 		}								\
-                inst->opcode 	  = OP_S390_MOVE; 				\
-		inst->backend.size	  = size;					\
-        MONO_ADD_INS (cfg->cbb, inst); \
+                inst->opcode 	  	= OP_S390_MOVE; 			\
+		inst->backend.size	= size;					\
+        MONO_ADD_INS (cfg->cbb, inst); 						\
 	} while (0)
 
 #define MONO_OUTPUT_VTR(cfg, size, dr, sr, so) do {				\
@@ -4194,34 +4191,39 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					s390_mvc  (code, ins->backend.size, ins->dreg, 
 						   ins->inst_offset, ins->sreg1, ins->inst_imm);
 				} else {
-					s390_lr   (code, s390_r0, ins->dreg);
+					s390_lr  (code, s390_r0, ins->dreg);
 					if (s390_is_imm16 (ins->inst_offset)) {
 						s390_ahi  (code, s390_r0, ins->inst_offset);
 					} else {
 						s390_basr (code, s390_r13, 0);
-						s390_j    (code, 4);
-						s390_word (code, ins->inst_offset);
+						s390_j    (code, 6);
+						s390_long (code, ins->inst_offset);
 						s390_a    (code, s390_r0, 0, s390_r13, 4);
 					}
-					s390_lr	  (code, s390_r14, s390_r12);
-					s390_lr   (code, s390_r12, ins->sreg1);
+					s390_lr  (code, s390_r12, ins->sreg1);
 					if (s390_is_imm16 (ins->inst_imm)) {
 						s390_ahi  (code, s390_r12, ins->inst_imm);
 					} else {
 						s390_basr (code, s390_r13, 0);
-						s390_j    (code, 4);
-						s390_word (code, ins->inst_imm);
+						s390_j    (code, 6);
+						s390_long (code, ins->inst_imm);
 						s390_a    (code, s390_r12, 0, s390_r13, 4);
 					}
-					s390_lr   (code, s390_r1, ins->sreg1);
+					if (s390_is_imm16 (ins->backend.size)) {
+						s390x_lhi (code, s390_r1, ins->backend.size);
+					} else {
+						s390_basr (code, s390_r13, 0);
+						s390_j    (code, 6);
+						s390_long (code, ins->backend.size);
+						s390_l    (code, s390_r1, 0, s390_r13, 4);
+					}
+					s390_lr   (code, s390_r1, ins->backend.size);
 					s390_lr   (code, s390_r13, s390_r1);
 					s390_mvcle(code, s390_r0, s390_r12, 0, 0);
 					s390_jo   (code, -2);
-					s390_lr	  (code, s390_r12, s390_r14);
 				}
 			}
 		}
-			break;
 		case OP_ATOMIC_ADD_I4: {
 			s390_lr  (code, s390_r1, ins->sreg2);
 			s390_l   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
