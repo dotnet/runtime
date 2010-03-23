@@ -584,6 +584,11 @@ class Tests {
 		return messages.Max(i => i.MessageID);
 	}
 
+	public static int test_0_partial_shared_method_in_nonshared_class () {
+		var c = new Class1<double> ();
+		return (c.Foo<string> (5).GetType () == typeof (Class1<string>)) ? 0 : 1;
+	}
+
 	class Message {
 		public int MessageID {
 			get; set;
@@ -601,6 +606,10 @@ class Tests {
     public class Class1<T> {
 		public virtual void Do (Class2<T> t) {
 			t.Foo ();
+		}
+
+		public virtual object Foo<U> (T t) {
+			return new Class1<U> ();
 		}
 	}
 

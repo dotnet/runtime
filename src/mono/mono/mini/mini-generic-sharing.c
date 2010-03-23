@@ -14,8 +14,8 @@
 
 #include "mini.h"
 
-//#define ALLOW_PARTIAL_SHARING TRUE
-#define ALLOW_PARTIAL_SHARING FALSE
+#define ALLOW_PARTIAL_SHARING TRUE
+//#define ALLOW_PARTIAL_SHARING FALSE
 
 static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
@@ -595,6 +595,41 @@ class_uninstantiated (MonoClass *class)
 	return class;
 }
 
+static gboolean
+generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
+						  gboolean allow_partial)
+{
+	gboolean has_refs;
+	int i;
+
+	has_refs = FALSE;
+	for (i = 0; i < inst->type_argc; ++i) {
+		MonoType *type = inst->type_argv [i];
+
+		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
+			has_refs = TRUE;
+	}
+ 
+	for (i = 0; i < inst->type_argc; ++i) {
+		MonoType *type = inst->type_argv [i];
+
+		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
+			continue;
+ 
+		/*
+		 * Allow non ref arguments, if there is at least one ref argument
+		 * (partial sharing).
+		 * FIXME: Allow more types
+		 */
+		if (allow_partial && !type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U)))
+			continue;
+
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 /*
  * mono_is_partially_sharable_inst:
  *
@@ -658,6 +693,9 @@ get_shared_class (MonoClass *class)
 			g_free (type_argv);
 
 			return mono_class_inflate_generic_class (class->generic_class->container_class, &shared_context);
+		} else if (!generic_inst_is_sharable (inst, TRUE, FALSE)) {
+			/* Happens for partially shared methods of nono-sharable generic class */
+			return class;
 		}
 	}
 
@@ -684,7 +722,7 @@ mono_class_get_runtime_generic_context_template (MonoClass *class)
 	if (template)
 		return template;
 
-	g_assert (get_shared_class (class) == class);
+	//g_assert (get_shared_class (class) == class);
 
 	template = alloc_template (class);
 
@@ -1354,41 +1392,6 @@ mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst
 	g_assert (mrgctx);
 
 	return mrgctx;
-}
-
-static gboolean
-generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
-						  gboolean allow_partial)
-{
-	gboolean has_refs;
-	int i;
-
-	has_refs = FALSE;
-	for (i = 0; i < inst->type_argc; ++i) {
-		MonoType *type = inst->type_argv [i];
-
-		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
-			has_refs = TRUE;
-	}
- 
-	for (i = 0; i < inst->type_argc; ++i) {
-		MonoType *type = inst->type_argv [i];
-
-		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
-			continue;
- 
-		/*
-		 * Allow non ref arguments, if there is at least one ref argument
-		 * (partial sharing).
-		 * FIXME: Allow more types
-		 */
-		if (!type->byref && type->type == MONO_TYPE_I4 && has_refs && allow_partial)
-			continue;
-
-		return FALSE;
-	}
-
-	return TRUE;
 }
 
 /*
