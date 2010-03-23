@@ -3911,6 +3911,35 @@ mono_thread_request_interruption (gboolean running_managed)
 	}
 }
 
+/*This function should be called by a thread after it has exited all of
+ * its handle blocks at interruption time.*/
+MonoException*
+mono_thread_resume_interruption (void)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	gboolean still_aborting;
+
+	/* The thread may already be stopping */
+	if (thread == NULL)
+		return NULL;
+
+	ensure_synch_cs_set (thread);
+	EnterCriticalSection (thread->synch_cs);
+	still_aborting = (thread->state & ThreadState_AbortRequested) != 0;
+	LeaveCriticalSection (thread->synch_cs);
+
+	/*This can happen if the protected block called Thread::ResetAbort*/
+	if (!still_aborting)
+		return FALSE;
+
+	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1)
+		return NULL;
+	InterlockedIncrement (&thread_interruption_requested);
+	wapi_self_interrupt ();
+
+	return mono_thread_execute_interruption (thread);
+}
+
 gboolean mono_thread_interruption_requested ()
 {
 	if (thread_interruption_requested) {

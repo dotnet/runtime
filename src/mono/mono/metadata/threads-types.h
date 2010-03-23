@@ -223,4 +223,6 @@ void mono_thread_interruption_checkpoint (void) MONO_INTERNAL;
 void mono_thread_force_interruption_checkpoint (void) MONO_INTERNAL;
 gint32* mono_thread_interruption_request_flag (void) MONO_INTERNAL;
 
+MonoException* mono_thread_resume_interruption (void) MONO_INTERNAL;
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
