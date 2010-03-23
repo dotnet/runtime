@@ -962,7 +962,6 @@ fill_in_rgctx_template_slot (MonoClass *class, int type_argc, int index, gpointe
 		MonoRuntimeGenericContextOtherInfoTemplate subclass_oti;
 		MonoRuntimeGenericContextTemplate *subclass_template = class_lookup_rgctx_template (subclass);
 
-		g_assert (!subclass->generic_class);
 		g_assert (subclass_template);
 
 		subclass_oti = class_get_rgctx_template_oti (subclass->parent, type_argc, index, FALSE, FALSE, NULL);
