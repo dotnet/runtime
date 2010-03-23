@@ -42,6 +42,10 @@ public class TestRunner
 		public StreamWriter stdout, stderr;
 	}
 
+	class TestInfo {
+		public string test, opt_set;
+	}
+
 	public static int Main (String[] args) {
 		// Defaults
 		int concurrency = 1;
@@ -51,6 +55,7 @@ public class TestRunner
 
 		string disabled_tests = null;
 		string runtime = "mono";
+		var opt_sets = new List<string> ();
 
 		// Process options
 		int i = 0;
@@ -86,6 +91,14 @@ public class TestRunner
 						return 1;
 					}
 					runtime = args [i + 1];
+					i += 2;
+				} else if (args [i] == "--opt-sets") {
+					if (i + i >= args.Length) {
+						Console.WriteLine ("Missing argument to --opt-sets command line option.");
+						return 1;
+					}
+					foreach (var s in args [i + 1].Split ())
+						opt_sets.Add (s);
 					i += 2;
 				} else {
 					Console.WriteLine ("Unknown command line option: '" + args [i] + "'.");
@@ -123,7 +136,18 @@ public class TestRunner
 		if (concurrency != 1)
 			Console.WriteLine ("Running tests: ");
 
-		foreach (string test in tests) {
+		var test_info = new List<TestInfo> ();
+		if (opt_sets.Count == 0) {
+			foreach (string s in tests)
+				test_info.Add (new TestInfo { test = s });
+		} else {
+			foreach (string opt in opt_sets) {
+				foreach (string s in tests)
+					test_info.Add (new TestInfo { test = s, opt_set = opt });
+			}
+		}		
+
+		foreach (TestInfo ti in test_info) {
 			lock (monitor) {
 				while (processes.Count == concurrency) {
 					/* Wait for one process to terminate */
@@ -142,11 +166,19 @@ public class TestRunner
 				terminated.Clear ();
 			}
 
+			string test = ti.test;
+			string opt_set = ti.opt_set;
+
 			if (concurrency == 1)
 				Console.Write ("Testing " + test + "... ");
 
 			/* Spawn a new process */
-			ProcessStartInfo info = new ProcessStartInfo (runtime, test);
+			string process_args;
+			if (opt_set == null)
+				process_args = test;
+			else
+				process_args = "-O=" + opt_set + " " + test;
+			ProcessStartInfo info = new ProcessStartInfo (runtime, process_args);
 			info.UseShellExecute = false;
 			info.RedirectStandardOutput = true;
 			info.RedirectStandardError = true;
@@ -183,9 +215,13 @@ public class TestRunner
 				}
 			};
 
-			data.stdout = new StreamWriter (new FileStream (test + ".stdout", FileMode.Create));
+			string log_prefix = "";
+			if (opt_set != null)
+				log_prefix = "." + opt_set.Replace ("-", "no").Replace (",", "_");
 
-			data.stderr = new StreamWriter (new FileStream (test + ".stderr", FileMode.Create));
+			data.stdout = new StreamWriter (new FileStream (test + log_prefix + ".stdout", FileMode.Create));
+
+			data.stderr = new StreamWriter (new FileStream (test + log_prefix + ".stderr", FileMode.Create));
 
 			p.OutputDataReceived += delegate (object sender, DataReceivedEventArgs e) {
 				Process p2 = (Process)sender;

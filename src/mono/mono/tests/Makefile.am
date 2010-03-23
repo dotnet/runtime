@@ -250,7 +250,6 @@ BASE_TEST_CS_SRC=		\
 	exists.cs		\
 	handleref.cs	\
 	transparentproxy.cs \
-	make-imt-test.cs \
 	dbnull-missing.cs	\
 	test-type-ctor.cs 	\
 	soft-float-tests.cs	\
@@ -603,7 +602,7 @@ runtest-managed: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la 
 	@$(RUNTIME) ./test-runner.exe -j a --disabled '$(DISABLED_TESTS)' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
 
 testjit:
-	@$(MAKE) runtest
+	@if test x$(M) != x; then $(MAKE) runtest-managed; else $(MAKE) runtest; fi
 
 testaot:
 	@$(MAKE) AOT=1 runtest
@@ -788,7 +787,8 @@ gshared: test-generic-sharing
 gshared-aot:
 	@$(MAKE) AOT=1 gshared
 
-test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
+GSHARED_TESTS = \
+		generics-sharing.2.exe shared-generic-methods.2.exe	\
 		shared-generic-synchronized.2.exe generic-initobj.2.exe		\
 		generics-sharing-other-exc.2.exe generic-box.2.exe		\
 		generic-unbox.2.exe generic-delegate.2.exe generic-sizeof.2.exe	\
@@ -813,6 +813,8 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		bug-472600.2.exe bug-473482.2.exe bug-473999.2.exe		\
 		bug-479763.2.exe generic-xdomain.2.exe				\
 		generic-type-load-exception.2.exe
+
+test-generic-sharing-normal: $(GSHARED_TESTS)
 	@for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared                $$fn > $$fn.stdout || exit 1;	\
@@ -821,6 +823,12 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline,shared $$fn > $fn.stdout || exit 1;	\
 		if [ x$(AOT) = x1 ]; then MONO_GENERIC_SHARING=all $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $$fn > /dev/null || exit 1; MONO_GENERIC_SHARING=all $(RUNTIME) $$fn > $$fn.stdout || exit 1; fi; \
 	done
+
+test-generic-sharing-managed: test-runner.exe $(GSHARED_TESTS)
+	@$(RUNTIME) ./test-runner.exe -j a --opt-sets "gshared gshared,shared gshared,-inline gshared,-inline,shared" $(GSHARED_TESTS)
+
+test-generic-sharing:
+	@if test x$(M) != x; then $(MAKE) test-generic-sharing-managed; else $(MAKE) test-generic-sharing-normal; fi
 
 EXTRA_DIST += async-exceptions.cs
 async-exceptions.exe : async-exceptions.cs
