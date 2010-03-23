@@ -7,6 +7,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-error-internals.h>
 
 #include "mini.h"
 #include "debug-mini.h"
@@ -879,6 +880,8 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	MonoMethod *invoke = tramp_data [0];
 	guint8 *impl_this = tramp_data [1];
 	guint8 *impl_nothis = tramp_data [2];
+	MonoError err;
+	MonoMethodSignature *sig;
 
 	trampoline_calls ++;
 
@@ -907,14 +910,29 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 #endif
 				method = mono_marshal_get_remoting_invoke (method);
 		}
-		else if (mono_method_signature (method)->hasthis && method->klass->valuetype)
-			method = mono_marshal_get_unbox_wrapper (method);
+		else {
+			mono_error_init (&err);
+			sig = mono_method_signature_checked (method, &err);
+			if (!sig)
+				mono_error_raise_exception (&err);
+				
+			if (sig->hasthis && method->klass->valuetype)
+				method = mono_marshal_get_unbox_wrapper (method);
+		}
 	} else {
 		ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
 		if (ji)
 			method = ji->method;
 	}
-	callvirt = !delegate->target && method && mono_method_signature (method)->hasthis;
+
+	if (method) {
+		mono_error_init (&err);
+		sig = mono_method_signature_checked (method, &err);
+		if (!sig)
+			mono_error_raise_exception (&err);
+
+		callvirt = !delegate->target && sig->hasthis;
+	}
 
 	if (method && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);

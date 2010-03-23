@@ -3694,6 +3694,8 @@ MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts)
 {
 	MonoMethodHeader *header;
+	MonoMethodSignature *sig;
+	MonoError err;
 	guint8 *ip;
 	MonoCompile *cfg;
 	int dfn, i, code_size_ratio;
@@ -3792,6 +3794,17 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			cfg->exception_message = g_strdup ("dynamic.");
 			cfg->disable_llvm = TRUE;
 		}
+	}
+
+	mono_error_init (&err);
+	sig = mono_method_signature_checked (cfg->method, &err);	
+	if (!sig) {
+		cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
+		cfg->exception_message = g_strdup (mono_error_get_message (&err));
+		mono_error_cleanup (&err);
+		return cfg;
+		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 	}
 
 	header = cfg->header;
