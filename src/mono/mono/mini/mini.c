@@ -2467,18 +2467,19 @@ static MonoInst*
 mono_create_tls_get (MonoCompile *cfg, int offset)
 {
 #ifdef MONO_ARCH_HAVE_TLS_GET
-	MonoInst* ins;
-	
-	if (offset == -1)
-		return NULL;
-	
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->dreg = mono_alloc_preg (cfg);
-	ins->inst_offset = offset;
-	return ins;
-#else
-	return NULL;
+	if (MONO_ARCH_HAVE_TLS_GET) {
+		MonoInst* ins;
+
+		if (offset == -1)
+			return NULL;
+
+		MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+		ins->dreg = mono_alloc_preg (cfg);
+		ins->inst_offset = offset;
+		return ins;
+	}
 #endif
+	return NULL;
 }
 
 MonoInst*
