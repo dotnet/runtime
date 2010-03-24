@@ -153,6 +153,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
+#include <pthread.h>
 #include "metadata/metadata-internals.h"
 #include "metadata/class-internals.h"
 #include "metadata/gc-internal.h"
@@ -6242,6 +6243,7 @@ gc_register_current_thread (void *addr)
 	}
 #elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 		 info->stack_end = (char*)pthread_get_stackaddr_np (pthread_self ());
+		 info->stack_start_limit = (char*)info->stack_end - pthread_get_stacksize_np (pthread_self ());
 #else
 	{
 		/* FIXME: we assume the stack grows down */
