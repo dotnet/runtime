@@ -453,9 +453,9 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	else
 		suffix = suffixes [idx];
 	if (directory && *directory)
-		res = g_strconcat (directory, G_DIR_SEPARATOR_S, prefix, name, suffixes [idx], NULL);
+		res = g_strconcat (directory, G_DIR_SEPARATOR_S, prefix, name, suffix, NULL);
 	else
-		res = g_strconcat (prefix, name, suffixes [idx], NULL);
+		res = g_strconcat (prefix, name, suffix, NULL);
 	++idx;
 	*iter = GUINT_TO_POINTER (idx);
 	return res;
