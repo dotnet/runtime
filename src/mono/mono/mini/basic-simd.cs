@@ -3122,6 +3122,20 @@ public class SimdTests {
 		return 0;
 	}
 
+
+	public static int test_0_scala_vector4f_mul () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f b = 2 * a;
+		Vector4f c = a * 3;
+
+		if (b.X != 2f || b.Y != 4f || b.Z != 6f || b.W != 8f )
+			return 1;
+		if (c.X != 3f || c.Y != 6f || c.Z != 9f || c.W != 12f )
+			return 1;
+
+		return 0;
+	}
+
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (SimdTests), args);
 	}
