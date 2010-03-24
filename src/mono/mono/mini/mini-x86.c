@@ -2034,6 +2034,23 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	return code;
 }
 
+gboolean
+mono_x86_have_tls_get (void)
+{
+#ifdef __APPLE__
+	guint32 *ins = (guint32*)pthread_getspecific;
+	/*
+	 * We're looking for these two instructions:
+	 *
+	 * mov    0x4(%esp),%eax
+	 * mov    %gs:0x48(,%eax,4),%eax
+	 */
+	return ins [0] == 0x0424448b && ins [1] == 0x85048b65 && ins [2] == 0x00000048;
+#else
+	return TRUE;
+#endif
+}
+
 /*
  * mono_x86_emit_tls_get:
  * @code: buffer to store code to
@@ -2049,7 +2066,10 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 guint8*
 mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
-#ifdef TARGET_WIN32
+#if defined(__APPLE__)
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_reg_mem (code, dreg, 0x48 + tls_offset * 4, 4);
+#elif defined(TARGET_WIN32)
 	/* 
 	 * See the Under the Hood article in the May 1996 issue of Microsoft Systems 
 	 * Journal and/or a disassembly of the TlsGet () function.

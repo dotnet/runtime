@@ -243,7 +243,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_ATOMIC_EXCHANGE 1
 #define MONO_ARCH_HAVE_ATOMIC_CAS 1
 #define MONO_ARCH_HAVE_IMT 1
-#define MONO_ARCH_HAVE_TLS_GET 1
+#define MONO_ARCH_HAVE_TLS_GET (mono_x86_have_tls_get ())
 #define MONO_ARCH_IMT_REG X86_EDX
 #define MONO_ARCH_VTABLE_REG X86_EDX
 #define MONO_ARCH_RGCTX_REG X86_EDX
@@ -304,6 +304,9 @@ mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
 
 guint32
 mono_x86_get_this_arg_offset (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig) MONO_INTERNAL;
+
+gboolean
+mono_x86_have_tls_get (void) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_X86_H__ */  
 

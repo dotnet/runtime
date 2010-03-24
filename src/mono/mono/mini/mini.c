@@ -5614,7 +5614,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 #ifdef MONO_ARCH_HAVE_TLS_GET
-	mono_runtime_set_has_tls_get (TRUE);
+	mono_runtime_set_has_tls_get (MONO_ARCH_HAVE_TLS_GET);
 #else
 	mono_runtime_set_has_tls_get (FALSE);
 #endif
