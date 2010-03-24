@@ -6119,14 +6119,18 @@ mono_image_set_wrappers_type (MonoReflectionModuleBuilder *moduleb, MonoReflecti
 MonoReflectionAssembly*
 mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 {
-	static MonoClass *System_Reflection_Assembly;
+	static MonoClass *assembly_type;
 	MonoReflectionAssembly *res;
 	
 	CHECK_OBJECT (MonoReflectionAssembly *, assembly, NULL);
-	if (!System_Reflection_Assembly)
-		System_Reflection_Assembly = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "Assembly");
-	res = (MonoReflectionAssembly *)mono_object_new (domain, System_Reflection_Assembly);
+	if (!assembly_type) {
+		MonoClass *class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoAssembly");
+		if (class == NULL)
+			class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Assembly");
+		g_assert (class);
+		assembly_type = class;
+	}
+	res = (MonoReflectionAssembly *)mono_object_new (domain, assembly_type);
 	res->assembly = assembly;
 
 	CACHE_OBJECT (MonoReflectionAssembly *, assembly, res, NULL);
@@ -7698,7 +7702,7 @@ mono_reflection_get_token (MonoObject *obj)
 		MonoReflectionModule *m = (MonoReflectionModule*)obj;
 
 		token = m->token;
-	} else if (strcmp (klass->name, "Assembly") == 0) {
+	} else if (strcmp (klass->name, "Assembly") == 0 || strcmp (klass->name, "MonoAssembly") == 0) {
 		token = mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1);
 	} else {
 		gchar *msg = g_strdup_printf ("MetadataToken is not supported for type '%s.%s'", klass->name_space, klass->name);
@@ -8682,7 +8686,7 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 		klass = mono_class_from_mono_type (type);
 		cinfo = mono_custom_attrs_from_class (klass);
-	} else if (strcmp ("Assembly", klass->name) == 0) {
+	} else if (strcmp ("Assembly", klass->name) == 0 || strcmp ("MonoAssembly", klass->name) == 0) {
 		MonoReflectionAssembly *rassembly = (MonoReflectionAssembly*)obj;
 		cinfo = mono_custom_attrs_from_assembly (rassembly->assembly);
 	} else if (strcmp ("Module", klass->name) == 0) {
