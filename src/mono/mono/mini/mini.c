@@ -3607,6 +3607,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	return jinfo;
 }
+#endif
 
 /*
  * mini_get_shared_method:
@@ -3679,6 +3680,7 @@ mini_get_shared_method (MonoMethod *method)
 	return res;
 }
 
+#ifndef DISABLE_JIT
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -4797,6 +4799,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	mono_destroy_compile (cfg);
 
+#ifndef DISABLE_JIT
 	if (domain_jit_info (target_domain)->jump_target_hash) {
 		MonoJumpInfo patch_info;
 		GSList *list, *tmp;
@@ -4814,6 +4817,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 
 	mono_emit_jit_map (jinfo);
+#endif
 	mono_domain_unlock (target_domain);
 	mono_loader_unlock ();
 

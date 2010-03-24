@@ -8717,11 +8717,13 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 			g_assert (method);
 
 			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
-		} else if (is_sre_method_on_tb_inst (member_class)) {/*XXX This is a workaround for Compiler Context*/
+		} 
+#ifndef DISABLE_REFLECTION_EMIT
+		else if (is_sre_method_on_tb_inst (member_class)) {/*XXX This is a workaround for Compiler Context*/
 			MonoMethod *method = mono_reflection_method_on_tb_inst_get_handle ((MonoReflectionMethodOnTypeBuilderInst*)param->MemberImpl);
 			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
 		} else if (is_sre_ctor_on_tb_inst (member_class)) { /*XX This is a workaround for Compiler Context*/
-		MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)param->MemberImpl;
+			MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)param->MemberImpl;
 			MonoMethod *method = NULL;
 			if (is_sre_ctor_builder (mono_object_class (c->cb)))
 				method = ((MonoReflectionCtorBuilder *)c->cb)->mhandle;
@@ -8731,7 +8733,9 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 				g_error ("mono_reflection_get_custom_attrs_info:: can't handle a CTBI with base_method of type %s", mono_type_get_full_name (member_class));
 
 			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
-		} else {
+		} 
+#endif
+		else {
 			char *type_name = mono_type_get_full_name (member_class);
 			char *msg = g_strdup_printf ("Custom attributes on a ParamInfo with member %s are not supported", type_name);
 			MonoException *ex = mono_get_exception_not_supported  (msg);
@@ -8850,7 +8854,6 @@ mono_reflection_type_get_underlying_system_type (MonoReflectionType* t)
         return (MonoReflectionType *) mono_runtime_invoke (usertype_method, t, NULL, NULL);
 }
 
-#ifndef DISABLE_REFLECTION_EMIT
 
 static gboolean
 is_corlib_type (MonoClass *class)
@@ -8869,6 +8872,8 @@ is_corlib_type (MonoClass *class)
 	return FALSE; \
 } while (0) \
 
+
+#ifndef DISABLE_REFLECTION_EMIT
 static gboolean
 is_sre_array (MonoClass *class)
 {
@@ -8918,42 +8923,6 @@ is_sre_field_builder (MonoClass *class)
 }
 
 static gboolean
-is_sr_mono_method (MonoClass *class)
-{
-	check_corlib_type_cached (class, "System.Reflection", "MonoMethod");
-}
-
-static gboolean
-is_sr_mono_cmethod (MonoClass *class)
-{
-	check_corlib_type_cached (class, "System.Reflection", "MonoCMethod");
-}
-
-static gboolean
-is_sr_mono_generic_method (MonoClass *class)
-{
-	check_corlib_type_cached (class, "System.Reflection", "MonoGenericMethod");
-}
-
-static gboolean
-is_sr_mono_generic_cmethod (MonoClass *class)
-{
-	check_corlib_type_cached (class, "System.Reflection", "MonoGenericCMethod");
-}
-
-static gboolean
-is_sr_mono_field (MonoClass *class)
-{
-	check_corlib_type_cached (class, "System.Reflection", "MonoField");
-}
-
-static gboolean
-is_sr_mono_property (MonoClass *class)
-{
-	check_corlib_type_cached (class, "System.Reflection", "MonoProperty");
-}
-
-static gboolean
 is_sre_method_on_tb_inst (MonoClass *class)
 {
 	check_corlib_type_cached (class, "System.Reflection.Emit", "MethodOnTypeBuilderInst");
@@ -8963,12 +8932,6 @@ static gboolean
 is_sre_ctor_on_tb_inst (MonoClass *class)
 {
 	check_corlib_type_cached (class, "System.Reflection.Emit", "ConstructorOnTypeBuilderInst");
-}
-
-gboolean
-mono_class_is_reflection_method_or_constructor (MonoClass *class)
-{
-	return is_sr_mono_method (class) || is_sr_mono_cmethod (class) || is_sr_mono_generic_method (class) || is_sr_mono_generic_cmethod (class);
 }
 
 MonoType*
@@ -9189,6 +9152,49 @@ is_sre_generic_instance (MonoClass *class)
 }
 
 #endif /* !DISABLE_REFLECTION_EMIT */
+
+
+static gboolean
+is_sr_mono_field (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoField");
+}
+
+static gboolean
+is_sr_mono_property (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoProperty");
+}
+
+static gboolean
+is_sr_mono_method (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoMethod");
+}
+
+static gboolean
+is_sr_mono_cmethod (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoCMethod");
+}
+
+static gboolean
+is_sr_mono_generic_method (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoGenericMethod");
+}
+
+static gboolean
+is_sr_mono_generic_cmethod (MonoClass *class)
+{
+	check_corlib_type_cached (class, "System.Reflection", "MonoGenericCMethod");
+}
+
+gboolean
+mono_class_is_reflection_method_or_constructor (MonoClass *class)
+{
+	return is_sr_mono_method (class) || is_sr_mono_cmethod (class) || is_sr_mono_generic_method (class) || is_sr_mono_generic_cmethod (class);
+}
 
 static gboolean
 is_usertype (MonoReflectionType *ref)

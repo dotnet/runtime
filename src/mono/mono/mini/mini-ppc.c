@@ -752,6 +752,7 @@ is_regsize_var (MonoType *t) {
 	return FALSE;
 }
 
+#ifndef DISABLE_JIT
 GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
@@ -779,6 +780,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 
 	return vars;
 }
+#endif /* ifndef DISABLE_JIT */
 
 GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
@@ -3238,6 +3240,7 @@ emit_unreserve_param_area (MonoCompile *cfg, guint8 *code)
 
 #define MASK_SHIFT_IMM(i)	((i) & MONO_PPC_32_64_CASE (0x1f, 0x3f))
 
+#ifndef DISABLE_JIT
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -4654,6 +4657,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	cfg->code_len = code - cfg->native_code;
 }
+#endif /* !DISABLE_JIT */
 
 void
 mono_arch_register_lowlevel_calls (void)
@@ -4679,6 +4683,7 @@ mono_arch_register_lowlevel_calls (void)
 	} while (0)
 #endif
 
+#ifndef DISABLE_JIT
 void
 mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
@@ -5414,6 +5419,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	g_assert (cfg->code_len < cfg->code_size);
 
 }
+#endif /* ifndef DISABLE_JIT */
 
 /* remove once throw_exception_by_name is eliminated */
 static int
@@ -5437,6 +5443,7 @@ exception_id_by_name (const char *name)
 	return 0;
 }
 
+#ifndef DISABLE_JIT
 void
 mono_arch_emit_exceptions (MonoCompile *cfg)
 {
@@ -5562,6 +5569,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 	g_assert (cfg->code_len <= cfg->code_size);
 }
+#endif
 
 #if DEAD_CODE
 static int
