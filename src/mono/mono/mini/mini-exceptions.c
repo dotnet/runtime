@@ -1073,7 +1073,8 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 	MonoType *inflated_type;
 	MonoGenericContext context;
 
-	if (!catch_class)
+	/*MonoJitExceptionInfo::data is an union used by filter and finally clauses too.*/
+	if (!catch_class || ei->flags != MONO_EXCEPTION_CLAUSE_NONE)
 		return NULL;
 
 	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this)
