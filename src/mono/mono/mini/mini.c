@@ -3803,9 +3803,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
 		cfg->exception_message = g_strdup (mono_error_get_message (&err));
 		mono_error_cleanup (&err);
-		return cfg;
 		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
+		return cfg;
 	}
 
 	header = cfg->header;
