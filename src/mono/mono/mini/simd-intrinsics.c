@@ -866,22 +866,74 @@ get_simd_ctor_spill_area (MonoCompile *cfg, MonoClass *avector_klass)
 	return cfg->simd_ctor_var;
 }
 
+static int
+mono_type_to_expand_op (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_EXPAND_I1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_EXPAND_I2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_EXPAND_I4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_EXPAND_I8;
+	case MONO_TYPE_R4:
+		return OP_EXPAND_R4;
+	case MONO_TYPE_R8:
+		return OP_EXPAND_R8;
+	}
+	g_assert_not_reached ();
+}
+
+static int
+get_simd_vreg_or_expanded_scalar (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src, int position)
+{
+	MonoInst *ins;
+	MonoMethodSignature *sig = mono_method_signature (cmethod);
+	int expand_op;
+
+	g_assert (sig->param_count == 2);
+	g_assert (position == 0 || position == 1);
+
+	if (mono_class_from_mono_type (sig->params [position])->simd_type)
+		return get_simd_vreg (cfg, cmethod, src);
+
+	expand_op = mono_type_to_expand_op (sig->params [position]);
+	MONO_INST_NEW (cfg, ins, expand_op);
+	ins->klass = cmethod->klass;
+	ins->sreg1 = src->dreg;
+	ins->type = STACK_VTYPE;
+	ins->dreg = alloc_ireg (cfg);
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	if (expand_op == OP_EXPAND_R4)
+		ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+	else if (expand_op == OP_EXPAND_R8)
+		ins->backend.spill_var = get_double_spill_area (cfg);
+
+	return ins->dreg;
+}
+
 static MonoInst*
 simd_intrinsic_emit_binary (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
 	MonoInst* ins;
 	int left_vreg, right_vreg;
 
-	left_vreg = get_simd_vreg (cfg, cmethod, args [0]);
-	right_vreg = get_simd_vreg (cfg, cmethod, args [1]);
-	
+	left_vreg = get_simd_vreg_or_expanded_scalar (cfg, cmethod, args [0], 0);
+	right_vreg = get_simd_vreg_or_expanded_scalar (cfg, cmethod, args [1], 1);
+
 
 	MONO_INST_NEW (cfg, ins, intrinsic->opcode);
 	ins->klass = cmethod->klass;
 	ins->sreg1 = left_vreg;
 	ins->sreg2 = right_vreg;
 	ins->type = STACK_VTYPE;
-	ins->klass = cmethod->klass;
 	ins->dreg = alloc_ireg (cfg);
 	ins->inst_c0 = intrinsic->flags;
 	MONO_ADD_INS (cfg->cbb, ins);
