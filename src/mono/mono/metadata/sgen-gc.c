@@ -61,6 +61,7 @@
  * 4) there is a function to get an object's size and the number of
  *    elements in an array.
  * 5) we know the special way bounds are allocated for complex arrays
+ * 6) we know about proxies and how to treat them when domains are unloaded
  *
  * Always try to keep stack usage to a minimum: no recursive behaviour
  * and no large stack allocs.
@@ -70,7 +71,9 @@
  * When the nursery is full we start a nursery collection: this is performed with a
  * copying GC.
  * When the old generation is full we start a copying GC of the old generation as well:
- * this will be changed to mark/compact in the future.
+ * this will be changed to mark&sweep with copying when fragmentation becomes to severe
+ * in the future.  Maybe we'll even do both during the same collection like IMMIX.
+ *
  * The things that complicate this description are:
  * *) pinned objects: we can't move them so we need to keep track of them
  * *) no precise info of the thread stacks and registers: we need to be able to
@@ -85,50 +88,60 @@
 
 /*
  * TODO:
- *) change the jit to emit write barrier calls when needed (we
-  can have specialized write barriers): done with icalls, still need to
-  use some specialized barriers
+
  *) we could have a function pointer in MonoClass to implement
   customized write barriers for value types
- *) the write barrier code could be isolated in a couple of functions: when a
-  thread is stopped if it's inside the barrier it is let go again
-  until we stop outside of them (not really needed, see below GC-safe points)
+
  *) investigate the stuff needed to advance a thread to a GC-safe
-  point (single-stepping, read from unmapped memory etc) and implement it
-  Not needed yet: since we treat the objects reachable from the stack/regs as
-  roots, we store the ptr and exec the write barrier so there is no race.
-  We may need this to solve the issue with setting the length of arrays and strings.
+  point (single-stepping, read from unmapped memory etc) and implement it.
+  This would enable us to inline allocations and write barriers, for example,
+  or at least parts of them, like the write barrier checks.
   We may need this also for handling precise info on stacks, even simple things
   as having uninitialized data on the stack and having to wait for the prolog
   to zero it. Not an issue for the last frame that we scan conservatively.
   We could always not trust the value in the slots anyway.
- *) make the jit info table lock free
+
  *) modify the jit to save info about references in stack locations:
   this can be done just for locals as a start, so that at least
   part of the stack is handled precisely.
- *) Make the debug printf stuff thread and signal safe.
- *) test/fix 64 bit issues
+
  *) test/fix endianess issues
- *) port to non-Linux
+
  *) add batch moving profile info
+
  *) add more timing info
- *) there is a possible race when an array or string is created: the vtable is set,
-    but the length is set only later so if the GC needs to scan the object in that window,
-    it won't get the correct size for the object. The object can't have references and it will
-    be pinned, but a free memory fragment may be created that overlaps with it.
-    We should change the array max_length field to be at the same offset as the string length:
-    this way we can have a single special alloc function for them that sets the length.
-    Multi-dim arrays have the same issue for rank == 1 for the bounds data.
- *) implement a card table as the write barrier instead of remembered sets?
+
+ *) Implement a card table as the write barrier instead of remembered
+    sets?  Card tables are not easy to implement with our current
+    memory layout.  We have several different kinds of major heap
+    objects: Small objects in regular blocks, small objects in pinned
+    chunks and LOS objects.  If we just have a pointer we have no way
+    to tell which kind of object it points into, therefore we cannot
+    know where its card table is.  The least we have to do to make
+    this happen is to get rid of write barriers for indirect stores.
+    (See next item)
+
+ *) Get rid of write barriers for indirect stores.  We can do this by
+    telling the GC to wbarrier-register an object once we do an ldloca
+    or ldelema on it, and to unregister it once it's not used anymore
+    (it can only travel downwards on the stack).  The problem with
+    unregistering is that it needs to happen eventually no matter
+    what, even if exceptions are thrown, the thread aborts, etc.
+    Rodrigo suggested that we could do only the registering part and
+    let the collector find out (pessimistically) when it's safe to
+    unregister, namely when the stack pointer of the thread that
+    registered the object is higher than it was when the registering
+    happened.  This might make for a good first implementation to get
+    some data on performance.
+
  *) some sort of blacklist support?
- *) fin_ready_list and critical_fin_list are part of the root set, too
- *) consider lowering the large object min size to 16/32KB or so and benchmark
- *) once mark-compact is implemented we could still keep the
-    copying collector for the old generation and use it if we think
-    it is better (small heaps and no pinning object in the old
-    generation)
-  *) avoid the memory store from copy_object when not needed.
-  *) optimize the write barriers fastpath to happen in managed code
+
+ *) experiment with max small object size (very small right now - 2kb,
+    because it's tied to the max freelist size)
+
+ *) avoid the memory store from copy_object when not needed, i.e. when the object
+    is not copied.
+
   *) add an option to mmap the whole heap in one chunk: it makes for many
      simplifications in the checks (put the nursery at the top and just use a single
      check for inclusion/exclusion): the issue this has is that on 32 bit systems it's
@@ -137,11 +150,22 @@
      back to the system (mprotect(PROT_NONE) will still keep the memory allocated if it
      was written to, munmap is needed, but the following mmap may not find the same segment
      free...)
-   *) memzero the fragments after restarting the world and optionally a smaller chunk at a time
-   *) an additional strategy to realloc/expand the nursery when fully pinned is to start
-      allocating objects in the old generation. This means that we can't optimize away write
-      barrier calls in ctors (but that is not valid for other reasons, too).
-   *) add write barriers to the Clone methods
+
+ *) memzero the major fragments after restarting the world and optionally a smaller
+    chunk at a time
+
+ *) investigate having fragment zeroing threads
+
+ *) separate locks for finalization and other minor stuff to reduce
+    lock contention
+
+ *) try a different copying order to improve memory locality
+
+ *) a thread abort after a store but before the write barrier will
+    prevent the write barrier from executing
+
+ *) specialized dynamically generated markers/copiers
+
  */
 #include "config.h"
 #ifdef HAVE_SGEN_GC
@@ -3510,18 +3534,11 @@ major_collection (const char *reason)
 	if (xdomain_checks)
 		check_for_xdomain_refs ();
 
-	/* 
-	 * FIXME: implement Mark/Compact
-	 * Until that is done, we can just apply mostly the same alg as for the nursery:
-	 * this means we need a big section to potentially copy all the other sections, so
-	 * it is not ideal specially with large heaps.
-	 */
 	if (g_getenv ("MONO_GC_NO_MAJOR")) {
 		collect_nursery (0);
 		return;
 	}
 	TV_GETTIME (all_atv);
-	/* FIXME: make sure the nursery next_data ptr is updated */
 	nursery_section->next_data = nursery_real_end;
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
@@ -4147,9 +4164,6 @@ alloc_from_freelist (size_t size)
 }
 
 /* used for the GC-internal data structures */
-/* FIXME: add support for bigger sizes by allocating more than one page
- * in the chunk.
- */
 static void*
 get_internal_mem (size_t size, int type)
 {
@@ -6451,9 +6465,7 @@ alloc_remset (int size, gpointer id) {
  * Note: the write barriers first do the needed GC work and then do the actual store:
  * this way the value is visible to the conservative GC scan after the write barrier
  * itself. If a GC interrupts the barrier in the middle, value will be kept alive by
- * the conservative scan, otherwise by the remembered set scan. FIXME: figure out what
- * happens when we need to record which pointers contain references to the new generation.
- * The write barrier will be executed, but the pointer is still not stored.
+ * the conservative scan, otherwise by the remembered set scan.
  */
 void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
