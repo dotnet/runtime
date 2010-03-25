@@ -26,22 +26,22 @@
 #    include <mach/semaphore.h>
 typedef semaphore_t MonoSemType;
 #    define MONO_SEM_INIT(addr,value) semaphore_create (current_task (), (addr), SYNC_POLICY_FIFO, (value))
-#    define MONO_SEM_WAIT(sem) semaphore_wait (*(sem))
-#    define MONO_SEM_POST(sem) semaphore_signal (*(sem))
+#    define MONO_SEM_WAIT(sem) mono_sem_wait ((sem))
+#    define MONO_SEM_POST(sem) mono_sem_post (*(sem))
 #    define MONO_SEM_DESTROY(sem) semaphore_destroy (current_task (), *(sem))
 #  else
 typedef sem_t MonoSemType;
 #    define MONO_SEM_INIT(addr,value) sem_init ((addr), 0, (value))
-#    define MONO_SEM_WAIT(sem) sem_wait ((sem))
-#    define MONO_SEM_POST(sem) sem_post ((sem))
+#    define MONO_SEM_WAIT(sem) mono_sem_wait ((sem))
+#    define MONO_SEM_POST(sem) mono_sem_post ((sem))
 #    define MONO_SEM_DESTROY(sem) sem_destroy ((sem))
 #  endif
 #elif defined(HOST_WIN32) || defined(_WAPI_SEMAPHORES_H)
 #  define MONO_HAS_SEMAPHORES
 typedef HANDLE MonoSemType;
 #    define MONO_SEM_INIT(addr,initial) do {*(addr) = CreateSemaphore ( NULL,(initial),0x7FFFFFFF,NULL);} while(0)
-#    define MONO_SEM_WAIT(sem) (!WaitForSingleObjectEx (*(sem),INFINITE, TRUE))
-#    define MONO_SEM_POST(sem) (!(ReleaseSemaphore (*(sem),1,NULL)))
+#    define MONO_SEM_WAIT(sem) mono_sem_wait (sem)
+#    define MONO_SEM_POST(sem) mono_sem_post (sem)
 #    define MONO_SEM_DESTROY(sem) CloseHandle (*(sem))
 #endif
 
@@ -49,7 +49,9 @@ typedef HANDLE MonoSemType;
 
 G_BEGIN_DECLS
 
-gboolean mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms);
+int mono_sem_wait (MonoSemType *sem);
+int mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms);
+int mono_sem_post (MonoSemType *sem);
 
 G_END_DECLS
 #endif /* _MONO_SEMAPHORE_H_ */
