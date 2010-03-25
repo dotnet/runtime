@@ -1032,7 +1032,9 @@
 				RelativePath="..\mono\utils\mono-error.h"
 				>
 			</File>
-			<File
+      <File RelativePath="..\mono\utils\mono-semaphore.c"></File>
+      <File RelativePath="..\mono\utils\mono-semaphore.h"></File>
+      <File
 				RelativePath="..\mono\utils\mono-filemap.c"
 				>
 			</File>
