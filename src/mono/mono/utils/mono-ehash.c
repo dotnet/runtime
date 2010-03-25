@@ -73,6 +73,33 @@ static const int prime_tbl[] = {
 	6153409, 9230113, 13845163
 };
 
+#ifdef HAVE_SGEN_GC
+static void *table_hash_descr = NULL;
+
+static void mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func);
+
+static Slot*
+new_slot (MonoGHashTable *hash)
+{
+	if (hash->gc_type == MONO_HASH_CONSERVATIVE_GC)
+		return mono_gc_alloc_fixed (sizeof (Slot), NULL);
+	else
+		return mg_new (Slot, 1);
+}
+
+static void
+free_slot (MonoGHashTable *hash, Slot *slot)
+{
+	if (hash->gc_type == MONO_HASH_CONSERVATIVE_GC)
+		mono_gc_free_fixed (slot);
+	else
+		mg_free (slot);
+}
+#else
+#define new_slot(h)	mg_new(Slot,1)
+#define free_slot(h,s)	mg_free((s))
+#endif
+
 static gboolean
 test_prime (int x)
 {
@@ -106,7 +133,20 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 	MonoGHashTable *hash = mono_g_hash_table_new (hash_func, key_equal_func);
 
 	hash->gc_type = type;
-	
+
+#ifdef HAVE_SGEN_GC
+	if (type < 0 || type > MONO_HASH_KEY_VALUE_GC)
+		g_error ("wrong type for gc hashtable");
+	/*
+	 * We use a user defined marking function to avoid having to register a GC root for
+	 * each hash node.
+	 */
+	if (!table_hash_descr)
+		table_hash_descr = mono_gc_make_root_descr_user (mono_g_hash_mark);
+	if (type != MONO_HASH_CONSERVATIVE_GC)
+		mono_gc_register_root_wbarrier ((char*)hash, sizeof (MonoGHashTable), table_hash_descr);
+#endif
+
 	return hash;
 }
 
@@ -145,20 +185,28 @@ mono_g_hash_table_new_full (GHashFunc hash_func, GEqualFunc key_equal_func,
 	return hash;
 }
 
-static void
-do_rehash (MonoGHashTable *hash)
+typedef struct {
+	MonoGHashTable *hash;
+	int new_size;
+	Slot **table;
+} RehashData;
+
+static void*
+do_rehash (void *_data)
 {
+	RehashData *data = _data;
+	MonoGHashTable *hash = data->hash;
 	int current_size, i;
 	Slot **table;
 
 	/* printf ("Resizing diff=%d slots=%d\n", hash->in_use - hash->last_rehash, hash->table_size); */
 	hash->last_rehash = hash->table_size;
 	current_size = hash->table_size;
-	hash->table_size = g_spaced_primes_closest (hash->in_use);
+	hash->table_size = data->new_size;
 	/* printf ("New size: %d\n", hash->table_size); */
 	table = hash->table;
-	hash->table = mg_new0 (Slot *, hash->table_size);
-	
+	hash->table = data->table;
+
 	for (i = 0; i < current_size; i++){
 		Slot *s, *next;
 
@@ -170,20 +218,26 @@ do_rehash (MonoGHashTable *hash)
 			hash->table [hashcode] = s;
 		}
 	}
-	mg_free (table);
+	return table;
 }
 
 static void
 rehash (MonoGHashTable *hash)
 {
 	int diff = ABS (hash->last_rehash - hash->in_use);
+	RehashData data;
 
 	/* These are the factors to play with to change the rehashing strategy */
 	/* I played with them with a large range, and could not really get */
 	/* something that was too good, maybe the tests are not that great */
 	if (!(diff * 0.75 > hash->table_size * 2))
 		return;
-	do_rehash (hash);
+
+	data.hash = hash;
+	data.new_size = g_spaced_primes_closest (hash->in_use);
+	data.table = mg_new0 (Slot *, data.new_size);
+
+	mg_free (mono_gc_invoke_with_gc_lock (do_rehash, &data));
 }
 
 guint
@@ -283,7 +337,7 @@ mono_g_hash_table_remove (MonoGHashTable *hash, gconstpointer key)
 				hash->table [hashcode] = s->next;
 			else
 				last->next = s->next;
-			mg_free (s);
+			free_slot (hash, s);
 			hash->in_use--;
 			return TRUE;
 		}
@@ -320,7 +374,7 @@ mono_g_hash_table_foreach_remove (MonoGHashTable *hash, GHRFunc func, gpointer u
 					last->next = s->next;
 					n = last->next;
 				}
-				mg_free (s);
+				free_slot (hash, s);
 				hash->in_use--;
 				count++;
 				s = n;
@@ -342,6 +396,10 @@ mono_g_hash_table_destroy (MonoGHashTable *hash)
 	
 	g_return_if_fail (hash != NULL);
 
+#ifdef HAVE_SGEN_GC
+	mono_gc_deregister_root ((char*)hash);
+#endif
+
 	for (i = 0; i < hash->table_size; i++){
 		Slot *s, *next;
 
@@ -352,7 +410,7 @@ mono_g_hash_table_destroy (MonoGHashTable *hash)
 				(*hash->key_destroy_func)(s->key);
 			if (hash->value_destroy_func != NULL)
 				(*hash->value_destroy_func)(s->value);
-			mg_free (s);
+			free_slot (hash, s);
 		}
 	}
 	mg_free (hash->table);
@@ -386,7 +444,7 @@ mono_g_hash_table_insert_replace (MonoGHashTable *hash, gpointer key, gpointer v
 			return;
 		}
 	}
-	s = mg_new (Slot, 1);
+	s = new_slot (hash);
 	s->key = key;
 	s->value = value;
 	s->next = hash->table [hashcode];
@@ -406,3 +464,40 @@ mono_g_hash_table_replace(MonoGHashTable *h, gpointer k, gpointer v)
 	mono_g_hash_table_insert_replace (h, k, v, TRUE);
 }
 
+#ifdef HAVE_SGEN_GC
+
+/* GC marker function */
+static void
+mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func)
+{
+	MonoGHashTable *table = (MonoGHashTable*)addr;
+	Slot *node;
+	int i;
+
+	if (table->gc_type == MONO_HASH_KEY_GC) {
+		for (i = 0; i < table->table_size; i++) {
+			for (node = table->table [i]; node; node = node->next) {
+				if (node->key)
+					node->key = mark_func (node->key);
+			}
+		}
+	} else if (table->gc_type == MONO_HASH_VALUE_GC) {
+		for (i = 0; i < table->table_size; i++) {
+			for (node = table->table [i]; node; node = node->next) {
+				if (node->value)
+					node->value = mark_func (node->value);
+			}
+		}
+	} else if (table->gc_type == MONO_HASH_KEY_VALUE_GC) {
+		for (i = 0; i < table->table_size; i++) {
+			for (node = table->table [i]; node; node = node->next) {
+				if (node->key)
+					node->key = mark_func (node->key);
+				if (node->value)
+					node->value = mark_func (node->value);
+			}
+		}
+	}
+}
+
+#endif

@@ -932,5 +932,11 @@ mono_gc_get_write_barrier (void)
 
 #endif
 
+void*
+mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
+{
+	return GC_call_with_alloc_lock (func, data);
+}
+
 #endif /* no Boehm GC */
 

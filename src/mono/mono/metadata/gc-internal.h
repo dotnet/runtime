@@ -214,6 +214,10 @@ gsize* mono_gc_get_bitmap_for_descr (void *descr, int *numbits) MONO_INTERNAL;
    or -1 if not applicable. */
 int mono_gc_get_suspend_signal (void) MONO_INTERNAL;
 
+typedef void* (*MonoGCLockedCallbackFunc) (void *data);
+
+void* mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data) MONO_INTERNAL;
+
 #ifdef HAVE_SGEN_GC
 int mono_gc_get_los_limit (void) MONO_INTERNAL;
 #endif

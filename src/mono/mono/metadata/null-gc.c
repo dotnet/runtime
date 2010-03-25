@@ -262,5 +262,11 @@ mono_gc_get_write_barrier (void)
 	return NULL;
 }
 
+void*
+mono_gc_invoke_without_moving (MonoGCLockedCallbackFunc func, void *data)
+{
+	return func (data);
+}
+
 #endif
 

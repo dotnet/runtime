@@ -38,6 +38,8 @@
 #define LOCK_INIT(name)
 #define LOCK_GC pthread_mutex_lock (&gc_mutex)
 #define UNLOCK_GC pthread_mutex_unlock (&gc_mutex)
+#define LOCK_INTERRUPTION pthread_mutex_lock (&interruption_mutex)
+#define UNLOCK_INTERRUPTION pthread_mutex_unlock (&interruption_mutex)
 
 /* non-pthread will need to provide their own version of start/stop */
 #define USE_SIGNAL_BASED_START_STOP_WORLD 1

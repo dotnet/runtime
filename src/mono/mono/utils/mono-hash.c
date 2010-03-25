@@ -788,25 +788,25 @@ mono_g_hash_table_remap (MonoGHashTable *hash_table,
 	  }
 }
 
-static void
-g_hash_table_resize (MonoGHashTable *hash_table)
+typedef struct {
+	MonoGHashTable *hash;
+	gint new_size;
+	MonoGHashNode **nodes;
+} ResizeData;
+
+static void*
+do_resize (void *_data)
 {
-  MonoGHashNode **new_nodes;
+  ResizeData *data = _data;
+  MonoGHashTable *hash_table = data->hash;
+  MonoGHashNode **new_nodes = data->nodes;
   MonoGHashNode *node;
   MonoGHashNode *next;
   guint hash_val;
-  gint new_size;
+  gint new_size = data->new_size;
   gint i;
+  void *old_nodes = hash_table->nodes;
 
-  new_size = g_spaced_primes_closest (hash_table->nnodes);
-  new_size = CLAMP (new_size, HASH_TABLE_MIN_SIZE, HASH_TABLE_MAX_SIZE);
- 
-#if HAVE_BOEHM_GC
-  new_nodes              = GC_MALLOC (sizeof (MonoGHashNode*) * new_size);
-#else
-  new_nodes              = g_new0 (MonoGHashNode*, new_size);
-#endif
-  
   for (i = 0; i < hash_table->size; i++)
     for (node = hash_table->nodes[i]; node; node = next)
       {
@@ -817,13 +817,35 @@ g_hash_table_resize (MonoGHashTable *hash_table)
 	node->next = new_nodes[hash_val];
 	new_nodes[hash_val] = node;
       }
-  
-#if HAVE_BOEHM_GC
-#else
-  g_free (hash_table->nodes);
-#endif
+
   hash_table->nodes = new_nodes;
   hash_table->size = new_size;
+
+  return old_nodes;
+}
+
+static void
+g_hash_table_resize (MonoGHashTable *hash_table)
+{
+	ResizeData data;
+	void *old_nodes;
+
+	data.hash = hash_table;
+	data.new_size = g_spaced_primes_closest (hash_table->nnodes);
+	data.new_size = CLAMP (data.new_size, HASH_TABLE_MIN_SIZE, HASH_TABLE_MAX_SIZE);
+
+#if HAVE_BOEHM_GC
+	data.nodes = GC_MALLOC (sizeof (MonoGHashNode*) * data.new_size);
+#else
+	data.nodes = g_new0 (MonoGHashNode*, data.new_size);
+#endif
+
+	old_nodes = mono_gc_invoke_with_gc_lock (do_resize, &data);
+
+#if HAVE_BOEHM_GC
+#else
+	g_free (old_nodes);
+#endif
 }
 
 static void

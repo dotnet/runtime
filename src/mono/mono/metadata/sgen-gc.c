@@ -667,6 +667,8 @@ static GCMemSection *nursery_section = NULL;
 static mword lowest_heap_address = ~(mword)0;
 static mword highest_heap_address = 0;
 
+static LOCK_DECLARE (interruption_mutex);
+
 typedef struct _FinalizeEntry FinalizeEntry;
 struct _FinalizeEntry {
 	FinalizeEntry *next;
@@ -5686,6 +5688,18 @@ restart_handler (int sig)
 	errno = old_errno;
 }
 
+static void
+acquire_gc_locks (void)
+{
+	LOCK_INTERRUPTION;
+}
+
+static void
+release_gc_locks (void)
+{
+	UNLOCK_INTERRUPTION;
+}
+
 static TV_DECLARE (stop_world_time);
 static unsigned long max_pause_usec = 0;
 
@@ -5694,6 +5708,8 @@ static int
 stop_world (void)
 {
 	int count;
+
+	acquire_gc_locks ();
 
 	update_current_thread_stack (&count);
 
@@ -5729,6 +5745,8 @@ restart_world (void)
 			info->stopped_regs = NULL;
 		}
 	}
+
+	release_gc_locks ();
 
 	count = thread_handshake (restart_signal_num);
 	TV_GETTIME (end_sw);
@@ -7273,6 +7291,16 @@ mono_gc_free_fixed (void* addr)
 {
 	mono_gc_deregister_root (addr);
 	free (addr);
+}
+
+void*
+mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
+{
+	void *result;
+	LOCK_INTERRUPTION;
+	result = func (data);
+	UNLOCK_INTERRUPTION;
+	return result;
 }
 
 gboolean
