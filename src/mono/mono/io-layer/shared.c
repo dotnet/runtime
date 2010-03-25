@@ -44,11 +44,7 @@
 
 static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
 
-#ifdef DISABLE_SHARED_HANDLES
 gboolean _wapi_shm_disabled = TRUE;
-#else
-gboolean _wapi_shm_disabled = FALSE;
-#endif
 
 static void
 noshm_semaphores_init (void)
@@ -391,11 +387,12 @@ try_again:
 static gboolean
 check_disabled (void)
 {
-	if (_wapi_shm_disabled || g_getenv ("MONO_DISABLE_SHM")) {
-		const char* val = g_getenv ("MONO_DISABLE_SHM");
-		if (val == NULL || *val == '1' || *val == 'y' || *val == 'Y') {
-			_wapi_shm_disabled = TRUE;
-		}
+	static gboolean env_checked;
+
+	if (!env_checked) {
+		if (g_getenv ("MONO_ENABLE_SHM"))
+			_wapi_shm_disabled = FALSE;
+		env_checked = TRUE;
 	}
 
 	return _wapi_shm_disabled;
