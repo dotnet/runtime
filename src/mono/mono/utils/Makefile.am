@@ -11,14 +11,8 @@ mono-dtrace.h: $(top_srcdir)/data/mono.d
 
 endif
 
-if EGLIB_BUILD 
-hash_sources = mono-ehash.c
-else
-hash_sources = mono-hash.c
-endif
-
 libmonoutils_la_SOURCES = \
-	$(hash_sources)		\
+	mono-ehash.c		\
 	mono-md5.c		\
 	mono-sha1.c		\
 	mono-logger.c		\
@@ -92,4 +86,4 @@ libmonoutilsinclude_HEADERS = \
 	mono-logger.h	\
 	mono-publib.h
 
-EXTRA_DIST = ChangeLog mono-hash.c mono-hash.h mono-ehash.c
+EXTRA_DIST = ChangeLog
