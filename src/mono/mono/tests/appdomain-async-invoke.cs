@@ -11,11 +11,11 @@ public class Test : MarshalByRefObject {
     }
 
     ~Test () {
-	    Console.WriteLine ("in test desctructor");
+	    Console.WriteLine ("in test destructor");
 	    GetIntDelegate del = new GetIntDelegate (getInt);
 	    AsyncCallback ac = new AsyncCallback (async_callback);
 	    if (del.BeginInvoke (ac, "bla") == null) {
-		    Console.WriteLine ("async recult is null");
+		    Console.WriteLine ("async result is null");
 		    Environment.Exit (1);
 	    }
     }
