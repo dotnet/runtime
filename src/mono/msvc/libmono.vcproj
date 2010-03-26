@@ -1034,6 +1034,8 @@
 			</File>
       <File RelativePath="..\mono\utils\mono-semaphore.c"></File>
       <File RelativePath="..\mono\utils\mono-semaphore.h"></File>
+      <File RelativePath="..\mono\metadata\mono-wsq.c"></File>
+      <File RelativePath="..\mono\metadata\mono-wsq.h"></File>
       <File
 				RelativePath="..\mono\utils\mono-filemap.c"
 				>
