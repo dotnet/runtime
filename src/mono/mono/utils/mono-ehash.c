@@ -226,6 +226,7 @@ rehash (MonoGHashTable *hash)
 {
 	int diff = ABS (hash->last_rehash - hash->in_use);
 	RehashData data;
+	void *old_table;
 
 	/* These are the factors to play with to change the rehashing strategy */
 	/* I played with them with a large range, and could not really get */
@@ -237,7 +238,8 @@ rehash (MonoGHashTable *hash)
 	data.new_size = g_spaced_primes_closest (hash->in_use);
 	data.table = mg_new0 (Slot *, data.new_size);
 
-	mg_free (mono_gc_invoke_with_gc_lock (do_rehash, &data));
+	old_table = mono_gc_invoke_with_gc_lock (do_rehash, &data);
+	mg_free (old_table);
 }
 
 guint
