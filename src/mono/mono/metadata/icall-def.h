@@ -915,6 +915,7 @@ ICALL(THREADP_2, "GetMaxThreads", ves_icall_System_Threading_ThreadPool_GetMaxTh
 ICALL(THREADP_3, "GetMinThreads", ves_icall_System_Threading_ThreadPool_GetMinThreads)
 ICALL(THREADP_35, "SetMaxThreads", ves_icall_System_Threading_ThreadPool_SetMaxThreads)
 ICALL(THREADP_4, "SetMinThreads", ves_icall_System_Threading_ThreadPool_SetMinThreads)
+ICALL(THREADP_5, "pool_queue", icall_append_job)
 
 ICALL_TYPE(WAITH, "System.Threading.WaitHandle", WAITH_1)
 ICALL(WAITH_1, "SignalAndWait_Internal", ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal)

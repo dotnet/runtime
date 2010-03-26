@@ -271,6 +271,7 @@ typedef struct {
 	MonoObject  *async_callback;
 	MonoObject  *execution_context;
 	MonoObject  *original_context;
+	gint64	     add_time;
 } MonoAsyncResult;
 
 typedef struct {

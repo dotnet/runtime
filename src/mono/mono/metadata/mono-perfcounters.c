@@ -929,6 +929,12 @@ predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 		case COUNTER_THREADPOOL_IOWORKITEMS:
 			sample->rawValue = mono_perfcounters->threadpool_ioworkitems;
 			return TRUE;
+		case COUNTER_THREADPOOL_THREADS:
+			sample->rawValue = mono_perfcounters->threadpool_threads;
+			return TRUE;
+		case COUNTER_THREADPOOL_IOTHREADS:
+			sample->rawValue = mono_perfcounters->threadpool_iothreads;
+			return TRUE;
 		}
 		break;
 	}
@@ -954,6 +960,8 @@ predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 		switch (id) {
 		case COUNTER_THREADPOOL_WORKITEMS: ptr64 = (gint64 *) &mono_perfcounters->threadpool_workitems; break;
 		case COUNTER_THREADPOOL_IOWORKITEMS: ptr64 = (gint64 *) &mono_perfcounters->threadpool_ioworkitems; break;
+		case COUNTER_THREADPOOL_THREADS: ptr = &mono_perfcounters->threadpool_threads; break;
+		case COUNTER_THREADPOOL_IOTHREADS: ptr = &mono_perfcounters->threadpool_iothreads; break;
 		}
 		break;
 	}

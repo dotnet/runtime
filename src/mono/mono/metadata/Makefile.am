@@ -128,6 +128,8 @@ libmonoruntime_la_SOURCES = \
 	mono-perfcounters.c	\
 	mono-perfcounters.h	\
 	mono-perfcounters-def.h	\
+	mono-wsq.c		\
+	mono-wsq.h		\
 	monitor.c		\
 	monitor.h		\
 	normalization-tables.h	\

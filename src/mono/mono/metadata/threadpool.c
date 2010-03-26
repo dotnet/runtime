@@ -6,20 +6,19 @@
  *   Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
- * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2004-2010 Novell, Inc (http://www.novell.com)
  */
 
 #include <config.h>
 #include <glib.h>
 
 #ifdef MONO_SMALL_CONFIG
-#define THREADS_PER_CPU	2 /* 8 + THREADS_PER_CPU * number of CPUs = max threads */
-#define INITIAL_QUEUE_LENGTH 16
+#define QUEUE_LENGTH 16 /* Must be 2^N */
+#define MAX_POOL_THREADS 128
 #else
-#define THREADS_PER_CPU	10 /* 8 + THREADS_PER_CPU * number of CPUs = max threads */
-#define INITIAL_QUEUE_LENGTH 128
+#define QUEUE_LENGTH 64 /* Must be 2^N */
+#define MAX_POOL_THREADS 1024
 #endif
-#define THREAD_EXIT_TIMEOUT 1000
 
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/tabledefs.h>
@@ -33,10 +32,12 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/socket-io.h>
+#include <mono/metadata/mono-wsq.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-semaphore.h>
 #include <errno.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -64,8 +65,26 @@
 #define THREAD_WANTS_A_BREAK(t) ((t->state & (ThreadState_StopRequested | \
 						ThreadState_SuspendRequested)) != 0)
 
-#undef EPOLL_DEBUG
-//
+#define SPIN_TRYLOCK(i) (InterlockedCompareExchange (&(i), 1, 0) == 0)
+#define SPIN_LOCK(i) do { \
+				if (SPIN_TRYLOCK (i)) \
+					break; \
+			} while (1)
+
+#define SPIN_UNLOCK(i) i = 0
+
+#define EPOLL_DEBUG(...)
+#define EPOLL_DEBUG_STMT(...)
+#define TP_DEBUG(...)
+#define TP_DEBUG_STMT(...)
+
+/*
+#define EPOLL_DEBUG(...) g_message(__VA_ARGS__)
+#define EPOLL_DEBUG_STMT(...) do { __VA_ARGS__ } while (0)
+#define TP_DEBUG(...) g_message(__VA_ARGS__)
+#define TP_DEBUG_STMT(...) do { __VA_ARGS__ } while (0)
+*/
+
 /* map of CounterSample.cs */
 struct _MonoCounterSample {
 	gint64 rawValue;
@@ -80,8 +99,6 @@ struct _MonoCounterSample {
 
 /* mono_thread_pool_init called */
 static int tp_inited;
-
-static int pending_io_items;
 
 typedef struct {
 	CRITICAL_SECTION io_lock; /* access to sock_to_state */
@@ -108,49 +125,51 @@ typedef struct {
 	MonoObject        *state;
 	MonoObject        *res;
 	MonoArray         *out_args;
-	/* This is a HANDLE, we use guint64 so the managed object layout remains constant */
-	/* THIS FIELD IS NOT USED ANY MORE. Remove it when we feel like breaking corlib compatibility with 2.6 */
-	guint64           wait_event;
 } ASyncCall;
 
 typedef struct {
-	CRITICAL_SECTION lock;
-	MonoArray *array;
-	int first_elem;
-	int next_elem;
+	MonoSemType lock;
+	MonoMList *first; /* GC root */
+	MonoMList *last;
+	MonoMList *unused; /* Up to 20 chunks. GC root */
+	gint head;
+	gint tail;
+	MonoSemType new_job;
+	volatile gint waiting; /* threads waiting for a work item */
 
 	/**/
-	GQueue *idle_threads;
-	int idle_started; /* Have we started the idle threads? Interlocked */
+	volatile gint pool_status; /* 0 -> not initialized, 1 -> initialized, 2 -> cleaning up */
 	/* min, max, n and busy -> Interlocked */
-	int min_threads;
-	int max_threads;
-	int nthreads;
-	int busy_threads;
+	volatile gint min_threads;
+	volatile gint max_threads;
+	volatile gint nthreads;
+	volatile gint busy_threads;
 
 	void (*async_invoke) (gpointer data);
 	void *pc_nitems; /* Performance counter for total number of items in added */
-	/* We don't need the rate here since we can compute the different ourselves */
-	/* void *perfc_rate; */
-	MonoCounterSample last_sample;
-
+	void *pc_nthreads; /* Performance counter for total number of active threads */
+	/**/
+	volatile gint destroy_thread;
+	volatile gint ignore_times; /* Used when there's a thread being created or destroyed */
+	volatile gint sp_lock; /* spin lock used to protect ignore_times */
+	volatile gint64 last_check;
+	volatile gint64 time_sum;
+	volatile gint n_sum;
+	gint64 averages [2];
+	/**/
+	//TP_DEBUG_ONLY (gint nodes_created);
+	//TP_DEBUG_ONLY (gint nodes_reused);
+	gboolean is_io;
 } ThreadPool;
 
 static ThreadPool async_tp;
 static ThreadPool async_io_tp;
 
-typedef struct {
-	HANDLE wait_handle;
-	gpointer data;
-	gint timeout;
-	gboolean die;
-} IdleThreadData;
- 
 static void async_invoke_thread (gpointer data);
-static void mono_async_invoke (MonoAsyncResult *ares);
+static MonoObject *mono_async_invoke (ThreadPool *tp, MonoAsyncResult *ares);
 static void threadpool_free_queue (ThreadPool *tp);
 static void threadpool_append_job (ThreadPool *tp, MonoObject *ar);
-static void *threadpool_queue_idle_thread (ThreadPool *tp, IdleThreadData *it);
+static void threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs);
 static void threadpool_init (ThreadPool *tp, int min_threads, int max_threads, void (*async_invoke) (gpointer));
 static void threadpool_start_idle_threads (ThreadPool *tp);
 static void threadpool_kill_idle_threads (ThreadPool *tp);
@@ -158,6 +177,9 @@ static void threadpool_kill_idle_threads (ThreadPool *tp);
 static MonoClass *async_call_klass;
 static MonoClass *socket_async_call_klass;
 static MonoClass *process_async_call_klass;
+
+static GPtrArray *wsqs;
+CRITICAL_SECTION wsqs_lock;
 
 /* Hooks */
 static MonoThreadPoolFunc tp_start_func;
@@ -207,10 +229,6 @@ socket_io_cleanup (SocketIOData *data)
 	data->new_sem = NULL;
 	mono_g_hash_table_destroy (data->sock_to_state);
 	data->sock_to_state = NULL;
-	EnterCriticalSection (&async_io_tp.lock);
-	threadpool_free_queue (&async_io_tp);
-	threadpool_kill_idle_threads (&async_io_tp);
-	LeaveCriticalSection (&async_io_tp.lock);
 	g_free (data->newpfd);
 	data->newpfd = NULL;
 #ifdef HAVE_EPOLL
@@ -236,7 +254,7 @@ get_event_from_state (MonoSocketAsyncResult *state)
 	case AIO_OP_CONNECT:
 		return MONO_POLLOUT;
 	default: /* Should never happen */
-		g_print ("get_event_from_state: unknown value in switch!!!\n");
+		g_message ("get_event_from_state: unknown value in switch!!!");
 		return 0;
 	}
 }
@@ -284,104 +302,34 @@ threadpool_jobs_dec (MonoObject *obj)
 	return FALSE;
 }
 
-#ifndef DISABLE_SOCKETS
-static void
-async_invoke_io_thread (gpointer data)
+static MonoObject *
+get_io_event (MonoMList **list, gint event)
 {
-	MonoDomain *domain;
-	MonoInternalThread *thread;
-	IdleThreadData idle_data = {0};
-  
-	idle_data.timeout = INFINITE;
-	idle_data.wait_handle = CreateEvent (NULL, FALSE, FALSE, NULL);
+	MonoObject *state;
+	MonoMList *current;
+	MonoMList *prev;
 
-	thread = mono_thread_internal_current ();
-	if (tp_start_func)
-		tp_start_func (tp_hooks_user_data);
-
-	for (;;) {
-		MonoSocketAsyncResult *state;
-		MonoAsyncResult *ar;
-
-		state = (MonoSocketAsyncResult *) data;
-		if (state) {
-			InterlockedDecrement (&pending_io_items);
-			ar = state->ares;
-			switch (state->operation) {
-			case AIO_OP_RECEIVE:
-				state->total = ICALL_RECV (state);
-				break;
-			case AIO_OP_SEND:
-				state->total = ICALL_SEND (state);
-				break;
-			}
-
-			/* worker threads invokes methods in different domains,
-			 * so we need to set the right domain here */
-			domain = ((MonoObject *)ar)->vtable->domain;
-
-			g_assert (domain);
-
-			if (domain->state == MONO_APPDOMAIN_UNLOADED || domain->state == MONO_APPDOMAIN_UNLOADING) {
-				threadpool_jobs_dec ((MonoObject *)ar);
-				data = NULL;
-			} else {
-				mono_thread_push_appdomain_ref (domain);
-				if (threadpool_jobs_dec ((MonoObject *)ar)) {
-					data = NULL;
-					mono_thread_pop_appdomain_ref ();
-					continue;
-				}
-				if (mono_domain_set (domain, FALSE)) {
-					/* ASyncCall *ac; */
-
-					if (tp_item_begin_func)
-						tp_item_begin_func (tp_item_user_data);
-					mono_async_invoke (ar);
-					if (tp_item_end_func)
-						tp_item_end_func (tp_item_user_data);
-					/*
-					ac = (ASyncCall *) ar->object_data;
-					if (ac->msg->exc != NULL)
-						mono_unhandled_exception (ac->msg->exc);
-					*/
-					mono_domain_set (mono_get_root_domain (), TRUE);
-				}
-				mono_thread_pop_appdomain_ref ();
-				InterlockedDecrement (&async_io_tp.busy_threads);
-				/* If the callee changes the background status, set it back to TRUE */
-				if (!mono_thread_test_state (thread , ThreadState_Background))
-					ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
-			}
-		}
-
-		data = threadpool_queue_idle_thread (&async_io_tp, &idle_data);
-		while (!idle_data.die && !data) {
-			guint32 wr;
-			wr = WaitForSingleObjectEx (idle_data.wait_handle, idle_data.timeout, TRUE);
-			if (THREAD_WANTS_A_BREAK (thread))
-				mono_thread_interruption_checkpoint ();
+	current = *list;
+	prev = NULL;
+	state = NULL;
+	while (current) {
+		state = mono_mlist_get_data (current);
+		if (get_event_from_state ((MonoSocketAsyncResult *) state) == event)
+			break;
 		
-			if (wr != WAIT_TIMEOUT && wr != WAIT_IO_COMPLETION) {
-				data = idle_data.data;
-				idle_data.data = NULL;
-				break; /* We have to exit */
-			}
-		}
-
-		if (!data) {
-			InterlockedDecrement (&async_io_tp.nthreads);
-			CloseHandle (idle_data.wait_handle);
-			idle_data.wait_handle = NULL;
-			if (tp_finish_func)
-				tp_finish_func (tp_hooks_user_data);
-			return;
-		}
-		
-		InterlockedIncrement (&async_io_tp.busy_threads);
+		prev = current;
+		current = mono_mlist_next (current);
 	}
 
-	g_assert_not_reached ();
+	if (current) {
+		if (prev) {
+			mono_mlist_set_next (prev, mono_mlist_next (current));
+		} else {
+			*list = mono_mlist_next (*list);
+		}
+	}
+
+	return state;
 }
 
 static MonoMList *
@@ -402,10 +350,7 @@ process_io_event (MonoMList *list, int event)
 
 	if (list != NULL) {
 		oldlist = mono_mlist_remove_item (oldlist, list);
-#ifdef EPOLL_DEBUG
-		g_print ("Dispatching event %d on socket %p\n", event, state->handle);
-#endif
-		InterlockedIncrement (&pending_io_items);
+		EPOLL_DEBUG ("Dispatching event %d on socket %p", event, state->handle);
 		threadpool_append_job (&async_io_tp, (MonoObject *) state);
 	}
 
@@ -580,6 +525,7 @@ socket_io_poll_main (gpointer p)
 
 #ifdef HAVE_EPOLL
 #define EPOLL_ERRORS (EPOLLERR | EPOLLHUP)
+#define EPOLL_NEVENTS	128
 static void
 socket_io_epoll_main (gpointer p)
 {
@@ -587,13 +533,14 @@ socket_io_epoll_main (gpointer p)
 	int epollfd;
 	MonoInternalThread *thread;
 	struct epoll_event *events, *evt;
-	const int nevents = 512;
 	int ready = 0, i;
+	gpointer async_results [EPOLL_NEVENTS * 2]; // * 2 because each loop can add up to 2 results here
+	gint nresults;
 
 	data = p;
 	epollfd = data->epollfd;
 	thread = mono_thread_internal_current ();
-	events = g_new0 (struct epoll_event, nevents);
+	events = g_new0 (struct epoll_event, EPOLL_NEVENTS);
 
 	while (1) {
 		do {
@@ -601,24 +548,20 @@ socket_io_epoll_main (gpointer p)
 				if (THREAD_WANTS_A_BREAK (thread))
 					mono_thread_interruption_checkpoint ();
 			}
-#ifdef EPOLL_DEBUG
-			g_print ("epoll_wait init\n");
-#endif
-			ready = epoll_wait (epollfd, events, nevents, -1);
-#ifdef EPOLL_DEBUG
-			{
-			int err = errno;
-			g_print ("epoll_wait end with %d ready sockets (%d %s).\n", ready, err, (err) ? g_strerror (err) : "");
-			errno = err;
-			}
-#endif
+			EPOLL_DEBUG ("epoll_wait init");
+			ready = epoll_wait (epollfd, events, EPOLL_NEVENTS, -1);
+			EPOLL_DEBUG_STMT(
+				int err = errno;
+				EPOLL_DEBUG ("epoll_wait end with %d ready sockets (%d %s).", ready, err, (err) ? g_strerror (err) : "");
+				errno = err;
+			);
 		} while (ready == -1 && errno == EINTR);
 
 		if (ready == -1) {
 			int err = errno;
 			g_free (events);
 			if (err != EBADF)
-				g_warning ("epoll_wait: %d %s\n", err, g_strerror (err));
+				g_warning ("epoll_wait: %d %s", err, g_strerror (err));
 
 			close (epollfd);
 			return;
@@ -626,58 +569,59 @@ socket_io_epoll_main (gpointer p)
 
 		EnterCriticalSection (&data->io_lock);
 		if (data->inited == 0) {
-#ifdef EPOLL_DEBUG
-			g_print ("data->inited == 0\n");
-#endif
+			EPOLL_DEBUG ("data->inited == 0");
 			g_free (events);
 			close (epollfd);
 			return; /* cleanup called */
 		}
 
+		nresults = 0;
 		for (i = 0; i < ready; i++) {
 			int fd;
 			MonoMList *list;
+			MonoObject *ares;
 
 			evt = &events [i];
 			fd = evt->data.fd;
 			list = mono_g_hash_table_lookup (data->sock_to_state, GINT_TO_POINTER (fd));
-#ifdef EPOLL_DEBUG
-			g_print ("Event %d on %d list length: %d\n", evt->events, fd, mono_mlist_length (list));
-#endif
+			EPOLL_DEBUG ("Event %d on %d list length: %d", evt->events, fd, mono_mlist_length (list));
 			if (list != NULL && (evt->events & (EPOLLIN | EPOLL_ERRORS)) != 0) {
-				list = process_io_event (list, MONO_POLLIN);
+				ares = get_io_event (&list, MONO_POLLIN);
+				if (ares != NULL)
+					async_results [nresults++] = ares;
 			}
 
 			if (list != NULL && (evt->events & (EPOLLOUT | EPOLL_ERRORS)) != 0) {
-				list = process_io_event (list, MONO_POLLOUT);
+				ares = get_io_event (&list, MONO_POLLOUT);
+				if (ares != NULL)
+					async_results [nresults++] = ares;
 			}
 
 			if (list != NULL) {
 				mono_g_hash_table_replace (data->sock_to_state, GINT_TO_POINTER (fd), list);
 				evt->events = get_events_from_list (list);
-#ifdef EPOLL_DEBUG
-				g_print ("MOD %d to %d\n", fd, evt->events);
-#endif
+				EPOLL_DEBUG ("MOD %d to %d", fd, evt->events);
 				if (epoll_ctl (epollfd, EPOLL_CTL_MOD, fd, evt)) {
 					if (epoll_ctl (epollfd, EPOLL_CTL_ADD, fd, evt) == -1) {
-#ifdef EPOLL_DEBUG
-						int err = errno;
-						g_message ("epoll_ctl(MOD): %d %s fd: %d events: %d", err, g_strerror (err), fd, evt->events);
-						errno = err;
-#endif
+						EPOLL_DEBUG_STMT (
+							int err = errno;
+							EPOLL_DEBUG ("epoll_ctl(MOD): %d %s fd: %d events: %d", err, g_strerror (err), fd, evt->events);
+							errno = err;
+						);
 					}
 				}
 			} else {
 				mono_g_hash_table_remove (data->sock_to_state, GINT_TO_POINTER (fd));
-#ifdef EPOLL_DEBUG
-				g_print ("DEL %d\n", fd);
-#endif
+				EPOLL_DEBUG ("DEL %d", fd);
 				epoll_ctl (epollfd, EPOLL_CTL_DEL, fd, evt);
 			}
 		}
 		LeaveCriticalSection (&data->io_lock);
+		threadpool_append_jobs (&async_io_tp, (MonoObject **) async_results, nresults);
+		memset (async_results, 0, sizeof (gpointer) * nresults);
 	}
 }
+#undef EPOLL_NEVENTS
 #endif
 
 /*
@@ -726,7 +670,7 @@ connect_hack (gpointer x)
 	while (connect ((SOCKET) socket_io_data.pipe [1], (SOCKADDR *) addr, sizeof (struct sockaddr_in))) {
 		Sleep (500);
 		if (++count > 3) {
-			g_warning ("Error initializing async. sockets %d.\n", WSAGetLastError ());
+			g_warning ("Error initializing async. sockets %d.", WSAGetLastError ());
 			g_assert (WSAGetLastError ());
 		}
 	}
@@ -804,7 +748,6 @@ socket_io_init (SocketIOData *data)
 	closesocket (srv);
 #endif
 	data->sock_to_state = mono_g_hash_table_new_type (g_direct_hash, g_direct_equal, MONO_HASH_VALUE_GC);
-	mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_io_tp, TRUE);
 
 	if (data->epoll_disabled) {
 		data->new_sem = CreateSemaphore (NULL, 1, 1, NULL);
@@ -836,6 +779,7 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 	/* Bug #77637 for the BSD 6 case */
 	/* Bug #78888 for the Windows case */
 	if (state->operation == AIO_OP_CONNECT && state->blocking == TRUE) {
+		//FIXME: increment number of threads while this one is waiting?
 		threadpool_append_job (&async_io_tp, (MonoObject *) state);
 		return;
 	}
@@ -896,20 +840,18 @@ socket_io_add_epoll (MonoSocketAsyncResult *state)
 
 	mono_g_hash_table_replace (data->sock_to_state, state->handle, list);
 	event.data.fd = fd;
-#ifdef EPOLL_DEBUG
-	g_print ("%s %d with %d\n", epoll_op == EPOLL_CTL_ADD ? "ADD" : "MOD", fd, event.events);
-#endif
+	EPOLL_DEBUG ("%s %d with %d", epoll_op == EPOLL_CTL_ADD ? "ADD" : "MOD", fd, event.events);
 	if (epoll_ctl (data->epollfd, epoll_op, fd, &event) == -1) {
 		int err = errno;
 		if (epoll_op == EPOLL_CTL_ADD && err == EEXIST) {
 			epoll_op = EPOLL_CTL_MOD;
 			if (epoll_ctl (data->epollfd, epoll_op, fd, &event) == -1) {
-				g_message ("epoll_ctl(MOD): %d %s\n", err, g_strerror (err));
+				g_message ("epoll_ctl(MOD): %d %s", err, g_strerror (err));
 			}
 		}
 	}
-
 	LeaveCriticalSection (&data->io_lock);
+
 	return TRUE;
 }
 #endif
@@ -928,6 +870,7 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
 	socket_io_add_poll (state);
 }
 
+#ifndef DISABLE_SOCKETS
 static gboolean
 socket_io_filter (MonoObject *target, MonoObject *state)
 {
@@ -973,8 +916,9 @@ socket_io_filter (MonoObject *target, MonoObject *state)
 }
 #endif /* !DISABLE_SOCKETS */
 
-static void
-mono_async_invoke (MonoAsyncResult *ares)
+/* Returns the exception thrown when invoking, if any */
+static MonoObject *
+mono_async_invoke (ThreadPool *tp, MonoAsyncResult *ares)
 {
 	ASyncCall *ac = (ASyncCall *)ares->object_data;
 	MonoObject *res, *exc = NULL;
@@ -989,30 +933,36 @@ mono_async_invoke (MonoAsyncResult *ares)
 		ares->original_context = NULL;
 	}
 
-	ac->msg->exc = NULL;
-	res = mono_message_invoke (ares->async_delegate, ac->msg, &exc, &out_args);
-	MONO_OBJECT_SETREF (ac, res, res);
-	MONO_OBJECT_SETREF (ac, msg->exc, exc);
-	MONO_OBJECT_SETREF (ac, out_args, out_args);
+	if (ac == NULL) {
+		/* Fast path from ThreadPool.*QueueUserWorkItem */
+		void *pa = ares->async_state;
+		mono_runtime_delegate_invoke (ares->async_delegate, &pa, &exc);
+	} else {
+		ac->msg->exc = NULL;
+		res = mono_message_invoke (ares->async_delegate, ac->msg, &exc, &out_args);
+		MONO_OBJECT_SETREF (ac, res, res);
+		MONO_OBJECT_SETREF (ac, msg->exc, exc);
+		MONO_OBJECT_SETREF (ac, out_args, out_args);
 
-	mono_monitor_enter ((MonoObject *) ares);
-	ares->completed = 1;
-	if (ares->handle != NULL)
-		wait_event = mono_wait_handle_get_handle ((MonoWaitHandle *) ares->handle);
-	mono_monitor_exit ((MonoObject *) ares);
-	/* notify listeners */
-	if (wait_event != NULL)
-		SetEvent (wait_event);
+		mono_monitor_enter ((MonoObject *) ares);
+		ares->completed = 1;
+		if (ares->handle != NULL)
+			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle *) ares->handle);
+		mono_monitor_exit ((MonoObject *) ares);
+		/* notify listeners */
+		if (wait_event != NULL)
+			SetEvent (wait_event);
 
-	/* call async callback if cb_method != null*/
-	if (ac->cb_method) {
-		MonoObject *exc = NULL;
-		void *pa = &ares;
-		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &exc);
-		/* 'exc' will be the previous ac->msg->exc if not NULL and not
-		 * catched. If catched, this will be set to NULL and the
-		 * exception will not be printed. */
-		MONO_OBJECT_SETREF (ac->msg, exc, exc);
+		/* call async callback if cb_method != null*/
+		if (ac != NULL && ac->cb_method) {
+			MonoObject *exc = NULL;
+			void *pa = &ares;
+			mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &exc);
+			/* 'exc' will be the previous ac->msg->exc if not NULL and not
+			 * catched. If catched, this will be set to NULL and the
+			 * exception will not be printed. */
+			MONO_OBJECT_SETREF (ac->msg, exc, exc);
+		}
 	}
 
 	/* restore original thread execution context if flow isn't suppressed, i.e. non null */
@@ -1020,23 +970,25 @@ mono_async_invoke (MonoAsyncResult *ares)
 		mono_thread_set_execution_context (ares->original_context);
 		ares->original_context = NULL;
 	}
-
+	return exc;
 }
 
 static void
 threadpool_start_idle_threads (ThreadPool *tp)
 {
-	int needed;
-	int existing;
+	int n;
 
-	needed = (int) InterlockedCompareExchange (&tp->min_threads, 0, -1); 
 	do {
-		existing = (int) InterlockedCompareExchange (&tp->nthreads, 0, -1); 
-		if (existing >= needed)
-			break;
-		InterlockedIncrement (&tp->nthreads);
-		mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, NULL, TRUE);
-		SleepEx (250, TRUE);
+		while (1) {
+			n = tp->nthreads;
+			if (n >= tp->min_threads)
+				return;
+			if (InterlockedCompareExchange (&tp->nthreads, n + 1, n) == n)
+				break;
+		}
+		mono_perfcounter_update_value (tp->pc_nthreads, TRUE, 1);
+		mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE);
+		SleepEx (100, TRUE);
 	} while (1);
 }
 
@@ -1044,11 +996,11 @@ static void
 threadpool_init (ThreadPool *tp, int min_threads, int max_threads, void (*async_invoke) (gpointer))
 {
 	memset (tp, 0, sizeof (ThreadPool));
-	InitializeCriticalSection (&tp->lock);
+	MONO_SEM_INIT (&tp->lock, 1);
 	tp->min_threads = min_threads;
 	tp->max_threads = max_threads;
 	tp->async_invoke = async_invoke;
-	tp->idle_threads = g_queue_new ();
+	MONO_SEM_INIT (&tp->new_job, 0);
 }
 
 static void *
@@ -1073,38 +1025,51 @@ init_perf_counter (const char *category, const char *counter)
 void
 mono_thread_pool_init ()
 {
-	int threads_per_cpu = THREADS_PER_CPU;
-	int cpu_count;
-	int n;
+	gint threads_per_cpu = 1;
+	gint thread_count;
+	gint cpu_count = mono_cpu_count ();
 
 	if ((int) InterlockedCompareExchange (&tp_inited, 1, 0) == 1)
 		return;
+
+	MONO_GC_REGISTER_ROOT (async_tp.first);
+	MONO_GC_REGISTER_ROOT (async_tp.last);
+	MONO_GC_REGISTER_ROOT (async_tp.unused);
+	MONO_GC_REGISTER_ROOT (async_io_tp.first);
+	MONO_GC_REGISTER_ROOT (async_io_tp.unused);
+	MONO_GC_REGISTER_ROOT (async_io_tp.last);
 
 	MONO_GC_REGISTER_ROOT (socket_io_data.sock_to_state);
 	InitializeCriticalSection (&socket_io_data.io_lock);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
 		threads_per_cpu = atoi (g_getenv ("MONO_THREADS_PER_CPU"));
-		if (threads_per_cpu < THREADS_PER_CPU)
-			threads_per_cpu = THREADS_PER_CPU;
+		if (threads_per_cpu < 1)
+			threads_per_cpu = 1;
 	}
 
-	cpu_count = mono_cpu_count ();
-	n = 8 + 2 * cpu_count; /* 8 is minFreeThreads for ASP.NET */
-	threadpool_init (&async_tp, n, n + threads_per_cpu * cpu_count, async_invoke_thread);
-#ifndef DISABLE_SOCKETS
-	threadpool_init (&async_io_tp, 2 * cpu_count, 8 * cpu_count, async_invoke_io_thread);
-#endif
+	thread_count = MIN (cpu_count * threads_per_cpu, MAX_POOL_THREADS);
+	threadpool_init (&async_tp, thread_count, MAX_POOL_THREADS, async_invoke_thread);
+	threadpool_init (&async_io_tp, cpu_count * 2, cpu_count * 4, async_invoke_thread);
+	async_io_tp.is_io = TRUE;
 
 	async_call_klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
 	g_assert (async_call_klass);
 
+	InitializeCriticalSection (&wsqs_lock);
+	wsqs = g_ptr_array_sized_new (MAX_POOL_THREADS);
+	mono_wsq_init ();
+
 	async_tp.pc_nitems = init_perf_counter ("Mono Threadpool", "Work Items Added");
 	g_assert (async_tp.pc_nitems);
-	mono_perfcounter_get_sample (async_tp.pc_nitems, FALSE, &async_tp.last_sample);
 
 	async_io_tp.pc_nitems = init_perf_counter ("Mono Threadpool", "IO Work Items Added");
 	g_assert (async_io_tp.pc_nitems);
-	mono_perfcounter_get_sample (async_io_tp.pc_nitems, FALSE, &async_io_tp.last_sample);
+
+	async_tp.pc_nthreads = init_perf_counter ("Mono Threadpool", "# of Threads");
+	g_assert (async_tp.pc_nthreads);
+
+	async_io_tp.pc_nthreads = init_perf_counter ("Mono Threadpool", "# of IO Threads");
+	g_assert (async_io_tp.pc_nthreads);
 }
 
 MonoAsyncResult *
@@ -1115,7 +1080,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	MonoAsyncResult *ares;
 	ASyncCall *ac;
 
-	ac = (ASyncCall*)mono_object_new (mono_domain_get (), async_call_klass);
+	ac = (ASyncCall*)mono_object_new (domain, async_call_klass);
 	MONO_OBJECT_SETREF (ac, msg, msg);
 	MONO_OBJECT_SETREF (ac, state, state);
 
@@ -1133,9 +1098,6 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 		return ares;
 	}
 #endif
-	if (InterlockedCompareExchange (&async_tp.idle_started, 1, 0) == 0)
-		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_tp, TRUE);
-	
 	threadpool_append_job (&async_tp, (MonoObject *) ares);
 	return ares;
 }
@@ -1153,8 +1115,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	mono_monitor_enter ((MonoObject *) ares);
 	
 	if (ares->endinvoke_called) {
-		*exc = (MonoObject *)mono_exception_from_name (mono_defaults.corlib, "System", 
-					      "InvalidOperationException");
+		*exc = (MonoObject *) mono_get_exception_invalid_operation (NULL);
 		mono_monitor_exit ((MonoObject *) ares);
 		return NULL;
 	}
@@ -1186,43 +1147,41 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 static void
 threadpool_kill_idle_threads (ThreadPool *tp)
 {
-	IdleThreadData *it;
+	gint n;
 
-	if (!tp || !tp->idle_threads)
-		return;
-
-	while ((it = g_queue_pop_head (tp->idle_threads)) != NULL) {
-		it->data = NULL;
-		it->die = TRUE;
-		SetEvent (it->wait_handle);
+	n = (gint) InterlockedCompareExchange (&tp->max_threads, 0, -1);
+	while (n) {
+		n--;
+		MONO_SEM_POST (&tp->new_job);
 	}
-	g_queue_free (tp->idle_threads);
-	tp->idle_threads = NULL;
 }
 
 void
 mono_thread_pool_cleanup (void)
 {
-	EnterCriticalSection (&async_tp.lock);
+	if (async_tp.pool_status == 1 && InterlockedCompareExchange (&async_tp.pool_status, 2, 1) == 2)
+		return;
+
+	InterlockedExchange (&async_io_tp.pool_status, 2);
+	MONO_SEM_WAIT (&async_tp.lock);
 	threadpool_free_queue (&async_tp);
 	threadpool_kill_idle_threads (&async_tp);
-	LeaveCriticalSection (&async_tp.lock);
-	socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
-	/* Do we want/need these?
-	DeleteCriticalSection (&async_tp.lock);
-	DeleteCriticalSection (&async_tp.table_lock);
-	DeleteCriticalSection (&socket_io_data.io_lock);
-	*/
-}
+	MONO_SEM_POST (&async_tp.lock);
 
-static void
-null_array (MonoArray *a, int first, int last)
-{
-	/* We must null the old array because it might
-	   contain cross-appdomain references, which
-	   will crash the GC when the domains are
-	   unloaded. */
-	memset (mono_array_addr (a, MonoObject*, first), 0, sizeof (MonoObject*) * (last - first));
+	socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
+	MONO_SEM_WAIT (&async_io_tp.lock);
+	threadpool_free_queue (&async_io_tp);
+	threadpool_kill_idle_threads (&async_io_tp);
+	MONO_SEM_POST (&async_io_tp.lock);
+	MONO_SEM_DESTROY (&async_io_tp.new_job);
+
+	EnterCriticalSection (&wsqs_lock);
+	mono_wsq_cleanup ();
+	if (wsqs)
+		g_ptr_array_free (wsqs, TRUE);
+	wsqs = NULL;
+	LeaveCriticalSection (&wsqs_lock);
+	MONO_SEM_DESTROY (&async_tp.new_job);
 }
 
 /* Caller must enter &tp->lock */
@@ -1230,208 +1189,186 @@ static MonoObject*
 dequeue_job_nolock (ThreadPool *tp)
 {
 	MonoObject *ar;
-	int count;
+	MonoArray *array;
+	MonoMList *list;
 
-	if (!tp->array || tp->first_elem == tp->next_elem)
-		return NULL;
-	ar = mono_array_get (tp->array, MonoObject*, tp->first_elem);
-	mono_array_set (tp->array, MonoObject*, tp->first_elem, NULL);
-	tp->first_elem++;
-	count = tp->next_elem - tp->first_elem;
-	/* reduce the size of the array if it's mostly empty */
-	if (mono_array_length (tp->array) > INITIAL_QUEUE_LENGTH && count < (mono_array_length (tp->array) / 3)) {
-		MonoArray *newa = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (tp->array) / 2);
-		mono_array_memcpy_refs (newa, 0, tp->array, tp->first_elem, count);
-		null_array (tp->array, tp->first_elem, tp->next_elem);
-		tp->array = newa;
-		tp->first_elem = 0;
-		tp->next_elem = count;
-	}
+	list = tp->first;
+	do {
+		if (mono_runtime_is_shutting_down ())
+			return NULL;
+		if (!list || tp->head == tp->tail)
+			return NULL;
+
+		array = (MonoArray *) mono_mlist_get_data (list);
+		ar = mono_array_get (array, MonoObject *, tp->head % QUEUE_LENGTH);
+		mono_array_set (array, MonoObject *, tp->head % QUEUE_LENGTH, NULL);
+		tp->head++;
+		if ((tp->head % QUEUE_LENGTH) == 0) {
+			list = tp->first;
+			tp->first = mono_mlist_next (list);
+			if (tp->first == NULL)
+				tp->last = NULL;
+			if (mono_mlist_length (tp->unused) < 20) {
+				/* reuse this chunk */
+				tp->unused = mono_mlist_set_next (list, tp->unused);
+			}
+			tp->head -= QUEUE_LENGTH;
+			tp->tail -= QUEUE_LENGTH;
+		}
+		list = tp->first;
+	} while (ar == NULL);
 	return ar;
 }
 
 /* Call after entering &tp->lock */
-static int
-signal_idle_threads (ThreadPool *tp)
-{
-	IdleThreadData *it;
-	int result = 0;
-	int njobs;
-
-	njobs = tp->next_elem - tp->first_elem;
-	while (njobs > 0 && (it = g_queue_pop_head (tp->idle_threads)) != NULL) {
-		it->data = dequeue_job_nolock (tp);
-		if (it->data == NULL)
-			break; /* Should never happen */
-		result++;
-		njobs--;
-		it->timeout = INFINITE;
-		SetEvent (it->wait_handle);
-	}
-	return njobs;
-}
-
-/* Call after entering &tp->lock */
 static gboolean
-threadpool_start_thread (ThreadPool *tp, gpointer arg)
+threadpool_start_thread (ThreadPool *tp)
 {
-	gint max;
 	gint n;
 
-	max = (gint) InterlockedCompareExchange (&tp->max_threads, 0, -1);
-	n = (gint) InterlockedCompareExchange (&tp->nthreads, 0, -1);
-	if (max <= n)
-		return FALSE;
-	InterlockedIncrement (&tp->nthreads);
-	mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, arg, TRUE);
-	return TRUE;
-}
-
-/*
-static const char *
-get_queue_name (ThreadPool *tp)
-{
-	if (tp == &async_tp)
-		return "TP";
-	if (tp == &async_io_tp)
-		return "IO";
-	return "(Unknown)";
-}
-*/
-
-static gpointer
-threadpool_queue_idle_thread (ThreadPool *tp, IdleThreadData *it)
-{
-	/*
-	MonoCounterSample sample;
-	float rate;
-	*/
-	gpointer result = NULL;
-	CRITICAL_SECTION *cs = &tp->lock;
-
-	EnterCriticalSection (cs);
-	if (tp->idle_threads == NULL) {
-		it->die = TRUE;
-		LeaveCriticalSection (cs);
-		return NULL; /* We are shutting down */
-	}
-	/*
-	if (mono_100ns_ticks () - tp->last_sample.timeStamp > 10000 * 1000) {
-		float elapsed_ticks;
-		mono_perfcounter_get_sample (tp->pc_nitems, FALSE, &sample);
-
-		elapsed_ticks = (float) (sample.timeStamp - tp->last_sample.timeStamp);
-		rate = ((float) (sample.rawValue - tp->last_sample.rawValue)) / elapsed_ticks * 10000000;
-		printf ("Queue: %s NThreads: %d Rate: %.2f Total items: %lld Time(ms): %.2f\n", get_queue_name (tp),
-						InterlockedCompareExchange (&tp->nthreads, 0, -1), rate,
-						sample.rawValue - tp->last_sample.rawValue, elapsed_ticks / 10000);
-		memcpy (&tp->last_sample, &sample, sizeof (sample));
-	}
-	*/
-
-	it->data = result = dequeue_job_nolock (tp);
-	if (result != NULL) {
-		signal_idle_threads (tp);
-	} else {
-		int min, n;
-		min = (gint) InterlockedCompareExchange (&tp->min_threads, 0, -1);
-		n = (gint) InterlockedCompareExchange (&tp->nthreads, 0, -1);
-		if (n <= min) {
-			g_queue_push_tail (tp->idle_threads, it);
-		} else {
-			/* TODO: figure out when threads should be told to die */
-			/* it->die = TRUE; */
-			g_queue_push_tail (tp->idle_threads, it);
+	while ((n = tp->nthreads) < tp->max_threads) {
+		if (InterlockedCompareExchange (&tp->nthreads, n + 1, n) == n) {
+			mono_perfcounter_update_value (tp->pc_nthreads, TRUE, 1);
+			mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE);
+			return TRUE;
 		}
 	}
-	LeaveCriticalSection (cs);
-	return result;
+
+	return FALSE;
+}
+
+static void
+pulse_on_new_job (ThreadPool *tp)
+{
+	if (tp->waiting)
+		MONO_SEM_POST (&tp->new_job);
+}
+
+void
+icall_append_job (MonoObject *ar)
+{
+	threadpool_append_job (&async_tp, ar);
 }
 
 static void
 threadpool_append_job (ThreadPool *tp, MonoObject *ar)
 {
-	CRITICAL_SECTION *cs;
-
-	cs = &tp->lock;
-	threadpool_jobs_inc (ar); 
-	EnterCriticalSection (cs);
-	if (tp->idle_threads == NULL) { 
-		LeaveCriticalSection (cs);
-		return; /* We are shutting down */
-	}
-	if (ar->vtable->domain->state == MONO_APPDOMAIN_UNLOADING ||
-			ar->vtable->domain->state == MONO_APPDOMAIN_UNLOADED) {
-		LeaveCriticalSection (cs);
-		return;
-	}
-
-	mono_perfcounter_update_value (tp->pc_nitems, TRUE, 1);
-	if (tp->array && (tp->next_elem < mono_array_length (tp->array))) {
-		mono_array_setref (tp->array, tp->next_elem, ar);
-		tp->next_elem++;
-		if (signal_idle_threads (tp) > 0 && threadpool_start_thread (tp, ar)) {
-			tp->next_elem--;
-			mono_array_setref (tp->array, tp->next_elem, NULL);
-		}
-		LeaveCriticalSection (cs);
-		return;
-	}
-
-	if (!tp->array) {
-		MONO_GC_REGISTER_ROOT (tp->array);
-		tp->array = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, INITIAL_QUEUE_LENGTH);
-	} else {
-		int count = tp->next_elem - tp->first_elem;
-		/* slide the array or create a larger one if it's full */
-		if (tp->first_elem) {
-			mono_array_memcpy_refs (tp->array, 0, tp->array, tp->first_elem, count);
-			null_array (tp->array, count, tp->next_elem);
-		} else {
-			MonoArray *newa = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (tp->array) * 2);
-			mono_array_memcpy_refs (newa, 0, tp->array, tp->first_elem, count);
-			null_array (tp->array, count, tp->next_elem);
-			tp->array = newa;
-		}
-		tp->first_elem = 0;
-		tp->next_elem = count;
-	}
-	mono_array_setref (tp->array, tp->next_elem, ar);
-	tp->next_elem++;
-	if (signal_idle_threads (tp) > 0 && threadpool_start_thread (tp, ar)) {
-		tp->next_elem--;
-		mono_array_setref (tp->array, tp->next_elem, NULL);
-	}
-	LeaveCriticalSection (cs);
+	threadpool_append_jobs (tp, &ar, 1);
 }
 
+static MonoMList *
+create_or_reuse_list (ThreadPool *tp)
+{
+	MonoMList *list;
+	MonoArray *array;
+
+	list = NULL;
+	if (tp->unused) {
+		list = tp->unused;
+		tp->unused = mono_mlist_next (list);
+		mono_mlist_set_next (list, NULL);
+		//TP_DEBUG (tp->nodes_reused++);
+	} else {
+		array = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, QUEUE_LENGTH);
+		list = mono_mlist_alloc ((MonoObject *) array);
+		//TP_DEBUG (tp->nodes_created++);
+	}
+	return list;
+}
+
+static void
+threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
+{
+	MonoArray *array;
+	MonoMList *list;
+	MonoObject *ar;
+	gint i;
+	gboolean lock_taken = FALSE; /* We won't take the lock when the local queue is used */
+
+	if (mono_runtime_is_shutting_down ())
+		return;
+
+	if (tp->pool_status == 0 && InterlockedCompareExchange (&tp->pool_status, 1, 0) == 0)
+		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, tp, TRUE);
+
+	for (i = 0; i < njobs; i++) {
+		ar = jobs [i];
+		if (ar == NULL)
+			continue; /* Might happen when cleaning domain jobs */
+		if (!tp->is_io) {
+			MonoAsyncResult *o = (MonoAsyncResult *) ar;
+			o->add_time = mono_100ns_ticks ();
+		}
+		threadpool_jobs_inc (ar); 
+		mono_perfcounter_update_value (tp->pc_nitems, TRUE, 1);
+		if (!tp->is_io && mono_wsq_local_push (ar))
+			continue;
+
+		if (!lock_taken) {
+			MONO_SEM_WAIT (&tp->lock);
+			lock_taken = TRUE;
+		}
+		if ((tp->tail % QUEUE_LENGTH) == 0) {
+			list = create_or_reuse_list (tp);
+			if (tp->last != NULL)
+				mono_mlist_set_next (tp->last, list);
+			tp->last = list;
+			if (tp->first == NULL)
+				tp->first = tp->last;
+		}
+
+		array = (MonoArray *) mono_mlist_get_data (tp->last);
+		mono_array_setref (array, tp->tail % QUEUE_LENGTH, ar);
+		tp->tail++;
+	}
+	if (lock_taken)
+		MONO_SEM_POST (&tp->lock);
+	for (i = 0; i < MIN(njobs, tp->max_threads); i++)
+		pulse_on_new_job (tp);
+}
 
 static void
 threadpool_clear_queue (ThreadPool *tp, MonoDomain *domain)
 {
-	int i, count = 0;
-	EnterCriticalSection (&tp->lock);
-	/*remove*/
-	for (i = tp->first_elem; i < tp->next_elem; ++i) {
-		MonoObject *obj = mono_array_get (tp->array, MonoObject*, i);
-		if (obj->vtable->domain == domain) {
-			mono_array_set (tp->array, MonoObject*, i, NULL);
-			InterlockedDecrement (&domain->threadpool_jobs);
-			++count;
+	MonoMList *current;
+	MonoArray *array;
+	MonoObject *obj;
+	int domain_count;
+	int i;
+
+	domain_count = 0;
+	MONO_SEM_WAIT (&tp->lock);
+	current = tp->first;
+	while (current) {
+		array = (MonoArray *) mono_mlist_get_data (current);
+		for (i = 0; i < QUEUE_LENGTH; i++) {
+			obj = mono_array_get (array, MonoObject*, i);
+			if (obj != NULL && obj->vtable->domain == domain) {
+				domain_count++;
+				mono_array_setref (array, i, NULL);
+			}
 		}
+		current = mono_mlist_next (current);
 	}
-	/*compact*/
-	if (count) {
-		int idx = 0;
-		for (i = tp->first_elem; i < tp->next_elem; ++i) {
-			MonoObject *obj = mono_array_get (tp->array, MonoObject*, i);
-			if (obj)
-				mono_array_set (tp->array, MonoObject*, idx++, obj);
-		}
-		tp->first_elem = 0;
-		tp->next_elem = count;
+
+	if (!domain_count) {
+		MONO_SEM_POST (&tp->lock);
+		return;
 	}
-	LeaveCriticalSection (&tp->lock);
+
+	current = tp->first;
+	tp->first = NULL;
+	tp->last = NULL;
+	tp->head = 0;
+	tp->tail = 0;
+	MONO_SEM_POST (&tp->lock);
+	/* Re-add everything but the nullified elements */
+	while (current) {
+		array = (MonoArray *) mono_mlist_get_data (current);
+		threadpool_append_jobs (tp, mono_array_addr (array, MonoObject *, 0), QUEUE_LENGTH);
+		memset (mono_array_addr (array, MonoObject *, 0), 0, sizeof (MonoObject *) * QUEUE_LENGTH);
+		current = mono_mlist_next (current);
+	}
 }
 
 /*
@@ -1483,16 +1420,196 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 static void
 threadpool_free_queue (ThreadPool *tp)
 {
-	if (tp->array)
-		null_array (tp->array, tp->first_elem, tp->next_elem);
-	tp->array = NULL;
-	tp->first_elem = tp->next_elem = 0;
+	tp->head = tp->tail = 0;
+	tp->first = NULL;
+	tp->unused = NULL;
 }
 
 gboolean
 mono_thread_pool_is_queue_array (MonoArray *o)
 {
-	return o == async_tp.array || o == async_io_tp.array;
+	gpointer obj = o;
+
+	// FIXME: need some fix in sgen code.
+	// There are roots at: async*tp.unused (MonoMList) and wsqs [n]->queue (MonoArray)
+	return obj == async_tp.first || obj == async_io_tp.first;
+}
+
+static void
+add_wsq (MonoWSQ *wsq)
+{
+	int i;
+
+	if (wsq == NULL)
+		return;
+
+	EnterCriticalSection (&wsqs_lock);
+	if (wsqs == NULL) {
+		LeaveCriticalSection (&wsqs_lock);
+		return;
+	}
+	for (i = 0; i < wsqs->len; i++) {
+		if (g_ptr_array_index (wsqs, i) == NULL) {
+			wsqs->pdata [i] = wsq;
+			LeaveCriticalSection (&wsqs_lock);
+			return;
+		}
+	}
+	g_ptr_array_add (wsqs, wsq);
+	LeaveCriticalSection (&wsqs_lock);
+}
+
+static void
+remove_wsq (MonoWSQ *wsq)
+{
+	int i;
+
+	if (wsq == NULL)
+		return;
+
+	EnterCriticalSection (&wsqs_lock);
+	if (wsqs == NULL) {
+		LeaveCriticalSection (&wsqs_lock);
+		return;
+	}
+	for (i = 0; i < wsqs->len; i++) {
+		if (g_ptr_array_index (wsqs, i) == wsq) {
+			wsqs->pdata [i] = NULL;
+			LeaveCriticalSection (&wsqs_lock);
+			return;
+		}
+	}
+	/* Should not happen */
+	LeaveCriticalSection (&wsqs_lock);
+}
+
+static void
+try_steal (gpointer *data, gboolean retry)
+{
+	int i;
+	int ms;
+
+	if (wsqs == NULL || data == NULL || *data != NULL)
+		return;
+
+	ms = 0;
+	do {
+		if (mono_runtime_is_shutting_down ())
+			return;
+		for (i = 0; i < wsqs->len; i++) {
+			if (mono_runtime_is_shutting_down ()) {
+				return;
+			}
+			mono_wsq_try_steal (wsqs->pdata [i], data, ms);
+			if (*data != NULL) {
+				return;
+			}
+		}
+		ms += 10;
+	} while (retry && ms < 11);
+}
+
+static gboolean
+dequeue_or_steal (ThreadPool *tp, gpointer *data)
+{
+	if (mono_runtime_is_shutting_down ())
+		return FALSE;
+	TP_DEBUG ("Dequeue");
+	MONO_SEM_WAIT (&tp->lock);
+	*data = dequeue_job_nolock (tp);
+	MONO_SEM_POST (&tp->lock);
+	if (!tp->is_io && !*data)
+		try_steal (data, FALSE);
+	return (*data != NULL);
+}
+
+static void
+process_idle_times (ThreadPool *tp, gint64 t)
+{
+	gint64 ticks;
+	gint64 avg;
+	gboolean compute_avg;
+	gint new_threads;
+	gint64 per1;
+
+	if (tp->ignore_times)
+		return;
+
+	compute_avg = FALSE;
+	ticks = mono_100ns_ticks ();
+	t = ticks - t;
+	SPIN_LOCK (tp->sp_lock);
+	if (tp->ignore_times) {
+		SPIN_UNLOCK (tp->sp_lock);
+		return;
+	}
+	tp->time_sum += t;
+	tp->n_sum++;
+	if (tp->last_check == 0)
+		tp->last_check = ticks;
+	else if ((ticks - tp->last_check) > 5000000) {
+		tp->ignore_times = 1;
+		compute_avg = TRUE;
+	}
+	SPIN_UNLOCK (tp->sp_lock);
+
+	if (!compute_avg)
+		return;
+
+	//printf ("Items: %d Time elapsed: %.3fs\n", tp->n_sum, (ticks - tp->last_check) / 10000.0);
+	new_threads = 0;
+	avg = tp->time_sum / tp->n_sum;
+	if (tp->averages [1] == 0) {
+		tp->averages [1] = avg;
+	} else {
+		per1 = ((100 * (ABS (avg - tp->averages [1]))) / tp->averages [1]);
+		if (per1 > 5) {
+			if (avg > tp->averages [1]) {
+				if (tp->averages [1] < tp->averages [0]) {
+					new_threads = -1;
+				} else {
+					new_threads = 1;
+				}
+			} else if (avg < tp->averages [1] && tp->averages [1] < tp->averages [0]) {
+				new_threads = 1;
+			}
+		} else {
+			int min, n;
+			min = tp->min_threads;
+			n = tp->nthreads;
+			if ((n - min) < min && tp->busy_threads == n)
+				new_threads = 1;
+		}
+		/*
+		if (new_threads != 0) {
+			printf ("n: %d per1: %lld avg=%lld avg1=%lld avg0=%lld\n", new_threads, per1, avg, tp->averages [1], tp->averages [0]);
+		}
+		*/
+	}
+
+	tp->time_sum = 0;
+	tp->n_sum = 0;
+	tp->last_check = mono_100ns_ticks ();
+
+	tp->averages [0] = tp->averages [1];
+	tp->averages [1] = avg;
+	tp->ignore_times = 0;
+
+	if (tp->waiting == 0 && new_threads == 1) {
+		threadpool_start_thread (tp);
+	} else if (new_threads == -1) {
+		if (InterlockedCompareExchange (&tp->destroy_thread, 1, 0) == 0)
+			pulse_on_new_job (tp);
+	}
+}
+
+static gboolean
+should_i_die (ThreadPool *tp)
+{
+	gboolean result = FALSE;
+	if (tp->destroy_thread == 1 && InterlockedCompareExchange (&tp->destroy_thread, 0, 1) == 1)
+		result = (tp->nthreads > tp->min_threads);
+	return result;
 }
 
 static void
@@ -1500,26 +1617,50 @@ async_invoke_thread (gpointer data)
 {
 	MonoDomain *domain;
 	MonoInternalThread *thread;
-	IdleThreadData idle_data = {0};
+	MonoWSQ *wsq;
+	ThreadPool *tp;
+	gboolean must_die;
   
-	idle_data.timeout = INFINITE;
-	idle_data.wait_handle = CreateEvent (NULL, FALSE, FALSE, NULL);
- 
+	tp = data;
+	wsq = NULL;
+	if (!tp->is_io) {
+		wsq = mono_wsq_create ();
+		add_wsq (wsq);
+	}
+
 	thread = mono_thread_internal_current ();
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);
+	data = NULL;
 	for (;;) {
 		MonoAsyncResult *ar;
+		gboolean is_io_task;
 
+		is_io_task = FALSE;
 		ar = (MonoAsyncResult *) data;
 		if (ar) {
+#ifndef DISABLE_SOCKETS
+			is_io_task = (strcmp (((MonoObject *) data)->vtable->klass->name, "AsyncResult"));
+			if (is_io_task) {
+				MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
+				ar = state->ares;
+				switch (state->operation) {
+				case AIO_OP_RECEIVE:
+					state->total = ICALL_RECV (state);
+					break;
+				case AIO_OP_SEND:
+					state->total = ICALL_SEND (state);
+					break;
+				}
+			}
+#endif
+
 			/* worker threads invokes methods in different domains,
 			 * so we need to set the right domain here */
 			domain = ((MonoObject *)ar)->vtable->domain;
-
 			g_assert (domain);
 
-			if (domain->state == MONO_APPDOMAIN_UNLOADED || domain->state == MONO_APPDOMAIN_UNLOADING) {
+			if (mono_runtime_is_shutting_down ()) {
 				threadpool_jobs_dec ((MonoObject *)ar);
 				data = NULL;
 			} else {
@@ -1535,7 +1676,11 @@ async_invoke_thread (gpointer data)
 
 					if (tp_item_begin_func)
 						tp_item_begin_func (tp_item_user_data);
-					mono_async_invoke (ar);
+
+					if (!is_io_task)
+						process_idle_times (tp, ar->add_time);
+					/*FIXME: Do something with the exception returned? */
+					mono_async_invoke (tp, ar);
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
 					/*
@@ -1546,36 +1691,63 @@ async_invoke_thread (gpointer data)
 					mono_domain_set (mono_get_root_domain (), TRUE);
 				}
 				mono_thread_pop_appdomain_ref ();
-				InterlockedDecrement (&async_tp.busy_threads);
+				InterlockedDecrement (&tp->busy_threads);
 				/* If the callee changes the background status, set it back to TRUE */
 				if (!mono_thread_test_state (thread , ThreadState_Background))
 					ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 			}
 		}
-		data = threadpool_queue_idle_thread (&async_tp, &idle_data);
-		while (!idle_data.die && !data) {
-			guint32 wr;
-			wr = WaitForSingleObjectEx (idle_data.wait_handle, idle_data.timeout, TRUE);
-			if (THREAD_WANTS_A_BREAK (thread))
-				mono_thread_interruption_checkpoint ();
-		
-			if (wr != WAIT_TIMEOUT && wr != WAIT_IO_COMPLETION) {
-				data = idle_data.data;
-				break; /* We have to exit */
+
+		data = NULL;
+		must_die = should_i_die (tp);
+		TP_DEBUG ("Trying to get a job");
+		if (!must_die && (tp->is_io || !mono_wsq_local_pop (&data)))
+			dequeue_or_steal (tp, &data);
+		TP_DEBUG ("Done trying to get a job %p", data);
+
+		while (!must_die && !data) {
+			gboolean res;
+
+			TP_DEBUG ("Waiting");
+			InterlockedIncrement (&tp->waiting);
+			while ((res = MONO_SEM_WAIT (&tp->new_job)) && errno == EINTR) {
+				if (mono_runtime_is_shutting_down ())
+					break;
+				if (THREAD_WANTS_A_BREAK (thread))
+					mono_thread_interruption_checkpoint ();
 			}
+			TP_DEBUG ("Done waiting");
+			InterlockedDecrement (&tp->waiting);
+			//FIXME: res == 0 on windows when interrupted!
+			if (mono_runtime_is_shutting_down ())
+				break;
+			must_die = should_i_die (tp);
+			dequeue_or_steal (tp, &data);
 		}
-		idle_data.data = NULL;
 
 		if (!data) {
-			InterlockedDecrement (&async_tp.nthreads);
-			CloseHandle (idle_data.wait_handle);
-			idle_data.wait_handle = NULL;
-			if (tp_finish_func)
-				tp_finish_func (tp_hooks_user_data);
-			return;
+			gint nt;
+			gboolean down;
+			while (1) {
+				nt = tp->nthreads;
+				down = mono_runtime_is_shutting_down ();
+				if (!down && nt <= tp->min_threads)
+					break;
+				if (down || InterlockedCompareExchange (&tp->nthreads, nt - 1, nt) == nt) {
+					mono_perfcounter_update_value (tp->pc_nthreads, TRUE, -1);
+					TP_DEBUG ("DIE");
+					if (!tp->is_io) {
+						remove_wsq (wsq);
+						mono_wsq_destroy (wsq);
+					}
+					if (tp_finish_func)
+						tp_finish_func (tp_hooks_user_data);
+					return;
+				}
+			}
 		}
 		
-		InterlockedIncrement (&async_tp.busy_threads);
+		InterlockedIncrement (&tp->busy_threads);
 	}
 
 	g_assert_not_reached ();
@@ -1584,21 +1756,13 @@ async_invoke_thread (gpointer data)
 void
 ves_icall_System_Threading_ThreadPool_GetAvailableThreads (gint *workerThreads, gint *completionPortThreads)
 {
-	gint busy, busy_io;
-
-	MONO_ARCH_SAVE_REGS;
-
-	busy = (gint) InterlockedCompareExchange (&async_tp.busy_threads, 0, -1);
-	busy_io = (gint) InterlockedCompareExchange (&async_io_tp.busy_threads, 0, -1);
-	*workerThreads = async_tp.max_threads - busy;
-	*completionPortThreads = async_io_tp.max_threads - busy_io;
+	*workerThreads = 1024;//async_tp.max_threads - (gint) InterlockedCompareExchange (&async_tp.busy_threads, 0, -1);
+	*completionPortThreads = async_io_tp.max_threads - (gint) InterlockedCompareExchange (&async_io_tp.busy_threads, 0, -1);
 }
 
 void
 ves_icall_System_Threading_ThreadPool_GetMaxThreads (gint *workerThreads, gint *completionPortThreads)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	*workerThreads = (gint) InterlockedCompareExchange (&async_tp.max_threads, 0, -1);
 	*completionPortThreads = (gint) InterlockedCompareExchange (&async_io_tp.max_threads, 0, -1);
 }
@@ -1606,30 +1770,15 @@ ves_icall_System_Threading_ThreadPool_GetMaxThreads (gint *workerThreads, gint *
 void
 ves_icall_System_Threading_ThreadPool_GetMinThreads (gint *workerThreads, gint *completionPortThreads)
 {
-	gint workers, workers_io;
-
-	MONO_ARCH_SAVE_REGS;
-
-	workers = (gint) InterlockedCompareExchange (&async_tp.min_threads, 0, -1);
-	workers_io = (gint) InterlockedCompareExchange (&async_io_tp.min_threads, 0, -1);
-
-	*workerThreads = workers;
-	*completionPortThreads = workers_io;
-}
-
-static void
-start_idle_threads (void)
-{
-	threadpool_start_idle_threads (&async_tp);
+	*workerThreads = (gint) InterlockedCompareExchange (&async_tp.min_threads, 0, -1);
+	*completionPortThreads = (gint) InterlockedCompareExchange (&async_io_tp.min_threads, 0, -1);
 }
 
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, gint completionPortThreads)
 {
-	int max_threads;
-	int max_io_threads;
-
-	MONO_ARCH_SAVE_REGS;
+	gint max_threads;
+	gint max_io_threads;
 
 	max_threads = InterlockedCompareExchange (&async_tp.max_threads, -1, -1);
 	if (workerThreads <= 0 || workerThreads > max_threads)
@@ -1641,18 +1790,17 @@ ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, gint co
 
 	InterlockedExchange (&async_tp.min_threads, workerThreads);
 	InterlockedExchange (&async_io_tp.min_threads, completionPortThreads);
-	mono_thread_create_internal (mono_get_root_domain (), start_idle_threads, NULL, TRUE);
+	//FIXME: check the number of threads before starting this one
+	mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_tp, TRUE);
 	return TRUE;
 }
 
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMaxThreads (gint workerThreads, gint completionPortThreads)
 {
-	int min_threads;
-	int min_io_threads;
-	int cpu_count;
-
-	MONO_ARCH_SAVE_REGS;
+	gint min_threads;
+	gint min_io_threads;
+	gint cpu_count;
 
 	cpu_count = mono_cpu_count ();
 	min_threads = InterlockedCompareExchange (&async_tp.min_threads, -1, -1);
@@ -1703,5 +1851,4 @@ mono_install_threadpool_item_hooks (MonoThreadPoolItemFunc begin_func, MonoThrea
 	tp_item_end_func = end_func;
 	tp_item_user_data = user_data;
 }
-
 

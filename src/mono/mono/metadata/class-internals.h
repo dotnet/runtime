@@ -790,6 +790,8 @@ typedef struct {
 	/* Threadpool */
 	guint64 threadpool_workitems;
 	guint64 threadpool_ioworkitems;
+	guint threadpool_threads;
+	guint threadpool_iothreads;
 } MonoPerfCounters;
 
 extern MonoPerfCounters *mono_perfcounters MONO_INTERNAL;
