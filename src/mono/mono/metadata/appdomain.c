@@ -2369,7 +2369,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 			*exc = (MonoObject *) mono_get_exception_cannot_unload_appdomain ("Appdomain is already unloaded.");
 			return;
 		default:
-			g_warning ("Incalid appdomain state %d", prev_state);
+			g_warning ("Invalid appdomain state %d", prev_state);
 			g_assert_not_reached ();
 		}
 	}
