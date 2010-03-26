@@ -1672,13 +1672,16 @@ async_invoke_thread (gpointer data)
 			domain = ((MonoObject *)ar)->vtable->domain;
 			g_assert (domain);
 
-			if (mono_runtime_is_shutting_down ()) {
+			if (mono_domain_is_unloading (domain) || mono_runtime_is_shutting_down ()) {
 				threadpool_jobs_dec ((MonoObject *)ar);
 				data = NULL;
+				ar = NULL;
+				InterlockedDecrement (&tp->busy_threads);
 			} else {
 				mono_thread_push_appdomain_ref (domain);
 				if (threadpool_jobs_dec ((MonoObject *)ar)) {
 					data = NULL;
+					ar = NULL;
 					mono_thread_pop_appdomain_ref ();
 					continue;
 				}
@@ -1710,6 +1713,7 @@ async_invoke_thread (gpointer data)
 			}
 		}
 
+		ar = NULL;
 		data = NULL;
 		must_die = should_i_die (tp);
 		TP_DEBUG ("Trying to get a job");
