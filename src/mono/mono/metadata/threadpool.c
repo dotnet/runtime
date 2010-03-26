@@ -316,7 +316,8 @@ get_io_event (MonoMList **list, gint event)
 		state = mono_mlist_get_data (current);
 		if (get_event_from_state ((MonoSocketAsyncResult *) state) == event)
 			break;
-		
+
+		state = NULL;
 		prev = current;
 		current = mono_mlist_next (current);
 	}
