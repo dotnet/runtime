@@ -27,7 +27,7 @@
 typedef semaphore_t MonoSemType;
 #    define MONO_SEM_INIT(addr,value) semaphore_create (current_task (), (addr), SYNC_POLICY_FIFO, (value))
 #    define MONO_SEM_WAIT(sem) mono_sem_wait ((sem))
-#    define MONO_SEM_POST(sem) mono_sem_post (*(sem))
+#    define MONO_SEM_POST(sem) mono_sem_post ((sem))
 #    define MONO_SEM_DESTROY(sem) semaphore_destroy (current_task (), *(sem))
 #  else
 typedef sem_t MonoSemType;
