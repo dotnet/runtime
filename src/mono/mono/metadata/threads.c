@@ -1134,7 +1134,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		register_thread_start_argument (this, start_info);
 		if (threads_starting_up == NULL) {
 			MONO_GC_REGISTER_ROOT (threads_starting_up);
-			threads_starting_up = mono_g_hash_table_new (NULL, NULL);
+			threads_starting_up = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
 		}
 		mono_g_hash_table_insert (threads_starting_up, this, this);
 		mono_threads_unlock ();	
