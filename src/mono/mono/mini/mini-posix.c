@@ -179,16 +179,22 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	}
 
 	/*
-	 * FIXME:
 	 * This is an async signal, so the code below must not call anything which
 	 * is not async safe. That includes the pthread locking functions. If we
 	 * know that we interrupted managed code, then locking is safe.
 	 */
-	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
-	running_managed = ji != NULL;
+	/*
+	 * On OpenBSD, ctx can be NULL if we are interrupting poll ().
+	 */
+	if (ctx) {
+		ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
+		running_managed = ji != NULL;
 
-	if (mono_debugger_agent_thread_interrupt (ctx, ji))
-		return;
+		if (mono_debugger_agent_thread_interrupt (ctx, ji))
+			return;
+	} else {
+		running_managed = FALSE;
+	}
 	
 	exc = mono_thread_request_interruption (running_managed); 
 	if (!exc)
