@@ -47,6 +47,9 @@ mono_wsq_create ()
 	MonoWSQ *wsq;
 	MonoDomain *root;
 
+	if (wsq_tlskey == -1)
+		return NULL;
+
 	wsq = g_new0 (MonoWSQ, 1);
 	wsq->mask = INITIAL_LENGTH - 1;
 	MONO_GC_REGISTER_ROOT (wsq->queue);
@@ -86,7 +89,7 @@ mono_wsq_local_push (void *obj)
 	int count;
 	MonoWSQ *wsq;
 
-	if (obj == NULL)
+	if (obj == NULL || wsq_tlskey == -1)
 		return FALSE;
 
 	wsq = (MonoWSQ *) TlsGetValue (wsq_tlskey);
@@ -136,7 +139,7 @@ mono_wsq_local_pop (void **ptr)
 	gboolean res;
 	MonoWSQ *wsq;
 
-	if (ptr == NULL)
+	if (ptr == NULL || wsq_tlskey == -1)
 		return FALSE;
 
 	wsq = (MonoWSQ *) TlsGetValue (wsq_tlskey);
@@ -176,7 +179,7 @@ mono_wsq_local_pop (void **ptr)
 void
 mono_wsq_try_steal (MonoWSQ *wsq, void **ptr, guint32 ms_timeout)
 {
-	if (wsq == NULL || ptr == NULL || *ptr != NULL)
+	if (wsq == NULL || ptr == NULL || *ptr != NULL || wsq_tlskey == -1)
 		return;
 
 	if (TlsGetValue (wsq_tlskey) == wsq)

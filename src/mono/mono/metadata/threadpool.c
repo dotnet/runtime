@@ -98,7 +98,7 @@ struct _MonoCounterSample {
 };
 
 /* mono_thread_pool_init called */
-static int tp_inited;
+static volatile int tp_inited;
 
 typedef struct {
 	CRITICAL_SECTION io_lock; /* access to sock_to_state */
@@ -1029,9 +1029,19 @@ mono_thread_pool_init ()
 	gint threads_per_cpu = 1;
 	gint thread_count;
 	gint cpu_count = mono_cpu_count ();
+	int result;
 
-	if ((int) InterlockedCompareExchange (&tp_inited, 1, 0) == 1)
+	if (tp_inited == 2)
 		return;
+
+	result = InterlockedCompareExchange (&tp_inited, 1, 0);
+	if (result == 1) {
+		while (1) {
+			SleepEx (1, FALSE);
+			if (tp_inited == 2)
+				return;
+		}
+	}
 
 	MONO_GC_REGISTER_ROOT (async_tp.first);
 	MONO_GC_REGISTER_ROOT (async_tp.last);
@@ -1071,6 +1081,7 @@ mono_thread_pool_init ()
 
 	async_io_tp.pc_nthreads = init_perf_counter ("Mono Threadpool", "# of IO Threads");
 	g_assert (async_io_tp.pc_nthreads);
+	tp_inited = 2;
 }
 
 MonoAsyncResult *
@@ -1497,7 +1508,7 @@ try_steal (gpointer *data, gboolean retry)
 	do {
 		if (mono_runtime_is_shutting_down ())
 			return;
-		for (i = 0; i < wsqs->len; i++) {
+		for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
 			if (mono_runtime_is_shutting_down ()) {
 				return;
 			}
