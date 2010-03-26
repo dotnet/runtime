@@ -57,7 +57,7 @@
  * 1) 2-word header with no GC pointers in it (first vtable, second to store the
  *    forwarding ptr)
  * 2) gc descriptor is the second word in the vtable (first word in the class)
- * 3) 8 byte alignment is the minimum and enough (not true for special structures, FIXME)
+ * 3) 8 byte alignment is the minimum and enough (not true for special structures (SIMD), FIXME)
  * 4) there is a function to get an object's size and the number of
  *    elements in an array.
  * 5) we know the special way bounds are allocated for complex arrays
@@ -107,8 +107,6 @@
 
  *) test/fix endianess issues
 
- *) add batch moving profile info
-
  *) add more timing info
 
  *) Implement a card table as the write barrier instead of remembered
@@ -134,7 +132,10 @@
     happened.  This might make for a good first implementation to get
     some data on performance.
 
- *) some sort of blacklist support?
+ *) Some sort of blacklist support?  Blacklists is a concept from the
+    Boehm GC: if during a conservative scan we find pointers to an
+    area which we might use as heap, we mark that area as unusable, so
+    pointer retention by random pinning pointers is reduced.
 
  *) experiment with max small object size (very small right now - 2kb,
     because it's tied to the max freelist size)
