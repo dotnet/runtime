@@ -24,6 +24,7 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/mono-basic-block.h>
+#include <mono/utils/mono-counters.h>
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
@@ -162,7 +163,7 @@ typedef struct {
 
 typedef struct {
 	ILStackDesc *stack;
-	guint16 size;
+	guint16 size, max_size;
 	guint16 flags;
 } ILCodeDesc;
 
@@ -295,6 +296,48 @@ enum {
 };
 //////////////////////////////////////////////////////////////////
 
+#ifdef ENABLE_VERIFIER_STATS
+
+#define MEM_ALLOC(amt) do { allocated_memory += (amt); working_set += (amt); } while (0)
+#define MEM_FREE(amt) do { working_set -= (amt); } while (0)
+
+static int allocated_memory;
+static int working_set;
+static int max_allocated_memory;
+static int max_working_set;
+
+static void
+finish_collect_stats (void)
+{
+	max_allocated_memory = MAX (max_allocated_memory, allocated_memory);
+	max_working_set = MAX (max_working_set, working_set);
+	allocated_memory = working_set = 0;
+}
+
+static void
+init_verifier_stats (void)
+{
+	static gboolean inited;
+	if (!inited) {
+		inited = TRUE;
+		mono_counters_register ("Maximum memory allocated during verification", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &max_allocated_memory);
+		mono_counters_register ("Maximum memory used during verification", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &max_working_set);
+	}
+}
+
+#else
+
+#define MEM_ALLOC(amt) do {} while (0)
+#define MEM_FREE(amt) do { } while (0)
+
+#define finish_collect_stats()
+#define init_verifier_stats()
+
+#endif
+
+
+//////////////////////////////////////////////////////////////////
+
 
 /*Token validation macros and functions */
 #define IS_MEMBER_REF(token) (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
@@ -324,6 +367,8 @@ static MonoType *
 mono_type_create_fnptr_from_mono_method (VerifyContext *ctx, MonoMethod *method)
 {
 	MonoType *res = g_new0 (MonoType, 1);
+	MEM_ALLOC (sizeof (MonoType));
+
 	//FIXME use mono_method_get_signature_full
 	res->data.method = mono_method_signature (method);
 	res->type = MONO_TYPE_FNPTR;
@@ -1911,21 +1956,52 @@ mono_type_from_stack_slot (ILStackDesc *slot)
 /*Stack manipulation code*/
 
 static void
+ensure_stack_size (ILCodeDesc *stack, int required)
+{
+	int new_size = 8;
+	ILStackDesc *tmp;
+
+	if (required < stack->max_size)
+		return;
+
+	/* We don't have to worry about the exponential growth since stack_copy prune unused space */
+	new_size = MAX (8, MAX (required, stack->max_size * 2));
+
+	g_assert (new_size >= stack->size);
+	g_assert (new_size >= required);
+
+	tmp = g_new0 (ILStackDesc, new_size);
+	MEM_ALLOC (sizeof (ILStackDesc) * new_size);
+
+	if (stack->stack) {
+		if (stack->size)
+			memcpy (tmp, stack->stack, stack->size * sizeof (ILStackDesc));
+		g_free (stack->stack);
+		MEM_FREE (sizeof (ILStackDesc) * stack->max_size);
+	}
+
+	stack->stack = tmp;
+	stack->max_size = new_size;
+}
+
+static void
 stack_init (VerifyContext *ctx, ILCodeDesc *state) 
 {
 	if (state->flags & IL_CODE_FLAG_STACK_INITED)
 		return;
-	state->size = 0;
+	state->size = state->max_size = 0;
 	state->flags |= IL_CODE_FLAG_STACK_INITED;
-	if (!state->stack)
-		state->stack = g_new0 (ILStackDesc, ctx->max_stack);
 }
 
 static void
 stack_copy (ILCodeDesc *to, ILCodeDesc *from)
 {
+	ensure_stack_size (to, from->size);
 	to->size = from->size;
-	memcpy (to->stack, from->stack, sizeof (ILStackDesc) * from->size);
+
+	/*stack copy happens at merge points, which have small stacks*/
+	if (from->size)
+		memcpy (to->stack, from->stack, sizeof (ILStackDesc) * from->size);
 }
 
 static void
@@ -1978,11 +2054,14 @@ check_unverifiable_type (VerifyContext *ctx, MonoType *type)
 	return 1;
 }
 
-
 static ILStackDesc *
 stack_push (VerifyContext *ctx)
 {
 	g_assert (ctx->eval.size < ctx->max_stack);
+	g_assert (ctx->eval.size <= ctx->eval.max_size);
+
+	ensure_stack_size (&ctx->eval, ctx->eval.size + 1);
+
 	return & ctx->eval.stack [ctx->eval.size++];
 }
 
@@ -2451,6 +2530,7 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 	}
 
 	stack_init (ctx, code);
+	ensure_stack_size (code, 1);
 	set_stack_value (ctx, code->stack, type, FALSE);
 	ctx->exception_types = g_slist_prepend (ctx->exception_types, type);
 	code->size = 1;
@@ -4900,6 +4980,8 @@ mono_method_verify (MonoMethod *method, int level)
 	GSList *tmp;
 	VERIFIER_DEBUG ( printf ("Verify IL for method %s %s %s\n",  method->klass->name_space,  method->klass->name, method->name); );
 
+	init_verifier_stats ();
+
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 			(method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))) {
 		return NULL;
@@ -4911,11 +4993,14 @@ mono_method_verify (MonoMethod *method, int level)
 	ctx.signature = mono_method_signature (method);
 	if (!ctx.signature) {
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method signature"));
+
+		finish_collect_stats ();
 		return ctx.list;
 	}
 	ctx.header = mono_method_get_header (method);
 	if (!ctx.header) {
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method header"));
+		finish_collect_stats ();
 		return ctx.list;
 	}
 	ctx.method = method;
@@ -4931,17 +5016,20 @@ mono_method_verify (MonoMethod *method, int level)
 
 	ctx.code = g_new (ILCodeDesc, ctx.header->code_size);
 	ctx.code_size = ctx.header->code_size;
+	MEM_ALLOC (sizeof (ILCodeDesc) * ctx.header->code_size);
 
 	memset(ctx.code, 0, sizeof (ILCodeDesc) * ctx.header->code_size);
 
-
 	ctx.num_locals = ctx.header->num_locals;
 	ctx.locals = g_memdup (ctx.header->locals, sizeof (MonoType*) * ctx.header->num_locals);
+	MEM_ALLOC (sizeof (MonoType*) * ctx.header->num_locals);
 
 	if (ctx.num_locals > 0 && !ctx.header->init_locals)
 		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Method with locals variable but without init locals set"));
 
 	ctx.params = g_new (MonoType*, ctx.max_args);
+	MEM_ALLOC (sizeof (MonoType*) * ctx.max_args);
+
 	if (ctx.signature->hasthis)
 		ctx.params [0] = method->klass->valuetype ? &method->klass->this_arg : &method->klass->byval_arg;
 	memcpy (ctx.params + ctx.signature->hasthis, ctx.signature->params, sizeof (MonoType *) * ctx.signature->param_count);
@@ -6048,6 +6136,7 @@ cleanup:
 	mono_basic_block_free (original_bb);
 	mono_metadata_free_mh (ctx.header);
 
+	finish_collect_stats ();
 	return ctx.list;
 }
 
