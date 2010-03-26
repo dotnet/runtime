@@ -1041,7 +1041,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\mono\utils\mono-ehash.c"
+				RelativePath="..\mono\utils\mono-hash.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"

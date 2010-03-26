@@ -363,7 +363,6 @@ mono_image_open_full
 mono_image_rva_map
 mono_image_strerror
 mono_image_strong_name_position
-mono_image_verify_tables
 mono_images_cleanup
 mono_images_init
 mono_init
