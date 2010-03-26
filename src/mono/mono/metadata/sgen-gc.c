@@ -140,9 +140,6 @@
  *) experiment with max small object size (very small right now - 2kb,
     because it's tied to the max freelist size)
 
- *) avoid the memory store from copy_object when not needed, i.e. when the object
-    is not copied.
-
   *) add an option to mmap the whole heap in one chunk: it makes for many
      simplifications in the checks (put the nursery at the top and just use a single
      check for inclusion/exclusion): the issue this has is that on 32 bit systems it's
@@ -2041,12 +2038,13 @@ static int moved_objects_idx = 0;
  * copy_object could be made into a macro once debugged (use inline for now).
  */
 
-static char* __attribute__((noinline))
-copy_object (char *obj, char *from_space_start, char *from_space_end)
+static void __attribute__((noinline))
+copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
 {
-	static void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
+	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
 
 	char *forwarded;
+	char *obj = *obj_slot;
 	mword objsize;
 	MonoVTable *vt;
 
@@ -2056,10 +2054,10 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		DEBUG (9, fprintf (gc_debug_file, "Not copying %p because it's not in from space (%p-%p)\n",
 						obj, from_space_start, from_space_end));
 		HEAVY_STAT (++stat_copy_object_failed_from_space);
-		return obj;
+		return;
 	}
 
-	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p", obj));
+	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
 
 	/*
 	 * obj must belong to one of:
@@ -2090,13 +2088,14 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr);
 		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
 		HEAVY_STAT (++stat_copy_object_failed_forwarded);
-		return forwarded;
+		*obj_slot = forwarded;
+		return;
 	}
 	if (object_is_pinned (obj)) {
 		g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr);
 		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
 		HEAVY_STAT (++stat_copy_object_failed_pinned);
-		return obj;
+		return;
 	}
 
 	objsize = safe_object_get_size ((MonoObject*)obj);
@@ -2126,7 +2125,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
 		HEAVY_STAT (++stat_copy_object_failed_large_pinned);
-		return obj;
+		return;
 	}
 
 	/*
@@ -2138,7 +2137,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		g_assert (objsize <= MAX_SMALL_OBJ_SIZE);
 		DEBUG (9, fprintf (gc_debug_file, " (already copied)\n"));
 		HEAVY_STAT (++stat_copy_object_failed_to_space);
-		return obj;
+		return;
 	}
 
  copy:
@@ -2215,7 +2214,20 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 	DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
 	gray_object_enqueue (obj);
 	DEBUG (8, g_assert (to_space_bumper <= to_space_top));
-	return obj;
+	*obj_slot = obj;
+}
+
+/*
+ * This is a variant of copy_object() that can be used for object locations
+ * not in the heap. Ideally all the callers should later be changed to call
+ * the real copy_object() that takes the location of the pointer.
+ */
+static char*
+copy_object_no_heap (char *obj, char *from_space_start, char *from_space_end)
+{
+	void *obj_ptr = (void*)obj;
+	copy_object (&obj_ptr, from_space_start, from_space_end);
+	return obj_ptr;
 }
 
 #undef HANDLE_PTR
@@ -2223,7 +2235,8 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		void *__old = *(ptr);	\
 		void *__copy;		\
 		if (__old) {	\
-			*(ptr) = __copy = copy_object (__old, from_start, from_end);	\
+			copy_object ((ptr), from_start, from_end);	\
+			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
 				add_to_global_remset ((ptr), FALSE);							\
@@ -2639,7 +2652,7 @@ static void*
 user_copy (void *addr)
 {
 	if (addr)
-		return copy_object (addr, user_copy_n_start, user_copy_n_end);
+		return copy_object_no_heap (addr, user_copy_n_start, user_copy_n_end);
 	else
 		return NULL;
 }
@@ -2658,7 +2671,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 		desc >>= ROOT_DESC_TYPE_SHIFT;
 		while (desc) {
 			if ((desc & 1) && *start_root) {
-				*start_root = copy_object (*start_root, n_start, n_end);
+				copy_object (start_root, n_start, n_end);
 				DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", start_root, *start_root));
 				drain_gray_stack (n_start, n_end);
 			}
@@ -2676,7 +2689,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 			void **objptr = start_run;
 			while (bmap) {
 				if ((bmap & 1) && *objptr) {
-					*objptr = copy_object (*objptr, n_start, n_end);
+					copy_object (objptr, n_start, n_end);
 					DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", objptr, *objptr));
 					drain_gray_stack (n_start, n_end);
 				}
@@ -2804,7 +2817,7 @@ scan_finalizer_entries (FinalizeEntry *list, char *start, char *end) {
 		if (!fin->object)
 			continue;
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
-		fin->object = copy_object (fin->object, start, end);
+		copy_object (&fin->object, start, end);
 	}
 }
 
@@ -4805,7 +4818,7 @@ finalize_in_range (char *start, char *end, int generation)
 		for (entry = finalizable_hash [i]; entry;) {
 			if ((char*)entry->object >= start && (char*)entry->object < end && !object_is_in_to_space (entry->object)) {
 				gboolean is_fin_ready = object_is_fin_ready (entry->object);
-				char *copy = copy_object (entry->object, start, end);
+				char *copy = copy_object_no_heap (entry->object, start, end);
 				if (is_fin_ready) {
 					char *from;
 					FinalizeEntry *next;
@@ -4896,7 +4909,7 @@ null_link_in_range (char *start, char *end, int generation)
 					hash->num_links--;
 					continue;
 				} else {
-					char *copy = copy_object (object, start, end);
+					char *copy = copy_object_no_heap (object, start, end);
 
 					/* Update pointer if it's moved.  If the object
 					 * has been moved out of the nursery, we need to
@@ -5777,7 +5790,7 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 void*
 mono_gc_scan_object (void *obj)
 {
-	return copy_object (obj, scan_area_arg_start, scan_area_arg_end);
+	return copy_object_no_heap (obj, scan_area_arg_start, scan_area_arg_end);
 }
 	
 /*
@@ -5863,7 +5876,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
 			gpointer old = *ptr;
-			*ptr = copy_object (*ptr, start_nursery, end_nursery);
+			copy_object (ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (old)
 				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), safe_object_get_size (*ptr));
@@ -5885,7 +5898,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
-			*ptr = copy_object (*ptr, start_nursery, end_nursery);
+			copy_object (ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
 				add_to_global_remset (ptr, FALSE);
@@ -5912,7 +5925,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 4;
 		case REMSET_ROOT_LOCATION:
 			/* Same as REMSET_LOCATION, but the address is not required to be in the heap */
-			*ptr = copy_object (*ptr, start_nursery, end_nursery);
+			copy_object (ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote root location remset at %p with %p\n", ptr, *ptr));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
 				/*
