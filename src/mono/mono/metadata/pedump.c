@@ -349,18 +349,6 @@ dump_verify_info (MonoImage *image, int flags)
 		"Ok", "Error", "Warning", NULL, "CLS", NULL, NULL, NULL, "Not Verifiable"
 	};
 
-	if (verify_metadata) {
-		errors = mono_image_verify_tables (image, flags);
-	
-		for (tmp = errors; tmp; tmp = tmp->next) {
-			MonoVerifyInfo *info = tmp->data;
-			g_print ("%s: %s\n", desc [info->status], info->message);
-			if (info->status == MONO_VERIFY_ERROR)
-				count++;
-		}
-		mono_free_verify_list (errors);
-	}
-
 	if (verify_code) { /* verify code */
 		int i;
 		MonoTableInfo *m = &image->tables [MONO_TABLE_METHOD];
