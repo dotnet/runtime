@@ -1910,11 +1910,29 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 			if (special_static != SPECIAL_STATIC_NONE) {
 				guint32 size, offset;
 				gint32 align;
+				gsize default_bitmap [4] = {0};
+				gsize *bitmap;
+				int max_set = 0;
+				MonoClass *fclass;
+				if (mono_type_is_reference (field->type)) {
+					default_bitmap [0] = 1;
+					max_set = 1;
+					bitmap = default_bitmap;
+				} else if (mono_type_is_struct (field->type)) {
+					fclass = mono_class_from_mono_type (field->type);
+					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
+				} else {
+					default_bitmap [0] = 0;
+					max_set = 0;
+					bitmap = default_bitmap;
+				}
 				size = mono_type_size (field->type, &align);
-				offset = mono_alloc_special_static_data (special_static, size, align);
+				offset = mono_alloc_special_static_data (special_static, size, align, bitmap, max_set);
 				if (!domain->special_static_fields)
 					domain->special_static_fields = g_hash_table_new (NULL, NULL);
 				g_hash_table_insert (domain->special_static_fields, field, GUINT_TO_POINTER (offset));
+				if (bitmap != default_bitmap)
+					g_free (bitmap);
 				/* 
 				 * This marks the field as special static to speed up the
 				 * checks in mono_field_static_get/set_value ().

@@ -46,8 +46,6 @@ void     mono_thread_set_manage_callback (MonoThread *thread, MonoThreadManageCa
 
 extern void mono_threads_set_default_stacksize (uint32_t stacksize);
 extern uint32_t mono_threads_get_default_stacksize (void);
-uint32_t  mono_alloc_special_static_data (uint32_t static_type, uint32_t size, uint32_t align);
-void* mono_get_special_static_data   (uint32_t offset);
 
 void mono_threads_request_thread_dump (void);
 

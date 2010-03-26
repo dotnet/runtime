@@ -223,6 +223,9 @@ void mono_thread_interruption_checkpoint (void) MONO_INTERNAL;
 void mono_thread_force_interruption_checkpoint (void) MONO_INTERNAL;
 gint32* mono_thread_interruption_request_flag (void) MONO_INTERNAL;
 
+uint32_t mono_alloc_special_static_data (uint32_t static_type, uint32_t size, uint32_t align, uintptr_t *bitmap, int max_set) MONO_INTERNAL;
+void*    mono_get_special_static_data   (uint32_t offset) MONO_INTERNAL;
+
 MonoException* mono_thread_resume_interruption (void) MONO_INTERNAL;
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
