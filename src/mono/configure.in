@@ -647,6 +647,12 @@ if test x$enable_small_config = xyes; then
 	CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DSMALL_CONFIG"
 fi
 
+if test x$AOT_SUPPORTED != xyes; then
+   AOT_SUPPORTED=no
+fi
+
+AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compilation of system assemblies during the build (on by default on some platforms)], enable_system_aot=$enableval, enable_system_aot=$AOT_SUPPORTED)
+
 DISABLED_FEATURES=none
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
@@ -2787,7 +2793,7 @@ fi
 	echo "PLATFORM = darwin" >> $srcdir/$mcsdir/build/config.make
   fi
 
-  if test x$TARGET = xAMD64 -a x$host_win32 = xno -a "x$AOT_SUPPORTED" = "xyes"; then
+  if test x$TARGET = xAMD64 -a x$host_win32 = xno -a "x$AOT_SUPPORTED" = "xyes" -a x$enable_system_aot = xyes; then
   	 echo "ENABLE_AOT = 1" >> $srcdir/$mcsdir/build/config.make
   fi
 

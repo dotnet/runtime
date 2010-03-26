@@ -1,5 +1,10 @@
 2010-03-26  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Add a --enable-system-aot option to control the generation of
+	AOT images during the build.
+
+2010-03-26  Zoltan Varga  <vargaz@gmail.com>
+
 	* configure.in: Apply some openbsd changes from openbsd ports.
 
 2010-03-23  Neale Ferguson <neale@sinenomine.net>
