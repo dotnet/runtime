@@ -857,7 +857,7 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 	}
 	if (threads_starting_up == NULL) {
 		MONO_GC_REGISTER_ROOT (threads_starting_up);
-		threads_starting_up = mono_g_hash_table_new (NULL, NULL);
+		threads_starting_up = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
 	}
 
 	register_thread_start_argument (thread, start_info);
