@@ -1,6 +1,6 @@
 #! /bin/sh
 SED="sed"
-if [ `which gsed` ] ; then 
+if [ `which gsed 2> /dev/null` ] ; then 
 	SED="gsed"
 fi
 
