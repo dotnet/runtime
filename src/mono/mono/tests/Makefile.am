@@ -517,7 +517,9 @@ else
 if HOST_WIN32
 test_platform:
 else
-test_platform:	testbundle test-iomap-regression
+# mkbundle uses the installed mono-2.pc so it won't work if there is no system mono
+#test_platform:	testbundle test-iomap-regression
+test_platform:	test-iomap-regression
 endif
 endif
 
