@@ -151,8 +151,11 @@ case "$host" in
 		;;
 	*-*-*openbsd*)
 		host_win32=no
-		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_FREEBSD_THREADS -DPLATFORM_BSD"
-		libmono_cflags="-D_THREAD_SAFE"
+		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_FREEBSD_THREADS -DPLATFORM_BSD -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
+		if test "x$disable_munmap" != "xyes"; then
+		CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
+		fi
+		libmono_cflags="-D_THREAD_SAFE -D_REENTRANT"
 		LDFLAGS="$LDFLAGS -pthread"
 		libmono_ldflags="-pthread"
 		need_link_unlink=yes
@@ -1279,6 +1282,9 @@ if test x$target_win32 = xno; then
 		*-*-*freebsd*)
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
 		;;
+		*-*-*openbsd*)
+			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
+		;;
 		*)
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -lpthread")
 		;;
@@ -1671,6 +1677,7 @@ if test x$target_win32 = xno; then
 	AC_CHECK_MEMBERS(
 		[struct kinfo_proc.kp_proc],,, 
 		[#include <sys/types.h>
+		 #include <sys/param.h>
 		 #include <sys/sysctl.h>
 		 #include <sys/proc.h>
 		 ])

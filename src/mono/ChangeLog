@@ -1,3 +1,7 @@
+2010-03-26  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Apply some openbsd changes from openbsd ports.
+
 2010-03-23  Neale Ferguson <neale@sinenomine.net>
 
 	* configure.in: Change ACCESS_UNALINGED to "yes" for s390/s390x.
