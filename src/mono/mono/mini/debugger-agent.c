@@ -764,7 +764,7 @@ mono_debugger_agent_init (void)
 
 	debugger_tls_id = TlsAlloc ();
 
-	thread_to_tls = mono_g_hash_table_new (NULL, NULL);
+	thread_to_tls = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
 	MONO_GC_REGISTER_ROOT (thread_to_tls);
 
 	tid_to_thread = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
