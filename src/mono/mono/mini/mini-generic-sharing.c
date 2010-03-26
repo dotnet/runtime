@@ -14,8 +14,8 @@
 
 #include "mini.h"
 
-#define ALLOW_PARTIAL_SHARING TRUE
-//#define ALLOW_PARTIAL_SHARING FALSE
+//#define ALLOW_PARTIAL_SHARING TRUE
+#define ALLOW_PARTIAL_SHARING FALSE
 
 static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
