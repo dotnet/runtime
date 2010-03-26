@@ -953,7 +953,7 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 #define SHT_ARM_EXIDX 0x70000001
 #endif
 
-#ifdef HAVE_DL_ITERATE_PHDR
+#if defined(HAVE_DL_ITERATE_PHDR) && defined(PT_GNU_EH_FRAME)
 static int
 dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 {
@@ -1208,7 +1208,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	assembly->image->aot_module = amodule;
  
-#ifdef HAVE_DL_ITERATE_PHDR
+#if defined(HAVE_DL_ITERATE_PHDR) && defined(PT_GNU_EH_FRAME)
 	/* Lookup the address of the .eh_frame_hdr () section if available */
 	dl_iterate_phdr (dl_callback, amodule);
 #endif	
