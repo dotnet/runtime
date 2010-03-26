@@ -12,7 +12,7 @@ mono-dtrace.h: $(top_srcdir)/data/mono.d
 endif
 
 libmonoutils_la_SOURCES = \
-	mono-ehash.c		\
+	mono-hash.c		\
 	mono-md5.c		\
 	mono-sha1.c		\
 	mono-logger.c		\
