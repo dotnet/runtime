@@ -14,7 +14,7 @@
 #include <sys/time.h>
 #endif
 
-#if defined(HAVE_SEMAPHORE_H) || defined(USE_MACH_SEMA)
+#if (defined(HAVE_SEMAPHORE_H) || defined(USE_MACH_SEMA)) && !defined(__OpenBSD__)
 /* sem_* or semaphore_* functions in use */
 #  ifdef USE_MACH_SEMA
 #    define TIMESPEC mach_timespec_t

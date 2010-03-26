@@ -14,6 +14,7 @@
 
 /* FIXME: bsds untested */
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/proc.h>
@@ -41,9 +42,14 @@ gpointer*
 mono_process_list (int *size)
 {
 #if USE_SYSCTL
-	int mib [4];
 	int res, i;
+#ifdef KERN_PROC2
+	int mib [6];
+	size_t data_len = sizeof (struct kinfo_proc2) * 400;
+#else
+	int mib [4];
 	size_t data_len = sizeof (struct kinfo_proc) * 400;
+#endif /* KERN_PROC2 */
 	struct kinfo_proc *processes = malloc (data_len);
 	void **buf = NULL;
 
@@ -52,17 +58,33 @@ mono_process_list (int *size)
 	if (!processes)
 		return NULL;
 
+#ifdef KERN_PROC2
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC2;
+	mib [2] = KERN_PROC_ALL;
+	mib [3] = 0;
+	mib [4] = sizeof(struct kinfo_proc2);
+	mib [5] = 400; /* XXX */
+
+	res = sysctl (mib, 6, processes, &data_len, NULL, 0);
+#else
 	mib [0] = CTL_KERN;
 	mib [1] = KERN_PROC;
 	mib [2] = KERN_PROC_ALL;
 	mib [3] = 0;
 	
 	res = sysctl (mib, 4, processes, &data_len, NULL, 0);
+#endif /* KERN_PROC2 */
+
 	if (res < 0) {
 		free (processes);
 		return NULL;
 	}
+#ifdef KERN_PROC2
+	res = data_len/sizeof (struct kinfo_proc2);
+#else
 	res = data_len/sizeof (struct kinfo_proc);
+#endif /* KERN_PROC2 */
 	buf = g_realloc (buf, res * sizeof (void*));
 	for (i = 0; i < res; ++i)
 		buf [i] = GINT_TO_POINTER (processes [i].kinfo_pid_member);
@@ -155,13 +177,32 @@ char*
 mono_process_get_name (gpointer pid, char *buf, int len)
 {
 #if USE_SYSCTL
-	int mib [4];
 	int res;
+#ifdef KERN_PROC2
+	int mib [6];
+	size_t data_len = sizeof (struct kinfo_proc2);
+#else
+	int mib [4];
 	size_t data_len = sizeof (struct kinfo_proc);
+#endif /* KERN_PROC2 */
 	struct kinfo_proc processi;
 
 	memset (buf, 0, len);
 
+#ifdef KERN_PROC2
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC2;
+	mib [2] = KERN_PROC_PID;
+	mib [3] = GPOINTER_TO_UINT (pid);
+	mib [4] = sizeof(struct kinfo_proc2);
+	mib [5] = 400; /* XXX */
+
+	res = sysctl (mib, 6, &processi, &data_len, NULL, 0);
+
+	if (res < 0 || data_len != sizeof (struct kinfo_proc2)) {
+		return buf;
+	}
+#else
 	mib [0] = CTL_KERN;
 	mib [1] = KERN_PROC;
 	mib [2] = KERN_PROC_PID;
@@ -171,6 +212,7 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 	if (res < 0 || data_len != sizeof (struct kinfo_proc)) {
 		return buf;
 	}
+#endif /* KERN_PROC2 */
 	strncpy (buf, processi.kinfo_name_member, len - 1);
 	return buf;
 #else
