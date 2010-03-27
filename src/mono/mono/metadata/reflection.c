@@ -6929,8 +6929,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		mono_array_setref (ret->clauses, i, info);
 	}
 
-	CACHE_OBJECT (MonoReflectionMethodBody *, method, ret, NULL);
 	mono_metadata_free_mh (header);
+	CACHE_OBJECT (MonoReflectionMethodBody *, method, ret, NULL);
 	return ret;
 }
 
