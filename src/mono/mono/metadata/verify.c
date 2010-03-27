@@ -305,12 +305,14 @@ static int allocated_memory;
 static int working_set;
 static int max_allocated_memory;
 static int max_working_set;
+static int total_allocated_memory;
 
 static void
 finish_collect_stats (void)
 {
 	max_allocated_memory = MAX (max_allocated_memory, allocated_memory);
 	max_working_set = MAX (max_working_set, working_set);
+	total_allocated_memory += allocated_memory;
 	allocated_memory = working_set = 0;
 }
 
@@ -322,6 +324,7 @@ init_verifier_stats (void)
 		inited = TRUE;
 		mono_counters_register ("Maximum memory allocated during verification", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &max_allocated_memory);
 		mono_counters_register ("Maximum memory used during verification", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &max_working_set);
+		mono_counters_register ("Total memory allocated for verification", MONO_COUNTER_METADATA | MONO_COUNTER_INT, &total_allocated_memory);
 	}
 }
 
@@ -1474,6 +1477,14 @@ stack_pop_safe (VerifyContext *ctx)
 {
 	g_assert (ctx->eval.size > 0);
 	return ctx->eval.stack + --ctx->eval.size;
+}
+
+/*Positive number distance from stack top. [0] is stack top, [1] is the one below*/
+static ILStackDesc*
+stack_peek (VerifyContext *ctx, int distance)
+{
+	g_assert (ctx->eval.size - distance > 0);
+	return ctx->eval.stack + (ctx->eval.size - 1 - distance);
 }
 
 static ILStackDesc *
@@ -4871,14 +4882,13 @@ mono_method_verify (MonoMethod *method, int level)
 			break; 
 
 		case CEE_DUP: {
-			ILStackDesc * top;
+			ILStackDesc *top;
 			if (!check_underflow (&ctx, 1))
 				break;
 			if (!check_overflow (&ctx))
 				break;
-			top = stack_pop_safe (&ctx);
-			copy_stack_value (stack_push (&ctx), top); 
-			copy_stack_value (stack_push (&ctx), top);
+			top = stack_push (&ctx);
+			copy_stack_value (top, stack_peek (&ctx, 1));
 			++ip;
 			break;
 		}
