@@ -561,7 +561,6 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!inflated || !mono_error_ok (error))
 			return NULL;
 		nt = mono_metadata_type_dup (image, type);
-		nt->data.array = g_memdup (nt->data.array, sizeof (MonoArrayType));
 		nt->data.array->eklass = mono_class_from_mono_type (inflated);
 		mono_metadata_free_type (inflated);
 		return nt;
