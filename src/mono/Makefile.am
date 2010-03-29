@@ -72,7 +72,7 @@ do-build-mono-mcs: mcs-do-clean
 
 .PHONY: do-build-moon-maybe
 do-build-moon-maybe: do-build-mono-mcs
-	cd runtime && $(MAKE) moon-do-build
+#	cd runtime && $(MAKE) moon-do-build
 
 mcs-do-clean:
 	cd runtime && $(MAKE) clean-local
