@@ -2213,8 +2213,8 @@ verify_field_table_full (VerifyContext *ctx)
 	}
 }
 
-/*bits 6,8,9,10,11,13,14,15*/
-#define INVALID_METHOD_IMPLFLAG_BITS ((1 << 6) | (1 << 8) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 13) | (1 << 14) | (1 << 15))
+/*bits 8,9,10,11,13,14,15*/
+#define INVALID_METHOD_IMPLFLAG_BITS ((1 << 8) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 13) | (1 << 14) | (1 << 15))
 static void
 verify_method_table (VerifyContext *ctx)
 {
