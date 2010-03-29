@@ -281,6 +281,28 @@ static int stat_wbarrier_value_copy = 0;
 static int stat_wbarrier_object_copy = 0;
 #endif
 
+static long time_minor_pre_collection_fragment_clear = 0;
+static long time_minor_pinning = 0;
+static long time_minor_scan_remsets = 0;
+static long time_minor_scan_pinned = 0;
+static long time_minor_scan_registered_roots = 0;
+static long time_minor_scan_thread_data = 0;
+static long time_minor_scan_alloc_pinned = 0;
+static long time_minor_finish_gray_stack = 0;
+static long time_minor_fragment_creation = 0;
+
+static long time_major_pre_collection_fragment_clear = 0;
+static long time_major_pinning = 0;
+static long time_major_scan_pinned = 0;
+static long time_major_scan_registered_roots = 0;
+static long time_major_scan_thread_data = 0;
+static long time_major_scan_alloc_pinned = 0;
+static long time_major_scan_finalized = 0;
+static long time_major_scan_big_objects = 0;
+static long time_major_finish_gray_stack = 0;
+static long time_major_sweep = 0;
+static long time_major_fragment_creation = 0;
+
 static long pinned_chunk_bytes_alloced = 0;
 static long large_internal_bytes_alloced = 0;
 
@@ -318,6 +340,7 @@ mono_gc_flush_info (void)
 #define TV_DECLARE(name) gint64 name
 #define TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define TV_ELAPSED(start,end) (int)((end-start) / 10)
+#define TV_ELAPSED_MS(start,end) ((TV_ELAPSED((start),(end)) + 500) / 1000)
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -3304,6 +3327,28 @@ init_stats (void)
 	if (inited)
 		return;
 
+	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pre_collection_fragment_clear);
+	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pinning);
+	mono_counters_register ("Minor scan remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_remsets);
+	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_pinned);
+	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_registered_roots);
+	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_thread_data);
+	mono_counters_register ("Minor scan alloc_pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_alloc_pinned);
+	mono_counters_register ("Minor finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_finish_gray_stack);
+	mono_counters_register ("Minor fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_fragment_creation);
+
+	mono_counters_register ("Major fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_pre_collection_fragment_clear);
+	mono_counters_register ("Major pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_pinning);
+	mono_counters_register ("Major scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_pinned);
+	mono_counters_register ("Major scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_registered_roots);
+	mono_counters_register ("Major scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_thread_data);
+	mono_counters_register ("Major scan alloc_pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_alloc_pinned);
+	mono_counters_register ("Major scan finalized", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_finalized);
+	mono_counters_register ("Major scan big objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_big_objects);
+	mono_counters_register ("Major finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_finish_gray_stack);
+	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_sweep);
+	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_fragment_creation);
+
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_field);
 	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_arrayref);
@@ -3386,6 +3431,10 @@ collect_nursery (size_t requested_size)
 	max_garbage_amount = nursery_next - nursery_start;
 	g_assert (nursery_section->size >= max_garbage_amount);
 
+	/* world must be stopped already */
+	TV_GETTIME (all_atv);
+	TV_GETTIME (atv);
+
 	/* Clear all remaining nursery fragments, pinning depends on this */
 	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 		g_assert (orig_nursery_next <= nursery_frag_real_end);
@@ -3394,6 +3443,9 @@ collect_nursery (size_t requested_size)
 			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
 		}
 	}
+
+	TV_GETTIME (btv);
+	time_minor_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
 
 	if (xdomain_checks)
 		check_for_xdomain_refs ();
@@ -3414,17 +3466,15 @@ collect_nursery (size_t requested_size)
 
 	num_minor_gcs++;
 	mono_stats.minor_gc_count ++;
-	/* world must be stopped already */
-	TV_GETTIME (all_atv);
-	TV_GETTIME (atv);
 	/* pin from pinned handles */
 	init_pinning ();
 	pin_from_roots (nursery_start, nursery_next);
 	/* identify pinned objects */
 	optimize_pin_queue (0);
 	next_pin_slot = pin_objects_from_addresses (nursery_section, pin_queue, pin_queue + next_pin_slot, nursery_start, nursery_next);
-	TV_GETTIME (btv);
-	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
+	TV_GETTIME (atv);
+	time_minor_pinning += TV_ELAPSED_MS (btv, atv);
+	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (btv, atv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
 	if (consistency_check_at_minor_collection)
@@ -3437,32 +3487,44 @@ collect_nursery (size_t requested_size)
 
 	scan_from_remsets (nursery_start, nursery_next);
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
-	TV_GETTIME (atv);
-	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (btv, atv)));
+	TV_GETTIME (btv);
+	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
+	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	/* the pinned objects are roots */
 	for (i = 0; i < next_pin_slot; ++i) {
 		DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of pinned %p (%s)\n", i, pin_queue [i], safe_name (pin_queue [i])));
 		scan_object (pin_queue [i], nursery_start, nursery_next);
 	}
+	TV_GETTIME (atv);
+	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 	/* registered roots, this includes static fields */
 	scan_from_registered_roots (nursery_start, nursery_next, ROOT_TYPE_NORMAL);
 	scan_from_registered_roots (nursery_start, nursery_next, ROOT_TYPE_WBARRIER);
+	TV_GETTIME (btv);
+	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
+	/* thread data */
 	scan_thread_data (nursery_start, nursery_next, TRUE);
+	TV_GETTIME (atv);
+	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 	/* alloc_pinned objects */
 	scan_from_pinned_objects (nursery_start, nursery_next);
 	TV_GETTIME (btv);
+	time_minor_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY);
+	TV_GETTIME (atv);
+	time_minor_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
 	build_nursery_fragments (0, next_pin_slot);
-	TV_GETTIME (atv);
-	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %zd bytes available\n", TV_ELAPSED (btv, atv), fragment_total));
+	TV_GETTIME (btv);
+	time_minor_fragment_creation += TV_ELAPSED_MS (atv, btv);
+	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %zd bytes available\n", TV_ELAPSED (atv, btv), fragment_total));
 
 	for (section = section_list; section; section = section->block.next) {
 		if (section->is_to_space)
@@ -3533,6 +3595,10 @@ major_collection (const char *reason)
 	num_major_gcs++;
 	mono_stats.major_gc_count ++;
 
+	/* world must be stopped already */
+	TV_GETTIME (all_atv);
+	TV_GETTIME (atv);
+
 	/* Clear all remaining nursery fragments, pinning depends on this */
 	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 		g_assert (nursery_next <= nursery_frag_real_end);
@@ -3542,6 +3608,9 @@ major_collection (const char *reason)
 		}
 	}
 
+	TV_GETTIME (btv);
+	time_major_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
+
 	if (xdomain_checks)
 		check_for_xdomain_refs ();
 
@@ -3549,14 +3618,13 @@ major_collection (const char *reason)
 		collect_nursery (0);
 		return;
 	}
-	TV_GETTIME (all_atv);
 	nursery_section->next_data = nursery_real_end;
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
 	 */
 	/* The remsets are not useful for a major collection */
 	clear_remsets ();
-	/* world must be stopped already */
+
 	TV_GETTIME (atv);
 	init_pinning ();
 	DEBUG (6, fprintf (gc_debug_file, "Collecting pinned addresses\n"));
@@ -3621,6 +3689,7 @@ major_collection (const char *reason)
 	}
 
 	TV_GETTIME (btv);
+	time_major_pinning += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
@@ -3649,17 +3718,30 @@ major_collection (const char *reason)
 		}
 	}
 	scan_pinned_objects (scan_from_pinned_chunk_if_marked, NULL);
+	TV_GETTIME (atv);
+	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
+
 	/* registered roots, this includes static fields */
 	scan_from_registered_roots (heap_start, heap_end, ROOT_TYPE_NORMAL);
 	scan_from_registered_roots (heap_start, heap_end, ROOT_TYPE_WBARRIER);
+	TV_GETTIME (btv);
+	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
+
 	/* Threads */
 	scan_thread_data (heap_start, heap_end, TRUE);
+	TV_GETTIME (atv);
+	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);
+
 	/* alloc_pinned objects */
 	scan_from_pinned_objects (heap_start, heap_end);
+	TV_GETTIME (btv);
+	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
+
 	/* scan the list of objects ready for finalization */
 	scan_finalizer_entries (fin_ready_list, heap_start, heap_end);
 	scan_finalizer_entries (critical_fin_list, heap_start, heap_end);
 	TV_GETTIME (atv);
+	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 
 	/* we need to go over the big object list to see if any was marked and scan it
@@ -3667,8 +3749,13 @@ major_collection (const char *reason)
 	 * objects could reference big objects (this happens in finish_gray_stack ())
 	 */
 	scan_needed_big_objects (heap_start, heap_end);
+	TV_GETTIME (btv);
+	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
+
 	/* all the objects in the heap */
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD);
+	TV_GETTIME (atv);
+	time_major_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
 
 	unset_to_space ();
 
@@ -3695,6 +3782,9 @@ major_collection (const char *reason)
 	}
 	/* unpin objects from the pinned chunks and free the unmarked ones */
 	sweep_pinned_objects ();
+
+	TV_GETTIME (btv);
+	time_major_sweep += TV_ELAPSED_MS (atv, btv);
 
 	/* free the unused sections */
 	prev_section = NULL;
@@ -3731,6 +3821,9 @@ major_collection (const char *reason)
 	 * next allocations.
 	 */
 	build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_end);
+
+	TV_GETTIME (atv);
+	time_major_fragment_creation += TV_ELAPSED_MS (btv, atv);
 
 	TV_GETTIME (all_btv);
 	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
