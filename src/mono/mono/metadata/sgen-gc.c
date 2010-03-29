@@ -249,7 +249,10 @@ static gboolean do_scan_starts_check = FALSE;
 
 #ifdef HEAVY_STATISTICS
 static long stat_objects_alloced = 0;
+static long stat_bytes_alloced = 0;
 static long stat_objects_alloced_degraded = 0;
+static long stat_bytes_alloced_degraded = 0;
+static long stat_bytes_alloced_los = 0;
 static long stat_copy_object_called_nursery = 0;
 static long stat_objects_copied_nursery = 0;
 static long stat_copy_object_called_major = 0;
@@ -3360,7 +3363,10 @@ init_stats (void)
 	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_object_copy);
 
 	mono_counters_register ("# objects allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_alloced);
+	mono_counters_register ("bytes allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced);
 	mono_counters_register ("# objects allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_alloced_degraded);
+	mono_counters_register ("bytes allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced_degraded);
+	mono_counters_register ("bytes allocated in LOS", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced_los);
 	mono_counters_register ("# copy_object() called (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_called_nursery);
 	mono_counters_register ("# objects copied (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_copied_nursery);
 	mono_counters_register ("# copy_object() called (major)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_called_major);
@@ -4463,6 +4469,7 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 	void **p = NULL;
 	g_assert (size <= MAX_SMALL_OBJ_SIZE);
 	HEAVY_STAT (++stat_objects_alloced_degraded);
+	HEAVY_STAT (stat_bytes_alloced_degraded += size);
 	for (section = section_list; section; section = section->block.next) {
 		if (section != nursery_section && (section->end_data - section->next_data) >= size) {
 			p = (void**)section->next_data;
@@ -4500,6 +4507,10 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	TLAB_ACCESS_INIT;
 
 	HEAVY_STAT (++stat_objects_alloced);
+	if (size <= MAX_SMALL_OBJ_SIZE)
+		HEAVY_STAT (stat_bytes_alloced += size);
+	else
+		HEAVY_STAT (stat_bytes_alloced_los += size);
 
 	size += ALLOC_ALIGN - 1;
 	size &= ~(ALLOC_ALIGN - 1);
@@ -4685,6 +4696,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			 */
 
 			HEAVY_STAT (++stat_objects_alloced);
+			HEAVY_STAT (stat_bytes_alloced += size);
 
 			DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 			binary_protocol_alloc (p, vtable, size);
