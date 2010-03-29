@@ -3468,7 +3468,7 @@ static uintptr_t* static_reference_bitmaps [NUM_STATIC_DATA_IDX];
 
 #ifdef HAVE_SGEN_GC
 static void
-mark_tls_slots (void *addr, MonoGCCopyFunc mark_func)
+mark_tls_slots (void *addr, MonoGCMarkFunc mark_func)
 {
 	int i;
 	gpointer *static_data = addr;
@@ -3484,7 +3484,7 @@ mark_tls_slots (void *addr, MonoGCCopyFunc mark_func)
 			void ** p = ptr;
 			while (bmap) {
 				if ((bmap & 1) && *p) {
-					*p = mark_func (*p);
+					mark_func (p);
 				}
 				p++;
 				bmap >>= 1;

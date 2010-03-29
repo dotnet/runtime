@@ -1057,7 +1057,7 @@ enum {
 static gsize* complex_descriptors = NULL;
 static int complex_descriptors_size = 0;
 static int complex_descriptors_next = 0;
-static MonoGCMarkFunc user_descriptors [MAX_USER_DESCRIPTORS];
+static MonoGCRootMarkFunc user_descriptors [MAX_USER_DESCRIPTORS];
 static int user_descriptors_next = 0;
 
 static int
@@ -1628,11 +1628,10 @@ check_root_obj_specific_ref (RootRecord *root, MonoObject *key, MonoObject *obj)
 static MonoObject *check_key = NULL;
 static RootRecord *check_root = NULL;
 
-static void*
-check_root_obj_specific_ref_from_marker (void *obj)
+static void
+check_root_obj_specific_ref_from_marker (void **obj)
 {
-	check_root_obj_specific_ref (check_root, check_key, obj);
-	return obj;
+	check_root_obj_specific_ref (check_root, check_key, *obj);
 }
 
 static void
@@ -1677,7 +1676,7 @@ scan_roots_for_specific_ref (MonoObject *key, int root_type)
 				break;
 			}
 			case ROOT_DESC_USER: {
-				MonoGCMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+				MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
 				marker (start_root, check_root_obj_specific_ref_from_marker);
 				break;
 			}
@@ -1788,11 +1787,10 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 
 static MonoDomain *check_domain = NULL;
 
-static void*
-check_obj_not_in_domain (void *o)
+static void
+check_obj_not_in_domain (void **o)
 {
-	g_assert (((MonoObject*)o)->vtable->domain != check_domain);
-	return o;
+	g_assert (((MonoObject*)(*o))->vtable->domain != check_domain);
 }
 
 static void
@@ -1840,7 +1838,7 @@ scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 				break;
 			}
 			case ROOT_DESC_USER: {
-				MonoGCMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+				MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
 				marker (start_root, check_obj_not_in_domain);
 				break;
 			}
@@ -2648,13 +2646,10 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 static char *user_copy_n_start;
 static char *user_copy_n_end;
 
-static void*
-user_copy (void *addr)
+static void
+user_copy (void **addr)
 {
-	if (addr)
-		return copy_object_no_heap (addr, user_copy_n_start, user_copy_n_end);
-	else
-		return NULL;
+	copy_object (addr, user_copy_n_start, user_copy_n_end);
 }
 
 /*
@@ -2701,7 +2696,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 		break;
 	}
 	case ROOT_DESC_USER: {
-		MonoGCMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+		MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
 
 		user_copy_n_start = n_start;
 		user_copy_n_end = n_end;
@@ -7275,7 +7270,7 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 }
 
 void*
-mono_gc_make_root_descr_user (MonoGCMarkFunc marker)
+mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 {
 	void *descr;
 

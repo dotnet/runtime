@@ -83,13 +83,13 @@ void* mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits) MONO_INTERNAL;
 /* User defined marking function */
 /* It should work like this:
  * foreach (ref in GC references in the are structure pointed to by ADDR)
- *    *ref = mark_func (*ref)
+ *    mark_func (ref)
  */
-typedef void *(*MonoGCCopyFunc) (void *addr);
-typedef void (*MonoGCMarkFunc) (void *addr, MonoGCCopyFunc mark_func);
+typedef void (*MonoGCMarkFunc)     (void **addr);
+typedef void (*MonoGCRootMarkFunc) (void *addr, MonoGCMarkFunc mark_func);
 
 /* Create a descriptor with a user defined marking function */
-void *mono_gc_make_root_descr_user (MonoGCMarkFunc marker);
+void *mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker);
 
 /* desc is the result from mono_gc_make_descr*. A NULL value means
  * all the words might contain GC pointers.

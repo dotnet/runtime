@@ -76,7 +76,7 @@ static const int prime_tbl[] = {
 #ifdef HAVE_SGEN_GC
 static void *table_hash_descr = NULL;
 
-static void mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func);
+static void mono_g_hash_mark (void *addr, MonoGCMarkFunc mark_func);
 
 static Slot*
 new_slot (MonoGHashTable *hash)
@@ -470,7 +470,7 @@ mono_g_hash_table_replace(MonoGHashTable *h, gpointer k, gpointer v)
 
 /* GC marker function */
 static void
-mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func)
+mono_g_hash_mark (void *addr, MonoGCMarkFunc mark_func)
 {
 	MonoGHashTable *table = (MonoGHashTable*)addr;
 	Slot *node;
@@ -480,23 +480,23 @@ mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func)
 		for (i = 0; i < table->table_size; i++) {
 			for (node = table->table [i]; node; node = node->next) {
 				if (node->key)
-					node->key = mark_func (node->key);
+					mark_func (&node->key);
 			}
 		}
 	} else if (table->gc_type == MONO_HASH_VALUE_GC) {
 		for (i = 0; i < table->table_size; i++) {
 			for (node = table->table [i]; node; node = node->next) {
 				if (node->value)
-					node->value = mark_func (node->value);
+					mark_func (&node->value);
 			}
 		}
 	} else if (table->gc_type == MONO_HASH_KEY_VALUE_GC) {
 		for (i = 0; i < table->table_size; i++) {
 			for (node = table->table [i]; node; node = node->next) {
 				if (node->key)
-					node->key = mark_func (node->key);
+					mark_func (&node->key);
 				if (node->value)
-					node->value = mark_func (node->value);
+					mark_func (&node->value);
 			}
 		}
 	}
