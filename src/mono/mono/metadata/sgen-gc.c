@@ -658,7 +658,7 @@ static int num_major_gcs = 0;
 #define BLOCK_FOR_OBJECT(o)		((Block*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
 #define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
 #define MIN_MINOR_COLLECTION_SECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 3 / MAJOR_SECTION_SIZE)
-#define DEFAULT_LOS_COLLECTION_TARGET (DEFAULT_NURSERY_SIZE * 2)
+#define MIN_LOS_ALLOWANCE		(DEFAULT_NURSERY_SIZE * 2)
 /* to quickly find the head of an object pinned by a conservative address
  * we keep track of the objects allocated for each SCAN_START_SIZE memory
  * chunk in the nursery or other memory sections. Larger values have less
@@ -3852,15 +3852,24 @@ major_collection (const char *reason)
 	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 1);
 
 	save_target = num_major_sections / 2;
+	/*
+	 * We aim to allow the allocation of as many sections as is
+	 * necessary to reclaim save_target sections in the next
+	 * collection.  We assume the collection pattern won't change.
+	 * In the last cycle, we had num_major_sections_saved for
+	 * minor_collection_sections_alloced.  Assuming things won't
+	 * change, this must be the same ratio as save_target for
+	 * allowance_target, i.e.
+	 *
+	 *    num_major_sections_saved            save_target
+	 * --------------------------------- == ----------------
+	 * minor_collection_sections_alloced    allowance_target
+	 *
+	 * hence:
+	 */
 	allowance_target = save_target * minor_collection_sections_alloced / num_major_sections_saved;
 
 	minor_collection_section_allowance = MAX (MIN (allowance_target, num_major_sections), MIN_MINOR_COLLECTION_SECTION_ALLOWANCE);
-
-	/*
-	printf ("alloced %d  saved %d  target %d  allowance %d\n",
-			minor_collection_sections_alloced, num_major_sections_saved, allowance_target,
-			minor_collection_section_allowance);
-	*/
 
 	minor_collection_sections_alloced = 0;
 
@@ -4391,18 +4400,41 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	LOSObject *obj;
 	void **vtslot;
 	size_t alloc_size;
-	int just_did_major_gc = FALSE;
 
 	g_assert (size > MAX_SMALL_OBJ_SIZE);
 
 	if (los_memory_usage > next_los_collection) {
+		static mword last_los_memory_usage = 0;
+
+		mword los_memory_alloced;
+		mword old_los_memory_usage;
+		mword los_memory_saved;
+		mword save_target;
+		mword allowance_target;
+		mword allowance;
+
 		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %zu, limit: %zu)\n", size, los_memory_usage, next_los_collection));
-		just_did_major_gc = TRUE;
 		stop_world ();
+
+		g_assert (los_memory_usage >= last_los_memory_usage);
+		los_memory_alloced = los_memory_usage - last_los_memory_usage;
+		old_los_memory_usage = los_memory_usage;
+
 		major_collection ("LOS overflow");
+
+		los_memory_saved = MAX (old_los_memory_usage - los_memory_usage, 1);
+		save_target = los_memory_usage / 2;
+		/*
+		 * see the comment at the end of major_collection()
+		 * for the explanation for this calculation.
+		 */
+		allowance_target = (mword)((double)save_target * (double)los_memory_alloced / (double)los_memory_saved);
+		allowance = MAX (MIN (allowance_target, los_memory_usage), MIN_LOS_ALLOWANCE);
+		next_los_collection = los_memory_usage + allowance;
+
+		last_los_memory_usage = los_memory_usage;
+
 		restart_world ();
-		/* later increase based on a percent of the heap size */
-		next_los_collection = los_memory_usage + 5*1024*1024;
 	}
 	alloc_size = size;
 	alloc_size += sizeof (LOSObject);
