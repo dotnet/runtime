@@ -1,3 +1,9 @@
+2010-03-29  Andreas Färber  <andreas.faerber@web.de>
+
+	* configure.in: Add support for Haiku
+
+	Contributed under MIT/X11 license.
+
 2010-03-26  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add a --enable-system-aot option to control the generation of

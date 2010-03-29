@@ -257,6 +257,17 @@ case "$host" in
 				;;
 		esac
 		;;
+	*-*-haiku*)
+		host_win32=no
+		CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_THREAD_SAFE"
+		libmono_cflags="-D_REENTRANT -D_THREAD_SAFE"
+		libdl=
+		LIBS="$LIBS -lnetwork"
+		need_link_unlink=yes
+		AC_DEFINE(PTHREAD_POINTER_ID)
+		libgc_threads=pthreads
+		use_sigposix=yes
+		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])
 		host_win32=no
@@ -2054,6 +2065,10 @@ case "$host" in
 			;;
 		  cygwin*)
 			have_visibility_hidden=no		  
+			;;
+		  haiku*)
+			LIBC=libroot.so
+			;;
 		esac
 		;;
 	x86_64-*-* | amd64-*-*)
