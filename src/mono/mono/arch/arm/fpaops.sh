@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
 DYADIC="ADF MUF SUF RSF DVF RDF POW RPW RMF FML FDV FRD POL"
 MONADIC="MVF MNF ABS RND SQT LOG EXP SIN COS TAN ASN ACS ATN URD NRM"
 
 # $1: opcode list
 # $2: template
-function gen() {
+gen() {
 	for i in $1; do
 		sed "s/<Op>/$i/g" $2.th
 	done

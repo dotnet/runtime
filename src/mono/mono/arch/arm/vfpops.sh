@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
 DYADIC="ADD SUB MUL NMUL DIV"
 MONADIC="CPY ABS NEG SQRT CMP CMPE CMPZ CMPEZ CVT UITO SITO TOUI TOSI TOUIZ TOSIZ"
 
 # $1: opcode list
 # $2: template
-function gen() {
+gen() {
 	for i in $1; do
 		sed "s/<Op>/$i/g" $2.th
 	done

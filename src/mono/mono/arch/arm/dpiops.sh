@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 OPCODES="AND EOR SUB RSB ADD ADC SBC RSC ORR BIC"
 CMP_OPCODES="TST TEQ CMP CMN"
@@ -6,7 +6,7 @@ MOV_OPCODES="MOV MVN"
 
 # $1: opcode list
 # $2: template
-function gen() {
+gen() {
 	for i in $1; do
 		sed "s/<Op>/$i/g" $2.th
 	done
