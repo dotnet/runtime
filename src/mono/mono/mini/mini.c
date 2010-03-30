@@ -3483,6 +3483,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		table->num_holes = (guint16)num_holes;
 		i = 0;
 		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
+			guint32 start_bb_offset;
 			MonoTryBlockHoleJitInfo *hole;
 			TryBlockHole *hole_data = tmp->data;
 			MonoExceptionClause *ec = hole_data->clause;
@@ -3494,10 +3495,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			if (clause_last_bb->native_offset == hole_end)
 				continue;
 
+			start_bb_offset = hole_data->start_offset - hole_data->basic_block->native_offset;
 			hole = &table->holes [i++];
 			hole->clause = hole_data->clause - &header->clauses [0];
 			hole->offset = (guint32)hole_data->start_offset;
-			hole->length = (guint16)(hole_data->basic_block->native_length - hole_data->start_offset);
+			hole->length = (guint16)(hole_data->basic_block->native_length - start_bb_offset);
 
 			if (G_UNLIKELY (cfg->verbose_level >= 4))
 				printf ("\tTry block hole at eh clause %d offset %x length %x\n", hole->clause, hole->offset, hole->length);
