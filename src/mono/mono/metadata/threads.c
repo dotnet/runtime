@@ -3648,8 +3648,8 @@ update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int max_set)
 	offset /= sizeof (gpointer);
 	/* offset is now the bitmap offset */
 	for (i = 0; i < max_set; ++i) {
-		if (bitmap [i / sizeof (uintptr_t)] & (1 << (i & (sizeof (uintptr_t) * 8 -1))))
-			rb [(offset + i) / (sizeof (uintptr_t) * 8)] |= (1 << ((offset + i) & (sizeof (uintptr_t) * 8 -1)));
+		if (bitmap [i / sizeof (uintptr_t)] & (1L << (i & (sizeof (uintptr_t) * 8 -1))))
+			rb [(offset + i) / (sizeof (uintptr_t) * 8)] |= (1L << ((offset + i) & (sizeof (uintptr_t) * 8 -1)));
 	}
 }
 
@@ -3665,7 +3665,7 @@ clear_reference_bitmap (guint32 offset, guint32 size)
 	size += offset;
 	/* offset is now the bitmap offset */
 	for (; offset < size; ++offset)
-		rb [offset / (sizeof (uintptr_t) * 8)] &= ~(1 << (offset & (sizeof (uintptr_t) * 8 -1)));
+		rb [offset / (sizeof (uintptr_t) * 8)] &= ~(1L << (offset & (sizeof (uintptr_t) * 8 -1)));
 }
 
 /*
