@@ -85,6 +85,7 @@ typedef struct {
 	union {
 		MonoClass *catch_class;
 		gpointer filter;
+		gpointer handler_end;
 	} data;
 } MonoJitExceptionInfo;
 
