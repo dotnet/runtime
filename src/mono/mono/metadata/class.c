@@ -4439,9 +4439,6 @@ mono_class_init (MonoClass *class)
 		mono_secman_inheritancedemand_class (class, class->parent);
 	}
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-		mono_security_core_clr_check_inheritance (class);
-
 	mono_stats.initialized_class_count++;
 
 	if (class->generic_class && !class->generic_class->is_dynamic) {
@@ -4647,6 +4644,9 @@ mono_class_init (MonoClass *class)
 	} else {
 		setup_interface_offsets (class, 0);
 	}
+
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+		mono_security_core_clr_check_inheritance (class);
 
 	if (mono_loader_get_last_error ()) {
 		if (class->exception_type == MONO_EXCEPTION_NONE) {

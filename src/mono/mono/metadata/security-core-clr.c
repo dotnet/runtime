@@ -5,7 +5,7 @@
  *	Mark Probst <mark.probst@gmail.com>
  *	Sebastien Pouliot  <sebastien@ximian.com>
  *
- * Copyright 2007-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2007-2010 Novell, Inc (http://www.novell.com)
  */
 
 #include <mono/metadata/class-internals.h>
@@ -46,6 +46,34 @@ security_safe_critical_attribute (void)
 	return class;
 }
 
+/* MonoClass is not fully initialized (inited is not yet == 1) when we 
+ * check the inheritance rules so we need to look for the default ctor
+ * ourselve to avoid recursion (and aborting)
+ */
+static MonoMethod*
+get_default_ctor (MonoClass *klass)
+{
+	int i;
+
+	if (!klass->methods)
+		return NULL;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		MonoMethodSignature *sig;
+		MonoMethod *method = klass->methods [i];
+
+		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) == 0)
+			continue;
+		if ((method->name[0] != '.') || strcmp (".ctor", method->name))
+			continue;
+		sig = mono_method_signature (method);
+		if (sig && (sig->param_count == 0))
+			return method;
+	}
+
+	return NULL;
+}
+
 /*
  * mono_security_core_clr_check_inheritance:
  *
@@ -59,6 +87,12 @@ security_safe_critical_attribute (void)
  *	Critical	Critical
  *
  *	Reference: http://msdn.microsoft.com/en-us/magazine/cc765416.aspx#id0190030
+ *
+ *	Furthermore a class MUST have a default constructor if its base 
+ *	class has a non-transparent default constructor. The same 
+ *	inheritance rule applies to both default constructors.
+ *
+ *	Reference: message from a SecurityException in SL4RC
  */
 void
 mono_security_core_clr_check_inheritance (MonoClass *class)
@@ -72,8 +106,15 @@ mono_security_core_clr_check_inheritance (MonoClass *class)
 	class_level = mono_security_core_clr_class_level (class);
 	parent_level = mono_security_core_clr_class_level (parent);
 
-	if (class_level < parent_level)
+	if (class_level < parent_level) {
 		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	} else {
+		class_level = mono_security_core_clr_method_level (get_default_ctor (class), FALSE);
+		parent_level = mono_security_core_clr_method_level (get_default_ctor (parent), FALSE);
+		if (class_level < parent_level) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+		}
+	}
 }
 
 /*
