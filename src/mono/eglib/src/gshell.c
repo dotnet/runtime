@@ -137,7 +137,7 @@ gchar *
 g_shell_quote (const gchar *unquoted_string)
 {
 	GString *result = g_string_new ("'");
-	char *p;
+	const gchar *p;
 	
 	for (p = unquoted_string; *p; p++){
 		if (*p == '\'')
