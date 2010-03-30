@@ -1622,7 +1622,15 @@ static dis_map_t field_flags_map [] = {
 	{ FIELD_ATTRIBUTE_SPECIAL_NAME,        "specialname " },
 	{ FIELD_ATTRIBUTE_PINVOKE_IMPL,        "FIXME:pinvokeimpl " },
 	{ FIELD_ATTRIBUTE_RT_SPECIAL_NAME,        "rtspecialname " },
-	/*{ FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL,        "hasfieldmarshal " },*/
+
+	/* This is set when a MarshalAs attribute is seen. FIXME: round-trip?  */
+	{ FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL,        "" },
+
+	/* This seems to be set if LITERAL is set. FIXME: round-trip? */
+	{ FIELD_ATTRIBUTE_HAS_DEFAULT, 		"" },
+
+	/* This seems to be set on compiler-generated array initializer fields. FIXME: round-trip? */
+	{ FIELD_ATTRIBUTE_HAS_FIELD_RVA, 		"" },
 	{ 0, NULL }
 };
 
