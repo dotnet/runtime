@@ -3498,36 +3498,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			hole->clause = hole_data->clause - &header->clauses [0];
 			hole->offset = (guint32)hole_data->start_offset;
 			hole->length = (guint16)(hole_data->basic_block->native_length - hole_data->start_offset);
+
+			if (G_UNLIKELY (cfg->verbose_level >= 4))
+				printf ("\tTry block hole at eh clause %d offset %x length %x\n", hole->clause, hole->offset, hole->length);
 		}
 		g_assert (i == num_holes);
-	}
-
-	if (G_UNLIKELY (header->num_clauses && cfg->verbose_level >= 4)) {
-		GSList *tmp;
-		int i;
-		printf ("\nException Handling Data\n");
-		for (i = 0; i < header->num_clauses; i++) {
-			MonoExceptionClause *ec = &header->clauses [i];
-			int try_start = cfg->cil_offset_to_bb [ec->try_offset]->native_offset;
-			int try_end  = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len]->native_offset;
-			int handler_start = cfg->cil_offset_to_bb [ec->handler_offset]->native_offset;
-			int handler_end;
-			if (ec->handler_offset + ec->handler_len < header->code_size)
-				handler_end =  cfg->cil_offset_to_bb [ec->handler_offset + ec->handler_len]->native_offset;
-			else
-				handler_end = cfg->epilog_begin;
-
-			printf ("EH clause %d flags %x try IL %x-%x NATIVE %x-%x handler IL %x-%x NATIVE %x-%x\n",
-				i, ec->flags,
-				ec->try_offset, ec->try_offset + ec->try_len, try_start, try_end,
-				ec->handler_offset, ec->handler_offset + ec->handler_len, handler_start, handler_end);
-		}
-		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
-			TryBlockHole *hole = tmp->data;
-			int block = hole->clause - &header->clauses [0];
-			printf ("try block hole at eh clause %d range %x-%x\n",
-				block, hole->start_offset, hole->basic_block->native_offset + hole->basic_block->native_length);
-		}
 	}
 
 	if (COMPILE_LLVM (cfg)) {
@@ -3572,7 +3547,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				gpointer hole_end = cfg->native_code + (hole->basic_block->native_offset + hole->basic_block->native_length);
 				if (hole->clause == ec && hole_end == ei->try_end) {
 					if (G_UNLIKELY (cfg->verbose_level >= 4))
-						printf ("\tShortening try block %d from %p to %p\n", i, ei->try_end, cfg->native_code + hole->start_offset);
+						printf ("\tShortening try block %d from %x to %x\n", i, (guint8*)ei->try_end - cfg->native_code, hole->start_offset);
+
 					ei->try_end = cfg->native_code + hole->start_offset;
 					break;
 				}
@@ -3582,7 +3558,11 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		if (G_UNLIKELY (cfg->verbose_level >= 4)) {
 			for (i = 0; i < jinfo->num_clauses; i++) {
 				MonoJitExceptionInfo *ei = &jinfo->clauses [i];
-				printf ("JitInfo EH clause %d flags %x try %p-%p handler %p\n", i, ei->flags, ei->try_start, ei->try_end, ei->handler_start);
+				int start = (guint8*)ei->try_start - cfg->native_code;
+				int end = (guint8*)ei->try_end - cfg->native_code;
+				int handler = (guint8*)ei->handler_start - cfg->native_code;
+
+				printf ("JitInfo EH clause %d flags %x try %x-%x handler %x\n", i, ei->flags, start, end, handler);
 			}
 		}
 
