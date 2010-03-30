@@ -159,6 +159,7 @@ SIG_HANDLER_SIGNATURE (sigabrt_signal_handler)
 static void
 SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 {
+	MonoContext mctx;
 	gboolean running_managed;
 	MonoException *exc;
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -195,7 +196,19 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	} else {
 		running_managed = FALSE;
 	}
-	
+
+	/* We can't do handler block checking from metadata since it requires doing
+	 * a stack walk with context.
+	 *
+	 * FIXME add full-aot support.
+	 */
+	if (!mono_aot_only) {
+		mono_arch_sigctx_to_monoctx (ctx, &mctx);
+		if (mono_install_handler_block_guard (thread, &mctx)) {
+			return;
+		}
+	}
+
 	exc = mono_thread_request_interruption (running_managed); 
 	if (!exc)
 		return;

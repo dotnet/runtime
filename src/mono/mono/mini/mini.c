@@ -3555,6 +3555,18 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 					break;
 				}
 			}
+
+			if (ec->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+				int end_offset;
+				if (ec->handler_offset + ec->handler_len < header->code_size) {
+					tblock = cfg->cil_offset_to_bb [ec->handler_offset + ec->handler_len];
+					g_assert (tblock);
+					end_offset = tblock->native_offset;
+				} else {
+					end_offset = cfg->epilog_begin;
+				}
+				ei->data.handler_end = cfg->native_code + end_offset;
+			}
 		}
 
 		if (G_UNLIKELY (cfg->verbose_level >= 4)) {

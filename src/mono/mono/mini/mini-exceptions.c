@@ -63,6 +63,7 @@ static gpointer restore_stack_protection_tramp = NULL;
 
 static void try_more_restore (void);
 static void restore_stack_protection (void);
+static void mono_walk_stack_full (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gboolean use_new_ctx, gpointer user_data);
 
 void
 mono_exceptions_init (void)
@@ -659,6 +660,12 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 void
 mono_walk_stack (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gpointer user_data)
 {
+	mono_walk_stack_full (domain, jit_tls, start_ctx, func, TRUE, user_data);
+}
+
+static void
+mono_walk_stack_full (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gboolean use_new_ctx, gpointer user_data)
+{
 	MonoLMF *lmf = mono_get_lmf ();
 	MonoJitInfo *ji, rji;
 	gint native_offset;
@@ -676,7 +683,7 @@ mono_walk_stack (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start
 		if (!ji || ji == (gpointer)-1)
 			return;
 
-		if (func (domain, &new_ctx, ji, user_data))
+		if (func (domain, use_new_ctx ? &new_ctx : &ctx, ji, user_data))
 			return;
 
 		ctx = new_ctx;
@@ -1169,6 +1176,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	gboolean has_dynamic_methods = FALSE;
 	gint32 filter_idx, first_filter_idx;
 
+
 	g_assert (ctx != NULL);
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
@@ -1383,6 +1391,41 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 								return TRUE;
 							}
+							/*
+							 * This guards against the situation that we abort a thread that is executing a finally clause
+							 * that was called by the EH machinery. It won't have a guard trampoline installed, so we must
+							 * check for this situation here and resume interruption if we are below the guarded block.
+							 */
+							if (G_UNLIKELY (jit_tls->handler_block_return_address)) {
+								gboolean is_outside = FALSE;
+								gpointer prot_bp = MONO_CONTEXT_GET_BP (&jit_tls->ex_ctx);
+								gpointer catch_bp = MONO_CONTEXT_GET_BP (ctx);
+								//FIXME make this stack direction aware
+								if (catch_bp > prot_bp) {
+									is_outside = TRUE;
+								} else if (catch_bp == prot_bp) {
+									/* Can be either try { try { } catch {} } finally {} or try { try { } finally {} } catch {}
+									 * So we check if the catch handler_start is protected by the guarded handler protected region
+									 *
+									 * Assumptions:
+									 *	If there is an outstanding guarded_block return address, it means the current thread must be aborted.
+									 *	This is the only way to reach out the guarded block as other cases are handled by the trampoline.
+									 *	There aren't any further finally/fault handler blocks down the stack over this exception.
+									 *   This must be ensured by the code that installs the guard trampoline.
+									 */
+									g_assert (ji == mini_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (&jit_tls->ex_ctx), NULL));
+
+									if (!is_address_protected (ji, jit_tls->handler_block, ei->handler_start)) {
+										is_outside = TRUE;
+									}
+								}
+								if (is_outside) {
+									jit_tls->handler_block_return_address = NULL;
+									jit_tls->handler_block = NULL;
+									mono_thread_resume_interruption (); /*We ignore the exception here, it will be raised later*/
+								}
+							}
+
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
@@ -2028,3 +2071,111 @@ mono_resume_unwind (void)
 
 	restore_context (&ctx);
 }
+
+#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
+
+typedef struct {
+	MonoJitInfo *ji;
+	MonoContext ctx;
+	MonoJitExceptionInfo *ei;
+} FindHandlerBlockData;
+
+static gboolean
+find_last_handler_block (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data)
+{
+	int i;
+	gpointer ip;
+	FindHandlerBlockData *pdata = data;
+
+	if (ji->method->wrapper_type)
+		return FALSE;
+
+	ip = MONO_CONTEXT_GET_IP (ctx);
+
+	for (i = 0; i < ji->num_clauses; ++i) {
+		MonoJitExceptionInfo *ei = ji->clauses + i;
+		if (ei->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+			continue;
+		/*If ip points to the first instruction it means the handler block didn't start
+		 so we can leave its execution to the EH machinery*/
+		if (ei->handler_start < ip && ip < ei->data.handler_end) {
+			pdata->ji = ji;
+			pdata->ei = ei;
+			pdata->ctx = *ctx;
+			break;
+		}
+	}
+	return FALSE;
+}
+
+
+static gpointer
+install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
+{
+	int i;
+	MonoJitExceptionInfo *clause = NULL;
+	gpointer ip;
+
+	ip = MONO_CONTEXT_GET_IP (ctx);
+
+	for (i = 0; i < ji->num_clauses; ++i) {
+		clause = &ji->clauses [i];
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+			continue;
+		if (clause->handler_start < ip && clause->data.handler_end > ip)
+			break;
+	}
+
+	/*no matching finally */
+	if (i == ji->num_clauses)
+		return NULL;
+
+	/*If we stopped on the instruction right before the try, we haven't actually started executing it*/
+	if (ip == clause->handler_start)
+		return NULL;
+
+	return mono_arch_install_handler_block_guard (ji, clause, ctx, mono_create_handler_block_trampoline ());
+}
+
+/*
+ * Finds the bottom handler block running and install a block guard if needed.
+ */
+gboolean
+mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
+{
+	FindHandlerBlockData data = { 0 };
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	gpointer resume_ip;
+
+	if (jit_tls->handler_block_return_address)
+		return FALSE;
+
+	mono_walk_stack_full (domain, jit_tls, ctx, find_last_handler_block, FALSE, &data);
+
+	if (!data.ji)
+		return FALSE;
+
+	memcpy (&jit_tls->ex_ctx, &data.ctx, sizeof (MonoContext));
+
+	resume_ip = install_handler_block_guard (data.ji, &data.ctx);
+	if (resume_ip == NULL)
+		return FALSE;
+
+	jit_tls->handler_block_return_address = resume_ip;
+	jit_tls->handler_block = data.ei;
+	/*Clear current thread from been wapi interrupted otherwise things can go south*/
+	wapi_clear_interruption ();
+
+	return TRUE;
+}
+
+#else
+gboolean
+mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
+{
+	return FALSE;
+}
+
+#endif
+

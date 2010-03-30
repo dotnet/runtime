@@ -832,3 +832,41 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	x86_push_imm (code, func_arg);
 	x86_call_code (code, (guint8*)func);
 }
+
+static void
+handler_block_trampoline_helper (gpointer *ptr)
+{
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	*ptr = jit_tls->handler_block_return_address;
+}
+
+gpointer
+mono_arch_create_handler_block_trampoline (void)
+{
+	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
+	guint8 *code, *buf;
+	int tramp_size = 64;
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	/*
+	This trampoline restore the call chain of the handler block then jumps into the code that deals with it.
+	*/
+
+	if (mono_get_jit_tls_offset () != -1) {
+		code = mono_x86_emit_tls_get (code, X86_EAX, mono_get_jit_tls_offset ());
+		x86_mov_reg_membase (code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 4);
+		/*simulate a call*/
+		x86_push_reg (code, X86_EAX);
+		x86_jump_code (code, tramp);
+	} else {
+		/*Slow path uses a c helper*/
+		x86_push_reg (code, X86_ESP);
+		x86_push_imm (code, tramp);
+		x86_jump_code (code, handler_block_trampoline_helper);
+	}
+
+	mono_arch_flush_icache (buf, code - buf);
+	g_assert (code - buf <= tramp_size);
+
+	return buf;
+}

@@ -817,10 +817,14 @@ typedef struct {
 	/* Used to implement --debug=casts */
 	MonoClass       *class_cast_from, *class_cast_to;
 
-	/* Stores state needed by mono_resume_unwind () */
+	/* Stores state needed by mono_resume_unwind () and the handler block with a guard */
 	MonoContext     ex_ctx;
 	/* FIXME: GC */
 	gpointer        ex_obj;
+	/* handle block return address */
+	gpointer handler_block_return_address;
+	/* handler block been guarded */
+	MonoJitExceptionInfo *handler_block;
 } MonoJitTlsData;
 
 typedef enum {
@@ -910,6 +914,9 @@ typedef enum {
 	MONO_TRAMPOLINE_MONITOR_EXIT,
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 	MONO_TRAMPOLINE_LLVM_VCALL,
+#endif
+#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
+	MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD,
 #endif
 	MONO_TRAMPOLINE_NUM
 } MonoTrampolineType;
@@ -1800,6 +1807,12 @@ MonoMethod* mono_arch_find_imt_method           (mgreg_t *regs, guint8 *code) MO
 MonoVTable* mono_arch_find_static_call_vtable   (mgreg_t *regs, guint8 *code) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp) MONO_INTERNAL;
 void    mono_arch_notify_pending_exc            (void) MONO_INTERNAL;
+
+/* Handle block guard */
+gpointer mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *clause, MonoContext *ctx, gpointer new_value) MONO_INTERNAL;
+gpointer mono_arch_create_handler_block_trampoline (void) MONO_INTERNAL;
+gpointer mono_create_handler_block_trampoline (void) MONO_INTERNAL;
+gboolean mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx) MONO_INTERNAL;
 
 /* Exception handling */
 

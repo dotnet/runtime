@@ -966,6 +966,58 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 
 #endif
 
+static gpointer
+mono_handler_block_guard_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
+{
+	MonoContext ctx;
+	MonoException *exc;
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	gpointer resume_ip = jit_tls->handler_block_return_address;
+
+	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
+	MONO_CONTEXT_SET_IP (&ctx, jit_tls->handler_block_return_address);
+
+	jit_tls->handler_block_return_address = NULL;
+	jit_tls->handler_block = NULL;
+
+	if (!resume_ip) /*this should not happen, but we should avoid crashing */
+		exc = mono_get_exception_execution_engine ("Invalid internal state, resuming abort after handler block but no resume ip found");
+	else
+		exc = mono_thread_resume_interruption ();
+
+	if (exc) {
+		static void (*restore_context) (MonoContext *);
+
+		if (!restore_context)
+			restore_context = mono_get_restore_context ();
+
+		mono_handle_exception (&ctx, exc, NULL, FALSE);
+		restore_context (&ctx);
+	}
+
+	return resume_ip;
+}
+
+gpointer
+mono_create_handler_block_trampoline (void)
+{
+	static gpointer code;
+
+	if (mono_aot_only) {
+		g_assert (0);
+		return code;
+	}
+
+	mono_trampolines_lock ();
+
+	if (!code)
+		code = mono_arch_create_handler_block_trampoline ();
+
+	mono_trampolines_unlock ();
+
+	return code;
+}
+
 /*
  * mono_get_trampoline_func:
  *
@@ -1007,6 +1059,10 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 	case MONO_TRAMPOLINE_LLVM_VCALL:
 		return mono_llvm_vcall_trampoline;
 #endif
+#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
+	case MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD:
+		return mono_handler_block_guard_trampoline;
+#endif
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -1039,6 +1095,10 @@ mono_trampolines_init (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_EXIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 	mono_trampoline_code [MONO_TRAMPOLINE_LLVM_VCALL] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_LLVM_VCALL);
+#endif
+#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
+	mono_trampoline_code [MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
+	mono_create_handler_block_trampoline ();
 #endif
 
 	mono_counters_register ("Calls to trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &trampoline_calls);

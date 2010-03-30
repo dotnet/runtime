@@ -1984,7 +1984,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 			ei->exvar_offset = decode_value (p, &p);
 
-			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
 				ei->data.filter = code + decode_value (p, &p);
 			else {
 				if (decode_value (p, &p))

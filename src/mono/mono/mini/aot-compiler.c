@@ -3296,7 +3296,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			encode_value (ei->flags, p, &p);
 			encode_value (ei->exvar_offset, p, &p);
 
-			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
 				encode_value ((gint)((guint8*)ei->data.filter - code), p, &p);
 			else {
 				if (ei->data.catch_class) {
