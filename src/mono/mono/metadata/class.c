@@ -4648,6 +4648,13 @@ mono_class_init (MonoClass *class)
 		setup_interface_offsets (class, 0);
 	}
 
+	if (mono_loader_get_last_error ()) {
+		if (class->exception_type == MONO_EXCEPTION_NONE) {
+			set_failure_from_loader_error (class, mono_loader_get_last_error ());
+		}
+		mono_loader_clear_error ();
+	}
+
 	goto leave;
 
  leave:
@@ -4655,13 +4662,6 @@ mono_class_init (MonoClass *class)
 	mono_memory_barrier ();
 	class->inited = 1;
 	class->init_pending = 0;
-
-	if (mono_loader_get_last_error ()) {
-		if (class->exception_type == MONO_EXCEPTION_NONE) {
-			set_failure_from_loader_error (class, mono_loader_get_last_error ());
-		}
-		mono_loader_clear_error ();
-	}
 
 	mono_loader_unlock ();
 
