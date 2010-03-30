@@ -6141,15 +6141,19 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 MonoReflectionModule*   
 mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 {
-	static MonoClass *System_Reflection_Module;
+	static MonoClass *module_type;
 	MonoReflectionModule *res;
 	char* basename;
 	
 	CHECK_OBJECT (MonoReflectionModule *, image, NULL);
-	if (!System_Reflection_Module)
-		System_Reflection_Module = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "Module");
-	res = (MonoReflectionModule *)mono_object_new (domain, System_Reflection_Module);
+	if (!module_type) {
+		MonoClass *class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoModule");
+		if (class == NULL)
+			class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
+		g_assert (class);
+		module_type = class;
+	}
+	res = (MonoReflectionModule *)mono_object_new (domain, module_type);
 
 	res->image = image;
 	MONO_OBJECT_SETREF (res, assembly, (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly));
@@ -6181,7 +6185,7 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 MonoReflectionModule*   
 mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index)
 {
-	static MonoClass *System_Reflection_Module;
+	static MonoClass *module_type;
 	MonoReflectionModule *res;
 	MonoTableInfo *table;
 	guint32 cols [MONO_FILE_SIZE];
@@ -6189,10 +6193,14 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 	guint32 i, name_idx;
 	const char *val;
 	
-	if (!System_Reflection_Module)
-		System_Reflection_Module = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "Module");
-	res = (MonoReflectionModule *)mono_object_new (domain, System_Reflection_Module);
+	if (!module_type) {
+		MonoClass *class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoModule");
+		if (class == NULL)
+			class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
+		g_assert (class);
+		module_type = class;
+	}
+	res = (MonoReflectionModule *)mono_object_new (domain, module_type);
 
 	table = &image->tables [MONO_TABLE_FILE];
 	g_assert (table_index < table->rows);
@@ -7698,7 +7706,7 @@ mono_reflection_get_token (MonoObject *obj)
 		g_assert (mono_class_is_reflection_method_or_constructor (member_class));
 
 		token = mono_method_get_param_token (((MonoReflectionMethod*)p->MemberImpl)->method, p->PositionImpl);
-	} else if (strcmp (klass->name, "Module") == 0) {
+	} else if (strcmp (klass->name, "Module") == 0 || strcmp (klass->name, "MonoModule") == 0) {
 		MonoReflectionModule *m = (MonoReflectionModule*)obj;
 
 		token = m->token;
@@ -8689,7 +8697,7 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 	} else if (strcmp ("Assembly", klass->name) == 0 || strcmp ("MonoAssembly", klass->name) == 0) {
 		MonoReflectionAssembly *rassembly = (MonoReflectionAssembly*)obj;
 		cinfo = mono_custom_attrs_from_assembly (rassembly->assembly);
-	} else if (strcmp ("Module", klass->name) == 0) {
+	} else if (strcmp ("Module", klass->name) == 0 || strcmp ("MonoModule", klass->name) == 0) {
 		MonoReflectionModule *module = (MonoReflectionModule*)obj;
 		cinfo = mono_custom_attrs_from_module (module->image);
 	} else if (strcmp ("MonoProperty", klass->name) == 0) {
