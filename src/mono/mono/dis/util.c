@@ -45,19 +45,14 @@ flags (guint32 code, dis_map_t *table)
 	
 	buffer [0] = 0;
 	
-	for (i = 0; code && table [i].str != NULL; i++) {
-		if (!(table [i].code & code))
-			continue;
-		code &= ~table [i].code;
-		if (!*table [i].str)
-			continue;
-		if (buffer [0])
-			strcat (buffer, " ");
-		strcat (buffer, table [i].str);
-	}
+	for (i = 0; code && table [i].str != NULL; i++)
+		if (table [i].code & code) {
+			code &= ~table [i].code;
+			strcat (buffer, table [i].str);
+		}
 
 	if (code)
-		sprintf (buffer + strlen (buffer), " unknown-flag-%2x", code);
+		sprintf (buffer + strlen (buffer), "unknown-flag-%2x ", code);
 
 	return buffer;
 }
