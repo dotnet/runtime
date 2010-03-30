@@ -136,9 +136,16 @@ g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GErr
 gchar *
 g_shell_quote (const gchar *unquoted_string)
 {
-	//g_error ("%s", "Not implemented");
-	return g_strdup (unquoted_string);
-//	return NULL;
+	GString *result = g_string_new ("'");
+	char *p;
+	
+	for (p = unquoted_string; *p; p++){
+		if (*p == '\'')
+			g_string_append (result, "'\\'");
+		g_string_append_c (result, *p);
+	}
+	g_string_append_c (result, '\'');
+	return g_string_free (result, FALSE);
 }
 
 gchar *

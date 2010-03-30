@@ -226,10 +226,25 @@ test_shell_argv3 ()
 	return OK;
 }
 
+RESULT
+test_quote ()
+{
+	if (strcmp (g_shell_quote ("foo"), "'foo'"))
+		return FAILED ("Should return 'foo'");
+
+	if (strcmp (g_shell_quote ("foo'bar"), "'foo'\\''bar'"))
+		return FAILED ("Should return 'foo'\\''bar'");
+
+	if (strcmp (g_shell_quote ("foo bar"), "'foo bar'"))
+		return FAILED ("Should return 'foo bar'");
+	return OK;
+}
+
 static Test shell_tests [] = {
 	{"g_shell_parse_argv1", test_shell_argv1},
 	{"g_shell_parse_argv2", test_shell_argv2},
 	{"g_shell_parse_argv3", test_shell_argv3},
+	{"g_shell_quote", test_quote},
 	{NULL, NULL}
 };
 
