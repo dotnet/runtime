@@ -552,10 +552,11 @@ method_flags (guint32 f)
 {
 	GString *str = g_string_new ("");
 	int access = f & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
+	int rest = f & ~access;
 	char *s;
 	
 	g_string_append (str, map (access, method_access_map));
-	g_string_append (str, flags (f, method_flags_map));
+	g_string_append (str, flags (rest, method_flags_map));
 
 	s = str->str;
 	g_string_free (str, FALSE);
@@ -602,11 +603,12 @@ pinvoke_flags (guint32 f)
 	GString *str = g_string_new ("");
 	int cset = f & PINVOKE_ATTRIBUTE_CHAR_SET_MASK;
 	int cconv = f & PINVOKE_ATTRIBUTE_CALL_CONV_MASK;
+	int rest = f & ~(cset | cconv);
 	char *s;
 
 	g_string_append (str, map (cset, pinvoke_char_set_map));
 	g_string_append (str, map (cconv, pinvoke_call_conv_map));
-	g_string_append (str, flags (f, pinvoke_flags_map));
+	g_string_append (str, flags (rest, pinvoke_flags_map));
 
 	s = g_strdup(str->str);
 	g_string_free (str, FALSE);

@@ -1636,11 +1636,12 @@ field_flags (guint32 f)
 {
 	char buffer [1024];
 	int access = f & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK;
+	int rest = f & ~access;
 	
 	buffer [0] = 0;
 
 	strcat (buffer, map (access, field_access_map));
-	strcat (buffer, flags (f, field_flags_map));
+	strcat (buffer, flags (rest, field_flags_map));
 	return g_strdup (buffer);
 }
 
@@ -3192,10 +3193,11 @@ get_method_impl_flags (guint32 f)
 	char *s;
 	int code_type = f & METHOD_IMPL_ATTRIBUTE_CODE_TYPE_MASK;
 	int managed_type = f & METHOD_IMPL_ATTRIBUTE_MANAGED_MASK;
+	int rest = f & ~(code_type | managed_type);
 
 	g_string_append (str, map (code_type, method_impl_map));
 	g_string_append (str, map (managed_type, managed_type_map));
-	g_string_append (str, flags (f, managed_impl_flags));
+	g_string_append (str, flags (rest, managed_impl_flags));
 	
 	s = str->str;
 	g_string_free (str, FALSE);
