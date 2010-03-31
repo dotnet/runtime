@@ -966,6 +966,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 
 #endif
 
+#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
 static gpointer
 mono_handler_block_guard_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
 {
@@ -1017,6 +1018,7 @@ mono_create_handler_block_trampoline (void)
 
 	return code;
 }
+#endif
 
 /*
  * mono_get_trampoline_func:
