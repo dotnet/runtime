@@ -100,6 +100,7 @@ free_slot (MonoGHashTable *hash, Slot *slot)
 #define free_slot(h,s)	mg_free((s))
 #endif
 
+#if UNUSED
 static gboolean
 test_prime (int x)
 {
@@ -126,6 +127,7 @@ calc_prime (int x)
 	}
 	return x;
 }
+#endif
 
 MonoGHashTable *
 mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type)
@@ -419,7 +421,7 @@ mono_g_hash_table_destroy (MonoGHashTable *hash)
 	mg_free (hash);
 }
 
-void
+static void
 mono_g_hash_table_insert_replace (MonoGHashTable *hash, gpointer key, gpointer value, gboolean replace)
 {
 	guint hashcode;
