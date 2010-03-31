@@ -2099,7 +2099,11 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	MonoClass *class = remote_class->proxy_class;
 	gpointer *interface_offsets;
 	uint8_t *bitmap;
-	int bsize, bcsize;
+	int bsize;
+	
+#ifdef COMPRESSED_INTERFACE_BITMAP
+	int bcsize;
+#endif
 
 	vt = mono_class_vtable (domain, class);
 	g_assert (vt); /*FIXME property handle failure*/
