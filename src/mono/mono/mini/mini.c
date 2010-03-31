@@ -3549,7 +3549,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				gpointer hole_end = cfg->native_code + (hole->basic_block->native_offset + hole->basic_block->native_length);
 				if (hole->clause == ec && hole_end == ei->try_end) {
 					if (G_UNLIKELY (cfg->verbose_level >= 4))
-						printf ("\tShortening try block %d from %x to %x\n", i, (guint8*)ei->try_end - cfg->native_code, hole->start_offset);
+						printf ("\tShortening try block %d from %x to %x\n", i, (int)((guint8*)ei->try_end - cfg->native_code), hole->start_offset);
 
 					ei->try_end = cfg->native_code + hole->start_offset;
 					break;
