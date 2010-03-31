@@ -1455,10 +1455,12 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--aot") == 0) {
 			error_if_aot_unsupported ();
 			mono_compile_aot = TRUE;
+			enable_debugging = TRUE;
 		} else if (strncmp (argv [i], "--aot=", 6) == 0) {
 			error_if_aot_unsupported ();
 			mono_compile_aot = TRUE;
 			aot_options = &argv [i][6];
+			enable_debugging = TRUE;
 #endif
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
 			action = DO_COMPILE;
