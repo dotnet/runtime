@@ -7631,11 +7631,11 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		
 		/* Check null */
 		if (t->byref) {
-			
 			label_null = mono_mb_emit_branch (mb, CEE_BRFALSE);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, ldop);
-		}
+		} else
+			label_null = 0;
 
 		label_false = mono_mb_emit_branch (mb, CEE_BRFALSE);
 		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
