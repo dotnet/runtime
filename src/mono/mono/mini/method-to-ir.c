@@ -3418,6 +3418,8 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, ok_result_bb);
 
+	save_cast_details (cfg, klass, obj_reg);
+
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		NEW_BBLOCK (cfg, interface_fail_bb);
 	
