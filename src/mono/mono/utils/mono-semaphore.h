@@ -36,7 +36,7 @@ typedef sem_t MonoSemType;
 #    define MONO_SEM_POST(sem) mono_sem_post ((sem))
 #    define MONO_SEM_DESTROY(sem) sem_destroy ((sem))
 #  endif
-#elif defined(HOST_WIN32) || defined(_WAPI_SEMAPHORES_H)
+#elif defined(TARGET_WIN32) || defined(_WAPI_SEMAPHORES_H)
 #  define MONO_HAS_SEMAPHORES
 typedef HANDLE MonoSemType;
 #    define MONO_SEM_INIT(addr,initial) do {*(addr) = CreateSemaphore ( NULL,(initial),0x7FFFFFFF,NULL);} while(0)
