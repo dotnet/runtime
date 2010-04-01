@@ -36,8 +36,16 @@ struct _PinStatAddress {
 	PinStatAddress *right;
 };
 
+typedef struct _ObjectList ObjectList;
+struct _ObjectList {
+	MonoObject *obj;
+	ObjectList *next;
+};
+
 static PinStatAddress *pin_stat_addresses = NULL;
 static size_t pinned_byte_counts [PIN_TYPE_MAX];
+
+static ObjectList *pinned_objects = NULL;
 
 static void
 pin_stats_tree_free (PinStatAddress *node)
@@ -57,6 +65,11 @@ pin_stats_reset (void)
 	pin_stat_addresses = NULL;
 	for (i = 0; i < PIN_TYPE_MAX; ++i)
 		pinned_byte_counts [i] = 0;
+	while (pinned_objects) {
+		ObjectList *next = pinned_objects->next;
+		free_internal_mem (pinned_objects, INTERNAL_MEM_STATISTICS);
+		pinned_objects = next;
+	}
 }
 
 static void
@@ -111,5 +124,9 @@ static void
 pin_stats_register_object (char *obj, size_t size)
 {
 	int pin_types = 0;
+	ObjectList *list = get_internal_mem (sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
 	pin_stats_count_object_from_tree (obj, size, pin_stat_addresses, &pin_types);
+	list->obj = (MonoObject*)obj;
+	list->next = pinned_objects;
+	pinned_objects = list;
 }

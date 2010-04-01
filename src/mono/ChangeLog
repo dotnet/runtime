@@ -1,3 +1,8 @@
+2010-04-01  Mark Probst  <mark.probst@gmail.com>
+
+	* scripts/mono-heapviz: Process and output detailed pinning
+	statistics.
+
 2010-03-29  Andreas Färber  <andreas.faerber@web.de>
 
 	* configure.in: Add support for Haiku

@@ -107,8 +107,6 @@
 
  *) test/fix endianess issues
 
- *) add more timing info
-
  *) Implement a card table as the write barrier instead of remembered
     sets?  Card tables are not easy to implement with our current
     memory layout.  We have several different kinds of major heap
@@ -163,6 +161,13 @@
     prevent the write barrier from executing
 
  *) specialized dynamically generated markers/copiers
+
+ *) Dynamically adjust TLAB size to the number of threads.  If we have
+    too many threads that do allocation, we might need smaller TLABs,
+    and we might get better performance with larger TLABs if we only
+    have a handful of threads.  We could sum up the space left in all
+    assigned TLABs and if that's more than some percentage of the
+    nursery size, reduce the TLAB size.
 
  */
 #include "config.h"
@@ -3272,6 +3277,43 @@ dump_section (GCMemSection *section, const char *type)
 }
 
 static void
+dump_object (MonoObject *obj, gboolean dump_location)
+{
+	static char class_name [1024];
+
+	MonoClass *class = mono_object_class (obj);
+	int i, j;
+
+	/*
+	 * Python's XML parser is too stupid to parse angle brackets
+	 * in strings, so we just ignore them;
+	 */
+	i = j = 0;
+	while (class->name [i] && j < sizeof (class_name) - 1) {
+		if (!strchr ("<>\"", class->name [i]))
+			class_name [j++] = class->name [i];
+		++i;
+	}
+	g_assert (j < sizeof (class_name));
+	class_name [j] = 0;
+
+	fprintf (heap_dump_file, "<object class=\"%s.%s\" size=\"%d\"",
+			class->name_space, class_name,
+			safe_object_get_size (obj));
+	if (dump_location) {
+		const char *location;
+		if (ptr_in_nursery (obj))
+			location = "nursery";
+		else if (safe_object_get_size (obj) <= MAX_SMALL_OBJ_SIZE)
+			location = "major";
+		else
+			location = "LOS";
+		fprintf (heap_dump_file, " location=\"%s\"", location);
+	}
+	fprintf (heap_dump_file, "/>\n");
+}
+
+static void
 dump_heap (const char *type, int num, const char *reason)
 {
 	static char const *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
@@ -3280,6 +3322,7 @@ dump_heap (const char *type, int num, const char *reason)
 						     "remset", "gray-queue", "store-remset" };
 
 	GCMemSection *section;
+	ObjectList *list;
 	LOSObject *bigobj;
 	int i;
 
@@ -3296,6 +3339,11 @@ dump_heap (const char *type, int num, const char *reason)
 	/* fprintf (heap_dump_file, "<pinned type=\"static-data\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_STATIC_DATA]); */
 	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%zu\"/>\n", pinned_byte_counts [PIN_TYPE_OTHER]);
 
+	fprintf (heap_dump_file, "<pinned-objects>\n");
+	for (list = pinned_objects; list; list = list->next)
+		dump_object (list->obj, TRUE);
+	fprintf (heap_dump_file, "</pinned-objects>\n");
+
 	dump_section (nursery_section, "nursery");
 
 	for (section = section_list; section; section = section->block.next) {
@@ -3304,14 +3352,8 @@ dump_heap (const char *type, int num, const char *reason)
 	}
 
 	fprintf (heap_dump_file, "<los>\n");
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
-		MonoObject *obj = (MonoObject*) bigobj->data;
-		MonoClass *class = mono_object_class (obj);
-
-		fprintf (heap_dump_file, "<object class=\"%s.%s\" size=\"%d\"/>\n",
-				class->name_space, class->name,
-				safe_object_get_size (obj));
-	}
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		dump_object ((MonoObject*)bigobj->data, FALSE);
 	fprintf (heap_dump_file, "</los>\n");
 
 	fprintf (heap_dump_file, "</collection>\n");
@@ -4075,9 +4117,9 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 		/* if the vtable is inside the chunk it's on the freelist, so skip */
 		if (*ptr && (*ptr < (void*)chunk->start_data || *ptr > (void*)((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE))) {
 			binary_protocol_pin (addr, (gpointer)LOAD_VTABLE (addr), safe_object_get_size ((MonoObject*)addr));
-			pin_object (addr);
-			if (heap_dump_file)
+			if (heap_dump_file && !object_is_pinned (addr))
 				pin_stats_register_object ((char*) addr, safe_object_get_size ((MonoObject*) addr));
+			pin_object (addr);
 			DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
 		}
 	}
