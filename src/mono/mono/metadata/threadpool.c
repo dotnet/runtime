@@ -688,6 +688,7 @@ socket_io_init (SocketIOData *data)
 	int len;
 #endif
 	int inited;
+	guint32 stack_size;
 
 	inited = InterlockedCompareExchange (&data->inited, -1, -1);
 	if (inited == 1)
@@ -754,6 +755,9 @@ socket_io_init (SocketIOData *data)
 		data->new_sem = CreateSemaphore (NULL, 1, 1, NULL);
 		g_assert (data->new_sem != NULL);
 	}
+
+	stack_size = mono_threads_get_default_stacksize ();
+	mono_threads_set_default_stacksize (256 * 1024);
 	if (data->epoll_disabled) {
 		mono_thread_create_internal (mono_get_root_domain (), socket_io_poll_main, data, TRUE);
 	}
@@ -762,6 +766,7 @@ socket_io_init (SocketIOData *data)
 		mono_thread_create_internal (mono_get_root_domain (), socket_io_epoll_main, data, TRUE);
 	}
 #endif
+	mono_threads_set_default_stacksize (stack_size);
 	InterlockedCompareExchange (&data->inited, 1, 0);
 	LeaveCriticalSection (&data->io_lock);
 }
@@ -1726,7 +1731,7 @@ async_invoke_thread (gpointer data)
 
 			TP_DEBUG ("Waiting");
 			InterlockedIncrement (&tp->waiting);
-			while ((res = MONO_SEM_WAIT (&tp->new_job)) && errno == EINTR) {
+			while ((res = mono_sem_wait (&tp->new_job, TRUE)) == -1 && errno == EINTR) {
 				if (mono_runtime_is_shutting_down ())
 					break;
 				if (THREAD_WANTS_A_BREAK (thread))
@@ -1734,7 +1739,6 @@ async_invoke_thread (gpointer data)
 			}
 			TP_DEBUG ("Done waiting");
 			InterlockedDecrement (&tp->waiting);
-			//FIXME: res == 0 on windows when interrupted!
 			if (mono_runtime_is_shutting_down ())
 				break;
 			must_die = should_i_die (tp);
