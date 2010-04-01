@@ -345,6 +345,11 @@ mono_gc_flush_info (void)
 #define MAX_DEBUG_LEVEL 8
 #define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
+/* Define this to allow the user to change some of the constants by specifying
+ * their values in the MONO_GC_PARAMS environmental variable. See
+ * mono_gc_base_init for details. */
+#define USER_CONFIG 1
+
 #define TV_DECLARE(name) gint64 name
 #define TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define TV_ELAPSED(start,end) (int)((end-start) / 10)
@@ -654,11 +659,27 @@ static int gc_disabled = 0;
 static int num_minor_gcs = 0;
 static int num_major_gcs = 0;
 
+#ifdef USER_CONFIG
+
 /* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
 //#define DEFAULT_NURSERY_SIZE (1024*512*125+4096*118)
-#define DEFAULT_NURSERY_SIZE (1024*512*2)
+#define DEFAULT_NURSERY_SIZE (default_nursery_size)
+static int default_nursery_size = (1 << 20);
+#ifdef ALIGN_NURSERY
 /* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
+#define DEFAULT_NURSERY_BITS (default_nursery_bits)
+static int default_nursery_bits = 20;
+#endif
+
+#else
+
+#define DEFAULT_NURSERY_SIZE (1024*512*2)
+#ifdef ALIGN_NURSERY
 #define DEFAULT_NURSERY_BITS 20
+#endif
+
+#endif
+
 #define MAJOR_SECTION_SIZE	(128*1024)
 #define BLOCK_FOR_OBJECT(o)		((Block*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
 #define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
@@ -676,10 +697,10 @@ static int num_major_gcs = 0;
 #define FREELIST_PAGESIZE 4096
 
 static mword pagesize = 4096;
-static mword nursery_size = DEFAULT_NURSERY_SIZE;
+static mword nursery_size;
 static int degraded_mode = 0;
 
-static int minor_collection_section_allowance = MIN_MINOR_COLLECTION_SECTION_ALLOWANCE;
+static int minor_collection_section_allowance;
 static int minor_collection_sections_alloced = 0;
 static int num_major_sections = 0;
 
@@ -7501,6 +7522,52 @@ mono_gc_is_gc_thread (void)
 	return result;
 }
 
+#ifdef USER_CONFIG
+
+/* Tries to extract a number from the passed string, taking in to account m, k
+ * and g suffixes */
+gboolean parse_environment_string_extract_number (gchar *str, glong *out)
+{
+	char *endptr;
+	int len = strlen (str), shift = 0;
+	glong val;
+	gboolean is_suffix = FALSE;
+	char suffix;
+
+	switch (str [len - 1]) {
+		case 'g':
+		case 'G':
+			shift += 10;
+		case 'm':
+		case 'M':
+			shift += 10;
+		case 'k':
+		case 'K':
+			shift += 10;
+			is_suffix = TRUE;
+			suffix = str [len - 1];
+			break;
+	}
+
+	errno = 0;
+	val = strtol (str, &endptr, 10);
+
+	if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
+			|| (errno != 0 && val == 0) || (endptr == str))
+		return FALSE;
+
+	if (is_suffix) {
+		if (*(endptr + 1)) /* Invalid string. */
+			return FALSE;
+		val <<= shift;
+	}
+
+	*out = val;
+	return TRUE;
+}
+
+#endif 
+
 void
 mono_gc_base_init (void)
 {
@@ -7516,6 +7583,44 @@ mono_gc_base_init (void)
 	}
 	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
+
+#ifdef USER_CONFIG
+
+	if ((env = getenv ("MONO_GC_PARAMS"))) {
+		if (g_str_has_prefix (env, "nursery-size")) {
+			int index = 0;
+			long val;
+			while (env [index] && env [index++] != '=')
+				;
+			if (env [index] && parse_environment_string_extract_number (env
+					+ index, &val)) {
+				default_nursery_size = val;
+#ifdef ALIGN_NURSERY
+				if ((val & (val - 1))) {
+					fprintf (stderr, "The nursery size must be a power of two.\n");
+					exit (1);
+				}
+
+				default_nursery_bits = 0;
+				while (1 << (++ default_nursery_bits) != default_nursery_size)
+					;
+#endif
+			} else {
+				fprintf (stderr, "nursery-size must be an integer.\n");
+				exit (1);
+			}
+		} else {
+			fprintf (stderr, "MONO_GC_PARAMS must be of the form 'nursery-size=N' (where N is an integer, possibly with a k, m or a g suffix).\n");
+			exit (1);
+		}
+	}
+
+#endif
+
+	nursery_size = DEFAULT_NURSERY_SIZE;
+
+	minor_collection_section_allowance = MIN_MINOR_COLLECTION_SECTION_ALLOWANCE;
+
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
 		opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; ptr && *ptr; ptr ++) {
