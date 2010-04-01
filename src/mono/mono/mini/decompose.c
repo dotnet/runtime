@@ -136,6 +136,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_I4:
 	case OP_ICONV_TO_U4:
 	case OP_ICONV_TO_OVF_I4:
+	case OP_ICONV_TO_OVF_U4_UN:
 #if SIZEOF_REGISTER == 4
 	case OP_ICONV_TO_OVF_I:
 	case OP_ICONV_TO_OVF_U_UN:

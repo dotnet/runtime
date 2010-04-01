@@ -1116,6 +1116,18 @@ COND:   ldloc.0
         ret
 	}
 
+	.method public static int32 test_7_conv_ovf_u4_un () {
+    	.maxstack  2
+        .locals    init (unsigned int32)
+
+        ldc.i4.7
+        conv.ovf.u4.un
+        stloc.0
+		ldloc.0
+		conv.i4
+        ret
+	}
+
 	.method public static int32 test_1_bug_74591 () {
 		.maxstack 16
 		.locals init (int32)
