@@ -13,12 +13,18 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
-#if (defined(HAVE_SEMAPHORE_H) || defined(USE_MACH_SEMA)) && !defined(__OpenBSD__)
+#if (defined(HAVE_SEMAPHORE_H) || defined(USE_MACH_SEMA))
 /* sem_* or semaphore_* functions in use */
 #  ifdef USE_MACH_SEMA
 #    define TIMESPEC mach_timespec_t
 #    define WAIT_BLOCK(a,b) semaphore_timedwait (*(a), *(b))
+#  elif defined(__OpenBSD__)
+#    define TIMESPEC struct timespec
+#    define WAIT_BLOCK(a) sem_trywait(a)
 #  else
 #    define TIMESPEC struct timespec
 #    define WAIT_BLOCK(a,b) sem_timedwait (a, b)
@@ -30,6 +36,9 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 	TIMESPEC ts, copy;
 	struct timeval t;
 	int res;
+#if defined(__OpenBSD__)
+	int timeout;
+#endif
 
 #ifndef USE_MACH_SEMA
 	if (timeout_ms == 0)
@@ -45,12 +54,26 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 		ts.tv_nsec -= 1000000000;
 		ts.tv_sec++;
 	}
+#if defined(__OpenBSD__)
+	timeout = ts.tv_sec;
+	while (timeout) {
+		if ((res = WAIT_BLOCK (sem)) == 0)
+			return res;
+
+		if (alertable)
+			return -1;
+
+		usleep (ts.tv_nsec / 1000);
+		timeout--;
+	}
+#else
 	copy = ts;
 	while ((res = WAIT_BLOCK (sem, &ts) == -1) && errno == EINTR) {
 		if (alertable)
 			return -1;
 		ts = copy;
 	}
+#endif
 	return res;
 }
 
