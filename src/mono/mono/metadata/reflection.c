@@ -2768,7 +2768,7 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 		token = mono_image_get_memberref_token (assembly, &klass->byval_arg, field->name, sig);
 	} else {
 		char *name = mono_type_get_full_name (mono_object_class (f->fb));
-		g_error ("mono_image_get_method_on_inst_token: don't know how to handle %s", name);
+		g_error ("mono_image_get_field_on_inst_token: don't know how to handle %s", name);
 	}
 
 	mono_g_hash_table_insert (assembly->handleref_managed, f, GUINT_TO_POINTER (token));
