@@ -9792,6 +9792,7 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 		/*Make sure we are a diferent type instance */
 		klass->generic_container->type_params [i].param.owner = klass->generic_container;
 		klass->generic_container->type_params [i].info.pklass = NULL;
+		klass->generic_container->type_params [i].info.flags = gparam->attrs;
 
 		g_assert (klass->generic_container->type_params [i].param.owner);
 	}
