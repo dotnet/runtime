@@ -685,6 +685,20 @@ mono_get_exception_field_access (void)
 }
 
 /**
+ * mono_get_exception_field_access2:
+ * @msg: an informative message for the user.
+ *
+ * Returns: a new instance of the System.FieldAccessException
+ */
+MonoException *
+mono_get_exception_field_access_msg (const char *msg)
+{
+	MonoString *s = msg ? mono_string_new (mono_domain_get (), msg) : NULL;
+
+	return mono_exception_from_name_msg (mono_get_corlib (), "System", "FieldAccessException", msg);
+}
+
+/**
  * mono_get_exception_method_access:
  *
  * Returns: a new instance of the System.MethodAccessException
@@ -693,6 +707,20 @@ MonoException *
 mono_get_exception_method_access (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System", "MethodAccessException");
+}
+
+/**
+ * mono_get_exception_method_access2:
+ * @msg: an informative message for the user.
+ *
+ * Returns: a new instance of the System.MethodAccessException
+ */
+MonoException *
+mono_get_exception_method_access_msg (const char *msg)
+{
+	MonoString *s = msg ? mono_string_new (mono_domain_get (), msg) : NULL;
+
+	return mono_exception_from_name_msg (mono_get_corlib (), "System", "MethodAccessException", msg);
 }
 
 /**

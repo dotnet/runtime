@@ -687,5 +687,9 @@ void mono_image_load_names (MonoImage *image) MONO_INTERNAL;
 
 MonoImage *mono_image_open_raw (const char *fname, MonoImageOpenStatus *status) MONO_INTERNAL;
 
+MonoException *mono_get_exception_field_access_msg (const char *msg) MONO_INTERNAL;
+
+MonoException *mono_get_exception_method_access_msg (const char *msg) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
