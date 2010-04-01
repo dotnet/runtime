@@ -4887,36 +4887,20 @@ static void
 ensure_method_is_allowed_to_access_field (MonoCompile *cfg, MonoMethod *caller, MonoClassField *field,
 					  MonoBasicBlock *bblock, unsigned char *ip)
 {
-	/* there's no restriction to access Transparent or SafeCritical fields, so we only check calls to Critical methods */
-	if (mono_security_core_clr_class_level (mono_field_get_parent (field)) != MONO_SECURITY_CORE_CLR_CRITICAL)
-		return;
-
 	/* we can't get the coreclr security level on wrappers since they don't have the attributes */
-	caller = get_original_method (caller);
-	if (!caller)
-		return;
-
-	/* caller is Critical! only SafeCritical and Critical callers can access the field, so we throw if caller is Transparent */
-	if (mono_security_core_clr_method_level (caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
-		emit_throw_exception (cfg, mono_get_exception_field_access ());
+	MonoException *ex = mono_security_core_clr_is_field_access_allowed (get_original_method (caller), field);
+	if (ex)
+		emit_throw_exception (cfg, ex);
 }
 
 static void
 ensure_method_is_allowed_to_call_method (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
 					 MonoBasicBlock *bblock, unsigned char *ip)
 {
-	/* there's no restriction to call Transparent or SafeCritical code, so we only check calls to Critical methods */
-	if (mono_security_core_clr_method_level (callee, TRUE) != MONO_SECURITY_CORE_CLR_CRITICAL)
-		return;
-
 	/* we can't get the coreclr security level on wrappers since they don't have the attributes */
-	caller = get_original_method (caller);
-	if (!caller)
-		return;
-
-	/* caller is Critical! only SafeCritical and Critical callers can call it, so we throw if the caller is Transparent */
-	if (mono_security_core_clr_method_level (caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
-		emit_throw_exception (cfg, mono_get_exception_method_access ());
+	MonoException *ex = mono_security_core_clr_is_call_allowed (get_original_method (caller), callee);
+	if (ex)
+		emit_throw_exception (cfg, ex);
 }
 
 /*
