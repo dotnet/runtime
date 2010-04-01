@@ -2164,9 +2164,11 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 
 	jit_tls->handler_block_return_address = resume_ip;
 	jit_tls->handler_block = data.ei;
+
+#ifndef HOST_WIN32
 	/*Clear current thread from been wapi interrupted otherwise things can go south*/
 	wapi_clear_interruption ();
-
+#endif
 	return TRUE;
 }
 
