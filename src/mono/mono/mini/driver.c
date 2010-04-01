@@ -1628,6 +1628,12 @@ mono_main (int argc, char* argv[])
 	}
 #endif
 
+	/*
+	 * This must be called before mono_debug_init(), because the
+	 * latter registers GC roots.
+	 */
+	mono_gc_base_init ();
+
 	if (action == DO_DEBUGGER) {
 		enable_debugging = TRUE;
 

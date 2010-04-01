@@ -5670,8 +5670,6 @@ mini_init (const char *filename, const char *runtime_version)
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 
-	mono_gc_base_init ();
-
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
 
