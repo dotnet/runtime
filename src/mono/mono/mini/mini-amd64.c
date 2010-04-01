@@ -1969,6 +1969,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				}
 				g_assert (in->klass);
 
+				if (ainfo->storage == ArgOnStack && size >= 10000) {
+					/* Avoid asserts in emit_memcpy () */
+					cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
+					cfg->exception_message = g_strdup_printf ("Passing an argument of size '%d'.", size);
+					/* Continue normally */
+				}
+
 				if (size > 0) {
 					MONO_INST_NEW (cfg, arg, OP_OUTARG_VT);
 					arg->sreg1 = in->dreg;
