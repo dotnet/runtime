@@ -25,7 +25,7 @@
 #  endif
 
 int
-mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms)
+mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 {
 	TIMESPEC ts, copy;
 	struct timeval t;
@@ -36,7 +36,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms)
 		return (!sem_trywait (sem));
 #endif
 	if (timeout_ms == (guint32) 0xFFFFFFFF)
-		return mono_sem_wait (sem);
+		return mono_sem_wait (sem, alertable);
 
 	gettimeofday (&t, NULL);
 	ts.tv_sec = timeout_ms / 1000 + t.tv_sec;
@@ -46,20 +46,27 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms)
 		ts.tv_sec++;
 	}
 	copy = ts;
-	while ((res = WAIT_BLOCK (sem, &ts) == -1) && errno == EINTR)
+	while ((res = WAIT_BLOCK (sem, &ts) == -1) && errno == EINTR) {
+		if (alertable)
+			return -1;
 		ts = copy;
+	}
 	return res;
 }
 
 int
-mono_sem_wait (MonoSemType *sem)
+mono_sem_wait (MonoSemType *sem, gboolean alertable)
 {
 	int res;
 #ifndef USE_MACH_SEMA
-	while ((res = sem_wait (sem) == -1) && errno == EINTR);
+	while ((res = sem_wait (sem) == -1) && errno == EINTR)
 #else
-	while ((res = semaphore_wait (*sem) == -1) && errno == EINTR);
+	while ((res = semaphore_wait (*sem) == -1) && errno == EINTR)
 #endif
+	{
+		if (alertable)
+			return -1;
+	}
 	return res;
 }
 
@@ -78,17 +85,17 @@ mono_sem_post (MonoSemType *sem)
 #else
 /* Windows or io-layer functions in use */
 int
-mono_sem_wait (MonoSemType *sem)
+mono_sem_wait (MonoSemType *sem, gboolean alertable)
 {
-	return mono_sem_timedwait (sem, INFINITE);
+	return mono_sem_timedwait (sem, INFINITE, alertable);
 }
 
 int
-mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms)
+mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 {
 	gboolean res;
 
-	res = WaitForSingleObjectEx (*sem, timeout_ms, FALSE);
+	res = WaitForSingleObjectEx (*sem, timeout_ms, alertable);
 	if (!res)
 		return -1;
 	return 0;
