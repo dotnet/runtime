@@ -7167,6 +7167,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_CONV_U:
 			CHECK_STACK (1);
 			ADD_UNOP (*ip);
+			CHECK_CFG_EXCEPTION;
 			ip++;
 			break;
 		case CEE_ADD_OVF:

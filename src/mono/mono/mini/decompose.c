@@ -28,6 +28,7 @@ void mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, Mono
  * Returns a MonoInst which represents the result of the decomposition, and can
  * be pushed on the IL stack. This is needed because the original instruction is
  * nullified.
+ * Sets the cfg exception if an opcode is not supported.
  */
 MonoInst*
 mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
@@ -160,6 +161,20 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 
 	case OP_FCONV_TO_R8:
 		ins->opcode = OP_FMOVE;
+		break;
+
+	case OP_FCONV_TO_OVF_I1_UN:
+	case OP_FCONV_TO_OVF_I2_UN:
+	case OP_FCONV_TO_OVF_I4_UN:
+	case OP_FCONV_TO_OVF_I8_UN:
+	case OP_FCONV_TO_OVF_U1_UN:
+	case OP_FCONV_TO_OVF_U2_UN:
+	case OP_FCONV_TO_OVF_U4_UN:
+	case OP_FCONV_TO_OVF_U8_UN:
+	case OP_FCONV_TO_OVF_I_UN:
+	case OP_FCONV_TO_OVF_U_UN:
+		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
+		cfg->exception_message = g_strdup_printf ("float conv.ovf.un opcodes not supported.");
 		break;
 
 		/* Long opcodes on 64 bit machines */
