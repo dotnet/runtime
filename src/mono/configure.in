@@ -96,7 +96,7 @@ case "$host" in
 		HOST_CC="gcc"
 		# Windows 2000 is required that includes Internet Explorer 5.01
 		CPPFLAGS="$CPPFLAGS -DWINVER=0x0500 -D_WIN32_WINNT=0x0500 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
-		LDFLAGS="$LDFLAGS -lmswsock -lws2_32 -lole32 -loleaut32 -lpsapi -lversion -ladvapi32 -lwinmm"
+		LDFLAGS="$LDFLAGS -lmswsock -lws2_32 -lole32 -loleaut32 -lpsapi -lversion -ladvapi32 -lwinmm -lkernel32"
 		libmono_cflags="-mno-cygwin -mms-bitfields -mwindows"
 		libmono_ldflags="-mno-cygwin -mms-bitfields -mwindows"
 		libdl=
@@ -548,16 +548,10 @@ embedded)
   eglib_dir=eglib
   ;;
 system)
-  if test "x$cross_compiling" = "xyes"; then
-    pkg_config_path="$PKG_CONFIG_PATH"
-    unset PKG_CONFIG_PATH
-  fi
+    echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+    echo "cross_compiling=$cross_compiling"
   BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
   BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-  if test "x$cross_compiling" = "xyes"; then
-    PKG_CONFIG_PATH=$pkg_config_path
-    export PKG_CONFIG_PATH
-  fi
   
   ## Versions of dependencies
   GLIB_REQUIRED_VERSION=2.4.0

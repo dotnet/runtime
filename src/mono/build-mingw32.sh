@@ -1,19 +1,31 @@
 #!/bin/bash -e
 CURDIR="`pwd`"
-CROSS_DIR=${1:-/opt/cross/}
-MINGW=${1:-i386-mingw32msvc}
-CROSS_BIN_DIR="$CROSS_DIR/bin"
-CROSS_DLL_DIR="$CROSS_DIR/$MINGW/bin"
-CROSS_PKG_CONFIG_DIR=$CROSS_DIR/$MINGW/lib/pkgconfig
+MINGW=i386-mingw32msvc
+CROSS_DIR=/opt/cross/$MINGW
 COPY_DLLS="libgio*.dll libglib*.dll libgmodule*.dll libgthread*.dll libgobject*.dll"
-PATH=$CROSS_BIN_DIR:$PATH
 INSTALL_DESTDIR="$CURDIR/mono-win32"
 PROFILES="default net_2_0 moonlight net_3_5"
+TEMPORARY_PKG_CONFIG_DIR=/tmp/$RANDOM-pkg-config-$RANDOM
 
-export PATH
+export CPPFLAGS_FOR_EGLIB CFLAGS_FOR_EGLIB CPPFLAGS_FOR_LIBGC CFLAGS_FOR_LIBGC
+
+function cleanup ()
+{
+    if [ -d "$TEMPORARY_PKG_CONFIG_DIR" ]; then
+	rm -rf "$TEMPORARY_PKG_CONFIG_DIR"
+    fi
+}
 
 function setup ()
 {
+    local pcname
+
+    CROSS_BIN_DIR="$CROSS_DIR/bin"
+    CROSS_DLL_DIR="$CROSS_DIR/bin"
+    CROSS_PKG_CONFIG_DIR=$CROSS_DIR/lib/pkgconfig
+    PATH=$CROSS_BIN_DIR:$PATH
+
+    export PATH
     if [ -d ./.git/svn ]; then
 	SVN_INFO='git svn info'
     elif [ -d ./.svn ]; then
@@ -37,12 +49,23 @@ function setup ()
     NOCONFIGURE=yes
     export NOCONFIGURE
 
+    if [ -d "$CROSS_PKG_CONFIG_DIR" ]; then
+	install -d -m 755 "$TEMPORARY_PKG_CONFIG_DIR"
+	for pc in "$CROSS_PKG_CONFIG_DIR"/*.pc; do
+	    pcname="`basename $pc`"
+	    sed -e "s;^prefix=.*;prefix=$CROSS_DIR;g" < $pc > "$TEMPORARY_PKG_CONFIG_DIR"/$pcname
+	done
+	CROSS_PKG_CONFIG_DIR="$TEMPORARY_PKG_CONFIG_DIR"
+    fi
+
     echo Mono Win32 installation prefix: $MONO_PREFIX
 }
 
 function build ()
 {
     ./autogen.sh 
+
+    BUILD="`./config.guess`"
 
     if [ -f ./Makefile ]; then
 	make distclean
@@ -54,7 +77,7 @@ function build ()
 
     cd "$CURDIR/build-cross-windows"
     rm -rf *
-    ../configure --prefix=$MONO_PREFIX --with-crosspkgdir=$CROSS_PKG_CONFIG_DIR --target=$MINGW --host=$MINGW --enable-parallel-mark --program-transform-name=""
+    ../configure --prefix=$MONO_PREFIX --with-crosspkgdir=$CROSS_PKG_CONFIG_DIR --build=$BUILD --target=$MINGW --host=$MINGW --enable-parallel-mark --program-transform-name="" --with-tls=none --disable-mcs-build --disable-embed-check --enable-win32-dllmain=yes --with-libgc-threads=win32
     make
     cd "$CURDIR"
 
@@ -101,7 +124,31 @@ function doinstall ()
 
 }
 
+function usage ()
+{
+    cat <<EOF
+Usage: build-mingw32.sh [OPTIONS]
+
+where OPTIONS are:
+
+ -d DIR     Sets the location of directory where MINGW is installed [$CROSS_DIR]
+ -m MINGW   Sets the MINGW target name to be passed to configure [$MINGW]
+EOF
+
+    exit 1
+}
+
+trap cleanup 0
+
 pushd . > /dev/null
+
+while getopts "d:m:h" opt; do
+    case "$opt" in
+	d) CROSS_DIR="$OPTARG" ;;
+	m) MINGW="$OPTARG" ;;
+	*) usage ;;
+    esac
+done
 
 setup
 build

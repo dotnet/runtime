@@ -1,3 +1,11 @@
+2010-04-02  Marek Habersack  <mhabersack@novell.com>
+
+	* configure.in: include -lkernel32 in LDFLAGS when cross-compiling
+	with MINGW or compiling on Cygwin.
+
+	* build-mingw32.sh: some changes to make the compilation work
+	better on non-SuSE systems.
+
 2010-04-01  Mark Probst  <mark.probst@gmail.com>
 
 	* scripts/mono-heapviz: Process and output detailed pinning
