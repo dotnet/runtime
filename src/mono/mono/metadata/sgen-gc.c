@@ -342,7 +342,7 @@ mono_gc_flush_info (void)
 }
 */
 
-#define MAX_DEBUG_LEVEL 8
+#define MAX_DEBUG_LEVEL 2
 #define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
 /* Define this to allow the user to change some of the constants by specifying
@@ -1781,7 +1781,7 @@ static gboolean
 need_remove_object_for_domain (char *start, MonoDomain *domain)
 {
 	if (mono_object_domain (start) == domain) {
-		DEBUG (1, fprintf (gc_debug_file, "Need to cleanup object %p\n", start));
+		DEBUG (4, fprintf (gc_debug_file, "Need to cleanup object %p\n", start));
 		binary_protocol_cleanup (start, (gpointer)LOAD_VTABLE (start), safe_object_get_size ((MonoObject*)start));
 		return TRUE;
 	}
@@ -1802,7 +1802,7 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 		/* The server could already have been zeroed out, so
 		   we need to check for that, too. */
 		if (server && (!LOAD_VTABLE (server) || mono_object_domain (server) == domain)) {
-			DEBUG (1, fprintf (gc_debug_file, "Cleaning up remote pointer in %p to object %p\n",
+			DEBUG (4, fprintf (gc_debug_file, "Cleaning up remote pointer in %p to object %p\n",
 					start, server));
 			((MonoRealProxy*)start)->unwrapped_server = NULL;
 		}
@@ -1994,7 +1994,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 			else
 				los_object_list = bigobj->next;
 			bigobj = bigobj->next;
-			DEBUG (1, fprintf (gc_debug_file, "Freeing large object %p\n",
+			DEBUG (4, fprintf (gc_debug_file, "Freeing large object %p\n",
 					bigobj->data));
 			free_large_object (to_free);
 			continue;
@@ -2135,14 +2135,14 @@ copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
 	 */
 
 	if ((forwarded = object_is_forwarded (obj))) {
-		g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr);
+		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
 		HEAVY_STAT (++stat_copy_object_failed_forwarded);
 		*obj_slot = forwarded;
 		return;
 	}
 	if (object_is_pinned (obj)) {
-		g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr);
+		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
 		HEAVY_STAT (++stat_copy_object_failed_pinned);
 		return;
@@ -2184,7 +2184,7 @@ copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
 	 * not (4).
 	 */
 	if (MAJOR_SECTION_FOR_OBJECT (obj)->is_to_space) {
-		g_assert (objsize <= MAX_SMALL_OBJ_SIZE);
+		DEBUG (9, g_assert (objsize <= MAX_SMALL_OBJ_SIZE));
 		DEBUG (9, fprintf (gc_debug_file, " (already copied)\n"));
 		HEAVY_STAT (++stat_copy_object_failed_to_space);
 		return;
@@ -2199,7 +2199,7 @@ copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
 	/* Make sure we have enough space available */
 	if (to_space_bumper + objsize > to_space_top) {
 		to_space_expand ();
-		g_assert (to_space_bumper + objsize <= to_space_top);
+		DEBUG (8, g_assert (to_space_bumper + objsize <= to_space_top));
 	}
 
 	if (objsize <= sizeof (gpointer) * 8) {
@@ -2242,7 +2242,7 @@ copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
 	}
 	/* adjust array->bounds */
 	vt = ((MonoObject*)obj)->vtable;
-	g_assert (vt->gc_descr);
+	DEBUG (9, g_assert (vt->gc_descr));
 	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
 		MonoArray *array = (MonoArray*)to_space_bumper;
 		array->bounds = (MonoArrayBounds*)((char*)to_space_bumper + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
@@ -6003,7 +6003,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
 			if (info->skip) {
-				DEBUG (2, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %zd\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+				DEBUG (3, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %zd\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 				continue;
 			}
 			DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %zd, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
@@ -6388,7 +6388,7 @@ clear_remsets (void)
 				next = remset->next;
 				remset->next = NULL;
 				if (remset != info->remset) {
-					DEBUG (1, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
+					DEBUG (3, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
 					free_internal_mem (remset, INTERNAL_MEM_REMSET);
 				}
 			}
@@ -7008,7 +7008,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_object_copy);
 	rs = REMEMBERED_SET;
-	DEBUG (1, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
+	DEBUG (6, fprintf (gc_debug_file, "Adding object remset for %p\n", obj));
 	size = mono_object_class (obj)->instance_size;
 	LOCK_GC;
 	/* do not copy the sync state */

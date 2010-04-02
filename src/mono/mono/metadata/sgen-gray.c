@@ -92,13 +92,13 @@ gray_object_free_queue_section (GrayQueueSection *section)
 static inline void
 gray_object_enqueue (char *obj)
 {
-	g_assert (obj);
+	DEBUG (9, g_assert (obj));
 	if (G_UNLIKELY (!gray_queue_end || gray_queue_end->end == GRAY_QUEUE_SECTION_SIZE))
 		gray_object_alloc_queue_section ();
-	g_assert (gray_queue_end && gray_queue_end->end < GRAY_QUEUE_SECTION_SIZE);
+	DEBUG (9, g_assert (gray_queue_end && gray_queue_end->end < GRAY_QUEUE_SECTION_SIZE));
 	gray_queue_end->objects [gray_queue_end->end++] = obj;
 
-	++gray_queue_balance;
+	DEBUG (9, ++gray_queue_balance);
 }
 
 static inline gboolean
@@ -115,14 +115,14 @@ gray_object_dequeue (void)
 	if (gray_object_queue_is_empty ())
 		return NULL;
 
-	g_assert (gray_queue_end->end);
+	DEBUG (9, g_assert (gray_queue_end->end));
 
 	obj = gray_queue_end->objects [--gray_queue_end->end];
 
 	if (G_UNLIKELY (gray_queue_end->end == 0))
 		gray_queue_end = gray_queue_end->prev;
 
-	--gray_queue_balance;
+	DEBUG (9, --gray_queue_balance);
 
 	return obj;
 }
@@ -135,7 +135,7 @@ gray_object_queue_init (void)
 
 	g_assert (gray_object_queue_is_empty ());
 	g_assert (sizeof (GrayQueueSection) < MAX_FREELIST_SIZE);
-	g_assert (gray_queue_balance == 0);
+	DEBUG (9, g_assert (gray_queue_balance == 0));
 
 	/* Free the extra sections allocated during the last collection */
 	i = 0;
