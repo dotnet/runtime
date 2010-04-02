@@ -92,6 +92,9 @@ case "$host" in
 			# So libgc configure gets -mno-cygwin
 			export CC
 			export CXX
+		else
+			target_win32=yes
+			AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32/MinGW])
 		fi
 		HOST_CC="gcc"
 		# Windows 2000 is required that includes Internet Explorer 5.01

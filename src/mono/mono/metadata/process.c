@@ -510,6 +510,10 @@ complete_path (const gunichar2 *appname, gchar **completed)
 	return TRUE;
 }
 
+#if defined (__MINGW32__) && defined (HAVE_GETPROCESSID)
+#undef HAVE_GETPROCESSID
+#endif
+
 #ifndef HAVE_GETPROCESSID
 /* Run-time GetProcessId detection for Windows */
 #ifdef TARGET_WIN32

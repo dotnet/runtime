@@ -1,3 +1,13 @@
+2010-04-03  Marek Habersack  <mhabersack@novell.com>
+
+	* configure.in: TARGET_WIN32 is defined when cross-compiling with
+	MinGW
+
+	* build-mingw32.sh: include the 4.0 profile in the zip.
+	Remove cross-compilation environment bin path from PATH before
+	compiling native Mono.
+	Remove autotools cache directory before each compilation phase.
+
 2010-04-02  Marek Habersack  <mhabersack@novell.com>
 
 	* configure.in: include -lkernel32 in LDFLAGS when cross-compiling

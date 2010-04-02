@@ -4,8 +4,9 @@ MINGW=i386-mingw32msvc
 CROSS_DIR=/opt/cross/$MINGW
 COPY_DLLS="libgio*.dll libglib*.dll libgmodule*.dll libgthread*.dll libgobject*.dll"
 INSTALL_DESTDIR="$CURDIR/mono-win32"
-PROFILES="default net_2_0 moonlight net_3_5"
+PROFILES="default net_2_0 net_3_5 net_4_0 moonlight"
 TEMPORARY_PKG_CONFIG_DIR=/tmp/$RANDOM-pkg-config-$RANDOM
+ORIGINAL_PATH="$PATH"
 
 export CPPFLAGS_FOR_EGLIB CFLAGS_FOR_EGLIB CPPFLAGS_FOR_LIBGC CFLAGS_FOR_LIBGC
 
@@ -69,6 +70,7 @@ function build ()
 
     if [ -f ./Makefile ]; then
 	make distclean
+	rm -rf autom4te.cache
     fi
 
     if [ ! -d "$CURDIR/build-cross-windows" ]; then
@@ -77,13 +79,18 @@ function build ()
 
     cd "$CURDIR/build-cross-windows"
     rm -rf *
-    ../configure --prefix=$MONO_PREFIX --with-crosspkgdir=$CROSS_PKG_CONFIG_DIR --build=$BUILD --target=$MINGW --host=$MINGW --enable-parallel-mark --program-transform-name="" --with-tls=none --disable-mcs-build --disable-embed-check --enable-win32-dllmain=yes --with-libgc-threads=win32
+    ../configure --prefix=$MONO_PREFIX --with-crosspkgdir=$CROSS_PKG_CONFIG_DIR --build=$BUILD --target=$MINGW --host=$MINGW --enable-parallel-mark --program-transform-name="" --with-tls=none --disable-mcs-build --disable-embed-check --enable-win32-dllmain=yes --with-libgc-threads=win32 --with-profile4=yes
     make
     cd "$CURDIR"
 
     if [ ! -d "$CURDIR/build-cross-windows-mcs" ]; then
 	mkdir "$CURDIR/build-cross-windows-mcs"
     fi
+
+    rm -rf autom4te.cache
+    unset PATH
+    PATH="$ORIGINAL_PATH"
+    export PATH
     cd "$CURDIR/build-cross-windows-mcs"
     rm -rf *
     ../configure --prefix=$MONO_PREFIX --enable-parallel-mark
