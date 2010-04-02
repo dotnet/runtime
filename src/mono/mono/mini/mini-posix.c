@@ -202,7 +202,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	 *
 	 * FIXME add full-aot support.
 	 */
-	if (!mono_aot_only) {
+	if (!mono_aot_only && ctx) {
 		mono_arch_sigctx_to_monoctx (ctx, &mctx);
 		if (mono_install_handler_block_guard (thread, &mctx)) {
 			return;
