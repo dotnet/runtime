@@ -84,9 +84,16 @@ gray_object_free_queue_section (GrayQueueSection *section)
 	--num_gray_queue_sections;
 }
 
-/* 
- * The following three functions are called in the inner loops of the collector, so they
- * need to be as fast as possible.
+static inline gboolean
+gray_object_queue_is_empty (void)
+{
+	return gray_queue_end == NULL;
+}
+
+/*
+ * The following two functions are called in the inner loops of the
+ * collector, so they need to be as fast as possible.  We have macros
+ * for them below.
  */
 
 static inline void
@@ -99,12 +106,6 @@ gray_object_enqueue (char *obj)
 	gray_queue_end->objects [gray_queue_end->end++] = obj;
 
 	DEBUG (9, ++gray_queue_balance);
-}
-
-static inline gboolean
-gray_object_queue_is_empty (void)
-{
-	return gray_queue_end == NULL;
 }
 
 static inline char*
@@ -126,6 +127,26 @@ gray_object_dequeue (void)
 
 	return obj;
 }
+
+#if MAX_DEBUG_LEVEL >= 9
+#define GRAY_OBJECT_ENQUEUE gray_object_enqueue
+#define GRAY_OBJECT_DEQUEUE(o) ((o) = gray_object_dequeue ())
+#else
+#define GRAY_OBJECT_ENQUEUE(o) do {					\
+		if (G_UNLIKELY (!gray_queue_end || gray_queue_end->end == GRAY_QUEUE_SECTION_SIZE)) \
+			gray_object_alloc_queue_section ();		\
+		gray_queue_end->objects [gray_queue_end->end++] = (o);	\
+	} while (0)
+#define GRAY_OBJECT_DEQUEUE(o) do {					\
+		if (!gray_queue_end) {					\
+			(o) = NULL;					\
+		} else {						\
+			(o) = gray_queue_end->objects [--gray_queue_end->end]; \
+			if (G_UNLIKELY (gray_queue_end->end == 0))	\
+				gray_queue_end = gray_queue_end->prev;	\
+		}							\
+	} while (0)
+#endif
 
 static void
 gray_object_queue_init (void)

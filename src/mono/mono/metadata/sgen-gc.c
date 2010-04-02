@@ -2262,7 +2262,7 @@ copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
 	to_space_section->scan_starts [((char*)obj - (char*)to_space_section->data)/SCAN_START_SIZE] = obj;
 	to_space_bumper += objsize;
 	DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
-	gray_object_enqueue (obj);
+	GRAY_OBJECT_ENQUEUE (obj);
 	DEBUG (8, g_assert (to_space_bumper <= to_space_top));
 	*obj_slot = obj;
 }
@@ -2319,7 +2319,10 @@ drain_gray_stack (char *start_addr, char *end_addr)
 {
 	char *obj;
 
-	while ((obj = gray_object_dequeue ())) {
+	for (;;) {
+		GRAY_OBJECT_DEQUEUE (obj);
+		if (!obj)
+			break;
 		DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
 		scan_object (obj, start_addr, end_addr);
 	}
