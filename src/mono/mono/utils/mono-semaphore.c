@@ -35,7 +35,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 {
 	TIMESPEC ts, copy;
 	struct timeval t;
-	int res;
+	int res = 0;
 #if defined(__OpenBSD__)
 	int timeout;
 #endif
