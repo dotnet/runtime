@@ -7529,7 +7529,8 @@ mono_gc_is_gc_thread (void)
 
 /* Tries to extract a number from the passed string, taking in to account m, k
  * and g suffixes */
-gboolean parse_environment_string_extract_number (gchar *str, glong *out)
+static gboolean
+parse_environment_string_extract_number (gchar *str, glong *out)
 {
 	char *endptr;
 	int len = strlen (str), shift = 0;
