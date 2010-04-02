@@ -2106,6 +2106,9 @@ gboolean mono_gdb_render_native_backtraces (void) MONO_INTERNAL;
 #ifdef MONO_ARCH_USE_SIGACTION
 #define GET_CONTEXT \
     void *ctx = context;
+#elif defined(__HAIKU__)
+#define GET_CONTEXT \
+	void *ctx = &regs;
 #else
 #define GET_CONTEXT \
 	void **_p = (void **)&_dummy; \
@@ -2120,6 +2123,9 @@ gboolean mono_gdb_render_native_backtraces (void) MONO_INTERNAL;
 #elif defined(HOST_WIN32)
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, EXCEPTION_RECORD *info, void *context)
 #define SIG_HANDLER_PARAMS _dummy, info, context
+#elif defined(__HAIKU__)
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *userData, vregs regs)
+#define SIG_HANDLER_PARAMS _dummy, userData, regs
 #else
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
 #define SIG_HANDLER_PARAMS _dummy

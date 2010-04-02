@@ -44,6 +44,12 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #endif /* HOST_WIN32 */
 
+#ifdef __HAIKU__
+struct sigcontext {
+	vregs regs;
+};
+#endif /* __HAIKU__ */
+
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
        defined(__FreeBSD__) || defined(__OpenBSD__)
 #define MONO_ARCH_USE_SIGACTION
@@ -59,7 +65,10 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #ifndef __sun
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 #endif
+/* Haiku doesn't have SA_SIGINFO */
+#ifndef __HAIKU__
 #define MONO_ARCH_USE_SIGACTION
+#endif /* __HAIKU__ */
 
 #endif /* HAVE_WORKING_SIGALTSTACK */
 #endif /* !HOST_WIN32 */
@@ -161,6 +170,16 @@ typedef struct {
 # define SC_ESP sc_esp
 # define SC_EDI sc_edi
 # define SC_ESI sc_esi
+#elif defined(__HAIKU__)
+# define SC_EAX regs.eax
+# define SC_EBX regs._reserved_2[2]
+# define SC_ECX regs.ecx
+# define SC_EDX regs.edx
+# define SC_EBP regs.ebp
+# define SC_EIP regs.eip
+# define SC_ESP regs.esp
+# define SC_EDI regs._reserved_2[0]
+# define SC_ESI regs._reserved_2[1]
 #else
 # define SC_EAX eax
 # define SC_EBX ebx
