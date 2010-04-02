@@ -46,13 +46,13 @@ mono_gc_add_memory_pressure (gint64 value)
 }
 
 /* maybe track the size, not important, though */
-gint64
+int64_t
 mono_gc_get_used_size (void)
 {
 	return 1024*1024;
 }
 
-gint64
+int64_t
 mono_gc_get_heap_size (void)
 {
 	return 2*1024*1024;

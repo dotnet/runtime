@@ -7371,7 +7371,7 @@ mono_gc_collection_count (int generation)
 	return num_major_gcs;
 }
 
-gint64
+int64_t
 mono_gc_get_used_size (void)
 {
 	gint64 tot = 0;
@@ -7387,7 +7387,7 @@ mono_gc_get_used_size (void)
 	return tot;
 }
 
-gint64
+int64_t
 mono_gc_get_heap_size (void)
 {
 	return total_alloc;

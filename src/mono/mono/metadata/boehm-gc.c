@@ -153,13 +153,13 @@ mono_gc_add_memory_pressure (gint64 value)
 {
 }
 
-gint64
+int64_t
 mono_gc_get_used_size (void)
 {
 	return GC_get_heap_size () - GC_get_free_bytes ();
 }
 
-gint64
+int64_t
 mono_gc_get_heap_size (void)
 {
 	return GC_get_heap_size ();
