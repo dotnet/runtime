@@ -1,7 +1,7 @@
 2010-04-03  Marek Habersack  <mhabersack@novell.com>
 
-	* configure.in: TARGET_WIN32 is defined when cross-compiling with
-	MinGW
+	* configure.in: TARGET_WIN32 and MINGW_CROSS_COMPILE are defined
+	when cross-compiling with MinGW 
 
 	* build-mingw32.sh: include the 4.0 profile in the zip.
 	Remove cross-compilation environment bin path from PATH before
