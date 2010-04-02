@@ -693,8 +693,6 @@ mono_get_exception_field_access (void)
 MonoException *
 mono_get_exception_field_access_msg (const char *msg)
 {
-	MonoString *s = msg ? mono_string_new (mono_domain_get (), msg) : NULL;
-
 	return mono_exception_from_name_msg (mono_get_corlib (), "System", "FieldAccessException", msg);
 }
 
@@ -718,8 +716,6 @@ mono_get_exception_method_access (void)
 MonoException *
 mono_get_exception_method_access_msg (const char *msg)
 {
-	MonoString *s = msg ? mono_string_new (mono_domain_get (), msg) : NULL;
-
 	return mono_exception_from_name_msg (mono_get_corlib (), "System", "MethodAccessException", msg);
 }
 
