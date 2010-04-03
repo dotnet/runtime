@@ -35,10 +35,12 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef PLATFORM_MACOSX
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
 #include <sys/proc.h>
 #include <sys/sysctl.h>
-#include <sys/utsname.h>
+#  if !defined(__OpenBSD__)
+#    include <sys/utsname.h>
+#  endif
 #endif
 
 #ifdef PLATFORM_SOLARIS
@@ -1513,16 +1515,27 @@ static gboolean process_enum (gpointer handle, gpointer user_data)
 }
 #endif /* UNUSED_CODE */
 
-#ifdef PLATFORM_MACOSX
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
 
 gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 {
 	guint32 count, fit, i, j;
 	gint32 err;
 	gboolean done;
+       size_t proclength, size;
+#if defined(__OpenBSD__)
+       struct kinfo_proc2 *result;
+       int name[6];
+       name[0] = CTL_KERN;
+       name[1] = KERN_PROC2;
+       name[2] = KERN_PROC_ALL;
+       name[3] = 0;
+       name[4] = sizeof(struct kinfo_proc2);
+       name[5] = 400; /* XXX */
+#else
 	struct kinfo_proc *result;
-	size_t proclength;
 	static const int name[] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
+#endif
 	
 	mono_once (&process_current_once, process_set_current);
 	
@@ -1531,14 +1544,20 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	
 	do {
 		proclength = 0;
-		err = sysctl ((int *)name, (sizeof(name) / sizeof(*name)) - 1, NULL, &proclength, NULL, 0);
+#if defined(__OpenBSD__)
+               size = (sizeof(name) / sizeof(*name));
+#else
+               size = (sizeof(name) / sizeof(*name)) - 1;
+#endif
+               err = sysctl ((int *)name, size, NULL, &proclength, NULL, 0);
 
 		if (err == 0) {
 			result = malloc (proclength);
+
 			if (result == NULL)
 				return FALSE;
 			
-			err = sysctl ((int *) name, (sizeof(name) / sizeof(*name)) - 1, result, &proclength, NULL, 0);
+                       err = sysctl ((int *) name, size, result, &proclength, NULL, 0);
 
 			if (err == 0) 
 				done = TRUE;
@@ -1554,11 +1573,19 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 		}
 		return(FALSE);
 	}	
-	
+
+#if defined(__OpenBSD__)
+       count = proclength / sizeof(struct kinfo_proc2);
+#else
 	count = proclength / sizeof(struct kinfo_proc);
+#endif
 	fit = len / sizeof(guint32);
 	for (i = 0, j = 0; j< fit && i < count; i++) {
+#if defined(__OpenBSD__)
+               pids [j++] = result [i].p_pid;
+#else
 		pids [j++] = result [i].kp_proc.p_pid;
+#endif
 	}
 	free (result);
 	result = NULL;
