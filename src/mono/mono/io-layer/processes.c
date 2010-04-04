@@ -1930,8 +1930,8 @@ static GSList *load_modules (void)
 		struct dl_phdr_info *info = g_ptr_array_index (dlarray, i);
 
 		mod = g_new0 (WapiProcModule, 1);
-               mod->address_start = (gpointer)(info->dlpi_addr + info->dlpi_phdr[0].p_vaddr);
-               mod->address_end = (gpointer)(info->dlpi_addr +
+		mod->address_start = (gpointer)(info->dlpi_addr + info->dlpi_phdr[0].p_vaddr);
+		mod->address_end = (gpointer)(info->dlpi_addr +
                                        info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr);
 		mod->perms = g_strdup ("r--p");
 		mod->address_offset = 0;
@@ -1939,8 +1939,8 @@ static GSList *load_modules (void)
 		mod->filename = g_strdup (info->dlpi_name); 
 
 #ifdef DEBUG
-               g_message ("%s: inode=%d, filename=%s, address_start=%p, address_end=%p", __func__,
-                          mod->inode, mod->filename, mod->address_start, mod->address_end);
+		g_message ("%s: inode=%d, filename=%s, address_start=%p, address_end=%p", __func__,
+				   mod->inode, mod->filename, mod->address_start, mod->address_end);
 #endif
 
 		free(info);
