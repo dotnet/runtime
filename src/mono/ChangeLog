@@ -1,6 +1,7 @@
 2010-04-04  Andreas Färber  <andreas.faerber@web.de>
 
 	* configure.in: Fix typo.
+	Set default for with_moonlight to fix "Moon Profile:" output.
 
 	Contributed under MIT/X11 license.
 
