@@ -1775,7 +1775,7 @@ ac_cv_c_socklen_t=yes
 	AC_MSG_RESULT(no)
 ])
 
-AC_MSG_CHECKING(for array element initalizer support)
+AC_MSG_CHECKING(for array element initializer support)
 AC_TRY_COMPILE([#include <sys/socket.h>], [
 	const int array[] = {[1] = 2,};
 ], [

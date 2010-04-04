@@ -1,3 +1,9 @@
+2010-04-04  Andreas Färber  <andreas.faerber@web.de>
+
+	* configure.in: Fix typo.
+
+	Contributed under MIT/X11 license.
+
 2010-04-03  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Applied some openbsd changes from Robert Nagy
