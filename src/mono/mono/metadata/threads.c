@@ -16,6 +16,11 @@
 #include <signal.h>
 #include <string.h>
 
+#if defined(__OpenBSD__)
+#include <pthread.h>
+#include <pthread_np.h>
+#endif
+
 #include <mono/metadata/object.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/profiler-private.h>
@@ -932,6 +937,15 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 #    elif defined(sun)
 	*staddr = NULL;
 	pthread_attr_getstacksize (&attr, &stsize);
+#    elif defined(__OpenBSD__)
+	stack_t ss;
+	int rslt;
+
+	rslt = pthread_stackseg_np(pthread_self(), &ss);
+	g_assert (rslt == 0);
+
+	*staddr = (guint8*)((size_t)ss.ss_sp - ss.ss_size);
+	*stsize = ss.ss_size;
 #    else
 	*staddr = NULL;
 	*stsize = 0;
@@ -939,8 +953,10 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 #    endif
 #  endif
 
-#  ifndef sun
+#  if !defined(sun)
+#    if !defined(__OpenBSD__)
 	pthread_attr_getstack (&attr, (void**)staddr, stsize);
+#    endif
 	if (*staddr)
 		g_assert ((current > *staddr) && (current < *staddr + *stsize));
 #  endif
