@@ -81,8 +81,10 @@ extern char **environ;
 
 static guint32 process_wait (gpointer handle, guint32 timeout);
 
+#if !defined(__OpenBSD__)
 static FILE *
 open_process_map (int pid, const char *mode);
+#endif
 
 struct _WapiHandleOps _wapi_process_ops = {
 	NULL,				/* close_shared */
@@ -1522,16 +1524,16 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	guint32 count, fit, i, j;
 	gint32 err;
 	gboolean done;
-       size_t proclength, size;
+	size_t proclength, size;
 #if defined(__OpenBSD__)
-       struct kinfo_proc2 *result;
-       int name[6];
-       name[0] = CTL_KERN;
-       name[1] = KERN_PROC2;
-       name[2] = KERN_PROC_ALL;
-       name[3] = 0;
-       name[4] = sizeof(struct kinfo_proc2);
-       name[5] = 400; /* XXX */
+	struct kinfo_proc2 *result;
+	int name[6];
+	name[0] = CTL_KERN;
+	name[1] = KERN_PROC2;
+	name[2] = KERN_PROC_ALL;
+	name[3] = 0;
+	name[4] = sizeof(struct kinfo_proc2);
+	name[5] = 400; /* XXX */
 #else
 	struct kinfo_proc *result;
 	static const int name[] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
@@ -1545,11 +1547,11 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	do {
 		proclength = 0;
 #if defined(__OpenBSD__)
-               size = (sizeof(name) / sizeof(*name));
+		size = (sizeof(name) / sizeof(*name));
 #else
-               size = (sizeof(name) / sizeof(*name)) - 1;
+		size = (sizeof(name) / sizeof(*name)) - 1;
 #endif
-               err = sysctl ((int *)name, size, NULL, &proclength, NULL, 0);
+		err = sysctl ((int *)name, size, NULL, &proclength, NULL, 0);
 
 		if (err == 0) {
 			result = malloc (proclength);
@@ -1557,7 +1559,7 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 			if (result == NULL)
 				return FALSE;
 			
-                       err = sysctl ((int *) name, size, result, &proclength, NULL, 0);
+			err = sysctl ((int *) name, size, result, &proclength, NULL, 0);
 
 			if (err == 0) 
 				done = TRUE;
@@ -1575,14 +1577,14 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	}	
 
 #if defined(__OpenBSD__)
-       count = proclength / sizeof(struct kinfo_proc2);
+	count = proclength / sizeof(struct kinfo_proc2);
 #else
 	count = proclength / sizeof(struct kinfo_proc);
 #endif
 	fit = len / sizeof(guint32);
 	for (i = 0, j = 0; j< fit && i < count; i++) {
 #if defined(__OpenBSD__)
-               pids [j++] = result [i].p_pid;
+		pids [j++] = result [i].p_pid;
 #else
 		pids [j++] = result [i].kp_proc.p_pid;
 #endif
@@ -1677,8 +1679,12 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 				      process_open_compare,
 				      GUINT_TO_POINTER (pid), NULL, TRUE);
 	if (handle == 0) {
+#if defined(__OpenBSD__)
+		if ((kill(pid, 0) == 0) || (errno == EPERM)) {
+#else
 		gchar *dir = g_strdup_printf ("/proc/%d", pid);
 		if (!access (dir, F_OK)) {
+#endif
 			/* Return a pseudo handle for processes we
 			 * don't have handles for
 			 */
@@ -1891,6 +1897,67 @@ static GSList *load_modules (void)
 	
 	return(ret);
 }
+#elif defined(__OpenBSD__)
+#include <link.h>
+static int load_modules_callback (struct dl_phdr_info *info, size_t size, void *ptr)
+{
+
+	if (size < offsetof (struct dl_phdr_info, dlpi_phnum)
+	    + sizeof (info->dlpi_phnum))
+		return (-1);
+
+	struct dl_phdr_info *cpy = calloc(1, sizeof(struct dl_phdr_info));
+	if (!cpy)
+		return (-1);
+
+	memcpy(cpy, info, sizeof(*info));
+
+	g_ptr_array_add ((GPtrArray *)ptr, cpy);
+
+	return (0);
+}
+
+static GSList *load_modules (void)
+{
+	GSList *ret = NULL;
+	WapiProcModule *mod;
+	GPtrArray *dlarray = g_ptr_array_new();
+	int i;
+
+	if (dl_iterate_phdr(load_modules_callback, dlarray) < 0)
+		return (ret);
+
+	for (i = 0; i < dlarray->len; i++) {
+		int j;
+		char *end = NULL;
+
+		struct dl_phdr_info *info = g_ptr_array_index (dlarray, i);
+		for (j = 0; j < info->dlpi_phnum; j++)
+			end = (char *)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr);
+
+		mod = g_new0 (WapiProcModule, 1);
+		mod->address_start = GINT_TO_POINTER(info->dlpi_addr);
+		mod->address_end = end;
+		mod->perms = g_strdup ("r--p");
+		mod->address_offset = 0;
+		mod->inode = (ino_t) i;
+		mod->filename = g_strdup (info->dlpi_name); 
+
+		free(info);
+
+		if (g_slist_find_custom (ret, mod, find_procmodule) == NULL) {
+			ret = g_slist_prepend (ret, mod);
+		} else {
+			free_procmodule (mod);
+		}
+	}
+
+	g_ptr_array_free (dlarray, TRUE);
+
+	ret = g_slist_reverse (ret);
+
+	return(ret);
+}
 #else
 static GSList *load_modules (FILE *fp)
 {
@@ -2041,6 +2108,7 @@ static gboolean match_procname_to_modulename (gchar *procname, gchar *modulename
 	return result;
 }
 
+#if !defined(__OpenBSD__)
 static FILE *
 open_process_map (int pid, const char *mode)
 {
@@ -2061,13 +2129,16 @@ open_process_map (int pid, const char *mode)
 
 	return fp;
 }
+#endif
 
 gboolean EnumProcessModules (gpointer process, gpointer *modules,
 			     guint32 size, guint32 *needed)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
+#if !defined(__OpenBSD__)
 	FILE *fp;
+#endif
 	GSList *mods = NULL;
 	WapiProcModule *module;
 	guint32 count, avail = size / sizeof(gpointer);
@@ -2105,7 +2176,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		proc_name = process_handle->proc_name;
 	}
 	
-#ifdef PLATFORM_MACOSX
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
 	{
 		mods = load_modules ();
 #else
@@ -2242,7 +2313,9 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	gchar *procname_ext = NULL;
 	glong len;
 	gsize bytes;
+#if !defined(__OpenBSD__)
 	FILE *fp;
+#endif
 	GSList *mods = NULL;
 	WapiProcModule *found_module;
 	guint32 count;
@@ -2282,7 +2355,7 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	}
 
 	/* Look up the address in /proc/<pid>/maps */
-#ifdef PLATFORM_MACOSX
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
 	{
 		mods = load_modules ();
 #else
@@ -2394,7 +2467,9 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 	pid_t pid;
+#if !defined(__OpenBSD__)
 	FILE *fp;
+#endif
 	GSList *mods = NULL;
 	WapiProcModule *found_module;
 	guint32 count;
@@ -2432,7 +2507,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 		proc_name = g_strdup (process_handle->proc_name);
 	}
 
-#ifdef PLATFORM_MACOSX
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
 	{
 		mods = load_modules ();
 #else
