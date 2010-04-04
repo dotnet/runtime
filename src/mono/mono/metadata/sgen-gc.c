@@ -295,7 +295,6 @@ static long time_minor_scan_remsets = 0;
 static long time_minor_scan_pinned = 0;
 static long time_minor_scan_registered_roots = 0;
 static long time_minor_scan_thread_data = 0;
-static long time_minor_scan_alloc_pinned = 0;
 static long time_minor_finish_gray_stack = 0;
 static long time_minor_fragment_creation = 0;
 
@@ -3402,7 +3401,6 @@ init_stats (void)
 	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_pinned);
 	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_registered_roots);
 	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_thread_data);
-	mono_counters_register ("Minor scan alloc_pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_alloc_pinned);
 	mono_counters_register ("Minor finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_finish_gray_stack);
 	mono_counters_register ("Minor fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_fragment_creation);
 
@@ -3579,11 +3577,7 @@ collect_nursery (size_t requested_size)
 	scan_thread_data (nursery_start, nursery_next, TRUE);
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
-	/* alloc_pinned objects */
-	scan_from_pinned_objects (nursery_start, nursery_next);
-	TV_GETTIME (btv);
-	time_minor_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
-	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
+	btv = atv;
 
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY);
 	TV_GETTIME (atv);
@@ -3628,13 +3622,6 @@ collect_nursery (size_t requested_size)
 	minor_collection_sections_alloced += sections_alloced;
 
 	return minor_collection_sections_alloced > minor_collection_section_allowance;
-}
-
-static void
-scan_from_pinned_chunk_if_marked (PinnedChunk *chunk, char *obj, size_t size, void *dummy)
-{
-	if (object_is_pinned (obj))
-		scan_object (obj, NULL, (char*)-1);
 }
 
 static void
@@ -3789,7 +3776,6 @@ major_collection (const char *reason)
 			scan_object (bigobj->data, heap_start, heap_end);
 		}
 	}
-	scan_pinned_objects (scan_from_pinned_chunk_if_marked, NULL);
 	TV_GETTIME (atv);
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
