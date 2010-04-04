@@ -1901,7 +1901,6 @@ static GSList *load_modules (void)
 #include <link.h>
 static int load_modules_callback (struct dl_phdr_info *info, size_t size, void *ptr)
 {
-
 	if (size < offsetof (struct dl_phdr_info, dlpi_phnum)
 	    + sizeof (info->dlpi_phnum))
 		return (-1);
@@ -1928,20 +1927,21 @@ static GSList *load_modules (void)
 		return (ret);
 
 	for (i = 0; i < dlarray->len; i++) {
-		int j;
-		char *end = NULL;
-
 		struct dl_phdr_info *info = g_ptr_array_index (dlarray, i);
-		for (j = 0; j < info->dlpi_phnum; j++)
-			end = (char *)(info->dlpi_addr + info->dlpi_phdr[j].p_vaddr);
 
 		mod = g_new0 (WapiProcModule, 1);
-		mod->address_start = GINT_TO_POINTER(info->dlpi_addr);
-		mod->address_end = end;
+               mod->address_start = (gpointer)(info->dlpi_addr + info->dlpi_phdr[0].p_vaddr);
+               mod->address_end = (gpointer)(info->dlpi_addr +
+                                       info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr);
 		mod->perms = g_strdup ("r--p");
 		mod->address_offset = 0;
 		mod->inode = (ino_t) i;
 		mod->filename = g_strdup (info->dlpi_name); 
+
+#ifdef DEBUG
+               g_message ("%s: inode=%d, filename=%s, address_start=%p, address_end=%p", __func__,
+                          mod->inode, mod->filename, mod->address_start, mod->address_end);
+#endif
 
 		free(info);
 
