@@ -302,6 +302,7 @@ threadpool_jobs_dec (MonoObject *obj)
 	return FALSE;
 }
 
+#ifdef HAVE_EPOLL
 static MonoObject *
 get_io_event (MonoMList **list, gint event)
 {
@@ -332,6 +333,7 @@ get_io_event (MonoMList **list, gint event)
 
 	return state;
 }
+#endif
 
 static MonoMList *
 process_io_event (MonoMList *list, int event)
