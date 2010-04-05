@@ -481,7 +481,8 @@ TEST_IL_SRC=			\
 	constraints-load.il	\
 	array_load_exception.il \
 	bug-481403.il	\
-	interface-with-static-method.il
+	interface-with-static-method.il	\
+	bug-515884.il
 
 #	bug-318677.il
 
