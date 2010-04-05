@@ -986,17 +986,29 @@ stack_slot_stack_type_full_name (ILStackDesc *value)
 {
 	GString *str = g_string_new ("");
 	char *result;
+	gboolean has_pred = FALSE, first = TRUE;
 
 	if ((value->stype & TYPE_MASK) != value->stype) {
-		gboolean first = TRUE;
 		g_string_append(str, "[");
 		APPEND_WITH_PREDICATE (stack_slot_is_this_pointer, "this");
 		APPEND_WITH_PREDICATE (stack_slot_is_boxed_value, "boxed");
 		APPEND_WITH_PREDICATE (stack_slot_is_null_literal, "null");
 		APPEND_WITH_PREDICATE (stack_slot_is_managed_mutability_pointer, "cmmp");
 		APPEND_WITH_PREDICATE (stack_slot_is_managed_pointer, "mp");
-		g_string_append(str, "] ");
+		has_pred = TRUE;
 	}
+
+	if (mono_type_is_generic_argument (value->type) && !stack_slot_is_boxed_value (value)) {
+		if (!has_pred)
+			g_string_append(str, "[");
+		if (!first)
+			g_string_append (str, ", ");
+		g_string_append (str, "unboxed");
+		has_pred = TRUE;
+	}
+
+	if (has_pred)
+		g_string_append(str, "] ");
 
 	g_string_append (str, stack_slot_get_name (value));
 	result = str->str;
@@ -2022,6 +2034,13 @@ handle_enum:
 			target = mono_type_get_underlying_type_any (target);
 			goto handle_enum;
 		}
+		/*
+		 * VAR / MVAR compatibility must be checked by verify_stack_type_compatibility
+		 * to take boxing status into account.
+		 */
+		if (mono_type_is_generic_argument (original_candidate))
+			return FALSE;
+
 		target_klass = mono_class_from_mono_type (target);
 		candidate_klass = mono_class_from_mono_type (candidate);
 		if (mono_class_is_nullable (target_klass)) {
@@ -3032,8 +3051,13 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 		if (field->parent->valuetype && stack_slot_is_boxed_value (obj))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is a boxed valuetype and is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
-		if (!stack_slot_is_null_literal (obj) && !verify_stack_type_compatibility_full (ctx, &field->parent->byval_arg, obj, TRUE, FALSE))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
+		if (!stack_slot_is_null_literal (obj) && !verify_stack_type_compatibility_full (ctx, &field->parent->byval_arg, obj, TRUE, FALSE)) {
+			char *found = stack_slot_full_name (obj);
+			char *expected = mono_type_full_name (&field->parent->byval_arg);
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Expected type '%s' but found '%s' referencing the 'this' argument at 0x%04x", expected, found, ctx->ip_offset));
+			g_free (found);
+			g_free (expected);
+		}
 
 		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, mono_class_from_mono_type (obj->type)))
 			CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
