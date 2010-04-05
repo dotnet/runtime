@@ -1933,10 +1933,10 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	int i, buf_len;
 	MonoJitInfo *jinfo;
 	guint used_int_regs, flags;
-	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points;
+	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes;
 	gboolean from_llvm;
 	guint8 *p;
-	int generic_info_size;
+	int generic_info_size, try_holes_info_size, num_holes;
 
 	/* Load the method info from the AOT file */
 
@@ -1947,6 +1947,8 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	has_clauses = (flags & 4) != 0;
 	has_seq_points = (flags & 8) != 0;
 	from_llvm = (flags & 16) != 0;
+	has_try_block_holes = (flags & 32) != 0;
+
 	if (has_dwarf_unwind_info) {
 		guint32 offset;
 
@@ -1961,12 +1963,18 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	else
 		generic_info_size = 0;
 
+	if (has_try_block_holes) {
+		num_holes = decode_value (p, &p);
+		try_holes_info_size = sizeof (MonoTryBlockHoleTableJitInfo) + num_holes * sizeof (MonoTryBlockHoleJitInfo);
+	} else {
+		num_holes = try_holes_info_size = 0;
+	}
 	/* Exception table */
 	if (has_clauses) {
 		int num_clauses = decode_value (p, &p);
 
 		jinfo = 
-			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * num_clauses) + generic_info_size);
+			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * num_clauses) + generic_info_size + try_holes_info_size);
 		jinfo->num_clauses = num_clauses;
 
 		for (i = 0; i < num_clauses; ++i) {
@@ -1997,7 +2005,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		}
 	}
 	else {
-		jinfo = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + generic_info_size);
+		jinfo = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + generic_info_size + try_holes_info_size);
 	}
 
  	if (from_llvm) {
@@ -2034,6 +2042,23 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 
 		jinfo->method = decode_method_ref_2 (amodule, p, &p);
+	}
+
+	if (has_try_block_holes) {
+		MonoTryBlockHoleTableJitInfo *table;
+
+		jinfo->has_try_block_holes = 1;
+
+		table = mono_jit_info_get_try_block_hole_table_info (jinfo);
+		g_assert (table);
+
+		table->num_holes = (guint16)num_holes;
+		for (i = 0; i < num_holes; ++i) {
+			MonoTryBlockHoleJitInfo *hole = &table->holes [i];
+			hole->clause = decode_value (p, &p);
+			hole->length = decode_value (p, &p);
+			hole->offset = decode_value (p, &p);
+		}
 	}
 
 	if (has_seq_points) {

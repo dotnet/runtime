@@ -3248,7 +3248,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	use_unwind_ops = cfg->unwind_ops != NULL;
 #endif
 
-	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0);
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0);
 
 	encode_value (flags, p, &p);
 
@@ -3265,6 +3265,12 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		g_free (encoded);
 	} else {
 		encode_value (jinfo->used_regs, p, &p);
+	}
+
+	/*Encode the number of holes before the number of clauses to make decoding easier*/
+	if (jinfo->has_try_block_holes) {
+		MonoTryBlockHoleTableJitInfo *table = mono_jit_info_get_try_block_hole_table_info (jinfo);
+		encode_value (table->num_holes, p, &p);
 	}
 
 	/* Exception table */
@@ -3325,6 +3331,16 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		 * when using generic sharing.
 		 */
 		encode_method_ref (acfg, jinfo->method, p, &p);
+	}
+
+	if (jinfo->has_try_block_holes) {
+		MonoTryBlockHoleTableJitInfo *table = mono_jit_info_get_try_block_hole_table_info (jinfo);
+		for (i = 0; i < table->num_holes; ++i) {
+			MonoTryBlockHoleJitInfo *hole = &table->holes [i];
+			encode_value (hole->clause, p, &p);
+			encode_value (hole->length, p, &p);
+			encode_value (hole->offset, p, &p);
+		}
 	}
 
 	if (seq_points) {
