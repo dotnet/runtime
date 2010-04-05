@@ -6058,6 +6058,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* MS.NET seems to silently convert this to a callvirt */
 					virtual = 1;
 
+				{
+					/*
+					 * MS.NET accepts non virtual calls to virtual final methods of transparent proxy classes and
+					 * converts to a callvirt.
+					 *
+					 * tests/bug-515884.il is an example of this behavior
+					 */
+					const int test_flags = METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_FINAL | METHOD_ATTRIBUTE_STATIC;
+					const int expected_flags = METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_FINAL;
+					if (!virtual && cmethod->klass->marshalbyref && (cmethod->flags & test_flags) == expected_flags && cfg->method->wrapper_type == MONO_WRAPPER_NONE)
+						virtual = 1;
+				}
+
 				if (!cmethod->klass->inited)
 					if (!mono_class_init (cmethod->klass))
 						goto load_error;
