@@ -1342,6 +1342,8 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 		MONO_SEM_POST (&tp->lock);
 	for (i = 0; i < MIN(njobs, tp->max_threads); i++)
 		pulse_on_new_job (tp);
+	if (tp->waiting == 0)
+		threadpool_start_thread (tp);
 }
 
 static void
@@ -1615,7 +1617,7 @@ process_idle_times (ThreadPool *tp, gint64 t)
 	if (tp->waiting == 0 && new_threads == 1) {
 		threadpool_start_thread (tp);
 	} else if (new_threads == -1) {
-		if (InterlockedCompareExchange (&tp->destroy_thread, 1, 0) == 0)
+		if (tp->destroy_thread == 0 && InterlockedCompareExchange (&tp->destroy_thread, 1, 0) == 0)
 			pulse_on_new_job (tp);
 	}
 }
@@ -1776,22 +1778,22 @@ async_invoke_thread (gpointer data)
 void
 ves_icall_System_Threading_ThreadPool_GetAvailableThreads (gint *workerThreads, gint *completionPortThreads)
 {
-	*workerThreads = 1024;//async_tp.max_threads - (gint) InterlockedCompareExchange (&async_tp.busy_threads, 0, -1);
-	*completionPortThreads = async_io_tp.max_threads - (gint) InterlockedCompareExchange (&async_io_tp.busy_threads, 0, -1);
+	*workerThreads = async_tp.max_threads - async_tp.busy_threads;
+	*completionPortThreads = async_io_tp.max_threads - async_io_tp.busy_threads;
 }
 
 void
 ves_icall_System_Threading_ThreadPool_GetMaxThreads (gint *workerThreads, gint *completionPortThreads)
 {
-	*workerThreads = (gint) InterlockedCompareExchange (&async_tp.max_threads, 0, -1);
-	*completionPortThreads = (gint) InterlockedCompareExchange (&async_io_tp.max_threads, 0, -1);
+	*workerThreads = async_tp.max_threads;
+	*completionPortThreads = async_io_tp.max_threads;
 }
 
 void
 ves_icall_System_Threading_ThreadPool_GetMinThreads (gint *workerThreads, gint *completionPortThreads)
 {
-	*workerThreads = (gint) InterlockedCompareExchange (&async_tp.min_threads, 0, -1);
-	*completionPortThreads = (gint) InterlockedCompareExchange (&async_io_tp.min_threads, 0, -1);
+	*workerThreads = async_tp.min_threads;
+	*completionPortThreads = async_io_tp.min_threads;
 }
 
 MonoBoolean
@@ -1800,18 +1802,20 @@ ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, gint co
 	gint max_threads;
 	gint max_io_threads;
 
-	max_threads = InterlockedCompareExchange (&async_tp.max_threads, -1, -1);
+	max_threads = async_tp.max_threads;
 	if (workerThreads <= 0 || workerThreads > max_threads)
 		return FALSE;
 
-	max_io_threads = InterlockedCompareExchange (&async_io_tp.max_threads, -1, -1);
+	max_io_threads = async_io_tp.max_threads;
 	if (completionPortThreads <= 0 || completionPortThreads > max_io_threads)
 		return FALSE;
 
 	InterlockedExchange (&async_tp.min_threads, workerThreads);
 	InterlockedExchange (&async_io_tp.min_threads, completionPortThreads);
-	//FIXME: check the number of threads before starting this one
-	mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_tp, TRUE);
+	if (workerThreads > async_tp.nthreads)
+		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_tp, TRUE);
+	if (completionPortThreads > async_io_tp.nthreads)
+		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_io_tp, TRUE);
 	return TRUE;
 }
 
