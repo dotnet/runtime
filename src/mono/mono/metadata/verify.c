@@ -2062,6 +2062,10 @@ handle_enum:
 		 */
 		if (mono_type_is_generic_argument (original_candidate))
 			return FALSE;
+
+		if (candidate->type == MONO_TYPE_VALUETYPE)
+			return FALSE;
+
 		/* If candidate is an enum it should return true for System.Enum and supertypes.
 		 * That's why here we use the original type and not the underlying type.
 		 */ 
@@ -2090,9 +2094,14 @@ handle_enum:
 		return candidate->type == MONO_TYPE_TYPEDBYREF;
 
 	case MONO_TYPE_VALUETYPE: {
-		MonoClass *target_klass  = mono_class_from_mono_type (target);
-		MonoClass *candidate_klass = mono_class_from_mono_type (candidate);
+		MonoClass *target_klass;
+		MonoClass *candidate_klass;
 
+		if (candidate->type == MONO_TYPE_CLASS)
+			return FALSE;
+
+		target_klass = mono_class_from_mono_type (target);
+		candidate_klass = mono_class_from_mono_type (candidate);
 		if (target_klass == candidate_klass)
 			return TRUE;
 		if (mono_type_is_enum_type (target)) {
