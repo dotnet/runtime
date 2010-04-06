@@ -2446,12 +2446,16 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 
 static void
 print_implemented_interfaces (MonoClass *klass) {
+	char *name;
 	MonoError error;
 	GPtrArray *ifaces = NULL;
 	int i;
 	int ancestor_level = 0;
-	
-	printf ("Packed interface table for class %s has size %d\n", klass->name, klass->interface_offsets_count);
+
+	name = mono_type_get_full_name (klass);
+	printf ("Packed interface table for class %s has size %d\n", name, klass->interface_offsets_count);
+	g_free (name);
+
 	for (i = 0; i < klass->interface_offsets_count; i++)
 		printf ("  [%03d][UUID %03d][SLOT %03d][SIZE  %03d] interface %s.%s\n", i,
 				klass->interfaces_packed [i]->interface_id,
@@ -3221,7 +3225,6 @@ mono_class_setup_vtable (MonoClass *class)
 	MonoGenericContext *context;
 	guint32 type_token;
 	int onum = 0;
-	int i;
 	gboolean ok = TRUE;
 
 	if (class->vtable)
@@ -3258,30 +3261,14 @@ mono_class_setup_vtable (MonoClass *class)
 	}
 
 	if (class->image->dynamic) {
-		if (class->generic_class) {
-			MonoClass *gklass = class->generic_class->container_class;
-
-			mono_reflection_get_dynamic_overrides (gklass, &overrides, &onum);
-			for (i = 0; i < onum; ++i) {
-				MonoMethod *override = overrides [(i * 2) + 1];
-				MonoMethod *inflated = NULL;
-				int j;
-
-				for (j = 0; j < class->method.count; ++j) {
-					if (gklass->methods [j] == override) {
-						inflated = class->methods [j];
-						break;
-					}
-				}
-				g_assert (inflated);
-						
-				overrides [(i * 2) + 1] = inflated;
-			}
-		} else {
-			mono_reflection_get_dynamic_overrides (class, &overrides, &onum);
-		}
+		/* Generic instances can have zero method overrides without causing any harm.
+		 * This is true since we don't do layout all over again for them, we simply inflate
+		 * the layout of the parent.
+		 */
+		mono_reflection_get_dynamic_overrides (class, &overrides, &onum);
 	} else {
 		/* The following call fails if there are missing methods in the type */
+		/* FIXME it's probably a good idea to avoid this for generic instances. */
 		ok = mono_class_get_overrides_full (class->image, type_token, &overrides, &onum, context);
 	}
 
@@ -7043,7 +7030,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 		if (candidate->image->dynamic && !candidate->wastypebuilder) {
 			MonoReflectionTypeBuilder *tb = mono_class_get_ref_info (candidate);
 			int j;
-			if (tb->interfaces) {
+			if (tb && tb->interfaces) {
 				for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
 					MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
 					MonoClass *iface_class = mono_class_from_mono_type (iface->type);
