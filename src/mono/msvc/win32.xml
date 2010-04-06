@@ -1191,6 +1191,7 @@
 		<References>
 			<Reference>mscorlib</Reference>
 			<Reference>System</Reference>
+			<Reference>System.Core</Reference>
 			<Reference>System.Xml</Reference>
 			<Reference>Microsoft.Build.Framework</Reference>
 			<Reference>Microsoft.Build.Utilities</Reference>
