@@ -1,3 +1,10 @@
+2010-04-06  Andreia Gaita  <avidigal@novell.com>
+
+	* configure.in: add --with-mcs-path option to specify where the mcs
+	source can be found, if not on ./mcs or ../mcs.
+	Only touch the mcs and/or olive dirs and config files if we're
+	actually building them
+
 2010-04-05  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Append -lgc to libmono_ldflags if using an external libgc.
