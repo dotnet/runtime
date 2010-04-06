@@ -949,33 +949,15 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 	g_message ("%s: setting key %d to %p", __func__, idx, value);
 #endif
 	
-	MONO_SPIN_LOCK (TLS_spinlock);
-	
-	if(TLS_used[idx]==FALSE) {
-#ifdef TLS_DEBUG
-		g_message ("%s: key %d unused", __func__, idx);
-#endif
-
-		MONO_SPIN_UNLOCK (TLS_spinlock);
-
-		return(FALSE);
-	}
 	
 	ret=pthread_setspecific(TLS_keys[idx], value);
-	if(ret!=0) {
 #ifdef TLS_DEBUG
+	if(ret!=0)
 		g_message ("%s: pthread_setspecific error: %s", __func__,
 			   strerror (ret));
 #endif
-
-		MONO_SPIN_UNLOCK (TLS_spinlock);
-
-		return(FALSE);
-	}
 	
-	MONO_SPIN_UNLOCK (TLS_spinlock);
-	
-	return(TRUE);
+	return(ret == 0);
 }
 
 /**
