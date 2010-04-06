@@ -219,8 +219,10 @@ socket_io_cleanup (SocketIOData *data)
 	closesocket (data->pipe [0]);
 	closesocket (data->pipe [1]);
 #else
-	close (data->pipe [0]);
-	close (data->pipe [1]);
+	if (data->pipe [0] > -1)
+		close (data->pipe [0]);
+	if (data->pipe [1] > -1)
+		close (data->pipe [1]);
 #endif
 	data->pipe [0] = -1;
 	data->pipe [1] = -1;
