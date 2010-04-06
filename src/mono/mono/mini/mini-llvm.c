@@ -168,6 +168,9 @@ static guint32 current_cfg_tls_id;
 
 static MonoLLVMModule jit_module, aot_module;
 static gboolean jit_module_inited;
+static int memset_param_count, memcpy_param_count;
+static const char *memset_func_name;
+static const char *memcpy_func_name;
 
 static void init_jit_module (void);
 
@@ -2376,13 +2379,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				v = mono_llvm_build_alloca (builder, LLVMInt8Type (), LLVMConstInt (LLVMInt32Type (), size, FALSE), MONO_ARCH_FRAME_ALIGNMENT, "");
 
 				if (ins->flags & MONO_INST_INIT) {
-					LLVMValueRef args [4];
+					LLVMValueRef args [5];
 
 					args [0] = v;
 					args [1] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
 					args [2] = LLVMConstInt (LLVMInt32Type (), size, FALSE);
 					args [3] = LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT, FALSE);
-					LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memset.i32"), args, 4, "");
+					args [4] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+					LLVMBuildCall (builder, LLVMGetNamedFunction (module, memset_func_name), args, memset_param_count, "");
 				}
 
 				values [ins->dreg] = v;
@@ -2396,13 +2400,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				v = mono_llvm_build_alloca (builder, LLVMInt8Type (), size, MONO_ARCH_FRAME_ALIGNMENT, "");
 
 				if (ins->flags & MONO_INST_INIT) {
-					LLVMValueRef args [4];
+					LLVMValueRef args [5];
 
 					args [0] = v;
 					args [1] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
 					args [2] = size;
 					args [3] = LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT, FALSE);
-					LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memset.i32"), args, 4, "");
+					args [4] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+					LLVMBuildCall (builder, LLVMGetNamedFunction (module, memset_func_name), args, memset_param_count, "");
 				}
 				values [ins->dreg] = v;
 				break;
@@ -3029,7 +3034,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			 */
 			case OP_VZERO: {
 				MonoClass *klass = ins->klass;
-				LLVMValueRef args [4];
+				LLVMValueRef args [5];
 
 				if (!klass) {
 					// FIXME:
@@ -3044,7 +3049,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				args [2] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
 				// FIXME: Alignment
 				args [3] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-				LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memset.i32"), args, 4, "");
+				args [4] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+				LLVMBuildCall (builder, LLVMGetNamedFunction (module, memset_func_name), args, memset_param_count, "");
 				break;
 			}
 
@@ -3052,7 +3058,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_LOADV_MEMBASE:
 			case OP_VMOVE: {
 				MonoClass *klass = ins->klass;
-				LLVMValueRef src, dst, args [4];
+				LLVMValueRef src, dst, args [5];
 				gboolean done = FALSE;
 
 				if (!klass) {
@@ -3101,7 +3107,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				args [3] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 				// FIXME: Alignment
 				args [3] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-				LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memcpy.i32"), args, 4, "");
+				args [4] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+				LLVMBuildCall (builder, LLVMGetNamedFunction (module, memcpy_func_name), args, memcpy_param_count, "");
 				break;
 			}
 			case OP_LLVM_OUTARG_VT:
@@ -3682,15 +3689,30 @@ add_intrinsics (LLVMModuleRef module)
 {
 	/* Emit declarations of instrinsics */
 	{
-		LLVMTypeRef memset_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type () };
+		LLVMTypeRef memset_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
-		LLVMAddFunction (module, "llvm.memset.i32", LLVMFunctionType (LLVMVoidType (), memset_params, 4, FALSE));
+#if LLVM_MAJOR_VERSION > 2 || LLVM_MINOR_VERSION >= 8
+		memset_param_count = 5;
+		memset_func_name = "llvm.memset.p0i8.i32";
+#else
+		memset_param_count = 4;
+		memset_func_name = "llvm.memset.i32";
+#endif
+		LLVMAddFunction (module, memset_func_name, LLVMFunctionType (LLVMVoidType (), memset_params, memset_param_count, FALSE));
 	}
 
 	{
-		LLVMTypeRef memcpy_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type () };
+		LLVMTypeRef memcpy_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
-		LLVMAddFunction (module, "llvm.memcpy.i32", LLVMFunctionType (LLVMVoidType (), memcpy_params, 4, FALSE));
+#if LLVM_MAJOR_VERSION > 2 || LLVM_MINOR_VERSION >= 8
+		memcpy_param_count = 5;
+		memcpy_func_name = "llvm.memcpy.p0i8.p0i8.i32";
+#else
+		memcpy_param_count = 4;
+		memcpy_func_name = "llvm.memcpy.i32";
+#endif
+
+		LLVMAddFunction (module, memcpy_func_name, LLVMFunctionType (LLVMVoidType (), memcpy_params, memcpy_param_count, FALSE));
 	}
 
 	{
