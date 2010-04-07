@@ -1,3 +1,7 @@
+2010-04-07  Raja R Harinath  <harinath@hurrynot.org>
+
+	* runtime/Makefile.am ($(tmpinst)/bin/dmcs): Add.
+
 2010-04-06  Andreia Gaita  <avidigal@novell.com>
 
 	* configure.in: add --with-mcs-path option to specify where the mcs
