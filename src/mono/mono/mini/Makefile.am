@@ -78,6 +78,11 @@ noinst_PROGRAMS = genmdesc
 
 lib_LTLIBRARIES = libmono-2.0.la
 noinst_LTLIBRARIES = libmono-static.la
+
+if MOONLIGHT
+noinst_LTLIBRARIES += libmono-moon.la
+endif
+
 endif
 
 mono_SOURCES = \
@@ -425,6 +430,10 @@ endif
 
 libmono_2_0_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
 
+if MOONLIGHT
+libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
+endif
+
 libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
 libmono_static_la_LDFLAGS = -static
@@ -438,6 +447,10 @@ libmonoinclude_HEADERS = jit.h
 
 libmono_2_0_la_LIBADD = \
 	$(libs) $(LIBMONO_DTRACE_OBJECT)
+
+if MOONLIGHT
+libmono_moon_la_LIBADD = $(libmono_2_0_la_LIBADD)
+endif
 
 basic-simd.exe: basic-simd.cs
 	$(MCS) -out:$@ $< -r:TestDriver.dll -r:Mono.Simd.dll
