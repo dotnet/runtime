@@ -5779,6 +5779,29 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	else
 		class->cast_class = eclass;
 
+	switch (class->cast_class->byval_arg.type) {
+	case MONO_TYPE_I1:
+		class->cast_class = mono_defaults.byte_class;
+		break;
+	case MONO_TYPE_U2:
+		class->cast_class = mono_defaults.int16_class;
+		break;
+	case MONO_TYPE_U4:
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
+		class->cast_class = mono_defaults.int32_class;
+		break;
+	case MONO_TYPE_U8:
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
+		class->cast_class = mono_defaults.int64_class;
+		break;
+	}
+
 	class->element_class = eclass;
 
 	if ((rank > 1) || bounded) {
