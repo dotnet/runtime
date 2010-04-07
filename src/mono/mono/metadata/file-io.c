@@ -715,6 +715,7 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 						   stat);
 	} else {
 		*error=GetLastError ();
+		memset (stat, 0, sizeof (MonoIOStat));
 	}
 
 	return result;
