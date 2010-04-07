@@ -3193,6 +3193,8 @@ void mono_thread_suspend_all_other_threads (void)
 
 				if (thread == NULL)
 					continue;
+
+				ensure_synch_cs_set (thread);
 			
 				EnterCriticalSection (thread->synch_cs);
 				if ((thread->state & ThreadState_Suspended) != 0) {
