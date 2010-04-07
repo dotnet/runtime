@@ -3731,7 +3731,7 @@ mini_field_access_needs_cctor_run (MonoCompile *cfg, MonoMethod *method, MonoVTa
 }
 
 static MonoInst*
-mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index)
+mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck)
 {
 	MonoInst *ins;
 	guint32 size;
@@ -3762,7 +3762,8 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	}
 #endif
 
-	MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index2_reg);
+	if (bcheck)
+		MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index2_reg);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	if (size == 1 || size == 2 || size == 4 || size == 8) {
@@ -3856,7 +3857,7 @@ mini_emit_ldelema_ins (MonoCompile *cfg, MonoMethod *cmethod, MonoInst **sp, uns
 	rank = mono_method_signature (cmethod)->param_count - (is_set? 1: 0);
 
 	if (rank == 1)
-		return mini_emit_ldelema_1_ins (cfg, cmethod->klass->element_class, sp [0], sp [1]);
+		return mini_emit_ldelema_1_ins (cfg, cmethod->klass->element_class, sp [0], sp [1], TRUE);
 
 #ifndef MONO_ARCH_EMULATE_MUL_DIV
 	/* emit_ldelema_2 depends on OP_LMUL */
@@ -3917,6 +3918,25 @@ should_insert_brekpoint (MonoMethod *method) {
 		g_warning ("Incorrect value returned from break policy callback");
 		return FALSE;
 	}
+}
+
+/* optimize the simple GetGenericValueImpl/SetGenericValueImpl generic icalls */
+static MonoInst*
+emit_array_generic_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args, int is_set)
+{
+	MonoInst *addr, *store, *load;
+	MonoClass *eklass = mono_class_from_mono_type (fsig->params [2]);
+
+	/* the bounds check is already done by the callers */
+	addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1], FALSE);
+	if (is_set) {
+		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, &eklass->byval_arg, args [2]->dreg, 0);
+		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, &eklass->byval_arg, addr->dreg, 0, load->dreg);
+	} else {
+		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, &eklass->byval_arg, addr->dreg, 0);
+		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, &eklass->byval_arg, args [2]->dreg, 0, load->dreg);
+	}
+	return store;
 }
 
 static MonoInst*
@@ -4007,6 +4027,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.array_class) {
+		if (strcmp (cmethod->name + 1, "etGenericValueImpl") == 0)
+			return emit_array_generic_access (cfg, fsig, args, *cmethod->name == 'S');
  		if (cmethod->name [0] != 'g')
  			return NULL;
 
@@ -4097,15 +4119,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 		return (MonoInst*)mono_emit_method_call (cfg, fast_method, args, NULL);
 #endif
-	} else if (mini_class_is_system_array (cmethod->klass) &&
-			strcmp (cmethod->name, "GetGenericValueImpl") == 0) {
-		MonoInst *addr, *store, *load;
-		MonoClass *eklass = mono_class_from_mono_type (fsig->params [1]);
-
-		addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1]);
-		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, &eklass->byval_arg, addr->dreg, 0);
-		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, &eklass->byval_arg, args [2]->dreg, 0, load->dreg);
-		return store;
 	} else if (cmethod->klass->image == mono_defaults.corlib &&
 			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
 			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
@@ -8489,7 +8502,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			readonly = FALSE;
-			ins = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1]);
+			ins = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
 			*sp++ = ins;
 			ip += 5;
 			break;
@@ -8533,7 +8546,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, array_reg, offset);
 			} else {
-				addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1]);
+				addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0);
 			}
 			*sp++ = ins;
@@ -8597,7 +8610,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, array_reg, offset, sp [2]->dreg);
 				} else {
-					addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1]);
+					addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, addr->dreg, 0, sp [2]->dreg);
 				}
 			}
