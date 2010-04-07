@@ -92,4 +92,9 @@ Mono_Posix_ToSyslogLevel
 Mono_Posix_ToSyslogOptions
 Mono_Posix_ToWaitOptions
 Mono_Posix_ToXattrFlags
+CreateZStream
+CloseZStream
+ReadZStream
+WriteZStream
+Flush
 
