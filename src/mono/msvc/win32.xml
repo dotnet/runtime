@@ -1558,6 +1558,22 @@
       <Source type="list">Mono.Cecil.Mdb.dll.sources</Source>
     </Sources>
   </Assembly>
+  <Assembly name="Mono.Debugger.Soft" destination="{destdir}\lib\mono\2.0\Mono.Debugger.Soft.dll">
+    <References>
+      <Reference>mscorlib</Reference>
+      <Reference>System</Reference>
+      <Reference>System.Core</Reference>
+      <Reference>Mono.Cecil</Reference>
+    </References>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>library</OutputType>
+    <KeyFile>{sourcedir}\mcs\class\mono.snk</KeyFile>
+    <SourcePath>{sourcedir}\mcs\class\Mono.Debugger.Soft\</SourcePath>
+    <DefineConstants>NET_1_1;NET_2_0;MONO_DATACONVERTER_STATIC_METHODS</DefineConstants>
+    <Sources>
+      <Source type="list">Mono.Debugger.Soft.dll.sources</Source>
+    </Sources>
+  </Assembly>
 
   <Sign assembly="{destdir}\lib\mono\2.0\I18N.dll" key="{sourcedir}\mcs\class\mono.snk" />
 	<Sign assembly="{destdir}\lib\mono\2.0\I18N.West.dll" key="{sourcedir}\mcs\class\mono.snk" />
@@ -1633,6 +1649,7 @@
   <Sign assembly="{destdir}\lib\mono\2.0\Mono.Cecil.dll" key="{sourcedir}\mcs\class\mono.snk" />
   <Sign assembly="{destdir}\lib\mono\2.0\Mono.Cecil.Mdb.dll" key="{sourcedir}\mcs\class\mono.snk" />
   <Sign assembly="{destdir}\lib\mono\2.0\Mono.CompilerServices.SymbolWriter.dll" key="{sourcedir}\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Debugger.Soft.dll" key="{sourcedir}\mcs\class\mono.snk" />
 
   <!-- GAC our assemblies -->
 	<Gac>{destdir}\lib\mono\2.0\System.dll</Gac>
@@ -1714,6 +1731,7 @@
   <Gac>{destdir}\lib\mono\2.0\Mono.Cecil.dll</Gac>
   <Gac>{destdir}\lib\mono\2.0\Mono.Cecil.Mdb.dll</Gac>
   <Gac>{destdir}\lib\mono\2.0\Mono.CompilerServices.SymbolWriter.dll</Gac>
+  <Gac>{destdir}\lib\mono\2.0\Mono.Debugger.Soft.dll</Gac>
 
   <!-- Build some more tools -->
 	<Assembly name="al" destination="{destdir}\lib\mono\2.0\al.exe">
