@@ -6463,6 +6463,9 @@ ves_icall_System_Environment_Exit (int result)
 
 	mono_runtime_set_shutting_down ();
 
+	/* This will kill the tp threads which cannot be suspended */
+	mono_thread_pool_cleanup ();
+
 	/* Suspend all managed threads since the runtime is going away */
 	mono_thread_suspend_all_other_threads ();
 
