@@ -2080,8 +2080,9 @@ handle_enum:
 		if (candidate->type != MONO_TYPE_SZARRAY)
 			return FALSE;
 
-		left = mono_class_from_mono_type (target)->element_class;
-		right = mono_class_from_mono_type (candidate)->element_class;
+		left = mono_class_from_mono_type (target);
+		right = mono_class_from_mono_type (candidate);
+
 		return mono_class_is_assignable_from (left, right);
 	}
 
