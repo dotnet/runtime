@@ -85,6 +85,13 @@ public class InterlockTest
 		if (lb != 0x12345678)
 			return 18;		
 
+		la = 1;
+		lb = Interlocked.CompareExchange (ref la, 2, 1);
+		if (la != 2)
+			return 19;
+		if (lb != 1)
+			return 20;
+
 		Console.WriteLine ("done!");
 
 		return 0;
