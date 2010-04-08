@@ -2494,10 +2494,10 @@ AC_ARG_WITH(mcs_docs,[  --with-mcs-docs=yes,no         If you want to build the 
 	fi
 ])
 
-MOONLIGHT=no
-AC_ARG_WITH(moonlight, [  --with-moonlight=yes,no         If you want to build Mono for Moonlight (defaults to no - the resulting mono build is useless for anything but moonlight)],[
-	if test x$with_moonlight = xyes; then
-		MOONLIGHT=yes
+AC_ARG_WITH(moonlight, [  --with-moonlight=yes|no|only         If you want to build Mono for Moonlight (defaults to no)],[
+	if test "x$with_moonlight" = "xyes"; then
+		AC_DEFINE(MOONLIGHT,1,[Building for Moonlight])
+	elif test "x$with_moonlight" = "xonly"; then
 		AC_DEFINE(MOONLIGHT,1,[Building for Moonlight])
 	fi
 ], [with_moonlight=no])
@@ -2524,7 +2524,8 @@ AC_SUBST(OPROFILE_LIBS)
 
 libmono_ldflags="$libmono_ldflags $LIBS"
 
-AM_CONDITIONAL(MOONLIGHT, [test "x$with_moonlight" = xyes])
+AM_CONDITIONAL(MOONLIGHT, [test "x$with_moonlight" != "xno"])
+AM_CONDITIONAL(ONLY_MOONLIGHT, [test "x$with_moonlight" = "xonly"])
 AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
 AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" = xyes])
 
@@ -2829,7 +2830,7 @@ fi
       echo "DISABLE_MCS_DOCS = yes" >> $mcs_topdir/build/config.make
     fi
 
-    if test x$with_moonlight = xyes; then
+    if test x$with_moonlight != xno; then
       echo "MOONLIGHT = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 

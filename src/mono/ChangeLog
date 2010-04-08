@@ -1,3 +1,18 @@
+2010-04-08  Andreia Gaita  <avidigal@novell.com>
+
+	* configure.in: Add an extra "only" option to --with-moonlight. This
+	will configure mono to only build moonlight-specific stuff and
+	nothing else. --with-moonlight=yes now just adds the moon profile to
+	the build
+
+	* Makefile.am: Add moonlight-specific rules that only build what
+	moon needs. These are called directly from moon, to do fast
+	moon+mono+mcs builds
+
+	* runtime/Makefile.am: Change the build rules to have a moonlight-only
+	build configuration, as well as a normal build that optionally includes
+	it
+
 2010-04-07  Raja R Harinath  <harinath@hurrynot.org>
 
 	* runtime/Makefile.am ($(tmpinst)/bin/dmcs): Add.

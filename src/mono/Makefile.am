@@ -1,14 +1,16 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
+MOONLIGHT_SUBDIRS =    $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir)         data
+
 if CROSS_COMPILING
 SUBDIRS = po $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) data runtime scripts man samples web msvc $(docs_dir)
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
 DIST_SUBDIRS = po libgc eglib mono ikvm-native         data runtime scripts man samples web tools msvc docs
 else
-if MOONLIGHT
-SUBDIRS =    $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir)         data runtime
+if ONLY_MOONLIGHT
+SUBDIRS = $(MOONLIGHT_SUBDIRS) runtime
 else
 SUBDIRS = po $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) support data runtime scripts man samples web msvc $(docs_dir)
 # Keep in sync with SUBDIRS
@@ -70,9 +72,21 @@ build-test-mono-mcs-moon: do-build-moon-maybe
 do-build-mono-mcs: mcs-do-clean
 	$(MAKE) all
 
-.PHONY: do-build-moon-maybe
-do-build-moon-maybe: do-build-mono-mcs
-#	cd runtime && $(MAKE) moon-do-build
+if MOONLIGHT
+moon-do-build: config.h
+	@list='$(MOONLIGHT_SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making all in $$subdir"; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) all); \
+        done;
+	cd $(mcs_topdir) && NO_DIR_CHECK=1 $(MAKE) PROFILE=moonlight_raw all
+
+moon-do-clean:
+	@list='$(MOONLIGHT_SUBDIRS)'; for subdir in $$list; do \
+	  echo "Making clean in $$subdir"; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) clean); \
+        done;
+	cd $(mcs_topdir) && NO_DIR_CHECK=1 $(MAKE) PROFILE=moonlight_raw clean
+endif
 
 mcs-do-clean:
 	cd runtime && $(MAKE) clean-local
