@@ -3,6 +3,7 @@
 /*.o
 /*.exe
 /*.dll
+/*.mdb
 /*.lo
 /*.loT
 /*.la
@@ -27,3 +28,4 @@
 /iltests.il
 /version.h
 /buildver.h
+/TAGS
