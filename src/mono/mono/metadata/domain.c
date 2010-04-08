@@ -433,6 +433,9 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 	} while (chunk_pos < table->num_chunks);
 
  not_found:
+	if (!hp)
+		return NULL;
+
 	mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
 	mono_hazard_pointer_clear (hp, JIT_INFO_HAZARD_INDEX);
 
