@@ -4265,7 +4265,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				size = 4;
 			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I)
 				size = sizeof (gpointer);
-			else if (sizeof (gpointer) == 8 && fsig->params [1]->type == MONO_TYPE_I4)
+			else if (sizeof (gpointer) == 8 && fsig->params [1]->type == MONO_TYPE_I8)
 				size = 8;
 			if (size == 4) {
 				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I4);
