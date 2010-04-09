@@ -809,6 +809,7 @@ static int ccount = 0;
  * index_reg is the vreg holding the index
  */
 #define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
+		if (!(cfg->opt & MONO_OPT_UNSAFE)) {							\
 		if (!(cfg->opt & MONO_OPT_ABCREM)) {							\
 			MONO_EMIT_NULL_CHECK (cfg, array_reg);						\
 			MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
@@ -821,6 +822,7 @@ static int ccount = 0;
 			MONO_ADD_INS ((cfg)->cbb, ins);								\
 			(cfg)->flags |= MONO_CFG_HAS_ARRAY_ACCESS;					\
 			(cfg)->cbb->has_array_access = TRUE;						\
+		}																\
 		}																\
     } while (0)
 

@@ -133,7 +133,7 @@ opt_funcs [sizeof (int) * 8] = {
 	MONO_OPT_SIMD |	\
 	MONO_OPT_AOT)
 
-#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP)
+#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE)
 
 static guint32
 parse_optimizations (const char* p)
