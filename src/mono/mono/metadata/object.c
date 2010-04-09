@@ -2974,6 +2974,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	gchar *v;
 	gboolean is_static = FALSE;
 	gboolean is_ref = FALSE;
+	gboolean is_literal = FALSE;
 
 	switch (field->type->type) {
 	case MONO_TYPE_STRING:
@@ -3001,7 +3002,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 		is_ref = field->type->byref;
 		break;
 	case MONO_TYPE_GENERICINST:
-		is_ref = !field->type->data.generic_class->container_class->valuetype;
+		is_ref = !mono_type_generic_inst_is_valuetype (field->type);
 		break;
 	default:
 		g_error ("type 0x%x not handled in "
@@ -3009,21 +3010,30 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 		return NULL;
 	}
 
+	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL)
+		is_literal = TRUE;
+
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		is_static = TRUE;
-		vtable = mono_class_vtable (domain, field->parent);
-		if (!vtable) {
-			char *name = mono_type_get_full_name (field->parent);
-			g_warning ("Could not retrieve the vtable for type %s in mono_field_get_value_object", name);
-			g_free (name);
-			return NULL;
+
+		if (!is_literal) {
+			vtable = mono_class_vtable (domain, field->parent);
+			if (!vtable) {
+				char *name = mono_type_get_full_name (field->parent);
+				/*FIXME extend this to use the MonoError api*/
+				g_warning ("Could not retrieve the vtable for type %s in mono_field_get_value_object", name);
+				g_free (name);
+				return NULL;
+			}
+			if (!vtable->initialized)
+				mono_runtime_class_init (vtable);
 		}
-		if (!vtable->initialized)
-			mono_runtime_class_init (vtable);
 	}
 	
 	if (is_ref) {
-		if (is_static) {
+		if (is_literal) {
+			get_default_field_value (domain, field, &o);
+		} else if (is_static) {
 			mono_field_static_get_value (vtable, field, &o);
 		} else {
 			mono_field_get_value (obj, field, &o);
@@ -3039,7 +3049,10 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 
 	o = mono_object_new (domain, klass);
 	v = ((gchar *) o) + sizeof (MonoObject);
-	if (is_static) {
+
+	if (is_literal) {
+		get_default_field_value (domain, field, v);
+	} else if (is_static) {
 		mono_field_static_get_value (vtable, field, v);
 	} else {
 		mono_field_get_value (obj, field, v);
