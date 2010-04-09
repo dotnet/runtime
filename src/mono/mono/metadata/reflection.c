@@ -11085,6 +11085,11 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	klass->has_cctor = 1;
 	klass->has_finalize = 1;
 
+	/* fool mono_class_setup_parent */
+	klass->supertypes = NULL;
+	mono_class_setup_parent (klass, klass->parent);
+	mono_class_setup_mono_type (klass);
+
 #if 0
 	if (!((MonoDynamicImage*)klass->image)->run) {
 		if (klass->generic_container) {
