@@ -57,12 +57,32 @@ mono_100ns_datetime (void)
 #include <sys/time.h>
 #endif
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+
 #include <time.h>
 
 static gint64
 get_boot_time (void)
 {
-	/* FIXME: use sysctl (kern.boottime) on OSX */
+#if defined(PLATFORM_MACOSX) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+	int mib [2];
+	size_t size;
+	time_t now;
+	struct timeval boottime;
+
+	(void)time(&now);
+
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_BOOTTIME;
+
+	size = sizeof(boottime);
+
+	if (sysctl(mib, 2, &boottime, &size, NULL, 0) != -1)
+		return (gint64)((now - boottime.tv_sec) * MTICKS_PER_SEC);
+#else
 	FILE *uptime = fopen ("/proc/uptime", "r");
 	if (uptime) {
 		double upt;
@@ -73,6 +93,7 @@ get_boot_time (void)
 		}
 		fclose (uptime);
 	}
+#endif
 	/* a made up uptime of 300 seconds */
 	return (gint64)300 * MTICKS_PER_SEC;
 }
