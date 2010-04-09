@@ -342,7 +342,8 @@ typedef enum {
 	CMD_THREAD_GET_FRAME_INFO = 1,
 	CMD_THREAD_GET_NAME = 2,
 	CMD_THREAD_GET_STATE = 3,
-	CMD_THREAD_GET_INFO = 4
+	CMD_THREAD_GET_INFO = 4,
+	CMD_THREAD_GET_ID = 5
 } CmdThread;
 
 typedef enum {
@@ -6071,6 +6072,9 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	case CMD_THREAD_GET_INFO:
 		buffer_add_byte (buf, thread->threadpool_thread);
+		break;
+	case CMD_THREAD_GET_ID:
+		buffer_add_long (buf, (guint64)thread);
 		break;
 	default:
 		return ERR_NOT_IMPLEMENTED;
