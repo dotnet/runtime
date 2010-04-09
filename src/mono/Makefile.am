@@ -32,12 +32,11 @@ pkgconfigdir = $(libdir)/pkgconfig
 noinst_DATA = mono-uninstalled.pc
 DISTCLEANFILES= mono-uninstalled.pc
 
-.PHONY: get-monolite-latest mcs-do-compiler-tests compiler-tests bootstrap-world
-
 # building with monolite
 mcslib = $(mcs_topdir)/class/lib
 monolite = $(mcslib)/monolite
 monolite_url = http://mono.ximian.com/daily/monolite-latest.tar.gz
+.PHONY: get-monolite-latest 
 get-monolite-latest:
 	-rm -fr $(mcslib)/monolite-*
 	-mkdir -p $(mcslib)
@@ -46,31 +45,27 @@ get-monolite-latest:
 	cd $(mcslib) && { (wget -O- $(monolite_url) || curl $(monolite_url)) | gzip -d | tar xf - ; }
 	cd $(mcslib) && mv -f monolite-* monolite
 
-compiler-tests: build-test-mono-mcs-moon
-
-compiler-tests-net_2_0:
-	-rm -f $(mcs_topdir)/build/common/Consts.cs.save
-	-mv -f $(mcs_topdir)/build/common/Consts.cs $(mcs_topdir)/build/common/Consts.cs.save
-	cd $(mcs_topdir) && $(MAKE) PROFILE=net_2_0_bootstrap clean
-	cd $(mcs_topdir) && $(MAKE) PROFILE=net_2_0 clean
-	-mv -f $(mcs_topdir)/build/common/Consts.cs.save $(mcs_topdir)/build/common/Consts.cs
-	$(MAKE) all
-	$(MAKE) test_profiles=net_2_0 mcs-do-compiler-tests
-
-bootstrap-world: compiler-tests
-	$(MAKE) install
-
-bootstrap-world-net_2_0: compiler-tests-net_2_0
-	$(MAKE) install
-
-# internal targets
-.PHONY: build-test-mono-mcs-moon
-build-test-mono-mcs-moon: do-build-moon-maybe
-	$(MAKE) mcs-do-compiler-tests
-
-.PHONY: do-build-mono-mcs
+.PHONY: validate do-build-mono-mcs mcs-do-clean mcs-do-tests
+validate: do-build-mono-mcs
+	$(MAKE) mcs-do-tests
 do-build-mono-mcs: mcs-do-clean
 	$(MAKE) all
+mcs-do-clean:
+	cd runtime && $(MAKE) clean-local
+	cd mono/tests && $(MAKE) clean
+mcs-do-tests:
+	cd runtime && $(MAKE) check-local
+	cd mono/tests && $(MAKE) check
+
+.PHONY: compiler-tests mcs-do-compiler-tests
+compiler-tests:
+	$(MAKE) test_select='TEST_SUBDIRS="tests errors"' validate
+mcs-do-compiler-tests:
+	$(MAKE) test_select='TEST_SUBDIRS="tests errors"' mcs-do-tests
+
+.PHONY: bootstrap-world
+bootstrap-world: compiler-tests
+	$(MAKE) install
 
 if MOONLIGHT
 moon-do-build: config.h
@@ -88,13 +83,6 @@ moon-do-clean:
 	cd $(mcs_topdir) && NO_DIR_CHECK=1 $(MAKE) PROFILE=moonlight_raw clean
 endif
 
-mcs-do-clean:
-	cd runtime && $(MAKE) clean-local
-	cd mono/tests && $(MAKE) clean
-mcs-do-compiler-tests:
-	cd runtime && $(MAKE) test_select='TEST_SUBDIRS="tests errors"' check-local
-	cd mono/tests && $(MAKE) check
-
 win32getdeps:
 	wget http://www.go-mono.com/archive/pkgconfig-0.11-20020310.zip
 	wget http://www.go-mono.com/archive/glib-2.0.4-20020703.zip 
@@ -111,10 +99,6 @@ win32getdeps:
 
 win32setup:
 	makensis /DMILESTONE=$(VERSION) /DSOURCE_INSTALL_DIR=$(SOURCE_INSTALL_DIR) /DBUILDNUM=$(BUILDNUM) monowiz.win32.nsi
-
-bootstrap: all
-	@echo "*** 'make bootstrap' is obsolete.  Just run 'make' to perform a combined mono+mcs build"
-	exit 1
 
 patch-quiet:
 	find mono -name Makefile -exec scripts/patch-quiet.sh {} \;
