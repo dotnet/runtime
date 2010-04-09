@@ -1533,17 +1533,17 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	name[2] = KERN_PROC_ALL;
 	name[3] = 0;
 	name[4] = sizeof(struct kinfo_proc2);
-	name[5] = 400; /* XXX */
+	name[5] = 0;
 #else
 	struct kinfo_proc *result;
 	static const int name[] = { CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0 };
 #endif
-	
+
 	mono_once (&process_current_once, process_set_current);
-	
+
 	result = NULL;
 	done = FALSE;
-	
+
 	do {
 		proclength = 0;
 #if defined(__OpenBSD__)
@@ -1558,7 +1558,11 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 
 			if (result == NULL)
 				return FALSE;
-			
+
+#if defined(__OpenBSD__)
+			name[5] = (int)(proclength / sizeof(struct kinfo_proc2));
+#endif
+
 			err = sysctl ((int *) name, size, result, &proclength, NULL, 0);
 
 			if (err == 0) 
@@ -2224,10 +2228,12 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 
 static gchar *get_process_name_from_proc (pid_t pid)
 {
-	gchar *filename = NULL;
-	gchar *ret = NULL;
-	gchar buf[256];
+#if !defined(__OpenBSD__)
 	FILE *fp;
+	gchar *filename = NULL;
+	gchar buf[256];
+#endif
+	gchar *ret = NULL;
 
 #if defined(PLATFORM_SOLARIS)
 	filename = g_strdup_printf ("/proc/%d/psinfo", pid);
@@ -2248,6 +2254,40 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	proc_name (pid, buf, sizeof(buf));
 	if (strlen (buf) > 0)
 		ret = g_strdup (buf);
+#elif defined(__OpenBSD__)
+	int mib [6];
+	size_t size;
+	struct kinfo_proc2 *pi;
+
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC2;
+	mib [2] = KERN_PROC_PID;
+	mib [3] = pid;
+	mib [4] = sizeof(struct kinfo_proc2);
+	mib [5] = 0;
+
+retry:
+	if (sysctl(mib, 6, NULL, &size, NULL, 0) < 0)
+		return(ret);
+
+	if ((pi = malloc(size)) == NULL)
+		return(ret);
+
+	mib[5] = (int)(size / sizeof(struct kinfo_proc2));
+
+	if ((sysctl (mib, 6, pi, &size, NULL, 0) < 0) ||
+		(size != sizeof (struct kinfo_proc2))) {
+		if (errno == ENOMEM) {
+			free(pi);
+			goto retry;
+		}
+		return(ret);
+	}
+
+	if (strlen (pi->p_comm) > 0)
+		ret = g_strdup (pi->p_comm);
+
+	free(pi);
 #else
 	memset (buf, '\0', sizeof(buf));
 	filename = g_strdup_printf ("/proc/%d/exe", pid);
