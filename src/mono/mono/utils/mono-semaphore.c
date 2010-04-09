@@ -30,6 +30,7 @@
 #    define WAIT_BLOCK(a,b) sem_timedwait (a, b)
 #  endif
 
+#define NSEC_PER_SEC 1000000000
 int
 mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 {
@@ -50,8 +51,8 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 	gettimeofday (&t, NULL);
 	ts.tv_sec = timeout_ms / 1000 + t.tv_sec;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000 + t.tv_usec * 1000;
-	while (ts.tv_nsec > 1000000000) {
-		ts.tv_nsec -= 1000000000;
+	while (ts.tv_nsec > NSEC_PER_SEC) {
+		ts.tv_nsec -= NSEC_PER_SEC;
 		ts.tv_sec++;
 	}
 #if defined(__OpenBSD__)
@@ -69,9 +70,25 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 #else
 	copy = ts;
 	while ((res = WAIT_BLOCK (sem, &ts) == -1) && errno == EINTR) {
+		struct timeval current;
 		if (alertable)
 			return -1;
+		gettimeofday (&current, NULL);
 		ts = copy;
+		ts.tv_sec -= (current.tv_sec - t.tv_sec);
+		ts.tv_nsec -= (current.tv_usec - t.tv_usec) * 1000;
+		if (ts.tv_nsec < 0) {
+			if (ts.tv_sec <= 0) {
+				ts.tv_nsec = 0;
+			} else {
+				ts.tv_sec--;
+				ts.tv_nsec += NSEC_PER_SEC;
+			}
+		}
+		if (ts.tv_sec < 0) {
+			ts.tv_sec = 0;
+			ts.tv_nsec = 0;
+		}
 	}
 #endif
 	return res;
