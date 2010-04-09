@@ -22,8 +22,13 @@
 #include <sys/user.h>
 #endif
 #ifdef HAVE_STRUCT_KINFO_PROC_KP_PROC
-#define kinfo_pid_member kp_proc.p_pid
-#define kinfo_name_member kp_proc.p_comm
+#  ifdef KERN_PROC2
+#    define kinfo_pid_member p_pid
+#    define kinfo_name_member p_comm
+#  else
+#    define kinfo_pid_member kp_proc.p_pid
+#    define kinfo_name_member kp_proc.p_comm
+#  endif
 #else
 #define kinfo_pid_member ki_pid
 #define kinfo_name_member ki_comm
@@ -46,11 +51,12 @@ mono_process_list (int *size)
 #ifdef KERN_PROC2
 	int mib [6];
 	size_t data_len = sizeof (struct kinfo_proc2) * 400;
+	struct kinfo_proc2 *processes = malloc (data_len);
 #else
 	int mib [4];
 	size_t data_len = sizeof (struct kinfo_proc) * 400;
-#endif /* KERN_PROC2 */
 	struct kinfo_proc *processes = malloc (data_len);
+#endif /* KERN_PROC2 */
 	void **buf = NULL;
 
 	if (size)
@@ -181,11 +187,12 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 #ifdef KERN_PROC2
 	int mib [6];
 	size_t data_len = sizeof (struct kinfo_proc2);
+	struct kinfo_proc2 processi;
 #else
 	int mib [4];
 	size_t data_len = sizeof (struct kinfo_proc);
-#endif /* KERN_PROC2 */
 	struct kinfo_proc processi;
+#endif /* KERN_PROC2 */
 
 	memset (buf, 0, len);
 
