@@ -1695,6 +1695,11 @@ is_valid_standalonesig_blob (VerifyContext *ctx, guint32 offset)
 	--ptr;
 	if (signature == 0x07)
 		return parse_locals_signature (ctx, &ptr, end);
+
+	/*F# and managed C++ produce standalonesig for fields even thou the spec doesn't mention it.*/
+	if (signature == 0x06)
+		return parse_field (ctx, &ptr, end);
+
 	return parse_method_signature (ctx, &ptr, end, TRUE, TRUE);
 }
 
@@ -2106,8 +2111,10 @@ verify_typedef_table_full (VerifyContext *ctx)
 		mono_metadata_decode_row (table, i, data, MONO_TYPEDEF_SIZE);
 
 		if (i == 0) {
-			if (data [MONO_TYPEDEF_EXTENDS] != 0)
+			/*XXX it's ok if <module> extends object, or anything at all, actually. */
+			/*if (data [MONO_TYPEDEF_EXTENDS] != 0)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row 0 for the special <module> type must have a null extend field"));
+			*/
 			continue;
 		}
 
