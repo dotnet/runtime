@@ -1917,6 +1917,8 @@ public class DebuggerTests
 
 		Assert.AreEqual (ThreadState.Running, e.Thread.ThreadState);
 
+		Assert.IsTrue (e.Thread.ThreadId > 0);
+
 		vm.EnableEvents (EventType.ThreadStart, EventType.ThreadDeath);
 
 		vm.Resume ();
