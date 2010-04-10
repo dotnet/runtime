@@ -54,6 +54,10 @@
 #endif
 #endif
 
+#ifdef __HAIKU__
+#include <KernelKit.h>
+#endif
+
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
@@ -1599,6 +1603,24 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	
 	return(TRUE);
 }
+#elif defined(__HAIKU__)
+
+gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
+{
+	guint32 fit, i = 0;
+	int32 cookie = 0;
+	team_info teamInfo;
+
+	mono_once (&process_current_once, process_set_current);
+
+	fit = len / sizeof (guint32);
+	while (get_next_team_info (&cookie, &teamInfo) == B_OK && i < fit) {
+		pids [i++] = teamInfo.team;
+	}
+	*needed = i * sizeof (guint32);
+
+	return TRUE;
+}
 #else
 gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 {
@@ -1685,6 +1707,9 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 	if (handle == 0) {
 #if defined(__OpenBSD__)
 		if ((kill(pid, 0) == 0) || (errno == EPERM)) {
+#elif defined(__HAIKU__)
+		team_info teamInfo;
+		if (get_team_info ((team_id)pid, &teamInfo) == B_OK) {
 #else
 		gchar *dir = g_strdup_printf ("/proc/%d", pid);
 		if (!access (dir, F_OK)) {
@@ -1962,6 +1987,37 @@ static GSList *load_modules (void)
 
 	return(ret);
 }
+#elif defined(__HAIKU__)
+
+static GSList *load_modules (void)
+{
+	GSList *ret = NULL;
+	WapiProcModule *mod;
+	int32 cookie = 0;
+	image_info imageInfo;
+
+	while (get_next_image_info (B_CURRENT_TEAM, &cookie, &imageInfo) == B_OK) {
+		mod = g_new0 (WapiProcModule, 1);
+		mod->device = imageInfo.device;
+		mod->inode = imageInfo.node;
+		mod->filename = g_strdup (imageInfo.name);
+		mod->address_start = MIN (imageInfo.text, imageInfo.data);
+		mod->address_end = MAX ((uint8_t*)imageInfo.text + imageInfo.text_size,
+			(uint8_t*)imageInfo.data + imageInfo.data_size);
+		mod->perms = g_strdup ("r--p");
+		mod->address_offset = 0;
+
+		if (g_slist_find_custom (ret, mod, find_procmodule) == NULL) {
+			ret = g_slist_prepend (ret, mod);
+		} else {
+			free_procmodule (mod);
+		}
+	}
+
+	ret = g_slist_reverse (ret);
+
+	return ret;
+}
 #else
 static GSList *load_modules (FILE *fp)
 {
@@ -2180,7 +2236,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		proc_name = process_handle->proc_name;
 	}
 	
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
 	{
 		mods = load_modules ();
 #else
@@ -2288,6 +2344,13 @@ retry:
 		ret = g_strdup (pi->p_comm);
 
 	free(pi);
+#elif defined(__HAIKU__)
+	image_info imageInfo;
+	int32 cookie = 0;
+
+	if (get_next_image_info ((team_id)pid, &cookie, &imageInfo) == B_OK) {
+		ret = g_strdup (imageInfo.name);
+	}
 #else
 	memset (buf, '\0', sizeof(buf));
 	filename = g_strdup_printf ("/proc/%d/exe", pid);
@@ -2395,7 +2458,7 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	}
 
 	/* Look up the address in /proc/<pid>/maps */
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
 	{
 		mods = load_modules ();
 #else
@@ -2547,7 +2610,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 		proc_name = g_strdup (process_handle->proc_name);
 	}
 
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
 	{
 		mods = load_modules ();
 #else
