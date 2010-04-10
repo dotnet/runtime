@@ -51,8 +51,6 @@ INCLUDES = -I$(srcdir)
 
 if HOST_WIN32
 libeglib_la_LIBADD = -lm -liconv -lpsapi
-else
-libeglib_la_LIBADD = -lm -ldl
 endif
 
 libeglib_static_la_LIBADD = $(libeglib_la_LIBADD)
