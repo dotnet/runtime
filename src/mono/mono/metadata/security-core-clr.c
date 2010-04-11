@@ -103,6 +103,7 @@ get_default_ctor (MonoClass *klass)
 {
 	int i;
 
+	mono_class_setup_methods (klass);
 	if (!klass->methods)
 		return NULL;
 
@@ -287,7 +288,7 @@ get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean
  * 
  *	Walk to the first managed method outside:
  *	- System.Reflection* namespaces
- *	- System.[MulticastDelegate]Delegate or Activator type
+ *	- System.[Multicast]Delegate or Activator type
  *	- platform code
  *	and return a pointer to its MonoMethod.
  *
