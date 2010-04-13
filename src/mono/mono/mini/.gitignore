@@ -1,6 +1,7 @@
 /Makefile
 /Makefile.in
 /*.o
+/*.so
 /*.exe
 /*.dll
 /*.mdb
