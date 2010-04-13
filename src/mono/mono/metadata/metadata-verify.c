@@ -1132,14 +1132,16 @@ decode_signature_header (VerifyContext *ctx, guint32 offset, int *size, const ch
 	if (!decode_value (blob.data + offset, blob.size - offset, &value, &enc_size))
 		return FALSE;
 
-	if (offset + enc_size + value < offset)
+	if (CHECK_ADD4_OVERFLOW_UN (offset, enc_size))
 		return FALSE;
 
-	if (offset + enc_size + value > blob.size)
+	offset += enc_size;
+
+	if (ADD_IS_GREATER_OR_OVF (offset, value, blob.size))
 		return FALSE;
 
 	*size = value;
-	*first_byte = blob.data + offset + enc_size;
+	*first_byte = blob.data + offset;
 	return TRUE;
 }
 
