@@ -10839,6 +10839,9 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 		fb->handle = field;
 		mono_save_custom_attrs (klass->image, field, fb->cattrs);
 
+		if (klass->enumtype && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+			klass->cast_class = klass->element_class = mono_class_from_mono_type (field->type);
+		}
 		if (fb->def_value) {
 			MonoDynamicImage *assembly = (MonoDynamicImage*)klass->image;
 			field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
