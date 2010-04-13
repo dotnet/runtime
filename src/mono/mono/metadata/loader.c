@@ -2067,7 +2067,7 @@ mono_loader_lock_is_owned_by_self (void)
  * Return the signature of the method M. On failure, returns NULL, and ERR is set.
  */
 MonoMethodSignature*
-mono_method_signature_checked (MonoMethod *m, MonoError *err)
+mono_method_signature_checked (MonoMethod *m, MonoError *error)
 {
 	int idx;
 	int size;
@@ -2079,6 +2079,8 @@ mono_method_signature_checked (MonoMethod *m, MonoError *err)
 	guint32 sig_offset;
 
 	/* We need memory barriers below because of the double-checked locking pattern */ 
+
+	mono_error_init (error);
 
 	if (m->signature)
 		return m->signature;
@@ -2131,7 +2133,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *err)
 		/*TODO we should cache the failure result somewhere*/
 		if (!mono_verifier_verify_method_signature (img, sig_offset, NULL)) {
 			mono_loader_unlock ();
-			mono_error_set_method_load (err, m->klass, m->name, "");
+			mono_error_set_method_load (error, m->klass, m->name, "");
 			return NULL;
 		}
 
@@ -2140,7 +2142,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *err)
 		signature = mono_metadata_parse_method_signature_full (img, container, idx, sig_body, NULL);
 		if (!signature) {
 			mono_loader_unlock ();
-			mono_error_set_method_load (err, m->klass, m->name, "");
+			mono_error_set_method_load (error, m->klass, m->name, "");
 			return NULL;
 		}
 
@@ -2152,17 +2154,17 @@ mono_method_signature_checked (MonoMethod *m, MonoError *err)
 	if (signature->generic_param_count) {
 		if (!container || !container->is_method) {
 			mono_loader_unlock ();
-			mono_error_set_method_load (err, m->klass, m->name, "Signature claims method has generic parameters, but generic_params table says it doesn't for method 0x%08x from image %s", idx, img->name);
+			mono_error_set_method_load (error, m->klass, m->name, "Signature claims method has generic parameters, but generic_params table says it doesn't for method 0x%08x from image %s", idx, img->name);
 			return NULL;
 		}
 		if (container->type_argc != signature->generic_param_count) {
 			mono_loader_unlock ();
-			mono_error_set_method_load (err, m->klass, m->name, "Inconsistent generic parameter count.  Signature says %d, generic_params table says %d for method 0x%08x from image %s", signature->generic_param_count, container->type_argc, idx, img->name);
+			mono_error_set_method_load (error, m->klass, m->name, "Inconsistent generic parameter count.  Signature says %d, generic_params table says %d for method 0x%08x from image %s", signature->generic_param_count, container->type_argc, idx, img->name);
 			return NULL;
 		}
 	} else if (container && container->is_method && container->type_argc) {
 		mono_loader_unlock ();
-		mono_error_set_method_load (err, m->klass, m->name, "generic_params table claims method has generic parameters, but signature says it doesn't for method 0x%08x from image %s", idx, img->name);
+		mono_error_set_method_load (error, m->klass, m->name, "generic_params table claims method has generic parameters, but signature says it doesn't for method 0x%08x from image %s", idx, img->name);
 		return NULL;
 	}
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
@@ -2193,7 +2195,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *err)
 		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
 		default:
 			mono_loader_unlock ();
-			mono_error_set_method_load (err, m->klass, m->name, "unsupported calling convention : 0x%04x for method 0x%08x from image %s", piinfo->piflags, idx, img->name);
+			mono_error_set_method_load (error, m->klass, m->name, "unsupported calling convention : 0x%04x for method 0x%08x from image %s", piinfo->piflags, idx, img->name);
 			return NULL;
 		}
 		signature->call_convention = conv;
@@ -2214,15 +2216,13 @@ mono_method_signature_checked (MonoMethod *m, MonoError *err)
 MonoMethodSignature*
 mono_method_signature (MonoMethod *m)
 {
-	MonoError err;
+	MonoError error;
 	MonoMethodSignature *sig;
 
-	mono_error_init (&err);
-
-	sig = mono_method_signature_checked (m, &err);
+	sig = mono_method_signature_checked (m, &error);
 	if (!sig) {
-		g_warning ("Could not load signature due to: %s", mono_error_get_message (&err));
-		mono_error_cleanup (&err);
+		g_warning ("Could not load signature due to: %s", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
 	}
 
 	return sig;
