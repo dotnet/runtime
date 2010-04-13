@@ -858,11 +858,9 @@ verify_tables_schema (VerifyContext *ctx)
 	guint32 count;
 	int i;
 
-	//printf ("tables_area size %d offset %x %s\n", tables_area.size, tables_area.offset, ctx->image->name);
 	if (tables_area.size < 24)
 		ADD_ERROR (ctx, g_strdup_printf ("Table schemata size (%d) too small to for initial decoding (requires 24 bytes)", tables_area.size));
 
-	//printf ("ptr %x %x\n", ptr[4], ptr[5]);
 	if (ptr [4] != 2 && ptr [4] != 1)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata major version %d, expected 2", ptr [4]));
 	if (ptr [5] != 0)
@@ -1660,7 +1658,324 @@ is_valid_cattr_blob (VerifyContext *ctx, guint32 offset)
 
 	if (prolog != 1)
 		FAIL (ctx, g_strdup_printf ("CustomAttribute: Prolog is 0x%x, expected 0x1", prolog));
-		
+
+	return TRUE;
+}
+
+static gboolean
+is_valid_cattr_type (MonoType *type)
+{
+	MonoClass *klass;
+
+	if (type->type == MONO_TYPE_OBJECT || (type->type >= MONO_TYPE_BOOLEAN && type->type <= MONO_TYPE_STRING))
+		return TRUE;
+
+	if (type->type == MONO_TYPE_VALUETYPE) {
+		klass = mono_class_from_mono_type (type);
+		return klass && klass->enumtype;
+	}
+
+	if (type->type == MONO_TYPE_CLASS)
+		return mono_class_from_mono_type (type) == mono_defaults.systemtype_class;
+
+	return FALSE;
+}
+
+static gboolean
+is_valid_ser_string_full (VerifyContext *ctx, const char **str_start, guint32 *str_len, const char **_ptr, const char *end)
+{
+	guint32 size = 0;
+	const char *ptr = *_ptr;
+
+	*str_start = NULL;
+	*str_len = 0;
+
+	if (ptr >= end)
+		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for string size"));
+
+	/*NULL string*/
+	if (*ptr == (char)0xFF) {
+		*_ptr = ptr + 1;
+		return TRUE;
+	}
+
+	if (!safe_read_cint (size, ptr, end))
+		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for string size"));
+
+	if (ADDP_IS_GREATER_OR_OVF (ptr, size, end))
+		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for string"));
+
+	*str_start = ptr;
+	*str_len = size;
+
+	*_ptr = ptr + size;
+	return TRUE;
+}
+
+static gboolean
+is_valid_ser_string (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	const char *dummy_str;
+	guint32 dummy_int;
+	return is_valid_ser_string_full (ctx, &dummy_str, &dummy_int, _ptr, end);
+}
+
+static MonoClass*
+get_enum_by_encoded_name (VerifyContext *ctx, const char **_ptr, const char *end)
+{
+	MonoType *type;
+	MonoClass *klass;
+	const char *str_start = NULL;
+	const char *ptr = *_ptr;
+	char *enum_name;
+	guint32 str_len = 0;
+
+	if (!is_valid_ser_string_full (ctx, &str_start, &str_len, &ptr, end))
+		return NULL;
+
+	/*NULL or empty string*/
+	if (str_start == NULL || str_len == 0) {
+		ADD_ERROR_NO_RETURN (ctx, g_strdup ("CustomAttribute: Null or empty enum name"));
+		return NULL;
+	}
+
+	enum_name = g_memdup (str_start, str_len + 1);
+	enum_name [str_len] = 0;
+	type = mono_reflection_type_from_name (enum_name, ctx->image);
+	if (!type) {
+		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute: Invalid enum class %s", enum_name));
+		g_free (enum_name);
+		return NULL;
+	}
+	g_free (enum_name);
+
+	klass = mono_class_from_mono_type (type);
+	if (!klass || !klass->enumtype) {
+		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute:Class %s::%s is not an enum", klass->name_space, klass->name));
+		return NULL;
+	}
+
+	*_ptr = ptr;
+	return klass;
+}
+
+static gboolean
+is_valid_fixed_param (VerifyContext *ctx, MonoType *mono_type, const char **_ptr, const char *end)
+{
+	MonoClass *klass;
+	const char *ptr = *_ptr;
+	int elem_size = 0;
+	guint32 element_count, i;
+	int type;
+
+	klass = mono_type->data.klass;
+	type = mono_type->type;
+
+handle_enum:
+	switch (type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		elem_size = 1;
+		break;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		elem_size = 2;
+		break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		elem_size = 4;
+		break;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		elem_size = 8;
+		break;
+
+	case MONO_TYPE_STRING:
+		*_ptr = ptr;
+		return is_valid_ser_string (ctx, _ptr, end);
+
+	case MONO_TYPE_OBJECT: {
+		unsigned sub_type = 0;
+		if (!safe_read8 (sub_type, ptr, end))
+			FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for array type"));
+
+		if (sub_type >= MONO_TYPE_BOOLEAN && sub_type <= MONO_TYPE_STRING) {
+			type = sub_type;
+			goto handle_enum;
+		}
+		if (sub_type == MONO_TYPE_ENUM) {
+			klass = get_enum_by_encoded_name (ctx, &ptr, end);
+			if (!klass)
+				return FALSE;
+
+			klass = klass->element_class;
+			type = klass->byval_arg.type;
+			goto handle_enum;
+		}
+		if (sub_type == 0x50) { /*Type*/
+			*_ptr = ptr;
+			return is_valid_ser_string (ctx, _ptr, end);
+		}
+		if (sub_type == MONO_TYPE_SZARRAY) {
+			MonoType simple_type = {{0}};
+			unsigned etype = 0;
+			if (!safe_read8 (etype, ptr, end))
+				FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for array element type"));
+
+			if (etype == MONO_TYPE_ENUM) {
+				klass = get_enum_by_encoded_name (ctx, &ptr, end);
+				if (!klass)
+					return FALSE;
+			} else if ((etype >= MONO_TYPE_BOOLEAN && etype <= MONO_TYPE_STRING) || etype == 0x51) {
+				simple_type.type = etype == 0x51 ? MONO_TYPE_OBJECT : etype;
+				klass = mono_class_from_mono_type (&simple_type);
+			} else
+				FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %x", etype));
+
+			type = MONO_TYPE_SZARRAY;
+			goto handle_enum;
+		}
+		FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid boxed object type %x", sub_type));
+	}
+
+
+	case MONO_TYPE_CLASS:
+		if (klass != mono_defaults.systemtype_class)
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid class parameter type %s:%s ",klass->name_space, klass->name));
+		*_ptr = ptr;
+		return is_valid_ser_string (ctx, _ptr, end);
+
+	case MONO_TYPE_VALUETYPE:
+		if (!klass || !klass->enumtype)
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid valuetype parameter expected enum %s:%s ",klass->name_space, klass->name));
+
+		klass = klass->element_class;
+		type = klass->byval_arg.type;
+		goto handle_enum;
+
+	case MONO_TYPE_SZARRAY:
+		mono_type = &klass->byval_arg;
+		if (!is_valid_cattr_type (mono_type))
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %s:%s ",klass->name_space, klass->name));
+		if (!safe_read32 (element_count, ptr, end))
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid class parameter type %s:%s ",klass->name_space, klass->name));
+		if (element_count == 0xFFFFFFFFu) {
+			*_ptr = ptr;
+			return TRUE;
+		}
+		for (i = 0; i < element_count; ++i) {
+			if (!is_valid_fixed_param (ctx, mono_type, &ptr, end))
+				return FALSE;
+		}
+		*_ptr = ptr;
+		return TRUE;
+	default:
+		FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid parameter type %x ", type));
+	}
+
+	if (ADDP_IS_GREATER_OR_OVF (ptr, elem_size, end))
+		FAIL (ctx, g_strdup ("CustomAttribute: Not enough space for element"));
+	*_ptr = ptr + elem_size;
+	return TRUE;
+}
+
+static gboolean
+is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, guint32 size)
+{
+	MonoError error;
+	unsigned prolog = 0;
+	const char *end;
+	MonoMethodSignature *sig;
+	int args, i;
+	unsigned num_named;
+
+	if (!ctor)
+		FAIL (ctx, g_strdup ("CustomAttribute: Invalid constructor"));
+
+	sig = mono_method_signature_checked (ctor, &error);
+	if (!mono_error_ok (&error)) {
+		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute: Invalid constructor signature %s", mono_error_get_message (&error)));
+		mono_error_cleanup (&error);
+		return FALSE;
+	}
+
+	if (sig->sentinelpos != -1 || sig->call_convention == MONO_CALL_VARARG)
+		FAIL (ctx, g_strdup ("CustomAttribute: Constructor cannot have VARAG signature"));
+
+	end = ptr + size;
+
+	if (!safe_read16 (prolog, ptr, end))
+		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for prolog"));
+
+	if (prolog != 1)
+		FAIL (ctx, g_strdup_printf ("CustomAttribute: Prolog is 0x%x, expected 0x1", prolog));
+
+	args = sig->param_count;
+	for (i = 0; i < args; ++i) {
+		MonoType *arg_type = sig->params [i];
+		if (!is_valid_fixed_param (ctx, arg_type, &ptr, end))
+			return FALSE;
+	}
+
+	if (!safe_read16 (num_named, ptr, end))
+		FAIL (ctx, g_strdup ("CustomAttribute: Not enough space for num_named field"));
+
+	for (i = 0; i < num_named; ++i) {
+		MonoType *type, simple_type = {{0}};
+		unsigned kind;
+
+		if (!safe_read8 (kind, ptr, end))
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Not enough space for named parameter %d kind", i));
+		if (kind != 0x53 && kind != 0x54)
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid named parameter %d kind %x", i, kind));
+		if (!safe_read8 (kind, ptr, end))
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Not enough space for named parameter %d type", i));
+
+		if (kind >= MONO_TYPE_BOOLEAN && kind <= MONO_TYPE_STRING) {
+			simple_type.type = kind;
+			type = &simple_type;
+		} else if (kind == MONO_TYPE_ENUM) {
+			MonoClass *klass = get_enum_by_encoded_name (ctx, &ptr, end);
+			if (!klass)
+				return FALSE;
+			type = &klass->byval_arg;
+		} else if (kind == 0x50) {
+			type = &mono_defaults.systemtype_class->byval_arg;
+		} else if (kind == 0x51) {
+			type = &mono_defaults.object_class->byval_arg;
+		} else if (kind == MONO_TYPE_SZARRAY) {
+			MonoClass *klass;
+			unsigned etype = 0;
+			if (!safe_read8 (etype, ptr, end))
+				FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for array element type"));
+
+			if (etype == MONO_TYPE_ENUM) {
+				klass = get_enum_by_encoded_name (ctx, &ptr, end);
+				if (!klass)
+					return FALSE;
+			} else if ((etype >= MONO_TYPE_BOOLEAN && etype <= MONO_TYPE_STRING) || etype == 0x51) {
+				simple_type.type = etype == 0x51 ? MONO_TYPE_OBJECT : etype;
+				klass = mono_class_from_mono_type (&simple_type);
+			} else
+				FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %x", etype));
+
+			type = &mono_array_class_get (klass, 1)->byval_arg;
+		} else {
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid named parameter type %x", kind));
+		}
+
+		if (!is_valid_ser_string (ctx, &ptr, end))
+			return FALSE;
+
+		if (!is_valid_fixed_param (ctx, type, &ptr, end))
+			return FALSE;
+
+	}
+
 	return TRUE;
 }
 
@@ -2559,14 +2874,36 @@ static void
 verify_cattr_table_full (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
-	guint32 data [MONO_CUSTOM_ATTR_SIZE];
+	MonoMethod *ctor;
+	const char *ptr;
+	guint32 data [MONO_CUSTOM_ATTR_SIZE], mtoken, size;
 	int i;
 
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, data, MONO_CUSTOM_ATTR_SIZE);
 
-		if (!is_vald_cattr_blob (ctx, data [MONO_CUSTOM_ATTR_VALUE]))
+		if (!is_valid_cattr_blob (ctx, data [MONO_CUSTOM_ATTR_VALUE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Value field 0x%08x", i, data [MONO_CUSTOM_ATTR_VALUE]));
+
+		mtoken = data [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
+		switch (data [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) {
+		case MONO_CUSTOM_ATTR_TYPE_METHODDEF:
+			mtoken |= MONO_TOKEN_METHOD_DEF;
+			break;
+		case MONO_CUSTOM_ATTR_TYPE_MEMBERREF:
+			mtoken |= MONO_TOKEN_MEMBER_REF;
+			break;
+		default:
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute constructor row %d Token 0x%08x", i, data [MONO_CUSTOM_ATTR_TYPE]));
+		}
+
+		ctor = mono_get_method (ctx->image, mtoken, NULL);
+
+		/*This can't fail since this is checked in is_valid_cattr_blob*/
+		g_assert (decode_signature_header (ctx, data [MONO_CUSTOM_ATTR_VALUE], &size, &ptr));
+
+		if (!is_valid_cattr_content (ctx, ctor, ptr, size))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute content row %d Value field 0x%08x", i, data [MONO_CUSTOM_ATTR_VALUE]));
 	}
 }
 
@@ -3730,6 +4067,38 @@ mono_verifier_verify_string_signature (MonoImage *image, guint32 offset, GSList 
 }
 
 gboolean
+mono_verifier_verify_cattr_blob (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_TABLES;
+
+	is_valid_cattr_blob (&ctx, offset);
+
+	return cleanup_context (&ctx, error_list);
+}
+
+gboolean
+mono_verifier_verify_cattr_content (MonoImage *image, MonoMethod *ctor, const guchar *data, guint32 size, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_TABLES;
+
+	is_valid_cattr_content (&ctx, ctor, (const char*)data, size);
+
+	return cleanup_context (&ctx, error_list);
+}
+
+gboolean
 mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMethodSignature *signature)
 {
 	MonoMethodSignature *original_sig;
@@ -3826,6 +4195,18 @@ mono_verifier_verify_methodspec_signature (MonoImage *image, guint32 offset, GSL
 
 gboolean
 mono_verifier_verify_string_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_cattr_blob (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_cattr_content (MonoImage *image, MonoMethod *ctor, const guchar *data, guint32 size, GSList **error_list)
 {
 	return TRUE;
 }
