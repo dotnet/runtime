@@ -1121,7 +1121,7 @@ decode_value (const char *_ptr, unsigned available, unsigned *value, unsigned *s
 }
 
 static gboolean
-decode_signature_header (VerifyContext *ctx, guint32 offset, int *size, const char **first_byte)
+decode_signature_header (VerifyContext *ctx, guint32 offset, guint32 *size, const char **first_byte)
 {
 	MonoStreamHeader blob = ctx->image->heap_blob;
 	guint32 value, enc_size;
@@ -1589,7 +1589,7 @@ parse_locals_signature (VerifyContext *ctx, const char **_ptr, const char *end)
 static gboolean
 is_valid_field_signature (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0;
+	guint32 size = 0;
 	unsigned signature = 0;
 	const char *ptr = NULL, *end;
 
@@ -1610,7 +1610,7 @@ is_valid_field_signature (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0;
+	guint32 size = 0;
 	const char *ptr = NULL, *end;
 
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
@@ -1623,7 +1623,7 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0;
+	guint32 size = 0;
 	unsigned signature = 0;
 	const char *ptr = NULL, *end;
 
@@ -1642,9 +1642,9 @@ is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
-is_vald_cattr_blob (VerifyContext *ctx, guint32 offset)
+is_valid_cattr_blob (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0;
+	guint32 size = 0;
 	unsigned prolog = 0;
 	const char *ptr = NULL, *end;
 
@@ -1683,7 +1683,7 @@ is_valid_permission_set (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_standalonesig_blob (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0;
+	guint32 size = 0;
 	unsigned signature = 0;
 	const char *ptr = NULL, *end;
 
@@ -1708,7 +1708,7 @@ is_valid_standalonesig_blob (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_property_sig_blob (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0;
+	guint32 size = 0;
 	const char *ptr = NULL, *end;
 
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
@@ -1721,11 +1721,10 @@ is_valid_property_sig_blob (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0;
+	guint32 size = 0;
 	const char *ptr = NULL, *end;
 	unsigned type = 0;
 	
-
 	if (!decode_signature_header (ctx, offset, &size, &ptr))
 		FAIL (ctx, g_strdup ("TypeSpec: Could not decode signature header"));
 	end = ptr + size;
@@ -1753,7 +1752,7 @@ is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_methodspec_blob (VerifyContext *ctx, guint32 offset)
 {
-	int size = 0;
+	guint32 size = 0;
 	const char *ptr = NULL, *end;
 	unsigned type = 0;
 	unsigned count = 0, i;
