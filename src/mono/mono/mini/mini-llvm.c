@@ -171,6 +171,7 @@ static gboolean jit_module_inited;
 static int memset_param_count, memcpy_param_count;
 static const char *memset_func_name;
 static const char *memcpy_func_name;
+static const char *eh_selector_name;
 
 static void init_jit_module (void);
 
@@ -1630,7 +1631,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVM_FAILURE (ctx, "handler without invokes");
 			}
 
-			eh_selector = LLVMGetNamedFunction (module, "llvm.eh.selector");
+			eh_selector = LLVMGetNamedFunction (module, eh_selector_name);
 
 			if (cfg->compile_aot) {
 				/* Use a dummy personality function */
@@ -3775,10 +3776,23 @@ add_intrinsics (LLVMModuleRef module)
 	/* EH intrinsics */
 	{
 		LLVMTypeRef arg_types [2];
+		LLVMTypeRef ret_type;
 
 		arg_types [0] = LLVMPointerType (LLVMInt8Type (), 0);
 		arg_types [1] = LLVMPointerType (LLVMInt8Type (), 0);
-		LLVMAddFunction (module, "llvm.eh.selector", LLVMFunctionType (LLVMInt32Type (), arg_types, 2, TRUE));
+#if LLVM_MAJOR_VERSION > 2 || LLVM_MINOR_VERSION >= 8
+		eh_selector_name = "llvm.eh.selector";
+		ret_type = LLVMInt32Type ();
+#else
+#if SIZEOF_VOID_P == 8
+		eh_selector_name = "llvm.eh.selector.i64";
+		ret_type = LLVMInt64Type ();
+#else
+		eh_selector_name = "llvm.eh.selector.i32";
+		ret_type = LLVMInt32Type ();
+#endif
+#endif
+		LLVMAddFunction (module, eh_selector_name, LLVMFunctionType (ret_type, arg_types, 2, TRUE));
 
 		LLVMAddFunction (module, "llvm.eh.exception", LLVMFunctionType (LLVMPointerType (LLVMInt8Type (), 0), NULL, 0, FALSE));
 
