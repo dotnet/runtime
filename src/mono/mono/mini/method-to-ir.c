@@ -6145,6 +6145,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * but that type doesn't override the method we're
 					 * calling, so we need to box `this'.
 					 */
+					if (cfg->generic_sharing_context && mono_class_check_context_used (constrained_call))
+						GENERIC_SHARING_FAILURE (CEE_CONSTRAINED_);
+
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
 					ins->klass = constrained_call;
 					sp [0] = handle_box (cfg, ins, constrained_call);

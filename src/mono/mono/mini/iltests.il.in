@@ -2528,4 +2528,49 @@ END:
 		ldloc.0
 		ret
 	}
+
+	.class nested private auto ansi sealed beforefieldinit Pair`2<TKey,TValue>
+  		   extends [mscorlib]System.ValueType
+	{
+		.field  public  !0 key
+    	.field  public  !1 'value'
+  	}
+
+    .method private static hidebysig 
+           default bool ContentEquals<TKey,TValue> (valuetype Tests/Pair`2<!!TKey, !!TValue> v)  cil managed 
+    {
+	.maxstack 8
+	IL_0000:  ldarga.s 0 
+	IL_0006:  ldnull 
+			  constrained. valuetype Tests/Pair`2<!!0,!!1>
+	IL_0007:  callvirt instance bool class [mscorlib]System.Object::Equals(object)
+			  ret
+    }
+
+    .method public static hidebysig default int32 test_0_constrained_gshared_595863 () cil managed
+    {
+		.locals init (
+		valuetype Tests/Pair`2<string, string>	V_0,
+		valuetype Tests/Pair`2<string, string>	V_1)
+	IL_0000:  ldloca.s 0
+	IL_0002:  initobj valuetype Tests/Pair`2<string,string>
+	IL_0008:  ldloc.0 
+	IL_0009:  stloc.1 
+	IL_000a:  ldloca.s 1
+	IL_000c:  ldstr "A"
+	IL_0011:  stfld !0 valuetype Tests/Pair`2<string,string>::key
+	IL_0016:  ldloca.s 1
+	IL_0018:  ldstr "B"
+	IL_001d:  stfld !1 valuetype Tests/Pair`2<string,string>::'value'
+	IL_0022:  ldloc.1 
+	IL_0023:  stloc.0 
+	IL_0024:  ldloc.0 
+	IL_0025:  call bool class Tests::ContentEquals<string, string> (valuetype Tests/Pair`2<!!0,!!1>)
+			  brfalse SUCCESS
+			  ldc.i4.1
+			  ret
+	SUCCESS:
+			  ldc.i4.0
+			  ret
+    }
 }
