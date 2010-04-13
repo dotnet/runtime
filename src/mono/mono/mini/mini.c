@@ -3819,11 +3819,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	if (FALSE && header->clauses) {
-		/* 
-		 * Cannot be enabled until LLVM supports implicit exceptions, or we use
-		 * explicit checks, or we disable this for methods which might throw implicit
-		 * exceptions inside clauses.
+	if (header->clauses) {
+		/*
+		 * FIXME: LLLVM 2.6/SVN no longer seems to generate correct exception info
+		 * for JITted code.
 		 */
 		cfg->exception_message = g_strdup ("clauses");
 		cfg->disable_llvm = TRUE;
