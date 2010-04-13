@@ -38,6 +38,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 
@@ -8071,6 +8072,9 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 	mono_class_init (method->klass);
 
+	if (!mono_verifier_verify_cattr_content (image, method, data, len, NULL))
+		return NULL;
+
 	if (len == 0) {
 		attr = mono_object_new (mono_domain_get (), method->klass);
 		mono_runtime_invoke (method, attr, NULL, NULL);
@@ -8170,6 +8174,9 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	const char *named;
 	guint32 i, j, num_named;
 	CattrNamedArg *arginfo = NULL;
+
+	if (!mono_verifier_verify_cattr_content (image, method, data, len, NULL))
+		return;
 
 	mono_class_init (method->klass);
 
@@ -8441,6 +8448,14 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 			g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x", image->name, mtoken);
 			g_list_free (list);
 			g_free (ainfo);
+			return NULL;
+		}
+
+		if (!mono_verifier_verify_cattr_blob (image, cols [MONO_CUSTOM_ATTR_VALUE], NULL)) {
+			/*FIXME raising an exception here doesn't make any sense*/
+			g_warning ("Invalid custom attribute blob on image %s for index %x", image->name, idx);
+			g_free (ainfo);
+			g_free (list);
 			return NULL;
 		}
 		data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
