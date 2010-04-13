@@ -178,7 +178,7 @@ typedef-table {
 	valid offset table-row ( 2 0 ) + 8 set-ushort 0
 	#make <module> extend the first typeref entry, which usually is sys.obj
 	#LAMEIMPL MS ignores if <module> extend something.
-	invalid offset table-row ( 2 0 ) + 8 set-ushort 0x5
+	#invalid offset table-row ( 2 0 ) + 8 set-ushort 0x5
 }
 
 typedef-table-field-list {
@@ -288,9 +288,8 @@ methoddef-table {
 	assembly assembly-with-methods.exe
 
 	#bad implflags (3)
-	#unused bits 4,5,6,8,9,10,11,15
-	#LAMEIMPL MS doesn't check invalid bits  6,8,9,10,11,13,14,15
-	invalid offset table-row ( 6 0 ) + 4 set-bit 6
+	#unused bits 4,5,8,9,10,11,15
+	#LAMEIMPL MS doesn't check invalid bits  8,9,10,11,13,14,15
 	invalid offset table-row ( 6 0 ) + 4 set-bit 8
 	invalid offset table-row ( 6 0 ) + 4 set-bit 9
 	invalid offset table-row ( 6 0 ) + 4 set-bit 10
@@ -645,8 +644,9 @@ cattr-table {
 	#this uses 3 bits and only 0x2/0x3 are valid
 	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x0008
 	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x0009
-	valid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000A
-	valid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000B
+	#those two tests are invalid since they result in broken cattr
+	#valid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000A
+	#valid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000B
 	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000C
 	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000D
 	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000E

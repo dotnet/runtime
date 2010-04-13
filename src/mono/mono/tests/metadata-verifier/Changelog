@@ -1,3 +1,8 @@
+2010-04-13 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* Remove broken tests dues to aditional tests or relaxation
+	of existing constraints.
+
 2009-09-09  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* badrt-recursive-struct.il: New test for structs with bad layout.
