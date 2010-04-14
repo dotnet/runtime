@@ -5543,6 +5543,8 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		gpointer iter = NULL;
 		MonoMethod *m;
 
+		mono_class_setup_methods (klass);
+
 		nmethods = mono_class_num_methods (klass);
 
 		buffer_add_int (buf, nmethods);
