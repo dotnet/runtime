@@ -2710,6 +2710,11 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		mono_security_core_clr_ensure_reflection_access_method (m);
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
+		if (!mono_class_vtable_full (mono_object_domain (method), m->klass, FALSE)) {
+			mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_class_get_exception_for_failure (m->klass));
+			return NULL;
+		}
+
 		if (this) {
 			if (!mono_object_isinst (this, m->klass)) {
 				mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Object does not match target type."));
