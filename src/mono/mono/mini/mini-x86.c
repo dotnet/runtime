@@ -1224,7 +1224,11 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		case ArgOnStack:
 			if (MONO_TYPE_ISSTRUCT (t)) {
-				linfo->args [i].storage = LLVMArgVtypeByVal;
+				if (mono_class_value_size (mono_class_from_mono_type (t), NULL) == 0)
+				/* LLVM seems to allocate argument space for empty structures too */
+					linfo->args [i].storage = LLVMArgNone;
+				else
+					linfo->args [i].storage = LLVMArgVtypeByVal;
 			} else {
 				linfo->args [i].storage = LLVMArgInIReg;
 				if (t->byref) {

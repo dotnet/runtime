@@ -2555,6 +2555,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				int *pindexes;
 				gboolean virtual, calli;
 
+				if (call->signature->call_convention != MONO_CALL_DEFAULT)
+					LLVM_FAILURE (ctx, "non-default callconv");
+
 				cinfo = call->cinfo;
 
 				vretaddr = cinfo && cinfo->ret.storage == LLVMArgVtypeRetAddr;
