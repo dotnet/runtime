@@ -7271,7 +7271,8 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 					if (!_mono_reflection_parse_type (p, &p, TRUE, subinfo))
 						return 0;
 
-					if (fqname) {
+					/*MS is lenient on [] delimited parameters that aren't fqn - and F# uses them.*/
+					if (fqname && (*p != ']')) {
 						char *aname;
 
 						if (*p != ',')
@@ -7296,6 +7297,8 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 						if (!*aname ||
 						    !assembly_name_to_aname (&subinfo->assembly, aname))
 							return 0;
+					} else if (fqname && (*p == ']')) {
+						*p++ = 0;
 					}
 
 					if (i + 1 < arity) {
