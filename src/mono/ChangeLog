@@ -1,3 +1,14 @@
+2010-04-14  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: turn the AC_MSG_ERROR into a AC_MSG_WARN since in
+	Andrew's configuration this aborts the build:
+
+	 host=i686-pc-linux-gnu != target=i586-suse-linux
+
+	And I no longer remember why I added that error in the first
+	place (we need to determine perhaps the arch/OS but it is
+	difficult with those strings).
+
 2010-04-08  Andreia Gaita  <avidigal@novell.com>
 
 	* configure.in: Add an extra "only" option to --with-moonlight. This
