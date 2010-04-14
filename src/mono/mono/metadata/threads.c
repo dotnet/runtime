@@ -3295,9 +3295,7 @@ mono_thread_push_appdomain_ref (MonoDomain *domain)
 
 	if (thread) {
 		/* printf ("PUSH REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, domain->friendly_name); */
-		mono_threads_lock ();
 		thread->appdomain_refs = g_slist_prepend (thread->appdomain_refs, domain);
-		mono_threads_unlock ();
 	}
 }
 
@@ -3308,11 +3306,9 @@ mono_thread_pop_appdomain_ref (void)
 
 	if (thread) {
 		/* printf ("POP REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
-		mono_threads_lock ();
 		/* FIXME: How can the list be empty ? */
 		if (thread->appdomain_refs)
 			thread->appdomain_refs = g_slist_remove (thread->appdomain_refs, thread->appdomain_refs->data);
-		mono_threads_unlock ();
 	}
 }
 
