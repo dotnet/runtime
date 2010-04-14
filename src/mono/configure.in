@@ -2740,6 +2740,7 @@ data/net_4_0/Makefile
 data/net_2_0/Browsers/Makefile
 data/mint.pc
 data/mono-2.pc
+data/mono.pc
 data/mono-cairo.pc
 data/mono-nunit.pc
 data/mono-options.pc
