@@ -2972,10 +2972,41 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
  * Returns NULL and set the cfg exception on error.
  */
 static MonoInst*
-handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box)
+handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_used)
 {
 	MonoInst *iargs [2];
 	void *alloc_ftn;
+
+	if (context_used) {
+		MonoInst *data;
+		int rgctx_info;
+		MonoInst *iargs [2];
+
+		/*
+		  FIXME: we cannot get managed_alloc here because we can't get
+		  the class's vtable (because it's not a closed class)
+
+		  MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+		  MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
+		*/
+
+		if (cfg->opt & MONO_OPT_SHARED)
+			rgctx_info = MONO_RGCTX_INFO_KLASS;
+		else
+			rgctx_info = MONO_RGCTX_INFO_VTABLE;
+		data = emit_get_rgctx_klass (cfg, context_used, klass, rgctx_info);
+
+		if (cfg->opt & MONO_OPT_SHARED) {
+			EMIT_NEW_DOMAINCONST (cfg, iargs [0]);
+			iargs [1] = data;
+			alloc_ftn = mono_object_new;
+		} else {
+			iargs [0] = data;
+			alloc_ftn = mono_object_new_specific;
+		}
+
+		return mono_emit_jit_icall (cfg, alloc_ftn, iargs);
+	}
 
 	if (cfg->opt & MONO_OPT_SHARED) {
 		EMIT_NEW_DOMAINCONST (cfg, iargs [0]);
@@ -3020,83 +3051,38 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box)
 
 	return mono_emit_jit_icall (cfg, alloc_ftn, iargs);
 }
-
-static MonoInst*
-handle_alloc_from_inst (MonoCompile *cfg, MonoClass *klass, MonoInst *data_inst,
-						gboolean for_box)
-{
-	MonoInst *iargs [2];
-	MonoMethod *managed_alloc = NULL;
-	void *alloc_ftn;
-
-	/*
-	  FIXME: we cannot get managed_alloc here because we can't get
-	  the class's vtable (because it's not a closed class)
-
-	MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-	MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
-	*/
-
-	if (cfg->opt & MONO_OPT_SHARED) {
-		EMIT_NEW_DOMAINCONST (cfg, iargs [0]);
-		iargs [1] = data_inst;
-		alloc_ftn = mono_object_new;
-	} else {
-		if (managed_alloc) {
-			iargs [0] = data_inst;
-			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
-		}
-
-		iargs [0] = data_inst;
-		alloc_ftn = mono_object_new_specific;
-	}
-
-	return mono_emit_jit_icall (cfg, alloc_ftn, iargs);
-}
 	
 /*
  * Returns NULL and set the cfg exception on error.
  */	
 static MonoInst*
-handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass)
+handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 {
 	MonoInst *alloc, *ins;
 
 	if (mono_class_is_nullable (klass)) {
 		MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
-		return mono_emit_method_call (cfg, method, &val, NULL);
+
+		if (context_used) {
+			/* FIXME: What if the class is shared?  We might not
+			   have to get the method address from the RGCTX. */
+			MonoInst *addr = emit_get_rgctx_method (cfg, context_used, method,
+													MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+			MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
+
+			return mono_emit_rgctx_calli (cfg, mono_method_signature (method), &val, addr, rgctx);
+		} else {
+			return mono_emit_method_call (cfg, method, &val, NULL);
+		}
 	}
 
-	alloc = handle_alloc (cfg, klass, TRUE);
+	alloc = handle_alloc (cfg, klass, TRUE, context_used);
 	if (!alloc)
 		return NULL;
 
 	EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, alloc->dreg, sizeof (MonoObject), val->dreg);
 
 	return alloc;
-}
-
-static MonoInst *
-handle_box_from_inst (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used, MonoInst *data_inst)
-{
-	MonoInst *alloc, *ins;
-
-	if (mono_class_is_nullable (klass)) {
-		MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
-		/* FIXME: What if the class is shared?  We might not
-		   have to get the method address from the RGCTX. */
-		MonoInst *addr = emit_get_rgctx_method (cfg, context_used, method,
-			MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
-		MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
-
-		return mono_emit_rgctx_calli (cfg, mono_method_signature (method), &val, addr, rgctx);
-	} else {
-		alloc = handle_alloc_from_inst (cfg, klass, data_inst, TRUE);
-
-		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, alloc->dreg, sizeof (MonoObject), val->dreg);
-
-		return alloc;
-	}
 }
 
 // FIXME: This doesn't work yet (class libs tests fail?)
@@ -3493,7 +3479,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	MonoDomain *domain;
 	guint8 **code_slot;
 
-	obj = handle_alloc (cfg, klass, FALSE);
+	obj = handle_alloc (cfg, klass, FALSE, 0);
 	if (!obj)
 		return NULL;
 
@@ -6145,12 +6131,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * but that type doesn't override the method we're
 					 * calling, so we need to box `this'.
 					 */
-					if (cfg->generic_sharing_context && mono_class_check_context_used (constrained_call))
-						GENERIC_SHARING_FAILURE (CEE_CONSTRAINED_);
-
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
 					ins->klass = constrained_call;
-					sp [0] = handle_box (cfg, ins, constrained_call);
+					sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call));
 					CHECK_CFG_EXCEPTION;
 				} else if (!constrained_call->valuetype) {
 					int dreg = alloc_preg (cfg);
@@ -7486,16 +7469,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * will be transformed into a normal call there.
 					 */
 				} else if (context_used) {
-					MonoInst *data;
-					int rgctx_info;
-
-					if (cfg->opt & MONO_OPT_SHARED)
-						rgctx_info = MONO_RGCTX_INFO_KLASS;
-					else
-						rgctx_info = MONO_RGCTX_INFO_VTABLE;
-					data = emit_get_rgctx_klass (cfg, context_used, cmethod->klass, rgctx_info);
-
-					alloc = handle_alloc_from_inst (cfg, cmethod->klass, data, FALSE);
+					alloc = handle_alloc (cfg, cmethod->klass, FALSE, context_used);
 					*sp = alloc;
 				} else {
 					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
@@ -7514,7 +7488,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						class_inits = g_slist_prepend (class_inits, vtable);
 					}
 
-					alloc = handle_alloc (cfg, cmethod->klass, FALSE);
+					alloc = handle_alloc (cfg, cmethod->klass, FALSE, 0);
 					*sp = alloc;
 				}
 				CHECK_CFG_EXCEPTION; /*for handle_alloc*/
@@ -7820,19 +7794,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-			if (context_used) {
-				MonoInst *data;
-				int rgctx_info;
-
-				if (cfg->opt & MONO_OPT_SHARED)
-					rgctx_info = MONO_RGCTX_INFO_KLASS;
-				else
-					rgctx_info = MONO_RGCTX_INFO_VTABLE;
-				data = emit_get_rgctx_klass (cfg, context_used, klass, rgctx_info);
-				*sp++ = handle_box_from_inst (cfg, val, klass, context_used, data);
-			} else {
-				*sp++ = handle_box (cfg, val, klass);
-			}
+			*sp++ = handle_box (cfg, val, klass, context_used);
 
 			CHECK_CFG_EXCEPTION;
 			ip += 5;
@@ -8384,7 +8346,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				   allocator because we can't get the
 				   open generic class's vtable.  We
 				   have the same problem in
-				   handle_alloc_from_inst().  This
+				   handle_alloc().  This
 				   needs to be solved so that we can
 				   have managed allocs of shared
 				   generic classes. */
