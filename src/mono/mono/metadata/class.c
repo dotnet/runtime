@@ -172,7 +172,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		
 		mono_assembly_get_assemblyref (image, idx - 1, &aname);
 		human_name = mono_stringify_assembly_name (&aname);
-		mono_loader_set_error_assembly_load (human_name, image->assembly->ref_only);
+		mono_loader_set_error_assembly_load (human_name, image->assembly ? image->assembly->ref_only : FALSE);
 		g_free (human_name);
 		
 		return NULL;
