@@ -3727,6 +3727,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 	/* Optimized version for generic instances */
 	if (class->generic_class) {
+		MonoError error;
 		MonoClass *gklass = class->generic_class->container_class;
 		MonoMethod **tmp;
 
@@ -3740,7 +3741,15 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		class->vtable_size = gklass->vtable_size;
 		for (i = 0; i < gklass->vtable_size; ++i)
 			if (gklass->vtable [i]) {
-				tmp [i] = mono_class_inflate_generic_method_full (gklass->vtable [i], class, mono_class_get_context (class));
+				MonoMethod *inflated = mono_class_inflate_generic_method_full_checked (gklass->vtable [i], class, mono_class_get_context (class), &error);
+				if (!mono_error_ok (&error)) {
+					char *err_msg = g_strdup_printf ("Could not inflate method due to %s", mono_error_get_message (&error));
+					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, err_msg);
+					g_free (err_msg);
+					mono_error_cleanup (&error);
+					return;
+				}
+				tmp [i] = inflated;
 				tmp [i]->slot = gklass->vtable [i]->slot;
 			}
 		mono_memory_barrier ();
