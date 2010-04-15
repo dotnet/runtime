@@ -1939,7 +1939,8 @@ mono_class_get_method_by_index (MonoClass *class, int index)
 		return m;
 	} else {
 		mono_class_setup_methods (class);
-		g_assert (!class->exception_type); /*FIXME do proper error handling*/
+		if (class->exception_type) /*FIXME do proper error handling*/
+			return NULL;
 		g_assert (index >= 0 && index < class->method.count);
 		return class->methods [index];
 	}
