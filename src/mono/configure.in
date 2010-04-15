@@ -1010,6 +1010,7 @@ if test x$target_win32 = xno; then
 	AC_CHECK_FUNCS(getpriority)
 	AC_CHECK_FUNCS(setpriority)
 	AC_CHECK_FUNCS(dl_iterate_phdr)
+	AC_CHECK_FUNCS(sysconf)
 
 	AC_CHECK_FUNCS(sched_setaffinity)
 

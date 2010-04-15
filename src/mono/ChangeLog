@@ -1,3 +1,7 @@
+2010-04-16  Marek Habersack  <mhabersack@novell.com>
+
+	* configure.in: added a check for sysconf(3)
+
 2010-04-14  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in: turn the AC_MSG_ERROR into a AC_MSG_WARN since in

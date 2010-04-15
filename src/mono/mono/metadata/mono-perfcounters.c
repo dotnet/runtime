@@ -12,8 +12,20 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#if defined (__OpenBSD)
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#if defined (__NetBSD__) || defined (__APPLE__)
+#include <sys/sysctl.h>
 #endif
 #include "metadata/mono-perfcounters.h"
 #include "metadata/appdomain.h"
@@ -378,6 +390,60 @@ predef_cleanup (ImplVtable *vtable)
 	}
 	unref_pid_unlocked (vt->pid);
 	perfctr_unlock ();
+}
+
+static guint64
+mono_determine_physical_ram_size (void)
+{
+#if defined (TARGET_WIN32)
+	MEMORYSTATUSEX memstat;
+
+	memstat.dwLength = sizeof (memstat);
+	GlobalMemoryStatusEx (&memstat);
+	return (guint64)memstat.ullTotalPhys;
+#elif defined (__NetBSD__) || defined (__APPLE__)
+#ifdef __NetBSD__
+	unsigned long value;
+#else
+	guint64 value;
+#endif
+	int mib[2] = {
+		CTL_HW,
+#ifdef __NetBSD__
+		HW_PHYSMEM
+#else
+		HW_MEMSIZE
+#endif
+	};
+	size_t size_sys = sizeof (value);
+
+	sysctl (mib, 2, &value, &size_sys, NULL, 0);
+	if (value == 0)
+		return 134217728;
+
+	return (guint64)value;
+#elif defined (HAVE_SYSCONF)
+	guint64 page_size = 0, num_pages = 0;
+
+	/* sysconf works on most *NIX operating systems, if your system doesn't have it or if it
+	 * reports invalid values, please add your OS specific code below. */
+#ifdef _SC_PAGESIZE
+	page_size = (guint64)sysconf (_SC_PAGESIZE);
+#endif
+
+#ifdef _SC_PHYS_PAGES
+	num_pages = (guint64)sysconf (_SC_PHYS_PAGES);
+#endif
+
+	if (!page_size || !num_pages) {
+		g_warning ("Your operating system's sysconf (3) function doesn't correctly report physical memory size!");
+		return 134217728;
+	}
+
+	return page_size * num_pages;
+#else
+	return 134217728;
+#endif
 }
 
 void
@@ -828,6 +894,9 @@ mono_mem_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample 
 	switch (id) {
 	case COUNTER_MEM_NUM_OBJECTS:
 		sample->rawValue = mono_stats.new_object_count;
+		return TRUE;
+	case COUNTER_MEM_PHYS_TOTAL:
+		sample->rawValue = mono_determine_physical_ram_size ();;
 		return TRUE;
 	}
 	return FALSE;
