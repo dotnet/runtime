@@ -2861,9 +2861,13 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	}
 #endif
 
+#ifndef HOST_WIN32
 	he = NULL;
 	if (*hostname)
 		he = _wapi_gethostbyname (hostname);
+#else
+	he = _wapi_gethostbyname (hostname);
+#endif
 	g_free(hostname);
 
 	if (*hostname && he==NULL)
