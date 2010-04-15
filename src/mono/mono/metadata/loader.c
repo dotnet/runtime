@@ -849,10 +849,17 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 	}
 
 	if (context) {
+		MonoError error;
 		MonoMethodSignature *cached;
 
 		/* This signature is not owned by a MonoMethod, so need to cache */
-		sig = inflate_generic_signature (image, sig, context);
+		sig = inflate_generic_signature_checked (image, sig, context, &error);
+		if (!mono_error_ok (&error)) {/*XXX bubble up this and kill one use of loader errors */
+			mono_loader_set_error_bad_image (g_strdup_printf ("Could not inflate signature %s", mono_error_get_message (&error)));
+			mono_error_cleanup (&error);
+			return NULL;
+		}
+
 		cached = mono_metadata_get_inflated_signature (sig, context);
 		if (cached != sig)
 			mono_metadata_free_inflated_signature (sig);
