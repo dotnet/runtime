@@ -52,6 +52,14 @@
 /*#define LIBGC_DEBUG(a) do { a; } while (0)*/
 #define LIBGC_DEBUG(a)
 
+#define SPIN_TRYLOCK(i) (InterlockedCompareExchange (&(i), 1, 0) == 0)
+#define SPIN_LOCK(i) do { \
+				if (SPIN_TRYLOCK (i)) \
+					break; \
+			} while (1)
+
+#define SPIN_UNLOCK(i) i = 0
+
 /* Provide this for systems with glib < 2.6 */
 #ifndef G_GSIZE_FORMAT
 #   if GLIB_SIZEOF_LONG == 8
@@ -3295,7 +3303,9 @@ mono_thread_push_appdomain_ref (MonoDomain *domain)
 
 	if (thread) {
 		/* printf ("PUSH REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, domain->friendly_name); */
+		SPIN_LOCK (thread->lock_thread_id);
 		thread->appdomain_refs = g_slist_prepend (thread->appdomain_refs, domain);
+		SPIN_UNLOCK (thread->lock_thread_id);
 	}
 }
 
@@ -3307,8 +3317,10 @@ mono_thread_pop_appdomain_ref (void)
 	if (thread) {
 		/* printf ("POP REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
 		/* FIXME: How can the list be empty ? */
+		SPIN_LOCK (thread->lock_thread_id);
 		if (thread->appdomain_refs)
 			thread->appdomain_refs = g_slist_remove (thread->appdomain_refs, thread->appdomain_refs->data);
+		SPIN_UNLOCK (thread->lock_thread_id);
 	}
 }
 
@@ -3316,9 +3328,9 @@ gboolean
 mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, MonoDomain *domain)
 {
 	gboolean res;
-	mono_threads_lock ();
+	SPIN_LOCK (thread->lock_thread_id);
 	res = g_slist_find (thread->appdomain_refs, domain) != NULL;
-	mono_threads_unlock ();
+	SPIN_UNLOCK (thread->lock_thread_id);
 	return res;
 }
 
