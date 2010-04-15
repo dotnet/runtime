@@ -744,14 +744,15 @@ mono_class_inflate_generic_type_checked (MonoType *type, MonoGenericContext *con
  * was done.
  */
 static MonoType*
-mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoGenericContext *context)
+mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoGenericContext *context, MonoError *error)
 {
-	MonoError error;
 	MonoType *inflated = NULL; 
 
+	mono_error_init (error);
 	if (context) {
-		inflated = inflate_generic_type (image, type, context, &error);
-		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+		inflated = inflate_generic_type (image, type, context, error);
+		if (!mono_error_ok (error))
+			return NULL;
 	}
 
 	if (!inflated)
@@ -1190,6 +1191,7 @@ mono_type_has_exceptions (MonoType *type)
 static void
 mono_class_setup_fields (MonoClass *class)
 {
+	MonoError error;
 	MonoImage *m = class->image; 
 	int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
@@ -1305,7 +1307,14 @@ mono_class_setup_fields (MonoClass *class)
 
 			field->name = mono_field_get_name (gfield);
 			/*This memory must come from the image mempool as we don't have a chance to free it.*/
-			field->type = mono_class_inflate_generic_type_no_copy (class->image, gfield->type, mono_class_get_context (class));
+			field->type = mono_class_inflate_generic_type_no_copy (class->image, gfield->type, mono_class_get_context (class), &error);
+			if (!mono_error_ok (&error)) {
+				char *err_msg = g_strdup_printf ("Could not load field %d type due to: %s", i, mono_error_get_message (&error));
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, err_msg);
+				g_free (err_msg);
+				mono_error_cleanup (&error);
+				return;
+			}
 			g_assert (field->type->attrs == gfield->type->attrs);
 			if (mono_field_is_deleted (field))
 				continue;
