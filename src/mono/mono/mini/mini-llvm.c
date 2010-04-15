@@ -1297,6 +1297,11 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 			}
 		} else if (ainfo->storage == LLVMArgVtypeByVal) {
 			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindexes [i]);
+
+			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (sig->params [i]))) {
+				/* Treat these as normal values */
+				ctx->values [reg] = LLVMBuildLoad (builder, ctx->addresses [reg], "");
+			}
 		} else {
 			ctx->values [reg] = convert (ctx, ctx->values [reg], llvm_type_to_stack_type (type_to_llvm_type (ctx, sig->params [i])));
 		}
