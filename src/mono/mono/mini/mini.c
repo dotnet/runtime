@@ -4825,11 +4825,17 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 
 	if (prof_options & MONO_PROFILE_JIT_COMPILATION) {
-		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-			/* The profiler doesn't know about wrappers, so pass the original icall method */
-			mono_profiler_method_end_jit (mono_marshal_method_from_wrapper (method), jinfo, MONO_PROFILE_OK);
-		else
+		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			if (strstr (method->name, "wrapper_native_") == method->name) {
+				/* Native func wrappers, these have no method */
+				/* FIXME: Clean this up */
+			} else {
+				/* The profiler doesn't know about wrappers, so pass the original icall method */
+				mono_profiler_method_end_jit (mono_marshal_method_from_wrapper (method), jinfo, MONO_PROFILE_OK);
+			}
+		} else {
 			mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+		}
 	}
 
 	mono_runtime_class_init (vtable);
