@@ -1,3 +1,8 @@
+2010-04-16 Gonzalo Paniagua Javier <gonzalo@novell.com>
+
+	* test/ptrarray.c: new tests
+	* src/gptrarray.c: implemented g_ptr_array_remove_fast().
+
 2010-04-10  Andreas Faerber  <andreas.faerber@web.de>
 
 	* configure.ac: Add checks for libm and libdl.

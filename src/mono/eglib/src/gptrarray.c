@@ -177,6 +177,27 @@ g_ptr_array_remove(GPtrArray *array, gpointer data)
 	return FALSE;
 }
 
+gboolean
+g_ptr_array_remove_fast(GPtrArray *array, gpointer data)
+{
+	guint i;
+
+	g_return_val_if_fail(array != NULL, FALSE);
+
+	for(i = 0; i < array->len; i++) {
+		if(array->pdata[i] == data) {
+			array->len--;
+			if (array->len > 0)
+				array->pdata [i] = array->pdata [array->len];
+			else
+				array->pdata [i] = NULL;
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 void 
 g_ptr_array_foreach(GPtrArray *array, GFunc func, gpointer user_data)
 {
