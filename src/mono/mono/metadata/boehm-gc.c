@@ -85,6 +85,17 @@ mono_gc_base_init (void)
 	}
 #elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 		GC_stackbottom = (char*)pthread_get_stackaddr_np (pthread_self ());
+#elif defined(__OpenBSD__)
+#  include <pthread_np.h>
+	{
+		stack_t ss;
+		int rslt;
+
+		rslt = pthread_stackseg_np(pthread_self(), &ss);
+		g_assert (rslt == 0);
+
+		GC_stackbottom = (char*)ss.ss_sp;
+	}
 #else
 	{
 		int dummy;
