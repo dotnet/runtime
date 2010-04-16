@@ -25,7 +25,7 @@ opnames[] = {
  * Duplicate this from helpers.c, so the opcode name array can be omitted when 
  * DISABLE_JIT is set.
  */
-const char*
+static const char*
 inst_name (int op) {
 	if (op >= OP_LOAD && op <= OP_LAST)
 		return opnames [op - OP_LOAD];
