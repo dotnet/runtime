@@ -4607,6 +4607,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 #endif
 
+#ifndef DISABLE_JIT
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		MonoMethod *nm;
@@ -4665,6 +4666,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		}
 		return NULL;
 	}
+#endif
 
 	if (mono_aot_only) {
 		char *fullname = mono_method_full_name (method, TRUE);

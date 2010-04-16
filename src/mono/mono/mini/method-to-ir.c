@@ -1713,8 +1713,6 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 	}
 }
 
-#endif /* DISABLE_JIT */
-
 void 
 mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {
@@ -1776,8 +1774,6 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 		size -= 1;
 	}
 }
-
-#ifndef DISABLE_JIT
 
 static int
 ret_type_to_call_opcode (MonoType *type, int calli, int virt, MonoGenericSharingContext *gsctx)

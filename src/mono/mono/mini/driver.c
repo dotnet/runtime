@@ -1832,6 +1832,7 @@ mono_main (int argc, char* argv[])
 		return 3;
 	}
 
+#ifndef DISABLE_JIT
 	if (action == DO_DRAW) {
 		int part = 0;
 
@@ -1923,6 +1924,7 @@ mono_main (int argc, char* argv[])
 		cfg = mini_method_compile (method, opt, mono_get_root_domain (), FALSE, FALSE, 0);
 		mono_destroy_compile (cfg);
 	}
+#endif
 
 	mini_cleanup (domain);
  	return 0;
