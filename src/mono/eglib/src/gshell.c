@@ -155,6 +155,9 @@ g_shell_unquote (const gchar *quoted_string, GError **error)
 	const char *p;
 	int do_unquote = 0;
 
+	if (quoted_string == NULL)
+		return NULL;
+	
 	/* Quickly try to determine if we need to unquote or not */
 	for (p = quoted_string; *p; p++){
 		if (*p == '\'' || *p == '"' || *p == '\\'){
