@@ -8294,6 +8294,8 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 									mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
 
+	mono_marshal_set_wrapper_info (res, NULL);
+
 	/* code_for (res); */
 
 	return res;
