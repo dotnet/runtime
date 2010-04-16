@@ -151,7 +151,129 @@ g_shell_quote (const gchar *unquoted_string)
 gchar *
 g_shell_unquote (const gchar *quoted_string, GError **error)
 {
-//	g_error ("%s", "Not implemented");
-	return g_strdup (quoted_string);
-//	return NULL;
+	GString *result;
+	const char *p;
+	int do_unquote = 0;
+
+	/* Quickly try to determine if we need to unquote or not */
+	for (p = quoted_string; *p; p++){
+		if (*p == '\'' || *p == '"' || *p == '\\'){
+			do_unquote = 1;
+			break;
+		}
+	}
+	
+	if (!do_unquote)
+		return g_strdup (quoted_string);
+
+	/* We do need to unquote */
+	result = g_string_new ("");
+	for (p = quoted_string; *p; p++){
+
+		if (*p == '\''){
+			/* Process single quote, not even \ is processed by glib's version */
+			for (p++; *p; p++){
+				if (*p == '\'')
+					break;
+				g_string_append_c (result, *p);
+			}
+			if (!*p){
+				g_set_error (error, 0, 0, "Open quote");
+				return NULL;
+			}
+		} else if (*p == '"'){
+			/* Process double quote, allows some escaping */
+			for (p++; *p; p++){
+				if (*p == '"')
+					break;
+				if (*p == '\\'){
+					p++;
+					if (*p == 0){
+						g_set_error (error, 0, 0, "Open quote");
+						return NULL;
+					}
+					int append = -1;
+					switch (*p){
+					case '$':
+					case '"':
+					case '\\':
+					case '`':
+						break;
+					default:
+						g_string_append_c (result, '\\');
+						break;
+					}
+				} 
+				g_string_append_c (result, *p);
+			}
+			if (!*p){
+				g_set_error (error, 0, 0, "Open quote");
+				return NULL;
+			}
+		} else if (*p == '\\'){
+			p++;
+			char c = *p;
+			if (!(c == '$' || c == '"' || c == '\\' || c == '`' || c == 0))
+				g_string_append_c (result, '\\');
+			if (c == 0)
+				break;
+			else
+				g_string_append_c (result, c);
+		} else
+			g_string_append_c (result, *p);
+	}
+	return g_string_free (result, FALSE);
 }
+
+#if JOINT_TEST
+/*
+ * This test is designed to be built with the 2 glib/eglib to compare
+ */
+
+char *args [] = {
+	"\\",
+	"\"Foo'bar\"",
+	"'foo'",
+	"'fo\'b'",
+	"'foo\"bar'",
+	"'foo' dingus bar",
+	"'foo' 'bar' 'baz'",
+	"\"foo\" 'bar' \"baz\"",
+	"\"f\\$\\\'",
+	"\"\\",
+	"\\\\",
+	"'\\\\'",
+	"\"f\\$\"\\\"\\\\", //  /\\\"\\\\"
+	"'f\\$'\\\"\\\\", 
+	"'f\\$\\\\'", 
+	NULL
+};
+
+
+int
+main ()
+{
+	char **s = args;
+	int i;
+	
+	while (*s){
+		char *r1 = g_shell_unquote (*s, NULL);
+		char *r2 = g2_shell_unquote (*s, NULL);
+		char *ok = r1 == r2 ? "ok" : (r1 != NULL && r2 != NULL && strcmp (r1, r2) == 0) ? "ok" : "fail";
+		
+		printf ("%s [%s] -> [%s] - [%s]\n", ok, *s, r1, r2);
+		s++;
+	}
+	return;
+	char buffer [10];
+	buffer [0] = '\"';
+	buffer [1] = '\\';
+	buffer [3] = '\"';
+	buffer [4] = 0;
+	
+	for (i = 32; i < 255; i++){
+		buffer [2] = i;
+		printf ("%d [%s] -> [%s]\n", i, buffer, g_shell_unquote (buffer, NULL));
+	}
+}
+#endif
