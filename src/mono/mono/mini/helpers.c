@@ -11,6 +11,8 @@
 #include <unistd.h>
 #endif
 
+#ifndef DISABLE_LOGGING
+
 #ifdef MINI_OP
 #undef MINI_OP
 #endif
@@ -56,6 +58,8 @@ opnames[] = {
 
 #endif
 
+#endif /* DISABLE_LOGGING */
+
 #if defined(__i386__) || defined(__x86_64__)
 #define emit_debug_info  TRUE
 #else
@@ -67,6 +71,7 @@ opnames[] = {
 
 const char*
 mono_inst_name (int op) {
+#ifndef DISABLE_LOGGING
 	if (op >= OP_LOAD && op <= OP_LAST)
 #ifdef HAVE_ARRAY_ELEM_INIT
 		return (const char*)&opstr + opidx [op - OP_LOAD];
@@ -77,6 +82,9 @@ mono_inst_name (int op) {
 		return mono_opcode_name (op);
 	g_error ("unknown opcode name for %d", op);
 	return NULL;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 void

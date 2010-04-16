@@ -11,6 +11,30 @@
 #include <string.h>
 #include <mono/metadata/opcodes.h>
 
+#define MINI_OP(a,b,dest,src1,src2) b,
+#define MINI_OP3(a,b,dest,src1,src2,src3) b,
+/* keep in sync with the enum in mini.h */
+static const char* const
+opnames[] = {
+#include "mini-ops.h"
+};
+#undef MINI_OP
+#undef MINI_OP3
+
+/*
+ * Duplicate this from helpers.c, so the opcode name array can be omitted when 
+ * DISABLE_JIT is set.
+ */
+const char*
+inst_name (int op) {
+	if (op >= OP_LOAD && op <= OP_LAST)
+		return opnames [op - OP_LOAD];
+	if (op < OP_LOAD)
+		return mono_opcode_name (op);
+	g_error ("unknown opcode name for %d", op);
+	return NULL;
+}
+
 typedef struct {
 	int num;
 	const char *name;
@@ -165,7 +189,7 @@ init_table (void) {
 	for (i = OP_LOAD; i < OP_LAST; ++i) {
 		desc = opcodes + i;
 		desc->num = i;
-		desc->name = mono_inst_name (i);
+		desc->name = inst_name (i);
 		g_hash_table_insert (table, (char *)desc->name, desc);
 	}
 }
