@@ -778,9 +778,10 @@ ICALL(SECSTRING_2, "EncryptInternal", ves_icall_System_Security_SecureString_Enc
 ICALL_TYPE(SECMAN, "System.Security.SecurityManager", SECMAN_1)
 ICALL(SECMAN_1, "GetLinkDemandSecurity", ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity)
 ICALL(SECMAN_2, "get_CheckExecutionRights", ves_icall_System_Security_SecurityManager_get_CheckExecutionRights)
-ICALL(SECMAN_3, "get_SecurityEnabled", ves_icall_System_Security_SecurityManager_get_SecurityEnabled)
-ICALL(SECMAN_4, "set_CheckExecutionRights", ves_icall_System_Security_SecurityManager_set_CheckExecutionRights)
-ICALL(SECMAN_5, "set_SecurityEnabled", ves_icall_System_Security_SecurityManager_set_SecurityEnabled)
+ICALL(SECMAN_3, "get_RequiresElevatedPermissions", mono_security_core_clr_require_elevated_permissions)
+ICALL(SECMAN_4, "get_SecurityEnabled", ves_icall_System_Security_SecurityManager_get_SecurityEnabled)
+ICALL(SECMAN_5, "set_CheckExecutionRights", ves_icall_System_Security_SecurityManager_set_CheckExecutionRights)
+ICALL(SECMAN_6, "set_SecurityEnabled", ves_icall_System_Security_SecurityManager_set_SecurityEnabled)
 
 ICALL_TYPE(STRING, "System.String", STRING_1)
 ICALL(STRING_1, ".ctor(char*)", ves_icall_System_String_ctor_RedirectToCreateString)

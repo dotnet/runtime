@@ -41,4 +41,6 @@ extern MonoSecurityCoreCLRLevel mono_security_core_clr_method_level (MonoMethod 
 extern gboolean mono_security_core_clr_is_platform_image (MonoImage *image) MONO_INTERNAL;
 extern gboolean mono_security_core_clr_determine_platform_image (MonoImage *image) MONO_INTERNAL;
 
+extern gboolean mono_security_core_clr_require_elevated_permissions (void);
+
 #endif	/* _MONO_METADATA_SECURITY_CORE_CLR_H_ */

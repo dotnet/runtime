@@ -305,6 +305,95 @@ get_reflection_caller (void)
 	return m;
 }
 
+typedef struct {
+	int depth;
+	MonoMethod *caller;
+} ElevatedTrustCookie;
+
+/*
+ * get_caller_of_elevated_trust_code
+ *
+ *	Stack walk to find who is calling code requiring Elevated Trust.
+ *	If a critical method is found then the caller is platform code
+ *	and has elevated trust, otherwise (transparent) a check needs to
+ *	be done (on the managed side) to determine if the application is
+ *	running with elevated permissions.
+ */
+static gboolean
+get_caller_of_elevated_trust_code (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
+{
+	ElevatedTrustCookie *cookie = data;
+
+	/* skip unmanaged frames and wrappers */
+	if (!managed || (m->wrapper_type != MONO_WRAPPER_NONE))
+		return FALSE;
+
+	/* end stack walk if we find ourselves outside platform code (we won't find critical code anymore) */
+	if (!mono_security_core_clr_is_platform_image (m->klass->image)) {
+		cookie->caller = m;
+		return TRUE;
+	}
+
+	switch (cookie->depth) {
+	/* while depth == 0 look for SecurityManager::[Check|Ensure]ElevatedPermissions */
+	case 0:
+		if (strcmp (m->klass->name_space, "System.Security"))
+			return FALSE;
+		if (strcmp (m->klass->name, "SecurityManager"))
+			return FALSE;
+		if ((strcmp (m->name, "EnsureElevatedPermissions")) && strcmp (m->name, "CheckElevatedPermissions"))
+			return FALSE;
+		cookie->depth = 1;
+		break;
+	/* while depth == 1 look for the caller to SecurityManager::[Check|Ensure]ElevatedPermissions */
+	case 1:
+		/* this frame is [SecuritySafeCritical] because it calls [SecurityCritical] [Check|Ensure]ElevatedPermissions */
+		/* the next frame will contain the caller(s) we want to check */
+		cookie->depth = 2;
+		break;
+	/* while depth >= 2 look for [safe]critical caller, end stack walk if we find it  */
+	default:
+		cookie->depth++;
+		/* if the caller is transparent then we continue the stack walk */
+		if (mono_security_core_clr_method_level (m, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
+			break;
+
+		/* Security[Safe]Critical code is always allowed to call elevated-trust code */
+		cookie->caller = m;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+/*
+ * mono_security_core_clr_require_elevated_permissions:
+ *
+ *	Return TRUE if the caller of the current method (the code who 
+ *	called SecurityManager.get_RequiresElevatedPermissions) needs
+ *	elevated trust to perform an action.
+ *
+ *	A stack walk is done to find the callers. If one of the callers
+ *	is either [SecurityCritical] or [SecuritySafeCritical] then the
+ *	action is needed for platform code (i.e. no restriction). 
+ *	Otherwise (transparent) the requested action needs elevated trust
+ */
+gboolean
+mono_security_core_clr_require_elevated_permissions (void)
+{
+	ElevatedTrustCookie cookie;
+	cookie.depth = 0;
+	cookie.caller = NULL;
+	mono_stack_walk_no_il (get_caller_of_elevated_trust_code, &cookie);
+
+	/* return TRUE if the stack walk did not reach far enough or did not find callers */
+	if (!cookie.caller || cookie.depth < 3)
+		return TRUE;
+
+	/* return TRUE if the caller is transparent, i.e. if elevated trust is required to continue executing the method */
+	return (mono_security_core_clr_method_level (cookie.caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT);
+}
+
 /*
  * check_field_access:
  *
