@@ -195,7 +195,6 @@ g_shell_unquote (const gchar *quoted_string, GError **error)
 						g_set_error (error, 0, 0, "Open quote");
 						return NULL;
 					}
-					int append = -1;
 					switch (*p){
 					case '$':
 					case '"':
@@ -214,8 +213,7 @@ g_shell_unquote (const gchar *quoted_string, GError **error)
 				return NULL;
 			}
 		} else if (*p == '\\'){
-			p++;
-			char c = *p;
+			char c = *(++p);
 			if (!(c == '$' || c == '"' || c == '\\' || c == '`' || c == 0))
 				g_string_append_c (result, '\\');
 			if (c == 0)
