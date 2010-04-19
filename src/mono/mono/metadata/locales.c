@@ -22,8 +22,10 @@
 #include <mono/metadata/locales.h>
 #include <mono/metadata/culture-info.h>
 #include <mono/metadata/culture-info-tables.h>
-#include <mono/metadata/normalization-tables.h>
 
+#ifndef DISABLE_NORMALIZATION
+#include <mono/metadata/normalization-tables.h>
+#endif
 
 #include <locale.h>
 #if defined(__APPLE__)
@@ -979,12 +981,16 @@ void load_normalization_resource (guint8 **argProps,
 				  guint8 **argMapIdxToComposite,
 				  guint8 **argCombiningClass)
 {
+#ifdef DISABLE_NORMALIZATION
+	mono_raise_exception (mono_get_exception_not_supported ("This runtime has been compiled without string normalization support."));
+#else
 	*argProps = (guint8*)props;
 	*argMappedChars = (guint8*) mappedChars;
 	*argCharMapIndex = (guint8*) charMapIndex;
 	*argHelperIndex = (guint8*) helperIndex;
 	*argMapIdxToComposite = (guint8*) mapIdxToComposite;
 	*argCombiningClass = (guint8*)combiningClass;
+#endif
 }
 
 
