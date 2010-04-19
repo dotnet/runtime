@@ -1,3 +1,9 @@
+2010-04-19  Jonathan Pryor  <jpryor@novell.com>
+
+	* configure.in: Add header, structure member, and function checks as 
+	  Android doesn't provide all the headers, structure members, and 
+	  functions that a "full" Linux distro includes.
+
 2010-04-19  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add a --enable-minimal=normalization option to disable support

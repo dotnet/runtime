@@ -1633,6 +1633,7 @@ if test x$target_win32 = xno; then
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************
 	AC_CHECK_HEADERS(checklist.h)
+	AC_CHECK_HEADERS(pathconf.h)
 	AC_CHECK_HEADERS(fstab.h)
 	AC_CHECK_HEADERS(attr/xattr.h)
 	AC_CHECK_HEADERS(sys/extattr.h)
@@ -1644,13 +1645,15 @@ if test x$target_win32 = xno; then
 	AC_CHECK_HEADERS(sys/mman.h)
 	AC_CHECK_HEADERS(sys/param.h)
 	AC_CHECK_HEADERS(sys/mount.h)
+	AC_CHECK_FUNCS(confstr)
+	AC_CHECK_FUNCS(seekdir telldir)
 	AC_CHECK_FUNCS(getdomainname)
 	AC_CHECK_FUNCS(setdomainname)
-	AC_CHECK_FUNCS(fgetgrent)
-	AC_CHECK_FUNCS(fgetpwent)
-	AC_CHECK_FUNCS(fgetpwent)
+	AC_CHECK_FUNCS(endgrent getgrent fgetgrent setgrent)
+	AC_CHECK_FUNCS(setgroups)
+	AC_CHECK_FUNCS(endpwent getpwent fgetpwent setpwent)
 	AC_CHECK_FUNCS(getfsstat)
-	AC_CHECK_FUNCS(lutimes)
+	AC_CHECK_FUNCS(lutimes futimes)
 	AC_CHECK_FUNCS(mremap)
 	AC_CHECK_FUNCS(remap_file_pages)
 	AC_CHECK_FUNCS(posix_fadvise)
@@ -1658,7 +1661,8 @@ if test x$target_win32 = xno; then
 	AC_CHECK_FUNCS(posix_madvise)
 	AC_CHECK_FUNCS(vsnprintf)
 	AC_CHECK_FUNCS(sendfile)
-	AC_CHECK_FUNCS(sethostid)
+	AC_CHECK_FUNCS(gethostid sethostid)
+	AC_CHECK_FUNCS(sethostname)
 	AC_CHECK_FUNCS(statfs)
 	AC_CHECK_FUNCS(fstatfs)
 	AC_CHECK_FUNCS(statvfs)
@@ -1666,6 +1670,11 @@ if test x$target_win32 = xno; then
 	AC_CHECK_FUNCS(stime)
 	AC_CHECK_FUNCS(strerror_r)
 	AC_CHECK_FUNCS(ttyname_r)
+	AC_CHECK_FUNCS(psignal)
+	AC_CHECK_FUNCS(getlogin_r)
+	AC_CHECK_FUNCS(lockf)
+	AC_CHECK_FUNCS(swab)
+	AC_CHECK_FUNCS(setusershell endusershell)
 	AC_CHECK_SIZEOF(size_t)
 	AC_CHECK_TYPES([blksize_t], [AC_DEFINE(HAVE_BLKSIZE_T)], , 
 		[#include <sys/types.h>
@@ -1701,6 +1710,14 @@ if test x$target_win32 = xno; then
 		[struct dirent.d_off, struct dirent.d_reclen, struct dirent.d_type],,, 
 		[#include <sys/types.h>
 		 #include <dirent.h>])
+	AC_CHECK_MEMBERS(
+		[struct passwd.pw_gecos],,, 
+		[#include <sys/types.h>
+		 #include <pwd.h>])
+	AC_CHECK_MEMBERS(
+		[struct statfs.f_flags],,, 
+		[#include <sys/types.h>
+		 #include <sys/vfs.h>])
 
 	dnl Favour xattr through glibc, but use libattr if we have to
 	AC_CHECK_FUNC(lsetxattr, ,
