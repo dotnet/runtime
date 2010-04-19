@@ -22,11 +22,24 @@
 
 
 #ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
+/* Android does not implement pthread_mutex_timedlock(), but does provide an
+ * unusual declaration: http://code.google.com/p/android/issues/detail?id=7807
+ */
+#if defined(PLATFORM_ANDROID)
+int pthread_mutex_timedlock (pthread_mutex_t *mutex,
+			    struct timespec *timeout);
+#else
 int pthread_mutex_timedlock (pthread_mutex_t *mutex,
 			    const struct timespec *timeout);
+#endif
 
+#if defined(PLATFORM_ANDROID)
+int
+pthread_mutex_timedlock (pthread_mutex_t *mutex, struct timespec *timeout)
+#else
 int
 pthread_mutex_timedlock (pthread_mutex_t *mutex, const struct timespec *timeout)
+#endif
 {
 	struct timeval timenow;
 	struct timespec sleepytime;

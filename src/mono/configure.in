@@ -177,7 +177,7 @@ case "$host" in
 			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
 		libmono_cflags="-D_REENTRANT"
-		libmono_ldflags="-lpthread"
+		AC_CHECK_LIB(pthread, pthread_self, libmono_ldflags="-lpthread",,)
 		libdl="-ldl"
 		libgc_threads=pthreads
 		AOT_SUPPORTED="yes"
@@ -2526,6 +2526,10 @@ AC_ARG_WITH(moonlight, [  --with-moonlight=yes|no|only         If you want to bu
 ], [with_moonlight=no])
 
 
+
+AC_CHECK_HEADER([malloc.h], 
+		[AC_DEFINE([HAVE_USR_INCLUDE_MALLOC_H], [1], 
+			[Define to 1 if you have /usr/include/malloc.h.])],,)
 
 dnl
 dnl Consistency settings

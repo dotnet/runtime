@@ -1,5 +1,15 @@
 2010-04-19  Jonathan Pryor  <jpryor@novell.com>
 
+	* configure.in: Use AC_CHECK_LIB() to check for pthread instead of
+	  just blindly linking to -lpthread, as Android includes pthread
+	  support within libc and doesn't provide a separate libpthread.
+	  Android's <string.h> pulls in <malloc.h> (unlike glibc), resulting
+	  in a build error in mono/utils/mono-codeman.c due to 
+	  `struct mallinfo` re-declaration.  Define HAVE_USR_INCLUDE_MALLOC_H 
+	  if /usr/include/malloc.h is present to avoid this.
+
+2010-04-19  Jonathan Pryor  <jpryor@novell.com>
+
 	* configure.in: Add header, structure member, and function checks as 
 	  Android doesn't provide all the headers, structure members, and 
 	  functions that a "full" Linux distro includes.

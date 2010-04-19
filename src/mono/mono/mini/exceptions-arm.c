@@ -12,7 +12,11 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
+#if defined(PLATFORM_ANDROID)
+#include <asm/sigcontext.h>
+#else
 #include <ucontext.h>
+#endif
 
 #include <mono/arch/arm/arm-codegen.h>
 #include <mono/metadata/appdomain.h>
