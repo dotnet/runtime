@@ -1,5 +1,10 @@
 2010-04-19  Jonathan Pryor  <jpryor@novell.com>
 
+	* configure.in: Disable AC_CHECK_LIB() for pthread, as this breaks
+	  autoconf on BSD platforms.  (Why?  Who knows -- it's AutoConf!)
+
+2010-04-19  Jonathan Pryor  <jpryor@novell.com>
+
 	* configure.in: Use AC_CHECK_LIB() to check for pthread instead of
 	  just blindly linking to -lpthread, as Android includes pthread
 	  support within libc and doesn't provide a separate libpthread.
