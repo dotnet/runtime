@@ -298,7 +298,7 @@ struct _MonoDomain {
 	gpointer runtime_info;
 
 	/*thread pool jobs, used to coordinate shutdown.*/
-	int					threadpool_jobs;
+	volatile int			threadpool_jobs;
 	HANDLE				cleanup_semaphore;
 	
 	/* Contains the compiled runtime invoke wrapper used by finalizers */

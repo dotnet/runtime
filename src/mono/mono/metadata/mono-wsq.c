@@ -66,7 +66,7 @@ mono_wsq_destroy (MonoWSQ *wsq)
 	if (wsq == NULL || wsq->queue == NULL)
 		return;
 
-	/* TODO: clean up queue if not empty */
+	g_assert (mono_wsq_count (wsq) == 0);
 	MONO_GC_UNREGISTER_ROOT (wsq->queue);
 	MONO_SEM_DESTROY (&wsq->lock);
 	if (wsq_tlskey != -1 && TlsGetValue (wsq_tlskey) == wsq)
@@ -78,6 +78,8 @@ mono_wsq_destroy (MonoWSQ *wsq)
 gint
 mono_wsq_count (MonoWSQ *wsq)
 {
+	if (!wsq)
+		return 0;
 	return ((wsq->tail - wsq->head) & wsq->mask);
 }
 
