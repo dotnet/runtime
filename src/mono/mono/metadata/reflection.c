@@ -6398,6 +6398,49 @@ verify_safe_for_managed_space (MonoType *type)
 	return TRUE;
 }
 
+static MonoType*
+mono_type_normalize (MonoType *type)
+{
+	int i;
+	MonoGenericClass *gclass;
+	MonoGenericInst *ginst;
+	MonoClass *gtd;
+	MonoGenericContainer *gcontainer;
+	MonoType **argv = NULL;
+	gboolean is_denorm_gtd = TRUE, requires_rebind = FALSE;
+
+	if (type->type != MONO_TYPE_GENERICINST)
+		return type;
+
+	gclass = type->data.generic_class;
+	ginst = gclass->context.class_inst;
+	if (!ginst->is_open)
+		return type;
+
+	gtd = gclass->container_class;
+	gcontainer = gtd->generic_container;
+	argv = g_newa (MonoType*, ginst->type_argc);
+
+	for (i = 0; i < ginst->type_argc; ++i) {
+		MonoType *t = ginst->type_argv [i], *norm;
+		if (t->type != MONO_TYPE_VAR || t->data.generic_param->num != i || t->data.generic_param->owner != gcontainer)
+			is_denorm_gtd = FALSE;
+		norm = mono_type_normalize (t);
+		argv [i] = norm;
+		if (norm != t)
+			requires_rebind = TRUE;
+	}
+
+	if (is_denorm_gtd)
+		return type->byref == gtd->byval_arg.byref ? &gtd->byval_arg : &gtd->this_arg;
+
+	if (requires_rebind) {
+		MonoClass *klass = mono_class_bind_generic_parameters (gtd, ginst->type_argc, argv, gclass->is_dynamic);
+		return type->byref == klass->byval_arg.byref ? &klass->byval_arg : &klass->this_arg;
+	}
+
+	return type;
+}
 /*
  * mono_type_get_object:
  * @domain: an app domain
@@ -6408,6 +6451,7 @@ verify_safe_for_managed_space (MonoType *type)
 MonoReflectionType*
 mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
+	MonoType *norm_type;
 	MonoReflectionType *res;
 	MonoClass *klass = mono_class_from_mono_type (type);
 
@@ -6445,6 +6489,23 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		mono_loader_unlock ();
 		return res;
 	}
+
+	/*Types must be normalized so a generic instance of the GTD get's the same inner type.
+	 * For example in: Foo<A,B>; Bar<A> : Foo<A, Bar<A>>
+	 * The second Bar will be encoded a generic instance of Bar with <A> as parameter.
+	 * On all other places, Bar<A> will be encoded as the GTD itself. This is an implementation
+	 * artifact of how generics are encoded and should be transparent to managed code so we
+	 * need to weed out this diference when retrieving managed System.Type objects.
+	 */
+	norm_type = mono_type_normalize (type);
+	if (norm_type != type) {
+		res = mono_type_get_object (domain, norm_type);
+		mono_g_hash_table_insert (domain->type_hash, type, res);
+		mono_domain_unlock (domain);
+		mono_loader_unlock ();
+		return res;
+	}
+
 	/* Create a MonoGenericClass object for instantiations of not finished TypeBuilders */
 	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !type->data.generic_class->container_class->wastypebuilder) {
 		res = (MonoReflectionType *)mono_generic_class_get_object (domain, type);
