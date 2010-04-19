@@ -31,13 +31,59 @@
 /* The current fatal levels, error is always fatal */
 static GLogLevelFlags fatal = G_LOG_LEVEL_ERROR;
 
+#if PLATFORM_ANDROID
+#include <android/log.h>
+
+static android_LogPriority
+to_android_priority (GLogLevelFlags log_level)
+{
+	switch (log_level & G_LOG_LEVEL_MASK)
+	{
+		case G_LOG_LEVEL_ERROR:     return ANDROID_LOG_FATAL;
+		case G_LOG_LEVEL_CRITICAL:  return ANDROID_LOG_ERROR;
+		case G_LOG_LEVEL_WARNING:   return ANDROID_LOG_WARN;
+		case G_LOG_LEVEL_MESSAGE:   return ANDROID_LOG_INFO;
+		case G_LOG_LEVEL_INFO:      return ANDROID_LOG_DEBUG;
+		case G_LOG_LEVEL_DEBUG:     return ANDROID_LOG_VERBOSE;
+	}
+	return ANDROID_LOG_UNKNOWN;
+}
+
+static void 
+out_vfprintf (FILE *ignore, const gchar *format, va_list args)
+{
+	/* TODO: provide a proper app name */
+	__android_log_vprint (ANDROID_LOG_ERROR, "mono", format, args);
+}
+#else
+static void 
+out_vfprintf (FILE *file, const gchar *format, va_list args)
+{
+	vfprintf (file, format, args);
+}
+#endif
+
 void
 g_print (const gchar *format, ...)
 {
 	va_list args;
 
 	va_start (args, format);
-	vprintf (format, args);
+
+	out_vfprintf (stdout, format, args);
+
+	va_end (args);
+}
+
+void
+g_printerr (const gchar *format, ...)
+{
+	va_list args;
+
+	va_start (args, format);
+
+	out_vfprintf (stderr, format, args);
+
 	va_end (args);
 }
 
@@ -68,10 +114,19 @@ g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, 
 	char *msg;
 	
 	vasprintf (&msg, format, args);
+#if PLATFORM_ANDROID
+	__android_log_print (to_android_priority (log_level), 
+		/* TODO: provide a proper app name */
+		"mono", "%s%s%s",
+		log_domain != NULL ? log_domain : "",
+		log_domain != NULL ? ": " : "",
+		msg);
+#else
 	printf ("%s%s%s",
 		log_domain != NULL ? log_domain : "",
 		log_domain != NULL ? ": " : "",
 		msg);
+#endif
 	free (msg);
 	if (log_level & fatal){
 		fflush (stdout);

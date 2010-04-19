@@ -1,3 +1,11 @@
+2010-04-19  Jonathan Pryor  <jpryor@novell.com>
+
+	* src/glib.h: Rebase g_return_if_fail(), g_return_val_if_fail() in
+	  terms of g_critical() instead of printf, and turn g_printerr() into
+	  an actual function instead of a macro.
+	* src/goutput.c: Add Android support, sending g_print(), g_printerr(),
+	  and g_log() messages to the Android system log.
+
 2010-04-16 Gonzalo Paniagua Javier <gonzalo@novell.com>
 
 	* test/ptrarray.c: new tests
