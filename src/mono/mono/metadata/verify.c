@@ -1794,15 +1794,6 @@ handle_enum:
 	case MONO_TYPE_ARRAY:
 		return TYPE_COMPLEX | mask;
 
-	case MONO_TYPE_GENERICINST:
-		if (mono_type_is_enum_type (type)) {
-			type = mono_type_get_underlying_type_any (type);
-			type_kind = type->type;
-			goto handle_enum;
-		} else {
-			return TYPE_COMPLEX | mask;
-		}
-
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return TYPE_I8 | mask;
@@ -1811,9 +1802,12 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return TYPE_R8 | mask;
 
+	case MONO_TYPE_GENERICINST:
 	case MONO_TYPE_VALUETYPE:
 		if (mono_type_is_enum_type (type)) {
 			type = mono_type_get_underlying_type_any (type);
+			if (!type)
+				return FALSE;
 			type_kind = type->type;
 			goto handle_enum;
 		} else {
@@ -1873,16 +1867,6 @@ handle_enum:
 		stack->stype = TYPE_COMPLEX | mask;
 		break;
 		
-	case MONO_TYPE_GENERICINST:
-		if (mono_type_is_enum_type (type)) {
-			type = mono_type_get_underlying_type_any (type);
-			type_kind = type->type;
-			goto handle_enum;
-		} else {
-			stack->stype = TYPE_COMPLEX | mask;
-			break;
-		}
-
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		stack->stype = TYPE_I8 | mask;
@@ -1891,9 +1875,15 @@ handle_enum:
 	case MONO_TYPE_R8:
 		stack->stype = TYPE_R8 | mask;
 		break;
+	case MONO_TYPE_GENERICINST:
 	case MONO_TYPE_VALUETYPE:
 		if (mono_type_is_enum_type (type)) {
-			type = mono_type_get_underlying_type_any (type);
+			MonoType *utype = mono_type_get_underlying_type_any (type);
+			if (!utype) {
+				ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Could not resolve underlying type of %x at %d", type->type, ctx->ip_offset));
+				return FALSE;
+			}
+			type = utype;
 			type_kind = type->type;
 			goto handle_enum;
 		} else {
@@ -2032,6 +2022,8 @@ handle_enum:
 		MonoClass *candidate_klass;
 		if (mono_type_is_enum_type (target)) {
 			target = mono_type_get_underlying_type_any (target);
+			if (!target)
+				return FALSE;
 			goto handle_enum;
 		}
 		/*
@@ -2107,6 +2099,8 @@ handle_enum:
 			return TRUE;
 		if (mono_type_is_enum_type (target)) {
 			target = mono_type_get_underlying_type_any (target);
+			if (!target)
+				return FALSE;
 			goto handle_enum;
 		}
 		return FALSE;
