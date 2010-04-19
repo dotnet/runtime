@@ -1,3 +1,8 @@
+2010-04-19  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add a --enable-minimal=normalization option to disable support
+	for string normalization.
+
 2010-04-16  Marek Habersack  <mhabersack@novell.com>
 
 	* configure.in: added a check for sysconf(3)
