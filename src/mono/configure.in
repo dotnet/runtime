@@ -177,8 +177,6 @@ case "$host" in
 			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
 		libmono_cflags="-D_REENTRANT"
-		libmono_ldflags="-lpthread"
-		# AC_CHECK_LIB([pthread], [pthread_self], libmono_ldflags="-lpthread",,)
 		libdl="-ldl"
 		libgc_threads=pthreads
 		AOT_SUPPORTED="yes"

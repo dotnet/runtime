@@ -1,3 +1,10 @@
+2010-04-20  Jonathan Pryor  <jpryor@novell.com>
+
+	* configure.in: For Linux hosts, remove libmono_ldflags="-lpthread".
+	  It's unnecessary (for !target_win32, pthreads are checked again 
+	  later in configure.in), and it breaks Android (which doesn't have
+	  libpthread, but DOES have pthreads in libc).
+
 2010-04-19  Jonathan Pryor  <jpryor@novell.com>
 
 	* configure.in: Disable AC_CHECK_LIB() for pthread, as this breaks
