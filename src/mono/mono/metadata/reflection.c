@@ -8518,8 +8518,8 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 		if (!mono_verifier_verify_cattr_blob (image, cols [MONO_CUSTOM_ATTR_VALUE], NULL)) {
 			/*FIXME raising an exception here doesn't make any sense*/
 			g_warning ("Invalid custom attribute blob on image %s for index %x", image->name, idx);
+			g_list_free (list);
 			g_free (ainfo);
-			g_free (list);
 			return NULL;
 		}
 		data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
