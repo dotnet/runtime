@@ -12,11 +12,12 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
-#if defined(PLATFORM_ANDROID)
+#ifdef HAVE_ASM_SIGCONTEXT_H
 #include <asm/sigcontext.h>
-#else
+#endif  /* def HAVE_ASM_SIGCONTEXT_H */
+#ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
-#endif
+#endif  /* def HAVE_UCONTEXT_H */
 
 #include <mono/arch/arm/arm-codegen.h>
 #include <mono/metadata/appdomain.h>

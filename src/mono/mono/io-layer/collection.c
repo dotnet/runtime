@@ -58,16 +58,9 @@ void _wapi_collection_init (void)
         ret = pthread_attr_init (&attr);
         g_assert (ret == 0);
 
-/* Android implements pthread_attr_setstacksize(), but errors out when using
- * PTHREAD_STACK_MIN: http://code.google.com/p/android/issues/detail?id=7808
- */
-#if defined(HAVE_PTHREAD_ATTR_SETSTACKSIZE) && !defined(PLATFORM_ANDROID)
+#if defined(HAVE_PTHREAD_ATTR_SETSTACKSIZE)
         if (set_stacksize == 0) {
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-			ret = pthread_attr_setstacksize (&attr, 65536);
-#else
-			ret = pthread_attr_setstacksize (&attr, PTHREAD_STACK_MIN);
-#endif
+			ret = pthread_attr_setstacksize (&attr, MAX (65536, PTHREAD_STACK_MIN));
 			g_assert (ret == 0);
         } else if (set_stacksize == 1) {
 			ret = pthread_attr_setstacksize (&attr, 131072);
