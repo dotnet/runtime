@@ -1,3 +1,7 @@
+2010-04-20  Andrés G. Aragoneses  <andres@lindenlab.com>
+
+	* README: Replace --with-profile2 with --with-profile4.
+
 2010-04-20  Jonathan Pryor  <jpryor@novell.com>
 
 	* configure.in: On OpenBSD, remove duplicate -pthread options in 

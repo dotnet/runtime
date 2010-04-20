@@ -278,10 +278,10 @@ This is Mono.
 
 		This defaults to `yes'.
 
-	--with-profile2=yes,no
+	--with-profile4=yes,no
 
-		Whether you want to build the 2.x libraries (support
-		for Generics and the 2.0/3.5 APIS).
+		Whether you want to build the 4.x profile libraries
+		and runtime.
 
 	  	It defaults to `yes'.
 
