@@ -1,5 +1,10 @@
 2010-04-20  Jonathan Pryor  <jpryor@novell.com>
 
+	* configure.in: On OpenBSD, remove duplicate -pthread options in 
+	  libmono_ldflags.  Change from Robert Nagy <robert@openbsd.org>.
+
+2010-04-20  Jonathan Pryor  <jpryor@novell.com>
+
 	* configure.in: For Linux hosts, remove libmono_ldflags="-lpthread".
 	  It's unnecessary (for !target_win32, pthreads are checked again 
 	  later in configure.in), and it breaks Android (which doesn't have
