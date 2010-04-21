@@ -1569,6 +1569,23 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, M
 	return mono_class_is_subclass_of (klass, klassc, check_interfaces);
 }
 
+static gboolean
+mono_type_is_primitive (MonoType *type)
+{
+	return (type->type >= MONO_TYPE_BOOLEAN && type->type <= MONO_TYPE_R8) ||
+			type-> type == MONO_TYPE_I || type->type == MONO_TYPE_U;
+}
+
+static MonoType*
+mono_type_get_underlying_type_ignore_byref (MonoType *type)
+{
+	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)
+		return mono_class_enum_basetype (type->data.klass);
+	if (type->type == MONO_TYPE_GENERICINST && type->data.generic_class->container_class->enumtype)
+		return mono_class_enum_basetype (type->data.generic_class->container_class);
+	return type;
+}
+
 static guint32
 ves_icall_type_is_assignable_from (MonoReflectionType *type, MonoReflectionType *c)
 {
@@ -1585,9 +1602,31 @@ ves_icall_type_is_assignable_from (MonoReflectionType *type, MonoReflectionType 
 	klass = mono_class_from_mono_type (type->type);
 	klassc = mono_class_from_mono_type (c->type);
 
-	if (type->type->byref && !c->type->byref)
+	if (type->type->byref ^ c->type->byref)
 		return FALSE;
 
+	if (type->type->byref) {
+		MonoType *t = mono_type_get_underlying_type_ignore_byref (type->type);
+		MonoType *ot = mono_type_get_underlying_type_ignore_byref (c->type);
+
+		klass = mono_class_from_mono_type (t);
+		klassc = mono_class_from_mono_type (ot);
+
+		if (mono_type_is_primitive (t)) {
+			return mono_type_is_primitive (ot) && klass->instance_size == klassc->instance_size;
+		} else if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
+			return t->type == ot->type && t->data.generic_param->num == ot->data.generic_param->num;
+		} else if (t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
+			return t->type == ot->type;
+		} else {
+			 if (ot->type == MONO_TYPE_VAR || ot->type == MONO_TYPE_MVAR)
+				 return FALSE;
+
+			 if (klass->valuetype)
+				return klass == klassc;
+			return klass->valuetype == klassc->valuetype;
+		}
+	}
 	return mono_class_is_assignable_from (klass, klassc);
 }
 
