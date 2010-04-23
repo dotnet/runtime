@@ -1473,10 +1473,15 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 static gboolean
 image_references_newer_runtime (MonoImage *image)
 {
+	const MonoRuntimeInfo *image_runtime;
 	const char *image_version, *current_version;
 	gint i, cmp;
 
-	image_version = mono_get_runtime_by_version (image->version)->framework_version;
+	image_runtime = mono_get_runtime_by_version (image->version);
+	if (!image_runtime)
+		return FALSE;
+
+	image_version = image_runtime->framework_version;
 	current_version = mono_get_runtime_info ()->framework_version;
 
 	for (i = 0; i < 4; i++) {
