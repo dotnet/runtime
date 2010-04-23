@@ -460,7 +460,8 @@ socket_io_poll_main (gpointer p)
 
 			for (i = 1; i < allocated; i++) {
 				pfd = &pfds [i];
-				if (pfd->fd == -1 || pfd->fd == data->newpfd->fd)
+				if (pfd->fd == -1 || data->newpfd == NULL ||
+					pfd->fd == data->newpfd->fd)
 					break;
 			}
 
@@ -1823,8 +1824,11 @@ async_invoke_thread (gpointer data)
 
 			TP_DEBUG ("Waiting");
 			InterlockedIncrement (&tp->waiting);
-			//while ((res = mono_sem_wait (&tp->new_job, TRUE)) == -1) {// && errno == EINTR) {
+#if defined(__OpenBSD__)
+			while ((res = mono_sem_wait (&tp->new_job, TRUE)) == -1) {// && errno == EINTR) {
+#else
 			while ((res = mono_sem_timedwait (&tp->new_job, 2000, TRUE)) == -1) {// && errno == EINTR) {
+#endif
 				if (mono_runtime_is_shutting_down ())
 					break;
 				if (THREAD_WANTS_A_BREAK (thread))
