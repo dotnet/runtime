@@ -8247,21 +8247,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						EMIT_NEW_ICONST (cfg, *sp, *((guint32 *)addr));
 						sp++;
 						break;
-#ifndef HAVE_MOVING_COLLECTOR
 					case MONO_TYPE_I:
 					case MONO_TYPE_U:
+					case MONO_TYPE_PTR:
+					case MONO_TYPE_FNPTR:
+#ifndef HAVE_MOVING_COLLECTOR
 					case MONO_TYPE_STRING:
 					case MONO_TYPE_OBJECT:
 					case MONO_TYPE_CLASS:
 					case MONO_TYPE_SZARRAY:
-					case MONO_TYPE_PTR:
-					case MONO_TYPE_FNPTR:
 					case MONO_TYPE_ARRAY:
+#endif
 						EMIT_NEW_PCONST (cfg, *sp, *((gpointer *)addr));
 						type_to_eval_stack_type ((cfg), field->type, *sp);
 						sp++;
 						break;
-#endif
 					case MONO_TYPE_I8:
 					case MONO_TYPE_U8:
 						EMIT_NEW_I8CONST (cfg, *sp, *((gint64 *)addr));
