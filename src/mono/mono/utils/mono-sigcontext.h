@@ -78,7 +78,21 @@
 
 #elif defined(__x86_64__)
 
-#ifdef __FreeBSD__
+#if defined(__APPLE__)
+	#define UCONTEXT_REG_RAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rax)
+	#define UCONTEXT_REG_RBX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rbx)
+	#define UCONTEXT_REG_RCX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rcx)
+	#define UCONTEXT_REG_RDX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rdx)
+	#define UCONTEXT_REG_RBP(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rbp)
+	#define UCONTEXT_REG_RSP(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rsp)
+	#define UCONTEXT_REG_RSI(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rsi)
+	#define UCONTEXT_REG_RDI(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rdi)
+	#define UCONTEXT_REG_RIP(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rip)
+	#define UCONTEXT_REG_R12(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r12)
+	#define UCONTEXT_REG_R13(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r13)
+	#define UCONTEXT_REG_R14(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r14)
+	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r15)
+#elif defined(__FreeBSD__)
 #define UCONTEXT_GREGS(ctx)	&(((ucontext_t*)(ctx))->uc_mcontext)
 #elif defined(__OpenBSD__)
     /* OpenBSD/amd64 has no gregs array, ucontext_t == sigcontext */
