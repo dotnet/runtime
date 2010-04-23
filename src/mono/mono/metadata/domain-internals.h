@@ -517,9 +517,6 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 const MonoRuntimeInfo*
 mono_get_runtime_info (void) MONO_INTERNAL;
 
-const MonoRuntimeInfo*
-mono_get_runtime_by_version (const char *version) MONO_INTERNAL;
-
 void
 mono_runtime_set_no_exec (gboolean val) MONO_INTERNAL;
 

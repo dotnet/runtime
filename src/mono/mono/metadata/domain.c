@@ -149,6 +149,9 @@ extern void _mono_debug_init_corlib (MonoDomain *domain);
 static void
 get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRuntimeInfo** runtimes);
 
+static const MonoRuntimeInfo*
+get_runtime_by_version (const char *version);
+
 static MonoImage*
 mono_jit_info_find_aot_module (guint8* addr);
 
@@ -1313,12 +1316,12 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		mono_fixup_exe_image (exe_image);
 #endif
 	} else if (runtime_version != NULL) {
-		runtimes [0] = mono_get_runtime_by_version (runtime_version);
+		runtimes [0] = get_runtime_by_version (runtime_version);
 		runtimes [1] = NULL;
 	}
 
 	if (runtimes [0] == NULL) {
-		const MonoRuntimeInfo *default_runtime = mono_get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		const MonoRuntimeInfo *default_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
 		runtimes [0] = default_runtime;
 		runtimes [1] = NULL;
 		g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
@@ -2487,13 +2490,9 @@ app_config_free (AppConfigInfo* app_config)
 	g_free (app_config);
 }
 
-/**
- * mono_get_runtime_by_version:
- *
- * Returns: the runtime info for the specified version.
- */
-const MonoRuntimeInfo*
-mono_get_runtime_by_version (const char *version)
+
+static const MonoRuntimeInfo*
+get_runtime_by_version (const char *version)
 {
 	int n;
 	int max = G_N_ELEMENTS (supported_runtimes);
@@ -2524,7 +2523,7 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRu
 			GSList *list = app_config->supported_runtimes;
 			while (list != NULL) {
 				version = (char*) list->data;
-				runtime = mono_get_runtime_by_version (version);
+				runtime = get_runtime_by_version (version);
 				if (runtime != NULL)
 					runtimes [n++] = runtime;
 				list = g_slist_next (list);
@@ -2536,7 +2535,7 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRu
 		
 		/* Check the requiredRuntime element. This is for 1.0 apps only. */
 		if (app_config->required_runtime != NULL) {
-			runtimes [0] = mono_get_runtime_by_version (app_config->required_runtime);
+			runtimes [0] = get_runtime_by_version (app_config->required_runtime);
 			runtimes [1] = NULL;
 			app_config_free (app_config);
 			return;
@@ -2555,14 +2554,14 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRu
 		 * a default runtime and leave to the initialization method the work of
 		 * reporting the error.
 		 */
-		runtimes [0] = mono_get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		runtimes [0] = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
 		runtimes [1] = NULL;
 		return;
 	}
 
 	*exe_image = image;
 
-	runtimes [0] = mono_get_runtime_by_version (image->version);
+	runtimes [0] = get_runtime_by_version (image->version);
 	runtimes [1] = NULL;
 }
 

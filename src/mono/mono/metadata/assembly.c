@@ -1470,31 +1470,6 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	return mono_assembly_open_full (filename, status, FALSE);
 }
 
-static gboolean
-image_references_newer_runtime (MonoImage *image)
-{
-	const MonoRuntimeInfo *image_runtime;
-	const char *image_version, *current_version;
-	gint i, cmp;
-
-	image_runtime = mono_get_runtime_by_version (image->version);
-	if (!image_runtime)
-		return FALSE;
-
-	image_version = image_runtime->framework_version;
-	current_version = mono_get_runtime_info ()->framework_version;
-
-	for (i = 0; i < 4; i++) {
-		cmp = (image_version [i] - '0') - (current_version [0] - '0');
-		if (cmp > 0)
-			return TRUE;
-		else if (cmp < 0)
-			return FALSE;
-	}
-
-	return FALSE;
-}
-
 MonoAssembly *
 mono_assembly_load_from_full (MonoImage *image, const char*fname, 
 			      MonoImageOpenStatus *status, gboolean refonly)
@@ -1506,11 +1481,6 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		/* 'image' doesn't have a manifest -- maybe someone is trying to Assembly.Load a .netmodule */
 		*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
-	}
-
-	if (image_references_newer_runtime (image)) {
-		*status = MONO_IMAGE_IMAGE_INVALID;
-		return NULL;		
 	}
 
 #if defined (HOST_WIN32)
