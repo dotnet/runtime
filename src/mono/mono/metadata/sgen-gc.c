@@ -5677,10 +5677,12 @@ signal_desc (int signum)
  */
 //#define XDOMAIN_CHECKS_IN_WBARRIER
 
+#ifndef BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
 #ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
+#endif
 #endif
 #endif
 
