@@ -1339,6 +1339,8 @@ mono_main (int argc, char* argv[])
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
+	mono_use_llvm = getenv ("MONO_USE_LLVM") != NULL;
+
 	opt = parse_optimizations (NULL);
 
 	for (i = 1; i < argc; ++i) {
