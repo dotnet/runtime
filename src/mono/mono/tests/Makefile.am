@@ -365,7 +365,8 @@ BASE_TEST_CS_SRC=		\
 	large-gc-bitmap.cs	\
 	bug-561239.cs	\
 	bug-562150.cs	\
-	bug-575941.cs
+	bug-575941.cs	\
+	bug-599469.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
