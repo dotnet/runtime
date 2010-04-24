@@ -114,18 +114,13 @@ static int methods_with_llvm, methods_without_llvm;
 /*
  * This flag controls whenever the runtime uses LLVM compiled code.
  * Enabling this causes different/slower code paths to be used, which is why it
- * defaults to FALSE if ENABLE_LLVM is not defined, i.e. the runtime is only capable of
- * running AOT code compiled by LLVM.
+ * defaults to FALSE.
  * Changes when this flag is set include:
  * - a per method vtable trampoline is used to handle virtual calls, instead of only
  *   one trampoline.
  * - fast generic virtual calls are not supported.
  */
-#ifdef ENABLE_LLVM
-gboolean mono_use_llvm = TRUE;
-#else
 gboolean mono_use_llvm = FALSE;
-#endif
 
 #define mono_jit_lock() EnterCriticalSection (&jit_mutex)
 #define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
