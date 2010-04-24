@@ -1006,6 +1006,7 @@ static void null_link_in_range (char *start, char *end, int generation);
 static void null_links_for_domain (MonoDomain *domain, int generation);
 static gboolean search_fragment_for_size (size_t size);
 static void mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end);
+static void clear_nursery_fragments (char *next);
 static void clear_remsets (void);
 static void clear_tlabs (void);
 typedef void (*ScanPinnedObjectCallbackFunc) (PinnedChunk*, char*, size_t, void*);
@@ -1770,6 +1771,20 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 //#define BINARY_PROTOCOL
 #include "sgen-protocol.c"
 
+/* Clear all remaining nursery fragments */
+static void
+clear_nursery_fragments (char *next)
+{
+	Fragment *frag;
+	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+		g_assert (next <= nursery_frag_real_end);
+		memset (next, 0, nursery_frag_real_end - next);
+		for (frag = nursery_fragments; frag; frag = frag->next) {
+			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
+		}
+	}
+}
+
 static gboolean
 need_remove_object_for_domain (char *start, MonoDomain *domain)
 {
@@ -1945,18 +1960,11 @@ mono_gc_clear_domain (MonoDomain * domain)
 {
 	GCMemSection *section;
 	LOSObject *bigobj, *prev;
-	Fragment *frag;
 	int i;
 
 	LOCK_GC;
-	/* Clear all remaining nursery fragments */
-	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
-		g_assert (nursery_next <= nursery_frag_real_end);
-		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
-		for (frag = nursery_fragments; frag; frag = frag->next) {
-			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
-		}
-	}
+
+	clear_nursery_fragments (nursery_next);
 
 	if (xdomain_checks && domain != mono_get_root_domain ()) {
 		scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
@@ -3471,7 +3479,6 @@ collect_nursery (size_t requested_size)
 	size_t max_garbage_amount;
 	int i;
 	char *orig_nursery_next;
-	Fragment *frag;
 	GCMemSection *section;
 	int old_num_major_sections = num_major_sections;
 	int sections_alloced;
@@ -3498,14 +3505,8 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (all_atv);
 	TV_GETTIME (atv);
 
-	/* Clear all remaining nursery fragments, pinning depends on this */
-	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
-		g_assert (orig_nursery_next <= nursery_frag_real_end);
-		memset (orig_nursery_next, 0, nursery_frag_real_end - orig_nursery_next);
-		for (frag = nursery_fragments; frag; frag = frag->next) {
-			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
-		}
-	}
+	/* Pinning depends on this */
+	clear_nursery_fragments (orig_nursery_next);
 
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
