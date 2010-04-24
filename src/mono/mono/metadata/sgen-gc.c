@@ -7241,6 +7241,31 @@ check_consistency (void)
 		g_assert (!missing_remsets);
 }
 
+/* Check that the reference is valid */
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		if (*(ptr)) {	\
+			g_assert (safe_name (*(ptr)) != NULL);	\
+		}	\
+	} while (0)
+
+/*
+ * check_object:
+ *
+ *   Perform consistency check on an object. Currently we only check that the
+ * reference fields are valid.
+ */
+char*
+check_object (char *start)
+{
+	if (!start)
+		return NULL;
+
+#include "sgen-scan-object.h"
+
+	return start;
+}
+
 /*
  * ######################################################################
  * ########  Other mono public interface functions.
