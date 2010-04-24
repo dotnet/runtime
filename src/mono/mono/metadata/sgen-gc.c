@@ -562,7 +562,6 @@ static __thread RememberedSet *remembered_set MONO_TLS_FAST;
 static pthread_key_t remembered_set_key;
 static RememberedSet *global_remset;
 static RememberedSet *freed_thread_remsets;
-//static int store_to_global_remset = 0;
 static GenericStoreRememberedSet *generic_store_remsets = NULL;
 
 /* FIXME: later choose a size that takes into account the RememberedSet struct
@@ -661,7 +660,6 @@ static int num_major_gcs = 0;
 #ifdef USER_CONFIG
 
 /* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
-//#define DEFAULT_NURSERY_SIZE (1024*512*125+4096*118)
 #define DEFAULT_NURSERY_SIZE (default_nursery_size)
 static int default_nursery_size = (1 << 20);
 #ifdef ALIGN_NURSERY
@@ -937,7 +935,6 @@ static __thread long *store_remset_buffer_index_addr;
 static char *nursery_next = NULL;
 static char *nursery_frag_real_end = NULL;
 static char *nursery_real_end = NULL;
-//static char *nursery_first_pinned_start = NULL;
 static char *nursery_last_pinned_end = NULL;
 
 /* The size of a TLAB */
@@ -1075,10 +1072,7 @@ enum {
 #define VECTOR_INFO_SHIFT 14
 #define VECTOR_ELSIZE_SHIFT 3
 #define LARGE_BITMAP_SIZE (GC_BITS_PER_WORD - LOW_TYPE_BITS)
-#define MAX_SMALL_SIZE ((1 << SMALL_BITMAP_SHIFT) - 1)
-#define SMALL_SIZE_MASK 0xfff8
 #define MAX_ELEMENT_SIZE 0x3ff
-#define ELEMENT_SIZE_MASK (0x3ff << LOW_TYPE_BITS)
 #define VECTOR_SUBTYPE_PTRFREE (DESC_TYPE_V_PTRFREE << VECTOR_INFO_SHIFT)
 #define VECTOR_SUBTYPE_REFS    (DESC_TYPE_V_REFS << VECTOR_INFO_SHIFT)
 #define VECTOR_SUBTYPE_RUN_LEN (DESC_TYPE_V_RUN_LEN << VECTOR_INFO_SHIFT)
@@ -3072,7 +3066,6 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 */
 	drain_gray_stack (start_addr, end_addr);
 	TV_GETTIME (atv);
-	//scan_old_generation (start_addr, end_addr);
 	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
 	/* walk the finalization queue and move also the objects that need to be
 	 * finalized: use the finalized objects as new roots so the objects they depend
