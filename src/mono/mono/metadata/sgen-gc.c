@@ -1021,7 +1021,6 @@ static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gb
 
 void describe_ptr (char *ptr);
 void check_consistency (void);
-char* check_object (char *start);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key);
 
@@ -2623,25 +2622,6 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 	DEBUG (7, if (count) fprintf (gc_debug_file, "found %d potential pinned heap pointers\n", count));
 }
 
-/* 
- * If generation is 0, just mark objects in the nursery, the others we don't care,
- * since they are not going to move anyway.
- * There are different areas that are scanned for pinned pointers:
- * *) the thread stacks (when jit support is ready only the unmanaged frames)
- * *) the pinned handle table
- * *) the pinned roots
- *
- * Note: when we'll use a write barrier for old to new gen references, we need to
- * keep track of old gen objects that point to pinned new gen objects because in that
- * case the referenced object will be moved maybe at the next collection, but there
- * is no write in the old generation area where the pinned object is referenced
- * and we may not consider it as reachable.
- */
-static G_GNUC_UNUSED void
-mark_pinned_objects (int generation)
-{
-}
-
 /*
  * Debugging function: find in the conservative roots where @obj is being pinned.
  */
@@ -2870,42 +2850,6 @@ scan_finalizer_entries (FinalizeEntry *list, char *start, char *end) {
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
 		copy_object (&fin->object, start, end);
 	}
-}
-
-/*
- * Update roots in the old generation. Since we currently don't have the
- * info from the write barriers, we just scan all the objects.
- */
-static G_GNUC_UNUSED void
-scan_old_generation (char *start, char* end)
-{
-	GCMemSection *section;
-	LOSObject *big_object;
-	char *p;
-
-	for (section = section_list; section; section = section->block.next) {
-		if (section == nursery_section)
-			continue;
-		DEBUG (2, fprintf (gc_debug_file, "Scan of old section: %p-%p, size: %d\n", section->data, section->next_data, (int)(section->next_data - section->data)));
-		/* we have to deal with zeroed holes in old generation (truncated strings ...) */
-		p = section->data;
-		while (p < section->next_data) {
-			if (!*(void**)p) {
-				p += ALLOC_ALIGN;
-				continue;
-			}
-			DEBUG (8, fprintf (gc_debug_file, "Precise old object scan of %p (%s)\n", p, safe_name (p)));
-			p = scan_object (p, start, end);
-		}
-	}
-	/* scan the old object space, too */
-	for (big_object = los_object_list; big_object; big_object = big_object->next) {
-		DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %zd\n", big_object->data, safe_name (big_object->data), big_object->size));
-		scan_object (big_object->data, start, end);
-	}
-	/* scan the list of objects ready for finalization */
-	scan_finalizer_entries (fin_ready_list, start, end);
-	scan_finalizer_entries (critical_fin_list, start, end);
 }
 
 static mword fragment_total = 0;
@@ -7295,31 +7239,6 @@ check_consistency (void)
 	if (!binary_protocol_file)
 #endif
 		g_assert (!missing_remsets);
-}
-
-/* Check that the reference is valid */
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		if (*(ptr)) {	\
-			g_assert (safe_name (*(ptr)) != NULL);	\
-		}	\
-	} while (0)
-
-/*
- * check_object:
- *
- *   Perform consistency check on an object. Currently we only check that the
- * reference fields are valid.
- */
-char*
-check_object (char *start)
-{
-	if (!start)
-		return NULL;
-
-#include "sgen-scan-object.h"
-
-	return start;
 }
 
 /*
