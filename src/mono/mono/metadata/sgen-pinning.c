@@ -26,10 +26,26 @@
 static void* pin_staging_area [PIN_STAGING_AREA_SIZE];
 static int pin_staging_area_index;
 
+static void** pin_queue;
+static int pin_queue_size = 0;
+static int next_pin_slot = 0;
+
 static void
 init_pinning (void)
 {
 	pin_staging_area_index = 0;
+}
+
+static void
+realloc_pin_queue (void)
+{
+	int new_size = pin_queue_size? pin_queue_size + pin_queue_size/2: 1024;
+	void **new_pin = get_internal_mem (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
+	memcpy (new_pin, pin_queue, sizeof (void*) * next_pin_slot);
+	free_internal_mem (pin_queue, INTERNAL_MEM_PIN_QUEUE);
+	pin_queue = new_pin;
+	pin_queue_size = new_size;
+	DEBUG (4, fprintf (gc_debug_file, "Reallocated pin queue to size: %d\n", new_size));
 }
 
 static void
@@ -73,4 +89,38 @@ pin_stage_ptr (void *ptr)
 		evacuate_pin_staging_area ();
 
 	pin_staging_area [pin_staging_area_index++] = ptr;
+}
+
+static int
+optimized_pin_queue_search (void *addr)
+{
+	int first = 0, last = next_pin_slot;
+	while (first < last) {
+		int middle = first + ((last - first) >> 1);
+		if (addr <= pin_queue [middle])
+			last = middle;
+		else
+			first = middle + 1;
+	}
+	g_assert (first == last);
+	return first;
+}
+
+static void
+find_optimized_pin_queue_area (void *start, void *end, int *first, int *last)
+{
+	*first = optimized_pin_queue_search (start);
+	*last = optimized_pin_queue_search (end);
+}
+
+static void
+find_section_pin_queue_start_end (GCMemSection *section)
+{
+	int start, end;
+	DEBUG (6, fprintf (gc_debug_file, "Pinning from section %p (%p-%p)\n", section, section->data, section->end_data));
+	find_optimized_pin_queue_area (section->data, section->end_data, &start, &end);
+	DEBUG (6, fprintf (gc_debug_file, "Found %d pinning addresses in section %p (%d-%d)\n",
+					end - start, section, start, end));
+	section->pin_queue_start = start;
+	section->pin_queue_end = end;
 }
