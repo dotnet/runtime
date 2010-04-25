@@ -52,9 +52,6 @@
 
 #define MAJOR_OBJ_IS_IN_TO_SPACE(o)	(MAJOR_SECTION_FOR_OBJECT ((o))->is_to_space)
 
-#define major_copy_or_mark_object	copy_object
-#define major_scan_object		scan_object
-
 static int minor_collection_section_allowance;
 static int minor_collection_sections_alloced = 0;
 static int num_major_sections = 0;
@@ -276,6 +273,105 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 	return p;
 }
 
+static void
+major_copy_or_mark_object (void **obj_slot)
+{
+	char *forwarded;
+	char *obj = *obj_slot;
+	mword objsize;
+
+	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
+
+	HEAVY_STAT (++num_copy_object_called);
+
+	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
+
+	/*
+	 * obj must belong to one of:
+	 *
+	 * 1. the nursery
+	 * 2. the LOS
+	 * 3. a pinned chunk
+	 * 4. a non-to-space section of the major heap
+	 * 5. a to-space section of the major heap
+	 *
+	 * In addition, objects in 1, 2 and 4 might also be pinned.
+	 * Objects in 1 and 4 might be forwarded.
+	 *
+	 * Before we can copy the object we must make sure that we are
+	 * allowed to, i.e. that the object not pinned, not already
+	 * forwarded and doesn't belong to the LOS, a pinned chunk, or
+	 * a to-space section.
+	 *
+	 * We are usually called for to-space objects (5) when we have
+	 * two remset entries for the same reference.  The first entry
+	 * copies the object and updates the reference and the second
+	 * calls us with the updated reference that points into
+	 * to-space.  There might also be other circumstances where we
+	 * get to-space objects.
+	 */
+
+	if ((forwarded = object_is_forwarded (obj))) {
+		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
+		HEAVY_STAT (++stat_copy_object_failed_forwarded);
+		*obj_slot = forwarded;
+		return;
+	}
+	if (object_is_pinned (obj)) {
+		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
+		HEAVY_STAT (++stat_copy_object_failed_pinned);
+		return;
+	}
+
+	if (ptr_in_nursery (obj))
+		goto copy;
+
+	/*
+	 * At this point we know obj is not pinned, not forwarded and
+	 * belongs to 2, 3, 4, or 5.
+	 *
+	 * LOS object (2) are simple, at least until we always follow
+	 * the rule: if objsize > MAX_SMALL_OBJ_SIZE, pin the object
+	 * and return it.  At the end of major collections, we walk
+	 * the los list and if the object is pinned, it is marked,
+	 * otherwise it can be freed.
+	 *
+	 * Pinned chunks (3) and major heap sections (4, 5) both
+	 * reside in blocks, which are always aligned, so once we've
+	 * eliminated LOS objects, we can just access the block and
+	 * see whether it's a pinned chunk or a major heap section.
+	 */
+
+	objsize = safe_object_get_size ((MonoObject*)obj);
+	objsize += ALLOC_ALIGN - 1;
+	objsize &= ~(ALLOC_ALIGN - 1);
+
+	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
+		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
+		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
+		pin_object (obj);
+		HEAVY_STAT (++stat_copy_object_failed_large_pinned);
+		return;
+	}
+
+	/*
+	 * Now we know the object is in a major heap section.  All we
+	 * need to do is check whether it's already in to-space (5) or
+	 * not (4).
+	 */
+	if (MAJOR_OBJ_IS_IN_TO_SPACE (obj)) {
+		DEBUG (9, g_assert (objsize <= MAX_SMALL_OBJ_SIZE));
+		DEBUG (9, fprintf (gc_debug_file, " (already copied)\n"));
+		HEAVY_STAT (++stat_copy_object_failed_to_space);
+		return;
+	}
+
+ copy:
+	*obj_slot = copy_object_no_checks (obj);
+}
+
 /* FIXME: later reduce code duplication here with build_nursery_fragments().
  * We don't keep track of section fragments for non-nursery sections yet, so
  * just memset to 0.
@@ -414,19 +510,18 @@ sweep_pinned_objects (void)
 }
 
 static void
-scan_object_callback (char *ptr, size_t size, char **data)
+scan_object_callback (char *ptr, size_t size, void *data)
 {
 	DEBUG (6, fprintf (gc_debug_file, "Precise object scan of alloc_pinned %p (%s)\n", ptr, safe_name (ptr)));
 	/* FIXME: Put objects without references into separate chunks
 	   which do not need to be scanned */
-	scan_object (ptr, data [0], data [1]);
+	major_scan_object (ptr);
 }
 
 static void
-scan_from_pinned_objects (char *addr_start, char *addr_end)
+scan_from_pinned_objects (void)
 {
-	char *data [2] = { addr_start, addr_end };
-	scan_pinned_objects ((IterateObjectCallbackFunc)scan_object_callback, data);
+	scan_pinned_objects ((IterateObjectCallbackFunc)scan_object_callback, NULL);
 }
 
 static void
@@ -557,14 +652,14 @@ major_do_collection (const char *reason)
 	 * move all the objects.
 	 */
 	/* the pinned objects are roots (big objects are included in this list, too) */
-	scan_pinned_objects_in_nursery (major_scan_object, heap_start, heap_end);
+	scan_pinned_objects_in_nursery (major_scan_object);
 	for (section = section_list; section; section = section->block.next)
-		scan_pinned_objects_in_section (section, major_scan_object, heap_start, heap_end);
+		scan_pinned_objects_in_section (section, major_scan_object);
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		if (object_is_pinned (bigobj->data)) {
 			DEBUG (6, fprintf (gc_debug_file, "Precise object scan pinned LOS object %p (%s)\n",
 							bigobj->data, safe_name (bigobj->data)));
-			scan_object (bigobj->data, heap_start, heap_end);
+			major_scan_object (bigobj->data);
 		}
 	}
 	TV_GETTIME (atv);
@@ -589,13 +684,13 @@ major_do_collection (const char *reason)
 	 * objects should have been put in the gray queue and
 	 * non-reachable ones shouldn't be scanned.
 	 */
-	scan_from_pinned_objects (heap_start, heap_end);
+	scan_from_pinned_objects ();
 	TV_GETTIME (btv);
 	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 
 	/* scan the list of objects ready for finalization */
-	scan_finalizer_entries (major_copy_or_mark_object, fin_ready_list, heap_start, heap_end);
-	scan_finalizer_entries (major_copy_or_mark_object, critical_fin_list, heap_start, heap_end);
+	scan_finalizer_entries (major_copy_or_mark_object, fin_ready_list);
+	scan_finalizer_entries (major_copy_or_mark_object, critical_fin_list);
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
@@ -604,7 +699,7 @@ major_do_collection (const char *reason)
 	 * And we need to make this in a loop, considering that objects referenced by finalizable
 	 * objects could reference big objects (this happens in finish_gray_stack ())
 	 */
-	scan_needed_big_objects (major_scan_object, heap_start, heap_end);
+	scan_needed_big_objects (major_scan_object);
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
 

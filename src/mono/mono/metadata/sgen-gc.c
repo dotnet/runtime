@@ -936,6 +936,10 @@ static MonoGCCallbacks gc_callbacks;
 
 #define ALLOC_ALIGN 8
 
+#define MOVED_OBJECTS_NUM 64
+static void *moved_objects [MOVED_OBJECTS_NUM];
+static int moved_objects_idx = 0;
+
 /*
  * ######################################################################
  * ########  Macros and function declarations.
@@ -959,8 +963,8 @@ align_pointer (void *ptr)
 	return (void*)p;
 }
 
-typedef void (*CopyOrMarkObjectFunc) (void**, char*, char*);
-typedef char* (*ScanObjectFunc) (char*, char*, char*);
+typedef void (*CopyOrMarkObjectFunc) (void**);
+typedef char* (*ScanObjectFunc) (char*);
 
 /* forward declarations */
 static void* get_internal_mem          (size_t size, int type);
@@ -976,8 +980,8 @@ static void add_to_global_remset (gpointer ptr, gboolean root);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise);
 static void scan_from_remsets (void *start_nursery, void *end_nursery);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type);
-static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, char *start, char *end);
-static int scan_needed_big_objects (ScanObjectFunc scan_func, char *start_addr, char *end_addr);
+static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list);
+static int scan_needed_big_objects (ScanObjectFunc scan_func);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation);
@@ -995,11 +999,13 @@ static void clear_remsets (void);
 static void clear_tlabs (void);
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 static void scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data);
-static char* scan_object (char *start, char* from_start, char* from_end);
-static void copy_object (void **obj_slot, char *from_space_start, char *from_space_end);
-static void scan_from_pinned_objects (char *addr_start, char *addr_end);
-static void scan_pinned_objects_in_section (GCMemSection *section, ScanObjectFunc scan_func, char *heap_start, char *heap_end);
-static void scan_pinned_objects_in_nursery (ScanObjectFunc scan_func, char *heap_start, char *heap_end);
+static char* scan_object (char *start);
+static char* major_scan_object (char *start);
+static void* copy_object_no_checks (void *obj);
+static void copy_object (void **obj_slot);
+static void scan_from_pinned_objects (void);
+static void scan_pinned_objects_in_section (GCMemSection *section, ScanObjectFunc scan_func);
+static void scan_pinned_objects_in_nursery (ScanObjectFunc scan_func);
 static void* get_chunk_freelist (PinnedChunk *chunk, int slot);
 static PinnedChunk* alloc_pinned_chunk (void);
 static void free_large_object (LOSObject *obj);
@@ -2007,138 +2013,23 @@ add_to_global_remset (gpointer ptr, gboolean root)
 	}
 }
 
-#define MOVED_OBJECTS_NUM 64
-static void *moved_objects [MOVED_OBJECTS_NUM];
-static int moved_objects_idx = 0;
-
 /*
- * This is how the copying happens from the nursery to the old generation.
- * We assume that at this time all the pinned objects have been identified and
- * marked as such.
- * We run scan_object() for each pinned object so that each referenced
- * objects if possible are copied. The new gray objects created can have
- * scan_object() run on them right away, too.
- * Then we run copy_object() for the precisely tracked roots. At this point
- * all the roots are either gray or black. We run scan_object() on the gray
- * objects until no more gray objects are created.
- * At the end of the process we walk again the pinned list and we unmark
- * the pinned flag. As we go we also create the list of free space for use
- * in the next allocation runs.
- *
- * We need to remember objects from the old generation that point to the new one
- * (or just addresses?).
- *
- * copy_object could be made into a macro once debugged (use inline for now).
+ * FIXME: allocate before calling this function and pass the
+ * destination address.
  */
-
-static void __attribute__((noinline))
-copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
+static void*
+copy_object_no_checks (void *obj)
 {
 	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
 
-	char *destination;
-	char *forwarded;
-	char *obj = *obj_slot;
 	mword objsize;
+	char *destination;
 	MonoVTable *vt;
-
-	HEAVY_STAT (++num_copy_object_called);
-
-	/* FIXME: For the minor collector, only the ptr_in_nursery()
-	   check is necessary.  The rest must only be implemented in
-	   major_copy_or_mark_object(). */
-
-	if (!(obj >= from_space_start && obj < from_space_end)) {
-		DEBUG (9, fprintf (gc_debug_file, "Not copying %p because it's not in from space (%p-%p)\n",
-						obj, from_space_start, from_space_end));
-		HEAVY_STAT (++stat_copy_object_failed_from_space);
-		return;
-	}
-
-	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
-
-	/*
-	 * obj must belong to one of:
-	 *
-	 * 1. the nursery
-	 * 2. the LOS
-	 * 3. a pinned chunk
-	 * 4. a non-to-space section of the major heap
-	 * 5. a to-space section of the major heap
-	 *
-	 * In addition, objects in 1, 2 and 4 might also be pinned.
-	 * Objects in 1 and 4 might be forwarded.
-	 *
-	 * Before we can copy the object we must make sure that we are
-	 * allowed to, i.e. that the object not pinned, not already
-	 * forwarded and doesn't belong to the LOS, a pinned chunk, or
-	 * a to-space section.
-	 *
-	 * We are usually called for to-space objects (5) when we have
-	 * two remset entries for the same reference.  The first entry
-	 * copies the object and updates the reference and the second
-	 * calls us with the updated reference that points into
-	 * to-space.  There might also be other circumstances where we
-	 * get to-space objects.
-	 */
-
-	if ((forwarded = object_is_forwarded (obj))) {
-		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
-		HEAVY_STAT (++stat_copy_object_failed_forwarded);
-		*obj_slot = forwarded;
-		return;
-	}
-	if (object_is_pinned (obj)) {
-		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
-		HEAVY_STAT (++stat_copy_object_failed_pinned);
-		return;
-	}
 
 	objsize = safe_object_get_size ((MonoObject*)obj);
 	objsize += ALLOC_ALIGN - 1;
 	objsize &= ~(ALLOC_ALIGN - 1);
 
-	if (ptr_in_nursery (obj))
-		goto copy;
-
-	/*
-	 * At this point we know obj is not pinned, not forwarded and
-	 * belongs to 2, 3, 4, or 5.
-	 *
-	 * LOS object (2) are simple, at least until we always follow
-	 * the rule: if objsize > MAX_SMALL_OBJ_SIZE, pin the object
-	 * and return it.  At the end of major collections, we walk
-	 * the los list and if the object is pinned, it is marked,
-	 * otherwise it can be freed.
-	 *
-	 * Pinned chunks (3) and major heap sections (4, 5) both
-	 * reside in blocks, which are always aligned, so once we've
-	 * eliminated LOS objects, we can just access the block and
-	 * see whether it's a pinned chunk or a major heap section.
-	 */
-	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
-		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
-		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
-		pin_object (obj);
-		HEAVY_STAT (++stat_copy_object_failed_large_pinned);
-		return;
-	}
-
-	/*
-	 * Now we know the object is in a major heap section.  All we
-	 * need to do is check whether it's already in to-space (5) or
-	 * not (4).
-	 */
-	if (MAJOR_OBJ_IS_IN_TO_SPACE (obj)) {
-		DEBUG (9, g_assert (objsize <= MAX_SMALL_OBJ_SIZE));
-		DEBUG (9, fprintf (gc_debug_file, " (already copied)\n"));
-		HEAVY_STAT (++stat_copy_object_failed_to_space);
-		return;
-	}
-
- copy:
 	MAJOR_GET_COPY_OBJECT_SPACE (destination, objsize);
 
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", destination, ((MonoObject*)obj)->vtable->klass->name, objsize));
@@ -2205,7 +2096,67 @@ copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
 	obj = destination;
 	DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
 	GRAY_OBJECT_ENQUEUE (obj);
-	*obj_slot = obj;
+	return obj;
+}
+
+/*
+ * This is how the copying happens from the nursery to the old generation.
+ * We assume that at this time all the pinned objects have been identified and
+ * marked as such.
+ * We run scan_object() for each pinned object so that each referenced
+ * objects if possible are copied. The new gray objects created can have
+ * scan_object() run on them right away, too.
+ * Then we run copy_object() for the precisely tracked roots. At this point
+ * all the roots are either gray or black. We run scan_object() on the gray
+ * objects until no more gray objects are created.
+ * At the end of the process we walk again the pinned list and we unmark
+ * the pinned flag. As we go we also create the list of free space for use
+ * in the next allocation runs.
+ *
+ * We need to remember objects from the old generation that point to the new one
+ * (or just addresses?).
+ *
+ * copy_object could be made into a macro once debugged (use inline for now).
+ */
+
+static void __attribute__((noinline))
+copy_object (void **obj_slot)
+{
+	char *forwarded;
+	char *obj = *obj_slot;
+
+	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
+
+	HEAVY_STAT (++num_copy_object_called);
+
+	if (!ptr_in_nursery (obj)) {
+		HEAVY_STAT (++stat_copy_object_failed_from_space);
+		return;
+	}
+
+	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
+
+	/*
+	 * Before we can copy the object we must make sure that we are
+	 * allowed to, i.e. that the object not pinned or not already
+	 * forwarded.
+	 */
+
+	if ((forwarded = object_is_forwarded (obj))) {
+		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
+		HEAVY_STAT (++stat_copy_object_failed_forwarded);
+		*obj_slot = forwarded;
+		return;
+	}
+	if (object_is_pinned (obj)) {
+		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
+		HEAVY_STAT (++stat_copy_object_failed_pinned);
+		return;
+	}
+
+	*obj_slot = copy_object_no_checks (obj);
 }
 
 #undef HANDLE_PTR
@@ -2213,7 +2164,7 @@ copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
 		void *__old = *(ptr);	\
 		void *__copy;		\
 		if (__old) {	\
-			copy_object ((ptr), from_start, from_end);	\
+			copy_object ((ptr));	\
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
@@ -2228,59 +2179,11 @@ copy_object (void **obj_slot, char *from_space_start, char *from_space_end)
  * Returns a pointer to the end of the object.
  */
 static char*
-scan_object (char *start, char* from_start, char* from_end)
+scan_object (char *start)
 {
 #include "sgen-scan-object.h"
 
 	return start;
-}
-
-static void
-scan_pinned_objects_in_section (GCMemSection *section, ScanObjectFunc scan_func, char *heap_start, char *heap_end)
-{
-	int i;
-	for (i = section->pin_queue_start; i < section->pin_queue_end; ++i) {
-		DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of pinned %p (%s)\n",
-						i, pin_queue [i], safe_name (pin_queue [i])));
-		scan_func (pin_queue [i], heap_start, heap_end);
-	}
-}
-
-static void
-scan_pinned_objects_in_nursery (ScanObjectFunc scan_func, char *heap_start, char *heap_end)
-{
-	scan_pinned_objects_in_section (nursery_section, scan_func, heap_start, heap_end);
-}
-
-/*
- * drain_gray_stack:
- *
- *   Scan objects in the gray stack until the stack is empty. This should be called
- * frequently after each object is copied, to achieve better locality and cache
- * usage.
- */
-static void inline
-drain_gray_stack (char *start_addr, char *end_addr)
-{
-	char *obj;
-
-	if (current_collection_generation == GENERATION_NURSERY) {
-		for (;;) {
-			GRAY_OBJECT_DEQUEUE (obj);
-			if (!obj)
-				break;
-			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			scan_object (obj, start_addr, end_addr);
-		}
-	} else {
-		for (;;) {
-			GRAY_OBJECT_DEQUEUE (obj);
-			if (!obj)
-				break;
-			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			major_scan_object (obj, start_addr, end_addr);
-		}
-	}
 }
 
 /*
@@ -2319,6 +2222,75 @@ scan_vtype (char *start, mword desc, char* from_start, char* from_end)
 		break;
 	}
 	return NULL;
+}
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		void *__old = *(ptr);	\
+		void *__copy;		\
+		if (__old) {	\
+			major_copy_or_mark_object ((ptr));	\
+			__copy = *(ptr);	\
+			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
+			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
+				add_to_global_remset ((ptr), FALSE);							\
+		}	\
+	} while (0)
+
+static char*
+major_scan_object (char *start)
+{
+#include "sgen-scan-object.h"
+
+	return start;
+}
+
+static void
+scan_pinned_objects_in_section (GCMemSection *section, ScanObjectFunc scan_func)
+{
+	int i;
+	for (i = section->pin_queue_start; i < section->pin_queue_end; ++i) {
+		DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of pinned %p (%s)\n",
+						i, pin_queue [i], safe_name (pin_queue [i])));
+		scan_func (pin_queue [i]);
+	}
+}
+
+static void
+scan_pinned_objects_in_nursery (ScanObjectFunc scan_func)
+{
+	scan_pinned_objects_in_section (nursery_section, scan_func);
+}
+
+/*
+ * drain_gray_stack:
+ *
+ *   Scan objects in the gray stack until the stack is empty. This should be called
+ * frequently after each object is copied, to achieve better locality and cache
+ * usage.
+ */
+static void inline
+drain_gray_stack (void)
+{
+	char *obj;
+
+	if (current_collection_generation == GENERATION_NURSERY) {
+		for (;;) {
+			GRAY_OBJECT_DEQUEUE (obj);
+			if (!obj)
+				break;
+			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
+			scan_object (obj);
+		}
+	} else {
+		for (;;) {
+			GRAY_OBJECT_DEQUEUE (obj);
+			if (!obj)
+				break;
+			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
+			major_scan_object (obj);
+		}
+	}
 }
 
 /*
@@ -2605,17 +2577,6 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 	evacuate_pin_staging_area ();
 }
 
-/* Copy function called from user defined mark functions */
-static char *user_copy_n_start;
-static char *user_copy_n_end;
-static CopyOrMarkObjectFunc user_copy_func;
-
-static void
-user_copy (void **addr)
-{
-	user_copy_func (addr, user_copy_n_start, user_copy_n_end);
-}
-
 /*
  * The memory area from start_root to end_root contains pointers to objects.
  * Their position is precisely described by @desc (this means that the pointer
@@ -2630,9 +2591,9 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 		desc >>= ROOT_DESC_TYPE_SHIFT;
 		while (desc) {
 			if ((desc & 1) && *start_root) {
-				copy_func (start_root, n_start, n_end);
+				copy_func (start_root);
 				DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", start_root, *start_root));
-				drain_gray_stack (n_start, n_end);
+				drain_gray_stack ();
 			}
 			desc >>= 1;
 			start_root++;
@@ -2648,9 +2609,9 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 			void **objptr = start_run;
 			while (bmap) {
 				if ((bmap & 1) && *objptr) {
-					copy_func (objptr, n_start, n_end);
+					copy_func (objptr);
 					DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", objptr, *objptr));
-					drain_gray_stack (n_start, n_end);
+					drain_gray_stack ();
 				}
 				bmap >>= 1;
 				++objptr;
@@ -2661,11 +2622,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 	}
 	case ROOT_DESC_USER: {
 		MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
-
-		user_copy_n_start = n_start;
-		user_copy_n_end = n_end;
-		user_copy_func = copy_func;
-		marker (start_root, user_copy);
+		marker (start_root, copy_func);
 		break;
 	}
 	case ROOT_DESC_RUN_LEN:
@@ -2767,14 +2724,14 @@ alloc_nursery (void)
 }
 
 static void
-scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, char *start, char *end) {
+scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list) {
 	FinalizeEntry *fin;
 
 	for (fin = list; fin; fin = fin->next) {
 		if (!fin->object)
 			continue;
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
-		copy_func (&fin->object, start, end);
+		copy_func (&fin->object);
 	}
 }
 
@@ -2809,15 +2766,15 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 }
 
 static int
-scan_needed_big_objects (ScanObjectFunc scan_func, char *start_addr, char *end_addr)
+scan_needed_big_objects (ScanObjectFunc scan_func)
 {
 	LOSObject *big_object;
 	int count = 0;
 	for (big_object = los_object_list; big_object; big_object = big_object->next) {
 		if (!big_object->scanned && object_is_pinned (big_object->data)) {
 			DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %zd\n", big_object->data, safe_name (big_object->data), big_object->size));
-			scan_func (big_object->data, start_addr, end_addr);
-			drain_gray_stack (start_addr, end_addr);
+			scan_func (big_object->data);
+			drain_gray_stack ();
 			big_object->scanned = TRUE;
 			count++;
 		}
@@ -2877,7 +2834,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	drain_gray_stack (start_addr, end_addr);
+	drain_gray_stack ();
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
 	/* walk the finalization queue and move also the objects that need to be
@@ -2891,12 +2848,12 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 		fin_ready = num_ready_finalizers;
 		finalize_in_range (copy_func, start_addr, end_addr, generation);
 		if (generation == GENERATION_OLD)
-			finalize_in_range (copy_object, nursery_start, nursery_real_end, GENERATION_NURSERY);
-		bigo_scanned_num = scan_needed_big_objects (scan_func, start_addr, end_addr);
+			finalize_in_range (copy_func, nursery_start, nursery_real_end, GENERATION_NURSERY);
+		bigo_scanned_num = scan_needed_big_objects (scan_func);
 
 		/* drain the new stack that might have been created */
 		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
-		drain_gray_stack (start_addr, end_addr);
+		drain_gray_stack ();
 	} while (fin_ready != num_ready_finalizers || bigo_scanned_num);
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan for %s generation: %d usecs\n", generation_name (generation), TV_ELAPSED (atv, btv)));
@@ -2913,10 +2870,10 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	for (;;) {
 		null_link_in_range (copy_func, start_addr, end_addr, generation);
 		if (generation == GENERATION_OLD)
-			null_link_in_range (copy_object, start_addr, end_addr, GENERATION_NURSERY);
+			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY);
 		if (gray_object_queue_is_empty ())
 			break;
-		drain_gray_stack (start_addr, end_addr);
+		drain_gray_stack ();
 	}
 
 	g_assert (gray_object_queue_is_empty ());
@@ -3308,7 +3265,7 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	/* the pinned objects are roots */
-	scan_pinned_objects_in_nursery (scan_object, nursery_start, nursery_next);
+	scan_pinned_objects_in_nursery (scan_object);
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 	/* registered roots, this includes static fields */
@@ -4232,7 +4189,7 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 			if ((char*)entry->object >= start && (char*)entry->object < end && !major_is_object_live (entry->object)) {
 				gboolean is_fin_ready = object_is_fin_ready (entry->object);
 				char *copy = entry->object;
-				copy_func ((void**)&copy, start, end);
+				copy_func ((void**)&copy);
 				if (is_fin_ready) {
 					char *from;
 					FinalizeEntry *next;
@@ -4324,7 +4281,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 					continue;
 				} else {
 					char *copy = object;
-					copy_func ((void**)&copy, start, end);
+					copy_func ((void**)&copy);
 
 					/* Update pointer if it's moved.  If the object
 					 * has been moved out of the nursery, we need to
@@ -5208,9 +5165,9 @@ void*
 mono_gc_scan_object (void *obj)
 {
 	if (current_collection_generation == GENERATION_NURSERY)
-		copy_object (&obj, scan_area_arg_start, scan_area_arg_end);
+		copy_object (&obj);
 	else
-		major_copy_or_mark_object (&obj, scan_area_arg_end, scan_area_arg_end);
+		major_copy_or_mark_object (&obj);
 	return obj;
 }
 
@@ -5297,7 +5254,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
 			gpointer old = *ptr;
-			copy_object (ptr, start_nursery, end_nursery);
+			copy_object (ptr);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (old)
 				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), safe_object_get_size (*ptr));
@@ -5319,7 +5276,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
-			copy_object (ptr, start_nursery, end_nursery);
+			copy_object (ptr);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
 				add_to_global_remset (ptr, FALSE);
@@ -5330,7 +5287,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 1;
-		scan_object ((char*)ptr, start_nursery, end_nursery);
+		scan_object ((char*)ptr);
 		return p + 1;
 	case REMSET_OTHER: {
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
@@ -5346,7 +5303,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 4;
 		case REMSET_ROOT_LOCATION:
 			/* Same as REMSET_LOCATION, but the address is not required to be in the heap */
-			copy_object (ptr, start_nursery, end_nursery);
+			copy_object (ptr);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote root location remset at %p with %p\n", ptr, *ptr));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
 				/*

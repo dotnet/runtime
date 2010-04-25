@@ -277,7 +277,6 @@ alloc_obj (int size, gboolean pinned)
 	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned);
 	MSBlockInfo *block;
 	void *obj;
-	int index, word, bit;
 
 	if (!free_blocks [size_index])
 		ms_alloc_block (size_index, pinned);
@@ -299,19 +298,6 @@ alloc_obj (int size, gboolean pinned)
 	 * overwritten by the vtable immediately.
 	 */
 	*(void**)obj = NULL;
-
-	/*
-	 * FIXME: This should be put in major_copy_or_mark_object(),
-	 * after the copy_object() call, if *ptr in nursery and
-	 * afterwards not.
-	 */
-	if (current_collection_generation == GENERATION_OLD) {
-		index = MS_BLOCK_OBJ_INDEX (obj, block);
-		DEBUG (9, g_assert (obj == MS_BLOCK_OBJ (block, index)));
-		MS_CALC_MARK_BIT (word, bit, (index));
-		DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
-		MS_SET_MARK_BIT (block, word, bit);
-	}
 
 	return obj;
 }
@@ -384,6 +370,11 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 
 #define MAJOR_OBJ_IS_IN_TO_SPACE(obj)	FALSE
 
+/*
+ * obj is some object.  If it's not in the major heap (i.e. if it's in
+ * the nursery or LOS), return FALSE.  Otherwise return whether it's
+ * been marked or copied.
+ */
 static gboolean
 major_is_object_live (char *obj)
 {
@@ -402,11 +393,7 @@ major_is_object_live (char *obj)
 	if (objsize > MAX_SMALL_OBJ_SIZE)
 		return FALSE;
 
-	/* pinned chunk */
-	if (obj_is_from_pinned_alloc (obj))
-		return FALSE;
-
-	/* now we know it's in a non-pinned block */
+	/* now we know it's in a major block */
 	block = MS_BLOCK_FOR_OBJ (obj);
 	DEBUG (9, g_assert (!block->pinned));
 	MS_CALC_MARK_BIT (word, bit, MS_BLOCK_OBJ_INDEX (obj, block));
@@ -472,7 +459,7 @@ major_dump_non_pinned_sections (void)
 	} while (0)
 
 static void
-major_copy_or_mark_object (void **ptr, char *from_space_start, char *from_space_end)
+major_copy_or_mark_object (void **ptr)
 {
 	void *obj = *ptr;
 	mword objsize;
@@ -481,8 +468,10 @@ major_copy_or_mark_object (void **ptr, char *from_space_start, char *from_space_
 	int count;
 
 	DEBUG (9, g_assert (obj));
+	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
 
 	if (ptr_in_nursery (obj)) {
+		int word, bit;
 		char *forwarded;
 
 		if ((forwarded = object_is_forwarded (obj))) {
@@ -492,9 +481,21 @@ major_copy_or_mark_object (void **ptr, char *from_space_start, char *from_space_
 		if (object_is_pinned (obj))
 			return;
 
-		/* FIXME: copy the object here directly, without all
-		   the copy_object() overhead. */
-		copy_object (ptr, from_space_start, from_space_end);
+		obj = copy_object_no_checks (obj);
+		*ptr = obj;
+
+		/*
+		 * FIXME: See comment for copy_object_no_checks().  If
+		 * we have that, we can let the allocation function
+		 * give us the block info, too, and we won't have to
+		 * re-fetch it.
+		 */
+		block = MS_BLOCK_FOR_OBJ (obj);
+		index = MS_BLOCK_OBJ_INDEX (obj, block);
+		DEBUG (9, g_assert (obj == MS_BLOCK_OBJ (block, index)));
+		MS_CALC_MARK_BIT (word, bit, (index));
+		DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
+		MS_SET_MARK_BIT (block, word, bit);
 		return;
 	}
 
@@ -515,35 +516,10 @@ major_copy_or_mark_object (void **ptr, char *from_space_start, char *from_space_
 	MS_MARK_INDEX_IN_BLOCK_AND_ENQUEUE (obj, block, index);
 }
 
-/*
- * FIXME: this is essentially the same as the one for scan_object().
- * Unify.
- */
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		void *__old = *(ptr);	\
-		void *__copy;		\
-		if (__old) {	\
-			major_copy_or_mark_object ((ptr), from_start, from_end); \
-			__copy = *(ptr);	\
-			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
-			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
-				add_to_global_remset ((ptr), FALSE);							\
-		}	\
-	} while (0)
-
-static char*
-major_scan_object (char *start, char *from_start, char *from_end)
-{
-#include "sgen-scan-object.h"
-
-	return start;
-}
-
 static void
-scan_object_callback (char *ptr, size_t size, char **data)
+scan_object_callback (char *ptr, size_t size, void *data)
 {
-	major_scan_object (ptr, data [0], data [1]);
+	major_scan_object (ptr);
 }
 
 /*
@@ -552,10 +528,9 @@ scan_object_callback (char *ptr, size_t size, char **data)
  * major_do_collection())!
  */
 static void
-scan_from_pinned_objects (char *addr_start, char *addr_end)
+scan_from_pinned_objects (void)
 {
-	char *data [2] = { addr_start, addr_end };
-	major_iterate_objects (FALSE, TRUE, (IterateObjectCallbackFunc)scan_object_callback, data);
+	major_iterate_objects (FALSE, TRUE, scan_object_callback, NULL);
 }
 
 static void
@@ -789,12 +764,12 @@ major_do_collection (const char *reason)
 	 * move all the objects.
 	 */
 	/* the pinned objects are roots (big objects are included in this list, too) */
-	scan_pinned_objects_in_nursery (major_scan_object, heap_start, heap_end);
+	scan_pinned_objects_in_nursery (major_scan_object);
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		if (object_is_pinned (bigobj->data)) {
 			DEBUG (6, fprintf (gc_debug_file, "Precise object scan pinned LOS object %p (%s)\n",
 							bigobj->data, safe_name (bigobj->data)));
-			major_scan_object (bigobj->data, heap_start, heap_end);
+			major_scan_object (bigobj->data);
 		}
 	}
 	TV_GETTIME (atv);
@@ -819,13 +794,13 @@ major_do_collection (const char *reason)
 	 * objects should have been put in the gray queue and
 	 * non-reachable ones shouldn't be scanned.
 	 */
-	scan_from_pinned_objects (heap_start, heap_end);
+	scan_from_pinned_objects ();
 	TV_GETTIME (btv);
 	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 
 	/* scan the list of objects ready for finalization */
-	scan_finalizer_entries (major_copy_or_mark_object, fin_ready_list, heap_start, heap_end);
-	scan_finalizer_entries (major_copy_or_mark_object, critical_fin_list, heap_start, heap_end);
+	scan_finalizer_entries (major_copy_or_mark_object, fin_ready_list);
+	scan_finalizer_entries (major_copy_or_mark_object, critical_fin_list);
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
@@ -834,7 +809,7 @@ major_do_collection (const char *reason)
 	 * And we need to make this in a loop, considering that objects referenced by finalizable
 	 * objects could reference big objects (this happens in finish_gray_stack ())
 	 */
-	scan_needed_big_objects (major_scan_object, heap_start, heap_end);
+	scan_needed_big_objects (major_scan_object);
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
 
