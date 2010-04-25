@@ -70,6 +70,7 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(void *)
 AC_CHECK_FUNCS(strndup strlcpy getpwent_r strtok_r rewinddir)
 AC_CHECK_LIB(iconv, iconv_open, LIBS="$LIBS -liconv")
+AC_CHECK_LIB(iconv, libiconv_open, LIBS="$LIBS -liconv")
 AC_SEARCH_LIBS(sqrtf, m)
 AC_SEARCH_LIBS(dlopen, dl)
 old_ldflags="${LDFLAGS}"
