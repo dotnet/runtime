@@ -98,7 +98,7 @@ alloc_major_section (void)
 	GCMemSection *section;
 	int scan_starts;
 
-	section = get_os_memory_aligned (MAJOR_SECTION_SIZE, TRUE);
+	section = get_os_memory_aligned (MAJOR_SECTION_SIZE, MAJOR_SECTION_SIZE, TRUE);
 	section->next_data = section->data = (char*)section + SIZEOF_GC_MEM_SECTION;
 	g_assert (!((mword)section->data & 7));
 	section->size = MAJOR_SECTION_SIZE - SIZEOF_GC_MEM_SECTION;

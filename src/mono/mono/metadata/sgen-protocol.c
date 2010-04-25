@@ -92,6 +92,13 @@ binary_protocol_pin (gpointer obj, gpointer vtable, int size)
 }
 
 static void
+binary_protocol_mark (gpointer obj, gpointer vtable, int size)
+{
+	SGenProtocolMark entry = { obj, vtable, size };
+	protocol_entry (SGEN_PROTOCOL_MARK, &entry, sizeof (SGenProtocolMark));
+}
+
+static void
 binary_protocol_wbarrier (gpointer ptr, gpointer value, gpointer value_vtable)
 {
 	SGenProtocolWBarrier entry = { ptr, value, value_vtable };
@@ -164,6 +171,7 @@ binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset, g
 #define binary_protocol_alloc(obj, vtable, size)
 #define binary_protocol_copy(from, to, vtable, size)
 #define binary_protocol_pin(obj, vtable, size)
+#define binary_protocol_mark(obj, vtable, size)
 #define binary_protocol_wbarrier(ptr, value, value_vtable)
 #define binary_protocol_global_remset(ptr, value, value_vtable)
 #define binary_protocol_ptr_update(ptr, old_value, new_value, vtable, size)

@@ -328,6 +328,8 @@ enum {
 	INTERNAL_MEM_REMSET,
 	INTERNAL_MEM_GRAY_QUEUE,
 	INTERNAL_MEM_STORE_REMSET,
+	INTERNAL_MEM_MS_TABLES,
+	INTERNAL_MEM_MS_BLOCK_INFO,
 	INTERNAL_MEM_MAX
 };
 
@@ -964,7 +966,7 @@ typedef char* (*ScanObjectFunc) (char*, char*, char*);
 static void* get_internal_mem          (size_t size, int type);
 static void  free_internal_mem         (void *addr, int type);
 static void* get_os_memory             (size_t size, int activate);
-static void* get_os_memory_aligned     (mword size, gboolean activate);
+static void* get_os_memory_aligned     (mword size, mword alignment, gboolean activate);
 static void  free_os_memory            (void *addr, size_t size);
 static G_GNUC_UNUSED void  report_internal_mem_usage (void);
 
@@ -1449,7 +1451,8 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		}	\
 	} while (0)
 
-#include "sgen-major-copying.c"
+//#include "sgen-major-copying.c"
+#include "sgen-marksweep.c"
 
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
@@ -2688,21 +2691,21 @@ alloc_fragment (void)
 
 /* size must be a power of 2 */
 static void*
-get_os_memory_aligned (mword size, gboolean activate)
+get_os_memory_aligned (mword size, mword alignment, gboolean activate)
 {
 	/* Allocate twice the memory to be able to put the block on an aligned address */
-	char *mem = get_os_memory (size * 2, activate);
+	char *mem = get_os_memory (size + alignment, activate);
 	char *aligned;
 
 	g_assert (mem);
 
-	aligned = (char*)((mword)(mem + (size - 1)) & ~(size - 1));
-	g_assert (aligned >= mem && aligned + size <= mem + size * 2 && !((mword)aligned & (size - 1)));
+	aligned = (char*)((mword)(mem + (alignment - 1)) & ~(alignment - 1));
+	g_assert (aligned >= mem && aligned + size <= mem + size + alignment && !((mword)aligned & (alignment - 1)));
 
 	if (aligned > mem)
 		free_os_memory (mem, aligned - mem);
-	if (aligned + size < mem + size * 2)
-		free_os_memory (aligned + size, (mem + size * 2) - (aligned + size));
+	if (aligned + size < mem + size + alignment)
+		free_os_memory (aligned + size, (mem + size + alignment) - (aligned + size));
 
 	return aligned;
 }
@@ -2733,7 +2736,7 @@ alloc_nursery (void)
 	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
 	alloc_size = nursery_size;
 #ifdef ALIGN_NURSERY
-	data = get_os_memory_aligned (alloc_size, TRUE);
+	data = get_os_memory_aligned (alloc_size, alloc_size, TRUE);
 #else
 	data = get_os_memory (alloc_size, TRUE);
 #endif
@@ -3535,7 +3538,7 @@ alloc_pinned_chunk (void)
 	int offset;
 	int size = PINNED_CHUNK_SIZE;
 
-	chunk = get_os_memory_aligned (size, TRUE);
+	chunk = get_os_memory_aligned (size, size, TRUE);
 	chunk->block.role = MEMORY_ROLE_PINNED;
 
 	UPDATE_HEAP_BOUNDARIES (chunk, ((char*)chunk + size));

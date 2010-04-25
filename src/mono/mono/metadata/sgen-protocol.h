@@ -26,6 +26,7 @@ enum {
 	SGEN_PROTOCOL_ALLOC,
 	SGEN_PROTOCOL_COPY,
 	SGEN_PROTOCOL_PIN,
+	SGEN_PROTOCOL_MARK,
 	SGEN_PROTOCOL_WBARRIER,
 	SGEN_PROTOCOL_GLOBAL_REMSET,
 	SGEN_PROTOCOL_PTR_UPDATE,
@@ -59,6 +60,12 @@ typedef struct {
 	gpointer vtable;
 	int size;
 } SGenProtocolPin;
+
+typedef struct {
+	gpointer obj;
+	gpointer vtable;
+	int size;
+} SGenProtocolMark;
 
 typedef struct {
 	gpointer ptr;
