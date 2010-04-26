@@ -504,8 +504,11 @@ major_copy_or_mark_object (void **ptr)
 	objsize &= ~(ALLOC_ALIGN - 1);
 
 	if (objsize > MAX_SMALL_OBJ_SIZE) {
+		if (object_is_pinned (obj))
+			return;
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
+		GRAY_OBJECT_ENQUEUE (obj);
 		return;
 	}
 
@@ -514,23 +517,6 @@ major_copy_or_mark_object (void **ptr)
 	count = MS_BLOCK_FREE / block->obj_size;
 	DEBUG (9, g_assert (index >= 0 && index < count));
 	MS_MARK_INDEX_IN_BLOCK_AND_ENQUEUE (obj, block, index);
-}
-
-static void
-scan_object_callback (char *ptr, size_t size, void *data)
-{
-	major_scan_object (ptr);
-}
-
-/*
- * FIXME: This is essentially the same as the corresponding function
- * in sgen-major-copying.c.  Unify (or eliminate - see comment in
- * major_do_collection())!
- */
-static void
-scan_from_pinned_objects (void)
-{
-	major_iterate_objects (FALSE, TRUE, scan_object_callback, NULL);
 }
 
 static void
@@ -738,10 +724,8 @@ major_do_collection (const char *reason)
 		int start, end;
 		find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &start, &end);
 		if (start != end) {
-			/* FIXME: just put them in the gray queue,
-			   then we don't have to do the second loop
-			   below */
 			pin_object (bigobj->data);
+			GRAY_OBJECT_ENQUEUE (bigobj->data);
 			if (heap_dump_file)
 				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %zd from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
@@ -757,21 +741,8 @@ major_do_collection (const char *reason)
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
-	/* the old generation doesn't need to be scanned (no remembered sets or card
-	 * table needed either): the only objects that must survive are those pinned and
-	 * those referenced by the precise roots.
-	 * mark any section without pinned objects, so we can free it since we will be able to
-	 * move all the objects.
-	 */
-	/* the pinned objects are roots (big objects are included in this list, too) */
-	scan_pinned_objects_in_nursery (major_scan_object);
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
-		if (object_is_pinned (bigobj->data)) {
-			DEBUG (6, fprintf (gc_debug_file, "Precise object scan pinned LOS object %p (%s)\n",
-							bigobj->data, safe_name (bigobj->data)));
-			major_scan_object (bigobj->data);
-		}
-	}
+	drain_gray_stack ();
+
 	TV_GETTIME (atv);
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
@@ -788,13 +759,6 @@ major_do_collection (const char *reason)
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 
-	/* alloc_pinned objects */
-	/*
-	 * FIXME: This should not be necessary - reachable pinned
-	 * objects should have been put in the gray queue and
-	 * non-reachable ones shouldn't be scanned.
-	 */
-	scan_from_pinned_objects ();
 	TV_GETTIME (btv);
 	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 
@@ -805,11 +769,6 @@ major_do_collection (const char *reason)
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 
-	/* we need to go over the big object list to see if any was marked and scan it
-	 * And we need to make this in a loop, considering that objects referenced by finalizable
-	 * objects could reference big objects (this happens in finish_gray_stack ())
-	 */
-	scan_needed_big_objects (major_scan_object);
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
 
@@ -823,7 +782,6 @@ major_do_collection (const char *reason)
 	for (bigobj = los_object_list; bigobj;) {
 		if (object_is_pinned (bigobj->data)) {
 			unpin_object (bigobj->data);
-			bigobj->scanned = FALSE;
 		} else {
 			LOSObject *to_free;
 			/* not referenced anywhere, so we can free it */

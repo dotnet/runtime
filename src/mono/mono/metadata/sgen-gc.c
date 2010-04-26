@@ -412,9 +412,8 @@ typedef struct _LOSObject LOSObject;
 struct _LOSObject {
 	LOSObject *next;
 	mword size; /* this is the object size */
-	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
 	guint16 role;
-	guint16 scanned;
+	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
 	char data [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -981,7 +980,6 @@ static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 static void scan_from_remsets (void *start_nursery, void *end_nursery);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type);
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list);
-static int scan_needed_big_objects (ScanObjectFunc scan_func);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation);
@@ -1003,13 +1001,11 @@ static char* scan_object (char *start);
 static char* major_scan_object (char *start);
 static void* copy_object_no_checks (void *obj);
 static void copy_object (void **obj_slot);
-static void scan_from_pinned_objects (void);
-static void scan_pinned_objects_in_section (GCMemSection *section, ScanObjectFunc scan_func);
-static void scan_pinned_objects_in_nursery (ScanObjectFunc scan_func);
 static void* get_chunk_freelist (PinnedChunk *chunk, int slot);
 static PinnedChunk* alloc_pinned_chunk (void);
 static void free_large_object (LOSObject *obj);
 static void sort_addresses (void **array, int size);
+static void drain_gray_stack (void);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
@@ -2245,23 +2241,6 @@ major_scan_object (char *start)
 	return start;
 }
 
-static void
-scan_pinned_objects_in_section (GCMemSection *section, ScanObjectFunc scan_func)
-{
-	int i;
-	for (i = section->pin_queue_start; i < section->pin_queue_end; ++i) {
-		DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of pinned %p (%s)\n",
-						i, pin_queue [i], safe_name (pin_queue [i])));
-		scan_func (pin_queue [i]);
-	}
-}
-
-static void
-scan_pinned_objects_in_nursery (ScanObjectFunc scan_func)
-{
-	scan_pinned_objects_in_section (nursery_section, scan_func);
-}
-
 /*
  * drain_gray_stack:
  *
@@ -2357,6 +2336,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 					DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
 					binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
 					pin_object (search_start);
+					GRAY_OBJECT_ENQUEUE (search_start);
 					if (heap_dump_file)
 						pin_stats_register_object (search_start, last_obj_size);
 					definitely_pinned [count] = search_start;
@@ -2765,23 +2745,6 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 	}
 }
 
-static int
-scan_needed_big_objects (ScanObjectFunc scan_func)
-{
-	LOSObject *big_object;
-	int count = 0;
-	for (big_object = los_object_list; big_object; big_object = big_object->next) {
-		if (!big_object->scanned && object_is_pinned (big_object->data)) {
-			DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %zd\n", big_object->data, safe_name (big_object->data), big_object->size));
-			scan_func (big_object->data);
-			drain_gray_stack ();
-			big_object->scanned = TRUE;
-			count++;
-		}
-	}
-	return count;
-}
-
 static const char*
 generation_name (int generation)
 {
@@ -2817,9 +2780,8 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 {
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
-	int fin_ready, bigo_scanned_num;
+	int fin_ready;
 	CopyOrMarkObjectFunc copy_func = current_collection_generation == GENERATION_NURSERY ? copy_object : major_copy_or_mark_object;
-	ScanObjectFunc scan_func = current_collection_generation == GENERATION_NURSERY ? scan_object : major_scan_object;
 
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
@@ -2849,12 +2811,11 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 		finalize_in_range (copy_func, start_addr, end_addr, generation);
 		if (generation == GENERATION_OLD)
 			finalize_in_range (copy_func, nursery_start, nursery_real_end, GENERATION_NURSERY);
-		bigo_scanned_num = scan_needed_big_objects (scan_func);
 
 		/* drain the new stack that might have been created */
 		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
 		drain_gray_stack ();
-	} while (fin_ready != num_ready_finalizers || bigo_scanned_num);
+	} while (fin_ready != num_ready_finalizers);
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan for %s generation: %d usecs\n", generation_name (generation), TV_ELAPSED (atv, btv)));
 
@@ -3264,8 +3225,8 @@ collect_nursery (size_t requested_size)
 	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
-	/* the pinned objects are roots */
-	scan_pinned_objects_in_nursery (scan_object);
+	drain_gray_stack ();
+
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 	/* registered roots, this includes static fields */
@@ -3711,6 +3672,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	alloc_size &= ~(pagesize - 1);
 	/* FIXME: handle OOM */
 	obj = get_os_memory (alloc_size, TRUE);
+	g_assert (!((mword)obj->data & (ALLOC_ALIGN - 1)));
 	obj->size = size;
 	vtslot = (void**)obj->data;
 	*vtslot = vtable;

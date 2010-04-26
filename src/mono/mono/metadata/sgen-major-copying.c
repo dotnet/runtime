@@ -349,9 +349,12 @@ major_copy_or_mark_object (void **obj_slot)
 	objsize &= ~(ALLOC_ALIGN - 1);
 
 	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
+		if (object_is_pinned (obj))
+			return;
 		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
+		GRAY_OBJECT_ENQUEUE (obj);
 		HEAVY_STAT (++stat_copy_object_failed_large_pinned);
 		return;
 	}
@@ -486,6 +489,7 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 			if (heap_dump_file && !object_is_pinned (addr))
 				pin_stats_register_object ((char*) addr, safe_object_get_size ((MonoObject*) addr));
 			pin_object (addr);
+			GRAY_OBJECT_ENQUEUE (addr);
 			DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
 		}
 	}
@@ -507,21 +511,6 @@ static void
 sweep_pinned_objects (void)
 {
 	scan_pinned_objects (sweep_pinned_objects_callback, NULL);
-}
-
-static void
-scan_object_callback (char *ptr, size_t size, void *data)
-{
-	DEBUG (6, fprintf (gc_debug_file, "Precise object scan of alloc_pinned %p (%s)\n", ptr, safe_name (ptr)));
-	/* FIXME: Put objects without references into separate chunks
-	   which do not need to be scanned */
-	major_scan_object (ptr);
-}
-
-static void
-scan_from_pinned_objects (void)
-{
-	scan_pinned_objects ((IterateObjectCallbackFunc)scan_object_callback, NULL);
 }
 
 static void
@@ -563,6 +552,7 @@ major_do_collection (const char *reason)
 	init_stats ();
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
+	gray_object_queue_init ();
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
@@ -619,6 +609,7 @@ major_do_collection (const char *reason)
 		find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &start, &end);
 		if (start != end) {
 			pin_object (bigobj->data);
+			GRAY_OBJECT_ENQUEUE (bigobj->data);
 			if (heap_dump_file)
 				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %zd from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
@@ -643,25 +634,9 @@ major_do_collection (const char *reason)
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
 	new_to_space_section ();
-	gray_object_queue_init ();
 
-	/* the old generation doesn't need to be scanned (no remembered sets or card
-	 * table needed either): the only objects that must survive are those pinned and
-	 * those referenced by the precise roots.
-	 * mark any section without pinned objects, so we can free it since we will be able to
-	 * move all the objects.
-	 */
-	/* the pinned objects are roots (big objects are included in this list, too) */
-	scan_pinned_objects_in_nursery (major_scan_object);
-	for (section = section_list; section; section = section->block.next)
-		scan_pinned_objects_in_section (section, major_scan_object);
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
-		if (object_is_pinned (bigobj->data)) {
-			DEBUG (6, fprintf (gc_debug_file, "Precise object scan pinned LOS object %p (%s)\n",
-							bigobj->data, safe_name (bigobj->data)));
-			major_scan_object (bigobj->data);
-		}
-	}
+	drain_gray_stack ();
+
 	TV_GETTIME (atv);
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
@@ -678,13 +653,6 @@ major_do_collection (const char *reason)
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 
-	/* alloc_pinned objects */
-	/*
-	 * FIXME: This should not be necessary - reachable pinned
-	 * objects should have been put in the gray queue and
-	 * non-reachable ones shouldn't be scanned.
-	 */
-	scan_from_pinned_objects ();
 	TV_GETTIME (btv);
 	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 
@@ -695,11 +663,6 @@ major_do_collection (const char *reason)
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 
-	/* we need to go over the big object list to see if any was marked and scan it
-	 * And we need to make this in a loop, considering that objects referenced by finalizable
-	 * objects could reference big objects (this happens in finish_gray_stack ())
-	 */
-	scan_needed_big_objects (major_scan_object);
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
 
@@ -716,7 +679,6 @@ major_do_collection (const char *reason)
 	for (bigobj = los_object_list; bigobj;) {
 		if (object_is_pinned (bigobj->data)) {
 			unpin_object (bigobj->data);
-			bigobj->scanned = FALSE;
 		} else {
 			LOSObject *to_free;
 			/* not referenced anywhere, so we can free it */
