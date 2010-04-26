@@ -1891,15 +1891,24 @@ static GSList *load_modules (void)
 	int i = 0;
 
 	for (i = 0; i < count; i++) {
+#if SIZEOF_VOID_P == 8
+		const struct mach_header_64 *hdr;
+		const struct section_64 *sec;
+#else
 		const struct mach_header *hdr;
 		const struct section *sec;
+#endif
 		const char *name;
 		intptr_t slide;
 
 		slide = _dyld_get_image_vmaddr_slide (i);
 		name = _dyld_get_image_name (i);
 		hdr = _dyld_get_image_header (i);
+#if SIZEOF_VOID_P == 8
+		sec = getsectbynamefromheader_64 (hdr, SEG_DATA, SECT_DATA);
+#else
 		sec = getsectbynamefromheader (hdr, SEG_DATA, SECT_DATA);
+#endif
 
 		/* Some dynlibs do not have data sections on osx (#533893) */
 		if (sec == 0) {
