@@ -1,3 +1,8 @@
+2010-04-26  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Applied patch from Robert Nagy (robert@openbsd.org). Add
+	sys/param.h dependencies to a few checks.
+
 2010-04-25  Mark Probst  <mark.probst@gmail.com>
 
 	* tools/sgen/sgen-grep-binprot.c: Support for major Mark&Sweep

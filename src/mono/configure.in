@@ -362,8 +362,14 @@ fi
 AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h)
-AC_CHECK_HEADERS(sys/user.h sys/socket.h sys/ipc.h sys/sem.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h netinet/tcp.h netinet/in.h unistd.h sys/types.h link.h asm/sigcontext.h)
+AC_CHECK_HEADERS(sys/param.h sys/socket.h sys/ipc.h sys/sem.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h netinet/tcp.h netinet/in.h unistd.h sys/types.h link.h asm/sigcontext.h)
 
+AC_CHECK_HEADERS(sys/user.h, [], [],
+[
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+])
 
 AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
 if test x$have_zlib = xyes; then
@@ -1578,7 +1584,15 @@ if test x$target_win32 = xno; then
 	dnl *** Checks for SIOCGIFCONF ***
 	dnl ******************************
 	AC_CHECK_HEADERS(sys/ioctl.h)
-	AC_CHECK_HEADERS(net/if.h)
+	AC_CHECK_HEADERS(net/if.h, [], [],
+	   [
+	   #ifdef HAVE_SYS_TYPES_H
+	   # include <sys/types.h>
+	   #endif
+	   #ifdef HAVE_SYS_SOCKET_H
+	   # include <sys/socket.h>
+	   #endif
+	   ])
 	AC_MSG_CHECKING(for ifreq)
 	AC_TRY_COMPILE([
 		#include <stdio.h>
@@ -1642,6 +1656,12 @@ if test x$target_win32 = xno; then
 	AC_CHECK_HEADERS(sys/xattr.h)
 	AC_CHECK_HEADERS(sys/mman.h)
 	AC_CHECK_HEADERS(sys/param.h)
+	AC_CHECK_HEADERS(sys/mount.h, [], [],
+		[
+		#ifdef HAVE_SYS_PARAM_H
+		# include <sys/param.h>
+		#endif
+		])
 	AC_CHECK_HEADERS(sys/mount.h)
 	AC_CHECK_FUNCS(confstr)
 	AC_CHECK_FUNCS(seekdir telldir)
