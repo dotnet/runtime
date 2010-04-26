@@ -6,6 +6,9 @@
  */
 
 #include "config.h"
+
+#include <string.h>
+
 #define GC_I_HIDE_POINTERS
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-gc.h>

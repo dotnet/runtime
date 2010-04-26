@@ -1944,7 +1944,6 @@ static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 	
 	return(inaddr);
 }
-#endif
 
 #ifdef AF_INET6
 static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
@@ -1971,6 +1970,7 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 	return(in6addr);
 }
 #endif /* AF_INET6 */
+#endif
 
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val, gint32 *error)
 {
