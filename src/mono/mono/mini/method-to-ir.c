@@ -10313,14 +10313,15 @@ mono_op_to_op_imm_noemul (int opcode)
 	case OP_LSHR:
 	case OP_LSHL:
 	case OP_LSHR_UN:
+		return -1;
 #endif
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_DIV)
 	case OP_IDIV:
 	case OP_IDIV_UN:
 	case OP_IREM:
 	case OP_IREM_UN:
-#endif
 		return -1;
+#endif
 	default:
 		return mono_op_to_op_imm (opcode);
 	}
