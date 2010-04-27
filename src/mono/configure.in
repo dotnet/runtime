@@ -538,8 +538,8 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir      Chan
 )
 
 AC_ARG_WITH([glib],
-	[  --with-glib=embedded|system    Choose glib API: system or embedded (default to system)],
-	[], [with_glib=system])
+	[  --with-glib=embedded|system    Choose glib API: system or embedded (default to embedded)],
+	[], [with_glib=embedded])
 
 eglib_dir=
 

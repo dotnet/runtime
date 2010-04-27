@@ -1,3 +1,7 @@
+2010-04-27  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Switch to eglib by default.
+
 2010-04-26  Geoff Norton  <gnorton@novell.com>
 
 	* configure.in: Allow cross compiling osx for 64-bit
