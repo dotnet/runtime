@@ -1337,7 +1337,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	char *prev_file_name = NULL;
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoDebugMethodInfo *minfo;
-	GArray *ln_array;
+	MonoDebugLineNumberEntry *ln_array;
 	int *native_to_il_offset = NULL;
 
 	if (!w->emit_line) {
@@ -1351,38 +1351,33 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 
 	g_assert (code_size);
 
-#ifdef _EGLIB_MAJOR
-	mono_metadata_free_mh (header);
-	/* g_array is not implemented in eglib */
-	return;
-#else
-	ln_array = g_array_sized_new (FALSE, FALSE, sizeof (MonoDebugLineNumberEntry), 
-								  debug_info->num_line_numbers);
-	g_array_append_vals (ln_array, debug_info->line_numbers, debug_info->num_line_numbers);
-	g_array_sort (ln_array, (GCompareFunc)compare_lne);
+	ln_array = g_new0 (MonoDebugLineNumberEntry, debug_info->num_line_numbers);
+	memcpy (ln_array, debug_info->line_numbers, debug_info->num_line_numbers * sizeof (MonoDebugLineNumberEntry));
+
+	qsort (ln_array, debug_info->num_line_numbers, sizeof (MonoDebugLineNumberEntry), (gpointer)compare_lne);
+
 	native_to_il_offset = g_new0 (int, code_size + 1);
 
 	for (i = 0; i < debug_info->num_line_numbers; ++i) {
 		int j;
-		MonoDebugLineNumberEntry lne = g_array_index (ln_array, MonoDebugLineNumberEntry, i);
+		MonoDebugLineNumberEntry *lne = &ln_array [i];
 
 		if (i == 0) {
-			for (j = 0; j < lne.native_offset; ++j)
+			for (j = 0; j < lne->native_offset; ++j)
 				native_to_il_offset [j] = -1;
 		}
 
 		if (i < debug_info->num_line_numbers - 1) {
-			MonoDebugLineNumberEntry lne_next = g_array_index (ln_array, MonoDebugLineNumberEntry, i + 1);
+			MonoDebugLineNumberEntry *lne_next = &ln_array [i + 1];
 
-			for (j = lne.native_offset; j < lne_next.native_offset; ++j)
-				native_to_il_offset [j] = lne.il_offset;
+			for (j = lne->native_offset; j < lne_next->native_offset; ++j)
+				native_to_il_offset [j] = lne->il_offset;
 		} else {
-			for (j = lne.native_offset; j < code_size; ++j)
-				native_to_il_offset [j] = lne.il_offset;
+			for (j = lne->native_offset; j < code_size; ++j)
+				native_to_il_offset [j] = lne->il_offset;
 		}
 	}
-	g_array_free (ln_array, TRUE);
-#endif
+	g_free (ln_array);
 
 	prev_line = 1;
 	prev_il_offset = -1;
