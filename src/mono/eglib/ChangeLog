@@ -1,3 +1,7 @@
+2010-04-16  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gshell.c (g_shell_unquote): Implement this.
+
 2010-04-25  Andreas Faerber  <andreas.faerber@web.de>
 
 	* configure.ac: The iconv function may be libiconv_open.

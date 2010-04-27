@@ -120,7 +120,11 @@ static int methods_with_llvm, methods_without_llvm;
  *   one trampoline.
  * - fast generic virtual calls are not supported.
  */
+#ifdef ENABLE_LLVM
+gboolean mono_use_llvm = TRUE;
+#else
 gboolean mono_use_llvm = FALSE;
+#endif
 
 #define mono_jit_lock() EnterCriticalSection (&jit_mutex)
 #define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
