@@ -4265,7 +4265,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_decompose_array_access_opts (cfg);
 
 	if (cfg->got_var) {
+#ifndef MONO_ARCH_GOT_REG
 		GList *regs;
+#endif
+		int got_reg;
 
 		g_assert (cfg->got_var_allocated);
 
@@ -4276,13 +4279,17 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		 * branches problem. Testcase: mcs crash in 
 		 * System.MonoCustomAttrs:GetCustomAttributes.
 		 */
+#ifdef MONO_ARCH_GOT_REG
+		got_reg = MONO_ARCH_GOT_REG;
+#else
 		regs = mono_arch_get_global_int_regs (cfg);
 		g_assert (regs);
-		cfg->got_var->opcode = OP_REGVAR;
-		cfg->got_var->dreg = GPOINTER_TO_INT (regs->data);
-		cfg->used_int_regs |= 1LL << cfg->got_var->dreg;
-		
+		got_reg = GPOINTER_TO_INT (regs->data);
 		g_list_free (regs);
+#endif
+		cfg->got_var->opcode = OP_REGVAR;
+		cfg->got_var->dreg = got_reg;
+		cfg->used_int_regs |= 1LL << cfg->got_var->dreg;
 	}
 
 	/*
@@ -4301,7 +4308,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if ((cfg->opt & MONO_OPT_LINEARS) && !cfg->globalra) {
-		GList *vars, *regs;
+		GList *vars, *regs, *l;
 		
 		/* fixme: maybe we can avoid to compute livenesss here if already computed ? */
 		cfg->comp_done &= ~MONO_COMP_LIVENESS;
@@ -4310,8 +4317,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		if ((vars = mono_arch_get_allocatable_int_vars (cfg))) {
 			regs = mono_arch_get_global_int_regs (cfg);
-			if (cfg->got_var)
-				regs = g_list_delete_link (regs, regs);
+			/* Remove the reg reserved for holding the GOT address */
+			if (cfg->got_var) {
+				for (l = regs; l; l = l->next) {
+					if (GPOINTER_TO_UINT (l->data) == cfg->got_var->dreg) {
+						regs = g_list_delete_link (regs, l);
+						break;
+					}
+				}
+			}
 			mono_linear_scan (cfg, vars, regs, &cfg->used_int_regs);
 		}
 	}

@@ -585,6 +585,9 @@ COND:   ldloc.0
 	}
 
 	.method static public int32 test_24_tail_calls2 () il managed {
+		// Some platforms might not be able to AOT tail calls
+		.custom instance void class [TestDriver]CategoryAttribute::'.ctor'(string) =  (01 00 08 21 46 55 4C 4C 41 4F 54 00 00 ) // ...!FULLAOT..
+
 		.maxstack 16
 		.locals init (
 			int32 i,
@@ -602,6 +605,9 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_5_jmp () cil managed {
+		// Some platforms might not be able to AOT tail calls
+		.custom instance void class [TestDriver]CategoryAttribute::'.ctor'(string) =  (01 00 08 21 46 55 4C 4C 41 4F 54 00 00 ) // ...!FULLAOT..
+
 		ldc.i4.1
 		ldc.i4.2
 		call int32 Tests::jmp2 (int32, int32)
@@ -2063,6 +2069,9 @@ HAS_VALUE:	ldc.i4.1
     .method public static  hidebysig 
            default int32 test_0_many_args_tail_call ()  cil managed 
     {
+		// Some platforms might not be able to AOT tail calls
+		.custom instance void class [TestDriver]CategoryAttribute::'.ctor'(string) =  (01 00 08 21 46 55 4C 4C 41 4F 54 00 00 ) // ...!FULLAOT..
+
         // Method begins at RVA 0x2154
 	// Code size 43 (0x2b)
 	.maxstack 17

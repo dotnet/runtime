@@ -261,15 +261,14 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 gpointer
-mono_arch_get_restore_context (void)
+mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8 *start = NULL;
+	guint8 *start = NULL;
 	guint8 *code;
 
-	if (start)
-		return start;
-
 	/* restore_contect (MonoContext *ctx) */
+
+	*ji = NULL;
 
 	start = code = mono_global_codeman_reserve (128);
 	
@@ -300,6 +299,8 @@ mono_arch_get_restore_context (void)
 	/* jump to the saved IP */
 	x86_ret (code);
 
+	*code_size = code - start;
+
 	return start;
 }
 
@@ -311,16 +312,13 @@ mono_arch_get_restore_context (void)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter (void)
+mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8* start;
-	static int inited = 0;
+	guint8* start;
 	guint8 *code;
 
-	if (inited)
-		return start;
+	*ji = NULL;
 
-	inited = 1;
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	start = code = mono_global_codeman_reserve (64);
 
@@ -367,6 +365,8 @@ mono_arch_get_call_filter (void)
 	x86_leave (code);
 	x86_ret (code);
 
+	*code_size = code - start;
+
 	g_assert ((code - start) < 64);
 	return start;
 }
@@ -376,7 +376,7 @@ mono_arch_get_call_filter (void)
  *
  *   C function called from the throw trampolines.
  */
-static void
+void
 mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 
 						  mgreg_t eip, gboolean rethrow)
 {
@@ -384,7 +384,7 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 	MonoContext ctx;
 
 	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
+		restore_context = mono_get_restore_context ();
 
 	ctx.esp = regs [X86_ESP];
 	ctx.eip = eip;
@@ -434,7 +434,7 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 	g_assert_not_reached ();
 }
 
-static void
+void
 mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index, 
 								 mgreg_t eip, gint32 pc_offset)
 {
@@ -457,11 +457,14 @@ mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index,
  * which doesn't push the arguments.
  */
 static guint8*
-get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean corlib)
+get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean corlib, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	guint8 *start, *code;
 	GSList *unwind_ops = NULL;
 	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
+
+	if (ji)
+		*ji = NULL;
 
 	start = code = mono_global_codeman_reserve (128);
 
@@ -542,10 +545,22 @@ get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean
 		x86_mov_membase_imm (code, X86_ESP, arg_offsets [3], rethrow, 4);
 	}
 	/* Make the call */
-	x86_call_code (code, corlib ? (gpointer)mono_x86_throw_corlib_exception : (gpointer)mono_x86_throw_exception);
+	if (aot) {
+		// This can be called from runtime code, which can't guarantee that
+		// ebx contains the got address.
+		// So emit the got address loading code too
+		code = mono_arch_emit_load_got_addr (start, code, NULL, ji);
+		code = mono_arch_emit_load_aotconst (start, code, ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? "mono_x86_throw_corlib_exception" : "mono_x86_throw_exception");
+		x86_call_reg (code, X86_EAX);
+	} else {
+		x86_call_code (code, corlib ? (gpointer)mono_x86_throw_corlib_exception : (gpointer)mono_x86_throw_exception);
+	}
 	x86_breakpoint (code);
 
 	g_assert ((code - start) < 128);
+
+	if (code_size)
+		*code_size = code - start;
 
 	mono_save_trampoline_xdebug_info (corlib ? "llvm_throw_corlib_exception_trampoline" : "llvm_throw_exception_trampoline", start, code - start, unwind_ops);
 
@@ -565,15 +580,15 @@ get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean
  *
  */
 gpointer 
-mono_arch_get_throw_exception (void)
+mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	return get_throw_exception ("throw_exception_trampoline", FALSE, FALSE, FALSE);
+	return get_throw_exception ("throw_exception_trampoline", FALSE, FALSE, FALSE, code_size, ji, aot);
 }
 
 gpointer 
-mono_arch_get_rethrow_exception (void)
+mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	return get_throw_exception ("rethrow_exception_trampoline", TRUE, FALSE, FALSE);
+	return get_throw_exception ("rethow_exception_trampoline", TRUE, FALSE, FALSE, code_size, ji, aot);
 }
 
 /**
@@ -587,9 +602,9 @@ mono_arch_get_rethrow_exception (void)
  * needs no relocations in the caller.
  */
 gpointer 
-mono_arch_get_throw_corlib_exception (void)
+mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	return get_throw_exception ("throw_corlib_exception_trampoline", FALSE, FALSE, TRUE);
+	return get_throw_exception ("throw_corlib_exception_trampoline", FALSE, FALSE, TRUE, code_size, ji, aot);
 }
 
 void
@@ -597,12 +612,15 @@ mono_arch_exceptions_init (void)
 {
 	guint8 *tramp;
 
+	if (mono_aot_only)
+		return;
+
 	/* LLVM needs different throw trampolines */
-	tramp = get_throw_exception ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE);
+	tramp = get_throw_exception ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, NULL, NULL, FALSE);
 
 	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_exception", NULL, TRUE);
 
-	tramp = get_throw_exception ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE);
+	tramp = get_throw_exception ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, NULL, NULL, FALSE);
 
 	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
 }
@@ -894,7 +912,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 	void (*restore_context) (MonoContext *);
 	MonoContext mctx;
 
-	restore_context = mono_arch_get_restore_context ();
+	restore_context = mono_get_restore_context ();
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
 
 	if (mono_debugger_handle_exception (&mctx, (MonoObject *)obj)) {

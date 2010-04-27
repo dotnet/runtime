@@ -542,6 +542,11 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
  * one.
  */
 
+/*
+ * X86 design:
+ * - similar to the PPC32 design, we reserve EBX to hold the GOT pointer.
+ */
+
 #ifdef MONO_ARCH_AOT_SUPPORTED
 /*
  * arch_emit_got_offset:
@@ -635,15 +640,14 @@ static void
 arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 {
 #if defined(TARGET_X86)
-		if (index == 0) {
-			/* It is filled up during loading by the AOT loader. */
-			emit_zero_bytes (acfg, 16);
-		} else {
-			/* Need to make sure this is 9 bytes long */
-			emit_byte (acfg, '\xe9');
-			emit_symbol_diff (acfg, acfg->plt_symbol, ".", -4);
-			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
-		}
+		guint32 offset = (acfg->plt_got_offset_base + index) * sizeof (gpointer);
+
+		/* jmp *<offset>(%ebx) */
+		emit_byte (acfg, 0xff);
+		emit_byte (acfg, 0xa3);
+		emit_int32 (acfg, offset);
+		/* Used by mono_aot_get_plt_info_offset */
+		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 #elif defined(TARGET_AMD64)
 		/*
 		 * We can't emit jumps because they are 32 bits only so they can't be patched.
@@ -807,6 +811,31 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 #else
 	*tramp_size = 9 * 4;
 #endif
+#elif defined(TARGET_X86)
+	guint8 buf [128];
+	guint8 *code;
+
+	/* Similar to the PPC code above */
+
+	/* FIXME: Could this clobber the register needed by get_vcall_slot () ? */
+
+	/* We clobber ECX, since EAX is used as MONO_ARCH_MONITOR_OBJECT_REG */
+	g_assert (MONO_ARCH_MONITOR_OBJECT_REG != X86_ECX);
+
+	code = buf;
+	/* Load mscorlib got address */
+	x86_mov_reg_membase (code, X86_ECX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	/* Push trampoline argument */
+	x86_push_membase (code, X86_ECX, (offset + 1) * sizeof (gpointer));
+	/* Load generic trampoline address */
+	x86_mov_reg_membase (code, X86_ECX, X86_ECX, offset * sizeof (gpointer), 4);
+	/* Branch to generic trampoline */
+	x86_jump_reg (code, X86_ECX);
+
+	emit_bytes (acfg, buf, code - buf);
+
+	*tramp_size = 17;
+	g_assert (code - buf == *tramp_size);
 #else
 	g_assert_not_reached ();
 #endif
@@ -831,6 +860,23 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
 
 	emit_bytes (acfg, buf, code - buf);
+	/* jump <method> */
+	emit_byte (acfg, '\xe9');
+	emit_symbol_diff (acfg, call_target, ".", -4);
+#elif defined(TARGET_X86)
+	guint8 buf [32];
+	guint8 *code;
+	int this_pos = 4;
+
+	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
+		this_pos = 8;
+	    
+	code = buf;
+
+	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
+
+	emit_bytes (acfg, buf, code - buf);
+
 	/* jump <method> */
 	emit_byte (acfg, '\xe9');
 	emit_symbol_diff (acfg, call_target, ".", -4);
@@ -962,6 +1008,26 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	*tramp_size = 9 * 4;
 #endif
 
+#elif defined(TARGET_X86)
+	guint8 buf [128];
+	guint8 *code;
+
+	/* Similar to the PPC code above */
+
+	g_assert (MONO_ARCH_RGCTX_REG != X86_ECX);
+
+	code = buf;
+	/* Load mscorlib got address */
+	x86_mov_reg_membase (code, X86_ECX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	/* Load arg */
+	x86_mov_reg_membase (code, MONO_ARCH_RGCTX_REG, X86_ECX, offset * sizeof (gpointer), 4);
+	/* Branch to the target address */
+	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (gpointer));
+
+	emit_bytes (acfg, buf, code - buf);
+
+	*tramp_size = 15;
+	g_assert (code - buf == *tramp_size);
 #else
 	g_assert_not_reached ();
 #endif
@@ -1025,6 +1091,55 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	emit_bytes (acfg, buf, code - buf);
 	
 	*tramp_size = code - buf + 7;
+#elif defined(TARGET_X86)
+	guint8 *buf, *code;
+	guint8 *labels [3];
+
+	code = buf = g_malloc (256);
+
+	/* Allocate a temporary stack slot */
+	x86_push_reg (code, X86_EAX);
+	/* Save EAX */
+	x86_push_reg (code, X86_EAX);
+
+	/* Load mscorlib got address */
+	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	/* Load arg */
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, offset * sizeof (gpointer), 4);
+
+	labels [0] = code;
+	x86_alu_membase_imm (code, X86_CMP, X86_EAX, 0, 0);
+	labels [1] = code;
+	x86_branch8 (code, X86_CC_Z, FALSE, 0);
+
+	/* Check key */
+	x86_alu_membase_reg (code, X86_CMP, X86_EAX, 0, MONO_ARCH_IMT_REG);
+	labels [2] = code;
+	x86_branch8 (code, X86_CC_Z, FALSE, 0);
+
+	/* Loop footer */
+	x86_alu_reg_imm (code, X86_ADD, X86_EAX, 2 * sizeof (gpointer));
+	x86_jump_code (code, labels [0]);
+
+	/* Match */
+	mono_x86_patch (labels [2], code);
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, 0, 4);
+	/* Save the target address to the temporary stack location */
+	x86_mov_membase_reg (code, X86_ESP, 4, X86_EAX, 4);
+	/* Restore EAX */
+	x86_pop_reg (code, X86_EAX);
+	/* Jump to the target address */
+	x86_ret (code);
+
+	/* No match */
+	/* FIXME: */
+	mono_x86_patch (labels [1], code);
+	x86_breakpoint (code);
+
+	emit_bytes (acfg, buf, code - buf);
+	
+	*tramp_size = code - buf;
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code, *code2, *labels [16];
@@ -3683,7 +3798,7 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		code = mono_arch_get_nullified_class_init_trampoline (&code_size);
 		emit_trampoline (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL, NULL);
-#if defined(TARGET_AMD64) && defined(MONO_ARCH_MONITOR_OBJECT_REG)
+#if (defined(TARGET_AMD64) || defined(TARGET_X86)) && defined(MONO_ARCH_MONITOR_OBJECT_REG)
 		code = mono_arch_create_monitor_enter_trampoline_full (&code_size, &ji, TRUE);
 		emit_trampoline (acfg, "monitor_enter_trampoline", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_create_monitor_exit_trampoline_full (&code_size, &ji, TRUE);

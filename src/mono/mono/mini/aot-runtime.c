@@ -3267,12 +3267,8 @@ init_plt (MonoAotModule *amodule)
 #ifndef MONO_CROSS_COMPILE
 
 #ifdef MONO_ARCH_AOT_SUPPORTED
-#ifdef __i386__
-	guint8 *buf = amodule->plt;
-#elif defined(__x86_64__) || defined(__arm__) || defined(__mono_ppc__)
 	int i;
 	gpointer plt_0;
-#endif
 	gpointer tramp;
 
 	if (amodule->plt_inited)
@@ -3280,11 +3276,6 @@ init_plt (MonoAotModule *amodule)
 
 	tramp = mono_create_specific_trampoline (amodule, MONO_TRAMPOLINE_AOT_PLT, mono_get_root_domain (), NULL);
 
-#ifdef __i386__
-	/* Initialize the first PLT entry */
-	make_writable (amodule->plt, amodule->plt_end - amodule->plt);
-	x86_jump_code (buf, tramp);
-#elif defined(__x86_64__) || defined(__arm__) || defined(__mono_ppc__)
 	/*
 	 * Initialize the PLT entries in the GOT to point to the default targets.
 	 */
@@ -3296,9 +3287,6 @@ init_plt (MonoAotModule *amodule)
 	 for (i = 1; i < amodule->info.plt_size; ++i)
 		 /* All the default entries point to the first entry */
 		 ((gpointer*)amodule->got)[amodule->info.plt_got_offset_base + i] = plt_0;
-#else
-	g_assert_not_reached ();
-#endif
 
 	amodule->plt_inited = TRUE;
 #endif
@@ -3373,7 +3361,7 @@ mono_aot_get_plt_info_offset (mgreg_t *regs, guint8 *code)
 
 	/* The offset is embedded inside the code after the plt entry */
 #if defined(__i386__)
-	return *(guint32*)(plt_entry + 5);
+	return *(guint32*)(plt_entry + 6);
 #elif defined(__x86_64__)
 	return *(guint32*)(plt_entry + 6);
 #elif defined(__arm__)
@@ -3483,6 +3471,14 @@ load_function (MonoAotModule *amodule, const char *name)
 				} else if (!strcmp (ji->data.name, "mono_amd64_get_original_ip")) {
 					target = mono_amd64_get_original_ip;
 #endif
+#ifdef __i386__
+				} else if (!strcmp (ji->data.name, "mono_x86_throw_exception")) {
+					target = mono_x86_throw_exception;
+#endif
+#ifdef __i386__
+				} else if (!strcmp (ji->data.name, "mono_x86_throw_corlib_exception")) {
+					target = mono_x86_throw_corlib_exception;
+#endif
 #ifdef __arm__
 				} else if (!strcmp (ji->data.name, "mono_arm_throw_exception")) {
 					target = mono_arm_throw_exception;
@@ -3516,6 +3512,24 @@ load_function (MonoAotModule *amodule, const char *name)
 					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "mono_thread_get_and_clear_pending_exception")) {
 					target = mono_thread_get_and_clear_pending_exception;
+				} else if (strstr (ji->data.name, "generic_trampoline_monitor_enter")) {
+					char *symbol;
+
+					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_MONITOR_ENTER);
+					target = mono_aot_get_named_code (symbol);
+					g_free (symbol);
+				} else if (strstr (ji->data.name, "generic_trampoline_monitor_exit")) {
+					char *symbol;
+
+					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_MONITOR_EXIT);
+					target = mono_aot_get_named_code (symbol);
+					g_free (symbol);
+				} else if (strstr (ji->data.name, "generic_trampoline_generic_class_init")) {
+					char *symbol;
+
+					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+					target = mono_aot_get_named_code (symbol);
+					g_free (symbol);
 				} else {
 					fprintf (stderr, "Unknown relocation '%s'\n", ji->data.name);
 					g_assert_not_reached ();

@@ -140,6 +140,11 @@ mono_arch_xregname (int reg)
 	}
 }
 
+void 
+mono_x86_patch (unsigned char* code, gpointer target)
+{
+	x86_patch (code, (unsigned char*)target);
+}
 
 typedef enum {
 	ArgInIReg,
@@ -2780,14 +2785,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_mov_reg_imm (code, ins->dreg, 0);
 			break;
 		case OP_LOAD_GOTADDR:
-			x86_call_imm (code, 0);
-			/* 
-			 * The patch needs to point to the pop, since the GOT offset needs 
-			 * to be added to that address.
-			 */
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_GOT_OFFSET, NULL);
-			x86_pop_reg (code, ins->dreg);
-			x86_alu_reg_imm (code, X86_ADD, ins->dreg, 0xf0f0f0f0);
+			g_assert (ins->dreg == MONO_ARCH_GOT_REG);
+			code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
 			break;
 		case OP_GOT_ENTRY:
 			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
@@ -4576,12 +4575,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		pos += sizeof (MonoLMF);
 
-		if (cfg->compile_aot)
-			cfg->disable_aot = TRUE;
-
 		/* save the current IP */
-		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
-		x86_push_imm_template (code);
+		if (cfg->compile_aot) {
+			/* This pushes the current ip */
+			x86_call_imm (code, 0);
+		} else {
+			mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
+			x86_push_imm_template (code);
+		}
 		cfa_offset += sizeof (gpointer);
 
 		/* save all caller saved regs */
@@ -4629,6 +4630,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 			} else {
 				code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
+				if (cfg->compile_aot)
+					cfg->disable_aot = TRUE;
 			}
 
 			/* Skip esp + method info */
@@ -5538,17 +5541,10 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 
 #define MAX_ARCH_DELEGATE_PARAMS 10
 
-gpointer
-mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+static gpointer
+get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *code_len)
 {
 	guint8 *code, *start;
-
-	if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
-		return NULL;
-
-	/* FIXME: Support more cases */
-	if (MONO_TYPE_ISSTRUCT (sig->ret))
-		return NULL;
 
 	/*
 	 * The stack contains:
@@ -5557,10 +5553,6 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	 */
 
 	if (has_target) {
-		static guint8* cached = NULL;
-		if (cached)
-			return cached;
-		
 		start = code = mono_global_codeman_reserve (64);
 
 		/* Replace the this argument with the target */
@@ -5570,25 +5562,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < 64);
-
-		mono_debug_add_delegate_trampoline (start, code - start);
-
-		mono_memory_barrier ();
-
-		cached = start;
 	} else {
-		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
 		int i = 0;
 		/* 8 for mov_reg and jump, plus 8 for each parameter */
-		int code_reserve = 8 + (sig->param_count * 8);
-
-		for (i = 0; i < sig->param_count; ++i)
-			if (!mono_is_regsize_var (sig->params [i]))
-				return NULL;
-
-		code = cache [sig->param_count];
-		if (code)
-			return code;
+		int code_reserve = 8 + (param_count * 8);
 
 		/*
 		 * The stack contains:
@@ -5612,7 +5589,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		x86_mov_reg_membase (code, X86_ECX, X86_ESP, 4, 4);
 
 		/* move args up */
-		for (i = 0; i < sig->param_count; ++i) {
+		for (i = 0; i < param_count; ++i) {
 			x86_mov_reg_membase (code, X86_EAX, X86_ESP, (i+2)*4, 4);
 			x86_mov_membase_reg (code, X86_ESP, (i+1)*4, X86_EAX, 4);
 		}
@@ -5620,8 +5597,88 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		x86_jump_membase (code, X86_ECX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < code_reserve);
+	}
 
-		mono_debug_add_delegate_trampoline (start, code - start);
+	mono_debug_add_delegate_trampoline (start, code - start);
+
+	if (code_len)
+		*code_len = code - start;
+
+	return start;
+}
+
+GSList*
+mono_arch_get_delegate_invoke_impls (void)
+{
+	GSList *res = NULL;
+	guint8 *code;
+	guint32 code_len;
+	int i;
+
+	code = get_delegate_invoke_impl (TRUE, 0, &code_len);
+	res = g_slist_prepend (res, mono_aot_tramp_info_create (g_strdup ("delegate_invoke_impl_has_target"), code, code_len));
+
+	for (i = 0; i < MAX_ARCH_DELEGATE_PARAMS; ++i) {
+		code = get_delegate_invoke_impl (FALSE, i, &code_len);
+		res = g_slist_prepend (res, mono_aot_tramp_info_create (g_strdup_printf ("delegate_invoke_impl_target_%d", i), code, code_len));
+	}
+
+	return res;
+}
+
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	guint8 *code, *start;
+
+	if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
+		return NULL;
+
+	/* FIXME: Support more cases */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
+
+	/*
+	 * The stack contains:
+	 * <delegate>
+	 * <return addr>
+	 */
+
+	if (has_target) {
+		static guint8* cached = NULL;
+		if (cached)
+			return cached;
+		
+		if (mono_aot_only) {
+			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
+			start = mono_aot_get_named_code (name);
+			g_free (name);
+		} else {
+			start = get_delegate_invoke_impl (TRUE, 0, NULL);
+		}
+
+		mono_memory_barrier ();
+
+		cached = start;
+	} else {
+		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
+		int i = 0;
+
+		for (i = 0; i < sig->param_count; ++i)
+			if (!mono_is_regsize_var (sig->params [i]))
+				return NULL;
+
+		code = cache [sig->param_count];
+		if (code)
+			return code;
+
+		if (mono_aot_only) {
+			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
+			start = mono_aot_get_named_code (name);
+			g_free (name);
+		} else {
+			start = get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
+		}
 
 		mono_memory_barrier ();
 
@@ -5855,6 +5912,50 @@ mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *cl
 	*sp = new_value;
 
 	return old_value;
+}
+
+/*
+ * mono_aot_emit_load_got_addr:
+ *
+ *   Emit code to load the got address.
+ * On x86, the result is placed into EBX.
+ */
+guint8*
+mono_arch_emit_load_got_addr (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji)
+{
+	x86_call_imm (code, 0);
+	/* 
+	 * The patch needs to point to the pop, since the GOT offset needs 
+	 * to be added to that address.
+	 */
+	if (cfg)
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_GOT_OFFSET, NULL);
+	else
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_GOT_OFFSET, NULL);
+	x86_pop_reg (code, MONO_ARCH_GOT_REG);
+	x86_alu_reg_imm (code, X86_ADD, MONO_ARCH_GOT_REG, 0xf0f0f0f0);
+
+	return code;
+}
+
+/*
+ * mono_ppc_emit_load_aotconst:
+ *
+ *   Emit code to load the contents of the GOT slot identified by TRAMP_TYPE and
+ * TARGET from the mscorlib GOT in full-aot code.
+ * On x86, the GOT address is assumed to be in EBX, and the result is placed into 
+ * EAX.
+ */
+guint8*
+mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target)
+{
+	/* Load the mscorlib got address */
+	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	*ji = mono_patch_info_list_prepend (*ji, code - start, tramp_type, target);
+	/* arch_emit_got_access () patches this */
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, 0xf0f0f0f0, 4);
+
+	return code;
 }
 
 #if __APPLE__

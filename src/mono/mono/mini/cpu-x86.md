@@ -574,7 +574,7 @@ iconv_to_r8_raw: dest:f src1:i len:17
 insert_i2: dest:x src1:x src2:i len:5 clob:1
 
 extractx_u2: dest:i src1:x len:5
-insertx_u1_slow: dest:x src1:i src2:i len:15 clob:x
+insertx_u1_slow: dest:x src1:i src2:i len:16 clob:x
 
 insertx_i4_slow: dest:x src1:x src2:i len:13 clob:x
 insertx_r4_slow: dest:x src1:x src2:f len:24 clob:1
