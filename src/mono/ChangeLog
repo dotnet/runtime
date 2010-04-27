@@ -1,3 +1,8 @@
+2010-04-27  Mark Probst  <mark.probst@gmail.com>
+
+	* scripts/mono-heapviz: If the major sections are too small, use a
+	larger width.
+
 2010-04-27  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Switch to eglib by default.

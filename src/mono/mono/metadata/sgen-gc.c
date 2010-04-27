@@ -313,6 +313,7 @@ static long time_major_fragment_creation = 0;
 static long pinned_chunk_bytes_alloced = 0;
 static long large_internal_bytes_alloced = 0;
 
+/* Keep in sync with internal_mem_names in dump_heap()! */
 enum {
 	INTERNAL_MEM_PIN_QUEUE,
 	INTERNAL_MEM_FRAGMENT,
@@ -1015,6 +1016,7 @@ static void check_consistency (void);
 static void check_section_scan_starts (GCMemSection *section);
 static void check_scan_starts (void);
 static void check_for_xdomain_refs (void);
+static void dump_occupied (char *start, char *end, char *section_start);
 static void dump_section (GCMemSection *section, const char *type);
 static void dump_heap (const char *type, int num, const char *reason);
 static void commit_stats (int generation);
@@ -1453,8 +1455,8 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		}	\
 	} while (0)
 
-//#include "sgen-major-copying.c"
-#include "sgen-marksweep.c"
+#include "sgen-major-copying.c"
+//#include "sgen-marksweep.c"
 
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
@@ -3025,7 +3027,8 @@ dump_heap (const char *type, int num, const char *reason)
 	static char const *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
 						     "fin-table", "finalize-entry", "dislink-table",
 						     "dislink", "roots-table", "root-record", "statistics",
-						     "remset", "gray-queue", "store-remset" };
+						     "remset", "gray-queue", "store-remset", "marksweep-tables",
+						     "marksweep-block-info" };
 
 	ObjectList *list;
 	LOSObject *bigobj;
@@ -3051,7 +3054,7 @@ dump_heap (const char *type, int num, const char *reason)
 
 	dump_section (nursery_section, "nursery");
 
-	major_dump_non_pinned_sections ();
+	major_dump_heap ();
 
 	fprintf (heap_dump_file, "<los>\n");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)

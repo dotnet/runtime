@@ -792,11 +792,12 @@ major_check_scan_starts (void)
 }
 
 static void
-major_dump_non_pinned_sections (void)
+major_dump_heap (void)
 {
 	GCMemSection *section;
 	for (section = section_list; section; section = section->block.next)
 		dump_section (section, "old");
+	/* FIXME: dump pinned sections, too */
 }
 
 static gint64

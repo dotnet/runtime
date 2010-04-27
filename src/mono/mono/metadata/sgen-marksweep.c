@@ -431,9 +431,31 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 #define major_check_scan_starts()
 
 static void
-major_dump_non_pinned_sections (void)
+major_dump_heap (void)
 {
-	g_assert_not_reached ();
+	MSBlockInfo *block;
+
+	for (block = all_blocks; block; block = block->next) {
+		int count = MS_BLOCK_FREE / block->obj_size;
+		int i;
+		int start = -1;
+
+		fprintf (heap_dump_file, "<section type=\"%s\" size=\"%zu\">\n", "old", (size_t)MS_BLOCK_FREE);
+
+		for (i = 0; i <= count; ++i) {
+			if ((i < count) && MS_OBJ_ALLOCED (MS_BLOCK_OBJ (block, i), block)) {
+				if (start < 0)
+					start = i;
+			} else {
+				if (start >= 0) {
+					dump_occupied (MS_BLOCK_OBJ (block, start), MS_BLOCK_OBJ (block, i), block->block);
+					start = -1;
+				}
+			}
+		}
+
+		fprintf (heap_dump_file, "</section>\n");
+	}
 }
 
 #define MS_MARK_INDEX_IN_BLOCK_AND_ENQUEUE_CHECKED(obj,block,index) do { \
