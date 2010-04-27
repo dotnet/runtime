@@ -820,7 +820,9 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	/* FIXME: Could this clobber the register needed by get_vcall_slot () ? */
 
 	/* We clobber ECX, since EAX is used as MONO_ARCH_MONITOR_OBJECT_REG */
+#ifdef MONO_ARCH_MONITOR_OBJECT_REG
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG != X86_ECX);
+#endif
 
 	code = buf;
 	/* Load mscorlib got address */
