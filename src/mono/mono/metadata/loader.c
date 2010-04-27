@@ -2290,12 +2290,6 @@ mono_method_get_header (MonoMethod *method)
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return NULL;
 
-	if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
-		MonoMethodWrapper *mw = (MonoMethodWrapper *)method;
-		g_assert (mw->header);
-		return mw->header;
-	}
-
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 		MonoMethodHeader *header;
@@ -2313,6 +2307,12 @@ mono_method_get_header (MonoMethod *method)
 		mono_loader_unlock ();
 		mono_metadata_free_mh (header);
 		return imethod->header;
+	}
+
+	if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
+		MonoMethodWrapper *mw = (MonoMethodWrapper *)method;
+		g_assert (mw->header);
+		return mw->header;
 	}
 
 	/* 
