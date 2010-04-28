@@ -68,6 +68,13 @@ static char *to_space_bumper = NULL;
 static char *to_space_top = NULL;
 static GCMemSection *to_space_section = NULL;
 
+#ifdef HEAVY_STATISTICS
+static long stat_major_copy_object_failed_forwarded = 0;
+static long stat_major_copy_object_failed_pinned = 0;
+static long stat_major_copy_object_failed_large_pinned = 0;
+static long stat_major_copy_object_failed_to_space = 0;
+#endif
+
 static gboolean
 obj_is_from_pinned_alloc (char *p)
 {
@@ -282,7 +289,7 @@ major_copy_or_mark_object (void **obj_slot)
 
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
 
-	HEAVY_STAT (++num_copy_object_called);
+	HEAVY_STAT (++stat_copy_object_called_major);
 
 	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
 
@@ -314,14 +321,14 @@ major_copy_or_mark_object (void **obj_slot)
 	if ((forwarded = object_is_forwarded (obj))) {
 		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
-		HEAVY_STAT (++stat_copy_object_failed_forwarded);
+		HEAVY_STAT (++stat_major_copy_object_failed_forwarded);
 		*obj_slot = forwarded;
 		return;
 	}
 	if (object_is_pinned (obj)) {
 		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
-		HEAVY_STAT (++stat_copy_object_failed_pinned);
+		HEAVY_STAT (++stat_major_copy_object_failed_pinned);
 		return;
 	}
 
@@ -355,7 +362,7 @@ major_copy_or_mark_object (void **obj_slot)
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
 		GRAY_OBJECT_ENQUEUE (obj);
-		HEAVY_STAT (++stat_copy_object_failed_large_pinned);
+		HEAVY_STAT (++stat_major_copy_object_failed_large_pinned);
 		return;
 	}
 
@@ -367,11 +374,13 @@ major_copy_or_mark_object (void **obj_slot)
 	if (MAJOR_OBJ_IS_IN_TO_SPACE (obj)) {
 		DEBUG (9, g_assert (objsize <= MAX_SMALL_OBJ_SIZE));
 		DEBUG (9, fprintf (gc_debug_file, " (already copied)\n"));
-		HEAVY_STAT (++stat_copy_object_failed_to_space);
+		HEAVY_STAT (++stat_major_copy_object_failed_to_space);
 		return;
 	}
 
  copy:
+	HEAVY_STAT (++stat_objects_copied_major);
+
 	*obj_slot = copy_object_no_checks (obj);
 }
 
@@ -754,8 +763,6 @@ major_do_collection (const char *reason)
 
 	g_assert (gray_object_queue_is_empty ());
 
-	commit_stats (GENERATION_OLD);
-
 	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 1);
 
 	save_target = num_major_sections / 2;
@@ -816,6 +823,13 @@ static void
 major_init (void)
 {
 	minor_collection_section_allowance = MIN_MINOR_COLLECTION_SECTION_ALLOWANCE;
+
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("# major copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_forwarded);
+	mono_counters_register ("# major copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_pinned);
+	mono_counters_register ("# major copy_object() failed large or pinned chunk", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_large_pinned);
+	mono_counters_register ("# major copy_object() failed to space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_to_space);
+#endif
 }
 
 /* only valid during minor collections */

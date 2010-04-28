@@ -258,16 +258,18 @@ static long stat_bytes_alloced = 0;
 static long stat_objects_alloced_degraded = 0;
 static long stat_bytes_alloced_degraded = 0;
 static long stat_bytes_alloced_los = 0;
+
 static long stat_copy_object_called_nursery = 0;
 static long stat_objects_copied_nursery = 0;
 static long stat_copy_object_called_major = 0;
 static long stat_objects_copied_major = 0;
 
-static long stat_copy_object_failed_from_space = 0;
-static long stat_copy_object_failed_forwarded = 0;
-static long stat_copy_object_failed_pinned = 0;
-static long stat_copy_object_failed_large_pinned = 0;
-static long stat_copy_object_failed_to_space = 0;
+static long stat_scan_object_called_nursery = 0;
+static long stat_scan_object_called_major = 0;
+
+static long stat_nursery_copy_object_failed_from_space = 0;
+static long stat_nursery_copy_object_failed_forwarded = 0;
+static long stat_nursery_copy_object_failed_pinned = 0;
 
 static long stat_store_remsets = 0;
 static long stat_store_remsets_unique = 0;
@@ -275,9 +277,6 @@ static long stat_saved_remsets_1 = 0;
 static long stat_saved_remsets_2 = 0;
 static long stat_global_remsets_added = 0;
 static long stat_global_remsets_processed = 0;
-
-static long num_copy_object_called = 0;
-static long num_objects_copied = 0;
 
 static int stat_wbarrier_set_field = 0;
 static int stat_wbarrier_set_arrayref = 0;
@@ -2033,8 +2032,6 @@ copy_object_no_checks (void *obj)
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", destination, ((MonoObject*)obj)->vtable->klass->name, objsize));
 	binary_protocol_copy (obj, destination, ((MonoObject*)obj)->vtable, objsize);
 
-	HEAVY_STAT (++num_objects_copied);
-
 	if (objsize <= sizeof (gpointer) * 8) {
 		mword *dest = (mword*)destination;
 		goto *copy_labels [objsize / sizeof (gpointer)];
@@ -2125,10 +2122,10 @@ copy_object (void **obj_slot)
 
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
 
-	HEAVY_STAT (++num_copy_object_called);
+	HEAVY_STAT (++stat_copy_object_called_nursery);
 
 	if (!ptr_in_nursery (obj)) {
-		HEAVY_STAT (++stat_copy_object_failed_from_space);
+		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
 		return;
 	}
 
@@ -2143,16 +2140,18 @@ copy_object (void **obj_slot)
 	if ((forwarded = object_is_forwarded (obj))) {
 		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
-		HEAVY_STAT (++stat_copy_object_failed_forwarded);
+		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
 		*obj_slot = forwarded;
 		return;
 	}
 	if (object_is_pinned (obj)) {
 		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
-		HEAVY_STAT (++stat_copy_object_failed_pinned);
+		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
 		return;
 	}
+
+	HEAVY_STAT (++stat_objects_copied_nursery);
 
 	*obj_slot = copy_object_no_checks (obj);
 }
@@ -2180,6 +2179,8 @@ static char*
 scan_object (char *start)
 {
 #include "sgen-scan-object.h"
+
+	HEAVY_STAT (++stat_scan_object_called_nursery);
 
 	return start;
 }
@@ -2239,6 +2240,8 @@ static char*
 major_scan_object (char *start)
 {
 #include "sgen-scan-object.h"
+
+	HEAVY_STAT (++stat_scan_object_called_major);
 
 	return start;
 }
@@ -3069,11 +3072,6 @@ init_stats (void)
 {
 	static gboolean inited = FALSE;
 
-#ifdef HEAVY_STATISTICS
-	num_copy_object_called = 0;
-	num_objects_copied = 0;
-#endif
-
 	if (inited)
 		return;
 
@@ -3113,16 +3111,18 @@ init_stats (void)
 	mono_counters_register ("# objects allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_alloced_degraded);
 	mono_counters_register ("bytes allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced_degraded);
 	mono_counters_register ("bytes allocated in LOS", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_bytes_alloced_los);
+
 	mono_counters_register ("# copy_object() called (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_called_nursery);
 	mono_counters_register ("# objects copied (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_copied_nursery);
 	mono_counters_register ("# copy_object() called (major)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_called_major);
 	mono_counters_register ("# objects copied (major)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_objects_copied_major);
 
-	mono_counters_register ("# copy_object() failed from space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_from_space);
-	mono_counters_register ("# copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_forwarded);
-	mono_counters_register ("# copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_pinned);
-	mono_counters_register ("# copy_object() failed large or pinned chunk", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_large_pinned);
-	mono_counters_register ("# copy_object() failed to space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copy_object_failed_to_space);
+	mono_counters_register ("# scan_object() called (nursery)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scan_object_called_nursery);
+	mono_counters_register ("# scan_object() called (major)", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scan_object_called_major);
+
+	mono_counters_register ("# nursery copy_object() failed from space", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_from_space);
+	mono_counters_register ("# nursery copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_forwarded);
+	mono_counters_register ("# nursery copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_pinned);
 
 	mono_counters_register ("Store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets);
 	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
@@ -3133,21 +3133,6 @@ init_stats (void)
 #endif
 
 	inited = TRUE;
-}
-
-static void
-commit_stats (int generation)
-{
-#ifdef HEAVY_STATISTICS
-	if (generation == GENERATION_NURSERY) {
-		stat_copy_object_called_nursery += num_copy_object_called;
-		stat_objects_copied_nursery += num_objects_copied;
-	} else {
-		g_assert (generation == GENERATION_OLD);
-		stat_copy_object_called_major += num_copy_object_called;
-		stat_objects_copied_major += num_objects_copied;
-	}
-#endif
 }
 
 /*
@@ -3274,8 +3259,6 @@ collect_nursery (size_t requested_size)
 	pin_stats_reset ();
 
 	g_assert (gray_object_queue_is_empty ());
-
-	commit_stats (GENERATION_NURSERY);
 
 	check_scan_starts ();
 

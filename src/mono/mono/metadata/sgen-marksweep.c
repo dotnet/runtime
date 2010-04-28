@@ -365,6 +365,8 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 {
 	void *obj = alloc_obj (size, FALSE);
 	*(MonoVTable**)obj = vtable;
+	HEAVY_STAT (++stat_objects_alloced_degraded);
+	HEAVY_STAT (stat_bytes_alloced_degraded += size);
 	return obj;
 }
 
@@ -489,6 +491,8 @@ major_copy_or_mark_object (void **ptr)
 	int index;
 	int count;
 
+	HEAVY_STAT (++stat_copy_object_called_major);
+
 	DEBUG (9, g_assert (obj));
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
 
@@ -502,6 +506,8 @@ major_copy_or_mark_object (void **ptr)
 		}
 		if (object_is_pinned (obj))
 			return;
+
+		HEAVY_STAT (++stat_objects_copied_major);
 
 		obj = copy_object_no_checks (obj);
 		*ptr = obj;
@@ -849,8 +855,6 @@ major_do_collection (const char *reason)
 	pin_stats_reset ();
 
 	g_assert (gray_object_queue_is_empty ());
-
-	commit_stats (GENERATION_OLD);
 
 	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 1);
 
