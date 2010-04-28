@@ -670,7 +670,20 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<SourcePath>{sourcedir}\mcs\class\System.Web\</SourcePath>
 		<Sources>
-			<Source type="list">net_2_0_System.Web.dll.sources</Source>
+			<Source type="list">System.Web.dll.sources</Source>
+			<Source>System.Web.UI/KeyedList.cs</Source>
+			<Source>System.Web.UI/KeyedListEnumerator.cs</Source>
+			<Source>System.Web.Security/MembershipCreateStatus.cs</Source>
+			<Source>System.Web.Security/MembershipCreateUserException.cs</Source>
+			<Source>System.Web.Security/MembershipPasswordException.cs</Source>
+			<Source>System.Web.Security/MembershipPasswordFormat.cs</Source>
+			<Source>System.Web.Security/MembershipProviderCollection.cs</Source>
+			<Source>System.Web.Security/MembershipProvider.cs</Source>
+			<Source>System.Web.Security/MembershipUserCollection.cs</Source>
+			<Source>System.Web.Security/MembershipUser.cs</Source>
+			<Source>System.Web.Security/MembershipValidatePasswordEventHandler.cs</Source>
+			<Source>System.Web.Security/RoleProvider.cs</Source>
+			<Source>System.Web.Security/ValidatePasswordEventArgs.cs</Source>
 			<Source>System.Web/UplevelHelper.cs</Source>
 		</Sources>
 	</Assembly>
@@ -730,7 +743,20 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<SourcePath>{sourcedir}\mcs\class\System.Web\</SourcePath>
 		<Sources>
-			<Source type="list">net_2_0_System.Web.dll.sources</Source>
+			<Source type="list">System.Web.dll.sources</Source>
+			<Source>System.Web.UI/KeyedList.cs</Source>
+			<Source>System.Web.UI/KeyedListEnumerator.cs</Source>
+			<Source>System.Web.Security/MembershipCreateStatus.cs</Source>
+			<Source>System.Web.Security/MembershipCreateUserException.cs</Source>
+			<Source>System.Web.Security/MembershipPasswordException.cs</Source>
+			<Source>System.Web.Security/MembershipPasswordFormat.cs</Source>
+			<Source>System.Web.Security/MembershipProviderCollection.cs</Source>
+			<Source>System.Web.Security/MembershipProvider.cs</Source>
+			<Source>System.Web.Security/MembershipUserCollection.cs</Source>
+			<Source>System.Web.Security/MembershipUser.cs</Source>
+			<Source>System.Web.Security/MembershipValidatePasswordEventHandler.cs</Source>
+			<Source>System.Web.Security/RoleProvider.cs</Source>
+			<Source>System.Web.Security/ValidatePasswordEventArgs.cs</Source>
 			<Source>System.Web/UplevelHelper.cs</Source>
 			<Source>-resource:resources/TranslationResources.resources</Source>
 			<Source>-resource:resources/WebUIValidation.js</Source>
