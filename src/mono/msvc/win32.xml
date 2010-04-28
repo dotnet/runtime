@@ -670,7 +670,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<SourcePath>{sourcedir}\mcs\class\System.Web\</SourcePath>
 		<Sources>
-			<Source type="list">System.Web.dll.sources</Source>
+			<Source type="list">net_2_0_System.Web.dll.sources</Source>
 			<Source>System.Web/UplevelHelper.cs</Source>
 		</Sources>
 	</Assembly>
@@ -730,7 +730,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<SourcePath>{sourcedir}\mcs\class\System.Web\</SourcePath>
 		<Sources>
-			<Source type="list">System.Web.dll.sources</Source>
+			<Source type="list">net_2_0_System.Web.dll.sources</Source>
 			<Source>System.Web/UplevelHelper.cs</Source>
 			<Source>-resource:resources/TranslationResources.resources</Source>
 			<Source>-resource:resources/WebUIValidation.js</Source>
