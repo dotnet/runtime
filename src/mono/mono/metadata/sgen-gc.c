@@ -1454,8 +1454,8 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		}	\
 	} while (0)
 
-#include "sgen-major-copying.c"
-//#include "sgen-marksweep.c"
+//#include "sgen-major-copying.c"
+#include "sgen-marksweep.c"
 
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
@@ -2021,13 +2021,15 @@ copy_object_no_checks (void *obj)
 
 	mword objsize;
 	char *destination;
-	MonoVTable *vt;
+	MonoVTable *vt = ((MonoObject*)obj)->vtable;
+	gboolean has_references = vt->klass->has_references;
 
 	objsize = safe_object_get_size ((MonoObject*)obj);
 	objsize += ALLOC_ALIGN - 1;
 	objsize &= ~(ALLOC_ALIGN - 1);
 
-	MAJOR_GET_COPY_OBJECT_SPACE (destination, objsize);
+	DEBUG (9, g_assert (vt->klass->inited));
+	MAJOR_GET_COPY_OBJECT_SPACE (destination, objsize, has_references);
 
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", destination, ((MonoObject*)obj)->vtable->klass->name, objsize));
 	binary_protocol_copy (obj, destination, ((MonoObject*)obj)->vtable, objsize);
@@ -2071,7 +2073,6 @@ copy_object_no_checks (void *obj)
 #endif
 	}
 	/* adjust array->bounds */
-	vt = ((MonoObject*)obj)->vtable;
 	DEBUG (9, g_assert (vt->gc_descr));
 	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
 		MonoArray *array = (MonoArray*)destination;
@@ -2089,8 +2090,10 @@ copy_object_no_checks (void *obj)
 		moved_objects [moved_objects_idx++] = destination;
 	}
 	obj = destination;
-	DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
-	GRAY_OBJECT_ENQUEUE (obj);
+	if (has_references) {
+		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
+		GRAY_OBJECT_ENQUEUE (obj);
+	}
 	return obj;
 }
 
@@ -4037,7 +4040,8 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		/* large objects are always pinned anyway */
 		p = alloc_large_inner (vtable, size);
 	} else {
-		p = major_alloc_small_pinned_obj (size);
+		DEBUG (9, g_assert (vtable->klass->inited));
+		p = major_alloc_small_pinned_obj (size, vtable->klass->has_references);
 	}
 	DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 	binary_protocol_alloc (p, vtable, size);

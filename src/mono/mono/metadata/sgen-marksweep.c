@@ -27,6 +27,7 @@ typedef struct _MSBlockInfo MSBlockInfo;
 struct _MSBlockInfo {
 	int obj_size;
 	gboolean pinned;
+	gboolean has_references;
 	char *block;
 	void **free_list;
 	MSBlockInfo *next_free;
@@ -78,12 +79,16 @@ static int *block_obj_sizes;
 static int num_block_obj_sizes;
 static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 
+#define MS_BLOCK_FLAG_PINNED	1
+#define MS_BLOCK_FLAG_REFS	2
+
+#define MS_BLOCK_TYPE_MAX	4
+
 /* all blocks in the system */
 static MSBlockInfo *all_blocks;
 static int num_major_sections = 0;
 /* one free block list for each block object size */
-static MSBlockInfo **free_non_pinned_blocks;
-static MSBlockInfo **free_pinned_blocks;
+static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
 
 static long stat_major_blocks_alloced = 0;
 static long stat_major_blocks_freed = 0;
@@ -99,7 +104,7 @@ ms_find_block_obj_size_index (int size)
 	g_assert_not_reached ();
 }
 
-#define FREE_BLOCKS(pinned) ((pinned) ? free_pinned_blocks : free_non_pinned_blocks)
+#define FREE_BLOCKS(p,r) (free_block_lists [((p) ? MS_BLOCK_FLAG_PINNED : 0) | ((r) ? MS_BLOCK_FLAG_REFS : 0)])
 
 #define MS_BLOCK_OBJ_SIZE_INDEX(s)				\
 	(((s)+7)>>3 < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES ?	\
@@ -215,13 +220,14 @@ consistency_check (void)
 
 	/* check free blocks */
 	for (i = 0; i < num_block_obj_sizes; ++i) {
-		check_block_free_list (free_non_pinned_blocks [i], block_obj_sizes [i], FALSE);
-		check_block_free_list (free_pinned_blocks [i], block_obj_sizes [i], TRUE);
+		int j;
+		for (j = 0; j < MS_BLOCK_TYPE_MAX; ++j)
+			check_block_free_list (free_block_lists [j][i], block_obj_sizes [i], j & MS_BLOCK_FLAG_PINNED);
 	}
 }
 
 static void
-ms_alloc_block (int size_index, gboolean pinned)
+ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 {
 	int size = block_obj_sizes [size_index];
 	int count = MS_BLOCK_FREE / size;
@@ -229,7 +235,7 @@ ms_alloc_block (int size_index, gboolean pinned)
 	int block_info_size = sizeof (MSBlockInfo) + sizeof (mword) * (num_mark_words - 1);
 	MSBlockInfo *info = get_internal_mem (block_info_size, INTERNAL_MEM_MS_BLOCK_INFO);
 	MSBlockHeader *header;
-	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned);
+	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
 	char *obj_start;
 	int i;
 
@@ -237,6 +243,7 @@ ms_alloc_block (int size_index, gboolean pinned)
 
 	info->obj_size = size;
 	info->pinned = pinned;
+	info->has_references = has_references;
 	info->block = ms_get_empty_block ();
 
 	header = (MSBlockHeader*) info->block;
@@ -271,15 +278,15 @@ obj_is_from_pinned_alloc (char *obj)
 }
 
 static void*
-alloc_obj (int size, gboolean pinned)
+alloc_obj (int size, gboolean pinned, gboolean has_references)
 {
 	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
-	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned);
+	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
 	MSBlockInfo *block;
 	void *obj;
 
 	if (!free_blocks [size_index])
-		ms_alloc_block (size_index, pinned);
+		ms_alloc_block (size_index, pinned, has_references);
 
 	block = free_blocks [size_index];
 	DEBUG (9, g_assert (block));
@@ -303,14 +310,14 @@ alloc_obj (int size, gboolean pinned)
 }
 
 static void*
-ms_alloc_obj (int size)
+ms_alloc_obj (int size, gboolean has_references)
 {
-	return alloc_obj (size, FALSE);
+	return alloc_obj (size, FALSE, has_references);
 }
 
 /* FIXME: inline fast path */
-#define MAJOR_GET_COPY_OBJECT_SPACE(dest, size) do {	\
-		(dest) = ms_alloc_obj ((size));		\
+#define MAJOR_GET_COPY_OBJECT_SPACE(dest, size, refs) do {	\
+		(dest) = ms_alloc_obj ((size), (refs));		\
 	} while (0)
 
 /*
@@ -327,7 +334,7 @@ free_object (char *obj, size_t size, gboolean pinned)
 	MS_CALC_MARK_BIT (word, bit, MS_BLOCK_OBJ_INDEX (obj, block));
 	DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
 	if (!block->free_list) {
-		MSBlockInfo **free_blocks = FREE_BLOCKS (pinned);
+		MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, block->has_references);
 		int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
 		DEBUG (9, g_assert (!block->next_free));
 		block->next_free = free_blocks [size_index];
@@ -346,9 +353,9 @@ major_free_non_pinned_object (char *obj, size_t size)
 
 /* size is a multiple of ALLOC_ALIGN */
 static void*
-major_alloc_small_pinned_obj (size_t size)
+major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 {
-	return alloc_obj (size, TRUE);
+	return alloc_obj (size, TRUE, has_references);
 }
 
 static void
@@ -363,7 +370,7 @@ free_pinned_object (char *obj, size_t size)
 static void*
 alloc_degraded (MonoVTable *vtable, size_t size)
 {
-	void *obj = alloc_obj (size, FALSE);
+	void *obj = alloc_obj (size, FALSE, vtable->klass->has_references);
 	*(MonoVTable**)obj = vtable;
 	HEAVY_STAT (++stat_objects_alloced_degraded);
 	HEAVY_STAT (stat_bytes_alloced_degraded += size);
@@ -466,7 +473,8 @@ major_dump_heap (void)
 		DEBUG (9, g_assert ((obj) == MS_BLOCK_OBJ ((block), (index)))); \
 		if (!MS_MARK_BIT ((block), __word, __bit) && MS_OBJ_ALLOCED ((obj), (block))) { \
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
-			GRAY_OBJECT_ENQUEUE ((obj));			\
+			if ((block)->has_references)			\
+				GRAY_OBJECT_ENQUEUE ((obj));		\
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
@@ -474,10 +482,11 @@ major_dump_heap (void)
 		int __word, __bit;					\
 		MS_CALC_MARK_BIT (__word, __bit, (index));		\
 		DEBUG (9, g_assert ((obj) == MS_BLOCK_OBJ ((block), (index)))); \
-		g_assert (MS_OBJ_ALLOCED ((obj), (block)));		\
+		DEBUG (9, g_assert (MS_OBJ_ALLOCED ((obj), (block))));	\
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
-			GRAY_OBJECT_ENQUEUE ((obj));			\
+			if ((block)->has_references)			\
+				GRAY_OBJECT_ENQUEUE ((obj));		\
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
@@ -536,6 +545,7 @@ major_copy_or_mark_object (void **ptr)
 			return;
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
+		/* FIXME: only enqueue if object has references */
 		GRAY_OBJECT_ENQUEUE (obj);
 		return;
 	}
@@ -643,9 +653,9 @@ major_sweep (void)
 
 	/* go through all free lists and remove the blocks to be freed */
 	for (i = 0; i < num_block_obj_sizes; ++i) {
-		int pinned;
-		for (pinned = 0; pinned <= 1; ++pinned) {
-			MSBlockInfo **free_blocks = FREE_BLOCKS (pinned);
+		int j;
+		for (j = 0; j < MS_BLOCK_TYPE_MAX; ++j) {
+			MSBlockInfo **free_blocks = free_block_lists [j];
 			iter = &(free_blocks [i]);
 			while (*iter) {
 				MSBlockInfo *block = *iter;
@@ -672,6 +682,54 @@ major_sweep (void)
 	}
 }
 
+static int count_pinned_ref;
+static int count_pinned_nonref;
+static int count_nonpinned_ref;
+static int count_nonpinned_nonref;
+
+static void
+count_nonpinned_callback (char *obj, size_t size, void *data)
+{
+	MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
+
+	if (vtable->klass->has_references)
+		++count_nonpinned_ref;
+	else
+		++count_nonpinned_nonref;
+}
+
+static void
+count_pinned_callback (char *obj, size_t size, void *data)
+{
+	MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
+
+	if (vtable->klass->has_references)
+		++count_pinned_ref;
+	else
+		++count_pinned_nonref;
+}
+
+static void
+count_ref_nonref_objs (void)
+{
+	int total;
+
+	count_pinned_ref = 0;
+	count_pinned_nonref = 0;
+	count_nonpinned_ref = 0;
+	count_nonpinned_nonref = 0;
+
+	major_iterate_objects (TRUE, FALSE, count_nonpinned_callback, NULL);
+	major_iterate_objects (FALSE, TRUE, count_pinned_callback, NULL);
+
+	total = count_pinned_nonref + count_nonpinned_nonref + count_pinned_ref + count_nonpinned_ref;
+
+	g_print ("ref: %d pinned %d non-pinned   non-ref: %d pinned %d non-pinned  --  %.1f\n",
+			count_pinned_ref, count_nonpinned_ref,
+			count_pinned_nonref, count_nonpinned_nonref,
+			(count_pinned_nonref + count_nonpinned_nonref) * 100.0 / total);
+}
+
 static void
 major_do_collection (const char *reason)
 {
@@ -689,6 +747,7 @@ major_do_collection (const char *reason)
 	int old_num_major_sections = num_major_sections;
 	int num_major_sections_saved, save_target, allowance_target;
 
+	//count_ref_nonref_objs ();
 	//consistency_check ();
 
 	init_stats ();
@@ -753,6 +812,7 @@ major_do_collection (const char *reason)
 		find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &start, &end);
 		if (start != end) {
 			pin_object (bigobj->data);
+			/* FIXME: only enqueue if object has references */
 			GRAY_OBJECT_ENQUEUE (bigobj->data);
 			if (heap_dump_file)
 				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
@@ -927,8 +987,8 @@ major_init (void)
 	}
 	*/
 
-	free_pinned_blocks = get_internal_mem (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
-	free_non_pinned_blocks = get_internal_mem (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i)
+		free_block_lists [i] = get_internal_mem (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
 
 	for (i = 0; i < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES; ++i)
 		fast_block_obj_size_indexes [i] = ms_find_block_obj_size_index (i * 8);

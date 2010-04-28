@@ -165,7 +165,7 @@ to_space_expand (void)
 	new_to_space_section ();
 }
 
-#define MAJOR_GET_COPY_OBJECT_SPACE(dest, size) do {			\
+#define MAJOR_GET_COPY_OBJECT_SPACE(dest, size, refs) do {		\
 		(dest) = to_space_bumper;				\
 		/* Make sure we have enough space available */		\
 		if ((dest) + (size) > to_space_top) {			\
@@ -218,7 +218,7 @@ major_is_object_live (char *obj)
 
 /* size is a multiple of ALLOC_ALIGN */
 static void*
-major_alloc_small_pinned_obj (size_t size)
+major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 {
 	int slot;
 	void *res = NULL;
