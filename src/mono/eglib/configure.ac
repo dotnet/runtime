@@ -56,6 +56,10 @@ arm*-darwin*)
 i*86-*-darwin*)
     ORDER=G_LITTLE_ENDIAN
     ;;
+*-*-openbsd*)
+    CFLAGS="$CFLAGS -pthread"
+    LDFLAGS="$LDFLAGS -pthread"
+    ;;
 esac
 
 AC_SUBST(ORDER)

@@ -71,6 +71,8 @@
  */
 gchar ***_NSGetEnviron();
 #define environ (*_NSGetEnviron())
+#else
+extern char **environ;
 #endif
 
 static int
