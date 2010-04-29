@@ -669,6 +669,8 @@ mono_arch_create_generic_class_init_trampoline_full (guint32 *code_size, MonoJum
 
 	g_assert (code - buf <= tramp_size);
 
+	*code_size = code - buf;
+
 	return buf;
 }
 

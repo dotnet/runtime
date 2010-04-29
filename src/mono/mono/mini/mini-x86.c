@@ -4640,6 +4640,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
 #endif
 			} else {
+				if (cfg->compile_aot)
+					code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
 				code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
 			}
 
