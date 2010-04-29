@@ -6076,7 +6076,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_byte (buf, thread->threadpool_thread);
 		break;
 	case CMD_THREAD_GET_ID:
-		buffer_add_long (buf, (guint64)thread);
+		buffer_add_long (buf, (guint64)(gsize)thread);
 		break;
 	default:
 		return ERR_NOT_IMPLEMENTED;

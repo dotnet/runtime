@@ -700,6 +700,11 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	guint32 opts = 0;
 	
 	*exclude_mask = 0;
+
+	if (mono_aot_only)
+		/* The cpuid function allocates from the global codeman */
+		return opts;
+
 	/* Feature Flags function, flags returned in EDX. */
 	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
 		if (edx & (1 << 15)) {
@@ -735,6 +740,10 @@ mono_arch_cpu_enumerate_simd_versions (void)
 {
 	int eax, ebx, ecx, edx;
 	guint32 sse_opts = 0;
+
+	if (mono_aot_only)
+		/* The cpuid function allocates from the global codeman */
+		return sse_opts;
 
 	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
 		if (edx & (1 << 25))
@@ -4632,8 +4641,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 			} else {
 				code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_get_lmf_addr");
-				if (cfg->compile_aot)
-					cfg->disable_aot = TRUE;
 			}
 
 			/* Skip esp + method info */
