@@ -26,7 +26,6 @@
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/thread-private.h>
-#include <mono/io-layer/mono-spinlock.h>
 #include <mono/io-layer/mutex-private.h>
 #include <mono/io-layer/atomic.h>
 
@@ -818,7 +817,7 @@ guint32 SuspendThread(gpointer handle)
 
 static pthread_key_t TLS_keys[TLS_MINIMUM_AVAILABLE];
 static gboolean TLS_used[TLS_MINIMUM_AVAILABLE]={FALSE};
-static guint32 TLS_spinlock=0;
+static pthread_mutex_t TLS_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 guint32
 mono_pthread_key_for_tls (guint32 idx)
@@ -841,7 +840,7 @@ guint32 TlsAlloc(void)
 	guint32 i;
 	int thr_ret;
 	
-	MONO_SPIN_LOCK (TLS_spinlock);
+	pthread_mutex_lock (&TLS_mutex);
 	
 	for(i=0; i<TLS_MINIMUM_AVAILABLE; i++) {
 		if(TLS_used[i]==FALSE) {
@@ -849,7 +848,7 @@ guint32 TlsAlloc(void)
 			thr_ret = pthread_key_create(&TLS_keys[i], NULL);
 			g_assert (thr_ret == 0);
 
-			MONO_SPIN_UNLOCK (TLS_spinlock);
+			pthread_mutex_unlock (&TLS_mutex);
 	
 #ifdef TLS_DEBUG
 			g_message ("%s: returning key %d", __func__, i);
@@ -859,7 +858,7 @@ guint32 TlsAlloc(void)
 		}
 	}
 
-	MONO_SPIN_UNLOCK (TLS_spinlock);
+	pthread_mutex_unlock (&TLS_mutex);
 	
 #ifdef TLS_DEBUG
 	g_message ("%s: out of indices", __func__);
@@ -888,10 +887,10 @@ gboolean TlsFree(guint32 idx)
 	g_message ("%s: freeing key %d", __func__, idx);
 #endif
 
-	MONO_SPIN_LOCK (TLS_spinlock);
+	pthread_mutex_lock (&TLS_mutex);
 	
 	if(TLS_used[idx]==FALSE) {
-		MONO_SPIN_UNLOCK (TLS_spinlock);
+		pthread_mutex_unlock (&TLS_mutex);
 
 		return(FALSE);
 	}
@@ -900,7 +899,7 @@ gboolean TlsFree(guint32 idx)
 	thr_ret = pthread_key_delete(TLS_keys[idx]);
 	g_assert (thr_ret == 0);
 	
-	MONO_SPIN_UNLOCK (TLS_spinlock);
+	pthread_mutex_unlock (&TLS_mutex);
 	
 	return(TRUE);
 }
