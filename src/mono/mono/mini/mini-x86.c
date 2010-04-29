@@ -4565,8 +4565,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 		}
 		else {
-			g_assert (!cfg->compile_aot);
-			x86_push_imm (code, cfg->domain);
+			if (cfg->compile_aot)
+				x86_push_imm (code, 0);
+			else
+				x86_push_imm (code, cfg->domain);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 		}
