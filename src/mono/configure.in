@@ -1525,7 +1525,7 @@ if test x$target_win32 = xno; then
 	dnl *********************************
 	dnl *** Checks for math functions ***
 	dnl *********************************
-        LIBS="$LIBS -lm";
+	AC_SEARCH_LIBS(sqrtf, m)
 	if test "x$has_broken_apple_cpp" != "xyes"; then
 	        AC_CHECK_FUNCS(finite, , AC_MSG_CHECKING(for finite in math.h)
 	                AC_TRY_LINK([#include <math.h>], 
