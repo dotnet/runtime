@@ -1602,6 +1602,8 @@ asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 	fprintf (acfg->fp, "\t.align %d\t; ilog2\n", ilog2(size));
 #elif defined(TARGET_ASM_GAS)
 	fprintf (acfg->fp, "\t.balign %d\n", size);
+#elif defined(TARGET_ASM_APPLE)
+	fprintf (acfg->fp, "\t.align %d\n", ilog2 (size));
 #else
 	fprintf (acfg->fp, "\t.align %d\n", size);
 #endif
