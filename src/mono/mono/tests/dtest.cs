@@ -1539,6 +1539,10 @@ public class DebuggerTests
 		string[] sources = l.Method.DeclaringType.GetSourceFiles ();
 		Assert.AreEqual (1, sources.Length);
 		Assert.AreEqual ("dtest-app.cs", sources [0]);
+
+		sources = l.Method.DeclaringType.GetSourceFiles (true);
+		Assert.AreEqual (1, sources.Length);
+		Assert.IsTrue (sources [0].EndsWith ("dtest-app.cs"));
 	}
 
 	[Test]
