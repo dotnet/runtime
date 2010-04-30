@@ -1396,16 +1396,30 @@ enum {
 	MINI_TOKEN_SOURCE_FIELD
 };
 
-/* 
- * This structures contains information about a trampoline function required by
- * the AOT compiler in full-aot mode.
- */
-typedef struct
-{
-	guint8 *code;
-	guint32 code_size;
-	char *name;
-} MonoAotTrampInfo;
+ /* 
+  * Information about a trampoline function.
+  */
+ typedef struct
+ {
+	/* 
+	 * The native code of the trampoline. Not owned by this structure.
+	 */
+ 	guint8 *code;
+ 	guint32 code_size;
+	/*
+	 * The name of the trampoline which can be used in AOT/xdebug. Owned by this
+	 * structure.
+	 */
+ 	char *name;
+	/* 
+	 * Patches required by the trampoline when aot-ing. Owned by this structure.
+	 */
+	MonoJumpInfo *ji;
+	/*
+	 * Unwind information. Owned by this structure.
+	 */
+	GSList *unwind_ops;
+} MonoTrampInfo;
 
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
@@ -1550,7 +1564,6 @@ gpointer mono_aot_get_imt_thunk             (MonoVTable *vtable, MonoDomain *dom
 guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len) MONO_INTERNAL;
 guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
 char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
-MonoAotTrampInfo* mono_aot_tramp_info_create (const char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
 MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method) MONO_INTERNAL;
 guint32  mono_aot_get_got_offset            (MonoJumpInfo *ji) MONO_INTERNAL;
 char*    mono_aot_get_method_name           (MonoCompile *cfg) MONO_INTERNAL;
@@ -1654,6 +1667,8 @@ MonoUnwindOp     *mono_create_unwind_op (int when,
 void              mono_emit_unwind_op (MonoCompile *cfg, int when, 
 									   int tag, int reg, 
 									   int val) MONO_INTERNAL;
+MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops) MONO_INTERNAL;
+void              mono_tramp_info_free (MonoTrampInfo *info) MONO_INTERNAL;
 
 int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
 									 MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 

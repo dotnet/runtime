@@ -488,11 +488,11 @@ mono_arch_get_delegate_invoke_impls (void)
 	int i;
 
 	code = get_delegate_invoke_impl (TRUE, 0, &code_len, TRUE);
-	res = g_slist_prepend (res, mono_aot_tramp_info_create (g_strdup ("delegate_invoke_impl_has_target"), code, code_len));
+	res = g_slist_prepend (res, mono_tramp_info_create (g_strdup ("delegate_invoke_impl_has_target"), code, code_len, NULL, NULL));
 
 	for (i = 0; i < MAX_ARCH_DELEGATE_PARAMS; ++i) {
 		code = get_delegate_invoke_impl (FALSE, i, &code_len, TRUE);
-		res = g_slist_prepend (res, mono_aot_tramp_info_create (g_strdup_printf ("delegate_invoke_impl_target_%d", i), code, code_len));
+		res = g_slist_prepend (res, mono_tramp_info_create (g_strdup_printf ("delegate_invoke_impl_target_%d", i), code, code_len, NULL, NULL));
 	}
 
 	return res;

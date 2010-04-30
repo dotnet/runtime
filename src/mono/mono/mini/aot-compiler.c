@@ -3851,7 +3851,7 @@ emit_trampolines (MonoAotCompile *acfg)
 			/* delegate_invoke_impl trampolines */
 			l = mono_arch_get_delegate_invoke_impls ();
 			while (l) {
-				MonoAotTrampInfo *info = l->data;
+				MonoTrampInfo *info = l->data;
 
 				emit_trampoline (acfg, info->name, info->code, info->code_size, acfg->got_offset, NULL, NULL);
 				l = l->next;
@@ -4973,23 +4973,6 @@ mono_aot_get_array_helper_from_wrapper (MonoMethod *method)
 	}
 
 	return m;
-}
-
-/*
- * mono_aot_tramp_info_create:
- *
- *   Create a MonoAotTrampInfo structure from the arguments.
- */
-MonoAotTrampInfo*
-mono_aot_tramp_info_create (const char *name, guint8 *code, guint32 code_size)
-{
-	MonoAotTrampInfo *info = g_new0 (MonoAotTrampInfo, 1);
-
-	info->name = (char*)name;
-	info->code = code;
-	info->code_size = code_size;
-
-	return info;
 }
 
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
