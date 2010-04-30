@@ -402,7 +402,8 @@ typedef enum {
 	CMD_TYPE_GET_PROPERTIES = 9,
 	CMD_TYPE_GET_CATTRS = 10,
 	CMD_TYPE_GET_FIELD_CATTRS = 11,
-	CMD_TYPE_GET_PROPERTY_CATTRS = 12
+	CMD_TYPE_GET_PROPERTY_CATTRS = 12,
+	CMD_TYPE_GET_SOURCE_FILES_2 = 13,
 } CmdType;
 
 typedef enum {
@@ -5730,7 +5731,8 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_objid (buf, o);
 		break;
 	}
-	case CMD_TYPE_GET_SOURCE_FILES: {
+	case CMD_TYPE_GET_SOURCE_FILES:
+	case CMD_TYPE_GET_SOURCE_FILES_2: {
 		gpointer iter = NULL;
 		MonoMethod *method;
 		char *source_file, *base;
@@ -5759,9 +5761,13 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_int (buf, files->len);
 		for (i = 0; i < files->len; ++i) {
 			source_file = g_ptr_array_index (files, i);
-			base = g_path_get_basename (source_file);
-			buffer_add_string (buf, base);
-			g_free (base);
+			if (command == CMD_TYPE_GET_SOURCE_FILES_2) {
+				buffer_add_string (buf, source_file);
+			} else {
+				base = g_path_get_basename (source_file);
+				buffer_add_string (buf, base);
+				g_free (base);
+			}
 			g_free (source_file);
 		}
 		g_ptr_array_free (files, TRUE);
