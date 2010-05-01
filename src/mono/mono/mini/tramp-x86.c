@@ -931,3 +931,22 @@ mono_arch_create_handler_block_trampoline (void)
 
 	return buf;
 }
+
+guint8*
+mono_arch_get_call_target (guint8 *code)
+{
+	if (code [-5] == 0xe8) {
+		guint32 disp = *(guint32*)(code - 4);
+		guint8 *target = code + disp;
+
+		return target;
+	} else {
+		return NULL;
+	}
+}
+
+guint32
+mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+{
+	return *(guint32*)(plt_entry + 6);
+}

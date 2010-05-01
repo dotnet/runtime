@@ -704,3 +704,29 @@ mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 
 	return buf;
 }
+
+guint8*
+mono_arch_get_call_target (guint8 *code)
+{
+	/* Should be a bl */
+	guint32 ins = ((guint32*)(gpointer)code) [-1];
+
+	if ((ins >> 26 == 18) && ((ins & 1) == 1) && ((ins & 2) == 0)) {
+		gint32 disp = (((gint32)ins) >> 2) & 0xffffff;
+		guint8 *target = code - 4 + (disp * 4);
+
+		return target;
+	} else {
+		return NULL;
+	}
+}
+
+guint32
+mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+{
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	return ((guint32*)plt_entry) [8];
+#else
+	return ((guint32*)plt_entry) [6];
+#endif
+}

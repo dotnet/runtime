@@ -989,3 +989,32 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	x86_push_imm (code, (guint64)func_arg);
 	amd64_call_reg (code, AMD64_R11);
 }
+
+/*
+ * mono_arch_get_call_target:
+ *
+ *   Return the address called by the code before CODE if exists.
+ */
+guint8*
+mono_arch_get_call_target (guint8 *code)
+{
+	if (code [-5] == 0xe8) {
+		guint32 disp = *(guint32*)(code - 4);
+		guint8 *target = code + disp;
+
+		return target;
+	} else {
+		return NULL;
+	}
+}
+
+/*
+ * mono_arch_get_plt_info_offset:
+ *
+ *   Return the PLT info offset belonging to the plt entry PLT_ENTRY.
+ */
+guint32
+mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+{
+	return *(guint32*)(plt_entry + 6);
+}

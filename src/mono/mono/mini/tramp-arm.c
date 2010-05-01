@@ -708,3 +708,26 @@ mono_arch_create_generic_class_init_trampoline_full (MonoTrampInfo **info, gbool
 }
 	
 #endif /* DISABLE_JIT */
+
+guint8*
+mono_arch_get_call_target (guint8 *code)
+{
+	guint32 ins = ((guint32*)(gpointer)code) [-1];
+
+	/* Should be a 'bl' */
+	if ((((ins >> 25) & 0x7) == 0x5) && (((ins >> 24) & 0x1) == 0x1)) {
+		gint32 disp = ((gint32)ins) & 0xffffff;
+		guint8 *target = code - 4 + 8 + (disp * 4);
+
+		return target;
+	} else {
+		return NULL;
+	}
+}
+
+guint32
+mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+{
+	/* The offset is stored as the 4th word of the plt entry */
+	return ((guint32*)plt_entry) [3];
+}

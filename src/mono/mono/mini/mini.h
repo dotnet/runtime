@@ -1822,6 +1822,8 @@ MonoMethod* mono_arch_find_imt_method           (mgreg_t *regs, guint8 *code) MO
 MonoVTable* mono_arch_find_static_call_vtable   (mgreg_t *regs, guint8 *code) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp) MONO_INTERNAL;
 void    mono_arch_notify_pending_exc            (void) MONO_INTERNAL;
+guint8* mono_arch_get_call_target               (guint8 *code) MONO_INTERNAL;
+guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, mgreg_t *regs, guint8 *code) MONO_INTERNAL;
 
 /* Handle block guard */
 gpointer mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *clause, MonoContext *ctx, gpointer new_value) MONO_INTERNAL;

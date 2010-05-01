@@ -3264,9 +3264,6 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 static void
 init_plt (MonoAotModule *amodule)
 {
-#ifndef MONO_CROSS_COMPILE
-
-#ifdef MONO_ARCH_AOT_SUPPORTED
 	int i;
 	gpointer plt_0;
 	gpointer tramp;
@@ -3289,9 +3286,6 @@ init_plt (MonoAotModule *amodule)
 		 ((gpointer*)amodule->got)[amodule->info.plt_got_offset_base + i] = plt_0;
 
 	amodule->plt_inited = TRUE;
-#endif
-
-#endif /* MONO_CROSS_COMPILE */
 }
 
 /*
@@ -3303,39 +3297,13 @@ guint8*
 mono_aot_get_plt_entry (guint8 *code)
 {
 	MonoAotModule *aot_module = find_aot_module (code);
-#if defined(__arm__) || defined(__mono_ppc__)
-	guint32 ins;
-#endif
 
 	if (!aot_module)
 		return NULL;
 
-#if defined(__i386__) || defined(__x86_64__)
-	if (code [-5] == 0xe8) {
-		guint32 disp = *(guint32*)(code - 4);
-		guint8 *target = code + disp;
-
-		if ((target >= (guint8*)(aot_module->plt)) && (target < (guint8*)(aot_module->plt_end)))
-			return target;
-	}
-#elif defined(__arm__)
-	ins = ((guint32*)(gpointer)code) [-1];
-
-	/* Should be a 'bl' */
-	if ((((ins >> 25) & 0x7) == 0x5) && (((ins >> 24) & 0x1) == 0x1)) {
-		gint32 disp = ((gint32)ins) & 0xffffff;
-		guint8 *target = code - 4 + 8 + (disp * 4);
-
-		if ((target >= (guint8*)(aot_module->plt)) && (target < (guint8*)(aot_module->plt_end)))
-			return target;
-	}		
-#elif defined(__mono_ppc__)
-	/* Should be a bl */
-	ins = ((guint32*)(gpointer)code) [-1];
-
-	if ((ins >> 26 == 18) && ((ins & 1) == 1) && ((ins & 2) == 0)) {
-		gint32 disp = (((gint32)ins) >> 2) & 0xffffff;
-		guint8 *target = code - 4 + (disp * 4);
+#ifdef MONO_ARCH_AOT_SUPPORTED
+	{
+		guint8 *target = mono_arch_get_call_target (code);
 
 		if ((target >= (guint8*)(aot_module->plt)) && (target < (guint8*)(aot_module->plt_end)))
 			return target;
@@ -3360,19 +3328,8 @@ mono_aot_get_plt_info_offset (mgreg_t *regs, guint8 *code)
 	g_assert (plt_entry);
 
 	/* The offset is embedded inside the code after the plt entry */
-#if defined(__i386__)
-	return *(guint32*)(plt_entry + 6);
-#elif defined(__x86_64__)
-	return *(guint32*)(plt_entry + 6);
-#elif defined(__arm__)
-	/* The offset is stored as the 4th word of the plt entry */
-	return ((guint32*)plt_entry) [3];          
-#elif defined(__mono_ppc__)
-#ifdef PPC_USES_FUNCTION_DESCRIPTOR
-	return ((guint32*)plt_entry) [8];
-#else
-	return ((guint32*)plt_entry) [6];
-#endif
+#ifdef MONO_ARCH_AOT_SUPPORTED
+	return mono_arch_get_plt_info_offset (plt_entry, regs, code);
 #else
 	g_assert_not_reached ();
 	return 0;
