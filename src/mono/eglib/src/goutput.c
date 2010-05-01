@@ -122,7 +122,7 @@ g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, 
 		log_domain != NULL ? ": " : "",
 		msg);
 #else
-	printf ("%s%s%s",
+	printf ("%s%s%s\n",
 		log_domain != NULL ? log_domain : "",
 		log_domain != NULL ? ": " : "",
 		msg);

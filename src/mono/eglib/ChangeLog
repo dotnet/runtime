@@ -1,3 +1,7 @@
+2010-05-01  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/goutput.c (g_logv): Append a '\n' to the end of the string as glib does.
+
 2010-04-28  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.ac src/gspawn.c: Applied openbsd changes from Robert Nagy
