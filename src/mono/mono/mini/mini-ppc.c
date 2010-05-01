@@ -5450,9 +5450,14 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	MonoJumpInfo *patch_info;
 	int i;
 	guint8 *code;
-	const guint8* exc_throw_pos [MONO_EXC_INTRINS_NUM] = {NULL};
-	guint8 exc_throw_found [MONO_EXC_INTRINS_NUM] = {0};
+	guint8* exc_throw_pos [MONO_EXC_INTRINS_NUM];
+	guint8 exc_throw_found [MONO_EXC_INTRINS_NUM];
 	int max_epilog_size = 50;
+
+	for (i = 0; i < MONO_EXC_INTRINS_NUM; i++) {
+		exc_throw_pos [i] = NULL;
+		exc_throw_found [i] = 0;
+	}
 
 	/* count the number of exception infos */
      
