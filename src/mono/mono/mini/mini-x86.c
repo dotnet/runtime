@@ -5659,14 +5659,11 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		static guint8* cached = NULL;
 		if (cached)
 			return cached;
-		
-		if (mono_aot_only) {
-			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
-			start = mono_aot_get_named_code (name);
-			g_free (name);
-		} else {
+
+		if (mono_aot_only)
+			start = mono_aot_get_named_code ("delegate_invoke_impl_has_target");
+		else
 			start = get_delegate_invoke_impl (TRUE, 0, NULL);
-		}
 
 		mono_memory_barrier ();
 
