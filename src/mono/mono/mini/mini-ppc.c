@@ -2278,12 +2278,9 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		NULLIFY_INS (ins);
 		break;
 	case OP_LNEG:
-		/* This is the old version from inssel-long32.brg */
-		MONO_EMIT_NEW_UNALU (cfg, OP_INOT, ins->dreg + 1, ins->sreg1 + 1);
-		MONO_EMIT_NEW_UNALU (cfg, OP_INOT, ins->dreg + 2, ins->sreg1 + 2);
-		/* ADC sets the condition codes */
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, ins->dreg + 1, ins->dreg + 1, 1);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, ins->dreg + 2, ins->dreg + 2, 0);
+		/* From gcc generated code */
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PPC_SUBFIC, ins->dreg + 1, ins->sreg1 + 1, 0);
+		MONO_EMIT_NEW_UNALU (cfg, OP_PPC_SUBFZE, ins->dreg + 2, ins->sreg1 + 2);
 		NULLIFY_INS (ins);
 		break;
 	default:
