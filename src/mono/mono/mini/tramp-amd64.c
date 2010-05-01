@@ -452,8 +452,7 @@ mono_arch_create_generic_trampoline_full (MonoTrampolineType tramp_type, MonoTra
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, mono_get_lmf_addr);
 	}
@@ -489,13 +488,12 @@ mono_arch_create_generic_trampoline_full (MonoTrampolineType tramp_type, MonoTra
 
 	if (aot) {
 		char *icall_name = g_strdup_printf ("trampoline_func_%d", tramp_type);
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
-		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RIP, 0, 8);
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
 	} else {
 		tramp = (guint8*)mono_get_trampoline_func (tramp_type);
-		amd64_mov_reg_imm (code, AMD64_RAX, tramp);
+		amd64_mov_reg_imm (code, AMD64_R11, tramp);
 	}
-	amd64_call_reg (code, AMD64_RAX);
+	amd64_call_reg (code, AMD64_R11);
 
 	/* Check for thread interruption */
 	/* This is not perf critical code so no need to check the interrupt flag */
@@ -504,12 +502,12 @@ mono_arch_create_generic_trampoline_full (MonoTrampolineType tramp_type, MonoTra
 	 */
 	amd64_mov_membase_reg (code, AMD64_RBP, res_offset, AMD64_RAX, 8);
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
-		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RIP, 0, 8);
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
 	} else {
-		amd64_mov_reg_imm (code, AMD64_RAX, (guint8*)mono_thread_force_interruption_checkpoint);
+		amd64_mov_reg_imm (code, AMD64_R11, (guint8*)mono_thread_force_interruption_checkpoint);
 	}
-	amd64_call_reg (code, AMD64_RAX);
+	amd64_call_reg (code, AMD64_R11);
+
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, res_offset, 8);	
 
 	/* Restore LMF */
@@ -694,8 +692,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, MonoTrampInfo *
 	amd64_mov_reg_reg (code, MONO_ARCH_VTABLE_REG, AMD64_ARG_REG1, 8);
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, g_strdup_printf ("specific_trampoline_lazy_fetch_%u", slot));
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, g_strdup_printf ("specific_trampoline_lazy_fetch_%u", slot));
 		amd64_jump_reg (code, AMD64_R11);
 	} else {
 		tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
@@ -746,8 +743,7 @@ mono_arch_create_generic_class_init_trampoline_full (MonoTrampInfo **info, gbool
 	x86_patch (jump, code);
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_generic_class_init");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_generic_class_init");
 		amd64_jump_reg (code, AMD64_R11);
 	} else {
 		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), NULL);
@@ -854,8 +850,7 @@ mono_arch_create_monitor_enter_trampoline_full (MonoTrampInfo **info, gboolean a
 #endif
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_monitor_enter");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_monitor_enter");
 		amd64_jump_reg (code, AMD64_R11);
 	} else {
 		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
@@ -959,8 +954,7 @@ mono_arch_create_monitor_exit_trampoline_full (MonoTrampInfo **info, gboolean ao
 #endif
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_monitor_exit");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_monitor_exit");
 		amd64_jump_reg (code, AMD64_R11);
 	} else {
 		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_EXIT, mono_get_root_domain (), NULL);

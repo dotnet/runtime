@@ -7500,6 +7500,22 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	}
 }
 
+/*
+ * mono_arch_emit_load_aotconst:
+ *
+ *   Emit code to load the contents of the GOT slot identified by TRAMP_TYPE and
+ * TARGET from the mscorlib GOT in full-aot code.
+ * On AMD64, the result is placed into R11.
+ */
+guint8*
+mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target)
+{
+	*ji = mono_patch_info_list_prepend (*ji, code - start, tramp_type, target);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+
+	return code;
+}
+
 /* Soft Debug support */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 
