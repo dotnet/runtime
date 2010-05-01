@@ -1071,6 +1071,23 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 	}
 }
 
+static guchar*
+create_trampoline_code (MonoTrampolineType tramp_type)
+{
+#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+	MonoTrampInfo *info;
+	guchar *code;
+
+	code = mono_arch_create_generic_trampoline_full (tramp_type, &info, FALSE);
+	mono_save_trampoline_xdebug_info (info->name, info->code, info->code_size, info->unwind_ops);
+	mono_tramp_info_free (info);
+
+	return code;
+#else
+	return mono_arch_create_trampoline_code (tramp_type);
+#endif
+}
+
 void
 mono_trampolines_init (void)
 {
@@ -1079,27 +1096,27 @@ mono_trampolines_init (void)
 	if (mono_aot_only)
 		return;
 
-	mono_trampoline_code [MONO_TRAMPOLINE_JIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JIT);
-	mono_trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
-	mono_trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
- 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
-	mono_trampoline_code [MONO_TRAMPOLINE_RGCTX_LAZY_FETCH] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_RGCTX_LAZY_FETCH);
+	mono_trampoline_code [MONO_TRAMPOLINE_JIT] = create_trampoline_code (MONO_TRAMPOLINE_JIT);
+	mono_trampoline_code [MONO_TRAMPOLINE_JUMP] = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	mono_trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_CLASS_INIT] = create_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+	mono_trampoline_code [MONO_TRAMPOLINE_RGCTX_LAZY_FETCH] = create_trampoline_code (MONO_TRAMPOLINE_RGCTX_LAZY_FETCH);
 #ifdef MONO_ARCH_AOT_SUPPORTED
-	mono_trampoline_code [MONO_TRAMPOLINE_AOT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT);
-	mono_trampoline_code [MONO_TRAMPOLINE_AOT_PLT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT_PLT);
+	mono_trampoline_code [MONO_TRAMPOLINE_AOT] = create_trampoline_code (MONO_TRAMPOLINE_AOT);
+	mono_trampoline_code [MONO_TRAMPOLINE_AOT_PLT] = create_trampoline_code (MONO_TRAMPOLINE_AOT_PLT);
 #endif
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
-	mono_trampoline_code [MONO_TRAMPOLINE_DELEGATE] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_DELEGATE);
+	mono_trampoline_code [MONO_TRAMPOLINE_DELEGATE] = create_trampoline_code (MONO_TRAMPOLINE_DELEGATE);
 #endif
-	mono_trampoline_code [MONO_TRAMPOLINE_RESTORE_STACK_PROT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_RESTORE_STACK_PROT);
-	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
-	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_ENTER] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
-	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_EXIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
+	mono_trampoline_code [MONO_TRAMPOLINE_RESTORE_STACK_PROT] = create_trampoline_code (MONO_TRAMPOLINE_RESTORE_STACK_PROT);
+	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
+	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_ENTER] = create_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
+	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_EXIT] = create_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
 #ifdef MONO_ARCH_LLVM_SUPPORTED
-	mono_trampoline_code [MONO_TRAMPOLINE_LLVM_VCALL] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_LLVM_VCALL);
+	mono_trampoline_code [MONO_TRAMPOLINE_LLVM_VCALL] = create_trampoline_code (MONO_TRAMPOLINE_LLVM_VCALL);
 #endif
 #ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
-	mono_trampoline_code [MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
+	mono_trampoline_code [MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD] = create_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
 	mono_create_handler_block_trampoline ();
 #endif
 
@@ -1181,7 +1198,11 @@ mono_create_generic_class_init_trampoline (void)
 			/* get_named_code () might return an ftnptr, but our caller expects a direct pointer */
 			code = mono_get_addr_from_ftnptr (mono_aot_get_named_code ("generic_class_init_trampoline"));
 		else
+#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+			code = mono_arch_create_generic_class_init_trampoline_full (NULL, FALSE);
+#else
 			code = mono_arch_create_generic_class_init_trampoline ();
+#endif
 	}
 
 	mono_trampolines_unlock ();
@@ -1353,7 +1374,11 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	if (tramp)
 		return tramp;
 
+#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline_full (offset, NULL, FALSE);
+#else
 	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset);
+#endif
 	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
 
 	mono_trampolines_lock ();
@@ -1391,7 +1416,11 @@ mono_create_monitor_enter_trampoline (void)
 	mono_trampolines_lock ();
 
 	if (!code)
+#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+		code = mono_arch_create_monitor_enter_trampoline_full (NULL, FALSE);
+#else
 		code = mono_arch_create_monitor_enter_trampoline ();
+#endif
 
 	mono_trampolines_unlock ();
 #else
@@ -1417,7 +1446,11 @@ mono_create_monitor_exit_trampoline (void)
 	mono_trampolines_lock ();
 
 	if (!code)
+#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+		code = mono_arch_create_monitor_exit_trampoline_full (NULL, FALSE);
+#else
 		code = mono_arch_create_monitor_exit_trampoline ();
+#endif
 
 	mono_trampolines_unlock ();
 #else

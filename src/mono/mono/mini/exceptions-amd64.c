@@ -152,14 +152,14 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 gpointer
-mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start = NULL;
 	guint8 *code;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	/* restore_contect (MonoContext *ctx) */
-
-	*ji = NULL;
 
 	start = code = mono_global_codeman_reserve (256);
 
@@ -197,7 +197,8 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 
 	mono_arch_flush_icache (start, code - start);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -210,14 +211,14 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_call_filter_full (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start;
 	int i;
 	guint8 *code;
 	guint32 pos;
-
-	*ji = NULL;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	start = code = mono_global_codeman_reserve (128);
 
@@ -278,7 +279,8 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 
 	mono_arch_flush_icache (start, code - start);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -349,17 +351,16 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 }
 
 static gpointer
-get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean aot)
 {
 	guint8* start;
 	guint8 *code;
-	GSList *unwind_ops;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	start = code = mono_global_codeman_reserve (64);
 
 	code = start;
-
-	*ji = NULL;
 
 	unwind_ops = mono_arch_get_cie_program ();
 
@@ -402,7 +403,7 @@ get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, g
 #endif
 
 	if (aot) {
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_throw_exception");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_throw_exception");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_throw_exception);
@@ -414,9 +415,10 @@ get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, g
 
 	g_assert ((code - start) < 64);
 
-	*code_size = code - start;
-
 	mono_save_trampoline_xdebug_info ("throw_exception_trampoline", start, code - start, unwind_ops);
+
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf (rethrow ? "rethrow_exception" : "throw_exception"), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -430,15 +432,15 @@ get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, g
  *
  */
 gpointer 
-mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (FALSE, code_size, ji, aot);
+	return get_throw_trampoline (info, FALSE, aot);
 }
 
 gpointer 
-mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (TRUE, code_size, ji, aot);
+	return get_throw_trampoline (info, TRUE, aot);
 }
 
 /**
@@ -452,15 +454,14 @@ mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gbo
  * needs no relocations in the caller.
  */
 gpointer 
-mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_throw_corlib_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	static guint8* start;
-	guint8 *code;
+	guint8 *start, *code;
 	guint64 throw_ex;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	start = code = mono_global_codeman_reserve (64);
-
-	*ji = NULL;
 
 	/* Push throw_ip */
 	amd64_push_reg (code, AMD64_ARG_REG2);
@@ -468,9 +469,9 @@ mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji
 	/* Call exception_from_token */
 	amd64_mov_reg_reg (code, AMD64_ARG_REG2, AMD64_ARG_REG1, 8);
 	if (aot) {
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_IMAGE, mono_defaults.exception_class->image);
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_IMAGE, mono_defaults.exception_class->image);
 		amd64_mov_reg_membase (code, AMD64_ARG_REG1, AMD64_RIP, 0, 8);
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_ARG_REG1, mono_defaults.exception_class->image);
@@ -498,7 +499,7 @@ mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji
 	/* Call throw_exception */
 	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_RAX, 8);
 	if (aot) {
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_throw_exception");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_throw_exception");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, throw_ex);
@@ -510,7 +511,8 @@ mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji
 
 	mono_arch_flush_icache (start, code - start);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("throw_corlib_exception"), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -939,13 +941,13 @@ mono_amd64_get_original_ip (void)
 }
 
 gpointer
-mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_throw_pending_exception_full (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *code, *start;
 	guint8 *br[1];
 	gpointer throw_trampoline;
-
-	*ji = NULL;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	start = code = mono_global_codeman_reserve (128);
 
@@ -967,7 +969,7 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 
 	/* Obtain the pending exception */
 	if (aot) {
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_get_and_clear_pending_exception");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_get_and_clear_pending_exception");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, mono_thread_get_and_clear_pending_exception);
@@ -987,7 +989,7 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 
 	/* Obtain the original ip and clear the flag in previous_lmf */
 	if (aot) {
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_get_original_ip");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_get_original_ip");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_get_original_ip);
@@ -1008,7 +1010,7 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 
 	/* Call the throw trampoline */
 	if (aot) {
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_throw_exception");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_throw_exception");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		throw_trampoline = mono_get_throw_exception ();
@@ -1022,7 +1024,7 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 
 	/* Obtain the original ip and clear the flag in previous_lmf */
 	if (aot) {
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_get_original_ip");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_get_original_ip");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_get_original_ip);
@@ -1042,7 +1044,8 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 
 	g_assert ((code - start) < 128);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("throw_pending_exception"), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -1083,14 +1086,11 @@ mono_arch_notify_pending_exc (void)
 void
 mono_arch_exceptions_init (void)
 {
-	guint32 code_size;
-	MonoJumpInfo *ji;
-
 	if (mono_aot_only) {
 		throw_pending_exception = mono_aot_get_named_code ("throw_pending_exception");
 	} else {
 		/* Call this to avoid initialization races */
-		throw_pending_exception = mono_arch_get_throw_pending_exception_full (&code_size, &ji, FALSE);
+		throw_pending_exception = mono_arch_get_throw_pending_exception_full (NULL, FALSE);
 	}
 }
 

@@ -261,14 +261,14 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 gpointer
-mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start = NULL;
 	guint8 *code;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	/* restore_contect (MonoContext *ctx) */
-
-	*ji = NULL;
 
 	start = code = mono_global_codeman_reserve (128);
 	
@@ -299,7 +299,8 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 	/* jump to the saved IP */
 	x86_ret (code);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -312,12 +313,12 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_call_filter_full (MonoTrampInfo **info, gboolean aot)
 {
 	guint8* start;
 	guint8 *code;
-
-	*ji = NULL;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	start = code = mono_global_codeman_reserve (64);
@@ -365,7 +366,8 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 	x86_leave (code);
 	x86_ret (code);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
 
 	g_assert ((code - start) < 64);
 	return start;
@@ -457,14 +459,12 @@ mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index,
  * which doesn't push the arguments.
  */
 static guint8*
-get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean corlib, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean corlib, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start, *code;
-	GSList *unwind_ops = NULL;
 	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
-
-	if (ji)
-		*ji = NULL;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	start = code = mono_global_codeman_reserve (128);
 
@@ -549,8 +549,8 @@ get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean
 		// This can be called from runtime code, which can't guarantee that
 		// ebx contains the got address.
 		// So emit the got address loading code too
-		code = mono_arch_emit_load_got_addr (start, code, NULL, ji);
-		code = mono_arch_emit_load_aotconst (start, code, ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? "mono_x86_throw_corlib_exception" : "mono_x86_throw_exception");
+		code = mono_arch_emit_load_got_addr (start, code, NULL, &ji);
+		code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? "mono_x86_throw_corlib_exception" : "mono_x86_throw_exception");
 		x86_call_reg (code, X86_EAX);
 	} else {
 		x86_call_code (code, corlib ? (gpointer)mono_x86_throw_corlib_exception : (gpointer)mono_x86_throw_exception);
@@ -559,10 +559,10 @@ get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean
 
 	g_assert ((code - start) < 128);
 
-	if (code_size)
-		*code_size = code - start;
-
 	mono_save_trampoline_xdebug_info (corlib ? "llvm_throw_corlib_exception_trampoline" : "llvm_throw_exception_trampoline", start, code - start, unwind_ops);
+
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_exception" : "throw_exception")), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -580,15 +580,15 @@ get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean
  *
  */
 gpointer 
-mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_exception ("throw_exception_trampoline", FALSE, FALSE, FALSE, code_size, ji, aot);
+	return get_throw_exception ("throw_exception_trampoline", FALSE, FALSE, FALSE, info, aot);
 }
 
 gpointer 
-mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_exception ("rethow_exception_trampoline", TRUE, FALSE, FALSE, code_size, ji, aot);
+	return get_throw_exception ("rethow_exception_trampoline", TRUE, FALSE, FALSE, info, aot);
 }
 
 /**
@@ -602,9 +602,9 @@ mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gbo
  * needs no relocations in the caller.
  */
 gpointer 
-mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_throw_corlib_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_exception ("throw_corlib_exception_trampoline", FALSE, FALSE, TRUE, code_size, ji, aot);
+	return get_throw_exception ("throw_corlib_exception_trampoline", FALSE, FALSE, TRUE, info, aot);
 }
 
 void
@@ -616,11 +616,11 @@ mono_arch_exceptions_init (void)
 		return;
 
 	/* LLVM needs different throw trampolines */
-	tramp = get_throw_exception ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, NULL, NULL, FALSE);
+	tramp = get_throw_exception ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, NULL, FALSE);
 
 	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_exception", NULL, TRUE);
 
-	tramp = get_throw_exception ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, NULL, NULL, FALSE);
+	tramp = get_throw_exception ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, NULL, FALSE);
 
 	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
 }

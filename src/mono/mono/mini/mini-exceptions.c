@@ -69,19 +69,16 @@ void
 mono_exceptions_init (void)
 {
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-	guint32 code_size;
-	MonoJumpInfo *ji;
-
 	if (mono_aot_only) {
 		restore_context_func = mono_aot_get_named_code ("restore_context");
 		call_filter_func = mono_aot_get_named_code ("call_filter");
 		throw_exception_func = mono_aot_get_named_code ("throw_exception");
 		rethrow_exception_func = mono_aot_get_named_code ("rethrow_exception");
 	} else {
-		restore_context_func = mono_arch_get_restore_context_full (&code_size, &ji, FALSE);
-		call_filter_func = mono_arch_get_call_filter_full (&code_size, &ji, FALSE);
-		throw_exception_func = mono_arch_get_throw_exception_full (&code_size, &ji, FALSE);
-		rethrow_exception_func = mono_arch_get_rethrow_exception_full (&code_size, &ji, FALSE);
+		restore_context_func = mono_arch_get_restore_context_full (NULL, FALSE);
+		call_filter_func = mono_arch_get_call_filter_full (NULL, FALSE);
+		throw_exception_func = mono_arch_get_throw_exception_full (NULL, FALSE);
+		rethrow_exception_func = mono_arch_get_rethrow_exception_full (NULL, FALSE);
 	}
 #else
 	restore_context_func = mono_arch_get_restore_context ();
@@ -169,10 +166,6 @@ gpointer
 mono_get_throw_corlib_exception (void)
 {
 	gpointer code = NULL;
-#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-	guint32 code_size;
-	MonoJumpInfo *ji;
-#endif
 
 	/* This depends on corlib classes so cannot be inited in mono_exceptions_init () */
 	if (throw_corlib_exception_func)
@@ -183,7 +176,7 @@ mono_get_throw_corlib_exception (void)
 	if (mono_aot_only)
 		code = mono_aot_get_named_code ("throw_corlib_exception");
 	else
-		code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, FALSE);
+		code = mono_arch_get_throw_corlib_exception_full (NULL, FALSE);
 #else
 		code = mono_arch_get_throw_corlib_exception ();
 #endif

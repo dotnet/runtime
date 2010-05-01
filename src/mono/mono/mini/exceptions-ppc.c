@@ -196,13 +196,14 @@ mono_ppc_create_pre_code_ftnptr (guint8 *code)
  * The first argument in r3 is the pointer to the context.
  */
 gpointer
-mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start, *code;
 	int size = MONO_PPC_32_64_CASE (128, 172) + PPC_FTNPTR_SIZE;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	code = start = mono_global_codeman_reserve (size);
-	*ji = NULL;
 	if (!aot)
 		code = mono_ppc_create_pre_code_ftnptr (code);
 	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
@@ -218,7 +219,8 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 	g_assert ((code - start) <= size);
 	mono_arch_flush_icache (start, code - start);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -252,13 +254,13 @@ emit_save_saved_regs (guint8 *code, int pos)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_call_filter_full (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start, *code;
 	int alloc_size, pos, i;
 	int size = MONO_PPC_32_64_CASE (320, 500) + PPC_FTNPTR_SIZE;
-
-	*ji = NULL;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start = mono_global_codeman_reserve (size);
@@ -305,7 +307,8 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -351,12 +354,12 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
  *
  */
 static gpointer
-mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInfo **ji, int corlib, gboolean rethrow, gboolean aot)
+mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corlib, gboolean rethrow, gboolean aot)
 {
 	guint8 *start, *code;
 	int alloc_size, pos;
-
-	*ji = NULL;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
 
 	code = start = mono_global_codeman_reserve (size);
 	if (!aot)
@@ -381,9 +384,9 @@ mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInf
 		ppc_mr (code, ppc_r4, ppc_r3);
 
 		if (aot) {
-			code = mono_arch_emit_load_aotconst (start, code, ji, MONO_PATCH_INFO_IMAGE, mono_defaults.corlib);
+			code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_IMAGE, mono_defaults.corlib);
 			ppc_mr (code, ppc_r3, ppc_r11);
-			code = mono_arch_emit_load_aotconst (start, code, ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
+			code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 			ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r11);
 			ppc_ldptr (code, ppc_r11, 0, ppc_r11);
@@ -418,8 +421,8 @@ mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInf
 		// This can be called from runtime code, which can't guarantee that
 		// r30 contains the got address.
 		// So emit the got address loading code too
-		code = mono_arch_emit_load_got_addr (start, code, NULL, ji);
-		code = mono_arch_emit_load_aotconst (start, code, ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_ppc_throw_exception");
+		code = mono_arch_emit_load_got_addr (start, code, NULL, &ji);
+		code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_ppc_throw_exception");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r11);
 		ppc_ldptr (code, ppc_r11, 0, ppc_r11);
@@ -436,7 +439,8 @@ mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInf
 	g_assert ((code - start) <= size);
 	mono_arch_flush_icache (start, code - start);
 
-	*code_size = code - start;
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_exception" : "throw_exception")), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -450,13 +454,13 @@ mono_arch_get_throw_exception_generic (int size, guint32 *code_size, MonoJumpInf
  *
  */
 gpointer
-mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
 {
 	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
 
 	if (aot)
 		size += 64;
-	return mono_arch_get_throw_exception_generic (size, code_size, ji, FALSE, TRUE, aot);
+	return mono_arch_get_throw_exception_generic (size, info, FALSE, TRUE, aot);
 }
 
 /**
@@ -472,13 +476,13 @@ mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gbo
  *
  */
 gpointer
-mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
 {
 	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
 
 	if (aot)
 		size += 64;
-	return mono_arch_get_throw_exception_generic (size, code_size, ji, FALSE, FALSE, aot);
+	return mono_arch_get_throw_exception_generic (size, info, FALSE, FALSE, aot);
 }
 
 /**
@@ -490,13 +494,13 @@ mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gbool
  * On PPC, we pass the ip instead of the offset
  */
 gpointer
-mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_get_throw_corlib_exception_full (MonoTrampInfo **info, gboolean aot)
 {
 	int size = MONO_PPC_32_64_CASE (168, 304) + PPC_FTNPTR_SIZE;
 
 	if (aot)
 		size += 64;
-	return mono_arch_get_throw_exception_generic (size, code_size, ji, TRUE, FALSE, aot);
+	return mono_arch_get_throw_exception_generic (size, info, TRUE, FALSE, aot);
 }
 
 /*
