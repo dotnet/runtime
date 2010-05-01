@@ -3265,7 +3265,6 @@ static void
 init_plt (MonoAotModule *amodule)
 {
 	int i;
-	gpointer plt_0;
 	gpointer tramp;
 
 	if (amodule->plt_inited)
@@ -3278,12 +3277,9 @@ init_plt (MonoAotModule *amodule)
 	 */
 
 	tramp = mono_create_ftnptr (mono_domain_get (), tramp);
-	plt_0 = mono_create_ftnptr (mono_domain_get (), amodule->plt);
-	 /* The first entry points to the AOT trampoline */
-	 ((gpointer*)amodule->got)[amodule->info.plt_got_offset_base] = tramp;
 	 for (i = 1; i < amodule->info.plt_size; ++i)
-		 /* All the default entries point to the first entry */
-		 ((gpointer*)amodule->got)[amodule->info.plt_got_offset_base + i] = plt_0;
+		 /* All the default entries point to the AOT trampoline */
+		 ((gpointer*)amodule->got)[amodule->info.plt_got_offset_base + i] = tramp;
 
 	amodule->plt_inited = TRUE;
 }
