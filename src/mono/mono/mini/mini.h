@@ -1573,6 +1573,7 @@ MonoJumpInfo* mono_aot_patch_info_dup       (MonoJumpInfo* ji) MONO_INTERNAL;
 void     mono_aot_set_make_unreadable       (gboolean unreadable) MONO_INTERNAL;
 gboolean mono_aot_is_pagefault              (void *ptr) MONO_INTERNAL;
 void     mono_aot_handle_pagefault          (void *ptr) MONO_INTERNAL;
+void     mono_aot_register_jit_icall        (const char *name, gpointer addr) MONO_INTERNAL;
 
 /* This is an exported function */
 void     mono_aot_register_globals          (gpointer *globals);
