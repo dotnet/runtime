@@ -350,8 +350,34 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 	g_assert_not_reached ();
 }
 
+void
+mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
+							guint64 dummy5, guint64 dummy6,
+							guint32 ex_token_index,
+							guint64 rip, guint64 rsp,
+							guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
+							guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
+							guint64 rax, guint64 rcx, guint64 rdx,
+							gint32 pc_offset)
+{
+	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
+	MonoException *ex;
+
+	ex = mono_exception_from_token (mono_defaults.exception_class->image, ex_token);
+
+	rip -= pc_offset;
+
+	mono_amd64_throw_exception (dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, (MonoObject*)ex, rip, rsp, rbx, rbp, r12, r13, r14, r15, rdi, rsi, rax, rcx, rdx, FALSE);
+}
+
+/*
+ * get_throw_trampoline:
+ *
+ *  Generate a call to mono_amd64_throw_exception/
+ * mono_amd64_throw_corlib_exception.
+ */
 static gpointer
-get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean aot)
+get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, gboolean aot)
 {
 	guint8* start;
 	guint8 *code;
@@ -367,7 +393,10 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean aot)
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, 8);
 
 	/* reverse order */
-	amd64_push_imm (code, rethrow);
+	if (corlib)
+		amd64_push_reg (code, AMD64_ARG_REG2);
+	else
+		amd64_push_imm (code, rethrow);
 	amd64_push_reg (code, AMD64_RDX);
 	amd64_push_reg (code, AMD64_RCX);
 	amd64_push_reg (code, AMD64_RAX);
@@ -387,8 +416,12 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean aot)
 	/* IP */
 	amd64_push_membase (code, AMD64_R11, 0);
 
-	/* Exception */
-	amd64_push_reg (code, AMD64_ARG_REG1);
+	if (corlib)
+		/* exc type token */
+		amd64_push_reg (code, AMD64_ARG_REG1);
+	else
+		/* Exception */
+		amd64_push_reg (code, AMD64_ARG_REG1);
 
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, (15 + 1) * sizeof (gpointer));
 
@@ -403,10 +436,10 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean aot)
 #endif
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_throw_exception");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? "mono_amd64_throw_corlib_exception" : "mono_amd64_throw_exception");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
-		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_throw_exception);
+		amd64_mov_reg_imm (code, AMD64_R11, corlib ? (gpointer)mono_amd64_throw_corlib_exception : (gpointer)mono_amd64_throw_exception);
 	}
 	amd64_call_reg (code, AMD64_R11);
 	amd64_breakpoint (code);
@@ -418,7 +451,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean aot)
 	mono_save_trampoline_xdebug_info ("throw_exception_trampoline", start, code - start, unwind_ops);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf (rethrow ? "rethrow_exception" : "throw_exception"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (g_strdup_printf (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_exception" : "throw_exception")), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -434,13 +467,13 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean aot)
 gpointer 
 mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (info, FALSE, aot);
+	return get_throw_trampoline (info, FALSE, FALSE, aot);
 }
 
 gpointer 
 mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (info, TRUE, aot);
+	return get_throw_trampoline (info, TRUE, FALSE, aot);
 }
 
 /**
@@ -456,65 +489,7 @@ mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_throw_corlib_exception_full (MonoTrampInfo **info, gboolean aot)
 {
-	guint8 *start, *code;
-	guint64 throw_ex;
-	MonoJumpInfo *ji = NULL;
-	GSList *unwind_ops = NULL;
-
-	start = code = mono_global_codeman_reserve (64);
-
-	/* Push throw_ip */
-	amd64_push_reg (code, AMD64_ARG_REG2);
-
-	/* Call exception_from_token */
-	amd64_mov_reg_reg (code, AMD64_ARG_REG2, AMD64_ARG_REG1, 8);
-	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_IMAGE, mono_defaults.exception_class->image);
-		amd64_mov_reg_membase (code, AMD64_ARG_REG1, AMD64_RIP, 0, 8);
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
-	} else {
-		amd64_mov_reg_imm (code, AMD64_ARG_REG1, mono_defaults.exception_class->image);
-		amd64_mov_reg_imm (code, AMD64_R11, mono_exception_from_token);
-	}
-#ifdef TARGET_WIN32
-	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 32);
-#endif
-	amd64_call_reg (code, AMD64_R11);
-#ifdef TARGET_WIN32
-	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 32);
-#endif
-
-	/* Compute throw_ip */
-	amd64_pop_reg (code, AMD64_ARG_REG2);
-	/* return addr */
-	amd64_pop_reg (code, AMD64_ARG_REG3);
-	amd64_alu_reg_reg (code, X86_SUB, AMD64_ARG_REG3, AMD64_ARG_REG2);
-
-	/* Put the throw_ip at the top of the misaligned stack */
-	amd64_push_reg (code, AMD64_ARG_REG3);
-
-	throw_ex = (guint64)mono_get_throw_exception ();
-
-	/* Call throw_exception */
-	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_RAX, 8);
-	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_throw_exception");
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
-	} else {
-		amd64_mov_reg_imm (code, AMD64_R11, throw_ex);
-	}
-	/* The original IP is on the stack */
-	amd64_jump_reg (code, AMD64_R11);
-
-	g_assert ((code - start) < 64);
-
-	mono_arch_flush_icache (start, code - start);
-
-	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("throw_corlib_exception"), start, code - start, ji, unwind_ops);
-
-	return start;
+	return get_throw_trampoline (info, FALSE, TRUE, aot);
 }
 
 /*

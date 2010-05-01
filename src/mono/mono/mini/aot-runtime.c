@@ -3468,6 +3468,10 @@ load_function (MonoAotModule *amodule, const char *name)
 					target = mono_amd64_throw_exception;
 #endif
 #ifdef __x86_64__
+				} else if (!strcmp (ji->data.name, "mono_amd64_throw_corlib_exception")) {
+					target = mono_amd64_throw_corlib_exception;
+#endif
+#ifdef __x86_64__
 				} else if (!strcmp (ji->data.name, "mono_amd64_get_original_ip")) {
 					target = mono_amd64_get_original_ip;
 #endif

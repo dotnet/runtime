@@ -414,7 +414,17 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 							guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
 							guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
 							guint64 rax, guint64 rcx, guint64 rdx,
-							guint64 rethrow);
+							guint64 rethrow) MONO_INTERNAL;
+
+void
+mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
+								   guint64 dummy5, guint64 dummy6,
+								   guint32 ex_token_index,
+								   guint64 rip, guint64 rsp,
+								   guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
+								   guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
+								   guint64 rax, guint64 rcx, guint64 rdx,
+								   gint32 pc_offset) MONO_INTERNAL;
 
 guint64
 mono_amd64_get_original_ip (void) MONO_INTERNAL;
