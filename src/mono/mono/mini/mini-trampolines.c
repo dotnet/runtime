@@ -1196,7 +1196,7 @@ mono_create_generic_class_init_trampoline (void)
 	if (!code) {
 		if (mono_aot_only)
 			/* get_named_code () might return an ftnptr, but our caller expects a direct pointer */
-			code = mono_get_addr_from_ftnptr (mono_aot_get_named_code ("generic_class_init_trampoline"));
+			code = mono_get_addr_from_ftnptr (mono_aot_get_trampoline ("generic_class_init_trampoline"));
 		else
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 			code = mono_arch_create_generic_class_init_trampoline_full (NULL, FALSE);
@@ -1408,7 +1408,7 @@ mono_create_monitor_enter_trampoline (void)
 
 	if (mono_aot_only) {
 		if (!code)
-			code = mono_aot_get_named_code ("monitor_enter_trampoline");
+			code = mono_aot_get_trampoline ("monitor_enter_trampoline");
 		return code;
 	}
 
@@ -1438,7 +1438,7 @@ mono_create_monitor_exit_trampoline (void)
 
 	if (mono_aot_only) {
 		if (!code)
-			code = mono_aot_get_named_code ("monitor_exit_trampoline");
+			code = mono_aot_get_trampoline ("monitor_exit_trampoline");
 		return code;
 	}
 

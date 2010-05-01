@@ -1062,7 +1062,7 @@ void
 mono_arch_exceptions_init (void)
 {
 	if (mono_aot_only) {
-		throw_pending_exception = mono_aot_get_named_code ("throw_pending_exception");
+		throw_pending_exception = mono_aot_get_trampoline ("throw_pending_exception");
 	} else {
 		/* Call this to avoid initialization races */
 		throw_pending_exception = mono_arch_get_throw_pending_exception_full (NULL, FALSE);

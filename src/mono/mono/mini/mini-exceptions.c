@@ -70,10 +70,10 @@ mono_exceptions_init (void)
 {
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	if (mono_aot_only) {
-		restore_context_func = mono_aot_get_named_code ("restore_context");
-		call_filter_func = mono_aot_get_named_code ("call_filter");
-		throw_exception_func = mono_aot_get_named_code ("throw_exception");
-		rethrow_exception_func = mono_aot_get_named_code ("rethrow_exception");
+		restore_context_func = mono_aot_get_trampoline ("restore_context");
+		call_filter_func = mono_aot_get_trampoline ("call_filter");
+		throw_exception_func = mono_aot_get_trampoline ("throw_exception");
+		rethrow_exception_func = mono_aot_get_trampoline ("rethrow_exception");
 	} else {
 		restore_context_func = mono_arch_get_restore_context_full (NULL, FALSE);
 		call_filter_func = mono_arch_get_call_filter_full (NULL, FALSE);
@@ -141,7 +141,7 @@ mono_get_throw_exception_by_name (void)
 
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	if (mono_aot_only)
-		code = mono_aot_get_named_code ("throw_exception_by_name");
+		code = mono_aot_get_trampoline ("throw_exception_by_name");
 	else
 		code = mono_arch_get_throw_exception_by_name_full (&code_size, &ji, FALSE);
 #else
@@ -174,7 +174,7 @@ mono_get_throw_corlib_exception (void)
 #if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	if (mono_aot_only)
-		code = mono_aot_get_named_code ("throw_corlib_exception");
+		code = mono_aot_get_trampoline ("throw_corlib_exception");
 	else
 		code = mono_arch_get_throw_corlib_exception_full (NULL, FALSE);
 #else

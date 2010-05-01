@@ -211,7 +211,7 @@ void
 mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 {
 	if (mono_aot_only && !nullified_class_init_trampoline)
-		nullified_class_init_trampoline = mono_aot_get_named_code ("nullified_class_init_trampoline");
+		nullified_class_init_trampoline = mono_aot_get_trampoline ("nullified_class_init_trampoline");
 
 	mono_arch_patch_plt_entry (code, NULL, regs, nullified_class_init_trampoline);
 }

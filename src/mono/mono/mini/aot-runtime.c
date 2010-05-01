@@ -3464,19 +3464,19 @@ load_function (MonoAotModule *amodule, const char *name)
 					char *symbol;
 
 					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_MONITOR_ENTER);
-					target = mono_aot_get_named_code (symbol);
+					target = mono_aot_get_trampoline (symbol);
 					g_free (symbol);
 				} else if (strstr (ji->data.name, "generic_trampoline_monitor_exit")) {
 					char *symbol;
 
 					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_MONITOR_EXIT);
-					target = mono_aot_get_named_code (symbol);
+					target = mono_aot_get_trampoline (symbol);
 					g_free (symbol);
 				} else if (strstr (ji->data.name, "generic_trampoline_generic_class_init")) {
 					char *symbol;
 
 					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
-					target = mono_aot_get_named_code (symbol);
+					target = mono_aot_get_trampoline (symbol);
 					g_free (symbol);
 				} else if (aot_jit_icall_hash && g_hash_table_lookup (aot_jit_icall_hash, ji->data.name)) {
 					/* Registered by mono_arch_init () */
@@ -3506,11 +3506,11 @@ load_function (MonoAotModule *amodule, const char *name)
 }
 
 /*
- * Return the piece of code identified by NAME from the mscorlib AOT file.
+ * Return the trampoline identified by NAME from the mscorlib AOT file.
  * On ppc64, this returns a function descriptor.
  */
 gpointer
-mono_aot_get_named_code (const char *name)
+mono_aot_get_trampoline (const char *name)
 {
 	MonoImage *image;
 	MonoAotModule *amodule;
@@ -3590,7 +3590,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 		char *symbol;
 
 		symbol = g_strdup_printf ("generic_trampoline_%d", tramp_type);
-		generic_trampolines [tramp_type] = mono_aot_get_named_code (symbol);
+		generic_trampolines [tramp_type] = mono_aot_get_trampoline (symbol);
 		g_free (symbol);
 	}
 
@@ -3876,7 +3876,7 @@ mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr)
 }
 
 gpointer
-mono_aot_get_named_code (const char *name)
+mono_aot_get_trampoline (const char *name)
 {
 	g_assert_not_reached ();
 	return NULL;
