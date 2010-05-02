@@ -3274,6 +3274,218 @@ collect_nursery (size_t requested_size)
 }
 
 static void
+major_do_collection (const char *reason)
+{
+	LOSObject *bigobj, *prevbo;
+	TV_DECLARE (all_atv);
+	TV_DECLARE (all_btv);
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
+	/* FIXME: only use these values for the precise scan
+	 * note that to_space pointers should be excluded anyway...
+	 */
+	char *heap_start = NULL;
+	char *heap_end = (char*)-1;
+	int old_num_major_sections = num_major_sections;
+	int num_major_sections_saved, save_target, allowance_target;
+
+	//count_ref_nonref_objs ();
+	//consistency_check ();
+
+	init_stats ();
+	binary_protocol_collection (GENERATION_OLD);
+	check_scan_starts ();
+	gray_object_queue_init ();
+
+	degraded_mode = 0;
+	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
+	num_major_gcs++;
+	mono_stats.major_gc_count ++;
+
+	/* world must be stopped already */
+	TV_GETTIME (all_atv);
+	TV_GETTIME (atv);
+
+	/* Pinning depends on this */
+	clear_nursery_fragments (nursery_next);
+
+	TV_GETTIME (btv);
+	time_major_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
+
+	if (xdomain_checks)
+		check_for_xdomain_refs ();
+
+	nursery_section->next_data = nursery_real_end;
+	/* we should also coalesce scanning from sections close to each other
+	 * and deal with pointers outside of the sections later.
+	 */
+	/* The remsets are not useful for a major collection */
+	clear_remsets ();
+
+	TV_GETTIME (atv);
+	init_pinning ();
+	DEBUG (6, fprintf (gc_debug_file, "Collecting pinned addresses\n"));
+	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address);
+	optimize_pin_queue (0);
+
+	/*
+	 * pin_queue now contains all candidate pointers, sorted and
+	 * uniqued.  We must do two passes now to figure out which
+	 * objects are pinned.
+	 *
+	 * The first is to find within the pin_queue the area for each
+	 * section.  This requires that the pin_queue be sorted.  We
+	 * also process the LOS objects and pinned chunks here.
+	 *
+	 * The second, destructive, pass is to reduce the section
+	 * areas to pointers to the actually pinned objects.
+	 */
+	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
+	/* first pass for the sections */
+	find_section_pin_queue_start_end (nursery_section);
+	major_find_pin_queue_start_ends ();
+	/* identify possible pointers to the insize of large objects */
+	DEBUG (6, fprintf (gc_debug_file, "Pinning from large objects\n"));
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
+		int start, end;
+		find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &start, &end);
+		if (start != end) {
+			pin_object (bigobj->data);
+			/* FIXME: only enqueue if object has references */
+			GRAY_OBJECT_ENQUEUE (bigobj->data);
+			if (heap_dump_file)
+				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
+			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %zd from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
+		}
+	}
+	/* second pass for the sections */
+	pin_objects_in_section (nursery_section);
+	major_pin_objects ();
+
+	TV_GETTIME (btv);
+	time_major_pinning += TV_ELAPSED_MS (atv, btv);
+	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
+	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
+
+	major_init_to_space ();
+
+	drain_gray_stack ();
+
+	TV_GETTIME (atv);
+	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
+
+	/* registered roots, this includes static fields */
+	scan_from_registered_roots (major_copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_NORMAL);
+	scan_from_registered_roots (major_copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_WBARRIER);
+	TV_GETTIME (btv);
+	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
+
+	/* Threads */
+	/* FIXME: This is the wrong place for this, because it does
+	   pinning */
+	scan_thread_data (heap_start, heap_end, TRUE);
+	TV_GETTIME (atv);
+	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);
+
+	TV_GETTIME (btv);
+	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
+
+	/* scan the list of objects ready for finalization */
+	scan_finalizer_entries (major_copy_or_mark_object, fin_ready_list);
+	scan_finalizer_entries (major_copy_or_mark_object, critical_fin_list);
+	TV_GETTIME (atv);
+	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
+	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
+
+	TV_GETTIME (btv);
+	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
+
+	/* all the objects in the heap */
+	finish_gray_stack (heap_start, heap_end, GENERATION_OLD);
+	TV_GETTIME (atv);
+	time_major_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
+
+	/* sweep the big objects list */
+	prevbo = NULL;
+	for (bigobj = los_object_list; bigobj;) {
+		if (object_is_pinned (bigobj->data)) {
+			unpin_object (bigobj->data);
+		} else {
+			LOSObject *to_free;
+			/* not referenced anywhere, so we can free it */
+			if (prevbo)
+				prevbo->next = bigobj->next;
+			else
+				los_object_list = bigobj->next;
+			to_free = bigobj;
+			bigobj = bigobj->next;
+			free_large_object (to_free);
+			continue;
+		}
+		prevbo = bigobj;
+		bigobj = bigobj->next;
+	}
+
+	major_sweep ();
+
+	TV_GETTIME (btv);
+	time_major_sweep += TV_ELAPSED_MS (atv, btv);
+
+	/* walk the pin_queue, build up the fragment list of free memory, unmark
+	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
+	 * next allocations.
+	 */
+	build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_end);
+
+	TV_GETTIME (atv);
+	time_major_fragment_creation += TV_ELAPSED_MS (btv, atv);
+
+	TV_GETTIME (all_btv);
+	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
+
+	if (heap_dump_file)
+		dump_heap ("major", num_major_gcs - 1, reason);
+
+	/* prepare the pin queue for the next collection */
+	next_pin_slot = 0;
+	if (fin_ready_list || critical_fin_list) {
+		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
+		mono_gc_finalize_notify ();
+	}
+	pin_stats_reset ();
+
+	g_assert (gray_object_queue_is_empty ());
+
+	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 1);
+
+	save_target = num_major_sections / 2;
+	/*
+	 * We aim to allow the allocation of as many sections as is
+	 * necessary to reclaim save_target sections in the next
+	 * collection.  We assume the collection pattern won't change.
+	 * In the last cycle, we had num_major_sections_saved for
+	 * minor_collection_sections_alloced.  Assuming things won't
+	 * change, this must be the same ratio as save_target for
+	 * allowance_target, i.e.
+	 *
+	 *    num_major_sections_saved            save_target
+	 * --------------------------------- == ----------------
+	 * minor_collection_sections_alloced    allowance_target
+	 *
+	 * hence:
+	 */
+	allowance_target = save_target * minor_collection_sections_alloced / num_major_sections_saved;
+
+	minor_collection_section_allowance = MAX (MIN (allowance_target, num_major_sections), MIN_MINOR_COLLECTION_SECTION_ALLOWANCE);
+
+	minor_collection_sections_alloced = 0;
+
+	check_scan_starts ();
+
+	//consistency_check ();
+}
+
+static void
 major_collection (const char *reason)
 {
 	if (g_getenv ("MONO_GC_NO_MAJOR")) {
