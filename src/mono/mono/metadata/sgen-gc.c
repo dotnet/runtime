@@ -276,6 +276,7 @@ static long stat_store_remsets_unique = 0;
 static long stat_saved_remsets_1 = 0;
 static long stat_saved_remsets_2 = 0;
 static long stat_global_remsets_added = 0;
+static long stat_global_remsets_readded = 0;
 static long stat_global_remsets_processed = 0;
 
 static int stat_wbarrier_set_field = 0;
@@ -3133,6 +3134,7 @@ init_stats (void)
 	mono_counters_register ("Saved remsets 1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_1);
 	mono_counters_register ("Saved remsets 2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_2);
 	mono_counters_register ("Global remsets added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_added);
+	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
 	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
 #endif
 
@@ -5416,14 +5418,17 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 			 */
 			ptr = (p [0] & ~REMSET_TYPE_MASK);
 			if ((p [0] & REMSET_TYPE_MASK) == REMSET_LOCATION) {
-				if (ptr_in_nursery (*(void**)ptr))
+				if (ptr_in_nursery (*(void**)ptr)) {
 					*store_pos ++ = p [0];
+					HEAVY_STAT (++stat_global_remsets_readded);
+				}
 			} else {
 				g_assert ((p [0] & REMSET_TYPE_MASK) == REMSET_OTHER);
 				g_assert (p [1] == REMSET_ROOT_LOCATION);
 				if (ptr_in_nursery (*(void**)ptr)) {
 					*store_pos ++ = p [0];
 					*store_pos ++ = p [1];
+					HEAVY_STAT (++stat_global_remsets_readded);
 				}
 			}
 		}
