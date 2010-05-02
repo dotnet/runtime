@@ -1,3 +1,7 @@
+2010-05-02  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/glib.h: Include sys/types.h for pid_t.
+
 2010-05-01  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/goutput.c (g_logv): Append a '\n' to the end of the string as glib does.
