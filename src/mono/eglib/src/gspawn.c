@@ -72,9 +72,7 @@
 gchar ***_NSGetEnviron();
 #define environ (*_NSGetEnviron())
 #else
-#if defined (__OpenBSD__)
 extern char **environ;
-#endif
 #endif
 
 static int

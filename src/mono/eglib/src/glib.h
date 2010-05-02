@@ -9,15 +9,12 @@
 #include <ctype.h>
 #include <limits.h>
 
-/* For pid_t */
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
 #ifdef _MSC_VER
 #pragma include_alias(<eglib-config.h>, <eglib-config.hw>)
 #else
 #include <stdint.h>
+/* For pid_t */
+#include <unistd.h>
 #endif
 
 #include <eglib-config.h>

@@ -1,3 +1,9 @@
+2010-05-03  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/glib.h: Include unistd.h on !windows for pid_t.
+
+	* gspawn.c: Add an extern define for environ on !apple platforms.
+
 2010-05-02  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/glib.h: Include sys/types.h for pid_t.
