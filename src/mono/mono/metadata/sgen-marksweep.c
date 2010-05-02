@@ -17,7 +17,7 @@
 
 #define MS_BLOCK_FREE	(MS_BLOCK_SIZE - MS_BLOCK_SKIP)
 
-#define MS_NUM_MARK_WORDS(c)	(((c) + sizeof (mword) * 8 - 1) / (sizeof (mword) * 8))
+#define MS_NUM_MARK_WORDS	((MS_BLOCK_SIZE / ALLOC_ALIGN + sizeof (mword) * 8 - 1) / (sizeof (mword) * 8))
 
 #if MAX_SMALL_OBJ_SIZE > MS_BLOCK_FREE / 2
 #error MAX_SMALL_OBJ_SIZE must be at most (MS_BLOCK_SIZE - MS_BLOCK_SKIP) / 2
@@ -34,7 +34,7 @@ struct _MSBlockInfo {
 	MSBlockInfo *next;
 	int pin_queue_start;
 	int pin_queue_end;
-	mword mark_words [1];
+	mword mark_words [MS_NUM_MARK_WORDS];
 };
 
 #define MS_BLOCK_OBJ(b,i)	((b)->block + MS_BLOCK_SKIP + (b)->obj_size * (i))
@@ -47,14 +47,15 @@ typedef struct {
 
 #define MS_BLOCK_OBJ_INDEX(o,b)	(((char*)(o) - ((b)->block + MS_BLOCK_SKIP)) / (b)->obj_size)
 
-#define MS_CALC_MARK_BIT(w,b,i)	do {		\
-		if (sizeof (mword) == 4) {	\
-			(w) = (i) >> 5;		\
-			(b) = (i) & 31;		\
-		} else {			\
-			(w) = (i) >> 6;		\
-			(b) = (i) & 63;		\
-		}				\
+#define MS_CALC_MARK_BIT(w,b,o,bl) 	do {				\
+		int i = ((char*)(o) - (bl)->block) >> ALLOC_ALIGN_BITS; \
+		if (sizeof (mword) == 4) {				\
+			(w) = i >> 5;					\
+			(b) = i & 31;					\
+		} else {						\
+			(w) = i >> 6;					\
+			(b) = i & 63;					\
+		}							\
 	} while (0)
 
 #define MS_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] & (1L << (b)))
@@ -192,7 +193,6 @@ consistency_check (void)
 	/* check all blocks */
 	for (block = all_blocks; block; block = block->next) {
 		int count = MS_BLOCK_FREE / block->obj_size;
-		int num_mark_words = MS_NUM_MARK_WORDS (count);
 		int num_free = 0;
 		void **free;
 
@@ -214,7 +214,7 @@ consistency_check (void)
 		g_assert (num_free == 0);
 
 		/* check all mark words are zero */
-		for (i = 0; i < num_mark_words; ++i)
+		for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
 			g_assert (block->mark_words [i] == 0);
 	}
 
@@ -231,9 +231,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 {
 	int size = block_obj_sizes [size_index];
 	int count = MS_BLOCK_FREE / size;
-	int num_mark_words = MS_NUM_MARK_WORDS (count);
-	int block_info_size = sizeof (MSBlockInfo) + sizeof (mword) * (num_mark_words - 1);
-	MSBlockInfo *info = get_internal_mem (block_info_size, INTERNAL_MEM_MS_BLOCK_INFO);
+	MSBlockInfo *info = get_internal_mem (sizeof (MSBlockInfo), INTERNAL_MEM_MS_BLOCK_INFO);
 	MSBlockHeader *header;
 	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
 	char *obj_start;
@@ -331,7 +329,7 @@ free_object (char *obj, size_t size, gboolean pinned)
 	int word, bit;
 	DEBUG (9, g_assert ((pinned && block->pinned) || (!pinned && !block->pinned)));
 	DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
-	MS_CALC_MARK_BIT (word, bit, MS_BLOCK_OBJ_INDEX (obj, block));
+	MS_CALC_MARK_BIT (word, bit, obj, block);
 	DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
 	if (!block->free_list) {
 		MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, block->has_references);
@@ -405,7 +403,7 @@ major_is_object_live (char *obj)
 	/* now we know it's in a major block */
 	block = MS_BLOCK_FOR_OBJ (obj);
 	DEBUG (9, g_assert (!block->pinned));
-	MS_CALC_MARK_BIT (word, bit, MS_BLOCK_OBJ_INDEX (obj, block));
+	MS_CALC_MARK_BIT (word, bit, obj, block);
 	return MS_MARK_BIT (block, word, bit) ? TRUE : FALSE;
 }
 
@@ -467,10 +465,9 @@ major_dump_heap (void)
 	}
 }
 
-#define MS_MARK_INDEX_IN_BLOCK_AND_ENQUEUE_CHECKED(obj,block,index) do { \
+#define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,block) do {		\
 		int __word, __bit;					\
-		MS_CALC_MARK_BIT (__word, __bit, (index));		\
-		DEBUG (9, g_assert ((obj) == MS_BLOCK_OBJ ((block), (index)))); \
+		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
 		if (!MS_MARK_BIT ((block), __word, __bit) && MS_OBJ_ALLOCED ((obj), (block))) { \
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
@@ -478,10 +475,9 @@ major_dump_heap (void)
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
-#define MS_MARK_INDEX_IN_BLOCK_AND_ENQUEUE(obj,block,index) do {	\
+#define MS_MARK_OBJECT_AND_ENQUEUE(obj,block) do {			\
 		int __word, __bit;					\
-		MS_CALC_MARK_BIT (__word, __bit, (index));		\
-		DEBUG (9, g_assert ((obj) == MS_BLOCK_OBJ ((block), (index)))); \
+		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
 		DEBUG (9, g_assert (MS_OBJ_ALLOCED ((obj), (block))));	\
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
@@ -497,8 +493,6 @@ major_copy_or_mark_object (void **ptr)
 	void *obj = *ptr;
 	mword objsize;
 	MSBlockInfo *block;
-	int index;
-	int count;
 
 	HEAVY_STAT (++stat_copy_object_called_major);
 
@@ -528,9 +522,7 @@ major_copy_or_mark_object (void **ptr)
 		 * re-fetch it.
 		 */
 		block = MS_BLOCK_FOR_OBJ (obj);
-		index = MS_BLOCK_OBJ_INDEX (obj, block);
-		DEBUG (9, g_assert (obj == MS_BLOCK_OBJ (block, index)));
-		MS_CALC_MARK_BIT (word, bit, (index));
+		MS_CALC_MARK_BIT (word, bit, obj, block);
 		DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
 		MS_SET_MARK_BIT (block, word, bit);
 		return;
@@ -551,10 +543,7 @@ major_copy_or_mark_object (void **ptr)
 	}
 
 	block = MS_BLOCK_FOR_OBJ (obj);
-	index = MS_BLOCK_OBJ_INDEX (obj, block);
-	count = MS_BLOCK_FREE / block->obj_size;
-	DEBUG (9, g_assert (index >= 0 && index < count));
-	MS_MARK_INDEX_IN_BLOCK_AND_ENQUEUE (obj, block, index);
+	MS_MARK_OBJECT_AND_ENQUEUE (obj, block);
 }
 
 static void
@@ -569,7 +558,7 @@ mark_pinned_objects_in_block (MSBlockInfo *block)
 		DEBUG (9, g_assert (index >= 0 && index < count));
 		if (index == last_index)
 			continue;
-		MS_MARK_INDEX_IN_BLOCK_AND_ENQUEUE_CHECKED (MS_BLOCK_OBJ (block, index), block, index);
+		MS_MARK_OBJECT_AND_ENQUEUE_CHECKED (MS_BLOCK_OBJ (block, index), block);
 		last_index = index;
 	}
 }
@@ -587,44 +576,31 @@ major_sweep (void)
 		MSBlockInfo *block = *iter;
 		int count = MS_BLOCK_FREE / block->obj_size;
 		gboolean have_live = FALSE;
-		int word_index = 0;
-		int obj_index = 0;
+		int obj_index;
 
 		block->free_list = NULL;
 
-		do {
-			mword word = block->mark_words [word_index];
+		for (obj_index = 0; obj_index < count; ++obj_index) {
+			int word, bit;
+			void *obj = MS_BLOCK_OBJ (block, obj_index);
 
-			if (word == (mword)-1L) {
-				obj_index += 8 * sizeof (mword);
+			MS_CALC_MARK_BIT (word, bit, obj, block);
+			if (MS_MARK_BIT (block, word, bit)) {
+				DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
 				have_live = TRUE;
 			} else {
-				int num_bits = MIN (count - obj_index, 8 * sizeof (mword));
-				for (i = 0; i < num_bits; ++i) {
-					void *obj = MS_BLOCK_OBJ (block, obj_index);
-					if (word & 1) {
-						DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
-						have_live = TRUE;
-					} else {
-						/* an unmarked object */
-						void *obj = MS_BLOCK_OBJ (block, obj_index);
-						if (MS_OBJ_ALLOCED (obj, block)) {
-							binary_protocol_empty (obj, block->obj_size);
-							memset (obj, 0, block->obj_size);
-						}
-						*(void**)obj = block->free_list;
-						block->free_list = obj;
-					}
-					word >>= 1;
-					++obj_index;
+				/* an unmarked object */
+				if (MS_OBJ_ALLOCED (obj, block)) {
+					binary_protocol_empty (obj, block->obj_size);
+					memset (obj, 0, block->obj_size);
 				}
+				*(void**)obj = block->free_list;
+				block->free_list = obj;
 			}
+		}
 
-			/* reset mark bits */
-			block->mark_words [word_index] = 0;
-
-			++word_index;
-		} while (obj_index < count);
+		/* reset mark bits */
+		memset (block->mark_words, 0, sizeof (mword) * MS_NUM_MARK_WORDS);
 
 		/*
 		 * FIXME: reverse free list so that it's in address

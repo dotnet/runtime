@@ -933,7 +933,8 @@ static Fragment *fragment_freelist = NULL;
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
 
-#define ALLOC_ALIGN 8
+#define ALLOC_ALIGN		8
+#define ALLOC_ALIGN_BITS	3
 
 #define MOVED_OBJECTS_NUM 64
 static void *moved_objects [MOVED_OBJECTS_NUM];
