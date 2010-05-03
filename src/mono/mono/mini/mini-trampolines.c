@@ -855,7 +855,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	MonoJitInfo *ji;
 	MonoMethod *m;
 	MonoMethod *method = NULL;
-	gboolean multicast, callvirt;
+	gboolean multicast, callvirt = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
 	MonoMethod *invoke = tramp_data [0];
 	guint8 *impl_this = tramp_data [1];
