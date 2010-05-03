@@ -4577,12 +4577,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 		}
 		else {
-			if (cfg->compile_aot)
+			if (cfg->compile_aot) {
+				/* 
+				 * This goes before the saving of callee saved regs, so save the got reg
+				 * ourselves.
+				 */
+				x86_push_reg (code, MONO_ARCH_GOT_REG);
+				code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
 				x86_push_imm (code, 0);
-			else
+			} else {
 				x86_push_imm (code, cfg->domain);
+			}
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+			if (cfg->compile_aot)
+				x86_pop_reg (code, MONO_ARCH_GOT_REG);
 		}
 	}
 
