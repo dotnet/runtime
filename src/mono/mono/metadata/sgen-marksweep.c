@@ -566,9 +566,16 @@ mark_pinned_objects_in_block (MSBlockInfo *block)
 static void
 major_sweep (void)
 {
-	MSBlockInfo *empty_blocks = NULL;
 	MSBlockInfo **iter;
 	int i;
+
+	/* clear all the free lists */
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i) {
+		MSBlockInfo **free_blocks = free_block_lists [i];
+		int j;
+		for (j = 0; j < num_block_obj_sizes; ++j)
+			free_blocks [j] = NULL;
+	}
 
 	/* traverse all blocks, free and zero unmarked objects */
 	iter = &all_blocks;
@@ -609,52 +616,31 @@ major_sweep (void)
 
 		if (have_live) {
 			iter = &block->next;
-			continue;
-		}
 
-		/*
-		 * blocks without live objects are removed from the
-		 * block list and marked with obj_size = -1
-		 */
-		*iter = block->next;
-		block->next = empty_blocks;
-		empty_blocks = block;
-
-		block->obj_size = -1;
-	}
-
-	/* if there are no blocks to be freed, we're done */
-	if (!empty_blocks)
-		return;
-
-	/* go through all free lists and remove the blocks to be freed */
-	for (i = 0; i < num_block_obj_sizes; ++i) {
-		int j;
-		for (j = 0; j < MS_BLOCK_TYPE_MAX; ++j) {
-			MSBlockInfo **free_blocks = free_block_lists [j];
-			iter = &(free_blocks [i]);
-			while (*iter) {
-				MSBlockInfo *block = *iter;
-				if (block->obj_size < 0)
-					*iter = block->next_free;
-				else
-					iter = &block->next_free;
+			/*
+			 * If there are free slots in the block, add
+			 * the block to the corresponding free list.
+			 */
+			if (block->free_list) {
+				MSBlockInfo **free_blocks = FREE_BLOCKS (block->pinned, block->has_references);
+				int index = MS_BLOCK_OBJ_SIZE_INDEX (block->obj_size);
+				block->next_free = free_blocks [index];
+				free_blocks [index] = block;
 			}
+		} else {
+			/*
+			 * Blocks without live objects are removed from the
+			 * block list and freed.
+			 */
+			*iter = block->next;
+
+			ms_free_block (block->block);
+			free_internal_mem (block, INTERNAL_MEM_MS_BLOCK_INFO);
+
+			--num_major_sections;
+
+			++stat_major_blocks_freed;
 		}
-	}
-
-	/* now free the blocks */
-	while (empty_blocks) {
-		MSBlockInfo *next = empty_blocks->next;
-
-		ms_free_block (empty_blocks->block);
-		free_internal_mem (empty_blocks, INTERNAL_MEM_MS_BLOCK_INFO);
-
-		empty_blocks = next;
-
-		--num_major_sections;
-
-		++stat_major_blocks_freed;
 	}
 }
 
