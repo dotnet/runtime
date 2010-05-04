@@ -71,6 +71,8 @@
  */
 gchar ***_NSGetEnviron();
 #define environ (*_NSGetEnviron())
+#elif defined(_MSC_VER)
+/* MS defines this in stdlib.h */
 #else
 extern char **environ;
 #endif
