@@ -2370,6 +2370,8 @@ case "$host" in
     *-*-*openbsd*)
     	LIBC="libc.so"
 	INTL="libintl.so"
+        SQLITE="libsqlite.so"
+        SQLITE3="libsqlite3.so"
 	;;
     *-*-*linux*)
 	AC_PATH_X
