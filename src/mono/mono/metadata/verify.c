@@ -5768,6 +5768,29 @@ verify_valuetype_layout (MonoClass *class)
 	return res;
 }
 
+static gboolean
+verify_generic_parameters (MonoClass *class)
+{
+	int i;
+	MonoGenericContainer *gc = class->generic_container;
+
+	for (i = 0; i < gc->type_argc; ++i) {
+		MonoGenericParamInfo *param_info = mono_generic_container_get_param_info (gc, i);
+		MonoClass **constraints;
+
+		if (!param_info->constraints)
+			continue;
+
+		for (constraints = param_info->constraints; *constraints; ++constraints) {
+			MonoClass *ctr = *constraints;
+
+			if (!mono_type_is_valid_type_in_context (&ctr->byval_arg, &gc->context))
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 /*
  * Check if the class is verifiable.
  * 
@@ -5789,6 +5812,8 @@ mono_verifier_verify_class (MonoClass *class)
 	if (class->parent && MONO_CLASS_IS_INTERFACE (class->parent))
 		return FALSE;
 	if (class->generic_container && (class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
+		return FALSE;
+	if (class->generic_container && !verify_generic_parameters (class))
 		return FALSE;
 	if (!verify_class_for_overlapping_reference_fields (class))
 		return FALSE;
