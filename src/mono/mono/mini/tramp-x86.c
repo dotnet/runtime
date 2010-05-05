@@ -444,14 +444,13 @@ mono_arch_create_generic_trampoline_full (MonoTrampolineType tramp_type, MonoTra
 
 	g_assert ((code - buf) <= 256);
 
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
-		/* Initialize the nullified class init trampoline used in the AOT case */
-		nullified_class_init_trampoline = code = mono_global_codeman_reserve (16);
-		x86_ret (code);
-	}
-
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("generic_trampoline_%d", tramp_type), buf, code - buf, ji, unwind_ops);
+
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
+		/* Initialize the nullified class init trampoline used in the AOT case */
+		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (NULL);
+	}
 
 	return buf;
 }
