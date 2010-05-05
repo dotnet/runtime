@@ -250,7 +250,7 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
  *  -------------------
  */
 guchar*
-mono_arch_create_generic_trampoline_full (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
+mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 
 	guint8 *buf, *code = NULL;
@@ -518,7 +518,7 @@ emit_trampoline_jump (guint8 *code, guint8 *tramp)
 }
 
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, MonoTrampInfo **info, gboolean aot)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
 #ifdef MONO_ARCH_VTABLE_REG
 	guint8 *tramp;
@@ -631,7 +631,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, MonoTrampInfo *
 }
 
 gpointer
-mono_arch_create_generic_class_init_trampoline_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;

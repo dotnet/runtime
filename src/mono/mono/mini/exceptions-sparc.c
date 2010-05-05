@@ -39,11 +39,15 @@
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 gpointer
-mono_arch_get_restore_context (void)
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
 	static guint32 *start;
 	static int inited = 0;
 	guint32 *code;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -76,12 +80,16 @@ mono_arch_get_restore_context (void)
  * call_filter (MonoContext *ctx, gpointer ip)
  */
 gpointer
-mono_arch_get_call_filter (void)
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	static guint32 *start;
 	static int inited = 0;
 	guint32 *code;
 	int i;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -163,7 +171,7 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 	gpointer *window;
 	
 	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
+		restore_context = mono_get_restore_context ();
 
 	window = MONO_SPARC_WINDOW_ADDR (sp);
 	ctx.sp = (gpointer*)sp;
@@ -213,11 +221,15 @@ get_throw_exception (gboolean rethrow)
  * The returned function has the following 
  * signature: void (*func) (MonoException *exc); 
  */
-gpointer 
-mono_arch_get_throw_exception (void)
+gpointer
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint32* start;
 	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -229,11 +241,15 @@ mono_arch_get_throw_exception (void)
 	return start;
 }
 
-gpointer 
-mono_arch_get_rethrow_exception (void)
+gpointer
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint32* start;
 	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -255,13 +271,17 @@ mono_arch_get_rethrow_exception (void)
  * to get the IP of the throw. Passing the offset has the advantage that it 
  * needs no relocations in the caller.
  */
-gpointer 
-mono_arch_get_throw_corlib_exception (void)
+gpointer
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint32 *start;
 	static int inited = 0;
 	guint32 *code;
 	int reg;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;

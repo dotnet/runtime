@@ -111,12 +111,16 @@ mono_arch_has_unwind_info (gconstpointer addr)
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_call_filter (void)
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8 *start;
 	static int inited = 0;
 	guint8 *code;
 	int alloc_size, pos, i;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -227,7 +231,7 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 	static void (*restore_context) (MonoContext *);
 
 	if (!restore_context)
-		restore_context = mono_arch_get_restore_context();
+		restore_context = mono_get_restore_context();
 	
 	memset(&ctx, 0, sizeof(ctx));
 
@@ -379,11 +383,15 @@ get_throw_exception_generic (guint8 *start, int size,
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-gpointer 
-mono_arch_get_throw_exception (void)
+gpointer
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8 *start;
 	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -412,6 +420,10 @@ mono_arch_get_rethrow_exception (void)
 	static guint8 *start;
 	static int inited = 0;
 
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
+
 	if (inited)
 		return start;
 	start = mono_global_codeman_reserve (SZ_THROW);
@@ -433,11 +445,15 @@ mono_arch_get_rethrow_exception (void)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-gpointer 
-mono_arch_get_throw_corlib_exception(void)
+gpointer
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8 *start;
 	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -604,7 +620,7 @@ mono_arch_ip_from_context (void *sigctx)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_get_restore_context                     */
+/* Name		- mono_arch_get_restore_context                    */
 /*                                                                  */
 /* Function	- Return the address of the routine that will rest- */
 /*                ore the context.                                  */
@@ -612,11 +628,14 @@ mono_arch_ip_from_context (void *sigctx)
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_restore_context ()
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
+
 	return setcontext;
 }
-
 
 /*========================= End of Function ========================*/
 

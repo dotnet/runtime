@@ -58,13 +58,17 @@
  * The first argument in a0 is the pointer to the MonoContext.
  */
 gpointer
-mono_arch_get_restore_context (void)
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
 	int i;
 	guint8 *code;
 	static guint8 start [128];
 	static int inited = 0;
 	guint32 iregs_to_restore;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -108,13 +112,17 @@ mono_arch_get_restore_context (void)
  *	handler (void)
  */
 gpointer
-mono_arch_get_call_filter (void)
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8 start [320];
 	static int inited = 0;
 	guint8 *code;
 	int alloc_size;
 	int offset;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -193,7 +201,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 #endif
 
 	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
+		restore_context = mono_get_restore_context ();
 
 	/* adjust eip so that it point into the call instruction */
 	eip -= 8;
@@ -307,10 +315,14 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboo
  *
  */
 gpointer
-mono_arch_get_rethrow_exception (void)
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8 start [GENERIC_EXCEPTION_SIZE];
 	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -331,11 +343,15 @@ mono_arch_get_rethrow_exception (void)
  * x86_call_code (code, arch_get_throw_exception ()); 
  *
  */
-gpointer 
-mono_arch_get_throw_exception (void)
+gpointer
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8 start [GENERIC_EXCEPTION_SIZE];
 	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -365,11 +381,15 @@ mono_arch_get_throw_exception_by_name (void)
  * signature: void (*func) (guint32 ex_token, guint32 offset); 
  * On MIPS, the offset argument is missing.
  */
-gpointer 
-mono_arch_get_throw_corlib_exception (void)
+gpointer
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8 start [GENERIC_EXCEPTION_SIZE];
 	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;

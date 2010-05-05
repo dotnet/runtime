@@ -1074,18 +1074,16 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 static guchar*
 create_trampoline_code (MonoTrampolineType tramp_type)
 {
-#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	MonoTrampInfo *info;
 	guchar *code;
 
-	code = mono_arch_create_generic_trampoline_full (tramp_type, &info, FALSE);
-	mono_save_trampoline_xdebug_info (info->name, info->code, info->code_size, info->unwind_ops);
-	mono_tramp_info_free (info);
+	code = mono_arch_create_generic_trampoline (tramp_type, &info, FALSE);
+	if (info) {
+		mono_save_trampoline_xdebug_info (info->name, info->code, info->code_size, info->unwind_ops);
+		mono_tramp_info_free (info);
+	}
 
 	return code;
-#else
-	return mono_arch_create_trampoline_code (tramp_type);
-#endif
 }
 
 void
@@ -1198,11 +1196,7 @@ mono_create_generic_class_init_trampoline (void)
 			/* get_named_code () might return an ftnptr, but our caller expects a direct pointer */
 			code = mono_get_addr_from_ftnptr (mono_aot_get_trampoline ("generic_class_init_trampoline"));
 		else
-#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-			code = mono_arch_create_generic_class_init_trampoline_full (NULL, FALSE);
-#else
-			code = mono_arch_create_generic_class_init_trampoline ();
-#endif
+			code = mono_arch_create_generic_class_init_trampoline (NULL, FALSE);
 	}
 
 	mono_trampolines_unlock ();
@@ -1374,11 +1368,7 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	if (tramp)
 		return tramp;
 
-#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline_full (offset, NULL, FALSE);
-#else
-	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset);
-#endif
+	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, NULL, FALSE);
 	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
 
 	mono_trampolines_lock ();
@@ -1416,11 +1406,7 @@ mono_create_monitor_enter_trampoline (void)
 	mono_trampolines_lock ();
 
 	if (!code)
-#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-		code = mono_arch_create_monitor_enter_trampoline_full (NULL, FALSE);
-#else
-		code = mono_arch_create_monitor_enter_trampoline ();
-#endif
+		code = mono_arch_create_monitor_enter_trampoline (NULL, FALSE);
 
 	mono_trampolines_unlock ();
 #else
@@ -1446,11 +1432,7 @@ mono_create_monitor_exit_trampoline (void)
 	mono_trampolines_lock ();
 
 	if (!code)
-#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-		code = mono_arch_create_monitor_exit_trampoline_full (NULL, FALSE);
-#else
-		code = mono_arch_create_monitor_exit_trampoline ();
-#endif
+		code = mono_arch_create_monitor_exit_trampoline (NULL, FALSE);
 
 	mono_trampolines_unlock ();
 #else

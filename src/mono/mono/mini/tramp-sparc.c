@@ -88,11 +88,15 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 
 guchar*
-mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
+mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *buf, *code, *tramp_addr;
 	guint32 lmf_offset, regs_offset, method_reg, i;
 	gboolean has_caller;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		has_caller = FALSE;
@@ -269,7 +273,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 }	
 
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
 	/* FIXME: implement! */
 	g_assert_not_reached ();

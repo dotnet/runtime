@@ -217,11 +217,15 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
  *  -------------------
  */
 guchar*
-mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
+mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *buf, *tramp, *code = NULL;
 	int i, lmf;
 	int max_code_len = 768;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	/* Now we'll create in 'buf' the MIPS trampoline code. This
 	   is the trampoline code common to all methods  */
@@ -379,7 +383,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 }
 
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
 	/* FIXME: implement! */
 	g_assert_not_reached ();
@@ -387,7 +391,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
 }
 
 gpointer
-mono_arch_create_generic_class_init_trampoline (void)
+mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	/* FIXME: implement! */
 	g_assert_not_reached ();

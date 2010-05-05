@@ -152,7 +152,7 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 gpointer
-mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start = NULL;
 	guint8 *code;
@@ -211,7 +211,7 @@ mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start;
 	int i;
@@ -464,14 +464,14 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
  * signature: void (*func) (MonoException *exc); 
  *
  */
-gpointer 
-mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
+gpointer
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, FALSE, FALSE, aot);
 }
 
 gpointer 
-mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, TRUE, FALSE, aot);
 }
@@ -487,7 +487,7 @@ mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
  * needs no relocations in the caller.
  */
 gpointer 
-mono_arch_get_throw_corlib_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, FALSE, TRUE, aot);
 }
@@ -916,7 +916,7 @@ mono_amd64_get_original_ip (void)
 }
 
 gpointer
-mono_arch_get_throw_pending_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_throw_pending_exception (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *code, *start;
 	guint8 *br[1];
@@ -1065,7 +1065,7 @@ mono_arch_exceptions_init (void)
 		throw_pending_exception = mono_aot_get_trampoline ("throw_pending_exception");
 	} else {
 		/* Call this to avoid initialization races */
-		throw_pending_exception = mono_arch_get_throw_pending_exception_full (NULL, FALSE);
+		throw_pending_exception = mono_arch_get_throw_pending_exception (NULL, FALSE);
 	}
 }
 

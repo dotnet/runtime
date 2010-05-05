@@ -3798,36 +3798,36 @@ emit_trampolines (MonoAotCompile *acfg)
 		 * method.
 		 */
 		for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
-			mono_arch_create_generic_trampoline_full (tramp_type, &info, TRUE);
+			mono_arch_create_generic_trampoline (tramp_type, &info, TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
 
 		mono_arch_get_nullified_class_init_trampoline (&info);
 		emit_trampoline (acfg, acfg->got_offset, info);
 #if defined(MONO_ARCH_MONITOR_OBJECT_REG)
-		mono_arch_create_monitor_enter_trampoline_full (&info, TRUE);
+		mono_arch_create_monitor_enter_trampoline (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
-		mono_arch_create_monitor_exit_trampoline_full (&info, TRUE);
+		mono_arch_create_monitor_exit_trampoline (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 #endif
 
-		mono_arch_create_generic_class_init_trampoline_full (&info, TRUE);
+		mono_arch_create_generic_class_init_trampoline (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 
 		/* Emit the exception related code pieces */
-		code = mono_arch_get_restore_context_full (&info, TRUE);
+		code = mono_arch_get_restore_context (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
-		code = mono_arch_get_call_filter_full (&info, TRUE);
+		code = mono_arch_get_call_filter (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
-		code = mono_arch_get_throw_exception_full (&info, TRUE);
+		code = mono_arch_get_throw_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
-		code = mono_arch_get_rethrow_exception_full (&info, TRUE);
+		code = mono_arch_get_rethrow_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
-		code = mono_arch_get_throw_corlib_exception_full (&info, TRUE);
+		code = mono_arch_get_throw_corlib_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 
 #if defined(TARGET_AMD64)
-		code = mono_arch_get_throw_pending_exception_full (&info, TRUE);
+		code = mono_arch_get_throw_pending_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 #endif
 
@@ -3835,11 +3835,11 @@ emit_trampolines (MonoAotCompile *acfg)
 			int offset;
 
 			offset = MONO_RGCTX_SLOT_MAKE_RGCTX (i);
-			code = mono_arch_create_rgctx_lazy_fetch_trampoline_full (offset, &info, TRUE);
+			code = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
 
 			offset = MONO_RGCTX_SLOT_MAKE_MRGCTX (i);
-			code = mono_arch_create_rgctx_lazy_fetch_trampoline_full (offset, &info, TRUE);
+			code = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
 

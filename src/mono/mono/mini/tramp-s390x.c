@@ -311,12 +311,15 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-guchar *
-mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
+guchar*
+mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
-
 	guint8 *buf, *tramp, *code;
 	int i, offset, lmfOffset;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	/* Now we'll create in 'buf' the S/390 trampoline code. This
 	   is the trampoline code common to all methods  */
@@ -551,7 +554,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
 	/* FIXME: implement! */
 	g_assert_not_reached ();

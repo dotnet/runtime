@@ -223,7 +223,7 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 }
 
 guchar*
-mono_arch_create_generic_trampoline_full (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
+mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *buf, *code, *tramp;
 	int pushed_args, pushed_args_caller_saved;
@@ -495,7 +495,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 }
 
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, MonoTrampInfo **info, gboolean aot)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;
@@ -588,7 +588,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, MonoTrampInfo *
 }
 
 gpointer
-mono_arch_create_generic_class_init_trampoline_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;
@@ -657,7 +657,7 @@ mono_arch_create_generic_class_init_trampoline_full (MonoTrampInfo **info, gbool
  *
  */
 gpointer
-mono_arch_create_monitor_enter_trampoline_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
 	guint8 *code, *buf;
@@ -770,7 +770,7 @@ mono_arch_create_monitor_enter_trampoline_full (MonoTrampInfo **info, gboolean a
 }
 
 gpointer
-mono_arch_create_monitor_exit_trampoline_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
 	guint8 *code, *buf;
@@ -867,20 +867,23 @@ mono_arch_create_monitor_exit_trampoline_full (MonoTrampInfo **info, gboolean ao
 
 	return buf;
 }
+
 #else
+
 gpointer
-mono_arch_create_monitor_enter_trampoline (void)
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
 
 gpointer
-mono_arch_create_monitor_exit_trampoline (void)
+mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
+
 #endif
 
 void

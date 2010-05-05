@@ -196,7 +196,7 @@ mono_ppc_create_pre_code_ftnptr (guint8 *code)
  * The first argument in r3 is the pointer to the context.
  */
 gpointer
-mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start, *code;
 	int size = MONO_PPC_32_64_CASE (128, 172) + PPC_FTNPTR_SIZE;
@@ -254,7 +254,7 @@ emit_save_saved_regs (guint8 *code, int pos)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start, *code;
 	int alloc_size, pos, i;
@@ -454,7 +454,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
  *
  */
 gpointer
-mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
 
@@ -476,7 +476,7 @@ mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
  *
  */
 gpointer
-mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
 
@@ -494,7 +494,7 @@ mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
  * On PPC, we pass the ip instead of the offset
  */
 gpointer
-mono_arch_get_throw_corlib_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	int size = MONO_PPC_32_64_CASE (168, 304) + PPC_FTNPTR_SIZE;
 

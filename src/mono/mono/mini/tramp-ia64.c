@@ -180,7 +180,7 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 }
 
 guchar*
-mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
+mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *buf, *tramp;
 	int i, offset, saved_regs_offset, saved_fpregs_offset, last_offset, framesize;
@@ -189,6 +189,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	Ia64CodegenState code;
 	unw_dyn_info_t *di;
 	unw_dyn_region_info_t *r_pro;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	/* 
 	 * Since jump trampolines are not patched, this trampoline is executed every
@@ -412,7 +416,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 }
 
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
 	/* FIXME: implement! */
 	g_assert_not_reached ();

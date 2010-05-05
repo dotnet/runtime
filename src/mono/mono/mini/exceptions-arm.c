@@ -110,7 +110,7 @@ typedef struct my_ucontext {
  * The first argument in r0 is the pointer to the context.
  */
 gpointer
-mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *code;
 	guint8 *start;
@@ -162,7 +162,7 @@ mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *code;
 	guint8* start;
@@ -309,7 +309,7 @@ mono_arch_get_throw_exception_generic (int size, gboolean corlib, gboolean rethr
  *
  */
 gpointer
-mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return mono_arch_get_throw_exception_generic (132, FALSE, TRUE, info, aot);
 }
@@ -327,7 +327,7 @@ mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
  *
  */
 gpointer 
-mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return mono_arch_get_throw_exception_generic (132, FALSE, FALSE, info, aot);
 }
@@ -344,7 +344,7 @@ mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
  * On ARM, the ip is passed instead of an offset.
  */
 gpointer 
-mono_arch_get_throw_corlib_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return mono_arch_get_throw_exception_generic (168, TRUE, FALSE, info, aot);
 }	

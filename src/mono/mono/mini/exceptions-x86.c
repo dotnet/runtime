@@ -261,7 +261,7 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 gpointer
-mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start = NULL;
 	guint8 *code;
@@ -313,7 +313,7 @@ mono_arch_get_restore_context_full (MonoTrampInfo **info, gboolean aot)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
 	guint8* start;
 	guint8 *code;
@@ -580,13 +580,13 @@ get_throw_exception (const char *name, gboolean rethrow, gboolean llvm, gboolean
  *
  */
 gpointer 
-mono_arch_get_throw_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_exception ("throw_exception_trampoline", FALSE, FALSE, FALSE, info, aot);
 }
 
 gpointer 
-mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_exception ("rethow_exception_trampoline", TRUE, FALSE, FALSE, info, aot);
 }
@@ -602,7 +602,7 @@ mono_arch_get_rethrow_exception_full (MonoTrampInfo **info, gboolean aot)
  * needs no relocations in the caller.
  */
 gpointer 
-mono_arch_get_throw_corlib_exception_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_exception ("throw_corlib_exception_trampoline", FALSE, FALSE, TRUE, info, aot);
 }

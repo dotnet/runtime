@@ -90,8 +90,12 @@ restore_context (MonoContext *ctx)
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 gpointer
-mono_arch_get_restore_context (void)
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 {
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
+
 	return restore_context;
 }
 
@@ -216,8 +220,12 @@ call_filter (MonoContext *ctx, gpointer ip)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter (void)
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
+
 	/* Initialize the real filter non-lazily */
 	get_real_call_filter ();
 
@@ -354,11 +362,15 @@ get_throw_trampoline (gboolean rethrow)
  * signature: void (*func) (MonoException *exc); 
  *
  */
-gpointer 
-mono_arch_get_throw_exception (void)
+gpointer
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8* start;
 	static gboolean inited = FALSE;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -370,11 +382,15 @@ mono_arch_get_throw_exception (void)
 	return start;
 }
 
-gpointer 
-mono_arch_get_rethrow_exception (void)
+gpointer
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8* start;
 	static gboolean inited = FALSE;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return start;
@@ -396,8 +412,8 @@ mono_arch_get_rethrow_exception (void)
  * to get the IP of the throw. Passing the offset has the advantage that it 
  * needs no relocations in the caller.
  */
-gpointer 
-mono_arch_get_throw_corlib_exception (void)
+gpointer
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8* res;
 	static gboolean inited = FALSE;
@@ -407,6 +423,10 @@ mono_arch_get_throw_corlib_exception (void)
 	Ia64CodegenState code;
 	unw_dyn_info_t *di;
 	unw_dyn_region_info_t *r_pro;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
 
 	if (inited)
 		return res;

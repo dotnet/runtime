@@ -281,7 +281,7 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 }
 
 guchar*
-mono_arch_create_generic_trampoline_full (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
+mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
 	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, tramp_offset, saved_regs_offset;
@@ -614,7 +614,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 }	
 
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, MonoTrampInfo **info, gboolean aot)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;
@@ -716,7 +716,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, MonoTrampInfo *
 }
 
 gpointer
-mono_arch_create_generic_class_init_trampoline_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;
@@ -765,7 +765,7 @@ mono_arch_create_generic_class_init_trampoline_full (MonoTrampInfo **info, gbool
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 
 gpointer
-mono_arch_create_monitor_enter_trampoline_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;
@@ -869,7 +869,7 @@ mono_arch_create_monitor_enter_trampoline_full (MonoTrampInfo **info, gboolean a
 }
 
 gpointer
-mono_arch_create_monitor_exit_trampoline_full (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;
