@@ -2364,6 +2364,8 @@ case "$host" in
     *-*-*freebsd*)
     	LIBC="libc.so"
 	INTL="libintl.so"
+	SQLITE="libsqlite.so"
+	SQLITE3="libsqlite3.so"
 	;;
     *-*-*openbsd*)
     	LIBC="libc.so"
