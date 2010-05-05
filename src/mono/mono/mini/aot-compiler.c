@@ -3826,9 +3826,17 @@ emit_trampolines (MonoAotCompile *acfg)
 		code = mono_arch_get_throw_corlib_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 
-#if defined(TARGET_AMD64)
-		code = mono_arch_get_throw_pending_exception (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+#if defined(MONO_ARCH_HAVE_GET_TRAMPOLINES)
+		{
+			GSList *l = mono_arch_get_trampolines (TRUE);
+
+			while (l) {
+				MonoTrampInfo *info = l->data;
+
+				emit_trampoline (acfg, acfg->got_offset, info);
+				l = l->next;
+			}
+		}
 #endif
 
 		for (i = 0; i < 128; ++i) {

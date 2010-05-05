@@ -7516,6 +7516,25 @@ mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, in
 	return code;
 }
 
+/*
+ * mono_arch_get_trampolines:
+ *
+ *   Return a list of MonoTrampInfo structures describing arch specific trampolines
+ * for AOT.
+ */
+GSList *
+mono_arch_get_trampolines (gboolean aot)
+{
+	MonoTrampInfo *info;
+	GSList *tramps = NULL;
+
+	mono_arch_get_throw_pending_exception (&info, aot);
+
+	tramps = g_slist_append (tramps, info);
+
+	return tramps;
+}
+
 /* Soft Debug support */
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 
