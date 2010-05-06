@@ -404,7 +404,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			break;
 			
 		case FLUSH_TEXT:
-			if (context->parser.text != NULL){
+			if (context->parser.text != NULL && context->text != NULL){
 				context->parser.text (context, context->text->str, context->text->len,
 						      context->user_data, error);
 				if (error != NULL && *error != NULL)

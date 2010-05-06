@@ -1,3 +1,7 @@
+2010-05-06  Alan McGovern  <amcgovern@novell.com>
+
+	* src/gmarkup.c: Fix a parser issue when skipping the xml declaration.
+
 2010-05-06  Jonathan Chambers  <joncham@gmail.com>
 
 	* gfile-win32.c: Use __stat64 instead of _stat64.
