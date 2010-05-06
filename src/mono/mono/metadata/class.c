@@ -1633,8 +1633,12 @@ mono_class_layout_fields (MonoClass *class)
 
 				class->min_align = MAX (align, class->min_align);
 				field->offset = real_size;
-				field->offset += align - 1;
-				field->offset &= ~(align - 1);
+				if (align) {
+					field->offset += align - 1;
+					field->offset &= ~(align - 1);
+				}
+				/*TypeBuilders produce all sort of weird things*/
+				g_assert (class->image->dynamic || field->offset > 0);
 				real_size = field->offset + size;
 			}
 
@@ -1725,6 +1729,7 @@ mono_class_layout_fields (MonoClass *class)
 
 		size = mono_type_size (field->type, &align);
 		field->offset = class->sizes.class_size;
+		/*align is always non-zero here*/
 		field->offset += align - 1;
 		field->offset &= ~(align - 1);
 		class->sizes.class_size = field->offset + size;
@@ -5340,8 +5345,13 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
-	/* FIXME: shouldn't this be ->type_token? */
+	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
 	klass->sizes.generic_param_token = pinfo ? pinfo->token : 0;
+
+	/*Init these fields to sane values*/
+	klass->min_align = 1;
+	klass->instance_size = sizeof (gpointer);
+	klass->size_inited = 1;
 
 	mono_class_setup_supertypes (klass);
 
