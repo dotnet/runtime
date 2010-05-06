@@ -471,6 +471,16 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 #endif
 }
 
+void
+ves_icall_System_GC_register_ephemeron_array (MonoObject *array)
+{
+#ifdef HAVE_SGEN_GC
+	if (!mono_gc_ephemeron_array_add (array))
+		mono_raise_exception (mono_object_domain (array)->out_of_memory_ex);
+#endif
+}
+
+
 #define mono_allocator_lock() EnterCriticalSection (&allocator_section)
 #define mono_allocator_unlock() LeaveCriticalSection (&allocator_section)
 static CRITICAL_SECTION allocator_section;

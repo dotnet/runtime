@@ -33,6 +33,7 @@ MonoObject *ves_icall_System_GCHandle_GetTarget (guint32 handle) MONO_INTERNAL;
 guint32     ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type) MONO_INTERNAL;
 void        ves_icall_System_GCHandle_FreeHandle (guint32 handle) MONO_INTERNAL;
 gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle) MONO_INTERNAL;
+void        ves_icall_System_GC_register_ephemeron_array (MonoObject *array) MONO_INTERNAL;
 
 extern void mono_gc_init (void) MONO_INTERNAL;
 extern void mono_gc_base_init (void) MONO_INTERNAL;
@@ -73,6 +74,10 @@ void    mono_gc_change_weak_track_handle (MonoObject *old_obj, MonoObject *obj, 
 void    mono_gc_remove_weak_track_handle (guint32 gchandle) MONO_INTERNAL;
 GSList* mono_gc_remove_weak_track_object (MonoDomain *domain, MonoObject *obj) MONO_INTERNAL;
 #endif
+
+/*Ephemeron functionality. Sgen only*/
+gboolean    mono_gc_ephemeron_array_add (MonoObject *obj) MONO_INTERNAL;
+
 
 MonoBoolean
 GCHandle_CheckCurrentDomain (guint32 gchandle) MONO_INTERNAL;

@@ -633,6 +633,15 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 		size = max_size;
 	}
 
+#ifdef HAVE_SGEN_GC
+	/*An Ephemeron cannot be marked by sgen*/
+	if (!static_fields && class->image == mono_defaults.corlib && !strcmp ("Ephemeron", class->name)) {
+		*max_set = 0;
+		memset (bitmap, 0, size / 8);
+		return bitmap;
+	}
+#endif
+
 	for (p = class; p != NULL; p = p->parent) {
 		gpointer iter = NULL;
 		while ((field = mono_class_get_fields (p, &iter))) {

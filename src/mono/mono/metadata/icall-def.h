@@ -268,6 +268,7 @@ ICALL(GC_4a, "RecordPressure", mono_gc_add_memory_pressure)
 ICALL(GC_5, "SuppressFinalize", ves_icall_System_GC_SuppressFinalize)
 ICALL(GC_6, "WaitForPendingFinalizers", ves_icall_System_GC_WaitForPendingFinalizers)
 ICALL(GC_7, "get_MaxGeneration", mono_gc_max_generation)
+ICALL(GC_8, "register_ephemeron_array", ves_icall_System_GC_register_ephemeron_array)
 
 ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_1)
 ICALL(COMPINF_1, "assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey)
