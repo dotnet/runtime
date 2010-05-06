@@ -1,3 +1,7 @@
+2010-05-06  Jonathan Chambers  <joncham@gmail.com>
+
+	* gfile-win32.c: Use __stat64 instead of _stat64.
+
 2010-05-04  Jonathan Chambers  <joncham@gmail.com>
 
 	* gspawn.c: Remove extern define for MSVC.

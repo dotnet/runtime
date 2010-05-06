@@ -70,7 +70,7 @@ int mkstemp (char *tmp_template)
 gboolean
 g_file_test (const gchar *filename, GFileTest test)
 {
-	struct _stat64 stat;
+	struct __stat64 stat;
 	int ret = 0;
 	gunichar2* utf16_filename = NULL;
 
