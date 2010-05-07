@@ -1525,6 +1525,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObject* object, Mon
 	g_assert (type->type);
 	klass = mono_type_get_class (type->type);
 	g_assert (klass);
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	itf = cominterop_get_ccw (object, klass);
 	g_assert (itf);
 	return itf;
@@ -1680,7 +1683,11 @@ gpointer
 ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflectionType* type, MonoBoolean throw_exception)
 {
 #ifndef DISABLE_COM
-	return cominterop_get_interface (obj, mono_type_get_class (type->type), (gboolean)throw_exception);
+	MonoClass *class = mono_type_get_class (type->type);
+	if (!mono_class_init (class))
+		mono_raise_exception (mono_class_get_exception_for_failure (class));
+
+	return cominterop_get_interface (obj, class, (gboolean)throw_exception);
 #else
 	g_assert_not_reached ();
 #endif

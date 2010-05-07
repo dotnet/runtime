@@ -4872,6 +4872,9 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 	} else if (strcmp (klass->name, "MonoType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 		MonoClass *mc = mono_class_from_mono_type (type);
+		if (!mono_class_init (mc))
+			mono_raise_exception (mono_class_get_exception_for_failure (mc));
+
 		token = mono_metadata_token_from_dor (
 			mono_image_typedef_or_ref_full (assembly, type, mc->generic_container == NULL));
 	} else if (strcmp (klass->name, "GenericTypeParameterBuilder") == 0) {
@@ -6549,8 +6552,6 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 			return mono_class_get_ref_info (klass);
 		}
 	}
-	// FIXME: Get rid of this, do it in the icalls for Type
-	mono_class_init (klass);
 #ifdef HAVE_SGEN_GC
 	res = (MonoReflectionType *)mono_gc_alloc_pinned_obj (mono_class_vtable (domain, mono_defaults.monotype_class), mono_class_instance_size (mono_defaults.monotype_class));
 #else
@@ -7731,8 +7732,12 @@ mono_reflection_get_token (MonoObject *obj)
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
 	} else if (strcmp (klass->name, "MonoType") == 0) {
-		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
-		token = mono_class_from_mono_type (type)->type_token;
+		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj);
+		MonoClass *mc = mono_class_from_mono_type (type);
+		if (!mono_class_init (mc))
+			mono_raise_exception (mono_class_get_exception_for_failure (mc));
+
+		token = mc->type_token;
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 		   strcmp (klass->name, "MonoMethod") == 0 ||
 		   strcmp (klass->name, "MonoGenericMethod") == 0 ||
@@ -8772,6 +8777,8 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 	if (klass == mono_defaults.monotype_class) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 		klass = mono_class_from_mono_type (type);
+		if (!mono_class_init (klass))
+			mono_raise_exception (mono_class_get_exception_for_failure (klass));
 		cinfo = mono_custom_attrs_from_class (klass);
 	} else if (strcmp ("Assembly", klass->name) == 0 || strcmp ("MonoAssembly", klass->name) == 0) {
 		MonoReflectionAssembly *rassembly = (MonoReflectionAssembly*)obj;
@@ -11553,6 +11560,10 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj);
+		MonoClass *mc = mono_class_from_mono_type (type);
+		if (!mono_class_init (mc))
+			mono_raise_exception (mono_class_get_exception_for_failure (mc));
+
 		if (context) {
 			MonoType *inflated = mono_class_inflate_generic_type (type, context);
 			result = mono_class_from_mono_type (inflated);

@@ -9959,6 +9959,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rty
 
 	type = rtype->type;
 	klass = mono_class_from_mono_type (type);
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
 	layout = (klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK);
 
 	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
@@ -10039,6 +10042,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 MonoObject *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type)
 {
+	MonoClass *klass;
 	MonoDomain *domain = mono_domain_get (); 
 	MonoObject *res;
 
@@ -10047,7 +10051,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 	MONO_CHECK_ARG_NULL (src);
 	MONO_CHECK_ARG_NULL (type);
 
-	res = mono_object_new (domain, mono_class_from_mono_type (type->type));
+	klass = mono_class_from_mono_type (type->type);
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
+	res = mono_object_new (domain, klass);
 
 	ptr_to_structure (src, res);
 
@@ -10069,6 +10077,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 
 	fname = mono_string_to_utf8 (field_name);
 	klass = mono_class_from_mono_type (type->type);
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	while (klass && match_index == -1) {
 		MonoClassField* field;
@@ -10211,6 +10221,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 	MONO_CHECK_ARG_NULL (type);
 
 	klass = mono_class_from_mono_type (type->type);
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	mono_struct_delete_old (klass, (char *)src);
 }
@@ -10315,7 +10327,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 MonoDelegate*
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type)
 {
-	return mono_ftnptr_to_delegate (mono_type_get_class (type->type), ftn);
+	MonoClass *klass = mono_type_get_class (type->type);
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+
+	return mono_ftnptr_to_delegate (klass, ftn);
 }
 
 /**
