@@ -2885,7 +2885,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
 						//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
 						direct_call = TRUE;
-						sprintf (direct_call_target, callee_cfg->asm_symbol);
+						sprintf (direct_call_target, "%s", callee_cfg->asm_symbol);
 						patch_info->type = MONO_PATCH_INFO_NONE;
 						acfg->stats.direct_calls ++;
 					}
