@@ -549,14 +549,8 @@ enum {
 	REMSET_LOCATION, /* just a pointer to the exact location */
 	REMSET_RANGE,    /* range of pointer fields */
 	REMSET_OBJECT,   /* mark all the object for scanning */
-	REMSET_OTHER,    /* all others */
+	REMSET_VTYPE,    /* a valuetype array described by a gc descriptor and a count */
 	REMSET_TYPE_MASK = 0x3
-};
-
-/* Subtypes of REMSET_OTHER */
-enum {
-	REMSET_VTYPE, /* a valuetype array described by a gc descriptor and a count */
-	REMSET_ROOT_LOCATION, /* a location inside a root */
 };
 
 #ifdef HAVE_KW_THREAD
@@ -992,7 +986,7 @@ static G_GNUC_UNUSED void  report_internal_mem_usage (void);
 
 static int stop_world (void);
 static int restart_world (void);
-static void add_to_global_remset (gpointer ptr, gboolean root);
+static void add_to_global_remset (gpointer ptr);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise);
 static void scan_from_remsets (void *start_nursery, void *end_nursery);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type);
@@ -1988,14 +1982,13 @@ mono_gc_clear_domain (MonoDomain * domain)
  * a minor collection. This can happen if the objects they point to are pinned.
  */
 static void
-add_to_global_remset (gpointer ptr, gboolean root)
+add_to_global_remset (gpointer ptr)
 {
 	RememberedSet *rs;
 
 	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
 	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (*(gpointer*)ptr));
 
-	g_assert (!root);
 	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
 
 	HEAVY_STAT (++stat_global_remsets_added);
@@ -2005,23 +1998,13 @@ add_to_global_remset (gpointer ptr, gboolean root)
 	 * To avoid uncontrolled growth of the global remset, only add each pointer once.
 	 */
 	if (global_remset->store_next + 3 < global_remset->end_set) {
-		if (root) {
-			*(global_remset->store_next++) = (mword)ptr | REMSET_OTHER;
-			*(global_remset->store_next++) = (mword)REMSET_ROOT_LOCATION;
-		} else {
-			*(global_remset->store_next++) = (mword)ptr;
-		}
+		*(global_remset->store_next++) = (mword)ptr;
 		return;
 	}
 	rs = alloc_remset (global_remset->end_set - global_remset->data, NULL);
 	rs->next = global_remset;
 	global_remset = rs;
-	if (root) {
-		*(global_remset->store_next++) = (mword)ptr | REMSET_OTHER;
-		*(global_remset->store_next++) = (mword)REMSET_ROOT_LOCATION;
-	} else {
-		*(global_remset->store_next++) = (mword)ptr;
-	}
+	*(global_remset->store_next++) = (mword)ptr;
 
 	{
 		int global_rs_size = 0;
@@ -2191,7 +2174,7 @@ copy_object (void **obj_slot)
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
-				add_to_global_remset ((ptr), FALSE);							\
+				add_to_global_remset ((ptr));		\
 		}	\
 	} while (0)
 
@@ -2258,7 +2241,7 @@ scan_vtype (char *start, mword desc, char* from_start, char* from_end)
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
-				add_to_global_remset ((ptr), FALSE);							\
+				add_to_global_remset ((ptr));		\
 		}	\
 	} while (0)
 
@@ -4552,11 +4535,11 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 			if (was_promoted) {
 				if (ptr_in_nursery (key)) {/*key was not promoted*/
 					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to key %p\n", key));
-					add_to_global_remset (&cur->key, FALSE);
+					add_to_global_remset (&cur->key);
 				}
 				if (ptr_in_nursery (cur->value)) {/*value was not promoted*/
 					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to value %p\n", cur->value));
-					add_to_global_remset (&cur->value, FALSE);
+					add_to_global_remset (&cur->value);
 				}
 			}
 		}
@@ -5634,7 +5617,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 				 * becomes part of the global remset, which can grow very large.
 				 */
 				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
-				add_to_global_remset (ptr, FALSE);
+				add_to_global_remset (ptr);
 			}
 		} else {
 			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
@@ -5649,7 +5632,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			copy_object (ptr);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
-				add_to_global_remset (ptr, FALSE);
+				add_to_global_remset (ptr);
 			++ptr;
 		}
 		return p + 2;
@@ -5659,35 +5642,15 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 1;
 		scan_object ((char*)ptr);
 		return p + 1;
-	case REMSET_OTHER: {
+	case REMSET_VTYPE: {
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-
-		switch (p [1]) {
-		case REMSET_VTYPE:
-			if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
-				return p + 4;
-			desc = p [2];
-			count = p [3];
-			while (count-- > 0)
-				ptr = (void**) scan_vtype ((char*)ptr, desc, start_nursery, end_nursery);
-			return p + 4;
-		case REMSET_ROOT_LOCATION:
-			/* Same as REMSET_LOCATION, but the address is not required to be in the heap */
-			copy_object (ptr);
-			DEBUG (9, fprintf (gc_debug_file, "Overwrote root location remset at %p with %p\n", ptr, *ptr));
-			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
-				/*
-				 * If the object is pinned, each reference to it from nonpinned objects
-				 * becomes part of the global remset, which can grow very large.
-				 */
-				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
-				add_to_global_remset (ptr, TRUE);
-			}
-			return p + 2;
-		default:
-			g_assert_not_reached ();
-		}
-		break;
+		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
+			return p + 3;
+		desc = p [1];
+		count = p [2];
+		while (count-- > 0)
+			ptr = (void**) scan_vtype ((char*)ptr, desc, start_nursery, end_nursery);
+		return p + 3;
 	}
 	default:
 		g_assert_not_reached ();
@@ -5725,17 +5688,8 @@ collect_store_remsets (RememberedSet *remset, mword *bumper)
 		case REMSET_OBJECT:
 			p += 1;
 			break;
-		case REMSET_OTHER:
-			switch (p [1]) {
-			case REMSET_VTYPE:
-				p += 4;
-				break;
-			case REMSET_ROOT_LOCATION:
-				p += 2;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
+		case REMSET_VTYPE:
+			p += 3;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -5838,13 +5792,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 					HEAVY_STAT (++stat_global_remsets_readded);
 				}
 			} else {
-				g_assert ((p [0] & REMSET_TYPE_MASK) == REMSET_OTHER);
-				g_assert (p [1] == REMSET_ROOT_LOCATION);
-				if (ptr_in_nursery (*(void**)ptr)) {
-					*store_pos ++ = p [0];
-					*store_pos ++ = p [1];
-					HEAVY_STAT (++stat_global_remsets_readded);
-				}
+				g_assert_not_reached ();
 			}
 		}
 
@@ -6485,35 +6433,6 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 }
 
 void
-mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value)
-{
-	RememberedSet *rs;
-	TLAB_ACCESS_INIT;
-	HEAVY_STAT (++stat_wbarrier_set_root);
-	if (ptr_in_nursery (ptr))
-		return;
-	DEBUG (8, fprintf (gc_debug_file, "Adding root remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
-
-	rs = REMEMBERED_SET;
-	if (rs->store_next + 2 < rs->end_set) {
-		*(rs->store_next++) = (mword)ptr | REMSET_OTHER;
-		*(rs->store_next++) = (mword)REMSET_ROOT_LOCATION;
-		*(void**)ptr = value;
-		return;
-	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
-#endif
-	*(rs->store_next++) = (mword)ptr | REMSET_OTHER;
-	*(rs->store_next++) = (mword)REMSET_ROOT_LOCATION;
-
-	*(void**)ptr = value;
-}
-
-void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	RememberedSet *rs;
@@ -6531,8 +6450,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
 
 	if (rs->store_next + 3 < rs->end_set) {
-		*(rs->store_next++) = (mword)dest | REMSET_OTHER;
-		*(rs->store_next++) = (mword)REMSET_VTYPE;
+		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		*(rs->store_next++) = (mword)count;
 		UNLOCK_GC;
@@ -6544,8 +6462,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 #ifdef HAVE_KW_THREAD
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
-	*(rs->store_next++) = (mword)dest | REMSET_OTHER;
-	*(rs->store_next++) = (mword)REMSET_VTYPE;
+	*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 	*(rs->store_next++) = (mword)klass->gc_descr;
 	*(rs->store_next++) = (mword)count;
 	UNLOCK_GC;
@@ -6681,39 +6598,30 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 		if ((void**)addr >= ptr && (void**)addr < ptr + count)
 			*found = TRUE;
 		return p + 1;
-	case REMSET_OTHER: {
-		switch (p [1]) {
-		case REMSET_VTYPE:
-			ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-			desc = p [2];
-			count = p [3];
+	case REMSET_VTYPE:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		desc = p [1];
+		count = p [2];
 
-			switch (desc & 0x7) {
-			case DESC_TYPE_RUN_LENGTH:
-				OBJ_RUN_LEN_SIZE (skip_size, desc, ptr);
-				break;
-			case DESC_TYPE_SMALL_BITMAP:
-				OBJ_BITMAP_SIZE (skip_size, desc, start);
-				break;
-			default:
-				// FIXME:
-				g_assert_not_reached ();
-			}
-
-			/* The descriptor includes the size of MonoObject */
-			skip_size -= sizeof (MonoObject);
-			skip_size *= count;
-			if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
-				*found = TRUE;
-
-			return p + 4;
-		case REMSET_ROOT_LOCATION:
-			return p + 2;
+		switch (desc & 0x7) {
+		case DESC_TYPE_RUN_LENGTH:
+			OBJ_RUN_LEN_SIZE (skip_size, desc, ptr);
+			break;
+		case DESC_TYPE_SMALL_BITMAP:
+			OBJ_BITMAP_SIZE (skip_size, desc, start);
+			break;
 		default:
+			// FIXME:
 			g_assert_not_reached ();
 		}
-		break;
-	}
+
+		/* The descriptor includes the size of MonoObject */
+		skip_size -= sizeof (MonoObject);
+		skip_size *= count;
+		if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
+			*found = TRUE;
+
+		return p + 3;
 	default:
 		g_assert_not_reached ();
 	}
