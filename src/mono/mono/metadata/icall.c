@@ -1574,8 +1574,18 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, M
 	klass = mono_class_from_mono_type (type->type);
 	klassc = mono_class_from_mono_type (c->type);
 
-	mono_class_init_or_throw (klass);
-	mono_class_init_or_throw (klassc);
+	/* Interface check requires a more complex setup so we
+	 * only do for them. Otherwise we simply avoid mono_class_init.
+	 */
+	if (check_interfaces) {
+		mono_class_init_or_throw (klass);
+		mono_class_init_or_throw (klassc);
+	} else if (!klass->supertypes || !klassc->supertypes) {
+		mono_loader_lock ();
+		mono_class_setup_supertypes (klass);
+		mono_class_setup_supertypes (klassc);
+		mono_loader_unlock ();
+	}
 
 	if (type->type->byref)
 		return klassc == mono_defaults.object_class;
@@ -1659,11 +1669,6 @@ static guint32
 ves_icall_get_attributes (MonoReflectionType *type)
 {
 	MonoClass *klass = mono_class_from_mono_type (type->type);
-
-	mono_class_init_or_throw (klass);
-
-	MONO_ARCH_SAVE_REGS;
-
 	return klass->flags;
 }
 
@@ -2195,9 +2200,6 @@ static MonoReflectionType*
 ves_icall_get_type_parent (MonoReflectionType *type)
 {
 	MonoClass *class = mono_class_from_mono_type (type->type);
-
-	mono_class_init_or_throw (class);
-
 	return class->parent ? mono_type_get_object (mono_object_domain (type), &class->parent->byval_arg): NULL;
 }
 
@@ -2296,8 +2298,6 @@ ves_icall_MonoType_get_Name (MonoReflectionType *type)
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *class = mono_class_from_mono_type (type->type);
 
-	mono_class_init_or_throw (class);
-
 	if (type->type->byref) {
 		char *n = g_strdup_printf ("%s&", class->name);
 		MonoString *res = mono_string_new (domain, n);
@@ -2315,8 +2315,6 @@ ves_icall_MonoType_get_Namespace (MonoReflectionType *type)
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *class = mono_class_from_mono_type (type->type);
-
-	mono_class_init_or_throw (class);
 
 	while (class->nested_in)
 		class = class->nested_in;
@@ -2385,8 +2383,6 @@ ves_icall_Type_get_IsGenericTypeDefinition (MonoReflectionType *type)
 		return FALSE;
 
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
-
 	return klass->generic_container != NULL;
 }
 
@@ -2454,7 +2450,6 @@ ves_icall_Type_get_IsGenericInstance (MonoReflectionType *type)
 		return FALSE;
 
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
 	return klass->generic_class != NULL;
 }
@@ -2472,7 +2467,6 @@ ves_icall_Type_get_IsGenericType (MonoReflectionType *type)
 		return FALSE;
 
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 	return klass->generic_class != NULL || klass->generic_container != NULL;
 }
 
