@@ -37,7 +37,7 @@ Recommends:     libgdiplus0
 Requires:       libgdiplus0
 %endif
 BuildRequires:  gcc-c++
-BuildRequires:  glib2-devel zlib-devel
+BuildRequires:  pkgconfig zlib-devel
 #######  distro specific changes  ########
 #####
 #### suse options ####
@@ -250,17 +250,6 @@ Authors:
 %_prefix/lib/mono/gac/cscompmgd
 %_prefix/lib/mono/mono-configuration-crypto
 
-%post
-/sbin/ldconfig
-%ifarch s390 s390x
-if grep -q "machine = 9672" /proc/cpuinfo 2>/dev/null ; then
-    # anchor for rebuild on failure
-    echo "mono may not work correctly on G5"
-fi
-%endif
-
-%postun -p /sbin/ldconfig
-
 %package -n libmono-2_0-1
 License:        LGPL v2.1 only
 Summary:	A Library for embedding Mono in your Application
@@ -278,6 +267,17 @@ A Library for embedding Mono in your Application.
 %files -n libmono-2_0-1
 %defattr(-, root, root)
 %_libdir/libmono-2.0.so.1*
+
+%post -n libmono-2_0-1
+/sbin/ldconfig
+%ifarch s390 s390x
+if grep -q "machine = 9672" /proc/cpuinfo 2>/dev/null ; then
+    # anchor for rebuild on failure
+    echo "mono may not work correctly on G5"
+fi
+%endif
+
+%postun -n libmono-2_0-1 -p /sbin/ldconfig
 
 %package -n libmono-2_0-devel
 License:        LGPL v2.1 only
@@ -874,7 +874,6 @@ License:        LGPL v2.1 only
 Summary:        Mono development tools
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
-Recommends:     glib2-devel
 Requires:       pkgconfig
 %if 0%{?monobuild}
 Requires:       libgdiplus0
@@ -1083,35 +1082,35 @@ Monodoc-core contains documentation tools for C#.
 
 %files -n monodoc-core
 %defattr(-, root, root)
-%_bindir/mdassembler
-%_bindir/mdoc
-%_bindir/mdoc-assemble
-%_bindir/mdoc-export-html
-%_bindir/mdoc-export-msxdoc
-%_bindir/mdoc-update
-%_bindir/mdoc-validate
-%_bindir/mdvalidater
-%_bindir/mod
-%_bindir/monodocer
-%_bindir/monodocs2html
-%_bindir/monodocs2slashdoc
-%_libdir/pkgconfig/monodoc.pc
-%_mandir/man1/mdassembler.1%ext_man
-%_mandir/man1/mdoc-assemble.1%ext_man
-%_mandir/man1/mdoc-export-html.1%ext_man
-%_mandir/man1/mdoc-export-msxdoc.1%ext_man
-%_mandir/man1/mdoc-update.1%ext_man
-%_mandir/man1/mdoc-validate.1%ext_man
-%_mandir/man1/mdoc.1%ext_man
-%_mandir/man1/mdvalidater.1%ext_man
-%_mandir/man1/monodocer.1%ext_man
-%_mandir/man1/monodocs2html.1%ext_man
-%_mandir/man5/mdoc.5%ext_man
-%_prefix/lib/mono/4.0/mdoc.exe*
-%_prefix/lib/mono/4.0/mod.exe*
-%_prefix/lib/mono/gac/monodoc
-%_prefix/lib/mono/monodoc
-%_prefix/lib/monodoc
+%{_bindir}/mdassembler
+%{_bindir}/mdoc
+%{_bindir}/mdoc-assemble
+%{_bindir}/mdoc-export-html
+%{_bindir}/mdoc-export-msxdoc
+%{_bindir}/mdoc-update
+%{_bindir}/mdoc-validate
+%{_bindir}/mdvalidater
+%{_bindir}/mod
+%{_bindir}/monodocer
+%{_bindir}/monodocs2html
+%{_bindir}/monodocs2slashdoc
+%{_libdir}/pkgconfig/monodoc.pc
+%{_mandir}/man1/mdassembler.1%ext_man
+%{_mandir}/man1/mdoc-assemble.1%ext_man
+%{_mandir}/man1/mdoc-export-html.1%ext_man
+%{_mandir}/man1/mdoc-export-msxdoc.1%ext_man
+%{_mandir}/man1/mdoc-update.1%ext_man
+%{_mandir}/man1/mdoc-validate.1%ext_man
+%{_mandir}/man1/mdoc.1%ext_man
+%{_mandir}/man1/mdvalidater.1%ext_man
+%{_mandir}/man1/monodocer.1%ext_man
+%{_mandir}/man1/monodocs2html.1%ext_man
+%{_mandir}/man5/mdoc.5%ext_man
+%{_prefix}/lib/mono/4.0/mdoc.exe*
+%{_prefix}/lib/mono/4.0/mod.exe*
+%{_prefix}/lib/mono/gac/monodoc
+%{_prefix}/lib/mono/monodoc
+%{_prefix}/lib/monodoc
 
 %package -n mono-complete
 License:        LGPL v2.1 only
@@ -1153,6 +1152,7 @@ Authors:
 %files -n mono-complete
 %defattr(-, root, root)
 %dir %_prefix/lib/mono/compat-2.0
+%dir %_prefix/lib/mono/compat-4.0
 
 %prep
 %setup -q -n mono-%{version}
