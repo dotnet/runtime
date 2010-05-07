@@ -36,6 +36,7 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/verify.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -910,6 +911,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 {
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
+	GSList *errors = NULL;
 
 	mono_profiler_module_event (image, MONO_PROFILE_START_LOAD);
 
@@ -924,7 +926,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (care_about_pecoff == FALSE)
 		goto done;
 
-	if (!mono_verifier_verify_pe_data (image, NULL))
+	if (!mono_verifier_verify_pe_data (image, &errors))
 		goto invalid_image;
 
 	if (!mono_image_load_pe_data (image))
@@ -934,13 +936,13 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		goto done;
 	}
 
-	if (!mono_verifier_verify_cli_data (image, NULL))
+	if (!mono_verifier_verify_cli_data (image, &errors))
 		goto invalid_image;
 
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-	if (!mono_verifier_verify_table_data (image, NULL))
+	if (!mono_verifier_verify_table_data (image, &errors))
 		goto invalid_image;
 
 	mono_image_load_names (image);
@@ -955,9 +957,14 @@ done:
 	return image;
 
 invalid_image:
+	if (errors) {
+		MonoVerifyInfo *info = errors->data;
+		g_warning ("Could not load image %s due to %s", image->name, info->message);
+		mono_free_verify_list (errors);
+	}
 	mono_profiler_module_loaded (image, MONO_PROFILE_FAILED);
 	mono_image_close (image);
-		return NULL;
+	return NULL;
 }
 
 static MonoImage *
