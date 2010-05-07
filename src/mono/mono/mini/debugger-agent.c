@@ -281,7 +281,8 @@ typedef enum {
 	ERR_NOT_SUSPENDED = 101,
 	ERR_INVALID_ARGUMENT = 102,
 	ERR_UNLOADED = 103,
-	ERR_NO_INVOCATION = 104
+	ERR_NO_INVOCATION = 104,
+	ERR_ABSENT_INFORMATION = 105
 } ErrorCode;
 
 typedef enum {
@@ -6137,7 +6138,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	if (!frame->jit) {
 		frame->jit = mono_debug_find_method (frame->method, frame->domain);
-		g_assert (frame->jit);
+		if (!frame->jit)
+			/* This could happen for aot images with no jit debug info */
+			return ERR_ABSENT_INFORMATION;
 	}
 	jit = frame->jit;
 
