@@ -1,3 +1,7 @@
+2010-05-07  Andrew Jorgensen  <ajorgensen@novell.com>
+
+	* test/test.h: Fix some compiler warning that SUSE takes seriously.
+
 2010-05-06  Alan McGovern  <amcgovern@novell.com>
 
 	* src/gmarkup.c: Fix a parser issue when skipping the xml declaration.
