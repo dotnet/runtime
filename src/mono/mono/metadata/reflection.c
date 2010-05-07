@@ -6327,51 +6327,6 @@ mymono_metadata_type_hash (MonoType *t1)
 	return hash;
 }
 
-static MonoReflectionGenericClass*
-mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
-{
-	static MonoClass *System_Reflection_MonoGenericClass;
-	MonoReflectionGenericClass *res;
-	MonoClass *klass, *gklass;
-	MonoGenericInst *ginst;
-	MonoArray *type_args;
-	int i;
-	MonoObject *tb;
-
-	g_assert (0); /*This code path should not be taken anymore, all MGC instantiation must happen in managed code*/
-
-	if (!System_Reflection_MonoGenericClass) {
-		System_Reflection_MonoGenericClass = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "MonoGenericClass");
-		g_assert (System_Reflection_MonoGenericClass);
-	}
-
-	klass = mono_class_from_mono_type (geninst);
-	gklass = klass->generic_class->container_class;
-
-	mono_class_init (klass);
-
-#ifdef HAVE_SGEN_GC
-	res = (MonoReflectionGenericClass *) mono_gc_alloc_pinned_obj (mono_class_vtable (domain, System_Reflection_MonoGenericClass), mono_class_instance_size (System_Reflection_MonoGenericClass));
-#else
-	res = (MonoReflectionGenericClass *) mono_object_new (domain, System_Reflection_MonoGenericClass);
-#endif
-
-	res->type.type = geninst;
-	tb = mono_class_get_ref_info (gklass);
-	g_assert (tb);
-	g_assert (!strcmp (tb->vtable->klass->name, "TypeBuilder"));
-	MONO_OBJECT_SETREF (res, generic_type, tb);
-
-	ginst = klass->generic_class->context.class_inst;
-	type_args = mono_array_new (domain, mono_defaults.systemtype_class, ginst->type_argc);
-	for (i = 0; i < ginst->type_argc; ++i)
-		mono_array_setref (type_args, i, mono_type_get_object (domain, ginst->type_argv [i]));
-	MONO_OBJECT_SETREF (res, type_arguments, type_args);
-
-	return res;
-}
-
 static gboolean
 verify_safe_for_managed_space (MonoType *type)
 {
@@ -6509,14 +6464,9 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		return res;
 	}
 
-	/* Create a MonoGenericClass object for instantiations of not finished TypeBuilders */
-	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !type->data.generic_class->container_class->wastypebuilder) {
-		res = (MonoReflectionType *)mono_generic_class_get_object (domain, type);
-		mono_g_hash_table_insert (domain->type_hash, type, res);
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return res;
-	}
+	/* This MonoGenericClass hack is no longer necessary. Let's leave it here until we finish with the 2-stage type-builder setup.*/
+	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !type->data.generic_class->container_class->wastypebuilder)
+		g_assert (0);
 
 	if (!verify_safe_for_managed_space (type)) {
 		mono_domain_unlock (domain);
