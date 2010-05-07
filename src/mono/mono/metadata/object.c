@@ -2958,6 +2958,8 @@ mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
 {
 	void *src;
 
+	g_assert (obj);
+
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
 	src = (char*)obj + field->offset;
@@ -3037,6 +3039,8 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 			if (!vtable->initialized)
 				mono_runtime_class_init (vtable);
 		}
+	} else {
+		g_assert (obj);
 	}
 	
 	if (is_ref) {

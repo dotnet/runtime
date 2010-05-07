@@ -539,6 +539,10 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 		g_assert (field);
 	}
 
+	/*pedump doesn't create an appdomin, so the domain object doesn't exist.*/
+	if (!domain->domain)
+		return FALSE;
+
 	mono_field_get_value ((MonoObject*)(domain->domain), field, &o);
 	return o != NULL;
 }
