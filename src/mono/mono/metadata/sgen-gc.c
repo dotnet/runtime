@@ -4475,11 +4475,7 @@ null_ephemerons_for_domain (MonoDomain *domain)
 	while (current) {
 		MonoObject *object = (MonoObject*)current->array;
 
-		/* FIXME: actually there should be no object
-		   left in the domain with a non-null vtable
-		   (provided we remove the Thread special
-		   case) */
-		if (object && (!object->vtable || mono_object_domain (object) == domain)) {
+		if (object && !object->vtable) {
 			EphemeronLinkNode *tmp = current;
 
 			if (prev)
@@ -4720,11 +4716,7 @@ null_links_for_domain (MonoDomain *domain, int generation)
 		prev = NULL;
 		for (entry = disappearing_link_hash [i]; entry; ) {
 			char *object = DISLINK_OBJECT (entry);
-			/* FIXME: actually there should be no object
-			   left in the domain with a non-null vtable
-			   (provided we remove the Thread special
-			   case) */
-			if (object && (!((MonoObject*)object)->vtable || mono_object_domain (object) == domain)) {
+			if (object && !((MonoObject*)object)->vtable) {
 				DisappearingLink *next = entry->next;
 
 				if (prev)
