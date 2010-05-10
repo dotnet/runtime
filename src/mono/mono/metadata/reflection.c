@@ -10732,7 +10732,7 @@ static MonoMethod*
 mono_reflection_method_get_handle (MonoObject *method)
 {
 	MonoClass *class = mono_object_class (method);
-	if (is_sr_mono_method (class)) {
+	if (is_sr_mono_method (class) || is_sr_mono_generic_method (class)) {
 		MonoReflectionMethod *sr_method = (MonoReflectionMethod*)method;
 		return sr_method->method;
 	}
