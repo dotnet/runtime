@@ -3136,9 +3136,10 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoJitInfo *ji, MonoBreakpoint
 			break;
 	}
 
-	if (i == seq_points->len)
+	if (i == seq_points->len) {
 		/* Have to handle this somehow */
-		NOT_IMPLEMENTED;
+		g_error ("Unable to insert breakpoint at %s:%d, seq_points=%d\n", mono_method_full_name (ji->method, TRUE), bp->il_offset, seq_points->len);
+	}
 
 	inst = g_new0 (BreakpointInstance, 1);
 	inst->native_offset = native_offset;
