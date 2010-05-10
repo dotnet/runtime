@@ -77,10 +77,10 @@ g_file_test (const gchar *filename, GFileTest test)
 		return FALSE;
 
 	utf16_filename = u8to16 (filename);
-	attr = GetFileAttributesW (filename);
+	attr = GetFileAttributesW (utf16_filename);
 	g_free (utf16_filename);
 	
-	if (ret == INVALID_FILE_ATTRIBUTES)
+	if (attr == INVALID_FILE_ATTRIBUTES)
 		return FALSE;
 
 	if ((test & G_FILE_TEST_EXISTS) != 0) {
@@ -88,8 +88,8 @@ g_file_test (const gchar *filename, GFileTest test)
 	}
 
 	if ((test & G_FILE_TEST_IS_EXECUTABLE) != 0) {
-		int len = strlen (filename);
-		if (len > 4 && strcmp (filename + len-3, "exe")
+		size_t len = strlen (filename);
+		if (len > 4 && strcmp (filename + len-3, "exe"))
 		    return TRUE;
 		    
 		return FALSE;
