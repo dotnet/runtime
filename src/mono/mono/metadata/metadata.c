@@ -2640,10 +2640,22 @@ free_generic_class_dependents (MonoGenericClass *gclass)
 
 		/* Allocated in mono_class_init () */
 		g_free (class->methods);
-		if (class->ext)
+		if (class->ext) {
 			g_free (class->ext->properties);
+			g_free (class->ext->field_def_values);
+		}
+		/* Allocated in mono_class_setup_fields () */
+		g_free (class->fields);
+		/* Allocated in mono_class_setup_vtable_general () */
+		g_free (class->vtable);
 		/* Allocated in mono_generic_class_get_class () */
 		g_free (class->interfaces);
+		/* Allocated in setup_interface_offsets () */
+		g_free (class->interfaces_packed);
+		g_free (class->interface_offsets_packed);
+		g_free (class->interface_bitmap);
+		/* Allocated in mono_class_setup_supertypes () */
+		g_free (class->supertypes);
 		l = g_slist_prepend (l, class);
 	} else if (gclass->is_dynamic) {
 		MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass *)gclass;
