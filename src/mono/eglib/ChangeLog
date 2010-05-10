@@ -1,3 +1,8 @@
+2010-05-10  Miguel de Icaza  <miguel@novell.com>
+
+	* gfile-win32.c: Port this to use the Win32 APIs to get this
+	building with Cygwin.
+
 2010-05-07  Andrew Jorgensen  <ajorgensen@novell.com>
 
 	* test/test.h: Fix some compiler warning that SUSE takes seriously.

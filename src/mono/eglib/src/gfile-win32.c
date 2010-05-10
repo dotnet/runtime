@@ -26,6 +26,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <config.h>
+#include <windows.h>
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +35,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #ifdef G_OS_WIN32
 #include <io.h>
@@ -70,37 +70,39 @@ int mkstemp (char *tmp_template)
 gboolean
 g_file_test (const gchar *filename, GFileTest test)
 {
-	struct __stat64 stat;
-	int ret = 0;
 	gunichar2* utf16_filename = NULL;
-
+	DWORD attr;
+	
 	if (filename == NULL || test == 0)
 		return FALSE;
 
 	utf16_filename = u8to16 (filename);
-	ret = _wstati64 (utf16_filename, &stat);
+	attr = GetFileAttributesW (filename);
 	g_free (utf16_filename);
-
-	if ((test & G_FILE_TEST_EXISTS) != 0) {
-		if (ret == 0)
-			return TRUE;
-	}
-
-	if (ret != 0)
+	
+	if (ret == INVALID_FILE_ATTRIBUTES)
 		return FALSE;
 
+	if ((test & G_FILE_TEST_EXISTS) != 0) {
+		return TRUE;
+	}
+
 	if ((test & G_FILE_TEST_IS_EXECUTABLE) != 0) {
-		if (stat.st_mode & _S_IEXEC)
-			return TRUE;
+		int len = strlen (filename);
+		if (len > 4 && strcmp (filename + len-3, "exe")
+		    return TRUE;
+		    
+		return FALSE;
 	}
 
 	if ((test & G_FILE_TEST_IS_REGULAR) != 0) {
-		if (stat.st_mode & _S_IFREG)
-			return TRUE;
+		if (attr & (FILE_ATTRIBUTE_DEVICE|FILE_ATTRIBUTE_DIRECTORY))
+			return FALSE;
+		return TRUE;
 	}
 
 	if ((test & G_FILE_TEST_IS_DIR) != 0) {
-		if (stat.st_mode & _S_IFDIR)
+		if (attr & FILE_ATTRIBUTE_DIRECTORY)
 			return TRUE;
 	}
 
