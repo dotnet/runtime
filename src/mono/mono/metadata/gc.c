@@ -480,6 +480,11 @@ ves_icall_System_GC_register_ephemeron_array (MonoObject *array)
 #endif
 }
 
+MonoObject*
+ves_icall_System_GC_get_ephemeron_tombstone (void)
+{
+	return mono_domain_get ()->ephemeron_tombstone;
+}
 
 #define mono_allocator_lock() EnterCriticalSection (&allocator_section)
 #define mono_allocator_unlock() LeaveCriticalSection (&allocator_section)

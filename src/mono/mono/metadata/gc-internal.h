@@ -34,6 +34,7 @@ guint32     ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 
 void        ves_icall_System_GCHandle_FreeHandle (guint32 handle) MONO_INTERNAL;
 gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle) MONO_INTERNAL;
 void        ves_icall_System_GC_register_ephemeron_array (MonoObject *array) MONO_INTERNAL;
+MonoObject  *ves_icall_System_GC_get_ephemeron_tombstone (void) MONO_INTERNAL;
 
 extern void mono_gc_init (void) MONO_INTERNAL;
 extern void mono_gc_base_init (void) MONO_INTERNAL;
