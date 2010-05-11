@@ -39,7 +39,7 @@
 #include <unicode-data.h>
 #include <errno.h>
 
-#ifdef _MSC_VER || G_OS_WIN32
+#if defined(_MSC_VER) || defined(G_OS_WIN32)
 /* FIXME */
 #  define CODESET 1
 #  include <Windows.h>
