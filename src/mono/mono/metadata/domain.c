@@ -1999,6 +1999,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->out_of_memory_ex = NULL;
 	domain->null_reference_ex = NULL;
 	domain->stack_overflow_ex = NULL;
+	domain->ephemeron_tombstone = NULL;
 	domain->entry_assembly = NULL;
 
 	g_free (domain->friendly_name);

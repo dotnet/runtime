@@ -229,6 +229,8 @@ struct _MonoDomain {
 	MonoException      *stack_overflow_ex;
 	/* typeof (void) */
 	MonoObject         *typeof_void;
+	/* Ephemeron Tombstone*/
+	MonoObject         *ephemeron_tombstone;
 	/* 
 	 * The fields between FIRST_GC_TRACKED and LAST_GC_TRACKED are roots, but
 	 * not object references.

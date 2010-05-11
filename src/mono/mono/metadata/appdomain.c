@@ -165,7 +165,7 @@ mono_runtime_get_no_exec (void)
 }
 
 static void
-create_exceptions (MonoDomain *domain)
+create_domain_objects (MonoDomain *domain)
 {
 	MonoDomain *old_domain = mono_domain_get ();
 	MonoString *arg;
@@ -189,6 +189,9 @@ create_exceptions (MonoDomain *domain)
 	domain->null_reference_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL);
 	arg = mono_string_new (domain, "The requested operation caused a stack overflow.");
 	domain->stack_overflow_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL);
+
+	/*The ephemeron tombstone i*/
+	domain->ephemeron_tombstone = mono_object_new (domain, mono_defaults.object_class);
 
 	if (domain != old_domain) {
 		mono_thread_pop_appdomain_ref ();
@@ -263,7 +266,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_type_initialization_init ();
 
 	if (!mono_runtime_get_no_exec ())
-		create_exceptions (domain);
+		create_domain_objects (domain);
 
 	/* GC init has to happen after thread init */
 	mono_gc_init ();
@@ -516,7 +519,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	g_free (shadow_location);
 #endif
 
-	create_exceptions (data);
+	create_domain_objects (data);
 
 	return ad;
 }
