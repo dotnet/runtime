@@ -205,7 +205,9 @@ typedef struct {
 	int line_base, line_range, max_address_incr;
 	guint8 opcode_base;
 	guint32 last_line, last_file, last_offset;
+	guint32 first_file;
 	int line, file, offset;
+	gboolean is_hidden;
 } StatementMachine;
 
 static gboolean
@@ -292,8 +294,10 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 	stm.offset = stm.last_offset = 0;
 	stm.last_file = 0;
 	stm.last_line = 0;
+	stm.first_file = 0;
 	stm.file = 1;
 	stm.line = 1;
+	stm.is_hidden = FALSE;
 
 	while (TRUE) {
 		guint8 opcode = *ptr++;
@@ -309,7 +313,7 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 					goto out_success;
 				break;
 			} else if (opcode == DW_LNE_MONO_negate_is_hidden) {
-				;
+				stm.is_hidden = !stm.is_hidden;
 			} else if ((opcode >= DW_LNE_MONO__extensions_start) &&
 				   (opcode <= DW_LNE_MONO__extensions_end)) {
 				; // reserved for future extensions
@@ -368,6 +372,9 @@ add_line (StatementMachine *stm, GPtrArray *il_offset_array, GPtrArray *line_num
 		g_ptr_array_add (il_offset_array, GUINT_TO_POINTER (stm->offset));
 		g_ptr_array_add (line_number_array, GUINT_TO_POINTER (stm->line));
 	}
+
+	if (!stm->is_hidden && !stm->first_file)
+		stm->first_file = stm->file;
 }
 
 /*
@@ -409,8 +416,10 @@ mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_f
 	stm.offset = stm.last_offset = 0;
 	stm.last_file = 0;
 	stm.last_line = 0;
+	stm.first_file = 0;
 	stm.file = 1;
 	stm.line = 1;
+	stm.is_hidden = FALSE;
 
 	while (TRUE) {
 		guint8 opcode = *ptr++;
@@ -425,7 +434,7 @@ mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_f
 				add_line (&stm, il_offset_array, line_number_array);
 				break;
 			} else if (opcode == DW_LNE_MONO_negate_is_hidden) {
-				;
+				stm.is_hidden = !stm.is_hidden;
 			} else if ((opcode >= DW_LNE_MONO__extensions_start) &&
 				   (opcode <= DW_LNE_MONO__extensions_end)) {
 				; // reserved for future extensions
@@ -465,6 +474,9 @@ mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_f
 			add_line (&stm, il_offset_array, line_number_array);
 		}
 	}
+
+	if (!stm.file && stm.first_file)
+		stm.file = stm.first_file;
 
 	if (stm.file) {
 		int offset = read32(&(stm.symfile->offset_table->_source_table_offset)) +
