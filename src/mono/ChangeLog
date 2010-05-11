@@ -1,6 +1,7 @@
 2010-05-11  Andrew Jorgensen  <ajorgensen@novell.com>
 
 	* scripts/mono-find-*.in: Look for libmono-2.0.so.1, not libmono.so
+	and set MONO_PATH to ensure that mscorlib.dll can be found
 
 2010-04-29  Andreas Färber  <andreas.faerber@web.de>
 
