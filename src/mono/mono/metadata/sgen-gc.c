@@ -4485,6 +4485,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
 	MonoArray *array;
 	Ephemeron *cur, *array_end;
+	char *tombstone;
 
 	while (current) {
 		char *object = current->array;
@@ -4517,11 +4518,12 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 		array = (MonoArray*)object;
 		cur = mono_array_addr (array, Ephemeron, 0);
 		array_end = cur + mono_array_length (array);
+		tombstone = (char*)((MonoVTable*)LOAD_VTABLE (object))->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
 			char *key = (char*)cur->key;
 
-			if (!key)
+			if (!key || key == tombstone)
 				continue;
 
 			DEBUG (5, fprintf (gc_debug_file, "[%d] key %p (%s) value %p (%s)\n", cur - mono_array_addr (array, Ephemeron, 0),
@@ -4529,7 +4531,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable"));
 
 			if (!object_is_reachable (key, start, end)) {
-				cur->key = NULL;
+				cur->key = tombstone;
 				cur->value = NULL;
 				continue;
 			}
@@ -4558,6 +4560,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 	EphemeronLinkNode *current = ephemeron_list;
 	MonoArray *array;
 	Ephemeron *cur, *array_end;
+	char *tombstone;
 
 	for (current = ephemeron_list; current; current = current->next) {
 		char *object = current->array;
@@ -4578,11 +4581,12 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 		array = (MonoArray*)object;
 		cur = mono_array_addr (array, Ephemeron, 0);
 		array_end = cur + mono_array_length (array);
+		tombstone = (char*)((MonoVTable*)LOAD_VTABLE (object))->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
 			char *key = cur->key;
 
-			if (!key)
+			if (!key || key == tombstone)
 				continue;
 
 			DEBUG (5, fprintf (gc_debug_file, "[%d] key %p (%s) value %p (%s)\n", cur - mono_array_addr (array, Ephemeron, 0),
