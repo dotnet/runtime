@@ -1,3 +1,8 @@
+2010-05-11  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* Makefile.am : do not try to build test on windows (fails).
+	* src/glib.h : fix cygwin build, do not include unistd.h.
+
 2010-05-10  Miguel de Icaza  <miguel@novell.com>
 
 	* gfile-win32.c: Port this to use the Win32 APIs to get this

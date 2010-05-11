@@ -14,7 +14,9 @@
 #else
 #include <stdint.h>
 /* For pid_t */
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #endif
 
 #include <eglib-config.h>
