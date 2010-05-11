@@ -38,19 +38,21 @@
 #include <glib.h>
 #include <unicode-data.h>
 #include <errno.h>
-#ifdef _MSC_VER
-/* FIXME */
-#define CODESET 1
-#include <Windows.h>
 
-typedef int iconv_t;
+#ifdef _MSC_VER || G_OS_WIN32
+/* FIXME */
+#  define CODESET 1
+#  include <Windows.h>
+#  ifdef _MSC_VER
+       typedef int iconv_t;
+#  endif
 #else
-#ifdef HAVE_LANGINFO_H
-#include <langinfo.h>
-#endif
-#ifdef HAVE_ICONV_H
-#include <iconv.h>
-#endif
+#    ifdef HAVE_LANGINFO_H
+#       include <langinfo.h>
+#    endif
+#    ifdef HAVE_ICONV_H
+#       include <iconv.h>
+#    endif
 #endif
 
 static char *my_charset;
