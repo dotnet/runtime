@@ -3745,7 +3745,12 @@ mono_unhandled_exception (MonoObject *exc)
 	}
 }
 
-/*
+/**
+ * mono_runtime_exec_managed_code:
+ * @domain: Application domain
+ * @main_func: function to invoke from the execution thread
+ * @main_args: parameter to the main_func
+ *
  * Launch a new thread to execute a function
  *
  * main_func is called back from the thread with main_args as the

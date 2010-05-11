@@ -1646,7 +1646,11 @@ mono_init (const char *domain_name)
 
 /**
  * mono_init_from_assembly:
- * 
+ * @domain_name: name to give to the initial domain
+ * @filename: filename to load on startup
+ *
+ * Used by the runtime, users should use mono_jit_init instead.
+ *
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
  * This function is guaranteed to not run any IL code.
@@ -1665,8 +1669,11 @@ mono_init_from_assembly (const char *domain_name, const char *filename)
 /**
  * mono_init_version:
  * 
+ * Used by the runtime, users should use mono_jit_init instead.
+ * 
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
+ *
  * This function is guaranteed to not run any IL code.
  * The runtime is initialized using the provided rutime version.
  *

@@ -1278,6 +1278,14 @@ mono_jit_parse_options (int argc, char * argv[])
 	}
 }
 
+/**
+ * mono_main:
+ * @argc: number of arguments in the argv array
+ * @argv: array of strings containing the startup arguments
+ *
+ * Launches the Mono JIT engine and parses all the command line options
+ * in the same way that the mono command line VM would.
+ */
 int
 mono_main (int argc, char* argv[])
 {
