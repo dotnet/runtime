@@ -1936,6 +1936,13 @@ mono_gc_clear_domain (MonoDomain * domain)
 	scan_area_with_callback (nursery_section->data, nursery_section->end_data,
 			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain);
 
+	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
+	to memory returned to the OS.*/
+	null_ephemerons_for_domain (domain);
+
+	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
+		null_links_for_domain (domain, i);
+
 	/* We need two passes over major and large objects because
 	   freeing such objects might give their memory back to the OS
 	   (in the case of large objects) or obliterate its vtable
@@ -1966,11 +1973,6 @@ mono_gc_clear_domain (MonoDomain * domain)
 	}
 	major_iterate_objects (TRUE, FALSE, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
 	major_iterate_objects (FALSE, TRUE, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
-
-	null_ephemerons_for_domain (domain);
-
-	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		null_links_for_domain (domain, i);
 
 	UNLOCK_GC;
 }
