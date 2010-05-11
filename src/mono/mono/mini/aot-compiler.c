@@ -3594,12 +3594,7 @@ emit_plt (MonoAotCompile *acfg)
 
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, symbol, TRUE);
-#ifdef TARGET_X86
-	/* This section will be made read-write by the AOT loader */
-	emit_alignment (acfg, mono_pagesize ());
-#else
 	emit_alignment (acfg, 16);
-#endif
 	emit_label (acfg, symbol);
 	emit_label (acfg, acfg->plt_symbol);
 
