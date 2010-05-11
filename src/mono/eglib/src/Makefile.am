@@ -2,7 +2,7 @@ noinst_LTLIBRARIES = libeglib.la libeglib-static.la
 
 win_files  = \
 	gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c \
-	gmodule-win32.c gtimer-win32.c
+	gmodule-win32.c gtimer-win32.c vasprintf.c
 
 unix_files = \
 	gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c	\
