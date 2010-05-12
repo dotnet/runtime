@@ -3319,7 +3319,6 @@ set_bp_in_domain (gpointer key, gpointer value, gpointer user_data)
 static MonoBreakpoint*
 set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req)
 {
-	MonoDomain *domain;
 	MonoBreakpoint *bp;
 
 	// FIXME:
