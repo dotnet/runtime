@@ -685,25 +685,7 @@ gregs_from_ucontext (ucontext_t *ctx)
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-
-    guint64 *gregs = gregs_from_ucontext (ctx);
-
-	mctx->rax = gregs [REG_RAX];
-	mctx->rbx = gregs [REG_RBX];
-	mctx->rcx = gregs [REG_RCX];
-	mctx->rdx = gregs [REG_RDX];
-	mctx->rbp = gregs [REG_RBP];
-	mctx->rsp = gregs [REG_RSP];
-	mctx->rsi = gregs [REG_RSI];
-	mctx->rdi = gregs [REG_RDI];
-	mctx->rip = gregs [REG_RIP];
-	mctx->r12 = gregs [REG_R12];
-	mctx->r13 = gregs [REG_R13];
-	mctx->r14 = gregs [REG_R14];
-	mctx->r15 = gregs [REG_R15];
-#elif defined(MONO_ARCH_USE_SIGACTION)
+#if defined(MONO_ARCH_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	mctx->rax = UCONTEXT_REG_RAX (ctx);
@@ -741,25 +723,7 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
-#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-
-    guint64 *gregs = gregs_from_ucontext (ctx);
-
-	gregs [REG_RAX] = mctx->rax;
-	gregs [REG_RBX] = mctx->rbx;
-	gregs [REG_RCX] = mctx->rcx;
-	gregs [REG_RDX] = mctx->rdx;
-	gregs [REG_RBP] = mctx->rbp;
-	gregs [REG_RSP] = mctx->rsp;
-	gregs [REG_RSI] = mctx->rsi;
-	gregs [REG_RDI] = mctx->rdi;
-	gregs [REG_RIP] = mctx->rip;
-	gregs [REG_R12] = mctx->r12;
-	gregs [REG_R13] = mctx->r13;
-	gregs [REG_R14] = mctx->r14;
-	gregs [REG_R15] = mctx->r15;
-#elif defined(MONO_ARCH_USE_SIGACTION)
+#if defined(MONO_ARCH_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	UCONTEXT_REG_RAX (ctx) = mctx->rax;
@@ -797,13 +761,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-
-    guint64 *gregs = gregs_from_ucontext (ctx);
-
-	return (gpointer)gregs [REG_RIP];
-#elif defined(MONO_ARCH_USE_SIGACTION)
+#if defined(MONO_ARCH_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	return (gpointer)UCONTEXT_REG_RIP (ctx);
