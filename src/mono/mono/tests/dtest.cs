@@ -2128,6 +2128,20 @@ public class DebuggerTests
 		Assert.AreEqual ("invoke", frames [1].Method.Name);
 		Assert.AreEqual ("domains", frames [2].Method.Name);
 
+		// Test breakpoints on already JITted methods in other domains
+		m = entry_point.DeclaringType.GetMethod ("invoke_in_domain_2");
+		Assert.IsNotNull (m);
+		vm.SetBreakpoint (m, 0);
+
+		while (true) {
+			vm.Resume ();
+			e = vm.GetNextEvent ();
+			if (e is BreakpointEvent)
+				break;
+		}
+
+		Assert.AreEqual ("invoke_in_domain_2", (e as BreakpointEvent).Method.Name);
+
 		// This is empty when receiving the AppDomainCreateEvent
 		Assert.AreEqual ("domain", domain.FriendlyName);
 

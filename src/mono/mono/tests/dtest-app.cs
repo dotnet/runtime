@@ -605,7 +605,11 @@ public class Tests : TestsBase
 		CrossDomain o = (CrossDomain)domain.CreateInstanceAndUnwrap (
 				   typeof (CrossDomain).Assembly.FullName, "CrossDomain");
 
+		o.invoke_2 ();
+
 		o.invoke ();
+
+		o.invoke_2 ();
 
 		AppDomain.Unload (domain);
 
@@ -618,6 +622,10 @@ public class Tests : TestsBase
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static void invoke_in_domain () {
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void invoke_in_domain_2 () {
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
@@ -674,6 +682,10 @@ public class CrossDomain : MarshalByRefObject
 {
 	public void invoke () {
 		Tests.invoke_in_domain ();
+	}
+
+	public void invoke_2 () {
+		Tests.invoke_in_domain_2 ();
 	}
 }	
 
