@@ -68,6 +68,12 @@
 
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 
+#if defined(__linux__)
+#define RODATA_SECT ".rodata"
+#else
+#define RODATA_SECT ".text"
+#endif
+
 #define TV_DECLARE(name) gint64 name
 #define TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define TV_ELAPSED(start,end) (((end) - (start)) / 10)
@@ -344,7 +350,7 @@ emit_symbol_size (MonoAotCompile *acfg, const char *name, const char *end_label)
 static void
 emit_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
 {
-	img_writer_emit_section_change (acfg->w, ".text", 1);
+	img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
 	emit_global (acfg, name, FALSE);
 	img_writer_emit_label (acfg->w, name);
 	img_writer_emit_string (acfg->w, value);
@@ -3746,7 +3752,7 @@ emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
 
 	info_offset = add_to_blob (acfg, buf, p - buf);
 
-	emit_section_change (acfg, ".text", 0);
+	emit_section_change (acfg, RODATA_SECT, 0);
 	emit_global (acfg, symbol, FALSE);
 	emit_label (acfg, symbol);
 
@@ -4728,7 +4734,7 @@ emit_code (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 
 	sprintf (symbol, "code_offsets");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -4768,7 +4774,7 @@ emit_info (MonoAotCompile *acfg)
 	}
 
 	sprintf (symbol, "method_info_offsets");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -5108,7 +5114,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 	/* Emit the table */
 	sprintf (symbol, "extra_method_table");
-	emit_section_change (acfg, ".text", 0);
+	emit_section_change (acfg, RODATA_SECT, 0);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -5137,7 +5143,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	 * This is used by mono_aot_find_jit_info ().
 	 */
 	sprintf (symbol, "extra_method_info_offsets");
-	emit_section_change (acfg, ".text", 0);
+	emit_section_change (acfg, RODATA_SECT, 0);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -5169,7 +5175,7 @@ emit_exception_info (MonoAotCompile *acfg)
 	}
 
 	sprintf (symbol, "ex_info_offsets");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -5191,7 +5197,7 @@ emit_unwind_info (MonoAotCompile *acfg)
 	 */
 
 	sprintf (symbol, "unwind_info");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 	emit_global (acfg, symbol, FALSE);
@@ -5226,7 +5232,7 @@ emit_class_info (MonoAotCompile *acfg)
 		offsets [i] = emit_klass_info (acfg, MONO_TOKEN_TYPE_DEF | (i + 1));
 
 	sprintf (symbol, "class_info_offsets");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -5285,7 +5291,7 @@ emit_class_name_table (MonoAotCompile *acfg)
 
 	/* Emit the table */
 	sprintf (symbol, "class_name_table");
-	emit_section_change (acfg, ".text", 0);
+	emit_section_change (acfg, RODATA_SECT, 0);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -5322,7 +5328,7 @@ emit_image_table (MonoAotCompile *acfg)
 	 */
 
 	sprintf (symbol, "mono_image_table");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -5405,7 +5411,7 @@ emit_got_info (MonoAotCompile *acfg)
 
 	/* Emit got_info_offsets table */
 	sprintf (symbol, "got_info_offsets");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
@@ -5488,7 +5494,7 @@ emit_globals_table (MonoAotCompile *acfg)
 
 	/* Emit the table */
 	sprintf (symbol, ".Lglobals_hash");
-	emit_section_change (acfg, ".text", 0);
+	emit_section_change (acfg, RODATA_SECT, 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
@@ -5515,7 +5521,7 @@ emit_globals_table (MonoAotCompile *acfg)
 		char *name = g_ptr_array_index (acfg->globals, i);
 
 		sprintf (symbol, "name_%d", i);
-		emit_section_change (acfg, ".text", 1);
+		emit_section_change (acfg, RODATA_SECT, 1);
 		emit_label (acfg, symbol);
 		emit_string (acfg, name);
 	}
@@ -5666,7 +5672,7 @@ emit_blob (MonoAotCompile *acfg)
 	char symbol [128];
 
 	sprintf (symbol, "blob");
-	emit_section_change (acfg, ".text", 1);
+	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);

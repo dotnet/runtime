@@ -470,6 +470,7 @@ enum {
 	SECT_TEXT,
 	SECT_DYNAMIC,
 	SECT_GOT_PLT,
+	SECT_RODATA,
 	SECT_DATA,
 	SECT_BSS,
 	SECT_DEBUG_FRAME,
@@ -523,6 +524,7 @@ static SectInfo section_info [] = {
 	{".text", SHT_PROGBITS, 0, 6, 4096},
 	{".dynamic", SHT_DYNAMIC, sizeof (ElfDynamic), 3, SIZEOF_VOID_P},
 	{".got.plt", SHT_PROGBITS, SIZEOF_VOID_P, 3, SIZEOF_VOID_P},
+	{".rodata", SHT_PROGBITS, 0, 6, 4096},
 	{".data", SHT_PROGBITS, 0, 3, 8},
 	{".bss", SHT_NOBITS, 0, 3, 8},
 	{".debug_frame", SHT_PROGBITS, 0, 0, 8},
@@ -714,6 +716,11 @@ collect_syms (MonoImageWriter *acfg, int *hash, ElfStrTable *strtab, ElfSectHead
 			if (strcmp (section->name, ".text") == 0) {
 				symbols [i].st_shndx = SECT_TEXT;
 				section->shidx = SECT_TEXT;
+				section->file_offset = 4096;
+				symbols [i].st_value = section->virt_offset;
+			} else if (strcmp (section->name, ".rodata") == 0) {
+				symbols [i].st_shndx = SECT_RODATA;
+				section->shidx = SECT_RODATA;
 				section->file_offset = 4096;
 				symbols [i].st_value = section->virt_offset;
 			} else if (strcmp (section->name, ".data") == 0) {
@@ -1033,7 +1040,7 @@ bin_writer_fseek (MonoImageWriter *acfg, int offset)
 		acfg->out_buf_pos = offset;
 }
 
-static int normal_sections [] = { SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, SECT_DEBUG_ABBREV, SECT_DEBUG_LINE, SECT_DEBUG_LOC };
+static int normal_sections [] = { SECT_RODATA, SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, SECT_DEBUG_ABBREV, SECT_DEBUG_LINE, SECT_DEBUG_LOC };
 
 static int
 bin_writer_emit_writeout (MonoImageWriter *acfg)
@@ -1179,6 +1186,17 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	secth [SECT_GOT_PLT].sh_size = size;
 	file_offset += size;
 	virt_offset += size;
+
+	file_offset = ALIGN_TO (file_offset, secth [SECT_RODATA].sh_addralign);
+	virt_offset = ALIGN_TO (virt_offset, secth [SECT_RODATA].sh_addralign);
+	secth [SECT_RODATA].sh_addr = virt_offset;
+	secth [SECT_RODATA].sh_offset = file_offset;
+	if (sections [SECT_RODATA]) {
+		size = sections [SECT_RODATA]->cur_offset;
+		secth [SECT_RODATA].sh_size = size;
+		file_offset += size;
+		virt_offset += size;
+	}
 
 	file_offset = ALIGN_TO (file_offset, secth [SECT_DATA].sh_addralign);
 	virt_offset = ALIGN_TO (virt_offset, secth [SECT_DATA].sh_addralign);
