@@ -171,7 +171,7 @@ mono_loader_set_error_type_load (const char *class_name, const char *assembly_na
 	 * can't deal with load errors, and this message is more helpful than an
 	 * assert.
 	 */
-	g_warning ("The class %s could not be loaded, used in %s", class_name, assembly_name);
+	mono_trace_warning (MONO_TRACE_TYPE, "The class %s could not be loaded, used in %s", class_name, assembly_name);
 
 	set_loader_error (error);
 }
