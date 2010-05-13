@@ -39,6 +39,7 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/mono-ptr-array.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 
@@ -3502,11 +3503,11 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 #endif
 
 static void
-collect_types (GPtrArray *types, MonoReflectionTypeBuilder *type)
+collect_types (MonoPtrArray *types, MonoReflectionTypeBuilder *type)
 {
 	int i;
 
-	g_ptr_array_add (types, type); /* FIXME: GC object added to unmanaged memory */
+	mono_ptr_array_append (*types, type);
 
 	if (!type->subtypes)
 		return;
@@ -4534,7 +4535,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	MonoDynamicImage *assembly;
 	MonoReflectionAssemblyBuilder *assemblyb;
 	MonoDomain *domain;
-	GPtrArray *types;
+	MonoPtrArray types;
 	guint32 *values;
 	int i, j;
 
@@ -4592,34 +4593,35 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	mono_image_fill_module_table (domain, moduleb, assembly);
 
 	/* Collect all types into a list sorted by their table_idx */
-	types = g_ptr_array_new ();
+	mono_ptr_array_init (types, moduleb->num_types);
 
 	if (moduleb->types)
 		for (i = 0; i < moduleb->num_types; ++i) {
 			MonoReflectionTypeBuilder *type = mono_array_get (moduleb->types, MonoReflectionTypeBuilder*, i);
-			collect_types (types, type);
+			collect_types (&types, type);
 		}
 
-	g_ptr_array_sort (types, (GCompareFunc)compare_types_by_table_idx);
+	qsort (&mono_ptr_array_get(types, 0), mono_ptr_array_size (types), sizeof (gpointer), compare_types_by_table_idx);
+	//g_ptr_array_sort (types, (GCompareFunc)compare_types_by_table_idx);
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
-	table->rows += types->len;
+	table->rows += mono_ptr_array_size (types);
 	alloc_table (table, table->rows);
 
 	/*
 	 * Emit type names + namespaces at one place inside the string heap,
 	 * so load_class_names () needs to touch fewer pages.
 	 */
-	for (i = 0; i < types->len; ++i) {
-		MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
+	for (i = 0; i < mono_ptr_array_size (types); ++i) {
+		MonoReflectionTypeBuilder *tb = mono_ptr_array_get (types, i);
 		string_heap_insert_mstring (&assembly->sheap, tb->nspace);
 	}
-	for (i = 0; i < types->len; ++i) {
-		MonoReflectionTypeBuilder *tb = g_ptr_array_index (types, i);
+	for (i = 0; i < mono_ptr_array_size (types); ++i) {
+		MonoReflectionTypeBuilder *tb = mono_ptr_array_get (types, i);
 		string_heap_insert_mstring (&assembly->sheap, tb->name);
 	}
 
-	for (i = 0; i < types->len; ++i) {
-		MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
+	for (i = 0; i < mono_ptr_array_size (types); ++i) {
+		MonoReflectionTypeBuilder *type = mono_ptr_array_get (types, i);
 		mono_image_get_type_info (domain, type, assembly);
 	}
 
@@ -4653,8 +4655,8 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 		}
 	}
 
-	for (i = 0; i < types->len; ++i) {
-		MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
+	for (i = 0; i < mono_ptr_array_size (types); ++i) {
+		MonoReflectionTypeBuilder *type = mono_ptr_array_get (types, i);
 		if (type->methods) {
 			for (j = 0; j < type->num_methods; ++j) {
 				MonoReflectionMethodBuilder *mb = mono_array_get (
@@ -4665,7 +4667,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 		}
 	}
 
-	g_ptr_array_free (types, TRUE);
+	mono_ptr_array_destroy (types);
 
 	fixup_cattrs (assembly);
 }
