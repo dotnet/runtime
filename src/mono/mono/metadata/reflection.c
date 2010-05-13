@@ -4601,8 +4601,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 			collect_types (&types, type);
 		}
 
-	qsort (&mono_ptr_array_get(types, 0), mono_ptr_array_size (types), sizeof (gpointer), compare_types_by_table_idx);
-	//g_ptr_array_sort (types, (GCompareFunc)compare_types_by_table_idx);
+	mono_ptr_array_sort (types, compare_types_by_table_idx);
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
 	table->rows += mono_ptr_array_size (types);
 	alloc_table (table, table->rows);
