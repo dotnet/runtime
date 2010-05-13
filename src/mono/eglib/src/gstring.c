@@ -41,10 +41,14 @@ g_string_new_len (const gchar *init, gssize len)
 {
 	GString *ret = g_new (GString, 1);
 
-	ret->len = len < 0 ? strlen(init) : len;
+	if (init == NULL)
+		ret->len = 0;
+	else
+		ret->len = len < 0 ? strlen(init) : len;
 	ret->allocated_len = MAX(ret->len + 1, 16);
 	ret->str = g_malloc(ret->allocated_len);
-	memcpy(ret->str, init, ret->len);
+	if (init)
+		memcpy(ret->str, init, ret->len);
 	ret->str[ret->len] = 0;
 
 	return ret;

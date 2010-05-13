@@ -1,3 +1,7 @@
+2010-05-13  Alan McGovern  <amcgovern@novell.com>
+
+	* src/gstring.c: Put in some null guards for the ctors
+
 2010-05-11  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gunicode.c: Pull the Windows.h header when G_OS_WIN32 is
