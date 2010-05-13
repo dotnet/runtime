@@ -2053,70 +2053,100 @@ ves_icall_get_event_info (MonoReflectionMonoEvent *event, MonoEventInfo *info)
 #endif
 }
 
+static void
+collect_interfaces (MonoClass *klass, GHashTable *ifaces, MonoError *error)
+{
+	int i;
+	MonoClass *ic;
+
+	mono_class_setup_interfaces (klass, error);
+	if (!mono_error_ok (error))
+		return;
+
+	for (i = 0; i < klass->interface_count; i++) {
+		ic = klass->interfaces [i];
+		g_hash_table_insert (ifaces, ic, ic);
+
+		collect_interfaces (ic, ifaces, error);
+		if (!mono_error_ok (error))
+			return;
+	}
+}
+
+typedef struct {
+	MonoArray *iface_array;
+	MonoGenericContext *context;
+	MonoError *error;
+	MonoDomain *domain;
+	int next_idx;
+} FillIfaceArrayData;
+
+static void
+fill_iface_array (gpointer key, gpointer value, gpointer user_data)
+{
+	FillIfaceArrayData *data = user_data;
+	MonoClass *ic = key;
+	MonoType *ret = &ic->byval_arg, *inflated = NULL;
+
+	if (!mono_error_ok (data->error))
+		return;
+
+	if (data->context && ic->generic_class && ic->generic_class->context.class_inst->is_open) {
+		inflated = ret = mono_class_inflate_generic_type_checked (ret, data->context, data->error);
+		if (!mono_error_ok (data->error))
+			return;
+	}
+
+	mono_array_setref (data->iface_array, data->next_idx++, mono_type_get_object (data->domain, ret));
+
+	if (inflated)
+		mono_metadata_free_type (inflated);
+}
+
 static MonoArray*
 ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 {
 	MonoError error;
-	MonoDomain *domain = mono_object_domain (type); 
-	MonoArray *intf;
-	GPtrArray *ifaces = NULL;
-	int i;
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	MonoClass *parent;
-	MonoBitSet *slots;
-	MonoGenericContext *context = NULL;
+	FillIfaceArrayData data = { 0 };
+	int len;
 
-	mono_class_init_or_throw (class);
+	GHashTable *iface_hash = g_hash_table_new (NULL, NULL);
 
 	if (class->generic_class && class->generic_class->context.class_inst->is_open) {
-		context = mono_class_get_context (class);
+		data.context = mono_class_get_context (class);
 		class = class->generic_class->container_class;
 	}
 
-	mono_class_setup_vtable (class);
-
-	slots = mono_bitset_new (class->max_interface_id + 1, 0);
-
 	for (parent = class; parent; parent = parent->parent) {
-		GPtrArray *tmp_ifaces = mono_class_get_implemented_interfaces (parent, &error);
-		if (!mono_error_ok (&error)) {
-			mono_bitset_free (slots);
-			mono_error_raise_exception (&error);
-			return NULL;
-		} else if (tmp_ifaces) {
-			for (i = 0; i < tmp_ifaces->len; ++i) {
-				MonoClass *ic = g_ptr_array_index (tmp_ifaces, i);
-
-				if (mono_bitset_test (slots, ic->interface_id))
-					continue;
-
-				mono_bitset_set (slots, ic->interface_id);
-				if (ifaces == NULL)
-					ifaces = g_ptr_array_new ();
-				g_ptr_array_add (ifaces, ic);
-			}
-			g_ptr_array_free (tmp_ifaces, TRUE);
-		}
+		mono_class_setup_interfaces (parent, &error);
+		if (!mono_error_ok (&error))
+			goto fail;
+		collect_interfaces (parent, iface_hash, &error);
+		if (!mono_error_ok (&error))
+			goto fail;
 	}
-	mono_bitset_free (slots);
 
-	if (!ifaces)
-		return mono_array_new_cached (domain, mono_defaults.monotype_class, 0);
-		
-	intf = mono_array_new_cached (domain, mono_defaults.monotype_class, ifaces->len);
-	for (i = 0; i < ifaces->len; ++i) {
-		MonoClass *ic = g_ptr_array_index (ifaces, i);
-		MonoType *ret = &ic->byval_arg, *inflated = NULL;
-		if (context && ic->generic_class && ic->generic_class->context.class_inst->is_open)
-			inflated = ret = mono_class_inflate_generic_type (ret, context);
-		
-		mono_array_setref (intf, i, mono_type_get_object (domain, ret));
-		if (inflated)
-			mono_metadata_free_type (inflated);
-	}
-	g_ptr_array_free (ifaces, TRUE);
+	data.error = &error;
+	data.domain = mono_object_domain (type);
 
-	return intf;
+	len = g_hash_table_size (iface_hash);
+	if (len == 0)
+		return mono_array_new_cached (data.domain, mono_defaults.monotype_class, 0);
+
+	data.iface_array = mono_array_new_cached (data.domain, mono_defaults.monotype_class, len);
+	g_hash_table_foreach (iface_hash, fill_iface_array, &data);
+	if (!mono_error_ok (&error))
+		goto fail;
+
+	g_hash_table_destroy (iface_hash);
+	return data.iface_array;
+
+fail:
+	g_hash_table_destroy (iface_hash);
+	mono_error_raise_exception (&error);
+	return NULL;
 }
 
 static void
