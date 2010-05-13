@@ -5978,6 +5978,24 @@ mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, in
 	return code;
 }
 
+/* Can't put this into mini-x86.h */
+gpointer
+mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot);
+
+GSList *
+mono_arch_get_trampolines (gboolean aot)
+{
+	MonoTrampInfo *info;
+	GSList *tramps = NULL;
+
+	mono_x86_get_signal_exception_trampoline (&info, aot);
+
+	tramps = g_slist_append (tramps, info);
+
+	return tramps;
+}
+
+
 #if __APPLE__
 #define DBG_SIGNAL SIGBUS
 #else
