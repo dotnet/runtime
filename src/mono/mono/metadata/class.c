@@ -6428,6 +6428,8 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
 		mono_loader_set_error_type_load (name, assembly);
+		g_free (name);
+		g_free (assembly);
 	}
 
 	return class;
