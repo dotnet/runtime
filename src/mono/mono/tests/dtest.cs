@@ -2088,6 +2088,30 @@ public class DebuggerTests
 			});
 	}
 
+	//
+	// Test single threaded invokes during processing of nullref exceptions.
+	// These won't work if the exception handling is done from the sigsegv signal
+	// handler, since the sigsegv signal is disabled until control returns from the
+	// signal handler.
+	//
+	[Test]
+	[Category ("only3")]
+	public void NullRefExceptionAndSingleThreadedInvoke () {
+		Event e = run_until ("exceptions");
+		var req = vm.CreateExceptionRequest (vm.RootDomain.Corlib.GetType ("System.NullReferenceException"));
+		req.Enable ();
+
+		vm.Resume ();
+
+		e = vm.GetNextEvent ();
+		Assert.IsInstanceOfType (typeof (ExceptionEvent), e);
+		Assert.AreEqual ("NullReferenceException", (e as ExceptionEvent).Exception.Type.Name);
+
+		var ex = (e as ExceptionEvent).Exception;
+		var tostring_method = vm.RootDomain.Corlib.GetType ("System.Object").GetMethod ("ToString");
+		ex.InvokeMethod (e.Thread, tostring_method, null, InvokeOptions.SingleThreaded);
+	}
+
 	[Test]
 	public void Domains () {
 		vm.Dispose ();
