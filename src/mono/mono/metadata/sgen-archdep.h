@@ -82,24 +82,24 @@
 		: "0" (cur_thread_regs)	\
 		: "memory"	\
 	)
-#define ARCH_SIGCTX_SP(ctx)	((*UCONTEXT_GREGS((ctx))) [REG_RSP])
-#define ARCH_SIGCTX_IP(ctx)	((*UCONTEXT_GREGS((ctx))) [REG_RIP])
+#define ARCH_SIGCTX_SP(ctx)	((UCONTEXT_GREGS((ctx))) [REG_RSP])
+#define ARCH_SIGCTX_IP(ctx)	((UCONTEXT_GREGS((ctx))) [REG_RIP])
 #define ARCH_COPY_SIGCTX_REGS(a,ctx) do {		\
-	((a)[0] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_RAX]);	\
-	((a)[1] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_RBX]);	\
-	((a)[2] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_RCX]);	\
-	((a)[3] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_RDX]);	\
-	((a)[4] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_RSI]);	\
-	((a)[5] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_RDI]);	\
-	((a)[6] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_RBP]);	\
-	((a)[7] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_R8]);	\
-	((a)[8] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_R9]);	\
-	((a)[9] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_R10]);	\
-	((a)[10] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_R11]);	\
-	((a)[11] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_R12]);	\
-	((a)[12] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_R13]);	\
-	((a)[13] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_R14]);	\
-	((a)[14] = (gpointer) (*UCONTEXT_GREGS((ctx))) [REG_R15]);	\
+	((a)[0] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_RAX]);	\
+	((a)[1] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_RBX]);	\
+	((a)[2] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_RCX]);	\
+	((a)[3] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_RDX]);	\
+	((a)[4] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_RSI]);	\
+	((a)[5] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_RDI]);	\
+	((a)[6] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_RBP]);	\
+	((a)[7] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_R8]);	\
+	((a)[8] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_R9]);	\
+	((a)[9] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_R10]);	\
+	((a)[10] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_R11]);	\
+	((a)[11] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_R12]);	\
+	((a)[12] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_R13]);	\
+	((a)[13] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_R14]);	\
+	((a)[14] = (gpointer) (UCONTEXT_GREGS((ctx))) [REG_R15]);	\
 	} while (0)
 
 #elif defined(__ppc__)
