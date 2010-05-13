@@ -4860,10 +4860,6 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full
 	MonoString *res;
 	gchar *name;
 
-	MONO_ARCH_SAVE_REGS;
-
-	mono_class_init_or_throw (mono_class_from_mono_type (object->type));
-
 	if (full_name)
 		format = assembly_qualified ?
 			MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED :
