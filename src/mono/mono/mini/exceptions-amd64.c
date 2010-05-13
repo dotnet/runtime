@@ -686,7 +686,7 @@ handle_signal_exception (gpointer obj, gboolean test_only)
 gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
-#if defined(MONO_ARCH_USE_SIGACTION)
+#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
 	/*
 	 * Handling the exception in the signal handler is problematic, since the original
 	 * signal is disabled, and we could run arbitrary code though the debugger. So
