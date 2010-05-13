@@ -75,10 +75,14 @@ typedef enum
 
 struct jit_code_entry
 {
-  struct jit_code_entry *next_entry;
-  struct jit_code_entry *prev_entry;
-  const char *symfile_addr;
-  guint64 symfile_size;
+	struct jit_code_entry *next_entry;
+	struct jit_code_entry *prev_entry;
+	const char *symfile_addr;
+	/*
+	 * The gdb code in gdb/jit.c which reads this structure ignores alignment
+	 * requirements, so use two 32 bit fields.
+	 */
+	guint32 symfile_size1, symfile_size2;
 };
 
 struct jit_descriptor
@@ -186,6 +190,7 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
 	guint8 *img;
 	guint32 img_size;
 	struct jit_code_entry *entry;
+	guint64 *psize;
 
 	il_file_line_index = mono_dwarf_writer_get_il_file_line_index (dw);
 	mono_dwarf_writer_close (dw);
@@ -204,7 +209,7 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
 
 		file_counter ++;
 		file_name = g_strdup_printf ("xdb-%d.o", file_counter);
-		//printf ("%s -> %s\n", mono_method_full_name (method, TRUE), file_name);
+		printf ("%s %p %d\n", file_name, img, img_size);
 
 		fp = fopen (file_name, "w");
 		fwrite (img, img_size, 1, fp);
@@ -214,10 +219,11 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
 
 	/* Register the image with GDB */
 
-	entry = g_malloc (sizeof (struct jit_code_entry));
+	entry = g_malloc0 (sizeof (struct jit_code_entry));
 
 	entry->symfile_addr = (const char*)img;
-	entry->symfile_size = img_size;
+	psize = (guint64*)&entry->symfile_size1;
+	*psize = img_size;
 
 	entry->next_entry = __jit_debug_descriptor.first_entry;
 	if (__jit_debug_descriptor.first_entry)
