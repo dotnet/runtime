@@ -171,7 +171,7 @@ libmonoruntime_la_SOURCES = \
 	threadpool-internals.h	\
 	verify.c		\
 	verify-internals.h	\
-	wrapper-types.h	\
+	wrapper-types.h
 
 libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
 
