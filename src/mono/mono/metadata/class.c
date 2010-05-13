@@ -5003,6 +5003,8 @@ mono_class_setup_supertypes (MonoClass *class)
  *
  * Create the MonoClass* representing the specified type token.
  * @type_token must be a TypeDef token.
+ *
+ * FIXME: don't return NULL on failure, just the the caller figure it out.
  */
 static MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
@@ -5026,7 +5028,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if ((class = mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
 		mono_loader_unlock ();
-		return class;
+		return class->exception_type ? NULL : class;
 	}
 
 	mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
@@ -5073,7 +5075,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		parent = mono_class_get_full (image, parent_token, context);
 
 		if (parent == NULL){
-			mono_internal_hash_table_remove (&image->class_cache, GUINT_TO_POINTER (type_token));
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load parent type"));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;
@@ -5092,7 +5094,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if ((nesting_tokeen = mono_metadata_nested_in_typedef (image, type_token))) {
 		class->nested_in = mono_class_create_from_typedef (image, nesting_tokeen);
 		if (!class->nested_in) {
-			mono_internal_hash_table_remove (&image->class_cache, GUINT_TO_POINTER (type_token));
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load nestedin type"));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;
@@ -5112,6 +5114,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if (!class->enumtype) {
 		if (!mono_metadata_interfaces_from_typedef_full (
 			    image, type_token, &interfaces, &icount, FALSE, context)){
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load interfaces"));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;
