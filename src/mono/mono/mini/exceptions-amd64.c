@@ -652,6 +652,31 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	return FALSE;
 }
 
+/*
+ * handle_exception:
+ *
+ *   Called by resuming from a signal handler.
+ */
+static void
+handle_signal_exception (gpointer obj, gboolean test_only)
+{
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoContext ctx;
+	static void (*restore_context) (MonoContext *);
+
+	if (!restore_context)
+		restore_context = mono_get_restore_context ();
+
+	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
+
+	if (mono_debugger_handle_exception (&ctx, (MonoObject *)obj))
+		return;
+
+	mono_handle_exception (&ctx, obj, MONO_CONTEXT_GET_IP (&ctx), test_only);
+
+	restore_context (&ctx);
+}
+
 /**
  * mono_arch_handle_exception:
  *
@@ -661,6 +686,32 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
+#if defined(MONO_ARCH_USE_SIGACTION)
+	/*
+	 * Handling the exception in the signal handler is problematic, since the original
+	 * signal is disabled, and we could run arbitrary code though the debugger. So
+	 * resume into the normal stack and do most work there if possible.
+	 */
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	guint64 sp = UCONTEXT_REG_RSP (sigctx);
+
+	/* Pass the ctx parameter in TLS */
+	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
+	/* The others in registers */
+	UCONTEXT_REG_RDI (sigctx) = (guint64)obj;
+	UCONTEXT_REG_RSI (sigctx) = test_only;
+
+	/* Allocate a stack frame below the red zone */
+	sp -= 128;
+	/* The stack should be unaligned */
+	if (sp % 8 == 0)
+		sp -= 8;
+	UCONTEXT_REG_RSP (sigctx) = sp;
+
+	UCONTEXT_REG_RIP (sigctx) = (guint64)handle_signal_exception;
+
+	return TRUE;
+#else
 	MonoContext mctx;
 
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
@@ -673,6 +724,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	mono_arch_monoctx_to_sigctx (&mctx, sigctx);
 
 	return TRUE;
+#endif
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
