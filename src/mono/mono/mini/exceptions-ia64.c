@@ -365,41 +365,21 @@ get_throw_trampoline (gboolean rethrow)
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	static guint8* start;
-	static gboolean inited = FALSE;
-
 	g_assert (!aot);
 	if (info)
 		*info = NULL;
 
-	if (inited)
-		return start;
-
-	start = get_throw_trampoline (FALSE);
-
-	inited = TRUE;
-
-	return start;
+	return get_throw_trampoline (FALSE);
 }
 
 gpointer
-mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	static guint8* start;
-	static gboolean inited = FALSE;
-
 	g_assert (!aot);
 	if (info)
 		*info = NULL;
 
-	if (inited)
-		return start;
-
-	start = get_throw_trampoline (TRUE);
-
-	inited = TRUE;
-
-	return start;
+	return get_throw_trampoline (TRUE);
 }
 
 /**
