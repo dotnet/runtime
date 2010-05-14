@@ -3677,7 +3677,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (arm_is_imm12 (ins->inst_offset));
 			g_assert (ins->sreg1 != ARMREG_LR);
 			call = (MonoCallInst*)ins;
-			if (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			if (call->dynamic_imt_arg || call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_PC, 4);
 				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
 				/* 
@@ -5132,7 +5132,7 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt
 
 			mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
 		}
-	} else if (cfg->generic_context) {
+	} else if (cfg->generic_context || imt_arg) {
 
 		/* Always pass in a register for simplicity */
 		call->dynamic_imt_arg = TRUE;
@@ -5212,22 +5212,18 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	size = BASE_SIZE;
 	constant_pool_starts = g_new0 (guint32*, count);
 
-	/* 
-	 * We might be called with a fail_tramp from the IMT builder code even if
-	 * MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK is not defined.
-	 */
-	//g_assert (!fail_tramp);
-
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
-			if (!arm_is_imm12 (DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]))) {
+			gboolean fail_case = !item->check_target_idx && fail_tramp;
+
+			if (item->has_target_code || !arm_is_imm12 (DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]))) {
 				item->chunk_size += 32;
 				large_offsets = TRUE;
 			}
 
-			if (item->check_target_idx) {
-				if (!item->compare_done)
+			if (item->check_target_idx || fail_case) {
+				if (!item->compare_done || fail_case)
 					item->chunk_size += CMP_SIZE;
 				item->chunk_size += BRANCH_SIZE;
 			} else {
@@ -5235,6 +5231,8 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				item->chunk_size += WMC_SIZE;
 #endif
 			}
+			if (fail_case)
+				item->chunk_size += 16;
 			item->chunk_size += CALL_SIZE;
 		} else {
 			item->chunk_size += BSEARCH_ENTRY_SIZE;
@@ -5246,7 +5244,11 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	if (large_offsets)
 		size += 4 * count; /* The ARM_ADD_REG_IMM to pop the stack */
 
-	start = code = mono_domain_code_reserve (domain, size);
+	if (fail_tramp)
+		code = mono_method_alloc_generic_virtual_thunk (domain, size);
+	else
+		code = mono_domain_code_reserve (domain, size);
+	start = code;
 
 #if DEBUG_IMT
 	printf ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable);
@@ -5270,14 +5272,16 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
-		arminstr_t *imt_method = NULL, *vtable_offset_ins = NULL;
+		arminstr_t *imt_method = NULL, *vtable_offset_ins = NULL, *target_code_ins = NULL;
 		gint32 vtable_offset;
 
 		item->code_target = (guint8*)code;
 
 		if (item->is_equals) {
-			if (item->check_target_idx) {
-				if (!item->compare_done) {
+			gboolean fail_case = !item->check_target_idx && fail_tramp;
+
+			if (item->check_target_idx || fail_case) {
+				if (!item->compare_done || fail_case) {
 					imt_method = code;
 					ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
 					ARM_CMP_REG_REG (code, ARMREG_R0, ARMREG_R1);
@@ -5296,29 +5300,56 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #endif
 			}
 
-			vtable_offset = DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]);
-			if (!arm_is_imm12 (vtable_offset)) {
-				/* 
-				 * We need to branch to a computed address but we don't have
-				 * a free register to store it, since IP must contain the 
-				 * vtable address. So we push the two values to the stack, and
-				 * load them both using LDM.
-				 */
-				/* Compute target address */
-				vtable_offset_ins = code;
+			if (item->has_target_code) {
+				target_code_ins = code;
+				/* Load target address */
 				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
-				ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_IP, ARMREG_R1);
 				/* Save it to the fourth slot */
 				ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (gpointer));
 				/* Restore registers and branch */
 				ARM_POP4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
 				
-				code = arm_emit_value_and_patch_ldr (code, vtable_offset_ins, vtable_offset);
+				code = arm_emit_value_and_patch_ldr (code, target_code_ins, (gsize)item->value.target_code);
 			} else {
-				ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
-				if (large_offsets)
-					ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 2 * sizeof (gpointer));
-				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, vtable_offset);
+				vtable_offset = DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]);
+				if (!arm_is_imm12 (vtable_offset)) {
+					/* 
+					 * We need to branch to a computed address but we don't have
+					 * a free register to store it, since IP must contain the 
+					 * vtable address. So we push the two values to the stack, and
+					 * load them both using LDM.
+					 */
+					/* Compute target address */
+					vtable_offset_ins = code;
+					ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
+					ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_IP, ARMREG_R1);
+					/* Save it to the fourth slot */
+					ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (gpointer));
+					/* Restore registers and branch */
+					ARM_POP4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
+				
+					code = arm_emit_value_and_patch_ldr (code, vtable_offset_ins, vtable_offset);
+				} else {
+					ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
+					if (large_offsets)
+						ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 2 * sizeof (gpointer));
+					ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, vtable_offset);
+				}
+			}
+
+			if (fail_case) {
+				arm_patch (item->jmp_code, (guchar*)code);
+
+				target_code_ins = code;
+				/* Load target address */
+				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
+				/* Save it to the fourth slot */
+				ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (gpointer));
+				/* Restore registers and branch */
+				ARM_POP4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
+				
+				code = arm_emit_value_and_patch_ldr (code, target_code_ins, (gsize)fail_tramp);
+				item->jmp_code = NULL;
 			}
 
 			if (imt_method)
