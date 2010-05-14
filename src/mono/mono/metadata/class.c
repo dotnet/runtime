@@ -5062,6 +5062,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	}
 
 	if (cols [MONO_TYPEDEF_EXTENDS]) {
+		MonoClass *tmp;
 		guint32 parent_token = mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]);
 
 		if (mono_metadata_token_table (parent_token) == MONO_TABLE_TYPESPEC) {
@@ -5079,6 +5080,15 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;
+		}
+
+		for (tmp = parent; tmp; tmp = tmp->parent) {
+			if (tmp == class) {
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cycle found while resolving parent"));
+				mono_loader_unlock ();
+				mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+				return NULL;
+			}
 		}
 	}
 
