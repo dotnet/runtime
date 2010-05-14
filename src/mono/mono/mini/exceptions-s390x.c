@@ -415,7 +415,7 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 /*------------------------------------------------------------------*/
 
 gpointer 
-mono_arch_get_rethrow_exception (void)
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	static guint8 *start;
 	static int inited = 0;
