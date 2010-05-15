@@ -918,7 +918,8 @@ mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot)
 	mono_add_unwind_op_def_cfa (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_ESP, 4);
 	mono_add_unwind_op_offset (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_NREG, -4);
 
-	stack_size = 4;
+	/* Fix the alignment to be what apple expects */
+	stack_size = 12;
 
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, stack_size);
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, stack_size + 4);
