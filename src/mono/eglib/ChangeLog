@@ -1,3 +1,8 @@
+2010-05-15  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/glib.h (g_error): Add a for (;;) after the call to tell GCC this doesn't
+	return, fixing some warnings.
+
 2010-05-13  Alan McGovern  <amcgovern@novell.com>
 
 	* src/gstring.c: Put in some null guards for the ctors
