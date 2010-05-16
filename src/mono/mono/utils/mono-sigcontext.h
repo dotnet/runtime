@@ -93,7 +93,7 @@
 	#define UCONTEXT_REG_R14(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r14)
 	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r15)
 #elif defined(__FreeBSD__)
-#define UCONTEXT_GREGS(ctx)	&(((ucontext_t*)(ctx))->uc_mcontext)
+#define UCONTEXT_GREGS(ctx)	((guint64*)&(((ucontext_t*)(ctx))->uc_mcontext))
 #elif defined(__OpenBSD__)
     /* OpenBSD/amd64 has no gregs array, ucontext_t == sigcontext */
 	#define UCONTEXT_REG_RAX(ctx) ((ctx)->sc_rax)
