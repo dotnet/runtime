@@ -291,11 +291,13 @@ mono_debug_cleanup (void)
 		data_table_hash = NULL;
 	}
 
-	if (mono_symbol_table->global_data_table)
-		free_data_table (mono_symbol_table->global_data_table);
+	if (mono_symbol_table) {
+		if (mono_symbol_table->global_data_table)
+			free_data_table (mono_symbol_table->global_data_table);
 
-	g_free (mono_symbol_table);
-	mono_symbol_table = NULL;
+		g_free (mono_symbol_table);
+		mono_symbol_table = NULL;
+	}
 }
 
 void
