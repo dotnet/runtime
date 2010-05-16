@@ -112,6 +112,9 @@ MonoDebugSourceLocation *
 mono_debug_symfile_lookup_location (MonoDebugMethodInfo      *minfo,
 				    guint32                   offset);
 
+void
+mono_debug_symfile_free_location   (MonoDebugSourceLocation  *location);
+
 gint32
 _mono_debug_address_from_il_offset (MonoDebugMethodJitInfo   *jit,
 				    guint32                   il_offset);

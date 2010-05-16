@@ -378,6 +378,19 @@ add_line (StatementMachine *stm, GPtrArray *il_offset_array, GPtrArray *line_num
 }
 
 /*
+ * mono_debug_symfile_free_location:
+ *
+ *   Free a MonoDebugSourceLocation returned by
+ *   mono_debug_symfile_lookup_location
+ */
+void
+mono_debug_symfile_free_location   (MonoDebugSourceLocation  *location)
+{
+	g_free (location->source_file);
+	g_free (location);
+}
+
+/*
  * mono_debug_symfile_get_line_numbers:
  *
  *   All the output parameters can be NULL.
