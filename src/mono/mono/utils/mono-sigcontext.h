@@ -111,6 +111,9 @@
 	#define UCONTEXT_REG_R15(ctx) ((ctx)->sc_r15)
 #else
 #define UCONTEXT_GREGS(ctx)	((guint64*)&(((ucontext_t*)(ctx))->uc_mcontext.gregs))
+#endif
+
+#ifdef UCONTEXT_GREGS
 #define UCONTEXT_REG_RAX(ctx) (UCONTEXT_GREGS ((ctx)) [REG_RAX])
 #define UCONTEXT_REG_RBX(ctx) (UCONTEXT_GREGS ((ctx)) [REG_RBX])
 #define UCONTEXT_REG_RCX(ctx) (UCONTEXT_GREGS ((ctx)) [REG_RCX])
