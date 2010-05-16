@@ -1459,10 +1459,12 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 			}
 
 			first = FALSE;
-			g_free (loc);
+
+			mono_debug_symfile_free_location (loc);
 		}
 	}
 
+	g_free (native_to_il_offset);
 	g_free (prev_file_name);
 
 	if (!first) {
@@ -1582,7 +1584,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	char *name;
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
-	char **names, **tdies, **local_tdies;
+	char **names;
 	char **local_names;
 	int *local_indexes;
 	int i, num_locals;
@@ -1595,7 +1597,6 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	header = mono_method_get_header (method);
 
 	/* Parameter types */
-	tdies = g_new0 (char *, sig->param_count + sig->hasthis);
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoType *t;
 
@@ -1612,7 +1613,6 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	}
 
 	/* Local types */
-	local_tdies = g_new0 (char *, header->num_locals);
 	for (i = 0; i < header->num_locals; ++i) {
 		emit_type (w, header->locals [i]);
 	}

@@ -263,6 +263,8 @@ static int xdebug_method_count;
 void
 mono_save_xdebug_info (MonoCompile *cfg)
 {
+	MonoDebugMethodJitInfo *dmji;
+
 	if (use_gdb_interface) {
 		mono_loader_lock ();
 
@@ -278,7 +280,9 @@ mono_save_xdebug_info (MonoCompile *cfg)
 
 		xdebug_method_count ++;
 
-		mono_dwarf_writer_emit_method (xdebug_writer, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+		dmji = mono_debug_find_method (cfg->jit_info->method, mono_domain_get ());;
+		mono_dwarf_writer_emit_method (xdebug_writer, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, dmji);
+		mono_debug_free_method_jit_info (dmji);
 
 #if 0
 		/* 
@@ -305,10 +309,13 @@ mono_save_xdebug_info (MonoCompile *cfg)
 			return;
 
 		mono_loader_lock ();
-		mono_dwarf_writer_emit_method (xdebug_writer, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+		dmji = mono_debug_find_method (cfg->jit_info->method, mono_domain_get ());;
+		mono_dwarf_writer_emit_method (xdebug_writer, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, dmji);
+		mono_debug_free_method_jit_info (dmji);
 		fflush (xdebug_fp);
 		mono_loader_unlock ();
 	}
+
 }
 
 /*
