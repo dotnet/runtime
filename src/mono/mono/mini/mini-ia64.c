@@ -4618,15 +4618,19 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				item->jmp_code = (guint8*)code.buf + code.nins;
 				ia64_br_cond_pred (code, 7, 0);
 
-				ia64_movl (code, GP_SCRATCH_REG, &(vtable->vtable [item->value.vtable_slot]));
-				ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
+				if (item->has_target_code) {
+					ia64_movl (code, GP_SCRATCH_REG, item->value.target_code);
+				} else {
+					ia64_movl (code, GP_SCRATCH_REG, &(vtable->vtable [item->value.vtable_slot]));
+					ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
+				}
 				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 				ia64_br_cond_reg (code, IA64_B6);
 
 				if (fail_case) {
+					ia64_begin_bundle (code);
 					ia64_patch (item->jmp_code, (guint8*)code.buf + code.nins);
 					ia64_movl (code, GP_SCRATCH_REG, fail_tramp);
-					ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
 					ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 					ia64_br_cond_reg (code, IA64_B6);
 					item->jmp_code = NULL;

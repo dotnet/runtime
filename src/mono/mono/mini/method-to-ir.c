@@ -6277,7 +6277,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Prevent inlining of methods that contain indirect calls */
 				INLINE_FAILURE;
 
-#if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK
+#if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK && defined(MONO_ARCH_GSHARED_SUPPORTED)
 				/* The llvm vcall trampolines doesn't support generic virtual calls yet */
 				if (cmethod->wrapper_type == MONO_WRAPPER_NONE && mono_use_imt && !mono_use_llvm) {
 					g_assert (!imt_arg);
