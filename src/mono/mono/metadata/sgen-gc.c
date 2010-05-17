@@ -632,10 +632,10 @@ safe_object_get_size (MonoObject* o)
 {
 	MonoClass *klass = ((MonoVTable*)LOAD_VTABLE (o))->klass;
 	if (klass == mono_defaults.string_class) {
-		return sizeof (MonoString) + 2 * mono_string_length ((MonoString*) o) + 2;
+		return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
 	} else if (klass->rank) {
 		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length (array);
+		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
 		if (G_UNLIKELY (array->bounds)) {
 			size += sizeof (mono_array_size_t) - 1;
 			size &= ~(sizeof (mono_array_size_t) - 1);
@@ -1304,7 +1304,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
 #define STRING_SIZE(size,str) do {	\
-		(size) = sizeof (MonoString) + 2 * mono_string_length ((MonoString*)(str)) + 2;	\
+		(size) = sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*)(str)) + 2;	\
 		(size) += (ALLOC_ALIGN - 1);	\
 		(size) &= ~(ALLOC_ALIGN - 1);	\
 	} while (0)
@@ -1399,7 +1399,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		int mbwords = (*mbitmap_data++) - 1;	\
 		int el_size = mono_array_element_size (((MonoObject*)(obj))->vtable->klass);	\
 		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
-		char *e_end = e_start + el_size * mono_array_length ((MonoArray*)(obj));	\
+		char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
 		if (0) {	\
 			MonoObject *myobj = (MonoObject*)start;	\
 			g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
@@ -1433,7 +1433,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 			int etype = (vt)->desc & 0xc000;	\
 			if (etype == (DESC_TYPE_V_REFS << 14)) {	\
 				void **p = (void**)((char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector));	\
-				void **end_refs = (void**)((char*)p + el_size * mono_array_length ((MonoArray*)(obj)));	\
+				void **end_refs = (void**)((char*)p + el_size * mono_array_length_fast ((MonoArray*)(obj)));	\
 				/* Note: this code can handle also arrays of struct with only references in them */	\
 				while (p < end_refs) {	\
 					HANDLE_PTR (p, (obj));	\
@@ -1443,7 +1443,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 				int offset = ((vt)->desc >> 16) & 0xff;	\
 				int num_refs = ((vt)->desc >> 24) & 0xff;	\
 				char *e_start = (char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector);	\
-				char *e_end = e_start + el_size * mono_array_length ((MonoArray*)(obj));	\
+				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
 				while (e_start < e_end) {	\
 					void **p = (void**)e_start;	\
 					int i;	\
@@ -1455,7 +1455,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 				}	\
 			} else if (etype == DESC_TYPE_V_BITMAP << 14) {	\
 				char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
-				char *e_end = e_start + el_size * mono_array_length ((MonoArray*)(obj));	\
+				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
 				while (e_start < e_end) {	\
 					void **p = (void**)e_start;	\
 					gsize _bmap = (vt)->desc >> 16;	\
@@ -4572,7 +4572,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 
 		array = (MonoArray*)object;
 		cur = mono_array_addr (array, Ephemeron, 0);
-		array_end = cur + mono_array_length (array);
+		array_end = cur + mono_array_length_fast (array);
 		tombstone = (char*)((MonoVTable*)LOAD_VTABLE (object))->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
@@ -4635,7 +4635,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 
 		array = (MonoArray*)object;
 		cur = mono_array_addr (array, Ephemeron, 0);
-		array_end = cur + mono_array_length (array);
+		array_end = cur + mono_array_length_fast (array);
 		tombstone = (char*)((MonoVTable*)LOAD_VTABLE (object))->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
