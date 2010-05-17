@@ -278,6 +278,7 @@ static long stat_saved_remsets_2 = 0;
 static long stat_global_remsets_added = 0;
 static long stat_global_remsets_readded = 0;
 static long stat_global_remsets_processed = 0;
+static long stat_global_remsets_discarded = 0;
 
 static int stat_wbarrier_set_field = 0;
 static int stat_wbarrier_set_arrayref = 0;
@@ -560,6 +561,9 @@ static pthread_key_t remembered_set_key;
 static RememberedSet *global_remset;
 static RememberedSet *freed_thread_remsets;
 static GenericStoreRememberedSet *generic_store_remsets = NULL;
+
+/*A two slots cache for recently inserted remsets */
+static gpointer global_remset_cache [2];
 
 /* FIXME: later choose a size that takes into account the RememberedSet struct
  * and doesn't waste any alloc paddin space.
@@ -1977,6 +1981,48 @@ mono_gc_clear_domain (MonoDomain * domain)
 	UNLOCK_GC;
 }
 
+static void
+global_remset_cache_clear (void)
+{
+	memset (global_remset_cache, 0, sizeof (global_remset_cache));
+}
+
+/*
+ * Tries to check if a given remset location was already added to the global remset.
+ * It can
+ *
+ * A 2 entry, LRU cache of recently saw location remsets.
+ *
+ * It's hand-coded instead of done using loops to reduce the number of memory references on cache hit.
+ *
+ * Returns TRUE is the element was added..
+ */
+static gboolean
+global_remset_location_was_not_added (gpointer ptr)
+{
+
+	gpointer first = global_remset_cache [0], second;
+	if (first == ptr) {
+		HEAVY_STAT (++stat_global_remsets_discarded);
+		return FALSE;
+	}
+
+	second = global_remset_cache [1];
+
+	if (second == ptr) {
+		/*Move the second to the front*/
+		global_remset_cache [0] = second;
+		global_remset_cache [1] = first;
+
+		HEAVY_STAT (++stat_global_remsets_discarded);
+		return FALSE;
+	}
+
+	global_remset_cache [0] = second;
+	global_remset_cache [1] = ptr;
+	return TRUE;
+}
+
 /*
  * add_to_global_remset:
  *
@@ -1988,10 +2034,13 @@ add_to_global_remset (gpointer ptr)
 {
 	RememberedSet *rs;
 
+	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
+
+	if (!global_remset_location_was_not_added (ptr))
+		return;
+
 	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
 	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (*(gpointer*)ptr));
-
-	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
 
 	HEAVY_STAT (++stat_global_remsets_added);
 
@@ -3164,6 +3213,8 @@ init_stats (void)
 	mono_counters_register ("Global remsets added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_added);
 	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
 	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
+	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
+
 #endif
 
 	inited = TRUE;
@@ -3220,6 +3271,9 @@ collect_nursery (size_t requested_size)
 
 	num_minor_gcs++;
 	mono_stats.minor_gc_count ++;
+
+	global_remset_cache_clear ();
+
 	/* pin from pinned handles */
 	init_pinning ();
 	pin_from_roots (nursery_start, nursery_next);
@@ -3349,6 +3403,7 @@ major_do_collection (const char *reason)
 	 */
 	/* The remsets are not useful for a major collection */
 	clear_remsets ();
+	global_remset_cache_clear ();
 
 	TV_GETTIME (atv);
 	init_pinning ();
@@ -5782,7 +5837,13 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
 		store_pos = remset->data;
 		for (p = remset->data; p < remset->store_next; p = next_p) {
-			mword ptr;
+			void **ptr = p [0];
+
+			/*Ignore previously processed remset.*/
+			if (!global_remset_location_was_not_added (ptr)) {
+				next_p = p + 1;
+				continue;
+			}
 
 			next_p = handle_remset (p, start_nursery, end_nursery, TRUE);
 
@@ -5790,15 +5851,12 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 			 * Clear global remsets of locations which no longer point to the 
 			 * nursery. Otherwise, they could grow indefinitely between major 
 			 * collections.
+			 *
+			 * Since all global remsets are location remsets, we don't need to unmask the pointer.
 			 */
-			ptr = (p [0] & ~REMSET_TYPE_MASK);
-			if ((p [0] & REMSET_TYPE_MASK) == REMSET_LOCATION) {
-				if (ptr_in_nursery (*(void**)ptr)) {
-					*store_pos ++ = p [0];
-					HEAVY_STAT (++stat_global_remsets_readded);
-				}
-			} else {
-				g_assert_not_reached ();
+			if (ptr_in_nursery (*ptr)) {
+				*store_pos ++ = p [0];
+				HEAVY_STAT (++stat_global_remsets_readded);
 			}
 		}
 
