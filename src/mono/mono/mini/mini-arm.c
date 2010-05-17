@@ -5231,8 +5231,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				item->chunk_size += WMC_SIZE;
 #endif
 			}
-			if (fail_case)
+			if (fail_case) {
 				item->chunk_size += 16;
+				large_offsets = TRUE;
+			}
 			item->chunk_size += CALL_SIZE;
 		} else {
 			item->chunk_size += BSEARCH_ENTRY_SIZE;
