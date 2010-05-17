@@ -253,32 +253,32 @@ static gboolean do_scan_starts_check = FALSE;
 #endif
 
 #ifdef HEAVY_STATISTICS
-static long stat_objects_alloced = 0;
-static long stat_bytes_alloced = 0;
-static long stat_objects_alloced_degraded = 0;
-static long stat_bytes_alloced_degraded = 0;
-static long stat_bytes_alloced_los = 0;
+static long long stat_objects_alloced = 0;
+static long long stat_bytes_alloced = 0;
+static long long stat_objects_alloced_degraded = 0;
+static long long stat_bytes_alloced_degraded = 0;
+static long long stat_bytes_alloced_los = 0;
 
-static long stat_copy_object_called_nursery = 0;
-static long stat_objects_copied_nursery = 0;
-static long stat_copy_object_called_major = 0;
-static long stat_objects_copied_major = 0;
+static long long stat_copy_object_called_nursery = 0;
+static long long stat_objects_copied_nursery = 0;
+static long long stat_copy_object_called_major = 0;
+static long long stat_objects_copied_major = 0;
 
-static long stat_scan_object_called_nursery = 0;
-static long stat_scan_object_called_major = 0;
+static long long stat_scan_object_called_nursery = 0;
+static long long stat_scan_object_called_major = 0;
 
-static long stat_nursery_copy_object_failed_from_space = 0;
-static long stat_nursery_copy_object_failed_forwarded = 0;
-static long stat_nursery_copy_object_failed_pinned = 0;
+static long long stat_nursery_copy_object_failed_from_space = 0;
+static long long stat_nursery_copy_object_failed_forwarded = 0;
+static long long stat_nursery_copy_object_failed_pinned = 0;
 
-static long stat_store_remsets = 0;
-static long stat_store_remsets_unique = 0;
-static long stat_saved_remsets_1 = 0;
-static long stat_saved_remsets_2 = 0;
-static long stat_global_remsets_added = 0;
-static long stat_global_remsets_readded = 0;
-static long stat_global_remsets_processed = 0;
-static long stat_global_remsets_discarded = 0;
+static long long stat_store_remsets = 0;
+static long long stat_store_remsets_unique = 0;
+static long long stat_saved_remsets_1 = 0;
+static long long stat_saved_remsets_2 = 0;
+static long long stat_global_remsets_added = 0;
+static long long stat_global_remsets_readded = 0;
+static long long stat_global_remsets_processed = 0;
+static long long stat_global_remsets_discarded = 0;
 
 static int stat_wbarrier_set_field = 0;
 static int stat_wbarrier_set_arrayref = 0;
@@ -290,29 +290,29 @@ static int stat_wbarrier_value_copy = 0;
 static int stat_wbarrier_object_copy = 0;
 #endif
 
-static long time_minor_pre_collection_fragment_clear = 0;
-static long time_minor_pinning = 0;
-static long time_minor_scan_remsets = 0;
-static long time_minor_scan_pinned = 0;
-static long time_minor_scan_registered_roots = 0;
-static long time_minor_scan_thread_data = 0;
-static long time_minor_finish_gray_stack = 0;
-static long time_minor_fragment_creation = 0;
+static long long time_minor_pre_collection_fragment_clear = 0;
+static long long time_minor_pinning = 0;
+static long long time_minor_scan_remsets = 0;
+static long long time_minor_scan_pinned = 0;
+static long long time_minor_scan_registered_roots = 0;
+static long long time_minor_scan_thread_data = 0;
+static long long time_minor_finish_gray_stack = 0;
+static long long time_minor_fragment_creation = 0;
 
-static long time_major_pre_collection_fragment_clear = 0;
-static long time_major_pinning = 0;
-static long time_major_scan_pinned = 0;
-static long time_major_scan_registered_roots = 0;
-static long time_major_scan_thread_data = 0;
-static long time_major_scan_alloc_pinned = 0;
-static long time_major_scan_finalized = 0;
-static long time_major_scan_big_objects = 0;
-static long time_major_finish_gray_stack = 0;
-static long time_major_sweep = 0;
-static long time_major_fragment_creation = 0;
+static long long time_major_pre_collection_fragment_clear = 0;
+static long long time_major_pinning = 0;
+static long long time_major_scan_pinned = 0;
+static long long time_major_scan_registered_roots = 0;
+static long long time_major_scan_thread_data = 0;
+static long long time_major_scan_alloc_pinned = 0;
+static long long time_major_scan_finalized = 0;
+static long long time_major_scan_big_objects = 0;
+static long long time_major_finish_gray_stack = 0;
+static long long time_major_sweep = 0;
+static long long time_major_fragment_creation = 0;
 
-static long pinned_chunk_bytes_alloced = 0;
-static long large_internal_bytes_alloced = 0;
+static long long pinned_chunk_bytes_alloced = 0;
+static long long large_internal_bytes_alloced = 0;
 
 /* Keep in sync with internal_mem_names in dump_heap()! */
 enum {
@@ -3123,8 +3123,8 @@ dump_heap (const char *type, int num, const char *reason)
 	if (reason)
 		fprintf (heap_dump_file, " reason=\"%s\"", reason);
 	fprintf (heap_dump_file, ">\n");
-	fprintf (heap_dump_file, "<other-mem-usage type=\"pinned-chunks\" size=\"%ld\"/>\n", pinned_chunk_bytes_alloced);
-	fprintf (heap_dump_file, "<other-mem-usage type=\"large-internal\" size=\"%ld\"/>\n", large_internal_bytes_alloced);
+	fprintf (heap_dump_file, "<other-mem-usage type=\"pinned-chunks\" size=\"%lld\"/>\n", pinned_chunk_bytes_alloced);
+	fprintf (heap_dump_file, "<other-mem-usage type=\"large-internal\" size=\"%lld\"/>\n", large_internal_bytes_alloced);
 	fprintf (heap_dump_file, "<other-mem-usage type=\"mempools\" size=\"%ld\"/>\n", mono_mempool_get_bytes_allocated ());
 	for (i = 0; i < INTERNAL_MEM_MAX; ++i)
 		fprintf (heap_dump_file, "<other-mem-usage type=\"%s\" size=\"%ld\"/>\n", internal_mem_names [i], small_internal_mem_bytes [i]);
