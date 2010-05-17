@@ -341,6 +341,9 @@ is_load_sequence (guint32 *seq)
 #define ppc_load_get_off(l)	((gint16)((l) & 0xffff))
 #endif
 
+/* ld || lwz */
+#define ppc_is_load_op(opcode) (ppc_opcode ((opcode)) == 58 || ppc_opcode ((opcode)) == 32)
+
 /* code must point to the blrl */
 gboolean
 mono_ppc_is_direct_call_sequence (guint32 *code)
@@ -350,7 +353,7 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 
 	/* the thunk-less direct call sequence: lis/ori/sldi/oris/ori/mtlr/blrl */
 	if (ppc_opcode (code [-1]) == 31) { /* mtlr */
-		if (ppc_opcode (code [-2]) == 58 && ppc_opcode (code [-3]) == 58) { /* ld/ld */
+		if (ppc_is_load_op (code [-2]) && ppc_is_load_op (code [-3])) { /* ld/ld */
 			if (!is_load_sequence (&code [-8]))
 				return FALSE;
 			/* one of the loads must be "ld r2,8(rX)" */
@@ -2914,12 +2917,12 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 		/* the trampoline code will try to patch the blrl, blr, bcctr */
 		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
 			branch_ins = seq;
-			if (ppc_opcode (seq [-3]) == 58 || ppc_opcode (seq [-3]) == 31) /* ld || mr */
+			if (ppc_is_load_op (seq [-3]) || ppc_opcode (seq [-3]) == 31) /* ld || lwz || mr */
 				code -= 32;
 			else
 				code -= 24;
 		} else {
-			if (ppc_opcode (seq [5]) == 58 || ppc_opcode (seq [5]) == 31) /* ld || mr */
+			if (ppc_is_load_op (seq [5]) || ppc_opcode (seq [5]) == 31) /* ld || lwz || mr */
 				branch_ins = seq + 8;
 			else
 				branch_ins = seq + 6;
@@ -2929,8 +2932,8 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 		/* this is the lis/ori/sldi/oris/ori/(ld/ld|mr/nop)/mtlr/blrl sequence */
 		g_assert (mono_ppc_is_direct_call_sequence (branch_ins));
 
-		if (ppc_opcode (seq [5]) == 58) {	/* ld */
-			g_assert (ppc_opcode (seq [6]) == 58); /* ld */
+		if (ppc_is_load_op (seq [5])) {
+			g_assert (ppc_is_load_op (seq [6]));
 
 			if (!is_fd) {
 				guint8 *buf = (guint8*)&seq [5];
