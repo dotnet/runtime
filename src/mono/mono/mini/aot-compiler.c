@@ -129,8 +129,8 @@ typedef struct MonoAotCompile {
 	GHashTable *method_depth;
 	MonoCompile **cfgs;
 	int cfgs_size;
-	GHashTable *patch_to_plt_offset;
-	GHashTable *plt_offset_to_patch;
+	GHashTable *patch_to_plt_entry;
+	GHashTable *plt_offset_to_entry;
 	GHashTable *patch_to_got_offset;
 	GHashTable **patch_to_got_offset_by_type;
 	GPtrArray *got_patches;
@@ -179,6 +179,12 @@ typedef struct MonoAotCompile {
 	MonoAotFileFlags flags;
 	MonoDynamicStream blob;
 } MonoAotCompile;
+
+typedef struct {
+	int plt_offset;
+	char *symbol;
+	MonoJumpInfo *ji;
+} MonoPltEntry;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
 #define mono_acfg_unlock(acfg) LeaveCriticalSection (&((acfg)->mutex))
@@ -1891,36 +1897,67 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	}
 }
 
-static int
-get_plt_offset (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+/*
+ * get_plt_symbol:
+ *
+ *   Return the symbol identifying the plt entry PLT_OFFSET.
+ */
+static char*
+get_plt_symbol (MonoAotCompile *acfg, int plt_offset, MonoJumpInfo *patch_info)
 {
-	int res = -1;
+#ifdef __MACH__
+	/* 
+	 * The Apple linker reorganizes object files, so it doesn't like branches to local
+	 * labels, since those have no relocations.
+	 */
+	return g_strdup_printf ("%sp_%d", acfg->llvm_label_prefix, plt_offset);
+#else
+	return g_strdup_printf ("%s%sp_%d", acfg->llvm_label_prefix, acfg->temp_prefix, plt_offset);
+#endif
+}
 
-	if (is_plt_patch (patch_info)) {
-		int idx = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_plt_offset, patch_info));
+/*
+ * get_plt_entry:
+ *
+ *   Return a PLT entry which belongs to the method identified by PATCH_INFO.
+ */
+static MonoPltEntry*
+get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+{
+	MonoPltEntry *res;
 
-		// FIXME: This breaks the calculation of final_got_size		
-		if (!acfg->llvm && patch_info->type == MONO_PATCH_INFO_METHOD && (patch_info->data.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
-			/* 
-			 * Allocate a separate PLT slot for each such patch, since some plt
-			 * entries will refer to the method itself, and some will refer to the
-			 * wrapper.
-			 */
-			idx = 0;
-		}
+	if (!is_plt_patch (patch_info))
+		return NULL;
 
-		if (idx) {
-			res = idx;
-		} else {
-			MonoJumpInfo *new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
+	res = g_hash_table_lookup (acfg->patch_to_plt_entry, patch_info);
 
-			g_assert (!acfg->final_got_size);
+	// FIXME: This breaks the calculation of final_got_size		
+	if (!acfg->llvm && patch_info->type == MONO_PATCH_INFO_METHOD && (patch_info->data.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
+		/* 
+		 * Allocate a separate PLT slot for each such patch, since some plt
+		 * entries will refer to the method itself, and some will refer to the
+		 * wrapper.
+		 */
+		res = NULL;
+	}
 
-			res = acfg->plt_offset;
-			g_hash_table_insert (acfg->plt_offset_to_patch, GUINT_TO_POINTER (res), new_ji);
-			g_hash_table_insert (acfg->patch_to_plt_offset, new_ji, GUINT_TO_POINTER (res));
-			acfg->plt_offset ++;
-		}
+	if (!res) {
+		MonoJumpInfo *new_ji;
+
+		g_assert (!acfg->final_got_size);
+
+		new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
+
+		res = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoPltEntry));
+		res->plt_offset = acfg->plt_offset;
+		res->ji = new_ji;
+		res->symbol = get_plt_symbol (acfg, res->plt_offset, patch_info);
+
+		g_hash_table_insert (acfg->patch_to_plt_entry, new_ji, res);
+
+		g_hash_table_insert (acfg->plt_offset_to_entry, GUINT_TO_POINTER (res->plt_offset), res);
+
+		acfg->plt_offset ++;
 	}
 
 	return res;
@@ -2900,11 +2937,11 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				}
 
 				if (!got_only && !direct_call) {
-					int plt_offset = get_plt_offset (acfg, patch_info);
-					if (plt_offset != -1) {
+					MonoPltEntry *plt_entry = get_plt_entry (acfg, patch_info);
+					if (plt_entry) {
 						/* This patch has a PLT entry, so we must emit a call to the PLT entry */
 						direct_call = TRUE;
-						sprintf (direct_call_target, "%s%sp_%d", acfg->llvm_label_prefix, acfg->temp_prefix, plt_offset);
+						sprintf (direct_call_target, "%s", plt_entry->symbol);
 		
 						/* Nullify the patch */
 						patch_info->type = MONO_PATCH_INFO_NONE;
@@ -3607,9 +3644,20 @@ emit_plt (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->plt_offset; ++i) {
 		char label [128];
 		char *debug_sym = NULL;
+		MonoPltEntry *plt_entry = NULL;
 		MonoJumpInfo *ji;
 
-		sprintf (label, "%s%sp_%d", acfg->llvm_label_prefix, acfg->temp_prefix, i);
+		if (i == 0) {
+			/* 
+			 * The first plt entry is used to transfer code to the AOT loader. 
+			 */
+			arch_emit_plt_entry (acfg, i);
+			continue;
+		}
+
+		plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
+		ji = plt_entry->ji;
+		sprintf (label, "%s", plt_entry->symbol);
 
 		if (acfg->llvm) {
 			/*
@@ -3619,7 +3667,6 @@ emit_plt (MonoAotCompile *acfg)
 			 * FIXME: Avoid the got slot.
 			 * FIXME: Add support to the binary writer.
 			 */
-			ji = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
 			if (ji && is_direct_callable (acfg, NULL, ji) && !acfg->use_bin_writer) {
 				MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, ji->data.method);
 				fprintf (acfg->fp, "\n.set %s, %s\n", label, callee_cfg->asm_symbol);
@@ -3630,50 +3677,43 @@ emit_plt (MonoAotCompile *acfg)
 		emit_label (acfg, label);
 
 		if (acfg->aot_opts.write_symbols) {
-			MonoJumpInfo *ji = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
-
-			if (ji) {
-				switch (ji->type) {
-				case MONO_PATCH_INFO_METHOD:
-					debug_sym = get_debug_sym (ji->data.method, "plt_", cache);
-					break;
-				case MONO_PATCH_INFO_INTERNAL_METHOD:
-					debug_sym = g_strdup_printf ("plt__jit_icall_%s", ji->data.name);
-					break;
-				case MONO_PATCH_INFO_CLASS_INIT:
-					debug_sym = g_strdup_printf ("plt__class_init_%s", mono_type_get_name (&ji->data.klass->byval_arg));
-					sanitize_symbol (debug_sym);
-					break;
-				case MONO_PATCH_INFO_RGCTX_FETCH:
-					debug_sym = g_strdup_printf ("plt__rgctx_fetch_%d", acfg->label_generator ++);
-					break;
-				case MONO_PATCH_INFO_ICALL_ADDR: {
-					char *s = get_debug_sym (ji->data.method, "", cache);
+			switch (ji->type) {
+			case MONO_PATCH_INFO_METHOD:
+				debug_sym = get_debug_sym (ji->data.method, "plt_", cache);
+				break;
+			case MONO_PATCH_INFO_INTERNAL_METHOD:
+				debug_sym = g_strdup_printf ("plt__jit_icall_%s", ji->data.name);
+				break;
+			case MONO_PATCH_INFO_CLASS_INIT:
+				debug_sym = g_strdup_printf ("plt__class_init_%s", mono_type_get_name (&ji->data.klass->byval_arg));
+				sanitize_symbol (debug_sym);
+				break;
+			case MONO_PATCH_INFO_RGCTX_FETCH:
+				debug_sym = g_strdup_printf ("plt__rgctx_fetch_%d", acfg->label_generator ++);
+				break;
+			case MONO_PATCH_INFO_ICALL_ADDR: {
+				char *s = get_debug_sym (ji->data.method, "", cache);
 					
-					debug_sym = g_strdup_printf ("plt__icall_native_%s", s);
-					g_free (s);
-					break;
-				}
-				case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-					debug_sym = g_strdup_printf ("plt__jit_icall_native_%s", ji->data.name);
-					break;
-				case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
-					debug_sym = g_strdup_printf ("plt__generic_class_init");
-					break;
-				default:
-					break;
-				}
+				debug_sym = g_strdup_printf ("plt__icall_native_%s", s);
+				g_free (s);
+				break;
+			}
+			case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+				debug_sym = g_strdup_printf ("plt__jit_icall_native_%s", ji->data.name);
+				break;
+			case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
+				debug_sym = g_strdup_printf ("plt__generic_class_init");
+				break;
+			default:
+				break;
+			}
 
-				if (debug_sym) {
-					emit_local_symbol (acfg, debug_sym, NULL, TRUE);
-					emit_label (acfg, debug_sym);
-				}
+			if (debug_sym) {
+				emit_local_symbol (acfg, debug_sym, NULL, TRUE);
+				emit_label (acfg, debug_sym);
 			}
 		}
 
-		/* 
-		 * The first plt entry is used to transfer code to the AOT loader. 
-		 */
 		arch_emit_plt_entry (acfg, i);
 
 		if (debug_sym) {
@@ -4529,7 +4569,7 @@ char*
 mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 {
 	MonoJumpInfo *ji = mono_mempool_alloc (llvm_acfg->mempool, sizeof (MonoJumpInfo));
-	int offset;
+	MonoPltEntry *plt_entry;
 
 	ji->type = type;
 	ji->data.target = data;
@@ -4537,9 +4577,9 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 	if (!can_encode_patch (llvm_acfg, ji))
 		return NULL;
 
-	offset = get_plt_offset (llvm_acfg, ji);
+	plt_entry = get_plt_entry (llvm_acfg, ji);
 
-	return g_strdup_printf ("%sp_%d", llvm_acfg->temp_prefix, offset);
+	return g_strdup_printf (plt_entry->symbol);
 }
 
 MonoJumpInfo*
@@ -4583,7 +4623,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 					if (!is_plt_patch (patch_info))
 						get_got_offset (acfg, patch_info);
 					else
-						get_plt_offset (acfg, patch_info);
+						get_plt_entry (acfg, patch_info);
 				}
 			}
 		}
@@ -5367,9 +5407,9 @@ emit_got_info (MonoAotCompile *acfg)
 	acfg->plt_got_offset_base = acfg->got_offset;
 	first_plt_got_patch = acfg->got_patches->len;
 	for (i = 1; i < acfg->plt_offset; ++i) {
-		MonoJumpInfo *patch_info = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
+		MonoPltEntry *plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
 
-		g_ptr_array_add (acfg->got_patches, patch_info);
+		g_ptr_array_add (acfg->got_patches, plt_entry->ji);
 	}
 
 	acfg->got_offset += acfg->plt_offset;
@@ -5954,8 +5994,8 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->methods = g_ptr_array_new ();
 	acfg->method_indexes = g_hash_table_new (NULL, NULL);
 	acfg->method_depth = g_hash_table_new (NULL, NULL);
-	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
-	acfg->patch_to_plt_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
+	acfg->plt_offset_to_entry = g_hash_table_new (NULL, NULL);
+	acfg->patch_to_plt_entry = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->patch_to_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->patch_to_got_offset_by_type = g_new0 (GHashTable*, MONO_PATCH_INFO_NUM);
 	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
@@ -5998,8 +6038,8 @@ acfg_free (MonoAotCompile *acfg)
 	g_ptr_array_free (acfg->unwind_ops, TRUE);
 	g_hash_table_destroy (acfg->method_indexes);
 	g_hash_table_destroy (acfg->method_depth);
-	g_hash_table_destroy (acfg->plt_offset_to_patch);
-	g_hash_table_destroy (acfg->patch_to_plt_offset);
+	g_hash_table_destroy (acfg->plt_offset_to_entry);
+	g_hash_table_destroy (acfg->patch_to_plt_entry);
 	g_hash_table_destroy (acfg->patch_to_got_offset);
 	g_hash_table_destroy (acfg->method_to_cfg);
 	g_hash_table_destroy (acfg->token_info_hash);
