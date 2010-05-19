@@ -808,7 +808,7 @@ my and Ximian's copyright to this code. ;)
 
 #define ppc_load_func(c,D,v) G_STMT_START { \
 		ppc_load_sequence ((c), ppc_r11, (guint64)(gsize)(v));	\
-		ppc_ldptr ((c), ppc_r2, 8, ppc_r11);	\
+		ppc_ldptr ((c), ppc_r2, sizeof (gpointer), ppc_r11);	\
 		ppc_ldptr ((c), (D), 0, ppc_r11);	\
 	} G_STMT_END
 
