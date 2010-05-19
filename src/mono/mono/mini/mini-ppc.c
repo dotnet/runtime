@@ -356,9 +356,9 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 		if (ppc_is_load_op (code [-2]) && ppc_is_load_op (code [-3])) { /* ld/ld */
 			if (!is_load_sequence (&code [-8]))
 				return FALSE;
-			/* one of the loads must be "ld r2,8(rX)" */
-			return (ppc_load_get_dest (code [-2]) == ppc_r2 && ppc_load_get_off (code [-2]) == 8) ||
-				(ppc_load_get_dest (code [-3]) == ppc_r2 && ppc_load_get_off (code [-3]) == 8);
+			/* one of the loads must be "ld r2,8(rX)" or "ld r2,4(rX) for ilp32 */
+			return (ppc_load_get_dest (code [-2]) == ppc_r2 && ppc_load_get_off (code [-2]) == sizeof (gpointer)) ||
+				(ppc_load_get_dest (code [-3]) == ppc_r2 && ppc_load_get_off (code [-3]) == sizeof (gpointer));
 		}
 		if (ppc_opcode (code [-2]) == 24 && ppc_opcode (code [-3]) == 31) /* mr/nop */
 			return is_load_sequence (&code [-8]);
