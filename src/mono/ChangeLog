@@ -1,3 +1,8 @@
+2010-05-20  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: drop again the pkg.m4 dependency and for eglib
+	cases (and not-Windows) make it entirely optional.
+
 2010-05-11  Andrew Jorgensen  <ajorgensen@novell.com>
 
 	* scripts/mono-find-*.in: Look for libmono-2.0.so.1, not libmono.so

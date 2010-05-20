@@ -519,10 +519,7 @@ yes|sibling) libgdiplus_loc=`cd ../libgdiplus && pwd`/src/libgdiplus.la ;;
 esac
 AC_SUBST([libgdiplus_loc])
 
-PKG_PROG_PKG_CONFIG()
-if test "x$PKG_CONFIG" = "x"; then
-	AC_MSG_ERROR([You need to install pkg-config])
-fi
+AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 
 pkg_config_path=
 AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir      Change pkg-config dir to custom dir],
@@ -557,8 +554,11 @@ embedded)
   eglib_dir=eglib
   ;;
 system)
-    echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-    echo "cross_compiling=$cross_compiling"
+  if test "x$PKG_CONFIG" = "xno"; then
+    AC_MSG_ERROR([You need to install pkg-config])
+  fi
+  echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+  echo "cross_compiling=$cross_compiling"
   BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
   BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
   
@@ -568,6 +568,9 @@ system)
   dnl
   dnl No, you will not replace this check with a pkg.m4 check
   dnl
+  if test "x$PKG_CONFIG" = "xno"; then
+    AC_MSG_ERROR([You need to install pkg-config])
+  fi
   if $PKG_CONFIG --atleast-version=$GLIB_REQUIRED_VERSION glib-2.0; then
       GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
       GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
