@@ -291,7 +291,7 @@ mono_aot_get_offset (guint32 *table, int index)
 }
 
 static MonoMethod*
-decode_method_ref_2 (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
+decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
 
 static MonoClass*
 decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
@@ -396,7 +396,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				if (is_method) {
 					MonoMethod *method_def;
 					g_assert (type == MONO_TYPE_MVAR);
-					method_def = decode_method_ref_2 (module, p, &p);
+					method_def = decode_resolve_method_ref (module, p, &p);
 					if (!method_def)
 						return NULL;
 
@@ -469,8 +469,8 @@ decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 /*
  * can_method_ref_match_method:
  *
- *   Determine if calling decode_method_ref_2 on P could return the same method as 
- * METHOD. This is an optimization to avoid calling decode_method_ref_2 () which
+ *   Determine if calling decode_resolve_method_ref on P could return the same method as 
+ * METHOD. This is an optimization to avoid calling decode_resolve_method_ref () which
  * would create MonoMethods which are not needed etc.
  */
 static gboolean
@@ -542,7 +542,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 
 		switch (wrapper_type) {
 		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
-			MonoMethod *m = decode_method_ref_2 (module, p, &p);
+			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
 
 			if (!m)
 				return NULL;
@@ -595,7 +595,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			*method = mono_marshal_get_stelemref ();
 			break;
 		case MONO_WRAPPER_SYNCHRONIZED: {
-			MonoMethod *m = decode_method_ref_2 (module, p, &p);
+			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
 
 			if (!m)
 				return NULL;
@@ -621,7 +621,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		}
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			/* Direct wrapper */
-			MonoMethod *m = decode_method_ref_2 (module, p, &p);
+			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
 
 			if (!m)
 				return NULL;
@@ -735,12 +735,12 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 }
 
 /*
- * decode_method_ref_2:
+ * decode_resolve_method_ref:
  *
  *   Similar to decode_method_ref, but resolve and return the method itself.
  */
 static MonoMethod*
-decode_method_ref_2 (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
+decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoMethod *method;
 	guint32 token;
@@ -752,23 +752,6 @@ decode_method_ref_2 (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		return NULL;
 	method = mono_get_method (image, token, NULL);
 	return method;
-}
-
-G_GNUC_UNUSED
-static void
-make_writable (guint8* addr, guint32 len)
-{
-	guint8 *page_start;
-	int pages, err;
-
-	if (mono_aot_only)
-		g_error ("Attempt to make AOT memory writable while running in aot-only mode.\n");
-
-	page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1));
-	pages = (addr + len - page_start + mono_pagesize () - 1) / mono_pagesize ();
-
-	err = mono_mprotect (page_start, pages * mono_pagesize (), MONO_MMAP_READ | MONO_MMAP_WRITE | MONO_MMAP_EXEC);
-	g_assert (err == 0);
 }
 
 static void
@@ -2041,7 +2024,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		/* This currently contains no data */
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 
-		jinfo->method = decode_method_ref_2 (amodule, p, &p);
+		jinfo->method = decode_resolve_method_ref (amodule, p, &p);
 	}
 
 	if (has_try_block_holes) {
@@ -2322,7 +2305,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 			p = amodule->blob + table [(pos * 2) + 1];
 			is_wrapper = decode_value (p, &p);
 			g_assert (!is_wrapper);
-			method = decode_method_ref_2 (amodule, p, &p);
+			method = decode_resolve_method_ref (amodule, p, &p);
 			g_assert (method);
 		} else {
 			token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
@@ -2391,7 +2374,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	}
 	case MONO_PATCH_INFO_METHODCONST:
 		/* Shared */
-		ji->data.method = decode_method_ref_2 (aot_module, p, &p);
+		ji->data.method = decode_resolve_method_ref (aot_module, p, &p);
 		if (!ji->data.method)
 			goto cleanup;
 		break;
@@ -2492,7 +2475,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		MonoJumpInfoRgctxEntry *entry;
 
 		entry = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoRgctxEntry));
-		entry->method = decode_method_ref_2 (aot_module, p, &p);
+		entry->method = decode_resolve_method_ref (aot_module, p, &p);
 		entry->in_mrgctx = decode_value (p, &p);
 		entry->info_type = decode_value (p, &p);
 		entry->data = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
@@ -2509,7 +2492,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE: {
 		MonoJumpInfoImtTramp *imt_tramp = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoImtTramp));
 
-		imt_tramp->method = decode_method_ref_2 (aot_module, p, &p);
+		imt_tramp->method = decode_resolve_method_ref (aot_module, p, &p);
 		imt_tramp->vt_offset = decode_value (p, &p);
 		
 		ji->data.imt_tramp = imt_tramp;
@@ -2831,7 +2814,7 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, const 
 			mono_aot_unlock ();
 			if (!m) {
 				guint8 *orig_p = p;
-				m = decode_method_ref_2 (amodule, p, &p);
+				m = decode_resolve_method_ref (amodule, p, &p);
 				if (m) {
 					mono_aot_lock ();
 					g_hash_table_insert (amodule->method_ref_to_method, orig_p, m);
