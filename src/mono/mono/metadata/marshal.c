@@ -81,7 +81,7 @@ static guint32 last_error_tls_id;
 static guint32 load_type_info_tls_id;
 
 static void
-delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc);
+delegate_hash_table_add (MonoDelegate *d);
 
 static void
 emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
@@ -245,6 +245,7 @@ mono_marshal_init (void)
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
+		register_icall (mono_gchandle_get_target, "mono_gchandle_get_target", "object int32", TRUE);
 
 		mono_cominterop_init ();
 	}
@@ -307,7 +308,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 {
 	MonoMethod *method, *wrapper;
 	MonoClass *klass;
-	MonoObject **target_loc;
+	uint32_t target_handle = 0;
 
 	if (!delegate)
 		return NULL;
@@ -334,18 +335,15 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 
 	if (delegate->target) {
 		/* Produce a location which can be embedded in JITted code */
-		target_loc = mono_gc_alloc_fixed (sizeof (MonoObject*), NULL);
-		*target_loc = delegate->target;
-	} else {
-		target_loc = NULL;
+		target_handle = mono_gchandle_new_weakref (delegate->target, FALSE);
 	}
 
-	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_loc);
+	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_handle);
 
 	delegate->delegate_trampoline = mono_compile_method (wrapper);
 
 	// Add the delegate to the delegate hash table
-	delegate_hash_table_add (delegate, target_loc);
+	delegate_hash_table_add (delegate);
 
 	/* when the object is collected, collect the dynamic method, too */
 	mono_object_register_finalizer ((MonoObject*)delegate);
@@ -359,8 +357,6 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
  * object pointer itself, otherwise we use a GC handle.
  */
 static GHashTable *delegate_hash_table;
-/* Contains root locations pointing to the this arguments of delegates */
-static MonoGHashTable *delegate_target_locations;
 
 static GHashTable *
 delegate_hash_table_new (void) {
@@ -370,7 +366,6 @@ delegate_hash_table_new (void) {
 static void 
 delegate_hash_table_remove (MonoDelegate *d)
 {
-	MonoObject **target_loc;
 #ifdef HAVE_MOVING_COLLECTOR
 	guint32 gchandle;
 #endif
@@ -381,23 +376,14 @@ delegate_hash_table_remove (MonoDelegate *d)
 	gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
 #endif
 	g_hash_table_remove (delegate_hash_table, d->delegate_trampoline);
-	if (delegate_target_locations)
-		target_loc = mono_g_hash_table_lookup (delegate_target_locations, d->delegate_trampoline);
-	else
-		target_loc = NULL;
-	if (target_loc)
-		mono_g_hash_table_remove (delegate_target_locations, d->delegate_trampoline);
 	mono_marshal_unlock ();
-	if (target_loc) {
-		mono_gc_free_fixed (target_loc);
-	}
 #ifdef HAVE_MOVING_COLLECTOR
 	mono_gchandle_free (gchandle);
 #endif
 }
 
 static void
-delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc) 
+delegate_hash_table_add (MonoDelegate *d)
 {
 #ifdef HAVE_MOVING_COLLECTOR
 	guint32 gchandle = mono_gchandle_new_weakref ((MonoObject*)d, FALSE);
@@ -406,11 +392,6 @@ delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc)
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
-	if (delegate_target_locations == NULL) {
-		/* Has to be conservative as the values are not object references */
-		delegate_target_locations = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_CONSERVATIVE_GC);
-		MONO_GC_REGISTER_ROOT (delegate_target_locations);
-	}
 #ifdef HAVE_MOVING_COLLECTOR
 	old_gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, GUINT_TO_POINTER (gchandle));
@@ -419,9 +400,6 @@ delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc)
 #else
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
 #endif
-	if (target_loc)
-		/* This keeps target_loc alive for Boehm */
-		mono_g_hash_table_insert (delegate_target_locations, d->delegate_trampoline, target_loc);
 	mono_marshal_unlock ();
 }
 
@@ -524,8 +502,18 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 	}
 
 	if (ptr) {
+		uint32_t gchandle;
+		void **method_data;
 		ji = mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (ptr));
 		g_assert (ji);
+
+		method_data = ((MonoMethodWrapper*)ji->method)->method_data;
+
+		/*the target gchandle is the first entry after size and the wrapper itself.*/
+		gchandle = GPOINTER_TO_UINT (method_data [2]);
+
+		if (gchandle)
+			mono_gchandle_free (gchandle);
 
 		mono_runtime_free_method (mono_object_domain (delegate), ji->method);
 	}
@@ -8310,7 +8298,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
  * THIS_LOC is the memory location where the target of the delegate is stored.
  */
 void
-mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoObject** this_loc)
+mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
 {
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
@@ -8369,16 +8357,16 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	emit_thread_interrupt_checkpoint (mb);
 
 	if (sig->hasthis) {
-		if (this_loc) {
-			mono_mb_emit_ptr (mb, this_loc);
-			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		if (target_handle) {
+			mono_mb_emit_icon (mb, (gint32)target_handle);
+			mono_mb_emit_icall (mb, mono_gchandle_get_target);
 		} else {
 			/* fixme: */
 			g_assert_not_reached ();
 		}
 	} else if (closed) {
-		mono_mb_emit_ptr (mb, this_loc);
-		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+		mono_mb_emit_icon (mb, (gint32)target_handle);
+		mono_mb_emit_icall (mb, mono_gchandle_get_target);
 	}
 
 	for (i = 0; i < sig->param_count; i++) {
@@ -8526,7 +8514,7 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
  * generates IL code to call managed methods from unmanaged code 
  */
 MonoMethod *
-mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoObject **this_loc)
+mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, uint32_t target_handle)
 {
 	static MonoClass *UnmanagedFunctionPointerAttribute;
 	MonoMethodSignature *sig, *csig, *invoke_sig;
@@ -8547,7 +8535,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	 * options.
 	 */
 	cache = get_cache (&method->klass->image->managed_wrapper_cache, mono_aligned_addr_hash, NULL);
-	if (!this_loc && (res = mono_marshal_find_in_cache (cache, method)))
+	if (!target_handle && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
 	invoke = mono_get_delegate_invoke (delegate_klass);
@@ -8560,8 +8548,11 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 
+	/*the target gchandle must be the first entry after size and the wrapper itself.*/
+	mono_mb_add_data (mb, GUINT_TO_POINTER (target_handle));
+
 	/* we copy the signature, so that we can modify it */
-	if (this_loc)
+	if (target_handle)
 		/* Need to free this later */
 		csig = mono_metadata_signature_dup (invoke_sig);
 	else
@@ -8653,9 +8644,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_custom_attrs_free (cinfo);
 	}
 
-	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, this_loc);
+	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle);
 
-	if (!this_loc)
+	if (!target_handle)
 		res = mono_mb_create_and_cache (cache, method,
 											 mb, csig, sig->param_count + 16);
 	else {
@@ -8714,7 +8705,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 
 		/* FIXME: Implement VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN. */
 
-		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, NULL);
+		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0);
 
 		mb->dynamic = 1;
 		method = mono_mb_create_method (mb, csig, sig->param_count + 16);

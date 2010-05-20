@@ -2433,7 +2433,7 @@ add_wrappers (MonoAotCompile *acfg)
 				klass = mono_class_from_mono_type (t);
 				g_assert (klass->parent == mono_defaults.multicastdelegate_class);
 
-				add_method (acfg, mono_marshal_get_managed_wrapper (method, klass, NULL));
+				add_method (acfg, mono_marshal_get_managed_wrapper (method, klass, 0));
 			}
 		}
 
