@@ -206,8 +206,24 @@ enum {
 };
 
 #ifdef DISABLE_SOCKETS
+
 #define socket_io_cleanup(x)
+
+static int
+get_event_from_state (MonoSocketAsyncResult *state)
+{
+	g_assert_not_reached ();
+	return -1;
+}
+
+static int
+get_events_from_list (MonoMList *list)
+{
+	return 0;
+}
+
 #else
+
 static void
 socket_io_cleanup (SocketIOData *data)
 {
