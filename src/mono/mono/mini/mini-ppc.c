@@ -1677,6 +1677,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	g_free (cinfo);
 }
 
+#ifndef DISABLE_JIT
+
 void
 mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 {
@@ -1791,6 +1793,8 @@ mono_arch_is_inst_imm (gint64 imm)
 {
        return TRUE;
 }
+
+#endif /* DISABLE_JIT */
 
 /*
  * Allow tracing to work with this interface (with an optional argument)
