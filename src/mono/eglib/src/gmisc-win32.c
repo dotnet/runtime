@@ -42,13 +42,13 @@ g_getenv(const gchar *variable)
 	gint32 retval;
 	var = u8to16(variable); 
 	buffer = g_malloc(buffer_size*sizeof(gunichar2));
-	retval = GetEnvironmentVariable (var, buffer, buffer_size);
+	retval = GetEnvironmentVariableW (var, buffer, buffer_size);
 	if (retval != 0) {
 		if (retval > buffer_size) {
 			g_free (buffer);
 			buffer_size = retval;
 			buffer = g_malloc(buffer_size*sizeof(gunichar2));
-			retval = GetEnvironmentVariable (var, buffer, buffer_size);
+			retval = GetEnvironmentVariableW (var, buffer, buffer_size);
 		}
 		val = u16to8 (buffer);
 	}
@@ -64,7 +64,7 @@ g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 	gboolean result;
 	var = u8to16(variable); 
 	val = u8to16(value);
-	result = (SetEnvironmentVariable(var, val) != 0) ? TRUE : FALSE;
+	result = (SetEnvironmentVariableW(var, val) != 0) ? TRUE : FALSE;
 	g_free(var);
 	g_free(val);
 	return result;
@@ -75,7 +75,7 @@ g_unsetenv(const gchar *variable)
 {
 	gunichar2 *var;
 	var = u8to16(variable); 
-	SetEnvironmentVariable(var, TEXT(""));
+	SetEnvironmentVariableW(var, TEXT(""));
 	g_free(var);
 }
 

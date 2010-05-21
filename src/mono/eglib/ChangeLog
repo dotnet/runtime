@@ -1,3 +1,8 @@
+2010-05-21  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/gmisc-win32.c (g_setenv): Use the
+	GetEnvironmentVariableW/SetEnvironmentVariableW variants.
+
 2010-05-15  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/glib.h (g_error): Add a for (;;) after the call to tell GCC this doesn't
