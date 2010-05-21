@@ -2735,7 +2735,7 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 	
 	THREAD_DEBUG (g_message("%s: %d threads to wait for in this batch", __func__, wait->num));
 
-	ret=WaitForMultipleObjectsEx(wait->num, wait->handles, TRUE, timeout, FALSE);
+	ret=WaitForMultipleObjectsEx(wait->num, wait->handles, TRUE, timeout, TRUE);
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
@@ -2789,7 +2789,7 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 		count++;
 	}
 
-	ret=WaitForMultipleObjectsEx (count, wait->handles, FALSE, timeout, FALSE);
+	ret=WaitForMultipleObjectsEx (count, wait->handles, FALSE, timeout, TRUE);
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
