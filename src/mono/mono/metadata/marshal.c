@@ -4166,41 +4166,15 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		}
 	}
 
-#if 0
-	/* Vtypes/nullables/Byrefs cause too many problems */
-	for (i = 0; i < callsig->param_count; ++i) {
-		if (MONO_TYPE_ISSTRUCT (callsig->params [i]) || callsig->params [i]->byref)
-			need_direct_wrapper = TRUE;
-	}
-#endif
+	target_klass = get_wrapper_target_class (method->klass->image);
 
-	/*
-	 * We try to share runtime invoke wrappers between different methods but have to
-	 * be careful about methods whose klass has a type cctor, since putting the wrapper
-	 * into that klass would mean that calling a method of klass A might invoke the
-	 * type initializer of class B, or throw an exception if the type initializer 
-	 * was called before and failed. See #349621 for an example. 
-	 * We avoid that for mscorlib methods by putting every wrapper into the object class.
-	 */
-	if (method->klass->image == mono_defaults.corlib)
+	/* Try to share wrappers for non-corlib methods with simple signatures */
+	if (mono_metadata_signature_equal (callsig, cctor_signature)) {
+		callsig = cctor_signature;
 		target_klass = mono_defaults.object_class;
-	else {
-		/* Try to share wrappers for non-corlib methods with simple signatures */
-		if (mono_metadata_signature_equal (callsig, cctor_signature)) {
-			callsig = cctor_signature;
-			target_klass = mono_defaults.object_class;
-		} else if (mono_metadata_signature_equal (callsig, finalize_signature)) {
-			callsig = finalize_signature;
-			target_klass = mono_defaults.object_class;
-		} else {
-			// FIXME: This breaks too many things
-			/*
-			if (mono_class_get_cctor (method->klass))
-				need_direct_wrapper = TRUE;
-			*/
-
-			target_klass = get_wrapper_target_class (method->klass->image);
-		}
+	} else if (mono_metadata_signature_equal (callsig, finalize_signature)) {
+		callsig = finalize_signature;
+		target_klass = mono_defaults.object_class;
 	}
 
 	if (need_direct_wrapper) {
