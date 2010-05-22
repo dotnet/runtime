@@ -4875,7 +4875,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		}
 	}
 
-	mono_runtime_class_init (vtable);
+	ex = mono_runtime_class_init_full (vtable, FALSE);
+	if (ex) {
+		*jit_ex = ex;
+		return NULL;
+	}
 	return code;
 }
 
@@ -5227,7 +5231,13 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	 * We need this here because mono_marshal_get_runtime_invoke can place 
 	 * the helper method in System.Object and not the target class.
 	 */
-	mono_runtime_class_init (info->vtable);
+	if (exc) {
+		*exc = (MonoObject*)mono_runtime_class_init_full (info->vtable, FALSE);
+		if (*exc)
+			return NULL;
+	} else {
+		mono_runtime_class_init (info->vtable);
+	}
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 	if (info->dyn_call_info) {
