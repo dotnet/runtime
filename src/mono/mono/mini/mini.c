@@ -4857,10 +4857,10 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	vtable = mono_class_vtable (target_domain, method->klass);
 	if (!vtable) {
-		MonoException *exc;
-		exc = mono_class_get_exception_for_failure (method->klass);
-		g_assert (exc);
-		mono_raise_exception (exc);
+		ex = mono_class_get_exception_for_failure (method->klass);
+		g_assert (ex);
+		*jit_ex = ex;
+		return NULL;
 	}
 
 	if (prof_options & MONO_PROFILE_JIT_COMPILATION) {
