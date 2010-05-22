@@ -294,7 +294,11 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   mono_mm->alloc_cb = alloc_cb;
   mono_mm->emitted_cb = emitted_cb;
 
-  DwarfExceptionHandling = true;
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 8
+   DwarfExceptionHandling = true;
+#else
+   JITExceptionHandling = true;
+#endif
   // PrettyStackTrace installs signal handlers which trip up libgc
   DisablePrettyStackTrace = true;
 

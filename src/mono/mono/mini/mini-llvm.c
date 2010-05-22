@@ -2094,17 +2094,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				switch (ins->opcode) {
 				case OP_IADD:
-				case OP_FADD:
 				case OP_LADD:
 					values [ins->dreg] = LLVMBuildAdd (builder, lhs, rhs, dname);
 					break;
 				case OP_ISUB:
-				case OP_FSUB:
 				case OP_LSUB:
 					values [ins->dreg] = LLVMBuildSub (builder, lhs, rhs, dname);
 					break;
 				case OP_IMUL:
-				case OP_FMUL:
 				case OP_LMUL:
 					values [ins->dreg] = LLVMBuildMul (builder, lhs, rhs, dname);
 					break;
@@ -2151,6 +2148,29 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				case OP_LSHR_UN:
 					values [ins->dreg] = LLVMBuildLShr (builder, lhs, rhs, dname);
 					break;
+
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 8
+				case OP_FADD:
+					values [ins->dreg] = LLVMBuildAdd (builder, lhs, rhs, dname);
+					break;
+				case OP_FSUB:
+					values [ins->dreg] = LLVMBuildSub (builder, lhs, rhs, dname);
+					break;
+				case OP_FMUL:
+					values [ins->dreg] = LLVMBuildMul (builder, lhs, rhs, dname);
+					break;
+#else
+				case OP_FADD:
+					values [ins->dreg] = LLVMBuildFAdd (builder, lhs, rhs, dname);
+					break;
+				case OP_FSUB:
+					values [ins->dreg] = LLVMBuildFSub (builder, lhs, rhs, dname);
+					break;
+				case OP_FMUL:
+					values [ins->dreg] = LLVMBuildFMul (builder, lhs, rhs, dname);
+					break;
+#endif
+
 				default:
 					g_assert_not_reached ();
 				}
@@ -2272,7 +2292,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				break;
 			case OP_FNEG:
 				lhs = convert (ctx, lhs, LLVMDoubleType ());
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 8
 				values [ins->dreg] = LLVMBuildSub (builder, LLVMConstReal (LLVMDoubleType (), 0.0), lhs, dname);
+#else
+				values [ins->dreg] = LLVMBuildFSub (builder, LLVMConstReal (LLVMDoubleType (), 0.0), lhs, dname);
+#endif
 				break;
 			case OP_INOT: {
 				guint32 v = 0xffffffff;
