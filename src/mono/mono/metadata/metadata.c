@@ -36,7 +36,7 @@ typedef struct {
 	MonoGenericContext context;
 } MonoInflatedMethodSignature;
 
-static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
+static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container, gboolean transient,
 					 const char *ptr, const char **rptr);
 
 static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
@@ -1245,27 +1245,29 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
 }
 
 /*
- * mono_metadata_parse_array_full:
+ * mono_metadata_parse_array_internal:
  * @m: a metadata context.
+ * @transient: whenever to allocate data from the heap
  * @ptr: a pointer to an encoded array description.
  * @rptr: pointer updated to match the end of the decoded stream
  *
  * Decodes the compressed array description found in the metadata @m at @ptr.
  *
  * Returns: a #MonoArrayType structure describing the array type
- * and dimensions. Memory is allocated from the image mempool.
+ * and dimensions. Memory is allocated from the heap or from the image mempool, depending
+ * on the value of @transient.
  *
  * LOCKING: Acquires the loader lock
  */
-MonoArrayType *
-mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
-				const char *ptr, const char **rptr)
+static MonoArrayType *
+mono_metadata_parse_array_internal (MonoImage *m, MonoGenericContainer *container,
+									gboolean transient, const char *ptr, const char **rptr)
 {
 	int i;
 	MonoArrayType *array;
 	MonoType *etype;
 	
-	array = mono_image_alloc0 (m, sizeof (MonoArrayType));
+	array = transient ? g_malloc0 (sizeof (MonoArrayType)) : mono_image_alloc0 (m, sizeof (MonoArrayType));
 	etype = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	if (!etype)
 		return NULL;
@@ -1274,19 +1276,26 @@ mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
 
 	array->numsizes = mono_metadata_decode_value (ptr, &ptr);
 	if (array->numsizes)
-		array->sizes = mono_image_alloc0 (m, sizeof (int) * array->numsizes);
+		array->sizes = transient ? g_malloc0 (sizeof (int) * array->numsizes) : mono_image_alloc0 (m, sizeof (int) * array->numsizes);
 	for (i = 0; i < array->numsizes; ++i)
 		array->sizes [i] = mono_metadata_decode_value (ptr, &ptr);
 
 	array->numlobounds = mono_metadata_decode_value (ptr, &ptr);
 	if (array->numlobounds)
-		array->lobounds = mono_image_alloc0 (m, sizeof (int) * array->numlobounds);
+		array->lobounds = transient ? g_malloc0 (sizeof (int) * array->numlobounds) : mono_image_alloc0 (m, sizeof (int) * array->numlobounds);
 	for (i = 0; i < array->numlobounds; ++i)
 		array->lobounds [i] = mono_metadata_decode_signed_value (ptr, &ptr);
 
 	if (rptr)
 		*rptr = ptr;
 	return array;
+}
+
+MonoArrayType *
+mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
+								const char *ptr, const char **rptr)
+{
+	return mono_metadata_parse_array_internal (m, container, FALSE, ptr, rptr);
 }
 
 MonoArrayType *
@@ -1495,6 +1504,7 @@ mono_metadata_cleanup (void)
  * @opt_attrs: optional attributes to store in the returned type
  * @ptr: pointer to the type representation
  * @rptr: pointer updated to match the end of the decoded stream
+ * @transient: whenever to allocate the result from the heap or from a mempool
  * 
  * Decode a compressed type description found at @ptr in @m.
  * @mode can be one of MONO_PARSE_MOD_TYPE, MONO_PARSE_PARAM, MONO_PARSE_RET,
@@ -1507,15 +1517,14 @@ mono_metadata_cleanup (void)
  * (stored in image->property_hash) generic container.
  * When we encounter any MONO_TYPE_VAR or MONO_TYPE_MVAR's, they're looked up in
  * this MonoGenericContainer.
- * This is a Mono runtime internal function.
  *
  * LOCKING: Acquires the loader lock.
  *
  * Returns: a #MonoType structure representing the decoded type.
  */
-MonoType*
-mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, MonoParseTypeMode mode,
-			       short opt_attrs, const char *ptr, const char **rptr)
+static MonoType*
+mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container, MonoParseTypeMode mode,
+								   short opt_attrs, gboolean transient, const char *ptr, const char **rptr)
 {
 	MonoType *type, *cached;
 	MonoType stype;
@@ -1557,7 +1566,10 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	}
 
 	if (count) {
-		type = mono_image_alloc0 (m, MONO_SIZEOF_TYPE + ((gint32)count) * sizeof (MonoCustomMod));
+		int size;
+
+		size = MONO_SIZEOF_TYPE + ((gint32)count) * sizeof (MonoCustomMod);
+		type = transient ? g_malloc0 (size) : mono_image_alloc0 (m, size);
 		type->num_mods = count;
 		if (count > 64)
 			g_warning ("got more than 64 modifiers in type");
@@ -1593,7 +1605,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	type->byref = byref;
 	type->pinned = pinned ? 1 : 0;
 
-	if (!do_mono_metadata_parse_type (type, m, container, ptr, &ptr)) {
+	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr)) {
 		return NULL;
 	}
 
@@ -1636,10 +1648,17 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
 	
 	if (type == &stype) {
-		type = mono_image_alloc (m, MONO_SIZEOF_TYPE);
+		type = transient ? g_malloc (MONO_SIZEOF_TYPE) : mono_image_alloc (m, MONO_SIZEOF_TYPE);
 		memcpy (type, &stype, MONO_SIZEOF_TYPE);
 	}
 	return type;
+}
+
+MonoType*
+mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, MonoParseTypeMode mode,
+							   short opt_attrs, const char *ptr, const char **rptr)
+{
+	return mono_metadata_parse_type_internal (m, container, mode, opt_attrs, FALSE, ptr, rptr);
 }
 
 /*
@@ -3087,6 +3106,7 @@ mono_metadata_get_shared_type (MonoType *type)
  * @type: MonoType to be filled in with the return value
  * @m: image context
  * @generic_context: generics_context
+ * @transient: whenever to allocate data from the heap
  * @ptr: pointer to the encoded type
  * @rptr: pointer where the end of the encoded type is saved
  * 
@@ -3104,7 +3124,7 @@ mono_metadata_get_shared_type (MonoType *type)
  */
 static gboolean
 do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
-			     const char *ptr, const char **rptr)
+							 gboolean transient, const char *ptr, const char **rptr)
 {
 	gboolean ok = TRUE;
 	type->type = mono_metadata_decode_value (ptr, &ptr);
@@ -3148,7 +3168,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		break;
 	}
 	case MONO_TYPE_PTR:
-		type->data.type = mono_metadata_parse_type_full (m, container, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
+		type->data.type = mono_metadata_parse_type_internal (m, container, MONO_PARSE_MOD_TYPE, 0, transient, ptr, &ptr);
 		if (!type->data.type)
 			return FALSE;
 		break;
@@ -3158,7 +3178,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 			return FALSE;
 		break;
 	case MONO_TYPE_ARRAY:
-		type->data.array = mono_metadata_parse_array_full (m, container, ptr, &ptr);
+		type->data.array = mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr);
 		if (!type->data.array)
 			return FALSE;
 		break;
@@ -3404,7 +3424,7 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
  *
  * LOCKING: Acquires the loader lock.
  *
- * Returns: a MonoMethodHeader allocated from the image mempool.
+ * Returns: a transient MonoMethodHeader allocated from the heap.
  */
 MonoMethodHeader *
 mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, const char *ptr)
@@ -3486,8 +3506,8 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh = g_malloc0 (MONO_SIZEOF_METHOD_HEADER + len * sizeof (MonoType*) + num_clauses * sizeof (MonoExceptionClause));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
-			mh->locals [i] = mono_metadata_parse_type_full (
-				m, container, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
+			mh->locals [i] = mono_metadata_parse_type_internal (m, container,
+																MONO_PARSE_LOCAL, 0, TRUE, locals_ptr, &locals_ptr);
 			if (!mh->locals [i]) {
 				g_free (clauses);
 				return NULL;
@@ -3545,12 +3565,17 @@ mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 void
 mono_metadata_free_mh (MonoMethodHeader *mh)
 {
+	int i;
+
 	/* If it is not transient it means it's part of a wrapper method,
 	 * or a SRE-generated method, so the lifetime in that case is
 	 * dictated by the method's own lifetime
 	 */
-	if (mh->is_transient)
+	if (mh->is_transient) {
+		for (i = 0; i < mh->num_locals; ++i)
+			mono_metadata_free_type (mh->locals [i]);
 		g_free (mh);
+	}
 }
 
 /*
@@ -5206,7 +5231,7 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 		ptr++;
 	}
 
-	if (!do_mono_metadata_parse_type (type, image, NULL, ptr, &ptr)) {
+	if (!do_mono_metadata_parse_type (type, image, NULL, FALSE, ptr, &ptr)) {
 		mono_loader_unlock ();
 		return NULL;
 	}
