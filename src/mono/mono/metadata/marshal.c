@@ -10802,6 +10802,20 @@ mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_e
 	}
 }
 
+/*
+ * free_wrapper:
+ *
+ *   Wrappers of generic instances need to be dynamic, since they cannot be freed when their
+ * image is unloaded, since the generic instance they are based on does not belong to any
+ * image. This function should be the value dtor of caches holding such wrappers.
+ */
+static void
+free_wrapper (MonoMethod *method)
+{
+	if (method->dynamic)
+		mono_free_method (method);
+}
+
 MonoMethod *
 mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar *name, MonoMethod *method)
 {
@@ -10811,7 +10825,7 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	int i;
 	GHashTable *cache;
 
-	cache = get_cache_full (&method->klass->image->generic_array_helper_cache, mono_aligned_addr_hash, NULL, NULL, (GDestroyNotify)mono_free_method);
+	cache = get_cache_full (&method->klass->image->generic_array_helper_cache, mono_aligned_addr_hash, NULL, NULL, (GDestroyNotify)free_wrapper);
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
