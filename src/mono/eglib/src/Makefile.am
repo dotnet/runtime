@@ -2,11 +2,19 @@ noinst_LTLIBRARIES = libeglib.la libeglib-static.la
 
 win_files  = \
 	gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c \
-	gmodule-win32.c gtimer-win32.c vasprintf.c
+	gmodule-win32.c gtimer-win32.c
 
 unix_files = \
 	gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c	\
 	gmodule-unix.c gtimer-unix.c
+
+# some unices and windows do not have an implementation of vasprintf
+# used by eglib, use provided implementation instead
+if NEED_VASPRINTF
+vasprintf_files = vasprintf.c
+else
+vaprinttf_files = foo.c
+endif
 
 if HOST_WIN32
 os_files = $(win_files)
@@ -41,7 +49,8 @@ libeglib_la_SOURCES = \
 	gutf8.c		\
 	gunicode.c	\
 	unicode-data.h	\
-	$(os_files)
+	$(os_files)	\
+	$(vasprintf_files)
 
 libeglib_la_CFLAGS = -Wall -D_FORTIFY_SOURCE=2
 libeglib_static_la_SOURCES=$(libeglib_la_SOURCES)

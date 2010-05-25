@@ -1,3 +1,8 @@
+2010-05-25  Zoltan Varga  <vargaz@gmail.com>
+
+	* Applied patch from Burkhard Linke (blinke@cebitec.uni-bielefeld.de). Fix
+	building on solaris.
+
 2010-05-21  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/gmisc-win32.c (g_setenv): Use the

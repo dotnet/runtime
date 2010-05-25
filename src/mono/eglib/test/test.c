@@ -47,6 +47,12 @@
 
 extern gint global_passed, global_tests;
 
+#ifndef HAVE_VASPRINTF
+  /* systen does not provide a vasprintf function, use the one
+     provided within eglib itself */
+extern int vasprintf(char **ret, const char *format, va_list ap);
+#endif
+
 static gchar *last_result = NULL;
 
 gboolean 
