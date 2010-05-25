@@ -91,6 +91,7 @@ struct _MonoSymbolFile {
 	gchar *filename;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
+	gboolean was_loaded_from_memory;
 };
 
 #define MONO_SYMBOL_FILE_MAJOR_VERSION		50

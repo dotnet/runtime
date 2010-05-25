@@ -123,10 +123,11 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_content
 		symfile->raw_contents = p = g_malloc (size);
 		memcpy (p, raw_contents, size);
 		symfile->filename = g_strdup_printf ("LoadedFromMemory");
+		symfile->was_loaded_from_memory = TRUE;
 	} else {
 		MonoFileMap *f;
 		symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
-
+		symfile->was_loaded_from_memory = FALSE;
 		if ((f = mono_file_map_open (symfile->filename))) {
 			symfile->raw_contents_size = mono_file_map_size (f);
 			if (symfile->raw_contents_size == 0) {
@@ -164,8 +165,12 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 	if (symfile->method_hash)
 		g_hash_table_destroy (symfile->method_hash);
 
-	if (symfile->raw_contents)
-		mono_file_unmap ((gpointer) symfile->raw_contents, symfile->raw_contents_handle);
+	if (symfile->raw_contents) {
+		if (symfile->was_loaded_from_memory)
+			g_free ((gpointer)symfile->raw_contents);
+		else
+			mono_file_unmap ((gpointer) symfile->raw_contents, symfile->raw_contents_handle);
+	}
 
 	if (symfile->filename)
 		g_free (symfile->filename);
