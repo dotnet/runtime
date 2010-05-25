@@ -4608,7 +4608,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	char *command, *opts;
 	int i;
 	MonoJumpInfo *patch_info;
-	char *llc_target_args;
+	const char *llc_extra_args;
 
 	/*
 	 * When using LLVM, we let llvm emit the got since the LLVM IL needs to refer
@@ -4670,10 +4670,13 @@ emit_llvm_file (MonoAotCompile *acfg)
 #endif
 	g_free (opts);
 
-	llc_target_args = g_strdup (LLC_TARGET_ARGS);
-
-	command = g_strdup_printf ("llc %s -f -relocation-model=pic -unwind-tables -o %s temp.opt.bc", llc_target_args, acfg->tmpfname);
-	g_free (llc_target_args);
+#if !LLVM_CHECK_VERSION(2, 8)
+	/* LLVM 2.8 removed the -f flag ??? */
+	llc_extra_args = "-f";
+#else
+	llc_extra_args = "";
+#endif
+	command = g_strdup_printf ("llc %s %s -relocation-model=pic -unwind-tables -o %s temp.opt.bc", LLC_TARGET_ARGS, llc_extra_args, acfg->tmpfname);
 
 	printf ("Executing llc: %s\n", command);
 
@@ -6134,6 +6137,16 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	acfg->temp_prefix = img_writer_get_temp_label_prefix (NULL);
 
+	/*
+	 * The prefix LLVM likes to put in front of symbol names on darwin.
+	 * The mach-os specs require this for globals, but LLVM puts them in front of all
+	 * symbols. We need to handle this, since we need to refer to LLVM generated
+	 * symbols.
+	 */
+	acfg->llvm_label_prefix = "";
+	if (acfg->llvm)
+		acfg->llvm_label_prefix = LLVM_LABEL_PREFIX;
+
 	acfg->method_index = 1;
 
 	collect_methods (acfg);
@@ -6233,16 +6246,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		tmp_outfile_name = NULL;
 		outfile_name = NULL;
 	}
-
-	/*
-	 * The prefix LLVM likes to put in front of symbol names on darwin.
-	 * The mach-os specs require this for globals, but LLVM puts them in front of all
-	 * symbols. We need to handle this, since we need to refer to LLVM generated
-	 * symbols.
-	 */
-	acfg->llvm_label_prefix = "";
-	if (acfg->llvm)
-		acfg->llvm_label_prefix = LLVM_LABEL_PREFIX;
 
 	acfg->got_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, acfg->got_symbol_base);
 

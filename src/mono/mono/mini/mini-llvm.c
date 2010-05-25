@@ -186,6 +186,31 @@ IntPtrType (void)
 	return sizeof (gpointer) == 8 ? LLVMInt64Type () : LLVMInt32Type ();
 }
 
+#if !LLVM_CHECK_VERSION(2, 8)
+
+static LLVMValueRef LLVMBuildFAdd(LLVMBuilderRef Builder,
+								  LLVMValueRef LHS, LLVMValueRef RHS,
+								  const char *Name)
+{
+	return LLVMBuildAdd (Builder, LHS, RHS, Name);
+}
+
+static LLVMValueRef LLVMBuildFSub(LLVMBuilderRef Builder,
+								  LLVMValueRef LHS, LLVMValueRef RHS,
+								  const char *Name)
+{
+	return LLVMBuildSub (Builder, LHS, RHS, Name);
+}
+
+static LLVMValueRef LLVMBuildFMul(LLVMBuilderRef Builder,
+								  LLVMValueRef LHS, LLVMValueRef RHS,
+								  const char *Name)
+{
+	return LLVMBuildMul (Builder, LHS, RHS, Name);
+}
+
+#endif
+
 /*
  * get_vtype_size:
  *
@@ -2149,17 +2174,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					values [ins->dreg] = LLVMBuildLShr (builder, lhs, rhs, dname);
 					break;
 
-#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 8
-				case OP_FADD:
-					values [ins->dreg] = LLVMBuildAdd (builder, lhs, rhs, dname);
-					break;
-				case OP_FSUB:
-					values [ins->dreg] = LLVMBuildSub (builder, lhs, rhs, dname);
-					break;
-				case OP_FMUL:
-					values [ins->dreg] = LLVMBuildMul (builder, lhs, rhs, dname);
-					break;
-#else
 				case OP_FADD:
 					values [ins->dreg] = LLVMBuildFAdd (builder, lhs, rhs, dname);
 					break;
@@ -2169,7 +2183,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				case OP_FMUL:
 					values [ins->dreg] = LLVMBuildFMul (builder, lhs, rhs, dname);
 					break;
-#endif
 
 				default:
 					g_assert_not_reached ();
@@ -2292,11 +2305,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				break;
 			case OP_FNEG:
 				lhs = convert (ctx, lhs, LLVMDoubleType ());
-#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 8
-				values [ins->dreg] = LLVMBuildSub (builder, LLVMConstReal (LLVMDoubleType (), 0.0), lhs, dname);
-#else
 				values [ins->dreg] = LLVMBuildFSub (builder, LLVMConstReal (LLVMDoubleType (), 0.0), lhs, dname);
-#endif
 				break;
 			case OP_INOT: {
 				guint32 v = 0xffffffff;
@@ -3169,25 +3178,29 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = mono_llvm_build_aligned_load (builder, src, "", FALSE, 1);
 				break;
 			}
-			case OP_ADDPD:
-			case OP_ADDPS:
 			case OP_PADDB:
 			case OP_PADDW:
 			case OP_PADDD:
 			case OP_PADDQ:
 				values [ins->dreg] = LLVMBuildAdd (builder, lhs, rhs, "");
 				break;
-			case OP_SUBPD:
-			case OP_SUBPS:
+			case OP_ADDPD:
+			case OP_ADDPS:
+				values [ins->dreg] = LLVMBuildFAdd (builder, lhs, rhs, "");
+				break;
 			case OP_PSUBB:
 			case OP_PSUBW:
 			case OP_PSUBD:
 			case OP_PSUBQ:
 				values [ins->dreg] = LLVMBuildSub (builder, lhs, rhs, "");
 				break;
+			case OP_SUBPD:
+			case OP_SUBPS:
+				values [ins->dreg] = LLVMBuildFSub (builder, lhs, rhs, "");
+				break;
 			case OP_MULPD:
 			case OP_MULPS:
-				values [ins->dreg] = LLVMBuildMul (builder, lhs, rhs, "");
+				values [ins->dreg] = LLVMBuildFMul (builder, lhs, rhs, "");
 				break;
 			case OP_DIVPD:
 			case OP_DIVPS:
@@ -3724,7 +3737,7 @@ add_intrinsics (LLVMModuleRef module)
 	{
 		LLVMTypeRef memset_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
-#if LLVM_MAJOR_VERSION > 2 || LLVM_MINOR_VERSION >= 8
+#if LLVM_CHECK_VERSION(2, 8)
 		memset_param_count = 5;
 		memset_func_name = "llvm.memset.p0i8.i32";
 #else
@@ -3737,7 +3750,7 @@ add_intrinsics (LLVMModuleRef module)
 	{
 		LLVMTypeRef memcpy_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
-#if LLVM_MAJOR_VERSION > 2 || LLVM_MINOR_VERSION >= 8
+#if LLVM_CHECK_VERSION(2, 8)
 		memcpy_param_count = 5;
 		memcpy_func_name = "llvm.memcpy.p0i8.p0i8.i32";
 #else
@@ -3812,7 +3825,7 @@ add_intrinsics (LLVMModuleRef module)
 
 		arg_types [0] = LLVMPointerType (LLVMInt8Type (), 0);
 		arg_types [1] = LLVMPointerType (LLVMInt8Type (), 0);
-#if LLVM_MAJOR_VERSION > 2 || LLVM_MINOR_VERSION >= 8
+#if LLVM_CHECK_VERSION(2, 8)
 		eh_selector_name = "llvm.eh.selector";
 		ret_type = LLVMInt32Type ();
 #else
