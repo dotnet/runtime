@@ -13,7 +13,8 @@ sub INST_SRC2  () {return 2;}
 sub INST_SRC3  () {return 3;}
 sub INST_LEN   () {return 4;}
 sub INST_CLOB  () {return 5;}
-sub INST_MAX   () {return 6;}
+sub INST_NACL  () {return 6;}
+sub INST_MAX   () {return 7;}
 
 # this must include all the #defines used in mini-ops.h
 my @defines = qw (__i386__ __x86_64__ __ppc__ __powerpc__ __ppc64__ __arm__ 

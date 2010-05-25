@@ -43,6 +43,7 @@ typedef struct {
 	char spec [MONO_INST_MAX];
 } OpDesc;
 
+static int nacl;
 static GHashTable *table;
 static GHashTable *template_table;
 
@@ -65,7 +66,7 @@ load_file (const char *name) {
 	 * The format of the lines are:
 	 * # comment
 	 * opcode: [dest:format] [src1:format] [src2:format] [flags:format] [clob:format] 
-	 * 	[cost:num] [res:format] [delay:num] [len:num]
+	 * 	[cost:num] [res:format] [delay:num] [len:num] [nacl:num]
 	 * format is a single letter that depends on the field
 	 * NOTE: no space between the field name and the ':'
 	 *
@@ -132,7 +133,11 @@ load_file (const char *name) {
 				*/
 			} else if (strncmp (p, "len:", 4) == 0) {
 				p += 4;
-				desc->spec [MONO_INST_LEN] = strtoul (p, &p, 10);
+				desc->spec [MONO_INST_LEN] += strtoul (p, &p, 10);
+			} else if (strncmp (p, "nacl:", 5) == 0){
+				p += 5;
+				if (nacl)
+					desc->spec [MONO_INST_LEN] += strtoul (p, &p, 10);
 			} else if (strncmp (p, "template:", 9) == 0) {
 				char *tname;
 				int i;
@@ -284,14 +289,22 @@ main (int argc, char* argv [])
 		dump ();
 	} else if (argc < 4) {
 		g_print ("Usage: genmdesc arguments\n");
-		g_print ("\tgenmdesc desc                        Output to stdout the description file.\n");
-		g_print ("\tgenmdesc output name desc [desc1...] Write to output the description in a table named 'name'.\n");
+		g_print ("\tgenmdesc desc     Output to stdout the description file.\n");
+		g_print ("\tgenmdesc [--nacl] output name desc [desc1...]\n"
+			"                     Write to output the description in a table named 'name',\n"
+			"                     use --nacl to generate Google NativeClient code\n");
 		return 1;
 	} else {
-		int i;
-		for (i = 3; i < argc; ++i)
+		int i = 3;
+		if (strcmp (argv [1], "--nacl")){
+			nacl = 1;
+			i++;
+		}
+		
+		for (; i < argc; ++i)
 			load_file (argv [i]);
-		build_table (argv [1], argv [2]);
+		
+		build_table (argv [1 + nacl], argv [2 + nacl]);
 	}
 	return 0;
 }
