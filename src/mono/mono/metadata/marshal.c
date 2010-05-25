@@ -164,7 +164,14 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 static MonoMethodSignature*
 signature_dup (MonoImage *image, MonoMethodSignature *sig)
 {
-	return mono_metadata_signature_dup_full (image, sig);
+	MonoMethodSignature *res;
+	int sigsize;
+
+	res = mono_metadata_signature_alloc (image, sig->param_count);
+	sigsize = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *);
+	memcpy (res, sig, sigsize);
+
+	return res;
 }
 
 MonoMethodSignature*
@@ -2276,27 +2283,19 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
  * Return the hash table pointed to by VAR, lazily creating it if neccesary.
  */
 static GHashTable*
-get_cache_full (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func,
-				GDestroyNotify  key_destroy_func,
-				GDestroyNotify  value_destroy_func)
+get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 {
 	if (!(*var)) {
 		mono_marshal_lock ();
 		if (!(*var)) {
 			GHashTable *cache = 
-				g_hash_table_new_full (hash_func, equal_func, key_destroy_func, value_destroy_func);
+				g_hash_table_new (hash_func, equal_func);
 			mono_memory_barrier ();
 			*var = cache;
 		}
 		mono_marshal_unlock ();
 	}
 	return *var;
-}
-
-static GHashTable*
-get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
-{
-	return get_cache_full (var, hash_func, equal_func, NULL, NULL);
 }
 
 GHashTable*
@@ -10809,22 +10808,15 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int i;
-	GHashTable *cache;
 
-	cache = get_cache_full (&method->klass->image->generic_array_helper_cache, mono_aligned_addr_hash, NULL, NULL, (GDestroyNotify)mono_free_method);
-
-	if ((res = mono_marshal_find_in_cache (cache, method)))
-		return res;
-
-	mb = mono_mb_new (class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+	mb = mono_mb_new_no_dup_name (class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 	mb->method->slot = -1;
-	mb->dynamic = TRUE;
 
 	mb->method->flags = METHOD_ATTRIBUTE_PRIVATE | METHOD_ATTRIBUTE_VIRTUAL |
 		METHOD_ATTRIBUTE_NEW_SLOT | METHOD_ATTRIBUTE_HIDE_BY_SIG | METHOD_ATTRIBUTE_FINAL;
 
 	sig = mono_method_signature (method);
-	csig = signature_dup (NULL, sig);
+	csig = signature_dup (method->klass->image, sig);
 	csig->generic_param_count = 0;
 
 	mono_mb_emit_ldarg (mb, 0);
@@ -10836,7 +10828,7 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	/* We can corlib internal methods */
 	mb->skip_visibility = TRUE;
 
-	res = mono_mb_create_and_cache (cache, method, mb, csig, csig->param_count + 16);
+	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
 
 	mono_mb_free (mb);
 
@@ -11142,8 +11134,6 @@ mono_marshal_free_inflated_wrappers (MonoMethod *method)
                g_hash_table_remove (method->klass->image->cominterop_wrapper_cache, method);
        if (method->klass->image->thunk_invoke_cache)
                g_hash_table_remove (method->klass->image->thunk_invoke_cache, method);
-       if (method->klass->image->generic_array_helper_cache)
-               g_hash_table_remove (method->klass->image->generic_array_helper_cache, method);
 
        mono_marshal_unlock ();
 }
