@@ -68,7 +68,7 @@ call: dest:a clob:c len:17
 br: len:5
 seq_point: len:16
 
-int_beq: len:6
+int_beq: len:6 nacl:28
 int_bge: len:6
 int_bgt: len:6
 int_ble: len:6

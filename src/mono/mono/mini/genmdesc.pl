@@ -6,7 +6,7 @@ use strict;
 no locale;
 
 # must keep in sync with mini.h
-my @spec_names = qw(dest src1 src2 src3 len clob);
+my @spec_names = qw(dest src1 src2 src3 len clob nacl);
 sub INST_DEST  () {return 0;}
 sub INST_SRC1  () {return 1;}
 sub INST_SRC2  () {return 2;}
@@ -165,11 +165,16 @@ sub build_spec {
 	}
 	#print "vals: " . join (' ', @vals) . "\n";
 	my $res = "";
+	my $n = 0;
 	for (my $i = 0; $i < @vals; ++$i) {
 		if (defined $vals [$i]) {
 			if ($i == INST_LEN) {
-				$res .= sprintf ("\\x%x\" \"", +$vals [$i]);
-			} else {
+			        $n = $vals [$i];
+			        if (defined $vals [INST_NACL]){
+				    $n += $vals [INST_NACL];
+			        }
+				$res .= sprintf ("\\x%x\" \"", + $n);
+			} if ($i != INST_NACL) {
 				if ($vals [$i] =~ /^[a-zA-Z0-9]$/) {
 					$res .= $vals [$i];
 				} else {
