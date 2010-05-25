@@ -296,7 +296,7 @@ main (int argc, char* argv [])
 		return 1;
 	} else {
 		int i = 3;
-		if (strcmp (argv [1], "--nacl")){
+		if (strcmp (argv [1], "--nacl") == 0){
 			nacl = 1;
 			i++;
 		}
