@@ -136,8 +136,9 @@ load_file (const char *name) {
 				desc->spec [MONO_INST_LEN] += strtoul (p, &p, 10);
 			} else if (strncmp (p, "nacl:", 5) == 0){
 				p += 5;
+				unsigned long size = strtoul (p, &p, 10);
 				if (nacl)
-					desc->spec [MONO_INST_LEN] += strtoul (p, &p, 10);
+					desc->spec [MONO_INST_LEN] += size;
 			} else if (strncmp (p, "template:", 9) == 0) {
 				char *tname;
 				int i;
