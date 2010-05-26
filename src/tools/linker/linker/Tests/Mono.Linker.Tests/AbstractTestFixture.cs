@@ -35,7 +35,6 @@ namespace Mono.Linker.Tests {
 
 	using NUnit.Framework;
 
-	[TestFixture]
 	public abstract class AbstractTestFixture {
 
 		string _testCasesRoot;
