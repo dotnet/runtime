@@ -4613,7 +4613,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			EMIT_NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
 			*sp++ = ins;
 		}
-		mono_metadata_free_mh (cheader);
+		cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, cheader);
 		return costs + 1;
 	} else {
 		if (cfg->verbose_level > 2)
@@ -4624,7 +4624,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		/* This gets rid of the newly added bblocks */
 		cfg->cbb = prev_cbb;
 	}
-	mono_metadata_free_mh (cheader);
+	cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, cheader);
 	return 0;
 }
 
@@ -4997,7 +4997,7 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
  	cfg->exception_message = g_strdup_printf ("Invalid IL code in %s: %s\n", method_fname, method_code);
  	g_free (method_fname);
  	g_free (method_code);
-	mono_metadata_free_mh (header);
+	cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 }
 
 static void
@@ -9827,7 +9827,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 		cfg->exception_message = g_strdup_printf ("Method %s is too complex.", mname);
 		g_free (mname);
-		mono_metadata_free_mh (header);
+		cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 		mono_basic_block_free (original_bb);
 		return -1;
 	}
@@ -9835,7 +9835,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if ((cfg->verbose_level > 2) && (cfg->method == method)) 
 		mono_print_code (cfg, "AFTER METHOD-TO-IR");
 
-	mono_metadata_free_mh (header);
+	cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 	mono_basic_block_free (original_bb);
 	return inline_costs;
  
@@ -9858,7 +9858,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	g_slist_free (class_inits);
 	mono_basic_block_free (original_bb);
 	dont_inline = g_list_remove (dont_inline, method);
-	mono_metadata_free_mh (header);
+	cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 	return -1;
 }
 

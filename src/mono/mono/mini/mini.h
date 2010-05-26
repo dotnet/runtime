@@ -1149,6 +1149,9 @@ typedef struct {
 	/* The encoded sequence point info */
 	MonoSeqPointInfo *seq_point_info;
 
+	/* Method headers which need to be freed after compilation */
+	GSList *headers_to_free;
+
 	/* Used by AOT */
 	guint32 got_offset, ex_info_offset, method_info_offset;
 	/* Symbol used to refer to this method in generated assembly */

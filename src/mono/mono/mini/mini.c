@@ -2201,6 +2201,8 @@ mono_verify_cfg (MonoCompile *cfg)
 void
 mono_destroy_compile (MonoCompile *cfg)
 {
+	GSList *l;
+
 	if (cfg->header)
 		mono_metadata_free_mh (cfg->header);
 	//mono_mempool_stats (cfg->mempool);
@@ -2211,11 +2213,13 @@ mono_destroy_compile (MonoCompile *cfg)
 		g_hash_table_destroy (cfg->spvars);
 	if (cfg->exvars)
 		g_hash_table_destroy (cfg->exvars);
-	mono_mempool_destroy (cfg->mempool);
+	for (l = cfg->headers_to_free; l; l = l->next)
+		mono_metadata_free_mh (l->data);
 	g_list_free (cfg->ldstr_list);
 	g_hash_table_destroy (cfg->token_info_hash);
 	if (cfg->abs_patches)
 		g_hash_table_destroy (cfg->abs_patches);
+	mono_mempool_destroy (cfg->mempool);
 
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
