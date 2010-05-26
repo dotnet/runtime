@@ -114,10 +114,6 @@ typedef struct MonoAotModule {
 	/* Points to the GNU .eh_frame_hdr section, if it exists */
 	guint8 *eh_frame_hdr;
 
-	/* Points to the .ARM.exidx section, if it exists */
-	guint8 *arm_exidx;
-	guint32 arm_exidx_size;
-
 	/* Points to the trampolines */
 	guint8 *trampolines [MONO_AOT_TRAMP_NUM];
 	/* The first unused trampoline of each kind */
@@ -932,10 +928,6 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 	}
 }
 
-#ifndef SHT_ARM_EXIDX
-#define SHT_ARM_EXIDX 0x70000001
-#endif
-
 #if defined(HAVE_DL_ITERATE_PHDR) && defined(PT_GNU_EH_FRAME)
 static int
 dl_callback (struct dl_phdr_info *info, size_t size, void *data)
@@ -947,10 +939,6 @@ dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 		for (j = 0; j < info->dlpi_phnum; j++) {
 			if (info->dlpi_phdr [j].p_type == PT_GNU_EH_FRAME)
 				amodule->eh_frame_hdr = (guint8*)(info->dlpi_addr + info->dlpi_phdr [j].p_vaddr);
-			if (info->dlpi_phdr [j].p_type == SHT_ARM_EXIDX) {
-				amodule->arm_exidx = (guint8*)(info->dlpi_addr + info->dlpi_phdr [j].p_vaddr);
-				amodule->arm_exidx_size = info->dlpi_phdr [j].p_filesz;
-			}
 		}
 		return 1;
 	} else {
@@ -1630,280 +1618,6 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	return jinfo;
 }
- 
-#ifdef TARGET_ARM
-
-/* The offsets in the table are 31 bits long, have to extend them to 32 */
-#define EXTEND_PREL31(val) ((((gint32)(val)) << 1) >> 1)
-
-static inline guint32
-decode_uleb128 (guint8 *buf, guint8 **endbuf)
-{
-	guint8 *p = buf;
-	guint32 res = 0;
-	int shift = 0;
-
-	while (TRUE) {
-		guint8 b = *p;
-		p ++;
-
-		res = res | (((int)(b & 0x7f)) << shift);
-		if (!(b & 0x80))
-			break;
-		shift += 7;
-	}
-
-	*endbuf = p;
-
-	return res;
-}
-
-static GSList*
-decode_arm_eh_ops (guint8 *unwind_ops, int nops)
-{
-	int i, vsp_reg, vsp_offset;
-	GSList *ops;
-	gint32 *reg_offsets;
-
-	/*
-	 * Have to convert the ARM unwind info into DWARF unwind info.
-	 * The ARM unwind info specifies a simple set of instructions which need to be
-	 * executed during unwinding. It manipulates a virtual stack pointer (vsp). The
-	 * connection with DWARF unwind info is the following: after all ARM unwind
-	 * opcodes have been executed, the stack should be completely unwound, i.e.
-	 * vsp == DWARF CFA. This allows us to construct the DWARF opcodes corresponding
-	 * to the ARM opcodes.
-	 * The ARM unwind info is not instruction precise, i. e. it can't handle
-	 * async exceptions etc.
-	 */
-	/* The reg used to compute the initial value of vsp */
-	vsp_reg = ARMREG_SP;
-	/* The offset between vsp_reg and the CFA */
-	vsp_offset = 0;
-
-	/* The register save offsets from the initial value of vsp */
-	reg_offsets = g_new0 (gint32, 16);
-	for (i = 0; i < 16; ++i)
-		reg_offsets [i] = -1;
-
-	/* section 9.3 in the ehabi doc */
-	for (i = 0; i < nops; ++i) {
-		guint8 op = unwind_ops [i];
-
-		if ((op >> 6) == 0) {
-			/* vsp = vsp + (xxxxxx << 2) + 4. */
-			vsp_offset += ((op & 0x3f) << 2) + 4;
-		} else if ((op >> 6) == 1) {
-			/* vsp = vsp - (xxxxxx << 2) - 4. */
-			vsp_offset -= ((op & 0x3f) << 2) + 4;
-		} else if (op == 0xb2) {
-			/* vsp = vsp = vsp + 0x204 + (uleb128 << 2) */
-			guint8 *p = unwind_ops + i + 1;
-			guint32 v = decode_uleb128 (p, &p);
-
-			vsp_offset += 0x204 + (v << 2);
-			i = (p - unwind_ops) - 1;
-		} else if (op >= 0x80 && op <= 0x8f) {
-			/* pop registers */
-			guint8 op2;
-			GSList *regs;
-			int j;
-
-			g_assert (i + 1 < nops);
-			op2 = unwind_ops [i + 1];
-
-			regs = NULL;
-			for (j = 0; j < 8; ++j)
-				if (op2 & (0x1 << j))
-					regs = g_slist_append (regs, GUINT_TO_POINTER (ARMREG_R4 + j));
-			for (j = 0; j < 4; ++j)
-				if (op & (0x1 << j))
-					regs = g_slist_append (regs, GUINT_TO_POINTER (ARMREG_R12 + j));
-			g_assert (regs);
-
-			for (j = 0; j < g_slist_length (regs); ++j)
-				reg_offsets [GPOINTER_TO_UINT (g_slist_nth (regs, j)->data)] = vsp_offset + (j * 4);
-
-			vsp_offset += g_slist_length (regs) * 4;
-
-			g_slist_free (regs);
-
-			i ++;
-		} else if (op >= 0xa8 && op <= 0xaf) {
-			GSList *regs;
-			int j;
-
-			/* pop r4-r[4 + nnn], r14 */
-
-			regs = NULL;
-			for (j = 0; j <= (op & 0x7); ++j)
-				regs = g_slist_append (regs, GUINT_TO_POINTER (ARMREG_R4 + j));
-			regs = g_slist_append (regs, GUINT_TO_POINTER (ARMREG_R14));
-
-			for (j = 0; j < g_slist_length (regs); ++j)
-				reg_offsets [GPOINTER_TO_UINT (g_slist_nth (regs, j)->data)] = vsp_offset + (j * 4);
-
-			vsp_offset += g_slist_length (regs) * 4;
-
-			g_slist_free (regs);
-		} else if (op == 0xb0) {
-			/* finish */
-			break;
-		} else if (op >= 0x90 && op <= 0x9f && op != 0x9d && op != 0x9f) {
-			/* vsp = <reg> */
-			vsp_reg = op & 0xf;
-			vsp_offset = 0;
-		} else {
-			int j;
-
-			for (j = 0; j < nops; ++j)
-				printf ("%x ", unwind_ops [j]);
-			printf (" / %d\n", i);
-			g_assert_not_reached ();
-		}
-	}
-
-	ops = NULL;
-
-	/* vsp_reg + vsp_offset = CFA */
-	mono_add_unwind_op_def_cfa (ops, (guint8*)NULL, (guint8*)NULL, vsp_reg, vsp_offset);
-
-	for (i = 0; i < 16; ++i) {
-		if (reg_offsets [i] != -1)
-			/* The reg is saved at vsp_reg + reg_offset [i] == CFA - (vsp_offset - reg_offset [i]) */
-			mono_add_unwind_op_offset (ops, (guint8*)NULL, (guint8*)NULL, i, - (vsp_offset - reg_offsets [i]));
-	}
-
-	return ops;
-}
-
-/*
- * decode_arm_exidx:
- *
- *   Decode the exception handling information in the .ARM.exidx section of the AOT
- * file belong to CODE, and construct a MonoJitInfo structure from it.
- * LOCKING: Acquires the domain lock.
- */
-static void
-decode_arm_exidx (MonoAotModule *amodule, MonoDomain *domain, 
-				  MonoMethod *method, guint8 *code, guint32 code_len, MonoJitInfo *jinfo)
-{
-	guint32 *table;
-	guint8 *base, *code1, *code2;
-	int i, pos, left, right, offset, offset1, offset2, count, nwords, nops;
-	guint32 entry;
-	guint8 unwind_ops [64];
-	GSList *ops;
-	guint8 *unwind_info;
-	guint32 unw_len;
-
-	g_assert (amodule->arm_exidx);
-
-	table = (guint32*)amodule->arm_exidx;
-
-	/* 
-	 * The table format is described in:
-	 * infocenter.arm.com/help/topic/com.arm.doc.../IHI0038A_ehabi.pdf
-	 */
-
-	base = amodule->arm_exidx;
-	count = amodule->arm_exidx_size / 8;
-
-	/* Binary search in the table to find the entry for code */
-	offset = code - base;
-
-	left = 0;
-	right = count;
-	while (TRUE) {
-		pos = (left + right) / 2;
-
-		if (left == right)
-			break;
-
-		offset1 = EXTEND_PREL31 (table [(pos * 2)]);
-		code1 = (guint8*)&(table [pos * 2]) + offset1;
-		if (pos + 1 == count)
-			/* FIXME: */
-			offset2 = amodule->code_end - amodule->code;
-		else
-			offset2 = EXTEND_PREL31 (table [(pos + 1) * 2]);
-		code2 = (guint8*)&(table [(pos + 1) * 2]) + offset2;
-
-		if (code < code1)
-			right = pos;
-		else if (code >= code2)
-			left = pos + 1;
-		else
-			break;
-	}
-
-	if (code >= code1) {
-		/* 
-		 * The linker might merge duplicate unwind table entries, so
-		 * offset1 and offset2 might point to another method, but this is not a problem.
-		 */
-		code1 = (guint8*)&(table [pos * 2]) + offset1;
-		code2 = (guint8*)&(table [(pos + 1) * 2]) + offset2;
-
-		g_assert (code >= code1);
-		if (pos < count)
-			g_assert (code < code2);
-
-		entry = table [(pos * 2) + 1];
-
-		/* inline entry, compact model, personality routine 0 */
-		if ((entry & 0xff000000) == 0x80000000) {
-			nops = 3;
-			unwind_ops [0] = (entry & 0x00ff0000) >> 16;
-			unwind_ops [1] = (entry & 0x0000ff00) >> 8;
-			unwind_ops [2] = (entry & 0x000000ff) >> 0;
-
-			ops = decode_arm_eh_ops (unwind_ops, nops);
-		} else if ((entry & 0x80000000) == 0) {
-			/* non-inline entry */
-			guint8 *data = (guint8*)&table [(pos * 2) + 1] + EXTEND_PREL31 (entry);
-
-			entry = ((guint32*)data) [0];
-
-			/* compact model, personality routine 1 */
-			g_assert ((entry & 0xff000000) == 0x81000000);
-
-			nwords = (entry & 0x00ff0000) >> 16;
-			nops = nwords * 4 + 2;
-			g_assert (nops < 64);
-
-			unwind_ops [0] = (entry & 0x0000ff00) >> 8;
-			unwind_ops [1] = (entry & 0x000000ff) >> 0;
-
-			for (i = 0; i < nwords; ++i) {
-				entry = ((guint32*)data) [1 + i];
-				unwind_ops [(i * 4) + 2] = (entry & 0xff000000) >> 24;
-				unwind_ops [(i * 4) + 2 + 1] = (entry & 0x00ff0000) >> 16;
-				unwind_ops [(i * 4) + 2 + 2] = (entry & 0x0000ff00) >> 8;
-				unwind_ops [(i * 4) + 2 + 3] = (entry & 0x000000ff) >> 0;
-			}
-
-			ops = decode_arm_eh_ops (unwind_ops, nops);
-		} else {
-			NOT_IMPLEMENTED;
-		}
-
-		unwind_info = mono_unwind_ops_encode (ops, &unw_len);
-	} else {
-		/* The method has no unwind info */
-		unwind_info = NULL;
-		unw_len = 0;
-	}
-
-	jinfo->code_size = code_len;
-	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);
-	jinfo->method = method;
-	jinfo->code_start = code;
-	jinfo->domain_neutral = 0;
-	/* This signals that used_regs points to a normal cached unwind info */
-	jinfo->from_aot = 0;
-}
-#endif
 
 /*
  * LOCKING: Acquires the domain lock.
@@ -1994,11 +1708,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
  	if (from_llvm) {
 		/* LLVM compiled method */
 		/* The info is in the .eh_frame section */
-#ifdef TARGET_ARM
-		decode_arm_exidx (amodule, domain, method, code, code_len, jinfo);
-#else
  		jinfo = decode_eh_frame (amodule, domain, method, code, jinfo, generic_info_size);
-#endif
 		jinfo->from_llvm = 1;
  	} else {
 		jinfo->code_size = code_len;
