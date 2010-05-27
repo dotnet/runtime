@@ -30,6 +30,13 @@ public class InterlockTest
 		if (it.test != 1)
 			return 4;
 
+		a = 10;
+		c = Interlocked.Exchange (ref a, 5);
+		if (c != 10)
+			return 5;
+		if (a != 5)
+			return 5;
+
 		a = 1;
 		b = Interlocked.Increment (ref a);
 		if (a != 2)
