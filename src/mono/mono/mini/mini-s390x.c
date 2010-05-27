@@ -4605,7 +4605,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;	
 		case OP_ATOMIC_EXCHANGE_I4: {
-			s390_lg  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
+			s390_l   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_cs  (code, s390_r0, ins->sreg2, ins->inst_basereg, ins->inst_offset);
 			s390_jnz (code, -4);
 			s390_lgfr(code, ins->dreg, s390_r0);
