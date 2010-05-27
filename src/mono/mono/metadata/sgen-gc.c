@@ -280,6 +280,9 @@ static long long stat_global_remsets_readded = 0;
 static long long stat_global_remsets_processed = 0;
 static long long stat_global_remsets_discarded = 0;
 
+static long long stat_wasted_fragments_used = 0;
+static long long stat_wasted_fragments_bytes = 0;
+
 static int stat_wbarrier_set_field = 0;
 static int stat_wbarrier_set_arrayref = 0;
 static int stat_wbarrier_arrayref_copy = 0;
@@ -1005,6 +1008,7 @@ static void add_or_remove_disappearing_link (MonoObject *obj, void **link, gbool
 static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation);
 static void null_links_for_domain (MonoDomain *domain, int generation);
 static gboolean search_fragment_for_size (size_t size);
+static int search_fragment_for_size_range (size_t desired_size, size_t minimum_size);
 static void build_nursery_fragments (int start_pin, int end_pin);
 static void clear_nursery_fragments (char *next);
 static void pin_from_roots (void *start_nursery, void *end_nursery);
@@ -3209,6 +3213,9 @@ init_stats (void)
 	mono_counters_register ("# nursery copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_forwarded);
 	mono_counters_register ("# nursery copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_nursery_copy_object_failed_pinned);
 
+	mono_counters_register ("# wasted fragments used", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_used);
+	mono_counters_register ("bytes in wasted fragments", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wasted_fragments_bytes);
+
 	mono_counters_register ("Store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets);
 	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
 	mono_counters_register ("Saved remsets 1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_1);
@@ -3977,6 +3984,22 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	return obj->data;
 }
 
+static void
+setup_fragment (Fragment *frag, Fragment *prev, size_t size)
+{
+	/* remove from the list */
+	if (prev)
+		prev->next = frag->next;
+	else
+		nursery_fragments = frag->next;
+	nursery_next = frag->fragment_start;
+	nursery_frag_real_end = frag->fragment_end;
+
+	DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %zd (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
+	frag->next = fragment_freelist;
+	fragment_freelist = frag;
+}
+
 /* check if we have a suitable fragment in nursery_fragments to be able to allocate
  * an object of size @size
  * Return FALSE if not found (which means we need a collection)
@@ -3994,22 +4017,59 @@ search_fragment_for_size (size_t size)
 	prev = NULL;
 	for (frag = nursery_fragments; frag; frag = frag->next) {
 		if (size <= (frag->fragment_end - frag->fragment_start)) {
-			/* remove from the list */
-			if (prev)
-				prev->next = frag->next;
-			else
-				nursery_fragments = frag->next;
-			nursery_next = frag->fragment_start;
-			nursery_frag_real_end = frag->fragment_end;
-
-			DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %zd (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
-			frag->next = fragment_freelist;
-			fragment_freelist = frag;
+			setup_fragment (frag, prev, size);
 			return TRUE;
 		}
 		prev = frag;
 	}
 	return FALSE;
+}
+
+/*
+ * Same as search_fragment_for_size but if search for @desired_size fails, try to satisfy @minimum_size.
+ * This improves nursery usage.
+ */
+static int
+search_fragment_for_size_range (size_t desired_size, size_t minimum_size)
+{
+	Fragment *frag, *prev, *min_prev;
+	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, desired size: %zd minimum size %zd\n", nursery_frag_real_end, desired_size, minimum_size));
+
+	if (nursery_frag_real_end > nursery_next && nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+		/* Clear the remaining space, pinning depends on this */
+		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
+
+	min_prev = GINT_TO_POINTER (-1);
+	prev = NULL;
+
+	for (frag = nursery_fragments; frag; frag = frag->next) {
+		int frag_size = frag->fragment_end - frag->fragment_start;
+		if (desired_size <= frag_size) {
+			setup_fragment (frag, prev, desired_size);
+			return desired_size;
+		}
+		if (minimum_size <= frag_size)
+			min_prev = prev;
+
+		prev = frag;
+	}
+
+	if (min_prev != GINT_TO_POINTER (-1)) {
+		int frag_size;
+		if (min_prev)
+			frag = min_prev->next;
+		else
+			frag = nursery_fragments;
+
+		frag_size = frag->fragment_end - frag->fragment_start;
+		HEAVY_STAT (++stat_wasted_fragments_used);
+		HEAVY_STAT (stat_wasted_fragments_bytes += frag_size);
+
+		setup_fragment (frag, min_prev, minimum_size);
+		return frag_size;
+	}
+
+	return 0;
 }
 
 /*
@@ -4026,7 +4086,6 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	/* FIXME: handle OOM */
 	void **p;
 	char *new_next;
-	gboolean res;
 	TLAB_ACCESS_INIT;
 
 	HEAVY_STAT (++stat_objects_alloced);
@@ -4120,6 +4179,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				return p;
 			}
 
+			/*FIXME This codepath is current deadcode since tlab_size > MAX_SMALL_OBJ_SIZE*/
 			if (size > tlab_size) {
 				/* Allocate directly from the nursery */
 				if (nursery_next + size >= nursery_frag_real_end) {
@@ -4151,8 +4211,9 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					if (available_in_nursery > MAX_NURSERY_TLAB_WASTE && available_in_nursery > size) {
 						alloc_size = available_in_nursery;
 					} else {
-						res = search_fragment_for_size (tlab_size);
-						if (!res) {
+						alloc_size = search_fragment_for_size_range (tlab_size, size);
+						if (!alloc_size) {
+							alloc_size = tlab_size;
 							minor_collect_or_expand_inner (tlab_size);
 							if (degraded_mode) {
 								p = alloc_degraded (vtable, size);
