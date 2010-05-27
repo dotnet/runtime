@@ -936,6 +936,9 @@ static char *nursery_last_pinned_end = NULL;
  */
 static guint32 tlab_size = (1024 * 4);
 
+/*How much space is tolerable to be wasted from the current fragment when allocating a new TLAB*/
+#define MAX_NURSERY_TLAB_WASTE 512
+
 /* fragments that are free and ready to be used for allocation */
 static Fragment *nursery_fragments = NULL;
 /* freeelist of fragment structures */
@@ -4139,29 +4142,35 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 					memset (p, 0, size);
 			} else {
+				int alloc_size = tlab_size;
+				int available_in_nursery = nursery_frag_real_end - nursery_next;
 				if (TLAB_START)
 					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", TLAB_START, TLAB_REAL_END, (long)(TLAB_REAL_END - TLAB_NEXT - size)));
 
-				if (nursery_next + tlab_size >= nursery_frag_real_end) {
-					res = search_fragment_for_size (tlab_size);
-					if (!res) {
-						minor_collect_or_expand_inner (tlab_size);
-						if (degraded_mode) {
-							p = alloc_degraded (vtable, size);
-							return p;
+				if (alloc_size >= available_in_nursery) {
+					if (available_in_nursery > MAX_NURSERY_TLAB_WASTE && available_in_nursery > size) {
+						alloc_size = available_in_nursery;
+					} else {
+						res = search_fragment_for_size (tlab_size);
+						if (!res) {
+							minor_collect_or_expand_inner (tlab_size);
+							if (degraded_mode) {
+								p = alloc_degraded (vtable, size);
+								return p;
+							}
 						}
 					}
 				}
 
 				/* Allocate a new TLAB from the current nursery fragment */
 				TLAB_START = nursery_next;
-				nursery_next += tlab_size;
+				nursery_next += alloc_size;
 				TLAB_NEXT = TLAB_START;
-				TLAB_REAL_END = TLAB_START + tlab_size;
-				TLAB_TEMP_END = TLAB_START + MIN (SCAN_START_SIZE, tlab_size);
+				TLAB_REAL_END = TLAB_START + alloc_size;
+				TLAB_TEMP_END = TLAB_START + MIN (SCAN_START_SIZE, alloc_size);
 
 				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
-					memset (TLAB_START, 0, tlab_size);
+					memset (TLAB_START, 0, alloc_size);
 
 				/* Allocate from the TLAB */
 				p = (void*)TLAB_NEXT;
