@@ -5518,20 +5518,14 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 }
 
 static ErrorCode
-type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
+type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint8 *p, guint8 *end, Buffer *buf)
 {
-	MonoClass *klass;
-	MonoDomain *domain;
 	MonoClass *nested;
 	MonoType *type;
 	gpointer iter;
 	guint8 b;
 	int err, nnested;
 	char *name;
-
-	klass = decode_typeid (p, &p, end, &domain, &err);
-	if (err)
-		return err;
 
 	switch (command) {
 	case CMD_TYPE_GET_INFO: {
@@ -5829,16 +5823,32 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 }
 
 static ErrorCode
-method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
+type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
-	int err;
+	MonoClass *klass;
+	MonoDomain *old_domain;
 	MonoDomain *domain;
-	MonoMethod *method;
-	MonoMethodHeader *header;
+	int err;
 
-	method = decode_methodid (p, &p, end, &domain, &err);
+	klass = decode_typeid (p, &p, end, &domain, &err);
 	if (err)
 		return err;
+
+	old_domain = mono_domain_get ();
+
+	mono_domain_set (domain, TRUE);
+
+	err = type_commands_internal (command, klass, domain, p, end, buf);
+
+	mono_domain_set (old_domain, TRUE);
+
+	return err;
+}
+
+static ErrorCode
+method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, guint8 *p, guint8 *end, Buffer *buf)
+{
+	MonoMethodHeader *header;
 
 	switch (command) {
 	case CMD_METHOD_GET_NAME: {
@@ -6038,6 +6048,29 @@ method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 
 	return ERR_NONE;
+}
+
+static ErrorCode
+method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
+{
+	int err;
+	MonoDomain *old_domain;
+	MonoDomain *domain;
+	MonoMethod *method;
+
+	method = decode_methodid (p, &p, end, &domain, &err);
+	if (err)
+		return err;
+
+	old_domain = mono_domain_get ();
+
+	mono_domain_set (domain, TRUE);
+
+	err = method_commands_internal (command, method, domain, p, end, buf);
+
+	mono_domain_set (old_domain, TRUE);
+
+	return err;
 }
 
 static ErrorCode
