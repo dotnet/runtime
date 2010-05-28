@@ -2454,41 +2454,54 @@ new_gap (int gap)
 	return gap;
 }
 
-#if 0
-static int
-compare_addr (const void *a, const void *b)
-{
-	return *(const void **)a - *(const void **)b;
-}
-#endif
-
-/* sort the addresses in array in increasing order */
+/* Sort the addresses in array in increasing order.
+ * Done using a by-the book heap sort. Which has decent and stable performance, is pretty cache efficient.
+ */
 static void
 sort_addresses (void **array, int size)
 {
-	/*
-	 * qsort is slower as predicted.
-	 * qsort (array, size, sizeof (gpointer), compare_addr);
-	 * return;
-	 */
-	int gap = size;
-	int swapped, end;
-	while (TRUE) {
-		int i;
-		gap = new_gap (gap);
-		swapped = FALSE;
-		end = size - gap;
-		for (i = 0; i < end; i++) {
-			int j = i + gap;
-			if (array [i] > array [j]) {
-				void* val = array [i];
-				array [i] = array [j];
-				array [j] = val;
-				swapped = TRUE;
-			}
+	int i;
+	void *tmp;
+
+	for (i = 1; i < size; ++i) {
+		int child = i;
+		while (child > 0) {
+			int parent = (child - 1) / 2;
+
+			if (array [parent] >= array [child])
+				break;
+
+			tmp = array [parent];
+			array [parent] = array [child];
+			array [child] = tmp;
+
+			child = parent;
 		}
-		if (gap == 1 && !swapped)
-			break;
+	}
+
+	for (i = size - 1; i > 0; --i) {
+		int end, root;
+		tmp = array [i];
+		array [i] = array [0];
+		array [0] = tmp;
+
+		end = i - 1;
+		root = 0;
+
+		while (root * 2 + 1 <= end) {
+			int child = root * 2 + 1;
+
+			if (child < end && array [child] < array [child + 1])
+				++child;
+			if (array [root] >= array [child])
+				break;
+
+			tmp = array [root];
+			array [root] = array [child];
+			array [child] = tmp;
+
+			root = child;
+		}
 	}
 }
 
