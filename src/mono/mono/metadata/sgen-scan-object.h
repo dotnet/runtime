@@ -24,7 +24,9 @@
  *
  * Scans one object, using the OBJ_XXX macros.  The start of the
  * object must be given in the variable "char* start".  Afterwards,
- * "start" will point to the start of the next object.
+ * "start" will point to the start of the next object, if the scanned
+ * object contained references.  If not, the value of "start" should
+ * be considered undefined after executing this code.
  *
  * Modifiers (automatically undefined):
  *
@@ -53,16 +55,8 @@
 	/* gcc should be smart enough to remove the bounds check, but it isn't:( */
 	desc = vt->desc;
 	switch (desc & 0x7) {
-	case DESC_TYPE_STRING:
-		STRING_SIZE (skip_size, start);
-#define SCAN
-		SCAN_OBJECT_ACTION;
-#undef SCAN
-		start += skip_size;
-		break;
 	case DESC_TYPE_RUN_LENGTH:
 		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
-		g_assert (skip_size);
 #define SCAN OBJ_RUN_LEN_FOREACH_PTR (desc, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
