@@ -169,6 +169,12 @@
     assigned TLABs and if that's more than some percentage of the
     nursery size, reduce the TLAB size.
 
+ *) Explore placing unreachable objects on unused nursery memory.
+	Instead of memset'ng a region to zero, place an int[] covering it.
+	A good place to start is add_nursery_frag. The tricky thing here is
+	placing those objects atomically outside of a collection.
+
+
  */
 #include "config.h"
 #ifdef HAVE_SGEN_GC
@@ -2826,6 +2832,7 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 		fragment_total += frag_size;
 	} else {
 		/* Clear unused fragments, pinning depends on this */
+		/*TODO place an int[] here instead of the memset if size justify it*/
 		memset (frag_start, 0, frag_size);
 	}
 }
