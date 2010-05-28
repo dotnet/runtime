@@ -10702,7 +10702,7 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 	case MONO_TYPE_STRING:
 		switch (string_encoding) {
 		case MONO_NATIVE_LPWSTR:
-			return mono_string_to_utf16 ((MonoString*)o);
+			return mono_marshal_string_to_utf16_copy ((MonoString*)o);
 			break;
 		case MONO_NATIVE_LPSTR:
 			return mono_string_to_lpstr ((MonoString*)o);
