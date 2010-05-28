@@ -1508,8 +1508,8 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		}	\
 	} while (0)
 
-#include "sgen-major-copying.c"
-//#include "sgen-marksweep.c"
+//#include "sgen-major-copying.c"
+#include "sgen-marksweep.c"
 
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
