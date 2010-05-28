@@ -1,3 +1,7 @@
+2010-05-28  Robert Jordan  <robertj@gmx.net>
+
+	* configure.in: Fix mcs_topdir* for the Windows build.
+
 2010-05-28  Mark Probst  <mark.probst@gmail.com>
 
 	* tools/sgen/sgen-grep-binprot.c (main): Use strtoul(), not
