@@ -7190,6 +7190,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_STORE_MEMBASE (cfg, store, OP_STORE_MEMBASE_REG, sp [0]->dreg, 0, dreg);
 				store->flags |= ins_flag;
 				MONO_ADD_INS (cfg->cbb, store);
+
+#if HAVE_WRITE_BARRIERS
+				if (cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER) {
+					MonoInst *dummy_use;
+					MonoMethod *write_barrier = mono_gc_get_write_barrier ();
+					mono_emit_method_call (cfg, write_barrier, sp, NULL);
+					EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
+				}
+#endif
 			} else {
 				mini_emit_stobj (cfg, sp [0], sp [1], klass, FALSE);
 			}
