@@ -8301,13 +8301,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: should check item at sp [1] is compatible with the type of the store. */
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0, sp [1]->dreg);
 #if HAVE_WRITE_BARRIERS
-			if (cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && (generic_class_is_reference_type (cfg, klass) || klass->has_references)) {
+			if (cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER &&
+					generic_class_is_reference_type (cfg, klass)) {
 				MonoInst *dummy_use;
 				/* insert call to write barrier */
 				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 				mono_emit_method_call (cfg, write_barrier, sp, NULL);
-				if (generic_class_is_reference_type (cfg, klass)) /*value types will be on stack, so no need for dummy use*/
-					EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
+				EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
 			}
 #endif
 			ins_flag = 0;
