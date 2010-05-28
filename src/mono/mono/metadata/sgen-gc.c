@@ -1025,8 +1025,8 @@ static void clear_remsets (void);
 static void clear_tlabs (void);
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 static void scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data);
-static char* scan_object (char *start);
-static char* major_scan_object (char *start);
+static void scan_object (char *start);
+static void major_scan_object (char *start);
 static void* copy_object_no_checks (void *obj);
 static void copy_object (void **obj_slot);
 static void* get_chunk_freelist (PinnedChunk *chunk, int slot);
@@ -1581,27 +1581,12 @@ check_reference_for_xdomain (gpointer *ptr, char *obj, MonoDomain *domain)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	check_reference_for_xdomain ((ptr), (obj), domain)
 
-static char*
-scan_object_for_xdomain_refs (char *start)
+static void
+scan_object_for_xdomain_refs (char *start, mword size, void *data)
 {
 	MonoDomain *domain = ((MonoObject*)start)->vtable->domain;
 
 	#include "sgen-scan-object.h"
-
-	return start;
-}
-
-static void
-scan_area_for_xdomain_refs (char *start, char *end)
-{
-	while (start < end) {
-		if (!*(void**)start) {
-			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
-			continue;
-		}
-
-		start = scan_object_for_xdomain_refs (start);
-	}
 }
 
 #undef HANDLE_PTR
@@ -1612,12 +1597,10 @@ scan_area_for_xdomain_refs (char *start, char *end)
 	}								\
 	} while (0)
 
-static char*
+static void
 scan_object_for_specific_ref (char *start, MonoObject *key)
 {
 	#include "sgen-scan-object.h"
-
-	return start;
 }
 
 static void
@@ -1864,22 +1847,16 @@ scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 }
 
 static void
-scan_pinned_object_for_xdomain_refs_callback (char *obj, size_t size, gpointer dummy)
-{
-	scan_object_for_xdomain_refs (obj);
-}
-
-static void
 check_for_xdomain_refs (void)
 {
 	LOSObject *bigobj;
 
-	scan_area_for_xdomain_refs (nursery_section->data, nursery_section->end_data);
+	scan_area_with_callback (nursery_section->data, nursery_section->end_data, scan_object_for_xdomain_refs, NULL);
 
-	major_iterate_objects (TRUE, TRUE, scan_pinned_object_for_xdomain_refs_callback, NULL);
+	major_iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		scan_object_for_xdomain_refs (bigobj->data);
+		scan_object_for_xdomain_refs (bigobj->data, bigobj->size, NULL);
 }
 
 static gboolean
@@ -2247,16 +2224,13 @@ copy_object (void **obj_slot)
  * Scan the object pointed to by @start for references to
  * other objects between @from_start and @from_end and copy
  * them to the gray_objects area.
- * Returns a pointer to the end of the object.
  */
-static char*
+static void
 scan_object (char *start)
 {
 #include "sgen-scan-object.h"
 
 	HEAVY_STAT (++stat_scan_object_called_nursery);
-
-	return start;
 }
 
 /*
@@ -2310,14 +2284,12 @@ scan_vtype (char *start, mword desc, char* from_start, char* from_end)
 		}	\
 	} while (0)
 
-static char*
+static void
 major_scan_object (char *start)
 {
 #include "sgen-scan-object.h"
 
 	HEAVY_STAT (++stat_scan_object_called_major);
-
-	return start;
 }
 
 /*
@@ -6447,29 +6419,6 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 	UNLOCK_GC;
 }
 
-static char*
-find_object_for_ptr_in_area (char *ptr, char *start, char *end)
-{
-	while (start < end) {
-		char *old_start;
-
-		if (!*(void**)start) {
-			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
-			continue;
-		}
-
-		old_start = start;
-
-		#define SCAN_OBJECT_NOSCAN
-		#include "sgen-scan-object.h"
-
-		if (ptr >= old_start && ptr < start)
-			return old_start;
-	}
-
-	return NULL;
-}
-
 static char *found_obj;
 
 static void
@@ -6488,8 +6437,13 @@ find_object_for_ptr (char *ptr)
 {
 	LOSObject *bigobj;
 
-	if (ptr >= nursery_section->data && ptr < nursery_section->end_data)
-		return find_object_for_ptr_in_area (ptr, nursery_section->data, nursery_section->end_data);
+	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
+		found_obj = NULL;
+		scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+				(IterateObjectCallbackFunc)find_object_for_ptr_callback, ptr);
+		if (found_obj)
+			return found_obj;
+	}
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		if (ptr >= bigobj->data && ptr < bigobj->data + bigobj->size)
@@ -6952,15 +6906,13 @@ check_major_refs (void)
  *   Perform consistency check on an object. Currently we only check that the
  * reference fields are valid.
  */
-char*
+void
 check_object (char *start)
 {
 	if (!start)
-		return NULL;
+		return;
 
 #include "sgen-scan-object.h"
-
-	return start;
 }
 
 /*
