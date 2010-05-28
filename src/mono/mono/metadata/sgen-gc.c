@@ -1040,6 +1040,7 @@ static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gb
 
 void describe_ptr (char *ptr);
 static void check_consistency (void);
+static void check_major_refs (void);
 static void check_section_scan_starts (GCMemSection *section);
 static void check_scan_starts (void);
 static void check_for_xdomain_refs (void);
@@ -3358,6 +3359,9 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	time_minor_fragment_creation += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %zd bytes available\n", TV_ELAPSED (atv, btv), fragment_total));
+
+	if (consistency_check_at_minor_collection)
+		check_major_refs ();
 
 	major_finish_nursery_collection ();
 
@@ -6887,6 +6891,8 @@ check_consistency_callback (char *start, size_t size, void *dummy)
 static void
 check_consistency (void)
 {
+	LOSObject *bigobj;
+
 	// Need to add more checks
 
 	missing_remsets = FALSE;
@@ -6896,12 +6902,40 @@ check_consistency (void)
 	// Check that oldspace->newspace pointers are registered with the collector
 	major_iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		check_consistency_callback (bigobj->data, bigobj->size, NULL);
+
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 
 #ifdef BINARY_PROTOCOL
 	if (!binary_protocol_file)
 #endif
 		g_assert (!missing_remsets);
+}
+
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {					\
+		if (*(ptr))						\
+			g_assert (LOAD_VTABLE (*(ptr)));		\
+	} while (0)
+
+static void
+check_major_refs_callback (char *start, size_t size, void *dummy)
+{
+#define SCAN_OBJECT_ACTION
+#include "sgen-scan-object.h"
+}
+
+static void
+check_major_refs (void)
+{
+	LOSObject *bigobj;
+
+	major_iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
+
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		check_major_refs_callback (bigobj->data, bigobj->size, NULL);
 }
 
 /* Check that the reference is valid */
@@ -7253,6 +7287,7 @@ mono_gc_base_init (void)
 				collect_before_allocs = TRUE;
 			} else if (!strcmp (opt, "check-at-minor-collections")) {
 				consistency_check_at_minor_collection = TRUE;
+				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "xdomain-checks")) {
 				xdomain_checks = TRUE;
 			} else if (!strcmp (opt, "clear-at-gc")) {
