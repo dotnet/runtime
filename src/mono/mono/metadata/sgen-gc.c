@@ -671,18 +671,18 @@ static int num_major_gcs = 0;
 
 /* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
 #define DEFAULT_NURSERY_SIZE (default_nursery_size)
-static int default_nursery_size = (1 << 20);
+static int default_nursery_size = (1 << 22);
 #ifdef ALIGN_NURSERY
 /* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
 #define DEFAULT_NURSERY_BITS (default_nursery_bits)
-static int default_nursery_bits = 20;
+static int default_nursery_bits = 22;
 #endif
 
 #else
 
-#define DEFAULT_NURSERY_SIZE (1024*512*2)
+#define DEFAULT_NURSERY_SIZE (4*1024*1024)
 #ifdef ALIGN_NURSERY
-#define DEFAULT_NURSERY_BITS 20
+#define DEFAULT_NURSERY_BITS 22
 #endif
 
 #endif
