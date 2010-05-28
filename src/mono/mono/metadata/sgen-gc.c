@@ -1101,6 +1101,12 @@ enum {
 	 * We don't use 0 so that 0 isn't a valid GC descriptor.  No
 	 * deep reason for this other than to be able to identify a
 	 * non-inited descriptor for debugging.
+	 *
+	 * If an object contains no references, its GC descriptor is
+	 * always DESC_TYPE_RUN_LENGTH, without a size, no exceptions.
+	 * This is so that we can quickly check for that in
+	 * copy_object_no_checks(), without having to fetch the
+	 * object's class.
 	 */
 	DESC_TYPE_RUN_LENGTH = 1, /* 15 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
 	DESC_TYPE_SMALL_BITMAP, /* 15 bits aligned byte size | 16-48 bit bitmap */
@@ -1281,6 +1287,9 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 			num_set++;
 		}
 	}
+	/* See comment at the definition of DESC_TYPE_RUN_LENGTH. */
+	if (first_set < 0)
+		return DESC_TYPE_RUN_LENGTH;
 	if (elem_size <= MAX_ELEMENT_SIZE) {
 		desc |= elem_size << VECTOR_ELSIZE_SHIFT;
 		if (!num_set) {
@@ -2091,7 +2100,7 @@ copy_object_no_checks (void *obj)
 	mword objsize;
 	char *destination;
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
-	gboolean has_references = vt->klass->has_references;
+	gboolean has_references = vt->gc_descr != DESC_TYPE_RUN_LENGTH;
 
 	objsize = safe_object_get_size ((MonoObject*)obj);
 	objsize += ALLOC_ALIGN - 1;
