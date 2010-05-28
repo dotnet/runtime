@@ -1,3 +1,8 @@
+2010-05-28  Mark Probst  <mark.probst@gmail.com>
+
+	* tools/sgen/sgen-grep-binprot.c (main): Use strtoul(), not
+	strtol(), to parse addresses from the command line.
+
 2010-05-20  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in: drop again the pkg.m4 dependency and for eglib
