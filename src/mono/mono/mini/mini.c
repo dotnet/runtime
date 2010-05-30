@@ -3599,18 +3599,18 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				ei->data.handler_end = cfg->native_code + end_offset;
 			}
 		}
+	}
 
-		if (G_UNLIKELY (cfg->verbose_level >= 4)) {
-			for (i = 0; i < jinfo->num_clauses; i++) {
-				MonoJitExceptionInfo *ei = &jinfo->clauses [i];
-				int start = (guint8*)ei->try_start - cfg->native_code;
-				int end = (guint8*)ei->try_end - cfg->native_code;
-				int handler = (guint8*)ei->handler_start - cfg->native_code;
+	if (G_UNLIKELY (cfg->verbose_level >= 4)) {
+		int i;
+		for (i = 0; i < jinfo->num_clauses; i++) {
+			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
+			int start = (guint8*)ei->try_start - cfg->native_code;
+			int end = (guint8*)ei->try_end - cfg->native_code;
+			int handler = (guint8*)ei->handler_start - cfg->native_code;
 
-				printf ("JitInfo EH clause %d flags %x try %x-%x handler %x\n", i, ei->flags, start, end, handler);
-			}
+			printf ("JitInfo EH clause %d flags %x try %x-%x handler %x\n", i, ei->flags, start, end, handler);
 		}
-
 	}
 
 	/* 
