@@ -3854,6 +3854,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		/*
 		 * FIXME: LLLVM 2.6/SVN no longer seems to generate correct exception info
 		 * for JITted code.
+		 * Also, the corlib exception throwing code in emit_cond_system_exception ()
+		 * currently does not pass the correct offset.
 		 */
 		cfg->exception_message = g_strdup ("clauses");
 		cfg->disable_llvm = TRUE;
