@@ -990,6 +990,28 @@ emit_cond_throw_pos (EmitContext *ctx)
 {
 }
 
+static int
+get_handler_clause (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+	MonoMethodHeader *header = cfg->header;
+	MonoExceptionClause *clause;
+	int i;
+
+	/* Directly */
+	if (bb->region != -1 && MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY))
+		return (bb->region >> 8) - 1;
+
+	/* Indirectly */
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+			   
+		if (MONO_OFFSET_IN_CLAUSE (clause, bb->real_offset) && clause->flags == MONO_EXCEPTION_CLAUSE_NONE)
+			return i;
+	}
+
+	return -1;
+}
+
 /*
  * emit_call:
  *
@@ -1002,12 +1024,12 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 	MonoCompile *cfg = ctx->cfg;
 	LLVMValueRef lcall;
 	LLVMBuilderRef builder = *builder_ref;
+	int clause_index;
 
-	// FIXME: Nested clauses
-	if (bb->region != -1 && MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_TRY)) {
+	clause_index = get_handler_clause (cfg, bb);
+
+	if (clause_index != -1) {
 		MonoMethodHeader *header = cfg->header;
-		// FIXME: Add a macro for this
-		int clause_index = (bb->region >> 8) - 1;
 		MonoExceptionClause *ec = &header->clauses [clause_index];
 		MonoBasicBlock *tblock;
 		LLVMBasicBlockRef ex_bb, noex_bb;
