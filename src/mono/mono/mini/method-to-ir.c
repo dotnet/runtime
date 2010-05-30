@@ -9667,6 +9667,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, ins, OP_RETHROW);
 				ins->sreg1 = load->dreg;
 				MONO_ADD_INS (bblock, ins);
+
+				MONO_INST_NEW (cfg, ins, OP_NOT_REACHED);
+				MONO_ADD_INS (bblock, ins);
+
 				sp = stack_start;
 				link_bblock (cfg, bblock, end_bblock);
 				start_new_bblock = 1;

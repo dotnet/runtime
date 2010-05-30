@@ -27,7 +27,7 @@
   */
 typedef struct {
 	LLVMModuleRef module;
-	LLVMValueRef throw, throw_corlib_exception;
+	LLVMValueRef throw, rethrow, throw_corlib_exception;
 	GHashTable *llvm_types;
 	LLVMValueRef got_var;
 	const char *got_symbol;
@@ -3368,35 +3368,44 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				if (bb->region != -1)
 					LLVM_FAILURE (ctx, "implicit-exception");
 				break;
-			case OP_THROW: {
+			case OP_THROW:
+			case OP_RETHROW: {
 				MonoMethodSignature *throw_sig;
 				LLVMValueRef callee, arg;
+				gboolean rethrow = (ins->opcode == OP_RETHROW);
+				const char *icall_name;
+				
+				callee = rethrow ? ctx->lmodule->rethrow : ctx->lmodule->throw;
+				icall_name = rethrow ? "mono_arch_rethrow_exception" : "mono_arch_throw_exception";
 
-				if (!ctx->lmodule->throw) {
+				if (!callee) {
 					throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 					throw_sig->ret = &mono_defaults.void_class->byval_arg;
 					throw_sig->params [0] = &mono_defaults.object_class->byval_arg;
 					if (cfg->compile_aot) {
-						callee = get_plt_entry (ctx, sig_to_llvm_sig (ctx, throw_sig, NULL), MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception");
+						callee = get_plt_entry (ctx, sig_to_llvm_sig (ctx, throw_sig, NULL), MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
 					} else {
-						callee = LLVMAddFunction (module, "mono_arch_throw_exception", sig_to_llvm_sig (ctx, throw_sig, NULL));
+						callee = LLVMAddFunction (module, icall_name, sig_to_llvm_sig (ctx, throw_sig, NULL));
 
 #ifdef TARGET_X86
 						/* 
 						 * LLVM doesn't push the exception argument, so we need a different
 						 * trampoline.
 						 */
-						LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_llvm_throw_exception"));
+						LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, rethrow ? "mono_arch_llvm_rethrow_exception" : "mono_arch_llvm_throw_exception"));
 #else
-						LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception"));
+						LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name));
 #endif
 					}
 
 					mono_memory_barrier ();
-					ctx->lmodule->throw = callee;
+					if (rethrow)
+						ctx->lmodule->rethrow = callee;
+					else
+						ctx->lmodule->throw = callee;
 				}
 				arg = convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, &mono_defaults.object_class->byval_arg));
-				emit_call (ctx, bb, &builder, ctx->lmodule->throw, &arg, 1);
+				emit_call (ctx, bb, &builder, callee, &arg, 1);
 				break;
 			}
 			case OP_CALL_HANDLER: {

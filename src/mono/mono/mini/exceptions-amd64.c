@@ -448,7 +448,8 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 	g_assert ((code - start) < 64);
 
-	mono_save_trampoline_xdebug_info ("throw_exception_trampoline", start, code - start, unwind_ops);
+	mono_save_trampoline_xdebug_info (corlib ? "throw_corlib_exception_trampoline"
+									  : "throw_exception_trampoline", start, code - start, unwind_ops);
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_exception" : "throw_exception")), start, code - start, ji, unwind_ops);

@@ -624,11 +624,12 @@ mono_arch_exceptions_init (void)
 
 	/* LLVM needs different throw trampolines */
 	tramp = get_throw_exception ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, NULL, FALSE);
-
 	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_exception", NULL, TRUE);
 
-	tramp = get_throw_exception ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, NULL, FALSE);
+	tramp = get_throw_exception ("llvm_rethrow_exception_trampoline", FALSE, TRUE, FALSE, NULL, FALSE);
+	mono_register_jit_icall (tramp, "mono_arch_llvm_rethrow_exception", NULL, TRUE);
 
+	tramp = get_throw_exception ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, NULL, FALSE);
 	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
 
 	signal_exception_trampoline = mono_x86_get_signal_exception_trampoline (NULL, FALSE);
