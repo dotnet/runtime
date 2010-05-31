@@ -281,11 +281,15 @@ namespace Mono.Linker.Steps {
 
 			string type_name = (string) value;
 
-			TypeDefinition type = _context.GetType (slotType.Module, type_name);
-			if (type == null)
-				type = _context.GetType (type_name);
+			try {
+				var type = TypeParser.ParseType (slotType.Module, type_name);
+				if (type == null)
+					return;
 
-			MarkType (type);
+				MarkType (type);
+			} catch {
+				return;
+			}
 		}
 
 		protected static bool CheckProcessed (IAnnotationProvider provider)
