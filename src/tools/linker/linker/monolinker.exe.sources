@@ -2,6 +2,7 @@
 ./Mono.Linker/AssemblyInfo.cs
 ./Mono.Linker/AssemblyResolver.cs
 ./Mono.Linker/TypePreserve.cs
+./Mono.Linker/TypeParser.cs
 ./Mono.Linker/Annotations.cs
 ./Mono.Linker/LinkContext.cs
 ./Mono.Linker/AssemblyAction.cs
