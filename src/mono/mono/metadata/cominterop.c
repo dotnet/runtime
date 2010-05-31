@@ -2022,7 +2022,7 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 
 			cominterop_setup_marshal_context (&m, adjust_method);
 			m.mb = mb;
-			mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, NULL);
+			mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0);
 			mono_loader_lock ();
 			mono_cominterop_lock ();
 			wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
