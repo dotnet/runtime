@@ -1570,7 +1570,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	}
 
 	g_assert (code >= amodule->eh_frame_hdr + table [(pos * 2)]);
-	if (pos < fde_count)
+	if (pos + 1 < fde_count)
 		g_assert (code < amodule->eh_frame_hdr + table [(pos * 2) + 2]);
 
 	eh_frame = amodule->eh_frame_hdr + table [(pos * 2) + 1];

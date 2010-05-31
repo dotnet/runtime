@@ -773,6 +773,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	gint32 i, cie_aug_len, buf_len;
 	char *cie_aug_str;
 	guint8 *buf;
+	gboolean has_fde_augmentation = FALSE;
 
 	/* 
 	 * http://refspecs.freestandards.org/LSB_3.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
@@ -810,6 +811,8 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 
 		g_assert (!strcmp (cie_aug_str, "zR") || !strcmp (cie_aug_str, "zPLR"));
 
+		has_fde_augmentation = TRUE;
+
 		/* Check that the augmention is what we expect */
 		if (!strcmp (cie_aug_str, "zPLR")) {
 			guint8 *cie_aug = p;
@@ -843,9 +846,13 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	p += 4;
 	pc_range = *(guint32*)p;
 	p += 4;
-	aug_len = decode_uleb128 (p, &p);
-	fde_aug = p;
-	p += aug_len;
+	if (has_fde_augmentation) {
+		aug_len = decode_uleb128 (p, &p);
+		fde_aug = p;
+		p += aug_len;
+	} else {
+		aug_len = 0;
+	}
 	fde_cfi = p;
 	fde_data_len = fde + 4 + fde_len - p;
 
