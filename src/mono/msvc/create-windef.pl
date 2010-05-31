@@ -5,7 +5,7 @@ use strict;
 my $outfile = shift || usage ();
 my @symbols = ();
 my %excludes = ();
-my $cmd = "nm -D ../mono/mini/.libs/libmono.so";
+my $cmd = "nm -D ../mono/mini/.libs/libmono-2.0.so";
 
 @excludes {qw(
 	mono_class_setup_vtable_general_new mono_debugger_init mono_debugger_main

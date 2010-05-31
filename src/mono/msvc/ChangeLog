@@ -1,3 +1,9 @@
+2010-05-31  Robert Jordan  <robertj@gmx.net>
+
+	* mono.def: Regenerate with create-windef.pl.
+
+	* create-windef.pl: Track 2.0 API changes.
+
 2010-03-16  Jb Evain  <jbevain@novell.com>
 
 	* scripts/monowrap.cs, scripts/genproj.cs: rename
