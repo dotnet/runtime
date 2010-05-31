@@ -1566,7 +1566,8 @@ public class Tests {
 	delegate void CalliDel (IntPtr a, int[] f);
 
 	public static int test_0_calli_dynamic () {
-		IntPtr func = mono_test_marshal_lookup_symbol ("mono_test_marshal_inout_array");
+		/* we need the cdecl version because the icall convention demands it under Windows */
+		IntPtr func = mono_test_marshal_lookup_symbol ("mono_test_marshal_inout_array_cdecl");
 
 		DynamicMethod dm = new DynamicMethod ("calli", typeof (void), new Type [] { typeof (IntPtr), typeof (int[]) });
 

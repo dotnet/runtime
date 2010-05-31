@@ -419,6 +419,12 @@ mono_test_marshal_inout_array (int *a1)
 	return sum;
 }
 
+LIBTEST_API int /* cdecl */
+mono_test_marshal_inout_array_cdecl (int *a1)
+{
+	return mono_test_marshal_inout_array (a1);
+}
+
 LIBTEST_API int STDCALL  
 mono_test_marshal_out_array (int *a1)
 {
