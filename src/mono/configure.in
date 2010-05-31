@@ -478,10 +478,14 @@ mcs_topdir=$(cd "$srcdir/$mcsdir" && pwd)
 mcs_topdir_from_srcdir='$(top_builddir)'/$mcsdir
 fi
 
-# Convert paths to Windows syntax.
+# Convert mcs_topdir* paths to Windows syntax.
 if test x$cross_compiling$host_win32 = xnoyes; then
-  mcs_topdir=$(cygpath -m -a $mcs_topdir)
-  mcs_topdir_from_srcdir=$(cygpath -m -a $mcs_topdir_from_srcdir)
+  mcs_topdir=$(cygpath -m $mcs_topdir)
+  case $mcs_topdir_from_srcdir in
+    /cygdrive/*)
+	mcs_topdir_from_srcdir=$(cygpath -m $mcs_topdir_from_srcdir)
+	;;
+  esac
 fi
 
 ## Maybe should also disable if mcsdir is invalid.  Let's punt the issue for now.

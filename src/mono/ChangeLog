@@ -1,3 +1,9 @@
+2010-05-31  Robert Jordan  <robertj@gmx.net>
+
+	* configure.in: Windows: mcs_topdir_from_srcdir must not be
+	converted to a Win32 path unless it's already a cygwin path.
+	Fixes --with-mcs-docs for in-tree mcs builds.
+
 2010-05-28  Robert Jordan  <robertj@gmx.net>
 
 	* configure.in: Fix mcs_topdir* for the Windows build.
