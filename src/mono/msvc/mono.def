@@ -192,7 +192,6 @@ mono_debug_symfile_lookup_locals
 mono_debug_symfile_lookup_location
 mono_debug_symfile_lookup_method
 mono_debug_using_mono_debugger
-mono_debugger_abort_runtime_invoke
 mono_debugger_breakpoint_callback
 mono_debugger_call_exception_handler
 mono_debugger_check_breakpoints
@@ -216,7 +215,6 @@ mono_debugger_remove_breakpoint
 mono_debugger_remove_class_init_callback
 mono_debugger_remove_method_breakpoint
 mono_debugger_run_finally
-mono_debugger_runtime_invoke
 mono_debugger_thread_cleanup
 mono_debugger_thread_created
 mono_debugger_trampoline_compiled
@@ -297,7 +295,6 @@ mono_file_map_fd
 mono_file_map_open
 mono_file_map_size
 mono_file_unmap
-mono_free
 mono_free_bstr
 mono_free_method
 mono_free_verify_list

@@ -1,5 +1,7 @@
 2010-05-31  Robert Jordan  <robertj@gmx.net>
 
+	* mono.def : Remove unimplemented symbols.
+
 	* mono.def: Regenerate with create-windef.pl.
 
 	* create-windef.pl: Track 2.0 API changes.
