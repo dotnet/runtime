@@ -182,8 +182,8 @@ terminal_get_dimensions (void)
 	if (ioctl (STDIN_FILENO, TIOCGWINSZ, &ws) == 0){
 		ret = (ws.ws_col << 16) | ws.ws_row;
 		errno = save_errno;
-	}
-
+		return ret;
+	} 
 	return -1;
 }
 #else
