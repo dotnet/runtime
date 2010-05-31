@@ -1871,6 +1871,26 @@ compare_patches (gconstpointer a, gconstpointer b)
 		return 0;
 }
 
+static G_GNUC_UNUSED char*
+patch_to_string (MonoJumpInfo *patch_info)
+{
+	GString *str;
+
+	str = g_string_new ("");
+
+	g_string_append_printf (str, "%s(", get_patch_name (patch_info->type));
+
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_VTABLE:
+		mono_type_get_desc (str, &patch_info->data.klass->byval_arg, TRUE);
+		break;
+	default:
+		break;
+	}
+	g_string_append_printf (str, ")");
+	return g_string_free (str, FALSE);
+}
+
 /*
  * is_plt_patch:
  *
