@@ -20,7 +20,6 @@
 #ifdef HAVE_SYS_IOCTL_H
 #  include <sys/ioctl.h>
 #endif
-#include <sys/poll.h>
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>     /* defines FIONBIO and FIONREAD */
 #endif
@@ -39,6 +38,7 @@
 #include <mono/io-layer/socket-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/socket-wrappers.h>
+#include <mono/utils/mono-poll.h>
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -311,7 +311,7 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 	}
 	
 	if (connect (fd, serv_addr, addrlen) == -1) {
-		struct pollfd fds;
+		mono_pollfd fds;
 		int so_error;
 		socklen_t len;
 		
@@ -352,7 +352,7 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 
 		fds.fd = fd;
 		fds.events = POLLOUT;
-		while (poll (&fds, 1, -1) == -1 &&
+		while (mono_poll (&fds, 1, -1) == -1 &&
 		       !_wapi_thread_cur_apc_pending ()) {
 			if (errno != EINTR) {
 				errnum = errno_to_WSA (errno, __func__);
