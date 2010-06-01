@@ -3850,7 +3850,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	if (TRUE || (header->clauses && !LLVM_CHECK_VERSION (2, 8))) {
+	if (header->num_clauses > 1 || !LLVM_CHECK_VERSION (2, 8)) {
 		/*
 		 * FIXME: LLLVM 2.6 no longer seems to generate correct exception info
 		 * for JITted code.
