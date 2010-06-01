@@ -3110,22 +3110,6 @@ breakpoints_init (void)
 	bp_locs = g_hash_table_new (NULL, NULL);
 }	
 
-static void
-breakpoints_cleanup (void)
-{
-	int i;
-
-	mono_loader_lock ();
-
-	for (i = 0; i < breakpoints->len; ++i)
-		g_free (g_ptr_array_index (breakpoints, i));
-
-	g_ptr_array_free (breakpoints, TRUE);
-	g_hash_table_destroy (bp_locs);
-
-	mono_loader_unlock ();
-}
-
 /*
  * insert_breakpoint:
  *
@@ -3368,6 +3352,37 @@ clear_breakpoint (MonoBreakpoint *bp)
 
 	g_ptr_array_free (bp->children, TRUE);
 	g_free (bp);
+}
+
+static void
+breakpoints_cleanup (void)
+{
+	int i;
+
+	mono_loader_lock ();
+	i = 0;
+	while (i < event_requests->len) {
+		EventRequest *req = g_ptr_array_index (event_requests, i);
+
+		if (req->event_kind == EVENT_KIND_BREAKPOINT) {
+			clear_breakpoint (req->info);
+			g_ptr_array_remove_index_fast (event_requests, i);
+			g_free (req);
+		} else {
+			i ++;
+		}
+	}
+
+	for (i = 0; i < breakpoints->len; ++i)
+		g_free (g_ptr_array_index (breakpoints, i));
+
+	g_ptr_array_free (breakpoints, TRUE);
+	g_hash_table_destroy (bp_locs);
+
+	breakpoints = NULL;
+	bp_locs = NULL;
+
+	mono_loader_unlock ();
 }
 
 static gboolean
