@@ -72,9 +72,13 @@ typedef gint64 mgreg_t;
 #define COMPILE_SOFT_FLOAT(cfg) 0
 #endif
 
+#ifdef ENABLE_LLVM
 #define LLVM_CHECK_VERSION(major,minor) \
 	((LLVM_MAJOR_VERSION > (major)) ||									\
 	 ((LLVM_MAJOR_VERSION == (major)) && (LLVM_MINOR_VERSION >= (minor))))
+#else
+#define LLVM_CHECK_VERSION(major,minor) 0
+#endif
 
 #define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
 
