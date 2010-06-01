@@ -1071,6 +1071,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
  * emit_cond_system_exception:
  *
  *   Emit code to throw the exception EXC_TYPE if the condition CMP is false.
+ * Might set the ctx exception.
  */
 static void
 emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *exc_type, LLVMValueRef cmp)
@@ -1127,11 +1128,14 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 #else
 	args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token, FALSE);
 #endif
+
 	/*
-	 * FIXME: The offset is 0, this is not a problem for exception handling
-	 * in general, because we don't llvm compile methods with handlers, its only
-	 * a problem for line numbers in stack traces.
+	 * FIXME: The offset is 0, this is only a problem if the code is inside a clause,
+	 * otherwise only the line numbers in stack traces are incorrect.
 	 */
+	if (bb->region != -1)
+		LLVM_FAILURE (ctx, "system-ex-in-region");
+
 	args [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	emit_call (ctx, bb, &builder, ctx->lmodule->throw_corlib_exception, args, 2);
 
@@ -1143,6 +1147,10 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	ctx->bblocks [bb->block_num].end_bblock = noex_bb;
 
 	ctx->ex_index ++;
+	return;
+
+ FAILURE:
+	return;
 }
 
 /*
@@ -2007,6 +2015,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				} else if (MONO_IS_COND_EXC (ins->next)) {
 					//emit_cond_throw_pos (ctx);
 					emit_cond_system_exception (ctx, bb, ins->next->inst_p1, cmp);
+					CHECK_FAILURE (ctx);
 					builder = ctx->builder;
 				} else {
 					LLVM_FAILURE (ctx, "next");
@@ -3085,6 +3094,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildExtractValue (builder, val, 0, dname);
 				ovf = LLVMBuildExtractValue (builder, val, 1, "");
 				emit_cond_system_exception (ctx, bb, "OverflowException", ovf);
+				CHECK_FAILURE (ctx);
 				builder = ctx->builder;
 				break;
 			}
