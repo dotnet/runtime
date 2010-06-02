@@ -25,6 +25,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/monobitset.h>
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
@@ -5797,10 +5798,40 @@ verify_valuetype_layout (MonoClass *class)
 }
 
 static gboolean
+recursive_mark_constraint_args (MonoBitSet *used_args, MonoGenericContainer *gc, MonoType *type)
+{
+	int idx;
+	MonoClass **constraints;
+	MonoGenericParamInfo *param_info;
+
+	g_assert (mono_type_is_generic_argument (type));
+
+	idx = mono_type_get_generic_param_num (type);
+	if (mono_bitset_test_fast (used_args, idx))
+		return FALSE;
+
+	mono_bitset_set_fast (used_args, idx);
+	param_info = mono_generic_container_get_param_info (gc, idx);
+
+	if (!param_info->constraints)
+		return TRUE;
+
+	for (constraints = param_info->constraints; *constraints; ++constraints) {
+		MonoClass *ctr = *constraints;
+		MonoType *constraint_type = &ctr->byval_arg;
+
+		if (mono_type_is_generic_argument (constraint_type) && !recursive_mark_constraint_args (used_args, gc, constraint_type))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean
 verify_generic_parameters (MonoClass *class)
 {
 	int i;
 	MonoGenericContainer *gc = class->generic_container;
+	MonoBitSet *used_args = mono_bitset_new (gc->type_argc, 0);
 
 	for (i = 0; i < gc->type_argc; ++i) {
 		MonoGenericParamInfo *param_info = mono_generic_container_get_param_info (gc, i);
@@ -5809,14 +5840,26 @@ verify_generic_parameters (MonoClass *class)
 		if (!param_info->constraints)
 			continue;
 
+		mono_bitset_clear_all (used_args);
+		mono_bitset_set_fast (used_args, i);
+
 		for (constraints = param_info->constraints; *constraints; ++constraints) {
 			MonoClass *ctr = *constraints;
+			MonoType *constraint_type = &ctr->byval_arg;
 
-			if (!mono_type_is_valid_type_in_context (&ctr->byval_arg, &gc->context))
-				return FALSE;
+			if (!mono_type_is_valid_type_in_context (constraint_type, &gc->context))
+				goto fail;
+
+			if (mono_type_is_generic_argument (constraint_type) && !recursive_mark_constraint_args (used_args, gc, constraint_type))
+				goto fail;
 		}
 	}
+	mono_bitset_free (used_args);
 	return TRUE;
+
+fail:
+	mono_bitset_free (used_args);
+	return FALSE;
 }
 
 /*
