@@ -1266,8 +1266,18 @@ shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *targ
 	gboolean copy_result;
 	
 	strcpy (src + srclen - tail_len, extension);
-	if (!g_file_test (src, G_FILE_TEST_IS_REGULAR))
+
+	if (IS_PORTABILITY_CASE) {
+		gchar *file = mono_portability_find_file (src, TRUE);
+
+		if (file == NULL)
+			return TRUE;
+
+		g_free (file);
+	} else if (!g_file_test (src, G_FILE_TEST_IS_REGULAR)) {
 		return TRUE;
+	}
+
 	orig = g_utf8_to_utf16 (src, strlen (src), NULL, NULL, NULL);
 
 	strcpy (target + targetlen - tail_len, extension);
