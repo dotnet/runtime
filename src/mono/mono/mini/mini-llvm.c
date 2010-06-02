@@ -74,6 +74,7 @@ typedef struct {
 	GHashTable *region_to_handler;
 	LLVMBuilderRef alloca_builder;
 	LLVMValueRef last_alloca;
+	LLVMValueRef rgctx_arg;
 
 	char temp_name [32];
 } EmitContext;
@@ -850,6 +851,14 @@ sig_to_llvm_sig (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *cinfo
 
 	param_types = g_new0 (LLVMTypeRef, (sig->param_count * 2) + 2);
 	pindex = 0;
+	if (cinfo && cinfo->rgctx_arg) {
+		param_types [pindex] = IntPtrType ();
+		pindex ++;
+	}
+	if (cinfo && cinfo->imt_arg) {
+		param_types [pindex] = IntPtrType ();
+		pindex ++;
+	}
 	if (vretaddr) {
 		ret_type = LLVMVoidType ();
 		param_types [pindex ++] = IntPtrType ();
@@ -1370,6 +1379,45 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder, int *pindexes)
 		if (!MONO_TYPE_ISSTRUCT (sig->params [i]))
 			emit_volatile_store (ctx, cfg->args [i + sig->hasthis]->dreg);
 
+	if (sig->hasthis && !cfg->rgctx_var) {
+#if LLVM_CHECK_VERSION (2, 8)
+		LLVMValueRef this_alloc, md_arg;
+		int md_kind;
+
+		/*
+		 * The exception handling code needs the location where the this argument was
+		 * stored for gshared methods. We create a separate alloca to hold it, and mark it
+		 * with the "mono.this" custom metadata to tell llvm that it needs to save its
+		 * location into the LSDA.
+		 */
+		// FIXME: Do this for gshared only
+		this_alloc = mono_llvm_build_alloca (builder, IntPtrType (), LLVMConstInt (LLVMInt32Type (), 1, FALSE), 0, "");
+		/* This volatile store will keep the alloca alive */
+		mono_llvm_build_store (builder, ctx->values [cfg->args [0]->dreg], this_alloc, TRUE);
+
+		md_kind = LLVMGetMDKindID ("mono.this", strlen ("mono.this"));
+		md_arg = LLVMMDString ("this", 4);
+		LLVMSetMetadata (this_alloc, md_kind, LLVMMDNode (&md_arg, 1));
+#endif
+	}
+
+	if (cfg->rgctx_var) {
+		LLVMValueRef rgctx_alloc, store, md_arg;
+		int md_kind;
+
+		/*
+		 * We handle the rgctx arg similarly to the this pointer.
+		 */
+		g_assert (ctx->addresses [cfg->rgctx_var->dreg]);
+		rgctx_alloc = ctx->addresses [cfg->rgctx_var->dreg];
+		/* This volatile store will keep the alloca alive */
+		store = mono_llvm_build_store (builder, ctx->rgctx_arg, rgctx_alloc, TRUE);
+
+		md_kind = LLVMGetMDKindID ("mono.this", strlen ("mono.this"));
+		md_arg = LLVMMDString ("this", 4);
+		LLVMSetMetadata (rgctx_alloc, md_kind, LLVMMDNode (&md_arg, 1));
+	}
+
 	/*
 	 * For finally clauses, create an indicator variable telling OP_ENDFINALLY whenever
 	 * it needs to continue normally, or return back to the exception handling system.
@@ -1504,12 +1552,20 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	ctx->linfo = linfo;
 	CHECK_FAILURE (ctx);
 
+	if (cfg->rgctx_var) {
+		if (IS_LLVM_MONO_BRANCH)
+			linfo->rgctx_arg = TRUE;
+		else
+			LLVM_FAILURE (ctx, "rgctx arg");
+	}
 	method_type = sig_to_llvm_sig (ctx, sig, linfo);
 	CHECK_FAILURE (ctx);
 
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
 
+	if (linfo->rgctx_arg)
+		LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	if (cfg->method->save_lmf)
@@ -1531,6 +1587,16 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	 */
 	pindexes = g_new0 (int, sig->param_count);
 	pindex = 0;
+	if (linfo->rgctx_arg) {
+		ctx->rgctx_arg = LLVMGetParam (method, pindex);
+		/*
+		 * We mark the rgctx parameter with the inreg attribute, which is mapped to
+		 * MONO_ARCH_RGCTX_REG in the Mono calling convention in llvm, i.e.
+		 * CC_X86_64_Mono in X86CallingConv.td.
+		 */
+		LLVMAddAttribute (ctx->rgctx_arg, LLVMInRegAttribute);
+		pindex ++;
+	}
 	if (cfg->vret_addr) {
 		values [cfg->vret_addr->dreg] = LLVMGetParam (method, pindex);
 		pindex ++;
@@ -2587,7 +2653,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
 					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, "");
 				}
-				LLVMBuildStore (builder, convert (ctx, LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE), t), addr);
+				LLVMBuildStore (builder, convert (ctx, LLVMConstInt (t, ins->inst_imm, FALSE), t), addr);
 				break;
 			}
 
@@ -2627,7 +2693,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				if (call->signature->call_convention != MONO_CALL_DEFAULT)
 					LLVM_FAILURE (ctx, "non-default callconv");
 
+				if (call->rgctx_arg_reg && !IS_LLVM_MONO_BRANCH)
+					LLVM_FAILURE (ctx, "rgctx reg in call");
+
 				cinfo = call->cinfo;
+				if (call->rgctx_arg_reg)
+					cinfo->rgctx_arg = TRUE;
+				if (call->imt_arg_reg)
+					cinfo->imt_arg = TRUE;
 
 				vretaddr = cinfo && cinfo->ret.storage == LLVMArgVtypeRetAddr;
 
@@ -2636,8 +2709,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				virtual = (ins->opcode == OP_VOIDCALL_MEMBASE || ins->opcode == OP_CALL_MEMBASE || ins->opcode == OP_VCALL_MEMBASE || ins->opcode == OP_LCALL_MEMBASE || ins->opcode == OP_FCALL_MEMBASE);
 				calli = (ins->opcode == OP_VOIDCALL_REG || ins->opcode == OP_CALL_REG || ins->opcode == OP_VCALL_REG || ins->opcode == OP_LCALL_REG || ins->opcode == OP_FCALL_REG);
-
-				pindexes = mono_mempool_alloc0 (cfg->mempool, (sig->param_count + 2) * sizeof (guint32));
 
 				/* FIXME: Avoid creating duplicate methods */
 
@@ -2729,7 +2800,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					// generated by LLVM
 					//LLVM_FAILURE (ctx, "virtual call");
 
-					if (call->method && call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+					/*
+					 * When using the llvm mono branch, we can support IMT directly, otherwise
+					 * we need to call a trampoline.
+					 */
+					if (call->method && call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE && !IS_LLVM_MONO_BRANCH) {
 #ifdef MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE
 						if (cfg->compile_aot) {
 							MonoJumpInfoImtTramp *imt_tramp = g_new0 (MonoJumpInfoImtTramp, 1);
@@ -2759,10 +2834,18 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				/* 
 				 * Collect and convert arguments
 				 */
-
-				args = alloca (sizeof (LLVMValueRef) * ((sig->param_count * 2) + sig->hasthis + vretaddr));
+				pindexes = mono_mempool_alloc0 (cfg->mempool, (sig->param_count + 2) * sizeof (guint32));
+				args = alloca (sizeof (LLVMValueRef) * ((sig->param_count * 2) + sig->hasthis + vretaddr + call->rgctx_reg));
 				l = call->out_ireg_args;
 				pindex = 0;
+
+				if (IS_LLVM_MONO_BRANCH) {
+					if (call->rgctx_arg_reg)
+						args [pindex ++] = values [call->rgctx_arg_reg];
+					if (call->imt_arg_reg)
+						args [pindex ++] = values [call->imt_arg_reg];
+				}
+
 				if (vretaddr) {
 					if (!addresses [call->inst.dreg])
 						addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
@@ -2816,6 +2899,21 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				 */
 
 				lcall = emit_call (ctx, bb, &builder, callee, args, pindex);
+
+#ifdef LLVM_MONO_BRANCH
+				/*
+				 * Modify cconv and parameter attributes to pass rgctx/imt correctly.
+				 */
+				if (call->rgctx_arg_reg)
+					LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
+				else if (call->imt_arg_reg)
+					LLVMSetInstructionCallConv (lcall, LLVMMono2CallConv);
+
+				if (call->rgctx_arg_reg)
+					LLVMAddInstrAttribute (lcall, 1, LLVMInRegAttribute);
+				if (call->imt_arg_reg)
+					LLVMAddInstrAttribute (lcall, 1 + (call->rgctx_arg_reg ? 1 : 0), LLVMInRegAttribute);
+#endif
 
 				/* Add byval attributes if needed */
 				for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -2982,7 +3080,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				g_assert (ins->inst_offset == 0);
 
 				args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt64Type (), 0));
-				args [1] = rhs;
+				args [1] = convert (ctx, rhs, LLVMInt64Type ());
 				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.swap.i64.p0i64"), args, 2, dname);
 				break;
 			}
@@ -3744,6 +3842,7 @@ exception_cb (void *data)
 	MonoJitExceptionInfo *ei;
 	guint32 ei_len, i;
 	gpointer *type_info;
+	int this_reg, this_offset;
 
 	cfg = TlsGetValue (current_cfg_tls_id);
 	g_assert (cfg);
@@ -3754,7 +3853,7 @@ exception_cb (void *data)
 	 * An alternative would be to save it directly, and modify our unwinder to work
 	 * with it.
 	 */
-	cfg->encoded_unwind_ops = mono_unwind_decode_fde ((guint8*)data, &cfg->encoded_unwind_ops_len, NULL, &ei, &ei_len, &type_info);
+	cfg->encoded_unwind_ops = mono_unwind_decode_fde ((guint8*)data, &cfg->encoded_unwind_ops_len, NULL, &ei, &ei_len, &type_info, &this_reg, &this_offset);
 
 	cfg->llvm_ex_info = mono_mempool_alloc0 (cfg->mempool, ei_len * sizeof (MonoJitExceptionInfo));
 	cfg->llvm_ex_info_len = ei_len;
@@ -3767,6 +3866,8 @@ exception_cb (void *data)
 		cfg->llvm_ex_info [i].flags = clause->flags;
 		cfg->llvm_ex_info [i].data.catch_class = clause->data.catch_class;
 	}
+	cfg->llvm_this_reg = this_reg;
+	cfg->llvm_this_offset = this_offset;
 
 	g_free (ei);
 }

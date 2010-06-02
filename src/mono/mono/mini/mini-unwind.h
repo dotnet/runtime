@@ -90,6 +90,9 @@ int
 mono_hw_reg_to_dwarf_reg (int reg) MONO_INTERNAL;
 
 int
+mono_dwarf_reg_to_hw_reg (int reg) MONO_INTERNAL;
+
+int
 mono_unwind_get_dwarf_data_align (void) MONO_INTERNAL;
 
 int
@@ -111,7 +114,7 @@ guint32 mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len) MO
 
 guint8* mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len) MONO_INTERNAL;
 
-guint8* mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len, gpointer **type_info) MONO_INTERNAL;
+guint8* mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len, gpointer **type_info, int *this_reg, int *this_offset) MONO_INTERNAL;
 
 GSList* mono_unwind_get_cie_program (void) MONO_INTERNAL;
 

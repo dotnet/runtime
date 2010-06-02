@@ -28,6 +28,7 @@
 #include <llvm/ExecutionEngine/JITEventListener.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Target/TargetData.h>
+#include <llvm/Target/TargetRegisterInfo.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/CommandLine.h>
@@ -36,6 +37,8 @@
 #include <llvm/CodeGen/Passes.h>
 #include <llvm/CodeGen/MachineFunctionPass.h>
 #include <llvm/CodeGen/MachineFunction.h>
+#include <llvm/CodeGen/MachineFrameInfo.h>
+#include <llvm/CodeGen/MonoMachineFunctionInfo.h>
 //#include <llvm/LinkAllPasses.h>
 
 #include "llvm-c/Core.h"
@@ -55,7 +58,6 @@ private:
 public:
 	/* Callbacks installed by mono */
 	AllocCodeMemoryCb *alloc_cb;
-	FunctionEmittedCb *emitted_cb;
 
 	MonoJITMemoryManager ();
 	~MonoJITMemoryManager ();
@@ -164,7 +166,6 @@ void
 MonoJITMemoryManager::endFunctionBody(const Function *F, unsigned char *FunctionStart,
 				  unsigned char *FunctionEnd)
 {
-	emitted_cb (wrap (F), FunctionStart, FunctionEnd);
 }
 
 unsigned char *
@@ -244,6 +245,13 @@ mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 	return wrap(ins);
 }
 
+LLVMValueRef 
+mono_llvm_build_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
+					  gboolean is_volatile)
+{
+	return wrap(unwrap(builder)->CreateStore(unwrap(Val), unwrap(PointerVal), is_volatile));
+}
+
 void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 {
@@ -255,6 +263,14 @@ static cl::list<const PassInfo*, bool, PassNameParser>
 PassList(cl::desc("Optimizations available:"));
 
 class MonoJITEventListener : public JITEventListener {
+
+public:
+	FunctionEmittedCb *emitted_cb;
+
+	MonoJITEventListener (FunctionEmittedCb *cb) {
+		emitted_cb = cb;
+	}
+
 	virtual void NotifyFunctionEmitted(const Function &F,
 									   void *Code, size_t Size,
 									   const EmittedFunctionDetails &Details) {
@@ -273,10 +289,15 @@ class MonoJITEventListener : public JITEventListener {
 		 *
 		 */
 		//#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifndef LLVM_MONO_BRANCH
+		/* The LLVM mono branch contains a workaround, so this is not needed */
 		if (Details.MF->getTarget ().getCodeModel () == CodeModel::Large) {
 			Details.MF->getTarget ().setCodeModel (CodeModel::Default);
 		}
+#endif
 		//#endif
+
+		emitted_cb (wrap (&F), Code, (char*)Code + Size);
 	}
 };
 
@@ -292,7 +313,6 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
   mono_mm = new MonoJITMemoryManager ();
   mono_mm->alloc_cb = alloc_cb;
-  mono_mm->emitted_cb = emitted_cb;
 
 #if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 8
    DwarfExceptionHandling = true;
@@ -308,7 +328,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	  g_assert_not_reached ();
   }
   EE->InstallExceptionTableRegister (exception_cb);
-  EE->RegisterJITEventListener (new MonoJITEventListener ());
+  EE->RegisterJITEventListener (new MonoJITEventListener (emitted_cb));
 
   fpm = new FunctionPassManager (unwrap (MP));
 

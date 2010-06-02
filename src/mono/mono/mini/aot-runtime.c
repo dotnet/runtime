@@ -1523,7 +1523,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint32 eh_frame_ptr;
 	int fde_count;
 	gint32 *table;
-	int i, pos, left, right, offset, offset1, offset2;
+	int i, pos, left, right, offset, offset1, offset2, this_reg, this_offset;
 	guint32 unw_len, code_len;
 	MonoJitExceptionInfo *ei;
 	guint32 ei_len;
@@ -1575,7 +1575,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	eh_frame = amodule->eh_frame_hdr + table [(pos * 2) + 1];
 
-	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, &type_info);
+	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, &type_info, &this_reg, &this_offset);
 
 	/*
 	 * LLVM might represent one IL region with multiple regions, so have to

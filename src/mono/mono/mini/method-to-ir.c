@@ -115,6 +115,7 @@ void mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, Mono
 extern MonoMethodSignature *helper_sig_class_init_trampoline;
 extern MonoMethodSignature *helper_sig_domain_get;
 extern MonoMethodSignature *helper_sig_generic_class_init_trampoline;
+extern MonoMethodSignature *helper_sig_generic_class_init_trampoline_llvm;
 extern MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 extern MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline;
 extern MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm;
@@ -2098,6 +2099,10 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
 
+#ifdef ENABLE_LLVM
+	if (COMPILE_LLVM (cfg))
+		call->imt_arg_reg = method_reg;
+#endif
 	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
 #else
 	mono_arch_emit_imt_argument (cfg, call, imt_arg);
@@ -2226,10 +2231,24 @@ mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, Mo
 	return (MonoInst*)call;
 }
 
+static void
+set_rgctx_arg (MonoCompile *cfg, MonoCallInst *call, int rgctx_reg, MonoInst *rgctx_arg)
+{
+#ifdef MONO_ARCH_RGCTX_REG
+	mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
+	cfg->uses_rgctx_reg = TRUE;
+	call->rgctx_reg = TRUE;
+#ifdef ENABLE_LLVM
+	call->rgctx_arg_reg = rgctx_reg;
+#endif
+#else
+	NOT_IMPLEMENTED;
+#endif
+}	
+
 inline static MonoInst*
 mono_emit_rgctx_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, MonoInst *addr, MonoInst *rgctx_arg)
 {
-#ifdef MONO_ARCH_RGCTX_REG
 	MonoCallInst *call;
 	int rgctx_reg = -1;
 
@@ -2238,16 +2257,9 @@ mono_emit_rgctx_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **ar
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, rgctx_arg->dreg);
 	}
 	call = (MonoCallInst*)mono_emit_calli (cfg, sig, args, addr);
-	if (rgctx_arg) {
-		mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
-		cfg->uses_rgctx_reg = TRUE;
-		call->rgctx_reg = TRUE;
-	}
+	if (rgctx_arg)
+		set_rgctx_arg (cfg, call, rgctx_reg, rgctx_arg);
 	return (MonoInst*)call;
-#else
-	g_assert_not_reached ();
-	return NULL;
-#endif
 }
 
 static MonoInst*
@@ -2402,32 +2414,19 @@ static MonoInst*
 mono_emit_rgctx_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
 		MonoInst **args, MonoInst *this, MonoInst *imt_arg, MonoInst *vtable_arg)
 {
-#ifdef MONO_ARCH_RGCTX_REG
 	int rgctx_reg = 0;
-#endif
 	MonoInst *ins;
 	MonoCallInst *call;
 
 	if (vtable_arg) {
-#ifdef MONO_ARCH_RGCTX_REG
 		rgctx_reg = mono_alloc_preg (cfg);
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, vtable_arg->dreg);
-#else
-		NOT_IMPLEMENTED;
-#endif
 	}
 	ins = mono_emit_method_call_full (cfg, method, sig, args, this, imt_arg);
 
 	call = (MonoCallInst*)ins;
-	if (vtable_arg) {
-#ifdef MONO_ARCH_RGCTX_REG
-		mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
-		cfg->uses_rgctx_reg = TRUE;
-		call->rgctx_reg = TRUE;
-#else
-		NOT_IMPLEMENTED;
-#endif
-	}
+	if (vtable_arg)
+		set_rgctx_arg (cfg, call, rgctx_reg, vtable_arg);
 
 	return ins;
 }
@@ -2793,7 +2792,10 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 		EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
 	}
 
-	call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline, &vtable_arg);
+	if (COMPILE_LLVM (cfg))
+		call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline_llvm, &vtable_arg);
+	else
+		call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline, &vtable_arg);
 #ifdef MONO_ARCH_VTABLE_REG
 	mono_call_inst_add_outarg_reg (cfg, call, vtable_arg->dreg, MONO_ARCH_VTABLE_REG, FALSE);
 	cfg->uses_vtable_reg = TRUE;
@@ -6491,19 +6493,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				INLINE_FAILURE;
 
 				if (vtable_arg) {
-#ifdef MONO_ARCH_RGCTX_REG
 					MonoCallInst *call;
 					int rgctx_reg = mono_alloc_preg (cfg);
 
 					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, vtable_arg->dreg);
 					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr);
 					call = (MonoCallInst*)ins;
-					mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
-					cfg->uses_rgctx_reg = TRUE;
-					call->rgctx_reg = TRUE;
-#else
-					NOT_IMPLEMENTED;
-#endif
+					set_rgctx_arg (cfg, call, rgctx_reg, vtable_arg);
 				} else {
 					if (addr->opcode == OP_AOTCONST && addr->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
 						/* 
@@ -8116,28 +8112,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					depth, field->offset);
 				*/
 
-				if (mono_class_needs_cctor_run (klass, method)) {
-					MonoCallInst *call;
-					MonoInst *vtable;
-
-					vtable = emit_get_rgctx_klass (cfg, context_used,
-						klass, MONO_RGCTX_INFO_VTABLE);
-
-					// FIXME: This doesn't work since it tries to pass the argument
-					// in the normal way, instead of using MONO_ARCH_VTABLE_REG
-					/* 
-					 * The vtable pointer is always passed in a register regardless of
-					 * the calling convention, so assign it manually, and make a call
-					 * using a signature without parameters.
-					 */					
-					call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline, &vtable);
-#ifdef MONO_ARCH_VTABLE_REG
-					mono_call_inst_add_outarg_reg (cfg, call, vtable->dreg, MONO_ARCH_VTABLE_REG, FALSE);
-					cfg->uses_vtable_reg = TRUE;
-#else
-					NOT_IMPLEMENTED;
-#endif
-				}
+				if (mono_class_needs_cctor_run (klass, method))
+					emit_generic_class_init (cfg, klass);
 
 				/*
 				 * The pointer we're computing here is

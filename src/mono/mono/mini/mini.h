@@ -80,6 +80,17 @@ typedef gint64 mgreg_t;
 #define LLVM_CHECK_VERSION(major,minor) 0
 #endif
 
+/* 
+ * Whenever we are using mono's LLVM branch.
+ * This can be used in if statements, code which references new definitions from the branch
+ * still needs an #ifdef LLVM_MONO_BRANCH.
+ */
+#ifdef LLVM_MONO_BRANCH
+#define IS_LLVM_MONO_BRANCH 1
+#else
+#define IS_LLVM_MONO_BRANCH 0
+#endif
+
 #define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
 
 /* for 32 bit systems */
@@ -581,6 +592,10 @@ typedef struct {
 
 typedef struct {
 	LLVMArgInfo ret;
+	/* Whenever there is an rgctx argument */
+	gboolean rgctx_arg;
+	/* Whenever there is an IMT argument */
+	gboolean imt_arg;
 	/* args [0] is for the this argument if it exists */
 	LLVMArgInfo args [1];
 } LLVMCallInfo;
@@ -671,6 +686,7 @@ struct MonoCallInst {
 	GSList *out_freg_args;
 #ifdef ENABLE_LLVM
 	LLVMCallInfo *cinfo;
+	int rgctx_arg_reg, imt_arg_reg;
 #endif
 };
 
@@ -1163,6 +1179,7 @@ typedef struct {
 
 	MonoJitExceptionInfo *llvm_ex_info;
 	guint32 llvm_ex_info_len;
+	int llvm_this_reg, llvm_this_offset;
 
 	GSList *try_block_holes;
 } MonoCompile;

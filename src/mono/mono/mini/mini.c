@@ -72,6 +72,7 @@ static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 op
 MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
 MonoMethodSignature *helper_sig_domain_get = NULL;
 MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
+MonoMethodSignature *helper_sig_generic_class_init_trampoline_llvm = NULL;
 MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
 MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline = NULL;
 MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm = NULL;
@@ -1343,6 +1344,7 @@ create_helper_signature (void)
 	helper_sig_domain_get = mono_create_icall_signature ("ptr");
 	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
 	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
+	helper_sig_generic_class_init_trampoline_llvm = mono_create_icall_signature ("void ptr");
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
 	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
 	helper_sig_monitor_enter_exit_trampoline_llvm = mono_create_icall_signature ("void object");
@@ -3482,12 +3484,18 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				mini_method_get_context (method_to_compile)->method_inst ||
 				method_to_compile->klass->valuetype) {
 			inst = cfg->rgctx_var;
-			g_assert (inst->opcode == OP_REGOFFSET);
+			if (!COMPILE_LLVM (cfg))
+				g_assert (inst->opcode == OP_REGOFFSET);
 		} else {
 			inst = cfg->args [0];
 		}
 
-		if (inst->opcode == OP_REGVAR) {
+		if (COMPILE_LLVM (cfg)) {
+			g_assert (cfg->llvm_this_reg != -1);
+			gi->this_in_reg = 0;
+			gi->this_reg = cfg->llvm_this_reg;
+			gi->this_offset = cfg->llvm_this_offset;
+		} else if (inst->opcode == OP_REGVAR) {
 			gi->this_in_reg = 1;
 			gi->this_reg = inst->dreg;
 		} else {
@@ -3805,9 +3813,19 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 	cfg->method_to_register = method_to_register;
 
+	mono_error_init (&err);
+	sig = mono_method_signature_checked (cfg->method, &err);	
+	if (!sig) {
+		cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
+		cfg->exception_message = g_strdup (mono_error_get_message (&err));
+		mono_error_cleanup (&err);
+		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
+		return cfg;
+	}
+
 	if (cfg->compile_llvm) {
-		/* No way to obtain the location info for 'this' */
-		if (try_generic_shared) {
+		if (try_generic_shared && !IS_LLVM_MONO_BRANCH) {
 			cfg->exception_message = g_strdup ("gshared");
 			cfg->disable_llvm = TRUE;
 		}
@@ -3822,17 +3840,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			cfg->exception_message = g_strdup ("dynamic.");
 			cfg->disable_llvm = TRUE;
 		}
-	}
-
-	mono_error_init (&err);
-	sig = mono_method_signature_checked (cfg->method, &err);	
-	if (!sig) {
-		cfg->exception_type = MONO_EXCEPTION_TYPE_LOAD;
-		cfg->exception_message = g_strdup (mono_error_get_message (&err));
-		mono_error_cleanup (&err);
-		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
-			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
-		return cfg;
 	}
 
 	header = cfg->header;
