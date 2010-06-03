@@ -6015,6 +6015,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			buffer_add_int (buf, 0);
 			buffer_add_int (buf, header->code_size);
 		}
+		mono_metadata_free_mh (header);
 
 		break;
 	}
