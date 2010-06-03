@@ -77,6 +77,30 @@ struct _MonoDebugMethodInfo {
 	guint32 lnt_offset;
 };
 
+typedef struct {
+	int parent;
+	int type;
+	/* IL offsets */
+	int start_offset, end_offset;
+} MonoDebugCodeBlock;
+
+typedef struct {
+	char *name;
+	int index;
+	/* Might be null for the main scope */
+	MonoDebugCodeBlock *block;
+} MonoDebugLocalVar;
+
+/*
+ * Information about local variables retrieved from a symbol file.
+ */
+struct _MonoDebugLocalsInfo {
+	int num_locals;
+	MonoDebugLocalVar *locals;
+	int num_blocks;
+	MonoDebugCodeBlock *code_blocks;
+};
+
 struct _MonoDebugLineNumberEntry {
 	guint32 il_offset;
 	guint32 native_offset;
@@ -124,9 +148,11 @@ MonoDebugMethodInfo *
 mono_debug_symfile_lookup_method   (MonoDebugHandle          *handle,
 				    MonoMethod               *method);
 
-int
-mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo, char ***names, 
-								  int **indexes);
+MonoDebugLocalsInfo*
+mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo);
+
+void
+mono_debug_symfile_free_locals (MonoDebugLocalsInfo *info);
 
 void
 mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_file, int *n_il_offsets, int **il_offsets, int **line_numbers);

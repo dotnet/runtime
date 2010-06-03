@@ -1051,31 +1051,25 @@ mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDoma
  * mono_debug_lookup_locals:
  *
  *   Return information about the local variables of MINFO.
- * NAMES and INDEXES are set to g_malloc-ed arrays containing the local names and
- * their IL indexes.
- * Returns: the number of elements placed into the arrays, or -1 if there is no
- * local variable info.
+ * The result should be freed using mono_debug_symfile_free_locals ().
  */
-int
-mono_debug_lookup_locals (MonoMethod *method, char ***names, int **indexes)
+MonoDebugLocalsInfo*
+mono_debug_lookup_locals (MonoMethod *method)
 {
 	MonoDebugMethodInfo *minfo;
-	int res;
-
-	*names = NULL;
-	*indexes = NULL;
+	MonoDebugLocalsInfo *res;
 
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
-		return -1;
+		return NULL;
 
 	mono_debugger_lock ();
 	minfo = _mono_debug_lookup_method (method);
 	if (!minfo || !minfo->handle || !minfo->handle->symfile || !minfo->handle->symfile->offset_table) {
 		mono_debugger_unlock ();
-		return -1;
+		return NULL;
 	}
 
-	res = mono_debug_symfile_lookup_locals (minfo, names, indexes);
+	res = mono_debug_symfile_lookup_locals (minfo);
 	mono_debugger_unlock ();
 
 	return res;
