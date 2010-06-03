@@ -5983,8 +5983,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	}
 	case CMD_METHOD_GET_LOCALS_INFO: {
 		int i, j, num_locals;
-		char **local_names;
-		int *local_indexes;
+		MonoDebugLocalsInfo *locals;
 
 		header = mono_method_get_header (method);
 		g_assert (header);
@@ -5996,26 +5995,38 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			buffer_add_typeid (buf, domain, mono_class_from_mono_type (header->locals [i]));
 
 		/* Names */
-		num_locals = mono_debug_lookup_locals (method, &local_names, &local_indexes);
+		locals = mono_debug_lookup_locals (method);
+		if (locals)
+			num_locals = locals->num_locals;
+		else
+			num_locals = 0;
 		for (i = 0; i < header->num_locals; ++i) {
 			for (j = 0; j < num_locals; ++j)
-				if (local_indexes [j] == i)
+				if (locals->locals [j].index == i)
 					break;
 			if (j < num_locals)
-				buffer_add_string (buf, local_names [j]);
+				buffer_add_string (buf, locals->locals [j].name);
 			else
 				buffer_add_string (buf, "");
 		}
-		g_free (local_names);
-		g_free (local_indexes);
 
-		/* Live ranges */
-		/* FIXME: This works because we set debug_options.mdb_optimizations */
+		/* Scopes */
 		for (i = 0; i < header->num_locals; ++i) {
-			buffer_add_int (buf, 0);
-			buffer_add_int (buf, header->code_size);
+			for (j = 0; j < num_locals; ++j)
+				if (locals->locals [j].index == i)
+					break;
+			if (j < num_locals && locals->locals [j].block) {
+				buffer_add_int (buf, locals->locals [j].block->start_offset);
+				buffer_add_int (buf, locals->locals [j].block->end_offset);
+			} else {
+				buffer_add_int (buf, 0);
+				buffer_add_int (buf, header->code_size);
+			}
 		}
 		mono_metadata_free_mh (header);
+
+		if (locals)
+			mono_debug_symfile_free_locals (locals);
 
 		break;
 	}

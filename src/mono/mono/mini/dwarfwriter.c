@@ -1585,9 +1585,8 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 	char **names;
-	char **local_names;
-	int *local_indexes;
-	int i, num_locals;
+	MonoDebugLocalsInfo *locals_info;
+	int i;
 	guint8 buf [128];
 	guint8 *p;
 
@@ -1690,7 +1689,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	g_free (names);
 
 	/* Locals */
-	num_locals = mono_debug_lookup_locals (method, &local_names, &local_indexes);
+	locals_info = mono_debug_lookup_locals (method);
 
 	for (i = 0; i < header->num_locals; ++i) {
 		MonoInst *ins = locals [i];
@@ -1698,6 +1697,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		int j;
 		MonoMethodVar *vmv = NULL;
 		gboolean need_loclist = FALSE;
+		char *lname;
 
 		/* ins->dreg no longer contains the original vreg */
 		vmv = find_vmv (cfg, ins);
@@ -1710,11 +1710,16 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 		emit_uleb128 (w, need_loclist ? ABBREV_VARIABLE_LOCLIST : ABBREV_VARIABLE);
 		/* name */
-		for (j = 0; j < num_locals; ++j)
-			if (local_indexes [j] == i)
-				break;
-		if (j < num_locals) {
-			emit_string (w, local_names [j]);
+		lname = NULL;
+		if (locals_info) {
+			for (j = 0; j < locals_info->num_locals; ++j)
+				if (locals_info->locals [j].index == i)
+					break;
+			if (j < locals_info->num_locals)
+				lname = locals_info->locals [j].name;
+		}
+		if (lname) {
+			emit_string (w, lname);
 		} else {
 			sprintf (name_buf, "V_%d", i);
 			emit_string (w, name_buf);
@@ -1739,8 +1744,8 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		}
 	}
 
-	g_free (local_names);
-	g_free (local_indexes);
+	if (locals_info)
+		mono_debug_symfile_free_locals (locals_info);
 
 	/* Subprogram end */
 	emit_uleb128 (w, 0x0);
