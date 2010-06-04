@@ -3780,6 +3780,7 @@ ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32
 	MonoEvent *event;
 	MonoMethod *method;
 	gchar *event_name;
+	int (*compare_func) (const char *s1, const char *s2);
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -3791,13 +3792,14 @@ ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32
 
 	mono_class_init_or_throw (klass);
 
+	compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
 handle_parent:	
 	if (klass->exception_type != MONO_EXCEPTION_NONE)
 		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	iter = NULL;
 	while ((event = mono_class_get_events (klass, &iter))) {
-		if (strcmp (event->name, event_name))
+		if (compare_func (event->name, event_name))
 			continue;
 
 		method = event->add;
