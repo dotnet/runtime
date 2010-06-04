@@ -410,6 +410,7 @@ public class Tests : TestsBase
 	public static void locals () {
 		locals1 (null);
 		locals2 (null, 5);
+		locals3 ();
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
@@ -430,6 +431,35 @@ public class Tests : TestsBase
 			if (s != null)
 				i ++;
 		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void locals3 () {
+		string s = "B";
+		s.ToString ();
+
+		{
+			long i = 42;
+			i ++;
+			locals4 ();
+		}
+		{
+			string i = "A";
+			i.ToString ();
+			locals5 ();
+		}
+		{
+			long j = 42;
+			j ++;
+		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void locals4 () {
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void locals5 () {
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]

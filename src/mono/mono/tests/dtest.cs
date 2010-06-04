@@ -1438,6 +1438,41 @@ public class DebuggerTests
 	}
 
 	[Test]
+	public void GetVisibleVariables () {
+		Event e = run_until ("locals4");
+
+		// First scope
+		var locals = e.Thread.GetFrames ()[1].GetVisibleVariables ();
+		Assert.AreEqual (2, locals.Count);
+		var loc = locals.First (l => l.Name == "i");
+		Assert.AreEqual ("Int64", loc.Type.Name);
+		loc = locals.First (l => l.Name == "s");
+		Assert.AreEqual ("String", loc.Type.Name);
+
+		loc = e.Thread.GetFrames ()[1].GetVisibleVariableByName ("i");
+		Assert.AreEqual ("i", loc.Name);
+		Assert.AreEqual ("Int64", loc.Type.Name);
+
+		e = run_until ("locals5");
+
+		// Second scope
+		locals = e.Thread.GetFrames ()[1].GetVisibleVariables ();
+		Assert.AreEqual (2, locals.Count);
+		loc = locals.First (l => l.Name == "i");
+		Assert.AreEqual ("String", loc.Type.Name);
+		loc = locals.First (l => l.Name == "s");
+		Assert.AreEqual ("String", loc.Type.Name);
+
+		loc = e.Thread.GetFrames ()[1].GetVisibleVariableByName ("i");
+		Assert.AreEqual ("i", loc.Name);
+		Assert.AreEqual ("String", loc.Type.Name);
+
+		// Variable in another scope
+		loc = e.Thread.GetFrames ()[1].GetVisibleVariableByName ("j");
+		Assert.IsNull (loc);
+	}
+
+	[Test]
 	public void Exit () {
 		run_until ("Main");
 
