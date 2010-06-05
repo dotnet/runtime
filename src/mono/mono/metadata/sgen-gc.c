@@ -4090,6 +4090,18 @@ search_fragment_for_size_range (size_t desired_size, size_t minimum_size)
 	return 0;
 }
 
+static void*
+alloc_degraded (MonoVTable *vtable, size_t size)
+{
+	if (need_major_collection ()) {
+		stop_world ();
+		major_collection ("degraded overflow");
+		restart_world ();
+	}
+
+	return major_alloc_degraded (vtable, size);
+}
+
 /*
  * Provide a variant that takes just the vtable for small fixed-size objects.
  * The aligned size is already computed and stored in vt->gc_descr.

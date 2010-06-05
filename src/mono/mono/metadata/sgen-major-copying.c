@@ -251,7 +251,7 @@ major_alloc_small_pinned_obj (size_t size, gboolean has_references)
  * size is already rounded up and we hold the GC lock.
  */
 static void*
-alloc_degraded (MonoVTable *vtable, size_t size)
+major_alloc_degraded (MonoVTable *vtable, size_t size)
 {
 	GCMemSection *section;
 	void **p = NULL;
@@ -269,6 +269,7 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 		section->is_to_space = FALSE;
 		/* FIXME: handle OOM */
 		p = (void**)section->next_data;
+		++minor_collection_sections_alloced;
 	}
 	section->next_data += size;
 	degraded_mode += size;

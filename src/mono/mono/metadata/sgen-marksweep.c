@@ -364,12 +364,16 @@ free_pinned_object (char *obj, size_t size)
  * size is already rounded up and we hold the GC lock.
  */
 static void*
-alloc_degraded (MonoVTable *vtable, size_t size)
+major_alloc_degraded (MonoVTable *vtable, size_t size)
 {
-	void *obj = alloc_obj (size, FALSE, vtable->klass->has_references);
+	void *obj;
+	int old_num_sections = num_major_sections;
+	obj = alloc_obj (size, FALSE, vtable->klass->has_references);
 	*(MonoVTable**)obj = vtable;
 	HEAVY_STAT (++stat_objects_alloced_degraded);
 	HEAVY_STAT (stat_bytes_alloced_degraded += size);
+	g_assert (num_major_sections >= old_num_sections);
+	minor_collection_sections_alloced += num_major_sections - old_num_sections;
 	return obj;
 }
 
