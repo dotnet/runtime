@@ -144,6 +144,8 @@ ms_get_empty_block (void)
 
 	g_assert (!((mword)block & (MS_BLOCK_SIZE - 1)));
 
+	UPDATE_HEAP_BOUNDARIES (block, (char*)block + MS_BLOCK_SIZE);
+
 	return block;
 }
 
