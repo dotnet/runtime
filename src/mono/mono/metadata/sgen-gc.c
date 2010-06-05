@@ -687,7 +687,7 @@ static int default_nursery_bits = 22;
 
 #endif
 
-#define MIN_LOS_ALLOWANCE		(DEFAULT_NURSERY_SIZE * 2)
+#define MIN_MINOR_COLLECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 4)
 /* to quickly find the head of an object pinned by a conservative address
  * we keep track of the objects allocated for each SCAN_START_SIZE memory
  * chunk in the nursery or other memory sections. Larger values have less
@@ -705,11 +705,13 @@ static int degraded_mode = 0;
 
 static LOSObject *los_object_list = NULL;
 static mword los_memory_usage = 0;
+static mword last_los_memory_usage = 0;
 static mword los_num_objects = 0;
-static mword next_los_collection = 2*1024*1024; /* 2 MB, need to tune */
 static mword total_alloc = 0;
 /* use this to tune when to do a major/minor collection */
 static mword memory_pressure = 0;
+static int minor_collection_allowance;
+static int minor_collection_sections_alloced = 0;
 
 static GCMemSection *nursery_section = NULL;
 static mword lowest_heap_address = ~(mword)0;
@@ -1042,6 +1044,7 @@ static void free_large_object (LOSObject *obj);
 static void sort_addresses (void **array, int size);
 static void drain_gray_stack (void);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation);
+static gboolean need_major_collection (void);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
 
@@ -3253,6 +3256,13 @@ init_stats (void)
 	inited = TRUE;
 }
 
+static gboolean
+need_major_collection (void)
+{
+	mword los_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
+	return minor_collection_sections_alloced * MAJOR_SECTION_SIZE + los_alloced > minor_collection_allowance;
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -3388,7 +3398,7 @@ collect_nursery (size_t requested_size)
 
 	current_collection_generation = -1;
 
-	return major_need_major_collection ();
+	return need_major_collection ();
 }
 
 static void
@@ -3406,6 +3416,14 @@ major_do_collection (const char *reason)
 	char *heap_end = (char*)-1;
 	int old_num_major_sections = num_major_sections;
 	int num_major_sections_saved, save_target, allowance_target;
+	mword los_memory_saved, los_memory_alloced, old_los_memory_usage;
+
+	/*
+	 * A domain could have been freed, resulting in
+	 * los_memory_usage being less than last_los_memory_usage.
+	 */
+	los_memory_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
+	old_los_memory_usage = los_memory_usage;
 
 	//count_ref_nonref_objs ();
 	//consistency_check ();
@@ -3575,9 +3593,10 @@ major_do_collection (const char *reason)
 
 	g_assert (gray_object_queue_is_empty ());
 
-	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 1);
+	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 0);
+	los_memory_saved = MAX (old_los_memory_usage - los_memory_usage, 1);
 
-	save_target = num_major_sections / 2;
+	save_target = ((num_major_sections * MAJOR_SECTION_SIZE) + los_memory_saved) / 2;
 	/*
 	 * We aim to allow the allocation of as many sections as is
 	 * necessary to reclaim save_target sections in the next
@@ -3593,11 +3612,12 @@ major_do_collection (const char *reason)
 	 *
 	 * hence:
 	 */
-	allowance_target = save_target * minor_collection_sections_alloced / num_major_sections_saved;
+	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * MAJOR_SECTION_SIZE + los_memory_alloced) / (double)(num_major_sections_saved * MAJOR_SECTION_SIZE + los_memory_saved));
 
-	minor_collection_section_allowance = MAX (MIN (allowance_target, num_major_sections), MIN_MINOR_COLLECTION_SECTION_ALLOWANCE);
+	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * MAJOR_SECTION_SIZE + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
 
 	minor_collection_sections_alloced = 0;
+	last_los_memory_usage = los_memory_usage;
 
 	check_scan_starts ();
 
@@ -3956,37 +3976,10 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 
 	g_assert (size > MAX_SMALL_OBJ_SIZE);
 
-	if (los_memory_usage > next_los_collection) {
-		static mword last_los_memory_usage = 0;
-
-		mword los_memory_alloced;
-		mword old_los_memory_usage;
-		mword los_memory_saved;
-		mword save_target;
-		mword allowance_target;
-		mword allowance;
-
-		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %zu, limit: %zu)\n", size, los_memory_usage, next_los_collection));
+	if (need_major_collection ()) {
+		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %zu)\n", size, los_memory_usage));
 		stop_world ();
-
-		g_assert (los_memory_usage >= last_los_memory_usage);
-		los_memory_alloced = los_memory_usage - last_los_memory_usage;
-		old_los_memory_usage = los_memory_usage;
-
 		major_collection ("LOS overflow");
-
-		los_memory_saved = MAX (old_los_memory_usage - los_memory_usage, 1);
-		save_target = los_memory_usage / 2;
-		/*
-		 * see the comment at the end of major_collection()
-		 * for the explanation for this calculation.
-		 */
-		allowance_target = (mword)((double)save_target * (double)los_memory_alloced / (double)los_memory_saved);
-		allowance = MAX (MIN (allowance_target, los_memory_usage), MIN_LOS_ALLOWANCE);
-		next_los_collection = los_memory_usage + allowance;
-
-		last_los_memory_usage = los_memory_usage;
-
 		restart_world ();
 	}
 	alloc_size = size;
@@ -7246,6 +7239,7 @@ mono_gc_base_init (void)
 #endif
 
 	nursery_size = DEFAULT_NURSERY_SIZE;
+	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 
 	major_init ();
 

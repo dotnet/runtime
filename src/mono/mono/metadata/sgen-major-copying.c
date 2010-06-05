@@ -48,12 +48,9 @@
 #define MAJOR_SECTION_SIZE		PINNED_CHUNK_SIZE
 #define BLOCK_FOR_OBJECT(o)		((Block*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
 #define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
-#define MIN_MINOR_COLLECTION_SECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 3 / MAJOR_SECTION_SIZE)
 
 #define MAJOR_OBJ_IS_IN_TO_SPACE(o)	(MAJOR_SECTION_FOR_OBJECT ((o))->is_to_space)
 
-static int minor_collection_section_allowance;
-static int minor_collection_sections_alloced = 0;
 static int num_major_sections = 0;
 
 static GCMemSection *section_list = NULL;
@@ -647,8 +644,6 @@ major_get_used_size (void)
 static void
 major_init (void)
 {
-	minor_collection_section_allowance = MIN_MINOR_COLLECTION_SECTION_ALLOWANCE;
-
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("# major copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_forwarded);
 	mono_counters_register ("# major copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_pinned);
@@ -690,12 +685,6 @@ major_finish_nursery_collection (void)
 
 	sections_alloced = num_major_sections - old_num_major_sections;
 	minor_collection_sections_alloced += sections_alloced;
-}
-
-static gboolean
-major_need_major_collection (void)
-{
-	return minor_collection_sections_alloced > minor_collection_section_allowance;
 }
 
 static gboolean

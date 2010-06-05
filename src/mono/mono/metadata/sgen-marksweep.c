@@ -1,6 +1,7 @@
 #include <math.h>
 
 #define MS_BLOCK_SIZE	(16*1024)
+#define MAJOR_SECTION_SIZE	MS_BLOCK_SIZE
 
 /*
  * Don't allocate single blocks, but alloc a contingent of this many
@@ -64,11 +65,6 @@ typedef struct {
 #define MS_OBJ_ALLOCED(o,b)	(*(void**)(o) && (*(char**)(o) < (b)->block || *(char**)(o) >= (b)->block + MS_BLOCK_SIZE))
 
 #define MS_BLOCK_OBJ_SIZE_FACTOR	(sqrt (2.0))
-
-#define MIN_MINOR_COLLECTION_SECTION_ALLOWANCE	(DEFAULT_NURSERY_SIZE * 3 / MS_BLOCK_SIZE)
-
-static int minor_collection_section_allowance;
-static int minor_collection_sections_alloced = 0;
 
 /*
  * This way we can lookup block object size indexes for sizes up to
@@ -744,8 +740,6 @@ major_init (void)
 
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
-
-	minor_collection_section_allowance = MIN_MINOR_COLLECTION_SECTION_ALLOWANCE;
 }
 
 /* only valid during minor collections */
@@ -768,12 +762,6 @@ major_finish_nursery_collection (void)
 
 	sections_alloced = num_major_sections - old_num_major_sections;
 	minor_collection_sections_alloced += sections_alloced;
-}
-
-static gboolean
-major_need_major_collection (void)
-{
-	return minor_collection_sections_alloced > minor_collection_section_allowance;
 }
 
 static void
