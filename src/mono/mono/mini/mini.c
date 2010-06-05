@@ -6027,6 +6027,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_array_new_2, "mono_array_new_2", "object ptr int int", FALSE);
 	register_icall (mono_array_new_3, "mono_array_new_3", "object ptr int int int", FALSE);
 	register_icall (mono_get_native_calli_wrapper, "mono_get_native_calli_wrapper", "ptr ptr ptr ptr", FALSE);
+	register_icall (mono_resume_unwind, "mono_resume_unwind", "void", TRUE);
 #endif
 
 	mono_generic_sharing_init ();
