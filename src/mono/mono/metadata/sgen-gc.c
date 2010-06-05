@@ -317,6 +317,8 @@ static long long time_major_scan_alloc_pinned = 0;
 static long long time_major_scan_finalized = 0;
 static long long time_major_scan_big_objects = 0;
 static long long time_major_finish_gray_stack = 0;
+static long long time_major_free_bigobjs = 0;
+static long long time_major_los_sweep = 0;
 static long long time_major_sweep = 0;
 static long long time_major_fragment_creation = 0;
 
@@ -406,28 +408,6 @@ struct _GCMemSection {
 };
 
 #define SIZEOF_GC_MEM_SECTION	((sizeof (GCMemSection) + 7) & ~7)
-
-/* large object space struct: 64+ KB */
-/* we could make this limit much smaller to avoid memcpy copy
- * and potentially have more room in the GC descriptor: need to measure
- * This also means that such small OS objects will need to be
- * allocated in a different way (using pinned chunks).
- * We may want to put large but smaller than 64k objects in the fixed space
- * when we move the object from one generation to another (to limit the
- * pig in the snake effect).
- * Note: it may be worth to have an optimized copy function, since we can
- * assume that objects are aligned and have a multiple of 8 size.
- * FIXME: This structure needs to be a multiple of 8 bytes in size: this is not
- * true if MONO_ZERO_LEN_ARRAY is nonzero.
- */
-typedef struct _LOSObject LOSObject;
-struct _LOSObject {
-	LOSObject *next;
-	mword size; /* this is the object size */
-	guint16 role;
-	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
-	char data [MONO_ZERO_LEN_ARRAY];
-};
 
 /* Pinned objects are allocated in the LOS space if bigger than half a page
  * or from freelists otherwise. We assume that pinned objects are relatively few
@@ -701,10 +681,6 @@ static mword pagesize = 4096;
 static mword nursery_size;
 static int degraded_mode = 0;
 
-static LOSObject *los_object_list = NULL;
-static mword los_memory_usage = 0;
-static mword last_los_memory_usage = 0;
-static mword los_num_objects = 0;
 static mword total_alloc = 0;
 /* use this to tune when to do a major/minor collection */
 static mword memory_pressure = 0;
@@ -1039,11 +1015,11 @@ static void* copy_object_no_checks (void *obj);
 static void copy_object (void **obj_slot);
 static void* get_chunk_freelist (PinnedChunk *chunk, int slot);
 static PinnedChunk* alloc_pinned_chunk (void);
-static void free_large_object (LOSObject *obj);
 static void sort_addresses (void **array, int size);
 static void drain_gray_stack (void);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation);
 static gboolean need_major_collection (void);
+static void major_collection (const char *reason);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
 
@@ -1072,6 +1048,7 @@ static void null_ephemerons_for_domain (MonoDomain *domain);
 #include "sgen-pinning.c"
 #include "sgen-pinning-stats.c"
 #include "sgen-gray.c"
+#include "sgen-los.c"
 
 /*
  * ######################################################################
@@ -3207,6 +3184,8 @@ init_stats (void)
 	mono_counters_register ("Major scan finalized", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_finalized);
 	mono_counters_register ("Major scan big objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_scan_big_objects);
 	mono_counters_register ("Major finish gray stack", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_finish_gray_stack);
+	mono_counters_register ("Major free big objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_free_bigobjs);
+	mono_counters_register ("Major LOS sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_los_sweep);
 	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_sweep);
 	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_fragment_creation);
 
@@ -3561,6 +3540,14 @@ major_do_collection (const char *reason)
 		prevbo = bigobj;
 		bigobj = bigobj->next;
 	}
+
+	TV_GETTIME (btv);
+	time_major_free_bigobjs += TV_ELAPSED_MS (atv, btv);
+
+	los_sweep ();
+
+	TV_GETTIME (atv);
+	time_major_los_sweep += TV_ELAPSED_MS (btv, atv);
 
 	major_sweep ();
 
@@ -3943,64 +3930,6 @@ free_internal_mem (void *addr, int type)
  * *) fast lock-free allocation
  * *) allocation of pinned objects
  */
-
-static void
-free_large_object (LOSObject *obj)
-{
-	size_t size = obj->size;
-	DEBUG (4, fprintf (gc_debug_file, "Freed large object %p, size %zd\n", obj->data, obj->size));
-	binary_protocol_empty (obj->data, obj->size);
-
-	los_memory_usage -= size;
-	size += sizeof (LOSObject);
-	size += pagesize - 1;
-	size &= ~(pagesize - 1);
-	total_alloc -= size;
-	los_num_objects--;
-	free_os_memory (obj, size);
-}
-
-/*
- * Objects with size >= 64KB are allocated in the large object space.
- * They are currently kept track of with a linked list.
- * They don't move, so there is no need to pin them during collection
- * and we avoid the memcpy overhead.
- */
-static void* __attribute__((noinline))
-alloc_large_inner (MonoVTable *vtable, size_t size)
-{
-	LOSObject *obj;
-	void **vtslot;
-	size_t alloc_size;
-
-	g_assert (size > MAX_SMALL_OBJ_SIZE);
-
-	if (need_major_collection ()) {
-		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %zu)\n", size, los_memory_usage));
-		stop_world ();
-		major_collection ("LOS overflow");
-		restart_world ();
-	}
-	alloc_size = size;
-	alloc_size += sizeof (LOSObject);
-	alloc_size += pagesize - 1;
-	alloc_size &= ~(pagesize - 1);
-	/* FIXME: handle OOM */
-	obj = get_os_memory (alloc_size, TRUE);
-	g_assert (!((mword)obj->data & (ALLOC_ALIGN - 1)));
-	obj->size = size;
-	vtslot = (void**)obj->data;
-	*vtslot = vtable;
-	total_alloc += alloc_size;
-	UPDATE_HEAP_BOUNDARIES (obj->data, (char*)obj->data + size);
-	obj->next = los_object_list;
-	los_object_list = obj;
-	los_memory_usage += size;
-	los_num_objects++;
-	DEBUG (4, fprintf (gc_debug_file, "Allocated large object %p, vtable: %p (%s), size: %zd\n", obj->data, vtable, vtable->klass->name, size));
-	binary_protocol_alloc (obj->data, vtable, size);
-	return obj->data;
-}
 
 static void
 setup_fragment (Fragment *frag, Fragment *prev, size_t size)

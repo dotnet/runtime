@@ -1,0 +1,505 @@
+/*
+ * sgen-los.c: Simple generational GC.
+ *
+ * Author:
+ * 	Paolo Molaro (lupus@ximian.com)
+ *
+ * Copyright 2005-2010 Novell, Inc (http://www.novell.com)
+ *
+ * Thread start/stop adapted from Boehm's GC:
+ * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
+ * Copyright (c) 1996 by Silicon Graphics.  All rights reserved.
+ * Copyright (c) 1998 by Fergus Henderson.  All rights reserved.
+ * Copyright (c) 2000-2004 by Hewlett-Packard Company.  All rights reserved.
+ *
+ * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
+ * OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+ *
+ * Permission is hereby granted to use or copy this program
+ * for any purpose,  provided the above notices are retained on all copies.
+ * Permission to modify the code and to distribute modified code is granted,
+ * provided the above notices are retained, and a notice that the code was
+ * modified is included with the above copyright notice.
+ *
+ *
+ * Copyright 2001-2003 Ximian, Inc
+ * Copyright 2003-2010 Novell, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#define LOS_SECTION_SIZE	(1024 * 1024)
+
+/*
+ * This shouldn't be much smaller or larger than MAX_SMALL_OBJ_SIZE.
+ * Must be at least sizeof (LOSSection).
+ */
+#define LOS_CHUNK_SIZE		4096
+#define LOS_CHUNK_BITS		12
+
+/* Largest object that can be allocated in a section. */
+#define LOS_SECTION_OBJECT_LIMIT	(LOS_SECTION_SIZE - LOS_CHUNK_SIZE - sizeof (LOSObject))
+//#define LOS_SECTION_OBJECT_LIMIT	0
+#define LOS_SECTION_NUM_CHUNKS		((LOS_SECTION_SIZE >> LOS_CHUNK_BITS) - 1)
+
+#define LOS_SECTION_FOR_OBJ(obj)	((LOSSection*)((mword)(obj) & ~(mword)(LOS_SECTION_SIZE - 1)))
+
+#define LOS_NUM_FAST_SIZES		32
+
+typedef struct _LOSObject LOSObject;
+struct _LOSObject {
+	LOSObject *next;
+	mword size; /* this is the object size */
+	guint16 role;
+	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
+	char data [MONO_ZERO_LEN_ARRAY];
+};
+
+typedef struct _LOSFreeChunks LOSFreeChunks;
+struct _LOSFreeChunks {
+	LOSFreeChunks *next;
+	LOSFreeChunks *next_size;
+	size_t size;
+};
+
+typedef struct _LOSSection LOSSection;
+struct _LOSSection {
+	LOSSection *next;
+	LOSFreeChunks *free_chunks;
+	int num_free_chunks;
+};
+
+static LOSSection *los_sections = NULL;
+static LOSObject *los_object_list = NULL;
+static LOSFreeChunks *los_fast_free_lists [LOS_NUM_FAST_SIZES]; /* 0 is for larger sizes */
+static mword los_memory_usage = 0;
+static mword last_los_memory_usage = 0;
+static mword los_num_objects = 0;
+static int los_num_sections = 0;
+static mword next_los_collection = 2*1024*1024; /* 2 MB, need to tune */
+
+//#define USE_MALLOC
+//#define LOS_CONSISTENCY_CHECK
+//#define LOS_DUMMY
+
+#ifdef LOS_DUMMY
+#define LOS_SEGMENT_SIZE	(4096 * 1024)
+
+static char *los_segment = NULL;
+static int los_segment_index = 0;
+#endif
+
+static void
+los_consistency_check (void)
+{
+	LOSSection *section;
+	LOSObject *obj;
+	int i;
+	mword memory_usage = 0;
+
+	for (section = los_sections; section; section = section->next) {
+		LOSFreeChunks *free_chunks;
+		size_t total_free = 0;
+		for (free_chunks = section->free_chunks; free_chunks; free_chunks = free_chunks->next) {
+			int num_chunks;
+			LOSFreeChunks *size_chunks;
+
+			total_free += free_chunks->size;
+			if (free_chunks->next)
+				g_assert ((char*)free_chunks + free_chunks->size <= (char*)free_chunks->next);
+
+			num_chunks = free_chunks->size >> LOS_CHUNK_BITS;
+			if (num_chunks >= LOS_NUM_FAST_SIZES)
+				num_chunks = 0;
+			for (size_chunks = los_fast_free_lists [num_chunks]; size_chunks; size_chunks = size_chunks->next_size) {
+				if (size_chunks == free_chunks)
+					break;
+			}
+			g_assert (size_chunks == free_chunks);
+		}
+		g_assert ((total_free & (LOS_CHUNK_SIZE - 1)) == 0);
+		g_assert (section->num_free_chunks * LOS_CHUNK_SIZE == total_free);
+	}
+
+	for (obj = los_object_list; obj; obj = obj->next) {
+		char *start = (char*)obj;
+		char *end = obj->data + obj->size;
+		LOSFreeChunks *free_chunks;
+
+		memory_usage += obj->size;
+
+		if (obj->size > LOS_SECTION_OBJECT_LIMIT)
+			continue;
+
+		section = LOS_SECTION_FOR_OBJ (obj);
+
+		for (free_chunks = section->free_chunks; free_chunks; free_chunks = free_chunks->next)
+			g_assert (end <= (char*)free_chunks || start >= (char*)free_chunks + free_chunks->size);
+	}
+
+	for (i = 0; i < LOS_NUM_FAST_SIZES; ++i) {
+		LOSFreeChunks *size_chunks;
+		for (size_chunks = los_fast_free_lists [i]; size_chunks; size_chunks = size_chunks->next_size) {
+			LOSSection *section = LOS_SECTION_FOR_OBJ (size_chunks);
+			LOSFreeChunks *free_chunks;
+
+			if (i == 0)
+				g_assert (size_chunks->size >= LOS_NUM_FAST_SIZES * LOS_CHUNK_SIZE);
+			else
+				g_assert (size_chunks->size == i * LOS_CHUNK_SIZE);
+
+			for (free_chunks = section->free_chunks; free_chunks; free_chunks = free_chunks->next)
+				if (size_chunks == free_chunks)
+					break;
+			g_assert (size_chunks == free_chunks);
+		}
+	}
+
+	g_assert (los_memory_usage == memory_usage);
+}
+
+static LOSFreeChunks*
+get_from_size_list (LOSFreeChunks **list, size_t size)
+{
+	LOSFreeChunks *free_chunks = NULL;
+	LOSFreeChunks *next;
+	LOSSection *section;
+
+	g_assert ((size & (LOS_CHUNK_SIZE - 1)) == 0);
+
+	while (*list) {
+		free_chunks = *list;
+		if (free_chunks->size >= size)
+			break;
+		list = &(*list)->next_size;
+	}
+
+	if (!*list)
+		return NULL;
+
+	*list = free_chunks->next_size;
+
+	if (free_chunks->size > size) {
+		int num_chunks;
+
+		next = (LOSFreeChunks*)((char*)free_chunks + size);
+		next->size = free_chunks->size - size;
+		next->next = free_chunks->next;
+
+		num_chunks = next->size >> LOS_CHUNK_BITS;
+		if (num_chunks >= LOS_NUM_FAST_SIZES)
+			num_chunks = 0;
+		next->next_size = los_fast_free_lists [num_chunks];
+		los_fast_free_lists [num_chunks] = next;
+	} else {
+		next = free_chunks->next;
+	}
+
+	section = LOS_SECTION_FOR_OBJ (free_chunks);
+	if (section->free_chunks == free_chunks) {
+		section->free_chunks = next;
+	} else {
+		LOSFreeChunks *prev;
+		for (prev = section->free_chunks; prev; prev = prev->next) {
+			if (prev->next == free_chunks) {
+				prev->next = next;
+				break;
+			}
+		}
+		g_assert (prev);
+	}
+
+	section->num_free_chunks -= size >> LOS_CHUNK_BITS;
+	g_assert (section->num_free_chunks >= 0);
+
+	return free_chunks;
+}
+
+static LOSObject*
+get_los_section_memory (size_t size)
+{
+	LOSSection *section;
+	LOSFreeChunks *free_chunks;
+	int num_chunks;
+
+	size += LOS_CHUNK_SIZE - 1;
+	size &= ~(LOS_CHUNK_SIZE - 1);
+
+	num_chunks = size >> LOS_CHUNK_BITS;
+
+	g_assert (size > 0 && size - sizeof (LOSObject) <= LOS_SECTION_OBJECT_LIMIT);
+	g_assert (num_chunks > 0);
+
+ retry:
+	if (num_chunks >= LOS_NUM_FAST_SIZES) {
+		free_chunks = get_from_size_list (&los_fast_free_lists [0], size);
+	} else {
+		int i;
+		for (i = num_chunks; i < LOS_NUM_FAST_SIZES; ++i) {
+			free_chunks = get_from_size_list (&los_fast_free_lists [i], size);
+			if (free_chunks)
+				break;
+		}
+		if (!free_chunks)
+			free_chunks = get_from_size_list (&los_fast_free_lists [0], size);
+	}
+
+	if (free_chunks)
+		return (LOSObject*)free_chunks;
+
+	section = get_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
+
+	total_alloc += LOS_SECTION_SIZE;
+
+	free_chunks = (LOSFreeChunks*)((char*)section + LOS_CHUNK_SIZE);
+	free_chunks->next = NULL;
+	free_chunks->size = LOS_SECTION_SIZE - LOS_CHUNK_SIZE;
+	free_chunks->next_size = los_fast_free_lists [0];
+	los_fast_free_lists [0] = free_chunks;
+
+	section->free_chunks = free_chunks;
+	section->num_free_chunks = LOS_SECTION_NUM_CHUNKS;
+
+	section->next = los_sections;
+	los_sections = section;
+
+	++los_num_sections;
+
+	goto retry;
+}
+
+static void
+free_los_section_memory (LOSObject *obj, size_t size)
+{
+	LOSSection *section = LOS_SECTION_FOR_OBJ (obj);
+	LOSFreeChunks *prev, *free_chunks;
+	LOSFreeChunks *new_free = (LOSFreeChunks*)obj;
+	int num_chunks;
+	int i;
+
+	size += LOS_CHUNK_SIZE - 1;
+	size &= ~(LOS_CHUNK_SIZE - 1);
+
+	num_chunks = size >> LOS_CHUNK_BITS;
+
+	g_assert (size > 0 && size - sizeof (LOSObject) <= LOS_SECTION_OBJECT_LIMIT);
+	g_assert (num_chunks > 0);
+
+	section->num_free_chunks += num_chunks;
+	g_assert (section->num_free_chunks <= LOS_SECTION_NUM_CHUNKS);
+
+	/*
+	 * We could free the LOS section here if it's empty, but we
+	 * can't unless we also remove its free chunks from the fast
+	 * free lists.  Instead, we do it in los_sweep().
+	 */
+
+	prev = NULL;
+	for (free_chunks = section->free_chunks; free_chunks; free_chunks = free_chunks->next) {
+		if (free_chunks > new_free)
+			break;
+		prev = free_chunks;
+	}
+
+	if (prev)
+		g_assert (prev < new_free);
+	if (free_chunks)
+		g_assert (free_chunks > new_free);
+
+	new_free->size = size;
+	new_free->next = free_chunks;
+	if (prev)
+		prev->next = new_free;
+	else
+		section->free_chunks = new_free;
+
+	if (num_chunks >= LOS_NUM_FAST_SIZES)
+		num_chunks = 0;
+	new_free->next_size = los_fast_free_lists [num_chunks];
+	los_fast_free_lists [num_chunks] = new_free;
+}
+
+static void
+free_large_object (LOSObject *obj)
+{
+#ifndef LOS_DUMMY
+	size_t size = obj->size;
+	DEBUG (4, fprintf (gc_debug_file, "Freed large object %p, size %zd\n", obj->data, obj->size));
+	binary_protocol_empty (obj->data, obj->size);
+
+	los_memory_usage -= size;
+	los_num_objects--;
+
+#ifdef USE_MALLOC
+	free (obj);
+#else
+	if (size > LOS_SECTION_OBJECT_LIMIT) {
+		size += sizeof (LOSObject);
+		size += pagesize - 1;
+		size &= ~(pagesize - 1);
+		total_alloc -= size;
+		free_os_memory (obj, size);
+	} else {
+		free_los_section_memory (obj, size + sizeof (LOSObject));
+#ifdef LOS_CONSISTENCY_CHECKS
+		los_consistency_check ();
+#endif
+	}
+#endif
+#endif
+}
+
+/*
+ * Objects with size >= MAX_SMALL_SIZE are allocated in the large object space.
+ * They are currently kept track of with a linked list.
+ * They don't move, so there is no need to pin them during collection
+ * and we avoid the memcpy overhead.
+ */
+static void* __attribute__((noinline))
+alloc_large_inner (MonoVTable *vtable, size_t size)
+{
+	LOSObject *obj;
+	void **vtslot;
+
+	g_assert (size > MAX_SMALL_OBJ_SIZE);
+
+#ifdef LOS_DUMMY
+	if (!los_segment)
+		los_segment = get_os_memory (LOS_SEGMENT_SIZE, TRUE);
+	los_segment_index += ALLOC_ALIGN - 1;
+	los_segment_index &= ~(ALLOC_ALIGN - 1);
+
+	obj = (LOSObject*)(los_segment + los_segment_index);
+	los_segment_index += size + sizeof (LOSObject);
+	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
+#else
+	if (need_major_collection ()) {
+		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %zu, limit: %zu)\n", size, los_memory_usage, next_los_collection));
+		stop_world ();
+		major_collection ("LOS overflow");
+		restart_world ();
+	}
+
+#ifdef USE_MALLOC
+	obj = malloc (size + sizeof (LOSObject));
+	memset (obj, 0, size + sizeof (LOSObject));
+#else
+	if (size > LOS_SECTION_OBJECT_LIMIT) {
+		size_t alloc_size = size;
+		alloc_size += sizeof (LOSObject);
+		alloc_size += pagesize - 1;
+		alloc_size &= ~(pagesize - 1);
+		/* FIXME: handle OOM */
+		obj = get_os_memory (alloc_size, TRUE);
+		total_alloc += alloc_size;
+	} else {
+		obj = get_los_section_memory (size + sizeof (LOSObject));
+		memset (obj, 0, size + sizeof (LOSObject));
+	}
+#endif
+#endif
+
+	g_assert (!((mword)obj->data & (ALLOC_ALIGN - 1)));
+	obj->size = size;
+	vtslot = (void**)obj->data;
+	*vtslot = vtable;
+	UPDATE_HEAP_BOUNDARIES (obj->data, (char*)obj->data + size);
+	obj->next = los_object_list;
+	los_object_list = obj;
+	los_memory_usage += size;
+	los_num_objects++;
+	DEBUG (4, fprintf (gc_debug_file, "Allocated large object %p, vtable: %p (%s), size: %zd\n", obj->data, vtable, vtable->klass->name, size));
+	binary_protocol_alloc (obj->data, vtable, size);
+
+#ifdef LOS_CONSISTENCY_CHECK
+	los_consistency_check ();
+#endif
+
+	return obj->data;
+}
+
+static void
+los_sweep (void)
+{
+	LOSSection *section, *prev;
+	int i;
+	int num_sections = 0;
+
+	for (i = 0; i < LOS_NUM_FAST_SIZES; ++i)
+		los_fast_free_lists [i] = NULL;
+
+	prev = NULL;
+	section = los_sections;
+	while (section) {
+		LOSFreeChunks *free_chunks;
+
+		if (section->num_free_chunks == LOS_SECTION_NUM_CHUNKS) {
+			LOSSection *next = section->next;
+			if (prev)
+				prev->next = next;
+			else
+				los_sections = next;
+			free_os_memory (section, LOS_SECTION_SIZE);
+			section = next;
+			--los_num_sections;
+			continue;
+		}
+
+		free_chunks = section->free_chunks;
+		while (free_chunks) {
+			if (free_chunks->next == (LOSFreeChunks*)((char*)free_chunks + free_chunks->size)) {
+				free_chunks->size += free_chunks->next->size;
+				free_chunks->next = free_chunks->next->next;
+			} else {
+				int num_chunks = free_chunks->size >> LOS_CHUNK_BITS;
+				g_assert (num_chunks > 0);
+				if (num_chunks >= LOS_NUM_FAST_SIZES)
+					num_chunks = 0;
+
+				free_chunks->next_size = los_fast_free_lists [num_chunks];
+				los_fast_free_lists [num_chunks] = free_chunks;
+
+				free_chunks = free_chunks->next;
+			}
+		}
+
+		prev = section;
+		section = section->next;
+
+		++num_sections;
+	}
+
+#ifdef LOS_CONSISTENCY_CHECK
+	los_consistency_check ();
+#endif
+
+	/*
+	g_print ("LOS sections: %d  objects: %d  usage: %d\n", num_sections, los_num_objects, los_memory_usage);
+	for (i = 0; i < LOS_NUM_FAST_SIZES; ++i) {
+		int num_chunks = 0;
+		LOSFreeChunks *free_chunks;
+		for (free_chunks = los_fast_free_lists [i]; free_chunks; free_chunks = free_chunks->next_size)
+			++num_chunks;
+		g_print ("  %d: %d\n", i, num_chunks);
+	}
+	*/
+
+	g_assert (los_num_sections == num_sections);
+}
