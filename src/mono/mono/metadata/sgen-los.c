@@ -60,6 +60,7 @@
 #define LOS_SECTION_NUM_CHUNKS		((LOS_SECTION_SIZE >> LOS_CHUNK_BITS) - 1)
 
 #define LOS_SECTION_FOR_OBJ(obj)	((LOSSection*)((mword)(obj) & ~(mword)(LOS_SECTION_SIZE - 1)))
+#define LOS_CHUNK_INDEX(obj,section)	(((char*)(obj) - (char*)(section)) >> LOS_CHUNK_BITS)
 
 #define LOS_NUM_FAST_SIZES		32
 
@@ -74,7 +75,6 @@ struct _LOSObject {
 
 typedef struct _LOSFreeChunks LOSFreeChunks;
 struct _LOSFreeChunks {
-	LOSFreeChunks *next;
 	LOSFreeChunks *next_size;
 	size_t size;
 };
@@ -82,8 +82,8 @@ struct _LOSFreeChunks {
 typedef struct _LOSSection LOSSection;
 struct _LOSSection {
 	LOSSection *next;
-	LOSFreeChunks *free_chunks;
 	int num_free_chunks;
+	unsigned char *free_chunk_map;
 };
 
 static LOSSection *los_sections = NULL;
@@ -114,34 +114,9 @@ los_consistency_check (void)
 	int i;
 	mword memory_usage = 0;
 
-	for (section = los_sections; section; section = section->next) {
-		LOSFreeChunks *free_chunks;
-		size_t total_free = 0;
-		for (free_chunks = section->free_chunks; free_chunks; free_chunks = free_chunks->next) {
-			int num_chunks;
-			LOSFreeChunks *size_chunks;
-
-			total_free += free_chunks->size;
-			if (free_chunks->next)
-				g_assert ((char*)free_chunks + free_chunks->size <= (char*)free_chunks->next);
-
-			num_chunks = free_chunks->size >> LOS_CHUNK_BITS;
-			if (num_chunks >= LOS_NUM_FAST_SIZES)
-				num_chunks = 0;
-			for (size_chunks = los_fast_free_lists [num_chunks]; size_chunks; size_chunks = size_chunks->next_size) {
-				if (size_chunks == free_chunks)
-					break;
-			}
-			g_assert (size_chunks == free_chunks);
-		}
-		g_assert ((total_free & (LOS_CHUNK_SIZE - 1)) == 0);
-		g_assert (section->num_free_chunks * LOS_CHUNK_SIZE == total_free);
-	}
-
 	for (obj = los_object_list; obj; obj = obj->next) {
-		char *start = (char*)obj;
 		char *end = obj->data + obj->size;
-		LOSFreeChunks *free_chunks;
+		int start_index, num_chunks;
 
 		memory_usage += obj->size;
 
@@ -150,37 +125,54 @@ los_consistency_check (void)
 
 		section = LOS_SECTION_FOR_OBJ (obj);
 
-		for (free_chunks = section->free_chunks; free_chunks; free_chunks = free_chunks->next)
-			g_assert (end <= (char*)free_chunks || start >= (char*)free_chunks + free_chunks->size);
+		g_assert (end <= (char*)section + LOS_SECTION_SIZE);
+
+		start_index = LOS_CHUNK_INDEX (obj, section);
+		num_chunks = (obj->size + sizeof (LOSObject) + LOS_CHUNK_SIZE - 1) >> LOS_CHUNK_BITS;
+		for (i = start_index; i < start_index + num_chunks; ++i)
+			g_assert (!section->free_chunk_map [i]);
 	}
 
 	for (i = 0; i < LOS_NUM_FAST_SIZES; ++i) {
 		LOSFreeChunks *size_chunks;
 		for (size_chunks = los_fast_free_lists [i]; size_chunks; size_chunks = size_chunks->next_size) {
 			LOSSection *section = LOS_SECTION_FOR_OBJ (size_chunks);
-			LOSFreeChunks *free_chunks;
+			int j, num_chunks, start_index;
 
 			if (i == 0)
 				g_assert (size_chunks->size >= LOS_NUM_FAST_SIZES * LOS_CHUNK_SIZE);
 			else
 				g_assert (size_chunks->size == i * LOS_CHUNK_SIZE);
 
-			for (free_chunks = section->free_chunks; free_chunks; free_chunks = free_chunks->next)
-				if (size_chunks == free_chunks)
-					break;
-			g_assert (size_chunks == free_chunks);
+			num_chunks = size_chunks->size >> LOS_CHUNK_BITS;
+			start_index = LOS_CHUNK_INDEX (size_chunks, section);
+			for (j = start_index; j < start_index + num_chunks; ++j)
+				g_assert (section->free_chunk_map [j]);
 		}
 	}
 
 	g_assert (los_memory_usage == memory_usage);
 }
 
+static void
+add_free_chunk (LOSFreeChunks *free_chunks, size_t size)
+{
+	int num_chunks = size >> LOS_CHUNK_BITS;
+
+	free_chunks->size = size;
+
+	if (num_chunks >= LOS_NUM_FAST_SIZES)
+		num_chunks = 0;
+	free_chunks->next_size = los_fast_free_lists [num_chunks];
+	los_fast_free_lists [num_chunks] = free_chunks;
+}
+
 static LOSFreeChunks*
 get_from_size_list (LOSFreeChunks **list, size_t size)
 {
 	LOSFreeChunks *free_chunks = NULL;
-	LOSFreeChunks *next;
 	LOSSection *section;
+	int num_chunks, i, start_index;
 
 	g_assert ((size & (LOS_CHUNK_SIZE - 1)) == 0);
 
@@ -196,34 +188,17 @@ get_from_size_list (LOSFreeChunks **list, size_t size)
 
 	*list = free_chunks->next_size;
 
-	if (free_chunks->size > size) {
-		int num_chunks;
+	if (free_chunks->size > size)
+		add_free_chunk ((LOSFreeChunks*)((char*)free_chunks + size), free_chunks->size - size);
 
-		next = (LOSFreeChunks*)((char*)free_chunks + size);
-		next->size = free_chunks->size - size;
-		next->next = free_chunks->next;
-
-		num_chunks = next->size >> LOS_CHUNK_BITS;
-		if (num_chunks >= LOS_NUM_FAST_SIZES)
-			num_chunks = 0;
-		next->next_size = los_fast_free_lists [num_chunks];
-		los_fast_free_lists [num_chunks] = next;
-	} else {
-		next = free_chunks->next;
-	}
+	num_chunks = size >> LOS_CHUNK_BITS;
 
 	section = LOS_SECTION_FOR_OBJ (free_chunks);
-	if (section->free_chunks == free_chunks) {
-		section->free_chunks = next;
-	} else {
-		LOSFreeChunks *prev;
-		for (prev = section->free_chunks; prev; prev = prev->next) {
-			if (prev->next == free_chunks) {
-				prev->next = next;
-				break;
-			}
-		}
-		g_assert (prev);
+
+	start_index = LOS_CHUNK_INDEX (free_chunks, section);
+	for (i = start_index; i < start_index + num_chunks; ++i) {
+		g_assert (section->free_chunk_map [i]);
+		section->free_chunk_map [i] = 0;
 	}
 
 	section->num_free_chunks -= size >> LOS_CHUNK_BITS;
@@ -269,13 +244,16 @@ get_los_section_memory (size_t size)
 	total_alloc += LOS_SECTION_SIZE;
 
 	free_chunks = (LOSFreeChunks*)((char*)section + LOS_CHUNK_SIZE);
-	free_chunks->next = NULL;
 	free_chunks->size = LOS_SECTION_SIZE - LOS_CHUNK_SIZE;
 	free_chunks->next_size = los_fast_free_lists [0];
 	los_fast_free_lists [0] = free_chunks;
 
-	section->free_chunks = free_chunks;
 	section->num_free_chunks = LOS_SECTION_NUM_CHUNKS;
+
+	section->free_chunk_map = (unsigned char*)section + sizeof (LOSSection);
+	g_assert (sizeof (LOSSection) + LOS_SECTION_NUM_CHUNKS + 1 <= LOS_CHUNK_SIZE);
+	section->free_chunk_map [0] = 0;
+	memset (section->free_chunk_map + 1, 1, LOS_SECTION_NUM_CHUNKS);
 
 	section->next = los_sections;
 	los_sections = section;
@@ -289,10 +267,7 @@ static void
 free_los_section_memory (LOSObject *obj, size_t size)
 {
 	LOSSection *section = LOS_SECTION_FOR_OBJ (obj);
-	LOSFreeChunks *prev, *free_chunks;
-	LOSFreeChunks *new_free = (LOSFreeChunks*)obj;
-	int num_chunks;
-	int i;
+	int num_chunks, i, start_index;
 
 	size += LOS_CHUNK_SIZE - 1;
 	size &= ~(LOS_CHUNK_SIZE - 1);
@@ -311,29 +286,13 @@ free_los_section_memory (LOSObject *obj, size_t size)
 	 * free lists.  Instead, we do it in los_sweep().
 	 */
 
-	prev = NULL;
-	for (free_chunks = section->free_chunks; free_chunks; free_chunks = free_chunks->next) {
-		if (free_chunks > new_free)
-			break;
-		prev = free_chunks;
+	start_index = LOS_CHUNK_INDEX (obj, section);
+	for (i = start_index; i < start_index + num_chunks; ++i) {
+		g_assert (!section->free_chunk_map [i]);
+		section->free_chunk_map [i] = 1;
 	}
 
-	if (prev)
-		g_assert (prev < new_free);
-	if (free_chunks)
-		g_assert (free_chunks > new_free);
-
-	new_free->size = size;
-	new_free->next = free_chunks;
-	if (prev)
-		prev->next = new_free;
-	else
-		section->free_chunks = new_free;
-
-	if (num_chunks >= LOS_NUM_FAST_SIZES)
-		num_chunks = 0;
-	new_free->next_size = los_fast_free_lists [num_chunks];
-	los_fast_free_lists [num_chunks] = new_free;
+	add_free_chunk ((LOSFreeChunks*)obj, size);
 }
 
 static void
@@ -448,8 +407,6 @@ los_sweep (void)
 	prev = NULL;
 	section = los_sections;
 	while (section) {
-		LOSFreeChunks *free_chunks;
-
 		if (section->num_free_chunks == LOS_SECTION_NUM_CHUNKS) {
 			LOSSection *next = section->next;
 			if (prev)
@@ -462,21 +419,13 @@ los_sweep (void)
 			continue;
 		}
 
-		free_chunks = section->free_chunks;
-		while (free_chunks) {
-			if (free_chunks->next == (LOSFreeChunks*)((char*)free_chunks + free_chunks->size)) {
-				free_chunks->size += free_chunks->next->size;
-				free_chunks->next = free_chunks->next->next;
-			} else {
-				int num_chunks = free_chunks->size >> LOS_CHUNK_BITS;
-				g_assert (num_chunks > 0);
-				if (num_chunks >= LOS_NUM_FAST_SIZES)
-					num_chunks = 0;
-
-				free_chunks->next_size = los_fast_free_lists [num_chunks];
-				los_fast_free_lists [num_chunks] = free_chunks;
-
-				free_chunks = free_chunks->next;
+		for (i = 0; i <= LOS_SECTION_NUM_CHUNKS; ++i) {
+			if (section->free_chunk_map [i]) {
+				int j;
+				for (j = i + 1; j <= LOS_SECTION_NUM_CHUNKS && section->free_chunk_map [j]; ++j)
+					;
+				add_free_chunk ((LOSFreeChunks*)((char*)section + (i << LOS_CHUNK_BITS)), (j - i) << LOS_CHUNK_BITS);
+				i = j - 1;
 			}
 		}
 
