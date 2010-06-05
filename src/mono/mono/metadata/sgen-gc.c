@@ -4206,6 +4206,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			 */
 			if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE) {
 				p = alloc_degraded (vtable, size);
+				binary_protocol_alloc_degraded (p, vtable, size);
 				return p;
 			}
 
@@ -4217,6 +4218,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 						minor_collect_or_expand_inner (size);
 						if (degraded_mode) {
 							p = alloc_degraded (vtable, size);
+							binary_protocol_alloc_degraded (p, vtable, size);
 							return p;
 						}
 					}
@@ -4247,6 +4249,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 							minor_collect_or_expand_inner (tlab_size);
 							if (degraded_mode) {
 								p = alloc_degraded (vtable, size);
+								binary_protocol_alloc_degraded (p, vtable, size);
 								return p;
 							}
 						}
@@ -4442,7 +4445,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		p = major_alloc_small_pinned_obj (size, vtable->klass->has_references);
 	}
 	DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
-	binary_protocol_alloc (p, vtable, size);
+	binary_protocol_alloc_pinned (p, vtable, size);
 	*p = vtable;
 	UNLOCK_GC;
 	return p;

@@ -1,3 +1,8 @@
+2010-06-05  Mark Probst  <mark.probst@gmail.com>
+
+	* tools/sgen/sgen-grep-binprot.c: Updated for degraded and pinned
+	allocations.
+
 2010-06-02  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Check whenever we are using mono's LLVM branch.

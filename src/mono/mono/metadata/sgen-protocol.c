@@ -78,6 +78,20 @@ binary_protocol_alloc (gpointer obj, gpointer vtable, int size)
 }
 
 static void
+binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size)
+{
+	SGenProtocolAlloc entry = { obj, vtable, size };
+	protocol_entry (SGEN_PROTOCOL_ALLOC_PINNED, &entry, sizeof (SGenProtocolAlloc));
+}
+
+static void
+binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, int size)
+{
+	SGenProtocolAlloc entry = { obj, vtable, size };
+	protocol_entry (SGEN_PROTOCOL_ALLOC_DEGRADED, &entry, sizeof (SGenProtocolAlloc));
+}
+
+static void
 binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size)
 {
 	SGenProtocolCopy entry = { from, to, vtable, size };
@@ -169,6 +183,8 @@ binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset, g
 
 #define binary_protocol_collection(generation)
 #define binary_protocol_alloc(obj, vtable, size)
+#define binary_protocol_alloc_pinned(obj, vtable, size)
+#define binary_protocol_alloc_degraded(obj, vtable, size)
 #define binary_protocol_copy(from, to, vtable, size)
 #define binary_protocol_pin(obj, vtable, size)
 #define binary_protocol_mark(obj, vtable, size)
