@@ -461,9 +461,7 @@ struct _LOSObject {
  * reference-free objects.
  */
 #define PINNED_FIRST_SLOT_SIZE (sizeof (gpointer) * 4)
-#define MAX_FREELIST_SIZE 2048
-#define PINNED_PAGE_SIZE (4096)
-#define PINNED_CHUNK_MIN_SIZE (4096*8)
+#define MAX_FREELIST_SIZE 8192
 typedef struct _PinnedChunk PinnedChunk;
 struct _PinnedChunk {
 	Block block;
@@ -697,7 +695,7 @@ static int default_nursery_bits = 22;
 /* the minimum size of a fragment that we consider useful for allocation */
 #define FRAGMENT_MIN_SIZE (512)
 /* This is a fixed value used for pinned chunks, not the system pagesize */
-#define FREELIST_PAGESIZE 4096
+#define FREELIST_PAGESIZE (16*1024)
 
 static mword pagesize = 4096;
 static mword nursery_size;
@@ -808,7 +806,8 @@ static int no_finalize = 0;
 static const int freelist_sizes [] = {
 	8, 16, 24, 32, 40, 48, 64, 80,
 	96, 128, 160, 192, 224, 256, 320, 384,
-	448, 512, 584, 680, 816, 1024, 1360, 2048};
+	448, 512, 584, 680, 816, 1024, 1360, 2048,
+	2336, 2728, 3272, 4096, 5456, 8192 };
 #define FREELIST_NUM_SLOTS (sizeof (freelist_sizes) / sizeof (freelist_sizes [0]))
 
 /* This is also the MAJOR_SECTION_SIZE for the copying major
@@ -963,7 +962,7 @@ static Fragment *fragment_freelist = NULL;
  * of which (DESC_TYPE_RUN_LENGTH, DESC_TYPE_SMALL_BITMAP) encode the
  * object size.
  */
-#define MAX_SMALL_OBJ_SIZE 2040
+#define MAX_SMALL_OBJ_SIZE 8000
 
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
