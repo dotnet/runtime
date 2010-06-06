@@ -4231,14 +4231,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 	/* allocate local 1 (object) exc */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
-	/* cond set *exc to null */
-	mono_mb_emit_byte (mb, CEE_LDARG_2);
-	mono_mb_emit_byte (mb, CEE_BRFALSE_S);
-	mono_mb_emit_byte (mb, 3);	
-	mono_mb_emit_byte (mb, CEE_LDARG_2);
-	mono_mb_emit_byte (mb, CEE_LDNULL);
-	mono_mb_emit_byte (mb, CEE_STIND_REF);
-
 	emit_thread_force_interrupt_checkpoint (mb);
 
 	if (virtual) {
