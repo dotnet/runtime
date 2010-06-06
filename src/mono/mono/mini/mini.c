@@ -5251,6 +5251,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		mono_runtime_class_init (info->vtable);
 	}
 
+	/* The wrappers expect this to be initialized to NULL */
+	if (exc)
+		*exc = NULL;
+
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 	if (info->dyn_call_info) {
 		MonoMethodSignature *sig = mono_method_signature (method);
