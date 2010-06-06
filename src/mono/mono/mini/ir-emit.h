@@ -751,13 +751,19 @@ static int ccount = 0;
 		} \
 	} while (0)
 
+/* Loads/Stores which can fault are handled correctly by the LLVM mono branch */
+#define MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE(cfg) do { \
+	if (COMPILE_LLVM (cfg) && !IS_LLVM_MONO_BRANCH)			\
+		MONO_EMIT_NEW_IMPLICIT_EXCEPTION ((cfg));			\
+    } while (0)
+
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
 #define MONO_EMIT_NULL_CHECK(cfg, reg) do { \
 		if (cfg->explicit_null_checks) {							  \
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0); \
 			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException"); \
-		} else {														\
-			MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg);						\
+		} else {			\
+			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg);						\
 		}																\
 	} while (0)
 
@@ -767,25 +773,24 @@ static int ccount = 0;
 		MONO_EMIT_NULL_CHECK (cfg, sreg); \
 	} else {												\
 		MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
-		MONO_EMIT_NEW_IMPLICIT_EXCEPTION (cfg);				\
+		MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg);				\
 		} \
 	MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg);	\
 	} while (0)
 
 /* A load which can cause a nullref */
 #define NEW_LOAD_MEMBASE_FAULT(cfg,dest,op,dr,base,offset) do { \
-		MONO_EMIT_NULL_CHECK ((cfg), (base));							\
+		MONO_EMIT_NULL_CHECK ((cfg), (base));	\
 		NEW_LOAD_MEMBASE_FLAGS ((cfg), (dest), (op), (dr), (base), (offset), MONO_INST_FAULT); \
 	} while (0)
 
 #define EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dest,op,dr,base,offset) do { \
-		MONO_EMIT_NULL_CHECK ((cfg), (base));							\
-		NEW_LOAD_MEMBASE_FLAGS ((cfg), (dest), (op), (dr), (base), (offset), MONO_INST_FAULT); \
+		NEW_LOAD_MEMBASE_FAULT ((cfg), (dest), (op), (dr), (base), (offset)); \
 		MONO_ADD_INS ((cfg)->cbb, (dest)); \
 	} while (0)
 
 #define MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT(cfg,op,dr,base,offset) do { \
-		MONO_EMIT_NULL_CHECK (cfg, base);								\
+		MONO_EMIT_NULL_CHECK (cfg, base);		\
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS ((cfg), (op), (dr), (base), (offset), MONO_INST_FAULT); \
 	} while (0)
 

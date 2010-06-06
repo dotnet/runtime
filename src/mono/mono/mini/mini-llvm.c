@@ -1077,6 +1077,82 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 	return lcall;
 }
 
+static LLVMValueRef
+emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, int size, LLVMValueRef addr, const char *name, gboolean is_faulting)
+{
+	const char *intrins_name;
+	LLVMValueRef args [16];
+
+	if (is_faulting && bb->region != -1 && IS_LLVM_MONO_BRANCH) {
+		/*
+		 * We handle loads which can fault by calling a mono specific intrinsic
+		 * using an invoke, so they are handled properly inside try blocks.
+		 */
+		switch (size) {
+		case 1:
+			intrins_name = "llvm.mono.load.i8.p0i8";
+			break;
+		case 2:
+			intrins_name = "llvm.mono.load.i16.p0i16";
+			break;
+		case 4:
+			intrins_name = "llvm.mono.load.i32.p0i32";
+			break;
+		case 8:
+			intrins_name = "llvm.mono.load.i64.p0i64";
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		args [0] = addr;
+		args [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		args [2] = LLVMConstInt (LLVMInt1Type (), TRUE, FALSE);
+		return emit_call (ctx, bb, builder_ref, LLVMGetNamedFunction (ctx->module, intrins_name), args, 3);
+	} else {
+		/* 
+		 * We emit volatile loads for loads which can fault, because otherwise
+		 * LLVM will generate invalid code when encountering a load from a
+		 * NULL address.
+		 */
+		return mono_llvm_build_load (*builder_ref, addr, name, is_faulting);
+	}
+}
+
+static void
+emit_store (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, int size, LLVMValueRef value, LLVMValueRef addr, gboolean is_faulting)
+{
+	const char *intrins_name;
+	LLVMValueRef args [16];
+
+	if (is_faulting && bb->region != -1) {
+		switch (size) {
+		case 1:
+			intrins_name = "llvm.mono.store.i8.p0i8";
+			break;
+		case 2:
+			intrins_name = "llvm.mono.store.i16.p0i16";
+			break;
+		case 4:
+			intrins_name = "llvm.mono.store.i32.p0i32";
+			break;
+		case 8:
+			intrins_name = "llvm.mono.store.i64.p0i64";
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		args [0] = value;
+		args [1] = addr;
+		args [2] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		args [3] = LLVMConstInt (LLVMInt1Type (), TRUE, FALSE);
+		emit_call (ctx, bb, builder_ref, LLVMGetNamedFunction (ctx->module, intrins_name), args, 4);
+	} else {
+		LLVMBuildStore (*builder_ref, value, addr);
+	}
+}
+
 /*
  * emit_cond_system_exception:
  *
@@ -2577,11 +2653,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				if (sext || zext)
 					dname = (char*)"";
 
-				/* 
-				 * We emit volatile loads for loads which can fault, because otherwise
-				 * LLVM will generate invalid code when encountering a load from a
-				 * NULL address.
-				 */
 				if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM) || (ins->opcode == OP_LOADI4_MEM) || (ins->opcode == OP_LOADU4_MEM) || (ins->opcode == OP_LOADU1_MEM) || (ins->opcode == OP_LOADU2_MEM)) {
 					addr = LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE);
 				} else if (ins->inst_offset == 0) {
@@ -2597,7 +2668,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				addr = convert (ctx, addr, LLVMPointerType (t, 0));
 
-				values [ins->dreg] = mono_llvm_build_load (builder, addr, dname, is_volatile);
+				values [ins->dreg] = emit_load (ctx, bb, &builder, size, addr, dname, is_volatile);
 
 				if (sext)
 					values [ins->dreg] = LLVMBuildSExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
@@ -2619,6 +2690,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMValueRef index, addr;
 				LLVMTypeRef t;
 				gboolean sext = FALSE, zext = FALSE;
+				gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
 
 				t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -2630,7 +2702,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
 					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, "");
 				}
-				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], t), convert (ctx, addr, LLVMPointerType (t, 0)));
+				emit_store (ctx, bb, &builder, size, convert (ctx, values [ins->sreg1], t), convert (ctx, addr, LLVMPointerType (t, 0)), is_volatile);
 				break;
 			}
 
@@ -2643,6 +2715,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMValueRef index, addr;
 				LLVMTypeRef t;
 				gboolean sext = FALSE, zext = FALSE;
+				gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
 
 				t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -2654,12 +2727,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
 					addr = LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, "");
 				}
-				LLVMBuildStore (builder, convert (ctx, LLVMConstInt (t, ins->inst_imm, FALSE), t), addr);
+				emit_store (ctx, bb, &builder, size, convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), t), addr, is_volatile);
 				break;
 			}
 
 			case OP_CHECK_THIS:
-				mono_llvm_build_load (builder, convert (ctx, values [ins->sreg1], LLVMPointerType (IntPtrType (), 0)), "", TRUE);
+				emit_load (ctx, bb, &builder, sizeof (gpointer), convert (ctx, values [ins->sreg1], LLVMPointerType (IntPtrType (), 0)), "", TRUE);
 				break;
 			case OP_OUTARG_VTRETADDR:
 				break;
@@ -4028,6 +4101,28 @@ add_intrinsics (LLVMModuleRef module)
 		arg_types [1] = vector_type;
 		LLVMAddFunction (module, "llvm.x86.sse2.min.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
 		LLVMAddFunction (module, "llvm.x86.sse2.max.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+	}
+
+	/* Load/Store intrinsics */
+	if (IS_LLVM_MONO_BRANCH) {
+		LLVMTypeRef arg_types [5];
+		int i;
+		char name [128];
+
+		for (i = 1; i <= 8; i *= 2) {
+			arg_types [0] = LLVMPointerType (LLVMIntType (i * 8), 0);
+			arg_types [1] = LLVMInt32Type ();
+			arg_types [2] = LLVMInt1Type ();
+			sprintf (name, "llvm.mono.load.i%d.p0i%d", i * 8, i * 8);
+			LLVMAddFunction (module, name, LLVMFunctionType (LLVMIntType (i * 8), arg_types, 3, FALSE));
+
+			arg_types [0] = LLVMIntType (i * 8);
+			arg_types [1] = LLVMPointerType (LLVMIntType (i * 8), 0);
+			arg_types [2] = LLVMInt32Type ();
+			arg_types [3] = LLVMInt1Type ();
+			sprintf (name, "llvm.mono.store.i%d.p0i%d", i * 8, i * 8);
+			LLVMAddFunction (module, name, LLVMFunctionType (LLVMVoidType (), arg_types, 4, FALSE));
+		}
 	}
 }
 
