@@ -232,6 +232,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	if (!objdump_args)
 		objdump_args = "";
 
+	fflush (stdout);
+
 #ifdef __arm__
 	/* 
 	 * The arm assembler inserts ELF directives instructing objdump to display 
