@@ -3476,6 +3476,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 void
 mono_llvm_check_method_supported (MonoCompile *cfg)
 {
+	MonoMethodHeader *header = cfg->header;
+	MonoExceptionClause *clause;
+	int i;
+
 	if (cfg->generic_sharing_context && !IS_LLVM_MONO_BRANCH) {
 		/* No way to obtain location info for this/rgctx */
 		cfg->exception_message = g_strdup ("gshared");
@@ -3487,14 +3491,25 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 		cfg->disable_llvm = TRUE;
 	}
 
-	if (cfg->header->num_clauses > 1 || !LLVM_CHECK_VERSION (2, 8)) {
+	if (!LLVM_CHECK_VERSION (2, 8)) {
 		/*
 		 * FIXME: LLLVM 2.6 no longer seems to generate correct exception info
 		 * for JITted code.
-		 * FIXME: Some tests still fail with nested clauses.
 		 */
 		cfg->exception_message = g_strdup ("clauses");
 		cfg->disable_llvm = TRUE;
+	}
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		
+		if (i > 0 && clause->try_offset <= header->clauses [i - 1].handler_offset + header->clauses [i - 1].handler_len) {
+			/*
+			 * FIXME: Some tests still fail with nested clauses.
+			 */
+			cfg->exception_message = g_strdup ("nested clauses");
+			cfg->disable_llvm = TRUE;
+		}
 	}
 
 	/* FIXME: */
