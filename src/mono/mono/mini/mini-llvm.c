@@ -3468,6 +3468,43 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 }
 
 /*
+ * mono_llvm_check_method_supported:
+ *
+ *   Do some quick checks to decide whenever cfg->method can be compiled by LLVM, to avoid
+ * compiling a method twice.
+ */
+void
+mono_llvm_check_method_supported (MonoCompile *cfg)
+{
+	if (cfg->generic_sharing_context && !IS_LLVM_MONO_BRANCH) {
+		/* No way to obtain location info for this/rgctx */
+		cfg->exception_message = g_strdup ("gshared");
+		cfg->disable_llvm = TRUE;
+	}
+
+	if (cfg->method->save_lmf) {
+		cfg->exception_message = g_strdup ("lmf");
+		cfg->disable_llvm = TRUE;
+	}
+
+	if (cfg->header->num_clauses > 1 || !LLVM_CHECK_VERSION (2, 8)) {
+		/*
+		 * FIXME: LLLVM 2.6 no longer seems to generate correct exception info
+		 * for JITted code.
+		 * FIXME: Some tests still fail with nested clauses.
+		 */
+		cfg->exception_message = g_strdup ("clauses");
+		cfg->disable_llvm = TRUE;
+	}
+
+	/* FIXME: */
+	if (cfg->method->dynamic) {
+		cfg->exception_message = g_strdup ("dynamic.");
+		cfg->disable_llvm = TRUE;
+	}
+}
+
+/*
  * mono_llvm_emit_method:
  *
  *   Emit LLVM IL from the mono IL, and compile it to native code using LLVM.

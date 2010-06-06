@@ -1621,6 +1621,7 @@ void     mono_llvm_emit_method              (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
 void     mono_llvm_create_aot_module        (const char *got_symbol) MONO_INTERNAL;
 void     mono_llvm_emit_aot_module          (const char *filename, int got_size) MONO_INTERNAL;
+void     mono_llvm_check_method_supported   (MonoCompile *cfg) MONO_INTERNAL;
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;

@@ -3824,24 +3824,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	if (cfg->compile_llvm) {
-		if (try_generic_shared && !IS_LLVM_MONO_BRANCH) {
-			cfg->exception_message = g_strdup ("gshared");
-			cfg->disable_llvm = TRUE;
-		}
-
-		if (cfg->method->save_lmf) {
-			cfg->exception_message = g_strdup ("lmf");
-			cfg->disable_llvm = TRUE;
-		}
-
-		/* FIXME: */
-		if (cfg->method->dynamic) {
-			cfg->exception_message = g_strdup ("dynamic.");
-			cfg->disable_llvm = TRUE;
-		}
-	}
-
 	header = cfg->header;
 	if (!header) {
 		MonoLoaderError *error;
@@ -3857,16 +3839,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	if (header->num_clauses > 1 || !LLVM_CHECK_VERSION (2, 8)) {
-		/*
-		 * FIXME: LLLVM 2.6 no longer seems to generate correct exception info
-		 * for JITted code.
-		 * FIXME: Some tests still fail when this is enabled.
-		 */
-		cfg->exception_message = g_strdup ("clauses");
-		cfg->disable_llvm = TRUE;
-	}
-
 #ifdef ENABLE_LLVM
 	{
 		static gboolean inited;
@@ -3876,21 +3848,24 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_without_llvm);
 			inited = TRUE;
 		}
-	
+
 		/* 
 		 * Check for methods which cannot be compiled by LLVM early, to avoid
 		 * the extra compilation pass.
 		 */
-		if (COMPILE_LLVM (cfg) && cfg->disable_llvm) {
-			if (cfg->verbose_level >= 1) {
-				//nm = mono_method_full_name (cfg->method, TRUE);
-				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
-				//g_free (nm);
+		if (COMPILE_LLVM (cfg)) {
+			mono_llvm_check_method_supported (cfg);
+			if (cfg->disable_llvm) {
+				if (cfg->verbose_level >= 1) {
+					//nm = mono_method_full_name (cfg->method, TRUE);
+					printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
+					//g_free (nm);
+				}
+				InterlockedIncrement (&methods_without_llvm);
+				mono_destroy_compile (cfg);
+				try_llvm = FALSE;
+				goto restart_compile;
 			}
-			InterlockedIncrement (&methods_without_llvm);
-			mono_destroy_compile (cfg);
-			try_llvm = FALSE;
-			goto restart_compile;
 		}
 	}
 #endif
