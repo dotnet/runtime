@@ -2568,5 +2568,24 @@ class Tests {
 
 		return 2;
 	}
+
+    class Child
+    {
+        public virtual long Method()
+        {
+            throw new Exception();
+        }
+    }
+
+	/* #612206 */
+	public static int test_100_long_vars_in_clauses_initlocals_opt () {
+		Child c = new Child();
+		long value = 100; 
+		try {
+			value = c.Method();
+		}
+		catch {}
+		return (int)value;
+	}
 }
 
