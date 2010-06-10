@@ -994,14 +994,6 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 	return SPECIAL_STATIC_NONE;
 }
 
-static gpointer imt_trampoline = NULL;
-
-void
-mono_install_imt_trampoline (gpointer tramp_code)
-{
-	imt_trampoline = tramp_code;
-}
-
 #define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
 #define mix(a,b,c) { \
 	a -= c;  a ^= rot(c, 4);  c += b; \
@@ -1355,7 +1347,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 				 * The IMT thunk might be called with an instance of one of the 
 				 * generic virtual methods, so has to fallback to the IMT trampoline.
 				 */
-				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], imt_trampoline);
+				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], callbacks.get_imt_trampoline (i));
 			} else {
 				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], NULL);
 			}
@@ -1423,7 +1415,7 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 	mono_loader_lock (); /*FIXME build_imt_slots requires the loader lock.*/
 	mono_domain_lock (vtable->domain);
 	/* we change the slot only if it wasn't changed from the generic imt trampoline already */
-	if (imt [imt_slot] == imt_trampoline)
+	if (imt [imt_slot] == callbacks.get_imt_trampoline (imt_slot))
 		build_imt_slots (vtable->klass, vtable, vtable->domain, imt, NULL, imt_slot);
 	mono_domain_unlock (vtable->domain);
 	mono_loader_unlock ();
@@ -1676,11 +1668,13 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	if (++gvc->count == THUNK_THRESHOLD) {
 		gpointer *old_thunk = *vtable_slot;
 		gpointer vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline ((gpointer*)vtable_slot - (gpointer*)vtable) : NULL;
+		gpointer imt_trampoline = NULL;
 
-		if ((gpointer)vtable_slot < (gpointer)vtable)
+		if ((gpointer)vtable_slot < (gpointer)vtable) {
 			/* Force the rebuild of the thunk at the next call */
+			imt_trampoline = callbacks.get_imt_trampoline (((gpointer*)vtable - (gpointer*)vtable_slot) + 1);
 			*vtable_slot = imt_trampoline;
-		else {
+		} else {
 			entries = get_generic_virtual_entries (domain, vtable_slot);
 
 			sorted = imt_sort_slot_entries (entries);
@@ -2041,10 +2035,10 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 
 	if (ARCH_USE_IMT && imt_table_bytes) {
 		/* Now that the vtable is full, we can actually fill up the IMT */
-		if (imt_trampoline) {
+		if (callbacks.get_imt_trampoline) {
 			/* lazy construction of the IMT entries enabled */
 			for (i = 0; i < MONO_IMT_SIZE; ++i)
-				interface_offsets [i] = imt_trampoline;
+				interface_offsets [i] = callbacks.get_imt_trampoline (i);
 		} else {
 			build_imt (class, vt, domain, interface_offsets, NULL);
 		}
