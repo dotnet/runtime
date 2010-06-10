@@ -5438,25 +5438,28 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 	return mono_get_addr_from_ftnptr (addr);
 }
 
-#ifdef MONO_ARCH_HAVE_IMT
-static G_GNUC_UNUSED gpointer
-mini_get_imt_trampoline (void)
-{
-	static gpointer tramp = NULL;
-	if (!tramp)
-		tramp = mono_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
-	return tramp;
-}
-#endif
-
 gpointer
 mini_get_vtable_trampoline (int slot_index)
 {
-	static gpointer tramp = NULL;
+	if (slot_index < 0) {
+		static gpointer tramp = NULL;
 
-	if (!tramp)
-		tramp = mono_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
-	return tramp;
+		if (!tramp)
+			tramp = mono_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
+		return tramp;
+	} else {
+		static gpointer tramp = NULL;
+
+		if (!tramp)
+			tramp = mono_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
+		return tramp;
+	}
+}
+
+static gpointer
+mini_get_imt_trampoline (int slot_index)
+{
+	return mini_get_vtable_trampoline ((-slot_index) - 1);
 }
 
 static void
@@ -5678,6 +5681,11 @@ mini_init (const char *filename, const char *runtime_version)
 		if (!mono_use_llvm) {
 			/* LLVM needs a per-method vtable trampoline */
 			callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
+			/* 
+			 * The imt code in mono_magic_trampoline () can't handle LLVM code. By disabling
+			 * this, we force iface calls to go through the llvm vcall trampoline.
+			 */
+			callbacks.get_imt_trampoline = mini_get_imt_trampoline;
 		}
 	}
 #endif
@@ -5791,13 +5799,6 @@ mini_init (const char *filename, const char *runtime_version)
 			mono_install_imt_thunk_builder (mono_aot_get_imt_thunk);
 		else
 			mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
-		if (!mono_use_llvm) {
-			/* 
-			 * The imt code in mono_magic_trampoline () can't handle LLVM code. By disabling
-			 * this, we force iface calls to go through the llvm vcall trampoline.
-			 */
-			mono_install_imt_trampoline (mini_get_imt_trampoline ());
-		}
 	}
 #endif
 
