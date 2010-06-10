@@ -543,7 +543,7 @@ endif
 
 # test_messages fails on the buildbots
 #test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
-test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test-runtime-invoke test-imt-big-iface test_2_1
+test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test-runtime-invoke test-imt-big-iface test_2_1 test-process-exit
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -867,6 +867,13 @@ patch-libtool:
 	sed -e 's,build_libtool_libs=no,build_libtool_libs=yes,g' libtool > 2; mv 2 libtool
 	sed -e 's,LIBTOOL =,LIBTOOL2 =,g' Makefile > 2 && echo "LIBTOOL = bash ./libtool" > 1 && cat 1 2 > Makefile
 	touch libtest.c
+
+EXTRA_DIST += bug-438454.cs bug-438454.exe.stdout.expected
+test-process-exit:
+	@$(MCS) $(srcdir)/bug-438454.cs -out:bug-438454.exe
+	@echo "Testing bug-438454.exe..."
+	@$(RUNTIME) bug-438454.exe > bug-438454.exe.stdout
+	@diff bug-438454.exe.stdout bug-438454.exe.stdout.expected
 
 noinst_LTLIBRARIES = libtest.la
 

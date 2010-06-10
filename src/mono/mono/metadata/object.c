@@ -3343,29 +3343,6 @@ mono_runtime_get_main_args (void)
 	return res;
 }
 
-static void
-fire_process_exit_event (void)
-{
-	MonoClassField *field;
-	MonoDomain *domain = mono_domain_get ();
-	gpointer pa [2];
-	MonoObject *delegate, *exc;
-	
-	field = mono_class_get_field_from_name (mono_defaults.appdomain_class, "ProcessExit");
-	g_assert (field);
-
-	if (domain != mono_get_root_domain ())
-		return;
-
-	delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
-	if (delegate == NULL)
-		return;
-
-	pa [0] = domain;
-	pa [1] = NULL;
-	mono_runtime_delegate_invoke (delegate, pa, &exc);
-}
-
 /**
  * mono_runtime_run_main:
  * @method: the method to start the application with (usually Main)
@@ -3387,7 +3364,6 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	MonoArray *args = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	gchar *utf8_fullpath;
-	int result;
 
 	g_assert (method != NULL);
 	
@@ -3460,9 +3436,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	
 	mono_assembly_set_main (method->klass->image->assembly);
 
-	result = mono_runtime_exec_main (method, args, exc);
-	fire_process_exit_event ();
-	return result;
+	return mono_runtime_exec_main (method, args, exc);
 }
 
 static MonoObject*

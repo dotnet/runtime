@@ -148,6 +148,7 @@ libmonoruntime_la_SOURCES = \
 	profiler-private.h	\
 	rand.h			\
 	rand.c			\
+	runtime.c		\
 	reflection.c		\
 	security.c		\
 	security.h		\

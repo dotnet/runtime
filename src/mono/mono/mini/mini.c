@@ -45,6 +45,7 @@
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
+#include <mono/metadata/runtime.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -6135,6 +6136,8 @@ mini_cleanup (MonoDomain *domain)
 #ifndef DISABLE_COM
 	cominterop_release_all_rcws ();
 #endif
+
+	mono_runtime_shutdown ();
 
 #ifndef MONO_CROSS_COMPILE	
 	/* 
