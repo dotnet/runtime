@@ -830,9 +830,10 @@
 			</File>
 			<File
 				RelativePath="..\mono\utils\mono-compiler.h"
-				>
-			</File>
-			<File
+				></File>
+      <File RelativePath="..\mono\metadata\runtime.c" />
+      <File RelativePath="..\mono\metadata\runtime.h" />
+      <File
 				RelativePath="..\mono\utils\mono-counters.c"
 				>
 				<FileConfiguration
