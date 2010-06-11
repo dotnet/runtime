@@ -1667,14 +1667,19 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 
 	if (++gvc->count == THUNK_THRESHOLD) {
 		gpointer *old_thunk = *vtable_slot;
-		gpointer vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline ((gpointer*)vtable_slot - (gpointer*)vtable) : NULL;
+		gpointer vtable_trampoline = NULL;
 		gpointer imt_trampoline = NULL;
 
 		if ((gpointer)vtable_slot < (gpointer)vtable) {
+			int displacement = (gpointer*)vtable_slot - (gpointer*)vtable;
+			int imt_slot = MONO_IMT_SIZE + displacement;
+
 			/* Force the rebuild of the thunk at the next call */
-			imt_trampoline = callbacks.get_imt_trampoline (((gpointer*)vtable - (gpointer*)vtable_slot) + 1);
+			imt_trampoline = callbacks.get_imt_trampoline (imt_slot);
 			*vtable_slot = imt_trampoline;
 		} else {
+			vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline ((gpointer*)vtable_slot - (gpointer*)vtable->vtable) : NULL;
+
 			entries = get_generic_virtual_entries (domain, vtable_slot);
 
 			sorted = imt_sort_slot_entries (entries);
