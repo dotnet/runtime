@@ -2516,13 +2516,21 @@ method_has_type_vars (MonoMethod *method)
 	return FALSE;
 }
 
+static void add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth);
+
+static void
+add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
+{
+	add_generic_class_with_depth (acfg, klass, 0);
+}
+
 /*
  * add_generic_class:
  *
  *   Add all methods of a generic class.
  */
 static void
-add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
+add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 {
 	MonoMethod *method;
 	gpointer iter;
@@ -2552,7 +2560,7 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 		 * FIXME: Instances which are referenced by these methods are not added,
 		 * for example Array.Resize<int> for List<int>.Add ().
 		 */
-		add_extra_method (acfg, method);
+		add_extra_method_with_depth (acfg, method, depth);
 	}
 
 	if (klass->delegate) {
@@ -2597,7 +2605,7 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 		while ((method = mono_class_get_methods (array_class, &iter))) {
 			if (strstr (method->name, name_prefix)) {
 				MonoMethod *m = mono_aot_get_array_helper_from_wrapper (method);
-				add_extra_method (acfg, m);
+				add_extra_method_with_depth (acfg, m, depth);
 			}
 		}
 
@@ -4339,7 +4347,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 							add_extra_method_with_depth (acfg, m, depth + 1);
 						}
 					}
-					add_generic_class (acfg, m->klass);
+					add_generic_class_with_depth (acfg, m->klass, depth + 5);
 				}
 				if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && !strcmp (m->name, "ElementAddr"))
 					add_extra_method_with_depth (acfg, m, depth + 1);
@@ -4349,7 +4357,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				MonoClass *klass = patch_info->data.klass;
 
 				if (klass->generic_class && !mono_generic_context_is_sharable (&klass->generic_class->context, FALSE))
-					add_generic_class (acfg, klass);
+					add_generic_class_with_depth (acfg, klass, depth + 5);
 				break;
 			}
 			default:
@@ -5082,7 +5090,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		if (!cfg)
 			continue;
 
-		buf_size = 512;
+		buf_size = 1024;
 		p = buf = g_malloc (buf_size);
 
 		nmethods ++;
