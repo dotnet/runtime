@@ -53,7 +53,7 @@ static void* marshal_alloc (gsize size)
 #endif
 }
 
-static char* marshal_strdup (char *str)
+static char* marshal_strdup (const char *str)
 {
 #ifdef WIN32
 	int len;
