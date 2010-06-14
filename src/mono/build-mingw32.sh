@@ -51,8 +51,10 @@ function setup ()
     if [ -d "$CROSS_PKG_CONFIG_DIR" ]; then
 	install -d -m 755 "$TEMPORARY_PKG_CONFIG_DIR"
 	for pc in "$CROSS_PKG_CONFIG_DIR"/*.pc; do
-	    pcname="`basename $pc`"
-	    sed -e "s;^prefix=.*;prefix=$CROSS_DIR;g" < $pc > "$TEMPORARY_PKG_CONFIG_DIR"/$pcname
+	    if [ -f $pc ]; then
+	        pcname="`basename $pc`"
+	        sed -e "s;^prefix=.*;prefix=$CROSS_DIR;g" < $pc > "$TEMPORARY_PKG_CONFIG_DIR"/$pcname
+	    fi;
 	done
 	CROSS_PKG_CONFIG_DIR="$TEMPORARY_PKG_CONFIG_DIR"
     fi
