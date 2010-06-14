@@ -26,6 +26,7 @@ function setup ()
     CROSS_PKG_CONFIG_DIR=$CROSS_DIR/lib/pkgconfig
     PATH=$CROSS_BIN_DIR:$PATH
 
+    MONO_VERSION=`grep AM_INIT_AUTOMAKE configure.in | cut -d ',' -f 2|tr -d '\)'`
     export PATH
     if [ -d ./.git/svn ]; then
 	SVN_INFO='git svn info'
@@ -38,13 +39,11 @@ function setup ()
     if [ -n "$SVN_INFO" ]; then
 	MONO_SVN_REVISION=`$SVN_INFO | grep Revision | sed 's/.*: //'`
 	MONO_BRANCH=`$SVN_INFO | grep URL | sed -e 's;.*source/;;g' -e 's;/mono;;g'`
+	MONO_RELEASE="$MONO_VERSION-$MONO_BRANCH-r$MONO_SVN_REVISION"
     else
-	MONO_SVN_REVISION="rUNKNOWN"
-	MONO_BRANCH="tarball"
+	MONO_RELEASE="$MONO_VERSION"
     fi
 
-    MONO_VERSION=`grep AM_INIT_AUTOMAKE configure.in | cut -d ',' -f 2|tr -d '\)'`
-    MONO_RELEASE="$MONO_VERSION-$MONO_BRANCH-r$MONO_SVN_REVISION"
     MONO_PREFIX="/mono-$MONO_RELEASE"
 
     NOCONFIGURE=yes
@@ -105,18 +104,23 @@ function doinstall ()
     cd "$CURDIR/build-cross-windows"
     make DESTDIR="$INSTALL_DESTDIR" USE_BATCH_FILES=yes install
 
-    cd "$CURDIR/../mcs/mcs"
+    if test -d $CURDIR/mcs; then
+      mcsdir=$CURDIR/mcs
+    else
+      mcsdir=$CURDIR/../mcs
+    fi
 
+    cd "$mcsdir/mcs"
     for p in $PROFILES; do
 	make DESTDIR="$INSTALL_DESTDIR" PROFILE=$p install || echo "mcs profile $p installation failed"
     done
 
-    cd "$CURDIR/../mcs/class"
+    cd "$mcsdir/class"
     for p in $PROFILES; do
 	make DESTDIR="$INSTALL_DESTDIR" PROFILE=$p install || echo "class library profile $p installation failed"
     done
 
-    cd "$CURDIR/../mcs/tools"
+    cd "$mcsdir/tools"
     for p in $PROFILES; do
 	make DESTDIR="$INSTALL_DESTDIR" PROFILE=$p install || echo "tools profile $p installation failed"
     done
