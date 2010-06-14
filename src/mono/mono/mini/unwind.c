@@ -836,33 +836,38 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	data_align = decode_sleb128 (p, &p);
 	return_reg = decode_uleb128 (p, &p);
 	if (strstr (cie_aug_str, "z")) {
-		cie_aug_len = decode_uleb128 (p, &p);
+		guint8 *cie_aug;
+		guint32 p_encoding;
 
-		g_assert (!strcmp (cie_aug_str, "zR") || !strcmp (cie_aug_str, "zPLR"));
+		cie_aug_len = decode_uleb128 (p, &p);
 
 		has_fde_augmentation = TRUE;
 
-		/* Check that the augmention is what we expect */
-		if (!strcmp (cie_aug_str, "zPLR")) {
-			guint8 *cie_aug = p;
-			guint32 p_encoding;
-
-			/* P */
-			p_encoding = *p;
-			p ++;
-			read_encoded_val (p_encoding, p, &p);
-
-			/* L */
-			g_assert ((*p == (DW_EH_PE_sdata4|DW_EH_PE_pcrel)) || (*p == (DW_EH_PE_sdata8|DW_EH_PE_pcrel)));
-			p ++;
-			/* R */
-			g_assert (*p == (DW_EH_PE_sdata4|DW_EH_PE_pcrel));
-			p ++;
-
-			g_assert (p - cie_aug == cie_aug_len);
-			
-			p = cie_aug;
+		cie_aug = p;
+		for (i = 0; cie_aug_str [i] != '\0'; ++i) {
+			switch (cie_aug_str [i]) {
+			case 'z':
+				break;
+			case 'P':
+				p_encoding = *p;
+				p ++;
+				read_encoded_val (p_encoding, p, &p);
+				break;
+			case 'L':
+				g_assert ((*p == (DW_EH_PE_sdata4|DW_EH_PE_pcrel)) || (*p == (DW_EH_PE_sdata8|DW_EH_PE_pcrel)));
+				p ++;
+				break;
+			case 'R':
+				g_assert (*p == (DW_EH_PE_sdata4|DW_EH_PE_pcrel));
+				p ++;
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
 		}
+			
+		p = cie_aug;
 		p += cie_aug_len;
 	}
 	cie_cfi = p;
