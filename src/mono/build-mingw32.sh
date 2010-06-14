@@ -2,7 +2,6 @@
 CURDIR="`pwd`"
 MINGW=i386-mingw32msvc
 CROSS_DIR=/opt/cross/$MINGW
-COPY_DLLS="libgio*.dll libglib*.dll libgmodule*.dll libgthread*.dll libgobject*.dll"
 INSTALL_DESTDIR="$CURDIR/mono-win32"
 PROFILES="default net_2_0 net_3_5 net_4_0 moonlight"
 TEMPORARY_PKG_CONFIG_DIR=/tmp/$RANDOM-pkg-config-$RANDOM
@@ -126,10 +125,6 @@ function doinstall ()
     done
 
     cd "$CURDIR/mono-win32"
-    for dll in $COPY_DLLS; do
-	cp -ap "$CROSS_DLL_DIR"/$dll "$INSTALL_DESTDIR/$MONO_PREFIX/bin"
-    done
-
     rm -f "$CURDIR/mono-win32-$MONO_RELEASE".zip
     zip -9r "$CURDIR/mono-win32-$MONO_RELEASE".zip .
 
