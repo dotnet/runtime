@@ -596,6 +596,12 @@ typedef struct {
 	gboolean rgctx_arg;
 	/* Whenever there is an IMT argument */
 	gboolean imt_arg;
+	/* 
+	 * The position of the vret arg in the argument list.
+	 * Only if ret->storage == ArgVtypeRetAddr.
+	 * Should be 0 or 1.
+	 */
+	int vret_arg_index;
 	/* args [0] is for the this argument if it exists */
 	LLVMArgInfo args [1];
 } LLVMCallInfo;
