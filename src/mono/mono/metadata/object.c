@@ -1347,7 +1347,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 				 * The IMT thunk might be called with an instance of one of the 
 				 * generic virtual methods, so has to fallback to the IMT trampoline.
 				 */
-				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], callbacks.get_imt_trampoline (i));
+				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], callbacks.get_imt_trampoline ? callbacks.get_imt_trampoline (i) : NULL);
 			} else {
 				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], NULL);
 			}
