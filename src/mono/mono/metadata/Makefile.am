@@ -227,5 +227,5 @@ if PLATFORM_DARWIN
 pedump_LDFLAGS=-framework CoreFoundation
 endif
 
-EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) $(sgen_sources)
+EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) $(sgen_sources) runtime.h
 
