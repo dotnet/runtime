@@ -3924,6 +3924,21 @@ emit_array_generic_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst
 }
 
 static MonoInst*
+mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoInst *ins = NULL;
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	if (cfg->opt & MONO_OPT_SIMD) {
+		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
+		if (ins)
+			return ins;
+	}
+#endif
+
+	return ins;
+}
+
+static MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins = NULL;
@@ -7501,6 +7516,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Avoid virtual calls to ctors if possible */
 				if (cmethod->klass->marshalbyref)
 					callvirt_this_arg = sp [0];
+
+
+				if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_ctor (cfg, cmethod, fsig, sp))) {
+					if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+						type_to_eval_stack_type ((cfg), fsig->ret, ins);
+						*sp = ins;
+						sp++;
+					}
+
+					CHECK_CFG_EXCEPTION;
+				} else
+
+
 
 				if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used && !vtable_arg &&
 				    mono_method_check_inlining (cfg, cmethod) &&
