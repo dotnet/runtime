@@ -174,6 +174,9 @@ typedef struct {
 	guint32 freg_usage;
 	gboolean need_stack_align;
 	guint32 stack_align_amount;
+	gboolean vtype_retaddr;
+	/* The index of the vret arg in the argument list */
+	int vret_arg_index;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
@@ -303,7 +306,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 static CallInfo*
 get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
-	guint32 i, gr, fr;
+	guint32 i, gr, fr, pstart;
 	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
@@ -357,15 +360,15 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
 			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
-			if (cinfo->ret.storage == ArgOnStack)
+			if (cinfo->ret.storage == ArgOnStack) {
+				cinfo->vtype_retaddr = TRUE;
 				/* The caller passes the address where the value is stored */
-				add_general (&gr, &stack_size, &cinfo->ret);
+			}
 			break;
 		}
 		case MONO_TYPE_TYPEDBYREF:
-			/* Same as a valuetype with size 24 */
-			add_general (&gr, &stack_size, &cinfo->ret);
-			;
+			/* Same as a valuetype with size 12 */
+			cinfo->vtype_retaddr = TRUE;
 			break;
 		case MONO_TYPE_VOID:
 			cinfo->ret.storage = ArgNone;
@@ -375,9 +378,31 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		}
 	}
 
-	/* this */
-	if (sig->hasthis)
-		add_general (&gr, &stack_size, cinfo->args + 0);
+	pstart = 0;
+	/*
+	 * To simplify get_this_arg_reg () and LLVM integration, emit the vret arg after
+	 * the first argument, allowing 'this' to be always passed in the first arg reg.
+	 * Also do this if the first argument is a reference type, since virtual calls
+	 * are sometimes made using calli without sig->hasthis set, like in the delegate
+	 * invoke wrappers.
+	 */
+	if (cinfo->vtype_retaddr && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (sig->params [0])))) {
+		if (sig->hasthis) {
+			add_general (&gr, &stack_size, cinfo->args + 0);
+		} else {
+			add_general (&gr, &stack_size, &cinfo->args [sig->hasthis + 0]);
+			pstart = 1;
+		}
+		add_general (&gr, &stack_size, &cinfo->ret);
+		cinfo->vret_arg_index = 1;
+	} else {
+		/* this */
+		if (sig->hasthis)
+			add_general (&gr, &stack_size, cinfo->args + 0);
+
+		if (cinfo->vtype_retaddr)
+			add_general (&gr, &stack_size, &cinfo->ret);
+	}
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
 		gr = PARAM_REGS;
@@ -387,7 +412,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		add_general (&gr, &stack_size, &cinfo->sig_cookie);
 	}
 
-	for (i = 0; i < sig->param_count; ++i) {
+	for (i = pstart; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 		MonoType *ptype;
 
@@ -526,14 +551,14 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 	cinfo = get_call_info_internal (NULL, cinfo, csig, FALSE);
 
-	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
+	arg_info [0].offset = offset;
+
+	if (csig->hasthis) {
 		args_size += sizeof (gpointer);
 		offset += 4;
 	}
 
-	arg_info [0].offset = offset;
-
-	if (csig->hasthis) {
+	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
 		args_size += sizeof (gpointer);
 		offset += 4;
 	}
@@ -1330,6 +1355,15 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		ArgInfo *ainfo = cinfo->args + i;
 		MonoType *t;
 
+		if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && i == 0) {
+			/* Push the vret arg before the first argument */
+			MonoInst *vtarg;
+			MONO_INST_NEW (cfg, vtarg, OP_X86_PUSH);
+			vtarg->type = STACK_MP;
+			vtarg->sreg1 = call->vret_var->dreg;
+			MONO_ADD_INS (cfg->cbb, vtarg);
+		}
+
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
@@ -1417,7 +1451,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			MONO_ADD_INS (cfg->cbb, vtarg);
 				
 			mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
-		} else {
+		} else if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 0) {
 			MonoInst *vtarg;
 			MONO_INST_NEW (cfg, vtarg, OP_X86_PUSH);
 			vtarg->type = STACK_MP;
@@ -5522,18 +5556,7 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 guint32
 mono_x86_get_this_arg_offset (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig)
 {
-	CallInfo *cinfo = NULL;
-	int offset;
-
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		cinfo = get_call_info (gsctx, NULL, sig, FALSE);
-
-		offset = cinfo->args [0].offset;
-	} else {
-		offset = 0;
-	}
-
-	return offset;
+	return 0;
 }
 
 gpointer
@@ -5545,25 +5568,12 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 	gpointer res;
 	int offset;
 
-	/* 
-	 * Avoid expensive calls to get_generic_context_from_code () + get_call_info 
-	 * if possible.
-	 */
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		if (!gsctx && code)
-			gsctx = mono_get_generic_context_from_code (code);
-		cinfo = get_call_info (gsctx, NULL, sig, FALSE);
-
-		offset = cinfo->args [0].offset;
-	} else {
-		offset = 0;
-	}
+	offset = 0;
 
 	/*
 	 * The stack looks like:
 	 * <other args>
 	 * <this=delegate>
-	 * <possible vtype return address>
 	 * <return addr>
 	 * <4 pointers pushed by mono_arch_create_trampoline_code ()>
 	 */

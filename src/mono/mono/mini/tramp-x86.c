@@ -43,9 +43,6 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	int this_pos = 4;
 	MonoDomain *domain = mono_domain_get ();
 
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
-		this_pos = 8;
-	    
 	start = code = mono_domain_code_reserve (domain, 16);
 
 	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
