@@ -961,14 +961,8 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 GSList*
 mono_unwind_get_cie_program (void)
 {
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_POWERPC)
 	return mono_arch_get_cie_program ();
-#elif defined(TARGET_POWERPC)
-	GSList *l = NULL;
-
-	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, ppc_r1, 0);
-
-	return l;
 #else
 	return NULL;
 #endif
