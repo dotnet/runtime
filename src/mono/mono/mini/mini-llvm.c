@@ -192,31 +192,6 @@ IntPtrType (void)
 	return sizeof (gpointer) == 8 ? LLVMInt64Type () : LLVMInt32Type ();
 }
 
-#if !LLVM_CHECK_VERSION(2, 8)
-
-static LLVMValueRef LLVMBuildFAdd(LLVMBuilderRef Builder,
-								  LLVMValueRef LHS, LLVMValueRef RHS,
-								  const char *Name)
-{
-	return LLVMBuildAdd (Builder, LHS, RHS, Name);
-}
-
-static LLVMValueRef LLVMBuildFSub(LLVMBuilderRef Builder,
-								  LLVMValueRef LHS, LLVMValueRef RHS,
-								  const char *Name)
-{
-	return LLVMBuildSub (Builder, LHS, RHS, Name);
-}
-
-static LLVMValueRef LLVMBuildFMul(LLVMBuilderRef Builder,
-								  LLVMValueRef LHS, LLVMValueRef RHS,
-								  const char *Name)
-{
-	return LLVMBuildMul (Builder, LHS, RHS, Name);
-}
-
-#endif
-
 /*
  * get_vtype_size:
  *
@@ -1547,6 +1522,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 
 	if (cfg->rgctx_var) {
+#if LLVM_CHECK_VERSION (2, 8)
 		LLVMValueRef rgctx_alloc, store, md_arg;
 		int md_kind;
 
@@ -1561,6 +1537,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		md_kind = LLVMGetMDKindID ("mono.this", strlen ("mono.this"));
 		md_arg = LLVMMDString ("this", 4);
 		LLVMSetMetadata (rgctx_alloc, md_kind, LLVMMDNode (&md_arg, 1));
+#endif
 	}
 
 	/*
