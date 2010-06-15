@@ -701,8 +701,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		}
 		case MONO_TYPE_TYPEDBYREF:
 			/* Same as a valuetype with size 24 */
-			add_general (&gr, &stack_size, &cinfo->ret);
-			;
+			cinfo->vtype_retaddr = TRUE;
 			break;
 		case MONO_TYPE_VOID:
 			break;
