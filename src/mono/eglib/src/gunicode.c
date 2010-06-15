@@ -42,7 +42,7 @@
 #if defined(_MSC_VER) || defined(G_OS_WIN32)
 /* FIXME */
 #  define CODESET 1
-#  include <Windows.h>
+#  include <windows.h>
 #  ifdef _MSC_VER
        typedef int iconv_t;
 #  endif

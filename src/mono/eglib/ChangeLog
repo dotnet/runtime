@@ -1,3 +1,8 @@
+2010-06-15  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/gunicode.c: Applied patch from Hib Eris <hib@hiberis.nl>. use "windows.h"
+	instead of "Windows.h".
+
 2010-05-25  Zoltan Varga  <vargaz@gmail.com>
 
 	* Applied patch from Burkhard Linke (blinke@cebitec.uni-bielefeld.de). Fix
