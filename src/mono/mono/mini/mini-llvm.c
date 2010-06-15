@@ -3699,8 +3699,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
 
+#ifdef LLVM_MONO_BRANCH
 	if (linfo->rgctx_arg)
 		LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
+#endif
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	if (cfg->method->save_lmf)
