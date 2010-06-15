@@ -2823,6 +2823,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_FCALL_REG:
 		case OP_VCALL_REG: {
 			process_call (ctx, bb, &builder, ins);
+			CHECK_FAILURE (ctx);
 			break;
 		}
 		case OP_AOTCONST: {
