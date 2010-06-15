@@ -230,6 +230,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 
+	unwind_ops = mono_arch_get_cie_program ();
+
 	code = buf = mono_global_codeman_reserve (256);
 
 	/* Note that there is a single argument to the trampoline
@@ -347,6 +349,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	x86_branch_disp (buf, X86_CC_Z, 3, FALSE);
 	x86_breakpoint (buf);*/
 #endif
+
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, X86_ESP, ((pushed_args + 2) * 4));
 
 	if (aot) {
 		char *icall_name = g_strdup_printf ("trampoline_func_%d", tramp_type);

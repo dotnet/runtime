@@ -961,7 +961,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 GSList*
 mono_unwind_get_cie_program (void)
 {
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 	return mono_arch_get_cie_program ();
 #elif defined(TARGET_POWERPC)
 	GSList *l = NULL;

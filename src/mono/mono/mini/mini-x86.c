@@ -5292,6 +5292,17 @@ mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
 
+GSList*
+mono_arch_get_cie_program (void)
+{
+	GSList *l = NULL;
+
+	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, X86_ESP, 4);
+	mono_add_unwind_op_offset (l, (guint8*)NULL, (guint8*)NULL, X86_NREG, -4);
+
+	return l;
+}
+
 MonoInst*
 mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
