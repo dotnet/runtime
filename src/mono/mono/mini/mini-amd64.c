@@ -1826,6 +1826,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage == ArgInIReg) {
 		/* Vtype returned using a hidden argument */
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
+		linfo->vret_arg_index = cinfo->vret_arg_index;
 	}
 
 	for (i = 0; i < n; ++i) {

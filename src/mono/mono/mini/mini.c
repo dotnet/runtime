@@ -5438,28 +5438,66 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 	return mono_get_addr_from_ftnptr (addr);
 }
 
+static gpointer *vtable_trampolines;
+static int vtable_trampolines_size;
+
 gpointer
 mini_get_vtable_trampoline (int slot_index)
 {
-	if (slot_index < 0) {
-		static gpointer tramp = NULL;
+	if (!mono_use_llvm) {
+		/* Use only one trampoline */
+		if (slot_index < 0) {
+			static gpointer tramp = NULL;
 
-		if (!tramp)
-			tramp = mono_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
-		return tramp;
+			if (!tramp)
+				tramp = mono_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
+			return tramp;
+		} else {
+			static gpointer tramp = NULL;
+
+			if (!tramp)
+				tramp = mono_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
+			return tramp;
+		}
 	} else {
-		static gpointer tramp = NULL;
+		int index = slot_index + MONO_IMT_SIZE;
 
-		if (!tramp)
-			tramp = mono_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
-		return tramp;
+		/* For LLVM, use one trampoline per vtable slot index */
+		g_assert (slot_index >= - MONO_IMT_SIZE);
+		if (!vtable_trampolines || slot_index + MONO_IMT_SIZE >= vtable_trampolines_size) {
+			mono_jit_lock ();
+			if (!vtable_trampolines || index >= vtable_trampolines_size) {
+				int new_size;
+				gpointer new_table;
+
+				new_size = vtable_trampolines_size ? vtable_trampolines_size * 2 : 128;
+				while (new_size <= index)
+					new_size *= 2;
+				new_table = g_new0 (gpointer, new_size);
+
+				if (vtable_trampolines)
+					memcpy (new_table, vtable_trampolines, vtable_trampolines_size * sizeof (gpointer));
+				mono_memory_barrier ();
+				vtable_trampolines = new_table;
+				vtable_trampolines_size = new_size;
+			}
+			mono_jit_unlock ();
+		}
+
+#ifdef MONO_ARCH_LLVM_SUPPORTED 
+		if (!vtable_trampolines [index])
+			vtable_trampolines [index] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_LLVM_VCALL, mono_get_root_domain (), NULL);
+		return vtable_trampolines [index];
+#else
+		g_assert_not_reached ();
+#endif
 	}
 }
 
 static gpointer
 mini_get_imt_trampoline (int slot_index)
 {
-	return mini_get_vtable_trampoline ((-slot_index) - 1);
+	return mini_get_vtable_trampoline (slot_index - MONO_IMT_SIZE);
 }
 
 static void
@@ -5678,15 +5716,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 #ifdef MONO_ARCH_HAVE_IMT
 	if (mono_use_imt) {
-		if (!mono_use_llvm) {
-			/* LLVM needs a per-method vtable trampoline */
-			callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
-			/* 
-			 * The imt code in mono_magic_trampoline () can't handle LLVM code. By disabling
-			 * this, we force iface calls to go through the llvm vcall trampoline.
-			 */
-			callbacks.get_imt_trampoline = mini_get_imt_trampoline;
-		}
+		callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
+		callbacks.get_imt_trampoline = mini_get_imt_trampoline;
 	}
 #endif
 
@@ -5755,15 +5786,7 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef JIT_TRAMPOLINES_WORK
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_free_method (mono_jit_free_method);
-#ifdef MONO_ARCH_LLVM_SUPPORTED
-	if (mono_use_llvm)
-		/* The runtime currently only uses this for filling out vtables */
-		mono_install_trampoline (mono_create_llvm_vcall_trampoline);
-	else
-		mono_install_trampoline (mono_create_jit_trampoline);
-#else
 	mono_install_trampoline (mono_create_jit_trampoline);
-#endif
 	mono_install_jump_trampoline (mono_create_jump_trampoline);
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
 	mono_install_delegate_trampoline (mono_create_delegate_trampoline);

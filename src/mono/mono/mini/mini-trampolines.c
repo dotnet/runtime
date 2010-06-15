@@ -618,36 +618,48 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
  *   This trampoline handles virtual calls when using LLVM.
  */
 static gpointer
-mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
+mono_llvm_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 {
 	MonoObject *this;
 	MonoVTable *vt;
 	gpointer *vtable_slot;
-	int slot;
+	MonoMethod *m;
+	gboolean need_rgctx_tramp;
 
 	trampoline_calls ++;
 
-	/* 
-	 * We have the method which is called, we need to obtain the vtable slot without
-	 * disassembly which is impossible with LLVM.
-	 * So we use the this argument.
+	/*
+	 * We need to obtain the following pieces of information:
+	 * - the method which needs to be compiled.
+	 * - the vtable slot.
+	 * Since disassembly is impossible with LLVM, we use one vtable trampoline per
+	 * vtable slot index, and obtain the method using this index + the this argument.
+	 * This requires us to always pass this as the first argument, regardless of the
+	 * signature.
 	 */
-	this = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (m), regs, code);
+#ifndef MONO_ARCH_THIS_AS_FIRST_ARG
+	NOT_IMPLEMENTED;
+#endif
+
+	this = mono_arch_get_this_arg_from_call (NULL, NULL, regs, code);
 	g_assert (this);
-
-	slot = mono_method_get_vtable_slot (m);
-
-	g_assert (slot != -1);
-
-	g_assert (this->vtable->klass->vtable [slot] == m);
 
 	vt = this->vtable;
 
-	g_assert (!m->is_generic);
+	if (slot < 0) {
+		m = MONO_FAKE_IMT_METHOD;
+		need_rgctx_tramp = FALSE;
+		vtable_slot = &(((gpointer*)vt) [slot]);
+	} else {
 
-	vtable_slot = &(vt->vtable [slot]);
+		m = mono_class_get_vtable_entry (this->vtable->klass, slot);
 
-	return common_call_trampoline (regs, code, m, tramp, vt, vtable_slot, mono_method_needs_static_rgctx_invoke (m, 0));
+		need_rgctx_tramp = mono_method_needs_static_rgctx_invoke (m, 0);
+
+		vtable_slot = &(vt->vtable [slot]);
+	}
+
+	return common_call_trampoline (regs, code, m, tramp, vt, vtable_slot, need_rgctx_tramp);
 }
 #endif
 
