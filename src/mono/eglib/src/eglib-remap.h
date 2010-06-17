@@ -105,6 +105,7 @@
 #define g_ptr_array_free monoeg_g_ptr_array_free
 #define g_ptr_array_new monoeg_g_ptr_array_new
 #define g_ptr_array_remove monoeg_g_ptr_array_remove
+#define g_ptr_array_remove_fast monoeg_g_ptr_array_remove_fast
 #define g_ptr_array_remove_index monoeg_g_ptr_array_remove_index
 #define g_ptr_array_remove_index_fast monoeg_g_ptr_array_remove_index_fast
 #define g_ptr_array_set_size monoeg_g_ptr_array_set_size

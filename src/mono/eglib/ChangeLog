@@ -1,3 +1,7 @@
+2010-06-18  Rolf Bjarne Kvinge  <RKvinge@novell.com>
+
+	* src/eglib-remap.h: Remap g_ptr_array_remove_fast too.
+
 2010-06-15  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/gunicode.c: Applied patch from Hib Eris <hib@hiberis.nl>. use "windows.h"
