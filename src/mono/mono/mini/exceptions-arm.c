@@ -29,79 +29,7 @@
 
 #include "mini.h"
 #include "mini-arm.h"
-
-/*
-
-struct sigcontext {
-	unsigned long trap_no;
-	unsigned long error_code;
-	unsigned long oldmask;
-	unsigned long arm_r0;
-	unsigned long arm_r1;
-	unsigned long arm_r2;
-	unsigned long arm_r3;
-	unsigned long arm_r4;
-	unsigned long arm_r5;
-	unsigned long arm_r6;
-	unsigned long arm_r7;
-	unsigned long arm_r8;
-	unsigned long arm_r9;
-	unsigned long arm_r10;
-	unsigned long arm_fp;
-	unsigned long arm_ip;
-	unsigned long arm_sp;
-	unsigned long arm_lr;
-	unsigned long arm_pc;
-	unsigned long arm_cpsr;
-	unsigned long fault_address;
-};
-
-gregs below is this struct
-struct user_regs {
-	unsigned long int uregs[18];
-};
-
-the companion user_fpregs has just 8 double registers
-(it's valid for FPA mode, will need changes for VFP)
-
-typedef struct {
-	gregset_t gregs;
-	fpregset_t fpregs;
-} mcontext_t;
-	    
-typedef struct ucontext {
-	unsigned long int uc_flags;
-	struct ucontext *uc_link;
-	__sigset_t uc_sigmask;
-	stack_t uc_stack;
-	mcontext_t uc_mcontext;
-	long int uc_filler[5];
-} ucontext_t;
-
-*/
-
-/*
- * So, it turns out that the ucontext struct defined by libc is incorrect.
- * We define our own version here and use it instead.
- */
-
-#if __APPLE__
-#define my_ucontext ucontext_t
-#else
-typedef struct my_ucontext {
-	unsigned long       uc_flags;
-	struct my_ucontext *uc_link;
-	struct {
-		void *p;
-		int flags;
-		size_t size;
-	} sstack_data;
-	struct sigcontext sig_ctx;
-	/* some 2.6.x kernel has fp data here after a few other fields
-	 * we don't use them for now...
-	 */
-} my_ucontext;
-#endif
+#include "mono/utils/mono-sigcontext.h"
 
 /*
  * arch_get_restore_context:
@@ -460,7 +388,7 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #if BROKEN_LINUX
 	g_assert_not_reached ();
 #else
-	my_ucontext *my_uc = sigctx;
+	arm_ucontext *my_uc = sigctx;
 
 	mctx->eip = UCONTEXT_REG_PC (my_uc);
 	mctx->esp = UCONTEXT_REG_SP (my_uc);
@@ -475,7 +403,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 #if BROKEN_LINUX
 	g_assert_not_reached ();
 #else
-	my_ucontext *my_uc = ctx;
+	arm_ucontext *my_uc = ctx;
 
 	UCONTEXT_REG_PC (my_uc) = mctx->eip;
 	UCONTEXT_REG_SP (my_uc) = mctx->ebp;
@@ -515,7 +443,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 #if defined(MONO_CROSS_COMPILE)
 	g_assert_not_reached ();
 #elif defined(MONO_ARCH_USE_SIGACTION)
-	my_ucontext *sigctx = ctx;
+	arm_ucontext *sigctx = ctx;
 	/*
 	 * Handling the exception in the signal handler is problematic, since the original
 	 * signal is disabled, and we could run arbitrary code though the debugger. So
@@ -558,7 +486,7 @@ mono_arch_ip_from_context (void *sigctx)
 #if BROKEN_LINUX
 	g_assert_not_reached ();
 #else
-	my_ucontext *my_uc = sigctx;
+	arm_ucontext *my_uc = sigctx;
 	return (void*) UCONTEXT_REG_PC (my_uc);
 #endif
 }
