@@ -2542,12 +2542,35 @@ get_memcpy_method (void)
 }
 
 #if HAVE_WRITE_BARRIERS
+
+static void
+create_write_barrier_bitmap (MonoClass *klass, unsigned *wb_bitmap, int offset)
+{
+	MonoClassField *field;
+	gpointer iter = NULL;
+
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		int foffset;
+
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		foffset = klass->valuetype ? field->offset - sizeof (MonoObject): field->offset;
+		if (mono_type_is_reference (field->type)) {
+			g_assert ((foffset % SIZEOF_VOID_P) == 0);
+			*wb_bitmap |= 1 << ((offset + foffset) / SIZEOF_VOID_P);
+		} else {
+			/*FIXME support nested value types so this works for: struct X { Y y; int z;} struct Y { object a,b; }*/
+			MonoClass *field_class = mono_class_from_mono_type (field->type);
+			if (field_class->has_references)
+				create_write_barrier_bitmap (field_class, wb_bitmap, offset + foffset);
+		}
+	}
+}
+
 static gboolean
 mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {
 	MonoInst *args[1];
-	MonoClassField *field;
-	gpointer iter = NULL;
 	int dest_ptr_reg, tmp_reg;
 	unsigned need_wb = 0;
 
@@ -2565,22 +2588,7 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, int destreg, int 
 	if (size > 5 * SIZEOF_VOID_P)
 		return FALSE;
 
-	while ((field = mono_class_get_fields (klass, &iter))) {
-		int foffset;
-
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-			continue;
-		foffset = klass->valuetype ? field->offset - sizeof (MonoObject): field->offset;
-		if (mono_type_is_reference (field->type)) {
-			g_assert ((foffset % SIZEOF_VOID_P) == 0);
-			need_wb |= 1 << (foffset / SIZEOF_VOID_P);
-		} else {
-			/*FIXME support nested value types so this works for: struct X { Y y; int z;} struct Y { object a,b; }*/
-			MonoClass *field_class = mono_class_from_mono_type (field->type);
-			if (field_class->has_references)
-				return FALSE;
-		}
-	}
+	create_write_barrier_bitmap (klass, &need_wb, 0);
 
 	dest_ptr_reg = alloc_preg (cfg);
 	tmp_reg = alloc_preg (cfg);
