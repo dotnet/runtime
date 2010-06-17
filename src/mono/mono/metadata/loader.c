@@ -2302,6 +2302,8 @@ mono_method_get_header (MonoMethod *method)
 		}
 
 		header = mono_method_get_header (imethod->declaring);
+		if (!header)
+			return NULL;
 
 		imethod->header = inflate_generic_header (header, mono_method_get_context (method));
 		mono_loader_unlock ();
