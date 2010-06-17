@@ -6510,6 +6510,24 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 		mono_gc_wbarrier_generic_nostore (ptr);
 }
 
+void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
+{
+	mword *dest = _dest;
+	mword *src = _src;
+
+	while (size) {
+		if (bitmap & 0x1)
+			mono_gc_wbarrier_generic_store (dest, (MonoObject*)*src);
+		else
+			*dest = *src;
+		++src;
+		++dest;
+		size -= sizeof (SIZEOF_VOID_P);
+		bitmap >>= 1;
+	}
+}
+
+
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {

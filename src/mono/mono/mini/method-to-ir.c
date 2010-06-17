@@ -2568,10 +2568,9 @@ create_write_barrier_bitmap (MonoClass *klass, unsigned *wb_bitmap, int offset)
 }
 
 static gboolean
-mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, int destreg, int doffset, int srcreg, int soffset, int size, int align)
+mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4], int size, int align)
 {
-	MonoInst *args[1];
-	int dest_ptr_reg, tmp_reg;
+	int dest_ptr_reg, tmp_reg, destreg, srcreg, offset;
 	unsigned need_wb = 0;
 
 	if (align == 0)
@@ -2581,35 +2580,43 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, int destreg, int 
 	if (align < SIZEOF_VOID_P)
 		return FALSE;
 
-	/*
-	 * This value cannot be biger than 32 due to the way we calculate the required wb bitmap.
-	 * FIXME tune this value.
-	 */
-	if (size > 5 * SIZEOF_VOID_P)
+	/*This value cannot be bigger than 32 due to the way we calculate the required wb bitmap.*/
+	if (size > 32 * SIZEOF_VOID_P)
 		return FALSE;
 
 	create_write_barrier_bitmap (klass, &need_wb, 0);
 
+	/* We don't unroll more than 5 stores to avoid code bloat. */
+	if (size > 5 * SIZEOF_VOID_P) {
+		/*This is harmless and simplify mono_gc_wbarrier_value_copy_bitmap */
+		size += (SIZEOF_VOID_P - 1);
+		size &= ~(SIZEOF_VOID_P - 1);
+
+		EMIT_NEW_ICONST (cfg, iargs [2], size);
+		EMIT_NEW_ICONST (cfg, iargs [3], need_wb);
+		mono_emit_jit_icall (cfg, mono_gc_wbarrier_value_copy_bitmap, iargs);
+		return TRUE;
+	}
+
+	destreg = iargs [0]->dreg;
+	srcreg = iargs [1]->dreg;
+	offset = 0;
+
 	dest_ptr_reg = alloc_preg (cfg);
 	tmp_reg = alloc_preg (cfg);
 
-	/*tmp = dreg + doffset*/
-	if (doffset) {
-		NEW_BIALU_IMM (cfg, args [0], OP_PADD_IMM, dest_ptr_reg, destreg, doffset);
-		MONO_ADD_INS (cfg->cbb, args [0]);
-	} else {
-		EMIT_NEW_UNALU (cfg, args [0], OP_MOVE, dest_ptr_reg, destreg);
-	}
+	/*tmp = dreg*/
+	EMIT_NEW_UNALU (cfg, iargs [0], OP_MOVE, dest_ptr_reg, destreg);
 
 	while (size >= SIZEOF_VOID_P) {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, tmp_reg, srcreg, soffset);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, tmp_reg, srcreg, offset);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, dest_ptr_reg, 0, tmp_reg);
 
 		if (need_wb & 0x1) {
 			MonoInst *dummy_use;
 
 			MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-			mono_emit_method_call (cfg, write_barrier, &args [0], NULL);
+			mono_emit_method_call (cfg, write_barrier, &iargs [0], NULL);
 
 			MONO_INST_NEW (cfg, dummy_use, OP_DUMMY_USE);
 			dummy_use->sreg1 = dest_ptr_reg;
@@ -2617,40 +2624,36 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, int destreg, int 
 		}
 
 
-		doffset += SIZEOF_VOID_P;
-		soffset += SIZEOF_VOID_P;
+		offset += SIZEOF_VOID_P;
 		size -= SIZEOF_VOID_P;
 		need_wb >>= 1;
 
-		//tmp += sizeof (void*)
+		/*tmp += sizeof (void*)*/
 		if (size >= SIZEOF_VOID_P) {
-			NEW_BIALU_IMM (cfg, args [0], OP_PADD_IMM, dest_ptr_reg, dest_ptr_reg, SIZEOF_VOID_P);
-			MONO_ADD_INS (cfg->cbb, args [0]);
+			NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, dest_ptr_reg, dest_ptr_reg, SIZEOF_VOID_P);
+			MONO_ADD_INS (cfg->cbb, iargs [0]);
 		}
 	}
 
 	/* Those cannot be references since size < sizeof (void*) */
 	while (size >= 4) {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, tmp_reg, srcreg, soffset);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, destreg, doffset, tmp_reg);
-		doffset += 4;
-		soffset += 4;
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, tmp_reg, srcreg, offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, destreg, offset, tmp_reg);
+		offset += 4;
 		size -= 4;
 	}
 
 	while (size >= 2) {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI2_MEMBASE, tmp_reg, srcreg, soffset);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, destreg, doffset, tmp_reg);
-		doffset += 2;
-		soffset += 2;
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI2_MEMBASE, tmp_reg, srcreg, offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, destreg, offset, tmp_reg);
+		offset += 2;
 		size -= 2;
 	}
 
 	while (size >= 1) {
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, tmp_reg, srcreg, soffset);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, destreg, doffset, tmp_reg);
-		doffset += 1;
-		soffset += 1;
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, tmp_reg, srcreg, offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, destreg, offset, tmp_reg);
+		offset += 1;
 		size -= 1;
 	}
 
@@ -2665,7 +2668,7 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, int destreg, int 
 void
 mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native)
 {
-	MonoInst *iargs [3];
+	MonoInst *iargs [4];
 	int n;
 	guint32 align = 0;
 	MonoMethod *memcpy_method;
@@ -2694,12 +2697,13 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
-			/*FIXME can we use the intrinsics version when context_used == TRUE? */
-			if (context_used) {
-				iargs [2] = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
-			} else if ((cfg->opt & MONO_OPT_INTRINS) && mono_emit_wb_aware_memcpy (cfg, klass, dest->dreg, 0, src->dreg, 0, n, align)) {
+
+			/* It's ok to intrinsify under gsharing since shared code types are layout stable. */
+			if ((cfg->opt & MONO_OPT_INTRINS) && mono_emit_wb_aware_memcpy (cfg, klass, iargs, n, align)) {
 				return;
-			} else {
+			} else if (context_used) {
+				iargs [2] = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+			}  else {
 				if (cfg->compile_aot) {
 					EMIT_NEW_CLASSCONST (cfg, iargs [2], klass);
 				} else {

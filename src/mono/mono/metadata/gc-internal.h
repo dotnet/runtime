@@ -170,6 +170,9 @@ guint32 mono_gc_get_managed_allocator_types (void) MONO_INTERNAL;
 /* Fast write barriers */
 MonoMethod* mono_gc_get_write_barrier (void) MONO_INTERNAL;
 
+/* Fast valuetype copy */
+void mono_gc_wbarrier_value_copy_bitmap (gpointer dest, gpointer src, int size, unsigned bitmap) MONO_INTERNAL;
+
 /* helper for the managed alloc support */
 MonoString *mono_string_alloc (int length) MONO_INTERNAL;
 
