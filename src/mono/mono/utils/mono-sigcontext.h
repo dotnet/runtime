@@ -179,6 +179,57 @@
 	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.mc_lr)
 #endif
 
+#elif defined(__arm__)
+#if defined(__APPLE__)
+	typedef ucontext_t arm_ucontext;
+
+	#define UCONTEXT_REG_PC(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__pc)
+	#define UCONTEXT_REG_SP(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__sp)
+	#define UCONTEXT_REG_LR(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__lr)
+	#define UCONTEXT_REG_R0(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[0])
+	#define UCONTEXT_REG_R1(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[1])
+	#define UCONTEXT_REG_R2(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[2])
+	#define UCONTEXT_REG_R3(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[3])
+	#define UCONTEXT_REG_R4(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[4])
+	#define UCONTEXT_REG_R5(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[5])
+	#define UCONTEXT_REG_R6(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[6])
+	#define UCONTEXT_REG_R7(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[7])
+	#define UCONTEXT_REG_R8(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[8])
+	#define UCONTEXT_REG_R9(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[9])
+	#define UCONTEXT_REG_R10(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[10])
+	#define UCONTEXT_REG_R11(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[11])
+	#define UCONTEXT_REG_R12(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[12])
+#elif defined(__linux__)
+	typedef struct arm_ucontext {
+		unsigned long       uc_flags;
+		struct arm_ucontext *uc_link;
+		struct {
+			void *p;
+			int flags;
+			size_t size;
+		} sstack_data;
+		struct sigcontext sig_ctx;
+		/* some 2.6.x kernel has fp data here after a few other fields
+		* we don't use them for now...
+		*/
+	} arm_ucontext;
+	#define UCONTEXT_REG_PC(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_pc)
+	#define UCONTEXT_REG_SP(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_sp)
+	#define UCONTEXT_REG_LR(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_lr)
+	#define UCONTEXT_REG_R0(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r0)
+	#define UCONTEXT_REG_R1(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r1)
+	#define UCONTEXT_REG_R2(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r2)
+	#define UCONTEXT_REG_R3(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r3)
+	#define UCONTEXT_REG_R4(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r4)
+	#define UCONTEXT_REG_R5(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r5)
+	#define UCONTEXT_REG_R6(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r6)
+	#define UCONTEXT_REG_R7(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r7)
+	#define UCONTEXT_REG_R8(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r8)
+	#define UCONTEXT_REG_R9(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r9)
+	#define UCONTEXT_REG_R10(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_r10)
+	#define UCONTEXT_REG_R11(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_fp)
+	#define UCONTEXT_REG_R12(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_ip)
+#endif
 #endif
 
 #endif
