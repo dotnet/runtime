@@ -2541,6 +2541,115 @@ get_memcpy_method (void)
 	return memcpy_method;
 }
 
+#if HAVE_WRITE_BARRIERS
+static gboolean
+mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, int destreg, int doffset, int srcreg, int soffset, int size, int align)
+{
+	MonoInst *args[1];
+	MonoClassField *field;
+	gpointer iter = NULL;
+	int dest_ptr_reg, tmp_reg;
+	unsigned need_wb = 0;
+
+	if (align == 0)
+		align = 4;
+
+	/*types with references can't have alignment smaller than sizeof(void*) */
+	if (align < SIZEOF_VOID_P)
+		return FALSE;
+
+	/*
+	 * This value cannot be biger than 32 due to the way we calculate the required wb bitmap.
+	 * FIXME tune this value.
+	 */
+	if (size > 5 * SIZEOF_VOID_P)
+		return FALSE;
+
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		int foffset;
+
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		foffset = klass->valuetype ? field->offset - sizeof (MonoObject): field->offset;
+		if (mono_type_is_reference (field->type)) {
+			g_assert ((foffset % SIZEOF_VOID_P) == 0);
+			need_wb |= 1 << (foffset / SIZEOF_VOID_P);
+		} else {
+			/*FIXME support nested value types so this works for: struct X { Y y; int z;} struct Y { object a,b; }*/
+			MonoClass *field_class = mono_class_from_mono_type (field->type);
+			if (field_class->has_references)
+				return FALSE;
+		}
+	}
+
+	dest_ptr_reg = alloc_preg (cfg);
+	tmp_reg = alloc_preg (cfg);
+
+	/*tmp = dreg + doffset*/
+	if (doffset) {
+		NEW_BIALU_IMM (cfg, args [0], OP_PADD_IMM, dest_ptr_reg, destreg, doffset);
+		MONO_ADD_INS (cfg->cbb, args [0]);
+	} else {
+		EMIT_NEW_UNALU (cfg, args [0], OP_MOVE, dest_ptr_reg, destreg);
+	}
+
+	while (size >= SIZEOF_VOID_P) {
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, tmp_reg, srcreg, soffset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, dest_ptr_reg, 0, tmp_reg);
+
+		if (need_wb & 0x1) {
+			MonoInst *dummy_use;
+
+			MonoMethod *write_barrier = mono_gc_get_write_barrier ();
+			mono_emit_method_call (cfg, write_barrier, &args [0], NULL);
+
+			MONO_INST_NEW (cfg, dummy_use, OP_DUMMY_USE);
+			dummy_use->sreg1 = dest_ptr_reg;
+			MONO_ADD_INS (cfg->cbb, dummy_use);
+		}
+
+
+		doffset += SIZEOF_VOID_P;
+		soffset += SIZEOF_VOID_P;
+		size -= SIZEOF_VOID_P;
+		need_wb >>= 1;
+
+		//tmp += sizeof (void*)
+		if (size >= SIZEOF_VOID_P) {
+			NEW_BIALU_IMM (cfg, args [0], OP_PADD_IMM, dest_ptr_reg, dest_ptr_reg, SIZEOF_VOID_P);
+			MONO_ADD_INS (cfg->cbb, args [0]);
+		}
+	}
+
+	/* Those cannot be references since size < sizeof (void*) */
+	while (size >= 4) {
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, tmp_reg, srcreg, soffset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, destreg, doffset, tmp_reg);
+		doffset += 4;
+		soffset += 4;
+		size -= 4;
+	}
+
+	while (size >= 2) {
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI2_MEMBASE, tmp_reg, srcreg, soffset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, destreg, doffset, tmp_reg);
+		doffset += 2;
+		soffset += 2;
+		size -= 2;
+	}
+
+	while (size >= 1) {
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, tmp_reg, srcreg, soffset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, destreg, doffset, tmp_reg);
+		doffset += 1;
+		soffset += 1;
+		size -= 1;
+	}
+
+	return TRUE;
+}
+#endif
+
 /*
  * Emit code to copy a valuetype of type @klass whose address is stored in
  * @src->dreg to memory whose address is stored at @dest->dreg.
@@ -2577,8 +2686,11 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
+			/*FIXME can we use the intrinsics version when context_used == TRUE? */
 			if (context_used) {
 				iargs [2] = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+			} else if ((cfg->opt & MONO_OPT_INTRINS) && mono_emit_wb_aware_memcpy (cfg, klass, dest->dreg, 0, src->dreg, 0, n, align)) {
+				return;
 			} else {
 				if (cfg->compile_aot) {
 					EMIT_NEW_CLASSCONST (cfg, iargs [2], klass);
@@ -2588,10 +2700,8 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 				}
 			}
 
-			/* FIXME: this does the memcpy as well (or
-			   should), so we don't need the memcpy
-			   afterwards */
 			mono_emit_jit_icall (cfg, mono_value_copy, iargs);
+			return;
 		}
 	}
 #endif
