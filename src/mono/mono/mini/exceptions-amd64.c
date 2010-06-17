@@ -358,7 +358,7 @@ mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy
 							guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
 							guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
 							guint64 rax, guint64 rcx, guint64 rdx,
-							gint32 pc_offset)
+							gint64 pc_offset)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
 	MonoException *ex;
@@ -366,6 +366,9 @@ mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy
 	ex = mono_exception_from_token (mono_defaults.exception_class->image, ex_token);
 
 	rip -= pc_offset;
+
+	/* Negate the ip adjustment done in mono_amd64_throw_exception () */
+	rip += 1;
 
 	mono_amd64_throw_exception (dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, (MonoObject*)ex, rip, rsp, rbx, rbp, r12, r13, r14, r15, rdi, rsi, rax, rcx, rdx, FALSE);
 }
@@ -377,7 +380,7 @@ mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy
  * mono_amd64_throw_corlib_exception.
  */
 static gpointer
-get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, gboolean aot)
+get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, gboolean llvm_abs, gboolean aot)
 {
 	guint8* start;
 	guint8 *code;
@@ -393,10 +396,18 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, 8);
 
 	/* reverse order */
-	if (corlib)
+	if (corlib) {
 		amd64_push_reg (code, AMD64_ARG_REG2);
-	else
+		if (llvm_abs)
+			/* 
+			 * The caller is LLVM code which passes the absolute address not a pc offset,
+			 * so compensate by passing 0 as 'rip' and passing the negated abs address as
+			 * the pc offset.
+			 */
+			amd64_neg_membase (code, X86_ESP, 0);
+	} else {
 		amd64_push_imm (code, rethrow);
+	}
 	amd64_push_reg (code, AMD64_RDX);
 	amd64_push_reg (code, AMD64_RCX);
 	amd64_push_reg (code, AMD64_RAX);
@@ -414,7 +425,10 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	amd64_push_reg (code, AMD64_RAX);
 
 	/* IP */
-	amd64_push_membase (code, AMD64_R11, 0);
+	if (llvm_abs)
+		amd64_push_imm (code, 0);
+	else
+		amd64_push_membase (code, AMD64_R11, 0);
 
 	if (corlib)
 		/* exc type token */
@@ -436,7 +450,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 #endif
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? "mono_amd64_throw_corlib_exception" : "mono_amd64_throw_exception");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? (llvm_abs ? "mono_amd64_throw_corlib_exception_abs" : "mono_amd64_throw_corlib_exception") : "mono_amd64_throw_exception");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, corlib ? (gpointer)mono_amd64_throw_corlib_exception : (gpointer)mono_amd64_throw_exception);
@@ -448,11 +462,11 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 	g_assert ((code - start) < 64);
 
-	mono_save_trampoline_xdebug_info (corlib ? "throw_corlib_exception_trampoline"
+	mono_save_trampoline_xdebug_info (corlib ? (llvm_abs ? "throw_corlib_exception_trampoline_llvm_abs" : "throw_corlib_exception_trampoline")
 									  : "throw_exception_trampoline", start, code - start, unwind_ops);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_exception" : "throw_exception")), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (g_strdup_printf (corlib ? (llvm_abs ? "throw_corlib_exception_llvm_abs" : "throw_corlib_exception") : (rethrow ? "rethrow_exception" : "throw_exception")), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -468,13 +482,13 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (info, FALSE, FALSE, aot);
+	return get_throw_trampoline (info, FALSE, FALSE, FALSE, aot);
 }
 
 gpointer 
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (info, TRUE, FALSE, aot);
+	return get_throw_trampoline (info, TRUE, FALSE, FALSE, aot);
 }
 
 /**
@@ -490,7 +504,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (info, FALSE, TRUE, aot);
+	return get_throw_trampoline (info, FALSE, TRUE, FALSE, aot);
 }
 
 /*
@@ -1075,12 +1089,21 @@ mono_arch_notify_pending_exc (void)
 void
 mono_arch_exceptions_init (void)
 {
+	guint8 *tramp;
+
 	if (mono_aot_only) {
 		throw_pending_exception = mono_aot_get_trampoline ("throw_pending_exception");
 	} else {
 		/* Call this to avoid initialization races */
 		throw_pending_exception = mono_arch_get_throw_pending_exception (NULL, FALSE);
 	}
+
+	/* LLVM needs different throw trampolines */
+	tramp = get_throw_trampoline (NULL, FALSE, TRUE, FALSE, FALSE);
+	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
+
+	tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, FALSE);
+	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception_abs", NULL, TRUE);
 }
 
 #ifdef TARGET_WIN32

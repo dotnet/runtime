@@ -131,6 +131,12 @@ llvm_ins_info[] = {
 #define TRACE_FAILURE(msg)
 #endif
 
+#ifdef TARGET_X86
+#define IS_TARGET_X86 1
+#else
+#define IS_TARGET_X86 0
+#endif
+
 #define LLVM_FAILURE(ctx, reason) do { \
 	TRACE_FAILURE (reason); \
 	(ctx)->cfg->exception_message = g_strdup (reason); \
@@ -1038,11 +1044,6 @@ get_plt_entry (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gc
 	return callee;
 }
 
-static void
-emit_cond_throw_pos (EmitContext *ctx)
-{
-}
-
 static int
 get_handler_clause (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -1209,7 +1210,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	LLVMBuilderRef builder;
 	MonoClass *exc_class;
 	LLVMValueRef args [2];
-
+	
 	ex_bb = gen_bb (ctx, "EX_BB");
 	noex_bb = gen_bb (ctx, "NOEX_BB");
 
@@ -1225,48 +1226,61 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	if (!ctx->lmodule->throw_corlib_exception) {
 		LLVMValueRef callee;
 		LLVMTypeRef sig;
+		const char *icall_name;
 
 		MonoMethodSignature *throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 		throw_sig->ret = &mono_defaults.void_class->byval_arg;
 		throw_sig->params [0] = &mono_defaults.int32_class->byval_arg;
-		throw_sig->params [1] = &mono_defaults.int32_class->byval_arg;
+		if (IS_LLVM_MONO_BRANCH) {
+			icall_name = "mono_arch_llvm_throw_corlib_exception_abs";
+			throw_sig->params [1] = &mono_defaults.int_class->byval_arg;
+		} else {
+			icall_name = "mono_arch_llvm_throw_corlib_exception";
+			throw_sig->params [1] = &mono_defaults.int32_class->byval_arg;
+		}
 		sig = sig_to_llvm_sig (ctx, throw_sig);
 
 		if (ctx->cfg->compile_aot) {
-			callee = get_plt_entry (ctx, sig, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_corlib_exception");
+			callee = get_plt_entry (ctx, sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
 		} else {
-			callee = LLVMAddFunction (ctx->module, "throw_corlib_exception", sig_to_llvm_sig (ctx, throw_sig));
+			callee = LLVMAddFunction (ctx->module, "llvm_throw_corlib_exception", sig_to_llvm_sig (ctx, throw_sig));
 
-#ifdef TARGET_X86 
-			/* 
-			 * LLVM generated code doesn't push the arguments, so we need another
-			 * throw trampoline.
+			/*
+			 * Differences between the LLVM/non-LLVM throw corlib exception trampoline:
+			 * - On x86, LLVM generated code doesn't push the arguments
+			 * - When using the LLVM mono branch, the trampoline takes the throw address as an
+			 *   arguments, not a pc offset.
 			 */
-			LLVMAddGlobalMapping (ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_llvm_throw_corlib_exception"));
-#else
-			LLVMAddGlobalMapping (ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_corlib_exception"));
-#endif
+			LLVMAddGlobalMapping (ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name));
 		}
 
 		mono_memory_barrier ();
 		ctx->lmodule->throw_corlib_exception = callee;
 	}
 
-#ifdef TARGET_X86
-	args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token - MONO_TOKEN_TYPE_DEF, FALSE);
-#else
-	args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token, FALSE);
-#endif
+	if (IS_TARGET_X86)
+		args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token - MONO_TOKEN_TYPE_DEF, FALSE);
+	else
+		args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token, FALSE);
 
-	/*
-	 * FIXME: The offset is 0, this is only a problem if the code is inside a clause,
-	 * otherwise only the line numbers in stack traces are incorrect.
-	 */
-	if (bb->region != -1)
-		LLVM_FAILURE (ctx, "system-ex-in-region");
+	if (IS_LLVM_MONO_BRANCH) {
+		/*
+		 * The LLVM mono branch contains changes so a block address can be passed as an
+		 * argument to a call.
+		 */
+		args [1] = LLVMBuildPtrToInt (builder, LLVMBlockAddress (ctx->lmethod, ex_bb), IntPtrType (), "");
+		emit_call (ctx, bb, &builder, ctx->lmodule->throw_corlib_exception, args, 2);
+	} else {
+		/*
+		 * FIXME: The offset is 0, this is only a problem if the code is inside a clause,
+		 * otherwise only the line numbers in stack traces are incorrect.
+		 */
+		if (bb->region != -1 && !IS_LLVM_MONO_BRANCH)
+			LLVM_FAILURE (ctx, "system-ex-in-region");
 
-	args [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-	emit_call (ctx, bb, &builder, ctx->lmodule->throw_corlib_exception, args, 2);
+		args [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		emit_call (ctx, bb, &builder, ctx->lmodule->throw_corlib_exception, args, 2);
+	}
 
 	LLVMBuildUnreachable (builder);
 
@@ -2227,7 +2241,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					/* Add stores for volatile variables */
 					emit_volatile_store (ctx, ins->next->dreg);
 				} else if (MONO_IS_COND_EXC (ins->next)) {
-					//emit_cond_throw_pos (ctx);
 					emit_cond_system_exception (ctx, bb, ins->next->inst_p1, cmp);
 					CHECK_FAILURE (ctx);
 					builder = ctx->builder;
@@ -3062,8 +3075,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #endif
 			{
 				LLVMValueRef args [2], val, ovf, func;
-
-				emit_cond_throw_pos (ctx);
 
 				args [0] = convert (ctx, lhs, op_to_llvm_type (ins->opcode));
 				args [1] = convert (ctx, rhs, op_to_llvm_type (ins->opcode));

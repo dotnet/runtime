@@ -426,7 +426,7 @@ mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy
 								   guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
 								   guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
 								   guint64 rax, guint64 rcx, guint64 rdx,
-								   gint32 pc_offset) MONO_INTERNAL;
+								   gint64 pc_offset) MONO_INTERNAL;
 
 guint64
 mono_amd64_get_original_ip (void) MONO_INTERNAL;
