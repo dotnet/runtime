@@ -3579,6 +3579,9 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	gboolean no_special_static, cant_encode;
 	gpointer iter = NULL;
 
+	if (!klass)
+		return add_to_blob (acfg, NULL, 0);
+		
 	buf_size = 10240 + (klass->vtable_size * 16);
 	p = buf = g_malloc (buf_size);
 
@@ -5338,6 +5341,8 @@ emit_class_name_table (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
+		if (!klass)
+			continue;
 		full_name = mono_type_get_name_full (mono_class_get_type (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
 		hash = mono_metadata_str_hash (full_name) % table_size;
 		g_free (full_name);

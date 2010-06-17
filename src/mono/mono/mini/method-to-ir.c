@@ -5286,6 +5286,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);
+	if (!header) {
+		MonoLoaderError *error;
+
+		if ((error = mono_loader_get_last_error ())) {
+			cfg->exception_type = error->exception_type;
+		} else {
+			cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
+			cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
+		}
+		goto exception_exit;
+	}
 	generic_container = mono_method_get_generic_container (method);
 	sig = mono_method_signature (method);
 	num_args = sig->hasthis + sig->param_count;
