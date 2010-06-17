@@ -452,6 +452,9 @@ mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index,
 
 	eip -= pc_offset;
 
+	/* Negate the ip adjustment done in mono_x86_throw_exception () */
+	eip += 1;
+
 	mono_x86_throw_exception (regs, (MonoObject*)ex, eip, FALSE);
 }
 
