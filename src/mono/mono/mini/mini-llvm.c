@@ -3720,13 +3720,23 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		 * CC_X86_64_Mono in X86CallingConv.td.
 		 */
 		LLVMAddAttribute (ctx->rgctx_arg, LLVMInRegAttribute);
+		LLVMSetValueName (ctx->rgctx_arg, "rgctx");
 	}
-	if (cfg->vret_addr)
+	if (cfg->vret_addr) {
 		values [cfg->vret_addr->dreg] = LLVMGetParam (method, sinfo.vret_arg_pindex);
-	if (sig->hasthis)
+		LLVMSetValueName (values [cfg->vret_addr->dreg], "vret");
+	}
+	if (sig->hasthis) {
 		values [cfg->args [0]->dreg] = LLVMGetParam (method, sinfo.this_arg_pindex);
+		LLVMSetValueName (values [cfg->args [0]->dreg], "this");
+	}
 	for (i = 0; i < sig->param_count; ++i) {
+		char *name;
+
 		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, sinfo.pindexes [i]);
+		name = g_strdup_printf ("arg_%d", i);
+		LLVMSetValueName (values [cfg->args [i + sig->hasthis]->dreg], name);
+		g_free (name);
 		if (linfo->args [i + sig->hasthis].storage == LLVMArgVtypeByVal)
 			LLVMAddAttribute (LLVMGetParam (method, sinfo.pindexes [i]), LLVMByValAttribute);
 	}
