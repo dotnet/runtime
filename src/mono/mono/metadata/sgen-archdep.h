@@ -121,6 +121,44 @@
 		((a)[__i]) = UCONTEXT_REG_Rn((ctx), __i);	\
 	} while (0)
 
+#elif defined(__arm__)
+
+#define REDZONE_SIZE	0
+
+/* We dont store ip, sp */
+#define ARCH_NUM_REGS 14
+#define ARCH_STORE_REGS(ptr)				\
+	__asm__ __volatile__(				\
+		"ldr r12, %0\n"				\
+		"push {r0}\n"				\
+		"push {r12}\n"				\
+		"stmia r12!, {r0-r11}\n"		\
+		"pop {r0}\n"				\
+		"stmia r12!, {r0, lr}\n"		\
+		"mov r12, r0\n"				\
+		"pop {r0}\n"				\
+		: 					\
+		: "m" (ptr)				\
+	)
+
+#define ARCH_SIGCTX_SP(ctx)	(UCONTEXT_REG_SP((ctx)))
+#define ARCH_SIGCTX_IP(ctx)	(UCONTEXT_REG_PC((ctx)))
+#define ARCH_COPY_SIGCTX_REGS(a,ctx) do {			\
+	((a)[0]) = (gpointer) (UCONTEXT_REG_R0((ctx)));		\
+	((a)[1]) = (gpointer) (UCONTEXT_REG_R1((ctx)));		\
+	((a)[2]) = (gpointer) (UCONTEXT_REG_R2((ctx)));		\
+	((a)[3]) = (gpointer) (UCONTEXT_REG_R3((ctx)));		\
+	((a)[4]) = (gpointer) (UCONTEXT_REG_R4((ctx)));		\
+	((a)[5]) = (gpointer) (UCONTEXT_REG_R5((ctx)));		\
+	((a)[6]) = (gpointer) (UCONTEXT_REG_R6((ctx)));		\
+	((a)[7]) = (gpointer) (UCONTEXT_REG_R7((ctx)));		\
+	((a)[8]) = (gpointer) (UCONTEXT_REG_R8((ctx)));		\
+	((a)[9]) = (gpointer) (UCONTEXT_REG_R9((ctx)));		\
+	((a)[10]) = (gpointer) (UCONTEXT_REG_R10((ctx)));	\
+	((a)[11]) = (gpointer) (UCONTEXT_REG_R11((ctx)));	\
+	((a)[12]) = (gpointer) (UCONTEXT_REG_R12((ctx)));	\
+	((a)[13]) = (gpointer) (UCONTEXT_REG_LR((ctx)));	\
+	} while (0)
 #endif
 
 #endif /* __MONO_SGENARCHDEP_H__ */
