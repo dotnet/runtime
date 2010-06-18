@@ -1096,14 +1096,14 @@ mono_arch_exceptions_init (void)
 	} else {
 		/* Call this to avoid initialization races */
 		throw_pending_exception = mono_arch_get_throw_pending_exception (NULL, FALSE);
+
+		/* LLVM needs different throw trampolines */
+		tramp = get_throw_trampoline (NULL, FALSE, TRUE, FALSE, FALSE);
+		mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
+
+		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, FALSE);
+		mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception_abs", NULL, TRUE);
 	}
-
-	/* LLVM needs different throw trampolines */
-	tramp = get_throw_trampoline (NULL, FALSE, TRUE, FALSE, FALSE);
-	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
-
-	tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, FALSE);
-	mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception_abs", NULL, TRUE);
 }
 
 #ifdef TARGET_WIN32

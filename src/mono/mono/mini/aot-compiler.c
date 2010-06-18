@@ -3082,7 +3082,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
-	header = mono_method_get_header (method);
+	header = cfg->header;
 
 	method_index = get_method_index (acfg, method);
 
