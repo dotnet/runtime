@@ -56,7 +56,7 @@
 
 static gpointer restore_context_func, call_filter_func;
 static gpointer throw_exception_func, rethrow_exception_func;
-static gpointer throw_exception_by_name_func, throw_corlib_exception_func;
+static gpointer throw_corlib_exception_func;
 
 static gpointer try_more_restore_tramp = NULL;
 static gpointer restore_stack_protection_tramp = NULL;
