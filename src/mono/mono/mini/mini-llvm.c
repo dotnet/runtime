@@ -2915,17 +2915,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.cos.f64"), args, 1, dname);
 			break;
 		}
-			/* test_0_sqrt_nan fails with LLVM */
-			/*
-			  case OP_SQRT: {
-			  LLVMValueRef args [1];
+		case OP_SQRT: {
+			LLVMValueRef args [1];
 
-			  args [0] = lhs;
-			  values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.sqrt.f64"), args, 1, dname);
-			  break;
-			  }
-			*/
-
+			if (!IS_LLVM_MONO_BRANCH)
+				/*
+				 * LLVM optimizes sqrt(nan) into undefined in
+				 * lib/Analysis/ConstantFolding.cpp
+				 */
+				LLVM_FAILURE (ctx, "sqrt");
+			args [0] = lhs;
+			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.sqrt.f64"), args, 1, dname);
+			break;
+		}
 		case OP_ABS: {
 			LLVMValueRef args [1];
 
