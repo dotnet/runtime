@@ -10,6 +10,8 @@
 #define G_MODULE_EXPORT
 #endif
 
+G_BEGIN_DECLS
+
 /*
  * Modules
  */
@@ -29,5 +31,7 @@ gchar *  g_module_build_path (const gchar *directory, const gchar *module_name);
 
 extern char *gmodule_libprefix;
 extern char *gmodule_libsuffix;
+
+G_END_DECLS
 
 #endif

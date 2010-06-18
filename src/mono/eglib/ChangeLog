@@ -1,3 +1,14 @@
+2010-06-18  Chris Toshok  <toshok@ximian.com>
+
+	patch from Jacob Berkman:
+
+	* src/glib.h (g_mkdir): #define to mkdir
+	(g_ascii_strtoull): #define to strtoull
+
+	* src/gmodule.h: add G_BEGIN/END_DECLS
+
+	* src/gstr.c (g_strdupv): new function.
+
 2010-06-18  Rolf Bjarne Kvinge  <RKvinge@novell.com>
 
 	* src/eglib-remap.h: Remap g_ptr_array_remove_fast too.

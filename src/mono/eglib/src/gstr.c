@@ -63,6 +63,21 @@ g_strfreev (gchar **str_array)
 	g_free (orig);
 }
 
+gchar **
+g_strdupv (gchar **str_array)
+{
+	guint length;
+	gchar **ret;
+	guint i;
+	length = g_strv_length(str_array);
+	ret = g_new0(gchar *, length + 1);
+	for (i = 0; str_array[i]; i++) {
+		ret[i] = g_strdup(str_array[i]);
+	}
+	ret[length] = NULL;
+	return ret;
+}
+
 guint
 g_strv_length(gchar **str_array)
 {

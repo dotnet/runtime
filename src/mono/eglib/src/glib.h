@@ -137,6 +137,7 @@ static inline gpointer g_malloc0 (gsize x) {if (x) return calloc(1,x); else retu
 
 gpointer g_memdup (gconstpointer mem, guint byte_size);
 static inline gchar   *g_strdup (const gchar *str) { if (str) {return strdup (str);} return NULL; }
+gchar **g_strdupv (gchar **str_array);
 
 typedef struct {
 	gpointer (*malloc)      (gsize    n_bytes);
@@ -289,6 +290,7 @@ gint    g_ascii_xdigit_value (gchar c);
 #else
 #define g_strcasecmp strcasecmp
 #define g_ascii_strcasecmp strcasecmp
+#define g_ascii_strtoull strtoull
 #define g_strncasecmp strncasecmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))
 #endif
@@ -768,6 +770,7 @@ GDir        *g_dir_open (const gchar *path, guint flags, GError **error);
 const gchar *g_dir_read_name (GDir *dir);
 void         g_dir_rewind (GDir *dir);
 void         g_dir_close (GDir *dir);
+#define g_mkdir mkdir
 
 /*
  * GMarkup
