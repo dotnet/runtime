@@ -3586,8 +3586,19 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	gboolean no_special_static, cant_encode;
 	gpointer iter = NULL;
 
-	if (!klass)
-		return add_to_blob (acfg, NULL, 0);
+	if (!klass) {
+		buf_size = 16;
+
+		p = buf = g_malloc (buf_size);
+
+		/* Mark as unusable */
+		encode_value (-1, p, &p);
+
+		res = add_to_blob (acfg, buf, p - buf);
+		g_free (buf);
+
+		return res;
+	}
 		
 	buf_size = 10240 + (klass->vtable_size * 16);
 	p = buf = g_malloc (buf_size);
