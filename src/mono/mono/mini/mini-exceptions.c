@@ -118,30 +118,6 @@ mono_get_restore_context (void)
 }
 
 gpointer
-mono_get_throw_exception_by_name (void)
-{
-#ifdef MONO_ARCH_HAVE_THROW_EXCEPTION_BY_NAME
-	gpointer code = NULL;
-
-	/* This depends on corlib classes so cannot be inited in mono_exceptions_init () */
-	if (throw_exception_by_name_func)
-		return throw_exception_by_name_func;
-
-	code = mono_arch_get_throw_exception_by_name ();
-
-	mono_memory_barrier ();
-
-	throw_exception_by_name_func = code;
-#else
-	throw_exception_by_name_func = NULL;
-
-	g_assert_not_reached ();
-#endif
-
-	return throw_exception_by_name_func;
-}
-
-gpointer
 mono_get_throw_corlib_exception (void)
 {
 	gpointer code = NULL;

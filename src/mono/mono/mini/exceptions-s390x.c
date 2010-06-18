@@ -76,7 +76,6 @@ gboolean mono_arch_handle_exception (void     *ctx,
 
 typedef enum {
 	by_none,
-	by_name,
 	by_token
 } throwType;
 
@@ -277,36 +276,21 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 /*------------------------------------------------------------------*/
 
 static gpointer 
-get_throw_exception_generic (guint8 *start, int size, 
-			     throwType type, gboolean rethrow)
+mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, 
+				int corlib, gboolean rethrow, gboolean aot)
 {
-	guint8 *code;
+	guint8 *code, *start;
 	int alloc_size, pos, i;
 
-	code = start;
+	code = start = mono_global_codeman_reserve(size);
 
 	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	alloc_size = S390_ALIGN(S390_THROWSTACK_SIZE, S390_STACK_ALIGNMENT);
 	s390_lgr  (code, s390_r14, STK_BASE);
 	s390_aghi (code, STK_BASE, -alloc_size);
 	s390_stg  (code, s390_r14, 0, STK_BASE, 0);
-	switch (type) {
-	case by_name : 
-		s390_lgr  (code, s390_r4, s390_r2);
-		s390_lg   (code, s390_r3, 0, s390_r2, G_STRUCT_OFFSET(MonoException, object));
-		s390_basr (code, s390_r13, 0);
-		s390_j    (code, 10);
-		s390_llong(code, mono_defaults.corlib);
-		s390_llong(code, mono_exception_from_name);
-		s390_lg   (code, s390_r3, 0, s390_r3, G_STRUCT_OFFSET(MonoVTable, klass));
-		s390_lg   (code, s390_r2, 0, s390_r13, 4);
-		s390_lg   (code, s390_r1, 0, s390_r13, 12);
-		s390_lg   (code, s390_r4, 0, s390_r3, G_STRUCT_OFFSET(MonoClass, name));
-		s390_lg   (code, s390_r3, 0, s390_r3, G_STRUCT_OFFSET(MonoClass, name_space));
-		s390_basr (code, s390_r14, s390_r1);
-		break;
-	case by_token : 
-		s390_lgr  (code, s390_r3, s390_r2);
+	s390_lgr  (code, s390_r3, s390_r2);
+	if (corlib) {
 		s390_basr (code, s390_r13, 0);
 		s390_j    (code, 10);
 		s390_llong(code, mono_defaults.exception_class->image);
@@ -314,10 +298,8 @@ get_throw_exception_generic (guint8 *start, int size,
 		s390_lg   (code, s390_r2, 0, s390_r13, 4);
 		s390_lg   (code, s390_r1, 0, s390_r13, 12);
 		s390_basr (code, s390_r14, s390_r1);
-		break;
-	case by_none :
-		break;
 	}
+
 	/*------------------------------------------------------*/
 	/* save the general registers on the stack 		*/
 	/*------------------------------------------------------*/
@@ -386,19 +368,12 @@ get_throw_exception_generic (guint8 *start, int size,
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	static guint8 *start;
-	static int inited = 0;
 
 	g_assert (!aot);
 	if (info)
 		*info = NULL;
 
-	if (inited)
-		return start;
-	start = mono_global_codeman_reserve (SZ_THROW);
-	get_throw_exception_generic (start, SZ_THROW, by_none, FALSE);
-	inited = 1;
-	return start;
+	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, FALSE, aot));
 }
 
 /*========================= End of Function ========================*/
@@ -417,19 +392,11 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	static guint8 *start;
-	static int inited = 0;
-
 	g_assert (!aot);
 	if (info)
 		*info = NULL;
 
-	if (inited)
-		return start;
-	start = mono_global_codeman_reserve (SZ_THROW);
-	get_throw_exception_generic (start, SZ_THROW, FALSE, TRUE);
-	inited = 1;
-	return start;
+	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, FALSE, aot));
 }
 
 /*========================= End of Function ========================*/
@@ -448,46 +415,11 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 gpointer
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	static guint8 *start;
-	static int inited = 0;
-
 	g_assert (!aot);
 	if (info)
 		*info = NULL;
 
-	if (inited)
-		return start;
-	start = mono_global_codeman_reserve (SZ_THROW);
-	get_throw_exception_generic (start, SZ_THROW, by_token, FALSE);
-	inited = 1;
-	return start;
-}	
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- arch_get_throw_exception_by_name                  */
-/*                                                                  */
-/* Function	- Return a function pointer which can be used to    */
-/*                raise corlib exceptions. The return function has  */
-/*                the following signature:                          */
-/*                void (*func) (char *exc_name);                    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-gpointer 
-mono_arch_get_throw_exception_by_name (void)
-{
-	static guint8 *start;
-	static int inited = 0;
-
-	if (inited)
-		return start;
-	start = mono_global_codeman_reserve (SZ_THROW);
-	get_throw_exception_generic (start, SZ_THROW, by_name, FALSE);
-	inited = 1;
-	return start;
+	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, TRUE, FALSE, aot));
 }	
 
 /*========================= End of Function ========================*/
@@ -595,6 +527,39 @@ gboolean
 mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 {
 	return mono_handle_exception (uc, obj, mono_arch_ip_from_context(uc), test_only);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_sigctx_to_monoctx.                      */
+/*                                                                  */
+/* Function	- Called from the signal handler to convert signal  */
+/*                context to MonoContext.                           */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
+{
+	memcpy (mctx, ctx, sizeof(MonoContext));
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_monoctx_to_sigctx.                      */
+/*                                                                  */
+/* Function	- Convert MonoContext structure to signal context.  */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
+{
+	memcpy (ctx, mctx, sizeof(MonoContext));
 }
 
 /*========================= End of Function ========================*/

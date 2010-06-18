@@ -5863,9 +5863,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	register_icall (mono_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
 	register_icall (mono_get_rethrow_exception (), "mono_arch_rethrow_exception", "void object", TRUE);
-#ifdef MONO_ARCH_HAVE_THROW_EXCEPTION_BY_NAME
-	register_icall (mono_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", "void ptr", TRUE); 
-#endif
 #if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
 	register_icall (mono_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", 
 				 "void ptr", TRUE);

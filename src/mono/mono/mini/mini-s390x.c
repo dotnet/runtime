@@ -1347,8 +1347,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-// static void inline
-static void 
+static void inline
 add_general (guint *gr, size_data *sz, ArgInfo *ainfo)
 {
 	if (*gr > S390_LAST_ARG_REG) {
@@ -5878,7 +5877,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 						s390_lg	  (code, s390_r1, 0, s390_r1, 0);
 					}
 					s390_br	  (code, s390_r1);
-					target = S390_RELATIVE(item->jmp_code, code);
+					target = S390_RELATIVE(code, item->jmp_code);
 					s390_patch_rel(item->jmp_code+2, target);
 					s390_basr (code, s390_r13, s390_r0);
 					s390_j	  (code, 6);
