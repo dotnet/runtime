@@ -1515,7 +1515,7 @@ typedef struct
 static G_GNUC_UNUSED MonoJitInfo*
 decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain, 
 				 MonoMethod *method, guint8 *code, MonoJitInfo *orig_jinfo,
-				 int extra_size)
+				 int extra_size, int *this_reg, int *this_offset)
 {
 	eh_frame_hdr *hdr;
 	guint8 *p;
@@ -1523,7 +1523,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint32 eh_frame_ptr;
 	int fde_count;
 	gint32 *table;
-	int i, pos, left, right, offset, offset1, offset2, this_reg, this_offset;
+	int i, pos, left, right, offset, offset1, offset2;
 	guint32 unw_len, code_len;
 	MonoJitExceptionInfo *ei;
 	guint32 ei_len;
@@ -1575,7 +1575,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	eh_frame = amodule->eh_frame_hdr + table [(pos * 2) + 1];
 
-	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, &type_info, &this_reg, &this_offset);
+	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, &type_info, this_reg, this_offset);
 
 	/*
 	 * LLVM might represent one IL region with multiple regions, so have to
@@ -1633,7 +1633,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes;
 	gboolean from_llvm;
 	guint8 *p;
-	int generic_info_size, try_holes_info_size, num_holes;
+	int generic_info_size, try_holes_info_size, num_holes, this_reg, this_offset;
 
 	/* Load the method info from the AOT file */
 
@@ -1708,7 +1708,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
  	if (from_llvm) {
 		/* LLVM compiled method */
 		/* The info is in the .eh_frame section */
- 		jinfo = decode_eh_frame (amodule, domain, method, code, jinfo, generic_info_size);
+ 		jinfo = decode_eh_frame (amodule, domain, method, code, jinfo, generic_info_size, &this_reg, &this_offset);
 		jinfo->from_llvm = 1;
  	} else {
 		jinfo->code_size = code_len;
@@ -1727,9 +1727,15 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		gi = mono_jit_info_get_generic_jit_info (jinfo);
 		g_assert (gi);
 
-		gi->has_this = decode_value (p, &p);
-		gi->this_reg = decode_value (p, &p);
-		gi->this_offset = decode_value (p, &p);
+		if (from_llvm) {
+			gi->has_this = this_reg != -1;
+			gi->this_reg = this_reg;
+			gi->this_offset = this_offset;
+		} else {
+			gi->has_this = decode_value (p, &p);
+			gi->this_reg = decode_value (p, &p);
+			gi->this_offset = decode_value (p, &p);
+		}
 
 		/* This currently contains no data */
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);

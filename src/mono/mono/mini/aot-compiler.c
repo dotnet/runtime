@@ -3416,7 +3416,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
-	header = mono_method_get_header (method);
+	header = cfg->header;
 
 	method_index = get_method_index (acfg, method);
 
@@ -3463,6 +3463,11 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	/* Exception table */
 	if (cfg->compile_llvm) {
+		/*
+		 * When using LLVM, we can't emit some data, like pc offsets, this reg/offset etc.,
+		 * since the information is only available to llc. Instead, we let llc save the data
+		 * into the LSDA, and read it from there at runtime.
+		 */
 		/* The assembly might be CIL stripped so emit the data ourselves */
 		if (header->num_clauses)
 			encode_value (header->num_clauses, p, &p);
@@ -3510,9 +3515,11 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	if (jinfo->has_generic_jit_info) {
 		MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (jinfo);
 
-		encode_value (gi->has_this ? 1 : 0, p, &p);
-		encode_value (gi->this_reg, p, &p);
-		encode_value (gi->this_offset, p, &p);
+		if (!cfg->compile_llvm) {
+			encode_value (gi->has_this ? 1 : 0, p, &p);
+			encode_value (gi->this_reg, p, &p);
+			encode_value (gi->this_offset, p, &p);
+		}
 
 		/* 
 		 * Need to encode jinfo->method too, since it is not equal to 'method'
@@ -4686,12 +4693,13 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * a lot of time, and doesn't seem to save much space.
 	 * The following optimizations cannot be enabled:
 	 * - 'tailcallelim'
+	 * - 'jump-threading' changes our blockaddress references to int constants.
 	 * The opt list below was produced by taking the output of:
 	 * llvm-as < /dev/null | opt -O2 -disable-output -debug-pass=Arguments
 	 * then removing tailcallelim + the global opts, and adding a second gvn.
 	 */
 	opts = g_strdup ("-instcombine -simplifycfg");
-	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -prune-eh -inline -functionattrs -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -jump-threading -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -jump-threading -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify");
+	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -prune-eh -inline -functionattrs -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify");
 #if 1
 	command = g_strdup_printf ("opt -f %s -o temp.opt.bc temp.bc", opts);
 	printf ("Executing opt: %s\n", command);
