@@ -780,8 +780,8 @@ verify_metadata_header (VerifyContext *ctx)
 	ptr = ctx->data + offset; //move to streams header 
 
 	section_count = read16 (ptr + 2);
-	if (section_count < 3)
-		ADD_ERROR (ctx, g_strdup_printf ("Metadata root section must have at least 3 streams (#~, #GUID and #Blob"));
+	if (section_count < 2)
+		ADD_ERROR (ctx, g_strdup_printf ("Metadata root section must have at least 2 streams (#~ and #GUID)"));
 
 	ptr += 4;
 	offset += 4;
@@ -843,9 +843,6 @@ verify_metadata_header (VerifyContext *ctx)
 		ADD_ERROR (ctx, g_strdup_printf ("Metadata #~ stream missing"));
 	if (!ctx->metadata_streams [GUID_STREAM].size)
 		ADD_ERROR (ctx, g_strdup_printf ("Metadata guid stream missing"));
-	if (!ctx->metadata_streams [BLOB_STREAM].size)
-		ADD_ERROR (ctx, g_strdup_printf ("Metadata blob stream missing"));
-		
 }
 
 static void
