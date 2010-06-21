@@ -3581,9 +3581,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 void
 mono_llvm_check_method_supported (MonoCompile *cfg)
 {
+	/*
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
 	int i;
+	*/
 
 	if (cfg->generic_sharing_context && !IS_LLVM_MONO_BRANCH) {
 		/* No way to obtain location info for this/rgctx */
