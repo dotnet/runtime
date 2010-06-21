@@ -1168,7 +1168,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	g_assert (jit_tls->end_of_stack);
 	g_assert (jit_tls->abort_func);
 
-	if (!test_only) {
+	if (!test_only && !resume) {
 		MonoContext ctx_cp = *ctx;
 		if (mono_trace_is_enabled ()) {
 			MonoMethod *system_exception_get_message = mono_class_get_method_from_name (mono_defaults.exception_class, "get_Message", 0);
@@ -1218,12 +1218,23 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	while (1) {
 		MonoContext new_ctx;
 		guint32 free_stack;
+		int clause_index_start = 0;
 
-		ji = mono_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
-								 NULL, &lmf, NULL, NULL);
-		if (!ji) {
-			g_warning ("Exception inside function without unwind info");
-			g_assert_not_reached ();
+		if (resume) {
+			resume = FALSE;
+			ji = jit_tls->resume_state.ji;
+			new_ctx = jit_tls->resume_state.new_ctx;
+			clause_index_start = jit_tls->resume_state.clause_index;
+			lmf = jit_tls->resume_state.lmf;
+			first_filter_idx = jit_tls->resume_state.first_filter_idx;
+			filter_idx = jit_tls->resume_state.filter_idx;
+		} else {
+			ji = mono_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
+									 NULL, &lmf, NULL, NULL);
+			if (!ji) {
+				g_warning ("Exception inside function without unwind info");
+				g_assert_not_reached ();
+			}
 		}
 
 		if (ji != (gpointer)-1 && !(ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)ji->code_start + ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx))))) {
@@ -1271,7 +1282,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			if ((free_stack > (64 * 1024)) && ji->num_clauses) {
 				int i;
 				
-				for (i = 0; i < ji->num_clauses; i++) {
+				for (i = clause_index_start; i < ji->num_clauses; i++) {
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
 					gboolean filtered = FALSE;
 
@@ -1407,10 +1418,15 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 								 * mono_resume_unwind () will call us again to continue
 								 * the unwinding.
 								 */
+								jit_tls->resume_state.ex_obj = obj;
+								jit_tls->resume_state.ji = ji;
+								jit_tls->resume_state.clause_index = i + 1;
+								jit_tls->resume_state.ctx = *ctx;
+								jit_tls->resume_state.new_ctx = new_ctx;
+								jit_tls->resume_state.lmf = lmf;
+								jit_tls->resume_state.first_filter_idx = first_filter_idx;
+								jit_tls->resume_state.filter_idx = filter_idx;
 								MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-								*(mono_get_lmf_addr ()) = lmf;
-								jit_tls->ex_ctx = new_ctx;
-								jit_tls->ex_obj = obj;
 								return 0;
 							} else {
 								call_filter (ctx, ei->handler_start);
@@ -1996,24 +2012,26 @@ mono_print_thread_dump_from_ctx (MonoContext *ctx)
 /*
  * mono_resume_unwind:
  *
- *   This is called by code at the end of LLVM compiled finally clauses to continue
+ *   This is called by a trampoline from LLVM compiled finally clauses to continue
  * unwinding.
  */
 void
-mono_resume_unwind (void)
+mono_resume_unwind (MonoContext *ctx)
 {
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	static void (*restore_context) (MonoContext *);
-	MonoContext ctx;
+	MonoContext new_ctx;
 
-	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
+	MONO_CONTEXT_SET_IP (ctx, MONO_CONTEXT_GET_IP (&jit_tls->resume_state.ctx));
+	MONO_CONTEXT_SET_SP (ctx, MONO_CONTEXT_GET_SP (&jit_tls->resume_state.ctx));
+	new_ctx = *ctx;
 
-	mono_handle_exception_internal (&ctx, jit_tls->ex_obj, NULL, FALSE, TRUE, NULL, NULL);
+	mono_handle_exception_internal (&new_ctx, jit_tls->resume_state.ex_obj, NULL, FALSE, TRUE, NULL, NULL);
 
 	if (!restore_context)
 		restore_context = mono_get_restore_context ();
 
-	restore_context (&ctx);
+	restore_context (&new_ctx);
 }
 
 #ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD

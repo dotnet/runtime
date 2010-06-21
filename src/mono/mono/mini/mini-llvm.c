@@ -1130,7 +1130,8 @@ static LLVMValueRef
 emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, int size, LLVMValueRef addr, const char *name, gboolean is_faulting)
 {
 	const char *intrins_name;
-	LLVMValueRef args [16];
+	LLVMValueRef args [16], res;
+	LLVMTypeRef addr_type;
 
 	if (is_faulting && bb->region != -1 && IS_LLVM_MONO_BRANCH) {
 		/*
@@ -1154,10 +1155,21 @@ emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, in
 			g_assert_not_reached ();
 		}
 
+		addr_type = LLVMTypeOf (addr);
+		if (addr_type == LLVMPointerType (LLVMDoubleType (), 0) || addr_type == LLVMPointerType (LLVMFloatType (), 0))
+			addr = LLVMBuildBitCast (*builder_ref, addr, LLVMPointerType (LLVMIntType (size * 8), 0), "");
+
 		args [0] = addr;
 		args [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 		args [2] = LLVMConstInt (LLVMInt1Type (), TRUE, FALSE);
-		return emit_call (ctx, bb, builder_ref, LLVMGetNamedFunction (ctx->module, intrins_name), args, 3);
+		res = emit_call (ctx, bb, builder_ref, LLVMGetNamedFunction (ctx->module, intrins_name), args, 3);
+
+		if (addr_type == LLVMPointerType (LLVMDoubleType (), 0))
+			res = LLVMBuildBitCast (*builder_ref, res, LLVMDoubleType (), "");
+		else if (addr_type == LLVMPointerType (LLVMFloatType (), 0))
+			res = LLVMBuildBitCast (*builder_ref, res, LLVMFloatType (), "");
+		
+		return res;
 	} else {
 		/* 
 		 * We emit volatile loads for loads which can fault, because otherwise
@@ -1190,6 +1202,11 @@ emit_store (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, i
 			break;
 		default:
 			g_assert_not_reached ();
+		}
+
+		if (LLVMTypeOf (value) == LLVMDoubleType () || LLVMTypeOf (value) == LLVMFloatType ()) {
+			value = LLVMBuildBitCast (*builder_ref, value, LLVMIntType (size * 8), "");
+			addr = LLVMBuildBitCast (*builder_ref, addr, LLVMPointerType (LLVMIntType (size * 8), 0), "");
 		}
 
 		args [0] = value;
@@ -2947,12 +2964,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SQRT: {
 			LLVMValueRef args [1];
 
-			if (!IS_LLVM_MONO_BRANCH)
-				/*
-				 * LLVM optimizes sqrt(nan) into undefined in
-				 * lib/Analysis/ConstantFolding.cpp
-				 */
-				LLVM_FAILURE (ctx, "sqrt");
+			/*
+			 * LLVM optimizes sqrt(nan) into undefined in
+			 * lib/Analysis/ConstantFolding.cpp
+			 * Also, sqrt(NegativeInfinity) is optimized into 0.
+			 */
+			LLVM_FAILURE (ctx, "sqrt");
 			args [0] = lhs;
 			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.sqrt.f64"), args, 1, dname);
 			break;
@@ -3507,9 +3524,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMPositionBuilderAtEnd (ctx->builder, resume_bb);
 
 			if (ctx->cfg->compile_aot) {
-				callee = get_plt_entry (ctx, LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE), MONO_PATCH_INFO_INTERNAL_METHOD, "mono_resume_unwind");
+				callee = get_plt_entry (ctx, LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE), MONO_PATCH_INFO_INTERNAL_METHOD, "mono_llvm_resume_unwind_trampoline");
 			} else {
-				callee = LLVMGetNamedFunction (module, "mono_resume_unwind");
+				callee = LLVMGetNamedFunction (module, "mono_llvm_resume_unwind_trampoline");
 			}
 			LLVMBuildCall (builder, callee, NULL, 0, "");
 
@@ -3588,6 +3605,7 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 		cfg->disable_llvm = TRUE;
 	}
 
+#if 0
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		
@@ -3599,6 +3617,7 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 			cfg->disable_llvm = TRUE;
 		}
 	}
+#endif
 
 	/* FIXME: */
 	if (cfg->method->dynamic) {
@@ -3690,6 +3709,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		if (getenv ("LLVM_COUNT")) {
 			if (count == atoi (getenv ("LLVM_COUNT"))) {
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+				fflush (stdout);
 				last = TRUE;
 			}
 			if (count > atoi (getenv ("LLVM_COUNT")))
@@ -4092,7 +4112,7 @@ exception_cb (void *data)
 {
 	MonoCompile *cfg;
 	MonoJitExceptionInfo *ei;
-	guint32 ei_len, i;
+	guint32 ei_len, i, j, nested_len, nindex;
 	gpointer *type_info;
 	int this_reg, this_offset;
 
@@ -4107,8 +4127,23 @@ exception_cb (void *data)
 	 */
 	cfg->encoded_unwind_ops = mono_unwind_decode_fde ((guint8*)data, &cfg->encoded_unwind_ops_len, NULL, &ei, &ei_len, &type_info, &this_reg, &this_offset);
 
-	cfg->llvm_ex_info = mono_mempool_alloc0 (cfg->mempool, ei_len * sizeof (MonoJitExceptionInfo));
-	cfg->llvm_ex_info_len = ei_len;
+	/* Count nested clauses */
+	nested_len = 0;
+	for (i = 0; i < ei_len; ++i) {
+		for (j = 0; j < ei_len; ++j) {
+			gint32 cindex1 = *(gint32*)type_info [i];
+			MonoExceptionClause *clause1 = &cfg->header->clauses [cindex1];
+			gint32 cindex2 = *(gint32*)type_info [j];
+			MonoExceptionClause *clause2 = &cfg->header->clauses [cindex2];
+
+			if (cindex1 != cindex2 && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
+				nested_len ++;
+			}
+		}
+	}
+
+	cfg->llvm_ex_info = mono_mempool_alloc0 (cfg->mempool, (ei_len + nested_len) * sizeof (MonoJitExceptionInfo));
+	cfg->llvm_ex_info_len = ei_len + nested_len;
 	memcpy (cfg->llvm_ex_info, ei, ei_len * sizeof (MonoJitExceptionInfo));
 	/* Fill the rest of the information from the type info */
 	for (i = 0; i < ei_len; ++i) {
@@ -4118,6 +4153,33 @@ exception_cb (void *data)
 		cfg->llvm_ex_info [i].flags = clause->flags;
 		cfg->llvm_ex_info [i].data.catch_class = clause->data.catch_class;
 	}
+
+	/*
+	 * For nested clauses, the LLVM produced exception info associates the try interval with
+	 * the innermost handler, while mono expects it to be associated with all nesting clauses.
+	 */
+	/* FIXME: These should be order with the normal clauses */
+	nindex = ei_len;
+	for (i = 0; i < ei_len; ++i) {
+		for (j = 0; j < ei_len; ++j) {
+			gint32 cindex1 = *(gint32*)type_info [i];
+			MonoExceptionClause *clause1 = &cfg->header->clauses [cindex1];
+			gint32 cindex2 = *(gint32*)type_info [j];
+			MonoExceptionClause *clause2 = &cfg->header->clauses [cindex2];
+
+			if (cindex1 != cindex2 && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
+				/* 
+				 * The try interval comes from the nested clause, everything else from the
+				 * nesting clause.
+				 */
+				memcpy (&cfg->llvm_ex_info [nindex], &cfg->llvm_ex_info [j], sizeof (MonoJitExceptionInfo));
+				cfg->llvm_ex_info [nindex].try_start = cfg->llvm_ex_info [i].try_start;
+				cfg->llvm_ex_info [nindex].try_end = cfg->llvm_ex_info [i].try_end;
+				nindex ++;
+			}
+		}
+	}
+	g_assert (nindex == ei_len + nested_len);
 	cfg->llvm_this_reg = this_reg;
 	cfg->llvm_this_offset = this_offset;
 
@@ -4237,7 +4299,7 @@ add_intrinsics (LLVMModuleRef module)
 
 		LLVMAddFunction (module, "mono_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 
-		LLVMAddFunction (module, "mono_resume_unwind", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
+		LLVMAddFunction (module, "mono_llvm_resume_unwind_trampoline", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 	}
 
 	/* SSE intrinsics */
@@ -4307,6 +4369,8 @@ mono_llvm_init (void)
 static void
 init_jit_module (void)
 {
+	MonoJitICallInfo *info;
+
 	if (jit_module_inited)
 		return;
 
@@ -4325,7 +4389,9 @@ init_jit_module (void)
 
 	jit_module.llvm_types = g_hash_table_new (NULL, NULL);
 
-	LLVMAddGlobalMapping (ee, LLVMGetNamedFunction (jit_module.module, "mono_resume_unwind"), mono_resume_unwind);
+	info = mono_find_jit_icall_by_name ("mono_llvm_resume_unwind_trampoline");
+	g_assert (info);
+	LLVMAddGlobalMapping (ee, LLVMGetNamedFunction (jit_module.module, "mono_llvm_resume_unwind_trampoline"), (void*)info->func);
 
 	jit_module_inited = TRUE;
 

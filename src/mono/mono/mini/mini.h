@@ -829,6 +829,19 @@ struct MonoMethodVar {
 	gint32         vreg;
 };
 
+/*
+ * Stores state need to resume exception handling when using LLVM
+ */
+typedef struct {
+	MonoJitInfo *ji;
+	int clause_index;
+	MonoContext ctx, new_ctx;
+	/* FIXME: GC */
+	gpointer        ex_obj;
+	MonoLMF *lmf;
+	int first_filter_idx, filter_idx;
+} ResumeState;
+
 typedef struct {
 	gpointer          end_of_stack;
 	guint32           stack_size;
@@ -847,10 +860,9 @@ typedef struct {
 	/* Used to implement --debug=casts */
 	MonoClass       *class_cast_from, *class_cast_to;
 
-	/* Stores state needed by mono_resume_unwind () and the handler block with a guard */
+	/* Stores state needed by handler block with a guard */
 	MonoContext     ex_ctx;
-	/* FIXME: GC */
-	gpointer        ex_obj;
+	ResumeState resume_state;
 	/* handle block return address */
 	gpointer handler_block_return_address;
 	/* handler block been guarded */
@@ -1875,7 +1887,7 @@ void     mono_setup_altstack                    (MonoJitTlsData *tls) MONO_INTER
 void     mono_free_altstack                     (MonoJitTlsData *tls) MONO_INTERNAL;
 gpointer mono_altstack_restore_prot             (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
 MonoJitInfo* mini_jit_info_table_find           (MonoDomain *domain, char *addr, MonoDomain **out_domain) MONO_INTERNAL;
-void     mono_resume_unwind                     (void) MONO_INTERNAL;
+void     mono_resume_unwind                     (MonoContext *ctx) MONO_INTERNAL;
 
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed) MONO_INTERNAL;
 
