@@ -1983,7 +1983,10 @@ property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBui
 	if (!mb && smb && smb->parameters)
 		nparams = mono_array_length (smb->parameters) - 1;
 	sigbuffer_init (&buf, 32);
-	sigbuffer_add_byte (&buf, 0x08);
+	if (fb->call_conv & 0x20)
+		sigbuffer_add_byte (&buf, 0x28);
+	else
+		sigbuffer_add_byte (&buf, 0x08);
 	sigbuffer_add_value (&buf, nparams);
 	if (mb) {
 		encode_reflection_type (assembly, (MonoReflectionType*)mb->rtype, &buf);

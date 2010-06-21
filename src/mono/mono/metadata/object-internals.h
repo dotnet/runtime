@@ -1066,6 +1066,12 @@ typedef struct {
 	MonoReflectionMethodBuilder *set_method;
 	MonoReflectionMethodBuilder *get_method;
 	gint32 table_idx;
+	MonoObject *type_builder;
+	MonoArray *returnModReq;
+	MonoArray *returnModOpt;
+	MonoArray *paramModReq;
+	MonoArray *paramModOpt;
+	guint32 call_conv;
 } MonoReflectionPropertyBuilder;
 
 struct _MonoReflectionModule {
