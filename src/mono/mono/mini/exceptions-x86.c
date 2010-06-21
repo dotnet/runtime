@@ -798,6 +798,9 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->ebp = (*lmf)->ebp;
 		new_ctx->eip = (*lmf)->eip;
 
+		/* Adjust IP */
+		new_ctx->eip --;
+
 		frame->ji = ji;
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 
