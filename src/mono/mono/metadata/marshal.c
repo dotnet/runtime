@@ -571,10 +571,10 @@ mono_array_to_lparray (MonoArray *array)
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
 	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_PTR:
 		/* nothing to do */
 		break;
 	case MONO_TYPE_GENERICINST:
-	case MONO_TYPE_PTR:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY: 
 	case MONO_TYPE_SZARRAY:
