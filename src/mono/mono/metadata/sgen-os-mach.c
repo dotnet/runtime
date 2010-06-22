@@ -52,6 +52,7 @@ mono_sgen_thread_handshake (int signum)
 	thread_state_t state;
 	kern_return_t ret;
 	ucontext_t ctx;
+	mcontext_t mctx;
 
 	SgenThreadInfo *info;
 	gpointer regs [ARCH_NUM_REGS];
@@ -71,7 +72,8 @@ mono_sgen_thread_handshake (int signum)
 					continue;
 				}
 
-				ret = mono_mach_arch_get_thread_state (t, &state, &num_state);
+				state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
+				ret = mono_mach_arch_get_thread_state (t, state, &num_state);
 				if (ret != KERN_SUCCESS) {
 					mach_port_deallocate (task, t);
 					continue;
@@ -82,7 +84,9 @@ mono_sgen_thread_handshake (int signum)
 
 				/* Ensure that the runtime is aware of this thread */
 				if (info != NULL) {
-					ctx.uc_mcontext = mono_mach_arch_thread_state_to_context (state);
+					mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
+					mono_mach_arch_thread_state_to_mcontext (state, mctx);
+					ctx.uc_mcontext = mctx;
 
 					info->stopped_domain = mono_mach_arch_get_tls_value_from_thread (t, mono_pthread_key_for_tls (mono_domain_get_tls_key ()));
 					info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
@@ -100,8 +104,6 @@ mono_sgen_thread_handshake (int signum)
 					/* Notify the JIT */
 					if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 						mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx);
-
-					g_free (ctx.uc_mcontext);
 				}
 			} else {
 				ret = thread_resume (t);

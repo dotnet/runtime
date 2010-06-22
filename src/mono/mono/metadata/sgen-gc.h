@@ -114,7 +114,7 @@ static int restart_signal_num = SIGXCPU;
 
 int mono_sgen_thread_handshake (int signum) MONO_INTERNAL;
 SgenThreadInfo* mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id) MONO_INTERNAL;
-SgenThreadInfo** mono_sgen_get_thread_table () MONO_INTERNAL;
+SgenThreadInfo** mono_sgen_get_thread_table (void) MONO_INTERNAL;
 void mono_sgen_wait_for_suspend_ack (int count) MONO_INTERNAL;
 
 #endif /* __MONO_SGENGC_H__ */

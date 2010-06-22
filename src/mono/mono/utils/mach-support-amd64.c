@@ -32,29 +32,36 @@ mono_mach_arch_get_sp (thread_state_t state)
 	return (void *) arch_state->__rsp;
 }
 
-void *
-mono_mach_arch_thread_state_to_context (thread_state_t state)
+int
+mono_mach_arch_get_mcontext_size ()
+{
+	return sizeof (struct __darwin_mcontext64);
+}
+
+void
+mono_mach_arch_thread_state_to_mcontext (thread_state_t state, mcontext_t context)
 {
 	x86_thread_state64_t *arch_state = (x86_thread_state64_t *) state;
-	struct __darwin_mcontext64 *ctx;
+	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontex64 *) context;
 
-	ctx = (struct __darwin_mcontext64 *) g_new0 (struct __darwin_mcontext64, 1);
 	ctx->__ss = *arch_state;
+}
 
-	return ctx;
+int
+mono_mach_arch_get_thread_state_size ()
+{
+	return sizeof (x86_thread_state64_t);
 }
 
 kern_return_t
-mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t *state, mach_msg_type_number_t *count)
+mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count)
 {
-	x86_thread_state64_t *arch_state = (x86_thread_state64_t *) g_new0 (x86_thread_state64_t, 1);
+	x86_thread_state64_t *arch_state = (x86_thread_state64_t *) state;
 	kern_return_t ret;
 
 	*count = x86_THREAD_STATE64_COUNT;
 
 	ret = thread_get_state (thread, x86_THREAD_STATE64, (thread_state_t) arch_state, count);
-
-	*state = (thread_state_t) arch_state;
 
 	return ret;
 }
