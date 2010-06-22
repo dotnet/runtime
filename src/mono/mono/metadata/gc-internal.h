@@ -207,6 +207,7 @@ typedef struct {
 
 /* Set the callback functions callable by the GC */
 void mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks) MONO_INTERNAL;
+MonoGCCallbacks *mono_gc_get_gc_callbacks (void) MONO_INTERNAL;
 
 /* Functions callable from the thread mark func */
 

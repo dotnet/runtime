@@ -158,12 +158,7 @@ mono_jit_info_find_aot_module (guint8* addr);
 guint32
 mono_domain_get_tls_key (void)
 {
-#ifdef NO_TLS_SET_VALUE
-	g_assert_not_reached ();
-	return 0;
-#else
 	return appdomain_thread_id;
-#endif
 }
 
 gint32

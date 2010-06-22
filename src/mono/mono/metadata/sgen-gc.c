@@ -208,6 +208,10 @@
 
 #include <mono/utils/memcheck.h>
 
+#if defined(__MACH__)
+#include "utils/mach-support.h"
+#endif
+
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
 
@@ -223,11 +227,6 @@ enum {
  * ########  Types and constants used by the GC.
  * ######################################################################
  */
-#if SIZEOF_VOID_P == 4
-typedef guint32 mword;
-#else
-typedef guint64 mword;
-#endif
 
 static int gc_initialized = 0;
 static int gc_debug_level = 0;
@@ -356,9 +355,6 @@ mono_gc_flush_info (void)
 	fflush (gc_debug_file);
 }
 */
-
-#define MAX_DEBUG_LEVEL 2
-#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
 /* Define this to allow the user to change some of the constants by specifying
  * their values in the MONO_GC_PARAMS environmental variable. See
@@ -506,15 +502,6 @@ struct _RootRecord {
 	char *start_root;
 	char *end_root;
 	mword root_desc;
-};
-
-/* for use with write barriers */
-typedef struct _RememberedSet RememberedSet;
-struct _RememberedSet {
-	mword *store_next;
-	mword *end_set;
-	RememberedSet *next;
-	mword data [MONO_ZERO_LEN_ARRAY];
 };
 
 /*
@@ -830,40 +817,6 @@ static int num_roots_entries [ROOT_TYPE_NUM] = { 0, 0, 0 };
  * MAX(nursery_last_pinned_end, nursery_frag_real_end)
  */
 static char *nursery_start = NULL;
-
-/* eventually share with MonoThread? */
-typedef struct _SgenThreadInfo SgenThreadInfo;
-
-struct _SgenThreadInfo {
-	SgenThreadInfo *next;
-	ARCH_THREAD_TYPE id;
-	unsigned int stop_count; /* to catch duplicate signals */
-	int signal;
-	int skip;
-	volatile int in_critical_region;
-	void *stack_end;
-	void *stack_start;
-	void *stack_start_limit;
-	char **tlab_next_addr;
-	char **tlab_start_addr;
-	char **tlab_temp_end_addr;
-	char **tlab_real_end_addr;
-	gpointer **store_remset_buffer_addr;
-	long *store_remset_buffer_index_addr;
-	RememberedSet *remset;
-	gpointer runtime_data;
-	gpointer stopped_ip;	/* only valid if the thread is stopped */
-	MonoDomain *stopped_domain; /* ditto */
-	gpointer *stopped_regs;	    /* ditto */
-#ifndef HAVE_KW_THREAD
-	char *tlab_start;
-	char *tlab_next;
-	char *tlab_temp_end;
-	char *tlab_real_end;
-	gpointer *store_remset_buffer;
-	long store_remset_buffer_index;
-#endif
-};
 
 #ifdef HAVE_KW_THREAD
 #define TLAB_ACCESS_INIT
@@ -5254,7 +5207,6 @@ mono_gc_deregister_root (char* addr)
  */
 
 /* FIXME: handle large/small config */
-#define THREAD_HASH_SIZE 11
 #define HASH_PTHREAD_T(id) (((unsigned int)(id) >> 4) * 2654435761u)
 
 static SgenThreadInfo* thread_table [THREAD_HASH_SIZE];
@@ -5264,18 +5216,19 @@ static SgenThreadInfo* thread_table [THREAD_HASH_SIZE];
 static MonoSemType suspend_ack_semaphore;
 static MonoSemType *suspend_ack_semaphore_ptr;
 static unsigned int global_stop_count = 0;
-#ifdef __APPLE__
-static int suspend_signal_num = SIGXFSZ;
-#else
-static int suspend_signal_num = SIGPWR;
-#endif
-static int restart_signal_num = SIGXCPU;
+
 static sigset_t suspend_signal_mask;
 static mword cur_thread_regs [ARCH_NUM_REGS] = {0};
 
 /* LOCKING: assumes the GC lock is held */
-static SgenThreadInfo*
-thread_info_lookup (ARCH_THREAD_TYPE id)
+SgenThreadInfo**
+mono_sgen_get_thread_table ()
+{
+	return thread_table;
+}
+
+SgenThreadInfo*
+mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id)
 {
 	unsigned int hash = HASH_PTHREAD_T (id) % THREAD_HASH_SIZE;
 	SgenThreadInfo *info;
@@ -5291,7 +5244,7 @@ static void
 update_current_thread_stack (void *start)
 {
 	void *ptr = cur_thread_regs;
-	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
+	SgenThreadInfo *info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
 	
 	info->stack_start = align_pointer (&ptr);
 	g_assert (info->stack_start >= info->stack_start_limit && info->stack_start < info->stack_end);
@@ -5329,8 +5282,8 @@ signal_desc (int signum)
 static gboolean
 is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip);
 
-static void
-wait_for_suspend_ack (int count)
+void
+mono_sgen_wait_for_suspend_ack (int count)
 {
 	int i, result;
 
@@ -5341,40 +5294,6 @@ wait_for_suspend_ack (int count)
 			}
 		}
 	}
-}
-
-/* LOCKING: assumes the GC lock is held */
-static int
-thread_handshake (int signum)
-{
-	int count, i, result;
-	SgenThreadInfo *info;
-	pthread_t me = pthread_self ();
-
-	count = 0;
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			DEBUG (4, fprintf (gc_debug_file, "considering thread %p for signal %d (%s)\n", info, signum, signal_desc (signum)));
-			if (ARCH_THREAD_EQUALS (info->id, me)) {
-				DEBUG (4, fprintf (gc_debug_file, "Skip (equal): %p, %p\n", (void*)me, (void*)info->id));
-				continue;
-			}
-			/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
-				continue;*/
-			result = pthread_kill (info->id, signum);
-			if (result == 0) {
-				DEBUG (4, fprintf (gc_debug_file, "thread %p signal sent\n", info));
-				count++;
-			} else {
-				DEBUG (4, fprintf (gc_debug_file, "thread %p signal failed: %d (%s)\n", (void*)info->id, result, strerror (result)));
-				info->skip = 1;
-			}
-		}
-	}
-
-	wait_for_suspend_ack (count);
-
-	return count;
 }
 
 static int
@@ -5395,7 +5314,11 @@ restart_threads_until_none_in_managed_allocator (void)
 				if (!info->stack_start || info->in_critical_region ||
 						is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
 					binary_protocol_thread_restart ((gpointer)info->id);
+#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
+					result = thread_resume (pthread_mach_thread_np (info->id));
+#else
 					result = pthread_kill (info->id, restart_signal_num);
+#endif
 					if (result == 0) {
 						++restart_count;
 					} else {
@@ -5416,8 +5339,12 @@ restart_threads_until_none_in_managed_allocator (void)
 		if (restart_count == 0)
 			break;
 
+#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
+		/* mach thread_resume is synchronous so we dont need to wait for them */
+#else
 		/* wait for the threads to signal their restart */
-		wait_for_suspend_ack (restart_count);
+		mono_sgen_wait_for_suspend_ack (restart_count);
+#endif
 
 		if (sleep_duration < 0) {
 			sched_yield ();
@@ -5432,7 +5359,11 @@ restart_threads_until_none_in_managed_allocator (void)
 			for (info = thread_table [i]; info; info = info->next) {
 				if (info->skip || info->stopped_ip == NULL)
 					continue;
+#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
+				result = thread_suspend (pthread_mach_thread_np (info->id));
+#else
 				result = pthread_kill (info->id, suspend_signal_num);
+#endif
 				if (result == 0) {
 					++restarted_count;
 				} else {
@@ -5442,9 +5373,13 @@ restart_threads_until_none_in_managed_allocator (void)
 		}
 		/* some threads might have died */
 		num_threads_died += restart_count - restarted_count;
+#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
+		/* mach thread_resume is synchronous so we dont need to wait for them */
+#else
 		/* wait for the threads to signal their suspension
 		   again */
-		wait_for_suspend_ack (restart_count);
+		mono_sgen_wait_for_suspend_ack (restart_count);
+#endif
 	}
 
 	return num_threads_died;
@@ -5462,7 +5397,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	gpointer stack_start;
 
 	id = pthread_self ();
-	info = thread_info_lookup (id);
+	info = mono_sgen_thread_info_lookup (id);
 	info->stopped_domain = mono_domain_get ();
 	info->stopped_ip = (gpointer) ARCH_SIGCTX_IP (context);
 	stop_count = global_stop_count;
@@ -5515,7 +5450,7 @@ restart_handler (int sig)
 	SgenThreadInfo *info;
 	int old_errno = errno;
 
-	info = thread_info_lookup (pthread_self ());
+	info = mono_sgen_thread_info_lookup (pthread_self ());
 	info->signal = restart_signal_num;
 	DEBUG (4, fprintf (gc_debug_file, "Restart handler in %p %p\n", info, (gpointer)ARCH_GET_THREAD ()));
 
@@ -5548,9 +5483,9 @@ stop_world (void)
 	update_current_thread_stack (&count);
 
 	global_stop_count++;
-	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", global_stop_count, thread_info_lookup (ARCH_GET_THREAD ()), (gpointer)ARCH_GET_THREAD ()));
+	DEBUG (3, fprintf (gc_debug_file, "stopping world n %d from %p %p\n", global_stop_count, mono_sgen_thread_info_lookup (ARCH_GET_THREAD ()), (gpointer)ARCH_GET_THREAD ()));
 	TV_GETTIME (stop_world_time);
-	count = thread_handshake (suspend_signal_num);
+	count = mono_sgen_thread_handshake (suspend_signal_num);
 	count -= restart_threads_until_none_in_managed_allocator ();
 	g_assert (count >= 0);
 	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
@@ -5582,7 +5517,7 @@ restart_world (void)
 
 	release_gc_locks ();
 
-	count = thread_handshake (restart_signal_num);
+	count = mono_sgen_thread_handshake (restart_signal_num);
 	TV_GETTIME (end_sw);
 	usec = TV_ELAPSED (stop_world_time, end_sw);
 	max_pause_usec = MAX (usec, max_pause_usec);
@@ -5596,6 +5531,12 @@ void
 mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
 {
 	gc_callbacks = *callbacks;
+}
+
+MonoGCCallbacks *
+mono_gc_get_gc_callbacks ()
+{
+	return &gc_callbacks;
 }
 
 /* Variables holding start/end nursery so it won't have to be passed at every call */
@@ -5676,7 +5617,7 @@ static gboolean
 ptr_on_stack (void *ptr)
 {
 	gpointer stack_start = &stack_start;
-	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
+	SgenThreadInfo *info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
 
 	if (ptr >= stack_start && ptr < (gpointer)info->stack_end)
 		return TRUE;
@@ -6186,7 +6127,7 @@ mono_gc_register_thread (void *baseptr)
 
 	LOCK_GC;
 	init_stats ();
-	info = thread_info_lookup (ARCH_GET_THREAD ());
+	info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
 	if (info == NULL)
 		info = gc_register_current_thread (baseptr);
 	UNLOCK_GC;
@@ -6317,7 +6258,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 	*(rs->store_next++) = (mword)field_ptr;
 	*(void**)field_ptr = value;
@@ -6347,7 +6288,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 	*(rs->store_next++) = (mword)slot_ptr;
 	*(void**)slot_ptr = value;
@@ -6378,7 +6319,7 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 	*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
 	*(rs->store_next++) = count;
@@ -6556,7 +6497,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 	*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 	*(rs->store_next++) = (mword)klass->gc_descr;
@@ -6597,7 +6538,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
 	UNLOCK_GC;
@@ -7098,7 +7039,7 @@ mono_gc_is_gc_thread (void)
 {
 	gboolean result;
 	LOCK_GC;
-        result = thread_info_lookup (ARCH_GET_THREAD ()) != NULL;
+        result = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ()) != NULL;
 	UNLOCK_GC;
 	return result;
 }

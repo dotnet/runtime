@@ -156,6 +156,8 @@ libmonoruntime_la_SOURCES = \
 	security-core-clr.h	\
 	security-manager.c	\
 	security-manager.h	\
+	sgen-os-posix.c		\
+	sgen-os-mach.c		\
 	sgen-gc.c		\
 	sgen-gc.h		\
 	sgen-archdep.h		\

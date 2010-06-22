@@ -25,11 +25,74 @@
 #define __MONO_SGENGC_H__
 
 /* pthread impl */
+#include "config.h"
+#include <glib.h>
 #include <pthread.h>
+#include <sys/signal.h>
+#include "utils/mono-compiler.h"
+#include "metadata/class-internals.h"
+
+#define THREAD_HASH_SIZE 11
 
 #define ARCH_THREAD_TYPE pthread_t
 #define ARCH_GET_THREAD pthread_self
 #define ARCH_THREAD_EQUALS(a,b) pthread_equal (a, b)
+
+#if SIZEOF_VOID_P == 4
+typedef guint32 mword;
+#else
+typedef guint64 mword;
+#endif
+
+/* for use with write barriers */
+typedef struct _RememberedSet RememberedSet;
+struct _RememberedSet {
+	mword *store_next;
+	mword *end_set;
+	RememberedSet *next;
+	mword data [MONO_ZERO_LEN_ARRAY];
+};
+
+/* eventually share with MonoThread? */
+typedef struct _SgenThreadInfo SgenThreadInfo;
+
+struct _SgenThreadInfo {
+	SgenThreadInfo *next;
+	ARCH_THREAD_TYPE id;
+	unsigned int stop_count; /* to catch duplicate signals */
+	int signal;
+	int skip;
+	volatile int in_critical_region;
+	void *stack_end;
+	void *stack_start;
+	void *stack_start_limit;
+	char **tlab_next_addr;
+	char **tlab_start_addr;
+	char **tlab_temp_end_addr;
+	char **tlab_real_end_addr;
+	gpointer **store_remset_buffer_addr;
+	long *store_remset_buffer_index_addr;
+	RememberedSet *remset;
+	gpointer runtime_data;
+	gpointer stopped_ip;	/* only valid if the thread is stopped */
+	MonoDomain *stopped_domain; /* ditto */
+	gpointer *stopped_regs;	    /* ditto */
+#ifndef HAVE_KW_THREAD
+	char *tlab_start;
+	char *tlab_next;
+	char *tlab_temp_end;
+	char *tlab_real_end;
+	gpointer *store_remset_buffer;
+	long store_remset_buffer_index;
+#endif
+};
+
+#ifdef __APPLE__
+static int suspend_signal_num = SIGXFSZ;
+#else
+static int suspend_signal_num = SIGPWR;
+#endif
+static int restart_signal_num = SIGXCPU;
 
 /*
  * Recursion is not allowed for the thread lock.
@@ -45,6 +108,14 @@
 #define USE_SIGNAL_BASED_START_STOP_WORLD 1
 /* we intercept pthread_create calls to know which threads exist */
 #define USE_PTHREAD_INTERCEPT 1
+
+#define MAX_DEBUG_LEVEL 2
+#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
+
+int mono_sgen_thread_handshake (int signum) MONO_INTERNAL;
+SgenThreadInfo* mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id) MONO_INTERNAL;
+SgenThreadInfo** mono_sgen_get_thread_table () MONO_INTERNAL;
+void mono_sgen_wait_for_suspend_ack (int count) MONO_INTERNAL;
 
 #endif /* __MONO_SGENGC_H__ */
 
