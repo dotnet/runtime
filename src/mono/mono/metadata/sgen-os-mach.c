@@ -29,6 +29,7 @@
  */
 
 #include "config.h"
+#ifdef HAVE_SGEN_GC
 #include <glib.h>
 #include "metadata/gc-internal.h"
 #include "metadata/sgen-gc.h"
@@ -122,4 +123,5 @@ mono_sgen_thread_handshake (int signum)
 
 	return count;
 }
+#endif
 #endif
