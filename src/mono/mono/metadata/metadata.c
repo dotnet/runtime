@@ -4553,9 +4553,20 @@ mono_metadata_type_hash (MonoType *t1)
 	switch (t1->type) {
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-		/* check if the distribution is good enough */
-		return ((hash << 5) - hash) ^ mono_metadata_str_hash (t1->data.klass->name);
+	case MONO_TYPE_SZARRAY: {
+		MonoClass *class = t1->data.klass;
+		/*
+		 * Dynamic classes must not be hashed on their type since it can change
+		 * during runtime. For example, if we hash a reference type that is
+		 * later made into a valuetype.
+		 *
+		 * This is specially problematic with generic instances since they are
+		 * inserted in a bunch of hash tables before been finished.
+		 */
+		if (class->image->dynamic)
+			return (t1->byref << 6) | mono_metadata_str_hash (class->name);
+		return ((hash << 5) - hash) ^ mono_metadata_str_hash (class->name);
+	}
 	case MONO_TYPE_PTR:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_ARRAY:
