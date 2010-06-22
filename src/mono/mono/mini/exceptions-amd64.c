@@ -410,7 +410,8 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	buf_size = 256;
 	start = code = mono_global_codeman_reserve (buf_size);
 
-	stack_size = 192;
+	/* The stack is unaligned on entry */
+	stack_size = 192 + 8;
 
 	code = start;
 
