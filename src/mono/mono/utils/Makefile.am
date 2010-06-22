@@ -11,7 +11,7 @@ mono-dtrace.h: $(top_srcdir)/data/mono.d
 
 endif
 
-libmonoutils_la_SOURCES = \
+monoutils_sources = \
 	mono-hash.c		\
 	mono-md5.c		\
 	mono-sha1.c		\
@@ -78,8 +78,21 @@ libmonoutils_la_SOURCES = \
 	mono-uri.h	\
 	mono-stdlib.h	\
 	valgrind.h	\
+	mach-support.c	\
+	mach-support.h  \
 	memcheck.h
 
+arch_sources = 
+
+if X86
+arch_sources += mach-support-x86.c
+endif
+
+if AMD64
+arch_sources += mach-support-amd64.c
+endif
+
+libmonoutils_la_SOURCES = $(monoutils_sources) $(arch_sources)
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
 libmonoutilsinclude_HEADERS = \
