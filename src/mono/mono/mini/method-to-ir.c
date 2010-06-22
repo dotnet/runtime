@@ -8062,7 +8062,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
 
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
-					store->flags |= MONO_INST_FAULT;
+					if (sp [0]->opcode != OP_LDADDR)
+						store->flags |= MONO_INST_FAULT;
 
 #if HAVE_WRITE_BARRIERS
 				if (mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
@@ -8140,7 +8141,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, field->type, sp [0]->dreg, foffset);
 					load->flags |= ins_flag;
-					load->flags |= MONO_INST_FAULT;
+					if (sp [0]->opcode != OP_LDADDR)
+						load->flags |= MONO_INST_FAULT;
 					*sp++ = load;
 				}
 			}

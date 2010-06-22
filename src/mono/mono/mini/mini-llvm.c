@@ -4428,7 +4428,7 @@ mono_llvm_cleanup (void)
 	if (jit_module.llvm_types)
 		g_hash_table_destroy (jit_module.llvm_types);
 
-	LLVMContextDispose (LLVMGetGlobalContext ());
+	//LLVMContextDispose (LLVMGetGlobalContext ());
 }
 
 void
