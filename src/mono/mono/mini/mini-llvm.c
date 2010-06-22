@@ -857,7 +857,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	}
 
 	pindexes = g_new0 (int, sig->param_count);
-	param_types = g_new0 (LLVMTypeRef, (sig->param_count * 2) + 2);
+	param_types = g_new0 (LLVMTypeRef, (sig->param_count * 2) + 3);
 	pindex = 0;
 	if (cinfo && cinfo->rgctx_arg) {
 		if (sinfo)
@@ -3736,6 +3736,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	method_type = sig_to_llvm_sig_full (ctx, sig, linfo, &sinfo);
 	CHECK_FAILURE (ctx);
 
+	/* 
+	 * This maps parameter indexes in the original signature to the indexes in
+	 * the LLVM signature.
+	 */
+	ctx->pindexes = sinfo.pindexes;
+
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
 
@@ -3758,11 +3764,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			LLVM_FAILURE (ctx, "non-finally/catch clause.");
 	}
 
-	/* 
-	 * This maps parameter indexes in the original signature to the indexes in
-	 * the LLVM signature.
-	 */
-	ctx->pindexes = sinfo.pindexes;
 	if (linfo->rgctx_arg) {
 		ctx->rgctx_arg = LLVMGetParam (method, sinfo.rgctx_arg_pindex);
 		/*
@@ -3997,6 +3998,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	g_free (ctx->vreg_types);
 	g_free (ctx->vreg_cli_types);
 	g_free (ctx->pindexes);
+	g_free (ctx->is_dead);
+	g_free (ctx->unreachable);
 	g_free (debug_name);
 	g_ptr_array_free (phi_values, TRUE);
 	g_free (ctx->bblocks);
@@ -4186,6 +4189,7 @@ exception_cb (void *data)
 	cfg->llvm_this_offset = this_offset;
 
 	g_free (ei);
+	g_free (type_info);
 }
 
 static void
@@ -4195,26 +4199,26 @@ add_intrinsics (LLVMModuleRef module)
 	{
 		LLVMTypeRef memset_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
-#if LLVM_CHECK_VERSION(2, 8)
-		memset_param_count = 5;
-		memset_func_name = "llvm.memset.p0i8.i32";
-#else
-		memset_param_count = 4;
-		memset_func_name = "llvm.memset.i32";
-#endif
+		if (LLVM_CHECK_VERSION(2, 8)) {
+			memset_param_count = 5;
+			memset_func_name = "llvm.memset.p0i8.i32";
+		} else {
+			memset_param_count = 4;
+			memset_func_name = "llvm.memset.i32";
+		}
 		LLVMAddFunction (module, memset_func_name, LLVMFunctionType (LLVMVoidType (), memset_params, memset_param_count, FALSE));
 	}
 
 	{
 		LLVMTypeRef memcpy_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
-#if LLVM_CHECK_VERSION(2, 8)
-		memcpy_param_count = 5;
-		memcpy_func_name = "llvm.memcpy.p0i8.p0i8.i32";
-#else
-		memcpy_param_count = 4;
-		memcpy_func_name = "llvm.memcpy.i32";
-#endif
+		if (LLVM_CHECK_VERSION(2, 8)) {
+			memcpy_param_count = 5;
+			memcpy_func_name = "llvm.memcpy.p0i8.p0i8.i32";
+		} else {
+			memcpy_param_count = 4;
+			memcpy_func_name = "llvm.memcpy.i32";
+		}
 
 		LLVMAddFunction (module, memcpy_func_name, LLVMFunctionType (LLVMVoidType (), memcpy_params, memcpy_param_count, FALSE));
 	}
@@ -4283,18 +4287,18 @@ add_intrinsics (LLVMModuleRef module)
 
 		arg_types [0] = LLVMPointerType (LLVMInt8Type (), 0);
 		arg_types [1] = LLVMPointerType (LLVMInt8Type (), 0);
-#if LLVM_CHECK_VERSION(2, 8)
-		eh_selector_name = "llvm.eh.selector";
-		ret_type = LLVMInt32Type ();
-#else
-#if SIZEOF_VOID_P == 8
-		eh_selector_name = "llvm.eh.selector.i64";
-		ret_type = LLVMInt64Type ();
-#else
-		eh_selector_name = "llvm.eh.selector.i32";
-		ret_type = LLVMInt32Type ();
-#endif
-#endif
+		if (LLVM_CHECK_VERSION(2, 8)) {
+			eh_selector_name = "llvm.eh.selector";
+			ret_type = LLVMInt32Type ();
+		} else {
+			if (SIZEOF_VOID_P == 8) {
+				eh_selector_name = "llvm.eh.selector.i64";
+				ret_type = LLVMInt64Type ();
+			} else {
+				eh_selector_name = "llvm.eh.selector.i32";
+				ret_type = LLVMInt32Type ();
+			}
+		}
 		LLVMAddFunction (module, eh_selector_name, LLVMFunctionType (ret_type, arg_types, 2, TRUE));
 
 		LLVMAddFunction (module, "llvm.eh.exception", LLVMFunctionType (LLVMPointerType (LLVMInt8Type (), 0), NULL, 0, FALSE));
@@ -4408,6 +4412,8 @@ mono_llvm_cleanup (void)
 
 	if (jit_module.llvm_types)
 		g_hash_table_destroy (jit_module.llvm_types);
+
+	LLVMContextDispose (LLVMGetGlobalContext ());
 }
 
 void

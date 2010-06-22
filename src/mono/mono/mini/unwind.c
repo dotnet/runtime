@@ -805,6 +805,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	 * http://refspecs.freestandards.org/LSB_3.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
 	 */
 
+	*type_info = NULL;
 	*this_reg = -1;
 	*this_offset = -1;
 
