@@ -1,5 +1,5 @@
 /*
- * mach-support-x86.c: mach support for x86
+ * mach-support-arm.c: mach support for ARM
  *
  * Authors:
  *   Geoff Norton (gnorton@novell.com)
