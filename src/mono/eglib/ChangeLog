@@ -1,3 +1,10 @@
+2010-06-22  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* src/ghashtable.c: Add code to sanity check the
+	hashtable contents. This is invaluable, for example,
+	to catch bugs where a key hashcode changes after
+	insertion.
+
 2010-06-18  Chris Toshok  <toshok@ximian.com>
 
 	patch from Jacob Berkman:
