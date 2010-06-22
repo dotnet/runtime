@@ -6539,7 +6539,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 					exc_classes [nthrows] = exc_class;
 					exc_throw_start [nthrows] = code;
 				}
-				amd64_mov_reg_imm (code, AMD64_ARG_REG1, exc_class->type_token);
+				amd64_mov_reg_imm (code, AMD64_ARG_REG1, exc_class->type_token - MONO_TOKEN_TYPE_DEF);
 
 				patch_info->type = MONO_PATCH_INFO_NONE;
 
