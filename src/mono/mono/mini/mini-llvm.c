@@ -1535,7 +1535,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		if (!MONO_TYPE_ISSTRUCT (sig->params [i]))
 			emit_volatile_store (ctx, cfg->args [i + sig->hasthis]->dreg);
 
-	if (sig->hasthis && !cfg->rgctx_var) {
+	if (sig->hasthis && !cfg->rgctx_var && cfg->generic_sharing_context) {
 #if LLVM_CHECK_VERSION (2, 8)
 		LLVMValueRef this_alloc, md_arg;
 		int md_kind;
@@ -1546,7 +1546,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		 * with the "mono.this" custom metadata to tell llvm that it needs to save its
 		 * location into the LSDA.
 		 */
-		// FIXME: Do this for gshared only
 		this_alloc = mono_llvm_build_alloca (builder, IntPtrType (), LLVMConstInt (LLVMInt32Type (), 1, FALSE), 0, "");
 		/* This volatile store will keep the alloca alive */
 		mono_llvm_build_store (builder, ctx->values [cfg->args [0]->dreg], this_alloc, TRUE);
