@@ -3810,7 +3810,20 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 
 	/*
-	 * Make a first pass over the code to precreate PHI nodes.
+	 * The INDIRECT flag added by OP_LDADDR inhibits optimizations, even if the LDADDR
+	 * was later optimized away, so clear these flags, and add them back for the still
+	 * present OP_LDADDR instructions.
+	 */
+	for (i = 0; i < cfg->next_vreg; ++i) {
+		MonoInst *ins;
+
+		ins = get_vreg_to_inst (cfg, i);
+		if (ins && ins != cfg->rgctx_var)
+			ins->flags &= ~MONO_INST_INDIRECT;
+	}
+
+	/*
+	 * Make a first pass over the code to precreate PHI nodes/set INDIRECT flags.
 	 */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
@@ -3861,6 +3874,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				}
 				break;
 				}
+			case OP_LDADDR:
+				((MonoInst*)ins->inst_p0)->flags |= MONO_INST_INDIRECT;
+				break;
 			default:
 				break;
 			}
