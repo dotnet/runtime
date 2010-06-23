@@ -106,6 +106,7 @@ static char *los_segment = NULL;
 static int los_segment_index = 0;
 #endif
 
+#ifdef LOS_CONSISTENCY_CHECK
 static void
 los_consistency_check (void)
 {
@@ -153,6 +154,7 @@ los_consistency_check (void)
 
 	g_assert (los_memory_usage == memory_usage);
 }
+#endif
 
 static void
 add_free_chunk (LOSFreeChunks *free_chunks, size_t size)
@@ -300,7 +302,7 @@ free_large_object (LOSObject *obj)
 {
 #ifndef LOS_DUMMY
 	size_t size = obj->size;
-	DEBUG (4, fprintf (gc_debug_file, "Freed large object %p, size %zd\n", obj->data, obj->size));
+	DEBUG (4, fprintf (gc_debug_file, "Freed large object %p, size %lu\n", obj->data, (unsigned long)obj->size));
 	binary_protocol_empty (obj->data, obj->size);
 
 	los_memory_usage -= size;
@@ -350,7 +352,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
 #else
 	if (need_major_collection ()) {
-		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %zu, limit: %zu)\n", size, los_memory_usage, next_los_collection));
+		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %lu, limit: %lu)\n", size, (unsigned long)los_memory_usage, (unsigned long)next_los_collection));
 		stop_world ();
 		major_collection ("LOS overflow");
 		restart_world ();

@@ -186,7 +186,13 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
+#ifdef __MACH__
+#undef _XOPEN_SOURCE
+#endif
 #include <pthread.h>
+#ifdef __MACH__
+#define _XOPEN_SOURCE
+#endif
 #include "metadata/metadata-internals.h"
 #include "metadata/class-internals.h"
 #include "metadata/gc-internal.h"
@@ -977,6 +983,8 @@ static void major_collection (const char *reason);
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
 
 void describe_ptr (char *ptr);
+void check_object (char *start);
+
 static void check_consistency (void);
 static void check_major_refs (void);
 static void check_section_scan_starts (GCMemSection *section);
@@ -985,7 +993,6 @@ static void check_for_xdomain_refs (void);
 static void dump_occupied (char *start, char *end, char *section_start);
 static void dump_section (GCMemSection *section, const char *type);
 static void dump_heap (const char *type, int num, const char *reason);
-static void commit_stats (int generation);
 static void report_pinned_chunk (PinnedChunk *chunk, int seq);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key);
@@ -1171,7 +1178,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	 * references are relevant, this is not a problem.
 	 */
 	if (first_set < 0)
-		return DESC_TYPE_RUN_LENGTH;
+		return (void*)DESC_TYPE_RUN_LENGTH;
 	g_assert (!(stored_size & 0x3));
 	if (stored_size <= MAX_SMALL_OBJ_SIZE) {
 		/* check run-length encoding first: one byte offset, one byte number of pointers
@@ -1221,7 +1228,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 	}
 	/* See comment at the definition of DESC_TYPE_RUN_LENGTH. */
 	if (first_set < 0)
-		return DESC_TYPE_RUN_LENGTH;
+		return (void*)DESC_TYPE_RUN_LENGTH;
 	if (elem_size <= MAX_ELEMENT_SIZE) {
 		desc |= elem_size << VECTOR_ELSIZE_SHIFT;
 		if (!num_set) {
@@ -1554,7 +1561,7 @@ scan_object_for_xdomain_refs (char *start, mword size, void *data)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj) do {		\
 	if ((MonoObject*)*(ptr) == key) {	\
-	g_print ("found ref to %p in object %p (%s) at offset %zd\n",	\
+	g_print ("found ref to %p in object %p (%s) at offset %td\n",	\
 			key, (obj), safe_name ((obj)), ((char*)(ptr) - (char*)(obj))); \
 	}								\
 	} while (0)
@@ -1813,7 +1820,7 @@ check_for_xdomain_refs (void)
 {
 	LOSObject *bigobj;
 
-	scan_area_with_callback (nursery_section->data, nursery_section->end_data, scan_object_for_xdomain_refs, NULL);
+	scan_area_with_callback (nursery_section->data, nursery_section->end_data, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
 	major_iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
@@ -2032,7 +2039,7 @@ copy_object_no_checks (void *obj)
 	mword objsize;
 	char *destination;
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
-	gboolean has_references = vt->gc_descr != DESC_TYPE_RUN_LENGTH;
+	gboolean has_references = vt->gc_descr != (void*)DESC_TYPE_RUN_LENGTH;
 
 	objsize = safe_object_get_size ((MonoObject*)obj);
 	objsize += ALLOC_ALIGN - 1;
@@ -2041,7 +2048,7 @@ copy_object_no_checks (void *obj)
 	DEBUG (9, g_assert (vt->klass->inited));
 	MAJOR_GET_COPY_OBJECT_SPACE (destination, objsize, has_references);
 
-	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", destination, ((MonoObject*)obj)->vtable->klass->name, objsize));
+	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %lu)\n", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize));
 	binary_protocol_copy (obj, destination, ((MonoObject*)obj)->vtable, objsize);
 
 	if (objsize <= sizeof (gpointer) * 8) {
@@ -2087,7 +2094,7 @@ copy_object_no_checks (void *obj)
 	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
 		MonoArray *array = (MonoArray*)destination;
 		array->bounds = (MonoArrayBounds*)((char*)destination + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
-		DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %zd, rank: %d, length: %d\n", array, objsize, vt->rank, mono_array_length (array)));
+		DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %lu, rank: %d, length: %lu\n", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array)));
 	}
 	/* set the forwarding pointer */
 	forward_object (obj, destination);
@@ -2384,17 +2391,6 @@ pin_objects_in_section (GCMemSection *section)
 	}
 }
 
-static int
-new_gap (int gap)
-{
-	gap = (gap * 10) / 13;
-	if (gap == 9 || gap == 10)
-		return 11;
-	if (gap < 1)
-		return 1;
-	return gap;
-}
-
 /* Sort the addresses in array in increasing order.
  * Done using a by-the book heap sort. Which has decent and stable performance, is pretty cache efficient.
  */
@@ -2454,11 +2450,11 @@ print_nursery_gaps (void* start_nursery, void *end_nursery)
 	gpointer next;
 	for (i = 0; i < next_pin_slot; ++i) {
 		next = pin_queue [i];
-		fprintf (gc_debug_file, "Nursery range: %p-%p, size: %zd\n", first, next, (char*)next-(char*)first);
+		fprintf (gc_debug_file, "Nursery range: %p-%p, size: %td\n", first, next, (char*)next-(char*)first);
 		first = next;
 	}
 	next = end_nursery;
-	fprintf (gc_debug_file, "Nursery range: %p-%p, size: %zd\n", first, next, (char*)next-(char*)first);
+	fprintf (gc_debug_file, "Nursery range: %p-%p, size: %td\n", first, next, (char*)next-(char*)first);
 }
 
 /* reduce the info in the pin queue, removing duplicate pointers and sorting them */
@@ -2688,7 +2684,7 @@ alloc_nursery (void)
 
 	if (nursery_section)
 		return;
-	DEBUG (2, fprintf (gc_debug_file, "Allocating nursery size: %zd\n", nursery_size));
+	DEBUG (2, fprintf (gc_debug_file, "Allocating nursery size: %lu\n", (unsigned long)nursery_size));
 	/* later we will alloc a larger area for the nursery but only activate
 	 * what we need. The rest will be used as expansion if we have too many pinned
 	 * objects in the existing nursery.
@@ -2708,7 +2704,7 @@ alloc_nursery (void)
 	UPDATE_HEAP_BOUNDARIES (nursery_start, nursery_real_end);
 	nursery_next = nursery_start;
 	total_alloc += alloc_size;
-	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %zd, total: %zd\n", data, data + alloc_size, nursery_size, total_alloc));
+	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)nursery_size, (unsigned long)total_alloc));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
 	section->end_data = nursery_real_end;
@@ -2977,7 +2973,7 @@ scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, ch
 static void
 dump_occupied (char *start, char *end, char *section_start)
 {
-	fprintf (heap_dump_file, "<occupied offset=\"%zd\" size=\"%zd\"/>\n", start - section_start, end - start);
+	fprintf (heap_dump_file, "<occupied offset=\"%td\" size=\"%td\"/>\n", start - section_start, end - start);
 }
 
 static void
@@ -2989,7 +2985,7 @@ dump_section (GCMemSection *section, const char *type)
 	GCVTable *vt;
 	char *old_start = NULL;	/* just for debugging */
 
-	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%zu\">\n", type, section->size);
+	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)section->size);
 
 	while (start < end) {
 		guint size;
@@ -3301,7 +3297,7 @@ collect_nursery (size_t requested_size)
 	build_nursery_fragments (0, next_pin_slot);
 	TV_GETTIME (btv);
 	time_minor_fragment_creation += TV_ELAPSED_MS (atv, btv);
-	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %zd bytes available\n", TV_ELAPSED (atv, btv), fragment_total));
+	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %lu bytes available\n", TV_ELAPSED (atv, btv), (unsigned long)fragment_total));
 
 	if (consistency_check_at_minor_collection)
 		check_major_refs ();
@@ -3423,7 +3419,7 @@ major_do_collection (const char *reason)
 			GRAY_OBJECT_ENQUEUE (bigobj->data);
 			if (heap_dump_file)
 				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
-			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %zd from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
+			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %lu from roots\n", bigobj->data, safe_name (bigobj->data), (unsigned long)bigobj->size));
 		}
 	}
 	/* second pass for the sections */
@@ -3595,7 +3591,7 @@ minor_collect_or_expand_inner (size_t size)
 		stop_world ();
 		if (collect_nursery (size))
 			major_collection ("minor overflow");
-		DEBUG (2, fprintf (gc_debug_file, "Heap size: %zd, LOS size: %zd\n", total_alloc, los_memory_usage));
+		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)total_alloc, (unsigned long)los_memory_usage));
 		restart_world ();
 		/* this also sets the proper pointers for the next allocation */
 		if (!search_fragment_for_size (size)) {
@@ -3895,7 +3891,7 @@ setup_fragment (Fragment *frag, Fragment *prev, size_t size)
 	nursery_next = frag->fragment_start;
 	nursery_frag_real_end = frag->fragment_end;
 
-	DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %zd (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
+	DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %td (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
 	frag->next = fragment_freelist;
 	fragment_freelist = frag;
 }
@@ -4566,7 +4562,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 			if (!key || key == tombstone)
 				continue;
 
-			DEBUG (5, fprintf (gc_debug_file, "[%d] key %p (%s) value %p (%s)\n", cur - mono_array_addr (array, Ephemeron, 0),
+			DEBUG (5, fprintf (gc_debug_file, "[%td] key %p (%s) value %p (%s)\n", cur - mono_array_addr (array, Ephemeron, 0),
 				key, object_is_reachable (key, start, end) ? "reachable" : "unreachable",
 				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable"));
 
@@ -4629,7 +4625,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 			if (!key || key == tombstone)
 				continue;
 
-			DEBUG (5, fprintf (gc_debug_file, "[%d] key %p (%s) value %p (%s)\n", cur - mono_array_addr (array, Ephemeron, 0),
+			DEBUG (5, fprintf (gc_debug_file, "[%td] key %p (%s) value %p (%s)\n", cur - mono_array_addr (array, Ephemeron, 0),
 				key, object_is_reachable (key, start, end) ? "reachable" : "unreachable",
 				cur->value, cur->value && object_is_reachable (cur->value, start, end) ? "reachable" : "unreachable"));
 
@@ -5222,7 +5218,7 @@ static mword cur_thread_regs [ARCH_NUM_REGS] = {0};
 
 /* LOCKING: assumes the GC lock is held */
 SgenThreadInfo**
-mono_sgen_get_thread_table ()
+mono_sgen_get_thread_table (void)
 {
 	return thread_table;
 }
@@ -5252,16 +5248,6 @@ update_current_thread_stack (void *start)
 	info->stopped_regs = ptr;
 	if (gc_callbacks.thread_suspend_func)
 		gc_callbacks.thread_suspend_func (info->runtime_data, NULL);
-}
-
-static const char*
-signal_desc (int signum)
-{
-	if (signum == suspend_signal_num)
-		return "suspend";
-	if (signum == restart_signal_num)
-		return "restart";
-	return "unknown";
 }
 
 /*
@@ -5573,10 +5559,10 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
 			if (info->skip) {
-				DEBUG (3, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %zd\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+				DEBUG (3, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 				continue;
 			}
-			DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %zd, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
+			DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
 			if (gc_callbacks.thread_mark_func && !conservative_stack_mark)
 				gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
 			else if (!precise)
@@ -5807,10 +5793,10 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 
 	/* the global one */
 	for (remset = global_remset; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
 		store_pos = remset->data;
 		for (p = remset->data; p < remset->store_next; p = next_p) {
-			void **ptr = p [0];
+			void **ptr = (void**)p [0];
 
 			/*Ignore previously processed remset.*/
 			if (!global_remset_location_was_not_added (ptr)) {
@@ -5860,7 +5846,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 			RememberedSet *next;
 			int j;
 			for (remset = info->remset; remset; remset = next) {
-				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %zd\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
+				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
 				for (p = remset->data; p < remset->store_next;) {
 					p = handle_remset (p, start_nursery, end_nursery, FALSE);
 				}
@@ -5882,7 +5868,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 	while (freed_thread_remsets) {
 		RememberedSet *next;
 		remset = freed_thread_remsets;
-		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
 		for (p = remset->data; p < remset->store_next;) {
 			p = handle_remset (p, start_nursery, end_nursery, FALSE);
 		}
@@ -6680,7 +6666,7 @@ find_in_remsets (char *addr)
 
 	/* the global one */
 	for (remset = global_remset; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
 		for (p = remset->data; p < remset->store_next;) {
 			p = find_in_remset_loc (p, addr, &found);
 			if (found)
@@ -6701,7 +6687,7 @@ find_in_remsets (char *addr)
 		for (info = thread_table [i]; info; info = info->next) {
 			int j;
 			for (remset = info->remset; remset; remset = remset->next) {
-				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %zd\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
+				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
 				for (p = remset->data; p < remset->store_next;) {
 					p = find_in_remset_loc (p, addr, &found);
 					if (found)
@@ -6717,7 +6703,7 @@ find_in_remsets (char *addr)
 
 	/* the freed thread ones */
 	for (remset = freed_thread_remsets; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
 		for (p = remset->data; p < remset->store_next;) {
 			p = find_in_remset_loc (p, addr, &found);
 			if (found)
@@ -6740,7 +6726,7 @@ static gboolean missing_remsets;
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
 		if (!find_in_remsets ((char*)(ptr))) { \
-                fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
+                fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
 		binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 		if (!object_is_pinned (*(ptr)))				\
 			missing_remsets = TRUE;				\

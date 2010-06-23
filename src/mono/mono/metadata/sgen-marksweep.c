@@ -160,6 +160,9 @@ ms_free_block (void *block)
 	++num_empty_blocks;
 }
 
+//#define MARKSWEEP_CONSISTENCY_CHECK
+
+#ifdef MARKSWEEP_CONSISTENCY_CHECK
 static void
 check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 {
@@ -223,6 +226,7 @@ consistency_check (void)
 			check_block_free_list (free_block_lists [j][i], block_obj_sizes [i], j & MS_BLOCK_FLAG_PINNED);
 	}
 }
+#endif
 
 static void
 ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
@@ -673,7 +677,7 @@ count_pinned_callback (char *obj, size_t size, void *data)
 		++count_pinned_nonref;
 }
 
-static void
+static void __attribute__ ((unused))
 count_ref_nonref_objs (void)
 {
 	int total;
@@ -754,7 +758,9 @@ static int old_num_major_sections;
 static void
 major_start_nursery_collection (void)
 {
-	//consistency_check ();
+#ifdef MARKSWEEP_CONSISTENCY_CHECK
+	consistency_check ();
+#endif
 
 	old_num_major_sections = num_major_sections;
 }
@@ -764,7 +770,9 @@ major_finish_nursery_collection (void)
 {
 	int sections_alloced;
 
-	//consistency_check ();
+#ifdef MARKSWEEP_CONSISTENCY_CHECK
+	consistency_check ();
+#endif
 
 	sections_alloced = num_major_sections - old_num_major_sections;
 	minor_collection_sections_alloced += sections_alloced;
