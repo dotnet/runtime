@@ -1,6 +1,9 @@
 2010-06-23  Miguel de Icaza  <miguel@novell.com>
 
-	* configure.in: First pass at supporting the compilation of both
+	* configure.in: Remove redundant setting of variables in non-Boehm
+	cases.
+
+	First pass at supporting the compilation of both
 	the Boehm-powered Mono VM and the Sgen-powered one.
 
 	The Boehm configuration flags are no longer part of the config.h

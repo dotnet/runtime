@@ -871,8 +871,6 @@ case "x$gc" in
 		;;
 
 	xincluded)
-		found_boehm=yes
-		gc_headers=yes
 		use_included_gc=yes
 		libgc_dir=libgc
 
@@ -890,8 +888,6 @@ case "x$gc" in
 		;;
 
 	xsgen)
-		found_boehm=no
-		gc_headers=no
 		use_included_gc=no
 		AC_DEFINE(HAVE_SGEN_GC,1,[Using the simple generational GC.])
 		AC_DEFINE(HAVE_MOVING_COLLECTOR,1,[The GC can move objects.])
