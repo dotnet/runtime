@@ -177,8 +177,10 @@ libmonoruntime_la_SOURCES = \
 	wrapper-types.h
 
 libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
+libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
 
 libmonoruntime_static_la_LDFLAGS = -static
+libmonoruntime_static_la_CFLAGS = $(BOEHM_DEFINES)
 
 libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 

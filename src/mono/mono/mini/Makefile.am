@@ -35,7 +35,6 @@ ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
 
 AM_CFLAGS = \
 	-I$(top_srcdir) 	\
-	$(LIBGC_CFLAGS)		\
 	$(GLIB_CFLAGS)		\
 	$(LLVM_CFLAGS)		\
 	$(PLATFORM_CFLAGS) $(ARCH_CFLAGS)
@@ -87,6 +86,8 @@ endif
 
 mono_SOURCES = \
 	main.c
+
+mono_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
@@ -148,11 +149,12 @@ endif
 genmdesc_SOURCES = \
 	mini.h		\
 	genmdesc.c	\
-	helpers.c
+	helpers.c	\
+	../metadata/opcodes.c
 
 # Don't link this against libmonoruntime to speed up rebuilds
 genmdesc_LDADD = \
-	$(monodir)/mono/utils/libmonoutils.la $(monodir)/mono/metadata/opcodes.lo -lm	\
+	$(monodir)/mono/utils/libmonoutils.la -lm	\
 	$(GLIB_LIBS)
 
 x86_sources = \
@@ -291,8 +293,10 @@ common_sources = \
 	dwarfwriter.c	\
 	mini-gc.h		\
 	mini-gc.c		\
-	debugger-agent.h \
+	debugger-agent.h 	\
 	debugger-agent.c	\
+	debug-debugger.c	\
+	debug-debugger.h	\
 	xdebug.c
 
 test_sources = 			\
@@ -312,33 +316,21 @@ test_sources = 			\
 	generics-variant-types.il\
 	basic-simd.cs
 
-if MONO_DEBUGGER_SUPPORTED
-if PLATFORM_DARWIN
-mono_debugger_arch_sources = mdb-debug-info32-darwin.s
-else
-if AMD64
-mono_debugger_arch_sources = mdb-debug-info64.s
-else
-if X86
-mono_debugger_arch_sources = mdb-debug-info32.s
-endif
-endif
-endif
-mono_debugger_sources = debug-debugger.c debug-debugger.h $(mono_debugger_arch_sources)
-else
-mono_debugger_sources =
-endif
-
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
 
 if X86
-arch_sources = $(x86_sources) $(mono_debugger_sources)
+if PLATFORM_DARWIN
+mdb_x86 = mdb-debug-info32-darwin.S
+else
+mdb_x86 = mdb-debug-info32.S
+endif
+arch_sources = $(x86_sources) $(mdb_x86)
 arch_built=cpu-x86.h
 arch_define=__i386__
 endif
 
 if AMD64
-arch_sources = $(amd64_sources) $(mono_debugger_sources)
+arch_sources = $(amd64_sources) mdb-debug-info64.S
 arch_built=cpu-amd64.h
 arch_define=__x86_64__
 endif
@@ -429,15 +421,20 @@ monobin_platform_ldflags=-framework CoreFoundation
 endif
 
 libmono_2_0_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
+libmono_2_0_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
 
 if MOONLIGHT
 libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmono_moon_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
 endif
 
 libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
+libmono_static_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
 libmono_static_la_LDFLAGS = -static
 libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
+
+nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
+nodist_libmono_static_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 

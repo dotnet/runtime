@@ -1,11 +1,12 @@
 /*
  * mini.c: The new Mono code generator.
  *
- * Author:
+ * Authors:
  *   Paolo Molaro (lupus@ximian.com)
  *   Dietmar Maurer (dietmar@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * Copyright 2002-2003 Ximian, Inc.
+ * Coprygith 2003-2010 Novell, Inc.
  */
 
 #include <config.h>

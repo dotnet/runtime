@@ -851,23 +851,22 @@ case "x$gc" in
 			AC_MSG_ERROR("GC requested but header files not found! You may need to install them by hand.")
 		fi
 
-		AC_DEFINE(HAVE_BOEHM_GC, 1, [Have Boehm GC])
-		AC_SUBST(HAVE_BOEHM_GC)
 		LIBGC_LIBS="-lgc $libdl"
 		LIBGC_STATIC_LIBS="$LIBGC_LIBS"
 		libmono_ldflags="$libmono_ldflags -lgc"
+		BOEHM_DEFINES="-DHAVE_BOEHM_GC"
 
 		# AC_CHECK_FUNCS does not work for some reason...
 		AC_CHECK_LIB(gc, GC_gcj_malloc, found_gcj_malloc="yes",,$libdl)
 		if test "x$found_gcj_malloc" = "xyes"; then
-			AC_DEFINE(HAVE_GC_GCJ_MALLOC, 1, [Have GC_gcj_malloc])
+			BOEHM_DEFINES="-DHAVE_GC_GCJ_MALLOC $BOEHM_DEFINES"
 			AC_DEFINE_UNQUOTED(USED_GC_NAME, "System Boehm (with typed GC)", [GC description])
 		else
 			AC_DEFINE_UNQUOTED(USED_GC_NAME, "System Boehm (no typed GC)", [GC description])
 		fi
 		AC_CHECK_LIB(gc, GC_enable, found_gc_enable="yes",,$libdl)
 		if test "x$found_gc_enable" = "xyes"; then
-			AC_DEFINE(HAVE_GC_ENABLE, 1, [Have 'GC_enable'])
+			BOEHM_DEFINES="-DHAVE_GC_ENABLE $BOEHM_DEFINES"
 		fi
 		;;
 
@@ -881,15 +880,8 @@ case "x$gc" in
 		LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
 		LIBGC_STATIC_LIBS='$(top_builddir)/libgc/libmonogc-static.la'
 
-		AC_DEFINE(HAVE_BOEHM_GC, 1, [Have Boehm GC])
-		AC_SUBST(HAVE_BOEHM_GC)
+		BOEHM_DEFINES="-DHAVE_BOEHM_GC -DHAVE_GC_H -DUSE_INCLUDED_LIBGC -DHAVE_GC_GCJ_MALLOC -DHAVE_GC_ENABLE"
 
-		AC_DEFINE(HAVE_GC_H, 1, [Have gc.h])
-		AC_DEFINE(USE_INCLUDED_LIBGC, 1, [Use included libgc])
-
-		# The included libgc contains GCJ support
-		AC_DEFINE(HAVE_GC_GCJ_MALLOC, 1, [Have GC_gcj_malloc])
-		AC_DEFINE(HAVE_GC_ENABLE, 1, [Have GC_enable])
 		if test x$enable_parallel_mark = xyes; then
 			AC_DEFINE_UNQUOTED(USED_GC_NAME, "Included Boehm (with typed GC and Parallel Mark)", [GC description])
 		else
@@ -928,6 +920,7 @@ AC_SUBST(LIBGC_CFLAGS)
 AC_SUBST(LIBGC_LIBS)
 AC_SUBST(LIBGC_STATIC_LIBS)
 AC_SUBST(libgc_dir)
+AC_SUBST(BOEHM_DEFINES)
 
 dnl
 dnl End of libgc checks
@@ -1543,7 +1536,7 @@ if test x$target_win32 = xno; then
 	        AC_CHECK_FUNCS(finite, , AC_MSG_CHECKING(for finite in math.h)
 	                AC_TRY_LINK([#include <math.h>], 
 	                [ finite(0.0); ], 
-	                AC_DEFINE(HAVE_FINITE, 1, [Have finite]) AC_MSG_RESULT(yes),
+	                AC_DEFINE(HAVE_FINITE, 1, [Have finite in -lm]) AC_MSG_RESULT(yes),
 	                AC_MSG_RESULT(no)))
 	fi
         AC_CHECK_FUNCS(isfinite, , AC_MSG_CHECKING(for isfinite in math.h)
@@ -2449,10 +2442,10 @@ fi
 
 AC_MSG_CHECKING(if the Mono Debugger is supported on this platform)
 if test "x$mono_debugger_supported" = "xyes"; then
-	AC_DEFINE(MONO_DEBUGGER_SUPPORTED,1,[The Mono Debugger is supported on this platform])
+	BOEHM_DEFINES="$BOEHM_DEFINES -DMONO_DEBUGGER_SUPPORTED"
+	NESTED_LIBGC_FLAGS="-DMONO_DEBUGGER_SUPPORTED"
 fi
 AC_MSG_RESULT($mono_debugger_supported)
-AM_CONDITIONAL(MONO_DEBUGGER_SUPPORTED, test x$mono_debugger_supported = xyes)
 
 if test "x$with_tls" = "x__thread"; then
 	AC_DEFINE(HAVE_KW_THREAD, 1, [Have __thread keyword])
@@ -2501,7 +2494,7 @@ case "x$gc" in
 		# The problem with this approach, is that during a reconfigure, the main
 		# configure scripts gets invoked with these arguments, so we use separate
 		# variables understood by libgc's configure to pass CPPFLAGS and CFLAGS.
-		LIBGC_CPPFLAGS=$CPPFLAGS
+		LIBGC_CPPFLAGS="$CPPFLAGS $NESTED_LIBGC_FLAGS"
 		if test x$TARGET = xSPARC -o x$TARGET = xSPARC64; then
 			LIBGC_CPPFLAGS=`echo $LIBGC_CPPFLAGS | sed -e 's/-D_FILE_OFFSET_BITS=64//g'`
 		fi

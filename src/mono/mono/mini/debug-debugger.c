@@ -1,3 +1,12 @@
+/*
+ * debug-debugger.c: Hard debugger support (mdb)
+ *
+ * Author:
+ *
+ * Copyright 2006-2010 Novell, Inc.
+ */
+#if MONO_DEBUGGER_SUPPORTED
+
 #include <config.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/threads.h>
@@ -20,10 +29,8 @@
  * configure.in checks whether we're using the included libgc and disables the debugger if not.
  */
 
-#if !defined(MONO_DEBUGGER_SUPPORTED)
-#error "Some clown tried to compile debug-debugger.c on an unsupported platform - fix Makefile.am!"
-#elif !defined(USE_INCLUDED_LIBGC)
-#error "Some clown #defined MONO_DEBUGGER_SUPPORTED without USE_INCLUDED_GC - fix configure.in!"
+#if !defined(USE_INCLUDED_LIBGC)
+#error "Inconsistency detected: #defined MONO_DEBUGGER_SUPPORTED without USE_INCLUDED_GC - fix configure.in!"
 #endif
 
 static guint64 debugger_compile_method (guint64 method_arg);
@@ -597,3 +604,4 @@ mini_debugger_main (MonoDomain *domain, MonoAssembly *assembly, int argc, char *
 
 	return 0;
 }
+#endif /* MONO_DEBUGGER_SUPPORTED */

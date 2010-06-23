@@ -1,10 +1,10 @@
 /*
- * debugger-agent.c: Debugger back-end module
+ * debugger-agent.c: Soft Debugger back-end module
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)
  *
- * (C) 2009 Novell, Inc.
+ * Copyright 2009-2010 Novell, Inc.
  */
 
 #include <config.h>

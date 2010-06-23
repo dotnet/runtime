@@ -1,3 +1,33 @@
+2010-06-23  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: First pass at supporting the compilation of both
+	the Boehm-powered Mono VM and the Sgen-powered one.
+
+	The Boehm configuration flags are no longer part of the config.h
+	that we generate, but instead they are part of the CFLAGS
+	variables that are used for the following components:
+
+		* io-layer/ because it uses the pthread APIs that are
+		wrapped by using utils/gc_wrapper.h
+
+		* metatada/ because we have plenty of GC-specific code
+
+		* mini/ the VM itself
+
+	The patch currently only changes the way that Boehm is compiled,
+	no changes for Sgen have been done yet.
+
+	We now pass Boehm CFLAG settings as "BOEHM_DEFINES" which need to
+	be added to the three Makefiles above.
+
+	When building the bundled and modified libgc, we also need to pass
+	MONO_DEBUGGER_SUPPORTED as it triggers some special features in
+	the libgc.
+
+	Simplify the build also by removing the AM_CONDITIONAL debugger
+	supported, we now merely check this on the source file and wrap
+	the entire debug-debugger.c in an ifdef.
+
 2010-06-05  Mark Probst  <mark.probst@gmail.com>
 
 	* tools/sgen/sgen-grep-binprot.c: Updated for degraded and pinned

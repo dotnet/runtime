@@ -1,4 +1,4 @@
-.text
+	.text
 .global		MONO_DEBUGGER__debugger_info
 .global		MONO_DEBUGGER__notification_function	
 MONO_DEBUGGER__notification_function:

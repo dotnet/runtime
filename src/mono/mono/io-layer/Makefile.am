@@ -134,7 +134,7 @@ endif
 if PLATFORM_DARWIN
 libwapi_la_LIBADD = -lproc
 endif
-
+libwapi_la_CFLAGS = $(BOEHM_DEFINES)
 
 EXTRA_DIST =	\
 	$(WINDOWS_SRC)	\

@@ -167,10 +167,10 @@ struct _MonoJitInfo {
 	gboolean    has_try_block_holes:1;
 	gboolean    from_aot:1;
 	gboolean    from_llvm:1;
-#ifdef HAVE_SGEN_GC
-	/* FIXME: Embed this after the structure later */
-	gpointer    gc_info;
-#endif
+
+	/* FIXME: Embed this after the structure later*/
+	gpointer    gc_info; /* Currently only used by SGen */
+	
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 	/* There is an optional MonoGenericJitInfo after the clauses */
 	/* There is an optional MonoTryBlockHoleTableJitInfo after MonoGenericJitInfo clauses*/
