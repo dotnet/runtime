@@ -151,7 +151,8 @@ dump_hash_table (GHashTable *hash)
 }
 #endif
 
-#ifdef SANITY_CHECKstatic void
+#ifdef SANITY_CHECK
+static void
 sanity_check (GHashTable *hash)
 {
 	int i;
