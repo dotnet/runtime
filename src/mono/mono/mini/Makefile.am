@@ -287,10 +287,10 @@ common_sources = \
 	simd-intrinsics.c	\
 	mini-unwind.h		\
 	unwind.c		\
-	image-writer.h	\
-	image-writer.c	\
-	dwarfwriter.h	\
-	dwarfwriter.c	\
+	image-writer.h		\
+	image-writer.c		\
+	dwarfwriter.h		\
+	dwarfwriter.c		\
 	mini-gc.h		\
 	mini-gc.c		\
 	debugger-agent.h 	\
@@ -578,21 +578,21 @@ endif
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = $(common_BURGSRC) TestDriver.cs ldscript ldscript.mono \
-	genmdesc.pl	\
-	$(test_sources) \
-	$(x86_sources) cpu-x86.md \
-	$(amd64_sources) cpu-amd64.md \
-	$(ppc_sources) cpu-ppc.md cpu-ppc64.md \
-	$(arm_sources) cpu-arm.md \
-	$(mips_sources) cpu-mips.md \
-	$(sparc_sources) cpu-sparc.md \
-	$(s390_sources) cpu-s390.md \
-	$(s390x_sources) cpu-s390x.md \
-	$(ia64_sources) cpu-ia64.md \
-	$(alpha_sources) cpu-alpha.md \
-	$(hppa_sources) cpu-hppa.md 	\
-	$(windows_sources)		\
-	$(darwin_sources) Info.plist	\
+	genmdesc.pl				\
+	$(test_sources) 			\
+	$(x86_sources) cpu-x86.md 		\
+	$(amd64_sources) cpu-amd64.md 		\
+	$(ppc_sources) cpu-ppc.md cpu-ppc64.md 	\
+	$(arm_sources) cpu-arm.md 		\
+	$(mips_sources) cpu-mips.md 		\
+	$(sparc_sources) cpu-sparc.md 		\
+	$(s390_sources) cpu-s390.md 		\
+	$(s390x_sources) cpu-s390x.md 		\
+	$(ia64_sources) cpu-ia64.md 		\
+	$(alpha_sources) cpu-alpha.md 		\
+	$(hppa_sources) cpu-hppa.md 		\
+	$(windows_sources)			\
+	$(darwin_sources) Info.plist		\
 	$(posix_sources)
 
 version.h: Makefile
