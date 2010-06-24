@@ -6,7 +6,7 @@
 #include "mono/metadata/blob.h"
 #include "mono/metadata/mempool.h"
 #include "mono/metadata/domain-internals.h"
-#include "mono/utils/mono-hash.h"
+#include "mono/metadata/mono-hash.h"
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/monobitset.h"

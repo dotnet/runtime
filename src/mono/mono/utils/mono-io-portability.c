@@ -10,7 +10,6 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object.h>
-#include <mono/utils/mono-hash.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/profiler-private.h>
