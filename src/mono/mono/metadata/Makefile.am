@@ -34,11 +34,7 @@ bin_PROGRAMS = pedump
 # libtool is not capable of creating static/shared versions of the same
 # convenience lib, so we have to do it ourselves
 #
-if SUPPORT_SGEN
-sgen_libraries = libmonoruntimesgen.la libmonoruntimesgen-static.la 
-endif
-
-noinst_LTLIBRARIES = libmonoruntime.la libmonoruntime-static.la $(sgen_libraries)
+noinst_LTLIBRARIES = libmonoruntime.la libmonoruntime-static.la
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
@@ -180,18 +176,9 @@ libmonoruntime_la_SOURCES = \
 	verify-internals.h	\
 	wrapper-types.h
 
-libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
-
-libmonoruntimesgen_la_SOURCES = $(libmonoruntime_la_SOURCES)
-libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES)
-
 libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
-libmonoruntime_static_la_LDFLAGS = -static
-libmonoruntime_static_la_CFLAGS = $(BOEHM_DEFINES)
 
-libmonoruntimesgen_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
-libmonoruntimesgen_static_la_LDFLAGS = -static
-libmonoruntimesgen_static_la_CFLAGS = $(SGEN_DEFINES)
+libmonoruntime_static_la_LDFLAGS = -static
 
 libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 

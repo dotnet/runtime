@@ -26,7 +26,6 @@ dnl
 
 gc_headers=no
 gc=included
-gc_msg="included Boehm"
 use_included_gc=no
 libgc_configure_args=
 
@@ -625,7 +624,7 @@ if test x$cross_compiling$host_win32 = xnoyes; then
    AC_MSG_RESULT(ok)
 fi
 
-AC_ARG_WITH(gc,   [  --with-gc=boehm,included,none  Controls the Boehm GC config, default=included],[gc=$with_gc],[gc=$gc_default])
+AC_ARG_WITH(gc, [  --with-gc=boehm,included,none  Defaults to included],[gc=$with_gc],[gc=$gc_default])
 
 # Enable support for fast thread-local storage
 # Some systems have broken support, so we allow to disable it.
@@ -836,9 +835,6 @@ if test x$enable_parallel_mark = xyes; then
 	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
 fi
 
-dnl
-dnl Boehm GC configuration
-dnl
 LIBGC_CFLAGS=
 LIBGC_LIBS=
 LIBGC_STATIC_LIBS=
@@ -855,28 +851,29 @@ case "x$gc" in
 			AC_MSG_ERROR("GC requested but header files not found! You may need to install them by hand.")
 		fi
 
+		AC_DEFINE(HAVE_BOEHM_GC, 1, [Have Boehm GC])
+		AC_SUBST(HAVE_BOEHM_GC)
 		LIBGC_LIBS="-lgc $libdl"
 		LIBGC_STATIC_LIBS="$LIBGC_LIBS"
 		libmono_ldflags="$libmono_ldflags -lgc"
-		BOEHM_DEFINES="-DHAVE_BOEHM_GC"
 
 		# AC_CHECK_FUNCS does not work for some reason...
 		AC_CHECK_LIB(gc, GC_gcj_malloc, found_gcj_malloc="yes",,$libdl)
 		if test "x$found_gcj_malloc" = "xyes"; then
-			BOEHM_DEFINES="-DHAVE_GC_GCJ_MALLOC $BOEHM_DEFINES"
-			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "System Boehm (with typed GC)", [GC description])
-			gc_msg="System Boehm with typed GC"
+			AC_DEFINE(HAVE_GC_GCJ_MALLOC, 1, [Have GC_gcj_malloc])
+			AC_DEFINE_UNQUOTED(USED_GC_NAME, "System Boehm (with typed GC)", [GC description])
 		else
-			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "System Boehm (no typed GC)", [GC description])
-			gc_msg="System Boehm (without typed GC)"
+			AC_DEFINE_UNQUOTED(USED_GC_NAME, "System Boehm (no typed GC)", [GC description])
 		fi
 		AC_CHECK_LIB(gc, GC_enable, found_gc_enable="yes",,$libdl)
 		if test "x$found_gc_enable" = "xyes"; then
-			BOEHM_DEFINES="-DHAVE_GC_ENABLE $BOEHM_DEFINES"
+			AC_DEFINE(HAVE_GC_ENABLE, 1, [Have 'GC_enable'])
 		fi
 		;;
 
 	xincluded)
+		found_boehm=yes
+		gc_headers=yes
 		use_included_gc=yes
 		libgc_dir=libgc
 
@@ -884,24 +881,35 @@ case "x$gc" in
 		LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
 		LIBGC_STATIC_LIBS='$(top_builddir)/libgc/libmonogc-static.la'
 
-		BOEHM_DEFINES="-DHAVE_BOEHM_GC -DHAVE_GC_H -DUSE_INCLUDED_LIBGC -DHAVE_GC_GCJ_MALLOC -DHAVE_GC_ENABLE"
+		AC_DEFINE(HAVE_BOEHM_GC, 1, [Have Boehm GC])
+		AC_SUBST(HAVE_BOEHM_GC)
 
-		gc_msg="bundled Boehm GC with typed GC"
+		AC_DEFINE(HAVE_GC_H, 1, [Have gc.h])
+		AC_DEFINE(USE_INCLUDED_LIBGC, 1, [Use included libgc])
+
+		# The included libgc contains GCJ support
+		AC_DEFINE(HAVE_GC_GCJ_MALLOC, 1, [Have GC_gcj_malloc])
+		AC_DEFINE(HAVE_GC_ENABLE, 1, [Have GC_enable])
 		if test x$enable_parallel_mark = xyes; then
-			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC and Parallel Mark)", [GC description])
-			gc_msg="$gc_msg and parallel mark"
+			AC_DEFINE_UNQUOTED(USED_GC_NAME, "Included Boehm (with typed GC and Parallel Mark)", [GC description])
 		else
-			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC)", [GC description])
+			AC_DEFINE_UNQUOTED(USED_GC_NAME, "Included Boehm (with typed GC)", [GC description])
 		fi
 		;;
 
 	xsgen)
-		AC_MSG_WARN("Use --with-sgen instead, --with-gc= controls Boehm configuration")
+		found_boehm=no
+		gc_headers=no
+		use_included_gc=no
+		AC_DEFINE(HAVE_SGEN_GC,1,[Using the simple generational GC.])
+		AC_DEFINE(HAVE_MOVING_COLLECTOR,1,[The GC can move objects.])
+		AC_DEFINE(HAVE_WRITE_BARRIERS,1,[The GC needs write barriers.])
+		AC_DEFINE_UNQUOTED(USED_GC_NAME, "Simple generational", [GC description])
 		;;
 
 	xnone)
 		AC_MSG_WARN("Compiling mono without GC.")
-		AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "none", [GC description])
+		AC_DEFINE_UNQUOTED(USED_GC_NAME, "none", [GC description])
 		AC_DEFINE(HAVE_NULL_GC,1,[No GC support.])
 		;;
 	*)
@@ -911,6 +919,7 @@ esac
 
 AC_ARG_WITH(large-heap, [  --with-large-heap=yes,no       Enable support for GC heaps larger than 3GB (defaults to no)], [large_heap=$withval], [large_heap=no])
 if test "x$large_heap" = "xyes"; then
+   echo "FOO"
    CPPFLAGS="$CPPFLAGS -DLARGE_CONFIG"
 fi
 
@@ -919,7 +928,6 @@ AC_SUBST(LIBGC_CFLAGS)
 AC_SUBST(LIBGC_LIBS)
 AC_SUBST(LIBGC_STATIC_LIBS)
 AC_SUBST(libgc_dir)
-AC_SUBST(BOEHM_DEFINES)
 
 dnl
 dnl End of libgc checks
@@ -1535,7 +1543,7 @@ if test x$target_win32 = xno; then
 	        AC_CHECK_FUNCS(finite, , AC_MSG_CHECKING(for finite in math.h)
 	                AC_TRY_LINK([#include <math.h>], 
 	                [ finite(0.0); ], 
-	                AC_DEFINE(HAVE_FINITE, 1, [Have finite in -lm]) AC_MSG_RESULT(yes),
+	                AC_DEFINE(HAVE_FINITE, 1, [Have finite]) AC_MSG_RESULT(yes),
 	                AC_MSG_RESULT(no)))
 	fi
         AC_CHECK_FUNCS(isfinite, , AC_MSG_CHECKING(for isfinite in math.h)
@@ -2061,7 +2069,6 @@ sizeof_register="SIZEOF_VOID_P"
 
 jit_wanted=false
 interp_wanted=false
-sgen_supported=true
 case "$host" in
 #	mips-sgi-irix5.* | mips-sgi-irix6.*)
 #		TARGET=MIPS;
@@ -2120,9 +2127,6 @@ case "$host" in
 		  haiku*)
 			LIBC=libroot.so
 			;;
-		  linux*|darwin*)
-			sgen_supported=true
-		        ;;
 		esac
 		;;
 	x86_64-*-* | amd64-*-*)
@@ -2130,11 +2134,6 @@ case "$host" in
 		arch_target=amd64;
 		JIT_SUPPORTED=yes
 		jit_wanted=true
-		case $host_os in
-		  linux*|darwin*)
-			sgen_supported=true
-			;;
-		esac
 		;;
 	ia64-*-*)
 		TARGET=IA64
@@ -2217,11 +2216,6 @@ case "$host" in
 		arch_target=ppc;
 		JIT_SUPPORTED=yes
 		jit_wanted=true
-		case $host_os in
-		  linux*|darwin*)
-			sgen_supported=true
-			;;
-		esac
 		;;
 	arm*-darwin*)
 		TARGET=ARM;
@@ -2230,7 +2224,6 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -DARM_FPU_NONE=1"
 		jit_wanted=true
-		sgen_supported=true
 		;;
 	arm*-linux*)
 		TARGET=ARM;
@@ -2238,7 +2231,6 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		jit_wanted=true
-		sgen_supported=true
 		;;
 	s390-*-linux*)
 		TARGET=S390;
@@ -2332,23 +2324,6 @@ fi
 if test "x$have_deprecated" = "xyes"; then
    AC_DEFINE(HAVE_DEPRECATED, 1, [Support for the deprecated attribute])
 fi
-
-dnl 
-dnl Simple Generational checks (sgen)
-dnl
-SGEN_DEFINES=
-AC_ARG_WITH(sgen, [  --with-sgen=yes,no             Extra Generational GC, default=yes],[buildsgen=$with_sgen],[buildsgen=yes])
-if test x$buildsgen = xyes; then
-   if $sgen_supported; then
-       SGEN_DEFINES="-DHAVE_SGEN_GC -DHAVE_MOVING_COLLECTOR -DHAVE_WRITE_BARRIERS"
-       gc_msg="sgen and $gc_msg"
-   else
-       buildsgen=no
-       AC_MSG_WARN("Sgen is not supported on this platform")
-   fi
-fi
-AC_SUBST(SGEN_DEFINES)
-AM_CONDITIONAL(SUPPORT_SGEN, test x$buildsgen = xyes)
 
 AC_ARG_WITH(jit, [  --with-jit=yes,no              If you want to build scripts that default to the JIT (defaults to no)],[
 	if test x$withval = xyes; then
@@ -2474,10 +2449,10 @@ fi
 
 AC_MSG_CHECKING(if the Mono Debugger is supported on this platform)
 if test "x$mono_debugger_supported" = "xyes"; then
-	BOEHM_DEFINES="$BOEHM_DEFINES -DMONO_DEBUGGER_SUPPORTED"
-	NESTED_LIBGC_FLAGS="-DMONO_DEBUGGER_SUPPORTED"
+	AC_DEFINE(MONO_DEBUGGER_SUPPORTED,1,[The Mono Debugger is supported on this platform])
 fi
 AC_MSG_RESULT($mono_debugger_supported)
+AM_CONDITIONAL(MONO_DEBUGGER_SUPPORTED, test x$mono_debugger_supported = xyes)
 
 if test "x$with_tls" = "x__thread"; then
 	AC_DEFINE(HAVE_KW_THREAD, 1, [Have __thread keyword])
@@ -2526,7 +2501,7 @@ case "x$gc" in
 		# The problem with this approach, is that during a reconfigure, the main
 		# configure scripts gets invoked with these arguments, so we use separate
 		# variables understood by libgc's configure to pass CPPFLAGS and CFLAGS.
-		LIBGC_CPPFLAGS="$CPPFLAGS $NESTED_LIBGC_FLAGS"
+		LIBGC_CPPFLAGS=$CPPFLAGS
 		if test x$TARGET = xSPARC -o x$TARGET = xSPARC64; then
 			LIBGC_CPPFLAGS=`echo $LIBGC_CPPFLAGS | sed -e 's/-D_FILE_OFFSET_BITS=64//g'`
 		fi
@@ -2941,7 +2916,7 @@ echo "
         olive source:  $olive_topdir
 
    Engine:
-	GC:	       $gc_msg 
+	GC:	       $gc
 	GLIB:	       $with_glib
 	TLS:           $with_tls
 	SIGALTSTACK:   $with_sigaltstack
@@ -2962,6 +2937,15 @@ echo "
 "
 if test x$with_static_mono = xno -a "x$host_win32" != "xyes"; then
    AC_MSG_WARN(Turning off static Mono is a risk, you might run into unexpected bugs)
+fi
+
+if test x$gc = xsgen; then
+        echo IMPORTANT:
+	echo IMPORTANT: You have selected an experimental, work-in-progress 
+	echo IMPORTANT: GC engine.  This GC engine is currently not supported
+	echo IMPORTANT: and is not yet ready for use.  
+	echo IMPORTANT:
+	echo IMPORTANT: There are known problems with it, use at your own risk.
 fi
 
 if test x$enable_llvm = xyes; then
