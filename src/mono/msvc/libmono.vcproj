@@ -1042,7 +1042,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\mono\utils\mono-hash.c"
+				RelativePath="..\mono\metadata\mono-hash.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
@@ -1130,7 +1130,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\mono\utils\mono-hash.h"
+				RelativePath="..\mono\metadata\mono-hash.h"
 				>
 			</File>
 			<File
