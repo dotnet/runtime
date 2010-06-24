@@ -172,11 +172,20 @@ This is Mono.
 	The following are the configuration options that someone
 	building Mono might want to use:
 	
+	--with-sgen=yes,no
+
+		Generational GC support: Used to enable or disable the
+		compilation of a Mono runtime with the SGen garbage collector.
+
+		On platforms that support it, after building Mono, you
+		will have both a mono binary and a mono-sgen binary.
+		Mono uses Boehm, while mono-sgen uses the Simple
+		Generational GC.
 
 	--with-gc=[boehm, included, sgen, none]
 
-		Selects the garbage collector engine to use, the
-	  	default is the "included" value.
+		Selects the default Boehm garbage collector engine to
+	  	use, the default is the "included" value.
 	
 		included: 
 			This is the default value, and its
@@ -191,10 +200,6 @@ This is Mono.
 			it is useful to test new features available in
 			Boehm GC, but we do not recommend that people
 			use this, as it disables a few features.
-
-		sgen:
-			The under-development Generational GC for
-		  	Mono, do not use this in production.
 
 		none:
 			Disables the inclusion of a garbage

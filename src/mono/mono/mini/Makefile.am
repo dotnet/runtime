@@ -18,12 +18,24 @@ libs=	\
 	$(GLIB_LIBS)	\
 	$(libgc_libs)
 
+sgen_libs = \
+	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
+	$(monodir)/mono/io-layer/libwapisgen.la	\
+	$(monodir)/mono/utils/libmonoutils.la \
+	$(GLIB_LIBS)
+
 static_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS)	\
 	$(libgc_static_libs)
+
+sgenstatic_libs = \
+	$(monodir)/mono/metadata/libmonoruntimesgen-static.la	\
+	$(monodir)/mono/io-layer/libwapisgen.la	\
+	$(monodir)/mono/utils/libmonoutils.la \
+	$(GLIB_LIBS)
 
 CLASS=$(mcs_topdir)/class/lib/net_2_0
 
@@ -67,16 +79,22 @@ endif
 
 if JIT_SUPPORTED
 
+if SUPPORT_SGEN
+sgen_binaries = mono-sgen
+sgen_libraries = libmonosgen-2.0.la
+sgen_static_libraries = libmonosgen-static.la
+endif
+
 if HOST_WIN32
 bin_PROGRAMS = mono monow
 else
-bin_PROGRAMS = mono
+bin_PROGRAMS = mono $(sgen_binaries)
 endif
 
 noinst_PROGRAMS = genmdesc
 
-lib_LTLIBRARIES = libmono-2.0.la
-noinst_LTLIBRARIES = libmono-static.la
+lib_LTLIBRARIES = libmono-2.0.la $(sgen_libraries)
+noinst_LTLIBRARIES = libmono-static.la $(sgen_static_libraries)
 
 if MOONLIGHT
 noinst_LTLIBRARIES += libmono-moon.la
@@ -88,6 +106,9 @@ mono_SOURCES = \
 	main.c
 
 mono_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
+
+mono_sgen_SOURCES = $(mono_SOURCES)
+mono_sgen_CFLAGS = $(SGEN_DEFINES) $(AM_CFLAGS)
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
@@ -112,20 +133,32 @@ if STATIC_MONO
 # Link libmono into mono statically
 # This leads to higher performance, especially with TLS
 MONO_LIB=libmono-static.la
+MONO_SGEN_LIB=libmonosgen-static.la
 else 
 MONO_LIB=libmono-2.0.la
+MONO_SGEN_LIB=libmonosgen-2.0.la
 endif
 
 mono_LDADD = \
-	$(MONO_LIB)			\
+	$(MONO_LIB)		\
 	$(GLIB_LIBS)		\
 	$(LLVM_LIBS)		\
-	-lm	\
-	$(MONO_DTRACE_OBJECT) \
+	-lm			\
+	$(MONO_DTRACE_OBJECT) 	\
 	$(LLVM_LDFLAGS)
 
 mono_LDFLAGS = \
 	$(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)
+
+mono_sgen_LDADD = \
+	$(MONO_SGEN_LIB)	\
+	$(GLIB_LIBS)		\
+	$(LLVM_LIBS)		\
+	-lm			\
+	$(MONO_DTRACE_OBJECT) 	\
+	$(LLVM_LDFLAGS)
+
+mono_sgen_LDFLAGS = $(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)
 
 if DTRACE_G_REQUIRED
 
@@ -423,6 +456,9 @@ endif
 libmono_2_0_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
 libmono_2_0_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
 
+libmonosgen_2_0_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmonosgen_2_0_la_CFLAGS = $(AM_CFLAGS) $(SGEN_DEFINES)
+
 if MOONLIGHT
 libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
 libmono_moon_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
@@ -432,6 +468,11 @@ libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
 libmono_static_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
 libmono_static_la_LDFLAGS = -static
 libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
+
+libmonosgen_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
+libmonosgen_static_la_CFLAGS = $(AM_CFLAGS) $(SGEN_DEFINES)
+libmonosgen_static_la_LDFLAGS = -static
+libmonosgen_static_la_LIBADD = $(sgenstatic_libs) $(MONO_DTRACE_OBJECT)
 
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
 nodist_libmono_static_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
@@ -444,6 +485,9 @@ libmonoinclude_HEADERS = jit.h
 
 libmono_2_0_la_LIBADD = \
 	$(libs) $(LIBMONO_DTRACE_OBJECT)
+
+libmonosgen_2_0_la_LIBADD = \
+	$(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 
 if MOONLIGHT
 libmono_moon_la_LIBADD = $(libmono_2_0_la_LIBADD)
@@ -595,7 +639,7 @@ EXTRA_DIST = $(common_BURGSRC) TestDriver.cs ldscript ldscript.mono \
 	$(darwin_sources) Info.plist		\
 	$(posix_sources)
 
-version.h: Makefile
+version.h: #Makefile
 	if test -d $(top_srcdir)/.git; then svn_info="git log --no-color --first-parent -n1 --grep=git-svn-id: --pretty=format:%b | sed -n -e 's,git-svn-id: \(.*\)@\(.*\) .*,URL: \1 Revision: \2,p'"; fi; \
 	if test -d $(srcdir)/.svn; then svn_info='svn info'; fi; \
 	if test -n "$$svn_info"; then \

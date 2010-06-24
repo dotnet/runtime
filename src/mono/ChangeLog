@@ -1,5 +1,13 @@
 2010-06-23  Miguel de Icaza  <miguel@novell.com>
 
+	* configure.in: By default, we will now also buils an SGen-aware
+	VM by default.   This can be turned off by using the
+	--with-sgen=no command line option.
+
+	Two binaries are produced now: mono and mono-sgen
+
+	--- First Pass ---
+
 	* configure.in: Remove redundant setting of variables in non-Boehm
 	cases.
 
