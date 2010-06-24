@@ -38,6 +38,7 @@
 #include <llvm/CodeGen/MachineFunctionPass.h>
 #include <llvm/CodeGen/MachineFunction.h>
 #include <llvm/CodeGen/MachineFrameInfo.h>
+#include <llvm/Support/StandardPasses.h>
 //#include <llvm/LinkAllPasses.h>
 
 #include "llvm-c/Core.h"
@@ -334,6 +335,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   fpm->add(new TargetData(*EE->getTargetData()));
   /* Add a random set of passes */
   /* Make this run-time configurable */
+  //createStandardFunctionPasses (fpm, 2);
   fpm->add(createInstructionCombiningPass());
   fpm->add(createReassociatePass());
   fpm->add(createGVNPass());
