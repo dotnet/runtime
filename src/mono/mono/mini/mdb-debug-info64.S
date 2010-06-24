@@ -1,6 +1,6 @@
-	.text
+.text
 .global		MONO_DEBUGGER__debugger_info
-.global		MONO_DEBUGGER__notification_function	
+.global		MONO_DEBUGGER__notification_function
 MONO_DEBUGGER__notification_function:
 		int3
 		ret
@@ -8,6 +8,8 @@ MONO_DEBUGGER__notification_function:
 .global		MONO_DEBUGGER__debugger_info_ptr
 .global		MONO_DEBUGGER__using_debugger
 MONO_DEBUGGER__debugger_info_ptr:
-		.long	MONO_DEBUGGER__debugger_info
+		.quad	MONO_DEBUGGER__debugger_info
 MONO_DEBUGGER__using_debugger:
 		.quad	0
+.section	.note.GNU-stack, "", @progbits
+.previous

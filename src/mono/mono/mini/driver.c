@@ -1185,7 +1185,11 @@ static const char info[] =
 #else
 	"\tTLS:           normal\n"
 #endif /* HAVE_KW_THREAD */
-	"\tGC:            " USED_GC_NAME "\n"
+#if HAVE_SGEN_GC
+	"\tGC:            Generational\n"
+#else
+	"\tGC:            " DEFAULT_GC_NAME "\n"
+#endif
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
     "\tSIGSEGV:       altstack\n"
 #else

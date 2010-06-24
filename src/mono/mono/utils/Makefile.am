@@ -12,7 +12,6 @@ mono-dtrace.h: $(top_srcdir)/data/mono.d
 endif
 
 monoutils_sources = \
-	mono-hash.c		\
 	mono-md5.c		\
 	mono-sha1.c		\
 	mono-logger.c		\
@@ -70,7 +69,6 @@ monoutils_sources = \
 	mono-digest.h	\
 	mono-embed.h	\
 	mono-error.h	\
-	mono-hash.h	\
 	mono-math.h	\
 	mono-membar.h	\
 	mono-path.h	\

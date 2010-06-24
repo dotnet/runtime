@@ -1,4 +1,8 @@
-noinst_LTLIBRARIES = libwapi.la
+if SUPPORT_SGEN
+sgen_library = libwapisgen.la
+endif
+ 
+noinst_LTLIBRARIES = libwapi.la $(sgen_library)
 
 INCLUDES = \
 	$(GLIB_CFLAGS)		\
@@ -134,7 +138,12 @@ endif
 if PLATFORM_DARWIN
 libwapi_la_LIBADD = -lproc
 endif
+libwapi_la_CFLAGS = $(BOEHM_DEFINES)
 
+if SUPPORT_SGEN
+libwapisgen_la_SOURCES = $(libwapi_la_SOURCES)
+libwapisgen_la_CFLAGS = $(SGEN_DEFINES)
+endif
 
 EXTRA_DIST =	\
 	$(WINDOWS_SRC)	\
