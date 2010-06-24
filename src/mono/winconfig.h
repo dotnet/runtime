@@ -83,6 +83,8 @@
 /* Have Boehm GC */
 #define HAVE_BOEHM_GC 1
 
+#define DEFAULT_GC_NAME "Boehm"
+
 /* Define to 1 if you have the <checklist.h> header file. */
 /* #undef HAVE_CHECKLIST_H */
 
