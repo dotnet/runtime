@@ -1,3 +1,7 @@
+2010-06-25  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/patch-quiet.sh: Fix this up after the build changes.
+
 2010-06-23  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in: By default, we will now also buils an SGen-aware
