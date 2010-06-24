@@ -640,7 +640,7 @@ EXTRA_DIST = $(common_BURGSRC) TestDriver.cs ldscript ldscript.mono \
 	$(darwin_sources) Info.plist		\
 	$(posix_sources)
 
-version.h: #Makefile
+version.h: Makefile
 	if test -d $(top_srcdir)/.git; then svn_info="git log --no-color --first-parent -n1 --grep=git-svn-id: --pretty=format:%b | sed -n -e 's,git-svn-id: \(.*\)@\(.*\) .*,URL: \1 Revision: \2,p'"; fi; \
 	if test -d $(srcdir)/.svn; then svn_info='svn info'; fi; \
 	if test -n "$$svn_info"; then \
