@@ -970,4 +970,10 @@ mono_gc_is_moving (void)
 	return FALSE;
 }
 
+void
+mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
+{
+	g_assert_not_reached ();
+}
+
 #endif /* no Boehm GC */
