@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "mini-gc.h"
+#include <mono/metadata/gc-internal.h>
 
 /*
  * The code above does not work yet, and probably needs to be thrown out if we move
