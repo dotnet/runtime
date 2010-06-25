@@ -952,5 +952,10 @@ mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
 	return GC_call_with_alloc_lock (func, data);
 }
 
-#endif /* no Boehm GC */
+char*
+mono_gc_get_description (void)
+{
+	return g_strdup (DEFAULT_GC_NAME);
+}
 
+#endif /* no Boehm GC */

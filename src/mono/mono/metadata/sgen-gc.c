@@ -7801,5 +7801,10 @@ mono_gc_get_write_barrier (void)
 	return write_barrier_method;
 }
 
-#endif /* HAVE_SGEN_GC */
+char*
+mono_gc_get_description (void)
+{
+	return g_strdup ("sgen");
+}
 
+#endif /* HAVE_SGEN_GC */

@@ -224,6 +224,11 @@ gsize* mono_gc_get_bitmap_for_descr (void *descr, int *numbits) MONO_INTERNAL;
    or -1 if not applicable. */
 int mono_gc_get_suspend_signal (void) MONO_INTERNAL;
 
+/*
+ * Return a human readable description of the GC in malloc-ed memory.
+ */
+char* mono_gc_get_description (void) MONO_INTERNAL;
+
 typedef void* (*MonoGCLockedCallbackFunc) (void *data);
 
 void* mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data) MONO_INTERNAL;
