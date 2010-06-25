@@ -620,10 +620,10 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 void
 mini_gc_init_cfg (MonoCompile *cfg)
 {
-#ifdef HAVE_SGEN_GC
-	cfg->disable_ref_noref_stack_slot_share = TRUE;
-	cfg->gen_write_barriers = TRUE;
-#endif
+	if (mono_gc_is_moving ()) {
+		cfg->disable_ref_noref_stack_slot_share = TRUE;
+		cfg->gen_write_barriers = TRUE;
+	}
 
 	mini_gc_init_gc_map (cfg);
 }
