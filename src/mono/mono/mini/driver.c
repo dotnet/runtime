@@ -1555,9 +1555,7 @@ mono_main (int argc, char* argv[])
 				return 1;
 			}
 		} else if (strcmp (argv [i], "--desktop") == 0) {
-#if defined (HAVE_BOEHM_GC)
-			GC_dont_expand = 1;
-#endif
+			mono_gc_set_desktop_mode ();
 			/* Put desktop-specific optimizations here */
 		} else if (strcmp (argv [i], "--server") == 0){
 			/* Put server-specific optimizations here */
