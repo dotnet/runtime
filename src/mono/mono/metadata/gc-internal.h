@@ -234,6 +234,11 @@ char* mono_gc_get_description (void) MONO_INTERNAL;
  */
 void mono_gc_set_desktop_mode (void) MONO_INTERNAL;
 
+/*
+ * Return whenever this GC can move objects
+ */
+gboolean mono_gc_is_moving (void) MONO_INTERNAL;
+
 typedef void* (*MonoGCLockedCallbackFunc) (void *data);
 
 void* mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data) MONO_INTERNAL;

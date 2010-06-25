@@ -964,4 +964,10 @@ mono_gc_set_desktop_mode (void)
 	GC_dont_expand = 1;
 }
 
+gboolean
+mono_gc_is_moving (void)
+{
+	return FALSE;
+}
+
 #endif /* no Boehm GC */

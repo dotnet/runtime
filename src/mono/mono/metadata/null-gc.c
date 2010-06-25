@@ -279,4 +279,10 @@ mono_gc_set_desktop_mode (void)
 {
 }
 
+gboolean
+mono_gc_is_moving (void)
+{
+	return FALSE;
+}
+
 #endif
