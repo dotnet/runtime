@@ -976,4 +976,30 @@ mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, uns
 	g_assert_not_reached ();
 }
 
+/*
+ * These will call the redefined versions in libgc.
+ */
+
+#ifndef HOST_WIN32
+
+int
+mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
+{
+	return pthread_create (new_thread, attr, start_routine, arg);
+}
+
+int
+mono_gc_pthread_join (pthread_t thread, void **retval)
+{
+	return pthread_join (thread, retval);
+}
+
+int
+mono_gc_pthread_detach (pthread_t thread)
+{
+	return pthread_detach (thread);
+}
+
+#endif
+
 #endif /* no Boehm GC */
