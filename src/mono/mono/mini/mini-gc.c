@@ -10,6 +10,11 @@
 #include "config.h"
 #include "mini-gc.h"
 
+/*
+ * The code above does not work yet, and probably needs to be thrown out if we move
+ * to GC safe points.
+ */
+
 #if 0
 //#ifdef HAVE_SGEN_GC
 
@@ -314,7 +319,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		(slots) [(pos)] = (val);			   \
 	} while (0)
 
-void
+static void
 mini_gc_init_gc_map (MonoCompile *cfg)
 {
 	if (COMPILE_LLVM (cfg))
@@ -595,7 +600,7 @@ mini_gc_init (void)
 {
 }
 
-void
+static void
 mini_gc_init_gc_map (MonoCompile *cfg)
 {
 }
@@ -606,3 +611,19 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 }
 
 #endif
+
+/*
+ * mini_gc_init_cfg:
+ *
+ *   Set GC specific options in CFG.
+ */
+void
+mini_gc_init_cfg (MonoCompile *cfg)
+{
+#ifdef HAVE_SGEN_GC
+	cfg->disable_ref_noref_stack_slot_share = TRUE;
+	cfg->gen_write_barriers = TRUE;
+#endif
+
+	mini_gc_init_gc_map (cfg);
+}

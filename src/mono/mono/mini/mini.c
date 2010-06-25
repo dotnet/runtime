@@ -1564,12 +1564,11 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 #else
 		case MONO_TYPE_I8:
 #endif
-#ifdef HAVE_SGEN_GC
-			slot_info = &scalar_stack_slots [MONO_TYPE_I];
-			break;
-#else
+			if (cfg->disable_ref_noref_stack_slot_share) {
+				slot_info = &scalar_stack_slots [MONO_TYPE_I];
+				break;
+			}
 			/* Fall through */
-#endif
 
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
@@ -1854,12 +1853,11 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 #else
 			case MONO_TYPE_I8:
 #endif
-#ifdef HAVE_SGEN_GC
-				slot_info = &scalar_stack_slots [MONO_TYPE_I];
-				break;
-#else
+				if (cfg->disable_ref_noref_stack_slot_share) {
+					slot_info = &scalar_stack_slots [MONO_TYPE_I];
+					break;
+				}
 				/* Fall through */
-#endif
 
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
@@ -3918,7 +3916,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->compute_precise_live_ranges = TRUE;
 	}
 
-	mini_gc_init_gc_map (cfg);
+	mini_gc_init_cfg (cfg);
 
 	if (COMPILE_LLVM (cfg)) {
 		cfg->opt |= MONO_OPT_ABCREM;
@@ -6131,13 +6129,9 @@ print_jit_stats (void)
 		g_print ("JIT info table lookups: %ld\n", mono_stats.jit_info_table_lookup_count);
 
 		g_print ("Hazardous pointers:     %ld\n", mono_stats.hazardous_pointer_count);
-#ifdef HAVE_SGEN_GC
 		g_print ("Minor GC collections:   %ld\n", mono_stats.minor_gc_count);
-#endif
 		g_print ("Major GC collections:   %ld\n", mono_stats.major_gc_count);
-#ifdef HAVE_SGEN_GC
 		g_print ("Minor GC time in msecs: %lf\n", (double)mono_stats.minor_gc_time_usecs / 1000.0);
-#endif
 		g_print ("Major GC time in msecs: %lf\n", (double)mono_stats.major_gc_time_usecs / 1000.0);
 		if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);

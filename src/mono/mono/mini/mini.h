@@ -1103,12 +1103,14 @@ typedef struct {
 	guint            disable_reuse_registers : 1;
 	guint            disable_reuse_stack_slots : 1;
 	guint            disable_reuse_ref_stack_slots : 1;
+	guint            disable_ref_noref_stack_slot_share : 1;
 	guint            disable_initlocals_opt : 1;
 	guint            disable_initlocals_opt_refs : 1;
 	guint            disable_omit_fp : 1;
 	guint            disable_vreg_to_lvreg : 1;
 	guint            disable_deadce_vars : 1;
 	guint            disable_out_of_line_bblocks : 1;
+	guint            gen_write_barriers : 1;
 	guint            init_ref_vars : 1;
 	guint            extend_live_ranges : 1;
 	guint            compute_precise_live_ranges : 1;
