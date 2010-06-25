@@ -7807,4 +7807,9 @@ mono_gc_get_description (void)
 	return g_strdup ("sgen");
 }
 
+void
+mono_gc_set_desktop_mode (void)
+{
+}
+
 #endif /* HAVE_SGEN_GC */

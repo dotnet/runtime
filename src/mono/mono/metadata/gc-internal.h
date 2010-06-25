@@ -229,6 +229,11 @@ int mono_gc_get_suspend_signal (void) MONO_INTERNAL;
  */
 char* mono_gc_get_description (void) MONO_INTERNAL;
 
+/*
+ * Configure the GC to desktop mode
+ */
+void mono_gc_set_desktop_mode (void) MONO_INTERNAL;
+
 typedef void* (*MonoGCLockedCallbackFunc) (void *data);
 
 void* mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data) MONO_INTERNAL;

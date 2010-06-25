@@ -958,4 +958,10 @@ mono_gc_get_description (void)
 	return g_strdup (DEFAULT_GC_NAME);
 }
 
+void
+mono_gc_set_desktop_mode (void)
+{
+	GC_dont_expand = 1;
+}
+
 #endif /* no Boehm GC */
