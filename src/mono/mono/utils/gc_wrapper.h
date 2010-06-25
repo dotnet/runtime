@@ -56,13 +56,6 @@
 #if defined(HOST_WIN32)
 #define CreateThread mono_gc_CreateThread
 #else
-/* pthread function wrappers */
-#include <pthread.h>
-#include <signal.h>
-
-int mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
-int mono_gc_pthread_join (pthread_t thread, void **retval);
-int mono_gc_pthread_detach (pthread_t thread);
 
 #define pthread_create mono_gc_pthread_create
 #define pthread_join mono_gc_pthread_join
@@ -71,6 +64,23 @@ int mono_gc_pthread_detach (pthread_t thread);
 #endif
 
 #else /* not Boehm and not sgen GC */
+#endif
+
+#if !defined(HOST_WIN32)
+
+/*
+ * Both Boehm and SGEN needs to intercept some thread operations. So instead of the
+ * pthread_... calls, runtime code should call these wrappers.
+ */
+
+/* pthread function wrappers */
+#include <pthread.h>
+#include <signal.h>
+
+int mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+int mono_gc_pthread_join (pthread_t thread, void **retval);
+int mono_gc_pthread_detach (pthread_t thread);
+
 #endif
 
 #endif
