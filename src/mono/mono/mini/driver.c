@@ -47,7 +47,6 @@
 #include <mono/metadata/coree.h>
 #include <mono/metadata/attach.h>
 #include "mono/utils/mono-counters.h"
-#include <mono/utils/gc_wrapper.h>
 
 #include "mini.h"
 #include "jit.h"
