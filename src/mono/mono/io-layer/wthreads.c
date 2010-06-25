@@ -247,7 +247,7 @@ static void *thread_start_routine (gpointer args)
 	struct _WapiHandle_thread *thread = (struct _WapiHandle_thread *)args;
 	int thr_ret;
 	
-	thr_ret = pthread_detach (pthread_self ());
+	thr_ret = mono_gc_pthread_detach (pthread_self ());
 	g_assert (thr_ret == 0);
 
 	thr_ret = pthread_setspecific (thread_hash_key,
@@ -399,8 +399,8 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	thread_handle_p->handle = handle;
 	
 
-	ret = pthread_create (&thread_handle_p->id, &attr,
-			      thread_start_routine, (void *)thread_handle_p);
+	ret = mono_gc_pthread_create (&thread_handle_p->id, &attr,
+								  thread_start_routine, (void *)thread_handle_p);
 
 	if (ret != 0) {
 #ifdef DEBUG

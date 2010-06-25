@@ -28,8 +28,6 @@
 #endif
 #include <sys/stat.h>
 
-#include <mono/utils/gc_wrapper.h>
-
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
