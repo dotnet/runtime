@@ -20,7 +20,7 @@ libs=	\
 
 sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
-	$(monodir)/mono/io-layer/libwapisgen.la	\
+	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS)
 
@@ -33,7 +33,7 @@ static_libs=	\
 
 sgenstatic_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen-static.la	\
-	$(monodir)/mono/io-layer/libwapisgen.la	\
+	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS)
 
