@@ -39,8 +39,10 @@ sgenstatic_libs = \
 
 CLASS=$(mcs_topdir)/class/lib/net_2_0
 
-RUNTIME = MONO_PATH=$(CLASS) $(top_builddir)/runtime/mono-wrapper
-RUNTIME_AOTCHECK = MONO_PATH=$(CLASS):. $(top_builddir)/runtime/mono-wrapper
+RUNTIME_EXECUTABLE = $(if $(SGEN),$(top_builddir)/mono/mini/mono-sgen,$(top_builddir)/runtime/mono-wrapper)
+
+RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
+RUNTIME_AOTCHECK = MONO_PATH=$(CLASS):. $(RUNTIME_EXECUTABLE)
 
 MCS = $(RUNTIME) $(CLASS)/gmcs.exe -unsafe -nowarn:0162
 ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
