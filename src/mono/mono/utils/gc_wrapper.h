@@ -55,11 +55,6 @@
 
 #if defined(HOST_WIN32)
 #define CreateThread mono_gc_CreateThread
-#else
-
-#define pthread_create mono_gc_pthread_create
-#define pthread_join mono_gc_pthread_join
-#define pthread_detach mono_gc_pthread_detach
 
 #endif
 
