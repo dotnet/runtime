@@ -1185,11 +1185,6 @@ static const char info[] =
 #else
 	"\tTLS:           normal\n"
 #endif /* HAVE_KW_THREAD */
-#if HAVE_SGEN_GC
-	"\tGC:            Generational\n"
-#else
-	"\tGC:            " DEFAULT_GC_NAME "\n"
-#endif
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
     "\tSIGSEGV:       altstack\n"
 #else
@@ -1217,7 +1212,7 @@ static const char info[] =
 #endif
 		"\n"
 #ifdef MONO_ARCH_LLVM_SUPPORTED
-	"\tLLVM supported\n"
+	"\tLLVM:          supported\n"
 #endif
 	"";
 
@@ -1362,9 +1357,14 @@ mono_main (int argc, char* argv[])
 			mini_verbose++;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
 			char *build = mono_get_runtime_build_info ();
+			char *gc_descr;
+
 			g_print ("Mono JIT compiler version %s\nCopyright (C) 2002-2010 Novell, Inc and Contributors. www.mono-project.com\n", build);
 			g_free (build);
 			g_print (info);
+			gc_descr = mono_gc_get_description ();
+			g_print ("\tGC:            %s\n", gc_descr);
+			g_free (gc_descr);
 			if (mini_verbose) {
 				const char *cerror;
 				const char *clibpath;
