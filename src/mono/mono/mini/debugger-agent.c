@@ -1395,26 +1395,42 @@ static ObjRef*
 get_objref (MonoObject *obj)
 {
 	ObjRef *ref;
+	GSList *reflist = NULL, *l;
+	int hash = 0;
 
 	if (obj == NULL)
 		return 0;
 
-#ifdef HAVE_SGEN_GC
-	NOT_IMPLEMENTED;
-#endif
-
-	/* Use a hash table with masked pointers to internalize object references */
-	/* FIXME: This can grow indefinitely */
 	mono_loader_lock ();
 
 	if (!obj_to_objref)
 		obj_to_objref = g_hash_table_new (NULL, NULL);
+	
+	/* FIXME: The tables can grow indefinitely */
 
-	ref = g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
-	/* ref might refer to a different object with the same addr which was GCd */
-	if (ref && mono_gchandle_get_target (ref->handle) == obj) {
-		mono_loader_unlock ();
-		return ref;
+	if (mono_gc_is_moving ()) {
+		/*
+		 * Objects can move, so use a hash table mapping hash codes to lists of
+		 * ObjRef structures.
+		 */
+		hash = mono_object_hash (obj);
+
+		reflist = g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (hash));
+		for (l = reflist; l; l = l->next) {
+			ref = l->data;
+			if (ref && mono_gchandle_get_target (ref->handle) == obj) {
+				mono_loader_unlock ();
+				return ref;
+			}
+		}
+	} else {
+		/* Use a hash table with masked pointers to internalize object references */
+		ref = g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
+		/* ref might refer to a different object with the same addr which was GCd */
+		if (ref && mono_gchandle_get_target (ref->handle) == obj) {
+			mono_loader_unlock ();
+			return ref;
+		}
 	}
 
 	ref = g_new0 (ObjRef, 1);
@@ -1422,7 +1438,13 @@ get_objref (MonoObject *obj)
 	ref->handle = mono_gchandle_new_weakref (obj, FALSE);
 
 	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
-	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
+
+	if (mono_gc_is_moving ()) {
+		reflist = g_slist_append (reflist, ref);
+		g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (hash), reflist);
+	} else {
+		g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
+	}
 
 	mono_loader_unlock ();
 
