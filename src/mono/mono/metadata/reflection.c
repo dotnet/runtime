@@ -4997,6 +4997,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 		version = mono_get_runtime_info ()->runtime_version;
 
 #if HAVE_BOEHM_GC
+	/* The MonoGHashTable's need GC tracking */
 	image = GC_MALLOC (sizeof (MonoDynamicImage));
 #else
 	image = g_new0 (MonoDynamicImage, 1);
@@ -5167,6 +5168,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 		return;
 
 #if HAVE_BOEHM_GC
+	/* assembly->assembly.image might be GC allocated */
 	assembly = assemblyb->dynamic_assembly = GC_MALLOC (sizeof (MonoDynamicAssembly));
 #else
 	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicAssembly, 1);
