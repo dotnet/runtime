@@ -279,9 +279,12 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 	MonoMethod *declaring = NULL;
 	MonoMethod *generic_virtual = NULL, *variant_iface = NULL;
 	int context_used;
-	gboolean proxy = FALSE, variance_used = FALSE;
+	gboolean virtual, proxy = FALSE, variance_used = FALSE;
 	gpointer *orig_vtable_slot;
 	MonoJitInfo *ji = NULL;
+
+	/* The first case is for !llvm, the second is for llvm */
+	virtual = (arg == MONO_FAKE_VTABLE_METHOD) || ((gpointer)vtable_slot > (gpointer)vt);
 
 	m = arg;
 
@@ -396,7 +399,11 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 	}
 #endif
 
-	if (arg == MONO_FAKE_VTABLE_METHOD && is_generic_method_definition (m)) {
+	/*
+	 * The virtual check is needed because is_generic_method_definition (m) could
+	 * return TRUE for methods used in IMT calls too.
+	 */
+	if (virtual && is_generic_method_definition (m)) {
 		MonoGenericContext context = { NULL, NULL };
 		MonoMethod *declaring;
 
