@@ -1002,6 +1002,19 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 			mono_metadata_free_type (inflated);
 	}
 
+	/*
+	 * FIXME: This should hold, but it doesn't:
+	 *
+	 * if (result->is_inflated && mono_method_get_context (result)->method_inst &&
+	 *		mono_method_get_context (result)->method_inst == mono_method_get_generic_container (((MonoMethodInflated*)result)->declaring)->context.method_inst) {
+	 * 	g_assert (result->is_generic);
+	 * }
+	 *
+	 * Fixing this here causes other things to break, hence a very
+	 * ugly hack in mini-trampolines.c - see
+	 * is_generic_method_definition().
+	 */
+
 	mono_method_inflated_lookup (iresult, TRUE);
 	mono_loader_unlock ();
 	return result;

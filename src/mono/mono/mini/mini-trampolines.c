@@ -240,6 +240,30 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 }
 #endif
 
+/*
+ * This is a super-ugly hack to fix bug #616463.
+ *
+ * The problem is that we don't always set is_generic for generic
+ * method definitions.  See the comment at the end of
+ * mono_class_inflate_generic_method_full_checked() in class.c.
+ */
+static gboolean
+is_generic_method_definition (MonoMethod *m)
+{
+	MonoGenericContext *context;
+	if (m->is_generic)
+		return TRUE;
+	if (!m->is_inflated)
+		return FALSE;
+
+	context = mono_method_get_context (m);
+	if (!context->method_inst)
+		return FALSE;
+	if (context->method_inst == mono_method_get_generic_container (((MonoMethodInflated*)m)->declaring)->context.method_inst)
+		return TRUE;
+	return FALSE;
+}
+
 /**
  * common_call_trampoline:
  *
@@ -296,6 +320,19 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 				return addr;
 			}
 
+			/*
+			 * Bug #616463 (see
+			 * is_generic_method_definition() above) also
+			 * goes away if we do a
+			 * mono_class_setup_vtable (vt->klass) here,
+			 * because we then inflate the method
+			 * correctly, put it in the cache, and the
+			 * "wrong" inflation invocation still looks up
+			 * the correctly inflated method.
+			 *
+			 * The hack above seems more stable and
+			 * trustworthy.
+			 */
 			m = mono_class_get_vtable_entry (vt->klass, slot);
 			if (mono_method_needs_static_rgctx_invoke (m, FALSE))
 				need_rgctx_tramp = TRUE;
@@ -359,7 +396,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 	}
 #endif
 
-	if (m->is_generic) {
+	if (arg == MONO_FAKE_VTABLE_METHOD && is_generic_method_definition (m)) {
 		MonoGenericContext context = { NULL, NULL };
 		MonoMethod *declaring;
 

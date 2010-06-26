@@ -306,6 +306,7 @@ BASE_TEST_CS_SRC=		\
 	bug-473482.2.cs	\
 	bug-473999.2.cs	\
 	bug-479763.2.cs	\
+	bug-616463.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
 	dynamic-method-finalize.2.cs	\
@@ -819,7 +820,7 @@ GSHARED_TESTS = \
 		generic-stack-traces.2.exe generic-stack-traces2.2.exe		\
 		bug-472600.2.exe bug-473482.2.exe bug-473999.2.exe		\
 		bug-479763.2.exe generic-xdomain.2.exe				\
-		generic-type-load-exception.2.exe
+		generic-type-load-exception.2.exe bug-616463.exe
 
 test-generic-sharing-normal: $(GSHARED_TESTS)
 	@for fn in $+ ; do	\
