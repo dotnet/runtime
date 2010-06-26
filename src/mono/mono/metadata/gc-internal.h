@@ -247,5 +247,10 @@ void* mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data) MO
 int mono_gc_get_los_limit (void) MONO_INTERNAL;
 #endif
 
+/*
+ * Return whenever GC is disabled
+ */
+gboolean mono_gc_is_disabled (void) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

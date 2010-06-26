@@ -23,6 +23,7 @@
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/dtrace.h>
+#include <mono/utils/gc_wrapper.h>
 
 #if HAVE_BOEHM_GC
 
@@ -968,6 +969,15 @@ gboolean
 mono_gc_is_moving (void)
 {
 	return FALSE;
+}
+
+gboolean
+mono_gc_is_disabled (void)
+{
+	if (GC_dont_gc || g_getenv ("GC_DONT_GC"))
+		return TRUE;
+	else
+		return FALSE;
 }
 
 void

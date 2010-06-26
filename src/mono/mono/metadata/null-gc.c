@@ -285,6 +285,12 @@ mono_gc_is_moving (void)
 	return FALSE;
 }
 
+gboolean
+mono_gc_is_disabled (void)
+{
+	return FALSE;
+}
+
 void
 mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
 {

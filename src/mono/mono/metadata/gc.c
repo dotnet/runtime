@@ -1080,10 +1080,6 @@ finalizer_thread (gpointer unused)
 	return 0;
 }
 
-#ifdef HAVE_SGEN_GC
-#define GC_dont_gc 0
-#endif
-
 void
 mono_gc_init (void)
 {
@@ -1097,7 +1093,7 @@ mono_gc_init (void)
 
 	mono_gc_base_init ();
 
-	if (GC_dont_gc || g_getenv ("GC_DONT_GC")) {
+	if (mono_gc_is_disabled ()) {
 		gc_disabled = TRUE;
 		return;
 	}

@@ -7818,4 +7818,10 @@ mono_gc_is_moving (void)
 	return TRUE;
 }
 
+gboolean
+mono_gc_is_disabled (void)
+{
+	return FALSE;
+}
+
 #endif /* HAVE_SGEN_GC */
