@@ -2586,10 +2586,6 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4
 
 	/* We don't unroll more than 5 stores to avoid code bloat. */
 	if (size > 5 * SIZEOF_VOID_P) {
-		/*FIXME this is a temporary fix while issues with valuetypes are solved.*/
-#if SIZEOF_VOID_P == 8
-		return FALSE;
-#endif
 		/*This is harmless and simplify mono_gc_wbarrier_value_copy_bitmap */
 		size += (SIZEOF_VOID_P - 1);
 		size &= ~(SIZEOF_VOID_P - 1);
