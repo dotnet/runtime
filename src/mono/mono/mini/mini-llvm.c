@@ -733,6 +733,8 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 			return LLVMBuildTrunc (ctx->builder, v, dtype, "");
 		if (stype == LLVMInt32Type () && (dtype == LLVMInt16Type () || dtype == LLVMInt8Type ()))
 			return LLVMBuildTrunc (ctx->builder, v, dtype, "");
+		if (stype == LLVMInt16Type () && dtype == LLVMInt8Type ())
+			return LLVMBuildTrunc (ctx->builder, v, dtype, "");
 		if (stype == LLVMDoubleType () && dtype == LLVMFloatType ())
 			return LLVMBuildFPTrunc (ctx->builder, v, dtype, "");
 
@@ -2821,6 +2823,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			gboolean sext = FALSE, zext = FALSE;
 			gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
 
+			if (!values [ins->inst_destbasereg])
+				LLVM_FAILURE (ctx, "inst_destbasereg");
+
 			t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
 			if (ins->inst_offset % size != 0) {
@@ -2937,6 +2942,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/* Might have instructions after this */
 			while (ins->next) {
 				MonoInst *next = ins->next;
+				/* 
+				 * FIXME: If later code uses the regs defined by these instructions,
+				 * compilation will fail.
+				 */
 				MONO_DELETE_INS (bb, next);
 			}				
 			break;
@@ -2982,26 +2991,39 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		case OP_IMIN:
-		case OP_LMIN: {
-			LLVMValueRef v = LLVMBuildICmp (builder, LLVMIntSLE, lhs, rhs, "");
-			values [ins->dreg] = LLVMBuildSelect (builder, v, lhs, rhs, dname);
-			break;
-		}
+		case OP_LMIN:
 		case OP_IMAX:
-		case OP_LMAX: {
-			LLVMValueRef v = LLVMBuildICmp (builder, LLVMIntSGE, lhs, rhs, "");
-			values [ins->dreg] = LLVMBuildSelect (builder, v, lhs, rhs, dname);
-			break;
-		}
+		case OP_LMAX:
 		case OP_IMIN_UN:
-		case OP_LMIN_UN: {
-			LLVMValueRef v = LLVMBuildICmp (builder, LLVMIntULE, lhs, rhs, "");
-			values [ins->dreg] = LLVMBuildSelect (builder, v, lhs, rhs, dname);
-			break;
-		}
+		case OP_LMIN_UN:
 		case OP_IMAX_UN:
 		case OP_LMAX_UN: {
-			LLVMValueRef v = LLVMBuildICmp (builder, LLVMIntUGE, lhs, rhs, "");
+			LLVMValueRef v;
+
+			lhs = convert (ctx, lhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
+			rhs = convert (ctx, rhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
+
+			switch (ins->opcode) {
+			case OP_IMIN:
+			case OP_LMIN:
+				v = LLVMBuildICmp (builder, LLVMIntSLE, lhs, rhs, "");
+				break;
+			case OP_IMAX:
+			case OP_LMAX:
+				v = LLVMBuildICmp (builder, LLVMIntSGE, lhs, rhs, "");
+				break;
+			case OP_IMIN_UN:
+			case OP_LMIN_UN:
+				v = LLVMBuildICmp (builder, LLVMIntULE, lhs, rhs, "");
+				break;
+			case OP_IMAX_UN:
+			case OP_LMAX_UN:
+				v = LLVMBuildICmp (builder, LLVMIntUGE, lhs, rhs, "");
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
 			values [ins->dreg] = LLVMBuildSelect (builder, v, lhs, rhs, dname);
 			break;
 		}
@@ -3935,8 +3957,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 			g_assert (values [sreg1]);
 
-			g_assert (LLVMTypeOf (values [sreg1]) == LLVMTypeOf (values [phi->dreg]));
-			LLVMAddIncoming (values [phi->dreg], &values [sreg1], &in_bb, 1);
+			if (phi->opcode == OP_VPHI) {
+				g_assert (LLVMTypeOf (ctx->addresses [sreg1]) == LLVMTypeOf (values [phi->dreg]));
+				LLVMAddIncoming (values [phi->dreg], &ctx->addresses [sreg1], &in_bb, 1);
+			} else {
+				g_assert (LLVMTypeOf (values [sreg1]) == LLVMTypeOf (values [phi->dreg]));
+				LLVMAddIncoming (values [phi->dreg], &values [sreg1], &in_bb, 1);
+			}
 		}
 	}
 
