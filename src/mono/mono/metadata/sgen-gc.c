@@ -6449,7 +6449,7 @@ void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size
 			*dest = *src;
 		++src;
 		++dest;
-		size -= sizeof (SIZEOF_VOID_P);
+		size -= SIZEOF_VOID_P;
 		bitmap >>= 1;
 	}
 }
