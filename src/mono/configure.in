@@ -2061,7 +2061,7 @@ sizeof_register="SIZEOF_VOID_P"
 
 jit_wanted=false
 interp_wanted=false
-sgen_supported=true
+sgen_supported=false
 case "$host" in
 #	mips-sgi-irix5.* | mips-sgi-irix6.*)
 #		TARGET=MIPS;

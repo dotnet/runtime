@@ -1,3 +1,7 @@
+2010-06-26  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Make sgen_supported default to false to fix non-x86 builds.
+
 2010-06-25  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/patch-quiet.sh: Fix this up after the build changes.
