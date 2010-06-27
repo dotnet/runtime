@@ -701,7 +701,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 
 	g_assert (code - buf <= tramp_size);
 
-	name = g_strdup_printf ("rgctx_fetch_trampoline_%s_%d", mrgctx ? "mrgctx" : "rgctx", index);
+	name = g_strdup_printf ("rgctx_fetch_trampoline_%s_%d", mrgctx ? "mrgctx" : "rgctx", MONO_RGCTX_SLOT_INDEX (slot));
 	mono_save_trampoline_xdebug_info (name, buf, code - buf, unwind_ops);
 	g_free (name);
 
