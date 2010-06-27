@@ -1646,6 +1646,15 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (call->rgctx_arg_reg && !IS_LLVM_MONO_BRANCH)
 		LLVM_FAILURE (ctx, "rgctx reg in call");
 
+	if (call->rgctx_reg && !IS_LLVM_MONO_BRANCH) {
+		/*
+		 * It might be possible to support this by creating a static rgctx trampoline, but
+		 * common_call_trampoline () would patch callsites to call the trampoline, which
+		 * would be incorrect if the rgctx arg is computed dynamically.
+		 */
+		LLVM_FAILURE (ctx, "rgctx reg");
+	}
+
 	cinfo = call->cinfo;
 	if (call->rgctx_arg_reg)
 		cinfo->rgctx_arg = TRUE;

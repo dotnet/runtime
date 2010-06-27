@@ -385,20 +385,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp
 	}
 #endif
 
-#ifdef MONO_ARCH_LLVM_SUPPORTED
-	if (!vtable_slot && code && !need_rgctx_tramp && mono_method_needs_static_rgctx_invoke (m, FALSE)) {
-		/*
-		 * Call this only if the called method is shared, cause it is slow/loads a lot of
-		 * data in AOT.
-		 */
-		ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
-		if (ji && ji->from_llvm) {
-			/* LLVM can't pass an rgctx arg */
-			need_rgctx_tramp = TRUE;
-		}
-	}
-#endif
-
 	/*
 	 * The virtual check is needed because is_generic_method_definition (m) could
 	 * return TRUE for methods used in IMT calls too.
