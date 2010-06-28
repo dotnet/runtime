@@ -5443,54 +5443,32 @@ static int vtable_trampolines_size;
 gpointer
 mini_get_vtable_trampoline (int slot_index)
 {
-	if (!mono_use_llvm) {
-		/* Use only one trampoline */
-		if (slot_index < 0) {
-			static gpointer tramp = NULL;
+	int index = slot_index + MONO_IMT_SIZE;
 
-			if (!tramp)
-				tramp = mono_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
-			return tramp;
-		} else {
-			static gpointer tramp = NULL;
+	g_assert (slot_index >= - MONO_IMT_SIZE);
+	if (!vtable_trampolines || slot_index + MONO_IMT_SIZE >= vtable_trampolines_size) {
+		mono_jit_lock ();
+		if (!vtable_trampolines || index >= vtable_trampolines_size) {
+			int new_size;
+			gpointer new_table;
 
-			if (!tramp)
-				tramp = mono_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
-			return tramp;
+			new_size = vtable_trampolines_size ? vtable_trampolines_size * 2 : 128;
+			while (new_size <= index)
+				new_size *= 2;
+			new_table = g_new0 (gpointer, new_size);
+
+			if (vtable_trampolines)
+				memcpy (new_table, vtable_trampolines, vtable_trampolines_size * sizeof (gpointer));
+			mono_memory_barrier ();
+			vtable_trampolines = new_table;
+			vtable_trampolines_size = new_size;
 		}
-	} else {
-		int index = slot_index + MONO_IMT_SIZE;
-
-		/* For LLVM, use one trampoline per vtable slot index */
-		g_assert (slot_index >= - MONO_IMT_SIZE);
-		if (!vtable_trampolines || slot_index + MONO_IMT_SIZE >= vtable_trampolines_size) {
-			mono_jit_lock ();
-			if (!vtable_trampolines || index >= vtable_trampolines_size) {
-				int new_size;
-				gpointer new_table;
-
-				new_size = vtable_trampolines_size ? vtable_trampolines_size * 2 : 128;
-				while (new_size <= index)
-					new_size *= 2;
-				new_table = g_new0 (gpointer, new_size);
-
-				if (vtable_trampolines)
-					memcpy (new_table, vtable_trampolines, vtable_trampolines_size * sizeof (gpointer));
-				mono_memory_barrier ();
-				vtable_trampolines = new_table;
-				vtable_trampolines_size = new_size;
-			}
-			mono_jit_unlock ();
-		}
-
-#ifdef MONO_ARCH_LLVM_SUPPORTED 
-		if (!vtable_trampolines [index])
-			vtable_trampolines [index] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_LLVM_VCALL, mono_get_root_domain (), NULL);
-		return vtable_trampolines [index];
-#else
-		g_assert_not_reached ();
-#endif
+		mono_jit_unlock ();
 	}
+
+	if (!vtable_trampolines [index])
+		vtable_trampolines [index] = mono_create_specific_trampoline (GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, mono_get_root_domain (), NULL);
+	return vtable_trampolines [index];
 }
 
 static gpointer

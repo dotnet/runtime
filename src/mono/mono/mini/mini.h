@@ -106,9 +106,6 @@ typedef gint64 mgreg_t;
 #define inst_ls_word data.op[MINI_LS_WORD_IDX].const_val
 #define inst_ms_word data.op[MINI_MS_WORD_IDX].const_val
 
-#define MONO_FAKE_IMT_METHOD ((MonoMethod*)GINT_TO_POINTER(-1))
-#define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
-
 #ifndef DISABLE_AOT
 #define MONO_USE_AOT_COMPILER
 #endif
@@ -954,9 +951,7 @@ typedef enum {
 	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
 	MONO_TRAMPOLINE_MONITOR_ENTER,
 	MONO_TRAMPOLINE_MONITOR_EXIT,
-#ifdef MONO_ARCH_LLVM_SUPPORTED
-	MONO_TRAMPOLINE_LLVM_VCALL,
-#endif
+	MONO_TRAMPOLINE_VCALL,
 #ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
 	MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD,
 #endif
@@ -1676,7 +1671,6 @@ gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset) MONO_
 gpointer          mono_create_monitor_enter_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_monitor_exit_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr) MONO_INTERNAL;
-gpointer          mono_create_llvm_vcall_trampoline (MonoMethod *method) MONO_INTERNAL;
 gpointer          mono_create_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offset) MONO_INTERNAL;
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 guint32           mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
