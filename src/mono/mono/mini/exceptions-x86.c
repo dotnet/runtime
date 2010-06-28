@@ -813,7 +813,7 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			/* FIXME: Handle the delegate case too ((*lmf)->method == NULL) */
 			/* FIXME: Handle the IMT/vtable case too */
 #ifndef ENABLE_LLVM
-			if ((*lmf)->method && (*lmf)->method != MONO_FAKE_IMT_METHOD && (*lmf)->method != MONO_FAKE_VTABLE_METHOD) {
+			if ((*lmf)->method) {
 				MonoMethod *method = (*lmf)->method;
 				MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (method)->param_count + 1);
 
