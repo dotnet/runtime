@@ -2029,7 +2029,7 @@ mono_class_get_inflated_method (MonoClass *class, MonoMethod *method)
 /*
  * mono_class_get_vtable_entry:
  *
- *   Returns class->vtable [offset], computing it if neccesary.
+ *   Returns class->vtable [offset], computing it if neccesary. Returns NULL on failure.
  * LOCKING: Acquires the loader lock.
  */
 MonoMethod*
@@ -2055,6 +2055,8 @@ mono_class_get_vtable_entry (MonoClass *class, int offset)
 		m = mono_class_inflate_generic_method_full (m, class, mono_class_get_context (class));
 	} else {
 		mono_class_setup_vtable (class);
+		if (class->exception_type)
+			return NULL;
 		m = class->vtable [offset];
 	}
 
