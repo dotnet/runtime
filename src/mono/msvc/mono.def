@@ -295,6 +295,7 @@ mono_file_map_fd
 mono_file_map_open
 mono_file_map_size
 mono_file_unmap
+mono_free
 mono_free_bstr
 mono_free_method
 mono_free_verify_list

@@ -1,3 +1,7 @@
+2010-06-28  Robert Jordan  <robertj@gmx.net>
+
+	* mono.def: Add mono_free symbol (exposed by mono-publib.h).
+
 2010-05-31  Robert Jordan  <robertj@gmx.net>
 
 	* mono.def : Remove unimplemented symbols.
