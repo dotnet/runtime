@@ -732,6 +732,7 @@ bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $
 	$(MCS) -target:library -out:bug-81691-b.dll -r:bug-81691-a.dll $(srcdir)/bug-81691-b.cs
 	$(MCS) -r:bug-81691-b.dll -out:bug-81691.exe $(srcdir)/bug-81691.cs
 	rm -f bug-81691-a.dll
+bug-81691.exe: bug-81691-b.dll
 
 EXTRA_DIST += bug-81466-lib.il
 bug-81466-lib.dll: bug-81466-lib.il
