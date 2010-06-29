@@ -2032,6 +2032,7 @@ if test "x$enable_llvm" = "xyes"; then
 
    AC_DEFINE_UNQUOTED(LLVM_MAJOR_VERSION, $major_version, [Major version of LLVM libraries])
    AC_DEFINE_UNQUOTED(LLVM_MINOR_VERSION, $minor_version, [Minor version of LLVM libraries])
+   AC_DEFINE_UNQUOTED(LLVM_VERSION, "$llvm_version", [Full version of LLVM libraties])
 
    # Have to pass these on the command line since mini-llvm-cpp.h already includes
    # llvm's config.h

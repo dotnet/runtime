@@ -1,3 +1,7 @@
+2010-06-29  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add a define for the full LLVM version to config.h.
+
 2010-06-26  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Make sgen_supported default to false to fix non-x86 builds.
