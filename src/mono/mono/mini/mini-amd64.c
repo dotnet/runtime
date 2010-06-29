@@ -4209,22 +4209,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
 
-			if (AMD64_IS_ARGUMENT_REG (ins->sreg1)) {
-				/* 
-				 * Can't use R11 because it is clobbered by the trampoline 
-				 * code, and the reg value is needed by get_vcall_slot_addr.
-				 */
-				amd64_mov_reg_reg (code, AMD64_RAX, ins->sreg1, 8);
-				ins->sreg1 = AMD64_RAX;
-			}
-
-			/* 
-			 * Emit a few nops to simplify get_vcall_slot ().
-			 */
-			amd64_nop (code);
-			amd64_nop (code);
-			amd64_nop (code);
-
 			amd64_call_membase (code, ins->sreg1, ins->inst_offset);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention) && !cfg->arch.no_pushes)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
@@ -6928,9 +6912,7 @@ gpointer
 mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 {
 	guint8 buf [10];
-	guint32 reg;
 	gint32 disp;
-	guint8 rex = 0;
 	MonoJitInfo *ji = NULL;
 
 #ifdef ENABLE_LLVM
@@ -6946,74 +6928,19 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 
 	code -= 7;
 
-	/* 
-	 * A given byte sequence can match more than case here, so we have to be
-	 * really careful about the ordering of the cases. Longer sequences
-	 * come first.
-	 * There are two types of calls:
-	 * - direct calls: 0xff address_byte 8/32 bits displacement
-	 * - indirect calls: nop nop nop <call>
-	 * The nops make sure we don't confuse the instruction preceeding an indirect
-	 * call with a direct call.
+	/*
+	 * This function is no longer used, the only caller is
+	 * mono_arch_nullify_class_init_trampoline ().
 	 */
 	if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
 		/* call OFFSET(%rip) */
-		disp = *(guint32*)(code + 3);
-		return (gpointer*)(code + disp + 7);
-	} else if ((code [0] == 0xff) && (amd64_modrm_reg (code [1]) == 0x2) && (amd64_modrm_mod (code [1]) == 0x2) && (amd64_sib_index (code [2]) == 4) && (amd64_sib_scale (code [2]) == 0)) {
-		/* call *[reg+disp32] using indexed addressing */
-		/* The LLVM JIT emits this, and we emit it too for %r12 */
-		if (IS_REX (code [-1])) {
-			rex = code [-1];
-			g_assert (amd64_rex_x (rex) == 0);
-		}			
-		reg = amd64_sib_base (code [2]);
-		disp = *(gint32*)(code + 3);
-	} else if ((code [1] == 0xff) && (amd64_modrm_reg (code [2]) == 0x2) && (amd64_modrm_mod (code [2]) == 0x2)) {
-		/* call *[reg+disp32] */
-		if (IS_REX (code [0]))
-			rex = code [0];
-		reg = amd64_modrm_rm (code [2]);
-		disp = *(gint32*)(code + 3);
-		/* R10 is clobbered by the IMT thunk code */
-		g_assert (reg != AMD64_R10);
-	} else if (code [2] == 0xe8) {
-		/* call <ADDR> */
-		return NULL;
-	} else if ((code [3] == 0xff) && (amd64_modrm_reg (code [4]) == 0x2) && (amd64_modrm_mod (code [4]) == 0x1) && (amd64_sib_index (code [5]) == 4) && (amd64_sib_scale (code [5]) == 0)) {
-		/* call *[r12+disp8] using indexed addressing */
-		if (IS_REX (code [2]))
-			rex = code [2];
-		reg = amd64_sib_base (code [5]);
-		disp = *(gint8*)(code + 6);
-	} else if (IS_REX (code [4]) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x3)) {
-		/* call *%reg */
-		return NULL;
-	} else if ((code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x1)) {
-		/* call *[reg+disp8] */
-		if (IS_REX (code [3]))
-			rex = code [3];
-		reg = amd64_modrm_rm (code [5]);
-		disp = *(gint8*)(code + 6);
-		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
-	}
-	else if ((code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
-		/* call *%reg */
-		if (IS_REX (code [4]))
-			rex = code [4];
-		reg = amd64_modrm_rm (code [6]);
-		disp = 0;
-	}
-	else
 		g_assert_not_reached ();
-
-	reg += amd64_rex_b (rex);
-
-	/* R11 is clobbered by the trampoline code */
-	g_assert (reg != AMD64_R11);
-
-	*displacement = disp;
-	return (gpointer)regs [reg];
+		*displacement = *(guint32*)(code + 3);
+		return (gpointer*)(code + disp + 7);
+	} else {
+		g_assert_not_reached ();
+		return NULL;
+	}
 }
 
 int
