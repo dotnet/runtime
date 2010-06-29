@@ -1514,8 +1514,10 @@ typedef struct
  */
 static G_GNUC_UNUSED MonoJitInfo*
 decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain, 
-				 MonoMethod *method, guint8 *code, MonoJitInfo *orig_jinfo,
-				 int extra_size, int *this_reg, int *this_offset)
+				 MonoMethod *method, guint8 *code, 
+				 MonoJitExceptionInfo *clauses, int num_clauses,
+				 int extra_size, GSList **nesting,
+				 int *this_reg, int *this_offset)
 {
 	eh_frame_hdr *hdr;
 	guint8 *p;
@@ -1523,10 +1525,10 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint32 eh_frame_ptr;
 	int fde_count;
 	gint32 *table;
-	int i, pos, left, right, offset, offset1, offset2;
+	int i, j, pos, left, right, offset, offset1, offset2;
 	guint32 unw_len, code_len;
 	MonoJitExceptionInfo *ei;
-	guint32 ei_len;
+	guint32 ei_len, nested_len, nindex;
 	gpointer *type_info;
 	MonoJitInfo *jinfo;
 
@@ -1577,16 +1579,30 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, &type_info, this_reg, this_offset);
 
+	/* Count number of nested clauses */
+	nested_len = 0;
+	for (i = 0; i < ei_len; ++i) {
+		gint32 cindex1 = *(gint32*)type_info [i];
+		GSList *l;
+
+		for (l = nesting [cindex1]; l; l = l->next) {
+			gint32 nesting_cindex = GPOINTER_TO_INT (l->data);
+
+			for (j = 0; j < ei_len; ++j) {
+				gint32 cindex2 = *(gint32*)type_info [j];
+
+				if (cindex2 == nesting_cindex)
+					nested_len ++;
+			}
+		}
+	}
+
 	/*
 	 * LLVM might represent one IL region with multiple regions, so have to
 	 * allocate a new JI.
 	 */
-	if (ei_len) {
-		jinfo = 
-			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * ei_len) + extra_size);
-	} else {
-		jinfo = orig_jinfo;
-	}
+	jinfo = 
+		mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * (ei_len + nested_len)) + extra_size);
 
 	jinfo->code_size = code_len;
 	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);
@@ -1595,7 +1611,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	jinfo->domain_neutral = 0;
 	/* This signals that used_regs points to a normal cached unwind info */
 	jinfo->from_aot = 0;
-	jinfo->num_clauses = ei_len;
+	jinfo->num_clauses = ei_len + nested_len;
 
 	for (i = 0; i < ei_len; ++i) {
 		/*
@@ -1605,9 +1621,9 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		/* The type_info entries contain IL clause indexes */
 		int clause_index = *(gint32*)type_info [i];
 		MonoJitExceptionInfo *jei = &jinfo->clauses [i];
-		MonoJitExceptionInfo *orig_jei = &orig_jinfo->clauses [clause_index];
+		MonoJitExceptionInfo *orig_jei = &clauses [clause_index];
 
-		g_assert (clause_index < orig_jinfo->num_clauses);
+		g_assert (clause_index < num_clauses);
 		jei->flags = orig_jei->flags;
 		jei->data.catch_class = orig_jei->data.catch_class;
 
@@ -1615,6 +1631,33 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		jei->try_end = ei [i].try_end;
 		jei->handler_start = ei [i].handler_start;
 	}
+
+	/* See exception_cb () in mini-llvm.c as to why this is needed */
+	nindex = ei_len;
+	for (i = 0; i < ei_len; ++i) {
+		gint32 cindex1 = *(gint32*)type_info [i];
+		GSList *l;
+
+		for (l = nesting [cindex1]; l; l = l->next) {
+			gint32 nesting_cindex = GPOINTER_TO_INT (l->data);
+
+			for (j = 0; j < ei_len; ++j) {
+				gint32 cindex2 = *(gint32*)type_info [j];
+
+				if (cindex2 == nesting_cindex) {
+					/* 
+					 * The try interval comes from the nested clause, everything else from the
+					 * nesting clause.
+					 */
+					memcpy (&jinfo->clauses [nindex], &jinfo->clauses [j], sizeof (MonoJitExceptionInfo));
+					jinfo->clauses [nindex].try_start = jinfo->clauses [i].try_start;
+					jinfo->clauses [nindex].try_end = jinfo->clauses [i].try_end;
+					nindex ++;
+				}
+			}
+		}
+	}
+	g_assert (nindex == ei_len + nested_len);
 
 	return jinfo;
 }
@@ -1627,7 +1670,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 							 MonoMethod *method, guint8* ex_info, guint8 *addr,
 							 guint8 *code, guint32 code_len)
 {
-	int i, buf_len;
+	int i, buf_len, num_clauses;
 	MonoJitInfo *jinfo;
 	guint used_int_regs, flags;
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes;
@@ -1667,25 +1710,55 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		num_holes = try_holes_info_size = 0;
 	}
 	/* Exception table */
-	if (has_clauses) {
-		int num_clauses = decode_value (p, &p);
+	if (has_clauses)
+		num_clauses = decode_value (p, &p);
+	else
+		num_clauses = 0;
 
+	if (from_llvm) {
+		MonoJitExceptionInfo *clauses;
+		GSList **nesting;
+
+		/*
+		 * Part of the info is encoded by the AOT compiler, the rest is in the .eh_frame
+		 * section.
+		 */
+		clauses = g_new0 (MonoJitExceptionInfo, num_clauses);
+		nesting = g_new0 (GSList*, num_clauses);
+
+		for (i = 0; i < num_clauses; ++i) {
+			MonoJitExceptionInfo *ei = &clauses [i];
+
+			ei->flags = decode_value (p, &p);
+
+			if (decode_value (p, &p))
+				ei->data.catch_class = decode_klass_ref (amodule, p, &p);
+
+			/* Read the list of nesting clauses */
+			while (TRUE) {
+				int nesting_index = decode_value (p, &p);
+				if (nesting_index == -1)
+					break;
+				nesting [i] = g_slist_prepend (nesting [i], GINT_TO_POINTER (nesting_index));
+			}
+		}
+
+ 		jinfo = decode_eh_frame (amodule, domain, method, code, clauses, num_clauses, generic_info_size + try_holes_info_size, nesting, &this_reg, &this_offset);
+		jinfo->from_llvm = 1;
+
+		g_free (clauses);
+		for (i = 0; i < num_clauses; ++i)
+			g_slist_free (nesting [i]);
+		g_free (nesting);
+	} else {
 		jinfo = 
 			mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * num_clauses) + generic_info_size + try_holes_info_size);
 		jinfo->num_clauses = num_clauses;
 
-		for (i = 0; i < num_clauses; ++i) {
+		for (i = 0; i < jinfo->num_clauses; ++i) {
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 
 			ei->flags = decode_value (p, &p);
-
-			if (from_llvm) {
-				if (decode_value (p, &p))
-					ei->data.catch_class = decode_klass_ref (amodule, p, &p);
-
-				/* The rest of the info is in the DWARF EH section */
-				continue;
-			}
 
 			ei->exvar_offset = decode_value (p, &p);
 
@@ -1700,17 +1773,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			ei->try_end = code + decode_value (p, &p);
 			ei->handler_start = code + decode_value (p, &p);
 		}
-	}
-	else {
-		jinfo = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + generic_info_size + try_holes_info_size);
-	}
 
- 	if (from_llvm) {
-		/* LLVM compiled method */
-		/* The info is in the .eh_frame section */
- 		jinfo = decode_eh_frame (amodule, domain, method, code, jinfo, generic_info_size, &this_reg, &this_offset);
-		jinfo->from_llvm = 1;
- 	} else {
 		jinfo->code_size = code_len;
 		jinfo->used_regs = used_int_regs;
 		jinfo->method = method;

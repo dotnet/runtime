@@ -3484,6 +3484,18 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			} else {
 				encode_value (0, p, &p);
 			}
+
+			/* Emit a list of nesting clauses */
+			for (i = 0; i < header->num_clauses; ++i) {
+				gint32 cindex1 = k;
+				MonoExceptionClause *clause1 = &header->clauses [cindex1];
+				gint32 cindex2 = i;
+				MonoExceptionClause *clause2 = &header->clauses [cindex2];
+
+				if (cindex1 != cindex2 && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset)
+					encode_value (i, p, &p);
+			}
+			encode_value (-1, p, &p);
 		}
 	} else {
 		if (jinfo->num_clauses)
