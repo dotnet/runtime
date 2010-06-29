@@ -4464,7 +4464,10 @@ mono_llvm_cleanup (void)
 	if (jit_module.llvm_types)
 		g_hash_table_destroy (jit_module.llvm_types);
 
-	//LLVMContextDispose (LLVMGetGlobalContext ());
+	if (aot_module.module)
+		LLVMDisposeModule (aot_module.module);
+
+	LLVMContextDispose (LLVMGetGlobalContext ());
 }
 
 void
@@ -4473,6 +4476,8 @@ mono_llvm_create_aot_module (const char *got_symbol)
 	/* Delete previous module */
 	if (aot_module.plt_entries)
 		g_hash_table_destroy (aot_module.plt_entries);
+	if (aot_module.module)
+		LLVMDisposeModule (aot_module.module);
 
 	memset (&aot_module, 0, sizeof (aot_module));
 
