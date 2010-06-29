@@ -306,81 +306,11 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
-static gpointer
-decode_vcall_slot_from_ldr (guint32 ldr, mgreg_t *regs, int *displacement)
-{
-	char *o = NULL;
-	int reg, offset = 0;
-	reg = (ldr >> 16 ) & 0xf;
-	offset = ldr & 0xfff;
-	if (((ldr >> 23) & 1) == 0) /*U bit, 0 means negative and 1 positive*/
-		offset = -offset;
-	/*g_print ("found vcall at r%d + %d for code at %p 0x%x\n", reg, offset, code, *code);*/
-	o = (gpointer)regs [reg];
-
-	*displacement = offset;
-	return o;
-}
-
 gpointer
 mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 {
-	guint32* code = (guint32*)code_ptr;
-
-	/* Locate the address of the method-specific trampoline. The call using
-	the vtable slot that took the processing flow to 'arch_create_jit_trampoline' 
-	looks something like this:
-
-		ldr rA, rX, #offset
-		mov lr, pc
-		mov pc, rA
-	or better:
-		mov lr, pc
-		ldr pc, rX, #offset
-
-	The call sequence could be also:
-		ldr ip, pc, 0
-		b skip
-		function pointer literal
-		skip:
-		mov lr, pc
-		mov pc, ip
-	Note that on ARM5+ we can use one instruction instead of the last two.
-	Therefore, we need to locate the 'ldr rA' instruction to know which
-	register was used to hold the method addrs.
-	*/
-
-	/* This is the instruction after "ldc pc, xxx", "mov pc, xxx" or "bl xxx" could be either the IMT value or some other instruction*/
-	--code;
-
-	/* Three possible code sequences can happen here:
-	 * interface call:
-	 * 
-	 * add lr, [pc + #4]
-	 * ldr pc, [rX - #offset]
-	 * .word IMT value
-	 * 
-	 * virtual call:
-	 * 
-	 * mov lr, pc
-	 * ldr pc, [rX - #offset] 
-	 * 
-	 * direct branch with bl:
-	 * 
-	 * bl #offset
-	 * 
-	 * direct branch with mov: 
-	 * 
-	 * mv pc, rX
-	 * 
-	 * We only need to identify interface and virtual calls, the others can be ignored.
-	 * 
-	 */
-	if (IS_LDR_PC (code [-1]) && code [-2] == ADD_LR_PC_4)
-		return decode_vcall_slot_from_ldr (code [-1], regs, displacement);
-
-	if (IS_LDR_PC (code [0]) && code [-1] == MOV_LR_PC)
-		return decode_vcall_slot_from_ldr (code [0], regs, displacement);
+	/* Not used on ARM */
+	g_assert_not_reached ();
 
 	return NULL;
 }
