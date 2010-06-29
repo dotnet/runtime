@@ -591,39 +591,35 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	 * We use one vtable trampoline per vtable slot index, so we need only the vtable,
 	 * the other two can be computed from the vtable + the slot index.
 	 */
-	if (mono_use_llvm) {
-		/*
-		 * Since disassembly is impossible with LLVM, we obtain the vtable using
-		 * the this argument. This requires us to always pass this as the first argument,
-		 * regardless of the signature.
-		 */
-#ifndef MONO_ARCH_THIS_AS_FIRST_ARG
-		NOT_IMPLEMENTED;
-#endif
-		this = mono_arch_get_this_arg_from_call (NULL, NULL, regs, code);
-		g_assert (this);
+#ifdef MONO_ARCH_THIS_AS_FIRST_ARG
+	/*
+	 * If the arch passes 'this' as the first arg, obtain the vtable using it.
+	 */
+	this = mono_arch_get_this_arg_from_call (NULL, NULL, regs, code);
+	g_assert (this);
 
-		vt = this->vtable;
-	} else {
-		/*
-		 * Obtain the vtable pointer in an arch specific manner.
-		 */
-		vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	vt = this->vtable;
+#else
+	g_assert (!mono_use_llvm);
+	/*
+	 * Obtain the vtable pointer in an arch specific manner.
+	 */
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
 
-		if (!vt) {
-			int i;
-			MonoJitInfo *ji;
+	if (!vt) {
+		int i;
+		MonoJitInfo *ji;
 
-			ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
-			if (ji)
-				printf ("Caller: %s\n", mono_method_full_name (ji->method, TRUE));
-			/* Print some debug info */
-			for (i = 0; i < 32; ++i)
-				printf ("0x%x ", code [-32 + i]);
-			printf ("\n");
-			g_assert (vt);
-		}
+		ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+		if (ji)
+			printf ("Caller: %s\n", mono_method_full_name (ji->method, TRUE));
+		/* Print some debug info */
+		for (i = 0; i < 32; ++i)
+			printf ("0x%x ", code [-32 + i]);
+		printf ("\n");
+		g_assert (vt);
 	}
+#endif
 
 	if (slot >= 0) {
 		/* Normal virtual call */
@@ -663,7 +659,7 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	}
 
 	// FIXME:
-	// - get rid of the non-vcall cases in mono_arch_get_vcall_slot
+	// - get rid of mono_arch_get_vcall_slot where possible
 
 	return common_call_trampoline (regs, code, m, tramp, vt, vtable_slot, need_rgctx_tramp);
 }
