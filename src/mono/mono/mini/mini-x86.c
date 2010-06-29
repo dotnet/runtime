@@ -2962,13 +2962,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
 
-			/* 
-			 * Emit a few nops to simplify get_vcall_slot ().
-			 */
-			x86_nop (code);
-			x86_nop (code);
-			x86_nop (code);
-
 			x86_call_membase (code, ins->sreg1, ins->inst_offset);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature)) {
 				if (call->stack_usage == 4)
@@ -5514,35 +5507,17 @@ mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 
 	code -= 6;
 
-	/* 
-	 * A given byte sequence can match more than case here, so we have to be
-	 * really careful about the ordering of the cases. Longer sequences
-	 * come first.
-	 * There are two types of calls:
-	 * - direct calls: 0xff address_byte 8/32 bits displacement
-	 * - indirect calls: nop nop nop <call>
-	 * The nops make sure we don't confuse the instruction preceeding an indirect
-	 * call with a direct call.
+	/*
+	 * This function is no longer used, the only caller is
+	 * mono_arch_nullify_class_init_trampoline ().
 	 */
-	if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
-		reg = code [4] & 0x07;
-		disp = (signed char)code [5];
-	} else if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
+	if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
 		reg = code [1] & 0x07;
 		disp = *((gint32*)(code + 2));
-	} else if ((code [1] == 0xe8)) {
-			return NULL;
-	} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
-		/*
-		 * This is a interface call
-		 * 8b 40 30   mov    0x30(%eax),%eax
-		 * ff 10      call   *(%eax)
-		 */
-		disp = 0;
-		reg = code [5] & 0x07;
-	}
-	else
+	} else {
+		g_assert_not_reached ();
 		return NULL;
+	}
 
 	*displacement = disp;
 	return (gpointer)regs [reg];

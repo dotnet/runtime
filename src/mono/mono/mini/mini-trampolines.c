@@ -579,8 +579,10 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	gpointer *vtable_slot;
 	MonoMethod *m;
 	gboolean need_rgctx_tramp = FALSE;
-	int displacement;
 	gpointer addr;
+#ifndef MONO_ARCH_THIS_AS_FIRST_ARG
+	int displacement;
+#endif
 
 	trampoline_calls ++;
 
