@@ -511,9 +511,6 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 gpointer
 mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
 {
-	/* FIXME: handle returning a struct */
-	if (MONO_TYPE_ISSTRUCT (sig->ret))
-		return (gpointer)regs [ARMREG_R1];
 	return (gpointer)regs [ARMREG_R0];
 }
 
@@ -761,8 +758,9 @@ typedef struct {
 typedef struct {
 	int nargs;
 	guint32 stack_usage;
-	guint32 struct_ret;
 	gboolean vtype_retaddr;
+	/* The index of the vret arg in the argument list */
+	int vret_arg_index;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
@@ -837,7 +835,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 static CallInfo*
 get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
-	guint i, gr;
+	guint i, gr, pstart;
 	int n = sig->hasthis + sig->param_count;
 	MonoType *simpletype;
 	guint32 stack_size = 0;
@@ -858,19 +856,42 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 		if (is_pinvoke && mono_class_native_size (mono_class_from_mono_type (sig->ret), &align) <= sizeof (gpointer)) {
 			cinfo->ret.storage = RegTypeStructByVal;
 		} else {
-			add_general (&gr, &stack_size, &cinfo->ret, TRUE);
-			cinfo->struct_ret = ARMREG_R0;
 			cinfo->vtype_retaddr = TRUE;
 		}
 	}
 
+	pstart = 0;
 	n = 0;
-	if (sig->hasthis) {
-		add_general (&gr, &stack_size, cinfo->args + n, TRUE);
-		n++;
+	/*
+	 * To simplify get_this_arg_reg () and LLVM integration, emit the vret arg after
+	 * the first argument, allowing 'this' to be always passed in the first arg reg.
+	 * Also do this if the first argument is a reference type, since virtual calls
+	 * are sometimes made using calli without sig->hasthis set, like in the delegate
+	 * invoke wrappers.
+	 */
+	if (cinfo->vtype_retaddr && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (sig->params [0])))) {
+		if (sig->hasthis) {
+			add_general (&gr, &stack_size, cinfo->args + 0, TRUE);
+		} else {
+			add_general (&gr, &stack_size, &cinfo->args [sig->hasthis + 0], TRUE);
+			pstart = 1;
+		}
+		n ++;
+		add_general (&gr, &stack_size, &cinfo->ret, TRUE);
+		cinfo->vret_arg_index = 1;
+	} else {
+		/* this */
+		if (sig->hasthis) {
+			add_general (&gr, &stack_size, cinfo->args + 0, TRUE);
+			n ++;
+		}
+
+		if (cinfo->vtype_retaddr)
+			add_general (&gr, &stack_size, &cinfo->ret, TRUE);
 	}
-        DEBUG(printf("params: %d\n", sig->param_count));
-	for (i = 0; i < sig->param_count; ++i) {
+
+	DEBUG(printf("params: %d\n", sig->param_count));
+	for (i = pstart; i < sig->param_count; ++i) {
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* Prevent implicit arguments and sig_cookie from
 			   being passed in registers */

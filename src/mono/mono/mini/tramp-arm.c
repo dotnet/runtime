@@ -437,16 +437,12 @@ gpointer
 mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
-	int this_pos = 0;
 	MonoDomain *domain = mono_domain_get ();
-
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
-		this_pos = 1;
 
 	start = code = mono_domain_code_reserve (domain, 16);
 
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
-	ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (MonoObject));
 	code = emit_bx (code, ARMREG_IP);
 	*(guint32*)code = (guint32)addr;
 	code += 4;
