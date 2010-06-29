@@ -1211,7 +1211,11 @@ static const char info[] =
 #endif
 		"\n"
 #ifdef MONO_ARCH_LLVM_SUPPORTED
-	"\tLLVM:          supported\n"
+#ifdef ENABLE_LLVM
+	"\tLLVM:          yes(" LLVM_VERSION ")\n"
+#else
+	"\tLLVM:          supported, not enabled.\n"
+#endif
 #endif
 	"";
 
