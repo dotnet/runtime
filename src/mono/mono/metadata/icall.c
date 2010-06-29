@@ -5712,6 +5712,20 @@ ves_icall_Type_IsArrayImpl (MonoReflectionType *t)
 	return res;
 }
 
+static void
+check_for_invalid_type (MonoClass *klass)
+{
+	char *name;
+	MonoString *str;
+	if (klass->byval_arg.type != MONO_TYPE_TYPEDBYREF)
+		return;
+
+	name = mono_type_get_full_name (klass);
+	str =  mono_string_new (mono_domain_get (), name);
+	g_free (name);
+	mono_raise_exception ((MonoException*)mono_get_exception_type_load (str, NULL));
+
+}
 static MonoReflectionType *
 ves_icall_Type_make_array_type (MonoReflectionType *type, int rank)
 {
@@ -5721,6 +5735,7 @@ ves_icall_Type_make_array_type (MonoReflectionType *type, int rank)
 
 	klass = mono_class_from_mono_type (type->type);
 	mono_class_init_or_throw (klass);
+	check_for_invalid_type (klass);
 
 	if (rank == 0) //single dimentional array
 		aklass = mono_array_class_get (klass, 1);
@@ -5739,6 +5754,7 @@ ves_icall_Type_make_byref_type (MonoReflectionType *type)
 
 	klass = mono_class_from_mono_type (type->type);
 	mono_class_init_or_throw (klass);
+	check_for_invalid_type (klass);
 
 	return mono_type_get_object (mono_object_domain (type), &klass->this_arg);
 }
@@ -5746,9 +5762,11 @@ ves_icall_Type_make_byref_type (MonoReflectionType *type)
 static MonoReflectionType *
 ves_icall_Type_MakePointerType (MonoReflectionType *type)
 {
-	MonoClass *pklass;
+	MonoClass *klass, *pklass;
 
-	mono_class_init_or_throw (mono_class_from_mono_type (type->type));
+	klass = mono_class_from_mono_type (type->type);
+	mono_class_init_or_throw (klass);
+	check_for_invalid_type (klass);
 
 	pklass = mono_ptr_class_get (type->type);
 
