@@ -155,8 +155,14 @@
 
 #if !defined(_MSC_VER) && !defined(PLATFORM_SOLARIS) && HAVE_VISIBILITY_HIDDEN
 #define MONO_INTERNAL __attribute__ ((visibility ("hidden")))
+#if MONO_LLVM_LOADED
+#define MONO_LLVM_INTERNAL 
+#else
+#define MONO_LLVM_INTERNAL MONO_INTERNAL
+#endif
 #else
 #define MONO_INTERNAL 
+#define MONO_LLVM_INTERNAL 
 #endif
 
 #if HAVE_DEPRECATED
