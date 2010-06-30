@@ -1240,7 +1240,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 
 	LLVMBuildCondBr (ctx->builder, cmp, ex_bb, noex_bb);
 
-	exc_class = mono_class_from_name (mono_defaults.corlib, "System", exc_type);
+	exc_class = mono_class_from_name (mono_get_corlib (), "System", exc_type);
 	g_assert (exc_class);
 
 	/* Emit exception throwing code */
@@ -1252,15 +1252,15 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		LLVMTypeRef sig;
 		const char *icall_name;
 
-		MonoMethodSignature *throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-		throw_sig->ret = &mono_defaults.void_class->byval_arg;
-		throw_sig->params [0] = &mono_defaults.int32_class->byval_arg;
+		MonoMethodSignature *throw_sig = mono_metadata_signature_alloc (mono_get_corlib (), 2);
+		throw_sig->ret = &mono_get_void_class ()->byval_arg;
+		throw_sig->params [0] = &mono_get_int32_class ()->byval_arg;
 		if (IS_LLVM_MONO_BRANCH) {
 			icall_name = "mono_arch_llvm_throw_corlib_exception_abs";
-			throw_sig->params [1] = &mono_defaults.int_class->byval_arg;
+			throw_sig->params [1] = &mono_get_intptr_class ()->byval_arg;
 		} else {
 			icall_name = "mono_arch_llvm_throw_corlib_exception";
-			throw_sig->params [1] = &mono_defaults.int32_class->byval_arg;
+			throw_sig->params [1] = &mono_get_int32_class ()->byval_arg;
 		}
 		sig = sig_to_llvm_sig (ctx, throw_sig);
 
@@ -3457,9 +3457,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			icall_name = rethrow ? "mono_arch_rethrow_exception" : "mono_arch_throw_exception";
 
 			if (!callee) {
-				throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-				throw_sig->ret = &mono_defaults.void_class->byval_arg;
-				throw_sig->params [0] = &mono_defaults.object_class->byval_arg;
+				throw_sig = mono_metadata_signature_alloc (mono_get_corlib (), 1);
+				throw_sig->ret = &mono_get_void_class ()->byval_arg;
+				throw_sig->params [0] = &mono_get_object_class ()->byval_arg;
 				if (cfg->compile_aot) {
 					callee = get_plt_entry (ctx, sig_to_llvm_sig (ctx, throw_sig), MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
 				} else {
@@ -3482,7 +3482,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				else
 					ctx->lmodule->throw = callee;
 			}
-			arg = convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, &mono_defaults.object_class->byval_arg));
+			arg = convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, &mono_get_object_class ()->byval_arg));
 			emit_call (ctx, bb, &builder, callee, &arg, 1);
 			break;
 		}
