@@ -2005,6 +2005,7 @@ dnl ***  LLVM  ***
 dnl **************
 
 AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the experimental LLVM back-end], enable_llvm=$enableval, enable_llvm=no)
+AC_ARG_ENABLE(loadedllvm,[  --enable-loadedllvm	Load the LLVM back-end dynamically], enable_llvm=$enableval && enable_loadedllvm=$enableval, enable_loadedllvm=no)
 
 if test "x$enable_llvm" = "xyes"; then
    AC_PATH_PROG(LLVM_CONFIG, llvm-config, no)
@@ -2046,6 +2047,10 @@ if test "x$enable_llvm" = "xyes"; then
 fi
 
 AM_CONDITIONAL(ENABLE_LLVM, [test x$enable_llvm = xyes])
+if test "x$enable_loadedllvm" = "xyes"; then
+   AC_DEFINE(MONO_LLVM_LOADED, 1, [The LLVM back end is dynamically loaded])
+fi
+AM_CONDITIONAL(LOADED_LLVM, [test x$enable_loadedllvm = xyes])
 
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
@@ -2951,7 +2956,7 @@ echo "
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
 	Parallel Mark: $enable_parallel_mark
-	LLVM Back End: $enable_llvm
+	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
 
     Libraries:
 	Moon Profile:  $with_moonlight
