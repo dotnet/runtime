@@ -102,6 +102,12 @@ if MOONLIGHT
 noinst_LTLIBRARIES += libmono-moon.la
 endif
 
+if LOADED_LLVM
+lib_LTLIBRARIES += libmono-llvm.la
+libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp
+libmono_llvm_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(LLVM_LIBS) $(LLVM_LDFLAGS) $(libs)
+endif
+
 endif
 
 mono_SOURCES = \
@@ -142,13 +148,18 @@ MONO_LIB=libmono-2.0.la
 MONO_SGEN_LIB=libmonosgen-2.0.la
 endif
 
+if LOADED_LLVM
+LLVMMONOF=
+else
+LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
+endif
+
 mono_LDADD = \
 	$(MONO_LIB)		\
 	$(GLIB_LIBS)		\
-	$(LLVM_LIBS)		\
+	$(LLVMMONOF)		\
 	-lm			\
-	$(MONO_DTRACE_OBJECT) 	\
-	$(LLVM_LDFLAGS)
+	$(MONO_DTRACE_OBJECT)
 
 mono_LDFLAGS = \
 	$(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)
@@ -156,10 +167,9 @@ mono_LDFLAGS = \
 mono_sgen_LDADD = \
 	$(MONO_SGEN_LIB)	\
 	$(GLIB_LIBS)		\
-	$(LLVM_LIBS)		\
+	$(LLVMMONOF)		\
 	-lm			\
-	$(MONO_DTRACE_OBJECT) 	\
-	$(LLVM_LDFLAGS)
+	$(MONO_DTRACE_OBJECT)
 
 mono_sgen_LDFLAGS = $(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)
 
@@ -269,9 +279,13 @@ posix_sources = \
 	mini-posix.c
 
 if ENABLE_LLVM
+if LOADED_LLVM
+llvm_sources =
+else
 llvm_sources = \
 	mini-llvm.c		\
 	mini-llvm-cpp.cpp
+endif
 endif
 
 common_sources = \

@@ -9,6 +9,7 @@
  * Coprygith 2003-2010 Novell, Inc.
  */
 
+#define MONO_LLVM_IN_MINI 1
 #include <config.h>
 #include <signal.h>
 #ifdef HAVE_ALLOCA_H
@@ -55,6 +56,7 @@
 #include <mono/utils/dtrace.h>
 
 #include "mini.h"
+#include "mini-llvm.h"
 #include "tasklets.h"
 #include <string.h>
 #include <ctype.h>
@@ -123,7 +125,7 @@ static int methods_with_llvm, methods_without_llvm;
  *   one trampoline.
  * - fast generic virtual calls are not supported.
  */
-#ifdef ENABLE_LLVM
+#if defined(ENABLE_LLVM) && !defined(MONO_LLVM_LOADED)
 gboolean mono_use_llvm = TRUE;
 #else
 gboolean mono_use_llvm = FALSE;
@@ -3764,11 +3766,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			mono_stats.generics_unsharable_methods++;
 	}
 
-	try_llvm = TRUE;
-
-#ifndef ENABLE_LLVM
-	try_llvm = FALSE;
-#endif
+	try_llvm = mono_use_llvm;
 
  restart_compile:
 	if (try_generic_shared) {
@@ -5724,7 +5722,12 @@ mini_init (const char *filename, const char *runtime_version)
 	}
 
 #ifdef ENABLE_LLVM
-	mono_llvm_init ();
+	if (!mono_llvm_load (NULL)) {
+		mono_use_llvm = FALSE;
+		fprintf (stderr, "Mono Warning: llvm support could not be loaded.\n");
+	}
+	if (mono_use_llvm)
+		mono_llvm_init ();
 #endif
 
 	mono_trampolines_init ();
@@ -6166,7 +6169,8 @@ mini_cleanup (MonoDomain *domain)
 	mono_debugger_cleanup ();
 
 #ifdef ENABLE_LLVM
-	mono_llvm_cleanup ();
+	if (mono_use_llvm)
+		mono_llvm_cleanup ();
 #endif
 
 	mono_trampolines_cleanup ();
