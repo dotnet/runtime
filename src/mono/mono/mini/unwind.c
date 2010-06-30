@@ -906,13 +906,13 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 
 		/* sdata|pcrel encoding */
 		if (aug_len == 4)
-			lsda_offset = *(gint64*)fde_aug;
+			lsda_offset = read32 (fde_aug);
 		else if (aug_len == 8)
-			lsda_offset = *(gint32*)fde_aug;
+			lsda_offset = *(gint64*)fde_aug;
 		else
 			g_assert_not_reached ();
 		if (lsda_offset != 0) {
-			lsda = fde_aug + *(gint32*)fde_aug;
+			lsda = fde_aug + lsda_offset;
 
 			decode_lsda (lsda, code, ex_info, ex_info_len, type_info, this_reg, this_offset);
 		}
