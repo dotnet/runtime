@@ -6139,9 +6139,8 @@ mini_cleanup (MonoDomain *domain)
 	cominterop_release_all_rcws ();
 #endif
 
-	mono_runtime_shutdown ();
-
 #ifndef MONO_CROSS_COMPILE	
+	mono_runtime_shutdown ();
 	/* 
 	 * mono_runtime_cleanup() and mono_domain_finalize () need to
 	 * be called early since they need the execution engine still
