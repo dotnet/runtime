@@ -396,7 +396,7 @@ gpointer
 mono_domain_alloc0 (MonoDomain *domain, guint size) MONO_INTERNAL;
 
 void*
-mono_domain_code_reserve (MonoDomain *domain, int size) MONO_INTERNAL;
+mono_domain_code_reserve (MonoDomain *domain, int size) MONO_LLVM_INTERNAL;
 
 void*
 mono_domain_code_reserve_align (MonoDomain *domain, int size, int alignment) MONO_INTERNAL;

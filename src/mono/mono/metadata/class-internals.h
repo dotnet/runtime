@@ -1080,10 +1080,10 @@ void
 mono_loader_cleanup        (void) MONO_INTERNAL;
 
 void
-mono_loader_lock           (void) MONO_INTERNAL;
+mono_loader_lock           (void) MONO_LLVM_INTERNAL;
 
 void
-mono_loader_unlock         (void) MONO_INTERNAL;
+mono_loader_unlock         (void) MONO_LLVM_INTERNAL;
 
 void
 mono_loader_lock_track_ownership (gboolean track) MONO_INTERNAL;
@@ -1154,10 +1154,10 @@ void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper) MONO_INTERNAL;
 
 MonoJitICallInfo *
-mono_find_jit_icall_by_name (const char *name) MONO_INTERNAL;
+mono_find_jit_icall_by_name (const char *name) MONO_LLVM_INTERNAL;
 
 MonoJitICallInfo *
-mono_find_jit_icall_by_addr (gconstpointer addr) MONO_INTERNAL;
+mono_find_jit_icall_by_addr (gconstpointer addr) MONO_LLVM_INTERNAL;
 
 GHashTable*
 mono_get_jit_icall_info (void) MONO_INTERNAL;
