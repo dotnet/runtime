@@ -347,7 +347,8 @@ common_sources = \
 	debugger-agent.c	\
 	debug-debugger.c	\
 	debug-debugger.h	\
-	xdebug.c
+	xdebug.c			\
+	mini-llvm.h
 
 test_sources = 			\
 	basic-calls.cs 		\
