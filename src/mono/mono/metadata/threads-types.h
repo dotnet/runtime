@@ -61,7 +61,7 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 void ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this) MONO_INTERNAL;
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start) MONO_INTERNAL;
 void ves_icall_System_Threading_InternalThread_Thread_free_internal(MonoInternalThread *this_obj, HANDLE thread) MONO_INTERNAL;
-void ves_icall_System_Threading_Thread_Sleep_internal(int ms) MONO_INTERNAL;
+void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms) MONO_INTERNAL;
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoInternalThread *this_obj, int ms, HANDLE thread) MONO_INTERNAL;
 gint32 ves_icall_System_Threading_Thread_GetDomainID (void) MONO_INTERNAL;
 MonoString* ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj) MONO_INTERNAL;

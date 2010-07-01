@@ -25,7 +25,7 @@
 
 G_BEGIN_DECLS
 
-gboolean ves_icall_System_IO_FSW_SupportsFSW (void) MONO_INTERNAL;
+gint ves_icall_System_IO_FSW_SupportsFSW (void) MONO_INTERNAL;
 
 gboolean ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 							MonoString **filename,

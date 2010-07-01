@@ -155,7 +155,7 @@ int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, 
 	return -1;
 }
 
-int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, int watch_descriptor)
+int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor)
 {
 	return -1;
 }
