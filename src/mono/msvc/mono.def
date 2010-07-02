@@ -624,6 +624,7 @@ mono_object_new_alloc_specific
 mono_object_new_fast
 mono_object_new_from_token
 mono_object_new_specific
+mono_object_to_string
 mono_object_unbox
 mono_op_to_op_imm_noemul
 mono_opcode_name
@@ -766,6 +767,7 @@ mono_string_new_utf16
 mono_string_new_wrapper
 mono_string_to_utf16
 mono_string_to_utf8
+mono_string_to_utf8_checked
 mono_stringify_assembly_name
 mono_table_info_get_rows
 mono_thread_attach
