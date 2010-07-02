@@ -2,6 +2,7 @@
 #define _MONO_CLI_OBJECT_H_
 
 #include <mono/metadata/class.h>
+#include <mono/utils/mono-error.h>
 
 MONO_BEGIN_DECLS
 
@@ -129,6 +130,9 @@ mono_string_new_len	    (MonoDomain *domain, const char *text, unsigned int leng
 char *
 mono_string_to_utf8	    (MonoString *string_obj);
 
+char *
+mono_string_to_utf8_checked (MonoString *string_obj, MonoError *error);
+
 mono_unichar2 *
 mono_string_to_utf16	    (MonoString *string_obj);
 
@@ -143,6 +147,9 @@ mono_string_hash            (MonoString *s);
 
 int
 mono_object_hash            (MonoObject* obj);
+
+MonoString *
+mono_object_to_string (MonoObject *obj, MonoObject **exc);
 
 MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, void* val);

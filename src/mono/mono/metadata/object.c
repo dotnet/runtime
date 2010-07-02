@@ -5227,8 +5227,8 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
  * mono_string_to_utf8:
  * @s: a System.String
  *
- * Return the UTF8 representation for @s.
- * the resulting buffer nedds to be freed with g_free().
+ * Returns the UTF8 representation for @s.
+ * The resulting buffer needs to be freed with mono_free().
  *
  * @deprecated Use mono_string_to_utf8_checked to avoid having an exception arbritraly raised.
  */
@@ -5243,6 +5243,15 @@ mono_string_to_utf8 (MonoString *s)
 	return result;
 }
 
+/**
+ * mono_string_to_utf8_checked:
+ * @s: a System.String
+ * @error: a MonoError.
+ * 
+ * Converts a MonoString to its UTF8 representation. May fail; check 
+ * @error to determine whether the conversion was successful.
+ * The resulting buffer should be freed with mono_free().
+ */
 char *
 mono_string_to_utf8_checked (MonoString *s, MonoError *error)
 {
@@ -5698,6 +5707,29 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 }
 
 /**
+ * mono_object_to_string:
+ * @obj: The object
+ * @exc: Any exception thrown by ToString (). May be NULL.
+ *
+ * Returns: the result of calling ToString () on an object.
+ */
+MonoString *
+mono_object_to_string (MonoObject *obj, MonoObject **exc)
+{
+	static MonoMethod *to_string = NULL;
+	MonoMethod *method;
+
+	g_assert (obj);
+
+	if (!to_string)
+		to_string = mono_class_get_method_from_name_flags (mono_get_object_class (), "ToString", 0, METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_PUBLIC);
+
+	method = mono_object_get_virtual_method (obj, to_string);
+
+	return (MonoString *) mono_runtime_invoke (method, obj, NULL, exc);
+}
+
+/**
  * mono_print_unhandled_exception:
  * @exc: The exception
  *
@@ -5706,35 +5738,21 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 void
 mono_print_unhandled_exception (MonoObject *exc)
 {
-	MonoError error;
-	char *message = (char *) "";
-	MonoString *str; 
-	MonoMethod *method;
-	MonoClass *klass;
+	MonoString * str;
+	char *message = "";
 	gboolean free_message = FALSE;
+	MonoError error;
 
-	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
-		klass = exc->vtable->klass;
-		method = NULL;
-		while (klass && method == NULL) {
-			method = mono_class_get_method_from_name_flags (klass, "ToString", 0, METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_PUBLIC);
-			if (method == NULL)
-				klass = klass->parent;
+	str = mono_object_to_string (exc, NULL);
+	if (str) {
+		message = mono_string_to_utf8_checked (str, &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_cleanup (&error);
+			message = (char *) "";
+		} else {
+			free_message = TRUE;
 		}
-
-		g_assert (method);
-
-		str = (MonoString *) mono_runtime_invoke (method, exc, NULL, NULL);
-		if (str) {
-			message = mono_string_to_utf8_checked (str, &error);
-			if (!mono_error_ok (&error)) {
-				mono_error_cleanup (&error);
-				message = (char *)"";
-			} else {
-				free_message = TRUE;
-			}
-		}
-	}				
+	}
 
 	/*
 	 * g_printerr ("\nUnhandled Exception: %s.%s: %s\n", exc->vtable->klass->name_space, 
