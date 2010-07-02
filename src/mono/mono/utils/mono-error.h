@@ -1,6 +1,8 @@
 #ifndef __MONO_ERROR_H__
 #define __MONO_ERROR_H__
 
+#include <mono/utils/mono-publib.h>
+
 enum {
 	/*
 	The supplied strings were dup'd by means of calling mono_error_dup_strings.
@@ -39,7 +41,7 @@ typedef struct {
     char hidden_2 [128]; /*DON'T TOUCH */
 } MonoError;
 
-G_BEGIN_DECLS
+MONO_BEGIN_DECLS
 
 void
 mono_error_init (MonoError *error);
@@ -50,7 +52,7 @@ mono_error_init_flags (MonoError *error, unsigned short flags);
 void
 mono_error_cleanup (MonoError *error);
 
-gboolean
+mono_bool
 mono_error_ok (MonoError *error);
 
 unsigned short
@@ -59,5 +61,6 @@ mono_error_get_error_code (MonoError *error);
 const char*
 mono_error_get_message (MonoError *error);
 
-G_END_DECLS
+MONO_END_DECLS
+
 #endif

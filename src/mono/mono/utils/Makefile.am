@@ -99,6 +99,7 @@ libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
 libmonoutilsinclude_HEADERS = \
 	mono-logger.h	\
+	mono-error.h	\
 	mono-publib.h
 
 EXTRA_DIST = ChangeLog
