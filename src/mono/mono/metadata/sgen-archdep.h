@@ -159,6 +159,55 @@
 	((a)[12]) = (gpointer) (UCONTEXT_REG_R12((ctx)));	\
 	((a)[13]) = (gpointer) (UCONTEXT_REG_LR((ctx)));	\
 	} while (0)
+
+#elif defined(__s390x__)
+
+#define REDZONE_SIZE	128
+
+#define ARCH_NUM_REGS 16	
+#define ARCH_STORE_REGS(ptr)	\
+	__asm__ __volatile__(	\
+		"stg %%r0, 0x00(%0)\n"	\
+		"stg %%r1, 0x08(%0)\n"	\
+		"stg %%r2, 0x10(%0)\n"	\
+		"stg %%r3, 0x18(%0)\n"	\
+		"stg %%r4, 0x20(%0)\n"	\
+		"stg %%r5, 0x28(%0)\n"	\
+		"stg %%r6, 0x30(%0)\n"	\
+		"stg %%r7, 0x38(%0)\n"	\
+		"stg %%r8, 0x40(%0)\n"	\
+		"stg %%r9, 0x48(%0)\n"	\
+		"stg %%r10, 0x50(%0)\n"	\
+		"stg %%r11, 0x58(%0)\n"	\
+		"stg %%r12, 0x60(%0)\n"	\
+		"stg %%r13, 0x68(%0)\n"	\
+		"stg %%r14, 0x70(%0)\n"	\
+		"stg %%r15, 0x78(%0)\n"	\
+		: "=&a" (ptr)	\
+		: "0" (cur_thread_regs)	\
+		: "memory"	\
+	)
+#define ARCH_SIGCTX_SP(ctx)	((UCONTEXT_GREGS((ctx))) [15])
+#define ARCH_SIGCTX_IP(ctx)	((ucontext_t *) (ctx))->uc_mcontext.psw.addr
+#define ARCH_COPY_SIGCTX_REGS(a,ctx) do {		\
+	((a)[0] = (gpointer) (UCONTEXT_GREGS((ctx))) [0]);		\
+	((a)[1] = (gpointer) (UCONTEXT_GREGS((ctx))) [1]);		\
+	((a)[2] = (gpointer) (UCONTEXT_GREGS((ctx))) [2]);		\
+	((a)[3] = (gpointer) (UCONTEXT_GREGS((ctx))) [3]);		\
+	((a)[4] = (gpointer) (UCONTEXT_GREGS((ctx))) [4]);		\
+	((a)[5] = (gpointer) (UCONTEXT_GREGS((ctx))) [5]);		\
+	((a)[6] = (gpointer) (UCONTEXT_GREGS((ctx))) [6]);		\
+	((a)[7] = (gpointer) (UCONTEXT_GREGS((ctx))) [7]);		\
+	((a)[8] = (gpointer) (UCONTEXT_GREGS((ctx))) [8]);		\
+	((a)[9] = (gpointer) (UCONTEXT_GREGS((ctx))) [9]);		\
+	((a)[10] = (gpointer) (UCONTEXT_GREGS((ctx))) [10]);		\
+	((a)[11] = (gpointer) (UCONTEXT_GREGS((ctx))) [11]);		\
+	((a)[12] = (gpointer) (UCONTEXT_GREGS((ctx))) [12]);		\
+	((a)[13] = (gpointer) (UCONTEXT_GREGS((ctx))) [13]);		\
+	((a)[14] = (gpointer) (UCONTEXT_GREGS((ctx))) [14]);		\
+	((a)[15] = (gpointer) (UCONTEXT_GREGS((ctx))) [15]);		\
+	} while (0)
+
 #endif
 
 #endif /* __MONO_SGENARCHDEP_H__ */

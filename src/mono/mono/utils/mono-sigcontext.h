@@ -230,6 +230,13 @@
 	#define UCONTEXT_REG_R11(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_fp)
 	#define UCONTEXT_REG_R12(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_ip)
 #endif
+#elif defined(__s390x__)
+
+# if HAVE_UCONTEXT_H
+#  include <ucontext.h>
+# endif
+
+# define UCONTEXT_GREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs)
 #endif
 
 #endif
