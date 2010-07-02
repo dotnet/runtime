@@ -830,10 +830,9 @@
 			</File>
 			<File
 				RelativePath="..\mono\utils\mono-compiler.h"
-				></File>
-      <File RelativePath="..\mono\metadata\runtime.c" />
-      <File RelativePath="..\mono\metadata\runtime.h" />
-      <File
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\mono-counters.c"
 				>
 				<FileConfiguration
@@ -1033,11 +1032,7 @@
 				RelativePath="..\mono\utils\mono-error.h"
 				>
 			</File>
-      <File RelativePath="..\mono\utils\mono-semaphore.c"></File>
-      <File RelativePath="..\mono\utils\mono-semaphore.h"></File>
-      <File RelativePath="..\mono\metadata\mono-wsq.c"></File>
-      <File RelativePath="..\mono\metadata\mono-wsq.h"></File>
-      <File
+			<File
 				RelativePath="..\mono\utils\mono-filemap.c"
 				>
 			</File>
@@ -1642,6 +1637,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\utils\mono-publib.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-semaphore.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-semaphore.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\mono-sha1.c"
 				>
 				<FileConfiguration
@@ -1846,6 +1853,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\metadata\mono-wsq.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\mono-wsq.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\monobitset.c"
 				>
 				<FileConfiguration
@@ -1935,6 +1950,14 @@
 			</File>
 			<File
 				RelativePath="..\mono\utils\monobitset.h"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\runtime.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\runtime.h"
 				>
 			</File>
 			<File
@@ -4006,6 +4029,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\metadata\mono-basic-block.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\mono-basic-block.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\metadata\mono-config.c"
 				>
 				<FileConfiguration
@@ -4185,15 +4216,7 @@
 				RelativePath="..\mono\metadata\mono-debug-debugger.h"
 				>
 			</File>
-      <File
-				RelativePath="..\mono\metadata\mono-basic-block.c"
-				>
-      </File>
-      <File
-				RelativePath="..\mono\metadata\mono-basic-block.h"
-				>
-      </File>
-      <File
+			<File
 				RelativePath="..\mono\metadata\mono-debug.c"
 				>
 				<FileConfiguration
@@ -6062,10 +6085,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\mono\mini\xdebug.c"
-				>
-			</File>
-			<File
 				RelativePath="..\mono\mini\debugger-agent.h"
 				>
 			</File>
@@ -7319,6 +7338,10 @@
 			</File>
 			<File
 				RelativePath="..\mono\mini\wapihandles.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\mini\xdebug.c"
 				>
 			</File>
 			<Filter
