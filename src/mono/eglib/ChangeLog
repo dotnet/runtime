@@ -1,3 +1,7 @@
+2010-07-02  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/glib.h: Define gboolean as int32_t to match mono_bool.
+
 2010-06-22  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* src/ghashtable.c: Add code to sanity check the

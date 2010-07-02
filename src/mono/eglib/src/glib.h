@@ -43,7 +43,6 @@ G_BEGIN_DECLS
 /*
  * Basic data types
  */
-typedef int            gboolean;
 typedef int            gint;
 typedef unsigned int   guint;
 typedef short          gshort;
@@ -68,6 +67,7 @@ typedef unsigned __int64	guint64;
 typedef float				gfloat;
 typedef double				gdouble;
 typedef unsigned __int16	gunichar2;
+typedef int                 gboolean;
 #else
 /* Types defined in terms of the stdint.h */
 typedef int8_t         gint8;
@@ -81,6 +81,7 @@ typedef uint64_t       guint64;
 typedef float          gfloat;
 typedef double         gdouble;
 typedef uint16_t       gunichar2;
+typedef int32_t        gboolean;
 #endif
 #endif
 
