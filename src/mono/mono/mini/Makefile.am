@@ -124,7 +124,7 @@ buildver.h: libmono-static.la
 	@echo "const char *build_date = \"`date`\";" > buildver.h
 
 mono-main.$(OBJEXT): buildver.h
-mono-sgen-main.$(OBJEXT): buildver.h
+mono_sgen-main.$(OBJEXT): buildver.h
 
 if DTRACE_G_REQUIRED
 LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
