@@ -3101,6 +3101,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_MEMORY_BARRIER: {
 			LLVMValueRef args [5];
 
+#ifdef TARGET_ARM
+			/* Not yet supported by llc on arm */
+			LLVM_FAILURE (ctx, "memory-barrier+arm");
+#endif
+
 			for (i = 0; i < 5; ++i)
 				args [i] = LLVMConstInt (LLVMInt1Type (), TRUE, TRUE);
 
