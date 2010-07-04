@@ -317,7 +317,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	WIN32_FIND_DATA data;
 	HANDLE find_handle;
 	GPtrArray *names;
-	gchar *utf8_path, *utf8_result, *full_name;
+	gchar *utf8_result;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -344,7 +344,6 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 		return(NULL);
 	}
 
-	utf8_path = mono_string_to_utf8 (path); /*If this raises there is not memory to release*/
 	names = g_ptr_array_new ();
 
 	do {
@@ -359,10 +358,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 				continue;
 			}
 			
-			full_name = g_build_filename (utf8_path, utf8_result, NULL);
-			g_ptr_array_add (names, full_name);
-
-			g_free (utf8_result);
+			g_ptr_array_add (names, utf8_result);
 		}
 	} while(FindNextFile (find_handle, &data));
 
@@ -380,7 +376,6 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 		g_free (g_ptr_array_index (names, i));
 	}
 	g_ptr_array_free (names, TRUE);
-	g_free (utf8_path);
 	
 	return result;
 }
