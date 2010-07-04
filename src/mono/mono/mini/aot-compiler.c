@@ -882,9 +882,6 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 	guint8 *code;
 	int this_pos = 4;
 
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
-		this_pos = 8;
-	    
 	code = buf;
 
 	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
@@ -897,14 +894,10 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
-	int this_pos = 0;
 
 	code = buf;
 
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
-		this_pos = 1;
-
-	ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
+	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (MonoObject));
 
 	emit_bytes (acfg, buf, code - buf);
 	/* jump to method */
