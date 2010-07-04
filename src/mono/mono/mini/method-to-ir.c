@@ -2084,9 +2084,7 @@ callvirt_to_call_membase (int opcode)
 static void
 emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 {
-#ifdef MONO_ARCH_IMT_REG
 	int method_reg;
-#endif
 
 	if (COMPILE_LLVM (cfg)) {
 		method_reg = alloc_preg (cfg);
