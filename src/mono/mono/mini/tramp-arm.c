@@ -125,8 +125,6 @@ emit_bx (guint8* code, int reg)
 /* Jump-specific trampoline code fragment size */
 #define JUMP_TRAMPOLINE_SIZE   64
 
-#define GEN_TRAMP_SIZE 196
-	
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
@@ -136,11 +134,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	int cfa_offset;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
+	int buf_len;
 
 	/* Now we'll create in 'buf' the ARM trampoline code. This
 	 is the trampoline code common to all methods  */
-	
-	code = buf = mono_global_codeman_reserve (GEN_TRAMP_SIZE);
+
+	buf_len = 212;
+	code = buf = mono_global_codeman_reserve (buf_len);
 
 	/*
 	 * At this point lr points to the specific arg and sp points to the saved
@@ -337,7 +337,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mono_arch_flush_icache (buf, code - buf);
 
 	/* Sanity check */
-	g_assert ((code - buf) <= GEN_TRAMP_SIZE);
+	g_assert ((code - buf) <= buf_len);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		/* Initialize the nullified class init trampoline used in the AOT case */
