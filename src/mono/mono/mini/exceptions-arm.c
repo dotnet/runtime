@@ -61,9 +61,6 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* move sp to SP */
 	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, esp));
 	ARM_STR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_SP * 4));
-	/* move ebp to FP */
-	ARM_LDR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, ebp));
-	ARM_STR_IMM (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_FP * 4));
 
 	/* restore everything */
 	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ctx_reg, G_STRUCT_OFFSET(MonoContext, regs));
@@ -371,7 +368,6 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			new_ctx->regs [i] = regs [i];
 		new_ctx->eip = regs [ARMREG_LR];
 		new_ctx->esp = (gsize)cfa;
-		new_ctx->ebp = regs [ARMREG_FP];
 
 		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->esp)) {
 			/* remove any unused lmf */
@@ -422,7 +418,6 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* SP is skipped */
 		new_ctx->regs [ARMREG_LR] = (*lmf)->iregs [ARMREG_LR - 1];
 		new_ctx->esp = (*lmf)->iregs [ARMREG_IP];
-		new_ctx->ebp = new_ctx->regs [ARMREG_FP];
 		new_ctx->eip = new_ctx->regs [ARMREG_LR];
 
 		/* we substract 1, so that the IP points into the call instruction */
@@ -448,7 +443,6 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->esp = UCONTEXT_REG_SP (my_uc);
 	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (gulong) * 16);
 #endif
-	mctx->ebp = mctx->regs [ARMREG_FP];
 }
 
 void
@@ -460,7 +454,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 	arm_ucontext *my_uc = ctx;
 
 	UCONTEXT_REG_PC (my_uc) = mctx->eip;
-	UCONTEXT_REG_SP (my_uc) = mctx->ebp;
+	UCONTEXT_REG_SP (my_uc) = mctx->regs [ARMREG_FP];
 	/* The upper registers are not guaranteed to be valid */
 	memcpy (&UCONTEXT_REG_R0 (my_uc), &mctx->regs, sizeof (gulong) * 12);
 #endif
