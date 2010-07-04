@@ -168,6 +168,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
+#define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
 
 /* ARM doesn't have too many registers, so we have to use a callee saved one */
 #define MONO_ARCH_RGCTX_REG ARMREG_V5
@@ -182,6 +183,8 @@ typedef struct MonoCompileArch {
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->eip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->ebp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
+
+#define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->regs [0] = (gsize)exc; } while (0)
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {	\
 		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\

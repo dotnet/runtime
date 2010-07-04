@@ -607,7 +607,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V2));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V3));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V4));
-	if (!(cfg->compile_aot || cfg->uses_rgctx_reg))
+	if (!(cfg->compile_aot || cfg->uses_rgctx_reg || COMPILE_LLVM (cfg)))
 		/* V5 is reserved for passing the vtable/rgctx/IMT method */
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V5));
 	/*regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V6));*/
@@ -1060,7 +1060,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->used_int_regs |= 1 << frame_reg;
 	}
 
-	if (cfg->compile_aot || cfg->uses_rgctx_reg)
+	if (cfg->compile_aot || cfg->uses_rgctx_reg || COMPILE_LLVM (cfg))
 		/* V5 is reserved for passing the vtable/rgctx/IMT method */
 		cfg->used_int_regs |= (1 << ARMREG_V5);
 
@@ -5083,7 +5083,7 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt
 
 			mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
 		}
-	} else if (cfg->generic_context || imt_arg) {
+	} else if (cfg->generic_context || imt_arg || mono_use_llvm) {
 
 		/* Always pass in a register for simplicity */
 		call->dynamic_imt_arg = TRUE;
@@ -5113,6 +5113,11 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
 	guint32 *code_ptr = (guint32*)code;
 	code_ptr -= 2;
+
+	if (mono_use_llvm)
+		/* Passed in V5 */
+		return (MonoMethod*)regs [ARMREG_V5];
+
 	/* The IMT value is stored in the code stream right after the LDC instruction. */
 	if (!IS_LDR_PC (code_ptr [0])) {
 		g_warning ("invalid code stream, instruction before IMT value is not a LDC in %s() (code %p value 0: 0x%x -1: 0x%x -2: 0x%x)", __FUNCTION__, code, code_ptr [2], code_ptr [1], code_ptr [0]);
@@ -5219,9 +5224,14 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	vtable_target = code;
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 
-	/* R0 == 0 means we are called from AOT code. In this case, V5 contains the IMT method */
-	ARM_CMP_REG_IMM8 (code, ARMREG_R0, 0);
-	ARM_MOV_REG_REG_COND (code, ARMREG_R0, ARMREG_V5, ARMCOND_EQ);
+	if (mono_use_llvm) {
+		/* LLVM always passes the IMT method in R5 */
+		ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_V5);
+	} else {
+		/* R0 == 0 means we are called from AOT code. In this case, V5 contains the IMT method */
+		ARM_CMP_REG_IMM8 (code, ARMREG_R0, 0);
+		ARM_MOV_REG_REG_COND (code, ARMREG_R0, ARMREG_V5, ARMCOND_EQ);
+	}
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];

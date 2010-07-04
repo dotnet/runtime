@@ -166,7 +166,7 @@ mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsign
 }
 
 /**
- * arch_get_throw_exception_generic:
+ * get_throw_trampoline:
  *
  * Returns a function pointer which can be used to raise 
  * exceptions. The returned function has the following 
@@ -175,7 +175,7 @@ mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsign
  *
  */
 static gpointer 
-mono_arch_get_throw_exception_generic (int size, gboolean corlib, gboolean rethrow, MonoTrampInfo **info, gboolean aot)
+get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, const char *tramp_name, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start;
 	guint8 *code;
@@ -184,9 +184,14 @@ mono_arch_get_throw_exception_generic (int size, gboolean corlib, gboolean rethr
 
 	code = start = mono_global_codeman_reserve (size);
 
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, ARMREG_SP, 0);
+
 	/* save all the regs on the stack */
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 	ARM_PUSH (code, MONO_ARM_REGSAVE_MASK);
+
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, ARMREG_SP, 10 * 4);
+	mono_add_unwind_op_offset (unwind_ops, code, start, ARMREG_LR, -4);
 
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
@@ -222,8 +227,10 @@ mono_arch_get_throw_exception_generic (int size, gboolean corlib, gboolean rethr
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
 
+	mono_save_trampoline_xdebug_info (tramp_name, start, code - start, unwind_ops);
+
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_exception" : "throw_exception")), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (g_strdup_printf (tramp_name), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -239,7 +246,7 @@ mono_arch_get_throw_exception_generic (int size, gboolean corlib, gboolean rethr
 gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return mono_arch_get_throw_exception_generic (132, FALSE, TRUE, info, aot);
+	return get_throw_trampoline (132, FALSE, TRUE, "rethrow_exception", info, aot);
 }
 
 /**
@@ -257,7 +264,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return mono_arch_get_throw_exception_generic (132, FALSE, FALSE, info, aot);
+	return get_throw_trampoline (132, FALSE, FALSE, "throw_exception", info, aot);
 }
 
 /**
@@ -274,8 +281,29 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return mono_arch_get_throw_exception_generic (168, TRUE, FALSE, info, aot);
+	return get_throw_trampoline (168, TRUE, FALSE, "throw_corlib_exception", info, aot);
 }	
+
+void
+mono_arch_exceptions_init (void)
+{
+	guint8 *tramp;
+
+	if (mono_aot_only) {
+	} else {
+		/* LLVM uses the normal trampolines, but with a different name */
+		tramp = get_throw_trampoline (168, TRUE, FALSE, "llvm_throw_corlib_exception", NULL, FALSE);
+		mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
+
+		tramp = get_throw_trampoline (168, TRUE, FALSE, "llvm_throw_corlib_exception_abs", NULL, FALSE);
+		mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception_abs", NULL, TRUE);
+
+		/*
+		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, TRUE, "mono_llvm_resume_unwind_trampoline", FALSE);
+		mono_register_jit_icall (tramp, "mono_llvm_resume_unwind_trampoline", NULL, TRUE);
+		*/
+	}
+}
 
 /* 
  * mono_arch_find_jit_info_ext:

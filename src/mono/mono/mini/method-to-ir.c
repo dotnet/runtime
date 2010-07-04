@@ -2085,7 +2085,32 @@ static void
 emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 {
 #ifdef MONO_ARCH_IMT_REG
-	int method_reg = alloc_preg (cfg);
+	int method_reg;
+#endif
+
+	if (COMPILE_LLVM (cfg)) {
+		method_reg = alloc_preg (cfg);
+
+		if (imt_arg) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
+		} else if (cfg->compile_aot) {
+			MONO_EMIT_NEW_AOTCONST (cfg, method_reg, call->method, MONO_PATCH_INFO_METHODCONST);
+		} else {
+			MonoInst *ins;
+			MONO_INST_NEW (cfg, ins, OP_PCONST);
+			ins->inst_p0 = call->method;
+			ins->dreg = method_reg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+
+#ifdef ENABLE_LLVM
+		call->imt_arg_reg = method_reg;
+#endif
+		return;
+	}
+
+#ifdef MONO_ARCH_IMT_REG
+	method_reg = alloc_preg (cfg);
 
 	if (imt_arg) {
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
@@ -2099,10 +2124,6 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
 
-#ifdef ENABLE_LLVM
-	if (COMPILE_LLVM (cfg))
-		call->imt_arg_reg = method_reg;
-#endif
 	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
 #else
 	mono_arch_emit_imt_argument (cfg, call, imt_arg);
