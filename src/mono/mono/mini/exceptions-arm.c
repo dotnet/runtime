@@ -165,6 +165,23 @@ mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsign
 	mono_arm_throw_exception ((MonoObject*)mono_exception_from_token (mono_defaults.corlib, type_token), eip, esp, int_regs, fp_regs);
 }
 
+static void
+mono_arm_resume_unwind (guint32 dummy1, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
+{
+	MonoContext ctx;
+
+	eip &= ~1; /* clear the optional rethrow bit */
+	/* adjust eip so that it point into the call instruction */
+	eip -= 4;
+
+	MONO_CONTEXT_SET_BP (&ctx, int_regs [ARMREG_FP - 4]);
+	MONO_CONTEXT_SET_SP (&ctx, esp);
+	MONO_CONTEXT_SET_IP (&ctx, eip);
+	memcpy (((guint8*)&ctx.regs) + (4 * 4), int_regs, sizeof (gulong) * 8);
+
+	mono_resume_unwind (&ctx);
+}
+
 /**
  * get_throw_trampoline:
  *
@@ -175,7 +192,7 @@ mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsign
  *
  */
 static gpointer 
-get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, const char *tramp_name, MonoTrampInfo **info, gboolean aot)
+get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm, gboolean resume_unwind, const char *tramp_name, MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *start;
 	guint8 *code;
@@ -199,6 +216,9 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, const char *t
 	/* exc is already in place in r0 */
 	if (corlib) {
 		/* The caller ip is already in R1 */
+		if (llvm)
+			/* Negate the ip adjustment done in mono_arm_throw_exception */
+			ARM_ADD_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, 4);
 	} else {
 		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR); /* caller ip */
 	}
@@ -218,7 +238,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, const char *t
 		code += 4;
 		ARM_LDR_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
 	} else {
-		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (corlib ? (gpointer)mono_arm_throw_exception_by_token : (gpointer)mono_arm_throw_exception));
+		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (resume_unwind ? (gpointer)mono_arm_resume_unwind : (corlib ? (gpointer)mono_arm_throw_exception_by_token : (gpointer)mono_arm_throw_exception)));
 	}
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
@@ -236,20 +256,6 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, const char *t
 }
 
 /**
- * mono_arch_get_rethrow_exception:
- *
- * Returns a function pointer which can be used to rethrow 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
- *
- */
-gpointer
-mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
-{
-	return get_throw_trampoline (132, FALSE, TRUE, "rethrow_exception", info, aot);
-}
-
-/**
  * arch_get_throw_exception:
  *
  * Returns a function pointer which can be used to raise 
@@ -264,7 +270,21 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (132, FALSE, FALSE, "throw_exception", info, aot);
+	return get_throw_trampoline (132, FALSE, FALSE, FALSE, FALSE, "throw_exception", info, aot);
+}
+
+/**
+ * mono_arch_get_rethrow_exception:
+ *
+ * Returns a function pointer which can be used to rethrow 
+ * exceptions. The returned function has the following 
+ * signature: void (*func) (MonoException *exc); 
+ *
+ */
+gpointer
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
+{
+	return get_throw_trampoline (132, FALSE, TRUE, FALSE, FALSE, "rethrow_exception", info, aot);
 }
 
 /**
@@ -281,7 +301,7 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (168, TRUE, FALSE, "throw_corlib_exception", info, aot);
+	return get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot);
 }	
 
 void
@@ -292,16 +312,14 @@ mono_arch_exceptions_init (void)
 	if (mono_aot_only) {
 	} else {
 		/* LLVM uses the normal trampolines, but with a different name */
-		tramp = get_throw_trampoline (168, TRUE, FALSE, "llvm_throw_corlib_exception", NULL, FALSE);
+		tramp = get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "llvm_throw_corlib_exception", NULL, FALSE);
 		mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
 
-		tramp = get_throw_trampoline (168, TRUE, FALSE, "llvm_throw_corlib_exception_abs", NULL, FALSE);
+		tramp = get_throw_trampoline (168, TRUE, FALSE, TRUE, FALSE, "llvm_throw_corlib_exception_abs", NULL, FALSE);
 		mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception_abs", NULL, TRUE);
 
-		/*
-		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, TRUE, "mono_llvm_resume_unwind_trampoline", FALSE);
+		tramp = get_throw_trampoline (168, FALSE, FALSE, FALSE, TRUE, "mono_llvm_resume_unwind_trampoline", NULL, FALSE);
 		mono_register_jit_icall (tramp, "mono_llvm_resume_unwind_trampoline", NULL, TRUE);
-		*/
 	}
 }
 
@@ -353,9 +371,9 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			new_ctx->regs [i] = regs [i];
 		new_ctx->eip = regs [ARMREG_LR];
 		new_ctx->esp = (gsize)cfa;
-		new_ctx->ebp = new_ctx->esp;
+		new_ctx->ebp = regs [ARMREG_FP];
 
-		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
+		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->esp)) {
 			/* remove any unused lmf */
 			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
@@ -394,13 +412,21 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			frame->method = (*lmf)->method;
 		}
 
+		/*
+		 * The LMF is saved at the start of the method using:
+		 * ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP)
+		 * ARM_PUSH (code, 0x5ff0);
+		 * So it stores the register state as it existed at the caller.
+		 */
 		memcpy (&new_ctx->regs [0], &(*lmf)->iregs [0], sizeof (gulong) * 13);
 		/* SP is skipped */
 		new_ctx->regs [ARMREG_LR] = (*lmf)->iregs [ARMREG_LR - 1];
-		/* This is the sp for the current frame */
-		new_ctx->esp = (*lmf)->iregs [ARMREG_FP];
-		new_ctx->eip = (*lmf)->iregs [13];
-		new_ctx->ebp = new_ctx->esp;
+		new_ctx->esp = (*lmf)->iregs [ARMREG_IP];
+		new_ctx->ebp = new_ctx->regs [ARMREG_FP];
+		new_ctx->eip = new_ctx->regs [ARMREG_LR];
+
+		/* we substract 1, so that the IP points into the call instruction */
+		new_ctx->eip--;
 
 		*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 

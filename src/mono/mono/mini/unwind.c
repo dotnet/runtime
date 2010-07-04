@@ -718,10 +718,12 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 	while (p < action_table) {
 		int block_start_offset, block_size, landing_pad, action_offset;
 
-		block_start_offset = ((guint32*)p) [0];
-		block_size = ((guint32*)p) [1];
-		landing_pad = ((guint32*)p) [2];
-		p += 3 * sizeof (guint32);
+		block_start_offset = read32 (p);
+		p += sizeof (gint32);
+		block_size = read32 (p);
+		p += sizeof (gint32);
+		landing_pad = read32 (p);
+		p += sizeof (gint32);
 		action_offset = decode_uleb128 (p, &p);
 
 		/* landing_pad == 0 means the region has no landing pad */
@@ -743,10 +745,12 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 		int block_start_offset, block_size, landing_pad, action_offset, type_offset;
 		guint8 *action, *tinfo;
 
-		block_start_offset = ((guint32*)p) [0];
-		block_size = ((guint32*)p) [1];
-		landing_pad = ((guint32*)p) [2];
-		p += 3 * sizeof (guint32);
+		block_start_offset = read32 (p);
+		p += sizeof (gint32);
+		block_size = read32 (p);
+		p += sizeof (gint32);
+		landing_pad = read32 (p);
+		p += sizeof (gint32);
 		action_offset = decode_uleb128 (p, &p);
 
 		action = action_table + action_offset - 1;
@@ -755,6 +759,8 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 
 		if (landing_pad) {
 			//printf ("BLOCK: %p-%p %p, %d\n", code + block_start_offset, code + block_start_offset + block_size, code + landing_pad, action_offset);
+
+			g_assert (ttype_offset);
 
 			if (ttype_encoding == DW_EH_PE_absptr) {
 				guint8 *ttype_entry = (ttype - (type_offset * sizeof (gpointer)));
