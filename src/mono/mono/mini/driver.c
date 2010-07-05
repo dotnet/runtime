@@ -1308,6 +1308,7 @@ mono_main (int argc, char* argv[])
 	char *trace_options = NULL;
 	char *profile_options = NULL;
 	char *aot_options = NULL;
+	char *vm_config = NULL;
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
 	char *attach_options = NULL;
@@ -1317,6 +1318,11 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
+	vm_config = getenv ("MONO_VM_CONFIG");
+	if (vm_config != NULL && strstr (vm_config, "llvm")){
+		mono_use_llvm = TRUE;
+	}
+	
 #if HAVE_SCHED_SETAFFINITY
 	if (getenv ("MONO_NO_SMP")) {
 		unsigned long proc_mask = 1;

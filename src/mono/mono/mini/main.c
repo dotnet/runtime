@@ -31,6 +31,17 @@ int
 main (int argc, char* argv[])
 {
 	mono_build_date = build_date;
+
+#if HAVE_BOEHM_GC
+	{
+		char *p = getenv ("MONO_VM_CONFIG");
+		if (p != NULL && strstr (p, "sgen") != NULL){
+			GString *path = g_string_new (argv [0]);
+			g_string_append (path, "-sgen");
+			execvp (path->str, argv);
+		}
+	}
+#endif
 	return mono_main (argc, argv);
 }
 
