@@ -2483,6 +2483,7 @@ if test "x$mono_debugger_supported" = "xyes"; then
 	BOEHM_DEFINES="$BOEHM_DEFINES -DMONO_DEBUGGER_SUPPORTED"
 	NESTED_LIBGC_FLAGS="-DMONO_DEBUGGER_SUPPORTED"
 fi
+AM_CONDITIONAL(MONO_DEBUGGER_SUPPORTED, test x$mono_debugger_supported = xyes)
 AC_MSG_RESULT($mono_debugger_supported)
 
 if test "x$with_tls" = "x__thread"; then

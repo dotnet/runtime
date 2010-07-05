@@ -370,10 +370,14 @@ test_sources = 			\
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
 
 if X86
+if MONO_DEBUGGER_SUPPORTED
 if PLATFORM_DARWIN
 mdb_x86 = mdb-debug-info32-darwin.s
 else
 mdb_x86 = mdb-debug-info32.s
+endif
+else
+mdb_x86 = 
 endif
 arch_sources = $(x86_sources) $(mdb_x86)
 arch_built=cpu-x86.h
@@ -381,7 +385,11 @@ arch_define=__i386__
 endif
 
 if AMD64
+if MONO_DEBUGGER_SUPPORTED
 arch_sources = $(amd64_sources) mdb-debug-info64.s
+else
+arch_sources = $(amd64_sources)
+endif
 arch_built=cpu-amd64.h
 arch_define=__x86_64__
 endif

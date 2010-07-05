@@ -1,3 +1,8 @@
+2010-07-05  Rolf Bjarne Kvinge  <RKvinge@novell.com>
+
+	* configure.in: Restore the AM_CONDITIONAL debugger supported, we need it to
+	include/exclude assembler files from the build in the makefile.
+
 2010-06-29  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add a define for the full LLVM version to config.h.
