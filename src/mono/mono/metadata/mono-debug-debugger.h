@@ -91,4 +91,7 @@ mono_debugger_register_class_init_callback (MonoImage *image, const gchar *full_
 void
 mono_debugger_remove_class_init_callback (int index);
 
+int
+mono_debugger_get_thread_abort_signal (void);
+
 #endif /* __MONO_DEBUG_DEBUGGER_H__ */
