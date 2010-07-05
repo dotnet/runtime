@@ -6,7 +6,6 @@
 #ifndef __MONO_DEBUG_H__
 #define __MONO_DEBUG_H__
 
-#include <glib.h> /* GHashTable dep below */
 #include <mono/utils/mono-publib.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/appdomain.h>
@@ -49,7 +48,7 @@ struct _MonoDebugList {
 };
 
 struct _MonoSymbolTable {
-	guint64 magic;
+	uint64_t magic;
 	uint32_t version;
 	uint32_t total_size;
 
@@ -136,7 +135,6 @@ struct _MonoDebugVarInfo {
 
 extern MonoSymbolTable *mono_symbol_table;
 extern MonoDebugFormat mono_debug_format;
-extern GHashTable *mono_debug_handles;
 extern int32_t mono_debug_debugger_version;
 extern int32_t _mono_debug_using_mono_debugger;
 

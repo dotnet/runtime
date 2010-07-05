@@ -110,7 +110,7 @@ gint32 mono_debug_debugger_version = 5;
 gint32 _mono_debug_using_mono_debugger = 0;
 
 static gboolean mono_debug_initialized = FALSE;
-GHashTable *mono_debug_handles = NULL;
+static GHashTable *mono_debug_handles = NULL;
 
 static GHashTable *data_table_hash = NULL;
 static int next_symbol_file_id = 0;
@@ -1031,7 +1031,7 @@ mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDoma
 
 	mono_debugger_lock ();
 	minfo = _mono_debug_lookup_method (method);
-	if (!minfo || !minfo->handle || !minfo->handle->symfile || !minfo->handle->symfile->offset_table) {
+	if (!minfo || !minfo->handle || !minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile)) {
 		mono_debugger_unlock ();
 		return NULL;
 	}
@@ -1064,7 +1064,7 @@ mono_debug_lookup_locals (MonoMethod *method)
 
 	mono_debugger_lock ();
 	minfo = _mono_debug_lookup_method (method);
-	if (!minfo || !minfo->handle || !minfo->handle->symfile || !minfo->handle->symfile->offset_table) {
+	if (!minfo || !minfo->handle || !minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile)) {
 		mono_debugger_unlock ();
 		return NULL;
 	}
