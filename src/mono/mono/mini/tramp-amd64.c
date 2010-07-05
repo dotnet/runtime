@@ -519,11 +519,10 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	amd64_mov_membase_reg (code, AMD64_RBP, rax_offset, AMD64_RAX, 8);
 
-	/* Restore argument registers, r10 (needed to pass rgctx to
-	   static shared generic methods), r11 (imt register for
-	   interface calls), and rax (needed for direct calls to C vararg functions). */
+	/* Restore argument registers, r10 (imt method/rgxtx)
+	   and rax (needed for direct calls to C vararg functions). */
 	for (i = 0; i < AMD64_NREG; ++i)
-		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_R11 || i == AMD64_RAX)
+		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_RAX)
 			amd64_mov_reg_membase (code, i, AMD64_RBP, saved_regs_offset + (i * 8), 8);
 
 	for (i = 0; i < 8; ++i)
