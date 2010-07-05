@@ -2104,6 +2104,9 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 #ifdef ENABLE_LLVM
 		call->imt_arg_reg = method_reg;
 #endif
+#ifdef MONO_ARCH_IMT_REG
+	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
+#endif
 		return;
 	}
 

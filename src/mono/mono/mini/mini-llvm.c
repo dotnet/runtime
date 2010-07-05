@@ -1867,10 +1867,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	/*
 	 * Modify cconv and parameter attributes to pass rgctx/imt correctly.
 	 */
-	if (call->rgctx_arg_reg)
+#if defined(MONO_ARCH_IMT_REG) && defined(MONO_ARCH_RGCTX_REG)
+	g_assert (MONO_ARCH_IMT_REG == MONO_ARCH_RGCTX_REG);
+#endif
+	/* The two can't be used together, so use only one LLVM calling conv to pass them */
+	g_assert (!(call->rgctx_arg_reg && call->imt_arg_reg));
+	if (call->rgctx_arg_reg || call->imt_arg_reg)
 		LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
-	else if (call->imt_arg_reg)
-		LLVMSetInstructionCallConv (lcall, LLVMMono2CallConv);
 
 	if (call->rgctx_arg_reg)
 		LLVMAddInstrAttribute (lcall, 1 + sinfo.rgctx_arg_pindex, LLVMInRegAttribute);
