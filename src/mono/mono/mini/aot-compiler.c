@@ -916,9 +916,6 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 #elif defined(TARGET_POWERPC)
 	int this_pos = 3;
 
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
-		this_pos = 4;
-
 	g_assert (!acfg->use_bin_writer);
 
 	fprintf (acfg->fp, "\n\taddi %d, %d, %d\n", this_pos, this_pos, (int)sizeof (MonoObject));

@@ -379,48 +379,11 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 gpointer
 mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 {
-	char *o = NULL;
-	int reg, offset = 0;
-	guint32* code = (guint32*)code_ptr;
-	mgreg_t *r = (mgreg_t*)regs;
-
 	*displacement = 0;
 
-	/* This is the 'blrl' instruction */
-	--code;
-
-	/* Sanity check: instruction must be 'blrl' */
-	if (*code != 0x4e800021)
-		return NULL;
-
-	if (mono_ppc_is_direct_call_sequence (code))
-		return NULL;
-
-	/* FIXME: more sanity checks here */
-	/* OK, we're now at the 'blrl' instruction. Now walk backwards
-	till we get to a 'mtlr rA' */
-	for (; --code;) {
-		if((*code & 0x7c0803a6) == 0x7c0803a6) {
-			gint16 soff;
-			/* Here we are: we reached the 'mtlr rA'.
-			Extract the register from the instruction */
-			reg = (*code & 0x03e00000) >> 21;
-			--code;
-			/* ok, this is a lwz reg, offset (vtreg) 
-			 * it is emitted with:
-			 * ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
-			 */
-			soff = (*code & 0xffff);
-			offset = soff;
-			reg = (*code >> 16) & 0x1f;
-			g_assert (reg != ppc_r1);
-			/*g_print ("patching reg is %d\n", reg);*/
-			o = (gpointer)(gsize)r [reg];
-			break;
-		}
-	}
-	*displacement = offset;
-	return o;
+	/* Not used on PPC */
+	g_assert_not_reached ();
+	return NULL;
 }
 
 #define MAX_ARCH_DELEGATE_PARAMS 7
@@ -559,9 +522,6 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 {
 	mgreg_t *r = (mgreg_t*)regs;
 
-	/* FIXME: handle returning a struct */
-	if (MONO_TYPE_ISSTRUCT (sig->ret))
-		return (gpointer)(gsize)r [ppc_r4];
 	return (gpointer)(gsize)r [ppc_r3];
 }
 
@@ -942,6 +902,8 @@ typedef struct {
 	guint32 struct_ret;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
+	gboolean vtype_retaddr;
+	int vret_arg_index;
 	ArgInfo args [1];
 } CallInfo;
 
@@ -1011,7 +973,7 @@ has_only_a_r48_field (MonoClass *klass)
 static CallInfo*
 calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
-	guint i, fr, gr;
+	guint i, fr, gr, pstart;
 	int n = sig->hasthis + sig->param_count;
 	MonoType *simpletype;
 	guint32 stack_size = 0;
@@ -1022,17 +984,45 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 	/* FIXME: handle returning a struct */
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		add_general (&gr, &stack_size, &cinfo->ret, TRUE);
-		cinfo->struct_ret = PPC_FIRST_ARG_REG;
+		cinfo->vtype_retaddr = TRUE;
 	}
 
+	pstart = 0;
 	n = 0;
-	if (sig->hasthis) {
-		add_general (&gr, &stack_size, cinfo->args + n, TRUE);
-		n++;
+	/*
+	 * To simplify get_this_arg_reg () and LLVM integration, emit the vret arg after
+	 * the first argument, allowing 'this' to be always passed in the first arg reg.
+	 * Also do this if the first argument is a reference type, since virtual calls
+	 * are sometimes made using calli without sig->hasthis set, like in the delegate
+	 * invoke wrappers.
+	 */
+	if (cinfo->vtype_retaddr && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (sig->params [0])))) {
+		if (sig->hasthis) {
+			add_general (&gr, &stack_size, cinfo->args + 0, TRUE);
+			n ++;
+		} else {
+			add_general (&gr, &stack_size, &cinfo->args [sig->hasthis + 0], TRUE);
+			pstart = 1;
+			n ++;
+		}
+		add_general (&gr, &stack_size, &cinfo->ret, TRUE);
+		cinfo->struct_ret = cinfo->ret.reg;
+		cinfo->vret_arg_index = 1;
+	} else {
+		/* this */
+		if (sig->hasthis) {
+			add_general (&gr, &stack_size, cinfo->args + 0, TRUE);
+			n ++;
+		}
+
+		if (cinfo->vtype_retaddr) {
+			add_general (&gr, &stack_size, &cinfo->ret, TRUE);
+			cinfo->struct_ret = cinfo->ret.reg;
+		}
 	}
+
         DEBUG(printf("params: %d\n", sig->param_count));
-	for (i = 0; i < sig->param_count; ++i) {
+	for (i = pstart; i < sig->param_count; ++i) {
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
                         /* Prevent implicit arguments and sig_cookie from
 			   being passed in registers */

@@ -82,9 +82,6 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 
 	addr = mono_get_addr_from_ftnptr (addr);
 
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
-		this_pos = 4;
-	    
 	mono_domain_lock (domain);
 	start = code = mono_domain_code_reserve (domain, size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
