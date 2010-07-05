@@ -746,9 +746,77 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 #endif /* !MONO_CROSS_COMPILE */
 }
 
+/*
+ * handle_exception:
+ *
+ *   Called by resuming from a signal handler.
+ */
+static void
+handle_signal_exception (gpointer obj, gboolean test_only)
+{
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoContext ctx;
+	static void (*restore_context) (MonoContext *);
+
+	if (!restore_context)
+		restore_context = mono_get_restore_context ();
+
+	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
+
+	mono_handle_exception (&ctx, obj, MONO_CONTEXT_GET_IP (&ctx), test_only);
+
+	restore_context (&ctx);
+}
+
+static void
+setup_ucontext_return (void *uc, gpointer func)
+{
+	UCONTEXT_REG_LNK(uc) = UCONTEXT_REG_NIP(uc);
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	{
+		MonoPPCFunctionDescriptor *handler_ftnptr = (MonoPPCFunctionDescriptor*)func;
+
+		UCONTEXT_REG_NIP(uc) = (gulong)handler_ftnptr->code;
+		UCONTEXT_REG_Rn(uc, 2) = (gulong)handler_ftnptr->toc;
+	}
+#else
+	UCONTEXT_REG_NIP(uc) = (unsigned long)func;
+#endif
+}
+
 gboolean
 mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 {
+#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_REG_Rn)
+	/*
+	 * Handling the exception in the signal handler is problematic, since the original
+	 * signal is disabled, and we could run arbitrary code though the debugger. So
+	 * resume into the normal stack and do most work there if possible.
+	 */
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	mgreg_t sp;
+	void *sigctx = ctx;
+	int frame_size;
+	void *uc = sigctx;
+
+	/* Pass the ctx parameter in TLS */
+	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
+	/* The others in registers */
+	UCONTEXT_REG_Rn (sigctx, PPC_FIRST_ARG_REG) = (gsize)obj;
+	UCONTEXT_REG_Rn (sigctx, PPC_FIRST_ARG_REG + 1) = test_only;
+
+	/* Allocate a stack frame below the red zone */
+	/* Similar to mono_arch_handle_altstack_exception () */
+	frame_size = 224;
+	frame_size += 15;
+	frame_size &= ~15;
+	sp = (mgreg_t)(UCONTEXT_REG_Rn(uc, 1) & ~15);
+	sp = (mgreg_t)(sp - frame_size);
+	UCONTEXT_REG_Rn(uc, 1) = (mgreg_t)sp;
+	setup_ucontext_return (uc, handle_signal_exception);
+
+	return TRUE;
+#else
 	MonoContext mctx;
 	gboolean result;
 
@@ -760,6 +828,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	 */
 	mono_arch_monoctx_to_sigctx (&mctx, ctx);
 	return result;
+#endif
 }
 
 gboolean
