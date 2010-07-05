@@ -1019,6 +1019,32 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	UCONTEXT_REG_EIP (sigctx) = (gsize)signal_exception_trampoline;
 
 	return TRUE;
+#elif defined (TARGET_WIN32)
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	struct sigcontext *ctx = (struct sigcontext *)sigctx;
+	guint64 sp = ctx->SC_ESP;
+
+	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
+
+	/*
+	 * Can't pass the obj on the stack, since we are executing on the
+	 * same stack. Can't save it into MonoJitTlsData, since it needs GC tracking.
+	 * So put it into a register, and branch to a trampoline which
+	 * pushes it.
+	 */
+	g_assert (!test_only);
+	ctx->SC_EAX = (gsize)obj;
+	ctx->SC_ECX = ctx->SC_EIP;
+	ctx->SC_EDX = (gsize)handle_signal_exception;
+
+	/* Allocate a stack frame, align it to 16 bytes which is needed on apple */
+	sp -= 16;
+	sp &= ~15;
+	ctx->SC_ESP = sp;
+
+	ctx->SC_EIP = (gsize)signal_exception_trampoline;
+
+	return TRUE;
 #else
 	MonoContext mctx;
 
