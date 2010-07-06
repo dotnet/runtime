@@ -4569,9 +4569,6 @@ mono_llvm_emit_aot_module (const char *filename, int got_size)
   - Emit LLVM IR from the mono IR using the LLVM C API.
   - The original arch specific code remains, so we can fall back to it if we run
     into something we can't handle.
-  FIXME:
-  - llvm's PrettyStackTrace class seems to register a signal handler which screws
-    up our GC. Also, it calls sigaction () a _lot_ of times instead of just once.
 */
 
 /*  
@@ -4665,9 +4662,7 @@ mono_llvm_emit_aot_module (const char *filename, int got_size)
 /* FIXME: Normalize some aspects of the mono IR to allow easier translation, like:
  *   - each bblock should end with a branch
  *   - setting the return value, making cfg->ret non-volatile
- * - merge some changes back to HEAD, to reduce the differences.
  * - avoid some transformations in the JIT which make it harder for us to generate
  *   code.
- * - fix memory leaks.
  * - use pointer types to help optimizations.
  */
