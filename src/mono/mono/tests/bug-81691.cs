@@ -12,15 +12,20 @@ class Program
 		int numExceptions = 0;
 
 		for (i = 0; i < 100000; ++i) {
-		try {
-			Type type = assembly.GetType ("NS.B.TestB");
-			FieldInfo field =type.GetField ("testb", BindingFlags.NonPublic | BindingFlags.Static);
-			if (field.FieldType == null)
-				return 1;
-		} catch (TypeLoadException ex) {
-			++numExceptions;
+			try {
+				try {
+					Type type = assembly.GetType ("NS.B.TestB");
+					FieldInfo field =type.GetField ("testb", BindingFlags.NonPublic | BindingFlags.Static);
+					if (field.FieldType == null)
+						return 1;
+				} catch (TypeLoadException ex) {
+					++numExceptions;
+				}
+			} catch (FileNotFoundException ex) {
+				++numExceptions;
+			}
 		}
-		}
+
 		if (numExceptions == 100000)
 			return 0;
 		return 1;
