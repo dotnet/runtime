@@ -64,7 +64,9 @@ sgen_sources = \
 	sgen-gray.c	\
 	sgen-pinning.c	\
 	sgen-pinning-stats.c	\
-	sgen-marksweep.c
+	sgen-marksweep.c		\
+	sgen-los.c				\
+	sgen-protocol.c
 
 libmonoruntime_la_SOURCES = \
 	$(platform_sources)	\
