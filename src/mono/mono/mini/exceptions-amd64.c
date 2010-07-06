@@ -1117,14 +1117,14 @@ mono_arch_exceptions_init (void)
 		throw_pending_exception = mono_arch_get_throw_pending_exception (NULL, FALSE);
 
 		/* LLVM needs different throw trampolines */
-		tramp = get_throw_trampoline (NULL, FALSE, TRUE, FALSE, FALSE, "llvm_throw_corlib_exception", FALSE);
-		mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception", NULL, TRUE);
+		tramp = get_throw_trampoline (NULL, FALSE, TRUE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", FALSE);
+		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
 
-		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, FALSE, "llvm_throw_corlib_exception_abs", FALSE);
-		mono_register_jit_icall (tramp, "mono_arch_llvm_throw_corlib_exception_abs", NULL, TRUE);
+		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", FALSE);
+		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE);
 
-		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, TRUE, "mono_llvm_resume_unwind_trampoline", FALSE);
-		mono_register_jit_icall (tramp, "mono_llvm_resume_unwind_trampoline", NULL, TRUE);
+		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, TRUE, "llvm_resume_unwind_trampoline", FALSE);
+		mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
 	}
 }
 

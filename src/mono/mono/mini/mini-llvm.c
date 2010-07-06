@@ -1256,10 +1256,10 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		throw_sig->ret = &mono_get_void_class ()->byval_arg;
 		throw_sig->params [0] = &mono_get_int32_class ()->byval_arg;
 		if (IS_LLVM_MONO_BRANCH) {
-			icall_name = "mono_arch_llvm_throw_corlib_exception_abs";
+			icall_name = "llvm_throw_corlib_exception_abs_trampoline";
 			throw_sig->params [1] = &mono_get_intptr_class ()->byval_arg;
 		} else {
-			icall_name = "mono_arch_llvm_throw_corlib_exception";
+			icall_name = "llvm_throw_corlib_exception_trampoline";
 			throw_sig->params [1] = &mono_get_int32_class ()->byval_arg;
 		}
 		sig = sig_to_llvm_sig (ctx, throw_sig);
@@ -1267,7 +1267,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		if (ctx->cfg->compile_aot) {
 			callee = get_plt_entry (ctx, sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
 		} else {
-			callee = LLVMAddFunction (ctx->module, "llvm_throw_corlib_exception", sig_to_llvm_sig (ctx, throw_sig));
+			callee = LLVMAddFunction (ctx->module, "llvm_throw_corlib_exception_trampoline", sig_to_llvm_sig (ctx, throw_sig));
 
 			/*
 			 * Differences between the LLVM/non-LLVM throw corlib exception trampoline:
@@ -3478,7 +3478,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					 * LLVM doesn't push the exception argument, so we need a different
 					 * trampoline.
 					 */
-					LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, rethrow ? "mono_arch_llvm_rethrow_exception" : "mono_arch_llvm_throw_exception"));
+					LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, rethrow ? "llvm_rethrow_exception_trampoline" : "llvm_throw_exception_trampoline"));
 #else
 					LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name));
 #endif
@@ -3562,9 +3562,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMPositionBuilderAtEnd (ctx->builder, resume_bb);
 
 			if (ctx->cfg->compile_aot) {
-				callee = get_plt_entry (ctx, LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE), MONO_PATCH_INFO_INTERNAL_METHOD, "mono_llvm_resume_unwind_trampoline");
+				callee = get_plt_entry (ctx, LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE), MONO_PATCH_INFO_INTERNAL_METHOD, "llvm_resume_unwind_trampoline");
 			} else {
-				callee = LLVMGetNamedFunction (module, "mono_llvm_resume_unwind_trampoline");
+				callee = LLVMGetNamedFunction (module, "llvm_resume_unwind_trampoline");
 			}
 			LLVMBuildCall (builder, callee, NULL, 0, "");
 
@@ -4364,7 +4364,7 @@ add_intrinsics (LLVMModuleRef module)
 
 		LLVMAddFunction (module, "mono_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 
-		LLVMAddFunction (module, "mono_llvm_resume_unwind_trampoline", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
+		LLVMAddFunction (module, "llvm_resume_unwind_trampoline", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 	}
 
 	/* SSE intrinsics */
@@ -4454,9 +4454,9 @@ init_jit_module (void)
 
 	jit_module.llvm_types = g_hash_table_new (NULL, NULL);
 
-	info = mono_find_jit_icall_by_name ("mono_llvm_resume_unwind_trampoline");
+	info = mono_find_jit_icall_by_name ("llvm_resume_unwind_trampoline");
 	g_assert (info);
-	LLVMAddGlobalMapping (ee, LLVMGetNamedFunction (jit_module.module, "mono_llvm_resume_unwind_trampoline"), (void*)info->func);
+	LLVMAddGlobalMapping (ee, LLVMGetNamedFunction (jit_module.module, "llvm_resume_unwind_trampoline"), (void*)info->func);
 
 	jit_module_inited = TRUE;
 
