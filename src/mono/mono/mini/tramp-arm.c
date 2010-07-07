@@ -496,6 +496,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	gboolean mrgctx;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
+	char *name;
 
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
@@ -512,6 +513,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	tramp_size = 64 + 16 * depth;
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, 0);
 
 	rgctx_null_jumps = g_malloc (sizeof (guint8*) * (depth + 2));
 	njumps = 0;
@@ -590,6 +593,10 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	mono_arch_flush_icache (buf, code - buf);
 
 	g_assert (code - buf <= tramp_size);
+
+	name = g_strdup_printf ("rgctx_fetch_trampoline_%s_%d", mrgctx ? "mrgctx" : "rgctx", MONO_RGCTX_SLOT_INDEX (slot));
+	mono_save_trampoline_xdebug_info (name, buf, code - buf, unwind_ops);
+	g_free (name);
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("rgctx_fetch_trampoline_%u", slot), buf, code - buf, ji, unwind_ops);
