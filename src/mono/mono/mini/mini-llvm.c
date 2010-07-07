@@ -1797,10 +1797,14 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	l = call->out_ireg_args;
 
 	if (IS_LLVM_MONO_BRANCH) {
-		if (call->rgctx_arg_reg)
+		if (call->rgctx_arg_reg) {
+			g_assert (values [call->rgctx_arg_reg]);
 			args [sinfo.rgctx_arg_pindex] = values [call->rgctx_arg_reg];
-		if (call->imt_arg_reg)
+		}
+		if (call->imt_arg_reg) {
+			g_assert (values [call->imt_arg_reg]);
 			args [sinfo.imt_arg_pindex] = values [call->imt_arg_reg];
+		}
 	}
 
 	if (vretaddr) {

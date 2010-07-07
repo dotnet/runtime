@@ -2106,6 +2106,9 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 #endif
 #ifdef MONO_ARCH_IMT_REG
 	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
+#else
+	/* Need this to keep the IMT arg alive */
+	mono_call_inst_add_outarg_reg (cfg, call, method_reg, 0, FALSE);
 #endif
 		return;
 	}
