@@ -1380,13 +1380,11 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		/* there are pointers */	\
 		gsize *mbitmap_data = complex_descriptors + ((vt)->desc >> LOW_TYPE_BITS);	\
 		int mbwords = (*mbitmap_data++) - 1;	\
-		int el_size = mono_array_element_size (((MonoObject*)(obj))->vtable->klass);	\
+		int el_size = mono_array_element_size (vt->klass);	\
 		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
 		char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
-		if (0) {	\
-			MonoObject *myobj = (MonoObject*)start;	\
-			g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
-		}	\
+		if (0)							\
+                        g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (vt)->desc, vt->klass->name_space, vt->klass->name); \
 		while (e_start < e_end) {	\
 			void **_objptr = (void**)e_start;	\
 			gsize *bitmap_data = mbitmap_data;	\
