@@ -301,10 +301,148 @@ public:
 	}
 };
 
+static void
+force_pass_linking (void)
+{
+	// Make sure the rest is linked in, but never executed
+	if (getenv ("FOO") != (char*)-1)
+		return;
+
+	// This is a subset of the passes in LinkAllPasses.h
+	// The utility passes and the interprocedural passes are commented out
+
+      (void) llvm::createAAEvalPass();
+      (void) llvm::createAggressiveDCEPass();
+      (void) llvm::createAliasAnalysisCounterPass();
+      (void) llvm::createAliasDebugger();
+	  /*
+      (void) llvm::createArgumentPromotionPass();
+      (void) llvm::createStructRetPromotionPass();
+	  */
+      (void) llvm::createBasicAliasAnalysisPass();
+      (void) llvm::createLibCallAliasAnalysisPass(0);
+      (void) llvm::createScalarEvolutionAliasAnalysisPass();
+      (void) llvm::createBlockPlacementPass();
+      (void) llvm::createBreakCriticalEdgesPass();
+      (void) llvm::createCFGSimplificationPass();
+	  /*
+      (void) llvm::createConstantMergePass();
+      (void) llvm::createConstantPropagationPass();
+	  */
+	  /*
+      (void) llvm::createDeadArgEliminationPass();
+	  */
+      (void) llvm::createDeadCodeEliminationPass();
+      (void) llvm::createDeadInstEliminationPass();
+      (void) llvm::createDeadStoreEliminationPass();
+	  /*
+      (void) llvm::createDeadTypeEliminationPass();
+      (void) llvm::createDomOnlyPrinterPass();
+      (void) llvm::createDomPrinterPass();
+      (void) llvm::createDomOnlyViewerPass();
+      (void) llvm::createDomViewerPass();
+      (void) llvm::createEdgeProfilerPass();
+      (void) llvm::createOptimalEdgeProfilerPass();
+      (void) llvm::createFunctionInliningPass();
+      (void) llvm::createAlwaysInlinerPass();
+      (void) llvm::createGlobalDCEPass();
+      (void) llvm::createGlobalOptimizerPass();
+      (void) llvm::createGlobalsModRefPass();
+      (void) llvm::createIPConstantPropagationPass();
+      (void) llvm::createIPSCCPPass();
+	  */
+      (void) llvm::createIndVarSimplifyPass();
+      (void) llvm::createInstructionCombiningPass();
+	  /*
+      (void) llvm::createInternalizePass(false);
+	  */
+      (void) llvm::createLCSSAPass();
+      (void) llvm::createLICMPass();
+      (void) llvm::createLazyValueInfoPass();
+      (void) llvm::createLiveValuesPass();
+      (void) llvm::createLoopDependenceAnalysisPass();
+	  /*
+      (void) llvm::createLoopExtractorPass();
+	  */
+      (void) llvm::createLoopSimplifyPass();
+      (void) llvm::createLoopStrengthReducePass();
+      (void) llvm::createLoopUnrollPass();
+      (void) llvm::createLoopUnswitchPass();
+      (void) llvm::createLoopRotatePass();
+      (void) llvm::createLoopIndexSplitPass();
+      (void) llvm::createLowerInvokePass();
+	  /*
+      (void) llvm::createLowerSetJmpPass();
+	  */
+      (void) llvm::createLowerSwitchPass();
+      (void) llvm::createNoAAPass();
+	  /*
+      (void) llvm::createNoProfileInfoPass();
+      (void) llvm::createProfileEstimatorPass();
+      (void) llvm::createProfileVerifierPass();
+      (void) llvm::createProfileLoaderPass();
+	  */
+      (void) llvm::createPromoteMemoryToRegisterPass();
+      (void) llvm::createDemoteRegisterToMemoryPass();
+	  /*
+      (void) llvm::createPruneEHPass();
+      (void) llvm::createPostDomOnlyPrinterPass();
+      (void) llvm::createPostDomPrinterPass();
+      (void) llvm::createPostDomOnlyViewerPass();
+      (void) llvm::createPostDomViewerPass();
+	  */
+      (void) llvm::createReassociatePass();
+      (void) llvm::createSCCPPass();
+      (void) llvm::createScalarReplAggregatesPass();
+      (void) llvm::createSimplifyLibCallsPass();
+      (void) llvm::createSimplifyHalfPowrLibCallsPass();
+	  /*
+      (void) llvm::createSingleLoopExtractorPass();
+      (void) llvm::createStripSymbolsPass();
+      (void) llvm::createStripNonDebugSymbolsPass();
+      (void) llvm::createStripDeadDebugInfoPass();
+      (void) llvm::createStripDeadPrototypesPass();
+      (void) llvm::createTailCallEliminationPass();
+      (void) llvm::createTailDuplicationPass();
+      (void) llvm::createJumpThreadingPass();
+	  */
+	  /*
+      (void) llvm::createUnifyFunctionExitNodesPass();
+	  */
+      (void) llvm::createInstCountPass();
+      (void) llvm::createCodeGenPreparePass();
+      (void) llvm::createGVNPass();
+      (void) llvm::createMemCpyOptPass();
+      (void) llvm::createLoopDeletionPass();
+	  /*
+      (void) llvm::createPostDomTree();
+      (void) llvm::createPostDomFrontier();
+      (void) llvm::createInstructionNamerPass();
+      (void) llvm::createPartialSpecializationPass();
+      (void) llvm::createFunctionAttrsPass();
+      (void) llvm::createMergeFunctionsPass();
+      (void) llvm::createPrintModulePass(0);
+      (void) llvm::createPrintFunctionPass("", 0);
+      (void) llvm::createDbgInfoPrinterPass();
+      (void) llvm::createModuleDebugInfoPrinterPass();
+      (void) llvm::createPartialInliningPass();
+	  */
+      (void) llvm::createSSIPass();
+      (void) llvm::createSSIEverythingPass();
+      (void) llvm::createGEPSplitterPass();
+      (void) llvm::createABCDPass();
+	  /*
+      (void) llvm::createLintPass();
+	  */
+      (void) llvm::createSinkingPass();
+}
+
 LLVMExecutionEngineRef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb)
 {
   std::string Error;
+
+  force_pass_linking ();
 
   LLVMInitializeX86Target ();
   LLVMInitializeX86TargetInfo ();
@@ -333,16 +471,19 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   fpm = new FunctionPassManager (unwrap (MP));
 
   fpm->add(new TargetData(*EE->getTargetData()));
-  /* Add a random set of passes */
-  /* Make this run-time configurable */
+  /* Add a default set of passes */
   //createStandardFunctionPasses (fpm, 2);
   fpm->add(createInstructionCombiningPass());
   fpm->add(createReassociatePass());
   fpm->add(createGVNPass());
   fpm->add(createCFGSimplificationPass());
 
+  /* The one used by opt is:
+   * -simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify
+   */
+
   /* Add passes specified by the env variable */
-  /* FIXME: This can only add passes which are linked in, thus are already used */
+  /* Only the passes in force_pass_linking () can be used */
   for (unsigned i = 0; i < PassList.size(); ++i) {
       const PassInfo *PassInf = PassList[i];
       Pass *P = 0;
