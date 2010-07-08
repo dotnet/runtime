@@ -446,7 +446,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	g_assert ((code - buf) <= 256);
 
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("generic_trampoline_%d", tramp_type), buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create (mono_get_generic_trampoline_name (tramp_type), buf, code - buf, ji, unwind_ops);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
 		/* Initialize the nullified class init trampoline used in the AOT case */
@@ -507,7 +507,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	gboolean mrgctx;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	char *name;
 
 	unwind_ops = mono_arch_get_cie_program ();
 
@@ -585,12 +584,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 
 	g_assert (code - buf <= tramp_size);
 
-	name = g_strdup_printf ("rgctx_fetch_trampoline_%s_%d", mrgctx ? "mrgctx" : "rgctx", index);
-	mono_save_trampoline_xdebug_info (name, buf, code - buf, unwind_ops);
-	g_free (name);
-
 	if (info)
-		*info = mono_tramp_info_create (g_strdup_printf ("rgctx_fetch_trampoline_%u", slot), buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create (mono_get_rgctx_fetch_trampoline_name (slot), buf, code - buf, ji, unwind_ops);
 
 	return buf;
 }
@@ -640,8 +635,6 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 	mono_arch_flush_icache (code, code - buf);
 
 	g_assert (code - buf <= tramp_size);
-
-	mono_save_trampoline_xdebug_info ("generic_class_init_trampoline", buf, code - buf, unwind_ops);
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("generic_class_init_trampoline"), buf, code - buf, ji, unwind_ops);

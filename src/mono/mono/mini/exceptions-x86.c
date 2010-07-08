@@ -601,10 +601,8 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 
 	g_assert ((code - start) < 128);
 
-	mono_save_trampoline_xdebug_info (name, start, code - start, unwind_ops);
-
 	if (info)
-		*info = mono_tramp_info_create (name, start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (g_strdup (name), start, code - start, ji, unwind_ops);
 
 	return start;
 }
@@ -977,8 +975,6 @@ mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot)
 	x86_call_reg (code, X86_EDX);
 
 	g_assert ((code - start) < 128);
-
-	mono_save_trampoline_xdebug_info ("x86_signal_exception_trampoline", start, code - start, unwind_ops);
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup ("x86_signal_exception_trampoline"), start, code - start, ji, unwind_ops);

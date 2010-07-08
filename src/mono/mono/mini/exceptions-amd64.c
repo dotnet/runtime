@@ -482,10 +482,8 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 	g_assert ((code - start) < buf_size);
 
-	mono_save_trampoline_xdebug_info (tramp_name, start, code - start, unwind_ops);
-
 	if (info)
-		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (g_strdup (tramp_name), start, code - start, ji, unwind_ops);
 
 	return start;
 }

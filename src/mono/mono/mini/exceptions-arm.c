@@ -244,8 +244,6 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
 
-	mono_save_trampoline_xdebug_info (tramp_name, start, code - start, unwind_ops);
-
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf (tramp_name), start, code - start, ji, unwind_ops);
 

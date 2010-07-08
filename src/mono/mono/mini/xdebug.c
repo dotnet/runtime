@@ -325,7 +325,7 @@ mono_save_xdebug_info (MonoCompile *cfg)
  * LOCKING: Acquires the loader lock.
  */
 void
-mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info)
+mono_save_trampoline_xdebug_info (MonoTrampInfo *info)
 {
 	if (use_gdb_interface) {
 		MonoImageWriter *w;
@@ -335,7 +335,7 @@ mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 
 
 		xdebug_begin_emit (&w, &dw);
 
-		mono_dwarf_writer_emit_trampoline (dw, tramp_name, NULL, NULL, code, code_size, unwind_info);
+		mono_dwarf_writer_emit_trampoline (dw, info->name, NULL, NULL, info->code, info->code_size, info->unwind_ops);
 
 		xdebug_end_emit (w, dw, NULL);
 		
@@ -345,7 +345,7 @@ mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 
 			return;
 
 		mono_loader_lock ();
-		mono_dwarf_writer_emit_trampoline (xdebug_writer, tramp_name, NULL, NULL, code, code_size, unwind_info);
+		mono_dwarf_writer_emit_trampoline (xdebug_writer, info->name, NULL, NULL, info->code, info->code_size, info->unwind_ops);
 		fflush (xdebug_fp);
 		mono_loader_unlock ();
 	}
@@ -364,7 +364,7 @@ mono_save_xdebug_info (MonoCompile *cfg)
 }
 
 void
-mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info)
+mono_save_trampoline_xdebug_info (MonoTrampInfo *info)
 {
 }
 

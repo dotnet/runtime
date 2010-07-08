@@ -1088,7 +1088,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	code = mono_arch_create_generic_trampoline (tramp_type, &info, FALSE);
 	if (info) {
-		mono_save_trampoline_xdebug_info (info->name, info->code, info->code_size, info->unwind_ops);
+		mono_save_trampoline_xdebug_info (info);
 		mono_tramp_info_free (info);
 	}
 
@@ -1195,6 +1195,7 @@ mono_create_generic_class_init_trampoline (void)
 {
 #ifdef MONO_ARCH_VTABLE_REG
 	static gpointer code;
+	MonoTrampInfo *info;
 
 	mono_trampolines_lock ();
 
@@ -1202,8 +1203,14 @@ mono_create_generic_class_init_trampoline (void)
 		if (mono_aot_only)
 			/* get_named_code () might return an ftnptr, but our caller expects a direct pointer */
 			code = mono_get_addr_from_ftnptr (mono_aot_get_trampoline ("generic_class_init_trampoline"));
-		else
-			code = mono_arch_create_generic_class_init_trampoline (NULL, FALSE);
+		else {
+			code = mono_arch_create_generic_class_init_trampoline (&info, FALSE);
+
+			if (info) {
+				mono_save_trampoline_xdebug_info (info);
+				mono_tramp_info_free (info);
+			}
+		}
 	}
 
 	mono_trampolines_unlock ();
@@ -1360,6 +1367,7 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 {
 	static gboolean inited = FALSE;
 	static int num_trampolines = 0;
+	MonoTrampInfo *info;
 
 	gpointer tramp, ptr;
 
@@ -1375,7 +1383,11 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	if (tramp)
 		return tramp;
 
-	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, NULL, FALSE);
+	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, FALSE);
+	if (info) {
+		mono_save_trampoline_xdebug_info (info);
+		mono_tramp_info_free (info);
+	}
 	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
 
 	mono_trampolines_lock ();
@@ -1502,3 +1514,51 @@ mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr)
 	mono_trampolines_unlock ();
 	return offset;
 }
+
+static const char*tramp_names [MONO_TRAMPOLINE_NUM] = {
+	"jit",
+	"jump",
+	"class_init",
+	"generic_class_init",
+	"rgctx_lazy_fetch",
+	"aot",
+	"aot_plt",
+	"delegate",
+	"restore_stack_prot",
+	"generic_virtual_remoting",
+	"monitor_enter",
+	"monitor_exit",
+	"vcall",
+#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
+	"handler_block_guard"
+#endif
+};
+
+/*
+ * mono_get_generic_trampoline_name:
+ *
+ *   Returns a pointer to malloc-ed memory.
+ */
+char*
+mono_get_generic_trampoline_name (MonoTrampolineType tramp_type)
+{
+	return g_strdup_printf ("generic_trampoline_%s", tramp_names [tramp_type]);
+}
+
+/*
+ * mono_get_rgctx_fetch_trampoline_name:
+ *
+ *   Returns a pointer to malloc-ed memory.
+ */
+char*
+mono_get_rgctx_fetch_trampoline_name (int slot)
+{
+	gboolean mrgctx;
+	int index;
+
+	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
+	index = MONO_RGCTX_SLOT_INDEX (slot);
+
+	return g_strdup_printf ("rgctx_fetch_trampoline_%s_%d", mrgctx ? "mrgctx" : "rgctx", index);
+}
+

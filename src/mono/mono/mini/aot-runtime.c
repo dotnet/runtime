@@ -3218,24 +3218,8 @@ load_function (MonoAotModule *amodule, const char *name)
 					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "mono_thread_get_and_clear_pending_exception")) {
 					target = mono_thread_get_and_clear_pending_exception;
-				} else if (strstr (ji->data.name, "generic_trampoline_monitor_enter")) {
-					char *symbol;
-
-					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_MONITOR_ENTER);
-					target = mono_aot_get_trampoline (symbol);
-					g_free (symbol);
-				} else if (strstr (ji->data.name, "generic_trampoline_monitor_exit")) {
-					char *symbol;
-
-					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_MONITOR_EXIT);
-					target = mono_aot_get_trampoline (symbol);
-					g_free (symbol);
-				} else if (strstr (ji->data.name, "generic_trampoline_generic_class_init")) {
-					char *symbol;
-
-					symbol = g_strdup_printf ("generic_trampoline_%d", MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
-					target = mono_aot_get_trampoline (symbol);
-					g_free (symbol);
+				} else if (strstr (ji->data.name, "generic_trampoline_")) {
+					target = mono_aot_get_trampoline (ji->data.name);
 				} else if (aot_jit_icall_hash && g_hash_table_lookup (aot_jit_icall_hash, ji->data.name)) {
 					/* Registered by mono_arch_init () */
 					target = g_hash_table_lookup (aot_jit_icall_hash, ji->data.name);
@@ -3347,7 +3331,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	if (!generic_trampolines [tramp_type]) {
 		char *symbol;
 
-		symbol = g_strdup_printf ("generic_trampoline_%d", tramp_type);
+		symbol = mono_get_generic_trampoline_name (tramp_type);
 		generic_trampolines [tramp_type] = mono_aot_get_trampoline (symbol);
 		g_free (symbol);
 	}
@@ -3414,7 +3398,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	char *symbol;
 	gpointer code;
 
-	symbol = g_strdup_printf ("rgctx_fetch_trampoline_%u", slot);
+	symbol = mono_get_rgctx_fetch_trampoline_name (slot);
 	code = load_function (mono_defaults.corlib->aot_module, symbol);
 	g_free (symbol);
 	/* The caller expects an ftnptr */

@@ -373,7 +373,8 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 		int i;
 
 		for (i = 0; i < g_slist_length (w->cie_program); ++i)
-			l = l->next;
+			if (l)
+				l = l->next;
 	}
 
 	/* Convert the list of MonoUnwindOps to the format used by DWARF */	
