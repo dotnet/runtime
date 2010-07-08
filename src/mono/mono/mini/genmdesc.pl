@@ -14,7 +14,7 @@ sub INST_SRC3  () {return 3;}
 sub INST_LEN   () {return 4;}
 sub INST_CLOB  () {return 5;}
 sub INST_NACL  () {return 6;}
-sub INST_MAX   () {return 7;}
+sub INST_MAX   () {return 6;}
 
 # this must include all the #defines used in mini-ops.h
 my @defines = qw (__i386__ __x86_64__ __ppc__ __powerpc__ __ppc64__ __arm__ 
@@ -174,14 +174,14 @@ sub build_spec {
 				    $n += $vals [INST_NACL];
 			        }
 				$res .= sprintf ("\\x%x\" \"", + $n);
-			} if ($i != INST_NACL) {
+			} elsif ($i != INST_NACL) {
 				if ($vals [$i] =~ /^[a-zA-Z0-9]$/) {
 					$res .= $vals [$i];
 				} else {
 					$res .= sprintf ("\\x%x\" \"", $vals [$i]);
 				}
 			}
-		} else {
+		} elsif ($i != INST_NACL) {
 			$res .= "\\x0\" \"";
 		}
 	}
