@@ -468,6 +468,13 @@ verify_image_file (const char *fname)
 			mono_loader_clear_error ();
 			++count;
 		}
+
+		mono_class_setup_vtable (class);
+		if (class->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ()) {
+			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, class->name_space, class->name);
+			mono_loader_clear_error ();
+			++count;
+		}
 	}
 	if (count)
 		return 5;
