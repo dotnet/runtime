@@ -1158,7 +1158,7 @@ domain_id_alloc (MonoDomain *domain)
 	return id;
 }
 
-static guint32 domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
+static gsize domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
 static gpointer domain_gc_desc = NULL;
 static guint32 domain_shadow_serial = 0L;
 
@@ -1175,7 +1175,7 @@ mono_domain_create (void)
 		unsigned int i, bit = 0;
 		for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i < G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED); i += sizeof (gpointer)) {
 			bit = i / sizeof (gpointer);
-			domain_gc_bitmap [bit / 32] |= 1 << (bit % 32);
+			domain_gc_bitmap [bit / 32] |= (gsize) 1 << (bit % 32);
 		}
 		domain_gc_desc = mono_gc_make_descr_from_bitmap ((gsize*)domain_gc_bitmap, bit + 1);
 	}

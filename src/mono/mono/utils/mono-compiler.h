@@ -112,6 +112,30 @@
 		"addi	%0,%0, " #var "@tprel@l\n" \
 	: "=r" (offset))
 #endif
+#elif defined(__s390x__)
+# if defined(PIC)
+// This only works if libmono is linked into the application
+#  define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  				\
+						__asm__ ("basr	%%r1,0\n\t"			\
+							 "j	0f\n\t"				\
+							 ".quad " #var "@INDNTPOFF\n\t"		\
+							 "0:\n\t"				\
+							 "lg	%%r2,4(%%r1)\n\t"		\
+							 "brasl	%%r14,__tls_get_offset@PLT\n\t" \
+							 "lgr	%0,%%r2\n\t"			\
+							: "=r" (foo) : 				\
+							: "1", "2", "14", "cc");		\
+						offset = foo; } while (0)
+# else
+#  define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  				\
+						__asm__ ("basr	%%r1,0\n\t"			\
+							 "j	0f\n\t"				\
+							 ".quad " #var "@NTPOFF\n"		\
+							 "0:\n\t"				\
+							 "lg	%0,4(%%r1)\n\t"			\
+							: "=r" (foo) : : "1");			\
+						offset = foo; } while (0)
+# endif
 #else
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 #endif

@@ -2183,7 +2183,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, cinfo->ret.reg, FALSE);
 	}
 
-	header = mono_method_get_header (cfg->method);
+	header = cfg->header;
 	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
 		frmReg = s390_r11;
 	else

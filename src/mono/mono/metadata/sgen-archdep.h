@@ -162,30 +162,30 @@
 
 #elif defined(__s390x__)
 
-#define REDZONE_SIZE	128
+#define REDZONE_SIZE	0
 
 #define ARCH_NUM_REGS 16	
 #define ARCH_STORE_REGS(ptr)	\
 	__asm__ __volatile__(	\
-		"stg %%r0, 0x00(%0)\n"	\
-		"stg %%r1, 0x08(%0)\n"	\
-		"stg %%r2, 0x10(%0)\n"	\
-		"stg %%r3, 0x18(%0)\n"	\
-		"stg %%r4, 0x20(%0)\n"	\
-		"stg %%r5, 0x28(%0)\n"	\
-		"stg %%r6, 0x30(%0)\n"	\
-		"stg %%r7, 0x38(%0)\n"	\
-		"stg %%r8, 0x40(%0)\n"	\
-		"stg %%r9, 0x48(%0)\n"	\
-		"stg %%r10, 0x50(%0)\n"	\
-		"stg %%r11, 0x58(%0)\n"	\
-		"stg %%r12, 0x60(%0)\n"	\
-		"stg %%r13, 0x68(%0)\n"	\
-		"stg %%r14, 0x70(%0)\n"	\
-		"stg %%r15, 0x78(%0)\n"	\
-		: "=&a" (ptr)	\
-		: "0" (cur_thread_regs)	\
-		: "memory"	\
+		"stg	%%r0,0x00(%0)\n\t"	\
+		"stg	%%r1,0x08(%0)\n\t"	\
+		"stg	%%r2,0x10(%0)\n\t"	\
+		"stg	%%r3,0x18(%0)\n\t"	\
+		"stg	%%r4,0x20(%0)\n\t"	\
+		"stg	%%r5,0x28(%0)\n\t"	\
+		"stg	%%r6,0x30(%0)\n\t"	\
+		"stg	%%r7,0x38(%0)\n\t"	\
+		"stg	%%r8,0x40(%0)\n\t"	\
+		"stg	%%r9,0x48(%0)\n\t"	\
+		"stg	%%r10,0x50(%0)\n\t"	\
+		"stg	%%r11,0x58(%0)\n\t"	\
+		"stg	%%r12,0x60(%0)\n\t"	\
+		"stg	%%r13,0x68(%0)\n\t"	\
+		"stg	%%r14,0x70(%0)\n\t"	\
+		"stg	%%r15,0x78(%0)\n"	\
+		: "=&a" (ptr)			\
+		: "0" (cur_thread_regs)		\
+		: "memory"			\
 	)
 #define ARCH_SIGCTX_SP(ctx)	((UCONTEXT_GREGS((ctx))) [15])
 #define ARCH_SIGCTX_IP(ctx)	((ucontext_t *) (ctx))->uc_mcontext.psw.addr

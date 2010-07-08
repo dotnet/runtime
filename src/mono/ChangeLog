@@ -1,3 +1,7 @@
+2010-07-08  Neale Ferguson <neale@sinenomine.net>
+
+	* configure.in: Add sgen_supported=true for s390x.
+
 2010-07-05  Rolf Bjarne Kvinge  <RKvinge@novell.com>
 
 	* configure.in: Restore the AM_CONDITIONAL debugger supported, we need it to
