@@ -28,7 +28,7 @@
 #include "config.h"
 #include <glib.h>
 #include <pthread.h>
-#include <sys/signal.h>
+#include <signal.h>
 #include "utils/mono-compiler.h"
 #include "metadata/class-internals.h"
 
