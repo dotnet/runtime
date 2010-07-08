@@ -912,7 +912,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 			extra_msg = g_strdup ("");
 		}
 		
-		g_warning ("The following assembly referenced from %s could not be loaded:\n"
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY, "The following assembly referenced from %s could not be loaded:\n"
 				   "     Assembly:   %s    (assemblyref_index=%d)\n"
 				   "     Version:    %d.%d.%d.%d\n"
 				   "     Public Key: %s\n%s",
