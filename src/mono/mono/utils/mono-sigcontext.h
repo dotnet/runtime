@@ -2,6 +2,9 @@
 #define __MONO_MONO_SIGCONTEXT_H__
 
 #include <config.h>
+#if defined(PLATFORM_ANDROID)
+#include <asm/sigcontext.h>
+#endif
 
 #if defined(__i386__)
 
