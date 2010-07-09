@@ -1079,6 +1079,9 @@ set_metadata_flag (LLVMValueRef v, const char *flag_name)
 #if LLVM_CHECK_VERSION (2, 8)
 	LLVMValueRef md_arg;
 	int md_kind;
+	
+	if (!IS_LLVM_MONO_BRANCH)
+		return;
 
 	md_kind = LLVMGetMDKindID (flag_name, strlen (flag_name));
 	md_arg = LLVMMDString ("mono", 4);
@@ -2780,7 +2783,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			values [ins->dreg] = emit_load (ctx, bb, &builder, size, addr, dname, is_volatile);
 
-			if (!is_volatile && (ins->flags & MONO_INST_CONSTANT_LOAD) && IS_LLVM_MONO_BRANCH) {
+			if (!is_volatile && (ins->flags & MONO_INST_CONSTANT_LOAD)) {
 				/*
 				 * These will signal LLVM that these loads do not alias any stores, and
 				 * they can't fail, allowing them to be hoisted out of loops.
