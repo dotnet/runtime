@@ -28,45 +28,96 @@
 /* If not null, dump binary protocol to this file */
 static FILE *binary_protocol_file = NULL;
 
-#define BINARY_PROTOCOL_BUFFER_SIZE	65536
+#define BINARY_PROTOCOL_BUFFER_SIZE	(65536 - 2 * 8)
 
-static unsigned char binary_protocol_buffer [BINARY_PROTOCOL_BUFFER_SIZE];
-static int binary_protocol_buffer_index = 0;
+typedef struct _BinaryProtocolBuffer BinaryProtocolBuffer;
+struct _BinaryProtocolBuffer {
+	BinaryProtocolBuffer *next;
+	int index;
+	unsigned char buffer [BINARY_PROTOCOL_BUFFER_SIZE];
+};
+
+static BinaryProtocolBuffer *binary_protocol_buffers = NULL;
+LOCK_DECLARE (binary_protocol_mutex);
 
 static void
-flush_binary_protocol_buffer (void)
+binary_protocol_flush_buffers_rec (BinaryProtocolBuffer *buffer)
+{
+	if (!buffer)
+		return;
+
+	binary_protocol_flush_buffers_rec (buffer->next);
+
+	g_assert (buffer->index > 0);
+	fwrite (buffer->buffer, 1, buffer->index, binary_protocol_file);
+
+	free_os_memory (buffer, sizeof (BinaryProtocolBuffer));
+}
+
+static void
+binary_protocol_flush_buffers (void)
 {
 	if (!binary_protocol_file)
 		return;
-	if (binary_protocol_buffer_index == 0)
-		return;
 
-	fwrite (binary_protocol_buffer, 1, binary_protocol_buffer_index, binary_protocol_file);
-	fflush (binary_protocol_file);
-
-	binary_protocol_buffer_index = 0;
+	binary_protocol_flush_buffers_rec (binary_protocol_buffers);
+	binary_protocol_buffers = NULL;
 }
+
+static BinaryProtocolBuffer*
+binary_protocol_get_buffer (int length)
+{
+	BinaryProtocolBuffer *buffer, *new_buffer;
+
+ retry:
+	buffer = binary_protocol_buffers;
+	if (buffer && buffer->index + length <= BINARY_PROTOCOL_BUFFER_SIZE)
+		return buffer;
+
+	new_buffer = get_os_memory (sizeof (BinaryProtocolBuffer), TRUE);
+	new_buffer->next = buffer;
+	new_buffer->index = 0;
+
+	if (InterlockedCompareExchangePointer ((void**)&binary_protocol_buffers, new_buffer, buffer) != buffer) {
+		free_os_memory (new_buffer, sizeof (BinaryProtocolBuffer));
+		goto retry;
+	}
+
+	return new_buffer;
+}
+
 
 static void
 protocol_entry (unsigned char type, gpointer data, int size)
 {
+	int index;
+	BinaryProtocolBuffer *buffer;
+
 	if (!binary_protocol_file)
 		return;
-	if (binary_protocol_buffer_index + 1 + size > BINARY_PROTOCOL_BUFFER_SIZE)
-		flush_binary_protocol_buffer ();
 
-	binary_protocol_buffer [binary_protocol_buffer_index++] = type;
-	memcpy (binary_protocol_buffer + binary_protocol_buffer_index, data, size);
-	binary_protocol_buffer_index += size;
+ retry:
+	buffer = binary_protocol_get_buffer (size + 1);
+ retry_same_buffer:
+	index = buffer->index;
+	if (index + 1 + size > BINARY_PROTOCOL_BUFFER_SIZE)
+		goto retry;
 
-	g_assert (binary_protocol_buffer_index <= BINARY_PROTOCOL_BUFFER_SIZE);
+	if (InterlockedCompareExchange (&buffer->index, index + 1 + size, index) != index)
+		goto retry_same_buffer;
+
+	buffer->buffer [index++] = type;
+	memcpy (buffer->buffer + index, data, size);
+	index += size;
+
+	g_assert (index <= BINARY_PROTOCOL_BUFFER_SIZE);
 }
 
 static void
 binary_protocol_collection (int generation)
 {
 	SGenProtocolCollection entry = { generation };
-	flush_binary_protocol_buffer ();
+	binary_protocol_flush_buffers ();
 	protocol_entry (SGEN_PROTOCOL_COLLECTION, &entry, sizeof (SGenProtocolCollection));
 }
 

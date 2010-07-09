@@ -3321,6 +3321,8 @@ collect_nursery (size_t requested_size)
 
 	check_scan_starts ();
 
+	binary_protocol_flush_buffers ();
+
 	current_collection_generation = -1;
 
 	return need_major_collection ();
@@ -3553,6 +3555,8 @@ major_do_collection (const char *reason)
 	last_los_memory_usage = los_memory_usage;
 
 	check_scan_starts ();
+
+	binary_protocol_flush_buffers ();
 
 	//consistency_check ();
 }
