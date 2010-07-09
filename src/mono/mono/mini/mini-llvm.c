@@ -2209,126 +2209,74 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_COMPARE:
 		case OP_ICOMPARE_IMM:
 		case OP_LCOMPARE_IMM:
-		case OP_COMPARE_IMM:
-#ifdef TARGET_AMD64
-		case OP_AMD64_ICOMPARE_MEMBASE_REG:
-		case OP_AMD64_ICOMPARE_MEMBASE_IMM:
-#endif
-#ifdef TARGET_X86
-		case OP_X86_COMPARE_MEMBASE_REG:
-		case OP_X86_COMPARE_MEMBASE_IMM:
-#endif
-			{
-				CompRelation rel;
-				LLVMValueRef cmp;
+		case OP_COMPARE_IMM: {
+			CompRelation rel;
+			LLVMValueRef cmp;
 
-				if (ins->next->opcode == OP_NOP)
-					break;
-
-				if (ins->next->opcode == OP_BR)
-					/* The comparison result is not needed */
-					continue;
-
-				rel = mono_opcode_to_cond (ins->next->opcode);
-
-				/* Used for implementing bound checks */
-#ifdef TARGET_AMD64
-				if ((ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_REG) || (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM)) {
-					int size = 4;
-					LLVMValueRef index;
-					LLVMTypeRef t;
-
-					t = LLVMInt32Type ();
-
-					g_assert (ins->inst_offset % size == 0);
-					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-
-					lhs = emit_load (ctx, bb, &builder, 4, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), "", !cfg->explicit_null_checks);
-				}
-				if (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM) {
-					lhs = convert (ctx, lhs, LLVMInt32Type ());
-					rhs = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
-				}
-				if (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_REG)
-					rhs = convert (ctx, rhs, LLVMInt32Type ());
-#endif
-
-#ifdef TARGET_X86
-				if ((ins->opcode == OP_X86_COMPARE_MEMBASE_REG) || (ins->opcode == OP_X86_COMPARE_MEMBASE_IMM)) {
-					int size = 4;
-					LLVMValueRef index;
-					LLVMTypeRef t;
-
-					t = LLVMInt32Type ();
-
-					g_assert (ins->inst_offset % size == 0);
-					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-
-					lhs = LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), "");
-				}
-				if (ins->opcode == OP_X86_COMPARE_MEMBASE_IMM) {
-					lhs = convert (ctx, lhs, LLVMInt32Type ());
-					rhs = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
-				}
-				if (ins->opcode == OP_X86_COMPARE_MEMBASE_REG)
-					rhs = convert (ctx, rhs, LLVMInt32Type ());
-#endif
-
-				if (ins->opcode == OP_ICOMPARE_IMM) {
-					lhs = convert (ctx, lhs, LLVMInt32Type ());
-					rhs = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
-				}
-				if (ins->opcode == OP_LCOMPARE_IMM) {
-					lhs = convert (ctx, lhs, LLVMInt64Type ());
-					rhs = LLVMConstInt (LLVMInt64Type (), GET_LONG_IMM (ins), FALSE);
-				}
-				if (ins->opcode == OP_LCOMPARE) {
-					lhs = convert (ctx, lhs, LLVMInt64Type ());
-					rhs = convert (ctx, rhs, LLVMInt64Type ());
-				}
-				if (ins->opcode == OP_ICOMPARE) {
-					lhs = convert (ctx, lhs, LLVMInt32Type ());
-					rhs = convert (ctx, rhs, LLVMInt32Type ());
-				}
-
-				if (lhs && rhs) {
-					if (LLVMGetTypeKind (LLVMTypeOf (lhs)) == LLVMPointerTypeKind)
-						rhs = convert (ctx, rhs, LLVMTypeOf (lhs));
-					else if (LLVMGetTypeKind (LLVMTypeOf (rhs)) == LLVMPointerTypeKind)
-						lhs = convert (ctx, lhs, LLVMTypeOf (rhs));
-				}
-
-				/* We use COMPARE+SETcc/Bcc, llvm uses SETcc+br cond */
-				if (ins->opcode == OP_FCOMPARE)
-					cmp = LLVMBuildFCmp (builder, fpcond_to_llvm_cond [rel], convert (ctx, lhs, LLVMDoubleType ()), convert (ctx, rhs, LLVMDoubleType ()), "");
-				else if (ins->opcode == OP_COMPARE_IMM)
-					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), "");
-				else if (ins->opcode == OP_COMPARE)
-					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), convert (ctx, rhs, IntPtrType ()), "");
-				else
-					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, rhs, "");
-
-				if (MONO_IS_COND_BRANCH_OP (ins->next)) {
-					LLVMBuildCondBr (builder, cmp, get_bb (ctx, ins->next->inst_true_bb), get_bb (ctx, ins->next->inst_false_bb));
-					has_terminator = TRUE;
-				} else if (MONO_IS_SETCC (ins->next)) {
-					sprintf (dname_buf, "t%d", ins->next->dreg);
-					dname = dname_buf;
-					values [ins->next->dreg] = LLVMBuildZExt (builder, cmp, LLVMInt32Type (), dname);
-
-					/* Add stores for volatile variables */
-					emit_volatile_store (ctx, ins->next->dreg);
-				} else if (MONO_IS_COND_EXC (ins->next)) {
-					emit_cond_system_exception (ctx, bb, ins->next->inst_p1, cmp);
-					CHECK_FAILURE (ctx);
-					builder = ctx->builder;
-				} else {
-					LLVM_FAILURE (ctx, "next");
-				}
-
-				ins = ins->next;
+			if (ins->next->opcode == OP_NOP)
 				break;
+
+			if (ins->next->opcode == OP_BR)
+				/* The comparison result is not needed */
+				continue;
+
+			rel = mono_opcode_to_cond (ins->next->opcode);
+
+			if (ins->opcode == OP_ICOMPARE_IMM) {
+				lhs = convert (ctx, lhs, LLVMInt32Type ());
+				rhs = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
 			}
+			if (ins->opcode == OP_LCOMPARE_IMM) {
+				lhs = convert (ctx, lhs, LLVMInt64Type ());
+				rhs = LLVMConstInt (LLVMInt64Type (), GET_LONG_IMM (ins), FALSE);
+			}
+			if (ins->opcode == OP_LCOMPARE) {
+				lhs = convert (ctx, lhs, LLVMInt64Type ());
+				rhs = convert (ctx, rhs, LLVMInt64Type ());
+			}
+			if (ins->opcode == OP_ICOMPARE) {
+				lhs = convert (ctx, lhs, LLVMInt32Type ());
+				rhs = convert (ctx, rhs, LLVMInt32Type ());
+			}
+
+			if (lhs && rhs) {
+				if (LLVMGetTypeKind (LLVMTypeOf (lhs)) == LLVMPointerTypeKind)
+					rhs = convert (ctx, rhs, LLVMTypeOf (lhs));
+				else if (LLVMGetTypeKind (LLVMTypeOf (rhs)) == LLVMPointerTypeKind)
+					lhs = convert (ctx, lhs, LLVMTypeOf (rhs));
+			}
+
+			/* We use COMPARE+SETcc/Bcc, llvm uses SETcc+br cond */
+			if (ins->opcode == OP_FCOMPARE)
+				cmp = LLVMBuildFCmp (builder, fpcond_to_llvm_cond [rel], convert (ctx, lhs, LLVMDoubleType ()), convert (ctx, rhs, LLVMDoubleType ()), "");
+			else if (ins->opcode == OP_COMPARE_IMM)
+				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), "");
+			else if (ins->opcode == OP_COMPARE)
+				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), convert (ctx, rhs, IntPtrType ()), "");
+			else
+				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, rhs, "");
+
+			if (MONO_IS_COND_BRANCH_OP (ins->next)) {
+				LLVMBuildCondBr (builder, cmp, get_bb (ctx, ins->next->inst_true_bb), get_bb (ctx, ins->next->inst_false_bb));
+				has_terminator = TRUE;
+			} else if (MONO_IS_SETCC (ins->next)) {
+				sprintf (dname_buf, "t%d", ins->next->dreg);
+				dname = dname_buf;
+				values [ins->next->dreg] = LLVMBuildZExt (builder, cmp, LLVMInt32Type (), dname);
+
+				/* Add stores for volatile variables */
+				emit_volatile_store (ctx, ins->next->dreg);
+			} else if (MONO_IS_COND_EXC (ins->next)) {
+				emit_cond_system_exception (ctx, bb, ins->next->inst_p1, cmp);
+				CHECK_FAILURE (ctx);
+				builder = ctx->builder;
+			} else {
+				LLVM_FAILURE (ctx, "next");
+			}
+
+			ins = ins->next;
+			break;
+		}
 		case OP_FCEQ:
 		case OP_FCLT:
 		case OP_FCLT_UN:

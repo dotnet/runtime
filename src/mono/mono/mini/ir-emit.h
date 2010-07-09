@@ -788,6 +788,13 @@ static int ccount = 0;
 		} \
 	} while (0)
 
+#define NEW_LOAD_MEMBASE_MAY_FAULT(cfg,dest,op,dr,base,offset,fault) do {	\
+		if (fault)														\
+			NEW_LOAD_MEMBASE_FAULT ((cfg), (dest), (op), (dr), (base), (offset)); \
+		else \
+			NEW_LOAD_MEMBASE ((cfg), (dest), (op), (dr), (base), (offset)); \
+	} while (0)
+
 #define EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dest,op,dr,base,offset) do { \
 		NEW_LOAD_MEMBASE_FAULT ((cfg), (dest), (op), (dr), (base), (offset)); \
 		MONO_ADD_INS ((cfg)->cbb, (dest)); \
@@ -802,17 +809,30 @@ static int ccount = 0;
 			} \
 	} while (0)
 
+#define MONO_EMIT_NEW_LOAD_MEMBASE_OP_MAY_FAULT(cfg,op,dr,base,offset,fault) do { \
+	if (fault) \
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT ((cfg), (op), (dr), (base), (offset)); \
+	else \
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP ((cfg), (op), (dr), (base), (offset)); \
+	} while (0)
+
 #define MONO_EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT ((cfg), (OP_LOAD_MEMBASE), (dr), (base), (offset))
 
 /*Object Model related macros*/
 
-#ifndef MONO_ARCH_EMIT_BOUNDS_CHECK
-#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) do { \
+/* Default bounds check implementation for most architectures + llvm */
+#define MONO_EMIT_DEFAULT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg, fault) do { \
 			int _length_reg = alloc_ireg (cfg); \
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset); \
+			if (fault) \
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset); \
+			else \
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset); \
 			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, _length_reg, index_reg); \
 			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
 	} while (0)
+
+#ifndef MONO_ARCH_EMIT_BOUNDS_CHECK
+#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (offset), (index_reg), TRUE)
 #endif
 
 /* cfg is the MonoCompile been used
@@ -825,13 +845,17 @@ static int ccount = 0;
 		if (!(cfg->opt & MONO_OPT_UNSAFE)) {							\
 		if (!(cfg->opt & MONO_OPT_ABCREM)) {							\
 			MONO_EMIT_NULL_CHECK (cfg, array_reg);						\
-			MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
+			if (COMPILE_LLVM (cfg)) \
+				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg), TRUE); \
+			else \
+				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
 		} else {														\
 			MonoInst *ins;												\
 			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);				\
 			ins->sreg1 = array_reg;										\
 			ins->sreg2 = index_reg;										\
 			ins->inst_imm = G_STRUCT_OFFSET (array_type, array_length_field); \
+			ins->flags |= MONO_INST_FAULT; \
 			MONO_ADD_INS ((cfg)->cbb, ins);								\
 			(cfg)->flags |= MONO_CFG_HAS_ARRAY_ACCESS;					\
 			(cfg)->cbb->has_array_access = TRUE;						\

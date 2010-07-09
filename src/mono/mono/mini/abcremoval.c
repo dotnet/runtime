@@ -999,6 +999,34 @@ remove_abc_from_inst (MonoInst *ins, MonoVariableRelationsEvaluationArea *area)
 	}
 }
 
+static gboolean
+eval_non_null (MonoVariableRelationsEvaluationArea *area, int reg)
+{
+	MonoRelationsEvaluationContext *context = &(area->contexts [reg]);
+
+	clean_contexts (area->contexts, area->cfg->next_vreg);
+	evaluate_relation_with_target_variable (area, reg, reg, NULL);
+				
+	return context->ranges.zero.lower > 0;
+}
+
+static void
+add_non_null (MonoVariableRelationsEvaluationArea *area, MonoCompile *cfg, int reg,
+			  GSList **check_relations)
+{
+	MonoAdditionalVariableRelation *rel;
+
+	rel = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
+	rel->variable = reg;
+	rel->relation.relation = MONO_GT_RELATION;
+	rel->relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
+	rel->relation.related_value.value.constant.value = 0;
+
+	apply_change_to_evaluation_area (area, rel);
+
+	*check_relations = g_slist_append_mempool (cfg->mempool, *check_relations, rel);
+}
+
 /*
  * Process a BB removing bounds checks from array accesses.
  * It does the following (in sequence):
@@ -1089,28 +1117,40 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 		}
 
 		if (ins->opcode == OP_CHECK_THIS) {
-			MonoRelationsEvaluationContext *context = &(area->contexts [ins->sreg1]);
-
-			clean_contexts (area->contexts, area->cfg->next_vreg);
-			evaluate_relation_with_target_variable (area, ins->sreg1, ins->sreg1, NULL);
-				
-			if (context->ranges.zero.lower > 0) {
+			if (eval_non_null (area, ins->sreg1)) {
 				if (REPORT_ABC_REMOVAL)
 					printf ("ARRAY-ACCESS: removed check_this instruction.\n");
 				NULLIFY_INS (ins);
 			}
 		}
 
-		if (ins->opcode == OP_NOT_NULL) {
-			rel = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
-			rel->variable = ins->sreg1;
-			rel->relation.relation = MONO_GT_RELATION;
-			rel->relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
-			rel->relation.related_value.value.constant.value = 0;
+		if (ins->opcode == OP_NOT_NULL)
+			add_non_null (area, cfg, ins->sreg1, &check_relations);
 
-			apply_change_to_evaluation_area (area, rel);
+		/*
+		 * Eliminate MONO_INST_FAULT flags if possible.
+		 */
+		if (COMPILE_LLVM (cfg) && (ins->opcode == OP_LDLEN ||
+								   ins->opcode == OP_BOUNDS_CHECK ||
+								   ins->opcode == OP_STRLEN ||
+								   (MONO_IS_LOAD_MEMBASE (ins) && (ins->flags & MONO_INST_FAULT)) ||
+								   (MONO_IS_STORE_MEMBASE (ins) && (ins->flags & MONO_INST_FAULT)))) {
+			int reg;
 
-			check_relations = g_slist_append_mempool (cfg->mempool, check_relations, rel);
+			if (MONO_IS_STORE_MEMBASE (ins))
+				reg = ins->inst_destbasereg;
+			else if (MONO_IS_LOAD_MEMBASE (ins))
+				reg = ins->inst_basereg;
+			else
+				reg = ins->sreg1;
+
+			if (eval_non_null (area, reg)) {
+				if (REPORT_ABC_REMOVAL)
+					printf ("ARRAY-ACCESS: removed MONO_INST_FAULT flag.\n");
+				ins->flags &= ~MONO_INST_FAULT;
+			} else {
+				add_non_null (area, cfg, reg, &check_relations);
+			}
 		}
 	}	
 	

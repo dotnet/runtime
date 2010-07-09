@@ -4125,6 +4125,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			/* Decompose later to allow more optimizations */
 			EMIT_NEW_UNALU (cfg, ins, OP_STRLEN, dreg, args [0]->dreg);
 			ins->type = STACK_I4;
+			ins->flags |= MONO_INST_FAULT;
 			cfg->cbb->has_array_access = TRUE;
 			cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
 
@@ -8601,6 +8602,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->dreg = alloc_preg (cfg);
 			ins->sreg1 = sp [0]->dreg;
 			ins->type = STACK_I4;
+			/* This flag will be inherited by the decomposition */
+			ins->flags |= MONO_INST_FAULT;
 			MONO_ADD_INS (cfg->cbb, ins);
 			cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
 			cfg->cbb->has_array_access = TRUE;

@@ -1301,13 +1301,16 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 			for (ins = bb->code; ins; ins = ins->next) {
 				switch (ins->opcode) {
 				case OP_LDLEN:
-					NEW_LOAD_MEMBASE_FAULT (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
-											G_STRUCT_OFFSET (MonoArray, max_length));
+					NEW_LOAD_MEMBASE_MAY_FAULT (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
+												G_STRUCT_OFFSET (MonoArray, max_length), ins->flags & MONO_INST_FAULT);
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
 				case OP_BOUNDS_CHECK:
 					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1);
-					MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2);
+					if (COMPILE_LLVM (cfg))
+						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->flags & MONO_INST_FAULT);
+					else
+						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2);
 					break;
 				case OP_NEWARR:
 					if (cfg->opt & MONO_OPT_SHARED) {
@@ -1336,8 +1339,8 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					}
 					break;
 				case OP_STRLEN:
-					MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOADI4_MEMBASE, ins->dreg,
-														 ins->sreg1, G_STRUCT_OFFSET (MonoString, length));
+					MONO_EMIT_NEW_LOAD_MEMBASE_OP_MAY_FAULT (cfg, OP_LOADI4_MEMBASE, ins->dreg,
+															 ins->sreg1, G_STRUCT_OFFSET (MonoString, length), ins->flags & MONO_INST_FAULT);
 					break;
 				default:
 					break;
