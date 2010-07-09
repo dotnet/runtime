@@ -1186,11 +1186,13 @@ emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, in
 		 res = mono_llvm_build_load (*builder_ref, addr, name, is_faulting);
 
 		 /* Mark it with a custom metadata */
+#if LLVM_CHECK_VERSION (2, 8)
 		 if (is_faulting) {
 			 md_kind = LLVMGetMDKindID ("mono.faulting.load", strlen ("mono.faulting.load"));
 			 md_arg = LLVMMDString ("mono", 4);
 			 LLVMSetMetadata (res, md_kind, LLVMMDNode (&md_arg, 1));
 		 }
+#endif
 		 return res;
 	}
 }
