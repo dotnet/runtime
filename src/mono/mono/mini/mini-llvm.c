@@ -1175,12 +1175,23 @@ emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, in
 		
 		return res;
 	} else {
+		LLVMValueRef res, md_arg;
+		int md_kind;
+
 		/* 
 		 * We emit volatile loads for loads which can fault, because otherwise
 		 * LLVM will generate invalid code when encountering a load from a
 		 * NULL address.
 		 */
-		return mono_llvm_build_load (*builder_ref, addr, name, is_faulting);
+		 res = mono_llvm_build_load (*builder_ref, addr, name, is_faulting);
+
+		 /* Mark it with a custom metadata */
+		 if (is_faulting) {
+			 md_kind = LLVMGetMDKindID ("mono.faulting.load", strlen ("mono.faulting.load"));
+			 md_arg = LLVMMDString ("mono", 4);
+			 LLVMSetMetadata (res, md_kind, LLVMMDNode (&md_arg, 1));
+		 }
+		 return res;
 	}
 }
 
@@ -2230,7 +2241,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					g_assert (ins->inst_offset % size == 0);
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
 
-					lhs = emit_load (ctx, bb, &builder, 4, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), "", TRUE);
+					lhs = emit_load (ctx, bb, &builder, 4, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), "", !cfg->explicit_null_checks);
 				}
 				if (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM) {
 					lhs = convert (ctx, lhs, LLVMInt32Type ());

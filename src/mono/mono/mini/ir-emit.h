@@ -781,7 +781,11 @@ static int ccount = 0;
 /* A load which can cause a nullref */
 #define NEW_LOAD_MEMBASE_FAULT(cfg,dest,op,dr,base,offset) do { \
 		MONO_EMIT_NULL_CHECK ((cfg), (base));	\
-		NEW_LOAD_MEMBASE_FLAGS ((cfg), (dest), (op), (dr), (base), (offset), MONO_INST_FAULT); \
+		if (cfg->explicit_null_checks) {							  \
+			NEW_LOAD_MEMBASE ((cfg), (dest), (op), (dr), (base), (offset)); \
+		} else { \
+			NEW_LOAD_MEMBASE_FLAGS ((cfg), (dest), (op), (dr), (base), (offset), MONO_INST_FAULT); \
+		} \
 	} while (0)
 
 #define EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dest,op,dr,base,offset) do { \
@@ -791,7 +795,11 @@ static int ccount = 0;
 
 #define MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT(cfg,op,dr,base,offset) do { \
 		MONO_EMIT_NULL_CHECK (cfg, base);		\
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS ((cfg), (op), (dr), (base), (offset), MONO_INST_FAULT); \
+		if (cfg->explicit_null_checks) {							  \
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP ((cfg), (op), (dr), (base), (offset)); \
+		} else { \
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS ((cfg), (op), (dr), (base), (offset), MONO_INST_FAULT); \
+			} \
 	} while (0)
 
 #define MONO_EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT ((cfg), (OP_LOAD_MEMBASE), (dr), (base), (offset))
