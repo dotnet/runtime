@@ -8893,7 +8893,18 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 	if (!can)
 		return FALSE;
 
-	if (!can_access_type (access_class, member_class) && (!access_class->nested_in || !can_access_type (access_class->nested_in, member_class)))
+	can = can_access_type (access_class, member_class);
+	if (!can) {
+		MonoClass *nested = access_class->nested_in;
+		while (nested) {
+			can = can_access_type (nested, member_class);
+			if (can)
+				break;
+			nested = nested->nested_in;
+		}
+	}
+
+	if (!can)
 		return FALSE;
 
 	if (called->is_inflated) {
@@ -8937,7 +8948,18 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 	if (!can)
 		return FALSE;
 
-	if (!can_access_type (access_class, member_class) && (!access_class->nested_in || !can_access_type (access_class->nested_in, member_class)))
+	can = can_access_type (access_class, member_class);
+	if (!can) {
+		MonoClass *nested = access_class->nested_in;
+		while (nested) {
+			can = can_access_type (nested, member_class);
+			if (can)
+				break;
+			nested = nested->nested_in;
+		}
+	}
+
+	if (!can)
 		return FALSE;
 	return TRUE;
 }
