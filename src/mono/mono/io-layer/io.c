@@ -2845,7 +2845,7 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	struct stat buf, linkbuf;
 	int result;
 	gchar *filename;
-	gchar *utf8_filename;
+	gchar *utf8_filename, *utf8_basename;
 	gunichar2 *utf16_basename;
 	time_t create_time;
 	glong bytes;
@@ -2942,9 +2942,11 @@ retry:
 	find_data->dwReserved0 = 0;
 	find_data->dwReserved1 = 0;
 
-	utf16_basename = g_utf8_to_utf16 (utf8_filename, -1, NULL, &bytes,
+	utf8_basename = _wapi_basename (utf8_filename);
+	utf16_basename = g_utf8_to_utf16 (utf8_basename, -1, NULL, &bytes,
 					  NULL);
 	if(utf16_basename==NULL) {
+		g_free (utf8_basename);
 		g_free (utf8_filename);
 		goto retry;
 	}
@@ -2963,6 +2965,7 @@ retry:
 
 	find_data->cAlternateFileName [0] = 0;	/* not used */
 
+	g_free (utf8_basename);
 	g_free (utf8_filename);
 	g_free (utf16_basename);
 
