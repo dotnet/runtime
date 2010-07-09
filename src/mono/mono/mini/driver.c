@@ -1316,6 +1316,13 @@ mono_main (int argc, char* argv[])
 	int test_jit_info_table = FALSE;
 #endif
 
+#ifdef MOONLIGHT
+	/* stdout defaults to block buffering if it's not writing to a terminal, which
+	 * happens with our test harness: we redirect stdout to capture it. Force line
+	 * buffering in all cases. */
+	setlinebuf (stdout);
+#endif
+
 	setlocale (LC_ALL, "");
 
 	vm_config = getenv ("MONO_VM_CONFIG");
