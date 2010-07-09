@@ -1073,6 +1073,19 @@ get_handler_clause (MonoCompile *cfg, MonoBasicBlock *bb)
 	return -1;
 }
 
+static void
+set_metadata_flag (LLVMValueRef v, const char *flag_name)
+{
+#if LLVM_CHECK_VERSION (2, 8)
+	LLVMValueRef md_arg;
+	int md_kind;
+
+	md_kind = LLVMGetMDKindID (flag_name, strlen (flag_name));
+	md_arg = LLVMMDString ("mono", 4);
+	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
+#endif
+}
+
 /*
  * emit_call:
  *
@@ -1175,8 +1188,7 @@ emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, in
 		
 		return res;
 	} else {
-		LLVMValueRef res, md_arg;
-		int md_kind;
+		LLVMValueRef res;
 
 		/* 
 		 * We emit volatile loads for loads which can fault, because otherwise
@@ -1186,13 +1198,11 @@ emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, in
 		 res = mono_llvm_build_load (*builder_ref, addr, name, is_faulting);
 
 		 /* Mark it with a custom metadata */
-#if LLVM_CHECK_VERSION (2, 8)
-		 if (is_faulting) {
-			 md_kind = LLVMGetMDKindID ("mono.faulting.load", strlen ("mono.faulting.load"));
-			 md_arg = LLVMMDString ("mono", 4);
-			 LLVMSetMetadata (res, md_kind, LLVMMDNode (&md_arg, 1));
-		 }
-#endif
+		 /*
+		 if (is_faulting)
+			 set_metadata_flag (res, "mono.faulting.load");
+		 */
+
 		 return res;
 	}
 }
@@ -1553,9 +1563,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			emit_volatile_store (ctx, cfg->args [i + sig->hasthis]->dreg);
 
 	if (sig->hasthis && !cfg->rgctx_var && cfg->generic_sharing_context) {
-#if LLVM_CHECK_VERSION (2, 8)
-		LLVMValueRef this_alloc, md_arg;
-		int md_kind;
+		LLVMValueRef this_alloc;
 
 		/*
 		 * The exception handling code needs the location where the this argument was
@@ -1567,16 +1575,11 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		/* This volatile store will keep the alloca alive */
 		mono_llvm_build_store (builder, ctx->values [cfg->args [0]->dreg], this_alloc, TRUE);
 
-		md_kind = LLVMGetMDKindID ("mono.this", strlen ("mono.this"));
-		md_arg = LLVMMDString ("this", 4);
-		LLVMSetMetadata (this_alloc, md_kind, LLVMMDNode (&md_arg, 1));
-#endif
+		set_metadata_flag (this_alloc, "mono.this");
 	}
 
 	if (cfg->rgctx_var) {
-#if LLVM_CHECK_VERSION (2, 8)
-		LLVMValueRef rgctx_alloc, store, md_arg;
-		int md_kind;
+		LLVMValueRef rgctx_alloc, store;
 
 		/*
 		 * We handle the rgctx arg similarly to the this pointer.
@@ -1586,10 +1589,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		/* This volatile store will keep the alloca alive */
 		store = mono_llvm_build_store (builder, ctx->rgctx_arg, rgctx_alloc, TRUE);
 
-		md_kind = LLVMGetMDKindID ("mono.this", strlen ("mono.this"));
-		md_arg = LLVMMDString ("this", 4);
-		LLVMSetMetadata (rgctx_alloc, md_kind, LLVMMDNode (&md_arg, 1));
-#endif
+		set_metadata_flag (rgctx_alloc, "mono.this");
 	}
 
 	/*
@@ -2779,6 +2779,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			addr = convert (ctx, addr, LLVMPointerType (t, 0));
 
 			values [ins->dreg] = emit_load (ctx, bb, &builder, size, addr, dname, is_volatile);
+
+			if (!is_volatile && (ins->flags & MONO_INST_CONSTANT_LOAD) && IS_LLVM_MONO_BRANCH) {
+				/*
+				 * These will signal LLVM that these loads do not alias any stores, and
+				 * they can't fail, allowing them to be hoisted out of loops.
+				 */
+				set_metadata_flag (values [ins->dreg], "mono.noalias");
+				set_metadata_flag (values [ins->dreg], "mono.nofail.load");
+			}
 
 			if (sext)
 				values [ins->dreg] = LLVMBuildSExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
