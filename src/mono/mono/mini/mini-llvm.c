@@ -1135,12 +1135,12 @@ emit_load (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, in
 	LLVMValueRef args [16], res;
 	LLVMTypeRef addr_type;
 
-	if (is_faulting && IS_LLVM_MONO_BRANCH) {
+	if (is_faulting && bb->region != -1 && IS_LLVM_MONO_BRANCH) {
 		/*
 		 * We handle loads which can fault by calling a mono specific intrinsic
 		 * using an invoke, so they are handled properly inside try blocks.
-		 * We use this even outside clauses, since LLVM might be able to hoist them
-		 * out of loops.
+		 * We can't use this outside clauses, since LLVM optimizes intrinsics which
+		 * are marked with IntrReadArgMem.
 		 */
 		switch (size) {
 		case 1:
@@ -1190,7 +1190,7 @@ emit_store (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, i
 	const char *intrins_name;
 	LLVMValueRef args [16];
 
-	if (is_faulting && IS_LLVM_MONO_BRANCH) {
+	if (is_faulting && bb->region != -1 && IS_LLVM_MONO_BRANCH) {
 		switch (size) {
 		case 1:
 			intrins_name = "llvm.mono.store.i8.p0i8";
