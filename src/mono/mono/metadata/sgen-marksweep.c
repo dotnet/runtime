@@ -780,6 +780,15 @@ static void
 major_finish_major_collection (void)
 {
 	int section_reserve = minor_collection_allowance / MS_BLOCK_SIZE;
+
+	/*
+	 * FIXME: We don't free blocks on 32 bit platforms because it
+	 * can lead to address space fragmentation, since we're
+	 * allocating blocks in larger contingents.
+	 */
+	if (sizeof (mword) < 8)
+		return;
+
 	while (num_empty_blocks > section_reserve) {
 		void *next = *(void**)empty_blocks;
 		free_os_memory (empty_blocks, MS_BLOCK_SIZE);
