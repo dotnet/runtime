@@ -2230,7 +2230,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					g_assert (ins->inst_offset % size == 0);
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
 
-					lhs = LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), "");
+					lhs = emit_load (ctx, bb, &builder, 4, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), "", TRUE);
 				}
 				if (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM) {
 					lhs = convert (ctx, lhs, LLVMInt32Type ());
