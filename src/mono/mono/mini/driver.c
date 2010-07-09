@@ -1132,6 +1132,7 @@ mini_usage (void)
 		"    --attach=OPTIONS       Pass OPTIONS to the attach agent in the runtime.\n"
 		"                           Currently the only supported option is 'disable'.\n"
 		"    --llvm, --nollvm       Controls whenever the runtime uses LLVM to compile code.\n"
+	        "    --gc=[sgen,boehm]      Select SGen or Boehm GC (runs mono or mono-sgen)\n"
 	  );
 }
 
@@ -1280,6 +1281,22 @@ mono_jit_parse_options (int argc, char * argv[])
 	}
 }
 
+void
+mono_set_use_smp (int use_smp)
+{
+#if HAVE_SCHED_SETAFFINITY
+	if (!use_smp) {
+		unsigned long proc_mask = 1;
+#ifdef GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY
+		sched_setaffinity (getpid(), (gpointer)&proc_mask);
+#else
+		sched_setaffinity (getpid(), sizeof (unsigned long), (gpointer)&proc_mask);
+#endif
+	}
+#endif
+}
+	
+
 /**
  * mono_main:
  * @argc: number of arguments in the argv array
@@ -1308,10 +1325,10 @@ mono_main (int argc, char* argv[])
 	char *trace_options = NULL;
 	char *profile_options = NULL;
 	char *aot_options = NULL;
-	char *vm_config = NULL;
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
 	char *attach_options = NULL;
+	int use_smp = 1;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
 #endif
@@ -1325,21 +1342,9 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
-	vm_config = getenv ("MONO_VM_CONFIG");
-	if (vm_config != NULL && strstr (vm_config, "llvm")){
-		mono_use_llvm = TRUE;
-	}
+	if (getenv ("MONO_NO_SMP"))
+		mono_set_use_smp (FALSE);
 	
-#if HAVE_SCHED_SETAFFINITY
-	if (getenv ("MONO_NO_SMP")) {
-		unsigned long proc_mask = 1;
-#ifdef GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY
-		sched_setaffinity (getpid(), (gpointer)&proc_mask);
-#else
-		sched_setaffinity (getpid(), sizeof (unsigned long), (gpointer)&proc_mask);
-#endif
-	}
-#endif
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 
@@ -1420,6 +1425,25 @@ mono_main (int argc, char* argv[])
 			opt = parse_optimizations (argv [i] + 11);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
 			opt = parse_optimizations (argv [i] + 3);
+		} else if (strcmp (argv [i], "--gc=sgen")) {
+#if HAVE_BOEHM_GC
+			GString *path = g_string_new (argv [0]);
+			g_string_append (path, "-sgen");
+			argv [0] = path->str;
+			execvp (path->str, argv);
+#endif
+		} else if (strcmp (argv [i], "--gc=boehm")) {
+#if HAVE_SGEN_GC
+			char *copy = g_strdup (argv [0]);
+			char *p = strstr (copy, "-sgen");
+			if (p == NULL){
+				fprintf (stderr, "Error, this process is not named mono-sgen and the command line option --boehm was passed");
+				exit (1);
+			}
+			*p = 0;
+			argv [0] = p;
+			execvp (p, argv);
+#endif
 		} else if (strcmp (argv [i], "--config") == 0) {
 			if (i +1 >= argc){
 				fprintf (stderr, "error: --config requires a filename argument\n");
