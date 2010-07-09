@@ -398,9 +398,7 @@ major_is_object_live (char *obj)
 	if (ptr_in_nursery (obj))
 		return FALSE;
 
-	objsize = safe_object_get_size ((MonoObject*)obj);
-	objsize += ALLOC_ALIGN - 1;
-	objsize &= ~(ALLOC_ALIGN - 1);
+	objsize = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 
 	/* LOS */
 	if (objsize > MAX_SMALL_OBJ_SIZE)
@@ -534,9 +532,7 @@ major_copy_or_mark_object (void **ptr)
 		return;
 	}
 
-	objsize = safe_object_get_size ((MonoObject*)obj);
-	objsize += ALLOC_ALIGN - 1;
-	objsize &= ~(ALLOC_ALIGN - 1);
+	objsize = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 
 	if (objsize > MAX_SMALL_OBJ_SIZE) {
 		if (object_is_pinned (obj))

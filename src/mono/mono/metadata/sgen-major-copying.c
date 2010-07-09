@@ -197,9 +197,7 @@ major_is_object_live (char *obj)
 	if (ptr_in_nursery (obj))
 		return FALSE;
 
-	objsize = safe_object_get_size ((MonoObject*)obj);
-	objsize += ALLOC_ALIGN - 1;
-	objsize &= ~(ALLOC_ALIGN - 1);
+	objsize = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 
 	/* LOS */
 	if (objsize > MAX_SMALL_OBJ_SIZE)
@@ -349,9 +347,7 @@ major_copy_or_mark_object (void **obj_slot)
 	 * see whether it's a pinned chunk or a major heap section.
 	 */
 
-	objsize = safe_object_get_size ((MonoObject*)obj);
-	objsize += ALLOC_ALIGN - 1;
-	objsize &= ~(ALLOC_ALIGN - 1);
+	objsize = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 
 	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
 		if (object_is_pinned (obj))
@@ -411,9 +407,7 @@ build_section_fragments (GCMemSection *section)
 			binary_protocol_empty (frag_start, frag_size);
 			memset (frag_start, 0, frag_size);
 		}
-		frag_size = safe_object_get_size ((MonoObject*)pin_queue [i]);
-		frag_size += ALLOC_ALIGN - 1;
-		frag_size &= ~(ALLOC_ALIGN - 1);
+		frag_size = ALIGN_UP (safe_object_get_size ((MonoObject*)pin_queue [i]));
 		frag_start = (char*)pin_queue [i] + frag_size;
 		section->next_data = MAX (section->next_data, frag_start);
 	}

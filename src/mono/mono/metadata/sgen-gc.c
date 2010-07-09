@@ -905,6 +905,8 @@ static MonoGCCallbacks gc_callbacks;
 #define ALLOC_ALIGN		8
 #define ALLOC_ALIGN_BITS	3
 
+#define ALIGN_UP(s)		(((s)+(ALLOC_ALIGN-1)) & ~(ALLOC_ALIGN-1))
+
 #define MOVED_OBJECTS_NUM 64
 static void *moved_objects [MOVED_OBJECTS_NUM];
 static int moved_objects_idx = 0;
@@ -1286,12 +1288,6 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 }
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
-#define STRING_SIZE(size,str) do {	\
-		(size) = sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*)(str)) + 2;	\
-		(size) += (ALLOC_ALIGN - 1);	\
-		(size) &= ~(ALLOC_ALIGN - 1);	\
-	} while (0)
-
 #define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \
 		(size) = ((desc) & 0xfff8) >> 1;	\
     } while (0)
@@ -1580,9 +1576,7 @@ scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callb
 			continue;
 		}
 
-		size = safe_object_get_size ((MonoObject*) start);
-		size += ALLOC_ALIGN - 1;
-		size &= ~(ALLOC_ALIGN - 1);
+		size = ALIGN_UP (safe_object_get_size ((MonoObject*) start));
 
 		callback (start, size, data);
 
@@ -2338,17 +2332,11 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 			 */
 			do {
 				if (!*(void**)search_start) {
-					mword p = (mword)search_start;
-					p += sizeof (gpointer);
-					p += ALLOC_ALIGN - 1;
-					p &= ~(ALLOC_ALIGN - 1);
-					search_start = (void*)p;
+					search_start = (void*)ALIGN_UP ((mword)search_start + sizeof (gpointer));
 					continue;
 				}
 				last_obj = search_start;
-				last_obj_size = safe_object_get_size ((MonoObject*)search_start);
-				last_obj_size += ALLOC_ALIGN - 1;
-				last_obj_size &= ~(ALLOC_ALIGN - 1);
+				last_obj_size = ALIGN_UP (safe_object_get_size ((MonoObject*)search_start));
 				DEBUG (8, fprintf (gc_debug_file, "Pinned try match %p (%s), size %zd\n", last_obj, safe_name (last_obj), last_obj_size));
 				if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
 					DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
@@ -2931,9 +2919,7 @@ build_nursery_fragments (int start_pin, int end_pin)
 		frag_size = frag_end - frag_start;
 		if (frag_size)
 			add_nursery_frag (frag_size, frag_start, frag_end);
-		frag_size = safe_object_get_size ((MonoObject*)pin_queue [i]);
-		frag_size += ALLOC_ALIGN - 1;
-		frag_size &= ~(ALLOC_ALIGN - 1);
+		frag_size = ALIGN_UP (safe_object_get_size ((MonoObject*)pin_queue [i]));
 		frag_start = (char*)pin_queue [i] + frag_size;
 	}
 	nursery_last_pinned_end = frag_start;
@@ -3005,9 +2991,7 @@ dump_section (GCMemSection *section, const char *type)
 		vt = (GCVTable*)LOAD_VTABLE (start);
 		class = vt->klass;
 
-		size = safe_object_get_size ((MonoObject*) start);
-		size += ALLOC_ALIGN - 1;
-		size &= ~(ALLOC_ALIGN - 1);
+		size = ALIGN_UP (safe_object_get_size ((MonoObject*) start));
 
 		/*
 		fprintf (heap_dump_file, "<object offset=\"%d\" class=\"%s.%s\" size=\"%d\"/>\n",
@@ -3750,12 +3734,10 @@ alloc_pinned_chunk (void)
 	offset = G_STRUCT_OFFSET (PinnedChunk, data);
 	chunk->page_sizes = (void*)((char*)chunk + offset);
 	offset += sizeof (int) * chunk->num_pages;
-	offset += ALLOC_ALIGN - 1;
-	offset &= ~(ALLOC_ALIGN - 1);
+	offset = ALIGN_UP (offset);
 	chunk->free_list = (void*)((char*)chunk + offset);
 	offset += sizeof (void*) * FREELIST_NUM_SLOTS;
-	offset += ALLOC_ALIGN - 1;
-	offset &= ~(ALLOC_ALIGN - 1);
+	offset = ALIGN_UP (offset);
 	chunk->start_data = (void*)((char*)chunk + offset);
 
 	/* allocate the first page to the freelist */
@@ -4006,8 +3988,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	else
 		HEAVY_STAT (stat_bytes_alloced_los += size);
 
-	size += ALLOC_ALIGN - 1;
-	size &= ~(ALLOC_ALIGN - 1);
+	size = ALIGN_UP (size);
 
 	g_assert (vtable->gc_descr);
 
@@ -4180,8 +4161,7 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	char *new_next;
 	TLAB_ACCESS_INIT;
 
-	size += ALLOC_ALIGN - 1;
-	size &= ~(ALLOC_ALIGN - 1);
+	size = ALIGN_UP (size);
 
 	g_assert (vtable->gc_descr);
 	if (size <= MAX_SMALL_OBJ_SIZE) {
@@ -4316,8 +4296,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 {
 	/* FIXME: handle OOM */
 	void **p;
-	size += ALLOC_ALIGN - 1;
-	size &= ~(ALLOC_ALIGN - 1);
+	size = ALIGN_UP (size);
 	LOCK_GC;
 	if (size > MAX_SMALL_OBJ_SIZE) {
 		/* large objects are always pinned anyway */
@@ -6619,8 +6598,7 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 	case REMSET_OBJECT:
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		count = safe_object_get_size ((MonoObject*)ptr); 
-		count += (ALLOC_ALIGN - 1);
-		count &= (ALLOC_ALIGN - 1);
+		count = ALIGN_UP (count);
 		count /= sizeof (mword);
 		if ((void**)addr >= ptr && (void**)addr < ptr + count)
 			*found = TRUE;

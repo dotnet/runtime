@@ -344,8 +344,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 #ifdef LOS_DUMMY
 	if (!los_segment)
 		los_segment = get_os_memory (LOS_SEGMENT_SIZE, TRUE);
-	los_segment_index += ALLOC_ALIGN - 1;
-	los_segment_index &= ~(ALLOC_ALIGN - 1);
+	los_segment_index = ALIGN_UP (los_segment_index);
 
 	obj = (LOSObject*)(los_segment + los_segment_index);
 	los_segment_index += size + sizeof (LOSObject);

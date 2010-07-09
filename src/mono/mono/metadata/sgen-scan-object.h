@@ -67,9 +67,7 @@
 		break;
 	case DESC_TYPE_ARRAY:
 	case DESC_TYPE_VECTOR:
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
+		skip_size = ALIGN_UP (safe_object_get_size ((MonoObject*)start));
 #define SCAN OBJ_VECTOR_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
@@ -90,9 +88,7 @@
 		start += skip_size;
 		break;
 	case DESC_TYPE_LARGE_BITMAP:
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
+		skip_size = ALIGN_UP (safe_object_get_size ((MonoObject*)start));
 #define SCAN OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
@@ -103,9 +99,7 @@
 		break;
 	case DESC_TYPE_COMPLEX:
 		/* this is a complex object */
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
+		skip_size = ALIGN_UP (safe_object_get_size ((MonoObject*)start));
 #define SCAN OBJ_COMPLEX_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
@@ -116,9 +110,7 @@
 		break;
 	case DESC_TYPE_COMPLEX_ARR:
 		/* this is an array of complex structs */
-		skip_size = safe_object_get_size ((MonoObject*)start);
-		skip_size += (ALLOC_ALIGN - 1);
-		skip_size &= ~(ALLOC_ALIGN - 1);
+		skip_size = ALIGN_UP (safe_object_get_size ((MonoObject*)start));
 #define SCAN OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
