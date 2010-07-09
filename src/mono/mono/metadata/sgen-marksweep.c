@@ -87,8 +87,8 @@ static int num_major_sections = 0;
 /* one free block list for each block object size */
 static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
 
-static long stat_major_blocks_alloced = 0;
-static long stat_major_blocks_freed = 0;
+static long long stat_major_blocks_alloced = 0;
+static long long stat_major_blocks_freed = 0;
 
 static int
 ms_find_block_obj_size_index (int size)
@@ -131,6 +131,8 @@ ms_get_empty_block (void)
 		}
 
 		num_empty_blocks += MS_BLOCK_ALLOC_NUM;
+
+		stat_major_blocks_alloced += MS_BLOCK_ALLOC_NUM;
 	}
 
 	g_assert (empty_blocks);
@@ -266,8 +268,6 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	all_blocks = info;
 
 	++num_major_sections;
-
-	++stat_major_blocks_alloced;
 }
 
 static gboolean
@@ -644,8 +644,6 @@ major_sweep (void)
 			free_internal_mem (block, INTERNAL_MEM_MS_BLOCK_INFO);
 
 			--num_major_sections;
-
-			++stat_major_blocks_freed;
 		}
 	}
 }
@@ -776,6 +774,20 @@ major_finish_nursery_collection (void)
 
 	sections_alloced = num_major_sections - old_num_major_sections;
 	minor_collection_sections_alloced += sections_alloced;
+}
+
+static void
+major_finish_major_collection (void)
+{
+	int section_reserve = minor_collection_allowance / MS_BLOCK_SIZE;
+	while (num_empty_blocks > section_reserve) {
+		void *next = *(void**)empty_blocks;
+		free_os_memory (empty_blocks, MS_BLOCK_SIZE);
+		empty_blocks = next;
+		--num_empty_blocks;
+
+		++stat_major_blocks_freed;
+	}
 }
 
 static void

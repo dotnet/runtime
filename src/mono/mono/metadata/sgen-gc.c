@@ -3554,6 +3554,8 @@ major_do_collection (const char *reason)
 	minor_collection_sections_alloced = 0;
 	last_los_memory_usage = los_memory_usage;
 
+	major_finish_major_collection ();
+
 	check_scan_starts ();
 
 	binary_protocol_flush_buffers ();

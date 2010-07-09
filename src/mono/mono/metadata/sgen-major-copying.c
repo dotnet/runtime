@@ -688,6 +688,11 @@ major_finish_nursery_collection (void)
 	minor_collection_sections_alloced += sections_alloced;
 }
 
+static void
+major_finish_major_collection (void)
+{
+}
+
 static gboolean
 major_ptr_is_in_non_pinned_space (char *ptr)
 {
