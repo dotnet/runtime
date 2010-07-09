@@ -2101,7 +2101,7 @@ copy_object_no_checks (void *obj)
 	obj = destination;
 	if (has_references) {
 		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
-		GRAY_OBJECT_ENQUEUE (obj);
+		GRAY_OBJECT_ENQUEUE (&gray_queue, obj);
 	}
 	return obj;
 }
@@ -2267,7 +2267,7 @@ drain_gray_stack (void)
 
 	if (current_collection_generation == GENERATION_NURSERY) {
 		for (;;) {
-			GRAY_OBJECT_DEQUEUE (obj);
+			GRAY_OBJECT_DEQUEUE (&gray_queue, obj);
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
@@ -2275,7 +2275,7 @@ drain_gray_stack (void)
 		}
 	} else {
 		for (;;) {
-			GRAY_OBJECT_DEQUEUE (obj);
+			GRAY_OBJECT_DEQUEUE (&gray_queue, obj);
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
@@ -2342,7 +2342,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 					DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
 					binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
 					pin_object (search_start);
-					GRAY_OBJECT_ENQUEUE (search_start);
+					GRAY_OBJECT_ENQUEUE (&gray_queue, search_start);
 					if (heap_dump_file)
 						pin_stats_register_object (search_start, last_obj_size);
 					definitely_pinned [count] = search_start;
@@ -2858,17 +2858,17 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 * GC a finalized object my lose the monitor because it is cleared before the finalizer is
 	 * called.
 	 */
-	g_assert (gray_object_queue_is_empty ());
+	g_assert (gray_object_queue_is_empty (&gray_queue));
 	for (;;) {
 		null_link_in_range (copy_func, start_addr, end_addr, generation);
 		if (generation == GENERATION_OLD)
 			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY);
-		if (gray_object_queue_is_empty ())
+		if (gray_object_queue_is_empty (&gray_queue))
 			break;
 		drain_gray_stack ();
 	}
 
-	g_assert (gray_object_queue_is_empty ());
+	g_assert (gray_object_queue_is_empty (&gray_queue));
 }
 
 static void
@@ -3219,7 +3219,7 @@ collect_nursery (size_t requested_size)
 
 	major_start_nursery_collection ();
 
-	gray_object_queue_init ();
+	gray_object_queue_init (&gray_queue);
 
 	num_minor_gcs++;
 	mono_stats.minor_gc_count ++;
@@ -3301,7 +3301,7 @@ collect_nursery (size_t requested_size)
 	}
 	pin_stats_reset ();
 
-	g_assert (gray_object_queue_is_empty ());
+	g_assert (gray_object_queue_is_empty (&gray_queue));
 
 	check_scan_starts ();
 
@@ -3342,7 +3342,7 @@ major_do_collection (const char *reason)
 	init_stats ();
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
-	gray_object_queue_init ();
+	gray_object_queue_init (&gray_queue);
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
@@ -3400,7 +3400,7 @@ major_do_collection (const char *reason)
 		if (start != end) {
 			pin_object (bigobj->data);
 			/* FIXME: only enqueue if object has references */
-			GRAY_OBJECT_ENQUEUE (bigobj->data);
+			GRAY_OBJECT_ENQUEUE (&gray_queue, bigobj->data);
 			if (heap_dump_file)
 				pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %lu from roots\n", bigobj->data, safe_name (bigobj->data), (unsigned long)bigobj->size));
@@ -3510,7 +3510,7 @@ major_do_collection (const char *reason)
 	}
 	pin_stats_reset ();
 
-	g_assert (gray_object_queue_is_empty ());
+	g_assert (gray_object_queue_is_empty (&gray_queue));
 
 	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 0);
 	los_memory_saved = MAX (old_los_memory_usage - los_memory_usage, 1);

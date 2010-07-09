@@ -475,7 +475,7 @@ major_dump_heap (void)
 		if (!MS_MARK_BIT ((block), __word, __bit) && MS_OBJ_ALLOCED ((obj), (block))) { \
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
-				GRAY_OBJECT_ENQUEUE ((obj));		\
+				GRAY_OBJECT_ENQUEUE (&gray_queue, (obj)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
@@ -486,7 +486,7 @@ major_dump_heap (void)
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
-				GRAY_OBJECT_ENQUEUE ((obj));		\
+				GRAY_OBJECT_ENQUEUE (&gray_queue, (obj)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
@@ -540,7 +540,7 @@ major_copy_or_mark_object (void **ptr)
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
 		/* FIXME: only enqueue if object has references */
-		GRAY_OBJECT_ENQUEUE (obj);
+		GRAY_OBJECT_ENQUEUE (&gray_queue, obj);
 		return;
 	}
 

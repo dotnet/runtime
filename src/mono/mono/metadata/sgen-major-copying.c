@@ -355,7 +355,7 @@ major_copy_or_mark_object (void **obj_slot)
 		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
-		GRAY_OBJECT_ENQUEUE (obj);
+		GRAY_OBJECT_ENQUEUE (&gray_queue, obj);
 		HEAVY_STAT (++stat_major_copy_object_failed_large_pinned);
 		return;
 	}
@@ -490,7 +490,7 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 			if (heap_dump_file && !object_is_pinned (addr))
 				pin_stats_register_object ((char*) addr, safe_object_get_size ((MonoObject*) addr));
 			pin_object (addr);
-			GRAY_OBJECT_ENQUEUE (addr);
+			GRAY_OBJECT_ENQUEUE (&gray_queue, addr);
 			DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
 		}
 	}
