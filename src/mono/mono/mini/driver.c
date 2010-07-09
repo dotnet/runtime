@@ -1281,7 +1281,7 @@ mono_jit_parse_options (int argc, char * argv[])
 	}
 }
 
-void
+static void
 mono_set_use_smp (int use_smp)
 {
 #if HAVE_SCHED_SETAFFINITY
@@ -1328,7 +1328,6 @@ mono_main (int argc, char* argv[])
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
 	char *attach_options = NULL;
-	int use_smp = 1;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
 #endif
@@ -1425,14 +1424,14 @@ mono_main (int argc, char* argv[])
 			opt = parse_optimizations (argv [i] + 11);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
 			opt = parse_optimizations (argv [i] + 3);
-		} else if (strcmp (argv [i], "--gc=sgen")) {
+		} else if (strcmp (argv [i], "--gc=sgen") == 0) {
 #if HAVE_BOEHM_GC
 			GString *path = g_string_new (argv [0]);
 			g_string_append (path, "-sgen");
 			argv [0] = path->str;
 			execvp (path->str, argv);
 #endif
-		} else if (strcmp (argv [i], "--gc=boehm")) {
+		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
 #if HAVE_SGEN_GC
 			char *copy = g_strdup (argv [0]);
 			char *p = strstr (copy, "-sgen");

@@ -63,7 +63,7 @@ mono_main_with_options (int argc, char *argv [])
 		g_ptr_array_free (array, TRUE);
 	}
 
-	mono_main (argc, argv);
+	return mono_main (argc, argv);
 }
 
 #ifdef HOST_WIN32
