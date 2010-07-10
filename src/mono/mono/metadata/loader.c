@@ -2128,7 +2128,9 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		MonoMethodInflated *imethod = (MonoMethodInflated *) m;
 		/* the lock is recursive */
 		signature = mono_method_signature (imethod->declaring);
-		signature = inflate_generic_signature (imethod->declaring->klass->image, signature, mono_method_get_context (m));
+		signature = inflate_generic_signature_checked (imethod->declaring->klass->image, signature, mono_method_get_context (m), error);
+		if (!mono_error_ok (error))
+			return NULL;
 
 		inflated_signatures_size += mono_metadata_signature_size (signature);
 
