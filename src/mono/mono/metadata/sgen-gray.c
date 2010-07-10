@@ -31,13 +31,13 @@
 typedef struct _GrayQueueSection GrayQueueSection;
 struct _GrayQueueSection {
 	int end;
-	GrayQueueSection *next, *prev;
+	GrayQueueSection *next;
 	char *objects [GRAY_QUEUE_SECTION_SIZE];
 };
 
 struct _GrayQueue {
-	GrayQueueSection *start;
-	GrayQueueSection *end;
+	GrayQueueSection *first;
+	GrayQueueSection *free_list;
 	int balance;
 };
 
@@ -48,34 +48,20 @@ gray_object_alloc_queue_section (GrayQueue *queue)
 {
 	GrayQueueSection *section;
 
-	/* Use the previously allocated queue sections if possible */
-	if (!queue->end && queue->start) {
-		queue->end = queue->start;
-		queue->end->end = 0;
-		return;
+	if (queue->free_list) {
+		/* Use the previously allocated queue sections if possible */
+		section = queue->free_list;
+		queue->free_list = section->next;
+	} else {
+		/* Allocate a new section */
+		section = get_internal_mem (sizeof (GrayQueueSection), INTERNAL_MEM_GRAY_QUEUE);
 	}
-	if (queue->end && queue->end->next) {
-		queue->end = queue->end->next;
-		queue->end->end = 0;
-		return;
-	}
-
-	/* Allocate a new section */
-	section = get_internal_mem (sizeof (GrayQueueSection), INTERNAL_MEM_GRAY_QUEUE);
 
 	section->end = 0;
-	section->next = NULL;
-	section->prev = NULL;
 
 	/* Link it with the others */
-	if (queue->end) {
-		queue->end->next = section;
-		section->prev = queue->end;
-	} else {
-		g_assert (!queue->start);
-		queue->start = section;
-	}
-	queue->end = section;
+	section->next = queue->first;
+	queue->first = section;
 }
 
 static void
@@ -87,7 +73,7 @@ gray_object_free_queue_section (GrayQueueSection *section)
 static inline gboolean
 gray_object_queue_is_empty (GrayQueue *queue)
 {
-	return queue->end == NULL;
+	return queue->first == NULL;
 }
 
 /*
@@ -100,10 +86,10 @@ static inline void
 gray_object_enqueue (GrayQueue *queue, char *obj)
 {
 	DEBUG (9, g_assert (obj));
-	if (G_UNLIKELY (!queue->end || queue->end->end == GRAY_QUEUE_SECTION_SIZE))
+	if (G_UNLIKELY (!queue->first || queue->first->end == GRAY_QUEUE_SECTION_SIZE))
 		gray_object_alloc_queue_section (queue);
-	DEBUG (9, g_assert (queue->end && queue->end->end < GRAY_QUEUE_SECTION_SIZE));
-	queue->end->objects [queue->end->end++] = obj;
+	DEBUG (9, g_assert (queue->first && queue->first->end < GRAY_QUEUE_SECTION_SIZE));
+	queue->first->objects [queue->first->end++] = obj;
 
 	DEBUG (9, ++queue->balance);
 }
@@ -116,12 +102,16 @@ gray_object_dequeue (GrayQueue *queue)
 	if (gray_object_queue_is_empty (queue))
 		return NULL;
 
-	DEBUG (9, g_assert (queue->end->end));
+	DEBUG (9, g_assert (queue->first->end));
 
-	obj = queue->end->objects [--queue->end->end];
+	obj = queue->first->objects [--queue->first->end];
 
-	if (G_UNLIKELY (queue->end->end == 0))
-		queue->end = queue->end->prev;
+	if (G_UNLIKELY (queue->first->end == 0)) {
+		GrayQueueSection *section = queue->first;
+		queue->first = section->next;
+		section->next = queue->free_list;
+		queue->free_list = section;
+	}
 
 	DEBUG (9, --queue->balance);
 
@@ -133,18 +123,17 @@ gray_object_dequeue (GrayQueue *queue)
 #define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = gray_object_dequeue ((queue)))
 #else
 #define GRAY_OBJECT_ENQUEUE(queue,o) do {				\
-		if (G_UNLIKELY (!(queue)->end || (queue)->end->end == GRAY_QUEUE_SECTION_SIZE)) \
+		if (G_UNLIKELY (!(queue)->first || (queue)->first->end == GRAY_QUEUE_SECTION_SIZE)) \
 			gray_object_alloc_queue_section ((queue));	\
-		(queue)->end->objects [(queue)->end->end++] = (o);	\
+		(queue)->first->objects [(queue)->first->end++] = (o);	\
 	} while (0)
 #define GRAY_OBJECT_DEQUEUE(queue,o) do {				\
-		if (!(queue)->end) {					\
+		if (!(queue)->first)					\
 			(o) = NULL;					\
-		} else {						\
-			(o) = (queue)->end->objects [--(queue)->end->end]; \
-			if (G_UNLIKELY ((queue)->end->end == 0))	\
-				(queue)->end = (queue)->end->prev;	\
-		}							\
+		else if (G_UNLIKELY ((queue)->first->end == 1))		\
+			(o) = gray_object_dequeue ((queue));		\
+		else							\
+			(o) = (queue)->first->objects [--(queue)->first->end]; \
 	} while (0)
 #endif
 
@@ -160,14 +149,13 @@ gray_object_queue_init (GrayQueue *queue)
 
 	/* Free the extra sections allocated during the last collection */
 	i = 0;
-	for (section = queue->start; section && i < GRAY_QUEUE_LENGTH_LIMIT; section = section->next)
+	for (section = queue->free_list; section && i < GRAY_QUEUE_LENGTH_LIMIT - 1; section = section->next)
 		i ++;
-	if (section) {
-		if (section->prev)
-			section->prev->next = NULL;
-		for (; section; section = next) {
-			next = section->next;
-			gray_object_free_queue_section (section);
-		}
+	if (!section)
+		return;
+	while (section->next) {
+		next = section->next;
+		section->next = next->next;
+		gray_object_free_queue_section (next);
 	}
 }
