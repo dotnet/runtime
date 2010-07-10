@@ -577,11 +577,10 @@ typedef struct {
 #define VTABLE_BITS_MASK 0x3
 
 /* returns NULL if not forwarded, or the forwarded address */
-#define object_is_forwarded(obj) (((mword*)(obj))[0] & FORWARDED_BIT? (void*)(((mword*)(obj))[1]): NULL)
+#define object_is_forwarded(obj) (((mword*)(obj))[0] & FORWARDED_BIT ? (void*)(((mword*)(obj))[0] & ~VTABLE_BITS_MASK) : NULL)
 /* set the forwarded address fw_addr for object obj */
-#define forward_object(obj,fw_addr) do {	\
-		((mword*)(obj))[0] |= FORWARDED_BIT;	\
-		((mword*)(obj))[1] = (mword)(fw_addr);	\
+#define forward_object(obj,fw_addr) do {				\
+		((mword*)(obj))[0] = (mword)(fw_addr) | FORWARDED_BIT;	\
 	} while (0)
 
 #define object_is_pinned(obj) (((mword*)(obj))[0] & PINNED_BIT)
