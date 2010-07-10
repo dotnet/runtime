@@ -1612,7 +1612,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	if (rptr)
 		*rptr = ptr;
 
-	if (!type->num_mods) {
+	if (!type->num_mods && !transient) {
 		/* no need to free type here, because it is on the stack */
 		if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
 			MonoType *ret = type->byref ? &type->data.klass->this_arg : &type->data.klass->byval_arg;
@@ -3510,6 +3510,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 																MONO_PARSE_LOCAL, 0, TRUE, locals_ptr, &locals_ptr);
 			if (!mh->locals [i]) {
 				g_free (clauses);
+				g_free (mh);
 				return NULL;
 			}
 		}
