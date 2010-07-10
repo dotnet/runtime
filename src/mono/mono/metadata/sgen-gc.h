@@ -29,8 +29,8 @@
 #include <glib.h>
 #include <pthread.h>
 #include <signal.h>
-#include "utils/mono-compiler.h"
-#include "metadata/class-internals.h"
+#include <mono/utils/mono-compiler.h>
+#include <mono/metadata/class-internals.h>
 
 #define THREAD_HASH_SIZE 11
 
@@ -116,6 +116,8 @@ int mono_sgen_thread_handshake (int signum) MONO_INTERNAL;
 SgenThreadInfo* mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id) MONO_INTERNAL;
 SgenThreadInfo** mono_sgen_get_thread_table (void) MONO_INTERNAL;
 void mono_sgen_wait_for_suspend_ack (int count) MONO_INTERNAL;
+
+gboolean mono_sgen_is_worker_thread (pthread_t thread) MONO_INTERNAL;
 
 #endif /* __MONO_SGENGC_H__ */
 

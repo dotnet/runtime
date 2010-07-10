@@ -252,5 +252,10 @@ int mono_gc_get_los_limit (void) MONO_INTERNAL;
  */
 gboolean mono_gc_is_disabled (void) MONO_INTERNAL;
 
+#if defined(__MACH__)
+void mono_gc_register_mach_exception_thread (pthread_t thread) MONO_INTERNAL;
+pthread_t mono_gc_get_mach_exception_thread (void) MONO_INTERNAL;
+#endif
+
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

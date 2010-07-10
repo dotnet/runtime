@@ -54,6 +54,7 @@ mono_sgen_thread_handshake (int signum)
 	kern_return_t ret;
 	ucontext_t ctx;
 	mcontext_t mctx;
+	pthread_t exception_thread = mono_gc_get_mach_exception_thread ();
 
 	SgenThreadInfo *info;
 	gpointer regs [ARCH_NUM_REGS];
@@ -65,7 +66,8 @@ mono_sgen_thread_handshake (int signum)
 
 	for (i = 0, count = 0; i < num_threads; i++) {
 		thread_port_t t = thread_list [i];
-		if (t != cur_thread) {
+		pthread_t pt = pthread_from_mach_thread_np (t);
+		if (t != cur_thread && pt != exception_thread && !mono_sgen_is_worker_thread (pt)) {
 			if (signum == suspend_signal_num) {
 				ret = thread_suspend (t);
 				if (ret != KERN_SUCCESS) {
@@ -81,7 +83,7 @@ mono_sgen_thread_handshake (int signum)
 				}
 
 
-				info = mono_sgen_thread_info_lookup (pthread_from_mach_thread_np (t));
+				info = mono_sgen_thread_info_lookup (pt);
 
 				/* Ensure that the runtime is aware of this thread */
 				if (info != NULL) {

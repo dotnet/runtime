@@ -228,6 +228,10 @@ enum {
 
 #undef OPDEF
 
+#undef pthread_create
+#undef pthread_join
+#undef pthread_detach
+
 /*
  * ######################################################################
  * ########  Types and constants used by the GC.
@@ -6123,10 +6127,6 @@ mono_gc_register_thread (void *baseptr)
 
 #if USE_PTHREAD_INTERCEPT
 
-#undef pthread_create
-#undef pthread_join
-#undef pthread_detach
-
 typedef struct {
 	void *(*start_routine) (void *);
 	void *arg;
@@ -7820,6 +7820,12 @@ mono_gc_is_moving (void)
 
 gboolean
 mono_gc_is_disabled (void)
+{
+	return FALSE;
+}
+
+gboolean
+mono_sgen_is_worker_thread (pthread_t thread)
 {
 	return FALSE;
 }

@@ -43,6 +43,7 @@
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -179,7 +180,12 @@ macosx_register_exception_handler ()
 					    mach_exception_port,
 					    EXCEPTION_DEFAULT,
 					    MACHINE_THREAD_STATE) == KERN_SUCCESS);
+
+	mono_gc_register_mach_exception_thread (thread);
 }
+
+/* This is #define'd by Boehm GC to _GC_dlopen. */
+#undef dlopen
 
 void
 mono_runtime_install_handlers (void)

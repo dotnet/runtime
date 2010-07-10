@@ -1205,3 +1205,19 @@ mono_gc_is_finalizer_thread (MonoThread *thread)
 {
 	return mono_gc_is_finalizer_internal_thread (thread->internal_thread);
 }
+
+#if defined(__MACH__)
+static pthread_t mach_exception_thread;
+
+void
+mono_gc_register_mach_exception_thread (pthread_t thread)
+{
+	mach_exception_thread = thread;
+}
+
+pthread_t
+mono_gc_get_mach_exception_thread (void)
+{
+	return mach_exception_thread;
+}
+#endif
