@@ -934,8 +934,10 @@ align_pointer (void *ptr)
 	return (void*)p;
 }
 
-typedef void (*CopyOrMarkObjectFunc) (void**);
-typedef char* (*ScanObjectFunc) (char*);
+typedef struct _GrayQueue GrayQueue;
+
+typedef void (*CopyOrMarkObjectFunc) (void**, GrayQueue*);
+typedef char* (*ScanObjectFunc) (char*, GrayQueue*);
 
 /* forward declarations */
 static void* get_internal_mem          (size_t size, int type);
@@ -949,36 +951,36 @@ static int stop_world (void);
 static int restart_world (void);
 static void add_to_global_remset (gpointer ptr);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise);
-static void scan_from_remsets (void *start_nursery, void *end_nursery);
-static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type);
-static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list);
+static void scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
+static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
+static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, GrayQueue *queue);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
-static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation);
+static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, int generation);
-static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation);
+static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void null_links_for_domain (MonoDomain *domain, int generation);
 static gboolean search_fragment_for_size (size_t size);
 static int search_fragment_for_size_range (size_t desired_size, size_t minimum_size);
 static void build_nursery_fragments (int start_pin, int end_pin);
 static void clear_nursery_fragments (char *next);
 static void pin_from_roots (void *start_nursery, void *end_nursery);
-static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery);
-static void pin_objects_in_section (GCMemSection *section);
+static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
+static void pin_objects_in_section (GCMemSection *section, GrayQueue *queue);
 static void optimize_pin_queue (int start_slot);
 static void clear_remsets (void);
 static void clear_tlabs (void);
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 static void scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data);
-static void scan_object (char *start);
-static void major_scan_object (char *start);
-static void* copy_object_no_checks (void *obj);
-static void copy_object (void **obj_slot);
+static void scan_object (char *start, GrayQueue *queue);
+static void major_scan_object (char *start, GrayQueue *queue);
+static void* copy_object_no_checks (void *obj, GrayQueue *queue);
+static void copy_object (void **obj_slot, GrayQueue *queue);
 static void* get_chunk_freelist (PinnedChunk *chunk, int slot);
 static PinnedChunk* alloc_pinned_chunk (void);
 static void sort_addresses (void **array, int size);
-static void drain_gray_stack (void);
-static void finish_gray_stack (char *start_addr, char *end_addr, int generation);
+static void drain_gray_stack (GrayQueue *queue);
+static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 static gboolean need_major_collection (void);
 static void major_collection (const char *reason);
 
@@ -1001,8 +1003,8 @@ void mono_gc_scan_for_specific_ref (MonoObject *key);
 
 static void init_stats (void);
 
-static int mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end);
-static void clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end);
+static int mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue);
+static void clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
 //#define BINARY_PROTOCOL
@@ -2024,7 +2026,7 @@ add_to_global_remset (gpointer ptr)
  * destination address.
  */
 static void*
-copy_object_no_checks (void *obj)
+copy_object_no_checks (void *obj, GrayQueue *queue)
 {
 	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
 
@@ -2101,7 +2103,7 @@ copy_object_no_checks (void *obj)
 	obj = destination;
 	if (has_references) {
 		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
-		GRAY_OBJECT_ENQUEUE (&gray_queue, obj);
+		GRAY_OBJECT_ENQUEUE (queue, obj);
 	}
 	return obj;
 }
@@ -2127,7 +2129,7 @@ copy_object_no_checks (void *obj)
  */
 
 static void __attribute__((noinline))
-copy_object (void **obj_slot)
+copy_object (void **obj_slot, GrayQueue *queue)
 {
 	char *forwarded;
 	char *obj = *obj_slot;
@@ -2165,7 +2167,7 @@ copy_object (void **obj_slot)
 
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
-	*obj_slot = copy_object_no_checks (obj);
+	*obj_slot = copy_object_no_checks (obj, queue);
 }
 
 #undef HANDLE_PTR
@@ -2173,7 +2175,7 @@ copy_object (void **obj_slot)
 		void *__old = *(ptr);	\
 		void *__copy;		\
 		if (__old) {	\
-			copy_object ((ptr));	\
+			copy_object ((ptr), queue);	\
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
@@ -2187,7 +2189,7 @@ copy_object (void **obj_slot)
  * them to the gray_objects area.
  */
 static void
-scan_object (char *start)
+scan_object (char *start, GrayQueue *queue)
 {
 #include "sgen-scan-object.h"
 
@@ -2202,7 +2204,7 @@ scan_object (char *start)
  * Returns a pointer to the end of the object.
  */
 static char*
-scan_vtype (char *start, mword desc, char* from_start, char* from_end)
+scan_vtype (char *start, mword desc, char* from_start, char* from_end, GrayQueue *queue)
 {
 	size_t skip_size;
 
@@ -2237,7 +2239,7 @@ scan_vtype (char *start, mword desc, char* from_start, char* from_end)
 		void *__old = *(ptr);	\
 		void *__copy;		\
 		if (__old) {	\
-			major_copy_or_mark_object ((ptr));	\
+			major_copy_or_mark_object ((ptr), queue);	\
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
@@ -2246,7 +2248,7 @@ scan_vtype (char *start, mword desc, char* from_start, char* from_end)
 	} while (0)
 
 static void
-major_scan_object (char *start)
+major_scan_object (char *start, GrayQueue *queue)
 {
 #include "sgen-scan-object.h"
 
@@ -2261,25 +2263,25 @@ major_scan_object (char *start)
  * usage.
  */
 static void inline
-drain_gray_stack (void)
+drain_gray_stack (GrayQueue *queue)
 {
 	char *obj;
 
 	if (current_collection_generation == GENERATION_NURSERY) {
 		for (;;) {
-			GRAY_OBJECT_DEQUEUE (&gray_queue, obj);
+			GRAY_OBJECT_DEQUEUE (queue, obj);
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			scan_object (obj);
+			scan_object (obj, queue);
 		}
 	} else {
 		for (;;) {
-			GRAY_OBJECT_DEQUEUE (&gray_queue, obj);
+			GRAY_OBJECT_DEQUEUE (queue, obj);
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			major_scan_object (obj);
+			major_scan_object (obj, queue);
 		}
 	}
 }
@@ -2292,7 +2294,7 @@ drain_gray_stack (void)
  * pinned objects.  Return the number of pinned objects.
  */
 static int
-pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery)
+pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue)
 {
 	void *last = NULL;
 	int count = 0;
@@ -2342,7 +2344,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 					DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
 					binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
 					pin_object (search_start);
-					GRAY_OBJECT_ENQUEUE (&gray_queue, search_start);
+					GRAY_OBJECT_ENQUEUE (queue, search_start);
 					if (heap_dump_file)
 						pin_stats_register_object (search_start, last_obj_size);
 					definitely_pinned [count] = search_start;
@@ -2364,14 +2366,14 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 }
 
 static void
-pin_objects_in_section (GCMemSection *section)
+pin_objects_in_section (GCMemSection *section, GrayQueue *queue)
 {
 	int start = section->pin_queue_start;
 	int end = section->pin_queue_end;
 	if (start != end) {
 		int reduced_to;
 		reduced_to = pin_objects_from_addresses (section, pin_queue + start, pin_queue + end,
-				section->data, section->next_data);
+				section->data, section->next_data, queue);
 		section->pin_queue_start = start;
 		section->pin_queue_end = start + reduced_to;
 	}
@@ -2565,23 +2567,34 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 	evacuate_pin_staging_area ();
 }
 
+static CopyOrMarkObjectFunc user_copy_or_mark_func;
+static GrayQueue *user_copy_or_mark_queue;
+
+static void
+single_arg_user_copy_or_mark (void **obj)
+{
+	user_copy_or_mark_func (obj, user_copy_or_mark_queue);
+}
+
 /*
  * The memory area from start_root to end_root contains pointers to objects.
  * Their position is precisely described by @desc (this means that the pointer
  * can be either NULL or the pointer to the start of an object).
  * This functions copies them to to_space updates them.
+ *
+ * This function is not thread-safe!
  */
 static void
-precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, void** end_root, char* n_start, char *n_end, mword desc)
+precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, void** end_root, char* n_start, char *n_end, mword desc, GrayQueue *queue)
 {
 	switch (desc & ROOT_DESC_TYPE_MASK) {
 	case ROOT_DESC_BITMAP:
 		desc >>= ROOT_DESC_TYPE_SHIFT;
 		while (desc) {
 			if ((desc & 1) && *start_root) {
-				copy_func (start_root);
+				copy_func (start_root, queue);
 				DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", start_root, *start_root));
-				drain_gray_stack ();
+				drain_gray_stack (queue);
 			}
 			desc >>= 1;
 			start_root++;
@@ -2597,9 +2610,9 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 			void **objptr = start_run;
 			while (bmap) {
 				if ((bmap & 1) && *objptr) {
-					copy_func (objptr);
+					copy_func (objptr, queue);
 					DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", objptr, *objptr));
-					drain_gray_stack ();
+					drain_gray_stack (queue);
 				}
 				bmap >>= 1;
 				++objptr;
@@ -2610,7 +2623,11 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 	}
 	case ROOT_DESC_USER: {
 		MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
-		marker (start_root, copy_func);
+		user_copy_or_mark_func = copy_func;
+		user_copy_or_mark_queue = queue;
+		marker (start_root, single_arg_user_copy_or_mark);
+		user_copy_or_mark_func = NULL;
+		user_copy_or_mark_queue = NULL;
 		break;
 	}
 	case ROOT_DESC_RUN_LEN:
@@ -2712,14 +2729,15 @@ alloc_nursery (void)
 }
 
 static void
-scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list) {
+scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, GrayQueue *queue)
+{
 	FinalizeEntry *fin;
 
 	for (fin = list; fin; fin = fin->next) {
 		if (!fin->object)
 			continue;
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
-		copy_func (&fin->object);
+		copy_func (&fin->object, queue);
 	}
 }
 
@@ -2785,7 +2803,7 @@ get_finalize_entry_hash_table (int generation)
 }
 
 static void
-finish_gray_stack (char *start_addr, char *end_addr, int generation)
+finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue)
 {
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -2806,7 +2824,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	drain_gray_stack ();
+	drain_gray_stack (queue);
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
 	/* walk the finalization queue and move also the objects that need to be
@@ -2826,26 +2844,26 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 		 */
 		int done_with_ephemerons = 0;
 		do {
-			done_with_ephemerons = mark_ephemerons_in_range (copy_func, start_addr, end_addr);
-			drain_gray_stack ();
+			done_with_ephemerons = mark_ephemerons_in_range (copy_func, start_addr, end_addr, queue);
+			drain_gray_stack (queue);
 			++ephemeron_rounds;
 		} while (!done_with_ephemerons);
 
 		fin_ready = num_ready_finalizers;
-		finalize_in_range (copy_func, start_addr, end_addr, generation);
+		finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
-			finalize_in_range (copy_func, nursery_start, nursery_real_end, GENERATION_NURSERY);
+			finalize_in_range (copy_func, nursery_start, nursery_real_end, GENERATION_NURSERY, queue);
 
 		/* drain the new stack that might have been created */
 		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
-		drain_gray_stack ();
+		drain_gray_stack (queue);
 	} while (fin_ready != num_ready_finalizers);
 
 	/*
 	 * Clear ephemeron pairs with unreachable keys.
 	 * We pass the copy func so we can figure out if an array was promoted or not.
 	 */
-	clear_unreachable_ephemerons (copy_func, start_addr, end_addr);
+	clear_unreachable_ephemerons (copy_func, start_addr, end_addr, queue);
 
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron roundss\n", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds));
@@ -2858,17 +2876,17 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 * GC a finalized object my lose the monitor because it is cleared before the finalizer is
 	 * called.
 	 */
-	g_assert (gray_object_queue_is_empty (&gray_queue));
+	g_assert (gray_object_queue_is_empty (queue));
 	for (;;) {
-		null_link_in_range (copy_func, start_addr, end_addr, generation);
+		null_link_in_range (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
-			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY);
-		if (gray_object_queue_is_empty (&gray_queue))
+			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, queue);
+		if (gray_object_queue_is_empty (queue))
 			break;
-		drain_gray_stack ();
+		drain_gray_stack (queue);
 	}
 
-	g_assert (gray_object_queue_is_empty (&gray_queue));
+	g_assert (gray_object_queue_is_empty (queue));
 }
 
 static void
@@ -2942,14 +2960,14 @@ build_nursery_fragments (int start_pin, int end_pin)
 }
 
 static void
-scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type)
+scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue)
 {
 	int i;
 	RootRecord *root;
 	for (i = 0; i < roots_hash_size [root_type]; ++i) {
 		for (root = roots_hash [root_type][i]; root; root = root->next) {
 			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
-			precisely_scan_objects_from (copy_func, (void**)root->start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc);
+			precisely_scan_objects_from (copy_func, (void**)root->start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc, queue);
 		}
 	}
 }
@@ -3231,7 +3249,7 @@ collect_nursery (size_t requested_size)
 	pin_from_roots (nursery_start, nursery_next);
 	/* identify pinned objects */
 	optimize_pin_queue (0);
-	next_pin_slot = pin_objects_from_addresses (nursery_section, pin_queue, pin_queue + next_pin_slot, nursery_start, nursery_next);
+	next_pin_slot = pin_objects_from_addresses (nursery_section, pin_queue, pin_queue + next_pin_slot, nursery_start, nursery_next, &gray_queue);
 	nursery_section->pin_queue_start = 0;
 	nursery_section->pin_queue_end = next_pin_slot;
 	TV_GETTIME (atv);
@@ -3247,19 +3265,19 @@ collect_nursery (size_t requested_size)
 	 * starting from to_space
 	 */
 
-	scan_from_remsets (nursery_start, nursery_next);
+	scan_from_remsets (nursery_start, nursery_next, &gray_queue);
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
 	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
-	drain_gray_stack ();
+	drain_gray_stack (&gray_queue);
 
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL);
-	scan_from_registered_roots (copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER);
+	scan_from_registered_roots (copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL, &gray_queue);
+	scan_from_registered_roots (copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER, &gray_queue);
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 	/* thread data */
@@ -3268,7 +3286,7 @@ collect_nursery (size_t requested_size)
 	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 	btv = atv;
 
-	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY);
+	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
 	time_minor_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
 
@@ -3391,7 +3409,7 @@ major_do_collection (const char *reason)
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
 	/* first pass for the sections */
 	find_section_pin_queue_start_end (nursery_section);
-	major_find_pin_queue_start_ends ();
+	major_find_pin_queue_start_ends (&gray_queue);
 	/* identify possible pointers to the insize of large objects */
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from large objects\n"));
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
@@ -3407,8 +3425,8 @@ major_do_collection (const char *reason)
 		}
 	}
 	/* second pass for the sections */
-	pin_objects_in_section (nursery_section);
-	major_pin_objects ();
+	pin_objects_in_section (nursery_section, &gray_queue);
+	major_pin_objects (&gray_queue);
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED_MS (atv, btv);
@@ -3417,14 +3435,14 @@ major_do_collection (const char *reason)
 
 	major_init_to_space ();
 
-	drain_gray_stack ();
+	drain_gray_stack (&gray_queue);
 
 	TV_GETTIME (atv);
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (major_copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_NORMAL);
-	scan_from_registered_roots (major_copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_WBARRIER);
+	scan_from_registered_roots (major_copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_NORMAL, &gray_queue);
+	scan_from_registered_roots (major_copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_WBARRIER, &gray_queue);
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 
@@ -3439,8 +3457,8 @@ major_do_collection (const char *reason)
 	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 
 	/* scan the list of objects ready for finalization */
-	scan_finalizer_entries (major_copy_or_mark_object, fin_ready_list);
-	scan_finalizer_entries (major_copy_or_mark_object, critical_fin_list);
+	scan_finalizer_entries (major_copy_or_mark_object, fin_ready_list, &gray_queue);
+	scan_finalizer_entries (major_copy_or_mark_object, critical_fin_list, &gray_queue);
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
@@ -3449,7 +3467,7 @@ major_do_collection (const char *reason)
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
 
 	/* all the objects in the heap */
-	finish_gray_stack (heap_start, heap_end, GENERATION_OLD);
+	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
 	TV_GETTIME (atv);
 	time_major_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
 
@@ -4387,7 +4405,7 @@ rehash_fin_table_if_necessary (FinalizeEntryHashTable *hash_table)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation)
+finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
 {
 	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	FinalizeEntry *entry, *prev;
@@ -4403,7 +4421,7 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 			if ((char*)entry->object >= start && (char*)entry->object < end && !major_is_object_live (entry->object)) {
 				gboolean is_fin_ready = object_is_fin_ready (entry->object);
 				char *copy = entry->object;
-				copy_func ((void**)&copy);
+				copy_func ((void**)&copy, queue);
 				if (is_fin_ready) {
 					char *from;
 					FinalizeEntry *next;
@@ -4498,7 +4516,7 @@ null_ephemerons_for_domain (MonoDomain *domain)
 
 /* LOCKING: requires that the GC lock is held */
 static void
-clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end)
+clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue)
 {
 	int was_in_nursery, was_promoted;
 	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
@@ -4526,7 +4544,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 		}
 
 		was_in_nursery = ptr_in_nursery (object);
-		copy_func ((void**)&object);
+		copy_func ((void**)&object, queue);
 		current->array = object;
 
 		/*The array was promoted, add global remsets for key/values left behind in nursery.*/
@@ -4573,7 +4591,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 
 /* LOCKING: requires that the GC lock is held */
 static int
-mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end)
+mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue)
 {
 	int nothing_marked = 1;
 	EphemeronLinkNode *current = ephemeron_list;
@@ -4595,7 +4613,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 			continue;
 		}
 
-		copy_func ((void**)&object);
+		copy_func ((void**)&object, queue);
 
 		array = (MonoArray*)object;
 		cur = mono_array_addr (array, Ephemeron, 0);
@@ -4615,11 +4633,11 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 			if (object_is_reachable (key, start, end)) {
 				char *value = cur->value;
 
-				copy_func ((void**)&cur->key);
+				copy_func ((void**)&cur->key, queue);
 				if (value) {
 					if (!object_is_reachable (value, start, end))
 						nothing_marked = 0;
-					copy_func ((void**)&cur->value);
+					copy_func ((void**)&cur->value, queue);
 				}
 			}
 		}
@@ -4631,7 +4649,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 
 /* LOCKING: requires that the GC lock is held */
 static void
-null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation)
+null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
 {
 	DisappearingLinkHashTable *hash = get_dislink_hash_table (generation);
 	DisappearingLink **disappearing_link_hash = hash->table;
@@ -4663,7 +4681,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 					continue;
 				} else {
 					char *copy = object;
-					copy_func ((void**)&copy);
+					copy_func ((void**)&copy, queue);
 
 					/* Update pointer if it's moved.  If the object
 					 * has been moved out of the nursery, we need to
@@ -5521,9 +5539,9 @@ void*
 mono_gc_scan_object (void *obj)
 {
 	if (current_collection_generation == GENERATION_NURSERY)
-		copy_object (&obj);
+		copy_object (&obj, &gray_queue);
 	else
-		major_copy_or_mark_object (&obj);
+		major_copy_or_mark_object (&obj, &gray_queue);
 	return obj;
 }
 
@@ -5594,7 +5612,7 @@ ptr_on_stack (void *ptr)
 }
 
 static mword*
-handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global)
+handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global, GrayQueue *queue)
 {
 	void **ptr;
 	mword count;
@@ -5610,7 +5628,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
 			gpointer old = *ptr;
-			copy_object (ptr);
+			copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (old)
 				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), safe_object_get_size (*ptr));
@@ -5632,7 +5650,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
-			copy_object (ptr);
+			copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
 				add_to_global_remset (ptr);
@@ -5643,7 +5661,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 1;
-		scan_object ((char*)ptr);
+		scan_object ((char*)ptr, queue);
 		return p + 1;
 	case REMSET_VTYPE: {
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
@@ -5652,7 +5670,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		desc = p [1];
 		count = p [2];
 		while (count-- > 0)
-			ptr = (void**) scan_vtype ((char*)ptr, desc, start_nursery, end_nursery);
+			ptr = (void**) scan_vtype ((char*)ptr, desc, start_nursery, end_nursery, queue);
 		return p + 3;
 	}
 	default:
@@ -5762,7 +5780,7 @@ clear_thread_store_remset_buffer (SgenThreadInfo *info)
 }
 
 static void
-scan_from_remsets (void *start_nursery, void *end_nursery)
+scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 {
 	int i;
 	SgenThreadInfo *info;
@@ -5787,7 +5805,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 				continue;
 			}
 
-			next_p = handle_remset (p, start_nursery, end_nursery, TRUE);
+			next_p = handle_remset (p, start_nursery, end_nursery, TRUE, queue);
 
 			/* 
 			 * Clear global remsets of locations which no longer point to the 
@@ -5814,7 +5832,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 		for (i = 0; i < STORE_REMSET_BUFFER_SIZE - 1; ++i) {
 			gpointer addr = store_remset->data [i];
 			if (addr)
-				handle_remset ((mword*)&addr, start_nursery, end_nursery, FALSE);
+				handle_remset ((mword*)&addr, start_nursery, end_nursery, FALSE, queue);
 		}
 
 		free_internal_mem (store_remset, INTERNAL_MEM_STORE_REMSET);
@@ -5831,7 +5849,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 			for (remset = info->remset; remset; remset = next) {
 				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
 				for (p = remset->data; p < remset->store_next;) {
-					p = handle_remset (p, start_nursery, end_nursery, FALSE);
+					p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
 				}
 				remset->store_next = remset->data;
 				next = remset->next;
@@ -5842,7 +5860,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 				}
 			}
 			for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
-				handle_remset ((mword*)*info->store_remset_buffer_addr + j + 1, start_nursery, end_nursery, FALSE);
+				handle_remset ((mword*)*info->store_remset_buffer_addr + j + 1, start_nursery, end_nursery, FALSE, queue);
 			clear_thread_store_remset_buffer (info);
 		}
 	}
@@ -5853,7 +5871,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 		remset = freed_thread_remsets;
 		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
 		for (p = remset->data; p < remset->store_next;) {
-			p = handle_remset (p, start_nursery, end_nursery, FALSE);
+			p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
 		}
 		next = remset->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));

@@ -35,7 +35,6 @@ struct _GrayQueueSection {
 	char *objects [GRAY_QUEUE_SECTION_SIZE];
 };
 
-typedef struct _GrayQueue GrayQueue;
 struct _GrayQueue {
 	GrayQueueSection *start;
 	GrayQueueSection *end;

@@ -277,7 +277,7 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 }
 
 static void
-major_copy_or_mark_object (void **obj_slot)
+major_copy_or_mark_object (void **obj_slot, GrayQueue *queue)
 {
 	char *forwarded;
 	char *obj = *obj_slot;
@@ -355,7 +355,7 @@ major_copy_or_mark_object (void **obj_slot)
 		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
-		GRAY_OBJECT_ENQUEUE (&gray_queue, obj);
+		GRAY_OBJECT_ENQUEUE (queue, obj);
 		HEAVY_STAT (++stat_major_copy_object_failed_large_pinned);
 		return;
 	}
@@ -375,7 +375,7 @@ major_copy_or_mark_object (void **obj_slot)
  copy:
 	HEAVY_STAT (++stat_objects_copied_major);
 
-	*obj_slot = copy_object_no_checks (obj);
+	*obj_slot = copy_object_no_checks (obj, queue);
 }
 
 /* FIXME: later reduce code duplication here with build_nursery_fragments().
@@ -455,7 +455,7 @@ scan_pinned_objects (IterateObjectCallbackFunc callback, void *callback_data)
  * with the PIN bit.
  */
 static void
-mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
+mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end, GrayQueue *queue)
 {
 	for (; start < end; start++) {
 		char *addr = *start;
@@ -490,7 +490,7 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 			if (heap_dump_file && !object_is_pinned (addr))
 				pin_stats_register_object ((char*) addr, safe_object_get_size ((MonoObject*) addr));
 			pin_object (addr);
-			GRAY_OBJECT_ENQUEUE (&gray_queue, addr);
+			GRAY_OBJECT_ENQUEUE (queue, addr);
 			DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
 		}
 	}
@@ -533,7 +533,7 @@ major_free_non_pinned_object (char *obj, size_t size)
 }
 
 static void
-major_find_pin_queue_start_ends (void)
+major_find_pin_queue_start_ends (GrayQueue *queue)
 {
 	GCMemSection *section;
 	PinnedChunk *chunk;
@@ -547,17 +547,17 @@ major_find_pin_queue_start_ends (void)
 		int start, end;
 		find_optimized_pin_queue_area (chunk->start_data, (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE, &start, &end);
 		if (start != end)
-			mark_pinned_from_addresses (chunk, pin_queue + start, pin_queue + end);
+			mark_pinned_from_addresses (chunk, pin_queue + start, pin_queue + end, queue);
 	}
 }
 
 static void
-major_pin_objects (void)
+major_pin_objects (GrayQueue *queue)
 {
 	GCMemSection *section;
 
 	for (section = section_list; section; section = section->block.next)
-		pin_objects_in_section (section);
+		pin_objects_in_section (section, queue);
 }
 
 static void

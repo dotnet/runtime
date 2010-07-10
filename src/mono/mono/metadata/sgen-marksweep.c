@@ -469,30 +469,30 @@ major_dump_heap (void)
 	}
 }
 
-#define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,block) do {		\
+#define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,block,queue) do {	\
 		int __word, __bit;					\
 		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
 		if (!MS_MARK_BIT ((block), __word, __bit) && MS_OBJ_ALLOCED ((obj), (block))) { \
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
-				GRAY_OBJECT_ENQUEUE (&gray_queue, (obj)); \
+				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
-#define MS_MARK_OBJECT_AND_ENQUEUE(obj,block) do {			\
+#define MS_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
 		int __word, __bit;					\
 		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
 		DEBUG (9, g_assert (MS_OBJ_ALLOCED ((obj), (block))));	\
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
-				GRAY_OBJECT_ENQUEUE (&gray_queue, (obj)); \
+				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
 
 static void
-major_copy_or_mark_object (void **ptr)
+major_copy_or_mark_object (void **ptr, GrayQueue *queue)
 {
 	void *obj = *ptr;
 	mword objsize;
@@ -516,7 +516,7 @@ major_copy_or_mark_object (void **ptr)
 
 		HEAVY_STAT (++stat_objects_copied_major);
 
-		obj = copy_object_no_checks (obj);
+		obj = copy_object_no_checks (obj, queue);
 		*ptr = obj;
 
 		/*
@@ -540,16 +540,16 @@ major_copy_or_mark_object (void **ptr)
 		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
 		pin_object (obj);
 		/* FIXME: only enqueue if object has references */
-		GRAY_OBJECT_ENQUEUE (&gray_queue, obj);
+		GRAY_OBJECT_ENQUEUE (queue, obj);
 		return;
 	}
 
 	block = MS_BLOCK_FOR_OBJ (obj);
-	MS_MARK_OBJECT_AND_ENQUEUE (obj, block);
+	MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 }
 
 static void
-mark_pinned_objects_in_block (MSBlockInfo *block)
+mark_pinned_objects_in_block (MSBlockInfo *block, GrayQueue *queue)
 {
 	int i;
 	int last_index = -1;
@@ -560,7 +560,7 @@ mark_pinned_objects_in_block (MSBlockInfo *block)
 		DEBUG (9, g_assert (index >= 0 && index < count));
 		if (index == last_index)
 			continue;
-		MS_MARK_OBJECT_AND_ENQUEUE_CHECKED (MS_BLOCK_OBJ (block, index), block);
+		MS_MARK_OBJECT_AND_ENQUEUE_CHECKED (MS_BLOCK_OBJ (block, index), block, queue);
 		last_index = index;
 	}
 }
@@ -796,7 +796,7 @@ major_finish_major_collection (void)
 }
 
 static void
-major_find_pin_queue_start_ends (void)
+major_find_pin_queue_start_ends (GrayQueue *queue)
 {
 	MSBlockInfo *block;
 
@@ -807,12 +807,12 @@ major_find_pin_queue_start_ends (void)
 }
 
 static void
-major_pin_objects (void)
+major_pin_objects (GrayQueue *queue)
 {
 	MSBlockInfo *block;
 
 	for (block = all_blocks; block; block = block->next)
-		mark_pinned_objects_in_block (block);
+		mark_pinned_objects_in_block (block, queue);
 }
 
 static void
