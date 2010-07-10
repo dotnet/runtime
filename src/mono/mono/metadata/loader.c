@@ -751,15 +751,6 @@ fail:
 	return NULL;
 }
 
-static MonoMethodSignature*
-inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericContext *context)
-{
-	MonoError error;
-	MonoMethodSignature *res = inflate_generic_signature_checked (image, sig, context, &error);
-	g_assert (mono_error_ok (&error)); /*FIXME move callers to use _checked version*/
-	return res;
-}
-
 static MonoMethodHeader*
 inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 {
@@ -1695,8 +1686,10 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	mono_class_init (constrained_class);
 	method = *cil_method;
 	original_sig = sig = mono_method_signature (method);
-	if (sig == NULL)
+	if (sig == NULL) {
+		mono_loader_unlock ();
 		return NULL;
+	}
 
 	if (method->is_inflated && sig->generic_param_count) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
@@ -1710,13 +1703,17 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 		 * any type argument which a concrete type. See #325283.
 		 */
 		if (method_context->class_inst) {
+			MonoError error;
 			MonoGenericContext ctx;
 			ctx.method_inst = NULL;
 			ctx.class_inst = method_context->class_inst;
-		
-			sig = inflate_generic_signature (method->klass->image, sig, &ctx);
-			if (sig == NULL)
+			/*Fixme, property propagate this error*/
+			sig = inflate_generic_signature_checked (method->klass->image, sig, &ctx, &error);
+			if (!mono_error_ok (&error)) {
+				mono_loader_unlock ();
+				mono_error_cleanup (&error);
 				return NULL;
+			}
 		}
 	}
 
