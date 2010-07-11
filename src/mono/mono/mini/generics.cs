@@ -563,6 +563,25 @@ class Tests {
 		return 0;
 	}
 
+	class Pair<TKey, TValue> {
+		public static KeyValuePair<TKey, TValue> make_pair (TKey key, TValue value)
+			{
+				return new KeyValuePair<TKey, TValue> (key, value);
+			}
+
+		public delegate TRet Transform<TRet> (TKey key, TValue value);
+	}
+
+	public static int test_0_bug_620864 () {
+		var d = new Pair<string, Type>.Transform<KeyValuePair<string, Type>> (Pair<string, Type>.make_pair);
+
+		var p = d ("FOO", typeof (int));
+		if (p.Key != "FOO" || p.Value != typeof (int))
+			return 1;
+
+		return 0;
+	}
+
 	public static int test_0_partial_sharing () {
 		if (PartialShared1 (new List<string> (), 1) != typeof (string))
 			return 1;
