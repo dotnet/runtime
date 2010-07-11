@@ -7843,18 +7843,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
-				if (context_used) {
-					MonoInst *iargs [2];
-
-					/* obj */
-					iargs [0] = *sp;
-					/* klass */
-					iargs [1] = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
-					ins = mono_emit_jit_icall (cfg, mono_object_castclass, iargs);
-					*sp ++ = ins;
-					ip += 5;
-					inline_costs += 2;
-				} else if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {				
+				if (!context_used && (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 					MonoMethod *mono_castclass;
 					MonoInst *iargs [1];
 					int costs;
@@ -7874,7 +7863,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					*sp++ = iargs [0];
 					inline_costs += costs;
 				} else {
-					ins = handle_castclass (cfg, klass, *sp, 0);
+					ins = handle_castclass (cfg, klass, *sp, context_used);
 					CHECK_CFG_EXCEPTION;
 					bblock = cfg->cbb;
 					*sp ++ = ins;
