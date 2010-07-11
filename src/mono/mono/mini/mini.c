@@ -4658,6 +4658,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		//mono_debug_add_wrapper (method, nm);
 	} else if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		const char *name = method->name;
+		char *full_name, *msg;
 		MonoMethod *nm;
 
 		if (method->klass->parent == mono_defaults.multicastdelegate_class) {
@@ -4690,6 +4691,12 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				return mono_get_addr_from_ftnptr (mono_compile_method (nm));
 			}
 		}
+
+		full_name = mono_method_full_name (method, TRUE);
+		msg = g_strdup_printf ("Unrecognizable runtime implemented method '%s'", full_name);
+		*jit_ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", msg);
+		g_free (full_name);
+		g_free (msg);
 		return NULL;
 	}
 
