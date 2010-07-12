@@ -10623,6 +10623,25 @@ fix_partial_generic_class (MonoClass *klass)
 		return;
 
 	dgclass = (MonoDynamicGenericClass *)  klass->generic_class;
+	if (klass->parent != gklass->parent) {
+		MonoError error;
+		MonoType *parent_type = mono_class_inflate_generic_type_checked (&gklass->parent->byval_arg, &klass->generic_class->context, &error);
+		if (mono_error_ok (&error)) {
+			MonoClass *parent = mono_class_from_mono_type (parent_type);
+			mono_metadata_free_type (parent_type);
+			if (parent != klass->parent) {
+				/*fool mono_class_setup_parent*/
+				klass->supertypes = NULL;
+				mono_class_setup_parent (klass, parent);
+			}
+		} else {
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_error_cleanup (&error);
+			if (gklass->wastypebuilder)
+				klass->wastypebuilder = TRUE;
+			return;
+		}
+	}
 
 	if (!dgclass->initialized)
 		return;
