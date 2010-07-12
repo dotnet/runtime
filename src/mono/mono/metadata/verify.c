@@ -593,7 +593,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
  * This means that @candidate constraints are a super set of @target constaints
  */
 static gboolean
-mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericParam *target, MonoGenericParam *candidate, MonoGenericContext *context)
+mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericParam *target, MonoGenericParam *candidate, MonoClass *candidate_param_class, MonoGenericContext *context)
 {
 	MonoGenericParamInfo *tinfo = mono_generic_param_info (target);
 	MonoGenericParamInfo *cinfo = mono_generic_param_info (candidate);
@@ -614,6 +614,13 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 				return FALSE;
 			tc = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
+
+			/*
+			 * A constraint from @target might inflate into @candidate itself and in that case we don't need
+			 * check it's constraints since it satisfy the constraint by itself.
+			 */
+			if (mono_metadata_type_equal (&tc->byval_arg, &candidate_param_class->byval_arg))
+				continue;
 
 			for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
 				MonoClass *cc;
@@ -691,6 +698,7 @@ generic_arguments_respect_constraints (VerifyContext *ctx, MonoGenericContainer 
 		MonoType *type = ginst->type_argv [i];
 		MonoGenericParam *target = mono_generic_container_get_param (gc, i);
 		MonoGenericParam *candidate;
+		MonoClass *candidate_class;
 
 		if (!mono_type_is_generic_argument (type))
 			continue;
@@ -699,8 +707,9 @@ generic_arguments_respect_constraints (VerifyContext *ctx, MonoGenericContainer 
 			return FALSE;
 
 		candidate = verifier_get_generic_param_from_type (ctx, type);
+		candidate_class = mono_class_from_mono_type (type);
 
-		if (!mono_generic_param_is_constraint_compatible (ctx, target, candidate, context))
+		if (!mono_generic_param_is_constraint_compatible (ctx, target, candidate, candidate_class, context))
 			return FALSE;
 	}
 	return TRUE;
