@@ -6986,6 +6986,12 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 	if (klass == method->klass)
 		return m;
 
+	/*This is possible if definition == FALSE.
+	 * Do it here to be really sure we don't read invalid memory.
+	 */
+	if (method->slot >= klass->vtable_size)
+		return m;
+
 	result = klass->vtable [method->slot];
 	if (result == NULL) {
 		/* It is an abstract method */
