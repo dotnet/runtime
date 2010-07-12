@@ -5501,6 +5501,8 @@ mini_parse_debug_options (void)
 			debug_options.handle_sigint = TRUE;
 		else if (!strcmp (arg, "keep-delegates"))
 			debug_options.keep_delegates = TRUE;
+		else if (!strcmp (arg, "reverse-pinvoke-exceptions"))
+			debug_options.reverse_pinvoke_exceptions = TRUE;
 		else if (!strcmp (arg, "collect-pagefault-stats"))
 			debug_options.collect_pagefault_stats = TRUE;
 		else if (!strcmp (arg, "break-on-unverified"))
@@ -5523,7 +5525,7 @@ mini_parse_debug_options (void)
 			debug_options.init_stacks = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks'\n");
 			exit (1);
 		}
 	}

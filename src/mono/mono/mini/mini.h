@@ -1381,6 +1381,7 @@ typedef struct {
 typedef struct {
 	gboolean handle_sigint;
 	gboolean keep_delegates;
+	gboolean reverse_pinvoke_exceptions;
 	gboolean collect_pagefault_stats;
 	gboolean break_on_unverified;
 	gboolean better_cast_details;

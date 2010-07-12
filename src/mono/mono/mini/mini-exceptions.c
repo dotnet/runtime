@@ -1268,6 +1268,12 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			frame_count ++;
 			//printf ("M: %s %d %d.\n", mono_method_full_name (ji->method, TRUE), frame_count, test_only);
 
+			if (mini_get_debug_options ()->reverse_pinvoke_exceptions && ji->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+				g_error ("A native frame was found while unwinding the stack after an exception.\n"
+				"The native frame called the managed method:\n%s\n",
+				mono_method_full_name (ji->method, TRUE));
+			}
+
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
 				/* 
 				 * Avoid overwriting the stack trace if the exception is
