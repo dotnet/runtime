@@ -368,7 +368,8 @@ BASE_TEST_CS_SRC=		\
 	bug-561239.cs	\
 	bug-562150.cs	\
 	bug-575941.cs	\
-	bug-599469.cs
+	bug-599469.cs	\
+	bug-389886-3.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
