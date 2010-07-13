@@ -81,7 +81,19 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 
 #define MS_BLOCK_TYPE_MAX	4
 
-/* all blocks in the system */
+#ifdef SGEN_PARALLEL_MARK
+static LOCK_DECLARE (ms_block_list_mutex);
+#define LOCK_MS_BLOCK_LIST pthread_mutex_lock (&ms_block_list_mutex)
+#define UNLOCK_MS_BLOCK_LIST pthread_mutex_unlock (&ms_block_list_mutex)
+#else
+#define LOCK_MS_BLOCK_LIST
+#define UNLOCK_MS_BLOCK_LIST
+#endif
+
+/* non-allocated block free-list */
+static void *empty_blocks = NULL;
+static int num_empty_blocks = 0;
+/* all allocated blocks in the system */
 static MSBlockInfo *all_blocks;
 static int num_major_sections = 0;
 /* one free block list for each block object size */
@@ -108,25 +120,28 @@ ms_find_block_obj_size_index (int size)
 	 fast_block_obj_size_indexes [((s)+7)>>3] :		\
 	 ms_find_block_obj_size_index ((s)))
 
-void *empty_blocks = NULL;
-int num_empty_blocks = 0;
-
 static void*
 ms_get_empty_block (void)
 {
 	char *p;
 	int i;
-	void *block;
+	void *block, *empty, *next;
 
+ retry:
 	if (!empty_blocks) {
-		g_assert (num_empty_blocks == 0);
-
 		p = get_os_memory_aligned (MS_BLOCK_SIZE * MS_BLOCK_ALLOC_NUM, MS_BLOCK_SIZE, TRUE);
 
 		for (i = 0; i < MS_BLOCK_ALLOC_NUM; ++i) {
 			block = p;
-			*(void**)block = empty_blocks;
-			empty_blocks = block;
+			/*
+			 * We do the free list update one after the
+			 * other so that other threads can use the new
+			 * blocks as quickly as possible.
+			 */
+			do {
+				empty = empty_blocks;
+				*(void**)block = empty;
+			} while (SGEN_CAS_PTR (&empty_blocks, block, empty) != empty);
 			p += MS_BLOCK_SIZE;
 		}
 
@@ -135,12 +150,13 @@ ms_get_empty_block (void)
 		stat_major_blocks_alloced += MS_BLOCK_ALLOC_NUM;
 	}
 
-	g_assert (empty_blocks);
-
-	block = empty_blocks;
-	empty_blocks = *(void**)empty_blocks;
-
-	--num_empty_blocks;
+	do {
+		empty = empty_blocks;
+		if (!empty)
+			goto retry;
+		block = empty;
+		next = *(void**)block;
+	} while (SGEN_CAS_PTR (&empty_blocks, next, empty) != empty);
 
 	*(void**)block = NULL;
 
@@ -154,12 +170,14 @@ ms_get_empty_block (void)
 static void
 ms_free_block (void *block)
 {
+	void *empty;
+
 	memset (block, 0, MS_BLOCK_SIZE);
 
-	*(void**)block = empty_blocks;
-	empty_blocks = block;
-
-	++num_empty_blocks;
+	do {
+		empty = empty_blocks;
+		*(void**)block = empty;
+	} while (SGEN_CAS_PTR (&empty_blocks, block, empty) != empty);
 }
 
 //#define MARKSWEEP_CONSISTENCY_CHECK
@@ -285,6 +303,10 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 	MSBlockInfo *block;
 	void *obj;
 
+	/* FIXME: try to do this without locking */
+
+	LOCK_MS_BLOCK_LIST;
+
 	if (!free_blocks [size_index])
 		ms_alloc_block (size_index, pinned, has_references);
 
@@ -299,6 +321,8 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 		free_blocks [size_index] = block->next_free;
 		block->next_free = NULL;
 	}
+
+	UNLOCK_MS_BLOCK_LIST;
 
 	/*
 	 * FIXME: This should not be necessary because it'll be
@@ -323,6 +347,9 @@ ms_alloc_obj (int size, gboolean has_references)
 /*
  * We're not freeing the block if it's empty.  We leave that work for
  * the next major collection.
+ *
+ * This is just called from the domain clearing code, which runs in a
+ * single thread and has the GC lock, so we don't need an extra lock.
  */
 static void
 free_object (char *obj, size_t size, gboolean pinned)
@@ -741,6 +768,8 @@ major_init (void)
 		fast_block_obj_size_indexes [i] = ms_find_block_obj_size_index (i * 8);
 	for (i = 0; i < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES * 8; ++i)
 		g_assert (MS_BLOCK_OBJ_SIZE_INDEX (i) == ms_find_block_obj_size_index (i));
+
+	LOCK_INIT (ms_block_list_mutex);
 
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
