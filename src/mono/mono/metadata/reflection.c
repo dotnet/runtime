@@ -10469,7 +10469,7 @@ inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
 
 	context = mono_class_get_context (klass);
 
-	if (klass->method.count) {
+	if (klass->method.count && klass->methods) {
 		/* Find the already created inflated method */
 		for (i = 0; i < klass->method.count; ++i) {
 			g_assert (klass->methods [i]->is_inflated);
