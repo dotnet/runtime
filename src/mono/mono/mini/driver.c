@@ -1333,10 +1333,12 @@ mono_main (int argc, char* argv[])
 #endif
 
 #ifdef MOONLIGHT
+#ifndef HOST_WIN32
 	/* stdout defaults to block buffering if it's not writing to a terminal, which
 	 * happens with our test harness: we redirect stdout to capture it. Force line
 	 * buffering in all cases. */
 	setlinebuf (stdout);
+#endif
 #endif
 
 	setlocale (LC_ALL, "");
