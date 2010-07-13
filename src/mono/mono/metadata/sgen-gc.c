@@ -610,10 +610,19 @@ safe_name (void* obj)
 	return vt->klass->name;
 }
 
+/*
+ * This function can be called on an object whose first word, the
+ * vtable field, is not intact.  This is necessary for the parallel
+ * collector.
+ */
 static inline guint
-safe_object_get_size (MonoObject* o)
+par_object_get_size (MonoVTable *vtable, MonoObject* o)
 {
-	MonoClass *klass = ((MonoVTable*)LOAD_VTABLE (o))->klass;
+	MonoClass *klass = vtable->klass;
+	/*
+	 * We depend on mono_string_length_fast and
+	 * mono_array_length_fast not using the object's vtable.
+	 */
 	if (klass == mono_defaults.string_class) {
 		return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
 	} else if (klass->rank) {
@@ -630,6 +639,8 @@ safe_object_get_size (MonoObject* o)
 		return klass->instance_size;
 	}
 }
+
+#define safe_object_get_size(o)		par_object_get_size ((MonoVTable*)LOAD_VTABLE ((o)), (o))
 
 /*
  * ######################################################################
@@ -975,6 +986,7 @@ typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 static void scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data);
 static void scan_object (char *start, GrayQueue *queue);
 static void major_scan_object (char *start, GrayQueue *queue);
+static void par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, GrayQueue *queue);
 static void* copy_object_no_checks (void *obj, GrayQueue *queue);
 static void copy_object (void **obj_slot, GrayQueue *queue);
 static void* get_chunk_freelist (PinnedChunk *chunk, int slot);
@@ -2024,29 +2036,19 @@ add_to_global_remset (gpointer ptr)
 }
 
 /*
- * FIXME: allocate before calling this function and pass the
- * destination address.
+ * This function can be used even if the vtable of obj is not valid
+ * anymore, which is the case in the parallel collector.
  */
-static void*
-copy_object_no_checks (void *obj, GrayQueue *queue)
+static void
+par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, GrayQueue *queue)
 {
 	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
 
-	mword objsize;
-	char *destination;
-	MonoVTable *vt = ((MonoObject*)obj)->vtable;
-	gboolean has_references = vt->gc_descr != (void*)DESC_TYPE_RUN_LENGTH;
-
-	objsize = safe_object_get_size ((MonoObject*)obj);
-	objsize += ALLOC_ALIGN - 1;
-	objsize &= ~(ALLOC_ALIGN - 1);
-
 	DEBUG (9, g_assert (vt->klass->inited));
-	MAJOR_GET_COPY_OBJECT_SPACE (destination, objsize, has_references);
-
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %lu)\n", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize));
-	binary_protocol_copy (obj, destination, ((MonoObject*)obj)->vtable, objsize);
+	binary_protocol_copy (obj, destination, vt, objsize);
 
+	*(MonoVTable**)destination = vt;
 	if (objsize <= sizeof (gpointer) * 8) {
 		mword *dest = (mword*)destination;
 		goto *copy_labels [objsize / sizeof (gpointer)];
@@ -2065,25 +2067,11 @@ copy_object_no_checks (void *obj, GrayQueue *queue)
 	LAB_2:
 		(dest) [1] = ((mword*)obj) [1];
 	LAB_1:
-		(dest) [0] = ((mword*)obj) [0];
+		;
 	LAB_0:
 		;
 	} else {
-#if 0
-		{
-			int ecx;
-			char* esi = obj;
-			char* edi = destination;
-			__asm__ __volatile__(
-				"rep; movsl"
-				: "=&c" (ecx), "=&D" (edi), "=&S" (esi)
-				: "0" (objsize/4), "1" (edi),"2" (esi)
-				: "memory"
-					     );
-		}
-#else
-		memcpy (destination, obj, objsize);
-#endif
+		memcpy (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
 	}
 	/* adjust array->bounds */
 	DEBUG (9, g_assert (vt->gc_descr));
@@ -2092,9 +2080,11 @@ copy_object_no_checks (void *obj, GrayQueue *queue)
 		array->bounds = (MonoArrayBounds*)((char*)destination + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
 		DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %lu, rank: %d, length: %lu\n", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array)));
 	}
-	/* set the forwarding pointer */
-	forward_object (obj, destination);
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES)) {
+		/* FIXME: handle this for parallel collector */
+#ifdef SGEN_PARALLEL_MARK
+		g_assert_not_reached ();
+#endif
 		if (moved_objects_idx == MOVED_OBJECTS_NUM) {
 			mono_profiler_gc_moves (moved_objects, moved_objects_idx);
 			moved_objects_idx = 0;
@@ -2103,11 +2093,28 @@ copy_object_no_checks (void *obj, GrayQueue *queue)
 		moved_objects [moved_objects_idx++] = destination;
 	}
 	obj = destination;
-	if (has_references) {
+	if (queue) {
 		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
 		GRAY_OBJECT_ENQUEUE (queue, obj);
 	}
-	return obj;
+}
+
+static void*
+copy_object_no_checks (void *obj, GrayQueue *queue)
+{
+	MonoVTable *vt = ((MonoObject*)obj)->vtable;
+	gboolean has_references = vt->gc_descr != (void*)DESC_TYPE_RUN_LENGTH;
+	mword objsize = ALIGN_UP (par_object_get_size (vt, (MonoObject*)obj));
+	char *destination;
+
+	MAJOR_GET_COPY_OBJECT_SPACE (destination, objsize, has_references);
+
+	par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
+
+	/* set the forwarding pointer */
+	forward_object (obj, destination);
+
+	return destination;
 }
 
 /*
