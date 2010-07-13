@@ -108,7 +108,7 @@ alloc_major_section (void)
 	g_assert (!((mword)section->data & 7));
 	section->size = MAJOR_SECTION_SIZE - SIZEOF_GC_MEM_SECTION;
 	section->end_data = section->data + section->size;
-	UPDATE_HEAP_BOUNDARIES (section->data, section->end_data);
+	update_heap_boundaries (section->data, section->end_data);
 	total_alloc += section->size;
 	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %zd\n", section->data, section->end_data, total_alloc));
 	scan_starts = (section->size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;

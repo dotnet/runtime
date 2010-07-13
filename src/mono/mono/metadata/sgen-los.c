@@ -380,7 +380,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	obj->size = size;
 	vtslot = (void**)obj->data;
 	*vtslot = vtable;
-	UPDATE_HEAP_BOUNDARIES (obj->data, (char*)obj->data + size);
+	update_heap_boundaries ((mword)obj->data, (mword)obj->data + size);
 	obj->next = los_object_list;
 	los_object_list = obj;
 	los_memory_usage += size;

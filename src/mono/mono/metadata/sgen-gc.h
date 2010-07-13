@@ -114,6 +114,12 @@ static int restart_signal_num = SIGXCPU;
 #define UNLOCK_INTERNAL_ALLOCATOR
 #endif
 
+#ifdef SGEN_PARALLEL_MARK
+#define SGEN_CAS_PTR	InterlockedCompareExchangePointer
+#else
+#define SGEN_CAS_PTR(p,n,c)	((*(void**)(p) == (void*)(c)) ? (*(void**)(p) = (void*)(n), (void*)(c)) : (*(void**)(p)))
+#endif
+
 /* non-pthread will need to provide their own version of start/stop */
 #define USE_SIGNAL_BASED_START_STOP_WORLD 1
 /* we intercept pthread_create calls to know which threads exist */

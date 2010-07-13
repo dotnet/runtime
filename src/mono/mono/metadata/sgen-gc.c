@@ -924,12 +924,6 @@ static int moved_objects_idx = 0;
  * ######################################################################
  */
 
-#define UPDATE_HEAP_BOUNDARIES(low,high) do {	\
-		if ((mword)(low) < lowest_heap_address)	\
-			lowest_heap_address = (mword)(low);	\
-		if ((mword)(high) > highest_heap_address)	\
-			highest_heap_address = (mword)(high);	\
-	} while (0)
 #define ADDR_IN_HEAP_BOUNDARIES(addr) ((p) >= lowest_heap_address && (p) < highest_heap_address)
 
 inline static void*
@@ -990,6 +984,7 @@ static void drain_gray_stack (GrayQueue *queue);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 static gboolean need_major_collection (void);
 static void major_collection (const char *reason);
+static void update_heap_boundaries (mword low, mword high);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
 
@@ -2644,6 +2639,24 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 	}
 }
 
+static void
+update_heap_boundaries (mword low, mword high)
+{
+	mword old;
+
+	do {
+		old = lowest_heap_address;
+		if (low >= old)
+			break;
+	} while (SGEN_CAS_PTR ((gpointer*)&lowest_heap_address, (gpointer)low, (gpointer)old) != (gpointer)old);
+
+	do {
+		old = highest_heap_address;
+		if (high <= old)
+			break;
+	} while (SGEN_CAS_PTR ((gpointer*)&highest_heap_address, (gpointer)high, (gpointer)old) != (gpointer)old);
+}
+
 static Fragment*
 alloc_fragment (void)
 {
@@ -2711,7 +2724,7 @@ alloc_nursery (void)
 #endif
 	nursery_start = data;
 	nursery_real_end = nursery_start + nursery_size;
-	UPDATE_HEAP_BOUNDARIES (nursery_start, nursery_real_end);
+	update_heap_boundaries ((mword)nursery_start, (mword)nursery_real_end);
 	nursery_next = nursery_start;
 	total_alloc += alloc_size;
 	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)nursery_size, (unsigned long)total_alloc));
@@ -3751,7 +3764,7 @@ alloc_pinned_chunk (void)
 	chunk = get_os_memory_aligned (size, size, TRUE);
 	chunk->block.role = MEMORY_ROLE_PINNED;
 
-	UPDATE_HEAP_BOUNDARIES (chunk, ((char*)chunk + size));
+	update_heap_boundaries ((mword)chunk, ((mword)chunk + size));
 	total_alloc += size;
 	pinned_chunk_bytes_alloced += size;
 
