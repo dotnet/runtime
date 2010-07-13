@@ -10,6 +10,8 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/appdomain.h>
 
+MONO_BEGIN_DECLS
+
 typedef struct _MonoSymbolTable			MonoSymbolTable;
 typedef struct _MonoDebugDataTable		MonoDebugDataTable;
 
@@ -201,5 +203,7 @@ int             mono_debugger_insert_breakpoint           (const char *method_na
 
 void mono_set_is_debugger_attached (mono_bool attached);
 mono_bool mono_is_debugger_attached (void);
+
+MONO_END_DECLS
 
 #endif /* __MONO_DEBUG_H__ */
