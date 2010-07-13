@@ -116,8 +116,15 @@ static int restart_signal_num = SIGXCPU;
 
 #ifdef SGEN_PARALLEL_MARK
 #define SGEN_CAS_PTR	InterlockedCompareExchangePointer
+#define SGEN_ATOMIC_ADD(x,i)	do {					\
+		int __old_x;						\
+		do {							\
+			__old_x = (x);					\
+		} while (InterlockedCompareExchange (&(x), __old_x, __old_x + (i)) != __old_x); \
+	} while (0)
 #else
 #define SGEN_CAS_PTR(p,n,c)	((*(void**)(p) == (void*)(c)) ? (*(void**)(p) = (void*)(n), (void*)(c)) : (*(void**)(p)))
+#define SGEN_ATOMIC_ADD(x,i)	((x) += (i))
 #endif
 
 /* non-pthread will need to provide their own version of start/stop */

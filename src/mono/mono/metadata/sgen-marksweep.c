@@ -160,7 +160,7 @@ ms_get_empty_block (void)
 			p += MS_BLOCK_SIZE;
 		}
 
-		num_empty_blocks += MS_BLOCK_ALLOC_NUM;
+		SGEN_ATOMIC_ADD (num_empty_blocks, MS_BLOCK_ALLOC_NUM);
 
 		stat_major_blocks_alloced += MS_BLOCK_ALLOC_NUM;
 	}
@@ -172,6 +172,8 @@ ms_get_empty_block (void)
 		block = empty;
 		next = *(void**)block;
 	} while (SGEN_CAS_PTR (&empty_blocks, next, empty) != empty);
+
+	SGEN_ATOMIC_ADD (num_empty_blocks, -1);
 
 	*(void**)block = NULL;
 
@@ -193,6 +195,8 @@ ms_free_block (void *block)
 		empty = empty_blocks;
 		*(void**)block = empty;
 	} while (SGEN_CAS_PTR (&empty_blocks, block, empty) != empty);
+
+	SGEN_ATOMIC_ADD (num_empty_blocks, 1);
 }
 
 //#define MARKSWEEP_CONSISTENCY_CHECK
@@ -218,6 +222,16 @@ check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 		}
 		g_assert (b == block);
 	}
+}
+
+static void
+check_empty_blocks (void)
+{
+	void *p;
+	int i = 0;
+	for (p = empty_blocks; p; p = *(void**)p)
+		++i;
+	g_assert (i == num_empty_blocks);
 }
 
 static void
@@ -260,6 +274,8 @@ consistency_check (void)
 		for (j = 0; j < MS_BLOCK_TYPE_MAX; ++j)
 			check_block_free_list (free_block_lists [j][i], block_obj_sizes [i], j & MS_BLOCK_FLAG_PINNED);
 	}
+
+	check_empty_blocks ();
 }
 #endif
 
@@ -864,6 +880,10 @@ major_finish_major_collection (void)
 		void *next = *(void**)empty_blocks;
 		free_os_memory (empty_blocks, MS_BLOCK_SIZE);
 		empty_blocks = next;
+		/*
+		 * Needs not be atomic because this is running
+		 * single-threaded.
+		 */
 		--num_empty_blocks;
 
 		++stat_major_blocks_freed;
