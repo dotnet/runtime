@@ -603,6 +603,8 @@ typedef struct {
  */
 #define LOAD_VTABLE(addr) ((*(mword*)(addr)) & ~VTABLE_BITS_MASK)
 
+#define VTABLE_HAS_REFERENCES(vt)	(((MonoVTable*)(vt))->gc_descr != (void*)DESC_TYPE_RUN_LENGTH)
+
 static const char*
 safe_name (void* obj)
 {
@@ -2103,7 +2105,7 @@ static void*
 copy_object_no_checks (void *obj, GrayQueue *queue)
 {
 	MonoVTable *vt = ((MonoObject*)obj)->vtable;
-	gboolean has_references = vt->gc_descr != (void*)DESC_TYPE_RUN_LENGTH;
+	gboolean has_references = VTABLE_HAS_REFERENCES (vt);
 	mword objsize = ALIGN_UP (par_object_get_size (vt, (MonoObject*)obj));
 	char *destination;
 

@@ -61,6 +61,21 @@ typedef struct {
 
 #define MS_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] & (1L << (b)))
 #define MS_SET_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] |= (1L << (b)))
+#define MS_PAR_SET_MARK_BIT(was_marked,bl,w,b)	do {			\
+		mword __old = (bl)->mark_words [(w)];			\
+		mword __bitmask = 1L << (b);				\
+		if (__old & __bitmask) {				\
+			was_marked = TRUE;				\
+			break;						\
+		}							\
+		if (SGEN_CAS_PTR ((gpointer*)&(bl)->mark_words [(w)],	\
+						(gpointer)(__old | __bitmask), \
+						(gpointer)__old) ==	\
+				(gpointer)__old) {			\
+			was_marked = FALSE;				\
+			break;						\
+		}							\
+	} while (1)
 
 #define MS_OBJ_ALLOCED(o,b)	(*(void**)(o) && (*(char**)(o) < (b)->block || *(char**)(o) >= (b)->block + MS_BLOCK_SIZE))
 
@@ -508,10 +523,11 @@ major_dump_heap (void)
 	} while (0)
 #define MS_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
 		int __word, __bit;					\
-		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
+		gboolean __was_marked;					\
 		DEBUG (9, g_assert (MS_OBJ_ALLOCED ((obj), (block))));	\
-		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
-			MS_SET_MARK_BIT ((block), __word, __bit);	\
+		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
+		MS_PAR_SET_MARK_BIT (__was_marked, (block), __word, __bit); \
+		if (!__was_marked) {					\
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
@@ -522,6 +538,8 @@ static void
 major_copy_or_mark_object (void **ptr, GrayQueue *queue)
 {
 	void *obj = *ptr;
+	mword vtable_word = *(mword*)obj;
+	MonoVTable *vt = (MonoVTable*)(vtable_word & ~VTABLE_BITS_MASK);
 	mword objsize;
 	MSBlockInfo *block;
 
@@ -532,42 +550,70 @@ major_copy_or_mark_object (void **ptr, GrayQueue *queue)
 
 	if (ptr_in_nursery (obj)) {
 		int word, bit;
-		char *forwarded;
+		gboolean has_references;
+		void *destination;
 
-		if ((forwarded = object_is_forwarded (obj))) {
-			*ptr = forwarded;
+		if (vtable_word & FORWARDED_BIT) {
+			*ptr = (void*)vt;
 			return;
 		}
-		if (object_is_pinned (obj))
+
+		if (vtable_word & PINNED_BIT)
 			return;
 
 		HEAVY_STAT (++stat_objects_copied_major);
 
-		obj = copy_object_no_checks (obj, queue);
-		*ptr = obj;
+		objsize = ALIGN_UP (par_object_get_size (vt, (MonoObject*)obj));
+		has_references = VTABLE_HAS_REFERENCES (vt);
 
-		/*
-		 * FIXME: See comment for copy_object_no_checks().  If
-		 * we have that, we can let the allocation function
-		 * give us the block info, too, and we won't have to
-		 * re-fetch it.
-		 */
-		block = MS_BLOCK_FOR_OBJ (obj);
-		MS_CALC_MARK_BIT (word, bit, obj, block);
-		DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
-		MS_SET_MARK_BIT (block, word, bit);
+		destination = ms_alloc_obj (objsize, has_references);
+
+		if (SGEN_CAS_PTR (obj, (void*)((mword)destination | FORWARDED_BIT), vt) == vt) {
+			gboolean was_marked;
+
+			par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
+			obj = destination;
+			*ptr = obj;
+
+			/*
+			 * FIXME: If we make ms_alloc_obj() give us
+			 * the block info, too, we won't have to
+			 * re-fetch it here.
+			 */
+			block = MS_BLOCK_FOR_OBJ (obj);
+			MS_CALC_MARK_BIT (word, bit, obj, block);
+			DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
+			MS_PAR_SET_MARK_BIT (was_marked, block, word, bit);
+		} else {
+			/*
+			 * FIXME: We have allocated destination, but
+			 * we cannot use it.  Give it back to the
+			 * allocator.
+			 */
+			*(void**)destination = NULL;
+
+			vtable_word = *(mword*)obj;
+			g_assert (vtable_word & FORWARDED_BIT);
+
+			obj = (void*)(vtable_word & ~VTABLE_BITS_MASK);
+
+			*ptr = obj;
+		}
 		return;
 	}
 
-	objsize = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
+	objsize = ALIGN_UP (par_object_get_size (vt, (MonoObject*)obj));
 
 	if (objsize > MAX_SMALL_OBJ_SIZE) {
-		if (object_is_pinned (obj))
+		if (vtable_word & PINNED_BIT)
 			return;
-		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), safe_object_get_size ((MonoObject*)obj));
-		pin_object (obj);
-		/* FIXME: only enqueue if object has references */
-		GRAY_OBJECT_ENQUEUE (queue, obj);
+		binary_protocol_pin (obj, vt, safe_object_get_size ((MonoObject*)obj));
+		if (SGEN_CAS_PTR (obj, (void*)(vtable_word | PINNED_BIT), (void*)vtable_word) == (void*)vtable_word) {
+			if (VTABLE_HAS_REFERENCES (vt))
+				GRAY_OBJECT_ENQUEUE (queue, obj);
+		} else {
+			g_assert (object_is_pinned (obj));
+		}
 		return;
 	}
 
