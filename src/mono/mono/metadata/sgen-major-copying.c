@@ -45,6 +45,10 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef SGEN_PARALLEL_MARK
+#error Parallel mark not supported in copying major collector
+#endif
+
 #define MAJOR_SECTION_SIZE		PINNED_CHUNK_SIZE
 #define BLOCK_FOR_OBJECT(o)		((Block*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
 #define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
@@ -235,7 +239,9 @@ major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 		if (res)
 			goto found;
 	}
+	LOCK_INTERNAL_ALLOCATOR;
 	pchunk = alloc_pinned_chunk ();
+	UNLOCK_INTERNAL_ALLOCATOR;
 	/* FIXME: handle OOM */
 	pchunk->block.next = pinned_chunk_list;
 	pinned_chunk_list = pchunk;

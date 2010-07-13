@@ -32,6 +32,8 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/metadata/class-internals.h>
 
+/* #define SGEN_PARALLEL_MARK */
+
 #define THREAD_HASH_SIZE 11
 
 #define ARCH_THREAD_TYPE pthread_t
@@ -103,6 +105,14 @@ static int restart_signal_num = SIGXCPU;
 #define UNLOCK_GC pthread_mutex_unlock (&gc_mutex)
 #define LOCK_INTERRUPTION pthread_mutex_lock (&interruption_mutex)
 #define UNLOCK_INTERRUPTION pthread_mutex_unlock (&interruption_mutex)
+
+#ifdef SGEN_PARALLEL_MARK
+#define LOCK_INTERNAL_ALLOCATOR pthread_mutex_lock (&internal_allocator_mutex)
+#define UNLOCK_INTERNAL_ALLOCATOR pthread_mutex_unlock (&internal_allocator_mutex)
+#else
+#define LOCK_INTERNAL_ALLOCATOR
+#define UNLOCK_INTERNAL_ALLOCATOR
+#endif
 
 /* non-pthread will need to provide their own version of start/stop */
 #define USE_SIGNAL_BASED_START_STOP_WORLD 1

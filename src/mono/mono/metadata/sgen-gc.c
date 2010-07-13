@@ -689,6 +689,10 @@ static mword highest_heap_address = 0;
 
 static LOCK_DECLARE (interruption_mutex);
 
+#ifdef SGEN_PARALLEL_MARK
+static LOCK_DECLARE (internal_allocator_mutex);
+#endif
+
 typedef struct _FinalizeEntry FinalizeEntry;
 struct _FinalizeEntry {
 	FinalizeEntry *next;
@@ -3736,6 +3740,7 @@ build_freelist (PinnedChunk *chunk, int slot, int size, char *start_page, char *
 	/*g_print ("%d items created, max: %d\n", count, (end_page - start_page) / size);*/
 }
 
+/* LOCKING: requires the internal allocator lock to be held */
 static PinnedChunk*
 alloc_pinned_chunk (void)
 {
@@ -3805,16 +3810,19 @@ get_internal_mem (size_t size, int type)
 	void *res = NULL;
 	PinnedChunk *pchunk;
 
+	LOCK_INTERNAL_ALLOCATOR;
+
 	if (size > freelist_sizes [FREELIST_NUM_SLOTS - 1]) {
 		LargeInternalMemHeader *mh;
+
+		UNLOCK_INTERNAL_ALLOCATOR;
 
 		size += sizeof (LargeInternalMemHeader);
 		mh = get_os_memory (size, TRUE);
 		mh->magic = LARGE_INTERNAL_MEM_HEADER_MAGIC;
 		mh->size = size;
-
+		/* FIXME: do a CAS here */
 		large_internal_bytes_alloced += size;
-
 		return mh->data;
 	}
 
@@ -3827,6 +3835,9 @@ get_internal_mem (size_t size, int type)
 		void **p = pchunk->free_list [slot];
 		if (p) {
 			pchunk->free_list [slot] = *p;
+
+			UNLOCK_INTERNAL_ALLOCATOR;
+
 			memset (p, 0, size);
 			return p;
 		}
@@ -3834,6 +3845,8 @@ get_internal_mem (size_t size, int type)
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		res = get_chunk_freelist (pchunk, slot);
 		if (res) {
+			UNLOCK_INTERNAL_ALLOCATOR;
+
 			memset (res, 0, size);
 			return res;
 		}
@@ -3843,6 +3856,9 @@ get_internal_mem (size_t size, int type)
 	pchunk->block.next = internal_chunk_list;
 	internal_chunk_list = pchunk;
 	res = get_chunk_freelist (pchunk, slot);
+
+	UNLOCK_INTERNAL_ALLOCATOR;
+
 	memset (res, 0, size);
 	return res;
 }
@@ -3854,6 +3870,9 @@ free_internal_mem (void *addr, int type)
 	LargeInternalMemHeader *mh;
 	if (!addr)
 		return;
+
+	LOCK_INTERNAL_ALLOCATOR;
+
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		/*printf ("trying to free %p in %p (pages: %d)\n", addr, pchunk, pchunk->num_pages);*/
 		if (addr >= (void*)pchunk && (char*)addr < (char*)pchunk + pchunk->num_pages * FREELIST_PAGESIZE) {
@@ -3866,11 +3885,17 @@ free_internal_mem (void *addr, int type)
 
 			small_internal_mem_bytes [type] -= freelist_sizes [slot];
 
+			UNLOCK_INTERNAL_ALLOCATOR;
+
 			return;
 		}
 	}
+
+	UNLOCK_INTERNAL_ALLOCATOR;
+
 	mh = (LargeInternalMemHeader*)((char*)addr - G_STRUCT_OFFSET (LargeInternalMemHeader, data));
 	g_assert (mh->magic == LARGE_INTERNAL_MEM_HEADER_MAGIC);
+	/* FIXME: do a CAS */
 	large_internal_bytes_alloced -= mh->size;
 	free_os_memory (mh, mh->size);
 }
