@@ -306,6 +306,10 @@ static int stat_wbarrier_generic_store_remset = 0;
 static int stat_wbarrier_set_root = 0;
 static int stat_wbarrier_value_copy = 0;
 static int stat_wbarrier_object_copy = 0;
+
+static long long stat_internal_alloc = 0;
+static long long stat_internal_alloc_loop1 = 0;
+static long long stat_internal_alloc_loop2 = 0;
 #endif
 
 static long long time_minor_pre_collection_fragment_clear = 0;
@@ -3207,6 +3211,9 @@ init_stats (void)
 	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
 	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
 
+	mono_counters_register ("Internal allocs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc);
+	mono_counters_register ("Internal alloc loop1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc_loop1);
+	mono_counters_register ("Internal alloc loop2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc_loop2);
 #endif
 
 	inited = TRUE;
@@ -3834,6 +3841,8 @@ get_internal_mem (size_t size, int type)
 
 	LOCK_INTERNAL_ALLOCATOR;
 
+	HEAVY_STAT (++stat_internal_alloc);
+
 	if (size > freelist_sizes [FREELIST_NUM_SLOTS - 1]) {
 		LargeInternalMemHeader *mh;
 
@@ -3855,6 +3864,7 @@ get_internal_mem (size_t size, int type)
 
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
 		void **p = pchunk->free_list [slot];
+		HEAVY_STAT (++stat_internal_alloc_loop1);
 		if (p) {
 			pchunk->free_list [slot] = *p;
 
@@ -3865,6 +3875,7 @@ get_internal_mem (size_t size, int type)
 		}
 	}
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
+		HEAVY_STAT (++stat_internal_alloc_loop2);
 		res = get_chunk_freelist (pchunk, slot);
 		if (res) {
 			UNLOCK_INTERNAL_ALLOCATOR;
