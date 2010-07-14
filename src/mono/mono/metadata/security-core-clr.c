@@ -300,7 +300,7 @@ get_reflection_caller (void)
 	MonoMethod *m = NULL;
 	mono_stack_walk_no_il (get_caller_no_reflection_related, &m);
 	if (G_UNLIKELY (!m)) {
-		mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_SECURITY, "No caller outside reflection was found");
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, "No caller outside reflection was found");
 	}
 	return m;
 }
@@ -488,7 +488,7 @@ static MonoException*
 get_method_access_exception (const char *format, MonoMethod *caller, MonoMethod *callee)
 {
 	MonoException *ex;
-	char *caller_name = mono_method_full_name (caller, TRUE);
+	char *caller_name = caller ? mono_method_full_name (caller, TRUE) : g_strdup ("no caller found");
 	char *callee_name = mono_method_full_name (callee, TRUE);
 	char *message = g_strdup_printf (format, caller_name, callee_name);
 	g_free (callee_name);
