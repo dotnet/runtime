@@ -6216,8 +6216,7 @@ mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void 
 	start_info = malloc (sizeof (SgenThreadStartInfo));
 	if (!start_info)
 		return ENOMEM;
-	result = MONO_SEM_INIT (&(start_info->registered), 0);
-	g_assert (!result);
+	MONO_SEM_INIT (&(start_info->registered), 0);
 	start_info->arg = arg;
 	start_info->start_routine = start_routine;
 
