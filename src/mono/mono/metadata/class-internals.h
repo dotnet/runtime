@@ -274,9 +274,10 @@ typedef struct {
 
 	guint32    declsec_flags;	/* declarative security attributes flags */
 
-	/* Default values/RVA for fields */
+	/* Default values/RVA for fields and properties */
 	/* Accessed using mono_class_get_field_default_value () / mono_field_get_data () */
 	MonoFieldDefaultValue *field_def_values;
+	MonoFieldDefaultValue *prop_def_values;
 
 	GList      *nested_classes;
 } MonoClassExt;

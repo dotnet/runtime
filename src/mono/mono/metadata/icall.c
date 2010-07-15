@@ -7343,8 +7343,6 @@ property_info_get_default_value (MonoReflectionProperty *property)
 	const char *def_value;
 	MonoObject *o;
 
-	g_assert (!prop->parent->image->dynamic);
-
 	mono_class_init (prop->parent);
 
 	if (!(prop->attrs & PROPERTY_ATTRIBUTE_HAS_DEFAULT))

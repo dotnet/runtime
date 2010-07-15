@@ -10971,6 +10971,21 @@ typebuilder_setup_properties (MonoClass *klass, MonoError *error)
 			properties [i].set = pb->set_method->mhandle;
 
 		mono_save_custom_attrs (klass->image, &properties [i], pb->cattrs);
+		if (pb->def_value) {
+			guint32 len, idx;
+			const char *p, *p2;
+			MonoDynamicImage *assembly = (MonoDynamicImage*)klass->image;
+			if (!klass->ext->prop_def_values)
+				klass->ext->prop_def_values = image_g_new0 (image, MonoFieldDefaultValue, klass->ext->property.count);
+			properties [i].attrs |= PROPERTY_ATTRIBUTE_HAS_DEFAULT;
+			idx = encode_constant (assembly, pb->def_value, &klass->ext->prop_def_values [i].def_type);
+			/* Copy the data from the blob since it might get realloc-ed */
+			p = assembly->blob.data + idx;
+			len = mono_metadata_decode_blob_size (p, &p2);
+			len += p2 - p;
+			klass->ext->prop_def_values [i].data = mono_image_alloc (image, len);
+			memcpy ((gpointer)klass->ext->prop_def_values [i].data, p, len);
+		}
 	}
 }
 

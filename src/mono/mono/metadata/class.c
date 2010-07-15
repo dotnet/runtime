@@ -6228,6 +6228,16 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 	return klass->ext->field_def_values [field_index].data;
 }
 
+static int
+mono_property_get_index (MonoProperty *prop)
+{
+	int index = prop - prop->parent->ext->properties;
+
+	g_assert (index >= 0 && index < prop->parent->ext->property.count);
+
+	return index;
+}
+
 /*
  * mono_class_get_property_default_value:
  *
@@ -6241,8 +6251,20 @@ mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def
 	MonoClass *klass = property->parent;
 
 	g_assert (property->attrs & PROPERTY_ATTRIBUTE_HAS_DEFAULT);
-	/*We don't cache here because it is not used by C# so it's quite rare.*/
+	/*
+	 * We don't cache here because it is not used by C# so it's quite rare, but
+	 * we still do the lookup in klass->ext because that is where the data
+	 * is stored for dynamic assemblies.
+	 */
 
+	if (klass->image->dynamic) {
+		int prop_index = mono_property_get_index (property);
+		if (klass->ext->prop_def_values && klass->ext->prop_def_values [prop_index].data) {
+			*def_type = klass->ext->prop_def_values [prop_index].def_type;
+			return klass->ext->prop_def_values [prop_index].data;
+		}
+		return NULL;
+	}
 	cindex = mono_metadata_get_constant_index (klass->image, mono_class_get_property_token (property), 0);
 	if (!cindex)
 		return NULL;
