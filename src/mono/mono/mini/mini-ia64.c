@@ -432,6 +432,12 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 		}
 	}
 
+	/*
+	 * IA64 has MONO_ARCH_THIS_AS_FIRST_ARG defined, but we don't need to really pass
+	 * this as first, because this is stored in a non-stacked register by the calling
+	 * sequence.
+	 */
+
 	/* this */
 	if (sig->hasthis)
 		add_general (&gr, &stack_size, cinfo->args + 0);
@@ -2686,7 +2692,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* Calls */
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
-			ia64_ld8 (code, GP_SCRATCH_REG, ins->sreg1);
+			/* Can't use ld8 as this could be a vtype address */
+			ia64_ld1 (code, GP_SCRATCH_REG, ins->sreg1);
 			break;
 		case OP_ARGLIST:
 			ia64_adds_imm (code, GP_SCRATCH_REG, cfg->sig_cookie, cfg->frame_reg);
@@ -2748,12 +2755,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			CallInfo *cinfo;
 			int out_reg;
 
-			/* 
-			 * There are no membase instructions on ia64, but we can't 
-			 * lower this since get_vcall_slot_addr () needs to decode it.
-			 */
-
-			/* Keep this in synch with get_vcall_slot_addr */
 			ia64_mov (code, IA64_R11, ins->sreg1);
 			if (ia64_is_imm14 (ins->inst_offset))
 				ia64_adds_imm (code, IA64_R8, ins->inst_offset, ins->sreg1);
@@ -2781,22 +2782,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				out_reg ++;
 			ia64_mov (code, IA64_R10, out_reg);
 
-			ia64_begin_bundle (code);
-			ia64_codegen_set_one_ins_per_bundle (code, TRUE);
-
 			ia64_ld8 (code, GP_SCRATCH_REG, IA64_R8);
 
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 
-			/*
-			 * This nop will tell get_vcall_slot_addr that this is a virtual 
-			 * call.
-			 */
-			ia64_nop_i (code, 0x12345);
-
 			ia64_br_call_reg (code, IA64_B0, IA64_B6);
-
-			ia64_codegen_set_one_ins_per_bundle (code, FALSE);
 
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -4510,58 +4500,8 @@ mono_arch_get_patch_offset (guint8 *code)
 gpointer
 mono_arch_get_vcall_slot (guint8* code, mgreg_t *regs, int *displacement)
 {
-	guint8 *bundle2 = code - 48;
-	guint8 *bundle3 = code - 32;
-	guint8 *bundle4 = code - 16;
-	guint64 ins21 = ia64_bundle_ins1 (bundle2);
-	guint64 ins22 = ia64_bundle_ins2 (bundle2);
-	guint64 ins23 = ia64_bundle_ins3 (bundle2);
-	guint64 ins31 = ia64_bundle_ins1 (bundle3);
-	guint64 ins32 = ia64_bundle_ins2 (bundle3);
-	guint64 ins33 = ia64_bundle_ins3 (bundle3);
-	guint64 ins41 = ia64_bundle_ins1 (bundle4);
-	guint64 ins42 = ia64_bundle_ins2 (bundle4);
-	guint64 ins43 = ia64_bundle_ins3 (bundle4);
-
-	/* 
-	 * Virtual calls are made with:
-	 *
-	 * [MII]       ld8 r31=[r8]
-	 *             nop.i 0x0
-	 *             nop.i 0x0;;
-	 * [MII]       nop.m 0x0
-	 *             mov.sptk b6=r31,0x2000000000f32a80
-	 *             nop.i 0x0
-	 * [MII]       nop.m 0x0
-	 *             nop.i 0x123456
-	 *             nop.i 0x0
-	 * [MIB]       nop.m 0x0
-	 *             nop.i 0x0
-	 *             br.call.sptk.few b0=b6;;
-	 */
-
-	if (((ia64_bundle_template (bundle3) == IA64_TEMPLATE_MII) ||
-		 (ia64_bundle_template (bundle3) == IA64_TEMPLATE_MIIS)) &&
-		(ia64_bundle_template (bundle4) == IA64_TEMPLATE_MIBS) &&
-		(ins31 == IA64_NOP_M) && 
-		(ia64_ins_opcode (ins32) == 0) && (ia64_ins_x3 (ins32) == 0) && (ia64_ins_x6 (ins32) == 0x1) && (ia64_ins_y (ins32) == 0) &&
-		(ins33 == IA64_NOP_I) &&
-		(ins41 == IA64_NOP_M) &&
-		(ins42 == IA64_NOP_I) &&
-		(ia64_ins_opcode (ins43) == 1) && (ia64_ins_b1 (ins43) == 0) && (ia64_ins_b2 (ins43) == 6) &&
-		((ins32 >> 6) & 0xfffff) == 0x12345) {
-		g_assert (ins21 == IA64_NOP_M);
-		g_assert (ins23 == IA64_NOP_I);
-		g_assert (ia64_ins_opcode (ins22) == 0);
-		g_assert (ia64_ins_x3 (ins22) == 7);
-		g_assert (ia64_ins_x (ins22) == 0);
-		g_assert (ia64_ins_b1 (ins22) == IA64_B6);
-
-		*displacement = (gssize)regs [IA64_R8] - (gssize)regs [IA64_R11];
-
-		return (gpointer)regs [IA64_R11];
-	}
-
+	/* Not used on IA64 */
+	g_assert_not_reached ();
 	return NULL;
 }
 
