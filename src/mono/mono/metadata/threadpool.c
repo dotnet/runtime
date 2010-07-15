@@ -174,6 +174,8 @@ static void threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njob
 static void threadpool_init (ThreadPool *tp, int min_threads, int max_threads, void (*async_invoke) (gpointer));
 static void threadpool_start_idle_threads (ThreadPool *tp);
 static void threadpool_kill_idle_threads (ThreadPool *tp);
+static gboolean threadpool_start_thread (ThreadPool *tp);
+static void monitor_thread (gpointer data);
 
 static MonoClass *async_call_klass;
 static MonoClass *socket_async_call_klass;
@@ -1033,6 +1035,8 @@ threadpool_start_idle_threads (ThreadPool *tp)
 {
 	int n;
 
+	if (tp->pool_status == 1 && !tp->is_io)
+		mono_thread_create_internal (mono_get_root_domain (), monitor_thread, tp, TRUE);
 	do {
 		while (1) {
 			n = tp->nthreads;
@@ -1123,6 +1127,55 @@ signal_handler (int signo)
 	alarm (2);
 }
 #endif
+
+static void
+monitor_thread (gpointer data)
+{
+	ThreadPool *tp;
+	MonoInternalThread *thread;
+	guint32 ms;
+	gboolean need_one;
+	int i;
+
+	tp = data;
+	thread = mono_thread_internal_current ();
+	while (1) {
+		ms = 500;
+		do {
+			guint32 ts;
+			ts = mono_msec_ticks ();
+			if (SleepEx (ms, TRUE) == 0)
+				break;
+			ms -= (mono_msec_ticks () - ts);
+			if (mono_runtime_is_shutting_down ())
+				break;
+			if (THREAD_WANTS_A_BREAK (thread))
+				mono_thread_interruption_checkpoint ();
+		} while (ms > 0);
+
+		if (mono_runtime_is_shutting_down ())
+			break;
+		if (tp->waiting > 0)
+			continue;
+		MONO_SEM_WAIT (&tp->lock);
+		need_one = (tp->head != tp->tail);
+		if (!need_one) {
+			EnterCriticalSection (&wsqs_lock);
+			for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
+				MonoWSQ *wsq;
+				wsq = g_ptr_array_index (wsqs, i);
+				if (mono_wsq_count (wsq) > 0) {
+					need_one = TRUE;
+					break;
+				}
+			}
+			LeaveCriticalSection (&wsqs_lock);
+		}
+		MONO_SEM_POST (&tp->lock);
+		if (need_one)
+			threadpool_start_thread (tp);
+	}
+}
 
 void
 mono_thread_pool_init ()
@@ -1444,16 +1497,6 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 	if (lock_taken)
 		MONO_SEM_POST (&tp->lock);
 
-	if (!tp->is_io && tp->waiting == 0) {
-		gint64 ticks = mono_100ns_ticks ();
-
-		if (tp->last_check == 0 || (ticks - tp->last_check) > 5000000) {
-			SPIN_LOCK (tp->sp_lock);
-			tp->last_check = ticks;
-			SPIN_UNLOCK (tp->sp_lock);
-			threadpool_start_thread (tp);
-		}
-	}
 	for (i = 0; i < MIN(njobs, tp->max_threads); i++)
 		pulse_on_new_job (tp);
 }
@@ -1718,9 +1761,7 @@ process_idle_times (ThreadPool *tp, gint64 t)
 	tp->averages [1] = avg;
 	tp->ignore_times = 0;
 
-	if (tp->waiting == 0 && new_threads == 1) {
-		threadpool_start_thread (tp);
-	} else if (new_threads == -1) {
+	if (new_threads == -1) {
 		if (tp->destroy_thread == 0 && InterlockedCompareExchange (&tp->destroy_thread, 1, 0) == 0)
 			pulse_on_new_job (tp);
 	}
