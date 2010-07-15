@@ -390,6 +390,11 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 #endif
 	}
 
+#ifdef PTHREAD_STACK_MIN
+	if (stacksize < PTHREAD_STACK_MIN)
+		stacksize = PTHREAD_STACK_MIN;
+#endif
+
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
 	thr_ret = pthread_attr_setstacksize(&attr, stacksize);
 	g_assert (thr_ret == 0);
