@@ -4730,8 +4730,8 @@ mono_class_init (MonoClass *class)
 	return class->exception_type == MONO_EXCEPTION_NONE;
 }
 
-static gboolean
-is_corlib_image (MonoImage *image)
+gboolean
+mono_is_corlib_image (MonoImage *image)
 {
 	/* FIXME: allow the dynamic case for our compilers and with full trust */
 	if (image->dynamic)
@@ -4748,7 +4748,7 @@ mono_class_setup_mono_type (MonoClass *class)
 {
 	const char *name = class->name;
 	const char *nspace = class->name_space;
-	gboolean is_corlib = is_corlib_image (class->image);
+	gboolean is_corlib = mono_is_corlib_image (class->image);
 
 	class->this_arg.byref = 1;
 	class->this_arg.data.klass = class;
@@ -4896,7 +4896,7 @@ void
 mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 {
 	gboolean system_namespace;
-	gboolean is_corlib = is_corlib_image (class->image);
+	gboolean is_corlib = mono_is_corlib_image (class->image);
 
 	system_namespace = !strcmp (class->name_space, "System") && is_corlib;
 
@@ -4955,10 +4955,10 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 				class->delegate  = 1;
 		}
 
-		if (class->parent->enumtype || (is_corlib_image (class->parent->image) && (strcmp (class->parent->name, "ValueType") == 0) && 
+		if (class->parent->enumtype || (mono_is_corlib_image (class->parent->image) && (strcmp (class->parent->name, "ValueType") == 0) && 
 						(strcmp (class->parent->name_space, "System") == 0)))
 			class->valuetype = 1;
-		if (is_corlib_image (class->parent->image) && ((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
+		if (mono_is_corlib_image (class->parent->image) && ((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
 			class->valuetype = class->enumtype = 1;
 		}
 		/*class->enumtype = class->parent->enumtype; */
@@ -5179,7 +5179,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->method.count = 0;
 
 	/* reserve space to store vector pointer in arrays */
-	if (is_corlib_image (image) && !strcmp (nspace, "System") && !strcmp (name, "Array")) {
+	if (mono_is_corlib_image (image) && !strcmp (nspace, "System") && !strcmp (name, "Array")) {
 		class->instance_size += 2 * sizeof (gpointer);
 		g_assert (class->field.count == 0);
 	}

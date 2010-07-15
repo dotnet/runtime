@@ -1780,12 +1780,18 @@ handle_enum:
 #endif
 #endif
 		break;
-	case MONO_TYPE_VALUETYPE:
-		if (val->vtable->klass->enumtype) {
-			*ret_type = mono_class_enum_basetype (val->vtable->klass)->type;
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass = val->vtable->klass;
+		
+		if (klass->enumtype) {
+			*ret_type = mono_class_enum_basetype (klass)->type;
 			goto handle_enum;
-		} else
-			g_error ("we can't encode valuetypes");
+		} else if (mono_is_corlib_image (klass->image) && strcmp (klass->name_space, "System") == 0 && strcmp (klass->name, "DateTime") == 0) {
+			len = 8;
+		} else 
+			g_error ("we can't encode valuetypes, we should have never reached this line");
+		break;
+	}
 	case MONO_TYPE_CLASS:
 		break;
 	case MONO_TYPE_STRING: {
@@ -7810,9 +7816,18 @@ handle_enum:
 			type = mono_class_enum_basetype (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			g_error ("generic valutype %s not handled in custom attr value decoding", t->data.klass->name);
+			MonoClass *k =  t->data.klass;
+			
+			if (mono_is_corlib_image (k->image) && strcmp (k->name_space, "System") == 0 && strcmp (k->name, "DateTime") == 0){
+				guint64 *val = g_malloc (sizeof (guint64));
+				*val = read64 (p);
+				*end = p + 8;
+				return val;
+			}
 		}
+		g_error ("generic valutype %s not handled in custom attr value decoding", t->data.klass->name);
 		break;
+		
 	case MONO_TYPE_STRING:
 		if (*p == (char)0xFF) {
 			*end = p + 1;
