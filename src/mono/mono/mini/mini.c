@@ -5519,6 +5519,8 @@ mini_parse_debug_options (void)
 			debug_options.gen_seq_points = TRUE;
 		else if (!strcmp (arg, "init-stacks"))
 			debug_options.init_stacks = TRUE;
+		else if (!strcmp (arg, "casts"))
+			debug_options.better_cast_details = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
 			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks'\n");
