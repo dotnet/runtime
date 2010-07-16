@@ -1,3 +1,7 @@
+2010-07-16  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Remove the 'LLVM backend is experimental' warning.
+
 2010-07-08  Neale Ferguson <neale@sinenomine.net>
 
 	* configure.in: Add sgen_supported=true for s390x.

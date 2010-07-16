@@ -2972,9 +2972,3 @@ echo "
 if test x$with_static_mono = xno -a "x$host_win32" != "xyes"; then
    AC_MSG_WARN(Turning off static Mono is a risk, you might run into unexpected bugs)
 fi
-
-if test x$enable_llvm = xyes; then
-   echo IMPORTANT:
-   echo IMPORTANT: The LLVM Back End is experimental and has known problems.
-   echo IMPORTANT:
-fi
