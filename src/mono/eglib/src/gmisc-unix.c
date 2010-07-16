@@ -26,6 +26,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <config.h>
 #include <stdlib.h>
 #include <glib.h>
 #include <pthread.h>
@@ -81,27 +82,18 @@ g_get_home_dir (void)
 	if (home_dir == NULL){
 		pthread_mutex_lock (&home_lock);
 		if (home_dir == NULL){
-#ifdef HAVE_GETPWENT_R
-			struct passwd pwbuf, *track;
+#ifdef HAVE_GETPWUID_R
+			struct passwd pw;
+			struct passwd *result;
 			char buf [4096];
-			uid_t uid;
-			
-			uid = getuid ();
 
-			setpwent ();
-			
-			while (getpwent_r (&pwbuf, buf, sizeof (buf), &track) == 0){
-				if (pwbuf.pw_uid == uid){
-					home_dir = g_strdup (pwbuf.pw_dir);
-					break;
-				}
-			}
-			endpwent ();
+			if (getpwuid_r (getuid (), &pw, buf, 4096, &result) == 0)
+				home_dir = g_strdup (pw.pw_dir);
 #endif
 			if (home_dir == NULL)
 				home_dir = g_getenv ("HOME");
-			pthread_mutex_unlock (&home_lock);
 		}
+		pthread_mutex_unlock (&home_lock);
 	}
 	return home_dir;
 }

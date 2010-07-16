@@ -72,7 +72,7 @@ AM_CONDITIONAL(TARGET_WIN32, test x$OS = xWIN32)
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(void *)
-AC_CHECK_FUNCS(strndup strlcpy getpwent_r strtok_r rewinddir vasprintf)
+AC_CHECK_FUNCS(strndup strlcpy getpwuid_r strtok_r rewinddir vasprintf)
 AM_CONDITIONAL(NEED_VASPRINTF, test x$have_vasprintf = x )
 AC_CHECK_LIB(iconv, iconv_open, LIBS="$LIBS -liconv")
 AC_CHECK_LIB(iconv, libiconv_open, LIBS="$LIBS -liconv")
