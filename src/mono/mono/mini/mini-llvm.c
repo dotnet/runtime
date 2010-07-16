@@ -624,6 +624,8 @@ simd_op_to_intrins (int opcode)
 		return "llvm.x86.sse41.pminuw";
 	case OP_PMINB_UN:
 		return "llvm.x86.sse2.pminu.b";
+	case OP_PMINW:
+		return "llvm.x86.sse2.pmins.w";
 	case OP_MAXPD:
 		return "llvm.x86.sse2.max.pd";
 	case OP_MAXPS:
@@ -634,11 +636,54 @@ simd_op_to_intrins (int opcode)
 		return "llvm.x86.sse41.pmaxuw";
 	case OP_PMAXB_UN:
 		return "llvm.x86.sse2.pmaxu.b";
+	case OP_PCMPEQB:
+		return "llvm.x86.sse2.pcmpeq.b";
+	case OP_PCMPEQW:
+		return "llvm.x86.sse2.pcmpeq.w";
+	case OP_PCMPEQD:
+		return "llvm.x86.sse2.pcmpeq.d";
+	case OP_PCMPEQQ:
+		return "llvm.x86.sse41.pcmpeqq";
+	case OP_PCMPGTB:
+		return "llvm.x86.sse2.pcmpgt.b";
 #endif
 	default:
 		g_assert_not_reached ();
 		return NULL;
 	}
+}
+
+static LLVMTypeRef
+simd_op_to_llvm_type (int opcode)
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+	switch (opcode) {
+	case OP_EXTRACT_R8:
+	case OP_EXPAND_R8:
+		return LLVMVectorType (LLVMDoubleType (), 2);
+	case OP_EXTRACT_I8:
+	case OP_EXPAND_I8:
+		return LLVMVectorType (LLVMInt64Type (), 2);
+	case OP_EXTRACT_I4:
+	case OP_EXPAND_I4:
+		return LLVMVectorType (LLVMInt32Type (), 4);
+	case OP_EXTRACT_I2:
+	case OP_EXTRACT_U2:
+	case OP_EXPAND_I2:
+		return LLVMVectorType (LLVMInt16Type (), 8);
+	case OP_EXTRACT_I1:
+	case OP_EXTRACT_U1:
+	case OP_EXPAND_I1:
+		return LLVMVectorType (LLVMInt8Type (), 16);
+	case OP_EXPAND_R4:
+		return LLVMVectorType (LLVMFloatType (), 4);
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+#else
+	return NULL;
+#endif
 }
 
 /*
@@ -3364,9 +3409,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_PMIND_UN:
 		case OP_PMINW_UN:
 		case OP_PMINB_UN:
+		case OP_PMINW:
 		case OP_PMAXD_UN:
 		case OP_PMAXW_UN:
-		case OP_PMAXB_UN: {
+		case OP_PMAXB_UN:
+		case OP_PCMPEQB:
+		case OP_PCMPEQW:
+		case OP_PCMPEQD:
+		case OP_PCMPEQQ:
+		case OP_PCMPGTB: {
 			LLVMValueRef args [2];
 
 			args [0] = lhs;
@@ -3385,28 +3436,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMTypeRef t;
 			gboolean zext = FALSE;
 
+			t = simd_op_to_llvm_type (ins->opcode);
+
 			switch (ins->opcode) {
 			case OP_EXTRACT_R8:
-				t = LLVMVectorType (LLVMDoubleType (), 2);
-				break;
 			case OP_EXTRACT_I8:
-				t = LLVMVectorType (LLVMInt64Type (), 2);
-				break;
 			case OP_EXTRACT_I4:
-				t = LLVMVectorType (LLVMInt32Type (), 4);
-				break;
 			case OP_EXTRACT_I2:
-				t = LLVMVectorType (LLVMInt16Type (), 8);
+			case OP_EXTRACT_I1:
 				break;
 			case OP_EXTRACT_U2:
-				t = LLVMVectorType (LLVMInt16Type (), 8);
-				zext = TRUE;
-				break;
-			case OP_EXTRACT_I1:
-				t = LLVMVectorType (LLVMInt8Type (), 16);
-				break;
 			case OP_EXTRACT_U1:
-				t = LLVMVectorType (LLVMInt8Type (), 16);
 				zext = TRUE;
 				break;
 			default:
@@ -3418,6 +3458,25 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), "");
 			if (zext)
 				values [ins->dreg] = LLVMBuildZExt (builder, values [ins->dreg], LLVMInt32Type (), "");
+			break;
+		}
+
+		case OP_EXPAND_I1:
+		case OP_EXPAND_I2:
+		case OP_EXPAND_I4:
+		case OP_EXPAND_I8:
+		case OP_EXPAND_R4:
+		case OP_EXPAND_R8: {
+			LLVMTypeRef t = simd_op_to_llvm_type (ins->opcode);
+			LLVMValueRef mask [16], v;
+
+			for (i = 0; i < 16; ++i)
+				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+
+			v = convert (ctx, values [ins->sreg1], LLVMGetElementType (t));
+
+			values [ins->dreg] = LLVMBuildInsertElement (builder, LLVMConstNull (t), v, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, values [ins->dreg], LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
 			break;
 		}
 #endif
@@ -4353,32 +4412,42 @@ add_intrinsics (LLVMModuleRef module)
 		vector_type = LLVMVectorType (LLVMInt32Type (), 4);
 		arg_types [0] = vector_type;
 		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse41.pminud", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
-		LLVMAddFunction (module, "llvm.x86.sse41.pmaxud", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse41.pminud", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse41.pmaxud", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.d", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
 
 		vector_type = LLVMVectorType (LLVMInt16Type (), 8);
 		arg_types [0] = vector_type;
 		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse41.pminuw", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
-		LLVMAddFunction (module, "llvm.x86.sse41.pmaxuw", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse41.pminuw", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pmins.w", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse41.pmaxuw", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.w", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
 
 		vector_type = LLVMVectorType (LLVMInt8Type (), 16);
 		arg_types [0] = vector_type;
 		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse2.pminu.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
-		LLVMAddFunction (module, "llvm.x86.sse2.pmaxu.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse2.pminu.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pmaxu.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pcmpgt.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+
+		vector_type = LLVMVectorType (LLVMInt64Type (), 2);
+		arg_types [0] = vector_type;
+		arg_types [1] = vector_type;
+		LLVMAddFunction (module, "llvm.x86.sse41.pcmpeqq", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
 
 		vector_type = LLVMVectorType (LLVMDoubleType (), 2);
 		arg_types [0] = vector_type;
 		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse2.min.pd", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
-		LLVMAddFunction (module, "llvm.x86.sse2.max.pd", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse2.min.pd", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.max.pd", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
 
 		vector_type = LLVMVectorType (LLVMFloatType (), 4);
 		arg_types [0] = vector_type;
 		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse2.min.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
-		LLVMAddFunction (module, "llvm.x86.sse2.max.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));					
+		LLVMAddFunction (module, "llvm.x86.sse2.min.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.max.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
 	}
 
 	/* Load/Store intrinsics */
