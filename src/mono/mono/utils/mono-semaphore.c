@@ -69,7 +69,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 	}
 #else
 	copy = ts;
-	while ((res = WAIT_BLOCK (sem, &ts) == -1) && errno == EINTR) {
+	while ((res = WAIT_BLOCK (sem, &ts)) == -1 && errno == EINTR) {
 		struct timeval current;
 		if (alertable)
 			return -1;
@@ -91,7 +91,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 		}
 	}
 #endif
-	return res;
+	return (res != -1);
 }
 
 int
