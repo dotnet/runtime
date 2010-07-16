@@ -5739,7 +5739,7 @@ void
 mono_print_unhandled_exception (MonoObject *exc)
 {
 	MonoString * str;
-	char *message = "";
+	char *message = (char*)"";
 	gboolean free_message = FALSE;
 	MonoError error;
 
