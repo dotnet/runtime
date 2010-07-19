@@ -70,7 +70,7 @@
 #include <mono/io-layer/timefuncs-private.h>
 
 /* The process' environment strings */
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined (__arm__)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
@@ -2316,7 +2316,9 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	g_free (filename);
 #elif defined(PLATFORM_MACOSX)
 	memset (buf, '\0', sizeof(buf));
+#  if !defined (__mono_ppc__) && !defined(__arm__)
 	proc_name (pid, buf, sizeof(buf));
+#  endif
 	if (strlen (buf) > 0)
 		ret = g_strdup (buf);
 #elif defined(__OpenBSD__)
