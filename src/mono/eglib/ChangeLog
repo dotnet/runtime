@@ -1,3 +1,10 @@
+2010-07-19  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gmisc-win32.c (g_getenv): Distinguish between variable not
+	found and an empty variable.  
+
+	This should fix 566152
+
 2010-07-19  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/glib.h (G_MAXUINT64): Define this. Fixes #623293.

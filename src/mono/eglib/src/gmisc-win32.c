@@ -51,6 +51,11 @@ g_getenv(const gchar *variable)
 			retval = GetEnvironmentVariableW (var, buffer, buffer_size);
 		}
 		val = u16to8 (buffer);
+	} else {
+		if (GetLastError () != ERROR_ENVVAR_NOT_FOUND){
+			val = g_malloc (1);
+			*val = 0;
+		}
 	}
 	g_free(var);
 	g_free(buffer);
