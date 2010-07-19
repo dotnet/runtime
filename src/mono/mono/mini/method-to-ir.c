@@ -4171,6 +4171,49 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass == mono_defaults.array_class) {
 		if (strcmp (cmethod->name + 1, "etGenericValueImpl") == 0)
 			return emit_array_generic_access (cfg, fsig, args, *cmethod->name == 'S');
+
+#ifndef MONO_BIG_ARRAYS
+		/*
+		 * This is an inline version of GetLength/GetLowerBound(0) used frequently in
+		 * Array methods.
+		 */
+		if ((strcmp (cmethod->name, "GetLength") == 0 || strcmp (cmethod->name, "GetLowerBound") == 0) && args [1]->opcode == OP_ICONST && args [1]->inst_c0 == 0) {
+			int dreg = alloc_ireg (cfg);
+			int bounds_reg = alloc_ireg (cfg);
+			MonoBasicBlock *end_bb, *szarray_bb;
+			gboolean get_length = strcmp (cmethod->name, "GetLength") == 0;
+
+			NEW_BBLOCK (cfg, end_bb);
+			NEW_BBLOCK (cfg, szarray_bb);
+
+			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOAD_MEMBASE, bounds_reg,
+										 args [0]->dreg, G_STRUCT_OFFSET (MonoArray, bounds));
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, bounds_reg, 0);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, szarray_bb);
+			/* Non-szarray case */
+			if (get_length)
+				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
+									   bounds_reg, G_STRUCT_OFFSET (MonoArrayBounds, length));
+			else
+				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
+									   bounds_reg, G_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+			MONO_START_BB (cfg, szarray_bb);
+			/* Szarray case */
+			if (get_length)
+				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
+									   args [0]->dreg, G_STRUCT_OFFSET (MonoArray, max_length));
+			else
+				MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
+			MONO_START_BB (cfg, end_bb);
+
+			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, dreg);
+			ins->type = STACK_I4;
+			
+			return ins;
+		}
+#endif
+
  		if (cmethod->name [0] != 'g')
  			return NULL;
 
@@ -6536,6 +6579,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* Conversion to a JIT intrinsic */
 			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp))) {
+				bblock = cfg->cbb;
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 					type_to_eval_stack_type ((cfg), fsig->ret, ins);
 					*sp = ins;
