@@ -100,6 +100,7 @@ typedef int32_t        gboolean;
 #define G_MININT32           INT32_MIN
 #define G_MININT64           INT64_MIN
 #define G_MAXINT64	     INT64_MAX
+#define G_MAXUINT64	     UINT64_MAX
 
 #define G_LITTLE_ENDIAN 1234
 #define G_BIG_ENDIAN    4321

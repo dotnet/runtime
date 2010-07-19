@@ -37,6 +37,7 @@ typedef int pid_t;
 #define INT64_MAX 9223372036854775807i64
 #define INT64_MIN (~INT64_MAX)
 #define UINT32_MAX 0xffffffffU
+#define UINT64_MAX 0xffffffffffffffffULL
 
 #define STDOUT_FILENO (int)(intptr_t)stdout
 #define STDERR_FILENO (int)(intptr_t)stderr

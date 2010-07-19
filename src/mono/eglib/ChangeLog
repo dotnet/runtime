@@ -1,3 +1,9 @@
+2010-07-19  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/glib.h (G_MAXUINT64): Define this. Fixes #623293.
+
+	* src/eglib-config.hw: Define UINT64_MAX.
+
 2010-07-16 Gonzalo Paniagua Javier <gonzalo@novell.com>
 
 	* src/gmisc-unix.c: include config.h. Fixes bug #609632.
