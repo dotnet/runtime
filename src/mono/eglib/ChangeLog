@@ -1,7 +1,11 @@
+2010-07-20  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/glib.h (G_LIKELY): Implement these for gcc properly.
+
 2010-07-19  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gmisc-win32.c (g_getenv): Distinguish between variable not
-	found and an empty variable.  
+	found and an empty variable.
 
 	This should fix 566152
 

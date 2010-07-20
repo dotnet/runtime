@@ -607,9 +607,13 @@ gint           g_unichar_xdigit_value (gunichar c);
 #define CLAMP(a,low,high) (((a) < (low)) ? (low) : (((a) > (high)) ? (high) : (a)))
 #endif
 
-/* FIXME: Implement these two for gcc */
+#if defined(__GNUC__) && (__GNUC__ > 2)
+#define G_LIKELY(expr) (__builtin_expect ((expr) != 0, 1))
+#define G_UNLIKELY(expr) (__builtin_expect ((expr) != 0, 0))
+#else
 #define G_LIKELY(x) (x)
 #define G_UNLIKELY(x) (x)
+#endif
 
 /*
  * Unicode conversion
