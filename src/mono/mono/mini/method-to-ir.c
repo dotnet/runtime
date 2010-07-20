@@ -10465,46 +10465,37 @@ op_to_op_src2_membase (int load_opcode, int opcode)
 #endif
 
 #ifdef TARGET_AMD64
-	switch (opcode) {
-	case OP_ICOMPARE:
-		if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE))
+	if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE)) {
+		switch (opcode) {
+		case OP_ICOMPARE:
 			return OP_AMD64_ICOMPARE_REG_MEMBASE;
-		break;
-	case OP_COMPARE:
-	case OP_LCOMPARE:
-		if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE))
-			return OP_AMD64_COMPARE_REG_MEMBASE;
-		break;
-	case OP_IADD:
-		if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE))
+		case OP_IADD:
 			return OP_X86_ADD_REG_MEMBASE;
-	case OP_ISUB:
-		if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE))
+		case OP_ISUB:
 			return OP_X86_SUB_REG_MEMBASE;
-	case OP_IAND:
-		if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE))
+		case OP_IAND:
 			return OP_X86_AND_REG_MEMBASE;
-	case OP_IOR:
-		if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE))
+		case OP_IOR:
 			return OP_X86_OR_REG_MEMBASE;
-	case OP_IXOR:
-		if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE))
+		case OP_IXOR:
 			return OP_X86_XOR_REG_MEMBASE;
-	case OP_LADD:
-		if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE))
+		}
+	} else if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE)) {
+		switch (opcode) {
+		case OP_COMPARE:
+		case OP_LCOMPARE:
+			return OP_AMD64_COMPARE_REG_MEMBASE;
+		case OP_LADD:
 			return OP_AMD64_ADD_REG_MEMBASE;
-	case OP_LSUB:
-		if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE))
+		case OP_LSUB:
 			return OP_AMD64_SUB_REG_MEMBASE;
-	case OP_LAND:
-		if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE))
+		case OP_LAND:
 			return OP_AMD64_AND_REG_MEMBASE;
-	case OP_LOR:
-		if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE))
+		case OP_LOR:
 			return OP_AMD64_OR_REG_MEMBASE;
-	case OP_LXOR:
-		if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE))
+		case OP_LXOR:
 			return OP_AMD64_XOR_REG_MEMBASE;
+		}
 	}
 #endif
 
