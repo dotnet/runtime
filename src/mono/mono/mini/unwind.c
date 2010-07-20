@@ -799,7 +799,7 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 guint8*
 mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len, gpointer **type_info, int *this_reg, int *this_offset)
 {
-	guint8 *p, *cie, *fde_current, *fde_aug, *code, *fde_cfi, *cie_cfi;
+	guint8 *p, *cie, *fde_current, *fde_aug = NULL, *code, *fde_cfi, *cie_cfi;
 	gint32 fde_len, cie_offset, pc_begin, pc_range, aug_len, fde_data_len;
 	gint32 cie_len, cie_id, cie_version, code_align, data_align, return_reg;
 	gint32 i, cie_aug_len, buf_len;
