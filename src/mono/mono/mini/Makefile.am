@@ -666,14 +666,12 @@ EXTRA_DIST = $(common_BURGSRC) TestDriver.cs ldscript ldscript.mono \
 	$(posix_sources)
 
 version.h: Makefile
-	if test -d $(top_srcdir)/.git; then svn_info="git log --no-color --first-parent -n1 --grep=git-svn-id: --pretty=format:%b | sed -n -e 's,git-svn-id: \(.*\)@\(.*\) .*,URL: \1 Revision: \2,p'"; fi; \
-	if test -d $(srcdir)/.svn; then svn_info='svn info'; fi; \
-	if test -n "$$svn_info"; then \
+	if test -d $(top_srcdir)/.git; then \
 		(cd $(top_srcdir); \
 			LANG=C; export LANG; \
-			branch=`eval $$svn_info | sed -n -e '/URL/ s,.*source/\(.*\)/mono.*,/\1/mono,p'`; \
-			version=`eval $$svn_info | sed -n -e '/Revision/ s/.*: //p'`; \
-			echo "#define FULL_VERSION \"$$branch r$$version\""; \
+			branch=`git branch | grep '^\*' | cut -d ' ' -f 2`; \
+			version=`git log --no-color --first-parent -n1 --pretty=format:%h`; \
+			echo "#define FULL_VERSION \"$$branch/$$version\""; \
 		); \
 	else \
 		echo "#define FULL_VERSION \"tarball\""; \
