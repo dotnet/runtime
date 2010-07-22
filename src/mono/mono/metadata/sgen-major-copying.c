@@ -84,7 +84,7 @@ obj_is_from_pinned_alloc (char *p)
 static void
 free_pinned_object (char *obj, size_t size)
 {
-	mono_sgen_free_internal_full (&pinned_allocator, obj, INTERNAL_MEM_MANAGED);
+	mono_sgen_free_internal_full (&pinned_allocator, obj, size, INTERNAL_MEM_MANAGED);
 }
 
 /*
@@ -104,7 +104,7 @@ alloc_major_section (void)
 	mono_sgen_update_heap_boundaries ((mword)section->data, (mword)section->end_data);
 	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %zd\n", section->data, section->end_data, total_alloc));
 	scan_starts = (section->size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
-	section->scan_starts = mono_sgen_alloc_internal (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
+	section->scan_starts = mono_sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN1;
 	section->is_to_space = TRUE;
@@ -122,7 +122,8 @@ static void
 free_major_section (GCMemSection *section)
 {
 	DEBUG (3, fprintf (gc_debug_file, "Freed major section %p (%p-%p)\n", section, section->data, section->end_data));
-	mono_sgen_free_internal (section->scan_starts, INTERNAL_MEM_SCAN_STARTS);
+	mono_sgen_free_internal_dynamic (section->scan_starts,
+			(section->size + SCAN_START_SIZE - 1) / SCAN_START_SIZE * sizeof (char*), INTERNAL_MEM_SCAN_STARTS);
 	mono_sgen_free_os_memory (section, MAJOR_SECTION_SIZE);
 
 	--num_major_sections;

@@ -54,7 +54,7 @@ gray_object_alloc_queue_section (GrayQueue *queue)
 		queue->free_list = section->next;
 	} else {
 		/* Allocate a new section */
-		section = mono_sgen_alloc_internal (sizeof (GrayQueueSection), INTERNAL_MEM_GRAY_QUEUE);
+		section = mono_sgen_alloc_internal (INTERNAL_MEM_GRAY_QUEUE);
 	}
 
 	section->end = 0;

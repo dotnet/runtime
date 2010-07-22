@@ -211,11 +211,16 @@ void mono_sgen_report_internal_mem_usage (void) MONO_INTERNAL;
 void mono_sgen_report_internal_mem_usage_full (SgenInternalAllocator *alc) MONO_INTERNAL;
 void mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file) MONO_INTERNAL;
 
-void* mono_sgen_alloc_internal (size_t size, int type) MONO_INTERNAL;
+void mono_sgen_register_fixed_internal_mem_type (int type, size_t size) MONO_INTERNAL;
+
+void* mono_sgen_alloc_internal (int type) MONO_INTERNAL;
 void mono_sgen_free_internal (void *addr, int type) MONO_INTERNAL;
 
+void* mono_sgen_alloc_internal_dynamic (size_t size, int type) MONO_INTERNAL;
+void mono_sgen_free_internal_dynamic (void *addr, size_t size, int type) MONO_INTERNAL;
+
 void* mono_sgen_alloc_internal_full (SgenInternalAllocator *allocator, size_t size, int type) MONO_INTERNAL;
-void mono_sgen_free_internal_full (SgenInternalAllocator *allocator, void *addr, int type) MONO_INTERNAL;
+void mono_sgen_free_internal_full (SgenInternalAllocator *allocator, void *addr, size_t size, int type) MONO_INTERNAL;
 
 void mono_sgen_debug_printf (int level, const char *format, ...) MONO_INTERNAL;
 

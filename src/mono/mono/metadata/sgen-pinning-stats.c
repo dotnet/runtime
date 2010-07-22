@@ -54,7 +54,7 @@ pin_stats_tree_free (PinStatAddress *node)
 		return;
 	pin_stats_tree_free (node->left);
 	pin_stats_tree_free (node->right);
-	mono_sgen_free_internal (node, INTERNAL_MEM_STATISTICS);
+	mono_sgen_free_internal_dynamic (node, sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS);
 }
 
 static void
@@ -67,7 +67,7 @@ pin_stats_reset (void)
 		pinned_byte_counts [i] = 0;
 	while (pinned_objects) {
 		ObjectList *next = pinned_objects->next;
-		mono_sgen_free_internal (pinned_objects, INTERNAL_MEM_STATISTICS);
+		mono_sgen_free_internal_dynamic (pinned_objects, sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
 		pinned_objects = next;
 	}
 }
@@ -91,7 +91,7 @@ pin_stats_register_address (char *addr, int pin_type)
 			node_ptr = &node->right;
 	}
 
-	node = mono_sgen_alloc_internal (sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS);
+	node = mono_sgen_alloc_internal_dynamic (sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS);
 	node->addr = addr;
 	node->pin_types = pin_type_bit;
 	node->left = node->right = NULL;
@@ -124,7 +124,7 @@ static void
 pin_stats_register_object (char *obj, size_t size)
 {
 	int pin_types = 0;
-	ObjectList *list = mono_sgen_alloc_internal (sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
+	ObjectList *list = mono_sgen_alloc_internal_dynamic (sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
 	pin_stats_count_object_from_tree (obj, size, pin_stat_addresses, &pin_types);
 	list->obj = (MonoObject*)obj;
 	list->next = pinned_objects;

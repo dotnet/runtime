@@ -2540,7 +2540,7 @@ alloc_fragment (void)
 		frag->next = NULL;
 		return frag;
 	}
-	frag = mono_sgen_alloc_internal (sizeof (Fragment), INTERNAL_MEM_FRAGMENT);
+	frag = mono_sgen_alloc_internal (INTERNAL_MEM_FRAGMENT);
 	frag->next = NULL;
 	return frag;
 }
@@ -2587,7 +2587,7 @@ alloc_nursery (void)
 	 * objects in the existing nursery.
 	 */
 	/* FIXME: handle OOM */
-	section = mono_sgen_alloc_internal (SIZEOF_GC_MEM_SECTION, INTERNAL_MEM_SECTION);
+	section = mono_sgen_alloc_internal (INTERNAL_MEM_SECTION);
 
 	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
 	alloc_size = nursery_size;
@@ -2605,7 +2605,7 @@ alloc_nursery (void)
 	section->size = alloc_size;
 	section->end_data = nursery_real_end;
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
-	section->scan_starts = mono_sgen_alloc_internal (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
+	section->scan_starts = mono_sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN0;
 	section->block.next = NULL;
@@ -4056,7 +4056,7 @@ rehash_fin_table (FinalizeEntryHashTable *hash_table)
 	FinalizeEntry *entry, *next;
 	int new_size = g_spaced_primes_closest (hash_table->num_registered);
 
-	new_hash = mono_sgen_alloc_internal (new_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
+	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
 	for (i = 0; i < finalizable_hash_size; ++i) {
 		for (entry = finalizable_hash [i]; entry; entry = next) {
 			hash = mono_object_hash (entry->object) % new_size;
@@ -4065,7 +4065,7 @@ rehash_fin_table (FinalizeEntryHashTable *hash_table)
 			new_hash [hash] = entry;
 		}
 	}
-	mono_sgen_free_internal (finalizable_hash, INTERNAL_MEM_FIN_TABLE);
+	mono_sgen_free_internal_dynamic (finalizable_hash, finalizable_hash_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
 	hash_table->table = new_hash;
 	hash_table->size = new_size;
 }
@@ -4549,7 +4549,7 @@ register_for_finalization (MonoObject *obj, void *user_data, int generation)
 		UNLOCK_GC;
 		return;
 	}
-	entry = mono_sgen_alloc_internal (sizeof (FinalizeEntry), INTERNAL_MEM_FINALIZE_ENTRY);
+	entry = mono_sgen_alloc_internal (INTERNAL_MEM_FINALIZE_ENTRY);
 	entry->object = obj;
 	entry->next = finalizable_hash [hash];
 	finalizable_hash [hash] = entry;
@@ -4578,7 +4578,7 @@ rehash_dislink (DisappearingLinkHashTable *hash_table)
 	DisappearingLink *entry, *next;
 	int new_size = g_spaced_primes_closest (hash_table->num_links);
 
-	new_hash = mono_sgen_alloc_internal (new_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
+	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		for (entry = disappearing_link_hash [i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->link) % new_size;
@@ -4587,7 +4587,8 @@ rehash_dislink (DisappearingLinkHashTable *hash_table)
 			new_hash [hash] = entry;
 		}
 	}
-	mono_sgen_free_internal (disappearing_link_hash, INTERNAL_MEM_DISLINK_TABLE);
+	mono_sgen_free_internal_dynamic (disappearing_link_hash,
+			disappearing_link_hash_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
 	hash_table->table = new_hash;
 	hash_table->size = new_size;
 }
@@ -4633,7 +4634,7 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, i
 	}
 	if (obj == NULL)
 		return;
-	entry = mono_sgen_alloc_internal (sizeof (DisappearingLink), INTERNAL_MEM_DISLINK);
+	entry = mono_sgen_alloc_internal (INTERNAL_MEM_DISLINK);
 	*link = HIDE_POINTER (obj, track);
 	entry->link = link;
 	entry->next = disappearing_link_hash [hash];
@@ -4751,7 +4752,7 @@ rehash_roots (gboolean pinned)
 	int new_size;
 
 	new_size = g_spaced_primes_closest (num_roots_entries [pinned]);
-	new_hash = mono_sgen_alloc_internal (new_size * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
+	new_hash = mono_sgen_alloc_internal_dynamic (new_size * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
 	for (i = 0; i < roots_hash_size [pinned]; ++i) {
 		for (entry = roots_hash [pinned][i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->start_root) % new_size;
@@ -4760,7 +4761,7 @@ rehash_roots (gboolean pinned)
 			new_hash [hash] = entry;
 		}
 	}
-	mono_sgen_free_internal (roots_hash [pinned], INTERNAL_MEM_ROOTS_TABLE);
+	mono_sgen_free_internal_dynamic (roots_hash [pinned], roots_hash_size [pinned] * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
 	roots_hash [pinned] = new_hash;
 	roots_hash_size [pinned] = new_size;
 }
@@ -4810,7 +4811,7 @@ mono_gc_register_root_inner (char *start, size_t size, void *descr, int root_typ
 			return TRUE;
 		}
 	}
-	new_root = mono_sgen_alloc_internal (sizeof (RootRecord), INTERNAL_MEM_ROOT_RECORD);
+	new_root = mono_sgen_alloc_internal (INTERNAL_MEM_ROOT_RECORD);
 	if (new_root) {
 		new_root->start_root = start;
 		new_root->end_root = new_root->start_root + size;
@@ -5415,7 +5416,7 @@ remset_stats (void)
 	for (remset = global_remset; remset; remset = remset->next)
 		size += remset->store_next - remset->data;
 
-	bumper = addresses = mono_sgen_alloc_internal (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
+	bumper = addresses = mono_sgen_alloc_internal_dynamic (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
 
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
@@ -5443,7 +5444,7 @@ remset_stats (void)
 
 	stat_store_remsets_unique += p - addresses;
 
-	mono_sgen_free_internal (addresses, INTERNAL_MEM_STATISTICS);
+	mono_sgen_free_internal_dynamic (addresses, sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
 }
 #endif
 
@@ -5452,6 +5453,12 @@ clear_thread_store_remset_buffer (SgenThreadInfo *info)
 {
 	*info->store_remset_buffer_index_addr = 0;
 	memset (*info->store_remset_buffer_addr, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+}
+
+static size_t
+remset_byte_size (RememberedSet *remset)
+{
+	return sizeof (RememberedSet) + (remset->end_set - remset->data) * sizeof (gpointer);
 }
 
 static void
@@ -5531,7 +5538,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 				remset->next = NULL;
 				if (remset != info->remset) {
 					DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-					mono_sgen_free_internal (remset, INTERNAL_MEM_REMSET);
+					mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 				}
 			}
 			for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
@@ -5550,7 +5557,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 		}
 		next = remset->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-		mono_sgen_free_internal (remset, INTERNAL_MEM_REMSET);
+		mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }
@@ -5574,7 +5581,7 @@ clear_remsets (void)
 		remset->next = NULL;
 		if (remset != global_remset) {
 			DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-			mono_sgen_free_internal (remset, INTERNAL_MEM_REMSET);
+			mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 		}
 	}
 	/* the generic store ones */
@@ -5592,7 +5599,7 @@ clear_remsets (void)
 				remset->next = NULL;
 				if (remset != info->remset) {
 					DEBUG (3, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-					mono_sgen_free_internal (remset, INTERNAL_MEM_REMSET);
+					mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 				}
 			}
 			clear_thread_store_remset_buffer (info);
@@ -5603,7 +5610,7 @@ clear_remsets (void)
 	while (freed_thread_remsets) {
 		next = freed_thread_remsets->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", freed_thread_remsets->data));
-		mono_sgen_free_internal (freed_thread_remsets, INTERNAL_MEM_REMSET);
+		mono_sgen_free_internal_dynamic (freed_thread_remsets, remset_byte_size (freed_thread_remsets), INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }
@@ -5713,7 +5720,7 @@ gc_register_current_thread (void *addr)
 	remembered_set = info->remset;
 #endif
 
-	STORE_REMSET_BUFFER = mono_sgen_alloc_internal (sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE, INTERNAL_MEM_STORE_REMSET);
+	STORE_REMSET_BUFFER = mono_sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
 	STORE_REMSET_BUFFER_INDEX = 0;
 
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) (hash: %d)\n", info, (gpointer)info->id, hash));
@@ -5727,7 +5734,7 @@ gc_register_current_thread (void *addr)
 static void
 add_generic_store_remset_from_buffer (gpointer *buffer)
 {
-	GenericStoreRememberedSet *remset = mono_sgen_alloc_internal (sizeof (GenericStoreRememberedSet), INTERNAL_MEM_STORE_REMSET);
+	GenericStoreRememberedSet *remset = mono_sgen_alloc_internal (INTERNAL_MEM_STORE_REMSET);
 	memcpy (remset->data, buffer + 1, sizeof (gpointer) * (STORE_REMSET_BUFFER_SIZE - 1));
 	remset->next = generic_store_remsets;
 	generic_store_remsets = remset;
@@ -5878,7 +5885,7 @@ mono_gc_pthread_detach (pthread_t thread)
 
 static RememberedSet*
 alloc_remset (int size, gpointer id) {
-	RememberedSet* res = mono_sgen_alloc_internal (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
+	RememberedSet* res = mono_sgen_alloc_internal_dynamic (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
 	res->store_next = res->data;
 	res->end_set = res->data + size;
 	res->next = NULL;
@@ -6621,7 +6628,7 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 
 	LOCK_GC;
 
-	node = mono_sgen_alloc_internal (sizeof (EphemeronLinkNode), INTERNAL_MEM_EPHEMERON_LINK);
+	node = mono_sgen_alloc_internal (INTERNAL_MEM_EPHEMERON_LINK);
 	if (!node) {
 		UNLOCK_GC;
 		return FALSE;
@@ -6802,6 +6809,16 @@ mono_gc_base_init (void)
 	init_stats ();
 	mono_sgen_init_internal_allocator ();
 	major_init ();
+
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SIZEOF_GC_MEM_SECTION);
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_ENTRY, sizeof (FinalizeEntry));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_DISLINK, sizeof (DisappearingLink));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_GRAY_QUEUE, sizeof (GrayQueueSection));
+	g_assert (sizeof (GenericStoreRememberedSet) == sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
 
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
 		opts = g_strsplit (env, ",", -1);
