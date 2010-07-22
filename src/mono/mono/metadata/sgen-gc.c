@@ -854,7 +854,6 @@ static void pin_objects_in_section (GCMemSection *section, GrayQueue *queue);
 static void optimize_pin_queue (int start_slot);
 static void clear_remsets (void);
 static void clear_tlabs (void);
-typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 static void scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data);
 static void scan_object (char *start, GrayQueue *queue);
 static void major_scan_object (char *start, GrayQueue *queue);

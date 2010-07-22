@@ -102,10 +102,6 @@ static const int freelist_sizes [] = {
 	2336, 2728, 3272, 4096, 5456, 8192 };
 #define FREELIST_NUM_SLOTS (sizeof (freelist_sizes) / sizeof (freelist_sizes [0]))
 
-/* This is also the MAJOR_SECTION_SIZE for the copying major
-   collector */
-#define PINNED_CHUNK_SIZE	(128 * 1024)
-
 static SgenInternalAllocator unmanaged_allocator;
 
 #define LARGE_INTERNAL_MEM_HEADER_MAGIC	0x7d289f3a
@@ -167,13 +163,19 @@ report_pinned_chunk (SgenPinnedChunk *chunk, int seq) {
 /*
  * Debug reporting.
  */
-G_GNUC_UNUSED void
-mono_sgen_report_internal_mem_usage (void)
+void
+mono_sgen_report_internal_mem_usage_full (SgenInternalAllocator *alc)
 {
 	SgenPinnedChunk *chunk;
 	int i = 0;
-	for (chunk = unmanaged_allocator.chunk_list; chunk; chunk = chunk->block.next)
+	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next)
 		report_pinned_chunk (chunk, i++);
+}
+
+void
+mono_sgen_report_internal_mem_usage (void)
+{
+	mono_sgen_report_internal_mem_usage_full (&unmanaged_allocator);
 }
 
 /*
@@ -222,13 +224,16 @@ alloc_pinned_chunk (gboolean managed)
 {
 	SgenPinnedChunk *chunk;
 	int offset;
-	int size = PINNED_CHUNK_SIZE;
+	int size = SGEN_PINNED_CHUNK_SIZE;
 
 	if (managed)
 		LOCK_INTERNAL_ALLOCATOR;
 
-	chunk = mono_sgen_alloc_os_memory_aligned (size, size, TRUE);
-	chunk->block.role = MEMORY_ROLE_PINNED;
+	if (managed)
+		chunk = mono_sgen_alloc_os_memory_aligned (size, size, TRUE);
+	else
+		chunk = mono_sgen_alloc_os_memory (size, TRUE);
+	chunk->block.role = managed ? MEMORY_ROLE_PINNED : MEMORY_ROLE_INTERNAL;
 
 	if (managed)
 		mono_sgen_update_heap_boundaries ((mword)chunk, ((mword)chunk + size));
@@ -338,7 +343,7 @@ mono_sgen_alloc_internal_full (SgenInternalAllocator *alc, size_t size, int type
 			return res;
 		}
 	}
-	pchunk = alloc_pinned_chunk (FALSE);
+	pchunk = alloc_pinned_chunk (type == INTERNAL_MEM_MANAGED);
 	/* FIXME: handle OOM */
 	pchunk->block.next = alc->chunk_list;
 	alc->chunk_list = pchunk;
@@ -402,7 +407,7 @@ mono_sgen_free_internal (void *addr, int type)
 void
 mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 {
-	static char const *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
+	static char const *internal_mem_names [] = { "managed", "pin-queue", "fragment", "section", "scan-starts",
 						     "fin-table", "finalize-entry", "dislink-table",
 						     "dislink", "roots-table", "root-record", "statistics",
 						     "remset", "gray-queue", "store-remset", "marksweep-tables",
@@ -426,4 +431,91 @@ mono_sgen_init_internal_allocator (void)
 	mono_counters_register ("Internal alloc loop1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc_loop1);
 	mono_counters_register ("Internal alloc loop2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc_loop2);
 #endif
+}
+
+void
+mono_sgen_internal_scan_objects (SgenInternalAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data)
+{
+	SgenPinnedChunk *chunk;
+	int i, obj_size;
+	char *p, *endp;
+	void **ptr;
+	void *end_chunk;
+	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next) {
+		end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
+		mono_sgen_debug_printf (6, "Scanning pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk);
+		for (i = 0; i < chunk->num_pages; ++i) {
+			obj_size = chunk->page_sizes [i];
+			if (!obj_size)
+				continue;
+			p = i? (char*)chunk + i * FREELIST_PAGESIZE: chunk->start_data;
+			endp = i? p + FREELIST_PAGESIZE: (char*)chunk + FREELIST_PAGESIZE;
+			mono_sgen_debug_printf (6, "Page %d (size: %d, range: %p-%p)\n", i, obj_size, p, endp);
+			while (p + obj_size <= endp) {
+				ptr = (void**)p;
+				/* if the first word (the vtable) is outside the chunk we have an object */
+				if (*ptr && (*ptr < (void*)chunk || *ptr >= end_chunk))
+					callback ((char*)ptr, obj_size, callback_data);
+				p += obj_size;
+			}
+		}
+	}
+}
+
+/*
+ * the array of pointers from @start to @end contains conservative
+ * pointers to objects inside @chunk: mark each referenced object
+ * with the PIN bit.
+ */
+static void
+mark_pinned_from_addresses (SgenPinnedChunk *chunk, void **start, void **end, IterateObjectCallbackFunc callback, void *callback_data)
+{
+	for (; start < end; start++) {
+		char *addr = *start;
+		int offset = (char*)addr - (char*)chunk;
+		int page = offset / FREELIST_PAGESIZE;
+		int obj_offset = page == 0? offset - ((char*)chunk->start_data - (char*)chunk): offset % FREELIST_PAGESIZE;
+		int slot_size = chunk->page_sizes [page];
+		void **ptr;
+		/* the page is not allocated */
+		if (!slot_size)
+			continue;
+		/* would be faster if we restrict the sizes to power of two,
+		 * but that's a waste of memory: need to measure. it could reduce
+		 * fragmentation since there are less pages needed, if for example
+		 * someone interns strings of each size we end up with one page per
+		 * interned string (still this is just ~40 KB): with more fine-grained sizes
+		 * this increases the number of used pages.
+		 */
+		if (page == 0) {
+			obj_offset /= slot_size;
+			obj_offset *= slot_size;
+			addr = (char*)chunk->start_data + obj_offset;
+		} else {
+			obj_offset /= slot_size;
+			obj_offset *= slot_size;
+			addr = (char*)chunk + page * FREELIST_PAGESIZE + obj_offset;
+		}
+		ptr = (void**)addr;
+		/* if the vtable is inside the chunk it's on the freelist, so skip */
+		/* FIXME: is it possible that we're pinning objects more than once here? */
+		if (*ptr && (*ptr < (void*)chunk->start_data || *ptr > (void*)((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE)))
+			callback (addr, slot_size, callback_data);
+	}
+}
+
+void
+mono_sgen_internal_scan_pinned_objects (SgenInternalAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data)
+{
+	SgenPinnedChunk *chunk;
+
+	/* look for pinned addresses for pinned-alloc objects */
+	mono_sgen_debug_printf (6, "Pinning from pinned-alloc objects\n");
+	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next) {
+		int num_pinned;
+		void **pinned = mono_sgen_find_optimized_pin_queue_area (chunk->start_data,
+				(char*)chunk + chunk->num_pages * FREELIST_PAGESIZE, &num_pinned);
+		if (num_pinned)
+			mark_pinned_from_addresses (chunk, pinned, pinned + num_pinned, callback, callback_data);
+	}
 }

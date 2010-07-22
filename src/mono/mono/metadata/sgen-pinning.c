@@ -113,6 +113,17 @@ find_optimized_pin_queue_area (void *start, void *end, int *first, int *last)
 	*last = optimized_pin_queue_search (end);
 }
 
+void**
+mono_sgen_find_optimized_pin_queue_area (void *start, void *end, int *num)
+{
+	int first, last;
+	find_optimized_pin_queue_area (start, end, &first, &last);
+	*num = last - first;
+	if (first == last)
+		return NULL;
+	return pin_queue + first;
+}
+
 static void
 find_section_pin_queue_start_end (GCMemSection *section)
 {
