@@ -112,6 +112,8 @@ struct _SgenBlock {
    collector */
 #define SGEN_PINNED_CHUNK_SIZE	(128 * 1024)
 
+#define SGEN_PINNED_CHUNK_FOR_PTR(o)	((SgenBlock*)(((mword)(o)) & ~(SGEN_PINNED_CHUNK_SIZE - 1)))
+
 typedef struct _SgenPinnedChunk SgenPinnedChunk;
 
 #ifdef __APPLE__
@@ -198,9 +200,12 @@ enum {
 	INTERNAL_MEM_MAX
 };
 
+#define SGEN_INTERNAL_FREELIST_NUM_SLOTS	30
+
 typedef struct _SgenInternalAllocator SgenInternalAllocator;
 struct _SgenInternalAllocator {
 	SgenPinnedChunk *chunk_list;
+	SgenPinnedChunk *free_lists [SGEN_INTERNAL_FREELIST_NUM_SLOTS];
 	long small_internal_mem_bytes [INTERNAL_MEM_MAX];
 };
 

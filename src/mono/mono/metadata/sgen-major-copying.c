@@ -50,7 +50,7 @@
 #endif
 
 #define MAJOR_SECTION_SIZE		SGEN_PINNED_CHUNK_SIZE
-#define BLOCK_FOR_OBJECT(o)		((SgenBlock*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
+#define BLOCK_FOR_OBJECT(o)		SGEN_PINNED_CHUNK_FOR_PTR ((o))
 #define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
 
 #define MAJOR_OBJ_IS_IN_TO_SPACE(o)	(MAJOR_SECTION_FOR_OBJECT ((o))->is_to_space)

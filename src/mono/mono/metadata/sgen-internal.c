@@ -83,6 +83,7 @@ struct _SgenPinnedChunk {
 	int num_pages;
 	int *page_sizes; /* a 0 means the page is still unused */
 	void **free_list;
+	SgenPinnedChunk *free_list_nexts [SGEN_INTERNAL_FREELIST_NUM_SLOTS];
 	void *start_data;
 	void *data [1]; /* page sizes and free lists are stored here */
 };
@@ -96,11 +97,10 @@ struct _SgenPinnedChunk {
 /* keep each size a multiple of ALLOC_ALIGN */
 /* on 64 bit systems 8 is likely completely unused. */
 static const int freelist_sizes [] = {
-	8, 16, 24, 32, 40, 48, 64, 80,
-	96, 128, 160, 192, 224, 256, 320, 384,
-	448, 512, 584, 680, 816, 1024, 1360, 2048,
+	   8,   16,   24,   32,   40,   48,   64,   80,
+	  96,  128,  160,  192,  224,  256,  320,  384,
+	 448,  512,  584,  680,  816, 1024, 1360, 2048,
 	2336, 2728, 3272, 4096, 5456, 8192 };
-#define FREELIST_NUM_SLOTS (sizeof (freelist_sizes) / sizeof (freelist_sizes [0]))
 
 /*
  * Slot indexes for the fixed INTERNAL_MEM_XXX types.  -1 if that type
@@ -133,8 +133,6 @@ static long long large_internal_bytes_alloced = 0;
 
 #ifdef HEAVY_STATISTICS
 static long long stat_internal_alloc = 0;
-static long long stat_internal_alloc_loop1 = 0;
-static long long stat_internal_alloc_loop2 = 0;
 #endif
 
 /*
@@ -151,7 +149,7 @@ report_pinned_chunk (SgenPinnedChunk *chunk, int seq) {
 	}
 	printf ("Pinned chunk %d at %p, size: %d, pages: %d, free: %d\n", seq, chunk, chunk->num_pages * FREELIST_PAGESIZE, chunk->num_pages, free_pages);
 	free_mem = FREELIST_PAGESIZE * free_pages;
-	for (i = 0; i < FREELIST_NUM_SLOTS; ++i) {
+	for (i = 0; i < SGEN_INTERNAL_FREELIST_NUM_SLOTS; ++i) {
 		if (!chunk->free_list [i])
 			continue;
 		num_free = 0;
@@ -193,7 +191,7 @@ slot_for_size (size_t size)
 {
 	int slot;
 	/* do a binary search or lookup table later. */
-	for (slot = 0; slot < FREELIST_NUM_SLOTS; ++slot) {
+	for (slot = 0; slot < SGEN_INTERNAL_FREELIST_NUM_SLOTS; ++slot) {
 		if (freelist_sizes [slot] >= size)
 			return slot;
 	}
@@ -220,7 +218,7 @@ mono_sgen_register_fixed_internal_mem_type (int type, size_t size)
  * start_page and end_page.
  */
 static void
-build_freelist (SgenPinnedChunk *chunk, int slot, int size, char *start_page, char *end_page)
+build_freelist (SgenInternalAllocator *alc, SgenPinnedChunk *chunk, int slot, int size, char *start_page, char *end_page)
 {
 	void **p, **end;
 	int count = 0;
@@ -236,11 +234,15 @@ build_freelist (SgenPinnedChunk *chunk, int slot, int size, char *start_page, ch
 	}
 	*p = NULL;
 	/*g_print ("%d items created, max: %d\n", count, (end_page - start_page) / size);*/
+
+	g_assert (!chunk->free_list_nexts [slot]);
+	chunk->free_list_nexts [slot] = alc->free_lists [slot];
+	alc->free_lists [slot] = chunk;
 }
 
 /* LOCKING: if !managed, requires the internal allocator lock to be held */
 static SgenPinnedChunk*
-alloc_pinned_chunk (gboolean managed)
+alloc_pinned_chunk (SgenInternalAllocator *alc, gboolean managed)
 {
 	SgenPinnedChunk *chunk;
 	int offset;
@@ -249,14 +251,12 @@ alloc_pinned_chunk (gboolean managed)
 	if (managed)
 		LOCK_INTERNAL_ALLOCATOR;
 
-	if (managed)
-		chunk = mono_sgen_alloc_os_memory_aligned (size, size, TRUE);
-	else
-		chunk = mono_sgen_alloc_os_memory (size, TRUE);
+	chunk = mono_sgen_alloc_os_memory_aligned (size, size, TRUE);
 	chunk->block.role = managed ? MEMORY_ROLE_PINNED : MEMORY_ROLE_INTERNAL;
 
 	if (managed)
 		mono_sgen_update_heap_boundaries ((mword)chunk, ((mword)chunk + size));
+
 	pinned_chunk_bytes_alloced += size;
 
 	/* setup the bookeeping fields */
@@ -266,14 +266,18 @@ alloc_pinned_chunk (gboolean managed)
 	offset += sizeof (int) * chunk->num_pages;
 	offset = SGEN_ALIGN_UP (offset);
 	chunk->free_list = (void*)((char*)chunk + offset);
-	offset += sizeof (void*) * FREELIST_NUM_SLOTS;
+	offset += sizeof (void*) * SGEN_INTERNAL_FREELIST_NUM_SLOTS;
 	offset = SGEN_ALIGN_UP (offset);
 	chunk->start_data = (void*)((char*)chunk + offset);
 
 	/* allocate the first page to the freelist */
 	chunk->page_sizes [0] = PINNED_FIRST_SLOT_SIZE;
-	build_freelist (chunk, slot_for_size (PINNED_FIRST_SLOT_SIZE), PINNED_FIRST_SLOT_SIZE, chunk->start_data, ((char*)chunk + FREELIST_PAGESIZE));
+	build_freelist (alc, chunk, slot_for_size (PINNED_FIRST_SLOT_SIZE), PINNED_FIRST_SLOT_SIZE,
+			chunk->start_data, ((char*)chunk + FREELIST_PAGESIZE));
 	mono_sgen_debug_printf (4, "Allocated pinned chunk %p, size: %d\n", chunk, size);
+
+	chunk->block.next = alc->chunk_list;
+	alc->chunk_list = chunk;
 
 	if (managed)
 		UNLOCK_INTERNAL_ALLOCATOR;
@@ -281,33 +285,22 @@ alloc_pinned_chunk (gboolean managed)
 	return chunk;
 }
 
-/* assumes freelist for slot is empty, so try to alloc a new page */
-static void*
-get_chunk_freelist (SgenPinnedChunk *chunk, int slot)
+/* Must be called with an empty freelist for the given slot. */
+static gboolean
+populate_chunk_page (SgenInternalAllocator *alc, SgenPinnedChunk *chunk, int slot)
 {
+	int size = freelist_sizes [slot];
 	int i;
-	void **p;
-	p = chunk->free_list [slot];
-	if (p) {
-		chunk->free_list [slot] = *p;
-		return p;
-	}
+	g_assert (!chunk->free_list [slot]);
+	g_assert (!chunk->free_list_nexts [slot]);
 	for (i = 0; i < chunk->num_pages; ++i) {
-		int size;
 		if (chunk->page_sizes [i])
 			continue;
-		size = freelist_sizes [slot];
 		chunk->page_sizes [i] = size;
-		build_freelist (chunk, slot, size, (char*)chunk + FREELIST_PAGESIZE * i, (char*)chunk + FREELIST_PAGESIZE * (i + 1));
-		break;
+		build_freelist (alc, chunk, slot, size, (char*)chunk + FREELIST_PAGESIZE * i, (char*)chunk + FREELIST_PAGESIZE * (i + 1));
+		return TRUE;
 	}
-	/* try again */
-	p = chunk->free_list [slot];
-	if (p) {
-		chunk->free_list [slot] = *p;
-		return p;
-	}
-	return NULL;
+	return FALSE;
 }
 
 /* LOCKING: assumes the internal allocator lock is held */
@@ -315,37 +308,42 @@ static void*
 alloc_from_slot (SgenInternalAllocator *alc, int slot, int type)
 {
 	SgenPinnedChunk *pchunk;
-	void *res;
 	size_t size = freelist_sizes [slot];
 
 	alc->small_internal_mem_bytes [type] += size;
 
-	for (pchunk = alc->chunk_list; pchunk; pchunk = pchunk->block.next) {
+ restart:
+	pchunk = alc->free_lists [slot];
+	if (pchunk) {
 		void **p = pchunk->free_list [slot];
-		HEAVY_STAT (++stat_internal_alloc_loop1);
-		if (p) {
-			pchunk->free_list [slot] = *p;
+		void *next;
 
-			memset (p, 0, size);
-			return p;
+		g_assert (p);
+
+		next = *p;
+		pchunk->free_list [slot] = next;
+
+		if (!next) {
+			alc->free_lists [slot] = pchunk->free_list_nexts [slot];
+			pchunk->free_list_nexts [slot] = NULL;
 		}
+
+		memset (p, 0, size);
+		return p;
 	}
+
 	for (pchunk = alc->chunk_list; pchunk; pchunk = pchunk->block.next) {
-		HEAVY_STAT (++stat_internal_alloc_loop2);
-		res = get_chunk_freelist (pchunk, slot);
-		if (res) {
-			memset (res, 0, size);
-			return res;
-		}
+		if (populate_chunk_page (alc, pchunk, slot))
+			goto restart;
 	}
-	pchunk = alloc_pinned_chunk (type == INTERNAL_MEM_MANAGED);
-	/* FIXME: handle OOM */
-	pchunk->block.next = alc->chunk_list;
-	alc->chunk_list = pchunk;
-	res = get_chunk_freelist (pchunk, slot);
 
-	memset (res, 0, size);
-	return res;
+	pchunk = alloc_pinned_chunk (alc, type == INTERNAL_MEM_MANAGED);
+	/* FIXME: handle OOM */
+	if (pchunk->free_list [slot])
+		goto restart;
+	if (!populate_chunk_page (alc, pchunk, slot))
+		g_assert_not_reached ();
+	goto restart;
 }
 
 /* used for the GC-internal data structures */
@@ -361,7 +359,7 @@ mono_sgen_alloc_internal_full (SgenInternalAllocator *alc, size_t size, int type
 
 	HEAVY_STAT (++stat_internal_alloc);
 
-	if (size > freelist_sizes [FREELIST_NUM_SLOTS - 1]) {
+	if (size > freelist_sizes [SGEN_INTERNAL_FREELIST_NUM_SLOTS - 1]) {
 		LargeInternalMemHeader *mh;
 
 		UNLOCK_INTERNAL_ALLOCATOR;
@@ -404,34 +402,34 @@ mono_sgen_alloc_internal_dynamic (size_t size, int type)
 	return mono_sgen_alloc_internal_full (&unmanaged_allocator, size, type);
 }
 
-static gboolean
+static void
 free_from_slot (SgenInternalAllocator *alc, void *addr, int slot, int type)
 {
-	SgenPinnedChunk *pchunk;
+	SgenPinnedChunk *pchunk = (SgenPinnedChunk*)SGEN_PINNED_CHUNK_FOR_PTR (addr);
+	void **p = addr;
+	void *next;
 
 	LOCK_INTERNAL_ALLOCATOR;
 
-	for (pchunk = alc->chunk_list; pchunk; pchunk = pchunk->block.next) {
-		/*printf ("trying to free %p in %p (pages: %d)\n", addr, pchunk, pchunk->num_pages);*/
-		if (addr >= (void*)pchunk && (char*)addr < (char*)pchunk + pchunk->num_pages * FREELIST_PAGESIZE) {
-			int offset = (char*)addr - (char*)pchunk;
-			int page = offset / FREELIST_PAGESIZE;
-			int slot = slot_for_size (pchunk->page_sizes [page]);
-			void **p = addr;
-			*p = pchunk->free_list [slot];
-			pchunk->free_list [slot] = p;
+	g_assert (addr >= (void*)pchunk && (char*)addr < (char*)pchunk + pchunk->num_pages * FREELIST_PAGESIZE);
+	if (type == INTERNAL_MEM_MANAGED)
+		g_assert (pchunk->block.role == MEMORY_ROLE_PINNED);
+	else
+		g_assert (pchunk->block.role == MEMORY_ROLE_INTERNAL);
 
-			alc->small_internal_mem_bytes [type] -= freelist_sizes [slot];
+	next = pchunk->free_list [slot];
+	*p = next;
+	pchunk->free_list [slot] = p;
 
-			UNLOCK_INTERNAL_ALLOCATOR;
-
-			return TRUE;
-		}
+	if (!next) {
+		g_assert (!pchunk->free_list_nexts [slot]);
+		pchunk->free_list_nexts [slot] = alc->free_lists [slot];
+		alc->free_lists [slot] = pchunk;
 	}
 
-	UNLOCK_INTERNAL_ALLOCATOR;
+	alc->small_internal_mem_bytes [type] -= freelist_sizes [slot];
 
-	return FALSE;
+	UNLOCK_INTERNAL_ALLOCATOR;
 }
 
 void
@@ -444,10 +442,10 @@ mono_sgen_free_internal_full (SgenInternalAllocator *alc, void *addr, size_t siz
 	if (!addr)
 		return;
 
-	if (size <= freelist_sizes [FREELIST_NUM_SLOTS - 1]) {
+	if (size <= freelist_sizes [SGEN_INTERNAL_FREELIST_NUM_SLOTS - 1]) {
 		int slot = slot_for_size (size);
-		if (free_from_slot (alc, addr, slot, type))
-			return;
+		free_from_slot (alc, addr, slot, type);
+		return;
 	}
 
 	mh = (LargeInternalMemHeader*)((char*)addr - G_STRUCT_OFFSET (LargeInternalMemHeader, data));
@@ -461,12 +459,10 @@ mono_sgen_free_internal_full (SgenInternalAllocator *alc, void *addr, size_t siz
 void
 mono_sgen_free_internal (void *addr, int type)
 {
-	gboolean res;
 	int slot = fixed_type_freelist_slots [type];
 	g_assert (slot >= 0);
 
-	res = free_from_slot (&unmanaged_allocator, addr, slot, type);
-	g_assert (res);
+	free_from_slot (&unmanaged_allocator, addr, slot, type);
 }
 
 void
@@ -499,13 +495,13 @@ mono_sgen_init_internal_allocator (void)
 {
 	int i;
 
+	g_assert (SGEN_INTERNAL_FREELIST_NUM_SLOTS == sizeof (freelist_sizes) / sizeof (freelist_sizes [0]));
+
 	for (i = 0; i < INTERNAL_MEM_MAX; ++i)
 		fixed_type_freelist_slots [i] = -1;
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("Internal allocs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc);
-	mono_counters_register ("Internal alloc loop1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc_loop1);
-	mono_counters_register ("Internal alloc loop2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc_loop2);
 #endif
 }
 
