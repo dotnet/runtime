@@ -167,6 +167,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-os-posix.c		\
 	sgen-os-mach.c		\
 	sgen-gc.c		\
+	sgen-internal.c		\
 	sgen-gc.h		\
 	sgen-archdep.h		\
 	sgen-scan-object.h	\

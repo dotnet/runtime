@@ -54,7 +54,7 @@ gray_object_alloc_queue_section (GrayQueue *queue)
 		queue->free_list = section->next;
 	} else {
 		/* Allocate a new section */
-		section = get_internal_mem (sizeof (GrayQueueSection), INTERNAL_MEM_GRAY_QUEUE);
+		section = mono_sgen_alloc_internal (sizeof (GrayQueueSection), INTERNAL_MEM_GRAY_QUEUE);
 	}
 
 	section->end = 0;
@@ -67,7 +67,7 @@ gray_object_alloc_queue_section (GrayQueue *queue)
 static void
 gray_object_free_queue_section (GrayQueueSection *section)
 {
-	free_internal_mem (section, INTERNAL_MEM_GRAY_QUEUE);
+	mono_sgen_free_internal (section, INTERNAL_MEM_GRAY_QUEUE);
 }
 
 static inline gboolean
@@ -144,7 +144,6 @@ gray_object_queue_init (GrayQueue *queue)
 	int i;
 
 	g_assert (gray_object_queue_is_empty (queue));
-	g_assert (sizeof (GrayQueueSection) < MAX_FREELIST_SIZE);
 	DEBUG (9, g_assert (queue->balance == 0));
 
 	/* Free the extra sections allocated during the last collection */

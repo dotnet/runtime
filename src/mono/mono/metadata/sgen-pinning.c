@@ -40,9 +40,9 @@ static void
 realloc_pin_queue (void)
 {
 	int new_size = pin_queue_size? pin_queue_size + pin_queue_size/2: 1024;
-	void **new_pin = get_internal_mem (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
+	void **new_pin = mono_sgen_alloc_internal (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
 	memcpy (new_pin, pin_queue, sizeof (void*) * next_pin_slot);
-	free_internal_mem (pin_queue, INTERNAL_MEM_PIN_QUEUE);
+	mono_sgen_free_internal (pin_queue, INTERNAL_MEM_PIN_QUEUE);
 	pin_queue = new_pin;
 	pin_queue_size = new_size;
 	DEBUG (4, fprintf (gc_debug_file, "Reallocated pin queue to size: %d\n", new_size));

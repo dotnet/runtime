@@ -239,8 +239,6 @@ enum {
  */
 
 static int gc_initialized = 0;
-static int gc_debug_level = 0;
-static FILE* gc_debug_file;
 /* If set, do a minor collection before every allocation */
 static gboolean collect_before_allocs = FALSE;
 /* If set, do a heap consistency check before each minor collection */
@@ -254,18 +252,6 @@ static gboolean conservative_stack_mark = TRUE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
-
-/*
- * Turning on heavy statistics will turn off the managed allocator and
- * the managed write barrier.
- */
-//#define HEAVY_STATISTICS
-
-#ifdef HEAVY_STATISTICS
-#define HEAVY_STAT(x)	x
-#else
-#define HEAVY_STAT(x)
-#endif
 
 #ifdef HEAVY_STATISTICS
 static long long stat_objects_alloced = 0;
@@ -306,10 +292,6 @@ static int stat_wbarrier_generic_store_remset = 0;
 static int stat_wbarrier_set_root = 0;
 static int stat_wbarrier_value_copy = 0;
 static int stat_wbarrier_object_copy = 0;
-
-static long long stat_internal_alloc = 0;
-static long long stat_internal_alloc_loop1 = 0;
-static long long stat_internal_alloc_loop2 = 0;
 #endif
 
 static long long time_minor_pre_collection_fragment_clear = 0;
@@ -335,32 +317,11 @@ static long long time_major_los_sweep = 0;
 static long long time_major_sweep = 0;
 static long long time_major_fragment_creation = 0;
 
-static long long pinned_chunk_bytes_alloced = 0;
-static long long large_internal_bytes_alloced = 0;
+#define MAX_DEBUG_LEVEL 2
+#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
-/* Keep in sync with internal_mem_names in dump_heap()! */
-enum {
-	INTERNAL_MEM_PIN_QUEUE,
-	INTERNAL_MEM_FRAGMENT,
-	INTERNAL_MEM_SECTION,
-	INTERNAL_MEM_SCAN_STARTS,
-	INTERNAL_MEM_FIN_TABLE,
-	INTERNAL_MEM_FINALIZE_ENTRY,
-	INTERNAL_MEM_DISLINK_TABLE,
-	INTERNAL_MEM_DISLINK,
-	INTERNAL_MEM_ROOTS_TABLE,
-	INTERNAL_MEM_ROOT_RECORD,
-	INTERNAL_MEM_STATISTICS,
-	INTERNAL_MEM_REMSET,
-	INTERNAL_MEM_GRAY_QUEUE,
-	INTERNAL_MEM_STORE_REMSET,
-	INTERNAL_MEM_MS_TABLES,
-	INTERNAL_MEM_MS_BLOCK_INFO,
-	INTERNAL_MEM_EPHEMERON_LINK,
-	INTERNAL_MEM_MAX
-};
-
-static long small_internal_mem_bytes [INTERNAL_MEM_MAX];
+static int gc_debug_level = 0;
+static FILE* gc_debug_file;
 
 /*
 void
@@ -384,22 +345,10 @@ mono_gc_flush_info (void)
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
-enum {
-	MEMORY_ROLE_GEN0,
-	MEMORY_ROLE_GEN1,
-	MEMORY_ROLE_PINNED
-};
-
-typedef struct _Block Block;
-struct _Block {
-	void *next;
-	unsigned char role;
-};
-
 /* each request from the OS ends up in a GCMemSection */
 typedef struct _GCMemSection GCMemSection;
 struct _GCMemSection {
-	Block block;
+	SgenBlock block;
 	char *data;
 	mword size;
 	/* pointer where more data could be allocated if it fits */
@@ -418,49 +367,6 @@ struct _GCMemSection {
 };
 
 #define SIZEOF_GC_MEM_SECTION	((sizeof (GCMemSection) + 7) & ~7)
-
-/* Pinned objects are allocated in the LOS space if bigger than half a page
- * or from freelists otherwise. We assume that pinned objects are relatively few
- * and they have a slow dying speed (like interned strings, thread objects).
- * As such they will be collected only at major collections.
- * free lists are not global: when we need memory we allocate a PinnedChunk.
- * Each pinned chunk is made of several pages, the first of wich is used
- * internally for bookeeping (here think of a page as 4KB). The bookeeping
- * includes the freelists vectors and info about the object size of each page
- * in the pinned chunk. So, when needed, a free page is found in a pinned chunk,
- * a size is assigned to it, the page is divided in the proper chunks and each
- * chunk is added to the freelist. To not waste space, the remaining space in the
- * first page is used as objects of size 16 or 32 (need to measure which are more
- * common).
- * We use this same structure to allocate memory used internally by the GC, so
- * we never use malloc/free if we need to alloc during collection: the world is stopped
- * and malloc/free will deadlock.
- * When we want to iterate over pinned objects, we just scan a page at a time
- * linearly according to the size of objects in the page: the next pointer used to link
- * the items in the freelist uses the same word as the vtable. Since we keep freelists
- * for each pinned chunk, if the word points outside the pinned chunk it means
- * it is an object.
- * We could avoid this expensive scanning in creative ways. We could have a policy
- * of putting in the pinned space only objects we know about that have no struct fields
- * with references and we can easily use a even expensive write barrier for them,
- * since pointer writes on such objects should be rare.
- * The best compromise is to just alloc interned strings and System.MonoType in them.
- * It would be nice to allocate MonoThread in it, too: must check that we properly
- * use write barriers so we don't have to do any expensive scanning of the whole pinned
- * chunk list during minor collections. We can avoid it now because we alloc in it only
- * reference-free objects.
- */
-#define PINNED_FIRST_SLOT_SIZE (sizeof (gpointer) * 4)
-#define MAX_FREELIST_SIZE 8192
-typedef struct _PinnedChunk PinnedChunk;
-struct _PinnedChunk {
-	Block block;
-	int num_pages;
-	int *page_sizes; /* a 0 means the page is still unused */
-	void **free_list;
-	void *start_data;
-	void *data [1]; /* page sizes and free lists are stored here */
-};
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -687,8 +593,6 @@ static int default_nursery_bits = 22;
 #define SCAN_START_SIZE (4096*2)
 /* the minimum size of a fragment that we consider useful for allocation */
 #define FRAGMENT_MIN_SIZE (512)
-/* This is a fixed value used for pinned chunks, not the system pagesize */
-#define FREELIST_PAGESIZE (16*1024)
 
 static mword pagesize = 4096;
 static mword nursery_size;
@@ -705,10 +609,6 @@ static mword lowest_heap_address = ~(mword)0;
 static mword highest_heap_address = 0;
 
 static LOCK_DECLARE (interruption_mutex);
-
-#ifdef SGEN_PARALLEL_MARK
-static LOCK_DECLARE (internal_allocator_mutex);
-#endif
 
 typedef struct _FinalizeEntry FinalizeEntry;
 struct _FinalizeEntry {
@@ -748,15 +648,6 @@ typedef struct {
        void *value;
 } Ephemeron;
 
-#define LARGE_INTERNAL_MEM_HEADER_MAGIC	0x7d289f3a
-
-typedef struct _LargeInternalMemHeader LargeInternalMemHeader;
-struct _LargeInternalMemHeader {
-	guint32 magic;
-	size_t size;
-	double data[0];
-};
-
 enum {
 	GENERATION_NURSERY,
 	GENERATION_OLD,
@@ -793,24 +684,6 @@ static EphemeronLinkNode *ephemeron_list;
 
 static int num_ready_finalizers = 0;
 static int no_finalize = 0;
-
-/* keep each size a multiple of ALLOC_ALIGN */
-/* on 64 bit systems 8 is likely completely unused. */
-static const int freelist_sizes [] = {
-	8, 16, 24, 32, 40, 48, 64, 80,
-	96, 128, 160, 192, 224, 256, 320, 384,
-	448, 512, 584, 680, 816, 1024, 1360, 2048,
-	2336, 2728, 3272, 4096, 5456, 8192 };
-#define FREELIST_NUM_SLOTS (sizeof (freelist_sizes) / sizeof (freelist_sizes [0]))
-
-/* This is also the MAJOR_SECTION_SIZE for the copying major
-   collector */
-#define PINNED_CHUNK_SIZE	(128 * 1024)
-
-/* internal_chunk_list is used for allocating structures needed by the GC */
-static PinnedChunk *internal_chunk_list = NULL;
-
-static int slot_for_size (size_t size);
 
 enum {
 	ROOT_TYPE_NORMAL = 0, /* "normal" roots */
@@ -926,10 +799,10 @@ static Fragment *fragment_freelist = NULL;
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
 
-#define ALLOC_ALIGN		8
-#define ALLOC_ALIGN_BITS	3
+#define ALLOC_ALIGN		SGEN_ALLOC_ALIGN
+#define ALLOC_ALIGN_BITS	SGEN_ALLOC_ALIGN_BITS
 
-#define ALIGN_UP(s)		(((s)+(ALLOC_ALIGN-1)) & ~(ALLOC_ALIGN-1))
+#define ALIGN_UP		SGEN_ALIGN_UP
 
 #define MOVED_OBJECTS_NUM 64
 static void *moved_objects [MOVED_OBJECTS_NUM];
@@ -958,13 +831,6 @@ typedef void (*CopyOrMarkObjectFunc) (void**, GrayQueue*);
 typedef char* (*ScanObjectFunc) (char*, GrayQueue*);
 
 /* forward declarations */
-static void* get_internal_mem          (size_t size, int type);
-static void  free_internal_mem         (void *addr, int type);
-static void* get_os_memory             (size_t size, int activate);
-static void* get_os_memory_aligned     (mword size, mword alignment, gboolean activate);
-static void  free_os_memory            (void *addr, size_t size);
-static G_GNUC_UNUSED void  report_internal_mem_usage (void);
-
 static int stop_world (void);
 static int restart_world (void);
 static void add_to_global_remset (gpointer ptr);
@@ -995,14 +861,11 @@ static void major_scan_object (char *start, GrayQueue *queue);
 static void par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, GrayQueue *queue);
 static void* copy_object_no_checks (void *obj, GrayQueue *queue);
 static void copy_object (void **obj_slot, GrayQueue *queue);
-static void* get_chunk_freelist (PinnedChunk *chunk, int slot);
-static PinnedChunk* alloc_pinned_chunk (void);
 static void sort_addresses (void **array, int size);
 static void drain_gray_stack (GrayQueue *queue);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 static gboolean need_major_collection (void);
 static void major_collection (const char *reason);
-static void update_heap_boundaries (mword low, mword high);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
 
@@ -1017,7 +880,6 @@ static void check_for_xdomain_refs (void);
 static void dump_occupied (char *start, char *end, char *section_start);
 static void dump_section (GCMemSection *section, const char *type);
 static void dump_heap (const char *type, int num, const char *reason);
-static void report_pinned_chunk (PinnedChunk *chunk, int seq);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key);
 
@@ -2652,8 +2514,8 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 	}
 }
 
-static void
-update_heap_boundaries (mword low, mword high)
+void
+mono_sgen_update_heap_boundaries (mword low, mword high)
 {
 	mword old;
 
@@ -2679,17 +2541,17 @@ alloc_fragment (void)
 		frag->next = NULL;
 		return frag;
 	}
-	frag = get_internal_mem (sizeof (Fragment), INTERNAL_MEM_FRAGMENT);
+	frag = mono_sgen_alloc_internal (sizeof (Fragment), INTERNAL_MEM_FRAGMENT);
 	frag->next = NULL;
 	return frag;
 }
 
 /* size must be a power of 2 */
-static void*
-get_os_memory_aligned (mword size, mword alignment, gboolean activate)
+void*
+mono_sgen_alloc_os_memory_aligned (mword size, mword alignment, gboolean activate)
 {
 	/* Allocate twice the memory to be able to put the block on an aligned address */
-	char *mem = get_os_memory (size + alignment, activate);
+	char *mem = mono_sgen_alloc_os_memory (size + alignment, activate);
 	char *aligned;
 
 	g_assert (mem);
@@ -2698,9 +2560,9 @@ get_os_memory_aligned (mword size, mword alignment, gboolean activate)
 	g_assert (aligned >= mem && aligned + size <= mem + size + alignment && !((mword)aligned & (alignment - 1)));
 
 	if (aligned > mem)
-		free_os_memory (mem, aligned - mem);
+		mono_sgen_free_os_memory (mem, aligned - mem);
 	if (aligned + size < mem + size + alignment)
-		free_os_memory (aligned + size, (mem + size + alignment) - (aligned + size));
+		mono_sgen_free_os_memory (aligned + size, (mem + size + alignment) - (aligned + size));
 
 	return aligned;
 }
@@ -2726,26 +2588,25 @@ alloc_nursery (void)
 	 * objects in the existing nursery.
 	 */
 	/* FIXME: handle OOM */
-	section = get_internal_mem (SIZEOF_GC_MEM_SECTION, INTERNAL_MEM_SECTION);
+	section = mono_sgen_alloc_internal (SIZEOF_GC_MEM_SECTION, INTERNAL_MEM_SECTION);
 
 	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
 	alloc_size = nursery_size;
 #ifdef ALIGN_NURSERY
-	data = get_os_memory_aligned (alloc_size, alloc_size, TRUE);
+	data = mono_sgen_alloc_os_memory_aligned (alloc_size, alloc_size, TRUE);
 #else
-	data = get_os_memory (alloc_size, TRUE);
+	data = mono_sgen_alloc_os_memory (alloc_size, TRUE);
 #endif
 	nursery_start = data;
 	nursery_real_end = nursery_start + nursery_size;
-	update_heap_boundaries ((mword)nursery_start, (mword)nursery_real_end);
+	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_real_end);
 	nursery_next = nursery_start;
-	total_alloc += alloc_size;
 	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)nursery_size, (unsigned long)total_alloc));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
 	section->end_data = nursery_real_end;
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
-	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
+	section->scan_starts = mono_sgen_alloc_internal (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN0;
 	section->block.next = NULL;
@@ -3100,25 +2961,15 @@ dump_object (MonoObject *obj, gboolean dump_location)
 static void
 dump_heap (const char *type, int num, const char *reason)
 {
-	static char const *internal_mem_names [] = { "pin-queue", "fragment", "section", "scan-starts",
-						     "fin-table", "finalize-entry", "dislink-table",
-						     "dislink", "roots-table", "root-record", "statistics",
-						     "remset", "gray-queue", "store-remset", "marksweep-tables",
-						     "marksweep-block-info", "ephemeron-link" };
-
 	ObjectList *list;
 	LOSObject *bigobj;
-	int i;
 
 	fprintf (heap_dump_file, "<collection type=\"%s\" num=\"%d\"", type, num);
 	if (reason)
 		fprintf (heap_dump_file, " reason=\"%s\"", reason);
 	fprintf (heap_dump_file, ">\n");
-	fprintf (heap_dump_file, "<other-mem-usage type=\"pinned-chunks\" size=\"%lld\"/>\n", pinned_chunk_bytes_alloced);
-	fprintf (heap_dump_file, "<other-mem-usage type=\"large-internal\" size=\"%lld\"/>\n", large_internal_bytes_alloced);
 	fprintf (heap_dump_file, "<other-mem-usage type=\"mempools\" size=\"%ld\"/>\n", mono_mempool_get_bytes_allocated ());
-	for (i = 0; i < INTERNAL_MEM_MAX; ++i)
-		fprintf (heap_dump_file, "<other-mem-usage type=\"%s\" size=\"%ld\"/>\n", internal_mem_names [i], small_internal_mem_bytes [i]);
+	mono_sgen_dump_internal_mem_usage (heap_dump_file);
 	fprintf (heap_dump_file, "<pinned type=\"stack\" bytes=\"%zu\"/>\n", pinned_byte_counts [PIN_TYPE_STACK]);
 	/* fprintf (heap_dump_file, "<pinned type=\"static-data\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_STATIC_DATA]); */
 	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%zu\"/>\n", pinned_byte_counts [PIN_TYPE_OTHER]);
@@ -3210,10 +3061,6 @@ init_stats (void)
 	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
 	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
 	mono_counters_register ("Global remsets discarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_discarded);
-
-	mono_counters_register ("Internal allocs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc);
-	mono_counters_register ("Internal alloc loop1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc_loop1);
-	mono_counters_register ("Internal alloc loop2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_internal_alloc_loop2);
 #endif
 
 	inited = TRUE;
@@ -3242,7 +3089,6 @@ collect_nursery (size_t requested_size)
 
 	current_collection_generation = GENERATION_NURSERY;
 
-	init_stats ();
 	binary_protocol_collection (GENERATION_NURSERY);
 	check_scan_starts ();
 
@@ -3393,7 +3239,6 @@ major_do_collection (const char *reason)
 	//count_ref_nonref_objs ();
 	//consistency_check ();
 
-	init_stats ();
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
 	gray_object_queue_init (&gray_queue);
@@ -3659,11 +3504,23 @@ minor_collect_or_expand_inner (size_t size)
  */
 
 /*
+ * Debug reporting.
+ */
+G_GNUC_UNUSED static void
+report_internal_mem_usage (void)
+{
+	printf ("Internal memory usage:\n");
+	mono_sgen_report_internal_mem_usage ();
+	printf ("Pinned memory usage:\n");
+	major_report_pinned_memory_usage ();
+}
+
+/*
  * Allocate a big chunk of memory from the OS (usually 64KB to several megabytes).
  * This must not require any lock.
  */
-static void*
-get_os_memory (size_t size, int activate)
+void*
+mono_sgen_alloc_os_memory (size_t size, int activate)
 {
 	void *ptr;
 	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
@@ -3672,265 +3529,23 @@ get_os_memory (size_t size, int activate)
 	size += pagesize - 1;
 	size &= ~(pagesize - 1);
 	ptr = mono_valloc (0, size, prot_flags);
+	/* FIXME: CAS */
+	total_alloc += size;
 	return ptr;
 }
 
 /*
- * Free the memory returned by get_os_memory (), returning it to the OS.
+ * Free the memory returned by mono_sgen_alloc_os_memory (), returning it to the OS.
  */
-static void
-free_os_memory (void *addr, size_t size)
+void
+mono_sgen_free_os_memory (void *addr, size_t size)
 {
 	mono_vfree (addr, size);
-}
 
-/*
- * Debug reporting.
- */
-static void
-report_pinned_chunk (PinnedChunk *chunk, int seq) {
-	void **p;
-	int i, free_pages, num_free, free_mem;
-	free_pages = 0;
-	for (i = 0; i < chunk->num_pages; ++i) {
-		if (!chunk->page_sizes [i])
-			free_pages++;
-	}
-	printf ("Pinned chunk %d at %p, size: %d, pages: %d, free: %d\n", seq, chunk, chunk->num_pages * FREELIST_PAGESIZE, chunk->num_pages, free_pages);
-	free_mem = FREELIST_PAGESIZE * free_pages;
-	for (i = 0; i < FREELIST_NUM_SLOTS; ++i) {
-		if (!chunk->free_list [i])
-			continue;
-		num_free = 0;
-		p = chunk->free_list [i];
-		while (p) {
-			num_free++;
-			p = *p;
-		}
-		printf ("\tfree list of size %d, %d items\n", freelist_sizes [i], num_free);
-		free_mem += freelist_sizes [i] * num_free;
-	}
-	printf ("\tfree memory in chunk: %d\n", free_mem);
-}
-
-/*
- * Debug reporting.
- */
-static G_GNUC_UNUSED void
-report_internal_mem_usage (void) {
-	PinnedChunk *chunk;
-	int i;
-	printf ("Internal memory usage:\n");
-	i = 0;
-	for (chunk = internal_chunk_list; chunk; chunk = chunk->block.next) {
-		report_pinned_chunk (chunk, i++);
-	}
-	printf ("Pinned memory usage:\n");
-	major_report_pinned_memory_usage ();
-}
-
-/*
- * Find the slot number in the freelist for memory chunks that
- * can contain @size objects.
- */
-static int
-slot_for_size (size_t size)
-{
-	int slot;
-	/* do a binary search or lookup table later. */
-	for (slot = 0; slot < FREELIST_NUM_SLOTS; ++slot) {
-		if (freelist_sizes [slot] >= size)
-			return slot;
-	}
-	g_assert_not_reached ();
-	return -1;
-}
-
-/*
- * Build a free list for @size memory chunks from the memory area between
- * start_page and end_page.
- */
-static void
-build_freelist (PinnedChunk *chunk, int slot, int size, char *start_page, char *end_page)
-{
-	void **p, **end;
-	int count = 0;
-	/*g_print ("building freelist for slot %d, size %d in %p\n", slot, size, chunk);*/
-	p = (void**)start_page;
-	end = (void**)(end_page - size);
-	g_assert (!chunk->free_list [slot]);
-	chunk->free_list [slot] = p;
-	while ((char*)p + size <= (char*)end) {
-		count++;
-		*p = (void*)((char*)p + size);
-		p = *p;
-	}
-	*p = NULL;
-	/*g_print ("%d items created, max: %d\n", count, (end_page - start_page) / size);*/
-}
-
-/* LOCKING: requires the internal allocator lock to be held */
-static PinnedChunk*
-alloc_pinned_chunk (void)
-{
-	PinnedChunk *chunk;
-	int offset;
-	int size = PINNED_CHUNK_SIZE;
-
-	chunk = get_os_memory_aligned (size, size, TRUE);
-	chunk->block.role = MEMORY_ROLE_PINNED;
-
-	update_heap_boundaries ((mword)chunk, ((mword)chunk + size));
-	total_alloc += size;
-	pinned_chunk_bytes_alloced += size;
-
-	/* setup the bookeeping fields */
-	chunk->num_pages = size / FREELIST_PAGESIZE;
-	offset = G_STRUCT_OFFSET (PinnedChunk, data);
-	chunk->page_sizes = (void*)((char*)chunk + offset);
-	offset += sizeof (int) * chunk->num_pages;
-	offset = ALIGN_UP (offset);
-	chunk->free_list = (void*)((char*)chunk + offset);
-	offset += sizeof (void*) * FREELIST_NUM_SLOTS;
-	offset = ALIGN_UP (offset);
-	chunk->start_data = (void*)((char*)chunk + offset);
-
-	/* allocate the first page to the freelist */
-	chunk->page_sizes [0] = PINNED_FIRST_SLOT_SIZE;
-	build_freelist (chunk, slot_for_size (PINNED_FIRST_SLOT_SIZE), PINNED_FIRST_SLOT_SIZE, chunk->start_data, ((char*)chunk + FREELIST_PAGESIZE));
-	DEBUG (4, fprintf (gc_debug_file, "Allocated pinned chunk %p, size: %d\n", chunk, size));
-	return chunk;
-}
-
-/* assumes freelist for slot is empty, so try to alloc a new page */
-static void*
-get_chunk_freelist (PinnedChunk *chunk, int slot)
-{
-	int i;
-	void **p;
-	p = chunk->free_list [slot];
-	if (p) {
-		chunk->free_list [slot] = *p;
-		return p;
-	}
-	for (i = 0; i < chunk->num_pages; ++i) {
-		int size;
-		if (chunk->page_sizes [i])
-			continue;
-		size = freelist_sizes [slot];
-		chunk->page_sizes [i] = size;
-		build_freelist (chunk, slot, size, (char*)chunk + FREELIST_PAGESIZE * i, (char*)chunk + FREELIST_PAGESIZE * (i + 1));
-		break;
-	}
-	/* try again */
-	p = chunk->free_list [slot];
-	if (p) {
-		chunk->free_list [slot] = *p;
-		return p;
-	}
-	return NULL;
-}
-
-/* used for the GC-internal data structures */
-static void*
-get_internal_mem (size_t size, int type)
-{
-	int slot;
-	void *res = NULL;
-	PinnedChunk *pchunk;
-
-	LOCK_INTERNAL_ALLOCATOR;
-
-	HEAVY_STAT (++stat_internal_alloc);
-
-	if (size > freelist_sizes [FREELIST_NUM_SLOTS - 1]) {
-		LargeInternalMemHeader *mh;
-
-		UNLOCK_INTERNAL_ALLOCATOR;
-
-		size += sizeof (LargeInternalMemHeader);
-		mh = get_os_memory (size, TRUE);
-		mh->magic = LARGE_INTERNAL_MEM_HEADER_MAGIC;
-		mh->size = size;
-		/* FIXME: do a CAS here */
-		large_internal_bytes_alloced += size;
-		return mh->data;
-	}
-
-	slot = slot_for_size (size);
-	g_assert (size <= freelist_sizes [slot]);
-
-	small_internal_mem_bytes [type] += freelist_sizes [slot];
-
-	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
-		void **p = pchunk->free_list [slot];
-		HEAVY_STAT (++stat_internal_alloc_loop1);
-		if (p) {
-			pchunk->free_list [slot] = *p;
-
-			UNLOCK_INTERNAL_ALLOCATOR;
-
-			memset (p, 0, size);
-			return p;
-		}
-	}
-	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
-		HEAVY_STAT (++stat_internal_alloc_loop2);
-		res = get_chunk_freelist (pchunk, slot);
-		if (res) {
-			UNLOCK_INTERNAL_ALLOCATOR;
-
-			memset (res, 0, size);
-			return res;
-		}
-	}
-	pchunk = alloc_pinned_chunk ();
-	/* FIXME: handle OOM */
-	pchunk->block.next = internal_chunk_list;
-	internal_chunk_list = pchunk;
-	res = get_chunk_freelist (pchunk, slot);
-
-	UNLOCK_INTERNAL_ALLOCATOR;
-
-	memset (res, 0, size);
-	return res;
-}
-
-static void
-free_internal_mem (void *addr, int type)
-{
-	PinnedChunk *pchunk;
-	LargeInternalMemHeader *mh;
-	if (!addr)
-		return;
-
-	LOCK_INTERNAL_ALLOCATOR;
-
-	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->block.next) {
-		/*printf ("trying to free %p in %p (pages: %d)\n", addr, pchunk, pchunk->num_pages);*/
-		if (addr >= (void*)pchunk && (char*)addr < (char*)pchunk + pchunk->num_pages * FREELIST_PAGESIZE) {
-			int offset = (char*)addr - (char*)pchunk;
-			int page = offset / FREELIST_PAGESIZE;
-			int slot = slot_for_size (pchunk->page_sizes [page]);
-			void **p = addr;
-			*p = pchunk->free_list [slot];
-			pchunk->free_list [slot] = p;
-
-			small_internal_mem_bytes [type] -= freelist_sizes [slot];
-
-			UNLOCK_INTERNAL_ALLOCATOR;
-
-			return;
-		}
-	}
-
-	UNLOCK_INTERNAL_ALLOCATOR;
-
-	mh = (LargeInternalMemHeader*)((char*)addr - G_STRUCT_OFFSET (LargeInternalMemHeader, data));
-	g_assert (mh->magic == LARGE_INTERNAL_MEM_HEADER_MAGIC);
-	/* FIXME: do a CAS */
-	large_internal_bytes_alloced -= mh->size;
-	free_os_memory (mh, mh->size);
+	size += pagesize - 1;
+	size &= ~(pagesize - 1);
+	/* FIXME: CAS */
+	total_alloc -= size;
 }
 
 /*
@@ -4442,7 +4057,7 @@ rehash_fin_table (FinalizeEntryHashTable *hash_table)
 	FinalizeEntry *entry, *next;
 	int new_size = g_spaced_primes_closest (hash_table->num_registered);
 
-	new_hash = get_internal_mem (new_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
+	new_hash = mono_sgen_alloc_internal (new_size * sizeof (FinalizeEntry*), INTERNAL_MEM_FIN_TABLE);
 	for (i = 0; i < finalizable_hash_size; ++i) {
 		for (entry = finalizable_hash [i]; entry; entry = next) {
 			hash = mono_object_hash (entry->object) % new_size;
@@ -4451,7 +4066,7 @@ rehash_fin_table (FinalizeEntryHashTable *hash_table)
 			new_hash [hash] = entry;
 		}
 	}
-	free_internal_mem (finalizable_hash, INTERNAL_MEM_FIN_TABLE);
+	mono_sgen_free_internal (finalizable_hash, INTERNAL_MEM_FIN_TABLE);
 	hash_table->table = new_hash;
 	hash_table->size = new_size;
 }
@@ -4567,7 +4182,7 @@ null_ephemerons_for_domain (MonoDomain *domain)
 				ephemeron_list = current->next;
 
 			current = current->next;
-			free_internal_mem (tmp, INTERNAL_MEM_EPHEMERON_LINK);
+			mono_sgen_free_internal (tmp, INTERNAL_MEM_EPHEMERON_LINK);
 		} else {
 			prev = current;
 			current = current->next;
@@ -4599,7 +4214,7 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 				ephemeron_list = current->next;
 
 			current = current->next;
-			free_internal_mem (tmp, INTERNAL_MEM_EPHEMERON_LINK);
+			mono_sgen_free_internal (tmp, INTERNAL_MEM_EPHEMERON_LINK);
 
 			continue;
 		}
@@ -4736,7 +4351,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 						disappearing_link_hash [i] = entry->next;
 					DEBUG (5, fprintf (gc_debug_file, "Dislink nullified at %p to GCed object %p\n", p, object));
 					old = entry->next;
-					free_internal_mem (entry, INTERNAL_MEM_DISLINK);
+					mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
 					entry = old;
 					hash->num_links--;
 					continue;
@@ -4761,7 +4376,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 						else
 							disappearing_link_hash [i] = entry->next;
 						old = entry->next;
-						free_internal_mem (entry, INTERNAL_MEM_DISLINK);
+						mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
 						entry = old;
 						hash->num_links--;
 
@@ -4815,7 +4430,7 @@ null_links_for_domain (MonoDomain *domain, int generation)
 					*(entry->link) = NULL;
 					g_warning ("Disappearing link %p not freed", entry->link);
 				} else {
-					free_internal_mem (entry, INTERNAL_MEM_DISLINK);
+					mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
 				}
 
 				entry = next;
@@ -4923,7 +4538,7 @@ register_for_finalization (MonoObject *obj, void *user_data, int generation)
 					finalizable_hash [hash] = entry->next;
 				hash_table->num_registered--;
 				DEBUG (5, fprintf (gc_debug_file, "Removed finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
-				free_internal_mem (entry, INTERNAL_MEM_FINALIZE_ENTRY);
+				mono_sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_ENTRY);
 			}
 			UNLOCK_GC;
 			return;
@@ -4935,7 +4550,7 @@ register_for_finalization (MonoObject *obj, void *user_data, int generation)
 		UNLOCK_GC;
 		return;
 	}
-	entry = get_internal_mem (sizeof (FinalizeEntry), INTERNAL_MEM_FINALIZE_ENTRY);
+	entry = mono_sgen_alloc_internal (sizeof (FinalizeEntry), INTERNAL_MEM_FINALIZE_ENTRY);
 	entry->object = obj;
 	entry->next = finalizable_hash [hash];
 	finalizable_hash [hash] = entry;
@@ -4964,7 +4579,7 @@ rehash_dislink (DisappearingLinkHashTable *hash_table)
 	DisappearingLink *entry, *next;
 	int new_size = g_spaced_primes_closest (hash_table->num_links);
 
-	new_hash = get_internal_mem (new_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
+	new_hash = mono_sgen_alloc_internal (new_size * sizeof (DisappearingLink*), INTERNAL_MEM_DISLINK_TABLE);
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		for (entry = disappearing_link_hash [i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->link) % new_size;
@@ -4973,7 +4588,7 @@ rehash_dislink (DisappearingLinkHashTable *hash_table)
 			new_hash [hash] = entry;
 		}
 	}
-	free_internal_mem (disappearing_link_hash, INTERNAL_MEM_DISLINK_TABLE);
+	mono_sgen_free_internal (disappearing_link_hash, INTERNAL_MEM_DISLINK_TABLE);
 	hash_table->table = new_hash;
 	hash_table->size = new_size;
 }
@@ -5008,7 +4623,7 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, i
 					disappearing_link_hash [hash] = entry->next;
 				hash_table->num_links--;
 				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s table\n", entry, hash_table->num_links, generation_name (generation)));
-				free_internal_mem (entry, INTERNAL_MEM_DISLINK);
+				mono_sgen_free_internal (entry, INTERNAL_MEM_DISLINK);
 				*link = NULL;
 			} else {
 				*link = HIDE_POINTER (obj, track); /* we allow the change of object */
@@ -5019,7 +4634,7 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, i
 	}
 	if (obj == NULL)
 		return;
-	entry = get_internal_mem (sizeof (DisappearingLink), INTERNAL_MEM_DISLINK);
+	entry = mono_sgen_alloc_internal (sizeof (DisappearingLink), INTERNAL_MEM_DISLINK);
 	*link = HIDE_POINTER (obj, track);
 	entry->link = link;
 	entry->next = disappearing_link_hash [hash];
@@ -5067,7 +4682,7 @@ mono_gc_invoke_finalizers (void)
 					e = e->next;
 				e->next = entry->next;
 			}
-			free_internal_mem (entry, INTERNAL_MEM_FINALIZE_ENTRY);
+			mono_sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_ENTRY);
 			entry = NULL;
 		}
 
@@ -5137,7 +4752,7 @@ rehash_roots (gboolean pinned)
 	int new_size;
 
 	new_size = g_spaced_primes_closest (num_roots_entries [pinned]);
-	new_hash = get_internal_mem (new_size * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
+	new_hash = mono_sgen_alloc_internal (new_size * sizeof (RootRecord*), INTERNAL_MEM_ROOTS_TABLE);
 	for (i = 0; i < roots_hash_size [pinned]; ++i) {
 		for (entry = roots_hash [pinned][i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->start_root) % new_size;
@@ -5146,7 +4761,7 @@ rehash_roots (gboolean pinned)
 			new_hash [hash] = entry;
 		}
 	}
-	free_internal_mem (roots_hash [pinned], INTERNAL_MEM_ROOTS_TABLE);
+	mono_sgen_free_internal (roots_hash [pinned], INTERNAL_MEM_ROOTS_TABLE);
 	roots_hash [pinned] = new_hash;
 	roots_hash_size [pinned] = new_size;
 }
@@ -5196,7 +4811,7 @@ mono_gc_register_root_inner (char *start, size_t size, void *descr, int root_typ
 			return TRUE;
 		}
 	}
-	new_root = get_internal_mem (sizeof (RootRecord), INTERNAL_MEM_ROOT_RECORD);
+	new_root = mono_sgen_alloc_internal (sizeof (RootRecord), INTERNAL_MEM_ROOT_RECORD);
 	if (new_root) {
 		new_root->start_root = start;
 		new_root->end_root = new_root->start_root + size;
@@ -5248,7 +4863,7 @@ mono_gc_deregister_root (char* addr)
 				roots_size -= (tmp->end_root - tmp->start_root);
 				num_roots_entries [root_type]--;
 				DEBUG (3, fprintf (gc_debug_file, "Removed root %p for range: %p-%p\n", tmp, tmp->start_root, tmp->end_root));
-				free_internal_mem (tmp, INTERNAL_MEM_ROOT_RECORD);
+				mono_sgen_free_internal (tmp, INTERNAL_MEM_ROOT_RECORD);
 				break;
 			}
 			prev = tmp;
@@ -5801,7 +5416,7 @@ remset_stats (void)
 	for (remset = global_remset; remset; remset = remset->next)
 		size += remset->store_next - remset->data;
 
-	bumper = addresses = get_internal_mem (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
+	bumper = addresses = mono_sgen_alloc_internal (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
 
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
@@ -5829,7 +5444,7 @@ remset_stats (void)
 
 	stat_store_remsets_unique += p - addresses;
 
-	free_internal_mem (addresses, INTERNAL_MEM_STATISTICS);
+	mono_sgen_free_internal (addresses, INTERNAL_MEM_STATISTICS);
 }
 #endif
 
@@ -5896,7 +5511,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 				handle_remset ((mword*)&addr, start_nursery, end_nursery, FALSE, queue);
 		}
 
-		free_internal_mem (store_remset, INTERNAL_MEM_STORE_REMSET);
+		mono_sgen_free_internal (store_remset, INTERNAL_MEM_STORE_REMSET);
 
 		store_remset = next;
 	}
@@ -5917,7 +5532,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 				remset->next = NULL;
 				if (remset != info->remset) {
 					DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-					free_internal_mem (remset, INTERNAL_MEM_REMSET);
+					mono_sgen_free_internal (remset, INTERNAL_MEM_REMSET);
 				}
 			}
 			for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
@@ -5936,7 +5551,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 		}
 		next = remset->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-		free_internal_mem (remset, INTERNAL_MEM_REMSET);
+		mono_sgen_free_internal (remset, INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }
@@ -5960,13 +5575,13 @@ clear_remsets (void)
 		remset->next = NULL;
 		if (remset != global_remset) {
 			DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-			free_internal_mem (remset, INTERNAL_MEM_REMSET);
+			mono_sgen_free_internal (remset, INTERNAL_MEM_REMSET);
 		}
 	}
 	/* the generic store ones */
 	while (generic_store_remsets) {
 		GenericStoreRememberedSet *gs_next = generic_store_remsets->next;
-		free_internal_mem (generic_store_remsets, INTERNAL_MEM_STORE_REMSET);
+		mono_sgen_free_internal (generic_store_remsets, INTERNAL_MEM_STORE_REMSET);
 		generic_store_remsets = gs_next;
 	}
 	/* the per-thread ones */
@@ -5978,7 +5593,7 @@ clear_remsets (void)
 				remset->next = NULL;
 				if (remset != info->remset) {
 					DEBUG (3, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-					free_internal_mem (remset, INTERNAL_MEM_REMSET);
+					mono_sgen_free_internal (remset, INTERNAL_MEM_REMSET);
 				}
 			}
 			clear_thread_store_remset_buffer (info);
@@ -5989,7 +5604,7 @@ clear_remsets (void)
 	while (freed_thread_remsets) {
 		next = freed_thread_remsets->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", freed_thread_remsets->data));
-		free_internal_mem (freed_thread_remsets, INTERNAL_MEM_REMSET);
+		mono_sgen_free_internal (freed_thread_remsets, INTERNAL_MEM_REMSET);
 		freed_thread_remsets = next;
 	}
 }
@@ -6099,7 +5714,7 @@ gc_register_current_thread (void *addr)
 	remembered_set = info->remset;
 #endif
 
-	STORE_REMSET_BUFFER = get_internal_mem (sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE, INTERNAL_MEM_STORE_REMSET);
+	STORE_REMSET_BUFFER = mono_sgen_alloc_internal (sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE, INTERNAL_MEM_STORE_REMSET);
 	STORE_REMSET_BUFFER_INDEX = 0;
 
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) (hash: %d)\n", info, (gpointer)info->id, hash));
@@ -6113,7 +5728,7 @@ gc_register_current_thread (void *addr)
 static void
 add_generic_store_remset_from_buffer (gpointer *buffer)
 {
-	GenericStoreRememberedSet *remset = get_internal_mem (sizeof (GenericStoreRememberedSet), INTERNAL_MEM_STORE_REMSET);
+	GenericStoreRememberedSet *remset = mono_sgen_alloc_internal (sizeof (GenericStoreRememberedSet), INTERNAL_MEM_STORE_REMSET);
 	memcpy (remset->data, buffer + 1, sizeof (gpointer) * (STORE_REMSET_BUFFER_SIZE - 1));
 	remset->next = generic_store_remsets;
 	generic_store_remsets = remset;
@@ -6155,7 +5770,7 @@ unregister_current_thread (void)
 	}
 	if (*p->store_remset_buffer_index_addr)
 		add_generic_store_remset_from_buffer (*p->store_remset_buffer_addr);
-	free_internal_mem (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
+	mono_sgen_free_internal (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
 	free (p);
 }
 
@@ -6264,7 +5879,7 @@ mono_gc_pthread_detach (pthread_t thread)
 
 static RememberedSet*
 alloc_remset (int size, gpointer id) {
-	RememberedSet* res = get_internal_mem (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
+	RememberedSet* res = mono_sgen_alloc_internal (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
 	res->store_next = res->data;
 	res->end_set = res->data + size;
 	res->next = NULL;
@@ -7007,7 +6622,7 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 
 	LOCK_GC;
 
-	node = get_internal_mem (sizeof (EphemeronLinkNode), INTERNAL_MEM_EPHEMERON_LINK);
+	node = mono_sgen_alloc_internal (sizeof (EphemeronLinkNode), INTERNAL_MEM_EPHEMERON_LINK);
 	if (!node) {
 		UNLOCK_GC;
 		return FALSE;
@@ -7185,6 +6800,8 @@ mono_gc_base_init (void)
 	nursery_size = DEFAULT_NURSERY_SIZE;
 	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 
+	init_stats ();
+	mono_sgen_init_internal_allocator ();
 	major_init ();
 
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
@@ -7884,6 +7501,19 @@ gboolean
 mono_sgen_is_worker_thread (pthread_t thread)
 {
 	return FALSE;
+}
+
+void
+mono_sgen_debug_printf (int level, const char *format, ...)
+{
+	va_list ap;
+
+	if (level > gc_debug_level)
+		return;
+
+	va_start (ap, format);
+	vfprintf (gc_debug_file, format, ap);
+	va_end (ap);
 }
 
 #endif /* HAVE_SGEN_GC */
