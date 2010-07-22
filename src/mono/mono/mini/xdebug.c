@@ -331,7 +331,8 @@ mono_save_trampoline_xdebug_info (MonoTrampInfo *info)
 		MonoImageWriter *w;
 		MonoDwarfWriter *dw;
 
-		mono_loader_lock ();
+		/* This can be called before the loader lock is initialized */
+		mono_loader_lock_if_inited ();
 
 		xdebug_begin_emit (&w, &dw);
 
@@ -339,15 +340,15 @@ mono_save_trampoline_xdebug_info (MonoTrampInfo *info)
 
 		xdebug_end_emit (w, dw, NULL);
 		
-		mono_loader_unlock ();
+		mono_loader_unlock_if_inited ();
 	} else {
 		if (!xdebug_writer)
 			return;
 
-		mono_loader_lock ();
+		mono_loader_lock_if_inited ();
 		mono_dwarf_writer_emit_trampoline (xdebug_writer, info->name, NULL, NULL, info->code, info->code_size, info->unwind_ops);
 		fflush (xdebug_fp);
-		mono_loader_unlock ();
+		mono_loader_unlock_if_inited ();
 	}
 }
 
