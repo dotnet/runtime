@@ -1093,6 +1093,12 @@ gboolean
 mono_loader_lock_is_owned_by_self (void) MONO_INTERNAL;
 
 void
+mono_loader_lock_if_inited (void) MONO_INTERNAL;
+
+void
+mono_loader_unlock_if_inited (void) MONO_INTERNAL;
+
+void
 mono_loader_set_error_assembly_load (const char *assembly_name, gboolean ref_only) MONO_INTERNAL;
 
 void
