@@ -90,11 +90,11 @@ struct _SgenThreadInfo {
 };
 
 #ifdef __APPLE__
-static int suspend_signal_num = SIGXFSZ;
+const static int suspend_signal_num = SIGXFSZ;
 #else
-static int suspend_signal_num = SIGPWR;
+const static int suspend_signal_num = SIGPWR;
 #endif
-static int restart_signal_num = SIGXCPU;
+const static int restart_signal_num = SIGXCPU;
 
 /*
  * Recursion is not allowed for the thread lock.
