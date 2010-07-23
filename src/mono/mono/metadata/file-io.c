@@ -818,6 +818,8 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
 	MONO_ARCH_SAVE_REGS;
 
 	*error=ERROR_SUCCESS;
+
+	MONO_CHECK_ARG_NULL (dest);
 	
 	if (dest_offset + count > mono_array_length (dest))
 		return 0;
@@ -845,6 +847,8 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
 	MONO_ARCH_SAVE_REGS;
 
 	*error=ERROR_SUCCESS;
+
+	MONO_CHECK_ARG_NULL (src);
 	
 	if (src_offset + count > mono_array_length (src))
 		return 0;
