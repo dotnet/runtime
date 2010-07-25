@@ -199,7 +199,7 @@ const static int restart_signal_num = SIGXCPU;
 		int __old_x;						\
 		do {							\
 			__old_x = (x);					\
-		} while (InterlockedCompareExchange (&(x), __old_x, __old_x + (i)) != __old_x); \
+		} while (InterlockedCompareExchange (&(x), __old_x + (i), __old_x) != __old_x); \
 	} while (0)
 #else
 #define SGEN_CAS_PTR(p,n,c)	((*(void**)(p) == (void*)(c)) ? (*(void**)(p) = (void*)(n), (void*)(c)) : (*(void**)(p)))
