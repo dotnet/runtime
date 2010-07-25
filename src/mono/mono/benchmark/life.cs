@@ -28,7 +28,7 @@ class App {
 	s15 ="";
 	s15 = s0+s1+s2+s3+s4+s5+s6+s7+s8+s9+s10+s11+s12+s13+s14;
 	dump();
-	i0 =0;
+	i0 =0;
 	while (i0++ < i2) {
 		generate();
 		dump();

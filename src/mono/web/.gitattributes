@@ -1,11 +1,3 @@
-/ado-net -crlf
-/download -crlf
 /gtk-sharp -crlf
 /mbas -crlf
 /mono-beginning-windows.xml -crlf
-/mysql -crlf
-/odbc -crlf
-/pending-classes.in -crlf
-/postgresql -crlf
-/sqlclient -crlf
-/sqlite -crlf
