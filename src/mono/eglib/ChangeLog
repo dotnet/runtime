@@ -1,3 +1,7 @@
+2010-07-25  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.ac src/eglib-config.h.in src/eglib-config.hw: Define G_GINT64_FORMAT.
+
 2010-07-20  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/glib.h (G_LIKELY): Implement these for gcc properly.
