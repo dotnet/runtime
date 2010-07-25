@@ -117,6 +117,7 @@ typedef struct
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION		1
 #define MONO_ARCH_HAVE_IMT 				1
 #define MONO_ARCH_IMT_REG				s390_r9
+#define MONO_ARCH_THIS_AS_FIRST_ARG     		1
 
 #define MONO_ARCH_USE_SIGACTION 	1
 

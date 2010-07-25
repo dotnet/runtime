@@ -1,0 +1,3 @@
+/make_type_visibility_test.sh -crlf
+/unverifiable_ldobj_with_generic_type_definition.il -crlf
+/unverifiable_throw_with_unboxed_generic_argument.il -crlf

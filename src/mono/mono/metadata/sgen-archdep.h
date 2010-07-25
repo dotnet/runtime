@@ -85,21 +85,21 @@
 #define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_RSP (ctx))
 #define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_RIP (ctx))
 #define ARCH_COPY_SIGCTX_REGS(a,ctx) do {	\
-	((a)[0] = (UCONTEXT_REG_RAX (ctx)));	\
-	((a)[1] = (UCONTEXT_REG_RBX (ctx)));	\
-	((a)[2] = (UCONTEXT_REG_RCX (ctx)));	\
-	((a)[3] = (UCONTEXT_REG_RDX (ctx)));	\
-	((a)[4] = (UCONTEXT_REG_RSI (ctx)));	\
-	((a)[5] = (UCONTEXT_REG_RDI (ctx)));	\
-	((a)[6] = (UCONTEXT_REG_RBP (ctx)));	\
-	((a)[7] = (UCONTEXT_REG_RSP (ctx)));	\
-	((a)[8] = (UCONTEXT_REG_RSI (ctx)));	\
-	((a)[9] = (UCONTEXT_REG_RDI (ctx)));	\
-	((a)[10] = (UCONTEXT_REG_RIP (ctx)));	\
-	((a)[11] = (UCONTEXT_REG_R12 (ctx)));	\
-	((a)[12] = (UCONTEXT_REG_R13 (ctx)));	\
-	((a)[13] = (UCONTEXT_REG_R14 (ctx)));	\
-	((a)[14] = (UCONTEXT_REG_R15 (ctx)));	\
+		((a)[0] = (gpointer)(UCONTEXT_REG_RAX (ctx)));	\
+		((a)[1] = (gpointer)(UCONTEXT_REG_RBX (ctx)));	\
+		((a)[2] = (gpointer)(UCONTEXT_REG_RCX (ctx)));	\
+		((a)[3] = (gpointer)(UCONTEXT_REG_RDX (ctx)));	\
+		((a)[4] = (gpointer)(UCONTEXT_REG_RSI (ctx)));	\
+		((a)[5] = (gpointer)(UCONTEXT_REG_RDI (ctx)));	\
+		((a)[6] = (gpointer)(UCONTEXT_REG_RBP (ctx)));	\
+		((a)[7] = (gpointer)(UCONTEXT_REG_RSP (ctx)));	\
+		((a)[8] = (gpointer)(UCONTEXT_REG_RSI (ctx)));	\
+		((a)[9] = (gpointer)(UCONTEXT_REG_RDI (ctx)));	\
+		((a)[10] = (gpointer)(UCONTEXT_REG_RIP (ctx)));	\
+		((a)[11] = (gpointer)(UCONTEXT_REG_R12 (ctx)));	\
+		((a)[12] = (gpointer)(UCONTEXT_REG_R13 (ctx)));	\
+		((a)[13] = (gpointer)(UCONTEXT_REG_R14 (ctx)));	\
+		((a)[14] = (gpointer)(UCONTEXT_REG_R15 (ctx)));	\
 	} while (0)
 
 #elif defined(__ppc__)

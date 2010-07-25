@@ -49,8 +49,8 @@
 #error Parallel mark not supported in copying major collector
 #endif
 
-#define MAJOR_SECTION_SIZE		PINNED_CHUNK_SIZE
-#define BLOCK_FOR_OBJECT(o)		((Block*)(((mword)(o)) & ~(MAJOR_SECTION_SIZE - 1)))
+#define MAJOR_SECTION_SIZE		SGEN_PINNED_CHUNK_SIZE
+#define BLOCK_FOR_OBJECT(o)		SGEN_PINNED_CHUNK_FOR_PTR ((o))
 #define MAJOR_SECTION_FOR_OBJECT(o)	((GCMemSection*)BLOCK_FOR_OBJECT ((o)))
 
 #define MAJOR_OBJ_IS_IN_TO_SPACE(o)	(MAJOR_SECTION_FOR_OBJECT ((o))->is_to_space)
@@ -59,8 +59,7 @@ static int num_major_sections = 0;
 
 static GCMemSection *section_list = NULL;
 
-/* pinned_chunk_list is used for allocations of objects that are never moved */
-static PinnedChunk *pinned_chunk_list = NULL;
+static SgenInternalAllocator pinned_allocator;
 
 /*
  * used when moving the objects
@@ -85,13 +84,7 @@ obj_is_from_pinned_alloc (char *p)
 static void
 free_pinned_object (char *obj, size_t size)
 {
-	PinnedChunk *chunk = (PinnedChunk*) BLOCK_FOR_OBJECT (obj);
-	void **p = (void**)obj;
-	int slot = slot_for_size (size);
-
-	g_assert (obj >= (char*)chunk->start_data && obj < ((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE));
-	*p = chunk->free_list [slot];
-	chunk->free_list [slot] = p;
+	mono_sgen_free_internal_full (&pinned_allocator, obj, size, INTERNAL_MEM_MANAGED);
 }
 
 /*
@@ -103,16 +96,15 @@ alloc_major_section (void)
 	GCMemSection *section;
 	int scan_starts;
 
-	section = get_os_memory_aligned (MAJOR_SECTION_SIZE, MAJOR_SECTION_SIZE, TRUE);
+	section = mono_sgen_alloc_os_memory_aligned (MAJOR_SECTION_SIZE, MAJOR_SECTION_SIZE, TRUE);
 	section->next_data = section->data = (char*)section + SIZEOF_GC_MEM_SECTION;
 	g_assert (!((mword)section->data & 7));
 	section->size = MAJOR_SECTION_SIZE - SIZEOF_GC_MEM_SECTION;
 	section->end_data = section->data + section->size;
-	update_heap_boundaries (section->data, section->end_data);
-	total_alloc += section->size;
+	mono_sgen_update_heap_boundaries ((mword)section->data, (mword)section->end_data);
 	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %zd\n", section->data, section->end_data, total_alloc));
 	scan_starts = (section->size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
-	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
+	section->scan_starts = mono_sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
 	section->block.role = MEMORY_ROLE_GEN1;
 	section->is_to_space = TRUE;
@@ -130,9 +122,9 @@ static void
 free_major_section (GCMemSection *section)
 {
 	DEBUG (3, fprintf (gc_debug_file, "Freed major section %p (%p-%p)\n", section, section->data, section->end_data));
-	free_internal_mem (section->scan_starts, INTERNAL_MEM_SCAN_STARTS);
-	free_os_memory (section, MAJOR_SECTION_SIZE);
-	total_alloc -= MAJOR_SECTION_SIZE - SIZEOF_GC_MEM_SECTION;
+	mono_sgen_free_internal_dynamic (section->scan_starts,
+			(section->size + SCAN_START_SIZE - 1) / SCAN_START_SIZE * sizeof (char*), INTERNAL_MEM_SCAN_STARTS);
+	mono_sgen_free_os_memory (section, MAJOR_SECTION_SIZE);
 
 	--num_major_sections;
 }
@@ -201,7 +193,7 @@ major_is_object_live (char *obj)
 	if (ptr_in_nursery (obj))
 		return FALSE;
 
-	objsize = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
+	objsize = SGEN_ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 
 	/* LOS */
 	if (objsize > MAX_SMALL_OBJ_SIZE)
@@ -219,36 +211,7 @@ major_is_object_live (char *obj)
 static void*
 major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 {
-	int slot;
-	void *res = NULL;
-	PinnedChunk *pchunk;
-	slot = slot_for_size (size);
-	/*g_print ("using slot %d for size %d (slot size: %d)\n", slot, size, freelist_sizes [slot]);*/
-	g_assert (size <= freelist_sizes [slot]);
-	for (pchunk = pinned_chunk_list; pchunk; pchunk = pchunk->block.next) {
-		void **p = pchunk->free_list [slot];
-		if (p) {
-			/*g_print ("found freelist for slot %d in chunk %p, returning %p, next %p\n", slot, pchunk, p, *p);*/
-			pchunk->free_list [slot] = *p;
-			res = p;
-			goto found;
-		}
-	}
-	for (pchunk = pinned_chunk_list; pchunk; pchunk = pchunk->block.next) {
-		res = get_chunk_freelist (pchunk, slot);
-		if (res)
-			goto found;
-	}
-	LOCK_INTERNAL_ALLOCATOR;
-	pchunk = alloc_pinned_chunk ();
-	UNLOCK_INTERNAL_ALLOCATOR;
-	/* FIXME: handle OOM */
-	pchunk->block.next = pinned_chunk_list;
-	pinned_chunk_list = pchunk;
-	res = get_chunk_freelist (pchunk, slot);
- found:
-	memset (res, 0, size);
-	return res;
+	return mono_sgen_alloc_internal_full (&pinned_allocator, size, INTERNAL_MEM_MANAGED);
 }
 
 /*
@@ -353,7 +316,7 @@ major_copy_or_mark_object (void **obj_slot, GrayQueue *queue)
 	 * see whether it's a pinned chunk or a major heap section.
 	 */
 
-	objsize = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
+	objsize = SGEN_ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 
 	if (G_UNLIKELY (objsize > MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
 		if (object_is_pinned (obj))
@@ -413,7 +376,7 @@ build_section_fragments (GCMemSection *section)
 			binary_protocol_empty (frag_start, frag_size);
 			memset (frag_start, 0, frag_size);
 		}
-		frag_size = ALIGN_UP (safe_object_get_size ((MonoObject*)pin_queue [i]));
+		frag_size = SGEN_ALIGN_UP (safe_object_get_size ((MonoObject*)pin_queue [i]));
 		frag_start = (char*)pin_queue [i] + frag_size;
 		section->next_data = MAX (section->next_data, frag_start);
 	}
@@ -422,83 +385,6 @@ build_section_fragments (GCMemSection *section)
 	if (frag_size) {
 		binary_protocol_empty (frag_start, frag_size);
 		memset (frag_start, 0, frag_size);
-	}
-}
-
-static void
-scan_pinned_objects (IterateObjectCallbackFunc callback, void *callback_data)
-{
-	PinnedChunk *chunk;
-	int i, obj_size;
-	char *p, *endp;
-	void **ptr;
-	void *end_chunk;
-	for (chunk = pinned_chunk_list; chunk; chunk = chunk->block.next) {
-		end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
-		DEBUG (6, fprintf (gc_debug_file, "Scanning pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk));
-		for (i = 0; i < chunk->num_pages; ++i) {
-			obj_size = chunk->page_sizes [i];
-			if (!obj_size)
-				continue;
-			p = i? (char*)chunk + i * FREELIST_PAGESIZE: chunk->start_data;
-			endp = i? p + FREELIST_PAGESIZE: (char*)chunk + FREELIST_PAGESIZE;
-			DEBUG (6, fprintf (gc_debug_file, "Page %d (size: %d, range: %p-%p)\n", i, obj_size, p, endp));
-			while (p + obj_size <= endp) {
-				ptr = (void**)p;
-				DEBUG (9, fprintf (gc_debug_file, "Considering %p (vtable: %p)\n", ptr, *ptr));
-				/* if the first word (the vtable) is outside the chunk we have an object */
-				if (*ptr && (*ptr < (void*)chunk || *ptr >= end_chunk))
-					callback ((char*)ptr, obj_size, callback_data);
-				p += obj_size;
-			}
-		}
-	}
-}
-
-/*
- * the array of pointers from @start to @end contains conservative
- * pointers to objects inside @chunk: mark each referenced object
- * with the PIN bit.
- */
-static void
-mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end, GrayQueue *queue)
-{
-	for (; start < end; start++) {
-		char *addr = *start;
-		int offset = (char*)addr - (char*)chunk;
-		int page = offset / FREELIST_PAGESIZE;
-		int obj_offset = page == 0? offset - ((char*)chunk->start_data - (char*)chunk): offset % FREELIST_PAGESIZE;
-		int slot_size = chunk->page_sizes [page];
-		void **ptr;
-		/* the page is not allocated */
-		if (!slot_size)
-			continue;
-		/* would be faster if we restrict the sizes to power of two,
-		 * but that's a waste of memory: need to measure. it could reduce
-		 * fragmentation since there are less pages needed, if for example
-		 * someone interns strings of each size we end up with one page per
-		 * interned string (still this is just ~40 KB): with more fine-grained sizes
-		 * this increases the number of used pages.
-		 */
-		if (page == 0) {
-			obj_offset /= slot_size;
-			obj_offset *= slot_size;
-			addr = (char*)chunk->start_data + obj_offset;
-		} else {
-			obj_offset /= slot_size;
-			obj_offset *= slot_size;
-			addr = (char*)chunk + page * FREELIST_PAGESIZE + obj_offset;
-		}
-		ptr = (void**)addr;
-		/* if the vtable is inside the chunk it's on the freelist, so skip */
-		if (*ptr && (*ptr < (void*)chunk->start_data || *ptr > (void*)((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE))) {
-			binary_protocol_pin (addr, (gpointer)LOAD_VTABLE (addr), safe_object_get_size ((MonoObject*)addr));
-			if (heap_dump_file && !object_is_pinned (addr))
-				pin_stats_register_object ((char*) addr, safe_object_get_size ((MonoObject*) addr));
-			pin_object (addr);
-			GRAY_OBJECT_ENQUEUE (queue, addr);
-			DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
-		}
 	}
 }
 
@@ -517,7 +403,7 @@ sweep_pinned_objects_callback (char *ptr, size_t size, void *data)
 static void
 sweep_pinned_objects (void)
 {
-	scan_pinned_objects (sweep_pinned_objects_callback, NULL);
+	mono_sgen_internal_scan_objects (&pinned_allocator, sweep_pinned_objects_callback, NULL);
 }
 
 static void
@@ -529,7 +415,7 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 			scan_area_with_callback (section->data, section->end_data, callback, data);
 	}
 	if (pinned)
-		scan_pinned_objects (callback, data);
+		mono_sgen_internal_scan_objects (&pinned_allocator, callback, data);
 }
 
 static void
@@ -539,22 +425,24 @@ major_free_non_pinned_object (char *obj, size_t size)
 }
 
 static void
+pin_pinned_object_callback (void *addr, size_t slot_size, GrayQueue *queue)
+{
+	binary_protocol_pin (addr, (gpointer)LOAD_VTABLE (addr), safe_object_get_size ((MonoObject*)addr));
+	if (heap_dump_file && !object_is_pinned (addr))
+		pin_stats_register_object ((char*) addr, safe_object_get_size ((MonoObject*) addr));
+	pin_object (addr);
+	GRAY_OBJECT_ENQUEUE (queue, addr);
+	DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
+}
+
+static void
 major_find_pin_queue_start_ends (GrayQueue *queue)
 {
 	GCMemSection *section;
-	PinnedChunk *chunk;
 
 	for (section = section_list; section; section = section->block.next)
 		find_section_pin_queue_start_end (section);
-
-	/* look for pinned addresses for pinned-alloc objects */
-	DEBUG (6, fprintf (gc_debug_file, "Pinning from pinned-alloc objects\n"));
-	for (chunk = pinned_chunk_list; chunk; chunk = chunk->block.next) {
-		int start, end;
-		find_optimized_pin_queue_area (chunk->start_data, (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE, &start, &end);
-		if (start != end)
-			mark_pinned_from_addresses (chunk, pin_queue + start, pin_queue + end, queue);
-	}
+	mono_sgen_internal_scan_pinned_objects (&pinned_allocator, (IterateObjectCallbackFunc)pin_pinned_object_callback, queue);
 }
 
 static void
@@ -708,8 +596,5 @@ major_ptr_is_in_non_pinned_space (char *ptr)
 static void
 major_report_pinned_memory_usage (void)
 {
-	PinnedChunk *chunk;
-	int i = 0;
-	for (chunk = pinned_chunk_list; chunk; chunk = chunk->block.next)
-		report_pinned_chunk (chunk, i++);
+	mono_sgen_report_internal_mem_usage_full (&pinned_allocator);
 }

@@ -1,0 +1,13 @@
+/appdomain.out -crlf
+/delegate-async-exit.out -crlf
+/delegate-delegate-exit.out -crlf
+/delegate.out -crlf
+/finalizer-abort.out -crlf
+/finalizer-exit.out -crlf
+/main-exit.out -crlf
+/main-returns-abort-resetabort.out -crlf
+/main-returns-background-abort-resetabort.out -crlf
+/main-returns-background-resetabort.out -crlf
+/main-returns-background.out -crlf
+/main-returns.out -crlf
+/subthread-exit.out -crlf

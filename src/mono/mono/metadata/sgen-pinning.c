@@ -40,9 +40,9 @@ static void
 realloc_pin_queue (void)
 {
 	int new_size = pin_queue_size? pin_queue_size + pin_queue_size/2: 1024;
-	void **new_pin = get_internal_mem (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
+	void **new_pin = mono_sgen_alloc_internal_dynamic (sizeof (void*) * new_size, INTERNAL_MEM_PIN_QUEUE);
 	memcpy (new_pin, pin_queue, sizeof (void*) * next_pin_slot);
-	free_internal_mem (pin_queue, INTERNAL_MEM_PIN_QUEUE);
+	mono_sgen_free_internal_dynamic (pin_queue, sizeof (void*) * pin_queue_size, INTERNAL_MEM_PIN_QUEUE);
 	pin_queue = new_pin;
 	pin_queue_size = new_size;
 	DEBUG (4, fprintf (gc_debug_file, "Reallocated pin queue to size: %d\n", new_size));
@@ -111,6 +111,17 @@ find_optimized_pin_queue_area (void *start, void *end, int *first, int *last)
 {
 	*first = optimized_pin_queue_search (start);
 	*last = optimized_pin_queue_search (end);
+}
+
+void**
+mono_sgen_find_optimized_pin_queue_area (void *start, void *end, int *num)
+{
+	int first, last;
+	find_optimized_pin_queue_area (start, end, &first, &last);
+	*num = last - first;
+	if (first == last)
+		return NULL;
+	return pin_queue + first;
 }
 
 static void
