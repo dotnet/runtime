@@ -41,7 +41,11 @@ static WorkerData workers_gc_thread_data;
 static int workers_num_working;
 
 static GrayQueue workers_distribute_gray_queue;
-/* must be a power of 2 */
+/*
+ * Must be a power of 2.  It seems that larger values don't help much.
+ * The main reason to make this larger would be to sustain a bigger
+ * number of worker threads.
+ */
 #define WORKERS_SHARED_BUFFER_SIZE	16
 static GrayQueueSection *workers_shared_buffer [WORKERS_SHARED_BUFFER_SIZE];
 static int workers_shared_buffer_used;
@@ -49,6 +53,14 @@ static int workers_shared_buffer_used;
 static const int workers_primes [] = { 3, 5, 7, 11, 13, 17, 23, 29 };
 
 static MonoSemType workers_done_sem;
+
+static long long stat_shared_buffer_insert_tries;
+static long long stat_shared_buffer_insert_full;
+static long long stat_shared_buffer_insert_iterations;
+static long long stat_shared_buffer_insert_failures;
+static long long stat_shared_buffer_remove_tries;
+static long long stat_shared_buffer_remove_iterations;
+static long long stat_shared_buffer_remove_empty;
 
 static void
 workers_gray_queue_share_redirect (GrayQueue *queue)
@@ -60,7 +72,10 @@ workers_gray_queue_share_redirect (GrayQueue *queue)
 	while ((section = gray_object_dequeue_section (queue))) {
 		int i, index;
 
+		HEAVY_STAT (++stat_shared_buffer_insert_tries);
+
 		if (workers_shared_buffer_used == WORKERS_SHARED_BUFFER_SIZE) {
+			HEAVY_STAT (++stat_shared_buffer_insert_full);
 			gray_object_enqueue_section (queue, section);
 			return;
 		}
@@ -68,6 +83,7 @@ workers_gray_queue_share_redirect (GrayQueue *queue)
 		index = data->shared_buffer_index;
 		for (i = 0; i < WORKERS_SHARED_BUFFER_SIZE; ++i) {
 			GrayQueueSection *old = workers_shared_buffer [index];
+			HEAVY_STAT (++stat_shared_buffer_insert_iterations);
 			if (!old) {
 				if (SGEN_CAS_PTR ((void**)&workers_shared_buffer [index], section, NULL) == NULL) {
 					SGEN_ATOMIC_ADD (workers_shared_buffer_used, 1);
@@ -81,6 +97,7 @@ workers_gray_queue_share_redirect (GrayQueue *queue)
 
 		if (i == WORKERS_SHARED_BUFFER_SIZE) {
 			/* unsuccessful */
+			HEAVY_STAT (++stat_shared_buffer_insert_failures);
 			gray_object_enqueue_section (queue, section);
 			return;
 		}
@@ -93,9 +110,13 @@ workers_get_work (WorkerData *data)
 	int i, index;
 	int increment = data->shared_buffer_increment;
 
+	HEAVY_STAT (++stat_shared_buffer_remove_tries);
+
 	index = data->shared_buffer_index;
 	for (i = 0; i < WORKERS_SHARED_BUFFER_SIZE; ++i) {
 		GrayQueueSection *section;
+
+		HEAVY_STAT (++stat_shared_buffer_remove_iterations);
 
 		do {
 			section = workers_shared_buffer [index];
@@ -113,6 +134,8 @@ workers_get_work (WorkerData *data)
 
 		index = (index + increment) & (WORKERS_SHARED_BUFFER_SIZE - 1);
 	}
+
+	HEAVY_STAT (++stat_shared_buffer_remove_empty);
 
 	data->shared_buffer_index = index;
 	return FALSE;
@@ -197,6 +220,14 @@ workers_init (int num_workers)
 		gray_object_queue_init_with_alloc_prepare (&workers_data [i].private_gray_queue,
 				workers_gray_queue_share_redirect,  &workers_data [i]);
 	}
+
+	mono_counters_register ("Shared buffer insert tries", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_shared_buffer_insert_tries);
+	mono_counters_register ("Shared buffer insert full", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_shared_buffer_insert_full);
+	mono_counters_register ("Shared buffer insert iterations", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_shared_buffer_insert_iterations);
+	mono_counters_register ("Shared buffer insert failures", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_shared_buffer_insert_failures);
+	mono_counters_register ("Shared buffer remove tries", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_shared_buffer_remove_tries);
+	mono_counters_register ("Shared buffer remove iterations", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_shared_buffer_remove_iterations);
+	mono_counters_register ("Shared buffer remove empty", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_shared_buffer_remove_empty);
 }
 
 /* only the GC thread is allowed to start and join workers */
