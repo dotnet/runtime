@@ -289,7 +289,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 #ifdef MONO_ARCH_HAVE_IMT
 	/* IMT call */
 	if (vt && (gpointer)vtable_slot < (gpointer)vt) {
-		MonoMethod *impl_method;
+		MonoMethod *impl_method = NULL;
 		MonoObject *this_arg;
 
 		/* we get the interface method because mono_convert_imt_slot_to_vtable_slot ()
