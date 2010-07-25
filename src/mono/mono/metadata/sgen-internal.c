@@ -45,6 +45,8 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef HAVE_SGEN_GC
+
 #include "metadata/sgen-gc.h"
 
 /* Pinned objects are allocated in the LOS space if bigger than half a page
@@ -591,3 +593,5 @@ mono_sgen_internal_scan_pinned_objects (SgenInternalAllocator *alc, IterateObjec
 			mark_pinned_from_addresses (chunk, pinned, pinned + num_pinned, callback, callback_data);
 	}
 }
+
+#endif
