@@ -157,6 +157,12 @@ static void*
 workers_thread_func (void *data_untyped)
 {
 	WorkerData *data = data_untyped;
+	SgenInternalAllocator allocator;
+
+	memset (&allocator, 0, sizeof (allocator));
+
+	gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue, &allocator,
+			workers_gray_queue_share_redirect, data);
 
 	for (;;) {
 		//g_print ("worker waiting for start %d\n", data->start_worker_sem);
@@ -184,7 +190,7 @@ workers_thread_func (void *data_untyped)
 			workers_change_num_working (1);
 		}
 
-		gray_object_queue_init (&data->private_gray_queue);
+		gray_object_queue_init (&data->private_gray_queue, &allocator);
 
 		MONO_SEM_POST (&workers_done_sem);
 
@@ -210,15 +216,13 @@ workers_init (int num_workers)
 	MONO_SEM_INIT (&workers_done_sem, 0);
 	workers_gc_thread_data.shared_buffer_increment = 1;
 	workers_gc_thread_data.shared_buffer_index = 0;
-	gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue,
+	gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue, mono_sgen_get_unmanaged_allocator (),
 			workers_gray_queue_share_redirect, &workers_gc_thread_data);
 
 	g_assert (num_workers <= sizeof (workers_primes) / sizeof (workers_primes [0]));
 	for (i = 0; i < workers_num; ++i) {
 		workers_data [i].shared_buffer_increment = workers_primes [i];
 		workers_data [i].shared_buffer_index = 0;
-		gray_object_queue_init_with_alloc_prepare (&workers_data [i].private_gray_queue,
-				workers_gray_queue_share_redirect,  &workers_data [i]);
 	}
 
 	mono_counters_register ("Shared buffer insert tries", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_shared_buffer_insert_tries);

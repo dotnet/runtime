@@ -2579,7 +2579,7 @@ collect_nursery (size_t requested_size)
 
 	major.start_nursery_collection ();
 
-	gray_object_queue_init (&gray_queue);
+	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
 
 	num_minor_gcs++;
 	mono_stats.minor_gc_count ++;
@@ -2701,8 +2701,8 @@ major_do_collection (const char *reason)
 
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
-	gray_object_queue_init (&gray_queue);
-	gray_object_queue_init (&workers_distribute_gray_queue);
+	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
+	gray_object_queue_init (&workers_distribute_gray_queue, mono_sgen_get_unmanaged_allocator ());
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));

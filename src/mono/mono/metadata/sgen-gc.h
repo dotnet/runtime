@@ -514,6 +514,8 @@ gsize* mono_sgen_get_complex_descriptor (GCVTable *vt) MONO_INTERNAL;
 		}	\
 	} while (0)
 
+typedef struct _SgenInternalAllocator SgenInternalAllocator;
+
 #define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - 3)
 
 /*
@@ -532,6 +534,7 @@ typedef struct _SgenGrayQueue SgenGrayQueue;
 typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
 
 struct _SgenGrayQueue {
+	SgenInternalAllocator *allocator;
 	GrayQueueSection *first;
 	GrayQueueSection *free_list;
 	int balance;
@@ -609,14 +612,16 @@ enum {
 
 #define SGEN_INTERNAL_FREELIST_NUM_SLOTS	30
 
-typedef struct _SgenInternalAllocator SgenInternalAllocator;
 struct _SgenInternalAllocator {
 	SgenPinnedChunk *chunk_list;
 	SgenPinnedChunk *free_lists [SGEN_INTERNAL_FREELIST_NUM_SLOTS];
+	void *delayed_free_lists [SGEN_INTERNAL_FREELIST_NUM_SLOTS];
 	long small_internal_mem_bytes [INTERNAL_MEM_MAX];
 };
 
 void mono_sgen_init_internal_allocator (void) MONO_INTERNAL;
+
+SgenInternalAllocator* mono_sgen_get_unmanaged_allocator (void) MONO_INTERNAL;
 
 const char* mono_sgen_internal_mem_type_name (int type) MONO_INTERNAL;
 void mono_sgen_report_internal_mem_usage (void) MONO_INTERNAL;
@@ -635,8 +640,13 @@ void mono_sgen_free_internal (void *addr, int type) MONO_INTERNAL;
 void* mono_sgen_alloc_internal_dynamic (size_t size, int type) MONO_INTERNAL;
 void mono_sgen_free_internal_dynamic (void *addr, size_t size, int type) MONO_INTERNAL;
 
+void* mono_sgen_alloc_internal_fixed (SgenInternalAllocator *allocator, int type) MONO_INTERNAL;
+void mono_sgen_free_internal_fixed (SgenInternalAllocator *allocator, void *addr, int type) MONO_INTERNAL;
+
 void* mono_sgen_alloc_internal_full (SgenInternalAllocator *allocator, size_t size, int type) MONO_INTERNAL;
 void mono_sgen_free_internal_full (SgenInternalAllocator *allocator, void *addr, size_t size, int type) MONO_INTERNAL;
+
+void mono_sgen_free_internal_delayed (void *addr, int type, SgenInternalAllocator *thread_allocator) MONO_INTERNAL;
 
 void mono_sgen_debug_printf (int level, const char *format, ...) MONO_INTERNAL;
 
