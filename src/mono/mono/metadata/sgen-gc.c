@@ -330,9 +330,11 @@ mono_gc_flush_info (void)
 }
 */
 
-/* Define this to allow the user to change some of the constants by specifying
- * their values in the MONO_GC_PARAMS environmental variable. See
- * mono_gc_base_init for details. */
+/*
+ * Define this to allow the user to change the nursery size by
+ * specifying its value in the MONO_GC_PARAMS environmental
+ * variable. See mono_gc_base_init for details.
+ */
 #define USER_CONFIG 1
 
 #define TV_DECLARE(name) gint64 name
@@ -6651,6 +6653,7 @@ mono_gc_base_init (void)
 {
 	char *env;
 	char **opts, **ptr;
+	char *major_collector = NULL;
 	struct sigaction sinfo;
 
 	LOCK_INIT (gc_mutex);
@@ -6662,38 +6665,43 @@ mono_gc_base_init (void)
 	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
 
-#ifdef USER_CONFIG
-
 	if ((env = getenv ("MONO_GC_PARAMS"))) {
-		if (g_str_has_prefix (env, "nursery-size")) {
-			int index = 0;
-			long val;
-			while (env [index] && env [index++] != '=')
-				;
-			if (env [index] && parse_environment_string_extract_number (env
-					+ index, &val)) {
-				default_nursery_size = val;
+		opts = g_strsplit (env, ",", -1);
+		for (ptr = opts; *ptr; ++ptr) {
+			char *opt = *ptr;
+#ifdef USER_CONFIG
+			if (g_str_has_prefix (opt, "nursery-size=")) {
+				long val;
+				opt = strchr (opt, '=') + 1;
+				if (*opt && parse_environment_string_extract_number (opt, &val)) {
+					default_nursery_size = val;
 #ifdef SGEN_ALIGN_NURSERY
-				if ((val & (val - 1))) {
-					fprintf (stderr, "The nursery size must be a power of two.\n");
+					if ((val & (val - 1))) {
+						fprintf (stderr, "The nursery size must be a power of two.\n");
+						exit (1);
+					}
+
+					default_nursery_bits = 0;
+					while (1 << (++ default_nursery_bits) != default_nursery_size)
+						;
+#endif
+				} else {
+					fprintf (stderr, "nursery-size must be an integer.\n");
 					exit (1);
 				}
-
-				default_nursery_bits = 0;
-				while (1 << (++ default_nursery_bits) != default_nursery_size)
-					;
+			} else
 #endif
+			if (g_str_has_prefix (opt, "major=")) {
+				opt = strchr (opt, '=') + 1;
+				major_collector = g_strdup (opt);
 			} else {
-				fprintf (stderr, "nursery-size must be an integer.\n");
+				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
+				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				exit (1);
 			}
-		} else {
-			fprintf (stderr, "MONO_GC_PARAMS must be of the form 'nursery-size=N' (where N is an integer, possibly with a k, m or a g suffix).\n");
-			exit (1);
 		}
+		g_strfreev (opts);
 	}
-
-#endif
 
 	nursery_size = DEFAULT_NURSERY_SIZE;
 	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
@@ -6712,7 +6720,18 @@ mono_gc_base_init (void)
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
 
 	alloc_nursery ();
-	mono_sgen_copying_init (&major, DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end);
+
+	if (!major_collector || !strcmp (major_collector, "marksweep"))
+		mono_sgen_marksweep_init (&major, DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end);
+	else if (!strcmp (major_collector, "copying"))
+		mono_sgen_copying_init (&major, DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end);
+	else {
+		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector);
+		exit (1);
+	}
+
+	if (major_collector)
+		g_free (major_collector);
 
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
 		opts = g_strsplit (env, ",", -1);
