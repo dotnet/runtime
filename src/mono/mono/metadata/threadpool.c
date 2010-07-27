@@ -1841,22 +1841,19 @@ async_invoke_thread (gpointer data)
 				}
 
 				if (mono_domain_set (domain, FALSE)) {
-					/* ASyncCall *ac; */
+					ASyncCall *ac;
 
 					if (tp_item_begin_func)
 						tp_item_begin_func (tp_item_user_data);
 
 					if (!is_io_task && ar->add_time > 0)
 						process_idle_times (tp, ar->add_time);
-					/*FIXME: Do something with the exception returned? */
 					mono_async_invoke (tp, ar);
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
-					/*
 					ac = (ASyncCall *) ar->object_data;
 					if (ac->msg->exc != NULL)
 						mono_unhandled_exception (ac->msg->exc);
-					*/
 					mono_domain_set (mono_get_root_domain (), TRUE);
 				}
 				mono_thread_pop_appdomain_ref ();
