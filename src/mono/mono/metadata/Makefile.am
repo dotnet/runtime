@@ -64,7 +64,6 @@ sgen_sources = \
 	sgen-gray.c	\
 	sgen-pinning.c	\
 	sgen-pinning-stats.c	\
-	sgen-marksweep.c		\
 	sgen-los.c				\
 	sgen-protocol.c
 
@@ -168,6 +167,8 @@ libmonoruntime_la_SOURCES = \
 	sgen-os-mach.c		\
 	sgen-gc.c		\
 	sgen-internal.c		\
+	sgen-marksweep.c	\
+	sgen-major-copying.c	\
 	sgen-gc.h		\
 	sgen-archdep.h		\
 	sgen-scan-object.h	\

@@ -21,9 +21,10 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifdef BINARY_PROTOCOL
 
 #include "sgen-protocol.h"
+
+#ifdef SGEN_BINARY_PROTOCOL
 
 /* If not null, dump binary protocol to this file */
 static FILE *binary_protocol_file = NULL;
@@ -113,7 +114,7 @@ protocol_entry (unsigned char type, gpointer data, int size)
 	g_assert (index <= BINARY_PROTOCOL_BUFFER_SIZE);
 }
 
-static void
+void
 binary_protocol_collection (int generation)
 {
 	SGenProtocolCollection entry = { generation };
@@ -121,84 +122,84 @@ binary_protocol_collection (int generation)
 	protocol_entry (SGEN_PROTOCOL_COLLECTION, &entry, sizeof (SGenProtocolCollection));
 }
 
-static void
+void
 binary_protocol_alloc (gpointer obj, gpointer vtable, int size)
 {
 	SGenProtocolAlloc entry = { obj, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_ALLOC, &entry, sizeof (SGenProtocolAlloc));
 }
 
-static void
+void
 binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size)
 {
 	SGenProtocolAlloc entry = { obj, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_ALLOC_PINNED, &entry, sizeof (SGenProtocolAlloc));
 }
 
-static void
+void
 binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, int size)
 {
 	SGenProtocolAlloc entry = { obj, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_ALLOC_DEGRADED, &entry, sizeof (SGenProtocolAlloc));
 }
 
-static void
+void
 binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size)
 {
 	SGenProtocolCopy entry = { from, to, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_COPY, &entry, sizeof (SGenProtocolCopy));
 }
 
-static void
+void
 binary_protocol_pin (gpointer obj, gpointer vtable, int size)
 {
 	SGenProtocolPin entry = { obj, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_PIN, &entry, sizeof (SGenProtocolPin));
 }
 
-static void
+void
 binary_protocol_mark (gpointer obj, gpointer vtable, int size)
 {
 	SGenProtocolMark entry = { obj, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_MARK, &entry, sizeof (SGenProtocolMark));
 }
 
-static void
+void
 binary_protocol_wbarrier (gpointer ptr, gpointer value, gpointer value_vtable)
 {
 	SGenProtocolWBarrier entry = { ptr, value, value_vtable };
 	protocol_entry (SGEN_PROTOCOL_WBARRIER, &entry, sizeof (SGenProtocolWBarrier));
 }
 
-static void
+void
 binary_protocol_global_remset (gpointer ptr, gpointer value, gpointer value_vtable)
 {
 	SGenProtocolGlobalRemset entry = { ptr, value, value_vtable };
 	protocol_entry (SGEN_PROTOCOL_GLOBAL_REMSET, &entry, sizeof (SGenProtocolGlobalRemset));
 }
 
-static void
+void
 binary_protocol_ptr_update (gpointer ptr, gpointer old_value, gpointer new_value, gpointer vtable, int size)
 {
 	SGenProtocolPtrUpdate entry = { ptr, old_value, new_value, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_PTR_UPDATE, &entry, sizeof (SGenProtocolPtrUpdate));
 }
 
-static void
+void
 binary_protocol_cleanup (gpointer ptr, gpointer vtable, int size)
 {
 	SGenProtocolCleanup entry = { ptr, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_CLEANUP, &entry, sizeof (SGenProtocolCleanup));
 }
 
-static void
+void
 binary_protocol_empty (gpointer start, int size)
 {
 	SGenProtocolEmpty entry = { start, size };
 	protocol_entry (SGEN_PROTOCOL_EMPTY, &entry, sizeof (SGenProtocolEmpty));
 }
 
-static void
+void
 binary_protocol_thread_restart (gpointer thread)
 {
 	SGenProtocolThreadRestart entry = { thread };
@@ -206,7 +207,7 @@ binary_protocol_thread_restart (gpointer thread)
 
 }
 
-static void
+void
 binary_protocol_thread_register (gpointer thread)
 {
 	SGenProtocolThreadRegister entry = { thread };
@@ -214,7 +215,7 @@ binary_protocol_thread_register (gpointer thread)
 
 }
 
-static void
+void
 binary_protocol_thread_unregister (gpointer thread)
 {
 	SGenProtocolThreadUnregister entry = { thread };
@@ -222,32 +223,12 @@ binary_protocol_thread_unregister (gpointer thread)
 
 }
 
-static void
+void
 binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset, gpointer value, gpointer value_vtable, int value_pinned)
 {
 	SGenProtocolMissingRemset entry = { obj, obj_vtable, offset, value, value_vtable, value_pinned };
 	protocol_entry (SGEN_PROTOCOL_MISSING_REMSET, &entry, sizeof (SGenProtocolMissingRemset));
 
 }
-
-#else
-
-#define binary_protocol_flush_buffers()
-#define binary_protocol_collection(generation)
-#define binary_protocol_alloc(obj, vtable, size)
-#define binary_protocol_alloc_pinned(obj, vtable, size)
-#define binary_protocol_alloc_degraded(obj, vtable, size)
-#define binary_protocol_copy(from, to, vtable, size)
-#define binary_protocol_pin(obj, vtable, size)
-#define binary_protocol_mark(obj, vtable, size)
-#define binary_protocol_wbarrier(ptr, value, value_vtable)
-#define binary_protocol_global_remset(ptr, value, value_vtable)
-#define binary_protocol_ptr_update(ptr, old_value, new_value, vtable, size)
-#define binary_protocol_cleanup(ptr, vtable, size)
-#define binary_protocol_empty(start, size)
-#define binary_protocol_thread_restart(thread)
-#define binary_protocol_thread_register(thread)
-#define binary_protocol_thread_unregister(thread)
-#define binary_protocol_missing_remset(obj, obj_vtable, offset, value, value_vtable, value_pinned)
 
 #endif
