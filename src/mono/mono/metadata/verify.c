@@ -2962,8 +2962,16 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 			if (method->klass->valuetype && (stack_slot_is_boxed_value (value) || !stack_slot_is_managed_pointer (value)))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a boxed or literal valuetype to call a valuetype method at 0x%04x", ctx->ip_offset));
 		}
-		if (!verify_stack_type_compatibility (ctx, type, &copy))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature at 0x%04x", ctx->ip_offset));
+		if (!verify_stack_type_compatibility (ctx, type, &copy)) {
+			char *expected = mono_type_full_name (type);
+			char *effective = stack_slot_full_name (&copy);
+			char *method_name = mono_method_full_name (method, TRUE);
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature expected '%s' but got '%s' for a call to '%s' at 0x%04x",
+					expected, effective, method_name, ctx->ip_offset));
+			g_free (method_name);
+			g_free (effective);
+			g_free (expected);
+		}
 
 		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method_full (ctx->method, method, mono_class_from_mono_type (value->type))) {
 			char *name = mono_method_full_name (method, TRUE);
