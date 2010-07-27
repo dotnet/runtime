@@ -4371,11 +4371,12 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, MonoMethod **met
 static char*
 concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
 {
-	int len = strlen (s1) + strlen (s2) + 2;
+	int null_length = strlen ("(null)");
+	int len = (s1 ? strlen (s1) : null_length) + (s2 ? strlen (s2) : null_length) + 2;
 	char *s = mono_image_alloc (image, len);
 	int result;
 
-	result = g_snprintf (s, len, "%s%c%s", s1, '\0', s2);
+	result = g_snprintf (s, len, "%s%c%s", s1 ? s1 : "(null)", '\0', s2 ? s2 : "(null)");
 	g_assert (result == len - 1);
 
 	return s;
