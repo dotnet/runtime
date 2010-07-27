@@ -266,7 +266,7 @@ static long long stat_copy_object_called_major = 0;
 static long long stat_objects_copied_major = 0;
 
 static long long stat_scan_object_called_nursery = 0;
-static long long stat_scan_object_called_major = 0;
+long long stat_scan_object_called_major = 0;
 
 static long long stat_nursery_copy_object_failed_from_space = 0;
 static long long stat_nursery_copy_object_failed_forwarded = 0;
@@ -343,8 +343,6 @@ mono_gc_flush_info (void)
 #define TV_ELAPSED_MS(start,end) ((TV_ELAPSED((start),(end)) + 500) / 1000)
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
-#define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -434,14 +432,6 @@ static gpointer global_remset_cache [2];
  */
 #define DEFAULT_REMSET_SIZE 1024
 static RememberedSet* alloc_remset (int size, gpointer id);
-
-/* Structure that corresponds to a MonoVTable: desc is a mword so requires
- * no cast from a pointer to an integer
- */
-typedef struct {
-	MonoClass *klass;
-	mword desc;
-} GCVTable;
 
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
 /* set the forwarded address fw_addr for object obj */
@@ -770,7 +760,6 @@ typedef char* (*ScanObjectFunc) (char*, GrayQueue*);
 /* forward declarations */
 static int stop_world (void);
 static int restart_world (void);
-static void add_to_global_remset (gpointer ptr);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise);
 static void scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
@@ -790,7 +779,6 @@ static void optimize_pin_queue (int start_slot);
 static void clear_remsets (void);
 static void clear_tlabs (void);
 static void scan_object (char *start, GrayQueue *queue);
-static void major_scan_object (char *start, GrayQueue *queue);
 static void copy_object (void **obj_slot, GrayQueue *queue);
 static void sort_addresses (void **array, int size);
 static void drain_gray_stack (GrayQueue *queue);
@@ -824,27 +812,6 @@ SgenMajorCollector major;
 #include "sgen-pinning-stats.c"
 #include "sgen-gray.c"
 #include "sgen-los.c"
-
-/*
- * ######################################################################
- * ########  GC descriptors
- * ######################################################################
- * Used to quickly get the info the GC needs about an object: size and
- * where the references are held.
- */
-#define OBJECT_HEADER_WORDS (sizeof(MonoObject)/sizeof(gpointer))
-#define LOW_TYPE_BITS 3
-#define SMALL_BITMAP_SHIFT 16
-#define SMALL_BITMAP_SIZE (GC_BITS_PER_WORD - SMALL_BITMAP_SHIFT)
-#define VECTOR_INFO_SHIFT 14
-#define VECTOR_ELSIZE_SHIFT 3
-#define LARGE_BITMAP_SIZE (GC_BITS_PER_WORD - LOW_TYPE_BITS)
-#define MAX_ELEMENT_SIZE 0x3ff
-#define VECTOR_SUBTYPE_PTRFREE (DESC_TYPE_V_PTRFREE << VECTOR_INFO_SHIFT)
-#define VECTOR_SUBTYPE_REFS    (DESC_TYPE_V_REFS << VECTOR_INFO_SHIFT)
-#define VECTOR_SUBTYPE_RUN_LEN (DESC_TYPE_V_RUN_LEN << VECTOR_INFO_SHIFT)
-#define VECTOR_SUBTYPE_BITMAP  (DESC_TYPE_V_BITMAP << VECTOR_INFO_SHIFT)
-
 
 /* Root bitmap descriptors are simpler: the lower three bits describe the type
  * and we either have 30/62 bitmap bits or nibble-based run-length,
@@ -914,6 +881,12 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 	}
 	UNLOCK_GC;
 	return res;
+}
+
+gsize*
+mono_sgen_get_complex_descriptor (GCVTable *vt)
+{
+	return complex_descriptors + (vt->desc >> LOW_TYPE_BITS);
 }
 
 /*
@@ -1055,169 +1028,6 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		g_assert_not_reached ();
 	}
 }
-
-/* helper macros to scan and traverse objects, macros because we resue them in many functions */
-#define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \
-		(size) = ((desc) & 0xfff8) >> 1;	\
-    } while (0)
-
-#define OBJ_BITMAP_SIZE(size,desc,obj) do { \
-		(size) = ((desc) & 0xfff8) >> 1;	\
-    } while (0)
-
-//#define PREFETCH(addr) __asm__ __volatile__ ("     prefetchnta     %0": : "m"(*(char *)(addr)))
-#define PREFETCH(addr)
-
-/* code using these macros must define a HANDLE_PTR(ptr) macro that does the work */
-#define OBJ_RUN_LEN_FOREACH_PTR(desc,obj)	do {	\
-		if ((desc) & 0xffff0000) {	\
-			/* there are pointers */	\
-			void **_objptr_end;	\
-			void **_objptr = (void**)(obj);	\
-			_objptr += ((desc) >> 16) & 0xff;	\
-			_objptr_end = _objptr + (((desc) >> 24) & 0xff);	\
-			while (_objptr < _objptr_end) {	\
-				HANDLE_PTR (_objptr, (obj));	\
-				_objptr++;	\
-			}	\
-		}	\
-	} while (0)
-
-/* a bitmap desc means that there are pointer references or we'd have
- * choosen run-length, instead: add an assert to check.
- */
-#define OBJ_BITMAP_FOREACH_PTR(desc,obj)	do {	\
-		/* there are pointers */	\
-		void **_objptr = (void**)(obj);	\
-		gsize _bmap = (desc) >> 16;	\
-		_objptr += OBJECT_HEADER_WORDS;	\
-		while (_bmap) {	\
-			if ((_bmap & 1)) {	\
-				HANDLE_PTR (_objptr, (obj));	\
-			}	\
-			_bmap >>= 1;	\
-			++_objptr;	\
-		}	\
-	} while (0)
-
-#define OBJ_LARGE_BITMAP_FOREACH_PTR(vt,obj)	do {	\
-		/* there are pointers */	\
-		void **_objptr = (void**)(obj);	\
-		gsize _bmap = (vt)->desc >> LOW_TYPE_BITS;	\
-		_objptr += OBJECT_HEADER_WORDS;	\
-		while (_bmap) {	\
-			if ((_bmap & 1)) {	\
-				HANDLE_PTR (_objptr, (obj));	\
-			}	\
-			_bmap >>= 1;	\
-			++_objptr;	\
-		}	\
-	} while (0)
-
-#define OBJ_COMPLEX_FOREACH_PTR(vt,obj)	do {	\
-		/* there are pointers */	\
-		void **_objptr = (void**)(obj);	\
-		gsize *bitmap_data = complex_descriptors + ((vt)->desc >> LOW_TYPE_BITS);	\
-		int bwords = (*bitmap_data) - 1;	\
-		void **start_run = _objptr;	\
-		bitmap_data++;	\
-		if (0) {	\
-			MonoObject *myobj = (MonoObject*)obj;	\
-			g_print ("found %d at %p (0x%zx): %s.%s\n", bwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
-		}	\
-		while (bwords-- > 0) {	\
-			gsize _bmap = *bitmap_data++;	\
-			_objptr = start_run;	\
-			/*g_print ("bitmap: 0x%x/%d at %p\n", _bmap, bwords, _objptr);*/	\
-			while (_bmap) {	\
-				if ((_bmap & 1)) {	\
-					HANDLE_PTR (_objptr, (obj));	\
-				}	\
-				_bmap >>= 1;	\
-				++_objptr;	\
-			}	\
-			start_run += GC_BITS_PER_WORD;	\
-		}	\
-	} while (0)
-
-/* this one is untested */
-#define OBJ_COMPLEX_ARR_FOREACH_PTR(vt,obj)	do {	\
-		/* there are pointers */	\
-		gsize *mbitmap_data = complex_descriptors + ((vt)->desc >> LOW_TYPE_BITS);	\
-		int mbwords = (*mbitmap_data++) - 1;	\
-		int el_size = mono_array_element_size (vt->klass);	\
-		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
-		char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
-		if (0)							\
-                        g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (vt)->desc, vt->klass->name_space, vt->klass->name); \
-		while (e_start < e_end) {	\
-			void **_objptr = (void**)e_start;	\
-			gsize *bitmap_data = mbitmap_data;	\
-			unsigned int bwords = mbwords;	\
-			while (bwords-- > 0) {	\
-				gsize _bmap = *bitmap_data++;	\
-				void **start_run = _objptr;	\
-				/*g_print ("bitmap: 0x%x\n", _bmap);*/	\
-				while (_bmap) {	\
-					if ((_bmap & 1)) {	\
-						HANDLE_PTR (_objptr, (obj));	\
-					}	\
-					_bmap >>= 1;	\
-					++_objptr;	\
-				}	\
-				_objptr = start_run + GC_BITS_PER_WORD;	\
-			}	\
-			e_start += el_size;	\
-		}	\
-	} while (0)
-
-#define OBJ_VECTOR_FOREACH_PTR(vt,obj)	do {	\
-		/* note: 0xffffc000 excludes DESC_TYPE_V_PTRFREE */	\
-		if ((vt)->desc & 0xffffc000) {	\
-			int el_size = ((vt)->desc >> 3) & MAX_ELEMENT_SIZE;	\
-			/* there are pointers */	\
-			int etype = (vt)->desc & 0xc000;	\
-			if (etype == (DESC_TYPE_V_REFS << 14)) {	\
-				void **p = (void**)((char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector));	\
-				void **end_refs = (void**)((char*)p + el_size * mono_array_length_fast ((MonoArray*)(obj)));	\
-				/* Note: this code can handle also arrays of struct with only references in them */	\
-				while (p < end_refs) {	\
-					HANDLE_PTR (p, (obj));	\
-					++p;	\
-				}	\
-			} else if (etype == DESC_TYPE_V_RUN_LEN << 14) {	\
-				int offset = ((vt)->desc >> 16) & 0xff;	\
-				int num_refs = ((vt)->desc >> 24) & 0xff;	\
-				char *e_start = (char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector);	\
-				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
-				while (e_start < e_end) {	\
-					void **p = (void**)e_start;	\
-					int i;	\
-					p += offset;	\
-					for (i = 0; i < num_refs; ++i) {	\
-						HANDLE_PTR (p + i, (obj));	\
-					}	\
-					e_start += el_size;	\
-				}	\
-			} else if (etype == DESC_TYPE_V_BITMAP << 14) {	\
-				char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
-				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
-				while (e_start < e_end) {	\
-					void **p = (void**)e_start;	\
-					gsize _bmap = (vt)->desc >> 16;	\
-					/* Note: there is no object header here to skip */	\
-					while (_bmap) {	\
-						if ((_bmap & 1)) {	\
-							HANDLE_PTR (p, (obj));	\
-						}	\
-						_bmap >>= 1;	\
-						++p;	\
-					}	\
-					e_start += el_size;	\
-				}	\
-			}	\
-		}	\
-	} while (0)
 
 static gboolean
 is_xdomain_ref_allowed (gpointer *ptr, char *obj, MonoDomain *domain)
@@ -1743,13 +1553,13 @@ global_remset_location_was_not_added (gpointer ptr)
 }
 
 /*
- * add_to_global_remset:
+ * mono_sgen_add_to_global_remset:
  *
  *   The global remset contains locations which point into newspace after
  * a minor collection. This can happen if the objects they point to are pinned.
  */
-static void
-add_to_global_remset (gpointer ptr)
+void
+mono_sgen_add_to_global_remset (gpointer ptr)
 {
 	RememberedSet *rs;
 
@@ -1937,7 +1747,7 @@ copy_object (void **obj_slot, GrayQueue *queue)
 			__copy = *(ptr);	\
 			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
-				add_to_global_remset ((ptr));		\
+				mono_sgen_add_to_global_remset ((ptr));	\
 		}	\
 	} while (0)
 
@@ -1992,27 +1802,6 @@ scan_vtype (char *start, mword desc, char* from_start, char* from_end, GrayQueue
 	return NULL;
 }
 
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		void *__old = *(ptr);	\
-		void *__copy;		\
-		if (__old) {	\
-			major.copy_or_mark_object ((ptr), queue);	\
-			__copy = *(ptr);	\
-			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
-			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
-				add_to_global_remset ((ptr));		\
-		}	\
-	} while (0)
-
-static void
-major_scan_object (char *start, GrayQueue *queue)
-{
-#include "sgen-scan-object.h"
-
-	HEAVY_STAT (++stat_scan_object_called_major);
-}
-
 /*
  * drain_gray_stack:
  *
@@ -2039,7 +1828,7 @@ drain_gray_stack (GrayQueue *queue)
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			major_scan_object (obj, queue);
+			major.scan_object (obj, queue);
 		}
 	}
 }
@@ -4133,11 +3922,11 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 			if (was_promoted) {
 				if (ptr_in_nursery (key)) {/*key was not promoted*/
 					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to key %p\n", key));
-					add_to_global_remset (&cur->key);
+					mono_sgen_add_to_global_remset (&cur->key);
 				}
 				if (ptr_in_nursery (cur->value)) {/*value was not promoted*/
 					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to value %p\n", cur->value));
-					add_to_global_remset (&cur->value);
+					mono_sgen_add_to_global_remset (&cur->value);
 				}
 			}
 		}
@@ -5208,7 +4997,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 				 * becomes part of the global remset, which can grow very large.
 				 */
 				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
-				add_to_global_remset (ptr);
+				mono_sgen_add_to_global_remset (ptr);
 			}
 		} else {
 			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
@@ -5223,7 +5012,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
-				add_to_global_remset (ptr);
+				mono_sgen_add_to_global_remset (ptr);
 			++ptr;
 		}
 		return p + 2;

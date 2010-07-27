@@ -48,6 +48,7 @@
 #ifdef HAVE_SGEN_GC
 
 #include "utils/mono-counters.h"
+#include "metadata/object-internals.h"
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
@@ -298,14 +299,14 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 	 */
 
 	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
 		HEAVY_STAT (++stat_major_copy_object_failed_forwarded);
 		*obj_slot = forwarded;
 		return;
 	}
 	if (SGEN_OBJECT_IS_PINNED (obj)) {
-		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
+		DEBUG (9, g_assert (((MonoVTable*)SGEN_LOAD_VTABLE(obj))->gc_descr));
 		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
 		HEAVY_STAT (++stat_major_copy_object_failed_pinned);
 		return;
@@ -336,7 +337,7 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 		if (SGEN_OBJECT_IS_PINNED (obj))
 			return;
 		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
-		binary_protocol_pin (obj, (gpointer)LOAD_VTABLE (obj), mono_sgen_safe_object_get_size ((MonoObject*)obj));
+		binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), mono_sgen_safe_object_get_size ((MonoObject*)obj));
 		SGEN_PIN_OBJECT (obj);
 		GRAY_OBJECT_ENQUEUE (queue, obj);
 		HEAVY_STAT (++stat_major_copy_object_failed_large_pinned);
@@ -360,6 +361,8 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 
 	*obj_slot = mono_sgen_copy_object_no_checks (obj, queue);
 }
+
+#include "sgen-major-scan-object.h"
 
 /* FIXME: later reduce code duplication here with build_nursery_fragments().
  * We don't keep track of section fragments for non-nursery sections yet, so
@@ -441,7 +444,7 @@ major_free_non_pinned_object (char *obj, size_t size)
 static void
 pin_pinned_object_callback (void *addr, size_t slot_size, SgenGrayQueue *queue)
 {
-	binary_protocol_pin (addr, (gpointer)LOAD_VTABLE (addr), mono_sgen_safe_object_get_size ((MonoObject*)addr));
+	binary_protocol_pin (addr, (gpointer)SGEN_LOAD_VTABLE (addr), mono_sgen_safe_object_get_size ((MonoObject*)addr));
 	if (!SGEN_OBJECT_IS_PINNED (addr))
 		mono_sgen_pin_stats_register_object ((char*) addr, mono_sgen_safe_object_get_size ((MonoObject*) addr));
 	SGEN_PIN_OBJECT (addr);
@@ -629,6 +632,7 @@ mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, cha
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
 	collector->alloc_degraded = major_alloc_degraded;
 	collector->copy_or_mark_object = major_copy_or_mark_object;
+	collector->scan_object = major_scan_object;
 	collector->alloc_object = alloc_object;
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;

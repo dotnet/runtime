@@ -31,6 +31,7 @@
 #include <math.h>
 
 #include "utils/mono-counters.h"
+#include "metadata/object-internals.h"
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
@@ -681,6 +682,8 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 }
 
+#include "sgen-major-scan-object.h"
+
 static void
 mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 {
@@ -995,6 +998,7 @@ mono_sgen_marksweep_init (SgenMajorCollector *collector, int the_nursery_bits, c
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
 	collector->alloc_degraded = major_alloc_degraded;
 	collector->copy_or_mark_object = major_copy_or_mark_object;
+	collector->scan_object = major_scan_object;
 	collector->alloc_object = ms_alloc_obj;
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;

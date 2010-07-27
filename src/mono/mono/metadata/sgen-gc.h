@@ -54,6 +54,8 @@
 
 #define THREAD_HASH_SIZE 11
 
+#define GC_BITS_PER_WORD (sizeof (mword) * 8)
+
 #define ARCH_THREAD_TYPE pthread_t
 #define ARCH_GET_THREAD pthread_self
 #define ARCH_THREAD_EQUALS(a,b) pthread_equal (a, b)
@@ -225,6 +227,14 @@ const static int restart_signal_num = SIGXCPU;
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	((char*)(p) >= (start) && (char*)(p) < (end))
 #endif
 
+/* Structure that corresponds to a MonoVTable: desc is a mword so requires
+ * no cast from a pointer to an integer
+ */
+typedef struct {
+	MonoClass *klass;
+	mword desc;
+} GCVTable;
+
 /* these bits are set in the object vtable: we could merge them since an object can be
  * either pinned or forwarded but not both.
  * We store them in the vtable slot because the bits are used in the sync block for
@@ -254,6 +264,26 @@ const static int restart_signal_num = SIGXCPU;
  * an object that is potentially pinned.
  */
 #define SGEN_LOAD_VTABLE(addr) ((*(mword*)(addr)) & ~SGEN_VTABLE_BITS_MASK)
+
+/*
+ * ######################################################################
+ * ########  GC descriptors
+ * ######################################################################
+ * Used to quickly get the info the GC needs about an object: size and
+ * where the references are held.
+ */
+#define OBJECT_HEADER_WORDS (sizeof(MonoObject)/sizeof(gpointer))
+#define LOW_TYPE_BITS 3
+#define SMALL_BITMAP_SHIFT 16
+#define SMALL_BITMAP_SIZE (GC_BITS_PER_WORD - SMALL_BITMAP_SHIFT)
+#define VECTOR_INFO_SHIFT 14
+#define VECTOR_ELSIZE_SHIFT 3
+#define LARGE_BITMAP_SIZE (GC_BITS_PER_WORD - LOW_TYPE_BITS)
+#define MAX_ELEMENT_SIZE 0x3ff
+#define VECTOR_SUBTYPE_PTRFREE (DESC_TYPE_V_PTRFREE << VECTOR_INFO_SHIFT)
+#define VECTOR_SUBTYPE_REFS    (DESC_TYPE_V_REFS << VECTOR_INFO_SHIFT)
+#define VECTOR_SUBTYPE_RUN_LEN (DESC_TYPE_V_RUN_LEN << VECTOR_INFO_SHIFT)
+#define VECTOR_SUBTYPE_BITMAP  (DESC_TYPE_V_BITMAP << VECTOR_INFO_SHIFT)
 
 /* objects are aligned to 8 bytes boundaries
  * A descriptor is a pointer in MonoVTable, so 32 or 64 bits of size.
@@ -300,6 +330,171 @@ enum {
 };
 
 #define SGEN_VTABLE_HAS_REFERENCES(vt)	(((MonoVTable*)(vt))->gc_descr != (void*)DESC_TYPE_RUN_LENGTH)
+
+/* helper macros to scan and traverse objects, macros because we resue them in many functions */
+#define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \
+		(size) = ((desc) & 0xfff8) >> 1;	\
+    } while (0)
+
+#define OBJ_BITMAP_SIZE(size,desc,obj) do { \
+		(size) = ((desc) & 0xfff8) >> 1;	\
+    } while (0)
+
+//#define PREFETCH(addr) __asm__ __volatile__ ("     prefetchnta     %0": : "m"(*(char *)(addr)))
+#define PREFETCH(addr)
+
+/* code using these macros must define a HANDLE_PTR(ptr) macro that does the work */
+#define OBJ_RUN_LEN_FOREACH_PTR(desc,obj)	do {	\
+		if ((desc) & 0xffff0000) {	\
+			/* there are pointers */	\
+			void **_objptr_end;	\
+			void **_objptr = (void**)(obj);	\
+			_objptr += ((desc) >> 16) & 0xff;	\
+			_objptr_end = _objptr + (((desc) >> 24) & 0xff);	\
+			while (_objptr < _objptr_end) {	\
+				HANDLE_PTR (_objptr, (obj));	\
+				_objptr++;	\
+			}	\
+		}	\
+	} while (0)
+
+/* a bitmap desc means that there are pointer references or we'd have
+ * choosen run-length, instead: add an assert to check.
+ */
+#define OBJ_BITMAP_FOREACH_PTR(desc,obj)	do {	\
+		/* there are pointers */	\
+		void **_objptr = (void**)(obj);	\
+		gsize _bmap = (desc) >> 16;	\
+		_objptr += OBJECT_HEADER_WORDS;	\
+		while (_bmap) {	\
+			if ((_bmap & 1)) {	\
+				HANDLE_PTR (_objptr, (obj));	\
+			}	\
+			_bmap >>= 1;	\
+			++_objptr;	\
+		}	\
+	} while (0)
+
+#define OBJ_LARGE_BITMAP_FOREACH_PTR(vt,obj)	do {	\
+		/* there are pointers */	\
+		void **_objptr = (void**)(obj);	\
+		gsize _bmap = (vt)->desc >> LOW_TYPE_BITS;	\
+		_objptr += OBJECT_HEADER_WORDS;	\
+		while (_bmap) {	\
+			if ((_bmap & 1)) {	\
+				HANDLE_PTR (_objptr, (obj));	\
+			}	\
+			_bmap >>= 1;	\
+			++_objptr;	\
+		}	\
+	} while (0)
+
+gsize* mono_sgen_get_complex_descriptor (GCVTable *vt) MONO_INTERNAL;
+
+#define OBJ_COMPLEX_FOREACH_PTR(vt,obj)	do {	\
+		/* there are pointers */	\
+		void **_objptr = (void**)(obj);	\
+		gsize *bitmap_data = mono_sgen_get_complex_descriptor ((vt)); \
+		int bwords = (*bitmap_data) - 1;	\
+		void **start_run = _objptr;	\
+		bitmap_data++;	\
+		if (0) {	\
+			MonoObject *myobj = (MonoObject*)obj;	\
+			g_print ("found %d at %p (0x%zx): %s.%s\n", bwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
+		}	\
+		while (bwords-- > 0) {	\
+			gsize _bmap = *bitmap_data++;	\
+			_objptr = start_run;	\
+			/*g_print ("bitmap: 0x%x/%d at %p\n", _bmap, bwords, _objptr);*/	\
+			while (_bmap) {	\
+				if ((_bmap & 1)) {	\
+					HANDLE_PTR (_objptr, (obj));	\
+				}	\
+				_bmap >>= 1;	\
+				++_objptr;	\
+			}	\
+			start_run += GC_BITS_PER_WORD;	\
+		}	\
+	} while (0)
+
+/* this one is untested */
+#define OBJ_COMPLEX_ARR_FOREACH_PTR(vt,obj)	do {	\
+		/* there are pointers */	\
+		gsize *mbitmap_data = mono_sgen_get_complex_descriptor ((vt)); \
+		int mbwords = (*mbitmap_data++) - 1;	\
+		int el_size = mono_array_element_size (vt->klass);	\
+		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
+		char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
+		if (0)							\
+                        g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (vt)->desc, vt->klass->name_space, vt->klass->name); \
+		while (e_start < e_end) {	\
+			void **_objptr = (void**)e_start;	\
+			gsize *bitmap_data = mbitmap_data;	\
+			unsigned int bwords = mbwords;	\
+			while (bwords-- > 0) {	\
+				gsize _bmap = *bitmap_data++;	\
+				void **start_run = _objptr;	\
+				/*g_print ("bitmap: 0x%x\n", _bmap);*/	\
+				while (_bmap) {	\
+					if ((_bmap & 1)) {	\
+						HANDLE_PTR (_objptr, (obj));	\
+					}	\
+					_bmap >>= 1;	\
+					++_objptr;	\
+				}	\
+				_objptr = start_run + GC_BITS_PER_WORD;	\
+			}	\
+			e_start += el_size;	\
+		}	\
+	} while (0)
+
+#define OBJ_VECTOR_FOREACH_PTR(vt,obj)	do {	\
+		/* note: 0xffffc000 excludes DESC_TYPE_V_PTRFREE */	\
+		if ((vt)->desc & 0xffffc000) {	\
+			int el_size = ((vt)->desc >> 3) & MAX_ELEMENT_SIZE;	\
+			/* there are pointers */	\
+			int etype = (vt)->desc & 0xc000;	\
+			if (etype == (DESC_TYPE_V_REFS << 14)) {	\
+				void **p = (void**)((char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector));	\
+				void **end_refs = (void**)((char*)p + el_size * mono_array_length_fast ((MonoArray*)(obj)));	\
+				/* Note: this code can handle also arrays of struct with only references in them */	\
+				while (p < end_refs) {	\
+					HANDLE_PTR (p, (obj));	\
+					++p;	\
+				}	\
+			} else if (etype == DESC_TYPE_V_RUN_LEN << 14) {	\
+				int offset = ((vt)->desc >> 16) & 0xff;	\
+				int num_refs = ((vt)->desc >> 24) & 0xff;	\
+				char *e_start = (char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector);	\
+				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
+				while (e_start < e_end) {	\
+					void **p = (void**)e_start;	\
+					int i;	\
+					p += offset;	\
+					for (i = 0; i < num_refs; ++i) {	\
+						HANDLE_PTR (p + i, (obj));	\
+					}	\
+					e_start += el_size;	\
+				}	\
+			} else if (etype == DESC_TYPE_V_BITMAP << 14) {	\
+				char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
+				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
+				while (e_start < e_end) {	\
+					void **p = (void**)e_start;	\
+					gsize _bmap = (vt)->desc >> 16;	\
+					/* Note: there is no object header here to skip */	\
+					while (_bmap) {	\
+						if ((_bmap & 1)) {	\
+							HANDLE_PTR (p, (obj));	\
+						}	\
+						_bmap >>= 1;	\
+						++p;	\
+					}	\
+					e_start += el_size;	\
+				}	\
+			}	\
+		}	\
+	} while (0)
 
 #define SGEN_GRAY_QUEUE_SECTION_SIZE	(128 - 3)
 
@@ -431,6 +626,8 @@ void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 void* mono_sgen_copy_object_no_checks (void *obj, SgenGrayQueue *queue) MONO_INTERNAL;
 void mono_sgen_par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, SgenGrayQueue *queue) MONO_INTERNAL;
 
+void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
+
 /* FIXME: this should be inlined */
 guint mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o) MONO_INTERNAL;
 
@@ -443,7 +640,8 @@ struct _SgenMajorCollector {
 	gboolean (*is_object_live) (char *obj);
 	void* (*alloc_small_pinned_obj) (size_t size, gboolean has_references);
 	void* (*alloc_degraded) (MonoVTable *vtable, size_t size);
-	void (*copy_or_mark_object) (void **obj_slot, SgenGrayQueue *queue); /* FIXME: don't call this indirectly - make a major_scan_object instead */
+	void (*copy_or_mark_object) (void **obj_slot, SgenGrayQueue *queue);
+	void (*scan_object) (char *start, SgenGrayQueue *queue);
 	void* (*alloc_object) (int size, gboolean has_references); /* FIXME: don't call this indirectly, either */
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (gboolean non_pinned, gboolean pinned, IterateObjectCallbackFunc callback, void *data);
