@@ -47,6 +47,7 @@
 
 #ifdef HAVE_SGEN_GC
 
+#include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
 
 /* Pinned objects are allocated in the LOS space if bigger than half a page

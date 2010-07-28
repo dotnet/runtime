@@ -256,14 +256,14 @@ static gboolean do_scan_starts_check = FALSE;
 #ifdef HEAVY_STATISTICS
 static long long stat_objects_alloced = 0;
 static long long stat_bytes_alloced = 0;
-static long long stat_objects_alloced_degraded = 0;
-static long long stat_bytes_alloced_degraded = 0;
+long long stat_objects_alloced_degraded = 0;
+long long stat_bytes_alloced_degraded = 0;
 static long long stat_bytes_alloced_los = 0;
 
 long long stat_copy_object_called_nursery = 0;
 long long stat_objects_copied_nursery = 0;
-static long long stat_copy_object_called_major = 0;
-static long long stat_objects_copied_major = 0;
+long long stat_copy_object_called_major = 0;
+long long stat_objects_copied_major = 0;
 
 long long stat_scan_object_called_nursery = 0;
 long long stat_scan_object_called_major = 0;

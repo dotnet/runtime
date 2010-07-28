@@ -213,6 +213,11 @@ const static int restart_signal_num = SIGXCPU;
 
 #ifdef HEAVY_STATISTICS
 #define HEAVY_STAT(x)	x
+
+extern long long stat_objects_alloced_degraded;
+extern long long stat_bytes_alloced_degraded;
+extern long long stat_copy_object_called_major;
+extern long long stat_objects_copied_major;
 #else
 #define HEAVY_STAT(x)
 #endif
