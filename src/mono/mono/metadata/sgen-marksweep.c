@@ -32,6 +32,7 @@
 
 #include "utils/mono-counters.h"
 #include "metadata/object-internals.h"
+#include "metadata/profiler-private.h"
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
@@ -410,7 +411,7 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 }
 
 static void*
-ms_alloc_obj (int size, gboolean has_references)
+major_alloc_object (int size, gboolean has_references)
 {
 	return alloc_obj (size, FALSE, has_references);
 }
@@ -595,6 +596,8 @@ major_dump_heap (FILE *heap_dump_file)
 		}							\
 	} while (0)
 
+#include "sgen-major-copy-object.h"
+
 static void
 major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 {
@@ -627,18 +630,18 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
 		has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
-		destination = ms_alloc_obj (objsize, has_references);
+		destination = major_alloc_object (objsize, has_references);
 
 		if (SGEN_CAS_PTR (obj, (void*)((mword)destination | SGEN_FORWARDED_BIT), vt) == vt) {
 			gboolean was_marked;
 
-			mono_sgen_par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
+			par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
 			obj = destination;
 			*ptr = obj;
 
 			/*
-			 * FIXME: If we make ms_alloc_obj() give us
-			 * the block info, too, we won't have to
+			 * FIXME: If we make major_alloc_object() give
+			 * us the block info, too, we won't have to
 			 * re-fetch it here.
 			 */
 			block = MS_BLOCK_FOR_OBJ (obj);
@@ -998,8 +1001,7 @@ mono_sgen_marksweep_init (SgenMajorCollector *collector, int the_nursery_bits, c
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
 	collector->alloc_degraded = major_alloc_degraded;
 	collector->copy_or_mark_object = major_copy_or_mark_object;
-	collector->scan_object = major_scan_object;
-	collector->alloc_object = ms_alloc_obj;
+	collector->alloc_object = major_alloc_object;
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
 	collector->free_non_pinned_object = major_free_non_pinned_object;
@@ -1017,6 +1019,8 @@ mono_sgen_marksweep_init (SgenMajorCollector *collector, int the_nursery_bits, c
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+	FILL_COLLECTOR_COPY_OBJECT (collector);
+	FILL_COLLECTOR_SCAN_OBJECT (collector);
 }
 
 #endif

@@ -252,6 +252,10 @@ typedef struct {
 #define SGEN_OBJECT_IS_FORWARDED(obj) (((mword*)(obj))[0] & SGEN_FORWARDED_BIT ? (void*)(((mword*)(obj))[0] & ~SGEN_VTABLE_BITS_MASK) : NULL)
 #define SGEN_OBJECT_IS_PINNED(obj) (((mword*)(obj))[0] & SGEN_PINNED_BIT)
 
+/* set the forwarded address fw_addr for object obj */
+#define SGEN_FORWARD_OBJECT(obj,fw_addr) do {				\
+		((mword*)(obj))[0] = (mword)(fw_addr) | SGEN_FORWARDED_BIT; \
+	} while (0)
 #define SGEN_PIN_OBJECT(obj) do {	\
 		((mword*)(obj))[0] |= SGEN_PINNED_BIT;	\
 	} while (0)
@@ -601,6 +605,8 @@ void mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file) MONO_INTERNAL;
 void mono_sgen_dump_section (GCMemSection *section, const char *type) MONO_INTERNAL;
 void mono_sgen_dump_occupied (char *start, char *end, char *section_start) MONO_INTERNAL;
 
+void mono_sgen_register_moved_object (void *obj, void *destination) MONO_INTERNAL;
+
 void mono_sgen_register_fixed_internal_mem_type (int type, size_t size) MONO_INTERNAL;
 
 void* mono_sgen_alloc_internal (int type) MONO_INTERNAL;
@@ -623,9 +629,6 @@ void mono_sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *que
 
 void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 
-void* mono_sgen_copy_object_no_checks (void *obj, SgenGrayQueue *queue) MONO_INTERNAL;
-void mono_sgen_par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, SgenGrayQueue *queue) MONO_INTERNAL;
-
 void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
 /* FIXME: this should be inlined */
@@ -641,8 +644,11 @@ struct _SgenMajorCollector {
 	void* (*alloc_small_pinned_obj) (size_t size, gboolean has_references);
 	void* (*alloc_degraded) (MonoVTable *vtable, size_t size);
 	void (*copy_or_mark_object) (void **obj_slot, SgenGrayQueue *queue);
-	void (*scan_object) (char *start, SgenGrayQueue *queue);
-	void* (*alloc_object) (int size, gboolean has_references); /* FIXME: don't call this indirectly, either */
+	void (*minor_scan_object) (char *start, SgenGrayQueue *queue);
+	char* (*minor_scan_vtype) (char *start, mword desc, char* from_start, char* from_end, SgenGrayQueue *queue);
+	void (*major_scan_object) (char *start, SgenGrayQueue *queue);
+	void (*copy_object) (void **obj_slot, SgenGrayQueue *queue);
+	void* (*alloc_object) (int size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (gboolean non_pinned, gboolean pinned, IterateObjectCallbackFunc callback, void *data);
 	void (*free_non_pinned_object) (char *obj, size_t size);

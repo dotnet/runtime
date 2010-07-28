@@ -49,6 +49,7 @@
 
 #include "utils/mono-counters.h"
 #include "metadata/object-internals.h"
+#include "metadata/profiler-private.h"
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
@@ -172,7 +173,7 @@ to_space_expand (void)
 }
 
 static void*
-alloc_object (int size, gboolean has_references)
+major_alloc_object (int size, gboolean has_references)
 {
 	char *dest = to_space_bumper;
 	/* Make sure we have enough space available */
@@ -259,6 +260,8 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 	*p = vtable;
 	return p;
 }
+
+#include "sgen-major-copy-object.h"
 
 static void
 major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
@@ -359,7 +362,7 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
  copy:
 	HEAVY_STAT (++stat_objects_copied_major);
 
-	*obj_slot = mono_sgen_copy_object_no_checks (obj, queue);
+	*obj_slot = copy_object_no_checks (obj, queue);
 }
 
 #include "sgen-major-scan-object.h"
@@ -632,8 +635,7 @@ mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, cha
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
 	collector->alloc_degraded = major_alloc_degraded;
 	collector->copy_or_mark_object = major_copy_or_mark_object;
-	collector->scan_object = major_scan_object;
-	collector->alloc_object = alloc_object;
+	collector->alloc_object = major_alloc_object;
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
 	collector->free_non_pinned_object = major_free_non_pinned_object;
@@ -651,6 +653,9 @@ mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, cha
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+
+	FILL_COLLECTOR_COPY_OBJECT (collector);
+	FILL_COLLECTOR_SCAN_OBJECT (collector);
 }
 
 #endif

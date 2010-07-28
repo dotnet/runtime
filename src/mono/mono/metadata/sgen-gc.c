@@ -260,17 +260,17 @@ static long long stat_objects_alloced_degraded = 0;
 static long long stat_bytes_alloced_degraded = 0;
 static long long stat_bytes_alloced_los = 0;
 
-static long long stat_copy_object_called_nursery = 0;
-static long long stat_objects_copied_nursery = 0;
+long long stat_copy_object_called_nursery = 0;
+long long stat_objects_copied_nursery = 0;
 static long long stat_copy_object_called_major = 0;
 static long long stat_objects_copied_major = 0;
 
-static long long stat_scan_object_called_nursery = 0;
+long long stat_scan_object_called_nursery = 0;
 long long stat_scan_object_called_major = 0;
 
-static long long stat_nursery_copy_object_failed_from_space = 0;
-static long long stat_nursery_copy_object_failed_forwarded = 0;
-static long long stat_nursery_copy_object_failed_pinned = 0;
+long long stat_nursery_copy_object_failed_from_space = 0;
+long long stat_nursery_copy_object_failed_forwarded = 0;
+long long stat_nursery_copy_object_failed_pinned = 0;
 
 static long long stat_store_remsets = 0;
 static long long stat_store_remsets_unique = 0;
@@ -434,11 +434,6 @@ static gpointer global_remset_cache [2];
 static RememberedSet* alloc_remset (int size, gpointer id);
 
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
-/* set the forwarded address fw_addr for object obj */
-#define forward_object(obj,fw_addr) do {				\
-		((mword*)(obj))[0] = (mword)(fw_addr) | SGEN_FORWARDED_BIT; \
-	} while (0)
-
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
 #define pin_object		SGEN_PIN_OBJECT
 #define unpin_object		SGEN_UNPIN_OBJECT
@@ -778,8 +773,6 @@ static int pin_objects_from_addresses (GCMemSection *section, void **start, void
 static void optimize_pin_queue (int start_slot);
 static void clear_remsets (void);
 static void clear_tlabs (void);
-static void scan_object (char *start, GrayQueue *queue);
-static void copy_object (void **obj_slot, GrayQueue *queue);
 static void sort_addresses (void **array, int size);
 static void drain_gray_stack (GrayQueue *queue);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
@@ -1597,212 +1590,6 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 }
 
 /*
- * This function can be used even if the vtable of obj is not valid
- * anymore, which is the case in the parallel collector.
- */
-void
-mono_sgen_par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, GrayQueue *queue)
-{
-	static const void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
-
-	DEBUG (9, g_assert (vt->klass->inited));
-	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %lu)\n", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize));
-	binary_protocol_copy (obj, destination, vt, objsize);
-
-	*(MonoVTable**)destination = vt;
-	if (objsize <= sizeof (gpointer) * 8) {
-		mword *dest = (mword*)destination;
-		goto *copy_labels [objsize / sizeof (gpointer)];
-	LAB_8:
-		(dest) [7] = ((mword*)obj) [7];
-	LAB_7:
-		(dest) [6] = ((mword*)obj) [6];
-	LAB_6:
-		(dest) [5] = ((mword*)obj) [5];
-	LAB_5:
-		(dest) [4] = ((mword*)obj) [4];
-	LAB_4:
-		(dest) [3] = ((mword*)obj) [3];
-	LAB_3:
-		(dest) [2] = ((mword*)obj) [2];
-	LAB_2:
-		(dest) [1] = ((mword*)obj) [1];
-	LAB_1:
-		;
-	LAB_0:
-		;
-	} else {
-		memcpy (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
-	}
-	/* adjust array->bounds */
-	DEBUG (9, g_assert (vt->gc_descr));
-	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
-		MonoArray *array = (MonoArray*)destination;
-		array->bounds = (MonoArrayBounds*)((char*)destination + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
-		DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %lu, rank: %d, length: %lu\n", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array)));
-	}
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES)) {
-		/* FIXME: handle this for parallel collector */
-#ifdef SGEN_PARALLEL_MARK
-		g_assert_not_reached ();
-#endif
-		if (moved_objects_idx == MOVED_OBJECTS_NUM) {
-			mono_profiler_gc_moves (moved_objects, moved_objects_idx);
-			moved_objects_idx = 0;
-		}
-		moved_objects [moved_objects_idx++] = obj;
-		moved_objects [moved_objects_idx++] = destination;
-	}
-	obj = destination;
-	if (queue) {
-		DEBUG (9, fprintf (gc_debug_file, "Enqueuing gray object %p (%s)\n", obj, safe_name (obj)));
-		GRAY_OBJECT_ENQUEUE (queue, obj);
-	}
-}
-
-void*
-mono_sgen_copy_object_no_checks (void *obj, GrayQueue *queue)
-{
-	MonoVTable *vt = ((MonoObject*)obj)->vtable;
-	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
-	mword objsize = ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
-	char *destination = major.alloc_object (objsize, has_references);
-
-	mono_sgen_par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
-
-	/* set the forwarding pointer */
-	forward_object (obj, destination);
-
-	return destination;
-}
-
-/*
- * This is how the copying happens from the nursery to the old generation.
- * We assume that at this time all the pinned objects have been identified and
- * marked as such.
- * We run scan_object() for each pinned object so that each referenced
- * objects if possible are copied. The new gray objects created can have
- * scan_object() run on them right away, too.
- * Then we run copy_object() for the precisely tracked roots. At this point
- * all the roots are either gray or black. We run scan_object() on the gray
- * objects until no more gray objects are created.
- * At the end of the process we walk again the pinned list and we unmark
- * the pinned flag. As we go we also create the list of free space for use
- * in the next allocation runs.
- *
- * We need to remember objects from the old generation that point to the new one
- * (or just addresses?).
- *
- * copy_object could be made into a macro once debugged (use inline for now).
- */
-
-static void __attribute__((noinline))
-copy_object (void **obj_slot, GrayQueue *queue)
-{
-	char *forwarded;
-	char *obj = *obj_slot;
-
-	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
-
-	HEAVY_STAT (++stat_copy_object_called_nursery);
-
-	if (!ptr_in_nursery (obj)) {
-		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
-		return;
-	}
-
-	DEBUG (9, fprintf (gc_debug_file, "Precise copy of %p from %p", obj, obj_slot));
-
-	/*
-	 * Before we can copy the object we must make sure that we are
-	 * allowed to, i.e. that the object not pinned or not already
-	 * forwarded.
-	 */
-
-	if ((forwarded = object_is_forwarded (obj))) {
-		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (already forwarded to %p)\n", forwarded));
-		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
-		*obj_slot = forwarded;
-		return;
-	}
-	if (object_is_pinned (obj)) {
-		DEBUG (9, g_assert (((MonoVTable*)LOAD_VTABLE(obj))->gc_descr));
-		DEBUG (9, fprintf (gc_debug_file, " (pinned, no change)\n"));
-		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
-		return;
-	}
-
-	HEAVY_STAT (++stat_objects_copied_nursery);
-
-	*obj_slot = mono_sgen_copy_object_no_checks (obj, queue);
-}
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		void *__old = *(ptr);	\
-		void *__copy;		\
-		if (__old) {	\
-			copy_object ((ptr), queue);	\
-			__copy = *(ptr);	\
-			DEBUG (9, if (__old != __copy) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
-			if (G_UNLIKELY (ptr_in_nursery (__copy) && !ptr_in_nursery ((ptr)))) \
-				mono_sgen_add_to_global_remset ((ptr));	\
-		}	\
-	} while (0)
-
-/*
- * Scan the object pointed to by @start for references to
- * other objects between @from_start and @from_end and copy
- * them to the gray_objects area.
- */
-static void
-scan_object (char *start, GrayQueue *queue)
-{
-#include "sgen-scan-object.h"
-
-	HEAVY_STAT (++stat_scan_object_called_nursery);
-}
-
-/*
- * scan_vtype:
- *
- * Scan the valuetype pointed to by START, described by DESC for references to
- * other objects between @from_start and @from_end and copy them to the gray_objects area.
- * Returns a pointer to the end of the object.
- */
-static char*
-scan_vtype (char *start, mword desc, char* from_start, char* from_end, GrayQueue *queue)
-{
-	size_t skip_size;
-
-	/* The descriptors include info about the MonoObject header as well */
-	start -= sizeof (MonoObject);
-
-	switch (desc & 0x7) {
-	case DESC_TYPE_RUN_LENGTH:
-		OBJ_RUN_LEN_FOREACH_PTR (desc,start);
-		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
-		g_assert (skip_size);
-		return start + skip_size;
-	case DESC_TYPE_SMALL_BITMAP:
-		OBJ_BITMAP_FOREACH_PTR (desc,start);
-		OBJ_BITMAP_SIZE (skip_size, desc, start);
-		return start + skip_size;
-	case DESC_TYPE_LARGE_BITMAP:
-	case DESC_TYPE_COMPLEX:
-		// FIXME:
-		g_assert_not_reached ();
-		break;
-	default:
-		// The other descriptors can't happen with vtypes
-		g_assert_not_reached ();
-		break;
-	}
-	return NULL;
-}
-
-/*
  * drain_gray_stack:
  *
  *   Scan objects in the gray stack until the stack is empty. This should be called
@@ -1820,7 +1607,7 @@ drain_gray_stack (GrayQueue *queue)
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			scan_object (obj, queue);
+			major.minor_scan_object (obj, queue);
 		}
 	} else {
 		for (;;) {
@@ -1828,7 +1615,7 @@ drain_gray_stack (GrayQueue *queue)
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			major.scan_object (obj, queue);
+			major.major_scan_object (obj, queue);
 		}
 	}
 }
@@ -2374,7 +2161,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	TV_DECLARE (btv);
 	int fin_ready;
 	int ephemeron_rounds = 0;
-	CopyOrMarkObjectFunc copy_func = current_collection_generation == GENERATION_NURSERY ? copy_object : major.copy_or_mark_object;
+	CopyOrMarkObjectFunc copy_func = current_collection_generation == GENERATION_NURSERY ? major.copy_object : major.copy_or_mark_object;
 
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
@@ -2662,6 +2449,23 @@ dump_heap (const char *type, int num, const char *reason)
 	fprintf (heap_dump_file, "</collection>\n");
 }
 
+void
+mono_sgen_register_moved_object (void *obj, void *destination)
+{
+	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
+
+	/* FIXME: handle this for parallel collector */
+#ifdef SGEN_PARALLEL_MARK
+	g_assert_not_reached ();
+#endif
+	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
+		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
+		moved_objects_idx = 0;
+	}
+	moved_objects [moved_objects_idx++] = obj;
+	moved_objects [moved_objects_idx++] = destination;
+}
+
 static void
 init_stats (void)
 {
@@ -2829,8 +2633,8 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL, &gray_queue);
-	scan_from_registered_roots (copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER, &gray_queue);
+	scan_from_registered_roots (major.copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL, &gray_queue);
+	scan_from_registered_roots (major.copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER, &gray_queue);
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 	/* thread data */
@@ -4898,7 +4702,7 @@ void*
 mono_gc_scan_object (void *obj)
 {
 	if (current_collection_generation == GENERATION_NURSERY)
-		copy_object (&obj, &gray_queue);
+		major.copy_object (&obj, &gray_queue);
 	else
 		major.copy_or_mark_object (&obj, &gray_queue);
 	return obj;
@@ -4987,7 +4791,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
 			gpointer old = *ptr;
-			copy_object (ptr, queue);
+			major.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (old)
 				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), safe_object_get_size (*ptr));
@@ -5009,7 +4813,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
-			copy_object (ptr, queue);
+			major.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
 				mono_sgen_add_to_global_remset (ptr);
@@ -5020,7 +4824,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 1;
-		scan_object ((char*)ptr, queue);
+		major.minor_scan_object ((char*)ptr, queue);
 		return p + 1;
 	case REMSET_VTYPE: {
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
@@ -5029,7 +4833,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		desc = p [1];
 		count = p [2];
 		while (count-- > 0)
-			ptr = (void**) scan_vtype ((char*)ptr, desc, start_nursery, end_nursery, queue);
+			ptr = (void**) major.minor_scan_vtype ((char*)ptr, desc, start_nursery, end_nursery, queue);
 		return p + 3;
 	}
 	default:
