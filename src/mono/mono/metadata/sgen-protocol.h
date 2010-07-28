@@ -126,7 +126,6 @@ typedef struct {
 
 /* missing: finalizers, dislinks, roots, non-store wbarriers */
 
-void binary_protocol_flush_buffers (void) MONO_INTERNAL;
 void binary_protocol_collection (int generation) MONO_INTERNAL;
 void binary_protocol_alloc (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;

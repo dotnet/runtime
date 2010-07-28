@@ -4388,7 +4388,7 @@ update_current_thread_stack (void *start)
  */
 //#define XDOMAIN_CHECKS_IN_WBARRIER
 
-#ifndef BINARY_PROTOCOL
+#ifndef SGEN_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
 #ifndef XDOMAIN_CHECKS_IN_WBARRIER
@@ -5904,7 +5904,7 @@ check_consistency (void)
 
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 
-#ifdef BINARY_PROTOCOL
+#ifdef SGEN_BINARY_PROTOCOL
 	if (!binary_protocol_file)
 #endif
 		g_assert (!missing_remsets);
@@ -6329,7 +6329,7 @@ mono_gc_base_init (void)
 				heap_dump_file = fopen (filename, "w");
 				if (heap_dump_file)
 					fprintf (heap_dump_file, "<sgen-dump>\n");
-#ifdef BINARY_PROTOCOL
+#ifdef SGEN_BINARY_PROTOCOL
 			} else if (g_str_has_prefix (opt, "binary-protocol=")) {
 				char *filename = strchr (opt, '=') + 1;
 				binary_protocol_file = fopen (filename, "w");

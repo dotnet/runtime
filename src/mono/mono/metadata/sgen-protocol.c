@@ -52,7 +52,7 @@ binary_protocol_flush_buffers_rec (BinaryProtocolBuffer *buffer)
 	g_assert (buffer->index > 0);
 	fwrite (buffer->buffer, 1, buffer->index, binary_protocol_file);
 
-	free_os_memory (buffer, sizeof (BinaryProtocolBuffer));
+	mono_sgen_free_os_memory (buffer, sizeof (BinaryProtocolBuffer));
 }
 
 static void
@@ -75,12 +75,12 @@ binary_protocol_get_buffer (int length)
 	if (buffer && buffer->index + length <= BINARY_PROTOCOL_BUFFER_SIZE)
 		return buffer;
 
-	new_buffer = get_os_memory (sizeof (BinaryProtocolBuffer), TRUE);
+	new_buffer = mono_sgen_alloc_os_memory (sizeof (BinaryProtocolBuffer), TRUE);
 	new_buffer->next = buffer;
 	new_buffer->index = 0;
 
 	if (InterlockedCompareExchangePointer ((void**)&binary_protocol_buffers, new_buffer, buffer) != buffer) {
-		free_os_memory (new_buffer, sizeof (BinaryProtocolBuffer));
+		mono_sgen_free_os_memory (new_buffer, sizeof (BinaryProtocolBuffer));
 		goto retry;
 	}
 
