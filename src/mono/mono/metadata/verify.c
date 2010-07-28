@@ -5388,7 +5388,8 @@ mono_method_verify (MonoMethod *method, int level)
 
 
 			case CEE_ARGLIST:
-				check_overflow (&ctx);
+				if (!check_overflow (&ctx))
+					break;
 				if (ctx.signature->call_convention != MONO_CALL_VARARG)
 					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot use arglist on method without VARGARG calling convention at 0x%04x", ctx.ip_offset));
 				set_stack_value (&ctx, stack_push (&ctx), &mono_defaults.argumenthandle_class->byval_arg, FALSE);
