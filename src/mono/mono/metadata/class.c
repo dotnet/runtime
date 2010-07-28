@@ -6387,8 +6387,11 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 	
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:
-		return mono_stringify_assembly_name (&image->assembly->aname);
-		break;
+		if (image->assembly)
+			return mono_stringify_assembly_name (&image->assembly->aname);
+		else if (image->assembly_name)
+			return g_strdup (image->assembly_name);
+		return g_strdup_printf ("%s", image->name ? image->name : "[Could not resolve assembly name");
 	case MONO_TOKEN_TYPE_REF: {
 		MonoAssemblyName aname;
 		guint32 cols [MONO_TYPEREF_SIZE];
