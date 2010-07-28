@@ -1278,6 +1278,16 @@ ves_icall_System_Threading_Thread_GetDomainID (void)
 	return mono_domain_get()->domain_id;
 }
 
+gboolean 
+ves_icall_System_Threading_Thread_Yield (void)
+{
+	#ifdef HOST_WIN32
+	return SwitchToThread ();
+	#else
+	return sched_yield () == 0;
+	#endif
+}
+
 /*
  * mono_thread_get_name:
  *
