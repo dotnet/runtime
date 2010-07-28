@@ -1852,7 +1852,7 @@ async_invoke_thread (gpointer data)
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
 					ac = (ASyncCall *) ar->object_data;
-					if (ac->msg->exc != NULL)
+					if (ac && ac->msg && ac->msg->exc != NULL)
 						mono_unhandled_exception (ac->msg->exc);
 					mono_domain_set (mono_get_root_domain (), TRUE);
 				}
