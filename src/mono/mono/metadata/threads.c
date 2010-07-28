@@ -1281,11 +1281,11 @@ ves_icall_System_Threading_Thread_GetDomainID (void)
 gboolean 
 ves_icall_System_Threading_Thread_Yield (void)
 {
-	#ifdef HOST_WIN32
+#ifdef HOST_WIN32
 	return SwitchToThread ();
-	#else
+#else
 	return sched_yield () == 0;
-	#endif
+#endif
 }
 
 /*
