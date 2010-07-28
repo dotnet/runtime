@@ -31,6 +31,7 @@
 #include <signal.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/object-internals.h>
 
 /* #define SGEN_PARALLEL_MARK */
 
@@ -631,11 +632,6 @@ void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 
 void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
-/* FIXME: this should be inlined */
-guint mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o) MONO_INTERNAL;
-
-#define mono_sgen_safe_object_get_size(o)		mono_sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE ((o)), (o))
-
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
@@ -670,5 +666,37 @@ struct _SgenMajorCollector {
 
 void mono_sgen_marksweep_init (SgenMajorCollector *collector, int nursery_bits, char *nursery_start, char *nursery_end) MONO_INTERNAL;
 void mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end) MONO_INTERNAL;
+
+/*
+ * This function can be called on an object whose first word, the
+ * vtable field, is not intact.  This is necessary for the parallel
+ * collector.
+ */
+static inline guint
+mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
+{
+	MonoClass *klass = vtable->klass;
+	/*
+	 * We depend on mono_string_length_fast and
+	 * mono_array_length_fast not using the object's vtable.
+	 */
+	if (klass == mono_defaults.string_class) {
+		return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
+	} else if (klass->rank) {
+		MonoArray *array = (MonoArray*)o;
+		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
+		if (G_UNLIKELY (array->bounds)) {
+			size += sizeof (mono_array_size_t) - 1;
+			size &= ~(sizeof (mono_array_size_t) - 1);
+			size += sizeof (MonoArrayBounds) * klass->rank;
+		}
+		return size;
+	} else {
+		/* from a created object: the class must be inited already */
+		return klass->instance_size;
+	}
+}
+
+#define mono_sgen_safe_object_get_size(o)		mono_sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE ((o)), (o))
 
 #endif /* __MONO_SGENGC_H__ */

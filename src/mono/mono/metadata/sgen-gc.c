@@ -449,38 +449,6 @@ safe_name (void* obj)
 	return vt->klass->name;
 }
 
-/*
- * This function can be called on an object whose first word, the
- * vtable field, is not intact.  This is necessary for the parallel
- * collector.
- *
- * FIXME: put this in an internal header
- */
-guint
-mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
-{
-	MonoClass *klass = vtable->klass;
-	/*
-	 * We depend on mono_string_length_fast and
-	 * mono_array_length_fast not using the object's vtable.
-	 */
-	if (klass == mono_defaults.string_class) {
-		return sizeof (MonoString) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
-	} else if (klass->rank) {
-		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
-		if (G_UNLIKELY (array->bounds)) {
-			size += sizeof (mono_array_size_t) - 1;
-			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * klass->rank;
-		}
-		return size;
-	} else {
-		/* from a created object: the class must be inited already */
-		return klass->instance_size;
-	}
-}
-
 #define safe_object_get_size	mono_sgen_safe_object_get_size
 
 /*
