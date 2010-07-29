@@ -1915,7 +1915,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->dreg+1, ins->sreg1+1);
 		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
 		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, ins->dreg+2, tmp1);
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_LADD_IMM:
@@ -1924,7 +1924,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->dreg+1, ins->sreg1+1);
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, ins->dreg+2, ins->sreg1+2, ins->inst_ms_word);
 		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, ins->dreg+2, tmp1);
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_LSUB:
@@ -1933,7 +1933,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->sreg1+1, ins->dreg+1);
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_LSUB_IMM:
@@ -1942,7 +1942,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->sreg1+1, ins->dreg+1);
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, ins->dreg+2, ins->sreg1+2, ins->inst_ms_word);
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_LMUL:
@@ -1962,7 +1962,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, mips_zero, ins->dreg+1);
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, mips_zero, ins->sreg1+2);
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 #if 0
@@ -2022,7 +2022,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 
 		/* Now, if (tmp4 == 0) then overflow */
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, EQ, tmp4, mips_zero, "OverflowException");
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_LADD_OVF_UN:
@@ -2035,7 +2035,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, tmp1, ins->dreg+2);
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp2, ins->dreg+2, ins->sreg1+2);
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp2, mips_zero, "OverflowException");
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_LMUL_OVF:
@@ -2073,7 +2073,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 
 		/* Now, if (tmp4 == 1) then overflow */
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp4, mips_zero, "OverflowException");
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_LSUB_OVF_UN:
@@ -2087,7 +2087,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp2, ins->sreg1+2, ins->dreg+2);
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp2, mips_zero, "OverflowException");
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 #if 0
 	case OP_LCONV_TO_OVF_I1_UN:
@@ -2150,7 +2150,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, tmp1, ins->sreg1, 31);
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, ins->sreg2, tmp1, "OverflowException");
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->sreg1);
-		ins->opcode = OP_NOP;
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_LMIN_UN:
@@ -2207,9 +2207,11 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, tmp5, tmp4, 31);
 
-		/* Now, if (tmp4 == 0) then overflow */
+		/* Now, if (tmp5 == 0) then overflow */
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, EQ, tmp5, mips_zero, "OverflowException");
-		ins->opcode = OP_NOP;
+		/* Make decompse and method-to-ir.c happy, last insn writes dreg */
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->dreg);
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_IADD_OVF_UN:
@@ -2218,7 +2220,9 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->dreg, ins->sreg1);
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp1, mips_zero, "OverflowException");
-		ins->opcode = OP_NOP;
+		/* Make decompse and method-to-ir.c happy, last insn writes dreg */
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->dreg);
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_ISUB_OVF:
@@ -2250,7 +2254,9 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_IAND, tmp5, tmp4, tmp3);
 
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp5, mips_zero, "OverflowException");
-		ins->opcode = OP_NOP;
+		/* Make decompse and method-to-ir.c happy, last insn writes dreg */
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->dreg);
+		NULLIFY_INS(ins);
 		break;
 
 	case OP_ISUB_OVF_UN:
@@ -2259,10 +2265,11 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->sreg1, ins->dreg);
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp1, mips_zero, "OverflowException");
-		ins->opcode = OP_NOP;
+		/* Make decompse and method-to-ir.c happy, last insn writes dreg */
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->dreg);
+		NULLIFY_INS(ins);
 		break;
 	}
-
 }
 
 static int
@@ -2432,7 +2439,7 @@ loop_start:
 			next = ins->next;
 			/* Branch opts can eliminate the branch */
 			if (!next || (!(MONO_IS_COND_BRANCH_OP (next) || MONO_IS_COND_EXC (next) || MONO_IS_SETCC (next)))) {
-				ins->opcode = OP_NOP;
+				NULLIFY_INS(ins);
 				break;
 			}
 			break;
@@ -2443,7 +2450,7 @@ loop_start:
 			next = ins->next;
 			/* Branch opts can eliminate the branch */
 			if (!next || (!(MONO_IS_COND_BRANCH_OP (next) || MONO_IS_COND_EXC (next) || MONO_IS_SETCC (next)))) {
-				ins->opcode = OP_NOP;
+				NULLIFY_INS(ins);
 				break;
 			}
 			if (ins->inst_imm) {
@@ -2622,7 +2629,7 @@ loop_start:
 			next = ins->next;
 			/* Branch opts can eliminate the branch */
 			if (!next || (!(MONO_IS_COND_BRANCH_OP (next) || MONO_IS_COND_EXC (next) || MONO_IS_SETCC (next)))) {
-				ins->opcode = OP_NOP;
+				NULLIFY_INS(ins);
 				break;
 			}
 			g_assert(next);
@@ -2631,10 +2638,10 @@ loop_start:
 			 * remap compare/branch and compare/set
 			 * to MIPS specific opcodes.
 			 */
-			ins->opcode = OP_NOP;
 			next->opcode = map_to_mips_op (next->opcode);
 			next->sreg1 = ins->sreg1;
 			next->sreg2 = ins->sreg2;
+			NULLIFY_INS(ins);
 			break;
 
 #if 0
@@ -2655,13 +2662,13 @@ loop_start:
 		case OP_IBEQ:
 			g_assert (ins_is_compare(last_ins));
 			INS_REWRITE(ins, OP_MIPS_BEQ, last_ins->sreg1, last_ins->sreg2);
-			last_ins->opcode = OP_NOP;
+			NULLIFY_INS(last_ins);
 			break;
 
 		case OP_IBNE_UN:
 			g_assert (ins_is_compare(last_ins));
 			INS_REWRITE(ins, OP_MIPS_BNE, last_ins->sreg1, last_ins->sreg2);
-			last_ins->opcode = OP_NOP;
+			NULLIFY_INS(last_ins);
 			break;
 
 		case OP_IBGE:
@@ -2731,14 +2738,14 @@ loop_start:
 		case OP_CLT:
 		case OP_ICLT:
 			INS_REWRITE(ins, OP_MIPS_SLT, last_ins->sreg1, last_ins->sreg2);
-			last_ins->opcode = OP_NOP;
+			NULLIFY_INS(last_ins);
 			break;
 
 
 		case OP_CLT_UN:
 		case OP_ICLT_UN:
 			INS_REWRITE(ins, OP_MIPS_SLTU, last_ins->sreg1, last_ins->sreg2);
-			last_ins->opcode = OP_NOP;
+			NULLIFY_INS(last_ins);
 			break;
 
 		case OP_CGT:

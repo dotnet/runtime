@@ -272,11 +272,11 @@ typedef struct MonoCompileArch {
 #define MIPS_LAST_FPARG_REG	mips_f19
 #endif
 
-//#define MONO_ARCH_HAVE_IMT 1
-//#define MONO_ARCH_IMT_REG mips_v0		/* XXX */
+#define MONO_ARCH_HAVE_IMT	1
+#define MONO_ARCH_IMT_REG	mips_v0
 
-//#define MONO_ARCH_VTABLE_REG	mips_v0		/* XXX */
-#define MONO_ARCH_RGCTX_REG	mips_v0		/* XXX */
+#define MONO_ARCH_VTABLE_REG	mips_v0
+#define MONO_ARCH_RGCTX_REG	mips_v0
 
 #define MONO_ARCH_HAVE_DECOMPOSE_OPTS 1
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
