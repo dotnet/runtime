@@ -6,7 +6,7 @@ public class Test {
 	static int csum = 0;
 	
 	public static void test_callback (object state) {
-		Console.WriteLine("test_casllback:" + state);
+		Console.WriteLine("test_callback:" + state);
 		Thread.Sleep (200);
 		Interlocked.Increment (ref csum);
 	}

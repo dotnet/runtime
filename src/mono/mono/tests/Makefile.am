@@ -215,6 +215,10 @@ BASE_TEST_CS_SRC=		\
 	async_read.cs		\
 	threadpool.cs		\
 	threadpool1.cs		\
+	threadpool-exceptions1.cs \
+	threadpool-exceptions2.cs \
+	threadpool-exceptions3.cs \
+	threadpool-exceptions4.cs \
 	base-definition.cs	\
 	bug-27420.cs		\
 	bug-47295.cs		\
