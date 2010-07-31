@@ -809,38 +809,39 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 	if (method->klass->generic_class)
 		return mono_method_signature (method);
 
-	if (image->dynamic)
-		/* FIXME: This might be incorrect for vararg methods */
-		return mono_method_signature (method);
+	if (image->dynamic) {
+		sig = mono_reflection_lookup_signature (image, method, token);
+	} else {
+		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
+		sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
 
-	mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
-	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
+		sig = find_cached_memberref_sig (image, sig_idx);
+		if (!sig) {
+			if (!mono_verifier_verify_memberref_signature (image, sig_idx, NULL)) {
+				guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
+				const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
-	sig = find_cached_memberref_sig (image, sig_idx);
-	if (!sig) {
-		if (!mono_verifier_verify_memberref_signature (image, sig_idx, NULL)) {
+				mono_loader_set_error_bad_image (g_strdup_printf ("Bad method signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
+				return NULL;
+			}
+
+			ptr = mono_metadata_blob_heap (image, sig_idx);
+			mono_metadata_decode_blob_size (ptr, &ptr);
+			sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
+			if (!sig)
+				return NULL;
+			sig = cache_memberref_sig (image, sig_idx, sig);
+		}
+		/* FIXME: we probably should verify signature compat in the dynamic case too*/
+		if (!mono_verifier_is_sig_compatible (image, method, sig)) {
 			guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 			const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
-			mono_loader_set_error_bad_image (g_strdup_printf ("Bad method signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
+			mono_loader_set_error_bad_image (g_strdup_printf ("Incompatible method signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
 			return NULL;
 		}
-
-		ptr = mono_metadata_blob_heap (image, sig_idx);
-		mono_metadata_decode_blob_size (ptr, &ptr);
-		sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
-		if (!sig)
-			return NULL;
-		sig = cache_memberref_sig (image, sig_idx, sig);
 	}
 
-	if (!mono_verifier_is_sig_compatible (image, method, sig)) {
-		guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-		const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
-
-		mono_loader_set_error_bad_image (g_strdup_printf ("Incompatible method signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
-		return NULL;
-	}
 
 	if (context) {
 		MonoError error;

@@ -114,6 +114,7 @@ if test $ac_cv_sizeof_void_p != $ac_cv_sizeof_int; then
    GSIZE="long"
    GSIZE_FORMAT='"lu"'
    G_GUINT64_FORMAT='"lu"'
+   G_GINT64_FORMAT='"ld"'
 else
    GPOINTER_TO_INT="((gint) (ptr))"
    GPOINTER_TO_UINT="((guint) (ptr))"
@@ -122,6 +123,7 @@ else
    GSIZE="int"
    GSIZE_FORMAT='"u"'
    G_GUINT64_FORMAT='"llu"'
+   G_GINT64_FORMAT='"lld"'
 fi
 
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
@@ -159,6 +161,7 @@ AC_SUBST(GUINT_TO_POINTER)
 AC_SUBST(GSIZE)
 AC_SUBST(GSIZE_FORMAT)
 AC_SUBST(G_GUINT64_FORMAT)
+AC_SUBST(G_GINT64_FORMAT)
 
 AC_OUTPUT([
 Makefile

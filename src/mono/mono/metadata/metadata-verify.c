@@ -3261,7 +3261,7 @@ verify_typespec_table_full (VerifyContext *ctx)
 	ctx->token = 0;
 }
 
-#define INVALID_IMPLMAP_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 6) | (1 << 8) | (1 << 9) | (1 << 10))
+#define INVALID_IMPLMAP_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 8) | (1 << 9) | (1 << 10) | (1 << 12) | (1 << 13))
 static void
 verify_implmap_table (VerifyContext *ctx)
 {

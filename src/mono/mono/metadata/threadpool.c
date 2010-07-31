@@ -995,6 +995,8 @@ mono_async_invoke (ThreadPool *tp, MonoAsyncResult *ares)
 		void *pa = ares->async_state;
 		mono_runtime_delegate_invoke (ares->async_delegate, &pa, &exc);
 	} else {
+		MonoObject *cb_exc = NULL;
+
 		ac->msg->exc = NULL;
 		res = mono_message_invoke (ares->async_delegate, ac->msg, &exc, &out_args);
 		MONO_OBJECT_SETREF (ac, res, res);
@@ -1012,13 +1014,13 @@ mono_async_invoke (ThreadPool *tp, MonoAsyncResult *ares)
 
 		/* call async callback if cb_method != null*/
 		if (ac != NULL && ac->cb_method) {
-			MonoObject *exc = NULL;
 			void *pa = &ares;
-			mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &exc);
-			/* 'exc' will be the previous ac->msg->exc if not NULL and not
-			 * catched. If catched, this will be set to NULL and the
-			 * exception will not be printed. */
-			MONO_OBJECT_SETREF (ac->msg, exc, exc);
+			cb_exc = NULL;
+			mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, &cb_exc);
+			MONO_OBJECT_SETREF (ac->msg, exc, cb_exc);
+			exc = cb_exc;
+		} else {
+			exc = NULL;
 		}
 	}
 
@@ -1841,22 +1843,20 @@ async_invoke_thread (gpointer data)
 				}
 
 				if (mono_domain_set (domain, FALSE)) {
-					/* ASyncCall *ac; */
+					MonoObject *exc;
 
 					if (tp_item_begin_func)
 						tp_item_begin_func (tp_item_user_data);
 
 					if (!is_io_task && ar->add_time > 0)
 						process_idle_times (tp, ar->add_time);
-					/*FIXME: Do something with the exception returned? */
-					mono_async_invoke (tp, ar);
+					exc = mono_async_invoke (tp, ar);
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
-					/*
-					ac = (ASyncCall *) ar->object_data;
-					if (ac->msg->exc != NULL)
-						mono_unhandled_exception (ac->msg->exc);
-					*/
+					if (exc && mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
+						mono_unhandled_exception (exc);
+						exit (255);
+					}
 					mono_domain_set (mono_get_root_domain (), TRUE);
 				}
 				mono_thread_pop_appdomain_ref ();

@@ -4371,11 +4371,12 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, MonoMethod **met
 static char*
 concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
 {
-	int len = strlen (s1) + strlen (s2) + 2;
+	int null_length = strlen ("(null)");
+	int len = (s1 ? strlen (s1) : null_length) + (s2 ? strlen (s2) : null_length) + 2;
 	char *s = mono_image_alloc (image, len);
 	int result;
 
-	result = g_snprintf (s, len, "%s%c%s", s1, '\0', s2);
+	result = g_snprintf (s, len, "%s%c%s", s1 ? s1 : "(null)", '\0', s2 ? s2 : "(null)");
 	g_assert (result == len - 1);
 
 	return s;
@@ -5844,7 +5845,10 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	class->parent = parent;
 	class->instance_size = mono_class_instance_size (class->parent);
 
-	if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
+	if (eclass->byval_arg.type == MONO_TYPE_TYPEDBYREF || eclass->byval_arg.type == MONO_TYPE_VOID) {
+		/*Arrays of those two types are invalid.*/
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	} else if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
 		if (!eclass->ref_info_handle || eclass->wastypebuilder) {
 			g_warning ("Only incomplete TypeBuilder objects are allowed to be an enum without base_type");
 			g_assert (eclass->ref_info_handle && !eclass->wastypebuilder);
@@ -6386,8 +6390,11 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 	
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:
-		return mono_stringify_assembly_name (&image->assembly->aname);
-		break;
+		if (image->assembly)
+			return mono_stringify_assembly_name (&image->assembly->aname);
+		else if (image->assembly_name)
+			return g_strdup (image->assembly_name);
+		return g_strdup_printf ("%s", image->name ? image->name : "[Could not resolve assembly name");
 	case MONO_TOKEN_TYPE_REF: {
 		MonoAssemblyName aname;
 		guint32 cols [MONO_TYPEREF_SIZE];

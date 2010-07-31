@@ -135,6 +135,7 @@ Authors:
 %_bindir/mcs
 %_bindir/mono
 %_bindir/mono-configuration-crypto
+%_bindir/mono-sgen
 %_bindir/mono-test-install
 %_bindir/mozroots
 %_bindir/peverify
@@ -300,6 +301,47 @@ Development files for libmono.
 %_libdir/pkgconfig/mono-2.pc
 %_includedir/mono-2.0
 
+%package -n libmonosgen-2_0-0
+License:        LGPL v2.1 only
+Summary:	A Library for embedding Mono in your Application (sgen version)
+Group:          Development/Libraries/C and C++
+
+%description -n libmonosgen-2_0-0
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+A Library for embedding Mono in your Application (sgen version).
+
+%files -n libmonosgen-2_0-0
+%defattr(-, root, root)
+%_libdir/libmonosgen-2.0.so.0*
+
+%post -n libmonosgen-2_0-0 -p /sbin/ldconfig
+
+%postun -n libmonosgen-2_0-0 -p /sbin/ldconfig
+
+%package -n libmonosgen-2_0-devel
+License:        LGPL v2.1 only
+Summary:	Development files for libmonosgen
+Group:          Development/Languages/Mono
+
+%description -n libmonosgen-2_0-devel
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Development files for libmonosgen.
+
+%files -n libmonosgen-2_0-devel
+%defattr(-, root, root)
+%_libdir/libmonosgen-2.0.a
+%_libdir/libmonosgen-2.0.so
+
 %package -n mono-locale-extras
 License:        LGPL v2.1 only
 Summary:        Extra locale information
@@ -376,6 +418,7 @@ Authors:
 %_prefix/lib/mono/2.0/Novell.Directory.Ldap.dll
 %_prefix/lib/mono/2.0/System.Data.DataSetExtensions.dll
 %_prefix/lib/mono/2.0/System.Data.Linq.dll
+%_prefix/lib/mono/2.0/System.Data.Services.dll
 %_prefix/lib/mono/2.0/System.Data.dll
 %_prefix/lib/mono/2.0/System.DirectoryServices.dll
 %_prefix/lib/mono/2.0/System.EnterpriseServices.dll
@@ -384,6 +427,7 @@ Authors:
 %_prefix/lib/mono/4.0/Novell.Directory.Ldap.dll
 %_prefix/lib/mono/4.0/System.Data.DataSetExtensions.dll
 %_prefix/lib/mono/4.0/System.Data.Linq.dll
+%_prefix/lib/mono/4.0/System.Data.Services.dll
 %_prefix/lib/mono/4.0/System.Data.dll
 %_prefix/lib/mono/4.0/System.DirectoryServices.dll
 %_prefix/lib/mono/4.0/System.EnterpriseServices.dll
@@ -602,6 +646,7 @@ Authors:
 %_prefix/lib/mono/2.0/System.ServiceModel.dll
 %_prefix/lib/mono/4.0/System.IdentityModel.Selectors.dll
 %_prefix/lib/mono/4.0/System.IdentityModel.dll
+%_prefix/lib/mono/4.0/System.Runtime.DurableInstancing.dll
 %_prefix/lib/mono/4.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Routing.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Web.dll
@@ -611,6 +656,7 @@ Authors:
 %_prefix/lib/mono/gac/System.Data.Services.Client
 %_prefix/lib/mono/gac/System.IdentityModel
 %_prefix/lib/mono/gac/System.IdentityModel.Selectors
+%_prefix/lib/mono/gac/System.Runtime.DurableInstancing
 %_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.ServiceModel
 %_prefix/lib/mono/gac/System.ServiceModel.Routing

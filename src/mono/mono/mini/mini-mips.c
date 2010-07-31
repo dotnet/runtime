@@ -206,7 +206,7 @@ mips_emit_load_const(guint8 *code, int dreg, mgreg_t v)
 	if (mips_is_imm16 (v))
 		mips_addiu (code, dreg, mips_zero, ((guint32)v) & 0xffff);
 	else {
-#ifdef SIZEOF_REGISTER == 8
+#if SIZEOF_REGISTER == 8
 		if (v != (long) v) {
 			/* v is not a sign-extended 32-bit value */
 			mips_lui (code, dreg, mips_zero, (guint32)((v >> (32+16)) & 0xffff));
@@ -1252,7 +1252,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		 * pinvoke wrappers when they call functions returning structure
 		 */
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
+			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), (unsigned int *) &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
 
@@ -3740,7 +3740,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_THROW: {
-			gpointer addr = mono_arch_get_throw_exception();
+			gpointer addr = mono_arch_get_throw_exception(NULL, FALSE);
 			mips_move (code, mips_a0, ins->sreg1);
 			mips_load_const (code, mips_t9, addr);
 			mips_jalr (code, mips_t9, mips_ra);
@@ -3749,7 +3749,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_RETHROW: {
-			gpointer addr = mono_arch_get_rethrow_exception();
+			gpointer addr = mono_arch_get_rethrow_exception(NULL, FALSE);
 			mips_move (code, mips_a0, ins->sreg1);
 			mips_load_const (code, mips_t9, addr);
 			mips_jalr (code, mips_t9, mips_ra);

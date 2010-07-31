@@ -212,34 +212,7 @@ mono_runtime_install_handlers (void)
 pid_t
 mono_runtime_syscall_fork ()
 {
-#if defined(__i386__)
-	/* Apple's fork syscall returns a regpair in EAX:EDX.
-	 *  EAX == pid of caller always
-	 *  EDX == 0 for parent, 1 for child
-	 */             
-	register_t eax;
-	register_t edx;
-	pid_t pid;
-
-	__asm__  __volatile__ (
-		"mov $0x2, %%eax;"
-		"int $0x80;"
-		"mov %%eax, %0;"
-		"mov %%edx, %1;"
-		: "=m" (eax), "=m" (edx));
-
-	if (edx == 0) {
-		pid = eax;
-	} else if (edx == 1) {
-		pid = 0;
-	} else {
-		g_assert_not_reached ();
-	}
-
-	return pid;
-#else
-	g_assert_not_reached ();
-#endif
+	return (pid_t) fork ();
 }
 
 gboolean

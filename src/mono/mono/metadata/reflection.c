@@ -4758,11 +4758,12 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 {
 	MonoClass *klass;
 	guint32 token = 0;
+	MonoMethodSignature *sig;
 
 	klass = obj->vtable->klass;
 	if (strcmp (klass->name, "MonoMethod") == 0) {
 		MonoMethod *method = ((MonoReflectionMethod *)obj)->method;
-		MonoMethodSignature *sig, *old;
+		MonoMethodSignature *old;
 		guint32 sig_token, parent;
 		int nargs, i;
 
@@ -4800,13 +4801,37 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 	} else if (strcmp (klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
 		ReflectionMethodBuilder rmb;
-		guint32 parent, sig;
+		guint32 parent, sig_token;
+		int nopt_args, nparams, ngparams, i;
 		char *name;
 
 		reflection_methodbuilder_from_method_builder (&rmb, mb);
 		rmb.opt_types = opt_param_types;
+		nopt_args = mono_array_length (opt_param_types);
 
-		sig = method_builder_encode_signature (assembly, &rmb);
+		nparams = rmb.parameters ? mono_array_length (rmb.parameters): 0;
+		ngparams = rmb.generic_params ? mono_array_length (rmb.generic_params): 0;
+		sig = mono_metadata_signature_alloc (&assembly->image, nparams + nopt_args);
+
+		sig->hasthis = !(rmb.attrs & METHOD_ATTRIBUTE_STATIC);
+		sig->explicit_this = (rmb.call_conv & 0x40) == 0x40;
+		sig->call_convention = rmb.call_conv;
+		sig->generic_param_count = ngparams;
+		sig->param_count = nparams + nopt_args;
+		sig->sentinelpos = nparams;
+		sig->ret = mono_reflection_type_get_handle (rmb.rtype);
+
+		for (i = 0; i < nparams; i++) {
+			MonoReflectionType *rt = mono_array_get (rmb.parameters, MonoReflectionType *, i);
+			sig->params [i] = mono_reflection_type_get_handle (rt);
+		}
+
+		for (i = 0; i < nopt_args; i++) {
+			MonoReflectionType *rt = mono_array_get (opt_param_types, MonoReflectionType *, i);
+			sig->params [nparams + i] = mono_reflection_type_get_handle (rt);
+		}
+
+		sig_token = method_builder_encode_signature (assembly, &rmb);
 
 		parent = mono_image_create_token (assembly, obj, TRUE, TRUE);
 		g_assert (mono_metadata_token_table (parent) == MONO_TABLE_METHOD);
@@ -4816,12 +4841,14 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 
 		name = mono_string_to_utf8 (rmb.name);
 		token = mono_image_get_varargs_method_token (
-			assembly, parent, name, sig);
+			assembly, parent, name, sig_token);
 		g_free (name);
 	} else {
 		g_error ("requested method token for %s\n", klass->name);
 	}
 
+	g_hash_table_insert (assembly->vararg_aux_hash, GUINT_TO_POINTER (token), sig);
+	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
 	return token;
 }
 
@@ -5034,6 +5061,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->method_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->field_to_table_idx = g_hash_table_new (NULL, NULL);
 	image->method_aux_hash = g_hash_table_new (NULL, NULL);
+	image->vararg_aux_hash = g_hash_table_new (NULL, NULL);
 	image->handleref = g_hash_table_new (NULL, NULL);
 	image->handleref_managed = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC);
 	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
@@ -5138,6 +5166,8 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		g_hash_table_destroy (di->field_to_table_idx);
 	if (di->method_aux_hash)
 		g_hash_table_destroy (di->method_aux_hash);
+	if (di->vararg_aux_hash)
+		g_hash_table_destroy (di->vararg_aux_hash);
 	g_free (di->strong_name);
 	g_free (di->win32_res);
 	if (di->public_key)
@@ -11528,6 +11558,19 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 	if (!handle_class)
 		handle_class = &klass;
 	return resolve_object (image, obj, handle_class, context);
+}
+
+MonoMethodSignature *
+mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token)
+{
+	MonoMethodSignature *sig;
+	g_assert (image->dynamic);
+
+	sig = g_hash_table_lookup (((MonoDynamicImage*)image)->vararg_aux_hash, GUINT_TO_POINTER (token));
+	if (sig)
+		return sig;
+
+	return mono_method_signature (method);
 }
 
 /*

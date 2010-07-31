@@ -95,10 +95,6 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *me
 	int this_pos = s390_r2;
 	MonoDomain *domain = mono_domain_get ();
 
-	start = addr;
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
-		this_pos = s390_r3;
-
 	start = code = mono_domain_code_reserve (domain, 28);
 
 	s390_basr (code, s390_r1, 0);
@@ -227,77 +223,9 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 gpointer
 mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 {
-	int reg, lkReg;
-	guchar* base;
-	unsigned short opcode;
-	char *sp;
-	MonoLMF *lmf = (MonoLMF *) ((gchar *) regs - sizeof(MonoLMF));
-
-	// We are passed sp instead of the register array
-#if 0
-	sp = (char *) regs;
-#endif
-	sp = (char *) lmf->gregs[s390_r15];
-
-	*displacement = 0;
-
-	opcode = *((unsigned short *) (code - 6));
-	if (opcode == 0xc0e5)
-		/* This is the 'brasl' instruction */
-		return NULL;
-
-	/*-----------------------------------*/
-	/* This is a basr r14,Rz instruction */
-	/* If it's preceded by a LG Rx,d(Ry) */
-	/* If Rz == 1 then this is virtual   */
-	/* call.                             */
-	/*-----------------------------------*/
-	code    -= 6;
-
-	/*-----------------------------------*/
-	/* If call is preceded by LGR then   */
-	/* there's nothing to patch          */
-	/*-----------------------------------*/
-	if ((code[0] == 0xb9) && (code[1] == 0x04))
-		return NULL;
-
-	/*-----------------------------------*/
-	/* We back up until we're pointing at*/
-	/* the base/displacement portion of  */
-	/* the LG instruction                */
-	/*-----------------------------------*/
-	lkReg    = code[5] & 0x0f;
-
-	/*-----------------------------------*/
-	/* The LG instruction has format:    */
-	/* E3x0ylllhh04 - where:             */
-	/* x = Rx; y = Ry;                   */
-	/* lll = low 12 bits of displacement */
-	/* hh  = high 8 bits of displacement */
-	/*-----------------------------------*/
-	reg      = code[0] >> 4;
-	*displacement = (code[2] << 12) |
-			((code[0] & 0x0f) << 8) |
-			code[1];
-
-	if (code[2] & 0x80)
-		*displacement |= 0xfff00000;
-
-	base = ((guchar *) lmf->gregs[reg]);
-#if 0
-	if (reg > 5)
-		base = *((guchar **) (sp + S390_REG_SAVE_OFFSET +
-							  sizeof(long)*(reg-6)));
-	else
-		base = *((guchar **) ((sp - CREATE_STACK_SIZE) +
-							  CREATE_GR_OFFSET +
-							  sizeof(long)*(reg-2)));
-#endif
-	if (lkReg != 1)
-		/* Non virtual call */
-		return NULL;
-
-	return base;
+	/* Not used on s390x */
+	g_assert_not_reached ();
+	return NULL;
 }
 
 /*========================= End of Function ========================*/

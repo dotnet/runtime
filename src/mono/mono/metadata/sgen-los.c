@@ -241,9 +241,7 @@ get_los_section_memory (size_t size)
 	if (free_chunks)
 		return (LOSObject*)free_chunks;
 
-	section = get_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
-
-	total_alloc += LOS_SECTION_SIZE;
+	section = mono_sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
 
 	free_chunks = (LOSFreeChunks*)((char*)section + LOS_CHUNK_SIZE);
 	free_chunks->size = LOS_SECTION_SIZE - LOS_CHUNK_SIZE;
@@ -315,8 +313,7 @@ free_large_object (LOSObject *obj)
 		size += sizeof (LOSObject);
 		size += pagesize - 1;
 		size &= ~(pagesize - 1);
-		total_alloc -= size;
-		free_os_memory (obj, size);
+		mono_sgen_free_os_memory (obj, size);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
 #ifdef LOS_CONSISTENCY_CHECKS
@@ -343,7 +340,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 
 #ifdef LOS_DUMMY
 	if (!los_segment)
-		los_segment = get_os_memory (LOS_SEGMENT_SIZE, TRUE);
+		los_segment = mono_sgen_alloc_os_memory (LOS_SEGMENT_SIZE, TRUE);
 	los_segment_index = ALIGN_UP (los_segment_index);
 
 	obj = (LOSObject*)(los_segment + los_segment_index);
@@ -367,8 +364,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size += pagesize - 1;
 		alloc_size &= ~(pagesize - 1);
 		/* FIXME: handle OOM */
-		obj = get_os_memory (alloc_size, TRUE);
-		total_alloc += alloc_size;
+		obj = mono_sgen_alloc_os_memory (alloc_size, TRUE);
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));
 		memset (obj, 0, size + sizeof (LOSObject));
@@ -380,7 +376,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	obj->size = size;
 	vtslot = (void**)obj->data;
 	*vtslot = vtable;
-	update_heap_boundaries ((mword)obj->data, (mword)obj->data + size);
+	mono_sgen_update_heap_boundaries ((mword)obj->data, (mword)obj->data + size);
 	obj->next = los_object_list;
 	los_object_list = obj;
 	los_memory_usage += size;
@@ -414,7 +410,7 @@ los_sweep (void)
 				prev->next = next;
 			else
 				los_sections = next;
-			free_os_memory (section, LOS_SECTION_SIZE);
+			mono_sgen_free_os_memory (section, LOS_SECTION_SIZE);
 			section = next;
 			--los_num_sections;
 			continue;

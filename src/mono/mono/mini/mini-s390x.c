@@ -328,6 +328,7 @@ typedef struct {
 	ArgInfo ret;
 	ArgInfo sigCookie;
 	size_data sz;
+	int vret_arg_index;
 	ArgInfo args [1];
 } CallInfo;
 
@@ -1448,7 +1449,7 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
 static CallInfo *
 get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
-	guint i, fr, gr, size;
+	guint i, fr, gr, size, pstart;
 	int nParm = sig->hasthis + sig->param_count;
 	MonoType *ret_type;
 	guint32 simpletype, align;
@@ -1533,20 +1534,16 @@ enum_retvalue:
 			else
 				size = mono_class_value_size (klass, &align);
 	
-			cinfo->ret.reg    = s390_r2;
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
 			cinfo->ret.vtsize = size;
-			gr++;
                         break;
 		}
 		case MONO_TYPE_TYPEDBYREF:
 			size = sizeof (MonoTypedRef);
-			cinfo->ret.reg    = s390_r2;
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
 			cinfo->ret.vtsize = size;
-			gr++;
 			break;
 		case MONO_TYPE_VOID:
 			break;
@@ -1554,10 +1551,40 @@ enum_retvalue:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
 	}
 
-	if (sig->hasthis) {
-		cinfo->args[nParm].size = sizeof(gpointer);
-		add_general (&gr, sz, cinfo->args+nParm);
-		nParm++;
+
+	pstart = 0;
+	/*
+	 * To simplify get_this_arg_reg () and LLVM integration, emit the vret arg after
+	 * the first argument, allowing 'this' to be always passed in the first arg reg.
+	 * Also do this if the first argument is a reference type, since virtual calls
+	 * are sometimes made using calli without sig->hasthis set, like in the delegate
+	 * invoke wrappers.
+	 */
+	if (cinfo->struct_ret && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (gsctx, sig->params [0]))))) {
+		if (sig->hasthis) {
+			cinfo->args[nParm].size = sizeof (gpointer);
+			add_general (&gr, sz, cinfo->args + nParm);
+		} else {
+			cinfo->args[nParm].size = sizeof (gpointer);
+			add_general (&gr, sz, &cinfo->args [sig->hasthis + nParm]);
+			pstart = 1;
+		}
+		nParm ++;
+		cinfo->vret_arg_index = 1;
+		cinfo->ret.reg = gr;
+		gr ++;
+	} else {
+		/* this */
+		if (sig->hasthis) {
+			cinfo->args[nParm].size = sizeof (gpointer);
+			add_general (&gr, sz, cinfo->args + nParm);
+			nParm ++;
+		}
+
+		if (cinfo->struct_ret) {
+			cinfo->ret.reg = gr;
+			gr ++;
+		}
 	}
 
 	if ((sig->call_convention == MONO_CALL_VARARG) && (sig->param_count == 0)) {
@@ -1573,7 +1600,7 @@ enum_retvalue:
 	/* parameters.						    */
 	/*----------------------------------------------------------*/
 
-	for (i = 0; i < sig->param_count; ++i) {
+	for (i = pstart; i < sig->param_count; ++i) {
 		MonoType *ptype;
 
 		/*--------------------------------------------------*/
@@ -5623,8 +5650,6 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 	MonoLMF *lmf = (MonoLMF *) ((gchar *) regs - sizeof(MonoLMF));
 
 	/* FIXME: handle returning a struct */
-	if (MONO_TYPE_ISSTRUCT (sig->ret))
-		return (gpointer) lmf->gregs [s390_r3];
 	return (gpointer) lmf->gregs [s390_r2];
 }
 

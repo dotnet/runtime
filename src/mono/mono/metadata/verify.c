@@ -605,8 +605,6 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 
 	if (tinfo->constraints) {
 		MonoClass **target_class, **candidate_class;
-		if (!cinfo->constraints)
-			return FALSE;
 		for (target_class = tinfo->constraints; *target_class; ++target_class) {
 			MonoClass *tc;
 			MonoType *inflated = verifier_inflate_type (ctx, &(*target_class)->byval_arg, context);
@@ -621,6 +619,9 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 			 */
 			if (mono_metadata_type_equal (&tc->byval_arg, &candidate_param_class->byval_arg))
 				continue;
+
+			if (!cinfo->constraints)
+				return FALSE;
 
 			for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
 				MonoClass *cc;
@@ -2961,8 +2962,16 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 			if (method->klass->valuetype && (stack_slot_is_boxed_value (value) || !stack_slot_is_managed_pointer (value)))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a boxed or literal valuetype to call a valuetype method at 0x%04x", ctx->ip_offset));
 		}
-		if (!verify_stack_type_compatibility (ctx, type, &copy))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature at 0x%04x", ctx->ip_offset));
+		if (!verify_stack_type_compatibility (ctx, type, &copy)) {
+			char *expected = mono_type_full_name (type);
+			char *effective = stack_slot_full_name (&copy);
+			char *method_name = mono_method_full_name (method, TRUE);
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature expected '%s' but got '%s' for a call to '%s' at 0x%04x",
+					expected, effective, method_name, ctx->ip_offset));
+			g_free (method_name);
+			g_free (effective);
+			g_free (expected);
+		}
 
 		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method_full (ctx->method, method, mono_class_from_mono_type (value->type))) {
 			char *name = mono_method_full_name (method, TRUE);
@@ -3309,6 +3318,25 @@ do_load_token (VerifyContext *ctx, int token)
 	MonoClass *handle_class;
 	if (!check_overflow (ctx))
 		return;
+
+	switch (token & 0xff000000) {
+	case MONO_TOKEN_TYPE_DEF:
+	case MONO_TOKEN_TYPE_REF:
+	case MONO_TOKEN_TYPE_SPEC:
+	case MONO_TOKEN_FIELD_DEF:
+	case MONO_TOKEN_METHOD_DEF:
+	case MONO_TOKEN_METHOD_SPEC:
+	case MONO_TOKEN_MEMBER_REF:
+		if (!token_bounds_check (ctx->image, token)) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Table index out of range 0x%x for token %x for ldtoken at 0x%04x", mono_metadata_token_index (token), token, ctx->ip_offset));
+			return;
+		}
+		break;
+	default:
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid table 0x%x for token 0x%x for ldtoken at 0x%04x", mono_metadata_token_table (token), token, ctx->ip_offset));
+		return;
+	}
+
 	handle = mono_ldtoken (ctx->image, token, &handle_class, ctx->generic_context);
 	if (!handle) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid token 0x%x for ldtoken at 0x%04x", token, ctx->ip_offset));
@@ -5379,7 +5407,8 @@ mono_method_verify (MonoMethod *method, int level)
 
 
 			case CEE_ARGLIST:
-				check_overflow (&ctx);
+				if (!check_overflow (&ctx))
+					break;
 				if (ctx.signature->call_convention != MONO_CALL_VARARG)
 					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot use arglist on method without VARGARG calling convention at 0x%04x", ctx.ip_offset));
 				set_stack_value (&ctx, stack_push (&ctx), &mono_defaults.argumenthandle_class->byval_arg, FALSE);
