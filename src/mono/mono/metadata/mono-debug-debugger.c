@@ -323,10 +323,3 @@ mono_debugger_class_initialized (MonoClass *klass)
 		goto again;
 	}
 }
-
-int
-mono_debugger_get_thread_abort_signal (void)
-{
-	return mono_thread_get_abort_signal ();
-}
-

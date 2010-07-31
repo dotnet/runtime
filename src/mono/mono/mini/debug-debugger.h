@@ -92,6 +92,8 @@ struct _MonoDebuggerInfo {
 	gint32 *interruption_request;
 
 	guint64 (*abort_runtime_invoke) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2);
+
+	guint32 *thread_abort_signal;
 };
 
 struct _MonoDebuggerMetadataInfo {
