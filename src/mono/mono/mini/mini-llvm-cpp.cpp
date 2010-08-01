@@ -116,7 +116,9 @@ public:
 
 MonoJITMemoryManager::MonoJITMemoryManager ()
 {
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION < 8
 	SizeRequired = true;
+#endif
 	mm = JITMemoryManager::CreateDefaultMemManager ();
 }
 
