@@ -2259,19 +2259,6 @@ mono_sparc_is_virtual_call (guint32 *code)
 	return FALSE;
 }
 
-/*
- * mono_arch_get_vcall_slot:
- *
- *  Determine the vtable slot used by a virtual call.
- */
-gpointer
-mono_arch_get_vcall_slot (guint8 *code8, mgreg_t *regs, int *displacement)
-{
-	/* Not used on sparc */
-	g_assert_not_reached ();
-	return NULL;
-}
-
 #define CMP_SIZE 3
 #define BR_SMALL_SIZE 2
 #define BR_LARGE_SIZE 2

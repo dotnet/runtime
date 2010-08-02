@@ -155,6 +155,43 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 	*(guint8**)((guint8*)got + offset) = addr;
 }
 
+static gpointer
+get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
+{
+	guint8 buf [8];
+	guint8 reg = 0;
+	gint32 disp = 0;
+
+	mono_breakpoint_clean_code (NULL, code, 8, buf, sizeof (buf));
+	code = buf + 8;
+
+	*displacement = 0;
+
+	code -= 6;
+
+	if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
+		reg = code [1] & 0x07;
+		disp = *((gint32*)(code + 2));
+	} else {
+		g_assert_not_reached ();
+		return NULL;
+	}
+
+	*displacement = disp;
+	return (gpointer)regs [reg];
+}
+
+static gpointer*
+get_vcall_slot_addr (guint8* code, mgreg_t *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
+}
+
 void
 mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 {
@@ -199,7 +236,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 		/* call *<OFFSET>(<REG>) -> Call made from AOT code */
 		gpointer *vtable_slot;
 
-		vtable_slot = mono_get_vcall_slot_addr (code + 5, regs);
+		vtable_slot = get_vcall_slot_addr (code + 5, regs);
 		g_assert (vtable_slot);
 
 		*vtable_slot = nullified_class_init_trampoline;

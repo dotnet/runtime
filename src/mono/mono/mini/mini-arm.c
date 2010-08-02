@@ -306,15 +306,6 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
-gpointer
-mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
-{
-	/* Not used on ARM */
-	g_assert_not_reached ();
-
-	return NULL;
-}
-
 #define MAX_ARCH_DELEGATE_PARAMS 3
 
 static gpointer

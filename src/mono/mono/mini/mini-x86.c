@@ -5493,36 +5493,6 @@ mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guin
 	return can_write;
 }
 
-gpointer
-mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
-{
-	guint8 buf [8];
-	guint8 reg = 0;
-	gint32 disp = 0;
-
-	mono_breakpoint_clean_code (NULL, code, 8, buf, sizeof (buf));
-	code = buf + 8;
-
-	*displacement = 0;
-
-	code -= 6;
-
-	/*
-	 * This function is no longer used, the only caller is
-	 * mono_arch_nullify_class_init_trampoline ().
-	 */
-	if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
-		reg = code [1] & 0x07;
-		disp = *((gint32*)(code + 2));
-	} else {
-		g_assert_not_reached ();
-		return NULL;
-	}
-
-	*displacement = disp;
-	return (gpointer)regs [reg];
-}
-
 /*
  * mono_x86_get_this_arg_offset:
  *

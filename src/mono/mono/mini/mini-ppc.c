@@ -376,16 +376,6 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 #endif
 }
 
-gpointer
-mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
-{
-	*displacement = 0;
-
-	/* Not used on PPC */
-	g_assert_not_reached ();
-	return NULL;
-}
-
 #define MAX_ARCH_DELEGATE_PARAMS 7
 
 static gpointer

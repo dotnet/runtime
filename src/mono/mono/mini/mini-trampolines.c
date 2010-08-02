@@ -147,17 +147,6 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 }
 #endif
 
-gpointer*
-mono_get_vcall_slot_addr (guint8* code, mgreg_t *regs)
-{
-	gpointer vt;
-	int displacement;
-	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
-	if (!vt)
-		return NULL;
-	return (gpointer*)((char*)vt + displacement);
-}
-
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
@@ -580,9 +569,6 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	MonoMethod *m;
 	gboolean need_rgctx_tramp = FALSE;
 	gpointer addr;
-#ifndef MONO_ARCH_THIS_AS_FIRST_ARG
-	int displacement;
-#endif
 
 	trampoline_calls ++;
 
@@ -593,35 +579,18 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	 * We use one vtable trampoline per vtable slot index, so we need only the vtable,
 	 * the other two can be computed from the vtable + the slot index.
 	 */
-#ifdef MONO_ARCH_THIS_AS_FIRST_ARG
+#ifndef MONO_ARCH_THIS_AS_FIRST_ARG
+	/* All architectures should support this */
+	g_assert_not_reached ();
+#endif
+
 	/*
-	 * If the arch passes 'this' as the first arg, obtain the vtable using it.
+	 * Obtain the vtable from the 'this' arg.
 	 */
 	this = mono_arch_get_this_arg_from_call (NULL, NULL, regs, code);
 	g_assert (this);
 
 	vt = this->vtable;
-#else
-	g_assert (!mono_use_llvm);
-	/*
-	 * Obtain the vtable pointer in an arch specific manner.
-	 */
-	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
-
-	if (!vt) {
-		int i;
-		MonoJitInfo *ji;
-
-		ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
-		if (ji)
-			printf ("Caller: %s\n", mono_method_full_name (ji->method, TRUE));
-		/* Print some debug info */
-		for (i = 0; i < 32; ++i)
-			printf ("0x%x ", code [-32 + i]);
-		printf ("\n");
-		g_assert (vt);
-	}
-#endif
 
 	if (slot >= 0) {
 		/* Normal virtual call */
@@ -659,9 +628,6 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 		m = NULL;
 		need_rgctx_tramp = FALSE;
 	}
-
-	// FIXME:
-	// - get rid of mono_arch_get_vcall_slot where possible
 
 	return common_call_trampoline (regs, code, m, tramp, vt, vtable_slot, need_rgctx_tramp);
 }

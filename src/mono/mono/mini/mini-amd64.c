@@ -6902,41 +6902,6 @@ mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guin
 	return can_write;
 }
 
-gpointer
-mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
-{
-	guint8 buf [10];
-	gint32 disp;
-	MonoJitInfo *ji = NULL;
-
-#ifdef ENABLE_LLVM
-	/* code - 9 might be before the start of the method */
-	/* FIXME: Avoid this expensive call somehow */
-	ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
-#endif
-
-	mono_breakpoint_clean_code (ji ? ji->code_start : NULL, code, 9, buf, sizeof (buf));
-	code = buf + 9;
-
-	*displacement = 0;
-
-	code -= 7;
-
-	/*
-	 * This function is no longer used, the only caller is
-	 * mono_arch_nullify_class_init_trampoline ().
-	 */
-	if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
-		/* call OFFSET(%rip) */
-		g_assert_not_reached ();
-		*displacement = *(guint32*)(code + 3);
-		return (gpointer*)(code + disp + 7);
-	} else {
-		g_assert_not_reached ();
-		return NULL;
-	}
-}
-
 int
 mono_arch_get_this_arg_reg (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx, guint8 *code)
 {
