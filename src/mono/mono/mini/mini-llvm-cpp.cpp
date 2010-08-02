@@ -447,8 +447,6 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   LLVMInitializeX86Target ();
   LLVMInitializeX86TargetInfo ();
 
-  llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
-
   mono_mm = new MonoJITMemoryManager ();
   mono_mm->alloc_cb = alloc_cb;
 
@@ -471,26 +469,47 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   fpm = new FunctionPassManager (unwrap (MP));
 
   fpm->add(new TargetData(*EE->getTargetData()));
-  /* Add a default set of passes */
-  //createStandardFunctionPasses (fpm, 2);
-  fpm->add(createInstructionCombiningPass());
-  fpm->add(createReassociatePass());
-  fpm->add(createGVNPass());
-  fpm->add(createCFGSimplificationPass());
 
-  /* The one used by opt is:
-   * -simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify
-   */
+  llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
 
-  /* Add passes specified by the env variable */
-  /* Only the passes in force_pass_linking () can be used */
-  for (unsigned i = 0; i < PassList.size(); ++i) {
-      const PassInfo *PassInf = PassList[i];
-      Pass *P = 0;
+  if (PassList.size() > 0) {
+	  /* Use the passes specified by the env variable */
+	  /* Only the passes in force_pass_linking () can be used */
+	  for (unsigned i = 0; i < PassList.size(); ++i) {
+		  const PassInfo *PassInf = PassList[i];
+		  Pass *P = 0;
 
-      if (PassInf->getNormalCtor())
-		  P = PassInf->getNormalCtor()();
-	  fpm->add (P);
+		  if (PassInf->getNormalCtor())
+			  P = PassInf->getNormalCtor()();
+		  fpm->add (P);
+	  }
+  } else {
+	  /* Use the same passes used by 'opt' by default, without the ipo passes */
+	  const char *opts = "-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify";
+	  char **args;
+	  int i;
+
+	  args = g_strsplit (opts, " ", 1000);
+	  for (i = 0; args [i]; i++)
+		  ;
+	  llvm::cl::ParseCommandLineOptions (i, args, "", false);
+	  g_free (args);
+
+	  for (unsigned i = 0; i < PassList.size(); ++i) {
+		  const PassInfo *PassInf = PassList[i];
+		  Pass *P = 0;
+
+		  if (PassInf->getNormalCtor())
+			  P = PassInf->getNormalCtor()();
+		  fpm->add (P);
+	  }
+
+	  /*
+	  fpm->add(createInstructionCombiningPass());
+	  fpm->add(createReassociatePass());
+	  fpm->add(createGVNPass());
+	  fpm->add(createCFGSimplificationPass());
+	  */
   }
 
   return wrap(EE);
