@@ -511,7 +511,8 @@ gpointer
 mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
 {
 	/* FIXME: handle returning a struct */
-	if (MONO_TYPE_ISSTRUCT (sig->ret))
+	g_assert(regs);
+	if (sig && MONO_TYPE_ISSTRUCT (sig->ret))
 		return (gpointer)regs [mips_a1];
 	return (gpointer)regs [mips_a0];
 }

@@ -307,11 +307,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * Now we're ready to call mips_magic_trampoline ().
 	 */
 
-	/* Arg 1: stack pointer so that the magic trampoline can access the
-	 * registers we saved above
+	/* Arg 1: pointer to registers so that the magic trampoline can
+	 * access what we saved above
 	 */
-	mips_move (code, mips_a0, mips_sp);
-		
+	mips_addiu (code, mips_a0, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[0]));
+
 	/* Arg 2: code (next address to the instruction that called us) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
 		mips_move (code, mips_a1, mips_zero);
