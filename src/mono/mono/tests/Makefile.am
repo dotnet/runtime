@@ -219,6 +219,8 @@ BASE_TEST_CS_SRC=		\
 	threadpool-exceptions2.cs \
 	threadpool-exceptions3.cs \
 	threadpool-exceptions4.cs \
+	threadpool-exceptions5.cs \
+	threadpool-exceptions6.cs \
 	base-definition.cs	\
 	bug-27420.cs		\
 	bug-47295.cs		\
@@ -695,6 +697,7 @@ test-inline-call-stack.exe: TestDriver.dll test-inline-call-stack-library.dll $(
 
 EXTRA_DIST += unhandled-exception-base-configuration.config
 EXTRA_DIST += unhandled-exception-legacy-configuration.config
+EXTRA_DIST += appdomain-unload.exe.config
 EXTRA_DIST += unhandled-exception-test-case.2.cs
 EXTRA_DIST += unhandled-exception-test-runner.2.cs
 unhandled-exception-test-case.1.cs: unhandled-exception-test-case.2.cs
