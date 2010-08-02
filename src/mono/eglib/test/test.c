@@ -177,6 +177,11 @@ FAILED(const gchar *format, ...)
 	va_list args;
 	gint n;
 
+#if !defined(HAVE_VASPRINTF) && !defined(_EGLIB_MAJOR)
+	/* We are linked against the real glib, no vasprintf */
+	g_assert_not_reached ();
+	return NULL;
+#else
 	va_start(args, format);
 	n = vasprintf(&ret, format, args);
 	va_end(args);
@@ -188,6 +193,7 @@ FAILED(const gchar *format, ...)
 
 	last_result = ret;
 	return ret;
+#endif
 }
 
 gdouble
