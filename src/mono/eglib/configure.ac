@@ -49,6 +49,12 @@ case $host in
     ;;
 esac
 
+case $host in
+	*-*-solaris*)
+	CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS"
+	;;
+esac
+
 case $target in
 arm*-darwin*)
     CFLAGS="$CFLAGS -U_FORTIFY_SOURCE"
