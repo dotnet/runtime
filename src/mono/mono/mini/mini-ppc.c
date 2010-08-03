@@ -961,7 +961,7 @@ has_only_a_r48_field (MonoClass *klass)
 #endif
 
 static CallInfo*
-calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
+calculate_sizes (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint i, fr, gr, pstart;
 	int n = sig->hasthis + sig->param_count;
@@ -1484,7 +1484,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	m->stack_offset = offset;
 
 	if (sig->call_convention == MONO_CALL_VARARG) {
-		CallInfo *cinfo = calculate_sizes (m->method->signature, m->method->signature->pinvoke);
+		CallInfo *cinfo = calculate_sizes (m->generic_sharing_context, m->method->signature, m->method->signature->pinvoke);
 
 		m->sig_cookie = cinfo->sig_cookie.offset;
 
@@ -1530,7 +1530,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	
-	cinfo = calculate_sizes (sig, sig->pinvoke);
+	cinfo = calculate_sizes (cfg->generic_sharing_context, sig, sig->pinvoke);
 
 	for (i = 0; i < n; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
@@ -3005,7 +3005,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	pos = 0;
 
-	cinfo = calculate_sizes (sig, sig->pinvoke);
+	cinfo = calculate_sizes (cfg->generic_sharing_context, sig, sig->pinvoke);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -3145,7 +3145,7 @@ ins_native_length (MonoCompile *cfg, MonoInst *ins)
 
 	call = (MonoCallInst*)ins;
 	sig = mono_method_signature (cfg->method);
-	cinfo = calculate_sizes (sig, sig->pinvoke);
+	cinfo = calculate_sizes (cfg->generic_sharing_context, sig, sig->pinvoke);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		len += 4;
@@ -4911,7 +4911,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* load arguments allocated to register from the stack */
 	pos = 0;
 
-	cinfo = calculate_sizes (sig, sig->pinvoke);
+	cinfo = calculate_sizes (cfg->generic_sharing_context, sig, sig->pinvoke);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;
