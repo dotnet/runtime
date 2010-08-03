@@ -4109,8 +4109,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #if PROMOTE_R4_TO_R8
 			/* Need to convert ins->sreg1 to single-precision first */
 			mips_cvtsd (code, mips_ftemp, ins->sreg1);
-#endif
 			mips_swc1 (code, mips_ftemp, ins->inst_destbasereg, ins->inst_offset);
+#else
+			mips_swc1 (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
+#endif
 			break;
 		case OP_MIPS_LWC1:
 			g_assert (mips_is_imm16 (ins->inst_offset));
@@ -4122,6 +4124,38 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #if PROMOTE_R4_TO_R8
 			/* Convert to double precision in place */
 			mips_cvtds (code, ins->dreg, ins->dreg);
+#endif
+			break;
+		case OP_LOADR4_MEMINDEX:
+			mips_addiu (code, mips_at, ins->inst_basereg, ins->sreg2);
+			mips_lwc1 (code, ins->dreg, mips_at, 0);
+			break;
+		case OP_LOADR8_MEMINDEX:
+			mips_addiu (code, mips_at, ins->inst_basereg, ins->sreg2);
+#if _MIPS_SIM == _ABIO32
+			mips_lwc1 (code, ins->dreg, mips_at, 0);
+			mips_lwc1 (code, ins->dreg+1, mips_at, 4);
+#elif _MIPS_SIM == _ABIN32
+			mips_ldc1 (code, ins->dreg, mips_at, 0);
+#endif
+			break;
+		case OP_STORER4_MEMINDEX:
+			mips_addiu (code, mips_at, ins->inst_basereg, ins->sreg2);
+#if PROMOTE_R4_TO_R8
+			/* Need to convert ins->sreg1 to single-precision first */
+			mips_cvtsd (code, mips_ftemp, ins->sreg1);
+			mips_swc1 (code, mips_ftemp, mips_at, 0);
+#else
+			mips_swc1 (code, ins->sreg1, mips_at, 0);
+#endif
+			break;
+		case OP_STORER8_MEMINDEX:
+			mips_addiu (code, mips_at, ins->inst_basereg, ins->sreg2);
+#if _MIPS_SIM == _ABIO32
+			mips_swc1 (code, ins->sreg1, mips_at, 0);
+			mips_swc1 (code, ins->sreg1+1, mips_at, 4);
+#elif _MIPS_SIM == _ABIN32
+			mips_sdc1 (code, ins->sreg1, mips_at, 0);
 #endif
 			break;
 		case OP_ICONV_TO_R_UN: {
@@ -5469,11 +5503,16 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 
 #ifdef MONO_ARCH_HAVE_IMT
 
-#define CMP_SIZE 12
-#define BR_SIZE 4
-#define JUMP_IMM_SIZE 12
-#define JUMP_IMM32_SIZE 16
 #define ENABLE_WRONG_METHOD_CHECK 0
+
+#define MIPS_LOAD_SEQUENCE_LENGTH	8
+#define CMP_SIZE			(MIPS_LOAD_SEQUENCE_LENGTH + 4)
+#define BR_SIZE				8
+#define LOADSTORE_SIZE			4
+#define JUMP_IMM_SIZE			16
+#define JUMP_IMM32_SIZE			(MIPS_LOAD_SEQUENCE_LENGTH + 8)
+#define LOAD_CONST_SIZE			8
+#define JUMP_JR_SIZE			8
 
 /*
  * LOCKING: called with the domain lock held
@@ -5482,111 +5521,134 @@ gpointer
 mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
 	gpointer fail_tramp)
 {
-	NOT_IMPLEMENTED;
-#if 0
 	int i;
 	int size = 0;
-	guint8 *code, *start;
+	guint8 *code, *start, *patch;
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
+
+		item->chunk_size += LOAD_CONST_SIZE;
 		if (item->is_equals) {
 			if (item->check_target_idx) {
-				if (!item->compare_done)
-					item->chunk_size += CMP_SIZE;
-				if (fail_tramp)
-					item->chunk_size += BR_SIZE + JUMP_IMM32_SIZE;
-				else
-					item->chunk_size += BR_SIZE + JUMP_IMM_SIZE;
+				item->chunk_size += BR_SIZE + LOAD_CONST_SIZE + JUMP_JR_SIZE;
 			} else {
 				if (fail_tramp) {
-					item->chunk_size += CMP_SIZE + BR_SIZE + JUMP_IMM32_SIZE * 2;
+					item->chunk_size += BR_SIZE + JUMP_IMM32_SIZE * 2;
+					if (!item->has_target_code)
+						item->chunk_size += LOADSTORE_SIZE;
 				} else {
-					item->chunk_size += JUMP_IMM_SIZE;
+					item->chunk_size += LOADSTORE_SIZE + JUMP_IMM_SIZE;
 #if ENABLE_WRONG_METHOD_CHECK
 					item->chunk_size += CMP_SIZE + BR_SIZE + 4;
 #endif
 				}
 			}
 		} else {
-			item->chunk_size += CMP_SIZE + BR_SIZE;
+			item->chunk_size += BR_SIZE;
 			imt_entries [item->check_target_idx]->compare_done = TRUE;
 		}
 		size += item->chunk_size;
 	}
+	/* the initial load of the vtable address */
+	size += MIPS_LOAD_SEQUENCE_LENGTH + LOADSTORE_SIZE;
 	if (fail_tramp) {
 		code = mono_method_alloc_generic_virtual_thunk (domain, size);
 	} else {
-		/* the initial load of the vtable address */
-		size += 8;
 		code = mono_domain_code_reserve (domain, size);
 	}
 	start = code;
-	if (!fail_tramp)
-		ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [0])));
+
+#if 0
+	/*
+	 * We need to save and restore r11 because it might be
+	 * used by the caller as the vtable register, so
+	 * clobbering it will trip up the magic trampoline.
+	 *
+	 * FIXME: Get rid of this by making sure that r11 is
+	 * not used as the vtable register in interface calls.
+	 */
+	ppc_stptr (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_load (code, ppc_r11, (gsize)(& (vtable->vtable [0])));
+#endif
+	/* t7 points to the vtable */
+	mips_load_const (code, mips_t7, (gsize)(& (vtable->vtable [0])));
+
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
+
 		item->code_target = code;
+		mips_load_const (code, mips_temp, (gsize)item->key);
 		if (item->is_equals) {
 			if (item->check_target_idx) {
-				if (!item->compare_done) {
-					ppc_load (code, ppc_r0, (guint32)item->key);
-					ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
-				}
 				item->jmp_code = code;
-				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-				if (fail_tramp)
-					ppc_load (code, ppc_r0, item->value.target_code);
-				else
-					ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
-				ppc_mtctr (code, ppc_r0);
-				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+				mips_bne (code, mips_temp, MONO_ARCH_IMT_REG, 0);
+				mips_nop (code);
+				if (item->has_target_code) {
+					mips_load_const (code, mips_t9,
+							 item->value.target_code);
+				}
+				else {
+					mips_lw (code, mips_t9, mips_t7,
+						(sizeof (gpointer) * item->value.vtable_slot));
+				}
+				mips_jr (code, mips_t9);
+				mips_nop (code);
 			} else {
 				if (fail_tramp) {
-					ppc_load (code, ppc_r0, (guint32)item->key);
-					ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
-					item->jmp_code = code;
-					ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-					ppc_load (code, ppc_r0, item->value.target_code);
-					ppc_mtctr (code, ppc_r0);
-					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
-					ppc_patch (item->jmp_code, code);
-					ppc_load (code, ppc_r0, fail_tramp);
-					ppc_mtctr (code, ppc_r0);
-					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
-					item->jmp_code = NULL;
+					patch = code;
+					mips_bne (code, mips_temp, MONO_ARCH_IMT_REG, 0);
+					mips_nop (code);
+					if (item->has_target_code) {
+						mips_load_const (code, mips_t9,
+								 item->value.target_code);
+					} else {
+						g_assert (vtable);
+						mips_load_const (code, mips_at,
+								 & (vtable->vtable [item->value.vtable_slot]));
+						mips_lw (code, mips_t9, mips_at, 0);
+					}
+					mips_jr (code, mips_t9);
+					mips_nop (code);
+					mips_patch ((guint32 *)(void *)patch, (guint32)code);
+					mips_load_const (code, mips_at, fail_tramp);
+					mips_lw (code, mips_t9, mips_at, 0);
+					mips_jr (code, mips_t9);
+					mips_nop (code);
 				} else {
 					/* enable the commented code to assert on wrong method */
 #if ENABLE_WRONG_METHOD_CHECK
 					ppc_load (code, ppc_r0, (guint32)item->key);
-					ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
-					item->jmp_code = code;
+					ppc_compare_log (code, 0, MONO_ARCH_IMT_REG, ppc_r0);
+					patch = code;
 					ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 #endif
-					ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
-					ppc_mtctr (code, ppc_r0);
-					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+					mips_lw (code, mips_t9, mips_t7,
+						 (sizeof (gpointer) * item->value.vtable_slot));
+					mips_jr (code, mips_t9);
+					mips_nop (code);
+
 #if ENABLE_WRONG_METHOD_CHECK
-					ppc_patch (item->jmp_code, code);
+					ppc_patch (patch, code);
 					ppc_break (code);
-					item->jmp_code = NULL;
 #endif
 				}
 			}
 		} else {
-			ppc_load (code, ppc_r0, (guint32)item->key);
-			ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
+			mips_load_const (code, mips_temp, (gulong)item->key);
+			mips_slt (code, mips_temp, mips_temp, MONO_ARCH_IMT_REG);
+
 			item->jmp_code = code;
-			ppc_bc (code, PPC_BR_FALSE, PPC_BR_LT, 0);
+			mips_bne (code, mips_temp, mips_zero, 0);
+			mips_nop (code);
 		}
 	}
 	/* patch the branches to get to the target items */
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
-		if (item->jmp_code) {
-			if (item->check_target_idx) {
-				ppc_patch (item->jmp_code, imt_entries [item->check_target_idx]->code_target);
-			}
+		if (item->jmp_code && item->check_target_idx) {
+			mips_patch ((guint32 *)item->jmp_code,
+				   (guint32)imt_entries [item->check_target_idx]->code_target);
 		}
 	}
 
@@ -5595,7 +5657,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	g_assert (code - start <= size);
 	mono_arch_flush_icache (start, size);
 	return start;
-#endif
 }
 
 MonoMethod*
