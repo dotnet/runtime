@@ -147,6 +147,7 @@ typedef struct {
 	int fr;
 	gboolean gr_passed;
 	gboolean on_stack;
+	gboolean vtype_retaddr;
 	int stack_size;
 	guint32 stack_usage;
 	guint32 struct_ret;
@@ -898,6 +899,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint i;
 	int n = sig->hasthis + sig->param_count;
+	int pstart;
 	MonoType* simpletype;
 	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * n);
 
@@ -907,19 +909,55 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 	DEBUG(printf("calculate_sizes\n"));
 
+	cinfo->vtype_retaddr = MONO_TYPE_ISSTRUCT (sig->ret) ? TRUE : FALSE;
+	pstart = 0;
+	n = 0;
+#if 0
 	/* handle returning a struct */
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		cinfo->struct_ret = cinfo->gr;
 		add_int32_arg (cinfo, &cinfo->ret);
 	}
 
-	n = 0;
 	if (sig->hasthis) {
 		add_int32_arg (cinfo, cinfo->args + n);
 		n++;
 	}
+#else
+	/*
+	 * To simplify get_this_arg_reg () and LLVM integration, emit the vret arg after
+	 * the first argument, allowing 'this' to be always passed in the first arg reg.
+	 * Also do this if the first argument is a reference type, since virtual calls
+	 * are sometimes made using calli without sig->hasthis set, like in the delegate
+	 * invoke wrappers.
+	 */
+	if (cinfo->vtype_retaddr && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (NULL, sig->params [0]))))) {
+		if (sig->hasthis) {
+			add_int32_arg (cinfo, cinfo->args + n);
+			n ++;
+		} else {
+			add_int32_arg (cinfo, cinfo->args + sig->hasthis);
+			pstart = 1;
+			n ++;
+		}
+		add_int32_arg (cinfo, &cinfo->ret);
+		cinfo->struct_ret = cinfo->ret.reg;
+	} else {
+		/* this */
+		if (sig->hasthis) {
+			add_int32_arg (cinfo, cinfo->args + n);
+			n ++;
+		}
+
+		if (cinfo->vtype_retaddr) {
+			add_int32_arg (cinfo, &cinfo->ret);
+			cinfo->struct_ret = cinfo->ret.reg;
+		}
+	}
+#endif
+
         DEBUG(printf("params: %d\n", sig->param_count));
-	for (i = 0; i < sig->param_count; ++i) {
+	for (i = pstart; i < sig->param_count; ++i) {
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
                         /* Prevent implicit arguments and sig_cookie from
 			   being passed in registers */
