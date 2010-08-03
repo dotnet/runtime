@@ -3569,18 +3569,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_patch (patch, (guint32)code);
 			break;
 		}
-		case OP_IMUL_OVF_UN:
-#if 0
-			mips_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
-#else
+		case OP_IMUL_OVF_UN: {
+			guint32 *patch;
 			mips_mult (code, ins->sreg1, ins->sreg2);
 			mips_mflo (code, ins->dreg);
 			mips_mfhi (code, mips_at);
 			mips_nop (code);
 			mips_nop (code);
-#endif
-			/* XXX - Throw exception if we overflowed */
+			patch = (guint32 *)(void *)code;
+			mips_beq (code, mips_at, mips_zero, 0);
+			mips_nop (code);
+			EMIT_SYSTEM_EXCEPTION_NAME("OverflowException");
+			mips_patch (patch, (guint32)code);
 			break;
+		}
 		case OP_ICONST:
 			mips_load_const (code, ins->dreg, ins->inst_c0);
 			break;
