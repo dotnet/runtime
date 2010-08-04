@@ -8699,6 +8699,8 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 
 	image = method->klass->image;
 	method_index = mono_method_get_index (method);
+	if (!method_index)
+		return NULL;
 	ca = &image->tables [MONO_TABLE_METHOD];
 
 	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
