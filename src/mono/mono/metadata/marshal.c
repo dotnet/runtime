@@ -2422,14 +2422,25 @@ MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 {
 	gpointer res;
+	int wrapper_type = wrapper->wrapper_type;
 
-	if (wrapper->wrapper_type == MONO_WRAPPER_NONE || wrapper->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+	if (wrapper_type == MONO_WRAPPER_NONE || wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
 		return wrapper;
 
-	res = mono_method_get_wrapper_data (wrapper, 1);
-	if (res == NULL)
-		return wrapper;
-	return res;
+	switch (wrapper_type) {
+	case MONO_WRAPPER_REMOTING_INVOKE:
+	case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
+	case MONO_WRAPPER_XDOMAIN_INVOKE:
+	case MONO_WRAPPER_SYNCHRONIZED:
+	case MONO_WRAPPER_MANAGED_TO_NATIVE:
+	case MONO_WRAPPER_RUNTIME_INVOKE:
+		res = mono_method_get_wrapper_data (wrapper, 1);
+		if (res == NULL)
+			return wrapper;
+		return res;
+	default:
+		return NULL;
+	}
 }
 
 /*
