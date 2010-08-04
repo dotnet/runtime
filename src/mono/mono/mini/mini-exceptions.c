@@ -2134,6 +2134,9 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	gpointer resume_ip;
 
+	/* Guard against a null MonoJitTlsData. This can happens if the thread receives the
+         * interrupt signal before the JIT has time to initialize its TLS data for the given thread.
+	 */
 	if (!jit_tls || jit_tls->handler_block_return_address)
 		return FALSE;
 
