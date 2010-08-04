@@ -2134,7 +2134,7 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	gpointer resume_ip;
 
-	if (jit_tls->handler_block_return_address)
+	if (!jit_tls || jit_tls->handler_block_return_address)
 		return FALSE;
 
 	mono_walk_stack_full (domain, jit_tls, ctx, find_last_handler_block, FALSE, &data);
