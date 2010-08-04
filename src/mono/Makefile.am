@@ -25,9 +25,9 @@ DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
 # Distribute the 'mcs' tree too
 dist-hook:
-	./scripts/commits-to-changelog.py --root=$(distdir) last-commit-with-compulsory-changelog-entry
 	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
 	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
+	./scripts/commits-to-changelog.py --root=$(distdir) last-commit-with-compulsory-changelog-entry
 
 pkgconfigdir = $(libdir)/pkgconfig
 noinst_DATA = mono-uninstalled.pc
