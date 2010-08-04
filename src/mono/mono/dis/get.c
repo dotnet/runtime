@@ -2903,6 +2903,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "ldvirtftn", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "leave", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "leave.s", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "legacy", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "linkcheck", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "literal", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "localloc", GINT_TO_POINTER (TRUE));
