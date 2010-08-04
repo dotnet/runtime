@@ -171,6 +171,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-major-copying.c	\
 	sgen-gc.h		\
 	sgen-archdep.h		\
+	sgen-protocol.h		\
 	sgen-scan-object.h	\
 	string-icalls.c 	\
 	string-icalls.h 	\
