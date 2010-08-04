@@ -106,32 +106,22 @@ optimized_pin_queue_search (void *addr)
 	return first;
 }
 
-static void
-find_optimized_pin_queue_area (void *start, void *end, int *first, int *last)
-{
-	*first = optimized_pin_queue_search (start);
-	*last = optimized_pin_queue_search (end);
-}
-
 void**
 mono_sgen_find_optimized_pin_queue_area (void *start, void *end, int *num)
 {
 	int first, last;
-	find_optimized_pin_queue_area (start, end, &first, &last);
+	first = optimized_pin_queue_search (start);
+	last = optimized_pin_queue_search (end);
 	*num = last - first;
 	if (first == last)
 		return NULL;
 	return pin_queue + first;
 }
 
-static void
-find_section_pin_queue_start_end (GCMemSection *section)
+void
+mono_sgen_find_section_pin_queue_start_end (GCMemSection *section)
 {
-	int start, end;
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from section %p (%p-%p)\n", section, section->data, section->end_data));
-	find_optimized_pin_queue_area (section->data, section->end_data, &start, &end);
-	DEBUG (6, fprintf (gc_debug_file, "Found %d pinning addresses in section %p (%d-%d)\n",
-					end - start, section, start, end));
-	section->pin_queue_start = start;
-	section->pin_queue_end = end;
+	section->pin_queue_start = mono_sgen_find_optimized_pin_queue_area (section->data, section->end_data, &section->pin_queue_num_entries);
+	DEBUG (6, fprintf (gc_debug_file, "Found %d pinning addresses in section %p\n", section->pin_queue_num_entries, section));
 }
