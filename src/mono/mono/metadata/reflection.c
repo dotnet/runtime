@@ -10186,6 +10186,23 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			container->type_params [i] = *param;
 		}
 
+		/*
+		 * The method signature might have pointers to generic parameters that belong to other methods.
+		 * This is a valid SRE case, but the resulting method signature must be encoded using the proper
+		 * generic parameters.
+		 */
+		for (i = 0; i < m->signature->param_count; ++i) {
+			MonoType *t = m->signature->params [i];
+			if (t->type == MONO_TYPE_MVAR) {
+				MonoGenericParam *gparam =  t->data.generic_param;
+				if (gparam->num < count) {
+					m->signature->params [i] = mono_metadata_type_dup (image, m->signature->params [i]);
+					m->signature->params [i]->data.generic_param = mono_generic_container_get_param (container, gparam->num);
+				}
+
+			}
+		}
+
 		if (klass->generic_container) {
 			container->parent = klass->generic_container;
 			container->context.class_inst = klass->generic_container->context.class_inst;
