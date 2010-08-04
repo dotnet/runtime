@@ -21,25 +21,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#define GRAY_QUEUE_SECTION_SIZE	(128 - 3)
 #define GRAY_QUEUE_LENGTH_LIMIT	64
-
-/*
- * This is a stack now instead of a queue, so the most recently added items are removed
- * first, improving cache locality, and keeping the stack size manageable.
- */
-typedef struct _GrayQueueSection GrayQueueSection;
-struct _GrayQueueSection {
-	int end;
-	GrayQueueSection *next;
-	char *objects [GRAY_QUEUE_SECTION_SIZE];
-};
-
-struct _GrayQueue {
-	GrayQueueSection *first;
-	GrayQueueSection *free_list;
-	int balance;
-};
 
 static GrayQueue gray_queue;
 
@@ -79,23 +61,23 @@ gray_object_queue_is_empty (GrayQueue *queue)
 /*
  * The following two functions are called in the inner loops of the
  * collector, so they need to be as fast as possible.  We have macros
- * for them below.
+ * for them in sgen-gc.h.
  */
 
-static inline void
-gray_object_enqueue (GrayQueue *queue, char *obj)
+void
+mono_sgen_gray_object_enqueue (GrayQueue *queue, char *obj)
 {
 	DEBUG (9, g_assert (obj));
-	if (G_UNLIKELY (!queue->first || queue->first->end == GRAY_QUEUE_SECTION_SIZE))
+	if (G_UNLIKELY (!queue->first || queue->first->end == SGEN_GRAY_QUEUE_SECTION_SIZE))
 		gray_object_alloc_queue_section (queue);
-	DEBUG (9, g_assert (queue->first && queue->first->end < GRAY_QUEUE_SECTION_SIZE));
+	DEBUG (9, g_assert (queue->first && queue->first->end < SGEN_GRAY_QUEUE_SECTION_SIZE));
 	queue->first->objects [queue->first->end++] = obj;
 
 	DEBUG (9, ++queue->balance);
 }
 
-static inline char*
-gray_object_dequeue (GrayQueue *queue)
+char*
+mono_sgen_gray_object_dequeue (GrayQueue *queue)
 {
 	char *obj;
 
@@ -117,25 +99,6 @@ gray_object_dequeue (GrayQueue *queue)
 
 	return obj;
 }
-
-#if MAX_DEBUG_LEVEL >= 9
-#define GRAY_OBJECT_ENQUEUE gray_object_enqueue
-#define GRAY_OBJECT_DEQUEUE(queue,o) ((o) = gray_object_dequeue ((queue)))
-#else
-#define GRAY_OBJECT_ENQUEUE(queue,o) do {				\
-		if (G_UNLIKELY (!(queue)->first || (queue)->first->end == GRAY_QUEUE_SECTION_SIZE)) \
-			gray_object_alloc_queue_section ((queue));	\
-		(queue)->first->objects [(queue)->first->end++] = (o);	\
-	} while (0)
-#define GRAY_OBJECT_DEQUEUE(queue,o) do {				\
-		if (!(queue)->first)					\
-			(o) = NULL;					\
-		else if (G_UNLIKELY ((queue)->first->end == 1))		\
-			(o) = gray_object_dequeue ((queue));		\
-		else							\
-			(o) = (queue)->first->objects [--(queue)->first->end]; \
-	} while (0)
-#endif
 
 static void
 gray_object_queue_init (GrayQueue *queue)
