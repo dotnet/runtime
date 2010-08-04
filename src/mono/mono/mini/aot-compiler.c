@@ -5116,7 +5116,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		if (!cfg)
 			continue;
 
-		buf_size = 1024;
+		buf_size = 10240;
 		p = buf = g_malloc (buf_size);
 
 		nmethods ++;
