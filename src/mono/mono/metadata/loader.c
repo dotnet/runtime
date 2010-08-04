@@ -2188,9 +2188,8 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (!signature) {
 		const char *sig_body;
 		/*TODO we should cache the failure result somewhere*/
-		if (!mono_verifier_verify_method_signature (img, sig_offset, NULL)) {
+		if (!mono_verifier_verify_method_signature (img, sig_offset, error)) {
 			mono_loader_unlock ();
-			mono_error_set_method_load (error, m->klass, m->name, "");
 			return NULL;
 		}
 
@@ -2278,7 +2277,9 @@ mono_method_signature (MonoMethod *m)
 
 	sig = mono_method_signature_checked (m, &error);
 	if (!sig) {
-		g_warning ("Could not load signature due to: %s", mono_error_get_message (&error));
+		char *type_name = mono_type_get_full_name (m->klass);
+		g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (&error));
+		g_free (type_name);
 		mono_error_cleanup (&error);
 	}
 
