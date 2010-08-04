@@ -2188,9 +2188,8 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (!signature) {
 		const char *sig_body;
 		/*TODO we should cache the failure result somewhere*/
-		if (!mono_verifier_verify_method_signature (img, sig_offset, NULL)) {
+		if (!mono_verifier_verify_method_signature (img, sig_offset, error)) {
 			mono_loader_unlock ();
-			mono_error_set_method_load (error, m->klass, m->name, "");
 			return NULL;
 		}
 

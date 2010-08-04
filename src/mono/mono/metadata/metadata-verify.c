@@ -23,6 +23,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/strenc.h>
+#include <mono/utils/mono-error-internals.h>
 #include <string.h>
 //#include <signal.h>
 #include <ctype.h>
@@ -3804,6 +3805,18 @@ cleanup_context (VerifyContext *ctx, GSList **error_list)
 	return ctx->valid;	
 }
 
+static gboolean
+cleanup_context_checked (VerifyContext *ctx, MonoError *error)
+{
+	g_free (ctx->sections);
+	if (ctx->errors) {
+		MonoVerifyInfo *info = ctx->errors->data;
+		mono_error_set_bad_image (error, ctx->image, "%s", info->message);
+		mono_free_verify_list (ctx->errors);
+	}
+	return ctx->valid;
+}
+
 gboolean
 mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
 {
@@ -3957,18 +3970,21 @@ mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **e
 }
 
 gboolean
-mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, GSList **error_list)
+mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, MonoError *error)
 {
 	VerifyContext ctx;
+
+	mono_error_init (error);
 
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list != NULL);
+	init_verify_context (&ctx, image, TRUE);
 	ctx.stage = STAGE_TABLES;
 
 	is_valid_method_signature (&ctx, offset);
-	return cleanup_context (&ctx, error_list);
+	/*XXX This returns a bad image exception, it might be the case that the right exception is method load.*/
+	return cleanup_context_checked (&ctx, error);
 }
 
 gboolean
@@ -4167,8 +4183,9 @@ mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **e
 }
 
 gboolean
-mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, GSList **error_list)
+mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, MonoError *error)
 {
+	mono_error_init (error);
 	return TRUE;
 }
 

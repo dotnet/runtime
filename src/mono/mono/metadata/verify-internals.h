@@ -34,7 +34,7 @@ gboolean mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_
 
 gboolean mono_verifier_verify_field_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
-gboolean mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
+gboolean mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, MonoError *error) MONO_INTERNAL;
 gboolean mono_verifier_verify_memberref_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_verify_standalone_signature (MonoImage *image, guint32 offset, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_verify_typespec_signature (MonoImage *image, guint32 offset, guint32 token, GSList **error_list) MONO_INTERNAL;
