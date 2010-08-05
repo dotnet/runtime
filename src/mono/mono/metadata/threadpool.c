@@ -1860,8 +1860,10 @@ async_invoke_thread (gpointer data)
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
 					if (exc && mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
-						mono_unhandled_exception (exc);
-						exit (255);
+						if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
+							mono_unhandled_exception (exc);
+							exit (255);
+						}
 					}
 					mono_domain_set (mono_get_root_domain (), TRUE);
 				}
