@@ -468,9 +468,9 @@ enum {
 	SECT_REL_DYN,
 	SECT_RELA_DYN,
 	SECT_TEXT,
+	SECT_RODATA,
 	SECT_DYNAMIC,
 	SECT_GOT_PLT,
-	SECT_RODATA,
 	SECT_DATA,
 	SECT_BSS,
 	SECT_DEBUG_FRAME,
@@ -522,9 +522,9 @@ static SectInfo section_info [] = {
 	{".rel.dyn", SHT_REL, sizeof (ElfReloc), 2, SIZEOF_VOID_P},
 	{".rela.dyn", SHT_RELA, sizeof (ElfRelocA), 2, SIZEOF_VOID_P},
 	{".text", SHT_PROGBITS, 0, 6, 4096},
+	{".rodata", SHT_PROGBITS, 0, SHF_ALLOC, 4096},
 	{".dynamic", SHT_DYNAMIC, sizeof (ElfDynamic), 3, SIZEOF_VOID_P},
 	{".got.plt", SHT_PROGBITS, SIZEOF_VOID_P, 3, SIZEOF_VOID_P},
-	{".rodata", SHT_PROGBITS, 0, 6, 4096},
 	{".data", SHT_PROGBITS, 0, 3, 8},
 	{".bss", SHT_NOBITS, 0, 3, 8},
 	{".debug_frame", SHT_PROGBITS, 0, 0, 8},
@@ -1040,7 +1040,7 @@ bin_writer_fseek (MonoImageWriter *acfg, int offset)
 		acfg->out_buf_pos = offset;
 }
 
-static int normal_sections [] = { SECT_RODATA, SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, SECT_DEBUG_ABBREV, SECT_DEBUG_LINE, SECT_DEBUG_LOC };
+static int normal_sections [] = { SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, SECT_DEBUG_ABBREV, SECT_DEBUG_LINE, SECT_DEBUG_LOC };
 
 static int
 bin_writer_emit_writeout (MonoImageWriter *acfg)
@@ -1165,6 +1165,17 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 		file_offset += size;
 	}
 
+	file_offset = ALIGN_TO (file_offset, secth [SECT_RODATA].sh_addralign);
+	virt_offset = file_offset;
+	secth [SECT_RODATA].sh_addr = virt_offset;
+	secth [SECT_RODATA].sh_offset = file_offset;
+	if (sections [SECT_RODATA]) {
+		size = sections [SECT_RODATA]->cur_offset;
+		secth [SECT_RODATA].sh_size = size;
+		file_offset += size;
+		virt_offset += size;
+	}
+
 	file_offset = ALIGN_TO (file_offset, secth [SECT_DYNAMIC].sh_addralign);
 	virt_offset = file_offset;
 
@@ -1186,17 +1197,6 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	secth [SECT_GOT_PLT].sh_size = size;
 	file_offset += size;
 	virt_offset += size;
-
-	file_offset = ALIGN_TO (file_offset, secth [SECT_RODATA].sh_addralign);
-	virt_offset = ALIGN_TO (virt_offset, secth [SECT_RODATA].sh_addralign);
-	secth [SECT_RODATA].sh_addr = virt_offset;
-	secth [SECT_RODATA].sh_offset = file_offset;
-	if (sections [SECT_RODATA]) {
-		size = sections [SECT_RODATA]->cur_offset;
-		secth [SECT_RODATA].sh_size = size;
-		file_offset += size;
-		virt_offset += size;
-	}
 
 	file_offset = ALIGN_TO (file_offset, secth [SECT_DATA].sh_addralign);
 	virt_offset = ALIGN_TO (virt_offset, secth [SECT_DATA].sh_addralign);
@@ -1419,16 +1419,24 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 		bin_writer_fseek (acfg, secth [SECT_TEXT].sh_offset);
 		bin_writer_fwrite (acfg, sections [SECT_TEXT]->data, sections [SECT_TEXT]->cur_offset, 1);
 	}
+	/* .rodata */
+	if (sections [SECT_RODATA]) {
+		bin_writer_fseek (acfg, secth [SECT_RODATA].sh_offset);
+		bin_writer_fwrite (acfg, sections [SECT_RODATA]->data, sections [SECT_RODATA]->cur_offset, 1);
+	}
 	/* .dynamic */
+	bin_writer_fseek (acfg, secth [SECT_DYNAMIC].sh_offset);
 	bin_writer_fwrite (acfg, dynamic, sizeof (dynamic), 1);
 
 	/* .got.plt */
 	size = secth [SECT_DYNAMIC].sh_addr;
+	bin_writer_fseek (acfg, secth [SECT_GOT_PLT].sh_offset);
 	bin_writer_fwrite (acfg, &size, sizeof (size), 1);
 
 	/* normal sections */
 	for (i = 0; i < sizeof (normal_sections) / sizeof (normal_sections [0]); ++i) {
 		int sect = normal_sections [i];
+
 		if (sections [sect]) {
 			bin_writer_fseek (acfg, secth [sect].sh_offset);
 			bin_writer_fwrite (acfg, sections [sect]->data, sections [sect]->cur_offset, 1);
