@@ -6258,6 +6258,7 @@ mono_gc_base_init (void)
 			} else {
 				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
 				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
+				fprintf (stderr, "  major=COLLECTOR (where collector is `marksweep' or `copying')\n");
 				exit (1);
 			}
 		}
