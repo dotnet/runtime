@@ -7965,40 +7965,73 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* frequent check in generic code: box (struct), brtrue */
 
 			// FIXME: LLVM can't handle the inconsistent bb linking
-			if (!COMPILE_LLVM (cfg) && !mono_class_is_nullable (klass) &&
-				ip + 5 < end && ip_in_bb (cfg, bblock, ip + 5) && (ip [5] == CEE_BRTRUE || ip [5] == CEE_BRTRUE_S)) {
-				/*printf ("box-brtrue opt at 0x%04x in %s\n", real_offset, method->name);*/
+			if (!mono_class_is_nullable (klass) &&
+				ip + 5 < end && ip_in_bb (cfg, bblock, ip + 5) &&
+				(ip [5] == CEE_BRTRUE || 
+				 ip [5] == CEE_BRTRUE_S ||
+				 ip [5] == CEE_BRFALSE ||
+				 ip [5] == CEE_BRFALSE_S)) {
+				gboolean is_true = ip [5] == CEE_BRTRUE || ip [5] == CEE_BRTRUE_S;
+				int dreg;
+				MonoBasicBlock *true_bb, *false_bb;
+
 				ip += 5;
-				MONO_INST_NEW (cfg, ins, OP_BR);
-				if (*ip == CEE_BRTRUE_S) {
+
+				if (cfg->verbose_level > 3) {
+					printf ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
+					printf ("<box+brtrue opt>\n");
+				}
+
+				switch (*ip) {
+				case CEE_BRTRUE_S:
+				case CEE_BRFALSE_S:
 					CHECK_OPSIZE (2);
 					ip++;
 					target = ip + 1 + (signed char)(*ip);
 					ip++;
-				} else {
+					break;
+				case CEE_BRTRUE:
+				case CEE_BRFALSE:
 					CHECK_OPSIZE (5);
 					ip++;
 					target = ip + 4 + (gint)(read32 (ip));
 					ip += 4;
+					break;
+				default:
+					g_assert_not_reached ();
 				}
-				GET_BBLOCK (cfg, tblock, target);
-				link_bblock (cfg, bblock, tblock);
-				ins->inst_target_bb = tblock;
-				GET_BBLOCK (cfg, tblock, ip);
+
 				/* 
-				 * This leads to some inconsistency, since the two bblocks are 
-				 * not really connected, but it is needed for handling stack 
+				 * We need to link both bblocks, since it is needed for handling stack
 				 * arguments correctly (See test_0_box_brtrue_opt_regress_81102).
-				 * FIXME: This should only be needed if sp != stack_start, but that
-				 * doesn't work for some reason (test failure in mcs/tests on x86).
+				 * Branching to only one of them would lead to inconsistencies, so
+				 * generate an ICONST+BRTRUE, the branch opts will get rid of them.
 				 */
-				link_bblock (cfg, bblock, tblock);
+				GET_BBLOCK (cfg, true_bb, target);
+				GET_BBLOCK (cfg, false_bb, ip);
+
+				mono_link_bblock (cfg, cfg->cbb, true_bb);
+				mono_link_bblock (cfg, cfg->cbb, false_bb);
+
 				if (sp != stack_start) {
 					handle_stack_args (cfg, stack_start, sp - stack_start);
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
 				}
-				MONO_ADD_INS (bblock, ins);
+
+				if (COMPILE_LLVM (cfg)) {
+					dreg = alloc_ireg (cfg);
+					MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, dreg, is_true ? 0 : 1);
+
+					MONO_EMIT_NEW_BRANCH_BLOCK2 (cfg, OP_IBEQ, true_bb, false_bb);
+				} else {
+					/* The JIT can't eliminate the iconst+compare */
+					MONO_INST_NEW (cfg, ins, OP_BR);
+					ins->inst_target_bb = is_true ? true_bb : false_bb;
+					MONO_ADD_INS (cfg->cbb, ins);
+				}
+
 				start_new_bblock = 1;
 				break;
 			}
