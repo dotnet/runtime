@@ -3726,6 +3726,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	MonoExceptionClause *clause;
 	LLVMSigInfo sinfo;
+	char **names;
 
 	/* The code below might acquire the loader lock, so use it for global locking */
 	mono_loader_lock ();
@@ -3854,16 +3855,24 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		values [cfg->args [0]->dreg] = LLVMGetParam (method, sinfo.this_arg_pindex);
 		LLVMSetValueName (values [cfg->args [0]->dreg], "this");
 	}
+
+	names = g_new (char *, sig->param_count);
+	mono_method_get_param_names (cfg->method, (const char **) names);
+
 	for (i = 0; i < sig->param_count; ++i) {
 		char *name;
 
 		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, sinfo.pindexes [i]);
-		name = g_strdup_printf ("arg_%d", i);
+		if (names [i] && names [i][0] != '\0')
+			name = g_strdup_printf ("arg_%s", names [i]);
+		else
+			name = g_strdup_printf ("arg_%d", i);
 		LLVMSetValueName (values [cfg->args [i + sig->hasthis]->dreg], name);
 		g_free (name);
 		if (linfo->args [i + sig->hasthis].storage == LLVMArgVtypeByVal)
 			LLVMAddAttribute (LLVMGetParam (method, sinfo.pindexes [i]), LLVMByValAttribute);
 	}
+	g_free (names);
 
 	max_block_num = 0;
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
