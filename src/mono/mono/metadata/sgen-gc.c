@@ -6226,6 +6226,8 @@ mono_gc_base_init (void)
 	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
 
+	LOCK_INIT (interruption_mutex);
+
 	if ((env = getenv ("MONO_GC_PARAMS"))) {
 		opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; *ptr; ++ptr) {
