@@ -22,8 +22,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifdef SGEN_PARALLEL_MARK
-
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
 	pthread_t thread;
@@ -41,6 +39,9 @@ static WorkerData workers_gc_thread_data;
 static int workers_num_working;
 
 static GrayQueue workers_distribute_gray_queue;
+
+#define WORKERS_DISTRIBUTE_GRAY_QUEUE (major.is_parallel ? &workers_distribute_gray_queue : &gray_queue)
+
 /*
  * Must be a power of 2.  It seems that larger values don't help much.
  * The main reason to make this larger would be to sustain a bigger
@@ -146,6 +147,10 @@ static int
 workers_change_num_working (int delta)
 {
 	int old, new;
+
+	if (!major.is_parallel)
+		return -1;
+
 	do {
 		old = workers_num_working;
 		new = old + delta;
@@ -201,6 +206,9 @@ workers_thread_func (void *data_untyped)
 static void
 workers_distribute_gray_queue_sections (void)
 {
+	if (!major.is_parallel)
+		return;
+
 	workers_gray_queue_share_redirect (&workers_distribute_gray_queue);
 }
 
@@ -208,6 +216,9 @@ static void
 workers_init (int num_workers)
 {
 	int i;
+
+	if (!major.is_parallel)
+		return;
 
 	//g_print ("initing %d workers\n", num_workers);
 
@@ -260,6 +271,9 @@ workers_start_all_workers (int num_additional_workers)
 {
 	int i;
 
+	if (!major.is_parallel)
+		return;
+
 	g_assert (workers_num_working == 0);
 	workers_num_working = workers_num + num_additional_workers;
 
@@ -271,6 +285,9 @@ static void
 workers_join (void)
 {
 	int i;
+
+	if (!major.is_parallel)
+		return;
 
 	//g_print ("joining\n");
 	for (i = 0; i < workers_num; ++i) {
@@ -293,47 +310,12 @@ mono_sgen_is_worker_thread (pthread_t thread)
 {
 	int i;
 
+	if (!major.is_parallel)
+		return FALSE;
+
 	for (i = 0; i < workers_num; ++i) {
 		if (workers_data [i].thread == thread)
 			return TRUE;
 	}
 	return FALSE;
 }
-
-#else
-
-#define workers_distribute_gray_queue gray_queue
-
-static int
-workers_change_num_working (int delta)
-{
-	return -1;
-}
-
-static void
-workers_distribute_gray_queue_sections (void)
-{
-}
-
-static void
-workers_init (int num_workers)
-{
-}
-
-static void
-workers_start_all_workers (int num_additional_workers)
-{
-}
-
-static void
-workers_join (void)
-{
-}
-
-gboolean
-mono_sgen_is_worker_thread (pthread_t thread)
-{
-	return FALSE;
-}
-
-#endif

@@ -959,7 +959,12 @@ get_num_major_sections (void)
 }
 
 void
-mono_sgen_marksweep_init (SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end)
+#ifdef SGEN_PARALLEL_MARK
+mono_sgen_marksweep_par_init
+#else
+mono_sgen_marksweep_init
+#endif
+	(SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end)
 {
 	int i;
 
@@ -996,6 +1001,11 @@ mono_sgen_marksweep_init (SgenMajorCollector *collector, int the_nursery_bits, c
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
 
 	collector->section_size = MAJOR_SECTION_SIZE;
+#ifdef SGEN_PARALLEL_MARK
+	collector->is_parallel = TRUE;
+#else
+	collector->is_parallel = FALSE;
+#endif
 
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;

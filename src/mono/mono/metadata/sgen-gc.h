@@ -33,8 +33,6 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 
-#define SGEN_PARALLEL_MARK
-
 /*
  * Turning on heavy statistics will turn off the managed allocator and
  * the managed write barrier.
@@ -193,15 +191,6 @@ const static int restart_signal_num = SIGXCPU;
 #define LOCK_INTERRUPTION pthread_mutex_lock (&interruption_mutex)
 #define UNLOCK_INTERRUPTION pthread_mutex_unlock (&interruption_mutex)
 
-#ifdef SGEN_PARALLEL_MARK
-#define LOCK_GLOBAL_REMSET pthread_mutex_lock (&global_remset_mutex)
-#define UNLOCK_GLOBAL_REMSET pthread_mutex_unlock (&global_remset_mutex)
-#else
-#define LOCK_GLOBAL_REMSET
-#define UNLOCK_GLOBAL_REMSET
-#endif
-
-#ifdef SGEN_PARALLEL_MARK
 #define SGEN_CAS_PTR	InterlockedCompareExchangePointer
 #define SGEN_ATOMIC_ADD(x,i)	do {					\
 		int __old_x;						\
@@ -209,10 +198,6 @@ const static int restart_signal_num = SIGXCPU;
 			__old_x = (x);					\
 		} while (InterlockedCompareExchange (&(x), __old_x + (i), __old_x) != __old_x); \
 	} while (0)
-#else
-#define SGEN_CAS_PTR(p,n,c)	((*(void**)(p) == (void*)(c)) ? (*(void**)(p) = (void*)(n), (void*)(c)) : (*(void**)(p)))
-#define SGEN_ATOMIC_ADD(x,i)	((x) += (i))
-#endif
 
 /* non-pthread will need to provide their own version of start/stop */
 #define USE_SIGNAL_BASED_START_STOP_WORLD 1
@@ -664,6 +649,7 @@ void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
+	gboolean is_parallel;
 
 	gboolean (*is_object_live) (char *obj);
 	void* (*alloc_small_pinned_obj) (size_t size, gboolean has_references);
@@ -694,6 +680,7 @@ struct _SgenMajorCollector {
 };
 
 void mono_sgen_marksweep_init (SgenMajorCollector *collector, int nursery_bits, char *nursery_start, char *nursery_end) MONO_INTERNAL;
+void mono_sgen_marksweep_par_init (SgenMajorCollector *collector, int nursery_bits, char *nursery_start, char *nursery_end) MONO_INTERNAL;
 void mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end) MONO_INTERNAL;
 
 /*
