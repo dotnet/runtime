@@ -370,10 +370,6 @@ mono_runtime_cleanup (MonoDomain *domain)
 	mono_type_initialization_cleanup ();
 
 	mono_monitor_cleanup ();
-
-#ifndef HOST_WIN32
-	_wapi_cleanup ();
-#endif
 }
 
 static MonoDomainFunc quit_function = NULL;

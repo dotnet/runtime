@@ -1739,6 +1739,14 @@ mono_cleanup (void)
 
 	TlsFree (appdomain_thread_id);
 	DeleteCriticalSection (&appdomains_mutex);
+
+	/*
+	 * This should be called last as TlsGetValue ()/TlsSetValue () can be called during
+	 * shutdown.
+	 */
+#ifndef HOST_WIN32
+	_wapi_cleanup ();
+#endif
 }
 
 void
