@@ -630,6 +630,7 @@ mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, cha
 #endif
 
 	collector->section_size = MAJOR_SECTION_SIZE;
+	collector->is_parallel = FALSE;
 
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;

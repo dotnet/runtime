@@ -585,6 +585,17 @@ major_dump_heap (FILE *heap_dump_file)
 	} while (0)
 #define MS_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
 		int __word, __bit;					\
+		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
+		DEBUG (9, g_assert (MS_OBJ_ALLOCED ((obj), (block))));	\
+		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
+			MS_SET_MARK_BIT ((block), __word, __bit);	\
+			if ((block)->has_references)			\
+				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
+			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
+		}							\
+	} while (0)
+#define MS_PAR_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
+		int __word, __bit;					\
 		gboolean __was_marked;					\
 		DEBUG (9, g_assert (MS_OBJ_ALLOCED ((obj), (block))));	\
 		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
@@ -598,6 +609,7 @@ major_dump_heap (FILE *heap_dump_file)
 
 #include "sgen-major-copy-object.h"
 
+#ifdef SGEN_PARALLEL_MARK
 static void
 major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 {
@@ -682,8 +694,66 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 	}
 
 	block = MS_BLOCK_FOR_OBJ (obj);
+	MS_PAR_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+}
+#else
+static void
+major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
+{
+	void *obj = *ptr;
+	mword objsize;
+	MSBlockInfo *block;
+
+	HEAVY_STAT (++stat_copy_object_called_major);
+
+	DEBUG (9, g_assert (obj));
+	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
+
+	if (ptr_in_nursery (obj)) {
+		int word, bit;
+		char *forwarded;
+
+		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
+			*ptr = forwarded;
+			return;
+		}
+		if (SGEN_OBJECT_IS_PINNED (obj))
+			return;
+
+		HEAVY_STAT (++stat_objects_copied_major);
+
+		obj = copy_object_no_checks (obj, queue);
+		*ptr = obj;
+
+		/*
+		 * FIXME: See comment for copy_object_no_checks().  If
+		 * we have that, we can let the allocation function
+		 * give us the block info, too, and we won't have to
+		 * re-fetch it.
+		 */
+		block = MS_BLOCK_FOR_OBJ (obj);
+		MS_CALC_MARK_BIT (word, bit, obj, block);
+		DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
+		MS_SET_MARK_BIT (block, word, bit);
+		return;
+	}
+
+	objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
+
+	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE) {
+		if (SGEN_OBJECT_IS_PINNED (obj))
+			return;
+		binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), mono_sgen_safe_object_get_size ((MonoObject*)obj));
+		SGEN_PIN_OBJECT (obj);
+		/* FIXME: only enqueue if object has references */
+		GRAY_OBJECT_ENQUEUE (queue, obj);
+		return;
+	}
+
+	block = MS_BLOCK_FOR_OBJ (obj);
 	MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 }
+#endif
 
 #include "sgen-major-scan-object.h"
 
@@ -959,7 +1029,12 @@ get_num_major_sections (void)
 }
 
 void
-mono_sgen_marksweep_init (SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end)
+#ifdef SGEN_PARALLEL_MARK
+mono_sgen_marksweep_par_init
+#else
+mono_sgen_marksweep_init
+#endif
+	(SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end)
 {
 	int i;
 
@@ -996,6 +1071,11 @@ mono_sgen_marksweep_init (SgenMajorCollector *collector, int the_nursery_bits, c
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
 
 	collector->section_size = MAJOR_SECTION_SIZE;
+#ifdef SGEN_PARALLEL_MARK
+	collector->is_parallel = TRUE;
+#else
+	collector->is_parallel = FALSE;
+#endif
 
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
