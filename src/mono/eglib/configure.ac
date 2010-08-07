@@ -133,9 +133,6 @@ else
 fi
 
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
-if test "x$PKG_CONFIG" = "xno"; then
-	AC_MSG_ERROR([You need to install pkg-config])
-fi
 
 pkg_config_path=
 AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir      Change pkg-config dir to custom dir],
@@ -153,10 +150,13 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir      Chan
 dnl
 dnl No, you can not replace the call below with a pkg.m4 macro
 dnl
-if $PKG_CONFIG --atleast-version=$GLIB_REQUIRED_VERSION glib-2.0; then
-    have_glib=true;
-else
-    have_glib=false;
+have_glib=false
+if test "x$PKG_CONFIG" != "xno"; then
+    if $PKG_CONFIG --atleast-version=$GLIB_REQUIRED_VERSION glib-2.0; then
+        have_glib=true;
+    else
+        have_glib=false;
+    fi
 fi
 AM_CONDITIONAL(HAVE_GLIB, $have_glib)
 
