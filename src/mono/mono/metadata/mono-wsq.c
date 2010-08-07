@@ -24,7 +24,8 @@ struct _MonoWSQ {
 	MonoSemType lock;
 };
 
-static guint32 wsq_tlskey = -1;
+#define NO_KEY ((guint32) -1)
+static guint32 wsq_tlskey = NO_KEY;
 
 void
 mono_wsq_init ()
@@ -35,10 +36,10 @@ mono_wsq_init ()
 void
 mono_wsq_cleanup ()
 {
-	if (wsq_tlskey == -1)
+	if (wsq_tlskey == NO_KEY)
 		return;
 	TlsFree (wsq_tlskey);
-	wsq_tlskey = -1;
+	wsq_tlskey = NO_KEY;
 }
 
 MonoWSQ *
@@ -47,7 +48,7 @@ mono_wsq_create ()
 	MonoWSQ *wsq;
 	MonoDomain *root;
 
-	if (wsq_tlskey == -1)
+	if (wsq_tlskey == NO_KEY)
 		return NULL;
 
 	wsq = g_new0 (MonoWSQ, 1);
@@ -56,7 +57,10 @@ mono_wsq_create ()
 	root = mono_get_root_domain ();
 	wsq->queue = mono_array_new_cached (root, mono_defaults.object_class, INITIAL_LENGTH);
 	MONO_SEM_INIT (&wsq->lock, 1);
-	TlsSetValue (wsq_tlskey, wsq);
+	if (!TlsSetValue (wsq_tlskey, wsq)) {
+		mono_wsq_destroy (wsq);
+		wsq = NULL;
+	}
 	return wsq;
 }
 
@@ -69,9 +73,9 @@ mono_wsq_destroy (MonoWSQ *wsq)
 	g_assert (mono_wsq_count (wsq) == 0);
 	MONO_GC_UNREGISTER_ROOT (wsq->queue);
 	MONO_SEM_DESTROY (&wsq->lock);
-	if (wsq_tlskey != -1 && TlsGetValue (wsq_tlskey) == wsq)
-		TlsSetValue (wsq_tlskey, NULL);
 	memset (wsq, 0, sizeof (MonoWSQ));
+	if (wsq_tlskey != NO_KEY && TlsGetValue (wsq_tlskey) == wsq)
+		TlsSetValue (wsq_tlskey, NULL);
 	g_free (wsq);
 }
 
@@ -91,7 +95,7 @@ mono_wsq_local_push (void *obj)
 	int count;
 	MonoWSQ *wsq;
 
-	if (obj == NULL || wsq_tlskey == -1)
+	if (obj == NULL || wsq_tlskey == NO_KEY)
 		return FALSE;
 
 	wsq = (MonoWSQ *) TlsGetValue (wsq_tlskey);
@@ -141,7 +145,7 @@ mono_wsq_local_pop (void **ptr)
 	gboolean res;
 	MonoWSQ *wsq;
 
-	if (ptr == NULL || wsq_tlskey == -1)
+	if (ptr == NULL || wsq_tlskey == NO_KEY)
 		return FALSE;
 
 	wsq = (MonoWSQ *) TlsGetValue (wsq_tlskey);
@@ -181,7 +185,7 @@ mono_wsq_local_pop (void **ptr)
 void
 mono_wsq_try_steal (MonoWSQ *wsq, void **ptr, guint32 ms_timeout)
 {
-	if (wsq == NULL || ptr == NULL || *ptr != NULL || wsq_tlskey == -1)
+	if (wsq == NULL || ptr == NULL || *ptr != NULL || wsq_tlskey == NO_KEY)
 		return;
 
 	if (TlsGetValue (wsq_tlskey) == wsq)

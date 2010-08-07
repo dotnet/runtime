@@ -272,11 +272,11 @@ typedef struct MonoCompileArch {
 #define MIPS_LAST_FPARG_REG	mips_f19
 #endif
 
-//#define MONO_ARCH_HAVE_IMT 1
-//#define MONO_ARCH_IMT_REG mips_v0		/* XXX */
+#define MONO_ARCH_HAVE_IMT	1
+#define MONO_ARCH_IMT_REG	mips_t0
 
-//#define MONO_ARCH_VTABLE_REG	mips_v0		/* XXX */
-#define MONO_ARCH_RGCTX_REG	mips_v0		/* XXX */
+#define MONO_ARCH_VTABLE_REG	mips_t0
+#define MONO_ARCH_RGCTX_REG	mips_t0
 
 #define MONO_ARCH_HAVE_DECOMPOSE_OPTS 1
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
@@ -295,6 +295,8 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_USE_SIGACTION
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_NO_IOV_CHECK 1
+
+#define MONO_ARCH_THIS_AS_FIRST_ARG 1
 
 #define MIPS_NUM_REG_ARGS (MIPS_LAST_ARG_REG-MIPS_FIRST_ARG_REG+1)
 #define MIPS_NUM_REG_FPARGS (MIPS_LAST_FPARG_REG-MIPS_FIRST_FPARG_REG+1)

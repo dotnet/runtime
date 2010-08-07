@@ -158,6 +158,7 @@ void  mono_gc_finalize_threadpool_threads (void) MONO_INTERNAL;
 
 /* Accessible using mono_marshal_wrapper_info_from_wrapper () */
 typedef struct {
+	const char *gc_name;
 	int alloc_type;
 } AllocatorWrapperInfo;
 
@@ -166,6 +167,9 @@ MonoMethod* mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank) M
 MonoMethod *mono_gc_get_managed_allocator_by_type (int atype) MONO_INTERNAL;
 
 guint32 mono_gc_get_managed_allocator_types (void) MONO_INTERNAL;
+
+/* Return a short string identifying the GC, indented to be saved in AOT images */
+const char *mono_gc_get_gc_name (void) MONO_INTERNAL;
 
 /* Fast write barriers */
 MonoMethod* mono_gc_get_write_barrier (void) MONO_INTERNAL;

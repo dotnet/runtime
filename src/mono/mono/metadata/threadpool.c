@@ -1612,33 +1612,35 @@ mono_thread_pool_is_queue_array (MonoArray *o)
 	return obj == async_tp.first || obj == async_io_tp.first;
 }
 
-static void
-add_wsq (MonoWSQ *wsq)
+static MonoWSQ *
+add_wsq (void)
 {
 	int i;
-
-	if (wsq == NULL)
-		return;
+	MonoWSQ *wsq;
 
 	EnterCriticalSection (&wsqs_lock);
+	wsq = mono_wsq_create ();
 	if (wsqs == NULL) {
 		LeaveCriticalSection (&wsqs_lock);
-		return;
+		return NULL;
 	}
 	for (i = 0; i < wsqs->len; i++) {
 		if (g_ptr_array_index (wsqs, i) == NULL) {
 			wsqs->pdata [i] = wsq;
 			LeaveCriticalSection (&wsqs_lock);
-			return;
+			return wsq;
 		}
 	}
 	g_ptr_array_add (wsqs, wsq);
 	LeaveCriticalSection (&wsqs_lock);
+	return wsq;
 }
 
 static void
 remove_wsq (MonoWSQ *wsq)
 {
+	gpointer data;
+
 	if (wsq == NULL)
 		return;
 
@@ -1648,6 +1650,12 @@ remove_wsq (MonoWSQ *wsq)
 		return;
 	}
 	g_ptr_array_remove_fast (wsqs, wsq);
+	data = NULL;
+	while (mono_wsq_local_pop (&data)) {
+		threadpool_jobs_dec (data);
+		data = NULL;
+	}
+	mono_wsq_destroy (wsq);
 	LeaveCriticalSection (&wsqs_lock);
 }
 
@@ -1789,10 +1797,8 @@ async_invoke_thread (gpointer data)
   
 	tp = data;
 	wsq = NULL;
-	if (!tp->is_io) {
-		wsq = mono_wsq_create ();
-		add_wsq (wsq);
-	}
+	if (!tp->is_io)
+		wsq = add_wsq ();
 
 	thread = mono_thread_internal_current ();
 	if (tp_start_func)
@@ -1854,8 +1860,10 @@ async_invoke_thread (gpointer data)
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
 					if (exc && mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
-						mono_unhandled_exception (exc);
-						exit (255);
+						if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
+							mono_unhandled_exception (exc);
+							exit (255);
+						}
 					}
 					mono_domain_set (mono_get_root_domain (), TRUE);
 				}
@@ -1921,11 +1929,6 @@ async_invoke_thread (gpointer data)
 					TP_DEBUG ("DIE");
 					if (!tp->is_io) {
 						remove_wsq (wsq);
-						while (mono_wsq_local_pop (&data)) {
-							threadpool_jobs_dec (data);
-							data = NULL;
-						}
-						mono_wsq_destroy (wsq);
 					}
 					if (tp_finish_func)
 						tp_finish_func (tp_hooks_user_data);

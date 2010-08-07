@@ -116,7 +116,9 @@ public:
 
 MonoJITMemoryManager::MonoJITMemoryManager ()
 {
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION <= 7
 	SizeRequired = true;
+#endif
 	mm = JITMemoryManager::CreateDefaultMemManager ();
 }
 
@@ -152,6 +154,9 @@ unsigned char *
 MonoJITMemoryManager::startFunctionBody(const Function *F, 
 					uintptr_t &ActualSize)
 {
+	// FIXME: This leaks memory
+	if (ActualSize == 0)
+		ActualSize = 128;
 	return alloc_cb (wrap (F), ActualSize);
 }
   
@@ -189,7 +194,7 @@ unsigned char*
 MonoJITMemoryManager::startExceptionTable(const Function* F,
 					  uintptr_t &ActualSize)
 {
-	return alloc_cb (wrap (F), ActualSize);
+	return startFunctionBody(F, ActualSize);
 }
   
 void

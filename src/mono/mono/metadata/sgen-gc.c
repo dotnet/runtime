@@ -6226,6 +6226,8 @@ mono_gc_base_init (void)
 	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
 
+	LOCK_INIT (interruption_mutex);
+
 	if ((env = getenv ("MONO_GC_PARAMS"))) {
 		opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; *ptr; ++ptr) {
@@ -6636,12 +6638,19 @@ create_allocator (int atype)
 	mono_method_get_header (res)->init_locals = FALSE;
 
 	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (AllocatorWrapperInfo));
+	info->gc_name = "sgen";
 	info->alloc_type = atype;
 	mono_marshal_set_wrapper_info (res, info);
 
 	return res;
 }
 #endif
+
+const char *
+mono_gc_get_gc_name (void)
+{
+	return "sgen";
+}
 
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
 static MonoMethod *write_barrier_method;
