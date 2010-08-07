@@ -223,6 +223,12 @@ mono_gc_get_managed_allocator_types (void)
 	return 0;
 }
 
+const char *
+mono_gc_get_gc_name (void)
+{
+	return "null";
+}
+
 void
 mono_gc_add_weak_track_handle (MonoObject *obj, guint32 gchandle)
 {

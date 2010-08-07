@@ -1417,7 +1417,7 @@ add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
  * blob where the data was stored.
  */
 static guint32
-add_to_blob (MonoAotCompile *acfg, guint8 *data, guint32 data_len)
+add_to_blob (MonoAotCompile *acfg, const guint8 *data, guint32 data_len)
 {
 	if (acfg->blob.alloc_size == 0)
 		stream_init (&acfg->blob);
@@ -1724,6 +1724,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_ALLOC: {
 			AllocatorWrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
+			/* The GC name is saved once in MonoAotFileInfo */
 			g_assert (info->alloc_type != -1);
 			encode_value (info->alloc_type, p, &p);
 			break;
@@ -5742,6 +5743,15 @@ emit_file_info (MonoAotCompile *acfg)
 {
 	char symbol [128];
 	int i;
+	int gc_name_offset;
+	const char *gc_name;
+
+	/*
+	 * The managed allocators are GC specific, so can't use an AOT image created by one GC
+	 * in another.
+	 */
+	gc_name = mono_gc_get_gc_name ();
+	gc_name_offset = add_to_blob (acfg, (guint8*)gc_name, strlen (gc_name) + 1);
 
 	sprintf (symbol, "mono_aot_file_info");
 	emit_section_change (acfg, ".data", 0);
@@ -5749,13 +5759,14 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 	emit_global (acfg, symbol, FALSE);
 
-	/* The data emitted here must match MonoAotFileInfo in aot-runtime.c. */
+	/* The data emitted here must match MonoAotFileInfo. */
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
 	emit_int32 (acfg, acfg->nmethods);
 	emit_int32 (acfg, acfg->flags);
 	emit_int32 (acfg, acfg->opts);
+	emit_int32 (acfg, gc_name_offset);
 
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->num_trampolines [i]);
