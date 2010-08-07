@@ -33,7 +33,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 
-/* #define SGEN_PARALLEL_MARK */
+#define SGEN_PARALLEL_MARK
 
 /*
  * Turning on heavy statistics will turn off the managed allocator and
@@ -192,6 +192,14 @@ const static int restart_signal_num = SIGXCPU;
 #define UNLOCK_GC pthread_mutex_unlock (&gc_mutex)
 #define LOCK_INTERRUPTION pthread_mutex_lock (&interruption_mutex)
 #define UNLOCK_INTERRUPTION pthread_mutex_unlock (&interruption_mutex)
+
+#ifdef SGEN_PARALLEL_MARK
+#define LOCK_GLOBAL_REMSET pthread_mutex_lock (&global_remset_mutex)
+#define UNLOCK_GLOBAL_REMSET pthread_mutex_unlock (&global_remset_mutex)
+#else
+#define LOCK_GLOBAL_REMSET
+#define UNLOCK_GLOBAL_REMSET
+#endif
 
 #ifdef SGEN_PARALLEL_MARK
 #define SGEN_CAS_PTR	InterlockedCompareExchangePointer
@@ -520,10 +528,15 @@ struct _GrayQueueSection {
 };
 
 typedef struct _SgenGrayQueue SgenGrayQueue;
+
+typedef void (*GrayQueueAllocPrepareFunc) (SgenGrayQueue*);
+
 struct _SgenGrayQueue {
 	GrayQueueSection *first;
 	GrayQueueSection *free_list;
 	int balance;
+	GrayQueueAllocPrepareFunc alloc_prepare_func;
+	void *alloc_prepare_data;
 };
 
 #if SGEN_MAX_DEBUG_LEVEL >= 9
@@ -590,6 +603,7 @@ enum {
 	INTERNAL_MEM_MS_TABLES,
 	INTERNAL_MEM_MS_BLOCK_INFO,
 	INTERNAL_MEM_EPHEMERON_LINK,
+	INTERNAL_MEM_WORKER_DATA,
 	INTERNAL_MEM_MAX
 };
 

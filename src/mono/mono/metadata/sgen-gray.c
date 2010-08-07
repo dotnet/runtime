@@ -30,6 +30,9 @@ gray_object_alloc_queue_section (GrayQueue *queue)
 {
 	GrayQueueSection *section;
 
+	if (queue->alloc_prepare_func)
+		queue->alloc_prepare_func (queue);
+
 	if (queue->free_list) {
 		/* Use the previously allocated queue sections if possible */
 		section = queue->free_list;
@@ -100,6 +103,29 @@ mono_sgen_gray_object_dequeue (GrayQueue *queue)
 	return obj;
 }
 
+static GrayQueueSection*
+gray_object_dequeue_section (GrayQueue *queue)
+{
+	GrayQueueSection *section;
+
+	if (!queue->first)
+		return NULL;
+
+	section = queue->first;
+	queue->first = section->next;
+
+	section->next = NULL;
+
+	return section;
+}
+
+static void
+gray_object_enqueue_section (GrayQueue *queue, GrayQueueSection *section)
+{
+	section->next = queue->first;
+	queue->first = section;
+}
+
 static void
 gray_object_queue_init (GrayQueue *queue)
 {
@@ -120,4 +146,12 @@ gray_object_queue_init (GrayQueue *queue)
 		section->next = next->next;
 		gray_object_free_queue_section (next);
 	}
+}
+
+static void
+gray_object_queue_init_with_alloc_prepare (GrayQueue *queue, GrayQueueAllocPrepareFunc func, void *data)
+{
+	gray_object_queue_init (queue);
+	queue->alloc_prepare_func = func;
+	queue->alloc_prepare_data = data;
 }

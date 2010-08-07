@@ -508,6 +508,10 @@ static mword highest_heap_address = 0;
 
 static LOCK_DECLARE (interruption_mutex);
 
+#ifdef SGEN_PARALLEL_MARK
+static LOCK_DECLARE (global_remset_mutex);
+#endif
+
 typedef struct _FinalizeEntry FinalizeEntry;
 struct _FinalizeEntry {
 	FinalizeEntry *next;
@@ -772,6 +776,7 @@ SgenMajorCollector major;
 #include "sgen-pinning.c"
 #include "sgen-pinning-stats.c"
 #include "sgen-gray.c"
+#include "sgen-workers.c"
 #include "sgen-los.c"
 
 /* Root bitmap descriptors are simpler: the lower three bits describe the type
@@ -1526,8 +1531,12 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 
 	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
 
-	if (!global_remset_location_was_not_added (ptr))
+	LOCK_GLOBAL_REMSET;
+
+	if (!global_remset_location_was_not_added (ptr)) {
+		UNLOCK_GLOBAL_REMSET;
 		return;
+	}
 
 	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
 	binary_protocol_global_remset (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (*(gpointer*)ptr));
@@ -1540,6 +1549,7 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 	 */
 	if (global_remset->store_next + 3 < global_remset->end_set) {
 		*(global_remset->store_next++) = (mword)ptr;
+		UNLOCK_GLOBAL_REMSET;
 		return;
 	}
 	rs = alloc_remset (global_remset->end_set - global_remset->data, NULL);
@@ -1555,6 +1565,8 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 		}
 		DEBUG (4, fprintf (gc_debug_file, "Global remset now has size %d\n", global_rs_size));
 	}
+
+	UNLOCK_GLOBAL_REMSET;
 }
 
 /*
@@ -1564,7 +1576,7 @@ mono_sgen_add_to_global_remset (gpointer ptr)
  * frequently after each object is copied, to achieve better locality and cache
  * usage.
  */
-static void inline
+static void
 drain_gray_stack (GrayQueue *queue)
 {
 	char *obj;
@@ -1578,6 +1590,11 @@ drain_gray_stack (GrayQueue *queue)
 			major.minor_scan_object (obj, queue);
 		}
 	} else {
+#ifdef SGEN_PARALLEL_MARK
+		if (queue == &workers_distribute_gray_queue)
+			return;
+#endif
+
 		for (;;) {
 			GRAY_OBJECT_DEQUEUE (queue, obj);
 			if (!obj)
@@ -2685,6 +2702,7 @@ major_do_collection (const char *reason)
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
 	gray_object_queue_init (&gray_queue);
+	gray_object_queue_init (&workers_distribute_gray_queue);
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
@@ -2733,7 +2751,7 @@ major_do_collection (const char *reason)
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
 	/* first pass for the sections */
 	mono_sgen_find_section_pin_queue_start_end (nursery_section);
-	major.find_pin_queue_start_ends (&gray_queue);
+	major.find_pin_queue_start_ends (&workers_distribute_gray_queue);
 	/* identify possible pointers to the insize of large objects */
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from large objects\n"));
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
@@ -2741,15 +2759,15 @@ major_do_collection (const char *reason)
 		if (mono_sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + bigobj->size, &dummy)) {
 			pin_object (bigobj->data);
 			/* FIXME: only enqueue if object has references */
-			GRAY_OBJECT_ENQUEUE (&gray_queue, bigobj->data);
+			GRAY_OBJECT_ENQUEUE (&workers_distribute_gray_queue, bigobj->data);
 			if (heap_dump_file)
 				mono_sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %lu from roots\n", bigobj->data, safe_name (bigobj->data), (unsigned long)bigobj->size));
 		}
 	}
 	/* second pass for the sections */
-	mono_sgen_pin_objects_in_section (nursery_section, &gray_queue);
-	major.pin_objects (&gray_queue);
+	mono_sgen_pin_objects_in_section (nursery_section, &workers_distribute_gray_queue);
+	major.pin_objects (&workers_distribute_gray_queue);
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED_MS (atv, btv);
@@ -2758,14 +2776,14 @@ major_do_collection (const char *reason)
 
 	major.init_to_space ();
 
-	drain_gray_stack (&gray_queue);
+	workers_start_all_workers (1);
 
 	TV_GETTIME (atv);
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (major.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_NORMAL, &gray_queue);
-	scan_from_registered_roots (major.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_WBARRIER, &gray_queue);
+	scan_from_registered_roots (major.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_NORMAL, &workers_distribute_gray_queue);
+	scan_from_registered_roots (major.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_WBARRIER, &workers_distribute_gray_queue);
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 
@@ -2780,14 +2798,23 @@ major_do_collection (const char *reason)
 	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 
 	/* scan the list of objects ready for finalization */
-	scan_finalizer_entries (major.copy_or_mark_object, fin_ready_list, &gray_queue);
-	scan_finalizer_entries (major.copy_or_mark_object, critical_fin_list, &gray_queue);
+	scan_finalizer_entries (major.copy_or_mark_object, fin_ready_list, &workers_distribute_gray_queue);
+	scan_finalizer_entries (major.copy_or_mark_object, critical_fin_list, &workers_distribute_gray_queue);
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
+
+	while (!gray_object_queue_is_empty (&workers_distribute_gray_queue))
+		workers_distribute_gray_queue_sections ();
+	workers_change_num_working (-1);
+	workers_join ();
+
+#ifdef SGEN_PARALLEL_MARK
+	g_assert (gray_object_queue_is_empty (&gray_queue));
+#endif
 
 	/* all the objects in the heap */
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
@@ -4669,6 +4696,7 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 void*
 mono_gc_scan_object (void *obj)
 {
+	g_assert_not_reached ();
 	if (current_collection_generation == GENERATION_NURSERY)
 		major.copy_object (&obj, &gray_queue);
 	else
@@ -6227,6 +6255,9 @@ mono_gc_base_init (void)
 	gc_debug_file = stderr;
 
 	LOCK_INIT (interruption_mutex);
+#ifdef SGEN_PARALLEL_MARK
+	LOCK_INIT (global_remset_mutex);
+#endif
 
 	if ((env = getenv ("MONO_GC_PARAMS"))) {
 		opts = g_strsplit (env, ",", -1);
@@ -6285,11 +6316,12 @@ mono_gc_base_init (void)
 
 	alloc_nursery ();
 
-	if (!major_collector || !strcmp (major_collector, "marksweep"))
+	if (!major_collector || !strcmp (major_collector, "marksweep")) {
 		mono_sgen_marksweep_init (&major, DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end);
-	else if (!strcmp (major_collector, "copying"))
+		workers_init (mono_cpu_count ());
+	} else if (!strcmp (major_collector, "copying")) {
 		mono_sgen_copying_init (&major, DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end);
-	else {
+	} else {
 		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector);
 		exit (1);
 	}
@@ -6993,12 +7025,6 @@ mono_gc_is_moving (void)
 
 gboolean
 mono_gc_is_disabled (void)
-{
-	return FALSE;
-}
-
-gboolean
-mono_sgen_is_worker_thread (pthread_t thread)
 {
 	return FALSE;
 }
