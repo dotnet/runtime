@@ -211,6 +211,7 @@
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
 #include "utils/mono-counters.h"
+#include "utils/mono-proclib.h"
 
 #include <mono/utils/memcheck.h>
 
@@ -6329,8 +6330,6 @@ mono_gc_base_init (void)
 		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector);
 		exit (1);
 	}
-
-	workers_init (8);
 
 	if (major_collector)
 		g_free (major_collector);
