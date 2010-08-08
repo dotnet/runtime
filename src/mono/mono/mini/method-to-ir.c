@@ -2958,7 +2958,7 @@ mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_cl
 	if (cfg->generic_sharing_context)
 		context_used = mono_class_check_context_used (array_class);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, obj->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
 				       
 	if (cfg->opt & MONO_OPT_SHARED) {
 		int class_reg = alloc_preg (cfg);
