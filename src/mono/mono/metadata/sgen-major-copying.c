@@ -89,6 +89,20 @@ static long stat_major_copy_object_failed_large_pinned = 0;
 static long stat_major_copy_object_failed_to_space = 0;
 #endif
 
+static void*
+major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
+{
+	if (nursery_align)
+		nursery_start = mono_sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
+	else
+		nursery_start = mono_sgen_alloc_os_memory (nursery_size, TRUE);
+
+	nursery_end = nursery_start + nursery_size;
+	nursery_bits = the_nursery_bits;
+
+	return nursery_start;
+}
+
 static gboolean
 obj_is_from_pinned_alloc (char *p)
 {
@@ -616,12 +630,8 @@ get_num_major_sections (void)
 }
 
 void
-mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end)
+mono_sgen_copying_init (SgenMajorCollector *collector)
 {
-	nursery_bits = the_nursery_bits;
-	nursery_start = the_nursery_start;
-	nursery_end = the_nursery_end;
-
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("# major copy_object() failed forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_forwarded);
 	mono_counters_register ("# major copy_object() failed pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_copy_object_failed_pinned);
@@ -632,6 +642,7 @@ mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, cha
 	collector->section_size = MAJOR_SECTION_SIZE;
 	collector->is_parallel = FALSE;
 
+	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
 	collector->alloc_degraded = major_alloc_degraded;
@@ -654,6 +665,8 @@ mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, cha
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+	collector->handle_gc_param = NULL;
+	collector->print_gc_param_usage = NULL;
 
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);

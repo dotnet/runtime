@@ -40,7 +40,12 @@
 #define DEBUG(l,x)
 
 #define MS_BLOCK_SIZE	(16*1024)
+#define MS_BLOCK_SIZE_SHIFT	14
 #define MAJOR_SECTION_SIZE	MS_BLOCK_SIZE
+
+#ifdef FIXED_HEAP
+#define MS_DEFAULT_HEAP_NUM_BLOCKS	(32 * 1024) /* 512 MB */
+#endif
 
 /*
  * Don't allocate single blocks, but alloc a contingent of this many
@@ -53,14 +58,18 @@
  * of a block is the MSBlockHeader, then opional padding, then come
  * the objects, so this must be >= sizeof (MSBlockHeader).
  */
+#ifdef FIXED_HEAP
+#define MS_BLOCK_SKIP	0
+#else
 #define MS_BLOCK_SKIP	16
+#endif
 
 #define MS_BLOCK_FREE	(MS_BLOCK_SIZE - MS_BLOCK_SKIP)
 
 #define MS_NUM_MARK_WORDS	((MS_BLOCK_SIZE / SGEN_ALLOC_ALIGN + sizeof (mword) * 8 - 1) / (sizeof (mword) * 8))
 
 #if SGEN_MAX_SMALL_OBJ_SIZE > MS_BLOCK_FREE / 2
-#error MAX_SMALL_OBJ_SIZE must be at most (MS_BLOCK_SIZE - MS_BLOCK_SKIP) / 2
+#error MAX_SMALL_OBJ_SIZE must be at most MS_BLOCK_FREE / 2
 #endif
 
 typedef struct _MSBlockInfo MSBlockInfo;
@@ -68,27 +77,48 @@ struct _MSBlockInfo {
 	int obj_size;
 	gboolean pinned;
 	gboolean has_references;
+#ifdef FIXED_HEAP
+	gboolean used;
+#else
+	MSBlockInfo *next;
+#endif
 	char *block;
 	void **free_list;
 	MSBlockInfo *next_free;
-	MSBlockInfo *next;
 	void **pin_queue_start;
 	int pin_queue_num_entries;
 	mword mark_words [MS_NUM_MARK_WORDS];
 };
 
-#define MS_BLOCK_OBJ(b,i)	((b)->block + MS_BLOCK_SKIP + (b)->obj_size * (i))
+#ifdef FIXED_HEAP
+static int ms_heap_num_blocks = MS_DEFAULT_HEAP_NUM_BLOCKS;
 
+#define ms_heap_start	nursery_end
+static char *ms_heap_end;
+
+#define MS_PTR_IN_SMALL_MAJOR_HEAP(p)	((char*)(p) >= ms_heap_start && (char*)(p) < ms_heap_end)
+
+/* array of all all block infos in the system */
+static MSBlockInfo *block_infos;
+#endif
+
+#define MS_BLOCK_OBJ(b,i)		((b)->block + MS_BLOCK_SKIP + (b)->obj_size * (i))
+#define MS_BLOCK_DATA_FOR_OBJ(o)	((char*)((mword)(o) & ~(mword)(MS_BLOCK_SIZE - 1)))
+
+#ifdef FIXED_HEAP
+#define MS_BLOCK_FOR_OBJ(o)		(&block_infos [(mword)((char*)(o) - ms_heap_start) >> MS_BLOCK_SIZE_SHIFT])
+#else
 typedef struct {
 	MSBlockInfo *info;
 } MSBlockHeader;
 
-#define MS_BLOCK_FOR_OBJ(o)	(((MSBlockHeader*)((mword)(o) & ~(MS_BLOCK_SIZE-1)))->info)
+#define MS_BLOCK_FOR_OBJ(o)		(((MSBlockHeader*)MS_BLOCK_DATA_FOR_OBJ ((o)))->info)
+#endif
 
 #define MS_BLOCK_OBJ_INDEX(o,b)	(((char*)(o) - ((b)->block + MS_BLOCK_SKIP)) / (b)->obj_size)
 
-#define MS_CALC_MARK_BIT(w,b,o,bl) 	do {				\
-		int i = ((char*)(o) - (bl)->block) >> SGEN_ALLOC_ALIGN_BITS; \
+#define MS_CALC_MARK_BIT(w,b,o) 	do {				\
+		int i = ((char*)(o) - MS_BLOCK_DATA_FOR_OBJ ((o))) >> SGEN_ALLOC_ALIGN_BITS; \
 		if (sizeof (mword) == 4) {				\
 			(w) = i >> 5;					\
 			(b) = i & 31;					\
@@ -151,11 +181,29 @@ static char *nursery_end;
 
 #define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), nursery_bits, nursery_start, nursery_end))
 
+#ifdef FIXED_HEAP
+/* non-allocated block free-list */
+static MSBlockInfo *empty_blocks = NULL;
+#else
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
-static int num_empty_blocks = 0;
 /* all allocated blocks in the system */
 static MSBlockInfo *all_blocks;
+static int num_empty_blocks = 0;
+#endif
+
+#ifdef FIXED_HEAP
+#define FOREACH_BLOCK(bl)	{					\
+		int __block_i;						\
+		for (__block_i = 0; __block_i < ms_heap_num_blocks; ++__block_i) { \
+			(bl) = &block_infos [__block_i];		\
+			if (!(bl)->used) continue;
+#define END_FOREACH_BLOCK	}}
+#else
+#define FOREACH_BLOCK(bl)	for ((bl) = all_blocks; (bl); (bl) = (bl)->next) {
+#define END_FOREACH_BLOCK	}
+#endif
+
 static int num_major_sections = 0;
 /* one free block list for each block object size */
 static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
@@ -181,6 +229,82 @@ ms_find_block_obj_size_index (int size)
 	 fast_block_obj_size_indexes [((s)+7)>>3] :		\
 	 ms_find_block_obj_size_index ((s)))
 
+#ifdef FIXED_HEAP
+static void*
+major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
+{
+	char *heap_start;
+	mword major_heap_size = ms_heap_num_blocks * MS_BLOCK_SIZE;
+	mword alloc_size = nursery_size + major_heap_size;
+	int i;
+
+	g_assert (ms_heap_num_blocks > 0);
+	g_assert (nursery_size % MS_BLOCK_SIZE == 0);
+	if (nursery_align)
+		g_assert (nursery_align % MS_BLOCK_SIZE == 0);
+
+	nursery_start = mono_sgen_alloc_os_memory_aligned (alloc_size, nursery_align ? nursery_align : MS_BLOCK_SIZE, TRUE);
+	nursery_end = heap_start = nursery_start + nursery_size;
+	nursery_bits = the_nursery_bits;
+
+	ms_heap_end = heap_start + major_heap_size;
+
+	block_infos = mono_sgen_alloc_internal_dynamic (sizeof (MSBlockInfo) * ms_heap_num_blocks, INTERNAL_MEM_MS_BLOCK_INFO);
+
+	for (i = 0; i < ms_heap_num_blocks; ++i) {
+		block_infos [i].block = heap_start + i * MS_BLOCK_SIZE;
+		if (i < ms_heap_num_blocks - 1)
+			block_infos [i].next_free = &block_infos [i + 1];
+		else
+			block_infos [i].next_free = NULL;
+	}
+
+	empty_blocks = &block_infos [0];
+
+	return nursery_start;
+}
+#else
+static void*
+major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
+{
+	if (nursery_align)
+		nursery_start = mono_sgen_alloc_os_memory_aligned (nursery_size, nursery_align, TRUE);
+	else
+		nursery_start = mono_sgen_alloc_os_memory (nursery_size, TRUE);
+
+	nursery_end = nursery_start + nursery_size;
+	nursery_bits = the_nursery_bits;
+
+	return nursery_start;
+}
+#endif
+
+#ifdef FIXED_HEAP
+static MSBlockInfo*
+ms_get_empty_block (void)
+{
+	MSBlockInfo *block;
+
+	g_assert (empty_blocks);
+
+	block = empty_blocks;
+	empty_blocks = empty_blocks->next_free;
+
+	block->used = TRUE;
+
+	mono_sgen_update_heap_boundaries ((mword)block, (mword)block + MS_BLOCK_SIZE);
+
+	return block;
+}
+
+static void
+ms_free_block (MSBlockInfo *block)
+{
+	block->next_free = empty_blocks;
+	empty_blocks = block;
+	block->used = FALSE;
+}
+#else
 static void*
 ms_get_empty_block (void)
 {
@@ -244,6 +368,7 @@ ms_free_block (void *block)
 
 	SGEN_ATOMIC_ADD (num_empty_blocks, 1);
 }
+#endif
 
 //#define MARKSWEEP_CONSISTENCY_CHECK
 
@@ -261,23 +386,31 @@ check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 		   one free slot */
 		g_assert (block->free_list);
 
+#ifdef FIXED_HEAP
+		/* the block must not be in the empty_blocks list */
+		for (b = empty_blocks; b; b = b->next_free)
+			g_assert (b != block);
+#else
 		/* the block must be in the all_blocks list */
 		for (b = all_blocks; b; b = b->next) {
 			if (b == block)
 				break;
 		}
 		g_assert (b == block);
+#endif
 	}
 }
 
 static void
 check_empty_blocks (void)
 {
+#ifndef FIXED_HEAP
 	void *p;
 	int i = 0;
 	for (p = empty_blocks; p; p = *(void**)p)
 		++i;
 	g_assert (i == num_empty_blocks);
+#endif
 }
 
 static void
@@ -287,13 +420,15 @@ consistency_check (void)
 	int i;
 
 	/* check all blocks */
-	for (block = all_blocks; block; block = block->next) {
+	FOREACH_BLOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int num_free = 0;
 		void **free;
 
+#ifndef FIXED_HEAP
 		/* check block header */
 		g_assert (((MSBlockHeader*)block->block)->info == block);
+#endif
 
 		/* count number of free slots */
 		for (i = 0; i < count; ++i) {
@@ -312,7 +447,7 @@ consistency_check (void)
 		/* check all mark words are zero */
 		for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
 			g_assert (block->mark_words [i] == 0);
-	}
+	} END_FOREACH_BLOCK;
 
 	/* check free blocks */
 	for (i = 0; i < num_block_obj_sizes; ++i) {
@@ -330,8 +465,12 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 {
 	int size = block_obj_sizes [size_index];
 	int count = MS_BLOCK_FREE / size;
+#ifdef FIXED_HEAP
+	MSBlockInfo *info = ms_get_empty_block ();
+#else
 	MSBlockInfo *info = mono_sgen_alloc_internal (INTERNAL_MEM_MS_BLOCK_INFO);
 	MSBlockHeader *header;
+#endif
 	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
 	char *obj_start;
 	int i;
@@ -341,26 +480,32 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->obj_size = size;
 	info->pinned = pinned;
 	info->has_references = has_references;
+#ifndef FIXED_HEAP
 	info->block = ms_get_empty_block ();
 
 	header = (MSBlockHeader*) info->block;
 	header->info = info;
+#endif
 
 	/* build free list */
 	obj_start = info->block + MS_BLOCK_SKIP;
 	info->free_list = (void**)obj_start;
-	/* we're skipping the last one - it's already NULL */
+	/* we're skipping the last one - it must be nulled */
 	for (i = 0; i < count - 1; ++i) {
 		char *next_obj_start = obj_start + size;
 		*(void**)obj_start = next_obj_start;
 		obj_start = next_obj_start;
 	}
+	/* the last one */
+	*(void**)obj_start = NULL;
 
 	info->next_free = free_blocks [size_index];
 	free_blocks [size_index] = info;
 
+#ifndef FIXED_HEAP
 	info->next = all_blocks;
 	all_blocks = info;
+#endif
 
 	++num_major_sections;
 }
@@ -430,7 +575,7 @@ free_object (char *obj, size_t size, gboolean pinned)
 	int word, bit;
 	DEBUG (9, g_assert ((pinned && block->pinned) || (!pinned && !block->pinned)));
 	DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
-	MS_CALC_MARK_BIT (word, bit, obj, block);
+	MS_CALC_MARK_BIT (word, bit, obj);
 	DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
 	if (!block->free_list) {
 		MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, block->has_references);
@@ -492,21 +637,29 @@ major_is_object_live (char *obj)
 {
 	MSBlockInfo *block;
 	int word, bit;
+#ifndef FIXED_HEAP
 	mword objsize;
+#endif
 
 	if (ptr_in_nursery (obj))
 		return FALSE;
 
+#ifdef FIXED_HEAP
+	/* LOS */
+	if (!MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
+		return FALSE;
+#else
 	objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
 
 	/* LOS */
 	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
 		return FALSE;
+#endif
 
 	/* now we know it's in a major block */
 	block = MS_BLOCK_FOR_OBJ (obj);
 	DEBUG (9, g_assert (!block->pinned));
-	MS_CALC_MARK_BIT (word, bit, obj, block);
+	MS_CALC_MARK_BIT (word, bit, obj);
 	return MS_MARK_BIT (block, word, bit) ? TRUE : FALSE;
 }
 
@@ -521,7 +674,7 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 {
 	MSBlockInfo *block;
 
-	for (block = all_blocks; block; block = block->next) {
+	FOREACH_BLOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int i;
 
@@ -535,7 +688,7 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 			if (MS_OBJ_ALLOCED (obj, block))
 				callback ((char*)obj, block->obj_size, data);
 		}
-	}
+	} END_FOREACH_BLOCK;
 }
 
 static void
@@ -548,7 +701,7 @@ major_dump_heap (FILE *heap_dump_file)
 {
 	MSBlockInfo *block;
 
-	for (block = all_blocks; block; block = block->next) {
+	FOREACH_BLOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int i;
 		int start = -1;
@@ -568,14 +721,14 @@ major_dump_heap (FILE *heap_dump_file)
 		}
 
 		fprintf (heap_dump_file, "</section>\n");
-	}
+	} END_FOREACH_BLOCK;
 }
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
 #define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,block,queue) do {	\
 		int __word, __bit;					\
-		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
+		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		if (!MS_MARK_BIT ((block), __word, __bit) && MS_OBJ_ALLOCED ((obj), (block))) { \
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
@@ -585,20 +738,20 @@ major_dump_heap (FILE *heap_dump_file)
 	} while (0)
 #define MS_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
 		int __word, __bit;					\
-		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
+		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		DEBUG (9, g_assert (MS_OBJ_ALLOCED ((obj), (block))));	\
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj));	\
-			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), safe_object_get_size ((MonoObject*)(obj))); \
+			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), mono_sgen_safe_object_get_size ((MonoObject*)(obj))); \
 		}							\
 	} while (0)
 #define MS_PAR_MARK_OBJECT_AND_ENQUEUE(obj,block,queue) do {		\
 		int __word, __bit;					\
 		gboolean __was_marked;					\
 		DEBUG (9, g_assert (MS_OBJ_ALLOCED ((obj), (block))));	\
-		MS_CALC_MARK_BIT (__word, __bit, (obj), (block));	\
+		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
 		MS_PAR_SET_MARK_BIT (__was_marked, (block), __word, __bit); \
 		if (!__was_marked) {					\
 			if ((block)->has_references)			\
@@ -657,7 +810,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			 * re-fetch it here.
 			 */
 			block = MS_BLOCK_FOR_OBJ (obj);
-			MS_CALC_MARK_BIT (word, bit, obj, block);
+			MS_CALC_MARK_BIT (word, bit, obj);
 			DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
 			MS_PAR_SET_MARK_BIT (was_marked, block, word, bit);
 		} else {
@@ -675,26 +828,29 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 
 			*ptr = obj;
 		}
-		return;
-	}
+	} else {
+#ifdef FIXED_HEAP
+		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
+#else
+		objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
 
-	objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
-
-	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE) {
-		if (vtable_word & SGEN_PINNED_BIT)
-			return;
-		binary_protocol_pin (obj, vt, mono_sgen_safe_object_get_size ((MonoObject*)obj));
-		if (SGEN_CAS_PTR (obj, (void*)(vtable_word | SGEN_PINNED_BIT), (void*)vtable_word) == (void*)vtable_word) {
-			if (SGEN_VTABLE_HAS_REFERENCES (vt))
-				GRAY_OBJECT_ENQUEUE (queue, obj);
+		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)
+#endif
+		{
+			block = MS_BLOCK_FOR_OBJ (obj);
+			MS_PAR_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 		} else {
-			g_assert (SGEN_OBJECT_IS_PINNED (obj));
+			if (vtable_word & SGEN_PINNED_BIT)
+				return;
+			binary_protocol_pin (obj, vt, mono_sgen_safe_object_get_size ((MonoObject*)obj));
+			if (SGEN_CAS_PTR (obj, (void*)(vtable_word | SGEN_PINNED_BIT), (void*)vtable_word) == (void*)vtable_word) {
+				if (SGEN_VTABLE_HAS_REFERENCES (vt))
+					GRAY_OBJECT_ENQUEUE (queue, obj);
+			} else {
+				g_assert (SGEN_OBJECT_IS_PINNED (obj));
+			}
 		}
-		return;
 	}
-
-	block = MS_BLOCK_FOR_OBJ (obj);
-	MS_PAR_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 }
 #else
 static void
@@ -732,26 +888,29 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		 * re-fetch it.
 		 */
 		block = MS_BLOCK_FOR_OBJ (obj);
-		MS_CALC_MARK_BIT (word, bit, obj, block);
+		MS_CALC_MARK_BIT (word, bit, obj);
 		DEBUG (9, g_assert (!MS_MARK_BIT (block, word, bit)));
 		MS_SET_MARK_BIT (block, word, bit);
-		return;
+	} else {
+#ifdef FIXED_HEAP
+		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
+#else
+		objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
+
+		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)
+#endif
+		{
+			block = MS_BLOCK_FOR_OBJ (obj);
+			MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+		} else {
+			if (SGEN_OBJECT_IS_PINNED (obj))
+				return;
+			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), mono_sgen_safe_object_get_size ((MonoObject*)obj));
+			SGEN_PIN_OBJECT (obj);
+			/* FIXME: only enqueue if object has references */
+			GRAY_OBJECT_ENQUEUE (queue, obj);
+		}
 	}
-
-	objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
-
-	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE) {
-		if (SGEN_OBJECT_IS_PINNED (obj))
-			return;
-		binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), mono_sgen_safe_object_get_size ((MonoObject*)obj));
-		SGEN_PIN_OBJECT (obj);
-		/* FIXME: only enqueue if object has references */
-		GRAY_OBJECT_ENQUEUE (queue, obj);
-		return;
-	}
-
-	block = MS_BLOCK_FOR_OBJ (obj);
-	MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 }
 #endif
 
@@ -777,8 +936,12 @@ mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 static void
 major_sweep (void)
 {
-	MSBlockInfo **iter;
 	int i;
+#ifdef FIXED_HEAP
+	int j;
+#else
+	MSBlockInfo **iter;
+#endif
 
 	/* clear all the free lists */
 	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i) {
@@ -789,20 +952,31 @@ major_sweep (void)
 	}
 
 	/* traverse all blocks, free and zero unmarked objects */
+#ifdef FIXED_HEAP
+	for (j = 0; j < ms_heap_num_blocks; ++j) {
+		MSBlockInfo *block = &block_infos [j];
+#else
 	iter = &all_blocks;
 	while (*iter) {
 		MSBlockInfo *block = *iter;
-		int count = MS_BLOCK_FREE / block->obj_size;
+#endif
+		int count;
 		gboolean have_live = FALSE;
 		int obj_index;
 
+#ifdef FIXED_HEAP
+		if (!block->used)
+			continue;
+#endif
+
+		count = MS_BLOCK_FREE / block->obj_size;
 		block->free_list = NULL;
 
 		for (obj_index = 0; obj_index < count; ++obj_index) {
 			int word, bit;
 			void *obj = MS_BLOCK_OBJ (block, obj_index);
 
-			MS_CALC_MARK_BIT (word, bit, obj, block);
+			MS_CALC_MARK_BIT (word, bit, obj);
 			if (MS_MARK_BIT (block, word, bit)) {
 				DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
 				have_live = TRUE;
@@ -826,7 +1000,9 @@ major_sweep (void)
 		 */
 
 		if (have_live) {
+#ifndef FIXED_HEAP
 			iter = &block->next;
+#endif
 
 			/*
 			 * If there are free slots in the block, add
@@ -843,10 +1019,14 @@ major_sweep (void)
 			 * Blocks without live objects are removed from the
 			 * block list and freed.
 			 */
+#ifdef FIXED_HEAP
+			ms_free_block (block);
+#else
 			*iter = block->next;
 
 			ms_free_block (block->block);
 			mono_sgen_free_internal (block, INTERNAL_MEM_MS_BLOCK_INFO);
+#endif
 
 			--num_major_sections;
 		}
@@ -950,6 +1130,7 @@ major_finish_nursery_collection (void)
 static void
 major_finish_major_collection (void)
 {
+#ifndef FIXED_HEAP
 	int section_reserve = mono_sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
 
 	/*
@@ -972,6 +1153,7 @@ major_finish_major_collection (void)
 
 		++stat_major_blocks_freed;
 	}
+#endif
 }
 
 static void
@@ -979,10 +1161,10 @@ major_find_pin_queue_start_ends (SgenGrayQueue *queue)
 {
 	MSBlockInfo *block;
 
-	for (block = all_blocks; block; block = block->next) {
+	FOREACH_BLOCK (block) {
 		block->pin_queue_start = mono_sgen_find_optimized_pin_queue_area (block->block + MS_BLOCK_SKIP, block->block + MS_BLOCK_SIZE,
 				&block->pin_queue_num_entries);
-	}
+	} END_FOREACH_BLOCK;
 }
 
 static void
@@ -990,8 +1172,9 @@ major_pin_objects (SgenGrayQueue *queue)
 {
 	MSBlockInfo *block;
 
-	for (block = all_blocks; block; block = block->next)
+	FOREACH_BLOCK (block) {
 		mark_pinned_objects_in_block (block, queue);
+	} END_FOREACH_BLOCK;
 }
 
 static void
@@ -1011,13 +1194,13 @@ major_get_used_size (void)
 	gint64 size = 0;
 	MSBlockInfo *block;
 
-	for (block = all_blocks; block; block = block->next) {
+	FOREACH_BLOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		void **iter;
 		size += count * block->obj_size;
 		for (iter = block->free_list; iter; iter = (void**)*iter)
 			size -= block->obj_size;
-	}
+	} END_FOREACH_BLOCK;
 
 	return size;
 }
@@ -1028,21 +1211,51 @@ get_num_major_sections (void)
 	return num_major_sections;
 }
 
+#ifdef FIXED_HEAP
+static gboolean
+major_handle_gc_param (const char *opt)
+{
+	if (g_str_has_prefix (opt, "major-heap-size=")) {
+		const char *arg = strchr (opt, '=') + 1;
+		glong size;
+		if (!mono_sgen_parse_environment_string_extract_number (arg, &size))
+			return FALSE;
+		ms_heap_num_blocks = (size + MS_BLOCK_SIZE - 1) / MS_BLOCK_SIZE;
+		g_assert (ms_heap_num_blocks > 0);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static void
+major_print_gc_param_usage (void)
+{
+	fprintf (stderr, "  major-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
+}
+#endif
+
 void
 #ifdef SGEN_PARALLEL_MARK
+#ifdef FIXED_HEAP
+mono_sgen_marksweep_fixed_par_init
+#else
 mono_sgen_marksweep_par_init
+#endif
+#else
+#ifdef FIXED_HEAP
+mono_sgen_marksweep_fixed_init
 #else
 mono_sgen_marksweep_init
 #endif
-	(SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end)
+#endif
+	(SgenMajorCollector *collector)
 {
 	int i;
 
-	nursery_bits = the_nursery_bits;
-	nursery_start = the_nursery_start;
-	nursery_end = the_nursery_end;
-
+#ifndef FIXED_HEAP
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_MS_BLOCK_INFO, sizeof (MSBlockInfo));
+#endif
 
 	num_block_obj_sizes = ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, NULL);
 	block_obj_sizes = mono_sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
@@ -1077,6 +1290,7 @@ mono_sgen_marksweep_init
 	collector->is_parallel = FALSE;
 #endif
 
+	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
 	collector->alloc_degraded = major_alloc_degraded;
@@ -1099,6 +1313,14 @@ mono_sgen_marksweep_init
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+#ifdef FIXED_HEAP
+	collector->handle_gc_param = major_handle_gc_param;
+	collector->print_gc_param_usage = major_print_gc_param_usage;
+#else
+	collector->handle_gc_param = NULL;
+	collector->print_gc_param_usage = NULL;
+#endif
+
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);
 }

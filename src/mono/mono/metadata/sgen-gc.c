@@ -2039,9 +2039,9 @@ alloc_nursery (void)
 	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
 	alloc_size = nursery_size;
 #ifdef SGEN_ALIGN_NURSERY
-	data = mono_sgen_alloc_os_memory_aligned (alloc_size, alloc_size, TRUE);
+	data = major.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
 #else
-	data = mono_sgen_alloc_os_memory (alloc_size, TRUE);
+	data = major.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
 #endif
 	nursery_start = data;
 	nursery_real_end = nursery_start + nursery_size;
@@ -6195,12 +6195,10 @@ mono_gc_is_gc_thread (void)
 	return result;
 }
 
-#ifdef USER_CONFIG
-
 /* Tries to extract a number from the passed string, taking in to account m, k
  * and g suffixes */
-static gboolean
-parse_environment_string_extract_number (gchar *str, glong *out)
+gboolean
+mono_sgen_parse_environment_string_extract_number (const char *str, glong *out)
 {
 	char *endptr;
 	int len = strlen (str), shift = 0;
@@ -6240,8 +6238,6 @@ parse_environment_string_extract_number (gchar *str, glong *out)
 	return TRUE;
 }
 
-#endif 
-
 void
 mono_gc_base_init (void)
 {
@@ -6266,11 +6262,55 @@ mono_gc_base_init (void)
 		opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
+			if (g_str_has_prefix (opt, "major=")) {
+				opt = strchr (opt, '=') + 1;
+				major_collector = g_strdup (opt);
+			}
+		}
+	} else {
+		opts = NULL;
+	}
+
+	init_stats ();
+	mono_sgen_init_internal_allocator ();
+
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_ENTRY, sizeof (FinalizeEntry));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_DISLINK, sizeof (DisappearingLink));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_GRAY_QUEUE, sizeof (GrayQueueSection));
+	g_assert (sizeof (GenericStoreRememberedSet) == sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
+
+	if (!major_collector || !strcmp (major_collector, "marksweep")) {
+		mono_sgen_marksweep_init (&major);
+	} else if (!major_collector || !strcmp (major_collector, "marksweep-fixed")) {
+		mono_sgen_marksweep_fixed_init (&major);
+	} else if (!major_collector || !strcmp (major_collector, "marksweep-par")) {
+		mono_sgen_marksweep_par_init (&major);
+		workers_init (mono_cpu_count ());
+	} else if (!major_collector || !strcmp (major_collector, "marksweep-fixed-par")) {
+		mono_sgen_marksweep_fixed_par_init (&major);
+		workers_init (mono_cpu_count ());
+	} else if (!strcmp (major_collector, "copying")) {
+		mono_sgen_copying_init (&major);
+	} else {
+		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector);
+		exit (1);
+	}
+
+	if (opts) {
+		for (ptr = opts; *ptr; ++ptr) {
+			char *opt = *ptr;
+			if (g_str_has_prefix (opt, "major="))
+				continue;
 #ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				long val;
 				opt = strchr (opt, '=') + 1;
-				if (*opt && parse_environment_string_extract_number (opt, &val)) {
+				if (*opt && mono_sgen_parse_environment_string_extract_number (opt, &val)) {
 					default_nursery_size = val;
 #ifdef SGEN_ALIGN_NURSERY
 					if ((val & (val - 1))) {
@@ -6286,53 +6326,28 @@ mono_gc_base_init (void)
 					fprintf (stderr, "nursery-size must be an integer.\n");
 					exit (1);
 				}
-			} else
+				continue;
+			}
 #endif
-			if (g_str_has_prefix (opt, "major=")) {
-				opt = strchr (opt, '=') + 1;
-				major_collector = g_strdup (opt);
-			} else {
+			if (!(major.handle_gc_param && major.handle_gc_param (opt))) {
 				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
 				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				fprintf (stderr, "  major=COLLECTOR (where collector is `marksweep', `marksweep-par' or `copying')\n");
+				if (major.print_gc_param_usage)
+					major.print_gc_param_usage ();
 				exit (1);
 			}
 		}
 		g_strfreev (opts);
 	}
 
+	if (major_collector)
+		g_free (major_collector);
+
 	nursery_size = DEFAULT_NURSERY_SIZE;
 	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 
-	init_stats ();
-	mono_sgen_init_internal_allocator ();
-
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FRAGMENT, sizeof (Fragment));
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_ENTRY, sizeof (FinalizeEntry));
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_DISLINK, sizeof (DisappearingLink));
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_ROOT_RECORD, sizeof (RootRecord));
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_GRAY_QUEUE, sizeof (GrayQueueSection));
-	g_assert (sizeof (GenericStoreRememberedSet) == sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
-	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
-
 	alloc_nursery ();
-
-	if (!major_collector || !strcmp (major_collector, "marksweep")) {
-		mono_sgen_marksweep_init (&major, DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end);
-	} else if (!major_collector || !strcmp (major_collector, "marksweep-par")) {
-		mono_sgen_marksweep_par_init (&major, DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end);
-		workers_init (mono_cpu_count ());
-	} else if (!strcmp (major_collector, "copying")) {
-		mono_sgen_copying_init (&major, DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end);
-	} else {
-		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector);
-		exit (1);
-	}
-
-	if (major_collector)
-		g_free (major_collector);
 
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
 		opts = g_strsplit (env, ",", -1);

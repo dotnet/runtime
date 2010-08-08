@@ -635,6 +635,8 @@ void mono_sgen_free_internal_delayed (void *addr, int type, SgenInternalAllocato
 
 void mono_sgen_debug_printf (int level, const char *format, ...) MONO_INTERNAL;
 
+gboolean mono_sgen_parse_environment_string_extract_number (const char *str, glong *out) MONO_INTERNAL;
+
 void mono_sgen_internal_scan_objects (SgenInternalAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
 void mono_sgen_internal_scan_pinned_objects (SgenInternalAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
 
@@ -651,6 +653,7 @@ struct _SgenMajorCollector {
 	size_t section_size;
 	gboolean is_parallel;
 
+	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
 	void* (*alloc_small_pinned_obj) (size_t size, gboolean has_references);
 	void* (*alloc_degraded) (MonoVTable *vtable, size_t size);
@@ -677,11 +680,15 @@ struct _SgenMajorCollector {
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);
 	int (*get_num_major_sections) (void);
+	gboolean (*handle_gc_param) (const char *opt);
+	void (*print_gc_param_usage) (void);
 };
 
-void mono_sgen_marksweep_init (SgenMajorCollector *collector, int nursery_bits, char *nursery_start, char *nursery_end) MONO_INTERNAL;
-void mono_sgen_marksweep_par_init (SgenMajorCollector *collector, int nursery_bits, char *nursery_start, char *nursery_end) MONO_INTERNAL;
-void mono_sgen_copying_init (SgenMajorCollector *collector, int the_nursery_bits, char *the_nursery_start, char *the_nursery_end) MONO_INTERNAL;
+void mono_sgen_marksweep_init (SgenMajorCollector *collector) MONO_INTERNAL;
+void mono_sgen_marksweep_fixed_init (SgenMajorCollector *collector) MONO_INTERNAL;
+void mono_sgen_marksweep_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
+void mono_sgen_marksweep_fixed_par_init (SgenMajorCollector *collector) MONO_INTERNAL;
+void mono_sgen_copying_init (SgenMajorCollector *collector) MONO_INTERNAL;
 
 /*
  * This function can be called on an object whose first word, the
