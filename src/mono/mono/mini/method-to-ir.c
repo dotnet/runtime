@@ -4151,8 +4151,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			type_from_op (ins, NULL, NULL);
 
 			return ins;
-#if !defined(MONO_ARCH_EMULATE_MUL_DIV) && !defined(HAVE_MOVING_COLLECTOR)
-		} else if (strcmp (cmethod->name, "InternalGetHashCode") == 0) {
+#if !defined(MONO_ARCH_EMULATE_MUL_DIV)
+		} else if (strcmp (cmethod->name, "InternalGetHashCode") == 0 && !mono_gc_is_moving ()) {
 			int dreg = alloc_ireg (cfg);
 			int t1 = alloc_ireg (cfg);
 	
@@ -8481,16 +8481,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					case MONO_TYPE_U:
 					case MONO_TYPE_PTR:
 					case MONO_TYPE_FNPTR:
-#ifndef HAVE_MOVING_COLLECTOR
+						EMIT_NEW_PCONST (cfg, *sp, *((gpointer *)addr));
+						type_to_eval_stack_type ((cfg), field->type, *sp);
+						sp++;
+						break;
 					case MONO_TYPE_STRING:
 					case MONO_TYPE_OBJECT:
 					case MONO_TYPE_CLASS:
 					case MONO_TYPE_SZARRAY:
 					case MONO_TYPE_ARRAY:
-#endif
-						EMIT_NEW_PCONST (cfg, *sp, *((gpointer *)addr));
-						type_to_eval_stack_type ((cfg), field->type, *sp);
-						sp++;
+						if (!mono_gc_is_moving ()) {
+							EMIT_NEW_PCONST (cfg, *sp, *((gpointer *)addr));
+							type_to_eval_stack_type ((cfg), field->type, *sp);
+							sp++;
+						} else {
+							is_const = FALSE;
+						}
 						break;
 					case MONO_TYPE_I8:
 					case MONO_TYPE_U8:
