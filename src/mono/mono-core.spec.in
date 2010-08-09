@@ -648,6 +648,7 @@ Authors:
 %_prefix/lib/mono/4.0/System.IdentityModel.dll
 %_prefix/lib/mono/4.0/System.Runtime.DurableInstancing.dll
 %_prefix/lib/mono/4.0/System.Runtime.Serialization.dll
+%_prefix/lib/mono/4.0/System.ServiceModel.Discovery.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Routing.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Web.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.dll
@@ -659,6 +660,7 @@ Authors:
 %_prefix/lib/mono/gac/System.Runtime.DurableInstancing
 %_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.ServiceModel
+%_prefix/lib/mono/gac/System.ServiceModel.Discovery
 %_prefix/lib/mono/gac/System.ServiceModel.Routing
 %_prefix/lib/mono/gac/System.ServiceModel.Web
 %_prefix/lib/mono/gac/System.Web.ApplicationServices
