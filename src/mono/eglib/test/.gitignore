@@ -8,3 +8,5 @@
 /semantic.cache
 /.project
 /.cproject
+/test-eglib
+/test-glib
