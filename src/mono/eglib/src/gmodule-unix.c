@@ -31,6 +31,42 @@
 #include <glib.h>
 #include <gmodule.h>
 
+#if defined(__native_client__)
+GModule *
+g_module_open (const gchar *file, GModuleFlags flags)
+{
+	printf("dlopen() not supported on Native Client.\n");
+	return NULL;
+}
+
+
+gboolean
+g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
+{
+	return FALSE;
+}
+
+
+const gchar*
+g_module_error(void)
+{
+	return "dlopen not supported on Native Client.";
+}
+
+gboolean
+g_module_close (GModule *module)
+{
+	return FALSE;
+}
+
+gchar*
+g_module_build_path (const gchar *directory, const gchar *module_name)
+{
+	return NULL;
+}
+
+#else
+
 #ifdef G_OS_UNIX
 #include <dlfcn.h>
 
@@ -285,4 +321,6 @@ g_module_build_path (const gchar *directory, const gchar *module_name)
 	}
 	return g_strdup_printf ("%s%s" LIBSUFFIX, lib_prefix, module_name); 
 }
+
+#endif /* __native_client__ */
 
