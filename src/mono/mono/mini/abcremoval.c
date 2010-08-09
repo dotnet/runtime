@@ -1127,6 +1127,11 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 		if (ins->opcode == OP_NOT_NULL)
 			add_non_null (area, cfg, ins->sreg1, &check_relations);
 
+		/* 
+		 * This doesn't work because LLVM can move the non-faulting loads before the faulting
+		 * ones (test_0_llvm_moving_faulting_loads ()).
+		 */
+#if 0
 		/*
 		 * Eliminate MONO_INST_FAULT flags if possible.
 		 */
@@ -1152,6 +1157,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 				add_non_null (area, cfg, reg, &check_relations);
 			}
 		}
+#endif
 	}	
 	
 	if (TRACE_ABC_REMOVAL) {

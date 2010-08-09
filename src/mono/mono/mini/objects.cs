@@ -1456,5 +1456,33 @@ ncells ) {
 
 		return 0;
 	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void UseValue (int index)
+	{
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static bool IsFalse ()
+	{
+		return false;
+	}
+
+	static int test_0_llvm_moving_faulting_loads ()
+	{
+		int[] indexes = null;
+
+		if (IsFalse ()) {
+			indexes = new int[0];
+		}
+			
+		while (IsFalse ()) {
+			UseValue (indexes[0]);
+			UseValue (indexes[0]);
+		}
+
+		return 0;
+	}
+
 }
 
