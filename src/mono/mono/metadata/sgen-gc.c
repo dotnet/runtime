@@ -2811,9 +2811,10 @@ major_do_collection (const char *reason)
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
 
 	if (major.is_parallel) {
-		/* FIXME: don't do busy waiting here! */
-		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE))
+		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			workers_distribute_gray_queue_sections ();
+			usleep (2000);
+		}
 	}
 	workers_change_num_working (-1);
 	workers_join ();
