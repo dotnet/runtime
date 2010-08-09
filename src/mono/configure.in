@@ -182,6 +182,19 @@ case "$host" in
 		AOT_SUPPORTED="yes"
 		use_sigposix=yes
 		;;
+	*-*-nacl*)
+		host_win32=no
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
+		if test "x$disable_munmap" != "xyes"; then
+			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
+		fi
+		libmono_cflags="-D_REENTRANT"
+		libdl=
+		libgc_threads=pthreads
+		AOT_SUPPORTED="yes"
+		gc_default=boehm
+		use_sigposix=yes
+		;;
 	*-*-hpux*)
 	        host_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
@@ -1999,6 +2012,22 @@ if test "x$enable_dtrace" = "xyes"; then
 fi
 AM_CONDITIONAL(ENABLE_DTRACE, [test x$enable_dtrace = xyes])
 AM_CONDITIONAL(DTRACE_G_REQUIRED, [test x$dtrace_g = xyes])
+
+dnl **************
+dnl ***  NaCl  ***
+dnl **************
+
+AC_ARG_ENABLE(nacl_codegen, [  --enable-nacl-codegen      Enable Native Client code generation], enable_nacl_codegen=$enableval, enable_nacl_codegen=no)
+
+AM_CONDITIONAL(NACL_CODEGEN, test x$enable_nacl_codegen != xno)
+if test "x$enable_nacl_codegen" = "xyes"; then
+   MONO_NACL_ALIGN_MASK_OFF=1
+   CPPFLAGS="$CPPFLAGS -D__native_client_codegen__"
+   AC_DEFINE(TARGET_NACL, 1, [...])
+else
+   MONO_NACL_ALIGN_MASK_OFF=0
+fi
+AC_SUBST(MONO_NACL_ALIGN_MASK_OFF)
 
 dnl **************
 dnl ***  LLVM  ***
