@@ -3824,7 +3824,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	MonoCompile *cfg;
 	int dfn, i, code_size_ratio;
 	gboolean deadce_has_run = FALSE;
-	gboolean try_generic_shared, try_llvm;
+	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 
 	mono_jit_stats.methods_compiled++;
@@ -3852,7 +3852,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			mono_stats.generics_unsharable_methods++;
 	}
 
+#ifdef ENABLE_LLVM
 	try_llvm = mono_use_llvm;
+#endif
 
  restart_compile:
 	if (try_generic_shared) {
