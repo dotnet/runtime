@@ -280,7 +280,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_XP_UNWIND 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
-#if defined(__linux__) && !defined(HAVE_MOVING_COLLECTOR)
+#if defined(__linux__)
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
 #endif
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1

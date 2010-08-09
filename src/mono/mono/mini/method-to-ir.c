@@ -4256,7 +4256,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
 #if defined(MONO_ARCH_MONITOR_OBJECT_REG)
-		if (strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 1) {
+		/* The trampolines don't work under SGEN */
+		gboolean is_moving_gc = mono_gc_is_moving ();
+
+		if (strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 1 && !is_moving_gc) {
 			MonoCallInst *call;
 
 			if (COMPILE_LLVM (cfg)) {
@@ -4273,7 +4276,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 
 			return (MonoInst*)call;
-		} else if (strcmp (cmethod->name, "Exit") == 0) {
+		} else if (strcmp (cmethod->name, "Exit") == 0 && !is_moving_gc) {
 			MonoCallInst *call;
 
 			if (COMPILE_LLVM (cfg)) {
