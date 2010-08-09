@@ -201,6 +201,9 @@ workers_thread_func (void *data_untyped)
 
 		//g_print ("worker done\n");
 	}
+
+	/* dummy return to make compilers happy */
+	return NULL;
 }
 
 static void
