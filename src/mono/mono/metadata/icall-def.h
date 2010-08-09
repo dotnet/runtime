@@ -125,7 +125,8 @@ ICALL(DEFAULTC_2, "get_machine_config_path", ves_icall_System_Configuration_Defa
 
 /* Note that the below icall shares the same function as DefaultConfig uses */
 ICALL_TYPE(INTCFGHOST, "System.Configuration.InternalConfigurationHost", INTCFGHOST_1)
-ICALL(INTCFGHOST_1, "get_bundled_machine_config", get_bundled_machine_config)
+ICALL(INTCFGHOST_1, "get_bundled_app_config", get_bundled_app_config)
+ICALL(INTCFGHOST_2, "get_bundled_machine_config", get_bundled_machine_config)
 
 ICALL_TYPE(CONSOLE, "System.ConsoleDriver", CONSOLE_1)
 ICALL(CONSOLE_1, "InternalKeyAvailable", ves_icall_System_ConsoleDriver_InternalKeyAvailable )

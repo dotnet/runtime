@@ -6847,6 +6847,40 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 }
 
 static MonoString *
+get_bundled_app_config (void)
+{
+	const gchar *app_config;
+	MonoDomain *domain;
+	MonoString *file;
+	gchar *config_file;
+	gsize len;
+	gchar *module;
+
+	MONO_ARCH_SAVE_REGS;
+
+	domain = mono_domain_get ();
+	file = domain->setup->configuration_file;
+	if (!file)
+		return NULL;
+
+	// Retrieve config file and remove the extension
+	config_file = mono_string_to_utf8 (file);
+	len = strlen (config_file) - strlen (".config");
+	module = g_malloc0 (len + 1);
+	memcpy (module, config_file, len);
+	// Get the config file from the module name
+	app_config = mono_config_string_for_assembly_file (module);
+	// Clean-up
+	g_free (module);
+	g_free (config_file);
+
+	if (!app_config)
+		return NULL;
+
+	return mono_string_new (mono_domain_get (), app_config);
+}
+
+static MonoString *
 get_bundled_machine_config (void)
 {
 	const gchar *machine_config;
