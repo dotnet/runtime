@@ -122,7 +122,7 @@ static int methods_with_llvm, methods_without_llvm;
 #endif
 
 /*
- * This flag controls whenever the runtime uses LLVM to JIT compilation, and whenever
+ * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
  * it can load AOT code compiled by LLVM.
  */
 gboolean mono_use_llvm = FALSE;
