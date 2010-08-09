@@ -122,13 +122,8 @@ static int methods_with_llvm, methods_without_llvm;
 #endif
 
 /*
- * This flag controls whenever the runtime uses LLVM compiled code.
- * Enabling this causes different/slower code paths to be used, which is why it
- * defaults to FALSE.
- * Changes when this flag is set include:
- * - a per method vtable trampoline is used to handle virtual calls, instead of only
- *   one trampoline.
- * - fast generic virtual calls are not supported.
+ * This flag controls whenever the runtime uses LLVM to JIT compilation, and whenever
+ * it can load AOT code compiled by LLVM.
  */
 gboolean mono_use_llvm = FALSE;
 
