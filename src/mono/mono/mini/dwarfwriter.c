@@ -828,7 +828,8 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	if (die)
 		return die;
 
-	if (!((klass->byval_arg.type == MONO_TYPE_CLASS) || (klass->byval_arg.type == MONO_TYPE_OBJECT) || klass->byval_arg.type == MONO_TYPE_GENERICINST || klass->enumtype || (klass->byval_arg.type == MONO_TYPE_VALUETYPE && vtype)))
+	if (!((klass->byval_arg.type == MONO_TYPE_CLASS) || (klass->byval_arg.type == MONO_TYPE_OBJECT) || klass->byval_arg.type == MONO_TYPE_GENERICINST || klass->enumtype || (klass->byval_arg.type == MONO_TYPE_VALUETYPE && vtype) ||
+		  (klass->byval_arg.type >= MONO_TYPE_BOOLEAN && klass->byval_arg.type <= MONO_TYPE_R8 && !vtype)))
 		return NULL;
 
 	/*
@@ -1020,6 +1021,8 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	return die;
 }
 
+static gboolean base_types_emitted [64];
+
 static const char*
 emit_type (MonoDwarfWriter *w, MonoType *t)
 {
@@ -1043,9 +1046,15 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 	for (j = 0; j < G_N_ELEMENTS (basic_types); ++j)
 		if (basic_types [j].type == t->type)
 			break;
-	if (j < G_N_ELEMENTS (basic_types))
+	if (j < G_N_ELEMENTS (basic_types)) {
+		/* Emit a boxed version of base types */
+		if (j < 64 && !base_types_emitted [j]) {
+			printf ("X: %s\n", klass->name);
+			emit_class_dwarf_info (w, klass, FALSE);
+			base_types_emitted [j] = TRUE;
+		}
 		tdie = basic_types [j].die_name;
-	else {
+	} else {
 		switch (t->type) {
 		case MONO_TYPE_CLASS:
 			emit_class_dwarf_info (w, klass, FALSE);
