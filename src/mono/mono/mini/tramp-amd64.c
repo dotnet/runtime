@@ -819,6 +819,8 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
+	unwind_ops = mono_arch_get_cie_program ();
+
 	if (mono_thread_get_tls_offset () != -1) {
 		/* MonoObject* obj is in RDI */
 		/* is obj null? */
@@ -925,6 +927,8 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	tramp_size = 94;
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	unwind_ops = mono_arch_get_cie_program ();
 
 	if (mono_thread_get_tls_offset () != -1) {
 		/* MonoObject* obj is in RDI */

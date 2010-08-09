@@ -1380,6 +1380,7 @@ gpointer
 mono_create_monitor_enter_trampoline (void)
 {
 	static gpointer code;
+	MonoTrampInfo *info;
 
 	if (mono_aot_only) {
 		if (!code)
@@ -1390,8 +1391,13 @@ mono_create_monitor_enter_trampoline (void)
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 	mono_trampolines_lock ();
 
-	if (!code)
-		code = mono_arch_create_monitor_enter_trampoline (NULL, FALSE);
+	if (!code) {
+		code = mono_arch_create_monitor_enter_trampoline (&info, FALSE);
+		if (info) {
+			mono_save_trampoline_xdebug_info (info);
+			mono_tramp_info_free (info);
+		}
+	}
 
 	mono_trampolines_unlock ();
 #else
@@ -1406,6 +1412,7 @@ gpointer
 mono_create_monitor_exit_trampoline (void)
 {
 	static gpointer code;
+	MonoTrampInfo *info;
 
 	if (mono_aot_only) {
 		if (!code)
@@ -1416,8 +1423,13 @@ mono_create_monitor_exit_trampoline (void)
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 	mono_trampolines_lock ();
 
-	if (!code)
-		code = mono_arch_create_monitor_exit_trampoline (NULL, FALSE);
+	if (!code) {
+		code = mono_arch_create_monitor_exit_trampoline (&info, FALSE);
+		if (info) {
+			mono_save_trampoline_xdebug_info (info);
+			mono_tramp_info_free (info);
+		}
+	}
 
 	mono_trampolines_unlock ();
 #else
