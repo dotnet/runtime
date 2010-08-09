@@ -55,6 +55,16 @@ struct sigcontext {
 #define MONO_ARCH_USE_SIGACTION
 #endif
 
+#if defined(__native_client__)
+#undef MONO_ARCH_USE_SIGACTION
+#endif
+
+#if defined(__native_client_codegen__) || defined(__native_client__)
+#define NACL_SIZE(a, b) (b)
+#else
+#define NACL_SIZE(a, b) (a)
+#endif
+
 #ifndef HOST_WIN32
 
 #ifdef HAVE_WORKING_SIGALTSTACK
@@ -286,7 +296,7 @@ typedef struct {
 
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) || defined(__native_client_codegen__)
 #define MONO_ARCH_AOT_SUPPORTED 1
 #endif
 

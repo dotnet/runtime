@@ -53,7 +53,7 @@
  * TARGET_ASM_GAS == GNU assembler
  */
 #if !defined(TARGET_ASM_APPLE) && !defined(TARGET_ASM_GAS)
-#ifdef __MACH__
+#if defined(__MACH__) && !defined(__native_client_codegen__)
 #define TARGET_ASM_APPLE
 #else
 #define TARGET_ASM_GAS
@@ -313,6 +313,11 @@ bin_writer_emit_ensure_buffer (BinSection *section, int size)
 		while (new_size <= new_offset)
 			new_size *= 2;
 		data = g_malloc0 (new_size);
+#ifdef __native_client_codegen__
+		/* for Native Client, fill empty space with HLT instruction */
+		/* instead of 00.                                           */
+		memset(data, 0xf4, new_size);
+#endif		
 		memcpy (data, section->data, section->data_len);
 		g_free (section->data);
 		section->data = data;
@@ -354,6 +359,22 @@ bin_writer_emit_alignment (MonoImageWriter *acfg, int size)
 		acfg->cur_section->cur_offset += add;
 	}
 }
+
+#ifdef __native_client_codegen__
+static void
+bin_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
+  int offset = acfg->cur_section->cur_offset;
+  int padding = kNaClAlignment - (offset & kNaClAlignmentMask) - kNaClLengthOfCallImm;
+  guint8 padc = '\x90';
+
+  if (padding < 0) padding += kNaClAlignment;
+
+  while (padding > 0) {
+    bin_writer_emit_bytes(acfg, &padc, 1);
+    padding -= 1;
+  }
+}
+#endif  /* __native_client_codegen__ */
 
 static void
 bin_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
@@ -1635,6 +1656,20 @@ asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 #endif
 }
 
+#ifdef __native_client_codegen__
+static void
+asm_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
+  int padding = kNaClAlignment - kNaClLengthOfCallImm;
+  guint8 padc = '\x90';
+
+  fprintf (acfg->fp, "\n\t.align %d", kNaClAlignment);
+  while (padding > 0) {
+    fprintf (acfg->fp, "\n\t.byte %d", padc);
+    padding -= 1;
+  }
+}
+#endif  /* __native_client_codegen__ */
+
 static void
 asm_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
@@ -1916,6 +1951,20 @@ img_writer_emit_alignment (MonoImageWriter *acfg, int size)
 	asm_writer_emit_alignment (acfg, size);
 #endif
 }
+
+#ifdef __native_client_codegen__
+void
+img_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
+#ifdef USE_BIN_WRITER
+	if (acfg->use_bin_writer)
+		bin_writer_emit_nacl_call_alignment (acfg);
+	else
+		asm_writer_emit_nacl_call_alignment (acfg);
+#else
+	g_assert_not_reached();
+#endif
+}
+#endif  /* __native_client_codegen__ */
 
 void
 img_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)

@@ -324,9 +324,14 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	guint8 *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
+#ifdef __native_client_codegen__
+	guint kMaxCodeSize = 128;
+#else
+	guint kMaxCodeSize = 64;
+#endif  /* __native_client_codegen__ */
 
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
-	start = code = mono_global_codeman_reserve (64);
+	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
 	x86_push_reg (code, X86_EBP);
 	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
@@ -374,7 +379,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
 
-	g_assert ((code - start) < 64);
+	g_assert ((code - start) < kMaxCodeSize);
 	return start;
 }
 
@@ -492,8 +497,12 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-
-	start = code = mono_global_codeman_reserve (128);
+#ifdef __native_client_codegen__
+	guint kMaxCodeSize = 256;
+#else
+	guint kMaxCodeSize = 128;
+#endif
+	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
 	stack_size = 128;
 
@@ -599,7 +608,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	}
 	x86_breakpoint (code);
 
-	g_assert ((code - start) < 128);
+	g_assert ((code - start) < kMaxCodeSize);
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup (name), start, code - start, ji, unwind_ops);
@@ -628,7 +637,7 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline ("rethow_exception", TRUE, FALSE, FALSE, FALSE, FALSE, info, aot);
+	return get_throw_trampoline ("rethrow_exception", TRUE, FALSE, FALSE, FALSE, FALSE, info, aot);
 }
 
 /**
@@ -848,6 +857,18 @@ mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
+#if defined (__native_client__)
+	printf("WARNING: mono_arch_sigctx_to_monoctx() called!\n");
+	mctx->eax = 0xDEADBEEF;
+	mctx->ebx = 0xDEADBEEF;
+	mctx->ecx = 0xDEADBEEF;
+	mctx->edx = 0xDEADBEEF;
+	mctx->ebp = 0xDEADBEEF;
+	mctx->esp = 0xDEADBEEF;
+	mctx->esi = 0xDEADBEEF;
+	mctx->edi = 0xDEADBEEF;
+	mctx->eip = 0xDEADBEEF;
+#else
 #ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	
@@ -873,11 +894,15 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->edi = ctx->SC_EDI;
 	mctx->eip = ctx->SC_EIP;
 #endif
+#endif /* if defined(__native_client__) */
 }
 
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
+#if defined(__native_client__)
+	printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
+#else
 #ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
@@ -903,18 +928,24 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	ctx->SC_EDI = mctx->edi;
 	ctx->SC_EIP = mctx->eip;
 #endif
+#endif /* __native_client__ */
 }	
 
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
+#if defined(__native_client__)
+	printf("WARNING: mono_arch_ip_from_context() called!\n");
+	return (NULL);
+#else
 #ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	return (gpointer)UCONTEXT_REG_EIP (ctx);
 #else
 	struct sigcontext *ctx = sigctx;
 	return (gpointer)ctx->SC_EIP;
-#endif	
+#endif
+#endif	/* __native_client__ */
 }
 
 /*
@@ -1166,6 +1197,9 @@ mono_tasklets_arch_restore (void)
 	static guint8* saved = NULL;
 	guint8 *code, *start;
 
+#ifdef __native_client_codegen__
+	g_print("mono_tasklets_arch_restore needs to be aligned for Native Client\n");
+#endif
 	if (saved)
 		return (MonoContinuationRestore)saved;
 	code = start = mono_global_codeman_reserve (48);

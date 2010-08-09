@@ -43,7 +43,7 @@ typedef struct {
 	char spec [MONO_INST_MAX];
 } OpDesc;
 
-static int nacl;
+static int nacl = 0;
 static GHashTable *table;
 static GHashTable *template_table;
 
@@ -75,6 +75,8 @@ load_file (const char *name) {
 	line = 0;
 	while ((str = fgets (buf, sizeof (buf), f))) {
 		gboolean is_template = FALSE;
+		gboolean nacl_length_set = FALSE;
+
 		++line;
 		eat_whitespace (str);
 		if (!str [0])
@@ -132,14 +134,20 @@ load_file (const char *name) {
 				p += 7;
 				*/
 			} else if (strncmp (p, "len:", 4) == 0) {
+				unsigned long size;
 				p += 4;
-				desc->spec [MONO_INST_LEN] += strtoul (p, &p, 10);
-			} else if (strncmp (p, "nacl:", 5) == 0){
+				size = strtoul (p, &p, 10);
+				if (!nacl_length_set) {
+					desc->spec [MONO_INST_LEN] = size;
+				}
+			} else if (strncmp (p, "nacl:", 5) == 0) {
 				unsigned long size;
 				p += 5;
 				size = strtoul (p, &p, 10);
-				if (nacl)
-					desc->spec [MONO_INST_LEN] += size;
+				if (nacl) {
+					desc->spec [MONO_INST_LEN] = size;
+					nacl_length_set = TRUE;
+				}
 			} else if (strncmp (p, "template:", 9) == 0) {
 				char *tname;
 				int i;
@@ -298,7 +306,7 @@ main (int argc, char* argv [])
 		return 1;
 	} else {
 		int i = 3;
-		if (strcmp (argv [1], "--nacl") == 0){
+		if (strcmp (argv [1], "--nacl") == 0) {
 			nacl = 1;
 			i++;
 		}

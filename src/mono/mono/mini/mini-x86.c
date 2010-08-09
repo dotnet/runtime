@@ -65,6 +65,65 @@ static CRITICAL_SECTION mini_arch_mutex;
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
+static gpointer
+mono_realloc_native_code (MonoCompile *cfg)
+{
+#ifdef __native_client_codegen__
+	guint old_padding;
+	gpointer native_code;
+	guint alignment_check;
+
+	/* Save the old alignment offset so we can re-align after the realloc. */
+	old_padding = (guint)(cfg->native_code - cfg->native_code_alloc);
+
+	cfg->native_code_alloc = g_realloc (cfg->native_code_alloc, 
+										cfg->code_size + kNaClAlignment);
+
+	/* Align native_code to next nearest kNaClAlignment byte. */
+	native_code = (guint)cfg->native_code_alloc + kNaClAlignment;
+	native_code = (guint)native_code & ~kNaClAlignmentMask;
+
+	/* Shift the data to be 32-byte aligned again. */
+	memmove (native_code, cfg->native_code_alloc + old_padding, cfg->code_size);
+
+	alignment_check = (guint)native_code & kNaClAlignmentMask;
+	g_assert (alignment_check == 0);
+	return native_code;
+#else
+	return g_realloc (cfg->native_code, cfg->code_size);
+#endif
+}
+
+#ifdef __native_client_codegen__
+
+/* mono_arch_nacl_pad: Add pad bytes of alignment instructions at code,       */
+/* Check that alignment doesn't cross an alignment boundary.        */
+guint8 *
+mono_arch_nacl_pad (guint8 *code, int pad)
+{
+	const int kMaxPadding = 7;    /* see x86-codegen.h: x86_padding() */
+
+	if (pad == 0) return code;
+	/* assertion: alignment cannot cross a block boundary */
+	g_assert(((uintptr_t)code & (~kNaClAlignmentMask)) ==
+			 (((uintptr_t)code + pad - 1) & (~kNaClAlignmentMask)));
+	while (pad >= kMaxPadding) {
+		x86_padding (code, kMaxPadding);
+		pad -= kMaxPadding;
+	}
+	if (pad != 0) x86_padding (code, pad);
+	return code;
+}
+
+guint8 *
+mono_arch_nacl_skip_nops (guint8 *code)
+{
+	x86_skip_nops (code);
+	return code;
+}
+
+#endif /* __native_client_codegen__ */
+
 /*
  * The code generated for sequence points reads from this location, which is
  * made read-only when single stepping is enabled.
@@ -617,6 +676,14 @@ typedef void (*CpuidFunc) (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_ed
 static int 
 cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 {
+#if defined(__native_client__)
+	/* Taken from below, the bug listed in the comment is */
+	/* only valid for non-static cases.                   */
+	__asm__ __volatile__ ("cpuid"
+		: "=a" (*p_eax), "=b" (*p_ebx), "=c" (*p_ecx), "=d" (*p_edx)
+		: "a" (id));
+	return 1;
+#else
 	int have_cpuid = 0;
 #ifndef _MSC_VER
 	__asm__  __volatile__ (
@@ -671,6 +738,7 @@ cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 		return 1;
 	}
 	return 0;
+#endif
 }
 
 /*
@@ -724,6 +792,7 @@ mono_arch_cleanup (void)
 guint32
 mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
+#if !defined(__native_client__)
 	int eax, ebx, ecx, edx;
 	guint32 opts = 0;
 	
@@ -755,6 +824,9 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 #endif
 	}
 	return opts;
+#else
+	return MONO_OPT_CMOV | MONO_OPT_FCMOV | MONO_OPT_SSE2;
+#endif
 }
 
 /*
@@ -2211,6 +2283,11 @@ x86_pop_reg (code, X86_ECX); \
 x86_pop_reg (code, X86_EDX); \
 x86_pop_reg (code, X86_EAX);
 
+/* REAL_PRINT_REG does not appear to be used, and was not adapted to work with Native Client. */
+#ifdef __native__client_codegen__
+#define REAL_PRINT_REG(text, reg) g_assert_not_reached()
+#endif
+
 /* benchmark and set based on cpu */
 #define LOOP_ALIGNMENT 8
 #define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
@@ -2237,7 +2314,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			bb->native_offset = cfg->code_len;
 		}
 	}
+#ifdef __native_client_codegen__
+	{
+		/* For Native Client, all indirect call/jump targets must be   */
+		/* 32-byte aligned.  Exception handler blocks are jumped to    */
+		/* indirectly as well.                                         */
+		gboolean bb_needs_alignment = (bb->flags & BB_INDIRECT_JUMP_TARGET) ||
+			(bb->flags & BB_EXCEPTION_HANDLER);
 
+		/* if ((cfg->code_len & kNaClAlignmentMask) != 0) { */
+		if ( bb_needs_alignment && ((cfg->code_len & kNaClAlignmentMask) != 0)) {
+            int pad = kNaClAlignment - (cfg->code_len & kNaClAlignmentMask);
+            if (pad != kNaClAlignment) code = mono_arch_nacl_pad(code, pad);
+            cfg->code_len += pad;
+            bb->native_offset = cfg->code_len;
+		}
+	}
+#endif  /* __native_client_codegen__ */
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
 
@@ -2262,9 +2355,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
-		if (G_UNLIKELY (offset > (cfg->code_size - max_len - 16))) {
+#define EXTRA_CODE_SPACE (NACL_SIZE (16, 16 + kNaClAlignment))
+
+		if (G_UNLIKELY (offset > (cfg->code_size - max_len - EXTRA_CODE_SPACE))) {
 			cfg->code_size *= 2;
-			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+			cfg->native_code = mono_realloc_native_code(cfg);
 			code = cfg->native_code + offset;
 			mono_jit_stats.code_reallocs++;
 		}
@@ -4463,9 +4558,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		if (G_UNLIKELY ((code - cfg->native_code - offset) > max_len)) {
+#ifndef __native_client_codegen__
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
-				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
+					   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
+#endif  /* __native_client_codegen__ */
 		}
 	       
 		cpos += max_len;
@@ -4548,13 +4645,30 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, pos, max_offset, i, cfa_offset;
 	guint8 *code;
 	gboolean need_stack_frame;
+#ifdef __native_client_codegen__
+	guint alignment_check;
+#endif
 
 	cfg->code_size = MAX (cfg->header->code_size * 4, 10240);
 
 	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		cfg->code_size += 512;
 
+#ifdef __native_client_codegen__
+	/* native_code_alloc is not 32-byte aligned, native_code is. */
+	cfg->native_code_alloc = g_malloc (cfg->code_size + kNaClAlignment);
+
+	/* Align native_code to next nearest kNaclAlignment byte. */
+	cfg->native_code = (guint)cfg->native_code_alloc + kNaClAlignment; 
+	cfg->native_code = (guint)cfg->native_code & ~kNaClAlignmentMask;
+	
+	code = cfg->native_code;
+
+	alignment_check = (guint)cfg->native_code & kNaClAlignmentMask;
+  	g_assert(alignment_check == 0);
+#else
 	code = cfg->native_code = g_malloc (cfg->code_size);
+#endif
 
 	/* Offset between RSP and the CFA */
 	cfa_offset = 0;
@@ -4741,7 +4855,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (G_UNLIKELY (required_code_size >= (cfg->code_size - offset))) {
 			while (required_code_size >= (cfg->code_size - offset))
 				cfg->code_size *= 2;
-			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+			cfg->native_code = mono_realloc_native_code(cfg);
 			code = cfg->native_code + offset;
 			mono_jit_stats.code_reallocs++;
 		}
@@ -4787,11 +4901,23 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			/* max alignment for loops */
 			if ((cfg->opt & MONO_OPT_LOOP) && bb_is_loop_start (bb))
 				max_offset += LOOP_ALIGNMENT;
-
+#ifdef __native_client_codegen__
+			/* max alignment for native client */
+			max_offset += kNaClAlignment;
+#endif
 			MONO_BB_FOR_EACH_INS (bb, ins) {
 				if (ins->opcode == OP_LABEL)
 					ins->inst_c1 = max_offset;
-				
+#ifdef __native_client_codegen__
+				{
+					int space_in_block = kNaClAlignment -
+						((max_offset + cfg->code_len) & kNaClAlignmentMask);
+					int max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+					if (space_in_block < max_len && max_len < kNaClAlignment) {
+						max_offset += space_in_block;
+					}
+				}
+#endif  /* __native_client_codegen__ */
 				max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 			}
 		}
@@ -4846,7 +4972,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;
-		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		cfg->native_code = mono_realloc_native_code(cfg);
 		mono_jit_stats.code_reallocs++;
 	}
 
@@ -5027,7 +5153,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;
-		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		cfg->native_code = mono_realloc_native_code(cfg);
 		mono_jit_stats.code_reallocs++;
 	}
 
@@ -5060,8 +5186,12 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				guint32 size;
 
 				/* Compute size of code following the push <OFFSET> */
+#ifdef __native_client_codegen__
+				code = mono_nacl_align (code);
+				size = kNaClAlignment;
+#else
 				size = 5 + 5;
-
+#endif
 				/*This is aligned to 16 bytes by the callee. This way we save a few bytes here.*/
 
 				if ((code - cfg->native_code) - throw_ip < 126 - size) {
@@ -5176,8 +5306,16 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 //[1 + 5] x86_jump_mem(inst,mem)
 
 #define CMP_SIZE 6
+#ifdef __native_client_codegen__
+/* These constants should be coming from cpu-x86.md            */
+/* I suspect the size calculation below is actually incorrect. */
+/* TODO: fix the calculation that uses these sizes.            */
+#define BR_SMALL_SIZE 16
+#define BR_LARGE_SIZE 12
+#else
 #define BR_SMALL_SIZE 2
 #define BR_LARGE_SIZE 5
+#endif  /* __native_client_codegen__ */
 #define JUMP_IMM_SIZE 6
 #define ENABLE_WRONG_METHOD_CHECK 0
 #define DEBUG_IMT 0
@@ -5202,6 +5340,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	int size = 0;
 	guint8 *code, *start;
 
+#ifdef __native_client_codegen__
+	/* g_print("mono_arch_build_imt_thunk needs to be aligned.\n"); */
+#endif
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
@@ -5555,8 +5696,12 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 	} else {
 		int i = 0;
 		/* 8 for mov_reg and jump, plus 8 for each parameter */
+#ifdef __native_client_codegen__
+		/* TODO: calculate this size correctly */
+		int code_reserve = 13 + (param_count * 8) + 2 * kNaClAlignment;
+#else
 		int code_reserve = 8 + (param_count * 8);
-
+#endif  /* __native_client_codegen__ */
 		/*
 		 * The stack contains:
 		 * <args in reverse order>

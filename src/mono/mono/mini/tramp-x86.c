@@ -144,12 +144,23 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 
 	/* Patch the jump table entry used by the plt entry */
 
+#if defined(__native_client_codegen__) || defined(__native_client__)
+	/* for both compiler and runtime      */
+	/* A PLT entry:                       */
+	/*        mov <DISP>(%ebx), %ecx      */
+	/*        and 0xffffffe0, %ecx        */
+	/*        jmp *%ecx                   */
+	g_assert (code [0] == 0x8b);
+	g_assert (code [1] == 0x8b);
+
+	offset = *(guint32*)(code + 2);
+#else
 	/* A PLT entry: jmp *<DISP>(%ebx) */
 	g_assert (code [0] == 0xff);
 	g_assert (code [1] == 0xa3);
 
 	offset = *(guint32*)(code + 2);
-
+#endif  /* __native_client_codegen__ */
 	if (!got)
 		got = (gpointer*)(gsize) regs [MONO_ARCH_GOT_REG];
 	*(guint8**)((guint8*)got + offset) = addr;
@@ -158,20 +169,28 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 static gpointer
 get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 {
-	guint8 buf [8];
+	const int kBufSize = NACL_SIZE (8, 16);
+	guint8 buf [kBufSize];
 	guint8 reg = 0;
 	gint32 disp = 0;
 
-	mono_breakpoint_clean_code (NULL, code, 8, buf, sizeof (buf));
+	mono_breakpoint_clean_code (NULL, code, kBufSize, buf, sizeof (buf));
 	code = buf + 8;
 
 	*displacement = 0;
 
-	code -= 6;
-
 	if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
 		reg = code [1] & 0x07;
 		disp = *((gint32*)(code + 2));
+#if defined(__native_client_codegen__) || defined(__native_client__)
+	} else if ((code[1] == 0x83) && (code[2] == 0xe1) && (code[4] == 0xff) &&
+			   (code[5] == 0xd1) && (code[-5] == 0x8b)) {
+		disp = *((gint32*)(code - 3));
+		reg = code[-4] & 0x07;
+	} else if ((code[-2] == 0x8b) && (code[1] == 0x83) && (code[4] == 0xff)) {
+		reg = code[-1] & 0x07;
+		disp = (signed char)code[0];
+#endif
 	} else {
 		g_assert_not_reached ();
 		return NULL;
@@ -518,7 +537,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	code = buf = mono_domain_code_reserve_align (domain, TRAMPOLINE_SIZE, 4);
+	code = buf = mono_domain_code_reserve_align (domain, TRAMPOLINE_SIZE, NACL_SIZE (4, kNaClAlignment));
 
 	x86_push_imm (buf, arg1);
 	x86_jump_code (buf, tramp);
@@ -559,7 +578,13 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		index -= size - 1;
 	}
 
+#ifdef __native_client_codegen__
+	/* TODO: align for Native Client */
+	tramp_size = (aot ? 64 : 36) + 2 * kNaClAlignment +
+		6 * (depth + kNaClAlignment);
+#else
 	tramp_size = (aot ? 64 : 36) + 6 * depth;
+#endif  /* __native_client_codegen__ */
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
@@ -672,7 +697,9 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 	mono_arch_flush_icache (code, code - buf);
 
 	g_assert (code - buf <= tramp_size);
-
+#ifdef __native_client_codegen__
+	g_assert (code - buf <= kNaClAlignment);
+#endif
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("generic_class_init_trampoline"), buf, code - buf, ji, unwind_ops);
 
@@ -717,7 +744,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	owner_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (owner_offset);
 	nest_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (nest_offset);
 
-	tramp_size = 64;
+	tramp_size = NACL_SIZE (64, 128);
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
@@ -833,7 +860,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	nest_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (nest_offset);
 	entry_count_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (entry_count_offset);
 
-	tramp_size = 64;
+	tramp_size = NACL_SIZE (64, 128);
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
@@ -992,5 +1019,5 @@ mono_arch_get_call_target (guint8 *code)
 guint32
 mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
 {
-	return *(guint32*)(plt_entry + 6);
+	return *(guint32*)(plt_entry + NACL_SIZE (6, 12));
 }

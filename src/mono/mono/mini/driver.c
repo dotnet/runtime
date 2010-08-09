@@ -114,6 +114,9 @@ opt_funcs [sizeof (int) * 8] = {
 	NULL
 };
 
+#ifdef __native_client_codegen__
+extern guint8 nacl_align_byte;
+#endif
 
 #define DEFAULT_OPTIMIZATIONS (	\
 	MONO_OPT_PEEPHOLE |	\
@@ -1118,6 +1121,9 @@ mini_usage (void)
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
 		"    --jitmap               Output a jit method map to /tmp/perf-PID.map\n"
 		"    --help-devel           Shows more options available to developers\n"
+#ifdef __native_client_codegen__
+		"    --nacl-align-mask-off  Turn off Native Client 32-byte alignment mask (for debug only)\n"
+#endif
 		"\n"
 		"Runtime:\n"
 		"    --config FILE          Loads FILE as the Mono config\n"
@@ -1627,11 +1633,22 @@ mono_main (int argc, char* argv[])
 #endif
 		} else if (strcmp (argv [i], "--nollvm") == 0){
 			mono_use_llvm = FALSE;
+#ifdef __native_client_codegen__
+		} else if (strcmp (argv [i], "--nacl-align-mask-off") == 0){
+			nacl_align_byte = 0xff;	
+#endif
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
 			return 1;
 		}
 	}
+
+#ifdef __native_client_codegen__
+	if (getenv ("MONO_NACL_ALIGN_MASK_OFF"))
+	{
+		nacl_align_byte = 0xff;
+	}
+#endif
 
 	if (!argv [i]) {
 		mini_usage ();

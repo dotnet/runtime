@@ -562,11 +562,13 @@ struct MonoBasicBlock {
 
 /* BBlock flags */
 enum {
-	BB_VISITED            = 1 << 0,
-	BB_REACHABLE          = 1 << 1,
-	BB_EXCEPTION_DEAD_OBJ = 1 << 2,
-	BB_EXCEPTION_UNSAFE   = 1 << 3,
-	BB_EXCEPTION_HANDLER  = 1 << 4
+	BB_VISITED              = 1 << 0,
+	BB_REACHABLE            = 1 << 1,
+	BB_EXCEPTION_DEAD_OBJ   = 1 << 2,
+	BB_EXCEPTION_UNSAFE     = 1 << 3,
+	BB_EXCEPTION_HANDLER    = 1 << 4,
+	/* for Native Client, mark the blocks that can be jumped to indirectly */
+	BB_INDIRECT_JUMP_TARGET = 1 << 5 
 };
 
 typedef struct MonoMemcpyArgs {
@@ -1070,6 +1072,11 @@ typedef struct {
 	MonoGenericSharingContext *generic_sharing_context;
 
 	unsigned char   *cil_start;
+#ifdef __native_client_codegen__
+	/* this alloc is not aligned, native_code */
+	/* is the 32-byte aligned version of this */
+	unsigned char   *native_code_alloc;
+#endif
 	unsigned char   *native_code;
 	guint            code_size;
 	guint            code_len;
@@ -1588,6 +1595,19 @@ gboolean  mono_linterval_covers             (MonoLiveInterval *interval, int pos
 gint32    mono_linterval_get_intersect_pos  (MonoLiveInterval *i1, MonoLiveInterval *i2) MONO_INTERNAL;
 void      mono_linterval_split              (MonoCompile *cfg, MonoLiveInterval *interval, MonoLiveInterval **i1, MonoLiveInterval **i2, int pos) MONO_INTERNAL;
 void      mono_liveness_handle_exception_clauses (MonoCompile *cfg) MONO_INTERNAL;
+
+/* Native Client functions */
+#ifdef __native_client_codegen__
+void mono_nacl_align_inst(guint8 **pcode, int instlen);
+void mono_nacl_align_call(guint8 **start, guint8 **pcode);
+guint8 *mono_nacl_pad_call(guint8 *code, guint8 ilength);
+guint8 *mono_nacl_align(guint8 *code);
+void mono_nacl_fix_patches(const guint8 *code, MonoJumpInfo *ji);
+/* Defined for each arch */
+guint8 *mono_arch_nacl_pad(guint8 *code, int pad);
+guint8 *mono_arch_nacl_skip_nops(guint8 *code);
+
+#endif
 
 /* AOT */
 void      mono_aot_init                     (void) MONO_INTERNAL;

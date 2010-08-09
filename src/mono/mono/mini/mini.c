@@ -81,6 +81,11 @@ MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
 MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline = NULL;
 MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm = NULL;
 
+#ifdef __native_client_codegen__
+/* Default alignment for Native Client is 32-byte. */
+guint8 nacl_align_byte = 0xe0;
+#endif
+
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 
@@ -156,6 +161,82 @@ gboolean check_for_pending_exc = TRUE;
 gboolean disable_vtypes_in_regs = FALSE;
 
 gboolean mono_dont_free_global_codeman;
+
+#ifdef __native_client_codegen__
+
+/* Prevent instructions from straddling a 32-byte alignment boundary.   */
+/* Instructions longer than 32 bytes must be aligned internally.        */
+/* IN: pcode, instlen                                                   */
+/* OUT: pcode                                                           */
+void mono_nacl_align_inst(guint8 **pcode, int instlen) {
+  int space_in_block;
+
+  space_in_block = kNaClAlignment - ((uintptr_t)(*pcode) & kNaClAlignmentMask);
+
+  if (G_UNLIKELY (instlen >= kNaClAlignment)) {
+    g_assert_not_reached();
+  } else if (instlen > space_in_block) {
+    *pcode = mono_arch_nacl_pad(*pcode, space_in_block);
+  }
+}
+
+/* Move emitted call sequence to the end of a kNaClAlignment-byte block.  */
+/* IN: start    pointer to start of call sequence                         */
+/* IN: pcode    pointer to end of call sequence (current "IP")            */
+/* OUT: start   pointer to the start of the call sequence after padding   */
+/* OUT: pcode   pointer to the end of the call sequence after padding     */
+void mono_nacl_align_call(guint8 **start, guint8 **pcode) {
+  const size_t MAX_NACL_CALL_LENGTH = kNaClAlignment;
+  guint8 copy_of_call[MAX_NACL_CALL_LENGTH];
+  guint8 *temp;
+
+  const size_t length = (size_t)((*pcode)-(*start));
+  g_assert(length < MAX_NACL_CALL_LENGTH);
+
+  memcpy(copy_of_call, *start, length);
+  temp = mono_nacl_pad_call(*start, (guint8)length);
+  memcpy(temp, copy_of_call, length);
+  (*start) = temp;
+  (*pcode) = temp + length;
+}
+
+/* mono_nacl_pad_call(): Insert padding for Native Client call instructions */
+/*    code     pointer to buffer for emitting code                          */
+/*    ilength  length of call instruction                                   */
+guint8 *mono_nacl_pad_call(guint8 *code, guint8 ilength) {
+  int freeSpaceInBlock = kNaClAlignment - ((uintptr_t)code & kNaClAlignmentMask);
+  int padding = freeSpaceInBlock - ilength;
+
+  if (padding < 0) {
+    /* There isn't enough space in this block for the instruction. */
+    /* Fill this block and start a new one.                        */
+    code = mono_arch_nacl_pad(code, freeSpaceInBlock);
+    freeSpaceInBlock = kNaClAlignment;
+    padding = freeSpaceInBlock - ilength;
+  }
+  g_assert(ilength > 0);
+  g_assert(padding >= 0);
+  g_assert(padding < kNaClAlignment);
+  if (0 == padding) return code;
+  return mono_arch_nacl_pad(code, padding);
+}
+
+guint8 *mono_nacl_align(guint8 *code) {
+  int padding = kNaClAlignment - ((uintptr_t)code & kNaClAlignmentMask);
+  if (padding != kNaClAlignment) code = mono_arch_nacl_pad(code, padding);
+  return code;
+}
+
+void mono_nacl_fix_patches(const guint8 *code, MonoJumpInfo *ji)
+{
+  MonoJumpInfo *patch_info;
+  for (patch_info = ji; patch_info; patch_info = patch_info->next) {
+    unsigned char *ip = patch_info->ip.i + code;
+    ip = mono_arch_nacl_skip_nops(ip);
+    patch_info->ip.i = ip - code;
+  }
+}
+#endif  /* __native_client_codegen__ */
 
 gboolean
 mono_running_on_valgrind (void)
@@ -3330,7 +3411,17 @@ mono_codegen (MonoCompile *cfg)
 	}
 
 	memcpy (code, cfg->native_code, cfg->code_len);
+#ifdef __native_client_codegen__
+	if (cfg->native_code_alloc) {
+		g_free (cfg->native_code_alloc);
+		cfg->native_code_alloc = 0;
+	}
+	else if (cfg->native_code) {
+		g_free (cfg->native_code);
+	}
+#else
 	g_free (cfg->native_code);
+#endif
 	cfg->native_code = code;
 	code = cfg->native_code + cfg->code_len;
   
@@ -3369,6 +3460,10 @@ if (valgrind_register){
 	mono_arch_save_unwind_info (cfg);
 #endif
 	
+#ifdef __native_client_codegen__
+	mono_nacl_fix_patches (cfg->native_code, cfg->patch_info);
+#endif
+
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
 	if (cfg->method->dynamic) {
@@ -5664,7 +5759,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	MONO_PROBE_VES_INIT_BEGIN ();
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(__native_client__)
 	if (access ("/proc/self/maps", F_OK) != 0) {
 		g_print ("Mono requires /proc to be mounted.\n");
 		exit (1);

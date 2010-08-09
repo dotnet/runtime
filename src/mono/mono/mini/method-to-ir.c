@@ -5446,6 +5446,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->bb_exit = end_bblock;
 		end_bblock->cil_code = NULL;
 		end_bblock->cil_length = 0;
+		end_bblock->flags |= BB_INDIRECT_JUMP_TARGET;
 		g_assert (cfg->num_bblocks == 2);
 
 		arg_array = cfg->args;
@@ -7051,11 +7052,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			target = ip + n * sizeof (guint32);
 
 			GET_BBLOCK (cfg, default_bblock, target);
+			default_bblock->flags |= BB_INDIRECT_JUMP_TARGET;
 
 			targets = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * n);
 			for (i = 0; i < n; ++i) {
 				GET_BBLOCK (cfg, tblock, target + (gint32)read32(ip));
 				targets [i] = tblock;
+				targets [i]->flags |= BB_INDIRECT_JUMP_TARGET;
 				ip += 4;
 			}
 
