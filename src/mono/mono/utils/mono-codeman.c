@@ -39,6 +39,14 @@
 #else
 #define MIN_ALIGN 8
 #endif
+#ifdef __native_client_codegen__
+/* For Google Native Client, all targets of indirect control flow need to    */
+/* be aligned to a 32-byte boundary. MIN_ALIGN was updated to 32 to force    */
+/* alignment for calls from tramp-x86.c to mono_global_codeman_reserve()     */
+/* and mono_domain_code_reserve().                                           */
+#undef MIN_ALIGN
+#define MIN_ALIGN 32
+#endif
 
 /* if a chunk has less than this amount of free space it's considered full */
 #define MAX_WASTAGE 32
