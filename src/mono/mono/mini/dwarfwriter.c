@@ -1049,7 +1049,6 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 	if (j < G_N_ELEMENTS (basic_types)) {
 		/* Emit a boxed version of base types */
 		if (j < 64 && !base_types_emitted [j]) {
-			printf ("X: %s\n", klass->name);
 			emit_class_dwarf_info (w, klass, FALSE);
 			base_types_emitted [j] = TRUE;
 		}
