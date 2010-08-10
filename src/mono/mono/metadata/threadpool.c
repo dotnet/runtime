@@ -1860,7 +1860,17 @@ async_invoke_thread (gpointer data)
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
 					if (exc && mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
-						if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
+						gboolean unloaded;
+						MonoClass *klass;
+
+						klass = exc->vtable->klass;
+						unloaded = (klass->image == mono_defaults.corlib);
+						if (unloaded) {
+							unloaded = (!strcmp ("System", klass->name_space) &&
+								!strcmp ("AppDomainUnloadedException", klass->name));
+						}
+
+						if (!unloaded && klass != mono_defaults.threadabortexception_class) {
 							mono_unhandled_exception (exc);
 							exit (255);
 						}
