@@ -829,7 +829,7 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 		 * Might have to zero extend since llvm doesn't have 
 		 * unsigned types.
 		 */
-		if (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2)
+		if (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_CHAR || t->type == MONO_TYPE_BOOLEAN)
 			v = LLVMBuildZExt (ctx->builder, v, LLVMInt32Type (), "");
 		else if (t->type == MONO_TYPE_U8)
 			v = LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), "");
