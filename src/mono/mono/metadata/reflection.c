@@ -8376,7 +8376,13 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 	method = ref_method->method;
 	domain = mono_object_domain (ref_method);
 
+	if (!mono_class_init (method->klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (method->klass));
+
 	mono_reflection_create_custom_attr_data_args (image, method, data, len, &typedargs, &namedargs, &arginfo);
+	if (mono_loader_get_last_error ())
+		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+
 	if (!typedargs || !namedargs)
 		return;
 
