@@ -599,14 +599,16 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
-	int k, args_size = 0;
+	int len, k, args_size = 0;
 	int size, pad;
 	guint32 align;
 	int offset = 8;
 	CallInfo *cinfo;
 
 	/* Avoid g_malloc as it is not signal safe */
-	cinfo = (CallInfo*)g_newa (guint8*, sizeof (CallInfo) + (sizeof (ArgInfo) * (csig->param_count + 1)));
+	len = sizeof (CallInfo) + (sizeof (ArgInfo) * (csig->param_count + 1));
+	cinfo = (CallInfo*)g_newa (guint8*, len);
+	memset (cinfo, 0, len);
 
 	cinfo = get_call_info_internal (NULL, cinfo, csig, FALSE);
 
