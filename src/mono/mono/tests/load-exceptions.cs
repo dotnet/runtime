@@ -9,6 +9,11 @@ using System.Reflection;
 class Miss1 : Missing.Foo1 {
 }
 
+public class Miss2 {
+	public class Foo : Missing.Foo1 {
+	}
+}
+
 public class Tests : LoadMissing {
 
 	public delegate void TestDel ();
@@ -313,6 +318,12 @@ public class Tests : LoadMissing {
 		return check_type_load (new TestDel (missing_parent));
 	}
 #endif
+
+	public static int test_0_missing_nested () {
+		if (typeof (Miss2).GetNestedTypes ().Length != 0)
+			return 1;
+		return 0;
+	}
 
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
