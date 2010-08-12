@@ -61,7 +61,7 @@
 #include "jit.h"
 #include "debugger-agent.h"
 
-#define BRANCH_COST 100
+#define BRANCH_COST 10
 #define INLINE_LENGTH_LIMIT 20
 #define INLINE_FAILURE do {\
 		if ((cfg->method != method) && (method->wrapper_type == MONO_WRAPPER_NONE))\
