@@ -2230,8 +2230,6 @@ static MonoReflectionModule*
 ves_icall_MonoType_get_Module (MonoReflectionType *type)
 {
 	MonoClass *class = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (class);
-
 	return mono_module_get_object (mono_object_domain (type), class->image);
 }
 
@@ -2240,9 +2238,7 @@ ves_icall_MonoType_get_Assembly (MonoReflectionType *type)
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *class = mono_class_from_mono_type (type->type);
-
-	mono_class_init_or_throw (class);
-
+	//mono_class_init_or_throw (class);
 	return mono_assembly_get_object (domain, class->image->assembly);
 }
 
@@ -4136,6 +4132,10 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			mono_raise_exception (e);
 
 		return NULL;
+	} else if (mono_loader_get_last_error ()) {
+		if (throwOnError)
+			mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+		mono_loader_clear_error ();
 	}
 
 	if (type->type == MONO_TYPE_CLASS) {
