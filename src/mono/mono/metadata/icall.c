@@ -2238,7 +2238,6 @@ ves_icall_MonoType_get_Assembly (MonoReflectionType *type)
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *class = mono_class_from_mono_type (type->type);
-	//mono_class_init_or_throw (class);
 	return mono_assembly_get_object (domain, class->image->assembly);
 }
 
@@ -3434,9 +3433,6 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	mono_class_init_or_throw (klass);
-	mono_class_init_or_throw (refklass);
-
 	len = 0;
 	if (name != NULL) {
 		mname = mono_string_to_utf8 (name);
@@ -3574,12 +3570,6 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	mono_class_init_or_throw (klass);
-	mono_class_init_or_throw (refklass);
-
-	if (klass->exception_type != MONO_EXCEPTION_NONE)
-		mono_raise_exception (mono_class_get_exception_for_failure (klass));
-
 	if (!System_Reflection_ConstructorInfo)
 		System_Reflection_ConstructorInfo = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "ConstructorInfo");
@@ -3659,6 +3649,7 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 static MonoArray*
 ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
+	MonoException *ex;
 	MonoDomain *domain; 
 	static MonoClass *System_Reflection_PropertyInfo;
 	MonoClass *startklass, *klass;
@@ -3670,7 +3661,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	gpointer iter;
-	GHashTable *properties;
+	GHashTable *properties = NULL;
 	MonoPtrArray tmp_array;
 
 	MONO_ARCH_SAVE_REGS;
@@ -3685,26 +3676,17 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	if (type->type->byref)
 		return mono_array_new_cached (domain, System_Reflection_PropertyInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
-
-
 
 	if (name != NULL) {
 		propname = mono_string_to_utf8 (name);
 		compare_func = (ignore_case) ? mono_utf8_strcasecmp : strcmp;
 	}
 
-	mono_class_setup_vtable (klass);
-
 	properties = g_hash_table_new (property_hash, (GEqualFunc)property_equal);
 handle_parent:
 	mono_class_setup_vtable (klass);
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		g_hash_table_destroy (properties);
-		if (name != NULL)
-			g_free (propname);
-		mono_raise_exception (mono_class_get_exception_for_failure (klass));
-	}
+	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+		goto loader_error;
 
 	iter = NULL;
 	while ((prop = mono_class_get_properties (klass, &iter))) {
@@ -3767,6 +3749,22 @@ handle_parent:
 	mono_ptr_array_destroy (tmp_array);
 
 	return res;
+
+loader_error:
+	if (properties)
+		g_hash_table_destroy (properties);
+	if (name)
+		g_free (propname);
+	mono_ptr_array_destroy (tmp_array);
+
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		ex = mono_class_get_exception_for_failure (klass);
+	} else {
+		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
+		mono_loader_clear_error ();
+	}
+	mono_raise_exception (ex);
+	return NULL;
 }
 
 static MonoReflectionEvent *
@@ -3843,6 +3841,7 @@ handle_parent:
 static MonoArray*
 ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
 {
+	MonoException *ex;
 	MonoDomain *domain; 
 	static MonoClass *System_Reflection_EventInfo;
 	MonoClass *startklass, *klass;
@@ -3866,12 +3865,11 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	if (type->type->byref)
 		return mono_array_new_cached (domain, System_Reflection_EventInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
-
-handle_parent:	
-	if (klass->exception_type != MONO_EXCEPTION_NONE)
-		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+handle_parent:
+	mono_class_setup_vtable (klass);
+	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+		goto loader_error;
 
 	iter = NULL;
 	while ((event = mono_class_get_events (klass, &iter))) {
@@ -3924,6 +3922,17 @@ handle_parent:
 	mono_ptr_array_destroy (tmp_array);
 
 	return res;
+
+loader_error:
+	mono_ptr_array_destroy (tmp_array);
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		ex = mono_class_get_exception_for_failure (klass);
+	} else {
+		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
+		mono_loader_clear_error ();
+	}
+	mono_raise_exception (ex);
+	return NULL;
 }
 
 static MonoReflectionType *

@@ -7806,8 +7806,6 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 	MonoMethod** method;
 	if (!iter)
 		return NULL;
-	if (!klass->inited)
-		mono_class_init (klass);
 	if (!*iter) {
 		mono_class_setup_methods (klass);
 
@@ -7924,8 +7922,6 @@ mono_class_get_properties (MonoClass* klass, gpointer *iter)
 	MonoProperty* property;
 	if (!iter)
 		return NULL;
-	if (!klass->inited)
-		mono_class_init (klass);
 	if (!*iter) {
 		mono_class_setup_properties (klass);
 		/* start from the first */
@@ -7962,8 +7958,6 @@ mono_class_get_events (MonoClass* klass, gpointer *iter)
 	MonoEvent* event;
 	if (!iter)
 		return NULL;
-	if (!klass->inited)
-		mono_class_init (klass);
 	if (!*iter) {
 		mono_class_setup_events (klass);
 		/* start from the first */
