@@ -7510,7 +7510,6 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 	}
 	if (!klass)
 		return NULL;
-	mono_class_init (klass);
 
 	if (info->type_arguments) {
 		MonoType **type_args = g_new0 (MonoType *, info->type_arguments->len);
@@ -7551,7 +7550,6 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		} else { /* array rank */
 			klass = mono_bounded_array_class_get (klass, modval, bounded);
 		}
-		mono_class_init (klass);
 	}
 
 	return &klass->byval_arg;
