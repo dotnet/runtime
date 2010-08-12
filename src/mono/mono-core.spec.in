@@ -971,6 +971,7 @@ Authors:
 %_bindir/macpack
 %_bindir/makecert
 %_bindir/mkbundle
+%_bindir/mono-abi-info
 %_bindir/mono-api-info
 %_bindir/mono-cil-strip
 %_bindir/mono-find-provides
@@ -1073,9 +1074,11 @@ Authors:
 %_prefix/lib/mono/4.0/Microsoft.Common.targets
 %_prefix/lib/mono/4.0/Microsoft.Common.tasks
 %_prefix/lib/mono/4.0/Microsoft.VisualBasic.targets
+%_prefix/lib/mono/4.0/Mono.CodeContracts.dll
 %_prefix/lib/mono/4.0/PEAPI.dll
 %_prefix/lib/mono/4.0/al.exe*
 %_prefix/lib/mono/4.0/caspol.exe*
+%_prefix/lib/mono/4.0/ccrewrite.exe*
 %_prefix/lib/mono/4.0/cert2spc.exe*
 %_prefix/lib/mono/4.0/dtd2rng.exe*
 %_prefix/lib/mono/4.0/dtd2xsd.exe*
@@ -1088,6 +1091,7 @@ Authors:
 %_prefix/lib/mono/4.0/macpack.exe*
 %_prefix/lib/mono/4.0/makecert.exe*
 %_prefix/lib/mono/4.0/mkbundle.exe*
+%_prefix/lib/mono/4.0/mono-abi-info.exe*
 %_prefix/lib/mono/4.0/mono-api-info.exe*
 %_prefix/lib/mono/4.0/mono-cil-strip.exe*
 %_prefix/lib/mono/4.0/mono-shlib-cop.exe*
@@ -1110,6 +1114,7 @@ Authors:
 %_prefix/lib/mono/gac/Microsoft.Build.Utilities
 %_prefix/lib/mono/gac/Microsoft.Build.Utilities.v3.5
 %_prefix/lib/mono/gac/Microsoft.Build.Utilities.v4.0
+%_prefix/lib/mono/gac/Mono.CodeContracts
 %_prefix/lib/mono/gac/Mono.Debugger.Soft
 %_prefix/lib/mono/gac/PEAPI
 %_prefix/lib/mono/xbuild
