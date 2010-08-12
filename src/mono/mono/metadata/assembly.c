@@ -92,6 +92,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"PEAPI", 0},
 	{"System", 0},
 	{"System.ComponentModel.DataAnnotations", 2},
+	{"System.Configuration", 0},
 	{"System.Configuration.Install", 0},
 	{"System.Core", 2},
 	{"System.Data", 0},

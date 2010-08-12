@@ -1130,6 +1130,8 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 		/* 
 		 * This doesn't work because LLVM can move the non-faulting loads before the faulting
 		 * ones (test_0_llvm_moving_faulting_loads ()).
+		 * FIXME: This also doesn't work because abcrem equates an array with its length,
+		 * so a = new int [100] implies a != null, but a = new int [0] doesn't.
 		 */
 #if 0
 		/*

@@ -221,6 +221,7 @@ BASE_TEST_CS_SRC=		\
 	threadpool-exceptions4.cs \
 	threadpool-exceptions5.cs \
 	threadpool-exceptions6.cs \
+	threadpool-exceptions7.cs \
 	base-definition.cs	\
 	bug-27420.cs		\
 	bug-47295.cs		\

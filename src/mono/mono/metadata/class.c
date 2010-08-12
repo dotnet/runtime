@@ -8063,8 +8063,11 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 				guint32 cols [MONO_NESTED_CLASS_SIZE];
 				mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
 				nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
-				if (!nclass)
+				if (!nclass) {
+					mono_loader_clear_error ();
+					i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
 					continue;
+				}
 				mono_class_alloc_ext (klass);
 				klass->ext->nested_classes = g_list_prepend_image (klass->image, klass->ext->nested_classes, nclass);
 
