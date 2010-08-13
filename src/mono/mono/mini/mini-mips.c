@@ -3288,6 +3288,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
 		case OP_LOADU4_MEMBASE:
+			g_assert (ins->dreg != -1);
 			if (mips_is_imm16 (ins->inst_offset)) {
 				mips_lw (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			} else {
@@ -4129,11 +4130,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			break;
 		case OP_LOADR4_MEMINDEX:
-			mips_addiu (code, mips_at, ins->inst_basereg, ins->sreg2);
+			mips_addu (code, mips_at, ins->inst_basereg, ins->sreg2);
 			mips_lwc1 (code, ins->dreg, mips_at, 0);
 			break;
 		case OP_LOADR8_MEMINDEX:
-			mips_addiu (code, mips_at, ins->inst_basereg, ins->sreg2);
+			mips_addu (code, mips_at, ins->inst_basereg, ins->sreg2);
 #if _MIPS_SIM == _ABIO32
 			mips_lwc1 (code, ins->dreg, mips_at, 0);
 			mips_lwc1 (code, ins->dreg+1, mips_at, 4);
@@ -4142,7 +4143,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			break;
 		case OP_STORER4_MEMINDEX:
-			mips_addiu (code, mips_at, ins->inst_basereg, ins->sreg2);
+			mips_addu (code, mips_at, ins->inst_basereg, ins->sreg2);
 #if PROMOTE_R4_TO_R8
 			/* Need to convert ins->sreg1 to single-precision first */
 			mips_cvtsd (code, mips_ftemp, ins->sreg1);
@@ -4152,7 +4153,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			break;
 		case OP_STORER8_MEMINDEX:
-			mips_addiu (code, mips_at, ins->inst_basereg, ins->sreg2);
+			mips_addu (code, mips_at, ins->inst_basereg, ins->sreg2);
 #if _MIPS_SIM == _ABIO32
 			mips_swc1 (code, ins->sreg1, mips_at, 0);
 			mips_swc1 (code, ins->sreg1+1, mips_at, 4);
