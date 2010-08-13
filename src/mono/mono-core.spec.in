@@ -960,6 +960,7 @@ Authors:
 %_bindir/al
 %_bindir/al2
 %_bindir/caspol
+%_bindir/ccrewrite
 %_bindir/cert2spc
 %_bindir/dtd2rng
 %_bindir/dtd2xsd
