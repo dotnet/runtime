@@ -1008,6 +1008,7 @@ Authors:
 %_libdir/pkgconfig/mono-options.pc
 %_libdir/pkgconfig/mono.pc
 %_mandir/man1/al.1%ext_man
+%_mandir/man1/ccrewrite.1%ext_man
 %_mandir/man1/cert2spc.1%ext_man
 %_mandir/man1/dtd2xsd.1%ext_man
 %_mandir/man1/genxs.1%ext_man
