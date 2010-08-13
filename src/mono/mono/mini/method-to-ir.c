@@ -2590,6 +2590,22 @@ create_write_barrier_bitmap (MonoClass *klass, unsigned *wb_bitmap, int offset)
 	}
 }
 
+static void
+emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_reg)
+{
+	MonoInst *dummy_use;
+	MonoMethod *write_barrier = mono_gc_get_write_barrier ();
+	mono_emit_method_call (cfg, write_barrier, &ptr, NULL);
+
+	if (value) {
+		EMIT_NEW_DUMMY_USE (cfg, dummy_use, value);
+	} else {
+		MONO_INST_NEW (cfg, dummy_use, OP_DUMMY_USE);
+		dummy_use->sreg1 = value_reg;
+		MONO_ADD_INS (cfg->cbb, dummy_use);
+	}
+}
+
 static gboolean
 mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4], int size, int align)
 {
@@ -2635,16 +2651,8 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, tmp_reg, srcreg, offset);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, dest_ptr_reg, 0, tmp_reg);
 
-		if (need_wb & 0x1) {
-			MonoInst *dummy_use;
-
-			MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-			mono_emit_method_call (cfg, write_barrier, &iargs [0], NULL);
-
-			MONO_INST_NEW (cfg, dummy_use, OP_DUMMY_USE);
-			dummy_use->sreg1 = tmp_reg;
-			MONO_ADD_INS (cfg->cbb, dummy_use);
-		}
+		if (need_wb & 0x1)
+			emit_write_barrier (cfg, iargs [0], NULL, tmp_reg);
 
 		offset += SIZEOF_VOID_P;
 		size -= SIZEOF_VOID_P;
@@ -4433,12 +4441,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				g_assert_not_reached ();
 			}
 
-			if (cfg->gen_write_barriers && is_ref) {
-				MonoInst *dummy_use;
-				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-				mono_emit_method_call (cfg, write_barrier, &args [0], NULL);
-				EMIT_NEW_DUMMY_USE (cfg, dummy_use, args [1]);
-			}
+			if (cfg->gen_write_barriers && is_ref)
+				emit_write_barrier (cfg, args [0], args [1], -1);
 		}
 #endif /* MONO_ARCH_HAVE_ATOMIC_EXCHANGE */
  
@@ -4471,12 +4475,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			} else {
 				/* g_assert_not_reached (); */
 			}
-			if (cfg->gen_write_barriers && is_ref) {
-				MonoInst *dummy_use;
-				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-				mono_emit_method_call (cfg, write_barrier, &args [0], NULL);
-				EMIT_NEW_DUMMY_USE (cfg, dummy_use, args [1]);
-			}
+			if (cfg->gen_write_barriers && is_ref)
+				emit_write_barrier (cfg, args [0], args [1], -1);
 		}
 #endif /* MONO_ARCH_HAVE_ATOMIC_CAS */
 
@@ -7191,13 +7191,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins_flag = 0;
 			MONO_ADD_INS (bblock, ins);
 
-			if (cfg->gen_write_barriers && *ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !((sp [1]->opcode == OP_PCONST) && (sp [1]->inst_p0 == 0))) {
-				MonoInst *dummy_use;
-				/* insert call to write barrier */
-				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-				mono_emit_method_call (cfg, write_barrier, sp, NULL);
-				EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
-			}
+			if (cfg->gen_write_barriers && *ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !((sp [1]->opcode == OP_PCONST) && (sp [1]->inst_p0 == 0)))
+				emit_write_barrier (cfg, sp [0], sp [1], -1);
 
 			inline_costs += 1;
 			++ip;
@@ -7400,12 +7395,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				store->flags |= ins_flag;
 				MONO_ADD_INS (cfg->cbb, store);
 
-				if (cfg->gen_write_barriers && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER) {
-					MonoInst *dummy_use;
-					MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-					mono_emit_method_call (cfg, write_barrier, sp, NULL);
-					EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
-				}
+				if (cfg->gen_write_barriers && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER)
+					emit_write_barrier (cfg, sp [0], sp [1], -1);
 			} else {
 				mini_emit_stobj (cfg, sp [0], sp [1], klass, FALSE);
 			}
@@ -8160,16 +8151,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (cfg->gen_write_barriers && mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
 					/* insert call to write barrier */
-					MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-					MonoInst *iargs [2], *dummy_use;
+					MonoInst *ptr;
 					int dreg;
 
 					dreg = alloc_preg (cfg);
-					EMIT_NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
-					iargs [1] = sp [1];
-					mono_emit_method_call (cfg, write_barrier, iargs, NULL);
-
-					EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
+					EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
+					emit_write_barrier (cfg, ptr, sp [1], -1);
 				}
 
 					store->flags |= ins_flag;
@@ -8552,11 +8539,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0, sp [1]->dreg);
 			if (cfg->gen_write_barriers && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER &&
 					generic_class_is_reference_type (cfg, klass)) {
-				MonoInst *dummy_use;
 				/* insert call to write barrier */
-				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-				mono_emit_method_call (cfg, write_barrier, sp, NULL);
-				EMIT_NEW_DUMMY_USE (cfg, dummy_use, sp [1]);
+				emit_write_barrier (cfg, sp [0], sp [1], -1);
 			}
 			ins_flag = 0;
 			ip += 5;
