@@ -101,6 +101,18 @@ card_table_clear (void)
 	}
 }
 
+guint8*
+mono_gc_get_card_table (int *shift_bits)
+{
+	if (!use_cardtable)
+		return NULL;
+
+	g_assert (cardtable);
+	*shift_bits = CARD_BITS;
+
+	return cardtable;
+}
+
 static void
 collect_faulted_cards (void)
 {
@@ -135,5 +147,11 @@ sgen_card_table_mark_range (mword address, mword size)
 #define scan_from_card_tables(start,end,queue)
 #define card_table_clear()
 #define card_table_init()
+
+guint8*
+mono_gc_get_card_table (int *shift_bits)
+{
+	return NULL;
+}
 
 #endif

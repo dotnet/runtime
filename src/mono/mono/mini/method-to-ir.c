@@ -2593,9 +2593,25 @@ create_write_barrier_bitmap (MonoClass *klass, unsigned *wb_bitmap, int offset)
 static void
 emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_reg)
 {
+#ifdef HAVE_SGEN_GC
 	MonoInst *dummy_use;
-	MonoMethod *write_barrier = mono_gc_get_write_barrier ();
-	mono_emit_method_call (cfg, write_barrier, &ptr, NULL);
+	int shift_bits;
+	guint8 *card_table = mono_gc_get_card_table (&shift_bits);
+
+	if (card_table) {
+		int offset_reg = alloc_preg (cfg);
+		int card_table_reg = alloc_preg (cfg);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, offset_reg, ptr->dreg, shift_bits);
+		MONO_EMIT_NEW_PCONST (cfg, card_table_reg, card_table);
+		MONO_EMIT_NEW_BIALU (cfg, OP_PADD, card_table_reg, card_table_reg, offset_reg);
+		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, card_table_reg, 0, 1);
+
+		EMIT_NEW_DUMMY_USE (cfg, dummy_use, ptr);
+	} else {
+		MonoMethod *write_barrier = mono_gc_get_write_barrier ();
+		mono_emit_method_call (cfg, write_barrier, &ptr, NULL);
+	}
 
 	if (value) {
 		EMIT_NEW_DUMMY_USE (cfg, dummy_use, value);
@@ -2604,6 +2620,7 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 		dummy_use->sreg1 = value_reg;
 		MONO_ADD_INS (cfg->cbb, dummy_use);
 	}
+#endif
 }
 
 static gboolean

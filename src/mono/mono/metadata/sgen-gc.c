@@ -6927,6 +6927,8 @@ mono_gc_get_write_barrier (void)
 #endif
 #endif
 
+	g_assert (!use_cardtable);
+
 	// FIXME: Maybe create a separate version for ctors (the branch would be
 	// correctly predicted more times)
 	if (write_barrier_method)
@@ -6940,7 +6942,7 @@ mono_gc_get_write_barrier (void)
 	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
 
 #ifdef MANAGED_WBARRIER
-	if (!use_cardtable && mono_runtime_has_tls_get ()) {
+	if (mono_runtime_has_tls_get ()) {
 #ifdef SGEN_ALIGN_NURSERY
 		// if (ptr_in_nursery (ptr)) return;
 		/*
