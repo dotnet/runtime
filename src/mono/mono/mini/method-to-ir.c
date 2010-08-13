@@ -8212,9 +8212,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					sp [0] = ins;
 				}
 
-			 	MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
-
 				if (*ip == CEE_LDFLDA) {
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
+					MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
+
 					dreg = alloc_preg (cfg);
 
 					EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
@@ -8223,6 +8224,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					*sp++ = ins;
 				} else {
 					MonoInst *load;
+
+					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
 
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, field->type, sp [0]->dreg, foffset);
 					load->flags |= ins_flag;
