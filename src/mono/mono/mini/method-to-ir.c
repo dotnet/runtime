@@ -8213,8 +8213,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				if (*ip == CEE_LDFLDA) {
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
-					MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
+					if (sp [0]->type == STACK_OBJ) {
+						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
+						MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
+					}
 
 					dreg = alloc_preg (cfg);
 

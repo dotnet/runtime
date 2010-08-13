@@ -2606,5 +2606,19 @@ class Tests {
 
 		return 1;
 	}
+
+	unsafe struct Foo
+	{
+		public int i;
+
+		public static Foo* pFoo;
+	}
+
+	/* MS.NET doesn't seem to throw in this case */
+	public unsafe static int test_0_ldflda_null_pointer () {
+		int* pi = &Foo.pFoo->i;
+
+		return 0;
+	}
 }
 
