@@ -64,6 +64,7 @@ static MonoMethod* mono_class_get_virtual_methods (MonoClass* klass, gpointer *i
 static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token);
 static gboolean mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass);
 static void mono_field_resolve_type (MonoClassField *field, MonoError *error);
+static guint32 mono_field_resolve_flags (MonoClassField *field);
 
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
@@ -8164,6 +8165,8 @@ mono_field_get_parent (MonoClassField *field)
 guint32
 mono_field_get_flags (MonoClassField *field)
 {
+	if (!field->type)
+		return mono_field_resolve_flags (field);
 	return field->type->attrs;
 }
 
@@ -9234,5 +9237,27 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		field->type = mono_metadata_parse_type_full (image, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (!field->type)
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	}
+}
+
+static guint32
+mono_field_resolve_flags (MonoClassField *field)
+{
+	MonoClass *class = field->parent;
+	MonoImage *image = class->image;
+	MonoClass *gtd = class->generic_class ? mono_class_get_generic_type_definition (class) : NULL;
+	int field_idx = field - class->fields;
+
+
+	if (gtd) {
+		MonoClassField *gfield = &gtd->fields [field_idx];
+		return mono_field_get_flags (gfield);
+	} else {
+		int idx = class->field.first + field_idx;
+
+		/*FIXME, in theory we do not lazy load SRE fields*/
+		g_assert (!image->dynamic);
+
+		return mono_metadata_decode_table_row_col (image, MONO_TABLE_FIELD, idx, MONO_FIELD_FLAGS);
 	}
 }
