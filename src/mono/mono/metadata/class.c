@@ -41,7 +41,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
-
+#include <mono/utils/mono-logger-internal.h>
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
@@ -63,6 +63,7 @@ static void setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, Mono
 static MonoMethod* mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter);
 static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token);
 static gboolean mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass);
+static void mono_field_resolve_type (MonoClassField *field, MonoError *error);
 
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
@@ -8113,7 +8114,13 @@ mono_field_get_name (MonoClassField *field)
 MonoType*
 mono_field_get_type (MonoClassField *field)
 {
-	return field->type;
+	MonoError error;
+	MonoType *type = mono_field_get_type_checked (field, &error);
+	if (!mono_error_ok (&error)) {
+		mono_trace_warning (MONO_TRACE_TYPE, "Could not load field's type due to %s", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+	}
+	return type;
 }
 
 
@@ -8128,6 +8135,8 @@ MonoType*
 mono_field_get_type_checked (MonoClassField *field, MonoError *error)
 {
 	mono_error_init (error);
+	if (!field->type)
+		mono_field_resolve_type (field, error);
 	return field->type;
 }
 
@@ -9167,4 +9176,63 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 	klass->interfaces_inited = TRUE;
 
 	mono_loader_unlock ();
+}
+
+/*error must have been inited by mono_field_get_type_checked*/
+static void
+mono_field_resolve_type (MonoClassField *field, MonoError *error)
+{
+	MonoClass *class = field->parent;
+	MonoImage *image = class->image;
+	MonoClass *gtd = class->generic_class ? mono_class_get_generic_type_definition (class) : NULL;
+	int field_idx = field - class->fields;
+
+
+	if (gtd) {
+		MonoClassField *gfield = &gtd->fields [field_idx];
+		MonoType *gtype = mono_field_get_type_checked (gfield, error);
+		if (!mono_error_ok (error)) {
+			char *err_msg = g_strdup_printf ("Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, err_msg);
+			g_free (err_msg);		}
+
+		field->type = mono_class_inflate_generic_type_no_copy (image, gtype, mono_class_get_context (class), error);
+		if (!mono_error_ok (error)) {
+			char *err_msg = g_strdup_printf ("Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, err_msg);
+			g_free (err_msg);
+		}
+	} else {
+		const char *sig;
+		guint32 cols [MONO_FIELD_SIZE];
+		MonoGenericContainer *container = NULL;
+		int idx = class->field.first + field_idx;
+
+		/*FIXME, in theory we do not lazy load SRE fields*/
+		g_assert (!image->dynamic);
+
+		if (class->generic_container) {
+			container = class->generic_container;
+		} else if (gtd) {
+			container = gtd->generic_container;
+			g_assert (container);
+		}
+
+		/* class->field.first and idx points into the fieldptr table */
+		mono_metadata_decode_table_row (image, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
+
+		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], NULL)) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			return;
+		}
+
+		sig = mono_metadata_blob_heap (image, cols [MONO_FIELD_SIGNATURE]);
+
+		mono_metadata_decode_value (sig, &sig);
+		/* FIELD signature == 0x06 */
+		g_assert (*sig == 0x06);
+		field->type = mono_metadata_parse_type_full (image, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
+		if (!field->type)
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	}
 }
