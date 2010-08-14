@@ -1271,4 +1271,7 @@ mono_class_has_variant_generic_params (MonoClass *klass) MONO_INTERNAL;
 
 gboolean mono_is_corlib_image (MonoImage *image) MONO_INTERNAL;
 
+MonoType*
+mono_field_get_type_checked (MonoClassField *field, MonoError *error) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

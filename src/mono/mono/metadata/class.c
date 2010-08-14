@@ -8116,6 +8116,21 @@ mono_field_get_type (MonoClassField *field)
 	return field->type;
 }
 
+
+/**
+ * mono_field_get_type_checked:
+ * @field: the MonoClassField to act on
+ * @error: used to return any erro found while retrieving @field type
+ *
+ * Returns: MonoType of the field.
+ */
+MonoType*
+mono_field_get_type_checked (MonoClassField *field, MonoError *error)
+{
+	mono_error_init (error);
+	return field->type;
+}
+
 /**
  * mono_field_get_parent:
  * @field: the MonoClassField to act on
