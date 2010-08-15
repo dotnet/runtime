@@ -1229,6 +1229,67 @@ mono_class_alloc0 (MonoClass *class, int size)
 #define mono_class_new0(class,struct_type, n_structs)		\
     ((struct_type *) mono_class_alloc0 ((class), ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
 
+/**
+ * mono_class_setup_basic_field_info:
+ * @class: The class to initialize
+ *
+ * Initializes the class->fields.
+ * LOCKING: Assumes the loader lock is held.
+ */
+static void
+mono_class_setup_basic_field_info (MonoClass *class)
+{
+	MonoClassField *field;
+	MonoClass *gtd;
+	MonoImage *image;
+	int i, top;
+
+	if (class->fields)
+		return;
+
+	gtd = class->generic_class ? mono_class_get_generic_type_definition (class) : NULL;
+	image = class->image;
+	top = class->field.count;
+
+	if (class->generic_class && class->generic_class->container_class->image->dynamic && !class->generic_class->container_class->wastypebuilder) {
+		/*
+		 * This happens when a generic instance of an unfinished generic typebuilder
+		 * is used as an element type for creating an array type. We can't initialize
+		 * the fields of this class using the fields of gklass, since gklass is not
+		 * finished yet, fields could be added to it later.
+		 */
+		return;
+	}
+
+	if (gtd) {
+		mono_class_setup_basic_field_info (gtd);
+
+		top = gtd->field.count;
+		class->field.first = gtd->field.first;
+		class->field.count = gtd->field.count;
+	}
+
+	class->fields = mono_class_alloc0 (class, sizeof (MonoClassField) * top);
+
+	/*
+	 * Fetch all the field information.
+	 */
+	for (i = 0; i < top; i++){
+		field = &class->fields [i];
+		field->parent = class;
+
+		if (gtd) {
+			field->name = mono_field_get_name (&gtd->fields [i]);
+		} else {
+			int idx = class->field.first + i;
+			/* class->field.first and idx points into the fieldptr table */
+			guint32 name_idx = mono_metadata_decode_table_row_col (image, MONO_TABLE_FIELD, idx, MONO_FIELD_NAME);
+			/* The name is needed for fieldrefs */
+			field->name = mono_metadata_string_heap (image, name_idx);
+		}
+	}
+}
+
 /** 
  * mono_class_setup_fields:
  * @class: The class to initialize
@@ -1241,7 +1302,7 @@ mono_class_setup_fields (MonoClass *class)
 {
 	MonoError error;
 	MonoImage *m = class->image; 
-	int top = class->field.count;
+	int top;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	int i, blittable = TRUE;
 	guint32 real_size = 0;
@@ -1264,16 +1325,15 @@ mono_class_setup_fields (MonoClass *class)
 		return;
 	}
 
+	mono_class_setup_basic_field_info (class);
+	top = class->field.count;
+
 	if (gtd) {
 		mono_class_setup_fields (gtd);
 		if (gtd->exception_type) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			return;
 		}
-
-		top = gtd->field.count;
-		class->field.first = gtd->field.first;
-		class->field.count = gtd->field.count;
 	}
 
 	class->instance_size = 0;
@@ -1332,8 +1392,6 @@ mono_class_setup_fields (MonoClass *class)
 	/* Prevent infinite loops if the class references itself */
 	class->size_inited = 1;
 
-	class->fields = mono_class_alloc0 (class, sizeof (MonoClassField) * top);
-
 	if (class->generic_container) {
 		container = class->generic_container;
 	} else if (gtd) {
@@ -1350,46 +1408,24 @@ mono_class_setup_fields (MonoClass *class)
 
 		field->parent = class;
 
-		if (gtd) {
-			MonoClassField *gfield = &gtd->fields [i];
-
-			field->name = mono_field_get_name (gfield);
-			/*This memory must come from the image mempool as we don't have a chance to free it.*/
-			field->type = mono_class_inflate_generic_type_no_copy (class->image, gfield->type, mono_class_get_context (class), &error);
+		if (!field->type) {
+			mono_field_resolve_type (field, &error);
 			if (!mono_error_ok (&error)) {
-				char *err_msg = g_strdup_printf ("Could not load field %d type due to: %s", i, mono_error_get_message (&error));
-				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, err_msg);
-				g_free (err_msg);
+				/*mono_field_resolve_type already failed class*/
 				mono_error_cleanup (&error);
 				return;
 			}
-			g_assert (field->type->attrs == gfield->type->attrs);
-			if (mono_field_is_deleted (field))
-				continue;
+			if (!field->type)
+				g_error ("could not resolve %s:%s\n", mono_type_get_full_name(class), field->name);
+			g_assert (field->type);
+		}
+
+		if (mono_field_is_deleted (field))
+			continue;
+		if (gtd) {
+			MonoClassField *gfield = &gtd->fields [i];
 			field->offset = gfield->offset;
 		} else {
-			const char *sig;
-			guint32 cols [MONO_FIELD_SIZE];
-
-			/* class->field.first and idx points into the fieldptr table */
-			mono_metadata_decode_table_row (m, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
-			/* The name is needed for fieldrefs */
-			field->name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
-			if (!mono_verifier_verify_field_signature (class->image, cols [MONO_FIELD_SIGNATURE], NULL)) {
-				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-				break;
-			}
-			sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
-			mono_metadata_decode_value (sig, &sig);
-			/* FIELD signature == 0x06 */
-			g_assert (*sig == 0x06);
-			field->type = mono_metadata_parse_type_full (m, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
-			if (!field->type) {
-				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-				break;
-			}
-			if (mono_field_is_deleted (field))
-				continue;
 			if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
 				guint32 offset;
 				mono_metadata_field_info (m, idx, &offset, NULL, NULL);
@@ -9181,7 +9217,6 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 	mono_loader_unlock ();
 }
 
-/*error must have been inited by mono_field_get_type_checked*/
 static void
 mono_field_resolve_type (MonoClassField *field, MonoError *error)
 {
@@ -9190,6 +9225,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 	MonoClass *gtd = class->generic_class ? mono_class_get_generic_type_definition (class) : NULL;
 	int field_idx = field - class->fields;
 
+	mono_error_init (error);
 
 	if (gtd) {
 		MonoClassField *gfield = &gtd->fields [field_idx];
@@ -9197,7 +9233,8 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		if (!mono_error_ok (error)) {
 			char *err_msg = g_strdup_printf ("Could not load field %d type due to: %s", field_idx, mono_error_get_message (error));
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, err_msg);
-			g_free (err_msg);		}
+			g_free (err_msg);
+		}
 
 		field->type = mono_class_inflate_generic_type_no_copy (image, gtype, mono_class_get_context (class), error);
 		if (!mono_error_ok (error)) {
@@ -9225,6 +9262,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		mono_metadata_decode_table_row (image, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
 
 		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], NULL)) {
+			mono_error_set_type_load_class (error, class, "Could not verify field %s signature", field->name);
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			return;
 		}
@@ -9235,8 +9273,11 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
 		field->type = mono_metadata_parse_type_full (image, container, MONO_PARSE_FIELD, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
-		if (!field->type)
+		if (!field->type) {
+			mono_error_set_type_load_class (error, class, "Could not load field %s type", field->name);
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_loader_clear_error ();
+		}
 	}
 }
 
