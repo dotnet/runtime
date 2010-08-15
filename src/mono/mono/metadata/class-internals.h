@@ -1274,4 +1274,6 @@ gboolean mono_is_corlib_image (MonoImage *image) MONO_INTERNAL;
 MonoType*
 mono_field_get_type_checked (MonoClassField *field, MonoError *error) MONO_INTERNAL;
 
+MonoClassField*
+mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter) MONO_INTERNAL;
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

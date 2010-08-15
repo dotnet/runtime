@@ -9302,3 +9302,58 @@ mono_field_resolve_flags (MonoClassField *field)
 		return mono_metadata_decode_table_row_col (image, MONO_TABLE_FIELD, idx, MONO_FIELD_FLAGS);
 	}
 }
+
+/**
+ * mono_class_setup_basic_field_info:
+ * @class: The class to initialize
+ *
+ * Initializes the class->fields array of fields.
+ * Aquires the loader lock.
+ */
+static void
+mono_class_setup_basic_field_info_locking (MonoClass *class)
+{
+	mono_loader_lock ();
+	mono_class_setup_basic_field_info (class);
+	mono_loader_unlock ();
+}
+
+/**
+ * mono_class_get_fields_lazy:
+ * @klass: the MonoClass to act on
+ *
+ * This routine is an iterator routine for retrieving the fields in a class.
+ * Only minimal information about fields are loaded. Accessors must be used
+ * for all MonoClassField returned.
+ *
+ * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * iterate over all of the elements.  When no more values are
+ * available, the return value is NULL.
+ *
+ * Returns: a @MonoClassField* on each iteration, or NULL when no more fields are available.
+ */
+MonoClassField*
+mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter)
+{
+	MonoClassField* field;
+	if (!iter)
+		return NULL;
+	if (!*iter) {
+		mono_class_setup_basic_field_info_locking (klass);
+		if (!klass->fields)
+			return NULL;
+		/* start from the first */
+		if (klass->field.count) {
+			return *iter = &klass->fields [0];
+		} else {
+			/* no fields */
+			return NULL;
+		}
+	}
+	field = *iter;
+	field++;
+	if (field < &klass->fields [klass->field.count]) {
+		return *iter = field;
+	}
+	return NULL;
+}
