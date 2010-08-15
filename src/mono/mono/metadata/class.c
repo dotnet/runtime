@@ -8082,8 +8082,6 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 
 	if (!iter)
 		return NULL;
-	if (!klass->inited)
-		mono_class_init (klass);
 	if (!klass->nested_classes_inited) {
 		if (!klass->type_token)
 			klass->nested_classes_inited = TRUE;
