@@ -143,6 +143,11 @@ struct _MonoClassField {
 #define mono_field_is_deleted(field) (((field)->type->attrs & (FIELD_ATTRIBUTE_SPECIAL_NAME | FIELD_ATTRIBUTE_RT_SPECIAL_NAME)) \
 				      && (strcmp (mono_field_get_name (field), "_Deleted") == 0))
 
+/* a field is ignored if it's named "_Deleted" and it has the specialname and rtspecialname flags set */
+/* Try to avoid loading the field's type */
+#define mono_field_is_deleted_with_flags(field, flags) (((flags) & (FIELD_ATTRIBUTE_SPECIAL_NAME | FIELD_ATTRIBUTE_RT_SPECIAL_NAME)) \
+				      && (strcmp (mono_field_get_name (field), "_Deleted") == 0))
+
 typedef struct {
 	MonoClassField *field;
 	guint32 offset;
