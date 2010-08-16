@@ -1690,7 +1690,10 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 static MonoArray*
 ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionField *field, MonoBoolean optional)
 {
-	MonoType *type = field->field->type;
+	MonoError error;
+	MonoType *type = mono_field_get_type_checked (field->field, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
 
 	return type_array_from_modifiers (field->field->parent->image, type, optional);
 }
