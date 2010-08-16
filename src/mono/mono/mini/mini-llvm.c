@@ -912,7 +912,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		param_types [pindex] = IntPtrType ();
 		pindex ++;
 	}
-	if (cinfo && cinfo->imt_arg) {
+	if (cinfo && cinfo->imt_arg && IS_LLVM_MONO_BRANCH) {
 		if (sinfo)
 			sinfo->imt_arg_pindex = pindex;
 		param_types [pindex] = IntPtrType ();
@@ -1695,7 +1695,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	LLVMValueRef *args;
 	LLVMCallInfo *cinfo;
 	GSList *l;
-	int i;
+	int i, len;
 	gboolean vretaddr;
 	LLVMTypeRef llvm_sig;
 	gpointer target;
@@ -1852,7 +1852,9 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	/* 
 	 * Collect and convert arguments
 	 */
-	args = alloca (sizeof (LLVMValueRef) * ((sig->param_count * 2) + sig->hasthis + vretaddr + call->rgctx_reg));
+	len = sizeof (LLVMValueRef) * ((sig->param_count * 2) + sig->hasthis + vretaddr + call->rgctx_reg);
+	args = alloca (len);
+	memset (args, 0, len);
 	l = call->out_ireg_args;
 
 	if (IS_LLVM_MONO_BRANCH) {
