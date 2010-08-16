@@ -600,6 +600,7 @@ ICALL(MFIELD_1, "GetFieldOffset", ves_icall_MonoField_GetFieldOffset)
 ICALL(MFIELD_2, "GetParentType", ves_icall_MonoField_GetParentType)
 ICALL(MFIELD_5, "GetRawConstantValue", ves_icall_MonoField_GetRawConstantValue)
 ICALL(MFIELD_3, "GetValueInternal", ves_icall_MonoField_GetValueInternal)
+ICALL(MFIELD_6, "ResolveType", ves_icall_MonoField_ResolveType)
 ICALL(MFIELD_4, "SetValueInternal", ves_icall_MonoField_SetValueInternal)
 
 ICALL_TYPE(MGENCM, "System.Reflection.MonoGenericCMethod", MGENCM_1)

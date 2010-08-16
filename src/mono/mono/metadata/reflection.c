@@ -6678,9 +6678,10 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	if (is_field_on_inst (field)) {
 		res->attrs = get_field_on_inst_generic_type (field)->attrs;
 		MONO_OBJECT_SETREF (res, type, mono_type_get_object (domain, field->type));
-	} else if (field->type) {
-		res->attrs = field->type->attrs;
-		MONO_OBJECT_SETREF (res, type, mono_type_get_object (domain, field->type));
+	} else {
+		if (field->type)
+			MONO_OBJECT_SETREF (res, type, mono_type_get_object (domain, field->type));
+		res->attrs = mono_field_get_flags (field);
 	}
 	CACHE_OBJECT (MonoReflectionField *, field, res, klass);
 }
