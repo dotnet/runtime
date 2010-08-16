@@ -1690,7 +1690,10 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 static MonoArray*
 ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionField *field, MonoBoolean optional)
 {
-	MonoType *type = field->field->type;
+	MonoError error;
+	MonoType *type = mono_field_get_type_checked (field->field, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
 
 	return type_array_from_modifiers (field->field->parent->image, type, optional);
 }
@@ -1756,6 +1759,10 @@ ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
 static gint32
 ves_icall_MonoField_GetFieldOffset (MonoReflectionField *field)
 {
+	MonoClass *parent = field->field->parent;
+	if (!parent->size_inited)
+		mono_class_init (parent);
+
 	return field->field->offset - sizeof (MonoObject);
 }
 
@@ -1933,6 +1940,17 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
 	}
 
 	return o;
+}
+
+static MonoReflectionType*
+ves_icall_MonoField_ResolveType (MonoReflectionField *ref_field)
+{
+	MonoError error;
+	MonoClassField *field = ref_field->field;
+	MonoType *type = mono_field_get_type_checked (field, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+	return mono_type_get_object (mono_object_domain (ref_field), type);
 }
 
 static MonoReflectionType*
@@ -3331,24 +3349,24 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	mono_class_init_or_throw (klass);
-	mono_class_init_or_throw (refklass);
-
 	mono_ptr_array_init (tmp_array, 2);
 	
 handle_parent:	
-	if (klass->exception_type != MONO_EXCEPTION_NONE)
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		mono_ptr_array_destroy (tmp_array);
 		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+	}
 
 	iter = NULL;
-	while ((field = mono_class_get_fields (klass, &iter))) {
+	while ((field = mono_class_get_fields_lazy (klass, &iter))) {
+		guint32 flags = mono_field_get_flags (field);
 		match = 0;
-		if (mono_field_is_deleted (field))
+		if (mono_field_is_deleted_with_flags (field, flags))
 			continue;
-		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
+		if ((flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else if ((klass == startklass) || (field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
+		} else if ((klass == startklass) || (flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
 			if (bflags & BFLAGS_NonPublic) {
 				match++;
 			}
@@ -3356,7 +3374,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+		if (flags & FIELD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
 				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
 					match++;
@@ -3953,7 +3971,6 @@ ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint3
 	if (type->type->byref)
 		return NULL;
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
 	str = mono_string_to_utf8 (name);
 
@@ -4014,7 +4031,6 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	if (type->type->byref)
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
 	/*
 	 * If a nested type is generic, return its generic type definition.
