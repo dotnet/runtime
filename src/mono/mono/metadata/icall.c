@@ -1759,6 +1759,10 @@ ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
 static gint32
 ves_icall_MonoField_GetFieldOffset (MonoReflectionField *field)
 {
+	MonoClass *parent = field->field->parent;
+	if (!parent->size_inited)
+		mono_class_init (parent);
+
 	return field->field->offset - sizeof (MonoObject);
 }
 
