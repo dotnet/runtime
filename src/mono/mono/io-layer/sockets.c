@@ -7,6 +7,8 @@
  * (C) 2002 Ximian, Inc.
  */
 
+#ifndef DISABLE_SOCKETS
+
 #include <config.h>
 #include <glib.h>
 #include <pthread.h>
@@ -1581,3 +1583,5 @@ int WSASend (guint32 fd, WapiWSABuf *buffers, guint32 count, guint32 *sent,
 	*sent = ret;
 	return 0;
 }
+
+#endif /* ifndef DISABLE_SOCKETS */
