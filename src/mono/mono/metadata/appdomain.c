@@ -85,12 +85,7 @@ typedef struct
 
 CRITICAL_SECTION mono_delegate_section;
 
-#ifdef _EGLIB_MAJOR
-/* Need to lock here because EGLIB has locking defined as no-ops, we can not depend on mono_strtod do the right locking */
-/* Ideally this will be fixed in eglib */
 CRITICAL_SECTION mono_strtod_mutex;
-#endif
-
 
 static gunichar2 process_guid [36];
 static gboolean process_guid_set = FALSE;
@@ -254,10 +249,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	InitializeCriticalSection (&mono_delegate_section);
 
-#ifdef _EGLIB_MAJOR
-	/* Needed until EGLIB is fixed #464316 */
 	InitializeCriticalSection (&mono_strtod_mutex);
-#endif
 	
 	mono_thread_attach (domain);
 	mono_context_init (domain);

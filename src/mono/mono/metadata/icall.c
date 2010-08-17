@@ -119,14 +119,10 @@ mono_double_ParseImpl (char *ptr, double *result)
 		*result = strtod (ptr, &endptr);
 #else
 	if (*ptr){
-#ifdef _EGLIB_MAJOR
-		/* Need to lock here because EGLIB (#464316) has locking defined as no-ops, and that breaks mono_strtod */
+		/* mono_strtod () is not thread-safe */
 		EnterCriticalSection (&mono_strtod_mutex);
 		*result = mono_strtod (ptr, &endptr);
 		LeaveCriticalSection (&mono_strtod_mutex);
-#else
-		*result = mono_strtod (ptr, &endptr);
-#endif
 	}
 #endif
 
