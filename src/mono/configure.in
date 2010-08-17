@@ -565,8 +565,6 @@ AC_ARG_WITH([glib],
 	[  --with-glib=embedded|system    Choose glib API: system or embedded (default to embedded)],
 	[], [with_glib=embedded])
 
-eglib_dir=
-
 ac_configure_args="$ac_configure_args \"CPPFLAGS_FOR_EGLIB=$EGLIB_CPPFLAGS\" \"CFLAGS_FOR_EGLIB=$CFLAGS_FOR_EGLIB\""
 AC_CONFIG_SUBDIRS(eglib)
 
@@ -578,39 +576,13 @@ embedded)
   BUILD_GLIB_LIBS="$GLIB_LIBS"
   GMODULE_CFLAGS="$GLIB_CFLAGS"
   GMODULE_LIBS="$GLIB_LIBS"
-  eglib_dir=eglib
   ;;
 system)
-  if test "x$PKG_CONFIG" = "xno"; then
-    AC_MSG_ERROR([You need to install pkg-config])
-  fi
-  echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-  echo "cross_compiling=$cross_compiling"
-  BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
-  BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-  
-  ## Versions of dependencies
-  GLIB_REQUIRED_VERSION=2.4.0
-
-  dnl
-  dnl No, you will not replace this check with a pkg.m4 check
-  dnl
-  if test "x$PKG_CONFIG" = "xno"; then
-    AC_MSG_ERROR([You need to install pkg-config])
-  fi
-  if $PKG_CONFIG --atleast-version=$GLIB_REQUIRED_VERSION glib-2.0; then
-      GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
-      GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-      GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
-      GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
-  else
-	AC_MSG_ERROR([You need at least glib-2.0 $GLIB_REQUIRED_VERSION])
-  fi
+  AC_MSG_ERROR([--with-glib=system is no longer supported as of Mono 2.8])
   ;;
 *)
   AC_MSG_ERROR([Invalid argument to --with-glib.])
 esac
-AM_CONDITIONAL(EGLIB_BUILD, test x$with_glib = xembedded)
   
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
@@ -618,7 +590,6 @@ AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 AC_SUBST(BUILD_GLIB_CFLAGS)
 AC_SUBST(BUILD_GLIB_LIBS)
-AC_SUBST(eglib_dir)
 
 if test x$cross_compiling$host_win32 = xnoyes; then
    AC_MSG_CHECKING(for cygwin glib2-dev package)
