@@ -11,6 +11,8 @@
 
 #include <config.h>
 
+#ifndef DISABLE_SOCKETS
+
 #include <glib.h>
 #include <string.h>
 #include <stdlib.h>
@@ -3075,3 +3077,5 @@ void mono_network_cleanup(void)
 	WSACleanup();
 }
 
+
+#endif /* #ifndef DISABLE_SOCKETS */

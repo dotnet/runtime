@@ -142,6 +142,7 @@ libmonoruntime_la_SOURCES = \
 	mono-wsq.h		\
 	monitor.c		\
 	monitor.h		\
+	nacl-stub.c		\
 	normalization-tables.h	\
 	null-gc.c		\
 	number-formatter.h	\
