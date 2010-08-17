@@ -67,6 +67,7 @@ AC_MSG_CHECKING([host platform characteristics])
 libgc_threads=no
 has_dtrace=no
 parallel_mark=yes
+ikvm_native=yes
 
 case "$host" in
 	powerpc*-*-linux*)
@@ -194,6 +195,8 @@ case "$host" in
 		AOT_SUPPORTED="yes"
 		gc_default=boehm
 		use_sigposix=yes
+		ikvm_native=no
+		AC_DEFINE(DISABLE_SOCKETS,1,[Disable sockets support])
 		;;
 	*-*-hpux*)
 	        host_win32=no
@@ -998,7 +1001,7 @@ if test x$target_win32 = xno; then
 	dnl ******************************************************************
 	dnl *** Checks for the IKVM JNI interface library                  ***
 	dnl ******************************************************************
-	AC_ARG_WITH(ikvm-native, [  --with-ikvm-native=yes,no      build the IKVM JNI interface library (defaults to yes)],[with_ikvm_native=$withval],[with_ikvm_native=yes])
+	AC_ARG_WITH(ikvm-native, [  --with-ikvm-native=yes,no      build the IKVM JNI interface library (defaults to yes)],[with_ikvm_native=$withval],[with_ikvm_native=$ikvm_native])
 
 	ikvm_native_dir=
 	if test x$with_ikvm_native = xyes; then
