@@ -28,7 +28,6 @@
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
 #define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
-#define LONG_BRANCH		1	/* needed for yyparse in mcs */
 
 #define SAVE_LMF		1
 #define ALWAYS_USE_FP		1
@@ -36,6 +35,19 @@
 
 #define PROMOTE_R4_TO_R8	1	/* promote single values in registers to doubles */
 #define USE_MUL			1	/* use mul instead of mult/mflo for multiply */
+
+/* Emit a call sequence to 'v', using 'D' as a scratch register if necessary */
+#define mips_call(c,D,v) do {	\
+		guint32 _target = (guint32)(v); \
+		if (1 || !(v) || ((_target & 0xfc000000) != (((guint32)(c)) & 0xfc000000))) { \
+			mips_load_const (c, D, _target); \
+			mips_jalr (c, D, mips_ra); \
+		} \
+		else { \
+			mips_jumpl (c, _target >> 2); \
+		} \
+		mips_nop (c); \
+	} while (0)
 
 enum {
 	TLS_MODE_DETECT,
@@ -193,10 +205,7 @@ mips_emit_exc_by_name(guint8 *code, const char *name)
 
 	mips_load_const (code, mips_a0, exc_class->type_token);
 	addr = (guint32) mono_get_throw_corlib_exception ();
-	mips_load_const (code, mips_t9, addr);
-	mips_jalr (code, mips_t9, mips_ra);
-	mips_nop (code);
-
+	mips_call (code, mips_t9, addr);
 	return code;
 }
 
@@ -234,79 +243,78 @@ mips_emit_load_const(guint8 *code, int dreg, mgreg_t v)
 guint8 *
 mips_emit_cond_branch (MonoCompile *cfg, guint8 *code, int op, MonoInst *ins)
 {
-#if LONG_BRANCH
-	int br_offset = 5;
-#endif
-
 	g_assert (ins);
-#if LONG_BRANCH
-	/* Invert test and emit branch around jump */
-	switch (op) {
-	case OP_MIPS_BEQ:
-		mips_bne (code, ins->sreg1, ins->sreg2, br_offset);
+	if (cfg->arch.long_branch) {
+		int br_offset = 5;
+
+		/* Invert test and emit branch around jump */
+		switch (op) {
+		case OP_MIPS_BEQ:
+			mips_bne (code, ins->sreg1, ins->sreg2, br_offset);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BNE:
+			mips_beq (code, ins->sreg1, ins->sreg2, br_offset);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BGEZ:
+			mips_bltz (code, ins->sreg1, br_offset);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BGTZ:
+			mips_blez (code, ins->sreg1, br_offset);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BLEZ:
+			mips_bgtz (code, ins->sreg1, br_offset);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BLTZ:
+			mips_bgez (code, ins->sreg1, br_offset);
+			mips_nop (code);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+		mono_add_patch_info (cfg, code - cfg->native_code,
+				     MONO_PATCH_INFO_BB, ins->inst_true_bb);
+		mips_lui (code, mips_at, mips_zero, 0);
+		mips_addiu (code, mips_at, mips_at, 0);
+		mips_jr (code, mips_at);
 		mips_nop (code);
-		break;
-	case OP_MIPS_BNE:
-		mips_beq (code, ins->sreg1, ins->sreg2, br_offset);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BGEZ:
-		mips_bltz (code, ins->sreg1, br_offset);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BGTZ:
-		mips_blez (code, ins->sreg1, br_offset);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BLEZ:
-		mips_bgtz (code, ins->sreg1, br_offset);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BLTZ:
-		mips_bgez (code, ins->sreg1, br_offset);
-		mips_nop (code);
-		break;
-	default:
-		g_assert_not_reached ();
 	}
-	mono_add_patch_info (cfg, code - cfg->native_code,
-			     MONO_PATCH_INFO_BB, ins->inst_true_bb);
-	mips_lui (code, mips_at, mips_zero, 0);
-	mips_addiu (code, mips_at, mips_at, 0);
-	mips_jr (code, mips_at);
-	mips_nop (code);
-#else
-	mono_add_patch_info (cfg, code - cfg->native_code,
-			     MONO_PATCH_INFO_BB, ins->inst_true_bb);
-	switch (op) {
-	case OP_MIPS_BEQ:
-		mips_beq (code, ins->sreg1, ins->sreg2, 0);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BNE:
-		mips_bne (code, ins->sreg1, ins->sreg2, 0);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BGEZ:
-		mips_bgez (code, ins->sreg1, 0);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BGTZ:
-		mips_bgtz (code, ins->sreg1, 0);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BLEZ:
-		mips_blez (code, ins->sreg1, 0);
-		mips_nop (code);
-		break;
-	case OP_MIPS_BLTZ:
-		mips_bltz (code, ins->sreg1, 0);
-		mips_nop (code);
-		break;
-	default:
-		g_assert_not_reached ();
+	else {
+		mono_add_patch_info (cfg, code - cfg->native_code,
+				     MONO_PATCH_INFO_BB, ins->inst_true_bb);
+		switch (op) {
+		case OP_MIPS_BEQ:
+			mips_beq (code, ins->sreg1, ins->sreg2, 0);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BNE:
+			mips_bne (code, ins->sreg1, ins->sreg2, 0);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BGEZ:
+			mips_bgez (code, ins->sreg1, 0);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BGTZ:
+			mips_bgtz (code, ins->sreg1, 0);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BLEZ:
+			mips_blez (code, ins->sreg1, 0);
+			mips_nop (code);
+			break;
+		case OP_MIPS_BLTZ:
+			mips_bltz (code, ins->sreg1, 0);
+			mips_nop (code);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
 	}
-#endif
 	return (code);
 }
 
@@ -3682,15 +3690,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code,
 					     MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-#if LONG_BRANCH
-			mips_lui (code, mips_t9, mips_zero, 0);
-			mips_addiu (code, mips_t9, mips_t9, 0);
-			mips_jr (code, mips_t9);
-			mips_nop (code);
-#else
-			mips_beq (code, mips_zero, mips_zero, 0);
-			mips_nop (code);
-#endif
+			if (cfg->arch.long_branch) {
+				mips_lui (code, mips_t9, mips_zero, 0);
+				mips_addiu (code, mips_t9, mips_t9, 0);
+				mips_jr (code, mips_t9);
+				mips_nop (code);
+			}
+			else {
+				mips_beq (code, mips_zero, mips_zero, 0);
+				mips_nop (code);
+			}
 			break;
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
@@ -3732,12 +3741,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_VCALL2:
 			case OP_VOIDCALL:
 			case OP_CALL:
-				if (ins->flags & MONO_INST_HAS_METHOD)
+				if (ins->flags & MONO_INST_HAS_METHOD) {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
-				else
+					mips_call (code, mips_t9, call->method);
+				}
+				else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-				mips_lui (code, mips_t9, mips_zero, 0);
-				mips_addiu (code, mips_t9, mips_t9, 0);
+					mips_call (code, mips_t9, call->fptr);
+				}
 				break;
 			case OP_FCALL_REG:
 			case OP_LCALL_REG:
@@ -3746,6 +3757,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_VOIDCALL_REG:
 			case OP_CALL_REG:
 				MIPS_MOVE (code, mips_t9, ins->sreg1);
+				mips_jalr (code, mips_t9, mips_ra);
+				mips_nop (code);
 				break;
 			case OP_FCALL_MEMBASE:
 			case OP_LCALL_MEMBASE:
@@ -3754,10 +3767,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_VOIDCALL_MEMBASE:
 			case OP_CALL_MEMBASE:
 				mips_lw (code, mips_t9, ins->sreg1, ins->inst_offset);
+				mips_jalr (code, mips_t9, mips_ra);
+				mips_nop (code);
 				break;
 			}
-			mips_jalr (code, mips_t9, mips_ra);
-			mips_nop (code);
 #if PROMOTE_R4_TO_R8
 			/* returned an FP R4 (single), promote to R8 (double) in place */
 			if ((ins->opcode == OP_FCALL ||
@@ -3791,18 +3804,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_THROW: {
 			gpointer addr = mono_arch_get_throw_exception(NULL, FALSE);
 			mips_move (code, mips_a0, ins->sreg1);
-			mips_load_const (code, mips_t9, addr);
-			mips_jalr (code, mips_t9, mips_ra);
-			mips_nop (code);
+			mips_call (code, mips_t9, addr);
 			mips_break (code, 0xfc);
 			break;
 		}
 		case OP_RETHROW: {
 			gpointer addr = mono_arch_get_rethrow_exception(NULL, FALSE);
 			mips_move (code, mips_a0, ins->sreg1);
-			mips_load_const (code, mips_t9, addr);
-			mips_jalr (code, mips_t9, mips_ra);
-			mips_nop (code);
+			mips_call (code, mips_t9, addr);
 			mips_break (code, 0xfb);
 			break;
 		}
@@ -3870,15 +3879,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_BR:
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-#if LONG_BRANCH
-			mips_lui (code, mips_at, mips_zero, 0);
-			mips_addiu (code, mips_at, mips_at, 0);
-			mips_jr (code, mips_at);
-			mips_nop (code);
-#else
-			mips_beq (code, mips_zero, mips_zero, 0);
-			mips_nop (code);
-#endif
+			if (cfg->arch.long_branch) {
+				mips_lui (code, mips_at, mips_zero, 0);
+				mips_addiu (code, mips_at, mips_at, 0);
+				mips_jr (code, mips_at);
+				mips_nop (code);
+			}
+			else {
+				mips_beq (code, mips_zero, mips_zero, 0);
+				mips_nop (code);
+			}
 			break;
 		case OP_BR_REG:
 			mips_jr (code, ins->sreg1);
@@ -4143,7 +4153,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			break;
 		case OP_STORER4_MEMINDEX:
-			mips_addu (code, mips_at, ins->inst_basereg, ins->sreg2);
+			mips_addu (code, mips_at, ins->inst_destbasereg, ins->sreg2);
 #if PROMOTE_R4_TO_R8
 			/* Need to convert ins->sreg1 to single-precision first */
 			mips_cvtsd (code, mips_ftemp, ins->sreg1);
@@ -4153,7 +4163,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			break;
 		case OP_STORER8_MEMINDEX:
-			mips_addu (code, mips_at, ins->inst_basereg, ins->sreg2);
+			mips_addu (code, mips_at, ins->inst_destbasereg, ins->sreg2);
 #if _MIPS_SIM == _ABIO32
 			mips_swc1 (code, ins->sreg1, mips_at, 0);
 			mips_swc1 (code, ins->sreg1+1, mips_at, 4);
@@ -4482,9 +4492,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	mips_load_const (code, mips_a0, cfg->method);
 	mips_addiu (code, mips_a1, mips_sp, offset);
-	mips_load_const (code, mips_t9, func);
-	mips_jalr (code, mips_t9, mips_ra);
-	mips_nop (code);
+	mips_call (code, mips_t9, func);
 
 	MIPS_LW (code, mips_a0, mips_sp, offset + 0*SIZEOF_REGISTER);
 	MIPS_LW (code, mips_a1, mips_sp, offset + 1*SIZEOF_REGISTER);
@@ -4899,9 +4907,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		mips_load_const (code, mips_a0, cfg->domain);
-		mips_load_const (code, mips_t9, (gpointer)mono_jit_thread_attach);
-		mips_jalr (code, mips_t9, mips_ra);
-		mips_nop (code);
+		mips_call (code, mips_t9, (gpointer)mono_jit_thread_attach);
 	}
 
 #if SAVE_LMF
@@ -4924,9 +4930,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			mips_nop (code);
 #endif
 			/* This can/will clobber the a0-a3 registers */
-			mips_load_const (code, mips_t9, (gpointer)mono_get_lmf_addr);
-			mips_jalr (code, mips_t9, mips_ra);
-			mips_nop (code);
+			mips_call (code, mips_t9, (gpointer)mono_get_lmf_addr);
 		}
 
 		/* mips_v0 is the result from mono_get_lmf_addr () (MonoLMF **) */
@@ -5042,9 +5046,7 @@ mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolea
 		break;
 	}
 	mips_load_const (code, mips_a0, cfg->method);
-	mips_load_const (code, mips_t9, func);
-	mips_jalr (code, mips_t9, mips_ra);
-	mips_nop (code);
+	mips_call (code, mips_t9, func);
 
 	switch (save_mode) {
 	case SAVE_TWO:

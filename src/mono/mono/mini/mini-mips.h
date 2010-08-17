@@ -238,6 +238,7 @@ typedef struct MonoCompileArch {
 	guint		spillvar_offset;
 	guint		spillvar_offset_float;
 	guint		tracing_offset;
+	guint		long_branch;
 } MonoCompileArch;
 
 #if SIZEOF_REGISTER == 4
