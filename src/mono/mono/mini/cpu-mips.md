@@ -111,42 +111,42 @@ r4const: dest:f len:20
 r8const: dest:f len:28
 label: len:0
 store_membase_imm: dest:b len:20
-store_membase_reg: dest:b src1:i len:16
+store_membase_reg: dest:b src1:i len:20
 storei1_membase_imm: dest:b len:20
-storei1_membase_reg: dest:b src1:i len:16
+storei1_membase_reg: dest:b src1:i len:20
 storei2_membase_imm: dest:b len:20
-storei2_membase_reg: dest:b src1:i len:16
+storei2_membase_reg: dest:b src1:i len:20
 storei4_membase_imm: dest:b len:20
-storei4_membase_reg: dest:b src1:i len:16
+storei4_membase_reg: dest:b src1:i len:20
 storei8_membase_imm: dest:b 
-storei8_membase_reg: dest:b src1:i len:16
-storer4_membase_reg: dest:b src1:f len:16
-storer8_membase_reg: dest:b src1:f len:16
-load_membase: dest:i src1:b len:16
-loadi1_membase: dest:i src1:b len:16
-loadu1_membase: dest:i src1:b len:16
-loadi2_membase: dest:i src1:b len:16
-loadu2_membase: dest:i src1:b len:16
-loadi4_membase: dest:i src1:b len:16
-loadu4_membase: dest:i src1:b len:16
-loadi8_membase: dest:i src1:b len:16
-loadr4_membase: dest:f src1:b len:16
-loadr8_membase: dest:f src1:b len:16
+storei8_membase_reg: dest:b src1:i len:20
+storer4_membase_reg: dest:b src1:f len:20
+storer8_membase_reg: dest:b src1:f len:20
+load_membase: dest:i src1:b len:20
+loadi1_membase: dest:i src1:b len:20
+loadu1_membase: dest:i src1:b len:20
+loadi2_membase: dest:i src1:b len:20
+loadu2_membase: dest:i src1:b len:20
+loadi4_membase: dest:i src1:b len:20
+loadu4_membase: dest:i src1:b len:20
+loadi8_membase: dest:i src1:b len:20
+loadr4_membase: dest:f src1:b len:20
+loadr8_membase: dest:f src1:b len:20
 load_memindex: dest:i src1:b src2:i len:4
-loadi1_memindex: dest:i src1:b src2:i len:4
-loadu1_memindex: dest:i src1:b src2:i len:4
-loadi2_memindex: dest:i src1:b src2:i len:4
-loadu2_memindex: dest:i src1:b src2:i len:4
-loadi4_memindex: dest:i src1:b src2:i len:4
-loadu4_memindex: dest:i src1:b src2:i len:4
-loadr4_memindex: dest:f src1:b src2:i len:4
-loadr8_memindex: dest:f src1:b src2:i len:4
-store_memindex: dest:b src1:i src2:i len:4
-storei1_memindex: dest:b src1:i src2:i len:4
-storei2_memindex: dest:b src1:i src2:i len:4
-storei4_memindex: dest:b src1:i src2:i len:4
-storer4_memindex: dest:b src1:f src2:i len:4
-storer8_memindex: dest:b src1:f src2:i len:4
+loadi1_memindex: dest:i src1:b src2:i len:12
+loadu1_memindex: dest:i src1:b src2:i len:12
+loadi2_memindex: dest:i src1:b src2:i len:12
+loadu2_memindex: dest:i src1:b src2:i len:12
+loadi4_memindex: dest:i src1:b src2:i len:12
+loadu4_memindex: dest:i src1:b src2:i len:12
+loadr4_memindex: dest:f src1:b src2:i len:12
+loadr8_memindex: dest:f src1:b src2:i len:12
+store_memindex: dest:b src1:i src2:i len:12
+storei1_memindex: dest:b src1:i src2:i len:12
+storei2_memindex: dest:b src1:i src2:i len:12
+storei4_memindex: dest:b src1:i src2:i len:12
+storer4_memindex: dest:b src1:f src2:i len:12
+storer8_memindex: dest:b src1:f src2:i len:12
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
 fmove: dest:f src1:f len:8
