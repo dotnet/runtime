@@ -381,10 +381,10 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			}
 
 			if (standard_input) {
-				dup2 (in_pipe [0], STDERR_FILENO);
+				dup2 (in_pipe [0], STDIN_FILENO);
 			} else if ((flags & G_SPAWN_CHILD_INHERITS_STDIN) == 0) {
 				fd = open ("/dev/null", O_RDONLY);
-				dup2 (fd, STDERR_FILENO);
+				dup2 (fd, STDIN_FILENO);
 			}
 
 			if ((flags & G_SPAWN_LEAVE_DESCRIPTORS_OPEN) != 0) {
