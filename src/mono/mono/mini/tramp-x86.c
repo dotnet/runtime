@@ -170,7 +170,7 @@ static gpointer
 get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
 {
 	const int kBufSize = NACL_SIZE (8, 16);
-	guint8 buf [kBufSize];
+	guint8 buf [64];
 	guint8 reg = 0;
 	gint32 disp = 0;
 
