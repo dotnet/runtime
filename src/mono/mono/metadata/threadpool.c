@@ -789,7 +789,8 @@ socket_io_init (SocketIOData *data)
 	}
 
 	stack_size = mono_threads_get_default_stacksize ();
-	mono_threads_set_default_stacksize (128 * 1024);
+	/* 128k stacks could lead to problems on 64 bit systems with large pagesizes+altstack */
+	mono_threads_set_default_stacksize (128 * (sizeof (gpointer) / 4) * 1024);
 	if (data->epoll_disabled) {
 		mono_thread_create_internal (mono_get_root_domain (), socket_io_poll_main, data, TRUE);
 	}
