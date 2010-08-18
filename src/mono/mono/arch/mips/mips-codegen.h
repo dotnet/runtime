@@ -193,7 +193,7 @@ enum {
 #define mips_format_r(code,op,rs,rt,rd,sa,func) mips_emit32 ((code), (((op)<<26)|((rs)<<21)|((rt)<<16)|((rd)<<11)|((sa)<<6)|(func)))
 #define mips_format_divmul(code,op,src1,src2,fun) mips_emit32 ((code), (((op)<<26)|((src1)<<21)|((src2)<<16)|(fun)))
 
-#define mips_is_imm16(val) ((gint)(val) >= (gint)-(1<<15) && (gint)(val) <= (gint)((1<<15)-1))
+#define mips_is_imm16(val) ((gint)(gshort)(gint)(val) == (gint)(val))
 
 /* Load always using lui/addiu pair (for later patching) */
 #define mips_load(c,D,v) do {	\
