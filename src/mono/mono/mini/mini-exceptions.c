@@ -1641,6 +1641,8 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	tls->stack_ovf_guard_base = staddr + mono_pagesize ();
 	tls->stack_ovf_guard_size = ALIGN_TO (8 * 4096, mono_pagesize ());
 
+	g_assert ((guint8*)&sa >= (guint8*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size);
+
 	if (mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE)) {
 		/* mprotect can fail for the main thread stack */
 		gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED);
