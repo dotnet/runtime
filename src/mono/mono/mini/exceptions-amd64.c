@@ -415,11 +415,13 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 	code = start;
 
-	unwind_ops = mono_arch_get_cie_program ();
+	if (info)
+		unwind_ops = mono_arch_get_cie_program ();
 
 	/* Alloc frame */
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, stack_size);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, stack_size + 8);
+	if (info)
+		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, stack_size + 8);
 
 	/*
 	 * To hide linux/windows calling convention differences, we pass all arguments on

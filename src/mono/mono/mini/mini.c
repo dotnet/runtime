@@ -497,9 +497,15 @@ mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJ
 void
 mono_tramp_info_free (MonoTrampInfo *info)
 {
+	GSList *l;
+
 	g_free (info->name);
 
-	// FIXME: ji + unwind_ops
+	// FIXME: ji
+	for (l = info->unwind_ops; l; l = l->next)
+		g_free (l->data);
+	g_slist_free (info->unwind_ops);
+	g_free (info);
 }
 
 #define MONO_INIT_VARINFO(vi,id) do { \
@@ -5547,6 +5553,7 @@ mini_get_vtable_trampoline (int slot_index)
 
 			if (vtable_trampolines)
 				memcpy (new_table, vtable_trampolines, vtable_trampolines_size * sizeof (gpointer));
+			g_free (vtable_trampolines);
 			mono_memory_barrier ();
 			vtable_trampolines = new_table;
 			vtable_trampolines_size = new_size;
@@ -6281,6 +6288,7 @@ mini_cleanup (MonoDomain *domain)
 	g_hash_table_destroy (jit_icall_name_hash);
 	g_free (emul_opcode_map);
 	g_free (emul_opcode_opcodes);
+	g_free (vtable_trampolines);
 
 	mono_arch_cleanup ();
 

@@ -139,6 +139,7 @@ gpointer
 mono_get_throw_corlib_exception (void)
 {
 	gpointer code = NULL;
+	MonoTrampInfo *info;
 
 	/* This depends on corlib classes so cannot be inited in mono_exceptions_init () */
 	if (throw_corlib_exception_func)
@@ -147,8 +148,13 @@ mono_get_throw_corlib_exception (void)
 #if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
 	if (mono_aot_only)
 		code = mono_aot_get_trampoline ("throw_corlib_exception");
-	else
-		code = mono_arch_get_throw_corlib_exception (NULL, FALSE);
+	else {
+		code = mono_arch_get_throw_corlib_exception (&info, FALSE);
+		if (info) {
+			mono_save_trampoline_xdebug_info (info);
+			mono_tramp_info_free (info);
+		}
+	}
 #else
 	g_assert_not_reached ();
 #endif

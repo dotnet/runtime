@@ -2068,8 +2068,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 */
 			//LLVM_FAILURE (ctx, "aot+clauses");
 		} else {
-			/* exception_cb will decode this */
-			ti = g_malloc (sizeof (gint32));
+			/*
+			 * After the cfg mempool is freed, the type info will point to stale memory,
+			 * but this is not a problem, since we decode it once in exception_cb during
+			 * compilation.
+			 */
+			ti = mono_mempool_alloc (cfg->mempool, sizeof (gint32));
 			*(gint32*)ti = clause_index;
 
 			type_info = LLVMAddGlobal (module, i8ptr, ti_name);
@@ -4291,6 +4295,8 @@ exception_cb (void *data)
 	g_assert (nindex == ei_len + nested_len);
 	cfg->llvm_this_reg = this_reg;
 	cfg->llvm_this_offset = this_offset;
+
+	/* type_info [i] is cfg mempool allocated, no need to free it */
 
 	g_free (ei);
 	g_free (type_info);
