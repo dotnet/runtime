@@ -116,11 +116,6 @@ gboolean mono_do_signal_chaining;
 static gboolean	mono_using_xdebug;
 static int mini_verbose = 0;
 
-/* Statistics */
-#ifdef ENABLE_LLVM
-static int methods_with_llvm, methods_without_llvm;
-#endif
-
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
  * it can load AOT code compiled by LLVM.
@@ -3930,8 +3925,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		static gboolean inited;
 
 		if (!inited) {
-			mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_with_llvm);	
-			mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_without_llvm);
 			inited = TRUE;
 		}
 
@@ -4539,12 +4532,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_codegen (cfg);
 	}
 
-#ifdef ENABLE_LLVM
 	if (COMPILE_LLVM (cfg))
-		InterlockedIncrement (&methods_with_llvm);
+		InterlockedIncrement (&mono_jit_stats.methods_with_llvm);
 	else
-		InterlockedIncrement (&methods_without_llvm);
-#endif
+		InterlockedIncrement (&mono_jit_stats.methods_without_llvm);
 
 	if (cfg->verbose_level >= 2) {
 		char *id =  mono_method_full_name (cfg->method, FALSE);
@@ -5669,6 +5660,15 @@ mini_get_addr_from_ftnptr (gpointer descr)
 #endif
 }	
 
+static void
+register_jit_stats (void)
+{
+	mono_counters_register ("Compiled methods", MONO_COUNTER_JIT | MONO_COUNTER_LONG, &mono_jit_stats.methods_compiled);
+	mono_counters_register ("Methods from AOT", MONO_COUNTER_JIT | MONO_COUNTER_LONG, &mono_jit_stats.methods_aot);
+	mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_llvm);	
+	mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_without_llvm);
+}
+
 static void runtime_invoke_info_free (gpointer value);
  
 static void
@@ -5930,6 +5930,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	create_helper_signature ();
 
+	register_jit_stats ();
+
 #define JIT_CALLS_WORK
 #ifdef JIT_CALLS_WORK
 	/* Needs to be called here since register_jit_icall depends on it */
@@ -6155,8 +6157,6 @@ print_jit_stats (void)
 {
 	if (mono_jit_stats.enabled) {
 		g_print ("Mono Jit statistics\n");
-		g_print ("Compiled methods:       %ld\n", mono_jit_stats.methods_compiled);
-		g_print ("Methods from AOT:       %ld\n", mono_jit_stats.methods_aot);
 		g_print ("Methods cache lookup:   %ld\n", mono_jit_stats.methods_lookups);
 		g_print ("Basic blocks:           %ld\n", mono_jit_stats.basic_blocks);
 		g_print ("Max basic blocks:       %ld\n", mono_jit_stats.max_basic_blocks);

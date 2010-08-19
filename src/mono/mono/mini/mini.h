@@ -1246,6 +1246,8 @@ typedef struct {
 	gulong cas_linkdemand;
 	gulong cas_demand_generation;
 	gulong generic_virtual_invocations;
+    int methods_with_llvm;
+	int methods_without_llvm;
 	char *max_ratio_method;
 	char *biggest_method;
 	gboolean enabled;
