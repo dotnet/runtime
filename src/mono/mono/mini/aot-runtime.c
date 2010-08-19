@@ -1056,10 +1056,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		usable = FALSE;
 	}
 
+	/* This is no longer needed, LLVM and non-LLVM runtimes should be compatible.
 	if ((((MonoAotFileInfo*)file_info)->flags & MONO_AOT_FILE_FLAG_WITH_LLVM) && !mono_use_llvm) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled with LLVM.\n", aot_name);
 		usable = FALSE;
 	}
+	*/
 
 	find_symbol (sofile, globals, "blob", (gpointer*)&blob);
 
