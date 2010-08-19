@@ -302,10 +302,11 @@ g_get_charset (G_CONST_RETURN char **charset)
 	is_utf8 = FALSE;
 #else
 	if (my_charset == NULL){
+		/* These shouldn't be heap allocated */
 #if HAVE_LANGINFO_H
-		my_charset = g_strdup (nl_langinfo (CODESET));
+		my_charset = nl_langinfo (CODESET);
 #else
-		my_charset = g_strdup ("UTF-8");
+		my_charset = "UTF-8";
 #endif
 		is_utf8 = strcmp (my_charset, "UTF-8") == 0;
 	}
