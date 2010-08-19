@@ -3947,7 +3947,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 					printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 					//g_free (nm);
 				}
-				InterlockedIncrement (&methods_without_llvm);
 				mono_destroy_compile (cfg);
 				try_llvm = FALSE;
 				goto restart_compile;
@@ -4523,13 +4522,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 				//g_free (nm);
 			}
-			InterlockedIncrement (&methods_without_llvm);
 			mono_destroy_compile (cfg);
 			try_llvm = FALSE;
 			goto restart_compile;
 		}
-
-		InterlockedIncrement (&methods_with_llvm);
 
 		if (cfg->verbose_level > 0 && !cfg->compile_aot) {
 			nm = mono_method_full_name (cfg->method, TRUE);
@@ -4542,6 +4538,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	} else {
 		mono_codegen (cfg);
 	}
+
+#ifdef ENABLE_LLVM
+	if (COMPILE_LLVM (cfg))
+		InterlockedIncrement (&methods_with_llvm);
+	else
+		InterlockedIncrement (&methods_without_llvm);
+#endif
 
 	if (cfg->verbose_level >= 2) {
 		char *id =  mono_method_full_name (cfg->method, FALSE);
