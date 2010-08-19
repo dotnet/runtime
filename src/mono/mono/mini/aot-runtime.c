@@ -165,6 +165,8 @@ static guint32 n_pagefaults = 0;
 static gsize aot_code_low_addr = (gssize)-1;
 static gsize aot_code_high_addr = 0;
 
+static GHashTable *aot_jit_icall_hash;
+
 static void
 init_plt (MonoAotModule *info);
 
@@ -1290,6 +1292,15 @@ mono_aot_init (void)
 		mono_last_aot_method = atoi (g_getenv ("MONO_LASTAOT"));
 	if (g_getenv ("MONO_AOT_CACHE"))
 		use_aot_cache = TRUE;
+}
+
+void
+mono_aot_cleanup (void)
+{
+	if (aot_jit_icall_hash)
+		g_hash_table_destroy (aot_jit_icall_hash);
+	if (aot_modules)
+		g_hash_table_destroy (aot_modules);
 }
 
 static gboolean
@@ -3126,8 +3137,6 @@ mono_create_ftnptr_malloc (guint8 *code)
 	return code;
 #endif
 }
-
-static GHashTable *aot_jit_icall_hash;
 
 /*
  * mono_aot_register_jit_icall:

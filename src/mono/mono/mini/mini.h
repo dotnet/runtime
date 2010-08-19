@@ -1612,6 +1612,7 @@ guint8 *mono_arch_nacl_skip_nops(guint8 *code);
 
 /* AOT */
 void      mono_aot_init                     (void) MONO_INTERNAL;
+void      mono_aot_cleanup                  (void) MONO_INTERNAL;
 gpointer  mono_aot_get_method               (MonoDomain *domain,
 											 MonoMethod *method) MONO_INTERNAL;
 gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token) MONO_INTERNAL;

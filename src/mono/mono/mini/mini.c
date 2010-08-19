@@ -6279,6 +6279,8 @@ mini_cleanup (MonoDomain *domain)
 		mono_llvm_cleanup ();
 #endif
 
+	mono_aot_cleanup ();
+
 	mono_trampolines_cleanup ();
 
 	mono_unwind_cleanup ();
