@@ -6158,7 +6158,6 @@ print_jit_stats (void)
 		g_print ("Compiled methods:       %ld\n", mono_jit_stats.methods_compiled);
 		g_print ("Methods from AOT:       %ld\n", mono_jit_stats.methods_aot);
 		g_print ("Methods cache lookup:   %ld\n", mono_jit_stats.methods_lookups);
-		g_print ("Method trampolines:     %ld\n", mono_jit_stats.method_trampolines);
 		g_print ("Basic blocks:           %ld\n", mono_jit_stats.basic_blocks);
 		g_print ("Max basic blocks:       %ld\n", mono_jit_stats.max_basic_blocks);
 		g_print ("Allocated vars:         %ld\n", mono_jit_stats.allocate_var);

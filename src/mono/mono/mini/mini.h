@@ -1226,7 +1226,6 @@ typedef struct {
 	gulong methods_compiled;
 	gulong methods_aot;
 	gulong methods_lookups;
-	gulong method_trampolines;
 	gulong allocate_var;
 	gulong cil_code_size;
 	gulong native_code_size;

@@ -21,7 +21,7 @@ guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 static GHashTable *class_init_hash_addr = NULL;
 static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
 static GHashTable *rgctx_lazy_fetch_trampoline_hash_addr = NULL;
-static guint32 trampoline_calls;
+static guint32 trampoline_calls, jit_trampolines, unbox_trampolines, static_rgctx_trampolines;
 
 #define mono_trampolines_lock() EnterCriticalSection (&trampolines_mutex)
 #define mono_trampolines_unlock() LeaveCriticalSection (&trampolines_mutex)
@@ -40,6 +40,7 @@ get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer 
 		else
 			return mono_aot_get_unbox_trampoline (m);
 	} else {
+		unbox_trampolines ++;
 		return mono_arch_get_unbox_trampoline (gsctx, m, addr);
 	}
 }
@@ -132,6 +133,8 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	info->addr = addr;
 	g_hash_table_insert (domain_jit_info (domain)->static_rgctx_trampoline_hash, info, res);
 	mono_domain_unlock (domain);
+
+	static_rgctx_trampolines ++;
 
 	return res;
 }
@@ -1092,6 +1095,9 @@ mono_trampolines_init (void)
 #endif
 
 	mono_counters_register ("Calls to trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &trampoline_calls);
+	mono_counters_register ("JIT trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &jit_trampolines);
+	mono_counters_register ("Unbox trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &unbox_trampolines);
+	mono_counters_register ("Static rgctx trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &static_rgctx_trampolines);
 }
 
 void
@@ -1256,7 +1262,7 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 	g_hash_table_insert (domain_jit_info (domain)->jit_trampoline_hash, method, tramp);
 	mono_domain_unlock (domain);
 
-	mono_jit_stats.method_trampolines++;
+	jit_trampolines++;
 
 	return tramp;
 }	
@@ -1283,7 +1289,7 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 
 	tramp = mono_create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
 
-	mono_jit_stats.method_trampolines++;
+	jit_trampolines++;
 
 	return tramp;
 }	
