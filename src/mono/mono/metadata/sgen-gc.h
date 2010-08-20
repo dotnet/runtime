@@ -658,6 +658,7 @@ guint8* sgen_card_table_get_card_address (mword address) MONO_INTERNAL;
 void* sgen_card_table_align_pointer (void *ptr) MONO_INTERNAL;
 gboolean sgen_card_table_is_region_marked (mword start, mword end) MONO_INTERNAL;
 void sgen_card_table_mark_address (mword address) MONO_INTERNAL;
+void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
 
 #define CARD_BITS 9
 #define CARD_SIZE_IN_BYTES (1 << CARD_BITS)

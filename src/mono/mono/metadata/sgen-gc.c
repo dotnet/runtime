@@ -5419,20 +5419,24 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
 	LOCK_GC;
-	rs = REMEMBERED_SET;
-	if (rs->store_next < rs->end_set) {
-		*(rs->store_next++) = (mword)field_ptr;
-		*(void**)field_ptr = value;
-		UNLOCK_GC;
-		return;
-	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
+	if (use_cardtable) {
+		sgen_card_table_mark_address ((mword)field_ptr);
+	} else {
+		rs = REMEMBERED_SET;
+		if (rs->store_next < rs->end_set) {
+			*(rs->store_next++) = (mword)field_ptr;
+			*(void**)field_ptr = value;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
-	*(rs->store_next++) = (mword)field_ptr;
+		*(rs->store_next++) = (mword)field_ptr;
+	}
 	*(void**)field_ptr = value;
 	UNLOCK_GC;
 }
@@ -5449,20 +5453,24 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
 	LOCK_GC;
-	rs = REMEMBERED_SET;
-	if (rs->store_next < rs->end_set) {
-		*(rs->store_next++) = (mword)slot_ptr;
-		*(void**)slot_ptr = value;
-		UNLOCK_GC;
-		return;
-	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
+	if (use_cardtable) {
+		sgen_card_table_mark_address ((mword)slot_ptr);
+	} else {
+		rs = REMEMBERED_SET;
+		if (rs->store_next < rs->end_set) {
+			*(rs->store_next++) = (mword)slot_ptr;
+			*(void**)slot_ptr = value;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
-	*(rs->store_next++) = (mword)slot_ptr;
+		*(rs->store_next++) = (mword)slot_ptr;
+	}
 	*(void**)slot_ptr = value;
 	UNLOCK_GC;
 }
@@ -5479,22 +5487,26 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 		UNLOCK_GC;
 		return;
 	}
-	rs = REMEMBERED_SET;
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", dest_ptr, count));
-	if (rs->store_next + 1 < rs->end_set) {
+	if (use_cardtable) {
+		sgen_card_table_mark_range ((mword)dest_ptr, count * sizeof (gpointer));
+	} else {
+		rs = REMEMBERED_SET;
+		DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", dest_ptr, count));
+		if (rs->store_next + 1 < rs->end_set) {
+			*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
+			*(rs->store_next++) = count;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
+		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 		*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
 		*(rs->store_next++) = count;
-		UNLOCK_GC;
-		return;
 	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
-#endif
-	*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
-	*(rs->store_next++) = count;
 	UNLOCK_GC;
 }
 
@@ -5650,35 +5662,40 @@ void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	RememberedSet *rs;
+	size_t size = count * mono_class_value_size (klass, NULL);
 	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
 	LOCK_GC;
-	memmove (dest, src, count * mono_class_value_size (klass, NULL));
-	rs = REMEMBERED_SET;
-	if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !klass->has_references) {
-		UNLOCK_GC;
-		return;
-	}
-	g_assert (klass->gc_descr_inited);
-	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
+	memmove (dest, src, size);
+	if (use_cardtable) {
+		sgen_card_table_mark_range ((mword)dest, size);
+	} else {
+		rs = REMEMBERED_SET;
+		if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !klass->has_references) {
+			UNLOCK_GC;
+			return;
+		}
+		g_assert (klass->gc_descr_inited);
+		DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
 
-	if (rs->store_next + 3 < rs->end_set) {
+		if (rs->store_next + 3 < rs->end_set) {
+			*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
+			*(rs->store_next++) = (mword)klass->gc_descr;
+			*(rs->store_next++) = (mword)count;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
+		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		*(rs->store_next++) = (mword)count;
-		UNLOCK_GC;
-		return;
 	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
-#endif
-	*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
-	*(rs->store_next++) = (mword)klass->gc_descr;
-	*(rs->store_next++) = (mword)count;
 	UNLOCK_GC;
 }
 
