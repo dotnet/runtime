@@ -1332,24 +1332,22 @@ threadpool_kill_idle_threads (ThreadPool *tp)
 void
 mono_thread_pool_cleanup (void)
 {
-	if (async_tp.pool_status == 0 || async_tp.pool_status == 2)
-		return;
+	if (!(async_tp.pool_status == 0 || async_tp.pool_status == 2)) {
+		if (!(async_tp.pool_status == 1 && InterlockedCompareExchange (&async_tp.pool_status, 2, 1) == 2)) {
+			InterlockedExchange (&async_io_tp.pool_status, 2);
+			MONO_SEM_WAIT (&async_tp.lock);
+			threadpool_free_queue (&async_tp);
+			threadpool_kill_idle_threads (&async_tp);
+			MONO_SEM_POST (&async_tp.lock);
 
-	if (async_tp.pool_status == 1 && InterlockedCompareExchange (&async_tp.pool_status, 2, 1) == 2)
-		return;
-
-	InterlockedExchange (&async_io_tp.pool_status, 2);
-	MONO_SEM_WAIT (&async_tp.lock);
-	threadpool_free_queue (&async_tp);
-	threadpool_kill_idle_threads (&async_tp);
-	MONO_SEM_POST (&async_tp.lock);
-
-	socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
-	MONO_SEM_WAIT (&async_io_tp.lock);
-	threadpool_free_queue (&async_io_tp);
-	threadpool_kill_idle_threads (&async_io_tp);
-	MONO_SEM_POST (&async_io_tp.lock);
-	MONO_SEM_DESTROY (&async_io_tp.new_job);
+			socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
+			MONO_SEM_WAIT (&async_io_tp.lock);
+			threadpool_free_queue (&async_io_tp);
+			threadpool_kill_idle_threads (&async_io_tp);
+			MONO_SEM_POST (&async_io_tp.lock);
+			MONO_SEM_DESTROY (&async_io_tp.new_job);
+		}
+	}
 
 	EnterCriticalSection (&wsqs_lock);
 	mono_wsq_cleanup ();
