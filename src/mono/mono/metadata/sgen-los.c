@@ -68,7 +68,7 @@ typedef struct _LOSObject LOSObject;
 struct _LOSObject {
 	LOSObject *next;
 	mword size; /* this is the object size */
-	guint16 role;
+	guint16 huge_object;
 	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
 	char data [MONO_ZERO_LEN_ARRAY];
 };
@@ -365,6 +365,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size &= ~(pagesize - 1);
 		/* FIXME: handle OOM */
 		obj = mono_sgen_alloc_os_memory (alloc_size, TRUE);
+		obj->huge_object = TRUE;
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));
 		memset (obj, 0, size + sizeof (LOSObject));
@@ -449,3 +450,94 @@ los_sweep (void)
 
 	g_assert (los_num_sections == num_sections);
 }
+
+#ifdef SGEN_HAVE_CARDTABLE
+
+static void __attribute__((noinline))
+los_clear_card_table (void)
+{
+	LOSObject *obj;
+	LOSSection *section;
+	for (obj = los_object_list; obj; obj = obj->next) {
+		if (obj->huge_object)
+			sgen_card_table_reset_region ((mword)obj->data, (mword)obj->data + obj->size);
+	}
+
+	for (section = los_sections; section; section = section->next)
+		sgen_card_table_reset_region ((mword)section, (mword)section + LOS_SECTION_SIZE);
+
+}
+
+#define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
+
+static void __attribute__((noinline))
+los_scan_card_table (GrayQueue *queue)
+{
+	LOSObject *obj;
+
+	for (obj = los_object_list; obj; obj = obj->next) {
+		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj->data);
+		MonoClass *klass = vt->klass;
+
+		if (!klass->has_references)
+			continue;
+
+		if (vt->rank) {
+			MonoArray *arr = obj->data;
+			mword desc = (mword)klass->element_class->gc_descr;
+			char *start = sgen_card_table_align_pointer (obj->data);
+			char *end = obj->data + obj->size;
+			int size = mono_array_element_size (klass);
+
+			g_assert (desc);
+
+			for (; start <= end; start += CARD_SIZE_IN_BYTES) {
+				char *elem, *card_end;
+				guint8 *card_addr;
+				uintptr_t index;
+				card_addr = sgen_card_table_get_card_address ((mword)start);
+
+				if (!*card_addr) {
+					//++card_ignored;
+					continue;
+				}
+
+				*card_addr = 0;
+				card_end = start + CARD_SIZE_IN_BYTES;
+				if (end < card_end)
+					card_end = end;
+
+				if (start <= arr->vector)
+					index = 0;
+				else
+					index = ARRAY_OBJ_INDEX (start, obj->data, size);
+
+				elem = (char*)mono_array_addr_with_size ((MonoArray*)obj->data, size, index);
+				if (klass->element_class->valuetype) {
+					while (elem < card_end) {
+						major.minor_scan_vtype (elem, desc, nursery_start, nursery_next, queue);
+						elem += size;
+					}
+				} else {
+					while (elem < card_end) {
+						gpointer new, old = *(gpointer*)elem;
+						if (old) {
+							major.copy_object ((void**)elem, queue);
+							new = *(gpointer*)elem;
+							if (G_UNLIKELY (ptr_in_nursery (new)))
+								mono_sgen_add_to_global_remset (elem);
+						}
+						elem += size;
+					}
+				}
+			}
+		} else {
+			if (sgen_card_table_is_region_marked ((mword)obj->data, (mword)obj->data + obj->size)) {
+				sgen_card_table_reset_region ((mword)obj->data, (mword)obj->data + obj->size);
+				major.minor_scan_object (obj->data, queue);
+			}
+		}
+	}
+}
+
+#endif
