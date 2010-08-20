@@ -125,7 +125,14 @@ mono_monitor_init (void)
 void
 mono_monitor_cleanup (void)
 {
+	MonitorArray *marray, *next = NULL;
+
 	/*DeleteCriticalSection (&monitor_mutex);*/
+
+	for (marray = monitor_allocated; marray; marray = next) {
+		next = marray->next;
+		g_free (marray);
+	}
 }
 
 /*

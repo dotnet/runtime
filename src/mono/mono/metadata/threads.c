@@ -3808,8 +3808,14 @@ do_free_special (gpointer key, gpointer value, gpointer data)
 			mono_g_hash_table_foreach (threads, free_thread_static_data_helper, &data);
 		item->offset = offset;
 		item->size = size;
-		item->next = thread_static_info.freelist;
-		thread_static_info.freelist = item;
+
+		if (!mono_runtime_is_shutting_down ()) {
+			item->next = thread_static_info.freelist;
+			thread_static_info.freelist = item;
+		} else {
+			/* We could be called during shutdown after mono_thread_cleanup () is called */
+			g_free (item);
+		}
 	} else {
 		/* FIXME: free context static data as well */
 	}

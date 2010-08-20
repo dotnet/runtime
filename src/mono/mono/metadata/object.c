@@ -79,6 +79,9 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 static MonoString*
 mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig);
 
+static void
+free_main_args (void);
+
 #define ldstr_lock() EnterCriticalSection (&ldstr_section)
 #define ldstr_unlock() LeaveCriticalSection (&ldstr_section)
 static CRITICAL_SECTION ldstr_section;
@@ -189,6 +192,8 @@ mono_type_initialization_cleanup (void)
 	DeleteCriticalSection (&ldstr_section);
 	g_hash_table_destroy (type_initialization_hash);
 	g_hash_table_destroy (blocked_thread_hash);
+
+	free_main_args ();
 }
 
 /**
@@ -3340,6 +3345,16 @@ mono_runtime_get_main_args (void)
 		mono_array_setref (res, i, mono_string_new (domain, main_args [i]));
 
 	return res;
+}
+
+static void
+free_main_args (void)
+{
+	int i;
+
+	for (i = 0; i < num_main_args; ++i)
+		g_free (main_args [i]);
+	g_free (main_args);
 }
 
 /**

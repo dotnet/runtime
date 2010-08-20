@@ -1742,6 +1742,7 @@ mono_cleanup (void)
 	mono_assembly_close (mono_defaults.corlib->assembly);
 	mono_defaults.corlib = NULL;
 
+	mono_config_cleanup ();
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
 	mono_assemblies_cleanup ();
