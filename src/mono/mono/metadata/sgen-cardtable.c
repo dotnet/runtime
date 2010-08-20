@@ -10,6 +10,10 @@
 
 #ifdef SGEN_HAVE_CARDTABLE
 
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+
 #define CARD_COUNT_BITS (32 - 9)
 #define CARD_COUNT_IN_BYTES (1 << CARD_COUNT_BITS)
 
@@ -85,6 +89,22 @@ card_table_clear (void)
 		major.clear_card_table ();
 		los_clear_card_table ();
 	}
+}
+
+static void
+collect_faulted_cards (void)
+{
+#define CARD_PAGES (CARD_COUNT_IN_BYTES / 4096)
+	int i, count = 0;
+	unsigned char faulted [CARD_PAGES] = { 0 };
+	mincore (cardtable, CARD_COUNT_IN_BYTES, faulted);
+
+	for (i = 0; i < CARD_PAGES; ++i) {
+		if (faulted [i])
+			++count;
+	}
+
+	printf ("TOTAL card pages %d faulted %d\n", CARD_PAGES, count);
 }
 
 #else

@@ -2627,8 +2627,10 @@ collect_nursery (size_t requested_size)
 	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
-	if (use_cardtable)
+	if (use_cardtable) {
 		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
+		//collect_faulted_cards ();
+	}
 
 	drain_gray_stack (&gray_queue);
 
