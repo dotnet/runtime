@@ -2994,8 +2994,13 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	gboolean is_static = FALSE;
 	gboolean is_ref = FALSE;
 	gboolean is_literal = FALSE;
+	MonoError error;
+	MonoType *type = mono_field_get_type_checked (field, &error);
 
-	switch (field->type->type) {
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+
+	switch (type->type) {
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
@@ -3018,21 +3023,21 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8:
 	case MONO_TYPE_VALUETYPE:
-		is_ref = field->type->byref;
+		is_ref = type->byref;
 		break;
 	case MONO_TYPE_GENERICINST:
-		is_ref = !mono_type_generic_inst_is_valuetype (field->type);
+		is_ref = !mono_type_generic_inst_is_valuetype (type);
 		break;
 	default:
 		g_error ("type 0x%x not handled in "
-			 "mono_field_get_value_object", field->type->type);
+			 "mono_field_get_value_object", type->type);
 		return NULL;
 	}
 
-	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL)
+	if (type->attrs & FIELD_ATTRIBUTE_LITERAL)
 		is_literal = TRUE;
 
-	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		is_static = TRUE;
 
 		if (!is_literal) {
@@ -3063,7 +3068,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	}
 
 	/* boxed value type */
-	klass = mono_class_from_mono_type (field->type);
+	klass = mono_class_from_mono_type (type);
 
 	if (mono_class_is_nullable (klass))
 		return mono_nullable_box (mono_field_get_addr (obj, vtable, field), klass);
