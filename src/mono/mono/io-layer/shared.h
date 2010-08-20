@@ -20,6 +20,8 @@ typedef enum {
 extern gboolean _wapi_shm_disabled;
 
 extern gpointer _wapi_shm_attach (_wapi_shm_t type);
+extern void _wapi_shm_detach (_wapi_shm_t type);
+extern gboolean _wapi_shm_enabled (void);
 extern void _wapi_shm_semaphores_init (void);
 extern void _wapi_shm_semaphores_remove (void);
 extern int _wapi_shm_sem_lock (int sem);
