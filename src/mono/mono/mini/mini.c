@@ -6294,6 +6294,8 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_arch_cleanup ();
 
+	mono_generic_sharing_cleanup ();
+
 	mono_cleanup ();
 
 	mono_trace_cleanup ();

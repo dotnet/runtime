@@ -236,12 +236,6 @@ register_generic_subclass (MonoClass *class)
 	MonoClass *parent = class->parent;
 	MonoClass *subclass;
 	MonoRuntimeGenericContextTemplate *rgctx_template = class_lookup_rgctx_template (class);
-	static gboolean hook_installed;
-
-	if (!hook_installed) {
-		mono_install_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
-		hook_installed = TRUE;
-	}
 
 	g_assert (rgctx_template);
 
@@ -1858,4 +1852,14 @@ mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint3
 void
 mono_generic_sharing_init (void)
 {
+	mono_install_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
+}
+
+void
+mono_generic_sharing_cleanup (void)
+{
+	mono_remove_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
+
+	if (generic_subclass_hash)
+		g_hash_table_destroy (generic_subclass_hash);
 }
