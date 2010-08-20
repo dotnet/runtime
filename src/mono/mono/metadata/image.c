@@ -60,12 +60,11 @@ static CRITICAL_SECTION images_mutex;
 
 typedef struct ImageUnloadHook ImageUnloadHook;
 struct ImageUnloadHook {
-	ImageUnloadHook *next;
 	MonoImageUnloadFunc func;
 	gpointer user_data;
 };
 
-ImageUnloadHook *image_unload_hook = NULL;
+GSList *image_unload_hooks;
 
 void
 mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data)
@@ -77,16 +76,35 @@ mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data)
 	hook = g_new0 (ImageUnloadHook, 1);
 	hook->func = func;
 	hook->user_data = user_data;
-	hook->next = image_unload_hook;
-	image_unload_hook = hook;
+	image_unload_hooks = g_slist_prepend (image_unload_hooks, hook);
+}
+
+void
+mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data)
+{
+	GSList *l;
+	ImageUnloadHook *hook;
+
+	for (l = image_unload_hooks; l; l = l->next) {
+		hook = l->data;
+
+		if (hook->func == func && hook->user_data == user_data) {
+			g_free (hook);
+			image_unload_hooks = g_slist_delete_link (image_unload_hooks, l);
+			break;
+		}
+	}
 }
 
 static void
 mono_image_invoke_unload_hook (MonoImage *image)
 {
+	GSList *l;
 	ImageUnloadHook *hook;
 
-	for (hook = image_unload_hook; hook; hook = hook->next) {
+	for (l = image_unload_hooks; l; l = l->next) {
+		hook = l->data;
+
 		hook->func (image, hook->user_data);
 	}
 }

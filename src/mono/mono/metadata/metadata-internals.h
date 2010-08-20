@@ -525,6 +525,9 @@ typedef void  (*MonoImageUnloadFunc) (MonoImage *image, gpointer user_data);
 void
 mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MONO_INTERNAL;
 
+void
+mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MONO_INTERNAL;
+
 MonoType*
 mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
 
