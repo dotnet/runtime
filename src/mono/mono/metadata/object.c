@@ -187,6 +187,8 @@ mono_type_initialization_cleanup (void)
 	DeleteCriticalSection (&type_initialization_section);
 #endif
 	DeleteCriticalSection (&ldstr_section);
+	g_hash_table_destroy (type_initialization_hash);
+	g_hash_table_destroy (blocked_thread_hash);
 }
 
 /**
