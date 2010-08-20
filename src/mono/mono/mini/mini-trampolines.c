@@ -1105,6 +1105,10 @@ mono_trampolines_cleanup (void)
 {
 	if (class_init_hash_addr)
 		g_hash_table_destroy (class_init_hash_addr);
+	if (rgctx_lazy_fetch_trampoline_hash)
+		g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash);
+	if (rgctx_lazy_fetch_trampoline_hash_addr)
+		g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash_addr);
 
 	DeleteCriticalSection (&trampolines_mutex);
 }
