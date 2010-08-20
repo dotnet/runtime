@@ -3993,15 +3993,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_CAS_I4: {
+			g_assert (ins->dreg == X86_EAX);
 			g_assert (ins->sreg3 == X86_EAX);
 			g_assert (ins->sreg1 != X86_EAX);
 			g_assert (ins->sreg1 != ins->sreg2);
 
 			x86_prefix (code, X86_LOCK_PREFIX);
 			x86_cmpxchg_membase_reg (code, ins->sreg1, ins->inst_offset, ins->sreg2);
-
-			if (ins->dreg != X86_EAX)
-				x86_mov_reg_reg (code, ins->dreg, X86_EAX, 4);
 			break;
 		}
 #ifdef MONO_ARCH_SIMD_INTRINSICS

@@ -1265,6 +1265,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		 * TRACK FIXED SREG2, 3, ...
 		 */
 		for (j = 1; j < num_sregs; ++j) {
+			gboolean assign_fixed = TRUE;
 			int sreg = sregs [j];
 			int dest_sreg = dest_sregs [j];
 			if (dest_sreg != -1) {
@@ -1279,7 +1280,35 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 								sreg_masks [k] &= ~ (regmask (dest_sreg));
 						}
 					}
-					else {
+					else if (j == 2) {
+						int k;
+
+						/*
+						 * CAS.
+						 * We need to special case this, since on x86, there are only 3
+						 * free registers, and the code below assigns one of them to
+						 * sreg, so we can run out of registers when trying to assign
+						 * dreg. Instead, we just set of the register masks, and let the
+						 * normal sreg2 assignment code handle this. It would be nice to
+						 * do this for all the fixed reg cases too, but there is too much
+						 * risk of breakage.
+						 */
+						assign_fixed = FALSE;
+
+						val = rs->vassign [sreg];
+						if (val <= -1) {
+							/* Nothing to do */
+						} else {
+							/* Argument already in hard reg, need to copy */
+							MonoInst *copy = create_copy_ins (cfg, bb, tmp, dest_sreg, val, NULL, ip, 0);
+							insert_before_ins (bb, ins, copy);
+						}
+
+						for (k = 0; k < num_sregs; ++k) {
+							if (k != j)
+								sreg_masks [k] &= ~ (regmask (dest_sreg));
+						}						
+					} else {
 						val = rs->vassign [sreg];
 						if (val == -1) {
 							DEBUG (printf ("\tshortcut assignment of R%d to %s\n", sreg, mono_arch_regname (dest_sreg)));
@@ -1384,7 +1413,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						assign_reg (cfg, rs, sregs [j], dest_sreg, 0);
 					}
 				}
-				sregs [j] = dest_sreg;
+				if (assign_fixed)
+					sregs [j] = dest_sreg;
 			}
 		}
 		mono_inst_set_src_registers (ins, sregs);
@@ -1968,6 +1998,16 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 		mono_inst_set_src_registers (ins, sregs);
+
+		/* Sanity check */
+		/* Do this for CAS only for now */
+		for (j = 1; j < num_sregs; ++j) {
+			int sreg = sregs [j];
+			int dest_sreg = dest_sregs [j];
+
+			if (j == 2 && dest_sreg != -1)
+				g_assert (sreg == dest_sreg);
+		}
 
 		/*if (reg_is_freeable (ins->sreg1) && prev_sreg1 >= 0 && reginfo [prev_sreg1].born_in >= i) {
 			DEBUG (printf ("freeable %s\n", mono_arch_regname (ins->sreg1)));
