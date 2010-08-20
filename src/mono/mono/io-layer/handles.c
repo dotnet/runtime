@@ -205,12 +205,16 @@ static void handle_cleanup (void)
 	}
 	
 	_wapi_shm_semaphores_remove ();
+
+	_wapi_shm_detach (WAPI_SHM_DATA);
+	_wapi_shm_detach (WAPI_SHM_FILESHARE);
+
+	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
+		g_free (_wapi_private_handles [i]);
 }
 
 void _wapi_cleanup ()
 {
-	int i;
-
 	g_assert (_wapi_has_shut_down == FALSE);
 	
 	_wapi_has_shut_down = TRUE;
@@ -218,12 +222,6 @@ void _wapi_cleanup ()
 	_wapi_critical_section_cleanup ();
 	_wapi_error_cleanup ();
 	_wapi_thread_cleanup ();
-
-	_wapi_shm_detach (WAPI_SHM_DATA);
-	_wapi_shm_detach (WAPI_SHM_FILESHARE);
-
-	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
-		g_free (_wapi_private_handles [i]);
 }
 
 static mono_once_t shared_init_once = MONO_ONCE_INIT;
