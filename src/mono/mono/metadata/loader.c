@@ -71,6 +71,8 @@ guint32 loader_error_thread_id;
  */
 guint32 loader_lock_nest_id;
 
+static void dllmap_cleanup (void);
+
 void
 mono_loader_init ()
 {
@@ -95,11 +97,13 @@ mono_loader_init ()
 void
 mono_loader_cleanup (void)
 {
+	dllmap_cleanup ();
+
 	TlsFree (loader_error_thread_id);
 	TlsFree (loader_lock_nest_id);
 
 	DeleteCriticalSection (&loader_mutex);
-	loader_lock_inited = FALSE;
+	loader_lock_inited = FALSE;	
 }
 
 /*
@@ -1187,6 +1191,28 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 	}
 
 	mono_loader_unlock ();
+}
+
+static void
+free_dllmap (MonoDllMap *map)
+{
+	while (map) {
+		MonoDllMap *next = map->next;
+
+		g_free (map->dll);
+		g_free (map->target);
+		g_free (map->func);
+		g_free (map->target_func);
+		g_free (map);
+		map = next;
+	}
+}
+
+static void
+dllmap_cleanup (void)
+{
+	free_dllmap (global_dll_map);
+	global_dll_map = NULL;
 }
 
 static GHashTable *global_module_map;
