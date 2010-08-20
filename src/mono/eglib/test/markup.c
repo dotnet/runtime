@@ -3,7 +3,7 @@
 #include <glib.h>
 #include "test.h"
 
-#define do_bad_test(s) do { char *r = markup_test (s); if (r == NULL) return FAILED ("Failed on test " # s); else free (r); } while (0)
+#define do_bad_test(s) do { char *r = markup_test (s); if (r == NULL) return FAILED ("Failed on test " # s); else g_free (r); } while (0)
 #define do_ok_test(s) do { char *r = markup_test (s); if (r != NULL) return FAILED ("Could not parse valid " # s); } while (0)
 
 static char *
