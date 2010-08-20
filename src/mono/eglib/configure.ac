@@ -160,6 +160,7 @@ if test "x$PKG_CONFIG" != "xno"; then
 fi
 AM_CONDITIONAL(HAVE_GLIB, $have_glib)
 
+AC_ARG_ENABLE(quiet-build, [  --enable-quiet-build  Enable quiet runtime build (on by default)], enable_quiet_build=$enableval, enable_quiet_build=yes)
 AC_SUBST(GPOINTER_TO_INT)
 AC_SUBST(GPOINTER_TO_UINT)
 AC_SUBST(GINT_TO_POINTER)
@@ -168,6 +169,11 @@ AC_SUBST(GSIZE)
 AC_SUBST(GSIZE_FORMAT)
 AC_SUBST(G_GUINT64_FORMAT)
 AC_SUBST(G_GINT64_FORMAT)
+
+if test x$enable_quiet_build = xyes; then
+   AC_CONFIG_COMMANDS([quiet], [for i in `find src test -name Makefile.in | sed -e 's/Makefile.in/Makefile/g'`; do if test -f $i; then $srcdir/../scripts/patch-quiet.sh $i; fi; done], [shell=$SHELL])
+   AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/$echo "copying selected/$show "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
+fi
 
 AC_OUTPUT([
 Makefile
