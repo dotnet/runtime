@@ -4354,7 +4354,7 @@ generic_array_methods (MonoClass *class)
 		}
 	}
 	list = g_list_reverse (list);
-	generic_array_method_info = g_malloc (sizeof (GenericArrayMethodInfo) * count_generic);
+	generic_array_method_info = mono_image_alloc (mono_defaults.corlib, sizeof (GenericArrayMethodInfo) * count_generic);
 	i = 0;
 	for (tmp = list; tmp; tmp = tmp->next) {
 		const char *mname, *iname;
