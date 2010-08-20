@@ -483,7 +483,7 @@ void
 mono_ssa_remove (MonoCompile *cfg)
 {
 	MonoInst *ins, *var, *move;
-	int i, j, first;
+	int bbindex, i, j, first;
 
 	g_assert (cfg->comp_done & MONO_COMP_SSA);
 
@@ -551,12 +551,12 @@ mono_ssa_remove (MonoCompile *cfg)
 	 * can coalesce them into the original variable.
 	 */
 
-	for (i = 0; i < cfg->num_bblocks; ++i) {
-		MonoBasicBlock *bb = cfg->bblocks [i];
+	for (bbindex = 0; bbindex < cfg->num_bblocks; ++bbindex) {
+		MonoBasicBlock *bb = cfg->bblocks [bbindex];
 
 		for (ins = bb->code; ins; ins = ins->next) {
 			const char *spec = INS_INFO (ins->opcode);
-			int num_sregs, j;
+			int num_sregs;
 			int sregs [MONO_MAX_SRC_REGS];
 
 			if (ins->opcode == OP_NOP)
@@ -580,7 +580,7 @@ mono_ssa_remove (MonoCompile *cfg)
 			}
 
 			num_sregs = mono_inst_get_src_registers (ins, sregs);
-			for (j = 0; j < num_sregs; ++j) {
+			for (i = 0; i < num_sregs; ++i) {
 				MonoInst *var = get_vreg_to_inst (cfg, sregs [i]);
 
 				if (var) {
