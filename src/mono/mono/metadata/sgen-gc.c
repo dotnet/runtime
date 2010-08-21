@@ -2078,6 +2078,18 @@ alloc_nursery (void)
 	/* FIXME: frag here is lost */
 }
 
+void*
+mono_gc_get_nursery (int *shift_bits, size_t *size)
+{
+	*size = nursery_size;
+#ifdef SGEN_ALIGN_NURSERY
+	*shift_bits = DEFAULT_NURSERY_BITS;
+#else
+	*shift_bits = -1;
+#endif
+	return nursery_start;
+}
+
 static void
 scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, GrayQueue *queue)
 {

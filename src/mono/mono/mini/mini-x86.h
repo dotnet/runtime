@@ -317,6 +317,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
 #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
 
+#define MONO_ARCH_HAVE_CARD_TABLE_WBARRIER 1
+
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
 

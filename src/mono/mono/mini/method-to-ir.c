@@ -2594,20 +2594,40 @@ static void
 emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_reg)
 {
 #ifdef HAVE_SGEN_GC
-	MonoInst *dummy_use;
-	int shift_bits;
-	guint8 *card_table = mono_gc_get_card_table (&shift_bits);
+	int card_table_shift_bits;
+	guint8 *card_table = mono_gc_get_card_table (&card_table_shift_bits);
+	gboolean need_dummy_use = TRUE;
 
+#ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
+	MonoInst *dummy_use;
+	int nursery_shift_bits;
+	size_t nursery_size;
+
+	mono_gc_get_nursery (&nursery_shift_bits, &nursery_size);
+
+	if (card_table && nursery_shift_bits > 0) {
+		MonoInst *wbarrier;
+
+		MONO_INST_NEW (cfg, wbarrier, OP_CARD_TABLE_WBARRIER);
+		wbarrier->sreg1 = ptr->dreg;
+		if (value)
+			wbarrier->sreg2 = value->dreg;
+		else
+			wbarrier->sreg2 = value_reg;
+		MONO_ADD_INS (cfg->cbb, wbarrier);
+
+		need_dummy_use = FALSE;
+	}
+#else
 	if (card_table) {
 		int offset_reg = alloc_preg (cfg);
-		guint8 *card_table = mono_gc_get_card_table (&shift_bits);
 
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, offset_reg, ptr->dreg, shift_bits);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, offset_reg, ptr->dreg, card_table_shift_bits);
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PADD_IMM, offset_reg, offset_reg, card_table);
 		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, offset_reg, 0, 1);
-
-		EMIT_NEW_DUMMY_USE (cfg, dummy_use, ptr);
-	} else {
+	}
+#endif
+	else {
 		MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 		mono_emit_method_call (cfg, write_barrier, &ptr, NULL);
 	}
