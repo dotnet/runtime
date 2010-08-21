@@ -6458,8 +6458,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				vtable_arg = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 
-				if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-						MONO_METHOD_IS_FINAL (cmethod)) {
+				/* !marshalbyref is needed to properly handle generic methods + remoting */
+				if ((!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
+					 MONO_METHOD_IS_FINAL (cmethod)) &&
+					!cmethod->klass->marshalbyref) {
 					if (virtual)
 						check_this = TRUE;
 					virtual = 0;
