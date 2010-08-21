@@ -1349,7 +1349,10 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					 * First check if dreg is assigned to dest_sreg2, since we
 					 * can't spill a dreg.
 					 */
-					val = rs->vassign [ins->dreg];
+					if (spec [MONO_INST_DEST])
+						val = rs->vassign [ins->dreg];
+					else
+						val = -1;
 					if (val == dest_sreg && ins->dreg != sreg) {
 						/* 
 						 * the destination register is already assigned to 
