@@ -374,7 +374,8 @@ mono_config_init (void)
 void
 mono_config_cleanup (void)
 {
-	g_hash_table_destroy (config_handlers);
+	if (config_handlers)
+		g_hash_table_destroy (config_handlers);
 	g_free (mono_cfg_dir_allocated);
 }
 
