@@ -2642,10 +2642,9 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4
 			mono_emit_method_call (cfg, write_barrier, &iargs [0], NULL);
 
 			MONO_INST_NEW (cfg, dummy_use, OP_DUMMY_USE);
-			dummy_use->sreg1 = dest_ptr_reg;
+			dummy_use->sreg1 = tmp_reg;
 			MONO_ADD_INS (cfg->cbb, dummy_use);
 		}
-
 
 		offset += SIZEOF_VOID_P;
 		size -= SIZEOF_VOID_P;
