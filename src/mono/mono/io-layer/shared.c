@@ -127,7 +127,6 @@ _wapi_shm_sem_unlock (int sem)
 gpointer
 _wapi_shm_attach (_wapi_shm_t type)
 {
-	guint32 size;
 	gpointer res;
 
 	switch(type) {
