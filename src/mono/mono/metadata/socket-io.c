@@ -1774,7 +1774,11 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	int time_ms = 0;
 	socklen_t time_ms_size = sizeof (time_ms);
 #ifdef SO_PEERCRED
+#  if defined(__OpenBSD__)
+	struct sockpeercred cred;
+#  else
 	struct ucred cred;
+#  endif
 	socklen_t credsize = sizeof(cred);
 #endif
 	MonoDomain *domain=mono_domain_get();
