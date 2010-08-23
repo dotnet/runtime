@@ -723,29 +723,31 @@ handle_signal_exception (gpointer obj, gboolean test_only)
 gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
-#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
+#if defined(MONO_ARCH_USE_SIGACTION)
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+
 	/*
 	 * Handling the exception in the signal handler is problematic, since the original
 	 * signal is disabled, and we could run arbitrary code though the debugger. So
 	 * resume into the normal stack and do most work there if possible.
 	 */
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	guint64 sp = UCONTEXT_REG_RSP (sigctx);
+	guint64 sp = UCONTEXT_REG_RSP (ctx);
 
 	/* Pass the ctx parameter in TLS */
-	mono_arch_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
+	mono_arch_sigctx_to_monoctx (ctx, &jit_tls->ex_ctx);
 	/* The others in registers */
-	UCONTEXT_REG_RDI (sigctx) = (guint64)obj;
-	UCONTEXT_REG_RSI (sigctx) = test_only;
+	UCONTEXT_REG_RDI (ctx) = (guint64)obj;
+	UCONTEXT_REG_RSI (ctx) = test_only;
 
 	/* Allocate a stack frame below the red zone */
 	sp -= 128;
 	/* The stack should be unaligned */
 	if (sp % 8 == 0)
 		sp -= 8;
-	UCONTEXT_REG_RSP (sigctx) = sp;
+	UCONTEXT_REG_RSP (ctx) = sp;
 
-	UCONTEXT_REG_RIP (sigctx) = (guint64)handle_signal_exception;
+	UCONTEXT_REG_RIP (ctx) = (guint64)handle_signal_exception;
 
 	return TRUE;
 #else
