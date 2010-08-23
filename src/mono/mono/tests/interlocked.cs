@@ -61,9 +61,25 @@ public class InterlockTest
 
 		Thread.MemoryBarrier ();
 
+		interlocked_regalloc1 ();
+
 		Console.WriteLine ("done!");
 
 		return 0;
+	}
+
+	public static object[] buckets;
+	public static object segmentCache;
+
+	public static int interlocked_regalloc1 () {
+	   int segment = 0;
+	   buckets = new object [10];
+
+	   if (buckets[segment] == null) {
+		   object newSegment = new Object ();
+		   segmentCache = Interlocked.CompareExchange (ref buckets[segment], newSegment, null) == null ? null : newSegment;
+	   }
+	   return 0;
 	}
 
 	public static string IncTest () {
