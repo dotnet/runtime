@@ -49,6 +49,10 @@
 
 //#define SGEN_BINARY_PROTOCOL
 
+#if SIZEOF_VOID_P == 4
+#define SGEN_HAVE_CARDTABLE	1
+#endif
+
 #define SGEN_MAX_DEBUG_LEVEL 2
 
 #define THREAD_HASH_SIZE 11
@@ -648,10 +652,24 @@ void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 
 void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
+#ifdef SGEN_HAVE_CARDTABLE
+void sgen_card_table_reset_region (mword start, mword end) MONO_INTERNAL;
+guint8* sgen_card_table_get_card_address (mword address) MONO_INTERNAL;
+void* sgen_card_table_align_pointer (void *ptr) MONO_INTERNAL;
+gboolean sgen_card_table_is_region_marked (mword start, mword end) MONO_INTERNAL;
+void sgen_card_table_mark_address (mword address) MONO_INTERNAL;
+void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
+
+#define CARD_BITS 9
+#define CARD_SIZE_IN_BYTES (1 << CARD_BITS)
+#endif
+
+
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
 	gboolean is_parallel;
+	gboolean supports_cardtable;
 
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
@@ -668,6 +686,8 @@ struct _SgenMajorCollector {
 	void (*free_non_pinned_object) (char *obj, size_t size);
 	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
+	void (*scan_card_table) (SgenGrayQueue *queue);
+	void (*clear_card_table) (void);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
 	void (*check_scan_starts) (void);

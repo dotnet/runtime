@@ -277,6 +277,7 @@ static long long stat_store_remsets = 0;
 static long long stat_store_remsets_unique = 0;
 static long long stat_saved_remsets_1 = 0;
 static long long stat_saved_remsets_2 = 0;
+static long long stat_local_remsets_processed = 0;
 static long long stat_global_remsets_added = 0;
 static long long stat_global_remsets_readded = 0;
 static long long stat_global_remsets_processed = 0;
@@ -461,6 +462,8 @@ static LOCK_DECLARE (gc_mutex);
 static int gc_disabled = 0;
 static int num_minor_gcs = 0;
 static int num_major_gcs = 0;
+
+static gboolean use_cardtable;
 
 #ifdef USER_CONFIG
 
@@ -779,6 +782,7 @@ SgenMajorCollector major;
 #include "sgen-gray.c"
 #include "sgen-workers.c"
 #include "sgen-los.c"
+#include "sgen-cardtable.c"
 
 /* Root bitmap descriptors are simpler: the lower three bits describe the type
  * and we either have 30/62 bitmap bits or nibble-based run-length,
@@ -1532,10 +1536,16 @@ void
 mono_sgen_add_to_global_remset (gpointer ptr)
 {
 	RememberedSet *rs;
-	gboolean lock = current_collection_generation == GENERATION_OLD && major.is_parallel;
+	gboolean lock;
+
+	if (use_cardtable) {
+		sgen_card_table_mark_address ((mword)ptr);
+		return;
+	}
 
 	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
 
+	lock = (current_collection_generation == GENERATION_OLD && major.is_parallel);
 	if (lock)
 		LOCK_GLOBAL_REMSET;
 
@@ -2484,6 +2494,7 @@ init_stats (void)
 	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_sweep);
 	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_fragment_creation);
 
+
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_field);
 	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_arrayref);
@@ -2519,6 +2530,7 @@ init_stats (void)
 	mono_counters_register ("Unique store remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_store_remsets_unique);
 	mono_counters_register ("Saved remsets 1", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_1);
 	mono_counters_register ("Saved remsets 2", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_saved_remsets_2);
+	mono_counters_register ("Non-global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_local_remsets_processed);
 	mono_counters_register ("Global remsets added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_added);
 	mono_counters_register ("Global remsets re-added", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_readded);
 	mono_counters_register ("Global remsets processed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_global_remsets_processed);
@@ -2614,6 +2626,11 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
+
+	if (use_cardtable) {
+		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
+		//collect_faulted_cards ();
+	}
 
 	drain_gray_stack (&gray_queue);
 
@@ -2732,6 +2749,8 @@ major_do_collection (const char *reason)
 	/* The remsets are not useful for a major collection */
 	clear_remsets ();
 	global_remset_cache_clear ();
+	if (use_cardtable)
+		card_table_clear ();
 
 	TV_GETTIME (atv);
 	init_pinning ();
@@ -4785,6 +4804,8 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 
 	if (global)
 		HEAVY_STAT (++stat_global_remsets_processed);
+	else
+		HEAVY_STAT (++stat_local_remsets_processed);
 
 	/* FIXME: exclude stack locations */
 	switch ((*p) & REMSET_TYPE_MASK) {
@@ -5019,9 +5040,8 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 			int j;
 			for (remset = info->remset; remset; remset = next) {
 				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
-				for (p = remset->data; p < remset->store_next;) {
+				for (p = remset->data; p < remset->store_next;)
 					p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
-				}
 				remset->store_next = remset->data;
 				next = remset->next;
 				remset->next = NULL;
@@ -5041,9 +5061,8 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 		RememberedSet *next;
 		remset = freed_thread_remsets;
 		DEBUG (4, fprintf (gc_debug_file, "Scanning remset for freed thread, range: %p-%p, size: %td\n", remset->data, remset->store_next, remset->store_next - remset->data));
-		for (p = remset->data; p < remset->store_next;) {
+		for (p = remset->data; p < remset->store_next;)
 			p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
-		}
 		next = remset->next;
 		DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
 		mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
@@ -5400,20 +5419,24 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
 	LOCK_GC;
-	rs = REMEMBERED_SET;
-	if (rs->store_next < rs->end_set) {
-		*(rs->store_next++) = (mword)field_ptr;
-		*(void**)field_ptr = value;
-		UNLOCK_GC;
-		return;
-	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
+	if (use_cardtable) {
+		sgen_card_table_mark_address ((mword)field_ptr);
+	} else {
+		rs = REMEMBERED_SET;
+		if (rs->store_next < rs->end_set) {
+			*(rs->store_next++) = (mword)field_ptr;
+			*(void**)field_ptr = value;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
-	*(rs->store_next++) = (mword)field_ptr;
+		*(rs->store_next++) = (mword)field_ptr;
+	}
 	*(void**)field_ptr = value;
 	UNLOCK_GC;
 }
@@ -5430,20 +5453,24 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
 	LOCK_GC;
-	rs = REMEMBERED_SET;
-	if (rs->store_next < rs->end_set) {
-		*(rs->store_next++) = (mword)slot_ptr;
-		*(void**)slot_ptr = value;
-		UNLOCK_GC;
-		return;
-	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
+	if (use_cardtable) {
+		sgen_card_table_mark_address ((mword)slot_ptr);
+	} else {
+		rs = REMEMBERED_SET;
+		if (rs->store_next < rs->end_set) {
+			*(rs->store_next++) = (mword)slot_ptr;
+			*(void**)slot_ptr = value;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
 #ifdef HAVE_KW_THREAD
-	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
-	*(rs->store_next++) = (mword)slot_ptr;
+		*(rs->store_next++) = (mword)slot_ptr;
+	}
 	*(void**)slot_ptr = value;
 	UNLOCK_GC;
 }
@@ -5460,22 +5487,26 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 		UNLOCK_GC;
 		return;
 	}
-	rs = REMEMBERED_SET;
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", dest_ptr, count));
-	if (rs->store_next + 1 < rs->end_set) {
+	if (use_cardtable) {
+		sgen_card_table_mark_range ((mword)dest_ptr, count * sizeof (gpointer));
+	} else {
+		rs = REMEMBERED_SET;
+		DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", dest_ptr, count));
+		if (rs->store_next + 1 < rs->end_set) {
+			*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
+			*(rs->store_next++) = count;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
+		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 		*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
 		*(rs->store_next++) = count;
-		UNLOCK_GC;
-		return;
 	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
-#endif
-	*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
-	*(rs->store_next++) = count;
 	UNLOCK_GC;
 }
 
@@ -5558,16 +5589,21 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	}
 #endif
 
-	LOCK_GC;
-
 	if (*(gpointer*)ptr)
 		binary_protocol_wbarrier (ptr, *(gpointer*)ptr, (gpointer)LOAD_VTABLE (*(gpointer*)ptr));
 
 	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr) || !ptr_in_nursery (*(gpointer*)ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
-		UNLOCK_GC;
 		return;
 	}
+
+	if (use_cardtable) {
+		if (ptr_in_nursery(*(gpointer*)ptr))
+			sgen_card_table_mark_address ((mword)ptr);
+		return;
+	}
+
+	LOCK_GC;
 
 	buffer = STORE_REMSET_BUFFER;
 	index = STORE_REMSET_BUFFER_INDEX;
@@ -5626,35 +5662,40 @@ void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	RememberedSet *rs;
+	size_t size = count * mono_class_value_size (klass, NULL);
 	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
 	LOCK_GC;
-	memmove (dest, src, count * mono_class_value_size (klass, NULL));
-	rs = REMEMBERED_SET;
-	if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !klass->has_references) {
-		UNLOCK_GC;
-		return;
-	}
-	g_assert (klass->gc_descr_inited);
-	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
+	memmove (dest, src, size);
+	if (use_cardtable) {
+		sgen_card_table_mark_range ((mword)dest, size);
+	} else {
+		rs = REMEMBERED_SET;
+		if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !klass->has_references) {
+			UNLOCK_GC;
+			return;
+		}
+		g_assert (klass->gc_descr_inited);
+		DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d, descr %p for class %s (%p)\n", dest, count, klass->gc_descr, klass->name, klass));
 
-	if (rs->store_next + 3 < rs->end_set) {
+		if (rs->store_next + 3 < rs->end_set) {
+			*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
+			*(rs->store_next++) = (mword)klass->gc_descr;
+			*(rs->store_next++) = (mword)count;
+			UNLOCK_GC;
+			return;
+		}
+		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+		rs->next = REMEMBERED_SET;
+		REMEMBERED_SET = rs;
+#ifdef HAVE_KW_THREAD
+		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+#endif
 		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		*(rs->store_next++) = (mword)count;
-		UNLOCK_GC;
-		return;
 	}
-	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
-	rs->next = REMEMBERED_SET;
-	REMEMBERED_SET = rs;
-#ifdef HAVE_KW_THREAD
-	mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
-#endif
-	*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
-	*(rs->store_next++) = (mword)klass->gc_descr;
-	*(rs->store_next++) = (mword)count;
 	UNLOCK_GC;
 }
 
@@ -5891,7 +5932,7 @@ static gboolean missing_remsets;
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
-		if (!find_in_remsets ((char*)(ptr))) { \
+		if (!find_in_remsets ((char*)(ptr)) && (!use_cardtable || !sgen_card_table_address_is_marked ((mword)ptr))) { \
                 fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
 		binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (char*)(ptr) - (char*)(obj), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 		if (!object_is_pinned (*(ptr)))				\
@@ -6302,11 +6343,32 @@ mono_gc_base_init (void)
 		exit (1);
 	}
 
+#ifdef SGEN_HAVE_CARDTABLE
+	use_cardtable = major.supports_cardtable;
+#else
+	use_cardtable = FALSE;
+#endif
+
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
 			if (g_str_has_prefix (opt, "major="))
 				continue;
+			if (g_str_has_prefix (opt, "wbarrier=")) {
+				opt = strchr (opt, '=') + 1;
+				if (strcmp (opt, "remset") == 0) {
+					use_cardtable = FALSE;
+				} else if (strcmp (opt, "cardtable") == 0) {
+					if (!use_cardtable) {
+						if (major.supports_cardtable)
+							fprintf (stderr, "The cardtable write barrier is not supported on this platform.\n");
+						else
+							fprintf (stderr, "The major collector does not support the cardtable write barrier.\n");
+						exit (1);
+					}
+				}
+				continue;
+			}
 #ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				long val;
@@ -6333,7 +6395,8 @@ mono_gc_base_init (void)
 			if (!(major.handle_gc_param && major.handle_gc_param (opt))) {
 				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
 				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
-				fprintf (stderr, "  major=COLLECTOR (where collector is `marksweep', `marksweep-par' or `copying')\n");
+				fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par' or `copying')\n");
+				fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
 				if (major.print_gc_param_usage)
 					major.print_gc_param_usage ();
 				exit (1);
@@ -6426,6 +6489,9 @@ mono_gc_base_init (void)
 #ifndef HAVE_KW_THREAD
 	pthread_key_create (&thread_info_key, NULL);
 #endif
+
+	if (use_cardtable)
+		card_table_init ();
 
 	gc_initialized = TRUE;
 	UNLOCK_GC;
@@ -6860,6 +6926,8 @@ mono_gc_get_write_barrier (void)
 	g_assert (store_remset_buffer_index_addr_offset != -1);
 #endif
 #endif
+
+	g_assert (!use_cardtable);
 
 	// FIXME: Maybe create a separate version for ctors (the branch would be
 	// correctly predicted more times)

@@ -42,6 +42,7 @@
 #define MS_BLOCK_SIZE	(16*1024)
 #define MS_BLOCK_SIZE_SHIFT	14
 #define MAJOR_SECTION_SIZE	MS_BLOCK_SIZE
+#define CARDS_PER_BLOCK (MS_BLOCK_SIZE / CARD_SIZE_IN_BYTES)
 
 #ifdef FIXED_HEAP
 #define MS_DEFAULT_HEAP_NUM_BLOCKS	(32 * 1024) /* 512 MB */
@@ -1235,6 +1236,54 @@ major_print_gc_param_usage (void)
 }
 #endif
 
+#ifdef SGEN_HAVE_CARDTABLE
+static void
+major_clear_card_table (void)
+{
+	MSBlockInfo *block;
+
+	FOREACH_BLOCK (block) {
+		sgen_card_table_reset_region ((mword)block->block, (mword)block->block + MS_BLOCK_SIZE);
+	} END_FOREACH_BLOCK;
+}
+
+static void
+major_scan_card_table (SgenGrayQueue *queue)
+{
+	MSBlockInfo *block;
+
+	FOREACH_BLOCK (block) {
+		int i;
+		int block_obj_size = block->obj_size;
+		guint8 *cards = sgen_card_table_get_card_address ((mword)block->block);
+		char *start = block->block;
+
+		for (i = 0; i < CARDS_PER_BLOCK; ++i, start += CARD_SIZE_IN_BYTES) {
+			int index;
+			char *obj, *end;
+
+			if (!cards [i])
+				continue;
+
+			cards [i] = 0;
+
+			end = start + CARD_SIZE_IN_BYTES;
+			if (i == 0)
+				index = 0;
+			else
+				index = MS_BLOCK_OBJ_INDEX (start, block);
+
+			obj = (char*)MS_BLOCK_OBJ (block, index);
+			while (obj < end) {
+				if (MS_OBJ_ALLOCED (obj, block))
+					minor_scan_object (obj, queue);
+				obj += block_obj_size;
+			}
+		}
+	} END_FOREACH_BLOCK;
+}
+#endif
+
 void
 #ifdef SGEN_PARALLEL_MARK
 #ifdef FIXED_HEAP
@@ -1289,6 +1338,7 @@ mono_sgen_marksweep_init
 #else
 	collector->is_parallel = FALSE;
 #endif
+	collector->supports_cardtable = !collector->is_parallel;
 
 	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;
@@ -1301,6 +1351,10 @@ mono_sgen_marksweep_init
 	collector->free_non_pinned_object = major_free_non_pinned_object;
 	collector->find_pin_queue_start_ends = major_find_pin_queue_start_ends;
 	collector->pin_objects = major_pin_objects;
+#ifdef SGEN_HAVE_CARDTABLE
+	collector->scan_card_table = major_scan_card_table;
+	collector->clear_card_table = major_clear_card_table;
+#endif
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
 	collector->check_scan_starts = major_check_scan_starts;

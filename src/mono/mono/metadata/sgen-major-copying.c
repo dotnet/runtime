@@ -640,6 +640,7 @@ mono_sgen_copying_init (SgenMajorCollector *collector)
 #endif
 
 	collector->section_size = MAJOR_SECTION_SIZE;
+	collector->supports_cardtable = FALSE;
 	collector->is_parallel = FALSE;
 
 	collector->alloc_heap = major_alloc_heap;
