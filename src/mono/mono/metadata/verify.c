@@ -788,6 +788,7 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		else
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		mono_loader_clear_error ();
 		return FALSE;
 	}
 
@@ -845,8 +846,9 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **out_klass, const
 	}
 
 	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
-	if (!field || !field->parent || !klass) {
+	if (!field || !field->parent || !klass || mono_loader_get_last_error ()) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load field from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		mono_loader_clear_error ();
 		return NULL;
 	}
 
@@ -868,8 +870,9 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 
 	method = mono_get_method_full (ctx->image, token, NULL, ctx->generic_context);
 
-	if (!method) {
+	if (!method || mono_loader_get_last_error ()) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load method from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		mono_loader_clear_error ();
 		return NULL;
 	}
 	
@@ -890,8 +893,9 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 
 	type = mono_type_get_full (ctx->image, token, ctx->generic_context);
 
-	if (!type) {
+	if (!type || mono_loader_get_last_error ()) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load type from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		mono_loader_clear_error ();
 		return NULL;
 	}
 
