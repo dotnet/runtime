@@ -1284,10 +1284,23 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * do this for all the fixed reg cases too, but there is too much
 				 * risk of breakage.
 				 */
+
+				/* Make sure sreg will be assigned to dest_sreg, and the other sregs won't */
+				sreg_masks [j] = regmask (dest_sreg);
 				for (k = 0; k < num_sregs; ++k) {
 					if (k != j)
 						sreg_masks [k] &= ~ (regmask (dest_sreg));
 				}						
+
+				/*
+				 * Spill sreg1/2 if they are assigned to dest_sreg.
+				 */
+				for (k = 0; k < num_sregs; ++k) {
+					if (k != j && is_soft_reg (sregs [k], 0) && rs->vassign [sregs [k]] == dest_sreg) {
+						get_register_force_spilling (cfg, bb, tmp, ins, sregs [k], 0);
+						mono_regstate_free_int (rs, dest_sreg);
+					}
+				}
 
 				/*
 				 * We can also run out of registers while processing sreg2 if sreg3 is
@@ -1295,7 +1308,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				 */
 				if (is_soft_reg (sreg, 0) && rs->vassign [sreg] >= 0 && rs->vassign [sreg] != dest_sreg) {
 					get_register_force_spilling (cfg, bb, tmp, ins, sreg, 0);
-					mono_regstate_free_int (rs, dest_sreg);
 				}
 				continue;
 			}
