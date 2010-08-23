@@ -133,10 +133,10 @@ _wapi_shm_attach (_wapi_shm_t type)
 	switch(type) {
 	case WAPI_SHM_DATA:
 		res = g_malloc0 (sizeof(struct _WapiHandleSharedLayout));
-		
+		break;
 	case WAPI_SHM_FILESHARE:
 		res = g_malloc0 (sizeof(struct _WapiFileShareLayout));
-
+		break;
 	default:
 		g_error ("Invalid type in _wapi_shm_attach ()");
 		return NULL;
