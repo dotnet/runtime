@@ -1307,7 +1307,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * assigned to another hreg, so spill sreg3 now.
 				 */
 				if (is_soft_reg (sreg, 0) && rs->vassign [sreg] >= 0 && rs->vassign [sreg] != dest_sreg) {
+					int hreg = rs->vassign [sreg];
 					get_register_force_spilling (cfg, bb, tmp, ins, sreg, 0);
+					mono_regstate_free_int (rs, hreg);
 				}
 				continue;
 			}
