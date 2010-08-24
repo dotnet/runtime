@@ -3666,6 +3666,16 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			g_assert (tblock->native_offset);
 			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
 			g_assert (tblock);
+			if (!tblock->native_offset) {
+				int j, end;
+				for (j = ec->try_offset + ec->try_len, end = ec->try_offset; j >= end; --j) {
+					MonoBasicBlock *bb = cfg->cil_offset_to_bb [j];
+					if (bb && bb->native_offset) {
+						tblock = bb;
+						break;
+					}
+				}
+			}
 			ei->try_end = cfg->native_code + tblock->native_offset;
 			g_assert (tblock->native_offset);
 			tblock = cfg->cil_offset_to_bb [ec->handler_offset];
