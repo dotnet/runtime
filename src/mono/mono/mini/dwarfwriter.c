@@ -81,6 +81,11 @@ mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_st
 	w->fp = img_writer_get_fp (w->w);
 	w->temp_prefix = img_writer_get_temp_label_prefix (w->w);
 
+	w->class_to_die = g_hash_table_new (NULL, NULL);
+	w->class_to_vtype_die = g_hash_table_new (NULL, NULL);
+	w->class_to_pointer_die = g_hash_table_new (NULL, NULL);
+	w->class_to_reference_die = g_hash_table_new (NULL, NULL);
+
 	return w;
 }
 
@@ -794,7 +799,21 @@ mono_dwarf_writer_close (MonoDwarfWriter *w)
 	}
 }
 
-static const char* emit_type (MonoDwarfWriter *w, MonoType *t);
+static void emit_type (MonoDwarfWriter *w, MonoType *t);
+static const char* get_type_die (MonoDwarfWriter *w, MonoType *t);
+
+static const char*
+get_class_die (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
+{
+	GHashTable *cache;
+
+	if (vtype)
+		cache = w->class_to_vtype_die;
+	else
+		cache = w->class_to_die;
+
+	return g_hash_table_lookup (cache, klass);
+}
 
 /* Returns the local symbol pointing to the emitted debug info */
 static char*
@@ -808,16 +827,6 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	int k;
 	gboolean emit_namespace = FALSE, has_children;
 	GHashTable *cache;
-
-	// FIXME: Appdomains
-	if (!w->class_to_die)
-		w->class_to_die = g_hash_table_new (NULL, NULL);
-	if (!w->class_to_vtype_die)
-		w->class_to_vtype_die = g_hash_table_new (NULL, NULL);
-	if (!w->class_to_pointer_die)
-		w->class_to_pointer_die = g_hash_table_new (NULL, NULL);
-	if (!w->class_to_reference_die)
-		w->class_to_reference_die = g_hash_table_new (NULL, NULL);
 
 	if (vtype)
 		cache = w->class_to_vtype_die;
@@ -971,7 +980,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 
-			fdie = emit_type (w, field->type);
+			fdie = get_type_die (w, field->type);
 			if (fdie) {
 				emit_uleb128 (w, ABBREV_DATA_MEMBER);
 				emit_string (w, field->name);
@@ -1024,7 +1033,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 static gboolean base_types_emitted [64];
 
 static const char*
-emit_type (MonoDwarfWriter *w, MonoType *t)
+get_type_die (MonoDwarfWriter *w, MonoType *t)
 {
 	MonoClass *klass = mono_class_from_mono_type (t);
 	int j;
@@ -1032,12 +1041,10 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 
 	if (t->byref) {
 		if (t->type == MONO_TYPE_VALUETYPE) {
-			tdie = emit_class_dwarf_info (w, klass, TRUE);
-			if (tdie)
-				return g_hash_table_lookup (w->class_to_pointer_die, klass);
+			tdie = g_hash_table_lookup (w->class_to_pointer_die, klass);
 		}
 		else {
-			tdie = emit_class_dwarf_info (w, klass, FALSE);
+			tdie = get_class_die (w, klass, FALSE);
 			/* Should return a pointer type to a reference */
 		}
 		// FIXME:
@@ -1047,16 +1054,10 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 		if (basic_types [j].type == t->type)
 			break;
 	if (j < G_N_ELEMENTS (basic_types)) {
-		/* Emit a boxed version of base types */
-		if (j < 64 && !base_types_emitted [j]) {
-			emit_class_dwarf_info (w, klass, FALSE);
-			base_types_emitted [j] = TRUE;
-		}
 		tdie = basic_types [j].die_name;
 	} else {
 		switch (t->type) {
 		case MONO_TYPE_CLASS:
-			emit_class_dwarf_info (w, klass, FALSE);
 			tdie = g_hash_table_lookup (w->class_to_reference_die, klass);
 			//tdie = ".LDIE_OBJECT";
 			break;
@@ -1065,13 +1066,12 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (klass->enumtype)
-				tdie = emit_class_dwarf_info (w, klass, FALSE);
+				tdie = get_class_die (w, klass, FALSE);
 			else
 				tdie = ".LDIE_I4";
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!MONO_TYPE_ISSTRUCT (t)) {
-				emit_class_dwarf_info (w, klass, FALSE);
 				tdie = g_hash_table_lookup (w->class_to_reference_die, klass);
 			} else {
 				tdie = ".LDIE_I4";
@@ -1086,7 +1086,60 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 		}
 	}
 
+	g_assert (tdie);
+
 	return tdie;
+}
+
+static void
+emit_type (MonoDwarfWriter *w, MonoType *t)
+{
+	MonoClass *klass = mono_class_from_mono_type (t);
+	int j;
+	const char *tdie;
+
+	if (t->byref) {
+		if (t->type == MONO_TYPE_VALUETYPE) {
+			tdie = emit_class_dwarf_info (w, klass, TRUE);
+			if (tdie)
+				return;
+		}
+		else {
+			emit_class_dwarf_info (w, klass, FALSE);
+		}
+		// FIXME:
+		t = &mono_defaults.int_class->byval_arg;
+	}
+	for (j = 0; j < G_N_ELEMENTS (basic_types); ++j)
+		if (basic_types [j].type == t->type)
+			break;
+	if (j < G_N_ELEMENTS (basic_types)) {
+		/* Emit a boxed version of base types */
+		if (j < 64 && !base_types_emitted [j]) {
+			emit_class_dwarf_info (w, klass, FALSE);
+			base_types_emitted [j] = TRUE;
+		}
+	} else {
+		switch (t->type) {
+		case MONO_TYPE_CLASS:
+			emit_class_dwarf_info (w, klass, FALSE);
+			break;
+		case MONO_TYPE_ARRAY:
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (klass->enumtype)
+				emit_class_dwarf_info (w, klass, FALSE);
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (!MONO_TYPE_ISSTRUCT (t))
+				emit_class_dwarf_info (w, klass, FALSE);
+			break;
+		case MONO_TYPE_PTR:
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 static void
@@ -1094,7 +1147,7 @@ emit_var_type (MonoDwarfWriter *w, MonoType *t)
 {
 	const char *tdie;
 
-	tdie = emit_type (w, t);
+	tdie = get_type_die (w, t);
 
 	emit_symbol_diff (w, tdie, ".Ldebug_info_start", 0);
 }
@@ -1619,6 +1672,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 		emit_type (w, t);
 	}
+	//emit_type (w, &mono_defaults.int32_class->byval_arg);
 
 	/* Local types */
 	for (i = 0; i < header->num_locals; ++i) {
