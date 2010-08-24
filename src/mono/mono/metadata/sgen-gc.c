@@ -4565,11 +4565,12 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	int old_errno = errno;
 	gpointer regs [ARCH_NUM_REGS];
 	gpointer stack_start;
+	ucontext_t *ctx = (ucontext_t*)context;
 
 	id = pthread_self ();
 	info = mono_sgen_thread_info_lookup (id);
 	info->stopped_domain = mono_domain_get ();
-	info->stopped_ip = (gpointer) ARCH_SIGCTX_IP (context);
+	info->stopped_ip = (gpointer) ARCH_SIGCTX_IP (ctx);
 	stop_count = global_stop_count;
 	/* duplicate signal */
 	if (0 && info->stop_count == stop_count) {
@@ -4580,13 +4581,13 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	/* update the remset info in the thread data structure */
 	info->remset = remembered_set;
 #endif
-	stack_start = (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE;
+	stack_start = (char*) ARCH_SIGCTX_SP (ctx) - REDZONE_SIZE;
 	/* If stack_start is not within the limits, then don't set it
 	   in info and we will be restarted. */
 	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
 		info->stack_start = stack_start;
 
-		ARCH_COPY_SIGCTX_REGS (regs, context);
+		ARCH_COPY_SIGCTX_REGS (regs, ctx);
 		info->stopped_regs = regs;
 	} else {
 		g_assert (!info->stack_start);
@@ -4594,7 +4595,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 
 	/* Notify the JIT */
 	if (gc_callbacks.thread_suspend_func)
-		gc_callbacks.thread_suspend_func (info->runtime_data, context);
+		gc_callbacks.thread_suspend_func (info->runtime_data, ctx);
 
 	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for suspend from %p %p\n", info, (gpointer)ARCH_GET_THREAD ()));
 	/* notify the waiting thread */

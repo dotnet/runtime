@@ -2129,7 +2129,7 @@ case "$host" in
 		  haiku*)
 			LIBC=libroot.so
 			;;
-		  linux*|darwin*)
+		  linux*|darwin*|openbsd*)
 			sgen_supported=true
 		        ;;
 		esac
@@ -2140,7 +2140,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		case $host_os in
-		  linux*|darwin*)
+		  linux*|darwin*|openbsd*)
 			sgen_supported=true
 			;;
 		esac

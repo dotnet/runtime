@@ -178,7 +178,7 @@ struct _GCMemSection {
 
 typedef struct _SgenPinnedChunk SgenPinnedChunk;
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 const static int suspend_signal_num = SIGXFSZ;
 #else
 const static int suspend_signal_num = SIGPWR;
