@@ -1528,8 +1528,7 @@ mono_image_close_except_pools (MonoImage *image)
 		int i;
 
 		for (i = 0; i < t->rows; i++) {
-			/* mscorlib might contain a reference to itself */
-			if (image->references [i] && image->references [i] != REFERENCE_MISSING && image->references [i]->image != image) {
+			if (image->references [i] && image->references [i] != REFERENCE_MISSING) {
 				if (!mono_assembly_close_except_image_pools (image->references [i]))
 					image->references [i] = NULL;
 			}
@@ -1693,7 +1692,7 @@ mono_image_close_finish (MonoImage *image)
 		int i;
 
 		for (i = 0; i < t->rows; i++) {
-			if (image->references [i] && image->references [i] != REFERENCE_MISSING && image->references [i]->image != image)
+			if (image->references [i] && image->references [i] != REFERENCE_MISSING)
 				mono_assembly_close_finish (image->references [i]);
 		}
 
