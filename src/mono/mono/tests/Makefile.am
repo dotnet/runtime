@@ -490,7 +490,8 @@ TEST_IL_SRC=			\
 	array_load_exception.il \
 	bug-481403.il	\
 	interface-with-static-method.il	\
-	bug-515884.il
+	bug-515884.il	\
+	bug-633291.il
 
 #	bug-318677.il
 
