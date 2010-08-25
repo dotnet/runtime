@@ -29,6 +29,8 @@
 /* If not null, dump binary protocol to this file */
 static FILE *binary_protocol_file = NULL;
 
+static int binary_protocol_use_count = 0;
+
 #define BINARY_PROTOCOL_BUFFER_SIZE	(65536 - 2 * 8)
 
 typedef struct _BinaryProtocolBuffer BinaryProtocolBuffer;
@@ -56,9 +58,12 @@ binary_protocol_flush_buffers_rec (BinaryProtocolBuffer *buffer)
 }
 
 static void
-binary_protocol_flush_buffers (void)
+binary_protocol_flush_buffers (gboolean force)
 {
 	if (!binary_protocol_file)
+		return;
+
+	if (!force && binary_protocol_use_count != 0)
 		return;
 
 	binary_protocol_flush_buffers_rec (binary_protocol_buffers);
@@ -93,9 +98,15 @@ protocol_entry (unsigned char type, gpointer data, int size)
 {
 	int index;
 	BinaryProtocolBuffer *buffer;
+	int old_count;
 
 	if (!binary_protocol_file)
 		return;
+
+	do {
+		old_count = binary_protocol_use_count;
+		g_assert (old_count >= 0);
+	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count + 1, old_count) != old_count);
 
  retry:
 	buffer = binary_protocol_get_buffer (size + 1);
@@ -112,13 +123,18 @@ protocol_entry (unsigned char type, gpointer data, int size)
 	index += size;
 
 	g_assert (index <= BINARY_PROTOCOL_BUFFER_SIZE);
+
+	do {
+		old_count = binary_protocol_use_count;
+		g_assert (old_count > 0);
+	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count - 1, old_count) != old_count);
 }
 
 void
 binary_protocol_collection (int generation)
 {
 	SGenProtocolCollection entry = { generation };
-	binary_protocol_flush_buffers ();
+	binary_protocol_flush_buffers (FALSE);
 	protocol_entry (SGEN_PROTOCOL_COLLECTION, &entry, sizeof (SGenProtocolCollection));
 }
 

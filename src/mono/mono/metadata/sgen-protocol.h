@@ -146,7 +146,7 @@ void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offs
 
 #else
 
-#define binary_protocol_flush_buffers()
+#define binary_protocol_flush_buffers(force)
 #define binary_protocol_collection(generation)
 #define binary_protocol_alloc(obj, vtable, size)
 #define binary_protocol_alloc_pinned(obj, vtable, size)

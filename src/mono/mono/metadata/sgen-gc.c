@@ -2684,7 +2684,7 @@ collect_nursery (size_t requested_size)
 
 	check_scan_starts ();
 
-	binary_protocol_flush_buffers ();
+	binary_protocol_flush_buffers (FALSE);
 
 	current_collection_generation = -1;
 
@@ -2937,7 +2937,7 @@ major_do_collection (const char *reason)
 
 	check_scan_starts ();
 
-	binary_protocol_flush_buffers ();
+	binary_protocol_flush_buffers (FALSE);
 
 	//consistency_check ();
 }
