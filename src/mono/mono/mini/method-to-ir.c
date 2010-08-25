@@ -2597,9 +2597,9 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 	int card_table_shift_bits;
 	guint8 *card_table = mono_gc_get_card_table (&card_table_shift_bits);
 	gboolean need_dummy_use = TRUE;
+	MonoInst *dummy_use;
 
 #ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
-	MonoInst *dummy_use;
 	int nursery_shift_bits;
 	size_t nursery_size;
 
