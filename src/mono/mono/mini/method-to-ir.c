@@ -2596,7 +2596,6 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 #ifdef HAVE_SGEN_GC
 	int card_table_shift_bits;
 	guint8 *card_table = mono_gc_get_card_table (&card_table_shift_bits);
-	gboolean need_dummy_use = TRUE;
 	MonoInst *dummy_use;
 
 #ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
@@ -2615,8 +2614,6 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 		else
 			wbarrier->sreg2 = value_reg;
 		MONO_ADD_INS (cfg->cbb, wbarrier);
-
-		need_dummy_use = FALSE;
 	}
 #else
 	if (card_table) {
