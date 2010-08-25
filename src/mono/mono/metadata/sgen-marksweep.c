@@ -293,7 +293,7 @@ ms_get_empty_block (void)
 
 	block->used = TRUE;
 
-	mono_sgen_update_heap_boundaries ((mword)block, (mword)block + MS_BLOCK_SIZE);
+	mono_sgen_update_heap_boundaries ((mword)block->block, (mword)block->block + MS_BLOCK_SIZE);
 
 	return block;
 }
