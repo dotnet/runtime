@@ -813,6 +813,7 @@ typedef struct {
 
 typedef struct {
 	MonoReflectionType *parent;
+	MonoReflectionType *declaring_type;
 	MonoString *name;
 	MonoReflectionMethod *get;
 	MonoReflectionMethod *set;

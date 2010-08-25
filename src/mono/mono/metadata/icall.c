@@ -1976,8 +1976,8 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 
 	if ((req_info & PInfo_ReflectedType) != 0)
 		MONO_STRUCT_SETREF (info, parent, mono_type_get_object (domain, &property->klass->byval_arg));
-	else if ((req_info & PInfo_DeclaringType) != 0)
-		MONO_STRUCT_SETREF (info, parent, mono_type_get_object (domain, &property->property->parent->byval_arg));
+	if ((req_info & PInfo_DeclaringType) != 0)
+		MONO_STRUCT_SETREF (info, declaring_type, mono_type_get_object (domain, &property->property->parent->byval_arg));
 
 	if ((req_info & PInfo_Name) != 0)
 		MONO_STRUCT_SETREF (info, name, mono_string_new (domain, property->property->name));
