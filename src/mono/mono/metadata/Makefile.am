@@ -61,6 +61,7 @@ null_sources = \
 	console-null.c
 
 sgen_sources = \
+	sgen-cardtable.c	\
 	sgen-gray.c		\
 	sgen-pinning.c		\
 	sgen-pinning-stats.c	\
