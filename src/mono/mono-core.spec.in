@@ -972,7 +972,6 @@ Authors:
 %_bindir/macpack
 %_bindir/makecert
 %_bindir/mkbundle
-%_bindir/mono-abi-info
 %_bindir/mono-api-info
 %_bindir/mono-cil-strip
 %_bindir/mono-find-provides
@@ -1093,7 +1092,6 @@ Authors:
 %_prefix/lib/mono/4.0/macpack.exe*
 %_prefix/lib/mono/4.0/makecert.exe*
 %_prefix/lib/mono/4.0/mkbundle.exe*
-%_prefix/lib/mono/4.0/mono-abi-info.exe*
 %_prefix/lib/mono/4.0/mono-api-info.exe*
 %_prefix/lib/mono/4.0/mono-cil-strip.exe*
 %_prefix/lib/mono/4.0/mono-shlib-cop.exe*
