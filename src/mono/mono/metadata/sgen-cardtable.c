@@ -102,6 +102,14 @@ card_table_init (void)
 
 
 void los_scan_card_table (GrayQueue *queue);
+void los_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
+
+
+static void
+clear_cards (mword start, mword size)
+{
+	memset (sgen_card_table_get_card_address (start), 0, size >> CARD_BITS);
+}
 
 static void
 scan_from_card_tables (void *start_nursery, void *end_nursery, GrayQueue *queue)
@@ -117,8 +125,8 @@ card_table_clear (void)
 {
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
 	if (use_cardtable) {
-		major.clear_card_table ();
-		los_clear_card_table ();
+		major.iterate_live_block_ranges (clear_cards);
+		los_iterate_live_block_ranges (clear_cards);
 	}
 }
 

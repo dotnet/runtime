@@ -659,6 +659,7 @@ void* sgen_card_table_align_pointer (void *ptr) MONO_INTERNAL;
 gboolean sgen_card_table_is_region_marked (mword start, mword end) MONO_INTERNAL;
 void sgen_card_table_mark_address (mword address) MONO_INTERNAL;
 void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
+typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 
 #define CARD_BITS 9
 #define CARD_SIZE_IN_BYTES (1 << CARD_BITS)
@@ -687,7 +688,7 @@ struct _SgenMajorCollector {
 	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*scan_card_table) (SgenGrayQueue *queue);
-	void (*clear_card_table) (void);
+	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
 	void (*check_scan_starts) (void);
