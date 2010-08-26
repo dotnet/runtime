@@ -1258,6 +1258,9 @@ major_scan_card_table (SgenGrayQueue *queue)
 		int block_obj_size = block->obj_size;
 		char *start = block->block;
 
+		if (!block->has_references)
+			continue;
+
 		for (i = 0; i < CARDS_PER_BLOCK; ++i, start += CARD_SIZE_IN_BYTES) {
 			int index;
 			char *obj, *end;
