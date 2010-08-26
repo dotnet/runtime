@@ -24,10 +24,11 @@ EXTRA_DIST= nls.m4 po.m4 progtest.m4 mono-uninstalled.pc.in build-mingw32.sh LIC
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
 # Distribute the 'mcs' tree too
+GIT_DIR ?= $(srcdir)/.git
 dist-hook:
 	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
 	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
-	test ! -d .git || ./scripts/commits-to-changelog.py --root=$(distdir) last-commit-with-compulsory-changelog-entry
+	test ! -d $(GIT_DIR) || ./scripts/commits-to-changelog.py --root=$(distdir) last-commit-with-compulsory-changelog-entry
 
 pkgconfigdir = $(libdir)/pkgconfig
 noinst_DATA = mono-uninstalled.pc
