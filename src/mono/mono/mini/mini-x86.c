@@ -4009,8 +4009,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			int value = ins->sreg2;
 			guchar *br;
 			int nursery_shift, card_table_shift;
+			gpointer card_table_mask;
 			size_t nursery_size;
-			gulong card_table = (gulong)mono_gc_get_card_table (&card_table_shift);
+			gulong card_table = (gulong)mono_gc_get_card_table (&card_table_shift, &card_table_mask);
 			gulong nursery_start = (gulong)mono_gc_get_nursery (&nursery_shift, &nursery_size);
 
 			/*

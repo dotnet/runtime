@@ -250,7 +250,7 @@ void* mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data) MO
 #ifdef HAVE_SGEN_GC
 int mono_gc_get_los_limit (void) MONO_INTERNAL;
 
-guint8* mono_gc_get_card_table (int *shift_bits) MONO_INTERNAL;
+guint8* mono_gc_get_card_table (int *shift_bits, gpointer *card_mask) MONO_INTERNAL;
 
 void* mono_gc_get_nursery (int *shift_bits, size_t *size) MONO_INTERNAL;
 #endif

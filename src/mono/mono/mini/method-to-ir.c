@@ -2595,10 +2595,11 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 {
 #ifdef HAVE_SGEN_GC
 	int card_table_shift_bits;
-	guint8 *card_table = mono_gc_get_card_table (&card_table_shift_bits);
+	gpointer card_table_mask;
+	guint8 *card_table = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
 	MonoInst *dummy_use;
 
-#ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
+#ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER__
 	int nursery_shift_bits;
 	size_t nursery_size;
 
@@ -2620,6 +2621,8 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 		int offset_reg = alloc_preg (cfg);
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, offset_reg, ptr->dreg, card_table_shift_bits);
+		if (card_table_mask)
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PAND_IMM, offset_reg, offset_reg, card_table_mask);
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PADD_IMM, offset_reg, offset_reg, card_table);
 		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, offset_reg, 0, 1);
 	}
