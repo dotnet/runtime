@@ -489,16 +489,11 @@ los_scan_card_table (GrayQueue *queue)
 
 			for (; start <= end; start += CARD_SIZE_IN_BYTES) {
 				char *elem, *card_end;
-				guint8 *card_addr;
 				uintptr_t index;
-				card_addr = sgen_card_table_get_card_address ((mword)start);
 
-				if (!*card_addr) {
-					//++card_ignored;
+				if (!sgen_card_table_card_begin_scanning ((mword)start))
 					continue;
-				}
 
-				*card_addr = 0;
 				card_end = start + CARD_SIZE_IN_BYTES;
 				if (end < card_end)
 					card_end = end;
@@ -528,10 +523,8 @@ los_scan_card_table (GrayQueue *queue)
 				}
 			}
 		} else {
-			if (sgen_card_table_is_region_marked ((mword)obj->data, (mword)obj->data + obj->size)) {
-				sgen_card_table_reset_region ((mword)obj->data, (mword)obj->data + obj->size);
+			if (sgen_card_table_region_begin_scanning ((mword)obj->data, (mword)obj->size))
 				major.minor_scan_object (obj->data, queue);
-			}
 		}
 	}
 }

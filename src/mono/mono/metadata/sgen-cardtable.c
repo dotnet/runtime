@@ -67,11 +67,34 @@ sgen_card_table_align_pointer (void *ptr)
 	return (void*)((mword)ptr & ~(CARD_SIZE_IN_BYTES - 1));
 }
 
-void
-sgen_card_table_reset_region (mword start, mword end)
+gboolean
+sgen_card_table_card_begin_scanning (mword address)
 {
-	memset (sgen_card_table_get_card_address (start), 0, (end - start) >> CARD_BITS);
+	guint8 *card = sgen_card_table_get_card_address (address);
+	gboolean res = *card;
+	*card = 0;
+	return res;
 }
+
+gboolean
+sgen_card_table_region_begin_scanning (mword start, mword size)
+{
+	gboolean res = FALSE;
+	mword old_start = start;
+	mword end = start + size;
+	while (start <= end) {
+		if (sgen_card_table_address_is_marked (start)) {
+			res = TRUE;
+			break;
+		}
+		start += CARD_SIZE_IN_BYTES;
+	}
+
+	memset (sgen_card_table_get_card_address (old_start), 0, size >> CARD_BITS);
+
+	return res;
+}
+
 
 void
 sgen_card_table_mark_range (mword address, mword size)
@@ -81,17 +104,6 @@ sgen_card_table_mark_range (mword address, mword size)
 		sgen_card_table_mark_address (address);
 		address += CARD_SIZE_IN_BYTES;
 	} while (address < end);
-}
-
-gboolean
-sgen_card_table_is_region_marked (mword start, mword end)
-{
-	while (start <= end) {
-		if (sgen_card_table_address_is_marked (start))
-			return TRUE;
-		start += CARD_SIZE_IN_BYTES;
-	}
-	return FALSE;
 }
 
 static void
