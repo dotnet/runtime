@@ -6001,8 +6001,8 @@ check_consistency (void)
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
-		if (*(ptr))						\
-			g_assert (LOAD_VTABLE (*(ptr)));		\
+		if (*(ptr) && !LOAD_VTABLE (*(ptr)))						\
+			g_error ("Could not load vtable for obj %p slot %d (size %d)", obj, (char*)ptr - (char*)obj, safe_object_get_size ((MonoObject*)obj));		\
 	} while (0)
 
 static void
