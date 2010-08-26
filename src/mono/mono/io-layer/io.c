@@ -326,7 +326,8 @@ static void file_close (gpointer handle, gpointer data)
 	
 	g_free (file_handle->filename);
 	
-	_wapi_handle_share_release (file_handle->share_info);
+	if (file_handle->share_info)
+		_wapi_handle_share_release (file_handle->share_info);
 	
 	close (GPOINTER_TO_UINT(handle));
 }
@@ -1732,7 +1733,8 @@ gboolean DeleteFile(const gunichar2 *name)
 		g_free (filename);
 		return FALSE;
 	}
-	_wapi_handle_share_release (shareinfo);
+	if (shareinfo)
+		_wapi_handle_share_release (shareinfo);
 #endif
 
 	retval = _wapi_unlink (filename);
@@ -1843,7 +1845,8 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 		SetLastError (ERROR_SHARING_VIOLATION);
 		return FALSE;
 	}
-	_wapi_handle_share_release (shareinfo);
+	if (shareinfo)
+		_wapi_handle_share_release (shareinfo);
 
 	result = _wapi_rename (utf8_name, utf8_dest_name);
 	errno_copy = errno;
