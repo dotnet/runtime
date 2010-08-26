@@ -125,16 +125,27 @@ mono_monitor_init (void)
 void
 mono_monitor_cleanup (void)
 {
+	MonoThreadsSync *mon;
 	MonitorArray *marray, *next = NULL;
 
 	/*DeleteCriticalSection (&monitor_mutex);*/
 
-	/* FIXME: This seems to cause crashes with SGEN
+	/* The monitors on the freelist don't have weak links - mark them */
+	for (mon = monitor_freelist; mon; mon = mon->data)
+		mon->wait_list = (gpointer)-1;
+
 	for (marray = monitor_allocated; marray; marray = next) {
+		int i;
+
+		for (i = 0; i < marray->num_monitors; ++i) {
+			mon = &marray->monitors [i];
+			if (mon->wait_list != (gpointer)-1)
+				mono_gc_weak_link_remove (&mon->data);
+		}
+
 		next = marray->next;
 		g_free (marray);
 	}
-	*/
 }
 
 /*
@@ -254,6 +265,7 @@ mon_new (gsize id)
 							new->wait_list = g_slist_remove (new->wait_list, new->wait_list->data);
 						}
 					}
+					mono_gc_weak_link_remove (&new->data);
 					new->data = monitor_freelist;
 					monitor_freelist = new;
 				}
