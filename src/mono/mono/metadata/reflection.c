@@ -6369,6 +6369,9 @@ mymono_metadata_type_hash (MonoType *t1)
 		}
 		return hash;
 	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		return ((hash << 5) - hash) ^ GPOINTER_TO_UINT (t1->data.generic_param);
 	}
 	return hash;
 }
