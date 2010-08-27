@@ -96,6 +96,7 @@ extern void _wapi_handle_update_refs (void);
 extern void _wapi_handle_foreach (WapiHandleType type,
 					gboolean (*on_each)(gpointer test, gpointer user),
 					gpointer user_data);
+void _wapi_free_share_info (_WapiFileShare *share_info);
 
 /* This is OK to use for atomic writes of individual struct members, as they
  * are independent
@@ -358,7 +359,7 @@ static inline int _wapi_namespace_unlock (gpointer data G_GNUC_UNUSED)
 static inline void _wapi_handle_share_release (struct _WapiFileShare *info)
 {
 	int thr_ret;
-	
+
 	g_assert (info->handle_refs > 0);
 	
 	/* Prevent new entries racing with us */
@@ -366,7 +367,7 @@ static inline void _wapi_handle_share_release (struct _WapiFileShare *info)
 	g_assert(thr_ret == 0);
 
 	if (InterlockedDecrement ((gint32 *)&info->handle_refs) == 0) {
-		memset (info, '\0', sizeof(struct _WapiFileShare));
+		_wapi_free_share_info (info);
 	}
 
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);

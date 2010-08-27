@@ -1017,6 +1017,7 @@ Authors:
 %_mandir/man1/macpack.1%ext_man
 %_mandir/man1/makecert.1%ext_man
 %_mandir/man1/mkbundle.1%ext_man
+%_mandir/man1/mono-api-info.1%ext_man
 %_mandir/man1/mono-cil-strip.1%ext_man
 %_mandir/man1/mono-shlib-cop.1%ext_man
 %_mandir/man1/mono-xmltool.1%ext_man
