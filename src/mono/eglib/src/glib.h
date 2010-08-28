@@ -201,6 +201,7 @@ gboolean        g_hash_table_remove          (GHashTable *hash, gconstpointer ke
 guint           g_hash_table_foreach_remove  (GHashTable *hash, GHRFunc func, gpointer user_data);
 guint           g_hash_table_foreach_steal   (GHashTable *hash, GHRFunc func, gpointer user_data);
 void            g_hash_table_destroy         (GHashTable *hash);
+void            g_hash_table_print_stats     (GHashTable *table);
 
 guint           g_spaced_primes_closest      (guint x);
 

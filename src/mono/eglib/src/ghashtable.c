@@ -479,6 +479,27 @@ g_hash_table_destroy (GHashTable *hash)
 	g_free (hash);
 }
 
+void
+g_hash_table_print_stats (GHashTable *table)
+{
+	int i, max_chain_index, chain_size, max_chain_size;
+	Slot *node;
+
+	max_chain_size = 0;
+	max_chain_index = -1;
+	for (i = 0; i < table->table_size; i++) {
+		chain_size = 0;
+		for (node = table->table [i]; node; node = node->next)
+			chain_size ++;
+		if (chain_size > max_chain_size) {
+			max_chain_size = chain_size;
+			max_chain_index = i;
+		}
+	}
+
+	printf ("Size: %d Table Size: %d Max Chain Length: %d at %d\n", table->in_use, table->table_size, max_chain_size, max_chain_index);
+}
+
 gboolean
 g_direct_equal (gconstpointer v1, gconstpointer v2)
 {
