@@ -145,7 +145,6 @@ mono_get_throw_corlib_exception (void)
 	if (throw_corlib_exception_func)
 		return throw_corlib_exception_func;
 
-#if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
 	if (mono_aot_only)
 		code = mono_aot_get_trampoline ("throw_corlib_exception");
 	else {
@@ -155,9 +154,6 @@ mono_get_throw_corlib_exception (void)
 			mono_tramp_info_free (info);
 		}
 	}
-#else
-	g_assert_not_reached ();
-#endif
 
 	mono_memory_barrier ();
 
