@@ -6355,7 +6355,7 @@ mymono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 		/* check if the distribution is good enough */
-		return ((hash << 5) - hash) ^ g_str_hash (t1->data.klass->name);
+		return ((hash << 5) - hash) ^ mono_aligned_addr_hash (t1->data.klass);
 	case MONO_TYPE_PTR:
 		return ((hash << 5) - hash) ^ mymono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_GENERICINST: {
