@@ -231,6 +231,8 @@ struct _MonoDomain {
 	MonoObject         *typeof_void;
 	/* Ephemeron Tombstone*/
 	MonoObject         *ephemeron_tombstone;
+	/* new MonoType [0] */
+	MonoArray          *empty_types;
 	/* 
 	 * The fields between FIRST_GC_TRACKED and LAST_GC_TRACKED are roots, but
 	 * not object references.

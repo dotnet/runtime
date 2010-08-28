@@ -2106,8 +2106,12 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	data.domain = mono_object_domain (type);
 
 	len = g_hash_table_size (iface_hash);
-	if (len == 0)
-		return mono_array_new_cached (data.domain, mono_defaults.monotype_class, 0);
+	if (len == 0) {
+		g_hash_table_destroy (iface_hash);
+		if (!data.domain->empty_types)
+			data.domain->empty_types = mono_array_new_cached (data.domain, mono_defaults.monotype_class, 0);
+		return data.domain->empty_types;
+	}
 
 	data.iface_array = mono_array_new_cached (data.domain, mono_defaults.monotype_class, len);
 	g_hash_table_foreach (iface_hash, fill_iface_array, &data);
