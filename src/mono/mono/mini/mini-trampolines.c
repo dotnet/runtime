@@ -152,8 +152,11 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 
 #ifdef MONO_ARCH_HAVE_IMT
 
+/*
+ * Either IMPL_METHOD or AOT_ADDR will be set on return.
+ */
 static gpointer*
-mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method, gboolean *need_rgctx_tramp, gboolean *variance_used)
+mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method, gboolean *need_rgctx_tramp, gboolean *variance_used, gpointer *aot_addr)
 {
 	MonoObject *this_argument = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (method), regs, code);
 	MonoVTable *vt = this_argument->vtable;
@@ -194,10 +197,18 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 			context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
 			impl = mono_class_inflate_generic_method (impl, &context);
 		} else {
-			impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_vtable_slot (imt_method));
+			/* Avoid loading metadata or creating a generic vtable if possible */
+			if (!vt->klass->valuetype)
+				*aot_addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, interface_offset + mono_method_get_vtable_slot (imt_method));
+			else
+				*aot_addr = NULL;
+			if (*aot_addr)
+				impl = NULL;
+			else
+				impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_vtable_slot (imt_method));
 		}
 
-		if (mono_method_needs_static_rgctx_invoke (impl, FALSE))
+		if (impl && mono_method_needs_static_rgctx_invoke (impl, FALSE))
 			*need_rgctx_tramp = TRUE;
 
 		*impl_method = impl;
@@ -298,7 +309,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 		    m = mono_object_get_virtual_method (this_arg, m);
 			vtable_slot_to_patch = NULL;
 		} else {
-			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, regs, code, m, &impl_method, &need_rgctx_tramp, &variance_used);
+			addr = NULL;
+			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, regs, code, m, &impl_method, &need_rgctx_tramp, &variance_used, &addr);
 			/* This is the vcall slot which gets called through the IMT thunk */
 			vtable_slot_to_patch = vtable_slot;
 			/* mono_convert_imt_slot_to_vtable_slot () also gives us the method that is supposed
@@ -312,6 +324,17 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 			} else if (variance_used && mono_class_has_variant_generic_params (m->klass)) {
 				variant_iface = m;
 			}
+
+			if (addr && !generic_virtual && !variant_iface) {
+				/*
+				 * We found AOT compiled code for the method, skip the rest.
+				 */
+				if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+					*vtable_slot = addr;
+
+				return mono_create_ftnptr (mono_domain_get (), addr);
+			}
+
 			m = impl_method;
 		}
 	}
