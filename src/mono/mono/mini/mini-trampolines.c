@@ -167,6 +167,7 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 		return slot;
 	} else {
 		MonoMethod *imt_method = mono_arch_find_imt_method (regs, code);
+		MonoMethod *impl;
 		int interface_offset;
 		int imt_slot = MONO_IMT_SIZE + displacement;
 
@@ -178,37 +179,34 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *cod
 		}
 		mono_vtable_build_imt_slot (vt, mono_method_get_imt_slot (imt_method));
 
-		if (impl_method) {
-			MonoMethod *impl;
+		if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
+			MonoGenericContext context = { NULL, NULL };
 
-			if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
-				MonoGenericContext context = { NULL, NULL };
+			/* 
+			 * Generic virtual method, imt_method contains the inflated interface 
+			 * method, need to get the inflated impl method.
+			 */
+			/* imt_method->slot might not be set */
+			impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_declaring_generic_method (imt_method)->slot);
 
-				/* 
-				 * Generic virtual method, imt_method contains the inflated interface 
-				 * method, need to get the inflated impl method.
-				 */
-				/* imt_method->slot might not be set */
-				impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_declaring_generic_method (imt_method)->slot);
+			if (impl->klass->generic_class)
+				context.class_inst = impl->klass->generic_class->context.class_inst;
+			context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
+			impl = mono_class_inflate_generic_method (impl, &context);
+		} else {
+			impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_vtable_slot (imt_method));
+		}
 
-				if (impl->klass->generic_class)
-					context.class_inst = impl->klass->generic_class->context.class_inst;
-				context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
-				impl = mono_class_inflate_generic_method (impl, &context);
-			} else {
-				impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_vtable_slot (imt_method));
-			}
+		if (mono_method_needs_static_rgctx_invoke (impl, FALSE))
+			*need_rgctx_tramp = TRUE;
 
-			if (mono_method_needs_static_rgctx_invoke (impl, FALSE))
-				*need_rgctx_tramp = TRUE;
-
-			*impl_method = impl;
+		*impl_method = impl;
 #if DEBUG_IMT
 		printf ("mono_convert_imt_slot_to_vtable_slot: method = %s.%s.%s, imt_method = %s.%s.%s\n",
 				method->klass->name_space, method->klass->name, method->name, 
 				imt_method->klass->name_space, imt_method->klass->name, imt_method->name);
 #endif
-		}
+
 		g_assert (imt_slot < MONO_IMT_SIZE);
 		if (vt->imt_collisions_bitmap & (1 << imt_slot)) {
 			int slot = mono_method_get_vtable_index (imt_method);
