@@ -55,98 +55,6 @@ g_utf8_strdown (const gchar *str, gssize len)
 	return (gchar*)utf8_case_conv (str, len, FALSE);
 }
 
-gunichar2*
-g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **error)
-{
-	/* The conversion logic is almost identical to UTF8Encoding.GetChars(),
-	   but error check is always done at utf8_to_utf16_len() so that
-	   the conversion core below simply resets erroreous bits */
-	glong utf16_len;
-	gunichar2 *ret;
-	guchar ch, mb_size, mb_remain;
-	guint32 codepoint;
-	glong in_pos, out_pos;
-
-	utf16_len = 0;
-	mb_size = 0;
-	mb_remain = 0;
-	in_pos = 0;
-	out_pos = 0;
-
-	if (error)
-		*error = NULL;
-
-	if (items_written)
-		*items_written = 0;
-	utf16_len = utf8_to_utf16_len (str, len, items_read, error);
-	if (error)
-		if (*error)
-			return NULL;
-	if (utf16_len < 0)
-		return NULL;
-
-	ret = g_malloc ((1 + utf16_len) * sizeof (gunichar2));
-
-	for (in_pos = 0; len < 0 ? str [in_pos] : in_pos < len; in_pos++) {
-		ch = (guchar) str [in_pos];
-		if (mb_size == 0) {
-			if (ch < 0x80)
-				ret [out_pos++] = ch;
-			else if ((ch & 0xE0) == 0xC0) {
-				codepoint = ch & 0x1F;
-				mb_size = 2;
-			} else if ((ch & 0xF0) == 0xE0) {
-				codepoint = ch & 0x0F;
-				mb_size = 3;
-			} else if ((ch & 0xF8) == 0xF0) {
-				codepoint = ch & 7;
-				mb_size = 4;
-			} else if ((ch & 0xFC) == 0xF8) {
-				codepoint = ch & 3;
-				mb_size = 5;
-			} else if ((ch & 0xFE) == 0xFC) {
-				codepoint = ch & 3;
-				mb_size = 6;
-			} else {
-				/* invalid utf-8 sequence */
-				codepoint = 0;
-				mb_remain = mb_size = 0;
-			}
-			if (mb_size > 1)
-				mb_remain = mb_size - 1;
-		} else {
-			if ((ch & 0xC0) == 0x80) {
-				codepoint = (codepoint << 6) | (ch & 0x3F);
-				if (--mb_remain == 0) {
-					/* multi byte character is fully consumed now. */
-					if (codepoint < 0x10000) {
-						ret [out_pos++] = (gunichar2)(codepoint % 0x10000);
-					} else if (codepoint < 0x110000) {
-						/* surrogate pair */
-						codepoint -= 0x10000;
-						ret [out_pos++] = (gunichar2)((codepoint >> 10) + 0xD800);
-						ret [out_pos++] = (gunichar2)((codepoint & 0x3FF) + 0xDC00);
-					} else {
-						/* invalid utf-8 sequence (excess) */
-						codepoint = 0;
-						mb_remain = 0;
-					}
-					mb_size = 0;
-				}
-			} else {
-				/* invalid utf-8 sequence */
-				codepoint = 0;
-				mb_remain = mb_size = 0;
-			}
-		}
-	}
-
-	ret [out_pos] = 0;
-	if (items_written)
-		*items_written = out_pos;
-	return ret;
-}
-
 static glong
 utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **error)
 {
@@ -156,13 +64,24 @@ utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **erro
 	guint32 codepoint;
 	glong in_pos, ret;
 
-	mb_size = 0;
-	mb_remain = 0;
-	overlong = 0;
+	if (len < 0)
+		len = strlen (str);
+
 	in_pos = 0;
 	ret = 0;
 
-	for (in_pos = 0; len < 0 ? str [in_pos] : in_pos < len; in_pos++) {
+	/* Common case */
+	for (in_pos = 0; in_pos < len && str [in_pos] < 0x80; in_pos++)
+		ret ++;
+
+	if (in_pos == len)
+		return ret;
+
+	mb_size = 0;
+	mb_remain = 0;
+	overlong = 0;
+
+	for (; in_pos < len; in_pos++) {
 		ch = str [in_pos];
 		if (mb_size == 0) {
 			if (ch < 0x80)
@@ -268,6 +187,110 @@ utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **erro
 
 	if (items_read)
 		*items_read = in_pos;
+	return ret;
+}
+
+gunichar2*
+g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **error)
+{
+	/* The conversion logic is almost identical to UTF8Encoding.GetChars(),
+	   but error check is always done at utf8_to_utf16_len() so that
+	   the conversion core below simply resets erroreous bits */
+	glong utf16_len;
+	gunichar2 *ret;
+	guchar ch, mb_size, mb_remain;
+	guint32 codepoint;
+	glong in_pos, out_pos;
+
+	utf16_len = 0;
+	mb_size = 0;
+	mb_remain = 0;
+	in_pos = 0;
+	out_pos = 0;
+
+	if (error)
+		*error = NULL;
+
+	if (len < 0)
+		len = strlen (str);
+
+	if (items_written)
+		*items_written = 0;
+	utf16_len = utf8_to_utf16_len (str, len, items_read, error);
+	if (error)
+		if (*error)
+			return NULL;
+	if (utf16_len < 0)
+		return NULL;
+
+	ret = g_malloc ((1 + utf16_len) * sizeof (gunichar2));
+
+	/* Common case */
+	for (in_pos = 0; in_pos < len; in_pos++) {
+		ch = (guchar) str [in_pos];
+
+		if (ch >= 0x80)
+			break;
+		ret [out_pos++] = ch;
+	}
+
+	for (; in_pos < len; in_pos++) {
+		ch = (guchar) str [in_pos];
+		if (mb_size == 0) {
+			if (ch < 0x80)
+				ret [out_pos++] = ch;
+			else if ((ch & 0xE0) == 0xC0) {
+				codepoint = ch & 0x1F;
+				mb_size = 2;
+			} else if ((ch & 0xF0) == 0xE0) {
+				codepoint = ch & 0x0F;
+				mb_size = 3;
+			} else if ((ch & 0xF8) == 0xF0) {
+				codepoint = ch & 7;
+				mb_size = 4;
+			} else if ((ch & 0xFC) == 0xF8) {
+				codepoint = ch & 3;
+				mb_size = 5;
+			} else if ((ch & 0xFE) == 0xFC) {
+				codepoint = ch & 3;
+				mb_size = 6;
+			} else {
+				/* invalid utf-8 sequence */
+				codepoint = 0;
+				mb_remain = mb_size = 0;
+			}
+			if (mb_size > 1)
+				mb_remain = mb_size - 1;
+		} else {
+			if ((ch & 0xC0) == 0x80) {
+				codepoint = (codepoint << 6) | (ch & 0x3F);
+				if (--mb_remain == 0) {
+					/* multi byte character is fully consumed now. */
+					if (codepoint < 0x10000) {
+						ret [out_pos++] = (gunichar2)(codepoint % 0x10000);
+					} else if (codepoint < 0x110000) {
+						/* surrogate pair */
+						codepoint -= 0x10000;
+						ret [out_pos++] = (gunichar2)((codepoint >> 10) + 0xD800);
+						ret [out_pos++] = (gunichar2)((codepoint & 0x3FF) + 0xDC00);
+					} else {
+						/* invalid utf-8 sequence (excess) */
+						codepoint = 0;
+						mb_remain = 0;
+					}
+					mb_size = 0;
+				}
+			} else {
+				/* invalid utf-8 sequence */
+				codepoint = 0;
+				mb_remain = mb_size = 0;
+			}
+		}
+	}
+
+	ret [out_pos] = 0;
+	if (items_written)
+		*items_written = out_pos;
 	return ret;
 }
 
