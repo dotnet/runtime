@@ -269,12 +269,13 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 	MonoMethod *generic_virtual = NULL, *variant_iface = NULL;
 	int context_used;
 	gboolean virtual, proxy = FALSE, variance_used = FALSE;
-	gpointer *orig_vtable_slot, *imt_vcall_slot = NULL;
+	gpointer *orig_vtable_slot, *vtable_slot_to_patch = NULL;
 	MonoJitInfo *ji = NULL;
 
 	virtual = (gpointer)vtable_slot > (gpointer)vt;
 
 	orig_vtable_slot = vtable_slot;
+	vtable_slot_to_patch = vtable_slot;
 
 #ifdef MONO_ARCH_HAVE_IMT
 	/* IMT call */
@@ -295,9 +296,11 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 			/* Use the slow path for now */
 			proxy = TRUE;
 		    m = mono_object_get_virtual_method (this_arg, m);
+			vtable_slot_to_patch = NULL;
 		} else {
-			imt_vcall_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, regs, code, m, &impl_method, &need_rgctx_tramp, &variance_used);
-			vtable_slot = imt_vcall_slot;
+			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, regs, code, m, &impl_method, &need_rgctx_tramp, &variance_used);
+			/* This is the vcall slot which gets called through the IMT thunk */
+			vtable_slot_to_patch = vtable_slot;
 			/* mono_convert_imt_slot_to_vtable_slot () also gives us the method that is supposed
 			 * to be called, so we compile it and go ahead as usual.
 			 */
@@ -505,13 +508,10 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 	if (vtable_slot) {
 		if (m->klass->valuetype)
 			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr, need_rgctx_tramp);
-		g_assert (*vtable_slot);
 
-		if (!proxy && (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))) {
-			if (imt_vcall_slot)
-				/* This is the vcall slot which gets called through the IMT thunk */
-				vtable_slot = imt_vcall_slot;
-			*vtable_slot = mono_get_addr_from_ftnptr (addr);
+		if (vtable_slot_to_patch && (mono_aot_is_got_entry (code, (guint8*)vtable_slot_to_patch) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot_to_patch))) {
+			g_assert (*vtable_slot_to_patch);
+			*vtable_slot_to_patch = mono_get_addr_from_ftnptr (addr);
 		}
 	}
 	else {
