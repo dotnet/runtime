@@ -433,12 +433,7 @@ force_pass_linking (void)
       (void) llvm::createDbgInfoPrinterPass();
       (void) llvm::createModuleDebugInfoPrinterPass();
       (void) llvm::createPartialInliningPass();
-	  */
-      (void) llvm::createSSIPass();
-      (void) llvm::createSSIEverythingPass();
       (void) llvm::createGEPSplitterPass();
-      (void) llvm::createABCDPass();
-	  /*
       (void) llvm::createLintPass();
 	  */
       (void) llvm::createSinkingPass();
