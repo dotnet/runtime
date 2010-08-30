@@ -45,7 +45,7 @@ static mword
 cards_in_range (mword address, mword size)
 {
 	mword end = address + size;
-	return (end >> CARD_BITS) - (address >> CARD_BITS);
+	return (end >> CARD_BITS) - (address >> CARD_BITS) + 1;
 }
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
