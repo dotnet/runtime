@@ -5842,9 +5842,11 @@ mini_init (const char *filename, const char *runtime_version)
 	}
 
 #ifdef ENABLE_LLVM
-	if (!mono_llvm_load (NULL)) {
-		mono_use_llvm = FALSE;
-		fprintf (stderr, "Mono Warning: llvm support could not be loaded.\n");
+	if (mono_use_llvm) {
+		if (!mono_llvm_load (NULL)) {
+			mono_use_llvm = FALSE;
+			fprintf (stderr, "Mono Warning: llvm support could not be loaded.\n");
+		}
 	}
 	if (mono_use_llvm)
 		mono_llvm_init ();
