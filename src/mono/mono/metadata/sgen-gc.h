@@ -49,8 +49,9 @@
 
 //#define SGEN_BINARY_PROTOCOL
 
-#if SIZEOF_VOID_P == 4
 #define SGEN_HAVE_CARDTABLE	1
+#if SIZEOF_VOID_P == 8
+#define SGEN_HAVE_OVERLAPPING_CARDS	1
 #endif
 
 #define SGEN_MAX_DEBUG_LEVEL 2
@@ -656,9 +657,11 @@ void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 void sgen_card_table_reset_region (mword start, mword end) MONO_INTERNAL;
 guint8* sgen_card_table_get_card_address (mword address) MONO_INTERNAL;
 void* sgen_card_table_align_pointer (void *ptr) MONO_INTERNAL;
-gboolean sgen_card_table_is_region_marked (mword start, mword end) MONO_INTERNAL;
 void sgen_card_table_mark_address (mword address) MONO_INTERNAL;
 void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
+gboolean sgen_card_table_card_begin_scanning (mword address) MONO_INTERNAL;
+gboolean sgen_card_table_region_begin_scanning (mword start, mword size) MONO_INTERNAL;
+typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 
 #define CARD_BITS 9
 #define CARD_SIZE_IN_BYTES (1 << CARD_BITS)
@@ -687,7 +690,7 @@ struct _SgenMajorCollector {
 	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*scan_card_table) (SgenGrayQueue *queue);
-	void (*clear_card_table) (void);
+	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
 	void (*check_scan_starts) (void);

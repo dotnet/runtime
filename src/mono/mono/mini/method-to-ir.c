@@ -2595,7 +2595,8 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 {
 #ifdef HAVE_SGEN_GC
 	int card_table_shift_bits;
-	guint8 *card_table = mono_gc_get_card_table (&card_table_shift_bits);
+	gpointer card_table_mask;
+	guint8 *card_table = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
 	MonoInst *dummy_use;
 
 #ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
@@ -2618,9 +2619,22 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 #else
 	if (card_table) {
 		int offset_reg = alloc_preg (cfg);
+		int card_reg  = alloc_preg (cfg);
+		MonoInst *ins;
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, offset_reg, ptr->dreg, card_table_shift_bits);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PADD_IMM, offset_reg, offset_reg, card_table);
+		if (card_table_mask)
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PAND_IMM, offset_reg, offset_reg, card_table_mask);
+
+		/*We can't use PADD_IMM since the cardtable might end up in high addresses and amd64 doesn't support
+		 * IMM's larger than 32bits.
+		 */
+		MONO_INST_NEW (cfg, ins, OP_PCONST);
+		ins->inst_p0 = card_table;
+		ins->dreg = card_reg;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_PADD, offset_reg, offset_reg, card_reg);
 		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, offset_reg, 0, 1);
 	}
 #endif
