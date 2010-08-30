@@ -1,97 +1,74 @@
 %{!?ext_man: %define ext_man .gz}
+%define llvm no
+%define sgen yes
+
+%ifnarch %ix86 x86_64
+%define llvm no
+%define sgen no
+%endif
+
+%if %llvm == yes
+%define enable_llvm --enable-loadedllvm
+%endif
+
 Name:           mono-core
 License:        LGPL v2.1 only
 Group:          Development/Languages/Mono
 Summary:        A .NET Runtime Environment
-Url:            http://go-mono.org/
+Url:            http://www.mono-project.com
 Version:        @VERSION@
-Release:        0
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+Release:        30
 Source0:        mono-%{version}.tar.bz2
-ExclusiveArch:  %ix86 x86_64 ppc ppc64 hppa armv4l sparc s390 ia64 s390x
+BuildRequires:  bison
+BuildRequires:  gcc-c++
+BuildRequires:  pkgconfig
+BuildRequires:  zlib-devel
+%ifnarch ia64
+BuildRequires:  valgrind-devel
+%endif
+%if %llvm == yes
+BuildRequires:  llvm-mono-devel
+%endif
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Provides:       mono = %{version}-%{release}
-Provides:       mono-ikvm = %{version}-%{release}
 Obsoletes:      mono
-Obsoletes:      mono-drawing
 Obsoletes:      mono-cairo
-Obsoletes:      mono-xml-relaxng
-Obsoletes:      mono-posix
-Obsoletes:      mono-ziplib
+Obsoletes:      mono-drawing
 Obsoletes:      mono-ikvm
-Provides:       mono-drawing
+Obsoletes:      mono-posix
+Obsoletes:      mono-xml-relaxng
+Obsoletes:      mono-ziplib
+Provides:       mono = %{version}-%{release}
 Provides:       mono-cairo
-Provides:       mono-xml-relaxng
+Provides:       mono-drawing
+Provides:       mono-ikvm
 Provides:       mono-posix
+Provides:       mono-xml-relaxng
 Provides:       mono-ziplib
 # This version of mono has issues with the following versions of apps:
 #  (not because of regressions, but because bugfixes in mono uncover bugs in the apps)
-Conflicts:      helix-banshee < 1.0
 Conflicts:      banshee < 1.0
 Conflicts:      f-spot < 0.4
+Conflicts:      helix-banshee < 1.0
 Conflicts:      mono-addins < 0.3.1
-# Only use recommends for 11.0 and up
-%if 0%{?suse_version} >= 1100
-Recommends:     libgdiplus0
-%else
-Requires:       libgdiplus0
-%endif
-BuildRequires:  gcc-c++
-BuildRequires:  pkgconfig zlib-devel
-#######  distro specific changes  ########
-#####
-#### suse options ####
-%if 0%{?suse_version}
-# For some reason these weren't required in 10.2 and before... ?
-%if 0%{suse_version} >= 1030
-BuildRequires:  bison
-# Add valgrind support for 10.3 and above on archs that have it
-%ifarch %ix86 x86_64 ppc ppc64
-BuildRequires:  valgrind-devel
-%endif
-%endif
-%if 0%{suse_version} >= 1020
-BuildRequires:  xorg-x11-libX11
-%endif
-%if 0%{sles_version} == 10
-BuildRequires:  xorg-x11-devel
-%endif
-%if 0%{suse_version} == 1010
-BuildRequires:  xorg-x11-devel
-%endif
-%if 0%{sles_version} == 9
-%define configure_options export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/gnome/%_lib/pkgconfig
-BuildRequires:  XFree86-devel XFree86-libs pkgconfig
-%endif
-%endif
-# Fedora x11
-%if 0%{?fedora_version}
-BuildRequires:  libX11
-%endif
-# rhel x11
-%if 0%{?rhel_version}
-BuildRequires:  libX11
-%endif
-#####
-#######  End of distro specific changes  ########
-# Why was this needed?
-%ifarch s390 s390x
-PreReq:         grep
-%endif
-# This lib only needed for ia64
-%ifarch ia64
-BuildRequires:  libunwind-devel
-%endif
-# TODO:
-# This won't work until the rpm package passes .config files to mono-find-requires
-#%define __find_provides env MONO_PREFIX=%{buildroot}/usr /usr/lib/rpm/find-provides
-#%define __find_requires env MONO_PREFIX=%{buildroot}/usr /usr/lib/rpm/find-requires
-%if 0%{?fedora_version} || 0%{?rhel_version}
-# Allows overrides of __find_provides in fedora distros... (already set to zero on newer suse distros)
-%define _use_internal_dependency_generator 0
-%endif
-%define __find_provides env sh -c 'filelist=($(cat)) && { printf "%s\\n" "${filelist[@]}" | /usr/lib/rpm/find-provides && printf "%s\\n" "${filelist[@]}" | prefix=%{buildroot}/usr %{buildroot}%{_bindir}/mono-find-provides ; } | sort | uniq'
-%define __find_requires env sh -c 'filelist=($(cat)) && { printf "%s\\n" "${filelist[@]}" | /usr/lib/rpm/find-requires && printf "%s\\n" "${filelist[@]}" | prefix=%{buildroot}/usr %{buildroot}%{_bindir}/mono-find-requires ; } | sort | uniq'
+Recommends:     libgdiplus0 >= 2.6
+Provides:       mono(Commons.Xml.Relaxng) = 1.0.5000.0
+Provides:       mono(CustomMarshalers) = 1.0.5000.0
+Provides:       mono(I18N) = 1.0.5000.0
+Provides:       mono(I18N.West) = 1.0.5000.0
+Provides:       mono(ICSharpCode.SharpZipLib) = 0.6.0.0
+Provides:       mono(ICSharpCode.SharpZipLib) = 0.84.0.0
+Provides:       mono(Mono.Cairo) = 1.0.5000.0
+Provides:       mono(Mono.CompilerServices.SymbolWriter) = 1.0.5000.0
+Provides:       mono(Mono.Posix) = 1.0.5000.0
+Provides:       mono(Mono.Security) = 1.0.5000.0
+Provides:       mono(OpenSystem.C) = 1.0.5000.0
+Provides:       mono(System) = 1.0.5000.0
+Provides:       mono(System.Security) = 1.0.5000.0
+Provides:       mono(System.Xml) = 1.0.5000.0
+Provides:       mono(mscorlib) = 1.0.5000.0
+
+%define __find_provides env sh -c 'filelist=($(cat)) && { printf "%s\\n" "${filelist[@]}" | /usr/lib/rpm/find-provides && printf "%s\\n" "${filelist[@]}" | prefix=%{buildroot}%{_prefix} %{buildroot}%{_bindir}/mono-find-provides ; } | sort | uniq'
+%define __find_requires env sh -c 'filelist=($(cat)) && { printf "%s\\n" "${filelist[@]}" | /usr/lib/rpm/find-requires && printf "%s\\n" "${filelist[@]}" | prefix=%{buildroot}%{_prefix} %{buildroot}%{_bindir}/mono-find-requires ; } | sort | uniq'
 
 %description
 The Mono Project is an open development initiative that is working to
@@ -100,13 +77,54 @@ Its objective is to enable Unix developers to build and deploy
 cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
+%prep
+%setup -q -n mono-%{version}
 
+%build
+# These are only needed if there are patches to the runtime
+#rm -f libgc/libtool.m4
+#autoreconf --force --install
+#autoreconf --force --install libgc
+export CFLAGS=" $RPM_OPT_FLAGS -fno-strict-aliasing"
+# distro specific configure options
+%if %llvm == yes
+export PATH=/opt/novell/llvm-mono/bin:$PATH
+%endif
+%configure \
+  --with-ikvm=yes \
+  --with-sgen=%{sgen} \
+  %{?enable_llvm} \
+  --with-moonlight=no
+make # We are not -jN safe! %{?jobs:-j%jobs}
 
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
+%install
+make install DESTDIR=%buildroot
+# remove .la files (they are generally bad news)
+rm -f %buildroot%_libdir/*.la
+# remove Windows-only stuff
+rm -rf %buildroot%_prefix/lib/mono/*/Mono.Security.Win32*
+rm -f %buildroot%_libdir/libMonoSupportW.*
+# remove .a files for libraries that are really only for us
+rm -f %buildroot%_libdir/libMonoPosixHelper.a
+rm -f %buildroot%_libdir/libikvm-native.a
+rm -f %buildroot%_libdir/libmono-llvm.a
+# remove libgc cruft
+rm -rf %buildroot%_datadir/libgc-mono
+# remove stuff that we don't package
+rm -f %buildroot%_bindir/cilc
+rm -f %buildroot%_mandir/man1/cilc.1*
+rm -f %buildroot%_prefix/lib/mono/*/browsercaps-updater.exe*
+rm -f %buildroot%_prefix/lib/mono/*/culevel.exe*
+rm -f %buildroot%_prefix/lib/mono/2.0/cilc.exe*
+# brp-compress doesn't search _mandir
+# so we cheat it
+ln -s . %buildroot%_prefix/usr
+RPM_BUILD_ROOT=%buildroot%_prefix /usr/lib/rpm/brp-compress
+rm %buildroot%_prefix/usr
+%find_lang mcs
+
+%clean
+rm -rf %buildroot
 
 %files -f mcs.lang
 %defattr(-, root, root)
@@ -120,6 +138,8 @@ Authors:
 %dir %_prefix/lib/mono/2.0
 %dir %_prefix/lib/mono/3.5
 %dir %_prefix/lib/mono/4.0
+%dir %_prefix/lib/mono/compat-2.0
+%dir %_prefix/lib/mono/compat-4.0
 %dir %_prefix/lib/mono/gac
 %dir %_sysconfdir/mono
 %dir %_sysconfdir/mono/2.0
@@ -135,7 +155,9 @@ Authors:
 %_bindir/mcs
 %_bindir/mono
 %_bindir/mono-configuration-crypto
+%if %sgen == yes
 %_bindir/mono-sgen
+%endif
 %_bindir/mono-test-install
 %_bindir/mozroots
 %_bindir/peverify
@@ -269,14 +291,7 @@ A Library for embedding Mono in your Application.
 %defattr(-, root, root)
 %_libdir/libmono-2.0.so.1*
 
-%post -n libmono-2_0-1
-/sbin/ldconfig
-%ifarch s390 s390x
-if grep -q "machine = 9672" /proc/cpuinfo 2>/dev/null ; then
-    # anchor for rebuild on failure
-    echo "mono may not work correctly on G5"
-fi
-%endif
+%post -n libmono-2_0-1 -p /sbin/ldconfig
 
 %postun -n libmono-2_0-1 -p /sbin/ldconfig
 
@@ -296,11 +311,12 @@ Development files for libmono.
 
 %files -n libmono-2_0-devel
 %defattr(-, root, root)
+%_includedir/mono-2.0
 %_libdir/libmono-2.0.a
 %_libdir/libmono-2.0.so
 %_libdir/pkgconfig/mono-2.pc
-%_includedir/mono-2.0
 
+%if %sgen == yes
 %package -n libmonosgen-2_0-0
 License:        LGPL v2.1 only
 Summary:	A Library for embedding Mono in your Application (sgen version)
@@ -341,12 +357,41 @@ Development files for libmonosgen.
 %defattr(-, root, root)
 %_libdir/libmonosgen-2.0.a
 %_libdir/libmonosgen-2.0.so
+%endif
+
+%if %llvm == yes
+%package -n libmono-llvm0
+License:        LGPL v2.1 only
+Summary:	Loadable LLVM libary for mono
+Group:          Development/Libraries/C and C++
+
+%description -n libmono-llvm0
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Loadable LLVM libary for mono.
+
+%files -n libmono-llvm0
+%defattr(-, root, root)
+%_libdir/libmono-llvm.so*
+
+%post -n libmono-llvm0 -p /sbin/ldconfig
+
+%postun -n libmono-llvm0 -p /sbin/ldconfig
+%endif
 
 %package -n mono-locale-extras
 License:        LGPL v2.1 only
 Summary:        Extra locale information
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
+Provides:       mono(I18N.CJK) = 1.0.5000.0
+Provides:       mono(I18N.MidEast) = 1.0.5000.0
+Provides:       mono(I18N.Other) = 1.0.5000.0
+Provides:       mono(I18N.Rare) = 1.0.5000.0
 
 %description -n mono-locale-extras
 The Mono Project is an open development initiative that is working to
@@ -356,14 +401,6 @@ cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
 Extra locale information.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %files -n mono-locale-extras
 %defattr(-, root, root)
@@ -385,12 +422,18 @@ License:        LGPL v2.1 only
 Summary:        Database connectivity for Mono
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
+Obsoletes:      mono-directory
 Obsoletes:      mono-ms-enterprise
 Obsoletes:      mono-novell-directory
-Obsoletes:      mono-directory
+Provides:       mono-directory
 Provides:       mono-ms-enterprise
 Provides:       mono-novell-directory
-Provides:       mono-directory
+Provides:       mono(Mono.Data) = 1.0.5000.0
+Provides:       mono(Mono.Data.Tds) = 1.0.5000.0
+Provides:       mono(Novell.Directory.Ldap) = 1.0.5000.0
+Provides:       mono(System.Data) = 1.0.5000.0
+Provides:       mono(System.DirectoryServices) = 1.0.5000.0
+Provides:       mono(System.EnterpriseServices) = 1.0.5000.0
 
 %description -n mono-data
 The Mono Project is an open development initiative that is working to
@@ -400,14 +443,6 @@ cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
 Database connectivity for Mono.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %files -n mono-data
 %defattr(-, root, root)
@@ -451,6 +486,11 @@ Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
 Provides:       mono-window-forms
 Obsoletes:      mono-window-forms
+Provides:       mono(Accessibility) = 1.0.5000.0
+Provides:       mono(System.Design) = 1.0.5000.0
+Provides:       mono(System.Drawing) = 1.0.5000.0
+Provides:       mono(System.Drawing.Design) = 1.0.5000.0
+Provides:       mono(System.Windows.Forms) = 1.0.5000.0
 
 %description -n mono-winforms
 The Mono Project is an open development initiative that is working to
@@ -460,14 +500,6 @@ cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
 Mono's Windows Forms implementation.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %files -n mono-winforms
 %defattr(-, root, root)
@@ -504,14 +536,6 @@ technologies that have been submitted to the ECMA for standardization.
 
 Database connectivity for DB2.
 
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
-
 %files -n ibm-data-db2
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/IBM.Data.DB2.dll
@@ -525,6 +549,14 @@ Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
 Obsoletes:      mono-ms-extras
 Provides:       mono-ms-extras
+Provides:       mono(Mono.Messaging) = 1.0.5000.0
+Provides:       mono(Mono.Messaging.RabbitMQ) = 1.0.5000.0
+Provides:       mono(RabbitMQ.Client) = 1.0.5000.0
+Provides:       mono(System.Configuration.Install) = 1.0.5000.0
+Provides:       mono(System.Management) = 1.0.5000.0
+Provides:       mono(System.Messaging) = 1.0.5000.0
+Provides:       mono(System.ServiceProcess) = 1.0.5000.0
+Provides:       mono(mono-service) = 1.0.5000.0
 
 %description -n mono-extras
 The Mono Project is an open development initiative that is working to
@@ -534,14 +566,6 @@ cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
 Extra packages.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %files -n mono-extras
 %defattr(-, root, root)
@@ -586,8 +610,7 @@ Summary:        Database connectivity for Mono
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
 Requires:       mono-data == %version-%release
-# TODO: Disable this, until a better solution is found
-#Requires:       sqlite2
+Provides:       mono(Mono.Data.Sqlite) = 1.0.5000.0
 
 %description -n mono-data-sqlite
 The Mono Project is an open development initiative that is working to
@@ -598,14 +621,6 @@ technologies that have been submitted to the ECMA for standardization.
 
 Database connectivity for Mono.
 
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
-
 %files -n mono-data-sqlite
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/Mono.Data.Sqlite.dll
@@ -613,6 +628,7 @@ Authors:
 %_prefix/lib/mono/gac/Mono.Data.Sqlite
 
 %package -n mono-wcf
+License:        MIT License (or similar) ; Ms-Pl
 Summary:        Mono implementation of WCF, Windows Communication Foundation
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
@@ -625,15 +641,6 @@ cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
 Mono implementation of WCF, Windows Communication Foundation
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
-
 
 %files -n mono-wcf
 %defattr(-, root, root)
@@ -665,7 +672,6 @@ Authors:
 %_prefix/lib/mono/gac/System.ServiceModel.Web
 %_prefix/lib/mono/gac/System.Web.ApplicationServices
 
-
 %package -n mono-winfxcore
 License:        MIT License (or similar) ; Ms-Pl
 Summary:        Mono implementation of core WinFX APIs
@@ -681,15 +687,6 @@ technologies that have been submitted to the ECMA for standardization.
 
 Mono implementation of core WinFX APIs
 
-
-
-Authors:
---------
-Miguel de Icaza <miguel@ximian.com>
-Paolo Molaro <lupus@ximian.com>
-Dietmar Maurer <dietmar@ximian.com>
-
-
 %files -n mono-winfxcore
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/WindowsBase.dll*
@@ -701,12 +698,17 @@ License:        MIT License (or similar) ; Ms-Pl
 Summary:        Mono implementation of ASP.NET, Remoting and Web Services
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
+Obsoletes:      mono-remoting
 Obsoletes:      mono-web-forms
 Obsoletes:      mono-web-services
-Obsoletes:      mono-remoting
+Provides:       mono-remoting
 Provides:       mono-web-forms
 Provides:       mono-web-services
-Provides:       mono-remoting
+Provides:       mono(Mono.Http) = 1.0.5000.0
+Provides:       mono(System.Runtime.Remoting) = 1.0.5000.0
+Provides:       mono(System.Runtime.Serialization.Formatters.Soap) = 1.0.5000.0
+Provides:       mono(System.Web) = 1.0.5000.0
+Provides:       mono(System.Web.Services) = 1.0.5000.0
 
 %description -n mono-web
 The Mono Project is an open development initiative that is working to
@@ -716,14 +718,6 @@ cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
 Mono implementation of ASP.NET, Remoting and Web Services.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %files -n mono-web
 %defattr(-, root, root)
@@ -808,6 +802,7 @@ Summary:        Database connectivity for Mono
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
 Requires:       mono-data == %version-%release
+Provides:       mono(System.Data.OracleClient) = 1.0.5000.0
 
 %description -n mono-data-oracle
 The Mono Project is an open development initiative that is working to
@@ -817,14 +812,6 @@ cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
 Database connectivity for Mono.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %files -n mono-data-oracle
 %defattr(-, root, root)
@@ -838,6 +825,7 @@ Summary:        Database connectivity for Mono
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
 Requires:       mono-data == %version-%release
+Provides:       mono(Npgsql) = 1.0.5000.0
 
 %description -n mono-data-postgresql
 The Mono Project is an open development initiative that is working to
@@ -847,14 +835,6 @@ cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
 Database connectivity for Mono.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %files -n mono-data-postgresql
 %defattr(-, root, root)
@@ -876,14 +856,6 @@ It is written entirely in C# and  has been completely redesigned to
 take advantage of many .NET language		 features, for example
 custom attributes and other reflection related capabilities. NUnit
 brings xUnit to all .NET languages.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %files -n mono-nunit
 %defattr(-, root, root)
@@ -922,17 +894,22 @@ License:        LGPL v2.1 only
 Summary:        Mono development tools
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
+Requires:       libgdiplus0
 Requires:       pkgconfig
-%if 0%{?monobuild}
-Requires:       libgdiplus0
-%else
-Requires:       libgdiplus0
-%endif
+Provides:       mono-xbuild
+# Required because they are referenced by .pc files
+Requires:       mono-data == %version-%release
+Requires:       mono-data-oracle == %version-%release
+Requires:       mono-extras == %version-%release
+Requires:       mono-web == %version-%release
+Requires:       mono-winforms == %version-%release
 # We build natively on ppc64 now
 %ifarch ppc64
 Provides:       mono-biarchcompat
 Obsoletes:      mono-biarchcompat
 %endif
+Provides:       mono(PEAPI) = 1.0.5000.0
+Provides:       mono(resgen) = 1.0.5000.0
 
 %description -n mono-devel
 The Mono Project is an open development initiative that is working to
@@ -942,14 +919,6 @@ cross-platform .NET applications. This package contains compilers and
 other tools needed to develop .NET applications.
 
 Mono development tools.
-
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
 
 %post -n mono-devel -p /sbin/ldconfig
 
@@ -995,6 +964,10 @@ Authors:
 %_bindir/sgen
 %_bindir/signcode
 %_bindir/xbuild
+%dir %_datadir/mono-2.0
+%dir %_datadir/mono-2.0/mono
+%dir %_datadir/mono-2.0/mono/cil
+%_datadir/mono-2.0/mono/cil/cil-opcodes.xml
 %_libdir/libmono-profiler-aot.*
 %_libdir/libmono-profiler-cov.*
 %_libdir/libmono-profiler-iomap.*
@@ -1119,56 +1092,53 @@ Authors:
 %_prefix/lib/mono/gac/Mono.Debugger.Soft
 %_prefix/lib/mono/gac/PEAPI
 %_prefix/lib/mono/xbuild
-%_prefix/share/mono-2.0/mono/cil/cil-opcodes.xml
-%dir %_prefix/share/mono-2.0
-%dir %_prefix/share/mono-2.0/mono
-%dir %_prefix/share/mono-2.0/mono/cil
 
 %package -n monodoc-core
 License:        LGPL v2.1 only
 Summary:        Monodoc - Documentation tools for C# code
 Group:          Development/Tools/Other
-Provides:       monodoc
 Obsoletes:      monodoc
+# Added to uncompress and compare documentation used by build-compare
+Requires:       unzip
 
 %description -n monodoc-core
 Monodoc-core contains documentation tools for C#.
 
 %files -n monodoc-core
 %defattr(-, root, root)
-%{_bindir}/mdassembler
-%{_bindir}/mdoc
-%{_bindir}/mdoc-assemble
-%{_bindir}/mdoc-export-html
-%{_bindir}/mdoc-export-msxdoc
-%{_bindir}/mdoc-update
-%{_bindir}/mdoc-validate
-%{_bindir}/mdvalidater
-%{_bindir}/mod
-%{_bindir}/monodocer
-%{_bindir}/monodocs2html
-%{_bindir}/monodocs2slashdoc
-%{_libdir}/pkgconfig/monodoc.pc
-%{_mandir}/man1/mdassembler.1%ext_man
-%{_mandir}/man1/mdoc-assemble.1%ext_man
-%{_mandir}/man1/mdoc-export-html.1%ext_man
-%{_mandir}/man1/mdoc-export-msxdoc.1%ext_man
-%{_mandir}/man1/mdoc-update.1%ext_man
-%{_mandir}/man1/mdoc-validate.1%ext_man
-%{_mandir}/man1/mdoc.1%ext_man
-%{_mandir}/man1/mdvalidater.1%ext_man
-%{_mandir}/man1/monodocer.1%ext_man
-%{_mandir}/man1/monodocs2html.1%ext_man
-%{_mandir}/man5/mdoc.5%ext_man
-%{_prefix}/lib/mono/4.0/mdoc.exe*
-%{_prefix}/lib/mono/4.0/mod.exe*
-%{_prefix}/lib/mono/gac/monodoc
-%{_prefix}/lib/mono/monodoc
-%{_prefix}/lib/monodoc
+%_bindir/mdassembler
+%_bindir/mdoc
+%_bindir/mdoc-assemble
+%_bindir/mdoc-export-html
+%_bindir/mdoc-export-msxdoc
+%_bindir/mdoc-update
+%_bindir/mdoc-validate
+%_bindir/mdvalidater
+%_bindir/mod
+%_bindir/monodocer
+%_bindir/monodocs2html
+%_bindir/monodocs2slashdoc
+%_libdir/pkgconfig/monodoc.pc
+%_mandir/man1/mdassembler.1%ext_man
+%_mandir/man1/mdoc-assemble.1%ext_man
+%_mandir/man1/mdoc-export-html.1%ext_man
+%_mandir/man1/mdoc-export-msxdoc.1%ext_man
+%_mandir/man1/mdoc-update.1%ext_man
+%_mandir/man1/mdoc-validate.1%ext_man
+%_mandir/man1/mdoc.1%ext_man
+%_mandir/man1/mdvalidater.1%ext_man
+%_mandir/man1/monodocer.1%ext_man
+%_mandir/man1/monodocs2html.1%ext_man
+%_mandir/man5/mdoc.5%ext_man
+%_prefix/lib/mono/4.0/mdoc.exe*
+%_prefix/lib/mono/4.0/mod.exe*
+%_prefix/lib/mono/gac/monodoc
+%_prefix/lib/mono/monodoc
+%_prefix/lib/monodoc
 
 %package -n mono-complete
 License:        LGPL v2.1 only
-Summary:        A .NET Runtime Environment
+Summary:        Install everything built from the mono source tree
 Group:          Development/Languages/Mono
 Requires:       bytefx-data-mysql = %version-%release
 Requires:       ibm-data-db2 = %version-%release
@@ -1181,7 +1151,6 @@ Requires:       mono-data-sqlite = %version-%release
 Requires:       mono-data-sybase = %version-%release
 Requires:       mono-devel = %version-%release
 Requires:       mono-extras = %version-%release
-Requires:       mono-jscript = %version-%release
 Requires:       mono-locale-extras = %version-%release
 Requires:       mono-nunit = %version-%release
 Requires:       mono-wcf = %version-%release
@@ -1195,62 +1164,12 @@ Its objective is to enable Unix developers to build and deploy
 cross-platform .NET applications. The project will implement various
 technologies that have been submitted to the ECMA for standardization.
 
-
-
-Authors:
---------
-    Miguel de Icaza <miguel@ximian.com>
-    Paolo Molaro <lupus@ximian.com>
-    Dietmar Maurer <dietmar@ximian.com>
+Install everything built from the mono source tree.  Note that this does
+not install anything from outside the mono source (XSP, mono-basic, etc.).
 
 %files -n mono-complete
 %defattr(-, root, root)
 %dir %_prefix/lib/mono/compat-2.0
 %dir %_prefix/lib/mono/compat-4.0
-
-%prep
-%setup -q -n mono-%{version}
-
-%build
-# These are only needed if there are patches to the runtime
-#rm -f libgc/libtool.m4
-#autoreconf --force --install
-#autoreconf --force --install libgc
-export CFLAGS=" $RPM_OPT_FLAGS -DKDE_ASSEMBLIES='\"/opt/kde3/%{_lib}\"' -fno-strict-aliasing"
-# distro specific configure options
-%{?configure_options}
-%configure \
-  --with-jit=yes \
-  --with-ikvm=yes \
-  --with-moonlight=no
-make
-
-%install
-make install DESTDIR=%buildroot
-# remove .la files (they are generally bad news)
-rm -f %buildroot%_libdir/*.la
-# remove Windows-only stuff
-rm -rf %buildroot%_prefix/lib/mono/*/Mono.Security.Win32*
-rm -f %buildroot%_libdir/libMonoSupportW.*
-# remove .a files for libraries that are really only for us
-rm -f %buildroot%_libdir/libMonoPosixHelper.a
-rm -f %buildroot%_libdir/libikvm-native.a
-# remove libgc cruft
-rm -rf %buildroot%_datadir/libgc-mono
-# remove stuff that we don't package
-rm -f %buildroot%_prefix/lib/mono/*/browsercaps-updater.exe*
-rm -f %buildroot%_bindir/cilc
-rm -f %buildroot%_mandir/man1/cilc.1*
-rm -f %buildroot%_prefix/lib/mono/2.0/cilc.exe*
-rm -f %buildroot%_prefix/lib/mono/*/culevel.exe*
-# brp-compress doesn't search _mandir
-# so we cheat it
-ln -s . %buildroot%_prefix/usr
-RPM_BUILD_ROOT=%buildroot%_prefix /usr/lib/rpm/brp-compress
-rm %buildroot%_prefix/usr
-%find_lang mcs
-
-%clean
-rm -rf ${RPM_BUILD_ROOT}
 
 %changelog
