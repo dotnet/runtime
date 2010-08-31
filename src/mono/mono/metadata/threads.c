@@ -1602,6 +1602,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	guint32 i;
 	MonoObject *waitHandle;
 	MonoInternalThread *thread = mono_thread_internal_current ();
+	guint32 start;
 
 	/* Do this WaitSleepJoin check before creating objects */
 	mono_thread_current_check_pending_interrupt ();
@@ -1619,8 +1620,21 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	}
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
-	ret=WaitForMultipleObjectsEx(numhandles, handles, FALSE, ms, TRUE);
+
+	start = (ms == -1) ? 0 : mono_msec_ticks ();
+	do {
+		ret = WaitForMultipleObjectsEx (numhandles, handles, FALSE, ms, TRUE);
+		if (ret != WAIT_IO_COMPLETION)
+			break;
+		if (ms != -1) {
+			guint32 diff;
+
+			diff = mono_msec_ticks () - start;
+			ms -= diff;
+			if (ms <= 0)
+				break;
+		}
+	} while (ms == -1 || ms > 0);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
