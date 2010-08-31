@@ -2914,7 +2914,7 @@ fi
       echo "PLATFORM = darwin" >> $mcs_topdir/build/config.make
     fi
 
-    if test x$TARGET = xAMD64 -a x$host_win32 = xno -a "x$AOT_SUPPORTED" = "xyes" -a x$enable_system_aot = xyes; then
+    if test x$host_win32 = xno -a "x$AOT_SUPPORTED" = "xyes" -a x$enable_system_aot = xyes; then
       echo "ENABLE_AOT = 1" >> $mcs_topdir/build/config.make
     fi
 
