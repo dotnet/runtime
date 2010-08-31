@@ -2615,8 +2615,8 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 		else
 			wbarrier->sreg2 = value_reg;
 		MONO_ADD_INS (cfg->cbb, wbarrier);
-	}
-#else
+	} else
+#endif
 	if (card_table) {
 		int offset_reg = alloc_preg (cfg);
 		int card_reg  = alloc_preg (cfg);
@@ -2640,9 +2640,7 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 
 		MONO_EMIT_NEW_BIALU (cfg, OP_PADD, offset_reg, offset_reg, card_reg);
 		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, offset_reg, 0, 1);
-	}
-#endif
-	else {
+	} else {
 		MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 		mono_emit_method_call (cfg, write_barrier, &ptr, NULL);
 	}
