@@ -1462,6 +1462,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 			}
 			if (MONO_TYPE_ISSTRUCT (sig->params [i]) && size < sizeof (gpointer))
 				size = align = sizeof (gpointer);
+			/* 
+			 * Use at least 4/8 byte alignment, since these might be passed in registers, and
+			 * they are saved using std in the prolog.
+			 */
+			align = sizeof (gpointer);
 			offset += align - 1;
 			offset &= ~(align - 1);
 			inst->inst_offset = offset;
@@ -3546,7 +3551,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_BREAK:
-			ppc_break (code);
+			/*
+			 * gdb does not like encountering a trap in the debugged code. So 
+			 * instead of emitting a trap, we emit a call a C function and place a 
+			 * breakpoint there.
+			 */
+			//ppc_break (code);
+			ppc_mr (code, ppc_r3, ins->sreg1);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+					     (gpointer)"mono_break");
+			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
+				ppc_load_func (code, ppc_r0, 0);
+				ppc_mtlr (code, ppc_r0);
+				ppc_blrl (code);
+			} else {
+				ppc_bl (code, 0);
+			}
 			break;
 		case OP_ADDCC:
 		case OP_IADDCC:
