@@ -3193,6 +3193,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_value (get_image_index (acfg, patch_info->data.image), p, &p);
 		break;
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
+	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 		break;
 	case MONO_PATCH_INFO_METHOD_REL:
 		encode_value ((gint)patch_info->data.offset, p, &p);
@@ -3389,6 +3390,12 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 
 		if ((patch_info->type == MONO_PATCH_INFO_IMAGE) && (patch_info->data.image == acfg->image)) {
+			/* Stored in a GOT slot initialized at module load time */
+			patch_info->type = MONO_PATCH_INFO_NONE;
+			continue;
+		}
+
+		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR) {
 			/* Stored in a GOT slot initialized at module load time */
 			patch_info->type = MONO_PATCH_INFO_NONE;
 			continue;
@@ -4461,6 +4468,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_GOT_OFFSET:
 		case MONO_PATCH_INFO_NONE:
+		case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 			break;
 		case MONO_PATCH_INFO_IMAGE:
 			/* The assembly is stored in GOT slot 0 */
@@ -6315,6 +6323,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		/* Slot 1 is reserved for the mscorlib got addr */
 		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
 		ji->type = MONO_PATCH_INFO_MSCORLIB_GOT_ADDR;
+		get_got_offset (acfg, ji);
+
+		/* This is very common */
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
 		get_got_offset (acfg, ji);
 	}
 

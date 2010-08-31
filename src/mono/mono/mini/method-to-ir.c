@@ -2605,7 +2605,7 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 
 	mono_gc_get_nursery (&nursery_shift_bits, &nursery_size);
 
-	if (card_table && nursery_shift_bits > 0) {
+	if (!cfg->compile_aot && card_table && nursery_shift_bits > 0) {
 		MonoInst *wbarrier;
 
 		MONO_INST_NEW (cfg, wbarrier, OP_CARD_TABLE_WBARRIER);
@@ -2629,10 +2629,14 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 		/*We can't use PADD_IMM since the cardtable might end up in high addresses and amd64 doesn't support
 		 * IMM's larger than 32bits.
 		 */
-		MONO_INST_NEW (cfg, ins, OP_PCONST);
-		ins->inst_p0 = card_table;
-		ins->dreg = card_reg;
-		MONO_ADD_INS (cfg->cbb, ins);
+		if (cfg->compile_aot) {
+			MONO_EMIT_NEW_AOTCONST (cfg, card_reg, NULL, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR);
+		} else {
+			MONO_INST_NEW (cfg, ins, OP_PCONST);
+			ins->inst_p0 = card_table;
+			ins->dreg = card_reg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
 
 		MONO_EMIT_NEW_BIALU (cfg, OP_PADD, offset_reg, offset_reg, card_reg);
 		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, offset_reg, 0, 1);
