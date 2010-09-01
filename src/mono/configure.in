@@ -180,7 +180,6 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		libdl="-ldl"
 		libgc_threads=pthreads
-		AOT_SUPPORTED="yes"
 		use_sigposix=yes
 		;;
 	*-*-nacl*)
@@ -192,7 +191,6 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		libdl=
 		libgc_threads=pthreads
-		AOT_SUPPORTED="yes"
 		gc_default=boehm
 		use_sigposix=yes
 		ikvm_native=no
@@ -662,11 +660,7 @@ if test x$enable_small_config = xyes; then
 	CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DSMALL_CONFIG"
 fi
 
-if test x$AOT_SUPPORTED != xyes; then
-   AOT_SUPPORTED=no
-fi
-
-AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compilation of system assemblies during the build (on by default on some platforms)], enable_system_aot=$enableval, enable_system_aot=$AOT_SUPPORTED)
+AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compilation of system assemblies during the build (on by default on some platforms)], enable_system_aot=$enableval, enable_system_aot=default)
 
 DISABLED_FEATURES=none
 
@@ -2129,7 +2123,11 @@ case "$host" in
 		  haiku*)
 			LIBC=libroot.so
 			;;
-		  linux*|darwin*|openbsd*)
+		  linux*)
+			sgen_supported=true
+			AOT_SUPPORTED="yes"
+			;;
+		  darwin*|openbsd*)
 			sgen_supported=true
 		        ;;
 		esac
@@ -2140,7 +2138,11 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		case $host_os in
-		  linux*|darwin*|openbsd*)
+		  linux*)
+			sgen_supported=true
+			AOT_SUPPORTED="yes"
+			;;
+		  darwin*|openbsd*)
 			sgen_supported=true
 			;;
 		esac
@@ -2914,7 +2916,11 @@ fi
       echo "PLATFORM = darwin" >> $mcs_topdir/build/config.make
     fi
 
-    if test x$host_win32 = xno -a x$platform_darwin != xyes -a "x$AOT_SUPPORTED" = "xyes" -a x$enable_system_aot = xyes; then
+	if test x$AOT_SUPPORTED = xyes -a x$enable_system_aot = xdefault; then
+	   enable_system_aot=yes
+	fi
+
+    if test x$host_win32 = xno -a x$platform_darwin != xyes -a x$enable_system_aot = xyes; then
       echo "ENABLE_AOT = 1" >> $mcs_topdir/build/config.make
     fi
 
