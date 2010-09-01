@@ -1348,8 +1348,8 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
  * 
  * Returns true if the method is invalid. 
  */
-gboolean
-mini_method_verify (MonoCompile *cfg, MonoMethod *method)
+static gboolean
+mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 {
 	GSList *tmp, *res;
 	gboolean is_fulltrust;
@@ -1366,7 +1366,10 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility);
 
 	if ((error = mono_loader_get_last_error ())) {
-		cfg->exception_type = error->exception_type;
+		if (fail_compile)
+			cfg->exception_type = error->exception_type;
+		else
+			mono_loader_clear_error ();
 		if (res)
 			mono_free_verify_list (res);
 		return TRUE;
@@ -1376,19 +1379,23 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 		for (tmp = res; tmp; tmp = tmp->next) {
 			MonoVerifyInfoExtended *info = (MonoVerifyInfoExtended *)tmp->data;
 			if (info->info.status == MONO_VERIFY_ERROR) {
+				if (fail_compile) {
 				char *method_name = mono_method_full_name (method, TRUE);
-				cfg->exception_type = info->exception_type;
-				cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
+					cfg->exception_type = info->exception_type;
+					cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
+					g_free (method_name);
+				}
 				mono_free_verify_list (res);
-				g_free (method_name);
 				return TRUE;
 			}
 			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && (!is_fulltrust || info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)) {
-				char *method_name = mono_method_full_name (method, TRUE);
-				cfg->exception_type = info->exception_type;
-				cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
+				if (fail_compile) {
+					char *method_name = mono_method_full_name (method, TRUE);
+					cfg->exception_type = info->exception_type;
+					cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
+					g_free (method_name);
+				}
 				mono_free_verify_list (res);
-				g_free (method_name);
 				return TRUE;
 			}
 		}
@@ -1398,11 +1405,10 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 	return FALSE;
 }
 
-/*Returns true is something went wrong*/
-static gboolean
-mono_compile_is_broken (MonoCompile *cfg)
+/*Returns true if something went wrong*/
+gboolean
+mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 {
-	MonoMethod *method = cfg->method;
 	MonoMethod *method_definition = method;
 	gboolean dont_verify = mini_assembly_can_skip_verification (cfg->domain, method);
 	dont_verify |= method->klass->image->assembly->corlib_internal;
@@ -1412,7 +1418,7 @@ mono_compile_is_broken (MonoCompile *cfg)
 		method_definition = imethod->declaring;
 	}
 
-	return !dont_verify && mini_method_verify (cfg, method_definition);
+	return !dont_verify && mini_method_verify (cfg, method_definition, fail_compile);
 }
 
 static void
@@ -4121,7 +4127,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	//cfg->enable_extended_bblocks = TRUE;
 
 	/*We must verify the method before doing any IR generation as mono_compile_create_vars can assert.*/
-	if (mono_compile_is_broken (cfg))
+	if (mono_compile_is_broken (cfg, cfg->method, TRUE))
 		return cfg;
 
 	/*
