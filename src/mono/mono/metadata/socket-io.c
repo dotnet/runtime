@@ -2783,7 +2783,7 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = get_family_hint ();
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_CANONNAME | AI_ADDRCONFIG;
+	hints.ai_flags = AI_CANONNAME;
 
 	if (*hostname && getaddrinfo(hostname, NULL, &hints, &info) == -1) {
 		return(FALSE);
