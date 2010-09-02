@@ -299,6 +299,7 @@ static int stat_wbarrier_object_copy = 0;
 static long long time_minor_pre_collection_fragment_clear = 0;
 static long long time_minor_pinning = 0;
 static long long time_minor_scan_remsets = 0;
+static long long time_minor_scan_card_table = 0;
 static long long time_minor_scan_pinned = 0;
 static long long time_minor_scan_registered_roots = 0;
 static long long time_minor_scan_thread_data = 0;
@@ -2486,6 +2487,7 @@ init_stats (void)
 	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pre_collection_fragment_clear);
 	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pinning);
 	mono_counters_register ("Minor scan remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_remsets);
+	mono_counters_register ("Minor scan cardtables", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_card_table);
 	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_pinned);
 	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_registered_roots);
 	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_thread_data);
@@ -2640,7 +2642,10 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	if (use_cardtable) {
+		TV_GETTIME (atv);
 		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
+		TV_GETTIME (btv);
+		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
 		//collect_faulted_cards ();
 	}
 
