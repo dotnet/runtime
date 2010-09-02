@@ -12,7 +12,7 @@
 #include <mono/metadata/gc-internal.h>
 
 /*
- * The code above does not work yet, and probably needs to be thrown out if we move
+ * The code below does not work yet, and probably needs to be thrown out if we move
  * to GC safe points.
  */
 
@@ -628,3 +628,13 @@ mini_gc_init_cfg (MonoCompile *cfg)
 
 	mini_gc_init_gc_map (cfg);
 }
+
+/*
+ * Problems with the precise stack scannin code:
+ * - it makes two passes over the stack
+ * - the stack walk is slow
+ * - only the locals are scanned precisely
+ * - using a pc range for live ranges is not good, have to use a list of intervals
+ * - if the code is finished, less pinning will be done, causing problems because
+ *   we promote all surviving objects to old-gen.
+ */
