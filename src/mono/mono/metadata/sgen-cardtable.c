@@ -71,7 +71,7 @@ sgen_card_table_card_begin_scanning (mword address)
 	return *sgen_card_table_get_shadow_card_address (address) != 0;
 }
 
-gboolean
+static gboolean
 sgen_card_table_region_begin_scanning (mword start, mword end)
 {
 	while (start <= end) {
@@ -80,6 +80,12 @@ sgen_card_table_region_begin_scanning (mword start, mword end)
 		start += CARD_SIZE_IN_BYTES;
 	}
 	return FALSE;
+}
+
+void
+sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards)
+{
+	memcpy (dest, sgen_card_table_get_shadow_card_address (address), cards);
 }
 
 #else
@@ -99,7 +105,7 @@ sgen_card_table_card_begin_scanning (mword address)
 	return res;
 }
 
-gboolean
+static gboolean
 sgen_card_table_region_begin_scanning (mword start, mword size)
 {
 	gboolean res = FALSE;
@@ -116,6 +122,15 @@ sgen_card_table_region_begin_scanning (mword start, mword size)
 	memset (sgen_card_table_get_card_address (start), 0, size >> CARD_BITS);
 
 	return res;
+}
+
+void
+sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards)
+{
+	int i;
+	guint8 *src = sgen_card_table_get_card_address (address);
+	memcpy (dest, src, cards);
+	memset (src, 0, cards);
 }
 
 #endif
@@ -146,6 +161,19 @@ sgen_card_table_mark_range (mword address, mword size)
 		sgen_card_table_mark_address (address);
 		address += CARD_SIZE_IN_BYTES;
 	} while (address < end);
+}
+
+static gboolean
+sgen_card_table_is_range_marked (guint8 *cards, mword size)
+{
+	mword start = 0;
+	while (start <= size) {
+		if (*cards++)
+			return TRUE;
+		start += CARD_SIZE_IN_BYTES;
+	}
+	return FALSE;
+
 }
 
 static void
@@ -243,7 +271,7 @@ collect_faulted_cards (void)
 
 
 void
-sgen_cardtable_scan_object (char *obj, mword obj_size, SgenGrayQueue *queue)
+sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQueue *queue)
 {
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
@@ -264,8 +292,12 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, SgenGrayQueue *queue)
 			char *elem, *card_end;
 			uintptr_t index;
 
-			if (!sgen_card_table_card_begin_scanning ((mword)start))
+			if (cards) {
+				if (!*cards++)
+					continue;
+			} else if (!sgen_card_table_card_begin_scanning ((mword)start)) {
 				continue;
+			}
 
 			card_end = start + CARD_SIZE_IN_BYTES;
 			if (end < card_end)
@@ -296,8 +328,12 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, SgenGrayQueue *queue)
 			}
 		}
 	} else {
-		if (sgen_card_table_region_begin_scanning ((mword)obj, obj_size))
+		if (cards) {
+			if (sgen_card_table_is_range_marked (cards, obj_size))
+				major.minor_scan_object (obj, queue);
+		} else if (sgen_card_table_region_begin_scanning ((mword)obj, obj_size)) {
 			major.minor_scan_object (obj, queue);
+		}
 	}
 }
 

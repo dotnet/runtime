@@ -472,7 +472,7 @@ los_scan_card_table (GrayQueue *queue)
 	LOSObject *obj;
 
 	for (obj = los_object_list; obj; obj = obj->next) {
-		sgen_cardtable_scan_object (obj->data, obj->size, queue);
+		sgen_cardtable_scan_object (obj->data, obj->size, NULL, queue);
 	}
 }
 

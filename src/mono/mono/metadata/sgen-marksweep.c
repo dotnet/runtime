@@ -1264,24 +1264,41 @@ major_scan_card_table (SgenGrayQueue *queue)
 		block_obj_size = block->obj_size;
 		start = block->block;
 
-		for (i = 0; i < CARDS_PER_BLOCK; ++i, start += CARD_SIZE_IN_BYTES) {
-			int index;
-			char *obj, *end;
+		if (block_obj_size >= CARD_SIZE_IN_BYTES) {
+			guint8 cards [CARDS_PER_BLOCK];
+			char *obj = (char*)MS_BLOCK_OBJ (block, 0);
+			char *end = start + MS_BLOCK_SIZE;
+			char *base = sgen_card_table_align_pointer (obj);
 
-			if (!sgen_card_table_card_begin_scanning ((mword)start))
-				continue;
+			sgen_card_table_get_card_data (cards, (mword)start, CARDS_PER_BLOCK);
 
-			end = start + CARD_SIZE_IN_BYTES;
-			if (i == 0)
-				index = 0;
-			else
-				index = MS_BLOCK_OBJ_INDEX (start, block);
-
-			obj = (char*)MS_BLOCK_OBJ (block, index);
 			while (obj < end) {
-				if (MS_OBJ_ALLOCED (obj, block))
-					minor_scan_object (obj, queue);
+				if (MS_OBJ_ALLOCED (obj, block)) {
+					int card_offset = (obj - base) >> CARD_BITS;
+					sgen_cardtable_scan_object (obj, block_obj_size, cards + card_offset, queue);
+				}
 				obj += block_obj_size;
+			}
+		} else {
+			for (i = 0; i < CARDS_PER_BLOCK; ++i, start += CARD_SIZE_IN_BYTES) {
+				int index;
+				char *obj, *end;
+
+				if (!sgen_card_table_card_begin_scanning ((mword)start))
+					continue;
+
+				end = start + CARD_SIZE_IN_BYTES;
+				if (i == 0)
+					index = 0;
+				else
+					index = MS_BLOCK_OBJ_INDEX (start, block);
+
+				obj = (char*)MS_BLOCK_OBJ (block, index);
+				while (obj < end) {
+					if (MS_OBJ_ALLOCED (obj, block))
+						minor_scan_object (obj, queue);
+					obj += block_obj_size;
+				}
 			}
 		}
 	} END_FOREACH_BLOCK;
