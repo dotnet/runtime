@@ -127,7 +127,6 @@ sgen_card_table_region_begin_scanning (mword start, mword size)
 void
 sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards)
 {
-	int i;
 	guint8 *src = sgen_card_table_get_card_address (address);
 	memcpy (dest, src, cards);
 	memset (src, 0, cards);
@@ -337,6 +336,51 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 	}
 }
 
+#ifdef CARDTABLE_STATS
+
+static int total_cards, marked_cards, remarked_cards;
+
+static void
+count_marked_cards (mword start, mword size)
+{
+	mword end = start + size;
+	while (start <= end) {
+		++total_cards;
+		if (sgen_card_table_address_is_marked (start))
+			++marked_cards;
+		start += CARD_SIZE_IN_BYTES;
+	}
+}
+
+static void
+count_remarked_cards (mword start, mword size)
+{
+	mword end = start + size;
+	while (start <= end) {
+		if (sgen_card_table_address_is_marked (start))
+			++remarked_cards;
+		start += CARD_SIZE_IN_BYTES;
+	}
+}
+
+#endif
+
+static void
+card_tables_collect_starts (gboolean begin)
+{
+#ifdef CARDTABLE_STATS
+	if (begin) {
+		total_cards = marked_cards = remarked_cards = 0;
+		major.iterate_live_block_ranges (count_marked_cards);
+		los_iterate_live_block_ranges (count_marked_cards);
+	} else {
+		major.iterate_live_block_ranges (count_marked_cards);
+		los_iterate_live_block_ranges (count_remarked_cards);
+		printf ("cards total %d marked %d remarked %d\n", total_cards, marked_cards, remarked_cards);
+	}
+#endif
+}
+
 #else
 
 void
@@ -355,6 +399,7 @@ sgen_card_table_mark_range (mword address, mword size)
 #define scan_from_card_tables(start,end,queue)
 #define card_table_clear()
 #define card_table_init()
+#define card_tables_collect_starts(begin)
 
 guint8*
 mono_gc_get_card_table (int *shift_bits, gpointer *mask)

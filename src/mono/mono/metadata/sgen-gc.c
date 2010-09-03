@@ -2642,11 +2642,11 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	if (use_cardtable) {
+		card_tables_collect_starts (TRUE);
 		TV_GETTIME (atv);
 		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
 		TV_GETTIME (btv);
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
-		//collect_faulted_cards ();
 	}
 
 	drain_gray_stack (&gray_queue);
@@ -2698,6 +2698,9 @@ collect_nursery (size_t requested_size)
 	pin_stats_reset ();
 
 	g_assert (gray_object_queue_is_empty (&gray_queue));
+
+	if (use_cardtable)
+		card_tables_collect_starts (FALSE);
 
 	check_scan_starts ();
 
