@@ -36,6 +36,8 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
+#include "metadata/sgen-cardtable.h"
+
 
 #define DEBUG(l,x)
 
@@ -1248,6 +1250,10 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	} END_FOREACH_BLOCK;
 }
 
+#define MS_BLOCK_OBJ_INDEX_FAST(o,b,os)	(((char*)(o) - ((b) + MS_BLOCK_SKIP)) / (os))
+#define MS_BLOCK_OBJ_FAST(b,os,i)			((b) + MS_BLOCK_SKIP + (os) * (i))
+#define MS_OBJ_ALLOCED_FAST(o,b)		(*(void**)(o) && (*(char**)(o) < (b) || *(char**)(o) >= (b) + MS_BLOCK_SIZE))
+
 static void
 major_scan_card_table (SgenGrayQueue *queue)
 {
@@ -1256,24 +1262,24 @@ major_scan_card_table (SgenGrayQueue *queue)
 	FOREACH_BLOCK (block) {
 		int i;
 		int block_obj_size;
-		char *start;
+		char *start, *block_start;
 
 		if (!block->has_references)
 			continue;
 
 		block_obj_size = block->obj_size;
-		start = block->block;
+		start = block_start = block->block;
 
 		if (block_obj_size >= CARD_SIZE_IN_BYTES) {
 			guint8 cards [CARDS_PER_BLOCK];
-			char *obj = (char*)MS_BLOCK_OBJ (block, 0);
+			char *obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, 0);
 			char *end = start + MS_BLOCK_SIZE;
 			char *base = sgen_card_table_align_pointer (obj);
 
 			sgen_card_table_get_card_data (cards, (mword)start, CARDS_PER_BLOCK);
 
 			while (obj < end) {
-				if (MS_OBJ_ALLOCED (obj, block)) {
+				if (MS_OBJ_ALLOCED_FAST (obj, block_start)) {
 					int card_offset = (obj - base) >> CARD_BITS;
 					sgen_cardtable_scan_object (obj, block_obj_size, cards + card_offset, queue);
 				}
@@ -1291,11 +1297,11 @@ major_scan_card_table (SgenGrayQueue *queue)
 				if (i == 0)
 					index = 0;
 				else
-					index = MS_BLOCK_OBJ_INDEX (start, block);
+					index = MS_BLOCK_OBJ_INDEX_FAST (start, block_start, block_obj_size);
 
-				obj = (char*)MS_BLOCK_OBJ (block, index);
+				obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, index);
 				while (obj < end) {
-					if (MS_OBJ_ALLOCED (obj, block))
+					if (MS_OBJ_ALLOCED_FAST (obj, block_start))
 						minor_scan_object (obj, queue);
 					obj += block_obj_size;
 				}

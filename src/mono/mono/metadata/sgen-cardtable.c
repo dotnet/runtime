@@ -31,15 +31,13 @@
 
 #ifdef SGEN_HAVE_CARDTABLE
 
+//#define CARDTABLE_STATS
+
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 
-#define CARD_COUNT_BITS (32 - 9)
-#define CARD_COUNT_IN_BYTES (1 << CARD_COUNT_BITS)
-#define CARD_MASK ((1 << CARD_COUNT_BITS) - 1)
-
-static guint8 *cardtable;
+guint8 *sgen_cardtable;
 
 static mword
 cards_in_range (mword address, mword size)
@@ -50,26 +48,7 @@ cards_in_range (mword address, mword size)
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
-
-guint8*
-sgen_card_table_get_card_address (mword address)
-{
-	return cardtable + ((address >> CARD_BITS) & CARD_MASK);
-}
-
-static guint8 *shadow_cardtable;
-
-static guint8*
-sgen_card_table_get_shadow_card_address (mword address)
-{
-	return shadow_cardtable + ((address >> CARD_BITS) & CARD_MASK);
-}
-
-gboolean
-sgen_card_table_card_begin_scanning (mword address)
-{
-	return *sgen_card_table_get_shadow_card_address (address) != 0;
-}
+guint8 *sgen_shadow_cardtable;
 
 static gboolean
 sgen_card_table_region_begin_scanning (mword start, mword end)
@@ -89,21 +68,6 @@ sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards)
 }
 
 #else
-
-guint8*
-sgen_card_table_get_card_address (mword address)
-{
-	return cardtable + (address >> CARD_BITS);
-}
-
-gboolean
-sgen_card_table_card_begin_scanning (mword address)
-{
-	guint8 *card = sgen_card_table_get_card_address (address);
-	gboolean res = *card;
-	*card = 0;
-	return res;
-}
 
 static gboolean
 sgen_card_table_region_begin_scanning (mword start, mword size)
@@ -178,10 +142,10 @@ sgen_card_table_is_range_marked (guint8 *cards, mword size)
 static void
 card_table_init (void)
 {
-	cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
+	sgen_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-	shadow_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
+	sgen_shadow_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
 #endif
 }
 
@@ -241,7 +205,7 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 	if (!use_cardtable)
 		return NULL;
 
-	g_assert (cardtable);
+	g_assert (sgen_cardtable);
 	*shift_bits = CARD_BITS;
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	*mask = (gpointer)CARD_MASK;
@@ -249,7 +213,7 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 	*mask = NULL;
 #endif
 
-	return cardtable;
+	return sgen_cardtable;
 }
 
 static void
@@ -258,7 +222,7 @@ collect_faulted_cards (void)
 #define CARD_PAGES (CARD_COUNT_IN_BYTES / 4096)
 	int i, count = 0;
 	unsigned char faulted [CARD_PAGES] = { 0 };
-	mincore (cardtable, CARD_COUNT_IN_BYTES, faulted);
+	mincore (sgen_cardtable, CARD_COUNT_IN_BYTES, faulted);
 
 	for (i = 0; i < CARD_PAGES; ++i) {
 		if (faulted [i])
