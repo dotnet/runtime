@@ -472,60 +472,7 @@ los_scan_card_table (GrayQueue *queue)
 	LOSObject *obj;
 
 	for (obj = los_object_list; obj; obj = obj->next) {
-		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj->data);
-		MonoClass *klass = vt->klass;
-
-		if (!klass->has_references)
-			continue;
-
-		if (vt->rank) {
-			MonoArray *arr = obj->data;
-			mword desc = (mword)klass->element_class->gc_descr;
-			char *start = sgen_card_table_align_pointer (obj->data);
-			char *end = obj->data + obj->size;
-			int size = mono_array_element_size (klass);
-
-			g_assert (desc);
-
-			for (; start <= end; start += CARD_SIZE_IN_BYTES) {
-				char *elem, *card_end;
-				uintptr_t index;
-
-				if (!sgen_card_table_card_begin_scanning ((mword)start))
-					continue;
-
-				card_end = start + CARD_SIZE_IN_BYTES;
-				if (end < card_end)
-					card_end = end;
-
-				if (start <= arr->vector)
-					index = 0;
-				else
-					index = ARRAY_OBJ_INDEX (start, obj->data, size);
-
-				elem = (char*)mono_array_addr_with_size ((MonoArray*)obj->data, size, index);
-				if (klass->element_class->valuetype) {
-					while (elem < card_end) {
-						major.minor_scan_vtype (elem, desc, nursery_start, nursery_next, queue);
-						elem += size;
-					}
-				} else {
-					while (elem < card_end) {
-						gpointer new, old = *(gpointer*)elem;
-						if (old) {
-							major.copy_object ((void**)elem, queue);
-							new = *(gpointer*)elem;
-							if (G_UNLIKELY (ptr_in_nursery (new)))
-								mono_sgen_add_to_global_remset (elem);
-						}
-						elem += size;
-					}
-				}
-			}
-		} else {
-			if (sgen_card_table_region_begin_scanning ((mword)obj->data, (mword)obj->size))
-				major.minor_scan_object (obj->data, queue);
-		}
+		sgen_cardtable_scan_object (obj->data, obj->size, queue);
 	}
 }
 

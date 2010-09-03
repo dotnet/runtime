@@ -241,6 +241,66 @@ collect_faulted_cards (void)
 	printf ("TOTAL card pages %d faulted %d\n", CARD_PAGES, count);
 }
 
+
+void
+sgen_cardtable_scan_object (char *obj, mword obj_size, SgenGrayQueue *queue)
+{
+	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
+	MonoClass *klass = vt->klass;
+
+	if (!klass->has_references)
+		return;
+
+	if (vt->rank) {
+		MonoArray *arr = (MonoArray*)obj;
+		mword desc = (mword)klass->element_class->gc_descr;
+		char *start = sgen_card_table_align_pointer (obj);
+		char *end = obj + obj_size;
+		int size = mono_array_element_size (klass);
+
+		g_assert (desc);
+
+		for (; start <= end; start += CARD_SIZE_IN_BYTES) {
+			char *elem, *card_end;
+			uintptr_t index;
+
+			if (!sgen_card_table_card_begin_scanning ((mword)start))
+				continue;
+
+			card_end = start + CARD_SIZE_IN_BYTES;
+			if (end < card_end)
+				card_end = end;
+
+			if (start <= (char*)arr->vector)
+				index = 0;
+			else
+				index = ARRAY_OBJ_INDEX (start, obj, size);
+
+			elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, size, index);
+			if (klass->element_class->valuetype) {
+				while (elem < card_end) {
+					major.minor_scan_vtype (elem, desc, nursery_start, nursery_next, queue);
+					elem += size;
+				}
+			} else {
+				while (elem < card_end) {
+					gpointer new, old = *(gpointer*)elem;
+					if (old) {
+						major.copy_object ((void**)elem, queue);
+						new = *(gpointer*)elem;
+						if (G_UNLIKELY (ptr_in_nursery (new)))
+							mono_sgen_add_to_global_remset (elem);
+					}
+					elem += size;
+				}
+			}
+		}
+	} else {
+		if (sgen_card_table_region_begin_scanning ((mword)obj, obj_size))
+			major.minor_scan_object (obj, queue);
+	}
+}
+
 #else
 
 void
