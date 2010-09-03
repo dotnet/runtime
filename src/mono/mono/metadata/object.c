@@ -3385,6 +3385,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	MonoArray *args = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	gchar *utf8_fullpath;
+	MonoMethodSignature *sig;
 
 	g_assert (method != NULL);
 	
@@ -3439,7 +3440,14 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	}
 	argc--;
 	argv++;
-	if (mono_method_signature (method)->param_count) {
+
+	sig = mono_method_signature (method);
+	if (!sig) {
+		g_print ("Unable to load Main method.\n");
+		exit (-1);
+	}
+
+	if (sig->param_count) {
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 		for (i = 0; i < argc; ++i) {
 			/* The encodings should all work, given that
