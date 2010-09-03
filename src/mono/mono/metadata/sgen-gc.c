@@ -5432,18 +5432,20 @@ alloc_remset (int size, gpointer id) {
 void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
-	RememberedSet *rs;
-	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_set_field);
 	if (ptr_in_nursery (field_ptr)) {
 		*(void**)field_ptr = value;
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
-	LOCK_GC;
 	if (use_cardtable) {
 		sgen_card_table_mark_address ((mword)field_ptr);
+		*(void**)field_ptr = value;
 	} else {
+		RememberedSet *rs;
+		TLAB_ACCESS_INIT;
+
+		LOCK_GC;
 		rs = REMEMBERED_SET;
 		if (rs->store_next < rs->end_set) {
 			*(rs->store_next++) = (mword)field_ptr;
@@ -5458,26 +5460,28 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 		*(rs->store_next++) = (mword)field_ptr;
+		*(void**)field_ptr = value;
+		UNLOCK_GC;
 	}
-	*(void**)field_ptr = value;
-	UNLOCK_GC;
 }
 
 void
 mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
-	RememberedSet *rs;
-	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_set_arrayref);
 	if (ptr_in_nursery (slot_ptr)) {
 		*(void**)slot_ptr = value;
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
-	LOCK_GC;
 	if (use_cardtable) {
 		sgen_card_table_mark_address ((mword)slot_ptr);
+		*(void**)slot_ptr = value;
 	} else {
+		RememberedSet *rs;
+		TLAB_ACCESS_INIT;
+
+		LOCK_GC;
 		rs = REMEMBERED_SET;
 		if (rs->store_next < rs->end_set) {
 			*(rs->store_next++) = (mword)slot_ptr;
@@ -5492,9 +5496,9 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 		*(rs->store_next++) = (mword)slot_ptr;
+		*(void**)slot_ptr = value;
+		UNLOCK_GC;
 	}
-	*(void**)slot_ptr = value;
-	UNLOCK_GC;
 }
 
 void
