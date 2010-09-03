@@ -1404,6 +1404,16 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		return NULL;
 	}
 
+#ifdef TARGET_WIN32
+	if (import && import [0] == '#' && isdigit (import [1])) {
+		char *end;
+		long id;
+
+		id = strtol (import + 1, &end, 10);
+		if (id > 0 && *end == '\0')
+			import++;
+	}
+#endif
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 				"Searching for '%s'.", import);
 
