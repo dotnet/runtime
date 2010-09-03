@@ -1380,7 +1380,7 @@ mono_sgen_marksweep_init
 	collector->pin_objects = major_pin_objects;
 #ifdef SGEN_HAVE_CARDTABLE
 	collector->scan_card_table = major_scan_card_table;
-	collector->iterate_live_block_ranges = major_iterate_live_block_ranges;
+	collector->iterate_live_block_ranges = (void*)(void*) major_iterate_live_block_ranges;
 #endif
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
