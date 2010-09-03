@@ -1255,11 +1255,14 @@ major_scan_card_table (SgenGrayQueue *queue)
 
 	FOREACH_BLOCK (block) {
 		int i;
-		int block_obj_size = block->obj_size;
-		char *start = block->block;
+		int block_obj_size;
+		char *start;
 
 		if (!block->has_references)
 			continue;
+
+		block_obj_size = block->obj_size;
+		start = block->block;
 
 		for (i = 0; i < CARDS_PER_BLOCK; ++i, start += CARD_SIZE_IN_BYTES) {
 			int index;
