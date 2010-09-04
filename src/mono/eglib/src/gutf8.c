@@ -74,8 +74,11 @@ utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **erro
 	for (in_pos = 0; in_pos < len && str [in_pos] < 0x80; in_pos++)
 		ret ++;
 
-	if (in_pos == len)
+	if (in_pos == len) {
+		if (items_read)
+			*items_read = in_pos;
 		return ret;
+	}
 
 	mb_size = 0;
 	mb_remain = 0;
@@ -214,6 +217,8 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 	if (len < 0)
 		len = strlen (str);
 
+	if (items_read)
+		*items_read = 0;
 	if (items_written)
 		*items_written = 0;
 	utf16_len = utf8_to_utf16_len (str, len, items_read, error);
@@ -311,6 +316,8 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	out_pos = 0;
 	surrogate = FALSE;
 
+	if (items_read)
+		*items_read = 0;
 	if (items_written)
 		*items_written = 0;
 	utf8_len = utf16_to_utf8_len (str, len, items_read, error);
