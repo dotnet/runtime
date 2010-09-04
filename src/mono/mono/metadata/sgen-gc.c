@@ -5413,6 +5413,15 @@ mono_gc_pthread_detach (pthread_t thread)
  * ######################################################################
  */
 
+/*
+ * This causes the compile to extend the liveness of 'v' till the call to dummy_use
+ */
+static void
+dummy_use (gpointer v) {
+	__asm__ volatile ("" : "=r"(v) : "r"(v));
+}
+
+
 static RememberedSet*
 alloc_remset (int size, gpointer id) {
 	RememberedSet* res = mono_sgen_alloc_internal_dynamic (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
@@ -5439,8 +5448,10 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
 	if (use_cardtable) {
-		sgen_card_table_mark_address ((mword)field_ptr);
 		*(void**)field_ptr = value;
+		if (ptr_in_nursery (value))
+			sgen_card_table_mark_address ((mword)field_ptr);
+		dummy_use (value);
 	} else {
 		RememberedSet *rs;
 		TLAB_ACCESS_INIT;
@@ -5475,8 +5486,10 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
 	if (use_cardtable) {
-		sgen_card_table_mark_address ((mword)slot_ptr);
 		*(void**)slot_ptr = value;
+		if (ptr_in_nursery (value))
+			sgen_card_table_mark_address ((mword)slot_ptr);
+		dummy_use (value);
 	} else {
 		RememberedSet *rs;
 		TLAB_ACCESS_INIT;
@@ -5526,6 +5539,7 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 				*dest = value;
 				if (ptr_in_nursery (value))
 					sgen_card_table_mark_address ((mword)dest);
+				dummy_use (value);
 			}
 		} else {
 			gpointer *end = dest + count;
@@ -5534,6 +5548,7 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 				*dest = value;
 				if (ptr_in_nursery (value))
 					sgen_card_table_mark_address ((mword)dest);
+				dummy_use (value);
 			}
 		}
 	} else {
@@ -5691,6 +5706,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 	*(void**)ptr = value;
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
+	dummy_use (value);
 }
 
 void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
