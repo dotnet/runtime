@@ -199,6 +199,7 @@
 #include "metadata/object-internals.h"
 #include "metadata/threads.h"
 #include "metadata/sgen-gc.h"
+#include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
@@ -299,6 +300,7 @@ static int stat_wbarrier_object_copy = 0;
 static long long time_minor_pre_collection_fragment_clear = 0;
 static long long time_minor_pinning = 0;
 static long long time_minor_scan_remsets = 0;
+static long long time_minor_scan_card_table = 0;
 static long long time_minor_scan_pinned = 0;
 static long long time_minor_scan_registered_roots = 0;
 static long long time_minor_scan_thread_data = 0;
@@ -2486,6 +2488,7 @@ init_stats (void)
 	mono_counters_register ("Minor fragment clear", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pre_collection_fragment_clear);
 	mono_counters_register ("Minor pinning", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_pinning);
 	mono_counters_register ("Minor scan remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_remsets);
+	mono_counters_register ("Minor scan cardtables", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_card_table);
 	mono_counters_register ("Minor scan pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_pinned);
 	mono_counters_register ("Minor scan registered roots", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_registered_roots);
 	mono_counters_register ("Minor scan thread data", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_minor_scan_thread_data);
@@ -2640,8 +2643,11 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	if (use_cardtable) {
+		card_tables_collect_starts (TRUE);
+		TV_GETTIME (atv);
 		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
-		//collect_faulted_cards ();
+		TV_GETTIME (btv);
+		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
 	}
 
 	drain_gray_stack (&gray_queue);
@@ -2693,6 +2699,9 @@ collect_nursery (size_t requested_size)
 	pin_stats_reset ();
 
 	g_assert (gray_object_queue_is_empty (&gray_queue));
+
+	if (use_cardtable)
+		card_tables_collect_starts (FALSE);
 
 	check_scan_starts ();
 
@@ -5404,6 +5413,15 @@ mono_gc_pthread_detach (pthread_t thread)
  * ######################################################################
  */
 
+/*
+ * This causes the compile to extend the liveness of 'v' till the call to dummy_use
+ */
+static void
+dummy_use (gpointer v) {
+	__asm__ volatile ("" : "=r"(v) : "r"(v));
+}
+
+
 static RememberedSet*
 alloc_remset (int size, gpointer id) {
 	RememberedSet* res = mono_sgen_alloc_internal_dynamic (sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
@@ -5423,18 +5441,22 @@ alloc_remset (int size, gpointer id) {
 void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
-	RememberedSet *rs;
-	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_set_field);
 	if (ptr_in_nursery (field_ptr)) {
 		*(void**)field_ptr = value;
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", field_ptr));
-	LOCK_GC;
 	if (use_cardtable) {
-		sgen_card_table_mark_address ((mword)field_ptr);
+		*(void**)field_ptr = value;
+		if (ptr_in_nursery (value))
+			sgen_card_table_mark_address ((mword)field_ptr);
+		dummy_use (value);
 	} else {
+		RememberedSet *rs;
+		TLAB_ACCESS_INIT;
+
+		LOCK_GC;
 		rs = REMEMBERED_SET;
 		if (rs->store_next < rs->end_set) {
 			*(rs->store_next++) = (mword)field_ptr;
@@ -5449,26 +5471,30 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 		*(rs->store_next++) = (mword)field_ptr;
+		*(void**)field_ptr = value;
+		UNLOCK_GC;
 	}
-	*(void**)field_ptr = value;
-	UNLOCK_GC;
 }
 
 void
 mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
-	RememberedSet *rs;
-	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_set_arrayref);
 	if (ptr_in_nursery (slot_ptr)) {
 		*(void**)slot_ptr = value;
 		return;
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", slot_ptr));
-	LOCK_GC;
 	if (use_cardtable) {
-		sgen_card_table_mark_address ((mword)slot_ptr);
+		*(void**)slot_ptr = value;
+		if (ptr_in_nursery (value))
+			sgen_card_table_mark_address ((mword)slot_ptr);
+		dummy_use (value);
 	} else {
+		RememberedSet *rs;
+		TLAB_ACCESS_INIT;
+
+		LOCK_GC;
 		rs = REMEMBERED_SET;
 		if (rs->store_next < rs->end_set) {
 			*(rs->store_next++) = (mword)slot_ptr;
@@ -5483,26 +5509,54 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 		mono_sgen_thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 #endif
 		*(rs->store_next++) = (mword)slot_ptr;
+		*(void**)slot_ptr = value;
+		UNLOCK_GC;
 	}
-	*(void**)slot_ptr = value;
-	UNLOCK_GC;
 }
 
 void
 mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
-	RememberedSet *rs;
-	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_arrayref_copy);
-	LOCK_GC;
-	memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
-	if (ptr_in_nursery (dest_ptr)) {
-		UNLOCK_GC;
+	/*This check can be done without taking a lock since dest_ptr array is pinned*/
+	if (ptr_in_nursery (dest_ptr) || count <= 0) {
+		memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
 		return;
 	}
+
 	if (use_cardtable) {
-		sgen_card_table_mark_range ((mword)dest_ptr, count * sizeof (gpointer));
+		gpointer *dest = dest_ptr;
+		gpointer *src = src_ptr;
+
+		/*overlapping that required backward copying*/
+		if (src < dest && (src + count) > dest) {
+			gpointer *start = dest;
+			dest += count - 1;
+			src += count - 1;
+
+			for (; dest >= start; --src, --dest) {
+				gpointer value = *src;
+				*dest = value;
+				if (ptr_in_nursery (value))
+					sgen_card_table_mark_address ((mword)dest);
+				dummy_use (value);
+			}
+		} else {
+			gpointer *end = dest + count;
+			for (; dest < end; ++src, ++dest) {
+				gpointer value = *src;
+				*dest = value;
+				if (ptr_in_nursery (value))
+					sgen_card_table_mark_address ((mword)dest);
+				dummy_use (value);
+			}
+		}
 	} else {
+		RememberedSet *rs;
+		TLAB_ACCESS_INIT;
+		LOCK_GC;
+		memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
+
 		rs = REMEMBERED_SET;
 		DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", dest_ptr, count));
 		if (rs->store_next + 1 < rs->end_set) {
@@ -5519,8 +5573,9 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 #endif
 		*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
 		*(rs->store_next++) = count;
+
+		UNLOCK_GC;
 	}
-	UNLOCK_GC;
 }
 
 static char *found_obj;
@@ -5651,6 +5706,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 	*(void**)ptr = value;
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
+	dummy_use (value);
 }
 
 void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
