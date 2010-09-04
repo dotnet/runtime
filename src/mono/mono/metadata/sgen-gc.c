@@ -5504,18 +5504,44 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 void
 mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
-	RememberedSet *rs;
-	TLAB_ACCESS_INIT;
 	HEAVY_STAT (++stat_wbarrier_arrayref_copy);
-	LOCK_GC;
-	memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
-	if (ptr_in_nursery (dest_ptr)) {
-		UNLOCK_GC;
+	/*This check can be done without taking a lock since dest_ptr array is pinned*/
+	if (ptr_in_nursery (dest_ptr) || count <= 0) {
+		memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
 		return;
 	}
+
 	if (use_cardtable) {
-		sgen_card_table_mark_range ((mword)dest_ptr, count * sizeof (gpointer));
+		gpointer *dest = dest_ptr;
+		gpointer *src = src_ptr;
+
+		/*overlapping that required backward copying*/
+		if (src < dest && (src + count) > dest) {
+			gpointer *start = dest;
+			dest += count - 1;
+			src += count - 1;
+
+			for (; dest >= start; --src, --dest) {
+				gpointer value = *src;
+				*dest = value;
+				if (ptr_in_nursery (value))
+					sgen_card_table_mark_address ((mword)dest);
+			}
+		} else {
+			gpointer *end = dest + count;
+			for (; dest < end; ++src, ++dest) {
+				gpointer value = *src;
+				*dest = value;
+				if (ptr_in_nursery (value))
+					sgen_card_table_mark_address ((mword)dest);
+			}
+		}
 	} else {
+		RememberedSet *rs;
+		TLAB_ACCESS_INIT;
+		LOCK_GC;
+		memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
+
 		rs = REMEMBERED_SET;
 		DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", dest_ptr, count));
 		if (rs->store_next + 1 < rs->end_set) {
@@ -5532,8 +5558,9 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 #endif
 		*(rs->store_next++) = (mword)dest_ptr | REMSET_RANGE;
 		*(rs->store_next++) = count;
+
+		UNLOCK_GC;
 	}
-	UNLOCK_GC;
 }
 
 static char *found_obj;
