@@ -62,7 +62,7 @@ extern guint8 *sgen_shadow_cardtable MONO_INTERNAL;
 static inline  guint8*
 sgen_card_table_get_shadow_card_address (mword address)
 {
-	return shadow_cardtable + ((address >> CARD_BITS) & CARD_MASK);
+	return sgen_shadow_cardtable + ((address >> CARD_BITS) & CARD_MASK);
 }
 
 static inline gboolean
