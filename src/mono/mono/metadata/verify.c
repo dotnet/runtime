@@ -30,7 +30,6 @@
 #include <signal.h>
 #include <ctype.h>
 
-
 static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
 static gboolean verify_all = FALSE;
 
@@ -3971,6 +3970,7 @@ do_leave (VerifyContext *ctx, int delta)
 	if (!is_correct_leave (ctx->header, ctx->ip_offset, target))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ctx->ip_offset));
 	ctx->eval.size = 0;
+	ctx->target = target;
 }
 
 /* 
@@ -5371,6 +5371,7 @@ mono_method_verify (MonoMethod *method, int level)
 			do_leave (&ctx, read32 (ip + 1) + 5);
 			ip += 5;
 			start = 1;
+			need_merge = 1;
 			break;
 
 		case CEE_LEAVE_S:
@@ -5378,6 +5379,7 @@ mono_method_verify (MonoMethod *method, int level)
 			do_leave (&ctx, (signed char)ip [1] + 2);
 			ip += 2;
 			start = 1;
+			need_merge = 1;
 			break;
 
 		case CEE_PREFIX1:
