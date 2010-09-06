@@ -48,14 +48,14 @@ typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 
 extern guint8 *sgen_cardtable MONO_INTERNAL;
 
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+
 static inline guint8*
 sgen_card_table_get_card_address (mword address)
 {
-	return sgen_cardtable + (address >> CARD_BITS);
+	return sgen_cardtable + ((address >> CARD_BITS) & CARD_MASK);
 }
-
-
-#ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
 extern guint8 *sgen_shadow_cardtable MONO_INTERNAL;
 
@@ -72,6 +72,12 @@ sgen_card_table_card_begin_scanning (mword address)
 }
 
 #else
+
+static inline guint8*
+sgen_card_table_get_card_address (mword address)
+{
+	return sgen_cardtable + (address >> CARD_BITS);
+}
 
 static inline gboolean
 sgen_card_table_card_begin_scanning (mword address)
