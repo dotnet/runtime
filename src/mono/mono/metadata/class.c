@@ -5143,6 +5143,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 				mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 				return NULL;
 			}
+			if (class->generic_container && tmp->generic_class && tmp->generic_class->container_class == class) {
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Parent extends generic instance of this type"));
+				mono_loader_unlock ();
+				mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+				return NULL;
+			}
 		}
 	}
 
