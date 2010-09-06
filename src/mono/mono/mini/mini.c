@@ -4614,12 +4614,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	else
 		InterlockedIncrement (&mono_jit_stats.methods_without_llvm);
 
-	if (cfg->verbose_level >= 2) {
-		char *id =  mono_method_full_name (cfg->method, FALSE);
-		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
-		g_free (id);
-	}
-
 	cfg->jit_info = create_jit_info (cfg, method_to_compile);
 
 #ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
@@ -4636,6 +4630,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mini_gc_create_gc_map (cfg);
  
 	mono_save_seq_point_info (cfg);
+
+	if (cfg->verbose_level >= 2) {
+		char *id =  mono_method_full_name (cfg->method, FALSE);
+		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
+		g_free (id);
+	}
 
 	if (!cfg->compile_aot) {
 		mono_domain_lock (cfg->domain);

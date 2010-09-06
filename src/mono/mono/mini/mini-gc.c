@@ -353,16 +353,6 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 	cfg->compute_gc_maps = TRUE;
 }
 
-static void
-compute_live_intervals (MonoCompile *cfg)
-{
-	/*
-	 * Compute precise live intervals for all stack allocated objects. These are
-	 * similar to the ones computed by mono_analyze_liveness2, but they consists of
-	 * PC ranges instead of abstract ranges.
-	 */
-}
-
 void
 mini_gc_create_gc_map (MonoCompile *cfg)
 {
@@ -405,11 +395,18 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	 */
 	//NOT_IMPLEMENTED;
 
-	compute_live_intervals (cfg);
-
 	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
 		/* Without liveness info, the live ranges are not precise enough */
 		return;
+
+	/*
+	 * Compute precise live intervals for all stack allocated objects.
+	 * FIXME:
+	 * - arguments
+	 * - it would simplify things if we extended live ranges to the end of basic blocks
+	 * instead of computing them precisely.
+	 */
+	mono_analyze_liveness_gc (cfg);
 
 #ifdef TARGET_AMD64
 	min_offset = ALIGN_TO (cfg->locals_min_stack_offset, sizeof (gpointer));
