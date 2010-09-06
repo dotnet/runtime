@@ -870,6 +870,14 @@ MINI_OP(OP_LIVERANGE_START, "liverange_start", NONE, NONE, NONE)
  */
 MINI_OP(OP_LIVERANGE_END, "liverange_end", NONE, NONE, NONE)
 
+/* GC support */
+/*
+ * mono_arch_output_basic_block () will set the backend.pc_offset field to the current pc
+ * offset.
+ */
+MINI_OP(OP_GC_LIVENESS_DEF, "gc_liveness_def", NONE, NONE, NONE)
+MINI_OP(OP_GC_LIVENESS_USE, "gc_liveness_use", NONE, NONE, NONE)
+
 /* Arch specific opcodes */
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null", NONE, IREG, NONE)

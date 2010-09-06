@@ -670,6 +670,7 @@ struct MonoInst {
 		gboolean record_cast_details; /* For CEE_CASTCLASS */
 		MonoInst *spill_var; /* for OP_ICONV_TO_R8_RAW and OP_FCONV_TO_R8_X */
 		guint16 source_opcode; /*OP_XCONV_R8_TO_I4 needs to know which op was used to do proper widening*/
+		int pc_offset; /* OP_GC_LIVERANGE_START/END */
 	} backend;
 	
 	MonoClass *klass;
@@ -1155,6 +1156,7 @@ typedef struct {
 	guint            keep_cil_nops : 1;
 	guint            gen_seq_points : 1;
 	guint            explicit_null_checks : 1;
+	guint            compute_gc_maps : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;

@@ -16,15 +16,15 @@
  * to GC safe points.
  */
 
-#if 0
-//#ifdef HAVE_SGEN_GC
+//#if 0
+#ifdef HAVE_SGEN_GC
 
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-counters.h>
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-#if 1
+#if 0
 #define DEBUG(s) do { s; } while (0)
 #else
 #define DEBUG(s)
@@ -107,6 +107,8 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 static int precise_frame_count [2], precise_frame_limit = -1;
 static gboolean precise_frame_limit_inited;
 
+static int scanned_stat, scanned_precisely_stat, scanned_conservatively_stat;
+
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
 
 static void
@@ -124,8 +126,11 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	int scanned = 0, scanned_precisely, scanned_conservatively;
 
 	if (mono_thread_internal_current () == NULL) {
-		if (!precise)
-			mono_gc_conservatively_scan_area (stack_start, stack_end);			
+		if (!precise) {
+			mono_gc_conservatively_scan_area (stack_start, stack_end);
+			scanned_stat += stack_end - stack_start;
+			scanned_conservatively_stat += stack_end - stack_start;
+		}
 		return;
 	}
 
@@ -145,7 +150,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 	DEBUG (printf ("*** %s stack marking %p-%p ***\n", precise ? "Precise" : "Conservative", stack_start, stack_end));
 
-	if (!tls->has_context) {
+	if (FALSE && !tls->has_context) {
 		memset (&new_ctx, 0, sizeof (ctx));
 
 		while (TRUE) {
@@ -307,10 +312,16 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		if (!precise) {
 			DEBUG (printf ("\tno context, scan area %p-%p.\n", stack_start, stack_end));
 			mono_gc_conservatively_scan_area (stack_start, stack_end);
+			scanned += stack_end - stack_start;
+			scanned_conservatively += stack_end - stack_start;
 		}
 	}
 
 	DEBUG (printf ("Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
+
+	scanned_stat += scanned;
+	scanned_precisely_stat += scanned_precisely;
+	scanned_conservatively_stat += scanned_conservatively;
 
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
 }
@@ -339,6 +350,17 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 	cfg->init_ref_vars = TRUE;
 	/* Prevent these initializations from being optimized away */
 	cfg->disable_initlocals_opt_refs = TRUE;
+	cfg->compute_gc_maps = TRUE;
+}
+
+static void
+compute_live_intervals (MonoCompile *cfg)
+{
+	/*
+	 * Compute precise live intervals for all stack allocated objects. These are
+	 * similar to the ones computed by mono_analyze_liveness2, but they consists of
+	 * PC ranges instead of abstract ranges.
+	 */
 }
 
 void
@@ -382,6 +404,8 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	 * a variable becomes dead, then alive again.
 	 */
 	//NOT_IMPLEMENTED;
+
+	compute_live_intervals (cfg);
 
 	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
 		/* Without liveness info, the live ranges are not precise enough */
@@ -592,6 +616,13 @@ mini_gc_init (void)
 
 	mono_counters_register ("GC Maps size",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_maps_size);
+
+	mono_counters_register ("Stack space scanned",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_stat);
+	mono_counters_register ("Stack space scanned precisely",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_precisely_stat);
+	mono_counters_register ("Stack space scanned conservatively",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_conservatively_stat);
 }
 
 #else

@@ -251,7 +251,7 @@ static gboolean xdomain_checks = FALSE;
 /* If not null, dump the heap after each collection into this file */
 static FILE *heap_dump_file = NULL;
 /* If set, mark stacks conservatively, even if precise marking is possible */
-static gboolean conservative_stack_mark = TRUE;
+static gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
@@ -5181,7 +5181,6 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 void*
 mono_gc_scan_object (void *obj)
 {
-	g_assert_not_reached ();
 	if (current_collection_generation == GENERATION_NURSERY)
 		major_collector.copy_object (&obj, &gray_queue);
 	else
@@ -5765,8 +5764,13 @@ mono_gc_register_thread (void *baseptr)
 	LOCK_GC;
 	init_stats ();
 	info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
-	if (info == NULL)
+	if (info == NULL) {
 		info = gc_register_current_thread (baseptr);
+	} else {
+		/* The main thread might get registered before callbacks are set */
+		if (gc_callbacks.thread_attach_func && !info->runtime_data)
+			info->runtime_data = gc_callbacks.thread_attach_func ();
+	}
 	UNLOCK_GC;
 
 	/* Need a better place to initialize this */

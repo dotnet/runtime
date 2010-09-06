@@ -11449,6 +11449,15 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					live_range_start [dreg] = def_ins;
 					live_range_start_bb [dreg] = bb;
 				}
+
+				// FIXME: Only for stack objects
+				if (cfg->compute_gc_maps && def_ins) {
+					MonoInst *tmp;
+
+					MONO_INST_NEW (cfg, tmp, OP_GC_LIVENESS_DEF);
+					tmp->inst_c1 = dreg;
+					mono_bblock_insert_after_ins (bb, ins, tmp);
+				}
 			}
 
 			/************/
@@ -11550,6 +11559,15 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					if (var->dreg < orig_next_vreg) {
 						live_range_end [var->dreg] = use_ins;
 						live_range_end_bb [var->dreg] = bb;
+					}
+
+					// FIXME: Only for stack objects
+					if (cfg->compute_gc_maps && var->dreg < orig_next_vreg) {
+						MonoInst *tmp;
+
+						MONO_INST_NEW (cfg, tmp, OP_GC_LIVENESS_USE);
+						tmp->inst_c1 = var->dreg;
+						mono_bblock_insert_after_ins (bb, ins, tmp);
 					}
 				}
 			}

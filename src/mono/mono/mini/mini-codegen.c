@@ -605,6 +605,8 @@ mono_print_ins_index (int i, MonoInst *ins)
 		break;
 	case OP_LIVERANGE_START:
 	case OP_LIVERANGE_END:
+	case OP_GC_LIVENESS_DEF:
+	case OP_GC_LIVENESS_USE:
 		printf (" R%d", (int)ins->inst_c1);
 		break;
 	default:

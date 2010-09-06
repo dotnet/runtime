@@ -5647,6 +5647,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MONO_VARINFO (cfg, ins->inst_c0)->live_range_end = code - cfg->native_code;
 			break;
 		}
+		case OP_GC_LIVENESS_DEF:
+		case OP_GC_LIVENESS_USE:
+			ins->backend.pc_offset = code - cfg->native_code;
+			break;
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
