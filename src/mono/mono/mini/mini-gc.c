@@ -358,50 +358,24 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	/*
 	 * Since we currently don't use GC safe points, we need to create GC maps which
-	 * are precise at every instruction within a method. We use the live ranges
-	 * calculated by the JIT in mono_spill_global_vars () for this. Unfortunately by 
-	 * default these are not precise enought for several reasons:
-	 * - the current calculation of MonoMethodVar->live_range_start/end is incorrect,
-	 * it doesn't take into account loops etc. It needs to use the results of the
-	 * liveness analysis pass.
-	 * - the current liveness analysis pass is too conservative, ie. the live_in/out
-	 * sets computed by it are sometimes include too many variables, for example because
-	 * of the bogus links between bblocks. This means the live_in/out sets cannot be
-	 * used to reliably compute precise live ranges.
-	 * - stack slots are shared, which means the live ranges of stack slots have holes
-	 * in them.
-	 * - the live ranges of variables used in out-of-line bblocks also have holes in
-	 * them.
-	 * - the live ranges of variables used for handling stack args also have holes in
-	 * them:
-	 *   if (A)
-     *     x = <ref>
-	 *   else
-	 *     x = <ref>
-	 *   <use x>
-	 * Here x is not live between the first and the second assignment.
-	 *
-	 * To work around these problems, we set a few cfg flags in mini_init_gc_maps ()
-	 * which guarantee that the live range of stack slots have no holes, i.e. they hold
-	 * a valid value (or null) during their entire live range.
-	 * FIXME: This doesn't completely work yet, see test_0_liveness_6 (), where
-	 * a variable becomes dead, then alive again.
-	 */
-	//NOT_IMPLEMENTED;
-
-	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
-		/* Without liveness info, the live ranges are not precise enough */
-		return;
-
-	/*
-	 * Compute precise live intervals for all stack allocated objects.
+	 * are precise at every instruction within a method. The live ranges calculated by
+	 * the liveness pass are not usable for this, since they contain abstract positions, not
+	 * pc offsets. The live ranges calculated by mono_spill_global_vars () are not usable
+	 * either, since they can't model holes. Instead of these, we implement our own
+	 * liveness analysis which is precise, and works with PC offsets. It calculates live
+	 * intervals, which are unions of live ranges.
 	 * FIXME:
-	 * - arguments
+	 * - arguments (these are not scanned precisely currently).
 	 * - it would simplify things if we extended live ranges to the end of basic blocks
 	 * instead of computing them precisely.
 	 * - maybe mark loads+stores as needing GC tracking, instead of using DEF/USE
 	 * instructions ?
 	 */
+
+	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
+		/* Without liveness info, the live ranges are not precise enough */
+		return;
+
 	mono_analyze_liveness_gc (cfg);
 
 #ifdef TARGET_AMD64
