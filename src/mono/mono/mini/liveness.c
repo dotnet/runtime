@@ -1009,7 +1009,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		block_from = bb->native_offset;
 		block_to = bb->native_offset + bb->native_length;
 
-		LIVENESS_DEBUG (printf ("GC LIVENESS BLOCK BB%d:\n", bb->block_num));
+		LIVENESS_DEBUG (printf ("GC LIVENESS BB%d:\n", bb->block_num));
 
 		if (!bb->code)
 			continue;
@@ -1027,8 +1027,8 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 			bits_out = mono_bitset_get_fast (bb->live_out_set, j);
 			k = (j * BITS_PER_CHUNK);	
 			while (bits_out) {
-				if (bits_out & 1) {
-					LIVENESS_DEBUG (printf ("Var R%d live at exit, set last_use to %x\n", cfg->varinfo [k]->dreg, block_to));
+				if ((bits_out & 1) && cfg->varinfo [k]->flags & MONO_INST_GC_TRACK) {
+					LIVENESS_DEBUG (printf ("Var R%d live at exit, last_use set to %x.\n", cfg->varinfo [j]->dreg, block_to));
 					last_use [k] = block_to;
 				}
 				bits_out >>= 1;
@@ -1058,7 +1058,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		for (idx = 0; idx < max_vars; ++idx) {
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
-			if (last_use [idx] != 0) {
+			if (last_use [idx] != 0 && cfg->varinfo [idx]->flags & MONO_INST_GC_TRACK) {
 				/* Live at exit, not written -> live on enter */
 				LIVENESS_DEBUG (printf ("Var R%d live at enter, add range to R%d: [%x, %x)\n", cfg->varinfo [idx]->dreg, cfg->varinfo [idx]->dreg, block_from, last_use [idx]));
 				mono_linterval_add_range (cfg, vi->gc_interval, block_from, last_use [idx]);
@@ -1073,7 +1073,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 	for (idx = 0; idx < max_vars; ++idx) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
-		if (cfg->varinfo [idx]->opcode == OP_REGOFFSET) {
+		if (cfg->varinfo [idx]->opcode == OP_REGOFFSET && (cfg->varinfo [idx]->flags & MONO_INST_GC_TRACK)) {
 			LIVENESS_DEBUG (printf ("\tR%d (%s+0x%x): ", cfg->varinfo [idx]->dreg, mono_arch_regname (cfg->varinfo [idx]->inst_basereg), (int)cfg->varinfo [idx]->inst_offset));
 			LIVENESS_DEBUG (mono_linterval_print (vi->gc_interval));
 			LIVENESS_DEBUG (printf ("\n"));

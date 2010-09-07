@@ -337,19 +337,6 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 	if (COMPILE_LLVM (cfg))
 		return;
 
-	/* See mini_gc_create_gc_map () for comments as to why these are needed */
-
-	/* Extend the live ranges using the liveness information */
-	cfg->compute_precise_live_ranges = TRUE;
-	/* Is this still needed ? */
-	cfg->disable_reuse_ref_stack_slots = TRUE;
-	/* 
-	 * Initialize all variables holding refs to null in the initlocals bblock, not just
-	 *  variables representing IL locals.
-	 */
-	cfg->init_ref_vars = TRUE;
-	/* Prevent these initializations from being optimized away */
-	cfg->disable_initlocals_opt_refs = TRUE;
 	cfg->compute_gc_maps = TRUE;
 }
 
@@ -405,6 +392,8 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	 * - arguments
 	 * - it would simplify things if we extended live ranges to the end of basic blocks
 	 * instead of computing them precisely.
+	 * - maybe mark loads+stores as needing GC tracking, instead of using DEF/USE
+	 * instructions ?
 	 */
 	mono_analyze_liveness_gc (cfg);
 

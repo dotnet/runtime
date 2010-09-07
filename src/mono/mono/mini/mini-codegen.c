@@ -2466,6 +2466,8 @@ mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins)
 		 * OP_STORE_MEMBASE_REG reg1, offset(basereg)
 		 * OP_MOVE reg1, reg2
 		 */
+		if (last_ins && last_ins->opcode == OP_GC_LIVENESS_DEF)
+			last_ins = last_ins->prev;
 		if (last_ins &&
 			(((ins->opcode == OP_LOADI4_MEMBASE) && (last_ins->opcode == OP_STOREI4_MEMBASE_REG)) ||
 			 ((ins->opcode == OP_LOAD_MEMBASE) && (last_ins->opcode == OP_STORE_MEMBASE_REG))) &&

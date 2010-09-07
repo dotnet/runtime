@@ -141,39 +141,6 @@ class Tests {
 			(int)b.o31 + (int)b.o32;
 	}
 
-	static void cond (bool b) {
-		if (b) {
-			/* Exhaust all registers so 'o' is stack allocated */
-			int sum = 0, i, j, k, l, m;
-			for (i = 0; i < 100; ++i)
-				sum ++;
-			for (j = 0; j < 100; ++j)
-				sum ++;
-			for (k = 0; k < 100; ++k)
-				sum ++;
-			for (l = 0; l < 100; ++l)
-				sum ++;
-			for (m = 0; m < 100; ++m)
-				sum ++;
-
-			object o = new object ();
-			sum += i + j + k;
-			if (b) {
-				throw new Exception (o.ToString ());
-			}
-		}
-		GC.Collect (1);
-	}
-
-	/* 
-	 * Tests liveness of object references which are initialized conditionally,
-	 * used in an out-of-line bblock, and the initlocals assignment is optimized away.
-	 */
-	public static int test_0_liveness_out_of_line_bblocks () {
-		cond (false);
-		return 0;
-	}
-
 	/*
 	 * Test liveness and loops.
 	 */
@@ -358,8 +325,13 @@ class Tests {
 	 */
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	static object liveness_6_1 () {
+	static object alloc_obj () {
 		return new object ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static bool return_false () {
+		return false;
 	}
 
 	public static int test_0_liveness_6 () {
@@ -387,7 +359,7 @@ class Tests {
 
 			GC.Collect (1);
 
-			object o = liveness_6_1 ();
+			object o = alloc_obj ();
 
 			o.ToString ();
 
@@ -431,12 +403,20 @@ class Tests {
 		for (s = 0; s < 100; ++s)
 			sum ++;
 
+		// o is dead here
 		GC.Collect (1);
 
-		object o = liveness_6_1 ();
+		if (return_false ()) {
+			// This bblock is in-line
+			object o = alloc_obj ();
+			// o is live here
+			if (return_false ()) {
+				// This bblock is out-of-line, and o is live here
+				throw new Exception (o.ToString ());
+			}
+		}
 
-		o.ToString ();
-
+		// o is dead here too
 		GC.Collect (1);
 
 		return 0;

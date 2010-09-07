@@ -11450,8 +11450,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					live_range_start_bb [dreg] = bb;
 				}
 
-				// FIXME: Only for ref vars
-				if (cfg->compute_gc_maps && def_ins && var->opcode != OP_REGVAR) {
+				if (cfg->compute_gc_maps && def_ins && var->opcode != OP_REGVAR && (var->flags & MONO_INST_GC_TRACK)) {
 					MonoInst *tmp;
 
 					MONO_INST_NEW (cfg, tmp, OP_GC_LIVENESS_DEF);
@@ -11562,7 +11561,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					}
 
 					// FIXME: Only for ref vars
-					if (cfg->compute_gc_maps && var->dreg < orig_next_vreg && var->opcode != OP_REGVAR) {
+					if (cfg->compute_gc_maps && var->dreg < orig_next_vreg && var->opcode != OP_REGVAR && (var->flags & MONO_INST_GC_TRACK)) {
 						MonoInst *tmp;
 
 						MONO_INST_NEW (cfg, tmp, OP_GC_LIVENESS_USE);
