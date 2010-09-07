@@ -166,6 +166,7 @@
 #define g_strerror monoeg_g_strerror
 #define g_strescape monoeg_g_strescape
 #define g_strfreev monoeg_g_strfreev
+#define g_strdupv monoeg_g_strdupv
 #define g_string_append monoeg_g_string_append
 #define g_string_append_c monoeg_g_string_append_c
 #define g_string_append_len monoeg_g_string_append_len
