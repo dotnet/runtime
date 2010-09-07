@@ -528,6 +528,29 @@ class Tests {
 		return cctor_count;
 	}
 
+	static int cctor_count2 = 0;
+
+	class ServiceController<T> {
+		static ServiceController () {
+			cctor_count2 ++;
+		}
+
+		public ServiceController () {
+		}
+	}
+
+	static ServiceController<T> Create<T>() {
+		return new ServiceController<T>();
+	}
+
+	// #631409
+	public static int test_2_generic_class_init_gshared_ctor_from_gshared () {
+		Create<object> ();
+		Create<string> ();
+
+		return cctor_count2;
+	}
+
 	public static Type get_type<T> () {
 		return typeof (T);
 	}

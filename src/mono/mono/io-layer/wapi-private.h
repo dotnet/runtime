@@ -188,6 +188,8 @@ struct _WapiFileShare
 	guint32 timestamp;
 };
 
+typedef struct _WapiFileShare _WapiFileShare;
+
 struct _WapiFileShareLayout
 {
 	guint32 hwm;

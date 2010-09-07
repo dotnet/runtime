@@ -7,6 +7,8 @@
  * (C) 2002 Ximian, Inc.
  */
 
+#ifndef DISABLE_SOCKETS
+
 #include <config.h>
 #include <glib.h>
 #include <pthread.h>
@@ -714,6 +716,15 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 		g_message ("%s: send error: %s", __func__, strerror (errno));
 #endif
 
+		/* At least linux returns EAGAIN/EWOULDBLOCK when the timeout has been set on
+		 * a blocking socket. See bug #599488 */
+		if (errnum == EAGAIN) {
+			gboolean nonblock;
+
+			ret = ioctlsocket (fd, FIONBIO, (gulong *) &nonblock);
+			if (ret != SOCKET_ERROR && !nonblock)
+				errnum = ETIMEDOUT;
+		}
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
 		
@@ -1581,3 +1592,5 @@ int WSASend (guint32 fd, WapiWSABuf *buffers, guint32 count, guint32 *sent,
 	*sent = ret;
 	return 0;
 }
+
+#endif /* ifndef DISABLE_SOCKETS */

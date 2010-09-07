@@ -124,7 +124,7 @@ class Driver
 
 class PassesStuffBinder : BaseBinder
 {
-	object stuff = stuff;
+	object stuff = null;
 
 	public PassesStuffBinder (object stuff)
 	{

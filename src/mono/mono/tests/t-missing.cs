@@ -25,6 +25,7 @@ public class Foo2 {
 #endif
 }
 
+
 public class Foo3 {
 #if FOUND
 	public static int i;

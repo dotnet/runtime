@@ -24,6 +24,8 @@
 #include "mini.h"
 #include "mini-mips.h"
 
+static guint8* nullified_class_init_trampoline;
+
 /*
  * get_unbox_trampoline:
  * @gsctx: the generic sharing context
@@ -64,9 +66,9 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 {
 	guint32 *code = (guint32*)orig_code;
 
-	/* Locate the address of the method-specific trampoline. The call using
-	the vtable slot that took the processing flow to 'arch_create_jit_trampoline' 
-	looks something like this:
+	/* Locate the address of the method-specific trampoline.
+	The call using the vtable slot that took the processing flow to
+	'arch_create_jit_trampoline' looks something like one of these:
 
 		jal	XXXXYYYY
 		nop
@@ -83,19 +85,19 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	if ((code[-2] >> 26) == 0x03) {
 		//g_print ("direct patching\n");
 		mips_patch ((code-2), (gsize)addr);
-	} else {
-		/* Sanity check: look for the jalr */
-		g_assert((code[-2] & 0xfc1f003f) == 0x00000009);
-
-		//printf ("mips_magic_trampoline: jalr @ 0x%0x, w/ reg %d\n", code-2, reg);
-
+		return;
+	}
+	/* Look for the jalr */
+	if ((code[-2] & 0xfc1f003f) == 0x00000009) {
 		/* The lui / addiu / jalr case */
-		if ((code [-4] >> 26) == 0x0f && (code [-3] >> 26) == 0x09 && (code [-2] >> 26) == 0) {
+		if ((code [-4] >> 26) == 0x0f && (code [-3] >> 26) == 0x09
+		    && (code [-2] >> 26) == 0) {
 			mips_patch ((code-4), (gsize)addr);
-		} else {
-			g_assert_not_reached ();
+			return;
 		}
 	}
+	g_print("error: bad patch at 0x%08x\n", code);
+	g_assert_not_reached ();
 }
 
 void
@@ -167,7 +169,7 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 				o = (gpointer)lmf->iregs [base];
 			}
 			else {
-				o = regs [base];
+				o = (gpointer) regs [base];
 			}
 			break;
 		}
@@ -179,7 +181,10 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, mgreg_t *regs, int *displacement)
 void
 mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 {
-	g_assert_not_reached ();
+	if (mono_aot_only && !nullified_class_init_trampoline)
+		nullified_class_init_trampoline = mono_aot_get_trampoline ("nullified_class_init_trampoline");
+
+	mono_arch_patch_plt_entry (code, NULL, regs, nullified_class_init_trampoline);
 }
 
 void
@@ -196,9 +201,26 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 		mips_nop (code32);
 		mono_arch_flush_icache ((gpointer)(code32 - 1), 4);
 		return;
-	} else {
-		g_assert_not_reached ();
 	}
+	g_assert_not_reached ();
+}
+
+gpointer
+mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
+{
+	guint8 *buf, *code;
+
+	code = buf = mono_global_codeman_reserve (16);
+
+	mips_jr (code, mips_ra);
+	mips_nop (code);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	if (info)
+		*info = mono_tramp_info_create (g_strdup_printf ("nullified_class_init_trampoline"), buf, code - buf, NULL, NULL);
+
+	return buf;
 }
 
 /*
@@ -221,11 +243,12 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 {
 	guint8 *buf, *tramp, *code = NULL;
 	int i, lmf;
+	GSList *unwind_ops = NULL;
+	MonoJumpInfo *ji = NULL;
 	int max_code_len = 768;
 
+	/* AOT not supported on MIPS yet */
 	g_assert (!aot);
-	if (info)
-		*info = NULL;
 
 	/* Now we'll create in 'buf' the MIPS trampoline code. This
 	   is the trampoline code common to all methods  */
@@ -284,11 +307,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * Now we're ready to call mips_magic_trampoline ().
 	 */
 
-	/* Arg 1: stack pointer so that the magic trampoline can access the
-	 * registers we saved above
+	/* Arg 1: pointer to registers so that the magic trampoline can
+	 * access what we saved above
 	 */
-	mips_move (code, mips_a0, mips_sp);
-		
+	mips_addiu (code, mips_a0, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[0]));
+
 	/* Arg 2: code (next address to the instruction that called us) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
 		mips_move (code, mips_a1, mips_zero);
@@ -348,6 +371,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	
 	/* Sanity check */
 	g_assert ((code - buf) <= max_code_len);
+
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
+		/* Initialize the nullified class init trampoline used in the AOT case */
+		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (NULL);
+
+	if (info)
+		*info = mono_tramp_info_create (mono_get_generic_trampoline_name (tramp_type), buf, code - buf, ji, unwind_ops);
 
 	return buf;
 }

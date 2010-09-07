@@ -6,6 +6,9 @@
  *
  * Copyright (C) 2005-2009 Novell, Inc. (http://www.novell.com)
  */
+#if defined(__native_client__)
+#include "console-null.c"
+#else
 
 #include <config.h>
 #include <glib.h>
@@ -485,3 +488,5 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 
 	return TRUE;
 }
+#endif /* #if defined(__native_client__) */
+

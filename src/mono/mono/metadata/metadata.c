@@ -1371,6 +1371,9 @@ builtin_types[] = {
 static GHashTable *type_cache = NULL;
 static int next_generic_inst_id = 0;
 
+static MonoImageSet *mscorlib_image_set;
+static GPtrArray *image_sets;
+
 static guint mono_generic_class_hash (gconstpointer data);
 
 /*
@@ -1495,6 +1498,8 @@ mono_metadata_cleanup (void)
 {
 	g_hash_table_destroy (type_cache);
 	type_cache = NULL;
+	g_ptr_array_free (image_sets, TRUE);
+	image_sets = NULL;
 }
 
 /**
@@ -2176,9 +2181,6 @@ retry:
 		return image == mono_class_from_mono_type (type)->image;
 	}
 }
-
-static MonoImageSet *mscorlib_image_set;
-static GPtrArray *image_sets;
 
 /*
  * get_image_set:

@@ -1,10 +1,10 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
-MOONLIGHT_SUBDIRS =    $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir)         data
+MOONLIGHT_SUBDIRS =    $(libgc_dir) eglib mono $(ikvm_native_dir)         data
 
 if CROSS_COMPILING
-SUBDIRS = po $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) data runtime scripts man samples web msvc $(docs_dir)
+SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) data runtime scripts man samples web msvc $(docs_dir)
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
 DIST_SUBDIRS = po libgc eglib mono ikvm-native         data runtime scripts man samples web tools msvc docs
@@ -12,7 +12,7 @@ else
 if ONLY_MOONLIGHT
 SUBDIRS = $(MOONLIGHT_SUBDIRS) runtime
 else
-SUBDIRS = po $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) support data runtime scripts man samples web msvc $(docs_dir)
+SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scripts man samples web msvc $(docs_dir)
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
 DIST_SUBDIRS = po libgc eglib mono ikvm-native support data runtime scripts man samples web tools msvc docs
@@ -24,9 +24,11 @@ EXTRA_DIST= nls.m4 po.m4 progtest.m4 mono-uninstalled.pc.in build-mingw32.sh LIC
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
 # Distribute the 'mcs' tree too
+GIT_DIR ?= $(srcdir)/.git
 dist-hook:
 	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
 	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
+	test ! -d $(GIT_DIR) || ./scripts/commits-to-changelog.py --root=$(distdir) last-commit-with-compulsory-changelog-entry
 
 pkgconfigdir = $(libdir)/pkgconfig
 noinst_DATA = mono-uninstalled.pc

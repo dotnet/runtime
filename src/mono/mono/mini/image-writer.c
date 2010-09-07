@@ -53,7 +53,7 @@
  * TARGET_ASM_GAS == GNU assembler
  */
 #if !defined(TARGET_ASM_APPLE) && !defined(TARGET_ASM_GAS)
-#ifdef __MACH__
+#if defined(__MACH__) && !defined(__native_client_codegen__)
 #define TARGET_ASM_APPLE
 #else
 #define TARGET_ASM_GAS
@@ -313,6 +313,11 @@ bin_writer_emit_ensure_buffer (BinSection *section, int size)
 		while (new_size <= new_offset)
 			new_size *= 2;
 		data = g_malloc0 (new_size);
+#ifdef __native_client_codegen__
+		/* for Native Client, fill empty space with HLT instruction */
+		/* instead of 00.                                           */
+		memset(data, 0xf4, new_size);
+#endif		
 		memcpy (data, section->data, section->data_len);
 		g_free (section->data);
 		section->data = data;
@@ -354,6 +359,22 @@ bin_writer_emit_alignment (MonoImageWriter *acfg, int size)
 		acfg->cur_section->cur_offset += add;
 	}
 }
+
+#ifdef __native_client_codegen__
+static void
+bin_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
+  int offset = acfg->cur_section->cur_offset;
+  int padding = kNaClAlignment - (offset & kNaClAlignmentMask) - kNaClLengthOfCallImm;
+  guint8 padc = '\x90';
+
+  if (padding < 0) padding += kNaClAlignment;
+
+  while (padding > 0) {
+    bin_writer_emit_bytes(acfg, &padc, 1);
+    padding -= 1;
+  }
+}
+#endif  /* __native_client_codegen__ */
 
 static void
 bin_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
@@ -468,9 +489,9 @@ enum {
 	SECT_REL_DYN,
 	SECT_RELA_DYN,
 	SECT_TEXT,
+	SECT_RODATA,
 	SECT_DYNAMIC,
 	SECT_GOT_PLT,
-	SECT_RODATA,
 	SECT_DATA,
 	SECT_BSS,
 	SECT_DEBUG_FRAME,
@@ -522,9 +543,9 @@ static SectInfo section_info [] = {
 	{".rel.dyn", SHT_REL, sizeof (ElfReloc), 2, SIZEOF_VOID_P},
 	{".rela.dyn", SHT_RELA, sizeof (ElfRelocA), 2, SIZEOF_VOID_P},
 	{".text", SHT_PROGBITS, 0, 6, 4096},
+	{".rodata", SHT_PROGBITS, 0, SHF_ALLOC, 4096},
 	{".dynamic", SHT_DYNAMIC, sizeof (ElfDynamic), 3, SIZEOF_VOID_P},
 	{".got.plt", SHT_PROGBITS, SIZEOF_VOID_P, 3, SIZEOF_VOID_P},
-	{".rodata", SHT_PROGBITS, 0, 6, 4096},
 	{".data", SHT_PROGBITS, 0, 3, 8},
 	{".bss", SHT_NOBITS, 0, 3, 8},
 	{".debug_frame", SHT_PROGBITS, 0, 0, 8},
@@ -1040,7 +1061,7 @@ bin_writer_fseek (MonoImageWriter *acfg, int offset)
 		acfg->out_buf_pos = offset;
 }
 
-static int normal_sections [] = { SECT_RODATA, SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, SECT_DEBUG_ABBREV, SECT_DEBUG_LINE, SECT_DEBUG_LOC };
+static int normal_sections [] = { SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, SECT_DEBUG_ABBREV, SECT_DEBUG_LINE, SECT_DEBUG_LOC };
 
 static int
 bin_writer_emit_writeout (MonoImageWriter *acfg)
@@ -1165,6 +1186,17 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 		file_offset += size;
 	}
 
+	file_offset = ALIGN_TO (file_offset, secth [SECT_RODATA].sh_addralign);
+	virt_offset = file_offset;
+	secth [SECT_RODATA].sh_addr = virt_offset;
+	secth [SECT_RODATA].sh_offset = file_offset;
+	if (sections [SECT_RODATA]) {
+		size = sections [SECT_RODATA]->cur_offset;
+		secth [SECT_RODATA].sh_size = size;
+		file_offset += size;
+		virt_offset += size;
+	}
+
 	file_offset = ALIGN_TO (file_offset, secth [SECT_DYNAMIC].sh_addralign);
 	virt_offset = file_offset;
 
@@ -1186,17 +1218,6 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	secth [SECT_GOT_PLT].sh_size = size;
 	file_offset += size;
 	virt_offset += size;
-
-	file_offset = ALIGN_TO (file_offset, secth [SECT_RODATA].sh_addralign);
-	virt_offset = ALIGN_TO (virt_offset, secth [SECT_RODATA].sh_addralign);
-	secth [SECT_RODATA].sh_addr = virt_offset;
-	secth [SECT_RODATA].sh_offset = file_offset;
-	if (sections [SECT_RODATA]) {
-		size = sections [SECT_RODATA]->cur_offset;
-		secth [SECT_RODATA].sh_size = size;
-		file_offset += size;
-		virt_offset += size;
-	}
 
 	file_offset = ALIGN_TO (file_offset, secth [SECT_DATA].sh_addralign);
 	virt_offset = ALIGN_TO (virt_offset, secth [SECT_DATA].sh_addralign);
@@ -1419,16 +1440,24 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 		bin_writer_fseek (acfg, secth [SECT_TEXT].sh_offset);
 		bin_writer_fwrite (acfg, sections [SECT_TEXT]->data, sections [SECT_TEXT]->cur_offset, 1);
 	}
+	/* .rodata */
+	if (sections [SECT_RODATA]) {
+		bin_writer_fseek (acfg, secth [SECT_RODATA].sh_offset);
+		bin_writer_fwrite (acfg, sections [SECT_RODATA]->data, sections [SECT_RODATA]->cur_offset, 1);
+	}
 	/* .dynamic */
+	bin_writer_fseek (acfg, secth [SECT_DYNAMIC].sh_offset);
 	bin_writer_fwrite (acfg, dynamic, sizeof (dynamic), 1);
 
 	/* .got.plt */
 	size = secth [SECT_DYNAMIC].sh_addr;
+	bin_writer_fseek (acfg, secth [SECT_GOT_PLT].sh_offset);
 	bin_writer_fwrite (acfg, &size, sizeof (size), 1);
 
 	/* normal sections */
 	for (i = 0; i < sizeof (normal_sections) / sizeof (normal_sections [0]); ++i) {
 		int sect = normal_sections [i];
+
 		if (sections [sect]) {
 			bin_writer_fseek (acfg, secth [sect].sh_offset);
 			bin_writer_fwrite (acfg, sections [sect]->data, sections [sect]->cur_offset, 1);
@@ -1626,6 +1655,20 @@ asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 	fprintf (acfg->fp, "\t.align %d\n", size);
 #endif
 }
+
+#ifdef __native_client_codegen__
+static void
+asm_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
+  int padding = kNaClAlignment - kNaClLengthOfCallImm;
+  guint8 padc = '\x90';
+
+  fprintf (acfg->fp, "\n\t.align %d", kNaClAlignment);
+  while (padding > 0) {
+    fprintf (acfg->fp, "\n\t.byte %d", padc);
+    padding -= 1;
+  }
+}
+#endif  /* __native_client_codegen__ */
 
 static void
 asm_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
@@ -1908,6 +1951,20 @@ img_writer_emit_alignment (MonoImageWriter *acfg, int size)
 	asm_writer_emit_alignment (acfg, size);
 #endif
 }
+
+#ifdef __native_client_codegen__
+void
+img_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
+#ifdef USE_BIN_WRITER
+	if (acfg->use_bin_writer)
+		bin_writer_emit_nacl_call_alignment (acfg);
+	else
+		asm_writer_emit_nacl_call_alignment (acfg);
+#else
+	g_assert_not_reached();
+#endif
+}
+#endif  /* __native_client_codegen__ */
 
 void
 img_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)

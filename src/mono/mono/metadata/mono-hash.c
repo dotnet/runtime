@@ -468,6 +468,23 @@ mono_g_hash_table_replace(MonoGHashTable *h, gpointer k, gpointer v)
 	mono_g_hash_table_insert_replace (h, k, v, TRUE);
 }
 
+void
+mono_g_hash_table_print_stats (MonoGHashTable *table)
+{
+	int i, chain_size, max_chain_size;
+	Slot *node;
+
+	max_chain_size = 0;
+	for (i = 0; i < table->table_size; i++) {
+		chain_size = 0;
+		for (node = table->table [i]; node; node = node->next)
+			chain_size ++;
+		max_chain_size = MAX(max_chain_size, chain_size);
+	}
+
+	printf ("Size: %d Table Size: %d Max Chain Length: %d\n", table->in_use, table->table_size, max_chain_size);
+}
+
 #ifdef HAVE_SGEN_GC
 
 /* GC marker function */
@@ -503,5 +520,5 @@ mono_g_hash_mark (void *addr, MonoGCMarkFunc mark_func)
 		}
 	}
 }
-
+	
 #endif

@@ -231,6 +231,8 @@ struct _MonoDomain {
 	MonoObject         *typeof_void;
 	/* Ephemeron Tombstone*/
 	MonoObject         *ephemeron_tombstone;
+	/* new MonoType [0] */
+	MonoArray          *empty_types;
 	/* 
 	 * The fields between FIRST_GC_TRACKED and LAST_GC_TRACKED are roots, but
 	 * not object references.
@@ -280,12 +282,13 @@ struct _MonoDomain {
 	 * if the hashtable contains a GC visible reference to them.
 	 */
 	GHashTable         *finalizable_objects_hash;
-#ifndef HAVE_SGEN_GC
+
+	/* These two are boehm only */
 	/* Maps MonoObjects to a GSList of WeakTrackResurrection GCHandles pointing to them */
 	GHashTable         *track_resurrection_objects_hash;
 	/* Maps WeakTrackResurrection GCHandles to the MonoObjects they point to */
 	GHashTable         *track_resurrection_handles_hash;
-#endif
+
 	/* Protects the three hashes above */
 	CRITICAL_SECTION   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */

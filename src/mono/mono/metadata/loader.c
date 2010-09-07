@@ -71,6 +71,8 @@ guint32 loader_error_thread_id;
  */
 guint32 loader_lock_nest_id;
 
+static void dllmap_cleanup (void);
+
 void
 mono_loader_init ()
 {
@@ -95,11 +97,13 @@ mono_loader_init ()
 void
 mono_loader_cleanup (void)
 {
+	dllmap_cleanup ();
+
 	TlsFree (loader_error_thread_id);
 	TlsFree (loader_lock_nest_id);
 
 	DeleteCriticalSection (&loader_mutex);
-	loader_lock_inited = FALSE;
+	loader_lock_inited = FALSE;	
 }
 
 /*
@@ -1189,6 +1193,28 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 	mono_loader_unlock ();
 }
 
+static void
+free_dllmap (MonoDllMap *map)
+{
+	while (map) {
+		MonoDllMap *next = map->next;
+
+		g_free (map->dll);
+		g_free (map->target);
+		g_free (map->func);
+		g_free (map->target_func);
+		g_free (map);
+		map = next;
+	}
+}
+
+static void
+dllmap_cleanup (void)
+{
+	free_dllmap (global_dll_map);
+	global_dll_map = NULL;
+}
+
 static GHashTable *global_module_map;
 
 static MonoDl*
@@ -1378,6 +1404,16 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		return NULL;
 	}
 
+#ifdef TARGET_WIN32
+	if (import && import [0] == '#' && isdigit (import [1])) {
+		char *end;
+		long id;
+
+		id = strtol (import + 1, &end, 10);
+		if (id > 0 && *end == '\0')
+			import++;
+	}
+#endif
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 				"Searching for '%s'.", import);
 
@@ -2188,9 +2224,8 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (!signature) {
 		const char *sig_body;
 		/*TODO we should cache the failure result somewhere*/
-		if (!mono_verifier_verify_method_signature (img, sig_offset, NULL)) {
+		if (!mono_verifier_verify_method_signature (img, sig_offset, error)) {
 			mono_loader_unlock ();
-			mono_error_set_method_load (error, m->klass, m->name, "");
 			return NULL;
 		}
 
@@ -2278,7 +2313,9 @@ mono_method_signature (MonoMethod *m)
 
 	sig = mono_method_signature_checked (m, &error);
 	if (!sig) {
-		g_warning ("Could not load signature due to: %s", mono_error_get_message (&error));
+		char *type_name = mono_type_get_full_name (m->klass);
+		g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (&error));
+		g_free (type_name);
 		mono_error_cleanup (&error);
 	}
 
@@ -2327,8 +2364,10 @@ mono_method_get_header (MonoMethod *method)
 		}
 
 		header = mono_method_get_header (imethod->declaring);
-		if (!header)
+		if (!header) {
+			mono_loader_unlock ();
 			return NULL;
+		}
 
 		imethod->header = inflate_generic_header (header, mono_method_get_context (method));
 		mono_loader_unlock ();
@@ -2378,6 +2417,10 @@ guint32
 mono_method_get_index (MonoMethod *method) {
 	MonoClass *klass = method->klass;
 	int i;
+
+	if (klass->rank)
+		/* constructed array methods are not in the MethodDef table */
+		return 0;
 
 	if (method->token)
 		return mono_metadata_token_index (method->token);

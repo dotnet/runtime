@@ -202,6 +202,48 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 	InterlockedExchangePointer (plt_jump_table_entry, addr);
 }
 
+static gpointer
+get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
+{
+	guint8 buf [10];
+	gint32 disp;
+	MonoJitInfo *ji = NULL;
+
+#ifdef ENABLE_LLVM
+	/* code - 9 might be before the start of the method */
+	/* FIXME: Avoid this expensive call somehow */
+	ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+#endif
+
+	mono_breakpoint_clean_code (ji ? ji->code_start : NULL, code, 9, buf, sizeof (buf));
+	code = buf + 9;
+
+	*displacement = 0;
+
+	code -= 7;
+
+	if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
+		/* call OFFSET(%rip) */
+		g_assert_not_reached ();
+		*displacement = *(guint32*)(code + 3);
+		return (gpointer*)(code + disp + 7);
+	} else {
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
+static gpointer*
+get_vcall_slot_addr (guint8* code, mgreg_t *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
+}
+
 void
 mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 {
@@ -229,7 +271,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, mgreg_t *regs)
 		gpointer *vtable_slot;
 
 		/* call *<OFFSET>(%rip) */
-		vtable_slot = mono_get_vcall_slot_addr (code, regs);
+		vtable_slot = get_vcall_slot_addr (code, regs);
 		g_assert (vtable_slot);
 
 		*vtable_slot = nullified_class_init_trampoline;
@@ -777,6 +819,8 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
+	unwind_ops = mono_arch_get_cie_program ();
+
 	if (mono_thread_get_tls_offset () != -1) {
 		/* MonoObject* obj is in RDI */
 		/* is obj null? */
@@ -883,6 +927,8 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	tramp_size = 94;
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	unwind_ops = mono_arch_get_cie_program ();
 
 	if (mono_thread_get_tls_offset () != -1) {
 		/* MonoObject* obj is in RDI */

@@ -139,19 +139,21 @@ gpointer
 mono_get_throw_corlib_exception (void)
 {
 	gpointer code = NULL;
+	MonoTrampInfo *info;
 
 	/* This depends on corlib classes so cannot be inited in mono_exceptions_init () */
 	if (throw_corlib_exception_func)
 		return throw_corlib_exception_func;
 
-#if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
 	if (mono_aot_only)
 		code = mono_aot_get_trampoline ("throw_corlib_exception");
-	else
-		code = mono_arch_get_throw_corlib_exception (NULL, FALSE);
-#else
-	g_assert_not_reached ();
-#endif
+	else {
+		code = mono_arch_get_throw_corlib_exception (&info, FALSE);
+		if (info) {
+			mono_save_trampoline_xdebug_info (info);
+			mono_tramp_info_free (info);
+		}
+	}
 
 	mono_memory_barrier ();
 
@@ -1641,6 +1643,8 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	tls->stack_ovf_guard_base = staddr + mono_pagesize ();
 	tls->stack_ovf_guard_size = ALIGN_TO (8 * 4096, mono_pagesize ());
 
+	g_assert ((guint8*)&sa >= (guint8*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size);
+
 	if (mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE)) {
 		/* mprotect can fail for the main thread stack */
 		gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED);
@@ -2134,7 +2138,10 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	gpointer resume_ip;
 
-	if (jit_tls->handler_block_return_address)
+	/* Guard against a null MonoJitTlsData. This can happens if the thread receives the
+         * interrupt signal before the JIT has time to initialize its TLS data for the given thread.
+	 */
+	if (!jit_tls || jit_tls->handler_block_return_address)
 		return FALSE;
 
 	mono_walk_stack_full (domain, jit_tls, ctx, find_last_handler_block, FALSE, &data);

@@ -813,6 +813,7 @@ typedef struct {
 
 typedef struct {
 	MonoReflectionType *parent;
+	MonoReflectionType *declaring_type;
 	MonoString *name;
 	MonoReflectionMethod *get;
 	MonoReflectionMethod *set;
@@ -1375,6 +1376,9 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass) MONO
 
 gboolean
 mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token) MONO_INTERNAL;
+
+void
+mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *method, MonoReflectionAssembly *assembly, gpointer data, guint32 data_length, MonoArray **ctor_args, MonoArray ** named_args) MONO_INTERNAL;
 
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType *ref) MONO_INTERNAL;

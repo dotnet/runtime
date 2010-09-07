@@ -79,6 +79,9 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 static MonoString*
 mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig);
 
+static void
+free_main_args (void);
+
 #define ldstr_lock() EnterCriticalSection (&ldstr_section)
 #define ldstr_unlock() LeaveCriticalSection (&ldstr_section)
 static CRITICAL_SECTION ldstr_section;
@@ -185,8 +188,14 @@ mono_type_initialization_cleanup (void)
 	 * mono_release_type_locks
 	 */
 	DeleteCriticalSection (&type_initialization_section);
+	g_hash_table_destroy (type_initialization_hash);
+	type_initialization_hash = NULL;
 #endif
 	DeleteCriticalSection (&ldstr_section);
+	g_hash_table_destroy (blocked_thread_hash);
+	blocked_thread_hash = NULL;
+
+	free_main_args ();
 }
 
 /**
@@ -2985,8 +2994,13 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	gboolean is_static = FALSE;
 	gboolean is_ref = FALSE;
 	gboolean is_literal = FALSE;
+	MonoError error;
+	MonoType *type = mono_field_get_type_checked (field, &error);
 
-	switch (field->type->type) {
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+
+	switch (type->type) {
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
@@ -3009,21 +3023,21 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8:
 	case MONO_TYPE_VALUETYPE:
-		is_ref = field->type->byref;
+		is_ref = type->byref;
 		break;
 	case MONO_TYPE_GENERICINST:
-		is_ref = !mono_type_generic_inst_is_valuetype (field->type);
+		is_ref = !mono_type_generic_inst_is_valuetype (type);
 		break;
 	default:
 		g_error ("type 0x%x not handled in "
-			 "mono_field_get_value_object", field->type->type);
+			 "mono_field_get_value_object", type->type);
 		return NULL;
 	}
 
-	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL)
+	if (type->attrs & FIELD_ATTRIBUTE_LITERAL)
 		is_literal = TRUE;
 
-	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		is_static = TRUE;
 
 		if (!is_literal) {
@@ -3054,7 +3068,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	}
 
 	/* boxed value type */
-	klass = mono_class_from_mono_type (field->type);
+	klass = mono_class_from_mono_type (type);
 
 	if (mono_class_is_nullable (klass))
 		return mono_nullable_box (mono_field_get_addr (obj, vtable, field), klass);
@@ -3340,6 +3354,16 @@ mono_runtime_get_main_args (void)
 	return res;
 }
 
+static void
+free_main_args (void)
+{
+	int i;
+
+	for (i = 0; i < num_main_args; ++i)
+		g_free (main_args [i]);
+	g_free (main_args);
+}
+
 /**
  * mono_runtime_run_main:
  * @method: the method to start the application with (usually Main)
@@ -3361,6 +3385,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	MonoArray *args = NULL;
 	MonoDomain *domain = mono_domain_get ();
 	gchar *utf8_fullpath;
+	MonoMethodSignature *sig;
 
 	g_assert (method != NULL);
 	
@@ -3415,7 +3440,14 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	}
 	argc--;
 	argv++;
-	if (mono_method_signature (method)->param_count) {
+
+	sig = mono_method_signature (method);
+	if (!sig) {
+		g_print ("Unable to load Main method.\n");
+		exit (-1);
+	}
+
+	if (sig->param_count) {
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 		for (i = 0; i < argc; ++i) {
 			/* The encodings should all work, given that

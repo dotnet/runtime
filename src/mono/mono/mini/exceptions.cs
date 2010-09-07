@@ -2587,5 +2587,38 @@ class Tests {
 		catch {}
 		return (int)value;
 	}
+
+	class A {
+		public object AnObj;
+	}
+
+	public static void DoSomething (ref object o) {
+	}
+
+	public static int test_0_ldflda_null () {
+		A a = null;
+
+		try {
+			DoSomething (ref a.AnObj);
+		} catch (NullReferenceException) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	unsafe struct Foo
+	{
+		public int i;
+
+		public static Foo* pFoo;
+	}
+
+	/* MS.NET doesn't seem to throw in this case */
+	public unsafe static int test_0_ldflda_null_pointer () {
+		int* pi = &Foo.pFoo->i;
+
+		return 0;
+	}
 }
 

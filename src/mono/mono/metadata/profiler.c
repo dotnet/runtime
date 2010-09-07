@@ -705,6 +705,8 @@ mono_profiler_shutdown (void)
 		if (prof->shutdown_callback)
 			prof->shutdown_callback (prof->profiler);
 	}
+
+	mono_profiler_set_events (0);
 }
 
 void

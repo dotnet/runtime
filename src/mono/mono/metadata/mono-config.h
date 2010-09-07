@@ -18,6 +18,7 @@ void        mono_set_config_dir (const char *dir);
 
 const char* mono_get_machine_config (void);
 
+void mono_config_cleanup      (void);
 void mono_config_parse        (const char *filename);
 void mono_config_for_assembly (MonoImage *assembly);
 void mono_config_parse_memory (const char *buffer);

@@ -13,6 +13,8 @@ sub INST_SRC2  () {return 2;}
 sub INST_SRC3  () {return 3;}
 sub INST_LEN   () {return 4;}
 sub INST_CLOB  () {return 5;}
+# making INST_NACL the same as INST_MAX is not a mistake,
+# INST_NACL writes over INST_LEN, it's not its own field
 sub INST_NACL  () {return 6;}
 sub INST_MAX   () {return 6;}
 
@@ -22,6 +24,8 @@ my @defines = qw (__i386__ __x86_64__ __ppc__ __powerpc__ __ppc64__ __arm__
 my %table =();
 my %template_table =();
 my @opcodes = ();
+
+my $nacl = 0;
 
 sub parse_file
 {
@@ -167,21 +171,22 @@ sub build_spec {
 	my $res = "";
 	my $n = 0;
 	for (my $i = 0; $i < @vals; ++$i) {
+		next if $i == INST_NACL;
 		if (defined $vals [$i]) {
 			if ($i == INST_LEN) {
 			        $n = $vals [$i];
-			        if (defined $vals [INST_NACL]){
-				    $n += $vals [INST_NACL];
+			        if ((defined $vals [INST_NACL]) and $nacl == 1){
+				    $n = $vals [INST_NACL];
 			        }
 				$res .= sprintf ("\\x%x\" \"", + $n);
-			} elsif ($i != INST_NACL) {
+			} else {
 				if ($vals [$i] =~ /^[a-zA-Z0-9]$/) {
 					$res .= $vals [$i];
 				} else {
 					$res .= sprintf ("\\x%x\" \"", $vals [$i]);
 				}
 			}
-		} elsif ($i != INST_NACL) {
+		} else {
 			$res .= "\\x0\" \"";
 		}
 	}
@@ -221,12 +226,17 @@ sub build_table {
 }
 
 sub usage {
-	die "genmdesc.pl arch srcdir output name desc [desc2 ...]\n";
+	die "genmdesc.pl arch srcdir [--nacl] output name desc [desc2 ...]\n";
 }
 
 my $arch = shift || usage ();
 my $srcdir = shift || usage ();
 my $output = shift || usage ();
+if ($output eq "--nacl")
+{
+  $nacl = 1;  
+  $output = shift || usage();
+}
 my $name = shift || usage ();
 usage () unless @ARGV;
 my @files = @ARGV;

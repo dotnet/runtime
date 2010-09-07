@@ -68,7 +68,7 @@
 
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__native_client_codegen__)
 #define RODATA_SECT ".rodata"
 #else
 #define RODATA_SECT ".text"
@@ -330,6 +330,14 @@ emit_byte (MonoAotCompile *acfg, guint8 val)
 	img_writer_emit_byte (acfg->w, val); 
 }
 
+#ifdef __native_client_codegen__
+static inline void
+emit_nacl_call_alignment (MonoAotCompile *acfg)
+{
+	img_writer_emit_nacl_call_alignment (acfg->w);
+}
+#endif
+
 static G_GNUC_UNUSED void
 emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
 {
@@ -459,6 +467,10 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #define AOT_FUNC_ALIGNMENT 4
 #else
 #define AOT_FUNC_ALIGNMENT 16
+#endif
+#if defined(TARGET_X86) && defined(__native_client_codegen__)
+#undef AOT_FUNC_ALIGNMENT
+#define AOT_FUNC_ALIGNMENT 32
 #endif
  
 #if defined(TARGET_POWERPC64) && !defined(__mono_ilp32__)
@@ -654,12 +666,26 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 #if defined(TARGET_X86)
 		guint32 offset = (acfg->plt_got_offset_base + index) * sizeof (gpointer);
 
+#ifdef __native_client_codegen__
+		const guint8 kSizeOfNaClJmp = 11;
+		guint8 bytes[kSizeOfNaClJmp];
+		guint8 *pbytes = &bytes[0];
+		
+		x86_jump_membase32 (pbytes, X86_EBX, offset);
+		emit_bytes (acfg, bytes, kSizeOfNaClJmp);
+		/* four bytes of data, used by mono_arch_patch_plt_entry              */
+		/* For Native Client, make this work with data embedded in push.      */
+		emit_byte (acfg, 0x68);  /* hide data in a push */
+		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
+#else
 		/* jmp *<offset>(%ebx) */
 		emit_byte (acfg, 0xff);
 		emit_byte (acfg, 0xa3);
 		emit_int32 (acfg, offset);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+#endif  /* __native_client_codegen__ */
 #elif defined(TARGET_AMD64)
 		/*
 		 * We can't emit jumps because they are 32 bits only so they can't be patched.
@@ -846,9 +872,16 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	/* Branch to generic trampoline */
 	x86_jump_reg (code, X86_ECX);
 
+#ifdef __native_client_codegen__
+	{
+		/* emit nops to next 32 byte alignment */
+		int a = (~kNaClAlignmentMask) & ((code - buf) + kNaClAlignment - 1);
+		while (code < (buf + a)) x86_nop(code);
+	}
+#endif
 	emit_bytes (acfg, buf, code - buf);
 
-	*tramp_size = 17;
+	*tramp_size = NACL_SIZE(17, kNaClAlignment);
 	g_assert (code - buf == *tramp_size);
 #else
 	g_assert_not_reached ();
@@ -1028,9 +1061,17 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	/* Branch to the target address */
 	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (gpointer));
 
+#ifdef __native_client_codegen__
+	{
+		/* emit nops to next 32 byte alignment */
+		int a = (~kNaClAlignmentMask) & ((code - buf) + kNaClAlignment - 1);
+		while (code < (buf + a)) x86_nop(code);
+	}
+#endif
+
 	emit_bytes (acfg, buf, code - buf);
 
-	*tramp_size = 15;
+	*tramp_size = NACL_SIZE (15, kNaClAlignment);
 	g_assert (code - buf == *tramp_size);
 #else
 	g_assert_not_reached ();
@@ -1099,9 +1140,17 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	*tramp_size = code - buf + 7;
 #elif defined(TARGET_X86)
 	guint8 *buf, *code;
+#ifdef __native_client_codegen__
+	guint8 *buf_alloc;
+#endif
 	guint8 *labels [3];
 
+#ifdef __native_client_codegen__
+	buf_alloc = g_malloc (256 + kNaClAlignment);
+	code = buf = ((guint)buf_alloc + kNaClAlignment) & ~kNaClAlignmentMask;
+#else
 	code = buf = g_malloc (256);
+#endif
 
 	/* Allocate a temporary stack slot */
 	x86_push_reg (code, X86_EAX);
@@ -1143,6 +1192,13 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	mono_x86_patch (labels [1], code);
 	x86_breakpoint (code);
 
+#ifdef __native_client_codegen__
+	{
+		/* emit nops to next 32 byte alignment */
+		int a = (~kNaClAlignmentMask) & ((code - buf) + kNaClAlignment - 1);
+		while (code < (buf + a)) x86_nop(code);
+	}
+#endif
 	emit_bytes (acfg, buf, code - buf);
 	
 	*tramp_size = code - buf;
@@ -1417,7 +1473,7 @@ add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
  * blob where the data was stored.
  */
 static guint32
-add_to_blob (MonoAotCompile *acfg, guint8 *data, guint32 data_len)
+add_to_blob (MonoAotCompile *acfg, const guint8 *data, guint32 data_len)
 {
 	if (acfg->blob.alloc_size == 0)
 		stream_init (&acfg->blob);
@@ -1724,6 +1780,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_ALLOC: {
 			AllocatorWrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
+			/* The GC name is saved once in MonoAotFileInfo */
 			g_assert (info->alloc_type != -1);
 			encode_value (info->alloc_type, p, &p);
 			break;
@@ -3136,6 +3193,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_value (get_image_index (acfg, patch_info->data.image), p, &p);
 		break;
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
+	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 		break;
 	case MONO_PATCH_INFO_METHOD_REL:
 		encode_value ((gint)patch_info->data.offset, p, &p);
@@ -3332,6 +3390,12 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 
 		if ((patch_info->type == MONO_PATCH_INFO_IMAGE) && (patch_info->data.image == acfg->image)) {
+			/* Stored in a GOT slot initialized at module load time */
+			patch_info->type = MONO_PATCH_INFO_NONE;
+			continue;
+		}
+
+		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR) {
 			/* Stored in a GOT slot initialized at module load time */
 			patch_info->type = MONO_PATCH_INFO_NONE;
 			continue;
@@ -3805,13 +3869,17 @@ emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
 	ji = info->ji;
 	unwind_ops = info->unwind_ops;
 
+#ifdef __native_client_codegen__
+	mono_nacl_fix_patches (code, ji);
+#endif
+
 	/* Emit code */
 
 	sprintf (start_symbol, "%s", name);
 
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, start_symbol, TRUE);
-	emit_alignment (acfg, 16);
+	emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
 	emit_label (acfg, start_symbol);
 
 	sprintf (symbol, "%snamed_%s", acfg->temp_prefix, name);
@@ -4010,7 +4078,7 @@ emit_trampolines (MonoAotCompile *acfg)
 			}
 
 			emit_global (acfg, symbol, TRUE);
-			emit_alignment (acfg, 16);
+			emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
 			emit_label (acfg, symbol);
 
 			acfg->trampoline_got_offset_base [ntype] = tramp_got_offset;
@@ -4034,6 +4102,10 @@ emit_trampolines (MonoAotCompile *acfg)
 				default:
 					g_assert_not_reached ();
 				}
+#ifdef __native_client_codegen__
+				/* align to avoid 32-byte boundary crossings */
+				emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
+#endif
 
 				if (!acfg->trampoline_size [ntype]) {
 					g_assert (tramp_size);
@@ -4396,6 +4468,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_GOT_OFFSET:
 		case MONO_PATCH_INFO_NONE:
+		case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 			break;
 		case MONO_PATCH_INFO_IMAGE:
 			/* The assembly is stored in GOT slot 0 */
@@ -4810,6 +4883,9 @@ emit_code (MonoAotCompile *acfg)
 			}
 
 			emit_section_change (acfg, ".text", 0);
+#ifdef __native_client_codegen__
+			emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
+#endif
 			emit_global (acfg, symbol, TRUE);
 			emit_label (acfg, symbol);
 
@@ -5116,7 +5192,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		if (!cfg)
 			continue;
 
-		buf_size = 1024;
+		buf_size = 10240;
 		p = buf = g_malloc (buf_size);
 
 		nmethods ++;
@@ -5682,7 +5758,7 @@ emit_globals (MonoAotCompile *acfg)
 		 * Emit a global symbol which can be passed by an embedding app to
 		 * mono_aot_register_module ().
 		 */
-#if defined(__MACH__)
+#if defined(__MACH__) && !defined(__native_client_codegen__)
 		sprintf (symbol, "_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
 #else
 		sprintf (symbol, "mono_aot_module_%s_info", acfg->image->assembly->aname.name);
@@ -5742,6 +5818,15 @@ emit_file_info (MonoAotCompile *acfg)
 {
 	char symbol [128];
 	int i;
+	int gc_name_offset;
+	const char *gc_name;
+
+	/*
+	 * The managed allocators are GC specific, so can't use an AOT image created by one GC
+	 * in another.
+	 */
+	gc_name = mono_gc_get_gc_name ();
+	gc_name_offset = add_to_blob (acfg, (guint8*)gc_name, strlen (gc_name) + 1);
 
 	sprintf (symbol, "mono_aot_file_info");
 	emit_section_change (acfg, ".data", 0);
@@ -5749,13 +5834,14 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 	emit_global (acfg, symbol, FALSE);
 
-	/* The data emitted here must match MonoAotFileInfo in aot-runtime.c. */
+	/* The data emitted here must match MonoAotFileInfo. */
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
 	emit_int32 (acfg, acfg->nmethods);
 	emit_int32 (acfg, acfg->flags);
 	emit_int32 (acfg, acfg->opts);
+	emit_int32 (acfg, gc_name_offset);
 
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->num_trampolines [i]);
@@ -5938,6 +6024,12 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OPTIONS ""
 #endif
 
+#ifdef __native_client_codegen__
+#define AS_NAME "nacl-as"
+#else
+#define AS_NAME "as"
+#endif
+
 #ifndef LD_OPTIONS
 #define LD_OPTIONS ""
 #endif
@@ -5963,7 +6055,7 @@ compile_asm (MonoAotCompile *acfg)
 	} else {
 		objfile = g_strdup_printf ("%s.o", acfg->tmpfname);
 	}
-	command = g_strdup_printf ("%sas %s %s -o %s", tool_prefix, AS_OPTIONS, acfg->tmpfname, objfile);
+	command = g_strdup_printf ("%s%s %s %s -o %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->tmpfname, objfile);
 	printf ("Executing the native assembler: %s\n", command);
 	if (system (command) != 0) {
 		g_free (command);
@@ -6231,6 +6323,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		/* Slot 1 is reserved for the mscorlib got addr */
 		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
 		ji->type = MONO_PATCH_INFO_MSCORLIB_GOT_ADDR;
+		get_got_offset (acfg, ji);
+
+		/* This is very common */
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
 		get_got_offset (acfg, ji);
 	}
 

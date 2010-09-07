@@ -63,6 +63,46 @@
 
 #include "jit-icalls.h"
 
+#if defined(__native_client__)
+
+void
+mono_runtime_setup_stat_profiler (void)
+{
+	printf("WARNING: mono_runtime_setup_stat_profiler() called!\n");
+}
+
+
+void
+mono_runtime_shutdown_stat_profiler (void)
+{
+}
+
+
+gboolean
+SIG_HANDLER_SIGNATURE (mono_chain_signal)
+{
+	return FALSE;
+}
+
+void
+mono_runtime_install_handlers (void)
+{
+}
+
+void
+mono_runtime_shutdown_handlers (void)
+{
+}
+
+void
+mono_runtime_cleanup_handlers (void)
+{
+}
+
+
+
+#else
+
 static GHashTable *mono_saved_signal_handlers = NULL;
 
 static gpointer
@@ -620,3 +660,5 @@ mono_gdb_render_native_backtraces ()
 	return TRUE;
 }
 #endif
+#endif /* __native_client__ */
+

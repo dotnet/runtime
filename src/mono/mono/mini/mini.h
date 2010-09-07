@@ -111,7 +111,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "68"
+#define MONO_AOT_FILE_VERSION "69"
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -155,6 +155,8 @@ typedef struct MonoAotFileInfo
 	guint32 flags;
 	/* Optimization flags used to compile the module */
 	guint32 opts;
+	/* Index of the blob entry holding the GC used by this module */
+	gint32 gc_name_index;
 
 	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
@@ -560,11 +562,13 @@ struct MonoBasicBlock {
 
 /* BBlock flags */
 enum {
-	BB_VISITED            = 1 << 0,
-	BB_REACHABLE          = 1 << 1,
-	BB_EXCEPTION_DEAD_OBJ = 1 << 2,
-	BB_EXCEPTION_UNSAFE   = 1 << 3,
-	BB_EXCEPTION_HANDLER  = 1 << 4
+	BB_VISITED              = 1 << 0,
+	BB_REACHABLE            = 1 << 1,
+	BB_EXCEPTION_DEAD_OBJ   = 1 << 2,
+	BB_EXCEPTION_UNSAFE     = 1 << 3,
+	BB_EXCEPTION_HANDLER    = 1 << 4,
+	/* for Native Client, mark the blocks that can be jumped to indirectly */
+	BB_INDIRECT_JUMP_TARGET = 1 << 5 
 };
 
 typedef struct MonoMemcpyArgs {
@@ -1068,6 +1072,11 @@ typedef struct {
 	MonoGenericSharingContext *generic_sharing_context;
 
 	unsigned char   *cil_start;
+#ifdef __native_client_codegen__
+	/* this alloc is not aligned, native_code */
+	/* is the 32-byte aligned version of this */
+	unsigned char   *native_code_alloc;
+#endif
 	unsigned char   *native_code;
 	guint            code_size;
 	guint            code_len;
@@ -1217,7 +1226,6 @@ typedef struct {
 	gulong methods_compiled;
 	gulong methods_aot;
 	gulong methods_lookups;
-	gulong method_trampolines;
 	gulong allocate_var;
 	gulong cil_code_size;
 	gulong native_code_size;
@@ -1238,6 +1246,8 @@ typedef struct {
 	gulong cas_linkdemand;
 	gulong cas_demand_generation;
 	gulong generic_virtual_invocations;
+    int methods_with_llvm;
+	int methods_without_llvm;
 	char *max_ratio_method;
 	char *biggest_method;
 	gboolean enabled;
@@ -1266,6 +1276,7 @@ enum {
 #define OP_PCONST OP_I8CONST
 #define OP_PADD OP_LADD
 #define OP_PADD_IMM OP_LADD_IMM
+#define OP_PAND_IMM OP_LAND_IMM
 #define OP_PSUB OP_LSUB
 #define OP_PMUL OP_LMUL
 #define OP_PMUL_IMM OP_LMUL_IMM
@@ -1288,6 +1299,7 @@ enum {
 #define OP_PCONST OP_ICONST
 #define OP_PADD OP_IADD
 #define OP_PADD_IMM OP_IADD_IMM
+#define OP_PAND_IMM OP_IAND_IMM
 #define OP_PSUB OP_ISUB
 #define OP_PMUL OP_IMUL
 #define OP_PMUL_IMM OP_IMUL_IMM
@@ -1567,7 +1579,7 @@ MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode) MONO_INTERNAL;
 void	  mono_print_ins_index (int i, MonoInst *ins) MONO_INTERNAL;
 void	  mono_print_ins (MonoInst *ins) MONO_INTERNAL;
 gboolean  mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
-gboolean  mini_method_verify (MonoCompile *cfg, MonoMethod *method) MONO_INTERNAL;
+gboolean mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile) MONO_INTERNAL;
 MonoInst *mono_get_got_var (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int native_offset) MONO_INTERNAL;
 MonoInst* mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args) MONO_INTERNAL;
@@ -1587,8 +1599,22 @@ gint32    mono_linterval_get_intersect_pos  (MonoLiveInterval *i1, MonoLiveInter
 void      mono_linterval_split              (MonoCompile *cfg, MonoLiveInterval *interval, MonoLiveInterval **i1, MonoLiveInterval **i2, int pos) MONO_INTERNAL;
 void      mono_liveness_handle_exception_clauses (MonoCompile *cfg) MONO_INTERNAL;
 
+/* Native Client functions */
+#ifdef __native_client_codegen__
+void mono_nacl_align_inst(guint8 **pcode, int instlen);
+void mono_nacl_align_call(guint8 **start, guint8 **pcode);
+guint8 *mono_nacl_pad_call(guint8 *code, guint8 ilength);
+guint8 *mono_nacl_align(guint8 *code);
+void mono_nacl_fix_patches(const guint8 *code, MonoJumpInfo *ji);
+/* Defined for each arch */
+guint8 *mono_arch_nacl_pad(guint8 *code, int pad);
+guint8 *mono_arch_nacl_skip_nops(guint8 *code);
+
+#endif
+
 /* AOT */
 void      mono_aot_init                     (void) MONO_INTERNAL;
+void      mono_aot_cleanup                  (void) MONO_INTERNAL;
 gpointer  mono_aot_get_method               (MonoDomain *domain,
 											 MonoMethod *method) MONO_INTERNAL;
 gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token) MONO_INTERNAL;
@@ -1688,7 +1714,6 @@ void              mono_monitor_enter_trampoline (mgreg_t *regs, guint8 *code, Mo
 void              mono_monitor_exit_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (int slot_index) MONO_INTERNAL;
-gpointer*         mono_get_vcall_slot_addr (guint8* code, mgreg_t *regs) MONO_INTERNAL;
 char*             mono_get_generic_trampoline_name (MonoTrampolineType tramp_type) MONO_INTERNAL;
 char*             mono_get_rgctx_fetch_trampoline_name (int slot) MONO_INTERNAL;
 
@@ -1837,7 +1862,6 @@ MonoInst* mono_arch_get_domain_intrinsic        (MonoCompile* cfg) MONO_INTERNAL
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info) MONO_INTERNAL;
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg) MONO_INTERNAL;
 guint32  mono_arch_get_patch_offset             (guint8 *code) MONO_INTERNAL;
-gpointer mono_arch_get_vcall_slot               (guint8 *code, mgreg_t *regs, int *displacement) MONO_INTERNAL;
 gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, mgreg_t *regs) MONO_INTERNAL;
 void     mono_arch_create_vars                  (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_arch_save_unwind_info             (MonoCompile *cfg) MONO_INTERNAL;
@@ -2049,6 +2073,7 @@ gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *v
 					  gint32 rgctx_index) MONO_INTERNAL;
 
 void mono_generic_sharing_init (void) MONO_INTERNAL;
+void mono_generic_sharing_cleanup (void) MONO_INTERNAL;
 
 MonoClass* mini_class_get_container_class (MonoClass *class) MONO_INTERNAL;
 MonoGenericContext* mini_class_get_context (MonoClass *class) MONO_INTERNAL;

@@ -165,6 +165,8 @@ static guint32 n_pagefaults = 0;
 static gsize aot_code_low_addr = (gssize)-1;
 static gsize aot_code_high_addr = 0;
 
+static GHashTable *aot_jit_icall_hash;
+
 static void
 init_plt (MonoAotModule *info);
 
@@ -963,6 +965,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	MonoAotFileInfo *file_info = NULL;
 	int i;
 	gpointer *got_addr;
+	guint8 *blob;
 
 	if (mono_compile_aot)
 		return;
@@ -1055,15 +1058,31 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		usable = FALSE;
 	}
 
+	/* This is no longer needed, LLVM and non-LLVM runtimes should be compatible.
 	if ((((MonoAotFileInfo*)file_info)->flags & MONO_AOT_FILE_FLAG_WITH_LLVM) && !mono_use_llvm) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled with LLVM.\n", aot_name);
 		usable = FALSE;
+	}
+	*/
+
+	find_symbol (sofile, globals, "blob", (gpointer*)&blob);
+
+	if (((MonoAotFileInfo*)file_info)->gc_name_index != -1) {
+		char *gc_name = (char*)&blob [((MonoAotFileInfo*)file_info)->gc_name_index];
+		const char *current_gc_name = mono_gc_get_gc_name ();
+
+		if (strcmp (current_gc_name, gc_name) != 0) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled against GC %s, while the current runtime uses GC %s.\n", aot_name, gc_name, current_gc_name);
+			usable = FALSE;
+		}
 	}
 
 	if (!usable) {
 		if (mono_aot_only) {
 			fprintf (stderr, "Failed to load AOT module '%s' while running in aot-only mode.\n", aot_name);
 			exit (1);
+		} else {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable.\n", aot_name);
 		}
 		g_free (aot_name);
 		if (sofile)
@@ -1083,6 +1102,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->globals = globals;
 	amodule->sofile = sofile;
 	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	amodule->blob = blob;
 
 	/* Read image table */
 	{
@@ -1131,7 +1151,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "methods_end", (gpointer*)&amodule->code_end);
 	find_symbol (sofile, globals, "method_info_offsets", (gpointer*)&amodule->method_info_offsets);
 	find_symbol (sofile, globals, "ex_info_offsets", (gpointer*)&amodule->ex_info_offsets);
-	find_symbol (sofile, globals, "blob", (gpointer*)&amodule->blob);
 	find_symbol (sofile, globals, "class_info_offsets", (gpointer*)&amodule->class_info_offsets);
 	find_symbol (sofile, globals, "class_name_table", (gpointer *)&amodule->class_name_table);
 	find_symbol (sofile, globals, "extra_method_table", (gpointer *)&amodule->extra_method_table);
@@ -1194,6 +1213,17 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			amodule->got [1] = amodule->got;
 		}
 	}
+
+#ifdef HAVE_SGEN_GC
+	{
+		MonoJumpInfo ji;
+
+		memset (&ji, 0, sizeof (ji));
+		ji.type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
+
+		amodule->got [2] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
+	}
+#endif
 
 	/*
 	 * Since we store methoddef and classdef tokens when referring to methods/classes in
@@ -1275,6 +1305,15 @@ mono_aot_init (void)
 		use_aot_cache = TRUE;
 }
 
+void
+mono_aot_cleanup (void)
+{
+	if (aot_jit_icall_hash)
+		g_hash_table_destroy (aot_jit_icall_hash);
+	if (aot_modules)
+		g_hash_table_destroy (aot_modules);
+}
+
 static gboolean
 decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guint8 *buf, guint8 **endbuf)
 {
@@ -1321,7 +1360,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 {
 	int i;
 	MonoClass *klass = vtable->klass;
-	MonoAotModule *aot_module = klass->image->aot_module;
+	MonoAotModule *amodule = klass->image->aot_module;
 	guint8 *info, *p;
 	MonoCachedClassInfo class_info;
 	gboolean err;
@@ -1329,20 +1368,20 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	MonoImage *image;
 	gboolean no_aot_trampoline;
 
-	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !aot_module)
+	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !amodule)
 		return NULL;
 
-	info = &aot_module->blob [mono_aot_get_offset (aot_module->class_info_offsets, mono_metadata_token_index (klass->type_token) - 1)];
+	info = &amodule->blob [mono_aot_get_offset (amodule->class_info_offsets, mono_metadata_token_index (klass->type_token) - 1)];
 	p = info;
 
-	err = decode_cached_class_info (aot_module, &class_info, p, &p);
+	err = decode_cached_class_info (amodule, &class_info, p, &p);
 	if (!err)
 		return NULL;
 
 	for (i = 0; i < slot; ++i)
-		decode_method_ref (aot_module, &token, NULL, NULL, p, &p);
+		decode_method_ref (amodule, &token, NULL, NULL, p, &p);
 
-	image = decode_method_ref (aot_module, &token, NULL, &no_aot_trampoline, p, &p);
+	image = decode_method_ref (amodule, &token, NULL, &no_aot_trampoline, p, &p);
 	if (!image)
 		return NULL;
 	if (no_aot_trampoline)
@@ -1357,16 +1396,16 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 gboolean
 mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 {
-	MonoAotModule *aot_module = klass->image->aot_module;
+	MonoAotModule *amodule = klass->image->aot_module;
 	guint8 *p;
 	gboolean err;
 
-	if (klass->rank || !aot_module)
+	if (klass->rank || !amodule)
 		return FALSE;
 
-	p = (guint8*)&aot_module->blob [mono_aot_get_offset (aot_module->class_info_offsets, mono_metadata_token_index (klass->type_token) - 1)];
+	p = (guint8*)&amodule->blob [mono_aot_get_offset (amodule->class_info_offsets, mono_metadata_token_index (klass->type_token) - 1)];
 
-	err = decode_cached_class_info (aot_module, res, p, &p);
+	err = decode_cached_class_info (amodule, res, p, &p);
 	if (!err)
 		return FALSE;
 
@@ -1386,7 +1425,7 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 gboolean
 mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const char *name, MonoClass **klass)
 {
-	MonoAotModule *aot_module = image->aot_module;
+	MonoAotModule *amodule = image->aot_module;
 	guint16 *table, *entry;
 	guint16 table_size;
 	guint32 hash;
@@ -1397,7 +1436,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	GHashTable *nspace_table;
 
-	if (!aot_module || !aot_module->class_name_table)
+	if (!amodule || !amodule->class_name_table)
 		return FALSE;
 
 	mono_aot_lock ();
@@ -1405,9 +1444,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	*klass = NULL;
 
 	/* First look in the cache */
-	if (!aot_module->name_cache)
-		aot_module->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	nspace_table = g_hash_table_lookup (aot_module->name_cache, name_space);
+	if (!amodule->name_cache)
+		amodule->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	nspace_table = g_hash_table_lookup (amodule->name_cache, name_space);
 	if (nspace_table) {
 		*klass = g_hash_table_lookup (nspace_table, name);
 		if (*klass) {
@@ -1416,8 +1455,8 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 		}
 	}
 
-	table_size = aot_module->class_name_table [0];
-	table = aot_module->class_name_table + 1;
+	table_size = amodule->class_name_table [0];
+	table = amodule->class_name_table + 1;
 
 	if (name_space [0] == '\0')
 		full_name = g_strdup_printf ("%s", name);
@@ -1457,10 +1496,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 				/* Add to cache */
 				if (*klass) {
 					mono_aot_lock ();
-					nspace_table = g_hash_table_lookup (aot_module->name_cache, name_space);
+					nspace_table = g_hash_table_lookup (amodule->name_cache, name_space);
 					if (!nspace_table) {
 						nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-						g_hash_table_insert (aot_module->name_cache, (char*)name_space2, nspace_table);
+						g_hash_table_insert (amodule->name_cache, (char*)name_space2, nspace_table);
 					}
 					g_hash_table_insert (nspace_table, (char*)name2, *klass);
 					mono_aot_unlock ();
@@ -2248,6 +2287,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
+	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		gboolean res;
@@ -3109,8 +3149,6 @@ mono_create_ftnptr_malloc (guint8 *code)
 	return code;
 #endif
 }
-
-static GHashTable *aot_jit_icall_hash;
 
 /*
  * mono_aot_register_jit_icall:

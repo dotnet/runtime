@@ -116,12 +116,15 @@ public:
 
 MonoJITMemoryManager::MonoJITMemoryManager ()
 {
+#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION <= 7
 	SizeRequired = true;
+#endif
 	mm = JITMemoryManager::CreateDefaultMemManager ();
 }
 
 MonoJITMemoryManager::~MonoJITMemoryManager ()
 {
+	delete mm;
 }
 
 void
@@ -152,6 +155,9 @@ unsigned char *
 MonoJITMemoryManager::startFunctionBody(const Function *F, 
 					uintptr_t &ActualSize)
 {
+	// FIXME: This leaks memory
+	if (ActualSize == 0)
+		ActualSize = 128;
 	return alloc_cb (wrap (F), ActualSize);
 }
   
@@ -189,7 +195,7 @@ unsigned char*
 MonoJITMemoryManager::startExceptionTable(const Function* F,
 					  uintptr_t &ActualSize)
 {
-	return alloc_cb (wrap (F), ActualSize);
+	return startFunctionBody(F, ActualSize);
 }
   
 void
@@ -199,7 +205,47 @@ MonoJITMemoryManager::endExceptionTable(const Function *F, unsigned char *TableS
 {
 }
 
+class MonoJITEventListener : public JITEventListener {
+
+public:
+	FunctionEmittedCb *emitted_cb;
+
+	MonoJITEventListener (FunctionEmittedCb *cb) {
+		emitted_cb = cb;
+	}
+
+	virtual void NotifyFunctionEmitted(const Function &F,
+									   void *Code, size_t Size,
+									   const EmittedFunctionDetails &Details) {
+		/*
+		 * X86TargetMachine::setCodeModelForJIT() sets the code model to Large on amd64,
+		 * which means the JIT will generate calls of the form
+		 * mov reg, <imm>
+		 * call *reg
+		 * Our trampoline code can't patch this. Passing CodeModel::Small to createJIT
+		 * doesn't seem to work, we need Default. A discussion is here:
+		 * http://lists.cs.uiuc.edu/pipermail/llvmdev/2009-December/027999.html
+		 * There seems to no way to get the TargeMachine used by an EE either, so we
+		 * install a profiler hook and reset the code model here.
+		 * This should be inside an ifdef, but we can't include our config.h either,
+		 * since its definitions conflict with LLVM's config.h.
+		 *
+		 */
+		//#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifndef LLVM_MONO_BRANCH
+		/* The LLVM mono branch contains a workaround, so this is not needed */
+		if (Details.MF->getTarget ().getCodeModel () == CodeModel::Large) {
+			Details.MF->getTarget ().setCodeModel (CodeModel::Default);
+		}
+#endif
+		//#endif
+
+		emitted_cb (wrap (&F), Code, (char*)Code + Size);
+	}
+};
+
 static MonoJITMemoryManager *mono_mm;
+static MonoJITEventListener *mono_event_listener;
 
 static FunctionPassManager *fpm;
 
@@ -261,45 +307,6 @@ mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 
 static cl::list<const PassInfo*, bool, PassNameParser>
 PassList(cl::desc("Optimizations available:"));
-
-class MonoJITEventListener : public JITEventListener {
-
-public:
-	FunctionEmittedCb *emitted_cb;
-
-	MonoJITEventListener (FunctionEmittedCb *cb) {
-		emitted_cb = cb;
-	}
-
-	virtual void NotifyFunctionEmitted(const Function &F,
-									   void *Code, size_t Size,
-									   const EmittedFunctionDetails &Details) {
-		/*
-		 * X86TargetMachine::setCodeModelForJIT() sets the code model to Large on amd64,
-		 * which means the JIT will generate calls of the form
-		 * mov reg, <imm>
-		 * call *reg
-		 * Our trampoline code can't patch this. Passing CodeModel::Small to createJIT
-		 * doesn't seem to work, we need Default. A discussion is here:
-		 * http://lists.cs.uiuc.edu/pipermail/llvmdev/2009-December/027999.html
-		 * There seems to no way to get the TargeMachine used by an EE either, so we
-		 * install a profiler hook and reset the code model here.
-		 * This should be inside an ifdef, but we can't include our config.h either,
-		 * since its definitions conflict with LLVM's config.h.
-		 *
-		 */
-		//#if defined(TARGET_X86) || defined(TARGET_AMD64)
-#ifndef LLVM_MONO_BRANCH
-		/* The LLVM mono branch contains a workaround, so this is not needed */
-		if (Details.MF->getTarget ().getCodeModel () == CodeModel::Large) {
-			Details.MF->getTarget ().setCodeModel (CodeModel::Default);
-		}
-#endif
-		//#endif
-
-		emitted_cb (wrap (&F), Code, (char*)Code + Size);
-	}
-};
 
 static void
 force_pass_linking (void)
@@ -426,12 +433,7 @@ force_pass_linking (void)
       (void) llvm::createDbgInfoPrinterPass();
       (void) llvm::createModuleDebugInfoPrinterPass();
       (void) llvm::createPartialInliningPass();
-	  */
-      (void) llvm::createSSIPass();
-      (void) llvm::createSSIEverythingPass();
       (void) llvm::createGEPSplitterPass();
-      (void) llvm::createABCDPass();
-	  /*
       (void) llvm::createLintPass();
 	  */
       (void) llvm::createSinkingPass();
@@ -446,8 +448,6 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
   LLVMInitializeX86Target ();
   LLVMInitializeX86TargetInfo ();
-
-  llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
 
   mono_mm = new MonoJITMemoryManager ();
   mono_mm->alloc_cb = alloc_cb;
@@ -466,31 +466,53 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	  g_assert_not_reached ();
   }
   EE->InstallExceptionTableRegister (exception_cb);
-  EE->RegisterJITEventListener (new MonoJITEventListener (emitted_cb));
+  mono_event_listener = new MonoJITEventListener (emitted_cb);
+  EE->RegisterJITEventListener (mono_event_listener);
 
   fpm = new FunctionPassManager (unwrap (MP));
 
   fpm->add(new TargetData(*EE->getTargetData()));
-  /* Add a default set of passes */
-  //createStandardFunctionPasses (fpm, 2);
-  fpm->add(createInstructionCombiningPass());
-  fpm->add(createReassociatePass());
-  fpm->add(createGVNPass());
-  fpm->add(createCFGSimplificationPass());
 
-  /* The one used by opt is:
-   * -simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify
-   */
+  llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
 
-  /* Add passes specified by the env variable */
-  /* Only the passes in force_pass_linking () can be used */
-  for (unsigned i = 0; i < PassList.size(); ++i) {
-      const PassInfo *PassInf = PassList[i];
-      Pass *P = 0;
+  if (PassList.size() > 0) {
+	  /* Use the passes specified by the env variable */
+	  /* Only the passes in force_pass_linking () can be used */
+	  for (unsigned i = 0; i < PassList.size(); ++i) {
+		  const PassInfo *PassInf = PassList[i];
+		  Pass *P = 0;
 
-      if (PassInf->getNormalCtor())
-		  P = PassInf->getNormalCtor()();
-	  fpm->add (P);
+		  if (PassInf->getNormalCtor())
+			  P = PassInf->getNormalCtor()();
+		  fpm->add (P);
+	  }
+  } else {
+	  /* Use the same passes used by 'opt' by default, without the ipo passes */
+	  const char *opts = "-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify";
+	  char **args;
+	  int i;
+
+	  args = g_strsplit (opts, " ", 1000);
+	  for (i = 0; args [i]; i++)
+		  ;
+	  llvm::cl::ParseCommandLineOptions (i, args, "", false);
+	  g_strfreev (args);
+
+	  for (unsigned i = 0; i < PassList.size(); ++i) {
+		  const PassInfo *PassInf = PassList[i];
+		  Pass *P = 0;
+
+		  if (PassInf->getNormalCtor())
+			  P = PassInf->getNormalCtor()();
+		  fpm->add (P);
+	  }
+
+	  /*
+	  fpm->add(createInstructionCombiningPass());
+	  fpm->add(createReassociatePass());
+	  fpm->add(createGVNPass());
+	  fpm->add(createCFGSimplificationPass());
+	  */
   }
 
   return wrap(EE);

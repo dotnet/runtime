@@ -4497,14 +4497,6 @@ mono_arch_get_patch_offset (guint8 *code)
 	return 0;
 }
 
-gpointer
-mono_arch_get_vcall_slot (guint8* code, mgreg_t *regs, int *displacement)
-{
-	/* Not used on IA64 */
-	g_assert_not_reached ();
-	return NULL;
-}
-
 gpointer*
 mono_arch_get_delegate_method_ptr_addr (guint8* code, mgreg_t *regs)
 {

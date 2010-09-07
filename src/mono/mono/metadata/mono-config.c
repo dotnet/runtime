@@ -132,6 +132,9 @@ mono_parser = {
 
 static GHashTable *config_handlers;
 
+static const char *mono_cfg_dir = NULL;
+static char *mono_cfg_dir_allocated = NULL;
+
 /* when this interface is stable, export it. */
 typedef struct MonoParseHandler MonoParseHandler;
 
@@ -368,6 +371,14 @@ mono_config_init (void)
 	g_hash_table_insert (config_handlers, (gpointer) legacyUEP_handler.element_name, (gpointer) &legacyUEP_handler);
 }
 
+void
+mono_config_cleanup (void)
+{
+	if (config_handlers)
+		g_hash_table_destroy (config_handlers);
+	g_free (mono_cfg_dir_allocated);
+}
+
 /* FIXME: error handling */
 
 static void
@@ -567,8 +578,6 @@ mono_config_parse (const char *filename) {
 #endif
 }
 
-static const char *mono_cfg_dir = NULL;
-
 /* Invoked during startup */
 void
 mono_set_config_dir (const char *dir)
@@ -576,7 +585,7 @@ mono_set_config_dir (const char *dir)
 	/* If this variable is set, overrides the directory computed */
 	mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
 	if (mono_cfg_dir == NULL)
-		mono_cfg_dir = g_strdup (dir);
+		mono_cfg_dir = mono_cfg_dir_allocated = g_strdup (dir);
 }
 
 const char* 

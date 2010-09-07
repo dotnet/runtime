@@ -55,6 +55,16 @@ struct sigcontext {
 #define MONO_ARCH_USE_SIGACTION
 #endif
 
+#if defined(__native_client__)
+#undef MONO_ARCH_USE_SIGACTION
+#endif
+
+#if defined(__native_client_codegen__) || defined(__native_client__)
+#define NACL_SIZE(a, b) (b)
+#else
+#define NACL_SIZE(a, b) (a)
+#endif
+
 #ifndef HOST_WIN32
 
 #ifdef HAVE_WORKING_SIGALTSTACK
@@ -255,7 +265,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD 1
 #define MONO_ARCH_NEED_GOT_VAR 1
-#define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 #define MONO_ARCH_ENABLE_MONO_LMF_VAR 1
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_ATOMIC_ADD 1
@@ -270,7 +279,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_XP_UNWIND 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
-#if defined(__linux__) && !defined(HAVE_MOVING_COLLECTOR)
+#if defined(__linux__)
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
 #endif
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
@@ -286,7 +295,7 @@ typedef struct {
 
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) || defined(__native_client_codegen__)
 #define MONO_ARCH_AOT_SUPPORTED 1
 #endif
 
@@ -306,6 +315,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
 #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
+
+#define MONO_ARCH_HAVE_CARD_TABLE_WBARRIER 1
 
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)

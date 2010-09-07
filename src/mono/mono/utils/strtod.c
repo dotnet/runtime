@@ -1548,6 +1548,11 @@ hexnan
 #endif /*No_Hex_NaN*/
 #endif /* INFNAN_CHECK */
 
+	/*
+	 * LOCKING: This is not thread-safe, since the locking macros are defined as no-ops,
+	 * the caller should lock.
+	 */
+
  double
 mono_strtod
 #ifdef KR_headers

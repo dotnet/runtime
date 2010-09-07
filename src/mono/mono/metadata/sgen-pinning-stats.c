@@ -120,11 +120,16 @@ pin_stats_count_object_from_tree (char *obj, size_t size, PinStatAddress *node, 
 		pin_stats_count_object_from_tree (obj, size, node->right, pin_types);
 }
 
-static void
-pin_stats_register_object (char *obj, size_t size)
+void
+mono_sgen_pin_stats_register_object (char *obj, size_t size)
 {
 	int pin_types = 0;
-	ObjectList *list = mono_sgen_alloc_internal_dynamic (sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
+	ObjectList *list;
+
+	if (!heap_dump_file)
+		return;
+
+	list = mono_sgen_alloc_internal_dynamic (sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
 	pin_stats_count_object_from_tree (obj, size, pin_stat_addresses, &pin_types);
 	list->obj = (MonoObject*)obj;
 	list->next = pinned_objects;

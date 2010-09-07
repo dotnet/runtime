@@ -46,6 +46,8 @@ static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
 
 gboolean _wapi_shm_disabled = TRUE;
 
+static gpointer wapi_storage [16];
+
 static void
 noshm_semaphores_init (void)
 {
@@ -125,20 +127,30 @@ _wapi_shm_sem_unlock (int sem)
 gpointer
 _wapi_shm_attach (_wapi_shm_t type)
 {
-	guint32 size;
+	gpointer res;
 
 	switch(type) {
 	case WAPI_SHM_DATA:
-		return g_malloc0 (sizeof(struct _WapiHandleSharedLayout));
-		
+		res = g_malloc0 (sizeof(struct _WapiHandleSharedLayout));
+		break;
 	case WAPI_SHM_FILESHARE:
-		return g_malloc0 (sizeof(struct _WapiFileShareLayout));
-
+		res = g_malloc0 (sizeof(struct _WapiFileShareLayout));
+		break;
 	default:
 		g_error ("Invalid type in _wapi_shm_attach ()");
 		return NULL;
 	}
+
+	wapi_storage [type] = res;
+	return res;
 }
+
+void
+_wapi_shm_detach (_wapi_shm_t type)
+{
+	g_free (wapi_storage [type]);
+}
+
 #else
 /*
  * Use POSIX shared memory if possible, it is simpler, and it has the advantage that 
@@ -384,8 +396,8 @@ try_again:
 	return fd;
 }
 
-static gboolean
-check_disabled (void)
+gboolean
+_wapi_shm_enabled (void)
 {
 	static gboolean env_checked;
 
@@ -395,7 +407,7 @@ check_disabled (void)
 		env_checked = TRUE;
 	}
 
-	return _wapi_shm_disabled;
+	return !_wapi_shm_disabled;
 }
 
 /*
@@ -427,8 +439,9 @@ _wapi_shm_attach (_wapi_shm_t type)
 		return NULL;
 	}
 
-	if (check_disabled ()) {
-		return g_malloc0 (size);
+	if (!_wapi_shm_enabled ()) {
+		wapi_storage [type] = g_malloc0 (size);
+		return wapi_storage [type];
 	}
 
 #ifdef USE_SHM
@@ -469,6 +482,13 @@ _wapi_shm_attach (_wapi_shm_t type)
 		
 	close (fd);
 	return shm_seg;
+}
+
+void
+_wapi_shm_detach (_wapi_shm_t type)
+{
+	if (!_wapi_shm_enabled ())
+		g_free (wapi_storage [type]);
 }
 
 static void
@@ -815,7 +835,7 @@ shm_sem_unlock (int sem)
 void
 _wapi_shm_semaphores_init (void)
 {
-	if (check_disabled ()) 
+	if (!_wapi_shm_enabled ())
 		noshm_semaphores_init ();
 	else
 		shm_semaphores_init ();

@@ -112,7 +112,18 @@ static guint32 _wapi_private_handle_count = 0;
 static guint32 _wapi_private_handle_slot_count = 0;
 
 struct _WapiHandleSharedLayout *_wapi_shared_layout = NULL;
+
+/*
+ * If SHM is enabled, this will point to shared memory, otherwise it will be NULL.
+ */
 struct _WapiFileShareLayout *_wapi_fileshare_layout = NULL;
+
+/*
+ * If SHM is disabled, this will point to a hash of _WapiFileShare structures, otherwise
+ * it will be NULL. We use this instead of _wapi_fileshare_layout to avoid allocating a
+ * 4MB array.
+ */
+static GHashTable *file_share_hash;
 
 guint32 _wapi_fd_reserve;
 
@@ -205,6 +216,15 @@ static void handle_cleanup (void)
 	}
 	
 	_wapi_shm_semaphores_remove ();
+
+	_wapi_shm_detach (WAPI_SHM_DATA);
+	_wapi_shm_detach (WAPI_SHM_FILESHARE);
+
+	if (file_share_hash)
+		g_hash_table_destroy (file_share_hash);
+
+	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
+		g_free (_wapi_private_handles [i]);
 }
 
 void _wapi_cleanup ()
@@ -248,11 +268,14 @@ static void shared_init (void)
 	_wapi_shared_layout = _wapi_shm_attach (WAPI_SHM_DATA);
 	g_assert (_wapi_shared_layout != NULL);
 	
-	_wapi_fileshare_layout = _wapi_shm_attach (WAPI_SHM_FILESHARE);
-	g_assert (_wapi_fileshare_layout != NULL);
+	if (_wapi_shm_enabled ()) {
+		/* This allocates a 4mb array, so do it only if SHM is enabled */
+		_wapi_fileshare_layout = _wapi_shm_attach (WAPI_SHM_FILESHARE);
+		g_assert (_wapi_fileshare_layout != NULL);
+	}
 	
 #if !defined (DISABLE_SHARED_HANDLES)
-	if (!g_getenv ("MONO_DISABLE_SHM"))
+	if (_wapi_shm_enabled ())
 		_wapi_collection_init ();
 #endif
 
@@ -1616,6 +1639,35 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 	}
 }
 
+void
+_wapi_free_share_info (_WapiFileShare *share_info)
+{
+	if (!_wapi_shm_enabled ()) {
+		_wapi_handle_lock_shared_handles ();
+		g_hash_table_remove (file_share_hash, share_info);
+		_wapi_handle_unlock_shared_handles ();
+	} else {
+		memset (share_info, '\0', sizeof(struct _WapiFileShare));
+	}
+}
+
+static gint
+wapi_share_info_equal (gconstpointer ka, gconstpointer kb)
+{
+	const _WapiFileShare *s1 = ka;
+	const _WapiFileShare *s2 = kb;
+
+	return (s1->device == s2->device && s1->inode == s2->inode) ? 1 : 0;
+}
+
+static guint
+wapi_share_info_hash (gconstpointer data)
+{
+	const _WapiFileShare *s = data;
+
+	return s->inode;
+}
+
 gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 					guint32 new_sharemode,
 					guint32 new_access,
@@ -1636,55 +1688,31 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 	/* Prevent new entries racing with us */
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
 	g_assert (thr_ret == 0);
-	
-	/* If a linear scan gets too slow we'll have to fit a hash
-	 * table onto the shared mem backing store
-	 */
-	*share_info = NULL;
-	for (i = 0; i <= _wapi_fileshare_layout->hwm; i++) {
-		file_share = &_wapi_fileshare_layout->share_info[i];
 
-		/* Make a note of an unused slot, in case we need to
-		 * store share info
+	if (!_wapi_shm_enabled ()) {
+		_WapiFileShare tmp;
+
+		/*
+		 * Instead of allocating a 4MB array, we use a hash table to keep track of this
+		 * info. This is needed even if SHM is disabled, to track sharing inside
+		 * the current process.
 		 */
-		if (first_unused == -1 && file_share->handle_refs == 0) {
-			first_unused = i;
-			continue;
-		}
-		
-		if (file_share->handle_refs == 0) {
-			continue;
-		}
-		
-		if (file_share->device == device &&
-		    file_share->inode == inode) {
+		if (!file_share_hash)
+			file_share_hash = g_hash_table_new_full (wapi_share_info_hash, wapi_share_info_equal, NULL, g_free);
+		tmp.device = device;
+		tmp.inode = inode;
+
+		file_share = g_hash_table_lookup (file_share_hash, &tmp);
+		if (file_share) {
 			*old_sharemode = file_share->sharemode;
 			*old_access = file_share->access;
 			*share_info = file_share;
 			
-			/* Increment the reference count while we
-			 * still have sole access to the shared area.
-			 * This makes the increment atomic wrt
-			 * collections
-			 */
 			InterlockedIncrement ((gint32 *)&file_share->handle_refs);
-			
 			exists = TRUE;
-			break;
-		}
-	}
-	
-	if (!exists) {
-		if (i == _WAPI_FILESHARE_SIZE && first_unused == -1) {
-			/* No more space */
 		} else {
-			if (first_unused == -1) {
-				file_share = &_wapi_fileshare_layout->share_info[++i];
-				_wapi_fileshare_layout->hwm = i;
-			} else {
-				file_share = &_wapi_fileshare_layout->share_info[first_unused];
-			}
-			
+			file_share = g_new0 (_WapiFileShare, 1);
+
 			file_share->device = device;
 			file_share->inode = inode;
 			file_share->opened_by_pid = _wapi_getpid ();
@@ -1692,11 +1720,71 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 			file_share->access = new_access;
 			file_share->handle_refs = 1;
 			*share_info = file_share;
-		}
-	}
 
-	if (*share_info != NULL) {
-		InterlockedExchange ((gint32 *)&(*share_info)->timestamp, now);
+			g_hash_table_insert (file_share_hash, file_share, file_share);
+		}
+	} else {
+		/* If a linear scan gets too slow we'll have to fit a hash
+		 * table onto the shared mem backing store
+		 */
+		*share_info = NULL;
+		for (i = 0; i <= _wapi_fileshare_layout->hwm; i++) {
+			file_share = &_wapi_fileshare_layout->share_info[i];
+
+			/* Make a note of an unused slot, in case we need to
+			 * store share info
+			 */
+			if (first_unused == -1 && file_share->handle_refs == 0) {
+				first_unused = i;
+				continue;
+			}
+		
+			if (file_share->handle_refs == 0) {
+				continue;
+			}
+		
+			if (file_share->device == device &&
+				file_share->inode == inode) {
+				*old_sharemode = file_share->sharemode;
+				*old_access = file_share->access;
+				*share_info = file_share;
+			
+				/* Increment the reference count while we
+				 * still have sole access to the shared area.
+				 * This makes the increment atomic wrt
+				 * collections
+				 */
+				InterlockedIncrement ((gint32 *)&file_share->handle_refs);
+			
+				exists = TRUE;
+				break;
+			}
+		}
+	
+		if (!exists) {
+			if (i == _WAPI_FILESHARE_SIZE && first_unused == -1) {
+				/* No more space */
+			} else {
+				if (first_unused == -1) {
+					file_share = &_wapi_fileshare_layout->share_info[++i];
+					_wapi_fileshare_layout->hwm = i;
+				} else {
+					file_share = &_wapi_fileshare_layout->share_info[first_unused];
+				}
+			
+				file_share->device = device;
+				file_share->inode = inode;
+				file_share->opened_by_pid = _wapi_getpid ();
+				file_share->sharemode = new_sharemode;
+				file_share->access = new_access;
+				file_share->handle_refs = 1;
+				*share_info = file_share;
+			}
+		}
+
+		if (*share_info != NULL) {
+			InterlockedExchange ((gint32 *)&(*share_info)->timestamp, now);
+		}
 	}
 	
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);

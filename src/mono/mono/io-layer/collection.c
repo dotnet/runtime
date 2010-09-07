@@ -84,6 +84,9 @@ void _wapi_handle_collect (void)
 {
 	guint32 count = _wapi_shared_layout->collection_count;
 	int i, thr_ret;
+
+	if (!_wapi_shm_enabled ())
+		return;
 	
 	LOGDEBUG ("%s: (%d) Starting a collection", __func__, _wapi_getpid ());
 

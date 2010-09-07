@@ -789,7 +789,8 @@ socket_io_init (SocketIOData *data)
 	}
 
 	stack_size = mono_threads_get_default_stacksize ();
-	mono_threads_set_default_stacksize (128 * 1024);
+	/* 128k stacks could lead to problems on 64 bit systems with large pagesizes+altstack */
+	mono_threads_set_default_stacksize (128 * (sizeof (gpointer) / 4) * 1024);
 	if (data->epoll_disabled) {
 		mono_thread_create_internal (mono_get_root_domain (), socket_io_poll_main, data, TRUE);
 	}
@@ -1331,24 +1332,22 @@ threadpool_kill_idle_threads (ThreadPool *tp)
 void
 mono_thread_pool_cleanup (void)
 {
-	if (async_tp.pool_status == 0 || async_tp.pool_status == 2)
-		return;
+	if (!(async_tp.pool_status == 0 || async_tp.pool_status == 2)) {
+		if (!(async_tp.pool_status == 1 && InterlockedCompareExchange (&async_tp.pool_status, 2, 1) == 2)) {
+			InterlockedExchange (&async_io_tp.pool_status, 2);
+			MONO_SEM_WAIT (&async_tp.lock);
+			threadpool_free_queue (&async_tp);
+			threadpool_kill_idle_threads (&async_tp);
+			MONO_SEM_POST (&async_tp.lock);
 
-	if (async_tp.pool_status == 1 && InterlockedCompareExchange (&async_tp.pool_status, 2, 1) == 2)
-		return;
-
-	InterlockedExchange (&async_io_tp.pool_status, 2);
-	MONO_SEM_WAIT (&async_tp.lock);
-	threadpool_free_queue (&async_tp);
-	threadpool_kill_idle_threads (&async_tp);
-	MONO_SEM_POST (&async_tp.lock);
-
-	socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
-	MONO_SEM_WAIT (&async_io_tp.lock);
-	threadpool_free_queue (&async_io_tp);
-	threadpool_kill_idle_threads (&async_io_tp);
-	MONO_SEM_POST (&async_io_tp.lock);
-	MONO_SEM_DESTROY (&async_io_tp.new_job);
+			socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
+			MONO_SEM_WAIT (&async_io_tp.lock);
+			threadpool_free_queue (&async_io_tp);
+			threadpool_kill_idle_threads (&async_io_tp);
+			MONO_SEM_POST (&async_io_tp.lock);
+			MONO_SEM_DESTROY (&async_io_tp.new_job);
+		}
+	}
 
 	EnterCriticalSection (&wsqs_lock);
 	mono_wsq_cleanup ();
@@ -1612,33 +1611,35 @@ mono_thread_pool_is_queue_array (MonoArray *o)
 	return obj == async_tp.first || obj == async_io_tp.first;
 }
 
-static void
-add_wsq (MonoWSQ *wsq)
+static MonoWSQ *
+add_wsq (void)
 {
 	int i;
-
-	if (wsq == NULL)
-		return;
+	MonoWSQ *wsq;
 
 	EnterCriticalSection (&wsqs_lock);
+	wsq = mono_wsq_create ();
 	if (wsqs == NULL) {
 		LeaveCriticalSection (&wsqs_lock);
-		return;
+		return NULL;
 	}
 	for (i = 0; i < wsqs->len; i++) {
 		if (g_ptr_array_index (wsqs, i) == NULL) {
 			wsqs->pdata [i] = wsq;
 			LeaveCriticalSection (&wsqs_lock);
-			return;
+			return wsq;
 		}
 	}
 	g_ptr_array_add (wsqs, wsq);
 	LeaveCriticalSection (&wsqs_lock);
+	return wsq;
 }
 
 static void
 remove_wsq (MonoWSQ *wsq)
 {
+	gpointer data;
+
 	if (wsq == NULL)
 		return;
 
@@ -1648,6 +1649,12 @@ remove_wsq (MonoWSQ *wsq)
 		return;
 	}
 	g_ptr_array_remove_fast (wsqs, wsq);
+	data = NULL;
+	while (mono_wsq_local_pop (&data)) {
+		threadpool_jobs_dec (data);
+		data = NULL;
+	}
+	mono_wsq_destroy (wsq);
 	LeaveCriticalSection (&wsqs_lock);
 }
 
@@ -1789,10 +1796,8 @@ async_invoke_thread (gpointer data)
   
 	tp = data;
 	wsq = NULL;
-	if (!tp->is_io) {
-		wsq = mono_wsq_create ();
-		add_wsq (wsq);
-	}
+	if (!tp->is_io)
+		wsq = add_wsq ();
 
 	thread = mono_thread_internal_current ();
 	if (tp_start_func)
@@ -1854,8 +1859,20 @@ async_invoke_thread (gpointer data)
 					if (tp_item_end_func)
 						tp_item_end_func (tp_item_user_data);
 					if (exc && mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
-						mono_unhandled_exception (exc);
-						exit (255);
+						gboolean unloaded;
+						MonoClass *klass;
+
+						klass = exc->vtable->klass;
+						unloaded = (klass->image == mono_defaults.corlib);
+						if (unloaded) {
+							unloaded = (!strcmp ("System", klass->name_space) &&
+								!strcmp ("AppDomainUnloadedException", klass->name));
+						}
+
+						if (!unloaded && klass != mono_defaults.threadabortexception_class) {
+							mono_unhandled_exception (exc);
+							exit (255);
+						}
 					}
 					mono_domain_set (mono_get_root_domain (), TRUE);
 				}
@@ -1921,11 +1938,6 @@ async_invoke_thread (gpointer data)
 					TP_DEBUG ("DIE");
 					if (!tp->is_io) {
 						remove_wsq (wsq);
-						while (mono_wsq_local_pop (&data)) {
-							threadpool_jobs_dec (data);
-							data = NULL;
-						}
-						mono_wsq_destroy (wsq);
 					}
 					if (tp_finish_func)
 						tp_finish_func (tp_hooks_user_data);

@@ -326,7 +326,8 @@ static void file_close (gpointer handle, gpointer data)
 	
 	g_free (file_handle->filename);
 	
-	_wapi_handle_share_release (file_handle->share_info);
+	if (file_handle->share_info)
+		_wapi_handle_share_release (file_handle->share_info);
 	
 	close (GPOINTER_TO_UINT(handle));
 }
@@ -1732,7 +1733,8 @@ gboolean DeleteFile(const gunichar2 *name)
 		g_free (filename);
 		return FALSE;
 	}
-	_wapi_handle_share_release (shareinfo);
+	if (shareinfo)
+		_wapi_handle_share_release (shareinfo);
 #endif
 
 	retval = _wapi_unlink (filename);
@@ -1843,7 +1845,8 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 		SetLastError (ERROR_SHARING_VIOLATION);
 		return FALSE;
 	}
-	_wapi_handle_share_release (shareinfo);
+	if (shareinfo)
+		_wapi_handle_share_release (shareinfo);
 
 	result = _wapi_rename (utf8_name, utf8_dest_name);
 	errno_copy = errno;
@@ -3550,6 +3553,34 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 	return(ret);
 }
 
+/* In-place octal sequence replacement */
+static void
+unescape_octal (gchar *str)
+{
+	gchar *rptr;
+	gchar *wptr;
+
+	if (str == NULL)
+		return;
+
+	rptr = wptr = str;
+	while (*rptr != '\0') {
+		if (*rptr == '\\') {
+			char c;
+			rptr++;
+			c = (*(rptr++) - '0') << 6;
+			c += (*(rptr++) - '0') << 3;
+			c += *(rptr++) - '0';
+			*wptr++ = c;
+		} else if (wptr != rptr) {
+			*wptr++ = *rptr++;
+		} else {
+			rptr++; wptr++;
+		}
+	}
+	*wptr = '\0';
+}
+
 gint32
 GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 {
@@ -3585,10 +3616,12 @@ GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 			continue;
 		}
 
-		dir = g_utf8_to_utf16 (*(splitted + 1), -1, &length, NULL, NULL);
+		unescape_octal (*(splitted + 1));
+		dir = g_utf8_to_utf16 (*(splitted + 1), -1, NULL, &length, NULL);
 		g_strfreev (splitted);
 		if (total + length + 1 > len) {
 			fclose (fp);
+			g_free (dir);
 			return len * 2; /* guess */
 		}
 

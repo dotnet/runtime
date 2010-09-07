@@ -61,12 +61,13 @@ null_sources = \
 	console-null.c
 
 sgen_sources = \
-	sgen-gray.c	\
-	sgen-pinning.c	\
+	sgen-cardtable.c	\
+	sgen-gray.c		\
+	sgen-pinning.c		\
 	sgen-pinning-stats.c	\
-	sgen-marksweep.c		\
-	sgen-los.c				\
-	sgen-protocol.c
+	sgen-los.c		\
+	sgen-protocol.c		\
+	sgen-workers.c
 
 libmonoruntime_la_SOURCES = \
 	$(platform_sources)	\
@@ -142,6 +143,7 @@ libmonoruntime_la_SOURCES = \
 	mono-wsq.h		\
 	monitor.c		\
 	monitor.h		\
+	nacl-stub.c		\
 	normalization-tables.h	\
 	null-gc.c		\
 	number-formatter.h	\
@@ -168,8 +170,16 @@ libmonoruntime_la_SOURCES = \
 	sgen-os-mach.c		\
 	sgen-gc.c		\
 	sgen-internal.c		\
+	sgen-marksweep.c	\
+	sgen-marksweep-fixed.c	\
+	sgen-marksweep-par.c	\
+	sgen-marksweep-fixed-par.c	\
+	sgen-major-copying.c	\
 	sgen-gc.h		\
 	sgen-archdep.h		\
+	sgen-major-copy-object.h \
+	sgen-major-scan-object.h \
+	sgen-protocol.h		\
 	sgen-scan-object.h	\
 	string-icalls.c 	\
 	string-icalls.h 	\

@@ -23,6 +23,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/strenc.h>
+#include <mono/utils/mono-error-internals.h>
 #include <string.h>
 //#include <signal.h>
 #include <ctype.h>
@@ -2181,12 +2182,14 @@ is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 #define SECTION_HEADER_INVALID_FLAGS 0x3E
 
 static gboolean
-is_valid_method_header (VerifyContext *ctx, guint32 rva)
+is_valid_method_header (VerifyContext *ctx, guint32 rva, guint32 *locals_token)
 {
 	unsigned local_vars_tok, code_size, offset = mono_cli_rva_image_map (ctx->image, rva);
 	unsigned header = 0;
 	unsigned fat_header = 0, size = 0, max_stack;
 	const char *ptr = NULL, *end;
+
+	*locals_token = 0;
 
 	if (offset == INVALID_ADDRESS)
 		FAIL (ctx, g_strdup ("MethodHeader: Invalid RVA"));
@@ -2230,6 +2233,7 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva)
 			FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid local vars signature table 0x%x", ((local_vars_tok >> 24) & 0xFF)));
 		if ((local_vars_tok & 0xFFFFFF) > ctx->image->tables [MONO_TABLE_STANDALONESIG].rows)	
 			FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid local vars signature points to invalid row 0x%x", local_vars_tok & 0xFFFFFF));
+		*locals_token = local_vars_tok & 0xFFFFFF;
 	}
 
 	if (fat_header & FAT_HEADER_INVALID_FLAGS)
@@ -2672,7 +2676,7 @@ static void
 verify_method_table_full (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_METHOD];
-	guint32 data [MONO_METHOD_SIZE], rva;
+	guint32 data [MONO_METHOD_SIZE], rva, locals_token;
 	int i;
 
 	for (i = 0; i < table->rows; ++i) {
@@ -2682,7 +2686,7 @@ verify_method_table_full (VerifyContext *ctx)
 		if (!data [MONO_METHOD_SIGNATURE] || !is_valid_method_signature (ctx, data [MONO_METHOD_SIGNATURE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid signature token 0x%08x", i, data [MONO_METHOD_SIGNATURE]));
 
-		if (rva && !is_valid_method_header (ctx, rva))
+		if (rva && !is_valid_method_header (ctx, rva, &locals_token))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d RVA points to an invalid method header", i));
 	}
 }
@@ -3782,11 +3786,11 @@ verify_tables_data (VerifyContext *ctx)
 }
 
 static void
-init_verify_context (VerifyContext *ctx, MonoImage *image, GSList **error_list)
+init_verify_context (VerifyContext *ctx, MonoImage *image, gboolean report_error)
 {
 	memset (ctx, 0, sizeof (VerifyContext));
 	ctx->image = image;
-	ctx->report_error = error_list != NULL;
+	ctx->report_error = report_error;
 	ctx->report_warning = FALSE; //export this setting in the API
 	ctx->valid = 1;
 	ctx->size = image->raw_data_len;
@@ -3804,6 +3808,18 @@ cleanup_context (VerifyContext *ctx, GSList **error_list)
 	return ctx->valid;	
 }
 
+static gboolean
+cleanup_context_checked (VerifyContext *ctx, MonoError *error)
+{
+	g_free (ctx->sections);
+	if (ctx->errors) {
+		MonoVerifyInfo *info = ctx->errors->data;
+		mono_error_set_bad_image (error, ctx->image, "%s", info->message);
+		mono_free_verify_list (ctx->errors);
+	}
+	return ctx->valid;
+}
+
 gboolean
 mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
 {
@@ -3812,7 +3828,7 @@ mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_PE;
 
 	verify_msdos_header (&ctx);
@@ -3842,7 +3858,7 @@ mono_verifier_verify_cli_data (MonoImage *image, GSList **error_list)
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_CLI;
 
 	verify_cli_header (&ctx);
@@ -3875,7 +3891,7 @@ mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	verify_tables_data (&ctx);
@@ -3895,7 +3911,7 @@ mono_verifier_verify_full_table_data (MonoImage *image, GSList **error_list)
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	verify_typedef_table_full (&ctx);
@@ -3934,7 +3950,7 @@ mono_verifier_verify_field_signature (MonoImage *image, guint32 offset, GSList *
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	is_valid_field_signature (&ctx, offset);
@@ -3945,30 +3961,39 @@ gboolean
 mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **error_list)
 {
 	VerifyContext ctx;
+	guint32 locals_token;
 
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
-	is_valid_method_header (&ctx, offset);
+	is_valid_method_header (&ctx, offset, &locals_token);
+	if (locals_token) {
+		guint32 sig_offset = mono_metadata_decode_row_col (&image->tables [MONO_TABLE_STANDALONESIG], locals_token - 1, MONO_STAND_ALONE_SIGNATURE);
+		is_valid_standalonesig_blob (&ctx, sig_offset);
+	}
+
 	return cleanup_context (&ctx, error_list);
 }
 
 gboolean
-mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, GSList **error_list)
+mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, MonoError *error)
 {
 	VerifyContext ctx;
+
+	mono_error_init (error);
 
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, TRUE);
 	ctx.stage = STAGE_TABLES;
 
 	is_valid_method_signature (&ctx, offset);
-	return cleanup_context (&ctx, error_list);
+	/*XXX This returns a bad image exception, it might be the case that the right exception is method load.*/
+	return cleanup_context_checked (&ctx, error);
 }
 
 gboolean
@@ -3979,7 +4004,7 @@ mono_verifier_verify_memberref_signature (MonoImage *image, guint32 offset, GSLi
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	is_valid_method_or_field_signature (&ctx, offset);
@@ -3994,7 +4019,7 @@ mono_verifier_verify_standalone_signature (MonoImage *image, guint32 offset, GSL
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	is_valid_standalonesig_blob (&ctx, offset);
@@ -4009,7 +4034,7 @@ mono_verifier_verify_typespec_signature (MonoImage *image, guint32 offset, guint
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 	ctx.token = token;
 
@@ -4025,7 +4050,7 @@ mono_verifier_verify_methodspec_signature (MonoImage *image, guint32 offset, GSL
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	is_valid_methodspec_blob (&ctx, offset);
@@ -4061,7 +4086,7 @@ mono_verifier_verify_string_signature (MonoImage *image, guint32 offset, GSList 
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	verify_user_string (&ctx, offset);
@@ -4077,7 +4102,7 @@ mono_verifier_verify_cattr_blob (MonoImage *image, guint32 offset, GSList **erro
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	is_valid_cattr_blob (&ctx, offset);
@@ -4093,7 +4118,7 @@ mono_verifier_verify_cattr_content (MonoImage *image, MonoMethod *ctor, const gu
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	init_verify_context (&ctx, image, error_list);
+	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
 	is_valid_cattr_content (&ctx, ctor, (const char*)data, size);
@@ -4167,8 +4192,9 @@ mono_verifier_verify_method_header (MonoImage *image, guint32 offset, GSList **e
 }
 
 gboolean
-mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, GSList **error_list)
+mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, MonoError *error)
 {
+	mono_error_init (error);
 	return TRUE;
 }
 

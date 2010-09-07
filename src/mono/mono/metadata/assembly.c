@@ -92,6 +92,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"PEAPI", 0},
 	{"System", 0},
 	{"System.ComponentModel.DataAnnotations", 2},
+	{"System.Configuration", 0},
 	{"System.Configuration.Install", 0},
 	{"System.Core", 2},
 	{"System.Data", 0},
@@ -125,6 +126,27 @@ static const AssemblyVersionMap framework_assemblies [] = {
  */
 static GList *loaded_assemblies = NULL;
 static MonoAssembly *corlib;
+
+#if defined(__native_client__)
+
+/* On Native Client, allow mscorlib to be loaded from memory  */
+/* instead of loaded off disk.  If these are not set, default */
+/* mscorlib loading will take place                           */
+
+/* NOTE: If mscorlib data is passed to mono in this way then */
+/* it needs to remain allocated during the use of mono.      */
+
+static void *corlibData = NULL;
+static size_t corlibSize = 0;
+
+void
+mono_set_corlib_data (void *data, size_t size)
+{
+  corlibData = data;
+  corlibSize = size;
+}
+
+#endif
 
 /* This protects loaded_assemblies and image->references */
 #define mono_assemblies_lock() EnterCriticalSection (&assemblies_mutex)
@@ -2514,7 +2536,6 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 	return result;
 }
 
-
 MonoAssembly*
 mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status)
 {
@@ -2524,6 +2545,22 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 		/* g_print ("corlib already loaded\n"); */
 		return corlib;
 	}
+
+#if defined(__native_client__)
+	if (corlibData != NULL && corlibSize != 0) {
+		int status = 0;
+		/* First "FALSE" instructs mono not to make a copy. */
+		/* Second "FALSE" says this is not just a ref.      */
+		MonoImage* image = mono_image_open_from_data_full (corlibData, corlibSize, FALSE, &status, FALSE);
+		if (image == NULL || status != 0)
+			g_print("mono_image_open_from_data_full failed: %d\n", status);
+		corlib = mono_assembly_load_from_full (image, "mscorlib", &status, FALSE);
+		if (corlib == NULL || status != 0)
+			g_print ("mono_assembly_load_from_full failed: %d\n", status);
+		if (corlib)
+			return corlib;
+	}
+#endif
 	
 	if (assemblies_path) {
 		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status, FALSE);

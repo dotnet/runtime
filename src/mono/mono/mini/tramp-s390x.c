@@ -207,31 +207,6 @@ mono_arch_nullify_plt_entry (guint8 *code, mgreg_t *regs)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_get_vcall_slot                          */
-/*                                                                  */
-/* Function	- This method is called by the arch independent     */
-/*            trampoline code to determine the vtable slot used by  */
-/*            the call which invoked the trampoline.                */
-/*                                                                  */
-/* Parameters   - code   - Pointer into caller code                 */
-/*                regs   - Register state at the point of the call  */
-/*                displacement - Out parameter which will receive   */
-/*                the displacement of the vtable slot               */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-gpointer
-mono_arch_get_vcall_slot (guint8 *code, mgreg_t *regs, int *displacement)
-{
-	/* Not used on s390x */
-	g_assert_not_reached ();
-	return NULL;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_create_trampoline_code                  */
 /*                                                                  */
 /* Function	- Create the designated type of trampoline according*/

@@ -6,7 +6,7 @@ AC_CANONICAL_SYSTEM
 m4_ifdef([_A][M_PROG_TAR],[_A][M_SET_OPTION([tar-ustar])])
 
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono,2.7)
+AM_INIT_AUTOMAKE(mono,2.8.1)
 AM_MAINTAINER_MODE
 
 API_VER=2.0
@@ -67,6 +67,7 @@ AC_MSG_CHECKING([host platform characteristics])
 libgc_threads=no
 has_dtrace=no
 parallel_mark=yes
+ikvm_native=yes
 
 case "$host" in
 	powerpc*-*-linux*)
@@ -156,7 +157,7 @@ case "$host" in
 		;;
 	*-*-*openbsd*)
 		host_win32=no
-		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_OPENBSD_THREADS -DPLATFORM_BSD -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
+		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_OPENBSD_THREADS -DPLATFORM_BSD -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
 		CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
@@ -179,8 +180,21 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		libdl="-ldl"
 		libgc_threads=pthreads
-		AOT_SUPPORTED="yes"
 		use_sigposix=yes
+		;;
+	*-*-nacl*)
+		host_win32=no
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
+		if test "x$disable_munmap" != "xyes"; then
+			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
+		fi
+		libmono_cflags="-D_REENTRANT"
+		libdl=
+		libgc_threads=pthreads
+		gc_default=boehm
+		use_sigposix=yes
+		ikvm_native=no
+		AC_DEFINE(DISABLE_SOCKETS,1,[Disable sockets support])
 		;;
 	*-*-hpux*)
 	        host_win32=no
@@ -350,7 +364,7 @@ fi
 
 AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
-AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h)
+AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h sys/param.h)
 AC_CHECK_HEADERS(sys/param.h sys/socket.h sys/ipc.h sys/sem.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h netinet/tcp.h netinet/in.h unistd.h sys/types.h link.h asm/sigcontext.h)
 
 AC_CHECK_HEADERS(sys/user.h, [], [],
@@ -549,8 +563,6 @@ AC_ARG_WITH([glib],
 	[  --with-glib=embedded|system    Choose glib API: system or embedded (default to embedded)],
 	[], [with_glib=embedded])
 
-eglib_dir=
-
 ac_configure_args="$ac_configure_args \"CPPFLAGS_FOR_EGLIB=$EGLIB_CPPFLAGS\" \"CFLAGS_FOR_EGLIB=$CFLAGS_FOR_EGLIB\""
 AC_CONFIG_SUBDIRS(eglib)
 
@@ -562,39 +574,13 @@ embedded)
   BUILD_GLIB_LIBS="$GLIB_LIBS"
   GMODULE_CFLAGS="$GLIB_CFLAGS"
   GMODULE_LIBS="$GLIB_LIBS"
-  eglib_dir=eglib
   ;;
 system)
-  if test "x$PKG_CONFIG" = "xno"; then
-    AC_MSG_ERROR([You need to install pkg-config])
-  fi
-  echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-  echo "cross_compiling=$cross_compiling"
-  BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
-  BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-  
-  ## Versions of dependencies
-  GLIB_REQUIRED_VERSION=2.4.0
-
-  dnl
-  dnl No, you will not replace this check with a pkg.m4 check
-  dnl
-  if test "x$PKG_CONFIG" = "xno"; then
-    AC_MSG_ERROR([You need to install pkg-config])
-  fi
-  if $PKG_CONFIG --atleast-version=$GLIB_REQUIRED_VERSION glib-2.0; then
-      GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
-      GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-      GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
-      GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
-  else
-	AC_MSG_ERROR([You need at least glib-2.0 $GLIB_REQUIRED_VERSION])
-  fi
+  AC_MSG_ERROR([--with-glib=system is no longer supported as of Mono 2.8])
   ;;
 *)
   AC_MSG_ERROR([Invalid argument to --with-glib.])
 esac
-AM_CONDITIONAL(EGLIB_BUILD, test x$with_glib = xembedded)
   
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
@@ -602,7 +588,6 @@ AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 AC_SUBST(BUILD_GLIB_CFLAGS)
 AC_SUBST(BUILD_GLIB_LIBS)
-AC_SUBST(eglib_dir)
 
 if test x$cross_compiling$host_win32 = xnoyes; then
    AC_MSG_CHECKING(for cygwin glib2-dev package)
@@ -675,11 +660,7 @@ if test x$enable_small_config = xyes; then
 	CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DSMALL_CONFIG"
 fi
 
-if test x$AOT_SUPPORTED != xyes; then
-   AOT_SUPPORTED=no
-fi
-
-AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compilation of system assemblies during the build (on by default on some platforms)], enable_system_aot=$enableval, enable_system_aot=$AOT_SUPPORTED)
+AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compilation of system assemblies during the build (on by default on some platforms)], enable_system_aot=$enableval, enable_system_aot=default)
 
 DISABLED_FEATURES=none
 
@@ -985,7 +966,7 @@ if test x$target_win32 = xno; then
 	dnl ******************************************************************
 	dnl *** Checks for the IKVM JNI interface library                  ***
 	dnl ******************************************************************
-	AC_ARG_WITH(ikvm-native, [  --with-ikvm-native=yes,no      build the IKVM JNI interface library (defaults to yes)],[with_ikvm_native=$withval],[with_ikvm_native=yes])
+	AC_ARG_WITH(ikvm-native, [  --with-ikvm-native=yes,no      build the IKVM JNI interface library (defaults to yes)],[with_ikvm_native=$withval],[with_ikvm_native=$ikvm_native])
 
 	ikvm_native_dir=
 	if test x$with_ikvm_native = xyes; then
@@ -2001,6 +1982,22 @@ AM_CONDITIONAL(ENABLE_DTRACE, [test x$enable_dtrace = xyes])
 AM_CONDITIONAL(DTRACE_G_REQUIRED, [test x$dtrace_g = xyes])
 
 dnl **************
+dnl ***  NaCl  ***
+dnl **************
+
+AC_ARG_ENABLE(nacl_codegen, [  --enable-nacl-codegen      Enable Native Client code generation], enable_nacl_codegen=$enableval, enable_nacl_codegen=no)
+
+AM_CONDITIONAL(NACL_CODEGEN, test x$enable_nacl_codegen != xno)
+if test "x$enable_nacl_codegen" = "xyes"; then
+   MONO_NACL_ALIGN_MASK_OFF=1
+   CPPFLAGS="$CPPFLAGS -D__native_client_codegen__"
+   AC_DEFINE(TARGET_NACL, 1, [...])
+else
+   MONO_NACL_ALIGN_MASK_OFF=0
+fi
+AC_SUBST(MONO_NACL_ALIGN_MASK_OFF)
+
+dnl **************
 dnl ***  LLVM  ***
 dnl **************
 
@@ -2126,7 +2123,11 @@ case "$host" in
 		  haiku*)
 			LIBC=libroot.so
 			;;
-		  linux*|darwin*)
+		  linux*)
+			sgen_supported=true
+			AOT_SUPPORTED="yes"
+			;;
+		  darwin*|openbsd*)
 			sgen_supported=true
 		        ;;
 		esac
@@ -2137,7 +2138,11 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		case $host_os in
-		  linux*|darwin*)
+		  linux*)
+			sgen_supported=true
+			AOT_SUPPORTED="yes"
+			;;
+		  darwin*|openbsd*)
 			sgen_supported=true
 			;;
 		esac
@@ -2911,7 +2916,11 @@ fi
       echo "PLATFORM = darwin" >> $mcs_topdir/build/config.make
     fi
 
-    if test x$TARGET = xAMD64 -a x$host_win32 = xno -a "x$AOT_SUPPORTED" = "xyes" -a x$enable_system_aot = xyes; then
+	if test x$AOT_SUPPORTED = xyes -a x$enable_system_aot = xdefault; then
+	   enable_system_aot=yes
+	fi
+
+    if test x$host_win32 = xno -a x$platform_darwin != xyes -a x$enable_system_aot = xyes; then
       echo "ENABLE_AOT = 1" >> $mcs_topdir/build/config.make
     fi
 

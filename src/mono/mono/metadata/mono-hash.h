@@ -96,6 +96,8 @@ void        mono_g_hash_table_remap (MonoGHashTable *hash_table,
 									 MonoGRemapperFunc func,
 									 gpointer user_data);
 
+void        mono_g_hash_table_print_stats (MonoGHashTable *table);
+
 G_END_DECLS
 
 #endif /* __MONO_G_HASH_H__ */

@@ -22,6 +22,7 @@
 /monow
 /cpu-sparc.h
 /cpu-s390.h
+/cpu-x86.h
 /.hidden
 /semantic.cache
 /.project
@@ -30,3 +31,5 @@
 /version.h
 /buildver.h
 /TAGS
+/mono-sgen
+

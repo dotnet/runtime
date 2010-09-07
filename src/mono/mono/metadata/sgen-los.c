@@ -68,7 +68,7 @@ typedef struct _LOSObject LOSObject;
 struct _LOSObject {
 	LOSObject *next;
 	mword size; /* this is the object size */
-	guint16 role;
+	guint16 huge_object;
 	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
 	char data [MONO_ZERO_LEN_ARRAY];
 };
@@ -365,6 +365,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size &= ~(pagesize - 1);
 		/* FIXME: handle OOM */
 		obj = mono_sgen_alloc_os_memory (alloc_size, TRUE);
+		obj->huge_object = TRUE;
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));
 		memset (obj, 0, size + sizeof (LOSObject));
@@ -449,3 +450,30 @@ los_sweep (void)
 
 	g_assert (los_num_sections == num_sections);
 }
+
+#ifdef SGEN_HAVE_CARDTABLE
+
+static void
+los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
+{
+	LOSObject *obj;
+	for (obj = los_object_list; obj; obj = obj->next) {
+		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj->data);
+		if (vt->klass->has_references)
+			callback ((mword)obj->data, (mword)obj->size);
+	}
+}
+
+#define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
+
+static void __attribute__((noinline))
+los_scan_card_table (GrayQueue *queue)
+{
+	LOSObject *obj;
+
+	for (obj = los_object_list; obj; obj = obj->next) {
+		sgen_cardtable_scan_object (obj->data, obj->size, NULL, queue);
+	}
+}
+
+#endif

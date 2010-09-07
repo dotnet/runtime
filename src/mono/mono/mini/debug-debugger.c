@@ -64,6 +64,8 @@ static guint8 *debugger_executable_code_buffer = NULL;
 
 static GCThreadFunctions debugger_thread_vtable;
 
+static guint32 debugger_thread_abort_signal = 0;
+
 static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	sizeof (MonoDebuggerMetadataInfo),
 	sizeof (MonoDefaults),
@@ -178,7 +180,9 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&_mono_debug_using_mono_debugger,
 	(gint32*)&_mono_debugger_interruption_request,
 
-	&debugger_abort_runtime_invoke
+	&debugger_abort_runtime_invoke,
+
+	&debugger_thread_abort_signal
 };
 
 static guint64
@@ -514,6 +518,8 @@ mini_debugger_init (void)
 	debugger_executable_code_buffer = mono_global_codeman_reserve (EXECUTABLE_CODE_BUFFER_SIZE);
 	mono_debugger_event_handler = debugger_event_handler;
 
+	debugger_thread_abort_signal = mono_thread_get_abort_signal ();
+
 	/*
 	 * Use an indirect call so gcc can't optimize it away.
 	 */
@@ -535,6 +541,7 @@ mini_debugger_init (void)
 void
 mini_debugger_set_attach_ok (void)
 {
+	debugger_thread_abort_signal = mono_thread_get_abort_signal ();
 	MONO_DEBUGGER__debugger_info.runtime_flags |= DEBUGGER_RUNTIME_FLAGS_ATTACH_OK;
 }
 

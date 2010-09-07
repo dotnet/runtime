@@ -62,6 +62,10 @@ void img_writer_emit_line (MonoImageWriter *w) MONO_INTERNAL;
 
 void img_writer_emit_alignment (MonoImageWriter *w, int size) MONO_INTERNAL;
 
+#ifdef __native_client_codegen__
+void img_writer_emit_nacl_call_alignment (MonoImageWriter *w) MONO_INTERNAL;
+#endif
+
 void img_writer_emit_pointer_unaligned (MonoImageWriter *w, const char *target) MONO_INTERNAL;
 
 void img_writer_emit_pointer (MonoImageWriter *w, const char *target) MONO_INTERNAL;

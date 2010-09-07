@@ -21,6 +21,9 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
+#ifdef SGEN_BINARY_PROTOCOL
+
 enum {
 	SGEN_PROTOCOL_COLLECTION,
 	SGEN_PROTOCOL_ALLOC,
@@ -122,3 +125,43 @@ typedef struct {
 } SGenProtocolMissingRemset;
 
 /* missing: finalizers, dislinks, roots, non-store wbarriers */
+
+void binary_protocol_collection (int generation) MONO_INTERNAL;
+void binary_protocol_alloc (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_pin (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_mark (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_wbarrier (gpointer ptr, gpointer value, gpointer value_vtable) MONO_INTERNAL;
+void binary_protocol_global_remset (gpointer ptr, gpointer value, gpointer value_vtable) MONO_INTERNAL;
+void binary_protocol_ptr_update (gpointer ptr, gpointer old_value, gpointer new_value, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_cleanup (gpointer ptr, gpointer vtable, int size) MONO_INTERNAL;
+void binary_protocol_empty (gpointer start, int size) MONO_INTERNAL;
+void binary_protocol_thread_restart (gpointer thread) MONO_INTERNAL;
+void binary_protocol_thread_register (gpointer thread) MONO_INTERNAL;
+void binary_protocol_thread_unregister (gpointer thread) MONO_INTERNAL;
+void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset,
+		gpointer value, gpointer value_vtable, int value_pinned) MONO_INTERNAL;
+
+#else
+
+#define binary_protocol_flush_buffers(force)
+#define binary_protocol_collection(generation)
+#define binary_protocol_alloc(obj, vtable, size)
+#define binary_protocol_alloc_pinned(obj, vtable, size)
+#define binary_protocol_alloc_degraded(obj, vtable, size)
+#define binary_protocol_copy(from, to, vtable, size)
+#define binary_protocol_pin(obj, vtable, size)
+#define binary_protocol_mark(obj, vtable, size)
+#define binary_protocol_wbarrier(ptr, value, value_vtable)
+#define binary_protocol_global_remset(ptr, value, value_vtable)
+#define binary_protocol_ptr_update(ptr, old_value, new_value, vtable, size)
+#define binary_protocol_cleanup(ptr, vtable, size)
+#define binary_protocol_empty(start, size)
+#define binary_protocol_thread_restart(thread)
+#define binary_protocol_thread_register(thread)
+#define binary_protocol_thread_unregister(thread)
+#define binary_protocol_missing_remset(obj, obj_vtable, offset, value, value_vtable, value_pinned)
+
+#endif

@@ -504,6 +504,8 @@ get_call_info (MonoCompile *cfg, MonoMethodSignature *sig, gboolean is_pinvoke)
 		/* The address of the return value is passed in %o0 */
 		add_general (&gr, &stack_size, &cinfo->ret, FALSE);
 		cinfo->ret.reg += sparc_i0;
+		/* FIXME: Pass this after this as on other platforms */
+		NOT_IMPLEMENTED;
 	}
 #endif
 
@@ -2255,84 +2257,6 @@ mono_sparc_is_virtual_call (guint32 *code)
 	}
 
 	return FALSE;
-}
-
-/*
- * mono_arch_get_vcall_slot:
- *
- *  Determine the vtable slot used by a virtual call.
- */
-gpointer
-mono_arch_get_vcall_slot (guint8 *code8, mgreg_t *regs, int *displacement)
-{
-	guint32 *code = (guint32*)(gpointer)code8;
-	guint32 ins = code [0];
-	guint32 prev_ins = code [-1];
-
-	mono_sparc_flushw ();
-
-	*displacement = 0;
-
-	if (!mono_sparc_is_virtual_call (code))
-		return NULL;
-
-	if ((sparc_inst_op (ins) == 0x2) && (sparc_inst_op3 (ins) == 0x38)) {
-		if ((sparc_inst_op (prev_ins) == 0x3) && (sparc_inst_i (prev_ins) == 1) && (sparc_inst_op3 (prev_ins) == 0 || sparc_inst_op3 (prev_ins) == 0xb)) {
-			/* ld [r1 + CONST ], r2; call r2 */
-			guint32 base = sparc_inst_rs1 (prev_ins);
-			gint32 disp = (((gint32)(sparc_inst_imm13 (prev_ins))) << 19) >> 19;
-			gpointer base_val;
-
-			g_assert (sparc_inst_rd (prev_ins) == sparc_inst_rs1 (ins));
-
-			g_assert ((base >= sparc_o0) && (base <= sparc_i7));
-
-			base_val = regs [base];
-
-			*displacement = disp;
-
-			return (gpointer)base_val;
-		}
-		else if ((sparc_inst_op (prev_ins) == 0x3) && (sparc_inst_i (prev_ins) == 0) && (sparc_inst_op3 (prev_ins) == 0)) {
-			/* set r1, ICONST; ld [r1 + r2], r2; call r2 */
-			/* Decode a sparc_set32 */
-			guint32 base = sparc_inst_rs1 (prev_ins);
-			guint32 disp;
-			gpointer base_val;
-			guint32 s1 = code [-3];
-			guint32 s2 = code [-2];
-
-#ifdef SPARCV9
-			NOT_IMPLEMENTED;
-#endif
-
-			/* sparc_sethi */
-			g_assert (sparc_inst_op (s1) == 0);
-			g_assert (sparc_inst_op2 (s1) == 4);
-
-			/* sparc_or_imm */
-			g_assert (sparc_inst_op (s2) == 2);
-			g_assert (sparc_inst_op3 (s2) == 2);
-			g_assert (sparc_inst_i (s2) == 1);
-			g_assert (sparc_inst_rs1 (s2) == sparc_inst_rd (s2));
-			g_assert (sparc_inst_rd (s1) == sparc_inst_rs1 (s2));
-
-			disp = ((s1 & 0x3fffff) << 10) | sparc_inst_imm13 (s2);
-
-			g_assert ((base >= sparc_o0) && (base <= sparc_i7));
-
-			base_val = regs [base];
-
-			*displacement = disp;
-
-			return (gpointer)base_val;
-		} else
-			g_assert_not_reached ();
-	}
-	else
-		g_assert_not_reached ();
-
-	return NULL;
 }
 
 #define CMP_SIZE 3

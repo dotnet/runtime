@@ -1181,14 +1181,23 @@ mono_domain_create (void)
 	}
 	mono_appdomains_unlock ();
 
+#ifdef HAVE_BOEHM_GC
+	/*
+	 * Boehm doesn't like roots inside GC allocated objects, and alloc_fixed returns
+	 * a GC_MALLOC-ed object, contrary to the api docs. This causes random crashes when
+	 * running the corlib test suite.
+	 * To solve this, we pass a NULL descriptor, and don't register roots.
+	 */
+	domain = mono_gc_alloc_fixed (sizeof (MonoDomain), NULL);
+#else
 	domain = mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc);
+	mono_gc_register_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED), G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_GC_TRACKED) - G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED), NULL);
+#endif
 	domain->shadow_serial = shadow_serial;
 	domain->domain = NULL;
 	domain->setup = NULL;
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
-
-	mono_gc_register_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED), G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_GC_TRACKED) - G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED), NULL);
 
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_LOAD);
 
@@ -1730,6 +1739,9 @@ mono_cleanup (void)
 {
 	mono_close_exe_image ();
 
+	mono_defaults.corlib = NULL;
+
+	mono_config_cleanup ();
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
 	mono_assemblies_cleanup ();
@@ -1739,6 +1751,14 @@ mono_cleanup (void)
 
 	TlsFree (appdomain_thread_id);
 	DeleteCriticalSection (&appdomains_mutex);
+
+	/*
+	 * This should be called last as TlsGetValue ()/TlsSetValue () can be called during
+	 * shutdown.
+	 */
+#ifndef HOST_WIN32
+	_wapi_cleanup ();
+#endif
 }
 
 void

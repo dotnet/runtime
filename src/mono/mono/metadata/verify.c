@@ -30,7 +30,6 @@
 #include <signal.h>
 #include <ctype.h>
 
-
 static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
 static gboolean verify_all = FALSE;
 
@@ -788,6 +787,7 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		else
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		mono_loader_clear_error ();
 		return FALSE;
 	}
 
@@ -845,8 +845,9 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **out_klass, const
 	}
 
 	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
-	if (!field || !field->parent || !klass) {
+	if (!field || !field->parent || !klass || mono_loader_get_last_error ()) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load field from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		mono_loader_clear_error ();
 		return NULL;
 	}
 
@@ -868,8 +869,9 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 
 	method = mono_get_method_full (ctx->image, token, NULL, ctx->generic_context);
 
-	if (!method) {
+	if (!method || mono_loader_get_last_error ()) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load method from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		mono_loader_clear_error ();
 		return NULL;
 	}
 	
@@ -890,8 +892,9 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 
 	type = mono_type_get_full (ctx->image, token, ctx->generic_context);
 
-	if (!type) {
+	if (!type || mono_loader_get_last_error ()) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load type from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		mono_loader_clear_error ();
 		return NULL;
 	}
 
@@ -3318,6 +3321,25 @@ do_load_token (VerifyContext *ctx, int token)
 	MonoClass *handle_class;
 	if (!check_overflow (ctx))
 		return;
+
+	switch (token & 0xff000000) {
+	case MONO_TOKEN_TYPE_DEF:
+	case MONO_TOKEN_TYPE_REF:
+	case MONO_TOKEN_TYPE_SPEC:
+	case MONO_TOKEN_FIELD_DEF:
+	case MONO_TOKEN_METHOD_DEF:
+	case MONO_TOKEN_METHOD_SPEC:
+	case MONO_TOKEN_MEMBER_REF:
+		if (!token_bounds_check (ctx->image, token)) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Table index out of range 0x%x for token %x for ldtoken at 0x%04x", mono_metadata_token_index (token), token, ctx->ip_offset));
+			return;
+		}
+		break;
+	default:
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid table 0x%x for token 0x%x for ldtoken at 0x%04x", mono_metadata_token_table (token), token, ctx->ip_offset));
+		return;
+	}
+
 	handle = mono_ldtoken (ctx->image, token, &handle_class, ctx->generic_context);
 	if (!handle) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid token 0x%x for ldtoken at 0x%04x", token, ctx->ip_offset));
@@ -3948,6 +3970,7 @@ do_leave (VerifyContext *ctx, int delta)
 	if (!is_correct_leave (ctx->header, ctx->ip_offset, target))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ctx->ip_offset));
 	ctx->eval.size = 0;
+	ctx->target = target;
 }
 
 /* 
@@ -5348,6 +5371,7 @@ mono_method_verify (MonoMethod *method, int level)
 			do_leave (&ctx, read32 (ip + 1) + 5);
 			ip += 5;
 			start = 1;
+			need_merge = 1;
 			break;
 
 		case CEE_LEAVE_S:
@@ -5355,6 +5379,7 @@ mono_method_verify (MonoMethod *method, int level)
 			do_leave (&ctx, (signed char)ip [1] + 2);
 			ip += 2;
 			start = 1;
+			need_merge = 1;
 			break;
 
 		case CEE_PREFIX1:

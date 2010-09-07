@@ -312,7 +312,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 	sparc_sll_imm (code, sparc_o1, 2, sparc_o1);
 	sparc_sub (code, 0, sparc_o2, sparc_o1, sparc_o7);
 
-	sparc_set (code, mono_arch_get_throw_exception (), reg);
+	sparc_set (code, mono_arch_get_throw_exception (NULL, FALSE), reg);
 	/* Use a jmp instead of a call so o7 is preserved */
 	sparc_jmpl_imm (code, reg, 0, sparc_g0);
 	sparc_nop (code);

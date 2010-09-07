@@ -817,6 +817,7 @@ create_allocator (int atype, int offset)
 	mono_method_get_header (res)->init_locals = FALSE;
 
 	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (AllocatorWrapperInfo));
+	info->gc_name = "boehm";
 	info->alloc_type = atype;
 	mono_marshal_set_wrapper_info (res, info);
 
@@ -946,6 +947,12 @@ mono_gc_get_write_barrier (void)
 }
 
 #endif
+
+const char *
+mono_gc_get_gc_name (void)
+{
+	return "boehm";
+}
 
 void*
 mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)

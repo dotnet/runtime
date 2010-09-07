@@ -15,6 +15,31 @@
 #ifndef X86_H
 #define X86_H
 #include <assert.h>
+
+#ifdef __native_client_codegen__
+#define kNaClAlignment 32
+#define kNaClAlignmentMask (kNaClAlignment - 1)
+extern guint8 nacl_align_byte;
+#endif /* __native_client_codegen__ */
+
+
+#if defined( __native_client_codegen__ ) && defined( TARGET_X86 )
+#define x86_codegen_pre(inst_ptr_ptr, inst_len) do { mono_nacl_align_inst(inst_ptr_ptr, inst_len); } while (0)
+#define x86_call_sequence_pre(inst) guint8* _code_start = (inst);
+#define x86_call_sequence_post(inst) \
+  (mono_nacl_align_call(&_code_start, &(inst)), _code_start);
+#define x86_call_sequence_pre_val(inst) guint8* _code_start = (inst);
+#define x86_call_sequence_post_val(inst) \
+  (mono_nacl_align_call(&_code_start, &(inst)), _code_start);
+#else
+#define x86_codegen_pre(inst_ptr_ptr, inst_len) do {} while (0)
+#define x86_call_sequence_pre(inst)
+#define x86_call_sequence_post(inst)
+#define x86_call_sequence_pre_val(inst) guint8* _code_start = (inst);
+#define x86_call_sequence_post_val(inst) _code_start
+#endif  /* __native_client_codegen__ */
+
+
 /*
 // x86 register numbers
 */
@@ -278,6 +303,8 @@ typedef union {
 #define x86_regp_emit(inst,r,regno)  do { x86_address_byte ((inst), 0, (r), (regno)); } while (0)
 #define x86_mem_emit(inst,r,disp)    do { x86_address_byte ((inst), 0, (r), 5); x86_imm_emit32((inst), (disp)); } while (0)
 
+#define kMaxMembaseEmitPadding 6
+
 #define x86_membase_emit(inst,r,basereg,disp)	do {\
 	if ((basereg) == X86_ESP) {	\
 		if ((disp) == 0) {	\
@@ -306,6 +333,8 @@ typedef union {
 		x86_imm_emit32 ((inst), (disp));	\
 	}	\
 	} while (0)
+
+#define kMaxMemindexEmitPadding 6
 
 #define x86_memindex_emit(inst,r,basereg,disp,indexreg,shift)	\
 	do {	\
@@ -343,7 +372,7 @@ typedef union {
  * the instruction is inspected for validity and the correct displacement
  * is inserted.
  */
-#define x86_patch(ins,target)	\
+#define x86_do_patch(ins,target)	\
 	do {	\
 		unsigned char* pos = (ins) + 1;	\
 		int disp, size = 0;	\
@@ -367,10 +396,73 @@ typedef union {
 		else assert (0);	\
 	} while (0)
 
+#if defined( __native_client_codegen__ ) && defined(TARGET_X86)
+
+#define x86_skip_nops(inst) \
+  do {    \
+    int in_nop = 0; \
+    do { \
+      in_nop = 0; \
+      if (inst[0] == 0x90) { \
+        in_nop = 1; \
+        inst += 1; \
+      } \
+      if (inst[0] == 0x8b && inst[1] == 0xc0) { \
+        in_nop = 1; \
+        inst += 2; \
+      } \
+      if (inst[0] == 0x8d && inst[1] == 0x6d \
+       && inst[2] == 0x00) { \
+        in_nop = 1; \
+        inst += 3; \
+      } \
+      if (inst[0] == 0x8d && inst[1] == 0x64 \
+       && inst[2] == 0x24 && inst[3] == 0x00) { \
+        in_nop = 1; \
+        inst += 4; \
+      } \
+      /* skip inst+=5 case because it's the 4-byte + 1-byte case */ \
+      if (inst[0] == 0x8d && inst[1] == 0xad \
+       && inst[2] == 0x00 && inst[3] == 0x00 \
+       && inst[4] == 0x00 && inst[5] == 0x00) { \
+        in_nop = 1; \
+        inst += 6; \
+      } \
+      if (inst[0] == 0x8d && inst[1] == 0xa4 \
+       && inst[2] == 0x24 && inst[3] == 0x00 \
+       && inst[4] == 0x00 && inst[5] == 0x00 \
+       && inst[6] == 0x00 ) { \
+        in_nop = 1; \
+        inst += 7; \
+      } \
+    } while ( in_nop );  \
+  } while (0)
+
+#define x86_patch(ins,target) \
+  do { \
+    unsigned char* inst = (ins); \
+    x86_skip_nops((inst)); \
+    x86_do_patch((inst), (target)); \
+  } while (0)
+
+#else
+#define x86_patch(ins,target) do { x86_do_patch((ins), (target)); } while (0)
+#endif /* __native_client_codegen__ */
+
+#ifdef __native_client_codegen__
+/* The breakpoint instruction is illegal in Native Client, although the HALT   */
+/* instruction is allowed. The breakpoint is used several places in mini-x86.c */
+/* and exceptions-x86.c.                                                       */
+#define x86_breakpoint(inst) \
+	do {	\
+		*(inst)++ = 0xf4;	\
+	} while (0)
+#else
 #define x86_breakpoint(inst) \
 	do {	\
 		*(inst)++ = 0xcc;	\
 	} while (0)
+#endif
 
 #define x86_cld(inst) do { *(inst)++ =(unsigned char)0xfc; } while (0)
 #define x86_stosb(inst) do { *(inst)++ =(unsigned char)0xaa; } while (0)
@@ -380,7 +472,15 @@ typedef union {
 #define x86_movsl(inst) do { *(inst)++ =(unsigned char)0xa5; } while (0)
 #define x86_movsd(inst) x86_movsl((inst))
 
-#define x86_prefix(inst,p) do { *(inst)++ =(unsigned char) (p); } while (0)
+/* kNaClAlignment - 1 is the max value we can pass into x86_codegen_pre. */
+/* This keeps us from having to call x86_codegen_pre with specific       */
+/* knowledge of the size of the instruction that follows it, and         */
+/* localizes the alignment requirement to this spot.                     */
+#define x86_prefix(inst,p) \
+	do { \
+		x86_codegen_pre(&(inst), kNaClAlignment - 1); \
+		*(inst)++ =(unsigned char) (p); \
+	} while (0)
 
 #define x86_rdtsc(inst) \
 	do {	\
@@ -390,6 +490,7 @@ typedef union {
 
 #define x86_cmpxchg_reg_reg(inst,dreg,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xb1;	\
 		x86_reg_emit ((inst), (reg), (dreg));	\
@@ -397,6 +498,7 @@ typedef union {
 	
 #define x86_cmpxchg_mem_reg(inst,mem,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 7); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xb1;	\
 		x86_mem_emit ((inst), (reg), (mem));	\
@@ -404,6 +506,7 @@ typedef union {
 	
 #define x86_cmpxchg_membase_reg(inst,basereg,disp,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xb1;	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
@@ -411,6 +514,7 @@ typedef union {
 
 #define x86_xchg_reg_reg(inst,dreg,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		if ((size) == 1)	\
 			*(inst)++ = (unsigned char)0x86;	\
 		else	\
@@ -420,6 +524,7 @@ typedef union {
 
 #define x86_xchg_mem_reg(inst,mem,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		if ((size) == 1)	\
 			*(inst)++ = (unsigned char)0x86;	\
 		else	\
@@ -429,6 +534,7 @@ typedef union {
 
 #define x86_xchg_membase_reg(inst,basereg,disp,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		if ((size) == 1)	\
 			*(inst)++ = (unsigned char)0x86;	\
 		else	\
@@ -438,6 +544,7 @@ typedef union {
 
 #define x86_xadd_reg_reg(inst,dreg,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0x0F;     \
 		if ((size) == 1)	\
 			*(inst)++ = (unsigned char)0xC0;	\
@@ -448,6 +555,7 @@ typedef union {
 
 #define x86_xadd_mem_reg(inst,mem,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 7); \
 		*(inst)++ = (unsigned char)0x0F;     \
 		if ((size) == 1)	\
 			*(inst)++ = (unsigned char)0xC0;	\
@@ -458,6 +566,7 @@ typedef union {
 
 #define x86_xadd_membase_reg(inst,basereg,disp,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0F;     \
 		if ((size) == 1)	\
 			*(inst)++ = (unsigned char)0xC0;	\
@@ -468,12 +577,14 @@ typedef union {
 
 #define x86_inc_mem(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_mem_emit ((inst), 0, (mem)); 	\
 	} while (0)
 
 #define x86_inc_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_membase_emit ((inst), 0, (basereg), (disp));	\
 	} while (0)
@@ -482,12 +593,14 @@ typedef union {
 
 #define x86_dec_mem(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_mem_emit ((inst), 1, (mem));	\
 	} while (0)
 
 #define x86_dec_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_membase_emit ((inst), 1, (basereg), (disp));	\
 	} while (0)
@@ -496,36 +609,42 @@ typedef union {
 
 #define x86_not_mem(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_mem_emit ((inst), 2, (mem));	\
 	} while (0)
 
 #define x86_not_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_membase_emit ((inst), 2, (basereg), (disp));	\
 	} while (0)
 
 #define x86_not_reg(inst,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_reg_emit ((inst), 2, (reg));	\
 	} while (0)
 
 #define x86_neg_mem(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_mem_emit ((inst), 3, (mem));	\
 	} while (0)
 
 #define x86_neg_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_membase_emit ((inst), 3, (basereg), (disp));	\
 	} while (0)
 
 #define x86_neg_reg(inst,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_reg_emit ((inst), 3, (reg));	\
 	} while (0)
@@ -535,15 +654,18 @@ typedef union {
 #define x86_alu_reg_imm(inst,opc,reg,imm) 	\
 	do {	\
 		if ((reg) == X86_EAX) {	\
+			x86_codegen_pre(&(inst), 5); \
 			*(inst)++ = (((unsigned char)(opc)) << 3) + 5;	\
 			x86_imm_emit32 ((inst), (imm));	\
 			break;	\
 		}	\
 		if (x86_is_imm8((imm))) {	\
+			x86_codegen_pre(&(inst), 3); \
 			*(inst)++ = (unsigned char)0x83;	\
 			x86_reg_emit ((inst), (opc), (reg));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 6); \
 			*(inst)++ = (unsigned char)0x81;	\
 			x86_reg_emit ((inst), (opc), (reg));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -553,10 +675,12 @@ typedef union {
 #define x86_alu_mem_imm(inst,opc,mem,imm) 	\
 	do {	\
 		if (x86_is_imm8((imm))) {	\
+			x86_codegen_pre(&(inst), 7); \
 			*(inst)++ = (unsigned char)0x83;	\
 			x86_mem_emit ((inst), (opc), (mem));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 10); \
 			*(inst)++ = (unsigned char)0x81;	\
 			x86_mem_emit ((inst), (opc), (mem));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -566,10 +690,12 @@ typedef union {
 #define x86_alu_membase_imm(inst,opc,basereg,disp,imm) 	\
 	do {	\
 		if (x86_is_imm8((imm))) {	\
+			x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 			*(inst)++ = (unsigned char)0x83;	\
 			x86_membase_emit ((inst), (opc), (basereg), (disp));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 5 + kMaxMembaseEmitPadding); \
 			*(inst)++ = (unsigned char)0x81;	\
 			x86_membase_emit ((inst), (opc), (basereg), (disp));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -578,6 +704,7 @@ typedef union {
 	
 #define x86_alu_membase8_imm(inst,opc,basereg,disp,imm) 	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x80;	\
 		x86_membase_emit ((inst), (opc), (basereg), (disp));	\
 		x86_imm_emit8 ((inst), (imm)); \
@@ -585,18 +712,21 @@ typedef union {
 
 #define x86_alu_mem_reg(inst,opc,mem,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (((unsigned char)(opc)) << 3) + 1;	\
 		x86_mem_emit ((inst), (reg), (mem));	\
 	} while (0)
 
 #define x86_alu_membase_reg(inst,opc,basereg,disp,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (((unsigned char)(opc)) << 3) + 1;	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
 #define x86_alu_reg_reg(inst,opc,dreg,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (((unsigned char)(opc)) << 3) + 3;	\
 		x86_reg_emit ((inst), (dreg), (reg));	\
 	} while (0)
@@ -612,24 +742,28 @@ typedef union {
  */
 #define x86_alu_reg8_reg8(inst,opc,dreg,reg,is_dreg_h,is_reg_h)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (((unsigned char)(opc)) << 3) + 2;	\
 		x86_reg8_emit ((inst), (dreg), (reg), (is_dreg_h), (is_reg_h));	\
 	} while (0)
 
 #define x86_alu_reg_mem(inst,opc,reg,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (((unsigned char)(opc)) << 3) + 3;	\
 		x86_mem_emit ((inst), (reg), (mem));	\
 	} while (0)
 
 #define x86_alu_reg_membase(inst,opc,reg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (((unsigned char)(opc)) << 3) + 3;	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
 #define x86_test_reg_imm(inst,reg,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		if ((reg) == X86_EAX) {	\
 			*(inst)++ = (unsigned char)0xa9;	\
 		} else {	\
@@ -641,6 +775,7 @@ typedef union {
 
 #define x86_test_mem_imm(inst,mem,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 10); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_mem_emit ((inst), 0, (mem));	\
 		x86_imm_emit32 ((inst), (imm));	\
@@ -648,6 +783,7 @@ typedef union {
 
 #define x86_test_membase_imm(inst,basereg,disp,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 5 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_membase_emit ((inst), 0, (basereg), (disp));	\
 		x86_imm_emit32 ((inst), (imm));	\
@@ -655,18 +791,21 @@ typedef union {
 
 #define x86_test_reg_reg(inst,dreg,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0x85;	\
 		x86_reg_emit ((inst), (reg), (dreg));	\
 	} while (0)
 
 #define x86_test_mem_reg(inst,mem,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0x85;	\
 		x86_mem_emit ((inst), (reg), (mem));	\
 	} while (0)
 
 #define x86_test_membase_reg(inst,basereg,disp,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x85;	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
@@ -674,9 +813,11 @@ typedef union {
 #define x86_shift_reg_imm(inst,opc,reg,imm)	\
 	do {	\
 		if ((imm) == 1) {	\
+			x86_codegen_pre(&(inst), 2); \
 			*(inst)++ = (unsigned char)0xd1;	\
 			x86_reg_emit ((inst), (opc), (reg));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 3); \
 			*(inst)++ = (unsigned char)0xc1;	\
 			x86_reg_emit ((inst), (opc), (reg));	\
 			x86_imm_emit8 ((inst), (imm));	\
@@ -686,9 +827,11 @@ typedef union {
 #define x86_shift_mem_imm(inst,opc,mem,imm)	\
 	do {	\
 		if ((imm) == 1) {	\
+			x86_codegen_pre(&(inst), 6); \
 			*(inst)++ = (unsigned char)0xd1;	\
 			x86_mem_emit ((inst), (opc), (mem));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 7); \
 			*(inst)++ = (unsigned char)0xc1;	\
 			x86_mem_emit ((inst), (opc), (mem));	\
 			x86_imm_emit8 ((inst), (imm));	\
@@ -698,9 +841,11 @@ typedef union {
 #define x86_shift_membase_imm(inst,opc,basereg,disp,imm)	\
 	do {	\
 		if ((imm) == 1) {	\
+			x86_codegen_pre(&(inst), 6); \
 			*(inst)++ = (unsigned char)0xd1;	\
 			x86_membase_emit ((inst), (opc), (basereg), (disp));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 7); \
 			*(inst)++ = (unsigned char)0xc1;	\
 			x86_membase_emit ((inst), (opc), (basereg), (disp));	\
 			x86_imm_emit8 ((inst), (imm));	\
@@ -709,18 +854,21 @@ typedef union {
 
 #define x86_shift_reg(inst,opc,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd3;	\
 		x86_reg_emit ((inst), (opc), (reg));	\
 	} while (0)
 
 #define x86_shift_mem(inst,opc,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xd3;	\
 		x86_mem_emit ((inst), (opc), (mem));	\
 	} while (0)
 
 #define x86_shift_membase(inst,opc,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xd3;	\
 		x86_membase_emit ((inst), (opc), (basereg), (disp));	\
 	} while (0)
@@ -731,6 +879,7 @@ typedef union {
 
 #define x86_shrd_reg(inst,dreg,reg)                     \
         do {                                            \
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xad;	\
 		x86_reg_emit ((inst), (reg), (dreg));	\
@@ -738,6 +887,7 @@ typedef union {
 
 #define x86_shrd_reg_imm(inst,dreg,reg,shamt)           \
         do {                                            \
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xac;	\
 		x86_reg_emit ((inst), (reg), (dreg));	\
@@ -746,6 +896,7 @@ typedef union {
 
 #define x86_shld_reg(inst,dreg,reg)                     \
         do {                                            \
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xa5;	\
 		x86_reg_emit ((inst), (reg), (dreg));	\
@@ -753,6 +904,7 @@ typedef union {
 
 #define x86_shld_reg_imm(inst,dreg,reg,shamt)           \
         do {                                            \
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xa4;	\
 		x86_reg_emit ((inst), (reg), (dreg));	\
@@ -764,18 +916,21 @@ typedef union {
  */
 #define x86_mul_reg(inst,reg,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_reg_emit ((inst), 4 + ((is_signed) ? 1 : 0), (reg));	\
 	} while (0)
 
 #define x86_mul_mem(inst,mem,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_mem_emit ((inst), 4 + ((is_signed) ? 1 : 0), (mem));	\
 	} while (0)
 
 #define x86_mul_membase(inst,basereg,disp,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_membase_emit ((inst), 4 + ((is_signed) ? 1 : 0), (basereg), (disp));	\
 	} while (0)
@@ -785,6 +940,7 @@ typedef union {
  */
 #define x86_imul_reg_reg(inst,dreg,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xaf;	\
 		x86_reg_emit ((inst), (dreg), (reg));	\
@@ -792,6 +948,7 @@ typedef union {
 
 #define x86_imul_reg_mem(inst,reg,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 7); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xaf;	\
 		x86_mem_emit ((inst), (reg), (mem));	\
@@ -799,6 +956,7 @@ typedef union {
 
 #define x86_imul_reg_membase(inst,reg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0xaf;	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
@@ -810,10 +968,12 @@ typedef union {
 #define x86_imul_reg_reg_imm(inst,dreg,reg,imm)	\
 	do {	\
 		if (x86_is_imm8 ((imm))) {	\
+			x86_codegen_pre(&(inst), 3); \
 			*(inst)++ = (unsigned char)0x6b;	\
 			x86_reg_emit ((inst), (dreg), (reg));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 6); \
 			*(inst)++ = (unsigned char)0x69;	\
 			x86_reg_emit ((inst), (dreg), (reg));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -823,10 +983,12 @@ typedef union {
 #define x86_imul_reg_mem_imm(inst,reg,mem,imm)	\
 	do {	\
 		if (x86_is_imm8 ((imm))) {	\
+			x86_codegen_pre(&(inst), 7); \
 			*(inst)++ = (unsigned char)0x6b;	\
 			x86_mem_emit ((inst), (reg), (mem));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 6); \
 			*(inst)++ = (unsigned char)0x69;	\
 			x86_reg_emit ((inst), (reg), (mem));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -836,10 +998,12 @@ typedef union {
 #define x86_imul_reg_membase_imm(inst,reg,basereg,disp,imm)	\
 	do {	\
 		if (x86_is_imm8 ((imm))) {	\
+			x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 			*(inst)++ = (unsigned char)0x6b;	\
 			x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 5 + kMaxMembaseEmitPadding); \
 			*(inst)++ = (unsigned char)0x69;	\
 			x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -853,24 +1017,28 @@ typedef union {
 
 #define x86_div_reg(inst,reg,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_reg_emit ((inst), 6 + ((is_signed) ? 1 : 0), (reg));	\
 	} while (0)
 
 #define x86_div_mem(inst,mem,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_mem_emit ((inst), 6 + ((is_signed) ? 1 : 0), (mem));	\
 	} while (0)
 
 #define x86_div_membase(inst,basereg,disp,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xf7;	\
 		x86_membase_emit ((inst), 6 + ((is_signed) ? 1 : 0), (basereg), (disp));	\
 	} while (0)
 
 #define x86_mov_mem_reg(inst,mem,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 7); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x88; break;	\
 		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
@@ -882,6 +1050,7 @@ typedef union {
 
 #define x86_mov_regp_reg(inst,regp,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x88; break;	\
 		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
@@ -893,6 +1062,7 @@ typedef union {
 
 #define x86_mov_membase_reg(inst,basereg,disp,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x88; break;	\
 		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
@@ -904,6 +1074,7 @@ typedef union {
 
 #define x86_mov_memindex_reg(inst,basereg,disp,indexreg,shift,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMemindexEmitPadding); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x88; break;	\
 		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
@@ -915,6 +1086,7 @@ typedef union {
 
 #define x86_mov_reg_reg(inst,dreg,reg,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
 		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
@@ -926,6 +1098,7 @@ typedef union {
 
 #define x86_mov_reg_mem(inst,reg,mem,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 7); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
 		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
@@ -935,8 +1108,11 @@ typedef union {
 		x86_mem_emit ((inst), (reg), (mem));	\
 	} while (0)
 
+#define kMovRegMembasePadding (2 + kMaxMembaseEmitPadding)
+
 #define x86_mov_reg_membase(inst,reg,basereg,disp,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), kMovRegMembasePadding); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
 		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
@@ -948,6 +1124,7 @@ typedef union {
 
 #define x86_mov_reg_memindex(inst,reg,basereg,disp,indexreg,shift,size)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMemindexEmitPadding); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
 		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
@@ -964,6 +1141,7 @@ typedef union {
 
 #define x86_mov_reg_imm(inst,reg,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 5); \
 		*(inst)++ = (unsigned char)0xb8 + (reg);	\
 		x86_imm_emit32 ((inst), (imm));	\
 	} while (0)
@@ -971,15 +1149,18 @@ typedef union {
 #define x86_mov_mem_imm(inst,mem,imm,size)	\
 	do {	\
 		if ((size) == 1) {	\
+			x86_codegen_pre(&(inst), 7); \
 			*(inst)++ = (unsigned char)0xc6;	\
 			x86_mem_emit ((inst), 0, (mem));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else if ((size) == 2) {	\
+			x86_codegen_pre(&(inst), 9); \
 			*(inst)++ = (unsigned char)0x66;	\
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_mem_emit ((inst), 0, (mem));	\
 			x86_imm_emit16 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 10); \
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_mem_emit ((inst), 0, (mem));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -989,15 +1170,18 @@ typedef union {
 #define x86_mov_membase_imm(inst,basereg,disp,imm,size)	\
 	do {	\
 		if ((size) == 1) {	\
+			x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 			*(inst)++ = (unsigned char)0xc6;	\
 			x86_membase_emit ((inst), 0, (basereg), (disp));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else if ((size) == 2) {	\
+			x86_codegen_pre(&(inst), 4 + kMaxMembaseEmitPadding); \
 			*(inst)++ = (unsigned char)0x66;	\
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_membase_emit ((inst), 0, (basereg), (disp));	\
 			x86_imm_emit16 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 5 + kMaxMembaseEmitPadding); \
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_membase_emit ((inst), 0, (basereg), (disp));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -1007,15 +1191,18 @@ typedef union {
 #define x86_mov_memindex_imm(inst,basereg,disp,indexreg,shift,imm,size)	\
 	do {	\
 		if ((size) == 1) {	\
+			x86_codegen_pre(&(inst), 2 + kMaxMemindexEmitPadding); \
 			*(inst)++ = (unsigned char)0xc6;	\
 			x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));	\
 			x86_imm_emit8 ((inst), (imm));	\
 		} else if ((size) == 2) {	\
+			x86_codegen_pre(&(inst), 4 + kMaxMemindexEmitPadding); \
 			*(inst)++ = (unsigned char)0x66;	\
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));	\
 			x86_imm_emit16 ((inst), (imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 5 + kMaxMemindexEmitPadding); \
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));	\
 			x86_imm_emit32 ((inst), (imm));	\
@@ -1024,18 +1211,21 @@ typedef union {
 
 #define x86_lea_mem(inst,reg,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 5); \
 		*(inst)++ = (unsigned char)0x8d;	\
 		x86_mem_emit ((inst), (reg), (mem));	\
 	} while (0)
 
 #define x86_lea_membase(inst,reg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x8d;	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
 #define x86_lea_memindex(inst,reg,basereg,disp,indexreg,shift)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMemindexEmitPadding); \
 		*(inst)++ = (unsigned char)0x8d;	\
 		x86_memindex_emit ((inst), (reg), (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
@@ -1044,6 +1234,7 @@ typedef union {
 	do {	\
 		unsigned char op = 0xb6;	\
                 g_assert (is_half ||  X86_IS_BYTE_REG (reg)); \
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed)) op += 0x08;	\
 		if ((is_half)) op += 0x01;	\
@@ -1054,6 +1245,7 @@ typedef union {
 #define x86_widen_mem(inst,dreg,mem,is_signed,is_half)	\
 	do {	\
 		unsigned char op = 0xb6;	\
+		x86_codegen_pre(&(inst), 7); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed)) op += 0x08;	\
 		if ((is_half)) op += 0x01;	\
@@ -1064,6 +1256,7 @@ typedef union {
 #define x86_widen_membase(inst,dreg,basereg,disp,is_signed,is_half)	\
 	do {	\
 		unsigned char op = 0xb6;	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed)) op += 0x08;	\
 		if ((is_half)) op += 0x01;	\
@@ -1074,6 +1267,7 @@ typedef union {
 #define x86_widen_memindex(inst,dreg,basereg,disp,indexreg,shift,is_signed,is_half)	\
 	do {	\
 		unsigned char op = 0xb6;	\
+		x86_codegen_pre(&(inst), 2 + kMaxMemindexEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed)) op += 0x08;	\
 		if ((is_half)) op += 0x01;	\
@@ -1086,18 +1280,21 @@ typedef union {
 
 #define x86_fp_op_mem(inst,opc,mem,is_double)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (is_double) ? (unsigned char)0xdc : (unsigned char)0xd8;	\
 		x86_mem_emit ((inst), (opc), (mem));	\
 	} while (0)
 
 #define x86_fp_op_membase(inst,opc,basereg,disp,is_double)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (is_double) ? (unsigned char)0xdc : (unsigned char)0xd8;	\
 		x86_membase_emit ((inst), (opc), (basereg), (disp));	\
 	} while (0)
 
 #define x86_fp_op(inst,opc,index)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd8;	\
 		*(inst)++ = (unsigned char)0xc0+((opc)<<3)+((index)&0x07);	\
 	} while (0)
@@ -1105,6 +1302,7 @@ typedef union {
 #define x86_fp_op_reg(inst,opc,index,pop_stack)	\
 	do {	\
 		static const unsigned char map[] = { 0, 1, 2, 3, 5, 4, 7, 6, 8};	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (pop_stack) ? (unsigned char)0xde : (unsigned char)0xdc;	\
 		*(inst)++ = (unsigned char)0xc0+(map[(opc)]<<3)+((index)&0x07);	\
 	} while (0)
@@ -1118,126 +1316,147 @@ typedef union {
  */
 #define x86_fp_int_op_membase(inst,opc,basereg,disp,is_int)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (is_int) ? (unsigned char)0xda : (unsigned char)0xde;	\
 		x86_membase_emit ((inst), opc, (basereg), (disp));	\
 	} while (0)
 
 #define x86_fstp(inst,index)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xdd;	\
 		*(inst)++ = (unsigned char)0xd8+(index);	\
 	} while (0)
 
 #define x86_fcompp(inst)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xde;	\
 		*(inst)++ = (unsigned char)0xd9;	\
 	} while (0)
 
 #define x86_fucompp(inst)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xda;	\
 		*(inst)++ = (unsigned char)0xe9;	\
 	} while (0)
 
 #define x86_fnstsw(inst)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xdf;	\
 		*(inst)++ = (unsigned char)0xe0;	\
 	} while (0)
 
 #define x86_fnstcw(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		x86_mem_emit ((inst), 7, (mem));	\
 	} while (0)
 
 #define x86_fnstcw_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		x86_membase_emit ((inst), 7, (basereg), (disp));	\
 	} while (0)
 
 #define x86_fldcw(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		x86_mem_emit ((inst), 5, (mem));	\
 	} while (0)
 
 #define x86_fldcw_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		x86_membase_emit ((inst), 5, (basereg), (disp));	\
 	} while (0)
 
 #define x86_fchs(inst)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		*(inst)++ = (unsigned char)0xe0;	\
 	} while (0)
 
 #define x86_frem(inst)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		*(inst)++ = (unsigned char)0xf8;	\
 	} while (0)
 
 #define x86_fxch(inst,index)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		*(inst)++ = (unsigned char)0xc8 + ((index) & 0x07);	\
 	} while (0)
 
 #define x86_fcomi(inst,index)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xdb;	\
 		*(inst)++ = (unsigned char)0xf0 + ((index) & 0x07);	\
 	} while (0)
 
 #define x86_fcomip(inst,index)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xdf;	\
 		*(inst)++ = (unsigned char)0xf0 + ((index) & 0x07);	\
 	} while (0)
 
 #define x86_fucomi(inst,index)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xdb;	\
 		*(inst)++ = (unsigned char)0xe8 + ((index) & 0x07);	\
 	} while (0)
 
 #define x86_fucomip(inst,index)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xdf;	\
 		*(inst)++ = (unsigned char)0xe8 + ((index) & 0x07);	\
 	} while (0)
 
 #define x86_fld(inst,mem,is_double)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (is_double) ? (unsigned char)0xdd : (unsigned char)0xd9;	\
 		x86_mem_emit ((inst), 0, (mem));	\
 	} while (0)
 
 #define x86_fld_membase(inst,basereg,disp,is_double)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (is_double) ? (unsigned char)0xdd : (unsigned char)0xd9;	\
 		x86_membase_emit ((inst), 0, (basereg), (disp));	\
 	} while (0)
 
 #define x86_fld80_mem(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xdb;	\
 		x86_mem_emit ((inst), 5, (mem));	\
 	} while (0)
 
 #define x86_fld80_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xdb;	\
 		x86_membase_emit ((inst), 5, (basereg), (disp));	\
 	} while (0)
 
 #define x86_fild(inst,mem,is_long)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		if ((is_long)) {	\
 			*(inst)++ = (unsigned char)0xdf;	\
 			x86_mem_emit ((inst), 5, (mem));	\
@@ -1249,6 +1468,7 @@ typedef union {
 
 #define x86_fild_membase(inst,basereg,disp,is_long)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		if ((is_long)) {	\
 			*(inst)++ = (unsigned char)0xdf;	\
 			x86_membase_emit ((inst), 5, (basereg), (disp));	\
@@ -1260,42 +1480,49 @@ typedef union {
 
 #define x86_fld_reg(inst,index)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		*(inst)++ = (unsigned char)0xc0 + ((index) & 0x07);	\
 	} while (0)
 
 #define x86_fldz(inst)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		*(inst)++ = (unsigned char)0xee;	\
 	} while (0)
 
 #define x86_fld1(inst)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		*(inst)++ = (unsigned char)0xe8;	\
 	} while (0)
 
 #define x86_fldpi(inst)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xd9;	\
 		*(inst)++ = (unsigned char)0xeb;	\
 	} while (0)
 
 #define x86_fst(inst,mem,is_double,pop_stack)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (is_double) ? (unsigned char)0xdd: (unsigned char)0xd9;	\
 		x86_mem_emit ((inst), 2 + ((pop_stack) ? 1 : 0), (mem));	\
 	} while (0)
 
 #define x86_fst_membase(inst,basereg,disp,is_double,pop_stack)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (is_double) ? (unsigned char)0xdd: (unsigned char)0xd9;	\
 		x86_membase_emit ((inst), 2 + ((pop_stack) ? 1 : 0), (basereg), (disp));	\
 	} while (0)
 
 #define x86_fst80_mem(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xdb;	\
 		x86_mem_emit ((inst), 7, (mem));	\
 	} while (0)
@@ -1303,6 +1530,7 @@ typedef union {
 
 #define x86_fst80_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xdb;	\
 		x86_membase_emit ((inst), 7, (basereg), (disp));	\
 	} while (0)
@@ -1310,6 +1538,7 @@ typedef union {
 
 #define x86_fist_pop(inst,mem,is_long)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		if ((is_long)) {	\
 			*(inst)++ = (unsigned char)0xdf;	\
 			x86_mem_emit ((inst), 7, (mem));	\
@@ -1321,6 +1550,7 @@ typedef union {
 
 #define x86_fist_pop_membase(inst,basereg,disp,is_long)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		if ((is_long)) {	\
 			*(inst)++ = (unsigned char)0xdf;	\
 			x86_membase_emit ((inst), 7, (basereg), (disp));	\
@@ -1332,6 +1562,7 @@ typedef union {
 
 #define x86_fstsw(inst)	\
 	do {	\
+			x86_codegen_pre(&(inst), 3); \
 			*(inst)++ = (unsigned char)0x9b;	\
 			*(inst)++ = (unsigned char)0xdf;	\
 			*(inst)++ = (unsigned char)0xe0;	\
@@ -1345,6 +1576,7 @@ typedef union {
  */
 #define x86_fist_membase(inst,basereg,disp,is_int)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		if ((is_int)) {	\
 			*(inst)++ = (unsigned char)0xdb;	\
 			x86_membase_emit ((inst), 2, (basereg), (disp));	\
@@ -1362,24 +1594,28 @@ typedef union {
 
 #define x86_push_regp(inst,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_regp_emit ((inst), 6, (reg));	\
 	} while (0)
 
 #define x86_push_mem(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_mem_emit ((inst), 6, (mem));	\
 	} while (0)
 
 #define x86_push_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_membase_emit ((inst), 6, (basereg), (disp));	\
 	} while (0)
 
 #define x86_push_memindex(inst,basereg,disp,indexreg,shift)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMemindexEmitPadding); \
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_memindex_emit ((inst), 6, (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
@@ -1390,9 +1626,11 @@ typedef union {
 	do {	\
 		int _imm = (int) (imm);	\
 		if (x86_is_imm8 (_imm)) {	\
+			x86_codegen_pre(&(inst), 2); \
 			*(inst)++ = (unsigned char)0x6A;	\
 			x86_imm_emit8 ((inst), (_imm));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 5); \
 			*(inst)++ = (unsigned char)0x68;	\
 			x86_imm_emit32 ((inst), (_imm));	\
 		}	\
@@ -1405,12 +1643,14 @@ typedef union {
 
 #define x86_pop_mem(inst,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0x87;	\
 		x86_mem_emit ((inst), 0, (mem));	\
 	} while (0)
 
 #define x86_pop_membase(inst,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x87;	\
 		x86_membase_emit ((inst), 0, (basereg), (disp));	\
 	} while (0)
@@ -1422,34 +1662,70 @@ typedef union {
 
 #define x86_loop(inst,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xe2;	\
 		x86_imm_emit8 ((inst), (imm));	\
 	} while (0)
 
 #define x86_loope(inst,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xe1;	\
 		x86_imm_emit8 ((inst), (imm));	\
 	} while (0)
 
 #define x86_loopne(inst,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xe0;	\
 		x86_imm_emit8 ((inst), (imm));	\
 	} while (0)
 
 #define x86_jump32(inst,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 5); \
 		*(inst)++ = (unsigned char)0xe9;	\
 		x86_imm_emit32 ((inst), (imm));	\
 	} while (0)
 
 #define x86_jump8(inst,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		*(inst)++ = (unsigned char)0xeb;	\
 		x86_imm_emit8 ((inst), (imm));	\
 	} while (0)
 
+
+#ifdef __native_client_codegen__
+#define x86_jump_reg(inst,reg)	do {	\
+    x86_codegen_pre(&(inst), 5);			\
+    *(inst)++ = (unsigned char)0x83;  /* and */		\
+    x86_reg_emit ((inst), 4, (reg));  /* reg */		\
+    *(inst)++ = (unsigned char)nacl_align_byte;		\
+    *(inst)++ = (unsigned char)0xff;			\
+    x86_reg_emit ((inst), 4, (reg));			\
+  } while (0)
+
+/* Let's hope ECX is available for these... */
+#define x86_jump_mem(inst,mem)	do {	\
+    x86_mov_reg_mem(inst, (X86_ECX), (mem), 4);		\
+    x86_jump_reg(inst, (X86_ECX));			\
+  } while (0)
+
+#define x86_jump_membase(inst,basereg,disp) do {	\
+    x86_mov_reg_membase(inst, (X86_ECX), basereg, disp, 4);	\
+    x86_jump_reg(inst, (X86_ECX));				\
+  } while (0)
+
+/* like x86_jump_membase, but force a 32-bit displacement  */
+#define x86_jump_membase32(inst,basereg,disp) do {	\
+    x86_codegen_pre(&(inst), 6); \
+    *(inst)++ = (unsigned char)0x8b;			\
+    x86_address_byte ((inst), 2, X86_ECX, (basereg));	\
+    x86_imm_emit32 ((inst), (disp));			\
+    x86_jump_reg(inst, (X86_ECX));			\
+  } while (0)
+#else  /* __native_client_codegen__ */
 #define x86_jump_reg(inst,reg)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xff;	\
@@ -1467,17 +1743,20 @@ typedef union {
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_membase_emit ((inst), 4, (basereg), (disp));	\
 	} while (0)
-
+#endif  /* __native_client_codegen__ */
 /*
  * target is a pointer in our buffer.
  */
 #define x86_jump_code(inst,target)	\
 	do {	\
-		int t = (unsigned char*)(target) - (inst) - 2;	\
+		int t; \
+		x86_codegen_pre(&(inst), 2); \
+		t = (unsigned char*)(target) - (inst) - 2;	\
 		if (x86_is_imm8(t)) {	\
 			x86_jump8 ((inst), t);	\
 		} else {	\
-			t -= 3;	\
+			x86_codegen_pre(&(inst), 5); \
+			t = (unsigned char*)(target) - (inst) - 5;	\
 			x86_jump32 ((inst), t);	\
 		}	\
 	} while (0)
@@ -1495,6 +1774,7 @@ typedef union {
 
 #define x86_branch8(inst,cond,imm,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2); \
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)];	\
 		else	\
@@ -1504,6 +1784,7 @@ typedef union {
 
 #define x86_branch32(inst,cond,imm,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 6); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] + 0x10;	\
@@ -1514,11 +1795,14 @@ typedef union {
 
 #define x86_branch(inst,cond,target,is_signed)	\
 	do {	\
-		int offset = (target) - (inst) - 2;	\
+		int offset;					 \
+		x86_codegen_pre(&(inst), 2); \
+		offset = (target) - (inst) - 2;	\
 		if (x86_is_imm8 ((offset)))	\
 			x86_branch8 ((inst), (cond), offset, (is_signed));	\
 		else {	\
-			offset -= 4;	\
+			x86_codegen_pre(&(inst), 6); \
+			offset = (target) - (inst) - 6;	\
 			x86_branch32 ((inst), (cond), offset, (is_signed));	\
 		}	\
 	} while (0)
@@ -1537,6 +1821,7 @@ typedef union {
 #define x86_set_reg(inst,cond,reg,is_signed)	\
 	do {	\
                 g_assert (X86_IS_BYTE_REG (reg)); \
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] + 0x20;	\
@@ -1547,6 +1832,7 @@ typedef union {
 
 #define x86_set_mem(inst,cond,mem,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 7); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] + 0x20;	\
@@ -1557,6 +1843,7 @@ typedef union {
 
 #define x86_set_membase(inst,cond,basereg,disp,is_signed)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] + 0x20;	\
@@ -1565,12 +1852,48 @@ typedef union {
 		x86_membase_emit ((inst), 0, (basereg), (disp));	\
 	} while (0)
 
-#define x86_call_imm(inst,disp)	\
+#define x86_call_imm_body(inst,disp) \
 	do {	\
 		*(inst)++ = (unsigned char)0xe8;	\
 		x86_imm_emit32 ((inst), (int)(disp));	\
 	} while (0)
 
+#define x86_call_imm(inst,disp)	\
+	do {	\
+		x86_call_sequence_pre((inst)); \
+		x86_call_imm_body((inst), (disp)); \
+		x86_call_sequence_post((inst)); \
+	} while (0)
+
+#ifdef __native_client_codegen__
+#define x86_call_reg_internal(inst,reg)	\
+  do {							\
+    x86_codegen_pre(&(inst), 5);			\
+    *(inst)++ = (unsigned char)0x83;  /* and */		\
+    x86_reg_emit ((inst), 4, (reg));  /* reg */		\
+    *(inst)++ = (unsigned char)nacl_align_byte;		\
+    *(inst)++ = (unsigned char)0xff;  /* call */	\
+    x86_reg_emit ((inst), 2, (reg));  /* reg */		\
+  } while (0)
+
+#define x86_call_reg(inst, reg) do {		\
+    x86_call_sequence_pre((inst));              \
+    x86_call_reg_internal(inst, reg);		\
+    x86_call_sequence_post((inst));             \
+  } while (0)
+
+
+/* It appears that x86_call_mem() is never used, so I'm leaving it out. */
+#define x86_call_membase(inst,basereg,disp)  do {		\
+    x86_call_sequence_pre((inst));                              \
+    /* x86_mov_reg_membase() inlined so its fixed size */	\
+    *(inst)++ = (unsigned char)0x8b;				\
+    x86_address_byte ((inst), 2, (X86_ECX), (basereg));		\
+    x86_imm_emit32 ((inst), (disp));				\
+    x86_call_reg_internal(inst, X86_ECX);			\
+    x86_call_sequence_post((inst));                             \
+  } while (0)
+#else  /* __native_client_codegen__ */
 #define x86_call_reg(inst,reg)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xff;	\
@@ -1588,12 +1911,57 @@ typedef union {
 		*(inst)++ = (unsigned char)0xff;	\
 		x86_membase_emit ((inst), 2, (basereg), (disp));	\
 	} while (0)
+#endif  /* __native_client_codegen__ */
+
+
+#ifdef __native_client_codegen__
 
 #define x86_call_code(inst,target)	\
 	do {	\
-		int _x86_offset = (unsigned char*)(target) - (inst);	\
+		int _x86_offset; \
+		guint8* _aligned_start; \
+		x86_call_sequence_pre_val ((inst)); \
+		_x86_offset = (unsigned char*)(target) - (inst);	\
 		_x86_offset -= 5;	\
-		x86_call_imm ((inst), _x86_offset);	\
+		x86_call_imm_body ((inst), _x86_offset);	\
+		_aligned_start = x86_call_sequence_post_val ((inst)); \
+		_x86_offset = (unsigned char*)(target) - (_aligned_start);	\
+		_x86_offset -= 5;	\
+		x86_call_imm_body ((_aligned_start), _x86_offset);	\
+	} while (0)
+
+#define SIZE_OF_RET 6
+#define x86_ret(inst) do { \
+    *(inst)++ = (unsigned char)0x59;  /* pop ecx */		\
+    x86_codegen_pre(&(inst), 5); \
+    *(inst)++ = (unsigned char)0x83;  /* and 0xffffffff, ecx */ \
+    *(inst)++ = (unsigned char)0xe1;				\
+    *(inst)++ = (unsigned char)nacl_align_byte;			\
+    *(inst)++ = (unsigned char)0xff;  /* jmp ecx */ 		\
+    *(inst)++ = (unsigned char)0xe1;				\
+  } while (0)
+
+/* pop return address */
+/* pop imm bytes from stack */
+/* return */
+#define x86_ret_imm(inst,imm)	do {	\
+    *(inst)++ = (unsigned char)0x59;  /* pop ecx */		\
+    x86_alu_reg_imm ((inst), X86_ADD, X86_ESP, imm);		\
+    x86_codegen_pre(&(inst), 5); \
+    *(inst)++ = (unsigned char)0x83;  /* and 0xffffffff, ecx */ \
+    *(inst)++ = (unsigned char)0xe1;				\
+    *(inst)++ = (unsigned char)nacl_align_byte;			\
+    *(inst)++ = (unsigned char)0xff;  /* jmp ecx */ 		\
+    *(inst)++ = (unsigned char)0xe1;				\
+} while (0)
+#else  /* __native_client_codegen__ */
+
+#define x86_call_code(inst,target)	\
+	do {	\
+		int _x86_offset; \
+		_x86_offset = (unsigned char*)(target) - (inst);	\
+		_x86_offset -= 5;	\
+		x86_call_imm_body ((inst), _x86_offset);	\
 	} while (0)
 
 #define x86_ret(inst) do { *(inst)++ = (unsigned char)0xc3; } while (0)
@@ -1603,13 +1971,16 @@ typedef union {
 		if ((imm) == 0) {	\
 			x86_ret ((inst));	\
 		} else {	\
+			x86_codegen_pre(&(inst), 3); \
 			*(inst)++ = (unsigned char)0xc2;	\
 			x86_imm_emit16 ((inst), (imm));	\
 		}	\
 	} while (0)
+#endif  /* __native_client_codegen__ */
 
 #define x86_cmov_reg(inst,cond,is_signed,dreg,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char) 0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] - 0x30;	\
@@ -1620,6 +1991,7 @@ typedef union {
 
 #define x86_cmov_mem(inst,cond,is_signed,reg,mem)	\
 	do {	\
+		x86_codegen_pre(&(inst), 7); \
 		*(inst)++ = (unsigned char) 0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] - 0x30;	\
@@ -1630,6 +2002,7 @@ typedef union {
 
 #define x86_cmov_membase(inst,cond,is_signed,reg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char) 0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] - 0x30;	\
@@ -1640,6 +2013,7 @@ typedef union {
 
 #define x86_enter(inst,framesize)	\
 	do {	\
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0xc8;	\
 		x86_imm_emit16 ((inst), (framesize));	\
 		*(inst)++ = 0;	\
@@ -1648,17 +2022,17 @@ typedef union {
 #define x86_leave(inst) do { *(inst)++ = (unsigned char)0xc9; } while (0)
 #define x86_sahf(inst)  do { *(inst)++ = (unsigned char)0x9e; } while (0)
 
-#define x86_fsin(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xfe; } while (0)
-#define x86_fcos(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xff; } while (0)
-#define x86_fabs(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xe1; } while (0)
-#define x86_ftst(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xe4; } while (0)
-#define x86_fxam(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xe5; } while (0)
-#define x86_fpatan(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xf3; } while (0)
-#define x86_fprem(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xf8; } while (0)
-#define x86_fprem1(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xf5; } while (0)
-#define x86_frndint(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xfc; } while (0)
-#define x86_fsqrt(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xfa; } while (0)
-#define x86_fptan(inst) do { *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xf2; } while (0)
+#define x86_fsin(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xfe; } while (0)
+#define x86_fcos(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xff; } while (0)
+#define x86_fabs(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xe1; } while (0)
+#define x86_ftst(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xe4; } while (0)
+#define x86_fxam(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xe5; } while (0)
+#define x86_fpatan(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xf3; } while (0)
+#define x86_fprem(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xf8; } while (0)
+#define x86_fprem1(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xf5; } while (0)
+#define x86_frndint(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xfc; } while (0)
+#define x86_fsqrt(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xfa; } while (0)
+#define x86_fptan(inst) do { x86_codegen_pre(&(inst), 2); *(inst)++ = (unsigned char)0xd9; *(inst)++ = (unsigned char)0xf2; } while (0)
 
 #define x86_padding(inst,size)	\
 	do {	\
@@ -1685,6 +2059,14 @@ typedef union {
 		default: assert (0);	\
 		}	\
 	} while (0)
+
+#ifdef __native_client_codegen__
+
+#define kNaClLengthOfCallReg 5
+#define kNaClLengthOfCallImm 5
+#define kNaClLengthOfCallMembase (kNaClLengthOfCallReg + 6)
+
+#endif  /* __native_client_codegen__ */
 
 #define x86_prolog(inst,frame_size,reg_mask)	\
 	do {	\
@@ -1853,6 +2235,7 @@ typedef enum {
 /* minimal SSE* support */
 #define x86_movsd_reg_membase(inst,dreg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xf2;	\
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x10;	\
@@ -1861,6 +2244,7 @@ typedef enum {
 
 #define x86_cvttsd2si(inst,dreg,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0xf2;	\
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x2c;	\
@@ -1869,6 +2253,7 @@ typedef enum {
 
 #define x86_sse_alu_reg_reg(inst,opc,dreg,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char)0x0F;	\
 		*(inst)++ = (unsigned char)(opc);	\
 		x86_reg_emit ((inst), (dreg), (reg));	\
@@ -1876,6 +2261,7 @@ typedef enum {
 
 #define x86_sse_alu_reg_membase(inst,opc,sreg,basereg,disp)	\
 		do {	\
+			x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 			*(inst)++ = (unsigned char)0x0f;	\
 			*(inst)++ = (unsigned char)(opc);	\
 			x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
@@ -1883,6 +2269,7 @@ typedef enum {
 
 #define x86_sse_alu_membase_reg(inst,opc,basereg,disp,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0F;	\
 		*(inst)++ = (unsigned char)(opc);	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
@@ -1891,30 +2278,35 @@ typedef enum {
 
 #define x86_sse_alu_pd_reg_reg(inst,opc,dreg,reg)       \
 	do {    \
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0x66;        \
 		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
 	} while (0)
 
 #define x86_sse_alu_pd_membase_reg(inst,opc,basereg,disp,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x66;	\
 		x86_sse_alu_membase_reg ((inst), (opc), (basereg), (disp), (reg)); \
 	} while (0)
 
 #define x86_sse_alu_pd_reg_membase(inst,opc,dreg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x66;	\
 		x86_sse_alu_reg_membase ((inst), (opc), (dreg),(basereg), (disp)); \
 	} while (0)
 
 #define x86_sse_alu_pd_reg_reg_imm(inst,opc,dreg,reg,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 5); \
 		x86_sse_alu_pd_reg_reg ((inst), (opc), (dreg), (reg)); \
 		*(inst)++ = (unsigned char)(imm);	\
 	} while (0)
 
 #define x86_sse_alu_pd_reg_membase_imm(inst,opc,dreg,basereg,disp,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 4 + kMaxMembaseEmitPadding); \
 		x86_sse_alu_pd_reg_membase ((inst), (opc), (dreg),(basereg), (disp)); \
 		*(inst)++ = (unsigned char)(imm);	\
 	} while (0)
@@ -1927,6 +2319,7 @@ typedef enum {
 
 #define x86_sse_alu_ps_reg_reg_imm(inst,opc,dreg,reg, imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 4); \
 		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
 		*(inst)++ = (unsigned char)imm;	\
 	} while (0)
@@ -1934,12 +2327,14 @@ typedef enum {
 
 #define x86_sse_alu_sd_reg_reg(inst,opc,dreg,reg)       \
 	do {    \
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0xF2;        \
 		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
 	} while (0)
 
 #define x86_sse_alu_sd_membase_reg(inst,opc,basereg,disp,reg)	\
 	do {    \
+		x86_codegen_pre(&(inst), 3 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xF2;        \
 		x86_sse_alu_membase_reg ((inst), (opc), (basereg), (disp), (reg));	\
 	} while (0)
@@ -1947,12 +2342,14 @@ typedef enum {
 
 #define x86_sse_alu_ss_reg_reg(inst,opc,dreg,reg)       \
 	do {    \
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0xF3;        \
 		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
 	} while (0)
 
 #define x86_sse_alu_ss_membase_reg(inst,opc,basereg,disp,reg)       \
 	do {    \
+		x86_codegen_pre(&(inst), 3 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0xF3;        \
 		x86_sse_alu_membase_reg ((inst), (opc), (basereg), (disp), (reg));	\
 	} while (0)
@@ -1961,6 +2358,7 @@ typedef enum {
 
 #define x86_sse_alu_sse41_reg_reg(inst,opc,dreg,reg)       \
 	do {    \
+		x86_codegen_pre(&(inst), 5); \
 		*(inst)++ = (unsigned char)0x66;        \
 		*(inst)++ = (unsigned char)0x0F;	\
 		*(inst)++ = (unsigned char)0x38;	\
@@ -1970,6 +2368,7 @@ typedef enum {
 
 #define x86_movups_reg_membase(inst,sreg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x10;	\
 		x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
@@ -1977,6 +2376,7 @@ typedef enum {
 
 #define x86_movups_membase_reg(inst,basereg,disp,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x11;	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
@@ -1984,6 +2384,7 @@ typedef enum {
 
 #define x86_movaps_reg_membase(inst,sreg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x28;	\
 		x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
@@ -1991,6 +2392,7 @@ typedef enum {
 
 #define x86_movaps_membase_reg(inst,basereg,disp,reg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x29;	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
@@ -1998,6 +2400,7 @@ typedef enum {
 
 #define x86_movaps_reg_reg(inst,dreg,sreg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x28;	\
 		x86_reg_emit ((inst), (dreg), (sreg));	\
@@ -2006,6 +2409,7 @@ typedef enum {
 
 #define x86_movd_reg_xreg(inst,dreg,sreg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0x66;	\
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x7e;	\
@@ -2014,6 +2418,7 @@ typedef enum {
 
 #define x86_movd_xreg_reg(inst,dreg,sreg)	\
 	do {	\
+		x86_codegen_pre(&(inst), 4); \
 		*(inst)++ = (unsigned char)0x66;	\
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x6e;	\
@@ -2022,6 +2427,7 @@ typedef enum {
 
 #define x86_movd_xreg_membase(inst,sreg,basereg,disp)	\
 	do {	\
+		x86_codegen_pre(&(inst), 3 + kMaxMembaseEmitPadding); \
 		*(inst)++ = (unsigned char)0x66;	\
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x6e;	\
@@ -2030,6 +2436,7 @@ typedef enum {
 
 #define x86_pshufw_reg_reg(inst,dreg,sreg,mask,high_words)	\
 	do {	\
+		x86_codegen_pre(&(inst), 5); \
 		*(inst)++ = (unsigned char)(high_words) ? 0xF3 : 0xF2;	\
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x70;	\
@@ -2039,6 +2446,7 @@ typedef enum {
 
 #define x86_sse_shift_reg_imm(inst,opc,mode, dreg,imm)	\
 	do {	\
+		x86_codegen_pre(&(inst), 5); \
 		x86_sse_alu_pd_reg_reg (inst, opc, mode, dreg);	\
 		x86_imm_emit8 ((inst), (imm));	\
 	} while (0)

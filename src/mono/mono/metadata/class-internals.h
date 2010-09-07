@@ -143,6 +143,11 @@ struct _MonoClassField {
 #define mono_field_is_deleted(field) (((field)->type->attrs & (FIELD_ATTRIBUTE_SPECIAL_NAME | FIELD_ATTRIBUTE_RT_SPECIAL_NAME)) \
 				      && (strcmp (mono_field_get_name (field), "_Deleted") == 0))
 
+/* a field is ignored if it's named "_Deleted" and it has the specialname and rtspecialname flags set */
+/* Try to avoid loading the field's type */
+#define mono_field_is_deleted_with_flags(field, flags) (((flags) & (FIELD_ATTRIBUTE_SPECIAL_NAME | FIELD_ATTRIBUTE_RT_SPECIAL_NAME)) \
+				      && (strcmp (mono_field_get_name (field), "_Deleted") == 0))
+
 typedef struct {
 	MonoClassField *field;
 	guint32 offset;
@@ -1271,4 +1276,9 @@ mono_class_has_variant_generic_params (MonoClass *klass) MONO_INTERNAL;
 
 gboolean mono_is_corlib_image (MonoImage *image) MONO_INTERNAL;
 
+MonoType*
+mono_field_get_type_checked (MonoClassField *field, MonoError *error) MONO_INTERNAL;
+
+MonoClassField*
+mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter) MONO_INTERNAL;
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

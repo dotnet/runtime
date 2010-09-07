@@ -119,14 +119,10 @@ mono_double_ParseImpl (char *ptr, double *result)
 		*result = strtod (ptr, &endptr);
 #else
 	if (*ptr){
-#ifdef _EGLIB_MAJOR
-		/* Need to lock here because EGLIB (#464316) has locking defined as no-ops, and that breaks mono_strtod */
+		/* mono_strtod () is not thread-safe */
 		EnterCriticalSection (&mono_strtod_mutex);
 		*result = mono_strtod (ptr, &endptr);
 		LeaveCriticalSection (&mono_strtod_mutex);
-#else
-		*result = mono_strtod (ptr, &endptr);
-#endif
 	}
 #endif
 
@@ -1690,7 +1686,10 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 static MonoArray*
 ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionField *field, MonoBoolean optional)
 {
-	MonoType *type = field->field->type;
+	MonoError error;
+	MonoType *type = mono_field_get_type_checked (field->field, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
 
 	return type_array_from_modifiers (field->field->parent->image, type, optional);
 }
@@ -1756,6 +1755,10 @@ ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method)
 static gint32
 ves_icall_MonoField_GetFieldOffset (MonoReflectionField *field)
 {
+	MonoClass *parent = field->field->parent;
+	if (!parent->size_inited)
+		mono_class_init (parent);
+
 	return field->field->offset - sizeof (MonoObject);
 }
 
@@ -1936,6 +1939,17 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
 }
 
 static MonoReflectionType*
+ves_icall_MonoField_ResolveType (MonoReflectionField *ref_field)
+{
+	MonoError error;
+	MonoClassField *field = ref_field->field;
+	MonoType *type = mono_field_get_type_checked (field, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+	return mono_type_get_object (mono_object_domain (ref_field), type);
+}
+
+static MonoReflectionType*
 ves_icall_MonoGenericMethod_get_ReflectedType (MonoReflectionGenericMethod *rmethod)
 {
 	MonoMethod *method = rmethod->method.method;
@@ -1962,8 +1976,8 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 
 	if ((req_info & PInfo_ReflectedType) != 0)
 		MONO_STRUCT_SETREF (info, parent, mono_type_get_object (domain, &property->klass->byval_arg));
-	else if ((req_info & PInfo_DeclaringType) != 0)
-		MONO_STRUCT_SETREF (info, parent, mono_type_get_object (domain, &property->property->parent->byval_arg));
+	if ((req_info & PInfo_DeclaringType) != 0)
+		MONO_STRUCT_SETREF (info, declaring_type, mono_type_get_object (domain, &property->property->parent->byval_arg));
 
 	if ((req_info & PInfo_Name) != 0)
 		MONO_STRUCT_SETREF (info, name, mono_string_new (domain, property->property->name));
@@ -2092,8 +2106,12 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	data.domain = mono_object_domain (type);
 
 	len = g_hash_table_size (iface_hash);
-	if (len == 0)
-		return mono_array_new_cached (data.domain, mono_defaults.monotype_class, 0);
+	if (len == 0) {
+		g_hash_table_destroy (iface_hash);
+		if (!data.domain->empty_types)
+			data.domain->empty_types = mono_array_new_cached (data.domain, mono_defaults.monotype_class, 0);
+		return data.domain->empty_types;
+	}
 
 	data.iface_array = mono_array_new_cached (data.domain, mono_defaults.monotype_class, len);
 	g_hash_table_foreach (iface_hash, fill_iface_array, &data);
@@ -2230,8 +2248,6 @@ static MonoReflectionModule*
 ves_icall_MonoType_get_Module (MonoReflectionType *type)
 {
 	MonoClass *class = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (class);
-
 	return mono_module_get_object (mono_object_domain (type), class->image);
 }
 
@@ -2240,9 +2256,6 @@ ves_icall_MonoType_get_Assembly (MonoReflectionType *type)
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *class = mono_class_from_mono_type (type->type);
-
-	mono_class_init_or_throw (class);
-
 	return mono_assembly_get_object (domain, class->image->assembly);
 }
 
@@ -3336,24 +3349,24 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	mono_class_init_or_throw (klass);
-	mono_class_init_or_throw (refklass);
-
 	mono_ptr_array_init (tmp_array, 2);
 	
 handle_parent:	
-	if (klass->exception_type != MONO_EXCEPTION_NONE)
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		mono_ptr_array_destroy (tmp_array);
 		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+	}
 
 	iter = NULL;
-	while ((field = mono_class_get_fields (klass, &iter))) {
+	while ((field = mono_class_get_fields_lazy (klass, &iter))) {
+		guint32 flags = mono_field_get_flags (field);
 		match = 0;
-		if (mono_field_is_deleted (field))
+		if (mono_field_is_deleted_with_flags (field, flags))
 			continue;
-		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
+		if ((flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else if ((klass == startklass) || (field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
+		} else if ((klass == startklass) || (flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
 			if (bflags & BFLAGS_NonPublic) {
 				match++;
 			}
@@ -3361,7 +3374,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+		if (flags & FIELD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
 				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
 					match++;
@@ -3437,9 +3450,6 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		return mono_array_new_specific (array_vtable, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
-
-	mono_class_init_or_throw (klass);
-	mono_class_init_or_throw (refklass);
 
 	len = 0;
 	if (name != NULL) {
@@ -3578,12 +3588,6 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	mono_class_init_or_throw (klass);
-	mono_class_init_or_throw (refklass);
-
-	if (klass->exception_type != MONO_EXCEPTION_NONE)
-		mono_raise_exception (mono_class_get_exception_for_failure (klass));
-
 	if (!System_Reflection_ConstructorInfo)
 		System_Reflection_ConstructorInfo = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "ConstructorInfo");
@@ -3663,6 +3667,7 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 static MonoArray*
 ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
+	MonoException *ex;
 	MonoDomain *domain; 
 	static MonoClass *System_Reflection_PropertyInfo;
 	MonoClass *startklass, *klass;
@@ -3674,7 +3679,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	gpointer iter;
-	GHashTable *properties;
+	GHashTable *properties = NULL;
 	MonoPtrArray tmp_array;
 
 	MONO_ARCH_SAVE_REGS;
@@ -3689,26 +3694,17 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	if (type->type->byref)
 		return mono_array_new_cached (domain, System_Reflection_PropertyInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
-
-
 
 	if (name != NULL) {
 		propname = mono_string_to_utf8 (name);
 		compare_func = (ignore_case) ? mono_utf8_strcasecmp : strcmp;
 	}
 
-	mono_class_setup_vtable (klass);
-
 	properties = g_hash_table_new (property_hash, (GEqualFunc)property_equal);
 handle_parent:
 	mono_class_setup_vtable (klass);
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		g_hash_table_destroy (properties);
-		if (name != NULL)
-			g_free (propname);
-		mono_raise_exception (mono_class_get_exception_for_failure (klass));
-	}
+	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+		goto loader_error;
 
 	iter = NULL;
 	while ((prop = mono_class_get_properties (klass, &iter))) {
@@ -3771,6 +3767,22 @@ handle_parent:
 	mono_ptr_array_destroy (tmp_array);
 
 	return res;
+
+loader_error:
+	if (properties)
+		g_hash_table_destroy (properties);
+	if (name)
+		g_free (propname);
+	mono_ptr_array_destroy (tmp_array);
+
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		ex = mono_class_get_exception_for_failure (klass);
+	} else {
+		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
+		mono_loader_clear_error ();
+	}
+	mono_raise_exception (ex);
+	return NULL;
 }
 
 static MonoReflectionEvent *
@@ -3847,6 +3859,7 @@ handle_parent:
 static MonoArray*
 ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
 {
+	MonoException *ex;
 	MonoDomain *domain; 
 	static MonoClass *System_Reflection_EventInfo;
 	MonoClass *startklass, *klass;
@@ -3870,12 +3883,11 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	if (type->type->byref)
 		return mono_array_new_cached (domain, System_Reflection_EventInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
-
-handle_parent:	
-	if (klass->exception_type != MONO_EXCEPTION_NONE)
-		mono_raise_exception (mono_class_get_exception_for_failure (klass));
+handle_parent:
+	mono_class_setup_vtable (klass);
+	if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ())
+		goto loader_error;
 
 	iter = NULL;
 	while ((event = mono_class_get_events (klass, &iter))) {
@@ -3928,6 +3940,17 @@ handle_parent:
 	mono_ptr_array_destroy (tmp_array);
 
 	return res;
+
+loader_error:
+	mono_ptr_array_destroy (tmp_array);
+	if (klass->exception_type != MONO_EXCEPTION_NONE) {
+		ex = mono_class_get_exception_for_failure (klass);
+	} else {
+		ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
+		mono_loader_clear_error ();
+	}
+	mono_raise_exception (ex);
+	return NULL;
 }
 
 static MonoReflectionType *
@@ -3948,7 +3971,6 @@ ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint3
 	if (type->type->byref)
 		return NULL;
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
 	str = mono_string_to_utf8 (name);
 
@@ -4009,7 +4031,6 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	if (type->type->byref)
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
 	/*
 	 * If a nested type is generic, return its generic type definition.
@@ -4136,6 +4157,10 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			mono_raise_exception (e);
 
 		return NULL;
+	} else if (mono_loader_get_last_error ()) {
+		if (throwOnError)
+			mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+		mono_loader_clear_error ();
 	}
 
 	if (type->type == MONO_TYPE_CLASS) {
@@ -6497,7 +6522,7 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder)
 static MonoArray *
 ves_icall_System_Environment_GetLogicalDrives (void)
 {
-        gunichar2 buf [128], *ptr, *dname;
+        gunichar2 buf [256], *ptr, *dname;
 	gunichar2 *u16;
 	guint initial_size = 127, size = 128;
 	gint ndrives;
@@ -6844,6 +6869,40 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 	g_free (path);
 
 	return mcpath;
+}
+
+static MonoString *
+get_bundled_app_config (void)
+{
+	const gchar *app_config;
+	MonoDomain *domain;
+	MonoString *file;
+	gchar *config_file;
+	gsize len;
+	gchar *module;
+
+	MONO_ARCH_SAVE_REGS;
+
+	domain = mono_domain_get ();
+	file = domain->setup->configuration_file;
+	if (!file)
+		return NULL;
+
+	// Retrieve config file and remove the extension
+	config_file = mono_string_to_utf8 (file);
+	len = strlen (config_file) - strlen (".config");
+	module = g_malloc0 (len + 1);
+	memcpy (module, config_file, len);
+	// Get the config file from the module name
+	app_config = mono_config_string_for_assembly_file (module);
+	// Clean-up
+	g_free (module);
+	g_free (config_file);
+
+	if (!app_config)
+		return NULL;
+
+	return mono_string_new (mono_domain_get (), app_config);
 }
 
 static MonoString *

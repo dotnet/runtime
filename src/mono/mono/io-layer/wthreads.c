@@ -892,11 +892,16 @@ gboolean TlsFree(guint32 idx)
 	g_message ("%s: freeing key %d", __func__, idx);
 #endif
 
+	if (idx >= TLS_MINIMUM_AVAILABLE) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return FALSE;
+	}
+
 	pthread_mutex_lock (&TLS_mutex);
 	
 	if(TLS_used[idx]==FALSE) {
 		pthread_mutex_unlock (&TLS_mutex);
-
+		SetLastError (ERROR_INVALID_PARAMETER);
 		return(FALSE);
 	}
 	
@@ -926,13 +931,17 @@ gpointer TlsGetValue(guint32 idx)
 #ifdef TLS_DEBUG
 	g_message ("%s: looking up key %d", __func__, idx);
 #endif
-	
+	if (idx >= TLS_MINIMUM_AVAILABLE) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return NULL;
+	}
 	ret=pthread_getspecific(TLS_keys[idx]);
 
 #ifdef TLS_DEBUG
 	g_message ("%s: returning %p", __func__, ret);
 #endif
-	
+
+	SetLastError (ERROR_SUCCESS);
 	return(ret);
 }
 
@@ -952,7 +961,10 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 #ifdef TLS_DEBUG
 	g_message ("%s: setting key %d to %p", __func__, idx, value);
 #endif
-	
+	if (idx >= TLS_MINIMUM_AVAILABLE) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return FALSE;
+	}
 	
 	ret=pthread_setspecific(TLS_keys[idx], value);
 #ifdef TLS_DEBUG

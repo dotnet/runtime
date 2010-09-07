@@ -1602,6 +1602,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	guint32 i;
 	MonoObject *waitHandle;
 	MonoInternalThread *thread = mono_thread_internal_current ();
+	guint32 start;
 
 	/* Do this WaitSleepJoin check before creating objects */
 	mono_thread_current_check_pending_interrupt ();
@@ -1619,8 +1620,21 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	}
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
-	ret=WaitForMultipleObjectsEx(numhandles, handles, FALSE, ms, TRUE);
+
+	start = (ms == -1) ? 0 : mono_msec_ticks ();
+	do {
+		ret = WaitForMultipleObjectsEx (numhandles, handles, FALSE, ms, TRUE);
+		if (ret != WAIT_IO_COMPLETION)
+			break;
+		if (ms != -1) {
+			guint32 diff;
+
+			diff = mono_msec_ticks () - start;
+			ms -= diff;
+			if (ms <= 0)
+				break;
+		}
+	} while (ms == -1 || ms > 0);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -3808,8 +3822,14 @@ do_free_special (gpointer key, gpointer value, gpointer data)
 			mono_g_hash_table_foreach (threads, free_thread_static_data_helper, &data);
 		item->offset = offset;
 		item->size = size;
-		item->next = thread_static_info.freelist;
-		thread_static_info.freelist = item;
+
+		if (!mono_runtime_is_shutting_down ()) {
+			item->next = thread_static_info.freelist;
+			thread_static_info.freelist = item;
+		} else {
+			/* We could be called during shutdown after mono_thread_cleanup () is called */
+			g_free (item);
+		}
 	} else {
 		/* FIXME: free context static data as well */
 	}

@@ -63,12 +63,12 @@
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
 break: len:1
-jmp: len:32
+jmp: len:32 clob:c
 call: dest:a clob:c len:17
 br: len:5
 seq_point: len:16
 
-int_beq: len:6 nacl:28
+int_beq: len:6
 int_bge: len:6
 int_bgt: len:6
 int_ble: len:6
@@ -117,8 +117,8 @@ int_mul_ovf_un: dest:i src1:i src2:i len:16
 throw: src1:i len:13
 rethrow: src1:i len:13
 start_handler: len:16
-endfinally: len:16
-endfilter: src1:a len:16
+endfinally: len:16 nacl:21
+endfilter: src1:a len:16 nacl:21
 
 ckfinite: dest:f src1:f len:32
 ceq: dest:y len:6
@@ -134,18 +134,18 @@ oparglist: src1:b len:10
 checkthis: src1:b len:3
 voidcall: len:17 clob:c
 voidcall_reg: src1:i len:11 clob:c
-voidcall_membase: src1:b len:16 clob:c
+voidcall_membase: src1:b len:16 nacl:17 clob:c
 fcall: dest:f len:17 clob:c
 fcall_reg: dest:f src1:i len:11 clob:c
-fcall_membase: dest:f src1:b len:16 clob:c
+fcall_membase: dest:f src1:b len:16 nacl:17 clob:c
 lcall: dest:l len:17 clob:c
 lcall_reg: dest:l src1:i len:11 clob:c
-lcall_membase: dest:l src1:b len:16 clob:c
+lcall_membase: dest:l src1:b len:16 nacl:17 clob:c
 vcall: len:17 clob:c
 vcall_reg: src1:i len:11 clob:c
-vcall_membase: src1:b len:16 clob:c
-call_reg: dest:a src1:i len:11 clob:c
-call_membase: dest:a src1:b len:16 clob:c
+vcall_membase: src1:b len:16 nacl:17 clob:c
+call_reg: dest:a src1:i len:11 nacl:14 clob:c
+call_membase: dest:a src1:b len:16 nacl:18 clob:c
 iconst: dest:i len:5
 r4const: dest:f len:15
 r8const: dest:f len:16
@@ -284,7 +284,7 @@ subcc: dest:i src1:i src2:i len:2 clob:1
 adc_imm: dest:i src1:i len:6 clob:1
 sbb: dest:i src1:i src2:i len:2 clob:1
 sbb_imm: dest:i src1:i len:6 clob:1
-br_reg: src1:i len:2
+br_reg: src1:i len:2 nacl:5
 sin: dest:f src1:f len:6
 cos: dest:f src1:f len:6
 abs: dest:f src1:f len:2
@@ -300,8 +300,10 @@ tls_get: dest:i len:20
 atomic_add_i4: src1:b src2:i dest:i len:16
 atomic_add_new_i4: src1:b src2:i dest:i len:16
 atomic_exchange_i4: src1:b src2:i dest:a len:24
-atomic_cas_i4: src1:b src2:i src3:a dest:i len:24
+atomic_cas_i4: src1:b src2:i src3:a dest:a len:24
 memory_barrier: len:16
+
+card_table_wbarrier: src1:a src2:i clob:d len:28
 
 relaxed_nop: len:2
 hard_nop: len:1
@@ -386,7 +388,7 @@ loadu2_mem: dest:i len:9
 
 vcall2: len:17 clob:c
 vcall2_reg: src1:i len:11 clob:c
-vcall2_membase: src1:b len:16 clob:c
+vcall2_membase: src1:b len:16 nacl:17 clob:c
 
 localloc_imm: dest:i len:120
 
