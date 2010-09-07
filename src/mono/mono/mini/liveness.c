@@ -969,10 +969,11 @@ update_liveness2_gc (MonoCompile *cfg, MonoInst *ins, gint32 *last_use, MonoMeth
 void
 mono_analyze_liveness_gc (MonoCompile *cfg)
 {
-	int bnum, idx, i, j, nins, rem, max, max_vars, block_from, block_to, pos, reverse_len;
+	int idx, i, j, nins, rem, max, max_vars, block_from, block_to, pos, reverse_len;
 	gint32 *last_use;
 	MonoInst **reverse;
 	MonoMethodVar **vreg_to_varinfo = NULL;
+	MonoBasicBlock *bb;
 
 	LIVENESS_DEBUG (printf ("\n------------ GC LIVENESS: ----------\n"));
 
@@ -999,14 +1000,13 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 	}
 
 	/*
-	 * Process bblocks in reverse order, so the addition of new live ranges
+	 * FIXME: Process bblocks in reverse order, so the addition of new live ranges
 	 * to the intervals is faster.
 	 */
-	for (bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
-		MonoBasicBlock *bb = cfg->bblocks [bnum];
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
 
-		block_from = bb->native_offset;
+		block_from = bb->real_native_offset;
 		block_to = bb->native_offset + bb->native_length;
 
 		LIVENESS_DEBUG (printf ("GC LIVENESS BB%d:\n", bb->block_num));
@@ -1023,6 +1023,10 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		for (j = 0; j < max; ++j) {
 			gsize bits_out;
 			int k;
+
+			if (!bb->live_out_set)
+				/* The variables used in this bblock are volatile anyway */
+				continue;
 
 			bits_out = mono_bitset_get_fast (bb->live_out_set, j);
 			k = (j * BITS_PER_CHUNK);	

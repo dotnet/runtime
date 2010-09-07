@@ -487,7 +487,10 @@ struct MonoBasicBlock {
 
 	/* The offset of the generated code, used for fixups */
 	int native_offset;
+	/* The length of the generated code, doesn't include alignment padding */
 	int native_length;
+	/* The real native offset, which includes alignment padding too */
+	int real_native_offset;
 	int max_offset;
 	int max_length;
 

@@ -72,12 +72,18 @@ typedef struct {
 	int locals_size;
 	/* The number of stack slots */
 	int nslots;
+	/* The width of the liveness bitmap in bytes */
+	int bitmap_width;
 	/* 
 	 * The gc map itself.
 	 */
 	StackSlotType *slots;
-	/* A pair of low pc offset-high pc offset for each SLOT_REF value in gc_refs */
-	guint32 live_ranges [MONO_ZERO_LEN_ARRAY];
+	/* 
+	 * A bitmap whose width is equal to the number of SLOT_REF values in gc_refs, and whose
+	 * height is equal to the number of possible PC offsets.
+	 * This needs to be compressed later.
+	 */
+	guint8 bitmap [MONO_ZERO_LEN_ARRAY];
 } GCMap;
 
 /* Statistics */
@@ -150,7 +156,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 	DEBUG (printf ("*** %s stack marking %p-%p ***\n", precise ? "Precise" : "Conservative", stack_start, stack_end));
 
-	if (FALSE && !tls->has_context) {
+	if (!tls->has_context) {
 		memset (&new_ctx, 0, sizeof (ctx));
 
 		while (TRUE) {
@@ -266,13 +272,17 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 			} else {
 				if (map->slots) {
 					int loffset = 0;
+					guint8 *bitmap = &map->bitmap [(map->bitmap_width * pc_offset)];
+					gboolean live;
 
 					for (i = 0; i < map->nslots; ++i) {
 						if (map->slots [i] == SLOT_REF) {
 							MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
 							MonoObject *obj = *ptr;
 
-							if (pc_offset >= map->live_ranges [loffset] && pc_offset < map->live_ranges [loffset + 1] && obj != DEAD_REF) {
+							live = bitmap [loffset / 8] & (1 << (loffset % 8));
+
+							if (live) {
 								if (obj) {
 									DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
 									*ptr = mono_gc_scan_object (obj);
@@ -283,17 +293,13 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 							} else {
 								DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
 								/*
-								 * This serves two purposes:
-								 * - fail fast if the live range is incorrect, and
+								 * Fail fast if the live range is incorrect, and
 								 * the JITted code tries to access this object
-								 * - it avoids problems when a dead slot becomes live
-								 * again due to a backward branch 
-								 * (see test_0_liveness_6).
 								 */
 								*ptr = DEAD_REF;
 							}
 
-							loffset += 2;
+							loffset ++;
 							scanned_precisely += sizeof (gpointer);
 						} else if (map->slots [i] == SLOT_NOREF) {
 							scanned_precisely += sizeof (gpointer);
@@ -347,7 +353,8 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	int i, nslots, alloc_size, loffset, min_offset, max_offset;
 	StackSlotType *slots = NULL;
 	gboolean norefs = FALSE;
-	guint32 *live_range_start, *live_range_end;
+	GSList **live_intervals;
+	int bitmap_width, bitmap_size;
 
 	/*
 	 * Since we currently don't use GC safe points, we need to create GC maps which
@@ -433,14 +440,8 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			slots [i] = SLOT_NOREF;
 		gc_maps_size += alloc_size;
 	}
-	live_range_start = g_new (guint32, nslots);
-	live_range_end = g_new (guint32, nslots);
+	live_intervals = g_new0 (GSList*, nslots);
 	loffset = 0;
-
-	for (i = 0; i < nslots; ++i) {
-		live_range_start [i] = (guint32)-1;
-		live_range_end [i] = 0;
-	}
 
 	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
@@ -523,7 +524,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		}
 
 		if (MONO_TYPE_IS_REFERENCE (ins->inst_vtype)) {
-			if (vmv && !vmv->live_range_start) {
+			if (vmv && !vmv->gc_interval) {
 				set_slot (slots, nslots, pos, SLOT_PIN);
 				continue;
 			}
@@ -535,17 +536,27 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 			set_slot (slots, nslots, pos, SLOT_REF);
 
-			/* Stack slots holding refs shouldn't be shared */
-			g_assert (!live_range_end [pos]);
-			live_range_start [pos] = vmv->live_range_start;
-			live_range_end [pos] = vmv->live_range_end;
+			live_intervals [pos] = g_slist_prepend_mempool (cfg->mempool, live_intervals [pos], vmv->gc_interval);
 
-			if (cfg->verbose_level > 1)
-				printf ("\tref at %s0x%x(fp) (slot=%d): %s [0x%x - 0x%x]\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype), vmv->live_range_start, vmv->live_range_end);
+			if (cfg->verbose_level > 1) {
+				printf ("\tref at %s0x%x(fp) (slot=%d): %s ", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
+				mono_linterval_print (vmv->gc_interval);
+				printf ("\n");
+			}
 		}
 	}
 
-	alloc_size = sizeof (GCMap) + (norefs ? 0 : (nslots - MONO_ZERO_LEN_ARRAY) * sizeof (guint32) * 2);
+	loffset = 0;
+	if (slots) {
+		for (i = 0; i < nslots; ++i) {
+			if (slots [i] == SLOT_REF)
+				loffset ++;
+		}
+	}
+
+	bitmap_width = ALIGN_TO (loffset, 8) / 8;
+	bitmap_size = bitmap_width * cfg->code_len;
+	alloc_size = sizeof (GCMap) + (norefs ? 0 : bitmap_size);
 	map = mono_domain_alloc0 (cfg->domain, alloc_size);
 	gc_maps_size += alloc_size;
 
@@ -554,12 +565,26 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	map->locals_size = ALIGN_TO (max_offset - min_offset, sizeof (gpointer));
 	map->nslots = nslots;
 	map->slots = slots;
+	map->bitmap_width = bitmap_width;
+
+	/* Create liveness bitmap */
 	loffset = 0;
-	if (!norefs) {
+	if (slots) {
 		for (i = 0; i < nslots; ++i) {
 			if (map->slots [i] == SLOT_REF) {
-				map->live_ranges [loffset ++] = live_range_start [i];
-				map->live_ranges [loffset ++] = live_range_end [i];
+				MonoLiveInterval *iv;
+				GSList *l;
+				MonoLiveRange2 *r;
+				int pc_offset;
+
+				for (l = live_intervals [i]; l; l = l->next) {
+					iv = l->data;
+					for (r = iv->range; r; r = r->next) {
+						for (pc_offset = r->from; pc_offset < r->to; ++pc_offset)
+							map->bitmap [(map->bitmap_width * pc_offset) + loffset / 8] |= (1 << (loffset % 8));
+					}
+				}
+				loffset ++;
 			}
 		}
 	}
@@ -584,8 +609,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	cfg->jit_info->gc_info = map;
 
-	g_free (live_range_start);
-	g_free (live_range_end);
+	g_free (live_intervals);
 }
 
 void
