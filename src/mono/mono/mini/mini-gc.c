@@ -100,6 +100,10 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 {
 	TlsData *tls = user_data;
 
+	if (!tls)
+		/* Happens during startup */
+		return;
+
 	tls->lmf = mono_get_lmf ();
 	if (sigctx) {
 		mono_arch_sigctx_to_monoctx (sigctx, &tls->ctx);
@@ -113,6 +117,7 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 static int precise_frame_count [2], precise_frame_limit = -1;
 static gboolean precise_frame_limit_inited;
 
+static int scanned_stacks_stat;
 static int scanned_stat, scanned_precisely_stat, scanned_conservatively_stat;
 
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
@@ -123,7 +128,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	TlsData *tls = user_data;
 	MonoJitInfo *ji, res;
 	MonoContext ctx, new_ctx;
-	MonoLMF *lmf = tls->lmf;
+	MonoLMF *lmf;
 	guint8 *stack_limit;
 	gboolean last = TRUE, managed;
 	GCMap *map;
@@ -131,14 +136,16 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	int i, pc_offset;
 	int scanned = 0, scanned_precisely, scanned_conservatively;
 
-	if (mono_thread_internal_current () == NULL) {
+	/* tls == NULL can happen during startup */
+	if (mono_thread_internal_current () == NULL || !tls) {
 		if (!precise) {
 			mono_gc_conservatively_scan_area (stack_start, stack_end);
-			scanned_stat += stack_end - stack_start;
-			scanned_conservatively_stat += stack_end - stack_start;
+			scanned_stacks_stat += stack_end - stack_start;
 		}
 		return;
 	}
+
+	lmf = tls->lmf;
 
 	/* Number of bytes scanned based on GC map data */
 	scanned = 0;
@@ -156,178 +163,172 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 	DEBUG (printf ("*** %s stack marking %p-%p ***\n", precise ? "Precise" : "Conservative", stack_start, stack_end));
 
-	if (!tls->has_context) {
+	if (!tls->has_context)
 		memset (&new_ctx, 0, sizeof (ctx));
+	else
+		memcpy (&new_ctx, &tls->ctx, sizeof (MonoContext));
 
-		while (TRUE) {
-			memcpy (&ctx, &new_ctx, sizeof (ctx));
+	while (TRUE) {
+		memcpy (&ctx, &new_ctx, sizeof (ctx));
 
-			g_assert ((guint64)stack_limit % sizeof (gpointer) == 0);
+		g_assert ((guint64)stack_limit % sizeof (gpointer) == 0);
 
-			// FIXME: This doesn't work with appdomain transitions
-			ji = mono_find_jit_info (mono_domain_get (), tls->jit_tls, &res, NULL,
-									 &ctx, &new_ctx, NULL, &lmf, NULL, &managed);
-			if (ji == (gpointer)-1)
-				break;
+		// FIXME: This doesn't work with appdomain transitions
+		ji = mono_find_jit_info (mono_domain_get (), tls->jit_tls, &res, NULL,
+								 &ctx, &new_ctx, NULL, &lmf, NULL, &managed);
+		if (ji == (gpointer)-1)
+			break;
 
-			/* The last frame can be in any state so mark conservatively */
-			if (last) {
-				last = FALSE;
-				continue;
-			}
+		/* The last frame can be in any state so mark conservatively */
+		if (last) {
+			last = FALSE;
+			continue;
+		}
 
-			/* These frames are returned by mono_find_jit_info () two times */
-			if (!managed)
-				continue;
+		/* These frames are returned by mono_find_jit_info () two times */
+		if (!managed)
+			continue;
 
-			/* Scan the frame of this method */
+		/* Scan the frame of this method */
 
-			/*
-			 * A frame contains the following:
-			 * - saved registers
-			 * - saved args
-			 * - locals
-			 * - spill area
-			 * - localloc-ed memory
-			 * Currently, only the locals are scanned precisely.
-			 */
+		/*
+		 * A frame contains the following:
+		 * - saved registers
+		 * - saved args
+		 * - locals
+		 * - spill area
+		 * - localloc-ed memory
+		 * Currently, only the locals are scanned precisely.
+		 */
 
-			map = ji->gc_info;
+		map = ji->gc_info;
 
-			if (!map) {
-				DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): No GC map for %s\n", precise, fname); g_free (fname));
-				continue;
-			}
+		if (!map) {
+			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): No GC map for %s\n", precise, fname); g_free (fname));
+			continue;
+		}
 
-			/*
-			 * Debugging aid to control the number of frames scanned precisely
-			 */
-			if (!precise_frame_limit_inited) {
-				if (getenv ("MONO_PRECISE_COUNT"))
-					precise_frame_limit = atoi (getenv ("MONO_PRECISE_COUNT"));
-				precise_frame_limit_inited = TRUE;
-			}
+		/*
+		 * Debugging aid to control the number of frames scanned precisely
+		 */
+		if (!precise_frame_limit_inited) {
+			if (getenv ("MONO_PRECISE_COUNT"))
+				precise_frame_limit = atoi (getenv ("MONO_PRECISE_COUNT"));
+			precise_frame_limit_inited = TRUE;
+		}
 				
-			if (precise_frame_limit != -1) {
-				if (precise_frame_count [precise] == precise_frame_limit)
-					printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (ji->method, TRUE));
-				if (precise_frame_count [precise] > precise_frame_limit)
-					continue;
-			}
-			precise_frame_count [precise] ++;
+		if (precise_frame_limit != -1) {
+			if (precise_frame_count [precise] == precise_frame_limit)
+				printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (ji->method, TRUE));
+			if (precise_frame_count [precise] > precise_frame_limit)
+				continue;
+		}
+		precise_frame_count [precise] ++;
 
 #ifdef __x86_64__
-			if (map->frame_reg == AMD64_RSP)
-				fp = (guint8*)ctx.rsp;
-			else if (map->frame_reg == AMD64_RBP)
-				fp = (guint8*)ctx.rbp;
-			else
-				g_assert_not_reached ();
-#else
-			fp = NULL;
+		if (map->frame_reg == AMD64_RSP)
+			fp = (guint8*)ctx.rsp;
+		else if (map->frame_reg == AMD64_RBP)
+			fp = (guint8*)ctx.rbp;
+		else
 			g_assert_not_reached ();
+#else
+		fp = NULL;
+		g_assert_not_reached ();
 #endif
 
-			locals_start = fp + map->locals_offset;
-			locals_end = locals_start + map->locals_size;
+		locals_start = fp + map->locals_offset;
+		locals_end = locals_start + map->locals_size;
 
-			pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
-			g_assert (pc_offset >= 0);
+		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
+		g_assert (pc_offset >= 0);
 
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s+0x%x (%p) limit=%p fp=%p locals=%p-%p (%d)\n", precise, fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, locals_start, locals_end, (int)(locals_end - locals_start)); g_free (fname));
+		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s+0x%x (%p) limit=%p fp=%p locals=%p-%p (%d)\n", precise, fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, locals_start, locals_end, (int)(locals_end - locals_start)); g_free (fname));
 
-			/* 
-			 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
-			 * call for each object.
-			 */
+		/* 
+		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
+		 * call for each object.
+		 */
 
-			scanned += locals_end - locals_start;
+		scanned += locals_end - locals_start;
 
-			/* Pinning needs to be done first, then the precise scan later */
+		/* Pinning needs to be done first, then the precise scan later */
 
-			if (!precise) {
-				g_assert (locals_start >= stack_limit);
+		if (!precise) {
+			g_assert (locals_start >= stack_limit);
 
-				if (locals_start > stack_limit) {
-					/* This scans the previously skipped frames as well */
-					DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, locals_start));
-					mono_gc_conservatively_scan_area (stack_limit, locals_start);
-				}
+			if (locals_start > stack_limit) {
+				/* This scans the previously skipped frames as well */
+				DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, locals_start));
+				mono_gc_conservatively_scan_area (stack_limit, locals_start);
+			}
 
-				if (map->slots) {
-					guint8 *p;
+			if (map->slots) {
+				guint8 *p;
 
-					p = locals_start;
-					for (i = 0; i < map->nslots; ++i) {
-						if (map->slots [i] == SLOT_PIN) {
-							DEBUG (printf ("\tscan slot %s0x%x(fp)=%p.\n", (guint8*)p > (guint8*)fp ? "" : "-", ABS ((int)((gssize)p - (gssize)fp)), p));
-							mono_gc_conservatively_scan_area (p, p + sizeof (gpointer));
-							scanned_conservatively += sizeof (gpointer);
-						}
-						p += sizeof (gpointer);
+				p = locals_start;
+				for (i = 0; i < map->nslots; ++i) {
+					if (map->slots [i] == SLOT_PIN) {
+						DEBUG (printf ("\tscan slot %s0x%x(fp)=%p.\n", (guint8*)p > (guint8*)fp ? "" : "-", ABS ((int)((gssize)p - (gssize)fp)), p));
+						mono_gc_conservatively_scan_area (p, p + sizeof (gpointer));
+						scanned_conservatively += sizeof (gpointer);
 					}
+					p += sizeof (gpointer);
 				}
+			}
 
-				stack_limit = locals_end;
-			} else {
-				if (map->slots) {
-					int loffset = 0;
-					guint8 *bitmap = &map->bitmap [(map->bitmap_width * pc_offset)];
-					gboolean live;
+			stack_limit = locals_end;
+		} else {
+			if (map->slots) {
+				int loffset = 0;
+				guint8 *bitmap = &map->bitmap [(map->bitmap_width * pc_offset)];
+				gboolean live;
 
-					for (i = 0; i < map->nslots; ++i) {
-						if (map->slots [i] == SLOT_REF) {
-							MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
-							MonoObject *obj = *ptr;
+				for (i = 0; i < map->nslots; ++i) {
+					if (map->slots [i] == SLOT_REF) {
+						MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
+						MonoObject *obj = *ptr;
 
-							live = bitmap [loffset / 8] & (1 << (loffset % 8));
+						live = bitmap [loffset / 8] & (1 << (loffset % 8));
 
-							if (live) {
-								if (obj) {
-									DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
-									*ptr = mono_gc_scan_object (obj);
-									DEBUG (printf (" %p.\n", *ptr));
-								} else {
-									DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
-								}
+						if (live) {
+							if (obj) {
+								DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+								*ptr = mono_gc_scan_object (obj);
+								DEBUG (printf (" %p.\n", *ptr));
 							} else {
-								DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
-								/*
-								 * Fail fast if the live range is incorrect, and
-								 * the JITted code tries to access this object
-								 */
-								*ptr = DEAD_REF;
+								DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
 							}
-
-							loffset ++;
-							scanned_precisely += sizeof (gpointer);
-						} else if (map->slots [i] == SLOT_NOREF) {
-							scanned_precisely += sizeof (gpointer);
+						} else {
+							DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+							/*
+							 * Fail fast if the live range is incorrect, and
+							 * the JITted code tries to access this object
+							 */
+							*ptr = DEAD_REF;
 						}
+
+						loffset ++;
+						scanned_precisely += sizeof (gpointer);
+					} else if (map->slots [i] == SLOT_NOREF) {
+						scanned_precisely += sizeof (gpointer);
 					}
 				}
 			}
 		}
+	}
 
-		if (stack_limit < stack_end && !precise) {
-			DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, stack_end));
-			mono_gc_conservatively_scan_area (stack_limit, stack_end);
-		}
-	} else {
-		// FIXME:
-		if (!precise) {
-			DEBUG (printf ("\tno context, scan area %p-%p.\n", stack_start, stack_end));
-			mono_gc_conservatively_scan_area (stack_start, stack_end);
-			scanned += stack_end - stack_start;
-			scanned_conservatively += stack_end - stack_start;
-		}
+	if (stack_limit < stack_end && !precise) {
+		DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, stack_end));
+		mono_gc_conservatively_scan_area (stack_limit, stack_end);
 	}
 
 	DEBUG (printf ("Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
 
+	scanned_stacks_stat += stack_end - stack_start;
 	scanned_stat += scanned;
 	scanned_precisely_stat += scanned_precisely;
-	scanned_conservatively_stat += scanned_conservatively;
+	scanned_conservatively_stat += scanned - scanned_precisely;
 
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
 }
@@ -601,11 +602,13 @@ mini_gc_init (void)
 	mono_counters_register ("GC Maps size",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_maps_size);
 
-	mono_counters_register ("Stack space scanned",
+	mono_counters_register ("Stack space scanned (all)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_stacks_stat);
+	mono_counters_register ("Stack space scanned (using GC Maps)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_stat);
-	mono_counters_register ("Stack space scanned precisely",
+	mono_counters_register ("Stack space scanned (precise)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_precisely_stat);
-	mono_counters_register ("Stack space scanned conservatively",
+	mono_counters_register ("Stack space scanned (conservative)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_conservatively_stat);
 }
 
