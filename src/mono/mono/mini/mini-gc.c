@@ -496,8 +496,8 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			/* Vret addr etc. */
 			continue;
 
-		if (t->byref || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_I || t->type == MONO_TYPE_U) {
-			// FIXME: Why is PTR/I/U needs to be treated this way ?
+		if (t->byref || t->type == MONO_TYPE_I) {
+			// FIXME: JIT temporaries have type I
 			set_slot (slots, nslots, pos, SLOT_PIN);
 			continue;
 		}
