@@ -497,6 +497,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			continue;
 
 		if (t->byref || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_I || t->type == MONO_TYPE_U) {
+			// FIXME: Why is PTR/I/U needs to be treated this way ?
 			set_slot (slots, nslots, pos, SLOT_PIN);
 			continue;
 		}
@@ -655,6 +656,7 @@ mini_gc_init_cfg (MonoCompile *cfg)
  * - it makes two passes over the stack
  * - the stack walk is slow
  * - only the locals are scanned precisely
+ * - vtypes/refs used in EH regions are treated conservatively
  * - the computation of the GC maps is slow since it involves a liveness analysis pass
  * - the GC maps are uncompressed and take up a lot of memory.
  * - if the code is finished, less pinning will be done, causing problems because
