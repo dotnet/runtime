@@ -325,10 +325,13 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 	DEBUG (printf ("Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
 
-	scanned_stacks_stat += stack_end - stack_start;
-	scanned_stat += scanned;
-	scanned_precisely_stat += scanned_precisely;
-	scanned_conservatively_stat += scanned - scanned_precisely;
+	if (precise) {
+		scanned_precisely_stat += scanned_precisely;
+	} else {
+		scanned_stacks_stat += stack_end - stack_start;
+		scanned_stat += scanned;
+		scanned_conservatively_stat += scanned_conservatively;
+	}
 
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
 }
