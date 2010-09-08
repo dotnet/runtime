@@ -129,10 +129,12 @@ mono_monitor_cleanup (void)
 
 	/*DeleteCriticalSection (&monitor_mutex);*/
 
+	/* FIXME: This seems to cause crashes with SGEN
 	for (marray = monitor_allocated; marray; marray = next) {
 		next = marray->next;
 		g_free (marray);
 	}
+	*/
 }
 
 /*
