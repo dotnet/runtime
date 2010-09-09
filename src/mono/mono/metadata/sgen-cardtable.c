@@ -61,12 +61,6 @@ sgen_card_table_region_begin_scanning (mword start, mword end)
 	return FALSE;
 }
 
-void
-sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards)
-{
-	memcpy (dest, sgen_card_table_get_shadow_card_address (address), cards);
-}
-
 #else
 
 static gboolean
@@ -88,15 +82,29 @@ sgen_card_table_region_begin_scanning (mword start, mword size)
 	return res;
 }
 
-void
-sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards)
-{
-	guint8 *src = sgen_card_table_get_card_address (address);
-	memcpy (dest, src, cards);
-	memset (src, 0, cards);
-}
-
 #endif
+
+/*FIXME this assumes that major blocks are multiple of 4K which is pretty reasonable */
+gboolean
+sgen_card_table_get_card_data (guint8 *data_dest, mword address, mword cards)
+{
+	mword *start = (mword*)sgen_card_table_get_card_scan_address (address);
+	mword *dest = (mword*)data_dest;
+	mword *end = (mword*)(data_dest + cards);
+	mword mask = 0;
+
+	for (; dest < end; ++dest) {
+		mword v = *start;
+		*dest = v;
+		mask |= v;
+
+#ifndef SGEN_HAVE_OVERLAPPING_CARDS
+		*start++ = 0;
+#endif
+	}
+
+	return mask;
+}
 
 static gboolean
 sgen_card_table_address_is_marked (mword address)

@@ -1271,11 +1271,15 @@ major_scan_card_table (SgenGrayQueue *queue)
 
 		if (block_obj_size >= CARD_SIZE_IN_BYTES) {
 			guint8 cards [CARDS_PER_BLOCK];
-			char *obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, 0);
-			char *end = start + MS_BLOCK_SIZE;
-			char *base = sgen_card_table_align_pointer (obj);
+			char *obj, *end, *base;
 
-			sgen_card_table_get_card_data (cards, (mword)start, CARDS_PER_BLOCK);
+			if (!sgen_card_table_get_card_data (cards, (mword)start, CARDS_PER_BLOCK))
+				continue;
+
+			obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, 0);
+			end = start + MS_BLOCK_SIZE;
+			base = sgen_card_table_align_pointer (obj);
+
 
 			while (obj < end) {
 				if (MS_OBJ_ALLOCED_FAST (obj, block_start)) {
