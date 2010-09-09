@@ -615,12 +615,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 	arg_info [0].offset = offset;
 
+	if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 0) {
+		args_size += sizeof (gpointer);
+		offset += 4;
+	}
+
 	if (csig->hasthis) {
 		args_size += sizeof (gpointer);
 		offset += 4;
 	}
 
-	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
+	if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && csig->hasthis) {
+		/* Emitted after this */
 		args_size += sizeof (gpointer);
 		offset += 4;
 	}
@@ -641,6 +647,12 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		offset += pad;
 		arg_info [k + 1].offset = offset;
 		offset += size;
+
+		if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && !csig->hasthis) {
+			/* Emitted after the first arg */
+			args_size += sizeof (gpointer);
+			offset += 4;
+		}
 	}
 
 	if (mono_do_x86_stack_align && !CALLCONV_IS_STDCALL (csig))
