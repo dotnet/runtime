@@ -51,6 +51,9 @@ Conflicts:      f-spot < 0.4
 Conflicts:      helix-banshee < 1.0
 Conflicts:      mono-addins < 0.3.1
 Recommends:     libgdiplus0 >= 2.6
+%if %llvm == yes
+Recommends:     libmono-llvm0 = %{version}-%{release}
+%endif
 Provides:       mono(Commons.Xml.Relaxng) = 1.0.5000.0
 Provides:       mono(CustomMarshalers) = 1.0.5000.0
 Provides:       mono(I18N) = 1.0.5000.0
@@ -67,6 +70,7 @@ Provides:       mono(System.Security) = 1.0.5000.0
 Provides:       mono(System.Xml) = 1.0.5000.0
 Provides:       mono(mscorlib) = 1.0.5000.0
 
+%define _use_internal_dependency_generator 0
 %define __find_provides env sh -c 'filelist=($(cat)) && { printf "%s\\n" "${filelist[@]}" | /usr/lib/rpm/find-provides && printf "%s\\n" "${filelist[@]}" | prefix=%{buildroot}%{_prefix} %{buildroot}%{_bindir}/mono-find-provides ; } | sort | uniq'
 %define __find_requires env sh -c 'filelist=($(cat)) && { printf "%s\\n" "${filelist[@]}" | /usr/lib/rpm/find-requires && printf "%s\\n" "${filelist[@]}" | prefix=%{buildroot}%{_prefix} %{buildroot}%{_bindir}/mono-find-requires ; } | sort | uniq'
 
@@ -428,7 +432,6 @@ Obsoletes:      mono-novell-directory
 Provides:       mono-directory
 Provides:       mono-ms-enterprise
 Provides:       mono-novell-directory
-Provides:       mono(Mono.Data) = 1.0.5000.0
 Provides:       mono(Mono.Data.Tds) = 1.0.5000.0
 Provides:       mono(Novell.Directory.Ldap) = 1.0.5000.0
 Provides:       mono(System.Data) = 1.0.5000.0
@@ -724,6 +727,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %config %_sysconfdir/mono/2.0/Browsers
 %config %_sysconfdir/mono/2.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/2.0/web.config
+%config %_sysconfdir/mono/4.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/4.0/web.config
 %config %_sysconfdir/mono/browscap.ini
 %config %_sysconfdir/mono/mconfig/config.xml
@@ -1098,6 +1102,7 @@ License:        LGPL v2.1 only
 Summary:        Monodoc - Documentation tools for C# code
 Group:          Development/Tools/Other
 Obsoletes:      monodoc
+Provides:       monodoc
 # Added to uncompress and compare documentation used by build-compare
 Requires:       unzip
 
@@ -1140,15 +1145,21 @@ Monodoc-core contains documentation tools for C#.
 License:        LGPL v2.1 only
 Summary:        Install everything built from the mono source tree
 Group:          Development/Languages/Mono
-Requires:       bytefx-data-mysql = %version-%release
 Requires:       ibm-data-db2 = %version-%release
+Requires:       libmono-2_0-1 = %version-%release
+Requires:       libmono-2_0-devel = %version-%release
+%if %llvm == yes
+Requires:       libmono-llvm0 = %version-%release
+%endif
+%if %sgen == yes
+Requires:       libmonosgen-2_0-0 = %version-%release
+Requires:       libmonosgen-2_0-devel = %version-%release
+%endif
 Requires:       mono-core = %version-%release
 Requires:       mono-data = %version-%release
-Requires:       mono-data-firebird = %version-%release
 Requires:       mono-data-oracle = %version-%release
 Requires:       mono-data-postgresql = %version-%release
 Requires:       mono-data-sqlite = %version-%release
-Requires:       mono-data-sybase = %version-%release
 Requires:       mono-devel = %version-%release
 Requires:       mono-extras = %version-%release
 Requires:       mono-locale-extras = %version-%release
@@ -1156,6 +1167,8 @@ Requires:       mono-nunit = %version-%release
 Requires:       mono-wcf = %version-%release
 Requires:       mono-web = %version-%release
 Requires:       mono-winforms = %version-%release
+Requires:       mono-winfxcore = %version-%release
+Requires:       monodoc-core = %version-%release
 
 %description -n mono-complete
 The Mono Project is an open development initiative that is working to
