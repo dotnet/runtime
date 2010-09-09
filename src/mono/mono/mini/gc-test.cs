@@ -451,4 +451,31 @@ class Tests {
 		o.GetHashCode ();
 		return 0;
 	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static object alloc_string () {
+		return "A";
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static object alloc_obj_and_gc () {
+		GC.Collect (1);
+		return new object ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void liveness_9_call1 (object o1, object o2, object o3) {
+		o1.GetHashCode ();
+		o2.GetHashCode ();
+		o3.GetHashCode ();
+	}
+
+	// Liveness + JIT temporaries
+	public static int test_0_liveness_9 () {
+		// the result of alloc_obj () goes into a vreg, which gets converted to the
+		// JIT temporary because of the branching introduced by the cast
+		// FIXME: This doesn't crash if MONO_TYPE_I is not treated as a GC ref
+		liveness_9_call1 (alloc_obj (), (string)alloc_string (), alloc_obj_and_gc ());
+		return 0;
+	}
 }
