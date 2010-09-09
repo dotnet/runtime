@@ -380,6 +380,13 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		/* Without liveness info, the live ranges are not precise enough */
 		return;
 
+	if (cfg->header->num_clauses)
+		/*
+		 * The calls to the finally clauses don't show up in the cfg. See
+		 * test_0_liveness_8 ().
+		 */
+		return;
+
 	mono_analyze_liveness_gc (cfg);
 
 #ifdef TARGET_AMD64
