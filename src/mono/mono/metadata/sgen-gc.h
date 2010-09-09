@@ -185,6 +185,8 @@ const static int restart_signal_num = SIGXCPU;
  * Recursion is not allowed for the thread lock.
  */
 #define LOCK_DECLARE(name) pthread_mutex_t name = PTHREAD_MUTEX_INITIALIZER
+/* if changing LOCK_INIT to something that isn't idempotent, look at
+   its use in mono_gc_base_init in sgen-gc.c */
 #define LOCK_INIT(name)
 #define LOCK_GC pthread_mutex_lock (&gc_mutex)
 #define UNLOCK_GC pthread_mutex_unlock (&gc_mutex)

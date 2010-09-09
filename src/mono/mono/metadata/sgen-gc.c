@@ -6357,6 +6357,10 @@ mono_gc_base_init (void)
 	char *major_collector = NULL;
 	struct sigaction sinfo;
 
+	/* the gc_initialized guard seems to imply this method is
+	   idempotent, but LOCK_INIT(gc_mutex) might not be.  It's
+	   defined in sgen-gc.h as nothing, so there's no danger at
+	   present. */
 	LOCK_INIT (gc_mutex);
 	LOCK_GC;
 	if (gc_initialized) {

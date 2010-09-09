@@ -228,6 +228,12 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debug_initialized = TRUE;
 	mono_debug_format = format;
 
+	/*
+	 * This must be called before mono_debugger_initialize(), because the
+	 * latter registers GC roots.
+	 */
+	mono_gc_base_init ();
+
 	mono_debugger_initialize (_mono_debug_using_mono_debugger);
 
 	mono_debugger_lock ();
