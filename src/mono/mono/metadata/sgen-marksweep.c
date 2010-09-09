@@ -1260,7 +1260,6 @@ major_scan_card_table (SgenGrayQueue *queue)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		int i;
 		int block_obj_size;
 		char *start, *block_start;
 
@@ -1286,15 +1285,20 @@ major_scan_card_table (SgenGrayQueue *queue)
 				obj += block_obj_size;
 			}
 		} else {
-			for (i = 0; i < CARDS_PER_BLOCK; ++i, start += CARD_SIZE_IN_BYTES) {
+			guint8 *card_data = sgen_card_table_get_card_scan_address ((mword)start);
+			char *end = start + MS_BLOCK_SIZE;
+
+			for (; start < end; start += CARD_SIZE_IN_BYTES, ++card_data) {
 				int index;
 				char *obj, *end;
 
-				if (!sgen_card_table_card_begin_scanning ((mword)start))
+				if (!*card_data)
 					continue;
 
+				sgen_card_table_prepare_card_for_scanning (card_data);
+
 				end = start + CARD_SIZE_IN_BYTES;
-				if (i == 0)
+				if (start == block_start)
 					index = 0;
 				else
 					index = MS_BLOCK_OBJ_INDEX_FAST (start, block_start, block_obj_size);

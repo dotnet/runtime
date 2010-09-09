@@ -71,6 +71,13 @@ sgen_card_table_card_begin_scanning (mword address)
 	return *sgen_card_table_get_shadow_card_address (address) != 0;
 }
 
+static inline void
+sgen_card_table_prepare_card_for_scanning (guint8 *card)
+{
+}
+
+#define sgen_card_table_get_card_scan_address sgen_card_table_get_shadow_card_address
+
 #else
 
 static inline guint8*
@@ -87,6 +94,15 @@ sgen_card_table_card_begin_scanning (mword address)
 	*card = 0;
 	return res;
 }
+
+static inline void
+sgen_card_table_prepare_card_for_scanning (guint8 *card)
+{
+	*card = 0;
+}
+
+#define sgen_card_table_get_card_scan_address sgen_card_table_get_card_address
+
 #endif
 
 #endif

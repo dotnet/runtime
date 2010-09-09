@@ -243,6 +243,7 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 		return;
 
 	if (vt->rank) {
+		guint8 *card_data;
 		MonoArray *arr = (MonoArray*)obj;
 		mword desc = (mword)klass->element_class->gc_descr;
 		char *start = sgen_card_table_align_pointer (obj);
@@ -251,16 +252,21 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 
 		g_assert (desc);
 
-		for (; start <= end; start += CARD_SIZE_IN_BYTES) {
+		if (cards)
+			card_data = cards;
+		else
+			card_data = sgen_card_table_get_card_scan_address ((mword)obj);
+
+
+		for (; start < end; start += CARD_SIZE_IN_BYTES, ++card_data) {
 			char *elem, *card_end;
 			uintptr_t index;
 
-			if (cards) {
-				if (!*cards++)
-					continue;
-			} else if (!sgen_card_table_card_begin_scanning ((mword)start)) {
+			if (!*card_data)
 				continue;
-			}
+
+			if (!cards)
+				sgen_card_table_prepare_card_for_scanning (card_data);
 
 			card_end = start + CARD_SIZE_IN_BYTES;
 			if (end < card_end)
