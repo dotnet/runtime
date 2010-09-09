@@ -421,4 +421,34 @@ class Tests {
 
 		return 0;
 	}
+
+	// Liveness + finally clauses
+	public static int test_0_liveness_8 () {
+		/* Exhaust all registers so 'o' is stack allocated */
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+
+		object o = null;
+		try {
+			o = alloc_obj ();
+		} finally {
+			GC.Collect (1);
+		}
+
+		o.GetHashCode ();
+		return 0;
+	}
 }
