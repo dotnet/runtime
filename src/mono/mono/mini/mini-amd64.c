@@ -1703,7 +1703,7 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 	switch (storage) {
 	case ArgInIReg:
 		MONO_INST_NEW (cfg, ins, OP_MOVE);
-		ins->dreg = mono_alloc_ireg (cfg);
+		ins->dreg = vreg_is_ref (cfg, tree->dreg) ? mono_alloc_ireg_ref (cfg) : mono_alloc_ireg (cfg);
 		ins->sreg1 = tree->dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
 		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, FALSE);

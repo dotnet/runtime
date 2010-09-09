@@ -117,8 +117,20 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 static int precise_frame_count [2], precise_frame_limit = -1;
 static gboolean precise_frame_limit_inited;
 
-static int scanned_stacks_stat;
-static int scanned_stat, scanned_precisely_stat, scanned_conservatively_stat;
+/* Stats */
+typedef struct {
+	int scanned_stacks;
+	int scanned;
+	int scanned_precisely;
+	int scanned_conservatively;
+
+	int all_slots;
+	int noref_slots;
+	int ref_slots;
+	int pin_slots;
+} JITGCStats;
+
+static JITGCStats stats;
 
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
 
@@ -140,7 +152,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	if (mono_thread_internal_current () == NULL || !tls) {
 		if (!precise) {
 			mono_gc_conservatively_scan_area (stack_start, stack_end);
-			scanned_stacks_stat += stack_end - stack_start;
+			stats.scanned_stacks += stack_end - stack_start;
 		}
 		return;
 	}
@@ -326,11 +338,11 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	DEBUG (printf ("Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
 
 	if (precise) {
-		scanned_precisely_stat += scanned_precisely;
+		stats.scanned_precisely += scanned_precisely;
 	} else {
-		scanned_stacks_stat += stack_end - stack_start;
-		scanned_stat += scanned;
-		scanned_conservatively_stat += scanned_conservatively;
+		stats.scanned_stacks += stack_end - stack_start;
+		stats.scanned += scanned;
+		stats.scanned_conservatively += scanned_conservatively;
 	}
 
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
@@ -503,11 +515,25 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			/* Vret addr etc. */
 			continue;
 
-		if (t->byref || t->type == MONO_TYPE_I) {
-			// FIXME: JIT temporaries have type I
+		if (t->byref) {
 			set_slot (slots, nslots, pos, SLOT_PIN);
 			continue;
 		}
+
+		/*
+		 * This is currently disabled, but could be enabled to debug crashes.
+		 */
+#if 0
+		if (t->type == MONO_TYPE_I) {
+			/*
+			 * Variables created in mono_handle_global_vregs have type I, but they
+			 * could hold GC refs since the vregs they were created from might not been
+			 * marked as holding a GC ref. So be conservative.
+			 */
+			set_slot (slots, nslots, pos, SLOT_PIN);
+			continue;
+		}
+#endif
 
 		if (MONO_TYPE_IS_REFERENCE (ins->inst_vtype)) {
 			if (vmv && !vmv->gc_interval) {
@@ -593,6 +619,20 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	}
 #endif
 
+	stats.all_slots += nslots;
+	if (map->slots) {
+		for (i = 0; i < nslots; ++i) {
+			if (map->slots [i] == SLOT_REF)
+				stats.ref_slots ++;
+			else if (map->slots [i] == SLOT_NOREF)
+				stats.noref_slots ++;
+			else
+				stats.pin_slots ++;
+		}
+	} else {
+		stats.noref_slots += nslots;
+	}
+
 	cfg->jit_info->gc_info = map;
 
 	g_free (live_intervals);
@@ -613,14 +653,23 @@ mini_gc_init (void)
 	mono_counters_register ("GC Maps size",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_maps_size);
 
+	mono_counters_register ("GC Map slots (all)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.all_slots);
+	mono_counters_register ("GC Map slots (ref)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.ref_slots);
+	mono_counters_register ("GC Map slots (noref)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.noref_slots);
+	mono_counters_register ("GC Map slots (pin)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.pin_slots);
+
 	mono_counters_register ("Stack space scanned (all)",
-							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_stacks_stat);
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_stacks);
 	mono_counters_register ("Stack space scanned (using GC Maps)",
-							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_stat);
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned);
 	mono_counters_register ("Stack space scanned (precise)",
-							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_precisely_stat);
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_precisely);
 	mono_counters_register ("Stack space scanned (conservative)",
-							MONO_COUNTER_GC | MONO_COUNTER_INT, &scanned_conservatively_stat);
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_conservatively);
 }
 
 #else

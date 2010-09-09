@@ -203,6 +203,17 @@ mono_alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 	return alloc_dreg (cfg, stack_type);
 }
 
+/*
+ * mono_alloc_ireg_ref:
+ *
+ *   Allocate an IREG, and mark it as holding a GC ref.
+ */
+guint32
+mono_alloc_ireg_ref (MonoCompile *cfg)
+{
+	return alloc_ireg_ref (cfg);
+}
+
 guint
 mono_type_to_regmove (MonoCompile *cfg, MonoType *type)
 {
@@ -11011,7 +11022,10 @@ mono_handle_global_vregs (MonoCompile *cfg)
 
 						switch (regtype) {
 						case 'i':
-							mono_compile_create_var_for_vreg (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL, vreg);
+							if (vreg_is_ref (cfg, vreg))
+								mono_compile_create_var_for_vreg (cfg, &mono_defaults.object_class->byval_arg, OP_LOCAL, vreg);
+							else
+								mono_compile_create_var_for_vreg (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL, vreg);
 							break;
 						case 'l':
 							mono_compile_create_var_for_vreg (cfg, &mono_defaults.int64_class->byval_arg, OP_LOCAL, vreg);

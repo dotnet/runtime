@@ -1029,6 +1029,12 @@ enum {
 
 #define vreg_is_volatile(cfg, vreg) (G_UNLIKELY (get_vreg_to_inst ((cfg), (vreg)) && (get_vreg_to_inst ((cfg), (vreg))->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))))
 
+#ifdef HAVE_SGEN_GC
+#define vreg_is_ref(cfg, vreg) ((vreg) < (cfg)->vreg_is_ref_len ? (cfg)->vreg_is_ref [(vreg)] : 0)
+#else
+#define vreg_is_ref(cfg, vreg) FALSE
+#endif
+
 /*
  * Control Flow Graph and compilation unit information
  */
@@ -1191,6 +1197,13 @@ typedef struct {
 
 	/* Size of above array */
 	guint32 vreg_to_inst_len;
+
+	/* Marks vregs which hold a GC ref */
+	/* FIXME: Use a bitmap */
+	gboolean *vreg_is_ref;
+
+	/* Size of above array */
+	guint32 vreg_is_ref_len;
 
 	/* 
 	 * The original method to compile, differs from 'method' when doing generic
@@ -1560,6 +1573,8 @@ guint32   mono_alloc_ireg                   (MonoCompile *cfg) MONO_LLVM_INTERNA
 guint32   mono_alloc_freg                   (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 guint32   mono_alloc_preg                   (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 guint32   mono_alloc_dreg                   (MonoCompile *cfg, MonoStackType stack_type) MONO_INTERNAL;
+guint32   mono_alloc_ireg_ref               (MonoCompile *cfg) MONO_LLVM_INTERNAL;
+void      mono_mark_vreg_as_ref             (MonoCompile *cfg, int vreg) MONO_INTERNAL;
 
 void      mono_link_bblock                  (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to) MONO_INTERNAL;
 void      mono_unlink_bblock                (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to) MONO_INTERNAL;
