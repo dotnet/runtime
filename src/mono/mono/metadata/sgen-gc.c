@@ -1250,8 +1250,10 @@ clear_nursery_fragments (char *next)
 	Fragment *frag;
 	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 		g_assert (next <= nursery_frag_real_end);
+		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", next, nursery_frag_real_end));
 		memset (next, 0, nursery_frag_real_end - next);
 		for (frag = nursery_fragments; frag; frag = frag->next) {
+			DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_start, frag->fragment_end));
 			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
 		}
 	}
@@ -2117,11 +2119,12 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 	Fragment *fragment;
 	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
 	binary_protocol_empty (frag_start, frag_size);
-	/* memsetting just the first chunk start is bound to provide better cache locality */
-	if (nursery_clear_policy == CLEAR_AT_GC)
-		memset (frag_start, 0, frag_size);
 	/* Not worth dealing with smaller fragments: need to tune */
 	if (frag_size >= FRAGMENT_MIN_SIZE) {
+		/* memsetting just the first chunk start is bound to provide better cache locality */
+		if (nursery_clear_policy == CLEAR_AT_GC)
+			memset (frag_start, 0, frag_size);
+
 		fragment = alloc_fragment ();
 		fragment->fragment_start = frag_start;
 		fragment->fragment_limit = frag_start;
