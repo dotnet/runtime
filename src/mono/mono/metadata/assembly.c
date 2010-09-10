@@ -954,7 +954,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		if (reference != REFERENCE_MISSING){
 			mono_assembly_addref (reference);
 			if (image->assembly)
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s %p -> %s %p: %d\n",
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s %p -> %s %p: %d",
 				    image->assembly->aname.name, image->assembly, reference->aname.name, reference, reference->ref_count);
 		} else {
 			if (image->assembly)
@@ -1553,7 +1553,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	/* Add a non-temporary reference because of ass->image */
 	mono_image_addref (image);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image addref %s %p -> %s %p: %d\n", ass->aname.name, ass, image->name, image, image->ref_count);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image addref %s %p -> %s %p: %d", ass->aname.name, ass, image->name, image, image->ref_count);
 
 	/* 
 	 * The load hooks might take locks so we can't call them while holding the
