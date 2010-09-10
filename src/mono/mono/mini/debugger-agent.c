@@ -233,7 +233,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 1
+#define MINOR_VERSION 2
 
 typedef enum {
 	CMD_SET_VM = 1,
