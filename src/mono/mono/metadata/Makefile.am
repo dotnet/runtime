@@ -177,6 +177,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-major-copying.c	\
 	sgen-gc.h		\
 	sgen-archdep.h		\
+	sgen-cardtable.h	\
 	sgen-major-copy-object.h \
 	sgen-major-scan-object.h \
 	sgen-protocol.h		\
