@@ -226,6 +226,39 @@ test_shell_argv3 ()
 	return OK;
 }
 
+// This was the 2.8 showstopper error
+RESULT
+test_shell_argv4 ()
+{
+	GError *error;
+	gint argc;
+	gchar **argv;
+	gboolean ret;
+	char *str = "'/usr/bin/gnome-terminal' -e \"bash -c 'read -p \\\"Press any key to continue...\\\" -n1;'\"";
+
+	argv = NULL;
+	argc = 0;
+	error = NULL;
+	ret = g_shell_parse_argv (str, &argc, &argv, &error);
+	if (!ret)
+		return FAILED ("1. It should return TRUE");
+	if (argc != 3)
+		return FAILED ("2. argc was %d", argc);
+	if (argv == NULL)
+		return FAILED ("3. argv[0] was NULL");
+	if (error != NULL)
+		return FAILED ("4. error was set");
+
+	if (strcmp (argv [0], "/usr/bin/gnome-terminal"))
+		return FAILED ("5. Expected /usr/bin/gnome-terminal got %s", argv [0]);
+	if (strcmp (argv [1], "-e"))
+		return FAILED ("6. Expected -e, got: %s", argv [1]);
+	if (strcmp (argv [2], "bash -c 'read -p \"Press any key to continue...\" -n1;'"))
+		return FAILED ("7. Got unexpected result: %s\n", argv [2]);
+	
+	return OK;
+}
+
 RESULT
 test_quote ()
 {
@@ -244,6 +277,7 @@ static Test shell_tests [] = {
 	{"g_shell_parse_argv1", test_shell_argv1},
 	{"g_shell_parse_argv2", test_shell_argv2},
 	{"g_shell_parse_argv3", test_shell_argv3},
+	{"g_shell_parse_argv4", test_shell_argv4},
 	{"g_shell_quote", test_quote},
 	{NULL, NULL}
 };
