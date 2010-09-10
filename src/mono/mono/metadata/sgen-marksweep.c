@@ -1250,6 +1250,49 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	} END_FOREACH_BLOCK;
 }
 
+#define CARD_WORDS_PER_BLOCK (CARDS_PER_BLOCK / SIZEOF_VOID_P)
+/*
+ * MS blocks are 16K aligned.
+ * Cardtables are 4K aligned, at least.
+ * This means that the cardtable of a given block is 32 bytes aligned.
+ */
+static guint8*
+initial_skip_card (guint8 *card_data)
+{
+	mword *cards = (mword*)card_data;
+	mword card;
+	int i;
+	for (i = 0; i < CARD_WORDS_PER_BLOCK; ++i) {
+		card = cards [i];
+		if (card)
+			break;
+	}
+
+	if (i == CARD_WORDS_PER_BLOCK)
+		return card_data + CARDS_PER_BLOCK;
+
+#if defined(__i386__) && defined(__GNUC__)
+	return card_data + i * 4 +  (__builtin_ffs (card) - 1) / 8;
+#elif defined(__x86_64__) && defined(__GNUC__)
+	return card_data + i * 8 +  (__builtin_ffsll (card) - 1) / 8;
+#else
+	for (i = i * SIZEOF_VOID_P; i < CARDS_PER_BLOCK; ++i) {
+		if (card_data [i])
+			return &card_data [i];
+	}
+	return card_data;
+#endif
+}
+
+
+static guint8*
+skip_card (guint8 *card_data, guint8 *card_data_end)
+{
+	while (card_data < card_data_end && !*card_data)
+		++card_data;
+	return card_data;
+}
+
 #define MS_BLOCK_OBJ_INDEX_FAST(o,b,os)	(((char*)(o) - ((b) + MS_BLOCK_SKIP)) / (os))
 #define MS_BLOCK_OBJ_FAST(b,os,i)			((b) + MS_BLOCK_SKIP + (os) * (i))
 #define MS_OBJ_ALLOCED_FAST(o,b)		(*(void**)(o) && (*(char**)(o) < (b) || *(char**)(o) >= (b) + MS_BLOCK_SIZE))
@@ -1261,25 +1304,24 @@ major_scan_card_table (SgenGrayQueue *queue)
 
 	FOREACH_BLOCK (block) {
 		int block_obj_size;
-		char *start, *block_start;
+		char *block_start;
 
 		if (!block->has_references)
 			continue;
 
 		block_obj_size = block->obj_size;
-		start = block_start = block->block;
+		block_start = block->block;
 
 		if (block_obj_size >= CARD_SIZE_IN_BYTES) {
 			guint8 cards [CARDS_PER_BLOCK];
 			char *obj, *end, *base;
 
-			if (!sgen_card_table_get_card_data (cards, (mword)start, CARDS_PER_BLOCK))
+			if (!sgen_card_table_get_card_data (cards, (mword)block_start, CARDS_PER_BLOCK))
 				continue;
 
 			obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, 0);
-			end = start + MS_BLOCK_SIZE;
+			end = block_start + MS_BLOCK_SIZE;
 			base = sgen_card_table_align_pointer (obj);
-
 
 			while (obj < end) {
 				if (MS_OBJ_ALLOCED_FAST (obj, block_start)) {
@@ -1289,20 +1331,24 @@ major_scan_card_table (SgenGrayQueue *queue)
 				obj += block_obj_size;
 			}
 		} else {
-			guint8 *card_data = sgen_card_table_get_card_scan_address ((mword)start);
-			char *end = start + MS_BLOCK_SIZE;
+			guint8 *card_data, *card_base;
+			guint8 *card_data_end;
 
-			for (; start < end; start += CARD_SIZE_IN_BYTES, ++card_data) {
+			card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
+			card_data_end = card_data + CARDS_PER_BLOCK;
+
+			for (card_data = initial_skip_card (card_data); card_data < card_data_end; ++card_data) { //card_data = skip_card (card_data + 1, card_data_end)) {
 				int index;
-				char *obj, *end;
+				int idx = card_data - card_base;
+				char *start = (char*)(block_start + idx * CARD_SIZE_IN_BYTES);
+				char *end = start + CARD_SIZE_IN_BYTES;
+				char *obj;
 
 				if (!*card_data)
 					continue;
-
 				sgen_card_table_prepare_card_for_scanning (card_data);
 
-				end = start + CARD_SIZE_IN_BYTES;
-				if (start == block_start)
+				if (idx == 0)
 					index = 0;
 				else
 					index = MS_BLOCK_OBJ_INDEX_FAST (start, block_start, block_obj_size);
