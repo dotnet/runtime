@@ -1105,6 +1105,18 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 
 					EMIT_NEW_VARLOADA_VREG (cfg, dest, ins->dreg, &ins->klass->byval_arg);
 					mini_emit_initobj (cfg, dest, NULL, ins->klass);
+					
+					if (cfg->compute_gc_maps) {
+						MonoInst *tmp;
+
+						/* 
+						 * Tell the GC map code that the vtype is considered live after
+						 * the initialization.
+						 */
+						MONO_INST_NEW (cfg, tmp, OP_GC_LIVENESS_DEF);
+						tmp->inst_c1 = ins->dreg;
+						MONO_ADD_INS (cfg->cbb, tmp);
+					}
 					break;
 				case OP_STOREV_MEMBASE: {
 					src_var = get_vreg_to_inst (cfg, ins->sreg1);

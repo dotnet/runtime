@@ -371,6 +371,9 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	gboolean norefs = FALSE;
 	GSList **live_intervals;
 	int bitmap_width, bitmap_size;
+	MonoBasicBlock *bb;
+	MonoInst *tmp;
+	int *pc_offsets;
 
 	/*
 	 * Since we currently don't use GC safe points, we need to create GC maps which
@@ -440,6 +443,23 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	live_intervals = g_new0 (GSList*, nslots);
 	loffset = 0;
 
+	/*
+	 * Compute the offset where variables are initialized in the first bblock, if any.
+	 */
+	pc_offsets = g_new0 (int, cfg->next_vreg);
+
+	bb = cfg->bb_entry->next_bb;
+	MONO_BB_FOR_EACH_INS (bb, tmp) {
+		if (tmp->opcode == OP_GC_LIVENESS_DEF) {
+			int vreg = tmp->inst_c1;
+			if (pc_offsets [vreg] == 0) {
+				g_assert (tmp->backend.pc_offset > 0);
+				pc_offsets [vreg] = tmp->backend.pc_offset;
+			}
+			break;
+		}
+	}
+
 	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
 		MonoType *t = ins->inst_vtype;
@@ -465,7 +485,9 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		if ((MONO_TYPE_ISSTRUCT (t) && ins->klass->has_references)) {
 			int numbits, j;
 			gsize *bitmap;
-			gboolean pin;
+			gboolean pin = FALSE;
+			MonoLiveInterval *interval = NULL;
+			int size;
 
 			if (ins->klass->generic_container || mono_class_is_open_constructed_type (t)) {
 				/* FIXME: Generic sharing */
@@ -484,11 +506,18 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 					}
 					g_free (bitmap);
 
-					if (cfg->verbose_level > 1)
-						printf ("\tvtype at fp+0x%x: %s -> 0x%x\n", (int)ins->inst_offset, mono_type_full_name (ins->inst_vtype), (int)ins->inst_offset);
-
-					// FIXME: These have no live range
-					pin = TRUE;
+					/*
+					 * Most vtypes are marked volatile because of the LDADDR instructions,
+					 * and they have no liveness information since they are decomposed
+					 * before the liveness pass. We emit OP_GC_LIVENESS_DEF instructions for
+					 * them during VZERO decomposition.
+					 */
+					if (pc_offsets [vmv->vreg]) {
+						interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+						mono_linterval_add_range (cfg, interval, pc_offsets [vmv->vreg], cfg->code_size);
+					} else {
+						pin = TRUE;
+					}
 				} else {
 					// FIXME:
 					pin = TRUE;
@@ -498,16 +527,28 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			if (ins->backend.is_pinvoke)
 				pin = TRUE;
 
-			if (pin) {
-				int size;
+			if (ins->backend.is_pinvoke)
+				size = mono_class_native_size (ins->klass, NULL);
+			else
+				size = mono_class_value_size (ins->klass, NULL);
 
-				if (ins->backend.is_pinvoke)
-					size = mono_class_native_size (ins->klass, NULL);
-				else
-					size = mono_class_value_size (ins->klass, NULL);
+			if (!pin) {
+				for (j = 0; j < size / sizeof (gpointer); ++j)
+					live_intervals [pos + j] = g_slist_prepend_mempool (cfg->mempool, live_intervals [pos + j], interval);
+			} else {
 				for (j = 0; j < size / sizeof (gpointer); ++j)
 					set_slot (slots, nslots, pos + j, SLOT_PIN);
 			}
+
+			if (cfg->verbose_level > 1) {
+				printf ("\tvtype R%d at fp+0x%x-0x%x: %s ", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / sizeof (gpointer))), mono_type_full_name (ins->inst_vtype));
+				if (interval)
+					mono_linterval_print (interval);
+				else
+					printf ("(pinned)");
+				printf ("\n");
+			}
+
 			continue;
 		}
 
@@ -542,8 +583,19 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			}
 
 			if (ins->flags & (MONO_INST_VOLATILE | MONO_INST_INDIRECT)) {
-				set_slot (slots, nslots, pos, SLOT_PIN);
-				continue;
+				/*
+				 * For volatile variables, treat them alive from the point they are
+				 * initialized in the first bblock until the end of the method.
+				 * FIXME: A var might be valid before that because of ldaddr
+				 * -> treat it as pin before that.
+				 */
+				if (pc_offsets [vmv->vreg]) {
+					vmv->gc_interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+					mono_linterval_add_range (cfg, vmv->gc_interval, pc_offsets [vmv->vreg], cfg->code_size);
+				} else {
+					set_slot (slots, nslots, pos, SLOT_PIN);
+					continue;
+				}
 			}
 
 			set_slot (slots, nslots, pos, SLOT_REF);
@@ -636,6 +688,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	cfg->jit_info->gc_info = map;
 
 	g_free (live_intervals);
+	g_free (pc_offsets);
 }
 
 void
