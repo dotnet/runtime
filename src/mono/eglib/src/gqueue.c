@@ -105,3 +105,9 @@ g_queue_free (GQueue *queue)
 	g_list_free (queue->head);
 	g_free (queue);
 }
+
+void 
+g_queue_foreach (GQueue *queue, GFunc func, gpointer user_data)
+{
+	g_list_foreach (queue->head, func, user_data);
+}
