@@ -160,15 +160,17 @@ static void
 thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise)
 {
 	TlsData *tls = user_data;
-	MonoJitInfo *ji, res;
+	MonoJitInfo *ji;
 	MonoContext ctx, new_ctx;
 	MonoLMF *lmf;
 	guint8 *stack_limit;
-	gboolean last = TRUE, managed;
+	gboolean last = TRUE;
 	GCMap *map;
 	guint8* fp, *locals_start, *locals_end;
 	int i, pc_offset;
 	int scanned = 0, scanned_precisely, scanned_conservatively;
+	gboolean res;
+	StackFrameInfo frame;
 
 	/* tls == NULL can happen during startup */
 	if (mono_thread_internal_current () == NULL || !tls) {
@@ -180,6 +182,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	}
 
 	lmf = tls->lmf;
+	frame.domain = NULL;
 
 	/* Number of bytes scanned based on GC map data */
 	scanned = 0;
@@ -187,10 +190,6 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	scanned_precisely = 0;
 	/* Number of bytes scanned conservatively based on GC map data */
 	scanned_conservatively = 0;
-
-	/* FIXME: sgen-gc.c calls this multiple times for each major collection from pin_from_roots */
-
-	/* FIXME: Use real gc descriptors instead of bitmaps */
 
 	/* This is one past the last address which we have scanned */
 	stack_limit = stack_start;
@@ -207,11 +206,13 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 		g_assert ((guint64)stack_limit % sizeof (gpointer) == 0);
 
-		// FIXME: This doesn't work with appdomain transitions
-		ji = mono_find_jit_info (mono_domain_get (), tls->jit_tls, &res, NULL,
-								 &ctx, &new_ctx, NULL, &lmf, NULL, &managed);
-		if (ji == (gpointer)-1)
+#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
+		res = mono_find_jit_info_ext (frame.domain ? frame.domain : mono_domain_get (), tls->jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
+		if (!res)
 			break;
+#else
+		break;
+#endif
 
 		/* The last frame can be in any state so mark conservatively */
 		if (last) {
@@ -220,8 +221,10 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		}
 
 		/* These frames are returned by mono_find_jit_info () two times */
-		if (!managed)
+		if (!frame.managed)
 			continue;
+
+		/* All the other frames are at a call site */
 
 		/* Scan the frame of this method */
 
@@ -235,6 +238,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		 * Currently, only the locals are scanned precisely.
 		 */
 
+		ji = frame.ji;
 		map = ji->gc_info;
 
 		if (!map) {
