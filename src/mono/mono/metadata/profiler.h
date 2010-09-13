@@ -108,7 +108,7 @@ typedef void (*MonoProfileAssemblyResult) (MonoProfiler *prof, MonoAssembly *ass
 
 typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *parent, MonoMethod *child, int *ok);
 
-typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, intptr_t tid);
+typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, uintptr_t tid);
 typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
 typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, mono_byte *ip, void *context);
 typedef void (*MonoProfileStatCallChainFunc) (MonoProfiler *prof, int call_chain_depth, mono_byte **ip, void *context);
