@@ -488,7 +488,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			continue;
 
 		if ((MONO_TYPE_ISSTRUCT (t) && ins->klass->has_references)) {
-			int numbits, j;
+			int numbits = 0, j;
 			gsize *bitmap;
 			gboolean pin = FALSE;
 			MonoLiveInterval *interval = NULL;
@@ -502,29 +502,20 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 				bitmap = mono_gc_get_bitmap_for_descr (ins->klass->gc_descr, &numbits);
 
-				if (bitmap) {
-					for (j = 0; j < numbits; ++j) {
-						if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
-							/* The descriptor is for the boxed object */
-							set_slot (slots, nslots, (pos + j - (sizeof (MonoObject) / sizeof (gpointer))), SLOT_REF);
-						}
-					}
-					g_free (bitmap);
-
-					/*
-					 * Most vtypes are marked volatile because of the LDADDR instructions,
-					 * and they have no liveness information since they are decomposed
-					 * before the liveness pass. We emit OP_GC_LIVENESS_DEF instructions for
-					 * them during VZERO decomposition.
-					 */
-					if (pc_offsets [vmv->vreg]) {
-						interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
-						mono_linterval_add_range (cfg, interval, pc_offsets [vmv->vreg], cfg->code_size);
-					} else {
-						pin = TRUE;
-					}
-				} else {
+				if (!bitmap)
 					// FIXME:
+					pin = TRUE;
+
+				/*
+				 * Most vtypes are marked volatile because of the LDADDR instructions,
+				 * and they have no liveness information since they are decomposed
+				 * before the liveness pass. We emit OP_GC_LIVENESS_DEF instructions for
+				 * them during VZERO decomposition.
+				 */
+				if (pc_offsets [vmv->vreg]) {
+					interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+					mono_linterval_add_range (cfg, interval, pc_offsets [vmv->vreg], cfg->code_size);
+				} else {
 					pin = TRUE;
 				}
 			}
@@ -537,15 +528,26 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			else
 				size = mono_class_value_size (ins->klass, NULL);
 
+			if (bitmap) {
+				for (j = 0; j < numbits; ++j) {
+					if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
+						/* The descriptor is for the boxed object */
+						set_slot (slots, nslots, (pos + j - (sizeof (MonoObject) / sizeof (gpointer))), pin ? SLOT_PIN : SLOT_REF);
+					}
+				}
+			} else if (pin) {
+				for (j = 0; j < size / sizeof (gpointer); ++j)
+					set_slot (slots, nslots, pos + j, SLOT_PIN);
+			}
+
 			if (!pin) {
 				for (j = 0; j < size / sizeof (gpointer); ++j) {
 					live_intervals [pos + j] = g_slist_prepend_mempool (cfg->mempool, live_intervals [pos + j], interval);
 					starts_pinned [pos + j] = TRUE;
 				}
-			} else {
-				for (j = 0; j < size / sizeof (gpointer); ++j)
-					set_slot (slots, nslots, pos + j, SLOT_PIN);
 			}
+
+			g_free (bitmap);
 
 			if (cfg->verbose_level > 1) {
 				printf ("\tvtype R%d at fp+0x%x-0x%x: %s ", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / sizeof (gpointer))), mono_type_full_name (ins->inst_vtype));
