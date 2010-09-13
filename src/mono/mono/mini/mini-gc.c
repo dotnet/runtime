@@ -50,6 +50,12 @@ typedef struct {
 	MonoJitTlsData *jit_tls;
 } TlsData;
 
+/*
+ * The GC type of a stack slot.
+ * This can change through the method as follows:
+ * - a SLOT_REF can become SLOT_NOREF and vice-versa when it becomes live/dead.
+ * - a SLOT_PIN can become SLOT_REF after it has been definitely assigned.
+ */
 typedef enum {
 	/* Stack slot doesn't contain a reference */
 	SLOT_NOREF = 0,
@@ -72,18 +78,29 @@ typedef struct {
 	int locals_size;
 	/* The number of stack slots */
 	int nslots;
-	/* The width of the liveness bitmap in bytes */
+	/* Thw width of the bitmap in bytes */
 	int bitmap_width;
+	guint has_pin_slots : 1;
+	guint has_ref_slots : 1;
 	/* 
-	 * The gc map itself.
-	 */
-	StackSlotType *slots;
-	/* 
-	 * A bitmap whose width is equal to the number of SLOT_REF values in gc_refs, and whose
+	 * A bitmap whose width is equal to bitmap_width, and whose
 	 * height is equal to the number of possible PC offsets.
-	 * This needs to be compressed later.
+	 * The bitmap contains a 1 if the corresponding stack slot has type SLOT_REF at the
+	 * given pc offset.
+	 * FIXME: Compress this.
+	 * FIXME: Embed this after the structure.
 	 */
-	guint8 bitmap [MONO_ZERO_LEN_ARRAY];
+	guint8 *ref_bitmap;
+	/*
+	 * Same for SLOT_PIN. It is possible that the same bit is set in both bitmaps at different
+	 * pc offsets, if the slot starts out as PIN, and later changes to REF.
+	 */
+	guint8 *pin_bitmap;
+	/*
+	 * A bit array marking slots which contain refs.
+	 * This is used only for debugging.
+	 */
+	guint8 *ref_slots;
 } GCMap;
 
 /* Statistics */
@@ -134,6 +151,13 @@ static JITGCStats stats;
 
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
 
+/*
+ * thread_mark_func:
+ *
+ *   This is called by the GC twice to mark a thread stack. PRECISE is FALSE at the first
+ * call, and TRUE at the second. USER_DATA points to a TlsData
+ * structure filled up by thread_suspend_func. 
+ */
 static void
 thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise)
 {
@@ -275,12 +299,15 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 				mono_gc_conservatively_scan_area (stack_limit, locals_start);
 			}
 
-			if (map->slots) {
+			if (map->has_pin_slots) {
+				guint8 *pin_bitmap = &map->pin_bitmap [(map->bitmap_width * pc_offset)];
 				guint8 *p;
+				gboolean pinned;
 
 				p = locals_start;
 				for (i = 0; i < map->nslots; ++i) {
-					if (map->slots [i] == SLOT_PIN) {
+					pinned = pin_bitmap [i / 8] & (1 << (i % 8));
+					if (pinned) {
 						DEBUG (printf ("\tscan slot %s0x%x(fp)=%p.\n", (guint8*)p > (guint8*)fp ? "" : "-", ABS ((int)((gssize)p - (gssize)fp)), p));
 						mono_gc_conservatively_scan_area (p, p + sizeof (gpointer));
 						scanned_conservatively += sizeof (gpointer);
@@ -291,27 +318,28 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 			stack_limit = locals_end;
 		} else {
-			if (map->slots) {
-				int loffset = 0;
-				guint8 *bitmap = &map->bitmap [(map->bitmap_width * pc_offset)];
-				gboolean live;
+			if (map->has_ref_slots) {
+				guint8 *ref_bitmap = &map->ref_bitmap [(map->bitmap_width * pc_offset)];
+				guint8 *pinned_bitmap = &map->pin_bitmap [(map->bitmap_width * pc_offset)];
+				gboolean live, pinned;
 
 				for (i = 0; i < map->nslots; ++i) {
-					if (map->slots [i] == SLOT_REF) {
-						MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
+					MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
+
+					live = ref_bitmap [i / 8] & (1 << (i % 8));
+					pinned = map->has_pin_slots ? pinned_bitmap [i / 8] & (1 << (i % 8)) : 0;
+
+					if (live) {
 						MonoObject *obj = *ptr;
-
-						live = bitmap [loffset / 8] & (1 << (loffset % 8));
-
-						if (live) {
-							if (obj) {
-								DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
-								*ptr = mono_gc_scan_object (obj);
-								DEBUG (printf (" %p.\n", *ptr));
-							} else {
-								DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
-							}
+						if (obj) {
+							DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+							*ptr = mono_gc_scan_object (obj);
+							DEBUG (printf (" %p.\n", *ptr));
 						} else {
+							DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+						}
+					} else {
+						if (map->ref_slots [i / 8] & (1 << (i % 8))) {
 							DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
 							/*
 							 * Fail fast if the live range is incorrect, and
@@ -319,12 +347,10 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 							 */
 							*ptr = DEAD_REF;
 						}
-
-						loffset ++;
-						scanned_precisely += sizeof (gpointer);
-					} else if (map->slots [i] == SLOT_NOREF) {
-						scanned_precisely += sizeof (gpointer);
 					}
+
+					if (!pinned)
+						scanned_precisely += sizeof (gpointer);
 				}
 			}
 		}
@@ -366,14 +392,15 @@ void
 mini_gc_create_gc_map (MonoCompile *cfg)
 {
 	GCMap *map;
-	int i, nslots, alloc_size, loffset, min_offset, max_offset;
+	int i, nslots, alloc_size, min_offset, max_offset;
 	StackSlotType *slots = NULL;
-	gboolean norefs = FALSE;
 	GSList **live_intervals;
 	int bitmap_width, bitmap_size;
 	MonoBasicBlock *bb;
 	MonoInst *tmp;
 	int *pc_offsets;
+	gboolean *starts_pinned;
+	gboolean has_ref_slots, has_pin_slots;
 
 	/*
 	 * Since we currently don't use GC safe points, we need to create GC maps which
@@ -389,6 +416,8 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	 * instead of computing them precisely.
 	 * - maybe mark loads+stores as needing GC tracking, instead of using DEF/USE
 	 * instructions ?
+	 * - group ref and no-ref slots together on the stack, to speed up marking, and
+	 * to make the gc bitmaps better compressable.
 	 */
 
 	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
@@ -412,36 +441,15 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	NOT_IMPLEMENTED;
 #endif
 
-	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
-		MonoInst *ins = cfg->varinfo [i];
-		MonoType *t = ins->inst_vtype;
-
-		if ((MONO_TYPE_ISSTRUCT (t) && ins->klass->has_references))
-			break;
-		if (MONO_TYPE_ISSTRUCT (t))
-			break;
-		if (t->byref || t->type == MONO_TYPE_PTR)
-			break;
-		if (ins && ins->opcode == OP_REGOFFSET && MONO_TYPE_IS_REFERENCE (ins->inst_vtype))
-			break;
-	}
-
-	if (i == cfg->num_varinfo)
-		norefs = TRUE;
-
 	if (cfg->verbose_level > 1)
 		printf ("GC Map for %s: 0x%x-0x%x\n", mono_method_full_name (cfg->method, TRUE), min_offset, max_offset);
 
 	nslots = (max_offset - min_offset) / sizeof (gpointer);
-	if (!norefs) {
-		alloc_size = nslots * sizeof (StackSlotType);
-		slots = mono_domain_alloc0 (cfg->domain, alloc_size);
-		for (i = 0; i < nslots; ++i)
-			slots [i] = SLOT_NOREF;
-		gc_maps_size += alloc_size;
-	}
+	slots = g_new0 (StackSlotType, nslots);
+	for (i = 0; i < nslots; ++i)
+		slots [i] = SLOT_NOREF;
 	live_intervals = g_new0 (GSList*, nslots);
-	loffset = 0;
+	starts_pinned = g_new0 (gboolean, nslots);
 
 	/*
 	 * Compute the offset where variables are initialized in the first bblock, if any.
@@ -465,9 +473,6 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		MonoType *t = ins->inst_vtype;
 		MonoMethodVar *vmv;
 		guint32 pos;
-
-		if (norefs)
-			continue;
 
 		vmv = MONO_VARINFO (cfg, i);
 
@@ -533,8 +538,10 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 				size = mono_class_value_size (ins->klass, NULL);
 
 			if (!pin) {
-				for (j = 0; j < size / sizeof (gpointer); ++j)
+				for (j = 0; j < size / sizeof (gpointer); ++j) {
 					live_intervals [pos + j] = g_slist_prepend_mempool (cfg->mempool, live_intervals [pos + j], interval);
+					starts_pinned [pos + j] = TRUE;
+				}
 			} else {
 				for (j = 0; j < size / sizeof (gpointer); ++j)
 					set_slot (slots, nslots, pos + j, SLOT_PIN);
@@ -586,12 +593,11 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 				/*
 				 * For volatile variables, treat them alive from the point they are
 				 * initialized in the first bblock until the end of the method.
-				 * FIXME: A var might be valid before that because of ldaddr
-				 * -> treat it as pin before that.
 				 */
 				if (pc_offsets [vmv->vreg]) {
 					vmv->gc_interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
 					mono_linterval_add_range (cfg, vmv->gc_interval, pc_offsets [vmv->vreg], cfg->code_size);
+					starts_pinned [pos] = TRUE;
 				} else {
 					set_slot (slots, nslots, pos, SLOT_PIN);
 					continue;
@@ -610,17 +616,36 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		}
 	}
 
-	loffset = 0;
-	if (slots) {
-		for (i = 0; i < nslots; ++i) {
-			if (slots [i] == SLOT_REF)
-				loffset ++;
+#if 1
+	{
+		static int precise_count;
+
+		precise_count ++;
+		if (getenv ("MONO_GCMAP_COUNT")) {
+			if (precise_count == atoi (getenv ("MONO_GCMAP_COUNT")))
+				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+			if (precise_count > atoi (getenv ("MONO_GCMAP_COUNT"))) {
+				for (i = 0; i < nslots; ++i)
+					slots [i] = SLOT_PIN;
+			}
 		}
 	}
+#endif
 
-	bitmap_width = ALIGN_TO (loffset, 8) / 8;
+	/* Create the GC Map */
+
+	has_ref_slots = FALSE;
+	has_pin_slots = FALSE;
+	for (i = 0; i < nslots; ++i) {
+		if (slots [i] == SLOT_REF)
+			has_ref_slots = TRUE;
+		if (slots [i] == SLOT_PIN || (slots [i] == SLOT_REF && starts_pinned [i]))
+			has_pin_slots = TRUE;
+	}
+
+	bitmap_width = ALIGN_TO (nslots, 8) / 8;
 	bitmap_size = bitmap_width * cfg->code_len;
-	alloc_size = sizeof (GCMap) + (norefs ? 0 : bitmap_size);
+	alloc_size = sizeof (GCMap);
 	map = mono_domain_alloc0 (cfg->domain, alloc_size);
 	gc_maps_size += alloc_size;
 
@@ -628,67 +653,66 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	map->locals_offset = min_offset;
 	map->locals_size = ALIGN_TO (max_offset - min_offset, sizeof (gpointer));
 	map->nslots = nslots;
-	map->slots = slots;
 	map->bitmap_width = bitmap_width;
+	map->has_ref_slots = has_ref_slots;
+	map->has_pin_slots = has_pin_slots;
+	map->ref_slots = mono_domain_alloc0 (cfg->domain, bitmap_width);
 
-	/* Create liveness bitmap */
-	loffset = 0;
-	if (slots) {
-		for (i = 0; i < nslots; ++i) {
-			if (map->slots [i] == SLOT_REF) {
-				MonoLiveInterval *iv;
-				GSList *l;
-				MonoLiveRange2 *r;
-				int pc_offset;
+	if (has_ref_slots)
+		map->ref_bitmap = mono_domain_alloc0 (cfg->domain, bitmap_size);
+	if (has_pin_slots)
+		map->pin_bitmap = mono_domain_alloc0 (cfg->domain, bitmap_size);
 
-				for (l = live_intervals [i]; l; l = l->next) {
-					iv = l->data;
-					for (r = iv->range; r; r = r->next) {
-						for (pc_offset = r->from; pc_offset < r->to; ++pc_offset)
-							map->bitmap [(map->bitmap_width * pc_offset) + loffset / 8] |= (1 << (loffset % 8));
-					}
-				}
-				loffset ++;
+	/* Create liveness bitmaps */
+	for (i = 0; i < nslots; ++i) {
+		int pc_offset;
+
+		if (slots [i] == SLOT_REF) {
+			MonoLiveInterval *iv;
+			GSList *l;
+			MonoLiveRange2 *r;
+
+			map->ref_slots [i / 8] |= (1 << i);
+
+			if (starts_pinned [i]) {
+				/* The slots start out as pinned until they are first defined */
+				g_assert (live_intervals [i]);
+				g_assert (!live_intervals [i]->next);
+
+				iv = live_intervals [i]->data;
+				for (pc_offset = 0; pc_offset < iv->range->from; ++pc_offset)
+					map->pin_bitmap [(map->bitmap_width * pc_offset) + i / 8] |= (1 << (i % 8));					
 			}
+
+			for (l = live_intervals [i]; l; l = l->next) {
+				iv = l->data;
+				for (r = iv->range; r; r = r->next) {
+					for (pc_offset = r->from; pc_offset < r->to; ++pc_offset)
+						map->ref_bitmap [(map->bitmap_width * pc_offset) + i / 8] |= (1 << (i % 8));
+				}
+			}
+		} else if (slots [i] == SLOT_PIN) {
+			for (pc_offset = 0; pc_offset < cfg->code_len; ++pc_offset)
+				map->pin_bitmap [(map->bitmap_width * pc_offset) + i / 8] |= (1 << (i % 8));
 		}
 	}
-
-#if 1
-	{
-		static int precise_count;
-
-		if (map->slots) {
-			precise_count ++;
-			if (getenv ("MONO_GCMAP_COUNT")) {
-				if (precise_count == atoi (getenv ("MONO_GCMAP_COUNT")))
-					printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-				if (precise_count > atoi (getenv ("MONO_GCMAP_COUNT"))) {
-					for (i = 0; i < nslots; ++i)
-						map->slots [i] = SLOT_PIN;
-				}
-			}
-		}
-	}
-#endif
 
 	stats.all_slots += nslots;
-	if (map->slots) {
-		for (i = 0; i < nslots; ++i) {
-			if (map->slots [i] == SLOT_REF)
-				stats.ref_slots ++;
-			else if (map->slots [i] == SLOT_NOREF)
-				stats.noref_slots ++;
-			else
-				stats.pin_slots ++;
-		}
-	} else {
-		stats.noref_slots += nslots;
+	for (i = 0; i < nslots; ++i) {
+		if (slots [i] == SLOT_REF)
+			stats.ref_slots ++;
+		else if (slots [i] == SLOT_NOREF)
+			stats.noref_slots ++;
+		else
+			stats.pin_slots ++;
 	}
 
 	cfg->jit_info->gc_info = map;
 
 	g_free (live_intervals);
 	g_free (pc_offsets);
+	g_free (slots);
+	g_free (starts_pinned);
 }
 
 void
