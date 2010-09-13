@@ -480,15 +480,15 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 		pos = (ins->inst_offset - min_offset) / sizeof (gpointer);
 
-		if ((MONO_TYPE_ISSTRUCT (t) && !ins->klass->has_references))
-			continue;
-
-		if ((MONO_TYPE_ISSTRUCT (t) && ins->klass->has_references)) {
+		if (MONO_TYPE_ISSTRUCT (t)) {
 			int numbits = 0, j;
-			gsize *bitmap;
+			gsize *bitmap = NULL;
 			gboolean pin = FALSE;
 			MonoLiveInterval *interval = NULL;
 			int size;
+
+			if (!ins->klass->has_references)
+				continue;
 
 			if (ins->klass->generic_container || mono_class_is_open_constructed_type (t)) {
 				/* FIXME: Generic sharing */
