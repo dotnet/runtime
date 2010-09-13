@@ -186,7 +186,7 @@ card_table_clear (void)
 {
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
 	if (use_cardtable) {
-		major.iterate_live_block_ranges (clear_cards);
+		major_collector.iterate_live_block_ranges (clear_cards);
 		los_iterate_live_block_ranges (clear_cards);
 	}
 }
@@ -196,13 +196,13 @@ scan_from_card_tables (void *start_nursery, void *end_nursery, GrayQueue *queue)
 	if (use_cardtable) {
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	/*First we copy*/
-	major.iterate_live_block_ranges (move_cards_to_shadow_table);
+	major_collector.iterate_live_block_ranges (move_cards_to_shadow_table);
 	los_iterate_live_block_ranges (move_cards_to_shadow_table);
 
 	/*Then we clear*/
 	card_table_clear ();
 #endif
-		major.scan_card_table (queue);
+		major_collector.scan_card_table (queue);
 		los_scan_card_table (queue);
 	}
 }
@@ -288,14 +288,14 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 			elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, size, index);
 			if (klass->element_class->valuetype) {
 				while (elem < card_end) {
-					major.minor_scan_vtype (elem, desc, nursery_start, nursery_next, queue);
+					major_collector.minor_scan_vtype (elem, desc, nursery_start, nursery_next, queue);
 					elem += size;
 				}
 			} else {
 				while (elem < card_end) {
 					gpointer new, old = *(gpointer*)elem;
 					if (old) {
-						major.copy_object ((void**)elem, queue);
+						major_collector.copy_object ((void**)elem, queue);
 						new = *(gpointer*)elem;
 						if (G_UNLIKELY (ptr_in_nursery (new)))
 							mono_sgen_add_to_global_remset (elem);
@@ -307,9 +307,9 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 	} else {
 		if (cards) {
 			if (sgen_card_table_is_range_marked (cards, obj_size))
-				major.minor_scan_object (obj, queue);
+				major_collector.minor_scan_object (obj, queue);
 		} else if (sgen_card_table_region_begin_scanning ((mword)obj, obj_size)) {
-			major.minor_scan_object (obj, queue);
+			major_collector.minor_scan_object (obj, queue);
 		}
 	}
 }
@@ -349,10 +349,10 @@ card_tables_collect_starts (gboolean begin)
 #ifdef CARDTABLE_STATS
 	if (begin) {
 		total_cards = marked_cards = remarked_cards = 0;
-		major.iterate_live_block_ranges (count_marked_cards);
+		major_collector.iterate_live_block_ranges (count_marked_cards);
 		los_iterate_live_block_ranges (count_marked_cards);
 	} else {
-		major.iterate_live_block_ranges (count_marked_cards);
+		major_collector.iterate_live_block_ranges (count_marked_cards);
 		los_iterate_live_block_ranges (count_remarked_cards);
 		printf ("cards total %d marked %d remarked %d\n", total_cards, marked_cards, remarked_cards);
 	}
