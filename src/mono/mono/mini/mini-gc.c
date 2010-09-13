@@ -440,7 +440,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	if (cfg->verbose_level > 1)
 		printf ("GC Map for %s: 0x%x-0x%x\n", mono_method_full_name (cfg->method, TRUE), min_offset, max_offset);
 
-	nslots = (max_offset - min_offset) / sizeof (gpointer);
+	nslots = ALIGN_TO (max_offset - min_offset, sizeof (gpointer)) / sizeof (gpointer);
 	slots = g_new0 (StackSlotType, nslots);
 	for (i = 0; i < nslots; ++i)
 		slots [i] = SLOT_NOREF;
