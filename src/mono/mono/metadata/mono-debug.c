@@ -17,6 +17,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/gc-internal.h>
 #include <string.h>
 
 #define DATA_TABLE_CHUNK_SIZE		16384
