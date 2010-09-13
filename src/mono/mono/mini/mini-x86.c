@@ -648,7 +648,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		arg_info [k + 1].offset = offset;
 		offset += size;
 
-		if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && !csig->hasthis) {
+		if (k == 0 && cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && !csig->hasthis) {
 			/* Emitted after the first arg */
 			args_size += sizeof (gpointer);
 			offset += 4;
