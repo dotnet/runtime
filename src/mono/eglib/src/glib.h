@@ -444,7 +444,7 @@ struct _GByteArray {
 	gint len;
 };
 
-GByteArray *g_byte_array_new    ();
+GByteArray *g_byte_array_new    (void);
 GByteArray* g_byte_array_append (GByteArray *array, const guint8 *data, guint len);
 guint8*  g_byte_array_free      (GByteArray *array, gboolean free_segment);
 
