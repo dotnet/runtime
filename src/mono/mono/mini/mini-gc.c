@@ -74,8 +74,6 @@ typedef struct {
 	int frame_reg;
 	/* The offset of the local variable area in the stack frame relative to the frame pointer */
 	int locals_offset;
-	/* The size of the locals area. Can't use nslots as it includes padding */
-	int locals_size;
 	/* The number of stack slots */
 	int nslots;
 	/* Thw width of the bitmap in bytes */
@@ -274,7 +272,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 #endif
 
 		locals_start = fp + map->locals_offset;
-		locals_end = locals_start + map->locals_size;
+		locals_end = locals_start + (map->nslots * sizeof (gpointer));
 
 		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 		g_assert (pc_offset >= 0);
@@ -311,23 +309,25 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 						DEBUG (printf ("\tscan slot %s0x%x(fp)=%p.\n", (guint8*)p > (guint8*)fp ? "" : "-", ABS ((int)((gssize)p - (gssize)fp)), p));
 						mono_gc_conservatively_scan_area (p, p + sizeof (gpointer));
 						scanned_conservatively += sizeof (gpointer);
+					} else {
+						scanned_precisely += sizeof (gpointer);
 					}
 					p += sizeof (gpointer);
 				}
+			} else {
+				scanned_precisely += map->nslots * sizeof (gpointer);
 			}
 
 			stack_limit = locals_end;
 		} else {
 			if (map->has_ref_slots) {
 				guint8 *ref_bitmap = &map->ref_bitmap [(map->bitmap_width * pc_offset)];
-				guint8 *pinned_bitmap = &map->pin_bitmap [(map->bitmap_width * pc_offset)];
-				gboolean live, pinned;
+				gboolean live;
 
 				for (i = 0; i < map->nslots; ++i) {
 					MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
 
 					live = ref_bitmap [i / 8] & (1 << (i % 8));
-					pinned = map->has_pin_slots ? pinned_bitmap [i / 8] & (1 << (i % 8)) : 0;
 
 					if (live) {
 						MonoObject *obj = *ptr;
@@ -348,9 +348,6 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 							*ptr = DEAD_REF;
 						}
 					}
-
-					if (!pinned)
-						scanned_precisely += sizeof (gpointer);
 				}
 			}
 		}
@@ -363,11 +360,10 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 	DEBUG (printf ("Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
 
-	if (precise) {
-		stats.scanned_precisely += scanned_precisely;
-	} else {
+	if (!precise) {
 		stats.scanned_stacks += stack_end - stack_start;
 		stats.scanned += scanned;
+		stats.scanned_precisely += scanned_precisely;
 		stats.scanned_conservatively += scanned_conservatively;
 	}
 
@@ -653,7 +649,6 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	map->frame_reg = cfg->frame_reg;
 	map->locals_offset = min_offset;
-	map->locals_size = ALIGN_TO (max_offset - min_offset, sizeof (gpointer));
 	map->nslots = nslots;
 	map->bitmap_width = bitmap_width;
 	map->has_ref_slots = has_ref_slots;
