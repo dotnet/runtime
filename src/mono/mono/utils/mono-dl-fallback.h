@@ -1,6 +1,10 @@
 #ifndef __MONO_UTILS_DL_FALLBACK_H__
 #define __MONO_UTILS_DL_FALLBACK_H__
 
+#include <mono/utils/mono-publib.h>
+
+MONO_BEGIN_DECLS
+
 enum {
 	MONO_DL_LAZY  = 1,
 	MONO_DL_LOCAL = 2,
@@ -24,6 +28,7 @@ MonoDlFallbackHandler *mono_dl_fallback_register (MonoDlFallbackLoad load_func, 
 
 void                   mono_dl_fallback_unregister (MonoDlFallbackHandler *handler);
 
+MONO_END_DECLS
 
 #endif /* __MONO_UTILS_DL_FALLBACK_H__ */
 
