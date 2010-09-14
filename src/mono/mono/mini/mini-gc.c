@@ -424,12 +424,12 @@ set_slot (MonoCompileGC *gcfg, int pos, StackSlotType val)
 }
 
 /*
- * process_cfa_slots:
+ * process_other_slots:
  *
- *   Process stack slots initialized by the prolog.
+ *   Process stack slots registered using mini_gc_set_slot_type_... ().
  */
 static void
-process_cfa_slots (MonoCompile *cfg)
+process_other_slots (MonoCompile *cfg)
 {
 	MonoCompileGC *gcfg = cfg->gc_info;
 	GSList *l;
@@ -452,7 +452,7 @@ process_cfa_slots (MonoCompile *cfg)
 
 		if (cfg->verbose_level > 1) {
 			if (type == SLOT_NOREF)
-				printf ("\tnoref at fp+0x%x (cfa - 0x%x)\n", (int)(fp_slot * sizeof (mgreg_t)), (int)(slot * sizeof (mgreg_t)));
+				printf ("\tnoref at fp+0x%x (slot = %d) (cfa - 0x%x)\n", (int)(fp_slot * sizeof (mgreg_t)), fp_slot, (int)(slot * sizeof (mgreg_t)));
 		}
 	}
 }
@@ -660,9 +660,7 @@ process_arguments (MonoCompile *cfg)
 		if (ins->opcode != OP_REGOFFSET)
 			continue;
 
-		if (ins->flags & MONO_INST_IS_DEAD)
-			/* These do not get stored in the prolog */
-			continue;
+		pos = (ins->inst_offset - gcfg->min_offset) / sizeof (gpointer);
 
 		g_assert (ins->inst_offset % sizeof (gpointer) == 0);
 
@@ -670,7 +668,15 @@ process_arguments (MonoCompile *cfg)
 			/* In parent frame */
 			continue;
 
-		pos = (ins->inst_offset - gcfg->min_offset) / sizeof (gpointer);
+		if (ins->flags & MONO_INST_IS_DEAD) {
+			/* These do not get stored in the prolog */
+			set_slot (gcfg, pos, SLOT_NOREF);
+
+			if (cfg->verbose_level > 1) {
+				printf ("\tdead arg at fp%s0x%x (slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "+", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
+			}
+			continue;
+		}
 
 		if (MONO_TYPE_ISSTRUCT (t)) {
 			int size;
@@ -837,7 +843,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	for (i = locals_min_slot; i < locals_max_slot; ++i)
 		slots [i] = SLOT_NOREF;
 
-	process_cfa_slots (cfg);
+	process_other_slots (cfg);
 	process_locals (cfg);
 	process_arguments (cfg);
 
