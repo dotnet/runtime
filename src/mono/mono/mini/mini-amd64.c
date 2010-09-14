@@ -32,6 +32,7 @@
 #include "mini-amd64.h"
 #include "cpu-amd64.h"
 #include "debugger-agent.h"
+#include "mini-gc.h"
 
 static gint lmf_tls_offset = -1;
 static gint lmf_addr_tls_offset = -1;
@@ -5824,6 +5825,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	// IP saved at CFA - 8
 	mono_emit_unwind_op_offset (cfg, code, AMD64_RIP, -cfa_offset);
 	async_exc_point (code);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 
 	if (!cfg->arch.omit_fp) {
 		amd64_push_reg (code, AMD64_RBP);
@@ -5868,13 +5870,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (cfg->arch.omit_fp) {
 		/* 
-		 * On enter, the stack is misaligned by the the pushing of the return
+		 * On enter, the stack is misaligned by the pushing of the return
 		 * address. It is either made aligned by the pushing of %rbp, or by
 		 * this.
 		 */
 		alloc_size = ALIGN_TO (cfg->stack_offset, 8);
-		if ((alloc_size % 16) == 0)
+		if ((alloc_size % 16) == 0) {
 			alloc_size += 8;
+			/* Mark the padding slot as NOREF */
+			mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset - sizeof (mgreg_t), SLOT_NOREF);
+		}
 	} else {
 		alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
 

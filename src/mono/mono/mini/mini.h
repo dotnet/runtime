@@ -1063,7 +1063,6 @@ typedef struct {
 	gint             stack_offset;
 	gint             max_ireg;
 	gint             cil_offset_to_bb_len;
-	gint             locals_min_stack_offset, locals_max_stack_offset;
 	MonoRegState    *rs;
 	MonoSpillInfo   *spill_info [16]; /* machine register spills */
 	gint             spill_count;
@@ -1260,6 +1259,17 @@ typedef struct {
 	int llvm_this_reg, llvm_this_offset;
 
 	GSList *try_block_holes;
+
+	/* GC Maps */
+   
+	/* The offsets of the locals area relative to the frame pointer */
+	gint locals_min_stack_offset, locals_max_stack_offset;
+
+	/* The final CFA rule at the end of the prolog */
+	int cfa_reg, cfa_offset;
+
+	/* Points to a MonoCompileGC */
+	gpointer gc_info;
 } MonoCompile;
 
 typedef enum {

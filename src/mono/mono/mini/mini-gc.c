@@ -22,6 +22,27 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-counters.h>
 
+/* Contains state needed by the GC Map construction code */
+typedef struct {
+	/*
+	 * This contains information about stack slots initialized in the prolog, encoded using
+	 * (slot_index << 16) | slot_type. The slot_index is relative to the CFA, i.e. 0
+	 * means cfa+0, 1 means cfa-4/8, etc.
+	 */
+	GSList *stack_slots_from_cfa;
+
+	/* Number of slots in the map */
+	int nslots;
+	/* The type of the slots */
+	StackSlotType *slots;
+	/* Live intervals for every slot */
+	GSList **live_intervals;
+	/* Whenever the slot starts out as SLOT_PIN, then changes to SLOT_REF */
+	gboolean *starts_pinned;
+	/* Min and Max offsets of the stack frame relative to fp */
+	int min_offset, max_offset;
+} MonoCompileGC;
+
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 #if 0
@@ -49,21 +70,6 @@ typedef struct {
 	gboolean has_context;
 	MonoJitTlsData *jit_tls;
 } TlsData;
-
-/*
- * The GC type of a stack slot.
- * This can change through the method as follows:
- * - a SLOT_REF can become SLOT_NOREF and vice-versa when it becomes live/dead.
- * - a SLOT_PIN can become SLOT_REF after it has been definitely assigned.
- */
-typedef enum {
-	/* Stack slot doesn't contain a reference */
-	SLOT_NOREF = 0,
-	/* Stack slot contains a reference */
-	SLOT_REF = 1,
-	/* No info, slot needs to be scanned conservatively */
-	SLOT_PIN = 2
-} StackSlotType;
 
 /* 
  * Contains information needed to mark a stack frame.
@@ -374,11 +380,6 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
 }
 
-#define set_slot(slots, nslots, pos, val) do {	\
-		g_assert ((pos) < (nslots));		   \
-		(slots) [(pos)] = (val);			   \
-	} while (0)
-
 static void
 mini_gc_init_gc_map (MonoCompile *cfg)
 {
@@ -386,70 +387,81 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 		return;
 
 	cfg->compute_gc_maps = TRUE;
+
+	cfg->gc_info = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoCompileGC));
 }
 
+/*
+ * mini_gc_set_slot_type_from_cfa:
+ *
+ *   Set the GC slot type of the stack slot identified by SLOT_OFFSET, which should be
+ * relative to the DWARF CFA value. This should be called from mono_arch_emit_prolog ().
+ * If type is STACK_REF, the slot is assumed to be live from the end of the prolog until
+ * the end of the method. By default, all stack slots are type PIN, so there is no need to
+ * call this function for those slots.
+ * FIXME: Add a variant for fp relative offsets.
+ */
 void
-mini_gc_create_gc_map (MonoCompile *cfg)
+mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, StackSlotType type)
 {
-	GCMap *map;
-	int i, nslots, alloc_size, min_offset, max_offset;
-	StackSlotType *slots = NULL;
-	GSList **live_intervals;
-	int bitmap_width, bitmap_size;
+	MonoCompileGC *gcfg = (MonoCompileGC*)cfg->gc_info;
+	int slot = - (slot_offset / sizeof (mgreg_t));
+
+	if (!cfg->compute_gc_maps)
+		return;
+
+	g_assert (slot_offset <= 0);
+	g_assert (slot_offset % sizeof (mgreg_t) == 0);
+
+	gcfg->stack_slots_from_cfa = g_slist_prepend_mempool (cfg->mempool, gcfg->stack_slots_from_cfa, GUINT_TO_POINTER (((slot) << 16) | type));
+}
+
+static inline void
+set_slot (MonoCompileGC *gcfg, int pos, StackSlotType val)
+{
+	g_assert (pos < gcfg->nslots);
+	gcfg->slots [pos] = val;
+}
+
+/*
+ * process_cfa_slots:
+ *
+ *   Process stack slots initialized by the prolog.
+ */
+static void
+process_cfa_slots (MonoCompile *cfg)
+{
+	MonoCompileGC *gcfg = cfg->gc_info;
+	GSList *l;
+	
+	for (l = gcfg->stack_slots_from_cfa; l; l = l->next) {
+		guint data = GPOINTER_TO_UINT (l->data);
+		int slot = data >> 16;
+		StackSlotType type = data & 0xff;
+		int fp_slot;
+		
+		/*
+		 * Map the cfa relative slot to an fp relative slot.
+		 * fp_slot_addr == cfa - <slot>*4/8
+		 * fp + cfa_offset == cfa
+		 * -> fp_slot_addr == fp + (cfa_offset - <slot>*4/8)
+		 */
+		fp_slot = (cfg->cfa_offset / sizeof (mgreg_t)) - slot - (gcfg->min_offset / sizeof (mgreg_t));
+
+		set_slot (gcfg, fp_slot, type);
+	}
+}
+
+static void
+process_locals (MonoCompile *cfg)
+{
+	int i;
 	MonoBasicBlock *bb;
 	MonoInst *tmp;
 	int *pc_offsets;
-	gboolean *starts_pinned;
-	gboolean has_ref_slots, has_pin_slots;
-
-	/*
-	 * Since we currently don't use GC safe points, we need to create GC maps which
-	 * are precise at every instruction within a method. The live ranges calculated by
-	 * the liveness pass are not usable for this, since they contain abstract positions, not
-	 * pc offsets. The live ranges calculated by mono_spill_global_vars () are not usable
-	 * either, since they can't model holes. Instead of these, we implement our own
-	 * liveness analysis which is precise, and works with PC offsets. It calculates live
-	 * intervals, which are unions of live ranges.
-	 * FIXME:
-	 * - arguments (these are not scanned precisely currently).
-	 * - it would simplify things if we extended live ranges to the end of basic blocks
-	 * instead of computing them precisely.
-	 * - maybe mark loads+stores as needing GC tracking, instead of using DEF/USE
-	 * instructions ?
-	 * - group ref and no-ref slots together on the stack, to speed up marking, and
-	 * to make the gc bitmaps better compressable.
-	 */
-
-	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
-		/* Without liveness info, the live ranges are not precise enough */
-		return;
-
-	if (cfg->header->num_clauses)
-		/*
-		 * The calls to the finally clauses don't show up in the cfg. See
-		 * test_0_liveness_8 ().
-		 */
-		return;
-
-	mono_analyze_liveness_gc (cfg);
-
-#ifdef TARGET_AMD64
-	min_offset = ALIGN_TO (cfg->locals_min_stack_offset, sizeof (gpointer));
-	max_offset = cfg->locals_max_stack_offset;
-#else
-	/* min/max stack offset needs to be computed in mono_arch_allocate_vars () */
-	NOT_IMPLEMENTED;
-#endif
-
-	if (cfg->verbose_level > 1)
-		printf ("GC Map for %s: 0x%x-0x%x\n", mono_method_full_name (cfg->method, TRUE), min_offset, max_offset);
-
-	nslots = ALIGN_TO (max_offset - min_offset, sizeof (gpointer)) / sizeof (gpointer);
-	slots = g_new0 (StackSlotType, nslots);
-	for (i = 0; i < nslots; ++i)
-		slots [i] = SLOT_NOREF;
-	live_intervals = g_new0 (GSList*, nslots);
-	starts_pinned = g_new0 (gboolean, nslots);
+	MonoCompileGC *gcfg = cfg->gc_info;
+	GSList **live_intervals = gcfg->live_intervals;
+	gboolean *starts_pinned = gcfg->starts_pinned;
 
 	/*
 	 * Compute the offset where variables are initialized in the first bblock, if any.
@@ -482,7 +494,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		if (ins->inst_offset % sizeof (gpointer) != 0)
 			continue;
 
-		pos = (ins->inst_offset - min_offset) / sizeof (gpointer);
+		pos = (ins->inst_offset - gcfg->min_offset) / sizeof (gpointer);
 
 		if (MONO_TYPE_ISSTRUCT (t)) {
 			int numbits = 0, j;
@@ -532,12 +544,12 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 				for (j = 0; j < numbits; ++j) {
 					if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
 						/* The descriptor is for the boxed object */
-						set_slot (slots, nslots, (pos + j - (sizeof (MonoObject) / sizeof (gpointer))), pin ? SLOT_PIN : SLOT_REF);
+						set_slot (gcfg, (pos + j - (sizeof (MonoObject) / sizeof (gpointer))), pin ? SLOT_PIN : SLOT_REF);
 					}
 				}
 			} else if (pin) {
 				for (j = 0; j < size / sizeof (gpointer); ++j)
-					set_slot (slots, nslots, pos + j, SLOT_PIN);
+					set_slot (gcfg, pos + j, SLOT_PIN);
 			}
 
 			if (!pin) {
@@ -561,12 +573,12 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			continue;
 		}
 
-		if (ins->inst_offset < min_offset || ins->inst_offset >= max_offset)
+		if (ins->inst_offset < gcfg->min_offset || ins->inst_offset >= gcfg->max_offset)
 			/* Vret addr etc. */
 			continue;
 
 		if (t->byref) {
-			set_slot (slots, nslots, pos, SLOT_PIN);
+			set_slot (gcfg, pos, SLOT_PIN);
 			continue;
 		}
 
@@ -580,14 +592,16 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			 * could hold GC refs since the vregs they were created from might not been
 			 * marked as holding a GC ref. So be conservative.
 			 */
-			set_slot (slots, nslots, pos, SLOT_PIN);
+			set_slot (gcfg, pos, SLOT_PIN);
 			continue;
 		}
 #endif
 
+		t = mini_type_get_underlying_type (NULL, t);
+
 		if (MONO_TYPE_IS_REFERENCE (ins->inst_vtype)) {
 			if (vmv && !vmv->gc_interval) {
-				set_slot (slots, nslots, pos, SLOT_PIN);
+				set_slot (gcfg, pos, SLOT_PIN);
 				continue;
 			}
 
@@ -601,12 +615,12 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 					mono_linterval_add_range (cfg, vmv->gc_interval, pc_offsets [vmv->vreg], cfg->code_size);
 					starts_pinned [pos] = TRUE;
 				} else {
-					set_slot (slots, nslots, pos, SLOT_PIN);
+					set_slot (gcfg, pos, SLOT_PIN);
 					continue;
 				}
 			}
 
-			set_slot (slots, nslots, pos, SLOT_REF);
+			set_slot (gcfg, pos, SLOT_REF);
 
 			live_intervals [pos] = g_slist_prepend_mempool (cfg->mempool, live_intervals [pos], vmv->gc_interval);
 
@@ -618,7 +632,211 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		}
 	}
 
+	g_free (pc_offsets);
+}
+
+// FIXME: Merge this with process_locals ()
+static void
+process_arguments (MonoCompile *cfg)
+{
+	int i, j;
+	MonoCompileGC *gcfg = cfg->gc_info;
+	MonoMethodSignature *sig = mono_method_signature (cfg->method);
+	MonoLiveInterval *li;
+
+	/*
+	 * Stack slots holding arguments are initialized in the prolog.
+	 */
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		MonoInst *ins = cfg->args [i];
+		MonoType *t = ins->inst_vtype;
+		int pos;
+
+		if (ins->opcode != OP_REGOFFSET)
+			continue;
+
+		if (ins->flags & MONO_INST_IS_DEAD)
+			/* These do not get stored in the prolog */
+			continue;
+
+		g_assert (ins->inst_offset % sizeof (gpointer) == 0);
+
+		if (ins->inst_offset >= gcfg->max_offset)
+			/* In parent frame */
+			continue;
+
+		pos = (ins->inst_offset - gcfg->min_offset) / sizeof (gpointer);
+
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			int size;
+
+			if (ins->backend.is_pinvoke)
+				size = mono_class_native_size (ins->klass, NULL);
+			else
+				size = mono_class_value_size (ins->klass, NULL);
+
+			if (!ins->klass->has_references) {
+				for (j = 0; j < size / sizeof (gpointer); ++j)
+					set_slot (gcfg, pos + j, SLOT_NOREF);
+				continue;
+			}
+
+			// FIXME:
+			continue;
+		}
+		
+		if (t->byref)
+			continue;
+
+		t = mini_type_get_underlying_type (NULL, t);
+
+		if (!MONO_TYPE_IS_REFERENCE (t)) {
+			set_slot (gcfg, pos, SLOT_NOREF);
+			continue;
+		}
+
+		set_slot (gcfg, pos, SLOT_REF);
+
+		/* Live for the whole method */
+		li = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+		mono_linterval_add_range (cfg, li, 0, cfg->code_size);
+
+		gcfg->live_intervals [pos] = g_slist_prepend_mempool (cfg->mempool, gcfg->live_intervals [pos], li);
+
+		if (cfg->verbose_level > 1) {
+			printf ("\tref at %s0x%x(fp) (slot=%d): %s ", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
+			mono_linterval_print (li);
+			printf ("\n");
+		}
+	}
+}
+
+void
+mini_gc_create_gc_map (MonoCompile *cfg)
+{
+	GCMap *map;
+	int i, locals_min_offset, locals_max_offset, cfa_min_offset, cfa_max_offset;
+	int min_offset, max_offset, locals_min_slot, locals_max_slot;
+	int nslots, alloc_size;
+	StackSlotType *slots = NULL;
+	GSList **live_intervals;
+	int bitmap_width, bitmap_size;
+	gboolean *starts_pinned;
+	gboolean has_ref_slots, has_pin_slots;
+	MonoCompileGC *gcfg = cfg->gc_info;
+	MonoMethodSignature *sig = mono_method_signature (cfg->method);
+
+	/*
+	 * Since we currently don't use GC safe points, we need to create GC maps which
+	 * are precise at every instruction within a method. The live ranges calculated by
+	 * the liveness pass are not usable for this, since they contain abstract positions, not
+	 * pc offsets. The live ranges calculated by mono_spill_global_vars () are not usable
+	 * either, since they can't model holes. Instead of these, we implement our own
+	 * liveness analysis which is precise, and works with PC offsets. It calculates live
+	 * intervals, which are unions of live ranges.
+	 * FIXME:
+	 * - it would simplify things if we extended live ranges to the end of basic blocks
+	 * instead of computing them precisely.
+	 * - maybe mark loads+stores as needing GC tracking, instead of using DEF/USE
+	 * instructions ?
+	 * - group ref and no-ref slots together on the stack, to speed up marking, and
+	 * to make the gc bitmaps better compressable.
+	 * During marking, all frames except the top frame are at a call site, and we mark the
+	 * top frame conservatively. This means that stack slots initialized in the prolog can
+	 * be assumed to be valid/live through the whole method.
+	 */
+
+	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
+		/* Without liveness info, the live ranges are not precise enough */
+		return;
+
+	if (cfg->header->num_clauses)
+		/*
+		 * The calls to the finally clauses don't show up in the cfg. See
+		 * test_0_liveness_8 ().
+		 */
+		return;
+
+	mono_analyze_liveness_gc (cfg);
+
+	/* Compute min/max offsets from the fp */
+
+	/* Locals */
+#ifdef TARGET_AMD64
+	locals_min_offset = ALIGN_TO (cfg->locals_min_stack_offset, sizeof (gpointer));
+	locals_max_offset = cfg->locals_max_stack_offset;
+#else
+	/* min/max stack offset needs to be computed in mono_arch_allocate_vars () */
+	NOT_IMPLEMENTED;
+#endif
+
+	locals_min_offset = ALIGN_TO (locals_min_offset, sizeof (gpointer));
+	locals_max_offset = ALIGN_TO (locals_max_offset, sizeof (gpointer));
+
+	min_offset = locals_min_offset;
+	max_offset = locals_max_offset;
+
+	/* Arguments */
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		MonoInst *ins = cfg->args [i];
+
+		if (ins->opcode == OP_REGOFFSET)
+			min_offset = MIN (min_offset, ins->inst_offset);
+	}
+
+	/* Cfa slots */
+	g_assert (cfg->frame_reg == cfg->cfa_reg);
+	g_assert (cfg->cfa_offset > 0);
+	cfa_min_offset = 0;
+	cfa_max_offset = cfg->cfa_offset;
+
+	min_offset = MIN (min_offset, cfa_min_offset);
+	max_offset = MAX (max_offset, cfa_max_offset);
+
+	/*
+	 * The stack frame looks like this:
+	 *
+	 * <fp + max_offset> == cfa ->  <end of previous frame>
+	 *                              <other stack slots>
+	 *                              <locals>
+	 *                              <other stack slots>
+	 * fp + min_offset          ->
+	 * ...
+	 * fp                       ->
+	 */
+
+	if (cfg->verbose_level > 1)
+		printf ("GC Map for %s: 0x%x-0x%x\n", mono_method_full_name (cfg->method, TRUE), min_offset, max_offset);
+
+	nslots = (max_offset - min_offset) / sizeof (gpointer);
+	/* slot [i] == type of slot at fp - <min_offset> + i*4/8 */
+	slots = g_new0 (StackSlotType, nslots);
+	live_intervals = g_new0 (GSList*, nslots);
+	starts_pinned = g_new0 (gboolean, nslots);
+
+	gcfg->slots = slots;
+	gcfg->nslots = nslots;
+	gcfg->live_intervals = live_intervals;
+	gcfg->starts_pinned = starts_pinned;
+	gcfg->min_offset = min_offset;
+	gcfg->max_offset = max_offset;
+
+	/* All slots start out as PIN */
+	for (i = 0; i < nslots; ++i)
+		slots [i] = SLOT_PIN;
+
+	/* Slots for locals are NOREF by default */
+	locals_min_slot = (locals_min_offset - min_offset) / sizeof (gpointer);
+	locals_max_slot = (locals_max_offset - min_offset) / sizeof (gpointer);
+	for (i = locals_min_slot; i < locals_max_slot; ++i)
+		slots [i] = SLOT_NOREF;
+
+	process_cfa_slots (cfg);
+	process_locals (cfg);
+	process_arguments (cfg);
+
 #if 1
+	/* Debugging support */
 	{
 		static int precise_count;
 
@@ -658,11 +876,16 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	map->has_ref_slots = has_ref_slots;
 	map->has_pin_slots = has_pin_slots;
 	map->ref_slots = mono_domain_alloc0 (cfg->domain, bitmap_width);
+	gc_maps_size += bitmap_width;
 
-	if (has_ref_slots)
+	if (has_ref_slots) {
 		map->ref_bitmap = mono_domain_alloc0 (cfg->domain, bitmap_size);
-	if (has_pin_slots)
+		gc_maps_size += bitmap_size;
+	}
+	if (has_pin_slots) {
 		map->pin_bitmap = mono_domain_alloc0 (cfg->domain, bitmap_size);
+		gc_maps_size += bitmap_size;
+	}
 
 	/* Create liveness bitmaps */
 	for (i = 0; i < nslots; ++i) {
@@ -711,7 +934,6 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	cfg->jit_info->gc_info = map;
 
 	g_free (live_intervals);
-	g_free (pc_offsets);
 	g_free (slots);
 	g_free (starts_pinned);
 }
@@ -764,6 +986,11 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 
 void
 mini_gc_create_gc_map (MonoCompile *cfg)
+{
+}
+
+void
+mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, StackSlotType type)
 {
 }
 
