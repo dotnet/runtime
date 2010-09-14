@@ -449,6 +449,11 @@ process_cfa_slots (MonoCompile *cfg)
 		fp_slot = (cfg->cfa_offset / sizeof (mgreg_t)) - slot - (gcfg->min_offset / sizeof (mgreg_t));
 
 		set_slot (gcfg, fp_slot, type);
+
+		if (cfg->verbose_level > 1) {
+			if (type == SLOT_NOREF)
+				printf ("\tnoref at fp+0x%x (cfa - 0x%x)\n", (int)(fp_slot * sizeof (mgreg_t)), (int)(slot * sizeof (mgreg_t)));
+		}
 	}
 }
 
@@ -718,6 +723,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	int i, locals_min_offset, locals_max_offset, cfa_min_offset, cfa_max_offset;
 	int min_offset, max_offset, locals_min_slot, locals_max_slot;
 	int nslots, alloc_size;
+	int ntypes [16];
 	StackSlotType *slots = NULL;
 	GSList **live_intervals;
 	int bitmap_width, bitmap_size;
@@ -856,12 +862,17 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	has_ref_slots = FALSE;
 	has_pin_slots = FALSE;
+	memset (ntypes, 0, sizeof (ntypes));
 	for (i = 0; i < nslots; ++i) {
+		ntypes [slots [i]] ++;
 		if (slots [i] == SLOT_REF)
 			has_ref_slots = TRUE;
 		if (slots [i] == SLOT_PIN || (slots [i] == SLOT_REF && starts_pinned [i]))
 			has_pin_slots = TRUE;
 	}
+
+	if (cfg->verbose_level > 1)
+		printf ("Slots: %d Refs: %d NoRefs: %d Pin: %d\n", nslots, ntypes [SLOT_REF], ntypes [SLOT_NOREF], ntypes [SLOT_PIN]);
 
 	bitmap_width = ALIGN_TO (nslots, 8) / 8;
 	bitmap_size = bitmap_width * cfg->code_len;
