@@ -78,8 +78,8 @@ typedef struct {
 typedef struct {
 	/* The frame pointer register */
 	int frame_reg;
-	/* The offset of the local variable area in the stack frame relative to the frame pointer */
-	int locals_offset;
+	/* The offset of the GC tracked area inside the stack frame relative to the frame pointer */
+	int frame_offset;
 	/* The number of stack slots */
 	int nslots;
 	/* Thw width of the bitmap in bytes */
@@ -172,7 +172,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	guint8 *stack_limit;
 	gboolean last = TRUE;
 	GCMap *map;
-	guint8* fp, *locals_start, *locals_end;
+	guint8* fp, *frame_start, *frame_end;
 	int i, pc_offset;
 	int scanned = 0, scanned_precisely, scanned_conservatively;
 	gboolean res;
@@ -241,7 +241,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		 * - locals
 		 * - spill area
 		 * - localloc-ed memory
-		 * Currently, only the locals are scanned precisely.
+		 * Currently, only the locals/args are scanned precisely.
 		 */
 
 		ji = frame.ji;
@@ -281,30 +281,30 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		g_assert_not_reached ();
 #endif
 
-		locals_start = fp + map->locals_offset;
-		locals_end = locals_start + (map->nslots * sizeof (gpointer));
+		frame_start = fp + map->frame_offset;
+		frame_end = frame_start + (map->nslots * sizeof (gpointer));
 
 		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 		g_assert (pc_offset >= 0);
 
-		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s+0x%x (%p) limit=%p fp=%p locals=%p-%p (%d)\n", precise, fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, locals_start, locals_end, (int)(locals_end - locals_start)); g_free (fname));
+		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", precise, fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
 
 		/* 
 		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
 		 * call for each object.
 		 */
 
-		scanned += locals_end - locals_start;
+		scanned += frame_end - frame_start;
 
 		/* Pinning needs to be done first, then the precise scan later */
 
 		if (!precise) {
-			g_assert (locals_start >= stack_limit);
+			g_assert (frame_start >= stack_limit);
 
-			if (locals_start > stack_limit) {
+			if (frame_start > stack_limit) {
 				/* This scans the previously skipped frames as well */
-				DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, locals_start));
-				mono_gc_conservatively_scan_area (stack_limit, locals_start);
+				DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, frame_start));
+				mono_gc_conservatively_scan_area (stack_limit, frame_start);
 			}
 
 			if (map->has_pin_slots) {
@@ -312,7 +312,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 				guint8 *p;
 				gboolean pinned;
 
-				p = locals_start;
+				p = frame_start;
 				for (i = 0; i < map->nslots; ++i) {
 					pinned = pin_bitmap [i / 8] & (1 << (i % 8));
 					if (pinned) {
@@ -328,14 +328,14 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 				scanned_precisely += map->nslots * sizeof (gpointer);
 			}
 
-			stack_limit = locals_end;
+			stack_limit = frame_end;
 		} else {
 			if (map->has_ref_slots) {
 				guint8 *ref_bitmap = &map->ref_bitmap [(map->bitmap_width * pc_offset)];
 				gboolean live;
 
 				for (i = 0; i < map->nslots; ++i) {
-					MonoObject **ptr = (MonoObject**)(locals_start + (i * sizeof (gpointer)));
+					MonoObject **ptr = (MonoObject**)(frame_start + (i * sizeof (gpointer)));
 
 					live = ref_bitmap [i / 8] & (1 << (i % 8));
 
@@ -881,7 +881,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	gc_maps_size += alloc_size;
 
 	map->frame_reg = cfg->frame_reg;
-	map->locals_offset = min_offset;
+	map->frame_offset = min_offset;
 	map->nslots = nslots;
 	map->bitmap_width = bitmap_width;
 	map->has_ref_slots = has_ref_slots;
