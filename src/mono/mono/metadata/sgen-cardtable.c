@@ -93,13 +93,13 @@ sgen_card_table_get_card_data (guint8 *data_dest, mword address, mword cards)
 	mword *end = (mword*)(data_dest + cards);
 	mword mask = 0;
 
-	for (; dest < end; ++dest) {
+	for (; dest < end; ++dest, ++start) {
 		mword v = *start;
 		*dest = v;
 		mask |= v;
 
 #ifndef SGEN_HAVE_OVERLAPPING_CARDS
-		*start++ = 0;
+		*start = 0;
 #endif
 	}
 
