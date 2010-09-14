@@ -445,14 +445,15 @@ verify_image_file (const char *fname)
 
 	mono_image_load_names (image);
 
-	if (!verify_partial_md && !mono_verifier_verify_full_table_data (image, &errors))
-		goto invalid_image;
-
 	/*fake an assembly for class loading to work*/
 	assembly = g_new0 (MonoAssembly, 1);
 	assembly->in_gac = FALSE;
 	assembly->image = image;
 	image->assembly = assembly;
+
+	if (!verify_partial_md && !mono_verifier_verify_full_table_data (image, &errors))
+		goto invalid_image;
+
 
 	table = &image->tables [MONO_TABLE_TYPEDEF];
 	for (i = 1; i <= table->rows; ++i) {
