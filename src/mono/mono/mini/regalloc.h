@@ -4,14 +4,16 @@ typedef size_t regmask_t;
 enum {
 	MONO_REG_INT,
 	MONO_REG_DOUBLE,
+	/* This is used only for allocating spill slots with GC tracking */
+	MONO_REG_INT_REF,
 	MONO_REG_SIMD
 };
 
  
 #ifdef MONO_ARCH_NEED_SIMD_BANK
-#define MONO_NUM_REGBANKS 3
+#define MONO_NUM_REGBANKS 4
 #else
-#define MONO_NUM_REGBANKS 2
+#define MONO_NUM_REGBANKS 3
 #endif
 
 typedef struct {

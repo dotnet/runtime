@@ -5652,6 +5652,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_GC_LIVENESS_USE:
 			ins->backend.pc_offset = code - cfg->native_code;
 			break;
+		case OP_GC_SPILL_SLOT_LIVENESS_DEF:
+			ins->backend.pc_offset = code - cfg->native_code;
+			bb->spill_slot_defs = g_slist_prepend_mempool (cfg->mempool, bb->spill_slot_defs, ins);
+			break;
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();

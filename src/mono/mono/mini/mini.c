@@ -1040,8 +1040,10 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	inst->dreg = vreg;
 
 	if (cfg->compute_gc_maps) {
-		if ((MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->klass->has_references) || MONO_TYPE_IS_REFERENCE (inst->inst_vtype))
+		if ((MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->klass->has_references) || MONO_TYPE_IS_REFERENCE (inst->inst_vtype)) {
 			inst->flags |= MONO_INST_GC_TRACK;
+			mono_mark_vreg_as_ref (cfg, vreg);
+		}
 	}
 	
 	cfg->varinfo [num] = inst;

@@ -554,6 +554,8 @@ struct MonoBasicBlock {
 	GSList *seq_points;
 	MonoInst *last_seq_point;
 
+	GSList *spill_slot_defs;
+
 	/*
 	 * The region encodes whether the basic block is inside
 	 * a finally, catch, filter or none of these.

@@ -24,6 +24,8 @@ void mini_gc_init_cfg (MonoCompile *cfg) MONO_INTERNAL;
 
 void mini_gc_create_gc_map (MonoCompile *cfg) MONO_INTERNAL;
 
+void mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, StackSlotType type) MONO_INTERNAL;
+
 void mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, StackSlotType type) MONO_INTERNAL;
 
 #endif
