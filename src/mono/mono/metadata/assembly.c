@@ -29,6 +29,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-path.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
 
@@ -589,7 +590,7 @@ void
 mono_set_rootdir (void)
 {
 #if defined(HOST_WIN32) || (defined(PLATFORM_MACOSX) && !defined(TARGET_ARM))
-	gchar *bindir, *installdir, *root, *name, *config;
+	gchar *bindir, *installdir, *root, *name, *resolvedname, *config;
 
 #ifdef HOST_WIN32
 	name = mono_get_module_file_name ((HMODULE) &__ImageBase);
@@ -612,10 +613,14 @@ mono_set_rootdir (void)
  			fallback ();
  			return;
  		}
+
+		name = mono_path_resolve_symlinks (name);
  	}
 #endif
 
-	bindir = g_path_get_dirname (name);
+	resolvedname = mono_path_resolve_symlinks (name);
+
+	bindir = g_path_get_dirname (resolvedname);
 	installdir = g_path_get_dirname (bindir);
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
 
@@ -634,6 +639,7 @@ mono_set_rootdir (void)
 	g_free (installdir);
 	g_free (bindir);
 	g_free (name);
+	g_free (resolvedname);
 #elif defined(DISABLE_MONO_AUTODETECTION)
 	fallback ();
 #else
