@@ -763,7 +763,6 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/2.0/System.Web.dll
 %_prefix/lib/mono/2.0/wsdl.exe*
 %_prefix/lib/mono/2.0/xsd.exe*
-%_prefix/lib/mono/3.5/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/4.0/Mono.Http.dll
 %_prefix/lib/mono/4.0/Mono.Web.dll
 %_prefix/lib/mono/4.0/System.ComponentModel.Composition.dll
