@@ -44,7 +44,7 @@ sgen_libraries = $(shared_sgen_libraries) libmonoruntimesgen-static.la
 endif
 
 if MOONLIGHT
-moonlight_libraries = libmonoruntimemoon.la libmonoruntimemoon-static.la
+moonlight_libraries = libmonoruntimemoon.la
 endif
 
 if SHARED_MONO
@@ -219,10 +219,6 @@ libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES)
 libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
 libmonoruntime_static_la_LDFLAGS = -static
 libmonoruntime_static_la_CFLAGS = $(BOEHM_DEFINES)
-
-libmonoruntimemoon_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
-libmonoruntimemoon_static_la_LDFLAGS = -static
-libmonoruntimemoon_static_la_CFLAGS = $(MOONLIGHT_DEFINES) $(BOEHM_DEFINES)
 
 libmonoruntimesgen_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
 libmonoruntimesgen_static_la_LDFLAGS = -static
