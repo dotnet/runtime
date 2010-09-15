@@ -475,6 +475,7 @@ process_spill_slots (MonoCompile *cfg)
 	MonoCompileGC *gcfg = cfg->gc_info;
 	MonoBasicBlock *bb;
 	GSList *l;
+	int i;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		/*
@@ -497,6 +498,37 @@ process_spill_slots (MonoCompile *cfg)
 			if (cfg->verbose_level > 1)
 				printf ("\tref spill slot at fp+0x%x (slot = %d)\n", offset, slot);
 		}
+	}
+
+	/* Set fp spill slots to NOREF */
+	for (i = 0; i < cfg->spill_info_len [MONO_REG_DOUBLE]; ++i) {
+		int offset = cfg->spill_info [MONO_REG_DOUBLE][i].offset;
+		int slot;
+
+		if (offset == -1)
+			continue;
+
+		slot = fp_offset_to_slot (cfg, offset);
+
+		set_slot (gcfg, slot, SLOT_NOREF);
+		/* FIXME: 32 bit */
+		if (cfg->verbose_level > 1)
+			printf ("\tfp spill slot at fp+0x%x (slot = %d)\n", offset, slot);
+	}
+
+	/* Set int spill slots to NOREF */
+	for (i = 0; i < cfg->spill_info_len [MONO_REG_INT]; ++i) {
+		int offset = cfg->spill_info [MONO_REG_INT][i].offset;
+		int slot;
+
+		if (offset == -1)
+			continue;
+
+		slot = fp_offset_to_slot (cfg, offset);
+
+		set_slot (gcfg, slot, SLOT_NOREF);
+		if (cfg->verbose_level > 1)
+			printf ("\tint spill slot at fp+0x%x (slot = %d)\n", offset, slot);
 	}
 }
 
@@ -801,6 +833,10 @@ process_arguments (MonoCompile *cfg)
 			continue;
 		}
 		
+		/* For some reason, 'this' is byref */
+		if (sig->hasthis && i == 0 && !cfg->method->klass->valuetype)
+			t = &cfg->method->klass->byval_arg;
+
 		if (t->byref)
 			continue;
 
