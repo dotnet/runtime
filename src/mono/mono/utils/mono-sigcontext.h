@@ -104,7 +104,7 @@
 #elif defined(__OpenBSD__)
     /* OpenBSD/amd64 has no gregs array, ucontext_t == sigcontext */
 	#define UCONTEXT_REG_RAX(ctx) (((ucontext_t*)(ctx))->sc_rax)
-	#define UCONTEXT_REG_RCX(ctx) (((ucontext_t*)(ctx))->sc_rcx)
+	#define UCONTEXT_REG_RBX(ctx) (((ucontext_t*)(ctx))->sc_rbx)
 	#define UCONTEXT_REG_RCX(ctx) (((ucontext_t*)(ctx))->sc_rcx)
 	#define UCONTEXT_REG_RDX(ctx) (((ucontext_t*)(ctx))->sc_rdx)
 	#define UCONTEXT_REG_RBP(ctx) (((ucontext_t*)(ctx))->sc_rbp)
