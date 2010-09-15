@@ -2646,8 +2646,8 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	if (use_cardtable) {
+		atv = btv;
 		card_tables_collect_starts (TRUE);
-		TV_GETTIME (atv);
 		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
 		TV_GETTIME (btv);
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
