@@ -568,7 +568,7 @@ process_other_slots (MonoCompile *cfg)
 
 	/* Relative to the FP */
 	for (l = gcfg->stack_slots_from_fp; l; l = l->next) {
-		guint data = GPOINTER_TO_INT (l->data);
+		gint data = GPOINTER_TO_INT (l->data);
 		int offset = data >> 16;
 		StackSlotType type = data & 0xff;
 		int slot;
@@ -1142,6 +1142,11 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 
 void
 mini_gc_create_gc_map (MonoCompile *cfg)
+{
+}
+
+void
+mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, StackSlotType type)
 {
 }
 
