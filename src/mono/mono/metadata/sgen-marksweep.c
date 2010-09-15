@@ -1334,6 +1334,13 @@ major_scan_card_table (SgenGrayQueue *queue)
 			guint8 *card_data, *card_base;
 			guint8 *card_data_end;
 
+			/*
+			 * This is safe in face of card aliasing for the following reason:
+			 *
+			 * Major blocks are 16k aligned, or 32 cards aligned.
+			 * Cards aliasing happens in powers of two, so as long as major blocks are aligned to their
+			 * sizes, they won't overflow the cardtable overlap modulus.
+			 */
 			card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
 			card_data_end = card_data + CARDS_PER_BLOCK;
 
@@ -1458,6 +1465,11 @@ mono_sgen_marksweep_init
 
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);
+
+
+	/*cardtable requires major pages to be 8 cards aligned*/
+	g_assert ((MS_BLOCK_SIZE % (8 * CARD_SIZE_IN_BYTES)) == 0);
+
 }
 
 #endif
