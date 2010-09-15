@@ -28,21 +28,29 @@ unix_sources = \
 platform_sources = $(unix_sources)
 endif
 
+if SHARED_MONO
 bin_PROGRAMS = pedump
+endif
 
 #
 # libtool is not capable of creating static/shared versions of the same
 # convenience lib, so we have to do it ourselves
 #
 if SUPPORT_SGEN
-sgen_libraries = libmonoruntimesgen.la libmonoruntimesgen-static.la 
+if SHARED_MONO
+shared_sgen_libraries = libmonoruntimesgen.la 
+endif
+sgen_libraries = $(shared_sgen_libraries) libmonoruntimesgen-static.la 
 endif
 
 if MOONLIGHT
 moonlight_libraries = libmonoruntimemoon.la libmonoruntimemoon-static.la
 endif
 
-noinst_LTLIBRARIES = libmonoruntime.la libmonoruntime-static.la $(sgen_libraries) $(moonlight_libraries)
+if SHARED_MONO
+shared_libraries = libmonoruntime.la
+endif
+noinst_LTLIBRARIES =  $(shared_libaries) libmonoruntime-static.la $(sgen_libraries) $(moonlight_libraries)
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
@@ -259,6 +267,7 @@ else
 PEDUMP_DTRACE_OBJECT = 
 endif
 
+if SHARED_MONO
 pedump_SOURCES =		\
 	pedump.c
 
@@ -267,6 +276,7 @@ pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la
 
 if PLATFORM_DARWIN
 pedump_LDFLAGS=-framework CoreFoundation
+endif
 endif
 
 EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) $(sgen_sources) runtime.h
