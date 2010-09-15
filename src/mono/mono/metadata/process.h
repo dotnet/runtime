@@ -22,7 +22,7 @@ typedef struct
 	HANDLE process_handle;
 	HANDLE thread_handle;
 	guint32 pid; /* Contains GetLastError () on failure */
-	gpointer tid;
+	guint32 tid;
 	MonoArray *env_keys;
 	MonoArray *env_values;
 	MonoString *username;
