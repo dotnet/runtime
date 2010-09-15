@@ -24,6 +24,13 @@ sgen_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS)
 
+moon_libs = \
+	$(monodir)/mono/metadata/libmonoruntimemoon.la	\
+	$(monodir)/mono/io-layer/libwapi.la	\
+	$(monodir)/mono/utils/libmonoutils.la \
+	$(GLIB_LIBS) \
+	$(libgc_libs)
+
 static_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
@@ -489,7 +496,7 @@ libmonosgen_2_0_la_CFLAGS = $(AM_CFLAGS) $(SGEN_DEFINES)
 
 if MOONLIGHT
 libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmono_moon_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
+libmono_moon_la_CFLAGS = $(AM_CFLAGS) $(MOONLIGHT_DEFINES)
 endif
 
 libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
@@ -518,7 +525,8 @@ libmonosgen_2_0_la_LIBADD = \
 	$(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 
 if MOONLIGHT
-libmono_moon_la_LIBADD = $(libmono_2_0_la_LIBADD)
+libmono_moon_la_LIBADD = \
+	$(moon_libs) $(LIBMONO_DTRACE_OBJECT)
 endif
 
 basic-simd.exe: basic-simd.cs

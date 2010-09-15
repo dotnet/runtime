@@ -2589,13 +2589,11 @@ AC_ARG_WITH(mcs_docs,[  --with-mcs-docs=yes,no         If you want to build the 
 	fi
 ])
 
+MOONLIGHT_DEFINES=
 AC_ARG_WITH(moonlight, [  --with-moonlight=yes|no|only         If you want to build Mono for Moonlight (defaults to no)],[
-	if test "x$with_moonlight" = "xyes"; then
-		AC_DEFINE(MOONLIGHT,1,[Building for Moonlight])
-	elif test "x$with_moonlight" = "xonly"; then
-		AC_DEFINE(MOONLIGHT,1,[Building for Moonlight])
-	fi
+        MOONLIGHT_DEFINES="-DMOONLIGHT"
 ], [with_moonlight=no])
+AC_SUBST(MOONLIGHT_DEFINES)
 
 
 
