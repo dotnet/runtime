@@ -2596,7 +2596,7 @@ collect_nursery (size_t requested_size)
 
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
-	TV_GETTIME (atv);
+	atv = all_atv;
 
 	/* Pinning depends on this */
 	clear_nursery_fragments (orig_nursery_next);
@@ -2755,7 +2755,7 @@ major_do_collection (const char *reason)
 
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
-	TV_GETTIME (atv);
+	atv = all_atv;
 
 	/* Pinning depends on this */
 	clear_nursery_fragments (nursery_next);
