@@ -319,12 +319,16 @@ print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *location
  * Given the state of the current frame as stored in REGS, execute the unwind 
  * operations in unwind_info until the location counter reaches POS. The result is 
  * stored back into REGS. OUT_CFA will receive the value of the CFA.
+ * If SAVE_LOCATIONS is non-NULL, it should point to an array of size SAVE_LOCATIONS_LEN.
+ * On return, the nth entry will point to the address of the stack slot where register
+ * N was saved, or NULL, if it was not saved by this frame.
  * This function is signal safe.
  */
 void
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
-				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, mgreg_t *regs, 
-				   int nregs, guint8 **out_cfa)
+				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, mgreg_t *regs, int nregs,
+				   mgreg_t **save_locations, int save_locations_len,
+				   guint8 **out_cfa)
 {
 	Loc locations [NUM_REGS];
 	int i, pos, reg, cfa_reg, cfa_offset;
@@ -386,12 +390,17 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 		}
 	}
 
+	if (save_locations)
+		memset (save_locations, 0, save_locations_len * sizeof (mgreg_t*));
+
 	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
 	for (i = 0; i < NUM_REGS; ++i) {
 		if (locations [i].loc_type == LOC_OFFSET) {
 			int hreg = mono_dwarf_reg_to_hw_reg (i);
 			g_assert (hreg < nregs);
 			regs [hreg] = *(mgreg_t*)(cfa_val + locations [i].offset);
+			if (save_locations && hreg < save_locations_len)
+				save_locations [hreg] = (mgreg_t*)(cfa_val + locations [i].offset);
 		}
 	}
 

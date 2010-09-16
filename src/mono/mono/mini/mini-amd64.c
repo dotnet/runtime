@@ -5860,6 +5860,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				offset += 8;
 				mono_emit_unwind_op_offset (cfg, code, i, - offset);
 				async_exc_point (code);
+
+				/* These are handled automatically by the stack marking code */
+				mini_gc_set_slot_type_from_cfa (cfg, - offset, SLOT_NOREF);
 			}
 	}
 
@@ -6015,11 +6018,25 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 		}
 
+		/* These can't contain refs */
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), SLOT_NOREF);
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
 		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
+
+		/* These are handled automatically by the stack marking code */
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), SLOT_NOREF);
+#ifdef HOST_WIN32
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), SLOT_NOREF);
+#endif
+
 	}
 
 	/* Save callee saved registers */
@@ -6033,6 +6050,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				amd64_mov_membase_reg (code, AMD64_RSP, save_area_offset, i, 8);
 				mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - save_area_offset));
+
+				/* These are handled automatically by the stack marking code */
+				mini_gc_set_slot_type_from_cfa (cfg, - (cfa_offset - save_area_offset), SLOT_NOREF);
+
 				save_area_offset += 8;
 				async_exc_point (code);
 			}

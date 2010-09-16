@@ -958,6 +958,17 @@ update_liveness2_gc (MonoCompile *cfg, MonoInst *ins, gint32 *last_use, MonoMeth
 
 }
 
+static inline int
+get_vreg_from_var (MonoCompile *cfg, MonoInst *var)
+{
+	if (var->opcode == OP_REGVAR)
+		/* dreg contains a hreg, but inst_c0 still contains the var index */
+		return MONO_VARINFO (cfg, var->inst_c0)->vreg;
+	else
+		/* dreg still contains the vreg */
+		return var->dreg;
+}
+
 /*
  * mono_analyze_liveness_gc:
  *
@@ -1032,7 +1043,8 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 			k = (j * BITS_PER_CHUNK);	
 			while (bits_out) {
 				if ((bits_out & 1) && cfg->varinfo [k]->flags & MONO_INST_GC_TRACK) {
-					LIVENESS_DEBUG (printf ("Var R%d live at exit, last_use set to %x.\n", cfg->varinfo [j]->dreg, block_to));
+					int vreg = get_vreg_from_var (cfg, cfg->varinfo [k]);
+					LIVENESS_DEBUG (printf ("Var R%d live at exit, last_use set to %x.\n", vreg, block_to));
 					last_use [k] = block_to;
 				}
 				bits_out >>= 1;
@@ -1063,22 +1075,26 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 			if (last_use [idx] != 0 && cfg->varinfo [idx]->flags & MONO_INST_GC_TRACK) {
+				int vreg = get_vreg_from_var (cfg, cfg->varinfo [idx]);
 				/* Live at exit, not written -> live on enter */
-				LIVENESS_DEBUG (printf ("Var R%d live at enter, add range to R%d: [%x, %x)\n", cfg->varinfo [idx]->dreg, cfg->varinfo [idx]->dreg, block_from, last_use [idx]));
+				LIVENESS_DEBUG (printf ("Var R%d live at enter, add range to R%d: [%x, %x)\n", vreg, vreg, block_from, last_use [idx]));
 				mono_linterval_add_range (cfg, vi->gc_interval, block_from, last_use [idx]);
 			}
 		}
 	}
 
-	/* FIXME: Arguments, these are stored to in the prolog */
-
 #ifdef ENABLE_LIVENESS_DEBUG
 	LIVENESS_DEBUG (printf ("\nGC LIVENESS RESULT:\n"));
 	for (idx = 0; idx < max_vars; ++idx) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+		MonoInst *var = cfg->varinfo [idx];
+		int vreg = get_vreg_from_var (cfg, var);
 
-		if (cfg->varinfo [idx]->opcode == OP_REGOFFSET && (cfg->varinfo [idx]->flags & MONO_INST_GC_TRACK)) {
-			LIVENESS_DEBUG (printf ("\tR%d (%s+0x%x): ", cfg->varinfo [idx]->dreg, mono_arch_regname (cfg->varinfo [idx]->inst_basereg), (int)cfg->varinfo [idx]->inst_offset));
+		if (var->flags & MONO_INST_GC_TRACK) {
+			if (var->opcode == OP_REGOFFSET)
+				LIVENESS_DEBUG (printf ("\tR%d (%s+0x%x): ", vreg, mono_arch_regname (var->inst_basereg), (int)var->inst_offset));
+			else
+				LIVENESS_DEBUG (printf ("\tR%d (%s): ", vreg, mono_arch_regname (var->dreg)));
 			LIVENESS_DEBUG (mono_linterval_print (vi->gc_interval));
 			LIVENESS_DEBUG (printf ("\n"));
 		}

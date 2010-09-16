@@ -238,6 +238,8 @@ typedef struct {
 	int native_offset;
 	int il_offset;
 	gpointer lmf;
+	guint32 unwind_info_len;
+	guint8 *unwind_info;
 } StackFrameInfo;
 
 typedef struct {
@@ -1902,7 +1904,8 @@ void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func
 gboolean
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						 MonoJitInfo *ji, MonoContext *ctx, 
-						 MonoContext *new_ctx, MonoLMF **lmf, 
+						 MonoContext *new_ctx, MonoLMF **lmf,
+						 mgreg_t **save_locations,
 						 StackFrameInfo *frame_info) MONO_INTERNAL;
 gpointer  mono_arch_get_throw_exception_by_name (void) MONO_INTERNAL;
 gpointer mono_arch_get_call_filter              (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
@@ -1979,6 +1982,7 @@ gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						MonoJitInfo *prev_ji, MonoContext *ctx,
 						MonoContext *new_ctx, char **trace, MonoLMF **lmf,
+						mgreg_t **save_locations,
 						StackFrameInfo *frame) MONO_INTERNAL;
 
 gpointer mono_get_throw_exception               (void) MONO_INTERNAL;

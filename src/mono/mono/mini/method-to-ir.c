@@ -11464,7 +11464,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					live_range_start_bb [dreg] = bb;
 				}
 
-				if (cfg->compute_gc_maps && def_ins && var->opcode != OP_REGVAR && (var->flags & MONO_INST_GC_TRACK)) {
+				if (cfg->compute_gc_maps && def_ins && (var->flags & MONO_INST_GC_TRACK)) {
 					MonoInst *tmp;
 
 					MONO_INST_NEW (cfg, tmp, OP_GC_LIVENESS_DEF);
@@ -11493,6 +11493,16 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						//mono_inst_set_src_registers (ins, sregs);
 						live_range_end [sreg] = use_ins;
 						live_range_end_bb [sreg] = bb;
+
+						if (cfg->compute_gc_maps && var->dreg < orig_next_vreg && (var->flags & MONO_INST_GC_TRACK)) {
+							MonoInst *tmp;
+
+							MONO_INST_NEW (cfg, tmp, OP_GC_LIVENESS_USE);
+							/* var->dreg is a hreg */
+							tmp->inst_c1 = sreg;
+							mono_bblock_insert_after_ins (bb, ins, tmp);
+						}
+
 						continue;
 					}
 
@@ -11574,8 +11584,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						live_range_end_bb [var->dreg] = bb;
 					}
 
-					// FIXME: Only for ref vars
-					if (cfg->compute_gc_maps && var->dreg < orig_next_vreg && var->opcode != OP_REGVAR && (var->flags & MONO_INST_GC_TRACK)) {
+					if (cfg->compute_gc_maps && var->dreg < orig_next_vreg && (var->flags & MONO_INST_GC_TRACK)) {
 						MonoInst *tmp;
 
 						MONO_INST_NEW (cfg, tmp, OP_GC_LIVENESS_USE);

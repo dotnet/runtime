@@ -330,6 +330,11 @@ class Tests {
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static bool return_true () {
+		return true;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static bool return_false () {
 		return false;
 	}
@@ -464,6 +469,26 @@ class Tests {
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void clobber_regs_and_gc () {
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+		GC.Collect (1);
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static void liveness_9_call1 (object o1, object o2, object o3) {
 		o1.GetHashCode ();
 		o2.GetHashCode ();
@@ -472,10 +497,29 @@ class Tests {
 
 	// Liveness + JIT temporaries
 	public static int test_0_liveness_9 () {
-		// the result of alloc_obj () goes into a vreg, which gets converted to the
+		// the result of alloc_obj () goes into a vreg, which gets converted to a
 		// JIT temporary because of the branching introduced by the cast
 		// FIXME: This doesn't crash if MONO_TYPE_I is not treated as a GC ref
 		liveness_9_call1 (alloc_obj (), (string)alloc_string (), alloc_obj_and_gc ());
+		return 0;
+	}
+
+	// Liveness for registers
+	public static int test_0_liveness_10 () {
+		// Make sure this goes into a register
+		object o = alloc_obj ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		// Break the bblock so o doesn't become a local vreg
+		if (return_true ())
+			// Clobber it with a call and run a GC
+			clobber_regs_and_gc ();
+		// Access it again
+		o.GetHashCode ();
 		return 0;
 	}
 }
