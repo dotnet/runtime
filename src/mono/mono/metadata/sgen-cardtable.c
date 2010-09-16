@@ -286,23 +286,32 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 		return;
 
 	if (vt->rank) {
-		guint8 *card_data;
+		guint8 *card_data, *card_base;
+		guint8 *card_data_end;
+		char *obj_start = sgen_card_table_align_pointer (obj);
+		char *obj_end = obj + obj_size;
+		size_t card_count;
+
 		MonoArray *arr = (MonoArray*)obj;
 		mword desc = (mword)klass->element_class->gc_descr;
-		char *start = sgen_card_table_align_pointer (obj);
-		char *end = obj + obj_size;
-		int size = mono_array_element_size (klass);
-
-		g_assert (desc);
+		int elem_size = mono_array_element_size (klass);
 
 		if (cards)
 			card_data = cards;
 		else
 			card_data = sgen_card_table_get_card_scan_address ((mword)obj);
 
-		for (; start < end; start += CARD_SIZE_IN_BYTES, ++card_data) {
-			char *elem, *card_end;
-			uintptr_t index;
+		card_base = card_data;
+		card_count = cards_in_range ((mword)obj, obj_size);
+		card_data_end = card_data + card_count;
+
+		/*FIXME use card skipping code*/
+		for (; card_data < card_data_end; ++card_data) {
+			int index;
+			int idx = card_data - card_base;
+			char *start = (char*)(obj_start + idx * CARD_SIZE_IN_BYTES);
+			char *card_end = start + CARD_SIZE_IN_BYTES;
+			char *elem;
 
 			if (!*card_data)
 				continue;
@@ -310,31 +319,27 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 			if (!cards)
 				sgen_card_table_prepare_card_for_scanning (card_data);
 
-			card_end = start + CARD_SIZE_IN_BYTES;
-			if (end < card_end)
-				card_end = end;
+			card_end = MIN (card_end, obj_end);
 
 			if (start <= (char*)arr->vector)
 				index = 0;
 			else
-				index = ARRAY_OBJ_INDEX (start, obj, size);
+				index = ARRAY_OBJ_INDEX (start, obj, elem_size);
 
-			elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, size, index);
+			elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, elem_size, index);
 			if (klass->element_class->valuetype) {
-				while (elem < card_end) {
+				for (; elem < card_end; elem += elem_size)
 					major_collector.minor_scan_vtype (elem, desc, nursery_start, nursery_next, queue);
-					elem += size;
-				}
 			} else {
-				while (elem < card_end) {
+				for (; elem < card_end; elem += SIZEOF_VOID_P) {
 					gpointer new, old = *(gpointer*)elem;
+					/*XXX it might be faster to do a nursery check here instead as it avoid a call*/
 					if (old) {
 						major_collector.copy_object ((void**)elem, queue);
 						new = *(gpointer*)elem;
 						if (G_UNLIKELY (ptr_in_nursery (new)))
 							mono_sgen_add_to_global_remset (elem);
 					}
-					elem += size;
 				}
 			}
 		}
