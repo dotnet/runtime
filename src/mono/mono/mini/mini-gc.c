@@ -295,8 +295,13 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 				/*
 				 * If the current frame saves the register, it means it might modify its
 				 * value, thus the old location might not contain the same value, so
-				 * we have to mark it conservatively. If we have precise info about the
-				 * register, reg_locations [i] is already cleared.
+				 * we have to mark it conservatively.
+				 * FIXME: This happens very often, due to:
+				 * - variables which are not GC tracked have no liveness info, so
+				 * the registers they are allocated are treated as PIN.
+				 * - outside the live intervals of the variables allocated to a register,
+				 * we have to treat the register as PIN, since we don't know whenever it
+				 * has the same value as in the caller, or a new dead value.
 				 */
 				if (!precise && reg_locations [i]) {
 					DEBUG (printf ("\tscan saved reg %s location %p.\n", mono_arch_regname (i), reg_locations [i]));
@@ -347,7 +352,6 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		 * - locals
 		 * - spill area
 		 * - localloc-ed memory
-		 * Currently, only the locals/args are scanned precisely.
 		 */
 
 		ji = frame.ji;
@@ -1526,7 +1530,6 @@ mini_gc_init_cfg (MonoCompile *cfg)
  * Problems with the current code:
  * - it makes two passes over the stack
  * - the stack walk is slow
- * - only the locals are scanned precisely
  * - vtypes/refs used in EH regions are treated conservatively
  * - the computation of the GC maps is slow since it involves a liveness analysis pass
  * - the GC maps are uncompressed and take up a lot of memory.
