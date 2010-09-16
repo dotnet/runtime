@@ -296,6 +296,10 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 		mword desc = (mword)klass->element_class->gc_descr;
 		int elem_size = mono_array_element_size (klass);
 
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+		guint8 *overflow_scan_end = NULL;
+#endif
+
 		if (cards)
 			card_data = cards;
 		else
@@ -305,6 +309,16 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 		card_count = cards_in_range ((mword)obj, obj_size);
 		card_data_end = card_data + card_count;
 
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+		/*Check for overflow and if so, setup to scan in two steps*/
+		if (!cards && card_data_end >= SGEN_SHADOW_CARDTABLE_END) {
+			overflow_scan_end = sgen_shadow_cardtable + (card_data_end - SGEN_SHADOW_CARDTABLE_END);
+			card_data_end = SGEN_SHADOW_CARDTABLE_END;
+		}
+
+LOOP_HEAD:
+#endif
 		/*FIXME use card skipping code*/
 		for (; card_data < card_data_end; ++card_data) {
 			int index;
@@ -343,6 +357,16 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 				}
 			}
 		}
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+		if (overflow_scan_end) {
+			card_data = sgen_shadow_cardtable;
+			card_data_end = overflow_scan_end;
+			overflow_scan_end = NULL;
+			goto LOOP_HEAD;
+		}
+#endif
+
 	} else {
 		if (cards) {
 			if (sgen_card_table_is_range_marked (cards, obj_size))
