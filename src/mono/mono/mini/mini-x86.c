@@ -4054,6 +4054,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			br = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
 			x86_mov_reg_reg (code, X86_EDX, ptr, 4);
 			x86_shift_reg_imm (code, X86_SHR, X86_EDX, card_table_shift);
+			if (card_table_mask)
+				x86_alu_reg_imm (code, X86_AND, X86_EDX, (int)card_table_mask);
 			x86_mov_membase_imm (code, X86_EDX, card_table, 1, 1);
 			x86_patch (br, code);
 			break;
