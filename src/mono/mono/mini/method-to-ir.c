@@ -11222,6 +11222,16 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	}
 #endif
 
+	if (cfg->compute_gc_maps) {
+		/* registers need liveness info even for !non refs */
+		for (i = 0; i < cfg->num_varinfo; i++) {
+			MonoInst *ins = cfg->varinfo [i];
+
+			if (ins->opcode == OP_REGVAR)
+				ins->flags |= MONO_INST_GC_TRACK;
+		}
+	}
+		
 	/* FIXME: widening and truncation */
 
 	/*

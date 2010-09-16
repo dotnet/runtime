@@ -297,8 +297,6 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 				 * value, thus the old location might not contain the same value, so
 				 * we have to mark it conservatively.
 				 * FIXME: This happens very often, due to:
-				 * - variables which are not GC tracked have no liveness info, so
-				 * the registers they are allocated are treated as PIN.
 				 * - outside the live intervals of the variables allocated to a register,
 				 * we have to treat the register as PIN, since we don't know whenever it
 				 * has the same value as in the caller, or a new dead value.
@@ -839,8 +837,13 @@ process_locals (MonoCompile *cfg)
 				li = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
 				mono_linterval_add_range (cfg, li, 0, cfg->code_size);
 			} else if (!MONO_TYPE_IS_REFERENCE (t)) {
-				// FIXME: These have no gc live interval
-				continue;
+				slot_type = SLOT_NOREF;
+				/*
+				 * Unlike variables allocated to the stack, we generate liveness info
+				 * for these in mono_spill_global_vars (), because knowing that a register
+				 * doesn't contain a ref allows us to mark its save locations precisely.
+				 */
+				li = vmv->gc_interval;
 			} else {
 				slot_type = SLOT_REF;
 				li = vmv->gc_interval;
@@ -850,7 +853,7 @@ process_locals (MonoCompile *cfg)
 			gcfg->reg_live_intervals [hreg] = g_slist_prepend_mempool (cfg->mempool, gcfg->reg_live_intervals [hreg], li);
 
 			if (cfg->verbose_level > 1) {
-				printf ("\t%s reg %s: ", slot_type_to_string (slot_type), mono_arch_regname (hreg));
+				printf ("\t%s reg %s(R%d): ", slot_type_to_string (slot_type), mono_arch_regname (hreg), vmv->vreg);
 				mono_linterval_print (li);
 				printf ("\n");
 			}
