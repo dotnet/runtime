@@ -230,6 +230,7 @@ scan_from_card_tables (void *start_nursery, void *end_nursery, GrayQueue *queue)
 {
 	if (use_cardtable) {
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
+	/*FIXME we should have a bit on each block/los object telling if the object have marked cards.*/
 	/*First we copy*/
 	major_collector.iterate_live_block_ranges (move_cards_to_shadow_table);
 	los_iterate_live_block_ranges (move_cards_to_shadow_table);

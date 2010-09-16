@@ -1313,11 +1313,20 @@ major_scan_card_table (SgenGrayQueue *queue)
 		block_start = block->block;
 
 		if (block_obj_size >= CARD_SIZE_IN_BYTES) {
-			guint8 cards [CARDS_PER_BLOCK];
+			guint8 *cards;
+#ifndef SGEN_HAVE_OVERLAPPING_CARDS
+			guint8 cards_data [CARDS_PER_BLOCK];
+#endif
 			char *obj, *end, *base;
 
-			if (!sgen_card_table_get_card_data (cards, (mword)block_start, CARDS_PER_BLOCK))
+			/*We can avoid the extra copy since the remark cardtable was cleaned before */
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+			cards = sgen_card_table_get_card_scan_address ((mword)block_start);
+#else
+			cards = cards_data;
+			if (!sgen_card_table_get_card_data (cards_data, (mword)block_start, CARDS_PER_BLOCK))
 				continue;
+#endif
 
 			obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, 0);
 			end = block_start + MS_BLOCK_SIZE;
