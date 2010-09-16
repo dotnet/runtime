@@ -39,6 +39,7 @@
 
 guint8 *sgen_cardtable;
 
+/*WARNING: This function returns the number of cards regardless of overflow in case of overlapping cards.*/
 static mword
 cards_in_range (mword address, mword size)
 {
@@ -50,9 +51,13 @@ cards_in_range (mword address, mword size)
 
 guint8 *sgen_shadow_cardtable;
 
+#define SGEN_SHADOW_CARDTABLE_END (sgen_shadow_cardtable + CARD_COUNT_IN_BYTES)
+#define SGEN_CARDTABLE_END (sgen_cardtable + CARD_COUNT_IN_BYTES)
+
 static gboolean
 sgen_card_table_region_begin_scanning (mword start, mword end)
 {
+	/*XXX this can be improved to work on words and have a single loop induction var */
 	while (start <= end) {
 		if (sgen_card_table_card_begin_scanning (start))
 			return TRUE;
@@ -70,6 +75,7 @@ sgen_card_table_region_begin_scanning (mword start, mword size)
 	guint8 *card = sgen_card_table_get_card_address (start);
 	guint8 *end = card + cards_in_range (start, size);
 
+	/*XXX this can be improved to work on words and have a branchless body */
 	while (card != end) {
 		if (*card++) {
 			res = TRUE;
@@ -162,11 +168,6 @@ void los_scan_card_table (GrayQueue *queue);
 void los_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
 
 
-static void
-clear_cards (mword start, mword size)
-{
-	memset (sgen_card_table_get_card_address (start), 0, size >> CARD_BITS);
-}
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
@@ -176,8 +177,42 @@ move_cards_to_shadow_table (mword start, mword size)
 	guint8 *from = sgen_card_table_get_card_address (start);
 	guint8 *to = sgen_card_table_get_shadow_card_address (start);
 	size_t bytes = cards_in_range (start, size);
-	memcpy (to, from, bytes);
+
+	if (to + bytes > SGEN_SHADOW_CARDTABLE_END) {
+		size_t first_chunk = SGEN_SHADOW_CARDTABLE_END - to;
+
+		memcpy (to, from, first_chunk);
+		memcpy (sgen_shadow_cardtable, from + first_chunk, bytes - first_chunk);
+	} else {
+		memcpy (to, from, bytes);
+	}
 }
+
+static void
+clear_cards (mword start, mword size)
+{
+	guint8 *addr = sgen_card_table_get_card_address (start);
+	size_t bytes = cards_in_range (start, size);
+
+	if (addr + bytes > SGEN_CARDTABLE_END) {
+		size_t first_chunk = SGEN_CARDTABLE_END - addr;
+
+		memset (addr, 0, first_chunk);
+		memset (sgen_cardtable, 0, bytes - first_chunk);
+	} else {
+		memset (addr, 0, bytes);
+	}
+}
+
+
+#else
+
+static void
+clear_cards (mword start, mword size)
+{
+	memset (sgen_card_table_get_card_address (start), 0, cards_in_range (start, size));
+}
+
 
 #endif
 
@@ -264,7 +299,6 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 			card_data = cards;
 		else
 			card_data = sgen_card_table_get_card_scan_address ((mword)obj);
-
 
 		for (; start < end; start += CARD_SIZE_IN_BYTES, ++card_data) {
 			char *elem, *card_end;
