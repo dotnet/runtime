@@ -100,7 +100,11 @@ typedef struct {
 	int frame_reg;
 	/* The offset of the GC tracked area inside the stack frame relative to the frame pointer */
 	int frame_offset;
-	/* The number of stack slots */
+	/*
+	 * The size of the stack frame in bytes, including areas which do not need GC tracking.
+	 */
+	int frame_size;
+	/* The number of stack slots in the map */
 	int nslots;
 	/* The number of registers in the map */
 	int nregs;
@@ -391,7 +395,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 #endif
 
 		frame_start = fp + map->frame_offset;
-		frame_end = frame_start + (map->nslots * sizeof (mgreg_t));
+		frame_end = fp + map->frame_size;
 
 		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 		g_assert (pc_offset >= 0);
@@ -1138,6 +1142,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	StackSlotType *slots = NULL;
 	GSList **live_intervals;
 	int bitmap_width, bitmap_size, reg_bitmap_width, reg_bitmap_size;
+	int start, end;
 	gboolean *starts_pinned;
 	gboolean has_ref_slots, has_pin_slots, has_ref_regs, has_pin_regs;
 	MonoCompileGC *gcfg = cfg->gc_info;
@@ -1229,6 +1234,24 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		if (slots [i] == SLOT_PIN || (slots [i] == SLOT_REF && starts_pinned [i]))
 			has_pin_slots = TRUE;
 	}
+
+	/* 
+	 * Compute the real size of the bitmap i.e. ignore NOREF columns at the beginning and at
+	 * the end.
+	 */
+	for (i = 0; i < nslots; ++i)
+		if (slots [i] != SLOT_NOREF)
+			break;
+	start = i;
+	if (start < nslots) {
+		for (i = nslots - 1; i >= 0; --i)
+			if (slots [i] != SLOT_NOREF)
+				break;
+		end = i + 1;
+	} else {
+		end = nslots;
+	}
+
 	has_ref_regs = FALSE;
 	has_pin_regs = TRUE;
 	for (i = 0; i < nregs; ++i) {
@@ -1239,9 +1262,9 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	}
 
 	if (cfg->verbose_level > 1)
-		printf ("Slots: %d Refs: %d NoRefs: %d Pin: %d\n", nslots, ntypes [SLOT_REF], ntypes [SLOT_NOREF], ntypes [SLOT_PIN]);
+		printf ("Slots: %d Start: %d End: %d Refs: %d NoRefs: %d Pin: %d\n", nslots, start, end, ntypes [SLOT_REF], ntypes [SLOT_NOREF], ntypes [SLOT_PIN]);
 
-	bitmap_width = ALIGN_TO (nslots, 8) / 8;
+	bitmap_width = ALIGN_TO (end - start, 8) / 8;
 	bitmap_size = bitmap_width * cfg->code_len;
 	reg_bitmap_width = ALIGN_TO (nregs, 8) / 8;
 	reg_bitmap_size = reg_bitmap_width * cfg->code_len;
@@ -1250,8 +1273,9 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	gc_maps_size += alloc_size;
 
 	map->frame_reg = cfg->frame_reg;
-	map->frame_offset = gcfg->min_offset;
-	map->nslots = nslots;
+	map->frame_offset = gcfg->min_offset + (start * sizeof (mgreg_t));
+	map->frame_size = gcfg->min_offset + (nslots * sizeof (mgreg_t));
+	map->nslots = end - start;
 	map->nregs = nregs;
 	map->bitmap_width = bitmap_width;
 	map->reg_bitmap_width = reg_bitmap_width;
@@ -1282,15 +1306,16 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	/* Create liveness bitmaps */
 
 	/* Stack slots */
-	for (i = 0; i < nslots; ++i) {
+	for (i = start; i < end; ++i) {
 		int pc_offset;
+		int bpos = i - start;
 
 		if (slots [i] == SLOT_REF) {
 			MonoLiveInterval *iv;
 			GSList *l;
 			MonoLiveRange2 *r;
 
-			map->ref_slots [i / 8] |= (1 << i);
+			map->ref_slots [bpos / 8] |= (1 << bpos);
 
 			if (starts_pinned [i]) {
 				/* The slots start out as pinned until they are first defined */
@@ -1299,19 +1324,19 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 				iv = live_intervals [i]->data;
 				for (pc_offset = 0; pc_offset < iv->range->from; ++pc_offset)
-					set_bit (map->pin_bitmap, bitmap_width, pc_offset, i);
+					set_bit (map->pin_bitmap, bitmap_width, pc_offset, bpos);
 			}
 
 			for (l = live_intervals [i]; l; l = l->next) {
 				iv = l->data;
 				for (r = iv->range; r; r = r->next) {
 					for (pc_offset = r->from; pc_offset < r->to; ++pc_offset)
-						set_bit (map->ref_bitmap, bitmap_width, pc_offset, i);
+						set_bit (map->ref_bitmap, bitmap_width, pc_offset, bpos);
 				}
 			}
 		} else if (slots [i] == SLOT_PIN) {
 			for (pc_offset = 0; pc_offset < cfg->code_len; ++pc_offset)
-				set_bit (map->pin_bitmap, bitmap_width, pc_offset, i);
+				set_bit (map->pin_bitmap, bitmap_width, pc_offset, bpos);
 		}
 	}
 
