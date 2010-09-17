@@ -786,14 +786,14 @@ process_other_slots (MonoCompile *cfg)
 }
 
 static void
-process_locals (MonoCompile *cfg)
+process_variables (MonoCompile *cfg)
 {
+	MonoCompileGC *gcfg = cfg->gc_info;
+	MonoMethodSignature *sig = mono_method_signature (cfg->method);
 	int i, locals_min_slot, locals_max_slot;
 	MonoBasicBlock *bb;
 	MonoInst *tmp;
 	int *pc_offsets;
-	MonoCompileGC *gcfg = cfg->gc_info;
-	GSList **live_intervals = gcfg->live_intervals;
 	gboolean *starts_pinned = gcfg->starts_pinned;
 	int locals_min_offset = gcfg->locals_min_offset;
 	int locals_max_offset = gcfg->locals_max_offset;
@@ -820,15 +820,27 @@ process_locals (MonoCompile *cfg)
 		}
 	}
 
-	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+	/*
+	 * Stack slots holding arguments are initialized in the prolog.
+	 * This means we can treat them alive for the whole method.
+	 */
+
+	for (i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
 		MonoType *t = ins->inst_vtype;
 		MonoMethodVar *vmv;
 		guint32 pos;
-		gboolean byref = t->byref;
+		gboolean byref;
+		gboolean is_arg = i < cfg->locals_start;
 		MonoLiveInterval *li;
-
+		
 		vmv = MONO_VARINFO (cfg, i);
+
+		/* For some reason, 'this' is byref */
+		if (sig->hasthis && ins == cfg->args [0] && !cfg->method->klass->valuetype)
+			t = &cfg->method->klass->byval_arg;
+
+		byref = t->byref;
 
 		if (ins->opcode == OP_REGVAR) {
 			int hreg;
@@ -839,29 +851,46 @@ process_locals (MonoCompile *cfg)
 			hreg = ins->dreg;
 			g_assert (hreg < MONO_MAX_IREGS);
 
-			if (byref) {
-				/* These have no live interval, be conservative */
+			if (is_arg && gcfg->reg_live_intervals [hreg]) {
+				/* 
+				 * FIXME: This argument shares a hreg with a local, we can't add the whole
+				 * method as a live interval, since it would overlap with the locals
+				 * live interval.
+				 */
+				continue;
+			}
+
+			if (byref)
 				slot_type = SLOT_PIN;
+			else
+				slot_type = MONO_TYPE_IS_REFERENCE (t) ? SLOT_REF : SLOT_NOREF;
+
+			if (is_arg) {
+				/* Live for the whole method */
 				li = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
 				mono_linterval_add_range (cfg, li, 0, cfg->code_size);
-			} else if (!MONO_TYPE_IS_REFERENCE (t)) {
-				slot_type = SLOT_NOREF;
-				/*
-				 * Unlike variables allocated to the stack, we generate liveness info
-				 * for these in mono_spill_global_vars (), because knowing that a register
-				 * doesn't contain a ref allows us to mark its save locations precisely.
-				 */
-				li = vmv->gc_interval;
 			} else {
-				slot_type = SLOT_REF;
-				li = vmv->gc_interval;
+				if (slot_type == SLOT_PIN) {
+					/* These have no live interval, be conservative */
+					li = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+					mono_linterval_add_range (cfg, li, 0, cfg->code_size);
+				} else if (slot_type == SLOT_NOREF) {
+					/*
+					 * Unlike variables allocated to the stack, we generate liveness info
+					 * for these in mono_spill_global_vars (), because knowing that a register
+					 * doesn't contain a ref allows us to mark its save locations precisely.
+					 */
+					li = vmv->gc_interval;
+				} else {
+					li = vmv->gc_interval;
+				}
 			}
 
 			gcfg->reg_types [hreg] = g_slist_prepend_mempool (cfg->mempool, gcfg->reg_types [hreg], GINT_TO_POINTER (slot_type));
 			gcfg->reg_live_intervals [hreg] = g_slist_prepend_mempool (cfg->mempool, gcfg->reg_live_intervals [hreg], li);
 
 			if (cfg->verbose_level > 1) {
-				printf ("\t%s reg %s(R%d): ", slot_type_to_string (slot_type), mono_arch_regname (hreg), vmv->vreg);
+				printf ("\t%s %sreg %s(R%d): ", slot_type_to_string (slot_type), is_arg ? "arg " : "", mono_arch_regname (hreg), vmv->vreg);
 				mono_linterval_print (li);
 				printf ("\n");
 			}
@@ -875,7 +904,21 @@ process_locals (MonoCompile *cfg)
 		if (ins->inst_offset % sizeof (mgreg_t) != 0)
 			continue;
 
+		if (is_arg && ins->inst_offset >= gcfg->max_offset)
+			/* In parent frame */
+			continue;
+
 		pos = fp_offset_to_slot (cfg, ins->inst_offset);
+
+		if (is_arg && ins->flags & MONO_INST_IS_DEAD) {
+			/* These do not get stored in the prolog */
+			set_slot (gcfg, pos, SLOT_NOREF);
+
+			if (cfg->verbose_level > 1) {
+				printf ("\tdead arg at fp%s0x%x (slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "+", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
+			}
+			continue;
+		}
 
 		if (MONO_TYPE_ISSTRUCT (t)) {
 			int numbits = 0, j;
@@ -884,8 +927,18 @@ process_locals (MonoCompile *cfg)
 			MonoLiveInterval *interval = NULL;
 			int size;
 
-			if (!ins->klass->has_references)
+			if (ins->backend.is_pinvoke)
+				size = mono_class_native_size (ins->klass, NULL);
+			else
+				size = mono_class_value_size (ins->klass, NULL);
+
+			if (!ins->klass->has_references) {
+				if (is_arg) {
+					for (j = 0; j < size / sizeof (mgreg_t); ++j)
+						set_slot (gcfg, pos + j, SLOT_NOREF);
+				}
 				continue;
+			}
 
 			if (ins->klass->generic_container || mono_class_is_open_constructed_type (t)) {
 				/* FIXME: Generic sharing */
@@ -916,11 +969,6 @@ process_locals (MonoCompile *cfg)
 			if (ins->backend.is_pinvoke)
 				pin = TRUE;
 
-			if (ins->backend.is_pinvoke)
-				size = mono_class_native_size (ins->klass, NULL);
-			else
-				size = mono_class_value_size (ins->klass, NULL);
-
 			if (bitmap) {
 				for (j = 0; j < numbits; ++j) {
 					if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
@@ -935,7 +983,7 @@ process_locals (MonoCompile *cfg)
 
 			if (!pin) {
 				for (j = 0; j < size / sizeof (mgreg_t); ++j) {
-					live_intervals [pos + j] = g_slist_prepend_mempool (cfg->mempool, live_intervals [pos + j], interval);
+					gcfg->live_intervals [pos + j] = g_slist_prepend_mempool (cfg->mempool, gcfg->live_intervals [pos + j], interval);
 					starts_pinned [pos + j] = TRUE;
 				}
 			}
@@ -954,7 +1002,7 @@ process_locals (MonoCompile *cfg)
 			continue;
 		}
 
-		if (ins->inst_offset < gcfg->min_offset || ins->inst_offset >= gcfg->max_offset)
+		if (!is_arg && (ins->inst_offset < gcfg->min_offset || ins->inst_offset >= gcfg->max_offset))
 			/* Vret addr etc. */
 			continue;
 
@@ -980,160 +1028,40 @@ process_locals (MonoCompile *cfg)
 
 		t = mini_type_get_underlying_type (NULL, t);
 
-		if (MONO_TYPE_IS_REFERENCE (ins->inst_vtype)) {
-			if (vmv && !vmv->gc_interval) {
-				set_slot (gcfg, pos, SLOT_PIN);
-				continue;
-			}
-
-			if (ins->flags & (MONO_INST_VOLATILE | MONO_INST_INDIRECT)) {
-				/*
-				 * For volatile variables, treat them alive from the point they are
-				 * initialized in the first bblock until the end of the method.
-				 */
-				if (pc_offsets [vmv->vreg]) {
-					vmv->gc_interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
-					mono_linterval_add_range (cfg, vmv->gc_interval, pc_offsets [vmv->vreg], cfg->code_size);
-					starts_pinned [pos] = TRUE;
-				} else {
-					set_slot (gcfg, pos, SLOT_PIN);
-					continue;
-				}
-			}
-
-			set_slot (gcfg, pos, SLOT_REF);
-
-			live_intervals [pos] = g_slist_prepend_mempool (cfg->mempool, live_intervals [pos], vmv->gc_interval);
-
-			if (cfg->verbose_level > 1) {
-				printf ("\tref at %s0x%x(fp) (slot=%d): %s ", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
-				mono_linterval_print (vmv->gc_interval);
-				printf ("\n");
-			}
-		}
-	}
-
-	g_free (pc_offsets);
-}
-
-// FIXME: Merge this with process_locals ()
-static void
-process_arguments (MonoCompile *cfg)
-{
-	int i, j;
-	MonoCompileGC *gcfg = cfg->gc_info;
-	MonoMethodSignature *sig = mono_method_signature (cfg->method);
-	MonoLiveInterval *li;
-
-	/*
-	 * Stack slots holding arguments are initialized in the prolog.
-	 * This means we can treat them alive for the whole method.
-	 */
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		MonoInst *ins = cfg->args [i];
-		MonoType *t = ins->inst_vtype;
-		int pos;
-		gboolean byref;
-
-		/* For some reason, 'this' is byref */
-		if (sig->hasthis && i == 0 && !cfg->method->klass->valuetype)
-			t = &cfg->method->klass->byval_arg;
-
-		byref = t->byref;
-
-		if (ins->opcode == OP_REGVAR) {
-			int hreg;
-			StackSlotType slot_type;
-
-			t = mini_type_get_underlying_type (NULL, t);
-
-			if (byref)
-				slot_type = SLOT_PIN;
-			else
-				slot_type = MONO_TYPE_IS_REFERENCE (t) ? SLOT_REF : SLOT_NOREF;
-
-			hreg = ins->dreg;
-			g_assert (hreg < MONO_MAX_IREGS);
-
-			if (gcfg->reg_live_intervals [hreg]) {
-				/* 
-				 * FIXME: This argument shares a hreg with a local, we can't add the whole
-				 * method as a live interval, since it would overlap with the locals
-				 * live interval.
-				 */
-				continue;
-			}
-
-			gcfg->reg_types [hreg] = g_slist_prepend_mempool (cfg->mempool, gcfg->reg_types [hreg], GINT_TO_POINTER (slot_type));
-
-			/* Live for the whole method */
-			li = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
-			mono_linterval_add_range (cfg, li, 0, cfg->code_size);
-			gcfg->reg_live_intervals [hreg] = g_slist_prepend_mempool (cfg->mempool, gcfg->reg_live_intervals [hreg], li);
-
-			if (cfg->verbose_level > 1) {
-				printf ("\t%s arg reg %s: ", slot_type_to_string (slot_type), mono_arch_regname (hreg));
-				mono_linterval_print (li);
-				printf ("\n");
-			}
-
-			continue;
-		}
-
-		if (ins->opcode != OP_REGOFFSET)
-			continue;
-
-		g_assert (ins->inst_offset % sizeof (mgreg_t) == 0);
-
-		pos = (ins->inst_offset - gcfg->min_offset) / sizeof (mgreg_t);
-
-		if (ins->inst_offset >= gcfg->max_offset)
-			/* In parent frame */
-			continue;
-
-		if (ins->flags & MONO_INST_IS_DEAD) {
-			/* These do not get stored in the prolog */
-			set_slot (gcfg, pos, SLOT_NOREF);
-
-			if (cfg->verbose_level > 1) {
-				printf ("\tdead arg at fp%s0x%x (slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "+", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
-			}
-			continue;
-		}
-
-		if (MONO_TYPE_ISSTRUCT (t)) {
-			int size;
-
-			if (ins->backend.is_pinvoke)
-				size = mono_class_native_size (ins->klass, NULL);
-			else
-				size = mono_class_value_size (ins->klass, NULL);
-
-			if (!ins->klass->has_references) {
-				for (j = 0; j < size / sizeof (mgreg_t); ++j)
-					set_slot (gcfg, pos + j, SLOT_NOREF);
-				continue;
-			}
-
-			// FIXME:
-			continue;
-		}
-
-		if (t->byref)
-			continue;
-
-		t = mini_type_get_underlying_type (NULL, t);
-
 		if (!MONO_TYPE_IS_REFERENCE (t)) {
 			set_slot (gcfg, pos, SLOT_NOREF);
 			continue;
 		}
 
+		if (!is_arg && (vmv && !vmv->gc_interval)) {
+			set_slot (gcfg, pos, SLOT_PIN);
+			continue;
+		}
+
+		if (ins->flags & (MONO_INST_VOLATILE | MONO_INST_INDIRECT)) {
+			/*
+			 * For volatile variables, treat them alive from the point they are
+			 * initialized in the first bblock until the end of the method.
+			 */
+			if (pc_offsets [vmv->vreg]) {
+				vmv->gc_interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+				mono_linterval_add_range (cfg, vmv->gc_interval, pc_offsets [vmv->vreg], cfg->code_size);
+				starts_pinned [pos] = TRUE;
+			} else {
+				set_slot (gcfg, pos, SLOT_PIN);
+				continue;
+			}
+		}
+
 		set_slot (gcfg, pos, SLOT_REF);
 
-		/* Live for the whole method */
-		li = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
-		mono_linterval_add_range (cfg, li, 0, cfg->code_size);
+		if (is_arg) {
+			/* Live for the whole method */
+			li = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+			mono_linterval_add_range (cfg, li, 0, cfg->code_size);
+		} else {
+			li = vmv->gc_interval;
+		}
 
 		gcfg->live_intervals [pos] = g_slist_prepend_mempool (cfg->mempool, gcfg->live_intervals [pos], li);
 
@@ -1143,6 +1071,8 @@ process_arguments (MonoCompile *cfg)
 			printf ("\n");
 		}
 	}
+
+	g_free (pc_offsets);
 }
 
 static void
@@ -1285,8 +1215,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	process_spill_slots (cfg);
 	process_other_slots (cfg);
-	process_locals (cfg);
-	process_arguments (cfg);
+	process_variables (cfg);
 
 	/* Create the GC Map */
 
@@ -1395,7 +1324,6 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		StackSlotType type;
 
 		if (!(cfg->used_int_regs & (1 << i))) {
-			g_assert (!gcfg->reg_types [i]);
 			continue;
 		}
 
