@@ -50,7 +50,7 @@ endif
 if SHARED_MONO
 shared_libraries = libmonoruntime.la
 endif
-noinst_LTLIBRARIES =  $(shared_libaries) libmonoruntime-static.la $(sgen_libraries) $(moonlight_libraries)
+noinst_LTLIBRARIES =  $(shared_libraries) libmonoruntime-static.la $(sgen_libraries) $(moonlight_libraries)
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
