@@ -675,11 +675,15 @@ process_spill_slots (MonoCompile *cfg)
 		for (l = bb->spill_slot_defs; l; l = l->next) {
 			MonoInst *def = l->data;
 			int spill_slot = def->inst_c0;
-			int offset = cfg->spill_info [MONO_REG_INT_REF][spill_slot].offset;
+			int bank = def->inst_c1;
+			int offset = cfg->spill_info [bank][spill_slot].offset;
 			int slot = fp_offset_to_slot (cfg, offset);
 			MonoLiveInterval *interval;
 
-			set_slot (gcfg, slot, SLOT_REF);
+			if (bank == MONO_REG_INT_MP)
+				set_slot (gcfg, slot, SLOT_PIN);
+			else
+				set_slot (gcfg, slot, SLOT_REF);
 
 			interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
 			mono_linterval_add_range (cfg, interval, def->backend.pc_offset, bb->native_offset + bb->native_length);

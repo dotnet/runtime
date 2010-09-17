@@ -6,14 +6,16 @@ enum {
 	MONO_REG_DOUBLE,
 	/* This is used only for allocating spill slots with GC tracking */
 	MONO_REG_INT_REF,
+	/* Ditto for managed pointers */
+	MONO_REG_INT_MP,
 	MONO_REG_SIMD
 };
 
  
 #ifdef MONO_ARCH_NEED_SIMD_BANK
-#define MONO_NUM_REGBANKS 4
+#define MONO_NUM_REGBANKS 5
 #else
-#define MONO_NUM_REGBANKS 3
+#define MONO_NUM_REGBANKS 4
 #endif
 
 typedef struct {

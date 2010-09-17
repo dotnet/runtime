@@ -71,12 +71,14 @@ static const int regbank_size [] = {
 	MONO_MAX_IREGS,
 	MONO_MAX_FREGS,
 	MONO_MAX_IREGS,
+	MONO_MAX_IREGS,
 	MONO_MAX_XREGS
 };
 
 static const int regbank_load_ops [] = { 
 	OP_LOADR_MEMBASE,
 	OP_LOADR8_MEMBASE,
+	OP_LOADR_MEMBASE,
 	OP_LOADR_MEMBASE,
 	OP_LOADX_MEMBASE
 };
@@ -85,12 +87,14 @@ static const int regbank_store_ops [] = {
 	OP_STORER_MEMBASE_REG,
 	OP_STORER8_MEMBASE_REG,
 	OP_STORER_MEMBASE_REG,
+	OP_STORER_MEMBASE_REG,
 	OP_STOREX_MEMBASE
 };
 
 static const int regbank_move_ops [] = { 
 	OP_MOVE,
 	OP_FMOVE,
+	OP_MOVE,
 	OP_MOVE,
 	OP_XMOVE
 };
@@ -101,6 +105,7 @@ static const regmask_t regbank_callee_saved_regs [] = {
 	MONO_ARCH_CALLEE_SAVED_REGS,
 	MONO_ARCH_CALLEE_SAVED_FREGS,
 	MONO_ARCH_CALLEE_SAVED_REGS,
+	MONO_ARCH_CALLEE_SAVED_REGS,
 	MONO_ARCH_CALLEE_SAVED_XREGS,
 };
 
@@ -108,12 +113,14 @@ static const regmask_t regbank_callee_regs [] = {
 	MONO_ARCH_CALLEE_REGS,
 	MONO_ARCH_CALLEE_FREGS,
 	MONO_ARCH_CALLEE_REGS,
+	MONO_ARCH_CALLEE_REGS,
 	MONO_ARCH_CALLEE_XREGS,
 };
 
 static const int regbank_spill_var_size[] = {
 	sizeof (mgreg_t),
 	sizeof (double),
+	sizeof (mgreg_t),
 	sizeof (mgreg_t),
 	16 /*FIXME make this a constant. Maybe MONO_ARCH_SIMD_VECTOR_SIZE? */
 };
@@ -233,10 +240,12 @@ mono_regname_full (int reg, int bank)
 {
 	if (G_UNLIKELY (bank)) {
 #if MONO_ARCH_NEED_SIMD_BANK
-		if (bank == 2)
+		if (bank == MONO_REG_SIMD)
 			return mono_arch_xregname (reg);
 #endif
-		g_assert (bank == 1);
+		if (bank == MONO_REG_INT_REF || bank == MONO_REG_INT_MP)
+			return mono_arch_regname (reg);
+		g_assert (bank == MONO_REG_DOUBLE);
 		return mono_arch_fregname (reg);
 	} else {
 		return mono_arch_regname (reg);
@@ -678,6 +687,17 @@ insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst **last, MonoInst* 
 	*last = to_insert;
 }
 
+static inline int
+get_vreg_bank (MonoCompile *cfg, int reg, int bank)
+{
+	if (vreg_is_ref (cfg, reg))
+		return MONO_REG_INT_REF;
+	else if (vreg_is_mp (cfg, reg))
+		return MONO_REG_INT_MP;
+	else
+		return bank;
+}
+
 /*
  * Force the spilling of the variable in the symbolic register 'reg', and free 
  * the hreg it was assigned to.
@@ -689,7 +709,6 @@ spill_vreg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins
 	int i, sel, spill;
 	int *symbolic;
 	MonoRegState *rs = cfg->rs;
-	gboolean ref = vreg_is_ref (cfg, reg);
 
 	symbolic = rs->symbolic [bank];
 	sel = rs->vassign [reg];
@@ -710,7 +729,7 @@ spill_vreg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins
 	MONO_INST_NEW (cfg, load, regbank_load_ops [bank]);
 	load->dreg = sel;
 	load->inst_basereg = cfg->frame_reg;
-	load->inst_offset = mono_spillvar_offset (cfg, spill, ref ? MONO_REG_INT_REF : bank);
+	load->inst_offset = mono_spillvar_offset (cfg, spill, get_vreg_bank (cfg, reg, bank));
 	insert_after_ins (bb, ins, last, load);
 	DEBUG (printf ("SPILLED LOAD (%d at 0x%08lx(%%ebp)) R%d (freed %s)\n", spill, (long)load->inst_offset, i, mono_regname_full (sel, bank)));
 	if (G_UNLIKELY (bank))
@@ -738,7 +757,6 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 	int sregs [MONO_MAX_SRC_REGS];
 	int *symbolic;
 	MonoRegState *rs = cfg->rs;
-	gboolean is_ref;
 
 	symbolic = rs->symbolic [bank];
 
@@ -798,13 +816,11 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 		mono_regstate_free_int (rs, sel);
 	}
 
-	is_ref = vreg_is_ref (cfg, i);
-
 	/* we need to create a spill var and insert a load to sel after the current instruction */
 	MONO_INST_NEW (cfg, load, regbank_load_ops [bank]);
 	load->dreg = sel;
 	load->inst_basereg = cfg->frame_reg;
-	load->inst_offset = mono_spillvar_offset (cfg, spill, is_ref ? MONO_REG_INT_REF : bank);
+	load->inst_offset = mono_spillvar_offset (cfg, spill, get_vreg_bank (cfg, i, bank));
 	insert_after_ins (bb, ins, last, load);
 	DEBUG (printf ("\tSPILLED LOAD (%d at 0x%08lx(%%ebp)) R%d (freed %s)\n", spill, (long)load->inst_offset, i, mono_regname_full (sel, bank)));
 	if (G_UNLIKELY (bank))
@@ -857,16 +873,28 @@ create_copy_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, int dest
 	return copy;
 }
 
+static inline const char*
+regbank_to_string (int bank)
+{
+	if (bank == MONO_REG_INT_REF)
+		return "REF ";
+	else if (bank == MONO_REG_INT_MP)
+		return "MP ";
+	else
+		return "";
+}
+
 static void
 create_spilled_store (MonoCompile *cfg, MonoBasicBlock *bb, int spill, int reg, int prev_reg, MonoInst **last, MonoInst *ins, MonoInst *insert_before, int bank)
 {
 	MonoInst *store, *def;
-	gboolean is_ref = vreg_is_ref (cfg, prev_reg);
+	
+	bank = get_vreg_bank (cfg, prev_reg, bank);
 
 	MONO_INST_NEW (cfg, store, regbank_store_ops [bank]);
 	store->sreg1 = reg;
 	store->inst_destbasereg = cfg->frame_reg;
-	store->inst_offset = mono_spillvar_offset (cfg, spill, is_ref ? MONO_REG_INT_REF : bank);
+	store->inst_offset = mono_spillvar_offset (cfg, spill, bank);
 	if (ins) {
 		mono_bblock_insert_after_ins (bb, ins, store);
 		*last = store;
@@ -875,12 +903,13 @@ create_spilled_store (MonoCompile *cfg, MonoBasicBlock *bb, int spill, int reg, 
 	} else {
 		g_assert_not_reached ();
 	}
-	DEBUG (printf ("\tSPILLED STORE (%d at 0x%08lx(%%ebp)) R%d (from %s)\n", spill, (long)store->inst_offset, prev_reg, mono_regname_full (reg, bank)));
+	DEBUG (printf ("\t%sSPILLED STORE (%d at 0x%08lx(%%ebp)) R%d (from %s)\n", regbank_to_string (bank), spill, (long)store->inst_offset, prev_reg, mono_regname_full (reg, bank)));
 
-	if (is_ref && cfg->compute_gc_maps) {
+	if (((bank == MONO_REG_INT_REF) || (bank == MONO_REG_INT_MP)) && cfg->compute_gc_maps) {
 		g_assert (prev_reg != -1);
 		MONO_INST_NEW (cfg, def, OP_GC_SPILL_SLOT_LIVENESS_DEF);
 		def->inst_c0 = spill;
+		def->inst_c1 = bank;
 		mono_bblock_insert_after_ins (bb, store, def);
 		*last = def;
 	}

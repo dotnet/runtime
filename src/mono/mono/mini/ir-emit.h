@@ -67,13 +67,27 @@ alloc_ireg_ref (MonoCompile *cfg)
 }
 
 static inline guint32
+alloc_ireg_mp (MonoCompile *cfg)
+{
+	int vreg = alloc_ireg (cfg);
+
+#ifdef HAVE_SGEN_GC
+	if (cfg->compute_gc_maps)
+		mono_mark_vreg_as_mp (cfg, vreg);
+#endif
+
+	return vreg;
+}
+
+static inline guint32
 alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 {
 	switch (stack_type) {
 	case STACK_I4:
 	case STACK_PTR:
-	case STACK_MP:
 		return alloc_ireg (cfg);
+	case STACK_MP:
+		return alloc_ireg_mp (cfg);
 	case STACK_OBJ:
 		return alloc_ireg_ref (cfg);
 	case STACK_R8:

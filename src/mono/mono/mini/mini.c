@@ -1040,7 +1040,9 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	inst->dreg = vreg;
 
 	if (cfg->compute_gc_maps) {
-		if ((MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->klass->has_references) || MONO_TYPE_IS_REFERENCE (inst->inst_vtype)) {
+		if (type->byref) {
+			mono_mark_vreg_as_mp (cfg, vreg);
+		} else if ((MONO_TYPE_ISSTRUCT (type) && inst->klass->has_references) || MONO_TYPE_IS_REFERENCE (type)) {
 			inst->flags |= MONO_INST_GC_TRACK;
 			mono_mark_vreg_as_ref (cfg, vreg);
 		}
@@ -1150,6 +1152,22 @@ mono_mark_vreg_as_ref (MonoCompile *cfg, int vreg)
 			memcpy (cfg->vreg_is_ref, tmp, size * sizeof (gboolean));
 	}
 	cfg->vreg_is_ref [vreg] = TRUE;
+}	
+
+void
+mono_mark_vreg_as_mp (MonoCompile *cfg, int vreg)
+{
+	if (vreg >= cfg->vreg_is_mp_len) {
+		gboolean *tmp = cfg->vreg_is_mp;
+		int size = cfg->vreg_is_mp_len;
+
+		while (vreg >= cfg->vreg_is_mp_len)
+			cfg->vreg_is_mp_len = cfg->vreg_is_mp_len ? cfg->vreg_is_mp_len * 2 : 32;
+		cfg->vreg_is_mp = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * cfg->vreg_is_mp_len);
+		if (size)
+			memcpy (cfg->vreg_is_mp, tmp, size * sizeof (gboolean));
+	}
+	cfg->vreg_is_mp [vreg] = TRUE;
 }	
 
 /*

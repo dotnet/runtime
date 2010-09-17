@@ -214,6 +214,33 @@ mono_alloc_ireg_ref (MonoCompile *cfg)
 	return alloc_ireg_ref (cfg);
 }
 
+/*
+ * mono_alloc_ireg_mp:
+ *
+ *   Allocate an IREG, and mark it as holding a managed pointer.
+ */
+guint32
+mono_alloc_ireg_mp (MonoCompile *cfg)
+{
+	return alloc_ireg_mp (cfg);
+}
+
+/*
+ * mono_alloc_ireg_copy:
+ *
+ *   Allocate an IREG with the same GC type as VREG.
+ */
+guint32
+mono_alloc_ireg_copy (MonoCompile *cfg, guint32 vreg)
+{
+	if (vreg_is_ref (cfg, vreg))
+		return alloc_ireg_ref (cfg);
+	else if (vreg_is_mp (cfg, vreg))
+		return alloc_ireg_mp (cfg);
+	else
+		return alloc_ireg (cfg);
+}
+
 guint
 mono_type_to_regmove (MonoCompile *cfg, MonoType *type)
 {
@@ -330,7 +357,7 @@ mono_create_helper_signatures (void)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 #define EMIT_NEW_X86_LEA(cfg,dest,sr1,sr2,shift,imm) do { \
 		MONO_INST_NEW (cfg, dest, OP_X86_LEA); \
-		(dest)->dreg = alloc_preg ((cfg)); \
+		(dest)->dreg = alloc_ireg_mp ((cfg)); \
 		(dest)->sreg1 = (sr1); \
 		(dest)->sreg2 = (sr2); \
 		(dest)->inst_imm = (imm); \
@@ -4055,18 +4082,20 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 		static const int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
 
 		EMIT_NEW_X86_LEA (cfg, ins, array_reg, index2_reg, fast_log2 [size], G_STRUCT_OFFSET (MonoArray, vector));
-		ins->type = STACK_PTR;
+		ins->klass = mono_class_get_element_class (klass);
+		ins->type = STACK_MP;
 
 		return ins;
 	}
 #endif		
 
-	add_reg = alloc_preg (cfg);
+	add_reg = alloc_ireg_mp (cfg);
 
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, index2_reg, size);
 	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, array_reg, mult_reg);
 	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, G_STRUCT_OFFSET (MonoArray, vector));
-	ins->type = STACK_PTR;
+	ins->klass = mono_class_get_element_class (klass);
+	ins->type = STACK_MP;
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	return ins;
@@ -5607,6 +5636,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
 	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_UNKNOWN;
 	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED;
+	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_STELEMREF;
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);

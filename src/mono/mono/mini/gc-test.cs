@@ -522,4 +522,20 @@ class Tests {
 		o.GetHashCode ();
 		return 0;
 	}
+
+	// Liveness for spill slots holding managed pointers
+	public static int test_0_liveness_11 () {
+		Tests[] arr = new Tests [10];
+		// This uses an ldelema internally
+		// FIXME: This doesn't crash if mp-s are not correctly tracked, just writes to
+		// an old object.
+		arr [0] >>= 1;
+
+		return 0;
+	}
+
+	public static Tests operator >> (Tests bi1, int shiftVal) {
+		clobber_regs_and_gc ();
+		return bi1;
+	}
 }
