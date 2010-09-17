@@ -102,7 +102,11 @@ endif
 
 noinst_PROGRAMS = genmdesc
 
-lib_LTLIBRARIES = libmono-2.0.la $(sgen_libraries)
+if SHARED_MONO
+shared_libraries = libmono-2.0.la
+endif
+
+lib_LTLIBRARIES = $(shared_libraries) $(sgen_libraries)
 noinst_LTLIBRARIES = libmono-static.la $(sgen_static_libraries)
 
 if MOONLIGHT
@@ -497,6 +501,7 @@ libmonosgen_2_0_la_CFLAGS = $(AM_CFLAGS) $(SGEN_DEFINES)
 if MOONLIGHT
 libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
 libmono_moon_la_CFLAGS = $(AM_CFLAGS) $(MOONLIGHT_DEFINES)
+libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
 endif
 
 libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
@@ -523,11 +528,6 @@ libmono_2_0_la_LIBADD = \
 
 libmonosgen_2_0_la_LIBADD = \
 	$(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
-
-if MOONLIGHT
-libmono_moon_la_LIBADD = \
-	$(moon_libs) $(LIBMONO_DTRACE_OBJECT)
-endif
 
 basic-simd.exe: basic-simd.cs
 	$(MCS) -out:$@ $< -r:TestDriver.dll -r:Mono.Simd.dll

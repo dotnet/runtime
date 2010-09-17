@@ -62,6 +62,7 @@ static char **assemblies_path = NULL;
 /* Contains the list of directories that point to auxiliary GACs */
 static char **extra_gac_paths = NULL;
 
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 /* The list of system assemblies what will be remapped to the running
  * runtime version. WARNING: this list must be sorted.
  */
@@ -121,6 +122,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"System.Xml", 0},
 	{"mscorlib", 0}
 };
+#endif
 
 /*
  * keeps track of loaded assemblies
@@ -796,6 +798,7 @@ mono_assembly_addref (MonoAssembly *assembly)
 	InterlockedIncrement (&assembly->ref_count);
 }
 
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 static MonoAssemblyName *
 mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_aname)
 {
@@ -844,6 +847,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 	}
 	return aname;
 }
+#endif
 
 /*
  * mono_assembly_get_assemblyref:
@@ -2059,7 +2063,10 @@ MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
 {
 	MonoAssembly *res;
-	MonoAssemblyName *aname, base_name, maped_aname;
+	MonoAssemblyName *aname, base_name;
+#ifndef DISABLE_ASSEMBLY_REMAPPING
+	MonoAssemblyName maped_aname;
+#endif
 	gchar *fullname, *gacpath;
 	gchar **paths;
 
@@ -2069,12 +2076,14 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	if (!mono_assembly_name_parse (name, aname))
 		return NULL;
 
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 	/* 
 	 * If no specific version has been requested, make sure we load the
 	 * correct version for system assemblies.
 	 */ 
 	if ((aname->major | aname->minor | aname->build | aname->revision) == 0)
 		aname = mono_assembly_remap_version (aname, &maped_aname);
+#endif
 	
 	res = mono_assembly_loaded (aname);
 	if (res) {
@@ -2598,12 +2607,17 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 {
 	MonoAssembly *result;
 	char *fullpath, *filename;
-	MonoAssemblyName maped_aname, maped_name_pp;
+#ifndef DISABLE_ASSEMBLY_REMAPPING
+	MonoAssemblyName maped_aname;
+#endif
+	MonoAssemblyName maped_name_pp;
 	int ext_index;
 	const char *ext;
 	int len;
 
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 	aname = mono_assembly_remap_version (aname, &maped_aname);
+#endif
 	
 	/* Reflection only assemblies don't get assembly binding */
 	if (!refonly)
@@ -2714,9 +2728,11 @@ MonoAssembly*
 mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 {
 	MonoAssembly *res;
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 	MonoAssemblyName maped_aname;
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
+#endif
 
 	res = mono_assembly_invoke_search_hook_internal (aname, refonly, FALSE);
 
