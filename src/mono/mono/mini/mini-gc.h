@@ -4,7 +4,7 @@
 #include "mini.h"
 
 /*
- * The GC type of a stack slot.
+ * The GC type of a stack slot or register.
  * This can change through the method as follows:
  * - a SLOT_REF can become SLOT_NOREF and vice-versa when it becomes live/dead.
  * - a SLOT_PIN can become SLOT_REF after it has been definitely assigned.
@@ -14,7 +14,7 @@ typedef enum {
 	SLOT_NOREF = 0,
 	/* Stack slot contains a reference */
 	SLOT_REF = 1,
-	/* No info, slot needs to be scanned conservatively */
+	/* No info or managed pointer, slot needs to be scanned conservatively */
 	SLOT_PIN = 2
 } StackSlotType;
 

@@ -459,6 +459,8 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 						DEBUG (printf ("\treg %s at location %p is precise.\n", mono_arch_regname (i), reg_locations [i]));
 						reg_locations [i] = NULL;
 						scanned_precisely += sizeof (mgreg_t);
+					} else {
+						DEBUG (printf ("\treg %s at location %p is pinning.\n", mono_arch_regname (i), reg_locations [i]));
 					}
 				}
 			}
@@ -512,6 +514,9 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 			if (map->has_ref_regs) {
 				guint8 *ref_bitmap = &map->reg_ref_bitmap [(map->reg_bitmap_width * pc_offset)];
 				for (i = 0; i < map->nregs; ++i) {
+					if (!(map->used_regs & (1 << i)))
+						continue;
+
 					if (!reg_locations [i])
 						continue;
 
@@ -812,7 +817,6 @@ process_locals (MonoCompile *cfg)
 				g_assert (tmp->backend.pc_offset > 0);
 				pc_offsets [vreg] = tmp->backend.pc_offset;
 			}
-			break;
 		}
 	}
 
@@ -1029,11 +1033,13 @@ process_arguments (MonoCompile *cfg)
 		MonoInst *ins = cfg->args [i];
 		MonoType *t = ins->inst_vtype;
 		int pos;
-		gboolean byref = t->byref;
+		gboolean byref;
 
 		/* For some reason, 'this' is byref */
 		if (sig->hasthis && i == 0 && !cfg->method->klass->valuetype)
 			t = &cfg->method->klass->byval_arg;
+
+		byref = t->byref;
 
 		if (ins->opcode == OP_REGVAR) {
 			int hreg;
@@ -1415,6 +1421,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 				for (r = iv->range; r; r = r->next) {
 					for (pc_offset = r->from; pc_offset < r->to; ++pc_offset) {
 						set_bit (map->reg_ref_bitmap, reg_bitmap_width, pc_offset, i);
+						clear_bit (map->reg_pin_bitmap, reg_bitmap_width, pc_offset, i);
 					}
 				}
 			} else if (type == SLOT_PIN) {
