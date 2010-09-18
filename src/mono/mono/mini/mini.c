@@ -2543,10 +2543,9 @@ mono_thread_attach_cb (intptr_t tid, gpointer stack_start)
 }
 
 static void
-mini_thread_cleanup (MonoThread *thread)
+mini_thread_cleanup (MonoInternalThread *thread)
 {
-	MonoInternalThread *internal = thread->internal_thread;
-	MonoJitTlsData *jit_tls = internal->jit_data;
+	MonoJitTlsData *jit_tls = thread->jit_data;
 
 	if (jit_tls) {
 		mono_debugger_thread_cleanup (jit_tls);
@@ -2555,7 +2554,7 @@ mini_thread_cleanup (MonoThread *thread)
 		mono_free_altstack (jit_tls);
 		g_free (jit_tls->first_lmf);
 		g_free (jit_tls);
-		internal->jit_data = NULL;
+		thread->jit_data = NULL;
 
 		/* We can't clean up tls information if we are on another thread, it will clean up the wrong stuff
 		 * It would be nice to issue a warning when this happens outside of the shutdown sequence. but it's
@@ -2563,7 +2562,7 @@ mini_thread_cleanup (MonoThread *thread)
 		 *
 		 * The current offender is mono_thread_manage which cleanup threads from the outside.
 		 */
-		if (internal == mono_thread_internal_current ()) {
+		if (thread == mono_thread_internal_current ()) {
 			TlsSetValue (mono_jit_tls_id, NULL);
 
 #ifdef HAVE_KW_THREAD

@@ -556,6 +556,9 @@ static void thread_cleanup (MonoInternalThread *thread)
 			mono_array_set (thread->cached_culture_info, MonoObject*, i, NULL);
 	}
 
+	if (mono_thread_cleanup_fn)
+		mono_thread_cleanup_fn (thread);
+
 	/* if the thread is not in the hash it has been removed already */
 	if (!handle_remove (thread))
 		return;
@@ -577,17 +580,6 @@ static void thread_cleanup (MonoInternalThread *thread)
 
 	mono_free_static_data (thread->static_data, TRUE);
 	thread->static_data = NULL;
-
-	/*
-	 * FIXME: The check for shutting_down here is a kludge and
-	 * should be removed.  The reason we need it here is because
-	 * mono_thread_manage() does not wait for finalizer threads,
-	 * so we might still be at this point in a finalizer thread
-	 * after the main thread has cleared the root domain, so
-	 * thread could have been zeroed out.
-	 */
-	if (mono_thread_cleanup_fn && !shutting_down)
-		mono_thread_cleanup_fn (thread->root_domain_thread);
 
 	small_id_free (thread->small_id);
 	thread->small_id = -2;
