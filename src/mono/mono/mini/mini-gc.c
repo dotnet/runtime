@@ -43,8 +43,8 @@ typedef struct {
 	int ncallsites;
 
 	/*
-	 * The width of the bitmaps in bytes. This is not equal to the bitmap width at runtime,
-	 * since it includes columns which are 0.
+	 * The width of the stack bitmaps in bytes. This is not equal to the bitmap width at
+     * runtime, since it includes columns which are 0.
 	 */
 	int bitmap_width;
 	/* 
@@ -93,13 +93,19 @@ typedef struct {
 	MonoJitTlsData *jit_tls;
 } TlsData;
 
+/* These are constant so don't store them in the GC Maps */
+
+/* Number of registers stored in gc maps */
+#define NREGS MONO_MAX_IREGS
+
 /* 
+ * The GC Map itself.
  * Contains information needed to mark a stack frame.
  * FIXME: Optimize the memory usage.
+ * FIXME: Factor out offsets.
+ * FIXME: Create two variants, one for small methods, one for large ?
  */
 typedef struct {
-	/* The frame pointer register */
-	int frame_reg;
 	/*
 	 * The offsets of the GC tracked area inside the stack frame relative to the frame pointer.
 	 * This includes memory which is NOREF thus doesn't need GC maps.
@@ -107,46 +113,43 @@ typedef struct {
 	int start_offset;
 	int end_offset;
 	/*
-	 * The offset relative to frame_offset where the the memory described by the GC maps begin.
+	 * The offset relative to frame_offset where the the memory described by the GC maps
+	 * begins.
 	 */
 	int map_offset;
 	/* The number of stack slots in the map */
 	int nslots;
-	/* The number of registers in the map */
-	int nregs;
-	/* Thw width of the stack bitmap in bytes */
-	int bitmap_width;
-	/* Thw width of the register bitmap in bytes */
-	int reg_bitmap_width;
+	/* The frame pointer register */
+	guint8 frame_reg;
 	guint has_pin_slots : 1;
 	guint has_ref_slots : 1;
 	guint has_ref_regs : 1;
 	guint has_pin_regs : 1;
+
+	/* The offsets below are into the 'bitmaps' array at the end */
+
 	/* 
-	 * A bitmap whose width is equal to bitmap_width, and whose
-	 * height is equal to ncallsites.
+	 * A bitmap whose width is equal to bitmap_width, and whose height is equal to ncallsites.
 	 * The bitmap contains a 1 if the corresponding stack slot has type SLOT_REF at the
 	 * given callsite.
-	 * FIXME: Compress this.
-	 * FIXME: Embed this after the structure.
 	 */
-	guint8 *ref_bitmap;
+	guint32 stack_ref_bitmap_offset;
 	/*
 	 * Same for SLOT_PIN. It is possible that the same bit is set in both bitmaps at
      * different callsites, if the slot starts out as PIN, and later changes to REF.
 	 */
-	guint8 *pin_bitmap;
+	guint32 stack_pin_bitmap_offset;
 
 	/*
 	 * Corresponding bitmaps for registers
-	 * These have width MONO_MAX_IREGS in bits.
+	 * These have width NREGS in bits.
 	 * FIXME: Merge these with the normal bitmaps, i.e. reserve the first x slots for them ?
 	 */
-	guint8 *reg_pin_bitmap;
-	guint8 *reg_ref_bitmap;
+	guint32 reg_pin_bitmap_offset;
+	guint32 reg_ref_bitmap_offset;
 
 	/* The registers used by the method */
-	guint64 used_regs;
+	guint32 used_regs;
 
 	/*
 	 * A bit array marking slots which contain refs.
@@ -155,12 +158,17 @@ typedef struct {
 	guint8 *ref_slots;
 
 	/* Callsite offsets */
-	int *callsite_offsets;
+	/* These can take up a lot of space, so encode them compactly */
+	union {
+		guint8 *offsets8;
+		guint16 *offsets16;
+		guint32 *offsets32;
+	} callsites;
 	int ncallsites;
-} GCMap;
 
-/* Statistics */
-static guint32 gc_maps_size;
+	/* All the bitmaps are embedded after the structure */
+	guint8 bitmaps [MONO_ZERO_LEN_ARRAY];
+} GCMap;
 
 static gpointer
 thread_attach_func (void)
@@ -202,6 +210,13 @@ typedef struct {
 	int noref_slots;
 	int ref_slots;
 	int pin_slots;
+
+	int gc_maps_size;
+	int gc_callsites_size;
+	int gc_callsites8_num;
+	int gc_callsites16_num;
+	int gc_callsites32_num;
+	int gc_bitmaps_size;
 } JITGCStats;
 
 static JITGCStats stats;
@@ -409,11 +424,24 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", precise, fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
 
 		/* Find the callsite index */
-		// FIXME: Use a binary search
-		for (i = 0; i < map->ncallsites; ++i)
-			/* ip points inside the call instruction */
-			if (map->callsite_offsets [i] == pc_offset + 1)
-				break;
+		if (ji->code_size < 256) {
+			for (i = 0; i < map->ncallsites; ++i)
+				/* ip points inside the call instruction */
+				if (map->callsites.offsets8 [i] == pc_offset + 1)
+					break;
+		} else if (ji->code_size < 65536) {
+			// FIXME: Use a binary search
+			for (i = 0; i < map->ncallsites; ++i)
+				/* ip points inside the call instruction */
+				if (map->callsites.offsets16 [i] == pc_offset + 1)
+					break;
+		} else {
+			// FIXME: Use a binary search
+			for (i = 0; i < map->ncallsites; ++i)
+				/* ip points inside the call instruction */
+				if (map->callsites.offsets32 [i] == pc_offset + 1)
+					break;
+		}
 		if (i == map->ncallsites) {
 			printf ("Unable to find ip offset 0x%x in callsite list of %s.\n", pc_offset + 1, mono_method_full_name (ji->method, TRUE));
 			g_assert_not_reached ();
@@ -438,7 +466,8 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 			/* Mark stack slots */
 			if (map->has_pin_slots) {
-				guint8 *pin_bitmap = &map->pin_bitmap [(map->bitmap_width * cindex)];
+				int bitmap_width = ALIGN_TO (map->nslots, 8) / 8;
+				guint8 *pin_bitmap = &map->bitmaps [map->stack_pin_bitmap_offset + (bitmap_width * cindex)];
 				guint8 *p;
 				gboolean pinned;
 
@@ -463,8 +492,9 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 			/* Mark registers */
 			if (map->has_pin_regs) {
-				guint8 *pin_bitmap = &map->reg_pin_bitmap [(map->reg_bitmap_width * cindex)];
-				for (i = 0; i < map->nregs; ++i) {
+				int bitmap_width = ALIGN_TO (NREGS, 8) / 8;
+				guint8 *pin_bitmap = &map->bitmaps [map->reg_pin_bitmap_offset + (bitmap_width * cindex)];
+				for (i = 0; i < NREGS; ++i) {
 					if (!(map->used_regs & (1 << i)))
 						continue;
 
@@ -494,7 +524,8 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		} else {
 			/* Mark stack slots */
 			if (map->has_ref_slots) {
-				guint8 *ref_bitmap = &map->ref_bitmap [(map->bitmap_width * cindex)];
+				int bitmap_width = ALIGN_TO (map->nslots, 8) / 8;
+				guint8 *ref_bitmap = &map->bitmaps [map->stack_ref_bitmap_offset + (bitmap_width * cindex)];
 				gboolean live;
 
 				for (i = 0; i < map->nslots; ++i) {
@@ -532,8 +563,9 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 			 * in its prolog to the stack. We can mark this location precisely.
 			 */
 			if (map->has_ref_regs) {
-				guint8 *ref_bitmap = &map->reg_ref_bitmap [(map->reg_bitmap_width * cindex)];
-				for (i = 0; i < map->nregs; ++i) {
+				int bitmap_width = ALIGN_TO (NREGS, 8) / 8;
+				guint8 *ref_bitmap = &map->bitmaps [map->reg_ref_bitmap_offset + (bitmap_width * cindex)];
+				for (i = 0; i < NREGS; ++i) {
 					if (!(map->used_regs & (1 << i)))
 						continue;
 
@@ -1218,9 +1250,9 @@ void
 mini_gc_create_gc_map (MonoCompile *cfg)
 {
 	GCMap *map;
-	int i, j, nregs, nslots, alloc_size;
+	int i, j, nregs, nslots, alloc_size, bitmaps_size, bitmaps_offset;
 	int ntypes [16];
-	int bitmap_width, bitmap_size, reg_bitmap_width, reg_bitmap_size;
+	int stack_bitmap_width, stack_bitmap_size, reg_bitmap_width, reg_bitmap_size;
 	int start, end;
 	gboolean has_ref_slots, has_pin_slots, has_ref_regs, has_pin_regs;
 	MonoCompileGC *gcfg = cfg->gc_info;
@@ -1228,6 +1260,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	int ncallsites;
 	MonoBasicBlock *bb;
 	GSList *l;
+	guint8 *bitmap;
 
 	if (!cfg->compute_gc_maps)
 		return;
@@ -1287,7 +1320,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		printf ("GC Map for %s: 0x%x-0x%x\n", mono_method_full_name (cfg->method, TRUE), gcfg->min_offset, gcfg->max_offset);
 
 	nslots = (gcfg->max_offset - gcfg->min_offset) / sizeof (mgreg_t);
-	nregs = MONO_MAX_IREGS;
+	nregs = NREGS;
 
 	gcfg->nslots = nslots;
 	gcfg->nregs = nregs;
@@ -1363,17 +1396,28 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	}
 
 	has_ref_regs = FALSE;
-	has_pin_regs = TRUE;
+	has_pin_regs = FALSE;
 	for (i = 0; i < nregs; ++i) {
 		gboolean has_ref = FALSE;
+		gboolean has_pin = FALSE;
 
 		for (j = 0; j < ncallsites; ++j) {
-			if (get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i))
+			if (get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i)) {
 				has_ref = TRUE;
+				break;
+			}
+		}
+		for (j = 0; j < ncallsites; ++j) {
+			if (get_bit (gcfg->reg_pin_bitmap, gcfg->reg_bitmap_width, j, i)) {
+				has_pin = TRUE;
+				break;
+			}
 		}
 
 		if (has_ref)
 			has_ref_regs = TRUE;
+		if (has_pin)
+			has_pin_regs = TRUE;
 	}
 
 	if (cfg->verbose_level > 1)
@@ -1381,71 +1425,98 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	/* Create the GC Map */
 
-	/* This is the final bitmap width */
-	bitmap_width = ALIGN_TO (end - start, 8) / 8;
-	bitmap_size = bitmap_width * ncallsites;
+	stack_bitmap_width = ALIGN_TO (end - start, 8) / 8;
+	stack_bitmap_size = stack_bitmap_width * ncallsites;
 	reg_bitmap_width = ALIGN_TO (nregs, 8) / 8;
 	reg_bitmap_size = reg_bitmap_width * ncallsites;
-	alloc_size = sizeof (GCMap);
+	bitmaps_size = (has_ref_slots ? stack_bitmap_size : 0) + (has_pin_slots ? stack_bitmap_size : 0) + (has_ref_regs ? reg_bitmap_size : 0) + (has_pin_regs ? reg_bitmap_size : 0);
+	
+	alloc_size = sizeof (GCMap) + bitmaps_size;
+
 	map = mono_domain_alloc0 (cfg->domain, alloc_size);
-	gc_maps_size += alloc_size;
+	stats.gc_maps_size += alloc_size;
+	stats.gc_bitmaps_size += bitmaps_size;
 
 	map->frame_reg = cfg->frame_reg;
 	map->start_offset = gcfg->min_offset;
 	map->end_offset = gcfg->min_offset + (nslots * sizeof (mgreg_t));
 	map->map_offset = start * sizeof (mgreg_t);
 	map->nslots = end - start;
-	map->nregs = nregs;
-	map->bitmap_width = bitmap_width;
-	map->reg_bitmap_width = reg_bitmap_width;
 	map->has_ref_slots = has_ref_slots;
 	map->has_pin_slots = has_pin_slots;
 	map->has_ref_regs = has_ref_regs;
 	map->has_pin_regs = has_pin_regs;
-	map->ref_slots = mono_domain_alloc0 (cfg->domain, bitmap_width);
-	gc_maps_size += bitmap_width;
+	// FIXME: Fill this
+	map->ref_slots = mono_domain_alloc0 (cfg->domain, stack_bitmap_width);
+	stats.gc_maps_size += stack_bitmap_width;
 
+	bitmaps_offset = 0;
 	if (has_ref_slots) {
-		map->ref_bitmap = mono_domain_alloc0 (cfg->domain, bitmap_size);
-		gc_maps_size += bitmap_size;
+		map->stack_ref_bitmap_offset = bitmaps_offset;
+		bitmaps_offset += stack_bitmap_size;
 
+		bitmap = &map->bitmaps [map->stack_ref_bitmap_offset];
 		for (i = 0; i < nslots; ++i) {
 			for (j = 0; j < ncallsites; ++j) {
 				if (get_bit (gcfg->ref_bitmap, gcfg->bitmap_width, j, i))
-					set_bit (map->ref_bitmap, map->bitmap_width, j, i - start);
+					set_bit (bitmap, stack_bitmap_width, j, i - start);
 			}
 		}
 	}
 	if (has_pin_slots) {
-		map->pin_bitmap = mono_domain_alloc0 (cfg->domain, bitmap_size);
-		gc_maps_size += bitmap_size;
+		map->stack_pin_bitmap_offset = bitmaps_offset;
+		bitmaps_offset += stack_bitmap_size;
 
+		bitmap = &map->bitmaps [map->stack_pin_bitmap_offset];
 		for (i = 0; i < nslots; ++i) {
 			for (j = 0; j < ncallsites; ++j) {
 				if (get_bit (gcfg->pin_bitmap, gcfg->bitmap_width, j, i))
-					set_bit (map->pin_bitmap, map->bitmap_width, j, i - start);
+					set_bit (bitmap, stack_bitmap_width, j, i - start);
 			}
 		}
 	}
 	if (has_ref_regs) {
-		map->reg_ref_bitmap = mono_domain_alloc0 (cfg->domain, reg_bitmap_size);
-		gc_maps_size += reg_bitmap_size;
-		memcpy (map->reg_ref_bitmap, gcfg->reg_ref_bitmap, reg_bitmap_size);
+		map->reg_ref_bitmap_offset = bitmaps_offset;
+		bitmaps_offset += reg_bitmap_size;
+
+		bitmap = &map->bitmaps [map->reg_ref_bitmap_offset];
+		memcpy (bitmap, gcfg->reg_ref_bitmap, reg_bitmap_size);
 	}
 	if (has_pin_regs) {
-		map->reg_pin_bitmap = mono_domain_alloc0 (cfg->domain, reg_bitmap_size);
-		gc_maps_size += reg_bitmap_size;
-		memcpy (map->reg_pin_bitmap, gcfg->reg_pin_bitmap, reg_bitmap_size);
+		map->reg_pin_bitmap_offset = bitmaps_offset;
+		bitmaps_offset += reg_bitmap_size;
+
+		bitmap = &map->bitmaps [map->reg_pin_bitmap_offset];
+		memcpy (bitmap, gcfg->reg_pin_bitmap, reg_bitmap_size);
 	}
 
+	/* Call sites */
 	map->ncallsites = ncallsites;
-	map->callsite_offsets = mono_domain_alloc0 (cfg->domain, ncallsites *sizeof (int));
-	g_assert (nregs < 64);
-	map->used_regs = cfg->used_int_regs;
-	gc_maps_size += ncallsites * sizeof (int);
+	if (cfg->code_len < 256) {
+		map->callsites.offsets8 = mono_domain_alloc0 (cfg->domain, ncallsites * sizeof (guint8));
+		for (i = 0; i < ncallsites; ++i)
+			map->callsites.offsets8 [i] = callsites [i]->pc_offset;
+		stats.gc_maps_size += ncallsites * sizeof (guint8);
+		stats.gc_callsites_size += ncallsites * sizeof (guint8);
+		stats.gc_callsites8_num ++;
+	} else if (cfg->code_len < 65536) {
+		map->callsites.offsets16 = mono_domain_alloc0 (cfg->domain, ncallsites * sizeof (guint16));
+		for (i = 0; i < ncallsites; ++i)
+			map->callsites.offsets16 [i] = callsites [i]->pc_offset;
+		stats.gc_maps_size += ncallsites * sizeof (guint16);
+		stats.gc_callsites_size += ncallsites * sizeof (guint16);
+		stats.gc_callsites16_num ++;
+	} else {
+		map->callsites.offsets32 = mono_domain_alloc0 (cfg->domain, ncallsites * sizeof (guint32));
+		for (i = 0; i < ncallsites; ++i)
+			map->callsites.offsets32 [i] = callsites [i]->pc_offset;
+		stats.gc_maps_size += ncallsites * sizeof (guint32);
+		stats.gc_callsites_size += ncallsites * sizeof (guint32);
+		stats.gc_callsites32_num ++;
+	}
 
-	for (i = 0; i < ncallsites; ++i)
-		map->callsite_offsets [i] = callsites [i]->pc_offset;
+	g_assert (nregs < 32);
+	map->used_regs = cfg->used_int_regs;
 
 	stats.all_slots += nslots;
 	stats.ref_slots += ntypes [SLOT_REF];
@@ -1468,7 +1539,17 @@ mini_gc_init (void)
 	mono_gc_set_gc_callbacks (&cb);
 
 	mono_counters_register ("GC Maps size",
-							MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_maps_size);
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_maps_size);
+	mono_counters_register ("GC Call Sites size",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites_size);
+	mono_counters_register ("GC Bitmaps size",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_bitmaps_size);
+	mono_counters_register ("GC Call Sites encoded using 8 bits",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites8_num);
+	mono_counters_register ("GC Call Sites encoded using 16 bits",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites16_num);
+	mono_counters_register ("GC Call Sites encoded using 32 bits",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites32_num);
 
 	mono_counters_register ("GC Map slots (all)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.all_slots);
