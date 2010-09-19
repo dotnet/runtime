@@ -161,6 +161,7 @@ storei8_membase_imm: dest:b
 storei8_membase_reg: dest:b src1:i 
 storer4_membase_reg: dest:b src1:f len:7
 storer8_membase_reg: dest:b src1:f len:7
+store_mem_imm: len:12
 load_membase: dest:i src1:b len:7
 loadi1_membase: dest:y src1:b len:7
 loadu1_membase: dest:y src1:b len:7
