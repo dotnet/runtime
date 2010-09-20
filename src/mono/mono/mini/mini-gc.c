@@ -81,6 +81,25 @@ typedef struct {
 #define GC_BITS_PER_WORD (sizeof (gsize) * 8)
 
 /*
+ * Contains information collected during the conservative stack marking pass,
+ * used during the precise pass. This helps to avoid doing a stack walk twice, which
+ * is expensive.
+ * FIXME: Optimize memory usage.
+ */
+typedef struct {
+	guint8 *bitmap;
+	int nslots;
+	/* FIXME: Store an offset from the previous frame */
+	guint8* frame_start;
+	int nreg_locations;
+	int regs [MONO_MAX_IREGS];
+	gpointer reg_locations [MONO_MAX_IREGS];
+} FrameInfo;
+
+/* Max number of frames stored in the TLS data */
+#define MAX_FRAMES 50
+
+/*
  * Per-thread data kept by this module. This is stored in the GC and passed to us as
  * parameters, instead of being stored in a TLS variable, since during a collection,
  * only the collection thread is active.
@@ -90,10 +109,12 @@ typedef struct {
 	MonoContext ctx;
 	gboolean has_context;
 	MonoJitTlsData *jit_tls;
+	/* Number of frames collected during the !precise pass */
+	int nframes;
+	FrameInfo frames [MAX_FRAMES];
 } TlsData;
 
 /* These are constant so don't store them in the GC Maps */
-
 /* Number of registers stored in gc maps */
 #define NREGS MONO_MAX_IREGS
 
@@ -455,14 +476,12 @@ slot_type_to_string (StackSlotType type)
 }
 
 /*
- * thread_mark_func:
+ * conservatively_pass:
  *
- *   This is called by the GC twice to mark a thread stack. PRECISE is FALSE at the first
- * call, and TRUE at the second. USER_DATA points to a TlsData
- * structure filled up by thread_suspend_func. 
+ *   Mark a thread stack conservatively and collect information needed by the precise pass.
  */
 static void
-thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise)
+conservative_pass (gpointer user_data, guint8 *stack_start, guint8 *stack_end)
 {
 	TlsData *tls = user_data;
 	MonoJitInfo *ji;
@@ -474,20 +493,19 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	GCMap map_tmp;
 	GCEncodedMap *emap;
 	guint8* fp, *p, *frame_start, *frame_end;
-	int i, pc_offset, cindex;
+	int i, pc_offset, cindex, bitmap_width;
 	int scanned = 0, scanned_precisely, scanned_conservatively, scanned_registers;
 	gboolean res;
 	StackFrameInfo frame;
 	mgreg_t *reg_locations [MONO_MAX_IREGS];
 	mgreg_t *new_reg_locations [MONO_MAX_IREGS];
 	guint8 *bitmaps;
+	FrameInfo *fi;
 
 	/* tls == NULL can happen during startup */
 	if (mono_thread_internal_current () == NULL || !tls) {
-		if (!precise) {
-			mono_gc_conservatively_scan_area (stack_start, stack_end);
-			stats.scanned_stacks += stack_end - stack_start;
-		}
+		mono_gc_conservatively_scan_area (stack_start, stack_end);
+		stats.scanned_stacks += stack_end - stack_start;
 		return;
 	}
 
@@ -506,8 +524,6 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	/* This is one past the last address which we have scanned */
 	stack_limit = stack_start;
 
-	DEBUG (printf ("*** %s stack marking %p-%p ***\n", precise ? "Precise" : "Conservative", stack_start, stack_end));
-
 	if (!tls->has_context)
 		memset (&new_ctx, 0, sizeof (ctx));
 	else
@@ -515,6 +531,8 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 	memset (reg_locations, 0, sizeof (reg_locations));
 	memset (new_reg_locations, 0, sizeof (new_reg_locations));
+
+	tls->nframes = 0;
 
 	while (TRUE) {
 		memcpy (&ctx, &new_ctx, sizeof (ctx));
@@ -530,7 +548,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 				 * we have to treat the register as PIN, since we don't know whenever it
 				 * has the same value as in the caller, or a new dead value.
 				 */
-				if (!precise && reg_locations [i]) {
+				if (reg_locations [i]) {
 					DEBUG (printf ("\tscan saved reg %s location %p.\n", mono_arch_regname (i), reg_locations [i]));
 					mono_gc_conservatively_scan_area (reg_locations [i], reg_locations [i] + sizeof (mgreg_t));
 					scanned_registers += sizeof (mgreg_t);
@@ -538,9 +556,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 				reg_locations [i] = new_reg_locations [i];
 
-				if (!precise) {
-					DEBUG (printf ("\treg %s is at location %p.\n", mono_arch_regname (i), reg_locations [i]));
-				}
+				DEBUG (printf ("\treg %s is at location %p.\n", mono_arch_regname (i), reg_locations [i]));
 			}
 		}
 
@@ -565,6 +581,14 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 			continue;
 
 		/* All the other frames are at a call site */
+
+		if (tls->nframes == MAX_FRAMES) {
+			/* 
+			 * Can't save information since the array is full. So scan the rest of the
+			 * stack conservatively.
+			 */
+			break;
+		}
 
 		/* Scan the frame of this method */
 
@@ -596,12 +620,12 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		}
 				
 		if (precise_frame_limit != -1) {
-			if (precise_frame_count [precise] == precise_frame_limit)
+			if (precise_frame_count [FALSE] == precise_frame_limit)
 				printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (ji->method, TRUE));
-			if (precise_frame_count [precise] > precise_frame_limit)
+			if (precise_frame_count [FALSE] > precise_frame_limit)
 				continue;
 		}
-		precise_frame_count [precise] ++;
+		precise_frame_count [FALSE] ++;
 
 		/* Decode the encoded GC map */
 		map = &map_tmp;
@@ -657,188 +681,239 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		}
 		cindex = i;
 
-		/* 
-		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
-		 * call for each object.
-		 */
+		g_assert (frame_start >= stack_limit);
 
-		/* Pinning needs to be done first, then the precise scan later */
+		if (frame_start > stack_limit) {
+			/* This scans the previously skipped frames as well */
+			DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, frame_start));
+			mono_gc_conservatively_scan_area (stack_limit, frame_start);
+		}
 
-		if (!precise) {
-			g_assert (frame_start >= stack_limit);
+		/* Mark stack slots */
+		if (map->has_pin_slots) {
+			int bitmap_width = ALIGN_TO (map->nslots, 8) / 8;
+			guint8 *pin_bitmap = &bitmaps [map->stack_pin_bitmap_offset + (bitmap_width * cindex)];
+			guint8 *p;
+			gboolean pinned;
 
-			if (frame_start > stack_limit) {
-				/* This scans the previously skipped frames as well */
-				DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, frame_start));
-				mono_gc_conservatively_scan_area (stack_limit, frame_start);
-			}
-
-			/* Mark stack slots */
-			if (map->has_pin_slots) {
-				int bitmap_width = ALIGN_TO (map->nslots, 8) / 8;
-				guint8 *pin_bitmap = &bitmaps [map->stack_pin_bitmap_offset + (bitmap_width * cindex)];
-				guint8 *p;
-				gboolean pinned;
-
-				p = frame_start;
-				for (i = 0; i < map->nslots; ++i) {
-					pinned = pin_bitmap [i / 8] & (1 << (i % 8));
-					if (pinned) {
-						DEBUG (printf ("\tscan slot %s0x%x(fp)=%p.\n", (guint8*)p > (guint8*)fp ? "" : "-", ABS ((int)((gssize)p - (gssize)fp)), p));
-						mono_gc_conservatively_scan_area (p, p + sizeof (mgreg_t));
-						scanned_conservatively += sizeof (mgreg_t);
-					} else {
-						scanned_precisely += sizeof (mgreg_t);
-					}
-					p += sizeof (mgreg_t);
+			p = frame_start;
+			for (i = 0; i < map->nslots; ++i) {
+				pinned = pin_bitmap [i / 8] & (1 << (i % 8));
+				if (pinned) {
+					DEBUG (printf ("\tscan slot %s0x%x(fp)=%p.\n", (guint8*)p > (guint8*)fp ? "" : "-", ABS ((int)((gssize)p - (gssize)fp)), p));
+					mono_gc_conservatively_scan_area (p, p + sizeof (mgreg_t));
+					scanned_conservatively += sizeof (mgreg_t);
+				} else {
+					scanned_precisely += sizeof (mgreg_t);
 				}
-			} else {
-				scanned_precisely += (map->nslots * sizeof (mgreg_t));
+				p += sizeof (mgreg_t);
 			}
-
-			/* The area outside of start-end is NOREF */
-			scanned_precisely += (map->end_offset - map->start_offset) - (map->nslots * sizeof (mgreg_t));
-
-			/* Mark registers */
-			if (map->has_pin_regs) {
-				int bitmap_width = ALIGN_TO (map->npin_regs, 8) / 8;
-				guint8 *pin_bitmap = &bitmaps [map->reg_pin_bitmap_offset + (bitmap_width * cindex)];
-				int bindex = 0;
-				for (i = 0; i < NREGS; ++i) {
-					if (!(map->reg_pin_mask & (1 << i)))
-						continue;
-
-					if (reg_locations [i] && !(pin_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
-						/*
-						 * The method uses this register, and we have precise info for it.
-						 * This means the location will be scanned precisely.
-						 * Tell the code at the beginning of the loop that this location is
-						 * processed.
-						 */
-						DEBUG (printf ("\treg %s at location %p is precise.\n", mono_arch_regname (i), reg_locations [i]));
-						reg_locations [i] = NULL;
-					} else {
-						DEBUG (printf ("\treg %s at location %p is pinning.\n", mono_arch_regname (i), reg_locations [i]));
-					}
-					bindex ++;
-				}
-			}
-
-			scanned += map->end_offset - map->start_offset;
-
-			g_assert (scanned == scanned_precisely + scanned_conservatively);
-
-			stack_limit = frame_end;
 		} else {
-			/* Mark stack slots */
-			if (map->has_ref_slots) {
-				int bitmap_width = ALIGN_TO (map->nslots, 8) / 8;
-				guint8 *ref_bitmap = &bitmaps [map->stack_ref_bitmap_offset + (bitmap_width * cindex)];
-				gboolean live;
+			scanned_precisely += (map->nslots * sizeof (mgreg_t));
+		}
 
-				for (i = 0; i < map->nslots; ++i) {
-					MonoObject **ptr = (MonoObject**)(frame_start + (i * sizeof (mgreg_t)));
+		/* The area outside of start-end is NOREF */
+		scanned_precisely += (map->end_offset - map->start_offset) - (map->nslots * sizeof (mgreg_t));
 
-					live = ref_bitmap [i / 8] & (1 << (i % 8));
+		/* Mark registers */
+		if (map->has_pin_regs) {
+			int bitmap_width = ALIGN_TO (map->npin_regs, 8) / 8;
+			guint8 *pin_bitmap = &bitmaps [map->reg_pin_bitmap_offset + (bitmap_width * cindex)];
+			int bindex = 0;
+			for (i = 0; i < NREGS; ++i) {
+				if (!(map->reg_pin_mask & (1 << i)))
+					continue;
 
-					if (live) {
-						MonoObject *obj = *ptr;
-						if (obj) {
-							DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
-							*ptr = mono_gc_scan_object (obj);
-							DEBUG (printf (" %p.\n", *ptr));
-						} else {
-							DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
-						}
-					} else {
-#if 0
-						/*
-						 * This is disabled because the pointer takes up a lot of space.
-						 * Stack slots might be shared between ref and non-ref variables ?
-						 */
-						if (map->ref_slots [i / 8] & (1 << (i % 8))) {
-							DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, *ptr));
-							/*
-							 * Fail fast if the live range is incorrect, and
-							 * the JITted code tries to access this object
-							 */
-							*ptr = DEAD_REF;
-						}
-#endif
-					}
+				if (reg_locations [i] && !(pin_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
+					/*
+					 * The method uses this register, and we have precise info for it.
+					 * This means the location will be scanned precisely.
+					 * Tell the code at the beginning of the loop that this location is
+					 * processed.
+					 */
+					DEBUG (printf ("\treg %s at location %p is precise.\n", mono_arch_regname (i), reg_locations [i]));
+					reg_locations [i] = NULL;
+				} else {
+					DEBUG (printf ("\treg %s at location %p is pinning.\n", mono_arch_regname (i), reg_locations [i]));
 				}
+				bindex ++;
 			}
+		}
 
-			/* Mark registers */
+		scanned += map->end_offset - map->start_offset;
 
-			/*
-			 * Registers are different from stack slots, they have no address where they
-			 * are stored. Instead, some frame below this frame in the stack saves them
-			 * in its prolog to the stack. We can mark this location precisely.
-			 */
-			if (map->has_ref_regs) {
-				int bitmap_width = ALIGN_TO (map->nref_regs, 8) / 8;
-				guint8 *ref_bitmap = &bitmaps [map->reg_ref_bitmap_offset + (bitmap_width * cindex)];
-				int bindex = 0;
-				for (i = 0; i < NREGS; ++i) {
-					if (!(map->reg_ref_mask & (1 << i)))
-						continue;
+		g_assert (scanned == scanned_precisely + scanned_conservatively);
 
-					if (reg_locations [i] && (ref_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
-						/*
-						 * reg_locations [i] contains the address of the stack slot where
-						 * i was last saved, so mark that slot.
-						 */
-						MonoObject **ptr = (MonoObject**)reg_locations [i];
-						MonoObject *obj = *ptr;
+		stack_limit = frame_end;
 
-						if (obj) {
-							DEBUG (printf ("\treg %s saved at %p: %p ->", mono_arch_regname (i), reg_locations [i], obj));
-							*ptr = mono_gc_scan_object (obj);
-							DEBUG (printf (" %p.\n", *ptr));
-						} else {
-							DEBUG (printf ("\treg %s saved at %p: %p", mono_arch_regname (i), reg_locations [i], obj));
-						}
-					}
-					bindex ++;
+		/* Save information for the precise pass */
+		fi = &tls->frames [tls->nframes];
+		fi->nslots = map->nslots;
+		bitmap_width = ALIGN_TO (map->nslots, 8) / 8;
+		if (map->has_ref_slots)
+			fi->bitmap = &bitmaps [map->stack_ref_bitmap_offset + (bitmap_width * cindex)];
+		else
+			fi->bitmap = NULL;
+		fi->frame_start = frame_start;
+		fi->nreg_locations = 0;
+
+		if (map->has_ref_regs) {
+			int bitmap_width = ALIGN_TO (map->nref_regs, 8) / 8;
+			guint8 *ref_bitmap = &bitmaps [map->reg_ref_bitmap_offset + (bitmap_width * cindex)];
+			int bindex = 0;
+			for (i = 0; i < NREGS; ++i) {
+				if (!(map->reg_ref_mask & (1 << i)))
+					continue;
+
+				if (reg_locations [i] && (ref_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
+					fi->regs [fi->nreg_locations] = i;
+					fi->reg_locations [fi->nreg_locations] = reg_locations [i];
+					fi->nreg_locations ++;
 				}
-			}	
+				bindex ++;
+			}
+		}
+
+		tls->nframes ++;
+	}
+
+	/* Scan the remaining register save locations */
+	for (i = 0; i < MONO_MAX_IREGS; ++i) {
+		if (reg_locations [i]) {
+			DEBUG (printf ("\tscan saved reg location %p.\n", reg_locations [i]));
+			mono_gc_conservatively_scan_area (reg_locations [i], reg_locations [i] + sizeof (mgreg_t));
+			scanned_registers += sizeof (mgreg_t);
+		}
+		// FIXME: Is this needed ?
+		if (new_reg_locations [i]) {
+			DEBUG (printf ("\tscan saved reg location %p.\n", new_reg_locations [i]));
+			mono_gc_conservatively_scan_area (new_reg_locations [i], new_reg_locations [i] + sizeof (mgreg_t));
+			scanned_registers += sizeof (mgreg_t);
 		}
 	}
 
-	if (!precise) {
-		/* Scan the remaining register save locations */
-		for (i = 0; i < MONO_MAX_IREGS; ++i) {
-			if (reg_locations [i]) {
-				DEBUG (printf ("\tscan saved reg location %p.\n", reg_locations [i]));
-				mono_gc_conservatively_scan_area (reg_locations [i], reg_locations [i] + sizeof (mgreg_t));
-				scanned_registers += sizeof (mgreg_t);
-			}
-			// FIXME: Is this needed ?
-			if (new_reg_locations [i]) {
-				DEBUG (printf ("\tscan saved reg location %p.\n", new_reg_locations [i]));
-				mono_gc_conservatively_scan_area (new_reg_locations [i], new_reg_locations [i] + sizeof (mgreg_t));
-				scanned_registers += sizeof (mgreg_t);
-			}
-		}
-	}
-
-	if (stack_limit < stack_end && !precise) {
+	if (stack_limit < stack_end) {
 		DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, stack_end));
 		mono_gc_conservatively_scan_area (stack_limit, stack_end);
 	}
 
 	DEBUG (printf ("Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
 
-	if (!precise) {
-		stats.scanned_stacks += stack_end - stack_start;
-		stats.scanned += scanned;
-		stats.scanned_precisely += scanned_precisely;
-		stats.scanned_conservatively += scanned_conservatively;
-		stats.scanned_registers += scanned_registers;
-	}
+	stats.scanned_stacks += stack_end - stack_start;
+	stats.scanned += scanned;
+	stats.scanned_precisely += scanned_precisely;
+	stats.scanned_conservatively += scanned_conservatively;
+	stats.scanned_registers += scanned_registers;
 
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
+}
+
+/*
+ * precise_pass:
+ *
+ *   Mark a thread stack precisely based on information saved during the conservative
+ * pass.
+ */
+static void
+precise_pass (TlsData *tls)
+{
+	int findex, i;
+	FrameInfo *fi;
+
+	if (!tls)
+		return;
+
+	for (findex = 0; findex < tls->nframes; findex ++) {
+		/* Load information saved by the !precise pass */
+		fi = &tls->frames [findex];
+
+		/* 
+		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
+		 * call for each object.
+		 */
+
+		/* Mark stack slots */
+		if (fi->bitmap) {
+			guint8 *ref_bitmap = fi->bitmap;
+			gboolean live;
+
+			for (i = 0; i < fi->nslots; ++i) {
+				MonoObject **ptr = (MonoObject**)(fi->frame_start + (i * sizeof (mgreg_t)));
+
+				live = ref_bitmap [i / 8] & (1 << (i % 8));
+
+				if (live) {
+					MonoObject *obj = *ptr;
+					if (obj) {
+						DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+						*ptr = mono_gc_scan_object (obj);
+						DEBUG (printf (" %p.\n", *ptr));
+					} else {
+						DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+					}
+				} else {
+#if 0
+					/*
+					 * This is disabled because the pointer takes up a lot of space.
+					 * Stack slots might be shared between ref and non-ref variables ?
+					 */
+					if (map->ref_slots [i / 8] & (1 << (i % 8))) {
+						DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, *ptr));
+						/*
+						 * Fail fast if the live range is incorrect, and
+						 * the JITted code tries to access this object
+						 */
+						*ptr = DEAD_REF;
+					}
+#endif
+				}
+			}
+		}
+
+		/* Mark registers */
+
+		/*
+		 * Registers are different from stack slots, they have no address where they
+		 * are stored. Instead, some frame below this frame in the stack saves them
+		 * in its prolog to the stack. We can mark this location precisely.
+		 */
+		for (i = 0; i < fi->nreg_locations; ++i) {
+			/*
+			 * reg_locations [i] contains the address of the stack slot where
+			 * a reg was last saved, so mark that slot.
+			 */
+			MonoObject **ptr = (MonoObject**)fi->reg_locations [i];
+			MonoObject *obj = *ptr;
+
+			if (obj) {
+				DEBUG (printf ("\treg %s saved at %p: %p ->", mono_arch_regname (fi->regs [i]), fi->reg_locations [i], obj));
+				*ptr = mono_gc_scan_object (obj);
+				DEBUG (printf (" %p.\n", *ptr));
+			} else {
+				DEBUG (printf ("\treg %s saved at %p: %p", mono_arch_regname (fi->regs [i]), fi->reg_locations [i], obj));
+			}
+		}	
+	}
+}
+
+/*
+ * thread_mark_func:
+ *
+ *   This is called by the GC twice to mark a thread stack. PRECISE is FALSE at the first
+ * call, and TRUE at the second. USER_DATA points to a TlsData
+ * structure filled up by thread_suspend_func. 
+ */
+static void
+thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise)
+{
+	TlsData *tls = user_data;
+
+	DEBUG (printf ("*** %s stack marking %p-%p ***\n", precise ? "Precise" : "Conservative", stack_start, stack_end));
+
+	if (!precise)
+		conservative_pass (tls, stack_start, stack_end);
+	else
+		precise_pass (tls);
 }
 
 static void
