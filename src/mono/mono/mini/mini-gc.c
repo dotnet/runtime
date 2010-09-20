@@ -328,7 +328,7 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 	flags = decode_uleb128 (buf, &buf);
 	map->has_ref_slots = (flags & 1) ? 1 : 0;
 	map->has_pin_slots = (flags & 2) ? 1 : 0;
-	map->has_pin_regs = (flags & 4) ? 1 : 0;
+	map->has_ref_regs = (flags & 4) ? 1 : 0;
 	map->has_pin_regs = (flags & 8) ? 1 : 0;
 	map->frame_reg = flags >> 4;
 	map->used_regs = decode_uleb128 (buf, &buf);
