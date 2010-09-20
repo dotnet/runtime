@@ -199,11 +199,11 @@ typedef struct {
 	 * Their address needs to be computed.
 	 */
 
-	/* An array of ncallsites entries, each entry is callsite_entry_size bytes long */
-	guint8 callsites [MONO_ZERO_LEN_ARRAY];
-
 	/* The fixed fields of the GCMap encoded using LEB128 */
 	guint8 encoded [MONO_ZERO_LEN_ARRAY];
+
+	/* An array of ncallsites entries, each entry is callsite_entry_size bytes long */
+	guint8 callsites [MONO_ZERO_LEN_ARRAY];
 
 	/* The GC bitmaps */
 	guint8 bitmaps [MONO_ZERO_LEN_ARRAY];
