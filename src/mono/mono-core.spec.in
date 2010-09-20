@@ -16,9 +16,10 @@ Version:        @VERSION@
 Release:        0
 Source0:        mono-%{version}.tar.bz2
 BuildRequires:  bison
-BuildRequires:  gcc-c++
 BuildRequires:  fdupes
+BuildRequires:  gcc-c++
 BuildRequires:  pkgconfig
+BuildRequires:  xorg-x11-libX11-devel
 BuildRequires:  zlib-devel
 %ifnarch ia64
 BuildRequires:  valgrind-devel
@@ -95,6 +96,9 @@ export PATH=/opt/novell/llvm-mono/bin:$PATH
   --with-sgen=%{sgen} \
 %if %llvm == yes
   --enable-loadedllvm \
+  --disable-system-aot \
+%endif
+%ifnarch %ix86 x86_64
   --disable-system-aot \
 %endif
   --with-ikvm=yes \
