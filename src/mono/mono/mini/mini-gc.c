@@ -121,6 +121,8 @@ typedef struct {
 	int nslots;
 	/* The frame pointer register */
 	guint8 frame_reg;
+	/* The size of each callsite table entry */
+	guint8 callsite_entry_size;
 	guint has_pin_slots : 1;
 	guint has_ref_slots : 1;
 	guint has_ref_regs : 1;
@@ -165,9 +167,6 @@ typedef struct {
 		guint32 *offsets32;
 	} callsites;
 	int ncallsites;
-
-	/* All the bitmaps are embedded after the structure */
-	guint8 bitmaps [MONO_ZERO_LEN_ARRAY];
 } GCMap;
 
 /*
@@ -175,12 +174,14 @@ typedef struct {
  */
 typedef struct {
 	//guint8 *ref_slots;
-	guint8 *callsites;
 	//guint8 encoded_size;
 
 	/* The arrays below are embedded after the struct.
 	 * Their address needs to be computed.
 	 */
+
+	/* An array of ncallsites entries, each entry is callsite_entry_size bytes long */
+	guint8 callsites [MONO_ZERO_LEN_ARRAY];
 
 	/* The fixed fields of the GCMap encoded using LEB128 */
 	guint8 encoded [MONO_ZERO_LEN_ARRAY];
@@ -299,6 +300,7 @@ encode_gc_map (GCMap *map, guint8 *buf, guint8 **endbuf)
 	encode_sleb128 (map->start_offset / sizeof (mgreg_t), buf, &buf);
 	encode_sleb128 (map->map_offset / sizeof (mgreg_t), buf, &buf);
 	encode_uleb128 (map->nslots, buf, &buf);
+	encode_uleb128 (map->callsite_entry_size, buf, &buf);
 	flags = (map->has_ref_slots ? 1 : 0) | (map->has_pin_slots ? 2 : 0) | (map->has_ref_regs ? 4 : 0) | (map->has_pin_regs ? 8 : 0) | (map->frame_reg << 4);
 	encode_uleb128 (flags, buf, &buf);
 	encode_uleb128 (map->used_regs, buf, &buf);
@@ -322,6 +324,7 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 	map->start_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
 	map->map_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
 	map->nslots = decode_uleb128 (buf, &buf);
+	map->callsite_entry_size = decode_uleb128 (buf, &buf);
 	flags = decode_uleb128 (buf, &buf);
 	map->has_ref_slots = (flags & 1) ? 1 : 0;
 	map->has_pin_slots = (flags & 2) ? 1 : 0;
@@ -591,7 +594,9 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 		map = &map_tmp;
 		memset (map, 0, sizeof (GCMap));
 		decode_gc_map (&emap->encoded [0], map, &p);
-		map->callsites.offsets8 = emap->callsites;
+		p = (guint8*)ALIGN_TO (p, map->callsite_entry_size);
+		map->callsites.offsets8 = p;
+		p += map->callsite_entry_size * map->ncallsites;
 		bitmaps = p;
 
 #ifdef __x86_64__
@@ -1686,28 +1691,12 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	/* Call sites */
 	map->ncallsites = ncallsites;
-	if (cfg->code_len < 256) {
-		map->callsites.offsets8 = mono_domain_alloc0 (cfg->domain, ncallsites * sizeof (guint8));
-		for (i = 0; i < ncallsites; ++i)
-			map->callsites.offsets8 [i] = callsites [i]->pc_offset;
-		stats.gc_maps_size += ncallsites * sizeof (guint8);
-		stats.gc_callsites_size += ncallsites * sizeof (guint8);
-		stats.gc_callsites8_num ++;
-	} else if (cfg->code_len < 65536) {
-		map->callsites.offsets16 = mono_domain_alloc0 (cfg->domain, ncallsites * sizeof (guint16));
-		for (i = 0; i < ncallsites; ++i)
-			map->callsites.offsets16 [i] = callsites [i]->pc_offset;
-		stats.gc_maps_size += ncallsites * sizeof (guint16);
-		stats.gc_callsites_size += ncallsites * sizeof (guint16);
-		stats.gc_callsites16_num ++;
-	} else {
-		map->callsites.offsets32 = mono_domain_alloc0 (cfg->domain, ncallsites * sizeof (guint32));
-		for (i = 0; i < ncallsites; ++i)
-			map->callsites.offsets32 [i] = callsites [i]->pc_offset;
-		stats.gc_maps_size += ncallsites * sizeof (guint32);
-		stats.gc_callsites_size += ncallsites * sizeof (guint32);
-		stats.gc_callsites32_num ++;
-	}
+	if (cfg->code_len < 256)
+		map->callsite_entry_size = 1;
+	else if (cfg->code_len < 65536)
+		map->callsite_entry_size = 2;
+	else
+		map->callsite_entry_size = 4;
 
 	/* Encode the GC Map */
 	{
@@ -1715,23 +1704,48 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		guint8 *endbuf;
 		GCEncodedMap *emap;
 		int encoded_size;
-		guint8 *bitmaps_addr;
+		guint8 *p;
 
 		encode_gc_map (map, buf, &endbuf);
 		g_assert (endbuf - buf < 256);
 
 		encoded_size = endbuf - buf;
-		alloc_size = sizeof (GCEncodedMap) + encoded_size + bitmaps_size;
+		alloc_size = sizeof (GCEncodedMap) + ALIGN_TO (encoded_size, map->callsite_entry_size) + (map->callsite_entry_size * map->ncallsites) + bitmaps_size;
 
 		emap = mono_domain_alloc0 (cfg->domain, alloc_size);
 		//emap->ref_slots = map->ref_slots;
-		emap->callsites = map->callsites.offsets8;
+
+		/* Encoded fixed fields */
+		p = &emap->encoded [0];
 		//emap->encoded_size = encoded_size;
-		memcpy (&emap->encoded [0], buf, encoded_size);
-		bitmaps_addr = &emap->encoded [encoded_size];
-		memcpy (bitmaps_addr, bitmaps, bitmaps_size);
+		memcpy (p, buf, encoded_size);
+		p += encoded_size;
+
+		/* Callsite table */
+		p = (guint8*)ALIGN_TO ((guint64)p, map->callsite_entry_size);
+		if (map->callsite_entry_size == 1) {
+			guint8 *offsets = p;
+			for (i = 0; i < ncallsites; ++i)
+				offsets [i] = callsites [i]->pc_offset;
+			stats.gc_callsites8_num ++;
+		} else if (map->callsite_entry_size == 2) {
+			guint16 *offsets = (guint16*)p;
+			for (i = 0; i < ncallsites; ++i)
+				offsets [i] = callsites [i]->pc_offset;
+			stats.gc_callsites16_num ++;
+		} else {
+			guint32 *offsets = (guint32*)p;
+			for (i = 0; i < ncallsites; ++i)
+				offsets [i] = callsites [i]->pc_offset;
+			stats.gc_callsites32_num ++;
+		}
+		p += ncallsites * map->callsite_entry_size;
+
+		/* Bitmaps */
+		memcpy (p, bitmaps, bitmaps_size);
 
 		stats.gc_maps_size += alloc_size;
+		stats.gc_callsites_size += ncallsites * map->callsite_entry_size;
 		stats.gc_bitmaps_size += bitmaps_size;
 		stats.gc_map_struct_size += sizeof (GCEncodedMap) + encoded_size;
 
