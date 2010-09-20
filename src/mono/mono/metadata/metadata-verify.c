@@ -300,6 +300,16 @@ dword_align (const char *ptr)
 #endif
 }
 
+static void
+add_from_mono_error (VerifyContext *ctx, MonoError *error)
+{
+	if (mono_error_ok (error))
+		return;
+
+	ADD_ERROR (ctx, g_strdup (mono_error_get_message (error)));
+	mono_error_cleanup (error);
+}
+
 static guint32
 pe_signature_offset (VerifyContext *ctx)
 {
@@ -928,20 +938,29 @@ get_metadata_stream (VerifyContext *ctx, MonoStreamHeader *header)
 }
 
 static gboolean
-is_valid_string_full (VerifyContext *ctx, guint32 offset, gboolean allow_empty)
+is_valid_string_full_with_image (MonoImage *image, guint32 offset, gboolean allow_empty)
 {
-	OffsetAndSize strings = get_metadata_stream (ctx, &ctx->image->heap_strings);
+	guint32 heap_offset = (char*)image->heap_strings.data - image->raw_data;
+	guint32 heap_size = image->heap_strings.size;
+
 	glong length;
-	const char *data = ctx->data + strings.offset;
+	const char *data = image->raw_data + heap_offset;
 
-	if (offset >= strings.size)
+	if (offset >= heap_size)
 		return FALSE;
-	if (data + offset < data) //FIXME, use a generalized and smart unsigned add with overflow check and fix the whole thing  
+	if (CHECK_ADDP_OVERFLOW_UN (data, offset))
 		return FALSE;
 
-	if (!mono_utf8_validate_and_len_with_bounds (data + offset, strings.size - offset, &length, NULL))
+	if (!mono_utf8_validate_and_len_with_bounds (data + offset, heap_size - offset, &length, NULL))
 		return FALSE;
 	return allow_empty || length > 0;
+}
+
+
+static gboolean
+is_valid_string_full (VerifyContext *ctx, guint32 offset, gboolean allow_empty)
+{
+	return is_valid_string_full_with_image (ctx->image, offset, allow_empty);
 }
 
 static gboolean
@@ -994,7 +1013,7 @@ make_coded_token (int kind, guint32 table, guint32 table_idx)
 }
 
 static gboolean
-is_valid_coded_index (VerifyContext *ctx, int token_kind, guint32 coded_token)
+is_valid_coded_index_with_image (MonoImage *image, int token_kind, guint32 coded_token)
 {
 	guint32 bits = coded_index_desc [token_kind++];
 	guint32 table_count = coded_index_desc [token_kind++];
@@ -1009,7 +1028,13 @@ is_valid_coded_index (VerifyContext *ctx, int token_kind, guint32 coded_token)
 
 	if (table == INVALID_TABLE)
 		return FALSE;
-	return token <= ctx->image->tables [table].rows;
+	return token <= image->tables [table].rows;
+}
+
+static gboolean
+is_valid_coded_index (VerifyContext *ctx, int token_kind, guint32 coded_token)
+{
+	return is_valid_coded_index_with_image (ctx->image, token_kind, coded_token);
 }
 
 typedef struct {
@@ -2328,22 +2353,12 @@ static void
 verify_typeref_table (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPEREF];
-	guint32 data [MONO_TYPEREF_SIZE];
-	int i;
+	MonoError error;
+	guint32 i;
 
 	for (i = 0; i < table->rows; ++i) {
-		mono_metadata_decode_row (table, i, data, MONO_TYPEREF_SIZE);
-		if (!is_valid_coded_index (ctx, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d coded index 0x%08x", i, data [MONO_TYPEREF_SCOPE]));
-		
-		if (!get_coded_index_token (RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
-			ADD_ERROR (ctx, g_strdup_printf ("The metadata verifier doesn't support null ResolutionScope tokens for typeref row %d", i));
-
-		if (!data [MONO_TYPEREF_NAME] || !is_valid_non_empty_string (ctx, data [MONO_TYPEREF_NAME]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d name token 0x%08x", i, data [MONO_TYPEREF_NAME]));
-
-		if (data [MONO_TYPEREF_NAMESPACE] && !is_valid_non_empty_string (ctx, data [MONO_TYPEREF_NAMESPACE]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d namespace token 0x%08x", i, data [MONO_TYPEREF_NAMESPACE]));
+		mono_verifier_verify_typeref_row (ctx->image, i, &error);
+		add_from_mono_error (ctx, &error);
 	}
 }
 
@@ -3688,6 +3703,7 @@ verify_tables_data_global_constraints (VerifyContext *ctx)
 static void
 verify_tables_data_global_constraints_full (VerifyContext *ctx)
 {
+	verify_typeref_table (ctx);
 	verify_typeref_table_global_constraints (ctx);
 }
 
@@ -3718,8 +3734,9 @@ verify_tables_data (VerifyContext *ctx)
 
 	verify_module_table (ctx);
 	CHECK_ERROR ();
+	/*Obfuscators love to place broken stuff in the typeref table
 	verify_typeref_table (ctx);
-	CHECK_ERROR ();
+	CHECK_ERROR ();*/
 	verify_typedef_table (ctx);
 	CHECK_ERROR ();
 	verify_field_table (ctx);
@@ -4154,6 +4171,52 @@ mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMetho
 	return TRUE;
 }
 
+gboolean
+mono_verifier_verify_typeref_row (MonoImage *image, guint32 row, MonoError *error)
+{
+	MonoTableInfo *table = &image->tables [MONO_TABLE_TYPEREF];
+	guint32 data [MONO_TYPEREF_SIZE];
+
+	mono_error_init (error);
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	if (row >= table->rows) {
+		printf ("---1\n");
+		g_assert (0);
+		mono_error_set_bad_image (error, image, "Invalid typeref row %d - table has %d rows", row, table->rows);
+		return FALSE;
+	}
+
+	mono_metadata_decode_row (table, row, data, MONO_TYPEREF_SIZE);
+	if (!is_valid_coded_index_with_image (image, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE])) {
+		printf ("---2\n");
+		mono_error_set_bad_image (error, image, "Invalid typeref row %d coded index 0x%08x", row, data [MONO_TYPEREF_SCOPE]);
+		return FALSE;
+	}
+
+	if (!get_coded_index_token (RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE])) {
+		printf ("---3\n");
+		mono_error_set_bad_image (error, image, "The metadata verifier doesn't support null ResolutionScope tokens for typeref row %d", row);
+		return FALSE;
+	}
+
+	if (!data [MONO_TYPEREF_NAME] || !is_valid_string_full_with_image (image, data [MONO_TYPEREF_NAME], FALSE)) {
+		printf ("---4\n");
+		mono_error_set_bad_image (error, image, "Invalid typeref row %d name token 0x%08x", row, data [MONO_TYPEREF_NAME]);
+		return FALSE;
+	}
+
+	if (data [MONO_TYPEREF_NAMESPACE] && !is_valid_string_full_with_image (image, data [MONO_TYPEREF_NAMESPACE], FALSE)) {
+		printf ("---5\n");
+		mono_error_set_bad_image (error, image, "Invalid typeref row %d namespace token 0x%08x", row, data [MONO_TYPEREF_NAMESPACE]);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 #else
 gboolean
 mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
@@ -4246,5 +4309,11 @@ mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMetho
 	return TRUE;
 }
 
+
+gboolean
+mono_verifier_verify_typeref_row (MonoImage *image, guint32 row, MonoError *error)
+{
+	mono_error_init (error);
+}
 
 #endif /* DISABLE_VERIFIER */

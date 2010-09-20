@@ -44,6 +44,7 @@ gboolean mono_verifier_verify_cattr_blob (MonoImage *image, guint32 offset, GSLi
 gboolean mono_verifier_verify_cattr_content (MonoImage *image, MonoMethod *ctor, const guchar *data, guint32 size, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMethodSignature *signature) MONO_INTERNAL;
 
+gboolean mono_verifier_verify_typeref_row (MonoImage *image, guint32 row, MonoError *error) MONO_INTERNAL;
 G_END_DECLS
 
 #endif  /* __MONO_METADATA_VERIFY_INTERNAL_H__ */
