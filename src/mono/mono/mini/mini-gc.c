@@ -1974,11 +1974,8 @@ mini_gc_init_cfg (MonoCompile *cfg)
 
 /*
  * Problems with the current code:
- * - it makes two passes over the stack
  * - the stack walk is slow
  * - vtypes/refs used in EH regions are treated conservatively
- * - the computation of the GC maps is slow since it involves a liveness analysis pass
- * - the GC maps are uncompressed and take up a lot of memory.
  * - if the code is finished, less pinning will be done, causing problems because
  *   we promote all surviving objects to old-gen.
  */
