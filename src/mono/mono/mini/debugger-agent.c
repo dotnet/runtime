@@ -103,6 +103,7 @@ typedef struct {
 	GSList *onthrow;
 	int timeout;
 	char *launch;
+	gboolean embedding;
 } AgentConfig;
 
 typedef struct
@@ -232,7 +233,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 1
+#define MINOR_VERSION 2
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -534,6 +535,8 @@ static HANDLE debugger_thread_handle;
 
 static int log_level;
 
+static gboolean embedding;
+
 static FILE *log_file;
 
 /* Classes whose class load event has been sent */
@@ -582,9 +585,9 @@ static void runtime_initialized (MonoProfiler *prof);
 
 static void runtime_shutdown (MonoProfiler *prof);
 
-static void thread_startup (MonoProfiler *prof, intptr_t tid);
+static void thread_startup (MonoProfiler *prof, uintptr_t tid);
 
-static void thread_end (MonoProfiler *prof, intptr_t tid);
+static void thread_end (MonoProfiler *prof, uintptr_t tid);
 
 static void appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result);
 
@@ -727,6 +730,8 @@ mono_debugger_agent_parse_options (char *options)
 			agent_config.timeout = atoi (arg + 8);
 		} else if (strncmp (arg, "launch=", 7) == 0) {
 			agent_config.launch = g_strdup (arg + 7);
+		} else if (strncmp (arg, "embedding=", 10) == 0) {
+			agent_config.embedding = atoi (arg + 10) == 1;
 		} else {
 			print_usage ();
 			exit (1);
@@ -793,6 +798,8 @@ mono_debugger_agent_init (void)
 	domains = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	log_level = agent_config.log_level;
+
+	embedding = agent_config.embedding;
 
 	if (agent_config.log_file) {
 		log_file = fopen (agent_config.log_file, "w+");
@@ -2833,7 +2840,7 @@ runtime_shutdown (MonoProfiler *prof)
 }
 
 static void
-thread_startup (MonoProfiler *prof, intptr_t tid)
+thread_startup (MonoProfiler *prof, uintptr_t tid)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoInternalThread *old_thread;
@@ -2895,7 +2902,7 @@ thread_startup (MonoProfiler *prof, intptr_t tid)
 }
 
 static void
-thread_end (MonoProfiler *prof, intptr_t tid)
+thread_end (MonoProfiler *prof, uintptr_t tid)
 {
 	MonoInternalThread *thread;
 	DebuggerTlsData *tls = NULL;
@@ -3000,7 +3007,7 @@ end_runtime_invoke (MonoProfiler *prof, MonoMethod *method)
 	gpointer stackptr = __builtin_frame_address (1);
 #endif
 
-	if (ss_req == NULL || stackptr != ss_invoke_addr || ss_req->thread != mono_thread_internal_current ())
+	if (!embedding || ss_req == NULL || stackptr != ss_invoke_addr || ss_req->thread != mono_thread_internal_current ())
 		return;
 
 	/*

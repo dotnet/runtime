@@ -52,11 +52,15 @@ typedef LPTHREAD_START_ROUTINE WapiThreadStart;
 
 typedef struct _MonoInternalThread MonoInternalThread;
 
+typedef void (*MonoThreadCleanupFunc) (MonoInternalThread* thread);
+
 gpointer mono_create_thread (WapiSecurityAttributes *security,
 							 guint32 stacksize, WapiThreadStart start,
 							 gpointer param, guint32 create, gsize *tid) MONO_INTERNAL;
 
 MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread) MONO_INTERNAL;
+
+void mono_threads_install_cleanup (MonoThreadCleanupFunc func) MONO_INTERNAL;
 
 void ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this) MONO_INTERNAL;
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start) MONO_INTERNAL;

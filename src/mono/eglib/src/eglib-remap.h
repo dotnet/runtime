@@ -50,6 +50,7 @@
 #define g_hash_table_new_full monoeg_g_hash_table_new_full
 #define g_hash_table_remove monoeg_g_hash_table_remove
 #define g_hash_table_size monoeg_g_hash_table_size
+#define g_hash_table_print_stats monoeg_g_hash_table_print_stats
 #define g_int_equal monoeg_g_int_equal
 #define g_int_hash monoeg_g_int_hash
 #define g_list_alloc monoeg_g_list_alloc
@@ -99,6 +100,7 @@
 #define g_pattern_spec_new monoeg_g_pattern_spec_new
 #define g_print monoeg_g_print
 #define g_printf monoeg_g_printf
+#define g_printerr monoeg_g_printerr
 #define g_propagate_error monoeg_g_propagate_error
 #define g_ptr_array_add monoeg_g_ptr_array_add
 #define g_ptr_array_foreach monoeg_g_ptr_array_foreach
@@ -166,6 +168,7 @@
 #define g_strerror monoeg_g_strerror
 #define g_strescape monoeg_g_strescape
 #define g_strfreev monoeg_g_strfreev
+#define g_strdupv monoeg_g_strdupv
 #define g_string_append monoeg_g_string_append
 #define g_string_append_c monoeg_g_string_append_c
 #define g_string_append_len monoeg_g_string_append_len

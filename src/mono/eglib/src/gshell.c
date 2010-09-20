@@ -33,7 +33,6 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **error)
 {
 	gchar *ptr;
 	gchar c;
-	gboolean in_quote = FALSE;
 	gboolean escaped = FALSE;
 	gchar quote_char = '\0';
 	GString *str;
@@ -42,18 +41,28 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **error)
 	ptr = (gchar *) cmdline;
 	while ((c = *ptr++) != '\0') {
 		if (escaped) {
-			escaped = FALSE;
-			if (!g_ascii_isspace (c))
+			/*
+			 * \CHAR is only special inside a double quote if CHAR is
+			 * one of: $`"\ and newline
+			 */
+			if (quote_char == '\"'){
+				if (!(c == '$' || c == '`' || c == '"' || c == '\\'))
+					g_string_append_c (str, '\\');
 				g_string_append_c (str, c);
-		} else if (in_quote) {
+			} else {
+				if (!g_ascii_isspace (c))
+					g_string_append_c (str, c);
+			}
+			escaped = FALSE;
+		} else if (quote_char) {
 			if (c == quote_char) {
-				in_quote = FALSE;
 				quote_char = '\0';
 				g_ptr_array_add (array, g_string_free (str, FALSE));
 				str = g_string_new ("");
-			} else {
+			} else if (c == '\\'){
+				escaped = TRUE;
+			} else 
 				g_string_append_c (str, c);
-			}
 		} else if (g_ascii_isspace (c)) {
 			if (str->len > 0) {
 				g_ptr_array_add (array, g_string_free (str, FALSE));
@@ -62,7 +71,6 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **error)
 		} else if (c == '\\') {
 			escaped = TRUE;
 		} else if (c == '\'' || c == '"') {
-			in_quote = TRUE;
 			quote_char = c;
 		} else {
 			g_string_append_c (str, c);
@@ -76,7 +84,7 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **error)
 		return -1;
 	}
 
-	if (in_quote) {
+	if (quote_char) {
 		if (error)
 			*error = g_error_new (G_LOG_DOMAIN, 0, "Unfinished quote.");
 		g_string_free (str, TRUE);

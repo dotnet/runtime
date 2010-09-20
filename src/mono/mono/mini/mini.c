@@ -2414,6 +2414,24 @@ mono_set_lmf (MonoLMF *lmf)
 	(*mono_get_lmf_addr ()) = lmf;
 }
 
+static void
+mono_set_jit_tls (MonoJitTlsData *jit_tls)
+{
+	TlsSetValue (mono_jit_tls_id, jit_tls);
+
+#ifdef HAVE_KW_THREAD
+	mono_jit_tls = jit_tls;
+#endif
+}
+
+static void
+mono_set_lmf_addr (gpointer lmf_addr)
+{
+#ifdef HAVE_KW_THREAD
+	mono_lmf_addr = lmf_addr;
+#endif
+}
+
 /* Called by native->managed wrappers */
 void
 mono_jit_thread_attach (MonoDomain *domain)
@@ -2471,14 +2489,10 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	jit_tls = g_new0 (MonoJitTlsData, 1);
 
-	TlsSetValue (mono_jit_tls_id, jit_tls);
-
-#ifdef HAVE_KW_THREAD
-	mono_jit_tls = jit_tls;
-#endif
-
 	jit_tls->abort_func = abort_func;
 	jit_tls->end_of_stack = stack_start;
+
+	mono_set_jit_tls (jit_tls);
 
 	lmf = g_new0 (MonoLMF, 1);
 #ifdef MONO_ARCH_INIT_TOP_LMF_ENTRY
@@ -2492,11 +2506,9 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 #if defined(HAVE_KW_THREAD) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
 	/* jit_tls->lmf is unused */
 	mono_lmf = lmf;
-	mono_lmf_addr = &mono_lmf;
+	mono_set_lmf_addr (&mono_lmf);
 #else
-#if defined(HAVE_KW_THREAD)
-	mono_lmf_addr = &jit_tls->lmf;	
-#endif
+	mono_set_lmf_addr (&jit_tls->lmf);
 
 	jit_tls->lmf = lmf;
 #endif
@@ -2543,10 +2555,9 @@ mono_thread_attach_cb (intptr_t tid, gpointer stack_start)
 }
 
 static void
-mini_thread_cleanup (MonoThread *thread)
+mini_thread_cleanup (MonoInternalThread *thread)
 {
-	MonoInternalThread *internal = thread->internal_thread;
-	MonoJitTlsData *jit_tls = internal->jit_data;
+	MonoJitTlsData *jit_tls = thread->jit_data;
 
 	if (jit_tls) {
 		mono_debugger_thread_cleanup (jit_tls);
@@ -2555,7 +2566,7 @@ mini_thread_cleanup (MonoThread *thread)
 		mono_free_altstack (jit_tls);
 		g_free (jit_tls->first_lmf);
 		g_free (jit_tls);
-		internal->jit_data = NULL;
+		thread->jit_data = NULL;
 
 		/* We can't clean up tls information if we are on another thread, it will clean up the wrong stuff
 		 * It would be nice to issue a warning when this happens outside of the shutdown sequence. but it's
@@ -2563,16 +2574,10 @@ mini_thread_cleanup (MonoThread *thread)
 		 *
 		 * The current offender is mono_thread_manage which cleanup threads from the outside.
 		 */
-		if (internal == mono_thread_internal_current ()) {
-			TlsSetValue (mono_jit_tls_id, NULL);
-
-#ifdef HAVE_KW_THREAD
-			mono_jit_tls = NULL;
-			mono_lmf_addr = NULL;
-#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
-			mono_lmf = NULL;
-#endif
-#endif		
+		if (thread == mono_thread_internal_current ()) {
+			mono_set_lmf (NULL);
+			mono_set_jit_tls (NULL);
+			mono_set_lmf_addr (NULL);
 		}
 	}
 }

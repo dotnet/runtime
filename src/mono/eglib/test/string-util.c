@@ -621,6 +621,30 @@ test_ascii_strdown ()
 	return OK;
 }
 
+RESULT
+test_strdupv ()
+{
+	gchar **one;
+	gchar **two;
+	gint len;
+
+	one = g_strdupv (NULL);
+	if (one)
+		return FAILED ("Should have been NULL");
+
+	one = g_malloc (sizeof (gchar *));
+	*one = NULL;
+	two = g_strdupv (one);
+	if (!two)
+		FAILED ("Should have been not NULL");
+	len = g_strv_length (two);
+	if (len)
+		FAILED ("Should have been 0");
+	g_strfreev (two);
+	g_strfreev (one);
+	return NULL;
+}
+
 static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
@@ -639,6 +663,7 @@ static Test strutil_tests [] = {
 	{"g_strescape", test_strescape},
 	{"g_ascii_strncasecmp", test_ascii_strncasecmp },
 	{"g_ascii_strdown", test_ascii_strdown },
+	{"g_strdupv", test_strdupv },
 	{NULL, NULL}
 };
 

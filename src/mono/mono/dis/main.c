@@ -862,8 +862,10 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		if (ms != NULL){
 			sig_str = dis_stringify_method_signature (m, ms, i + 1, container, FALSE);
 			method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
-		} else
+		} else {
+			sig_str = NULL;
 			method_name = g_strdup ("<NULL METHOD SIGNATURE>");
+		}
 
 		fprintf (output, "    // method line %d\n", i + 1);
 		fprintf (output, "    .method %s", flags);

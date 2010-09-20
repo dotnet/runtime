@@ -4663,10 +4663,11 @@ mono_method_verify (MonoMethod *method, int level)
 	g_assert (bb);
 
 	while (ip < end && ctx.valid) {
+		int op_size;
 		ip_offset = ip - code_start;
 		{
 			const unsigned char *ip_copy = ip;
-			int size, op;
+			int op;
 
 			if (ip_offset > bb->end) {
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or EH block at [0x%04x] targets middle instruction at 0x%04x", bb->end, ip_offset));
@@ -4676,28 +4677,21 @@ mono_method_verify (MonoMethod *method, int level)
 			if (ip_offset == bb->end)
 				bb = bb->next;
 	
-			size = mono_opcode_value_and_size (&ip_copy, end, &op);
-			if (size == -1) {
+			op_size = mono_opcode_value_and_size (&ip_copy, end, &op);
+			if (op_size == -1) {
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction %x at 0x%04x", *ip, ip_offset));
 				goto cleanup;
 			}
 
-			if (ADD_IS_GREATER_OR_OVF (ip_offset, size, bb->end)) {
+			if (ADD_IS_GREATER_OR_OVF (ip_offset, op_size, bb->end)) {
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or EH block targets middle of instruction at 0x%04x", ip_offset));
 				goto cleanup;
 			}
 
 			/*Last Instruction*/
-			if (ip_offset + size == bb->end && mono_opcode_is_prefix (op)) {
+			if (ip_offset + op_size == bb->end && mono_opcode_is_prefix (op)) {
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or EH block targets between prefix '%s' and instruction at 0x%04x", mono_opcode_name (op), ip_offset));
 				goto cleanup;
-			}
-
-			if (bb->dead) {
-				/*FIXME remove this once we move all bad branch checking code to use BB only*/
-				ctx.code [ip_offset].flags |= IL_CODE_FLAG_SEEN;
-				ip += size;
-				continue;
 			}
 		}
 
@@ -4738,6 +4732,14 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Try to enter try block with a non-empty stack at 0x%04x", ip_offset));
 				start = 1;
 			}
+		}
+
+		/*This must be done after fallthru detection otherwise it won't happen.*/
+		if (bb->dead) {
+			/*FIXME remove this once we move all bad branch checking code to use BB only*/
+			ctx.code [ip_offset].flags |= IL_CODE_FLAG_SEEN;
+			ip += op_size;
+			continue;
 		}
 
 		if (!ctx.valid)

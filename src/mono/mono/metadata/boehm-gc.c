@@ -128,6 +128,18 @@ mono_gc_base_init (void)
 	gc_initialized = TRUE;
 }
 
+/**
+ * mono_gc_collect:
+ * @generation: GC generation identifier
+ *
+ * Perform a garbage collection for the given generation, higher numbers
+ * mean usually older objects. Collecting a high-numbered generation
+ * implies collecting also the lower-numbered generations.
+ * The maximum value for @generation can be retrieved with a call to
+ * mono_gc_max_generation(), so this function is usually called as:
+ *
+ * 	mono_gc_collect (mono_gc_max_generation ());
+ */
 void
 mono_gc_collect (int generation)
 {
@@ -145,35 +157,87 @@ mono_gc_collect (int generation)
 #endif
 }
 
+/**
+ * mono_gc_max_generation:
+ *
+ * Get the maximum generation number used by the current garbage
+ * collector. The value will be 0 for the Boehm collector, 1 or more
+ * for the generational collectors.
+ *
+ * Returns: the maximum generation number.
+ */
 int
 mono_gc_max_generation (void)
 {
 	return 0;
 }
 
+/**
+ * mono_gc_get_generation:
+ * @object: a managed object
+ *
+ * Get the garbage collector's generation that @object belongs to.
+ * Use this has a hint only.
+ *
+ * Returns: a garbage collector generation number
+ */
 int
 mono_gc_get_generation  (MonoObject *object)
 {
 	return 0;
 }
 
+/**
+ * mono_gc_collection_count:
+ * @generation: a GC generation number
+ *
+ * Get how many times a garbage collection has been performed
+ * for the given @generation number.
+ *
+ * Returns: the number of garbage collections
+ */
 int
 mono_gc_collection_count (int generation)
 {
 	return GC_gc_no;
 }
 
+/**
+ * mono_gc_add_memory_pressure:
+ * @value: amount of bytes
+ *
+ * Adjust the garbage collector's view of how many bytes of memory
+ * are indirectly referenced by managed objects (for example unmanaged
+ * memory holding image or other binary data).
+ * This is a hint only to the garbage collector algorithm.
+ * Note that negative amounts of @value will decrease the memory
+ * pressure.
+ */
 void
 mono_gc_add_memory_pressure (gint64 value)
 {
 }
 
+/**
+ * mono_gc_get_used_size:
+ *
+ * Get the approximate amount of memory used by managed objects.
+ *
+ * Returns: the amount of memory used in bytes
+ */
 int64_t
 mono_gc_get_used_size (void)
 {
 	return GC_get_heap_size () - GC_get_free_bytes ();
 }
 
+/**
+ * mono_gc_get_heap_size:
+ *
+ * Get the amount of memory used by the garbage collector.
+ *
+ * Returns: the size of the heap in bytes
+ */
 int64_t
 mono_gc_get_heap_size (void)
 {

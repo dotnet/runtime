@@ -5,3 +5,4 @@
 /load-missing.il -crlf
 /mutexes.cs -crlf
 /thread4.cs -crlf
+/qt-instance.il -crlf

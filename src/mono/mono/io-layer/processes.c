@@ -1693,7 +1693,7 @@ static gboolean process_open_compare (gpointer handle, gpointer user_data)
 gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 pid)
 {
 	/* Find the process handle that corresponds to pid */
-	gpointer handle;
+	gpointer handle = NULL;
 	
 	mono_once (&process_current_once, process_set_current);
 
@@ -1701,11 +1701,12 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 	g_message ("%s: looking for process %d", __func__, pid);
 #endif
 
-	handle = _wapi_search_handle (WAPI_HANDLE_PROCESS,
-				      process_open_compare,
-				      GUINT_TO_POINTER (pid), NULL, TRUE);
+	if (_wapi_shm_enabled ())
+		handle = _wapi_search_handle (WAPI_HANDLE_PROCESS,
+					      process_open_compare,
+					      GUINT_TO_POINTER (pid), NULL, TRUE);
 	if (handle == 0) {
-#if defined(__OpenBSD__)
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
 		if ((kill(pid, 0) == 0) || (errno == EPERM)) {
 #elif defined(__HAIKU__)
 		team_info teamInfo;

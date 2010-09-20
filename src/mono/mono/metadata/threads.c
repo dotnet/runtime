@@ -556,6 +556,9 @@ static void thread_cleanup (MonoInternalThread *thread)
 			mono_array_set (thread->cached_culture_info, MonoObject*, i, NULL);
 	}
 
+	if (mono_thread_cleanup_fn)
+		mono_thread_cleanup_fn (thread);
+
 	/* if the thread is not in the hash it has been removed already */
 	if (!handle_remove (thread))
 		return;
@@ -577,17 +580,6 @@ static void thread_cleanup (MonoInternalThread *thread)
 
 	mono_free_static_data (thread->static_data, TRUE);
 	thread->static_data = NULL;
-
-	/*
-	 * FIXME: The check for shutting_down here is a kludge and
-	 * should be removed.  The reason we need it here is because
-	 * mono_thread_manage() does not wait for finalizer threads,
-	 * so we might still be at this point in a finalizer thread
-	 * after the main thread has cleared the root domain, so
-	 * thread could have been zeroed out.
-	 */
-	if (mono_thread_cleanup_fn && !shutting_down)
-		mono_thread_cleanup_fn (thread->root_domain_thread);
 
 	small_id_free (thread->small_id);
 	thread->small_id = -2;
@@ -2995,8 +2987,10 @@ mono_threads_is_shutting_down (void)
 
 void mono_thread_manage (void)
 {
-	struct wait_data *wait=g_new0 (struct wait_data, 1);
+	struct wait_data wait_data;
+	struct wait_data *wait = &wait_data;
 
+	memset (wait, 0, sizeof (struct wait_data));
 	/* join each thread that's still running */
 	THREAD_DEBUG (g_message ("%s: Joining each running thread...", __func__));
 	
@@ -3004,7 +2998,6 @@ void mono_thread_manage (void)
 	if(threads==NULL) {
 		THREAD_DEBUG (g_message("%s: No threads", __func__));
 		mono_threads_unlock ();
-		g_free (wait);
 		return;
 	}
 	mono_threads_unlock ();
@@ -3021,6 +3014,8 @@ void mono_thread_manage (void)
 	
 		ResetEvent (background_change_event);
 		wait->num=0;
+		/*We must zero all InternalThread pointers to avoid making the GC unhappy.*/
+		memset (wait->threads, 0, MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
 		mono_g_hash_table_foreach (threads, build_wait_tids, wait);
 		mono_threads_unlock ();
 		if(wait->num>0) {
@@ -3047,6 +3042,8 @@ void mono_thread_manage (void)
 		mono_threads_lock ();
 
 		wait->num = 0;
+		/*We must zero all InternalThread pointers to avoid making the GC unhappy.*/
+		memset (wait->threads, 0, MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
 		mono_g_hash_table_foreach_remove (threads, remove_and_abort_threads, wait);
 
 		mono_threads_unlock ();
@@ -3066,8 +3063,6 @@ void mono_thread_manage (void)
 #ifndef HOST_WIN32
 	sched_yield ();
 #endif
-
-	g_free (wait);
 }
 
 static void terminate_thread (gpointer key, gpointer value, gpointer user)
@@ -3128,13 +3123,15 @@ collect_threads_for_suspend (gpointer key, gpointer value, gpointer user_data)
  */
 void mono_thread_suspend_all_other_threads (void)
 {
-	struct wait_data *wait = g_new0 (struct wait_data, 1);
+	struct wait_data wait_data;
+	struct wait_data *wait = &wait_data;
 	int i;
 	gsize self = GetCurrentThreadId ();
 	gpointer *events;
 	guint32 eventidx = 0;
 	gboolean starting, finished;
 
+	memset (wait, 0, sizeof (struct wait_data));
 	/*
 	 * The other threads could be in an arbitrary state at this point, i.e.
 	 * they could be starting up, shutting down etc. This means that there could be
@@ -3161,6 +3158,8 @@ void mono_thread_suspend_all_other_threads (void)
 		 * threads while threads_mutex is held.
 		 */
 		wait->num = 0;
+		/*We must zero all InternalThread pointers to avoid making the GC unhappy.*/
+		memset (wait->threads, 0, MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
 		mono_threads_lock ();
 		mono_g_hash_table_foreach (threads, collect_threads_for_suspend, wait);
 		mono_threads_unlock ();
@@ -3257,8 +3256,6 @@ void mono_thread_suspend_all_other_threads (void)
 
 		g_free (events);
 	}
-
-	g_free (wait);
 }
 
 static void
@@ -3287,8 +3284,11 @@ collect_threads (gpointer key, gpointer value, gpointer user_data)
 void
 mono_threads_request_thread_dump (void)
 {
-	struct wait_data *wait = g_new0 (struct wait_data, 1);
+	struct wait_data wait_data;
+	struct wait_data *wait = &wait_data;
 	int i;
+
+	memset (wait, 0, sizeof (struct wait_data));
 
 	/* 
 	 * Make a copy of the hashtable since we can't do anything with

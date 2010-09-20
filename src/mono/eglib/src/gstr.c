@@ -69,6 +69,10 @@ g_strdupv (gchar **str_array)
 	guint length;
 	gchar **ret;
 	guint i;
+
+	if (!str_array)
+		return NULL;
+
 	length = g_strv_length(str_array);
 	ret = g_new0(gchar *, length + 1);
 	for (i = 0; str_array[i]; i++) {

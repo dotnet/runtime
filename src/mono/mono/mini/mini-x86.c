@@ -615,12 +615,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 	arg_info [0].offset = offset;
 
+	if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 0) {
+		args_size += sizeof (gpointer);
+		offset += 4;
+	}
+
 	if (csig->hasthis) {
 		args_size += sizeof (gpointer);
 		offset += 4;
 	}
 
-	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
+	if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && csig->hasthis) {
+		/* Emitted after this */
 		args_size += sizeof (gpointer);
 		offset += 4;
 	}
@@ -641,6 +647,12 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		offset += pad;
 		arg_info [k + 1].offset = offset;
 		offset += size;
+
+		if (k == 0 && cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && !csig->hasthis) {
+			/* Emitted after the first arg */
+			args_size += sizeof (gpointer);
+			offset += 4;
+		}
 	}
 
 	if (mono_do_x86_stack_align && !CALLCONV_IS_STDCALL (csig))
@@ -4042,6 +4054,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			br = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
 			x86_mov_reg_reg (code, X86_EDX, ptr, 4);
 			x86_shift_reg_imm (code, X86_SHR, X86_EDX, card_table_shift);
+			if (card_table_mask)
+				x86_alu_reg_imm (code, X86_AND, X86_EDX, (int)card_table_mask);
 			x86_mov_membase_imm (code, X86_EDX, card_table, 1, 1);
 			x86_patch (br, code);
 			break;

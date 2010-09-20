@@ -776,7 +776,7 @@ static int mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start
 static void clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char *end, GrayQueue *queue);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
-SgenMajorCollector major;
+SgenMajorCollector major_collector;
 
 #include "sgen-protocol.c"
 #include "sgen-pinning.c"
@@ -1223,7 +1223,7 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
 			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
-	major.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
+	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
 		scan_object_for_specific_ref (bigobj->data, key);
@@ -1250,8 +1250,10 @@ clear_nursery_fragments (char *next)
 	Fragment *frag;
 	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 		g_assert (next <= nursery_frag_real_end);
+		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", next, nursery_frag_real_end));
 		memset (next, 0, nursery_frag_real_end - next);
 		for (frag = nursery_fragments; frag; frag = frag->next) {
+			DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_start, frag->fragment_end));
 			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
 		}
 	}
@@ -1364,7 +1366,7 @@ check_for_xdomain_refs (void)
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
 			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
-	major.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
+	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
 		scan_object_for_xdomain_refs (bigobj->data, bigobj->size, NULL);
@@ -1404,14 +1406,14 @@ static void
 clear_domain_free_major_non_pinned_object_callback (char *obj, size_t size, MonoDomain *domain)
 {
 	if (need_remove_object_for_domain (obj, domain))
-		major.free_non_pinned_object (obj, size);
+		major_collector.free_non_pinned_object (obj, size);
 }
 
 static void
 clear_domain_free_major_pinned_object_callback (char *obj, size_t size, MonoDomain *domain)
 {
 	if (need_remove_object_for_domain (obj, domain))
-		major.free_pinned_object (obj, size);
+		major_collector.free_pinned_object (obj, size);
 }
 
 /*
@@ -1456,7 +1458,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	   objects with major-mark&sweep), but we might need to
 	   dereference a pointer from an object to another object if
 	   the first object is a proxy. */
-	major.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)clear_domain_process_major_object_callback, domain);
+	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)clear_domain_process_major_object_callback, domain);
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
 		clear_domain_process_object (bigobj->data, domain);
 
@@ -1477,8 +1479,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 		prev = bigobj;
 		bigobj = bigobj->next;
 	}
-	major.iterate_objects (TRUE, FALSE, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
-	major.iterate_objects (FALSE, TRUE, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
+	major_collector.iterate_objects (TRUE, FALSE, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
+	major_collector.iterate_objects (FALSE, TRUE, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
 
 	UNLOCK_GC;
 }
@@ -1547,7 +1549,7 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 
 	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
 
-	lock = (current_collection_generation == GENERATION_OLD && major.is_parallel);
+	lock = (current_collection_generation == GENERATION_OLD && major_collector.is_parallel);
 	if (lock)
 		LOCK_GLOBAL_REMSET;
 
@@ -1604,10 +1606,10 @@ drain_gray_stack (GrayQueue *queue)
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			major.minor_scan_object (obj, queue);
+			major_collector.minor_scan_object (obj, queue);
 		}
 	} else {
-		if (major.is_parallel && queue == &workers_distribute_gray_queue)
+		if (major_collector.is_parallel && queue == &workers_distribute_gray_queue)
 			return;
 
 		for (;;) {
@@ -1615,7 +1617,7 @@ drain_gray_stack (GrayQueue *queue)
 			if (!obj)
 				break;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			major.major_scan_object (obj, queue);
+			major_collector.major_scan_object (obj, queue);
 		}
 	}
 }
@@ -2051,9 +2053,9 @@ alloc_nursery (void)
 	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
 	alloc_size = nursery_size;
 #ifdef SGEN_ALIGN_NURSERY
-	data = major.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
+	data = major_collector.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
 #else
-	data = major.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
+	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
 #endif
 	nursery_start = data;
 	nursery_real_end = nursery_start + nursery_size;
@@ -2117,11 +2119,12 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 	Fragment *fragment;
 	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
 	binary_protocol_empty (frag_start, frag_size);
-	/* memsetting just the first chunk start is bound to provide better cache locality */
-	if (nursery_clear_policy == CLEAR_AT_GC)
-		memset (frag_start, 0, frag_size);
 	/* Not worth dealing with smaller fragments: need to tune */
 	if (frag_size >= FRAGMENT_MIN_SIZE) {
+		/* memsetting just the first chunk start is bound to provide better cache locality */
+		if (nursery_clear_policy == CLEAR_AT_GC)
+			memset (frag_start, 0, frag_size);
+
 		fragment = alloc_fragment ();
 		fragment->fragment_start = frag_start;
 		fragment->fragment_limit = frag_start;
@@ -2173,7 +2176,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	TV_DECLARE (btv);
 	int fin_ready;
 	int ephemeron_rounds = 0;
-	CopyOrMarkObjectFunc copy_func = current_collection_generation == GENERATION_NURSERY ? major.copy_object : major.copy_or_mark_object;
+	CopyOrMarkObjectFunc copy_func = current_collection_generation == GENERATION_NURSERY ? major_collector.copy_object : major_collector.copy_or_mark_object;
 
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
@@ -2271,7 +2274,7 @@ check_scan_starts (void)
 	if (!do_scan_starts_check)
 		return;
 	mono_sgen_check_section_scan_starts (nursery_section);
-	major.check_scan_starts ();
+	major_collector.check_scan_starts ();
 }
 
 static int last_num_pinned = 0;
@@ -2451,7 +2454,7 @@ dump_heap (const char *type, int num, const char *reason)
 
 	mono_sgen_dump_section (nursery_section, "nursery");
 
-	major.dump_heap (heap_dump_file);
+	major_collector.dump_heap (heap_dump_file);
 
 	fprintf (heap_dump_file, "<los>\n");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
@@ -2467,7 +2470,7 @@ mono_sgen_register_moved_object (void *obj, void *destination)
 	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
 
 	/* FIXME: handle this for parallel collector */
-	g_assert (!major.is_parallel);
+	g_assert (!major_collector.is_parallel);
 
 	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
 		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
@@ -2559,7 +2562,7 @@ static gboolean
 need_major_collection (void)
 {
 	mword los_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
-	return minor_collection_sections_alloced * major.section_size + los_alloced > minor_collection_allowance;
+	return minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
 }
 
 /*
@@ -2593,7 +2596,7 @@ collect_nursery (size_t requested_size)
 
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
-	TV_GETTIME (atv);
+	atv = all_atv;
 
 	/* Pinning depends on this */
 	clear_nursery_fragments (orig_nursery_next);
@@ -2606,7 +2609,7 @@ collect_nursery (size_t requested_size)
 
 	nursery_section->next_data = nursery_next;
 
-	major.start_nursery_collection ();
+	major_collector.start_nursery_collection ();
 
 	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
 
@@ -2643,8 +2646,8 @@ collect_nursery (size_t requested_size)
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
 	if (use_cardtable) {
+		atv = btv;
 		card_tables_collect_starts (TRUE);
-		TV_GETTIME (atv);
 		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
 		TV_GETTIME (btv);
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
@@ -2655,8 +2658,8 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (major.copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL, &gray_queue);
-	scan_from_registered_roots (major.copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER, &gray_queue);
+	scan_from_registered_roots (major_collector.copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL, &gray_queue);
+	scan_from_registered_roots (major_collector.copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER, &gray_queue);
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 	/* thread data */
@@ -2681,7 +2684,7 @@ collect_nursery (size_t requested_size)
 	if (consistency_check_at_minor_collection)
 		check_major_refs ();
 
-	major.finish_nursery_collection ();
+	major_collector.finish_nursery_collection ();
 
 	TV_GETTIME (all_btv);
 	mono_stats.minor_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
@@ -2725,7 +2728,7 @@ major_do_collection (const char *reason)
 	 */
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
-	int old_num_major_sections = major.get_num_major_sections ();
+	int old_num_major_sections = major_collector.get_num_major_sections ();
 	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
 	mword los_memory_saved, los_memory_alloced, old_los_memory_usage;
 
@@ -2742,7 +2745,7 @@ major_do_collection (const char *reason)
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
 	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
-	if (major.is_parallel)
+	if (major_collector.is_parallel)
 		gray_object_queue_init (&workers_distribute_gray_queue, mono_sgen_get_unmanaged_allocator ());
 
 	degraded_mode = 0;
@@ -2752,7 +2755,7 @@ major_do_collection (const char *reason)
 
 	/* world must be stopped already */
 	TV_GETTIME (all_atv);
-	TV_GETTIME (atv);
+	atv = all_atv;
 
 	/* Pinning depends on this */
 	clear_nursery_fragments (nursery_next);
@@ -2794,7 +2797,7 @@ major_do_collection (const char *reason)
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from sections\n"));
 	/* first pass for the sections */
 	mono_sgen_find_section_pin_queue_start_end (nursery_section);
-	major.find_pin_queue_start_ends (WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	major_collector.find_pin_queue_start_ends (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	/* identify possible pointers to the insize of large objects */
 	DEBUG (6, fprintf (gc_debug_file, "Pinning from large objects\n"));
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
@@ -2810,14 +2813,14 @@ major_do_collection (const char *reason)
 	}
 	/* second pass for the sections */
 	mono_sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	major.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finding pinned pointers: %d in %d usecs\n", next_pin_slot, TV_ELAPSED (atv, btv)));
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
-	major.init_to_space ();
+	major_collector.init_to_space ();
 
 	workers_start_all_workers (1);
 
@@ -2825,8 +2828,8 @@ major_do_collection (const char *reason)
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (major.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_NORMAL, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	scan_from_registered_roots (major.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_WBARRIER, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	scan_from_registered_roots (major_collector.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_NORMAL, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	scan_from_registered_roots (major_collector.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_WBARRIER, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 
@@ -2841,8 +2844,8 @@ major_do_collection (const char *reason)
 	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 
 	/* scan the list of objects ready for finalization */
-	scan_finalizer_entries (major.copy_or_mark_object, fin_ready_list, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	scan_finalizer_entries (major.copy_or_mark_object, critical_fin_list, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	scan_finalizer_entries (major_collector.copy_or_mark_object, fin_ready_list, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	scan_finalizer_entries (major_collector.copy_or_mark_object, critical_fin_list, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
@@ -2850,7 +2853,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED_MS (atv, btv);
 
-	if (major.is_parallel) {
+	if (major_collector.is_parallel) {
 		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			workers_distribute_gray_queue_sections ();
 			usleep (2000);
@@ -2859,7 +2862,7 @@ major_do_collection (const char *reason)
 	workers_change_num_working (-1);
 	workers_join ();
 
-	if (major.is_parallel)
+	if (major_collector.is_parallel)
 		g_assert (gray_object_queue_is_empty (&gray_queue));
 
 	/* all the objects in the heap */
@@ -2896,7 +2899,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (atv);
 	time_major_los_sweep += TV_ELAPSED_MS (btv, atv);
 
-	major.sweep ();
+	major_collector.sweep ();
 
 	TV_GETTIME (btv);
 	time_major_sweep += TV_ELAPSED_MS (atv, btv);
@@ -2926,12 +2929,12 @@ major_do_collection (const char *reason)
 
 	g_assert (gray_object_queue_is_empty (&gray_queue));
 
-	num_major_sections = major.get_num_major_sections ();
+	num_major_sections = major_collector.get_num_major_sections ();
 
 	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 0);
 	los_memory_saved = MAX (old_los_memory_usage - los_memory_usage, 1);
 
-	save_target = ((num_major_sections * major.section_size) + los_memory_saved) / 2;
+	save_target = ((num_major_sections * major_collector.section_size) + los_memory_saved) / 2;
 	/*
 	 * We aim to allow the allocation of as many sections as is
 	 * necessary to reclaim save_target sections in the next
@@ -2947,14 +2950,14 @@ major_do_collection (const char *reason)
 	 *
 	 * hence:
 	 */
-	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major.section_size + los_memory_alloced) / (double)(num_major_sections_saved * major.section_size + los_memory_saved));
+	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
 
-	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
+	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
 
 	minor_collection_sections_alloced = 0;
 	last_los_memory_usage = los_memory_usage;
 
-	major.finish_major_collection ();
+	major_collector.finish_major_collection ();
 
 	check_scan_starts ();
 
@@ -3026,7 +3029,7 @@ report_internal_mem_usage (void)
 	printf ("Internal memory usage:\n");
 	mono_sgen_report_internal_mem_usage ();
 	printf ("Pinned memory usage:\n");
-	major.report_pinned_memory_usage ();
+	major_collector.report_pinned_memory_usage ();
 }
 
 /*
@@ -3172,7 +3175,7 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 	}
 
 	degraded_mode += size;
-	return major.alloc_degraded (vtable, size);
+	return major_collector.alloc_degraded (vtable, size);
 }
 
 /*
@@ -3512,7 +3515,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		p = alloc_large_inner (vtable, size);
 	} else {
 		DEBUG (9, g_assert (vtable->klass->inited));
-		p = major.alloc_small_pinned_obj (size, vtable->klass->has_references);
+		p = major_collector.alloc_small_pinned_obj (size, vtable->klass->has_references);
 	}
 	DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 	binary_protocol_alloc_pinned (p, vtable, size);
@@ -3609,7 +3612,7 @@ finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int g
 	for (i = 0; i < finalizable_hash_size; ++i) {
 		prev = NULL;
 		for (entry = finalizable_hash [i]; entry;) {
-			if ((char*)entry->object >= start && (char*)entry->object < end && !major.is_object_live (entry->object)) {
+			if ((char*)entry->object >= start && (char*)entry->object < end && !major_collector.is_object_live (entry->object)) {
 				gboolean is_fin_ready = object_is_fin_ready (entry->object);
 				char *copy = entry->object;
 				copy_func ((void**)&copy, queue);
@@ -3676,7 +3679,7 @@ object_is_reachable (char *object, char *start, char *end)
 	/*This happens for non nursery objects during minor collections. We just treat all objects as alive.*/
 	if (object < start || object >= end)
 		return TRUE;
-	return !object_is_fin_ready (object) || major.is_object_live (object);
+	return !object_is_fin_ready (object) || major_collector.is_object_live (object);
 }
 
 /* LOCKING: requires that the GC lock is held */
@@ -3853,7 +3856,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 		prev = NULL;
 		for (entry = disappearing_link_hash [i]; entry;) {
 			char *object = DISLINK_OBJECT (entry);
-			if (object >= start && object < end && !major.is_object_live (object)) {
+			if (object >= start && object < end && !major_collector.is_object_live (object)) {
 				gboolean track = DISLINK_TRACK (entry);
 				if (!track && object_is_fin_ready (object)) {
 					void **p = entry->link;
@@ -4586,12 +4589,11 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	int old_errno = errno;
 	gpointer regs [ARCH_NUM_REGS];
 	gpointer stack_start;
-	ucontext_t *ctx = (ucontext_t*)context;
 
 	id = pthread_self ();
 	info = mono_sgen_thread_info_lookup (id);
 	info->stopped_domain = mono_domain_get ();
-	info->stopped_ip = (gpointer) ARCH_SIGCTX_IP (ctx);
+	info->stopped_ip = (gpointer) ARCH_SIGCTX_IP (context);
 	stop_count = global_stop_count;
 	/* duplicate signal */
 	if (0 && info->stop_count == stop_count) {
@@ -4602,13 +4604,13 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	/* update the remset info in the thread data structure */
 	info->remset = remembered_set;
 #endif
-	stack_start = (char*) ARCH_SIGCTX_SP (ctx) - REDZONE_SIZE;
+	stack_start = (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE;
 	/* If stack_start is not within the limits, then don't set it
 	   in info and we will be restarted. */
 	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
 		info->stack_start = stack_start;
 
-		ARCH_COPY_SIGCTX_REGS (regs, ctx);
+		ARCH_COPY_SIGCTX_REGS (regs, context);
 		info->stopped_regs = regs;
 	} else {
 		g_assert (!info->stack_start);
@@ -4616,7 +4618,7 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 
 	/* Notify the JIT */
 	if (gc_callbacks.thread_suspend_func)
-		gc_callbacks.thread_suspend_func (info->runtime_data, ctx);
+		gc_callbacks.thread_suspend_func (info->runtime_data, context);
 
 	DEBUG (4, fprintf (gc_debug_file, "Posting suspend_ack_semaphore for suspend from %p %p\n", info, (gpointer)ARCH_GET_THREAD ()));
 	/* notify the waiting thread */
@@ -4745,9 +4747,9 @@ mono_gc_scan_object (void *obj)
 {
 	g_assert_not_reached ();
 	if (current_collection_generation == GENERATION_NURSERY)
-		major.copy_object (&obj, &gray_queue);
+		major_collector.copy_object (&obj, &gray_queue);
 	else
-		major.copy_or_mark_object (&obj, &gray_queue);
+		major_collector.copy_or_mark_object (&obj, &gray_queue);
 	return obj;
 }
 
@@ -4836,7 +4838,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery)) {
 			gpointer old = *ptr;
-			major.copy_object (ptr, queue);
+			major_collector.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (old)
 				binary_protocol_ptr_update (ptr, old, *ptr, (gpointer)LOAD_VTABLE (*ptr), safe_object_get_size (*ptr));
@@ -4858,7 +4860,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
-			major.copy_object (ptr, queue);
+			major_collector.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
 				mono_sgen_add_to_global_remset (ptr);
@@ -4869,7 +4871,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery))
 			return p + 1;
-		major.minor_scan_object ((char*)ptr, queue);
+		major_collector.minor_scan_object ((char*)ptr, queue);
 		return p + 1;
 	case REMSET_VTYPE: {
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
@@ -4878,7 +4880,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		desc = p [1];
 		count = p [2];
 		while (count-- > 0)
-			ptr = (void**) major.minor_scan_vtype ((char*)ptr, desc, start_nursery, end_nursery, queue);
+			ptr = (void**) major_collector.minor_scan_vtype ((char*)ptr, desc, start_nursery, end_nursery, queue);
 		return p + 3;
 	}
 	default:
@@ -5614,7 +5616,7 @@ find_object_for_ptr (char *ptr)
 	 * be called from gdb, so we don't care.
 	 */
 	found_obj = NULL;
-	major.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)find_object_for_ptr_callback, ptr);
+	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)find_object_for_ptr_callback, ptr);
 	return found_obj;
 }
 
@@ -5834,9 +5836,9 @@ describe_ptr (char *ptr)
 	if (ptr_in_nursery (ptr)) {
 		printf ("Pointer inside nursery.\n");
 	} else {
-		if (major.ptr_is_in_non_pinned_space (ptr)) {
+		if (major_collector.ptr_is_in_non_pinned_space (ptr)) {
 			printf ("Pointer inside oldspace.\n");
-		} else if (major.obj_is_from_pinned_alloc (ptr)) {
+		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
 			printf ("Pointer is inside a pinned chunk.\n");
 		} else {
 			printf ("Pointer unknown.\n");
@@ -6041,7 +6043,7 @@ check_consistency (void)
 	DEBUG (1, fprintf (gc_debug_file, "Begin heap consistency check...\n"));
 
 	// Check that oldspace->newspace pointers are registered with the collector
-	major.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
+	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
 		check_consistency_callback (bigobj->data, bigobj->size, NULL);
@@ -6073,7 +6075,7 @@ check_major_refs (void)
 {
 	LOSObject *bigobj;
 
-	major.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
+	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
 
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
 		check_major_refs_callback (bigobj->data, bigobj->size, NULL);
@@ -6143,7 +6145,7 @@ mono_gc_get_used_size (void)
 	LOCK_GC;
 	tot = los_memory_usage;
 	tot += nursery_section->next_data - nursery_section->data;
-	tot += major.get_used_size ();
+	tot += major_collector.get_used_size ();
 	/* FIXME: account for pinned objects */
 	UNLOCK_GC;
 	return tot;
@@ -6354,9 +6356,13 @@ mono_gc_base_init (void)
 {
 	char *env;
 	char **opts, **ptr;
-	char *major_collector = NULL;
+	char *major_collector_opt = NULL;
 	struct sigaction sinfo;
 
+	/* the gc_initialized guard seems to imply this method is
+	   idempotent, but LOCK_INIT(gc_mutex) might not be.  It's
+	   defined in sgen-gc.h as nothing, so there's no danger at
+	   present. */
 	LOCK_INIT (gc_mutex);
 	LOCK_GC;
 	if (gc_initialized) {
@@ -6375,7 +6381,7 @@ mono_gc_base_init (void)
 			char *opt = *ptr;
 			if (g_str_has_prefix (opt, "major=")) {
 				opt = strchr (opt, '=') + 1;
-				major_collector = g_strdup (opt);
+				major_collector_opt = g_strdup (opt);
 			}
 		}
 	} else {
@@ -6395,25 +6401,25 @@ mono_gc_base_init (void)
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_STORE_REMSET, sizeof (GenericStoreRememberedSet));
 	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
 
-	if (!major_collector || !strcmp (major_collector, "marksweep")) {
-		mono_sgen_marksweep_init (&major);
-	} else if (!major_collector || !strcmp (major_collector, "marksweep-fixed")) {
-		mono_sgen_marksweep_fixed_init (&major);
-	} else if (!major_collector || !strcmp (major_collector, "marksweep-par")) {
-		mono_sgen_marksweep_par_init (&major);
+	if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep")) {
+		mono_sgen_marksweep_init (&major_collector);
+	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-fixed")) {
+		mono_sgen_marksweep_fixed_init (&major_collector);
+	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-par")) {
+		mono_sgen_marksweep_par_init (&major_collector);
 		workers_init (mono_cpu_count ());
-	} else if (!major_collector || !strcmp (major_collector, "marksweep-fixed-par")) {
-		mono_sgen_marksweep_fixed_par_init (&major);
+	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-fixed-par")) {
+		mono_sgen_marksweep_fixed_par_init (&major_collector);
 		workers_init (mono_cpu_count ());
-	} else if (!strcmp (major_collector, "copying")) {
-		mono_sgen_copying_init (&major);
+	} else if (!strcmp (major_collector_opt, "copying")) {
+		mono_sgen_copying_init (&major_collector);
 	} else {
-		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector);
+		fprintf (stderr, "Unknown major collector `%s'.\n", major_collector_opt);
 		exit (1);
 	}
 
 #ifdef SGEN_HAVE_CARDTABLE
-	use_cardtable = major.supports_cardtable;
+	use_cardtable = major_collector.supports_cardtable;
 #else
 	use_cardtable = FALSE;
 #endif
@@ -6429,7 +6435,7 @@ mono_gc_base_init (void)
 					use_cardtable = FALSE;
 				} else if (strcmp (opt, "cardtable") == 0) {
 					if (!use_cardtable) {
-						if (major.supports_cardtable)
+						if (major_collector.supports_cardtable)
 							fprintf (stderr, "The cardtable write barrier is not supported on this platform.\n");
 						else
 							fprintf (stderr, "The major collector does not support the cardtable write barrier.\n");
@@ -6461,21 +6467,21 @@ mono_gc_base_init (void)
 				continue;
 			}
 #endif
-			if (!(major.handle_gc_param && major.handle_gc_param (opt))) {
+			if (!(major_collector.handle_gc_param && major_collector.handle_gc_param (opt))) {
 				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
 				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par' or `copying')\n");
 				fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
-				if (major.print_gc_param_usage)
-					major.print_gc_param_usage ();
+				if (major_collector.print_gc_param_usage)
+					major_collector.print_gc_param_usage ();
 				exit (1);
 			}
 		}
 		g_strfreev (opts);
 	}
 
-	if (major_collector)
-		g_free (major_collector);
+	if (major_collector_opt)
+		g_free (major_collector_opt);
 
 	nursery_size = DEFAULT_NURSERY_SIZE;
 	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;

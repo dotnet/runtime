@@ -1,10 +1,12 @@
 #ifndef __MONO_EMBED_H__
 #define __MONO_EMBED_H__
 
+#include <mono/utils/mono-publib.h>
+
+MONO_BEGIN_DECLS
+
 /* 
- * These are only used and available on embedded systems, the
- * EMBEDDED_PINVOKE configuration option must be set, and it
- * overrides any platform symbol loading functionality 
+ * This is a fallback for platform symbol loading functionality.
  */
 typedef struct {
 	const char *name;	
@@ -12,5 +14,7 @@ typedef struct {
 } MonoDlMapping;
 
 void mono_dl_register_library (const char *name, MonoDlMapping *mappings);
+
+MONO_END_DECLS
 
 #endif /* __MONO_EMBED_H__ */

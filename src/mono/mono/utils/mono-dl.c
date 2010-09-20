@@ -29,11 +29,6 @@ static const char suffixes [][8] = {
 	".so",
 	".bundle"
 };
-#elif EMBEDDED_PINVOKE
-#define SOPREFIX ""
-static const char suffixes [][1] = {
-	""
-};
 #else
 #define SOPREFIX "lib"
 static const char suffixes [][4] = {
@@ -80,15 +75,6 @@ convert_flags (int flags)
 	return lflags;
 }
 
-#elif EMBEDDED_PINVOKE
-#define SO_HANDLE_TYPE void*
-void *LL_SO_OPEN   (const char *file, int flags);
-int   LL_SO_CLOSE  (void *handle);
-#define LL_SO_SYMBOL(module,symbol) _LL_SO_SYMBOL((module)->handle, (symbol))
-void *_LL_SO_SYMBOL (void *handle, const char *symbol);
-char *LL_SO_ERROR();
-#define LL_SO_TRFLAGS(flags)      0
-
 #else
 /* no dynamic loader supported */
 #define SO_HANDLE_TYPE void*
@@ -100,9 +86,21 @@ char *LL_SO_ERROR();
 
 #endif
 
+static GSList *fallback_handlers;
+
+struct MonoDlFallbackHandler {
+	MonoDlFallbackLoad load_func;
+	MonoDlFallbackSymbol symbol_func;
+	MonoDlFallbackClose close_func;
+	void *user_data;
+};
+	
 struct _MonoDl {
 	SO_HANDLE_TYPE handle;
 	int main_module;
+
+	/* If not NULL, use the methods in MonoDlFallbackHandler instead of the LL_* methods */
+	MonoDlFallbackHandler *dl_fallback;
 };
 
 #ifdef TARGET_WIN32
@@ -314,6 +312,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 {
 	MonoDl *module;
 	void *lib;
+	MonoDlFallbackHandler *dl_fallback = NULL;
 	int lflags = LL_SO_TRFLAGS (flags);
 
 	if (error_msg)
@@ -328,6 +327,22 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	module->main_module = name == NULL? TRUE: FALSE;
 	lib = LL_SO_OPEN (name, lflags);
 	if (!lib) {
+		GSList *node;
+		for (node = fallback_handlers; node != NULL; node = node->next){
+			MonoDlFallbackHandler *handler = (MonoDlFallbackHandler *) node->data;
+			*error_msg = NULL;
+			
+			lib = handler->load_func (name, lflags, error_msg, handler->user_data);
+			if (*error_msg != NULL)
+				g_free (*error_msg);
+			
+			if (lib != NULL){
+				dl_fallback = handler;
+				break;
+			}
+		}
+	}
+	if (!lib && !dl_fallback) {
 		char *lname;
 		char *llname;
 		const char *suff;
@@ -358,6 +373,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		}
 	}
 	module->handle = lib;
+	module->dl_fallback = dl_fallback;
 	return module;
 }
 
@@ -376,18 +392,24 @@ char*
 mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 {
 	void *sym;
+	char *err = NULL;
 
+	if (module->dl_fallback) {
+		sym = module->dl_fallback->symbol_func (module->handle, name, &err, module->dl_fallback->user_data);
+	} else {
 #if MONO_DL_NEED_USCORE
-	{
-		char *usname = malloc (strlen (name) + 2);
-		*usname = '_';
-		strcpy (usname + 1, name);
-		sym = LL_SO_SYMBOL (module, usname);
-		free (usname);
-	}
+		{
+			char *usname = malloc (strlen (name) + 2);
+			*usname = '_';
+			strcpy (usname + 1, name);
+			sym = LL_SO_SYMBOL (module, usname);
+			free (usname);
+		}
 #else
-	sym = LL_SO_SYMBOL (module, name);
+		sym = LL_SO_SYMBOL (module, name);
 #endif
+	}
+
 	if (sym) {
 		if (symbol)
 			*symbol = sym;
@@ -395,7 +417,7 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 	}
 	if (symbol)
 		*symbol = NULL;
-	return LL_SO_ERROR ();
+	return (module->dl_fallback != NULL) ? err :  LL_SO_ERROR ();
 }
 
 /**
@@ -409,7 +431,14 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 void
 mono_dl_close (MonoDl *module)
 {
-	LL_SO_CLOSE (module);
+	MonoDlFallbackHandler *dl_fallback = module->dl_fallback;
+	
+	if (dl_fallback){
+		if (dl_fallback->close_func != NULL)
+			dl_fallback->close_func (module->handle, dl_fallback->user_data);
+	} else
+		LL_SO_CLOSE (module);
+	
 	free (module);
 }
 
@@ -485,92 +514,34 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	return res;
 }
 
-#if EMBEDDED_PINVOKE
-static GHashTable *mono_dls;
-static char *ll_last_error = "";
+MonoDlFallbackHandler *
+mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data)
+{
+	MonoDlFallbackHandler *handler;
+	
+	g_return_val_if_fail (load_func != NULL, NULL);
+	g_return_val_if_fail (symbol_func != NULL, NULL);
 
-/**
- * mono_dl_register_library:
- * @name: Library name, this is the name used by the DllImport as the external library name
- * @mappings: the mappings to register for P/Invoke.
- *
- * This function is only available on builds that define
- * EMBEDDED_PINVOKE, this is available for systems that do not provide
- * a dynamic linker but still want to use DllImport to easily invoke
- * code from the managed side into the unmanaged world.
- *
- * Mappings is a pointer to the first element of an array of
- * MonoDlMapping values.  The list must be terminated with both 
- * the name and addr fields set to NULL.
- *
- * This is typically used like this:
- * MonoDlMapping sample_library_mappings [] = {
- *   { "CallMe", CallMe },
- *   { NULL, NULL }
- * };
- *
- * ...
- * main ()
- * {
- *    ...
- *    mono_dl_register_library ("sample", sample_library_mappings);
- *    ...
- * }
- *
- * Then the C# code can use this P/Invoke signature:
- *
- * 	[DllImport ("sample")]
- *	extern static int CallMe (int f);
- */
+	handler = g_new (MonoDlFallbackHandler, 1);
+	handler->load_func = load_func;
+	handler->symbol_func = symbol_func;
+	handler->close_func = close_func;
+	handler->user_data = user_data;
+
+	fallback_handlers = g_slist_prepend (fallback_handlers, handler);
+	
+	return handler;
+}
+
 void
-mono_dl_register_library (const char *name, MonoDlMapping *mappings)
+mono_dl_fallback_unregister (MonoDlFallbackHandler *handler)
 {
-	if (mono_dls == NULL)
-		mono_dls = g_hash_table_new (g_str_hash, g_str_equal);
-	
-	printf ("Inserting: 0x%p\n", mappings);
-	g_hash_table_insert (mono_dls, g_strdup (name), mappings);
-}
+	GSList *found;
 
-void *
-LL_SO_OPEN (const char *file, int flag)
-{
-	void *mappings;
-	
-	if (mono_dls == NULL){
-		ll_last_error = "Library not registered";
-		return NULL;
-	}
-		
-	mappings = g_hash_table_lookup (mono_dls, file);
-	ll_last_error = mappings == NULL ? "File not registered" : "";
-	return mappings;
-}
+	found = g_slist_find (fallback_handlers, handler);
+	if (found == NULL)
+		return;
 
-int LL_SO_CLOSE (void *handle)
-{
-	// No-op
-	return 0;
+	g_slist_remove (fallback_handlers, handler);
+	g_free (handler);
 }
-
-void *
-_LL_SO_SYMBOL (void *handle, const char *symbol)
-{
-	MonoDlMapping *mappings = (MonoDlMapping *) handle;
-	
-	for (;mappings->name; mappings++){
-		if (strcmp (symbol, mappings->name) == 0){
-			ll_last_error = "";
-			return mappings->addr;
-		}
-	}
-	ll_last_error = "Symbol not found";
-	return NULL;
-}
-
-char *
-LL_SO_ERROR (void)
-{
-	return g_strdup (ll_last_error);
-}
-#endif

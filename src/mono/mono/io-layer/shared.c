@@ -151,6 +151,12 @@ _wapi_shm_detach (_wapi_shm_t type)
 	g_free (wapi_storage [type]);
 }
 
+gboolean
+_wapi_shm_enabled (void)
+{
+	return FALSE;
+}
+
 #else
 /*
  * Use POSIX shared memory if possible, it is simpler, and it has the advantage that 

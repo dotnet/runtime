@@ -28,6 +28,7 @@ libeglib_la_SOURCES = \
 	sort.frag.h	\
 	glib.h	     	\
 	garray.c	\
+	gbytearray.c	\
 	gerror.c	\
 	ghashtable.c 	\
 	gmem.c       	\

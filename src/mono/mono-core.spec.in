@@ -7,20 +7,17 @@
 %define sgen no
 %endif
 
-%if %llvm == yes
-%define enable_llvm --enable-loadedllvm
-%endif
-
 Name:           mono-core
 License:        LGPL v2.1 only
 Group:          Development/Languages/Mono
 Summary:        A .NET Runtime Environment
 Url:            http://www.mono-project.com
 Version:        @VERSION@
-Release:        30
+Release:        0
 Source0:        mono-%{version}.tar.bz2
 BuildRequires:  bison
 BuildRequires:  gcc-c++
+BuildRequires:  fdupes
 BuildRequires:  pkgconfig
 BuildRequires:  zlib-devel
 %ifnarch ia64
@@ -51,6 +48,9 @@ Conflicts:      f-spot < 0.4
 Conflicts:      helix-banshee < 1.0
 Conflicts:      mono-addins < 0.3.1
 Recommends:     libgdiplus0 >= 2.6
+%if %llvm == yes
+Recommends:     libmono-llvm0 = %{version}-%{release}
+%endif
 Provides:       mono(Commons.Xml.Relaxng) = 1.0.5000.0
 Provides:       mono(CustomMarshalers) = 1.0.5000.0
 Provides:       mono(I18N) = 1.0.5000.0
@@ -67,6 +67,7 @@ Provides:       mono(System.Security) = 1.0.5000.0
 Provides:       mono(System.Xml) = 1.0.5000.0
 Provides:       mono(mscorlib) = 1.0.5000.0
 
+%define _use_internal_dependency_generator 0
 %define __find_provides env sh -c 'filelist=($(cat)) && { printf "%s\\n" "${filelist[@]}" | /usr/lib/rpm/find-provides && printf "%s\\n" "${filelist[@]}" | prefix=%{buildroot}%{_prefix} %{buildroot}%{_bindir}/mono-find-provides ; } | sort | uniq'
 %define __find_requires env sh -c 'filelist=($(cat)) && { printf "%s\\n" "${filelist[@]}" | /usr/lib/rpm/find-requires && printf "%s\\n" "${filelist[@]}" | prefix=%{buildroot}%{_prefix} %{buildroot}%{_bindir}/mono-find-requires ; } | sort | uniq'
 
@@ -91,9 +92,12 @@ export CFLAGS=" $RPM_OPT_FLAGS -fno-strict-aliasing"
 export PATH=/opt/novell/llvm-mono/bin:$PATH
 %endif
 %configure \
-  --with-ikvm=yes \
   --with-sgen=%{sgen} \
-  %{?enable_llvm} \
+%if %llvm == yes
+  --enable-loadedllvm \
+  --disable-system-aot \
+%endif
+  --with-ikvm=yes \
   --with-moonlight=no
 make # We are not -jN safe! %{?jobs:-j%jobs}
 
@@ -118,9 +122,10 @@ rm -f %buildroot%_prefix/lib/mono/*/culevel.exe*
 rm -f %buildroot%_prefix/lib/mono/2.0/cilc.exe*
 # brp-compress doesn't search _mandir
 # so we cheat it
-ln -s . %buildroot%_prefix/usr
+ln -s . %buildroot%_prefix%_prefix
 RPM_BUILD_ROOT=%buildroot%_prefix /usr/lib/rpm/brp-compress
-rm %buildroot%_prefix/usr
+rm %buildroot%_prefix%_prefix
+%fdupes %buildroot%_prefix
 %find_lang mcs
 
 %clean
@@ -144,6 +149,8 @@ rm -rf %buildroot
 %dir %_sysconfdir/mono
 %dir %_sysconfdir/mono/2.0
 %dir %_sysconfdir/mono/4.0
+%_bindir/al
+%_bindir/al2
 %_bindir/certmgr
 %_bindir/chktrust
 %_bindir/csharp
@@ -195,10 +202,12 @@ rm -rf %buildroot
 %_prefix/lib/mono/2.0/System.Configuration.dll
 %_prefix/lib/mono/2.0/System.Core.dll
 %_prefix/lib/mono/2.0/System.Drawing.dll
+%_prefix/lib/mono/2.0/System.Net.dll
 %_prefix/lib/mono/2.0/System.Security.dll
 %_prefix/lib/mono/2.0/System.Xml.Linq.dll
 %_prefix/lib/mono/2.0/System.Xml.dll
 %_prefix/lib/mono/2.0/System.dll
+%_prefix/lib/mono/2.0/al.exe*
 %_prefix/lib/mono/2.0/cscompmgd.dll
 %_prefix/lib/mono/2.0/csharp.exe*
 %_prefix/lib/mono/2.0/gacutil.exe*
@@ -225,11 +234,13 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.0/System.Core.dll
 %_prefix/lib/mono/4.0/System.Drawing.dll
 %_prefix/lib/mono/4.0/System.Dynamic.dll
+%_prefix/lib/mono/4.0/System.Net.dll
 %_prefix/lib/mono/4.0/System.Numerics.dll
 %_prefix/lib/mono/4.0/System.Security.dll
 %_prefix/lib/mono/4.0/System.Xml.Linq.dll
 %_prefix/lib/mono/4.0/System.Xml.dll
 %_prefix/lib/mono/4.0/System.dll
+%_prefix/lib/mono/4.0/al.exe*
 %_prefix/lib/mono/4.0/certmgr.exe*
 %_prefix/lib/mono/4.0/chktrust.exe*
 %_prefix/lib/mono/4.0/cscompmgd.dll
@@ -266,6 +277,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/gac/System.Core
 %_prefix/lib/mono/gac/System.Drawing
 %_prefix/lib/mono/gac/System.Dynamic
+%_prefix/lib/mono/gac/System.Net
 %_prefix/lib/mono/gac/System.Numerics
 %_prefix/lib/mono/gac/System.Security
 %_prefix/lib/mono/gac/System.Xml
@@ -299,6 +311,7 @@ A Library for embedding Mono in your Application.
 License:        LGPL v2.1 only
 Summary:	Development files for libmono
 Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
 
 %description -n libmono-2_0-devel
 The Mono Project is an open development initiative that is working to
@@ -343,6 +356,7 @@ A Library for embedding Mono in your Application (sgen version).
 License:        LGPL v2.1 only
 Summary:	Development files for libmonosgen
 Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
 
 %description -n libmonosgen-2_0-devel
 The Mono Project is an open development initiative that is working to
@@ -428,7 +442,6 @@ Obsoletes:      mono-novell-directory
 Provides:       mono-directory
 Provides:       mono-ms-enterprise
 Provides:       mono-novell-directory
-Provides:       mono(Mono.Data) = 1.0.5000.0
 Provides:       mono(Mono.Data.Tds) = 1.0.5000.0
 Provides:       mono(Novell.Directory.Ldap) = 1.0.5000.0
 Provides:       mono(System.Data) = 1.0.5000.0
@@ -453,19 +466,19 @@ Database connectivity for Mono.
 %_prefix/lib/mono/2.0/Novell.Directory.Ldap.dll
 %_prefix/lib/mono/2.0/System.Data.DataSetExtensions.dll
 %_prefix/lib/mono/2.0/System.Data.Linq.dll
-%_prefix/lib/mono/2.0/System.Data.Services.dll
 %_prefix/lib/mono/2.0/System.Data.dll
 %_prefix/lib/mono/2.0/System.DirectoryServices.dll
 %_prefix/lib/mono/2.0/System.EnterpriseServices.dll
+%_prefix/lib/mono/2.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/2.0/System.Transactions.dll
 %_prefix/lib/mono/4.0/Mono.Data.Tds.dll
 %_prefix/lib/mono/4.0/Novell.Directory.Ldap.dll
 %_prefix/lib/mono/4.0/System.Data.DataSetExtensions.dll
 %_prefix/lib/mono/4.0/System.Data.Linq.dll
-%_prefix/lib/mono/4.0/System.Data.Services.dll
 %_prefix/lib/mono/4.0/System.Data.dll
 %_prefix/lib/mono/4.0/System.DirectoryServices.dll
 %_prefix/lib/mono/4.0/System.EnterpriseServices.dll
+%_prefix/lib/mono/4.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/4.0/System.Transactions.dll
 %_prefix/lib/mono/4.0/sqlmetal.exe*
 %_prefix/lib/mono/4.0/sqlsharp.exe*
@@ -474,9 +487,9 @@ Database connectivity for Mono.
 %_prefix/lib/mono/gac/System.Data
 %_prefix/lib/mono/gac/System.Data.DataSetExtensions
 %_prefix/lib/mono/gac/System.Data.Linq
-%_prefix/lib/mono/gac/System.Data.Services
 %_prefix/lib/mono/gac/System.DirectoryServices
 %_prefix/lib/mono/gac/System.EnterpriseServices
+%_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.Transactions
 
 %package -n mono-winforms
@@ -646,31 +659,28 @@ Mono implementation of WCF, Windows Communication Foundation
 %defattr(-, root, root)
 %_bindir/svcutil
 %_libdir/pkgconfig/wcf.pc
+%_prefix/lib/mono/2.0/System.Data.Services.dll
 %_prefix/lib/mono/2.0/System.IdentityModel.Selectors.dll
 %_prefix/lib/mono/2.0/System.IdentityModel.dll
-%_prefix/lib/mono/2.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/2.0/System.ServiceModel.Web.dll
 %_prefix/lib/mono/2.0/System.ServiceModel.dll
+%_prefix/lib/mono/4.0/System.Data.Services.dll
 %_prefix/lib/mono/4.0/System.IdentityModel.Selectors.dll
 %_prefix/lib/mono/4.0/System.IdentityModel.dll
 %_prefix/lib/mono/4.0/System.Runtime.DurableInstancing.dll
-%_prefix/lib/mono/4.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Discovery.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Routing.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Web.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.dll
-%_prefix/lib/mono/4.0/System.Web.ApplicationServices.dll
 %_prefix/lib/mono/4.0/svcutil.exe*
-%_prefix/lib/mono/gac/System.Data.Services.Client
+%_prefix/lib/mono/gac/System.Data.Services
 %_prefix/lib/mono/gac/System.IdentityModel
 %_prefix/lib/mono/gac/System.IdentityModel.Selectors
 %_prefix/lib/mono/gac/System.Runtime.DurableInstancing
-%_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.ServiceModel
 %_prefix/lib/mono/gac/System.ServiceModel.Discovery
 %_prefix/lib/mono/gac/System.ServiceModel.Routing
 %_prefix/lib/mono/gac/System.ServiceModel.Web
-%_prefix/lib/mono/gac/System.Web.ApplicationServices
 
 %package -n mono-winfxcore
 License:        MIT License (or similar) ; Ms-Pl
@@ -691,6 +701,7 @@ Mono implementation of core WinFX APIs
 %defattr(-, root, root)
 %_prefix/lib/mono/2.0/WindowsBase.dll*
 %_prefix/lib/mono/4.0/WindowsBase.dll*
+%_prefix/lib/mono/gac/System.Data.Services.Client
 %_prefix/lib/mono/gac/WindowsBase
 
 %package -n mono-web
@@ -724,6 +735,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %config %_sysconfdir/mono/2.0/Browsers
 %config %_sysconfdir/mono/2.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/2.0/web.config
+%config %_sysconfdir/mono/4.0/DefaultWsdlHelpGenerator.aspx
 %config %_sysconfdir/mono/4.0/web.config
 %config %_sysconfdir/mono/browscap.ini
 %config %_sysconfdir/mono/mconfig/config.xml
@@ -735,10 +747,6 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_bindir/wsdl2
 %_bindir/xsd
 %_libdir/pkgconfig/mono.web.pc
-%_libdir/pkgconfig/system.web.extensions.design_1.0.pc
-%_libdir/pkgconfig/system.web.extensions_1.0.pc
-%_libdir/pkgconfig/system.web.mvc.pc
-%_libdir/pkgconfig/system.web.mvc2.pc
 %_mandir/man1/disco.1%ext_man
 %_mandir/man1/mconfig.1%ext_man
 %_mandir/man1/soapsuds.1%ext_man
@@ -751,15 +759,11 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/2.0/System.Runtime.Serialization.Formatters.Soap.dll
 %_prefix/lib/mono/2.0/System.Web.Abstractions.dll
 %_prefix/lib/mono/2.0/System.Web.DynamicData.dll
-%_prefix/lib/mono/2.0/System.Web.Extensions.Design.dll
-%_prefix/lib/mono/2.0/System.Web.Extensions.dll
-%_prefix/lib/mono/2.0/System.Web.Mvc.dll
 %_prefix/lib/mono/2.0/System.Web.Routing.dll
 %_prefix/lib/mono/2.0/System.Web.Services.dll
 %_prefix/lib/mono/2.0/System.Web.dll
 %_prefix/lib/mono/2.0/wsdl.exe*
 %_prefix/lib/mono/2.0/xsd.exe*
-%_prefix/lib/mono/3.5/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/4.0/Mono.Http.dll
 %_prefix/lib/mono/4.0/Mono.Web.dll
 %_prefix/lib/mono/4.0/System.ComponentModel.Composition.dll
@@ -767,9 +771,8 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.0/System.Runtime.Remoting.dll
 %_prefix/lib/mono/4.0/System.Runtime.Serialization.Formatters.Soap.dll
 %_prefix/lib/mono/4.0/System.Web.Abstractions.dll
+%_prefix/lib/mono/4.0/System.Web.ApplicationServices.dll
 %_prefix/lib/mono/4.0/System.Web.DynamicData.dll
-%_prefix/lib/mono/4.0/System.Web.Extensions.Design.dll
-%_prefix/lib/mono/4.0/System.Web.Extensions.dll
 %_prefix/lib/mono/4.0/System.Web.Routing.dll
 %_prefix/lib/mono/4.0/System.Web.Services.dll
 %_prefix/lib/mono/4.0/System.Web.dll
@@ -778,9 +781,6 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.0/soapsuds.exe*
 %_prefix/lib/mono/4.0/wsdl.exe*
 %_prefix/lib/mono/4.0/xsd.exe*
-%_prefix/lib/mono/compat-2.0/System.Web.Extensions.Design.dll
-%_prefix/lib/mono/compat-2.0/System.Web.Extensions.dll
-%_prefix/lib/mono/compat-2.0/System.Web.Mvc.dll
 %_prefix/lib/mono/gac/Mono.Http
 %_prefix/lib/mono/gac/Mono.Web
 %_prefix/lib/mono/gac/System.ComponentModel.Composition
@@ -789,12 +789,43 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/gac/System.Runtime.Serialization.Formatters.Soap
 %_prefix/lib/mono/gac/System.Web
 %_prefix/lib/mono/gac/System.Web.Abstractions
+%_prefix/lib/mono/gac/System.Web.ApplicationServices
 %_prefix/lib/mono/gac/System.Web.DynamicData
+%_prefix/lib/mono/gac/System.Web.Routing
+%_prefix/lib/mono/gac/System.Web.Services
+
+%package -n mono-mvc
+License:        MIT License (or similar) ; Ms-Pl
+Summary:        Mono implementation of ASP.NET MVC
+Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
+
+%description -n mono-mvc
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Mono implementation of ASP.NET MVC.
+
+%files -n mono-mvc
+%defattr(-, root, root)
+%_libdir/pkgconfig/system.web.extensions.design_1.0.pc
+%_libdir/pkgconfig/system.web.extensions_1.0.pc
+%_libdir/pkgconfig/system.web.mvc.pc
+%_libdir/pkgconfig/system.web.mvc2.pc
+%_prefix/lib/mono/2.0/System.Web.Extensions.Design.dll
+%_prefix/lib/mono/2.0/System.Web.Extensions.dll
+%_prefix/lib/mono/2.0/System.Web.Mvc.dll
+%_prefix/lib/mono/4.0/System.Web.Extensions.Design.dll
+%_prefix/lib/mono/4.0/System.Web.Extensions.dll
+%_prefix/lib/mono/compat-2.0/System.Web.Extensions.Design.dll
+%_prefix/lib/mono/compat-2.0/System.Web.Extensions.dll
+%_prefix/lib/mono/compat-2.0/System.Web.Mvc.dll
 %_prefix/lib/mono/gac/System.Web.Extensions
 %_prefix/lib/mono/gac/System.Web.Extensions.Design
 %_prefix/lib/mono/gac/System.Web.Mvc
-%_prefix/lib/mono/gac/System.Web.Routing
-%_prefix/lib/mono/gac/System.Web.Services
 
 %package -n mono-data-oracle
 License:        LGPL v2.1 only
@@ -926,8 +957,6 @@ Mono development tools.
 
 %files -n mono-devel
 %defattr(-, root, root)
-%_bindir/al
-%_bindir/al2
 %_bindir/caspol
 %_bindir/ccrewrite
 %_bindir/cert2spc
@@ -1018,7 +1047,6 @@ Mono development tools.
 %_prefix/lib/mono/2.0/Microsoft.VisualBasic.targets
 %_prefix/lib/mono/2.0/Mono.Debugger.Soft.dll
 %_prefix/lib/mono/2.0/PEAPI.dll
-%_prefix/lib/mono/2.0/al.exe*
 %_prefix/lib/mono/2.0/genxs.exe*
 %_prefix/lib/mono/2.0/ilasm.exe*
 %_prefix/lib/mono/2.0/mkbundle.exe*
@@ -1051,7 +1079,6 @@ Mono development tools.
 %_prefix/lib/mono/4.0/Microsoft.VisualBasic.targets
 %_prefix/lib/mono/4.0/Mono.CodeContracts.dll
 %_prefix/lib/mono/4.0/PEAPI.dll
-%_prefix/lib/mono/4.0/al.exe*
 %_prefix/lib/mono/4.0/caspol.exe*
 %_prefix/lib/mono/4.0/ccrewrite.exe*
 %_prefix/lib/mono/4.0/cert2spc.exe*
@@ -1097,7 +1124,9 @@ Mono development tools.
 License:        LGPL v2.1 only
 Summary:        Monodoc - Documentation tools for C# code
 Group:          Development/Tools/Other
+Requires:       mono-core == %version-%release
 Obsoletes:      monodoc
+Provides:       monodoc
 # Added to uncompress and compare documentation used by build-compare
 Requires:       unzip
 
@@ -1130,7 +1159,7 @@ Monodoc-core contains documentation tools for C#.
 %_mandir/man1/monodocer.1%ext_man
 %_mandir/man1/monodocs2html.1%ext_man
 %_mandir/man5/mdoc.5%ext_man
-%_prefix/lib/mono/4.0/mdoc.exe*
+%_prefix/lib/mono/2.0/mdoc.exe*
 %_prefix/lib/mono/4.0/mod.exe*
 %_prefix/lib/mono/gac/monodoc
 %_prefix/lib/mono/monodoc
@@ -1140,15 +1169,21 @@ Monodoc-core contains documentation tools for C#.
 License:        LGPL v2.1 only
 Summary:        Install everything built from the mono source tree
 Group:          Development/Languages/Mono
-Requires:       bytefx-data-mysql = %version-%release
-Requires:       ibm-data-db2 = %version-%release
 Requires:       mono-core = %version-%release
+Requires:       ibm-data-db2 = %version-%release
+Requires:       libmono-2_0-1 = %version-%release
+Requires:       libmono-2_0-devel = %version-%release
+%if %llvm == yes
+Requires:       libmono-llvm0 = %version-%release
+%endif
+%if %sgen == yes
+Requires:       libmonosgen-2_0-0 = %version-%release
+Requires:       libmonosgen-2_0-devel = %version-%release
+%endif
 Requires:       mono-data = %version-%release
-Requires:       mono-data-firebird = %version-%release
 Requires:       mono-data-oracle = %version-%release
 Requires:       mono-data-postgresql = %version-%release
 Requires:       mono-data-sqlite = %version-%release
-Requires:       mono-data-sybase = %version-%release
 Requires:       mono-devel = %version-%release
 Requires:       mono-extras = %version-%release
 Requires:       mono-locale-extras = %version-%release
@@ -1156,6 +1191,8 @@ Requires:       mono-nunit = %version-%release
 Requires:       mono-wcf = %version-%release
 Requires:       mono-web = %version-%release
 Requires:       mono-winforms = %version-%release
+Requires:       mono-winfxcore = %version-%release
+Requires:       monodoc-core = %version-%release
 
 %description -n mono-complete
 The Mono Project is an open development initiative that is working to

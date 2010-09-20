@@ -26,10 +26,6 @@
 
 #define SGEN_HAVE_CARDTABLE	1
 
-#if SIZEOF_VOID_P == 8
-#define SGEN_HAVE_OVERLAPPING_CARDS	1
-#endif
-
 #ifdef SGEN_HAVE_CARDTABLE
 
 void sgen_card_table_reset_region (mword start, mword end) MONO_INTERNAL;
@@ -37,14 +33,25 @@ void* sgen_card_table_align_pointer (void *ptr) MONO_INTERNAL;
 void sgen_card_table_mark_address (mword address) MONO_INTERNAL;
 void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
 void sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards) MONO_INTERNAL;
+gboolean sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards) MONO_INTERNAL;
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 
+/*How many bytes a single card covers*/
 #define CARD_BITS 9
+
+/* How many bits of the address space is covered by the card table.
+ * If this value is smaller than the number of address bits, card aliasing is required.
+ */
+#define CARD_TABLE_BITS 32
+
 #define CARD_SIZE_IN_BYTES (1 << CARD_BITS)
-#define CARD_COUNT_BITS (32 - 9)
+#define CARD_COUNT_BITS (CARD_TABLE_BITS - CARD_BITS)
 #define CARD_COUNT_IN_BYTES (1 << CARD_COUNT_BITS)
 #define CARD_MASK ((1 << CARD_COUNT_BITS) - 1)
+
+#if SIZEOF_VOID_P * 8 > CARD_TABLE_BITS
+#define SGEN_HAVE_OVERLAPPING_CARDS	1
+#endif
 
 extern guint8 *sgen_cardtable MONO_INTERNAL;
 
@@ -71,6 +78,13 @@ sgen_card_table_card_begin_scanning (mword address)
 	return *sgen_card_table_get_shadow_card_address (address) != 0;
 }
 
+static inline void
+sgen_card_table_prepare_card_for_scanning (guint8 *card)
+{
+}
+
+#define sgen_card_table_get_card_scan_address sgen_card_table_get_shadow_card_address
+
 #else
 
 static inline guint8*
@@ -87,6 +101,15 @@ sgen_card_table_card_begin_scanning (mword address)
 	*card = 0;
 	return res;
 }
+
+static inline void
+sgen_card_table_prepare_card_for_scanning (guint8 *card)
+{
+	*card = 0;
+}
+
+#define sgen_card_table_get_card_scan_address sgen_card_table_get_card_address
+
 #endif
 
 #endif

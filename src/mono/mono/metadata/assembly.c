@@ -29,6 +29,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-path.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
 
@@ -61,6 +62,7 @@ static char **assemblies_path = NULL;
 /* Contains the list of directories that point to auxiliary GACs */
 static char **extra_gac_paths = NULL;
 
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 /* The list of system assemblies what will be remapped to the running
  * runtime version. WARNING: this list must be sorted.
  */
@@ -120,6 +122,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"System.Xml", 0},
 	{"mscorlib", 0}
 };
+#endif
 
 /*
  * keeps track of loaded assemblies
@@ -589,7 +592,7 @@ void
 mono_set_rootdir (void)
 {
 #if defined(HOST_WIN32) || (defined(PLATFORM_MACOSX) && !defined(TARGET_ARM))
-	gchar *bindir, *installdir, *root, *name, *config;
+	gchar *bindir, *installdir, *root, *name, *resolvedname, *config;
 
 #ifdef HOST_WIN32
 	name = mono_get_module_file_name ((HMODULE) &__ImageBase);
@@ -612,10 +615,14 @@ mono_set_rootdir (void)
  			fallback ();
  			return;
  		}
+
+		name = mono_path_resolve_symlinks (name);
  	}
 #endif
 
-	bindir = g_path_get_dirname (name);
+	resolvedname = mono_path_resolve_symlinks (name);
+
+	bindir = g_path_get_dirname (resolvedname);
 	installdir = g_path_get_dirname (bindir);
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
 
@@ -634,6 +641,7 @@ mono_set_rootdir (void)
 	g_free (installdir);
 	g_free (bindir);
 	g_free (name);
+	g_free (resolvedname);
 #elif defined(DISABLE_MONO_AUTODETECTION)
 	fallback ();
 #else
@@ -790,6 +798,7 @@ mono_assembly_addref (MonoAssembly *assembly)
 	InterlockedIncrement (&assembly->ref_count);
 }
 
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 static MonoAssemblyName *
 mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_aname)
 {
@@ -838,6 +847,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 	}
 	return aname;
 }
+#endif
 
 /*
  * mono_assembly_get_assemblyref:
@@ -954,7 +964,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		if (reference != REFERENCE_MISSING){
 			mono_assembly_addref (reference);
 			if (image->assembly)
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s %p -> %s %p: %d\n",
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly Ref addref %s %p -> %s %p: %d",
 				    image->assembly->aname.name, image->assembly, reference->aname.name, reference, reference->ref_count);
 		} else {
 			if (image->assembly)
@@ -1553,7 +1563,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	/* Add a non-temporary reference because of ass->image */
 	mono_image_addref (image);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image addref %s %p -> %s %p: %d\n", ass->aname.name, ass, image->name, image, image->ref_count);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image addref %s %p -> %s %p: %d", ass->aname.name, ass, image->name, image, image->ref_count);
 
 	/* 
 	 * The load hooks might take locks so we can't call them while holding the
@@ -2053,7 +2063,10 @@ MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
 {
 	MonoAssembly *res;
-	MonoAssemblyName *aname, base_name, maped_aname;
+	MonoAssemblyName *aname, base_name;
+#ifndef DISABLE_ASSEMBLY_REMAPPING
+	MonoAssemblyName maped_aname;
+#endif
 	gchar *fullname, *gacpath;
 	gchar **paths;
 
@@ -2063,12 +2076,14 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	if (!mono_assembly_name_parse (name, aname))
 		return NULL;
 
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 	/* 
 	 * If no specific version has been requested, make sure we load the
 	 * correct version for system assemblies.
 	 */ 
 	if ((aname->major | aname->minor | aname->build | aname->revision) == 0)
 		aname = mono_assembly_remap_version (aname, &maped_aname);
+#endif
 	
 	res = mono_assembly_loaded (aname);
 	if (res) {
@@ -2592,12 +2607,17 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 {
 	MonoAssembly *result;
 	char *fullpath, *filename;
-	MonoAssemblyName maped_aname, maped_name_pp;
+#ifndef DISABLE_ASSEMBLY_REMAPPING
+	MonoAssemblyName maped_aname;
+#endif
+	MonoAssemblyName maped_name_pp;
 	int ext_index;
 	const char *ext;
 	int len;
 
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 	aname = mono_assembly_remap_version (aname, &maped_aname);
+#endif
 	
 	/* Reflection only assemblies don't get assembly binding */
 	if (!refonly)
@@ -2708,9 +2728,11 @@ MonoAssembly*
 mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 {
 	MonoAssembly *res;
+#ifndef DISABLE_ASSEMBLY_REMAPPING
 	MonoAssemblyName maped_aname;
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
+#endif
 
 	res = mono_assembly_invoke_search_hook_internal (aname, refonly, FALSE);
 

@@ -85,7 +85,6 @@ typedef int32_t        gboolean;
 #endif
 #endif
 
-
 /*
  * Macros
  */
@@ -198,6 +197,7 @@ gboolean        g_hash_table_lookup_extended (GHashTable *hash, gconstpointer ke
 void            g_hash_table_foreach         (GHashTable *hash, GHFunc func, gpointer user_data);
 gpointer        g_hash_table_find            (GHashTable *hash, GHRFunc predicate, gpointer user_data);
 gboolean        g_hash_table_remove          (GHashTable *hash, gconstpointer key);
+void            g_hash_table_remove_all      (GHashTable *hash);
 guint           g_hash_table_foreach_remove  (GHashTable *hash, GHRFunc func, gpointer user_data);
 guint           g_hash_table_foreach_steal   (GHashTable *hash, GHRFunc func, gpointer user_data);
 void            g_hash_table_destroy         (GHashTable *hash);
@@ -435,6 +435,20 @@ GList *g_list_sort          (GList         *sort,
 			     GCompareFunc   func);
 
 /*
+ * ByteArray
+ */
+
+typedef struct _GByteArray GByteArray;
+struct _GByteArray {
+	guint8 *data;
+	gint len;
+};
+
+GByteArray *g_byte_array_new    (void);
+GByteArray* g_byte_array_append (GByteArray *array, const guint8 *data, guint len);
+guint8*  g_byte_array_free      (GByteArray *array, gboolean free_segment);
+
+/*
  * Array
  */
 
@@ -496,6 +510,7 @@ void     g_queue_push_tail (GQueue   *queue,
 gboolean g_queue_is_empty  (GQueue   *queue);
 GQueue  *g_queue_new       (void);
 void     g_queue_free      (GQueue   *queue);
+void     g_queue_foreach   (GQueue   *queue, GFunc func, gpointer user_data);
 
 /*
  * Messages
@@ -541,6 +556,8 @@ void           g_assertion_message    (const gchar *format, ...) G_GNUC_NORETURN
 #define g_debug(...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #endif  /* ndef HAVE_C99_SUPPORT */
 #define g_log_set_handler(a,b,c,d)
+
+#define G_GNUC_INTERNAL
 
 /*
  * Conversions
@@ -891,15 +908,29 @@ glong     g_utf8_strlen        (const gchar *str, gssize max);
 #   define GUINT16_TO_LE(x) (x)
 #   define GUINT_TO_LE(x)   (x)
 #   define GUINT32_TO_BE(x) GUINT32_SWAP_LE_BE(x)
+#   define GUINT16_FROM_BE(x) GUINT16_SWAP_LE_BE(x)
 #   define GUINT32_FROM_BE(x) GUINT32_SWAP_LE_BE(x)
+#   define GUINT64_FROM_BE(x) GUINT64_SWAP_LE_BE(x)
+#   define GINT16_FROM_BE(x) GUINT16_SWAP_LE_BE(x)
+#   define GINT32_FROM_BE(x) GUINT32_SWAP_LE_BE(x)
+#   define GINT64_FROM_BE(x) GUINT64_SWAP_LE_BE(x)
 #else
 #   define GUINT32_TO_LE(x) GUINT32_SWAP_LE_BE(x)
 #   define GUINT64_TO_LE(x) GUINT64_SWAP_LE_BE(x)
 #   define GUINT16_TO_LE(x) GUINT16_SWAP_LE_BE(x)
 #   define GUINT_TO_LE(x)   GUINT32_SWAP_LE_BE(x)
 #   define GUINT32_TO_BE(x) (x)
+#   define GUINT16_FROM_BE(x) (x)
 #   define GUINT32_FROM_BE(x) (x)
+#   define GUINT64_FROM_BE(x) (x)
+#   define GINT16_FROM_BE(x) (x)
+#   define GINT32_FROM_BE(x) (x)
+#   define GINT64_FROM_BE(x) (x)
 #endif
+
+#define GINT64_FROM_LE(x)   (GUINT64_TO_LE (x))
+#define GINT32_FROM_LE(x)   (GUINT32_TO_LE (x))
+#define GINT16_FROM_LE(x)   (GUINT16_TO_LE (x))
 
 #define GUINT32_FROM_LE(x)  (GUINT32_TO_LE (x))
 #define GUINT64_FROM_LE(x)  (GUINT64_TO_LE (x))

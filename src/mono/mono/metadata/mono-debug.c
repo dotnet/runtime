@@ -17,6 +17,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/gc-internal.h>
 #include <string.h>
 
 #define DATA_TABLE_CHUNK_SIZE		16384
@@ -227,6 +228,12 @@ mono_debug_init (MonoDebugFormat format)
 
 	mono_debug_initialized = TRUE;
 	mono_debug_format = format;
+
+	/*
+	 * This must be called before mono_debugger_initialize(), because the
+	 * latter registers GC roots.
+	 */
+	mono_gc_base_init ();
 
 	mono_debugger_initialize (_mono_debug_using_mono_debugger);
 

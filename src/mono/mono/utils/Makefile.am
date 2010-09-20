@@ -67,7 +67,6 @@ monoutils_sources = \
 	mono-codeman.h	\
 	mono-counters.h	\
 	mono-digest.h	\
-	mono-embed.h	\
 	mono-error.h	\
 	mono-math.h	\
 	mono-membar.h	\
@@ -97,9 +96,10 @@ endif
 libmonoutils_la_SOURCES = $(monoutils_sources) $(arch_sources)
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
-libmonoutilsinclude_HEADERS = \
-	mono-logger.h	\
-	mono-error.h	\
-	mono-publib.h
+libmonoutilsinclude_HEADERS = 	\
+	mono-logger.h		\
+	mono-error.h		\
+	mono-publib.h		\
+	mono-dl-fallback.h
 
-EXTRA_DIST = ChangeLog
+EXTRA_DIST = ChangeLog mono-embed.h mono-embed.c
