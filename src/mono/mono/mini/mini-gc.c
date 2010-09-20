@@ -58,7 +58,6 @@ typedef struct {
 
 	/*
 	 * Similar bitmaps for registers. These have width MONO_MAX_IREGS in bits.
-	 * FIXME: Only store callee saved regs.
 	 */
 	int reg_bitmap_width;
 	guint8 *reg_ref_bitmap;
@@ -101,9 +100,6 @@ typedef struct {
 /* 
  * The GC Map itself.
  * Contains information needed to mark a stack frame.
- * FIXME: Optimize the memory usage.
- * FIXME: Factor out offsets.
- * FIXME: Create two variants, one for small methods, one for large ?
  */
 typedef struct {
 	/*
@@ -144,14 +140,16 @@ typedef struct {
 
 	/*
 	 * Corresponding bitmaps for registers
-	 * These have width NREGS in bits.
+	 * These have width equal to the number of bits set in reg_ref_mask/reg_pin_mask.
 	 * FIXME: Merge these with the normal bitmaps, i.e. reserve the first x slots for them ?
 	 */
 	guint32 reg_pin_bitmap_offset;
 	guint32 reg_ref_bitmap_offset;
 
-	/* The registers used by the method */
-	guint32 used_regs;
+	guint32 reg_ref_mask, reg_pin_mask;
+
+	/* The number of bits set in the two masks above */
+	guint8 nref_regs, npin_regs;
 
 	/*
 	 * A bit array marking slots which contain refs.
@@ -303,7 +301,14 @@ encode_gc_map (GCMap *map, guint8 *buf, guint8 **endbuf)
 	encode_uleb128 (map->callsite_entry_size, buf, &buf);
 	flags = (map->has_ref_slots ? 1 : 0) | (map->has_pin_slots ? 2 : 0) | (map->has_ref_regs ? 4 : 0) | (map->has_pin_regs ? 8 : 0) | (map->frame_reg << 4);
 	encode_uleb128 (flags, buf, &buf);
-	encode_uleb128 (map->used_regs, buf, &buf);
+	if (map->has_ref_regs)
+		encode_uleb128 (map->reg_ref_mask, buf, &buf);
+	if (map->has_pin_regs)
+		encode_uleb128 (map->reg_pin_mask, buf, &buf);
+	if (map->has_ref_regs)
+		encode_uleb128 (map->nref_regs, buf, &buf);
+	if (map->has_pin_regs)
+		encode_uleb128 (map->npin_regs, buf, &buf);
 	encode_uleb128 (map->ncallsites, buf, &buf);
 
 	*endbuf = buf;
@@ -318,7 +323,7 @@ static void
 decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 {
 	guint32 flags;
-	int stack_bitmap_size, reg_bitmap_size, offset;
+	int stack_bitmap_size, reg_ref_bitmap_size, reg_pin_bitmap_size, offset;
 
 	map->start_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
 	map->start_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
@@ -331,11 +336,19 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 	map->has_ref_regs = (flags & 4) ? 1 : 0;
 	map->has_pin_regs = (flags & 8) ? 1 : 0;
 	map->frame_reg = flags >> 4;
-	map->used_regs = decode_uleb128 (buf, &buf);
+	if (map->has_ref_regs)
+		map->reg_ref_mask = decode_uleb128 (buf, &buf);
+	if (map->has_pin_regs)
+		map->reg_pin_mask = decode_uleb128 (buf, &buf);
+	if (map->has_ref_regs)
+		map->nref_regs = decode_uleb128 (buf, &buf);
+	if (map->has_pin_regs)
+		map->npin_regs = decode_uleb128 (buf, &buf);
 	map->ncallsites = decode_uleb128 (buf, &buf);
 
 	stack_bitmap_size = (ALIGN_TO (map->nslots, 8) / 8) * map->ncallsites;
-	reg_bitmap_size = (ALIGN_TO (NREGS, 8) / 8) * map->ncallsites;
+	reg_ref_bitmap_size = (ALIGN_TO (map->nref_regs, 8) / 8) * map->ncallsites;
+	reg_pin_bitmap_size = (ALIGN_TO (map->npin_regs, 8) / 8) * map->ncallsites;
 	offset = 0;
 	map->stack_ref_bitmap_offset = offset;
 	if (map->has_ref_slots)
@@ -345,10 +358,10 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 		offset += stack_bitmap_size;
 	map->reg_ref_bitmap_offset = offset;
 	if (map->has_ref_regs)
-		offset += reg_bitmap_size;
+		offset += reg_ref_bitmap_size;
 	map->reg_pin_bitmap_offset = offset;
 	if (map->has_pin_regs)
-		offset += reg_bitmap_size;
+		offset += reg_pin_bitmap_size;
 
 	*endbuf = buf;
 }
@@ -688,16 +701,14 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 
 			/* Mark registers */
 			if (map->has_pin_regs) {
-				int bitmap_width = ALIGN_TO (NREGS, 8) / 8;
+				int bitmap_width = ALIGN_TO (map->npin_regs, 8) / 8;
 				guint8 *pin_bitmap = &bitmaps [map->reg_pin_bitmap_offset + (bitmap_width * cindex)];
+				int bindex = 0;
 				for (i = 0; i < NREGS; ++i) {
-					if (!(map->used_regs & (1 << i)))
+					if (!(map->reg_pin_mask & (1 << i)))
 						continue;
 
-					if (!reg_locations [i])
-						continue;
-
-					if (!(pin_bitmap [i / 8] & (1 << (i % 8)))) {
+					if (reg_locations [i] && !(pin_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
 						/*
 						 * The method uses this register, and we have precise info for it.
 						 * This means the location will be scanned precisely.
@@ -709,6 +720,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 					} else {
 						DEBUG (printf ("\treg %s at location %p is pinning.\n", mono_arch_regname (i), reg_locations [i]));
 					}
+					bindex ++;
 				}
 			}
 
@@ -765,16 +777,14 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 			 * in its prolog to the stack. We can mark this location precisely.
 			 */
 			if (map->has_ref_regs) {
-				int bitmap_width = ALIGN_TO (NREGS, 8) / 8;
+				int bitmap_width = ALIGN_TO (map->nref_regs, 8) / 8;
 				guint8 *ref_bitmap = &bitmaps [map->reg_ref_bitmap_offset + (bitmap_width * cindex)];
+				int bindex = 0;
 				for (i = 0; i < NREGS; ++i) {
-					if (!(map->used_regs & (1 << i)))
+					if (!(map->reg_ref_mask & (1 << i)))
 						continue;
 
-					if (!reg_locations [i])
-						continue;
-
-					if (ref_bitmap [i / 8] & (1 << (i % 8))) {
+					if (reg_locations [i] && (ref_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
 						/*
 						 * reg_locations [i] contains the address of the stack slot where
 						 * i was last saved, so mark that slot.
@@ -790,6 +800,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 							DEBUG (printf ("\treg %s saved at %p: %p", mono_arch_regname (i), reg_locations [i], obj));
 						}
 					}
+					bindex ++;
 				}
 			}	
 		}
@@ -1452,9 +1463,10 @@ void
 mini_gc_create_gc_map (MonoCompile *cfg)
 {
 	GCMap *map;
-	int i, j, nregs, nslots, alloc_size, bitmaps_size, bitmaps_offset;
+	int i, j, nregs, nslots, nref_regs, npin_regs, alloc_size, bitmaps_size, bitmaps_offset;
 	int ntypes [16];
-	int stack_bitmap_width, stack_bitmap_size, reg_bitmap_width, reg_bitmap_size;
+	int stack_bitmap_width, stack_bitmap_size, reg_ref_bitmap_width, reg_ref_bitmap_size;
+	int reg_pin_bitmap_width, reg_pin_bitmap_size, bindex;
 	int start, end;
 	gboolean has_ref_slots, has_pin_slots, has_ref_regs, has_pin_regs;
 	MonoCompileGC *gcfg = cfg->gc_info;
@@ -1463,6 +1475,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	GSList *l;
 	guint8 *bitmap, *bitmaps;
+	guint32 reg_ref_mask, reg_pin_mask;
 
 	if (!cfg->compute_gc_maps)
 		return;
@@ -1599,6 +1612,10 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	has_ref_regs = FALSE;
 	has_pin_regs = FALSE;
+	reg_ref_mask = 0;
+	reg_pin_mask = 0;
+	nref_regs = 0;
+	npin_regs = 0;
 	for (i = 0; i < nregs; ++i) {
 		gboolean has_ref = FALSE;
 		gboolean has_pin = FALSE;
@@ -1616,10 +1633,16 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 			}
 		}
 
-		if (has_ref)
+		if (has_ref) {
+			reg_ref_mask |= (1 << i);
 			has_ref_regs = TRUE;
-		if (has_pin)
+			nref_regs ++;
+		}
+		if (has_pin) {
+			reg_pin_mask |= (1 << i);
 			has_pin_regs = TRUE;
+			npin_regs ++;
+		}
 	}
 
 	if (cfg->verbose_level > 1)
@@ -1629,9 +1652,11 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 
 	stack_bitmap_width = ALIGN_TO (end - start, 8) / 8;
 	stack_bitmap_size = stack_bitmap_width * ncallsites;
-	reg_bitmap_width = ALIGN_TO (nregs, 8) / 8;
-	reg_bitmap_size = reg_bitmap_width * ncallsites;
-	bitmaps_size = (has_ref_slots ? stack_bitmap_size : 0) + (has_pin_slots ? stack_bitmap_size : 0) + (has_ref_regs ? reg_bitmap_size : 0) + (has_pin_regs ? reg_bitmap_size : 0);
+	reg_ref_bitmap_width = ALIGN_TO (nref_regs, 8) / 8;
+	reg_ref_bitmap_size = reg_ref_bitmap_width * ncallsites;
+	reg_pin_bitmap_width = ALIGN_TO (npin_regs, 8) / 8;
+	reg_pin_bitmap_size = reg_pin_bitmap_width * ncallsites;
+	bitmaps_size = (has_ref_slots ? stack_bitmap_size : 0) + (has_pin_slots ? stack_bitmap_size : 0) + (has_ref_regs ? reg_ref_bitmap_size : 0) + (has_pin_regs ? reg_pin_bitmap_size : 0);
 	
 	map = mono_mempool_alloc (cfg->mempool, sizeof (GCMap));
 
@@ -1645,7 +1670,10 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	map->has_ref_regs = has_ref_regs;
 	map->has_pin_regs = has_pin_regs;
 	g_assert (nregs < 32);
-	map->used_regs = cfg->used_int_regs;
+	map->reg_ref_mask = reg_ref_mask;
+	map->reg_pin_mask = reg_pin_mask;
+	map->nref_regs = nref_regs;
+	map->npin_regs = npin_regs;
 
 	bitmaps = mono_mempool_alloc0 (cfg->mempool, bitmaps_size);
 
@@ -1676,17 +1704,35 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	}
 	if (has_ref_regs) {
 		map->reg_ref_bitmap_offset = bitmaps_offset;
-		bitmaps_offset += reg_bitmap_size;
+		bitmaps_offset += reg_ref_bitmap_size;
 
 		bitmap = &bitmaps [map->reg_ref_bitmap_offset];
-		memcpy (bitmap, gcfg->reg_ref_bitmap, reg_bitmap_size);
+		bindex = 0;
+		for (i = 0; i < nregs; ++i) {
+			if (reg_ref_mask & (1 << i)) {
+				for (j = 0; j < ncallsites; ++j) {
+					if (get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i))
+						set_bit (bitmap, reg_ref_bitmap_width, j, bindex);
+				}
+				bindex ++;
+			}
+		}
 	}
 	if (has_pin_regs) {
 		map->reg_pin_bitmap_offset = bitmaps_offset;
-		bitmaps_offset += reg_bitmap_size;
+		bitmaps_offset += reg_pin_bitmap_size;
 
 		bitmap = &bitmaps [map->reg_pin_bitmap_offset];
-		memcpy (bitmap, gcfg->reg_pin_bitmap, reg_bitmap_size);
+		bindex = 0;
+		for (i = 0; i < nregs; ++i) {
+			if (reg_pin_mask & (1 << i)) {
+				for (j = 0; j < ncallsites; ++j) {
+					if (get_bit (gcfg->reg_pin_bitmap, gcfg->reg_bitmap_width, j, i))
+						set_bit (bitmap, reg_pin_bitmap_width, j, bindex);
+				}
+				bindex ++;
+			}
+		}
 	}
 
 	/* Call sites */
