@@ -262,6 +262,7 @@ typedef struct {
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
 	gint8 pair_regs [2];
+	int nregs;
 } ArgInfo;
 
 typedef struct {
@@ -570,6 +571,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 
 		ainfo->storage = ArgValuetypeInReg;
 		ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
+		ainfo->nregs = nquads;
 		for (quad = 0; quad < nquads; ++quad) {
 			switch (args [quad]) {
 			case ARG_CLASS_INTEGER:
@@ -1559,9 +1561,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					offset = ALIGN_TO (offset, sizeof (gpointer));
 					if (cfg->arch.omit_fp) {
 						ins->inst_offset = offset;
-						offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+						offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (gpointer) : sizeof (gpointer);
 					} else {
-						offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+						offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (gpointer) : sizeof (gpointer);
 						ins->inst_offset = - offset;
 					}
 					break;
@@ -1636,11 +1638,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				offset = ALIGN_TO (offset, sizeof (gpointer));
 				if (cfg->arch.omit_fp) {
 					ins->inst_offset = offset;
-					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+					offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (gpointer) : sizeof (gpointer);
 					// Arguments are yet supported by the stack map creation code
 					//cfg->locals_max_stack_offset = MAX (cfg->locals_max_stack_offset, offset);
 				} else {
-					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+					offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (gpointer) : sizeof (gpointer);
 					ins->inst_offset = - offset;
 					//cfg->locals_min_stack_offset = MIN (cfg->locals_min_stack_offset, offset);
 				}
@@ -5849,6 +5851,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #ifdef HOST_WIN32
 		mono_arch_unwindinfo_add_push_nonvol (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
 #endif
+		/* These are handled automatically by the stack marking code */
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 		
 		amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
 		mono_emit_unwind_op_def_cfa_reg (cfg, code, AMD64_RBP);

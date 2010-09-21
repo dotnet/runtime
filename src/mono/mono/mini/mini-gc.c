@@ -734,7 +734,8 @@ conservative_pass (gpointer user_data, guint8 *stack_start, guint8 *stack_end)
 					DEBUG (printf ("\treg %s at location %p is precise.\n", mono_arch_regname (i), reg_locations [i]));
 					reg_locations [i] = NULL;
 				} else {
-					DEBUG (printf ("\treg %s at location %p is pinning.\n", mono_arch_regname (i), reg_locations [i]));
+					if (reg_locations [i])
+						DEBUG (printf ("\treg %s at location %p is pinning.\n", mono_arch_regname (i), reg_locations [i]));
 				}
 				bindex ++;
 			}
@@ -1248,14 +1249,19 @@ process_variables (MonoCompile *cfg)
 		MonoType *t = ins->inst_vtype;
 		MonoMethodVar *vmv;
 		guint32 pos;
-		gboolean byref;
+		gboolean byref, is_this = FALSE;
 		gboolean is_arg = i < cfg->locals_start;
-		
+
+		if (ins == cfg->ret)
+			continue;
+
 		vmv = MONO_VARINFO (cfg, i);
 
 		/* For some reason, 'this' is byref */
-		if (sig->hasthis && ins == cfg->args [0] && !cfg->method->klass->valuetype)
+		if (sig->hasthis && ins == cfg->args [0] && !cfg->method->klass->valuetype) {
 			t = &cfg->method->klass->byval_arg;
+			is_this = TRUE;
+		}
 
 		byref = t->byref;
 
@@ -1307,7 +1313,6 @@ process_variables (MonoCompile *cfg)
 
 			if (cfg->verbose_level > 1) {
 				printf ("\t%s %sreg %s(R%d)\n", slot_type_to_string (slot_type), is_arg ? "arg " : "", mono_arch_regname (hreg), vmv->vreg);
-				printf ("\n");
 			}
 
 			continue;
@@ -1339,17 +1344,18 @@ process_variables (MonoCompile *cfg)
 			int numbits = 0, j;
 			gsize *bitmap = NULL;
 			gboolean pin = FALSE;
-			MonoLiveInterval *interval = NULL;
 			int size;
-
+			int size_in_slots;
+			
 			if (ins->backend.is_pinvoke)
 				size = mono_class_native_size (ins->klass, NULL);
 			else
 				size = mono_class_value_size (ins->klass, NULL);
+			size_in_slots = ALIGN_TO (size, sizeof (mgreg_t)) / sizeof (mgreg_t);
 
 			if (!ins->klass->has_references) {
 				if (is_arg) {
-					for (j = 0; j < size / sizeof (mgreg_t); ++j)
+					for (j = 0; j < size_in_slots; ++j)
 						set_slot_everywhere (gcfg, pos + j, SLOT_NOREF);
 				}
 				continue;
@@ -1373,12 +1379,8 @@ process_variables (MonoCompile *cfg)
 				 * before the liveness pass. We emit OP_GC_LIVENESS_DEF instructions for
 				 * them during VZERO decomposition.
 				 */
-				if (pc_offsets [vmv->vreg]) {
-					interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
-					mono_linterval_add_range (cfg, interval, pc_offsets [vmv->vreg], cfg->code_size);
-				} else {
+				if (!pc_offsets [vmv->vreg])
 					pin = TRUE;
-				}
 			}
 
 			if (ins->backend.is_pinvoke)
@@ -1398,7 +1400,7 @@ process_variables (MonoCompile *cfg)
 					}
 				}
 			} else if (pin) {
-				for (j = 0; j < size / sizeof (mgreg_t); ++j) {
+				for (j = 0; j < size_in_slots; ++j) {
 					set_slot_everywhere (gcfg, pos + j, SLOT_PIN);
 				}
 			}
@@ -1406,12 +1408,7 @@ process_variables (MonoCompile *cfg)
 			g_free (bitmap);
 
 			if (cfg->verbose_level > 1) {
-				printf ("\tvtype R%d at fp+0x%x-0x%x: %s ", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / sizeof (mgreg_t))), mono_type_full_name (ins->inst_vtype));
-				if (interval)
-					mono_linterval_print (interval);
-				else
-					printf ("(pinned)");
-				printf ("\n");
+				printf ("\tvtype R%d at fp+0x%x-0x%x: %s\n", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / sizeof (mgreg_t))), mono_type_full_name (ins->inst_vtype));
 			}
 
 			continue;
@@ -1449,13 +1446,15 @@ process_variables (MonoCompile *cfg)
 			continue;
 		}
 
-		if (ins->flags & (MONO_INST_VOLATILE | MONO_INST_INDIRECT)) {
+		/* 'this' is marked INDIRECT for gshared methods */
+		if (ins->flags & (MONO_INST_VOLATILE | MONO_INST_INDIRECT) && !is_this) {
 			/*
 			 * For volatile variables, treat them alive from the point they are
 			 * initialized in the first bblock until the end of the method.
 			 */
 			if (pc_offsets [vmv->vreg]) {
-				set_slot_in_range (gcfg, pos, pc_offsets [vmv->vreg], cfg->code_size, SLOT_PIN);
+				set_slot_in_range (gcfg, pos, 0, pc_offsets [vmv->vreg], SLOT_PIN);
+				set_slot_in_range (gcfg, pos, pc_offsets [vmv->vreg], cfg->code_size, SLOT_REF);
 			} else {
 				set_slot_everywhere (gcfg, pos, SLOT_PIN);
 				continue;
@@ -1472,8 +1471,7 @@ process_variables (MonoCompile *cfg)
 		}
 
 		if (cfg->verbose_level > 1) {
-			printf ("\tref at %s0x%x(fp) (slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
-			printf ("\n");
+			printf ("\tref at %s0x%x(fp) (R%d, slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
 		}
 	}
 
