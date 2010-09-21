@@ -4132,8 +4132,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	//cfg->enable_extended_bblocks = TRUE;
 
 	/*We must verify the method before doing any IR generation as mono_compile_create_vars can assert.*/
-	if (mono_compile_is_broken (cfg, cfg->method, TRUE))
+	if (mono_compile_is_broken (cfg, cfg->method, TRUE)) {
+		if (mini_get_debug_options ()->break_on_unverified)
+			G_BREAKPOINT ();
 		return cfg;
+	}
 
 	/*
 	 * create MonoInst* which represents arguments and local variables
