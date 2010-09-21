@@ -1435,7 +1435,7 @@ mono_sgen_marksweep_init
 #else
 	collector->is_parallel = FALSE;
 #endif
-	collector->supports_cardtable = !collector->is_parallel;
+	collector->supports_cardtable = TRUE;
 
 	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;
