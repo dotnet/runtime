@@ -556,12 +556,13 @@ static void thread_cleanup (MonoInternalThread *thread)
 			mono_array_set (thread->cached_culture_info, MonoObject*, i, NULL);
 	}
 
-	if (mono_thread_cleanup_fn)
-		mono_thread_cleanup_fn (thread);
-
 	/* if the thread is not in the hash it has been removed already */
-	if (!handle_remove (thread))
+	if (!handle_remove (thread)) {
+		/* This needs to be called even if handle_remove () fails */
+		if (mono_thread_cleanup_fn)
+			mono_thread_cleanup_fn (thread);
 		return;
+	}
 	mono_release_type_locks (thread);
 
 	EnterCriticalSection (thread->synch_cs);
@@ -581,8 +582,12 @@ static void thread_cleanup (MonoInternalThread *thread)
 	mono_free_static_data (thread->static_data, TRUE);
 	thread->static_data = NULL;
 
+	if (mono_thread_cleanup_fn)
+		mono_thread_cleanup_fn (thread);
+
 	small_id_free (thread->small_id);
 	thread->small_id = -2;
+
 }
 
 static gpointer
