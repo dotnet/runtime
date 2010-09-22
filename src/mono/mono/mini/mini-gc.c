@@ -1669,47 +1669,15 @@ compute_frame_size (MonoCompile *cfg)
 	gcfg->locals_max_offset = locals_max_offset;
 }
 
-void
-mini_gc_create_gc_map (MonoCompile *cfg)
+static void
+init_gcfg (MonoCompile *cfg)
 {
-	GCMap *map;
-	int i, j, nregs, nslots, nref_regs, npin_regs, alloc_size, bitmaps_size, bitmaps_offset;
-	int ntypes [16];
-	int stack_bitmap_width, stack_bitmap_size, reg_ref_bitmap_width, reg_ref_bitmap_size;
-	int reg_pin_bitmap_width, reg_pin_bitmap_size, bindex;
-	int start, end;
-	gboolean has_ref_slots, has_pin_slots, has_ref_regs, has_pin_regs;
+	int i, nregs, nslots;
 	MonoCompileGC *gcfg = cfg->gc_info;
 	GCCallSite **callsites;
 	int ncallsites;
 	MonoBasicBlock *bb;
 	GSList *l;
-	guint8 *bitmap, *bitmaps;
-	guint32 reg_ref_mask, reg_pin_mask;
-
-	if (!cfg->compute_gc_maps)
-		return;
-
-	/*
-	 * During marking, all frames except the top frame are at a call site, and we mark the
-	 * top frame conservatively. This means that we only need to compute and record
-	 * GC maps for call sites.
-	 */
-
-	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
-		/* Without liveness info, the live ranges are not precise enough */
-		return;
-
-	if (cfg->header->num_clauses)
-		/*
-		 * The calls to the finally clauses don't show up in the cfg. See
-		 * test_0_liveness_8 ().
-		 */
-		return;
-
-	mono_analyze_liveness_gc (cfg);
-
-	compute_frame_size (cfg);
 
 	/*
 	 * Collect callsites
@@ -1770,17 +1738,29 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		if ((cfg->used_int_regs & (1 << i)))
 			set_reg_slot_everywhere (gcfg, i, SLOT_PIN);
 	}
+}
 
-	process_spill_slots (cfg);
-	process_other_slots (cfg);
-	process_param_area_slots (cfg);
-	process_variables (cfg);
 
-	if (!strcmp (cfg->method->name, "GetMethod")) {
-		for (i = 8; i < nslots; ++i) {
-			set_slot_everywhere (gcfg, i, SLOT_PIN);
-		}
-	}
+static void
+create_map (MonoCompile *cfg)
+{
+	GCMap *map;
+	int i, j, nregs, nslots, nref_regs, npin_regs, alloc_size, bitmaps_size, bitmaps_offset;
+	int ntypes [16];
+	int stack_bitmap_width, stack_bitmap_size, reg_ref_bitmap_width, reg_ref_bitmap_size;
+	int reg_pin_bitmap_width, reg_pin_bitmap_size, bindex;
+	int start, end;
+	gboolean has_ref_slots, has_pin_slots, has_ref_regs, has_pin_regs;
+	MonoCompileGC *gcfg = cfg->gc_info;
+	GCCallSite **callsites;
+	int ncallsites;
+	guint8 *bitmap, *bitmaps;
+	guint32 reg_ref_mask, reg_pin_mask;
+
+	ncallsites = gcfg->ncallsites;
+	nslots = gcfg->nslots;
+	nregs = gcfg->nregs;
+	callsites = gcfg->callsites;
 
 	/* 
 	 * Compute the real size of the bitmap i.e. ignore NOREF columns at the beginning and at
@@ -2019,6 +1999,43 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	stats.ref_slots += ntypes [SLOT_REF];
 	stats.noref_slots += ntypes [SLOT_NOREF];
 	stats.pin_slots += ntypes [SLOT_PIN];
+}
+
+void
+mini_gc_create_gc_map (MonoCompile *cfg)
+{
+	if (!cfg->compute_gc_maps)
+		return;
+
+	/*
+	 * During marking, all frames except the top frame are at a call site, and we mark the
+	 * top frame conservatively. This means that we only need to compute and record
+	 * GC maps for call sites.
+	 */
+
+	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
+		/* Without liveness info, the live ranges are not precise enough */
+		return;
+
+	if (cfg->header->num_clauses)
+		/*
+		 * The calls to the finally clauses don't show up in the cfg. See
+		 * test_0_liveness_8 ().
+		 */
+		return;
+
+	mono_analyze_liveness_gc (cfg);
+
+	compute_frame_size (cfg);
+
+	init_gcfg (cfg);
+
+	process_spill_slots (cfg);
+	process_other_slots (cfg);
+	process_param_area_slots (cfg);
+	process_variables (cfg);
+
+	create_map (cfg);
 }
 
 void
