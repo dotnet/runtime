@@ -68,6 +68,7 @@ typedef struct {
 
 #if 0
 #define DEBUG(s) do { s; } while (0)
+#define DEBUG_ENABLED 1
 #else
 #define DEBUG(s)
 #endif
@@ -89,11 +90,13 @@ typedef struct {
 typedef struct {
 	guint8 *bitmap;
 	int nslots;
-	/* FIXME: Store an offset from the previous frame */
-	guint8* frame_start;
+    int frame_start_offset;
 	int nreg_locations;
+	/* Relative to stack_start */
+	int reg_locations [MONO_MAX_IREGS];
+#ifdef DEBUG_ENABLED
 	int regs [MONO_MAX_IREGS];
-	gpointer reg_locations [MONO_MAX_IREGS];
+#endif
 } FrameInfo;
 
 /* Max number of frames stored in the TLS data */
@@ -525,9 +528,8 @@ slot_type_to_string (GCSlotType type)
  *   Mark a thread stack conservatively and collect information needed by the precise pass.
  */
 static void
-conservative_pass (gpointer user_data, guint8 *stack_start, guint8 *stack_end)
+conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 {
-	TlsData *tls = user_data;
 	MonoJitInfo *ji;
 	MonoContext ctx, new_ctx;
 	MonoLMF *lmf;
@@ -799,7 +801,7 @@ conservative_pass (gpointer user_data, guint8 *stack_start, guint8 *stack_end)
 			fi->bitmap = &bitmaps [map->stack_ref_bitmap_offset + (bitmap_width * cindex)];
 		else
 			fi->bitmap = NULL;
-		fi->frame_start = frame_start;
+		fi->frame_start_offset = frame_start - stack_start;
 		fi->nreg_locations = 0;
 
 		if (map->has_ref_regs) {
@@ -811,8 +813,8 @@ conservative_pass (gpointer user_data, guint8 *stack_start, guint8 *stack_end)
 					continue;
 
 				if (reg_locations [i] && (ref_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
-					fi->regs [fi->nreg_locations] = i;
-					fi->reg_locations [fi->nreg_locations] = reg_locations [i];
+					DEBUG (fi->regs [fi->nreg_locations] = i);
+					fi->reg_locations [fi->nreg_locations] = (guint8*)reg_locations [i] - stack_start;
 					fi->nreg_locations ++;
 				}
 				bindex ++;
@@ -871,10 +873,11 @@ conservative_pass (gpointer user_data, guint8 *stack_start, guint8 *stack_end)
  * pass.
  */
 static void
-precise_pass (TlsData *tls)
+precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 {
 	int findex, i;
 	FrameInfo *fi;
+	guint8 *frame_start;
 
 	if (!tls)
 		return;
@@ -882,6 +885,7 @@ precise_pass (TlsData *tls)
 	for (findex = 0; findex < tls->nframes; findex ++) {
 		/* Load information saved by the !precise pass */
 		fi = &tls->frames [findex];
+		frame_start = stack_start + fi->frame_start_offset;
 
 		/* 
 		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
@@ -894,7 +898,7 @@ precise_pass (TlsData *tls)
 			gboolean live;
 
 			for (i = 0; i < fi->nslots; ++i) {
-				MonoObject **ptr = (MonoObject**)(fi->frame_start + (i * sizeof (mgreg_t)));
+				MonoObject **ptr = (MonoObject**)(frame_start + (i * sizeof (mgreg_t)));
 
 				live = ref_bitmap [i / 8] & (1 << (i % 8));
 
@@ -938,15 +942,15 @@ precise_pass (TlsData *tls)
 			 * reg_locations [i] contains the address of the stack slot where
 			 * a reg was last saved, so mark that slot.
 			 */
-			MonoObject **ptr = (MonoObject**)fi->reg_locations [i];
+			MonoObject **ptr = (MonoObject**)((guint8*)stack_start + fi->reg_locations [i]);
 			MonoObject *obj = *ptr;
 
 			if (obj) {
-				DEBUG (printf ("\treg %s saved at %p: %p ->", mono_arch_regname (fi->regs [i]), fi->reg_locations [i], obj));
+				DEBUG (printf ("\treg %s saved at %p: %p ->", mono_arch_regname (fi->regs [i]), ptr, obj));
 				*ptr = mono_gc_scan_object (obj);
 				DEBUG (printf (" %p.\n", *ptr));
 			} else {
-				DEBUG (printf ("\treg %s saved at %p: %p", mono_arch_regname (fi->regs [i]), fi->reg_locations [i], obj));
+				DEBUG (printf ("\treg %s saved at %p: %p", mono_arch_regname (fi->regs [i]), ptr, obj));
 			}
 		}	
 	}
@@ -969,7 +973,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	if (!precise)
 		conservative_pass (tls, stack_start, stack_end);
 	else
-		precise_pass (tls);
+		precise_pass (tls, stack_start, stack_end);
 }
 
 static void
