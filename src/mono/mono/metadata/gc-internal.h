@@ -250,7 +250,11 @@ typedef struct {
 	 * needed by the other functions.
 	 */
 	gpointer (*thread_attach_func) (void);
-	/* FIXME: Add a cleanup function too */
+	/* 
+	 * Function called during thread deatch to free the data allocated by
+	 * thread_attach_func.
+	 */
+	void (*thread_detach_func) (gpointer user_data);
 	/* 
 	 * Function called from every thread when suspending for GC. It can save
 	 * data needed for marking from thread stacks. user_data is the data returned 

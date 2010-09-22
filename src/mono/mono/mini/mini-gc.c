@@ -85,7 +85,6 @@ typedef struct {
  * Contains information collected during the conservative stack marking pass,
  * used during the precise pass. This helps to avoid doing a stack walk twice, which
  * is expensive.
- * FIXME: Optimize memory usage.
  */
 typedef struct {
 	guint8 *bitmap;
@@ -465,6 +464,14 @@ thread_attach_func (void)
 	stats.tlsdata_size += sizeof (TlsData);
 
 	return tls;
+}
+
+static void
+thread_detach_func (gpointer user_data)
+{
+	TlsData *tls = user_data;
+
+	g_free (tls);
 }
 
 static void
@@ -2093,6 +2100,7 @@ mini_gc_init (void)
 
 	memset (&cb, 0, sizeof (cb));
 	cb.thread_attach_func = thread_attach_func;
+	cb.thread_detach_func = thread_detach_func;
 	cb.thread_suspend_func = thread_suspend_func;
 	/* Comment this out to disable precise stack marking */
 	cb.thread_mark_func = thread_mark_func;

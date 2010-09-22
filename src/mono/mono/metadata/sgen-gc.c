@@ -5731,6 +5731,12 @@ unregister_current_thread (void)
 	} else {
 		prev->next = p->next;
 	}
+
+	if (gc_callbacks.thread_detach_func) {
+		gc_callbacks.thread_detach_func (p->runtime_data);
+		p->runtime_data = NULL;
+	}
+
 	if (p->remset) {
 		if (freed_thread_remsets) {
 			for (rset = p->remset; rset->next; rset = rset->next)
