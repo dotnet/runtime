@@ -16,7 +16,7 @@ typedef enum {
 	SLOT_REF = 1,
 	/* No info or managed pointer, slot needs to be scanned conservatively */
 	SLOT_PIN = 2
-} StackSlotType;
+} GCSlotType;
 
 void mini_gc_init (void) MONO_INTERNAL;
 
@@ -24,8 +24,8 @@ void mini_gc_init_cfg (MonoCompile *cfg) MONO_INTERNAL;
 
 void mini_gc_create_gc_map (MonoCompile *cfg) MONO_INTERNAL;
 
-void mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, StackSlotType type) MONO_INTERNAL;
+void mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, GCSlotType type) MONO_INTERNAL;
 
-void mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, StackSlotType type) MONO_INTERNAL;
+void mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType type) MONO_INTERNAL;
 
 #endif

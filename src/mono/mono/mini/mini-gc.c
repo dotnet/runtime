@@ -460,7 +460,7 @@ get_bit (guint8 *bitmap, int width, int y, int x)
 }
 
 static const char*
-slot_type_to_string (StackSlotType type)
+slot_type_to_string (GCSlotType type)
 {
 	switch (type) {
 	case SLOT_REF:
@@ -962,7 +962,7 @@ mini_gc_init_gc_map (MonoCompile *cfg)
  * need to call this function for those slots.
  */
 void
-mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, StackSlotType type)
+mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, GCSlotType type)
 {
 	MonoCompileGC *gcfg = (MonoCompileGC*)cfg->gc_info;
 
@@ -984,7 +984,7 @@ mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, StackSlotType 
  * call this function for those slots.
  */
 void
-mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, StackSlotType type)
+mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType type)
 {
 	MonoCompileGC *gcfg = (MonoCompileGC*)cfg->gc_info;
 	int slot = - (slot_offset / sizeof (mgreg_t));
@@ -1015,7 +1015,7 @@ slot_to_fp_offset (MonoCompile *cfg, int slot)
 }
 
 static inline void
-set_slot (MonoCompileGC *gcfg, int slot, int callsite_index, StackSlotType type)
+set_slot (MonoCompileGC *gcfg, int slot, int callsite_index, GCSlotType type)
 {
 	g_assert (slot >= 0 && slot < gcfg->nslots);
 
@@ -1032,7 +1032,7 @@ set_slot (MonoCompileGC *gcfg, int slot, int callsite_index, StackSlotType type)
 }
 
 static inline void
-set_slot_everywhere (MonoCompileGC *gcfg, int slot, StackSlotType type)
+set_slot_everywhere (MonoCompileGC *gcfg, int slot, GCSlotType type)
 {
 	int cindex;
 
@@ -1041,7 +1041,7 @@ set_slot_everywhere (MonoCompileGC *gcfg, int slot, StackSlotType type)
 }
 
 static inline void
-set_slot_in_range (MonoCompileGC *gcfg, int slot, int from, int to, StackSlotType type)
+set_slot_in_range (MonoCompileGC *gcfg, int slot, int from, int to, GCSlotType type)
 {
 	int cindex;
 
@@ -1053,7 +1053,7 @@ set_slot_in_range (MonoCompileGC *gcfg, int slot, int from, int to, StackSlotTyp
 }
 
 static inline void
-set_reg_slot (MonoCompileGC *gcfg, int slot, int callsite_index, StackSlotType type)
+set_reg_slot (MonoCompileGC *gcfg, int slot, int callsite_index, GCSlotType type)
 {
 	g_assert (slot >= 0 && slot < gcfg->nregs);
 
@@ -1070,7 +1070,7 @@ set_reg_slot (MonoCompileGC *gcfg, int slot, int callsite_index, StackSlotType t
 }
 
 static inline void
-set_reg_slot_everywhere (MonoCompileGC *gcfg, int slot, StackSlotType type)
+set_reg_slot_everywhere (MonoCompileGC *gcfg, int slot, GCSlotType type)
 {
 	int cindex;
 
@@ -1079,7 +1079,7 @@ set_reg_slot_everywhere (MonoCompileGC *gcfg, int slot, StackSlotType type)
 }
 
 static inline void
-set_reg_slot_in_range (MonoCompileGC *gcfg, int slot, int from, int to, StackSlotType type)
+set_reg_slot_in_range (MonoCompileGC *gcfg, int slot, int from, int to, GCSlotType type)
 {
 	int cindex;
 
@@ -1119,7 +1119,7 @@ process_spill_slots (MonoCompile *cfg)
 			int bank = def->inst_c1;
 			int offset = cfg->spill_info [bank][spill_slot].offset;
 			int slot = fp_offset_to_slot (cfg, offset);
-			StackSlotType type;
+			GCSlotType type;
 
 			if (bank == MONO_REG_INT_MP)
 				type = SLOT_PIN;
@@ -1185,7 +1185,7 @@ process_other_slots (MonoCompile *cfg)
 	for (l = gcfg->stack_slots_from_cfa; l; l = l->next) {
 		guint data = GPOINTER_TO_UINT (l->data);
 		int cfa_slot = data >> 16;
-		StackSlotType type = data & 0xff;
+		GCSlotType type = data & 0xff;
 		int slot;
 		
 		/*
@@ -1209,7 +1209,7 @@ process_other_slots (MonoCompile *cfg)
 	for (l = gcfg->stack_slots_from_fp; l; l = l->next) {
 		gint data = GPOINTER_TO_INT (l->data);
 		int offset = data >> 16;
-		StackSlotType type = data & 0xff;
+		GCSlotType type = data & 0xff;
 		int slot;
 		
 		slot = fp_offset_to_slot (cfg, offset);
@@ -1287,7 +1287,7 @@ process_variables (MonoCompile *cfg)
 
 		if (ins->opcode == OP_REGVAR) {
 			int hreg;
-			StackSlotType slot_type;
+			GCSlotType slot_type;
 
 			t = mini_type_get_underlying_type (NULL, t);
 
@@ -1521,7 +1521,7 @@ sp_offset_to_fp_offset (MonoCompile *cfg, int sp_offset)
 #endif
 }
 
-static StackSlotType
+static GCSlotType
 type_to_gc_slot_type (MonoType *t)
 {
 	if (t->byref)
@@ -1591,7 +1591,7 @@ process_param_area_slots (MonoCompile *cfg)
 			int sp_offset = def->inst_offset;
 			int fp_offset = sp_offset_to_fp_offset (cfg, sp_offset);
 			int slot = fp_offset_to_slot (cfg, fp_offset);
-			StackSlotType type = type_to_gc_slot_type (t);
+			GCSlotType type = type_to_gc_slot_type (t);
 
 			/* The slot is live between the def instruction and the call */
 			set_slot_in_range (gcfg, slot, def->backend.pc_offset, callsite->pc_offset + 1, type);
@@ -2104,12 +2104,12 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 }
 
 void
-mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, StackSlotType type)
+mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, GCSlotType type)
 {
 }
 
 void
-mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, StackSlotType type)
+mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType type)
 {
 }
 
