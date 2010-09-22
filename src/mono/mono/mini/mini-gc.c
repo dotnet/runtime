@@ -1443,10 +1443,7 @@ process_variables (MonoCompile *cfg)
 				mono_class_compute_gc_descriptor (ins->klass);
 
 				bitmap = mono_gc_get_bitmap_for_descr (ins->klass->gc_descr, &numbits);
-
-				if (!bitmap)
-					// FIXME:
-					pin = TRUE;
+				g_assert (bitmap);
 
 				/*
 				 * Most vtypes are marked volatile because of the LDADDR instructions,
@@ -1494,8 +1491,9 @@ process_variables (MonoCompile *cfg)
 			continue;
 
 		if (t->byref) {
-			// FIXME: Not everywhere
-			set_slot_everywhere (gcfg, pos, SLOT_PIN);
+			for (cindex = 0; cindex < gcfg->ncallsites; ++cindex)
+				if (gcfg->callsites [cindex]->liveness [i / 8] & (1 << (i % 8)))
+					set_slot (gcfg, pos, cindex, SLOT_PIN);
 			continue;
 		}
 
