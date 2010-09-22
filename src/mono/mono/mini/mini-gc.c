@@ -211,6 +211,34 @@ typedef struct {
 	guint8 bitmaps [MONO_ZERO_LEN_ARRAY];
 } GCEncodedMap;
 
+static int precise_frame_count [2], precise_frame_limit = -1;
+static gboolean precise_frame_limit_inited;
+
+/* Stats */
+typedef struct {
+	int scanned_stacks;
+	int scanned;
+	int scanned_precisely;
+	int scanned_conservatively;
+	int scanned_registers;
+
+	int all_slots;
+	int noref_slots;
+	int ref_slots;
+	int pin_slots;
+
+	int gc_maps_size;
+	int gc_callsites_size;
+	int gc_callsites8_size;
+	int gc_callsites16_size;
+	int gc_callsites32_size;
+	int gc_bitmaps_size;
+	int gc_map_struct_size;
+	int tlsdata_size;
+} JITGCStats;
+
+static JITGCStats stats;
+
 // FIXME: Move these to a shared place
 
 static inline void
@@ -307,6 +335,36 @@ decode_sleb128 (guint8 *buf, guint8 **endbuf)
 	return res;
 }
 
+static int
+encode_frame_reg (int frame_reg)
+{
+#ifdef TARGET_AMD64
+	if (frame_reg == AMD64_RSP)
+		return 0;
+	else if (frame_reg == AMD64_RBP)
+		return 1;
+#else
+	NOT_IMPLEMENTED;
+#endif
+	g_assert_not_reached ();
+	return -1;
+}
+
+static int
+decode_frame_reg (int encoded)
+{
+#ifdef TARGET_AMD64
+	if (encoded == 0)
+		return AMD64_RSP;
+	else if (encoded == 1)
+		return AMD64_RBP;
+#else
+	NOT_IMPLEMENTED;
+#endif
+	g_assert_not_reached ();
+	return -1;
+}
+
 /*
  * encode_gc_map:
  *
@@ -315,23 +373,20 @@ decode_sleb128 (guint8 *buf, guint8 **endbuf)
 static void
 encode_gc_map (GCMap *map, guint8 *buf, guint8 **endbuf)
 {
-	guint32 flags;
+	guint32 flags, freg;
 
-	encode_sleb128 (map->start_offset / sizeof (mgreg_t), buf, &buf);
 	encode_sleb128 (map->start_offset / sizeof (mgreg_t), buf, &buf);
 	encode_sleb128 (map->map_offset / sizeof (mgreg_t), buf, &buf);
 	encode_uleb128 (map->nslots, buf, &buf);
-	encode_uleb128 (map->callsite_entry_size, buf, &buf);
-	flags = (map->has_ref_slots ? 1 : 0) | (map->has_pin_slots ? 2 : 0) | (map->has_ref_regs ? 4 : 0) | (map->has_pin_regs ? 8 : 0) | (map->frame_reg << 4);
+	g_assert (map->callsite_entry_size <= 4);
+	freg = encode_frame_reg (map->frame_reg);
+	g_assert (freg < 2);
+	flags = (map->has_ref_slots ? 1 : 0) | (map->has_pin_slots ? 2 : 0) | (map->has_ref_regs ? 4 : 0) | (map->has_pin_regs ? 8 : 0) | ((map->callsite_entry_size - 1) << 4) | (freg << 6);
 	encode_uleb128 (flags, buf, &buf);
 	if (map->has_ref_regs)
 		encode_uleb128 (map->reg_ref_mask, buf, &buf);
 	if (map->has_pin_regs)
 		encode_uleb128 (map->reg_pin_mask, buf, &buf);
-	if (map->has_ref_regs)
-		encode_uleb128 (map->nref_regs, buf, &buf);
-	if (map->has_pin_regs)
-		encode_uleb128 (map->npin_regs, buf, &buf);
 	encode_uleb128 (map->ncallsites, buf, &buf);
 
 	*endbuf = buf;
@@ -346,27 +401,36 @@ static void
 decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 {
 	guint32 flags;
-	int stack_bitmap_size, reg_ref_bitmap_size, reg_pin_bitmap_size, offset;
+	int stack_bitmap_size, reg_ref_bitmap_size, reg_pin_bitmap_size, offset, freg;
+	int i, n;
 
-	map->start_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
 	map->start_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
 	map->map_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
 	map->nslots = decode_uleb128 (buf, &buf);
-	map->callsite_entry_size = decode_uleb128 (buf, &buf);
 	flags = decode_uleb128 (buf, &buf);
 	map->has_ref_slots = (flags & 1) ? 1 : 0;
 	map->has_pin_slots = (flags & 2) ? 1 : 0;
 	map->has_ref_regs = (flags & 4) ? 1 : 0;
 	map->has_pin_regs = (flags & 8) ? 1 : 0;
-	map->frame_reg = flags >> 4;
-	if (map->has_ref_regs)
+	map->callsite_entry_size = ((flags >> 4) & 0x3) + 1;
+	freg = flags >> 6;
+	map->frame_reg = decode_frame_reg (freg);
+	if (map->has_ref_regs) {
 		map->reg_ref_mask = decode_uleb128 (buf, &buf);
-	if (map->has_pin_regs)
+		n = 0;
+		for (i = 0; i < NREGS; ++i)
+			if (map->reg_ref_mask & (1 << i))
+				n ++;
+		map->nref_regs = n;
+	}
+	if (map->has_pin_regs) {
 		map->reg_pin_mask = decode_uleb128 (buf, &buf);
-	if (map->has_ref_regs)
-		map->nref_regs = decode_uleb128 (buf, &buf);
-	if (map->has_pin_regs)
-		map->npin_regs = decode_uleb128 (buf, &buf);
+		n = 0;
+		for (i = 0; i < NREGS; ++i)
+			if (map->reg_pin_mask & (1 << i))
+				n ++;
+		map->npin_regs = n;
+	}
 	map->ncallsites = decode_uleb128 (buf, &buf);
 
 	stack_bitmap_size = (ALIGN_TO (map->nslots, 8) / 8) * map->ncallsites;
@@ -392,7 +456,12 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 static gpointer
 thread_attach_func (void)
 {
-	return g_new0 (TlsData, 1);
+	TlsData *tls;
+
+	tls = g_new0 (TlsData, 1);
+	stats.tlsdata_size += sizeof (TlsData);
+
+	return tls;
 }
 
 static void
@@ -413,33 +482,6 @@ thread_suspend_func (gpointer user_data, void *sigctx)
 	}
 	tls->jit_tls = TlsGetValue (mono_jit_tls_id);
 }
-
-static int precise_frame_count [2], precise_frame_limit = -1;
-static gboolean precise_frame_limit_inited;
-
-/* Stats */
-typedef struct {
-	int scanned_stacks;
-	int scanned;
-	int scanned_precisely;
-	int scanned_conservatively;
-	int scanned_registers;
-
-	int all_slots;
-	int noref_slots;
-	int ref_slots;
-	int pin_slots;
-
-	int gc_maps_size;
-	int gc_callsites_size;
-	int gc_callsites8_num;
-	int gc_callsites16_num;
-	int gc_callsites32_num;
-	int gc_bitmaps_size;
-	int gc_map_struct_size;
-} JITGCStats;
-
-static JITGCStats stats;
 
 #define DEAD_REF ((gpointer)(gssize)0x2a2a2a2a2a2a2a2aULL)
 
@@ -1972,17 +2014,17 @@ create_map (MonoCompile *cfg)
 			guint8 *offsets = p;
 			for (i = 0; i < ncallsites; ++i)
 				offsets [i] = callsites [i]->pc_offset;
-			stats.gc_callsites8_num ++;
+			stats.gc_callsites8_size += ncallsites * sizeof (guint8);
 		} else if (map->callsite_entry_size == 2) {
 			guint16 *offsets = (guint16*)p;
 			for (i = 0; i < ncallsites; ++i)
 				offsets [i] = callsites [i]->pc_offset;
-			stats.gc_callsites16_num ++;
+			stats.gc_callsites16_size += ncallsites * sizeof (guint16);
 		} else {
 			guint32 *offsets = (guint32*)p;
 			for (i = 0; i < ncallsites; ++i)
 				offsets [i] = callsites [i]->pc_offset;
-			stats.gc_callsites32_num ++;
+			stats.gc_callsites32_size += ncallsites * sizeof (guint32);
 		}
 		p += ncallsites * map->callsite_entry_size;
 
@@ -2061,11 +2103,11 @@ mini_gc_init (void)
 	mono_counters_register ("GC Map struct size",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_map_struct_size);
 	mono_counters_register ("GC Call Sites encoded using 8 bits",
-							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites8_num);
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites8_size);
 	mono_counters_register ("GC Call Sites encoded using 16 bits",
-							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites16_num);
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites16_size);
 	mono_counters_register ("GC Call Sites encoded using 32 bits",
-							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites32_num);
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.gc_callsites32_size);
 
 	mono_counters_register ("GC Map slots (all)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.all_slots);
@@ -2075,6 +2117,9 @@ mini_gc_init (void)
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.noref_slots);
 	mono_counters_register ("GC Map slots (pin)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.pin_slots);
+
+	mono_counters_register ("GC TLS Data size",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.tlsdata_size);
 
 	mono_counters_register ("Stack space scanned (all)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_stacks);
