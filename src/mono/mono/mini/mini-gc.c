@@ -2057,6 +2057,8 @@ create_map (MonoCompile *cfg)
 void
 mini_gc_create_gc_map (MonoCompile *cfg)
 {
+	int i;
+
 	if (!cfg->compute_gc_maps)
 		return;
 
@@ -2070,12 +2072,16 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 		/* Without liveness info, the live ranges are not precise enough */
 		return;
 
-	if (cfg->header->num_clauses)
-		/*
-		 * The calls to the finally clauses don't show up in the cfg. See
-		 * test_0_liveness_8 ().
-		 */
-		return;
+	for (i = 0; i < cfg->header->num_clauses; ++i) {
+		MonoExceptionClause *clause = &cfg->header->clauses [i];
+
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+			/*
+			 * The calls to the finally clauses don't show up in the cfg. See
+			 * test_0_liveness_8 ().
+			 */
+			return;
+	}
 
 	mono_analyze_liveness_gc (cfg);
 
