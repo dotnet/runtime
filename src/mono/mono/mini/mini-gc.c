@@ -2195,3 +2195,15 @@ mini_gc_init_cfg (MonoCompile *cfg)
  * - if the code is finished, less pinning will be done, causing problems because
  *   we promote all surviving objects to old-gen.
  */
+
+/*
+ * Ideas for creating smaller GC maps:
+ * - remove empty columns from the bitmaps. This requires adding a mask bit array for
+ *   each bitmap.
+ * - merge reg and stack slot bitmaps, so the unused bits at the end of the reg bitmap are
+ *   not wasted.
+ * - if the bitmap width is not a multiple of 8, the remaining bits are wasted.
+ * - group ref and non-ref stack slots together in mono_allocate_stack_slots ().
+ * - add an index for the callsite table so that each entry can be encoded as a 1 byte difference
+ *   from an index entry.
+ */
