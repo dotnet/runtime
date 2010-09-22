@@ -1255,7 +1255,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 				if (last_error == ERROR_BAD_EXE_FORMAT || last_error == STATUS_INVALID_IMAGE_FORMAT)
 					*status = MONO_IMAGE_IMAGE_INVALID;
 				else {
-					if (last_error == ERROR_FILE_NOT_FOUND)
+					if (last_error == ERROR_FILE_NOT_FOUND || last_error == ERROR_PATH_NOT_FOUND)
 						errno = ENOENT;
 					else
 						errno = 0;
