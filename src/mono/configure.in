@@ -2599,6 +2599,9 @@ AC_ARG_WITH(mcs_docs,[  --with-mcs-docs=yes,no         If you want to build the 
 		DISABLE_MCS_DOCS=yes
 	fi
 ])
+if test x$with_profile4 != xyes; then
+	DISABLE_MCS_DOCS=yes
+fi
 
 MOONLIGHT_DEFINES=
 AC_ARG_WITH(moonlight, [  --with-moonlight=yes|no|only         If you want to build Mono for Moonlight (defaults to no)],[
