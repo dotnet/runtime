@@ -131,6 +131,7 @@ typedef enum {
 	SocketOptionName_Expedited=2,
 	SocketOptionName_NoChecksum=1,
 	SocketOptionName_ChecksumCoverage=20,
+	SocketOptionName_HopLimit=21,
 
 	/* This is Mono-specific, keep it in sync with
 	 * Mono.Posix/PeerCred.cs
