@@ -393,6 +393,12 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 	(dest)->flags = ss_loc ? MONO_INST_SINGLE_STEP_LOC : 0; \
 	} while (0)
 
+#define NEW_GC_PARAM_SLOT_LIVENESS_DEF(cfg,dest,offset,type) do { \
+	MONO_INST_NEW ((cfg), (dest), OP_GC_PARAM_SLOT_LIVENESS_DEF); \
+	(dest)->inst_offset = (offset); \
+	(dest)->inst_vtype = (type); \
+	} while (0)
+
 /*
  * Variants which do an emit as well.
  */
@@ -515,6 +521,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define EMIT_NEW_STORE_MEMBASE_TYPE(cfg,dest,ltype,base,offset,sr) do { NEW_STORE_MEMBASE_TYPE ((cfg), (dest), (ltype), (base), (offset), (sr)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
+#define EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF(cfg,dest,offset,type) do { NEW_GC_PARAM_SLOT_LIVENESS_DEF ((cfg), (dest), (offset), (type)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 /*
  * Variants which do not take an dest argument, but take a dreg argument.
  */

@@ -457,6 +457,11 @@ typedef struct {
 	 * Has length cfg->num_varinfo in bits.
 	 */
 	guint8 *liveness;
+	/*
+	 * List of OP_GC_PARAM_SLOT_LIVENESS_DEF instructions defining the param slots
+	 * used by this call.
+	 */
+	GSList *param_slots;
 } GCCallSite;
 
 /*

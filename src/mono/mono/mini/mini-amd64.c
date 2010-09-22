@@ -840,11 +840,13 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	stack_size += 0x20;
 #endif
 
+#ifndef MONO_AMD64_NO_PUSHES
 	if (stack_size & 0x8) {
 		/* The AMD64 ABI requires each stack frame to be 16 byte aligned */
 		cinfo->need_stack_align = TRUE;
 		stack_size += 8;
 	}
+#endif
 
 	cinfo->stack_usage = stack_size;
 	cinfo->reg_usage = gr;
@@ -1952,6 +1954,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				} else {
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
 				}
+				if (cfg->compute_gc_maps) {
+					MonoInst *def;
+
+					EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, t);
+				}
 			}
 		}
 	}
@@ -2218,6 +2225,11 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 				arg->inst_imm = size;
 				MONO_ADD_INS (cfg->cbb, arg);
 			}
+		}
+
+		if (cfg->compute_gc_maps) {
+			MonoInst *def;
+			EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, &ins->klass->byval_arg);
 		}
 	}
 }
@@ -4133,6 +4145,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				amd64_set_reg_template (code, AMD64_R11);
 			amd64_jump_reg (code, AMD64_R11);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			break;
 		}
 		case OP_CHECK_THIS:
@@ -5661,6 +5675,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_GC_LIVENESS_DEF:
 		case OP_GC_LIVENESS_USE:
+		case OP_GC_PARAM_SLOT_LIVENESS_DEF:
 			ins->backend.pc_offset = code - cfg->native_code;
 			break;
 		case OP_GC_SPILL_SLOT_LIVENESS_DEF:
@@ -5902,7 +5917,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	} else {
 		alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
-
+		if (cfg->stack_offset != alloc_size) {
+			/* Mark the padding slot as NOREF */
+			mini_gc_set_slot_type_from_fp (cfg, -alloc_size + cfg->param_area, SLOT_NOREF);
+		}
+		cfg->arch.sp_fp_offset = alloc_size;
 		alloc_size -= pos;
 	}
 

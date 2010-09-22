@@ -955,6 +955,13 @@ update_liveness_gc (MonoCompile *cfg, MonoInst *ins, gint32 *last_use, MonoMetho
 				last_use [idx] = pc_offset;
 			}
 		}
+	} else if (ins->opcode == OP_GC_PARAM_SLOT_LIVENESS_DEF) {
+		GCCallSite *last;
+
+		/* Add it to the last callsite */
+		g_assert (*callsites);
+		last = (*callsites)->data;
+		last->param_slots = g_slist_prepend_mempool (cfg->mempool, last->param_slots, ins);
 	} else if (ins->flags & MONO_INST_GC_CALLSITE) {
 		GCCallSite *callsite = mono_mempool_alloc0 (cfg->mempool, sizeof (GCCallSite));
 		int i;
@@ -965,7 +972,7 @@ update_liveness_gc (MonoCompile *cfg, MonoInst *ins, gint32 *last_use, MonoMetho
 			if (last_use [i] != 0)
 				callsite->liveness [i / 8] |= (1 << (i % 8));
 		}				
-		*callsites = g_slist_prepend (*callsites, callsite);
+		*callsites = g_slist_prepend_mempool (cfg->mempool, *callsites, callsite);
 	}
 }
 

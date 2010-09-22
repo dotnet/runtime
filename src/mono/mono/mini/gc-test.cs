@@ -538,4 +538,17 @@ class Tests {
 		clobber_regs_and_gc ();
 		return bi1;
 	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void liveness_12_inner (int a, int b, int c, int d, int e, int f, object o) {
+		GC.Collect (1);
+		o.GetHashCode ();
+	}
+
+	// Liveness for param area
+	public static int test_0_liveness_12 () {
+		// The ref argument should be passed on the stack
+		liveness_12_inner (1, 2, 3, 4, 5, 6, new object ());
+		return 0;
+	}
 }

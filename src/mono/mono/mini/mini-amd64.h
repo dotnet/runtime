@@ -165,6 +165,7 @@ typedef struct MonoCompileArch {
 	gint32 localloc_offset;
 	gint32 reg_save_area_offset;
 	gint32 stack_alloc_size;
+	gint32 sp_fp_offset;
 	gboolean omit_fp, omit_fp_computed, no_pushes;
 	gpointer cinfo;
 	gint32 async_point_count;
