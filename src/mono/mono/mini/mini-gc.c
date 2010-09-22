@@ -121,6 +121,7 @@ typedef struct {
 /* 
  * The GC Map itself.
  * Contains information needed to mark a stack frame.
+ * This is a transient structure, created from a compressed representation on-demand.
  */
 typedef struct {
 	/*
@@ -145,7 +146,7 @@ typedef struct {
 	guint has_ref_regs : 1;
 	guint has_pin_regs : 1;
 
-	/* The offsets below are into the 'bitmaps' array at the end */
+	/* The offsets below are into an external bitmaps array */
 
 	/* 
 	 * A bitmap whose width is equal to bitmap_width, and whose height is equal to ncallsites.
@@ -195,7 +196,8 @@ typedef struct {
 	//guint8 *ref_slots;
 	//guint8 encoded_size;
 
-	/* The arrays below are embedded after the struct.
+	/*
+	 * The arrays below are embedded after the struct.
 	 * Their address needs to be computed.
 	 */
 
