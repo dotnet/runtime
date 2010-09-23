@@ -4183,33 +4183,27 @@ mono_verifier_verify_typeref_row (MonoImage *image, guint32 row, MonoError *erro
 		return TRUE;
 
 	if (row >= table->rows) {
-		printf ("---1\n");
-		g_assert (0);
 		mono_error_set_bad_image (error, image, "Invalid typeref row %d - table has %d rows", row, table->rows);
 		return FALSE;
 	}
 
 	mono_metadata_decode_row (table, row, data, MONO_TYPEREF_SIZE);
 	if (!is_valid_coded_index_with_image (image, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE])) {
-		printf ("---2\n");
 		mono_error_set_bad_image (error, image, "Invalid typeref row %d coded index 0x%08x", row, data [MONO_TYPEREF_SCOPE]);
 		return FALSE;
 	}
 
 	if (!get_coded_index_token (RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE])) {
-		printf ("---3\n");
 		mono_error_set_bad_image (error, image, "The metadata verifier doesn't support null ResolutionScope tokens for typeref row %d", row);
 		return FALSE;
 	}
 
 	if (!data [MONO_TYPEREF_NAME] || !is_valid_string_full_with_image (image, data [MONO_TYPEREF_NAME], FALSE)) {
-		printf ("---4\n");
 		mono_error_set_bad_image (error, image, "Invalid typeref row %d name token 0x%08x", row, data [MONO_TYPEREF_NAME]);
 		return FALSE;
 	}
 
 	if (data [MONO_TYPEREF_NAMESPACE] && !is_valid_string_full_with_image (image, data [MONO_TYPEREF_NAMESPACE], FALSE)) {
-		printf ("---5\n");
 		mono_error_set_bad_image (error, image, "Invalid typeref row %d namespace token 0x%08x", row, data [MONO_TYPEREF_NAMESPACE]);
 		return FALSE;
 	}
