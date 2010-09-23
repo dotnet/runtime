@@ -1162,6 +1162,8 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		obj = mono_get_exception_null_reference ();
 	}
 
+#if 0
+	// FIXME: This breaks some tests
 	if (!mono_object_isinst (obj, mono_defaults.exception_class)) {
 		obj = mono_get_exception_runtime_wrapped (obj);
 		/*
@@ -1172,6 +1174,14 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 	mono_ex = (MonoException*)obj;
 	initial_trace_ips = mono_ex->trace_ips;
+#endif
+
+	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
+		mono_ex = (MonoException*)obj;
+		initial_trace_ips = mono_ex->trace_ips;
+	} else {
+		mono_ex = NULL;
+	}
 
 	if (mono_ex && jit_tls->class_cast_from && !strcmp (mono_ex->object.vtable->klass->name, "InvalidCastException")) {
 		char *from_name = mono_type_get_full_name (jit_tls->class_cast_from);
