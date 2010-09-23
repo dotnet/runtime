@@ -80,8 +80,6 @@ evacuate_pin_staging_area (void)
 	g_assert (next_pin_slot <= pin_queue_size);
 
 	pin_staging_area_index = 0;
-
-	printf ("%d\n", next_pin_slot);
 }
 
 static void
