@@ -259,6 +259,11 @@ typedef struct {
 } MonoTypeLoadException;
 
 typedef struct {
+	MonoException base;
+	MonoObject *wrapped_exception;
+} MonoRuntimeWrappedException;
+
+typedef struct {
 	MonoObject   object;
 	MonoObject  *async_state;
 	MonoObject  *handle;

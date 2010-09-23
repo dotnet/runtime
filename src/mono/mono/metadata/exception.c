@@ -749,3 +749,14 @@ mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions
 
 	return (MonoException *) exc;
 }
+
+MonoException *
+mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
+{
+	MonoRuntimeWrappedException *ex = (MonoRuntimeWrappedException*)
+		mono_exception_from_name (mono_get_corlib (), "System.Runtime.CompilerServices",
+								  "RuntimeWrappedException");
+
+   MONO_OBJECT_SETREF (ex, wrapped_exception, wrapped_exception);
+   return (MonoException*)ex;
+}	
