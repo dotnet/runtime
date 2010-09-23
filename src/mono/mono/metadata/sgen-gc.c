@@ -6294,7 +6294,7 @@ mono_gc_make_root_descr_all_refs (int numbits)
 	if (numbits < 32 && all_ref_root_descrs [numbits])
 		return all_ref_root_descrs [numbits];
 
-	gc_bitmap = g_malloc (ALIGN_TO (numbits, 8) + 1);
+	gc_bitmap = g_malloc0 (ALIGN_TO (numbits, 8) + 1);
 	memset (gc_bitmap, 0xff, numbits / 8);
 	if (numbits % 8)
 		gc_bitmap [numbits / 8] = (1 << (numbits % 8)) - 1;
