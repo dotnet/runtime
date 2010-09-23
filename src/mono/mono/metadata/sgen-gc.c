@@ -6273,12 +6273,38 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 void*
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {
-	if (numbits < ((sizeof (*bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) {
+	if (numbits == 0) {
+		return (void*)MAKE_ROOT_DESC (ROOT_DESC_BITMAP, 0);
+	} else if (numbits < ((sizeof (*bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) {
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_BITMAP, bitmap [0]);
 	} else {
 		mword complex = alloc_complex_descriptor (bitmap, numbits);
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_COMPLEX, complex);
 	}
+}
+
+ static void *all_ref_root_descrs [32];
+
+void*
+mono_gc_make_root_descr_all_refs (int numbits)
+{
+	gsize *gc_bitmap;
+	void *descr;
+
+	if (numbits < 32 && all_ref_root_descrs [numbits])
+		return all_ref_root_descrs [numbits];
+
+	gc_bitmap = g_malloc (ALIGN_TO (numbits, 8) + 1);
+	memset (gc_bitmap, 0xff, numbits / 8);
+	if (numbits % 8)
+		gc_bitmap [numbits / 8] = (1 << (numbits % 8)) - 1;
+	descr = mono_gc_make_descr_from_bitmap (gc_bitmap, numbits);
+	g_free (gc_bitmap);
+
+	if (numbits < 32)
+		all_ref_root_descrs [numbits] = descr;
+
+	return descr;
 }
 
 void*

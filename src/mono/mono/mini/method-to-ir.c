@@ -5260,7 +5260,7 @@ static void
 set_exception_object (MonoCompile *cfg, MonoException *exception)
 {
 	cfg->exception_type = MONO_EXCEPTION_OBJECT_SUPPLIED;
-	MONO_GC_REGISTER_ROOT (cfg->exception_ptr);
+	MONO_GC_REGISTER_ROOT_SINGLE (cfg->exception_ptr);
 	cfg->exception_ptr = exception;
 }
 

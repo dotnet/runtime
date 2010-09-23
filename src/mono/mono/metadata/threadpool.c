@@ -1200,14 +1200,14 @@ mono_thread_pool_init ()
 		}
 	}
 
-	MONO_GC_REGISTER_ROOT (async_tp.first);
-	MONO_GC_REGISTER_ROOT (async_tp.last);
-	MONO_GC_REGISTER_ROOT (async_tp.unused);
-	MONO_GC_REGISTER_ROOT (async_io_tp.first);
-	MONO_GC_REGISTER_ROOT (async_io_tp.unused);
-	MONO_GC_REGISTER_ROOT (async_io_tp.last);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.first);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.last);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.unused);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.first);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.unused);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.last);
 
-	MONO_GC_REGISTER_ROOT (socket_io_data.sock_to_state);
+	MONO_GC_REGISTER_ROOT_FIXED (socket_io_data.sock_to_state);
 	InitializeCriticalSection (&socket_io_data.io_lock);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
 		threads_per_cpu = atoi (g_getenv ("MONO_THREADS_PER_CPU"));

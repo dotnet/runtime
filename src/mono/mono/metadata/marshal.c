@@ -4119,7 +4119,7 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 	/* to make it work with our special string constructors */
 	if (!string_dummy) {
-		MONO_GC_REGISTER_ROOT (string_dummy);
+		MONO_GC_REGISTER_ROOT_SINGLE (string_dummy);
 		string_dummy = mono_string_new_wrapper ("dummy");
 	}
 

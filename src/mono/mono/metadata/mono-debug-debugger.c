@@ -81,7 +81,7 @@ mono_debugger_unlock (void)
 void
 mono_debugger_initialize (gboolean use_debugger)
 {
-	MONO_GC_REGISTER_ROOT (last_exception);
+	MONO_GC_REGISTER_ROOT_SINGLE (last_exception);
 	
 	g_assert (!mono_debugger_use_debugger);
 
