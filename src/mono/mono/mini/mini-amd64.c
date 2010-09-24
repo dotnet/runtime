@@ -6632,8 +6632,10 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR: {
-			/*FIXME handle AOT - we should not patch there in that case. Reuse is cool since we don't mix code that requires it during AOT with code that doesn't. */
 			guint8 *pos;
+
+			if (cfg->compile_aot)
+				continue;
 
 			/*loading is faster against aligned addresses.*/
 			code = (guint8*)ALIGN_TO (code, 8);
