@@ -331,7 +331,12 @@ small_id_alloc (MonoInternalThread *thread)
 
 	if (!small_id_table) {
 		small_id_table_size = 2;
-		small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (small_id_table_size));
+		/* 
+		 * Enabling this causes crashes, it looks like some code assumes MonoInternalThreads
+		 * are always pinned.
+		 */
+		//small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (small_id_table_size));
+		small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), NULL);
 	}
 	for (i = small_id_next; i < small_id_table_size; ++i) {
 		if (!small_id_table [i]) {
@@ -353,7 +358,8 @@ small_id_alloc (MonoInternalThread *thread)
 		if (new_size >= (1 << 16))
 			g_assert_not_reached ();
 		id = small_id_table_size;
-		new_table = mono_gc_alloc_fixed (new_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (new_size));
+		//new_table = mono_gc_alloc_fixed (new_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (new_size));
+		new_table = mono_gc_alloc_fixed (new_size * sizeof (MonoInternalThread*), NULL);
 		memcpy (new_table, small_id_table, small_id_table_size * sizeof (void*));
 		mono_gc_free_fixed (small_id_table);
 		small_id_table = new_table;
