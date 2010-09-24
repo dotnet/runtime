@@ -389,6 +389,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE 1
 #define MONO_ARCH_LLVM_SUPPORTED 1
 #define MONO_ARCH_THIS_AS_FIRST_ARG 1
+#define MONO_ARCH_HAVE_CARD_TABLE_WBARRIER 1
+
 
 #define MONO_ARCH_USE_OP_TAIL_CALL(caller_sig, callee_sig) mono_metadata_signature_equal ((caller_sig), (callee_sig))
 
