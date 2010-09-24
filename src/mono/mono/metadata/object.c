@@ -2994,6 +2994,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	gboolean is_static = FALSE;
 	gboolean is_ref = FALSE;
 	gboolean is_literal = FALSE;
+	gboolean is_ptr = FALSE;
 	MonoError error;
 	MonoType *type = mono_field_get_type_checked (field, &error);
 
@@ -3027,6 +3028,9 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 		break;
 	case MONO_TYPE_GENERICINST:
 		is_ref = !mono_type_generic_inst_is_valuetype (type);
+		break;
+	case MONO_TYPE_PTR:
+		is_ptr = TRUE;
 		break;
 	default:
 		g_error ("type 0x%x not handled in "
@@ -3065,6 +3069,34 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 			mono_field_get_value (obj, field, &o);
 		}
 		return o;
+	}
+
+	if (is_ptr) {
+		static MonoMethod *m;
+		gpointer args [2];
+		gpointer *ptr;
+		gpointer v;
+
+		if (!m) {
+			MonoClass *ptr_klass = mono_class_from_name_cached (mono_defaults.corlib, "System.Reflection", "Pointer");
+			m = mono_class_get_method_from_name_flags (ptr_klass, "Box", 2, METHOD_ATTRIBUTE_STATIC);
+			g_assert (m);
+		}
+
+		v = &ptr;
+		if (is_literal) {
+			get_default_field_value (domain, field, v);
+		} else if (is_static) {
+			mono_field_static_get_value (vtable, field, v);
+		} else {
+			mono_field_get_value (obj, field, v);
+		}
+
+		/* MONO_TYPE_PTR is passed by value to runtime_invoke () */
+		args [0] = *ptr;
+		args [1] = mono_type_get_object (mono_domain_get (), type);
+
+		return mono_runtime_invoke (m, NULL, args, NULL);
 	}
 
 	/* boxed value type */
