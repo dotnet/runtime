@@ -817,7 +817,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		scanned_precisely += (map->end_offset - map->start_offset) - (map->nslots * sizeof (mgreg_t));
 
 		/* Mark registers */
-		precise_regmask = map->used_int_regs;
+		precise_regmask = map->used_int_regs | (1 << map->frame_reg);
 		if (map->has_pin_regs) {
 			int bitmap_width = ALIGN_TO (map->npin_regs, 8) / 8;
 			guint8 *pin_bitmap = &bitmaps [map->reg_pin_bitmap_offset + (bitmap_width * cindex)];
@@ -870,6 +870,9 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			}
 		}
 
+		/*
+		 * Clear locations of precisely stacked registers.
+		 */
 		if (precise_regmask) {
 			for (i = 0; i < NREGS; ++i) {
 				if (precise_regmask & (1 << i))
