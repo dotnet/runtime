@@ -6291,6 +6291,9 @@ mono_gc_make_root_descr_all_refs (int numbits)
 	gsize *gc_bitmap;
 	void *descr;
 
+	// FIXME: Enabling this causes crashes while running tests
+	return NULL;
+
 	if (numbits < 32 && all_ref_root_descrs [numbits])
 		return all_ref_root_descrs [numbits];
 
