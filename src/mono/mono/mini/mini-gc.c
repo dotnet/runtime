@@ -370,9 +370,9 @@ decode_frame_reg (int encoded)
 
 #ifdef TARGET_AMD64
 #ifdef HOST_WIN32
-static int callee_saved_regs [] = { AMD64_RBX, AMD64_R12, AMD64_R13, AMD64_R14, AMD64_R15, AMD64_RDI, AMD64_RSI };
+static int callee_saved_regs [] = { AMD64_RBP, AMD64_RBX, AMD64_R12, AMD64_R13, AMD64_R14, AMD64_R15, AMD64_RDI, AMD64_RSI };
 #else
-static int callee_saved_regs [] = { AMD64_RBX, AMD64_R12, AMD64_R13, AMD64_R14, AMD64_R15 };
+static int callee_saved_regs [] = { AMD64_RBP, AMD64_RBX, AMD64_R12, AMD64_R13, AMD64_R14, AMD64_R15 };
 #endif
 #endif
 
@@ -384,9 +384,13 @@ encode_regmask (guint32 regmask)
 	guint32 res;
 
 	res = 0;
-	for (i = 0; i < sizeof (callee_saved_regs) / sizeof (int); ++i)
-		if (regmask & (1 << callee_saved_regs [i]))
+	for (i = 0; i < sizeof (callee_saved_regs) / sizeof (int); ++i) {
+		if (regmask & (1 << callee_saved_regs [i])) {
 			res |= (1 << i);
+			regmask -= (1 << callee_saved_regs [i]);
+		}
+	}
+	g_assert (regmask == 0);
 	return res;
 #else
 	NOT_IMPLEMENTED;
@@ -677,9 +681,17 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			continue;
 		}
 
-		/* These frames are returned by mono_find_jit_info () two times */
-		if (!frame.managed)
+		ji = frame.ji;
+
+		/* This happens with native-to-managed transitions */
+		if (!(MONO_CONTEXT_GET_IP (&ctx) >= ji->code_start && (guint8*)MONO_CONTEXT_GET_IP (&ctx) < (guint8*)ji->code_start + ji->code_size))
+ 			continue;
+
+#if 1
+		/* FIXME: Some wrappers do not declare variables with the proper GC type */
+		if (ji->method->wrapper_type)
 			continue;
+#endif
 
 		/* All the other frames are at a call site */
 
@@ -702,7 +714,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		 * - localloc-ed memory
 		 */
 
-		ji = frame.ji;
 		emap = ji->gc_info;
 
 		if (!emap) {
@@ -817,7 +828,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		scanned_precisely += (map->end_offset - map->start_offset) - (map->nslots * sizeof (mgreg_t));
 
 		/* Mark registers */
-		precise_regmask = map->used_int_regs | (1 << map->frame_reg);
+		precise_regmask = map->used_int_regs;
 		if (map->has_pin_regs) {
 			int bitmap_width = ALIGN_TO (map->npin_regs, 8) / 8;
 			guint8 *pin_bitmap = &bitmaps [map->reg_pin_bitmap_offset + (bitmap_width * cindex)];
@@ -863,6 +874,8 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 				if (reg_locations [i] && (ref_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
 					DEBUG (fi->regs [fi->nreg_locations] = i);
+
+					DEBUG (printf ("\treg %s saved at 0x%p is ref.\n", mono_arch_regname (i), reg_locations [i]));
 					fi->reg_locations [fi->nreg_locations] = (guint8*)reg_locations [i] - stack_start;
 					fi->nreg_locations ++;
 				}
@@ -875,7 +888,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		 */
 		if (precise_regmask) {
 			for (i = 0; i < NREGS; ++i) {
-				if (precise_regmask & (1 << i))
+				if (precise_regmask & (1 << i)) {
 					/*
 					 * The method uses this register, and we have precise info for it.
 					 * This means the location will be scanned precisely.
@@ -885,6 +898,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 					if (reg_locations [i])
 						DEBUG (printf ("\treg %s at location %p is precise.\n", mono_arch_regname (i), reg_locations [i]));
 					reg_locations [i] = NULL;
+				}
 			}
 		}
 
