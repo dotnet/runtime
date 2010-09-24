@@ -1373,7 +1373,6 @@ process_variables (MonoCompile *cfg)
 				set_reg_slot_everywhere (gcfg, hreg, slot_type);
 			} else {
 				if (slot_type == SLOT_PIN) {
-					printf ("HIT!\n");
 					/* These have no live interval, be conservative */
 					set_reg_slot_everywhere (gcfg, hreg, slot_type);
 				} else {
