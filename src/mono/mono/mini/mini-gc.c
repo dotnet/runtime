@@ -66,7 +66,7 @@ typedef struct {
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-#if 1
+#if 0
 #define DEBUG(s) do { s; } while (0)
 #define DEBUG_ENABLED 1
 #else
