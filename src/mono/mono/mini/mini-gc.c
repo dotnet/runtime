@@ -171,7 +171,7 @@ typedef struct {
 	guint32 reg_pin_bitmap_offset;
 	guint32 reg_ref_bitmap_offset;
 
-	guint32 reg_ref_mask, reg_pin_mask;
+	guint32 used_int_regs, reg_ref_mask, reg_pin_mask;
 
 	/* The number of bits set in the two masks above */
 	guint8 nref_regs, npin_regs;
@@ -386,6 +386,7 @@ encode_gc_map (GCMap *map, guint8 *buf, guint8 **endbuf)
 	g_assert (freg < 2);
 	flags = (map->has_ref_slots ? 1 : 0) | (map->has_pin_slots ? 2 : 0) | (map->has_ref_regs ? 4 : 0) | (map->has_pin_regs ? 8 : 0) | ((map->callsite_entry_size - 1) << 4) | (freg << 6);
 	encode_uleb128 (flags, buf, &buf);
+	encode_uleb128 (map->used_int_regs, buf, &buf);
 	if (map->has_ref_regs)
 		encode_uleb128 (map->reg_ref_mask, buf, &buf);
 	if (map->has_pin_regs)
@@ -418,6 +419,7 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 	map->callsite_entry_size = ((flags >> 4) & 0x3) + 1;
 	freg = flags >> 6;
 	map->frame_reg = decode_frame_reg (freg);
+	map->used_int_regs = decode_uleb128 (buf, &buf);
 	if (map->has_ref_regs) {
 		map->reg_ref_mask = decode_uleb128 (buf, &buf);
 		n = 0;
@@ -771,26 +773,20 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		scanned_precisely += (map->end_offset - map->start_offset) - (map->nslots * sizeof (mgreg_t));
 
 		/* Mark registers */
-		precise_regmask = 0;
+		precise_regmask = map->used_int_regs;
 		if (map->has_pin_regs) {
 			int bitmap_width = ALIGN_TO (map->npin_regs, 8) / 8;
 			guint8 *pin_bitmap = &bitmaps [map->reg_pin_bitmap_offset + (bitmap_width * cindex)];
 			int bindex = 0;
 			for (i = 0; i < NREGS; ++i) {
+				if (!(map->used_int_regs & (1 << i)))
+					continue;
+				
 				if (!(map->reg_pin_mask & (1 << i)))
 					continue;
 
-				if (reg_locations [i] && !(pin_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
-					/*
-					 * The method uses this register, and we have precise info for it.
-					 * This means the location will be scanned precisely.
-					 */
-					precise_regmask |= (1 << i);
-					DEBUG (printf ("\treg %s at location %p is precise.\n", mono_arch_regname (i), reg_locations [i]));
-				} else {
-					if (reg_locations [i])
-						DEBUG (printf ("\treg %s at location %p is pinning.\n", mono_arch_regname (i), reg_locations [i]));
-				}
+				if (pin_bitmap [bindex / 8] & (1 << (bindex % 8)))
+					precise_regmask &= ~(1 << i);
 				bindex ++;
 			}
 		}
@@ -834,9 +830,13 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			for (i = 0; i < NREGS; ++i) {
 				if (precise_regmask & (1 << i))
 					/*
+					 * The method uses this register, and we have precise info for it.
+					 * This means the location will be scanned precisely.
 					 * Tell the code at the beginning of the loop that this location is
 					 * processed.
 					 */
+					if (reg_locations [i])
+						DEBUG (printf ("\treg %s at location %p is precise.\n", mono_arch_regname (i), reg_locations [i]));
 					reg_locations [i] = NULL;
 			}
 		}
@@ -1785,13 +1785,12 @@ init_gcfg (MonoCompile *cfg)
 	memset (gcfg->pin_bitmap, 0xff, gcfg->bitmap_width * ncallsites);
 	for (i = 0; i < nregs; ++i) {
 		/*
-		 * By default, registers are PIN.
-		 * This is because we don't know their type outside their live range, since
-		 * they could have the same value as in the caller, or a value set by the
-		 * current method etc.
+		 * By default, registers are NOREF.
+		 * It is possible for a callee to save them before being defined in this method,
+		 * but the saved value is dead too, so it doesn't need to be marked.
 		 */
 		if ((cfg->used_int_regs & (1 << i)))
-			set_reg_slot_everywhere (gcfg, i, SLOT_PIN);
+			set_reg_slot_everywhere (gcfg, i, SLOT_NOREF);
 	}
 }
 
@@ -1910,7 +1909,7 @@ create_map (MonoCompile *cfg)
 	reg_pin_bitmap_size = reg_pin_bitmap_width * ncallsites;
 	bitmaps_size = (has_ref_slots ? stack_bitmap_size : 0) + (has_pin_slots ? stack_bitmap_size : 0) + (has_ref_regs ? reg_ref_bitmap_size : 0) + (has_pin_regs ? reg_pin_bitmap_size : 0);
 	
-	map = mono_mempool_alloc (cfg->mempool, sizeof (GCMap));
+	map = mono_mempool_alloc0 (cfg->mempool, sizeof (GCMap));
 
 	map->frame_reg = cfg->frame_reg;
 	map->start_offset = gcfg->min_offset;
@@ -1922,6 +1921,7 @@ create_map (MonoCompile *cfg)
 	map->has_ref_regs = has_ref_regs;
 	map->has_pin_regs = has_pin_regs;
 	g_assert (nregs < 32);
+	map->used_int_regs = cfg->used_int_regs;
 	map->reg_ref_mask = reg_ref_mask;
 	map->reg_pin_mask = reg_pin_mask;
 	map->nref_regs = nref_regs;
