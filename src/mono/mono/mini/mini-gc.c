@@ -368,6 +368,50 @@ decode_frame_reg (int encoded)
 	return -1;
 }
 
+#ifdef TARGET_AMD64
+#ifdef HOST_WIN32
+static int callee_saved_regs [] = { AMD64_RBX, AMD64_R12, AMD64_R13, AMD64_R14, AMD64_R15, AMD64_RDI, AMD64_RSI };
+#else
+static int callee_saved_regs [] = { AMD64_RBX, AMD64_R12, AMD64_R13, AMD64_R14, AMD64_R15 };
+#endif
+#endif
+
+static guint32
+encode_regmask (guint32 regmask)
+{
+#ifdef TARGET_AMD64
+	int i;
+	guint32 res;
+
+	res = 0;
+	for (i = 0; i < sizeof (callee_saved_regs) / sizeof (int); ++i)
+		if (regmask & (1 << callee_saved_regs [i]))
+			res |= (1 << i);
+	return res;
+#else
+	NOT_IMPLEMENTED;
+	return regmask;
+#endif
+}
+
+static guint32
+decode_regmask (guint32 regmask)
+{
+#ifdef TARGET_AMD64
+	int i;
+	guint32 res;
+
+	res = 0;
+	for (i = 0; i < sizeof (callee_saved_regs) / sizeof (int); ++i)
+		if (regmask & (1 << i))
+			res |= (1 << callee_saved_regs [i]);
+	return res;
+#else
+	NOT_IMPLEMENTED;
+	return regmask;
+#endif
+}
+
 /*
  * encode_gc_map:
  *
@@ -386,11 +430,11 @@ encode_gc_map (GCMap *map, guint8 *buf, guint8 **endbuf)
 	g_assert (freg < 2);
 	flags = (map->has_ref_slots ? 1 : 0) | (map->has_pin_slots ? 2 : 0) | (map->has_ref_regs ? 4 : 0) | (map->has_pin_regs ? 8 : 0) | ((map->callsite_entry_size - 1) << 4) | (freg << 6);
 	encode_uleb128 (flags, buf, &buf);
-	encode_uleb128 (map->used_int_regs, buf, &buf);
+	encode_uleb128 (encode_regmask (map->used_int_regs), buf, &buf);
 	if (map->has_ref_regs)
-		encode_uleb128 (map->reg_ref_mask, buf, &buf);
+		encode_uleb128 (encode_regmask (map->reg_ref_mask), buf, &buf);
 	if (map->has_pin_regs)
-		encode_uleb128 (map->reg_pin_mask, buf, &buf);
+		encode_uleb128 (encode_regmask (map->reg_pin_mask), buf, &buf);
 	encode_uleb128 (map->ncallsites, buf, &buf);
 
 	*endbuf = buf;
@@ -419,9 +463,9 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 	map->callsite_entry_size = ((flags >> 4) & 0x3) + 1;
 	freg = flags >> 6;
 	map->frame_reg = decode_frame_reg (freg);
-	map->used_int_regs = decode_uleb128 (buf, &buf);
+	map->used_int_regs = decode_regmask (decode_uleb128 (buf, &buf));
 	if (map->has_ref_regs) {
-		map->reg_ref_mask = decode_uleb128 (buf, &buf);
+		map->reg_ref_mask = decode_regmask (decode_uleb128 (buf, &buf));
 		n = 0;
 		for (i = 0; i < NREGS; ++i)
 			if (map->reg_ref_mask & (1 << i))
@@ -429,7 +473,7 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 		map->nref_regs = n;
 	}
 	if (map->has_pin_regs) {
-		map->reg_pin_mask = decode_uleb128 (buf, &buf);
+		map->reg_pin_mask = decode_regmask (decode_uleb128 (buf, &buf));
 		n = 0;
 		for (i = 0; i < NREGS; ++i)
 			if (map->reg_pin_mask & (1 << i))
