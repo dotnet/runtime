@@ -222,6 +222,8 @@
 #define g_malloc0 monoeg_malloc0
 #define g_ptr_array_grow monoeg_ptr_array_grow
 #define g_realloc monoeg_realloc
+#define g_try_malloc monoeg_try_malloc
+#define g_try_realloc monoeg_try_realloc
 #define g_strdup monoeg_strdup
 #define g_ucs4_to_utf16_len monoeg_ucs4_to_utf16_len
 #define g_utf16_to_ucs4_len monoeg_utf16_to_ucs4_len

@@ -51,3 +51,55 @@ g_memdup (gconstpointer mem, guint byte_size)
 	return ptr;
 }
 
+gpointer g_realloc (gpointer obj, gsize size)
+{
+	gpointer ptr;
+	if (!size) {
+		g_free (obj);
+		return 0;
+	}
+	ptr = realloc (obj, size);
+	if (ptr)
+		return ptr;
+	g_error ("Could not allocate %i bytes", size);
+}
+
+gpointer 
+g_malloc (gsize x) 
+{ 
+	gpointer ptr;
+	if (!x)
+		return 0;
+	ptr = malloc (x);
+	if (ptr) 
+		return ptr;
+	g_error ("Could not allocate %i bytes", x);
+}
+
+gpointer g_malloc0 (gsize x) 
+{ 
+	gpointer ptr; 
+	if (!x) 
+		return 0; 
+	ptr = calloc(1,x); 
+	if (ptr) 
+		return ptr; 
+	g_error ("Could not allocate %i bytes", x);
+}
+
+gpointer g_try_malloc (gsize x) 
+{
+	if (x)
+		return malloc (x);
+	return 0;
+}
+
+
+gpointer g_try_realloc (gpointer obj, gsize size)
+{ 
+	if (!size) {
+		g_free (obj);
+		return 0;
+	} 
+	return realloc (obj, size);
+}
