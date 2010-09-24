@@ -966,12 +966,18 @@ update_liveness_gc (MonoCompile *cfg, MonoInst *ins, gint32 *last_use, MonoMetho
 		GCCallSite *callsite = mono_mempool_alloc0 (cfg->mempool, sizeof (GCCallSite));
 		int i;
 
+		LIVENESS_DEBUG (printf ("\t%x: ", ins->backend.pc_offset); mono_print_ins (ins));
+		LIVENESS_DEBUG (printf ("\t\tlive: "));
+
 		callsite->liveness = mono_mempool_alloc0 (cfg->mempool, ALIGN_TO (cfg->num_varinfo, 8) / 8);
 		callsite->pc_offset = ins->backend.pc_offset;
 		for (i = 0; i < cfg->num_varinfo; ++i) {
-			if (last_use [i] != 0)
+			if (last_use [i] != 0) {
+				LIVENESS_DEBUG (printf ("R%d", MONO_VARINFO (cfg, i)->vreg));
 				callsite->liveness [i / 8] |= (1 << (i % 8));
-		}				
+			}
+		}
+		LIVENESS_DEBUG (printf ("\n"));
 		*callsites = g_slist_prepend_mempool (cfg->mempool, *callsites, callsite);
 	}
 }

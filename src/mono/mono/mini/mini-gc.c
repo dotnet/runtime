@@ -66,7 +66,7 @@ typedef struct {
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-#if 0
+#if 1
 #define DEBUG(s) do { s; } while (0)
 #define DEBUG_ENABLED 1
 #else
@@ -94,6 +94,7 @@ typedef struct {
 	/* Relative to stack_start */
 	int reg_locations [MONO_MAX_IREGS];
 #ifdef DEBUG_ENABLED
+	gpointer fp;
 	int regs [MONO_MAX_IREGS];
 #endif
 } FrameInfo;
@@ -555,6 +556,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	guint8 *bitmaps;
 	FrameInfo *fi;
 	guint32 precise_regmask;
+	gboolean precise = FALSE;
 
 	/* tls == NULL can happen during startup */
 	if (mono_thread_internal_current () == NULL || !tls) {
@@ -810,6 +812,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			fi->bitmap = NULL;
 		fi->frame_start_offset = frame_start - stack_start;
 		fi->nreg_locations = 0;
+		DEBUG (fi->fp = fp);
 
 		if (map->has_ref_regs) {
 			int bitmap_width = ALIGN_TO (map->nref_regs, 8) / 8;
@@ -912,11 +915,11 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				if (live) {
 					MonoObject *obj = *ptr;
 					if (obj) {
-						DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+						DEBUG (printf ("\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fi->fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fi->fp)), ptr, obj));
 						*ptr = mono_gc_scan_object (obj);
 						DEBUG (printf (" %p.\n", *ptr));
 					} else {
-						DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, obj));
+						DEBUG (printf ("\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fi->fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fi->fp)), ptr, obj));
 					}
 				} else {
 #if 0
@@ -925,7 +928,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 					 * Stack slots might be shared between ref and non-ref variables ?
 					 */
 					if (map->ref_slots [i / 8] & (1 << (i % 8))) {
-						DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fp)), ptr, *ptr));
+						DEBUG (printf ("\tref %s0x%x(fp)=%p: dead (%p)\n", (guint8*)ptr >= (guint8*)fi->fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fi->fp)), ptr, *ptr));
 						/*
 						 * Fail fast if the live range is incorrect, and
 						 * the JITted code tries to access this object
