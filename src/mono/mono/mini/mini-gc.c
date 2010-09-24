@@ -556,7 +556,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	guint8 *bitmaps;
 	FrameInfo *fi;
 	guint32 precise_regmask;
-	gboolean precise = FALSE;
 
 	/* tls == NULL can happen during startup */
 	if (mono_thread_internal_current () == NULL || !tls) {
@@ -661,7 +660,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		emap = ji->gc_info;
 
 		if (!emap) {
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): No GC map for %s\n", precise, fname); g_free (fname));
+			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(0): No GC map for %s\n", fname); g_free (fname));
 
 			continue;
 		}
@@ -710,7 +709,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 		g_assert (pc_offset >= 0);
 
-		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(%d): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", precise, fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
+		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(0): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
 
 		/* Find the callsite index */
 		if (ji->code_size < 256) {
@@ -1374,6 +1373,7 @@ process_variables (MonoCompile *cfg)
 				set_reg_slot_everywhere (gcfg, hreg, slot_type);
 			} else {
 				if (slot_type == SLOT_PIN) {
+					printf ("HIT!\n");
 					/* These have no live interval, be conservative */
 					set_reg_slot_everywhere (gcfg, hreg, slot_type);
 				} else {
