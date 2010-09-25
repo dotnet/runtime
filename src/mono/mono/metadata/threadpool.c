@@ -204,6 +204,11 @@ enum {
 	AIO_OP_RECV_JUST_CALLBACK,
 	AIO_OP_SEND_JUST_CALLBACK,
 	AIO_OP_READPIPE,
+	AIO_OP_CONSOLE2,
+	AIO_OP_DISCONNECT,
+	AIO_OP_ACCEPTRECEIVE,
+	AIO_OP_RECEIVE_BUFFERS,
+	AIO_OP_SEND_BUFFERS,
 	AIO_OP_LAST
 };
 
@@ -270,11 +275,15 @@ get_event_from_state (MonoSocketAsyncResult *state)
 	case AIO_OP_RECV_JUST_CALLBACK:
 	case AIO_OP_RECEIVEFROM:
 	case AIO_OP_READPIPE:
+	case AIO_OP_ACCEPTRECEIVE:
+	case AIO_OP_RECEIVE_BUFFERS:
 		return MONO_POLLIN;
 	case AIO_OP_SEND:
 	case AIO_OP_SEND_JUST_CALLBACK:
 	case AIO_OP_SENDTO:
 	case AIO_OP_CONNECT:
+	case AIO_OP_SEND_BUFFERS:
+	case AIO_OP_DISCONNECT:
 		return MONO_POLLOUT;
 	default: /* Should never happen */
 		g_message ("get_event_from_state: unknown value in switch!!!");
