@@ -1875,11 +1875,44 @@ create_map (MonoCompile *cfg)
 	int ncallsites;
 	guint8 *bitmap, *bitmaps;
 	guint32 reg_ref_mask, reg_pin_mask;
+	gboolean has_finally;
 
 	ncallsites = gcfg->ncallsites;
 	nslots = gcfg->nslots;
 	nregs = gcfg->nregs;
 	callsites = gcfg->callsites;
+
+	/*
+	 * FIXME: The calls to the finally clauses don't show up in the cfg. See
+	 * test_0_liveness_8 ().
+	 */
+	has_finally = FALSE;
+	for (i = 0; i < cfg->header->num_clauses; ++i) {
+		MonoExceptionClause *clause = &cfg->header->clauses [i];
+
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+			has_finally = TRUE;
+		}
+	}
+	if (has_finally) {
+		/* Treat every slot which has a ref somewhere as pin everywhere */
+		for (i = 0; i < nslots; ++i) {
+			for (j = 0; j < ncallsites; ++j) {
+				if (get_bit (gcfg->ref_bitmap, gcfg->bitmap_width, j, i))
+					break;
+			}
+			if (j < ncallsites)
+				set_slot_everywhere (gcfg, i, SLOT_PIN);
+		}
+		for (i = 0; i < nregs; ++i) {
+			for (j = 0; j < ncallsites; ++j) {
+				if (get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i))
+					break;
+			}
+			if (j < ncallsites)
+				set_reg_slot_everywhere (gcfg, i, SLOT_PIN);
+		}
+	}
 
 	/* 
 	 * Compute the real size of the bitmap i.e. ignore NOREF columns at the beginning and at
@@ -2124,8 +2157,6 @@ create_map (MonoCompile *cfg)
 void
 mini_gc_create_gc_map (MonoCompile *cfg)
 {
-	int i;
-
 	if (!cfg->compute_gc_maps)
 		return;
 
@@ -2138,17 +2169,6 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	if (!(cfg->comp_done & MONO_COMP_LIVENESS))
 		/* Without liveness info, the live ranges are not precise enough */
 		return;
-
-	for (i = 0; i < cfg->header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &cfg->header->clauses [i];
-
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
-			/*
-			 * The calls to the finally clauses don't show up in the cfg. See
-			 * test_0_liveness_8 ().
-			 */
-			return;
-	}
 
 	mono_analyze_liveness_gc (cfg);
 
