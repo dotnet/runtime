@@ -689,8 +689,11 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
  			continue;
 
 		/* These frames are very problematic */
-		if (ji->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+		if (ji->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+			DEBUG (printf ("\tSkip.\n"));
 			continue;
+		}
 
 #if 0
 		/* FIXME: Some wrappers do not declare variables with the proper GC type */
@@ -844,8 +847,10 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				if (!(map->reg_pin_mask & (1 << i)))
 					continue;
 
-				if (pin_bitmap [bindex / 8] & (1 << (bindex % 8)))
+				if (pin_bitmap [bindex / 8] & (1 << (bindex % 8))) {
+					DEBUG (printf ("\treg %s saved at 0x%p is pinning.\n", mono_arch_regname (i), reg_locations [i]));
 					precise_regmask &= ~(1 << i);
+				}
 				bindex ++;
 			}
 		}
@@ -1895,22 +1900,33 @@ create_map (MonoCompile *cfg)
 		}
 	}
 	if (has_finally) {
-		/* Treat every slot which has a ref somewhere as pin everywhere */
+		/* Treat every slot which has a ref somewhere as pin outside its live range */
+		DEBUG (printf ("\tMethod has finally clauses, pessimizing live ranges.\n"));
 		for (i = 0; i < nslots; ++i) {
 			for (j = 0; j < ncallsites; ++j) {
 				if (get_bit (gcfg->ref_bitmap, gcfg->bitmap_width, j, i))
 					break;
 			}
-			if (j < ncallsites)
-				set_slot_everywhere (gcfg, i, SLOT_PIN);
+			if (j < ncallsites) {
+				for (j = 0; j < ncallsites; ++j) {
+					if (!get_bit (gcfg->ref_bitmap, gcfg->bitmap_width, j, i))
+						set_slot (gcfg, i, j, SLOT_PIN);
+				}
+				//set_slot_everywhere (gcfg, i, SLOT_PIN);
+			}
 		}
 		for (i = 0; i < nregs; ++i) {
 			for (j = 0; j < ncallsites; ++j) {
 				if (get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i))
 					break;
 			}
-			if (j < ncallsites)
-				set_reg_slot_everywhere (gcfg, i, SLOT_PIN);
+			if (j < ncallsites) {
+				for (j = 0; j < ncallsites; ++j) {
+					if (!get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i))
+						set_reg_slot (gcfg, i, j, SLOT_PIN);
+				}
+				//set_reg_slot_everywhere (gcfg, i, SLOT_PIN);
+			}
 		}
 	}
 
