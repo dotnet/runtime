@@ -46,15 +46,15 @@ typedef struct {
 	 * The width of the stack bitmaps in bytes. This is not equal to the bitmap width at
      * runtime, since it includes columns which are 0.
 	 */
-	int bitmap_width;
+	int stack_bitmap_width;
 	/* 
 	 * A bitmap whose width equals nslots, and whose height equals ncallsites.
 	 * The bitmap contains a 1 if the corresponding stack slot has type SLOT_REF at the
 	 * given callsite.
 	 */
-	guint8 *ref_bitmap;
+	guint8 *stack_ref_bitmap;
 	/* Same for SLOT_PIN */
-	guint8 *pin_bitmap;
+	guint8 *stack_pin_bitmap;
 
 	/*
 	 * Similar bitmaps for registers. These have width MONO_MAX_IREGS in bits.
@@ -1147,14 +1147,14 @@ set_slot (MonoCompileGC *gcfg, int slot, int callsite_index, GCSlotType type)
 	g_assert (slot >= 0 && slot < gcfg->nslots);
 
 	if (type == SLOT_PIN) {
-		clear_bit (gcfg->ref_bitmap, gcfg->bitmap_width, callsite_index, slot);
-		set_bit (gcfg->pin_bitmap, gcfg->bitmap_width, callsite_index, slot);
+		clear_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, callsite_index, slot);
+		set_bit (gcfg->stack_pin_bitmap, gcfg->stack_bitmap_width, callsite_index, slot);
 	} else if (type == SLOT_REF) {
-		set_bit (gcfg->ref_bitmap, gcfg->bitmap_width, callsite_index, slot);
-		clear_bit (gcfg->pin_bitmap, gcfg->bitmap_width, callsite_index, slot);
+		set_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, callsite_index, slot);
+		clear_bit (gcfg->stack_pin_bitmap, gcfg->stack_bitmap_width, callsite_index, slot);
 	} else if (type == SLOT_NOREF) {
-		clear_bit (gcfg->ref_bitmap, gcfg->bitmap_width, callsite_index, slot);
-		clear_bit (gcfg->pin_bitmap, gcfg->bitmap_width, callsite_index, slot);
+		clear_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, callsite_index, slot);
+		clear_bit (gcfg->stack_pin_bitmap, gcfg->stack_bitmap_width, callsite_index, slot);
 	}
 }
 
@@ -1844,15 +1844,15 @@ init_gcfg (MonoCompile *cfg)
 	gcfg->nregs = nregs;
 	gcfg->callsites = callsites;
 	gcfg->ncallsites = ncallsites;
-	gcfg->bitmap_width = ALIGN_TO (nslots, 8) / 8;
+	gcfg->stack_bitmap_width = ALIGN_TO (nslots, 8) / 8;
 	gcfg->reg_bitmap_width = ALIGN_TO (nregs, 8) / 8;
-	gcfg->ref_bitmap = mono_mempool_alloc0 (cfg->mempool, gcfg->bitmap_width * ncallsites);
-	gcfg->pin_bitmap = mono_mempool_alloc0 (cfg->mempool, gcfg->bitmap_width * ncallsites);
+	gcfg->stack_ref_bitmap = mono_mempool_alloc0 (cfg->mempool, gcfg->stack_bitmap_width * ncallsites);
+	gcfg->stack_pin_bitmap = mono_mempool_alloc0 (cfg->mempool, gcfg->stack_bitmap_width * ncallsites);
 	gcfg->reg_ref_bitmap = mono_mempool_alloc0 (cfg->mempool, gcfg->reg_bitmap_width * ncallsites);
 	gcfg->reg_pin_bitmap = mono_mempool_alloc0 (cfg->mempool, gcfg->reg_bitmap_width * ncallsites);
 
 	/* All slots start out as PIN */
-	memset (gcfg->pin_bitmap, 0xff, gcfg->bitmap_width * ncallsites);
+	memset (gcfg->stack_pin_bitmap, 0xff, gcfg->stack_bitmap_width * ncallsites);
 	for (i = 0; i < nregs; ++i) {
 		/*
 		 * By default, registers are NOREF.
@@ -1904,12 +1904,12 @@ create_map (MonoCompile *cfg)
 		DEBUG (printf ("\tMethod has finally clauses, pessimizing live ranges.\n"));
 		for (i = 0; i < nslots; ++i) {
 			for (j = 0; j < ncallsites; ++j) {
-				if (get_bit (gcfg->ref_bitmap, gcfg->bitmap_width, j, i))
+				if (get_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, j, i))
 					break;
 			}
 			if (j < ncallsites) {
 				for (j = 0; j < ncallsites; ++j) {
-					if (!get_bit (gcfg->ref_bitmap, gcfg->bitmap_width, j, i))
+					if (!get_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, j, i))
 						set_slot (gcfg, i, j, SLOT_PIN);
 				}
 				//set_slot_everywhere (gcfg, i, SLOT_PIN);
@@ -1944,9 +1944,9 @@ create_map (MonoCompile *cfg)
 		gboolean has_pin = FALSE;
 
 		for (j = 0; j < ncallsites; ++j) {
-			if (get_bit (gcfg->pin_bitmap, gcfg->bitmap_width, j, i))
+			if (get_bit (gcfg->stack_pin_bitmap, gcfg->stack_bitmap_width, j, i))
 				has_pin = TRUE;
-			if (get_bit (gcfg->ref_bitmap, gcfg->bitmap_width, j, i))
+			if (get_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, j, i))
 				has_ref = TRUE;
 		}
 
@@ -2051,7 +2051,7 @@ create_map (MonoCompile *cfg)
 		bitmap = &bitmaps [map->stack_ref_bitmap_offset];
 		for (i = 0; i < nslots; ++i) {
 			for (j = 0; j < ncallsites; ++j) {
-				if (get_bit (gcfg->ref_bitmap, gcfg->bitmap_width, j, i))
+				if (get_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, j, i))
 					set_bit (bitmap, stack_bitmap_width, j, i - start);
 			}
 		}
@@ -2063,7 +2063,7 @@ create_map (MonoCompile *cfg)
 		bitmap = &bitmaps [map->stack_pin_bitmap_offset];
 		for (i = 0; i < nslots; ++i) {
 			for (j = 0; j < ncallsites; ++j) {
-				if (get_bit (gcfg->pin_bitmap, gcfg->bitmap_width, j, i))
+				if (get_bit (gcfg->stack_pin_bitmap, gcfg->stack_bitmap_width, j, i))
 					set_bit (bitmap, stack_bitmap_width, j, i - start);
 			}
 		}
