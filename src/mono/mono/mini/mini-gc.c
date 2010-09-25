@@ -94,6 +94,7 @@ typedef struct {
 	/* Relative to stack_start */
 	int reg_locations [MONO_MAX_IREGS];
 #ifdef DEBUG_ENABLED
+	MonoJitInfo *ji;
 	gpointer fp;
 	int regs [MONO_MAX_IREGS];
 #endif
@@ -687,7 +688,11 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		if (!(MONO_CONTEXT_GET_IP (&ctx) >= ji->code_start && (guint8*)MONO_CONTEXT_GET_IP (&ctx) < (guint8*)ji->code_start + ji->code_size))
  			continue;
 
-#if 1
+		/* These frames are very problematic */
+		if (ji->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+			continue;
+
+#if 0
 		/* FIXME: Some wrappers do not declare variables with the proper GC type */
 		if (ji->method->wrapper_type)
 			continue;
@@ -713,12 +718,14 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		 * - spill area
 		 * - localloc-ed memory
 		 */
+		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
+		g_assert (pc_offset >= 0);
 
 		emap = ji->gc_info;
 
 		if (!emap) {
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(0): No GC map for %s\n", fname); g_free (fname));
-
+			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+			DEBUG (printf ("\tNo GC Map.\n"));
 			continue;
 		}
 
@@ -762,9 +769,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 		frame_start = fp + map->start_offset + map->map_offset;
 		frame_end = fp + map->end_offset;
-
-		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
-		g_assert (pc_offset >= 0);
 
 		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); printf ("Mark(0): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
 
@@ -862,6 +866,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			fi->bitmap = NULL;
 		fi->frame_start_offset = frame_start - stack_start;
 		fi->nreg_locations = 0;
+		DEBUG (fi->ji = ji);
 		DEBUG (fi->fp = fp);
 
 		if (map->has_ref_regs) {
@@ -874,7 +879,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 				if (reg_locations [i] && (ref_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
 					DEBUG (fi->regs [fi->nreg_locations] = i);
-
 					DEBUG (printf ("\treg %s saved at 0x%p is ref.\n", mono_arch_regname (i), reg_locations [i]));
 					fi->reg_locations [fi->nreg_locations] = (guint8*)reg_locations [i] - stack_start;
 					fi->nreg_locations ++;
