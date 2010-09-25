@@ -43,6 +43,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler.h>
+#include <mono/metadata/mono-endian.h>
 #include <mono/utils/mono-mmap.h>
 
 #include "mini.h"
@@ -1113,6 +1114,72 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
 	return NULL;
 }
 
+/*
+ * wrap_non_exception_throws:
+ *
+ *   Determine whenever M's assembly has a RuntimeCompatibilityAttribute with the
+ * WrapNonExceptionThrows flag set.
+ */
+static gboolean
+wrap_non_exception_throws (MonoMethod *m)
+{
+	MonoAssembly *ass = m->klass->image->assembly;
+	MonoCustomAttrInfo* attrs;
+	static MonoClass *klass;
+	int i;
+	gboolean val = FALSE;
+
+	g_assert (ass);
+	if (ass->wrap_non_exception_throws_inited)
+		return ass->wrap_non_exception_throws;
+
+	klass = mono_class_from_name_cached (mono_defaults.corlib, "System.Runtime.CompilerServices", "RuntimeCompatibilityAttribute");
+
+	attrs = mono_custom_attrs_from_assembly (ass);
+	if (attrs) {
+		for (i = 0; i < attrs->num_attrs; ++i) {
+			MonoCustomAttrEntry *attr = &attrs->attrs [i];
+			const gchar *p;
+			int len, num_named, named_type, data_type, name_len;
+			char *name;
+
+			if (!attr->ctor || attr->ctor->klass != klass)
+				continue;
+			/* Decode the RuntimeCompatibilityAttribute. See reflection.c */
+			len = attr->data_size;
+			p = (const char*)attr->data;
+			g_assert (read16 (p) == 0x0001);
+			p += 2;
+			num_named = read16 (p);
+			if (num_named != 1)
+				continue;
+			p += 2;
+			named_type = *p;
+			p ++;
+			data_type = *p;
+			p ++;
+			/* Property */
+			if (named_type != 0x54)
+				continue;
+			name_len = mono_metadata_decode_blob_size (p, &p);
+			name = g_malloc (name_len + 1);
+			memcpy (name, p, name_len);
+			name [name_len] = 0;
+			p += name_len;
+			g_assert (!strcmp (name, "WrapNonExceptionThrows"));
+			g_free (name);
+			/* The value is a BOOLEAN */
+			val = *p;
+		}
+	}
+
+	ass->wrap_non_exception_throws = val;
+	mono_memory_barrier ();
+	ass->wrap_non_exception_throws_inited = TRUE;
+
+	return val;
+}
+
 /**
  * mono_handle_exception_internal:
  * @ctx: saved processor state
@@ -1123,7 +1190,7 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
  * @resume: whenever to resume unwinding based on the state in MonoJitTlsData.
  */
 static gboolean
-mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, gboolean resume, gint32 *out_filter_idx, MonoJitInfo **out_ji)
+mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, gboolean resume, gint32 *out_filter_idx, MonoJitInfo **out_ji, MonoObject *non_exception)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
@@ -1139,7 +1206,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	int frame_count = 0;
 	gboolean has_dynamic_methods = FALSE;
 	gint32 filter_idx, first_filter_idx;
-
 
 	g_assert (ctx != NULL);
 	if (!obj) {
@@ -1162,19 +1228,13 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		obj = mono_get_exception_null_reference ();
 	}
 
-#if 0
-	// FIXME: This breaks some tests
-	if (!mono_object_isinst (obj, mono_defaults.exception_class)) {
+	if (!test_only && !mono_object_isinst (obj, mono_defaults.exception_class)) {
+		non_exception = obj;
 		obj = mono_get_exception_runtime_wrapped (obj);
-		/*
-		 * FIXME: Might have to unwrap this before passing it to a catch clause based on the
-		 * RuntimeCompatibilityAttribute.
-		 */
 	}
 
 	mono_ex = (MonoException*)obj;
 	initial_trace_ips = mono_ex->trace_ips;
-#endif
 
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 		mono_ex = (MonoException*)obj;
@@ -1229,7 +1289,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				mono_print_thread_dump_from_ctx (ctx);
 		}
 		mono_profiler_exception_thrown (obj);
-		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, FALSE, &first_filter_idx, out_ji)) {
+		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, FALSE, &first_filter_idx, out_ji, non_exception)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
 			mono_debugger_agent_handle_exception (obj, ctx, NULL);
@@ -1321,6 +1381,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			 */
 			if ((free_stack > (64 * 1024)) && ji->num_clauses) {
 				int i;
+				MonoObject *ex_obj;
 				
 				for (i = clause_index_start; i < ji->num_clauses; i++) {
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
@@ -1339,23 +1400,32 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						/* catch block */
 						MonoClass *catch_class = get_exception_catch_class (ei, ji, ctx);
 
+						/*
+						 * Have to unwrap RuntimeWrappedExceptions if the
+						 * method's assembly doesn't have a RuntimeCompatibilityAttribute.
+						 */
+						if (non_exception && !wrap_non_exception_throws (ji->method))
+							ex_obj = non_exception;
+						else
+							ex_obj = obj;
+
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
 							if (ji->from_llvm) {
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
-								MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, obj);
+								MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
 #else
 								g_assert_not_reached ();
 #endif
 							} else {
 								/* store the exception object in bp + ei->exvar_offset */
-								*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = obj;
+								*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
 							}
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 							if (test_only) {
 								mono_perfcounters->exceptions_filters++;
-								mono_debugger_call_exception_handler (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
+								mono_debugger_call_exception_handler (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), ex_obj);
 								filtered = call_filter (ctx, ei->data.filter);
 								if (filtered && out_filter_idx)
 									*out_filter_idx = filter_idx;
@@ -1373,7 +1443,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						}
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-						     mono_object_isinst (obj, catch_class)) || filtered) {
+						     mono_object_isinst (ex_obj, catch_class)) || filtered) {
 							if (test_only) {
 								if (mono_ex && !initial_trace_ips) {
 									trace_ips = g_list_reverse (trace_ips);
@@ -1424,7 +1494,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
-							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
+							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							*(mono_get_lmf_addr ()) = lmf;
 							mono_perfcounters->exceptions_depth += frame_count;
@@ -1438,7 +1508,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
-							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
+							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
 							call_filter (ctx, ei->handler_start);
 						}
 						if (!test_only && is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
@@ -1446,7 +1516,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
-							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
+							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
 							mono_perfcounters->exceptions_finallys++;
 							*(mono_get_lmf_addr ()) = lmf;
 							if (ji->from_llvm) {
@@ -1547,7 +1617,7 @@ mono_debugger_handle_exception (MonoContext *ctx, MonoObject *obj)
 		 * The debugger wants us to stop only if this exception is user-unhandled.
 		 */
 
-		ret = mono_handle_exception_internal (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), TRUE, FALSE, NULL, &ji);
+		ret = mono_handle_exception_internal (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), TRUE, FALSE, NULL, &ji, NULL);
 		if (ret && (ji != NULL) && (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
 			/*
 			 * The exception is handled in a runtime-invoke wrapper, that means that it's unhandled
@@ -1625,7 +1695,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 	if (!test_only)
 		mono_perfcounters->exceptions_thrown++;
 
-	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, FALSE, NULL, NULL);
+	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, FALSE, NULL, NULL, NULL);
 }
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
@@ -2068,7 +2138,7 @@ mono_resume_unwind (MonoContext *ctx)
 	MONO_CONTEXT_SET_SP (ctx, MONO_CONTEXT_GET_SP (&jit_tls->resume_state.ctx));
 	new_ctx = *ctx;
 
-	mono_handle_exception_internal (&new_ctx, jit_tls->resume_state.ex_obj, NULL, FALSE, TRUE, NULL, NULL);
+	mono_handle_exception_internal (&new_ctx, jit_tls->resume_state.ex_obj, NULL, FALSE, TRUE, NULL, NULL, NULL);
 
 	if (!restore_context)
 		restore_context = mono_get_restore_context ();
