@@ -66,7 +66,7 @@ typedef struct {
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-#if 0
+#if 1
 #define DEBUG(s) do { s; } while (0)
 #define DEBUG_ENABLED 1
 #else
@@ -1909,7 +1909,8 @@ create_map (MonoCompile *cfg)
 		}
 	}
 	if (has_finally) {
-		DEBUG (printf ("\tMethod has finally clauses, pessimizing live ranges.\n"));
+		if (cfg->verbose_level > 1)
+			printf ("\tMethod has finally clauses, pessimizing live ranges.\n");
 		for (j = 0; j < ncallsites; ++j) {
 			MonoBasicBlock *bb = callsites [j]->bb;
 			MonoExceptionClause *clause;
