@@ -1896,6 +1896,9 @@ create_map (MonoCompile *cfg)
 	/*
 	 * FIXME: The calls to the finally clauses don't show up in the cfg. See
 	 * test_0_liveness_8 ().
+	 * Variables accessed inside the finally clause are already marked VOLATILE by
+	 * mono_liveness_handle_exception_clauses (). Variables not accessed inside the finally clause have
+	 * correct liveness outside the finally clause. So mark them PIN inside the finally clauses.
 	 */
 	has_finally = FALSE;
 	for (i = 0; i < cfg->header->num_clauses; ++i) {
@@ -1906,14 +1909,29 @@ create_map (MonoCompile *cfg)
 		}
 	}
 	if (has_finally) {
-		/* Treat every slot as pin everywhere */
 		DEBUG (printf ("\tMethod has finally clauses, pessimizing live ranges.\n"));
-		for (i = 0; i < nslots; ++i) {
-			set_slot_everywhere (gcfg, i, SLOT_PIN);
-		}
-		for (i = 0; i < nregs; ++i) {
-			if (cfg->used_int_regs & (1 << i))
-				set_reg_slot_everywhere (gcfg, i, SLOT_PIN);
+		for (j = 0; j < ncallsites; ++j) {
+			MonoBasicBlock *bb = callsites [j]->bb;
+			MonoExceptionClause *clause;
+			gboolean is_in_finally = FALSE;
+
+			for (i = 0; i < cfg->header->num_clauses; ++i) {
+				clause = &cfg->header->clauses [i];
+			   
+				if (MONO_OFFSET_IN_HANDLER (clause, bb->real_offset)) {
+					if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+						is_in_finally = TRUE;
+						break;
+					}
+				}
+			}
+
+			if (is_in_finally) {
+				for (i = 0; i < nslots; ++i)
+					set_slot (gcfg, i, j, SLOT_PIN);
+				for (i = 0; i < nregs; ++i)
+					set_reg_slot (gcfg, i, j, SLOT_PIN);
+			}
 		}
 	}
 
@@ -1971,6 +1989,9 @@ create_map (MonoCompile *cfg)
 	for (i = 0; i < nregs; ++i) {
 		gboolean has_ref = FALSE;
 		gboolean has_pin = FALSE;
+
+		if (!(cfg->used_int_regs & (1 << i)))
+			continue;
 
 		for (j = 0; j < ncallsites; ++j) {
 			if (get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i)) {

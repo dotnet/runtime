@@ -934,7 +934,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 static inline void
-update_liveness_gc (MonoCompile *cfg, MonoInst *ins, gint32 *last_use, MonoMethodVar **vreg_to_varinfo, GSList **callsites)
+update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 *last_use, MonoMethodVar **vreg_to_varinfo, GSList **callsites)
 {
 	if (ins->opcode == OP_GC_LIVENESS_DEF || ins->opcode == OP_GC_LIVENESS_USE) {
 		int vreg = ins->inst_c1;
@@ -969,6 +969,7 @@ update_liveness_gc (MonoCompile *cfg, MonoInst *ins, gint32 *last_use, MonoMetho
 		LIVENESS_DEBUG (printf ("\t%x: ", ins->backend.pc_offset); mono_print_ins (ins));
 		LIVENESS_DEBUG (printf ("\t\tlive: "));
 
+		callsite->bb = bb;
 		callsite->liveness = mono_mempool_alloc0 (cfg->mempool, ALIGN_TO (cfg->num_varinfo, 8) / 8);
 		callsite->pc_offset = ins->backend.pc_offset;
 		for (i = 0; i < cfg->num_varinfo; ++i) {
@@ -1082,7 +1083,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		for (i = nins - 1; i >= 0; --i) {
 			MonoInst *ins = (MonoInst*)reverse [i];
 
-			update_liveness_gc (cfg, ins, last_use, vreg_to_varinfo, &callsites);
+			update_liveness_gc (cfg, bb, ins, last_use, vreg_to_varinfo, &callsites);
 		}
 		/* The callsites should already be sorted by pc offset because we added them backwards */
 		bb->gc_callsites = callsites;

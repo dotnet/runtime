@@ -452,6 +452,8 @@ struct MonoSpillInfo {
 typedef struct {
 	/* The next offset after the call instruction */
 	int pc_offset;
+	/* The basic block containing the call site */
+	MonoBasicBlock *bb;
 	/* 
 	 * The set of variables live at the call site.
 	 * Has length cfg->num_varinfo in bits.
