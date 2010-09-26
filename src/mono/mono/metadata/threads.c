@@ -332,8 +332,8 @@ small_id_alloc (MonoInternalThread *thread)
 	if (!small_id_table) {
 		small_id_table_size = 2;
 		/* 
-		 * Enabling this causes crashes, it looks like some code assumes MonoInternalThreads
-		 * are always pinned.
+		 * Enabling this causes problems, because SGEN doesn't track/update the TLS slot holding
+		 * the current thread.
 		 */
 		//small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (small_id_table_size));
 		small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), NULL);
