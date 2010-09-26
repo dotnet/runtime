@@ -7053,6 +7053,8 @@ mono_gc_base_init (void)
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "conservative-stack-mark")) {
 				conservative_stack_mark = TRUE;
+			} else if (!strcmp (opt, "clear-nursery-at-gc")) {
+				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "check-scan-starts")) {
 				do_scan_starts_check = TRUE;
 			} else if (g_str_has_prefix (opt, "heap-dump=")) {
