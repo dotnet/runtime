@@ -180,6 +180,7 @@ typedef struct _MonoSocketAsyncResult {
 	gint error;
 	gint operation;
 	MonoAsyncResult *ares;
+	gint32 end_called;
 } MonoSocketAsyncResult;
 
 typedef struct

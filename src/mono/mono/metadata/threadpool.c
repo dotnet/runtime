@@ -1254,6 +1254,19 @@ mono_thread_pool_init ()
 #endif
 }
 
+void
+icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoAsyncResult *ares;
+
+	/* Don't call mono_async_result_new() to avoid capturing the context */
+	ares = (MonoAsyncResult *) mono_object_new (domain, mono_defaults.asyncresult_class);
+	MONO_OBJECT_SETREF (ares, async_delegate, target);
+	MONO_OBJECT_SETREF (ares, async_state, state);
+	socket_io_add (ares, state);
+}
+
 MonoAsyncResult *
 mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *async_callback,
 		      MonoObject *state)
