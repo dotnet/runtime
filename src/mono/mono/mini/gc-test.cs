@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Collections;
 
 /*
  * Regression tests for the GC support in the JIT
@@ -549,6 +550,18 @@ class Tests {
 	public static int test_0_liveness_12 () {
 		// The ref argument should be passed on the stack
 		liveness_12_inner (1, 2, 3, 4, 5, 6, new object ());
+		return 0;
+	}
+
+	public static void liveness_13_inner (ref ArrayList arr) {
+		// The value of arr will be stored in a spill slot
+		arr.Add (alloc_obj_and_gc ());
+	}
+
+	// Liveness for byref arguments in spill slots
+	public static int test_0_liveness_13 () {
+		var arr = new ArrayList ();
+		liveness_13_inner (ref arr);
 		return 0;
 	}
 }

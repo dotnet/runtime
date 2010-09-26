@@ -1261,7 +1261,7 @@ process_spill_slots (MonoCompile *cfg)
 			set_slot_in_range (gcfg, slot, def->backend.pc_offset, bb->native_offset + bb->native_length, type);
 
 			if (cfg->verbose_level > 1)
-				printf ("\t%s spill slot at %s0x%x(fp) (slot = %d)\n", slot_type_to_string (type), offset >= 0 ? "+" : "-", ABS (offset), slot);
+				printf ("\t%s spill slot at %s0x%x(fp) (slot = %d)\n", slot_type_to_string (type), offset >= 0 ? "" : "-", ABS (offset), slot);
 		}
 	}
 
@@ -1293,7 +1293,7 @@ process_spill_slots (MonoCompile *cfg)
 
 		set_slot_everywhere (gcfg, slot, SLOT_NOREF);
 		if (cfg->verbose_level > 1)
-			printf ("\tint spill slot at fp+0x%x (slot = %d)\n", offset, slot);
+			printf ("\tint spill slot at %s0x%x(fp) (slot = %d)\n", offset >= 0 ? "" : "-", ABS (offset), slot);
 	}
 }
 
@@ -1482,7 +1482,7 @@ process_variables (MonoCompile *cfg)
 			set_slot_everywhere (gcfg, pos, SLOT_NOREF);
 
 			if (cfg->verbose_level > 1) {
-				printf ("\tdead arg at fp%s0x%x (slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "+", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
+				printf ("\tdead arg at fp%s0x%x (slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "+", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, pos, mono_type_full_name (ins->inst_vtype));
 			}
 			continue;
 		}
@@ -1563,9 +1563,15 @@ process_variables (MonoCompile *cfg)
 			continue;
 
 		if (t->byref) {
-			for (cindex = 0; cindex < gcfg->ncallsites; ++cindex)
-				if (gcfg->callsites [cindex]->liveness [i / 8] & (1 << (i % 8)))
-					set_slot (gcfg, pos, cindex, SLOT_PIN);
+			if (is_arg) {
+				set_slot_everywhere (gcfg, pos, SLOT_PIN);
+			} else {
+				for (cindex = 0; cindex < gcfg->ncallsites; ++cindex)
+					if (gcfg->callsites [cindex]->liveness [i / 8] & (1 << (i % 8)))
+						set_slot (gcfg, pos, cindex, SLOT_PIN);
+			}
+			if (cfg->verbose_level > 1)
+				printf ("\tbyref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
 			continue;
 		}
 
@@ -1589,7 +1595,7 @@ process_variables (MonoCompile *cfg)
 		if (!MONO_TYPE_IS_REFERENCE (t)) {
 			set_slot_everywhere (gcfg, pos, SLOT_NOREF);
 			if (cfg->verbose_level > 1)
-				printf ("\tnoref at %s0x%x(fp) (R%d, slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
+				printf ("\tnoref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
 			continue;
 		}
 
@@ -1608,7 +1614,7 @@ process_variables (MonoCompile *cfg)
 				set_slot_everywhere (gcfg, pos, SLOT_PIN);
 			}
 			if (cfg->verbose_level > 1)
-				printf ("\tvolatile ref at %s0x%x(fp) (R%d, slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
+				printf ("\tvolatile ref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
 			continue;
 		}
 
@@ -1622,7 +1628,7 @@ process_variables (MonoCompile *cfg)
 		}
 
 		if (cfg->verbose_level > 1) {
-			printf ("\tref at %s0x%x(fp) (R%d, slot=%d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
+			printf ("\tref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
 		}
 	}
 
@@ -1900,33 +1906,14 @@ create_map (MonoCompile *cfg)
 		}
 	}
 	if (has_finally) {
-		/* Treat every slot which has a ref somewhere as pin outside its live range */
+		/* Treat every slot as pin everywhere */
 		DEBUG (printf ("\tMethod has finally clauses, pessimizing live ranges.\n"));
 		for (i = 0; i < nslots; ++i) {
-			for (j = 0; j < ncallsites; ++j) {
-				if (get_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, j, i))
-					break;
-			}
-			if (j < ncallsites) {
-				for (j = 0; j < ncallsites; ++j) {
-					if (!get_bit (gcfg->stack_ref_bitmap, gcfg->stack_bitmap_width, j, i))
-						set_slot (gcfg, i, j, SLOT_PIN);
-				}
-				//set_slot_everywhere (gcfg, i, SLOT_PIN);
-			}
+			set_slot_everywhere (gcfg, i, SLOT_PIN);
 		}
 		for (i = 0; i < nregs; ++i) {
-			for (j = 0; j < ncallsites; ++j) {
-				if (get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i))
-					break;
-			}
-			if (j < ncallsites) {
-				for (j = 0; j < ncallsites; ++j) {
-					if (!get_bit (gcfg->reg_ref_bitmap, gcfg->reg_bitmap_width, j, i))
-						set_reg_slot (gcfg, i, j, SLOT_PIN);
-				}
-				//set_reg_slot_everywhere (gcfg, i, SLOT_PIN);
-			}
+			if (cfg->used_int_regs & (1 << i))
+				set_reg_slot_everywhere (gcfg, i, SLOT_PIN);
 		}
 	}
 

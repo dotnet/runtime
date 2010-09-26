@@ -7497,6 +7497,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_LDIND_I8:
 				dreg = alloc_lreg (cfg);
 				break;
+			case CEE_LDIND_REF:
+				dreg = alloc_ireg_ref (cfg);
+				break;
 			default:
 				dreg = alloc_preg (cfg);
 			}
