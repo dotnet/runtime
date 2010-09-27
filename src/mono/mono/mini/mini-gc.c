@@ -66,7 +66,7 @@ typedef struct {
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-#if 1
+#if 0
 #define DEBUG(s) do { s; } while (0)
 #define DEBUG_ENABLED 1
 #else
@@ -649,10 +649,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				 * If the current frame saves the register, it means it might modify its
 				 * value, thus the old location might not contain the same value, so
 				 * we have to mark it conservatively.
-				 * FIXME: This happens very often, due to:
-				 * - outside the live intervals of the variables allocated to a register,
-				 * we have to treat the register as PIN, since we don't know whenever it
-				 * has the same value as in the caller, or a new dead value.
 				 */
 				if (reg_locations [i]) {
 					DEBUG (printf ("\tscan saved reg %s location %p.\n", mono_arch_regname (i), reg_locations [i]));
@@ -694,12 +690,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			DEBUG (printf ("\tSkip.\n"));
 			continue;
 		}
-
-#if 0
-		/* FIXME: Some wrappers do not declare variables with the proper GC type */
-		if (ji->method->wrapper_type)
-			continue;
-#endif
 
 		/* All the other frames are at a call site */
 
@@ -835,7 +825,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		scanned_precisely += (map->end_offset - map->start_offset) - (map->nslots * sizeof (mgreg_t));
 
 		/* Mark registers */
-		precise_regmask = map->used_int_regs;
+		precise_regmask = map->used_int_regs | (1 << map->frame_reg);
 		if (map->has_pin_regs) {
 			int bitmap_width = ALIGN_TO (map->npin_regs, 8) / 8;
 			guint8 *pin_bitmap = &bitmaps [map->reg_pin_bitmap_offset + (bitmap_width * cindex)];
@@ -921,7 +911,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			mono_gc_conservatively_scan_area (reg_locations [i], reg_locations [i] + sizeof (mgreg_t));
 			scanned_registers += sizeof (mgreg_t);
 		}
-		// FIXME: Is this needed ?
 		if (new_reg_locations [i]) {
 			DEBUG (printf ("\tscan saved reg location %p.\n", new_reg_locations [i]));
 			mono_gc_conservatively_scan_area (new_reg_locations [i], new_reg_locations [i] + sizeof (mgreg_t));
@@ -1733,6 +1722,64 @@ process_param_area_slots (MonoCompile *cfg)
 }
 
 static void
+process_finally_clauses (MonoCompile *cfg)
+{
+	MonoCompileGC *gcfg = cfg->gc_info;
+	GCCallSite **callsites;
+	int ncallsites;
+	gboolean has_finally;
+	int i, j, nslots, nregs;
+
+	ncallsites = gcfg->ncallsites;
+	nslots = gcfg->nslots;
+	nregs = gcfg->nregs;
+	callsites = gcfg->callsites;
+
+	/*
+	 * The calls to the finally clauses don't show up in the cfg. See
+	 * test_0_liveness_8 ().
+	 * Variables accessed inside the finally clause are already marked VOLATILE by
+	 * mono_liveness_handle_exception_clauses (). Variables not accessed inside the finally clause have
+	 * correct liveness outside the finally clause. So mark them PIN inside the finally clauses.
+	 */
+	has_finally = FALSE;
+	for (i = 0; i < cfg->header->num_clauses; ++i) {
+		MonoExceptionClause *clause = &cfg->header->clauses [i];
+
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+			has_finally = TRUE;
+		}
+	}
+	if (has_finally) {
+		if (cfg->verbose_level > 1)
+			printf ("\tMethod has finally clauses, pessimizing live ranges.\n");
+		for (j = 0; j < ncallsites; ++j) {
+			MonoBasicBlock *bb = callsites [j]->bb;
+			MonoExceptionClause *clause;
+			gboolean is_in_finally = FALSE;
+
+			for (i = 0; i < cfg->header->num_clauses; ++i) {
+				clause = &cfg->header->clauses [i];
+			   
+				if (MONO_OFFSET_IN_HANDLER (clause, bb->real_offset)) {
+					if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+						is_in_finally = TRUE;
+						break;
+					}
+				}
+			}
+
+			if (is_in_finally) {
+				for (i = 0; i < nslots; ++i)
+					set_slot (gcfg, i, j, SLOT_PIN);
+				for (i = 0; i < nregs; ++i)
+					set_reg_slot (gcfg, i, j, SLOT_PIN);
+			}
+		}
+	}
+}
+
+static void
 compute_frame_size (MonoCompile *cfg)
 {
 	int i, locals_min_offset, locals_max_offset, cfa_min_offset, cfa_max_offset;
@@ -1870,7 +1917,6 @@ init_gcfg (MonoCompile *cfg)
 	}
 }
 
-
 static void
 create_map (MonoCompile *cfg)
 {
@@ -1886,55 +1932,11 @@ create_map (MonoCompile *cfg)
 	int ncallsites;
 	guint8 *bitmap, *bitmaps;
 	guint32 reg_ref_mask, reg_pin_mask;
-	gboolean has_finally;
 
 	ncallsites = gcfg->ncallsites;
 	nslots = gcfg->nslots;
 	nregs = gcfg->nregs;
 	callsites = gcfg->callsites;
-
-	/*
-	 * FIXME: The calls to the finally clauses don't show up in the cfg. See
-	 * test_0_liveness_8 ().
-	 * Variables accessed inside the finally clause are already marked VOLATILE by
-	 * mono_liveness_handle_exception_clauses (). Variables not accessed inside the finally clause have
-	 * correct liveness outside the finally clause. So mark them PIN inside the finally clauses.
-	 */
-	has_finally = FALSE;
-	for (i = 0; i < cfg->header->num_clauses; ++i) {
-		MonoExceptionClause *clause = &cfg->header->clauses [i];
-
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
-			has_finally = TRUE;
-		}
-	}
-	if (has_finally) {
-		if (cfg->verbose_level > 1)
-			printf ("\tMethod has finally clauses, pessimizing live ranges.\n");
-		for (j = 0; j < ncallsites; ++j) {
-			MonoBasicBlock *bb = callsites [j]->bb;
-			MonoExceptionClause *clause;
-			gboolean is_in_finally = FALSE;
-
-			for (i = 0; i < cfg->header->num_clauses; ++i) {
-				clause = &cfg->header->clauses [i];
-			   
-				if (MONO_OFFSET_IN_HANDLER (clause, bb->real_offset)) {
-					if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
-						is_in_finally = TRUE;
-						break;
-					}
-				}
-			}
-
-			if (is_in_finally) {
-				for (i = 0; i < nslots; ++i)
-					set_slot (gcfg, i, j, SLOT_PIN);
-				for (i = 0; i < nregs; ++i)
-					set_reg_slot (gcfg, i, j, SLOT_PIN);
-			}
-		}
-	}
 
 	/* 
 	 * Compute the real size of the bitmap i.e. ignore NOREF columns at the beginning and at
@@ -2205,6 +2207,7 @@ mini_gc_create_gc_map (MonoCompile *cfg)
 	process_other_slots (cfg);
 	process_param_area_slots (cfg);
 	process_variables (cfg);
+	process_finally_clauses (cfg);
 
 	create_map (cfg);
 }
