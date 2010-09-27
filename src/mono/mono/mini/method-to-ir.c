@@ -9644,6 +9644,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if ((sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ)) {
 					MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context);
 					if (ctor_method && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
+						MonoInst *target_ins;
 						MonoMethod *invoke;
 						int invoke_context_used = 0;
 
@@ -9654,15 +9655,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						if (cfg->generic_sharing_context)
 							invoke_context_used = mono_method_check_context_used (invoke);
 
+						target_ins = sp [-1];
+
+						if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC)) {
+							if (mono_method_signature (invoke)->param_count == mono_method_signature (cmethod)->param_count) {
+								MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, target_ins->dreg, 0);
+								MONO_EMIT_NEW_COND_EXC (cfg, EQ, "ArgumentException");
+							}
+						}
+
 #if defined(MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE)
 						/* FIXME: SGEN support */
 						if (!cfg->gen_write_barriers && invoke_context_used == 0) {
-							MonoInst *target_ins;
-
 							ip += 6;
 							if (cfg->verbose_level > 3)
 								g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
-							target_ins = sp [-1];
 							sp --;
 							*sp = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used);
 							CHECK_CFG_EXCEPTION;
