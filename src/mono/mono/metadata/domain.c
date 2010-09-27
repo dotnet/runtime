@@ -1297,7 +1297,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_reflection_init ();
 
 	/* FIXME: When should we release this memory? */
-	MONO_GC_REGISTER_ROOT (appdomains_list);
+	MONO_GC_REGISTER_ROOT_FIXED (appdomains_list);
 
 	domain = mono_domain_create ();
 	mono_root_domain = domain;
@@ -2247,7 +2247,8 @@ mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointe
 		int size = GPOINTER_TO_INT (domain->static_data_array [1]);
 		next = GPOINTER_TO_INT (domain->static_data_array [0]);
 		if (next >= size) {
-			gpointer *new_array = mono_gc_alloc_fixed (sizeof (gpointer) * (size * 2), NULL);
+			/* 'data' is allocated by alloc_fixed */
+			gpointer *new_array = mono_gc_alloc_fixed (sizeof (gpointer) * (size * 2), MONO_GC_ROOT_DESCR_FOR_FIXED (size * 2));
 			memcpy (new_array, domain->static_data_array, sizeof (gpointer) * size);
 			size *= 2;
 			new_array [1] = GINT_TO_POINTER (size);
@@ -2256,7 +2257,7 @@ mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointe
 		}
 	} else {
 		int size = 32;
-		gpointer *new_array = mono_gc_alloc_fixed (sizeof (gpointer) * size, NULL);
+		gpointer *new_array = mono_gc_alloc_fixed (sizeof (gpointer) * size, MONO_GC_ROOT_DESCR_FOR_FIXED (size));
 		next = 2;
 		new_array [0] = GINT_TO_POINTER (next);
 		new_array [1] = GINT_TO_POINTER (size);

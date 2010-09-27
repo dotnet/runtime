@@ -23,6 +23,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
 
@@ -4973,6 +4974,64 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, size);
 			break;
 		}
+#ifdef HAVE_SGEN_GC
+		case OP_CARD_TABLE_WBARRIER: {
+			int ptr = ins->sreg1;
+			int value = ins->sreg2;
+			guchar *br;
+			int nursery_shift, card_table_shift;
+			gpointer card_table_mask;
+			size_t nursery_size;
+
+			gpointer card_table = mono_gc_get_card_table (&card_table_shift, &card_table_mask);
+			guint64 nursery_start = (guint64)mono_gc_get_nursery (&nursery_shift, &nursery_size);
+
+			/*If either point to the stack we can simply avoid the WB. This happens due to
+			 * optimizations revealing a stack store that was not visible when op_cardtable was emited.
+			 */
+			if (ins->sreg1 == AMD64_RSP || ins->sreg2 == AMD64_RSP)
+				continue;
+
+			/*
+			 * We need one register we can clobber, we choose EDX and make sreg1
+			 * fixed EAX to work around limitations in the local register allocator.
+			 * sreg2 might get allocated to EDX, but that is not a problem since
+			 * we use it before clobbering EDX.
+			 */
+			g_assert (ins->sreg1 == AMD64_RAX);
+
+			/*
+			 * This is the code we produce:
+			 *
+			 *   edx = value
+			 *   edx >>= nursery_shift
+			 *   cmp edx, (nursery_start >> nursery_shift)
+			 *   jne done
+			 *   edx = ptr
+			 *   edx >>= card_table_shift
+			 *   edx += cardtable
+			 *   [edx] = 1
+			 * done:
+			 */
+
+			if (value != AMD64_RDX)
+				amd64_mov_reg_reg (code, AMD64_RDX, value, 8);
+			amd64_shift_reg_imm (code, X86_SHR, AMD64_RDX, nursery_shift);
+			amd64_alu_reg_imm (code, X86_CMP, AMD64_RDX, nursery_start >> nursery_shift);
+			br = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
+			amd64_mov_reg_reg (code, AMD64_RDX, ptr, 8);
+			amd64_shift_reg_imm (code, X86_SHR, AMD64_RDX, card_table_shift);
+			if (card_table_mask)
+				amd64_alu_reg_imm (code, X86_AND, AMD64_RDX, (guint32)(guint64)card_table_mask);
+
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, card_table);
+			amd64_alu_reg_membase (code, X86_ADD, AMD64_RDX, AMD64_RIP, 0);
+
+			amd64_mov_membase_imm (code, AMD64_RDX, 0, 1, 1);
+			x86_patch (br, code);
+			break;
+		}
+#endif
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 		/* TODO: Some of these IR opcodes are marked as no clobber when they indeed do. */
 		case OP_ADDPS:
@@ -6473,6 +6532,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			code_size += 8 + 15; /* sizeof (double) + alignment */
 		if (patch_info->type == MONO_PATCH_INFO_R4)
 			code_size += 4 + 15; /* sizeof (float) + alignment */
+		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR)
+			code_size += 8 + 7; /*sizeof (void*) + alignment */
 	}
 
 	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
@@ -6566,6 +6627,29 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				*(float*)code = *(float*)patch_info->data.target;
 				code += sizeof (float);
 			}
+
+			remove = TRUE;
+			break;
+		}
+		case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR: {
+			guint8 *pos;
+
+			if (cfg->compile_aot)
+				continue;
+
+			/*loading is faster against aligned addresses.*/
+			code = (guint8*)ALIGN_TO (code, 8);
+
+			pos = cfg->native_code + patch_info->ip.i;
+
+			/*alu_op [rex] modr/m imm32 - 7 or 8 bytes */
+			if (IS_REX (pos [1]))
+				*(guint32*)(pos + 4) = (guint8*)code - pos - 8;
+			else
+				*(guint32*)(pos + 3) = (guint8*)code - pos - 7;
+
+			*(gpointer*)code = (gpointer)patch_info->data.target;
+			code += sizeof (gpointer);
 
 			remove = TRUE;
 			break;

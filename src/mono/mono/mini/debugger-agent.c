@@ -784,13 +784,13 @@ mono_debugger_agent_init (void)
 	debugger_tls_id = TlsAlloc ();
 
 	thread_to_tls = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
-	MONO_GC_REGISTER_ROOT (thread_to_tls);
+	MONO_GC_REGISTER_ROOT_FIXED (thread_to_tls);
 
 	tid_to_thread = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
-	MONO_GC_REGISTER_ROOT (tid_to_thread);
+	MONO_GC_REGISTER_ROOT_FIXED (tid_to_thread);
 
 	tid_to_thread_obj = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
-	MONO_GC_REGISTER_ROOT (tid_to_thread_obj);
+	MONO_GC_REGISTER_ROOT_FIXED (tid_to_thread_obj);
 
 	loaded_classes = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	pending_assembly_loads = g_ptr_array_new ();
@@ -2881,7 +2881,7 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	// FIXME: Free this somewhere
 	tls = g_new0 (DebuggerTlsData, 1);
 	tls->resume_event = CreateEvent (NULL, FALSE, FALSE, NULL);
-	MONO_GC_REGISTER_ROOT (tls->thread);
+	MONO_GC_REGISTER_ROOT_SINGLE (tls->thread);
 	tls->thread = thread;
 	TlsSetValue (debugger_tls_id, tls);
 

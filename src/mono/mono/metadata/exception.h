@@ -142,6 +142,9 @@ mono_get_exception_method_access (void);
 MonoException *
 mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions);
 
+MonoException *
+mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception);
+
 MONO_END_DECLS
 
 #endif /* _MONO_METADATA_EXCEPTION_H_ */

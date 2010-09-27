@@ -53,7 +53,7 @@ mono_wsq_create ()
 
 	wsq = g_new0 (MonoWSQ, 1);
 	wsq->mask = INITIAL_LENGTH - 1;
-	MONO_GC_REGISTER_ROOT (wsq->queue);
+	MONO_GC_REGISTER_ROOT_SINGLE (wsq->queue);
 	root = mono_get_root_domain ();
 	wsq->queue = mono_array_new_cached (root, mono_defaults.object_class, INITIAL_LENGTH);
 	MONO_SEM_INIT (&wsq->lock, 1);

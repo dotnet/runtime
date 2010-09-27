@@ -17,9 +17,39 @@
 #define mono_domain_finalizers_lock(domain) EnterCriticalSection (&(domain)->finalizable_objects_hash_lock);
 #define mono_domain_finalizers_unlock(domain) LeaveCriticalSection (&(domain)->finalizable_objects_hash_lock);
 
+/* Register a memory area as a conservatively scanned GC root */
 #define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root ((char*)&(x), sizeof(x), NULL)
 
 #define MONO_GC_UNREGISTER_ROOT(x) mono_gc_deregister_root ((char*)&(x))
+
+/*
+ * Register a memory location as a root pointing to memory allocated using
+ * mono_gc_alloc_fixed (). This includes MonoGHashTable.
+ */
+#ifdef HAVE_SGEN_GC
+/* The result of alloc_fixed () is not GC tracked memory */
+#define MONO_GC_REGISTER_ROOT_FIXED(x)
+#else
+#define MONO_GC_REGISTER_ROOT_FIXED(x) MONO_GC_REGISTER_ROOT ((x))
+#endif
+
+/*
+ * Return a GC descriptor for an array containing N pointers to memory allocated
+ * by mono_gc_alloc_fixed ().
+ */
+#ifdef HAVE_SGEN_GC
+/* The result of alloc_fixed () is not GC tracked memory */
+#define MONO_GC_ROOT_DESCR_FOR_FIXED(n) mono_gc_make_root_descr_all_refs (0)
+#else
+/* The result of alloc_fixed () is GC tracked memory */
+#define MONO_GC_ROOT_DESCR_FOR_FIXED(n) NULL
+#endif
+
+/* Register a memory location holding a single object reference as a GC root */
+#define MONO_GC_REGISTER_ROOT_SINGLE(x) do { \
+	g_assert (sizeof (x) == sizeof (MonoObject*)); \
+	mono_gc_register_root ((char*)&(x), sizeof(MonoObject*), mono_gc_make_root_descr_all_refs (1)); \
+	} while (0)
 
 void   mono_object_register_finalizer               (MonoObject  *obj) MONO_INTERNAL;
 void   ves_icall_System_GC_InternalCollect          (int          generation) MONO_INTERNAL;
@@ -86,6 +116,9 @@ GCHandle_CheckCurrentDomain (guint32 gchandle) MONO_INTERNAL;
 /* simple interface for data structures needed in the runtime */
 void* mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits) MONO_INTERNAL;
 
+/* Return a root descriptor for a root with all refs */
+void* mono_gc_make_root_descr_all_refs (int numbits) MONO_INTERNAL;
+
 /* User defined marking function */
 /* It should work like this:
  * foreach (ref in GC references in the are structure pointed to by ADDR)
@@ -102,6 +135,8 @@ void *mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker);
  * The memory is non-moving and it will be explicitly deallocated.
  * size bytes will be available from the returned address (ie, descr
  * must not be stored in the returned memory)
+ * NOTE: Under Boehm, this returns memory allocated using GC_malloc, so the result should
+ * be stored into a location registered using MONO_GC_REGISTER_ROOT_FIXED ().
  */
 void* mono_gc_alloc_fixed            (size_t size, void *descr) MONO_INTERNAL;
 void  mono_gc_free_fixed             (void* addr) MONO_INTERNAL;

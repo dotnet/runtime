@@ -256,7 +256,7 @@ static gboolean handle_store(MonoThread *thread)
 	}
 
 	if(threads==NULL) {
-		MONO_GC_REGISTER_ROOT (threads);
+		MONO_GC_REGISTER_ROOT_FIXED (threads);
 		threads=mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 	}
 
@@ -331,6 +331,11 @@ small_id_alloc (MonoInternalThread *thread)
 
 	if (!small_id_table) {
 		small_id_table_size = 2;
+		/* 
+		 * Enabling this causes problems, because SGEN doesn't track/update the TLS slot holding
+		 * the current thread.
+		 */
+		//small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (small_id_table_size));
 		small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), NULL);
 	}
 	for (i = small_id_next; i < small_id_table_size; ++i) {
@@ -353,6 +358,7 @@ small_id_alloc (MonoInternalThread *thread)
 		if (new_size >= (1 << 16))
 			g_assert_not_reached ();
 		id = small_id_table_size;
+		//new_table = mono_gc_alloc_fixed (new_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (new_size));
 		new_table = mono_gc_alloc_fixed (new_size * sizeof (MonoInternalThread*), NULL);
 		memcpy (new_table, small_id_table, small_id_table_size * sizeof (void*));
 		mono_gc_free_fixed (small_id_table);
@@ -556,12 +562,13 @@ static void thread_cleanup (MonoInternalThread *thread)
 			mono_array_set (thread->cached_culture_info, MonoObject*, i, NULL);
 	}
 
-	if (mono_thread_cleanup_fn)
-		mono_thread_cleanup_fn (thread);
-
 	/* if the thread is not in the hash it has been removed already */
-	if (!handle_remove (thread))
+	if (!handle_remove (thread)) {
+		/* This needs to be called even if handle_remove () fails */
+		if (mono_thread_cleanup_fn)
+			mono_thread_cleanup_fn (thread);
 		return;
+	}
 	mono_release_type_locks (thread);
 
 	EnterCriticalSection (thread->synch_cs);
@@ -581,8 +588,12 @@ static void thread_cleanup (MonoInternalThread *thread)
 	mono_free_static_data (thread->static_data, TRUE);
 	thread->static_data = NULL;
 
+	if (mono_thread_cleanup_fn)
+		mono_thread_cleanup_fn (thread);
+
 	small_id_free (thread->small_id);
 	thread->small_id = -2;
+
 }
 
 static gpointer
@@ -829,7 +840,7 @@ static void
 register_thread_start_argument (MonoThread *thread, struct StartInfo *start_info)
 {
 	if (thread_start_args == NULL) {
-		MONO_GC_REGISTER_ROOT (thread_start_args);
+		MONO_GC_REGISTER_ROOT_FIXED (thread_start_args);
 		thread_start_args = mono_g_hash_table_new (NULL, NULL);
 	}
 	mono_g_hash_table_insert (thread_start_args, thread, start_info->start_arg);
@@ -861,7 +872,7 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 		return NULL;
 	}
 	if (threads_starting_up == NULL) {
-		MONO_GC_REGISTER_ROOT (threads_starting_up);
+		MONO_GC_REGISTER_ROOT_FIXED (threads_starting_up);
 		threads_starting_up = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
 	}
 
@@ -1149,7 +1160,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		mono_threads_lock ();
 		register_thread_start_argument (this, start_info);
 		if (threads_starting_up == NULL) {
-			MONO_GC_REGISTER_ROOT (threads_starting_up);
+			MONO_GC_REGISTER_ROOT_FIXED (threads_starting_up);
 			threads_starting_up = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
 		}
 		mono_g_hash_table_insert (threads_starting_up, this, this);
@@ -2643,7 +2654,7 @@ ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, void *value)
 void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
 {
-	MONO_GC_REGISTER_ROOT (small_id_table);
+	MONO_GC_REGISTER_ROOT_FIXED (small_id_table);
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&interlocked_mutex);
 	InitializeCriticalSection(&contexts_mutex);

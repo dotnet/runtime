@@ -3,11 +3,13 @@
 
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/socket-io.h>
 
 /* No managed code here */
 void mono_thread_pool_init (void) MONO_INTERNAL;
 
 void icall_append_job (MonoObject *ar) MONO_INTERNAL;
+void icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state) MONO_INTERNAL;
 MonoAsyncResult *
 mono_thread_pool_add     (MonoObject *target, MonoMethodMessage *msg, 
 			  MonoDelegate *async_callback, MonoObject *state) MONO_INTERNAL;

@@ -505,6 +505,21 @@ mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
 			if (!mono_type_is_valid_type_in_context (inst->type_argv [i], context))
 				return FALSE;
 		break;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass = type->data.klass;
+		/*
+		 * It's possible to encode generic'sh types in such a way that they disguise themselves as class or valuetype.
+		 * Fixing the type decoding is really tricky since under some cases this behavior is needed, for example, to
+		 * have a 'class' type pointing to a 'genericinst' class.
+		 *
+		 * For the runtime these non canonical (weird) encodings work fine, they worst they can cause is some
+		 * reflection oddities which are harmless  - to security at least.
+		 */
+		if (klass->byval_arg.type != type->type)
+			return mono_type_is_valid_type_in_context (&klass->byval_arg, context);
+		break;
+	}
 	}
 	return TRUE;
 }

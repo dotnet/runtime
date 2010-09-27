@@ -16,9 +16,10 @@ Version:        @VERSION@
 Release:        0
 Source0:        mono-%{version}.tar.bz2
 BuildRequires:  bison
-BuildRequires:  gcc-c++
 BuildRequires:  fdupes
+BuildRequires:  gcc-c++
 BuildRequires:  pkgconfig
+BuildRequires:  xorg-x11-libX11-devel
 BuildRequires:  zlib-devel
 %ifnarch ia64
 BuildRequires:  valgrind-devel
@@ -95,6 +96,9 @@ export PATH=/opt/novell/llvm-mono/bin:$PATH
   --with-sgen=%{sgen} \
 %if %llvm == yes
   --enable-loadedllvm \
+  --disable-system-aot \
+%endif
+%ifnarch %ix86 x86_64
   --disable-system-aot \
 %endif
   --with-ikvm=yes \
@@ -758,7 +762,6 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/2.0/System.Runtime.Remoting.dll
 %_prefix/lib/mono/2.0/System.Runtime.Serialization.Formatters.Soap.dll
 %_prefix/lib/mono/2.0/System.Web.Abstractions.dll
-%_prefix/lib/mono/2.0/System.Web.DynamicData.dll
 %_prefix/lib/mono/2.0/System.Web.Routing.dll
 %_prefix/lib/mono/2.0/System.Web.Services.dll
 %_prefix/lib/mono/2.0/System.Web.dll
@@ -772,7 +775,6 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.0/System.Runtime.Serialization.Formatters.Soap.dll
 %_prefix/lib/mono/4.0/System.Web.Abstractions.dll
 %_prefix/lib/mono/4.0/System.Web.ApplicationServices.dll
-%_prefix/lib/mono/4.0/System.Web.DynamicData.dll
 %_prefix/lib/mono/4.0/System.Web.Routing.dll
 %_prefix/lib/mono/4.0/System.Web.Services.dll
 %_prefix/lib/mono/4.0/System.Web.dll
@@ -790,7 +792,6 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/gac/System.Web
 %_prefix/lib/mono/gac/System.Web.Abstractions
 %_prefix/lib/mono/gac/System.Web.ApplicationServices
-%_prefix/lib/mono/gac/System.Web.DynamicData
 %_prefix/lib/mono/gac/System.Web.Routing
 %_prefix/lib/mono/gac/System.Web.Services
 
@@ -815,14 +816,17 @@ Mono implementation of ASP.NET MVC.
 %_libdir/pkgconfig/system.web.extensions_1.0.pc
 %_libdir/pkgconfig/system.web.mvc.pc
 %_libdir/pkgconfig/system.web.mvc2.pc
+%_prefix/lib/mono/2.0/System.Web.DynamicData.dll
 %_prefix/lib/mono/2.0/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/2.0/System.Web.Extensions.dll
 %_prefix/lib/mono/2.0/System.Web.Mvc.dll
+%_prefix/lib/mono/4.0/System.Web.DynamicData.dll
 %_prefix/lib/mono/4.0/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/4.0/System.Web.Extensions.dll
 %_prefix/lib/mono/compat-2.0/System.Web.Extensions.Design.dll
 %_prefix/lib/mono/compat-2.0/System.Web.Extensions.dll
 %_prefix/lib/mono/compat-2.0/System.Web.Mvc.dll
+%_prefix/lib/mono/gac/System.Web.DynamicData
 %_prefix/lib/mono/gac/System.Web.Extensions
 %_prefix/lib/mono/gac/System.Web.Extensions.Design
 %_prefix/lib/mono/gac/System.Web.Mvc

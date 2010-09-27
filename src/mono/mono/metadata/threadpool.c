@@ -204,6 +204,11 @@ enum {
 	AIO_OP_RECV_JUST_CALLBACK,
 	AIO_OP_SEND_JUST_CALLBACK,
 	AIO_OP_READPIPE,
+	AIO_OP_CONSOLE2,
+	AIO_OP_DISCONNECT,
+	AIO_OP_ACCEPTRECEIVE,
+	AIO_OP_RECEIVE_BUFFERS,
+	AIO_OP_SEND_BUFFERS,
 	AIO_OP_LAST
 };
 
@@ -270,11 +275,15 @@ get_event_from_state (MonoSocketAsyncResult *state)
 	case AIO_OP_RECV_JUST_CALLBACK:
 	case AIO_OP_RECEIVEFROM:
 	case AIO_OP_READPIPE:
+	case AIO_OP_ACCEPTRECEIVE:
+	case AIO_OP_RECEIVE_BUFFERS:
 		return MONO_POLLIN;
 	case AIO_OP_SEND:
 	case AIO_OP_SEND_JUST_CALLBACK:
 	case AIO_OP_SENDTO:
 	case AIO_OP_CONNECT:
+	case AIO_OP_SEND_BUFFERS:
+	case AIO_OP_DISCONNECT:
 		return MONO_POLLOUT;
 	default: /* Should never happen */
 		g_message ("get_event_from_state: unknown value in switch!!!");
@@ -1200,14 +1209,14 @@ mono_thread_pool_init ()
 		}
 	}
 
-	MONO_GC_REGISTER_ROOT (async_tp.first);
-	MONO_GC_REGISTER_ROOT (async_tp.last);
-	MONO_GC_REGISTER_ROOT (async_tp.unused);
-	MONO_GC_REGISTER_ROOT (async_io_tp.first);
-	MONO_GC_REGISTER_ROOT (async_io_tp.unused);
-	MONO_GC_REGISTER_ROOT (async_io_tp.last);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.first);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.last);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.unused);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.first);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.unused);
+	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.last);
 
-	MONO_GC_REGISTER_ROOT (socket_io_data.sock_to_state);
+	MONO_GC_REGISTER_ROOT_FIXED (socket_io_data.sock_to_state);
 	InitializeCriticalSection (&socket_io_data.io_lock);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
 		threads_per_cpu = atoi (g_getenv ("MONO_THREADS_PER_CPU"));
@@ -1243,6 +1252,19 @@ mono_thread_pool_init ()
 	signal (SIGALRM, signal_handler);
 	alarm (2);
 #endif
+}
+
+void
+icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoAsyncResult *ares;
+
+	/* Don't call mono_async_result_new() to avoid capturing the context */
+	ares = (MonoAsyncResult *) mono_object_new (domain, mono_defaults.asyncresult_class);
+	MONO_OBJECT_SETREF (ares, async_delegate, target);
+	MONO_OBJECT_SETREF (ares, async_state, state);
+	socket_io_add (ares, state);
 }
 
 MonoAsyncResult *

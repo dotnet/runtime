@@ -72,7 +72,7 @@ add_thread_to_finalize (MonoInternalThread *thread)
 {
 	mono_finalizer_lock ();
 	if (!threads_to_finalize)
-		MONO_GC_REGISTER_ROOT (threads_to_finalize);
+		MONO_GC_REGISTER_ROOT_SINGLE (threads_to_finalize);
 	threads_to_finalize = mono_mlist_append (threads_to_finalize, (MonoObject*)thread);
 	mono_finalizer_unlock ();
 }
@@ -605,7 +605,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	if (!handles->size) {
 		handles->size = 32;
 		if (handles->type > HANDLE_WEAK_TRACK) {
-			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, NULL);
+			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, mono_gc_make_root_descr_all_refs (handles->size));
 		} else {
 			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
 			handles->domain_ids = g_malloc0 (sizeof (guint16) * handles->size);
@@ -641,17 +641,9 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 
 		/* resize and copy the entries */
 		if (handles->type > HANDLE_WEAK_TRACK) {
-			gsize *gc_bitmap;
 			gpointer *entries;
-			void *descr;
 
-			/* Create a GC descriptor */
-			gc_bitmap = g_malloc (new_size / 8);
-			memset (gc_bitmap, 0xff, new_size / 8);
-			descr = mono_gc_make_descr_from_bitmap (gc_bitmap, new_size);
-			g_free (gc_bitmap);
-
-			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, descr);
+			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, mono_gc_make_root_descr_all_refs (new_size));
 			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
 
 			mono_gc_free_fixed (handles->entries);
@@ -1088,8 +1080,8 @@ mono_gc_init (void)
 
 	InitializeCriticalSection (&finalizer_mutex);
 
-	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_NORMAL].entries);
-	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_PINNED].entries);
+	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_NORMAL].entries);
+	MONO_GC_REGISTER_ROOT_FIXED (gc_handles [HANDLE_PINNED].entries);
 
 	mono_gc_base_init ();
 

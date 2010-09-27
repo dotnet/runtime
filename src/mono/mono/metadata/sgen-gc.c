@@ -731,8 +731,8 @@ typedef void (*CopyOrMarkObjectFunc) (void**, GrayQueue*);
 typedef char* (*ScanObjectFunc) (char*, GrayQueue*);
 
 /* forward declarations */
-static int stop_world (void);
-static int restart_world (void);
+static int stop_world (int generation);
+static int restart_world (int generation);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise);
 static void scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
@@ -2579,6 +2579,8 @@ collect_nursery (size_t requested_size)
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
+	mono_perfcounters->gc_collections0++;
+
 	current_collection_generation = GENERATION_NURSERY;
 
 	binary_protocol_collection (GENERATION_NURSERY);
@@ -2620,6 +2622,7 @@ collect_nursery (size_t requested_size)
 
 	/* pin from pinned handles */
 	init_pinning ();
+	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
 	pin_from_roots (nursery_start, nursery_next);
 	/* identify pinned objects */
 	optimize_pin_queue (0);
@@ -2671,12 +2674,15 @@ collect_nursery (size_t requested_size)
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
 	time_minor_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
+	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, 0);
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
+	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_START, 0);
 	build_nursery_fragments (pin_queue, next_pin_slot);
+	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_END, 0);
 	TV_GETTIME (btv);
 	time_minor_fragment_creation += TV_ELAPSED_MS (atv, btv);
 	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %lu bytes available\n", TV_ELAPSED (atv, btv), (unsigned long)fragment_total));
@@ -2731,6 +2737,8 @@ major_do_collection (const char *reason)
 	int old_num_major_sections = major_collector.get_num_major_sections ();
 	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
 	mword los_memory_saved, los_memory_alloced, old_los_memory_usage;
+
+	mono_perfcounters->gc_collections1++;
 
 	/*
 	 * A domain could have been freed, resulting in
@@ -2992,11 +3000,16 @@ minor_collect_or_expand_inner (size_t size)
 
 	g_assert (nursery_section);
 	if (do_minor_collection) {
-		stop_world ();
-		if (collect_nursery (size))
+		mono_profiler_gc_event (MONO_GC_EVENT_START, 0);
+		stop_world (0);
+		if (collect_nursery (size)) {
+			mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
 			major_collection ("minor overflow");
+			/* keep events symmetric */
+			mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
+		}
 		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)total_alloc, (unsigned long)los_memory_usage));
-		restart_world ();
+		restart_world (0);
 		/* this also sets the proper pointers for the next allocation */
 		if (!search_fragment_for_size (size)) {
 			int i;
@@ -3007,6 +3020,7 @@ minor_collect_or_expand_inner (size_t size)
 			}
 			degraded_mode = 1;
 		}
+		mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
 	}
 	//report_internal_mem_usage ();
 }
@@ -3169,9 +3183,11 @@ static void*
 alloc_degraded (MonoVTable *vtable, size_t size)
 {
 	if (need_major_collection ()) {
-		stop_world ();
+		mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
+		stop_world (1);
 		major_collection ("degraded overflow");
-		restart_world ();
+		restart_world (1);
+		mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
 	}
 
 	degraded_mode += size;
@@ -3206,9 +3222,11 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 
 	if (G_UNLIKELY (collect_before_allocs)) {
 		if (nursery_section) {
-			stop_world ();
+			mono_profiler_gc_event (MONO_GC_EVENT_START, 0);
+			stop_world (0);
 			collect_nursery (0);
-			restart_world ();
+			restart_world (0);
+			mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
 			if (!degraded_mode && !search_fragment_for_size (size)) {
 				// FIXME:
 				g_assert_not_reached ();
@@ -4668,10 +4686,11 @@ static unsigned long max_pause_usec = 0;
 
 /* LOCKING: assumes the GC lock is held */
 static int
-stop_world (void)
+stop_world (int generation)
 {
 	int count;
 
+	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
 	acquire_gc_locks ();
 
 	update_current_thread_stack (&count);
@@ -4683,12 +4702,13 @@ stop_world (void)
 	count -= restart_threads_until_none_in_managed_allocator ();
 	g_assert (count >= 0);
 	DEBUG (3, fprintf (gc_debug_file, "world stopped %d thread(s)\n", count));
+	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 	return count;
 }
 
 /* LOCKING: assumes the GC lock is held */
 static int
-restart_world (void)
+restart_world (int generation)
 {
 	int count, i;
 	SgenThreadInfo *info;
@@ -4702,6 +4722,7 @@ restart_world (void)
 			moved_objects_idx = 0;
 		}
 	}
+	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
 			info->stack_start = NULL;
@@ -4716,6 +4737,7 @@ restart_world (void)
 	usec = TV_ELAPSED (stop_world_time, end_sw);
 	max_pause_usec = MAX (usec, max_pause_usec);
 	DEBUG (2, fprintf (gc_debug_file, "restarted %d thread(s) (pause time: %d usec, max: %d)\n", count, (int)usec, (int)max_pause_usec));
+	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 	return count;
 }
 
@@ -6114,13 +6136,17 @@ void
 mono_gc_collect (int generation)
 {
 	LOCK_GC;
-	stop_world ();
+	if (generation > 1)
+		generation = 1;
+	mono_profiler_gc_event (MONO_GC_EVENT_START, generation);
+	stop_world (generation);
 	if (generation == 0) {
 		collect_nursery (0);
 	} else {
 		major_collection ("user request");
 	}
-	restart_world ();
+	restart_world (generation);
+	mono_profiler_gc_event (MONO_GC_EVENT_END, generation);
 	UNLOCK_GC;
 }
 
@@ -6247,12 +6273,38 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 void*
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {
-	if (numbits < ((sizeof (*bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) {
+	if (numbits == 0) {
+		return (void*)MAKE_ROOT_DESC (ROOT_DESC_BITMAP, 0);
+	} else if (numbits < ((sizeof (*bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) {
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_BITMAP, bitmap [0]);
 	} else {
 		mword complex = alloc_complex_descriptor (bitmap, numbits);
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_COMPLEX, complex);
 	}
+}
+
+ static void *all_ref_root_descrs [32];
+
+void*
+mono_gc_make_root_descr_all_refs (int numbits)
+{
+	gsize *gc_bitmap;
+	void *descr;
+
+	if (numbits < 32 && all_ref_root_descrs [numbits])
+		return all_ref_root_descrs [numbits];
+
+	gc_bitmap = g_malloc0 (ALIGN_TO (numbits, 8) + 1);
+	memset (gc_bitmap, 0xff, numbits / 8);
+	if (numbits % 8)
+		gc_bitmap [numbits / 8] = (1 << (numbits % 8)) - 1;
+	descr = mono_gc_make_descr_from_bitmap (gc_bitmap, numbits);
+	g_free (gc_bitmap);
+
+	if (numbits < 32)
+		all_ref_root_descrs [numbits] = descr;
+
+	return descr;
 }
 
 void*

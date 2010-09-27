@@ -553,6 +553,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 
 		switch(mono_name) {
 		case SocketOptionName_IpTimeToLive:
+		case SocketOptionName_HopLimit:
 			*system_name = IPV6_UNICAST_HOPS;
 			break;
 		case SocketOptionName_MulticastInterface:

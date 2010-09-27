@@ -349,9 +349,11 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 #else
 	if (need_major_collection ()) {
 		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %lu, limit: %lu)\n", size, (unsigned long)los_memory_usage, (unsigned long)next_los_collection));
-		stop_world ();
+		mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
+		stop_world (1);
 		major_collection ("LOS overflow");
-		restart_world ();
+		restart_world (1);
+		mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
 	}
 
 #ifdef USE_MALLOC

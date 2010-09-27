@@ -82,6 +82,10 @@ AC_CHECK_FUNCS(strndup strlcpy getpwuid_r strtok_r rewinddir vasprintf)
 AM_CONDITIONAL(NEED_VASPRINTF, test x$have_vasprintf = x )
 AC_CHECK_LIB(iconv, iconv_open, LIBS="$LIBS -liconv")
 AC_CHECK_LIB(iconv, libiconv_open, LIBS="$LIBS -liconv")
+AC_CHECK_LIB(iconv, iconv_open, ICONV_LIBS="-liconv")
+AC_CHECK_LIB(iconv, libiconv_open, ICONV_LIBS="-liconv")
+AC_SUBST(ICONV_LIBS)
+LIBS="$LIBS $ICONV_LIBS"
 AC_SEARCH_LIBS(sqrtf, m)
 
 # nanosleep may not be part of libc, also search it in other libraries

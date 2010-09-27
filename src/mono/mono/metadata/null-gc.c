@@ -145,6 +145,12 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 }
 
 void*
+mono_gc_make_root_descr_all_refs (int numbits)
+{
+	return NULL;
+}
+
+void*
 mono_gc_alloc_fixed (size_t size, void *descr)
 {
 	return g_malloc0 (size);

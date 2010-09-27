@@ -1823,6 +1823,7 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		case MONO_TYPE_I8:
 		case MONO_TYPE_R8:
 		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_PTR:
 			if (v != NULL)
 				v += sizeof (MonoObject);
 			break;
