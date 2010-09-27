@@ -113,6 +113,8 @@ typedef struct {
 	MonoContext ctx;
 	gboolean has_context;
 	MonoJitTlsData *jit_tls;
+	/* For debugging */
+	guint64 tid;
 	/* Number of frames collected during the !precise pass */
 	int nframes;
 	FrameInfo frames [MAX_FRAMES];
@@ -428,6 +430,7 @@ encode_gc_map (GCMap *map, guint8 *buf, guint8 **endbuf)
 	guint32 flags, freg;
 
 	encode_sleb128 (map->start_offset / sizeof (mgreg_t), buf, &buf);
+	encode_sleb128 (map->end_offset / sizeof (mgreg_t), buf, &buf);
 	encode_sleb128 (map->map_offset / sizeof (mgreg_t), buf, &buf);
 	encode_uleb128 (map->nslots, buf, &buf);
 	g_assert (map->callsite_entry_size <= 4);
@@ -458,6 +461,7 @@ decode_gc_map (guint8 *buf, GCMap *map, guint8 **endbuf)
 	int i, n;
 
 	map->start_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
+	map->end_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
 	map->map_offset = decode_sleb128 (buf, &buf) * sizeof (mgreg_t);
 	map->nslots = decode_uleb128 (buf, &buf);
 	flags = decode_uleb128 (buf, &buf);
@@ -513,6 +517,7 @@ thread_attach_func (void)
 	TlsData *tls;
 
 	tls = g_new0 (TlsData, 1);
+	tls->tid = GetCurrentThreadId ();
 	stats.tlsdata_size += sizeof (TlsData);
 
 	return tls;
@@ -597,7 +602,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	GCMap *map;
 	GCMap map_tmp;
 	GCEncodedMap *emap;
-	guint8* fp, *p, *frame_start, *frame_end;
+	guint8* fp, *p, *real_frame_start, *frame_start, *frame_end;
 	int i, pc_offset, cindex, bitmap_width;
 	int scanned = 0, scanned_precisely, scanned_conservatively, scanned_registers;
 	gboolean res;
@@ -761,6 +766,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		g_assert_not_reached ();
 #endif
 
+		real_frame_start = fp + map->start_offset;
 		frame_start = fp + map->start_offset + map->map_offset;
 		frame_end = fp + map->end_offset;
 
@@ -791,12 +797,12 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		}
 		cindex = i;
 
-		g_assert (frame_start >= stack_limit);
+		g_assert (real_frame_start >= stack_limit);
 
-		if (frame_start > stack_limit) {
+		if (real_frame_start > stack_limit) {
 			/* This scans the previously skipped frames as well */
-			DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, frame_start));
-			mono_gc_conservatively_scan_area (stack_limit, frame_start);
+			DEBUG (printf ("\tscan area %p-%p (%d).\n", stack_limit, real_frame_start, (int)(real_frame_start - stack_limit)));
+			mono_gc_conservatively_scan_area (stack_limit, real_frame_start);
 		}
 
 		/* Mark stack slots */
@@ -920,7 +926,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	}
 
 	if (stack_limit < stack_end) {
-		DEBUG (printf ("\tscan area %p-%p.\n", stack_limit, stack_end));
+		DEBUG (printf ("\tscan remaining stack %p-%p (%d).\n", stack_limit, stack_end, (int)(stack_end - stack_limit)));
 		mono_gc_conservatively_scan_area (stack_limit, stack_end);
 	}
 
