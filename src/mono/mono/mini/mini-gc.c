@@ -698,6 +698,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			 * Can't save information since the array is full. So scan the rest of the
 			 * stack conservatively.
 			 */
+			DEBUG (printf ("Mark (0): Frame stack full.\n"));
 			break;
 		}
 
