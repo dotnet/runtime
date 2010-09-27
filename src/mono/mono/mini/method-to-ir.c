@@ -9658,6 +9658,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						target_ins = sp [-1];
 
 						if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC)) {
+							/*LAME IMPL: We must not add a null check for virtual invoke delegates.*/
 							if (mono_method_signature (invoke)->param_count == mono_method_signature (cmethod)->param_count) {
 								MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, target_ins->dreg, 0);
 								MONO_EMIT_NEW_COND_EXC (cfg, EQ, "ArgumentException");
