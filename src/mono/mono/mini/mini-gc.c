@@ -227,7 +227,9 @@ typedef struct {
 	int scanned_precisely;
 	int scanned_conservatively;
 	int scanned_registers;
-
+	int scanned_native;
+	int scanned_other;
+	
 	int all_slots;
 	int noref_slots;
 	int ref_slots;
@@ -803,6 +805,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			/* This scans the previously skipped frames as well */
 			DEBUG (printf ("\tscan area %p-%p (%d).\n", stack_limit, real_frame_start, (int)(real_frame_start - stack_limit)));
 			mono_gc_conservatively_scan_area (stack_limit, real_frame_start);
+			stats.scanned_other += real_frame_start - stack_limit;
 		}
 
 		/* Mark stack slots */
@@ -928,6 +931,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	if (stack_limit < stack_end) {
 		DEBUG (printf ("\tscan remaining stack %p-%p (%d).\n", stack_limit, stack_end, (int)(stack_end - stack_limit)));
 		mono_gc_conservatively_scan_area (stack_limit, stack_end);
+		stats.scanned_native += stack_end - stack_limit;
 	}
 
 	DEBUG (printf ("Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
@@ -2261,6 +2265,10 @@ mini_gc_init (void)
 
 	mono_counters_register ("Stack space scanned (all)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_stacks);
+	mono_counters_register ("Stack space scanned (native)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_native);
+	mono_counters_register ("Stack space scanned (other)",
+							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned_other);
 	mono_counters_register ("Stack space scanned (using GC Maps)",
 							MONO_COUNTER_GC | MONO_COUNTER_INT, &stats.scanned);
 	mono_counters_register ("Stack space scanned (precise)",
