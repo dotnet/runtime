@@ -3206,6 +3206,8 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 		int len;
 		MonoTypeEnum def_type;
 		
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+			continue;
 		if (strcmp ("value__", mono_field_get_name (field)) == 0)
 			continue;
 		if (mono_field_is_deleted (field))
