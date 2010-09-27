@@ -1079,6 +1079,8 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	code = mono_arch_create_generic_trampoline (tramp_type, &info, FALSE);
 	if (info) {
 		mono_save_trampoline_xdebug_info (info);
+		if (mono_jit_map_is_enabled ())
+			mono_emit_jit_tramp (info->code, info->code_size, info->name);
 		mono_tramp_info_free (info);
 	}
 
@@ -1205,6 +1207,8 @@ mono_create_generic_class_init_trampoline (void)
 
 			if (info) {
 				mono_save_trampoline_xdebug_info (info);
+				if (mono_jit_map_is_enabled ())
+					mono_emit_jit_tramp (info->code, info->code_size, info->name);
 				mono_tramp_info_free (info);
 			}
 		}
@@ -1383,6 +1387,8 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, FALSE);
 	if (info) {
 		mono_save_trampoline_xdebug_info (info);
+		if (mono_jit_map_is_enabled ())
+			mono_emit_jit_tramp (info->code, info->code_size, info->name);
 		mono_tramp_info_free (info);
 	}
 	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
@@ -1426,6 +1432,8 @@ mono_create_monitor_enter_trampoline (void)
 		code = mono_arch_create_monitor_enter_trampoline (&info, FALSE);
 		if (info) {
 			mono_save_trampoline_xdebug_info (info);
+			if (mono_jit_map_is_enabled ())
+				mono_emit_jit_tramp (info->code, info->code_size, info->name);
 			mono_tramp_info_free (info);
 		}
 	}
@@ -1458,6 +1466,8 @@ mono_create_monitor_exit_trampoline (void)
 		code = mono_arch_create_monitor_exit_trampoline (&info, FALSE);
 		if (info) {
 			mono_save_trampoline_xdebug_info (info);
+			if (mono_jit_map_is_enabled ())
+				mono_emit_jit_tramp (info->code, info->code_size, info->name);
 			mono_tramp_info_free (info);
 		}
 	}
