@@ -5506,6 +5506,15 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		g_free (buff);
 	}
 #endif
+	if (mono_jit_map_is_enabled ()) {
+		char *buff;
+		if (vtable)
+			buff = g_strdup_printf ("imt_%s_%s_entries_%d", vtable->klass->name_space, vtable->klass->name, count);
+		else
+			buff = g_strdup_printf ("imt_thunk_entries_%d", count);
+		mono_emit_jit_tramp (start, code - start, buff);
+		g_free (buff);
+	}
 
 	return start;
 }
@@ -5800,6 +5809,17 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 
 	if (code_len)
 		*code_len = code - start;
+
+	if (mono_jit_map_is_enabled ()) {
+		char *buff;
+		if (has_target)
+			buff = (char*)"delegate_invoke_has_target";
+		else
+			buff = g_strdup_printf ("delegate_invoke_no_target_%d", param_count);
+		mono_emit_jit_tramp (start, code - start, buff);
+		if (!has_target)
+			g_free (buff);
+	}
 
 	return start;
 }

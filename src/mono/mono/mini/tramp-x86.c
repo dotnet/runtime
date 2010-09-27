@@ -509,6 +509,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (NULL);
 	}
 
+	if (mono_jit_map_is_enabled ()) {
+		char *buff;
+		buff = mono_get_generic_trampoline_name (tramp_type);
+		mono_emit_jit_tramp (buf, code - buf, buff);
+		g_free (buff);
+	}
+
 	return buf;
 }
 
@@ -524,6 +531,9 @@ mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("nullified_class_init_trampoline"), buf, code - buf, NULL, NULL);
+
+	if (mono_jit_map_is_enabled ())
+		mono_emit_jit_tramp (buf, code - buf, "nullified_class_init_trampoline");
 
 	return buf;
 }
@@ -649,6 +659,12 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	if (info)
 		*info = mono_tramp_info_create (mono_get_rgctx_fetch_trampoline_name (slot), buf, code - buf, ji, unwind_ops);
 
+	 if (mono_jit_map_is_enabled ()) {
+		char *buff = mono_get_rgctx_fetch_trampoline_name (slot);
+		mono_emit_jit_tramp (buf, code - buf, buff);
+		g_free (buff);
+	}
+
 	return buf;
 }
 
@@ -702,6 +718,9 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 #endif
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("generic_class_init_trampoline"), buf, code - buf, ji, unwind_ops);
+
+	if (mono_jit_map_is_enabled ())
+		mono_emit_jit_tramp (buf, code - buf, "generic_class_init_trampoline");
 
 	return buf;
 }
@@ -835,6 +854,9 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("monitor_enter_trampoline"), buf, code - buf, ji, unwind_ops);
 
+	if (mono_jit_map_is_enabled ())
+		mono_emit_jit_tramp (buf, code - buf, "monitor_enter_trampoline");
+
 	return buf;
 }
 
@@ -934,6 +956,9 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("monitor_exit_trampoline"), buf, code - buf, ji, unwind_ops);
 
+	if (mono_jit_map_is_enabled ())
+		mono_emit_jit_tramp (buf, code - buf, "monitor_exit_trampoline");
+
 	return buf;
 }
 
@@ -999,6 +1024,9 @@ mono_arch_create_handler_block_trampoline (void)
 
 	mono_arch_flush_icache (buf, code - buf);
 	g_assert (code - buf <= tramp_size);
+
+	if (mono_jit_map_is_enabled ())
+		mono_emit_jit_tramp (buf, code - buf, "handler_block_trampoline");
 
 	return buf;
 }

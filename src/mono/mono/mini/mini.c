@@ -4727,6 +4727,13 @@ mono_emit_jit_map (MonoJitInfo *jinfo)
 		g_free (name);
 	}
 }
+
+gboolean
+mono_jit_map_is_enabled (void)
+{
+	return perf_map_file != NULL;
+}
+
 #endif
 
 static gpointer
