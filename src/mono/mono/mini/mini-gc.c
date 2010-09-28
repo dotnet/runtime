@@ -665,7 +665,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 				reg_locations [i] = new_reg_locations [i];
 
-				DEBUG (printf ("\treg %s is at location %p.\n", mono_arch_regname (i), reg_locations [i]));
+				DEBUG (printf ("\treg %s is now at location %p.\n", mono_arch_regname (i), reg_locations [i]));
 			}
 		}
 
@@ -905,7 +905,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 					 * processed.
 					 */
 					if (reg_locations [i])
-						DEBUG (printf ("\treg %s at location %p is precise.\n", mono_arch_regname (i), reg_locations [i]));
+						DEBUG (printf ("\treg %s at location %p (==%p) is precise.\n", mono_arch_regname (i), reg_locations [i], (gpointer)*reg_locations [i]));
 					reg_locations [i] = NULL;
 				}
 			}
@@ -1513,30 +1513,36 @@ process_variables (MonoCompile *cfg)
 			if (ins->backend.is_pinvoke)
 				pin = TRUE;
 
+			if (cfg->verbose_level > 1)
+				printf ("\tvtype R%d at fp+0x%x-0x%x: %s\n", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / sizeof (mgreg_t))), mono_type_full_name (ins->inst_vtype));
+
 			if (bitmap) {
-				if (pc_offsets [vmv->vreg]) {
-					for (cindex = 0; cindex < gcfg->ncallsites; ++cindex) {
-						if (gcfg->callsites [cindex]->pc_offset > pc_offsets [vmv->vreg]) {
-							for (j = 0; j < numbits; ++j) {
-								if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
-									/* The descriptor is for the boxed object */
-									set_slot (gcfg, (pos + j - (sizeof (MonoObject) / sizeof (gpointer))), cindex, pin ? SLOT_PIN : SLOT_REF);
-								}
+				for (cindex = 0; cindex < gcfg->ncallsites; ++cindex) {
+					if (gcfg->callsites [cindex]->pc_offset > pc_offsets [vmv->vreg]) {
+						for (j = 0; j < numbits; ++j) {
+							if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
+								/* The descriptor is for the boxed object */
+								set_slot (gcfg, (pos + j - (sizeof (MonoObject) / sizeof (gpointer))), cindex, pin ? SLOT_PIN : SLOT_REF);
 							}
 						}
 					}
 				}
-			} else if (pin) {
+
+				if (cfg->verbose_level > 1) {
+					for (j = 0; j < numbits; ++j) {
+						if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD)))
+							printf ("\t\t%s slot at 0x%x(fp) (slot = %d)\n", pin ? "pin" : "ref", (int)(ins->inst_offset + (j * sizeof (mgreg_t))), (int)(pos + j - (sizeof (MonoObject) / sizeof (gpointer))));
+					}
+				}
+			} else {
+				if (cfg->verbose_level > 1)
+					printf ("\t\tpinned\n");
 				for (j = 0; j < size_in_slots; ++j) {
 					set_slot_everywhere (gcfg, pos + j, SLOT_PIN);
 				}
 			}
 
 			g_free (bitmap);
-
-			if (cfg->verbose_level > 1) {
-				printf ("\tvtype R%d at fp+0x%x-0x%x: %s\n", vmv->vreg, (int)ins->inst_offset, (int)(ins->inst_offset + (size / sizeof (mgreg_t))), mono_type_full_name (ins->inst_vtype));
-			}
 
 			continue;
 		}
