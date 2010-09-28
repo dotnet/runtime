@@ -1421,41 +1421,24 @@ process_variables (MonoCompile *cfg)
 			hreg = ins->dreg;
 			g_assert (hreg < MONO_MAX_IREGS);
 
-			// FIXME: Add back this check
-#if 0
-			if (is_arg && gcfg->reg_live_intervals [hreg]) {
-				/* 
-				 * FIXME: This argument shares a hreg with a local, we can't add the whole
-				 * method as a live interval, since it would overlap with the locals
-				 * live interval.
-				 */
-				continue;
-			}
-#endif
-
 			if (byref)
 				slot_type = SLOT_PIN;
 			else
 				slot_type = MONO_TYPE_IS_REFERENCE (t) ? SLOT_REF : SLOT_NOREF;
 
-			if (is_arg) {
-				/* Live for the whole method */
+			if (slot_type == SLOT_PIN) {
+				/* These have no live interval, be conservative */
 				set_reg_slot_everywhere (gcfg, hreg, slot_type);
 			} else {
-				if (slot_type == SLOT_PIN) {
-					/* These have no live interval, be conservative */
-					set_reg_slot_everywhere (gcfg, hreg, slot_type);
-				} else {
-					/*
-					 * Unlike variables allocated to the stack, we generate liveness info
-					 * for noref vars in registers in mono_spill_global_vars (), because
-					 * knowing that a register doesn't contain a ref allows us to mark its save
-					 * locations precisely.
-					 */
-					for (cindex = 0; cindex < gcfg->ncallsites; ++cindex)
-						if (gcfg->callsites [cindex]->liveness [i / 8] & (1 << (i % 8)))
-							set_reg_slot (gcfg, hreg, cindex, slot_type);
-				}
+				/*
+				 * Unlike variables allocated to the stack, we generate liveness info
+				 * for noref vars in registers in mono_spill_global_vars (), because
+				 * knowing that a register doesn't contain a ref allows us to mark its save
+				 * locations precisely.
+				 */
+				for (cindex = 0; cindex < gcfg->ncallsites; ++cindex)
+					if (gcfg->callsites [cindex]->liveness [i / 8] & (1 << (i % 8)))
+						set_reg_slot (gcfg, hreg, cindex, slot_type);
 			}
 
 			if (cfg->verbose_level > 1) {
