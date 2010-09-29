@@ -73,6 +73,14 @@ typedef struct {
 #define DEBUG(s)
 #endif
 
+#ifdef DEBUG_ENABLED
+//#if 1
+#define DEBUG_PRECISE(s) do { s; } while (0)
+#define DEBUG_PRECISE_ENABLED
+#else
+#define DEBUG_PRECISE(s)
+#endif
+
 #if 1
 #define DEBUG_GC_MAP(s) do { s; fflush (stdout); } while (0)
 #else
@@ -93,7 +101,7 @@ typedef struct {
 	int nreg_locations;
 	/* Relative to stack_start */
 	int reg_locations [MONO_MAX_IREGS];
-#ifdef DEBUG_ENABLED
+#ifdef DEBUG_PRECISE_ENABLED
 	MonoJitInfo *ji;
 	gpointer fp;
 	int regs [MONO_MAX_IREGS];
@@ -615,6 +623,9 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	FrameInfo *fi;
 	guint32 precise_regmask;
 
+	if (tls)
+		tls->nframes = 0;
+
 	/* tls == NULL can happen during startup */
 	if (mono_thread_internal_current () == NULL || !tls) {
 		mono_gc_conservatively_scan_area (stack_start, stack_end);
@@ -644,8 +655,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 	memset (reg_locations, 0, sizeof (reg_locations));
 	memset (new_reg_locations, 0, sizeof (new_reg_locations));
-
-	tls->nframes = 0;
 
 	while (TRUE) {
 		memcpy (&ctx, &new_ctx, sizeof (ctx));
@@ -871,8 +880,8 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			fi->bitmap = NULL;
 		fi->frame_start_offset = frame_start - stack_start;
 		fi->nreg_locations = 0;
-		DEBUG (fi->ji = ji);
-		DEBUG (fi->fp = fp);
+		DEBUG_PRECISE (fi->ji = ji);
+		DEBUG_PRECISE (fi->fp = fp);
 
 		if (map->has_ref_regs) {
 			int bitmap_width = ALIGN_TO (map->nref_regs, 8) / 8;
@@ -883,7 +892,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 					continue;
 
 				if (reg_locations [i] && (ref_bitmap [bindex / 8] & (1 << (bindex % 8)))) {
-					DEBUG (fi->regs [fi->nreg_locations] = i);
+					DEBUG_PRECISE (fi->regs [fi->nreg_locations] = i);
 					DEBUG (printf ("\treg %s saved at 0x%p is ref.\n", mono_arch_regname (i), reg_locations [i]));
 					fi->reg_locations [fi->nreg_locations] = (guint8*)reg_locations [i] - stack_start;
 					fi->nreg_locations ++;
@@ -1029,7 +1038,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				*ptr = mono_gc_scan_object (obj);
 				DEBUG (printf (" %p.\n", *ptr));
 			} else {
-				DEBUG (printf ("\treg %s saved at %p: %p", mono_arch_regname (fi->regs [i]), ptr, obj));
+				DEBUG (printf ("\treg %s saved at %p: %p\n", mono_arch_regname (fi->regs [i]), ptr, obj));
 			}
 		}	
 	}
@@ -1047,7 +1056,9 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 {
 	TlsData *tls = user_data;
 
-	DEBUG (printf ("*** %s stack marking %p-%p ***\n", precise ? "Precise" : "Conservative", stack_start, stack_end));
+	DEBUG (printf ("****************************************\n"));
+	DEBUG (printf ("*** %s stack marking for thread %p (%p-%p) ***\n", precise ? "Precise" : "Conservative", GUINT_TO_POINTER (tls->tid), stack_start, stack_end));
+	DEBUG (printf ("****************************************\n"));
 
 	if (!precise)
 		conservative_pass (tls, stack_start, stack_end);
