@@ -708,6 +708,9 @@ static MonoGCCallbacks gc_callbacks;
 static void *moved_objects [MOVED_OBJECTS_NUM];
 static int moved_objects_idx = 0;
 
+/* Vtable of the objects used to fill out nursery fragments before a collection */
+static MonoVTable *array_fill_vtable;
+
 /*
  * ######################################################################
  * ########  Macros and function declarations.
@@ -1243,15 +1246,23 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 	}
 }
 
+static void
+clear_current_nursery_fragment (char *next)
+{
+	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+		g_assert (next <= nursery_frag_real_end);
+		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", next, nursery_frag_real_end));
+		memset (next, 0, nursery_frag_real_end - next);
+	}
+}
+
 /* Clear all remaining nursery fragments */
 static void
 clear_nursery_fragments (char *next)
 {
 	Fragment *frag;
 	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
-		g_assert (next <= nursery_frag_real_end);
-		DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", next, nursery_frag_real_end));
-		memset (next, 0, nursery_frag_real_end - next);
+		clear_current_nursery_fragment (next);
 		for (frag = nursery_fragments; frag; frag = frag->next) {
 			DEBUG (4, fprintf (gc_debug_file, "Clear nursery frag %p-%p\n", frag->fragment_start, frag->fragment_end));
 			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
@@ -1640,6 +1651,31 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 	void *addr;
 	int idx;
 	void **definitely_pinned = start;
+	Fragment *frag;
+
+	/*
+	 * The code below starts the search from an entry in scan_starts, which might point into a nursery
+	 * fragment containing random data. Clearing the nursery fragments takes a lot of time, and searching
+	 * though them too, so lay arrays at each location inside a fragment where a search can start:
+	 * - scan_locations[i]
+	 * - start_nursery
+	 * - the start of each fragment (the last_obj + last_obj case)
+	 * The third encompasses the first two, since scan_locations [i] can't point inside a nursery fragment.
+	 */
+	for (frag = nursery_fragments; frag; frag = frag->next) {
+		MonoArray *o;
+
+		g_assert (frag->fragment_end - frag->fragment_start >= sizeof (MonoArray));
+		o = (MonoArray*)frag->fragment_start;
+		memset (o, 0, sizeof (MonoArray));
+		g_assert (array_fill_vtable);
+		o->obj.vtable = array_fill_vtable;
+		/* Mark this as not a real object */
+		o->obj.synchronisation = GINT_TO_POINTER (-1);
+		o->max_length = (frag->fragment_end - frag->fragment_start) - sizeof (MonoArray);
+		g_assert (frag->fragment_start + safe_object_get_size ((MonoObject*)o) == frag->fragment_end);
+	}
+
 	while (start < end) {
 		addr = *start;
 		/* the range check should be reduntant */
@@ -1668,24 +1704,38 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 			/* now addr should be in an object a short distance from search_start
 			 * Note that search_start must point to zeroed mem or point to an object.
 			 */
+
 			do {
 				if (!*(void**)search_start) {
+					/* Consistency check */
+					/*
+					for (frag = nursery_fragments; frag; frag = frag->next) {
+						if (search_start >= frag->fragment_start && search_start < frag->fragment_end)
+							g_assert_not_reached ();
+					}
+					*/
+
 					search_start = (void*)ALIGN_UP ((mword)search_start + sizeof (gpointer));
 					continue;
 				}
 				last_obj = search_start;
 				last_obj_size = ALIGN_UP (safe_object_get_size ((MonoObject*)search_start));
-				DEBUG (8, fprintf (gc_debug_file, "Pinned try match %p (%s), size %zd\n", last_obj, safe_name (last_obj), last_obj_size));
-				if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
-					DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
-					binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
-					pin_object (search_start);
-					GRAY_OBJECT_ENQUEUE (queue, search_start);
-					if (heap_dump_file)
-						mono_sgen_pin_stats_register_object (search_start, last_obj_size);
-					definitely_pinned [count] = search_start;
-					count++;
-					break;
+
+				if (((MonoObject*)last_obj)->synchronisation == GINT_TO_POINTER (-1)) {
+					/* Marks the beginning of a nursery fragment, skip */
+				} else {
+					DEBUG (8, fprintf (gc_debug_file, "Pinned try match %p (%s), size %zd\n", last_obj, safe_name (last_obj), last_obj_size));
+					if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
+						DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
+						binary_protocol_pin (search_start, (gpointer)LOAD_VTABLE (search_start), safe_object_get_size (search_start));
+						pin_object (search_start);
+						GRAY_OBJECT_ENQUEUE (queue, search_start);
+						if (heap_dump_file)
+							mono_sgen_pin_stats_register_object (search_start, last_obj_size);
+						definitely_pinned [count] = search_start;
+						count++;
+						break;
+					}
 				}
 				/* skip to the next object */
 				search_start = (void*)((char*)search_start + last_obj_size);
@@ -2600,8 +2650,8 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (all_atv);
 	atv = all_atv;
 
-	/* Pinning depends on this */
-	clear_nursery_fragments (orig_nursery_next);
+	/* Pinning no longer depends on clearing all nursery fragments */
+	clear_current_nursery_fragment (orig_nursery_next);
 
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
@@ -3117,9 +3167,10 @@ search_fragment_for_size (size_t size)
 	Fragment *frag, *prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, size: %zd\n", nursery_frag_real_end, size));
 
-	if (nursery_frag_real_end > nursery_next && nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+	if (nursery_frag_real_end > nursery_next && nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 		/* Clear the remaining space, pinning depends on this */
 		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
+	}
 
 	prev = NULL;
 	for (frag = nursery_fragments; frag; frag = frag->next) {
@@ -3142,9 +3193,10 @@ search_fragment_for_size_range (size_t desired_size, size_t minimum_size)
 	Fragment *frag, *prev, *min_prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, desired size: %zd minimum size %zd\n", nursery_frag_real_end, desired_size, minimum_size));
 
-	if (nursery_frag_real_end > nursery_next && nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+	if (nursery_frag_real_end > nursery_next && nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 		/* Clear the remaining space, pinning depends on this */
 		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
+	}
 
 	min_prev = GINT_TO_POINTER (-1);
 	prev = NULL;
@@ -3324,8 +3376,9 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					g_assert (0);
 				}
 
-				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 					memset (p, 0, size);
+				}
 			} else {
 				int alloc_size = tlab_size;
 				int available_in_nursery = nursery_frag_real_end - nursery_next;
@@ -3356,8 +3409,9 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 				TLAB_REAL_END = TLAB_START + alloc_size;
 				TLAB_TEMP_END = TLAB_START + MIN (SCAN_START_SIZE, alloc_size);
 
-				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
 					memset (TLAB_START, 0, alloc_size);
+				}
 
 				/* Allocate from the TLAB */
 				p = (void*)TLAB_NEXT;
@@ -5354,6 +5408,12 @@ mono_gc_register_thread (void *baseptr)
 	if (info == NULL)
 		info = gc_register_current_thread (baseptr);
 	UNLOCK_GC;
+
+	/* Need a better place to initialize this */
+	if (!array_fill_vtable && mono_get_root_domain ()) {
+		array_fill_vtable = mono_class_vtable (mono_get_root_domain (), mono_array_class_get (mono_defaults.byte_class, 1));
+	}
+
 	return info != NULL;
 }
 
