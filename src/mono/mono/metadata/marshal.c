@@ -3796,7 +3796,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	if (callvirt)
 		closed_over_null = sig->param_count == mono_method_signature (del->method)->param_count;
 
-	if (del->method && mono_method_signature (del->method)->param_count == sig->param_count + 1 && (del->method->flags & METHOD_ATTRIBUTE_STATIC)) {
+	if (del && del->method && mono_method_signature (del->method)->param_count == sig->param_count + 1 && (del->method->flags & METHOD_ATTRIBUTE_STATIC)) {
 		invoke_sig = mono_method_signature (del->method);
 		target_method = del->method;
 		static_method_with_first_arg_bound = TRUE;
