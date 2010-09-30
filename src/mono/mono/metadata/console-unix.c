@@ -200,13 +200,15 @@ terminal_get_dimensions (void)
 static void
 tty_teardown (void)
 {
+	int unused;
+
 	MONO_ARCH_SAVE_REGS;
 
 	if (!setup_finished)
 		return;
 
 	if (teardown_str != NULL) {
-		write (STDOUT_FILENO, teardown_str, strlen (teardown_str));
+		unused = write (STDOUT_FILENO, teardown_str, strlen (teardown_str));
 		g_free (teardown_str);
 		teardown_str = NULL;
 	}
@@ -278,11 +280,12 @@ static struct sigaction save_sigcont, save_sigint, save_sigwinch;
 static void
 sigcont_handler (int signo, void *the_siginfo, void *data)
 {
+	int unused;
 	// Ignore error, there is not much we can do in the sigcont handler.
 	tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr);
 
 	if (keypad_xmit_str != NULL)
-		write (STDOUT_FILENO, keypad_xmit_str, strlen (keypad_xmit_str));
+		unused = write (STDOUT_FILENO, keypad_xmit_str, strlen (keypad_xmit_str));
 
 	// Call previous handler
 	if (save_sigcont.sa_sigaction != NULL &&

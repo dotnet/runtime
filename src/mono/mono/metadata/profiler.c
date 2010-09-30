@@ -1667,11 +1667,12 @@ try_addr2line (const char* binary, gpointer ip)
 	/* we first get the func name and then file:lineno in a second line */
 	if (fgets (buf, sizeof (buf), addr2line->pipeout) && buf [0] != '?') {
 		char *end = strchr (buf, '\n');
+		char *unused;
 		if (end)
 			*end = 0;
 		res = g_strdup_printf ("%s(%s", binary, buf);
 		/* discard the filename/line info */
-		fgets (buf, sizeof (buf), addr2line->pipeout);
+		unused = fgets (buf, sizeof (buf), addr2line->pipeout);
 	} else {
 		res = g_strdup (binary);
 	}
