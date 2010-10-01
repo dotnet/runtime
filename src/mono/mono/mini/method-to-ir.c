@@ -2933,10 +2933,9 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 		return vtable_var;
 	} else {
 		MonoInst *ins;
-		int vtable_reg, res_reg;
+		int vtable_reg;
 	
 		vtable_reg = alloc_preg (cfg);
-		res_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, vtable_reg, this->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
 		return ins;
 	}
@@ -3207,7 +3206,7 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 		reset_cast_details (cfg);
 	}
 
-	NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_PTR), obj_reg, sizeof (MonoObject));
+	NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), obj_reg, sizeof (MonoObject));
 	MONO_ADD_INS (cfg->cbb, add);
 	add->type = STACK_MP;
 	add->klass = klass;
@@ -3469,7 +3468,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 	MonoBasicBlock *is_null_bb, *false_bb, *end_bb;
 	int obj_reg = src->dreg;
 	int vtable_reg = alloc_preg (cfg);
-	int res_reg = alloc_preg (cfg);
+	int res_reg = alloc_ireg_ref (cfg);
 	MonoInst *klass_inst = NULL;
 
 	if (context_used) {
@@ -4106,7 +4105,7 @@ static MonoInst*
 mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index_ins1, MonoInst *index_ins2)
 {
 	int bounds_reg = alloc_preg (cfg);
-	int add_reg = alloc_preg (cfg);
+	int add_reg = alloc_ireg_mp (cfg);
 	int mult_reg = alloc_preg (cfg);
 	int mult2_reg = alloc_preg (cfg);
 	int low1_reg = alloc_preg (cfg);
@@ -4332,7 +4331,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass == mono_defaults.object_class) {
 
 		if (strcmp (cmethod->name, "GetType") == 0) {
-			int dreg = alloc_preg (cfg);
+			int dreg = alloc_ireg_ref (cfg);
 			int vt_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, vt_reg, G_STRUCT_OFFSET (MonoVTable, type));
@@ -4367,7 +4366,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		 */
 		if ((strcmp (cmethod->name, "GetLength") == 0 || strcmp (cmethod->name, "GetLowerBound") == 0) && args [1]->opcode == OP_ICONST && args [1]->inst_c0 == 0) {
 			int dreg = alloc_ireg (cfg);
-			int bounds_reg = alloc_ireg (cfg);
+			int bounds_reg = alloc_ireg_mp (cfg);
 			MonoBasicBlock *end_bb, *szarray_bb;
 			gboolean get_length = strcmp (cmethod->name, "GetLength") == 0;
 
@@ -4598,7 +4597,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				return NULL;
 
 			MONO_INST_NEW (cfg, ins, opcode);
-			ins->dreg = mono_alloc_ireg (cfg);
+			ins->dreg = is_ref ? mono_alloc_ireg_ref (cfg) : mono_alloc_ireg (cfg);
 			ins->inst_basereg = args [0]->dreg;
 			ins->inst_offset = 0;
 			ins->sreg2 = args [1]->dreg;
@@ -4636,7 +4635,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				size = 8;
 			if (size == 4) {
 				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I4);
-				ins->dreg = alloc_ireg (cfg);
+				ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
 				ins->sreg2 = args [1]->dreg;
 				ins->sreg3 = args [2]->dreg;
@@ -4644,7 +4643,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, ins);
 			} else if (size == 8) {
 				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I8);
-				ins->dreg = alloc_ireg (cfg);
+				ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
 				ins->sreg2 = args [1]->dreg;
 				ins->sreg3 = args [2]->dreg;
@@ -6641,7 +6640,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call));
 					CHECK_CFG_EXCEPTION;
 				} else if (!constrained_call->valuetype) {
-					int dreg = alloc_preg (cfg);
+					int dreg = alloc_ireg_ref (cfg);
 
 					/*
 					 * The type parameter is instantiated as a reference
@@ -7722,7 +7721,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 2;
 			if (generic_class_is_reference_type (cfg, klass)) {
 				MonoInst *store, *load;
-				int dreg = alloc_preg (cfg);
+				int dreg = alloc_ireg_ref (cfg);
 
 				NEW_LOAD_MEMBASE (cfg, load, OP_LOAD_MEMBASE, dreg, sp [1]->dreg, 0);
 				load->flags |= ins_flag;
@@ -8520,7 +8519,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoInst *ptr;
 					int dreg;
 
-					dreg = alloc_preg (cfg);
+					dreg = alloc_ireg_mp (cfg);
 					EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
 					emit_write_barrier (cfg, ptr, sp [1], -1);
 				}
@@ -8578,7 +8577,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
 					}
 
-					dreg = alloc_preg (cfg);
+					dreg = alloc_ireg_mp (cfg);
 
 					EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
 					ins->klass = mono_class_from_mono_type (field->type);
@@ -9021,7 +9020,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((cfg->opt & MONO_OPT_INTRINS) && ip + 6 < end && ip_in_bb (cfg, bblock, ip + 6) && (len_ins->opcode == OP_ICONST) && (data_ptr = initialize_array_data (method, cfg->compile_aot, ip, klass, len_ins->inst_c0, &data_size, &field_token))) {
 				MonoMethod *memcpy_method = get_memcpy_method ();
 				MonoInst *iargs [3];
-				int add_reg = alloc_preg (cfg);
+				int add_reg = alloc_ireg_mp (cfg);
 
 				EMIT_NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, add_reg, ins->dreg, G_STRUCT_OFFSET (MonoArray, vector));
 				if (cfg->compile_aot) {
@@ -9042,7 +9041,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			dreg = alloc_preg (cfg);
 			MONO_INST_NEW (cfg, ins, OP_LDLEN);
 			ins->dreg = alloc_preg (cfg);
 			ins->sreg1 = sp [0]->dreg;
@@ -9703,7 +9701,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				--sp;
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
-				ins->dreg = alloc_preg (cfg);
+				ins->dreg = alloc_ireg_mp (cfg);
 				ins->sreg1 = sp [0]->dreg;
 				ins->type = STACK_MP;
 				MONO_ADD_INS (cfg->cbb, ins);

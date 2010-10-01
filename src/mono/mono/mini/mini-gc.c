@@ -123,6 +123,7 @@ typedef struct {
 	MonoJitTlsData *jit_tls;
 	/* For debugging */
 	guint64 tid;
+	gpointer ref_to_track;
 	/* Number of frames collected during the !precise pass */
 	int nframes;
 	FrameInfo frames [MAX_FRAMES];
@@ -623,8 +624,10 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	FrameInfo *fi;
 	guint32 precise_regmask;
 
-	if (tls)
+	if (tls) {
 		tls->nframes = 0;
+		tls->ref_to_track = NULL;
+	}
 
 	/* tls == NULL can happen during startup */
 	if (mono_thread_internal_current () == NULL || !tls) {
@@ -695,6 +698,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		}
 
 		ji = frame.ji;
+		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 
 		/* This happens with native-to-managed transitions */
 		if (!(MONO_CONTEXT_GET_IP (&ctx) >= ji->code_start && (guint8*)MONO_CONTEXT_GET_IP (&ctx) < (guint8*)ji->code_start + ji->code_size))
@@ -728,7 +732,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		 * - spill area
 		 * - localloc-ed memory
 		 */
-		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 		g_assert (pc_offset >= 0);
 
 		emap = ji->gc_info;
@@ -1041,6 +1044,17 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				DEBUG (printf ("\treg %s saved at %p: %p\n", mono_arch_regname (fi->regs [i]), ptr, obj));
 			}
 		}	
+	}
+
+	/*
+	 * Debugging aid to check for missed refs.
+	 */
+	if (tls->ref_to_track) {
+		mgreg_t *p;
+
+		for (p = (mgreg_t*)stack_start; p < (mgreg_t*)stack_end; ++p)
+			if (*p == (mgreg_t)tls->ref_to_track)
+				printf ("REF AT %p.\n", p);
 	}
 }
 
