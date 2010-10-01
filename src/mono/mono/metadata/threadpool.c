@@ -1254,8 +1254,8 @@ mono_thread_pool_init ()
 #endif
 }
 
-void
-icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
+static MonoAsyncResult *
+create_simple_asyncresult (MonoObject *target, MonoObject *state)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoAsyncResult *ares;
@@ -1264,6 +1264,15 @@ icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
 	ares = (MonoAsyncResult *) mono_object_new (domain, mono_defaults.asyncresult_class);
 	MONO_OBJECT_SETREF (ares, async_delegate, target);
 	MONO_OBJECT_SETREF (ares, async_state, state);
+	return ares;
+}
+
+void
+icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
+{
+	MonoAsyncResult *ares;
+
+	ares = create_simple_asyncresult (target, (MonoObject *) state);
 	socket_io_add (ares, state);
 }
 
@@ -1828,6 +1837,7 @@ async_invoke_thread (gpointer data)
 	for (;;) {
 		MonoAsyncResult *ar;
 		gboolean is_io_task;
+		gboolean is_socket;
 		int n_naps = 0;
 
 		is_io_task = FALSE;
@@ -1836,8 +1846,10 @@ async_invoke_thread (gpointer data)
 			InterlockedIncrement (&tp->busy_threads);
 #ifndef DISABLE_SOCKETS
 			is_io_task = (strcmp (((MonoObject *) data)->vtable->klass->name, "AsyncResult"));
+			is_socket = FALSE;
 			if (is_io_task) {
 				MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
+				is_socket = (is_io_task && !strcmp (((MonoObject *) data)->vtable->klass->name, "SocketAsyncResult"));
 				ar = state->ares;
 				switch (state->operation) {
 				case AIO_OP_RECEIVE:
@@ -1894,6 +1906,16 @@ async_invoke_thread (gpointer data)
 						if (!unloaded && klass != mono_defaults.threadabortexception_class) {
 							mono_unhandled_exception (exc);
 							exit (255);
+						}
+					}
+					if (is_socket && tp->is_io) {
+						MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
+
+						if (state->completed && state->callback) {
+							MonoAsyncResult *cb_ares;
+							cb_ares = create_simple_asyncresult ((MonoObject *) state->callback,
+												(MonoObject *) state);
+							icall_append_job ((MonoObject *) cb_ares);
 						}
 					}
 					mono_domain_set (mono_get_root_domain (), TRUE);
