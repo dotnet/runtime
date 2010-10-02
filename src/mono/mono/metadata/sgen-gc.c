@@ -242,8 +242,8 @@ enum {
  */
 
 static int gc_initialized = 0;
-/* If set, do a minor collection before every allocation */
-static gboolean collect_before_allocs = FALSE;
+/* If set, do a minor collection before every X allocation */
+static guint32 collect_before_allocs = 0;
 /* If set, do a heap consistency check before each minor collection */
 static gboolean consistency_check_at_minor_collection = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
@@ -3594,13 +3594,16 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	g_assert (vtable->gc_descr);
 
 	if (G_UNLIKELY (collect_before_allocs)) {
-		if (nursery_section) {
+		static int alloc_count;
+
+		InterlockedIncrement (&alloc_count);
+		if (((alloc_count % collect_before_allocs) == 0) && nursery_section) {
 			mono_profiler_gc_event (MONO_GC_EVENT_START, 0);
 			stop_world (0);
 			collect_nursery (0);
 			restart_world (0);
 			mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
-			if (!degraded_mode && !search_fragment_for_size (size)) {
+			if (!degraded_mode && !search_fragment_for_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
 				// FIXME:
 				g_assert_not_reached ();
 			}
@@ -7043,7 +7046,10 @@ mono_gc_base_init (void)
 					g_free (rf);
 				}
 			} else if (!strcmp (opt, "collect-before-allocs")) {
-				collect_before_allocs = TRUE;
+				collect_before_allocs = 1;
+			} else if (g_str_has_prefix (opt, "collect-before-allocs=")) {
+				char *arg = strchr (opt, '=') + 1;
+				collect_before_allocs = atoi (arg);
 			} else if (!strcmp (opt, "check-at-minor-collections")) {
 				consistency_check_at_minor_collection = TRUE;
 				nursery_clear_policy = CLEAR_AT_GC;
@@ -7071,7 +7077,7 @@ mono_gc_base_init (void)
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
-				fprintf (stderr, "Valid options are: collect-before-allocs, check-at-minor-collections, xdomain-checks, clear-at-gc, conservative-stack-mark.\n");
+				fprintf (stderr, "Valid options are: collect-before-allocs[=<n>], check-at-minor-collections, xdomain-checks, clear-at-gc, conservative-stack-mark.\n");
 				exit (1);
 			}
 		}
