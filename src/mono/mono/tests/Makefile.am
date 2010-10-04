@@ -376,13 +376,17 @@ TEST_CS_SRC_DIST=	\
 	async-exc-compilation.cs \
 	filter-stack.cs
 
+TEST_CS_SRC_GEN = \
+	runtime-invoke.gen.cs \
+	imt_big_iface_test.cs
+
 if AMD64
-TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs
 else
 if X86
-TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs
 else
-TEST_CS_SRC = $(BASE_TEST_CS_SRC)
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN)
 endif
 endif
 
@@ -550,7 +554,7 @@ endif
 
 # test_messages fails on the buildbots
 #test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
-test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test-runtime-invoke test-imt-big-iface test_2_1 test-process-exit
+test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -672,18 +676,14 @@ test-type-load: TestDriver.dll
 
 # Generated tests for runtime invoke
 EXTRA_DIST += gen-runtime-invoke.cs
-test-runtime-invoke: TestDriver.dll gen-runtime-invoke.exe
-	@$(RUNTIME) gen-runtime-invoke.exe > runtime-invoke.gen.cs
-	@$(MCS) -out:runtime-invoke.gen.exe -r:TestDriver.dll runtime-invoke.gen.cs
-	@echo "Testing runtime-invoke.gen.exe..."
-	@$(RUNTIME) runtime-invoke.gen.exe > runtime-invoke.gen.exe.stdout 2> runtime-invoke.gen.exe.stderr
+runtime-invoke.gen.exe: TestDriver.dll gen-runtime-invoke.exe
+	$(RUNTIME) gen-runtime-invoke.exe > runtime-invoke.gen.cs
+	$(MCS) -out:runtime-invoke.gen.exe -r:TestDriver.dll runtime-invoke.gen.cs
 
 EXTRA_DIST += make-imt-test.cs
-test-imt-big-iface: TestDriver.dll make-imt-test.exe
-	@$(RUNTIME) make-imt-test.exe > imt_big_iface_test.cs
-	@$(MCS) -out:imt_big_iface_test.exe -r:TestDriver.dll imt_big_iface_test.cs
-	@echo "Testing imt_big_iface_test.exe..."
-	@$(RUNTIME) imt_big_iface_test.exe > imt_big_iface_test.exe.stdout 2> imt_big_iface_test.exe.stderr
+imt_big_iface_test.exe: TestDriver.dll make-imt-test.exe
+	$(RUNTIME) make-imt-test.exe > imt_big_iface_test.cs
+	$(MCS) -out:imt_big_iface_test.exe -r:TestDriver.dll imt_big_iface_test.cs
 
 EXTRA_DIST += test-inline-call-stack-library.cs test-inline-call-stack.cs
 test-inline-call-stack-library.dll: TestDriver.dll $(srcdir)/test-inline-call-stack-library.cs
