@@ -1562,7 +1562,7 @@ process_variables (MonoCompile *cfg)
 						for (j = 0; j < numbits; ++j) {
 							if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD))) {
 								/* The descriptor is for the boxed object */
-								set_slot (gcfg, (pos + j - (sizeof (MonoObject) / sizeof (gpointer))), cindex, pin ? SLOT_PIN : SLOT_REF);
+								set_slot (gcfg, (pos + j - (sizeof (MonoObject) / sizeof (mgreg_t))), cindex, pin ? SLOT_PIN : SLOT_REF);
 							}
 						}
 					}
@@ -1571,7 +1571,7 @@ process_variables (MonoCompile *cfg)
 				if (cfg->verbose_level > 1) {
 					for (j = 0; j < numbits; ++j) {
 						if (bitmap [j / GC_BITS_PER_WORD] & ((gsize)1 << (j % GC_BITS_PER_WORD)))
-							printf ("\t\t%s slot at 0x%x(fp) (slot = %d)\n", pin ? "pin" : "ref", (int)(ins->inst_offset + (j * sizeof (mgreg_t))), (int)(pos + j - (sizeof (MonoObject) / sizeof (gpointer))));
+							printf ("\t\t%s slot at 0x%x(fp) (slot = %d)\n", pin ? "pin" : "ref", (int)(ins->inst_offset + (j * sizeof (mgreg_t))), (int)(pos + j - (sizeof (MonoObject) / sizeof (mgreg_t))));
 					}
 				}
 			} else {
