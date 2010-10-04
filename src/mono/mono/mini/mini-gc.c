@@ -991,6 +991,8 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		fi = &tls->frames [findex];
 		frame_start = stack_start + fi->frame_start_offset;
 
+		DEBUG (char *fname = mono_method_full_name (fi->ji->method, TRUE); fprintf (logfile, "Mark(1): %s\n", fname); g_free (fname));
+
 		/* 
 		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
 		 * call for each object.
