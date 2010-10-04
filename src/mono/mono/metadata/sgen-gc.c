@@ -1,3 +1,4 @@
+#define SGEN_BINARY_PROTOCOL 1
 /*
  * sgen-gc.c: Simple generational GC.
  *
@@ -6150,6 +6151,18 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 		g_assert (index == 0);
 		++index;
 	}
+
+
+	{
+		MonoObject *o;
+
+		o = *(gpointer*)ptr;
+		if (o)
+			g_assert (o->vtable);
+		if (o && !strcmp (o->vtable->klass->name, "ObjectIDGenerator"))
+			printf ("D: %p %p\n", ptr, o);
+	}
+
 	buffer [index] = ptr;
 	STORE_REMSET_BUFFER_INDEX = index;
 
@@ -6454,6 +6467,29 @@ find_in_remsets (char *addr)
 	return FALSE;
 }
 
+/* Check that the reference is valid */
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		if (*(ptr)) {	\
+			g_assert (safe_name (*(ptr)) != NULL);	\
+		}	\
+	} while (0)
+
+/*
+ * check_object:
+ *
+ *   Perform consistency check on an object. Currently we only check that the
+ * reference fields are valid.
+ */
+void
+check_object (char *start)
+{
+	if (!start)
+		return;
+
+#include "sgen-scan-object.h"
+}
+
 static gboolean missing_remsets;
 
 /*
@@ -6488,6 +6524,13 @@ check_consistency_callback (char *start, size_t size, void *dummy)
 #include "sgen-scan-object.h"
 }
 
+/* Just scan the object */
+static void
+check_consistency_callback2 (char *start, size_t size, void *dummy)
+{
+	check_object (start);
+}
+
 /*
  * Perform consistency check of the heap.
  *
@@ -6507,6 +6550,9 @@ check_consistency (void)
 
 	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
+	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+									   (IterateObjectCallbackFunc)check_consistency_callback2, NULL);
+
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 
 #ifdef SGEN_BINARY_PROTOCOL
@@ -6514,7 +6560,6 @@ check_consistency (void)
 #endif
 		g_assert (!missing_remsets);
 }
-
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
@@ -6534,29 +6579,6 @@ check_major_refs (void)
 {
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
 	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_major_refs_callback, NULL);
-}
-
-/* Check that the reference is valid */
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		if (*(ptr)) {	\
-			g_assert (safe_name (*(ptr)) != NULL);	\
-		}	\
-	} while (0)
-
-/*
- * check_object:
- *
- *   Perform consistency check on an object. Currently we only check that the
- * reference fields are valid.
- */
-void
-check_object (char *start)
-{
-	if (!start)
-		return;
-
-#include "sgen-scan-object.h"
 }
 
 /*
