@@ -142,6 +142,11 @@ mono_xdebug_init (char *options)
 
 	/* This file will contain the IL code for methods which don't have debug info */
 	il_file = fopen ("xdb.il", "w");
+	if (il_file == NULL) {
+		use_gdb_interface = FALSE;
+		g_warning ("** Unable to create xdb.il. Managed symbol names won't be available.");
+		return;
+	}
 
 	if (use_gdb_interface)
 		return;

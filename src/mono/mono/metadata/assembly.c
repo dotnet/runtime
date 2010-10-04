@@ -2555,6 +2555,7 @@ MonoAssembly*
 mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status)
 {
 	char *corlib_file;
+	MonoAssemblyName *aname;
 
 	if (corlib) {
 		/* g_print ("corlib already loaded\n"); */
@@ -2576,7 +2577,13 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 			return corlib;
 	}
 #endif
-	
+
+	aname = mono_assembly_name_new ("mscorlib.dll");
+	corlib = invoke_assembly_preload_hook (aname, assemblies_path);
+	mono_assembly_name_free (aname);
+	if (corlib != NULL)
+		return corlib;
+
 	if (assemblies_path) {
 		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status, FALSE);
 		if (corlib)

@@ -1607,6 +1607,7 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->delegate_end_invoke_cache);
 	free_hash (image->delegate_invoke_cache);
 	free_hash (image->delegate_abstract_invoke_cache);
+	free_hash (image->delegate_bound_static_invoke_cache);
 	if (image->remoting_invoke_cache)
 		g_hash_table_foreach (image->remoting_invoke_cache, free_remoting_wrappers, NULL);
 	free_hash (image->remoting_invoke_cache);

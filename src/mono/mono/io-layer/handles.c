@@ -124,6 +124,10 @@ struct _WapiFileShareLayout *_wapi_fileshare_layout = NULL;
  * 4MB array.
  */
 static GHashTable *file_share_hash;
+static CRITICAL_SECTION file_share_hash_mutex;
+
+#define file_share_hash_lock() EnterCriticalSection (&file_share_hash_mutex)
+#define file_share_hash_unlock() LeaveCriticalSection (&file_share_hash_mutex)
 
 guint32 _wapi_fd_reserve;
 
@@ -220,8 +224,10 @@ static void handle_cleanup (void)
 	_wapi_shm_detach (WAPI_SHM_DATA);
 	_wapi_shm_detach (WAPI_SHM_FILESHARE);
 
-	if (file_share_hash)
+	if (file_share_hash) {
 		g_hash_table_destroy (file_share_hash);
+		DeleteCriticalSection (&file_share_hash_mutex);
+	}
 
 	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
 		g_free (_wapi_private_handles [i]);
@@ -1643,9 +1649,9 @@ void
 _wapi_free_share_info (_WapiFileShare *share_info)
 {
 	if (!_wapi_shm_enabled ()) {
-		_wapi_handle_lock_shared_handles ();
+		file_share_hash_lock ();
 		g_hash_table_remove (file_share_hash, share_info);
-		_wapi_handle_unlock_shared_handles ();
+		file_share_hash_unlock ();
 	} else {
 		memset (share_info, '\0', sizeof(struct _WapiFileShare));
 	}
@@ -1697,10 +1703,15 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 		 * info. This is needed even if SHM is disabled, to track sharing inside
 		 * the current process.
 		 */
-		if (!file_share_hash)
+		if (!file_share_hash) {
 			file_share_hash = g_hash_table_new_full (wapi_share_info_hash, wapi_share_info_equal, NULL, g_free);
+			InitializeCriticalSection (&file_share_hash_mutex);
+		}
+			
 		tmp.device = device;
 		tmp.inode = inode;
+
+		file_share_hash_lock ();
 
 		file_share = g_hash_table_lookup (file_share_hash, &tmp);
 		if (file_share) {
@@ -1723,6 +1734,8 @@ gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 
 			g_hash_table_insert (file_share_hash, file_share, file_share);
 		}
+
+		file_share_hash_unlock ();
 	} else {
 		/* If a linear scan gets too slow we'll have to fit a hash
 		 * table onto the shared mem backing store

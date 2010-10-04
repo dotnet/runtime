@@ -3792,7 +3792,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_SWITCH, ins->inst_p0);
 			max_len += 4 * GPOINTER_TO_INT (ins->klass);
-			if (offset > (cfg->code_size - max_len - 16)) {
+			if (offset + max_len > (cfg->code_size - 16)) {
 				cfg->code_size += max_len;
 				cfg->code_size *= 2;
 				cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
@@ -4915,6 +4915,8 @@ exception_id_by_name (const char *name)
 		return MONO_EXC_NULL_REF;
 	if (strcmp (name, "ArrayTypeMismatchException") == 0)
 		return MONO_EXC_ARRAY_TYPE_MISMATCH;
+	if (strcmp (name, "ArgumentException") == 0)
+		return MONO_EXC_ARGUMENT;
 	g_error ("Unknown intrinsic exception %s\n", name);
 	return -1;
 }

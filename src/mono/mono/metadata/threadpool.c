@@ -212,6 +212,118 @@ enum {
 	AIO_OP_LAST
 };
 
+static MonoImage *
+get_socket_assembly (void)
+{
+	static const char *version = NULL;
+	static gboolean moonlight;
+	static MonoImage *socket_assembly = NULL;
+
+	if (version == NULL) {
+		version = mono_get_runtime_info ()->framework_version;
+		moonlight = !strcmp (version, "2.1");
+	}
+
+	if (socket_assembly == NULL)
+		socket_assembly = mono_image_loaded (moonlight ? "System.Net" : "System");
+
+	return socket_assembly;
+}
+
+/*
+ * Note that we call it is_socket_type() where 'socket' refers to the image
+ * that contains the System.Net.Sockets.Socket type.
+*/
+static gboolean
+is_socket_type (MonoClass *klass)
+{
+	return klass->image == get_socket_assembly ();
+}
+
+static gboolean
+is_system_type (MonoClass *klass)
+{
+	static MonoImage *system_image = NULL;
+
+	if (system_image == NULL)
+		system_image = mono_image_loaded ("System");
+
+	return klass->image == system_image;
+}
+
+static gboolean
+is_corlib_type (MonoClass *klass)
+{
+	return klass->image == mono_defaults.corlib;
+}
+
+#define check_type_cached(ASSEMBLY, _class, _namespace, _name) do { \
+	static MonoClass *cached_class; \
+	if (cached_class) \
+		return cached_class == _class; \
+	if (is_##ASSEMBLY##_type (_class) && !strcmp (_name, _class->name) && !strcmp (_namespace, _class->name_space)) { \
+		cached_class = _class; \
+		return TRUE; \
+	} \
+	return FALSE; \
+} while (0) \
+
+#define check_corlib_type_cached(_class, _namespace, _name) check_type_cached (corlib, _class, _namespace, _name)
+
+#define check_socket_type_cached(_class, _namespace, _name) check_type_cached (socket, _class, _namespace, _name)
+
+#define check_system_type_cached(_class, _namespace, _name) check_type_cached (system, _class, _namespace, _name)
+
+static gboolean
+is_corlib_asyncresult (MonoClass *klass)
+{
+	check_corlib_type_cached (klass, "System.Runtime.Remoting.Messaging", "AsyncResult");
+}
+
+static gboolean
+is_socket (MonoClass *klass)
+{
+	check_socket_type_cached (klass, "System.Net.Sockets", "Socket");
+}
+
+static gboolean
+is_socketasyncresult (MonoClass *klass)
+{
+	return (klass->nested_in &&
+		is_socket (klass->nested_in) &&
+		!strcmp (klass->name, "SocketAsyncResult"));
+}
+
+static gboolean
+is_socketasynccall (MonoClass *klass)
+{
+	return (klass->nested_in &&
+		is_socket (klass->nested_in) &&
+		!strcmp (klass->name, "SocketAsyncCall"));
+}
+
+static gboolean
+is_appdomainunloaded_exception (MonoClass *klass)
+{
+	check_corlib_type_cached (klass, "System", "AppDomainUnloadedException");
+}
+
+static gboolean
+is_sd_process (MonoClass *klass)
+{
+	check_system_type_cached (klass, "System.Diagnostics", "Process");
+}
+
+static gboolean
+is_sdp_asyncreadhandler (MonoClass *klass)
+{
+
+	return (klass->nested_in &&
+		is_sd_process (klass->nested_in) &&
+		!strcmp (klass->name, "AsyncReadHandler"));
+}
+
+
 #ifdef DISABLE_SOCKETS
 
 #define socket_io_cleanup(x)
@@ -942,39 +1054,23 @@ static gboolean
 socket_io_filter (MonoObject *target, MonoObject *state)
 {
 	gint op;
-	MonoSocketAsyncResult *sock_res = (MonoSocketAsyncResult *) state;
+	MonoSocketAsyncResult *sock_res;
 	MonoClass *klass;
 
 	if (target == NULL || state == NULL)
 		return FALSE;
 
-	if (socket_async_call_klass == NULL) {
-		klass = target->vtable->klass;
-		/* Check if it's SocketAsyncCall in System.Net.Sockets
-		 * FIXME: check the assembly is signed correctly for extra care
-		 */
-		if (klass->name [0] == 'S' && strcmp (klass->name, "SocketAsyncCall") == 0 
-				&& strcmp (mono_image_get_name (klass->image), "System") == 0
-				&& klass->nested_in && strcmp (klass->nested_in->name, "Socket") == 0)
-			socket_async_call_klass = klass;
-	}
+	klass = target->vtable->klass;
+	if (socket_async_call_klass == NULL && is_socketasynccall (klass))
+		socket_async_call_klass = klass;
 
-	if (process_async_call_klass == NULL) {
-		klass = target->vtable->klass;
-		/* Check if it's AsyncReadHandler in System.Diagnostics.Process
-		 * FIXME: check the assembly is signed correctly for extra care
-		 */
-		if (klass->name [0] == 'A' && strcmp (klass->name, "AsyncReadHandler") == 0 
-				&& strcmp (mono_image_get_name (klass->image), "System") == 0
-				&& klass->nested_in && strcmp (klass->nested_in->name, "Process") == 0)
-			process_async_call_klass = klass;
-	}
-	/* return both when socket_async_call_klass has not been seen yet and when
-	 * the object is not an instance of the class.
-	 */
-	if (target->vtable->klass != socket_async_call_klass && target->vtable->klass != process_async_call_klass)
+	if (process_async_call_klass == NULL && is_sdp_asyncreadhandler (klass))
+		process_async_call_klass = klass;
+
+	if (klass != socket_async_call_klass && klass != process_async_call_klass)
 		return FALSE;
 
+	sock_res = (MonoSocketAsyncResult *) state;
 	op = sock_res->operation;
 	if (op < AIO_OP_FIRST || op >= AIO_OP_LAST)
 		return FALSE;
@@ -1254,8 +1350,8 @@ mono_thread_pool_init ()
 #endif
 }
 
-void
-icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
+static MonoAsyncResult *
+create_simple_asyncresult (MonoObject *target, MonoObject *state)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoAsyncResult *ares;
@@ -1264,6 +1360,15 @@ icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
 	ares = (MonoAsyncResult *) mono_object_new (domain, mono_defaults.asyncresult_class);
 	MONO_OBJECT_SETREF (ares, async_delegate, target);
 	MONO_OBJECT_SETREF (ares, async_state, state);
+	return ares;
+}
+
+void
+icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
+{
+	MonoAsyncResult *ares;
+
+	ares = create_simple_asyncresult (target, (MonoObject *) state);
 	socket_io_add (ares, state);
 }
 
@@ -1827,17 +1932,22 @@ async_invoke_thread (gpointer data)
 	data = NULL;
 	for (;;) {
 		MonoAsyncResult *ar;
+		MonoClass *klass;
 		gboolean is_io_task;
+		gboolean is_socket;
 		int n_naps = 0;
 
 		is_io_task = FALSE;
 		ar = (MonoAsyncResult *) data;
 		if (ar) {
 			InterlockedIncrement (&tp->busy_threads);
-#ifndef DISABLE_SOCKETS
-			is_io_task = (strcmp (((MonoObject *) data)->vtable->klass->name, "AsyncResult"));
+#ifndef DISABLE_SOCKET
+			klass = ((MonoObject *) data)->vtable->klass;
+			is_io_task = !is_corlib_asyncresult (klass);
+			is_socket = FALSE;
 			if (is_io_task) {
 				MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
+				is_socket = is_socketasyncresult (klass);
 				ar = state->ares;
 				switch (state->operation) {
 				case AIO_OP_RECEIVE:
@@ -1885,15 +1995,20 @@ async_invoke_thread (gpointer data)
 						MonoClass *klass;
 
 						klass = exc->vtable->klass;
-						unloaded = (klass->image == mono_defaults.corlib);
-						if (unloaded) {
-							unloaded = (!strcmp ("System", klass->name_space) &&
-								!strcmp ("AppDomainUnloadedException", klass->name));
-						}
-
+						unloaded = is_appdomainunloaded_exception (klass);
 						if (!unloaded && klass != mono_defaults.threadabortexception_class) {
 							mono_unhandled_exception (exc);
 							exit (255);
+						}
+					}
+					if (is_socket && tp->is_io) {
+						MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
+
+						if (state->completed && state->callback) {
+							MonoAsyncResult *cb_ares;
+							cb_ares = create_simple_asyncresult ((MonoObject *) state->callback,
+												(MonoObject *) state);
+							icall_append_job ((MonoObject *) cb_ares);
 						}
 					}
 					mono_domain_set (mono_get_root_domain (), TRUE);

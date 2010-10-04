@@ -330,10 +330,11 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		GSList *node;
 		for (node = fallback_handlers; node != NULL; node = node->next){
 			MonoDlFallbackHandler *handler = (MonoDlFallbackHandler *) node->data;
-			*error_msg = NULL;
+			if (error_msg)
+				*error_msg = NULL;
 			
 			lib = handler->load_func (name, lflags, error_msg, handler->user_data);
-			if (*error_msg != NULL)
+			if (error_msg && *error_msg != NULL)
 				g_free (*error_msg);
 			
 			if (lib != NULL){

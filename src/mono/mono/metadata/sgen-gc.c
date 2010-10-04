@@ -6908,6 +6908,10 @@ is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 	MonoMethod *method;
 	int i;
 
+	if (!mono_thread_internal_current ())
+		/* Happens during thread attach */
+		return FALSE;
+
 	if (!ip || !domain)
 		return FALSE;
 	ji = mono_jit_info_table_find (domain, ip);
