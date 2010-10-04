@@ -17,6 +17,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/arch/x86/x86-codegen.h>
 
 #include <mono/utils/memcheck.h>
@@ -733,7 +734,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
 	guint8 *code, *buf;
-	guint8 *jump_obj_null, *jump_sync_null, *jump_other_owner, *jump_cmpxchg_failed, *jump_tid;
+	guint8 *jump_obj_null, *jump_sync_null, *jump_other_owner, *jump_cmpxchg_failed, *jump_tid, *jump_sync_thin_hash = NULL;
 	int tramp_size;
 	int owner_offset, nest_offset, dummy;
 	MonoJumpInfo *ji = NULL;
@@ -761,8 +762,21 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 
 		/* load obj->synchronization to ECX */
 		x86_mov_reg_membase (code, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
+
+		if (mono_gc_is_moving ()) {
+			/*if bit zero is set it's a thin hash*/
+			/*FIXME use testb encoding*/
+			x86_test_reg_imm (code, X86_ECX, 0x01);
+			jump_sync_thin_hash = code;
+			x86_branch8 (code, X86_CC_NE, -1, 1);
+
+			/*clear bits used by the gc*/
+			x86_alu_reg_imm (code, X86_AND, X86_ECX, ~0x3);
+		}
+
 		/* is synchronization null? */
 		x86_test_reg_reg (code, X86_ECX, X86_ECX);
+
 		/* if yes, jump to actual trampoline */
 		jump_sync_null = code;
 		x86_branch8 (code, X86_CC_Z, -1, 1);
@@ -807,6 +821,8 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 
 		/* push obj */
 		x86_patch (jump_obj_null, code);
+		if (jump_sync_thin_hash)
+			x86_patch (jump_sync_thin_hash, code);
 		x86_patch (jump_sync_null, code);
 		x86_patch (jump_other_owner, code);
 		x86_push_reg (code, X86_EAX);
@@ -846,7 +862,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
 	guint8 *code, *buf;
-	guint8 *jump_obj_null, *jump_have_waiters, *jump_sync_null, *jump_not_owned;
+	guint8 *jump_obj_null, *jump_have_waiters, *jump_sync_null, *jump_not_owned, *jump_sync_thin_hash = NULL;
 	guint8 *jump_next;
 	int tramp_size;
 	int owner_offset, nest_offset, entry_count_offset;
@@ -863,7 +879,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	nest_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (nest_offset);
 	entry_count_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (entry_count_offset);
 
-	tramp_size = NACL_SIZE (64, 128);
+	tramp_size = NACL_SIZE (96, 128);
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
@@ -877,6 +893,18 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 
 		/* load obj->synchronization to ECX */
 		x86_mov_reg_membase (code, X86_ECX, X86_EAX, G_STRUCT_OFFSET (MonoObject, synchronisation), 4);
+
+		if (mono_gc_is_moving ()) {
+			/*if bit zero is set it's a thin hash*/
+			/*FIXME use testb encoding*/
+			x86_test_reg_imm (code, X86_ECX, 0x01);
+			jump_sync_thin_hash = code;
+			x86_branch8 (code, X86_CC_NE, -1, 1);
+
+			/*clear bits used by the gc*/
+			x86_alu_reg_imm (code, X86_AND, X86_ECX, ~0x3);
+		}
+
 		/* is synchronization null? */
 		x86_test_reg_reg (code, X86_ECX, X86_ECX);
 		/* if yes, jump to actual trampoline */
@@ -917,6 +945,8 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 
 		/* push obj and jump to the actual trampoline */
 		x86_patch (jump_obj_null, code);
+		if (jump_sync_thin_hash)
+			x86_patch (jump_sync_thin_hash, code);
 		x86_patch (jump_have_waiters, code);
 		x86_patch (jump_not_owned, code);
 		x86_patch (jump_sync_null, code);
