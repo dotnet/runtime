@@ -28,20 +28,21 @@
 
 
 using System;
+using System.Linq;
 
 using Mono.Cecil;
 
 using Mono.Linker;
 
 namespace Mono.Tuner {
-	
+
 	public class MoonlightA11yProcessor : InjectSecurityAttributes {
-		
+
 		protected override bool ConditionToProcess ()
 		{
 			return true;
 		}
-		
+
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
@@ -54,45 +55,45 @@ namespace Mono.Tuner {
 
 			// add [SecurityCritical]
 			AddSecurityAttributes ();
-			
+
 			// convert all public members into internal
 			MakeApiInternal ();
 		}
-		
+
 		void MakeApiInternal ()
 		{
 			foreach (TypeDefinition type in _assembly.MainModule.Types) {
 				if (type.IsPublic)
 					type.IsPublic = false;
 
-				if (type.HasConstructors && !type.Name.EndsWith ("Adapter"))
-					foreach (MethodDefinition ctor in type.Constructors)
+				if (type.HasMethods && !type.Name.EndsWith ("Adapter"))
+					foreach (MethodDefinition ctor in type.Methods.Where (m => m.IsConstructor))
 						if (ctor.IsPublic)
 							ctor.IsAssembly = true;
 
 				if (type.HasMethods)
-					foreach (MethodDefinition method in type.Methods)
+					foreach (MethodDefinition method in type.Methods.Where (m => !m.IsConstructor))
 						if (method.IsPublic)
 							method.IsAssembly = true;
 			}
 		}
-		
+
 		void AddSecurityAttributes ()
 		{
 			foreach (TypeDefinition type in _assembly.MainModule.Types) {
 				AddCriticalAttribute (type);
 
-				if (type.HasConstructors)
-					foreach (MethodDefinition ctor in type.Constructors)
+				if (type.HasMethods)
+					foreach (MethodDefinition ctor in type.Methods.Where (m => m.IsConstructor))
 						AddCriticalAttribute (ctor);
 
 				if (type.HasMethods)
-					foreach (MethodDefinition method in type.Methods) {
+					foreach (MethodDefinition method in type.Methods.Where (m => !m.IsConstructor)) {
 						MethodDefinition parent = null;
-					
+
 						//TODO: take in account generic params
 						if (!method.HasGenericParameters) {
-							
+
 							/*
 							 * we need to scan base methods because the CoreCLR complains about SC attribs added
 							 * to overriden methods whose base (virtual or interface) method is not marked as SC
@@ -112,16 +113,16 @@ namespace Mono.Tuner {
 
 							AddCriticalAttribute (method);
 				}
-				
+
 			}
 		}
-		
+
 		MethodDefinition GetBaseMethod (TypeDefinition finalType, MethodDefinition final)
 		{
 			// both GetOverridenMethod and GetInterfaceMethod return null if there is no base method
 			return GetOverridenMethod (finalType, final) ?? GetInterfaceMethod (finalType, final);
 		}
-		
+
 		//note: will not return abstract methods
 		MethodDefinition GetOverridenMethod (TypeDefinition finalType, MethodDefinition final)
 		{
@@ -130,11 +131,11 @@ namespace Mono.Tuner {
 				foreach (MethodDefinition method in baseType.Resolve ().Methods) {
 					if (!method.IsVirtual || method.Name != final.Name)
 						continue;
-					
+
 					//TODO: should we discard them?
 					if (method.IsAbstract)
 						continue;
-					
+
 					if (HasSameSignature (method, final))
 						return method;
 				}
@@ -142,7 +143,7 @@ namespace Mono.Tuner {
 			}
 			return null;
 		}
-		
+
 		MethodDefinition GetInterfaceMethod (TypeDefinition finalType, MethodDefinition final)
 		{
 			TypeDefinition baseType = finalType;
@@ -157,12 +158,12 @@ namespace Mono.Tuner {
 			}
 			return null;
 		}
-		
+
 		bool HasSameSignature (MethodDefinition method1, MethodDefinition method2)
 		{
-			if (method1.ReturnType.ReturnType.FullName != method2.ReturnType.ReturnType.FullName)
+			if (method1.ReturnType.FullName != method2.ReturnType.FullName)
 				return false;
-			
+
 			if (method1.Parameters.Count != method2.Parameters.Count)
 				return false;
 
@@ -171,7 +172,7 @@ namespace Mono.Tuner {
 				    method2.Parameters [i].ParameterType.FullName)
 					return false;
 			}
-			
+
 			return true;
 		}
 	}

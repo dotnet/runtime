@@ -27,6 +27,7 @@
 //
 
 using Mono.Cecil;
+using Mono.Linker;
 
 namespace Mono.Tuner {
 
@@ -34,14 +35,17 @@ namespace Mono.Tuner {
 
 		static readonly object _internalizedKey = new object ();
 
-		public static void Internalized (IAnnotationProvider provider)
+		public static void Internalized (LinkContext context, IMetadataTokenProvider provider)
 		{
-			provider.Annotations [_internalizedKey] = _internalizedKey;
+			var annotations = context.Annotations.GetCustomAnnotations (_internalizedKey);
+			annotations [provider] = _internalizedKey;
 		}
 
-		public static bool IsInternalized (IAnnotationProvider provider)
+		public static bool IsInternalized (LinkContext context, IMetadataTokenProvider provider)
 		{
-			return provider.Annotations.Contains (_internalizedKey);
+			var annotations = context.Annotations.GetCustomAnnotations (_internalizedKey);
+
+			return annotations.ContainsKey (provider);
 		}
 
 		private TunerAnnotations ()

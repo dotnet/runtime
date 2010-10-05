@@ -38,7 +38,7 @@ using Mono.Cecil;
 namespace Mono.Tuner {
 
 	public class MoonlightA11yAssemblyStep : MoonlightAssemblyStep {
-		
+
 		protected override void CustomizePipeline (Pipeline pipeline)
 		{
 			pipeline.RemoveStep (typeof (LoadI18nAssemblies));
@@ -49,6 +49,6 @@ namespace Mono.Tuner {
 			pipeline.RemoveStep (typeof (RegenerateGuidStep));
 			pipeline.AddStepBefore (typeof (OutputStep), new MoonlightA11yProcessor ());
 		}
-		
+
 	}
 }

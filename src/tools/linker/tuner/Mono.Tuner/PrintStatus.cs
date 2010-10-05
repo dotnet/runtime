@@ -45,7 +45,7 @@ namespace Mono.Tuner {
 			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
 				return;
 
-			Console.WriteLine ("Assembly `{0}' ({1}) tuned", assembly.Name, assembly.MainModule.Image.FileInformation);
+			Console.WriteLine ("Assembly `{0}' ({1}) tuned", assembly.Name, assembly.MainModule.FullyQualifiedName);
 
 			if (!DisplayInternalized ())
 				return;
@@ -63,22 +63,21 @@ namespace Mono.Tuner {
 			}
 		}
 
-		static void ProcessType (TypeDefinition type)
+		void ProcessType (TypeDefinition type)
 		{
 			ProcessCollection (type.Fields);
-			ProcessCollection (type.Constructors);
 			ProcessCollection (type.Methods);
 		}
 
-		static void ProcessCollection (ICollection collection)
+		void ProcessCollection (ICollection collection)
 		{
-			foreach (IAnnotationProvider provider in collection)
+			foreach (IMetadataTokenProvider provider in collection)
 				ProcessProvider (provider);
 		}
 
-		static void ProcessProvider (IAnnotationProvider provider)
+		void ProcessProvider (IMetadataTokenProvider provider)
 		{
-			if (!TunerAnnotations.IsInternalized (provider))
+			if (!TunerAnnotations.IsInternalized (Context, provider))
 				return;
 
 			Console.WriteLine ("[internalized] {0}", provider);
