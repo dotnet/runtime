@@ -42,25 +42,8 @@ namespace Mono.Linker.Steps {
 
 		static void CleanAssembly (AssemblyDefinition asm)
 		{
-			CleanMemberReferences (asm.MainModule);
 			foreach (TypeDefinition type in asm.MainModule.Types)
 				CleanType (type);
-		}
-
-		static void CleanMemberReferences (ModuleDefinition module)
-		{
-			var references = module.MemberReferences;
-
-			for (int i = 0; i < references.Count; i++) {
-				var reference = references [i];
-				GenericInstanceType git = reference.DeclaringType as GenericInstanceType;
-				if (git == null)
-					continue;
-
-				foreach (TypeReference arg in git.GenericArguments)
-					if (!CheckType (module, arg))
-						references.RemoveAt (i--);
-			}
 		}
 
 		static bool CheckType (ModuleDefinition module, TypeReference reference)

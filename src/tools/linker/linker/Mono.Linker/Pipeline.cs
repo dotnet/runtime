@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 
 using Mono.Linker.Steps;
 
@@ -72,6 +73,19 @@ namespace Mono.Linker {
 		{
 			for (int i = 0; i < _steps.Count; i++) {
 				if (_steps [i].GetType () == target) {
+					if (i == _steps.Count - 1)
+						_steps.Add (step);
+					else
+						_steps.Insert (i + 1, step);
+					return;
+				}
+			}
+		}
+
+		public void AddStepAfter (IStep target, IStep step)
+		{
+			for (int i = 0; i < _steps.Count; i++) {
+				if (_steps [i] == target) {
 					if (i == _steps.Count - 1)
 						_steps.Add (step);
 					else

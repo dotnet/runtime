@@ -30,7 +30,7 @@ namespace Mono.Linker.Steps {
 
 	using System.Collections;
 
-	public abstract class ResolveStep : IStep {
+	public abstract class ResolveStep : BaseStep {
 
 		ArrayList _unResolved;
 
@@ -53,7 +53,5 @@ namespace Mono.Linker.Steps {
 		{
 			_unResolved.Add (signature);
 		}
-
-		public abstract void Process (LinkContext context);
 	}
 }

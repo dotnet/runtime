@@ -52,11 +52,11 @@ namespace Mono.Linker.Steps {
 			_document = document;
 		}
 
-		public override void Process (LinkContext context)
+		protected override void Process ()
 		{
 			XPathNavigator nav = _document.CreateNavigator ();
 			nav.MoveToFirstChild ();
-			ProcessAssemblies (context, nav.SelectChildren ("assembly", _ns));
+			ProcessAssemblies (Context, nav.SelectChildren ("assembly", _ns));
 		}
 
 		void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
@@ -81,7 +81,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		static void MarkAndPreserveAll (TypeDefinition type)
+		void MarkAndPreserveAll (TypeDefinition type)
 		{
 			Annotations.Mark (type);
 			Annotations.SetPreserve (type, TypePreserve.All);
@@ -104,7 +104,7 @@ namespace Mono.Linker.Steps {
 					continue;
 				}
 
-				TypeDefinition type = assembly.MainModule.Types [fullname];
+				TypeDefinition type = assembly.MainModule.GetType (fullname);
 				if (type == null)
 					continue;
 
@@ -276,15 +276,12 @@ namespace Mono.Linker.Steps {
 		void ProcessMethodName (TypeDefinition type, XPathNavigator nav)
 		{
 			string name = GetAttribute (nav, "name");
-			if (name == ".ctor" || name == ".cctor" && type.HasConstructors)
-				foreach (MethodDefinition ctor in type.Constructors)
-					if (name == ctor.Name)
-						MarkMethod (type, ctor, name);
+			if (!type.HasMethods)
+				return;
 
-			if (type.HasMethods)
-				foreach (MethodDefinition method in type.Methods)
-					if (name == method.Name)
-						MarkMethod (type, method, name);
+			foreach (MethodDefinition method in type.Methods)
+				if (name == method.Name)
+					MarkMethod (type, method, name);
 		}
 
 		static MethodDefinition GetMethod (TypeDefinition type, string signature)
@@ -294,18 +291,13 @@ namespace Mono.Linker.Steps {
 					if (signature == GetMethodSignature (meth))
 						return meth;
 
-			if (type.HasConstructors)
-				foreach (MethodDefinition ctor in type.Constructors)
-					if (signature == GetMethodSignature (ctor))
-						return ctor;
-
 			return null;
 		}
 
 		static string GetMethodSignature (MethodDefinition meth)
 		{
 			StringBuilder sb = new StringBuilder ();
-			sb.Append (meth.ReturnType.ReturnType.FullName);
+			sb.Append (meth.ReturnType.FullName);
 			sb.Append (" ");
 			sb.Append (meth.Name);
 			sb.Append ("(");

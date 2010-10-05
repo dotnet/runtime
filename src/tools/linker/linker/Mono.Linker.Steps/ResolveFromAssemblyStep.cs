@@ -46,18 +46,18 @@ namespace Mono.Linker.Steps {
 			_assembly = assembly;
 		}
 
-		public override void Process (LinkContext context)
+		protected override void Process ()
 		{
 			if (_assembly != null) {
-				context.SafeLoadSymbols (_assembly);
-				context.Resolver.CacheAssembly (_assembly);
+				Context.SafeLoadSymbols (_assembly);
+				Context.Resolver.CacheAssembly (_assembly);
 			}
 
-			AssemblyDefinition assembly = _assembly ?? context.Resolve (_file);
+			AssemblyDefinition assembly = _assembly ?? Context.Resolve (_file);
 
-			switch (assembly.Kind) {
-			case AssemblyKind.Dll:
-				ProcessLibrary (assembly);
+			switch (assembly.MainModule.Kind) {
+			case ModuleKind.Dll:
+				ProcessLibrary (Context, assembly);
 				return;
 			default:
 				ProcessExecutable (assembly);
@@ -65,46 +65,44 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		public static void ProcessLibrary (AssemblyDefinition assembly)
+		public static void ProcessLibrary (LinkContext context, AssemblyDefinition assembly)
 		{
-			Annotations.SetAction (assembly, AssemblyAction.Copy);
+			context.Annotations.SetAction (assembly, AssemblyAction.Copy);
 
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
-				Annotations.Mark (type);
+				context.Annotations.Mark (type);
 
 				if (type.HasFields)
-					MarkFields (type.Fields);
+					MarkFields (context, type.Fields);
 				if (type.HasMethods)
-					MarkMethods (type.Methods);
-				if (type.HasConstructors)
-					MarkMethods (type.Constructors);
+					MarkMethods (context, type.Methods);
 			}
 		}
 
-		static void ProcessExecutable (AssemblyDefinition assembly)
+		void ProcessExecutable (AssemblyDefinition assembly)
 		{
 			Annotations.SetAction (assembly, AssemblyAction.Link);
 
 			Annotations.Mark (assembly.EntryPoint.DeclaringType);
-			MarkMethod (assembly.EntryPoint, MethodAction.Parse);
+			MarkMethod (Context, assembly.EntryPoint, MethodAction.Parse);
 		}
 
-		static void MarkFields (ICollection fields)
+		static void MarkFields (LinkContext context, ICollection fields)
 		{
 			foreach (FieldDefinition field in fields)
-				Annotations.Mark (field);
+				context.Annotations.Mark (field);
 		}
 
-		static void MarkMethods (ICollection methods)
+		static void MarkMethods (LinkContext context, ICollection methods)
 		{
 			foreach (MethodDefinition method in methods)
-				MarkMethod (method, MethodAction.ForceParse);
+				MarkMethod (context, method, MethodAction.ForceParse);
 		}
 
-		static void MarkMethod (MethodDefinition method, MethodAction action)
+		static void MarkMethod (LinkContext context, MethodDefinition method, MethodAction action)
 		{
-			Annotations.Mark (method);
-			Annotations.SetAction (method, action);
+			context.Annotations.Mark (method);
+			context.Annotations.SetAction (method, action);
 		}
 	}
 }
