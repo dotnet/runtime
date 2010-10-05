@@ -61,8 +61,7 @@ namespace Mono.Linker.Steps {
 
 			switch (Annotations.GetAction (assembly)) {
 			case AssemblyAction.Link:
-				SaveSymbols (assembly);
-				AssemblyFactory.SaveAssembly (assembly, GetAssemblyFileName (assembly, directory));
+				assembly.Write (GetAssemblyFileName (assembly, directory), SaveSymbols (assembly));
 				break;
 			case AssemblyAction.Copy:
 				CopyAssembly (GetOriginalAssemblyFileInfo (assembly), directory);
@@ -75,15 +74,17 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void SaveSymbols (AssemblyDefinition assembly)
+		WriterParameters SaveSymbols (AssemblyDefinition assembly)
 		{
+			var parameters = new WriterParameters ();
 			if (!Context.LinkSymbols)
-				return;
+				return parameters;
 
-			if (!Annotations.HasSymbols (assembly))
-				return;
+			if (!assembly.MainModule.HasSymbols)
+				return parameters;
 
-			assembly.MainModule.SaveSymbols();
+			parameters.WriteSymbols = true;
+			return parameters;
 		}
 
 		static void CopyConfigFileIfNeeded (AssemblyDefinition assembly, string directory)
@@ -107,7 +108,7 @@ namespace Mono.Linker.Steps {
 
 		static FileInfo GetOriginalAssemblyFileInfo (AssemblyDefinition assembly)
 		{
-			return assembly.MainModule.Image.FileInformation;
+			return new FileInfo (assembly.MainModule.FullyQualifiedName);
 		}
 
 		static void CopyAssembly (FileInfo fi, string directory)
@@ -121,7 +122,7 @@ namespace Mono.Linker.Steps {
 
 		static string GetAssemblyFileName (AssemblyDefinition assembly, string directory)
 		{
-			string file = assembly.Name.Name + (assembly.Kind == AssemblyKind.Dll ? ".dll" : ".exe");
+			string file = assembly.Name.Name + (assembly.MainModule.Kind == ModuleKind.Dll ? ".dll" : ".exe");
 			return Path.Combine (directory, file);
 		}
 	}

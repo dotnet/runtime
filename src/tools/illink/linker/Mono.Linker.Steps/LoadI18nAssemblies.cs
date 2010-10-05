@@ -77,17 +77,15 @@ namespace Mono.Linker.Steps {
 		void LoadAssembly (AssemblyNameReference name)
 		{
 			AssemblyDefinition assembly = Context.Resolve (name);
-			ResolveFromAssemblyStep.ProcessLibrary (assembly);
+			ResolveFromAssemblyStep.ProcessLibrary (Context, assembly);
 		}
 
 		AssemblyNameReference GetAssemblyName (I18nAssemblies assembly)
 		{
-			AssemblyNameReference name = new AssemblyNameReference ();
-			name.Name = "I18N";
+			AssemblyNameReference name = new AssemblyNameReference ("I18N", GetCorlibVersion ());
 			if (assembly != I18nAssemblies.Base)
 				name.Name += "." + assembly;
 
-			name.Version = GetCorlibVersion ();
 			name.PublicKeyToken = _pktoken;
 			return name;
 		}

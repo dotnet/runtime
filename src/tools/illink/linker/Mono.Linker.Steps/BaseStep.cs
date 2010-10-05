@@ -38,6 +38,10 @@ namespace Mono.Linker.Steps {
 			get { return _context; }
 		}
 
+		public AnnotationStore Annotations {
+			get { return _context.Annotations; }
+		}
+
 		public void Process (LinkContext context)
 		{
 			_context = context;

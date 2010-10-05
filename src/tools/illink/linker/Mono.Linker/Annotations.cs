@@ -28,162 +28,330 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 using Mono.Cecil;
 
 namespace Mono.Linker {
 
-	public class Annotations {
+	public class AnnotationStore {
 
-		private static readonly object _actionKey = new object ();
-		private static readonly object _markedKey = new object ();
-		private static readonly object _processedKey = new object ();
-		private static readonly object _preservedKey = new object ();
-		private static readonly object _preservedMethodsKey = new object ();
-		private static readonly object _publicKey = new object ();
-		private static readonly object _symbolsKey = new object ();
-		private static readonly object _overrideKey = new object ();
-		private static readonly object _baseKey = new object ();
+		readonly Dictionary<AssemblyDefinition, AssemblyAction> assembly_actions = new Dictionary<AssemblyDefinition, AssemblyAction> ();
+		readonly Dictionary<MethodDefinition, MethodAction> method_actions = new Dictionary<MethodDefinition, MethodAction> ();
+		readonly HashSet<IMetadataTokenProvider> marked = new HashSet<IMetadataTokenProvider> ();
+		readonly HashSet<IMetadataTokenProvider> processed = new HashSet<IMetadataTokenProvider> ();
+		readonly Dictionary<TypeDefinition, TypePreserve> preserved_types = new Dictionary<TypeDefinition, TypePreserve> ();
+		readonly Dictionary<TypeDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<TypeDefinition, List<MethodDefinition>> ();
+		readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider> ();
+		readonly Dictionary<MethodDefinition, List<MethodDefinition>> override_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
+		readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 
-		public static AssemblyAction GetAction (AssemblyDefinition assembly)
+		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
+
+		public AssemblyAction GetAction (AssemblyDefinition assembly)
 		{
-			return (AssemblyAction) GetAction (AsProvider (assembly));
+			AssemblyAction action;
+			if (assembly_actions.TryGetValue (assembly, out action))
+				return action;
+
+			throw new NotSupportedException ();
 		}
 
-		public static MethodAction GetAction (MethodDefinition method)
+		public MethodAction GetAction (MethodDefinition method)
 		{
-			var action = GetAction (AsProvider (method));
-			return action == null ? MethodAction.Nothing : (MethodAction) action;
+			MethodAction action;
+			if (method_actions.TryGetValue (method, out action))
+				return action;
+
+			return MethodAction.Nothing;
 		}
 
-		static object GetAction (IAnnotationProvider provider)
+		public void SetAction (AssemblyDefinition assembly, AssemblyAction action)
 		{
-			return provider.Annotations [_actionKey];
+			assembly_actions [assembly] = action;
 		}
 
-		public static bool HasAction (IAnnotationProvider provider)
+		public bool HasAction (AssemblyDefinition assembly)
 		{
-			return provider.Annotations.Contains (_actionKey);
+			return assembly_actions.ContainsKey (assembly);
 		}
 
-		public static void SetAction (AssemblyDefinition assembly, AssemblyAction action)
+		public void SetAction (MethodDefinition method, MethodAction action)
 		{
-			SetAction (AsProvider (assembly), action);
+			method_actions [method] = action;
 		}
 
-		public static void SetAction (MethodDefinition method, MethodAction action)
+		public void Mark (IMetadataTokenProvider provider)
 		{
-			SetAction (AsProvider (method), action);
+			marked.Add (provider);
 		}
 
-		static void SetAction (IAnnotationProvider provider, object action)
+		public bool IsMarked (IMetadataTokenProvider provider)
 		{
-			provider.Annotations [_actionKey] = action;
+			return marked.Contains (provider);
 		}
 
-		public static void Mark (IAnnotationProvider provider)
+		public void Processed (IMetadataTokenProvider provider)
 		{
-			provider.Annotations [_markedKey] = _markedKey;
+			processed.Add (provider);
 		}
 
-		public static bool IsMarked (IAnnotationProvider provider)
+		public bool IsProcessed (IMetadataTokenProvider provider)
 		{
-			return provider.Annotations.Contains (_markedKey);
+			return processed.Contains (provider);
 		}
 
-		public static void Processed (IAnnotationProvider provider)
+		public bool IsPreserved (TypeDefinition type)
 		{
-			provider.Annotations [_processedKey] = _processedKey;
+			return preserved_types.ContainsKey (type);
 		}
 
-		public static bool IsProcessed (IAnnotationProvider provider)
+		public void SetPreserve (TypeDefinition type, TypePreserve preserve)
 		{
-			return provider.Annotations.Contains (_processedKey);
+			preserved_types [type] = preserve;
 		}
 
-		public static bool IsPreserved (TypeDefinition type)
+		public TypePreserve GetPreserve (TypeDefinition type)
 		{
-			return AsProvider (type).Annotations.Contains (_preservedKey);
+			TypePreserve preserve;
+			if (preserved_types.TryGetValue (type, out preserve))
+				return preserve;
+
+			throw new NotSupportedException ();
 		}
 
-		public static void SetPreserve (TypeDefinition type, TypePreserve preserve)
+		public void SetPublic (IMetadataTokenProvider provider)
 		{
-			AsProvider (type).Annotations [_preservedKey] = preserve;
+			public_api.Add (provider);
 		}
 
-		public static TypePreserve GetPreserve (TypeDefinition type)
+		public bool IsPublic (IMetadataTokenProvider provider)
 		{
-			return (TypePreserve) AsProvider (type).Annotations [_preservedKey];
+			return public_api.Contains (provider);
 		}
 
-		public static void SetPublic (IAnnotationProvider provider)
+		public void AddOverride (MethodDefinition @base, MethodDefinition @override)
 		{
-			provider.Annotations [_publicKey] = _publicKey;
-		}
-
-		public static bool IsPublic (IAnnotationProvider provider)
-		{
-			return provider.Annotations.Contains (_publicKey);
-		}
-
-		static IAnnotationProvider AsProvider (object obj)
-		{
-			return (IAnnotationProvider) obj;
-		}
-
-		public static bool HasSymbols (AssemblyDefinition assembly)
-		{
-			return AsProvider (assembly).Annotations.Contains (_symbolsKey);
-		}
-
-		public static void SetHasSymbols (AssemblyDefinition assembly)
-		{
-			AsProvider (assembly).Annotations [_symbolsKey] = _symbolsKey;
-		}
-
-		public static void AddOverride (MethodDefinition @base, MethodDefinition @override)
-		{
-			ArrayList methods = (ArrayList) GetOverrides (@base);
+			var methods = GetOverrides (@base);
 			if (methods == null) {
-				methods = new ArrayList ();
-				AsProvider (@base).Annotations.Add (_overrideKey, methods);
+				methods = new List<MethodDefinition> ();
+				override_methods [@base] = methods;
 			}
 
 			methods.Add (@override);
 		}
 
-		public static IList GetOverrides (MethodDefinition method)
+		public List<MethodDefinition> GetOverrides (MethodDefinition method)
 		{
-			return (IList) AsProvider (method).Annotations [_overrideKey];
+			List<MethodDefinition> overrides;
+			if (override_methods.TryGetValue (method, out overrides))
+				return overrides;
+
+			return null;
 		}
 
-		public static void AddBaseMethod (MethodDefinition method, MethodDefinition @base)
+		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base)
 		{
-			ArrayList methods = (ArrayList) GetBaseMethods (method);
+			var methods = GetBaseMethods (method);
 			if (methods == null) {
-				methods = new ArrayList ();
-				AsProvider (method).Annotations.Add (_baseKey, methods);
+				methods = new List<MethodDefinition> ();
+				base_methods [method] = methods;
 			}
 
 			methods.Add (@base);
 		}
 
-		public static IList GetBaseMethods (MethodDefinition method)
+		public List<MethodDefinition> GetBaseMethods (MethodDefinition method)
 		{
-			return (IList) AsProvider (method).Annotations [_baseKey];
+			List<MethodDefinition> bases;
+			if (base_methods.TryGetValue (method, out bases))
+				return bases;
+
+			return null;
 		}
 
-		public static IList GetPreservedMethods (TypeDefinition type)
+		public List<MethodDefinition> GetPreservedMethods (TypeDefinition type)
 		{
-			return (IList) AsProvider (type).Annotations [_preservedMethodsKey];
+			List<MethodDefinition> preserved;
+			if (preserved_methods.TryGetValue (type, out preserved))
+				return preserved;
+
+			return null;
+		}
+
+		public void AddPreservedMethod (TypeDefinition type, MethodDefinition method)
+		{
+			var methods = GetPreservedMethods (type);
+			if (methods == null) {
+				methods = new List<MethodDefinition> ();
+				preserved_methods [type] = methods;
+			}
+
+			methods.Add (method);
+		}
+
+		public Dictionary<IMetadataTokenProvider, object> GetCustomAnnotations (object key)
+		{
+			Dictionary<IMetadataTokenProvider, object> slots;
+			if (custom_annotations.TryGetValue (key, out slots))
+				return slots;
+
+			slots = new Dictionary<IMetadataTokenProvider, object> ();
+			custom_annotations.Add (key, slots);
+			return slots;
+		}
+	}
+
+	/*
+	public class Annotations {
+
+		static readonly Dictionary<AssemblyDefinition, AssemblyAction> assembly_actions = new Dictionary<AssemblyDefinition, AssemblyAction> ();
+		static readonly Dictionary<MethodDefinition, MethodAction> method_actions = new Dictionary<MethodDefinition, MethodAction> ();
+		static readonly HashSet<IMetadataTokenProvider> marked = new HashSet<IMetadataTokenProvider> ();
+		static readonly HashSet<IMetadataTokenProvider> processed = new HashSet<IMetadataTokenProvider> ();
+		static readonly Dictionary<TypeDefinition, TypePreserve> preserved_types = new Dictionary<TypeDefinition, TypePreserve> ();
+		static readonly Dictionary<TypeDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<TypeDefinition, List<MethodDefinition>> ();
+		static readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider> ();
+		static readonly Dictionary<MethodDefinition, List<MethodDefinition>> override_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
+		static readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
+
+		public static AssemblyAction GetAction (AssemblyDefinition assembly)
+		{
+			AssemblyAction action;
+			if (assembly_actions.TryGetValue (assembly, out action))
+				return action;
+
+			throw new NotSupportedException ();
+		}
+
+		public static MethodAction GetAction (MethodDefinition method)
+		{
+			MethodAction action;
+			if (method_actions.TryGetValue (method, out action))
+				return action;
+
+			return MethodAction.Nothing;
+		}
+
+		public static void SetAction (AssemblyDefinition assembly, AssemblyAction action)
+		{
+			assembly_actions [assembly] = action;
+		}
+
+		public static bool HasAction (AssemblyDefinition assembly)
+		{
+			return assembly_actions.ContainsKey (assembly);
+		}
+
+		public static void SetAction (MethodDefinition method, MethodAction action)
+		{
+			method_actions [method] = action;
+		}
+
+		public static void Mark (IMetadataTokenProvider provider)
+		{
+			marked.Add (provider);
+		}
+
+		public static bool IsMarked (IMetadataTokenProvider provider)
+		{
+			return marked.Contains (provider);
+		}
+
+		public static void Processed (IMetadataTokenProvider provider)
+		{
+			processed.Add (provider);
+		}
+
+		public static bool IsProcessed (IMetadataTokenProvider provider)
+		{
+			return processed.Contains (provider);
+		}
+
+		public static bool IsPreserved (TypeDefinition type)
+		{
+			return preserved_types.ContainsKey (type);
+		}
+
+		public static void SetPreserve (TypeDefinition type, TypePreserve preserve)
+		{
+			preserved_types [type] = preserve;
+		}
+
+		public static TypePreserve GetPreserve (TypeDefinition type)
+		{
+			TypePreserve preserve;
+			if (preserved_types.TryGetValue (type, out preserve))
+				return preserve;
+
+			throw new NotSupportedException ();
+		}
+
+		public static void SetPublic (IMetadataTokenProvider provider)
+		{
+			public_api.Add (provider);
+		}
+
+		public static bool IsPublic (IMetadataTokenProvider provider)
+		{
+			return public_api.Contains (provider);
+		}
+
+		public static void AddOverride (MethodDefinition @base, MethodDefinition @override)
+		{
+			var methods = GetOverrides (@base);
+			if (methods == null) {
+				methods = new List<MethodDefinition> ();
+				override_methods [@base] = methods;
+			}
+
+			methods.Add (@override);
+		}
+
+		public static List<MethodDefinition> GetOverrides (MethodDefinition method)
+		{
+			List<MethodDefinition> overrides;
+			if (override_methods.TryGetValue (method, out overrides))
+				return overrides;
+
+			return null;
+		}
+
+		public static void AddBaseMethod (MethodDefinition method, MethodDefinition @base)
+		{
+			var methods = GetBaseMethods (method);
+			if (methods == null) {
+				methods = new List<MethodDefinition> ();
+				base_methods [method] = methods;
+			}
+
+			methods.Add (@base);
+		}
+
+		public static List<MethodDefinition> GetBaseMethods (MethodDefinition method)
+		{
+			List<MethodDefinition> bases;
+			if (base_methods.TryGetValue (method, out bases))
+				return bases;
+
+			return null;
+		}
+
+		public static List<MethodDefinition> GetPreservedMethods (TypeDefinition type)
+		{
+			List<MethodDefinition> preserved;
+			if (preserved_methods.TryGetValue (type, out preserved))
+				return preserved;
+
+			return null;
 		}
 
 		public static void AddPreservedMethod (TypeDefinition type, MethodDefinition method)
 		{
-			ArrayList methods = (ArrayList) GetPreservedMethods (type);
+			var methods = GetPreservedMethods (type);
 			if (methods == null) {
-				methods = new ArrayList ();
-				AsProvider (type).Annotations.Add (_preservedMethodsKey, methods);
+				methods = new List<MethodDefinition> ();
+				preserved_methods [type] = methods;
 			}
 
 			methods.Add (method);
@@ -192,5 +360,5 @@ namespace Mono.Linker {
 		private Annotations ()
 		{
 		}
-	}
+	}*/
 }

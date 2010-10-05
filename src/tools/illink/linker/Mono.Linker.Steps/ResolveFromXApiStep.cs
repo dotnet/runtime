@@ -39,8 +39,6 @@ namespace Mono.Linker.Steps {
 		static readonly string _name = "name";
 		static readonly string _ns = string.Empty;
 
-		LinkContext _context;
-
 		XPathDocument _document;
 
 		public ResolveFromXApiStep (XPathDocument document)
@@ -48,11 +46,10 @@ namespace Mono.Linker.Steps {
 			_document = document;
 		}
 
-		public override void Process (LinkContext context)
+		protected override void Process ()
 		{
-			_context = context;
 			XApiReader reader = new XApiReader (_document, this);
-			reader.Process (context);
+			reader.Process (Context);
 		}
 
 		public void OnAssembly (XPathNavigator nav, AssemblyDefinition assembly)
@@ -63,7 +60,7 @@ namespace Mono.Linker.Steps {
 		{
 			string name = GetName (nav);
 
-			TypeDefinition type = _context.GetType (name);
+			TypeDefinition type = Context.GetType (name);
 			if (type != null)
 				MarkType (type);
 		}
@@ -117,23 +114,23 @@ namespace Mono.Linker.Steps {
 			return nav.GetAttribute (attribute, _ns);
 		}
 
-		static void MarkType (TypeDefinition type)
+		void MarkType (TypeDefinition type)
 		{
 			InternalMark (type);
 		}
 
-		static void MarkField (FieldDefinition field)
+		void MarkField (FieldDefinition field)
 		{
 			InternalMark (field);
 		}
 
-		static void InternalMark (IAnnotationProvider provider)
+		void InternalMark (IMetadataTokenProvider provider)
 		{
 			Annotations.Mark (provider);
 			Annotations.SetPublic (provider);
 		}
 
-		static void MarkMethod (MethodDefinition method)
+		void MarkMethod (MethodDefinition method)
 		{
 			InternalMark (method);
 			Annotations.SetAction (method, MethodAction.Parse);

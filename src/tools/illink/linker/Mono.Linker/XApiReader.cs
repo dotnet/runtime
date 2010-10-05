@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections;
+using System.Linq;
 using System.Text;
 using System.Xml.XPath;
 
@@ -73,9 +74,9 @@ namespace Mono.Linker {
 
 		AssemblyDefinition GetAssembly (XPathNavigator nav)
 		{
-			AssemblyNameReference name = new AssemblyNameReference ();
-			name.Name = GetName (nav);
-			name.Version = new Version (GetAttribute (nav, "version"));
+			AssemblyNameReference name = new AssemblyNameReference (
+				GetName (nav),
+				new Version (GetAttribute (nav, "version")));
 
 			AssemblyDefinition assembly = _context.Resolve (name);
 			ProcessReferences (assembly);
@@ -119,7 +120,7 @@ namespace Mono.Linker {
 		{
 			string name = GetClassName (nav);
 
-			TypeDefinition type = _assembly.MainModule.Types [name];
+			TypeDefinition type = _assembly.MainModule.GetType (name);
 			if (type == null)
 				return;
 
@@ -156,7 +157,7 @@ namespace Mono.Linker {
 		{
 			TypeDefinition declaring = PeekType ();
 
-			FieldDefinition field = declaring.Fields.GetField (GetName (nav));
+			FieldDefinition field = declaring.Fields.FirstOrDefault (f => f.Name == GetName (nav));
 			if (field != null)
 				_visitor.OnField (nav, field);
 
@@ -192,11 +193,6 @@ namespace Mono.Linker {
 			return GetMethod (PeekType ().Methods, signature);
 		}
 
-		MethodDefinition GetConstructor (string signature)
-		{
-			return GetMethod (PeekType ().Constructors, signature);
-		}
-
 		static MethodDefinition GetMethod (ICollection methods, string signature)
 		{
 			foreach (MethodDefinition method in methods)
@@ -223,7 +219,7 @@ namespace Mono.Linker {
 
 			string returntype = GetAttribute (nav, "returntype");
 			if (returntype == null || returntype.Length == 0)
-				returntype = Constants.Void;
+				returntype = "System.Void";
 
 			_signature.Append (NormalizeTypeName (returntype));
 			_signature.Append (" ");
@@ -278,7 +274,7 @@ namespace Mono.Linker {
 
 			string signature = GetMethodSignature ();
 
-			MethodDefinition ctor = GetConstructor (signature);
+			MethodDefinition ctor = GetMethod (signature);
 			if (ctor != null)
 				_visitor.OnConstructor (nav, ctor);
 
@@ -290,9 +286,9 @@ namespace Mono.Linker {
 			string name = GetName (nav);
 			TypeDefinition type = PeekType ();
 
-			PropertyDefinition [] props = type.Properties.GetProperties (name);
-			if (props != null && props.Length > 0)
-				_visitor.OnProperty (nav, props [0]);
+			var property = type.Properties.FirstOrDefault (p => p.Name == name);
+			if (property != null)
+				_visitor.OnProperty (nav, property);
 
 			ProcessAttributes (nav);
 			ProcessMethods (nav);
@@ -303,7 +299,7 @@ namespace Mono.Linker {
 			string name = GetName (nav);
 			TypeDefinition type = PeekType ();
 
-			EventDefinition evt = type.Events.GetEvent (name);
+			EventDefinition evt = type.Events.FirstOrDefault (e => e.Name == name);
 			if (evt != null)
 				_visitor.OnEvent (nav, evt);
 
