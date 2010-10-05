@@ -5311,13 +5311,8 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	gklass = gclass->container_class;
 
 	if (gklass->nested_in) {
-		/* 
-		 * FIXME: the nested type context should include everything the
-		 * nesting context should have, but it may also have additional
-		 * generic parameters...
-		 */
-		klass->nested_in = mono_class_inflate_generic_class (gklass->nested_in,
-															 mono_generic_class_get_context (gclass));
+		/* The nested_in type should not be inflated since it's possible to produce a nested type with less generic arguments*/
+		klass->nested_in = gklass->nested_in;
 	}
 
 	klass->name = gklass->name;
