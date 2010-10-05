@@ -1086,7 +1086,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	TlsData *tls = user_data;
 
 	DEBUG (fprintf (logfile, "****************************************\n"));
-	DEBUG (fprintf (logfile, "*** %s stack marking for thread %p (%p-%p) ***\n", precise ? "Precise" : "Conservative", GUINT_TO_POINTER (tls->tid), stack_start, stack_end));
+	DEBUG (fprintf (logfile, "*** %s stack marking for thread %p (%p-%p) ***\n", precise ? "Precise" : "Conservative", tls ? GUINT_TO_POINTER (tls->tid) : NULL, stack_start, stack_end));
 	DEBUG (fprintf (logfile, "****************************************\n"));
 
 	if (!precise)
@@ -2388,6 +2388,11 @@ mini_gc_init_cfg (MonoCompile *cfg)
  * - vtypes/refs used in EH regions are treated conservatively
  * - if the code is finished, less pinning will be done, causing problems because
  *   we promote all surviving objects to old-gen.
+ * - the unwind code can't handle a method stopped inside a finally region, it thinks the caller is
+ *   another method, but in reality it is either the exception handling code or the CALL_HANDLER opcode.
+ *   This manifests in "Unable to find ip offset x in callsite list" assertions.
+ * - the unwind code also can't handle frames which are in the epilog, since the unwind info is not
+ *   precise there.
  */
 
 /*
