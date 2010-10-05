@@ -6895,7 +6895,7 @@ mono_gc_base_init (void)
 		return;
 	}
 	pagesize = mono_pagesize ();
-	gc_debug_file = stderr;
+	gc_debug_file = stdout;
 
 	LOCK_INIT (interruption_mutex);
 	LOCK_INIT (global_remset_mutex);
