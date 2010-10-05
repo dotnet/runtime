@@ -83,12 +83,6 @@ typedef struct {
 #define DEBUG_PRECISE(s)
 #endif
 
-#if 1
-#define DEBUG_GC_MAP(s) do { s; fflush (stdout); } while (0)
-#else
-#define DEBUG_GC_MAP(s)
-#endif
-
 /*
  * Contains information collected during the conservative stack marking pass,
  * used during the precise pass. This helps to avoid doing a stack walk twice, which
