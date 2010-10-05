@@ -3310,7 +3310,7 @@ verify_implmap_table (VerifyContext *ctx)
 		if (!is_valid_non_empty_string (ctx, data [MONO_IMPLMAP_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d ImportName Token %x", i, data [MONO_IMPLMAP_NAME]));
 
-		if (!data [MONO_IMPLMAP_SCOPE] || data [MONO_IMPLMAP_SCOPE] > ctx->image->tables [MONO_TABLE_MODULEREF].rows + 1)
+		if (!data [MONO_IMPLMAP_SCOPE] || data [MONO_IMPLMAP_SCOPE] > ctx->image->tables [MONO_TABLE_MODULEREF].rows)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d Invalid ImportScope token %x", i, data [MONO_IMPLMAP_SCOPE]));
 	}
 }

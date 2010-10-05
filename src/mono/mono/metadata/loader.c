@@ -1273,10 +1273,13 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		orig_scope = method_aux->dll;
 	}
 	else {
-		if (!piinfo->implmap_idx)
+		if (!piinfo->implmap_idx || piinfo->implmap_idx > im->rows)
 			return NULL;
 
 		mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
+
+		if (!im_cols [MONO_IMPLMAP_SCOPE] || im_cols [MONO_IMPLMAP_SCOPE] > mr->rows)
+			return NULL;
 
 		piinfo->piflags = im_cols [MONO_IMPLMAP_FLAGS];
 		import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
