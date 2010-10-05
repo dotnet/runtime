@@ -7756,4 +7756,10 @@ mono_sgen_debug_printf (int level, const char *format, ...)
 	va_end (ap);
 }
 
+FILE*
+mono_sgen_get_logfile (void)
+{
+	return gc_debug_file;
+}
+
 #endif /* HAVE_SGEN_GC */

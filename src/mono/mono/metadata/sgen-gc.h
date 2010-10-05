@@ -797,5 +797,9 @@ gboolean mono_sgen_ptr_is_in_los (char *ptr, char **start) MONO_INTERNAL;
 void mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data) MONO_INTERNAL;
 void mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 void mono_sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
+=======
+void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;;
+FILE *mono_sgen_get_logfile (void) MONO_INTERNAL;
+>>>>>>> Share the log file between sgen and the stack marking code.
 
 #endif /* __MONO_SGENGC_H__ */

@@ -6099,6 +6099,9 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_icall_init ();
 
+	/* This should come after mono_init () too */
+	mini_gc_init ();
+
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 
 				ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", 

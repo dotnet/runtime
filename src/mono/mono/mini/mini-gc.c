@@ -14,6 +14,7 @@
 //#if 0
 #ifdef HAVE_SGEN_GC
 
+#include <mono/metadata/sgen-gc.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-counters.h>
 
@@ -66,7 +67,8 @@ typedef struct {
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-#if 0
+#if 1
+/* We don't support debug levels, its all-or-nothing */
 #define DEBUG(s) do { s; fflush (logfile); } while (0)
 #define DEBUG_ENABLED 1
 #else
@@ -86,8 +88,6 @@ typedef struct {
 #else
 #define DEBUG_GC_MAP(s)
 #endif
-
-#define GC_BITS_PER_WORD (sizeof (gsize) * 8)
 
 /*
  * Contains information collected during the conservative stack marking pass,
@@ -2264,16 +2264,9 @@ parse_debug_options (void)
 
 	opts = g_strsplit (env, ",", -1);
 	for (ptr = opts; ptr && *ptr; ptr ++) {
-		char *opt = *ptr;
-
-		if (g_str_has_prefix (opt, "logfile=")) {
-			char *arg = strchr (opt, '=') + 1;
-			logfile = fopen (arg, "w");
-			g_assert (logfile);
-		} else {
-			fprintf (stderr, "Invalid format for the MONO_GCMAP_DEBUG env variable: '%s'\n", env);
-			exit (1);
-		}
+		/* No options yet */
+		fprintf (stderr, "Invalid format for the MONO_GCMAP_DEBUG env variable: '%s'\n", env);
+		exit (1);
 	}
 	g_strfreev (opts);
 }
@@ -2291,7 +2284,8 @@ mini_gc_init (void)
 	cb.thread_mark_func = thread_mark_func;
 	mono_gc_set_gc_callbacks (&cb);
 
-	logfile = stdout;
+	logfile = mono_sgen_get_logfile ();
+
 	parse_debug_options ();
 
 	mono_counters_register ("GC Maps size",
