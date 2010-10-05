@@ -43,7 +43,7 @@ guint8 *sgen_cardtable;
 static mword
 cards_in_range (mword address, mword size)
 {
-	mword end = address + size; //XXXXX should address + MAX (0, size - 1);
+	mword end = address + MAX (1, size) - 1;
 	return (end >> CARD_BITS) - (address >> CARD_BITS) + 1;
 }
 
