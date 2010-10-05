@@ -2650,7 +2650,7 @@ collect_nursery (size_t requested_size)
 
 	if (use_cardtable) {
 		atv = btv;
-		card_tables_collect_starts (TRUE);
+		card_tables_collect_stats (TRUE);
 		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
 		TV_GETTIME (btv);
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
@@ -2710,7 +2710,7 @@ collect_nursery (size_t requested_size)
 	g_assert (gray_object_queue_is_empty (&gray_queue));
 
 	if (use_cardtable)
-		card_tables_collect_starts (FALSE);
+		card_tables_collect_stats (FALSE);
 
 	check_scan_starts ();
 

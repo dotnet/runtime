@@ -260,6 +260,7 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 	return sgen_cardtable;
 }
 
+#if 0
 static void
 collect_faulted_cards (void)
 {
@@ -275,7 +276,7 @@ collect_faulted_cards (void)
 
 	printf ("TOTAL card pages %d faulted %d\n", CARD_PAGES, count);
 }
-
+#endif
 
 void
 sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQueue *queue)
@@ -408,7 +409,7 @@ count_remarked_cards (mword start, mword size)
 #endif
 
 static void
-card_tables_collect_starts (gboolean begin)
+card_tables_collect_stats (gboolean begin)
 {
 #ifdef CARDTABLE_STATS
 	if (begin) {
@@ -441,7 +442,7 @@ sgen_card_table_mark_range (mword address, mword size)
 #define scan_from_card_tables(start,end,queue)
 #define card_table_clear()
 #define card_table_init()
-#define card_tables_collect_starts(begin)
+#define card_tables_collect_stats(begin)
 
 guint8*
 mono_gc_get_card_table (int *shift_bits, gpointer *mask)
