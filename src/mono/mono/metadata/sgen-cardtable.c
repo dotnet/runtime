@@ -43,7 +43,7 @@ guint8 *sgen_cardtable;
 static mword
 cards_in_range (mword address, mword size)
 {
-	mword end = address + size;
+	mword end = address + size; //XXXXX should address + MAX (0, size - 1);
 	return (end >> CARD_BITS) - (address >> CARD_BITS) + 1;
 }
 
@@ -141,13 +141,14 @@ sgen_card_table_mark_range (mword address, mword size)
 }
 
 static gboolean
-sgen_card_table_is_range_marked (guint8 *cards, mword size)
+sgen_card_table_is_range_marked (guint8 *cards, mword address, mword size)
 {
-	mword start = 0;
-	while (start <= size) {
+	guint8 *end = cards + cards_in_range (address, size);
+
+	/*This is safe since this function is only called by code that only passes continuous card blocks*/
+	while (cards != end) {
 		if (*cards++)
 			return TRUE;
-		start += CARD_SIZE_IN_BYTES;
 	}
 	return FALSE;
 
@@ -180,9 +181,10 @@ move_cards_to_shadow_table (mword start, mword size)
 
 	if (to + bytes > SGEN_SHADOW_CARDTABLE_END) {
 		size_t first_chunk = SGEN_SHADOW_CARDTABLE_END - to;
+		size_t second_chunk = MIN (CARD_COUNT_IN_BYTES, bytes) - first_chunk;
 
 		memcpy (to, from, first_chunk);
-		memcpy (sgen_shadow_cardtable, from + first_chunk, bytes - first_chunk);
+		memcpy (sgen_shadow_cardtable, sgen_cardtable, second_chunk);
 	} else {
 		memcpy (to, from, bytes);
 	}
@@ -293,6 +295,7 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 		char *obj_start = sgen_card_table_align_pointer (obj);
 		char *obj_end = obj + obj_size;
 		size_t card_count;
+		int extra_idx = 0;
 
 		MonoArray *arr = (MonoArray*)obj;
 		mword desc = (mword)klass->element_class->gc_descr;
@@ -324,7 +327,7 @@ LOOP_HEAD:
 		/*FIXME use card skipping code*/
 		for (; card_data < card_data_end; ++card_data) {
 			int index;
-			int idx = card_data - card_base;
+			int idx = (card_data - card_base) + extra_idx;
 			char *start = (char*)(obj_start + idx * CARD_SIZE_IN_BYTES);
 			char *card_end = start + CARD_SIZE_IN_BYTES;
 			char *elem;
@@ -362,7 +365,8 @@ LOOP_HEAD:
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 		if (overflow_scan_end) {
-			card_data = sgen_shadow_cardtable;
+			extra_idx = card_data - card_base;
+			card_base = card_data = sgen_shadow_cardtable;
 			card_data_end = overflow_scan_end;
 			overflow_scan_end = NULL;
 			goto LOOP_HEAD;
@@ -371,7 +375,7 @@ LOOP_HEAD:
 
 	} else {
 		if (cards) {
-			if (sgen_card_table_is_range_marked (cards, obj_size))
+			if (sgen_card_table_is_range_marked (cards, (mword)obj, obj_size))
 				major_collector.minor_scan_object (obj, queue);
 		} else if (sgen_card_table_region_begin_scanning ((mword)obj, obj_size)) {
 			major_collector.minor_scan_object (obj, queue);
