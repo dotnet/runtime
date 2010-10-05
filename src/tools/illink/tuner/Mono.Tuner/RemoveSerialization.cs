@@ -54,7 +54,7 @@ namespace Mono.Tuner {
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			if (assembly.Name.Name == Constants.Corlib)
+			if (assembly.Name.Name == "mscorlib")
 				return;
 
 			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
@@ -86,11 +86,11 @@ namespace Mono.Tuner {
 			RemoveSerializableFlag (type);
 
 			RemoveInterface (type, _ISerializable);
-			RemoveConstructor (type, _SerializationInfo, _StreamingContext);
+			RemoveMethod (type, ".ctor", _SerializationInfo, _StreamingContext);
 			RemoveInterfaceMethod (type, _ISerializable, _GetObjectData, _SerializationInfo, _StreamingContext);
 
 			RemoveInterface (type, _IDeserializationCallback);
-			RemoveInterfaceMethod (type, _IDeserializationCallback, _OnDeserialization, Constants.Object);
+			RemoveInterfaceMethod (type, _IDeserializationCallback, _OnDeserialization, "System.Object");
 
 			RemoveField (type);
 		}
@@ -126,11 +126,6 @@ namespace Mono.Tuner {
 		static void RemoveMethod (TypeDefinition type, string name, params string [] parameters)
 		{
 			RemoveMethod (type.Methods, name, parameters);
-		}
-
-		static void RemoveConstructor (TypeDefinition type, params string [] parameters)
-		{
-			RemoveMethod (type.Constructors, MethodDefinition.Ctor, parameters);
 		}
 
 		static void RemoveMethod (IList container, string name, params string [] parameters)

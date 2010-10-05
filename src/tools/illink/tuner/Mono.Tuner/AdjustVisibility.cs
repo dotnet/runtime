@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 using Mono.Linker;
 using Mono.Linker.Steps;
@@ -38,6 +39,8 @@ namespace Mono.Tuner {
 
 	public class AdjustVisibility : BaseStep {
 
+		static readonly object internalized_key = new object ();
+
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
@@ -46,13 +49,13 @@ namespace Mono.Tuner {
 			ProcessTypes (assembly.MainModule.Types);
 		}
 
-		static void ProcessTypes (ICollection types)
+		void ProcessTypes (ICollection types)
 		{
 			foreach (TypeDefinition type in types)
 				ProcessType (type);
 		}
 
-		static void ProcessType (TypeDefinition type)
+		void ProcessType (TypeDefinition type)
 		{
 			if (!IsPublic (type))
 				return;
@@ -66,7 +69,6 @@ namespace Mono.Tuner {
 				return;
 
 			ProcessFields (type.Fields);
-			ProcessMethods (type.Constructors);
 			ProcessMethods (type.Methods);
 		}
 
@@ -75,7 +77,7 @@ namespace Mono.Tuner {
 			return type.DeclaringType == null ? type.IsPublic : type.IsNestedPublic;
 		}
 
-		static void SetInternalVisibility (TypeDefinition type)
+		void SetInternalVisibility (TypeDefinition type)
 		{
 			type.Attributes &= ~TypeAttributes.VisibilityMask;
 			if (type.DeclaringType == null)
@@ -86,13 +88,13 @@ namespace Mono.Tuner {
 			MarkInternalized (type);
 		}
 
-		static void ProcessMethods (ICollection methods)
+		void ProcessMethods (ICollection methods)
 		{
 			foreach (MethodDefinition method in methods)
 				ProcessMethod (method);
 		}
 
-		static void ProcessMethod (MethodDefinition method)
+		void ProcessMethod (MethodDefinition method)
 		{
 			if (IsMarkedAsPublic (method))
 				return;
@@ -103,15 +105,15 @@ namespace Mono.Tuner {
 				SetProtectedAndInternalVisibility (method);
 		}
 
-		static void SetInternalVisibility (MethodDefinition method)
+		void SetInternalVisibility (MethodDefinition method)
 		{
 			method.Attributes &= ~MethodAttributes.MemberAccessMask;
-			method.Attributes |= MethodAttributes.Assem;
+			method.Attributes |= MethodAttributes.Assembly;
 
 			MarkInternalized (method);
 		}
 
-		static void SetProtectedAndInternalVisibility (MethodDefinition method)
+		void SetProtectedAndInternalVisibility (MethodDefinition method)
 		{
 			method.Attributes &= ~MethodAttributes.MemberAccessMask;
 			method.Attributes |= MethodAttributes.FamANDAssem;
@@ -119,18 +121,18 @@ namespace Mono.Tuner {
 			MarkInternalized (method);
 		}
 
-		static bool IsMarkedAsPublic (IAnnotationProvider provider)
+		bool IsMarkedAsPublic (IMetadataTokenProvider provider)
 		{
 			return Annotations.IsPublic (provider);
 		}
 
-		static void ProcessFields (FieldDefinitionCollection fields)
+		void ProcessFields (IEnumerable<FieldDefinition> fields)
 		{
 			foreach (FieldDefinition field in fields)
 				ProcessField (field);
 		}
 
-		static void ProcessField (FieldDefinition field)
+		void ProcessField (FieldDefinition field)
 		{
 			if (IsMarkedAsPublic (field))
 				return;
@@ -141,7 +143,7 @@ namespace Mono.Tuner {
 				SetProtectedAndInternalVisibility (field);
 		}
 
-		static void SetInternalVisibility (FieldDefinition field)
+		void SetInternalVisibility (FieldDefinition field)
 		{
 			field.Attributes &= ~FieldAttributes.FieldAccessMask;
 			field.Attributes |= FieldAttributes.Assembly;
@@ -149,7 +151,7 @@ namespace Mono.Tuner {
 			MarkInternalized (field);
 		}
 
-		static void SetProtectedAndInternalVisibility (FieldDefinition field)
+		void SetProtectedAndInternalVisibility (FieldDefinition field)
 		{
 			field.Attributes &= ~FieldAttributes.FieldAccessMask;
 			field.Attributes |= FieldAttributes.FamANDAssem;
@@ -157,9 +159,9 @@ namespace Mono.Tuner {
 			MarkInternalized (field);
 		}
 
-		static void MarkInternalized (IAnnotationProvider provider)
+		void MarkInternalized (IMetadataTokenProvider provider)
 		{
-			TunerAnnotations.Internalized (provider);
+			TunerAnnotations.Internalized (Context, provider);
 		}
 	}
 }

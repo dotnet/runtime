@@ -81,7 +81,6 @@ namespace Mono.Tuner {
 			CheckInterfaces (type);
 
 			CheckFields (type);
-			CheckConstructors (type);
 			CheckMethods (type);
 		}
 
@@ -114,10 +113,10 @@ namespace Mono.Tuner {
 				if (!IsInternalsVisibleToAttribute (attribute))
 					continue;
 
-				if (attribute.ConstructorParameters.Count == 0)
+				if (attribute.ConstructorArguments.Count == 0)
 					continue;
 
-				string signature = (string) attribute.ConstructorParameters [0];
+				string signature = (string) attribute.ConstructorArguments [0].Value;
 
 				if (InternalsVisibleToSignatureMatch (signature, candidate.Name))
 					return true;
@@ -162,7 +161,7 @@ namespace Mono.Tuner {
 			if (reference == null)
 				return true;
 
-			if (reference is GenericParameter || reference.GetOriginalType () is GenericParameter)
+			if (reference is GenericParameter || reference.GetElementType () is GenericParameter)
 				return true;
 
 			TypeDefinition other = reference.Resolve ();
@@ -298,11 +297,6 @@ namespace Mono.Tuner {
 			}
 		}
 
-		void CheckConstructors (TypeDefinition type)
-		{
-			CheckMethods (type, type.Constructors);
-		}
-
 		void CheckMethods (TypeDefinition type)
 		{
 			CheckMethods (type, type.Methods);
@@ -311,15 +305,15 @@ namespace Mono.Tuner {
 		void CheckMethods (TypeDefinition type, ICollection methods)
 		{
 			foreach (MethodDefinition method in methods) {
-				if (!IsVisibleFrom (type, method.ReturnType.ReturnType)) {
+				if (!IsVisibleFrom (type, method.ReturnType)) {
 					ReportError ("Method return type `{0}` in method `{1}` is not visible",
-						method.ReturnType.ReturnType, method);
+						method.ReturnType, method);
 				}
 
 				foreach (ParameterDefinition parameter in method.Parameters) {
 					if (!IsVisibleFrom (type, parameter.ParameterType)) {
 						ReportError ("Parameter `{0}` of type `{1}` in method `{2}` is not visible.",
-							parameter.Sequence, parameter.ParameterType, method);
+							parameter.Index, parameter.ParameterType, method);
 					}
 				}
 

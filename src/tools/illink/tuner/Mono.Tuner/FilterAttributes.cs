@@ -77,9 +77,6 @@ namespace Mono.Tuner {
 			if (type.HasMethods)
 				ProcessMethods (type.Methods);
 
-			if (type.HasConstructors)
-				ProcessMethods (type.Constructors);
-
 			if (type.HasEvents)
 				ProcessEvents (type.Events);
 
@@ -105,7 +102,7 @@ namespace Mono.Tuner {
 		{
 			ProcessGenericParameters (method);
 
-			Filter (method.ReturnType);
+			Filter (method.MethodReturnType);
 
 			if (method.HasParameters)
 				ProcessParameters (method.Parameters);

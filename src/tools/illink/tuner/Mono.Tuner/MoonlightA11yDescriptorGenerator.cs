@@ -74,19 +74,19 @@ namespace Mono.Tuner {
 			if (types != null && types.Count > 0) {
 				writer.WriteStartElement("assembly");
 				writer.WriteAttributeString ("fullname", assembly.Name.Name);
-				
+
 				foreach (TypeDefinition type in types.Keys) {
 					IList members = types [type];
 					if (members != null && members.Count > 0) {
 						writer.WriteStartElement("type");
 						writer.WriteAttributeString ("fullname", type.FullName);
 
-						foreach (IAnnotationProvider member in members) {
+						foreach (IMetadataTokenProvider member in members) {
 							MethodDefinition method = member as MethodDefinition;
 							if (method != null) {
 								writer.WriteStartElement("method");
-								writer.WriteAttributeString ("signature", 
-								                             method.ReturnType.ReturnType.FullName + " " +
+								writer.WriteAttributeString ("signature",
+								                             method.ReturnType.FullName + " " +
 								                             method.Name + GetMethodParams (method));
 								writer.WriteEndElement ();
 								continue;
@@ -102,11 +102,11 @@ namespace Mono.Tuner {
 						writer.WriteEndElement ();
 					}
 				}
-				
+
 				writer.WriteEndElement ();
 				Console.WriteLine ();
 			}
-			
+
 		}
 
 		protected override void EndProcess ()
@@ -149,16 +149,16 @@ namespace Mono.Tuner {
 				IList used_providers = FilterPublicMembers (ScanType (type));
 				if (used_providers.Count > 0)
 					members_used [type] = used_providers;
-				else if (IsInternal (type, true) && 
+				else if (IsInternal (type, true) &&
 				         Annotations.IsMarked (type))
 					throw new NotSupportedException (String.Format ("The type {0} is used while its API is not", type.ToString ()));
 			}
 			return members_used;
 		}
 
-		static IList ScanType (TypeDefinition type)
+		IList ScanType (TypeDefinition type)
 		{
-			return ExtractUsedProviders (type.Methods, type.Constructors, type.Fields);
+			return ExtractUsedProviders (type.Methods, type.Fields);
 		}
 
 		static IList FilterPublicMembers (IList members)
@@ -177,12 +177,12 @@ namespace Mono.Tuner {
 		{
 			if (master_infos.Length == 0)
 				throw new Exception ("No masterinfo files found in current directory");
-			
+
 			foreach (string file in master_infos) {
 				if (file.EndsWith (name + ".info"))
 					return file;
 			}
-			
+
 			return null;
 		}
 
@@ -198,12 +198,12 @@ namespace Mono.Tuner {
 			}
 			return String.Format (xpath_init, parent_type.Namespace, parent_type.Name) + xpath;
 		}
-		
+
 		static bool IsInternal (MemberReference member, bool master_info)
 		{
 			TypeDefinition type = null;
 			string master_info_file = null;
-			
+
 			if (member is TypeDefinition) {
 				type = member as TypeDefinition;
 				if (!master_info)
@@ -224,7 +224,7 @@ namespace Mono.Tuner {
 
 			MethodDefinition method = member as MethodDefinition;
 			FieldDefinition field = member as FieldDefinition;
-	
+
 			if (field == null && method == null)
 				throw new System.NotSupportedException ("Members to scan should be methods or fields");
 
@@ -246,7 +246,7 @@ namespace Mono.Tuner {
 				name = field.Name;
 			else {
 				name = method.ToString ();
-				
+
 				//lame, I know...
 				name = WackyOutArgs (WackyCommas (name.Substring (name.IndexOf ("::") + 2)
 				                    .Replace ("/", "+") // nested classes
@@ -258,7 +258,7 @@ namespace Mono.Tuner {
 
 			return !NodeExists (master_info_file, xpath_type + String.Format ("/properties/*/*/*[@name='{0}']", name));
 		}
-		
+
 		//at some point I want to get rid of this method and ask cecil's maintainer to spew commas in a uniform way...
 		static string WackyCommas (string method)
 		{
@@ -310,14 +310,14 @@ namespace Mono.Tuner {
 			return nav.SelectSingleNode (xpath) != null;
 		}
 
-		static IList /*List<IAnnotationProvider>*/ ExtractUsedProviders (params IList[] members)
+		IList /*List<IAnnotationProvider>*/ ExtractUsedProviders (params IList[] members)
 		{
 			IList used = new ArrayList ();
 			if (members == null || members.Length == 0)
 				return used;
 
 			foreach (IList members_list in members)
-				foreach (IAnnotationProvider provider in members_list)
+				foreach (IMetadataTokenProvider provider in members_list)
 					if (Annotations.IsMarked (provider))
 						used.Add (provider);
 

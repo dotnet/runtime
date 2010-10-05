@@ -29,6 +29,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 using Mono.Linker;
@@ -101,17 +102,13 @@ namespace Mono.Tuner {
 			foreach (TypeDefinition type in _assembly.MainModule.Types) {
 				RemoveSecurityAttributes (type);
 
-				if (type.HasConstructors)
-					foreach (MethodDefinition ctor in type.Constructors)
-						RemoveSecurityAttributes (ctor);
-
 				if (type.HasMethods)
 					foreach (MethodDefinition method in type.Methods)
 						RemoveSecurityAttributes (method);
 			}
 		}
 
-		static void RemoveSecurityDeclarations (IHasSecurity provider)
+		static void RemoveSecurityDeclarations (ISecurityDeclarationProvider provider)
 		{
 			// also remove already existing CAS security declarations
 
@@ -126,12 +123,12 @@ namespace Mono.Tuner {
 
 		static void RemoveSecurityAttributes (ICustomAttributeProvider provider)
 		{
-			RemoveSecurityDeclarations (provider as IHasSecurity);
+			RemoveSecurityDeclarations (provider as ISecurityDeclarationProvider);
 
 			if (!provider.HasCustomAttributes)
 				return;
 
-			CustomAttributeCollection attributes = provider.CustomAttributes;
+			var attributes = provider.CustomAttributes;
 			for (int i = 0; i < attributes.Count; i++) {
 				CustomAttribute attribute = attributes [i];
 				switch (attribute.Constructor.DeclaringType.FullName) {
@@ -231,7 +228,7 @@ namespace Mono.Tuner {
 			if (HasSecurityAttribute (provider, type))
 				return;
 
-			CustomAttributeCollection attributes = provider.CustomAttributes;
+			var attributes = provider.CustomAttributes;
 			switch (type) {
 			case AttributeType.Critical:
 				attributes.Add (CreateCriticalAttribute ());
@@ -279,7 +276,7 @@ namespace Mono.Tuner {
 
 		TypeDefinition GetType (string fullname)
 		{
-			return _assembly.MainModule.Types [fullname];
+			return _assembly.MainModule.GetType (fullname);
 		}
 
 		MethodDefinition GetMethod (string signature)
@@ -306,9 +303,7 @@ namespace Mono.Tuner {
 			if (type == null)
 				return null;
 
-			return method_name.StartsWith (".c") ?
-				GetMethod (type.Constructors, signature) :
-				GetMethod (type.Methods, signature);
+			return GetMethod (type.Methods, signature);
 		}
 
 		static MethodDefinition GetMethod (IEnumerable methods, string signature)
@@ -322,10 +317,13 @@ namespace Mono.Tuner {
 
 		static string GetFullName (MethodReference method)
 		{
-			int sentinel = method.GetSentinel ();
+			var sentinel = method.Parameters.FirstOrDefault (p => p.ParameterType.IsSentinel);
+			var sentinel_pos = -1;
+			if (sentinel != null)
+				sentinel_pos = method.Parameters.IndexOf (sentinel);
 
 			StringBuilder sb = new StringBuilder ();
-			sb.Append (method.ReturnType.ReturnType.FullName);
+			sb.Append (method.ReturnType.FullName);
 			sb.Append (" ");
 			sb.Append (method.DeclaringType.FullName);
 			sb.Append ("::");
@@ -345,7 +343,7 @@ namespace Mono.Tuner {
 					if (i > 0)
 						sb.Append (",");
 
-					if (i == sentinel)
+					if (i == sentinel_pos)
 						sb.Append ("...,");
 
 					sb.Append (method.Parameters [i].ParameterType.FullName);
@@ -357,7 +355,7 @@ namespace Mono.Tuner {
 
 		static MethodDefinition GetDefaultConstructor (TypeDefinition type)
 		{
-			foreach (MethodDefinition ctor in type.Constructors)
+			foreach (MethodDefinition ctor in type.Methods.Where (m => m.IsConstructor))
 				if (ctor.Parameters.Count == 0)
 					return ctor;
 
@@ -372,7 +370,7 @@ namespace Mono.Tuner {
 			TypeDefinition safe_critical_type = Context.GetType (_safe_critical);
 			if (safe_critical_type == null)
 				throw new InvalidOperationException (String.Format ("{0} type not found", _safe_critical));
-			
+
 			_safe_critical_ctor = GetDefaultConstructor (safe_critical_type);
 			return _safe_critical_ctor;
 		}
@@ -385,7 +383,7 @@ namespace Mono.Tuner {
 			TypeDefinition critical_type = Context.GetType (_critical);
 			if (critical_type == null)
 				throw new InvalidOperationException (String.Format ("{0} type not found", _critical));
-			
+
 			_critical_ctor = GetDefaultConstructor (critical_type);
 			return _critical_ctor;
 		}

@@ -42,13 +42,13 @@ namespace Mono.Tuner {
 		public void Process (LinkContext context)
 		{
 			CustomizePipeline (context.Pipeline);
-			ProcessAssemblies (context.GetAssemblies ());
+			ProcessAssemblies (context);
 		}
 
-		static void ProcessAssemblies (AssemblyDefinition [] assemblies)
+		static void ProcessAssemblies (LinkContext context)
 		{
-			foreach (AssemblyDefinition assembly in assemblies)
-				Annotations.SetAction (assembly, AssemblyAction.Link);
+			foreach (AssemblyDefinition assembly in context.GetAssemblies ())
+				context.Annotations.SetAction (assembly, AssemblyAction.Link);
 		}
 
 		protected virtual void CustomizePipeline (Pipeline pipeline)
