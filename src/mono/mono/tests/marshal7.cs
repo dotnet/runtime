@@ -51,6 +51,50 @@ public class Test
 		object itf;
 	}
 
+	// Size should be 12 in both 32 and 64 bits
+	[StructLayout (LayoutKind.Explicit)]
+	struct TestStruct8 {
+		[FieldOffset (0)]
+		public int a;
+		[FieldOffset (4)]
+		public ulong b;
+	}
+
+	// Size should be 12 in both 32 and 64 bits
+	[StructLayout (LayoutKind.Explicit, Size=12)]
+	struct TestStruct9 {
+		[FieldOffset (0)]
+		public int a;
+		[FieldOffset (4)]
+		public ulong b;
+	}
+
+	// Size should be 11 in both 32 and 64 bits
+	[StructLayout (LayoutKind.Explicit)]
+	struct TestStruct10 {
+		[FieldOffset (0)]
+		public int a;
+		[FieldOffset (3)]
+		public ulong b;
+	}
+
+	// Size should be 11 in both 32 and 64 bits
+	[StructLayout (LayoutKind.Explicit, Size=11)]
+	struct TestStruct11 {
+		[FieldOffset (0)]
+		public int a;
+		[FieldOffset (3)]
+		public ulong b;
+	}
+
+	[StructLayout (LayoutKind.Explicit, Pack=1)]
+	struct TestStruct12 {
+		[FieldOffset (0)]
+		public short a;
+		[FieldOffset (2)]
+		public int b;
+	}
+
 	public unsafe static int Main () 
 	{
 		///
@@ -137,7 +181,16 @@ public class Test
 		// a VARIANT is 
 		if (Marshal.SizeOf (typeof (TestStruct7)) != 16)
 			return 13;
-
+		if (Marshal.SizeOf (typeof (TestStruct8)) != 16)
+			return 14;
+		if (Marshal.SizeOf (typeof (TestStruct9)) != 12)
+			return 15;
+		if (Marshal.SizeOf (typeof (TestStruct10)) != 16)
+			return 16;
+		if (Marshal.SizeOf (typeof (TestStruct11)) != 11)
+			return 17;
+		if (Marshal.SizeOf (typeof (TestStruct12)) != 6)
+			return 18;
 		return 0;
 	}
 }

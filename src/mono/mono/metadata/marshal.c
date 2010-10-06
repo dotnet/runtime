@@ -10614,7 +10614,7 @@ MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
 	int j, count = 0;
-	guint32 native_size = 0, min_align = 1;
+	guint32 native_size = 0, min_align = 1, packing;
 	MonoMarshalType *info;
 	MonoClassField* field;
 	gpointer iter;
@@ -10671,6 +10671,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		info->native_size = parent_size;
 	}
 
+	packing = klass->packing_size ? klass->packing_size : 8;
 	iter = NULL;
 	j = 0;
 	while ((field = mono_class_get_fields (klass, &iter))) {
@@ -10709,8 +10710,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
 			size = mono_marshal_type_size (field->type, info->fields [j].mspec, 
 						       &align, TRUE, klass->unicode);
-			align = klass->packing_size ? MIN (klass->packing_size, align): align;
-			min_align = MAX (align, min_align);
+			min_align = packing;
 			info->fields [j].offset = field->offset - sizeof (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
@@ -10718,8 +10718,15 @@ mono_marshal_load_type_info (MonoClass* klass)
 		j++;
 	}
 
-	if(layout != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+	if (layout != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
 		info->native_size = MAX (native_size, info->native_size);
+		/*
+		 * If the provided Size is equal or larger than the calculated size, and there
+		 * was no Pack attribute, we set min_align to 1 to avoid native_size being increased
+		 */
+		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
+			if (native_size && native_size == info->native_size && klass->packing_size == 0)
+				min_align = 1;
 	}
 
 	if (info->native_size & (min_align - 1)) {
