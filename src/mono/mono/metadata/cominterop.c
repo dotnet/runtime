@@ -801,7 +801,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 				mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 				mspecs[mspec_index]->native = MONO_NATIVE_INTERFACE;
 			}
-			else if (sig_native->params[i]->type == MONO_NATIVE_BOOLEAN) {
+			else if (sig_native->params[i]->type == MONO_TYPE_BOOLEAN) {
 				mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 				mspecs[mspec_index]->native = MONO_NATIVE_VARIANTBOOL;
 			}
@@ -824,7 +824,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 				mspecs[0] = g_new0 (MonoMarshalSpec, 1);
 				mspecs[0]->native = MONO_NATIVE_INTERFACE;
 			}
-			else if (sig->ret->type == MONO_NATIVE_BOOLEAN) {
+			else if (sig->ret->type == MONO_TYPE_BOOLEAN) {
 				mspecs[0] = g_new0 (MonoMarshalSpec, 1);
 				mspecs[0]->native = MONO_NATIVE_VARIANTBOOL;
 			}
@@ -1976,7 +1976,7 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[mspec_index]->native = MONO_NATIVE_INTERFACE;
 					}
-					else if (sig_adjusted->params[param_index]->type == MONO_NATIVE_BOOLEAN) {
+					else if (sig_adjusted->params[param_index]->type == MONO_TYPE_BOOLEAN) {
 						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[mspec_index]->native = MONO_NATIVE_VARIANTBOOL;
 					}
@@ -2007,7 +2007,7 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[0]->native = MONO_NATIVE_INTERFACE;
 					}
-					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_NATIVE_BOOLEAN) {
+					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_BOOLEAN) {
 						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[0]->native = MONO_NATIVE_VARIANTBOOL;
 					}
