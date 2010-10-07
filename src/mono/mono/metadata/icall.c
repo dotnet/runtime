@@ -5401,14 +5401,23 @@ ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *modul
 }
 
 static gboolean
-mono_metadata_memberref_is_method (MonoImage *image, guint32 token)
+mono_memberref_is_method (MonoImage *image, guint32 token)
 {
-	guint32 cols [MONO_MEMBERREF_SIZE];
-	const char *sig;
-	mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], mono_metadata_token_index (token) - 1, cols, MONO_MEMBERREF_SIZE);
-	sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
-	mono_metadata_decode_blob_size (sig, &sig);
-	return (*sig != 0x6);
+	if (!image->dynamic) {
+		guint32 cols [MONO_MEMBERREF_SIZE];
+		const char *sig;
+		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], mono_metadata_token_index (token) - 1, cols, MONO_MEMBERREF_SIZE);
+		sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+		mono_metadata_decode_blob_size (sig, &sig);
+		return (*sig != 0x6);
+	} else {
+		MonoClass *handle_class;
+
+		if (!mono_lookup_dynamic_token_class (image, token, FALSE, &handle_class, NULL))
+			return FALSE;
+
+		return mono_defaults.methodhandle_class == handle_class;
+	}
 }
 
 static void
@@ -5497,7 +5506,7 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 		*error = ResolveTokenError_OutOfRange;
 		return NULL;
 	}
-	if ((table == MONO_TABLE_MEMBERREF) && (!mono_metadata_memberref_is_method (image, token))) {
+	if ((table == MONO_TABLE_MEMBERREF) && (!mono_memberref_is_method (image, token))) {
 		*error = ResolveTokenError_BadTable;
 		return NULL;
 	}
@@ -5565,7 +5574,7 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 		*error = ResolveTokenError_OutOfRange;
 		return NULL;
 	}
-	if ((table == MONO_TABLE_MEMBERREF) && (mono_metadata_memberref_is_method (image, token))) {
+	if ((table == MONO_TABLE_MEMBERREF) && (mono_memberref_is_method (image, token))) {
 		*error = ResolveTokenError_BadTable;
 		return NULL;
 	}
@@ -5613,7 +5622,7 @@ ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32
 			return NULL;
 	}
 	case MONO_TABLE_MEMBERREF:
-		if (mono_metadata_memberref_is_method (image, token)) {
+		if (mono_memberref_is_method (image, token)) {
 			MonoMethod *m = ves_icall_System_Reflection_Module_ResolveMethodToken (image, token, type_args, method_args, error);
 			if (m)
 				return (MonoObject*)mono_method_get_object (mono_domain_get (), m, m->klass);
