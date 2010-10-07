@@ -3740,6 +3740,15 @@ signature_method_pair_equal (SignatureMethodPair *pair1, SignatureMethodPair *pa
 	return mono_metadata_signature_equal (pair1->sig, pair2->sig) && (pair1->method == pair2->method);
 }
 
+static gboolean
+signature_method_pair_matches_method (gpointer key, gpointer value, gpointer user_data)
+{
+	SignatureMethodPair *pair = (SignatureMethodPair*)key;
+	MonoMethod *method = (MonoMethod*)user_data;
+
+	return pair->method == method;
+}
+
 static void
 free_signature_method_pair (SignatureMethodPair *pair)
 {
@@ -11128,6 +11137,8 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 void
 mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 {
+	MonoImage *image = method->klass->image;
+
 	g_assert (method->dynamic);
 
 	/* This could be called during shutdown */
@@ -11137,8 +11148,13 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	 * FIXME: We currently leak the wrappers. Freeing them would be tricky as
 	 * they could be shared with other methods ?
 	 */
-	if (method->klass->image->runtime_invoke_direct_cache)
-		g_hash_table_remove (method->klass->image->runtime_invoke_direct_cache, method);
+	if (image->runtime_invoke_direct_cache)
+		g_hash_table_remove (image->runtime_invoke_direct_cache, method);
+	if (image->delegate_bound_static_invoke_cache)
+		g_hash_table_foreach_remove (image->delegate_bound_static_invoke_cache, signature_method_pair_matches_method, method);
+	if (image->delegate_abstract_invoke_cache)
+		g_hash_table_foreach_remove (image->delegate_abstract_invoke_cache, signature_method_pair_matches_method, method);
+
 	if (marshal_mutex_initialized)
 		mono_marshal_unlock ();
 }
