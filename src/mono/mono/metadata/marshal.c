@@ -10537,7 +10537,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		klass->blittable = FALSE;
 
 	/* If this is an array type, ensure that we have element info */
-	if (klass->element_class && !mono_marshal_is_loading_type_info (klass->element_class)) {
+	if (klass->rank && !mono_marshal_is_loading_type_info (klass->element_class)) {
 		mono_marshal_load_type_info (klass->element_class);
 	}
 
