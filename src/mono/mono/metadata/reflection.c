@@ -7733,8 +7733,7 @@ mono_reflection_get_token (MonoObject *obj)
 	} else if (strcmp (klass->name, "FieldBuilder") == 0) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)obj;
 
-		/* Call mono_image_create_token so the object gets added to the tokens hash table */
-		token = mono_image_create_token (((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image, obj, FALSE, TRUE);
+		token = fb->table_idx | MONO_TOKEN_FIELD_DEF;
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
