@@ -82,14 +82,13 @@
 /*                When value type methods are called through the    */
 /*		  vtable we need to unbox the 'this' argument.	    */
 /*		                               		 	    */
-/* Parameters   - gsctx  - Generic sharing context		    */
-/*                method - Methd pointer			    */
+/* Parameters   - method - Methd pointer			    */
 /*		  addr   - Pointer to native code for method	    */
 /*		                               		 	    */
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *method, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = s390_r2;

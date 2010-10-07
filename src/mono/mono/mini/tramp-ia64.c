@@ -24,7 +24,6 @@
 
 /*
  * mono_arch_get_unbox_trampoline:
- * @gsctx: the generic sharing context
  * @m: method pointer
  * @addr: pointer to native code for @m
  *
@@ -33,7 +32,7 @@
  * unboxing before calling the method
  */
 gpointer
-mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *buf;
 	gpointer func_addr, func_gp;

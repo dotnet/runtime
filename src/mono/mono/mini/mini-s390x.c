@@ -5645,11 +5645,10 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 {
 	MonoLMF *lmf = (MonoLMF *) ((gchar *) regs - sizeof(MonoLMF));
 
-	/* FIXME: handle returning a struct */
 	return (gpointer) lmf->gregs [s390_r2];
 }
 
@@ -5977,22 +5976,5 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 
 	return ((MonoMethod *) lmf->gregs [MONO_ARCH_IMT_REG]);
 }
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_find_this_argument.                     */
-/*                                                                  */
-/* Function	- 						    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-MonoObject *
-mono_arch_find_this_argument (mgreg_t *regs, MonoMethod *method, 
-			      MonoGenericSharingContext *gsctx)
-{
-        return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), regs, NULL);
-}  
 
 /*========================= End of Function ========================*/

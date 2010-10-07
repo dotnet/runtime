@@ -6987,15 +6987,15 @@ mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guin
 }
 
 int
-mono_arch_get_this_arg_reg (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx, guint8 *code)
+mono_arch_get_this_arg_reg (guint8 *code)
 {
 	return AMD64_ARG_REG1;
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 {
-	return (gpointer)regs [mono_arch_get_this_arg_reg (sig, gsctx, code)];
+	return (gpointer)regs [mono_arch_get_this_arg_reg (code)];
 }
 
 #define MAX_ARCH_DELEGATE_PARAMS 10

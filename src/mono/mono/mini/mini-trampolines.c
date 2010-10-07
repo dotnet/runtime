@@ -28,7 +28,7 @@ static guint32 trampoline_calls, jit_trampolines, unbox_trampolines, static_rgct
 static CRITICAL_SECTION trampolines_mutex;
 
 static gpointer
-get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr, gboolean need_rgctx_tramp)
+get_unbox_trampoline (MonoMethod *m, gpointer addr, gboolean need_rgctx_tramp)
 {
 	if (mono_aot_only) {
 		if (need_rgctx_tramp)
@@ -41,7 +41,7 @@ get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer 
 			return mono_aot_get_unbox_trampoline (m);
 	} else {
 		unbox_trampolines ++;
-		return mono_arch_get_unbox_trampoline (gsctx, m, addr);
+		return mono_arch_get_unbox_trampoline (m, addr);
 	}
 }
 
@@ -158,7 +158,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 static gpointer*
 mono_convert_imt_slot_to_vtable_slot (gpointer* slot, mgreg_t *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method, gboolean *need_rgctx_tramp, gboolean *variance_used, gpointer *aot_addr)
 {
-	MonoObject *this_argument = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (method), regs, code);
+	MonoObject *this_argument = mono_arch_get_this_arg_from_call (regs, code);
 	MonoVTable *vt = this_argument->vtable;
 	int displacement = slot - ((gpointer*)vt);
 
@@ -301,7 +301,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 		vtable_slot = orig_vtable_slot;
 		g_assert (vtable_slot);
 
-		this_arg = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (m), regs, code);
+		this_arg = mono_arch_get_this_arg_from_call (regs, code);
 
 		if (this_arg->vtable->klass == mono_defaults.transparent_proxy_class) {
 			/* Use the slow path for now */
@@ -399,7 +399,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 #endif
 		} else {
 #ifdef MONO_ARCH_HAVE_IMT
-			MonoObject *this_argument = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (m), regs, code);
+			MonoObject *this_argument = mono_arch_get_this_arg_from_call (regs, code);
 
 			vt = this_argument->vtable;
 			vtable_slot = orig_vtable_slot;
@@ -489,7 +489,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 		g_assert (vtable_slot);
 
 		if (vt->klass->valuetype) /*FIXME is this required variant iface?*/
-			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr, need_rgctx_tramp);
+			addr = get_unbox_trampoline (m, addr, need_rgctx_tramp);
 
 		mono_method_add_generic_virtual_invocation (mono_domain_get (), 
 													vt, vtable_slot,
@@ -530,7 +530,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
-			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr, need_rgctx_tramp);
+			addr = get_unbox_trampoline (m, addr, need_rgctx_tramp);
 
 		if (vtable_slot_to_patch && (mono_aot_is_got_entry (code, (guint8*)vtable_slot_to_patch) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot_to_patch))) {
 			g_assert (*vtable_slot_to_patch);
@@ -611,7 +611,7 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	/*
 	 * Obtain the vtable from the 'this' arg.
 	 */
-	this = mono_arch_get_this_arg_from_call (NULL, NULL, regs, code);
+	this = mono_arch_get_this_arg_from_call (regs, code);
 	g_assert (this);
 
 	vt = this->vtable;
@@ -867,12 +867,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	trampoline_calls ++;
 
 	/* Obtain the delegate object according to the calling convention */
-
-	/* 
-	 * Avoid calling mono_get_generic_context_from_code () now since it is expensive, 
-	 * get_this_arg_from_call will call it if needed.
-	 */
-	delegate = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (invoke), regs, code);
+	delegate = mono_arch_get_this_arg_from_call (regs, code);
 
 	if (delegate->method) {
 		method = delegate->method;

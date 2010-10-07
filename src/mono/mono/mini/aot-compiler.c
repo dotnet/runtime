@@ -895,14 +895,14 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
  * CALL_TARGET is the symbol pointing to the native code of METHOD.
  */
 static void
-arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGenericSharingContext *gsctx, const char *call_target)
+arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, const char *call_target)
 {
 #if defined(TARGET_AMD64)
 	guint8 buf [32];
 	guint8 *code;
 	int this_reg;
 
-	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (method), gsctx, NULL);
+	this_reg = mono_arch_get_this_arg_reg (NULL);
 	code = buf;
 	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
 
@@ -4891,7 +4891,7 @@ emit_code (MonoAotCompile *acfg)
 
 			sprintf (call_target, "%s", cfg->asm_symbol);
 
-			arch_emit_unbox_trampoline (acfg, cfg->orig_method, cfg->generic_sharing_context, call_target);
+			arch_emit_unbox_trampoline (acfg, cfg->orig_method, call_target);
 		}
 
 		if (cfg->compile_llvm)

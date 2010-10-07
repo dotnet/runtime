@@ -436,6 +436,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 	 * IA64 has MONO_ARCH_THIS_AS_FIRST_ARG defined, but we don't need to really pass
 	 * this as first, because this is stored in a non-stacked register by the calling
 	 * sequence.
+	 * FIXME: mono_arch_get_unbox_trampoline () depends on this.
 	 */
 
 	/* this */
@@ -2726,7 +2727,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			int out_reg;
 
 			/* 
-			 * mono_arch_find_this_arg () needs to find the this argument in a global 
+			 * mono_arch_get_this_arg_from_call () needs to find the this argument in a global 
 			 * register.
 			 */
 			cinfo = get_call_info (cfg, cfg->mempool, call->signature, FALSE);
@@ -4630,7 +4631,7 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt
 #endif
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 {
 	return (gpointer)regs [IA64_R10];
 }

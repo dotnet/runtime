@@ -31,7 +31,6 @@ static guint8* nullified_class_init_trampoline;
 
 /*
  * mono_arch_get_unbox_trampoline:
- * @gsctx: the generic sharing context
  * @m: method pointer
  * @addr: pointer to native code for @m
  *
@@ -40,14 +39,14 @@ static guint8* nullified_class_init_trampoline;
  * unboxing before calling the method
  */
 gpointer
-mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_reg;
 
 	MonoDomain *domain = mono_domain_get ();
 
-	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (m), gsctx, NULL);
+	this_reg = mono_arch_get_this_arg_reg (NULL);
 
 	start = code = mono_domain_code_reserve (domain, 20);
 
@@ -107,7 +106,7 @@ mono_arch_get_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_off
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
 
-	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (m), NULL, NULL);
+	this_reg = mono_arch_get_this_arg_reg (NULL);
 
 	/* Set imt arg */
 	amd64_mov_reg_imm (code, MONO_ARCH_IMT_REG, m);

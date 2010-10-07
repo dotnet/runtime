@@ -5718,8 +5718,7 @@ mono_x86_get_this_arg_offset (MonoGenericSharingContext *gsctx, MonoMethodSignat
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig,
-		mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 {
 	guint32 esp = regs [X86_ESP];
 	CallInfo *cinfo = NULL;
