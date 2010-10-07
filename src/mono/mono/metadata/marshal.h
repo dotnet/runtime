@@ -248,6 +248,12 @@ MonoMethod *
 mono_marshal_get_unbox_wrapper (MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod *
+mono_marshal_get_castclass_with_cache (void) MONO_INTERNAL;
+
+MonoMethod *
+mono_marshal_get_isinst_with_cache (void) MONO_INTERNAL;
+
+MonoMethod *
 mono_marshal_get_isinst (MonoClass *klass) MONO_INTERNAL;
 
 MonoMethod *

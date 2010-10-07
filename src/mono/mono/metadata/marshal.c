@@ -8817,6 +8817,203 @@ type_from_handle (MonoType *handle)
 }
 
 /*
+ * This does the equivalent of mono_object_variant_castclass.
+ */
+MonoMethod *
+mono_marshal_get_castclass_with_cache (void)
+{
+	static MonoMethod *cached;
+	MonoMethod *res;
+	MonoMethodBuilder *mb;
+	MonoMethodSignature *sig;
+	int return_null_pos, cache_miss_pos, invalid_cast_pos;
+
+	if (cached)
+		return cached;
+
+	mb = mono_mb_new (mono_defaults.object_class, "__castclass_with_cache", MONO_WRAPPER_CASTCLASS);
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	sig->params [1] = &mono_defaults.int_class->byval_arg;
+	sig->params [2] = &mono_defaults.int_class->byval_arg;
+	sig->ret = &mono_defaults.object_class->byval_arg;
+	sig->pinvoke = 0;
+
+	/* allocate local 0 (pointer) obj_vtable */
+	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+	/*if (!obj)*/
+	mono_mb_emit_ldarg (mb, 0);
+	return_null_pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	/*obj_vtable = obj->vtable;*/
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_stloc (mb, 0);
+
+	/* *cache */
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_ldloc (mb, 0);
+
+	/*if (*cache == obj_vtable)*/
+	cache_miss_pos = mono_mb_emit_branch (mb, CEE_BNE_UN);
+
+	/*return obj;*/
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	mono_mb_patch_branch (mb, cache_miss_pos);
+	/*if (mono_object_isinst (obj, klass)) */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_icall (mb, mono_object_isinst);
+	invalid_cast_pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	/**cache = obj_vtable;*/
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+
+	/*return obj;*/
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/*fails*/
+	mono_mb_patch_branch (mb, invalid_cast_pos);
+	mono_mb_emit_exception (mb, "InvalidCastException", NULL);
+
+	/*return null*/
+	mono_mb_patch_branch (mb, return_null_pos);
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_method (mb, sig, 8);
+	if (InterlockedCompareExchangePointer ((volatile gpointer *)&cached, res, NULL)) {
+		mono_free_method (res);
+		mono_metadata_free_method_signature (sig);
+	}
+	mono_mb_free (mb);
+
+	return cached;
+}
+
+/*
+ * This does the equivalent of mono_object_variant_isinst.
+ */
+MonoMethod *
+mono_marshal_get_isinst_with_cache (void)
+{
+	static MonoMethod *cached;
+	MonoMethod *res;
+	MonoMethodBuilder *mb;
+	MonoMethodSignature *sig;
+	int return_null_pos, cache_miss_pos, cache_hit_pos, not_an_instance_pos, negative_cache_hit_pos;
+
+	if (cached)
+		return cached;
+
+	mb = mono_mb_new (mono_defaults.object_class, "__isisnt_with_cache", MONO_WRAPPER_CASTCLASS);
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	sig->params [1] = &mono_defaults.int_class->byval_arg;
+	sig->params [2] = &mono_defaults.int_class->byval_arg;
+	sig->ret = &mono_defaults.object_class->byval_arg;
+	sig->pinvoke = 0;
+
+	/* allocate local 0 (pointer) obj_vtable */
+	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	/* allocate local 1 (pointer) cached_vtable */
+	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+	/*if (!obj)*/
+	mono_mb_emit_ldarg (mb, 0);
+	return_null_pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	/*obj_vtable = obj->vtable;*/
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_stloc (mb, 0);
+
+	/* cached_vtable = *cache*/
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_stloc (mb, 1);
+
+	mono_mb_emit_ldloc (mb, 1);
+	mono_mb_emit_byte (mb, CEE_LDC_I4);
+	mono_mb_emit_i4 (mb, ~0x1);
+	mono_mb_emit_byte (mb, CEE_CONV_U);
+	mono_mb_emit_byte (mb, CEE_AND);
+	mono_mb_emit_ldloc (mb, 0);
+	/*if ((cached_vtable & ~0x1)== obj_vtable)*/
+	cache_miss_pos = mono_mb_emit_branch (mb, CEE_BNE_UN);
+
+	/*return (cached_vtable & 0x1) ? NULL : obj;*/
+	mono_mb_emit_ldloc (mb, 1);
+	mono_mb_emit_byte(mb, CEE_LDC_I4_1);
+	mono_mb_emit_byte (mb, CEE_CONV_U);
+	mono_mb_emit_byte (mb, CEE_AND);
+	negative_cache_hit_pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+
+	/*obj*/
+	mono_mb_emit_ldarg (mb, 0);
+	cache_hit_pos = mono_mb_emit_branch (mb, CEE_BR);
+
+	/*NULL*/
+	mono_mb_patch_branch (mb, negative_cache_hit_pos);
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+
+	mono_mb_patch_branch (mb, cache_hit_pos);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	mono_mb_patch_branch (mb, cache_miss_pos);
+	/*if (mono_object_isinst (obj, klass)) */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_icall (mb, mono_object_isinst);
+	not_an_instance_pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	/**cache = obj_vtable;*/
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+
+	/*return obj;*/
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/*not an instance*/
+	mono_mb_patch_branch (mb, not_an_instance_pos);
+	/* *cache = (gpointer)(obj_vtable | 0x1);*/
+	mono_mb_emit_ldarg (mb, 1);
+	/*obj_vtable | 0x1*/
+	mono_mb_emit_ldloc (mb, 1);
+	mono_mb_emit_byte(mb, CEE_LDC_I4_1);
+	mono_mb_emit_byte (mb, CEE_CONV_U);
+	mono_mb_emit_byte (mb, CEE_OR);
+
+	/* *cache = ... */
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+
+	/*return null*/
+	mono_mb_patch_branch (mb, return_null_pos);
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_method (mb, sig, 8);
+	if (InterlockedCompareExchangePointer ((volatile gpointer *)&cached, res, NULL)) {
+		mono_free_method (res);
+		mono_metadata_free_method_signature (sig);
+	}
+	mono_mb_free (mb);
+
+	return cached;
+}
+
+/*
  * mono_marshal_get_isinst:
  * @klass: the type of the field
  *
