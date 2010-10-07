@@ -163,5 +163,11 @@ MonoObject* mono_object_castclass (MonoObject *obj, MonoClass *klass) MONO_INTER
 
 gpointer mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpointer func) MONO_INTERNAL;
 
+MonoObject*
+mono_object_isinst_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache);
+
+MonoObject*
+mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache);
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 

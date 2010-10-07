@@ -3290,17 +3290,21 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 
 
 static gboolean
-mini_class_has_reference_variant_generic_argument (MonoClass *klass)
+mini_class_has_reference_variant_generic_argument (MonoClass *klass, int context_used)
 {
 	int i;
 	MonoGenericContainer *container;
 	MonoGenericInst *ginst;
 
-	if (!klass->generic_class)
+	if (klass->generic_class) {
+		container = klass->generic_class->container_class->generic_container;
+		ginst = klass->generic_class->context.class_inst;
+	} else if (klass->generic_container && context_used) {
+		container = klass->generic_container;
+		ginst = container->context.class_inst;
+	} else {
 		return FALSE;
-
-	container = klass->generic_class->container_class->generic_container;
-	ginst = klass->generic_class->context.class_inst;
+	}
 
 	for (i = 0; i < container->type_argc; ++i) {
 		MonoType *type;
@@ -3309,12 +3313,15 @@ mini_class_has_reference_variant_generic_argument (MonoClass *klass)
 		type = ginst->type_argv [i];
 		if (MONO_TYPE_IS_REFERENCE (type))
 			return TRUE;
+
+		if (context_used && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))
+			return TRUE;
 	}
 	return FALSE;
 }
 
 // FIXME: This doesn't work yet (class libs tests fail?)
-#define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_SEALED) || mini_class_has_reference_variant_generic_argument (klass) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
+#define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
 /*
  * Returns NULL and set the cfg exception on error.
@@ -7872,8 +7879,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
-			if (!context_used && mini_class_has_reference_variant_generic_argument (klass)) {
-				MonoInst *args [2];
+			if (!context_used && mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+				MonoInst *args [3];
 
 				/* obj */
 				args [0] = *sp;
@@ -7881,7 +7888,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* klass */
 				EMIT_NEW_CLASSCONST (cfg, args [1], klass);
 
-				ins = mono_emit_jit_icall (cfg, mono_object_castclass, args);
+				/* inline cache*/
+				/*FIXME AOT support*/
+				EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
+
+
+				ins = mono_emit_jit_icall (cfg, mono_object_castclass_with_cache, args);
 				*sp ++ = ins;
 				ip += 5;
 				inline_costs += 2;
@@ -7926,8 +7938,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
-			if (!context_used && mini_class_has_reference_variant_generic_argument (klass)) {
-				MonoInst *args [2];
+			if (!context_used && mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+				MonoInst *args [3];
 
 				/* obj */
 				args [0] = *sp;
@@ -7935,7 +7947,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* klass */
 				EMIT_NEW_CLASSCONST (cfg, args [1], klass);
 
-				*sp = mono_emit_jit_icall (cfg, mono_object_isinst, args);
+				/* inline cache*/
+				/*FIXME AOT support*/
+				EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
+
+				*sp = mono_emit_jit_icall (cfg, mono_object_isinst_with_cache, args);
 				sp++;
 				ip += 5;
 				inline_costs += 2;
@@ -7983,7 +7999,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
-				if (!context_used && (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+				if (!context_used && mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+					MonoInst *args [3];
+
+					/* obj */
+					args [0] = *sp;
+
+					/* klass */
+					EMIT_NEW_CLASSCONST (cfg, args [1], klass);
+
+					/* inline cache*/
+					/*FIXME AOT support*/
+					EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
+
+
+					ins = mono_emit_jit_icall (cfg, mono_object_castclass_with_cache, args);
+					*sp ++ = ins;
+					ip += 5;
+					inline_costs += 2;
+				} else if (!context_used && (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 					MonoMethod *mono_castclass;
 					MonoInst *iargs [1];
 					int costs;

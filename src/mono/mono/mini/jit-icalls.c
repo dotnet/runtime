@@ -1033,6 +1033,67 @@ mono_object_castclass (MonoObject *obj, MonoClass *klass)
 	return NULL;
 }
 
+MonoObject*
+mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache)
+{
+	MonoJitTlsData *jit_tls = NULL;
+	gpointer cached_vtable, obj_vtable;
+
+	if (mini_get_debug_options ()->better_cast_details) {
+		jit_tls = TlsGetValue (mono_jit_tls_id);
+		jit_tls->class_cast_from = NULL;
+	}
+
+	if (!obj)
+		return NULL;
+
+	cached_vtable = *cache;
+	obj_vtable = obj->vtable;
+
+	if (cached_vtable == obj_vtable)
+		return obj;
+
+	if (mono_object_isinst (obj, klass)) {
+		*cache = obj_vtable;
+		return obj;
+	}
+
+	if (mini_get_debug_options ()->better_cast_details) {
+		jit_tls->class_cast_from = obj->vtable->klass;
+		jit_tls->class_cast_to = klass;
+	}
+
+	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
+					"System", "InvalidCastException"));
+
+	return NULL;
+}
+
+MonoObject*
+mono_object_isinst_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache)
+{
+	size_t cached_vtable, obj_vtable;
+
+	if (!obj)
+		return NULL;
+
+	cached_vtable = (size_t)*cache;
+	obj_vtable = (size_t)obj->vtable;
+
+	if ((cached_vtable & ~0x1) == obj_vtable) {
+		return (cached_vtable & 0x1) ? NULL : obj;
+	}
+
+	if (mono_object_isinst (obj, klass)) {
+		*cache = (gpointer)obj_vtable;
+		return obj;
+	} else {
+		/*negative cache*/
+		*cache = (gpointer)(obj_vtable | 0x1);
+		return NULL;
+	}
+}
+
 gpointer
 mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpointer func)
 {
