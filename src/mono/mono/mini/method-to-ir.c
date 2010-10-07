@@ -30,6 +30,7 @@
 #include <mono/utils/memcheck.h>
 
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/attrdefs.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
@@ -3287,8 +3288,33 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 	return alloc;
 }
 
+
+static gboolean
+mini_class_has_reference_variant_generic_argument (MonoClass *klass)
+{
+	int i;
+	MonoGenericContainer *container;
+	MonoGenericInst *ginst;
+
+	if (!klass->generic_class)
+		return FALSE;
+
+	container = klass->generic_class->container_class->generic_container;
+	ginst = klass->generic_class->context.class_inst;
+
+	for (i = 0; i < container->type_argc; ++i) {
+		MonoType *type;
+		if (!(mono_generic_container_get_param_info (container, i)->flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT)))
+			continue;
+		type = ginst->type_argv [i];
+		if (MONO_TYPE_IS_REFERENCE (type))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 // FIXME: This doesn't work yet (class libs tests fail?)
-#define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_SEALED) || mono_class_has_variant_generic_params (klass) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
+#define is_complex_isinst(klass) (TRUE || (klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || klass->marshalbyref || (klass->flags & TYPE_ATTRIBUTE_SEALED) || mini_class_has_reference_variant_generic_argument (klass) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
 
 /*
  * Returns NULL and set the cfg exception on error.
@@ -7846,7 +7872,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
-			if (!context_used && mono_class_has_variant_generic_params (klass)) {
+			if (!context_used && mini_class_has_reference_variant_generic_argument (klass)) {
 				MonoInst *args [2];
 
 				/* obj */
@@ -7900,7 +7926,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
-			if (!context_used && mono_class_has_variant_generic_params (klass)) {
+			if (!context_used && mini_class_has_reference_variant_generic_argument (klass)) {
 				MonoInst *args [2];
 
 				/* obj */
