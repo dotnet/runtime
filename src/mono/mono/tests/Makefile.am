@@ -43,7 +43,7 @@ STRESS_TESTS_SRC=	\
 	assembly-load-stress.cs
 
 # Disabled until ?mcs is fixed
-#	bug-331958.cs		\
+#	bug-331958.cs
 BASE_TEST_CS_SRC=		\
 	array-init.cs		\
 	arraylist.cs		\
