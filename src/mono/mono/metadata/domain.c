@@ -1970,13 +1970,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		domain->type_init_exception_hash = NULL;
 	}
 
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly *ass = tmp->data;
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s %p, assembly %s %p, refcount=%d\n", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
-		if (!mono_assembly_close_except_image_pools (ass))
-			tmp->data = NULL;
-	}
-
 #if HAVE_SGEN_GC
 	if (domain->class_vtable_array) {
 		int i;
@@ -1985,7 +1978,15 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 #endif
 
+	/* This needs to be done before closing assemblies */
 	mono_gc_clear_domain (domain);
+
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *ass = tmp->data;
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s %p, assembly %s %p, refcount=%d\n", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
+		if (!mono_assembly_close_except_image_pools (ass))
+			tmp->data = NULL;
+	}
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = tmp->data;
