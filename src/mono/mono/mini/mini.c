@@ -6454,4 +6454,10 @@ mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *st
 	cfg->try_block_holes = g_slist_append_mempool (cfg->mempool, cfg->try_block_holes, hole);
 }
 
+void
+mono_cfg_set_exception (MonoCompile *cfg, int type)
+{
+	cfg->exception_type = type;
+}
+
 #endif
