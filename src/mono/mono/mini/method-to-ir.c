@@ -3335,10 +3335,26 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 	MonoInst *klass_inst = NULL;
 
 	if (context_used) {
-		MonoInst *args [2];
+		MonoInst *args [3];
 
-		klass_inst = emit_get_rgctx_klass (cfg, context_used,
-										   klass, MONO_RGCTX_INFO_KLASS);
+		if(mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+			MonoInst *cache_ins;
+
+			cache_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_CAST_CACHE);
+
+			/* obj */
+			args [0] = src;
+
+			/* klass - it's the second element of the cache entry*/
+			EMIT_NEW_LOAD_MEMBASE (cfg, args [1], OP_LOAD_MEMBASE, alloc_preg (cfg), cache_ins->dreg, sizeof (gpointer));
+
+			/* cache */
+			args [2] = cache_ins;
+
+			return mono_emit_jit_icall (cfg, mono_object_castclass_with_cache, args);
+		}
+
+		klass_inst = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
 
 		if (is_complex_isinst (klass)) {
 			/* Complex case, handle by an icall */
@@ -3412,11 +3428,28 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 	MonoInst *klass_inst = NULL;
 
 	if (context_used) {
+		MonoInst *args [3];
+
+		if(mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+			MonoInst *cache_ins;
+
+			cache_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_CAST_CACHE);
+
+			/* obj */
+			args [0] = src;
+
+			/* klass - it's the second element of the cache entry*/
+			EMIT_NEW_LOAD_MEMBASE (cfg, args [1], OP_LOAD_MEMBASE, alloc_preg (cfg), cache_ins->dreg, sizeof (gpointer));
+
+			/* cache */
+			args [2] = cache_ins;
+
+			return mono_emit_jit_icall (cfg, mono_object_isinst_with_cache, args);
+		}
+
 		klass_inst = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
 
 		if (is_complex_isinst (klass)) {
-			MonoInst *args [2];
-
 			/* Complex case, handle by an icall */
 
 			/* obj */
@@ -7891,7 +7924,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* inline cache*/
 				/*FIXME AOT support*/
 				EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
-
 
 				ins = mono_emit_jit_icall (cfg, mono_object_castclass_with_cache, args);
 				*sp ++ = ins;
