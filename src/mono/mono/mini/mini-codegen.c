@@ -1043,7 +1043,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	int fpstack [8];
 	int sp = 0;
 #endif
-	int num_sregs;
+	int num_sregs = 0;
 	int sregs [MONO_MAX_SRC_REGS];
 
 	if (!bb->code)

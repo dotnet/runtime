@@ -12,7 +12,7 @@
 #include <mono/metadata/gc-internal.h>
 
 //#if 0
-#ifdef HAVE_SGEN_GC
+#if defined(HAVE_SGEN_GC) && defined(MONO_ARCH_GC_MAPS_SUPPORTED)
 
 #include <mono/metadata/sgen-gc.h>
 #include <mono/metadata/gc-internal.h>
@@ -65,9 +65,9 @@ typedef struct {
 	guint8 *reg_pin_bitmap;
 } MonoCompileGC;
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+#define ALIGN_TO(val,align) ((((mgreg_t)val) + ((align) - 1)) & ~((align) - 1))
 
-#if 1
+#if 0
 /* We don't support debug levels, its all-or-nothing */
 #define DEBUG(s) do { s; fflush (logfile); } while (0)
 #define DEBUG_ENABLED 1
@@ -116,7 +116,7 @@ typedef struct {
 	gboolean has_context;
 	MonoJitTlsData *jit_tls;
 	/* For debugging */
-	guint64 tid;
+	mgreg_t tid;
 	gpointer ref_to_track;
 	/* Number of frames collected during the !precise pass */
 	int nframes;
@@ -356,6 +356,11 @@ encode_frame_reg (int frame_reg)
 		return 0;
 	else if (frame_reg == AMD64_RBP)
 		return 1;
+#elif defined(TARGET_X86)
+	if (frame_reg == X86_EBP)
+		return 0;
+	else if (frame_reg == X86_ESP)
+		return 1;
 #else
 	NOT_IMPLEMENTED;
 #endif
@@ -371,6 +376,11 @@ decode_frame_reg (int encoded)
 		return AMD64_RSP;
 	else if (encoded == 1)
 		return AMD64_RBP;
+#elif defined(TARGET_X86)
+	if (encoded == 0)
+		return X86_EBP;
+	else if (encoded == 1)
+		return X86_ESP;
 #else
 	NOT_IMPLEMENTED;
 #endif
@@ -384,12 +394,13 @@ static int callee_saved_regs [] = { AMD64_RBP, AMD64_RBX, AMD64_R12, AMD64_R13, 
 #else
 static int callee_saved_regs [] = { AMD64_RBP, AMD64_RBX, AMD64_R12, AMD64_R13, AMD64_R14, AMD64_R15 };
 #endif
+#elif defined(TARGET_X86)
+static int callee_saved_regs [] = { X86_EBX, X86_ESI, X86_EDI };
 #endif
 
 static guint32
 encode_regmask (guint32 regmask)
 {
-#ifdef TARGET_AMD64
 	int i;
 	guint32 res;
 
@@ -402,16 +413,11 @@ encode_regmask (guint32 regmask)
 	}
 	g_assert (regmask == 0);
 	return res;
-#else
-	NOT_IMPLEMENTED;
-	return regmask;
-#endif
 }
 
 static guint32
 decode_regmask (guint32 regmask)
 {
-#ifdef TARGET_AMD64
 	int i;
 	guint32 res;
 
@@ -420,10 +426,6 @@ decode_regmask (guint32 regmask)
 		if (regmask & (1 << i))
 			res |= (1 << callee_saved_regs [i]);
 	return res;
-#else
-	NOT_IMPLEMENTED;
-	return regmask;
-#endif
 }
 
 /*
@@ -593,6 +595,24 @@ slot_type_to_string (GCSlotType type)
 	}
 }
 
+static inline mgreg_t
+get_frame_pointer (MonoContext *ctx, int frame_reg)
+{
+#if defined(TARGET_AMD64)
+		if (frame_reg == AMD64_RSP)
+			return ctx->rsp;
+		else if (frame_reg == AMD64_RBP)
+			return ctx->rbp;
+#elif defined(TARGET_X86)
+		if (frame_reg == X86_ESP)
+			return ctx->esp;
+		else if (frame_reg == X86_EBP)
+			return ctx->ebp;
+#endif
+		g_assert_not_reached ();
+		return 0;
+}
+
 /*
  * conservatively_pass:
  *
@@ -677,7 +697,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			}
 		}
 
-		g_assert ((guint64)stack_limit % sizeof (mgreg_t) == 0);
+		g_assert ((mgreg_t)stack_limit % sizeof (mgreg_t) == 0);
 
 #ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
 		res = mono_find_jit_info_ext (frame.domain ? frame.domain : mono_domain_get (), tls->jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, new_reg_locations, &frame);
@@ -687,17 +707,15 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		break;
 #endif
 
-		/* The last frame can be in any state so mark conservatively */
-		if (last) {
-			last = FALSE;
-			continue;
-		}
-
 		ji = frame.ji;
-		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 
 		if (frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
-			/* These frames are unwound through an LMF, and we have no precise register tracking for those */
+			/*
+			 * These frames are problematic for several reasons:
+			 * - they are unwound through an LMF, and we have no precise register tracking for those.
+			 * - the LMF might not contain a precise ip, so we can't compute the call site.
+			 * - the LMF only unwinds to the wrapper frame, so we get these methods twice.
+			 */
 			DEBUG (fprintf (logfile, "Mark(0): <Managed-to-native transition>\n"));
 			for (i = 0; i < MONO_MAX_IREGS; ++i) {
 				if (reg_locations [i]) {
@@ -710,6 +728,19 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			}
 			continue;
 		}
+
+		/* The last frame can be in any state so mark conservatively */
+		if (last) {
+			if (ji) {
+				DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+			}
+			DEBUG (fprintf (logfile, "\t <Last frame>\n"));
+			last = FALSE;
+			continue;
+		}
+
+
+		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 
 		/* These frames are very problematic */
 		if (ji->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
@@ -775,17 +806,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		p += map->callsite_entry_size * map->ncallsites;
 		bitmaps = p;
 
-#ifdef __x86_64__
-		if (map->frame_reg == AMD64_RSP)
-			fp = (guint8*)ctx.rsp;
-		else if (map->frame_reg == AMD64_RBP)
-			fp = (guint8*)ctx.rbp;
-		else
-			g_assert_not_reached ();
-#else
-		fp = NULL;
-		g_assert_not_reached ();
-#endif
+		fp = (guint8*)get_frame_pointer (&ctx, map->frame_reg);
 
 		real_frame_start = fp + map->start_offset;
 		frame_start = fp + map->start_offset + map->map_offset;
@@ -1825,7 +1846,7 @@ compute_frame_size (MonoCompile *cfg)
 	/* Compute min/max offsets from the fp */
 
 	/* Locals */
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 	locals_min_offset = ALIGN_TO (cfg->locals_min_stack_offset, sizeof (mgreg_t));
 	locals_max_offset = cfg->locals_max_stack_offset;
 #else
@@ -2179,7 +2200,7 @@ create_map (MonoCompile *cfg)
 		p += encoded_size;
 
 		/* Callsite table */
-		p = (guint8*)ALIGN_TO ((guint64)p, map->callsite_entry_size);
+		p = (guint8*)ALIGN_TO ((mgreg_t)p, map->callsite_entry_size);
 		if (map->callsite_entry_size == 1) {
 			guint8 *offsets = p;
 			for (i = 0; i < ncallsites; ++i)
