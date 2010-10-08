@@ -8955,8 +8955,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* storing a NULL doesn't need any of the complex checks in stelemref */
 			if (generic_class_is_reference_type (cfg, klass) &&
 				!(sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL)) {
-				MonoMethod* helper = mono_marshal_get_stelemref ();
+				MonoClass *obj_array = mono_array_class_get_cached (mono_defaults.object_class, 1);
+				MonoMethod *helper = mono_marshal_get_virtual_stelemref (obj_array);
 				MonoInst *iargs [3];
+
+				if (!helper->slot)
+					mono_class_setup_vtable (obj_array);
+				g_assert (helper->slot);
 
 				if (sp [0]->type != STACK_OBJ)
 					UNVERIFIED;
@@ -8966,8 +8971,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				iargs [2] = sp [2];
 				iargs [1] = sp [1];
 				iargs [0] = sp [0];
-				
-				mono_emit_method_call (cfg, helper, iargs, NULL);
+
+				mono_emit_method_call (cfg, helper, iargs, sp [0]);
 			} else {
 				if (sp [1]->opcode == OP_ICONST) {
 					int array_reg = sp [0]->dreg;

@@ -3752,6 +3752,13 @@ verify_class_overrides (MonoClass *class, MonoMethod **overrides, int onum)
 	}
 	return TRUE;
 }
+
+static gboolean
+mono_class_need_stelemref_method (MonoClass *class)
+{
+	return class->rank == 1 && MONO_TYPE_IS_REFERENCE (&class->element_class->byval_arg);
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -3771,6 +3778,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	int first_non_interface_slot;
 #endif
 	GSList *virt_methods = NULL, *l;
+	int stelemref_slot = 0;
 
 	if (class->vtable)
 		return;
@@ -3810,6 +3818,13 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	}
 
 	max_vtsize += class->method.count;
+
+	/*Array have a slot for stelemref*/
+	if (mono_class_need_stelemref_method (class)) {
+		stelemref_slot = cur_slot;
+		++max_vtsize;
+		++cur_slot;
+	}
 
 	vtable = alloca (sizeof (gpointer) * max_vtsize);
 	memset (vtable, 0, sizeof (gpointer) * max_vtsize);
@@ -3895,6 +3910,17 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			}
 			
 		}
+	}
+
+	/*Array have a slot for stelemref*/
+	if (mono_class_need_stelemref_method (class)) {
+		MonoMethod *method = mono_marshal_get_virtual_stelemref (class);
+		if (!method->slot)
+			method->slot = stelemref_slot;
+		else
+			g_assert (method->slot == stelemref_slot);
+
+		vtable [stelemref_slot] = method;
 	}
 
 	TRACE_INTERFACE_VTABLE (print_vtable_full (class, vtable, cur_slot, first_non_interface_slot, "AFTER INHERITING PARENT VTABLE", TRUE));
@@ -4621,14 +4647,19 @@ mono_class_init (MonoClass *class)
 		class->ghcimpl = cached_info.ghcimpl;
 		class->has_cctor = cached_info.has_cctor;
 	} else if (class->rank == 1 && class->byval_arg.type == MONO_TYPE_SZARRAY) {
-		static int szarray_vtable_size = 0;
+		/* SZARRAY can have 2 vtable layouts, with and without the stelemref method.
+		 * The first slot if for array with.
+		 */
+		static int szarray_vtable_size[2] = { 0 };
+
+		int slot = MONO_TYPE_IS_REFERENCE (&class->element_class->byval_arg) ? 0 : 1;
 
 		/* SZARRAY case */
-		if (!szarray_vtable_size) {
+		if (!szarray_vtable_size [slot]) {
 			mono_class_setup_vtable (class);
-			szarray_vtable_size = class->vtable_size;
+			szarray_vtable_size [slot] = class->vtable_size;
 		} else {
-			class->vtable_size = szarray_vtable_size;
+			class->vtable_size = szarray_vtable_size[slot];
 		}
 	} else if (class->generic_class && !MONO_CLASS_IS_INTERFACE (class)) {
 		MonoClass *gklass = class->generic_class->container_class;
@@ -4726,6 +4757,7 @@ mono_class_init (MonoClass *class)
 	}
 
 	if (class->parent) {
+		int first_iface_slot;
 		/* This will compute class->parent->vtable_size for some classes */
 		mono_class_init (class->parent);
 		if (class->parent->exception_type) {
@@ -4744,7 +4776,10 @@ mono_class_init (MonoClass *class)
 			if (mono_loader_get_last_error ())
 				goto leave;
 		}
-		setup_interface_offsets (class, class->parent->vtable_size);
+		first_iface_slot = class->parent->vtable_size;
+		if (mono_class_need_stelemref_method (class))
+			++first_iface_slot;
+		setup_interface_offsets (class, first_iface_slot);
 	} else {
 		setup_interface_offsets (class, 0);
 	}

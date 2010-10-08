@@ -266,6 +266,9 @@ MonoMethod *
 mono_marshal_get_stelemref (void) MONO_INTERNAL;
 
 MonoMethod*
+mono_marshal_get_virtual_stelemref (MonoClass *array_class) MONO_INTERNAL;
+
+MonoMethod*
 mono_marshal_get_array_address (int rank, int elem_size) MONO_INTERNAL;
 
 MonoMethod *
