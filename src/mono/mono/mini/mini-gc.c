@@ -739,7 +739,6 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			continue;
 		}
 
-
 		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 
 		/* These frames are very problematic */
