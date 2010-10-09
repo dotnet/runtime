@@ -9566,12 +9566,13 @@ enum {
 	STELEMREF_OBJECT, /*no check at all*/
 	STELEMREF_SEALED_CLASS, /*check vtable->klass->element_type */
 	STELEMREF_CLASS, /*only the klass->parents check*/
-	STELEMREF_COMPLEX, /*arrays, interfaces, MBR or classes with variant generic args - go straight to icalls*/
+	STELEMREF_INTERFACE, /*interfaces without variant generic arguments. */
+	STELEMREF_COMPLEX, /*arrays, MBR or types with variant generic args - go straight to icalls*/
 	STELEMREF_KIND_COUNT
 };
 
 static const char *strelemref_wrapper_name[] = {
-	"object", "sealed_class", "class", "complex"
+	"object", "sealed_class", "class", "interface", "complex"
 };
 
 static gboolean
@@ -9592,8 +9593,10 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 		return STELEMREF_OBJECT;
 	if (is_monomorphic_array (element_class))
 		return STELEMREF_SEALED_CLASS;
+	if (MONO_CLASS_IS_INTERFACE (element_class) && !mono_class_has_variant_generic_params (element_class))
+		return STELEMREF_INTERFACE;
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
-	if (MONO_CLASS_IS_INTERFACE (element_class) || element_class->marshalbyref || element_class->rank || mono_class_has_variant_generic_params (element_class))
+	if (element_class->marshalbyref || element_class->rank || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
 	if (element_class->flags & TYPE_ATTRIBUTE_SEALED)
 		return STELEMREF_SEALED_CLASS;
@@ -9634,7 +9637,7 @@ load_value_class (MonoMethodBuilder *mb, int vklass)
 
 #if 0
 static void
-record_vstore_2 (MonoObject *array, size_t index, MonoObject *value)
+record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
 {
 	char *name = mono_type_get_full_name (array->vtable->klass->element_class);
 	printf ("slow vstore of %s\n", name);
@@ -9659,7 +9662,7 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 	int kind;
 
 	guint32 b1, b2, b3;
-	int aklass, vklass;
+	int aklass, vklass, vtable, uiid;
 	int array_slot_addr;
 
 	g_assert (array_class->rank == 1);
@@ -9712,7 +9715,7 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 
 #if 0
 		{
-			/*Use this to debug stores that are going thru the slow path*/
+			/*Use this to debug/record stores that are going thru the slow path*/
 			MonoMethodSignature *csig;
 			csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
 			csig->ret = &mono_defaults.void_class->byval_arg;
@@ -9722,7 +9725,7 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 			mono_mb_emit_ldarg (mb, 0);
 			mono_mb_emit_ldarg (mb, 1);
 			mono_mb_emit_ldarg (mb, 2);
-			mono_mb_emit_native_call (mb, csig, record_vstore_2);
+			mono_mb_emit_native_call (mb, csig, record_slot_vstore);
 		}
 #endif
 
@@ -9897,6 +9900,101 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 		mono_mb_patch_branch (mb, b2);
 		mono_mb_patch_branch (mb, b3);
 
+		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
+		break;
+
+	case STELEMREF_INTERFACE:
+		/*Mono *klass;
+		MonoVTable *vt;
+		unsigned uiid;
+		if (value == NULL)
+			goto store;
+
+		klass = array->obj.vtable->klass->element_class;
+		vt = value->vtable;
+		uiid = klass->interface_id;
+		if (uiid > vt->max_interface_id)
+			goto exception;
+		if (!(vt->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
+			goto exception;
+		store:
+			mono_array_setref (array, index, value);
+			return;
+		exception:
+			mono_raise_exception (mono_get_exception_array_type_mismatch ());*/
+
+		array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
+		aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		vtable = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		uiid = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+
+		/* ldelema (implicit bound check) */
+		load_array_element_address (mb);
+		mono_mb_emit_stloc (mb, array_slot_addr);
+
+		/* if (!value) goto do_store */
+		mono_mb_emit_ldarg (mb, 2);
+		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+		/* klass = array->vtable->klass->element_class */
+		load_array_class (mb, aklass);
+
+		/* vt = value->vtable */
+		mono_mb_emit_ldarg (mb, 2);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_stloc (mb, vtable);
+
+		/* uiid = klass->interface_id; */
+		mono_mb_emit_ldloc (mb, aklass);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, interface_id));
+		mono_mb_emit_byte (mb, CEE_LDIND_U2);
+		mono_mb_emit_stloc (mb, uiid);
+
+		/*if (uiid > vt->max_interface_id)*/
+		mono_mb_emit_ldloc (mb, uiid);
+		mono_mb_emit_ldloc (mb, vtable);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		b2 = mono_mb_emit_branch (mb, CEE_BGT_UN);
+
+		/* if (!(vt->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7)))) */
+
+		/*vt->interface_bitmap*/
+		mono_mb_emit_ldloc (mb, vtable);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, interface_bitmap));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+
+		/*uiid >> 3*/
+		mono_mb_emit_ldloc (mb, uiid);
+		mono_mb_emit_icon (mb, 3);
+		mono_mb_emit_byte (mb, CEE_SHR_UN);
+
+		/*vt->interface_bitmap [(uiid) >> 3]*/
+		mono_mb_emit_byte (mb, CEE_ADD); /*interface_bitmap is a guint8 array*/
+		mono_mb_emit_byte (mb, CEE_LDIND_U1);
+
+		/*(1 << ((uiid)&7)))*/
+		mono_mb_emit_icon (mb, 1);
+		mono_mb_emit_ldloc (mb, uiid);
+		mono_mb_emit_icon (mb, 7);
+		mono_mb_emit_byte (mb, CEE_AND);
+		mono_mb_emit_byte (mb, CEE_SHL);
+
+		/*bitwise and the whole thing*/
+		mono_mb_emit_byte (mb, CEE_AND);
+		b3 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+		/* do_store: */
+		mono_mb_patch_branch (mb, b1);
+		mono_mb_emit_ldloc (mb, array_slot_addr);
+		mono_mb_emit_ldarg (mb, 2);
+		mono_mb_emit_byte (mb, CEE_STIND_REF);
+		mono_mb_emit_byte (mb, CEE_RET);
+
+		/* do_exception: */
+		mono_mb_patch_branch (mb, b2);
+		mono_mb_patch_branch (mb, b3);
 		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
 		break;
 
