@@ -1787,8 +1787,13 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		}
 		case MONO_WRAPPER_WRITE_BARRIER:
 			break;
-		case MONO_WRAPPER_STELEMREF:
+		case MONO_WRAPPER_STELEMREF: {
+			MonoClass *klass = mono_marshal_get_wrapper_info (method);
+
+			/* Make sure this is the 'normal' stelemref wrapper, not the virtual one */
+			g_assert (!klass);
 			break;
+		}
 		case MONO_WRAPPER_UNKNOWN:
 			if (strcmp (method->name, "FastMonitorEnter") == 0)
 				encode_value (MONO_AOT_WRAPPER_MONO_ENTER, p, &p);
@@ -2380,6 +2385,17 @@ add_wrappers (MonoAotCompile *acfg)
 		if (method)
 			add_method (acfg, method);
 #endif
+
+		/* Stelemref wrappers */
+		/* There is only a constant number of these, iterating over all types should handle them all */
+		for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+			MonoClass *klass;
+		
+			token = MONO_TOKEN_TYPE_DEF | (i + 1);
+			klass = mono_class_get (acfg->image, token);
+			if (klass)
+				add_method (acfg, mono_marshal_get_virtual_stelemref (mono_array_class_get (klass, 1)));
+		}
 	}
 
 	/* 
