@@ -129,6 +129,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	char *as_file;
 	char *o_file;
 	char *cmd;
+	int unused;
 
 #ifdef HOST_WIN32
 	as_file = g_strdup_printf ("%s/test.s", tmp);    
@@ -227,7 +228,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #endif
 
 	cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
-	system (cmd); 
+	unused = system (cmd); 
 	g_free (cmd);
 	if (!objdump_args)
 		objdump_args = "";
@@ -240,12 +241,12 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	 * everything as data.
 	 */
 	cmd = g_strdup_printf (ARCH_PREFIX "strip -x %s", o_file);
-	system (cmd);
+	unused = system (cmd);
 	g_free (cmd);
 #endif
 	
 	cmd = g_strdup_printf (ARCH_PREFIX DIS_CMD " %s %s", objdump_args, o_file);
-	system (cmd);
+	unused = system (cmd);
 	g_free (cmd);
 	
 #ifndef HOST_WIN32
