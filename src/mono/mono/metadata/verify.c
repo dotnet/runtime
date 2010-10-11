@@ -553,15 +553,23 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 		MonoGenericParamInfo *param_info = mono_generic_container_get_param_info (gc, i);
 		MonoClass *paramClass;
 		MonoClass **constraints;
+		MonoType *param_type =  ginst->type_argv [i];
 
-		if (!param_info->constraints && !(param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
+		/*it's not our job to validate type variables*/
+		if (mono_type_is_generic_argument (param_type))
 			continue;
-		if (mono_type_is_generic_argument (ginst->type_argv [i]))
-			continue; //it's not our job to validate type variables
 
-		paramClass = mono_class_from_mono_type (ginst->type_argv [i]);
+		paramClass = mono_class_from_mono_type (param_type);
 
 		if (paramClass->exception_type != MONO_EXCEPTION_NONE)
+			return FALSE;
+
+		/* A GTD can't be a generic argument.
+		 *
+		 * Due to how types are encoded we must check for the case of a genericinst MonoType and GTD MonoClass.
+		 * This happens in cases such as: class Foo<T>  { void X() { new Bar<T> (); } }
+		 */
+		if (paramClass->generic_container && param_type->type != MONO_TYPE_GENERICINST)
 			return FALSE;
 
 		/*it's not safe to call mono_class_init from here*/
@@ -569,6 +577,9 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 			if (!mono_class_is_valid_generic_instantiation (NULL, paramClass))
 				return FALSE;
 		}
+
+		if (!param_info->constraints && !(param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
+			continue;
 
 		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && (!paramClass->valuetype || mono_class_is_nullable (paramClass)))
 			return FALSE;
