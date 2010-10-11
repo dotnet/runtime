@@ -5924,6 +5924,8 @@ verify_generic_parameters (MonoClass *class)
 
 			if (mono_type_is_generic_argument (constraint_type) && !recursive_mark_constraint_args (used_args, gc, constraint_type))
 				goto fail;
+			if (ctr->generic_class && !mono_class_is_valid_generic_instantiation (NULL, ctr))
+				goto fail;
 		}
 	}
 	mono_bitset_free (used_args);
