@@ -5965,8 +5965,12 @@ mono_verifier_verify_class (MonoClass *class)
 		!MONO_CLASS_IS_INTERFACE (class) &&
 		(!class->image->dynamic && class->type_token != 0x2000001)) /*<Module> is the first type in the assembly*/
 		return FALSE;
-	if (class->parent && MONO_CLASS_IS_INTERFACE (class->parent))
-		return FALSE;
+	if (class->parent) {
+		if (MONO_CLASS_IS_INTERFACE (class->parent))
+			return FALSE;
+		if (class->parent->generic_container)
+			return FALSE;
+	}
 	if (class->generic_container && (class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
 		return FALSE;
 	if (class->generic_container && !verify_generic_parameters (class))
