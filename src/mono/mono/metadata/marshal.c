@@ -9646,6 +9646,8 @@ record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
 #endif
 
 /*
+ * The wrapper info for the wrapper contains the wrapper 'kind' + 1.
+ *
  * TODO:
  *	- Separate simple interfaces from variant interfaces or mbr types. This way we can avoid the icall for them.
  *	- Emit a (new) mono bytecode that produces OP_COND_EXC_NE_UN to raise ArrayTypeMismatch
@@ -10009,6 +10011,7 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 
 	res = mono_mb_create_method (mb, signature, 4);
 	res->flags |= METHOD_ATTRIBUTE_VIRTUAL;
+	mono_marshal_set_wrapper_info (res, GUINT_TO_POINTER (kind + 1));
 	cached_methods [kind] = res;
 
 	mono_mb_free (mb);
