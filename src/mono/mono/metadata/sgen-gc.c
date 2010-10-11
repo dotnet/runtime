@@ -298,6 +298,8 @@ static int stat_wbarrier_value_copy = 0;
 static int stat_wbarrier_object_copy = 0;
 #endif
 
+static long long stat_pinned_objects = 0;
+
 static long long time_minor_pre_collection_fragment_clear = 0;
 static long long time_minor_pinning = 0;
 static long long time_minor_scan_remsets = 0;
@@ -1844,6 +1846,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 			add_profile_gc_root (&report, definitely_pinned [idx], MONO_PROFILE_GC_ROOT_PINNING, 0);
 		notify_gc_roots (&report);
 	}
+	stat_pinned_objects += count;
 	return count;
 }
 
@@ -2004,7 +2007,7 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 				pin_stage_ptr ((void*)addr);
 			if (heap_dump_file)
 				pin_stats_register_address ((char*)addr, pin_type);
-			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p\n", (void*)addr));
+			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p from %p\n", (void*)addr, start));
 			count++;
 		}
 		start++;
@@ -2783,6 +2786,7 @@ init_stats (void)
 	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_sweep);
 	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_fragment_creation);
 
+	mono_counters_register ("Number of pinned objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_pinned_objects);
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_field);
@@ -5225,7 +5229,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 static void
 find_pinning_ref_from_thread (char *obj, size_t size)
 {
-	int i;
+	int i, j;
 	SgenThreadInfo *info;
 	char *endobj = obj + size;
 
@@ -5241,7 +5245,12 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 				start++;
 			}
 
-			/* FIXME: check info->stopped_regs */
+			for (j = 0; j < ARCH_NUM_REGS; ++j) {
+				mword w = (mword)info->stopped_regs [j];
+
+				if (w >= (mword)obj && w < (mword)obj + size)
+					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in saved reg %d of thread %p (id %p)\n", obj, j, info, (gpointer)info->id));
+			}
 		}
 	}
 }
@@ -5788,6 +5797,26 @@ mono_gc_register_thread (void *baseptr)
 	}
 
 	return info != NULL;
+}
+
+/*
+ * mono_gc_set_stack_end:
+ *
+ *   Set the end of the current threads stack to STACK_END. The stack space between 
+ * STACK_END and the real end of the threads stack will not be scanned during collections.
+ */
+void
+mono_gc_set_stack_end (void *stack_end)
+{
+	SgenThreadInfo *info;
+
+	LOCK_GC;
+	info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
+	if (info) {
+		g_assert (stack_end < info->stack_end);
+		info->stack_end = stack_end;
+	}
+	UNLOCK_GC;
 }
 
 #if USE_PTHREAD_INTERCEPT
@@ -6983,6 +7012,18 @@ mono_gc_base_init (void)
 				}
 				continue;
 			}
+			if (g_str_has_prefix (opt, "stack-mark=")) {
+				opt = strchr (opt, '=') + 1;
+				if (!strcmp (opt, "precise")) {
+					conservative_stack_mark = FALSE;
+				} else if (!strcmp (opt, "conservative")) {
+					conservative_stack_mark = TRUE;
+				} else {
+					fprintf (stderr, "Invalid value '%s' for stack-mark= option, possible values are: 'precise', 'conservative'.\n", opt);
+					exit (1);
+				}
+				continue;
+			}
 #ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				long val;
@@ -7012,6 +7053,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par' or `copying')\n");
 				fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
+				fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
 				if (major_collector.print_gc_param_usage)
 					major_collector.print_gc_param_usage ();
 				exit (1);
@@ -7057,8 +7099,6 @@ mono_gc_base_init (void)
 				xdomain_checks = TRUE;
 			} else if (!strcmp (opt, "clear-at-gc")) {
 				nursery_clear_policy = CLEAR_AT_GC;
-			} else if (!strcmp (opt, "conservative-stack-mark")) {
-				conservative_stack_mark = TRUE;
 			} else if (!strcmp (opt, "clear-nursery-at-gc")) {
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "check-scan-starts")) {

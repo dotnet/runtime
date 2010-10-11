@@ -110,6 +110,8 @@ extern gboolean mono_gc_register_thread (void *baseptr) MONO_INTERNAL;
 
 extern gboolean mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread) MONO_INTERNAL;
 
+extern void mono_gc_set_stack_end (void *stack_end) MONO_INTERNAL;
+
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).
  */
