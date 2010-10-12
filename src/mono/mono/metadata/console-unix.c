@@ -28,6 +28,7 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/threadpool.h>
 
@@ -231,6 +232,7 @@ do_console_cancel_event (void)
 	MonoMethod *im;
 	MonoVTable *vtable;
 
+	/* FIXME: this should likely iterate all the domains, instead */
 	if (!domain->domain)
 		return;
 
@@ -258,6 +260,17 @@ do_console_cancel_event (void)
 	mono_thread_pool_add ((MonoObject *) load_value, msg, NULL, NULL);
 }
 
+static int need_cancel = FALSE;
+/* this is executed from the finalizer thread */
+void
+mono_console_handle_async_ops (void)
+{
+	if (need_cancel) {
+		need_cancel = FALSE;
+		do_console_cancel_event ();
+	}
+}
+
 static gboolean in_sigint;
 static void
 sigint_handler (int signo)
@@ -270,7 +283,8 @@ sigint_handler (int signo)
 
 	in_sigint = TRUE;
 	save_errno = errno;
-	do_console_cancel_event ();
+	need_cancel = TRUE;
+	mono_gc_finalize_notify ();
 	errno = save_errno;
 	in_sigint = FALSE;
 }

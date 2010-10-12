@@ -27,6 +27,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 #include <mono/metadata/attach.h>
+#include <mono/metadata/console-io.h>
 #include <mono/utils/mono-semaphore.h>
 
 #ifndef HOST_WIN32
@@ -1042,6 +1043,8 @@ finalizer_thread (gpointer unused)
 		/* Use alertable=FALSE since we will be asked to exit using the event too */
 		WaitForSingleObjectEx (finalizer_event, INFINITE, FALSE);
 #endif
+
+		mono_console_handle_async_ops ();
 
 #ifndef DISABLE_ATTACH
 		mono_attach_maybe_start ();

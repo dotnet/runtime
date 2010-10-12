@@ -11,12 +11,18 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/gc-internal.h>
 
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/exception.h>
 
 void
 mono_console_init (void)
+{
+}
+
+void
+mono_console_handle_async_ops (void)
 {
 }
 
