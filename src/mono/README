@@ -129,16 +129,16 @@ This is Mono.
 	distribution, which contains just enough to run the 'mcs'
 	compiler.  You do this with:
 
+		# Run the following line after ./autogen.sh
 		make get-monolite-latest
 
 	This will download and automatically gunzip and untar the
 	tarball, and place the files appropriately so that you can then
 	just run:
 
-		make
+		make EXTERNAL_MCS=${PWD}/mcs/class/lib/monolite/gmcs.exe
 
-	To ensure that you're using the 'monolite' distribution, you can
-	also try passing EXTERNAL_MCS=false on the make command-line.
+	And that will use the files downloaded by 'make get-monolite-latest.
 
 	Testing and Installation
 	------------------------
