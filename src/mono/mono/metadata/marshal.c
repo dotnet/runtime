@@ -9957,7 +9957,7 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 		mono_mb_emit_ldloc (mb, uiid);
 		mono_mb_emit_ldloc (mb, vtable);
 		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 		b2 = mono_mb_emit_branch (mb, CEE_BGT_UN);
 
 		/* if (!(vt->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7)))) */
