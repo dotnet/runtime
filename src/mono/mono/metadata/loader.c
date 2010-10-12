@@ -1343,6 +1343,26 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 		if (!module) {
 			void *iter = NULL;
+			char *mdirname = g_path_get_dirname (image->name);
+			while ((full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+					"DllImport loading library: '%s'.", full_name);
+				module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
+				if (!module) {
+					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+						"DllImport error loading library '%s'.",
+						error_msg);
+					g_free (error_msg);
+				}
+				g_free (full_name);
+				if (module)
+					break;
+			}
+			g_free (mdirname);
+		}
+
+		if (!module) {
+			void *iter = NULL;
 			while ((full_name = mono_dl_build_path (NULL, file_name, &iter))) {
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 						"DllImport loading location: '%s'.", full_name);
@@ -1351,24 +1371,6 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 							"DllImport error loading library: '%s'.",
 							error_msg);
-					g_free (error_msg);
-				}
-				g_free (full_name);
-				if (module)
-					break;
-			}
-		}
-
-		if (!module) {
-			void *iter = NULL;
-			while ((full_name = mono_dl_build_path (".", file_name, &iter))) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-					"DllImport loading library: '%s'.", full_name);
-				module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
-				if (!module) {
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-						"DllImport error loading library '%s'.",
-						error_msg);
 					g_free (error_msg);
 				}
 				g_free (full_name);
