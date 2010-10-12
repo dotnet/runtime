@@ -3381,6 +3381,8 @@ mono_class_setup_vtable (MonoClass *class)
 
 	if (ok)
 		mono_class_setup_vtable_general (class, overrides, onum);
+	else
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load list of method overrides"));
 		
 	g_free (overrides);
 
