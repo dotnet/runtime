@@ -71,16 +71,6 @@
 
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
 
-/* helper methods signature */
-/* FIXME: Make these static again */
-MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
-MonoMethodSignature *helper_sig_domain_get = NULL;
-MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
-MonoMethodSignature *helper_sig_generic_class_init_trampoline_llvm = NULL;
-MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
-MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline = NULL;
-MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm = NULL;
-
 #ifdef __native_client_codegen__
 /* Default alignment for Native Client is 32-byte. */
 guint8 nacl_align_byte = 0xe0;
@@ -1419,18 +1409,6 @@ mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_comp
 	}
 
 	return !dont_verify && mini_method_verify (cfg, method_definition, fail_compile);
-}
-
-static void
-create_helper_signature (void)
-{
-	helper_sig_domain_get = mono_create_icall_signature ("ptr");
-	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
-	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
-	helper_sig_generic_class_init_trampoline_llvm = mono_create_icall_signature ("void ptr");
-	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
-	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
-	helper_sig_monitor_enter_exit_trampoline_llvm = mono_create_icall_signature ("void object");
 }
 
 static gconstpointer
@@ -5976,8 +5954,7 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", 
 				mono_runtime_install_handlers);
 
-
-	create_helper_signature ();
+	mono_create_helper_signatures ();
 
 	register_jit_stats ();
 
