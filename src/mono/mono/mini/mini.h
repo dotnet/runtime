@@ -1308,6 +1308,13 @@ typedef struct {
 
 	/* Points to a MonoCompileGC */
 	gpointer gc_info;
+
+	/*
+	 * The encoded GC map along with its size. This contains binary data so it can be saved in an AOT
+	 * image etc, but it requires a 4 byte alignment.
+	 */
+	guint8 *gc_map;
+	guint32 gc_map_size;
 } MonoCompile;
 
 typedef enum {

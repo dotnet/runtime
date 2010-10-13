@@ -779,6 +779,9 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			continue;
 		}
 
+		/* The embedded callsite table requires this */
+		g_assert (((mgreg_t)emap % 4) == 0);
+
 		/*
 		 * Debugging aid to control the number of frames scanned precisely
 		 */
@@ -814,12 +817,12 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
 
 		/* Find the callsite index */
-		if (ji->code_size < 256) {
+		if (map->callsite_entry_size == 1) {
 			for (i = 0; i < map->ncallsites; ++i)
 				/* ip points inside the call instruction */
 				if (map->callsites.offsets8 [i] == pc_offset + 1)
 					break;
-		} else if (ji->code_size < 65536) {
+		} else if (map->callsite_entry_size == 2) {
 			// FIXME: Use a binary search
 			for (i = 0; i < map->ncallsites; ++i)
 				/* ip points inside the call instruction */
@@ -2220,6 +2223,9 @@ create_map (MonoCompile *cfg)
 
 		/* Bitmaps */
 		memcpy (p, bitmaps, bitmaps_size);
+		p += bitmaps_size;
+
+		g_assert ((guint8*)p - (guint8*)emap <= alloc_size);
 
 		stats.gc_maps_size += alloc_size;
 		stats.gc_callsites_size += ncallsites * map->callsite_entry_size;
@@ -2227,6 +2233,9 @@ create_map (MonoCompile *cfg)
 		stats.gc_map_struct_size += sizeof (GCEncodedMap) + encoded_size;
 
 		cfg->jit_info->gc_info = emap;
+
+		cfg->gc_map = (guint8*)emap;
+		cfg->gc_map_size = alloc_size;
 	}
 
 	stats.all_slots += nslots;
