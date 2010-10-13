@@ -5968,7 +5968,7 @@ mono_verifier_verify_class (MonoClass *class)
 	if (class->parent) {
 		if (MONO_CLASS_IS_INTERFACE (class->parent))
 			return FALSE;
-		if (class->parent->generic_container)
+		if (!class->generic_class && class->parent->generic_container)
 			return FALSE;
 	}
 	if (class->generic_container && (class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
