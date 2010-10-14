@@ -333,29 +333,22 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * the @lmf if necessary. @native_offset return the IP offset from the 
  * start of the function or -1 if that info is not available.
  */
-MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
-			 MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
+gboolean
+mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+							 MonoJitInfo *ji, MonoContext *ctx, 
+							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 StackFrameInfo *frame)
 {
-	MonoJitInfo *ji;
-	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 	gpointer *window;
 
-	/* Avoid costly table lookup during stack overflow */
-	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
-		ji = prev_ji;
-	else
-		ji = mini_jit_info_table_find (domain, ip, NULL);
+	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->ji = ji;
+	frame->managed = FALSE;
 
-	if (managed)
-		*managed = FALSE;
+	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		*new_ctx = *ctx;
-
-		if (managed)
-			if (!ji->method->wrapper_type)
-				*managed = TRUE;
+		frame->type = FRAME_TYPE_MANAGED;
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
@@ -368,22 +361,21 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		new_ctx->sp = (gpointer*)(window [sparc_i6 - 16]);
 		new_ctx->fp = (gpointer*)(MONO_SPARC_WINDOW_ADDR (new_ctx->sp) [sparc_i6 - 16]);
 
-		return ji;
+		return TRUE;
 	}
 	else {
 		if (!(*lmf))
-			return NULL;
-
-		*new_ctx = *ctx;
+			return FALSE;
 
 		if (!(*lmf)->method)
-			return (gpointer)-1;
+			return FALSE;
 
-		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->ip, NULL))) {
-		} else {
-			memset (res, 0, MONO_SIZEOF_JIT_INFO);
-			res->method = (*lmf)->method;
-		}
+		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->ip, NULL);
+		if (!ji)
+			return FALSE;
+
+		frame->ji = ji;
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 
 		new_ctx->ip = (*lmf)->ip;
 		new_ctx->sp = (*lmf)->sp;
@@ -391,7 +383,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		*lmf = (*lmf)->previous_lmf;
 
-		return ji ? ji : res;
+		return TRUE;
 	}
 }
 
