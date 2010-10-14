@@ -483,9 +483,13 @@ mono_type_get_underlying_type (MonoType *type)
  * mono_class_is_open_constructed_type:
  * @type: a type
  *
- * Returns TRUE if type represents a generics open constructed type
- * (not all the type parameters required for the instantiation have
- * been provided).
+ * Returns TRUE if type represents a generics open constructed type.
+ * IOW, not all type parameters required for the instantiation have
+ * been provided or it's a generic type definition.
+ *
+ * An open constructed type means it's a non realizable type. Not to
+ * be mixed up with an abstract type - we can't cast or dispatch to
+ * an open type, for example.
  */
 gboolean
 mono_class_is_open_constructed_type (MonoType *t)
@@ -502,6 +506,9 @@ mono_class_is_open_constructed_type (MonoType *t)
 		return mono_class_is_open_constructed_type (t->data.type);
 	case MONO_TYPE_GENERICINST:
 		return t->data.generic_class->context.class_inst->is_open;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+		return t->data.klass->generic_container != NULL;
 	default:
 		return FALSE;
 	}
