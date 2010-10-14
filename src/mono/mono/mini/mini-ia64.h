@@ -189,5 +189,6 @@ unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 #define MONO_ARCH_HAVE_IMT 1
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 #define MONO_ARCH_THIS_AS_FIRST_ARG 1
+#define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 
 #endif /* __MONO_MINI_IA64_H__ */  

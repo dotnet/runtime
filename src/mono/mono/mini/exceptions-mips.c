@@ -417,41 +417,41 @@ glist_to_array (GList *list, MonoClass *eclass)
 	return res;
 }
 
-/* mono_arch_find_jit_info:
+/*
+ * mono_arch_find_jit_info_ext:
  *
- * This function is used to gather information from @ctx. It returns the 
- * MonoJitInfo of the corresponding function, unwinds one stack frame and
- * stores the resulting context into @new_ctx. It also stores a string 
- * describing the stack location into @trace (if not NULL), and modifies
- * the @lmf if necessary. @native_offset return the IP offset from the 
- * start of the function or -1 if that info is not available.
+ * This function is used to gather information from @ctx, and store it in @frame_info.
+ * It unwinds one stack frame, and stores the resulting context into @new_ctx. @lmf
+ * is modified if needed.
+ * Returns TRUE on success, FALSE otherwise.
+ * This function is a version of mono_arch_find_jit_info () where all the results are
+ * returned in a StackFrameInfo structure.
  */
-MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
-			 MonoJitInfo *res, MonoJitInfo *prev_ji,
-			 MonoContext *ctx, MonoContext *new_ctx,
-			 MonoLMF **lmf, gboolean *managed)
+gboolean
+mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+							 MonoJitInfo *ji, MonoContext *ctx, 
+							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 StackFrameInfo *frame)
 {
-	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 	gpointer fp = MONO_CONTEXT_GET_BP (ctx);
 	guint32 sp;
 
-	/* Avoid costly table lookup during stack overflow */
-	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
-		ji = prev_ji;
-	else
-		ji = mini_jit_info_table_find (domain, ip, NULL);
+	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->ji = ji;
+	frame->managed = FALSE;
 
-	if (managed)
-		*managed = FALSE;
-
-	memcpy (new_ctx, ctx, sizeof (MonoContext));
+	*new_ctx = *ctx;
 
 	if (ji != NULL) {
 		int i;
 		gint32 address;
 		int offset = 0;
+
+		frame->type = FRAME_TYPE_MANAGED;
+
+		if (!ji->method->wrapper_type || ji->method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+			frame->managed = TRUE;
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
@@ -459,10 +459,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 
 		address = (char *)ip - (char *)ji->code_start;
-
-		if (managed)
-			if (!ji->method->wrapper_type)
-				*managed = TRUE;
 
 		/* My stack frame */
 		fp = MONO_CONTEXT_GET_BP (ctx);
@@ -476,7 +472,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 #ifdef DEBUG_EXCEPTIONS
 			g_print ("mono_arch_find_jit_info: bad stack sp=%p\n", (void *) sp);
 #endif
-			return (gpointer)-1;
+			return FALSE;
 		}
 
 		if (ji->method->save_lmf && 0) {
@@ -518,21 +514,25 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		/* Sanity check -- we should have made progress here */
 		g_assert (new_ctx->sc_pc != ctx->sc_pc);
-		return ji;
+		return TRUE;
 	} else if (*lmf) {
 		if (!(*lmf)->method) {
 #ifdef DEBUG_EXCEPTIONS
 			g_print ("mono_arch_find_jit_info: bad lmf @ %p\n", (void *) *lmf);
 #endif
-			return (gpointer)-1;
+			return FALSE;
 		}
 		g_assert (((*lmf)->magic == MIPS_LMF_MAGIC1) || ((*lmf)->magic == MIPS_LMF_MAGIC2));
 
-		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL))) {
-		} else {
-			memset (res, 0, MONO_SIZEOF_JIT_INFO);
-			res->method = (*lmf)->method;
+		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL);
+		if (!ji) {
+			// FIXME: This can happen with multiple appdomains (bug #444383)
+			return FALSE;
 		}
+
+		frame->ji = ji;
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
+
 		memcpy (&new_ctx->sc_regs, (*lmf)->iregs, sizeof (gulong) * MONO_SAVED_GREGS);
 		memcpy (&new_ctx->sc_fpregs, (*lmf)->fregs, sizeof (float) * MONO_SAVED_FREGS);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
@@ -540,10 +540,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		g_assert (new_ctx->sc_pc != ctx->sc_pc);
 		*lmf = (*lmf)->previous_lmf;
 
-		return ji ? ji : res;
+		return TRUE;
 	}
 
-	return NULL;
+	return FALSE;
 }
 
 void

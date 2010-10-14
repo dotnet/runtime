@@ -431,7 +431,7 @@ mono_arch_get_throw_exception_by_name (void)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_find_jit_info                           */
+/* Name		- mono_arch_find_jit_info_ext                           */
 /*                                                                  */
 /* Function	- This function is used to gather informatoin from  */
 /*                @ctx. It returns the MonoJitInfo of the corres-   */
@@ -445,29 +445,28 @@ mono_arch_get_throw_exception_by_name (void)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-			 MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
-			 MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
+gboolean
+mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+							 MonoJitInfo *ji, MonoContext *ctx, 
+							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 StackFrameInfo *frame)
 {
-	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 	MonoS390StackFrame *sframe;
 
-	if (prev_ji && 
-	    (ip >= prev_ji->code_start && 
-	    ((guint8 *) ip <= ((guint8 *) prev_ji->code_start) + prev_ji->code_size)))
-		ji = prev_ji;
-	else
-		ji = mini_jit_info_table_find (domain, ip, NULL);
+	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->ji = ji;
+	frame->managed = FALSE;
 
-	if (managed)
-		*managed = FALSE;
+	*new_ctx = *ctx;
 
 	if (ji != NULL) {
 		gint32 address;
 
-		*new_ctx = *ctx;
+		frame->type = FRAME_TYPE_MANAGED;
+
+		if (!ji->method->wrapper_type || ji->method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+			frame->managed = TRUE;
 
 		if (*lmf && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
@@ -476,28 +475,24 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		address = (char *)ip - (char *)ji->code_start;
 
-		if (managed)
-			if (!ji->method->wrapper_type)
-				*managed = TRUE;
-
 		sframe = (MonoS390StackFrame *) MONO_CONTEXT_GET_SP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->prev);
 		sframe = (MonoS390StackFrame *) sframe->prev;
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->return_address);
 		memcpy (&new_ctx->uc_mcontext.gregs[6], sframe->regs, (8*sizeof(gint32)));
-		return ji;
+		return TRUE;
 	} else if (*lmf) {
-		
-		*new_ctx = *ctx;
-
 		if (!(*lmf)->method)
-			return (gpointer)-1;
+			return FALSE;
 
-		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL))) {
-		} else {
-			memset (res, 0, MONO_SIZEOF_JIT_INFO);
-			res->method = (*lmf)->method;
+		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL);
+		if (!ji) {
+			// FIXME: This can happen with multiple appdomains (bug #444383)
+			return FALSE;
 		}
+
+		frame->ji = ji;
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 
 		memcpy(new_ctx->uc_mcontext.gregs, (*lmf)->gregs, sizeof((*lmf)->gregs));
 		memcpy(new_ctx->uc_mcontext.fpregs.fprs, (*lmf)->fregs, sizeof((*lmf)->fregs));
@@ -506,10 +501,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
 		*lmf = (*lmf)->previous_lmf;
 
-		return ji ? ji : res;
+		return TRUE;
 	}
 
-	return NULL;
+	return FALSE;
 }
 
 /*========================= End of Function ========================*/

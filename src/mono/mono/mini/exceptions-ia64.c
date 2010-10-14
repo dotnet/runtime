@@ -487,22 +487,27 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 	return res;
 }
 
-/* mono_arch_find_jit_info:
+/*
+ * mono_arch_find_jit_info_ext:
  *
- * This function is used to gather information from @ctx. It return the 
- * MonoJitInfo of the corresponding function, unwinds one stack frame and
- * stores the resulting context into @new_ctx. It also stores a string 
- * describing the stack location into @trace (if not NULL), and modifies
- * the @lmf if necessary. @native_offset return the IP offset from the 
- * start of the function or -1 if that info is not available.
+ * This function is used to gather information from @ctx, and store it in @frame_info.
+ * It unwinds one stack frame, and stores the resulting context into @new_ctx. @lmf
+ * is modified if needed.
+ * Returns TRUE on success, FALSE otherwise.
+ * This function is a version of mono_arch_find_jit_info () where all the results are
+ * returned in a StackFrameInfo structure.
  */
-MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
-			 MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
+gboolean
+mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+							 MonoJitInfo *ji, MonoContext *ctx, 
+							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 StackFrameInfo *frame)
 {
-	MonoJitInfo *ji;
 	int err;
 	unw_word_t ip;
+
+	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->managed = FALSE;
 
 	*new_ctx = *ctx;
 	new_ctx->precise_ip = FALSE;
@@ -517,9 +522,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		else
 			ji = mini_jit_info_table_find (domain, (gpointer)ip, NULL);
 
-		if (managed)
-			*managed = FALSE;
-
 		/*
 		{
 			char name[256];
@@ -531,10 +533,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		*/
 
 		if (ji != NULL) {
-			if (managed)
-				if (!ji->method->wrapper_type)
-					*managed = TRUE;
-
 			break;
 		}
 
@@ -549,6 +547,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	}
 
 	if (ji) {
+		frame->type = FRAME_TYPE_MANAGED;
+
+		if (!ji->method->wrapper_type || ji->method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+			frame->managed = TRUE;
+
 		//print_ctx (new_ctx);
 
 		err = unw_step (&new_ctx->cursor);
@@ -556,10 +559,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		//print_ctx (new_ctx);
 
-		return ji;
+		return TRUE;
 	}
 	else
-		return (gpointer)(gssize)-1;
+		return FALSE;
 }
 
 /**
