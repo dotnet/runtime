@@ -2041,7 +2041,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 #ifdef HOST_WIN32
 	QueueUserAPC (notify_thread_apc, thread->handle, NULL);
 #else
-	pthread_kill ((pthread_t) tid, mono_thread_get_abort_signal ());
+	mono_thread_kill (thread, mono_thread_get_abort_signal ());
 #endif
 }
 

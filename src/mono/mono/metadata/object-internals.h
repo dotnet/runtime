@@ -401,11 +401,11 @@ struct _MonoInternalThread {
 	MonoThread *root_domain_thread;
 	gpointer interrupt_on_stop;
 	gsize    flags;
+	gpointer android_tid;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to the unmanaged MonoThread structure.
 	 */
-	gpointer unused4;
 	gpointer unused5;
 	gpointer unused6;
 };
@@ -645,6 +645,9 @@ mono_type_initialization_init (void) MONO_INTERNAL;
 
 void
 mono_type_initialization_cleanup (void) MONO_INTERNAL;
+
+int
+mono_thread_kill           (MonoInternalThread *thread, int signal) MONO_INTERNAL;
 
 guint32
 mono_thread_get_tls_key    (void) MONO_INTERNAL;

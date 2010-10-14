@@ -45,6 +45,12 @@
 
 #include <mono/metadata/gc-internal.h>
 
+#ifdef PLATFORM_ANDROID
+#include <errno.h>
+
+extern int tkill (pid_t tid, int signal);
+#endif
+
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
 #define THREAD_DEBUG(a)
 /*#define THREAD_WAIT_DEBUG(a) do { a; } while (0)*/
@@ -1014,6 +1020,9 @@ mono_thread_attach (MonoDomain *domain)
 
 	thread->handle=thread_handle;
 	thread->tid=tid;
+#ifdef PLATFORM_ANDROID
+	thread->android_tid = (gpointer) gettid ();
+#endif
 	thread->apartment_state=ThreadApartmentState_Unknown;
 	small_id_alloc (thread);
 	thread->stack_ptr = &tid;
@@ -2300,11 +2309,7 @@ static void signal_thread_state_change (MonoInternalThread *thread)
 	QueueUserAPC ((PAPCFUNC)interruption_request_apc, thread->handle, NULL);
 #else
 	/* fixme: store the state somewhere */
-#ifdef PTHREAD_POINTER_ID
-	pthread_kill ((gpointer)(gsize)(thread->tid), mono_thread_get_abort_signal ());
-#else
-	pthread_kill (thread->tid, mono_thread_get_abort_signal ());
-#endif
+	mono_thread_kill (thread, mono_thread_get_abort_signal ());
 
 	/* 
 	 * This will cause waits to be broken.
@@ -4333,4 +4338,31 @@ gboolean
 mono_runtime_has_tls_get (void)
 {
 	return has_tls_get;
+}
+
+int
+mono_thread_kill (MonoInternalThread *thread, int signal)
+{
+#ifdef PTHREAD_POINTER_ID
+	return pthread_kill ((gpointer)(gsize)(thread->tid), mono_thread_get_abort_signal ());
+#else
+#  ifdef PLATFORM_ANDROID
+	if (thread->android_tid != 0) {
+		int  ret;
+		int  old_errno = errno;
+
+		ret = tkill ((pid_t) thread->android_tid, signal);
+		if (ret < 0) {
+			ret = errno;
+			errno = old_errno;
+		}
+
+		return ret;
+	}
+	else
+		return pthread_kill (thread->tid, mono_thread_get_abort_signal ());
+#  else
+	return pthread_kill (thread->tid, mono_thread_get_abort_signal ());
+#  endif
+#endif
 }
