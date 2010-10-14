@@ -8817,7 +8817,7 @@ type_from_handle (MonoType *handle)
 }
 
 /*
- * This does the equivalent of mono_object_variant_castclass.
+ * This does the equivalent of mono_object_castclass_with_cache.
  */
 MonoMethod *
 mono_marshal_get_castclass_with_cache (void)
@@ -8853,7 +8853,7 @@ mono_marshal_get_castclass_with_cache (void)
 	mono_mb_emit_stloc (mb, 0);
 
 	/* *cache */
-	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_ldloc (mb, 0);
 
@@ -8872,7 +8872,7 @@ mono_marshal_get_castclass_with_cache (void)
 	invalid_cast_pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 	/**cache = obj_vtable;*/
-	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldloc (mb, 0);
 	mono_mb_emit_byte (mb, CEE_STIND_I);
 
@@ -8900,7 +8900,7 @@ mono_marshal_get_castclass_with_cache (void)
 }
 
 /*
- * This does the equivalent of mono_object_variant_isinst.
+ * This does the equivalent of mono_object_isinst_with_cache.
  */
 MonoMethod *
 mono_marshal_get_isinst_with_cache (void)
@@ -8938,7 +8938,7 @@ mono_marshal_get_isinst_with_cache (void)
 	mono_mb_emit_stloc (mb, 0);
 
 	/* cached_vtable = *cache*/
-	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, 1);
 
@@ -8977,7 +8977,7 @@ mono_marshal_get_isinst_with_cache (void)
 	not_an_instance_pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 	/**cache = obj_vtable;*/
-	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldloc (mb, 0);
 	mono_mb_emit_byte (mb, CEE_STIND_I);
 
@@ -8988,9 +8988,9 @@ mono_marshal_get_isinst_with_cache (void)
 	/*not an instance*/
 	mono_mb_patch_branch (mb, not_an_instance_pos);
 	/* *cache = (gpointer)(obj_vtable | 0x1);*/
-	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
 	/*obj_vtable | 0x1*/
-	mono_mb_emit_ldloc (mb, 1);
+	mono_mb_emit_ldloc (mb, 0);
 	mono_mb_emit_byte(mb, CEE_LDC_I4_1);
 	mono_mb_emit_byte (mb, CEE_CONV_U);
 	mono_mb_emit_byte (mb, CEE_OR);
