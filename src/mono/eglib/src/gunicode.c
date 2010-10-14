@@ -217,8 +217,10 @@ g_convert (const gchar *str, gssize len,
 	
 	convertor = iconv_open (to_codeset, from_codeset);
 	if (convertor == (iconv_t) -1){
-		*bytes_written = 0;
-		*bytes_read = 0;
+		if (bytes_written)
+			*bytes_written = 0;
+		if (bytes_read)
+			*bytes_read = 0;
 		return NULL;
 	}
 
