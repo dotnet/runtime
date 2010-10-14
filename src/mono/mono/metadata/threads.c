@@ -4343,10 +4343,14 @@ mono_runtime_has_tls_get (void)
 int
 mono_thread_kill (MonoInternalThread *thread, int signal)
 {
-#ifdef PTHREAD_POINTER_ID
-	return pthread_kill ((gpointer)(gsize)(thread->tid), mono_thread_get_abort_signal ());
+#ifdef HOST_WIN32
+	/* Win32 uses QueueUserAPC and callers of this are guarded */
+	g_assert_not_reached ();
 #else
-#  ifdef PLATFORM_ANDROID
+#  ifdef PTHREAD_POINTER_ID
+	return pthread_kill ((gpointer)(gsize)(thread->tid), mono_thread_get_abort_signal ());
+#  else
+#    ifdef PLATFORM_ANDROID
 	if (thread->android_tid != 0) {
 		int  ret;
 		int  old_errno = errno;
@@ -4361,8 +4365,9 @@ mono_thread_kill (MonoInternalThread *thread, int signal)
 	}
 	else
 		return pthread_kill (thread->tid, mono_thread_get_abort_signal ());
-#  else
+#    else
 	return pthread_kill (thread->tid, mono_thread_get_abort_signal ());
+#    endif
 #  endif
 #endif
 }
