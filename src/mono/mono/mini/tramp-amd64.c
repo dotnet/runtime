@@ -1050,6 +1050,48 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	amd64_call_reg (code, AMD64_R11);
 }
 
+
+static void
+handler_block_trampoline_helper (gpointer *ptr)
+{
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	*ptr = jit_tls->handler_block_return_address;
+}
+
+gpointer
+mono_arch_create_handler_block_trampoline (void)
+{
+	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
+	guint8 *code, *buf;
+	int tramp_size = 64;
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	/*
+	This trampoline restore the call chain of the handler block then jumps into the code that deals with it.
+	*/
+
+	if (mono_get_jit_tls_offset () != -1) {
+		code = mono_amd64_emit_tls_get (code, AMD64_RDI, mono_get_jit_tls_offset ());
+		/*simulate a call*/
+		amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RDI, G_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 8);
+		amd64_jump_code (code, tramp);
+	} else {
+		/*Slow path uses a c helper*/
+		amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RSP, 8);
+		amd64_mov_reg_imm (code, AMD64_RAX, tramp);
+		amd64_push_reg (code, AMD64_RAX);
+		amd64_jump_code (code, handler_block_trampoline_helper);
+	}
+
+	mono_arch_flush_icache (buf, code - buf);
+	g_assert (code - buf <= tramp_size);
+
+	if (mono_jit_map_is_enabled ())
+		mono_emit_jit_tramp (buf, code - buf, "handler_block_trampoline");
+
+	return buf;
+}
+
 /*
  * mono_arch_get_call_target:
  *
