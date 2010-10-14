@@ -53,7 +53,7 @@ libeglib_la_SOURCES = \
 	$(os_files)	\
 	$(vasprintf_files)
 
-libeglib_la_CFLAGS = -Wall -D_FORTIFY_SOURCE=2
+libeglib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2
 libeglib_static_la_SOURCES=$(libeglib_la_SOURCES)
 libeglib_static_la_CFLAGS = $(libeglib_la_CFLAGS)
 
