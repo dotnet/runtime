@@ -418,17 +418,15 @@ glist_to_array (GList *list, MonoClass *eclass)
 }
 
 /*
- * mono_arch_find_jit_info_ext:
+ * mono_arch_find_jit_info:
  *
  * This function is used to gather information from @ctx, and store it in @frame_info.
  * It unwinds one stack frame, and stores the resulting context into @new_ctx. @lmf
  * is modified if needed.
  * Returns TRUE on success, FALSE otherwise.
- * This function is a version of mono_arch_find_jit_info () where all the results are
- * returned in a StackFrameInfo structure.
  */
 gboolean
-mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf, 
 							 StackFrameInfo *frame)

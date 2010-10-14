@@ -1830,19 +1830,11 @@ void     mono_arch_skip_single_step             (MonoContext *ctx) MONO_INTERNAL
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code) MONO_INTERNAL;
 #endif
 
-MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain, 
-						 MonoJitTlsData *jit_tls, 
-						 MonoJitInfo *res, 
-						 MonoJitInfo *prev_ji, 
-						 MonoContext *ctx, 
-						 MonoContext *new_ctx, 
-						 MonoLMF **lmf, 
-						 gboolean *managed) MONO_INTERNAL;
 gboolean
-mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf, 
-							 StackFrameInfo *frame_info) MONO_INTERNAL;
+mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+						 MonoJitInfo *ji, MonoContext *ctx, 
+						 MonoContext *new_ctx, MonoLMF **lmf, 
+						 StackFrameInfo *frame_info) MONO_INTERNAL;
 gpointer  mono_arch_get_throw_exception_by_name (void) MONO_INTERNAL;
 gpointer mono_arch_get_call_filter              (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
 gpointer mono_arch_get_restore_context          (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;

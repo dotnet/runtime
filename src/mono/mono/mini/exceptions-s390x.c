@@ -428,20 +428,12 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 /*                                                                  */
 /* Name		- mono_arch_find_jit_info                           */
 /*                                                                  */
-/* Function	- This function is used to gather information from  */
-/*                @ctx. It returns the MonoJitInfo of the corres-   */
-/*                ponding function, unwinds one stack frame and     */
-/*                stores the resulting context into @new_ctx. It    */
-/*                also stores a string describing the stack location*/
-/*                into @trace (if not NULL), and modifies the @lmf  */
-/*                if necessary. @native_offset returns the IP off-  */
-/*                set from the start of the function or -1 if that  */
-/*                information is not available.                     */
+/* Function	- See exceptions-amd64.c for docs.                      */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
 gboolean
-mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf, 
 							 StackFrameInfo *frame)

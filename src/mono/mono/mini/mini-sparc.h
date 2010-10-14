@@ -122,7 +122,6 @@ typedef struct MonoCompileArch {
 #endif
 
 #define MONO_ARCH_THIS_AS_FIRST_ARG 1
-#define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 
 #ifndef __GNUC__
 /* assume Sun compiler if not GCC */

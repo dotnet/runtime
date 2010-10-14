@@ -370,7 +370,6 @@ typedef struct {
 #else
 #define DISABLE_DEBUGGER_AGENT 1
 #endif
-#define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 
 #if !defined(HOST_WIN32) || defined(__sun)
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1

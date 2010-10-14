@@ -167,7 +167,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_DYN_CALL_PARAM_AREA 24
 
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
-#define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
 
 /* ARM doesn't have too many registers, so we have to use a callee saved one */

@@ -295,7 +295,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_USE_SIGACTION
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_NO_IOV_CHECK 1
-#define MONO_ARCH_HAVE_FIND_JIT_INFO_EXT 1
 
 #define MONO_ARCH_THIS_AS_FIRST_ARG 1
 

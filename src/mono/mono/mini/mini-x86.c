@@ -594,7 +594,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
  *
  * Returns the size of the argument area on the stack.
  * This should be signal safe, since it is called from
- * mono_arch_find_jit_info_ext ().
+ * mono_arch_find_jit_info ().
  * FIXME: The metadata calls might not be signal safe.
  */
 int

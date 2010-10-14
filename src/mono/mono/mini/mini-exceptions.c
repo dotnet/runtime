@@ -191,13 +191,10 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 	return TRUE;
 }
 
-#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
-
 /*
  * find_jit_info_no_ext:
  *
- * If the target has the find_jit_info_ext version of this function, define the old
- * version here which translates between the old and new APIs.
+ * Translate between the mono_arch_find_jit_info function and the old API.
  */
 static MonoJitInfo *
 find_jit_info_no_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
@@ -217,7 +214,7 @@ find_jit_info_no_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *
 	if (managed)
 		*managed = FALSE;
 
-	err = mono_arch_find_jit_info_ext (domain, jit_tls, ji, ctx, new_ctx, lmf, &frame);
+	err = mono_arch_find_jit_info (domain, jit_tls, ji, ctx, new_ctx, lmf, &frame);
 	if (!err)
 		return (gpointer)-1;
 
@@ -252,8 +249,6 @@ find_jit_info_no_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *
 	}
 }
 
-#endif
-
 /* mono_find_jit_info:
  *
  * This function is used to gather information from @ctx. It return the 
@@ -281,11 +276,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	if (managed)
 		*managed = FALSE;
 
-#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
 	ji = find_jit_info_no_ext (domain, jit_tls, res, prev_ji, ctx, new_ctx, lmf, &managed2);
-#else
-	ji = mono_arch_find_jit_info (domain, jit_tls, res, prev_ji, ctx, new_ctx, lmf, &managed2);
-#endif
 
 	if (ji == (gpointer)-1)
 		return ji;
@@ -326,8 +317,6 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	return ji;
 }
 
-#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
-
 /*
  * mono_find_jit_info_ext:
  *
@@ -357,7 +346,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (!target_domain)
 		target_domain = domain;
 
-	err = mono_arch_find_jit_info_ext (target_domain, jit_tls, ji, ctx, new_ctx, lmf, frame);
+	err = mono_arch_find_jit_info (target_domain, jit_tls, ji, ctx, new_ctx, lmf, frame);
 	if (!err)
 		return FALSE;
 
@@ -393,8 +382,6 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 	return TRUE;
 }
-
-#endif /* MONO_ARCH_HAVE_FIND_JIT_INFO_EXT */
 
 static gpointer
 get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
@@ -716,13 +703,7 @@ mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domai
 	gint il_offset;
 	MonoContext ctx, new_ctx;
 	StackFrameInfo frame;
-#ifndef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
-	gint native_offset;
-	gboolean managed;
-	MonoJitInfo *ji, rji;
-#else
 	gboolean res;
-#endif
 	
 	MONO_ARCH_CONTEXT_DEF
 
@@ -741,21 +722,9 @@ mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domai
 
 	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		frame.lmf = lmf;
-#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
 		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
 		if (!res)
 			return;
-#else
-		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
-		g_assert (ji);
-		frame.type = FRAME_TYPE_MANAGED;
-		frame.ji = ji;
-		frame.managed = managed;
-		frame.native_offset = native_offset;
-
-		if (ji == (gpointer)-1)
-			return;
-#endif
 
 		if (do_il_offset && frame.ji) {
 			MonoDebugSourceLocation *source;

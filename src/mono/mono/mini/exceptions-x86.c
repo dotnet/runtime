@@ -138,7 +138,7 @@ win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, struct sigcontext *sctx)
 	do {
 		MonoContext new_ctx;
 
-		mono_arch_find_jit_info_ext (domain, jit_tls, &rji, &ctx, &new_ctx, &lmf, &frame);
+		mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, &lmf, &frame);
 		if (!frame.ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
@@ -686,12 +686,12 @@ mono_arch_exceptions_init (void)
 }
 
 /*
- * mono_arch_find_jit_info_ext:
+ * mono_arch_find_jit_info:
  *
  * See exceptions-amd64.c for docs.
  */
 gboolean
-mono_arch_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf, 
 							 StackFrameInfo *frame)
