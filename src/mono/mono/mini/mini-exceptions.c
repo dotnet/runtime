@@ -192,12 +192,12 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 }
 
 /*
- * find_jit_info_no_ext:
+ * find_jit_info:
  *
  * Translate between the mono_arch_find_jit_info function and the old API.
  */
 static MonoJitInfo *
-find_jit_info_no_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
+find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
 			   MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
 {
 	StackFrameInfo frame;
@@ -239,7 +239,7 @@ find_jit_info_no_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *
 		 * The normal exception handling code can't handle this frame, so just
 		 * skip it.
 		 */
-		ji = find_jit_info_no_ext (domain, jit_tls, res, NULL, new_ctx, &tmp_ctx, lmf, managed);
+		ji = find_jit_info (domain, jit_tls, res, NULL, new_ctx, &tmp_ctx, lmf, managed);
 		memcpy (new_ctx, &tmp_ctx, sizeof (MonoContext));
 		return ji;
 	}
@@ -276,7 +276,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	if (managed)
 		*managed = FALSE;
 
-	ji = find_jit_info_no_ext (domain, jit_tls, res, prev_ji, ctx, new_ctx, lmf, &managed2);
+	ji = find_jit_info (domain, jit_tls, res, prev_ji, ctx, new_ctx, lmf, &managed2);
 
 	if (ji == (gpointer)-1)
 		return ji;
