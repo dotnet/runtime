@@ -6269,11 +6269,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 	}
 
-#ifdef ENABLE_LLVM
-	acfg->llvm = TRUE;
- 	acfg->aot_opts.asm_writer = TRUE;
-	acfg->flags |= MONO_AOT_FILE_FLAG_WITH_LLVM;
-#endif
+	if (mono_use_llvm) {
+		acfg->llvm = TRUE;
+		acfg->aot_opts.asm_writer = TRUE;
+		acfg->flags |= MONO_AOT_FILE_FLAG_WITH_LLVM;
+	}
 
 	if (acfg->aot_opts.full_aot)
 		acfg->flags |= MONO_AOT_FILE_FLAG_FULL_AOT;
@@ -6322,8 +6322,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->plt_offset = 1;
 
 #ifdef ENABLE_LLVM
-	llvm_acfg = acfg;
-	mono_llvm_create_aot_module (acfg->got_symbol_base);
+	if (acfg->llvm) {
+		llvm_acfg = acfg;
+		mono_llvm_create_aot_module (acfg->got_symbol_base);
+	}
 #endif
 
 	/* GOT offset 0 is reserved for the address of the current assembly */
@@ -6367,9 +6369,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		} else {
 			acfg->tmpfname = g_strdup ("temp.s");
 		}
-	}
 
-	emit_llvm_file (acfg);
+		emit_llvm_file (acfg);
+	}
 #endif
 
 	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && bin_writer_supported ()) {

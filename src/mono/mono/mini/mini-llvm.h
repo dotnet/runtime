@@ -48,12 +48,14 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 void
 mono_llvm_create_aot_module (const char *got_symbol)
 {
+	g_assert (mono_llvm_create_aot_module_fptr);
 	mono_llvm_create_aot_module_fptr (got_symbol);
 }
 
 void
 mono_llvm_emit_aot_module (const char *filename, int got_size)
 {
+	g_assert (mono_llvm_emit_aot_module_fptr);
 	mono_llvm_emit_aot_module_fptr (filename, got_size);
 }
 
