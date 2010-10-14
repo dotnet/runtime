@@ -2316,8 +2316,12 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				item->jmp_code = (guint8*)code;
 				sparc_branch (code, 0, sparc_bne, 0);
 				sparc_nop (code);
-				sparc_set (code, ((guint32)(&(vtable->vtable [item->value.vtable_slot]))), sparc_g5);
-				sparc_ld (code, sparc_g5, 0, sparc_g5);
+				if (item->has_target_code) {
+					sparc_set (code, item->value.target_code, sparc_f5);
+				} else {
+					sparc_set (code, ((guint32)(&(vtable->vtable [item->value.vtable_slot]))), sparc_g5);
+					sparc_ld (code, sparc_g5, 0, sparc_g5);
+				}
 				sparc_jmpl (code, sparc_g5, sparc_g0, sparc_g0);
 				sparc_nop (code);
 
