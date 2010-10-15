@@ -376,7 +376,6 @@ force_pass_linking (void)
       (void) llvm::createLoopUnrollPass();
       (void) llvm::createLoopUnswitchPass();
       (void) llvm::createLoopRotatePass();
-      (void) llvm::createLoopIndexSplitPass();
       (void) llvm::createLowerInvokePass();
 	  /*
       (void) llvm::createLowerSetJmpPass();
