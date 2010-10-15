@@ -757,9 +757,11 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 char*
 mono_stringify_assembly_name (MonoAssemblyName *aname)
 {
+	const char *quote = g_ascii_isspace (aname->name [0]) ? "\"" : "";
+
 	return g_strdup_printf (
-		"%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
-		aname->name,
+		"%s%s%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
+		quote, aname->name, quote,
 		aname->major, aname->minor, aname->build, aname->revision,
 		aname->culture && *aname->culture? aname->culture: "neutral",
 		aname->public_key_token [0] ? (char *)aname->public_key_token : "null",

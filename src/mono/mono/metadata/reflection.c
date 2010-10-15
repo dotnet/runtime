@@ -7138,23 +7138,33 @@ static int
 assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	int found_sep;
 	char *s;
+	gboolean quoted = FALSE;
 
 	memset (assembly, 0, sizeof (MonoAssemblyName));
-	assembly->name = p;
 	assembly->culture = "";
 	memset (assembly->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 
-	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@'))
+	if (*p == '"') {
+		quoted = TRUE;
 		p++;
-	found_sep = 0;
-	while (g_ascii_isspace (*p) || *p == ',') {
-		*p++ = 0;
-		found_sep = 1;
-		continue;
 	}
-	/* failed */
-	if (!found_sep)
+	assembly->name = p;
+	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@' || g_ascii_isspace (*p)))
+		p++;
+	if (quoted) {
+		if (*p != '"')
+			return 1;
+		*p = 0;
+		p++;
+	}
+	if (*p != ',')
 		return 1;
+	*p = 0;
+	/* Remove trailing whitespace */
+	s = p - 1;
+	while (*s && g_ascii_isspace (*s))
+		*s-- = 0;
+	p ++;
 	while (*p) {
 		if (*p == 'V' && g_ascii_strncasecmp (p, "Version=", 8) == 0) {
 			p += 8;

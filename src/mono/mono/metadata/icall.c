@@ -5015,10 +5015,11 @@ ves_icall_System_Reflection_Assembly_get_fullName (MonoReflectionAssembly *assem
 	MonoAssembly *mass = assembly->assembly;
 	MonoString *res;
 	gchar *name;
+	const char *quote = g_ascii_isspace (mass->aname.name [0]) ? "\"" : "";
 
 	name = g_strdup_printf (
-		"%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
-		mass->aname.name,
+		"%s%s%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
+		quote, mass->aname.name, quote,
 		mass->aname.major, mass->aname.minor, mass->aname.build, mass->aname.revision,
 		mass->aname.culture && *mass->aname.culture? mass->aname.culture: "neutral",
 		mass->aname.public_key_token [0] ? (char *)mass->aname.public_key_token : "null",
