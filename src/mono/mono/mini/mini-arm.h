@@ -169,6 +169,11 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
 
+/* Matches the HAVE_AEABI_READ_TP define in mini-arm.c */
+#if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID)
+#define MONO_ARCH_HAVE_TLS_GET 1
+#endif
+
 /* ARM doesn't have too many registers, so we have to use a callee saved one */
 #define MONO_ARCH_RGCTX_REG ARMREG_V5
 /* First argument reg */
