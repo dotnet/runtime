@@ -514,11 +514,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		err = unw_get_reg (&new_ctx->cursor, UNW_IA64_IP, &ip);
 		g_assert (err == 0);
 
-		/* Avoid costly table lookup during stack overflow */
-		if (prev_ji && ((guint8*)ip > (guint8*)prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
-			ji = prev_ji;
-		else
-			ji = mini_jit_info_table_find (domain, (gpointer)ip, NULL);
+		ji = mini_jit_info_table_find (domain, (gpointer)ip, NULL);
 
 		/*
 		{
