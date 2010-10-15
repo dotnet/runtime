@@ -495,7 +495,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	gboolean mrgctx;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	char *name;
 
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
