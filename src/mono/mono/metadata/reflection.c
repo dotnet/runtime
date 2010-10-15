@@ -7165,6 +7165,8 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	while (*s && g_ascii_isspace (*s))
 		*s-- = 0;
 	p ++;
+	while (g_ascii_isspace (*p))
+		p++;
 	while (*p) {
 		if (*p == 'V' && g_ascii_strncasecmp (p, "Version=", 8) == 0) {
 			p += 8;
