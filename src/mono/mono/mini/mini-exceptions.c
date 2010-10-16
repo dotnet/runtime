@@ -223,7 +223,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	case FRAME_TYPE_MANAGED:
 		if (managed)
 			*managed = TRUE;
-		return ji;
+		return frame.ji;
 	case FRAME_TYPE_MANAGED_TO_NATIVE:
 		if (frame.ji)
 			return frame.ji;

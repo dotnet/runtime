@@ -505,43 +505,46 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	unw_word_t ip;
 
 	memset (frame, 0, sizeof (StackFrameInfo));
+	frame->ji = ji;
 	frame->managed = FALSE;
 
 	*new_ctx = *ctx;
 	new_ctx->precise_ip = FALSE;
 
-	while (TRUE) {
-		err = unw_get_reg (&new_ctx->cursor, UNW_IA64_IP, &ip);
-		g_assert (err == 0);
+	if (!ji) {
+		while (TRUE) {
+			err = unw_get_reg (&new_ctx->cursor, UNW_IA64_IP, &ip);
+			g_assert (err == 0);
 
-		ji = mini_jit_info_table_find (domain, (gpointer)ip, NULL);
+			ji = mini_jit_info_table_find (domain, (gpointer)ip, NULL);
 
-		/*
-		{
-			char name[256];
-			unw_word_t off;
+			/*
+			  {
+			  char name[256];
+			  unw_word_t off;
 
-			unw_get_proc_name (&new_ctx->cursor, name, 256, &off);
-			printf ("F: %s\n", name);
+			  unw_get_proc_name (&new_ctx->cursor, name, 256, &off);
+			  printf ("F: %s\n", name);
+			  }
+			*/
+
+			if (ji)
+				break;
+
+			/* This is an unmanaged frame, so just unwind through it */
+			/* FIXME: This returns -3 for the __clone2 frame in libc */
+			err = unw_step (&new_ctx->cursor);
+			if (err < 0)
+				break;
+
+			if (err == 0)
+				break;
 		}
-		*/
-
-		if (ji != NULL) {
-			break;
-		}
-
-		/* This is an unmanaged frame, so just unwind through it */
-		/* FIXME: This returns -3 for the __clone2 frame in libc */
-		err = unw_step (&new_ctx->cursor);
-		if (err < 0)
-			break;
-
-		if (err == 0)
-			break;
 	}
 
 	if (ji) {
 		frame->type = FRAME_TYPE_MANAGED;
+		frame->ji = ji;
 
 		if (!ji->method->wrapper_type || ji->method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
 			frame->managed = TRUE;
