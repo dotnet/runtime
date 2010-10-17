@@ -316,6 +316,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
 		value->value.variable.delta = 0;
+		area->defs [ins->dreg] = ins;
 		break;
 
 		/* FIXME: Add more opcodes */
@@ -1128,12 +1129,9 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			add_non_null (area, cfg, ins->sreg1, &check_relations);
 
 		/* 
-		 * This doesn't work because LLVM can move the non-faulting loads before the faulting
-		 * ones (test_0_llvm_moving_faulting_loads ()).
-		 * FIXME: This also doesn't work because abcrem equates an array with its length,
+		 * FIXME: abcrem equates an array with its length,
 		 * so a = new int [100] implies a != null, but a = new int [0] doesn't.
 		 */
-#if 0
 		/*
 		 * Eliminate MONO_INST_FAULT flags if possible.
 		 */
@@ -1151,6 +1149,18 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			else
 				reg = ins->sreg1;
 
+			/*
+			 * This doesn't work because LLVM can move the non-faulting loads before the faulting
+			 * ones (test_0_llvm_moving_faulting_loads ()).
+			 * So only do it if we know the load cannot be moved before the instruction which ensures it is not
+			 * null (i.e. the def of its sreg).
+			 */
+			if (area->defs [reg] && area->defs [reg]->opcode == OP_NEWARR) {
+				if (REPORT_ABC_REMOVAL)
+					printf ("ARRAY-ACCESS: removed MONO_INST_FAULT flag.\n");
+				ins->flags &= ~MONO_INST_FAULT;
+			}
+			/*
 			if (eval_non_null (area, reg)) {
 				if (REPORT_ABC_REMOVAL)
 					printf ("ARRAY-ACCESS: removed MONO_INST_FAULT flag.\n");
@@ -1158,8 +1168,8 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			} else {
 				add_non_null (area, cfg, reg, &check_relations);
 			}
+			*/
 		}
-#endif
 	}	
 	
 	if (TRACE_ABC_REMOVAL) {
@@ -1253,12 +1263,14 @@ mono_perform_abc_removal (MonoCompile *cfg)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoRelationsEvaluationContext) * (cfg->next_vreg));
 	area.variable_value_kind = (MonoIntegerValueKind *)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->next_vreg));
+	area.defs = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
 	for (i = 0; i < cfg->next_vreg; i++) {
 		area.variable_value_kind [i] = MONO_UNKNOWN_INTEGER_VALUE;
 		area.relations [i].relation = MONO_EQ_RELATION;
 		area.relations [i].relation_is_static_definition = TRUE;
 		MAKE_VALUE_ANY (area.relations [i].related_value);
 		area.relations [i].next = NULL;
+		area.defs [i] = NULL;
 	}
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {

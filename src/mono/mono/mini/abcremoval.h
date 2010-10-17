@@ -303,12 +303,14 @@ typedef struct MonoRelationsEvaluationContext {
  * contexts: an array of evaluation contexts (one for each method variable)
  * variable_value_kind: an array of MonoIntegerValueKind, one for each local
  *                      variable (or argument)
+ * defs: maps vregs to the instruction which defines it.
  */
 typedef struct MonoVariableRelationsEvaluationArea {
 	MonoCompile *cfg;
 	MonoSummarizedValueRelation *relations;
 	MonoRelationsEvaluationContext *contexts;
 	MonoIntegerValueKind *variable_value_kind;
+	MonoInst **defs;
 } MonoVariableRelationsEvaluationArea;
 
 /**
