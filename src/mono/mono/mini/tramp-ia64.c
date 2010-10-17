@@ -43,9 +43,6 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	/* FIXME: Optimize this */
 
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
-		this_reg = 1;
-
 	func_addr = ((gpointer*)addr) [0];
 	func_gp = ((gpointer*)addr) [1];
 

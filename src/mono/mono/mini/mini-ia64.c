@@ -188,6 +188,9 @@ typedef struct {
 	guint32 reg_usage;
 	guint32 freg_usage;
 	gboolean need_stack_align;
+	gboolean vtype_retaddr;
+	/* The index of the vret arg in the argument list */
+	int vret_arg_index;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
@@ -350,7 +353,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 static CallInfo*
 get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
-	guint32 i, gr, fr;
+	guint32 i, gr, fr, pstart;
 	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
@@ -416,11 +419,10 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 				cinfo->ret.storage = ArgInIReg;
 			} else {
 				add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
-				if (cinfo->ret.storage == ArgOnStack)
+				if (cinfo->ret.storage == ArgOnStack) {
 					/* The caller passes the address where the value is stored */
-					add_general (&gr, &stack_size, &cinfo->ret);
-				if (cinfo->ret.storage == ArgInIReg)
-					cinfo->ret.storage = ArgValuetypeAddrInIReg;
+					cinfo->vtype_retaddr = TRUE;
+				}
 			}
 			break;
 		}
@@ -432,16 +434,36 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 		}
 	}
 
+	pstart = 0;
 	/*
-	 * IA64 has MONO_ARCH_THIS_AS_FIRST_ARG defined, but we don't need to really pass
-	 * this as first, because this is stored in a non-stacked register by the calling
-	 * sequence.
-	 * FIXME: mono_arch_get_unbox_trampoline () depends on this.
+	 * To simplify get_this_arg_reg () and LLVM integration, emit the vret arg after
+	 * the first argument, allowing 'this' to be always passed in the first arg reg.
+	 * Also do this if the first argument is a reference type, since virtual calls
+	 * are sometimes made using calli without sig->hasthis set, like in the delegate
+	 * invoke wrappers.
 	 */
+	if (cinfo->vtype_retaddr && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (gsctx, sig->params [0]))))) {
+		if (sig->hasthis) {
+			add_general (&gr, &stack_size, cinfo->args + 0);
+		} else {
+			add_general (&gr, &stack_size, &cinfo->args [sig->hasthis + 0]);
+			pstart = 1;
+		}
+		add_general (&gr, &stack_size, &cinfo->ret);
+		if (cinfo->ret.storage == ArgInIReg)
+			cinfo->ret.storage = ArgValuetypeAddrInIReg;
+		cinfo->vret_arg_index = 1;
+	} else {
+		/* this */
+		if (sig->hasthis)
+			add_general (&gr, &stack_size, cinfo->args + 0);
 
-	/* this */
-	if (sig->hasthis)
-		add_general (&gr, &stack_size, cinfo->args + 0);
+		if (cinfo->vtype_retaddr) {
+			add_general (&gr, &stack_size, &cinfo->ret);
+			if (cinfo->ret.storage == ArgInIReg)
+				cinfo->ret.storage = ArgValuetypeAddrInIReg;
+		}
+	}
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == 0)) {
 		gr = PARAM_REGS;
@@ -451,7 +473,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 		add_general (&gr, &stack_size, &cinfo->sig_cookie);
 	}
 
-	for (i = 0; i < sig->param_count; ++i) {
+	for (i = pstart; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 		MonoType *ptype;
 
@@ -2732,8 +2754,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			cinfo = get_call_info (cfg, cfg->mempool, call->signature, FALSE);
 			out_reg = cfg->arch.reg_out0;
-			if (cinfo->ret.storage == ArgValuetypeAddrInIReg)
-				out_reg ++;
 			ia64_mov (code, IA64_R10, out_reg);
 
 			/* Indirect call */
@@ -2779,8 +2799,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			cinfo = get_call_info (cfg, cfg->mempool, call->signature, FALSE);
 			out_reg = cfg->arch.reg_out0;
-			if (cinfo->ret.storage == ArgValuetypeAddrInIReg)
-				out_reg ++;
 			ia64_mov (code, IA64_R10, out_reg);
 
 			ia64_ld8 (code, GP_SCRATCH_REG, IA64_R8);
