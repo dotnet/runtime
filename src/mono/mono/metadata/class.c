@@ -3320,6 +3320,56 @@ mono_class_setup_interface_offsets (MonoClass *class)
 
 	mono_loader_unlock ();
 }
+
+/*Checks if @klass has @parent as one of it's parents type gtd
+ *
+ * For example:
+ * 	Foo<T>
+ *	Bar<T> : Foo<Bar<Bar<T>>>
+ *
+ */
+static gboolean
+mono_class_has_gtd_parent (MonoClass *klass, MonoClass *parent)
+{
+	klass = mono_class_get_generic_type_definition (klass);
+	parent = mono_class_get_generic_type_definition (parent);
+	mono_class_setup_supertypes (klass);
+	mono_class_setup_supertypes (parent);
+
+	return klass->idepth >= parent->idepth &&
+		mono_class_get_generic_type_definition (klass->supertypes [parent->idepth - 1]) == parent;
+}
+
+gboolean
+mono_class_check_vtable_constraints (MonoClass *class)
+{
+	MonoGenericInst *ginst;
+	int i;
+
+	if (!class->generic_class) {
+		mono_class_setup_vtable (class);
+		return class->exception_type == 0;
+	}
+
+	mono_class_setup_vtable (mono_class_get_generic_type_definition (class));
+	if (class->generic_class->container_class->exception_type) {
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Failed to load generic definition vtable"));
+		return FALSE;
+	}
+
+	ginst = class->generic_class->context.class_inst;
+	for (i = 0; i < ginst->type_argc; ++i) {
+		MonoClass *arg = mono_class_from_mono_type (ginst->type_argv [i]);
+		/*Those 2 will be checked by mono_class_setup_vtable itself*/
+		if (mono_class_has_gtd_parent (class, arg) || mono_class_has_gtd_parent (arg, class))
+			continue;
+		if (!mono_class_check_vtable_constraints (arg)) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Failed to load generic parameter %d", i));
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
  
 /*
  * mono_class_setup_vtable:
@@ -3368,6 +3418,11 @@ mono_class_setup_vtable (MonoClass *class)
 	mono_stats.generic_vtable_count ++;
 
 	if (class->generic_class) {
+		if (!mono_class_check_vtable_constraints (class)) {
+			mono_loader_unlock ();
+			return;
+		}
+
 		context = mono_class_get_context (class);
 		type_token = class->generic_class->container_class->type_token;
 	} else {

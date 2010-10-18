@@ -1842,6 +1842,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	if (!class->vtable_size)
 		mono_class_setup_vtable (class);
 
+	if (class->generic_class && !class->vtable)
+		mono_class_check_vtable_constraints (class);
+
 	if (class->exception_type) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
