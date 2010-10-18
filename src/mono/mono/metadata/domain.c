@@ -2522,8 +2522,21 @@ get_runtime_by_version (const char *version)
 {
 	int n;
 	int max = G_N_ELEMENTS (supported_runtimes);
-	
+	gboolean do_partial_match;
+	int vlen;
+
+	if (!version)
+		return NULL;
+
+	vlen = strlen (version);
+	if (vlen >= 4 && version [1] - '0' >= 4)
+		do_partial_match = TRUE;
+	else
+		do_partial_match = FALSE;
+
 	for (n=0; n<max; n++) {
+		if (do_partial_match && strncmp (version, supported_runtimes[n].runtime_version, vlen) == 0)
+			return &supported_runtimes[n];
 		if (strcmp (version, supported_runtimes[n].runtime_version) == 0)
 			return &supported_runtimes[n];
 	}
