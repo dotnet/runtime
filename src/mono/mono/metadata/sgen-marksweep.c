@@ -703,6 +703,30 @@ static void
 major_dump_heap (FILE *heap_dump_file)
 {
 	MSBlockInfo *block;
+	int *slots_available = alloca (sizeof (int) * num_block_obj_sizes);
+	int *slots_used = alloca (sizeof (int) * num_block_obj_sizes);
+	int i;
+
+	for (i = 0; i < num_block_obj_sizes; ++i)
+		slots_available [i] = slots_used [i] = 0;
+
+	FOREACH_BLOCK (block) {
+		int index = ms_find_block_obj_size_index (block->obj_size);
+		int count = MS_BLOCK_FREE / block->obj_size;
+
+		slots_available [index] += count;
+		for (i = 0; i < count; ++i) {
+			if (MS_OBJ_ALLOCED (MS_BLOCK_OBJ (block, i), block))
+				++slots_used [index];
+		}
+	} END_FOREACH_BLOCK;
+
+	fprintf (heap_dump_file, "<occupancies>\n");
+	for (i = 0; i < num_block_obj_sizes; ++i) {
+		fprintf (heap_dump_file, "<occupancy size=\"%d\" available=\"%d\" used=\"%d\" />\n",
+				block_obj_sizes [i], slots_available [i], slots_used [i]);
+	}
+	fprintf (heap_dump_file, "</occupancies>\n");
 
 	FOREACH_BLOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
