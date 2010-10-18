@@ -860,7 +860,6 @@ static void
 major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 {
 	void *obj = *ptr;
-	mword objsize;
 	MSBlockInfo *block;
 
 	HEAVY_STAT (++stat_copy_object_called_major);
@@ -898,6 +897,8 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 #ifdef FIXED_HEAP
 		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
 #else
+		mword objsize;
+
 		objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
 
 		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)
@@ -924,11 +925,10 @@ mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 {
 	int i;
 	int last_index = -1;
-	int count = MS_BLOCK_FREE / block->obj_size;
 
 	for (i = 0; i < block->pin_queue_num_entries; ++i) {
 		int index = MS_BLOCK_OBJ_INDEX (block->pin_queue_start [i], block);
-		DEBUG (9, g_assert (index >= 0 && index < count));
+		DEBUG (9, g_assert (index >= 0 && index < MS_BLOCK_FREE / block->obj_size));
 		if (index == last_index)
 			continue;
 		MS_MARK_OBJECT_AND_ENQUEUE_CHECKED (MS_BLOCK_OBJ (block, index), block, queue);
@@ -1285,7 +1285,7 @@ initial_skip_card (guint8 *card_data)
 }
 
 
-static guint8*
+static G_GNUC_UNUSED guint8*
 skip_card (guint8 *card_data, guint8 *card_data_end)
 {
 	while (card_data < card_data_end && !*card_data)
