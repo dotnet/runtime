@@ -2484,6 +2484,10 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, MonoError
 			*res = g_ptr_array_new ();
 		g_ptr_array_add (*res, ic);
 		mono_class_init (ic);
+		if (ic->exception_type) {
+			mono_error_set_type_load_class (error, ic, "Error Loading class");
+			return;
+		}
 
 		collect_implemented_interfaces_aux (ic, res, error);
 		if (!mono_error_ok (error))
@@ -4591,24 +4595,23 @@ mono_class_init (MonoClass *class)
 	g_assert (class);
 
 	/* Double-checking locking pattern */
-	if (class->inited)
+	if (class->inited || class->exception_type)
 		return class->exception_type == MONO_EXCEPTION_NONE;
 
-	/*g_print ("Init class %s\n", class->name);*/
+	/*g_print ("Init class %s\n", mono_type_get_full_name (class));*/
 
 	/* We do everything inside the lock to prevent races */
 	mono_loader_lock ();
 
-	if (class->inited) {
+	if (class->inited || class->exception_type) {
 		mono_loader_unlock ();
 		/* Somebody might have gotten in before us */
 		return class->exception_type == MONO_EXCEPTION_NONE;
 	}
 
 	if (class->init_pending) {
-		mono_loader_unlock ();
-		/* this indicates a cyclic dependency */
-		g_error ("pending init %s.%s\n", class->name_space, class->name);
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Recursive type definition detected"));
+		goto leave;
 	}
 
 	class->init_pending = 1;
