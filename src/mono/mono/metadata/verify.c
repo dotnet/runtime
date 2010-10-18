@@ -3558,6 +3558,11 @@ do_newobj (VerifyContext *ctx, int token)
 		return;
 	}
 
+	if (!sig->hasthis) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid constructor signature missing hasthis at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
 	if (!check_underflow (ctx, sig->param_count))
 		return;
 
