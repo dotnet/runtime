@@ -5015,7 +5015,7 @@ ves_icall_System_Reflection_Assembly_get_fullName (MonoReflectionAssembly *assem
 	MonoAssembly *mass = assembly->assembly;
 	MonoString *res;
 	gchar *name;
-	const char *quote = g_ascii_isspace (mass->aname.name [0]) ? "\"" : "";
+	const char *quote = (mass->aname.name && g_ascii_isspace (mass->aname.name [0])) ? "\"" : "";
 
 	name = g_strdup_printf (
 		"%s%s%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",

@@ -237,7 +237,7 @@ static void
 _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 {
 	MonoAssembly *ta = klass->image->assembly;
-	const char *quote = g_ascii_isspace (ta->aname.name [0]) ? "\"" : "";
+	const char *quote = (ta->aname.name && g_ascii_isspace (ta->aname.name [0])) ? "\"" : "";
 
 	g_string_append_printf (
 		str, ", %s%s%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
