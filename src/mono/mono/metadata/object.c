@@ -276,7 +276,9 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			MonoVTable *module_vtable = mono_class_vtable_full (vtable->domain, module_klass, raise_exception);
 			if (!module_vtable)
 				return NULL;
-			mono_runtime_class_init (module_vtable);
+			exc = mono_runtime_class_init_full (module_vtable, raise_exception);
+			if (exc)
+				return exc;
 		}
 	}
 	method = mono_class_get_cctor (klass);

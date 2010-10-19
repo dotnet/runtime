@@ -5016,11 +5016,16 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			MonoVTable *vtable;
+			MonoException *tmpEx;
 
 			mono_jit_stats.methods_lookups++;
 			vtable = mono_class_vtable (domain, method->klass);
 			g_assert (vtable);
-			mono_runtime_class_init (vtable);
+			tmpEx = mono_runtime_class_init_full (vtable, ex == NULL);
+			if (tmpEx) {
+				*ex = tmpEx;
+				return NULL;
+			}
 			return mono_create_ftnptr (target_domain, info->code_start);
 		}
 	}
