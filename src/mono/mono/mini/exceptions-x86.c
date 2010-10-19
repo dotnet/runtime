@@ -41,6 +41,10 @@ static MonoW32ExceptionHandler segv_handler;
 
 static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 
+#ifndef PROCESS_CALLBACK_FILTER_ENABLED
+#	define PROCESS_CALLBACK_FILTER_ENABLED 1
+#endif
+
 #define W32_SEH_HANDLE_EX(_ex) \
 	if (_ex##_handler) _ex##_handler(0, er, sctx)
 
@@ -660,6 +664,27 @@ void
 mono_arch_exceptions_init (void)
 {
 	guint8 *tramp;
+
+/* 
+ * If we're running WoW64, we need to set the usermode exception policy 
+ * for SEHs to behave. This requires hotfix http://support.microsoft.com/kb/976038
+ * or (eventually) Windows 7 SP1.
+ */
+#ifdef HOST_WIN32
+	DWORD flags;
+	FARPROC getter;
+	FARPROC setter;
+	HMODULE kernel32 = LoadLibraryW (L"kernel32.dll");
+
+	if (kernel32) {
+		getter = GetProcAddress (kernel32, "GetProcessUserModeExceptionPolicy");
+		setter = GetProcAddress (kernel32, "SetProcessUserModeExceptionPolicy");
+		if (getter && setter) {
+			if (getter (&flags))
+				setter (flags & ~PROCESS_CALLBACK_FILTER_ENABLED);
+		}
+	}
+#endif
 
 	if (mono_aot_only) {
 		signal_exception_trampoline = mono_aot_get_trampoline ("x86_signal_exception_trampoline");
