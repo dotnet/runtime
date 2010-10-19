@@ -2426,6 +2426,12 @@ mono_delegate_signature_equal (MonoMethodSignature *delegate_sig, MonoMethodSign
 	return TRUE;
 }
 
+gboolean
+mono_verifier_is_signature_compatible (MonoMethodSignature *target, MonoMethodSignature *candidate)
+{
+	return mono_delegate_signature_equal (target, candidate, FALSE);
+}
+
 /* 
  * verify_ldftn_delegate:
  * 

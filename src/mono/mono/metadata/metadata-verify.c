@@ -4211,6 +4211,64 @@ mono_verifier_verify_typeref_row (MonoImage *image, guint32 row, MonoError *erro
 	return TRUE;
 }
 
+/*Perform additional verification including metadata ones*/
+gboolean
+mono_verifier_verify_methodimpl_row (MonoImage *image, guint32 row, MonoError *error)
+{
+	MonoMethod *declaration, *body;
+	MonoMethodSignature *body_sig, *decl_sig;
+	MonoTableInfo *table = &image->tables [MONO_TABLE_METHODIMPL];
+	guint32 data [MONO_METHODIMPL_SIZE];
+
+	mono_error_init (error);
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	if (row >= table->rows) {
+		mono_error_set_bad_image (error, image, "Invalid methodimpl row %d - table has %d rows", row, table->rows);
+		return FALSE;
+	}
+
+	mono_metadata_decode_row (table, row, data, MONO_METHODIMPL_SIZE);
+
+	body = method_from_method_def_or_ref (image, data [MONO_METHODIMPL_BODY], NULL);
+	if (mono_loader_get_last_error ()) {
+		mono_loader_clear_error ();
+		mono_error_set_bad_image (error, image, "Invalid methodimpl body for row %x", row);
+		return FALSE;
+	}
+
+	declaration = method_from_method_def_or_ref (image, data [MONO_METHODIMPL_DECLARATION], NULL);
+	if (mono_loader_get_last_error ()) {
+		mono_loader_clear_error ();
+		mono_error_set_bad_image (error, image, "Invalid methodimpl declaration for row %x", row);
+		return FALSE;
+	}
+
+	/* FIXME
+	mono_class_setup_supertypes (class);
+	if (!mono_class_has_parent (class, body->klass)) {
+		mono_error_set_bad_image (error, image, "Invalid methodimpl body doesn't belong to parent for row %x", row);
+		return FALSE;
+	}*/
+
+	if (!(body_sig = mono_method_signature_checked (body, error))) {
+		return FALSE;
+	}
+
+	if (!(decl_sig = mono_method_signature_checked (declaration, error))) {
+		return FALSE;
+	}
+
+	if (!mono_verifier_is_signature_compatible (decl_sig, body_sig)) {
+		mono_error_set_bad_image (error, image, "Invalid methodimpl body signature not compatible with declaration row %x", row);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 #else
 gboolean
 mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
@@ -4308,6 +4366,14 @@ gboolean
 mono_verifier_verify_typeref_row (MonoImage *image, guint32 row, MonoError *error)
 {
 	mono_error_init (error);
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_methodimpl_row (MonoImage *image, guint32 row, MonoError *error)
+{
+	mono_error_init (error);
+	return TRUE;
 }
 
 #endif /* DISABLE_VERIFIER */

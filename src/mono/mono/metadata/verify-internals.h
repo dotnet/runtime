@@ -45,6 +45,8 @@ gboolean mono_verifier_verify_cattr_content (MonoImage *image, MonoMethod *ctor,
 gboolean mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMethodSignature *signature) MONO_INTERNAL;
 
 gboolean mono_verifier_verify_typeref_row (MonoImage *image, guint32 row, MonoError *error) MONO_INTERNAL;
+gboolean mono_verifier_verify_methodimpl_row (MonoImage *image, guint32 row, MonoError *error) MONO_INTERNAL;
+gboolean mono_verifier_is_signature_compatible (MonoMethodSignature *target, MonoMethodSignature *candidate) MONO_INTERNAL;
 G_END_DECLS
 
 #endif  /* __MONO_METADATA_VERIFY_INTERNAL_H__ */
