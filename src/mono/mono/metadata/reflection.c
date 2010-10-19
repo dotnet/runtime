@@ -10841,8 +10841,12 @@ ensure_runtime_vtable (MonoClass *klass)
 	}
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		for (i = 0; i < klass->method.count; ++i)
-			klass->methods [i]->slot = i;
+		int slot_num = 0;
+		for (i = 0; i < klass->method.count; ++i) {
+			MonoMethod *im = klass->methods [i];
+			if (!(im->flags & METHOD_ATTRIBUTE_STATIC))
+				im->slot = slot_num++;
+		}
 		
 		klass->interfaces_packed = NULL; /*make setup_interface_offsets happy*/
 		mono_class_setup_interface_offsets (klass);
