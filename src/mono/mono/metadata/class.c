@@ -65,6 +65,7 @@ static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token
 static gboolean mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass);
 static void mono_field_resolve_type (MonoClassField *field, MonoError *error);
 static guint32 mono_field_resolve_flags (MonoClassField *field);
+static void mono_class_setup_vtable_full (MonoClass *class, GList *in_setup);
 
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
@@ -3341,20 +3342,16 @@ mono_class_has_gtd_parent (MonoClass *klass, MonoClass *parent)
 }
 
 gboolean
-mono_class_check_vtable_constraints (MonoClass *class)
+mono_class_check_vtable_constraints (MonoClass *class, GList *in_setup)
 {
 	MonoGenericInst *ginst;
 	int i;
-
-	/*FIXME temporary hack while mcs/test is fixed.*/
-	return TRUE;
-
 	if (!class->generic_class) {
-		mono_class_setup_vtable (class);
+		mono_class_setup_vtable_full (class, in_setup);
 		return class->exception_type == 0;
 	}
 
-	mono_class_setup_vtable (mono_class_get_generic_type_definition (class));
+	mono_class_setup_vtable_full (mono_class_get_generic_type_definition (class), in_setup);
 	if (class->generic_class->container_class->exception_type) {
 		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Failed to load generic definition vtable"));
 		return FALSE;
@@ -3366,7 +3363,7 @@ mono_class_check_vtable_constraints (MonoClass *class)
 		/*Those 2 will be checked by mono_class_setup_vtable itself*/
 		if (mono_class_has_gtd_parent (class, arg) || mono_class_has_gtd_parent (arg, class))
 			continue;
-		if (!mono_class_check_vtable_constraints (arg)) {
+		if (!mono_class_check_vtable_constraints (arg, in_setup)) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Failed to load generic parameter %d", i));
 			return FALSE;
 		}
@@ -3388,6 +3385,12 @@ mono_class_check_vtable_constraints (MonoClass *class)
  */
 void
 mono_class_setup_vtable (MonoClass *class)
+{
+	mono_class_setup_vtable_full (class, NULL);
+}
+
+static void
+mono_class_setup_vtable_full (MonoClass *class, GList *in_setup)
 {
 	MonoMethod **overrides;
 	MonoGenericContext *context;
@@ -3411,6 +3414,9 @@ mono_class_setup_vtable (MonoClass *class)
 	if (class->exception_type)
 		return;
 
+	if (g_list_find (in_setup, class))
+		return;
+
 	mono_loader_lock ();
 
 	if (class->vtable) {
@@ -3419,10 +3425,12 @@ mono_class_setup_vtable (MonoClass *class)
 	}
 
 	mono_stats.generic_vtable_count ++;
+	in_setup = g_list_prepend (in_setup, class);
 
 	if (class->generic_class) {
-		if (!mono_class_check_vtable_constraints (class)) {
+		if (!mono_class_check_vtable_constraints (class, in_setup)) {
 			mono_loader_unlock ();
+			g_list_remove (in_setup, class);
 			return;
 		}
 
@@ -3446,13 +3454,14 @@ mono_class_setup_vtable (MonoClass *class)
 	}
 
 	if (ok)
-		mono_class_setup_vtable_general (class, overrides, onum);
+		mono_class_setup_vtable_general (class, overrides, onum, in_setup);
 	else
 		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load list of method overrides"));
 		
 	g_free (overrides);
 
 	mono_loader_unlock ();
+	g_list_remove (in_setup, class);
 
 	return;
 }
@@ -3831,7 +3840,7 @@ mono_class_need_stelemref_method (MonoClass *class)
  * LOCKING: this is supposed to be called with the loader lock held.
  */
 void
-mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int onum)
+mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int onum, GList *in_setup)
 {
 	MonoError error;
 	MonoClass *k, *ic;
@@ -3872,7 +3881,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	
 	if (class->parent) {
 		mono_class_init (class->parent);
-		mono_class_setup_vtable (class->parent);
+		mono_class_setup_vtable_full (class->parent, in_setup);
 
 		if (class->parent->exception_type) {
 			char *name = mono_type_get_full_name (class->parent);
@@ -3912,7 +3921,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		MonoClass *gklass = class->generic_class->container_class;
 		MonoMethod **tmp;
 
-		mono_class_setup_vtable (gklass);
+		mono_class_setup_vtable_full (gklass, in_setup);
 		if (gklass->exception_type != MONO_EXCEPTION_NONE) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			return;

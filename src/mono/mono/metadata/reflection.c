@@ -9846,7 +9846,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 			(!strcmp (klass->name, "Enum") && !strcmp (klass->name_space, "System"))) {
 		klass->instance_size = sizeof (MonoObject);
 		klass->size_inited = 1;
-		mono_class_setup_vtable_general (klass, NULL, 0);
+		mono_class_setup_vtable_general (klass, NULL, 0, NULL);
 	}
 
 	mono_class_setup_mono_type (klass);
@@ -9980,7 +9980,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 		 * to create objects of the enum type (for use in SetConstant).
 		 */
 		/* FIXME: Does this mean enums can't have method overrides ? */
-		mono_class_setup_vtable_general (klass, NULL, 0);
+		mono_class_setup_vtable_general (klass, NULL, 0, NULL);
 	}
 	mono_loader_unlock ();
 }

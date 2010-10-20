@@ -866,7 +866,7 @@ void
 mono_class_setup_interface_offsets (MonoClass *klass) MONO_INTERNAL;
 
 void
-mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int onum) MONO_INTERNAL;
+mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int onum, GList *in_setup) MONO_INTERNAL;
 
 void
 mono_class_setup_vtable (MonoClass *klass) MONO_INTERNAL;
@@ -1284,6 +1284,6 @@ MonoClassField*
 mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter) MONO_INTERNAL;
 
 gboolean
-mono_class_check_vtable_constraints (MonoClass *class) MONO_INTERNAL;
+mono_class_check_vtable_constraints (MonoClass *class, GList *in_setup) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
