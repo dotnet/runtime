@@ -1067,7 +1067,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	find_symbol (sofile, globals, "blob", (gpointer*)&blob);
 
-	if (((MonoAotFileInfo*)file_info)->gc_name_index != -1) {
+	if (usable && ((MonoAotFileInfo*)file_info)->gc_name_index != -1) {
 		char *gc_name = (char*)&blob [((MonoAotFileInfo*)file_info)->gc_name_index];
 		const char *current_gc_name = mono_gc_get_gc_name ();
 
