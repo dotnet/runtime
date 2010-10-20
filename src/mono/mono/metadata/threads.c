@@ -978,7 +978,10 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 		g_assert ((current > *staddr) && (current < *staddr + *stsize));
 #  endif
 
-	pthread_attr_destroy (&attr); 
+	pthread_attr_destroy (&attr);
+#else
+	*staddr = NULL;
+	*stsize = (size_t)-1;
 #endif
 
 	/* When running under emacs, sometimes staddr is not aligned to a page size */
