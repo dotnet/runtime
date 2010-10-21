@@ -113,9 +113,11 @@
 #ifdef __GNUC__
 
 /* namespace and name should be a constant */
+/* image must be mscorlib since other assemblies can be unloaded */
 #define mono_class_from_name_cached(image,namespace,name) ({ \
 			static MonoClass *tmp_klass; \
 			if (!tmp_klass) { \
+				g_assert (image == mono_defaults.corlib); \
 				tmp_klass = mono_class_from_name ((image), (namespace), (name)); \
 				g_assert (tmp_klass); \
 			}; \
