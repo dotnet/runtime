@@ -213,22 +213,37 @@ enum {
 };
 
 /*
+ * Functions to check whenever a class is given system class. We need to cache things in MonoDomain since some of the
+ * assemblies can be unloaded.
+ */
+
+static gboolean
+is_system_type (MonoDomain *domain, MonoClass *klass)
+{
+	if (domain->system_image == NULL)
+		domain->system_image = mono_image_loaded ("System");
+
+	return klass->image == domain->system_image;
+}
+
+static gboolean
+is_corlib_type (MonoDomain *domain, MonoClass *klass)
+{
+	return klass->image == mono_defaults.corlib;
+}
+
+/*
  * Note that we call it is_socket_type() where 'socket' refers to the image
  * that contains the System.Net.Sockets.Socket type.
  * For moonlight there is a System.Net.Sockets.Socket class in both System.dll and System.Net.dll.
 */
 static gboolean
-is_socket_type (MonoClass *klass)
+is_socket_type (MonoDomain *domain, MonoClass *klass)
 {
 	static const char *version = NULL;
 	static gboolean moonlight;
-	static MonoImage *system_dll = NULL;
-	static MonoImage *system_net_dll = NULL;
 
-	if (system_dll == NULL)
-		system_dll = mono_image_loaded ("System");
-
-	if (klass->image == system_dll)
+	if (is_system_type (domain, klass))
 		return TRUE;
 
 	/* If moonlight, check if the type is in System.Net.dll too */
@@ -240,92 +255,74 @@ is_socket_type (MonoClass *klass)
 	if (!moonlight)
 		return FALSE;
 
-	if (system_net_dll == NULL)
-		system_net_dll = mono_image_loaded ("System.Net");
+	if (domain->system_net_dll == NULL)
+		domain->system_net_dll = mono_image_loaded ("System.Net");
 	
-	return klass->image == system_net_dll;
+	return klass->image == domain->system_net_dll;
 }
 
-static gboolean
-is_system_type (MonoClass *klass)
-{
-	static MonoImage *system_image = NULL;
-
-	if (system_image == NULL)
-		system_image = mono_image_loaded ("System");
-
-	return klass->image == system_image;
-}
-
-static gboolean
-is_corlib_type (MonoClass *klass)
-{
-	return klass->image == mono_defaults.corlib;
-}
-
-#define check_type_cached(ASSEMBLY, _class, _namespace, _name) do { \
-	static MonoClass *cached_class; \
-	if (cached_class) \
-		return cached_class == _class; \
-	if (is_##ASSEMBLY##_type (_class) && !strcmp (_name, _class->name) && !strcmp (_namespace, _class->name_space)) { \
-		cached_class = _class; \
+#define check_type_cached(domain, ASSEMBLY, _class, _namespace, _name, loc) do { \
+	if (*loc) \
+		return *loc == _class; \
+	if (is_##ASSEMBLY##_type (domain, _class) && !strcmp (_name, _class->name) && !strcmp (_namespace, _class->name_space)) { \
+		*loc = _class; \
 		return TRUE; \
 	} \
 	return FALSE; \
 } while (0) \
 
-#define check_corlib_type_cached(_class, _namespace, _name) check_type_cached (corlib, _class, _namespace, _name)
+#define check_corlib_type_cached(domain, _class, _namespace, _name, loc) check_type_cached (domain, corlib, _class, _namespace, _name, loc)
 
-#define check_socket_type_cached(_class, _namespace, _name) check_type_cached (socket, _class, _namespace, _name)
+#define check_socket_type_cached(domain, _class, _namespace, _name, loc) check_type_cached (domain, socket, _class, _namespace, _name, loc)
 
-#define check_system_type_cached(_class, _namespace, _name) check_type_cached (system, _class, _namespace, _name)
+#define check_system_type_cached(domain, _class, _namespace, _name, loc) check_type_cached (domain, system, _class, _namespace, _name, loc)
 
 static gboolean
-is_corlib_asyncresult (MonoClass *klass)
+is_corlib_asyncresult (MonoDomain *domain, MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Runtime.Remoting.Messaging", "AsyncResult");
+	check_corlib_type_cached (domain, klass, "System.Runtime.Remoting.Messaging", "AsyncResult", &domain->corlib_asyncresult_class);
 }
 
 static gboolean
-is_socket (MonoClass *klass)
+is_socket (MonoDomain *domain, MonoClass *klass)
 {
-	check_socket_type_cached (klass, "System.Net.Sockets", "Socket");
+	check_socket_type_cached (domain, klass, "System.Net.Sockets", "Socket", &domain->socket_class);
 }
 
 static gboolean
-is_socketasyncresult (MonoClass *klass)
+is_socketasyncresult (MonoDomain *domain, MonoClass *klass)
 {
 	return (klass->nested_in &&
-		is_socket (klass->nested_in) &&
-		!strcmp (klass->name, "SocketAsyncResult"));
+			is_socket (domain, klass->nested_in) &&
+			!strcmp (klass->name, "SocketAsyncResult"));
 }
 
 static gboolean
-is_socketasynccall (MonoClass *klass)
+is_socketasynccall (MonoDomain *domain, MonoClass *klass)
 {
 	return (klass->nested_in &&
-		is_socket (klass->nested_in) &&
-		!strcmp (klass->name, "SocketAsyncCall"));
+			is_socket (domain, klass->nested_in) &&
+			!strcmp (klass->name, "SocketAsyncCall"));
 }
 
 static gboolean
-is_appdomainunloaded_exception (MonoClass *klass)
+is_appdomainunloaded_exception (MonoDomain *domain, MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System", "AppDomainUnloadedException");
+	check_corlib_type_cached (domain, klass, "System", "AppDomainUnloadedException", &domain->ad_unloaded_ex_class);
 }
 
 static gboolean
-is_sd_process (MonoClass *klass)
+is_sd_process (MonoDomain *domain, MonoClass *klass)
 {
-	check_system_type_cached (klass, "System.Diagnostics", "Process");
+	check_system_type_cached (domain, klass, "System.Diagnostics", "Process", &domain->process_class);
 }
 
 static gboolean
-is_sdp_asyncreadhandler (MonoClass *klass)
+is_sdp_asyncreadhandler (MonoDomain *domain, MonoClass *klass)
 {
 
 	return (klass->nested_in &&
-		is_sd_process (klass->nested_in) &&
+			is_sd_process (domain, klass->nested_in) &&
 		!strcmp (klass->name, "AsyncReadHandler"));
 }
 
@@ -1062,15 +1059,17 @@ socket_io_filter (MonoObject *target, MonoObject *state)
 	gint op;
 	MonoSocketAsyncResult *sock_res;
 	MonoClass *klass;
+	MonoDomain *domain;
 
 	if (target == NULL || state == NULL)
 		return FALSE;
 
+	domain = target->vtable->domain;
 	klass = target->vtable->klass;
-	if (socket_async_call_klass == NULL && is_socketasynccall (klass))
+	if (socket_async_call_klass == NULL && is_socketasynccall (domain, klass))
 		socket_async_call_klass = klass;
 
-	if (process_async_call_klass == NULL && is_sdp_asyncreadhandler (klass))
+	if (process_async_call_klass == NULL && is_sdp_asyncreadhandler (domain, klass))
 		process_async_call_klass = klass;
 
 	if (klass != socket_async_call_klass && klass != process_async_call_klass)
@@ -1947,13 +1946,14 @@ async_invoke_thread (gpointer data)
 		ar = (MonoAsyncResult *) data;
 		if (ar) {
 			InterlockedIncrement (&tp->busy_threads);
+			domain = ((MonoObject *)ar)->vtable->domain;
 #ifndef DISABLE_SOCKET
 			klass = ((MonoObject *) data)->vtable->klass;
-			is_io_task = !is_corlib_asyncresult (klass);
+			is_io_task = !is_corlib_asyncresult (domain, klass);
 			is_socket = FALSE;
 			if (is_io_task) {
 				MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
-				is_socket = is_socketasyncresult (klass);
+				is_socket = is_socketasyncresult (domain, klass);
 				ar = state->ares;
 				switch (state->operation) {
 				case AIO_OP_RECEIVE:
@@ -1967,7 +1967,6 @@ async_invoke_thread (gpointer data)
 #endif
 			/* worker threads invokes methods in different domains,
 			 * so we need to set the right domain here */
-			domain = ((MonoObject *)ar)->vtable->domain;
 			g_assert (domain);
 
 			if (mono_domain_is_unloading (domain) || mono_runtime_is_shutting_down ()) {
@@ -2001,7 +2000,7 @@ async_invoke_thread (gpointer data)
 						MonoClass *klass;
 
 						klass = exc->vtable->klass;
-						unloaded = is_appdomainunloaded_exception (klass);
+						unloaded = is_appdomainunloaded_exception (exc->vtable->domain, klass);
 						if (!unloaded && klass != mono_defaults.threadabortexception_class) {
 							mono_unhandled_exception (exc);
 							exit (255);

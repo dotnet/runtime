@@ -324,6 +324,14 @@ struct _MonoDomain {
 	MonoImage *socket_assembly;
 	MonoClass *sockaddr_class;
 	MonoClassField *sockaddr_data_field;
+
+	/* Used by threadpool.c */
+	MonoImage *system_image;
+	MonoImage *system_net_dll;
+	MonoClass *corlib_asyncresult_class;
+	MonoClass *socket_class;
+	MonoClass *ad_unloaded_ex_class;
+	MonoClass *process_class;
 };
 
 typedef struct  {
