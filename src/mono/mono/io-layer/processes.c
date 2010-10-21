@@ -1624,8 +1624,7 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 #else
 gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 {
-	GArray *processes = g_array_new (FALSE, FALSE, sizeof(pid_t));
-	guint32 fit, i, j;
+	guint32 fit, i;
 	DIR *dir;
 	struct dirent *entry;
 	
@@ -1635,29 +1634,22 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	if (dir == NULL) {
 		return(FALSE);
 	}
-	while((entry = readdir (dir)) != NULL) {
-		if (isdigit (entry->d_name[0])) {
-			char *endptr;
-			pid_t pid = (pid_t)strtol (entry->d_name, &endptr, 10);
 
-			if (*endptr == '\0') {
-				/* Name was entirely numeric, so was a
-				 * process ID
-				 */
-				g_array_append_val (processes, pid);
-			}
-		}
+	i = 0;
+	fit = len / sizeof (guint32);
+	while(i < fit && (entry = readdir (dir)) != NULL) {
+		pid_t pid;
+		char *endptr;
+
+		if (!isdigit (entry->d_name[0]))
+			continue;
+
+		pid = (pid_t) strtol (entry->d_name, &endptr, 10);
+		if (*endptr == '\0')
+			pids [i++] = (guint32) pid;
 	}
 	closedir (dir);
-
-	fit=len/sizeof(guint32);
-	for (i = 0, j = 0; j < fit && i < processes->len; i++) {
-		pids[j++] = g_array_index (processes, pid_t, i);
-	}
-
-	g_array_free (processes, TRUE);
-	
-	*needed = j * sizeof(guint32);
+	*needed = i * sizeof(guint32);
 	
 	return(TRUE);
 }
