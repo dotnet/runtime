@@ -2768,7 +2768,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_LOCALLOC: {
 			LLVMValueRef v, size;
 				
-			size = LLVMBuildAnd (builder, LLVMBuildAdd (builder, lhs, LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT - 1, FALSE), ""), LLVMConstInt (LLVMInt32Type (), ~ (MONO_ARCH_FRAME_ALIGNMENT - 1), FALSE), "");
+			size = LLVMBuildAnd (builder, LLVMBuildAdd (builder, convert (ctx, lhs, LLVMInt32Type ()), LLVMConstInt (LLVMInt32Type (), MONO_ARCH_FRAME_ALIGNMENT - 1, FALSE), ""), LLVMConstInt (LLVMInt32Type (), ~ (MONO_ARCH_FRAME_ALIGNMENT - 1), FALSE), "");
 
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), size, MONO_ARCH_FRAME_ALIGNMENT, "");
 
