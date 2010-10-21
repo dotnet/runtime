@@ -660,14 +660,16 @@ static MonoImage *get_socket_assembly (void)
 {
 	static const char *version = NULL;
 	static gboolean moonlight;
-	static MonoImage *socket_assembly = NULL;
+	MonoDomain *domain = mono_domain_get ();
 	
 	if (version == NULL) {
 		version = mono_get_runtime_info ()->framework_version;
 		moonlight = !strcmp (version, "2.1");
 	}
 	
-	if (socket_assembly == NULL) {
+	if (domain->socket_assembly == NULL) {
+		MonoImage *socket_assembly;
+
 		if (moonlight) {
 			socket_assembly = mono_image_loaded ("System.Net");
 			if (!socket_assembly) {
@@ -691,9 +693,11 @@ static MonoImage *get_socket_assembly (void)
 				}
 			}
 		}
+
+		domain->socket_assembly = socket_assembly;
 	}
 	
-	return(socket_assembly);
+	return domain->socket_assembly;
 }
 
 #ifdef AF_INET6
@@ -903,17 +907,21 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoObject *sockaddr_obj;
-	MonoClass *sockaddr_class;
-	MonoClassField *field;
 	MonoArray *data;
 	MonoAddressFamily family;
 
 	/* Build a System.Net.SocketAddress object instance */
-	sockaddr_class=mono_class_from_name_cached (get_socket_assembly (), "System.Net", "SocketAddress");
-	sockaddr_obj=mono_object_new(domain, sockaddr_class);
+	if (!domain->sockaddr_class) {
+		domain->sockaddr_class=mono_class_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
+		g_assert (domain->sockaddr_class);
+	}
+	sockaddr_obj=mono_object_new(domain, domain->sockaddr_class);
 	
 	/* Locate the SocketAddress data buffer in the object */
-	field=mono_class_get_field_from_name_cached (sockaddr_class, "data");
+	if (!domain->sockaddr_data_field) {
+		domain->sockaddr_data_field=mono_class_get_field_from_name (domain->sockaddr_class, "data");
+		g_assert (domain->sockaddr_data_field);
+	}
 
 	/* Make sure there is space for the family and size bytes */
 #ifdef HAVE_SYS_UN_H
@@ -961,7 +969,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		mono_array_set(data, guint8, 6, (address>>8) & 0xff);
 		mono_array_set(data, guint8, 7, (address) & 0xff);
 	
-		mono_field_set_value (sockaddr_obj, field, data);
+		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
 
 		return(sockaddr_obj);
 #ifdef AF_INET6
@@ -991,7 +999,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		mono_array_set(data, guint8, 27,
 			       (sa_in->sin6_scope_id >> 24) & 0xff);
 
-		mono_field_set_value (sockaddr_obj, field, data);
+		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
 
 		return(sockaddr_obj);
 #endif
@@ -1003,7 +1011,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 			mono_array_set (data, guint8, i+2, saddr->sa_data[i]);
 		}
 		
-		mono_field_set_value (sockaddr_obj, field, data);
+		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
 
 		return sockaddr_obj;
 #endif
