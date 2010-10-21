@@ -37,7 +37,7 @@
 typedef struct {
 	GArray array;
 	gboolean clear_;
-	gboolean element_size;
+	guint element_size;
 	gboolean zero_terminated;
 	gint capacity;
 } GArrayPriv;
