@@ -282,74 +282,36 @@ static void namedmutex_prewait (gpointer handle)
 			   __func__, handle);
 #endif
 	} else {
-		guint32 *pids = g_new0 (guint32, 32);
-		guint32 count = 32, needed_bytes, i;
-		gboolean ret;
 		int thr_ret;
+		gpointer proc_handle;
 		
 #ifdef DEBUG
 		g_message ("%s: Named mutex handle %p owned by another process", __func__, handle);
 #endif
-		
-		ret = EnumProcesses (pids, count * sizeof(guint32),
-				     &needed_bytes);
-		if (ret == FALSE) {
-			do {
-				count = needed_bytes / sizeof(guint32);
-#ifdef DEBUG
-				g_message ("%s: Retrying pid lookup with %d slots", __func__, count);
-#endif
-				pids = g_renew (guint32, pids, count);
-				ret = EnumProcesses (pids, needed_bytes,
-						     &needed_bytes);
-			} while (ret == FALSE);
-		}
-
-		count = needed_bytes / sizeof(guint32);
-
-#ifdef DEBUG
-		g_message ("%s: Need to look at %d pids for named mutex handle %p", __func__, count, handle);
-#endif
-
-		thr_ret = _wapi_handle_lock_shared_handles ();
-		g_assert (thr_ret == 0);
-
-		for (i = 0; i < count; i++) {
-#ifdef DEBUG
-			g_message ("%s: Checking pid %d for named mutex handle %p", __func__, pids[i], handle);
-#endif
-
-			if (pids[i] == namedmutex_handle->pid) {
-				/* Must be still alive, because
-				 * EnumProcesses() checks for us
-				 */
-#ifdef DEBUG
-				g_message ("%s: Found active pid %d for named mutex handle %p", __func__, pids[i], handle);
-#endif
-
-				break;
-			}
-		}
-		
-		g_free (pids);
-
-		if (i == count) {
+		proc_handle = OpenProcess (0, 0, namedmutex_handle->pid);
+		if (proc_handle == NULL) {
 			/* Didn't find the process that this handle
 			 * was owned by, overriding it
 			 */
-
 #ifdef DEBUG
 			g_message ("%s: overriding old owner of named mutex handle %p", __func__, handle);
 #endif
+			thr_ret = _wapi_handle_lock_shared_handles ();
+			g_assert (thr_ret == 0);
 
 			namedmutex_handle->pid = 0;
 			namedmutex_handle->tid = 0;
 			namedmutex_handle->recursion = 0;
 
 			_wapi_shared_handle_set_signal_state (handle, TRUE);
+			_wapi_handle_unlock_shared_handles ();
+		} else {
+#ifdef DEBUG
+			g_message ("%s: Found active pid %d for named mutex handle %p", __func__, namedmutex_handle->pid, handle);
+#endif
 		}
-
-		_wapi_handle_unlock_shared_handles ();
+		if (proc_handle != NULL)
+			CloseProcess (proc_handle);
 	}
 }
 
