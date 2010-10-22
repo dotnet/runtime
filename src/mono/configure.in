@@ -2844,7 +2844,6 @@ mono/profiler/Makefile
 ikvm-native/Makefile
 scripts/Makefile
 man/Makefile
-web/Makefile
 docs/Makefile
 data/Makefile
 data/net_2_0/Makefile
