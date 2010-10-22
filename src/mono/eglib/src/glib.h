@@ -177,6 +177,14 @@ gchar*           g_win32_getlocale(void);
  * Hashtables
  */
 typedef struct _GHashTable GHashTable;
+typedef struct _GHashTableIter GHashTableIter;
+
+/* Private, but needed for stack allocation */
+struct _GHashTableIter
+{
+	gpointer dummy [8];
+};
+
 typedef void     (*GFunc)          (gpointer data, gpointer user_data);
 typedef gint     (*GCompareFunc)   (gconstpointer a, gconstpointer b);
 typedef gint     (*GCompareDataFunc) (gconstpointer a, gconstpointer b, gpointer user_data);
@@ -202,6 +210,9 @@ guint           g_hash_table_foreach_remove  (GHashTable *hash, GHRFunc func, gp
 guint           g_hash_table_foreach_steal   (GHashTable *hash, GHRFunc func, gpointer user_data);
 void            g_hash_table_destroy         (GHashTable *hash);
 void            g_hash_table_print_stats     (GHashTable *table);
+
+void            g_hash_table_iter_init       (GHashTableIter *iter, GHashTable *hash_table);
+gboolean        g_hash_table_iter_next       (GHashTableIter *iter, gpointer *key, gpointer *value);
 
 guint           g_spaced_primes_closest      (guint x);
 

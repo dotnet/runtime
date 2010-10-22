@@ -131,12 +131,40 @@ RESULT hash_grow (void)
 	return NULL;
 }
 
+RESULT hash_iter (void)
+{
+	GHashTable *hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, NULL);
+	GHashTableIter iter;
+	int i, sum, keys_sum, values_sum;
+	gpointer key, value;
+
+	sum = 0;
+	for (i = 0; i < 1000; i++) {
+		sum += i;
+		g_hash_table_insert (hash, GUINT_TO_POINTER (i), GUINT_TO_POINTER (i));
+	}
+
+	keys_sum = values_sum = 0;
+	g_hash_table_iter_init (&iter, hash);
+	while (g_hash_table_iter_next (&iter, &key, &value)) {
+		if (key != value)
+			return FAILED ("key != value");
+		keys_sum += GPOINTER_TO_UINT (key);
+		values_sum += GPOINTER_TO_UINT (value);
+	}
+	if (keys_sum != sum || values_sum != sum)
+		return FAILED ("Did not find all key-value pairs");
+	g_hash_table_destroy (hash);
+	return NULL;
+}
+
 static Test hashtable_tests [] = {
 	{"t1", hash_t1},
 	{"t2", hash_t2},
 	{"grow", hash_grow},
 	{"default", hash_default},
 	{"null_lookup", hash_null_lookup},
+	{"iter", hash_iter},
 	{NULL, NULL}
 };
 
