@@ -116,7 +116,7 @@ if test "x$have_iso_varargs" = "xyes"; then
 fi
 AC_SUBST(G_HAVE_ISO_VARARGS)
 
-AC_CHECK_HEADERS(getopt.h sys/time.h sys/wait.h pwd.h langinfo.h iconv.h)
+AC_CHECK_HEADERS(getopt.h sys/time.h sys/wait.h pwd.h langinfo.h iconv.h localcharset.h)
 
 if test $ac_cv_sizeof_void_p != $ac_cv_sizeof_int; then
    GPOINTER_TO_INT="((gint)(long) (ptr))"

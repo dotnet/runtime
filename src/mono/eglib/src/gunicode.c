@@ -53,6 +53,9 @@
 #    ifdef HAVE_ICONV_H
 #       include <iconv.h>
 #    endif
+#    ifdef HAVE_LOCALCHARSET_H
+#       include <localcharset.h>
+#    endif
 #endif
 
 static char *my_charset;
@@ -305,7 +308,9 @@ g_get_charset (G_CONST_RETURN char **charset)
 #else
 	if (my_charset == NULL){
 		/* These shouldn't be heap allocated */
-#if HAVE_LANGINFO_H
+#if HAVE_LOCALCHARSET_H
+		my_charset = locale_charset ();
+#elif defined(HAVE_LANGINFO_H)
 		my_charset = nl_langinfo (CODESET);
 #else
 		my_charset = "UTF-8";
