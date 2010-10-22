@@ -2338,7 +2338,6 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 	MONO_ARCH_SAVE_REGS;
 
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
 	if (klass->generic_container) {
 		MonoGenericContainer *container = klass->generic_container;
