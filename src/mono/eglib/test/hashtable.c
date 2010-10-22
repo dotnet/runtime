@@ -133,6 +133,7 @@ RESULT hash_grow (void)
 
 RESULT hash_iter (void)
 {
+#if !defined(GLIB_MAJOR_VERSION) || GLIB_CHECK_VERSION(2, 16, 0)
 	GHashTable *hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, NULL);
 	GHashTableIter iter;
 	int i, sum, keys_sum, values_sum;
@@ -156,6 +157,10 @@ RESULT hash_iter (void)
 		return FAILED ("Did not find all key-value pairs");
 	g_hash_table_destroy (hash);
 	return NULL;
+#else
+	/* GHashTableIter was added in glib 2.16 */
+	return NULL;
+#endif
 }
 
 static Test hashtable_tests [] = {
