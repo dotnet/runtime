@@ -1590,11 +1590,12 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	count = proclength / sizeof(struct kinfo_proc);
 #endif
 	fit = len / sizeof(guint32);
-	for (i = 0, j = 0; j< fit && i < count; i++) {
+	for (i = 0, j = 0; j < fit && i < count; i++) {
 #if defined(__OpenBSD__)
 		pids [j++] = result [i].p_pid;
 #else
-		pids [j++] = result [i].kp_proc.p_pid;
+		if (result[i].kp_proc.p_pid > 0) /* Pid 0 not supported */
+			pids [j++] = result [i].kp_proc.p_pid;
 #endif
 	}
 	free (result);
@@ -1708,7 +1709,7 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 				      GUINT_TO_POINTER (pid), NULL, TRUE);
 	if (handle == 0) {
 #if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
-		if ((kill(pid, 0) == 0) || (errno == EPERM)) {
+		if (((kill(pid, 0) == 0) || (errno == EPERM)) && pid != 0) {
 #elif defined(__HAIKU__)
 		team_info teamInfo;
 		if (get_team_info ((team_id)pid, &teamInfo) == B_OK) {
@@ -2222,7 +2223,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
-#if !defined(__OpenBSD__)
+#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;
@@ -2310,7 +2311,15 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 
 static gchar *get_process_name_from_proc (pid_t pid)
 {
-#if !defined(__OpenBSD__)
+#ifdef __OpenBSD__
+	int mib [6];
+	size_t size;
+	struct kinfo_proc2 *pi;
+#elif defined(PLATFORM_MACOSX)
+	size_t size;
+	struct kinfo_proc *pi;
+	int mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, pid };
+#else
 	FILE *fp;
 	gchar *filename = NULL;
 	gchar buf[256];
@@ -2332,12 +2341,34 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	}
 	g_free (filename);
 #elif defined(PLATFORM_MACOSX)
+#if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5) && !defined(__arm__)
+	/* No proc name on OSX < 10.5 nor iOS */
 	memset (buf, '\0', sizeof(buf));
-#  if !defined (__mono_ppc__) && !defined(__arm__)
 	proc_name (pid, buf, sizeof(buf));
-#  endif
 	if (strlen (buf) > 0)
 		ret = g_strdup (buf);
+#else
+	if (sysctl(mib, 4, NULL, &size, NULL, 0) < 0)
+		return(ret);
+
+	if ((pi = malloc(size)) == NULL)
+		return(ret);
+
+	if (sysctl (mib, 4, pi, &size, NULL, 0) < 0) {
+		if (errno == ENOMEM) {
+			free(pi);
+#ifdef DEBUG
+			g_message ("%s: Didn't allocate enough memory for kproc info", __func__);
+#endif
+		}
+		return(ret);
+	}
+
+	if (strlen (pi->kp_proc.p_comm) > 0)
+		ret = g_strdup (pi->kp_proc.p_comm);
+
+	free(pi);
+#endif
 #elif defined(__OpenBSD__)
 	int mib [6];
 	size_t size;
@@ -2426,11 +2457,7 @@ retry:
 	g_free (filename);
 #endif
 
-	if (ret != NULL) {
-		return(ret);
-	}
-
-	return(NULL);
+	return ret;
 }
 
 static guint32 get_module_name (gpointer process, gpointer module,
@@ -2444,7 +2471,7 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	gchar *procname_ext = NULL;
 	glong len;
 	gsize bytes;
-#if !defined(__OpenBSD__)
+#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;
@@ -2598,7 +2625,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 	pid_t pid;
-#if !defined(__OpenBSD__)
+#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;

@@ -17,9 +17,8 @@
 #define _WAPI_PROCESS_CURRENT (gpointer)0xFFFFFFFF
 
 /* This marks a system process that we don't have a handle on */
-/* FIXME: cope with pids > 31bit? */
-#define _WAPI_PROCESS_UNHANDLED_PID_MASK 0x7FFFFFFF
-#define _WAPI_PROCESS_UNHANDLED (-1 & ~_WAPI_PROCESS_UNHANDLED_PID_MASK)
+#define _WAPI_PROCESS_UNHANDLED (1 << (8*sizeof(pid_t)-1))
+#define _WAPI_PROCESS_UNHANDLED_PID_MASK (-1 & ~_WAPI_PROCESS_UNHANDLED)
 
 extern gpointer _wapi_process_duplicate (void);
 
