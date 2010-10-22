@@ -490,6 +490,11 @@ class Tests {
 		return l.Count;
 	}
 
+	public static int test_0_fullaot_comparer_t_2 () {
+		var l = new Dictionary <TimeSpan, int> ();
+		return l.Count;
+	}
+
 	static void enumerate<T> (IEnumerable<T> arr) {
 		foreach (var o in arr)
 			;
