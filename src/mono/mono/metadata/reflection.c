@@ -3150,12 +3150,25 @@ add_custom_modifiers (MonoDynamicImage *assembly, MonoType *type, MonoArray *mod
 	return t;
 }
 
+static void
+init_type_builder_generics (MonoObject *type)
+{
+	MonoReflectionTypeBuilder *tb;
+
+	if (!is_sre_type_builder(mono_object_class (type)))
+		return;
+	tb = (MonoReflectionTypeBuilder *)type;
+
+	if (tb && tb->generic_container)
+		mono_reflection_create_generic_class (tb);
+}
+
 static guint32
 mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *fb)
 {
 	MonoDynamicTable *table;
 	MonoClass *klass;
-	MonoType *custom = NULL;
+	MonoType *custom = NULL, *type;
 	guint32 *values;
 	guint32 token, pclass, parent, sig;
 	gchar *name;
@@ -3167,15 +3180,17 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	klass = mono_class_from_mono_type (mono_reflection_type_get_handle (fb->typeb));
 	name = mono_string_to_utf8 (fb->name);
 
+	/*FIXME this is one more layer of ugliness due how types are created.*/
+	init_type_builder_generics (fb->type);
+
 	/* fb->type does not include the custom modifiers */
 	/* FIXME: We should do this in one place when a fieldbuilder is created */
-	if (fb->modreq || fb->modopt) {
-		custom = add_custom_modifiers (assembly, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type), fb->modreq, fb->modopt);
-		sig = fieldref_encode_signature (assembly, NULL, custom);
-		g_free (custom);
-	} else {
-		sig = fieldref_encode_signature (assembly, NULL, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type));
-	}
+	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type);
+	if (fb->modreq || fb->modopt)
+		type = custom = add_custom_modifiers (assembly, type, fb->modreq, fb->modopt);
+
+	sig = fieldref_encode_signature (assembly, NULL, type);
+	g_free (custom);
 
 	parent = create_generic_typespec (assembly, (MonoReflectionTypeBuilder *) fb->typeb);
 	g_assert ((parent & MONO_TYPEDEFORREF_MASK) == MONO_TYPEDEFORREF_TYPESPEC);
