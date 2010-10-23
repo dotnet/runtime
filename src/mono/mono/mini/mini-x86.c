@@ -3899,7 +3899,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
-			/* Not needed on x86 */
+			/* http://blogs.sun.com/dave/resource/NHM-Pipeline-Blog-V2.txt */
+			x86_prefix (code, X86_LOCK_PREFIX);
+			x86_alu_membase_imm (code, X86_ADD, X86_ESP, 0, 0);
 			break;
 		}
 		case OP_ATOMIC_ADD_I4: {

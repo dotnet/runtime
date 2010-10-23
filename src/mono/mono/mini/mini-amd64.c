@@ -974,8 +974,6 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	int eax, ebx, ecx, edx;
 	guint32 opts = 0;
 
-	/* FIXME: AMD64 */
-
 	*exclude_mask = 0;
 	/* Feature Flags function, flags returned in EDX. */
 	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
@@ -4849,7 +4847,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
-			/* Not needed on amd64 */
+			/* http://blogs.sun.com/dave/resource/NHM-Pipeline-Blog-V2.txt */
+			x86_prefix (code, X86_LOCK_PREFIX);
+			amd64_alu_membase_imm (code, X86_ADD, AMD64_RSP, 0, 0);
 			break;
 		}
 		case OP_ATOMIC_ADD_I4:
