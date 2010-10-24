@@ -539,6 +539,21 @@ test_platform:	test-iomap-regression
 endif
 endif
 
+if X86
+if HOST_WIN32
+else
+test_platform: test-eglib-remap
+endif
+endif
+
+#
+# Test that no symbols are missed in eglib-remap.h
+#
+OK_G_SYMBOLS='g_list\|g_slist\|g_concat_dir_and_file'
+test-eglib-remap:
+	@echo "Testing eglib remap..."
+	@if which nm > /dev/null; then if nm $(top_builddir)/mono/mini/mono | grep -v $(OK_G_SYMBOLS) | grep 't g_'; then exit 1; else exit 0; fi; fi
+
 #
 # Tests that the internals in mono/io-layer/messages.c are ok by triggering the 
 # code that checks that the table is properly sorted
