@@ -4924,7 +4924,15 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		}
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
-		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
+		if (create_methodspec && tb->generic_params) {
+			MonoType *type;
+			init_type_builder_generics (obj);
+			type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
+			token = mono_image_typedef_or_ref_full (assembly, type, TRUE);
+			token = mono_metadata_token_from_dor (token);
+		} else {
+			token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
+		}
 	} else if (strcmp (klass->name, "MonoType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 		MonoClass *mc = mono_class_from_mono_type (type);
@@ -4932,7 +4940,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 			mono_raise_exception (mono_class_get_exception_for_failure (mc));
 
 		token = mono_metadata_token_from_dor (
-			mono_image_typedef_or_ref_full (assembly, type, mc->generic_container == NULL));
+			mono_image_typedef_or_ref_full (assembly, type, mc->generic_container == NULL || create_methodspec));
 	} else if (strcmp (klass->name, "GenericTypeParameterBuilder") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 		token = mono_metadata_token_from_dor (

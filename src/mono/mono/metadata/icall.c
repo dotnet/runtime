@@ -1171,13 +1171,13 @@ mono_type_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
 }
 
 static gint32
-ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *obj)
+ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *obj, gboolean create_open_instance)
 {
 	MONO_ARCH_SAVE_REGS;
 	
 	MONO_CHECK_ARG_NULL (obj);
 	
-	return mono_image_create_token (mb->dynamic_image, obj, TRUE, TRUE);
+	return mono_image_create_token (mb->dynamic_image, obj, create_open_instance, TRUE);
 }
 
 static gint32
