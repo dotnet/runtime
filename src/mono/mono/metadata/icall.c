@@ -2322,7 +2322,6 @@ ves_icall_MonoType_GetArrayRank (MonoReflectionType *type)
 		mono_raise_exception (mono_get_exception_argument ("type", "Type must be an array type"));
 
 	class = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (class);
 
 	return class->rank;
 }
@@ -5779,7 +5778,6 @@ ves_icall_Type_make_array_type (MonoReflectionType *type, int rank)
 	MONO_ARCH_SAVE_REGS;
 
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 	check_for_invalid_type (klass);
 
 	if (rank == 0) //single dimentional array
