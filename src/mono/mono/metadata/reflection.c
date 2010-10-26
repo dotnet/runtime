@@ -203,6 +203,9 @@ static guint32 mono_image_get_methodspec_token (MonoDynamicImage *assembly, Mono
 static guint32 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m);
 static MonoMethod * inflate_method (MonoReflectionType *type, MonoObject *obj);
 
+static guint32 create_typespec (MonoDynamicImage *assembly, MonoType *type);
+static void init_type_builder_generics (MonoObject *type);
+
 #define RESOLVE_TYPE(type) do { type = (void*)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type); } while (0)
 #define RESOLVE_ARRAY_TYPE_ELEMENT(array, index) do {	\
 	MonoReflectionType *__type = mono_array_get (array, MonoReflectionType*, index);	\
@@ -1713,13 +1716,31 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 {
 	SigBuffer buf;
 	guint32 idx;
+	guint32 typespec = 0;
+	MonoType *type;
+	MonoClass *class;
+
+	init_type_builder_generics (fb->type);
+
+	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type);
+	class = mono_class_from_mono_type (type);
 
 	sigbuffer_init (&buf, 32);
 	
 	sigbuffer_add_value (&buf, 0x06);
 	encode_custom_modifiers (assembly, fb->modreq, fb->modopt, &buf);
 	/* encode custom attributes before the type */
-	encode_reflection_type (assembly, (MonoReflectionType*)fb->type, &buf);
+
+	if (class->generic_container)
+		typespec = create_typespec (assembly, type);
+
+	if (typespec) {
+		MonoGenericClass *gclass;
+		gclass = mono_metadata_lookup_generic_class (class, class->generic_container->context.class_inst, TRUE);
+		encode_generic_class (assembly, gclass, &buf);
+	} else {
+		encode_type (assembly, type, &buf);
+	}
 	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
 	sigbuffer_free (&buf);
 	return idx;
