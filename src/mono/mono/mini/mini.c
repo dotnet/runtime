@@ -5693,8 +5693,8 @@ mini_get_addr_from_ftnptr (gpointer descr)
 static void
 register_jit_stats (void)
 {
-	mono_counters_register ("Compiled methods", MONO_COUNTER_JIT | MONO_COUNTER_LONG, &mono_jit_stats.methods_compiled);
-	mono_counters_register ("Methods from AOT", MONO_COUNTER_JIT | MONO_COUNTER_LONG, &mono_jit_stats.methods_aot);
+	mono_counters_register ("Compiled methods", MONO_COUNTER_JIT | MONO_COUNTER_WORD, &mono_jit_stats.methods_compiled);
+	mono_counters_register ("Methods from AOT", MONO_COUNTER_JIT | MONO_COUNTER_WORD, &mono_jit_stats.methods_aot);
 	mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_llvm);	
 	mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_without_llvm);
 }
