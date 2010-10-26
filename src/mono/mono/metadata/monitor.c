@@ -1158,6 +1158,20 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter (MonoObject *obj, guint32 m
 	return res == 1;
 }
 
+void
+ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken)
+{
+	gint32 res;
+	do {
+		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
+		/*This means we got interrupted during the wait and didn't got the monitor.*/
+		if (res == -1)
+			mono_thread_interruption_checkpoint ();
+	} while (res == -1);
+	/*It's safe to do it from here since interruption would happen only on the wrapper.*/
+	*lockTaken = TRUE;
+}
+
 gboolean 
 ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj)
 {
