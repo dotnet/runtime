@@ -202,7 +202,7 @@ sbb_imm: dest:i src1:i len:12
 br_reg: src1:i len:8
 bigmul: len:8 dest:l src1:i src2:i
 bigmul_un: len:8 dest:l src1:i src2:i
-tls_get: len:8 dest:i
+tls_get: len:8 dest:i clob:c
 
 # 32 bit opcodes
 int_add: dest:i src1:i src2:i len:4
