@@ -3615,7 +3615,7 @@ do_cast (VerifyContext *ctx, int token, const char *opcode) {
 	if (!check_underflow (ctx, 1))
 		return;
 
-	if (!(type = verifier_load_type (ctx, token, opcode)))
+	if (!(type = get_boxable_mono_type (ctx, token, opcode)))
 		return;
 
 	if (type->byref) {
