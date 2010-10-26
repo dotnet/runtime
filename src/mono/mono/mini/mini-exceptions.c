@@ -2211,6 +2211,11 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 #endif
 
 	fprintf (stdout, "%s", text->str);
+
+#if PLATFORM_WIN32 && TARGET_WIN32 && _DEBUG
+	OutputDebugStringA(text->str);
+#endif
+
 	g_string_free (text, TRUE);
 	fflush (stdout);
 }
