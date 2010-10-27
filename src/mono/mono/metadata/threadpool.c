@@ -19,6 +19,7 @@
 #endif
 
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
@@ -1932,8 +1933,12 @@ async_invoke_thread (gpointer data)
 		wsq = add_wsq ();
 
 	thread = mono_thread_internal_current ();
+
+	mono_profiler_thread_start (thread->tid);
+
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);
+
 	data = NULL;
 	for (;;) {
 		MonoAsyncResult *ar;
@@ -2082,6 +2087,9 @@ async_invoke_thread (gpointer data)
 					if (!tp->is_io) {
 						remove_wsq (wsq);
 					}
+
+					mono_profiler_thread_end (thread->tid);
+
 					if (tp_finish_func)
 						tp_finish_func (tp_hooks_user_data);
 					return;
