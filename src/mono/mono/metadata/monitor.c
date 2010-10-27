@@ -1169,7 +1169,7 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 			mono_thread_interruption_checkpoint ();
 	} while (res == -1);
 	/*It's safe to do it from here since interruption would happen only on the wrapper.*/
-	*lockTaken = TRUE;
+	*lockTaken = res == 1;
 }
 
 gboolean 
