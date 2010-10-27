@@ -626,7 +626,8 @@ ICALL(MMETH_7, "get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGener
 ICALL(MMETH_8, "get_base_method", ves_icall_MonoMethod_get_base_method)
 ICALL(MMETH_9, "get_name", ves_icall_MonoMethod_get_name)
 
-ICALL_TYPE(MMETHI, "System.Reflection.MonoMethodInfo", MMETHI_1)
+ICALL_TYPE(MMETHI, "System.Reflection.MonoMethodInfo", MMETHI_4)
+ICALL(MMETHI_4, "get_method_attributes", vell_icall_get_method_attributes)
 ICALL(MMETHI_1, "get_method_info", ves_icall_get_method_info)
 ICALL(MMETHI_2, "get_parameter_info", ves_icall_get_parameter_info)
 ICALL(MMETHI_3, "get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval_marshal)

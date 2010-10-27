@@ -1694,6 +1694,12 @@ ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionField *fie
 	return type_array_from_modifiers (field->field->parent->image, type, optional);
 }
 
+static int
+vell_icall_get_method_attributes (MonoMethod *method)
+{
+	return method->flags;
+}
+
 static void
 ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 {
