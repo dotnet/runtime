@@ -5248,6 +5248,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 		if (parent == NULL){
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load parent type"));
+			mono_loader_clear_error ();
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;

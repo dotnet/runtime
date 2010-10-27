@@ -2238,6 +2238,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 
 		signature = mono_metadata_parse_method_signature_full (img, container, idx, sig_body, NULL);
 		if (!signature) {
+			mono_loader_clear_error ();
 			mono_loader_unlock ();
 			mono_error_set_method_load (error, m->klass, m->name, "");
 			return NULL;
