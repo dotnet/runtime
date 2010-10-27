@@ -6840,6 +6840,7 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 {
 	static MonoClass *System_Reflection_ParameterInfo;
 	static MonoClass *System_Reflection_ParameterInfo_array;
+	MonoError error;
 	MonoArray *res = NULL;
 	MonoReflectionMethod *member = NULL;
 	MonoReflectionParameter *param = NULL;
@@ -6864,8 +6865,12 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 		mono_memory_barrier ();
 		System_Reflection_ParameterInfo_array = klass;
 	}
-	
-	if (!mono_method_signature (method)->param_count)
+
+	sig = mono_method_signature_checked (method, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+
+	if (!sig->param_count)
 		return mono_array_new_specific (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), 0);
 
 	/* Note: the cache is based on the address of the signature into the method
@@ -6873,7 +6878,6 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	 */
 	CHECK_OBJECT (MonoArray*, &(method->signature), refclass);
 
-	sig = mono_method_signature (method);
 	member = mono_method_get_object (domain, method, refclass);
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method, (const char **) names);
