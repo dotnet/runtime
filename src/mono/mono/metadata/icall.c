@@ -3276,7 +3276,6 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
 	if (!name)
 		mono_raise_exception (mono_get_exception_argument_null ("name"));
@@ -3290,17 +3289,16 @@ handle_parent:
 		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	iter = NULL;
-	while ((field = mono_class_get_fields (klass, &iter))) {
+	while ((field = mono_class_get_fields_lazy (klass, &iter))) {
+		guint32 flags = mono_field_get_flags (field);
 		match = 0;
 
-		if (field->type == NULL)
+		if (mono_field_is_deleted_with_flags (field, flags))
 			continue;
-		if (mono_field_is_deleted (field))
-			continue;
-		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
+		if ((flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else if ((klass == startklass) || (field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
+		} else if ((klass == startklass) || (flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
 			if (bflags & BFLAGS_NonPublic) {
 				match++;
 			}
@@ -3308,7 +3306,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+		if (flags & FIELD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
 				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
 					match++;
