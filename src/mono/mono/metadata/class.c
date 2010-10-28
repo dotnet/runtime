@@ -5199,7 +5199,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if ((class = mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
 		mono_loader_unlock ();
-		return class->exception_type ? NULL : class;
+		return class;
 	}
 
 	mono_metadata_decode_row (tt, tidx - 1, cols, MONO_TYPEDEF_SIZE);
@@ -5249,23 +5249,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		if (parent == NULL){
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not load parent type"));
 			mono_loader_clear_error ();
-			mono_loader_unlock ();
-			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
-			return NULL;
+			goto parent_failure;
 		}
 
 		for (tmp = parent; tmp; tmp = tmp->parent) {
 			if (tmp == class) {
 				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Cycle found while resolving parent"));
-				mono_loader_unlock ();
-				mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
-				return NULL;
+				goto parent_failure;
 			}
 			if (class->generic_container && tmp->generic_class && tmp->generic_class->container_class == class) {
 				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Parent extends generic instance of this type"));
-				mono_loader_unlock ();
-				mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
-				return NULL;
+				goto parent_failure;
 			}
 		}
 	}
@@ -5383,6 +5377,13 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	mono_profiler_class_loaded (class, MONO_PROFILE_OK);
 
 	return class;
+
+parent_failure:
+	mono_class_setup_mono_type (class);
+	mono_loader_unlock ();
+	mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
+	return NULL;
+
 }
 
 /** is klass Nullable<T>? */
