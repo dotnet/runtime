@@ -5810,14 +5810,18 @@ mono_print_unhandled_exception (MonoObject *exc)
 	gboolean free_message = FALSE;
 	MonoError error;
 
-	str = mono_object_to_string (exc, NULL);
-	if (str) {
-		message = mono_string_to_utf8_checked (str, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_cleanup (&error);
-			message = (char *) "";
-		} else {
-			free_message = TRUE;
+	if (exc == (MonoObject*)mono_object_domain (exc)->out_of_memory_ex) {
+		message = g_strdup ("OutOfMemoryException");
+	} else {
+		str = mono_object_to_string (exc, NULL);
+		if (str) {
+			message = mono_string_to_utf8_checked (str, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_cleanup (&error);
+				message = (char *) "";
+			} else {
+				free_message = TRUE;
+			}
 		}
 	}
 
