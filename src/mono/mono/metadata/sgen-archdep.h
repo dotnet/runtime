@@ -165,6 +165,78 @@
 	((a)[15] = (gpointer) (UCONTEXT_GREGS((ctx))) [15]);		\
 	} while (0)
 
+#elif defined(__sparc__)
+
+#define REDZONE_SIZE	0
+
+/* Don't bother with %g0 (%r0), it's always hard-coded to zero */
+#define ARCH_NUM_REGS 15	
+#ifdef __sparcv9
+#define ARCH_STORE_REGS(ptr)	\
+	__asm__ __volatile__(	\
+		"st %%g1,[%0]\n\t"	\
+		"st %%g2,[%0+0x08]\n\t"	\
+		"st %%g3,[%0+0x10]\n\t"	\
+		"st %%g4,[%0+0x18]\n\t"	\
+		"st %%g5,[%0+0x20]\n\t"	\
+		"st %%g6,[%0+0x28]\n\t"	\
+		"st %%g7,[%0+0x30]\n\t"	\
+		"st %%o0,[%0+0x38]\n\t"	\
+		"st %%o1,[%0+0x40]\n\t"	\
+		"st %%o2,[%0+0x48]\n\t"	\
+		"st %%o3,[%0+0x50]\n\t"	\
+		"st %%o4,[%0+0x58]\n\t"	\
+		"st %%o5,[%0+0x60]\n\t"	\
+		"st %%o6,[%0+0x68]\n\t"	\
+		"st %%o7,[%0+0x70]\n\t"	\
+		: 			\
+		: "r" (ptr)		\
+		: "memory"			\
+	)
+#else
+#define ARCH_STORE_REGS(ptr)	\
+	__asm__ __volatile__(	\
+		"st %%g1,[%0]\n\t"	\
+		"st %%g2,[%0+0x04]\n\t"	\
+		"st %%g3,[%0+0x08]\n\t"	\
+		"st %%g4,[%0+0x0c]\n\t"	\
+		"st %%g5,[%0+0x10]\n\t"	\
+		"st %%g6,[%0+0x14]\n\t"	\
+		"st %%g7,[%0+0x18]\n\t"	\
+		"st %%o0,[%0+0x1c]\n\t"	\
+		"st %%o1,[%0+0x20]\n\t"	\
+		"st %%o2,[%0+0x24]\n\t"	\
+		"st %%o3,[%0+0x28]\n\t"	\
+		"st %%o4,[%0+0x2c]\n\t"	\
+		"st %%o5,[%0+0x30]\n\t"	\
+		"st %%o6,[%0+0x34]\n\t"	\
+		"st %%o7,[%0+0x38]\n\t"	\
+		: 			\
+		: "r" (ptr)		\
+		: "memory"			\
+	)
+#endif
+
+#define ARCH_SIGCTX_SP(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_SP])
+#define ARCH_SIGCTX_IP(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_PC])
+#define ARCH_COPY_SIGCTX_REGS(a,ctx) do {	\
+	(a)[0] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_G1]);	\
+	(a)[1] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_G2]);	\
+	(a)[2] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_G3]);	\
+	(a)[3] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_G4]);	\
+	(a)[4] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_G5]);	\
+	(a)[5] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_G6]);	\
+	(a)[6] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_G7]);	\
+	(a)[7] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_O0]);	\
+	(a)[8] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_O1]);	\
+	(a)[9] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_O2]);	\
+	(a)[10] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_O3]);	\
+	(a)[11] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_O4]);	\
+	(a)[12] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_O5]);	\
+	(a)[13] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_O6]);	\
+	(a)[14] = (gpointer) (((ucontext_t *)(ctx))->uc_mcontext.gregs [REG_O7]);	\
+	} while (0)
+
 #endif
 
 #endif /* __MONO_SGENARCHDEP_H__ */

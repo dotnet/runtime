@@ -2128,6 +2128,7 @@ case "$host" in
 			# foo.c:6: warning: visibility attribute not supported in this configuration; ignored
 			# ld: fatal: relocation error: R_386_GOTOFF: file /var/tmp//ccxYR96k.o: symbol astruct: relocation must bind locally
 			have_visibility_hidden=no
+			sgen_supported=true
 			;;
 		  cygwin*)
 			have_visibility_hidden=no		  
@@ -2196,6 +2197,7 @@ case "$host" in
 		if test x"$AR" = xfalse; then
 			AC_MSG_ERROR([The required utility 'ar' is not found in your PATH. Usually it can be found in /usr/ccs/bin.])
 		fi
+		sgen_supported=true
 		;;
        alpha*-*-linux* | alpha*-*-osf*)
 		TARGET=ALPHA;
