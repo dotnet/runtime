@@ -35,6 +35,9 @@
 #endif
 
 #define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
+/*Boehm max heap cannot be smaller than 16MB*/
+#define MIN_BOEHM_MAX_HEAP_SIZE_IN_MB 16
+#define MIN_BOEHM_MAX_HEAP_SIZE (MIN_BOEHM_MAX_HEAP_SIZE_IN_MB << 20)
 
 static gboolean gc_initialized = FALSE;
 
@@ -47,6 +50,8 @@ mono_gc_warning (char *msg, GC_word arg)
 void
 mono_gc_base_init (void)
 {
+	char *env;
+
 	if (gc_initialized)
 		return;
 
@@ -124,6 +129,35 @@ mono_gc_base_init (void)
 #ifdef HAVE_GC_GCJ_MALLOC
 	GC_init_gcj_malloc (5, NULL);
 #endif
+
+	if ((env = getenv ("MONO_GC_PARAMS"))) {
+		char **ptr, **opts = g_strsplit (env, ",", -1);
+		for (ptr = opts; *ptr; ++ptr) {
+			char *opt = *ptr;
+			if (g_str_has_prefix (opt, "max-heap-size=")) {
+				glong max_heap;
+
+				opt = strchr (opt, '=') + 1;
+				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &max_heap)) {
+					if (max_heap < MIN_BOEHM_MAX_HEAP_SIZE) {
+						fprintf (stderr, "max-heap-size must be at least %dMb.\n", MIN_BOEHM_MAX_HEAP_SIZE_IN_MB);
+						exit (1);
+					}
+					GC_set_max_heap_size (max_heap);
+				} else {
+					fprintf (stderr, "max-heap-size must be an integer.\n");
+					exit (1);
+				}
+				continue;
+			} else {
+				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
+				fprintf (stderr, "  max-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
+				exit (1);
+			}
+		}
+		g_strfreev (opts);
+	}
+
 	mono_gc_enable_events ();
 	gc_initialized = TRUE;
 }
