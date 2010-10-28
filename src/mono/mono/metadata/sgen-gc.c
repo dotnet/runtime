@@ -556,12 +556,6 @@ typedef struct {
        void *value;
 } Ephemeron;
 
-enum {
-	GENERATION_NURSERY,
-	GENERATION_OLD,
-	GENERATION_MAX
-};
-
 int current_collection_generation = -1;
 
 /*
@@ -4796,6 +4790,12 @@ restart_world (int generation)
 }
 
 #endif /* USE_SIGNAL_BASED_START_STOP_WORLD */
+
+int
+mono_sgen_get_current_collection_generation (void)
+{
+	return current_collection_generation;
+}
 
 void
 mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)

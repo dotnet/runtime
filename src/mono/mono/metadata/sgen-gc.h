@@ -606,6 +606,12 @@ struct _SgenInternalAllocator {
 	long small_internal_mem_bytes [INTERNAL_MEM_MAX];
 };
 
+enum {
+	GENERATION_NURSERY,
+	GENERATION_OLD,
+	GENERATION_MAX
+};
+
 void mono_sgen_init_internal_allocator (void) MONO_INTERNAL;
 
 SgenInternalAllocator* mono_sgen_get_unmanaged_allocator (void) MONO_INTERNAL;
@@ -650,6 +656,7 @@ void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 
 void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
+int mono_sgen_get_current_collection_generation (void) MONO_INTERNAL;
 
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
