@@ -1703,15 +1703,15 @@ vell_icall_get_method_attributes (MonoMethod *method)
 static void
 ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature* sig;
 	MONO_ARCH_SAVE_REGS;
 
-	sig = mono_method_signature (method);
-	if (!sig) {
-		g_assert (mono_loader_get_last_error ());
-		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
-	}
+	sig = mono_method_signature_checked (method, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+
 
 	MONO_STRUCT_SETREF (info, parent, mono_type_get_object (domain, &method->klass->byval_arg));
 	MONO_STRUCT_SETREF (info, ret, mono_type_get_object (domain, sig->ret));
