@@ -3359,7 +3359,10 @@ mono_class_check_vtable_constraints (MonoClass *class, GList *in_setup)
 
 	ginst = class->generic_class->context.class_inst;
 	for (i = 0; i < ginst->type_argc; ++i) {
-		MonoClass *arg = mono_class_from_mono_type (ginst->type_argv [i]);
+		MonoClass *arg;
+		if (ginst->type_argv [i]->type != MONO_TYPE_GENERICINST)
+			continue;
+		arg = mono_class_from_mono_type (ginst->type_argv [i]);
 		/*Those 2 will be checked by mono_class_setup_vtable itself*/
 		if (mono_class_has_gtd_parent (class, arg) || mono_class_has_gtd_parent (arg, class))
 			continue;
