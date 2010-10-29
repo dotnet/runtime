@@ -5426,7 +5426,11 @@ SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 
 #if defined(MONO_ARCH_HAVE_IS_INT_OVERFLOW)
 	if (mono_arch_is_int_overflow (ctx, info))
-		exc = mono_get_exception_arithmetic ();
+		/*
+		 * The spec says this throws ArithmeticException, but MS throws the derived
+		 * OverflowException.
+		 */
+		exc = mono_get_exception_overflow ();
 	else
 		exc = mono_get_exception_divide_by_zero ();
 #else
