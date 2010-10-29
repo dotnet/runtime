@@ -473,6 +473,17 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
   fpm->add(new TargetData(*EE->getTargetData()));
 
+  PassRegistry &Registry = *PassRegistry::getPassRegistry();
+  initializeCore(Registry);
+  initializeScalarOpts(Registry);
+  //initializeIPO(Registry);
+  initializeAnalysis(Registry);
+  initializeIPA(Registry);
+  initializeTransformUtils(Registry);
+  initializeInstCombine(Registry);
+  //initializeInstrumentation(Registry);
+  initializeTarget(Registry);
+
   llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
 
   if (PassList.size() > 0) {
