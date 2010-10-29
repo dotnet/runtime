@@ -1799,7 +1799,9 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 static void
 ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *obj, MonoObject *value)
 {
+	MonoError error;
 	MonoClassField *cf = field->field;
+	MonoType *type;
 	gchar *v;
 
 	MONO_ARCH_SAVE_REGS;
@@ -1811,9 +1813,13 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
 		mono_security_core_clr_ensure_reflection_access_field (cf);
 
+	type = mono_field_get_type_checked (cf, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error);
+
 	v = (gchar *) value;
-	if (!cf->type->byref) {
-		switch (cf->type->type) {
+	if (!type->byref) {
+		switch (type->type) {
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_BOOLEAN:
@@ -1841,11 +1847,11 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 			/* Do nothing */
 			break;
 		case MONO_TYPE_GENERICINST: {
-			MonoGenericClass *gclass = cf->type->data.generic_class;
+			MonoGenericClass *gclass = type->data.generic_class;
 			g_assert (!gclass->context.class_inst->is_open);
 
-			if (mono_class_is_nullable (mono_class_from_mono_type (cf->type))) {
-				MonoClass *nklass = mono_class_from_mono_type (cf->type);
+			if (mono_class_is_nullable (mono_class_from_mono_type (type))) {
+				MonoClass *nklass = mono_class_from_mono_type (type);
 				MonoObject *nullable;
 
 				/* 
@@ -1866,12 +1872,12 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		}
 		default:
 			g_error ("type 0x%x not handled in "
-				 "ves_icall_FieldInfo_SetValueInternal", cf->type->type);
+				 "ves_icall_FieldInfo_SetValueInternal", type->type);
 			return;
 		}
 	}
 
-	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
+	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		MonoVTable *vtable = mono_class_vtable_full (mono_object_domain (field), cf->parent, TRUE);
 		if (!vtable->initialized)
 			mono_runtime_class_init (vtable);
