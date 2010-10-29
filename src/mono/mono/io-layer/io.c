@@ -3680,6 +3680,7 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 	gboolean isreadonly;
 	gchar *utf8_path_name;
 	int ret;
+	unsigned long block_size;
 
 	if (path_name == NULL) {
 		utf8_path_name = g_strdup (g_get_current_dir());
@@ -3704,9 +3705,11 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 #ifdef HAVE_STATVFS
 		ret = statvfs (utf8_path_name, &fsstat);
 		isreadonly = ((fsstat.f_flag & ST_RDONLY) == ST_RDONLY);
+		block_size = fsstat.f_frsize;
 #elif defined(HAVE_STATFS)
 		ret = statfs (utf8_path_name, &fsstat);
 		isreadonly = ((fsstat.f_flags & MNT_RDONLY) == MNT_RDONLY);
+		block_size = fsstat.f_bsize;
 #endif
 	} while(ret == -1 && errno == EINTR);
 
@@ -3726,13 +3729,13 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 			free_bytes_avail->QuadPart = 0;
 		}
 		else {
-			free_bytes_avail->QuadPart = fsstat.f_bsize * fsstat.f_bavail;
+			free_bytes_avail->QuadPart = block_size * (guint64)fsstat.f_bavail;
 		}
 	}
 
 	/* total number of bytes available for non-root */
 	if (total_number_of_bytes != NULL) {
-		total_number_of_bytes->QuadPart = fsstat.f_bsize * fsstat.f_blocks;
+		total_number_of_bytes->QuadPart = block_size * (guint64)fsstat.f_blocks;
 	}
 
 	/* total number of bytes available for root */
@@ -3741,7 +3744,7 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 			total_number_of_free_bytes->QuadPart = 0;
 		}
 		else {
-			total_number_of_free_bytes->QuadPart = fsstat.f_bsize * fsstat.f_bfree;
+			total_number_of_free_bytes->QuadPart = block_size * (guint64)fsstat.f_bfree;
 		}
 	}
 	
