@@ -2388,7 +2388,6 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 		return NULL;
 
 	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_or_throw (klass);
 
 	if (klass->generic_container) {
 		return type; /* check this one */
