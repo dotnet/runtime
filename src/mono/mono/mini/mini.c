@@ -83,7 +83,7 @@
 #define MINI_FAST_TLS_DECLARE(x) static pthread_key_t x;
 #define MINI_HAVE_FAST_TLS
 #define MINI_THREAD_VAR_OFFSET(x,y) y = (gint32) x
-#elif (defined(PLATFORM_ANDROID))
+#else
 #define MINI_THREAD_VAR_OFFSET(x,y) MONO_THREAD_VAR_OFFSET(x,y)
 #endif
 
