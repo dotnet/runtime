@@ -688,6 +688,7 @@ struct _SgenMajorCollector {
 	gint64 (*get_used_size) (void);
 	void (*start_nursery_collection) (void);
 	void (*finish_nursery_collection) (void);
+	void (*start_major_collection) (void);
 	void (*finish_major_collection) (void);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr);
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);

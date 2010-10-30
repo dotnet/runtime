@@ -2822,6 +2822,10 @@ major_do_collection (const char *reason)
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
 	 */
+
+	if (major_collector.start_major_collection)
+		major_collector.start_major_collection ();
+
 	/* The remsets are not useful for a major collection */
 	clear_remsets ();
 	global_remset_cache_clear ();
