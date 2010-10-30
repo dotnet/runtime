@@ -4,7 +4,7 @@
  * Author:
  *	Jonathan Pryor
  *
- * (C) 2010 Ximian, Inc.
+ * (C) 2010 Novell, Inc.
  */
 
 #ifndef _MONO_METADATA_RUNTIME_H_

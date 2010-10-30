@@ -4,7 +4,7 @@
  * Authors:
  *   Geoff Norton (gnorton@novell.com)
  *
- * (C) 2010 Ximian, Inc.
+ * (C) 2010 Novell, Inc.
  */
 
 #include <config.h>
