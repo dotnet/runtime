@@ -163,7 +163,6 @@ typedef struct {
 #define MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES	32
 
 static int *block_obj_sizes;
-static gboolean *evacuate_block_obj_sizes;
 static int num_block_obj_sizes;
 static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 
@@ -185,6 +184,9 @@ static LOCK_DECLARE (ms_block_list_mutex);
 static int nursery_bits;
 static char *nursery_start;
 static char *nursery_end;
+
+static gboolean *evacuate_block_obj_sizes;
+static float evacuation_threshold = 0.666;
 
 #define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), nursery_bits, nursery_start, nursery_end))
 
@@ -1122,7 +1124,7 @@ major_sweep (void)
 
 	for (i = 0; i < num_block_obj_sizes; ++i) {
 		float usage = (float)slots_used [i] / (float)slots_available [i];
-		if (num_blocks [i] > 5 && usage <= 0.666) {
+		if (num_blocks [i] > 5 && usage < evacuation_threshold) {
 			evacuate_block_obj_sizes [i] = TRUE;
 			/*
 			g_print ("slot size %d - %d of %d used\n",
@@ -1327,10 +1329,10 @@ get_num_major_sections (void)
 	return num_major_sections;
 }
 
-#ifdef FIXED_HEAP
 static gboolean
 major_handle_gc_param (const char *opt)
 {
+#ifdef FIXED_HEAP
 	if (g_str_has_prefix (opt, "major-heap-size=")) {
 		const char *arg = strchr (opt, '=') + 1;
 		glong size;
@@ -1338,6 +1340,17 @@ major_handle_gc_param (const char *opt)
 			return FALSE;
 		ms_heap_num_blocks = (size + MS_BLOCK_SIZE - 1) / MS_BLOCK_SIZE;
 		g_assert (ms_heap_num_blocks > 0);
+		return TRUE;
+	} else
+#endif
+	if (g_str_has_prefix (opt, "evacuation-threshold=")) {
+		const char *arg = strchr (opt, '=') + 1;
+		int percentage = atoi (arg);
+		if (percentage < 0 || percentage > 100) {
+			fprintf (stderr, "evacuation-threshold must be an integer in the range 0-100.\n");
+			exit (1);
+		}
+		evacuation_threshold = (float)percentage / 100.0;
 		return TRUE;
 	}
 
@@ -1347,9 +1360,12 @@ major_handle_gc_param (const char *opt)
 static void
 major_print_gc_param_usage (void)
 {
-	fprintf (stderr, "  major-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
-}
+	fprintf (stderr,
+#ifdef FIXED_HEAP
+			"  major-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n"
 #endif
+			"  evacuation-threshold=P (where P is a percentage, an integer in 0-100)\n");
+}
 
 #ifdef SGEN_HAVE_CARDTABLE
 static void
@@ -1582,13 +1598,8 @@ mono_sgen_marksweep_init
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
-#ifdef FIXED_HEAP
 	collector->handle_gc_param = major_handle_gc_param;
 	collector->print_gc_param_usage = major_print_gc_param_usage;
-#else
-	collector->handle_gc_param = NULL;
-	collector->print_gc_param_usage = NULL;
-#endif
 
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);
