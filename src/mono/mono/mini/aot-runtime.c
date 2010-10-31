@@ -464,40 +464,43 @@ decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 	return mono_class_get_field (klass, token);
 }
 
+/* Stores information returned by decode_method_ref () */
+typedef struct {
+	MonoImage *image;
+	guint32 token;
+	MonoMethod *method;
+	gboolean no_aot_trampoline;
+} MethodRef;
+
 /*
  * decode_method_ref_with_target:
  *
- *   Decode a method reference, and return its image and token. This avoids loading
- * metadata for the method if the caller does not need it. If the method has no token,
- * then it is loaded from metadata and METHOD is set to the method instance. If TARGET is non-NULL,
- * abort decoding if it can be determined that the decoded method couldn't resolve to it, and
- * return NULL.
+ *   Decode a method reference, storing the image/token into a MethodRef structure.
+ * This avoids loading metadata for the method if the caller does not need it. If the method has
+ * no token, then it is loaded from metadata and ref->method is set to the method instance.
+ * If TARGET is non-NULL, abort decoding if it can be determined that the decoded method couldn't resolve to TARGET, and return FALSE.
  */
-static MonoImage*
-decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod **method, MonoMethod *target, gboolean *no_aot_trampoline, guint8 *buf, guint8 **endbuf)
+static gboolean
+decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod *target, guint8 *buf, guint8 **endbuf)
 {
 	guint32 image_index, value;
 	MonoImage *image = NULL;
 	guint8 *p = buf;
 
-	if (method)
-		*method = NULL;
-	if (no_aot_trampoline)
-		*no_aot_trampoline = FALSE;
+	memset (ref, 0, sizeof (MethodRef));
 
 	value = decode_value (p, &p);
 	image_index = value >> 24;
 
 	if (image_index == MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE) {
-		if (no_aot_trampoline)
-			*no_aot_trampoline = TRUE;
+		ref->no_aot_trampoline = TRUE;
 		value = decode_value (p, &p);
 		image_index = value >> 24;
 	}
 
 	if (image_index < MONO_AOT_METHODREF_MIN || image_index == MONO_AOT_METHODREF_METHODSPEC || image_index == MONO_AOT_METHODREF_GINST) {
 		if (target && target->wrapper_type)
-			return NULL;
+			return FALSE;
 	}
 
 	if (image_index == MONO_AOT_METHODREF_WRAPPER) {
@@ -506,7 +509,7 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 		wrapper_type = decode_value (p, &p);
 
 		if (target && target->wrapper_type != wrapper_type)
-			return NULL;
+			return FALSE;
 
 		/* Doesn't matter */
 		image = mono_defaults.corlib;
@@ -516,16 +519,16 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
 
 			if (!m)
-				return NULL;
+				return FALSE;
 			mono_class_init (m->klass);
-			*method = mono_marshal_get_remoting_invoke_with_check (m);
+			ref->method = mono_marshal_get_remoting_invoke_with_check (m);
 			break;
 		}
 		case MONO_WRAPPER_PROXY_ISINST: {
 			MonoClass *klass = decode_klass_ref (module, p, &p);
 			if (!klass)
-				return NULL;
-			*method = mono_marshal_get_proxy_cancast (klass);
+				return FALSE;
+			ref->method = mono_marshal_get_proxy_cancast (klass);
 			break;
 		}
 		case MONO_WRAPPER_LDFLD:
@@ -534,43 +537,43 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 		case MONO_WRAPPER_ISINST: {
 			MonoClass *klass = decode_klass_ref (module, p, &p);
 			if (!klass)
-				return NULL;
+				return FALSE;
 			if (wrapper_type == MONO_WRAPPER_LDFLD)
-				*method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
+				ref->method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
 			else if (wrapper_type == MONO_WRAPPER_LDFLDA)
-				*method = mono_marshal_get_ldflda_wrapper (&klass->byval_arg);
+				ref->method = mono_marshal_get_ldflda_wrapper (&klass->byval_arg);
 			else if (wrapper_type == MONO_WRAPPER_STFLD)
-				*method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
+				ref->method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
 			else if (wrapper_type == MONO_WRAPPER_ISINST)
-				*method = mono_marshal_get_isinst (klass);
+				ref->method = mono_marshal_get_isinst (klass);
 			else
 				g_assert_not_reached ();
 			break;
 		}
 		case MONO_WRAPPER_LDFLD_REMOTE:
-			*method = mono_marshal_get_ldfld_remote_wrapper (NULL);
+			ref->method = mono_marshal_get_ldfld_remote_wrapper (NULL);
 			break;
 		case MONO_WRAPPER_STFLD_REMOTE:
-			*method = mono_marshal_get_stfld_remote_wrapper (NULL);
+			ref->method = mono_marshal_get_stfld_remote_wrapper (NULL);
 			break;
 		case MONO_WRAPPER_ALLOC: {
 			int atype = decode_value (p, &p);
 
-			*method = mono_gc_get_managed_allocator_by_type (atype);
+			ref->method = mono_gc_get_managed_allocator_by_type (atype);
 			break;
 		}
 		case MONO_WRAPPER_WRITE_BARRIER:
-			*method = mono_gc_get_write_barrier ();
+			ref->method = mono_gc_get_write_barrier ();
 			break;
 		case MONO_WRAPPER_STELEMREF:
-			*method = mono_marshal_get_stelemref ();
+			ref->method = mono_marshal_get_stelemref ();
 			break;
 		case MONO_WRAPPER_SYNCHRONIZED: {
 			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
 
 			if (!m)
-				return NULL;
-			*method = mono_marshal_get_synchronized_wrapper (m);
+				return FALSE;
+			ref->method = mono_marshal_get_synchronized_wrapper (m);
 			break;
 		}
 		case MONO_WRAPPER_UNKNOWN: {
@@ -587,7 +590,7 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 			g_assert (orig_method);
 			mono_method_desc_free (desc);
-			*method = mono_monitor_get_fast_path (orig_method);
+			ref->method = mono_monitor_get_fast_path (orig_method);
 			break;
 		}
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
@@ -595,8 +598,8 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
 
 			if (!m)
-				return NULL;
-			*method = mono_marshal_get_runtime_invoke (m, FALSE);
+				return FALSE;
+			ref->method = mono_marshal_get_runtime_invoke (m, FALSE);
 			break;
 		}
 		case MONO_WRAPPER_MANAGED_TO_MANAGED: {
@@ -606,7 +609,7 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 				int rank = decode_value (p, &p);
 				int elem_size = decode_value (p, &p);
 
-				*method = mono_marshal_get_array_address (rank, elem_size);
+				ref->method = mono_marshal_get_array_address (rank, elem_size);
 			} else {
 				g_assert_not_reached ();
 			}
@@ -617,16 +620,16 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 		}
 	} else if (image_index == MONO_AOT_METHODREF_WRAPPER_NAME) {
 		if (target)
-			return NULL;
+			return FALSE;
 		/* Can't decode these */
 		g_assert_not_reached ();
 	} else if (image_index == MONO_AOT_METHODREF_METHODSPEC) {
 		image_index = decode_value (p, &p);
-		*token = decode_value (p, &p);
+		ref->token = decode_value (p, &p);
 
 		image = load_image (module, image_index, TRUE);
 		if (!image)
-			return NULL;
+			return FALSE;
 	} else if (image_index == MONO_AOT_METHODREF_GINST) {
 		MonoClass *klass;
 		MonoGenericContext ctx;
@@ -637,21 +640,21 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 		 */
 		klass = decode_klass_ref (module, p, &p);
 		if (!klass)
-			return NULL;
+			return FALSE;
 
 		if (target && target->klass != klass)
-			return NULL;
+			return FALSE;
 
 		image_index = decode_value (p, &p);
-		*token = decode_value (p, &p);
+		ref->token = decode_value (p, &p);
 
 		image = load_image (module, image_index, TRUE);
 		if (!image)
-			return NULL;
+			return FALSE;
 
-		*method = mono_get_method_full (image, *token, NULL, NULL);
-		if (!(*method))
-			return NULL;
+		ref->method = mono_get_method_full (image, ref->token, NULL, NULL);
+		if (!ref->method)
+			return FALSE;
 
 		memset (&ctx, 0, sizeof (ctx));
 
@@ -659,61 +662,62 @@ decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod
 			ctx.class_inst = klass->generic_class->context.class_inst;
 			ctx.method_inst = NULL;
  
-			*method = mono_class_inflate_generic_method_full (*method, klass, &ctx);
+			ref->method = mono_class_inflate_generic_method_full (ref->method, klass, &ctx);
 		}			
 
 		memset (&ctx, 0, sizeof (ctx));
 
 		if (!decode_generic_context (module, &ctx, p, &p))
-			return NULL;
+			return FALSE;
 
-		*method = mono_class_inflate_generic_method_full (*method, klass, &ctx);
+		ref->method = mono_class_inflate_generic_method_full (ref->method, klass, &ctx);
 	} else if (image_index == MONO_AOT_METHODREF_ARRAY) {
 		MonoClass *klass;
 		int method_type;
 
 		klass = decode_klass_ref (module, p, &p);
 		if (!klass)
-			return NULL;
+			return FALSE;
 		method_type = decode_value (p, &p);
-		*token = 0;
 		switch (method_type) {
 		case 0:
-			*method = mono_class_get_method_from_name (klass, ".ctor", klass->rank);
+			ref->method = mono_class_get_method_from_name (klass, ".ctor", klass->rank);
 			break;
 		case 1:
-			*method = mono_class_get_method_from_name (klass, ".ctor", klass->rank * 2);
+			ref->method = mono_class_get_method_from_name (klass, ".ctor", klass->rank * 2);
 			break;
 		case 2:
-			*method = mono_class_get_method_from_name (klass, "Get", -1);
+			ref->method = mono_class_get_method_from_name (klass, "Get", -1);
 			break;
 		case 3:
-			*method = mono_class_get_method_from_name (klass, "Address", -1);
+			ref->method = mono_class_get_method_from_name (klass, "Address", -1);
 			break;
 		case 4:
-			*method = mono_class_get_method_from_name (klass, "Set", -1);
+			ref->method = mono_class_get_method_from_name (klass, "Set", -1);
 			break;
 		default:
 			g_assert_not_reached ();
 		}
 	} else {
 		g_assert (image_index < MONO_AOT_METHODREF_MIN);
-		*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
+		ref->token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
 		image = load_image (module, image_index, TRUE);
 		if (!image)
-			return NULL;
+			return FALSE;
 	}
 
 	*endbuf = p;
 
-	return image;
+	ref->image = image;
+
+	return TRUE;
 }
 
-static MonoImage*
-decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, gboolean *no_aot_trampoline, guint8 *buf, guint8 **endbuf)
+static gboolean
+decode_method_ref (MonoAotModule *module, MethodRef *ref, guint8 *buf, guint8 **endbuf)
 {
-	return decode_method_ref_with_target (module, token, method, NULL, no_aot_trampoline, buf, endbuf);
+	return decode_method_ref_with_target (module, ref, NULL, buf, endbuf);
 }
 
 /*
@@ -724,16 +728,17 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 static MonoMethod*
 decode_resolve_method_ref_with_target (MonoAotModule *module, MonoMethod *target, guint8 *buf, guint8 **endbuf)
 {
-	MonoMethod *method;
-	guint32 token;
-	MonoImage *image = decode_method_ref_with_target (module, &token, &method, target, NULL, buf, endbuf);
+	MethodRef ref;
+	gboolean res;
 
-	if (method)
-		return method;
-	if (!image)
+	res = decode_method_ref_with_target (module, &ref, target, buf, endbuf);
+	if (!res)
 		return NULL;
-	method = mono_get_method (image, token, NULL);
-	return method;
+	if (ref.method)
+		return ref.method;
+	if (!ref.image)
+		return NULL;
+	return mono_get_method (ref.image, ref.token, NULL);
 }
 
 static MonoMethod*
@@ -1308,6 +1313,8 @@ static gboolean
 decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guint8 *buf, guint8 **endbuf)
 {
 	guint32 flags;
+	MethodRef ref;
+	gboolean res;
 
 	info->vtable_size = decode_value (buf, &buf);
 	if (info->vtable_size == -1)
@@ -1325,14 +1332,17 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->is_generic_container = (flags >> 8) & 0x1;
 
 	if (info->has_cctor) {
-		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, NULL, NULL, buf, &buf);
-		if (!cctor_image)
+		res = decode_method_ref (module, &ref, buf, &buf);
+		if (!res)
 			return FALSE;
+		info->cctor_token = ref.token;
 	}
 	if (info->has_finalize) {
-		info->finalize_image = decode_method_ref (module, &info->finalize_token, NULL, NULL, buf, &buf);
-		if (!info->finalize_image)
+		res = decode_method_ref (module, &ref, buf, &buf);
+		if (!res)
 			return FALSE;
+		info->finalize_image = ref.image;
+		info->finalize_token = ref.token;
 	}
 
 	info->instance_size = decode_value (buf, &buf);
@@ -1354,9 +1364,8 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	guint8 *info, *p;
 	MonoCachedClassInfo class_info;
 	gboolean err;
-	guint32 token;
-	MonoImage *image;
-	gboolean no_aot_trampoline;
+	MethodRef ref;
+	gboolean res;
 
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !amodule)
 		return NULL;
@@ -1369,18 +1378,18 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 		return NULL;
 
 	for (i = 0; i < slot; ++i)
-		decode_method_ref (amodule, &token, NULL, NULL, p, &p);
+		decode_method_ref (amodule, &ref, p, &p);
 
-	image = decode_method_ref (amodule, &token, NULL, &no_aot_trampoline, p, &p);
-	if (!image)
+	res = decode_method_ref (amodule, &ref, p, &p);
+	if (!res)
 		return NULL;
-	if (no_aot_trampoline)
-		return NULL;
-
-	if (mono_metadata_token_index (token) == 0)
+	if (ref.no_aot_trampoline)
 		return NULL;
 
-	return mono_aot_get_method_from_token (domain, image, token);
+	if (mono_metadata_token_index (ref.token) == 0)
+		return NULL;
+
+	return mono_aot_get_method_from_token (domain, ref.image, ref.token);
 }
 
 gboolean
@@ -2150,23 +2159,22 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_METHOD_RGCTX: {
-		guint32 token;
-		MonoMethod *method;
-		gboolean no_aot_trampoline;
+		MethodRef ref;
+		gboolean res;
 
-		image = decode_method_ref (aot_module, &token, &method, &no_aot_trampoline, p, &p);
-		if (!image)
+		res = decode_method_ref (aot_module, &ref, p, &p);
+		if (!res)
 			goto cleanup;
 
-		if (!method && !mono_aot_only && !no_aot_trampoline && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
-			ji->data.target = mono_create_ftnptr (mono_domain_get (), mono_create_jit_trampoline_from_token (image, token));
+		if (!ref.method && !mono_aot_only && !ref.no_aot_trampoline && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (ref.token) == MONO_TABLE_METHOD)) {
+			ji->data.target = mono_create_ftnptr (mono_domain_get (), mono_create_jit_trampoline_from_token (ref.image, ref.token));
 			ji->type = MONO_PATCH_INFO_ABS;
 		}
 		else {
-			if (method)
-				ji->data.method = method;
+			if (ref.method)
+				ji->data.method = ref.method;
 			else
-				ji->data.method = mono_get_method (image, token, NULL);
+				ji->data.method = mono_get_method (ref.image, ref.token, NULL);
 			g_assert (ji->data.method);
 			mono_class_init (ji->data.method->klass);
 		}
