@@ -65,6 +65,8 @@
 #define SHARED_EXT ".dll"
 #elif ((defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__)) || defined(__MACH__)) && !defined(__linux__)
 #define SHARED_EXT ".dylib"
+#elif defined(__APPLE__) && defined(TARGET_X86) && !defined(__native_client_codegen__)
+#define SHARED_EXT ".dylib"
 #else
 #define SHARED_EXT ".so"
 #endif

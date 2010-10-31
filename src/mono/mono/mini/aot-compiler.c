@@ -82,6 +82,8 @@
 #define SHARED_EXT ".dll"
 #elif defined(__ppc__) && defined(__MACH__)
 #define SHARED_EXT ".dylib"
+#elif defined(__APPLE__) && defined(TARGET_X86) && !defined(__native_client_codegen__)
+#define SHARED_EXT ".dylib"
 #else
 #define SHARED_EXT ".so"
 #endif
@@ -6067,6 +6069,8 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS "-m elf64ppc"
 #elif defined(sparc) && SIZEOF_VOID_P == 8
 #define AS_OPTIONS "-xarch=v9"
+#elif defined(TARGET_X86) && defined(__APPLE__) && !defined(__native_client_codegen__)
+#define AS_OPTIONS "-arch i386 -W"
 #else
 #define AS_OPTIONS ""
 #endif
@@ -6132,6 +6136,8 @@ compile_asm (MonoAotCompile *acfg)
 	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(HOST_WIN32)
 	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
+#elif defined(TARGET_X86) && defined(__APPLE__) && !defined(__native_client_codegen__)
+	command = g_strdup_printf ("gcc -m32 -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #else
 	command = g_strdup_printf ("%sld %s %s -shared -o %s %s.o", tool_prefix, EH_LD_OPTIONS, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
 #endif

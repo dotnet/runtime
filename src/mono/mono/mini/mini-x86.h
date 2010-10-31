@@ -285,7 +285,9 @@ typedef struct {
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
 #endif
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
+#if !defined (__APPLE__) || defined(__native_client_codegen__)
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
+#endif
 #define MONO_ARCH_GOT_REG X86_EBX
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 
@@ -297,9 +299,7 @@ typedef struct {
 
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 
-#if !defined(__APPLE__) || defined(__native_client_codegen__)
 #define MONO_ARCH_AOT_SUPPORTED 1
-#endif
 
 #if defined(__linux__) || defined(__sun)
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
