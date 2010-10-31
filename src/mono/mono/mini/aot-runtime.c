@@ -465,51 +465,16 @@ decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 }
 
 /*
- * can_method_ref_match_method:
- *
- *   Determine if calling decode_resolve_method_ref on P could return the same method as 
- * METHOD. This is an optimization to avoid calling decode_resolve_method_ref () which
- * would create MonoMethods which are not needed etc.
- */
-static gboolean
-can_method_ref_match_method (MonoAotModule *module, guint8 *buf, MonoMethod *method)
-{
-	guint8 *p = buf;
-	guint32 image_index, value;
-
-	/* Keep this in sync with decode_method_ref () */
-	value = decode_value (p, &p);
-	image_index = value >> 24;
-
-	if (image_index == MONO_AOT_METHODREF_WRAPPER) {
-		guint32 wrapper_type;
-
-		if (!method->wrapper_type)
-			return FALSE;
-
-		wrapper_type = decode_value (p, &p);
-
-		if (method->wrapper_type != wrapper_type)
-			return FALSE;
-	} else if (image_index == MONO_AOT_METHODREF_WRAPPER_NAME) {
-		return FALSE;
-	} else if (image_index < MONO_AOT_METHODREF_MIN || image_index == MONO_AOT_METHODREF_METHODSPEC || image_index == MONO_AOT_METHODREF_GINST) {
-		if (method->wrapper_type)
-			return FALSE;
-	}
-
-	return TRUE;
-}
-
-/*
- * decode_method_ref:
+ * decode_method_ref_with_target:
  *
  *   Decode a method reference, and return its image and token. This avoids loading
  * metadata for the method if the caller does not need it. If the method has no token,
- * then it is loaded from metadata and METHOD is set to the method instance.
+ * then it is loaded from metadata and METHOD is set to the method instance. If TARGET is non-NULL,
+ * abort decoding if it can be determined that the decoded method couldn't resolve to it, and
+ * return NULL.
  */
 static MonoImage*
-decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, gboolean *no_aot_trampoline, guint8 *buf, guint8 **endbuf)
+decode_method_ref_with_target (MonoAotModule *module, guint32 *token, MonoMethod **method, MonoMethod *target, gboolean *no_aot_trampoline, guint8 *buf, guint8 **endbuf)
 {
 	guint32 image_index, value;
 	MonoImage *image = NULL;
@@ -530,10 +495,18 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		image_index = value >> 24;
 	}
 
+	if (image_index < MONO_AOT_METHODREF_MIN || image_index == MONO_AOT_METHODREF_METHODSPEC || image_index == MONO_AOT_METHODREF_GINST) {
+		if (target && target->wrapper_type)
+			return NULL;
+	}
+
 	if (image_index == MONO_AOT_METHODREF_WRAPPER) {
 		guint32 wrapper_type;
 
 		wrapper_type = decode_value (p, &p);
+
+		if (target && target->wrapper_type != wrapper_type)
+			return NULL;
 
 		/* Doesn't matter */
 		image = mono_defaults.corlib;
@@ -643,6 +616,8 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			g_assert_not_reached ();
 		}
 	} else if (image_index == MONO_AOT_METHODREF_WRAPPER_NAME) {
+		if (target)
+			return NULL;
 		/* Can't decode these */
 		g_assert_not_reached ();
 	} else if (image_index == MONO_AOT_METHODREF_METHODSPEC) {
@@ -662,6 +637,9 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		 */
 		klass = decode_klass_ref (module, p, &p);
 		if (!klass)
+			return NULL;
+
+		if (target && target->klass != klass)
 			return NULL;
 
 		image_index = decode_value (p, &p);
@@ -732,17 +710,23 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 	return image;
 }
 
+static MonoImage*
+decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, gboolean *no_aot_trampoline, guint8 *buf, guint8 **endbuf)
+{
+	return decode_method_ref_with_target (module, token, method, NULL, no_aot_trampoline, buf, endbuf);
+}
+
 /*
- * decode_resolve_method_ref:
+ * decode_resolve_method_ref_with_target:
  *
  *   Similar to decode_method_ref, but resolve and return the method itself.
  */
 static MonoMethod*
-decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
+decode_resolve_method_ref_with_target (MonoAotModule *module, MonoMethod *target, guint8 *buf, guint8 **endbuf)
 {
 	MonoMethod *method;
 	guint32 token;
-	MonoImage *image = decode_method_ref (module, &token, &method, NULL, buf, endbuf);
+	MonoImage *image = decode_method_ref_with_target (module, &token, &method, target, NULL, buf, endbuf);
 
 	if (method)
 		return method;
@@ -750,6 +734,12 @@ decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		return NULL;
 	method = mono_get_method (image, token, NULL);
 	return method;
+}
+
+static MonoMethod*
+decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
+{
+	return decode_resolve_method_ref_with_target (module, NULL, buf, endbuf);
 }
 
 static void
@@ -2625,15 +2615,16 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, const 
 				index = value;
 				break;
 			}
-		} else if (can_method_ref_match_method (amodule, p, method)) {
+		} else {
+			guint8 *orig_p = p;
+
 			mono_aot_lock ();
 			if (!amodule->method_ref_to_method)
 				amodule->method_ref_to_method = g_hash_table_new (NULL, NULL);
 			m = g_hash_table_lookup (amodule->method_ref_to_method, p);
 			mono_aot_unlock ();
 			if (!m) {
-				guint8 *orig_p = p;
-				m = decode_resolve_method_ref (amodule, p, &p);
+				m = decode_resolve_method_ref_with_target (amodule, method, p, &p);
 				if (m) {
 					mono_aot_lock ();
 					g_hash_table_insert (amodule->method_ref_to_method, orig_p, m);
@@ -2658,11 +2649,10 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, const 
 			}
 
 			/* Methods decoded needlessly */
-			/*
-			if (m)
-				printf ("%d %s %s\n", n_extra_decodes, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE));
-			*/
-			n_extra_decodes ++;
+			if (m) {
+				//printf ("%d %s %s %p\n", n_extra_decodes, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE), orig_p);
+				n_extra_decodes ++;
+			}
 		}
 
 		if (next != 0)

@@ -5045,17 +5045,21 @@ mono_aot_method_hash (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
 	MonoClass *klass;
-	int i;
+	int i, hindex;
 	int hashes_count;
 	guint32 *hashes_start, *hashes;
 	guint32 a, b, c;
+	MonoGenericInst *ginst = NULL;
 
 	/* Similar to the hash in mono_method_get_imt_slot () */
 
 	sig = mono_method_signature (method);
 
-	hashes_count = sig->param_count + 5;
-	hashes_start = malloc (hashes_count * sizeof (guint32));
+	if (method->is_inflated)
+		ginst = ((MonoMethodInflated*)method)->context.method_inst;
+
+	hashes_count = sig->param_count + 5 + (ginst ? ginst->type_argc : 0);
+	hashes_start = g_malloc0 (hashes_count * sizeof (guint32));
 	hashes = hashes_start;
 
 	/* Some wrappers are assigned to random classes */
@@ -5081,10 +5085,16 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [2] = mono_metadata_str_hash (method->name);
 	hashes [3] = method->wrapper_type;
 	hashes [4] = mono_aot_type_hash (sig->ret);
+	hindex = 5;
 	for (i = 0; i < sig->param_count; i++) {
-		hashes [5 + i] = mono_aot_type_hash (sig->params [i]);
+		hashes [hindex ++] = mono_aot_type_hash (sig->params [i]);
 	}
-	
+	if (ginst) {
+		for (i = 0; i < ginst->type_argc; ++i)
+			hashes [hindex ++] = mono_aot_type_hash (ginst->type_argv [i]);
+	}		
+	g_assert (hindex == hashes_count);
+
 	/* Setup internal state */
 	a = b = c = 0xdeadbeef + (((guint32)hashes_count)<<2);
 
