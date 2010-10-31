@@ -82,6 +82,8 @@ struct _MonoAssembly {
 	gboolean ref_only;
 	guint8 wrap_non_exception_throws;
 	guint8 wrap_non_exception_throws_inited;
+	guint8 jit_optimizer_disabled;
+	guint8 jit_optimizer_disabled_inited;
 	/* security manager flags (one bit is for lazy initialization) */
 	guint32 ecma:2;		/* Has the ECMA key */
 	guint32 aptc:2;		/* Has the [AllowPartiallyTrustedCallers] attributes */

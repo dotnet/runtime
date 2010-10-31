@@ -5431,6 +5431,60 @@ is_exception_class (MonoClass *class)
 }
 
 /*
+ * is_jit_optimizer_disabled:
+ *
+ *   Determine whenever M's assembly has a DebuggableAttribute with the
+ * IsJITOptimizerDisabled flag set.
+ */
+static gboolean
+is_jit_optimizer_disabled (MonoMethod *m)
+{
+	MonoAssembly *ass = m->klass->image->assembly;
+	MonoCustomAttrInfo* attrs;
+	static MonoClass *klass;
+	int i;
+	gboolean val = FALSE;
+
+	g_assert (ass);
+	if (ass->jit_optimizer_disabled_inited)
+		return ass->jit_optimizer_disabled;
+
+	klass = mono_class_from_name_cached (mono_defaults.corlib, "System.Diagnostics", "DebuggableAttribute");
+
+	attrs = mono_custom_attrs_from_assembly (ass);
+	if (attrs) {
+		for (i = 0; i < attrs->num_attrs; ++i) {
+			MonoCustomAttrEntry *attr = &attrs->attrs [i];
+			const gchar *p;
+			int len;
+			MonoMethodSignature *sig;
+
+			if (!attr->ctor || attr->ctor->klass != klass)
+				continue;
+			/* Decode the attribute. See reflection.c */
+			len = attr->data_size;
+			p = (const char*)attr->data;
+			g_assert (read16 (p) == 0x0001);
+			p += 2;
+
+			// FIXME: Support named parameters
+			sig = mono_method_signature (attr->ctor);
+			if (sig->param_count != 2 || sig->params [0]->type != MONO_TYPE_BOOLEAN || sig->params [1]->type != MONO_TYPE_BOOLEAN)
+				continue;
+			/* Two boolean arguments */
+			p ++;
+			val = *p;
+		}
+	}
+
+	ass->jit_optimizer_disabled = val;
+	mono_memory_barrier ();
+	ass->jit_optimizer_disabled_inited = TRUE;
+
+	return val;
+}
+
+/*
  * mono_method_to_ir:
  *
  *   Translate the .net IL into linear IR.
@@ -5468,6 +5522,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
 	int context_used;
 	gboolean init_locals, seq_points, skip_dead_blocks;
+	gboolean disable_inline;
+
+	disable_inline = is_jit_optimizer_disabled (method);
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
@@ -6736,7 +6793,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Inlining */
 			if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
 				(!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
-			    mono_method_check_inlining (cfg, cmethod) &&
+			    !disable_inline && mono_method_check_inlining (cfg, cmethod) &&
 				 !g_list_find (dont_inline, cmethod)) {
 				int costs;
 				gboolean allways = FALSE;
@@ -7853,12 +7910,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 
 					CHECK_CFG_EXCEPTION;
-				} else
-
-
-
-				if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used && !vtable_arg &&
-				    mono_method_check_inlining (cfg, cmethod) &&
+				} else if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used && !vtable_arg &&
+				    !disable_inline && mono_method_check_inlining (cfg, cmethod) &&
 				    !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE) &&
 				    !g_list_find (dont_inline, cmethod)) {
 					int costs;
