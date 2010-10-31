@@ -4588,7 +4588,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 #endif
 
-	mono_save_xdebug_info (cfg);
+	if (!cfg->compile_aot)
+		mono_save_xdebug_info (cfg);
 
 	mini_gc_create_gc_map (cfg);
  
