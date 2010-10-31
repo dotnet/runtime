@@ -9049,11 +9049,11 @@ gboolean
 mono_method_can_access_field (MonoMethod *method, MonoClassField *field)
 {
 	/* FIXME: check all overlapping fields */
-	int can = can_access_member (method->klass, field->parent, NULL, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+	int can = can_access_member (method->klass, field->parent, NULL, mono_field_get_type (field)->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
 	if (!can) {
 		MonoClass *nested = method->klass->nested_in;
 		while (nested) {
-			can = can_access_member (nested, field->parent, NULL, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+			can = can_access_member (nested, field->parent, NULL, mono_field_get_type (field)->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
 			if (can)
 				return TRUE;
 			nested = nested->nested_in;
