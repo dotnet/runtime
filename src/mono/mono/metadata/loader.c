@@ -59,6 +59,7 @@ static gboolean loader_lock_inited;
 /* Statistics */
 static guint32 inflated_signatures_size;
 static guint32 memberref_sig_cache_size;
+static guint32 methods_size;
 
 /*
  * This TLS variable contains the last type load error encountered by the loader.
@@ -89,6 +90,8 @@ mono_loader_init ()
 								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
 		mono_counters_register ("Memberref signature cache size",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
+		mono_counters_register ("MonoMethod size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
 
 		inited = TRUE;
 	}
@@ -1573,10 +1576,12 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	mono_metadata_decode_row (&image->tables [MONO_TABLE_METHOD], idx - 1, cols, 6);
 
 	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodPInvoke));
-	else
+	} else {
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethod));
+		methods_size += sizeof (MonoMethod);
+	}
 
 	mono_stats.method_count ++;
 
