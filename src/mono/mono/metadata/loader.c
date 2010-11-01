@@ -93,7 +93,7 @@ mono_loader_init ()
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
 		mono_counters_register ("MonoMethod size",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
-		mono_counters_register ("Signatures size",
+		mono_counters_register ("MonoMethodSignature size",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
 
 		inited = TRUE;
