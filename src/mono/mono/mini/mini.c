@@ -3859,7 +3859,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_profiler_method_jit (method);
 	if (MONO_PROBE_METHOD_COMPILE_BEGIN_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_BEGIN (method);
- 
+
 	if (compile_aot)
 		/* 
 		 * We might get passed the original generic method definition or
@@ -4742,6 +4742,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	MonoVTable *vtable;
 	MonoException *ex = NULL;
 	guint32 prof_options;
+	GTimer *jit_timer;
 
 #ifdef MONO_USE_AOT_COMPILER
 	if (opt & MONO_OPT_AOT) {
@@ -4836,7 +4837,13 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		return NULL;
 	}
 
+	jit_timer = g_timer_new ();
+
 	cfg = mini_method_compile (method, opt, target_domain, TRUE, FALSE, 0);
+
+	g_timer_stop (jit_timer);
+	mono_jit_stats.jit_time += g_timer_elapsed (jit_timer, NULL);
+	g_timer_destroy (jit_timer);
 
 	switch (cfg->exception_type) {
 	case MONO_EXCEPTION_NONE:
@@ -5720,6 +5727,7 @@ register_jit_stats (void)
 	mono_counters_register ("Methods from AOT", MONO_COUNTER_JIT | MONO_COUNTER_WORD, &mono_jit_stats.methods_aot);
 	mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_llvm);	
 	mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_without_llvm);
+	mono_counters_register ("Total time spent JITting (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_time);
 }
 
 static void runtime_invoke_info_free (gpointer value);

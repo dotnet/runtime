@@ -1250,6 +1250,7 @@ typedef struct {
 	int methods_without_llvm;
 	char *max_ratio_method;
 	char *biggest_method;
+	double jit_time;
 	gboolean enabled;
 } MonoJitStats;
 
