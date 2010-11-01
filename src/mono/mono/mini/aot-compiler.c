@@ -2592,8 +2592,12 @@ method_has_type_vars (MonoMethod *method)
 static void add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth);
 
 static void
-add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
+add_generic_class (MonoAotCompile *acfg, MonoClass *klass, gboolean force)
 {
+	/* This might lead to a huge code blowup so only do it if neccesary */
+	if (!acfg->aot_opts.full_aot && !force)
+		return;
+
 	add_generic_class_with_depth (acfg, klass, 0);
 }
 
@@ -2671,7 +2675,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 			}
 			g_assert (nclass);
 			nclass = mono_class_inflate_generic_class (nclass, mono_generic_class_get_context (klass->generic_class));
-			add_generic_class (acfg, nclass);
+			add_generic_class (acfg, nclass, FALSE);
 		}
 
 		iter = NULL;
@@ -2702,7 +2706,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 		if (mono_class_is_assignable_from (mono_class_inflate_generic_class (icomparable, &ctx), tclass)) {
 			gcomparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericComparer`1");
 			g_assert (gcomparer);
-			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx));
+			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE);
 		}
 	}
 
@@ -2723,13 +2727,13 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 		if (mono_class_is_assignable_from (mono_class_inflate_generic_class (iface, &ctx), tclass)) {
 			gcomparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "GenericEqualityComparer`1");
 			g_assert (gcomparer);
-			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx));
+			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE);
 		}
 	}
 }
 
 static void
-add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int ninsts)
+add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int ninsts, gboolean force)
 {
 	int i;
 	MonoGenericContext ctx;
@@ -2740,7 +2744,7 @@ add_instances_of (MonoAotCompile *acfg, MonoClass *klass, MonoType **insts, int 
 	for (i = 0; i < ninsts; ++i) {
 		args [0] = insts [i];
 		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-		add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx));
+		add_generic_class (acfg, mono_class_inflate_generic_class (klass, &ctx), force);
 	}
 }
 
@@ -2867,7 +2871,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (!klass || klass->rank)
 			continue;
 
-		add_generic_class (acfg, klass);
+		add_generic_class (acfg, klass, FALSE);
 	}
 
 	/* Add types of args/locals */
@@ -2881,7 +2885,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (sig) {
 			for (j = 0; j < sig->param_count; ++j)
 				if (sig->params [j]->type == MONO_TYPE_GENERICINST)
-					add_generic_class (acfg, mono_class_from_mono_type (sig->params [j]));
+					add_generic_class (acfg, mono_class_from_mono_type (sig->params [j]), FALSE);
 		}
 
 		header = mono_method_get_header (method);
@@ -2889,7 +2893,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (header) {
 			for (j = 0; j < header->num_locals; ++j)
 				if (header->locals [j]->type == MONO_TYPE_GENERICINST)
-					add_generic_class (acfg, mono_class_from_mono_type (header->locals [j]));
+					add_generic_class (acfg, mono_class_from_mono_type (header->locals [j]), FALSE);
 		}
 	}
 
@@ -2914,22 +2918,22 @@ add_generic_instances (MonoAotCompile *acfg)
 		/* Add GenericComparer<T> instances for primitive types for Enum.ToString () */
 		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
 		if (klass)
-			add_instances_of (acfg, klass, insts, ninsts);
+			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericEqualityComparer`1");
 		if (klass)
-			add_instances_of (acfg, klass, insts, ninsts);
+			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
 		/* Add instances of the array generic interfaces for primitive types */
 		/* This will add instances of the InternalArray_ helper methods in Array too */
 		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "ICollection`1");
 		if (klass)
-			add_instances_of (acfg, klass, insts, ninsts);
+			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IList`1");
 		if (klass)
-			add_instances_of (acfg, klass, insts, ninsts);
+			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IEnumerable`1");
 		if (klass)
-			add_instances_of (acfg, klass, insts, ninsts);
+			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
 		/* 
 		 * Add a managed-to-native wrapper of Array.GetGenericValueImpl<object>, which is
@@ -4328,9 +4332,6 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 
 	return TRUE;
 }
-
-static void
-add_generic_class (MonoAotCompile *acfg, MonoClass *klass);
 
 /*
  * compile_method:
