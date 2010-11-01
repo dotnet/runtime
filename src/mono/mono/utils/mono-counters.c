@@ -130,7 +130,7 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 		      dval = ((DoubleFunc)counter->addr) ();
 	      else
 		      dval = *(double*)counter->addr;
-	      fprintf (outfile, ENTRY_FMT "%.2f\n", counter->name, dval);
+	      fprintf (outfile, ENTRY_FMT "%.4f\n", counter->name, dval);
 	      break;
 	case MONO_COUNTER_STRING:
 	      if (counter->type & MONO_COUNTER_CALLBACK)
