@@ -60,6 +60,7 @@ static gboolean loader_lock_inited;
 static guint32 inflated_signatures_size;
 static guint32 memberref_sig_cache_size;
 static guint32 methods_size;
+static guint32 signatures_size;
 
 /*
  * This TLS variable contains the last type load error encountered by the loader.
@@ -92,6 +93,8 @@ mono_loader_init ()
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
 		mono_counters_register ("MonoMethod size",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
+		mono_counters_register ("Signatures size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
 
 		inited = TRUE;
 	}
@@ -2251,6 +2254,8 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 
 		if (can_cache_signature)
 			g_hash_table_insert (img->method_signatures, (gpointer)sig, signature);
+
+		signatures_size += mono_metadata_signature_size (signature);
 	}
 
 	/* Verify metadata consistency */
