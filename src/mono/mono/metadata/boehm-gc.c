@@ -320,6 +320,12 @@ mono_object_is_alive (MonoObject* o)
 #endif
 }
 
+int
+mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
+{
+	return 1;
+}
+
 #ifdef USE_INCLUDED_LIBGC
 
 static gint64 gc_start_time;

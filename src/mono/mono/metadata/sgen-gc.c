@@ -6192,6 +6192,82 @@ check_object (char *start)
  * ######################################################################
  */
 
+#define REFS_SIZE 128
+typedef struct {
+	void *data;
+	MonoGCReferences callback;
+	int flags;
+	int count;
+	int called;
+	MonoObject *refs [REFS_SIZE];
+} HeapWalkInfo;
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		if (*(ptr)) {	\
+			if (hwi->count == REFS_SIZE) {	\
+				hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->data);	\
+				hwi->count = 0;	\
+				hwi->called = 1;	\
+			}	\
+			hwi->refs [hwi->count++] = *(ptr);	\
+		}	\
+	} while (0)
+
+static void
+collect_references (HeapWalkInfo *hwi, char *start, size_t size)
+{
+#include "sgen-scan-object.h"
+}
+
+static void
+walk_references (char *start, size_t size, void *data)
+{
+	HeapWalkInfo *hwi = data;
+	hwi->called = 0;
+	hwi->count = 0;
+	collect_references (hwi, start, size);
+	if (hwi->count || !hwi->called)
+		hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->data);
+}
+
+/**
+ * mono_gc_walk_heap:
+ * @flags: flags for future use
+ * @callback: a function pointer called for each object in the heap
+ * @data: a user data pointer that is passed to callback
+ *
+ * This function can be used to iterate over all the live objects in the heap:
+ * for each object, @callback is invoked, providing info about the object's
+ * location in memory, its class, its size and the objects it references.
+ * The object references may be buffered, so the callback may be invoked
+ * multiple times for the same object: in all but the first call, the size
+ * argument will be zero.
+ * Note that this function can be only called in the #MONO_GC_EVENT_PRE_START_WORLD
+ * profiler event handler.
+ *
+ * Returns: a non-zero value if the GC doesn't support heap walking
+ */
+int
+mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
+{
+	HeapWalkInfo hwi;
+	LOSObject *bigobj;
+
+	hwi.flags = flags;
+	hwi.callback = callback;
+	hwi.data = data;
+
+	clear_nursery_fragments (nursery_next);
+	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi);
+
+	major_collector.iterate_objects (TRUE, TRUE, walk_references, &hwi);
+
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		walk_references (bigobj->data, bigobj->size, &hwi);
+	return 0;
+}
+
 void
 mono_gc_collect (int generation)
 {

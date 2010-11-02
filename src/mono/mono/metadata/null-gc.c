@@ -80,6 +80,12 @@ mono_gc_register_thread (void *baseptr)
 	return TRUE;
 }
 
+int
+mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
+{
+	return 1;
+}
+
 gboolean
 mono_object_is_alive (MonoObject* o)
 {
