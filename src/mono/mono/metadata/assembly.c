@@ -114,7 +114,6 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"System.ServiceProcess", 0},
 	{"System.Web", 0},
 	{"System.Web.Abstractions", 2},
-	{"System.Web.Extensions", 2},
 	{"System.Web.Mobile", 0},
 	{"System.Web.Routing", 2},
 	{"System.Web.Services", 0},
