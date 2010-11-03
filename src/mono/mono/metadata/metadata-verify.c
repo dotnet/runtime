@@ -1348,10 +1348,13 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 	
 		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
 			FAIL (ctx, g_strdup_printf ("Type: invalid TypeDefOrRef token %x", token));
+
+		if (!get_coded_index_token (TYPEDEF_OR_REF_DESC, token))
+			FAIL (ctx, g_strdup_printf ("Type: zero TypeDefOrRef token %x", token));
 		if (ctx->token) {
 			if (mono_metadata_token_index (ctx->token) == get_coded_index_token (TYPEDEF_OR_REF_DESC, token) &&
 				mono_metadata_token_table (ctx->token) == get_coded_index_table (TYPEDEF_OR_REF_DESC, token))
-				FAIL (ctx, g_strdup_printf ("Type: Recurside type specification (%x). A type signature can't reference itself", ctx->token));
+				FAIL (ctx, g_strdup_printf ("Type: Recursive type specification (%x). A type signature can't reference itself", ctx->token));
 		}
 		break;
 

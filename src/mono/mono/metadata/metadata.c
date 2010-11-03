@@ -963,6 +963,7 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 	const char *data;
 
 	g_assert (idx < t->rows);
+	g_assert (idx >= 0);
 	data = t->base + idx * t->row_size;
 	
 	g_assert (res_size == count);
