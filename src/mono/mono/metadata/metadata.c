@@ -3159,6 +3159,8 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		type->data.klass = mono_class_get (m, token);
 		if (!type->data.klass)
 			return FALSE;
+		if (type->data.klass->byval_arg.type != type->type)
+			return FALSE;
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
