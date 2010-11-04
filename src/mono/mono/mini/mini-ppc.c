@@ -564,6 +564,14 @@ linux_find_auxv (int *count)
 void
 mono_arch_cpu_init (void)
 {
+}
+
+/*
+ * Initialize architecture specific code.
+ */
+void
+mono_arch_init (void)
+{
 #ifdef __APPLE__
 	int mib [3];
 	size_t len;
@@ -629,14 +637,6 @@ mono_arch_cpu_init (void)
 
 	if (mono_cpu_count () > 1)
 		cpu_hw_caps |= PPC_SMP_CAPABLE;
-}
-
-/*
- * Initialize architecture specific code.
- */
-void
-mono_arch_init (void)
-{
 	InitializeCriticalSection (&mini_arch_mutex);
 
 	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
