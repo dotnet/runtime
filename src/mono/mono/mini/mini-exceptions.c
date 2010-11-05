@@ -742,6 +742,7 @@ mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domai
 				/*
 				 * FIXME: These frames show up twice, and ctx could refer to native code.
 				 */
+				ctx = new_ctx;
 				continue;
 			}
 			frame.actual_method = get_method_from_stack_frame (frame.ji, get_generic_info_from_stack_frame (frame.ji, &ctx));
