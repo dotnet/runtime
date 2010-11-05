@@ -745,4 +745,5 @@ enum {
 gboolean mono_sgen_try_alloc_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_release_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_pin_object (void *object, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;;
 #endif /* __MONO_SGENGC_H__ */

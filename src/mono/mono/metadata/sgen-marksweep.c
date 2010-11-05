@@ -558,8 +558,12 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 
 	LOCK_MS_BLOCK_LIST;
 
-	if (!free_blocks [size_index])
-		ms_alloc_block (size_index, pinned, has_references);
+	if (!free_blocks [size_index]) {
+		if (G_UNLIKELY (!ms_alloc_block (size_index, pinned, has_references))) {
+			UNLOCK_MS_BLOCK_LIST;
+			return NULL;
+		}
+	}
 
 	block = free_blocks [size_index];
 	DEBUG (9, g_assert (block));
@@ -628,7 +632,15 @@ major_free_non_pinned_object (char *obj, size_t size)
 static void*
 major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 {
-	return alloc_obj (size, TRUE, has_references);
+	 void *res = alloc_obj (size, TRUE, has_references);
+	 /*If we failed to alloc memory, we better try releasing memory
+	  *as pinned alloc is requested by the runtime.
+	  */
+	 if (!res) {
+		 sgen_collect_major_no_lock ("pinned alloc failure");
+		 res = alloc_obj (size, TRUE, has_references);
+	 }
+	 return res;
 }
 
 static void
@@ -646,11 +658,13 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 	void *obj;
 	int old_num_sections = num_major_sections;
 	obj = alloc_obj (size, FALSE, vtable->klass->has_references);
-	*(MonoVTable**)obj = vtable;
-	HEAVY_STAT (++stat_objects_alloced_degraded);
-	HEAVY_STAT (stat_bytes_alloced_degraded += size);
-	g_assert (num_major_sections >= old_num_sections);
-	mono_sgen_register_major_sections_alloced (num_major_sections - old_num_sections);
+	if (G_LIKELY (obj)) {
+		*(MonoVTable**)obj = vtable;
+		HEAVY_STAT (++stat_objects_alloced_degraded);
+		HEAVY_STAT (stat_bytes_alloced_degraded += size);
+		g_assert (num_major_sections >= old_num_sections);
+		mono_sgen_register_major_sections_alloced (num_major_sections - old_num_sections);
+	}
 	return obj;
 }
 
@@ -849,6 +863,21 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
 		destination = major_alloc_object (objsize, has_references);
+		if (G_UNLIKELY (!destination)) {
+			/*
+			 * This can fail under 2 scenarios:
+			 *  - object was copied, we must update *ptr.
+			 *  - object was pinned, we can leave *ptr as is.
+			 */
+			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
+				mono_sgen_pin_object (obj, queue);
+			} else {
+				vtable_word = *(mword*)obj;
+				if (vtable_word & SGEN_FORWARDED_BIT)
+					*ptr = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+			}
+			return;
+		}
 
 		if (SGEN_CAS_PTR (obj, (void*)((mword)destination | SGEN_FORWARDED_BIT), vt) == vt) {
 			gboolean was_marked;
@@ -919,7 +948,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 
 	if (ptr_in_nursery (obj)) {
 		int word, bit;
-		char *forwarded;
+		char *forwarded, *old_obj;
 
 		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
 			*ptr = forwarded;
@@ -931,7 +960,11 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		HEAVY_STAT (++stat_objects_copied_major);
 
 	do_copy_object:
+		old_obj = obj;
 		obj = copy_object_no_checks (obj, queue);
+		if (G_UNLIKELY (old_obj == obj)) {
+			return;
+		}
 		*ptr = obj;
 
 		/*

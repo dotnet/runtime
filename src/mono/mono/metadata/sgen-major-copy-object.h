@@ -90,6 +90,11 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 	mword objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
 	char *destination = major_alloc_object (objsize, has_references);
 
+	if (G_UNLIKELY (!destination)) {
+		mono_sgen_pin_object (obj, queue);
+		return obj;
+	}
+
 	par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
 
 	/* set the forwarding pointer */

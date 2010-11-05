@@ -125,3 +125,18 @@ mono_sgen_find_section_pin_queue_start_end (GCMemSection *section)
 	section->pin_queue_start = mono_sgen_find_optimized_pin_queue_area (section->data, section->end_data, &section->pin_queue_num_entries);
 	DEBUG (6, fprintf (gc_debug_file, "Found %d pinning addresses in section %p\n", section->pin_queue_num_entries, section));
 }
+
+static void
+mono_sgen_pin_queue_clear_discarded_entries (GCMemSection *section, int max_pin_slot)
+{
+	void **start = section->pin_queue_start + section->pin_queue_num_entries;
+	void **end = pin_queue + max_pin_slot;
+	void *addr;
+
+	for (; start < end; ++start) {
+		addr = *start;
+		if ((char*)addr < section->data || (char*)addr > section->end_data)
+			break;
+		*start = NULL;
+	}
+}

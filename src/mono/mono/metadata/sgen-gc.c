@@ -514,9 +514,13 @@ static mword highest_heap_address = 0;
 
 static LOCK_DECLARE (interruption_mutex);
 static LOCK_DECLARE (global_remset_mutex);
+static LOCK_DECLARE (pin_queue_mutex);
 
 #define LOCK_GLOBAL_REMSET pthread_mutex_lock (&global_remset_mutex)
 #define UNLOCK_GLOBAL_REMSET pthread_mutex_unlock (&global_remset_mutex)
+
+#define LOCK_PIN_QUEUE pthread_mutex_lock (&pin_queue_mutex)
+#define UNLOCK_PIN_QUEUE pthread_mutex_unlock (&pin_queue_mutex)
 
 typedef struct _FinalizeEntry FinalizeEntry;
 struct _FinalizeEntry {
@@ -713,6 +717,9 @@ static MonoVTable *array_fill_vtable;
 /*heap limits*/
 static mword max_heap_size = ((mword)0)- ((mword)1);
 static mword allocated_heap;
+
+/*Object was pinned during the current collection*/
+static mword objects_pinned;
 
 void
 mono_sgen_release_space (mword size, int space)
@@ -1804,6 +1811,24 @@ mono_sgen_pin_objects_in_section (GCMemSection *section, GrayQueue *queue)
 	}
 }
 
+
+void
+mono_sgen_pin_object (void *object, GrayQueue *queue)
+{
+	if (major_collector.is_parallel) {
+		LOCK_PIN_QUEUE;
+		/*object arrives pinned*/
+		pin_stage_ptr (object);
+		++objects_pinned ;
+		UNLOCK_PIN_QUEUE;
+	} else {
+		SGEN_PIN_OBJECT (object);
+		pin_stage_ptr (object);
+		++objects_pinned;
+	}
+	GRAY_OBJECT_ENQUEUE (queue, object);
+}
+
 /* Sort the addresses in array in increasing order.
  * Done using a by-the book heap sort. Which has decent and stable performance, is pretty cache efficient.
  */
@@ -2661,6 +2686,7 @@ need_major_collection (mword space_needed)
 static gboolean
 collect_nursery (size_t requested_size)
 {
+	gboolean needs_major;
 	size_t max_garbage_amount;
 	char *orig_nursery_next;
 	TV_DECLARE (all_atv);
@@ -2676,6 +2702,7 @@ collect_nursery (size_t requested_size)
 	check_scan_starts ();
 
 	degraded_mode = 0;
+	objects_pinned = 0;
 	orig_nursery_next = nursery_next;
 	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
 	/* FIXME: optimize later to use the higher address where an object can be present */
@@ -2765,6 +2792,13 @@ collect_nursery (size_t requested_size)
 	time_minor_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, 0);
 
+	if (objects_pinned) {
+		evacuate_pin_staging_area ();
+		optimize_pin_queue (0);
+		nursery_section->pin_queue_start = pin_queue;
+		nursery_section->pin_queue_num_entries = next_pin_slot;
+	}
+
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
@@ -2805,9 +2839,12 @@ collect_nursery (size_t requested_size)
 
 	binary_protocol_flush_buffers (FALSE);
 
+	/*objects are late pinned because of lack of memory, so a major is a good call*/
+	needs_major = need_major_collection (0) || objects_pinned;
 	current_collection_generation = -1;
+	objects_pinned = 0;
 
-	return need_major_collection ();
+	return needs_major;
 }
 
 static void
@@ -2825,6 +2862,7 @@ major_do_collection (const char *reason)
 	char *heap_end = (char*)-1;
 	int old_num_major_sections = major_collector.get_num_major_sections ();
 	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
+	int old_next_pin_slot;
 	mword los_memory_saved, los_memory_alloced, old_los_memory_usage;
 
 	mono_perfcounters->gc_collections1++;
@@ -2835,6 +2873,7 @@ major_do_collection (const char *reason)
 	 */
 	los_memory_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
 	old_los_memory_usage = los_memory_usage;
+	objects_pinned = 0;
 
 	//count_ref_nonref_objs ();
 	//consistency_check ();
@@ -2915,6 +2954,7 @@ major_do_collection (const char *reason)
 	/* second pass for the sections */
 	mono_sgen_pin_objects_in_section (nursery_section, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	old_next_pin_slot = next_pin_slot;
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED_MS (atv, btv);
@@ -2970,6 +3010,15 @@ major_do_collection (const char *reason)
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
 	TV_GETTIME (atv);
 	time_major_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
+
+	if (objects_pinned) {
+		/*This is slow, but we just OOM'd*/
+		mono_sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
+		evacuate_pin_staging_area ();
+		optimize_pin_queue (0);
+		mono_sgen_find_section_pin_queue_start_end (nursery_section);
+		objects_pinned = 0;
+	}
 
 	/* sweep the big objects list */
 	prevbo = NULL;
@@ -3078,6 +3127,16 @@ major_collection (const char *reason)
 	current_collection_generation = GENERATION_OLD;
 	major_do_collection (reason);
 	current_collection_generation = -1;
+}
+
+void
+sgen_collect_major_no_lock (const char *reason)
+{
+	 mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
+	 stop_world (1);
+	 major_collection (reason);
+	 restart_world (1);
+	 mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
 }
 
 /*
@@ -3640,10 +3699,10 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 void*
 mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 {
-	/* FIXME: handle OOM */
 	void **p;
 	size = ALIGN_UP (size);
 	LOCK_GC;
+
 	if (size > MAX_SMALL_OBJ_SIZE) {
 		/* large objects are always pinned anyway */
 		p = alloc_large_inner (vtable, size);
@@ -6594,6 +6653,7 @@ mono_gc_base_init (void)
 
 	LOCK_INIT (interruption_mutex);
 	LOCK_INIT (global_remset_mutex);
+	LOCK_INIT (pin_queue_mutex);
 
 	if ((env = getenv ("MONO_GC_PARAMS"))) {
 		opts = g_strsplit (env, ",", -1);
