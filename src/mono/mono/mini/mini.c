@@ -4922,6 +4922,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		ex = exp;
 		break;
 	}
+	case MONO_EXCEPTION_OUT_OF_MEMORY:
+		ex = mono_domain_get ()->out_of_memory_ex;
+		break;
 	default:
 		g_assert_not_reached ();
 	}
