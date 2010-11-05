@@ -230,6 +230,10 @@ typedef struct {
 	 * to native code, or the method which was JITted.
 	 */
 	MonoMethod *method;
+	/*
+	 * If ji->method is a gshared method, this is the actual method instance.
+	 */
+	MonoMethod *actual_method;
 	/* The domain containing the code executed by this frame */
 	MonoDomain *domain;
 	gboolean managed;

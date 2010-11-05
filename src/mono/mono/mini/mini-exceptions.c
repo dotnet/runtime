@@ -737,6 +737,11 @@ mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domai
 
 		frame.il_offset = il_offset;
 
+		if (frame.ji)
+			frame.actual_method = get_method_from_stack_frame (frame.ji, get_generic_info_from_stack_frame (frame.ji, &ctx));
+		else
+			frame.actual_method = frame.method;
+
 		if (func (&frame, &ctx, user_data))
 			return;
 		

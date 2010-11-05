@@ -112,6 +112,11 @@ typedef struct
 	guint32 il_offset;
 	MonoDomain *domain;
 	MonoMethod *method;
+	/*
+	 * If method is gshared, this is the actual instance, otherwise this is equal to
+	 * method.
+	 */
+	MonoMethod *actual_method;
 	MonoContext ctx;
 	MonoDebugMethodJitInfo *jit;
 	int flags;
@@ -2444,7 +2449,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 {
 	ComputeFramesUserData *ud = user_data;
 	StackFrame *frame;
-	MonoMethod *method;
+	MonoMethod *method, *actual_method;
 
 	if (info->type != FRAME_TYPE_MANAGED) {
 		if (info->type == FRAME_TYPE_DEBUGGER_INVOKE) {
@@ -2459,6 +2464,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		method = info->ji->method;
 	else
 		method = info->method;
+	actual_method = info->actual_method;
 
 	if (!method || (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD))
 		return FALSE;
@@ -2482,6 +2488,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 
 	frame = g_new0 (StackFrame, 1);
 	frame->method = method;
+	frame->actual_method = actual_method;
 	frame->il_offset = info->il_offset;
 	if (ctx) {
 		frame->ctx = *ctx;
@@ -6258,7 +6265,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_int (buf, tls->frame_count);
 		for (i = 0; i < tls->frame_count; ++i) {
 			buffer_add_int (buf, tls->frames [i]->id);
-			buffer_add_methodid (buf, tls->frames [i]->domain, tls->frames [i]->method);
+			buffer_add_methodid (buf, tls->frames [i]->domain, tls->frames [i]->actual_method);
 			buffer_add_int (buf, tls->frames [i]->il_offset);
 			/*
 			 * Instead of passing the frame type directly to the client, we associate
@@ -6338,7 +6345,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	jit = frame->jit;
 
-	sig = mono_method_signature (frame->method);
+	sig = mono_method_signature (frame->actual_method);
 
 	switch (command) {
 	case CMD_STACK_FRAME_GET_VALUES: {
