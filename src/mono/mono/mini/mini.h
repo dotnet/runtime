@@ -528,6 +528,14 @@ struct MonoBasicBlock {
 	guint has_jump_table : 1;
 	/* Whenever this bblock contains an OP_CALL_HANDLER instruction */
 	guint has_call_handler : 1;
+	/* Whenever this bblock starts a try block */
+	guint try_start : 1;
+	/*
+	 * If this is set, extend the try range started by this bblock by an arch specific
+	 * number of bytes to encompass the end of the previous bblock (e.g. a Monitor.Enter
+	 * call).
+	 */
+	guint extend_try_block : 1;
 	
 	/* use for liveness analysis */
 	MonoBitSet *gen_set;
@@ -559,7 +567,7 @@ struct MonoBasicBlock {
 	 *        | clause-flags |   MONO_REGION  | clause-index 
 	 *
 	 */
-        guint region;
+	guint region;
 
 	/* The current symbolic register number, used in local register allocation. */
 	guint32 max_vreg;
@@ -992,6 +1000,8 @@ enum {
 #define MONO_REGION_FILTER  128
 
 #define MONO_BBLOCK_IS_IN_REGION(bblock, regtype) (((bblock)->region & (0xf << 4)) == (regtype))
+
+#define MONO_REGION_FLAGS(region) ((region) & 0x7)
 
 #define get_vreg_to_inst(cfg, vreg) ((vreg) < (cfg)->vreg_to_inst_len ? (cfg)->vreg_to_inst [(vreg)] : NULL)
 

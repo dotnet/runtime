@@ -5660,6 +5660,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoExceptionClause *clause = &header->clauses [i];
 			GET_BBLOCK (cfg, try_bb, ip + clause->try_offset);
 			try_bb->real_offset = clause->try_offset;
+			try_bb->try_start = TRUE;
+			try_bb->region = ((i + 1) << 8) | clause->flags;
 			GET_BBLOCK (cfg, tblock, ip + clause->handler_offset);
 			tblock->real_offset = clause->handler_offset;
 			tblock->flags |= BB_EXCEPTION_HANDLER;
@@ -6777,6 +6779,33 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 6;
 				ins_flag = 0;
 				break;
+			}
+
+			/*
+			 * Implement a workaround for the inherent races involved in locking:
+			 * Monitor.Enter ()
+			 * try {
+			 * } finally {
+			 *    Monitor.Exit ()
+			 * }
+			 * If a thread abort happens between the call to Monitor.Enter () and the start of the
+			 * try block, the Exit () won't be executed, see:
+			 * http://www.bluebytesoftware.com/blog/2007/01/30/MonitorEnterThreadAbortsAndOrphanedLocks.aspx
+			 * To work around this, we extend such try blocks to include the last x bytes
+			 * of the Monitor.Enter () call.
+			 */
+			if (cmethod && cmethod->klass == mono_defaults.monitor_class && !strcmp (cmethod->name, "Enter") && mono_method_signature (cmethod)->param_count == 1) {
+				MonoBasicBlock *tbb;
+
+				GET_BBLOCK (cfg, tbb, ip + 5);
+				/* 
+				 * Only extend try blocks with a finally, to avoid catching exceptions thrown
+				 * from Monitor.Enter like ArgumentNullException.
+				 */
+				if (tbb->try_start && MONO_REGION_FLAGS(tbb->region) == MONO_EXCEPTION_CLAUSE_FINALLY) {
+					/* Mark this bblock as needing to be extended */
+					tbb->extend_try_block = TRUE;
+				}
 			}
 
 			/* Conversion to a JIT intrinsic */

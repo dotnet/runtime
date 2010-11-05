@@ -3682,8 +3682,16 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 			tblock = cfg->cil_offset_to_bb [ec->try_offset];
 			g_assert (tblock);
-			ei->try_start = cfg->native_code + tblock->native_offset;
 			g_assert (tblock->native_offset);
+			ei->try_start = cfg->native_code + tblock->native_offset;
+			if (tblock->extend_try_block) {
+				/*
+				 * Extend the try block backwards to include parts of the previous call
+				 * instruction.
+				 * FIXME: This is arch specific.
+				 */
+				ei->try_start = (guint8*)ei->try_start - 1;
+			}
 			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
 			g_assert (tblock);
 			if (!tblock->native_offset) {
