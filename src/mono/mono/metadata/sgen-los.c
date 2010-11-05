@@ -351,7 +351,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_segment_index += size + sizeof (LOSObject);
 	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
 #else
-	if (need_major_collection ()) {
+	if (need_major_collection (size)) {
 		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %lu, limit: %lu)\n", size, (unsigned long)los_memory_usage, (unsigned long)next_los_collection));
 		mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
 		stop_world (1);

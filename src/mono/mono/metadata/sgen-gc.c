@@ -795,7 +795,7 @@ static void clear_tlabs (void);
 static void sort_addresses (void **array, int size);
 static void drain_gray_stack (GrayQueue *queue);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
-static gboolean need_major_collection (void);
+static gboolean need_major_collection (mword space_needed);
 static void major_collection (const char *reason);
 
 static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
@@ -2647,10 +2647,11 @@ init_stats (void)
 }
 
 static gboolean
-need_major_collection (void)
+need_major_collection (mword space_needed)
 {
 	mword los_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
-	return minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
+	return (space_needed > available_free_space ()) ||
+		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
 }
 
 /*
@@ -3276,7 +3277,7 @@ search_fragment_for_size_range (size_t desired_size, size_t minimum_size)
 static void*
 alloc_degraded (MonoVTable *vtable, size_t size)
 {
-	if (need_major_collection ()) {
+	if (need_major_collection (0)) {
 		mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
 		stop_world (1);
 		major_collection ("degraded overflow");
