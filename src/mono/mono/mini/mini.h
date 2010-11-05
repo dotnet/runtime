@@ -227,7 +227,8 @@ typedef struct {
 	MonoJitInfo *ji;
 	/*
 	 * For FRAME_TYPE_MANAGED_TO_NATIVE, it is either the method which transitioned 
-	 * to native code, or the method which was JITted.
+	 * to native code, or the method which was JITted. For FRAME_TYPE_MANAGED, equal to
+	 * ji->method.
 	 */
 	MonoMethod *method;
 	/*
@@ -1892,7 +1893,6 @@ gboolean mono_install_handler_block_guard (MonoInternalThread *thread, MonoConte
 
 /* Exception handling */
 
-/* Same as MonoStackWalk, but pass the context/frame type as well */
 typedef gboolean (*MonoJitStackWalk)            (StackFrameInfo *frame, MonoContext *ctx, gpointer data);
 
 void     mono_exceptions_init                   (void) MONO_INTERNAL;
@@ -1903,7 +1903,7 @@ void     mono_print_thread_dump                 (void *sigctx);
 void     mono_print_thread_dump_from_ctx        (MonoContext *ctx);
 void     mono_jit_walk_stack                    (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) MONO_INTERNAL;
 void     mono_jit_walk_stack_from_ctx           (MonoStackWalk func, MonoContext *ctx, gboolean do_il_offset, gpointer user_data) MONO_INTERNAL;
-void     mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, gboolean do_il_offset, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data) MONO_INTERNAL;
+void     mono_walk_stack                        (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, gboolean do_il_offset, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data) MONO_INTERNAL;
 void     mono_setup_altstack                    (MonoJitTlsData *tls) MONO_INTERNAL;
 void     mono_free_altstack                     (MonoJitTlsData *tls) MONO_INTERNAL;
 gpointer mono_altstack_restore_prot             (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
@@ -1924,10 +1924,6 @@ gpointer mono_get_call_filter                   (void) MONO_INTERNAL;
 gpointer mono_get_restore_context               (void) MONO_INTERNAL;
 gpointer mono_get_throw_exception_by_name       (void) MONO_INTERNAL;
 gpointer mono_get_throw_corlib_exception        (void) MONO_INTERNAL;
-
-/* the new function to do stack walks */
-typedef gboolean (*MonoStackFrameWalk)          (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data);
-void      mono_walk_stack                       (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gpointer user_data);
 
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info) MONO_INTERNAL;
 MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info, 

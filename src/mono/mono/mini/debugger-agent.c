@@ -1963,7 +1963,7 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			data.last_frame_set = FALSE;
 			if (sigctx) {
 				mono_arch_sigctx_to_monoctx (sigctx, &ctx);
-				mono_jit_walk_stack_from_ctx_in_thread (get_last_frame, mono_domain_get (), &ctx, FALSE, tls->thread, mono_get_lmf (), &data);
+				mono_walk_stack (get_last_frame, mono_domain_get (), &ctx, FALSE, tls->thread, mono_get_lmf (), &data);
 			}
 			if (data.last_frame_set) {
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
@@ -2523,9 +2523,9 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 	} if (!tls->really_suspended && tls->has_async_ctx) {
 		/* Have to use the state saved by the signal handler */
 		process_frame (&tls->async_last_frame, NULL, &user_data);
-		mono_jit_walk_stack_from_ctx_in_thread (process_frame, tls->domain, &tls->async_ctx, FALSE, thread, tls->async_lmf, &user_data);
+		mono_walk_stack (process_frame, tls->domain, &tls->async_ctx, FALSE, thread, tls->async_lmf, &user_data);
 	} else if (tls->has_context) {
-		mono_jit_walk_stack_from_ctx_in_thread (process_frame, tls->domain, &tls->ctx, FALSE, thread, tls->lmf, &user_data);
+		mono_walk_stack (process_frame, tls->domain, &tls->ctx, FALSE, thread, tls->lmf, &user_data);
 	} else {
 		// FIXME:
 		tls->frame_count = 0;

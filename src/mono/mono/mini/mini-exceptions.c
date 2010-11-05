@@ -64,7 +64,6 @@ static gpointer restore_stack_protection_tramp = NULL;
 
 static void try_more_restore (void);
 static void restore_stack_protection (void);
-static void mono_walk_stack_full (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gboolean use_new_ctx, gpointer user_data);
 
 void
 mono_exceptions_init (void)
@@ -355,6 +354,9 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 	ji = frame->ji;
 
+	if (frame->type == FRAME_TYPE_MANAGED)
+		frame->method = ji->method;
+
 	if (ji && (frame->managed || ji->method->wrapper_type)) {
 		const char *real_ip, *start;
 
@@ -594,100 +596,38 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	return res;
 }
 
-/**
- * mono_walk_stack:
- * @domain: starting appdomain
- * @jit_tls: JIT data for the thread
- * @start_ctx: starting state of the stack frame
- * @func: callback to call for each stack frame
- * @user_data: data passed to the callback
- *
- * This function walks the stack of a thread, starting from the state
- * represented by jit_tls and start_ctx. For each frame the callback
- * function is called with the relevant info. The walk ends when no more
- * managed stack frames are found or when the callback returns a TRUE value.
- * Note that the function can be used to walk the stack of a thread 
- * different from the current.
- */
-void
-mono_walk_stack (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gpointer user_data)
+typedef struct {
+	MonoStackWalk func;
+	gpointer user_data;
+} StackWalkUserData;
+
+static gboolean
+stack_walk_adapter (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
-	mono_walk_stack_full (domain, jit_tls, start_ctx, func, TRUE, user_data);
-}
+	StackWalkUserData *d = data;
 
-static void
-mono_walk_stack_full (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start_ctx, MonoStackFrameWalk func, gboolean use_new_ctx, gpointer user_data)
-{
-	MonoLMF *lmf = mono_get_lmf ();
-	MonoJitInfo *ji, rji;
-	gint native_offset;
-	gboolean managed;
-	MonoContext ctx, new_ctx;
-
-	ctx = *start_ctx;
-
-	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
-		/* 
-		 * FIXME: mono_find_jit_info () will need to be able to return a different
-		 * MonoDomain when apddomain transitions are found on the stack.
-		 */
-		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
-		if (!ji || ji == (gpointer)-1)
-			return;
-
-		if (func (domain, use_new_ctx ? &new_ctx : &ctx, ji, user_data))
-			return;
-
-		ctx = new_ctx;
+	switch (frame->type) {
+	case FRAME_TYPE_DEBUGGER_INVOKE:
+		return FALSE;
+	case FRAME_TYPE_MANAGED:
+	case FRAME_TYPE_MANAGED_TO_NATIVE:
+		return d->func (frame->ji ? frame->ji->method : frame->method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
+		break;
+	default:
+		g_assert_not_reached ();
+		return FALSE;
 	}
 }
 
 void
 mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, gboolean do_il_offset, gpointer user_data)
 {
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = mono_get_lmf ();
-	MonoJitInfo *ji, rji;
-	gint native_offset, il_offset;
-	gboolean managed;
-	MonoContext ctx, new_ctx;
+	StackWalkUserData d;
 
-	MONO_ARCH_CONTEXT_DEF
+	d.func = func;
+	d.user_data = user_data;
 
-	mono_arch_flush_register_windows ();
-
-	if (start_ctx) {
-		memcpy (&ctx, start_ctx, sizeof (MonoContext));
-	} else {
-#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
-#else
-    MONO_INIT_CONTEXT_FROM_FUNC (&ctx, mono_jit_walk_stack_from_ctx);
-#endif
-	}
-
-	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
-		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
-		g_assert (ji);
-
-		if (ji == (gpointer)-1)
-			return;
-
-		if (do_il_offset) {
-			MonoDebugSourceLocation *source;
-
-			source = mono_debug_lookup_source_location (ji->method, native_offset, domain);
-			il_offset = source ? source->il_offset : -1;
-			mono_debug_free_source_location (source);
-		} else
-			il_offset = -1;
-
-		if (func (ji->method, native_offset, il_offset, managed, user_data))
-			return;
-		
-		ctx = new_ctx;
-	}
+	mono_walk_stack (stack_walk_adapter, mono_domain_get (), start_ctx, do_il_offset, mono_thread_internal_current (), mono_get_lmf (), &d);
 }
 
 void
@@ -696,10 +636,25 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 	mono_jit_walk_stack_from_ctx (func, NULL, do_il_offset, user_data);
 }
 
+/**
+ * mono_walk_stack:
+ * @func: callback to call for each stack frame
+ * @domain: starting appdomain, can be NULL to use the current domain
+ * @do_il_offsets: whenever to compute IL offsets
+ * @start_ctx: starting state of the stack walk, can be NULL.
+ * @thread: the thread whose stack to walk, can be NULL to use the current thread
+ * @lmf: the LMF of @thread, can be NULL to use the LMF of the current thread
+ * @user_data: data passed to the callback
+ *
+ * This function walks the stack of a thread, starting from the state
+ * represented by start_ctx. For each frame the callback
+ * function is called with the relevant info. The walk ends when no more
+ * managed stack frames are found or when the callback returns a TRUE value.
+ */
 void
-mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, gboolean do_il_offset, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data)
+mono_walk_stack (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, gboolean do_il_offset, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data)
 {
-	MonoJitTlsData *jit_tls = thread->jit_data;
+	MonoJitTlsData *jit_tls;
 	gint il_offset;
 	MonoContext ctx, new_ctx;
 	StackFrameInfo frame;
@@ -708,6 +663,13 @@ mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domai
 	MONO_ARCH_CONTEXT_DEF
 
 	mono_arch_flush_register_windows ();
+
+	if (!thread) {
+		thread = mono_thread_internal_current ();
+		lmf = mono_get_lmf ();
+	}
+
+	jit_tls = thread->jit_data;
 
 	if (start_ctx) {
 		memcpy (&ctx, start_ctx, sizeof (MonoContext));
@@ -756,7 +718,6 @@ mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domai
 		ctx = new_ctx;
 	}
 }
-
 
 MonoBoolean
 ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
@@ -852,9 +813,13 @@ typedef struct {
 } MonoFrameSecurityInfo;
 
 static gboolean
-callback_get_first_frame_security_info (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data)
+callback_get_first_frame_security_info (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
 	MonoFrameSecurityInfo *si = (MonoFrameSecurityInfo*) data;
+	MonoJitInfo *ji = frame->ji;
+
+	if (!ji)
+		return FALSE;
 
 	/* FIXME: skip all wrappers ?? probably not - case by case testing is required */
 	if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
@@ -870,7 +835,7 @@ callback_get_first_frame_security_info (MonoDomain *domain, MonoContext *ctx, Mo
 		return FALSE;
 	}
 
-	si->frame = mono_declsec_create_frame (domain, ji);
+	si->frame = mono_declsec_create_frame (frame->domain, ji);
 
 	/* Stop - we only want the first frame (e.g. LinkDemand and InheritanceDemand) */
 	return TRUE;
@@ -889,25 +854,12 @@ MonoSecurityFrame*
 ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoFrameSecurityInfo si;
-	MonoContext ctx;
-
-	MONO_ARCH_CONTEXT_DEF
-
-#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
-#else
-	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
-#endif
-
-#if	defined(__ia64__) || defined(__s390__) || defined(__s390x__)
-	skip--;
-#endif
 
 	si.skips = skip;
 	si.frame = NULL;
-	mono_walk_stack (domain, jit_tls, &ctx, callback_get_first_frame_security_info, (gpointer)&si);
+
+	mono_walk_stack (callback_get_first_frame_security_info, domain, NULL, FALSE, NULL, NULL, &si);
 
 	return (si.skips == 0) ? si.frame : NULL;
 }
@@ -936,9 +888,13 @@ grow_array (MonoSecurityStack *stack)
 }
 
 static gboolean
-callback_get_stack_frames_security_info (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data)
+callback_get_stack_frames_security_info (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
 	MonoSecurityStack *ss = (MonoSecurityStack*) data;
+	MonoJitInfo *ji = frame->ji;
+
+	if (!ji)
+		return FALSE;
 
 	/* FIXME: skip all wrappers ?? probably not - case by case testing is required */
 	if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
@@ -957,7 +913,7 @@ callback_get_stack_frames_security_info (MonoDomain *domain, MonoContext *ctx, M
 	if (ss->count == ss->maximum)
 		grow_array (ss);
 
-	mono_array_setref (ss->stack, ss->count++, mono_declsec_create_frame (domain, ji));
+	mono_array_setref (ss->stack, ss->count++, mono_declsec_create_frame (frame->domain, ji));
 
 	/* continue down the stack */
 	return FALSE;
@@ -995,17 +951,7 @@ MonoArray*
 ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoSecurityStack ss;
-	MonoContext ctx;
-
-	MONO_ARCH_CONTEXT_DEF
-
-#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
-#else
-	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityStack);
-#endif
 
 #if	defined(__ia64__) || defined(__s390__) || defined(__s390x__)
 	skip--;
@@ -1015,7 +961,7 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 	ss.count = 0;
 	ss.maximum = MONO_CAS_INITIAL_STACK_SIZE;
 	ss.stack = mono_array_new (domain, mono_defaults.runtimesecurityframe_class, ss.maximum);
-	mono_walk_stack (domain, jit_tls, &ctx, callback_get_stack_frames_security_info, (gpointer)&ss);
+	mono_walk_stack (callback_get_stack_frames_security_info, domain, NULL, FALSE, NULL, NULL, &ss);
 	/* g_warning ("STACK RESULT: %d out of %d", ss.count, ss.maximum); */
 	return ss.stack;
 }
@@ -2148,11 +2094,15 @@ typedef struct {
 } FindHandlerBlockData;
 
 static gboolean
-find_last_handler_block (MonoDomain *domain, MonoContext *ctx, MonoJitInfo *ji, gpointer data)
+find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
 	int i;
 	gpointer ip;
 	FindHandlerBlockData *pdata = data;
+	MonoJitInfo *ji = frame->ji;
+
+	if (!ji)
+		return FALSE;
 
 	if (ji->method->wrapper_type)
 		return FALSE;
@@ -2221,7 +2171,7 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	if (!jit_tls || jit_tls->handler_block_return_address)
 		return FALSE;
 
-	mono_walk_stack_full (domain, jit_tls, ctx, find_last_handler_block, FALSE, &data);
+	mono_walk_stack (find_last_handler_block, domain, ctx, FALSE, NULL, NULL, &data);
 
 	if (!data.ji)
 		return FALSE;
