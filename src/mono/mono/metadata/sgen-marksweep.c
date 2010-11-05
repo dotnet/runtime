@@ -317,6 +317,7 @@ ms_free_block (MSBlockInfo *block)
 	block->next_free = empty_blocks;
 	empty_blocks = block;
 	block->used = FALSE;
+	mono_sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 }
 #else
 static void*
@@ -373,6 +374,7 @@ ms_free_block (void *block)
 {
 	void *empty;
 
+	mono_sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 	memset (block, 0, MS_BLOCK_SIZE);
 
 	do {
@@ -474,20 +476,27 @@ consistency_check (void)
 }
 #endif
 
-static void
+static gboolean
 ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 {
 	int size = block_obj_sizes [size_index];
 	int count = MS_BLOCK_FREE / size;
-#ifdef FIXED_HEAP
-	MSBlockInfo *info = ms_get_empty_block ();
-#else
-	MSBlockInfo *info = mono_sgen_alloc_internal (INTERNAL_MEM_MS_BLOCK_INFO);
+	MSBlockInfo *info;
+#ifndef FIXED_HEAP
 	MSBlockHeader *header;
 #endif
 	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
 	char *obj_start;
 	int i;
+
+	if (!mono_sgen_try_alloc_space (MS_BLOCK_SIZE, SPACE_MAJOR))
+		return FALSE;
+
+#ifdef FIXED_HEAP
+	info = ms_get_empty_block ();
+#else
+	info = mono_sgen_alloc_internal (INTERNAL_MEM_MS_BLOCK_INFO);
+#endif
 
 	DEBUG (9, g_assert (count >= 2));
 
@@ -527,6 +536,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 #endif
 
 	++num_major_sections;
+	return TRUE;
 }
 
 static gboolean

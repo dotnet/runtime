@@ -241,6 +241,9 @@ get_los_section_memory (size_t size)
 	if (free_chunks)
 		return (LOSObject*)free_chunks;
 
+	if (!mono_sgen_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
+		return NULL;
+
 	section = mono_sgen_alloc_os_memory_aligned (LOS_SECTION_SIZE, LOS_SECTION_SIZE, TRUE);
 
 	free_chunks = (LOSFreeChunks*)((char*)section + LOS_CHUNK_SIZE);
@@ -314,6 +317,7 @@ free_large_object (LOSObject *obj)
 		size += pagesize - 1;
 		size &= ~(pagesize - 1);
 		mono_sgen_free_os_memory (obj, size);
+		mono_sgen_release_space (size, SPACE_LOS);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
 #ifdef LOS_CONSISTENCY_CHECKS
@@ -333,7 +337,7 @@ free_large_object (LOSObject *obj)
 static void* __attribute__((noinline))
 alloc_large_inner (MonoVTable *vtable, size_t size)
 {
-	LOSObject *obj;
+	LOSObject *obj = NULL;
 	void **vtslot;
 
 	g_assert (size > MAX_SMALL_OBJ_SIZE);
@@ -365,16 +369,19 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 		alloc_size += sizeof (LOSObject);
 		alloc_size += pagesize - 1;
 		alloc_size &= ~(pagesize - 1);
-		/* FIXME: handle OOM */
-		obj = mono_sgen_alloc_os_memory (alloc_size, TRUE);
-		obj->huge_object = TRUE;
+		if (mono_sgen_try_alloc_space (alloc_size, SPACE_LOS)) {
+			obj = mono_sgen_alloc_os_memory (alloc_size, TRUE);
+			obj->huge_object = TRUE;
+		}
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));
-		memset (obj, 0, size + sizeof (LOSObject));
+		if (obj)
+			memset (obj, 0, size + sizeof (LOSObject));
 	}
 #endif
 #endif
-
+	if (!obj)
+		return NULL;
 	g_assert (!((mword)obj->data & (ALLOC_ALIGN - 1)));
 	obj->size = size;
 	vtslot = (void**)obj->data;
@@ -414,6 +421,7 @@ los_sweep (void)
 			else
 				los_sections = next;
 			mono_sgen_free_os_memory (section, LOS_SECTION_SIZE);
+			mono_sgen_release_space (LOS_SECTION_SIZE, SPACE_LOS);
 			section = next;
 			--los_num_sections;
 			continue;

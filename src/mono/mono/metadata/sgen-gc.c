@@ -712,6 +712,29 @@ static MonoVTable *array_fill_vtable;
  */
 /*heap limits*/
 static mword max_heap_size = ((mword)0)- ((mword)1);
+static mword allocated_heap;
+
+void
+mono_sgen_release_space (mword size, int space)
+{
+	allocated_heap -= size;
+}
+
+static size_t
+available_free_space (void)
+{
+	return max_heap_size - MIN (allocated_heap, max_heap_size);
+}
+
+gboolean
+mono_sgen_try_alloc_space (mword size, int space)
+{
+	if (available_free_space () < size)
+		return FALSE;
+
+	allocated_heap += size;
+	return TRUE;
+}
 
 static void
 init_heap_size_limits (glong max_heap)
