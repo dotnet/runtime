@@ -889,6 +889,20 @@ test-process-exit:
 	@$(RUNTIME) bug-438454.exe > bug-438454.exe.stdout
 	@diff bug-438454.exe.stdout $(srcdir)/bug-438454.exe.stdout.expected
 
+OOM_TESTS =	\
+	gc-oom-handling.exe	\
+	gc-oom-handling2.exe
+
+
+test-oom: $(OOM_TESTS)
+	@for fn in $+ ; do	\
+		echo "Testing $$fn ...";	\
+		MONO_GC_PARAMS=max-heap-size=16m,major=marksweep-par MONO_ENV_OPTIONS="--gc=sgen" $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
+		MONO_GC_PARAMS=max-heap-size=16m MONO_ENV_OPTIONS="--gc=sgen"                     $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
+		MONO_GC_PARAMS=max-heap-size=16m                                                  $(RUNTIME) $$fn > $$fn.stdout || exit 1;	\
+	done
+
+
 noinst_LTLIBRARIES = libtest.la
 
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
