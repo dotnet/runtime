@@ -3450,9 +3450,11 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 		}
 	}
 
-	DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
-	binary_protocol_alloc (p, vtable, size);
-	*p = vtable;
+	if (G_LIKELY (p)) {
+		DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+		binary_protocol_alloc (p, vtable, size);
+		*p = vtable;
+	}
 
 	return p;
 }
@@ -3516,6 +3518,8 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	LOCK_GC;
 	res = mono_gc_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;
+	if (G_UNLIKELY (!res))
+		return mono_gc_out_of_memory (size);
 	return res;
 }
 
@@ -3538,6 +3542,11 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 	LOCK_GC;
 
 	arr = mono_gc_alloc_obj_nolock (vtable, size);
+	if (G_UNLIKELY (!arr)) {
+		UNLOCK_GC;
+		return mono_gc_out_of_memory (size);
+	}
+
 	arr->max_length = max_length;
 
 	UNLOCK_GC;
@@ -3554,6 +3563,11 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 	LOCK_GC;
 
 	arr = mono_gc_alloc_obj_nolock (vtable, size);
+	if (G_UNLIKELY (!arr)) {
+		UNLOCK_GC;
+		return mono_gc_out_of_memory (size);
+	}
+
 	arr->max_length = max_length;
 
 	bounds = (MonoArrayBounds*)((char*)arr + size - bounds_size);
@@ -3583,6 +3597,11 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 	LOCK_GC;
 
 	str = mono_gc_alloc_obj_nolock (vtable, size);
+	if (G_UNLIKELY (!str)) {
+		UNLOCK_GC;
+		return mono_gc_out_of_memory (size);
+	}
+
 	str->length = len;
 
 	UNLOCK_GC;
@@ -3608,9 +3627,11 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		DEBUG (9, g_assert (vtable->klass->inited));
 		p = major_collector.alloc_small_pinned_obj (size, vtable->klass->has_references);
 	}
-	DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
-	binary_protocol_alloc_pinned (p, vtable, size);
-	*p = vtable;
+	if (G_LIKELY (p)) {
+		DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+		binary_protocol_alloc_pinned (p, vtable, size);
+		*p = vtable;
+	}
 	UNLOCK_GC;
 	return p;
 }
