@@ -764,13 +764,6 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 #endif
 }
 
-#if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
-static inline guint64*
-gregs_from_ucontext (ucontext_t *ctx)
-{
-	return (guint64 *) UCONTEXT_GREGS (ctx);
-}
-#endif
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
@@ -913,8 +906,7 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 #if defined(MONO_ARCH_USE_SIGACTION) && defined(UCONTEXT_GREGS)
 	MonoException *exc = NULL;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
-	guint64 *gregs = gregs_from_ucontext (ctx);
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)gregs [REG_RIP], NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_RIP (sigctx), NULL);
 	gpointer *sp;
 	int frame_size;
 
@@ -934,18 +926,18 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 4 + 128;
 	frame_size += 15;
 	frame_size &= ~15;
-	sp = (gpointer)(gregs [REG_RSP] & ~15);
+	sp = (gpointer)(UCONTEXT_REG_RSP (sigctx) & ~15);
 	sp = (gpointer)((char*)sp - frame_size);
 	/* the arguments must be aligned */
-	sp [-1] = (gpointer)gregs [REG_RIP];
+	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
 	/* may need to adjust pointers in the new struct copy, depending on the OS */
 	memcpy (sp + 4, ctx, sizeof (ucontext_t));
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
-	gregs [REG_RIP] = (unsigned long)altstack_handle_and_restore;
-	gregs [REG_RSP] = (unsigned long)(sp - 1);
-	gregs [REG_RDI] = (unsigned long)(sp + 4);
-	gregs [REG_RSI] = (guint64)exc;
-	gregs [REG_RDX] = stack_ovf;
+	UCONTEXT_REG_RIP (sigctx) = (unsigned long)altstack_handle_and_restore;
+	UCONTEXT_REG_RSP (sigctx) = (unsigned long)(sp - 1);
+	UCONTEXT_REG_RDI (sigctx) = (unsigned long)(sp + 4);
+	UCONTEXT_REG_RSI (sigctx) = (guint64)exc;
+	UCONTEXT_REG_RDX (sigctx) = stack_ovf;
 #endif
 }
 
