@@ -54,9 +54,9 @@
     .method public hidebysig instance default int32 checkEqual () cil managed
     {
         ldtoken field int32 class Gen`1<!T>::myField
-	call [mscorlib]System.Reflection.FieldInfo [mscorlib]System.Reflection.FieldInfo::GetFieldFromHandle ([mscorlib]System.RuntimeFieldHandle)
+	call [mscorlib]System.Reflection.FieldInfo [mscorlib]System.Reflection.FieldInfo::GetFieldFromHandle (valuetype [mscorlib]System.RuntimeFieldHandle)
         ldtoken field int32 class Gen`1<class ClassA>::myField
-	call [mscorlib]System.Reflection.FieldInfo [mscorlib]System.Reflection.FieldInfo::GetFieldFromHandle ([mscorlib]System.RuntimeFieldHandle)
+	call [mscorlib]System.Reflection.FieldInfo [mscorlib]System.Reflection.FieldInfo::GetFieldFromHandle (valuetype [mscorlib]System.RuntimeFieldHandle)
 	ceq
 	ret
     }
