@@ -15,6 +15,17 @@
 #include <sys/mman.h>
 //#endif
 
+#if defined(__APPLE__)
+#include <mach/mach_time.h>  
+#include <stdio.h> 
+
+static mach_timebase_info_data_t timebase_info;
+#endif
+
+#ifndef MAP_ANON
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 #define TICKS_PER_SEC 1000000000LL
 
 typedef struct {
@@ -24,8 +35,15 @@ typedef struct {
 	uint64_t last_time;
 } TlsData;
 
+#if HAVE_KW_THREAD
 static __thread TlsData tls_data;
 #define DECL_TLS_DATA TlsData *tls = &tls_data
+#define TLS_INIT(x)
+#else
+static pthread_key_t tls_data;
+#define DECL_TLS_DATA TlsData *tls; tls = (TlsData *) pthread_getspecific (tls_data); if (tls == NULL) { tls = (TlsData *) malloc (sizeof (TlsData)); pthread_setspecific (tls_data, tls); }
+#define TLS_INIT(x) pthread_key_create(&x, NULL)
+#endif
 
 static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -37,9 +55,18 @@ static TimeFunc time_func;
 static uint64_t
 clock_time (void)
 {
+#if defined(__APPLE__)
+	uint64_t time = mach_absolute_time ();
+	
+	time *= info.numer;
+	time /= info.denom;
+
+	return time;
+#else
 	struct timespec tspec;
 	clock_gettime (CLOCK_MONOTONIC, &tspec);
 	return ((uint64_t)tspec.tv_sec * TICKS_PER_SEC + tspec.tv_nsec);
+#endif
 }
 
 /* must be power of two */
@@ -60,6 +87,7 @@ fast_current_time (void)
 #define rdtsc(low,high) \
 	__asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high))
 
+#if !defined(__APPLE__)
 static uint64_t
 safe_rdtsc (int *cpu)
 {
@@ -130,6 +158,7 @@ rdtsc_current_time (void)
 	tls->last_rdtsc = safe_rdtsc (&tls->last_cpu);
 	return tls->last_time;
 }
+#endif
 
 static uint64_t
 null_time (void)
@@ -141,9 +170,15 @@ null_time (void)
 void
 utils_init (int fast_time)
 {
+	TLS_INIT (tls_data);
+
 	if (fast_time > 1) {
 		time_func = null_time;
 	} else if (fast_time) {
+#if defined (__APPLE__)
+		mach_timebase_info (&timebase_info);
+		time_func = fast_current_time;
+#else
 		uint64_t timea;
 		uint64_t timeb;
 		int cpu = sched_getcpu ();
@@ -156,6 +191,7 @@ utils_init (int fast_time)
 			time_func = rdtsc_current_time;
 		else
 			time_func = fast_current_time;
+#endif
 	} else {
 		time_func = clock_time;
 	}

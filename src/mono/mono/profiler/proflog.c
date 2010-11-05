@@ -6,6 +6,7 @@
 #include <string.h>
 #include <zlib.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "utils.h"
 #include "proflog.h"
@@ -19,10 +20,14 @@ static int do_heap_shot = 0;
 static int max_call_depth = 100;
 static int runtime_inited = 0;
 
-/* Compile with:
+/* For linux compile with:
  * gcc -shared -o libmono-profiler-log.so proflog.c utils.c -Wall -g -lz `pkg-config --cflags --libs mono-2`
- * and:
  * gcc -o mprof-report decode.c utils.c -Wall -g -lz -lrt -lpthread `pkg-config --cflags mono-2`
+ *
+ * For osx compile with:
+ * gcc -m32 -Dmono_free=free shared -o libmono-profiler-log.dylib proflog.c utils.c -Wall -g -lz `pkg-config --cflags mono-2` -undefined suppress -flat_namespace
+ * gcc -m32 -o mprof-report decode.c utils.c -Wall -g -lz -lrt -lpthread `pkg-config --cflags mono-2`
+ *
  * Install with:
  * sudo cp mprof-report /usr/local/bin
  * sudo cp libmono-profiler-log.so /usr/local/lib
@@ -86,7 +91,17 @@ struct _MonoProfiler {
 	int last_gc_gen_started;
 };
 
+#if HAVE_KW_THREAD
+#define TLS_SET(x,y) x = y
+#define TLS_GET(x) x
+#define TLS_INIT(x)
 static __thread LogBuffer* tlsbuffer = NULL;
+#else
+#define TLS_SET(x,y) pthread_setspecific(x, y)
+#define TLS_GET(x) ((LogBuffer *) pthread_getspecific(x))
+#define TLS_INIT(x) pthread_key_create(&x, NULL)
+static pthread_key_t tlsbuffer;
+#endif
 
 static LogBuffer*
 create_buffer (void)
@@ -104,27 +119,27 @@ static void
 init_thread (void)
 {
 	LogBuffer *logbuffer;
-	if (tlsbuffer)
+	if (TLS_GET (tlsbuffer))
 		return;
 	logbuffer = create_buffer ();
-	tlsbuffer = logbuffer;
+	TLS_SET (tlsbuffer, logbuffer);
 	logbuffer->thread_id = thread_id ();
-	/*printf ("thread %p at time %llu\n", (void*)logbuffer->thread_id, logbuffer->time_base);*/
+	//printf ("thread %p at time %llu\n", (void*)logbuffer->thread_id, logbuffer->time_base);
 }
 
 static LogBuffer*
 ensure_logbuf (int bytes)
 {
-	LogBuffer *old = tlsbuffer;
+	LogBuffer *old = TLS_GET (tlsbuffer);
 	if (old && old->data + bytes + 100 < old->data_end)
 		return old;
-	tlsbuffer = NULL;
+	TLS_SET (tlsbuffer, NULL);
 	init_thread ();
-	tlsbuffer->next = old;
+	TLS_GET (tlsbuffer)->next = old;
 	if (old)
-		tlsbuffer->call_depth = old->call_depth;
+		TLS_GET (tlsbuffer)->call_depth = old->call_depth;
 	//printf ("new logbuffer\n");
-	return tlsbuffer;
+	return TLS_GET (tlsbuffer);
 }
 
 static void
@@ -278,11 +293,11 @@ safe_dump (MonoProfiler *profiler, LogBuffer *logbuffer)
 {
 	int cd = logbuffer->call_depth;
 	take_lock ();
-	dump_buffer (profiler, tlsbuffer);
+	dump_buffer (profiler, TLS_GET (tlsbuffer));
 	release_lock ();
-	tlsbuffer = NULL;
+	TLS_SET (tlsbuffer, NULL);
 	init_thread ();
-	tlsbuffer->call_depth = cd;
+	TLS_GET (tlsbuffer)->call_depth = cd;
 }
 
 static int
@@ -680,19 +695,19 @@ static void
 thread_end (MonoProfiler *prof, uintptr_t tid)
 {
 	take_lock ();
-	if (tlsbuffer)
-		dump_buffer (prof, tlsbuffer);
+	if (TLS_GET (tlsbuffer))
+		dump_buffer (prof, TLS_GET (tlsbuffer));
 	release_lock ();
-	tlsbuffer = NULL;
+	TLS_SET (tlsbuffer, NULL);
 }
 
 static void
 log_shutdown (MonoProfiler *prof)
 {
 	take_lock ();
-	if (tlsbuffer)
-		dump_buffer (prof, tlsbuffer);
-	tlsbuffer = NULL;
+	if (TLS_GET (tlsbuffer))
+		dump_buffer (prof, TLS_GET (tlsbuffer));
+	TLS_SET (tlsbuffer, NULL);
 	release_lock ();
 	if (prof->gzfile)
 		gzclose (prof->gzfile);
@@ -920,5 +935,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_runtime_initialized (runtime_initialized);
 
 	mono_profiler_set_events (events);
+
+	TLS_INIT (tlsbuffer);
 }
 
