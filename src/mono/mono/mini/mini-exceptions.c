@@ -737,10 +737,17 @@ mono_jit_walk_stack_from_ctx_in_thread (MonoJitStackWalk func, MonoDomain *domai
 
 		frame.il_offset = il_offset;
 
-		if (frame.ji)
+		if (frame.ji) {
+			if (frame.ji->has_generic_jit_info && frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
+				/*
+				 * FIXME: These frames show up twice, and ctx could refer to native code.
+				 */
+				continue;
+			}
 			frame.actual_method = get_method_from_stack_frame (frame.ji, get_generic_info_from_stack_frame (frame.ji, &ctx));
-		else
+		} else {
 			frame.actual_method = frame.method;
+		}
 
 		if (func (&frame, &ctx, user_data))
 			return;
