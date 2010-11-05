@@ -6350,7 +6350,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	switch (command) {
 	case CMD_STACK_FRAME_GET_VALUES: {
 		len = decode_int (p, &p, end);
-		header = mono_method_get_header (frame->method);
+		header = mono_method_get_header (frame->actual_method);
 
 		for (i = 0; i < len; ++i) {
 			pos = decode_int (p, &p, end);
@@ -6380,12 +6380,12 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				MonoObject *p = NULL;
 				buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &p, frame->domain);
 			} else {
-				add_var (buf, &frame->method->klass->this_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
+				add_var (buf, &frame->actual_method->klass->this_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
 			}
 		} else {
 			if (!sig->hasthis) {
 				MonoObject *p = NULL;
-				buffer_add_value (buf, &frame->method->klass->byval_arg, &p, frame->domain);
+				buffer_add_value (buf, &frame->actual_method->klass->byval_arg, &p, frame->domain);
 			} else {
 				add_var (buf, &frame->method->klass->byval_arg, jit->this_var, &frame->ctx, frame->domain, TRUE);
 			}
@@ -6398,7 +6398,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoDebugVarInfo *var;
 
 		len = decode_int (p, &p, end);
-		header = mono_method_get_header (frame->method);
+		header = mono_method_get_header (frame->actual_method);
 
 		for (i = 0; i < len; ++i) {
 			pos = decode_int (p, &p, end);
