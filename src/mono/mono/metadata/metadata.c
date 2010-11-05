@@ -3155,12 +3155,20 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		guint32 token;
+		MonoClass *class;
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
-		type->data.klass = mono_class_get (m, token);
-		if (!type->data.klass)
+		class = mono_class_get (m, token);
+		type->data.klass = class;
+		if (!class)
 			return FALSE;
-		if (type->data.klass->byval_arg.type != type->type)
+		/* byval_arg.type can be zero if we're decoding a type that references a class been loading.
+		 * See mcs/test/gtest-440. and #650936.
+		 * FIXME This better be moved to the metadata verifier as it can catch more cases.
+		 */
+		if (class->byval_arg.type && class->byval_arg.type != type->type) {
+			printf ("me [%x] it [%x] -- '%s'\n", type->type, type->data.klass->byval_arg.type, mono_type_full_name (type));
 			return FALSE;
+		}
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
