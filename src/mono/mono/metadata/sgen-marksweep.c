@@ -37,7 +37,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-cardtable.h"
-
+#include "metadata/gc-internal.h"
 
 #define DEBUG(l,x)
 
@@ -1349,7 +1349,7 @@ major_handle_gc_param (const char *opt)
 	if (g_str_has_prefix (opt, "major-heap-size=")) {
 		const char *arg = strchr (opt, '=') + 1;
 		glong size;
-		if (!mono_sgen_parse_environment_string_extract_number (arg, &size))
+		if (!mono_gc_parse_environment_string_extract_number (arg, &size))
 			return FALSE;
 		ms_heap_num_blocks = (size + MS_BLOCK_SIZE - 1) / MS_BLOCK_SIZE;
 		g_assert (ms_heap_num_blocks > 0);

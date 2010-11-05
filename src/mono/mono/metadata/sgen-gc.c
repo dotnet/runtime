@@ -6500,49 +6500,6 @@ mono_gc_is_gc_thread (void)
 	return result;
 }
 
-/* Tries to extract a number from the passed string, taking in to account m, k
- * and g suffixes */
-gboolean
-mono_sgen_parse_environment_string_extract_number (const char *str, glong *out)
-{
-	char *endptr;
-	int len = strlen (str), shift = 0;
-	glong val;
-	gboolean is_suffix = FALSE;
-	char suffix;
-
-	switch (str [len - 1]) {
-		case 'g':
-		case 'G':
-			shift += 10;
-		case 'm':
-		case 'M':
-			shift += 10;
-		case 'k':
-		case 'K':
-			shift += 10;
-			is_suffix = TRUE;
-			suffix = str [len - 1];
-			break;
-	}
-
-	errno = 0;
-	val = strtol (str, &endptr, 10);
-
-	if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
-			|| (errno != 0 && val == 0) || (endptr == str))
-		return FALSE;
-
-	if (is_suffix) {
-		if (*(endptr + 1)) /* Invalid string. */
-			return FALSE;
-		val <<= shift;
-	}
-
-	*out = val;
-	return TRUE;
-}
-
 void
 mono_gc_base_init (void)
 {
@@ -6644,7 +6601,7 @@ mono_gc_base_init (void)
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				long val;
 				opt = strchr (opt, '=') + 1;
-				if (*opt && mono_sgen_parse_environment_string_extract_number (opt, &val)) {
+				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &val)) {
 					default_nursery_size = val;
 #ifdef SGEN_ALIGN_NURSERY
 					if ((val & (val - 1))) {
