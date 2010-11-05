@@ -707,6 +707,27 @@ static MonoVTable *array_fill_vtable;
 
 /*
  * ######################################################################
+ * ########  Heap size accounting
+ * ######################################################################
+ */
+/*heap limits*/
+static mword max_heap_size = ((mword)0)- ((mword)1);
+
+static void
+init_heap_size_limits (glong max_heap)
+{
+	if (max_heap == 0)
+		return;
+
+	if (max_heap < nursery_size * 4) {
+		fprintf (stderr, "max-heap-size must be at least 4 times larger than nursery size.\n");
+		exit (1);
+	}
+	max_heap_size = max_heap - nursery_size;
+}
+
+/*
+ * ######################################################################
  * ########  Macros and function declarations.
  * ######################################################################
  */
@@ -6507,6 +6528,7 @@ mono_gc_base_init (void)
 	char **opts, **ptr;
 	char *major_collector_opt = NULL;
 	struct sigaction sinfo;
+	glong max_heap = 0;
 
 #ifdef PLATFORM_ANDROID
 	g_assert_not_reached ();
@@ -6597,6 +6619,19 @@ mono_gc_base_init (void)
 				}
 				continue;
 			}
+			if (g_str_has_prefix (opt, "max-heap-size=")) {
+				opt = strchr (opt, '=') + 1;
+				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &max_heap)) {
+					if ((max_heap & (mono_pagesize () - 1))) {
+						fprintf (stderr, "max-heap-size size must be a multiple of %d.\n", mono_pagesize ());
+						exit (1);
+					}
+				} else {
+					fprintf (stderr, "max-heap-size must be an integer.\n");
+					exit (1);
+				}
+				continue;
+			}
 #ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				long val;
@@ -6622,6 +6657,7 @@ mono_gc_base_init (void)
 #endif
 			if (!(major_collector.handle_gc_param && major_collector.handle_gc_param (opt))) {
 				fprintf (stderr, "MONO_GC_PARAMS must be a comma-delimited list of one or more of the following:\n");
+				fprintf (stderr, "  max-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par' or `copying')\n");
 				fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
@@ -6638,6 +6674,7 @@ mono_gc_base_init (void)
 
 	nursery_size = DEFAULT_NURSERY_SIZE;
 	minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+	init_heap_size_limits (max_heap);
 
 	alloc_nursery ();
 
