@@ -11637,6 +11637,19 @@ mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token)
 	return mono_g_hash_table_lookup (image->tokens, GUINT_TO_POINTER (token)) != NULL;
 }
 
+MonoMethodSignature *
+mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token)
+{
+	MonoMethodSignature *sig;
+	g_assert (image->dynamic);
+
+	sig = g_hash_table_lookup (((MonoDynamicImage*)image)->vararg_aux_hash, GUINT_TO_POINTER (token));
+	if (sig)
+		return sig;
+
+	return mono_method_signature (method);
+}
+
 #ifndef DISABLE_REFLECTION_EMIT
 
 /**
@@ -11669,19 +11682,6 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 	if (!handle_class)
 		handle_class = &klass;
 	return resolve_object (image, obj, handle_class, context);
-}
-
-MonoMethodSignature *
-mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token)
-{
-	MonoMethodSignature *sig;
-	g_assert (image->dynamic);
-
-	sig = g_hash_table_lookup (((MonoDynamicImage*)image)->vararg_aux_hash, GUINT_TO_POINTER (token));
-	if (sig)
-		return sig;
-
-	return mono_method_signature (method);
 }
 
 /*
