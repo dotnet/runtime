@@ -654,10 +654,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 
 		ji = mini_jit_info_table_find (domain, (gpointer)rip, NULL);
-		if (!ji) {
-			// FIXME: This can happen with multiple appdomains (bug #444383)
-			return FALSE;
-		}
+		g_assert (ji);
 
 		/* Adjust IP */
 		rip --;
