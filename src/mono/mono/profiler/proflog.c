@@ -21,7 +21,7 @@ static int max_call_depth = 100;
 static int runtime_inited = 0;
 
 /* For linux compile with:
- * gcc -shared -o libmono-profiler-log.so proflog.c utils.c -Wall -g -lz `pkg-config --cflags --libs mono-2`
+ * gcc -fPIC -shared -o libmono-profiler-log.so proflog.c utils.c -Wall -g -lz `pkg-config --cflags --libs mono-2`
  * gcc -o mprof-report decode.c utils.c -Wall -g -lz -lrt -lpthread `pkg-config --cflags mono-2`
  *
  * For osx compile with:

@@ -247,13 +247,12 @@ encode_uleb128 (uint64_t value, uint8_t *buf, uint8_t **endbuf)
 	*endbuf = p;
 }
 
-/* FIXME: make sure this works for 64 bit systems/values */
 void
 encode_sleb128 (intptr_t value, uint8_t *buf, uint8_t **endbuf)
 {
 	int more = 1;
 	int negative = (value < 0);
-	unsigned int size = 32;
+	unsigned int size = sizeof (intptr_t) * 8;
 	uint8_t byte;
 	uint8_t *p = buf;
 
@@ -266,7 +265,7 @@ encode_sleb128 (intptr_t value, uint8_t *buf, uint8_t **endbuf)
 		 */
 		if (negative)
 			/* sign extend */
-			value |= - (1 <<(size - 7));
+			value |= - ((intptr_t)1 <<(size - 7));
 		/* sign bit of byte is second high order bit (0x40) */
 		if ((value == 0 && !(byte & 0x40)) ||
 			(value == -1 && (byte & 0x40)))
@@ -310,11 +309,11 @@ decode_sleb128 (uint8_t *buf, uint8_t **endbuf)
 		uint8_t b = *p;
 		p ++;
 
-		res = res | (((int)(b & 0x7f)) << shift);
+		res = res | (((intptr_t)(b & 0x7f)) << shift);
 		shift += 7;
 		if (!(b & 0x80)) {
-			if (shift < 32 && (b & 0x40))
-				res |= - (1 << shift);
+			if (shift < sizeof (intptr_t) * 8 && (b & 0x40))
+				res |= - ((intptr_t)1 << shift);
 			break;
 		}
 	}
