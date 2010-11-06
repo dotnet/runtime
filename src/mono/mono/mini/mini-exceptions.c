@@ -321,6 +321,14 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
  *
  *   A version of mono_find_jit_info which returns all data in the StackFrameInfo
  * structure.
+ * A note about frames of type FRAME_TYPE_MANAGED_TO_NATIVE:
+ * - These frames are produced by unwinding through an LMF, which stores the state of the method
+ * before it transitioned to native code. Thus, for these frames, CTX does not describe the
+ * state of the method, NEW_CTX does. This means the caller should do the following check:
+ * (ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)ji->code_start + ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx))))
+ * and if it fails, unwind once more to restore the 'new_ctx describes ji' invariant.
+ * FIXME: Why is the check neeed, isn't this always true ?
+ * FIXME: Clean this up.
  */
 gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
@@ -1134,6 +1142,8 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	int frame_count = 0;
 	gboolean has_dynamic_methods = FALSE;
 	gint32 filter_idx, first_filter_idx;
+	int i;
+	MonoObject *ex_obj;
 
 	g_assert (ctx != NULL);
 	if (!obj) {
@@ -1252,7 +1262,8 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		MonoContext new_ctx;
 		guint32 free_stack;
 		int clause_index_start = 0;
-
+		gboolean unwind_res = TRUE;
+		
 		if (resume) {
 			resume = FALSE;
 			ji = jit_tls->resume_state.ji;
@@ -1262,239 +1273,32 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			first_filter_idx = jit_tls->resume_state.first_filter_idx;
 			filter_idx = jit_tls->resume_state.filter_idx;
 		} else {
-			ji = mono_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
-									 NULL, &lmf, NULL, NULL);
-			if (!ji) {
-				g_warning ("Exception inside function without unwind info");
-				g_assert_not_reached ();
-			}
-		}
+			StackFrameInfo frame;
 
-		if (ji != (gpointer)-1 && !(ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)ji->code_start + ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx))))) {
-			/*
-			 * The exception was raised in native code and we got back to managed code 
-			 * using the LMF.
-			 */
-			*ctx = new_ctx;
-			continue;
-		}
-
-		if (ji != (gpointer)-1) {
-			frame_count ++;
-			//printf ("M: %s %d %d.\n", mono_method_full_name (ji->method, TRUE), frame_count, test_only);
-
-			if (mini_get_debug_options ()->reverse_pinvoke_exceptions && ji->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-				g_error ("A native frame was found while unwinding the stack after an exception.\n"
-				"The native frame called the managed method:\n%s\n",
-				mono_method_full_name (ji->method, TRUE));
-			}
-
-			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
-				/* 
-				 * Avoid overwriting the stack trace if the exception is
-				 * rethrown. Also avoid giant stack traces during a stack
-				 * overflow.
-				 */
-				if (!initial_trace_ips && (frame_count < 1000)) {
-					trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
-					trace_ips = g_list_prepend (trace_ips,
-						get_generic_info_from_stack_frame (ji, ctx));
+			unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, &frame);
+			if (unwind_res) {
+				switch (frame.type) {
+				case FRAME_TYPE_MANAGED:
+					ji = frame.ji;
+					break;
+				case FRAME_TYPE_DEBUGGER_INVOKE:
+					break;
+				case FRAME_TYPE_MANAGED_TO_NATIVE:
+					memset (&rji, 0, sizeof (MonoJitInfo));
+					rji.method = frame.method;
+					ji = &rji;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+				if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE) {
+					*ctx = new_ctx;
+					continue;
 				}
 			}
-
-			if (ji->method->dynamic)
-				has_dynamic_methods = TRUE;
-
-			if (stack_overflow)
-#ifndef MONO_ARCH_STACK_GROWS_UP
-				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
-#else
-				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (ctx));
-#endif
-			else
-				free_stack = 0xffffff;
-
-			/* 
-			 * During stack overflow, wait till the unwinding frees some stack
-			 * space before running handlers/finalizers.
-			 */
-			if ((free_stack > (64 * 1024)) && ji->num_clauses) {
-				int i;
-				MonoObject *ex_obj;
-				
-				for (i = clause_index_start; i < ji->num_clauses; i++) {
-					MonoJitExceptionInfo *ei = &ji->clauses [i];
-					gboolean filtered = FALSE;
-					gboolean is_protected;
-
-#if defined(__s390__)
-					/* 
-					 * This is required in cases where a try block starts immediately after
-					 * a call which causes an exception. Testcase: tests/exception8.cs.
-					 * FIXME: Clean this up.
-					 */
-					is_protected = (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && MONO_CONTEXT_GET_IP (ctx) <= ei->try_end);
-#else
-					is_protected = is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx));
-#endif
-					if (is_protected) {
-						/* catch block */
-						MonoClass *catch_class = get_exception_catch_class (ei, ji, ctx);
-
-						/*
-						 * Have to unwrap RuntimeWrappedExceptions if the
-						 * method's assembly doesn't have a RuntimeCompatibilityAttribute.
-						 */
-						if (non_exception && !wrap_non_exception_throws (ji->method))
-							ex_obj = non_exception;
-						else
-							ex_obj = obj;
-
-						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
-							if (ji->from_llvm) {
-#ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
-								MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
-#else
-								g_assert_not_reached ();
-#endif
-							} else {
-								/* store the exception object in bp + ei->exvar_offset */
-								*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
-							}
-						}
-
-						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-							if (test_only) {
-								mono_perfcounters->exceptions_filters++;
-								mono_debugger_call_exception_handler (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), ex_obj);
-								filtered = call_filter (ctx, ei->data.filter);
-								if (filtered && out_filter_idx)
-									*out_filter_idx = filter_idx;
-								if (out_ji)
-									*out_ji = ji;
-							}
-							else {
-								/* 
-								 * Filter clauses should only be run in the 
-								 * first pass of exception handling.
-								 */
-								filtered = (filter_idx == first_filter_idx);
-							}
-							filter_idx ++;
-						}
-
-						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-						     mono_object_isinst (ex_obj, catch_class)) || filtered) {
-							if (test_only) {
-								if (mono_ex && !initial_trace_ips) {
-									trace_ips = g_list_reverse (trace_ips);
-									MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));
-									if (has_dynamic_methods)
-										/* These methods could go away anytime, so compute the stack trace now */
-										MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
-								}
-								g_list_free (trace_ips);
-
-								return TRUE;
-							}
-							/*
-							 * This guards against the situation that we abort a thread that is executing a finally clause
-							 * that was called by the EH machinery. It won't have a guard trampoline installed, so we must
-							 * check for this situation here and resume interruption if we are below the guarded block.
-							 */
-							if (G_UNLIKELY (jit_tls->handler_block_return_address)) {
-								gboolean is_outside = FALSE;
-								gpointer prot_bp = MONO_CONTEXT_GET_BP (&jit_tls->ex_ctx);
-								gpointer catch_bp = MONO_CONTEXT_GET_BP (ctx);
-								//FIXME make this stack direction aware
-								if (catch_bp > prot_bp) {
-									is_outside = TRUE;
-								} else if (catch_bp == prot_bp) {
-									/* Can be either try { try { } catch {} } finally {} or try { try { } finally {} } catch {}
-									 * So we check if the catch handler_start is protected by the guarded handler protected region
-									 *
-									 * Assumptions:
-									 *	If there is an outstanding guarded_block return address, it means the current thread must be aborted.
-									 *	This is the only way to reach out the guarded block as other cases are handled by the trampoline.
-									 *	There aren't any further finally/fault handler blocks down the stack over this exception.
-									 *   This must be ensured by the code that installs the guard trampoline.
-									 */
-									g_assert (ji == mini_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (&jit_tls->ex_ctx), NULL));
-
-									if (!is_address_protected (ji, jit_tls->handler_block, ei->handler_start)) {
-										is_outside = TRUE;
-									}
-								}
-								if (is_outside) {
-									jit_tls->handler_block_return_address = NULL;
-									jit_tls->handler_block = NULL;
-									mono_thread_resume_interruption (); /*We ignore the exception here, it will be raised later*/
-								}
-							}
-
-							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
-								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
-							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
-							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-							*(mono_get_lmf_addr ()) = lmf;
-							mono_perfcounters->exceptions_depth += frame_count;
-							if (obj == domain->stack_overflow_ex)
-								jit_tls->handling_stack_ovf = FALSE;
-
-							return 0;
-						}
-						if (!test_only && is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
-						    (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT)) {
-							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
-								g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
-							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
-							call_filter (ctx, ei->handler_start);
-						}
-						if (!test_only && is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
-						    (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
-							if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
-								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
-							mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
-							mono_perfcounters->exceptions_finallys++;
-							*(mono_get_lmf_addr ()) = lmf;
-							if (ji->from_llvm) {
-								/* 
-								 * LLVM compiled finally handlers follow the design
-								 * of the c++ ehabi, i.e. they call a resume function
-								 * at the end instead of returning to the caller.
-								 * So save the exception handling state,
-								 * mono_resume_unwind () will call us again to continue
-								 * the unwinding.
-								 */
-								jit_tls->resume_state.ex_obj = obj;
-								jit_tls->resume_state.ji = ji;
-								jit_tls->resume_state.clause_index = i + 1;
-								jit_tls->resume_state.ctx = *ctx;
-								jit_tls->resume_state.new_ctx = new_ctx;
-								jit_tls->resume_state.lmf = lmf;
-								jit_tls->resume_state.first_filter_idx = first_filter_idx;
-								jit_tls->resume_state.filter_idx = filter_idx;
-								MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-								return 0;
-							} else {
-								call_filter (ctx, ei->handler_start);
-							}
-						}
-						
-					}
-				}
-			}
-			if (!test_only)
-				mono_profiler_exception_method_leave (ji->method);
 		}
 
-		*ctx = new_ctx;
-
-		if (ji == (gpointer)-1) {
-
+		if (!unwind_res) {
 			if (!test_only) {
 				*(mono_get_lmf_addr ()) = lmf;
 
@@ -1512,6 +1316,225 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				return FALSE;
 			}
 		}
+
+		if (!(ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)ji->code_start + ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx))))) {
+			/*
+			 * The exception was raised in native code and we got back to managed code 
+			 * using the LMF. In this case, new_ctx refers to the current frame, not ctx, so
+			 * try again with new_ctx.
+			 */
+			*ctx = new_ctx;
+			continue;
+		}
+
+		frame_count ++;
+		//printf ("M: %s %d %d.\n", mono_method_full_name (ji->method, TRUE), frame_count, test_only);
+
+		if (mini_get_debug_options ()->reverse_pinvoke_exceptions && ji->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			g_error ("A native frame was found while unwinding the stack after an exception.\n"
+					 "The native frame called the managed method:\n%s\n",
+					 mono_method_full_name (ji->method, TRUE));
+		}
+
+		if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
+			/* 
+			 * Avoid overwriting the stack trace if the exception is
+			 * rethrown. Also avoid giant stack traces during a stack
+			 * overflow.
+			 */
+			if (!initial_trace_ips && (frame_count < 1000)) {
+				trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
+				trace_ips = g_list_prepend (trace_ips,
+											get_generic_info_from_stack_frame (ji, ctx));
+			}
+		}
+
+		if (ji->method->dynamic)
+			has_dynamic_methods = TRUE;
+
+		if (stack_overflow)
+#ifndef MONO_ARCH_STACK_GROWS_UP
+			free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
+#else
+		free_stack = (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (ctx));
+#endif
+		else
+			free_stack = 0xffffff;
+				
+		for (i = clause_index_start; i < ji->num_clauses; i++) {
+			MonoJitExceptionInfo *ei = &ji->clauses [i];
+			gboolean filtered = FALSE;
+			gboolean is_protected;
+
+			/* 
+			 * During stack overflow, wait till the unwinding frees some stack
+			 * space before running handlers/finalizers.
+			 */
+			if (free_stack <= (64 * 1024))
+				continue;
+
+#if defined(__s390__)
+			/* 
+			 * This is required in cases where a try block starts immediately after
+			 * a call which causes an exception. Testcase: tests/exception8.cs.
+			 * FIXME: Clean this up.
+			 */
+			is_protected = (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && MONO_CONTEXT_GET_IP (ctx) <= ei->try_end);
+#else
+			is_protected = is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx));
+#endif
+			if (is_protected) {
+				/* catch block */
+				MonoClass *catch_class = get_exception_catch_class (ei, ji, ctx);
+
+				/*
+				 * Have to unwrap RuntimeWrappedExceptions if the
+				 * method's assembly doesn't have a RuntimeCompatibilityAttribute.
+				 */
+				if (non_exception && !wrap_non_exception_throws (ji->method))
+					ex_obj = non_exception;
+				else
+					ex_obj = obj;
+
+				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
+					if (ji->from_llvm) {
+#ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
+						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+#else
+						g_assert_not_reached ();
+#endif
+					} else {
+						/* store the exception object in bp + ei->exvar_offset */
+						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
+					}
+				}
+
+				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+					if (test_only) {
+						mono_perfcounters->exceptions_filters++;
+						mono_debugger_call_exception_handler (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), ex_obj);
+						filtered = call_filter (ctx, ei->data.filter);
+						if (filtered && out_filter_idx)
+							*out_filter_idx = filter_idx;
+						if (out_ji)
+							*out_ji = ji;
+					}
+					else {
+						/* 
+						 * Filter clauses should only be run in the 
+						 * first pass of exception handling.
+						 */
+						filtered = (filter_idx == first_filter_idx);
+					}
+					filter_idx ++;
+				}
+
+				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
+					 mono_object_isinst (ex_obj, catch_class)) || filtered) {
+					if (test_only) {
+						if (mono_ex && !initial_trace_ips) {
+							trace_ips = g_list_reverse (trace_ips);
+							MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));
+							if (has_dynamic_methods)
+								/* These methods could go away anytime, so compute the stack trace now */
+								MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
+						}
+						g_list_free (trace_ips);
+
+						return TRUE;
+					}
+					/*
+					 * This guards against the situation that we abort a thread that is executing a finally clause
+					 * that was called by the EH machinery. It won't have a guard trampoline installed, so we must
+					 * check for this situation here and resume interruption if we are below the guarded block.
+					 */
+					if (G_UNLIKELY (jit_tls->handler_block_return_address)) {
+						gboolean is_outside = FALSE;
+						gpointer prot_bp = MONO_CONTEXT_GET_BP (&jit_tls->ex_ctx);
+						gpointer catch_bp = MONO_CONTEXT_GET_BP (ctx);
+						//FIXME make this stack direction aware
+						if (catch_bp > prot_bp) {
+							is_outside = TRUE;
+						} else if (catch_bp == prot_bp) {
+							/* Can be either try { try { } catch {} } finally {} or try { try { } finally {} } catch {}
+							 * So we check if the catch handler_start is protected by the guarded handler protected region
+							 *
+							 * Assumptions:
+							 *	If there is an outstanding guarded_block return address, it means the current thread must be aborted.
+							 *	This is the only way to reach out the guarded block as other cases are handled by the trampoline.
+							 *	There aren't any further finally/fault handler blocks down the stack over this exception.
+							 *   This must be ensured by the code that installs the guard trampoline.
+							 */
+							g_assert (ji == mini_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (&jit_tls->ex_ctx), NULL));
+
+							if (!is_address_protected (ji, jit_tls->handler_block, ei->handler_start)) {
+								is_outside = TRUE;
+							}
+						}
+						if (is_outside) {
+							jit_tls->handler_block_return_address = NULL;
+							jit_tls->handler_block = NULL;
+							mono_thread_resume_interruption (); /*We ignore the exception here, it will be raised later*/
+						}
+					}
+
+					if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
+						g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+					mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
+					mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
+					MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
+					*(mono_get_lmf_addr ()) = lmf;
+					mono_perfcounters->exceptions_depth += frame_count;
+					if (obj == domain->stack_overflow_ex)
+						jit_tls->handling_stack_ovf = FALSE;
+
+					return 0;
+				}
+				if (!test_only && is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
+					(ei->flags == MONO_EXCEPTION_CLAUSE_FAULT)) {
+					if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
+						g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+					mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
+					mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
+					call_filter (ctx, ei->handler_start);
+				}
+				if (!test_only && is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
+					(ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
+					if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
+						g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+					mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
+					mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
+					mono_perfcounters->exceptions_finallys++;
+					*(mono_get_lmf_addr ()) = lmf;
+					if (ji->from_llvm) {
+						/* 
+						 * LLVM compiled finally handlers follow the design
+						 * of the c++ ehabi, i.e. they call a resume function
+						 * at the end instead of returning to the caller.
+						 * So save the exception handling state,
+						 * mono_resume_unwind () will call us again to continue
+						 * the unwinding.
+						 */
+						jit_tls->resume_state.ex_obj = obj;
+						jit_tls->resume_state.ji = ji;
+						jit_tls->resume_state.clause_index = i + 1;
+						jit_tls->resume_state.ctx = *ctx;
+						jit_tls->resume_state.new_ctx = new_ctx;
+						jit_tls->resume_state.lmf = lmf;
+						jit_tls->resume_state.first_filter_idx = first_filter_idx;
+						jit_tls->resume_state.filter_idx = filter_idx;
+						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
+						return 0;
+					} else {
+						call_filter (ctx, ei->handler_start);
+					}
+				}
+			}
+		}
+		if (!test_only)
+			mono_profiler_exception_method_leave (ji->method);
+
+		*ctx = new_ctx;
 	}
 
 	g_assert_not_reached ();
