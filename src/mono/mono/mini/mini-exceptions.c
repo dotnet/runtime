@@ -1263,6 +1263,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		guint32 free_stack;
 		int clause_index_start = 0;
 		gboolean unwind_res = TRUE;
+		int frame_type = -1;
 		
 		if (resume) {
 			resume = FALSE;
@@ -1277,6 +1278,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 			unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, &frame);
 			if (unwind_res) {
+				frame_type = frame.type;
 				switch (frame.type) {
 				case FRAME_TYPE_MANAGED:
 					ji = frame.ji;
@@ -1284,6 +1286,8 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				case FRAME_TYPE_DEBUGGER_INVOKE:
 					break;
 				case FRAME_TYPE_MANAGED_TO_NATIVE:
+					g_assert (frame.ji);
+					g_assert (!(frame.ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)frame.ji->code_start + frame.ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx)))));
 					memset (&rji, 0, sizeof (MonoJitInfo));
 					rji.method = frame.method;
 					ji = &rji;
@@ -1323,6 +1327,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			 * using the LMF. In this case, new_ctx refers to the current frame, not ctx, so
 			 * try again with new_ctx.
 			 */
+			g_assert (frame_type == FRAME_TYPE_MANAGED_TO_NATIVE);
 			*ctx = new_ctx;
 			continue;
 		}
