@@ -470,7 +470,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		sframe = (MonoS390StackFrame *) MONO_CONTEXT_GET_SP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->prev);
 		sframe = (MonoS390StackFrame *) sframe->prev;
-		MONO_CONTEXT_SET_IP (new_ctx, sframe->return_address);
+		MONO_CONTEXT_SET_IP (new_ctx, (guint8*)sframe->return_address - 2);
 		memcpy (&new_ctx->uc_mcontext.gregs[6], sframe->regs, (8*sizeof(gint32)));
 		return TRUE;
 	} else if (*lmf) {
@@ -490,7 +490,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		memcpy(new_ctx->uc_mcontext.fpregs.fprs, (*lmf)->fregs, sizeof((*lmf)->fregs));
 
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
-		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
+		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip - 2);
 		*lmf = (*lmf)->previous_lmf;
 
 		return TRUE;
