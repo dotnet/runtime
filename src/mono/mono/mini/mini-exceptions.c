@@ -1325,6 +1325,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				for (i = clause_index_start; i < ji->num_clauses; i++) {
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
 					gboolean filtered = FALSE;
+					gboolean is_protected;
 
 #if defined(__s390__)
 					/* 
@@ -1332,10 +1333,11 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					 * a call which causes an exception. Testcase: tests/exception8.cs.
 					 * FIXME: Clean this up.
 					 */
-					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) {
+					is_protected = (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && MONO_CONTEXT_GET_IP (ctx) <= ei->try_end);
 #else
-					if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx))) {
+					is_protected = is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx));
 #endif
+					if (is_protected) {
 						/* catch block */
 						MonoClass *catch_class = get_exception_catch_class (ei, ji, ctx);
 
