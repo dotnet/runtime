@@ -81,8 +81,10 @@ struct _MSBlockInfo {
 	int obj_size_index;
 	gboolean pinned;
 	gboolean has_references;
+#ifndef SGEN_PARALLEL_MARK
 	gboolean has_pinned;	/* means cannot evacuate */
 	gboolean is_to_space;
+#endif
 #ifdef FIXED_HEAP
 	gboolean used;
 #else
@@ -185,8 +187,10 @@ static int nursery_bits;
 static char *nursery_start;
 static char *nursery_end;
 
+#ifndef SGEN_PARALLEL_MARK
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666;
+#endif
 
 #define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), nursery_bits, nursery_start, nursery_end))
 
@@ -491,8 +495,10 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->obj_size_index = size_index;
 	info->pinned = pinned;
 	info->has_references = has_references;
+#ifndef SGEN_PARALLEL_MARK
 	info->has_pinned = pinned;
 	info->is_to_space = (mono_sgen_get_current_collection_generation () == GENERATION_OLD);
+#endif
 #ifndef FIXED_HEAP
 	info->block = ms_get_empty_block ();
 
@@ -981,7 +987,9 @@ mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 	if (!block->pin_queue_num_entries)
 		return;
 
+#ifndef SGEN_PARALLEL_MARK
 	block->has_pinned = TRUE;
+#endif
 
 	for (i = 0; i < block->pin_queue_num_entries; ++i) {
 		int index = MS_BLOCK_OBJ_INDEX (block->pin_queue_start [i], block);
@@ -994,14 +1002,6 @@ mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 }
 
 static void
-clear_evacuate_block_obj_sizes (void)
-{
-	int i;
-	for (i = 0; i < num_block_obj_sizes; ++i)
-		evacuate_block_obj_sizes [i] = FALSE;
-}
-
-static void
 major_sweep (void)
 {
 	int i;
@@ -1010,6 +1010,7 @@ major_sweep (void)
 #else
 	MSBlockInfo **iter;
 #endif
+#ifndef SGEN_PARALLEL_MARK
 	/* statistics for evacuation */
 	int *slots_available = alloca (sizeof (int) * num_block_obj_sizes);
 	int *slots_used = alloca (sizeof (int) * num_block_obj_sizes);
@@ -1017,6 +1018,7 @@ major_sweep (void)
 
 	for (i = 0; i < num_block_obj_sizes; ++i)
 		slots_available [i] = slots_used [i] = num_blocks [i] = 0;
+#endif
 
 	/* clear all the free lists */
 	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i) {
@@ -1046,11 +1048,14 @@ major_sweep (void)
 			continue;
 #endif
 
-		has_pinned = block->has_pinned;
 		obj_size_index = block->obj_size_index;
 
+#ifndef SGEN_PARALLEL_MARK
+		has_pinned = block->has_pinned;
 		block->has_pinned = block->pinned;
+
 		block->is_to_space = FALSE;
+#endif
 
 		count = MS_BLOCK_FREE / block->obj_size;
 		block->free_list = NULL;
@@ -1063,8 +1068,10 @@ major_sweep (void)
 			if (MS_MARK_BIT (block, word, bit)) {
 				DEBUG (9, g_assert (MS_OBJ_ALLOCED (obj, block)));
 				have_live = TRUE;
+#ifndef SGEN_PARALLEL_MARK
 				if (!has_pinned)
 					++slots_used [obj_size_index];
+#endif
 			} else {
 				/* an unmarked object */
 				if (MS_OBJ_ALLOCED (obj, block)) {
@@ -1085,10 +1092,12 @@ major_sweep (void)
 		 */
 
 		if (have_live) {
+#ifndef SGEN_PARALLEL_MARK
 			if (!has_pinned) {
 				++num_blocks [obj_size_index];
 				slots_available [obj_size_index] += count;
 			}
+#endif
 
 #ifndef FIXED_HEAP
 			iter = &block->next;
@@ -1122,6 +1131,7 @@ major_sweep (void)
 		}
 	}
 
+#ifndef SGEN_PARALLEL_MARK
 	for (i = 0; i < num_block_obj_sizes; ++i) {
 		float usage = (float)slots_used [i] / (float)slots_available [i];
 		if (num_blocks [i] > 5 && usage < evacuation_threshold) {
@@ -1134,6 +1144,7 @@ major_sweep (void)
 			evacuate_block_obj_sizes [i] = FALSE;
 		}
 	}
+#endif
 }
 
 static int count_pinned_ref;
@@ -1233,6 +1244,7 @@ major_finish_nursery_collection (void)
 static void
 major_start_major_collection (void)
 {
+#ifndef SGEN_PARALLEL_MARK
 	int i;
 
 	/* clear the free lists */
@@ -1243,6 +1255,7 @@ major_start_major_collection (void)
 		free_block_lists [0][i] = NULL;
 		free_block_lists [MS_BLOCK_FLAG_REFS][i] = NULL;
 	}
+#endif
 }
 
 static void
@@ -1343,6 +1356,7 @@ major_handle_gc_param (const char *opt)
 		return TRUE;
 	} else
 #endif
+#ifndef SGEN_PARALLEL_MARK
 	if (g_str_has_prefix (opt, "evacuation-threshold=")) {
 		const char *arg = strchr (opt, '=') + 1;
 		int percentage = atoi (arg);
@@ -1353,6 +1367,7 @@ major_handle_gc_param (const char *opt)
 		evacuation_threshold = (float)percentage / 100.0;
 		return TRUE;
 	}
+#endif
 
 	return FALSE;
 }
@@ -1361,10 +1376,14 @@ static void
 major_print_gc_param_usage (void)
 {
 	fprintf (stderr,
+			""
 #ifdef FIXED_HEAP
 			"  major-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n"
 #endif
-			"  evacuation-threshold=P (where P is a percentage, an integer in 0-100)\n");
+#ifndef SGEN_PARALLEL_MARK
+			"  evacuation-threshold=P (where P is a percentage, an integer in 0-100)\n"
+#endif
+			);
 }
 
 #ifdef SGEN_HAVE_CARDTABLE
@@ -1536,8 +1555,11 @@ mono_sgen_marksweep_init
 	block_obj_sizes = mono_sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
 	ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, block_obj_sizes);
 
+#ifndef SGEN_PARALLEL_MARK
 	evacuate_block_obj_sizes = mono_sgen_alloc_internal_dynamic (sizeof (gboolean) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES);
-	clear_evacuate_block_obj_sizes ();
+	for (i = 0; i < num_block_obj_sizes; ++i)
+		evacuate_block_obj_sizes [i] = FALSE;
+#endif
 
 	/*
 	{
