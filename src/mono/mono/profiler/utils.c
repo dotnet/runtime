@@ -1,10 +1,14 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <time.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef HOST_WIN32
+#include <windows.h>
+#else
+#include <pthread.h>
 #include <sched.h>
+#endif
 
 #include "utils.h"
 
@@ -28,6 +32,10 @@ static mach_timebase_info_data_t timebase_info;
 
 #define TICKS_PER_SEC 1000000000LL
 
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(__linux__)
+#define HAVE_RDTSC 1
+#endif
+
 typedef struct {
 	unsigned int timer_count;
 	int last_cpu;
@@ -35,17 +43,25 @@ typedef struct {
 	uint64_t last_time;
 } TlsData;
 
-#if HAVE_KW_THREAD
+#ifdef HOST_WIN32
+static int tls_data;
+#define DECL_TLS_DATA TlsData *tls; tls = (TlsData *) TlsGetValue (tls_data); if (tls == NULL) { tls = (TlsData *) calloc (sizeof (TlsData), 1); TlsSetValue (tls_data, tls); }
+#define TLS_INIT(x) x = TlsAlloc()
+#elif HAVE_KW_THREAD
 static __thread TlsData tls_data;
 #define DECL_TLS_DATA TlsData *tls = &tls_data
 #define TLS_INIT(x)
 #else
 static pthread_key_t tls_data;
-#define DECL_TLS_DATA TlsData *tls; tls = (TlsData *) pthread_getspecific (tls_data); if (tls == NULL) { tls = (TlsData *) malloc (sizeof (TlsData)); pthread_setspecific (tls_data, tls); }
+#define DECL_TLS_DATA TlsData *tls; tls = (TlsData *) pthread_getspecific (tls_data); if (tls == NULL) { tls = (TlsData *) calloc (sizeof (TlsData), 1); pthread_setspecific (tls_data, tls); }
 #define TLS_INIT(x) pthread_key_create(&x, NULL)
 #endif
 
+#ifdef HOST_WIN32
+static CRITICAL_SECTION log_lock;
+#else
 static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 static uint64_t time_inc = 0;
 typedef uint64_t (*TimeFunc)(void);
@@ -84,10 +100,11 @@ fast_current_time (void)
 	return tls->last_time;
 }
 
+#if HAVE_RDTSC
+
 #define rdtsc(low,high) \
 	__asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high))
 
-#if !defined(__APPLE__)
 static uint64_t
 safe_rdtsc (int *cpu)
 {
@@ -113,6 +130,10 @@ have_rdtsc (void) {
 	int have_flag = 0;
 	float val;
 	FILE *cpuinfo;
+	int cpu = sched_getcpu ();
+
+	if (cpu < 0)
+		return 0;
 
 	if (!(cpuinfo = fopen ("/proc/cpuinfo", "r")))
 		return 0;
@@ -158,6 +179,9 @@ rdtsc_current_time (void)
 	tls->last_rdtsc = safe_rdtsc (&tls->last_cpu);
 	return tls->last_time;
 }
+#else
+#define have_rdtsc() 0
+#define rdtsc_current_time fast_current_time
 #endif
 
 static uint64_t
@@ -171,27 +195,27 @@ void
 utils_init (int fast_time)
 {
 	TLS_INIT (tls_data);
+#ifdef HOST_WIN32
+	InitializeCriticalSection (&log_lock);
+#endif
+#if defined (__APPLE__)
+	mach_timebase_info (&timebase_info);
+#endif
 
 	if (fast_time > 1) {
 		time_func = null_time;
 	} else if (fast_time) {
-#if defined (__APPLE__)
-		mach_timebase_info (&timebase_info);
-		time_func = fast_current_time;
-#else
 		uint64_t timea;
 		uint64_t timeb;
-		int cpu = sched_getcpu ();
 		clock_time ();
 		timea = clock_time ();
 		timeb = clock_time ();
 		time_inc = (timeb - timea) / TIME_ADJ;
 		/*printf ("time inc: %llu, timea: %llu, timeb: %llu, diff: %llu\n", time_inc, timea, timeb, timec-timeb);*/
-		if (cpu != -1 && have_rdtsc ())
+		if (have_rdtsc ())
 			time_func = rdtsc_current_time;
 		else
 			time_func = fast_current_time;
-#endif
 	} else {
 		time_func = clock_time;
 	}
@@ -207,28 +231,45 @@ void*
 alloc_buffer (int size)
 {
 	void *ptr;
+#ifdef HOST_WIN32
+	ptr = VirtualAlloc (NULL, size, MEM_COMMIT, PAGE_READWRITE);
+	return ptr;
+#else
 	ptr = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
 	if (ptr == (void*)-1)
 		return NULL;
 	return ptr;
+#endif
 }
 
 void
 free_buffer (void *buf, int size)
 {
+#ifdef HOST_WIN32
+	VirtualFree (buf, 0, MEM_RELEASE);
+#else
 	munmap (buf, size);
+#endif
 }
 
 void
 take_lock (void)
 {
+#ifdef HOST_WIN32
+	EnterCriticalSection (&log_lock);
+#else
 	pthread_mutex_lock (&log_lock);
+#endif
 }
 
 void
 release_lock (void)
 {
+#ifdef HOST_WIN32
+	LeaveCriticalSection (&log_lock);
+#else
 	pthread_mutex_unlock (&log_lock);
+#endif
 }
 
 void
@@ -326,6 +367,10 @@ decode_sleb128 (uint8_t *buf, uint8_t **endbuf)
 uintptr_t
 thread_id (void)
 {
+#ifdef HOST_WIN32
+	return (uintptr_t)GetCurrentThreadId ();
+#else
 	return (uintptr_t)pthread_self ();
+#endif
 }
 

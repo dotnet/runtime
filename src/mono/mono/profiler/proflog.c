@@ -6,7 +6,11 @@
 #include <string.h>
 #include <zlib.h>
 #include <assert.h>
+#ifdef HOST_WIN32
+#include <windows.h>
+#else
 #include <pthread.h>
+#endif
 
 #include "utils.h"
 #include "proflog.h"
@@ -212,7 +216,12 @@ struct _MonoProfiler {
 	int last_gc_gen_started;
 };
 
-#if HAVE_KW_THREAD
+#ifdef HOST_WIN32
+#define TLS_SET(x,y) TlsSetValue(x, y)
+#define TLS_GET(x) ((LogBuffer *) TlsGetValue(x))
+#define TLS_INIT(x) x = TlsAlloc ()
+static int tlsbuffer;
+#elif HAVE_KW_THREAD
 #define TLS_SET(x,y) x = y
 #define TLS_GET(x) x
 #define TLS_INIT(x)
