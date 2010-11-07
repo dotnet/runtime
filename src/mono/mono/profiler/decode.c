@@ -1,3 +1,11 @@
+/*
+ * decode.c: mprof-report program source: decode and analyze the log profiler data
+ *
+ * Author:
+ *   Paolo Molaro (lupus@ximian.com)
+ *
+ * Copyright 2010 Novell, Inc (http://www.novell.com)
+ */
 #include "utils.h"
 #include "proflog.h"
 #include <string.h>

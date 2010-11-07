@@ -1,3 +1,12 @@
+/*
+ * proflog.c: mono log profiler
+ *
+ * Author:
+ *   Paolo Molaro (lupus@ximian.com)
+ *
+ * Copyright 2010 Novell, Inc (http://www.novell.com)
+ */
+
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>

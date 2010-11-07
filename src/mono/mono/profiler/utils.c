@@ -1,3 +1,18 @@
+/*
+ * utils.c: log profiler and reporter utils
+ *
+ * We have here the minimal needed portability functions: we can't depend
+ * on the ones provided by the runtime, since they are internal and,
+ * especially mprof-report is an external program.
+ * Note also that we don't take a glib/eglib dependency here for mostly
+ * the same reason (but also because we need tight control in the profiler
+ * over memory allocation, which needs to work with the world stopped).
+ *
+ * Author:
+ *   Paolo Molaro (lupus@ximian.com)
+ *
+ * Copyright 2010 Novell, Inc (http://www.novell.com)
+ */
 #include <stdlib.h>
 #include <inttypes.h>
 #include <time.h>
@@ -12,12 +27,12 @@
 
 #include "utils.h"
 
-//#ifdef HAVE_SYS_TIME_H
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-//#endif
-//#if HAVE_SYS_MMAN_H
+#endif
+#if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
-//#endif
+#endif
 
 #if defined(__APPLE__)
 #include <mach/mach_time.h>  
