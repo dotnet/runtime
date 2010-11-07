@@ -37,34 +37,155 @@ static int runtime_inited = 0;
 typedef struct _LogBuffer LogBuffer;
 
 /*
- * file format: [OBSOLETE]
+ * file format:
  * [header] [buffer]*
- * each buffer contains events
+ *
+ * The file is composed by a header followed by 0 or more buffers.
+ * Each buffer contains events that happened on a thread: for a given thread
+ * buffers that appear later in the file are guaranteed to contain events
+ * that happened later in time. Buffers from separate threads could be interleaved,
+ * though.
+ * Buffers are not required to be aligned.
  *
  * header format:
- * [id: 4 bytes] [major: 1 byte] [minor: 1 byte] [length: 2 bytes]
- * [time: 8 bytes]
- * [bitness: 1 byte]
- * [mono version: variable]
- * [other data]
+ * [id: 4 bytes] constant value: LOG_HEADER_ID
+ * [major: 1 byte] [minor: 1 byte] major and minor version of the log profiler
+ * [format: 1 byte] version of the data format for the rest of the file
+ * [ptrsize: 1 byte] size in bytes of a pointer in the profiled program
+ * [startup time: 8 bytes] time in milliseconds since the unix epoch when the program started
+ * [timer overhead: 4 bytes] approximate overhead in nanoseconds of the timer
+ * [flags: 4 bytes] file format flags, should be 0 for now
+ * [pid: 4 bytes] pid of the profiled process
+ * [sysid: 4 bytes] operating system and architecture identifier
+ *
+ * The multiple byte integers are in little-endian format.
  *
  * buffer format:
- * [bufid: 4 bytes] [len: 4 bytes]
- * [time_base: 8 bytes]
- * [ptr_base: 8 bytes]
- * [obj_base: 8 bytes]
- * [thread id: 8 bytes]
+ * [buffer header] [event]*
+ * Buffers have a fixed-size header followed by 0 or more bytes of event data.
+ * Timing information and other values in the event data are usually stored
+ * as uleb128 or sleb128 integers. To save space, as noted for each item below,
+ * some data is represented as a difference between the actual value and
+ * either the last value of the same type (like for timing information) or
+ * as the difference from a value stored in a buffer header.
+ *
+ * For timing information the data is stored as uleb128, since timing
+ * increases in a monotonic way in each thread: the value is the number of
+ * nanoseconds to add to the last seen timing data in a buffer. The first value
+ * in a buffer will be calculated from the time_base field in the buffer head.
+ *
+ * Object or heap sizes are stored as uleb128.
+ * Pointer differences are stored as sleb128, instead.
+ *
+ * If an unexpected value is found, the rest of the buffer should be ignored,
+ * as generally the later values need the former to be interpreted correctly.
+ *
+ * buffer header format:
+ * [bufid: 4 bytes] constant value: BUF_ID
+ * [len: 4 bytes] size of the data following the buffer header
+ * [time_base: 8 bytes] time base in nanoseconds since an unspecified epoch
+ * [ptr_base: 8 bytes] base value for pointers
+ * [obj_base: 8 bytes] base value for object addresses
+ * [thread id: 8 bytes] system-specific thread ID (pthread_t for example)
+ * [method_base: 8 bytes] base value for MonoMethod pointers
  *
  * event format:
- * [extended type: 4 bits] [type: 4 bits]
- * The data that follows depend on type.
- * Time values are relative to the last time base of the buffer.
+ * [extended info: upper 4 bits] [type: lower 4 bits] [data]*
+ * The data that follows depends on type and the extended info.
+ * Type is one of the enum values in proflog.h: TYPE_ALLOC, TYPE_GC,
+ * TYPE_METADATA, TYPE_METHOD, TYPE_EXCEPTION, TYPE_MONITOR, TYPE_HEAP.
+ * The extended info bits are interpreted based on type, see
+ * each individual event description below.
+ * strings are represented as a 0-terminated utf8 sequence.
+ *
+ * backtrace format:
+ * [flags: uleb128] must be 0
+ * [num: uleb128] number of frames following
+ * [frame: sleb128]* num MonoMethod pointers as differences from ptr_base
  *
  * type alloc format:
- * [ptr: encoded] [class: encoded] [time: encoded] size?
+ * type: TYPE_ALLOC
+ * exinfo: flags: TYPE_ALLOC_BT
+ * [time diff: uleb128] nanoseconds since last timing
+ * [ptr: sleb128] class as a byte difference from ptr_base
+ * [obj: sleb128] object address as a byte difference from obj_base
+ * [size: uleb128] size of the object in the heap
+ * If the TYPE_ALLOC_BT flag is set, a backtrace follows.
  *
- * type enter/leave format:
- * [method: encoded] [time: encoded]
+ * type GC format:
+ * type: TYPE_GC
+ * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE
+ * [time diff: uleb128] nanoseconds since last timing
+ * if exinfo == TYPE_GC_RESIZE
+ *	[heap_size: uleb128] new heap size
+ * if exinfo == TYPE_GC_EVENT
+ *	[event type: uleb128] GC event (MONO_GC_EVENT_* from profiler.h)
+ *	[generation: uleb128] GC generation event refers to
+ * if exinfo == TYPE_GC_MOVE
+ *	[num_objects: uleb128] number of object moves that follow
+ *	[objaddr: sleb128]+ num_objects object pointer differences from obj_base
+ *	num is always an even number: the even items are the old
+ *	addresses, the odd numbers are the respective new object addresses
+ *
+ * type metadata format:
+ * type: TYPE_METADATA
+ * exinfo: flags: TYPE_LOAD_ERR
+ * [time diff: uleb128] nanoseconds since last timing
+ * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN
+ * [pointer: sleb128] pointer of the metadata type depending on mtype
+ * if mtype == TYPE_CLASS
+ *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
+ * 	[flags: uleb128] must be 0
+ * 	[name: string] full class name
+ * if mtype == TYPE_IMAGE
+ * 	[flags: uleb128] must be 0
+ * 	[name: string] image file name
+ *
+ * type method format:
+ * type: TYPE_METHOD
+ * exinfo: one of: TYPE_LEAVE, TYPE_ENTER, TYPE_EXC_LEAVE, TYPE_JIT
+ * [time diff: uleb128] nanoseconds since last timing
+ * [method: sleb128] MonoMethod* as a pointer difference from the last such
+ * pointer or the buffer method_base
+ * if exinfo == TYPE_JIT
+ *	[code address: sleb128] pointer to the native code as a diff from ptr_base
+ *	[code size: uleb128] size of the generated code
+ *	[name: string] full method name
+ *
+ * type exception format:
+ * type: TYPE_EXCEPTION
+ * exinfo: TYPE_EXCEPTION_BT flag and one of: TYPE_THROW, TYPE_CLAUSE
+ * [time diff: uleb128] nanoseconds since last timing
+ * if exinfo.low3bits == TYPE_CLAUSE
+ * 	[clause type: uleb128] finally/catch/fault/filter
+ * 	[clause num: uleb128] the clause number in the method header
+ * 	[method: sleb128] MonoMethod* as a pointer difference from the last such
+ * 	pointer or the buffer method_base
+ * if exinfo.low3bits == TYPE_THROW
+ * 	[object: sleb128] the object that was thrown as a difference from obj_base
+ *	If the TYPE_EXCEPTION_BT flag is set, a backtrace follows.
+ *
+ * type monitor format:
+ * type: TYPE_MONITOR
+ * exinfo: TYPE_MONITOR_BT flag and one of: MONO_PROFILER_MONITOR_(CONTENTION|FAIL|DONE)
+ * [time diff: uleb128] nanoseconds since last timing
+ * [object: sleb128] the lock object as a difference from obj_base
+ * if exinfo.low3bits == MONO_PROFILER_MONITOR_CONTENTION
+ *	If the TYPE_MONITOR_BT flag is set, a backtrace follows.
+ *
+ * type heap format
+ * type: TYPE_HEAP
+ * exinfo: one of TYPE_HEAP_START, TYPE_HEAP_END, TYPE_HEAP_OBJECT
+ * if exinfo == TYPE_HEAP_START
+ * 	[time diff: uleb128] nanoseconds since last timing
+ * if exinfo == TYPE_HEAP_END
+ * 	[time diff: uleb128] nanoseconds since last timing
+ * if exinfo == TYPE_HEAP_OBJECT
+ * 	[object: sleb128] the object as a difference from obj_base
+ * 	[class: sleb128] the object MonoClass* as a difference from ptr_base
+ * 	[size: uleb128] size of the object on the heap
+ * 	[num_refs: uleb128] number of object references
+ * 	[objrefs: sleb128]+ object referenced as a difference from obj_base
  *
  */
 struct _LogBuffer {

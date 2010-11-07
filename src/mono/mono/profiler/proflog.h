@@ -40,6 +40,7 @@ enum {
 	TYPE_EXC_LEAVE = 3 << 4,
 	TYPE_JIT       = 4 << 4,
 	/* extended type for TYPE_EXCEPTION */
+	TYPE_THROW        = 0 << 4,
 	TYPE_CLAUSE       = 1 << 4,
 	TYPE_EXCEPTION_BT = 1 << 7,
 	/* extended type for TYPE_ALLOC */
