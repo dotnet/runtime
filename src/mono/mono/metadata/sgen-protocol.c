@@ -68,6 +68,8 @@ binary_protocol_flush_buffers (gboolean force)
 
 	binary_protocol_flush_buffers_rec (binary_protocol_buffers);
 	binary_protocol_buffers = NULL;
+
+	fflush (binary_protocol_file);
 }
 
 static BinaryProtocolBuffer*
@@ -117,6 +119,9 @@ protocol_entry (unsigned char type, gpointer data, int size)
 
 	if (InterlockedCompareExchange (&buffer->index, index + 1 + size, index) != index)
 		goto retry_same_buffer;
+
+	/* FIXME: if we're interrupted at this point, we have a buffer
+	   entry that contains random data. */
 
 	buffer->buffer [index++] = type;
 	memcpy (buffer->buffer + index, data, size);
