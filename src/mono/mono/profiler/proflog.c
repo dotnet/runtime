@@ -13,6 +13,9 @@
 #include <mono/metadata/debug-helpers.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HOST_WIN32
+#undef HAVE_ZLIB
+#endif
 #if defined (HAVE_ZLIB)
 #include <zlib.h>
 #endif

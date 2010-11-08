@@ -16,6 +16,9 @@
 #endif
 #include <unistd.h>
 #include <stdlib.h>
+#ifdef HOST_WIN32
+#undef HAVE_ZLIB
+#endif
 #if defined (HAVE_ZLIB)
 #include <zlib.h>
 #endif
