@@ -5,6 +5,7 @@
 #include "mono/utils/mono-publib.h"
 
 void utils_init (int fast_time);
+int get_timer_overhead (void);
 uint64_t current_time (void);
 void* alloc_buffer (int size);
 void free_buffer (void *buf, int size);

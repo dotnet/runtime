@@ -77,6 +77,7 @@ static CRITICAL_SECTION log_lock;
 static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+static int timer_overhead = 0;
 static uint64_t time_inc = 0;
 typedef uint64_t (*TimeFunc)(void);
 
@@ -208,6 +209,8 @@ null_time (void)
 void
 utils_init (int fast_time)
 {
+	int i;
+	uint64_t time_start, time_end;
 	TLS_INIT (tls_data);
 #ifdef HOST_WIN32
 	InitializeCriticalSection (&log_lock);
@@ -233,6 +236,17 @@ utils_init (int fast_time)
 	} else {
 		time_func = clock_time;
 	}
+	time_start = time_func ();
+	for (i = 0; i < 256; ++i)
+		time_func ();
+	time_end = time_func ();
+	timer_overhead = (time_end - time_start) / 256;
+}
+
+int
+get_timer_overhead (void)
+{
+	return timer_overhead;
 }
 
 uint64_t

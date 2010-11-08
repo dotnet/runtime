@@ -406,6 +406,10 @@ typedef struct {
 	unsigned char *buf;
 	int size;
 	int data_version;
+	int version_major;
+	int version_minor;
+	int timer_overhead;
+	uint64_t startup_time;
 	ThreadContext *threads;
 	ThreadContext *current;
 } ProfContext;
@@ -1092,9 +1096,16 @@ load_file (char *name)
 	p = ctx->buf;
 	if (read_int32 (p) != LOG_HEADER_ID || p [6] != LOG_DATA_VERSION)
 		return NULL;
+	ctx->version_major = p [4];
+	ctx->version_minor = p [5];
 	ctx->data_version = p [6];
-	if (read_int32 (p + 12)) /* flags must be 0 */
+	/* reading 64 bit files on 32 bit systems not supported yet */
+	if (p [7] > sizeof (void*))
 		return NULL;
+	if (read_int32 (p + 20)) /* flags must be 0 */
+		return NULL;
+	ctx->startup_time = read_int64 (p + 8);
+	ctx->timer_overhead = read_int32 (p + 16);
 	return ctx;
 }
 
@@ -1127,8 +1138,13 @@ compare_class (const void *a, const void *b)
 static void
 dump_header (ProfContext *ctx)
 {
+	time_t st = ctx->startup_time / 1000;
+	char *t = ctime (&st);
 	fprintf (outfile, "\nMono log profiler data\n");
+	fprintf (outfile, "\tProfiler version: %d.%d\n", ctx->version_major, ctx->version_minor);
 	fprintf (outfile, "\tData version: %d\n", ctx->data_version);
+	fprintf (outfile, "\tMean timer overhead: %d nanoseconds\n", ctx->timer_overhead);
+	fprintf (outfile, "\tProgram startup: %s\n", t);
 }
 
 static void

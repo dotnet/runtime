@@ -386,8 +386,8 @@ dump_header (MonoProfiler *profiler)
 	*p++ = LOG_VERSION_MINOR;
 	*p++ = LOG_DATA_VERSION;
 	*p++ = sizeof (void*);
-	p = write_int64 (p, 0); /* startup time */
-	p = write_int32 (p, 0); /* timer overhead */
+	p = write_int64 (p, ((uint64_t)time (NULL)) * 1000); /* startup time */
+	p = write_int32 (p, get_timer_overhead ()); /* timer overhead */
 	p = write_int32 (p, 0); /* flags */
 	p = write_int32 (p, 0); /* pid */
 	p = write_int32 (p, 0); /* opsystem */
