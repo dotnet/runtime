@@ -39,3 +39,5 @@ libmono_profiler_log_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la
 mprof_report_SOURCES = decode.c
 mprof_report_LDADD = $(Z_LIBS)
 
+EXTRA_DIST=utils.c utils.h proflog.h log-profiler.txt
+
