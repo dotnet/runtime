@@ -99,7 +99,7 @@ MODE can be one of:
 	* *fast*: a usually faster but possibly more inaccurate timer
 
 * *maxframes=NUM*: when a stack trace needs to be performed, collect *NUM* frames
-at the most.
+at the most. The default is 8.
 
 * *calldepth=NUM*: ignore method enter/leave events when the call chain depth is
 bigger than NUM.
@@ -142,7 +142,10 @@ The maximum number of methods in each stack trace can be specified with the
 
 The stack trace info will be available if method enter/leave events have been
 recorded or if stack trace collection wasn't explicitly disabled with the
-*maxframes=0* option.
+*maxframes=0* profiler option. Note that the profiler will collect up to 8
+frames by default at specific events when the *nocalls* option is used, so
+in that case, if more stack frames are required in mprof-report, a bigger
+value for maxframes when profiling must be used, too.
 
 ### Sort order for methods and allocations
 
