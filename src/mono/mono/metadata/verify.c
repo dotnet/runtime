@@ -887,6 +887,13 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **out_klass, const
 	if (!mono_type_is_valid_in_context (ctx, &klass->byval_arg))
 		return NULL;
 
+	if (mono_field_get_flags (field) & FIELD_ATTRIBUTE_LITERAL) {
+		char *type_name = mono_type_get_full_name (field->parent);
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot reference literal field %s::%s at 0x%04x", type_name, field->name, ctx->ip_offset));
+		g_free (type_name);
+		return NULL;
+	}
+
 	*out_klass = klass;
 	return field;
 }
