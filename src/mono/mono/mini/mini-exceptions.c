@@ -742,10 +742,12 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = mono_get_lmf ();
-	MonoJitInfo *ji, rji;
-	MonoContext ctx, new_ctx, ji_ctx;
+	MonoJitInfo *ji;
+	MonoContext ctx, new_ctx;
 	MonoDebugSourceLocation *location;
-	MonoMethod *last_method = NULL, *actual_method;
+	MonoMethod *actual_method;
+	StackFrameInfo frame;
+	gboolean res;
 
 	MONO_ARCH_CONTEXT_DEF;
 
@@ -757,19 +759,18 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_get_frame_info);
 #endif
 
+	new_ctx = ctx;
 	do {
-		ji_ctx = ctx;
-		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, (int*) native_offset, NULL);
 		ctx = new_ctx;
-
-		if (ji && ji != (gpointer)-1 &&
-				MONO_CONTEXT_GET_IP (&ctx) >= ji->code_start &&
-				(guint8*)MONO_CONTEXT_GET_IP (&ctx) < (guint8*)ji->code_start + ji->code_size) {
-			ji_ctx = ctx;
-		}
-
-		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_SP (&ctx) >= jit_tls->end_of_stack)
+		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
+		if (!res)
 			return FALSE;
+
+		if (frame.type == FRAME_TYPE_MANAGED_TO_NATIVE || frame.type == FRAME_TYPE_DEBUGGER_INVOKE)
+			continue;
+
+		ji = frame.ji;
+		*native_offset = frame.native_offset;
 
 		/* skip all wrappers ??*/
 		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
@@ -780,22 +781,10 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			ji->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
 			continue;
 
-		if (ji->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && ji->method == last_method) {
-			/*
-			 * FIXME: Native-to-managed wrappers sometimes show up twice.
-			 * Probably the whole mono_find_jit_info () stuff needs to be fixed so this 
-			 * isn't needed.
-			 */
-			continue;
-		}
-
-		last_method = ji->method;
-
 		skip--;
-
 	} while (skip >= 0);
 
-	actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ji_ctx));
+	actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ctx));
 
 	mono_gc_wbarrier_generic_store (method, (MonoObject*) mono_method_get_object (domain, actual_method, NULL));
 
@@ -1135,7 +1124,7 @@ static gboolean
 mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only, gboolean resume, gint32 *out_filter_idx, MonoJitInfo **out_ji, MonoObject *non_exception)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji, rji;
+	MonoJitInfo *ji;
 	static int (*call_filter) (MonoContext *, gpointer) = NULL;
 	static void (*restore_context) (void *);
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
@@ -1262,7 +1251,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		*out_ji = NULL;
 	filter_idx = 0;
 	initial_ctx = *ctx;
-	memset (&rji, 0, sizeof (rji));
 
 	while (1) {
 		MonoContext new_ctx;
