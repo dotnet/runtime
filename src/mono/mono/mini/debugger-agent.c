@@ -3567,7 +3567,7 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	/* Process single step requests */
 	for (i = 0; i < ss_reqs_orig->len; ++i) {
 		EventRequest *req = g_ptr_array_index (ss_reqs_orig, i);
-		SingleStepReq *ss_req = bp->req->info;
+		SingleStepReq *ss_req = req->info;
 		gboolean hit = TRUE;
 		MonoSeqPointInfo *info;
 		SeqPoint *sp;
