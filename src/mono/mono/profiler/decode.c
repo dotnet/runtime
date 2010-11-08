@@ -31,8 +31,11 @@ static int collect_traces = 0;
 static int show_traces = 0;
 static int trace_max = 6;
 static int verbose = 0;
-static uintptr_t tracked_obj = 0;
+static uintptr_t *tracked_objects = 0;
+static int num_tracked_objects = 0;
 static uintptr_t thread_filter = 0;
+static uint64_t find_size = 0;
+static const char* find_name = NULL;
 static uint64_t time_from = 0;
 static uint64_t time_to = 0xffffffffffffffffULL;
 static uint64_t startup_time = 0;
@@ -739,12 +742,47 @@ decode_bt (MethodDesc** sframes, int *size, unsigned char *p, unsigned char **en
 static void
 tracked_creation (uintptr_t obj, ClassDesc *cd, uint64_t size, BackTrace *bt, uint64_t timestamp)
 {
-	fprintf (outfile, "Object %p (%s, %llu bytes) created at %.3f secs.\n", (void*)obj, cd->name, size, (timestamp - startup_time)/1000000000.0);
-	if (bt && bt->count) {
-		int k;
-		for (k = 0; k < bt->count; ++k)
-			fprintf (outfile, "\t%s\n", bt->methods [k]->name);
+	int i;
+	for (i = 0; i < num_tracked_objects; ++i) {
+		if (tracked_objects [i] != obj)
+			continue;
+		fprintf (outfile, "Object %p created (%s, %llu bytes) at %.3f secs.\n", (void*)obj, cd->name, size, (timestamp - startup_time)/1000000000.0);
+		if (bt && bt->count) {
+			int k;
+			for (k = 0; k < bt->count; ++k)
+				fprintf (outfile, "\t%s\n", bt->methods [k]->name);
+		}
 	}
+}
+
+static void
+track_move (uintptr_t src, uintptr_t dst)
+{
+	int i;
+	for (i = 0; i < num_tracked_objects; ++i) {
+		if (tracked_objects [i] == src)
+			fprintf (outfile, "Object %p moved to %p\n", (void*)src, (void*)dst);
+		else if (tracked_objects [i] == dst)
+			fprintf (outfile, "Object %p moved from %p\n", (void*)dst, (void*)src);
+	}
+}
+
+static void
+track_obj_reference (uintptr_t obj, uintptr_t parent, ClassDesc *cd)
+{
+	int i;
+	for (i = 0; i < num_tracked_objects; ++i) {
+		if (tracked_objects [i] == obj) 
+			fprintf (outfile, "Object %p referenced from %p (%s).\n", (void*)obj, (void*)parent, cd->name);
+	}
+}
+
+static void
+found_object (uintptr_t obj)
+{
+	num_tracked_objects ++;
+	tracked_objects = realloc (tracked_objects, num_tracked_objects * sizeof (tracked_objects [0]));
+	tracked_objects [num_tracked_objects - 1] = obj;
 }
 
 #define OBJ_ADDR(diff) ((obj_base + diff) << 3)
@@ -830,10 +868,8 @@ decode_buffer (ProfContext *ctx)
 				for (j = 0; j < num; j += 2) {
 					intptr_t obj1diff = decode_sleb128 (p, &p);
 					intptr_t obj2diff = decode_sleb128 (p, &p);
-					if (tracked_obj == OBJ_ADDR (obj1diff))
-						fprintf (outfile, "Object %p moved to %p\n", (void*)OBJ_ADDR (obj1diff), (void*)OBJ_ADDR (obj2diff));
-					else if (tracked_obj == OBJ_ADDR (obj2diff))
-						fprintf (outfile, "Object %p moved from %p\n", (void*)OBJ_ADDR (obj2diff), (void*)OBJ_ADDR (obj1diff));
+					if (num_tracked_objects)
+						track_move (OBJ_ADDR (obj1diff), OBJ_ADDR (obj2diff));
 					if (debug) {
 						fprintf (outfile, "moved obj %p to %p\n", (void*)OBJ_ADDR (obj1diff), (void*)OBJ_ADDR (obj2diff));
 					}
@@ -907,7 +943,13 @@ decode_buffer (ProfContext *ctx)
 					bt = add_trace_methods (frames, num_bt, &cd->traces, len);
 				else
 					bt = add_trace_thread (thread, &cd->traces, len);
-				if (tracked_obj == OBJ_ADDR (objdiff))
+				if (find_size && len >= find_size) {
+					if (!find_name || strstr (cd->name, find_name))
+						found_object (OBJ_ADDR (objdiff));
+				} else if (!find_size && find_name && strstr (cd->name, find_name)) {
+					found_object (OBJ_ADDR (objdiff));
+				}
+				if (num_tracked_objects)
 					tracked_creation (OBJ_ADDR (objdiff), cd, len, bt, time_base);
 			}
 			if (frames != sframes)
@@ -958,7 +1000,9 @@ decode_buffer (ProfContext *ctx)
 					/* FIXME: use object distance to measure how good
 					 * the GC is at keeping related objects close
 					 */
-					decode_sleb128 (p, &p);
+					intptr_t obj1diff = decode_sleb128 (p, &p);
+					if (num_tracked_objects)
+						track_obj_reference (OBJ_ADDR (obj1diff), OBJ_ADDR (objdiff), cd);
 				}
 				if (debug && size)
 					fprintf (outfile, "traced object %p, size %llu (%s), refs: %d\n", (void*)OBJ_ADDR (objdiff), size, cd->name, num);
@@ -1560,11 +1604,23 @@ print_reports (ProfContext *ctx, const char *reps, int parse_only)
 	return 1;
 }
 
+static int
+add_find_spec (const char *p)
+{
+	if (p [0] == 'S' && p [1] == ':') {
+		char *vale;
+		find_size = strtoul (p + 2, &vale, 10);
+		return 1;
+	} else if (p [0] == 'T' && p [1] == ':') {
+		find_name = p + 2;
+		return 1;
+	}
+	return 0;
+}
+
 static void
 usage (void)
 {
-	// FIXME: add --find="FINDSPEC"
-	// obj=addr size=<>num type=name
 	printf ("Mono log profiler report version %d.%d\n", LOG_VERSION_MAJOR, LOG_VERSION_MINOR);
 	printf ("Usage: mprof-report [OPTIONS] FILENAME\n");
 	printf ("FILENAME can be '-' to read from standard input.\n");
@@ -1577,7 +1633,9 @@ usage (void)
 	printf ("\t                     %s\n", reports);
 	printf ("\t--method-sort=MODE   sort methods according to MODE: total, self, calls\n");
 	printf ("\t--alloc-sort=MODE    sort allocations according to MODE: bytes, count\n");
-	printf ("\t--track=OBJID        track what happens to object OBJID\n");
+	printf ("\t--track=OB1[,OB2...] track what happens to objects OBJ1, O2 etc.\n");
+	printf ("\t--find=FINDSPEC      find and track objects matching FINFSPEC, where FINDSPEC is:\n");
+	printf ("\t                     S:minimum_size or T:partial_name\n");
 	printf ("\t--thread=THREADID    consider just the data for thread THREADID\n");
 	printf ("\t--time=FROM-TO       consider data FROM seconds from startup up to TO seconds\n");
 	printf ("\t--verbose            increase verbosity level\n");
@@ -1636,10 +1694,25 @@ main (int argc, char *argv[])
 			const char *val = argv [i] + 12;
 			char *vale;
 			trace_max = strtoul (val, &vale, 10);
+		} else if (strncmp ("--find=", argv [i], 7) == 0) {
+			const char *val = argv [i] + 7;
+			if (!add_find_spec (val)) {
+				usage ();
+				return 1;
+			}
 		} else if (strncmp ("--track=", argv [i], 8) == 0) {
 			const char *val = argv [i] + 8;
 			char *vale;
-			tracked_obj = strtoul (val, &vale, 0);
+			while (*val) {
+				uintptr_t tracked_obj;
+				if (*val == ',') {
+					val++;
+					continue;
+				}
+				tracked_obj = strtoul (val, &vale, 0);
+				found_object (tracked_obj);
+				val = vale;
+			}
 		} else if (strncmp ("--thread=", argv [i], 9) == 0) {
 			const char *val = argv [i] + 9;
 			char *vale;
@@ -1682,7 +1755,7 @@ main (int argc, char *argv[])
 	}
 	while (decode_buffer (ctx));
 	flush_context (ctx);
-	if (tracked_obj)
+	if (num_tracked_objects)
 		return 0;
 	print_reports (ctx, reports, 0);
 	return 0;

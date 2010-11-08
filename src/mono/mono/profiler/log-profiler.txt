@@ -219,6 +219,34 @@ printed you can use the option:
 
 `--verbose`
 
+### Track individual objects
+
+Instead of printing the usual reports from the profiler data, it is possible
+to track some interesting information about some specific object addresses.
+The objects are selected based on their address with the *--track* option as follows:
+
+`--track=0xaddr1[,0xaddr2,...]`
+
+The reported info (if available in the data file), will be class name, size,
+creation time, stack trace of creation (with the *--traces* option), etc.
+If heapshot data is available it will be possible to also track what other objects
+reference one of the listed addresses.
+
+The object addresses can be gathered either from the profiler report in some
+cases (like in the monitor lock report), from the live application or they can
+be selected with the *--find=FINDSPEC* option. FINDSPEC can be one of the
+following:
+
+* *S:SIZE*: where the object is selected if it's size is at least *SIZE* 
+* *T:NAME*: where the object is selected if *NAME* partially matches its class name
+
+This option can be specified multiple times with one of the different kinds
+of FINDSPEC. For example, the following:
+
+`--find=S:10000 --find=T:Byte[]`
+
+will find all the byte arrays that are at least 10000 bytes in size.
+
 ### Saving a profiler report
 
 By default mprof-report will print the summary data to the console.
