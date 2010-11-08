@@ -321,13 +321,9 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
  *   A version of mono_find_jit_info which returns all data in the StackFrameInfo
  * structure.
  * A note about frames of type FRAME_TYPE_MANAGED_TO_NATIVE:
- * - These frames are produced by unwinding through an LMF, which stores the state of the method
- * before it transitioned to native code. Thus, for these frames, CTX does not describe the
- * state of the method, NEW_CTX does. This means the caller should do the following check:
- * (ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)ji->code_start + ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx))))
- * and if it fails, unwind once more to restore the 'new_ctx describes ji' invariant.
- * FIXME: Why is the check neeed, isn't this always true ?
- * FIXME: Clean this up.
+ * - These frames are used to mark managed-to-native transitions, so CTX will refer to native
+ * code, and new_ctx will refer to the last managed frame. The caller should unwind once more
+ * to obtain the last managed frame.
  */
 gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
@@ -355,6 +351,15 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	err = mono_arch_find_jit_info (target_domain, jit_tls, ji, ctx, new_ctx, lmf, frame);
 	if (!err)
 		return FALSE;
+
+	if (frame->type == FRAME_TYPE_MANAGED_TO_NATIVE) {
+		/*
+		 * This type of frame is just a marker, the caller should unwind once more to get the
+		 * last managed frame.
+		 */
+		frame->ji = NULL;
+		frame->method = NULL;
+	}
 
 	frame->native_offset = -1;
 	frame->domain = target_domain;
@@ -615,10 +620,11 @@ stack_walk_adapter (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 
 	switch (frame->type) {
 	case FRAME_TYPE_DEBUGGER_INVOKE:
+	case FRAME_TYPE_MANAGED_TO_NATIVE:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
-	case FRAME_TYPE_MANAGED_TO_NATIVE:
-		return d->func (frame->ji ? frame->ji->method : frame->method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
+		g_assert (frame->ji);
+		return d->func (frame->ji->method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -707,13 +713,6 @@ mono_walk_stack (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_c
 		frame.il_offset = il_offset;
 
 		if (frame.ji) {
-			if (frame.ji->has_generic_jit_info && frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
-				/*
-				 * FIXME: These frames show up twice, and ctx could refer to native code.
-				 */
-				ctx = new_ctx;
-				continue;
-			}
 			frame.actual_method = get_method_from_stack_frame (frame.ji, get_generic_info_from_stack_frame (frame.ji, &ctx));
 		} else {
 			frame.actual_method = frame.method;
@@ -1262,7 +1261,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		guint32 free_stack;
 		int clause_index_start = 0;
 		gboolean unwind_res = TRUE;
-		int frame_type = -1;
 		
 		if (resume) {
 			resume = FALSE;
@@ -1277,27 +1275,12 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 			unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, &frame);
 			if (unwind_res) {
-				frame_type = frame.type;
-				switch (frame.type) {
-				case FRAME_TYPE_MANAGED:
-					ji = frame.ji;
-					break;
-				case FRAME_TYPE_DEBUGGER_INVOKE:
-					break;
-				case FRAME_TYPE_MANAGED_TO_NATIVE:
-					g_assert (frame.ji);
-					g_assert (!(frame.ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)frame.ji->code_start + frame.ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx)))));
-					memset (&rji, 0, sizeof (MonoJitInfo));
-					rji.method = frame.method;
-					ji = &rji;
-					break;
-				default:
-					g_assert_not_reached ();
-				}
-				if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE) {
+				if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE || frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
 					*ctx = new_ctx;
 					continue;
 				}
+				g_assert (frame.type == FRAME_TYPE_MANAGED);
+				ji = frame.ji;
 			}
 		}
 
@@ -1318,17 +1301,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				g_list_free (trace_ips);
 				return FALSE;
 			}
-		}
-
-		if (!(ji->code_start <= MONO_CONTEXT_GET_IP (ctx) && (((guint8*)ji->code_start + ji->code_size >= (guint8*)MONO_CONTEXT_GET_IP (ctx))))) {
-			/*
-			 * The exception was raised in native code and we got back to managed code 
-			 * using the LMF. In this case, new_ctx refers to the current frame, not ctx, so
-			 * try again with new_ctx.
-			 */
-			g_assert (frame_type == FRAME_TYPE_MANAGED_TO_NATIVE);
-			*ctx = new_ctx;
-			continue;
 		}
 
 		frame_count ++;

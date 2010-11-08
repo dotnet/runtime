@@ -220,15 +220,11 @@ typedef enum {
 typedef struct {
 	StackFrameType type;
 	/* 
-	 * For FRAME_TYPE_MANAGED.
-	 * For FRAME_TYPE_MANAGED_TO_NATIVE, the ji for the method which transitioned to
-	 * native code, if there is one, else NULL.
+	 * For FRAME_TYPE_MANAGED, otherwise NULL.
 	 */
 	MonoJitInfo *ji;
 	/*
-	 * For FRAME_TYPE_MANAGED_TO_NATIVE, it is either the method which transitioned 
-	 * to native code, or the method which was JITted. For FRAME_TYPE_MANAGED, equal to
-	 * ji->method.
+	 * Same as ji->method.
 	 */
 	MonoMethod *method;
 	/*
