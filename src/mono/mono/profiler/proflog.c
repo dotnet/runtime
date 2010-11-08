@@ -460,6 +460,9 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 	emit_byte (logbuffer, TYPE_HEAP_OBJECT | TYPE_HEAP);
 	emit_obj (logbuffer, obj);
 	emit_ptr (logbuffer, klass);
+	/* account for object alignment in the heap */
+	size += 7;
+	size &= ~7;
 	emit_value (logbuffer, size);
 	emit_value (logbuffer, num);
 	for (i = 0; i < num; ++i)
@@ -590,6 +593,9 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 	FrameData data;
 	LogBuffer *logbuffer;
 	len = mono_object_get_size (obj);
+	/* account for object alignment in the heap */
+	len += 7;
+	len &= ~7;
 	if (do_bt)
 		collect_bt (&data);
 	logbuffer = ensure_logbuf (32 + MAX_FRAMES * 8);
