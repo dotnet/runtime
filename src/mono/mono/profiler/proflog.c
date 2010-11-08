@@ -7,13 +7,16 @@
  * Copyright 2010 Novell, Inc (http://www.novell.com)
  */
 
+#include <config.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <string.h>
+#if defined (HAVE_ZLIB)
 #include <zlib.h>
+#endif
 #include <assert.h>
 #ifdef HOST_WIN32
 #include <windows.h>
@@ -21,7 +24,7 @@
 #include <pthread.h>
 #endif
 
-#include "utils.h"
+#include "utils.c"
 #include "proflog.h"
 
 #define BUFFER_SIZE (4096 * 16)
@@ -220,7 +223,9 @@ struct _LogBuffer {
 struct _MonoProfiler {
 	LogBuffer *buffers;
 	FILE* file;
+#if defined (HAVE_ZLIB)
 	gzFile *gzfile;
+#endif
 	int pipe_output;
 	int last_gc_gen_started;
 };
@@ -387,11 +392,15 @@ dump_header (MonoProfiler *profiler)
 	p = write_int32 (p, 0); /* flags */
 	p = write_int32 (p, 0); /* pid */
 	p = write_int32 (p, 0); /* opsystem */
+#if defined (HAVE_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
 	} else {
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
 	}
+#else
+	fwrite (hbuf, p - hbuf, 1, profiler->file);
+#endif
 }
 
 static void
@@ -408,13 +417,17 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 	p = write_int64 (p, buf->obj_base);
 	p = write_int64 (p, buf->thread_id);
 	p = write_int64 (p, buf->method_base);
+#if defined (HAVE_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
 		gzwrite (profiler->gzfile, buf->buf, buf->data - buf->buf);
 	} else {
+#endif
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
 		fwrite (buf->buf, buf->data - buf->buf, 1, profiler->file);
+#if defined (HAVE_ZLIB)
 	}
+#endif
 	free_buffer (buf, buf->size);
 }
 
@@ -848,8 +861,10 @@ log_shutdown (MonoProfiler *prof)
 		dump_buffer (prof, TLS_GET (tlsbuffer));
 	TLS_SET (tlsbuffer, NULL);
 	release_lock ();
+#if defined (HAVE_ZLIB)
 	if (prof->gzfile)
 		gzclose (prof->gzfile);
+#endif
 	if (prof->pipe_output)
 		pclose (prof->file);
 	else
@@ -877,8 +892,10 @@ create_profiler (char *filename)
 		printf ("Cannot create profiler output: %s\n", filename);
 		exit (1);
 	}
+#if defined (HAVE_ZLIB)
 	if (use_zip)
 		prof->gzfile = gzdopen (fileno (prof->file), "wb");
+#endif
 	dump_header (prof);
 	return prof;
 }
@@ -905,7 +922,7 @@ usage (int do_exit)
 		exit (1);
 }
 
-const char*
+static const char*
 match_option (const char* p, const char *opt, char **rval)
 {
 	int len = strlen (opt);
@@ -937,6 +954,13 @@ match_option (const char* p, const char *opt, char **rval)
 	}
 	return p;
 }
+
+/* 
+ * declaration to silence the compiler: this is the entry point that
+ * mono will load from the shared library and call.
+ */
+extern void
+mono_profiler_startup (const char *desc);
 
 void
 mono_profiler_startup (const char *desc)

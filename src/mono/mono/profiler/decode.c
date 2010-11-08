@@ -6,7 +6,8 @@
  *
  * Copyright 2010 Novell, Inc (http://www.novell.com)
  */
-#include "utils.h"
+#include <config.h>
+#include "utils.c"
 #include "proflog.h"
 #include <string.h>
 #include <stdio.h>
@@ -15,7 +16,9 @@
 #endif
 #include <unistd.h>
 #include <stdlib.h>
+#if defined (HAVE_ZLIB)
 #include <zlib.h>
+#endif
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>
@@ -113,20 +116,24 @@ struct _ClassDesc {
 };
 
 static ClassDesc* class_hash [HASH_SIZE] = {0};
-static ClassDesc default_class = {
-	NULL, 0,
-	"unknown class",
-	0, 0,
-	{0, 0, NULL}
-};
-
 static int num_classes = 0;
 
-static void
-add_class (intptr_t klass, char *name)
+static ClassDesc*
+add_class (intptr_t klass, const char *name)
 {
 	int slot = ((klass >> 2) & 0xffff) % HASH_SIZE;
-	ClassDesc *cd = malloc (sizeof (ClassDesc));
+	ClassDesc *cd;
+	cd = class_hash [slot];
+	while (cd && cd->klass != klass)
+		cd = cd->next;
+	/* we resolved an unknown class (unless we had the code unloaded) */
+	if (cd) {
+		/*printf ("resolved unknown: %s\n", name);*/
+		free (cd->name);
+		cd->name = pstrdup (name);
+		return cd;
+	}
+	cd = calloc (sizeof (ClassDesc), 1);
 	cd->klass = klass;
 	cd->name = pstrdup (name);
 	cd->next = class_hash [slot];
@@ -137,6 +144,7 @@ add_class (intptr_t klass, char *name)
 	cd->traces.traces = NULL;
 	class_hash [slot] = cd;
 	num_classes++;
+	return cd;
 }
 
 static ClassDesc *
@@ -147,7 +155,7 @@ lookup_class (intptr_t klass)
 	while (cd && cd->klass != klass)
 		cd = cd->next;
 	if (!cd)
-		return &default_class;
+		return add_class (klass, "unresolved class");
 	return cd;
 }
 
@@ -170,7 +178,7 @@ static MethodDesc* method_hash [HASH_SIZE] = {0};
 static int num_methods = 0;
 
 static MethodDesc*
-add_method (intptr_t method, char *name, intptr_t code, int len)
+add_method (intptr_t method, const char *name, intptr_t code, int len)
 {
 	int slot = ((method >> 2) & 0xffff) % HASH_SIZE;
 	MethodDesc *cd;
@@ -392,7 +400,9 @@ typedef struct _ThreadContext ThreadContext;
 
 typedef struct {
 	FILE *file;
+#if defined (HAVE_ZLIB)
 	gzFile *gzfile;
+#endif
 	unsigned char *buf;
 	int size;
 	int data_version;
@@ -425,9 +435,11 @@ static int
 load_data (ProfContext *ctx, int size)
 {
 	ensure_buffer (ctx, size);
+#if defined (HAVE_ZLIB)
 	if (ctx->gzfile)
 		return gzread (ctx->gzfile, ctx->buf, size) == size;
 	else
+#endif
 		return fread (ctx->buf, size, 1, ctx->file);
 }
 
@@ -701,6 +713,8 @@ decode_bt (MethodDesc** sframes, int *size, unsigned char *p, unsigned char **en
 	int i;
 	int flags = decode_uleb128 (p, &p);
 	int count = decode_uleb128 (p, &p);
+	if (flags != 0)
+		return NULL;
 	if (count > *size)
 		frames = malloc (count * sizeof (void*));
 	else
@@ -806,8 +820,8 @@ decode_buffer (ProfContext *ctx)
 				int j, num = decode_uleb128 (p, &p);
 				gc_object_moves += num / 2;
 				for (j = 0; j < num; j += 2) {
-					int64_t obj1diff = decode_sleb128 (p, &p);
-					int64_t obj2diff = decode_sleb128 (p, &p);
+					intptr_t obj1diff = decode_sleb128 (p, &p);
+					intptr_t obj2diff = decode_sleb128 (p, &p);
 					if (tracked_obj == OBJ_ADDR (obj1diff))
 						fprintf (outfile, "Object %p moved to %p\n", (void*)OBJ_ADDR (obj1diff), (void*)OBJ_ADDR (obj2diff));
 					else if (tracked_obj == OBJ_ADDR (obj2diff))
@@ -820,26 +834,35 @@ decode_buffer (ProfContext *ctx)
 			break;
 		}
 		case TYPE_METADATA: {
-			int type = *p & 0x30;
 			int error = *p & TYPE_LOAD_ERR;
 			uint64_t tdiff = decode_uleb128 (p + 1, &p);
 			int mtype = *p++;
-			int64_t ptrdiff = decode_sleb128 (p, &p);
+			intptr_t ptrdiff = decode_sleb128 (p, &p);
 			LOG_TIME (time_base, tdiff);
 			time_base += tdiff;
 			if (mtype == TYPE_CLASS) {
-				int64_t imptrdiff = decode_sleb128 (p, &p);
+				intptr_t imptrdiff = decode_sleb128 (p, &p);
 				uint64_t flags = decode_uleb128 (p, &p);
+				if (flags) {
+					fprintf (outfile, "non-zero flags in class\n");
+					return 0;
+				}
 				if (debug)
 					fprintf (outfile, "loaded class %p (%s in %p) at %llu\n", (void*)(ptr_base + ptrdiff), p, (void*)(ptr_base + imptrdiff), time_base);
-				add_class (ptr_base + ptrdiff, p);
+				if (!error)
+					add_class (ptr_base + ptrdiff, (char*)p);
 				while (*p) p++;
 				p++;
 			} else if (mtype == TYPE_IMAGE) {
 				uint64_t flags = decode_uleb128 (p, &p);
+				if (flags) {
+					fprintf (outfile, "non-zero flags in image\n");
+					return 0;
+				}
 				if (debug)
 					fprintf (outfile, "loaded image %p (%s) at %llu\n", (void*)(ptr_base + ptrdiff), p, time_base);
-				add_image (ptr_base + ptrdiff, p);
+				if (!error)
+					add_image (ptr_base + ptrdiff, (char*)p);
 				while (*p) p++;
 				p++;
 			}
@@ -847,10 +870,9 @@ decode_buffer (ProfContext *ctx)
 		}
 		case TYPE_ALLOC: {
 			int has_bt = *p & TYPE_ALLOC_BT;
-			const char *sp = p;
 			uint64_t tdiff = decode_uleb128 (p + 1, &p);
-			int64_t ptrdiff = decode_sleb128 (p, &p);
-			int64_t objdiff = decode_sleb128 (p, &p);
+			intptr_t ptrdiff = decode_sleb128 (p, &p);
+			intptr_t objdiff = decode_sleb128 (p, &p);
 			uint64_t len;
 			int num_bt = 0;
 			MethodDesc* sframes [8];
@@ -860,10 +882,14 @@ decode_buffer (ProfContext *ctx)
 			LOG_TIME (time_base, tdiff);
 			time_base += tdiff;
 			if (debug)
-				fprintf (outfile, "alloced object %p, size %llu (%s) at %llu (%p)\n", (void*)OBJ_ADDR (objdiff), len, lookup_class (ptr_base + ptrdiff)->name, time_base, sp);
+				fprintf (outfile, "alloced object %p, size %llu (%s) at %llu\n", (void*)OBJ_ADDR (objdiff), len, lookup_class (ptr_base + ptrdiff)->name, time_base);
 			if (has_bt) {
 				num_bt = 8;
 				frames = decode_bt (sframes, &num_bt, p, &p, ptr_base);
+				if (!frames) {
+					fprintf (outfile, "Cannot load backtrace\n");
+					return 0;
+				}
 			}
 			if ((thread_filter && thread_filter == thread->thread_id) || (time_base >= time_from && time_base < time_to)) {
 				BackTrace *bt;
@@ -888,11 +914,11 @@ decode_buffer (ProfContext *ctx)
 			time_base += tdiff;
 			method_base += ptrdiff;
 			if (subtype == TYPE_JIT) {
-				int64_t codediff = decode_sleb128 (p, &p);
+				intptr_t codediff = decode_sleb128 (p, &p);
 				int codelen = decode_uleb128 (p, &p);
 				if (debug)
 					fprintf (outfile, "jitted method %p (%s), size: %d\n", (void*)(method_base), p, codelen);
-				add_method (method_base, p, ptr_base + codediff, codelen);
+				add_method (method_base, (char*)p, ptr_base + codediff, codelen);
 				while (*p) p++;
 				p++;
 			} else {
@@ -915,13 +941,16 @@ decode_buffer (ProfContext *ctx)
 			int subtype = *p & 0xf0;
 			if (subtype == TYPE_HEAP_OBJECT) {
 				int i;
-				int64_t objdiff = decode_sleb128 (p + 1, &p);
-				int64_t ptrdiff = decode_sleb128 (p, &p);
+				intptr_t objdiff = decode_sleb128 (p + 1, &p);
+				intptr_t ptrdiff = decode_sleb128 (p, &p);
 				uint64_t size = decode_uleb128 (p, &p);
 				int num = decode_uleb128 (p, &p);
 				ClassDesc *cd = lookup_class (ptr_base + ptrdiff);
 				for (i = 0; i < num; ++i) {
-					int64_t obj1diff = decode_sleb128 (p, &p);
+					/* FIXME: use object distance to measure how good
+					 * the GC is at keeping related objects close
+					 */
+					decode_sleb128 (p, &p);
 				}
 				if (debug && size)
 					fprintf (outfile, "traced object %p, size %llu (%s), refs: %d\n", (void*)OBJ_ADDR (objdiff), size, cd->name, num);
@@ -948,7 +977,7 @@ decode_buffer (ProfContext *ctx)
 			int event = (*p >> 4) & 0x3;
 			int has_bt = *p & TYPE_MONITOR_BT;
 			uint64_t tdiff = decode_uleb128 (p + 1, &p);
-			int64_t objdiff = decode_sleb128 (p, &p);
+			intptr_t objdiff = decode_sleb128 (p, &p);
 			MethodDesc* sframes [8];
 			MethodDesc** frames = sframes;
 			int record;
@@ -965,6 +994,10 @@ decode_buffer (ProfContext *ctx)
 				if (has_bt) {
 					num_bt = 8;
 					frames = decode_bt (sframes, &num_bt, p, &p, ptr_base);
+					if (!frames) {
+						fprintf (outfile, "Cannot load backtrace\n");
+						return 0;
+					}
 					if (record)
 						add_trace_methods (frames, num_bt, &mdesc->traces, 1);
 				} else {
@@ -1004,12 +1037,16 @@ decode_buffer (ProfContext *ctx)
 				if (debug)
 					fprintf (outfile, "clause %s (%d) in method %s\n", clause_name (clause_type), clause_num, lookup_method (method_base)->name);
 			} else {
-				int64_t objdiff = decode_sleb128 (p, &p);
+				intptr_t objdiff = decode_sleb128 (p, &p);
 				if (record)
 					throw_count++;
 				if (has_bt) {
 					has_bt = 8;
 					frames = decode_bt (sframes, &has_bt, p, &p, ptr_base);
+					if (!frames) {
+						fprintf (outfile, "Cannot load backtrace\n");
+						return 0;
+					}
 					if (record)
 						add_trace_methods (frames, has_bt, &exc_traces, 1);
 				} else {
@@ -1037,7 +1074,7 @@ decode_buffer (ProfContext *ctx)
 static ProfContext*
 load_file (char *name)
 {
-	char *p;
+	unsigned char *p;
 	ProfContext *ctx = calloc (sizeof (ProfContext), 1);
 	if (strcmp (name, "-") == 0)
 		ctx->file = stdin;
@@ -1047,7 +1084,9 @@ load_file (char *name)
 		printf ("Cannot open file: %s\n", name);
 		exit (1);
 	}
+#if defined (HAVE_ZLIB)
 	ctx->gzfile = gzdopen (fileno (ctx->file), "rb");
+#endif
 	if (!load_data (ctx, 32))
 		return NULL;
 	p = ctx->buf;
@@ -1124,7 +1163,7 @@ dump_threads (ProfContext *ctx)
 }
 
 static void
-dump_exceptions ()
+dump_exceptions (void)
 {
 	int i;
 	fprintf (outfile, "\nException summary\n");
@@ -1150,7 +1189,7 @@ compare_monitor (const void *a, const void *b)
 }
 
 static void
-dump_monitors ()
+dump_monitors (void)
 {
 	MonitorDesc **monitors;
 	int i, j;
@@ -1412,7 +1451,7 @@ flush_context (ProfContext *ctx)
 static const char *reports = "header,gc,alloc,call,metadata,exception,monitor,thread,heapshot";
 
 static const char*
-match_option (const char *p, char *opt)
+match_option (const char *p, const char *opt)
 {
 	int len = strlen (opt);
 	if (strncmp (p, opt, len) == 0) {

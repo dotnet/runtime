@@ -1,3 +1,8 @@
+if HAVE_ZLIB
+Z_LIBS= -lz
+else
+Z_LIBS=
+endif
 
 INCLUDES = \
 	-fexceptions -DMONO_USE_EXC_TABLES	\
@@ -7,9 +12,11 @@ INCLUDES = \
 if !DISABLE_PROFILER
 if JIT_SUPPORTED
 if PLATFORM_LINUX
-lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-logging.la libmono-profiler-iomap.la
+bin_PROGRAMS = mprof-report
+lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-logging.la libmono-profiler-iomap.la libmono-profiler-log.la
 else
-lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la
+bin_PROGRAMS = mprof-report
+lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la
 endif
 endif
 endif
@@ -26,3 +33,9 @@ libmono_profiler_logging_la_SOURCES = mono-profiler-logging.c
 libmono_profiler_logging_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(GLIB_LIBS)
 libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
 libmono_profiler_iomap_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la
+libmono_profiler_log_la_SOURCES = proflog.c
+libmono_profiler_log_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(Z_LIBS)
+
+mprof_report_SOURCES = decode.c
+mprof_report_LDADD = $(Z_LIBS)
+
