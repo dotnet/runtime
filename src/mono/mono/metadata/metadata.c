@@ -3497,7 +3497,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 
 	if (local_var_sig_tok) {
 		int idx = (local_var_sig_tok & 0xffffff)-1;
-		if (idx >= t->rows)
+		if (idx >= t->rows || idx < 0)
 			return NULL;
 		mono_metadata_decode_row (t, idx, cols, 1);
 

@@ -2261,6 +2261,8 @@ is_valid_method_header (VerifyContext *ctx, guint32 rva, guint32 *locals_token)
 			FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid local vars signature table 0x%x", ((local_vars_tok >> 24) & 0xFF)));
 		if ((local_vars_tok & 0xFFFFFF) > ctx->image->tables [MONO_TABLE_STANDALONESIG].rows)	
 			FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid local vars signature points to invalid row 0x%x", local_vars_tok & 0xFFFFFF));
+		if (!(local_vars_tok & 0xFFFFFF))
+			FAIL (ctx, g_strdup_printf ("MethodHeader: Invalid local vars signature with zero index"));
 		*locals_token = local_vars_tok & 0xFFFFFF;
 	}
 
