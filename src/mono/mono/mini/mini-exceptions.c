@@ -682,6 +682,14 @@ mono_walk_stack (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_c
 		lmf = mono_get_lmf ();
 	}
 
+	/* A NULL thread->jit_data can happen in a small window during thread startup: the thread
+	 * allocation happens, we do a stack walk (for example with
+	 * --profile=log:nocalls and xsp) but the jit is not fully setup for the thread
+	 *  yet. Of course there are no stack frames, so just returning is ok.
+	 *  A NULL thread can happen during domain unload with the same test.
+	 */
+	if (!thread || !thread->jit_data)
+		return;
 	jit_tls = thread->jit_data;
 
 	if (start_ctx) {
