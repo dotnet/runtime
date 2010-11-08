@@ -396,6 +396,7 @@ add_backtrace (int count, MethodDesc **methods)
 	return bt;
 }
 
+typedef struct _MonitorDesc MonitorDesc;
 typedef struct _ThreadContext ThreadContext;
 
 typedef struct {
@@ -422,6 +423,8 @@ struct _ThreadContext {
 	uint64_t *time_stack;
 	uint64_t *callee_time_stack;
 	uint64_t last_time;
+	uint64_t contention_start;
+	MonitorDesc *monitor;
 	int stack_size;
 	int stack_id;
 };
@@ -461,7 +464,7 @@ load_thread (ProfContext *ctx, intptr_t thread_id)
 		}
 		thread = thread->next;
 	}
-	thread = malloc (sizeof (ThreadContext));
+	thread = calloc (sizeof (ThreadContext), 1);
 	thread->next = ctx->threads;
 	ctx->threads = thread;
 	ctx->current = thread;
@@ -671,11 +674,12 @@ static uint64_t monitor_contention;
 static uint64_t monitor_failed;
 static uint64_t monitor_acquired;
 
-typedef struct _MonitorDesc MonitorDesc;
 struct _MonitorDesc {
 	MonitorDesc *next;
 	uintptr_t objid;
 	uintptr_t contentions;
+	uint64_t wait_time;
+	uint64_t max_wait_time;
 	TraceDesc traces;
 };
 
@@ -994,6 +998,8 @@ decode_buffer (ProfContext *ctx)
 				if (record) {
 					monitor_contention++;
 					mdesc->contentions++;
+					thread->monitor = mdesc;
+					thread->contention_start = time_base;
 				}
 				if (has_bt) {
 					num_bt = 8;
@@ -1009,11 +1015,29 @@ decode_buffer (ProfContext *ctx)
 						add_trace_thread (thread, &mdesc->traces, 1);
 				}
 			} else if (event == MONO_PROFILER_MONITOR_FAIL) {
-				if (record)
+				if (record) {
 					monitor_failed++;
+					if (thread->monitor && thread->contention_start) {
+						uint64_t wait_time = time_base - thread->contention_start;
+						if (wait_time > thread->monitor->max_wait_time)
+							thread->monitor->max_wait_time = wait_time;
+						thread->monitor->wait_time += wait_time;
+						thread->monitor = NULL;
+						thread->contention_start = 0;
+					}
+				}
 			} else if (event == MONO_PROFILER_MONITOR_DONE) {
-				if (record)
+				if (record) {
 					monitor_acquired++;
+					if (thread->monitor && thread->contention_start) {
+						uint64_t wait_time = time_base - thread->contention_start;
+						if (wait_time > thread->monitor->max_wait_time)
+							thread->monitor->max_wait_time = wait_time;
+						thread->monitor->wait_time += wait_time;
+						thread->monitor = NULL;
+						thread->contention_start = 0;
+					}
+				}
 			}
 			if (debug)
 				fprintf (outfile, "monitor %s for object %p\n", monitor_ev_name (event), (void*)OBJ_ADDR (objdiff));
@@ -1197,9 +1221,9 @@ compare_monitor (const void *a, const void *b)
 {
 	MonitorDesc *const*A = a;
 	MonitorDesc *const*B = b;
-	if ((*B)->contentions == (*A)->contentions)
+	if ((*B)->wait_time == (*A)->wait_time)
 		return 0;
-	if ((*B)->contentions < (*A)->contentions)
+	if ((*B)->wait_time < (*A)->wait_time)
 		return -1;
 	return 1;
 }
@@ -1224,6 +1248,8 @@ dump_monitors (void)
 	for (i = 0; i < num_monitors; ++i) {
 		MonitorDesc *mdesc = monitors [i];
 		fprintf (outfile, "\tLock object %p: %d contentions\n", (void*)mdesc->objid, (int)mdesc->contentions);
+		fprintf (outfile, "\t\t%.6f secs total wait time, %.6f max, %.6f average\n",
+			mdesc->wait_time/1000000000.0, mdesc->max_wait_time/1000000000.0, mdesc->wait_time/1000000000.0/mdesc->contentions);
 		dump_traces (&mdesc->traces, "contentions");
 	}
 	fprintf (outfile, "\tLock contentions: %llu\n", monitor_contention);
