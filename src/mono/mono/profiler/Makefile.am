@@ -15,13 +15,8 @@ if PLATFORM_LINUX
 bin_PROGRAMS = mprof-report
 lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-logging.la libmono-profiler-iomap.la libmono-profiler-log.la
 else
-if TARGET_WIN32
-# No libz
-lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la
-else
 bin_PROGRAMS = mprof-report
 lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la
-endif
 endif
 endif
 endif
