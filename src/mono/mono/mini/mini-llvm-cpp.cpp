@@ -46,6 +46,10 @@
 
 #include "mini-llvm-cpp.h"
 
+#define LLVM_CHECK_VERSION(major,minor) \
+	((LLVM_MAJOR_VERSION > (major)) ||									\
+	 ((LLVM_MAJOR_VERSION == (major)) && (LLVM_MINOR_VERSION >= (minor))))
+
 extern "C" void LLVMInitializeX86TargetInfo();
 
 using namespace llvm;
@@ -473,6 +477,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
   fpm->add(new TargetData(*EE->getTargetData()));
 
+#if LLVM_CHECK_VERSION(2, 9)
   PassRegistry &Registry = *PassRegistry::getPassRegistry();
   initializeCore(Registry);
   initializeScalarOpts(Registry);
@@ -483,6 +488,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   initializeInstCombine(Registry);
   //initializeInstrumentation(Registry);
   initializeTarget(Registry);
+#endif
 
   llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
 
