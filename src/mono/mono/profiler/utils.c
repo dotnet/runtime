@@ -73,6 +73,7 @@ static pthread_key_t tls_data;
 
 #ifdef HOST_WIN32
 static CRITICAL_SECTION log_lock;
+static LARGE_INTEGER pcounter_freq;
 #else
 static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
@@ -93,10 +94,18 @@ clock_time (void)
 	time /= info.denom;
 
 	return time;
-#else
+#elif defined(HOST_WIN32)
+	LARGE_INTEGER value;
+	QueryPerformanceCounter (&value);
+	return value.QuadPart * TICKS_PER_SEC / pcounter_freq.QuadPart;
+#elif defined(CLOCK_MONOTONIC)
 	struct timespec tspec;
 	clock_gettime (CLOCK_MONOTONIC, &tspec);
 	return ((uint64_t)tspec.tv_sec * TICKS_PER_SEC + tspec.tv_nsec);
+#else
+	struct timeval tv;
+	gettimeofday (&tv, NULL);
+	return ((uint64_t)tv.tv_sec * TICKS_PER_SEC + tv.tv_usec * 1000);
 #endif
 }
 
@@ -214,6 +223,7 @@ utils_init (int fast_time)
 	TLS_INIT (tls_data);
 #ifdef HOST_WIN32
 	InitializeCriticalSection (&log_lock);
+	QueryPerformanceFrequency (&pcounter_freq);
 #endif
 #if defined (__APPLE__)
 	mach_timebase_info (&timebase_info);
