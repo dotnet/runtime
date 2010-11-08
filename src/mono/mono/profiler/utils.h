@@ -1,7 +1,8 @@
 #ifndef __MONO_MPLOG_UTILS_H__
 #define __MONO_MPLOG_UTILS_H__
 
-#include <inttypes.h>
+#include "config.h"
+#include "mono/utils/mono-publib.h"
 
 void utils_init (int fast_time);
 uint64_t current_time (void);

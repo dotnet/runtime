@@ -12,7 +12,6 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
 #include <stdlib.h>
-#include <inttypes.h>
 #include <string.h>
 #if defined (HAVE_ZLIB)
 #include <zlib.h>
@@ -873,7 +872,7 @@ log_shutdown (MonoProfiler *prof)
 }
 
 static MonoProfiler*
-create_profiler (char *filename)
+create_profiler (const char *filename)
 {
 	MonoProfiler *prof;
 	prof = calloc (1, sizeof (MonoProfiler));

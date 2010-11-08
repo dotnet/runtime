@@ -13,8 +13,8 @@
  *
  * Copyright 2010 Novell, Inc (http://www.novell.com)
  */
+#include "utils.h"
 #include <stdlib.h>
-#include <inttypes.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,7 +25,6 @@
 #include <sched.h>
 #endif
 
-#include "utils.h"
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
