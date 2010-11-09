@@ -742,7 +742,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = mono_get_lmf ();
-	MonoJitInfo *ji;
+	MonoJitInfo *ji = NULL;
 	MonoContext ctx, new_ctx;
 	MonoDebugSourceLocation *location;
 	MonoMethod *actual_method;
