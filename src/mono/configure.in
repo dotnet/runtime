@@ -678,7 +678,7 @@ AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsy
 		eval "mono_feature_disable_$feature='yes'"
 	done
 	DISABLED_FEATURES=$enable_minimal
-	disabled="Disabled:    $enable_minimal"
+	disabled="Disabled:      $enable_minimal"
 ],[])
 
 AC_DEFINE_UNQUOTED(DISABLED_FEATURES, "$DISABLED_FEATURES", [String of disabled features])
