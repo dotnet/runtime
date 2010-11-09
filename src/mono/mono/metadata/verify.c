@@ -231,6 +231,9 @@ mono_class_is_valid_generic_instantiation (VerifyContext *ctx, MonoClass *klass)
 
 static gboolean
 mono_method_is_valid_generic_instantiation (VerifyContext *ctx, MonoMethod *method);
+
+static MonoGenericParam*
+verifier_get_generic_param_from_type (VerifyContext *ctx, MonoType *type);
 //////////////////////////////////////////////////////////////////
 
 
@@ -665,6 +668,23 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 
 				if (mono_class_is_assignable_from (tc, cc))
 					break;
+
+				/*
+				 * This happens when we have the following:
+				 *
+				 * Bar<K> where K : IFace
+				 * Foo<T, U> where T : U where U : IFace
+				 * 	...
+				 * 	Bar<T> <- T here satisfy K constraint transitively through to U's constraint
+				 *
+				 */
+				if (mono_type_is_generic_argument (&cc->byval_arg)) {
+					MonoGenericParam *other_candidate = verifier_get_generic_param_from_type (ctx, &cc->byval_arg);
+
+					if (mono_generic_param_is_constraint_compatible (ctx, target, other_candidate, cc, context)) {
+						break;
+					}
+				}
 			}
 			if (!*candidate_class)
 				return FALSE;
@@ -694,7 +714,7 @@ verifier_get_generic_param_from_type (VerifyContext *ctx, MonoType *type)
 		gc = mono_method_get_generic_container (gmd);
 	}
 	if (!gc)
-		return FALSE;
+		return NULL;
 	return mono_generic_container_get_param (gc, num);
 }
 
