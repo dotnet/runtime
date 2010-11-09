@@ -640,6 +640,13 @@ static GCDesc gc_info [3];
 static uint64_t max_heap_size;
 static uint64_t gc_object_moves;
 static int gc_resizes;
+typedef struct {
+	uint64_t created;
+	uint64_t destroyed;
+	uint64_t max_live;
+	TraceDesc traces;
+} HandleInfo;
+static HandleInfo handle_info [4];
 
 static const char*
 gc_event_name (int ev)
@@ -720,6 +727,18 @@ monitor_ev_name (int ev)
 	}
 }
 
+static const char*
+get_handle_name (int htype)
+{
+	switch (htype) {
+	case 0: return "weak";
+	case 1: return "weaktrack";
+	case 2: return "normal";
+	case 3: return "pinned";
+	default: return "unknown";
+	}
+}
+
 static MethodDesc**
 decode_bt (MethodDesc** sframes, int *size, unsigned char *p, unsigned char **endp, intptr_t ptr_base)
 {
@@ -755,6 +774,16 @@ tracked_creation (uintptr_t obj, ClassDesc *cd, uint64_t size, BackTrace *bt, ui
 			for (k = 0; k < bt->count; ++k)
 				fprintf (outfile, "\t%s\n", bt->methods [k]->name);
 		}
+	}
+}
+
+static void
+track_handle (uintptr_t obj, int htype, uint32_t handle)
+{
+	int i;
+	for (i = 0; i < num_tracked_objects; ++i) {
+		if (tracked_objects [i] == obj)
+			fprintf (outfile, "Object %p referenced from handle %u\n", (void*)obj, handle);
 	}
 }
 
@@ -877,6 +906,29 @@ decode_buffer (ProfContext *ctx)
 						fprintf (outfile, "moved obj %p to %p\n", (void*)OBJ_ADDR (obj1diff), (void*)OBJ_ADDR (obj2diff));
 					}
 				}
+			} else if (subtype == TYPE_GC_HANDLE_CREATED) {
+				int htype = decode_uleb128 (p, &p);
+				uint32_t handle = decode_uleb128 (p, &p);
+				intptr_t objdiff = decode_sleb128 (p, &p);
+				if (htype > 3)
+					return 0;
+				handle_info [htype].created++;
+				add_trace_thread (thread, &handle_info [htype].traces, 1);
+				/* FIXME: we don't take into account timing here */
+				if (handle_info [htype].created > handle_info [htype].max_live)
+					handle_info [htype].max_live = handle_info [htype].created;
+				if (num_tracked_objects)
+					track_handle (OBJ_ADDR (objdiff), htype, handle);
+				if (debug)
+					fprintf (outfile, "handle (%s) %u created for object %p\n", get_handle_name (htype), handle, (void*)OBJ_ADDR (objdiff));
+			} else if (subtype == TYPE_GC_HANDLE_DESTROYED) {
+				int htype = decode_uleb128 (p, &p);
+				uint32_t handle = decode_uleb128 (p, &p);
+				if (htype > 3)
+					return 0;
+				handle_info [htype].created--;
+				if (debug)
+					fprintf (outfile, "handle (%s) %u destroyed\n", get_handle_name (htype), handle);
 			}
 			break;
 		}
@@ -1318,6 +1370,13 @@ dump_gcs (void)
 		fprintf (outfile, "\tGen%d collections: %d, max time: %lluus, total time: %lluus, average: %lluus\n",
 			i, gc_info [i].count, gc_info [i].max_time / 1000, gc_info [i].total_time / 1000,
 			gc_info [i].total_time / gc_info [i].count / 1000);
+	}
+	for (i = 0; i < 3; ++i) {
+		if (!handle_info [i].max_live)
+			continue;
+		fprintf (outfile, "\tGC handles %s: created: %llu, destroyed: %llu, max: %llu\n",
+			get_handle_name (i), handle_info [i].created, handle_info [i].destroyed, handle_info [i].max_live);
+		dump_traces (&handle_info [i].traces, "created");
 	}
 }
 

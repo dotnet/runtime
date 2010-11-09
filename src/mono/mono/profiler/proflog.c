@@ -133,7 +133,8 @@ typedef struct _LogBuffer LogBuffer;
  *
  * type GC format:
  * type: TYPE_GC
- * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE
+ * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE, TYPE_GC_HANDLE_CREATED,
+ * TYPE_GC_HANDLE_DESTROYED
  * [time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_GC_RESIZE
  *	[heap_size: uleb128] new heap size
@@ -145,6 +146,15 @@ typedef struct _LogBuffer LogBuffer;
  *	[objaddr: sleb128]+ num_objects object pointer differences from obj_base
  *	num is always an even number: the even items are the old
  *	addresses, the odd numbers are the respective new object addresses
+ * if exinfo == TYPE_GC_HANDLE_CREATED
+ *	[handle_type: uleb128] GC handle type (System.Runtime.InteropServices.GCHandleType)
+ *	upper bits reserved as flags
+ *	[handle: uleb128] GC handle value
+ *	[objaddr: sleb128] object pointer differences from obj_base
+ * if exinfo == TYPE_GC_HANDLE_DESTROYED
+ *	[handle_type: uleb128] GC handle type (System.Runtime.InteropServices.GCHandleType)
+ *	upper bits reserved as flags
+ *	[handle: uleb128] GC handle value
  *
  * type metadata format:
  * type: TYPE_METADATA
@@ -631,6 +641,25 @@ gc_moves (MonoProfiler *prof, void **objects, int num)
 	//printf ("gc moved %d objects\n", num/2);
 }
 
+static void
+gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *obj)
+{
+	uint64_t now;
+	LogBuffer *logbuffer = ensure_logbuf (16);
+	now = current_time ();
+	if (op == MONO_PROFILER_GC_HANDLE_CREATED)
+		emit_byte (logbuffer, TYPE_GC_HANDLE_CREATED | TYPE_GC);
+	else if (op == MONO_PROFILER_GC_HANDLE_DESTROYED)
+		emit_byte (logbuffer, TYPE_GC_HANDLE_DESTROYED | TYPE_GC);
+	else
+		return;
+	emit_time (logbuffer, now);
+	emit_value (logbuffer, type);
+	emit_value (logbuffer, handle);
+	if (op == MONO_PROFILER_GC_HANDLE_CREATED)
+		emit_obj (logbuffer, obj);
+}
+
 static char*
 push_nesting (char *p, MonoClass *klass)
 {
@@ -984,7 +1013,7 @@ mono_profiler_startup (const char *desc)
 	int events = MONO_PROFILE_GC|MONO_PROFILE_ALLOCATIONS|
 		MONO_PROFILE_GC_MOVES|MONO_PROFILE_CLASS_EVENTS|MONO_PROFILE_THREADS|
 		MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_EXCEPTIONS|
-		MONO_PROFILE_MONITOR_EVENTS|MONO_PROFILE_MODULE_EVENTS;
+		MONO_PROFILE_MONITOR_EVENTS|MONO_PROFILE_MODULE_EVENTS|MONO_PROFILE_GC_ROOTS;
 
 	p = desc;
 	if (strncmp (p, "log", 3))
@@ -1097,6 +1126,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_gc (gc_event, gc_resize);
 	mono_profiler_install_allocation (gc_alloc);
 	mono_profiler_install_gc_moves (gc_moves);
+	mono_profiler_install_gc_roots (gc_handle);
 	mono_profiler_install_class (NULL, class_loaded, NULL, NULL);
 	mono_profiler_install_module (NULL, image_loaded, NULL, NULL);
 	mono_profiler_install_thread (thread_start, thread_end);

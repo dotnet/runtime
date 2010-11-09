@@ -4,7 +4,7 @@
 #define BUF_ID 0x4D504C01
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 0
-#define LOG_VERSION_MINOR 1
+#define LOG_VERSION_MINOR 2
 #define LOG_DATA_VERSION 1
 
 enum {
@@ -34,6 +34,8 @@ enum {
 	TYPE_GC_EVENT  = 1 << 4,
 	TYPE_GC_RESIZE = 2 << 4,
 	TYPE_GC_MOVE   = 3 << 4,
+	TYPE_GC_HANDLE_CREATED   = 4 << 4,
+	TYPE_GC_HANDLE_DESTROYED = 5 << 4,
 	/* extended type for TYPE_METHOD */
 	TYPE_LEAVE     = 1 << 4,
 	TYPE_ENTER     = 2 << 4,
