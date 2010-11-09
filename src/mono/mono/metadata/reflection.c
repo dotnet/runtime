@@ -9344,6 +9344,11 @@ is_sre_generic_instance (MonoClass *class)
 	return FALSE;
 }
 
+static void
+init_type_builder_generics (MonoObject *type)
+{
+}
+
 #endif /* !DISABLE_REFLECTION_EMIT */
 
 
