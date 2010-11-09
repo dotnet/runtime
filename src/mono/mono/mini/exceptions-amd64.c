@@ -654,7 +654,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 
 		ji = mini_jit_info_table_find (domain, (gpointer)rip, NULL);
-		g_assert (ji);
+		/*
+		 * FIXME: ji == NULL can happen when a managed-to-native wrapper is interrupted
+		 * in the soft debugger suspend code, since (*lmf)->rsp no longer points to the
+		 * return address.
+		 */
+		//g_assert (ji);
+		if (!ji)
+			return FALSE;
 
 		/* Adjust IP */
 		rip --;
