@@ -13,12 +13,6 @@
 #include <mono/metadata/debug-helpers.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HOST_WIN32
-#undef HAVE_ZLIB
-#endif
-#if defined (HAVE_ZLIB)
-#include <zlib.h>
-#endif
 #include <assert.h>
 #ifdef HOST_WIN32
 #include <windows.h>
@@ -28,6 +22,13 @@
 
 #include "utils.c"
 #include "proflog.h"
+
+#ifdef HOST_WIN32
+#undef HAVE_ZLIB
+#endif
+#if defined (HAVE_ZLIB)
+#include <zlib.h>
+#endif
 
 #define BUFFER_SIZE (4096 * 16)
 static int nocalls = 0;

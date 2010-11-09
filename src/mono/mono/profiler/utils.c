@@ -40,7 +40,7 @@
 static mach_timebase_info_data_t timebase_info;
 #endif
 
-#ifndef MAP_ANON
+#ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
@@ -90,8 +90,8 @@ clock_time (void)
 #if defined(__APPLE__)
 	uint64_t time = mach_absolute_time ();
 	
-	time *= info.numer;
-	time /= info.denom;
+	time *= timebase_info.numer;
+	time /= timebase_info.denom;
 
 	return time;
 #elif defined(HOST_WIN32)
