@@ -602,6 +602,7 @@ static guint32
 alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 {
 	gint slot, i;
+	guint32 res;
 	lock_handles (handles);
 	if (!handles->size) {
 		handles->size = 32;
@@ -692,7 +693,9 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	mono_perfcounters->gc_num_handles++;
 	unlock_handles (handles);
 	/*g_print ("allocated entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
-	return (slot << 3) | (handles->type + 1);
+	res = (slot << 3) | (handles->type + 1);
+	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_CREATED, handles->type, res, obj);
+	return res;
 }
 
 /**
@@ -896,6 +899,7 @@ mono_gchandle_free (guint32 gchandle)
 	mono_perfcounters->gc_num_handles--;
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);
+	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_DESTROYED, handles->type, gchandle, NULL);
 }
 
 /**

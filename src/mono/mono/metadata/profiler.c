@@ -89,6 +89,7 @@ struct _ProfilerDesc {
 	MonoProfileGCFunc        gc_event;
 	MonoProfileGCResizeFunc  gc_heap_resize;
 	MonoProfileGCMoveFunc    gc_moves;
+	MonoProfileGCHandleFunc  gc_handle;
 
 	MonoProfileFunc          runtime_initialized_event;
 
@@ -741,6 +742,16 @@ mono_profiler_gc_moves (void **objects, int num)
 }
 
 void
+mono_profiler_gc_handle (int op, int type, uintptr_t handle, MonoObject *obj)
+{
+	ProfilerDesc *prof;
+	for (prof = prof_list; prof; prof = prof->next) {
+		if ((prof->events & MONO_PROFILE_GC_ROOTS) && prof->gc_handle)
+			prof->gc_handle (prof->profiler, op, type, handle, obj);
+	}
+}
+
+void
 mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
 {
 	mono_gc_enable_events ();
@@ -770,6 +781,24 @@ mono_profiler_install_gc_moves (MonoProfileGCMoveFunc callback)
 	if (!prof_list)
 		return;
 	prof_list->gc_moves = callback;
+}
+
+/**
+ * mono_profiler_install_gc_roots:
+ * @handle_callback: callback function
+ *
+ * Install the @handle_callback function that the GC will call when GC
+ * handles are created or destroyed.
+ * The callback receives an operation, which is either #MONO_PROFILER_GC_HANDLE_CREATED
+ * or #MONO_PROFILER_GC_HANDLE_DESTROYED, the handle type, the handle value and the
+ * object pointer, if present.
+ */
+void
+mono_profiler_install_gc_roots (MonoProfileGCHandleFunc handle_callback)
+{
+	if (!prof_list)
+		return;
+	prof_list->gc_handle = handle_callback;
 }
 
 void
