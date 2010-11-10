@@ -7117,7 +7117,7 @@ mono_gc_base_init (void)
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
-				fprintf (stderr, "Valid options are: collect-before-allocs[=<n>], check-at-minor-collections, xdomain-checks, clear-at-gc, conservative-stack-mark.\n");
+				fprintf (stderr, "Valid options are: collect-before-allocs[=<n>], check-at-minor-collections, xdomain-checks, clear-at-gc.\n");
 				exit (1);
 			}
 		}
