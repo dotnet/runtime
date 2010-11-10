@@ -864,18 +864,23 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 
 		destination = major_alloc_object (objsize, has_references);
 		if (G_UNLIKELY (!destination)) {
-			/*
-			 * This can fail under 2 scenarios:
-			 *  - object was copied, we must update *ptr.
-			 *  - object was pinned, we can leave *ptr as is.
-			 */
-			if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
-				mono_sgen_pin_object (obj, queue);
-			} else {
+			do {
+				if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
+					mono_sgen_pin_object (obj, queue);
+					break;
+				}
+
 				vtable_word = *(mword*)obj;
-				if (vtable_word & SGEN_FORWARDED_BIT)
+				/*someone else forwarded it, update the pointer and bail out*/
+				if (vtable_word & SGEN_FORWARDED_BIT) {
 					*ptr = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
-			}
+					break;
+				}
+
+				/*someone pinned it, nothing to do.*/
+				if (vtable_word & SGEN_PINNED_BIT)
+					break;
+			} while (TRUE);
 			return;
 		}
 
