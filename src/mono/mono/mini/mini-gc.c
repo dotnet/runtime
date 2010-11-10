@@ -722,6 +722,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				reg_locations [i] = NULL;
 				new_reg_locations [i] = NULL;
 			}
+			ctx = new_ctx;
 			continue;
 		}
 
