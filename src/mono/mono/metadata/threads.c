@@ -644,10 +644,36 @@ set_current_thread_for_domain (MonoDomain *domain, MonoInternalThread *thread, M
 	*current_thread_ptr = current;
 }
 
+static MonoInternalThread*
+create_internal_thread_object (void)
+{
+#ifdef HAVE_SGEN_GC
+	/*
+	 * These objects are long living, and they will become pinned by the thread startup code
+	 * anyway, so allocate them from oldspace.
+	 */
+	MonoVTable *vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.internal_thread_class);
+	return (MonoInternalThread*)mono_gc_alloc_pinned_obj (vt, vt->klass->instance_size);
+#else
+	return (MonoInternalThread*)mono_object_new (mono_get_root_domain (), mono_defaults.internal_thread_class);
+#endif
+}
+
+static MonoThread*
+create_thread_object (MonoDomain *domain)
+{
+#ifdef HAVE_SGEN_GC
+	MonoVTable *vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.thread_class);
+	return (MonoThread*)mono_gc_alloc_pinned_obj (vt, vt->klass->instance_size);
+#else
+	return (MonoThread*)mono_object_new (domain, mono_defaults.thread_class);
+#endif
+}
+
 static MonoThread*
 new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal)
 {
-	MonoThread *thread = (MonoThread*) mono_object_new (domain, mono_defaults.thread_class);
+	MonoThread *thread = create_thread_object (domain);
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 	return thread;
 }
@@ -860,10 +886,8 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 	struct StartInfo *start_info;
 	gsize tid;
 
-	thread=(MonoThread *)mono_object_new (domain,
-					      mono_defaults.thread_class);
-	internal = (MonoInternalThread*)mono_object_new (mono_get_root_domain (),
-			mono_defaults.internal_thread_class);
+	thread = create_thread_object (domain);
+	internal = create_internal_thread_object ();
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
 	start_info=g_new0 (struct StartInfo, 1);
@@ -1007,7 +1031,7 @@ mono_thread_attach (MonoDomain *domain)
 		g_error ("Thread %"G_GSIZE_FORMAT" calling into managed code is not registered with the GC. On UNIX, this can be fixed by #include-ing <gc.h> before <pthread.h> in the file containing the thread creation code.", GetCurrentThreadId ());
 	}
 
-	thread = (MonoInternalThread *)mono_object_new (domain, mono_defaults.internal_thread_class);
+	thread = create_internal_thread_object ();
 
 	thread_handle = GetCurrentThread ();
 	g_assert (thread_handle);
@@ -1113,7 +1137,8 @@ mono_thread_exit ()
 void
 ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this)
 {
-	MonoInternalThread *internal = (MonoInternalThread*)mono_object_new (mono_get_root_domain (), mono_defaults.internal_thread_class);
+	MonoInternalThread *internal = create_internal_thread_object ();
+
 	internal->state = ThreadState_Unstarted;
 	internal->apartment_state = ThreadApartmentState_Unknown;
 
