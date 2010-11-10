@@ -6311,6 +6311,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			fprintf (stderr, "The soft-debug AOT option requires the --debug option.\n");
 			return 1;
 		}
+		acfg->flags |= MONO_AOT_FILE_FLAG_DEBUG;
 	}
 
 	if (mono_use_llvm) {

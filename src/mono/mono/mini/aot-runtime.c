@@ -1062,6 +1062,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 	*/
 
+	if (mini_get_debug_options ()->mdb_optimizations && !(file_info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is not compiled for debugging.\n", aot_name);
+		usable = FALSE;
+	}
+
 	find_symbol (sofile, globals, "blob", (gpointer*)&blob);
 
 	if (usable && ((MonoAotFileInfo*)file_info)->gc_name_index != -1) {

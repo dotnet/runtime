@@ -142,7 +142,8 @@ typedef enum {
 
 typedef enum {
 	MONO_AOT_FILE_FLAG_WITH_LLVM = 1,
-	MONO_AOT_FILE_FLAG_FULL_AOT = 2
+	MONO_AOT_FILE_FLAG_FULL_AOT = 2,
+	MONO_AOT_FILE_FLAG_DEBUG = 4
 } MonoAotFileFlags;
 
 /* This structure is stored in the AOT file */
