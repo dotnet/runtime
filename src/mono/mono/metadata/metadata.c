@@ -28,6 +28,7 @@
 #include "class.h"
 #include "marshal.h"
 #include "gc-internal.h"
+#include "debug-helpers.h"
 #include <mono/utils/mono-error-internals.h>
  
 /* Auxiliary structure used for caching inflated signatures */
