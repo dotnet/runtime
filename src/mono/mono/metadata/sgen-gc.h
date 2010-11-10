@@ -736,4 +736,14 @@ mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 
 #define mono_sgen_safe_object_get_size(o)		mono_sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE ((o)), (o))
 
+
+enum {
+	SPACE_MAJOR,
+	SPACE_LOS
+};
+
+gboolean mono_sgen_try_alloc_space (mword size, int space) MONO_INTERNAL;
+void mono_sgen_release_space (mword size, int space) MONO_INTERNAL;
+void mono_sgen_pin_object (void *object, SgenGrayQueue *queue) MONO_INTERNAL;
+void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;;
 #endif /* __MONO_SGENGC_H__ */

@@ -216,9 +216,13 @@ ves_icall_System_String_InternalAllocateStr (gint32 length)
 MonoString  *
 ves_icall_System_String_InternalIntern (MonoString *str)
 {
+	MonoString *res;
 	MONO_ARCH_SAVE_REGS;
 
-	return mono_string_intern(str);
+	res = mono_string_intern(str);
+	if (!res)
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
+	return res;
 }
 
 MonoString * 

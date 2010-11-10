@@ -37,7 +37,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-cardtable.h"
-
+#include "metadata/gc-internal.h"
 
 #define DEBUG(l,x)
 
@@ -317,6 +317,7 @@ ms_free_block (MSBlockInfo *block)
 	block->next_free = empty_blocks;
 	empty_blocks = block;
 	block->used = FALSE;
+	mono_sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 }
 #else
 static void*
@@ -373,6 +374,7 @@ ms_free_block (void *block)
 {
 	void *empty;
 
+	mono_sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 	memset (block, 0, MS_BLOCK_SIZE);
 
 	do {
@@ -474,20 +476,27 @@ consistency_check (void)
 }
 #endif
 
-static void
+static gboolean
 ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 {
 	int size = block_obj_sizes [size_index];
 	int count = MS_BLOCK_FREE / size;
-#ifdef FIXED_HEAP
-	MSBlockInfo *info = ms_get_empty_block ();
-#else
-	MSBlockInfo *info = mono_sgen_alloc_internal (INTERNAL_MEM_MS_BLOCK_INFO);
+	MSBlockInfo *info;
+#ifndef FIXED_HEAP
 	MSBlockHeader *header;
 #endif
 	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
 	char *obj_start;
 	int i;
+
+	if (!mono_sgen_try_alloc_space (MS_BLOCK_SIZE, SPACE_MAJOR))
+		return FALSE;
+
+#ifdef FIXED_HEAP
+	info = ms_get_empty_block ();
+#else
+	info = mono_sgen_alloc_internal (INTERNAL_MEM_MS_BLOCK_INFO);
+#endif
 
 	DEBUG (9, g_assert (count >= 2));
 
@@ -527,6 +536,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 #endif
 
 	++num_major_sections;
+	return TRUE;
 }
 
 static gboolean
@@ -548,8 +558,12 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 
 	LOCK_MS_BLOCK_LIST;
 
-	if (!free_blocks [size_index])
-		ms_alloc_block (size_index, pinned, has_references);
+	if (!free_blocks [size_index]) {
+		if (G_UNLIKELY (!ms_alloc_block (size_index, pinned, has_references))) {
+			UNLOCK_MS_BLOCK_LIST;
+			return NULL;
+		}
+	}
 
 	block = free_blocks [size_index];
 	DEBUG (9, g_assert (block));
@@ -618,7 +632,15 @@ major_free_non_pinned_object (char *obj, size_t size)
 static void*
 major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 {
-	return alloc_obj (size, TRUE, has_references);
+	 void *res = alloc_obj (size, TRUE, has_references);
+	 /*If we failed to alloc memory, we better try releasing memory
+	  *as pinned alloc is requested by the runtime.
+	  */
+	 if (!res) {
+		 sgen_collect_major_no_lock ("pinned alloc failure");
+		 res = alloc_obj (size, TRUE, has_references);
+	 }
+	 return res;
 }
 
 static void
@@ -636,11 +658,13 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 	void *obj;
 	int old_num_sections = num_major_sections;
 	obj = alloc_obj (size, FALSE, vtable->klass->has_references);
-	*(MonoVTable**)obj = vtable;
-	HEAVY_STAT (++stat_objects_alloced_degraded);
-	HEAVY_STAT (stat_bytes_alloced_degraded += size);
-	g_assert (num_major_sections >= old_num_sections);
-	mono_sgen_register_major_sections_alloced (num_major_sections - old_num_sections);
+	if (G_LIKELY (obj)) {
+		*(MonoVTable**)obj = vtable;
+		HEAVY_STAT (++stat_objects_alloced_degraded);
+		HEAVY_STAT (stat_bytes_alloced_degraded += size);
+		g_assert (num_major_sections >= old_num_sections);
+		mono_sgen_register_major_sections_alloced (num_major_sections - old_num_sections);
+	}
 	return obj;
 }
 
@@ -839,6 +863,26 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 
 		destination = major_alloc_object (objsize, has_references);
+		if (G_UNLIKELY (!destination)) {
+			do {
+				if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
+					mono_sgen_pin_object (obj, queue);
+					break;
+				}
+
+				vtable_word = *(mword*)obj;
+				/*someone else forwarded it, update the pointer and bail out*/
+				if (vtable_word & SGEN_FORWARDED_BIT) {
+					*ptr = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+					break;
+				}
+
+				/*someone pinned it, nothing to do.*/
+				if (vtable_word & SGEN_PINNED_BIT)
+					break;
+			} while (TRUE);
+			return;
+		}
 
 		if (SGEN_CAS_PTR (obj, (void*)((mword)destination | SGEN_FORWARDED_BIT), vt) == vt) {
 			gboolean was_marked;
@@ -909,7 +953,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 
 	if (ptr_in_nursery (obj)) {
 		int word, bit;
-		char *forwarded;
+		char *forwarded, *old_obj;
 
 		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
 			*ptr = forwarded;
@@ -921,7 +965,13 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		HEAVY_STAT (++stat_objects_copied_major);
 
 	do_copy_object:
+		old_obj = obj;
 		obj = copy_object_no_checks (obj, queue);
+		if (G_UNLIKELY (old_obj == obj)) {
+			/*He have yet to figure out how to handle OOM failure during major evacuation*/
+			g_assert (ptr_in_nursery (obj));
+			return;
+		}
 		*ptr = obj;
 
 		/*
@@ -1349,7 +1399,7 @@ major_handle_gc_param (const char *opt)
 	if (g_str_has_prefix (opt, "major-heap-size=")) {
 		const char *arg = strchr (opt, '=') + 1;
 		glong size;
-		if (!mono_sgen_parse_environment_string_extract_number (arg, &size))
+		if (!mono_gc_parse_environment_string_extract_number (arg, &size))
 			return FALSE;
 		ms_heap_num_blocks = (size + MS_BLOCK_SIZE - 1) / MS_BLOCK_SIZE;
 		g_assert (ms_heap_num_blocks > 0);

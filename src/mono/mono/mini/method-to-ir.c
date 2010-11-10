@@ -98,7 +98,10 @@
 			goto exception_exit;	\
 		}			\
 	} while (0)
-
+#define OUT_OF_MEMORY_FAILURE do {	\
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_OUT_OF_MEMORY);		\
+		goto exception_exit;	\
+	} while (0)
 /* Determine whenever 'ins' represents a load of the 'this' argument */
 #define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && ((ins)->opcode == OP_MOVE) && ((ins)->sreg1 == cfg->args [0]->dreg))
 
@@ -7748,6 +7751,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						NEW_PCONST (cfg, ins, NULL);
 						ins->type = STACK_OBJ;
 						ins->inst_p0 = mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
+						if (!ins->inst_p0)
+							OUT_OF_MEMORY_FAILURE;
+
 						*sp = ins;
 						MONO_ADD_INS (bblock, ins);
 					}

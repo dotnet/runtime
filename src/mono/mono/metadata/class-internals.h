@@ -199,7 +199,8 @@ enum {
 	MONO_EXCEPTION_FIELD_ACCESS = 10,
 	MONO_EXCEPTION_GENERIC_SHARING_FAILED = 11,
 	MONO_EXCEPTION_BAD_IMAGE = 12,
-	MONO_EXCEPTION_OBJECT_SUPPLIED = 13 /*The exception object is already created.*/
+	MONO_EXCEPTION_OBJECT_SUPPLIED = 13, /*The exception object is already created.*/
+	MONO_EXCEPTION_OUT_OF_MEMORY = 14
 	/* add other exception type */
 };
 

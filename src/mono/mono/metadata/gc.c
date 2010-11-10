@@ -10,6 +10,7 @@
 #include <config.h>
 #include <glib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-gc.h>
@@ -1221,3 +1222,55 @@ mono_gc_get_mach_exception_thread (void)
 	return mach_exception_thread;
 }
 #endif
+
+/**
+ * mono_gc_parse_environment_string_extract_number:
+ *
+ * @str: points to the first digit of the number
+ * @out: pointer to the variable that will receive the value
+ *
+ * Tries to extract a number from the passed string, taking in to account m, k
+ * and g suffixes
+ *
+ * Returns true if passing was successful
+ */
+gboolean
+mono_gc_parse_environment_string_extract_number (const char *str, glong *out)
+{
+	char *endptr;
+	int len = strlen (str), shift = 0;
+	glong val;
+	gboolean is_suffix = FALSE;
+	char suffix;
+
+	switch (str [len - 1]) {
+		case 'g':
+		case 'G':
+			shift += 10;
+		case 'm':
+		case 'M':
+			shift += 10;
+		case 'k':
+		case 'K':
+			shift += 10;
+			is_suffix = TRUE;
+			suffix = str [len - 1];
+			break;
+	}
+
+	errno = 0;
+	val = strtol (str, &endptr, 10);
+
+	if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))
+			|| (errno != 0 && val == 0) || (endptr == str))
+		return FALSE;
+
+	if (is_suffix) {
+		if (*(endptr + 1)) /* Invalid string. */
+			return FALSE;
+		val <<= shift;
+	}
+
+	*out = val;
+	return TRUE;
+}

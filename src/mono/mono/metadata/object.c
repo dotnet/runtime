@@ -5150,8 +5150,10 @@ mono_string_get_pinned (MonoString *str)
 	MonoString *news;
 	size = sizeof (MonoString) + 2 * (mono_string_length (str) + 1);
 	news = mono_gc_alloc_pinned_obj (((MonoObject*)str)->vtable, size);
-	memcpy (mono_string_chars (news), mono_string_chars (str), mono_string_length (str) * 2);
-	news->length = mono_string_length (str);
+	if (news) {
+		memcpy (mono_string_chars (news), mono_string_chars (str), mono_string_length (str) * 2);
+		news->length = mono_string_length (str);
+	}
 	return news;
 }
 
@@ -5175,7 +5177,8 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 	}
 	if (insert) {
 		str = mono_string_get_pinned (str);
-		mono_g_hash_table_insert (ldstr_table, str, str);
+		if (str)
+			mono_g_hash_table_insert (ldstr_table, str, str);
 		ldstr_unlock ();
 		return str;
 	} else {
@@ -5284,7 +5287,8 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 	}
 
 	o = mono_string_get_pinned (o);
-	mono_g_hash_table_insert (domain->ldstr_table, o, o);
+	if (o)
+		mono_g_hash_table_insert (domain->ldstr_table, o, o);
 	ldstr_unlock ();
 
 	return o;
@@ -5810,14 +5814,18 @@ mono_print_unhandled_exception (MonoObject *exc)
 	gboolean free_message = FALSE;
 	MonoError error;
 
-	str = mono_object_to_string (exc, NULL);
-	if (str) {
-		message = mono_string_to_utf8_checked (str, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_cleanup (&error);
-			message = (char *) "";
-		} else {
-			free_message = TRUE;
+	if (exc == (MonoObject*)mono_object_domain (exc)->out_of_memory_ex) {
+		message = g_strdup ("OutOfMemoryException");
+	} else {
+		str = mono_object_to_string (exc, NULL);
+		if (str) {
+			message = mono_string_to_utf8_checked (str, &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_cleanup (&error);
+				message = (char *) "";
+			} else {
+				free_message = TRUE;
+			}
 		}
 	}
 
