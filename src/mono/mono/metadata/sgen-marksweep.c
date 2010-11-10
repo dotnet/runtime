@@ -968,6 +968,8 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		old_obj = obj;
 		obj = copy_object_no_checks (obj, queue);
 		if (G_UNLIKELY (old_obj == obj)) {
+			/*He have yet to figure out how to handle OOM failure during major evacuation*/
+			g_assert (ptr_in_nursery (obj));
 			return;
 		}
 		*ptr = obj;
