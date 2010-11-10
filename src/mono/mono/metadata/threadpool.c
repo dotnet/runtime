@@ -1253,6 +1253,7 @@ monitor_thread (gpointer data)
 
 	tp = data;
 	thread = mono_thread_internal_current ();
+	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), "Threapool monitor"));
 	while (1) {
 		ms = 500;
 		do {
@@ -1935,6 +1936,7 @@ async_invoke_thread (gpointer data)
 	thread = mono_thread_internal_current ();
 
 	mono_profiler_thread_start (thread->tid);
+	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), "Threapool worker"));
 
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);
