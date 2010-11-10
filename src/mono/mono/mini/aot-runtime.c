@@ -1913,7 +1913,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	if (has_gc_map) {
 		int map_size = decode_value (p, &p);
 		/* The GC map requires 4 bytes of alignment */
-		while ((guint64)p % 4)
+		while ((guint64)(gsize)p % 4)
 			p ++;		
 		jinfo->gc_info = p;
 		p += map_size;

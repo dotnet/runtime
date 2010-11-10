@@ -699,13 +699,9 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 		g_assert ((mgreg_t)stack_limit % sizeof (mgreg_t) == 0);
 
-#ifdef MONO_ARCH_HAVE_FIND_JIT_INFO_EXT
 		res = mono_find_jit_info_ext (frame.domain ? frame.domain : mono_domain_get (), tls->jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, new_reg_locations, &frame);
 		if (!res)
 			break;
-#else
-		break;
-#endif
 
 		ji = frame.ji;
 
