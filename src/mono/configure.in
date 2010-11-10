@@ -377,9 +377,8 @@ AC_CHECK_HEADERS(sys/user.h, [], [],
 AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
 if test x$have_zlib = xyes; then
    AC_TRY_COMPILE([#include <zlib.h>], [
-   void main () {
    #if defined(ZLIB_VERNUM) && (ZLIB_VERNUM >= 0x1230)
-   }
+   return 0;
    #else
    #error No good zlib found
    #endif
