@@ -2564,10 +2564,6 @@ mini_thread_cleanup (MonoInternalThread *thread)
 		mono_arch_free_jit_tls_data (jit_tls);
 
 		mono_free_altstack (jit_tls);
-		g_free (jit_tls->first_lmf);
-		g_free (jit_tls);
-		thread->jit_data = NULL;
-
 		/* We can't clean up tls information if we are on another thread, it will clean up the wrong stuff
 		 * It would be nice to issue a warning when this happens outside of the shutdown sequence. but it's
 		 * not a trivial thing.
@@ -2579,6 +2575,10 @@ mini_thread_cleanup (MonoInternalThread *thread)
 			mono_set_jit_tls (NULL);
 			mono_set_lmf_addr (NULL);
 		}
+
+		g_free (jit_tls->first_lmf);
+		g_free (jit_tls);
+		thread->jit_data = NULL;
 	}
 }
 
