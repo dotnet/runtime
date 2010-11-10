@@ -30,6 +30,7 @@ enum {
 	TYPE_IMAGE     = 2,
 	TYPE_ASSEMBLY  = 3,
 	TYPE_DOMAIN    = 4,
+	TYPE_THREAD    = 5,
 	/* extended type for TYPE_GC */
 	TYPE_GC_EVENT  = 1 << 4,
 	TYPE_GC_RESIZE = 2 << 4,

@@ -160,7 +160,8 @@ typedef struct _LogBuffer LogBuffer;
  * type: TYPE_METADATA
  * exinfo: flags: TYPE_LOAD_ERR
  * [time diff: uleb128] nanoseconds since last timing
- * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN
+ * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN,
+ * TYPE_THREAD
  * [pointer: sleb128] pointer of the metadata type depending on mtype
  * if mtype == TYPE_CLASS
  *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
@@ -169,6 +170,9 @@ typedef struct _LogBuffer LogBuffer;
  * if mtype == TYPE_IMAGE
  * 	[flags: uleb128] must be 0
  * 	[name: string] image file name
+ * if mtype == TYPE_THREAD
+ * 	[flags: uleb128] must be 0
+ * 	[name: string] thread name
  *
  * type method format:
  * type: TYPE_METHOD
@@ -892,6 +896,23 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 }
 
 static void
+thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
+{
+	int len = strlen (name) + 1;
+	uint64_t now;
+	LogBuffer *logbuffer;
+	logbuffer = ensure_logbuf (10 + len);
+	now = current_time ();
+	emit_byte (logbuffer, TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_THREAD);
+	emit_ptr (logbuffer, (void*)tid);
+	emit_value (logbuffer, 0); /* flags */
+	memcpy (logbuffer->data, name, len);
+	logbuffer->data += len;
+}
+
+static void
 log_shutdown (MonoProfiler *prof)
 {
 	take_lock ();
@@ -1130,6 +1151,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_class (NULL, class_loaded, NULL, NULL);
 	mono_profiler_install_module (NULL, image_loaded, NULL, NULL);
 	mono_profiler_install_thread (thread_start, thread_end);
+	mono_profiler_install_thread_name (thread_name);
 	mono_profiler_install_enter_leave (method_enter, method_leave);
 	mono_profiler_install_jit_end (method_jitted);
 	mono_profiler_install_exception (throw_exc, method_exc_leave, clause_exc);

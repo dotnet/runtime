@@ -424,6 +424,7 @@ typedef struct {
 struct _ThreadContext {
 	ThreadContext *next;
 	intptr_t thread_id;
+	char *name;
 	/* emulated stack */
 	MethodDesc **stack;
 	uint64_t *time_stack;
@@ -457,7 +458,7 @@ load_data (ProfContext *ctx, int size)
 }
 
 static ThreadContext*
-load_thread (ProfContext *ctx, intptr_t thread_id)
+get_thread (ProfContext *ctx, intptr_t thread_id)
 {
 	ThreadContext *thread;
 	if (ctx->current && ctx->current->thread_id == thread_id)
@@ -465,7 +466,6 @@ load_thread (ProfContext *ctx, intptr_t thread_id)
 	thread = ctx->threads;
 	while (thread) {
 		if (thread->thread_id == thread_id) {
-			ctx->current = thread;
 			return thread;
 		}
 		thread = thread->next;
@@ -473,7 +473,6 @@ load_thread (ProfContext *ctx, intptr_t thread_id)
 	thread = calloc (sizeof (ThreadContext), 1);
 	thread->next = ctx->threads;
 	ctx->threads = thread;
-	ctx->current = thread;
 	thread->thread_id = thread_id;
 	thread->last_time = 0;
 	thread->stack_id = 0;
@@ -481,6 +480,14 @@ load_thread (ProfContext *ctx, intptr_t thread_id)
 	thread->stack = malloc (thread->stack_size * sizeof (void*));
 	thread->time_stack = malloc (thread->stack_size * sizeof (uint64_t));
 	thread->callee_time_stack = malloc (thread->stack_size * sizeof (uint64_t));
+	return thread;
+}
+
+static ThreadContext*
+load_thread (ProfContext *ctx, intptr_t thread_id)
+{
+	ThreadContext *thread = get_thread (ctx, thread_id);
+	ctx->current = thread;
 	return thread;
 }
 
@@ -857,6 +864,8 @@ decode_buffer (ProfContext *ctx)
 			time_from += startup_time;
 			time_to += startup_time;
 		}
+		if (!thread->name)
+			thread->name = pstrdup ("Main");
 	}
 	for (i = 0; i < thread->stack_id; ++i)
 		thread->stack [i]->recurse_count++;
@@ -962,6 +971,19 @@ decode_buffer (ProfContext *ctx)
 					fprintf (outfile, "loaded image %p (%s) at %llu\n", (void*)(ptr_base + ptrdiff), p, time_base);
 				if (!error)
 					add_image (ptr_base + ptrdiff, (char*)p);
+				while (*p) p++;
+				p++;
+			} else if (mtype == TYPE_THREAD) {
+				ThreadContext *nt;
+				uint64_t flags = decode_uleb128 (p, &p);
+				if (flags) {
+					fprintf (outfile, "non-zero flags in thread\n");
+					return 0;
+				}
+				nt = get_thread (ctx, ptr_base * ptrdiff);
+				nt->name = pstrdup ((char*)p);
+				if (debug)
+					fprintf (outfile, "thread %p named: %s\n", (void*)(ptr_base + ptrdiff), p);
 				while (*p) p++;
 				p++;
 			}
@@ -1297,7 +1319,7 @@ dump_threads (ProfContext *ctx)
 	ThreadContext *thread;
 	fprintf (outfile, "\nThread summary\n");
 	for (thread = ctx->threads; thread; thread = thread->next) {
-		fprintf (outfile, "\tThread: %p\n", (void*)thread->thread_id);
+		fprintf (outfile, "\tThread: %p, name: \"%s\"\n", (void*)thread->thread_id, thread->name? thread->name: "");
 	}
 }
 
