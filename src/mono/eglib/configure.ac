@@ -37,11 +37,19 @@ CFLAGS="$CFLAGS -g -D_GNU_SOURCE"
 AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
 AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
 
+platform_darwin=no
+
 case $host in
 *-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
     PATHSEP='\\'
     SEARCHSEP=';'
     OS="WIN32"
+    ;;
+*-*darwin*)
+    platform_darwin=yes
+    PATHSEP='/'
+    SEARCHSEP=':'
+    OS="UNIX"
     ;;
 *)
     PATHSEP='/'
@@ -76,6 +84,7 @@ AC_SUBST(SEARCHSEP)
 AC_SUBST(OS)
 AM_CONDITIONAL(HOST_WIN32, test x$OS = xWIN32)
 AM_CONDITIONAL(TARGET_WIN32, test x$OS = xWIN32)
+AM_CONDITIONAL(PLATFORM_DARWIN, test x$platform_darwin = xyes)
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(void *)
