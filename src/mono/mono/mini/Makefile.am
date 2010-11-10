@@ -103,10 +103,10 @@ endif
 noinst_PROGRAMS = genmdesc
 
 if SHARED_MONO
-shared_libraries = libmono-2.0.la
+shared_libraries = libmono-2.0.la $(sgen_libraries)
 endif
 
-lib_LTLIBRARIES = $(shared_libraries) $(sgen_libraries)
+lib_LTLIBRARIES = $(shared_libraries)
 noinst_LTLIBRARIES = libmono-static.la $(sgen_static_libraries)
 
 if MOONLIGHT
