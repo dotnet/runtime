@@ -521,6 +521,7 @@ heap_walk (MonoProfiler *profiler)
 	now = current_time ();
 	emit_byte (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 	emit_time (logbuffer, now);
+	last_hs_time = now;
 }
 
 static void

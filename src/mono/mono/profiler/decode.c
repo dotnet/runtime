@@ -246,23 +246,18 @@ struct _HeapShot {
 
 static HeapShot *heap_shots = NULL;
 static HeapShot *current_heap_shot = NULL;
+static int num_heap_shots = 0;
 
 static HeapShot*
 new_heap_shot (uint64_t timestamp)
 {
-	HeapShot *p;
 	HeapShot *hs = calloc (sizeof (HeapShot), 1);
 	hs->hash_size = 4;
 	hs->class_hash = calloc (sizeof (void*), hs->hash_size);
 	hs->timestamp = timestamp;
-	/* append it to the list */
-	p = heap_shots;
-	while (p && p->next)
-		p = p->next;
-	if (p)
-		p->next = hs;
-	else
-		heap_shots = hs;
+	num_heap_shots++;
+	hs->next = heap_shots;
+	heap_shots = hs;
 	return hs;
 }
 
@@ -1588,18 +1583,36 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 	}
 }
 
+static int
+compare_heap_shots (const void *a, const void *b)
+{
+	HeapShot *const*A = a;
+	HeapShot *const*B = b;
+	if ((*B)->timestamp == (*A)->timestamp)
+		return 0;
+	if ((*B)->timestamp > (*A)->timestamp)
+		return -1;
+	return 1;
+}
+
 static void
 dump_heap_shots (void)
 {
+	HeapShot **hs_sorted;
 	HeapShot *hs;
 	HeapShot *last_hs = NULL;
 	int i;
 	if (!heap_shots)
 		return;
+	hs_sorted = malloc (num_heap_shots * sizeof (void*));
 	fprintf (outfile, "\nHeap shot summary\n");
 	i = 0;
-	for (hs = heap_shots; hs; hs = hs->next) {
-		heap_shot_summary (hs, i++, last_hs);
+	for (hs = heap_shots; hs; hs = hs->next)
+		hs_sorted [i++] = hs;
+	qsort (hs_sorted, num_heap_shots, sizeof (void*), compare_heap_shots);
+	for (i = 0; i < num_heap_shots; ++i) {
+		hs = hs_sorted [i];
+		heap_shot_summary (hs, i, last_hs);
 		last_hs = hs;
 	}
 }
