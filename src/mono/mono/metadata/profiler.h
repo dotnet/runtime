@@ -115,6 +115,7 @@ typedef void (*MonoProfileAssemblyResult) (MonoProfiler *prof, MonoAssembly *ass
 typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *parent, MonoMethod *child, int *ok);
 
 typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, uintptr_t tid);
+typedef void (*MonoProfileThreadNameFunc) (MonoProfiler *prof, uintptr_t tid, const char *name);
 typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
 typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, mono_byte *ip, void *context);
 typedef void (*MonoProfileStatCallChainFunc) (MonoProfiler *prof, int call_chain_depth, mono_byte **ip, void *context);
@@ -156,6 +157,7 @@ void mono_profiler_install_method_free (MonoProfileMethodFunc callback);
 void mono_profiler_install_method_invoke (MonoProfileMethodFunc start, MonoProfileMethodFunc end);
 void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave);
 void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
+void mono_profiler_install_thread_name (MonoProfileThreadNameFunc thread_name_cb);
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);
 void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
 void mono_profiler_install_monitor     (MonoProfileMonitorFunc callback);

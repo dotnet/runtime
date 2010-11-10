@@ -1374,6 +1374,11 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
 		this_obj->name = NULL;
 	
 	LeaveCriticalSection (this_obj->synch_cs);
+	if (this_obj->name) {
+		char *tname = mono_string_to_utf8 (name);
+		mono_profiler_thread_name (this_obj->tid, tname);
+		mono_free (tname);
+	}
 }
 
 static MonoObject*

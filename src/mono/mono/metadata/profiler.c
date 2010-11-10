@@ -81,6 +81,7 @@ struct _ProfilerDesc {
 
 	MonoProfileThreadFunc   thread_start;
 	MonoProfileThreadFunc   thread_end;
+	MonoProfileThreadNameFunc   thread_name;
 
 	MonoProfileCoverageFilterFunc coverage_filter_cb;
 
@@ -236,6 +237,14 @@ mono_profiler_install_thread (MonoProfileThreadFunc start, MonoProfileThreadFunc
 		return;
 	prof_list->thread_start = start;
 	prof_list->thread_end = end;
+}
+
+void 
+mono_profiler_install_thread_name (MonoProfileThreadNameFunc thread_name_cb)
+{
+	if (!prof_list)
+		return;
+	prof_list->thread_name = thread_name_cb;
 }
 
 void 
@@ -539,6 +548,16 @@ mono_profiler_thread_end (gsize tid)
 	for (prof = prof_list; prof; prof = prof->next) {
 		if ((prof->events & MONO_PROFILE_THREADS) && prof->thread_end)
 			prof->thread_end (prof->profiler, tid);
+	}
+}
+
+void
+mono_profiler_thread_name (gsize tid, const char *name)
+{
+	ProfilerDesc *prof;
+	for (prof = prof_list; prof; prof = prof->next) {
+		if ((prof->events & MONO_PROFILE_THREADS) && prof->thread_name)
+			prof->thread_name (prof->profiler, tid, name);
 	}
 }
 

@@ -42,6 +42,7 @@ int  mono_profiler_stat_get_call_chain_depth (void) MONO_INTERNAL;
 MonoProfilerCallChainStrategy  mono_profiler_stat_get_call_chain_strategy (void) MONO_INTERNAL;
 void mono_profiler_thread_start    (gsize tid) MONO_INTERNAL;
 void mono_profiler_thread_end      (gsize tid) MONO_INTERNAL;
+void mono_profiler_thread_name     (gsize tid, const char *name) MONO_INTERNAL;
 
 void mono_profiler_exception_thrown         (MonoObject *exception) MONO_INTERNAL;
 void mono_profiler_exception_method_leave   (MonoMethod *method) MONO_INTERNAL;
