@@ -148,7 +148,6 @@ rm -rf %buildroot
 %dir %_prefix/lib/mono/3.5
 %dir %_prefix/lib/mono/4.0
 %dir %_prefix/lib/mono/compat-2.0
-%dir %_prefix/lib/mono/compat-4.0
 %dir %_prefix/lib/mono/gac
 %dir %_sysconfdir/mono
 %dir %_sysconfdir/mono/2.0
@@ -256,7 +255,6 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.0/setreg.exe*
 %_prefix/lib/mono/4.0/sn.exe*
 %_prefix/lib/mono/compat-2.0/ICSharpCode.SharpZipLib.dll
-%_prefix/lib/mono/compat-4.0/ICSharpCode.SharpZipLib.dll
 %_prefix/lib/mono/gac/Commons.Xml.Relaxng
 %_prefix/lib/mono/gac/CustomMarshalers
 %_prefix/lib/mono/gac/I18N
@@ -1211,6 +1209,5 @@ not install anything from outside the mono source (XSP, mono-basic, etc.).
 %files -n mono-complete
 %defattr(-, root, root)
 %dir %_prefix/lib/mono/compat-2.0
-%dir %_prefix/lib/mono/compat-4.0
 
 %changelog
