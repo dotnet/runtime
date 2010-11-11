@@ -7,6 +7,8 @@ AM_MAINTAINER_MODE
 
 AC_PROG_CC
 AM_PROG_LIBTOOL
+# Use dolt (http://dolt.freedesktop.org/) instead of libtool for building.
+DOLT
 CFLAGS="$CFLAGS -O0"
 GNUC_PRETTY=
 GNUC_UNUSED=
