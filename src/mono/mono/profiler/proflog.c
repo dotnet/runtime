@@ -23,10 +23,7 @@
 #include "utils.c"
 #include "proflog.h"
 
-#ifdef HOST_WIN32
-#undef HAVE_ZLIB
-#endif
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
 #endif
 
@@ -240,7 +237,7 @@ struct _LogBuffer {
 struct _MonoProfiler {
 	LogBuffer *buffers;
 	FILE* file;
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	gzFile *gzfile;
 #endif
 	int pipe_output;
@@ -409,7 +406,7 @@ dump_header (MonoProfiler *profiler)
 	p = write_int32 (p, 0); /* flags */
 	p = write_int32 (p, 0); /* pid */
 	p = write_int32 (p, 0); /* opsystem */
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
 	} else {
@@ -434,7 +431,7 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 	p = write_int64 (p, buf->obj_base);
 	p = write_int64 (p, buf->thread_id);
 	p = write_int64 (p, buf->method_base);
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
 		gzwrite (profiler->gzfile, buf->buf, buf->data - buf->buf);
@@ -442,7 +439,7 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 #endif
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
 		fwrite (buf->buf, buf->data - buf->buf, 1, profiler->file);
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	}
 #endif
 	free_buffer (buf, buf->size);
@@ -921,7 +918,7 @@ log_shutdown (MonoProfiler *prof)
 		dump_buffer (prof, TLS_GET (tlsbuffer));
 	TLS_SET (tlsbuffer, NULL);
 	release_lock ();
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	if (prof->gzfile)
 		gzclose (prof->gzfile);
 #endif
@@ -952,7 +949,7 @@ create_profiler (const char *filename)
 		printf ("Cannot create profiler output: %s\n", filename);
 		exit (1);
 	}
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	if (use_zip)
 		prof->gzfile = gzdopen (fileno (prof->file), "wb");
 #endif

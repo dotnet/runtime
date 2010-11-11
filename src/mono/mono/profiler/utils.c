@@ -46,7 +46,7 @@ static mach_timebase_info_data_t timebase_info;
 
 #define TICKS_PER_SEC 1000000000LL
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(__linux__)
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(__linux__) && defined(HAVE_SCHED_GETCPU)
 #define HAVE_RDTSC 1
 #endif
 

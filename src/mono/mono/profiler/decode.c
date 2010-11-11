@@ -17,10 +17,7 @@
 #endif
 #include <unistd.h>
 #include <stdlib.h>
-#ifdef HOST_WIN32
-#undef HAVE_ZLIB
-#endif
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
 #endif
 #include <mono/metadata/profiler.h>
@@ -616,7 +613,7 @@ typedef struct _ThreadContext ThreadContext;
 
 typedef struct {
 	FILE *file;
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	gzFile *gzfile;
 #endif
 	unsigned char *buf;
@@ -659,7 +656,7 @@ static int
 load_data (ProfContext *ctx, int size)
 {
 	ensure_buffer (ctx, size);
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	if (ctx->gzfile)
 		return gzread (ctx->gzfile, ctx->buf, size) == size;
 	else
@@ -1460,7 +1457,7 @@ load_file (char *name)
 		printf ("Cannot open file: %s\n", name);
 		exit (1);
 	}
-#if defined (HAVE_ZLIB)
+#if defined (HAVE_SYS_ZLIB)
 	ctx->gzfile = gzdopen (fileno (ctx->file), "rb");
 #endif
 	if (!load_data (ctx, 32))

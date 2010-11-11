@@ -385,6 +385,7 @@ if test x$have_zlib = xyes; then
    ],[
 	AC_MSG_RESULT(Using system zlib)
 	zlib_msg="system zlib"
+	AC_DEFINE(HAVE_SYS_ZLIB,1,[Have system zlib])
    ],[
 	AC_MSG_RESULT(Using embedded zlib)
 	have_zlib=no
@@ -1006,6 +1007,7 @@ if test x$target_win32 = xno; then
 	AC_CHECK_FUNCS(sysconf)
 
 	AC_CHECK_FUNCS(sched_setaffinity)
+	AC_CHECK_FUNCS(sched_getcpu)
 
 	dnl ****************************************************************
 	dnl *** Check for sched_setaffinity from glibc versions before   ***
