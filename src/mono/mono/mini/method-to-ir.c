@@ -2599,19 +2599,26 @@ create_write_barrier_bitmap (MonoClass *klass, unsigned *wb_bitmap, int offset)
 static void
 emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_reg)
 {
-#ifdef HAVE_SGEN_GC
 	int card_table_shift_bits;
 	gpointer card_table_mask;
-	guint8 *card_table = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
+	guint8 *card_table;
 	MonoInst *dummy_use;
-
-#ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
 	int nursery_shift_bits;
 	size_t nursery_size;
+	gboolean has_card_table_wb = FALSE;
+
+	if (!cfg->gen_write_barriers)
+		return;
+
+	card_table = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
 
 	mono_gc_get_nursery (&nursery_shift_bits, &nursery_size);
 
-	if (!cfg->compile_aot && card_table && nursery_shift_bits > 0) {
+#ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
+	has_card_table_wb = TRUE;
+#endif
+
+	if (has_card_table_wb && !cfg->compile_aot && card_table && nursery_shift_bits > 0) {
 		MonoInst *wbarrier;
 
 		MONO_INST_NEW (cfg, wbarrier, OP_CARD_TABLE_WBARRIER);
@@ -2621,9 +2628,7 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 		else
 			wbarrier->sreg2 = value_reg;
 		MONO_ADD_INS (cfg->cbb, wbarrier);
-	} else
-#endif
-	if (card_table) {
+	} else if (card_table) {
 		int offset_reg = alloc_preg (cfg);
 		int card_reg  = alloc_preg (cfg);
 		MonoInst *ins;
@@ -2658,7 +2663,6 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value, int value_
 		dummy_use->sreg1 = value_reg;
 		MONO_ADD_INS (cfg->cbb, dummy_use);
 	}
-#endif
 }
 
 static gboolean
