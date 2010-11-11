@@ -10,6 +10,7 @@
 #include "utils.c"
 #include "proflog.h"
 #include <string.h>
+#include <assert.h>
 #include <stdio.h>
 #if !defined(__APPLE__)
 #include <malloc.h>
@@ -228,11 +229,80 @@ lookup_method (intptr_t method)
 	return cd;
 }
 
+typedef struct _HeapClassDesc HeapClassDesc;
 typedef struct {
+	HeapClassDesc *klass;
+	uint64_t count;
+} HeapClassRevRef;
+
+struct _HeapClassDesc {
 	ClassDesc *klass;
 	int64_t count;
 	int64_t total_size;
-} HeapClassDesc;
+	HeapClassRevRef *rev_hash;
+	int rev_hash_size;
+	int rev_count;
+};
+
+static int
+add_rev_class_hashed (HeapClassRevRef *rev_hash, uintptr_t size, HeapClassDesc *hklass, uint64_t value)
+{
+	uintptr_t i;
+	uintptr_t start_pos;
+	start_pos = (hklass->klass->klass >> 2) % size;
+	assert (start_pos < size);
+	i = start_pos;
+	do {
+		if (rev_hash [i].klass == hklass) {
+			rev_hash [i].count += value;
+			return 0;
+		} else if (!rev_hash [i].klass) {
+			rev_hash [i].klass = hklass;
+			rev_hash [i].count += value;
+			start_pos = 0;
+			for (i = 0; i < size; ++i)
+				if (rev_hash [i].klass && rev_hash [i].klass->klass == hklass->klass)
+					start_pos ++;
+			assert (start_pos == 1);
+			return 1;
+		}
+		/* wrap around */
+		if (++i == size)
+			i = 0;
+	} while (i != start_pos);
+	/* should not happen */
+	printf ("failed revref store\n");
+	return 0;
+}
+
+static void
+add_heap_class_rev (HeapClassDesc *from, HeapClassDesc *to)
+{
+	uintptr_t i;
+	if (to->rev_count * 2 >= to->rev_hash_size) {
+		HeapClassRevRef *n;
+		uintptr_t old_size = to->rev_hash_size;
+		to->rev_hash_size *= 2;
+		if (to->rev_hash_size == 0)
+			to->rev_hash_size = 4;
+		n = calloc (sizeof (HeapClassRevRef) * to->rev_hash_size, 1);
+		for (i = 0; i < old_size; ++i) {
+			if (to->rev_hash [i].klass)
+				add_rev_class_hashed (n, to->rev_hash_size, to->rev_hash [i].klass, to->rev_hash [i].count);
+		}
+		if (to->rev_hash)
+			free (to->rev_hash);
+		to->rev_hash = n;
+	}
+	to->rev_count += add_rev_class_hashed (to->rev_hash, to->rev_hash_size, from, 1);
+}
+
+typedef struct {
+	uintptr_t objaddr;
+	HeapClassDesc *hklass;
+	uintptr_t num_refs;
+	uintptr_t refs [0];
+} HeapObjectDesc;
 
 typedef struct _HeapShot HeapShot;
 struct _HeapShot {
@@ -242,10 +312,12 @@ struct _HeapShot {
 	int hash_size;
 	HeapClassDesc **class_hash;
 	HeapClassDesc **sorted;
+	HeapObjectDesc **objects_hash;
+	uintptr_t objects_count;
+	uintptr_t objects_hash_size;
 };
 
 static HeapShot *heap_shots = NULL;
-static HeapShot *current_heap_shot = NULL;
 static int num_heap_shots = 0;
 
 static HeapShot*
@@ -282,22 +354,28 @@ heap_class_lookup (HeapShot *hs, ClassDesc *klass)
 }
 
 static int
-add_heap_hashed (HeapClassDesc **hash, int hsize, ClassDesc *klass, uint64_t size, uint64_t count)
+add_heap_hashed (HeapClassDesc **hash, HeapClassDesc **retv, uintptr_t hsize, ClassDesc *klass, uint64_t size, uint64_t count)
 {
-	int i;
-	unsigned int start_pos;
+	uintptr_t i;
+	uintptr_t start_pos;
 	start_pos = ((uintptr_t)klass->klass >> 2) % hsize;
 	i = start_pos;
 	do {
 		if (hash [i] && hash [i]->klass == klass) {
 			hash [i]->total_size += size;
 			hash [i]->count += count;
+			*retv = hash [i];
 			return 0;
 		} else if (!hash [i]) {
+			if (*retv) {
+				hash [i] = *retv;
+				return 1;
+			}
 			hash [i] = calloc (sizeof (HeapClassDesc), 1);
 			hash [i]->klass = klass;
 			hash [i]->total_size += size;
 			hash [i]->count += count;
+			*retv = hash [i];
 			return 1;
 		}
 		/* wrap around */
@@ -309,9 +387,10 @@ add_heap_hashed (HeapClassDesc **hash, int hsize, ClassDesc *klass, uint64_t siz
 	return 0;
 }
 
-static void
-add_heap_shot_obj (HeapShot *hs, ClassDesc *klass, uint64_t size)
+static HeapClassDesc*
+add_heap_shot_class (HeapShot *hs, ClassDesc *klass, uint64_t size)
 {
+	HeapClassDesc *res;
 	int i;
 	if (hs->class_count * 2 >= hs->hash_size) {
 		HeapClassDesc **n;
@@ -321,14 +400,149 @@ add_heap_shot_obj (HeapShot *hs, ClassDesc *klass, uint64_t size)
 			hs->hash_size = 4;
 		n = calloc (sizeof (void*) * hs->hash_size, 1);
 		for (i = 0; i < old_size; ++i) {
+			res = hs->class_hash [i];
 			if (hs->class_hash [i])
-				add_heap_hashed (n, hs->hash_size, hs->class_hash [i]->klass, hs->class_hash [i]->total_size, hs->class_hash [i]->count);
+				add_heap_hashed (n, &res, hs->hash_size, hs->class_hash [i]->klass, hs->class_hash [i]->total_size, hs->class_hash [i]->count);
 		}
 		if (hs->class_hash)
 			free (hs->class_hash);
 		hs->class_hash = n;
 	}
-	hs->class_count += add_heap_hashed (hs->class_hash, hs->hash_size, klass, size, 1);
+	res = NULL;
+	hs->class_count += add_heap_hashed (hs->class_hash, &res, hs->hash_size, klass, size, 1);
+	//if (res->count == 1)
+	//	printf ("added heap class: %s\n", res->klass->name);
+	return res;
+}
+
+static HeapObjectDesc*
+alloc_heap_obj (uintptr_t objaddr, HeapClassDesc *hklass, uintptr_t num_refs)
+{
+	HeapObjectDesc* ho = calloc (sizeof (HeapObjectDesc) + num_refs * sizeof (uintptr_t), 1);
+	ho->objaddr = objaddr;
+	ho->hklass = hklass;
+	ho->num_refs = num_refs;
+	return ho;
+}
+
+static uintptr_t
+heap_shot_find_obj_slot (HeapShot *hs, uintptr_t objaddr)
+{
+	uintptr_t i;
+	uintptr_t start_pos;
+	HeapObjectDesc **hash = hs->objects_hash;
+	start_pos = ((uintptr_t)objaddr >> 3) % hs->objects_hash_size;
+	i = start_pos;
+	do {
+		if (hash [i] && hash [i]->objaddr == objaddr) {
+			return i;
+		} else if (!hash [i]) {
+			break; /* fail */
+		}
+		/* wrap around */
+		if (++i == hs->objects_hash_size)
+			i = 0;
+	} while (i != start_pos);
+	/* should not happen */
+	printf ("failed heap obj update\n");
+	return -1;
+}
+
+static HeapObjectDesc*
+heap_shot_obj_add_refs (HeapShot *hs, uintptr_t objaddr, uintptr_t num, uintptr_t *ref_offset)
+{
+	HeapObjectDesc **hash = hs->objects_hash;
+	uintptr_t i = heap_shot_find_obj_slot (hs, objaddr);
+	if (i >= 0) {
+		HeapObjectDesc* ho = alloc_heap_obj (objaddr, hash [i]->hklass, hash [i]->num_refs + num);
+		*ref_offset = hash [i]->num_refs;
+		memcpy (ho->refs, hash [i]->refs, hash [i]->num_refs * sizeof (uintptr_t));
+		free (hash [i]);
+		hash [i] = ho;
+		return ho;
+	}
+	/* should not happen */
+	printf ("failed heap obj update\n");
+	return NULL;
+	
+}
+
+static uintptr_t
+add_heap_hashed_obj (HeapObjectDesc **hash, uintptr_t hsize, HeapObjectDesc *obj)
+{
+	uintptr_t i;
+	uintptr_t start_pos;
+	start_pos = ((uintptr_t)obj->objaddr >> 3) % hsize;
+	i = start_pos;
+	do {
+		if (hash [i] && hash [i]->objaddr == obj->objaddr) {
+			printf ("duplicate object!\n");
+			return 0;
+		} else if (!hash [i]) {
+			hash [i] = obj;
+			return 1;
+		}
+		/* wrap around */
+		if (++i == hsize)
+			i = 0;
+	} while (i != start_pos);
+	/* should not happen */
+	printf ("failed heap obj store\n");
+	return 0;
+}
+
+static void
+add_heap_shot_obj (HeapShot *hs, HeapObjectDesc *obj)
+{
+	uintptr_t i;
+	if (hs->objects_count * 2 >= hs->objects_hash_size) {
+		HeapObjectDesc **n;
+		uintptr_t old_size = hs->objects_hash_size;
+		hs->objects_hash_size *= 2;
+		if (hs->objects_hash_size == 0)
+			hs->objects_hash_size = 4;
+		n = calloc (sizeof (void*) * hs->objects_hash_size, 1);
+		for (i = 0; i < old_size; ++i) {
+			if (hs->objects_hash [i])
+				add_heap_hashed_obj (n, hs->objects_hash_size, hs->objects_hash [i]);
+		}
+		if (hs->objects_hash)
+			free (hs->objects_hash);
+		hs->objects_hash = n;
+	}
+	hs->objects_count += add_heap_hashed_obj (hs->objects_hash, hs->objects_hash_size, obj);
+}
+
+static void
+heap_shot_resolve_reverse_refs (HeapShot *hs)
+{
+	uintptr_t i;
+	for (i = 0; i < hs->objects_hash_size; ++i) {
+		uintptr_t r;
+		HeapObjectDesc *ho = hs->objects_hash [i];
+		if (!ho)
+			continue;
+		for (r = 0; r < ho->num_refs; ++r) {
+			uintptr_t oi = heap_shot_find_obj_slot (hs, ho->refs [r]);
+			add_heap_class_rev (ho->hklass, hs->objects_hash [oi]->hklass);
+		}
+	}
+}
+
+static void
+heap_shot_free_objects (HeapShot *hs)
+{
+	uintptr_t i;
+	for (i = 0; i < hs->objects_hash_size; ++i) {
+		HeapObjectDesc *ho = hs->objects_hash [i];
+		if (ho)
+			free (ho);
+	}
+	if (hs->objects_hash)
+		free (hs->objects_hash);
+	hs->objects_hash = NULL;
+	hs->objects_hash_size = 0;
+	hs->objects_count = 0;
 }
 
 struct _BackTrace {
@@ -429,6 +643,7 @@ struct _ThreadContext {
 	MonitorDesc *monitor;
 	int stack_size;
 	int stack_id;
+	HeapShot *current_heap_shot;
 };
 
 static void
@@ -1062,38 +1277,55 @@ decode_buffer (ProfContext *ctx)
 		case TYPE_HEAP: {
 			int subtype = *p & 0xf0;
 			if (subtype == TYPE_HEAP_OBJECT) {
+				HeapObjectDesc *ho;
 				int i;
 				intptr_t objdiff = decode_sleb128 (p + 1, &p);
 				intptr_t ptrdiff = decode_sleb128 (p, &p);
 				uint64_t size = decode_uleb128 (p, &p);
-				int num = decode_uleb128 (p, &p);
+				uintptr_t num = decode_uleb128 (p, &p);
+				uintptr_t ref_offset;
 				ClassDesc *cd = lookup_class (ptr_base + ptrdiff);
+				if (size) {
+					HeapClassDesc *hcd = add_heap_shot_class (thread->current_heap_shot, cd, size);
+					if (collect_traces) {
+						ho = alloc_heap_obj (OBJ_ADDR (objdiff), hcd, num);
+						add_heap_shot_obj (thread->current_heap_shot, ho);
+						ref_offset = 0;
+					}
+				} else {
+					if (collect_traces)
+						ho = heap_shot_obj_add_refs (thread->current_heap_shot, OBJ_ADDR (objdiff), num, &ref_offset);
+				}
 				for (i = 0; i < num; ++i) {
 					/* FIXME: use object distance to measure how good
 					 * the GC is at keeping related objects close
 					 */
 					intptr_t obj1diff = decode_sleb128 (p, &p);
+					if (collect_traces)
+						ho->refs [ref_offset + i] = OBJ_ADDR (obj1diff);
 					if (num_tracked_objects)
 						track_obj_reference (OBJ_ADDR (obj1diff), OBJ_ADDR (objdiff), cd);
 				}
 				if (debug && size)
 					fprintf (outfile, "traced object %p, size %llu (%s), refs: %d\n", (void*)OBJ_ADDR (objdiff), size, cd->name, num);
-				if (size)
-					add_heap_shot_obj (current_heap_shot, cd, size);
 			} else if (subtype == TYPE_HEAP_END) {
 				uint64_t tdiff = decode_uleb128 (p + 1, &p);
 				LOG_TIME (time_base, tdiff);
 				time_base += tdiff;
 				if (debug)
 					fprintf (outfile, "heap shot end\n");
-				current_heap_shot = NULL;
+				if (collect_traces) {
+					heap_shot_resolve_reverse_refs (thread->current_heap_shot);
+					heap_shot_free_objects (thread->current_heap_shot);
+				}
+				thread->current_heap_shot = NULL;
 			} else if (subtype == TYPE_HEAP_START) {
 				uint64_t tdiff = decode_uleb128 (p + 1, &p);
 				LOG_TIME (time_base, tdiff);
 				time_base += tdiff;
 				if (debug)
 					fprintf (outfile, "heap shot start\n");
-				current_heap_shot = new_heap_shot (time_base);
+				thread->current_heap_shot = new_heap_shot (time_base);
 			}
 			break;
 		}
@@ -1542,6 +1774,32 @@ compare_heap_class (const void *a, const void *b)
 	return 1;
 }
 
+static int
+compare_rev_class (const void *a, const void *b)
+{
+	const HeapClassRevRef *A = a;
+	const HeapClassRevRef *B = b;
+	if (B->count == A->count)
+		return 0;
+	if (B->count < A->count)
+		return -1;
+	return 1;
+}
+
+static void
+dump_rev_claases (HeapClassRevRef *revs, int count)
+{
+	int j;
+	if (!show_traces)
+		return;
+	if (!count)
+		return;
+	for (j = 0; j < count; ++j) {
+		HeapClassDesc *cd = revs [j].klass;
+		fprintf (outfile, "\t\t%llu references from: %s\n", revs [j].count, cd->klass->name);
+	}
+}
+
 static void
 heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 {
@@ -1568,6 +1826,8 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		ccount = 30;
 	fprintf (outfile, "\t%10s %10s %8s Class name\n", "Bytes", "Count", "Average");
 	for (i = 0; i < ccount; ++i) {
+		HeapClassRevRef *rev_sorted;
+		int j, k;
 		HeapClassDesc *ocd = NULL;
 		cd = sorted [i];
 		if (last_hs)
@@ -1580,7 +1840,20 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		} else {
 			fprintf (outfile, "\n");
 		}
+		if (!collect_traces)
+			continue;
+		rev_sorted = malloc (cd->rev_count * sizeof (HeapClassRevRef));
+		k = 0;
+		for (j = 0; j < cd->rev_hash_size; ++j) {
+			if (cd->rev_hash [j].klass)
+				rev_sorted [k++] = cd->rev_hash [j];
+		}
+		assert (cd->rev_count == k);
+		qsort (rev_sorted, cd->rev_count, sizeof (HeapClassRevRef), compare_rev_class);
+		dump_rev_claases (rev_sorted, cd->rev_count);
+		free (rev_sorted);
 	}
+	free (sorted);
 }
 
 static int

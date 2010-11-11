@@ -147,6 +147,10 @@ frames by default at specific events when the *nocalls* option is used, so
 in that case, if more stack frames are required in mprof-report, a bigger
 value for maxframes when profiling must be used, too.
 
+The *--traces* option also controls the reverse reference feature in the heapshot
+report: for each class it reports how many references to objects of that class
+come from other classes.
+
 ### Sort order for methods and allocations
 
 When a list of methods is printed the default sort order is based on the total time
