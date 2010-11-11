@@ -315,6 +315,19 @@ mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, uns
 	g_assert_not_reached ();
 }
 
+guint8*
+mono_gc_get_card_table (int *shift_bits, gpointer *card_mask)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void*
+mono_gc_get_nursery (int *shift_bits, size_t *size)
+{
+	return NULL;
+}
+
 #ifndef HOST_WIN32
 
 int

@@ -3032,7 +3032,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		g_assert_not_reached ();
 #endif
 		break;
-#ifdef HAVE_SGEN_GC
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR: {
 		int card_table_shift_bits;
 		gpointer card_table_mask;
@@ -3040,7 +3039,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
 		break;
 	}
-#endif
 	default:
 		g_assert_not_reached ();
 	}

@@ -1216,8 +1216,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		}
 	}
 
-#ifdef HAVE_SGEN_GC
-	{
+	if (mono_gc_is_moving ()) {
 		MonoJumpInfo ji;
 
 		memset (&ji, 0, sizeof (ji));
@@ -1225,7 +1224,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 		amodule->got [2] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
 	}
-#endif
 
 	/*
 	 * Since we store methoddef and classdef tokens when referring to methods/classes in
