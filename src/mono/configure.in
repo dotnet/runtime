@@ -94,6 +94,7 @@ case "$host" in
 			# So libgc configure gets -mno-cygwin
 			export CC
 			export CXX
+			CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -mno-cygwin"
 		else
 			target_win32=yes
 			AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32/MinGW])
