@@ -771,6 +771,7 @@ handle_signal_exception (gpointer obj, gboolean test_only)
 static void
 setup_ucontext_return (void *uc, gpointer func)
 {
+#if !defined(MONO_CROSS_COMPILE)
 	UCONTEXT_REG_LNK(uc) = UCONTEXT_REG_NIP(uc);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 	{
@@ -781,6 +782,7 @@ setup_ucontext_return (void *uc, gpointer func)
 	}
 #else
 	UCONTEXT_REG_NIP(uc) = (unsigned long)func;
+#endif
 #endif
 }
 
