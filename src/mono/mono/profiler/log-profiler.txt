@@ -80,13 +80,12 @@ and exception throws) a stack trace is collected by default. See the *maxframes*
 control this behaviour. *calls* enables method enter/leave events if they were disabled
 by another option like *heapshot*.
 
-* *heapshot*: collect heap shot data at each major collection. The frequency of the
-heap shots can be changed with the *hsmode* option below. When this option is used
+* *heapshot[=MODE]*: collect heap shot data at each major collection. The frequency of the
+heap shots can be changed with the *MODE* parameter. When this option is used
 allocation events and method enter/leave events are not recorded by default: if they
 are needed, they need to be enabled explicitly.
-
-* *hsmode=MODE*: modify the default heap shot frequency according to MODE.
-hsmode can be used multiple times with different modes: in that case a heap shot is
+The optional parameter *MODE* can modify the default heap shot frequency.
+heapshot can be used multiple times with different modes: in that case a heap shot is
 taken if either of the conditions are met.
 MODE can be one of:
 	* *NUM*ms: perform a heap shot if at least *NUM* milliseconds passed since
@@ -286,8 +285,9 @@ by setting a low value with the *maxframes* option or by eliminating them
 completely, by setting it to 0.
 
 The other major source of data is the heapshot profiler option: especially
-if the managed heap is big, since every object needs to be inspected. The *hsmode*
-option can be used to reduce the frequency of the heap shots.
+if the managed heap is big, since every object needs to be inspected. The *MODE*
+parameter of the *heapshot* option can be used to reduce the frequency of the heap
+shots.
 
 ### Reduce the timestamp overhead
 
@@ -331,14 +331,14 @@ data, use the *maxframes=0* profiler option.
 Allocation events can be eliminated with the *noalloc* option.
 
 Heap shot data can also be huge: by default it is collected at each major collection.
-To reduce the frequency, you can use the *hsmode* profiler option to collect for example
+To reduce the frequency, you can specify a heapshot mode: for example to collect
 every 5 collections (including major and minor):
 
-`hsmode=5gc`
+`heapshot=5gc`
 
 or when at least 5 seconds passed since the last heap shot:
 
-`hsmode=5000ms`
+`heapshot=5000ms`
 
 ### Compressing the data
 

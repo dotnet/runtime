@@ -1103,8 +1103,8 @@ usage (int do_exit)
 	printf ("\thelp             show this usage info\n");
 	printf ("\t[no]alloc        enable/disable recording allocation info\n");
 	printf ("\t[no]calls        enable/disable recording enter/leave method events\n");
-	printf ("\theapshot         record heap shot info (by default at each major collection)\n");
-	printf ("\thsmode=MODE      heapshot mode: every XXms milliseconds or every YYgc collections\n");
+	printf ("\theapshot[=MODE]  record heap shot info (by default at each major collection)\n");
+	printf ("\t                 heapshot MODE: every XXms milliseconds or every YYgc collections\n");
 	printf ("\ttime=fast        use a faster (but more inaccurate) timer\n");
 	printf ("\tmaxframes=NUM    collect up to NUM stack frames\n");
 	printf ("\tcalldepth=NUM    ignore method events for call chain depth bigger than NUM\n");
@@ -1139,6 +1139,10 @@ match_option (const char* p, const char *opt, char **rval)
 				*rval = val;
 				return opt + l;
 			}
+			if (p [len] == 0 || p [len] == ',') {
+				*rval = NULL;
+				return p + len + (p [len] == ',');
+			}
 			usage (1);
 		} else {
 			if (p [len] == 0)
@@ -1148,6 +1152,25 @@ match_option (const char* p, const char *opt, char **rval)
 		}
 	}
 	return p;
+}
+
+static void
+set_hsmode (char* val, int allow_empty)
+{
+	char *end;
+	unsigned int count;
+	if (allow_empty && !val)
+		return;
+	count = strtoul (val, &end, 10);
+	if (val == end)
+		usage (1);
+	if (strcmp (end, "ms") == 0)
+		hs_mode_ms = count;
+	else if (strcmp (end, "gc") == 0)
+		hs_mode_gc = count;
+	else
+		usage (1);
+	free (val);
 }
 
 /* 
@@ -1219,25 +1242,17 @@ mono_profiler_startup (const char *desc)
 			do_report = 1;
 			continue;
 		}
-		if ((opt = match_option (p, "heapshot", NULL)) != p) {
+		if ((opt = match_option (p, "heapshot", &val)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
 			nocalls = 1;
 			do_heap_shot = 1;
+			set_hsmode (val, 1);
 			continue;
 		}
 		if ((opt = match_option (p, "hsmode", &val)) != p) {
-			char *end;
-			unsigned int count = strtoul (val, &end, 10);
-			if (val == end)
-				usage (1);
-			if (strcmp (end, "ms") == 0)
-				hs_mode_ms = count;
-			else if (strcmp (end, "gc") == 0)
-				hs_mode_gc = count;
-			else
-				usage (1);
-			free (val);
+			fprintf (stderr, "The hsmode profiler option is obsolete, use heapshot=MODE.\n");
+			set_hsmode (val, 0);
 			continue;
 		}
 		if ((opt = match_option (p, "zip", NULL)) != p) {
