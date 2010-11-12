@@ -658,11 +658,18 @@ load_data (ProfContext *ctx, int size)
 {
 	ensure_buffer (ctx, size);
 #if defined (HAVE_SYS_ZLIB)
-	if (ctx->gzfile)
-		return gzread (ctx->gzfile, ctx->buf, size) == size;
-	else
+	if (ctx->gzfile) {
+		int r = gzread (ctx->gzfile, ctx->buf, size);
+		if (r == 0)
+			return size == 0? 1: 0;
+		return r == size;
+	} else {
 #endif
-		return fread (ctx->buf, size, 1, ctx->file);
+		int r = fread (ctx->buf, size, 1, ctx->file);
+		if (r == 0)
+			return size == 0? 1: 0;
+		return r;
+	}
 }
 
 static ThreadContext*
@@ -1058,8 +1065,13 @@ decode_buffer (ProfContext *ctx)
 	if (!load_data (ctx, 48))
 		return 0;
 	p = ctx->buf;
-	if (read_int32 (p) != BUF_ID)
+	if (read_int32 (p) != BUF_ID) {
+		fprintf (outfile, "Incorrect buffer id: 0x%x\n", read_int32 (p));
+		for (i = 0; i < 48; ++i) {
+			fprintf (outfile, "0x%x%s", p [i], i % 8?" ":"\n");
+		}
 		return 0;
+	}
 	len = read_int32 (p + 4);
 	time_base = read_int64 (p + 8);
 	ptr_base = read_int64 (p + 16);
@@ -1464,7 +1476,8 @@ load_file (char *name)
 		exit (1);
 	}
 #if defined (HAVE_SYS_ZLIB)
-	ctx->gzfile = gzdopen (fileno (ctx->file), "rb");
+	if (ctx->file != stdin)
+		ctx->gzfile = gzdopen (fileno (ctx->file), "rb");
 #endif
 	if (!load_data (ctx, 32))
 		return NULL;

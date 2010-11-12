@@ -117,7 +117,9 @@ date and time, then do according to *OUTSPEC*:
 	name already exists, a warning is issued and profiling is disabled.
 
 * *report*: the profiling data is sent to mprof-report, which will print a summary
-report. This is equivalent to the option: `output=mprof-report -`.
+report. This is equivalent to the option: `output=mprof-report -`. If the *output*
+option is specified as well, the report will be written to the output file instead of
+the console.
 
 ## Analyzing the profile data
 

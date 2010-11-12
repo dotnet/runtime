@@ -1038,16 +1038,27 @@ create_profiler (const char *filename)
 	char *nf;
 	int force_delete = 0;
 	prof = calloc (1, sizeof (MonoProfiler));
-	if (do_report) /* FIXME: use filename as output */
-		filename = "|mprof-report -";
 
-	if (!filename)
-		filename = "output.mlpd";
-	if (*filename == '-') {
+	if (filename && *filename == '-') {
 		force_delete = 1;
 		filename++;
 	}
-	nf = new_filename (filename);
+	if (!filename) {
+		if (do_report)
+			filename = "|mprof-report -";
+		else
+			filename = "output.mlpd";
+		nf = filename;
+	} else {
+		nf = new_filename (filename);
+		if (do_report) {
+			int s = strlen (nf) + 32;
+			char *p = malloc (s);
+			snprintf (p, s, "|mprof-report '--out=%s' -", nf);
+			free (nf);
+			nf = p;
+		}
+	}
 	if (*nf == '|') {
 		prof->file = popen (nf + 1, "w");
 		prof->pipe_output = 1;
