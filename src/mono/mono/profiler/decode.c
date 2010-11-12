@@ -1048,7 +1048,12 @@ decode_buffer (ProfContext *ctx)
 	int len, i;
 	ThreadContext *thread;
 
-	file_offset = ftell (ctx->file);
+#ifdef HAVE_SYS_ZLIB
+	if (ctx->gzfile)
+		file_offset = gztell (ctx->gzfile);
+	else
+#endif
+		file_offset = ftell (ctx->file);
 	if (!load_data (ctx, 48))
 		return 0;
 	p = ctx->buf;
@@ -1434,7 +1439,7 @@ decode_buffer (ProfContext *ctx)
 			break;
 		}
 		default:
-			fprintf (outfile, "unhandled profiler event: 0x%x\n", *p);
+			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %llu + %d (len: %d\n)\n", *p, file_offset, p - ctx->buf, len);
 			exit (1);
 		}
 	}
