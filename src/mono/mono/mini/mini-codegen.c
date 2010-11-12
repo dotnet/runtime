@@ -911,7 +911,6 @@ create_spilled_store (MonoCompile *cfg, MonoBasicBlock *bb, int spill, int reg, 
 		def->inst_c0 = spill;
 		def->inst_c1 = bank;
 		mono_bblock_insert_after_ins (bb, store, def);
-		*last = def;
 	}
 }
 
