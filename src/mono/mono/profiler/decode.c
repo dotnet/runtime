@@ -1299,6 +1299,7 @@ decode_buffer (ProfContext *ctx)
 				uint64_t size = decode_uleb128 (p, &p);
 				uintptr_t num = decode_uleb128 (p, &p);
 				uintptr_t ref_offset;
+				uintptr_t last_obj_offset = 0;
 				ClassDesc *cd = lookup_class (ptr_base + ptrdiff);
 				if (size) {
 					HeapClassDesc *hcd = add_heap_shot_class (thread->current_heap_shot, cd, size);
@@ -1315,7 +1316,9 @@ decode_buffer (ProfContext *ctx)
 					/* FIXME: use object distance to measure how good
 					 * the GC is at keeping related objects close
 					 */
+					uintptr_t offset = ctx->data_version > 1? last_obj_offset + decode_uleb128 (p, &p): -1;
 					intptr_t obj1diff = decode_sleb128 (p, &p);
+					last_obj_offset = offset;
 					if (collect_traces)
 						ho->refs [ref_offset + i] = OBJ_ADDR (obj1diff);
 					if (num_tracked_objects)
@@ -1482,7 +1485,7 @@ load_file (char *name)
 	if (!load_data (ctx, 32))
 		return NULL;
 	p = ctx->buf;
-	if (read_int32 (p) != LOG_HEADER_ID || p [6] != LOG_DATA_VERSION)
+	if (read_int32 (p) != LOG_HEADER_ID || p [6] > LOG_DATA_VERSION)
 		return NULL;
 	ctx->version_major = p [4];
 	ctx->version_minor = p [5];

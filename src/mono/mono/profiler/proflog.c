@@ -215,6 +215,9 @@ typedef struct _LogBuffer LogBuffer;
  * 	[class: sleb128] the object MonoClass* as a difference from ptr_base
  * 	[size: uleb128] size of the object on the heap
  * 	[num_refs: uleb128] number of object references
+ * 	if (format version > 1) each referenced objref is preceded by a
+ *	uleb128 encoded offset: the first offset is from the object address
+ *	and each next offset is relative to the previous one
  * 	[objrefs: sleb128]+ object referenced as a difference from obj_base
  *
  */
@@ -480,9 +483,10 @@ safe_dump (MonoProfiler *profiler, LogBuffer *logbuffer)
 }
 
 static int
-gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, MonoObject **refs, void *data)
+gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, MonoObject **refs, uintptr_t *offsets, void *data)
 {
 	int i;
+	uintptr_t last_offset = 0;
 	//const char *name = mono_class_get_name (klass);
 	LogBuffer *logbuffer = ensure_logbuf (20 + num * 8);
 	emit_byte (logbuffer, TYPE_HEAP_OBJECT | TYPE_HEAP);
@@ -493,8 +497,11 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 	size &= ~7;
 	emit_value (logbuffer, size);
 	emit_value (logbuffer, num);
-	for (i = 0; i < num; ++i)
+	for (i = 0; i < num; ++i) {
+		emit_value (logbuffer, offsets [i] - last_offset);
+		last_offset = offsets [i];
 		emit_obj (logbuffer, refs [i]);
+	}
 	//if (num)
 	//	printf ("obj: %p, klass: %s, refs: %d, size: %d\n", obj, name, (int)num, (int)size);
 	return 0;
