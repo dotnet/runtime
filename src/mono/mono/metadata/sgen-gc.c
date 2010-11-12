@@ -6329,16 +6329,18 @@ typedef struct {
 	int count;
 	int called;
 	MonoObject *refs [REFS_SIZE];
+	uintptr_t offsets [REFS_SIZE];
 } HeapWalkInfo;
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr)) {	\
 			if (hwi->count == REFS_SIZE) {	\
-				hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->data);	\
+				hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->offsets, hwi->data);	\
 				hwi->count = 0;	\
 				hwi->called = 1;	\
 			}	\
+			hwi->offsets [hwi->count] = (char*)(ptr)-(char*)start;	\
 			hwi->refs [hwi->count++] = *(ptr);	\
 		}	\
 	} while (0)
@@ -6357,7 +6359,7 @@ walk_references (char *start, size_t size, void *data)
 	hwi->count = 0;
 	collect_references (hwi, start, size);
 	if (hwi->count || !hwi->called)
-		hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->data);
+		hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->offsets, hwi->data);
 }
 
 /**
@@ -6369,6 +6371,8 @@ walk_references (char *start, size_t size, void *data)
  * This function can be used to iterate over all the live objects in the heap:
  * for each object, @callback is invoked, providing info about the object's
  * location in memory, its class, its size and the objects it references.
+ * For each referenced object it's offset from the object address is
+ * reported in the offsets array.
  * The object references may be buffered, so the callback may be invoked
  * multiple times for the same object: in all but the first call, the size
  * argument will be zero.

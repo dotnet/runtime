@@ -9,7 +9,7 @@
 
 MONO_BEGIN_DECLS
 
-typedef int (*MonoGCReferences) (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, MonoObject **refs, void *data);
+typedef int (*MonoGCReferences) (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, MonoObject **refs, uintptr_t *offsets, void *data);
 
 void   mono_gc_collect         (int generation);
 int    mono_gc_max_generation  (void);
