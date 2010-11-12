@@ -985,6 +985,7 @@ Mono development tools.
 %_bindir/monolinker
 %_bindir/monop
 %_bindir/monop2
+%_bindir/mprof-report
 %_bindir/pdb2mdb
 %_bindir/pedump
 %_bindir/permview
@@ -1002,6 +1003,7 @@ Mono development tools.
 %_libdir/libmono-profiler-aot.*
 %_libdir/libmono-profiler-cov.*
 %_libdir/libmono-profiler-iomap.*
+%_libdir/libmono-profiler-log.*
 %_libdir/libmono-profiler-logging.*
 %_libdir/pkgconfig/cecil.pc
 %_libdir/pkgconfig/dotnet.pc
@@ -1028,6 +1030,7 @@ Mono development tools.
 %_mandir/man1/monodis.1%ext_man
 %_mandir/man1/monolinker.1%ext_man
 %_mandir/man1/monop.1%ext_man
+%_mandir/man1/mprof-report.1%ext_man
 %_mandir/man1/pdb2mdb.1%ext_man
 %_mandir/man1/permview.1%ext_man
 %_mandir/man1/prj2make.1%ext_man
