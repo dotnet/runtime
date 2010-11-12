@@ -968,8 +968,14 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		old_obj = obj;
 		obj = copy_object_no_checks (obj, queue);
 		if (G_UNLIKELY (old_obj == obj)) {
-			/*He have yet to figure out how to handle OOM failure during major evacuation*/
-			g_assert (ptr_in_nursery (obj));
+			/*If we fail to evacuate an object we just stop doing it for a given block size as all other will surely fail too.*/
+			if (!ptr_in_nursery (obj)) {
+				int size_index;
+				block = MS_BLOCK_FOR_OBJ (obj);
+				size_index = block->obj_size_index;
+				evacuate_block_obj_sizes [size_index] = FALSE;
+				MS_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
+			}
 			return;
 		}
 		*ptr = obj;
