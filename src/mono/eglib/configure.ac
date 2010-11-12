@@ -16,7 +16,7 @@ BREAKPOINT="G_STMT_START { raise (SIGTRAP); } G_STMT_END"
 if test x$GCC = xyes; then
    GNUC_UNUSED='__attribute__((__unused__))'
    GNUC_NORETURN='__attribute__((__noreturn__))'
-   case $target_cpu in
+   case $host_cpu in
      i*86|x86_64) BREAKPOINT="G_STMT_START { __asm__ (\"int \$03\"); } G_STMT_END" ;;
    esac
 fi
