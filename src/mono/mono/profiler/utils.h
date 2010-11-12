@@ -12,6 +12,7 @@ void free_buffer (void *buf, int size);
 void take_lock (void);
 void release_lock (void);
 uintptr_t thread_id (void);
+uintptr_t process_id (void);
 
 void encode_uleb128 (uint64_t value, uint8_t *buf, uint8_t **endbuf);
 void encode_sleb128 (intptr_t value, uint8_t *buf, uint8_t **endbuf);

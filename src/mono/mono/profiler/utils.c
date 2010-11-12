@@ -18,6 +18,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #ifdef HOST_WIN32
 #include <windows.h>
 #else
@@ -409,6 +410,16 @@ thread_id (void)
 	return (uintptr_t)GetCurrentThreadId ();
 #else
 	return (uintptr_t)pthread_self ();
+#endif
+}
+
+uintptr_t
+process_id (void)
+{
+#ifdef HOST_WIN32
+	return 0; /* FIXME */
+#else
+	return (uintptr_t)getpid ();
 #endif
 }
 

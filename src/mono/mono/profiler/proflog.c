@@ -265,6 +265,15 @@ static __thread LogBuffer* tlsbuffer = NULL;
 static pthread_key_t tlsbuffer;
 #endif
 
+static char*
+pstrdup (const char *s)
+{
+	int len = strlen (s) + 1;
+	char *p = malloc (len);
+	memcpy (p, s, len);
+	return p;
+}
+
 static LogBuffer*
 create_buffer (void)
 {
@@ -408,7 +417,7 @@ dump_header (MonoProfiler *profiler)
 	p = write_int64 (p, ((uint64_t)time (NULL)) * 1000); /* startup time */
 	p = write_int32 (p, get_timer_overhead ()); /* timer overhead */
 	p = write_int32 (p, 0); /* flags */
-	p = write_int32 (p, 0); /* pid */
+	p = write_int32 (p, process_id ()); /* pid */
 	p = write_int32 (p, 0); /* opsystem */
 #if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
@@ -963,25 +972,100 @@ log_shutdown (MonoProfiler *prof)
 	free (prof);
 }
 
+static char*
+new_filename (const char* filename)
+{
+	time_t t = time (NULL);
+	int pid = process_id ();
+	char pid_buf [16];
+	char time_buf [16];
+	char *res, *d;
+	const char *p;
+	int count_dates = 0;
+	int count_pids = 0;
+	int s_date, s_pid;
+	struct tm *ts;
+	for (p = filename; *p; p++) {
+		if (*p != '%')
+			continue;
+		p++;
+		if (*p == 't')
+			count_dates++;
+		else if (*p == 'p')
+			count_pids++;
+		else if (*p == 0)
+			break;
+	}
+	if (!count_dates && !count_pids)
+		return pstrdup (filename);
+	snprintf (pid_buf, sizeof (pid_buf), "%d", pid);
+	ts = gmtime (&t);
+	snprintf (time_buf, sizeof (time_buf), "%d%02d%02d%02d%02d%02d",
+		1900 + ts->tm_year, 1 + ts->tm_mon, ts->tm_mday, ts->tm_hour, ts->tm_min, ts->tm_sec);
+	s_date = strlen (time_buf);
+	s_pid = strlen (pid_buf);
+	d = res = malloc (strlen (filename) + s_date * count_dates + s_pid * count_pids);
+	for (p = filename; *p; p++) {
+		if (*p != '%') {
+			*d++ = *p;
+			continue;
+		}
+		p++;
+		if (*p == 't') {
+			strcpy (d, time_buf);
+			d += s_date;
+			continue;
+		} else if (*p == 'p') {
+			strcpy (d, pid_buf);
+			d += s_pid;
+			continue;
+		} else if (*p == '%') {
+			*d++ = '%';
+			continue;
+		} else if (*p == 0)
+			break;
+		*d++ = '%';
+		*d++ = *p;
+	}
+	*d = 0;
+	return res;
+}
+
 static MonoProfiler*
 create_profiler (const char *filename)
 {
 	MonoProfiler *prof;
+	char *nf;
+	int force_delete = 0;
 	prof = calloc (1, sizeof (MonoProfiler));
 	if (do_report) /* FIXME: use filename as output */
 		filename = "|mprof-report -";
 
 	if (!filename)
 		filename = "output.mlpd";
-	if (*filename == '|') {
-		prof->file = popen (filename + 1, "w");
+	if (*filename == '-') {
+		force_delete = 1;
+		filename++;
+	}
+	nf = new_filename (filename);
+	if (*nf == '|') {
+		prof->file = popen (nf + 1, "w");
 		prof->pipe_output = 1;
 	} else {
-		unlink (filename);
-		prof->file = fopen (filename, "wb");
+		FILE *f;
+		if (force_delete)
+			unlink (nf);
+		if ((f = fopen (nf, "r"))) {
+			fclose (f);
+			fprintf (stderr, "The Mono profiler won't overwrite existing filename: %s.\n", nf);
+			fprintf (stderr, "Profiling disabled: use a different name or -FILENAME to force overwrite.\n");
+			free (prof);
+			return NULL;
+		}
+		prof->file = fopen (nf, "wb");
 	}
 	if (!prof->file) {
-		printf ("Cannot create profiler output: %s\n", filename);
+		printf ("Cannot create profiler output: %s\n", nf);
 		exit (1);
 	}
 #if defined (HAVE_SYS_ZLIB)
@@ -1006,8 +1090,9 @@ usage (int do_exit)
 	printf ("\ttime=fast        use a faster (but more inaccurate) timer\n");
 	printf ("\tmaxframes=NUM    collect up to NUM stack frames\n");
 	printf ("\tcalldepth=NUM    ignore method events for call chain depth bigger than NUM\n");
-	printf ("\toutput=FILENAME  write the data to file FILENAME\n");
+	printf ("\toutput=FILENAME  write the data to file FILENAME (-FILENAME to overwrite)\n");
 	printf ("\toutput=|PROGRAM  write the data to the stdin of PROGRAM\n");
+	printf ("\t                 %%t is subtituted with date and time, %%p with the pid\n");
 	printf ("\treport           create a report instead of writing the raw data to a file\n");
 	printf ("\tzip              compress the output data\n");
 	if (do_exit)
@@ -1174,6 +1259,8 @@ mono_profiler_startup (const char *desc)
 	utils_init (fast_time);
 
 	prof = create_profiler (filename);
+	if (!prof)
+		return;
 	init_thread ();
 
 	mono_profiler_install (prof, log_shutdown);

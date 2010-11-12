@@ -107,10 +107,14 @@ bigger than NUM.
 * *zip*: automatically compress the output data in gzip format.
 
 * *output=OUTSPEC*: instead of writing the profiling data to the output.mlpd file,
-do according to *OUTSPEC*:
+substitute *%p* in *OUTSPEC* with the current process id and *%t* with the current
+date and time, then do according to *OUTSPEC*:
 	* if *OUTSPEC* begins with a *|* character, execute the rest as a program
 	and feed the data to its standard input
-	* otherwise write the data the the named file
+	* if *OUTSPEC* begins with a *-* character, use the rest of OUTSPEC as
+	the filename, but force overwrite any existing file by that name
+	* otherwise write the data the the named file: note that is a file by that
+	name already exists, a warning is issued and profiling is disabled.
 
 * *report*: the profiling data is sent to mprof-report, which will print a summary
 report. This is equivalent to the option: `output=mprof-report -`.

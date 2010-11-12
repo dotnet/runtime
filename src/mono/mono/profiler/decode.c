@@ -622,6 +622,7 @@ typedef struct {
 	int version_major;
 	int version_minor;
 	int timer_overhead;
+	int pid;
 	uint64_t startup_time;
 	ThreadContext *threads;
 	ThreadContext *current;
@@ -1480,6 +1481,7 @@ load_file (char *name)
 		return NULL;
 	ctx->startup_time = read_int64 (p + 8);
 	ctx->timer_overhead = read_int32 (p + 16);
+	ctx->pid = read_int32 (p + 24);
 	return ctx;
 }
 
@@ -1518,7 +1520,9 @@ dump_header (ProfContext *ctx)
 	fprintf (outfile, "\tProfiler version: %d.%d\n", ctx->version_major, ctx->version_minor);
 	fprintf (outfile, "\tData version: %d\n", ctx->data_version);
 	fprintf (outfile, "\tMean timer overhead: %d nanoseconds\n", ctx->timer_overhead);
-	fprintf (outfile, "\tProgram startup: %s\n", t);
+	fprintf (outfile, "\tProgram startup: %s", t);
+	if (ctx->pid)
+		fprintf (outfile, "\tProgram ID: %d\n", ctx->pid);
 }
 
 static void
