@@ -1954,7 +1954,7 @@ async_invoke_thread (gpointer data)
 		if (ar) {
 			InterlockedIncrement (&tp->busy_threads);
 			domain = ((MonoObject *)ar)->vtable->domain;
-#ifndef DISABLE_SOCKET
+#ifndef DISABLE_SOCKETS
 			klass = ((MonoObject *) data)->vtable->klass;
 			is_io_task = !is_corlib_asyncresult (domain, klass);
 			is_socket = FALSE;
