@@ -284,6 +284,18 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		mono_print_ins_index (-1, tree);
 }
 
+void
+mono_create_helper_signatures (void)
+{
+	helper_sig_domain_get = mono_create_icall_signature ("ptr");
+	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
+	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
+	helper_sig_generic_class_init_trampoline_llvm = mono_create_icall_signature ("void ptr");
+	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
+	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
+	helper_sig_monitor_enter_exit_trampoline_llvm = mono_create_icall_signature ("void object");
+}
+
 /* 
  * Can't put this at the beginning, since other files reference stuff from this
  * file.
@@ -11581,18 +11593,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	g_free (live_range_end);
 	g_free (live_range_start_bb);
 	g_free (live_range_end_bb);
-}
-
-void
-mono_create_helper_signatures (void)
-{
-	helper_sig_domain_get = mono_create_icall_signature ("ptr");
-	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
-	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
-	helper_sig_generic_class_init_trampoline_llvm = mono_create_icall_signature ("void ptr");
-	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
-	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
-	helper_sig_monitor_enter_exit_trampoline_llvm = mono_create_icall_signature ("void object");
 }
 
 /**
