@@ -65,7 +65,7 @@ void ves_icall_System_Diagnostics_Process_Process_free_internal (MonoObject *thi
 	g_message ("%s: Closing process %p, handle %p", __func__, this, process);
 #endif
 
-#if TARGET_WIN32
+#if defined(TARGET_WIN32) || defined(HOST_WIN32)
 	CloseHandle (process);
 #else
 	CloseProcess (process);
