@@ -1440,7 +1440,7 @@ mono_main (int argc, char* argv[])
 #ifdef HAVE_EXECVP
 				execvp (path->str, argv);
 #else
-				fprintf ("Error: --gc=<NAME> option not supported on this platform.\n");
+				fprintf (stderr, "Error: --gc=<NAME> option not supported on this platform.\n");
 #endif
 			}
 		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
@@ -1456,7 +1456,7 @@ mono_main (int argc, char* argv[])
 #ifdef HAVE_EXECVP
 				execvp (p, argv);
 #else
-				fprintf ("Error: --gc=<NAME> option not supported on this platform.\n");
+				fprintf (stderr, "Error: --gc=<NAME> option not supported on this platform.\n");
 #endif
 			}
 		} else if (strcmp (argv [i], "--config") == 0) {
