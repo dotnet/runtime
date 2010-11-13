@@ -1437,7 +1437,11 @@ mono_main (int argc, char* argv[])
 				GString *path = g_string_new (argv [0]);
 				g_string_append (path, "-sgen");
 				argv [0] = path->str;
+#ifdef HAVE_EXECVP
 				execvp (path->str, argv);
+#else
+				fprintf ("Error: --gc=<NAME> option not supported on this platform.\n");
+#endif
 			}
 		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
 			if (!strcmp (mono_gc_get_gc_name (), "sgen")) {
@@ -1449,7 +1453,11 @@ mono_main (int argc, char* argv[])
 				}
 				*p = 0;
 				argv [0] = p;
+#ifdef HAVE_EXECVP
 				execvp (p, argv);
+#else
+				fprintf ("Error: --gc=<NAME> option not supported on this platform.\n");
+#endif
 			}
 		} else if (strcmp (argv [i], "--config") == 0) {
 			if (i +1 >= argc){

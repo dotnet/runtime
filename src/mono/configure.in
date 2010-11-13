@@ -1823,6 +1823,7 @@ fi
 
 AC_CHECK_FUNCS(round)
 AC_CHECK_FUNCS(rint)
+AC_CHECK_FUNCS(execvp)
 
 dnl ****************************
 dnl *** Look for /dev/random ***
