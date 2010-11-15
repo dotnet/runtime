@@ -1485,9 +1485,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
 				int creg;
 
-#ifdef MONO_ARCH_SOFT_FLOAT
-				g_assert_not_reached ();
-#endif
+				/* This should work for soft-float as well */
 
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, ARMREG_SP, (cfg->param_area - 8), in->dreg);
 				creg = mono_alloc_ireg (cfg);
