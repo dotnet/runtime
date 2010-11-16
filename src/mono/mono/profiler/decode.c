@@ -663,8 +663,9 @@ load_data (ProfContext *ctx, int size)
 		if (r == 0)
 			return size == 0? 1: 0;
 		return r == size;
-	} else {
+	} else 
 #endif
+	{
 		int r = fread (ctx->buf, size, 1, ctx->file);
 		if (r == 0)
 			return size == 0? 1: 0;
