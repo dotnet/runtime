@@ -2240,6 +2240,8 @@ class Tests {
 
 		public static void rethrow2 () {
 			rethrow1 ();
+			/* This disables tailcall opts */
+			Console.WriteLine ();
 		}
 	}
 

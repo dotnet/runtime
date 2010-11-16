@@ -882,6 +882,25 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return args_size;
 }
 
+gboolean
+mono_amd64_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+{
+	CallInfo *c1, *c2;
+	gboolean res;
+
+	c1 = get_call_info (NULL, NULL, caller_sig, FALSE);
+	c2 = get_call_info (NULL, NULL, callee_sig, FALSE);
+	res = c1->stack_usage >= c2->stack_usage;
+	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret) && c2->ret.storage != ArgValuetypeInReg)
+		/* An address on the callee's stack is passed as the first argument */
+		res = FALSE;
+
+	g_free (c1);
+	g_free (c2);
+
+	return res;
+}
+
 static int 
 cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 {
@@ -4055,10 +4074,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TAILCALL: {
-			/*
-			 * Note: this 'frame destruction' logic is useful for tail calls, too.
-			 * Keep in sync with the code in emit_epilog.
-			 */
+			MonoCallInst *call = (MonoCallInst*)ins;
 			int pos = 0, i;
 
 			/* FIXME: no tracing support... */
@@ -4076,20 +4092,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 						save_offset += 8;
 					}
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, cfg->arch.stack_alloc_size);
+
+				// FIXME:
+				if (call->stack_usage)
+					NOT_IMPLEMENTED;
 			}
 			else {
 				for (i = 0; i < AMD64_NREG; ++i)
 					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i)))
 						pos -= sizeof (gpointer);
+
+				/* Restore callee-saved registers */
+				for (i = AMD64_NREG - 1; i > 0; --i) {
+					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+						amd64_mov_reg_membase (code, i, AMD64_RBP, pos, 8);
+						pos += 8;
+					}
+				}
+
+				/* Copy arguments on the stack to our argument area */
+				for (i = 0; i < call->stack_usage; i += 8) {
+					amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, i, 8);
+					amd64_mov_membase_reg (code, AMD64_RBP, 16 + i, AMD64_RAX, 8);
+				}
 			
 				if (pos)
 					amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, pos);
-
-				/* Pop registers in reverse order */
-				for (i = AMD64_NREG - 1; i > 0; --i)
-					if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-						amd64_pop_reg (code, i);
-					}
 
 				amd64_leave (code);
 			}

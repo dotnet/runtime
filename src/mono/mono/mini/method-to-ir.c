@@ -5508,6 +5508,50 @@ is_jit_optimizer_disabled (MonoMethod *m)
 	return val;
 }
 
+static gboolean
+is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmethod, MonoMethodSignature *fsig)
+{
+	gboolean supported_tail_call;
+	int i;
+
+#ifdef MONO_ARCH_USE_OP_TAIL_CALL
+	supported_tail_call = MONO_ARCH_USE_OP_TAIL_CALL (mono_method_signature (method), mono_method_signature (cmethod));
+#else
+	supported_tail_call = mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)) && !MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->ret);
+#endif
+
+	for (i = 0; i < fsig->param_count; ++i) {
+		if (fsig->params [i]->byref || fsig->params [i]->type == MONO_TYPE_PTR || fsig->params [i]->type == MONO_TYPE_FNPTR)
+			/* These can point to the current method's stack */
+			supported_tail_call = FALSE;
+	}
+	if (fsig->hasthis && cmethod->klass->valuetype)
+		/* this might point to the current method's stack */
+		supported_tail_call = FALSE;
+	if (cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		supported_tail_call = FALSE;
+	if (cfg->method->save_lmf)
+		supported_tail_call = FALSE;
+	if (cmethod->wrapper_type && cmethod->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
+		supported_tail_call = FALSE;
+
+	/* Debugging support */
+#if 0
+	if (supported_tail_call) {
+		static int count = 0;
+		count ++;
+		if (getenv ("COUNT")) {
+			if (count == atoi (getenv ("COUNT")))
+				printf ("LAST: %s\n", mono_method_full_name (cmethod, TRUE));
+			if (count > atoi (getenv ("COUNT")))
+				supported_tail_call = FALSE;
+		}
+	}
+#endif
+
+	return supported_tail_call;
+}
+
 /*
  * mono_method_to_ir:
  *
@@ -6754,56 +6798,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-#ifdef MONO_ARCH_USE_OP_TAIL_CALL
-			supported_tail_call = cmethod && MONO_ARCH_USE_OP_TAIL_CALL (mono_method_signature (method), mono_method_signature (cmethod));
-#else
-			supported_tail_call = cmethod && mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)) && !MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->ret);
-#endif
-
-			/* Tail prefix */
-			/* FIXME: runtime generic context pointer for jumps? */
-			/* FIXME: handle this for generic sharing eventually */
-			if ((ins_flag & MONO_INST_TAILCALL) && !cfg->generic_sharing_context && !vtable_arg && cmethod && (*ip == CEE_CALL) && supported_tail_call) {
-				MonoCallInst *call;
-
-				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
-				INLINE_FAILURE;
-
-#ifdef MONO_ARCH_USE_OP_TAIL_CALL
-				/* Handle tail calls similarly to calls */
-				call = mono_emit_call_args (cfg, mono_method_signature (cmethod), sp, FALSE, FALSE, TRUE);
-#else
-				MONO_INST_NEW_CALL (cfg, call, OP_JMP);
-				call->tail_call = TRUE;
-				call->method = cmethod;
-				call->signature = mono_method_signature (cmethod);
-
-				/*
-				 * We implement tail calls by storing the actual arguments into the 
-				 * argument variables, then emitting a CEE_JMP.
-				 */
-				for (i = 0; i < n; ++i) {
-					/* Prevent argument from being register allocated */
-					arg_array [i]->flags |= MONO_INST_VOLATILE;
-					EMIT_NEW_ARGSTORE (cfg, ins, i, sp [i]);
-				}
-#endif
-
-				ins = (MonoInst*)call;
-				ins->inst_p0 = cmethod;
-				ins->inst_p1 = arg_array [0];
-				MONO_ADD_INS (bblock, ins);
-				link_bblock (cfg, bblock, end_bblock);			
-				start_new_bblock = 1;
-
-				CHECK_CFG_EXCEPTION;
-
-				/* skip CEE_RET as well */
-				ip += 6;
-				ins_flag = 0;
-				break;
-			}
-
 			/*
 			 * Implement a workaround for the inherent races involved in locking:
 			 * Monitor.Enter ()
@@ -7037,6 +7031,68 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				ip += 5;
 				ins_flag = 0;
+				break;
+			}
+
+			/* Tail prefix / tail call optimization */
+
+			/* FIXME: Enabling TAILC breaks some inlining/stack trace/etc tests */
+			/* FIXME: runtime generic context pointer for jumps? */
+			/* FIXME: handle this for generic sharing eventually */
+			supported_tail_call = cmethod && 
+				((((ins_flag & MONO_INST_TAILCALL) && (*ip == CEE_CALL))
+				  ))//|| ((cfg->opt & MONO_OPT_TAILC) && *ip == CEE_CALL && ip [5] == CEE_RET))
+				&& !vtable_arg && !cfg->generic_sharing_context && is_supported_tail_call (cfg, method, cmethod, fsig);
+
+			if (supported_tail_call) {
+				MonoCallInst *call;
+
+				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
+				INLINE_FAILURE;
+
+				//printf ("HIT: %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
+
+#ifdef MONO_ARCH_USE_OP_TAIL_CALL
+				/* Handle tail calls similarly to calls */
+				call = mono_emit_call_args (cfg, mono_method_signature (cmethod), sp, FALSE, FALSE, TRUE);
+#else
+				MONO_INST_NEW_CALL (cfg, call, OP_JMP);
+				call->tail_call = TRUE;
+				call->method = cmethod;
+				call->signature = mono_method_signature (cmethod);
+
+				/*
+				 * We implement tail calls by storing the actual arguments into the 
+				 * argument variables, then emitting a CEE_JMP.
+				 */
+				for (i = 0; i < n; ++i) {
+					/* Prevent argument from being register allocated */
+					arg_array [i]->flags |= MONO_INST_VOLATILE;
+					EMIT_NEW_ARGSTORE (cfg, ins, i, sp [i]);
+				}
+#endif
+
+				ins = (MonoInst*)call;
+				ins->inst_p0 = cmethod;
+				ins->inst_p1 = arg_array [0];
+				MONO_ADD_INS (bblock, ins);
+				link_bblock (cfg, bblock, end_bblock);			
+				start_new_bblock = 1;
+
+				CHECK_CFG_EXCEPTION;
+
+				ip += 5;
+				ins_flag = 0;
+
+				// FIXME: Eliminate unreachable epilogs
+
+				/*
+				 * OP_TAILCALL has no return value, so skip the CEE_RET if it is
+				 * only reachable from this call.
+				 */
+				GET_BBLOCK (cfg, tblock, ip);
+				if (tblock == bblock || tblock->in_count == 0)
+					ip += 1;
 				break;
 			}
 
