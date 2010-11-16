@@ -2872,7 +2872,6 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			code = mono_aot_get_method (domain, m);
 			if (code)
 				return code;
-			printf ("HIT!\n");
 		}
 
 		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_impl_full (method, FALSE, TRUE)) {
