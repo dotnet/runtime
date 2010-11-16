@@ -239,6 +239,8 @@ struct _HeapClassDesc {
 	HeapClassRevRef *rev_hash;
 	int rev_hash_size;
 	int rev_count;
+	uintptr_t pinned_references;
+	uintptr_t root_references;
 };
 
 static int
@@ -312,6 +314,10 @@ struct _HeapShot {
 	HeapObjectDesc **objects_hash;
 	uintptr_t objects_count;
 	uintptr_t objects_hash_size;
+	uintptr_t num_roots;
+	uintptr_t *roots;
+	uintptr_t *roots_extra;
+	int *roots_types;
 };
 
 static HeapShot *heap_shots = NULL;
@@ -441,7 +447,7 @@ heap_shot_find_obj_slot (HeapShot *hs, uintptr_t objaddr)
 			i = 0;
 	} while (i != start_pos);
 	/* should not happen */
-	printf ("failed heap obj update\n");
+	//printf ("failed heap obj slot\n");
 	return -1;
 }
 
@@ -524,6 +530,81 @@ heap_shot_resolve_reverse_refs (HeapShot *hs)
 			add_heap_class_rev (ho->hklass, hs->objects_hash [oi]->hklass);
 		}
 	}
+}
+
+#define MARK_GRAY 1
+#define MARK_BLACK 2
+
+static void
+heap_shot_mark_objects (HeapShot *hs)
+{
+	uintptr_t i, oi, r;
+	unsigned char *marks;
+	HeapObjectDesc *obj, *ref;
+	int marked_some;
+	uintptr_t num_marked = 0, num_unmarked;
+	for (i = 0; i < hs->num_roots; ++i) {
+		HeapClassDesc *cd;
+		oi = heap_shot_find_obj_slot (hs, hs->roots [i]);
+		if (oi == -1) {
+			continue;
+		}
+		obj = hs->objects_hash [oi];
+		cd = obj->hklass;
+		if (hs->roots_types [i] & MONO_PROFILE_GC_ROOT_PINNING)
+			cd->pinned_references++;
+		cd->root_references++;
+	}
+	if (!debug)
+		return;
+	/* consistency checks: it seems not all the objects are walked in the heap in some cases */
+	marks = calloc (hs->objects_hash_size, 1);
+	if (!marks)
+		return;
+	for (i = 0; i < hs->num_roots; ++i) {
+		oi = heap_shot_find_obj_slot (hs, hs->roots [i]);
+		if (oi == -1) {
+			fprintf (outfile, "root type 0x%x for obj %p (%s) not found in heap\n", hs->roots_types [i], (void*)hs->roots [i], lookup_class (hs->roots_extra [i])->name);
+			continue;
+		}
+		obj = hs->objects_hash [oi];
+		if (!marks [oi]) {
+			marks [oi] = obj->num_refs? MARK_GRAY: MARK_BLACK;
+			num_marked++;
+		}
+	}
+	marked_some = 1;
+	while (marked_some) {
+		marked_some = 0;
+		for (i = 0; i < hs->objects_hash_size; ++i) {
+			if (marks [i] != MARK_GRAY)
+				continue;
+			marks [i] = MARK_BLACK;
+			obj = hs->objects_hash [i];
+			for (r = 0; r < obj->num_refs; ++r) {
+				oi = heap_shot_find_obj_slot (hs, obj->refs [r]);
+				if (oi == -1) {
+					fprintf (outfile, "referenced obj %p not found in heap\n", (void*)obj->refs [r]);
+					continue;
+				}
+				ref = hs->objects_hash [oi];
+				if (!marks [oi]) {
+					marks [oi] = ref->num_refs? MARK_GRAY: MARK_BLACK;
+				}
+			}
+			marked_some++;
+		}
+	}
+
+	num_unmarked = 0;
+	for (i = 0; i < hs->objects_hash_size; ++i) {
+		if (hs->objects_hash [i] && !marks [i]) {
+			num_unmarked++;
+			fprintf (outfile, "object %p (%s) unmarked\n", (void*)hs->objects_hash [i], hs->objects_hash [i]->hklass->klass->name);
+		}
+	}
+	fprintf (outfile, "Total unmarked: %d/%d\n", num_unmarked, hs->objects_count);
+	free (marks);
 }
 
 static void
@@ -642,6 +723,11 @@ struct _ThreadContext {
 	int stack_size;
 	int stack_id;
 	HeapShot *current_heap_shot;
+	uintptr_t num_roots;
+	uintptr_t size_roots;
+	uintptr_t *roots;
+	uintptr_t *roots_extra;
+	int *roots_types;
 };
 
 static void
@@ -792,6 +878,23 @@ add_trace_methods (MethodDesc **methods, int count, TraceDesc *trace, uint64_t v
 	bt = add_backtrace (count, methods);
 	add_trace_bt (bt, trace, value);
 	return bt;
+}
+
+static void
+thread_add_root (ThreadContext *ctx, uintptr_t obj, int root_type, uintptr_t extra_info)
+{
+	if (ctx->num_roots == ctx->size_roots) {
+		int new_size = ctx->size_roots * 2;
+		if (!new_size)
+			new_size = 4;
+		ctx->roots = realloc (ctx->roots, new_size * sizeof (uintptr_t));
+		ctx->roots_extra = realloc (ctx->roots_extra, new_size * sizeof (uintptr_t));
+		ctx->roots_types = realloc (ctx->roots_types, new_size * sizeof (int));
+		ctx->size_roots = new_size;
+	}
+	ctx->roots_types [ctx->num_roots] = root_type;
+	ctx->roots_extra [ctx->num_roots] = extra_info;
+	ctx->roots [ctx->num_roots++] = obj;
 }
 
 static int
@@ -958,6 +1061,19 @@ get_handle_name (int htype)
 	case 1: return "weaktrack";
 	case 2: return "normal";
 	case 3: return "pinned";
+	default: return "unknown";
+	}
+}
+
+static const char*
+get_root_name (int rtype)
+{
+	switch (rtype & MONO_PROFILE_GC_ROOT_TYPEMASK) {
+	case MONO_PROFILE_GC_ROOT_STACK: return "stack";
+	case MONO_PROFILE_GC_ROOT_FINALIZER: return "finalizer";
+	case MONO_PROFILE_GC_ROOT_HANDLE: return "handle";
+	case MONO_PROFILE_GC_ROOT_OTHER: return "other";
+	case MONO_PROFILE_GC_ROOT_MISC: return "misc";
 	default: return "unknown";
 	}
 }
@@ -1327,6 +1443,20 @@ decode_buffer (ProfContext *ctx)
 				}
 				if (debug && size)
 					fprintf (outfile, "traced object %p, size %llu (%s), refs: %d\n", (void*)OBJ_ADDR (objdiff), size, cd->name, num);
+			} else if (subtype == TYPE_HEAP_ROOT) {
+				uintptr_t num = decode_uleb128 (p + 1, &p);
+				uintptr_t gc_num = decode_uleb128 (p, &p);
+				int i;
+				for (i = 0; i < num; ++i) {
+					intptr_t objdiff = decode_sleb128 (p, &p);
+					int root_type = decode_uleb128 (p, &p);
+					/* we just discard the extra info for now */
+					uintptr_t extra_info = decode_uleb128 (p, &p);
+					if (debug)
+						fprintf (outfile, "object %p is a %s root\n", (void*)OBJ_ADDR (objdiff), get_root_name (root_type));
+					if (collect_traces)
+						thread_add_root (thread, OBJ_ADDR (objdiff), root_type, extra_info);
+				}
 			} else if (subtype == TYPE_HEAP_END) {
 				uint64_t tdiff = decode_uleb128 (p + 1, &p);
 				LOG_TIME (time_base, tdiff);
@@ -1334,8 +1464,26 @@ decode_buffer (ProfContext *ctx)
 				if (debug)
 					fprintf (outfile, "heap shot end\n");
 				if (collect_traces) {
-					heap_shot_resolve_reverse_refs (thread->current_heap_shot);
-					heap_shot_free_objects (thread->current_heap_shot);
+					HeapShot *hs = thread->current_heap_shot;
+					if (hs && thread->num_roots) {
+						/* transfer the root ownershipt to the heapshot */
+						hs->num_roots = thread->num_roots;
+						hs->roots = thread->roots;
+						hs->roots_extra = thread->roots_extra;
+						hs->roots_types = thread->roots_types;
+					} else {
+						free (thread->roots);
+						free (thread->roots_extra);
+						free (thread->roots_types);
+					}
+					thread->num_roots = 0;
+					thread->size_roots = 0;
+					thread->roots = NULL;
+					thread->roots_extra = NULL;
+					thread->roots_types = NULL;
+					heap_shot_resolve_reverse_refs (hs);
+					heap_shot_mark_objects (hs);
+					heap_shot_free_objects (hs);
 				}
 				thread->current_heap_shot = NULL;
 			} else if (subtype == TYPE_HEAP_START) {
@@ -1843,8 +1991,8 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 	}
 	hs->sorted = sorted;
 	qsort (sorted, ccount, sizeof (void*), compare_heap_class);
-	fprintf (outfile, "\n\tHeap shot %d at %.3f secs: size: %llu, object count: %llu, class count: %d\n",
-		hs_num, (hs->timestamp - startup_time)/1000000000.0, size, count, ccount);
+	fprintf (outfile, "\n\tHeap shot %d at %.3f secs: size: %llu, object count: %llu, class count: %d, roots: %d\n",
+		hs_num, (hs->timestamp - startup_time)/1000000000.0, size, count, ccount, hs->num_roots);
 	if (!verbose && ccount > 30)
 		ccount = 30;
 	fprintf (outfile, "\t%10s %10s %8s Class name\n", "Bytes", "Count", "Average");
@@ -1873,6 +2021,8 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		}
 		assert (cd->rev_count == k);
 		qsort (rev_sorted, cd->rev_count, sizeof (HeapClassRevRef), compare_rev_class);
+		if (cd->root_references)
+			fprintf (outfile, "\t\t%d root references (%d pinning)\n", cd->root_references, cd->pinned_references);
 		dump_rev_claases (rev_sorted, cd->rev_count);
 		free (rev_sorted);
 	}

@@ -205,7 +205,7 @@ typedef struct _LogBuffer LogBuffer;
  *
  * type heap format
  * type: TYPE_HEAP
- * exinfo: one of TYPE_HEAP_START, TYPE_HEAP_END, TYPE_HEAP_OBJECT
+ * exinfo: one of TYPE_HEAP_START, TYPE_HEAP_END, TYPE_HEAP_OBJECT, TYPE_HEAP_ROOT
  * if exinfo == TYPE_HEAP_START
  * 	[time diff: uleb128] nanoseconds since last timing
  * if exinfo == TYPE_HEAP_END
@@ -219,6 +219,13 @@ typedef struct _LogBuffer LogBuffer;
  *	uleb128 encoded offset: the first offset is from the object address
  *	and each next offset is relative to the previous one
  * 	[objrefs: sleb128]+ object referenced as a difference from obj_base
+ * if exinfo == TYPE_HEAP_ROOT
+ * 	[num_roots: uleb128] number of root references
+ * 	[num_gc: uleb128] number of major gcs
+ * 	[object: sleb128] the object as a difference from obj_base
+ * 	[root_type: uleb128] the root_type
+ * 	[extra_info: uleb128] the extra_info value
+ * 	object, root_type_extra_info are repeated num_roots times
  *
  */
 struct _LogBuffer {
@@ -668,6 +675,23 @@ gc_moves (MonoProfiler *prof, void **objects, int num)
 	for (i = 0; i < num; ++i)
 		emit_obj (logbuffer, objects [i]);
 	//printf ("gc moved %d objects\n", num/2);
+	EXIT_LOG (logbuffer);
+}
+
+static void
+gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_t *extra_info)
+{
+	int i;
+	LogBuffer *logbuffer = ensure_logbuf (5 + num * 18);
+	ENTER_LOG (logbuffer, "gcroots");
+	emit_byte (logbuffer, TYPE_HEAP_ROOT | TYPE_HEAP);
+	emit_value (logbuffer, num);
+	emit_value (logbuffer, mono_gc_collection_count (mono_gc_max_generation ()));
+	for (i = 0; i < num; ++i) {
+		emit_obj (logbuffer, objects [i]);
+		emit_value (logbuffer, root_types [i]);
+		emit_value (logbuffer, extra_info [i]);
+	}
 	EXIT_LOG (logbuffer);
 }
 
@@ -1300,7 +1324,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_gc (gc_event, gc_resize);
 	mono_profiler_install_allocation (gc_alloc);
 	mono_profiler_install_gc_moves (gc_moves);
-	mono_profiler_install_gc_roots (gc_handle);
+	mono_profiler_install_gc_roots (gc_handle, gc_roots);
 	mono_profiler_install_class (NULL, class_loaded, NULL, NULL);
 	mono_profiler_install_module (NULL, image_loaded, NULL, NULL);
 	mono_profiler_install_thread (thread_start, thread_end);

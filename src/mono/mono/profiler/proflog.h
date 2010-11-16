@@ -5,7 +5,11 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 0
 #define LOG_VERSION_MINOR 2
-#define LOG_DATA_VERSION 2
+#define LOG_DATA_VERSION 3
+/*
+ * version 2: added offsets in heap walk
+ * version 3: added GC roots
+ */
 
 enum {
 	TYPE_ALLOC,
@@ -20,6 +24,7 @@ enum {
 	TYPE_HEAP_START  = 0 << 4,
 	TYPE_HEAP_END    = 1 << 4,
 	TYPE_HEAP_OBJECT = 2 << 4,
+	TYPE_HEAP_ROOT   = 3 << 4,
 	/* extended type for TYPE_METADATA */
 	TYPE_START_LOAD   = 1 << 4,
 	TYPE_END_LOAD     = 2 << 4,
