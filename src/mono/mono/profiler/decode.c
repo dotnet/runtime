@@ -12,7 +12,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 #include <malloc.h>
 #endif
 #include <unistd.h>
