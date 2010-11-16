@@ -7207,11 +7207,15 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass)
 gboolean
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 {
+	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
 	if (!klass->inited)
 		mono_class_init (klass);
 
 	if (!oklass->inited)
 		mono_class_init (oklass);
+
+	if (klass->exception_type || oklass->exception_type)
+		return FALSE;
 
 	if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
 		return klass == oklass;
