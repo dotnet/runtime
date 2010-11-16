@@ -91,6 +91,7 @@ struct _ProfilerDesc {
 	MonoProfileGCResizeFunc  gc_heap_resize;
 	MonoProfileGCMoveFunc    gc_moves;
 	MonoProfileGCHandleFunc  gc_handle;
+	MonoProfileGCRootFunc    gc_roots;
 
 	MonoProfileFunc          runtime_initialized_event;
 
@@ -771,6 +772,16 @@ mono_profiler_gc_handle (int op, int type, uintptr_t handle, MonoObject *obj)
 }
 
 void
+mono_profiler_gc_roots (int num, void **objects, int *root_types, uintptr_t *extra_info)
+{
+	ProfilerDesc *prof;
+	for (prof = prof_list; prof; prof = prof->next) {
+		if ((prof->events & MONO_PROFILE_GC_ROOTS) && prof->gc_roots)
+			prof->gc_roots (prof->profiler, num, objects, root_types, extra_info);
+	}
+}
+
+void
 mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
 {
 	mono_gc_enable_events ();
@@ -805,19 +816,26 @@ mono_profiler_install_gc_moves (MonoProfileGCMoveFunc callback)
 /**
  * mono_profiler_install_gc_roots:
  * @handle_callback: callback function
+ * @roots_callback: callback function
  *
  * Install the @handle_callback function that the GC will call when GC
  * handles are created or destroyed.
  * The callback receives an operation, which is either #MONO_PROFILER_GC_HANDLE_CREATED
  * or #MONO_PROFILER_GC_HANDLE_DESTROYED, the handle type, the handle value and the
  * object pointer, if present.
+ * Install the @roots_callback function that the GC will call when tracing
+ * the roots for a collection.
+ * The callback receives the number of elements and three arrays: an array
+ * of objects, an array of root types and flags and an array of extra info.
+ * The size of each array is given by the first argument.
  */
 void
-mono_profiler_install_gc_roots (MonoProfileGCHandleFunc handle_callback)
+mono_profiler_install_gc_roots (MonoProfileGCHandleFunc handle_callback, MonoProfileGCRootFunc roots_callback)
 {
 	if (!prof_list)
 		return;
 	prof_list->gc_handle = handle_callback;
+	prof_list->gc_roots = roots_callback;
 }
 
 void

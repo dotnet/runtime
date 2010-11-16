@@ -69,6 +69,7 @@ void mono_profiler_gc_event       (MonoGCEvent e, int generation) MONO_INTERNAL;
 void mono_profiler_gc_heap_resize (gint64 new_size) MONO_INTERNAL;
 void mono_profiler_gc_moves       (void **objects, int num) MONO_INTERNAL;
 void mono_profiler_gc_handle      (int op, int type, uintptr_t handle, MonoObject *obj) MONO_INTERNAL;
+void mono_profiler_gc_roots       (int num, void **objects, int *root_types, uintptr_t *extra_info) MONO_INTERNAL;
 
 void mono_profiler_code_chunk_new (gpointer chunk, int size) MONO_INTERNAL;
 void mono_profiler_code_chunk_destroy (gpointer chunk) MONO_INTERNAL;

@@ -89,6 +89,19 @@ typedef enum {
 	MONO_PROFILER_GC_HANDLE_DESTROYED
 } MonoProfileGCHandleEvent;
 
+typedef enum {
+	MONO_PROFILE_GC_ROOT_PINNING  = 1 << 8,
+	MONO_PROFILE_GC_ROOT_WEAKREF  = 2 << 8,
+	MONO_PROFILE_GC_ROOT_INTERIOR = 4 << 8,
+	/* the above are flags, the type is in the low 2 bytes */
+	MONO_PROFILE_GC_ROOT_STACK = 0,
+	MONO_PROFILE_GC_ROOT_FINALIZER = 1,
+	MONO_PROFILE_GC_ROOT_HANDLE = 2,
+	MONO_PROFILE_GC_ROOT_OTHER = 3,
+	MONO_PROFILE_GC_ROOT_MISC = 4, /* could be stack, handle, etc. */
+	MONO_PROFILE_GC_ROOT_TYPEMASK = 0xff
+} MonoProfileGCRootType;
+
 /*
  * Functions that the runtime will call on the profiler.
  */
@@ -123,6 +136,7 @@ typedef void (*MonoProfileGCFunc)         (MonoProfiler *prof, MonoGCEvent event
 typedef void (*MonoProfileGCMoveFunc)     (MonoProfiler *prof, void **objects, int num);
 typedef void (*MonoProfileGCResizeFunc)   (MonoProfiler *prof, int64_t new_size);
 typedef void (*MonoProfileGCHandleFunc)   (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *obj);
+typedef void (*MonoProfileGCRootFunc)     (MonoProfiler *prof, int num_roots, void **objects, int *root_types, uintptr_t *extra_info);
 
 typedef void (*MonoProfileIomapFunc) (MonoProfiler *prof, const char *report, const char *pathname, const char *new_pathname);
 
@@ -168,7 +182,7 @@ void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callba
 void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
 void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
 void mono_profiler_install_gc_moves    (MonoProfileGCMoveFunc callback);
-void mono_profiler_install_gc_roots    (MonoProfileGCHandleFunc handle_callback);
+void mono_profiler_install_gc_roots    (MonoProfileGCHandleFunc handle_callback, MonoProfileGCRootFunc roots_callback);
 void mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback);
 
 void mono_profiler_install_code_chunk_new (MonoProfilerCodeChunkNew callback);

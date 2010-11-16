@@ -607,6 +607,33 @@ static int roots_hash_size [ROOT_TYPE_NUM] = { 0, 0, 0 };
 static mword roots_size = 0; /* amount of memory in the root set */
 static int num_roots_entries [ROOT_TYPE_NUM] = { 0, 0, 0 };
 
+#define GC_ROOT_NUM 32
+typedef struct {
+	int count;
+	void *objects [GC_ROOT_NUM];
+	int root_types [GC_ROOT_NUM];
+	uintptr_t extra_info [GC_ROOT_NUM];
+} GCRootReport;
+
+static void
+notify_gc_roots (GCRootReport *report)
+{
+	if (!report->count)
+		return;
+	mono_profiler_gc_roots (report->count, report->objects, report->root_types, report->extra_info);
+	report->count = 0;
+}
+
+static void
+add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t extra_info)
+{
+	if (report->count == GC_ROOT_NUM)
+		notify_gc_roots (report);
+	report->objects [report->count] = object;
+	report->root_types [report->count] = rtype;
+	report->extra_info [report->count++] = ((MonoVTable*)LOAD_VTABLE (object))->klass;
+}
+
 /* 
  * The current allocation cursors
  * We allocate objects in the nursery.
@@ -785,6 +812,8 @@ static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 static void scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, GrayQueue *queue);
+static void report_finalizer_roots (void);
+static void report_registered_roots (void);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
@@ -1793,6 +1822,13 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 		start++;
 	}
 	//printf ("effective pinned: %d (at the end: %d)\n", count, (char*)end_nursery - (char*)last);
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS) {
+		GCRootReport report;
+		report.count = 0;
+		for (idx = 0; idx < count; ++idx)
+			add_profile_gc_root (&report, definitely_pinned [idx], MONO_PROFILE_GC_ROOT_PINNING, 0);
+		notify_gc_roots (&report);
+	}
 	return count;
 }
 
@@ -2205,6 +2241,106 @@ mono_gc_get_nursery (int *shift_bits, size_t *size)
 	*shift_bits = -1;
 #endif
 	return nursery_start;
+}
+
+static void
+report_finalizer_roots_list (FinalizeEntry *list)
+{
+	GCRootReport report;
+	FinalizeEntry *fin;
+
+	report.count = 0;
+	for (fin = list; fin; fin = fin->next) {
+		if (!fin->object)
+			continue;
+		add_profile_gc_root (&report, fin->object, MONO_PROFILE_GC_ROOT_FINALIZER, 0);
+	}
+	notify_gc_roots (&report);
+}
+
+static void
+report_finalizer_roots (void)
+{
+	report_finalizer_roots_list (fin_ready_list);
+	report_finalizer_roots_list (critical_fin_list);
+}
+
+static GCRootReport *root_report;
+
+static void
+single_arg_report_root (void **obj)
+{
+	if (*obj)
+		add_profile_gc_root (root_report, *obj, MONO_PROFILE_GC_ROOT_OTHER, 0);
+}
+
+static void
+precisely_report_roots_from (GCRootReport *report, void** start_root, void** end_root, mword desc)
+{
+	switch (desc & ROOT_DESC_TYPE_MASK) {
+	case ROOT_DESC_BITMAP:
+		desc >>= ROOT_DESC_TYPE_SHIFT;
+		while (desc) {
+			if ((desc & 1) && *start_root) {
+				add_profile_gc_root (report, *start_root, MONO_PROFILE_GC_ROOT_OTHER, 0);
+			}
+			desc >>= 1;
+			start_root++;
+		}
+		return;
+	case ROOT_DESC_COMPLEX: {
+		gsize *bitmap_data = complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
+		int bwords = (*bitmap_data) - 1;
+		void **start_run = start_root;
+		bitmap_data++;
+		while (bwords-- > 0) {
+			gsize bmap = *bitmap_data++;
+			void **objptr = start_run;
+			while (bmap) {
+				if ((bmap & 1) && *objptr) {
+					add_profile_gc_root (report, *objptr, MONO_PROFILE_GC_ROOT_OTHER, 0);
+				}
+				bmap >>= 1;
+				++objptr;
+			}
+			start_run += GC_BITS_PER_WORD;
+		}
+		break;
+	}
+	case ROOT_DESC_USER: {
+		MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+		root_report = report;
+		marker (start_root, single_arg_report_root);
+		break;
+	}
+	case ROOT_DESC_RUN_LEN:
+		g_assert_not_reached ();
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static void
+report_registered_roots_by_type (int root_type)
+{
+	GCRootReport report;
+	int i;
+	RootRecord *root;
+	report.count = 0;
+	for (i = 0; i < roots_hash_size [root_type]; ++i) {
+		for (root = roots_hash [root_type][i]; root; root = root->next) {
+			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
+			precisely_report_roots_from (&report, (void**)root->start_root, (void**)root->end_root, root->root_desc);
+		}
+	}
+	notify_gc_roots (&report);
+}
+
+static void
+report_registered_roots (void)
+{
+	report_registered_roots_by_type (ROOT_TYPE_NORMAL);
+	report_registered_roots_by_type (ROOT_TYPE_WBARRIER);
 }
 
 static void
@@ -2774,6 +2910,10 @@ collect_nursery (size_t requested_size)
 
 	drain_gray_stack (&gray_queue);
 
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
+		report_registered_roots ();
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
+		report_finalizer_roots ();
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 	/* registered roots, this includes static fields */
@@ -2965,6 +3105,8 @@ major_do_collection (const char *reason)
 
 	workers_start_all_workers (1);
 
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
+		report_registered_roots ();
 	TV_GETTIME (atv);
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
@@ -2984,6 +3126,8 @@ major_do_collection (const char *reason)
 	TV_GETTIME (btv);
 	time_major_scan_alloc_pinned += TV_ELAPSED_MS (atv, btv);
 
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
+		report_finalizer_roots ();
 	/* scan the list of objects ready for finalization */
 	scan_finalizer_entries (major_collector.copy_or_mark_object, fin_ready_list, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	scan_finalizer_entries (major_collector.copy_or_mark_object, critical_fin_list, WORKERS_DISTRIBUTE_GRAY_QUEUE);
