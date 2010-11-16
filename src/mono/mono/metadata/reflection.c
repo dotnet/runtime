@@ -2870,6 +2870,8 @@ mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderI
 	MonoMethod *method, *inflated;
 	int count, i;
 
+	init_type_builder_generics ((MonoObject*)m->inst);
+
 	method = inflate_method (m->inst, (MonoObject*)m->mb);
 
 	klass = method->klass;
