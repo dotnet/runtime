@@ -3245,6 +3245,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			switch (ins->opcode) {
 			case OP_STOREV_MEMBASE:
+				if (cfg->gen_write_barriers && klass->has_references && ins->inst_destbasereg != cfg->frame_reg) {
+					/* FIXME: Emit write barriers like in mini_emit_stobj () */
+					LLVM_FAILURE (ctx, "storev_membase + write barriers");
+					break;
+				}
 				if (!addresses [ins->sreg1]) {
 					/* SIMD */
 					g_assert (values [ins->sreg1]);
@@ -3273,6 +3278,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			default:
 				g_assert_not_reached ();
 			}
+			CHECK_FAILURE (ctx);
 
 			if (done)
 				break;
