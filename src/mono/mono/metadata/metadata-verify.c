@@ -2883,8 +2883,8 @@ verify_cattr_table (VerifyContext *ctx)
 		if (!is_valid_coded_index (ctx, HAS_CATTR_DESC, data [MONO_CUSTOM_ATTR_PARENT]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Parent field 0x%08x", i, data [MONO_CUSTOM_ATTR_PARENT]));
 
-		if (!is_valid_coded_index (ctx, CATTR_TYPE_DESC, data [MONO_CUSTOM_ATTR_TYPE]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Parent field 0x%08x", i, data [MONO_CUSTOM_ATTR_PARENT]));
+		if (!is_valid_coded_index (ctx, CATTR_TYPE_DESC, data [MONO_CUSTOM_ATTR_TYPE]) || !get_coded_index_token (CATTR_TYPE_DESC, data [MONO_CUSTOM_ATTR_TYPE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Type field 0x%08x", i, data [MONO_CUSTOM_ATTR_TYPE]));
 
 		if (data [MONO_CUSTOM_ATTR_VALUE] && !is_valid_blob_object (ctx, data [MONO_CUSTOM_ATTR_VALUE], 0))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d invalid value blob 0x%x", i, data [MONO_CUSTOM_ATTR_VALUE]));
