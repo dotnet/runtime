@@ -681,7 +681,16 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 		if (name [0] == '.' && (!strcmp (name, ".ctor") || !strcmp (name, ".cctor")))
 			break;
 
-		g_assert (from_class->interface_offsets_count == in_class->interface_offsets_count);
+		/*
+		 * This happens when we fail to lazily load the interfaces of one of the types.
+		 * On such case we can't just bail out since user code depends on us trying harder.
+		 */
+		if (from_class->interface_offsets_count != in_class->interface_offsets_count) {
+			in_class = in_class->parent;
+			from_class = from_class->parent;
+			continue;
+		}
+
 		for (i = 0; i < in_class->interface_offsets_count; i++) {
 			MonoClass *in_ic = in_class->interfaces_packed [i];
 			MonoClass *from_ic = from_class->interfaces_packed [i];
