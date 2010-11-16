@@ -2846,6 +2846,35 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 				return code;
 		}
 
+		/* Same for CompareExchange<T> */
+		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && method->klass->image == mono_defaults.corlib && !strcmp (method->klass->name_space, "System.Threading") && !strcmp (method->klass->name, "Interlocked") && !strcmp (method->name, "CompareExchange")) {
+			MonoMethod *m;
+			MonoGenericContext ctx;
+			MonoType *args [16];
+			gpointer iter = NULL;
+
+			while ((m = mono_class_get_methods (method->klass, &iter))) {
+				if (mono_method_signature (m)->generic_param_count && !strcmp (m->name, "CompareExchange"))
+					break;
+			}
+			g_assert (m);
+
+			memset (&ctx, 0, sizeof (ctx));
+			args [0] = &mono_defaults.object_class->byval_arg;
+			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
+
+			m = mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (m, &ctx), TRUE, TRUE);
+
+			/* 
+			 * Get the code for the <object> instantiation which should be emitted into
+			 * the mscorlib aot image by the AOT compiler.
+			 */
+			code = mono_aot_get_method (domain, m);
+			if (code)
+				return code;
+			printf ("HIT!\n");
+		}
+
 		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_impl_full (method, FALSE, TRUE)) {
 			/* Partial sharing */
 			method_index = find_extra_method (mini_get_shared_method (method), &amodule);
