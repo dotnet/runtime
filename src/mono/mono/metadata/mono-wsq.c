@@ -191,7 +191,7 @@ mono_wsq_try_steal (MonoWSQ *wsq, void **ptr, guint32 ms_timeout)
 	if (TlsGetValue (wsq_tlskey) == wsq)
 		return;
 
-	if (MONO_SEM_TIMEDWAIT (&wsq->lock, ms_timeout)) {
+	if (mono_sem_timedwait (&wsq->lock, ms_timeout, FALSE) == 0) {
 		int head;
 
 		head = wsq->head;

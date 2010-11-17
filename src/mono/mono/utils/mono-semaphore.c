@@ -43,7 +43,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 
 #ifndef USE_MACH_SEMA
 	if (timeout_ms == 0)
-		return (!sem_trywait (sem));
+		return sem_trywait (sem);
 #endif
 	if (timeout_ms == (guint32) 0xFFFFFFFF)
 		return mono_sem_wait (sem, alertable);
@@ -135,8 +135,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 {
 	gboolean res;
 
-	while (res = WaitForSingleObjectEx (*sem, timeout_ms, TRUE) == WAIT_IO_COMPLETION)
-	{
+	while (res = WaitForSingleObjectEx (*sem, timeout_ms, alertable) == WAIT_IO_COMPLETION) {
 		if (alertable) {
 			errno = EINTR;
 			return -1;
