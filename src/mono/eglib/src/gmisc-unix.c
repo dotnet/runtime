@@ -98,13 +98,32 @@ g_get_home_dir (void)
 	return home_dir;
 }
 
+static const char *user_name;
+static pthread_mutex_t user_lock = PTHREAD_MUTEX_INITIALIZER;
+
 const char *
 g_get_user_name (void)
 {
-	const char *retName = g_getenv ("USER");
-	if (!retName)
-		retName = "somebody";
-	return retName;
+	if (user_name == NULL){
+		pthread_mutex_lock (&user_lock);
+		if (user_name == NULL){
+#ifdef HAVE_GETPWUID_R
+			struct passwd pw;
+			struct passwd *result;
+			char buf [4096];
+
+			if (getpwuid_r (getuid (), &pw, buf, 4096, &result) == 0)
+				user_name = g_strdup (pw.pw_name);
+#endif
+			if (user_name == NULL) {
+				user_name = g_getenv ("USER");
+				if (user_name == NULL)
+					user_name = "somebody";
+			}
+		}
+		pthread_mutex_unlock (&user_lock);
+	}
+	return user_name;
 }
 
 static const char *tmp_dir;
