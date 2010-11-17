@@ -611,9 +611,11 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 				continue;
 
 			method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
-			other_sig = mono_method_signature (method);
-			if (method && other_sig && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, other_sig))
-				return method;
+			if (method) {
+				other_sig = mono_method_signature (method);
+				if (other_sig && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, other_sig))
+					return method;
+			}
 		}
 	}
 
@@ -628,6 +630,10 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoMethod *m = klass->methods [i];
 		MonoMethodSignature *msig;
+
+		/* We must cope with failing to load some of the types. */
+		if (!m)
+			continue;
 
 		if (!((fqname && !strcmp (m->name, fqname)) ||
 		      (qname && !strcmp (m->name, qname)) ||
