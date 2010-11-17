@@ -43,6 +43,14 @@ static uint64_t startup_time = 0;
 static FILE* outfile = NULL;
 
 static int32_t
+read_int16 (unsigned char *p)
+{
+	int32_t value = *p++;
+	value |= (*p++) << 8;
+	return value;
+}
+
+static int32_t
 read_int32 (unsigned char *p)
 {
 	int32_t value = *p++;
@@ -704,6 +712,7 @@ typedef struct {
 	int version_minor;
 	int timer_overhead;
 	int pid;
+	int port;
 	uint64_t startup_time;
 	ThreadContext *threads;
 	ThreadContext *current;
@@ -1647,6 +1656,7 @@ load_file (char *name)
 	ctx->startup_time = read_int64 (p + 8);
 	ctx->timer_overhead = read_int32 (p + 16);
 	ctx->pid = read_int32 (p + 24);
+	ctx->port = read_int16 (p + 28);
 	return ctx;
 }
 
@@ -1688,6 +1698,8 @@ dump_header (ProfContext *ctx)
 	fprintf (outfile, "\tProgram startup: %s", t);
 	if (ctx->pid)
 		fprintf (outfile, "\tProgram ID: %d\n", ctx->pid);
+	if (ctx->port)
+		fprintf (outfile, "\tServer listening on: %d\n", ctx->port);
 }
 
 static void

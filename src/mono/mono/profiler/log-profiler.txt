@@ -90,9 +90,9 @@ taken if either of the conditions are met.
 MODE can be one of:
 	* *NUM*ms: perform a heap shot if at least *NUM* milliseconds passed since
 	the last one.
-	* *NUM*gc: perform a heap shot every *NUM* garbage collections (either
-	minor or major).
-
+	* *NUM*gc: perform a heap shot every *NUM* major garbage collections
+	* *ondemand*: perform a heap shot when such a command is sent to the
+	control port
 
 * *time=TIMER*: use the TIMER timestamp mode. TIMER can have the following values:
 	* *fast*: a usually faster but possibly more inaccurate timer
@@ -119,6 +119,12 @@ date and time, then do according to *OUTSPEC*:
 report. This is equivalent to the option: `output=mprof-report -`. If the *output*
 option is specified as well, the report will be written to the output file instead of
 the console.
+
+* *port=PORT*: specify the tcp/ip port to use for the listening command server.
+Currently not available for windows.
+This server is started for example when heapshot=ondemand is used: it will read
+commands line by line. The following commands are available:
+	* *heapshot*: perform a heapshot as soon as possible
 
 ## Analyzing the profile data
 

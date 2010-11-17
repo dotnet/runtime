@@ -9,11 +9,24 @@
 
 #include <config.h>
 #include <mono/metadata/profiler.h>
+#include <mono/metadata/threads.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
+#if defined(HOST_WIN32) || defined(DISABLE_SOCKETS)
+#define DISABLE_HELPER_THREAD 1
+#endif
+
+#ifndef DISABLE_HELPER_THREAD
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/select.h>
+#endif
+
 #ifdef HOST_WIN32
 #include <windows.h>
 #else
@@ -35,6 +48,8 @@ static int do_report = 0;
 static int do_heap_shot = 0;
 static int max_call_depth = 100;
 static int runtime_inited = 0;
+static int command_port = 0;
+static int heapshot_requested = 0;
 
 /* For linux compile with:
  * gcc -fPIC -shared -o libmono-profiler-log.so proflog.c utils.c -Wall -g -lz `pkg-config --cflags --libs mono-2`
@@ -72,7 +87,8 @@ typedef struct _LogBuffer LogBuffer;
  * [timer overhead: 4 bytes] approximate overhead in nanoseconds of the timer
  * [flags: 4 bytes] file format flags, should be 0 for now
  * [pid: 4 bytes] pid of the profiled process
- * [sysid: 4 bytes] operating system and architecture identifier
+ * [port: 2 bytes] tcp port for server if != 0
+ * [sysid: 2 bytes] operating system and architecture identifier
  *
  * The multiple byte integers are in little-endian format.
  *
@@ -256,6 +272,12 @@ struct _MonoProfiler {
 #endif
 	int pipe_output;
 	int last_gc_gen_started;
+	int command_port;
+	int server_socket;
+	int pipes [2];
+#ifndef HOST_WIN32
+	pthread_t helper_thread;
+#endif
 };
 
 #ifdef HOST_WIN32
@@ -393,6 +415,17 @@ emit_obj (LogBuffer *logbuffer, void *ptr)
 }
 
 static char*
+write_int16 (char *buf, int32_t value)
+{
+	int i;
+	for (i = 0; i < 2; ++i) {
+		buf [i] = value;
+		value >>= 8;
+	}
+	return buf + 2;
+}
+
+static char*
 write_int32 (char *buf, int32_t value)
 {
 	int i;
@@ -428,7 +461,8 @@ dump_header (MonoProfiler *profiler)
 	p = write_int32 (p, get_timer_overhead ()); /* timer overhead */
 	p = write_int32 (p, 0); /* flags */
 	p = write_int32 (p, process_id ()); /* pid */
-	p = write_int32 (p, 0); /* opsystem */
+	p = write_int16 (p, profiler->command_port); /* port */
+	p = write_int16 (p, 0); /* opsystem */
 #if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
@@ -466,6 +500,13 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 	}
 #endif
 	free_buffer (buf, buf->size);
+}
+
+static void
+process_requests (MonoProfiler *profiler)
+{
+	if (heapshot_requested)
+		mono_gc_collect (mono_gc_max_generation ());
 }
 
 static void
@@ -516,6 +557,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 
 static unsigned int hs_mode_ms = 0;
 static unsigned int hs_mode_gc = 0;
+static unsigned int hs_mode_ondemand = 0;
 static unsigned int gc_count = 0;
 static uint64_t last_hs_time = 0;
 
@@ -533,11 +575,14 @@ heap_walk (MonoProfiler *profiler)
 		do_walk = 1;
 	else if (hs_mode_gc && (gc_count % hs_mode_gc) == 0)
 		do_walk = 1;
+	else if (hs_mode_ondemand && heapshot_requested)
+		do_walk = 1;
 	else if (!hs_mode_ms && !hs_mode_gc && profiler->last_gc_gen_started == mono_gc_max_generation ())
 		do_walk = 1;
 
 	if (!do_walk)
 		return;
+	heapshot_requested = 0;
 	emit_byte (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
 	emit_time (logbuffer, now);
 	mono_gc_walk_heap (0, gc_reference, NULL);
@@ -561,7 +606,8 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 	/* to deal with nested gen1 after gen0 started */
 	if (ev == MONO_GC_EVENT_START) {
 		profiler->last_gc_gen_started = generation;
-		gc_count++;
+		if (generation == mono_gc_max_generation ())
+			gc_count++;
 	}
 	if (ev == MONO_GC_EVENT_PRE_START_WORLD)
 		heap_walk (profiler);
@@ -658,6 +704,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_dump (prof, logbuffer);
+	process_requests (prof);
 	//printf ("gc alloc %s at %p\n", mono_class_get_name (klass), obj);
 }
 
@@ -714,6 +761,7 @@ gc_handle (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *o
 	if (op == MONO_PROFILER_GC_HANDLE_CREATED)
 		emit_obj (logbuffer, obj);
 	EXIT_LOG (logbuffer);
+	process_requests (prof);
 }
 
 static char*
@@ -777,6 +825,7 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_dump (prof, logbuffer);
+	process_requests (prof);
 }
 
 static void
@@ -814,6 +863,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_dump (prof, logbuffer);
+	process_requests (prof);
 }
 
 static void
@@ -829,6 +879,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 	emit_time (logbuffer, now);
 	emit_method (logbuffer, method);
 	EXIT_LOG (logbuffer);
+	process_requests (prof);
 }
 
 static void
@@ -846,6 +897,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_dump (prof, logbuffer);
+	process_requests (prof);
 }
 
 static void
@@ -864,6 +916,7 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 	emit_time (logbuffer, now);
 	emit_method (logbuffer, method);
 	EXIT_LOG (logbuffer);
+	process_requests (prof);
 }
 
 static void
@@ -891,6 +944,7 @@ method_jitted (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, int r
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_dump (prof, logbuffer);
+	process_requests (prof);
 }
 
 static void
@@ -911,6 +965,7 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 	if (do_bt)
 		emit_bt (logbuffer, &data);
 	EXIT_LOG (logbuffer);
+	process_requests (prof);
 }
 
 static void
@@ -946,6 +1001,7 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 	if (do_bt)
 		emit_bt (logbuffer, &data);
 	EXIT_LOG (logbuffer);
+	process_requests (profiler);
 }
 
 static void
@@ -987,6 +1043,14 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 static void
 log_shutdown (MonoProfiler *prof)
 {
+#ifndef DISABLE_HELPER_THREAD
+	if (prof->command_port) {
+		char c = 1;
+		void *res;
+		write (prof->pipes [1], &c, 1);
+		pthread_join (prof->helper_thread, &res);
+	}
+#endif
 	take_lock ();
 	if (TLS_GET (tlsbuffer))
 		dump_buffer (prof, TLS_GET (tlsbuffer));
@@ -1062,6 +1126,119 @@ new_filename (const char* filename)
 	return res;
 }
 
+#ifndef DISABLE_HELPER_THREAD
+static void*
+helper_thread (void* arg)
+{
+	MonoProfiler* prof = arg;
+	int command_socket;
+	int len;
+	char buf [64];
+	MonoThread *thread = NULL;
+
+	//fprintf (stderr, "Server listening\n");
+	command_socket = -1;
+	while (1) {
+		fd_set rfds;
+		struct timeval tv;
+		int max_fd = -1;
+		FD_ZERO (&rfds);
+		FD_SET (prof->server_socket, &rfds);
+		max_fd = prof->server_socket;
+		FD_SET (prof->pipes [0], &rfds);
+		if (max_fd < prof->pipes [0])
+			max_fd = prof->pipes [0];
+		if (command_socket >= 0) {
+			FD_SET (command_socket, &rfds);
+			if (max_fd < command_socket)
+				max_fd = command_socket;
+		}
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
+		if (FD_ISSET (prof->pipes [0], &rfds)) {
+			/* time to shut down */
+			if (thread)
+				mono_thread_detach (thread);
+			/*fprintf (stderr, "helper shutdown\n");*/
+			return NULL;
+		}
+		if (runtime_inited && !thread) {
+			thread = mono_thread_attach (mono_get_root_domain ());
+			/*fprintf (stderr, "attached\n");*/
+		}
+		if (command_socket >= 0 && FD_ISSET (command_socket, &rfds)) {
+			len = read (command_socket, buf, sizeof (buf) - 1);
+			if (len < 0)
+				continue;
+			if (len == 0) {
+				close (command_socket);
+				command_socket = -1;
+				continue;
+			}
+			buf [len] = 0;
+			if (strcmp (buf, "heapshot\n") == 0) {
+				heapshot_requested = 1;
+				//fprintf (stderr, "perform heapshot\n");
+				if (thread)
+					process_requests (prof);
+			}
+			continue;
+		}
+		if (!FD_ISSET (prof->server_socket, &rfds)) {
+			continue;
+		}
+		command_socket = accept (prof->server_socket, NULL, NULL);
+		if (command_socket < 0)
+			continue;
+		//fprintf (stderr, "Accepted connection\n");
+	}
+	return NULL;
+}
+
+static int
+start_helper_thread (MonoProfiler* prof)
+{
+	struct sockaddr_in server_address;
+	int r;
+	socklen_t slen;
+	if (pipe (prof->pipes) < 0) {
+		fprintf (stderr, "Cannot create pipe\n");
+		return 0;
+	}
+	prof->server_socket = socket (PF_INET, SOCK_STREAM, 0);
+	if (prof->server_socket < 0) {
+		fprintf (stderr, "Cannot create server socket\n");
+		return 0;
+	}
+	memset (&server_address, 0, sizeof (server_address));
+	server_address.sin_family = AF_INET;
+	server_address.sin_addr.s_addr = INADDR_ANY;
+	server_address.sin_port = htons (prof->command_port);
+	if (bind (prof->server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) < 0) {
+		fprintf (stderr, "Cannot bind server socket, port: %d: %s\n", prof->command_port, strerror (errno));
+		close (prof->server_socket);
+		return 0;
+	}
+	if (listen (prof->server_socket, 1) < 0) {
+		fprintf (stderr, "Cannot listen server socket\n");
+		close (prof->server_socket);
+		return 0;
+	}
+	if (getsockname (prof->server_socket, (struct sockaddr *)&server_address, &slen) == 0) {
+		prof->command_port = ntohs (server_address.sin_port);
+		/*fprintf (stderr, "Assigned server port: %d\n", prof->command_port);*/
+	}
+
+	r = pthread_create (&prof->helper_thread, NULL, helper_thread, prof);
+	if (r) {
+		close (prof->server_socket);
+		return 0;
+	}
+	return 1;
+}
+#endif
+
 static MonoProfiler*
 create_profiler (const char *filename)
 {
@@ -1070,6 +1247,7 @@ create_profiler (const char *filename)
 	int force_delete = 0;
 	prof = calloc (1, sizeof (MonoProfiler));
 
+	prof->command_port = command_port;
 	if (filename && *filename == '-') {
 		force_delete = 1;
 		filename++;
@@ -1107,12 +1285,21 @@ create_profiler (const char *filename)
 		prof->file = fopen (nf, "wb");
 	}
 	if (!prof->file) {
-		printf ("Cannot create profiler output: %s\n", nf);
+		fprintf (stderr, "Cannot create profiler output: %s\n", nf);
 		exit (1);
 	}
 #if defined (HAVE_SYS_ZLIB)
 	if (use_zip)
 		prof->gzfile = gzdopen (fileno (prof->file), "wb");
+#endif
+#ifndef DISABLE_HELPER_THREAD
+	if (hs_mode_ondemand) {
+		if (!start_helper_thread (prof))
+			prof->command_port = 0;
+	}
+#else
+	if (hs_mode_ondemand)
+		fprintf (stderr, "Ondemand heapshot unavailable on this arch.\n");
 #endif
 	dump_header (prof);
 	return prof;
@@ -1128,7 +1315,7 @@ usage (int do_exit)
 	printf ("\t[no]alloc        enable/disable recording allocation info\n");
 	printf ("\t[no]calls        enable/disable recording enter/leave method events\n");
 	printf ("\theapshot[=MODE]  record heap shot info (by default at each major collection)\n");
-	printf ("\t                 heapshot MODE: every XXms milliseconds or every YYgc collections\n");
+	printf ("\t                 MODE: every XXms milliseconds, every YYgc collections, ondemand\n");
 	printf ("\ttime=fast        use a faster (but more inaccurate) timer\n");
 	printf ("\tmaxframes=NUM    collect up to NUM stack frames\n");
 	printf ("\tcalldepth=NUM    ignore method events for call chain depth bigger than NUM\n");
@@ -1137,6 +1324,7 @@ usage (int do_exit)
 	printf ("\t                 %%t is subtituted with date and time, %%p with the pid\n");
 	printf ("\treport           create a report instead of writing the raw data to a file\n");
 	printf ("\tzip              compress the output data\n");
+	printf ("\tport=PORTNUM     use PORTNUM for the listening command server\n");
 	if (do_exit)
 		exit (1);
 }
@@ -1185,6 +1373,11 @@ set_hsmode (char* val, int allow_empty)
 	unsigned int count;
 	if (allow_empty && !val)
 		return;
+	if (strcmp (val, "ondemand") == 0) {
+		hs_mode_ondemand = 1;
+		free (val);
+		return;
+	}
 	count = strtoul (val, &end, 10);
 	if (val == end)
 		usage (1);
@@ -1285,6 +1478,12 @@ mono_profiler_startup (const char *desc)
 		}
 		if ((opt = match_option (p, "output", &val)) != p) {
 			filename = val;
+			continue;
+		}
+		if ((opt = match_option (p, "port", &val)) != p) {
+			char *end;
+			command_port = strtoul (val, &end, 10);
+			free (val);
 			continue;
 		}
 		if ((opt = match_option (p, "maxframes", &val)) != p) {
