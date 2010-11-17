@@ -728,6 +728,7 @@ struct _ThreadContext {
 	uintptr_t *roots;
 	uintptr_t *roots_extra;
 	int *roots_types;
+	uint64_t gc_start_times [3];
 };
 
 static void
@@ -957,7 +958,6 @@ pop_method (ThreadContext *thread, MethodDesc *method, uint64_t timestamp)
 }
 
 typedef struct {
-	uint64_t start_time; /* move this per-thread? */
 	uint64_t total_time;
 	uint64_t max_time;
 	int count;
@@ -1231,16 +1231,16 @@ decode_buffer (ProfContext *ctx)
 				uint64_t ev = decode_uleb128 (p, &p);
 				int gen = decode_uleb128 (p, &p);
 				if (debug)
-					fprintf (outfile, "gc event for gen%d: %s at %llu\n", gen - 1, gc_event_name (ev), time_base);
+					fprintf (outfile, "gc event for gen%d: %s at %llu (thread: 0x%x)\n", gen, gc_event_name (ev), time_base, thread->thread_id);
 				if (gen > 2) {
 					fprintf (outfile, "incorrect gc gen: %d\n", gen);
 					break;
 				}
 				if (ev == MONO_GC_EVENT_START) {
-					gc_info [gen].start_time = time_base;
+					thread->gc_start_times [gen] = time_base;
 					gc_info [gen].count++;
 				} else if (ev == MONO_GC_EVENT_END) {
-					tdiff = time_base - gc_info [gen].start_time;
+					tdiff = time_base - thread->gc_start_times [gen];
 					gc_info [gen].total_time += tdiff;
 					if (tdiff > gc_info [gen].max_time)
 						gc_info [gen].max_time = tdiff;
