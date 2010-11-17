@@ -166,8 +166,11 @@ lookup_class (intptr_t klass)
 	ClassDesc *cd = class_hash [slot];
 	while (cd && cd->klass != klass)
 		cd = cd->next;
-	if (!cd)
-		return add_class (klass, "unresolved class");
+	if (!cd) {
+		char buf [128];
+		snprintf (buf, sizeof (buf), "unresolved class %p", (void*)klass);
+		return add_class (klass, buf);
+	}
 	return cd;
 }
 
@@ -229,8 +232,11 @@ lookup_method (intptr_t method)
 	MethodDesc *cd = method_hash [slot];
 	while (cd && cd->method != method)
 		cd = cd->next;
-	if (!cd)
-		return add_method (method, "unknown method", 0, 0);
+	if (!cd) {
+		char buf [128];
+		snprintf (buf, sizeof (buf), "unknown method %p", (void*)method);
+		return add_method (method, buf, 0, 0);
+	}
 	return cd;
 }
 
