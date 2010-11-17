@@ -2067,7 +2067,7 @@ async_invoke_thread (gpointer data)
 			n_naps++;
 		}
 
-		if (!data && tp->is_io && !mono_runtime_is_shutting_down ()) {
+		if (!data && !tp->is_io && !mono_runtime_is_shutting_down ()) {
 			mono_wsq_local_pop (&data);
 			if (data && must_die) {
 				InterlockedCompareExchange (&tp->destroy_thread, 1, 0);
