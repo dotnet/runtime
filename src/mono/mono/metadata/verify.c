@@ -3055,6 +3055,9 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 	}
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
+		if (!mono_type_is_valid_in_context (ctx, sig->ret))
+			return;
+
 		if (check_overflow (ctx)) {
 			value = stack_push (ctx);
 			set_stack_value (ctx, value, sig->ret, FALSE);
