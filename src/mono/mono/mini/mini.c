@@ -4753,6 +4753,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	MonoException *ex = NULL;
 	guint32 prof_options;
 	GTimer *jit_timer;
+	MonoMethod *prof_method;
 
 #ifdef MONO_USE_AOT_COMPILER
 	if (opt & MONO_OPT_AOT) {
@@ -4788,7 +4789,13 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
 		nm = mono_marshal_get_native_wrapper (method, check_for_pending_exc, FALSE);
-		return mono_get_addr_from_ftnptr (mono_compile_method (nm));
+		code = mono_get_addr_from_ftnptr (mono_compile_method (nm));
+		jinfo = mono_jit_info_table_find (target_domain, code);
+		if (!jinfo)
+			jinfo = mono_jit_info_table_find (mono_domain_get (), code);
+		if (jinfo)
+			mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+		return code;
 
 		//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
 		//mono_debug_add_wrapper (method, nm);
@@ -4850,6 +4857,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	jit_timer = g_timer_new ();
 
 	cfg = mini_method_compile (method, opt, target_domain, TRUE, FALSE, 0);
+	prof_method = cfg->method;
 
 	g_timer_stop (jit_timer);
 	mono_jit_stats.jit_time += g_timer_elapsed (jit_timer, NULL);
@@ -5008,8 +5016,10 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				/* The profiler doesn't know about wrappers, so pass the original icall method */
 				mono_profiler_method_end_jit (mono_marshal_method_from_wrapper (method), jinfo, MONO_PROFILE_OK);
 			}
-		} else {
-			mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+		}
+		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+		if (prof_method != method) {
+			mono_profiler_method_end_jit (prof_method, jinfo, MONO_PROFILE_OK);
 		}
 	}
 
