@@ -1085,6 +1085,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	g_assert (param_count);
 
 	inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
+	if (!inst)
+		return NULL;
+
 	if (context && inst->is_open) {
 		inst = mono_metadata_inflate_generic_inst (inst, context, &error);
 		if (!mono_error_ok (&error)) {
