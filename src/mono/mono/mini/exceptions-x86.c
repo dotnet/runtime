@@ -555,11 +555,14 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 			/* We don't generate stack alignment code on osx to save space */
 #endif
 		} else {
-			/* One argument */
+			/* One argument + stack alignment */
 			stack_offset = stack_size + 4 + 4;
 #ifdef __APPLE__
 			/* Pop the alignment added by OP_THROW too */
 			stack_offset += MONO_ARCH_FRAME_ALIGNMENT - 4;
+#else
+			if (mono_do_x86_stack_align)
+				stack_offset += MONO_ARCH_FRAME_ALIGNMENT - 4;
 #endif
 		}
 	}
@@ -820,6 +823,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			if (!((guint32)((*lmf)->previous_lmf) & 1))
 				/* Top LMF entry */
 				return FALSE;
+			g_assert_not_reached ();
 			/* Trampoline lmf frame */
 			frame->method = (*lmf)->method;
 		}
