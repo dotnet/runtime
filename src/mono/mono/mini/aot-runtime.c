@@ -2865,6 +2865,10 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 
 			m = mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (m, &ctx), TRUE, TRUE);
 
+			/* Avoid recursion */
+			if (method == m)
+				return NULL;
+
 			/* 
 			 * Get the code for the <object> instantiation which should be emitted into
 			 * the mscorlib aot image by the AOT compiler.
