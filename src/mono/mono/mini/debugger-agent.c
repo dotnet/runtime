@@ -109,7 +109,7 @@ typedef struct {
 typedef struct
 {
 	int id;
-	guint32 il_offset;
+	guint32 il_offset, native_offset;
 	MonoDomain *domain;
 	MonoMethod *method;
 	/*
@@ -2413,6 +2413,32 @@ find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 }
 
 /*
+ * find_prev_seq_point_for_native_offset:
+ *
+ *   Find the first sequence point before NATIVE_OFFSET.
+ */
+static SeqPoint*
+find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info)
+{
+	MonoSeqPointInfo *seq_points;
+	int i;
+
+	mono_domain_lock (domain);
+	seq_points = g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
+	mono_domain_unlock (domain);
+	g_assert (seq_points);
+
+	*info = seq_points;
+
+	for (i = seq_points->len - 1; i >= 0; --i) {
+		if (seq_points->seq_points [i].native_offset <= native_offset)
+			return &seq_points->seq_points [i];
+	}
+
+	return NULL;
+}
+
+/*
  * find_seq_point:
  *
  *   Find the sequence point corresponding to the IL offset IL_OFFSET, which
@@ -2508,7 +2534,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		info->il_offset = mono_debug_il_offset_from_address (method, info->domain, info->native_offset);
 	}
 
-	DEBUG (1, fprintf (log_file, "\tFrame: %s %d %d %d\n", mono_method_full_name (method, TRUE), info->native_offset, info->il_offset, info->managed));
+	DEBUG (1, fprintf (log_file, "\tFrame: %s:%x(%x) %d\n", mono_method_full_name (method, TRUE), info->il_offset, info->native_offset, info->managed));
 
 	if (!info->managed && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD) {
 		/*
@@ -2524,6 +2550,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	frame->method = method;
 	frame->actual_method = actual_method;
 	frame->il_offset = info->il_offset;
+	frame->native_offset = info->native_offset;
 	if (ctx) {
 		frame->ctx = *ctx;
 		frame->has_ctx = TRUE;
@@ -4150,7 +4177,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 
 		if (!method && frame->il_offset != -1) {
 			/* FIXME: Sort the table and use a binary search */
-			sp = find_seq_point (frame->domain, frame->method, frame->il_offset, &info);
+			sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info);
 			g_assert (sp);
 			method = frame->method;
 		}
