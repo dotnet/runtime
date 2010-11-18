@@ -1784,9 +1784,15 @@ remove_wsq (MonoWSQ *wsq)
 	}
 	g_ptr_array_remove_fast (wsqs, wsq);
 	data = NULL;
-	while (mono_wsq_local_pop (&data)) {
-		threadpool_jobs_dec (data);
-		data = NULL;
+	/*
+	 * Only clean this up when shutting down, any other case will error out
+	 * if we're removing a queue that still has work items.
+	 */
+	if (mono_runtime_is_shutting_down ()) {
+		while (mono_wsq_local_pop (&data)) {
+			threadpool_jobs_dec (data);
+			data = NULL;
+		}
 	}
 	mono_wsq_destroy (wsq);
 	LeaveCriticalSection (&wsqs_lock);
