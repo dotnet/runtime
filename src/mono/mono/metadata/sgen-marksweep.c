@@ -79,14 +79,15 @@ typedef struct _MSBlockInfo MSBlockInfo;
 struct _MSBlockInfo {
 	int obj_size;
 	int obj_size_index;
-	gboolean pinned;
-	gboolean has_references;
+	int pin_queue_num_entries;
+	unsigned int pinned : 1;
+	unsigned int has_references : 1;
 #ifndef SGEN_PARALLEL_MARK
-	gboolean has_pinned;	/* means cannot evacuate */
-	gboolean is_to_space;
+	unsigned int has_pinned : 1;	/* means cannot evacuate */
+	unsigned int is_to_space : 1;
 #endif
 #ifdef FIXED_HEAP
-	gboolean used;
+	unsigned int used : 1;
 #else
 	MSBlockInfo *next;
 #endif
@@ -94,7 +95,6 @@ struct _MSBlockInfo {
 	void **free_list;
 	MSBlockInfo *next_free;
 	void **pin_queue_start;
-	int pin_queue_num_entries;
 	mword mark_words [MS_NUM_MARK_WORDS];
 };
 
