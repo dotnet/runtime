@@ -63,6 +63,8 @@ static CRITICAL_SECTION mini_arch_mutex;
 #define CALLCONV_IS_STDCALL(sig) (((sig)->call_convention) == MONO_CALL_STDCALL)
 #endif
 
+#define X86_IS_CALLEE_SAVED_REG(reg) (((reg) == X86_EBX) || ((reg) == X86_EDI) || ((reg) == X86_ESI))
+
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
@@ -663,6 +665,25 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	arg_info [k].pad = pad;
 
 	return args_size;
+}
+
+gboolean
+mono_x86_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+{
+	CallInfo *c1, *c2;
+	gboolean res;
+
+	c1 = get_call_info (NULL, NULL, caller_sig, FALSE);
+	c2 = get_call_info (NULL, NULL, callee_sig, FALSE);
+	res = c1->stack_usage >= c2->stack_usage;
+	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret) && c2->ret.storage != ArgValuetypeInReg)
+		/* An address on the callee's stack is passed as the first argument */
+		res = FALSE;
+
+	g_free (c1);
+	g_free (c2);
+
+	return res;
 }
 
 static const guchar cpuid_impl [] = {
@@ -2991,6 +3012,52 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_pop_reg (code, X86_EDI);
 			if (cfg->used_int_regs & (1 << X86_EBX))
 				x86_pop_reg (code, X86_EBX);
+	
+			/* restore ESP/EBP */
+			x86_leave (code);
+			offset = code - cfg->native_code;
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
+			x86_jump32 (code, 0);
+
+			cfg->disable_aot = TRUE;
+			break;
+		}
+		case OP_TAILCALL: {
+			MonoCallInst *call = (MonoCallInst*)ins;
+			int pos = 0, i;
+
+			/* FIXME: no tracing support... */
+			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
+			/* reset offset to make max_len work */
+			offset = code - cfg->native_code;
+
+			g_assert (!cfg->method->save_lmf);
+
+			//code = emit_load_volatile_arguments (cfg, code);
+
+			/* restore callee saved registers */
+			for (i = 0; i < X86_NREG; ++i)
+				if (X86_IS_CALLEE_SAVED_REG (i) && cfg->used_int_regs & (1 << i))
+					pos -= 4;
+			if (cfg->used_int_regs & (1 << X86_ESI)) {
+				x86_mov_reg_membase (code, X86_ESI, X86_EBP, pos, 4);
+				pos += 4;
+			}
+			if (cfg->used_int_regs & (1 << X86_EDI)) {
+				x86_mov_reg_membase (code, X86_EDI, X86_EBP, pos, 4);
+				pos += 4;
+			}
+			if (cfg->used_int_regs & (1 << X86_EBX)) {
+				x86_mov_reg_membase (code, X86_EBX, X86_EBP, pos, 4);
+				pos += 4;
+			}
+
+			/* Copy arguments on the stack to our argument area */
+			for (i = 0; i < call->stack_usage; i += 4) {
+				x86_mov_reg_membase (code, X86_EAX, X86_ESP, i, 4);
+				x86_mov_membase_reg (code, X86_EBP, 8 + i, X86_EAX, 4);
+			}
 	
 			/* restore ESP/EBP */
 			x86_leave (code);

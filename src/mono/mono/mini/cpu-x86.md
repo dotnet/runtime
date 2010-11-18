@@ -65,6 +65,7 @@
 break: len:1
 jmp: len:32 clob:c
 call: dest:a clob:c len:17
+tailcall: len:120 clob:c
 br: len:5
 seq_point: len:16
 
