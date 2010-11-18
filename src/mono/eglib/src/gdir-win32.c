@@ -51,46 +51,40 @@ g_dir_open (const gchar *path, guint flags, GError **error)
 
 	g_return_val_if_fail (path != NULL, NULL);
 	g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
 	dir = g_new0 (GDir, 1);
-
 	path_utf16 = u8to16 (path);
+	path_utf16_search = g_malloc ((wcslen(path_utf16) + 3)*sizeof(gunichar2));
+	wcscpy (path_utf16_search, path_utf16);
+	wcscat (path_utf16_search, L"\\*");
 
-	dir->handle = FindFirstFile (path_utf16, &find_data);
+	dir->handle = FindFirstFileW (path_utf16_search, &find_data);
 	if (dir->handle == INVALID_HANDLE_VALUE) {
 		if (error) {
 			gint err = errno;
 			*error = g_error_new (G_LOG_DOMAIN, g_file_error_from_errno (err), strerror (err));
 		}
-		g_free (dir);
+		g_free (path_utf16_search);
 		g_free (path_utf16);
+		g_free (dir);
 		return NULL;
 	}
-
-	/* now get files */
-	FindClose (dir->handle);
-	path_utf16_search = g_malloc ((wcslen(path_utf16) + 3)*sizeof(gunichar2));
-	wcscpy (path_utf16_search, path_utf16);
-	wcscat (path_utf16_search, L"\\*");
-
-	dir->handle = FindFirstFile (path_utf16_search, &find_data);
 	g_free (path_utf16_search);
+	g_free (path_utf16);
 
 	while ((wcscmp (find_data.cFileName, L".") == 0) || (wcscmp (find_data.cFileName, L"..") == 0)) {
-		if (!FindNextFile (dir->handle, &find_data)) {
+		if (!FindNextFileW (dir->handle, &find_data)) {
 			if (error) {
 				gint err = errno;
 				*error = g_error_new (G_LOG_DOMAIN, g_file_error_from_errno (err), strerror (err));
 			}
 			g_free (dir);
-			g_free (path_utf16);
 			return NULL;
 		}
 	}
 
 	dir->current = NULL;
 	dir->next = u16to8 (find_data.cFileName);
-
-	g_free (path_utf16);
 	return dir;
 }
 
@@ -113,7 +107,7 @@ g_dir_read_name (GDir *dir)
 	dir->next = NULL;
 
 	do {
-		if (!FindNextFile (dir->handle, &find_data)) {
+		if (!FindNextFileW (dir->handle, &find_data)) {
 			dir->next = NULL;
 			return dir->current;
 		}
