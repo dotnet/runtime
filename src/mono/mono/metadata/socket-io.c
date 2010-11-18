@@ -71,7 +71,7 @@
 
 #include "mono/io-layer/socket-wrappers.h"
 
-#if defined(HOST_WIN32) && !defined(_MSC_VER)
+#if defined(HOST_WIN32)
 /* This is a kludge to make this file build under cygwin:
  * w32api/ws2tcpip.h has definitions for some AF_INET6 values and
  * prototypes for some but not all required functions (notably
