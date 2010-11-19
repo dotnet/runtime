@@ -510,7 +510,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 
 	UCONTEXT_REG_PC (sigctx) = (gsize)handle_signal_exception;
 #ifdef UCONTEXT_REG_CPSR
-	if ((gsize)UCONTEXT_REG_PC (sigctx) | 1)
+	if ((gsize)UCONTEXT_REG_PC (sigctx) & 1)
 		/* Transition to thumb */
 		UCONTEXT_REG_CPSR (sigctx) |= (1 << 5);
 #endif
