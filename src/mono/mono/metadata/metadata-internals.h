@@ -39,6 +39,12 @@ struct _MonoType {
 
 #define MONO_PUBLIC_KEY_TOKEN_LENGTH	17
 
+#define PROCESSOR_ARCHITECTURE_NONE 0
+#define PROCESSOR_ARCHITECTURE_MSIL 1
+#define PROCESSOR_ARCHITECTURE_X86 2
+#define PROCESSOR_ARCHITECTURE_IA64 3
+#define PROCESSOR_ARCHITECTURE_AMD64 4
+
 struct _MonoAssemblyName {
 	const char *name;
 	const char *culture;
@@ -49,7 +55,7 @@ struct _MonoAssemblyName {
 	uint32_t hash_alg;
 	uint32_t hash_len;
 	uint32_t flags;
-	uint16_t major, minor, build, revision;
+	uint16_t major, minor, build, revision, arch;
 };
 
 struct MonoTypeNameParse {

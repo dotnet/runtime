@@ -1718,7 +1718,7 @@ parse_public_key (const gchar *key, gchar** pubkey)
 }
 
 static gboolean
-build_assembly_name (const char *name, const char *version, const char *culture, const char *token, const char *key, guint32 flags, MonoAssemblyName *aname, gboolean save_public_key)
+build_assembly_name (const char *name, const char *version, const char *culture, const char *token, const char *key, guint32 flags, guint32 arch, MonoAssemblyName *aname, gboolean save_public_key)
 {
 	gint major, minor, build, revision;
 	gint len;
@@ -1748,6 +1748,7 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	}
 	
 	aname->flags = flags;
+	aname->arch = arch;
 	aname->name = g_strdup (name);
 	
 	if (culture) {
@@ -1804,7 +1805,7 @@ parse_assembly_directory_name (const char *name, const char *dirname, MonoAssemb
 		return FALSE;
 	}
 	
-	res = build_assembly_name (name, parts[0], parts[1], parts[2], NULL, 0, aname, FALSE);
+	res = build_assembly_name (name, parts[0], parts[1], parts[2], NULL, 0, 0, aname, FALSE);
 	g_strfreev (parts);
 	return res;
 }
@@ -1825,6 +1826,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	gboolean version_defined;
 	gboolean token_defined;
 	guint32 flags = 0;
+	guint32 arch = PROCESSOR_ARCHITECTURE_NONE;
 
 	if (!is_version_defined)
 		is_version_defined = &version_defined;
@@ -1898,7 +1900,19 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		}
 
 		if (!g_ascii_strncasecmp (value, "ProcessorArchitecture=", 22)) {
-			/* this is ignored for now, until we can change MonoAssemblyName */
+			char *s = g_strstrip (value + 22);
+			if (!g_ascii_strcasecmp (s, "None"))
+				arch = PROCESSOR_ARCHITECTURE_NONE;
+			else if (!g_ascii_strcasecmp (s, "MSIL"))
+				arch = PROCESSOR_ARCHITECTURE_MSIL;
+			else if (!g_ascii_strcasecmp (s, "X86"))
+				arch = PROCESSOR_ARCHITECTURE_X86;
+			else if (!g_ascii_strcasecmp (s, "IA64"))
+				arch = PROCESSOR_ARCHITECTURE_IA64;
+			else if (!g_ascii_strcasecmp (s, "AMD64"))
+				arch = PROCESSOR_ARCHITECTURE_AMD64;
+			else
+				goto cleanup_and_fail;
 			tmp++;
 			continue;
 		}
@@ -1912,7 +1926,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		goto cleanup_and_fail;
 	}
 
-	res = build_assembly_name (dllname, version, culture, token, key, flags,
+	res = build_assembly_name (dllname, version, culture, token, key, flags, arch,
 		aname, save_public_key);
 	g_strfreev (parts);
 	return res;

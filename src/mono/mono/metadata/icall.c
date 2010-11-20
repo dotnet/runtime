@@ -4937,6 +4937,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	aname->revision = name->revision;
 	aname->hashalg = name->hash_alg;
 	aname->versioncompat = 1; /* SameMachine (default) */
+	aname->processor_architecture = name->arch;
 
 	if (by_default_version)
 		MONO_OBJECT_SETREF (aname, version, create_version (domain, name->major, name->minor, name->build, name->revision));
