@@ -186,11 +186,9 @@ static void handle_cleanup (void)
 		for(j = SLOT_OFFSET (0); j < _WAPI_HANDLE_INITIAL_COUNT; j++) {
 			struct _WapiHandleUnshared *handle_data = &_wapi_private_handles[i][j];
 			int type = handle_data->type;
-			
+			gpointer handle = GINT_TO_POINTER (i*_WAPI_HANDLE_INITIAL_COUNT+j);
 			
 			if (_WAPI_SHARED_HANDLE (type)) {
-				gpointer handle = GINT_TO_POINTER (i*_WAPI_HANDLE_INITIAL_COUNT+j);
-				
 				if (type == WAPI_HANDLE_THREAD) {
 					/* Special-case thread handles
 					 * because they need extra
@@ -207,14 +205,14 @@ static void handle_cleanup (void)
 					 */
 					_wapi_thread_set_termination_details (handle, 0);
 				}
+			}
 				
-				for(k = handle_data->ref; k > 0; k--) {
+			for(k = handle_data->ref; k > 0; k--) {
 #ifdef DEBUG
-					g_message ("%s: unreffing %s handle %p", __func__, _wapi_handle_typename[type], handle);
+				g_message ("%s: unreffing %s handle %p", __func__, _wapi_handle_typename[type], handle);
 #endif
 					
-					_wapi_handle_unref (handle);
-				}
+				_wapi_handle_unref (handle);
 			}
 		}
 	}
