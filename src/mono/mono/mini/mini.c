@@ -2516,6 +2516,16 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 }
 
 static void
+free_jit_tls_data (MonoJitTlsData *jit_tls)
+{
+	mono_arch_free_jit_tls_data (jit_tls);
+	mono_free_altstack (jit_tls);
+
+	g_free (jit_tls->first_lmf);
+	g_free (jit_tls);
+}
+
+static void
 mono_thread_start_cb (intptr_t tid, gpointer stack_start, gpointer func)
 {
 	MonoInternalThread *thread;
@@ -2561,9 +2571,7 @@ mini_thread_cleanup (MonoInternalThread *thread)
 
 	if (jit_tls) {
 		mono_debugger_thread_cleanup (jit_tls);
-		mono_arch_free_jit_tls_data (jit_tls);
 
-		mono_free_altstack (jit_tls);
 		/* We can't clean up tls information if we are on another thread, it will clean up the wrong stuff
 		 * It would be nice to issue a warning when this happens outside of the shutdown sequence. but it's
 		 * not a trivial thing.
@@ -2576,8 +2584,8 @@ mini_thread_cleanup (MonoInternalThread *thread)
 			mono_set_lmf_addr (NULL);
 		}
 
-		g_free (jit_tls->first_lmf);
-		g_free (jit_tls);
+		free_jit_tls_data (jit_tls);
+
 		thread->jit_data = NULL;
 	}
 }
@@ -6352,6 +6360,8 @@ mini_cleanup (MonoDomain *domain)
 #ifndef MONO_CROSS_COMPILE
 	mono_runtime_cleanup (domain);
 #endif
+
+	free_jit_tls_data (TlsGetValue (mono_jit_tls_id));
 
 	mono_icall_cleanup ();
 
