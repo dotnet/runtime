@@ -5737,7 +5737,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	}
 	if (!found)
 		return TRUE;
-	res = g_new0 (MonoClass*, found + 1);
+	res = mono_image_alloc0 (image, sizeof (MonoClass*) * (found + 1));
 	for (i = 0, tmp = cons; i < found; ++i, tmp = tmp->next) {
 		res [i] = tmp->data;
 	}
@@ -5797,6 +5797,9 @@ mono_metadata_has_generic_params (MonoImage *image, guint32 token)
 	return mono_metadata_get_generic_param_row (image, token, &owner);
 }
 
+/*
+ * Memory is allocated from IMAGE's mempool.
+ */
 gboolean
 mono_metadata_load_generic_param_constraints_full (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container)
@@ -5822,6 +5825,7 @@ mono_metadata_load_generic_param_constraints_full (MonoImage *image, guint32 tok
  * Load the generic parameter constraints for the newly created generic type or method
  * represented by @token and @container.  The @container is the new container which has
  * been returned by a call to mono_metadata_load_generic_params() with this @token.
+ * Memory is allocated from IMAGE's mempool.
  */
 void
 mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
