@@ -2596,6 +2596,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	aname = mono_assembly_name_new ("mscorlib.dll");
 	corlib = invoke_assembly_preload_hook (aname, assemblies_path);
 	mono_assembly_name_free (aname);
+	g_free (aname);
 	if (corlib != NULL)
 		return corlib;
 

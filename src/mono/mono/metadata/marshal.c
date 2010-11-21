@@ -9666,6 +9666,7 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int kind;
+	char *name;
 
 	guint32 b1, b2, b3;
 	int aklass, vklass, vtable, uiid;
@@ -9677,7 +9678,9 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 	if (cached_methods [kind])
 		return cached_methods [kind];
 
-	mb = mono_mb_new_no_dup_name (mono_defaults.object_class, g_strdup_printf ("virt_stelemref_%s", strelemref_wrapper_name [kind]), MONO_WRAPPER_STELEMREF);
+	name = g_strdup_printf ("virt_stelemref_%s", strelemref_wrapper_name [kind]);
+	mb = mono_mb_new_no_dup_name (mono_defaults.object_class, name, MONO_WRAPPER_STELEMREF);
+	g_free (name);
 
 	if (!signature) {
 		MonoMethodSignature *sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);

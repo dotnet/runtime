@@ -1102,6 +1102,7 @@ wrap_non_exception_throws (MonoMethod *m)
 			/* The value is a BOOLEAN */
 			val = *p;
 		}
+		mono_custom_attrs_free (attrs);
 	}
 
 	ass->wrap_non_exception_throws = val;

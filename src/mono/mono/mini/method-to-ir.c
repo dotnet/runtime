@@ -5499,6 +5499,7 @@ is_jit_optimizer_disabled (MonoMethod *m)
 			p ++;
 			val = *p;
 		}
+		mono_custom_attrs_free (attrs);
 	}
 
 	ass->jit_optimizer_disabled = val;
