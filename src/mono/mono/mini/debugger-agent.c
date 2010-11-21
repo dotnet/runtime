@@ -4084,7 +4084,7 @@ static ErrorCode
 ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req)
 {
 	DebuggerTlsData *tls;
-	MonoSeqPointInfo *info;
+	MonoSeqPointInfo *info = NULL;
 	SeqPoint *sp = NULL;
 	MonoMethod *method = NULL;
 	MonoDebugMethodInfo *minfo;
