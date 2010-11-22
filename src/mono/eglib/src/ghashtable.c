@@ -350,8 +350,10 @@ g_hash_table_remove_all (GHashTable *hash)
 	for (i = 0; i < hash->table_size; i++){
 		Slot *s;
 
-		for (s = hash->table [i]; s != NULL; s = s->next)
+		while (hash->table [i]) {
+			s = hash->table [i];
 			g_hash_table_remove (hash, s->key);
+		}
 	}
 }
 
