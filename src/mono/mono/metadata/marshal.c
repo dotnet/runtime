@@ -2302,6 +2302,22 @@ get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 	return *var;
 }
 
+static GHashTable*
+get_cache_full (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func, GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
+{
+	if (!(*var)) {
+		mono_marshal_lock ();
+		if (!(*var)) {
+			GHashTable *cache = 
+				g_hash_table_new_full (hash_func, equal_func, key_destroy_func, value_destroy_func);
+			mono_memory_barrier ();
+			*var = cache;
+		}
+		mono_marshal_unlock ();
+	}
+	return *var;
+}
+
 GHashTable*
 mono_marshal_get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 {
@@ -2386,7 +2402,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 {
 	MonoMethod **res = NULL;
 	MonoRemotingMethods *wrps;
-	GHashTable *cache = get_cache (&key->klass->image->remoting_invoke_cache, mono_aligned_addr_hash, NULL);
+	GHashTable *cache = get_cache_full (&key->klass->image->remoting_invoke_cache, mono_aligned_addr_hash, NULL, NULL, g_free);
 
 	mono_marshal_lock ();
 	wrps = g_hash_table_lookup (cache, key);
