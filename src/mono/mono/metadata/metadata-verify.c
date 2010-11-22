@@ -1856,6 +1856,8 @@ handle_enum:
 				klass = get_enum_by_encoded_name (ctx, &ptr, end);
 				if (!klass)
 					return FALSE;
+			} else if (etype == 0x50 || etype == MONO_TYPE_CLASS) {
+				klass = mono_defaults.systemtype_class;
 			} else if ((etype >= MONO_TYPE_BOOLEAN && etype <= MONO_TYPE_STRING) || etype == 0x51) {
 				simple_type.type = etype == 0x51 ? MONO_TYPE_OBJECT : etype;
 				klass = mono_class_from_mono_type (&simple_type);
@@ -1983,6 +1985,8 @@ is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, g
 				klass = get_enum_by_encoded_name (ctx, &ptr, end);
 				if (!klass)
 					return FALSE;
+			} else if (etype == 0x50 || etype == MONO_TYPE_CLASS) {
+				klass = mono_defaults.systemtype_class;
 			} else if ((etype >= MONO_TYPE_BOOLEAN && etype <= MONO_TYPE_STRING) || etype == 0x51) {
 				simple_type.type = etype == 0x51 ? MONO_TYPE_OBJECT : etype;
 				klass = mono_class_from_mono_type (&simple_type);
