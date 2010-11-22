@@ -1394,6 +1394,9 @@ MonoType*
 mono_reflection_type_get_handle (MonoReflectionType *ref) MONO_INTERNAL;
 
 void
+mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass) MONO_INTERNAL;
+
+void
 mono_image_build_metadata (MonoReflectionModuleBuilder *module) MONO_INTERNAL;
 
 int

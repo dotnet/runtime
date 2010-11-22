@@ -1222,7 +1222,7 @@ mono_class_alloc (MonoClass *class, int size)
 		 * FIXME: It would be better to allocate this from the image set mempool, by
 		 * adding an image_set field to MonoGenericClass.
 		 */
-	   return g_malloc (size);
+		return mono_image_set_alloc (class->generic_class->owner, size);
 	else
 		return mono_image_alloc (class->image, size);
 }
@@ -5421,7 +5421,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		return gclass->cached_class;
 	}
 
-	gclass->cached_class = g_malloc0 (sizeof (MonoClass));
+	gclass->cached_class = mono_image_set_alloc0 (gclass->owner, sizeof (MonoClass));
 	klass = gclass->cached_class;
 
 	gklass = gclass->container_class;

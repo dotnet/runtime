@@ -10722,11 +10722,11 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	dgclass->count_ctors = ctors ? mono_array_length (ctors) : 0;
 	dgclass->count_fields = fields ? mono_array_length (fields) : 0;
 
-	dgclass->methods = g_new0 (MonoMethod *, dgclass->count_methods);
-	dgclass->ctors = g_new0 (MonoMethod *, dgclass->count_ctors);
-	dgclass->fields = g_new0 (MonoClassField, dgclass->count_fields);
-	dgclass->field_objects = g_new0 (MonoObject*, dgclass->count_fields);
-	dgclass->field_generic_types = g_new0 (MonoType*, dgclass->count_fields);
+	dgclass->methods = mono_image_set_new0 (gclass->owner, MonoMethod *, dgclass->count_methods);
+	dgclass->ctors = mono_image_set_new0 (gclass->owner, MonoMethod *, dgclass->count_ctors);
+	dgclass->fields = mono_image_set_new0 (gclass->owner, MonoClassField, dgclass->count_fields);
+	dgclass->field_objects = mono_image_set_new0 (gclass->owner, MonoObject*, dgclass->count_fields);
+	dgclass->field_generic_types = mono_image_set_new0 (gclass->owner, MonoType*, dgclass->count_fields);
 
 	for (i = 0; i < dgclass->count_methods; i++) {
 		MonoObject *obj = mono_array_get (methods, gpointer, i);
@@ -10764,11 +10764,30 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		if (inflated_field) {
 			g_free (inflated_field);
 		} else {
-			dgclass->fields [i].name = g_strdup (dgclass->fields [i].name);
+			dgclass->fields [i].name = mono_image_set_strdup (gclass->owner, dgclass->fields [i].name);
 		}
 	}
 
 	dgclass->initialized = TRUE;
+}
+
+void
+mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
+{
+	MonoDynamicGenericClass *dgclass;
+	int i;
+
+	g_assert (gclass->is_dynamic);
+
+	dgclass = (MonoDynamicGenericClass *)gclass;
+
+	for (i = 0; i < dgclass->count_fields; ++i) {
+		MonoClassField *field = dgclass->fields + i;
+		mono_metadata_free_type (field->type);
+#if HAVE_SGEN_GC
+		MONO_GC_UNREGISTER_ROOT (dgclass->field_objects [i]);
+#endif
+	}
 }
 
 static void

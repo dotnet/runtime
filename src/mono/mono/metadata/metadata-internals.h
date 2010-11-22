@@ -542,6 +542,17 @@ mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MO
 void
 mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MONO_INTERNAL;
 
+gpointer
+mono_image_set_alloc  (MonoImageSet *set, guint size) MONO_INTERNAL;
+
+gpointer
+mono_image_set_alloc0 (MonoImageSet *set, guint size) MONO_INTERNAL;
+
+char*
+mono_image_set_strdup (MonoImageSet *set, const char *s) MONO_INTERNAL;
+
+#define mono_image_set_new0(image,type,size) ((type *) mono_image_set_alloc0 (image, sizeof (type)* (size)))
+
 MonoType*
 mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
 

@@ -532,6 +532,13 @@ struct _MonoGenericClass {
 	guint is_dynamic  : 1;		/* We're a MonoDynamicGenericClass */
 	guint is_tb_open  : 1;		/* This is the fully open instantiation for a type_builder. Quite ugly, but it's temporary.*/
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
+
+	/* 
+	 * The image set which owns this generic class. Memory owned by the generic class
+	 * including cached_class should be allocated from the mempool of the image set,
+	 * so it is easy to free.
+	 */
+	MonoImageSet *owner;
 };
 
 /*

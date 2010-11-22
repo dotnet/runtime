@@ -27,7 +27,6 @@
 #include "verify-internals.h"
 #include "class.h"
 #include "marshal.h"
-#include "gc-internal.h"
 #include "debug-helpers.h"
 #include <mono/utils/mono-error-internals.h>
  
@@ -45,9 +44,7 @@ static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolea
 static gboolean mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only);
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
-static GSList* free_generic_inst_dependents (MonoGenericInst *ginst);
 static void free_generic_inst (MonoGenericInst *ginst);
-static GSList* free_generic_class_dependents (MonoGenericClass *ginst);
 static void free_generic_class (MonoGenericClass *ginst);
 static void free_inflated_method (MonoMethodInflated *method);
 static void free_inflated_signature (MonoInflatedMethodSignature *sig);
@@ -2280,6 +2277,60 @@ delete_image_set (MonoImageSet *set)
 	g_free (set);
 }
 
+static void
+mono_image_set_lock (MonoImageSet *set)
+{
+	EnterCriticalSection (&set->lock);
+}
+
+static void
+mono_image_set_unlock (MonoImageSet *set)
+{
+	LeaveCriticalSection (&set->lock);
+}
+
+gpointer
+mono_image_set_alloc (MonoImageSet *set, guint size)
+{
+	gpointer res;
+
+	mono_image_set_lock (set);
+	if (!set->mempool)
+		set->mempool = mono_mempool_new_size (1024);
+	res = mono_mempool_alloc (set->mempool, size);
+	mono_image_set_unlock (set);
+
+	return res;
+}
+
+gpointer
+mono_image_set_alloc0 (MonoImageSet *set, guint size)
+{
+	gpointer res;
+
+	mono_image_set_lock (set);
+	if (!set->mempool)
+		set->mempool = mono_mempool_new_size (1024);
+	res = mono_mempool_alloc0 (set->mempool, size);
+	mono_image_set_unlock (set);
+
+	return res;
+}
+
+char*
+mono_image_set_strdup (MonoImageSet *set, const char *s)
+{
+	char *res;
+
+	mono_image_set_lock (set);
+	if (!set->mempool)
+		set->mempool = mono_mempool_new_size (1024);
+	res = mono_mempool_strdup (set->mempool, s);
+	mono_image_set_unlock (set);
+
+	return res;
+}
+
 /* 
  * Structure used by the collect_..._images functions to store the image list.
  */
@@ -2563,7 +2614,10 @@ mono_metadata_clean_for_image (MonoImage *image)
 
 	//check_image_sets (image);
 
-	/* The data structures could reference each other so we delete them in two phases */
+	/*
+	 * The data structures could reference each other so we delete them in two phases.
+	 * This is required because of the hashing functions in gclass/ginst_cache.
+	 */
 	ginst_data.image = gclass_data.image = image;
 	ginst_data.list = gclass_data.list = NULL;
 	mono_loader_lock ();
@@ -2581,9 +2635,9 @@ mono_metadata_clean_for_image (MonoImage *image)
 
 	/* Delete the removed items */
 	for (l = ginst_data.list; l; l = l->next)
-		free_list = g_slist_concat (free_generic_inst_dependents (l->data), free_list);
+		free_generic_inst (l->data);
 	for (l = gclass_data.list; l; l = l->next)
-		free_list = g_slist_concat (free_generic_class_dependents (l->data), free_list);
+		free_generic_class (l->data);
 	g_slist_free (ginst_data.list);
 	g_slist_free (gclass_data.list);
 	/* delete_image_set () modifies the lists so make a copy */
@@ -2627,86 +2681,21 @@ free_inflated_method (MonoMethodInflated *imethod)
 }
 
 static void
-free_list_with_data (GSList *l)
-{
-	while (l) {
-		g_free (l->data);
-		l = g_slist_delete_link (l, l);
-	}
-}
-
-static GSList*
-free_generic_inst_dependents (MonoGenericInst *ginst)
-{
-	int i;
-
-	for (i = 0; i < ginst->type_argc; ++i)
-		mono_metadata_free_type (ginst->type_argv [i]);
-	return g_slist_prepend (NULL, ginst);
-}
-
-static void
 free_generic_inst (MonoGenericInst *ginst)
 {
-	free_list_with_data (free_generic_inst_dependents (ginst));
-}
-
-static GSList*
-free_generic_class_dependents (MonoGenericClass *gclass)
-{
-	GSList *l = NULL;
 	int i;
 
-	/* FIXME: The dynamic case */
-	if (gclass->cached_class && !gclass->cached_class->image->dynamic && !mono_generic_class_is_generic_type_definition (gclass)) {
-		MonoClass *class = gclass->cached_class;
-
-		/* Allocated in mono_class_init () */
-		g_free (class->methods);
-		if (class->ext) {
-			g_free (class->ext->properties);
-			g_free (class->ext->field_def_values);
-		}
-		/* Allocated in mono_class_setup_fields () */
-		g_free (class->fields);
-		/* Allocated in mono_class_setup_vtable_general () */
-		g_free (class->vtable);
-		/* Allocated in mono_generic_class_get_class () */
-		g_free (class->interfaces);
-		/* Allocated in setup_interface_offsets () */
-		g_free (class->interfaces_packed);
-		g_free (class->interface_offsets_packed);
-		g_free (class->interface_bitmap);
-		/* Allocated in mono_class_setup_supertypes () */
-		g_free (class->supertypes);
-		l = g_slist_prepend (l, class);
-	} else if (gclass->is_dynamic) {
-		MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass *)gclass;
-
-		for (i = 0; i < dgclass->count_fields; ++i) {
-			MonoClassField *field = dgclass->fields + i;
-			mono_metadata_free_type (field->type);
-			g_free ((char*)field->name);
-#if HAVE_SGEN_GC
-			MONO_GC_UNREGISTER_ROOT (dgclass->field_objects [i]);
-#endif
-		}
-
-		g_free (dgclass->methods);
-		g_free (dgclass->ctors);
-		g_free (dgclass->fields);
-		g_free (dgclass->field_objects);
-		g_free (dgclass->field_generic_types);
-		if (!mono_generic_class_is_generic_type_definition (gclass))
-			l = g_slist_prepend (l, gclass->cached_class);
-	}
-	return g_slist_prepend (l, gclass);
+	/* The ginst itself is allocated from the image set mempool */
+	for (i = 0; i < ginst->type_argc; ++i)
+		mono_metadata_free_type (ginst->type_argv [i]);
 }
 
 static void
 free_generic_class (MonoGenericClass *gclass)
 {
-	free_list_with_data (free_generic_class_dependents (gclass));
+	/* The gclass itself is allocated from the image set mempool */
+	if (gclass->is_dynamic)
+		mono_reflection_free_dynamic_generic_class (gclass);
 }
 
 static void
@@ -2826,7 +2815,7 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 
 	ginst = g_hash_table_lookup (set->ginst_cache, ginst);
 	if (!ginst) {
-		ginst = g_malloc (size);
+		ginst = mono_image_set_alloc0 (set, size);
 #ifndef MONO_SMALL_CONFIG
 		ginst->id = ++next_generic_inst_id;
 #endif
@@ -2896,17 +2885,18 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	}
 
 	if (is_dynamic) {
-		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
+		MonoDynamicGenericClass *dgclass = mono_image_set_new0 (set, MonoDynamicGenericClass, 1);
 		gclass = &dgclass->generic_class;
 		gclass->is_dynamic = 1;
 	} else {
-		gclass = g_new0 (MonoGenericClass, 1);
+		gclass = mono_image_set_new0 (set, MonoGenericClass, 1);
 	}
 
 	gclass->is_tb_open = is_tb_open;
 	gclass->container_class = container_class;
 	gclass->context.class_inst = inst;
 	gclass->context.method_inst = NULL;
+	gclass->owner = set;
 	if (inst == container_class->generic_container->context.class_inst && !is_tb_open)
 		gclass->cached_class = container_class;
 
