@@ -1590,7 +1590,7 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 	count = proclength / sizeof(struct kinfo_proc);
 #endif
 	fit = len / sizeof(guint32);
-	for (i = 0, j = 0; j < fit && i < count; i++) {
+	for (i = 0, j = 0; j< fit && i < count; i++) {
 #if defined(__OpenBSD__)
 		pids [j++] = result [i].p_pid;
 #else
@@ -2322,8 +2322,8 @@ static gchar *get_process_name_from_proc (pid_t pid)
 #else
 	FILE *fp;
 	gchar *filename = NULL;
-	gchar buf[256];
 #endif
+	gchar buf[256];
 	gchar *ret = NULL;
 
 #if defined(PLATFORM_SOLARIS)
@@ -2341,8 +2341,8 @@ static gchar *get_process_name_from_proc (pid_t pid)
 	}
 	g_free (filename);
 #elif defined(PLATFORM_MACOSX)
-#if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5) && !defined(__arm__)
-	/* No proc name on OSX < 10.5 nor iOS */
+#if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5) && !defined (__mono_ppc__) && !defined(__arm__)
+	/* No proc name on OSX < 10.5 nor ppc nor iOS */
 	memset (buf, '\0', sizeof(buf));
 	proc_name (pid, buf, sizeof(buf));
 	if (strlen (buf) > 0)

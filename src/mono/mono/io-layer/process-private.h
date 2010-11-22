@@ -17,6 +17,7 @@
 #define _WAPI_PROCESS_CURRENT (gpointer)0xFFFFFFFF
 
 /* This marks a system process that we don't have a handle on */
+/* FIXME: Cope with PIDs > sizeof guint */
 #define _WAPI_PROCESS_UNHANDLED (1 << (8*sizeof(pid_t)-1))
 #define _WAPI_PROCESS_UNHANDLED_PID_MASK (-1 & ~_WAPI_PROCESS_UNHANDLED)
 
