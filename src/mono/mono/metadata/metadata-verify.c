@@ -3254,7 +3254,7 @@ verify_moduleref_table (VerifyContext *ctx)
 		mono_metadata_decode_row (table, i, data, MONO_MODULEREF_SIZE);
 
 		if (!is_valid_non_empty_string (ctx, data[MONO_MODULEREF_NAME]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid ModoleRef row %d name field %08x", i, data [MONO_MODULEREF_NAME]));
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ModuleRef row %d name field %08x", i, data [MONO_MODULEREF_NAME]));
 	}
 }
 
