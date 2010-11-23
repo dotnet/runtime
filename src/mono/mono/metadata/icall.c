@@ -68,6 +68,7 @@
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-ptr-array.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
@@ -2415,6 +2416,7 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 static MonoReflectionType*
 ves_icall_Type_MakeGenericType (MonoReflectionType *type, MonoArray *type_array)
 {
+	MonoClass *class;
 	MonoType *geninst, **types;
 	int i, count;
 
@@ -2433,6 +2435,10 @@ ves_icall_Type_MakeGenericType (MonoReflectionType *type, MonoArray *type_array)
 	g_free (types);
 	if (!geninst)
 		return NULL;
+
+	class = mono_class_from_mono_type (geninst);
+	if (!mono_verifier_class_is_valid_generic_instantiation (class))
+		mono_raise_exception (mono_get_exception_argument ("method", "Invalid generic arguments"));
 
 	return mono_type_get_object (mono_object_domain (type), geninst);
 }
