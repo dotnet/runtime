@@ -114,8 +114,8 @@ struct Gamma {
 
 class Tests {
 
-	static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 	
 	public static int test_0_return () {
@@ -1379,7 +1379,7 @@ ncells ) {
 
 	//repro for #506915
 	struct Bug506915 { public int val; }
-	static int test_2_ldobj_stobj_optization ()
+	static int test_2_ldobj_stobj_optimization ()
 	{
 		int i = 99;
 		var a = new Bug506915 ();
@@ -1419,6 +1419,8 @@ ncells ) {
 	 * This only happens because the call in middle forces the temp for "(float)obj"
 	 * to be spilled.
 	*/
+	// This overflows the PS3 stack
+	[Category ("!PS3")]
 	public static int test_0_float_load_and_store_with_big_offset ()
 	{
 		object obj = 1.0f;
