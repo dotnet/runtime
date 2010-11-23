@@ -46,25 +46,16 @@ namespace Mono.Linker.Steps {
 				CleanType (type);
 		}
 
-		static bool CheckType (ModuleDefinition module, TypeReference reference)
-		{
-			TypeSpecification spec = reference as TypeSpecification;
-			if (spec != null)
-				return CheckType (module, spec.ElementType);
-
-			TypeDefinition type = reference as TypeDefinition;
-			if (type == null)
-				return true;
-
-			return module.Types.Contains (type);
-		}
-
 		static void CleanType (TypeDefinition type)
 		{
 			if (type.HasProperties)
 				CleanProperties (type);
 			if (type.HasEvents)
 				CleanEvents (type);
+
+			if (type.HasNestedTypes)
+				foreach (var nested in type.NestedTypes)
+					CleanType (nested);
 		}
 
 		static MethodDefinition CheckMethod (TypeDefinition type, MethodDefinition method)

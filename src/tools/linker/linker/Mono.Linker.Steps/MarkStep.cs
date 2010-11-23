@@ -85,6 +85,10 @@ namespace Mono.Linker.Steps {
 				InitializeFields (type);
 			if (type.HasMethods)
 				InitializeMethods (type.Methods);
+
+			if (type.HasNestedTypes)
+				foreach (var nested in type.NestedTypes)
+					InitializeType (nested);
 		}
 
 		void InitializeFields (TypeDefinition type)
