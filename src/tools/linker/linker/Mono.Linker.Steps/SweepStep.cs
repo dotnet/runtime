@@ -111,6 +111,21 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasMethods)
 				SweepCollection (type.Methods);
+
+			if (type.HasNestedTypes)
+				SweepNestedTypes (type);
+		}
+
+		void SweepNestedTypes (TypeDefinition type)
+		{
+			for (int i = 0; i < type.NestedTypes.Count; i++) {
+				var nested = type.NestedTypes [i];
+				if (Annotations.IsMarked (nested)) {
+					SweepType (nested);
+				} else {
+					//type.NestedTypes.RemoveAt (i--);
+				}
+			}
 		}
 
 		void SweepCollection (IList list)
