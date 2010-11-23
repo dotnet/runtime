@@ -45,6 +45,12 @@ namespace Mono.Linker.Steps {
 		{
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
+
+			if (!type.HasNestedTypes)
+				return;
+
+			foreach (var nested in type.NestedTypes)
+				MapType (nested);
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)

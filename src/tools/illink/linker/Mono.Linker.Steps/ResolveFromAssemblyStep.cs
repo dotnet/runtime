@@ -69,14 +69,21 @@ namespace Mono.Linker.Steps {
 		{
 			context.Annotations.SetAction (assembly, AssemblyAction.Copy);
 
-			foreach (TypeDefinition type in assembly.MainModule.Types) {
-				context.Annotations.Mark (type);
+			foreach (TypeDefinition type in assembly.MainModule.Types)
+				MarkType (context, type);
+		}
 
-				if (type.HasFields)
-					MarkFields (context, type.Fields);
-				if (type.HasMethods)
-					MarkMethods (context, type.Methods);
-			}
+		static void MarkType (LinkContext context, TypeDefinition type)
+		{
+			context.Annotations.Mark (type);
+
+			if (type.HasFields)
+				MarkFields (context, type.Fields);
+			if (type.HasMethods)
+				MarkMethods (context, type.Methods);
+			if (type.HasNestedTypes)
+				foreach (var nested in type.NestedTypes)
+					MarkType (context, nested);
 		}
 
 		void ProcessExecutable (AssemblyDefinition assembly)

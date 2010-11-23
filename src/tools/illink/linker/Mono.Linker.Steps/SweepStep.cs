@@ -65,6 +65,9 @@ namespace Mono.Linker.Steps {
 					types.Add (type);
 					continue;
 				}
+
+				if (type.Name == "<Module>")
+					types.Add (type);
 			}
 		}
 
@@ -123,7 +126,7 @@ namespace Mono.Linker.Steps {
 				if (Annotations.IsMarked (nested)) {
 					SweepType (nested);
 				} else {
-					//type.NestedTypes.RemoveAt (i--);
+					type.NestedTypes.RemoveAt (i--);
 				}
 			}
 		}
