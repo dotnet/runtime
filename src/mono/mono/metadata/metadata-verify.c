@@ -2799,7 +2799,7 @@ verify_interfaceimpl_table (VerifyContext *ctx)
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, data, MONO_INTERFACEIMPL_SIZE);
 		if (data [MONO_INTERFACEIMPL_CLASS] && data [MONO_INTERFACEIMPL_CLASS] > ctx->image->tables [MONO_TABLE_TYPEDEF].rows)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid InterfaceImpl row %d Class field 0x%08x", i, data [MONO_TABLE_TYPEDEF]));
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid InterfaceImpl row %d Class field 0x%08x", i, data [MONO_INTERFACEIMPL_CLASS]));
 
 		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_INTERFACEIMPL_INTERFACE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid InterfaceImpl row %d Inteface field coded index 0x%08x", i, data [MONO_INTERFACEIMPL_INTERFACE]));
@@ -3254,7 +3254,7 @@ verify_moduleref_table (VerifyContext *ctx)
 		mono_metadata_decode_row (table, i, data, MONO_MODULEREF_SIZE);
 
 		if (!is_valid_non_empty_string (ctx, data[MONO_MODULEREF_NAME]))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d Class field %08x", i, data [MONO_TABLE_TYPEDEF]));
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ModoleRef row %d name field %08x", i, data [MONO_MODULEREF_NAME]));
 	}
 }
 
@@ -3603,7 +3603,7 @@ verify_generic_param_constraint_table (VerifyContext *ctx)
 		mono_metadata_decode_row (table, i, data, MONO_GENPARCONSTRAINT_SIZE);
 
 		if (!data [MONO_GENPARCONSTRAINT_GENERICPAR] || data [MONO_GENPARCONSTRAINT_GENERICPAR] > ctx->image->tables [MONO_TABLE_GENERICPARAM].rows)
-			ADD_ERROR (ctx, g_strdup_printf ("GenericParamConstraint table row %d has invalid Owner token %08x", i, data [MONO_TABLE_GENERICPARAM]));
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParamConstraint table row %d has invalid Owner token %08x", i, data [MONO_GENPARCONSTRAINT_GENERICPAR]));
 
 		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_GENPARCONSTRAINT_CONSTRAINT]))
 			ADD_ERROR (ctx, g_strdup_printf ("GenericParamConstraint table row %d has invalid Constraint token %08x", i, data [MONO_GENPARCONSTRAINT_CONSTRAINT]));
