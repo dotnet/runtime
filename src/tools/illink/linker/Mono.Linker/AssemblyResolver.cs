@@ -51,7 +51,7 @@ namespace Mono.Linker {
 			_assemblies = assembly_cache;
 		}
 
-		public override AssemblyDefinition Resolve (AssemblyNameReference name)
+		public override AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters)
 		{
 			AssemblyDefinition asm = (AssemblyDefinition) _assemblies [name.Name];
 			if (asm == null) {
