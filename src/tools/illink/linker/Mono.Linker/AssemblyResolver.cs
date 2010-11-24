@@ -55,7 +55,7 @@ namespace Mono.Linker {
 		{
 			AssemblyDefinition asm = (AssemblyDefinition) _assemblies [name.Name];
 			if (asm == null) {
-				asm = base.Resolve (name);
+				asm = base.Resolve (name, parameters);
 				_assemblies [name.Name] = asm;
 			}
 

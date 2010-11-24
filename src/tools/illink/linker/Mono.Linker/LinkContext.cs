@@ -68,10 +68,7 @@ namespace Mono.Linker {
 
 		public bool LinkSymbols {
 			get { return _linkSymbols; }
-			set {
-				_linkSymbols = value;
-				_readerParameters.ReadSymbols = value;
-			}
+			set { _linkSymbols = value; }
 		}
 
 		public IDictionary Actions {
@@ -96,7 +93,6 @@ namespace Mono.Linker {
 			_annotations = new AnnotationStore ();
 			_readerParameters = new ReaderParameters {
 				AssemblyResolver = _resolver,
-				ReadSymbols = _linkSymbols,
 			};
 		}
 
@@ -137,8 +133,10 @@ namespace Mono.Linker {
 
 			AssemblyDefinition assembly = _resolver.Resolve (reference, _readerParameters);
 
-			if (SeenFirstTime (assembly))
+			if (SeenFirstTime (assembly)) {
+				SafeReadSymbols (assembly);
 				SetAction (assembly);
+			}
 
 			return assembly;
 		}
@@ -146,6 +144,13 @@ namespace Mono.Linker {
 		bool SeenFirstTime (AssemblyDefinition assembly)
 		{
 			return !_annotations.HasAction (assembly);
+		}
+
+		void SafeReadSymbols (AssemblyDefinition assembly)
+		{
+			try {
+				assembly.MainModule.ReadSymbols ();
+			} catch {}
 		}
 
 		static AssemblyNameReference GetReference (IMetadataScope scope)
