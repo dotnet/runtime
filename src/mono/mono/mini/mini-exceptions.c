@@ -1649,6 +1649,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	g_assert (staddr);
 
 	tls->end_of_stack = staddr + stsize;
+	tls->stack_size = stsize;
 
 	/*g_print ("thread %p, stack_base: %p, stack_size: %d\n", (gpointer)pthread_self (), staddr, stsize);*/
 
@@ -1663,14 +1664,6 @@ mono_setup_altstack (MonoJitTlsData *tls)
 		g_assert (gaddr == tls->stack_ovf_guard_base);
 		tls->stack_ovf_valloced = TRUE;
 	}
-
-	/*
-	 * threads created by nptl does not seem to have a guard page, and
-	 * since the main thread is not created by us, we can't even set one.
-	 * Increasing stsize fools the SIGSEGV signal handler into thinking this
-	 * is a stack overflow exception.
-	 */
-	tls->stack_size = stsize + mono_pagesize ();
 
 	/* Setup an alternate signal stack */
 	tls->signal_stack = mono_valloc (0, MONO_ARCH_SIGNAL_STACK_SIZE, MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON);

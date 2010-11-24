@@ -5508,6 +5508,7 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 {
 	MonoJitInfo *ji;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	gpointer fault_addr = NULL;
 
 	GET_CONTEXT;
 
@@ -5522,6 +5523,7 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 #endif
 
 #if !defined(HOST_WIN32) && defined(HAVE_SIG_INFO)
+	fault_addr = info->si_addr;
 	if (mono_aot_is_pagefault (info->si_addr)) {
 		mono_aot_handle_pagefault (info->si_addr);
 		return;
@@ -5541,11 +5543,23 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 	if (mono_handle_soft_stack_ovf (jit_tls, ji, ctx, (guint8*)info->si_addr))
 		return;
 
+#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
+	/* info->si_addr seems to be NULL on some kernels when handling stack overflows */
+	fault_addr = info->si_addr;
+	if (fault_addr == NULL) {
+		MonoContext mctx;
+
+		mono_arch_sigctx_to_monoctx (ctx, &mctx);
+
+		fault_addr = MONO_CONTEXT_GET_SP (&mctx);
+	}
+#endif
+
 	/* The hard-guard page has been hit: there is not much we can do anymore
 	 * Print a hopefully clear message and abort.
 	 */
 	if (jit_tls->stack_size && 
-			ABS ((guint8*)info->si_addr - ((guint8*)jit_tls->end_of_stack - jit_tls->stack_size)) < 32768) {
+		ABS ((guint8*)fault_addr - ((guint8*)jit_tls->end_of_stack - jit_tls->stack_size)) < 8192 * sizeof (gpointer)) {
 		const char *method;
 		/* we don't do much now, but we can warn the user with a useful message */
 		fprintf (stderr, "Stack overflow: IP: %p, fault addr: %p\n", mono_arch_ip_from_context (ctx), (gpointer)info->si_addr);
