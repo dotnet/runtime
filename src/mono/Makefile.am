@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
-MOONLIGHT_SUBDIRS =    $(libgc_dir) eglib mono $(ikvm_native_dir)         data
+MOONLIGHT_SUBDIRS = $(libgc_dir) eglib/src mono
 
 if CROSS_COMPILING
 SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) data runtime scripts man samples msvc $(docs_dir)
@@ -72,17 +72,26 @@ bootstrap-world: compiler-tests
 if MOONLIGHT
 moon-do-build: config.h
 	@list='$(MOONLIGHT_SUBDIRS)'; for subdir in $$list; do \
-	  echo "Making all in $$subdir"; \
-	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) all); \
+	  case "x$$subdir" in \
+		xmono ) target="moon-do-build";; \
+		* ) target="all";; \
+	  esac; \
+	  echo "Making $$target in $$subdir"; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target); \
         done;
-	cd $(mcs_topdir) && NO_DIR_CHECK=1 $(MAKE) PROFILE=moonlight_raw all
+	(cd runtime && $(MAKE) $(AM_MAKEFLAGS) moon-do-build)
 
 moon-do-clean:
 	@list='$(MOONLIGHT_SUBDIRS)'; for subdir in $$list; do \
-	  echo "Making clean in $$subdir"; \
-	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) clean); \
+	  case "x$$subdir" in \
+		xmono ) target="moon-do-clean";; \
+		* ) target="clean";; \
+	  esac; \
+	  echo "Making $$target in $$subdir"; \
+	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target); \
         done;
-	cd $(mcs_topdir) && NO_DIR_CHECK=1 $(MAKE) PROFILE=moonlight_raw clean
+	(cd runtime && $(MAKE) $(AM_MAKEFLAGS) moon-do-clean)
+
 endif
 
 win32getdeps:

@@ -111,6 +111,10 @@ noinst_LTLIBRARIES = libmono-static.la $(sgen_static_libraries)
 
 if MOONLIGHT
 noinst_LTLIBRARIES += libmono-moon.la
+moon-do-build: $(BUILT_SOURCES) mono libmono-moon.la
+moon-do-clean: maintainer-clean-generic
+	-test -z "mono$(EXEEXT)" || rm -f mono$(EXEEXT)
+	-test -z "libmono-moon.la" || rm -f libmono-moon.la
 endif
 
 if LOADED_LLVM

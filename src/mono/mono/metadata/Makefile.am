@@ -45,6 +45,10 @@ endif
 
 if MOONLIGHT
 moonlight_libraries = libmonoruntimemoon.la
+moon-do-build: libmonoruntime-static.la libmonoruntimemoon.la
+moon-do-clean:
+	-test -z "libmonoruntime-static.la" || rm -f libmonoruntime-static.la
+	-test -z "libmonoruntimemoon.la" || rm -f libmonoruntimemoon.la
 endif
 
 if SHARED_MONO
