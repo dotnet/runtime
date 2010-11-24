@@ -9345,7 +9345,6 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 			klass->interfaces [i] = mono_class_inflate_generic_class_checked (gklass->interfaces [i], mono_generic_class_get_context (klass->generic_class), error);
 			if (!mono_error_ok (error)) {
 				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Could not setup the interfaces"));
-				g_free (klass->interfaces);
 				klass->interfaces = NULL;
 				return;
 			}
