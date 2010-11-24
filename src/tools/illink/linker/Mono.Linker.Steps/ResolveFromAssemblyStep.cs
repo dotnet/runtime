@@ -48,10 +48,8 @@ namespace Mono.Linker.Steps {
 
 		protected override void Process ()
 		{
-			if (_assembly != null) {
-				Context.SafeLoadSymbols (_assembly);
+			if (_assembly != null)
 				Context.Resolver.CacheAssembly (_assembly);
-			}
 
 			AssemblyDefinition assembly = _assembly ?? Context.Resolve (_file);
 

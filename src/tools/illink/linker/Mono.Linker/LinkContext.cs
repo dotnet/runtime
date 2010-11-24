@@ -44,6 +44,8 @@ namespace Mono.Linker {
 
 		AssemblyResolver _resolver;
 
+		ReaderParameters _readerParameters;
+
 		AnnotationStore _annotations;
 
 		public Pipeline Pipeline {
@@ -89,6 +91,10 @@ namespace Mono.Linker {
 			_actions = new Hashtable ();
 			_parameters = new Hashtable ();
 			_annotations = new AnnotationStore ();
+			_readerParameters = new ReaderParameters {
+				AssemblyResolver = _resolver,
+				ReadSymbols = _linkSymbols,
+			};
 		}
 
 		public TypeDefinition GetType (string fullName)
@@ -114,9 +120,8 @@ namespace Mono.Linker {
 		public AssemblyDefinition Resolve (string name)
 		{
 			if (File.Exists (name)) {
-				AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly (name);
+				AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly (name, _readerParameters);
 				_resolver.CacheAssembly (assembly);
-				SafeLoadSymbols (assembly);
 				return assembly;
 			}
 
@@ -127,27 +132,12 @@ namespace Mono.Linker {
 		{
 			AssemblyNameReference reference = GetReference (scope);
 
-			AssemblyDefinition assembly = _resolver.Resolve (reference);
+			AssemblyDefinition assembly = _resolver.Resolve (reference, _readerParameters);
 
-			if (SeenFirstTime (assembly)) {
+			if (SeenFirstTime (assembly))
 				SetAction (assembly);
-				SafeLoadSymbols (assembly);
-			}
 
 			return assembly;
-		}
-
-		public void SafeLoadSymbols (AssemblyDefinition assembly)
-		{
-			if (!_linkSymbols)
-				return;
-
-			try {
-				// throw new NotImplementedException ();
-				// assembly.MainModule.LoadSymbols ();
-			} catch {
-				return; // resharper loves this
-			}
 		}
 
 		bool SeenFirstTime (AssemblyDefinition assembly)
