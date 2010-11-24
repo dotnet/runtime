@@ -1021,52 +1021,88 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 	}
 }
 
-extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock, gint32 *error)
+static int
+get_sockaddr_size (int family)
 {
-	gchar sa[32];	/* sockaddr in not big enough for sockaddr_in6 */
+	int size;
+
+	size = 0;
+	if (family == AF_INET) {
+		size = sizeof (struct sockaddr_in);
+#ifdef AF_INET6
+	} else if (family == AF_INET6) {
+		size = sizeof (struct sockaddr_in6);
+#endif
+#ifdef HAVE_SYS_UN_H
+	} else if (family == AF_UNIX) {
+		size = sizeof (struct sockaddr_un);
+#endif
+	}
+	return size;
+}
+
+extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock, gint32 af, gint32 *error)
+{
+	gchar *sa;
 	socklen_t salen;
 	int ret;
+	MonoObject *result;
 	
 	MONO_ARCH_SAVE_REGS;
 
 	*error = 0;
 	
-	salen=sizeof(sa);
+	salen = get_sockaddr_size (convert_family (af));
+	if (salen == 0) {
+		*error = WSAEAFNOSUPPORT;
+		return NULL;
+	}
+	sa = g_malloc0 (salen);
 	ret = _wapi_getsockname (sock, (struct sockaddr *)sa, &salen);
 	
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
+		g_free (sa);
 		return(NULL);
 	}
 	
 	LOGDEBUG (g_message("%s: bound to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port)));
 
-	return(create_object_from_sockaddr((struct sockaddr *)sa, salen,
-					   error));
+	result = create_object_from_sockaddr((struct sockaddr *)sa, salen, error);
+	g_free (sa);
+	return result;
 }
 
-extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock, gint32 *error)
+extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock, gint32 af, gint32 *error)
 {
-	gchar sa[32];	/* sockaddr in not big enough for sockaddr_in6 */
+	gchar *sa;
 	socklen_t salen;
 	int ret;
+	MonoObject *result;
 	
 	MONO_ARCH_SAVE_REGS;
 
 	*error = 0;
 	
-	salen=sizeof(sa);
+	salen = get_sockaddr_size (convert_family (af));
+	if (salen == 0) {
+		*error = WSAEAFNOSUPPORT;
+		return NULL;
+	}
+	sa = g_malloc0 (salen);
+	/* Note: linux returns just 2 for AF_UNIX. Always. */
 	ret = _wapi_getpeername (sock, (struct sockaddr *)sa, &salen);
-	
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
+		g_free (sa);
 		return(NULL);
 	}
 	
 	LOGDEBUG (g_message("%s: connected to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port)));
 
-	return(create_object_from_sockaddr((struct sockaddr *)sa, salen,
-					   error));
+	result = create_object_from_sockaddr((struct sockaddr *)sa, salen, error);
+	g_free (sa);
+	return result;
 }
 
 static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
