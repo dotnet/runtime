@@ -68,7 +68,10 @@ namespace Mono.Linker {
 
 		public bool LinkSymbols {
 			get { return _linkSymbols; }
-			set { _linkSymbols = value; }
+			set {
+				_linkSymbols = value;
+				_readerParameters.ReadSymbols = value;
+			}
 		}
 
 		public IDictionary Actions {
