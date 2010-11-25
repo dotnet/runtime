@@ -241,7 +241,7 @@ mono_idiv (gint32 a, gint32 b)
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
 	else if (b == -1 && a == (0x80000000))
-		mono_raise_exception (mono_get_exception_arithmetic ());
+		mono_raise_exception (mono_get_exception_overflow ());
 #endif
 	return a / b;
 }
