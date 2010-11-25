@@ -2440,7 +2440,7 @@ ves_icall_Type_MakeGenericType (MonoReflectionType *type, MonoArray *type_array)
 
 	/*we might inflate to the GTD*/
 	if (class->generic_class && !mono_verifier_class_is_valid_generic_instantiation (class))
-		mono_raise_exception (mono_get_exception_argument ("method", "Invalid generic arguments"));
+		mono_raise_exception (mono_get_exception_argument ("typeArguments", "Invalid generic arguments"));
 
 	return mono_type_get_object (mono_object_domain (type), geninst);
 }
