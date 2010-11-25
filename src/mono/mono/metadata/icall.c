@@ -5860,6 +5860,8 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 		/* Creating a trampoline would leak memory */
 		func = mono_compile_method (method);
 	} else {
+		if (target && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_object_class (target))
+			method = mono_object_get_virtual_method (target, method);
 		func = mono_create_ftnptr (mono_domain_get (),
 			mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE));
 	}
