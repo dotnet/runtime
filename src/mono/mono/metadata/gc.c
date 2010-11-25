@@ -687,6 +687,8 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	slot = slot * 32 + i;
 	handles->entries [slot] = obj;
 	if (handles->type <= HANDLE_WEAK_TRACK) {
+		/*FIXME, what to use when obj == null?*/
+		handles->domain_ids [slot] = (obj ? mono_object_get_domain (obj) : mono_domain_get ())->domain_id;
 		if (obj)
 			mono_gc_weak_link_add (&(handles->entries [slot]), obj, track);
 	}
@@ -814,6 +816,8 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 				mono_gc_weak_link_remove (&handles->entries [slot]);
 			if (obj)
 				mono_gc_weak_link_add (&handles->entries [slot], obj, handles->type == HANDLE_WEAK_TRACK);
+			/*FIXME, what to use when obj == null?*/
+			handles->domain_ids [slot] = (obj ? mono_object_get_domain (obj) : mono_domain_get ())->domain_id;
 		} else {
 			handles->entries [slot] = obj;
 		}
