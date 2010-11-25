@@ -789,8 +789,6 @@ init_heap_size_limits (glong max_heap)
  * ######################################################################
  */
 
-#define ADDR_IN_HEAP_BOUNDARIES(addr) ((p) >= lowest_heap_address && (p) < highest_heap_address)
-
 inline static void*
 align_pointer (void *ptr)
 {
@@ -2123,6 +2121,13 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 	}
 }
 
+static void
+reset_heap_boundaries (void)
+{
+	lowest_heap_address = ~(mword)0;
+	highest_heap_address = 0;
+}
+
 void
 mono_sgen_update_heap_boundaries (mword low, mword high)
 {
@@ -3164,11 +3169,15 @@ major_do_collection (const char *reason)
 		objects_pinned = 0;
 	}
 
+	reset_heap_boundaries ();
+	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_real_end);
+
 	/* sweep the big objects list */
 	prevbo = NULL;
 	for (bigobj = los_object_list; bigobj;) {
 		if (object_is_pinned (bigobj->data)) {
 			unpin_object (bigobj->data);
+			mono_sgen_update_heap_boundaries ((mword)bigobj->data, (mword)bigobj->data + bigobj->size);
 		} else {
 			LOSObject *to_free;
 			/* not referenced anywhere, so we can free it */

@@ -289,6 +289,12 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 }
 #endif
 
+static void
+update_heap_boundaries_for_block (MSBlockInfo *block)
+{
+	mono_sgen_update_heap_boundaries ((mword)block->block, (mword)block->block + MS_BLOCK_SIZE);
+}
+
 #ifdef FIXED_HEAP
 static MSBlockInfo*
 ms_get_empty_block (void)
@@ -301,8 +307,6 @@ ms_get_empty_block (void)
 	empty_blocks = empty_blocks->next_free;
 
 	block->used = TRUE;
-
-	mono_sgen_update_heap_boundaries ((mword)block->block, (mword)block->block + MS_BLOCK_SIZE);
 
 	return block;
 }
@@ -359,8 +363,6 @@ ms_get_empty_block (void)
 	*(void**)block = NULL;
 
 	g_assert (!((mword)block & (MS_BLOCK_SIZE - 1)));
-
-	mono_sgen_update_heap_boundaries ((mword)block, (mword)block + MS_BLOCK_SIZE);
 
 	return block;
 }
@@ -508,6 +510,8 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	header = (MSBlockHeader*) info->block;
 	header->info = info;
 #endif
+
+	update_heap_boundaries_for_block (info);
 
 	/* build free list */
 	obj_start = info->block + MS_BLOCK_SKIP;
@@ -1172,6 +1176,8 @@ major_sweep (void)
 				block->next_free = free_blocks [index];
 				free_blocks [index] = block;
 			}
+
+			update_heap_boundaries_for_block (block);
 		} else {
 			/*
 			 * Blocks without live objects are removed from the

@@ -505,15 +505,19 @@ major_sweep (void)
 	/* unpin objects from the pinned chunks and free the unmarked ones */
 	sweep_pinned_objects ();
 
+	mono_sgen_internal_update_heap_boundaries (&pinned_allocator);
+
 	/* free the unused sections */
 	prev_section = NULL;
 	for (section = section_list; section;) {
+		GCMemSection *this_section = section;
+
 		/* to_space doesn't need handling here */
 		if (section->is_to_space) {
 			section->is_to_space = FALSE;
 			prev_section = section;
 			section = section->block.next;
-			continue;
+			goto update;
 		}
 		/* no pinning object, so the section is free */
 		if (!section->pin_queue_num_entries) {
@@ -533,6 +537,9 @@ major_sweep (void)
 		}
 		prev_section = section;
 		section = section->block.next;
+
+	update:
+		mono_sgen_update_heap_boundaries ((mword)this_section->data, (mword)this_section->data + this_section->size);
 	}
 }
 

@@ -556,6 +556,16 @@ mono_sgen_internal_scan_objects (SgenInternalAllocator *alc, IterateObjectCallba
 	}
 }
 
+void
+mono_sgen_internal_update_heap_boundaries (SgenInternalAllocator *alc)
+{
+	SgenPinnedChunk *chunk;
+	for (chunk = alc->chunk_list; chunk; chunk = chunk->block.next) {
+		char *end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
+		mono_sgen_update_heap_boundaries ((mword)chunk, (mword)end_chunk);
+	}
+}
+
 /*
  * the array of pointers from @start to @end contains conservative
  * pointers to objects inside @chunk: mark each referenced object

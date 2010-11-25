@@ -648,6 +648,8 @@ gboolean mono_sgen_parse_environment_string_extract_number (const char *str, glo
 void mono_sgen_internal_scan_objects (SgenInternalAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
 void mono_sgen_internal_scan_pinned_objects (SgenInternalAllocator *alc, IterateObjectCallbackFunc callback, void *callback_data) MONO_INTERNAL;
 
+void mono_sgen_internal_update_heap_boundaries (SgenInternalAllocator *alc) MONO_INTERNAL;
+
 void** mono_sgen_find_optimized_pin_queue_area (void *start, void *end, int *num) MONO_INTERNAL;
 void mono_sgen_find_section_pin_queue_start_end (GCMemSection *section) MONO_INTERNAL;
 void mono_sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *queue) MONO_INTERNAL;
