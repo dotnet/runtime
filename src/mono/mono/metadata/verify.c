@@ -6042,6 +6042,14 @@ mono_verifier_class_is_valid_generic_instantiation (MonoClass *class)
 	return mono_class_is_valid_generic_instantiation (NULL, class);
 }
 
+gboolean
+mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method)
+{
+	if (!method->is_inflated)
+		return TRUE;
+	return mono_method_is_valid_generic_instantiation (NULL, method);
+}
+
 #else
 
 gboolean
@@ -6112,6 +6120,13 @@ mono_verifier_class_is_valid_generic_instantiation (MonoClass *class)
 {
 	return TRUE;
 }
+
+gboolean
+mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method)
+{
+	return TRUE;
+}
+
 
 
 #endif

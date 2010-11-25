@@ -22,6 +22,7 @@ gboolean mono_verifier_is_enabled_for_class (MonoClass *klass) MONO_INTERNAL;
 gboolean mono_verifier_is_method_full_trust (MonoMethod *method) MONO_INTERNAL;
 gboolean mono_verifier_is_class_full_trust (MonoClass *klass) MONO_INTERNAL;
 gboolean mono_verifier_class_is_valid_generic_instantiation (MonoClass *class) MONO_INTERNAL;
+gboolean mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method) MONO_INTERNAL;
 
 gboolean mono_verifier_verify_class (MonoClass *klass) MONO_INTERNAL;
 

@@ -10605,6 +10605,9 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		mono_g_hash_table_insert (image->generic_def_objects, imethod, rmethod);
 		mono_loader_unlock ();
 	}
+
+	if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
+		mono_raise_exception (mono_get_exception_argument ("typeArguments", "Invalid generic arguments"));
 	
 	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 }
