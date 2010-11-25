@@ -1841,6 +1841,7 @@ guint8*   mono_arch_get_ip_for_breakpoint       (MonoJitInfo *ji, MonoContext *c
 void     mono_arch_skip_breakpoint              (MonoContext *ctx) MONO_INTERNAL;
 void     mono_arch_skip_single_step             (MonoContext *ctx) MONO_INTERNAL;
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code) MONO_INTERNAL;
+void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func) MONO_INTERNAL;
 #endif
 
 gboolean

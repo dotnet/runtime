@@ -3725,7 +3725,11 @@ resume_from_signal_handler (void *sigctx, void *func)
 
 	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 	memcpy (&tls->handler_ctx, &ctx, sizeof (MonoContext));
+#ifdef MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX
+	mono_arch_setup_resume_sighandler_ctx (&ctx, func);
+#else
 	MONO_CONTEXT_SET_IP (&ctx, func);
+#endif
 	mono_arch_monoctx_to_sigctx (&ctx, sigctx);
 
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR

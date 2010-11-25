@@ -1421,3 +1421,19 @@ mono_tasklets_arch_restore (void)
 }
 #endif
 
+/*
+ * mono_arch_setup_resume_sighandler_ctx:
+ *
+ *   Setup CTX so execution continues at FUNC.
+ */
+void
+mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
+{
+	/* 
+	 * When resuming from a signal handler, the stack should be misaligned, just like right after
+	 * a call.
+	 */
+	if ((((guint64)MONO_CONTEXT_GET_SP (ctx)) % 16) == 0)
+		MONO_CONTEXT_SET_SP (ctx, (guint64)MONO_CONTEXT_GET_SP (ctx) - 8);
+	MONO_CONTEXT_SET_IP (ctx, func);
+}
