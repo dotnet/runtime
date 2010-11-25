@@ -9695,7 +9695,7 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 		return cached_methods [kind];
 
 	name = g_strdup_printf ("virt_stelemref_%s", strelemref_wrapper_name [kind]);
-	mb = mono_mb_new_no_dup_name (mono_defaults.object_class, name, MONO_WRAPPER_STELEMREF);
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STELEMREF);
 	g_free (name);
 
 	if (!signature) {
