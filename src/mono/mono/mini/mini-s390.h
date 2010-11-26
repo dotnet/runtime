@@ -155,6 +155,8 @@ typedef struct
 		MONO_CONTEXT_SET_IP ((ctx), sframe->return_address);	\
 	} while (0)
 
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- context_get_ip                                    */

@@ -284,6 +284,8 @@ typedef struct {
 #endif
 #endif
 
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
+
 typedef struct {
 	gint8 reg;
 	gint8 size;

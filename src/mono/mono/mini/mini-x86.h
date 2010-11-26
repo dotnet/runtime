@@ -248,6 +248,8 @@ typedef struct {
 
 #endif
 
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
+
 /*
  * This structure is an extension of MonoLMF and contains extra information.
  */

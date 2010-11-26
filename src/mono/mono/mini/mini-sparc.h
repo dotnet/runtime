@@ -100,6 +100,8 @@ typedef struct MonoCompileArch {
 		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
 	} while (0)
 
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
+
 #define MONO_ARCH_USE_SIGACTION 1
 
 #ifdef HAVE_WORKING_SIGALTSTACK
