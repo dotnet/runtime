@@ -42,7 +42,7 @@ static int thumb_supported = 0;
 
 /* 
  * Whenever to use the iphone ABI extensions:
- * http://developer.apple.com/iphone/library/documentation/Xcode/Conceptual/iPhoneOSABIReference/Aticles/ARMv6FunctionCallingConventions.html
+ * http://developer.apple.com/library/ios/documentation/Xcode/Conceptual/iPhoneOSABIReference/index.html
  * Basically, r7 is used as a frame pointer and it should point to the saved r7 + lr.
  */
 static int iphone_abi = 0;

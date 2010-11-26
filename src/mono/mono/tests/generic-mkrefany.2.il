@@ -70,8 +70,8 @@
 	IL_0001:  stloc.0 
 		  ldloca 0
 		  mkrefany	!0
-		  refanyval	ClassA
-		  ldobj		ClassA
+		  refanyval	!0
+		  ldobj		!0
 	IL_0003:  ret 
     } // end of method Gen`1::ident
 
@@ -88,8 +88,8 @@
 	IL_0001:  stloc.0 
 		  ldloca	0
 		  mkrefany	valuetype GenStruct`1<!0>
-		  refanyval	valuetype GenStruct`1<ClassA>
-		  ldobj		valuetype GenStruct`1<ClassA>
+		  refanyval	valuetype GenStruct`1<!0>
+		  ldobj		valuetype GenStruct`1<!0>
 	IL_0003:  ret 
     } // end of method Gen`1::structIdent
 

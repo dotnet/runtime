@@ -1438,6 +1438,7 @@ stream_init (MonoDynamicStream *sh)
 	sh->data = g_malloc (4096);
 
 	/* So offsets are > 0 */
+	sh->data [0] = 0;
 	sh->index ++;
 }
 

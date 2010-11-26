@@ -1340,7 +1340,7 @@ gboolean
 mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 {
 	MonoAssembly *assembly = method->klass->image->assembly;
-	if (method->wrapper_type != MONO_WRAPPER_NONE)
+	if (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		return FALSE;
 	if (assembly->in_gac || assembly->image == mono_defaults.corlib)
 		return FALSE;

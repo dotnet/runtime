@@ -572,7 +572,8 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-#ifdef __APPLE__
+#if defined(MONO_CROSS_COMPILE)
+#elif defined(__APPLE__)
 	int mib [3];
 	size_t len;
 	mib [0] = CTL_HW;
@@ -626,7 +627,6 @@ mono_arch_init (void)
 #elif defined(G_COMPILER_CODEWARRIOR)
 	cachelinesize = 32;
 	cachelineinc = 32;
-#elif defined(MONO_CROSS_COMPILE)
 #else
 //#error Need a way to get cache line size
 #endif
@@ -3721,7 +3721,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_sldi (code, ppc_r0, ppc_r0, 32);
 #endif
 			ppc_compare (code, 0, ins->sreg1, ppc_r0);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "ArithmeticException");
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "OverflowException");
 			ppc_patch (divisor_is_m1, code);
 			 /* XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
 			 */

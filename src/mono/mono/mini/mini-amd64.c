@@ -6633,6 +6633,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	/* Handle relocations with RIP relative addressing */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		gboolean remove = FALSE;
+		guint8 *orig_code = code;
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_R8:
@@ -6641,6 +6642,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 			/* The SSE opcodes require a 16 byte alignment */
 			code = (guint8*)ALIGN_TO (code, 16);
+			memset (orig_code, 0, code - orig_code);
 
 			pos = cfg->native_code + patch_info->ip.i;
 
@@ -6668,6 +6670,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 			/*loading is faster against aligned addresses.*/
 			code = (guint8*)ALIGN_TO (code, 8);
+			memset (orig_code, 0, code - orig_code);
 
 			pos = cfg->native_code + patch_info->ip.i;
 
