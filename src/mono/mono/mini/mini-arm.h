@@ -102,8 +102,6 @@ struct MonoLMF {
 	/* This is only set in trampoline LMF frames */
 	MonoMethod *method;
 	gulong     esp;
-	/* Unused */
-	gulong     ebp;
 	gulong     eip;
 	/* all but sp and pc: matches the PUSH instruction layout in the trampolines
 	 * 0-4 should be considered undefined (execpt in the magic tramp)
@@ -196,6 +194,8 @@ typedef struct MonoCompileArch {
 		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
 		MONO_CONTEXT_SET_IP ((ctx), (func));	\
 	} while (0)
+
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 /*
  * This structure is an extension of MonoLMF and contains extra information.
