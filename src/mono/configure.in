@@ -86,7 +86,7 @@ case "$host" in
 		host_win32=yes
 		if test "x$cross_compiling" = "xno"; then
 			target_win32=yes
-			if test "x$host" == "x$target"; then
+			if test "x$host" == "x$build"; then
 				AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
 			fi
 			CC="gcc -mno-cygwin -g"
@@ -1836,7 +1836,7 @@ try_dev_random=$enableval, try_dev_random=yes)
 
 AC_MSG_RESULT($try_dev_random)
 
-case "{$target}" in
+case "{$build}" in
     *-openbsd*)
     NAME_DEV_RANDOM="/dev/srandom"
     ;;
