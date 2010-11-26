@@ -3666,10 +3666,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_load_volatile_arguments (cfg, code);
 
 			code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
-			if (cfg->arch.omit_fp)
-				ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_LR));
-			else
-				ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP)) | ((1 << ARMREG_LR)));
+			ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_LR));
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			if (cfg->compile_aot) {
 				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
@@ -4548,17 +4545,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
+	prev_sp_offset = 0;
 
 	if (!method->save_lmf) {
-		if (cfg->arch.omit_fp) {
-			ARM_PUSH (code, cfg->used_int_regs | (1 << ARMREG_LR));
-			prev_sp_offset = 4;
-		} else {
-			/* We save SP by storing it into IP and saving IP */
-			ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
-			ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
-			prev_sp_offset = 8; /* ip and lr */
-		}
+		ARM_PUSH (code, cfg->used_int_regs | (1 << ARMREG_LR));
+		prev_sp_offset += 4;
 		for (i = 0; i < 16; ++i) {
 			if (cfg->used_int_regs & (1 << i))
 				prev_sp_offset += 4;
@@ -4566,7 +4557,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		reg_offset = 0;
 		for (i = 0; i < 16; ++i) {
-			if ((cfg->used_int_regs & (1 << i)) || ((i == ARMREG_IP) && !cfg->arch.omit_fp) || (i == ARMREG_LR)) {
+			if ((cfg->used_int_regs & (1 << i)) || (i == ARMREG_LR)) {
 				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
 				reg_offset += 4;
 			}
@@ -4574,7 +4565,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	} else {
 		ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 		ARM_PUSH (code, 0x5ff0);
-		prev_sp_offset = 4 * 10; /* all but r0-r3, sp and pc */
+		prev_sp_offset += 4 * 10; /* all but r0-r3, sp and pc */
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		reg_offset = 0;
 		for (i = 0; i < 16; ++i) {
@@ -5001,13 +4992,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			ARM_ADD_REG_IMM (code, ARMREG_SP, cfg->frame_reg, i, rot_amount);
 		} else {
 			code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->stack_usage);
-			ARM_ADD_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
+			ARM_ADD_REG_REG (code, ARMREG_SP, cfg->frame_reg, ARMREG_IP);
 		}
-		if (cfg->arch.omit_fp)
-			ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_PC));
-		else
-			/* FIXME: add v4 thumb interworking support */
-			ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
+		ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_PC));
 	}
 
 	cfg->code_len = code - cfg->native_code;
