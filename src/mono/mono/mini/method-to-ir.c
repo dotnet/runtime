@@ -7153,6 +7153,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					g_assert (!return_var);
 					CHECK_STACK (1);
 					--sp;
+
+					if ((method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD || method->wrapper_type == MONO_WRAPPER_NONE) && target_type_is_incompatible (cfg, ret_type, *sp))
+						UNVERIFIED;
+
 					if (mini_type_to_stind (cfg, ret_type) == CEE_STOBJ) {
 						MonoInst *ret_addr;
 
