@@ -8573,13 +8573,19 @@ find_method_in_metadata (MonoClass *klass, const char *name, int param_count, in
 	for (i = 0; i < klass->method.count; ++i) {
 		guint32 cols [MONO_METHOD_SIZE];
 		MonoMethod *method;
+		MonoMethodSignature *sig;
 
 		/* class->method.first points into the methodptr table */
 		mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
 
 		if (!strcmp (mono_metadata_string_heap (klass->image, cols [MONO_METHOD_NAME]), name)) {
 			method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
-			if ((param_count == -1) || mono_method_signature (method)->param_count == param_count) {
+			if (param_count == -1) {
+				res = method;
+				break;
+			}
+			sig = mono_method_signature (method);
+			if (sig && sig->param_count == param_count) {
 				res = method;
 				break;
 			}
