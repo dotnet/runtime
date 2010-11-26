@@ -40,6 +40,13 @@ static int v5_supported = 0;
 static int v7_supported = 0;
 static int thumb_supported = 0;
 
+/* 
+ * Whenever to use the iphone ABI extensions:
+ * http://developer.apple.com/iphone/library/documentation/Xcode/Conceptual/iPhoneOSABIReference/Aticles/ARMv6FunctionCallingConventions.html
+ * Basically, r7 is used as a frame pointer and it should point to the saved r7 + lr.
+ */
+static int iphone_abi = 0;
+
 /*
  * The code generated for sequence points reads from this location, which is
  * made read-only when single stepping is enabled.
@@ -487,6 +494,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 #if __APPLE__
 	thumb_supported = TRUE;
 	v5_supported = TRUE;
+	iphone_abi = TRUE;
 #else
 	char buf [512];
 	char *line;
@@ -603,7 +611,11 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V1));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V2));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V3));
-	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V4));
+	if (iphone_abi)
+		/* V4=R7 is used as a frame pointer, but V7=R10 is preserved */
+		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V7));
+	else
+		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V4));
 	if (!(cfg->compile_aot || cfg->uses_rgctx_reg || COMPILE_LLVM (cfg)))
 		/* V5 is reserved for passing the vtable/rgctx/IMT method */
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V5));
@@ -3666,7 +3678,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_load_volatile_arguments (cfg, code);
 
 			code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
-			ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_LR));
+			if (iphone_abi) {
+				if (cfg->used_int_regs)
+					ARM_POP (code, cfg->used_int_regs);
+				ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_LR));
+			} else {
+				ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_LR));
+			}
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			if (cfg->compile_aot) {
 				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
@@ -4548,8 +4566,30 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	prev_sp_offset = 0;
 
 	if (!method->save_lmf) {
-		ARM_PUSH (code, cfg->used_int_regs | (1 << ARMREG_LR));
-		prev_sp_offset += 4;
+		if (iphone_abi) {
+			/* 
+			 * The iphone uses R7 as the frame pointer, and it points at the saved
+			 * r7+lr:
+			 *         <lr>
+			 * r7 ->   <r7>
+			 *         <rest of frame>
+			 * We can't use r7 as a frame pointer since it points into the middle of
+			 * the frame, so we keep using our own frame pointer.
+			 * FIXME: Optimize this.
+			 */
+			ARM_PUSH (code, (1 << ARMREG_R7) | (1 << ARMREG_LR));
+			ARM_MOV_REG_REG (code, ARMREG_R7, ARMREG_SP);
+			prev_sp_offset += 8; /* r7 and lr */
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
+			mono_emit_unwind_op_offset (cfg, code, ARMREG_R7, (- prev_sp_offset) + 0);
+
+			/* No need to push LR again */
+			if (cfg->used_int_regs)
+				ARM_PUSH (code, cfg->used_int_regs);
+		} else {
+			ARM_PUSH (code, cfg->used_int_regs | (1 << ARMREG_LR));
+			prev_sp_offset += 4;
+		}
 		for (i = 0; i < 16; ++i) {
 			if (cfg->used_int_regs & (1 << i))
 				prev_sp_offset += 4;
@@ -4557,10 +4597,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		reg_offset = 0;
 		for (i = 0; i < 16; ++i) {
-			if ((cfg->used_int_regs & (1 << i)) || (i == ARMREG_LR)) {
+			if ((cfg->used_int_regs & (1 << i))) {
 				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
 				reg_offset += 4;
 			}
+		}
+		if (iphone_abi) {
+			mono_emit_unwind_op_offset (cfg, code, ARMREG_LR, -4);
+		} else {
+			mono_emit_unwind_op_offset (cfg, code, ARMREG_LR, -4);
 		}
 	} else {
 		ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
@@ -4994,7 +5039,16 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->stack_usage);
 			ARM_ADD_REG_REG (code, ARMREG_SP, cfg->frame_reg, ARMREG_IP);
 		}
-		ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_PC));
+
+		if (iphone_abi) {
+			/* Restore saved gregs */
+			if (cfg->used_int_regs)
+				ARM_POP (code, cfg->used_int_regs);
+			/* Restore saved r7, restore LR to PC */
+			ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_PC));
+		} else {
+			ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_PC));
+		}
 	}
 
 	cfg->code_len = code - cfg->native_code;
