@@ -105,6 +105,8 @@ int mono_exc_esp_offset = 0;
 	}																	\
 	} while (0)
 
+static void mono_arch_compute_omit_fp (MonoCompile *cfg);
+
 const char*
 mono_arch_regname (int reg)
 {
@@ -586,6 +588,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
 
+	mono_arch_compute_omit_fp (cfg);
+
 	/* 
 	 * FIXME: Interface calls might go through a static rgctx trampoline which
 	 * sets V5, but it doesn't save it, so we need to save it ourselves, and
@@ -594,6 +598,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	if (cfg->flags & MONO_CFG_HAS_CALLS)
 		cfg->uses_rgctx_reg = TRUE;
 
+	if (cfg->arch.omit_fp)
+		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_FP));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V1));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V2));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V3));
@@ -1005,6 +1011,111 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 
 #ifndef DISABLE_JIT
 
+G_GNUC_UNUSED static void
+break_count (void)
+{
+}
+
+G_GNUC_UNUSED static gboolean
+debug_count (void)
+{
+	static int count = 0;
+	count ++;
+
+	if (!getenv ("COUNT"))
+		return TRUE;
+
+	if (count == atoi (getenv ("COUNT"))) {
+		break_count ();
+	}
+
+	if (count > atoi (getenv ("COUNT"))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
+debug_omit_fp (void)
+{
+#if 0
+	return debug_count ();
+#else
+	return TRUE;
+#endif
+}
+
+/**
+ * mono_arch_compute_omit_fp:
+ *
+ *   Determine whenever the frame pointer can be eliminated.
+ */
+static void
+mono_arch_compute_omit_fp (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+	MonoMethodHeader *header;
+	int i, locals_size;
+	CallInfo *cinfo;
+
+	if (cfg->arch.omit_fp_computed)
+		return;
+
+	header = cfg->header;
+
+	sig = mono_method_signature (cfg->method);
+
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
+	cinfo = cfg->arch.cinfo;
+
+	/*
+	 * FIXME: Remove some of the restrictions.
+	 */
+	cfg->arch.omit_fp = TRUE;
+	cfg->arch.omit_fp_computed = TRUE;
+
+	if (cfg->disable_omit_fp)
+		cfg->arch.omit_fp = FALSE;
+	if (!debug_omit_fp ())
+		cfg->arch.omit_fp = FALSE;
+	/*
+	if (cfg->method->save_lmf)
+		cfg->arch.omit_fp = FALSE;
+	*/
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+		cfg->arch.omit_fp = FALSE;
+	if (header->num_clauses)
+		cfg->arch.omit_fp = FALSE;
+	if (cfg->param_area)
+		cfg->arch.omit_fp = FALSE;
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
+		cfg->arch.omit_fp = FALSE;
+	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
+		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
+		cfg->arch.omit_fp = FALSE;
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = &cinfo->args [i];
+
+		if (ainfo->storage == RegTypeBase || ainfo->storage == RegTypeBaseGen || ainfo->storage == RegTypeStructByVal) {
+			/* 
+			 * The stack offset can only be determined when the frame
+			 * size is known.
+			 */
+			cfg->arch.omit_fp = FALSE;
+		}
+	}
+
+	locals_size = 0;
+	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+		MonoInst *ins = cfg->varinfo [i];
+		int ialign;
+
+		locals_size += mono_type_size (ins->inst_vtype, &ialign);
+	}
+}
+
 /*
  * Set var information according to the calling convention. arm version.
  * The locals var stuff should most likely be split in another method.
@@ -1016,7 +1127,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	MonoInst *ins;
 	int i, offset, size, align, curinst;
-	int frame_reg = ARMREG_FP;
 	CallInfo *cinfo;
 	guint32 ualign;
 
@@ -1026,7 +1136,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->arch.cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, sig->pinvoke);
 	cinfo = cfg->arch.cinfo;
 
-	/* FIXME: this will change when we use FP as gcc does */
+	mono_arch_compute_omit_fp (cfg);
+
+	if (cfg->arch.omit_fp)
+		cfg->frame_reg = ARMREG_SP;
+	else
+		cfg->frame_reg = ARMREG_FP;
+
 	cfg->flags |= MONO_CFG_HAS_SPILLUP;
 
 	/* allow room for the vararg method args: void* and long/double */
@@ -1035,21 +1151,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	header = cfg->header;
 
-	/* 
-	 * We use the frame register also for any method that has
-	 * exception clauses. This way, when the handlers are called,
-	 * the code will reference local variables using the frame reg instead of
-	 * the stack pointer: if we had to restore the stack pointer, we'd
-	 * corrupt the method frames that are already on the stack (since
-	 * filters get called before stack unwinding happens) when the filter
-	 * code would call any method (this also applies to finally etc.).
-	 */ 
-	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
-		frame_reg = ARMREG_FP;
-	cfg->frame_reg = frame_reg;
-	if (frame_reg != ARMREG_SP) {
-		cfg->used_int_regs |= 1 << frame_reg;
-	}
+	if (cfg->frame_reg != ARMREG_SP)
+		cfg->used_int_regs |= 1 << cfg->frame_reg;
 
 	if (cfg->compile_aot || cfg->uses_rgctx_reg || COMPILE_LLVM (cfg))
 		/* V5 is reserved for passing the vtable/rgctx/IMT method */
@@ -1102,7 +1205,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset &= ~(sizeof(gpointer) - 1);
 			ins->inst_offset = offset;
 			ins->opcode = OP_REGOFFSET;
-			ins->inst_basereg = frame_reg;
+			ins->inst_basereg = cfg->frame_reg;
 			if (G_UNLIKELY (cfg->verbose_level > 1)) {
 				printf ("vret_addr =");
 				mono_print_ins (cfg->vret_addr);
@@ -1122,7 +1225,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += align - 1;
 		offset &= ~(align - 1);
 		ins->opcode = OP_REGOFFSET;
-		ins->inst_basereg = frame_reg;
+		ins->inst_basereg = cfg->frame_reg;
 		ins->inst_offset = offset;
 		offset += size;
 
@@ -1132,7 +1235,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += align - 1;
 		offset &= ~(align - 1);
 		ins->opcode = OP_REGOFFSET;
-		ins->inst_basereg = frame_reg;
+		ins->inst_basereg = cfg->frame_reg;
 		ins->inst_offset = offset;
 		offset += size;
 	}
@@ -1161,7 +1264,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset &= ~(align - 1);
 		ins->opcode = OP_REGOFFSET;
 		ins->inst_offset = offset;
-		ins->inst_basereg = frame_reg;
+		ins->inst_basereg = cfg->frame_reg;
 		offset += size;
 		//g_print ("allocating local %d to %d\n", i, inst->inst_offset);
 	}
@@ -1171,7 +1274,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		ins = cfg->args [curinst];
 		if (ins->opcode != OP_REGVAR) {
 			ins->opcode = OP_REGOFFSET;
-			ins->inst_basereg = frame_reg;
+			ins->inst_basereg = cfg->frame_reg;
 			offset += sizeof (gpointer) - 1;
 			offset &= ~(sizeof (gpointer) - 1);
 			ins->inst_offset = offset;
@@ -1196,7 +1299,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 		if (ins->opcode != OP_REGVAR) {
 			ins->opcode = OP_REGOFFSET;
-			ins->inst_basereg = frame_reg;
+			ins->inst_basereg = cfg->frame_reg;
 			size = mini_type_stack_size_full (NULL, sig->params [i], &ualign, sig->pinvoke);
 			align = ualign;
 			/* FIXME: if a structure is misaligned, our memcpy doesn't work,
@@ -3563,7 +3666,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_load_volatile_arguments (cfg, code);
 
 			code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
-			ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP)) | ((1 << ARMREG_LR)));
+			if (cfg->arch.omit_fp)
+				ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_LR));
+			else
+				ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP)) | ((1 << ARMREG_LR)));
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			if (cfg->compile_aot) {
 				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
@@ -4440,15 +4546,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	mono_emit_unwind_op_def_cfa (cfg, code, ARMREG_SP, 0);
 
-	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
-
 	alloc_size = cfg->stack_offset;
 	pos = 0;
 
 	if (!method->save_lmf) {
-		/* We save SP by storing it into IP and saving IP */
-		ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
-		prev_sp_offset = 8; /* ip and lr */
+		if (cfg->arch.omit_fp) {
+			ARM_PUSH (code, cfg->used_int_regs | (1 << ARMREG_LR));
+			prev_sp_offset = 4;
+		} else {
+			/* We save SP by storing it into IP and saving IP */
+			ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
+			ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
+			prev_sp_offset = 8; /* ip and lr */
+		}
 		for (i = 0; i < 16; ++i) {
 			if (cfg->used_int_regs & (1 << i))
 				prev_sp_offset += 4;
@@ -4456,12 +4566,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		reg_offset = 0;
 		for (i = 0; i < 16; ++i) {
-			if ((cfg->used_int_regs & (1 << i)) || (i == ARMREG_IP) || (i == ARMREG_LR)) {
+			if ((cfg->used_int_regs & (1 << i)) || ((i == ARMREG_IP) && !cfg->arch.omit_fp) || (i == ARMREG_LR)) {
 				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
 				reg_offset += 4;
 			}
 		}
 	} else {
+		ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 		ARM_PUSH (code, 0x5ff0);
 		prev_sp_offset = 4 * 10; /* all but r0-r3, sp and pc */
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
@@ -4859,7 +4970,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	if (method->save_lmf) {
-		int lmf_offset;
+		int lmf_offset, reg, sp_adj, regmask;
 		/* all but r0-r3, sp and pc */
 		pos += sizeof (MonoLMF) - (4 * 10);
 		lmf_offset = pos;
@@ -4871,13 +4982,20 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		ARM_LDR_IMM (code, ARMREG_LR, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 		/* *(lmf_addr) = previous_lmf */
 		ARM_STR_IMM (code, ARMREG_IP, ARMREG_LR, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		/* FIXME: speedup: there is no actual need to restore the registers if
-		 * we didn't actually change them (idea from Zoltan).
-		 */
-		/* restore iregs */
+		/* This points to r4 inside MonoLMF->iregs */
+		sp_adj = (sizeof (MonoLMF) - 10 * sizeof (gulong));
+		reg = ARMREG_R4;
+		regmask = 0x9ff0; /* restore lr to pc */
+		/* Skip caller saved registers not used by the method */
+		while (!(cfg->used_int_regs & (1 << reg)) && reg < ARMREG_FP) {
+			regmask &= ~(1 << reg);
+			sp_adj += 4;
+			reg ++;
+		}
 		/* point sp at the registers to restore: 10 is 14 -4, because we skip r0-r3 */
-		ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_R2, (sizeof (MonoLMF) - 10 * sizeof (gulong)));
-		ARM_POP_NWB (code, 0xaff0); /* restore ip to sp and lr to pc */
+		ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_R2, sp_adj);
+		/* restore iregs */
+		ARM_POP (code, regmask); 
 	} else {
 		if ((i = mono_arm_is_rotated_imm8 (cfg->stack_usage, &rot_amount)) >= 0) {
 			ARM_ADD_REG_IMM (code, ARMREG_SP, cfg->frame_reg, i, rot_amount);
@@ -4885,8 +5003,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			code = mono_arm_emit_load_imm (code, ARMREG_IP, cfg->stack_usage);
 			ARM_ADD_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
 		}
-		/* FIXME: add v4 thumb interworking support */
-		ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
+		if (cfg->arch.omit_fp)
+			ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_PC));
+		else
+			/* FIXME: add v4 thumb interworking support */
+			ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
 	}
 
 	cfg->code_len = code - cfg->native_code;

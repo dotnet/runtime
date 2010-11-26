@@ -127,6 +127,7 @@ typedef struct {
 
 typedef struct MonoCompileArch {
 	gpointer seq_point_info_var, ss_trigger_page_var;
+	gboolean omit_fp, omit_fp_computed;
 	gpointer cinfo;
 } MonoCompileArch;
 
