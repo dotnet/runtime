@@ -5732,7 +5732,7 @@ mono_verify_corlib ()
 gboolean
 mono_verifier_is_enabled_for_method (MonoMethod *method)
 {
-	return mono_verifier_is_enabled_for_class (method->klass) && method->wrapper_type == MONO_WRAPPER_NONE;
+	return mono_verifier_is_enabled_for_class (method->klass) && (method->wrapper_type == MONO_WRAPPER_NONE || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD);
 }
 
 /*
@@ -5751,10 +5751,14 @@ mono_verifier_is_enabled_for_image (MonoImage *image)
 	return verify_all || verifier_mode > MONO_VERIFIER_MODE_OFF;
 }
 
+/*
+ * Dynamic methods are not considered full trust since if the user is trusted and need to
+ * generate unsafe code, make the method skip verification - this is a known good way to do it.
+ */
 gboolean
 mono_verifier_is_method_full_trust (MonoMethod *method)
 {
-	return mono_verifier_is_class_full_trust (method->klass);
+	return mono_verifier_is_class_full_trust (method->klass) && !method->dynamic;
 }
 
 /*
