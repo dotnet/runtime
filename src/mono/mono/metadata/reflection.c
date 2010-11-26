@@ -12171,6 +12171,12 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 	return ref->type;
 }
 
+void
+mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
+{
+	g_assert_not_reached ();
+}
+
 #endif /* DISABLE_REFLECTION_EMIT */
 
 /* SECURITY_ACTION_* are defined in mono/metadata/tabledefs.h */
