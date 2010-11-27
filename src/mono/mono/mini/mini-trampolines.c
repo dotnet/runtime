@@ -858,6 +858,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	MonoMethod *method = NULL;
 	gboolean multicast, callvirt = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
+	gboolean enable_caching = TRUE;
 	MonoMethod *invoke = tramp_data [0];
 	guint8 *impl_this = tramp_data [1];
 	guint8 *impl_nothis = tramp_data [2];
@@ -908,6 +909,10 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 			mono_error_raise_exception (&err);
 
 		callvirt = !delegate->target && sig->hasthis;
+		if (delegate->target && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_object_class (delegate->target)) {
+			method = mono_object_get_virtual_method (delegate->target, method);
+			enable_caching = FALSE;
+		}
 	}
 
 	if (method && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
@@ -922,13 +927,13 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 	 */
 	if (method && !callvirt) {
 		/* Avoid the overhead of looking up an already compiled method if possible */
-		if (delegate->method_code && *delegate->method_code) {
+		if (enable_caching && delegate->method_code && *delegate->method_code) {
 			delegate->method_ptr = *delegate->method_code;
 		} else {
 			delegate->method_ptr = mono_compile_method (method);
 			if (need_rgctx_tramp)
 				delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
-			if (delegate->method_code)
+			if (enable_caching && delegate->method_code)
 				*delegate->method_code = delegate->method_ptr;
 			mono_debugger_trampoline_compiled (NULL, method, delegate->method_ptr);
 		}
