@@ -1406,24 +1406,6 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
 	}
 }
 
-static MonoObject*
-lookup_cached_culture (MonoInternalThread *this, MonoDomain *domain, int start_idx)
-{
-	MonoObject *res;
-	int i;
-
-	if (this->cached_culture_info) {
-		domain = mono_domain_get ();
-		for (i = start_idx; i < start_idx + NUM_CACHED_CULTURES; ++i) {
-			res = mono_array_get (this->cached_culture_info, MonoObject*, i);
-			if (res && res->vtable->domain == domain)
-				return res;
-		}
-	}
-
-	return NULL;
-}
-
 /* If the array is already in the requested domain, we just return it,
    otherwise we return a copy in that domain. */
 static MonoArray*
@@ -1452,12 +1434,6 @@ MonoArray*
 ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArray *arr)
 {
 	return byte_array_to_domain (arr, mono_domain_get ());
-}
-
-MonoObject*
-ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoInternalThread *this)
-{
-	return lookup_cached_culture (this, mono_domain_get (), CULTURES_START_IDX);
 }
 
 static void
@@ -1505,12 +1481,6 @@ ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this, Mon
 	MonoDomain *domain = mono_object_get_domain (&this->obj);
 	g_assert (domain == mono_domain_get ());
 	cache_culture (this->internal_thread, culture, CULTURES_START_IDX);
-}
-
-MonoObject*
-ves_icall_System_Threading_Thread_GetCachedCurrentUICulture (MonoInternalThread *this)
-{
-	return lookup_cached_culture (this, mono_domain_get (), UICULTURES_START_IDX);
 }
 
 void
