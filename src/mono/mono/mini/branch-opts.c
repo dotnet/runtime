@@ -1280,7 +1280,7 @@ mono_optimize_branches (MonoCompile *cfg)
 					/* the block are in sequence anyway ... */
 
 					/* branches to the following block can be removed */
-					if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
+					if (bb->last_ins && bb->last_ins->opcode == OP_BR && !bbn->out_of_line) {
 						bb->last_ins->opcode = OP_NOP;
 						changed = TRUE;
 						if (cfg->verbose_level > 2)

@@ -3512,6 +3512,20 @@ compute_reachable (MonoBasicBlock *bb)
 	}
 }
 
+static void
+mono_handle_out_of_line_bblock (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		if (bb->next_bb && bb->next_bb->out_of_line && bb->last_ins && !MONO_IS_BRANCH_OP (bb->last_ins)) {
+			MonoInst *ins;
+			MONO_INST_NEW (cfg, ins, OP_BR);
+			MONO_ADD_INS (bb, ins);
+			ins->inst_target_bb = bb->next_bb;
+		}
+	}
+}
+
 static MonoJitInfo*
 create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 {
@@ -4219,6 +4233,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	 * SSA will ignore variables marked VOLATILE.
 	 */
 	mono_liveness_handle_exception_clauses (cfg);
+
+	mono_handle_out_of_line_bblock (cfg);
 
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
 
