@@ -1086,7 +1086,7 @@ mini_usage_jitdeveloper (void)
 		 "    --stats                Print statistics about the JIT operations\n"
 		 "    --wapi=hps|semdel|seminfo IO-layer maintenance\n"
 		 "    --inject-async-exc METHOD OFFSET Inject an asynchronous exception at METHOD\n"
-		 "    --verify-all           Run the verifier on all methods\n"
+		 "    --verify-all           Run the verifier on all assemblies and methods\n"
 		 "    --full-aot             Avoid JITting any code\n"
 		 "    --agent=ASSEMBLY[:ARG] Loads the specific agent assembly and executes its Main method with the given argument before loading the main assembly.\n"
 		 "    --no-x86-stack-align   Don't align stack on x86\n"
