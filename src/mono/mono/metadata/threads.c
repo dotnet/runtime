@@ -1436,61 +1436,6 @@ ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArray *arr)
 	return byte_array_to_domain (arr, mono_domain_get ());
 }
 
-static void
-cache_culture (MonoInternalThread *this, MonoObject *culture, int start_idx)
-{
-	int i;
-	MonoDomain *domain = mono_domain_get ();
-	MonoObject *obj;
-	int free_slot = -1;
-	int same_domain_slot = -1;
-
-	ensure_synch_cs_set (this);
-	
-	EnterCriticalSection (this->synch_cs);
-	
-	if (!this->cached_culture_info)
-		MONO_OBJECT_SETREF (this, cached_culture_info, mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, NUM_CACHED_CULTURES * 2));
-
-	for (i = start_idx; i < start_idx + NUM_CACHED_CULTURES; ++i) {
-		obj = mono_array_get (this->cached_culture_info, MonoObject*, i);
-		/* Free entry */
-		if (!obj) {
-			free_slot = i;
-			/* we continue, because there may be a slot used with the same domain */
-			continue;
-		}
-		/* Replace */
-		if (obj->vtable->domain == domain) {
-			same_domain_slot = i;
-			break;
-		}
-	}
-	if (same_domain_slot >= 0)
-		mono_array_setref (this->cached_culture_info, same_domain_slot, culture);
-	else if (free_slot >= 0)
-		mono_array_setref (this->cached_culture_info, free_slot, culture);
-	/* we may want to replace an existing entry here, even when no suitable slot is found */
-
-	LeaveCriticalSection (this->synch_cs);
-}
-
-void
-ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this, MonoObject *culture)
-{
-	MonoDomain *domain = mono_object_get_domain (&this->obj);
-	g_assert (domain == mono_domain_get ());
-	cache_culture (this->internal_thread, culture, CULTURES_START_IDX);
-}
-
-void
-ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this, MonoObject *culture)
-{
-	MonoDomain *domain = mono_object_get_domain (&this->obj);
-	g_assert (domain == mono_domain_get ());
-	cache_culture (this->internal_thread, culture, UICULTURES_START_IDX);
-}
-
 MonoThread *
 mono_thread_current (void)
 {
