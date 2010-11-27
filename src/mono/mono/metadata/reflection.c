@@ -8206,7 +8206,7 @@ find_event_index (MonoClass *klass, MonoEvent *event) {
 }
 
 static MonoObject*
-create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len)
+create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoError *error)
 {
 	const char *p = (const char*)data;
 	const char *named;
@@ -8216,10 +8216,14 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	void **params;
 	MonoMethodSignature *sig;
 
+	mono_error_init (error);
+
 	mono_class_init (method->klass);
 
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, NULL))
+	if (!mono_verifier_verify_cattr_content (image, method, data, len, NULL)) {
+		mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of the specified custom attribute was invalid.");
 		return NULL;
+	}
 
 	if (len == 0) {
 		attr = mono_object_new (mono_domain_get (), method->klass);
@@ -8502,48 +8506,45 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr)
 	return attr;
 }
 
-MonoArray*
-mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
-{
-	MonoArray *result;
-	MonoObject *attr;
-	int i;
-
-	result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, cinfo->num_attrs);
-	for (i = 0; i < cinfo->num_attrs; ++i) {
-		if (!cinfo->attrs [i].ctor)
-			/* The cattr type is not finished yet */
-			/* We should include the type name but cinfo doesn't contain it */
-			mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
-		attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
-		mono_array_setref (result, i, attr);
-	}
-	return result;
-}
-
 static MonoArray*
-mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_klass)
+mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_klass, MonoError *error)
 {
 	MonoArray *result;
 	MonoObject *attr;
 	int i, n;
 
+	mono_error_init (error);
+
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
-		if (mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass))
+		if (!attr_klass || mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass))
 			n ++;
 	}
 
 	result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, n);
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
-		if (mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass)) {
-			attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
+		if (!cinfo->attrs [i].ctor)
+			/* The cattr type is not finished yet */
+			/* We should include the type name but cinfo doesn't contain it */
+			mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
+		if (!attr_klass || mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass)) {
+			attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size, error);
+			if (!mono_error_ok (error))
+				return result;
 			mono_array_setref (result, n, attr);
 			n ++;
 		}
 	}
 	return result;
+}
+
+MonoArray*
+mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
+{
+	MonoError error;
+
+	return mono_custom_attrs_construct_by_type (cinfo, NULL, &error);
 }
 
 static MonoArray*
@@ -8976,17 +8977,16 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
  * occurs.
  */
 MonoArray*
-mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass)
+mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass, MonoError *error)
 {
 	MonoArray *result;
 	MonoCustomAttrInfo *cinfo;
 
+	mono_error_init (error);
+
 	cinfo = mono_reflection_get_custom_attrs_info (obj);
 	if (cinfo) {
-		if (attr_klass)
-			result = mono_custom_attrs_construct_by_type (cinfo, attr_klass);
-		else
-			result = mono_custom_attrs_construct (cinfo);
+		result = mono_custom_attrs_construct_by_type (cinfo, attr_klass, error);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
@@ -9009,7 +9009,9 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 MonoArray*
 mono_reflection_get_custom_attrs (MonoObject *obj)
 {
-	return mono_reflection_get_custom_attrs_by_type (obj, NULL);
+	MonoError error;
+
+	return mono_reflection_get_custom_attrs_by_type (obj, NULL, &error);
 }
 
 /*
