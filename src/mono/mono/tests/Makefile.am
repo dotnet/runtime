@@ -384,6 +384,8 @@ TEST_CS_SRC_GEN = \
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs finally_guard.cs
+# #651684
+PLATFORM_DISABLED_TESTS = finally_guard.exe
 else
 if X86
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) $(TEST_CS_SRC_GEN) async-exc-compilation.cs finally_guard.cs
