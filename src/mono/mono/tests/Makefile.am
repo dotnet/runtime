@@ -500,9 +500,8 @@ TEST_IL_SRC=			\
 	interface-with-static-method.il	\
 	bug-515884.il	\
 	bug-633291.il	\
-	delegate-with-null-target.il
-
-#	bug-318677.il
+	delegate-with-null-target.il	\
+	bug-318677.il
 
 # pre-requisite test sources: files that are not test themselves
 # but that need to be compiled
