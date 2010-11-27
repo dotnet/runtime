@@ -8579,6 +8579,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoClassField *field;
 			gpointer addr = NULL;
 			gboolean is_special_static;
+			MonoType *ftype;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -8612,7 +8613,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
-			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
+			ftype = mono_field_get_type (field);
+
+			g_assert (!(ftype->attrs & FIELD_ATTRIBUTE_LITERAL));
 
 			/* The special_static_fields field is init'd in mono_class_vtable, so it needs
 			 * to be called here.
@@ -8763,7 +8766,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Generate IR to do the actual load/store operation */
 
 			if (*ip == CEE_LDSFLDA) {
-				ins->klass = mono_class_from_mono_type (field->type);
+				ins->klass = mono_class_from_mono_type (ftype);
 				ins->type = STACK_PTR;
 				*sp++ = ins;
 			} else if (*ip == CEE_STSFLD) {
@@ -8771,7 +8774,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				sp--;
 
-				EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, ins->dreg, 0, sp [0]->dreg);
+				EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, ftype, ins->dreg, 0, sp [0]->dreg);
 				store->flags |= ins_flag;
 			} else {
 				gboolean is_const = FALSE;
@@ -8782,11 +8785,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					CHECK_TYPELOAD (klass);
 				}
 				if (!context_used && !((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
-				    vtable->initialized && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY)) {
+				    vtable->initialized && (ftype->attrs & FIELD_ATTRIBUTE_INIT_ONLY)) {
 					gpointer addr = (char*)vtable->data + field->offset;
-					int ro_type = field->type->type;
-					if (ro_type == MONO_TYPE_VALUETYPE && field->type->data.klass->enumtype) {
-						ro_type = mono_class_enum_basetype (field->type->data.klass)->type;
+					int ro_type = ftype->type;
+					if (ro_type == MONO_TYPE_VALUETYPE && ftype->data.klass->enumtype) {
+						ro_type = mono_class_enum_basetype (ftype->data.klass)->type;
 					}
 					/* printf ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, mono_field_get_name (field));*/
 					is_const = TRUE;
