@@ -182,6 +182,7 @@ struct _MethodDesc {
 	intptr_t code;
 	int len;
 	int recurse_count;
+	int sample_hits;
 	uint64_t calls;
 	uint64_t total_time;
 	uint64_t callee_time;
@@ -238,6 +239,307 @@ lookup_method (intptr_t method)
 		return add_method (method, buf, 0, 0);
 	}
 	return cd;
+}
+
+static int num_stat_samples = 0;
+static int size_stat_samples = 0;
+uintptr_t *stat_samples = NULL;
+int *stat_sample_desc = NULL;
+
+static void
+add_stat_sample (int type, uintptr_t ip) {
+	if (num_stat_samples == size_stat_samples) {
+		size_stat_samples *= 2;
+		if (!size_stat_samples)
+		size_stat_samples = 32;
+		stat_samples = realloc (stat_samples, size_stat_samples * sizeof (uintptr_t));
+		stat_sample_desc = realloc (stat_sample_desc, size_stat_samples * sizeof (int));
+	}
+	stat_samples [num_stat_samples] = ip;
+	stat_sample_desc [num_stat_samples++] = type;
+}
+
+static MethodDesc*
+lookup_method_by_ip (uintptr_t ip)
+{
+	int i;
+	MethodDesc* m;
+	/* dumb */
+	for (i = 0; i < HASH_SIZE; ++i) {
+		m = method_hash [i];
+		while (m) {
+			//printf ("checking %p against %p-%p\n", (void*)ip, (void*)(m->code), (void*)(m->code + m->len));
+			if (ip >= (uintptr_t)m->code && ip < (uintptr_t)m->code + m->len) {
+				return m;
+			}
+			m = m->next;
+		}
+	}
+	return NULL;
+}
+
+static int
+compare_method_samples (const void *a, const void *b)
+{
+	MethodDesc *const*A = a;
+	MethodDesc *const*B = b;
+	if ((*A)->sample_hits == (*B)->sample_hits)
+		return 0;
+	if ((*B)->sample_hits < (*A)->sample_hits)
+		return -1;
+	return 1;
+}
+
+typedef struct _UnmanagedSymbol UnmanagedSymbol;
+struct _UnmanagedSymbol {
+	UnmanagedSymbol *parent;
+	char *name;
+	int is_binary;
+	uintptr_t addr;
+	uintptr_t size;
+	uintptr_t sample_hits;
+};
+
+static UnmanagedSymbol **usymbols = NULL;
+static int usymbols_size = 0;
+static int usymbols_num = 0;
+
+static int
+compare_usymbol_addr (const void *a, const void *b)
+{
+	UnmanagedSymbol *const*A = a;
+	UnmanagedSymbol *const*B = b;
+	if ((*B)->addr == (*A)->addr)
+		return 0;
+	if ((*B)->addr > (*A)->addr)
+		return -1;
+	return 1;
+}
+
+static int
+compare_usymbol_samples (const void *a, const void *b)
+{
+	UnmanagedSymbol *const*A = a;
+	UnmanagedSymbol *const*B = b;
+	if ((*B)->sample_hits == (*A)->sample_hits)
+		return 0;
+	if ((*B)->sample_hits < (*A)->sample_hits)
+		return -1;
+	return 1;
+}
+
+static void
+add_unmanaged_symbol (uintptr_t addr, char *name, uintptr_t size)
+{
+	UnmanagedSymbol *sym;
+	if (usymbols_num == usymbols_size) {
+		int new_size = usymbols_size * 2;
+		if (!new_size)
+			new_size = 16;
+		usymbols = realloc (usymbols, sizeof (void*) * new_size);
+		usymbols_size = new_size;
+	}
+	sym = calloc (sizeof (UnmanagedSymbol), 1);
+	sym->addr = addr;
+	sym->name = name;
+	sym->size = size;
+	usymbols [usymbols_num++] = sym;
+}
+
+/* only valid after the symbols are sorted */
+static UnmanagedSymbol*
+lookup_unmanaged_symbol (uintptr_t addr)
+{
+	int r = usymbols_num - 1;
+	int l = 0;
+	UnmanagedSymbol *sym;
+	int last_best = -1;
+	while (r >= l) {
+		int m = (l + r) / 2;
+		sym = usymbols [m];
+		if (addr == sym->addr)
+			return sym;
+		if (addr < sym->addr) {
+			r = m - 1;
+		} else if (addr > sym->addr) {
+			l = m + 1;
+			last_best = m;
+		}
+	}
+	if (last_best >= 0 && (addr - usymbols [last_best]->addr) < 4096)
+		return usymbols [last_best];
+	return NULL;
+}
+
+/* we use the same structure for binaries */
+static UnmanagedSymbol **ubinaries = NULL;
+static int ubinaries_size = 0;
+static int ubinaries_num = 0;
+
+static void
+add_unmanaged_binary (uintptr_t addr, char *name, uintptr_t size)
+{
+	UnmanagedSymbol *sym;
+	if (ubinaries_num == ubinaries_size) {
+		int new_size = ubinaries_size * 2;
+		if (!new_size)
+			new_size = 16;
+		ubinaries = realloc (ubinaries, sizeof (void*) * new_size);
+		ubinaries_size = new_size;
+	}
+	sym = calloc (sizeof (UnmanagedSymbol), 1);
+	sym->addr = addr;
+	sym->name = name;
+	sym->size = size;
+	sym->is_binary = 1;
+	ubinaries [ubinaries_num++] = sym;
+}
+
+static UnmanagedSymbol*
+lookup_unmanaged_binary (uintptr_t addr)
+{
+	int i;
+	for (i = 0; i < ubinaries_num; ++i) {
+		UnmanagedSymbol *ubin = ubinaries [i];
+		if (addr >= ubin->addr && addr < ubin->addr + ubin->size) {
+			return ubin;
+		}
+	}
+	return NULL;
+}
+
+static const char*
+sample_type_name (int type)
+{
+	switch (type) {
+	case SAMPLE_CYCLES: return "cycles";
+	case SAMPLE_INSTRUCTIONS: return "instructions retired";
+	case SAMPLE_CACHE_MISSES: return "cache misses";
+	case SAMPLE_CACHE_REFS: return "cache references";
+	case SAMPLE_BRANCHES: return "executed branches";
+	case SAMPLE_BRANCH_MISSES: return "unpredicted branches";
+	}
+	return "unknown";
+}
+
+static void
+set_usym_parent (UnmanagedSymbol** cachedus, int count)
+{
+	int i;
+	for (i = 0; i < count; ++i) {
+		UnmanagedSymbol *ubin = lookup_unmanaged_binary (cachedus [i]->addr);
+		if (ubin == cachedus [i])
+			continue;
+		cachedus [i]->parent = ubin;
+	}
+}
+
+static void
+print_usym (UnmanagedSymbol* um)
+{
+	if (um->parent)
+		fprintf (outfile, "\t%6d %6.2f %-36s in %s\n", um->sample_hits, um->sample_hits*100.0/num_stat_samples, um->name, um->parent->name);
+	else
+		fprintf (outfile, "\t%6d %6.2f %s\n", um->sample_hits, um->sample_hits*100.0/num_stat_samples, um->name);
+}
+
+static int
+sym_percent (uintptr_t sample_hits)
+{
+	double pc;
+	if (verbose)
+		return 1;
+	pc = sample_hits*100.0/num_stat_samples;
+	return pc >= 0.1;
+}
+
+static void
+dump_samples (void)
+{
+	int i, u;
+	int count = 0, msize = 0;
+	int unmanaged_hits = 0;
+	int unresolved_hits = 0;
+	MethodDesc** cachedm = NULL;
+	int ucount = 0, usize = 0;
+	UnmanagedSymbol** cachedus = NULL;
+	if (!num_stat_samples)
+		return;
+	qsort (usymbols, usymbols_num, sizeof (UnmanagedSymbol*), compare_usymbol_addr);
+	for (i = 0; i < num_stat_samples; ++i) {
+		MethodDesc *m = lookup_method_by_ip (stat_samples [i]);
+		if (m) {
+			if (!m->sample_hits) {
+				if (count == msize) {
+					msize *= 2;
+					if (!msize)
+						msize = 4;
+					cachedm = realloc (cachedm, sizeof (void*) * msize);
+				}
+				cachedm [count++] = m;
+			}
+			m->sample_hits++;
+		} else {
+			UnmanagedSymbol *usym = lookup_unmanaged_symbol (stat_samples [i]);
+			if (!usym) {
+				unresolved_hits++;
+				//printf ("unmanaged hit at %p\n", (void*)stat_samples [i]);
+				usym = lookup_unmanaged_binary (stat_samples [i]);
+			}
+			if (usym) {
+				if (!usym->sample_hits) {
+					if (ucount == usize) {
+						usize *= 2;
+						if (!usize)
+							usize = 4;
+						cachedus = realloc (cachedus, sizeof (void*) * usize);
+					}
+					cachedus [ucount++] = usym;
+				}
+				usym->sample_hits++;
+			}
+			unmanaged_hits++;
+		}
+	}
+	qsort (cachedm, count, sizeof (MethodDesc*), compare_method_samples);
+	qsort (cachedus, ucount, sizeof (UnmanagedSymbol*), compare_usymbol_samples);
+	set_usym_parent (cachedus, ucount);
+	fprintf (outfile, "\nStatistical samples summary\n");
+	fprintf (outfile, "\tSample type: %s\n", sample_type_name (stat_sample_desc [0]));
+	fprintf (outfile, "\tUnmanaged hits:  %6d (%4.1f%%)\n", unmanaged_hits, (100.0*unmanaged_hits)/num_stat_samples);
+	fprintf (outfile, "\tManaged hits:    %6d (%4.1f%%)\n", num_stat_samples - unmanaged_hits, (100.0*(num_stat_samples-unmanaged_hits))/num_stat_samples);
+	fprintf (outfile, "\tUnresolved hits: %6d (%4.1f%%)\n", unresolved_hits, (100.0*unresolved_hits)/num_stat_samples);
+	fprintf (outfile, "\t%6s %6s %s\n", "Hits", "%", "Method name");
+	i = 0;
+	u = 0;
+	while (i < count || u < ucount) {
+		if (i < count) {
+			MethodDesc *m = cachedm [i];
+			if (u < ucount) {
+				UnmanagedSymbol *um = cachedus [u];
+				if (um->sample_hits > m->sample_hits) {
+					if (!sym_percent (um->sample_hits))
+						break;
+					print_usym (um);
+					u++;
+					continue;
+				}
+			}
+			if (!sym_percent (m->sample_hits))
+				break;
+			fprintf (outfile, "\t%6d %6.2f %s\n", m->sample_hits, m->sample_hits*100.0/num_stat_samples, m->name);
+			i++;
+			continue;
+		}
+		if (u < ucount) {
+			UnmanagedSymbol *um = cachedus [u];
+			if (!sym_percent (um->sample_hits))
+				break;
+			print_usym (um);
+			u++;
+			continue;
+		}
+	}
 }
 
 typedef struct _HeapClassDesc HeapClassDesc;
@@ -636,6 +938,7 @@ heap_shot_free_objects (HeapShot *hs)
 	hs->objects_hash_size = 0;
 	hs->objects_count = 0;
 }
+
 
 struct _BackTrace {
 	BackTrace *next;
@@ -1401,7 +1704,7 @@ decode_buffer (ProfContext *ctx)
 				intptr_t codediff = decode_sleb128 (p, &p);
 				int codelen = decode_uleb128 (p, &p);
 				if (debug)
-					fprintf (outfile, "jitted method %p (%s), size: %d\n", (void*)(method_base), p, codelen);
+					fprintf (outfile, "jitted method %p (%s), size: %d, code: %p\n", (void*)(method_base), p, codelen, (void*)(ptr_base + codediff));
 				add_method (method_base, (char*)p, ptr_base + codediff, codelen);
 				while (*p) p++;
 				p++;
@@ -1618,6 +1921,50 @@ decode_buffer (ProfContext *ctx)
 			}
 			break;
 		}
+		case TYPE_SAMPLE: {
+			int subtype = *p & 0xf0;
+			if (subtype == TYPE_SAMPLE_HIT) {
+				int i;
+				int sample_type = decode_uleb128 (p + 1, &p);
+				uint64_t tstamp = decode_uleb128 (p, &p);
+				int count = decode_uleb128 (p, &p);
+				for (i = 0; i < count; ++i) {
+					uintptr_t ip = ptr_base + decode_sleb128 (p, &p);
+					add_stat_sample (sample_type, ip);
+					if (debug)
+						fprintf (outfile, "sample hit, type: %d at %p\n", sample_type, (void*)ip);
+				}
+			} else if (subtype == TYPE_SAMPLE_USYM) {
+				/* un unmanaged symbol description */
+				uintptr_t addr = ptr_base + decode_sleb128 (p + 1, &p);
+				uintptr_t size = decode_uleb128 (p, &p);
+				char *name;
+				name = pstrdup ((char*)p);
+				add_unmanaged_symbol (addr, name, size);
+				if (debug)
+					fprintf (outfile, "unmanaged symbol %s at %p\n", name, (void*)addr);
+				while (*p) p++;
+				p++;
+			} else if (subtype == TYPE_SAMPLE_UBIN) {
+				/* un unmanaged binary loaded in memory */
+				uint64_t tdiff = decode_uleb128 (p + 1, &p);
+				uintptr_t addr = decode_sleb128 (p, &p);
+				uint64_t offset = decode_uleb128 (p, &p);
+				uintptr_t size = decode_uleb128 (p, &p);
+				char *name;
+				LOG_TIME (time_base, tdiff);
+				time_base += tdiff;
+				name = pstrdup ((char*)p);
+				add_unmanaged_binary (addr, name, size);
+				if (debug)
+					fprintf (outfile, "unmanaged binary %s at %p\n", name, (void*)addr);
+				while (*p) p++;
+				p++;
+			} else {
+				return 0;
+			}
+			break;
+		}
 		default:
 			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %llu + %d (len: %d\n)\n", *p, file_offset, p - ctx->buf, len);
 			exit (1);
@@ -1816,6 +2163,27 @@ dump_gcs (void)
 			get_handle_name (i), handle_info [i].created, handle_info [i].destroyed, handle_info [i].max_live);
 		dump_traces (&handle_info [i].traces, "created");
 	}
+}
+
+static void
+dump_jit (void)
+{
+	int i;
+	int code_size = 0;
+	int compiled_methods = 0;
+	MethodDesc* m;
+	fprintf (outfile, "\nJIT summary\n");
+	for (i = 0; i < HASH_SIZE; ++i) {
+		m = method_hash [i];
+		for (m = method_hash [i]; m; m = m->next) {
+			if (!m->code)
+				continue;
+			compiled_methods++;
+			code_size += m->len;
+		}
+	}
+	fprintf (outfile, "\tCompiled methods: %d\n", compiled_methods);
+	fprintf (outfile, "\tGenerated code size: %d\n", code_size);
 }
 
 static void
@@ -2095,7 +2463,7 @@ flush_context (ProfContext *ctx)
 	}
 }
 
-static const char *reports = "header,gc,alloc,call,metadata,exception,monitor,thread,heapshot";
+static const char *reports = "header,jit,gc,sample,alloc,call,metadata,exception,monitor,thread,heapshot";
 
 static const char*
 match_option (const char *p, const char *opt)
@@ -2130,6 +2498,11 @@ print_reports (ProfContext *ctx, const char *reps, int parse_only)
 				dump_gcs ();
 			continue;
 		}
+		if ((opt = match_option (p, "jit")) != p) {
+			if (!parse_only)
+				dump_jit ();
+			continue;
+		}
 		if ((opt = match_option (p, "alloc")) != p) {
 			if (!parse_only)
 				dump_allocations ();
@@ -2158,6 +2531,11 @@ print_reports (ProfContext *ctx, const char *reps, int parse_only)
 		if ((opt = match_option (p, "heapshot")) != p) {
 			if (!parse_only)
 				dump_heap_shots ();
+			continue;
+		}
+		if ((opt = match_option (p, "sample")) != p) {
+			if (!parse_only)
+				dump_samples ();
 			continue;
 		}
 		return 0;

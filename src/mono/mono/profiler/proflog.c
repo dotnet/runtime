@@ -15,9 +15,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#include <fcntl.h>
 #include <errno.h>
 #if defined(HOST_WIN32) || defined(DISABLE_SOCKETS)
 #define DISABLE_HELPER_THREAD 1
+#endif
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <dlfcn.h>
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
+#ifdef HAVE_LINK_H
+#include <link.h>
 #endif
 
 #ifndef DISABLE_HELPER_THREAD
@@ -33,11 +48,22 @@
 #include <pthread.h>
 #endif
 
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 #include "utils.c"
 #include "proflog.h"
 
 #if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
+#endif
+
+/* the architecture needs a memory fence */
+#if defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
+#include "perf_event.h"
+#define USE_PERF_EVENTS 1
+static int read_perf_mmap (MonoProfiler* prof);
 #endif
 
 #define BUFFER_SIZE (4096 * 16)
@@ -50,6 +76,11 @@ static int max_call_depth = 100;
 static int runtime_inited = 0;
 static int command_port = 0;
 static int heapshot_requested = 0;
+static int sample_type = 0;
+static int sample_freq = 0;
+static int do_mono_sample = 0;
+static int in_shutdown = 0;
+static int do_debug = 0;
 
 /* For linux compile with:
  * gcc -fPIC -shared -o libmono-profiler-log.so proflog.c utils.c -Wall -g -lz `pkg-config --cflags --libs mono-2`
@@ -235,13 +266,35 @@ typedef struct _LogBuffer LogBuffer;
  *	uleb128 encoded offset: the first offset is from the object address
  *	and each next offset is relative to the previous one
  * 	[objrefs: sleb128]+ object referenced as a difference from obj_base
+ * 	The same object can appear multiple times, but only the first time
+ * 	with size != 0: in the other cases this data will only be used to
+ * 	provide additional referenced objects.
  * if exinfo == TYPE_HEAP_ROOT
  * 	[num_roots: uleb128] number of root references
  * 	[num_gc: uleb128] number of major gcs
  * 	[object: sleb128] the object as a difference from obj_base
- * 	[root_type: uleb128] the root_type
+ * 	[root_type: uleb128] the root_type: MonoProfileGCRootType (profiler.h)
  * 	[extra_info: uleb128] the extra_info value
  * 	object, root_type_extra_info are repeated num_roots times
+ *
+ * type sample format
+ * type: TYPE_SAMPLE
+ * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN
+ * if exinfo == TYPE_SAMPLE_HIT
+ * 	[sample_type: uleb128] type of sample (SAMPLE_*)
+ * 	[timestamp: uleb128] nanoseconds since startup (note: different from other timestamps!)
+ * 	[count: uleb128] number of following instruction addresses
+ * 	[ip: sleb128]* instruction pointer as difference from ptr_base
+ * if exinfo == TYPE_SAMPLE_USYM
+ * 	[address: sleb128] symbol address as a difference from ptr_base
+ * 	[size: uleb128] symbol size (may be 0 if unknown)
+ * 	[name: string] symbol name
+ * if exinfo == TYPE_SAMPLE_UBIN
+ * 	[time diff: uleb128] nanoseconds since last timing
+ * 	[address: sleb128] address where binary has been loaded
+ * 	[offset: uleb128] file offset of mapping (the same file can be mapped multiple times)
+ * 	[size: uleb128] memory size
+ * 	[name: string] binary name
  *
  */
 struct _LogBuffer {
@@ -264,12 +317,31 @@ struct _LogBuffer {
 #define ENTER_LOG(lb,str) if ((lb)->locked) {write(2, str, strlen(str)); write(2, "\n", 1);return;} else {(lb)->locked++;}
 #define EXIT_LOG(lb) (lb)->locked--;
 
+typedef struct _StatBuffer StatBuffer;
+struct _StatBuffer {
+	StatBuffer *next;
+	uintptr_t size;
+	uintptr_t *data_end;
+	uintptr_t *data;
+	uintptr_t buf [1];
+};
+
+typedef struct _BinaryObject BinaryObject;
+
+struct _BinaryObject {
+	BinaryObject *next;
+	void *addr;
+	char *name;
+};
+
 struct _MonoProfiler {
 	LogBuffer *buffers;
+	StatBuffer *stat_buffers;
 	FILE* file;
 #if defined (HAVE_SYS_ZLIB)
 	gzFile *gzfile;
 #endif
+	uint64_t startup_time;
 	int pipe_output;
 	int last_gc_gen_started;
 	int command_port;
@@ -278,6 +350,7 @@ struct _MonoProfiler {
 #ifndef HOST_WIN32
 	pthread_t helper_thread;
 #endif
+	BinaryObject *binary_objects;
 };
 
 #ifdef HOST_WIN32
@@ -304,6 +377,16 @@ pstrdup (const char *s)
 	char *p = malloc (len);
 	memcpy (p, s, len);
 	return p;
+}
+
+static StatBuffer*
+create_stat_buffer (void)
+{
+	StatBuffer* buf = alloc_buffer (BUFFER_SIZE);
+	buf->size = BUFFER_SIZE;
+	buf->data_end = (uintptr_t*)((unsigned char*)buf + buf->size);
+	buf->data = buf->buf;
+	return buf;
 }
 
 static LogBuffer*
@@ -381,6 +464,13 @@ static void
 emit_svalue (LogBuffer *logbuffer, int64_t value)
 {
 	encode_sleb128 (value, logbuffer->data, &logbuffer->data);
+	assert (logbuffer->data <= logbuffer->data_end);
+}
+
+static void
+emit_uvalue (LogBuffer *logbuffer, uint64_t value)
+{
+	encode_uleb128 (value, logbuffer->data, &logbuffer->data);
 	assert (logbuffer->data <= logbuffer->data_end);
 }
 
@@ -1040,9 +1130,579 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	EXIT_LOG (logbuffer);
 }
 
+#ifdef HOST_WIN32
+#define cmp_exchange InterlockedCompareExchangePointer
+#else
+static void*
+cmp_exchange (volatile void **dest, void *exch, void *comp)
+{
+	void *old;
+	__asm__ __volatile__ ("lock; "
+#ifdef __x86_64__
+		"cmpxchgq"
+#else
+		"cmpxchgl"
+#endif
+		" %2, %0"
+		: "=m" (*dest), "=a" (old)
+		: "r" (exch), "m" (*dest), "a" (comp));
+	return old;
+}
+#endif
+
+static void
+mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
+{
+	StatBuffer *sbuf;
+	uint64_t now;
+	uintptr_t *data, *new_data, *old_data;
+	if (in_shutdown)
+		return;
+	now = current_time ();
+	if (do_debug) {
+		int len;
+		char buf [256];
+		snprintf (buf, sizeof (buf), "hit at %p in thread %p at %llu\n", ip, (void*)thread_id (), now);
+		len = strlen (buf);
+		write (2, buf, len);
+	}
+	sbuf = profiler->stat_buffers;
+	if (!sbuf)
+		return;
+	/* overflow */
+	if (sbuf->data + 400 >= sbuf->data_end) {
+		sbuf = create_stat_buffer ();
+		sbuf->next = profiler->stat_buffers;
+		profiler->stat_buffers = sbuf;
+		if (do_debug)
+			write (2, "overflow\n", 9);
+		/* notify the helper thread */
+		if (sbuf->next->next) {
+			char c = 0;
+			write (profiler->pipes [1], &c, 1);
+			if (do_debug)
+				write (2, "notify\n", 7);
+		}
+	}
+	do {
+		old_data = sbuf->data;
+		new_data = old_data + 4;
+		data = cmp_exchange ((volatile void**)&sbuf->data, new_data, old_data);
+	} while (data != old_data);
+	if (old_data >= sbuf->data_end)
+		return; /* lost event */
+	old_data [0] = 1 | (sample_type << 16);
+	old_data [1] = thread_id ();
+	old_data [2] = (now - profiler->startup_time) / 10000;
+	old_data [3] = (uintptr_t)ip;
+}
+
+static uintptr_t *code_pages = 0;
+static int num_code_pages = 0;
+static int size_code_pages = 0;
+#define CPAGE_SHIFT (9)
+#define CPAGE_SIZE (1 << CPAGE_SHIFT)
+#define CPAGE_MASK (~(CPAGE_SIZE - 1))
+#define CPAGE_ADDR(p) ((p) & CPAGE_MASK)
+
+static uintptr_t
+add_code_page (uintptr_t *hash, uintptr_t hsize, uintptr_t page)
+{
+	uintptr_t i;
+	uintptr_t start_pos;
+	start_pos = (page >> CPAGE_SHIFT) % hsize;
+	i = start_pos;
+	do {
+		if (hash [i] && CPAGE_ADDR (hash [i]) == CPAGE_ADDR (page)) {
+			return 0;
+		} else if (!hash [i]) {
+			hash [i] = page;
+			return 1;
+		}
+		/* wrap around */
+		if (++i == hsize)
+			i = 0;
+	} while (i != start_pos);
+	/* should not happen */
+	printf ("failed code page store\n");
+	return 0;
+}
+
+static void
+add_code_pointer (uintptr_t ip)
+{
+	uintptr_t i;
+	if (num_code_pages * 2 >= size_code_pages) {
+		uintptr_t *n;
+		uintptr_t old_size = size_code_pages;
+		size_code_pages *= 2;
+		if (size_code_pages == 0)
+			size_code_pages = 16;
+		n = calloc (sizeof (uintptr_t) * size_code_pages, 1);
+		for (i = 0; i < old_size; ++i) {
+			if (code_pages [i])
+				add_code_page (n, size_code_pages, code_pages [i]);
+		}
+		if (code_pages)
+			free (code_pages);
+		code_pages = n;
+	}
+	num_code_pages += add_code_page (code_pages, size_code_pages, ip & CPAGE_MASK);
+}
+
+static void
+dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t size)
+{
+	uint64_t now;
+	LogBuffer *logbuffer;
+	int len;
+	len = strlen (filename) + 1;
+	now = current_time ();
+	logbuffer = ensure_logbuf (20 + len);
+	emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_UBIN);
+	emit_time (logbuffer, now);
+	emit_svalue (logbuffer, load_addr);
+	emit_uvalue (logbuffer, offset);
+	emit_uvalue (logbuffer, size);
+	memcpy (logbuffer->data, filename, len);
+	logbuffer->data += len;
+}
+
+static void
+dump_usym (const char *name, uintptr_t value, uintptr_t size)
+{
+	LogBuffer *logbuffer;
+	int len;
+	len = strlen (name) + 1;
+	logbuffer = ensure_logbuf (20 + len);
+	emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_USYM);
+	emit_ptr (logbuffer, (void*)value);
+	emit_value (logbuffer, size);
+	memcpy (logbuffer->data, name, len);
+	logbuffer->data += len;
+}
+
+#ifdef ELFMAG0
+static void
+dump_elf_symbols (ElfW(Sym) *symbols, int num_symbols, const char *strtab, void *load_addr)
+{
+	int i;
+	for (i = 0; i < num_symbols; ++i) {
+		const char* sym;
+		sym =  strtab + symbols [i].st_name;
+		if (!symbols [i].st_name || !symbols [i].st_size || (symbols [i].st_info & 0xf) != STT_FUNC)
+			continue;
+		//printf ("symbol %s at %d\n", sym, symbols [i].st_value);
+		dump_usym (sym, (uintptr_t)load_addr + symbols [i].st_value, symbols [i].st_size);
+	}
+}
+
+static int
+read_elf_symbols (MonoProfiler *prof, const char *filename, void *load_addr)
+{
+	int fd, i;
+	void *data;
+	struct stat statb;
+	uint64_t file_size;
+	ElfW(Ehdr) *header;
+	ElfW(Shdr) *sheader;
+	ElfW(Shdr) *shstrtabh;
+	ElfW(Shdr) *symtabh = NULL;
+	ElfW(Shdr) *strtabh = NULL;
+	ElfW(Sym) *symbols = NULL;
+	const char *strtab;
+	int num_symbols;
+
+	fd = open (filename, O_RDONLY);
+	if (fd < 0)
+		return 0;
+	if (fstat (fd, &statb) != 0) {
+		close (fd);
+		return 0;
+	}
+	file_size = statb.st_size;
+	data = mmap (NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	close (fd);
+	if (data == MAP_FAILED)
+		return 0;
+	header = data;
+	if (header->e_ident [EI_MAG0] != ELFMAG0 ||
+			header->e_ident [EI_MAG1] != ELFMAG1 ||
+			header->e_ident [EI_MAG2] != ELFMAG2 ||
+			header->e_ident [EI_MAG3] != ELFMAG3 ) {
+		munmap (data, file_size);
+		return 0;
+	}
+	sheader = (void*)((char*)data + header->e_shoff);
+	shstrtabh = (void*)((char*)sheader + (header->e_shentsize * header->e_shstrndx));
+	strtab = (const char*)data + shstrtabh->sh_offset;
+	for (i = 0; i < header->e_shnum; ++i) {
+		//printf ("section header: %d\n", sheader->sh_type);
+		if (sheader->sh_type == SHT_SYMTAB) {
+			symtabh = sheader;
+			strtabh = (void*)((char*)data + header->e_shoff + sheader->sh_link * header->e_shentsize);
+			/*printf ("symtab section header: %d, .strstr: %d\n", i, sheader->sh_link);*/
+			break;
+		}
+		sheader = (void*)((char*)sheader + header->e_shentsize);
+	}
+	if (!symtabh || !strtabh) {
+		munmap (data, file_size);
+		return 0;
+	}
+	strtab = (const char*)data + strtabh->sh_offset;
+	num_symbols = symtabh->sh_size / symtabh->sh_entsize;
+	symbols = (void*)((char*)data + symtabh->sh_offset);
+	dump_elf_symbols (symbols, num_symbols, strtab, load_addr);
+	munmap (data, file_size);
+	return 1;
+}
+#endif
+
+#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
+static int
+elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
+{
+	MonoProfiler *prof = data;
+	char buf [256];
+	const char *filename;
+	BinaryObject *obj;
+	char *a = (void*)info->dlpi_addr;
+	int i, num_sym;
+	ElfW(Dyn) *dyn = NULL;
+	ElfW(Sym) *symtab = NULL;
+	ElfW(Word) *hash_table = NULL;
+	ElfW(Ehdr) *header = NULL;
+	const char* strtab = NULL;
+	for (obj = prof->binary_objects; obj; obj = obj->next) {
+		if (obj->addr == a)
+			return 0;
+	}
+	filename = info->dlpi_name;
+	if (!info->dlpi_addr && !filename [0]) {
+		int l = readlink ("/proc/self/exe", buf, sizeof (buf) - 1);
+		if (l > 0) {
+			buf [l] = 0;
+			filename = buf;
+		}
+	}
+	obj = calloc (sizeof (BinaryObject), 1);
+	obj->addr = (void*)info->dlpi_addr;
+	obj->name = pstrdup (filename);
+	obj->next = prof->binary_objects;
+	prof->binary_objects = obj;
+	//printf ("loaded file: %s at %p, segments: %d\n", filename, (void*)info->dlpi_addr, info->dlpi_phnum);
+	a = NULL;
+	for (i = 0; i < info->dlpi_phnum; ++i) {
+		//printf ("segment type %d file offset: %d, size: %d\n", info->dlpi_phdr[i].p_type, info->dlpi_phdr[i].p_offset, info->dlpi_phdr[i].p_memsz);
+		if (info->dlpi_phdr[i].p_type == PT_LOAD && !header) {
+			header = (ElfW(Ehdr)*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+			if (header->e_ident [EI_MAG0] != ELFMAG0 ||
+					header->e_ident [EI_MAG1] != ELFMAG1 ||
+					header->e_ident [EI_MAG2] != ELFMAG2 ||
+					header->e_ident [EI_MAG3] != ELFMAG3 ) {
+				header = NULL;
+			}
+			dump_ubin (filename, info->dlpi_addr + info->dlpi_phdr[i].p_vaddr, info->dlpi_phdr[i].p_offset, info->dlpi_phdr[i].p_memsz);
+		} else if (info->dlpi_phdr[i].p_type == PT_DYNAMIC) {
+			dyn = (ElfW(Dyn) *)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+		}
+	}
+	if (read_elf_symbols (prof, filename, (void*)info->dlpi_addr))
+		return 0;
+	if (!info->dlpi_name || !info->dlpi_name[0])
+		return 0;
+	if (!dyn)
+		return 0;
+	for (i = 0; dyn [i].d_tag != DT_NULL; ++i) {
+		if (dyn [i].d_tag == DT_SYMTAB) {
+			if (symtab && do_debug)
+				printf ("multiple symtabs: %d\n", i);
+			symtab = (ElfW(Sym) *)(a + dyn [i].d_un.d_ptr);
+		} else if (dyn [i].d_tag == DT_HASH) {
+			hash_table = (ElfW(Word) *)(a + dyn [i].d_un.d_ptr);
+		} else if (dyn [i].d_tag == DT_STRTAB) {
+			strtab = (const char*)(a + dyn [i].d_un.d_ptr);
+		}
+	}
+	if (!hash_table)
+		return 0;
+	num_sym = hash_table [1];
+	dump_elf_symbols (symtab, num_sym, strtab, (void*)info->dlpi_addr);
+	return 0;
+}
+
+static void
+load_binaries (MonoProfiler *prof)
+{
+	dl_iterate_phdr (elf_dl_callback, prof);
+}
+#else
+static void
+load_binaries (MonoProfiler *prof)
+{
+}
+#endif
+
+static const char*
+symbol_for (uintptr_t code)
+{
+	void *ip = (void*)code;
+	Dl_info di;
+	if (dladdr (ip, &di)) {
+		if (di.dli_sname)
+			return di.dli_sname;
+	} else {
+	/*	char **names;
+		names = backtrace_symbols (&ip, 1);
+		if (names) {
+			const char* p = names [0];
+			free (names);
+			return p;
+		}
+		*/
+	}
+	return NULL;
+}
+
+static void
+dump_unmanaged_coderefs (MonoProfiler *prof)
+{
+	int i;
+	const char* last_symbol;
+	uintptr_t addr, page_end;
+
+	load_binaries (prof);
+	return;
+	for (i = 0; i < size_code_pages; ++i) {
+		const char* sym;
+		if (!code_pages [i] || code_pages [i] & 1)
+			continue;
+		last_symbol = NULL;
+		addr = CPAGE_ADDR (code_pages [i]);
+		page_end = addr + CPAGE_SIZE;
+		code_pages [i] |= 1;
+		/* we dump the symbols for the whole page */
+		for (; addr < page_end; addr += 16) {
+			sym = symbol_for (addr);
+			if (sym && sym == last_symbol)
+				continue;
+			last_symbol = sym;
+			if (!sym)
+				continue;
+			dump_usym (sym, addr, 0); /* let's not guess the size */
+			//printf ("found symbol at %p: %s\n", (void*)addr, sym);
+		}
+	}
+}
+
+static void
+dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf, int recurse)
+{
+	uintptr_t *sample;
+	LogBuffer *logbuffer;
+	if (!sbuf)
+		return;
+	if (recurse && sbuf->next) {
+		dump_sample_hits (prof, sbuf->next, 1);
+		free_buffer (sbuf->next, sbuf->next->size);
+		sbuf->next = NULL;
+	}
+	for (sample = sbuf->buf; sample < sbuf->data;) {
+		int i;
+		int count = sample [0] & 0xffff;
+		int type = sample [0] >> 16;
+		if (sample + count + 3 > sbuf->data)
+			break;
+		logbuffer = ensure_logbuf (20 + count * 8);
+		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
+		emit_value (logbuffer, type);
+		emit_uvalue (logbuffer, (prof->startup_time + sample [2]) * 10000);
+		emit_value (logbuffer, count);
+		for (i = 0; i < count; ++i) {
+			emit_ptr (logbuffer, (void*)sample [i + 3]);
+			add_code_pointer (sample [i + 3]);
+		}
+		sample += count + 3;
+	}
+	dump_unmanaged_coderefs (prof);
+}
+
+#if USE_PERF_EVENTS
+#ifndef __NR_perf_event_open
+#define __NR_perf_event_open 241
+#endif
+
+static int perf_fd = -1;
+static void *mmap_base;
+static struct perf_event_mmap_page *page_desc = NULL;
+static int num_pages = 64;
+static unsigned int mmap_mask;
+static unsigned int prev_pos = 0;
+
+typedef struct {
+	struct perf_event_header h;
+	uint64_t ip;
+	uint32_t pid;
+	uint32_t tid;
+	uint64_t timestamp;
+	uint64_t period;
+	uint64_t nframes;
+} PSample;
+
+static int
+perf_event_syscall (struct perf_event_attr *attr, pid_t pid, int cpu, int group_fd, unsigned long flags)
+{
+	attr->size = PERF_ATTR_SIZE_VER0;
+	//printf ("perf attr size: %d\n", attr->size);
+	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
+}
+
+static int
+setup_perf_map (void)
+{
+	mmap_mask = num_pages * getpagesize () - 1;
+	mmap_base = mmap (NULL, (num_pages + 1) * getpagesize (), PROT_READ|PROT_WRITE, MAP_SHARED, perf_fd, 0);
+	if (mmap_base == MAP_FAILED) {
+		if (do_debug)
+			printf ("failed mmap\n");
+		return 0;
+	}
+	page_desc = mmap_base;
+	if (do_debug)
+		printf ("mmap version: %d\n", page_desc->version);
+	return 1;
+}
+
+static void
+dump_perf_hits (MonoProfiler *prof, void *buf, int size)
+{
+	LogBuffer *logbuffer;
+	void *end = (char*)buf + size;
+	int samples = 0;
+	int pid = getpid ();
+
+	while (buf < end) {
+		PSample *s = buf;
+		if (s->h.size == 0)
+			break;
+		if (pid != s->pid) {
+			if (do_debug)
+				printf ("event for different pid: %d\n", s->pid);
+			buf = (char*)buf + s->h.size;
+			continue;
+		}
+		/*ip = (void*)s->ip;
+		printf ("sample: %d, size: %d, ip: %p (%s), timestamp: %llu, nframes: %llu\n",
+			s->h.type, s->h.size, ip, symbol_for (ip), s->timestamp, s->nframes);*/
+		logbuffer = ensure_logbuf (20 + s->nframes * 8);
+		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
+		emit_value (logbuffer, sample_type);
+		emit_uvalue (logbuffer, s->timestamp - prof->startup_time);
+		emit_value (logbuffer, 1); /* count */
+		emit_ptr (logbuffer, (void*)(uintptr_t)s->ip);
+		add_code_pointer (s->ip);
+		buf = (char*)buf + s->h.size;
+		samples++;
+	}
+	if (do_debug)
+		printf ("dumped %d samples\n", samples);
+	dump_unmanaged_coderefs (prof);
+}
+
+/* read events from the ring buffer */
+static int
+read_perf_mmap (MonoProfiler* prof)
+{
+	unsigned char *buf;
+	unsigned char *data = (unsigned char*)mmap_base + getpagesize ();
+	unsigned int head = page_desc->data_head;
+	int diff, size;
+	unsigned int old;
+
+#if defined(__i386__)
+	asm volatile("lock; addl $0,0(%%esp)":::"memory");
+#elif defined (__x86_64__)
+	asm volatile("lfence":::"memory")
+#endif
+
+	old = prev_pos;
+	diff = head - old;
+	if (diff < 0) {
+		if (do_debug)
+			printf ("lost mmap events: old: %d, head: %d\n", old, head);
+		old = head;
+	}
+	size = head - old;
+	if ((old & mmap_mask) + size != (head & mmap_mask)) {
+		buf = data + (old & mmap_mask);
+		size = mmap_mask + 1 - (old & mmap_mask);
+		old += size;
+		/* size bytes at buf */
+		if (do_debug)
+			printf ("found1 bytes of events: %d\n", size);
+		dump_perf_hits (prof, buf, size);
+	}
+	buf = data + (old & mmap_mask);
+	size = head - old;
+	/* size bytes at buf */
+	if (do_debug)
+		printf ("found bytes of events: %d\n", size);
+	dump_perf_hits (prof, buf, size);
+	old += size;
+	prev_pos = old;
+	page_desc->data_tail = old;
+	return 0;
+}
+
+static int
+setup_perf_event (void)
+{
+	struct perf_event_attr attr;
+	memset (&attr, 0, sizeof (attr));
+	attr.type = PERF_TYPE_HARDWARE;
+	switch (sample_type) {
+	case SAMPLE_CYCLES: attr.config = PERF_COUNT_HW_CPU_CYCLES; break;
+	case SAMPLE_INSTRUCTIONS: attr.config = PERF_COUNT_HW_INSTRUCTIONS; break;
+	case SAMPLE_CACHE_MISSES: attr.config = PERF_COUNT_HW_CACHE_MISSES; break;
+	case SAMPLE_CACHE_REFS: attr.config = PERF_COUNT_HW_CACHE_REFERENCES; break;
+	case SAMPLE_BRANCHES: attr.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS; break;
+	case SAMPLE_BRANCH_MISSES: attr.config = PERF_COUNT_HW_BRANCH_MISSES; break;
+	default: attr.config = PERF_COUNT_HW_CPU_CYCLES; break;
+	}
+	attr.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME;
+//	attr.sample_type |= PERF_SAMPLE_CALLCHAIN;
+	attr.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING | PERF_FORMAT_ID;
+	attr.inherit = 1;
+	attr.freq = 1;
+	attr.sample_freq = sample_freq;
+
+	perf_fd = perf_event_syscall (&attr, getpid (), -1, -1, 0);
+	if (do_debug)
+		printf ("perf fd: %d, freq: %d, event: %llu\n", perf_fd, sample_freq, attr.config);
+	if (perf_fd < 0) {
+		if (perf_fd == -EPERM) {
+			fprintf (stderr, "Perf syscall denied, do \"echo 1 > /proc/sys/kernel/perf_event_paranoid\" as root to enable.\n");
+		} else {
+			if (do_debug)
+				perror ("open perf event");
+		}
+		return 0;
+	}
+	if (!setup_perf_map ()) {
+		close (perf_fd);
+		perf_fd = -1;
+		return 0;
+	}
+	return 1;
+}
+
+#endif /* USE_PERF_EVENTS */
+
 static void
 log_shutdown (MonoProfiler *prof)
 {
+	in_shutdown = 1;
 #ifndef DISABLE_HELPER_THREAD
 	if (prof->command_port) {
 		char c = 1;
@@ -1051,6 +1711,11 @@ log_shutdown (MonoProfiler *prof)
 		pthread_join (prof->helper_thread, &res);
 	}
 #endif
+#if USE_PERF_EVENTS
+	if (page_desc)
+		read_perf_mmap (prof);
+#endif
+	dump_sample_hits (prof, prof->stat_buffers, 1);
 	take_lock ();
 	if (TLS_GET (tlsbuffer))
 		dump_buffer (prof, TLS_GET (tlsbuffer));
@@ -1153,20 +1818,46 @@ helper_thread (void* arg)
 			if (max_fd < command_socket)
 				max_fd = command_socket;
 		}
+#if USE_PERF_EVENTS
+		if (perf_fd >= 0) {
+			FD_SET (perf_fd, &rfds);
+			if (max_fd < perf_fd)
+				max_fd = perf_fd;
+		}
+#endif
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
 		if (FD_ISSET (prof->pipes [0], &rfds)) {
+			char c;
+			int r = read (prof->pipes [0], &c, 1);
+			if (r == 1 && c == 0) {
+				StatBuffer *sbuf = prof->stat_buffers->next->next;
+				prof->stat_buffers->next->next = NULL;
+				if (do_debug)
+					fprintf (stderr, "stat buffer dump\n");
+				dump_sample_hits (prof, sbuf, 1);
+				free_buffer (sbuf, sbuf->size);
+				continue;
+			}
 			/* time to shut down */
 			if (thread)
 				mono_thread_detach (thread);
-			/*fprintf (stderr, "helper shutdown\n");*/
+			if (do_debug)
+				fprintf (stderr, "helper shutdown\n");
+#if USE_PERF_EVENTS
+			if (perf_fd >= 0)
+				read_perf_mmap (prof);
+#endif
+			safe_dump (prof, ensure_logbuf (0));
 			return NULL;
 		}
-		if (runtime_inited && !thread) {
-			thread = mono_thread_attach (mono_get_root_domain ());
-			/*fprintf (stderr, "attached\n");*/
+#if USE_PERF_EVENTS
+		if (perf_fd >= 0 && FD_ISSET (perf_fd, &rfds)) {
+			read_perf_mmap (prof);
+			safe_dump (prof, ensure_logbuf (0));
 		}
+#endif
 		if (command_socket >= 0 && FD_ISSET (command_socket, &rfds)) {
 			len = read (command_socket, buf, sizeof (buf) - 1);
 			if (len < 0)
@@ -1180,8 +1871,15 @@ helper_thread (void* arg)
 			if (strcmp (buf, "heapshot\n") == 0) {
 				heapshot_requested = 1;
 				//fprintf (stderr, "perform heapshot\n");
-				if (thread)
+				if (runtime_inited && !thread) {
+					thread = mono_thread_attach (mono_get_root_domain ());
+					/*fprintf (stderr, "attached\n");*/
+				}
+				if (thread) {
 					process_requests (prof);
+					mono_thread_detach (thread);
+					thread = NULL;
+				}
 			}
 			continue;
 		}
@@ -1245,6 +1943,7 @@ create_profiler (const char *filename)
 	MonoProfiler *prof;
 	char *nf;
 	int force_delete = 0;
+	int need_helper_thread = 0;
 	prof = calloc (1, sizeof (MonoProfiler));
 
 	prof->command_port = command_port;
@@ -1292,8 +1991,20 @@ create_profiler (const char *filename)
 	if (use_zip)
 		prof->gzfile = gzdopen (fileno (prof->file), "wb");
 #endif
+#if USE_PERF_EVENTS
+	if (sample_type && !do_mono_sample)
+		need_helper_thread = setup_perf_event ();
+	if (perf_fd < 0) {
+		/* FIXME: warn if different freq or sample type */
+		do_mono_sample = 1;
+	}
+#endif
+	if (do_mono_sample) {
+		prof->stat_buffers = create_stat_buffer ();
+		need_helper_thread = 1;
+	}
 #ifndef DISABLE_HELPER_THREAD
-	if (hs_mode_ondemand) {
+	if (hs_mode_ondemand || need_helper_thread) {
 		if (!start_helper_thread (prof))
 			prof->command_port = 0;
 	}
@@ -1301,6 +2012,7 @@ create_profiler (const char *filename)
 	if (hs_mode_ondemand)
 		fprintf (stderr, "Ondemand heapshot unavailable on this arch.\n");
 #endif
+	prof->startup_time = current_time ();
 	dump_header (prof);
 	return prof;
 }
@@ -1316,6 +2028,9 @@ usage (int do_exit)
 	printf ("\t[no]calls        enable/disable recording enter/leave method events\n");
 	printf ("\theapshot[=MODE]  record heap shot info (by default at each major collection)\n");
 	printf ("\t                 MODE: every XXms milliseconds, every YYgc collections, ondemand\n");
+	printf ("\tsample[=TYPE]    use statistical sampling mode (by default cycles/1000)\n");
+	printf ("\t                 TYPE: cycles,instr,cacherefs,cachemiss,branches,branchmiss\n");
+	printf ("\t                 TYPE can be followed by /FREQUENCY\n");
 	printf ("\ttime=fast        use a faster (but more inaccurate) timer\n");
 	printf ("\tmaxframes=NUM    collect up to NUM stack frames\n");
 	printf ("\tcalldepth=NUM    ignore method events for call chain depth bigger than NUM\n");
@@ -1364,6 +2079,65 @@ match_option (const char* p, const char *opt, char **rval)
 		}
 	}
 	return p;
+}
+
+typedef struct {
+	const char *name;
+	int sample_mode;
+} SampleMode;
+
+static const SampleMode sample_modes [] = {
+	{"cycles", SAMPLE_CYCLES},
+	{"instr", SAMPLE_INSTRUCTIONS},
+	{"cachemiss", SAMPLE_CACHE_MISSES},
+	{"cacherefs", SAMPLE_CACHE_REFS},
+	{"branches", SAMPLE_BRANCHES},
+	{"branchmiss", SAMPLE_BRANCH_MISSES},
+	{NULL, 0}
+};
+
+static void
+set_sample_mode (char* val, int allow_empty)
+{
+	char *end;
+	char *maybe_freq = NULL;
+	unsigned int count;
+	const SampleMode *smode = sample_modes;
+#ifndef USE_PERF_EVENTS
+	do_mono_sample = 1;
+#endif
+	if (allow_empty && !val) {
+		sample_type = SAMPLE_CYCLES;
+		sample_freq = 1000;
+		return;
+	}
+	if (strcmp (val, "mono") == 0) {
+		do_mono_sample = 1;
+		sample_type = SAMPLE_CYCLES;
+		free (val);
+		return;
+	}
+	for (smode = sample_modes; smode->name; smode++) {
+		int l = strlen (smode->name);
+		if (strncmp (val, smode->name, l) == 0) {
+			sample_type = smode->sample_mode;
+			maybe_freq = val + l;
+			break;
+		}
+	}
+	if (!smode->name)
+		usage (1);
+	if (*maybe_freq == '/') {
+		count = strtoul (maybe_freq + 1, &end, 10);
+		if (maybe_freq + 1 == end)
+			usage (1);
+		sample_freq = count;
+	} else if (*maybe_freq != 0) {
+		usage (1);
+	} else {
+		sample_freq = 1000;
+	}
+	free (val);
 }
 
 static void
@@ -1459,12 +2233,23 @@ mono_profiler_startup (const char *desc)
 			do_report = 1;
 			continue;
 		}
+		if ((opt = match_option (p, "debug", NULL)) != p) {
+			do_debug = 1;
+			continue;
+		}
 		if ((opt = match_option (p, "heapshot", &val)) != p) {
 			events &= ~MONO_PROFILE_ALLOCATIONS;
 			events &= ~MONO_PROFILE_ENTER_LEAVE;
 			nocalls = 1;
 			do_heap_shot = 1;
 			set_hsmode (val, 1);
+			continue;
+		}
+		if ((opt = match_option (p, "sample", &val)) != p) {
+			events &= ~MONO_PROFILE_ALLOCATIONS;
+			events &= ~MONO_PROFILE_ENTER_LEAVE;
+			nocalls = 1;
+			set_sample_mode (val, 1);
 			continue;
 		}
 		if ((opt = match_option (p, "hsmode", &val)) != p) {
@@ -1533,6 +2318,12 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_exception (throw_exc, method_exc_leave, clause_exc);
 	mono_profiler_install_monitor (monitor_event);
 	mono_profiler_install_runtime_initialized (runtime_initialized);
+
+	
+	if (do_mono_sample && sample_type == SAMPLE_CYCLES) {
+		events |= MONO_PROFILE_STATISTICAL;
+		mono_profiler_install_statistical (mono_sample_hit);
+	}
 
 	mono_profiler_set_events (events);
 

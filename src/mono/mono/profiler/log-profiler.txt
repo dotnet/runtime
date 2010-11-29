@@ -22,6 +22,10 @@ The events collected include (among others):
 In addition, the profiler can periodically collect info about all the objects
 present in the heap at the end of a garbage collection (this is called heap shot
 and currently implemented only for the sgen garbage collector).
+Another available profiler mode is the *sampling* or *statistical* mode:
+periodically the program is sampled and the information about what the program was
+busy with is saved. This allows to get information about the program behaviour
+without degrading its performance too much (usually less than 10%).
 
 ## Basic profiler usage
 
@@ -50,12 +54,17 @@ the needed info can be gathered with:
 `mono --profile=log:nocalls program.exe`
 
 You will still be able to inspect information about the sequence of calls that lead
-to each allocation because at each object allocation a stack trace is collected as well.
+to each allocation because at each object allocation a stack trace is collected if
+full enter/leave information is not available.
 
 To periodically collect heap shots (and exclude method and allocation events) use the
 following options (making sure you run with the sgen garbage collector):
 
 `mono --gc=sgen --profile=log:heapshot program.exe`
+
+To perform a sampling profiler run, use the *sample* option:
+
+`mono --profile=log:sample program.exe`
 
 ## Profiler option documentation
 
@@ -93,6 +102,18 @@ MODE can be one of:
 	* *NUM*gc: perform a heap shot every *NUM* major garbage collections
 	* *ondemand*: perform a heap shot when such a command is sent to the
 	control port
+
+* *sample[=TYPE[/FREQ]]*: collect statistical samples of the program behaviour. The
+default is to collect a 1000 times per second the instruction pointer. This is
+equivalent to the value "cycles/1000" for *TYPE*. On some systems, like with recent
+Linux kernels, it is possible to cause the sampling to happen for other events
+provided by the performance counters of the cpu. In this case, *TYPE* can be one of:
+	* *cycles*: processor cycles
+	* *instr*: executed instructions
+	* *cacherefs*: cache references
+	* *cachemiss*: cache misses
+	* *branches*: executed branches
+	* *branchmiss*: mispredicted branches
 
 * *time=TIMER*: use the TIMER timestamp mode. TIMER can have the following values:
 	* *fast*: a usually faster but possibly more inaccurate timer
@@ -203,6 +224,9 @@ option:
 
 where the report names R1, R2 etc. can be:
 
+* *header*: information about program startup and profiler version
+* *jit*: JIT compiler information
+* *sample*: statistical sampling information
 * *gc*: garbage collection information
 * *alloc*: object allocation information
 * *call*: method profiling information
@@ -262,6 +286,11 @@ of FINDSPEC. For example, the following:
 
 will find all the byte arrays that are at least 10000 bytes in size.
 
+Note that with a moving garbage collector the object address can change, so
+you may need to track the changed address manually. It can also happen that
+multiple objects are allocated at the same address, so the output from this
+option can become large.
+
 ### Saving a profiler report
 
 By default mprof-report will print the summary data to the console.
@@ -274,6 +303,13 @@ To print it to a file, instead, use the option:
 If the profiler needs to collect lots of data, the execution of the program will
 slow down significantly, usually 10 to 20 times slower. There are several
 ways to reduce the impact of the profiler on the program execution.
+
+### Use the statistical sampling mode
+
+Statistical sampling allows executing a program under the profiler with minimal
+performance overhead (usually less than 10%). This mode allows checking where
+the program is spending most of it's execution time without significantly
+perturbing its behaviour.
 
 ### Collect less data
 
@@ -302,11 +338,6 @@ is the function provided by the system to get timestamp information.
 The *time=fast* profiler option can be usually used to speed up this operation,
 but, depending on the system, time accounting may have some level of approximation
 (though statistically the data should be still fairly valuable).
-
-### Use a statistical profiler instead
-
-See the mono manpage for the use of a statistical (sampling) profiler.
-The *log* profiler will be enhanced to provide sampling info in the future.
 
 ## Dealing with the size of the data files
 
