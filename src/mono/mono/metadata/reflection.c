@@ -4959,9 +4959,6 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 	} else if (strcmp (klass->name, "MonoType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 		MonoClass *mc = mono_class_from_mono_type (type);
-		if (!mono_class_init (mc))
-			mono_raise_exception (mono_class_get_exception_for_failure (mc));
-
 		token = mono_metadata_token_from_dor (
 			mono_image_typedef_or_ref_full (assembly, type, mc->generic_container == NULL || create_open_instance));
 	} else if (strcmp (klass->name, "GenericTypeParameterBuilder") == 0) {
