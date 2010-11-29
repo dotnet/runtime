@@ -1629,7 +1629,7 @@ read_perf_mmap (MonoProfiler* prof)
 #if defined(__i386__)
 	asm volatile("lock; addl $0,0(%%esp)":::"memory");
 #elif defined (__x86_64__)
-	asm volatile("lfence":::"memory")
+	asm volatile("lfence":::"memory");
 #endif
 
 	old = prev_pos;
