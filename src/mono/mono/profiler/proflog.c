@@ -1130,9 +1130,10 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	EXIT_LOG (logbuffer);
 }
 
-#ifdef HOST_WIN32
+#include "mono/io-layer/atomic.h"
+//#ifdef HOST_WIN32
 #define cmp_exchange InterlockedCompareExchangePointer
-#else
+/*#else
 static void*
 cmp_exchange (volatile void **dest, void *exch, void *comp)
 {
@@ -1149,6 +1150,7 @@ cmp_exchange (volatile void **dest, void *exch, void *comp)
 	return old;
 }
 #endif
+*/
 
 static void
 mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
@@ -1432,21 +1434,24 @@ elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 	return 0;
 }
 
-static void
+static int
 load_binaries (MonoProfiler *prof)
 {
 	dl_iterate_phdr (elf_dl_callback, prof);
+	return 1;
 }
 #else
-static void
+static int
 load_binaries (MonoProfiler *prof)
 {
+	return 0;
 }
 #endif
 
 static const char*
 symbol_for (uintptr_t code)
 {
+#ifdef HAVE_DLADDR
 	void *ip = (void*)code;
 	Dl_info di;
 	if (dladdr (ip, &di)) {
@@ -1462,6 +1467,7 @@ symbol_for (uintptr_t code)
 		}
 		*/
 	}
+#endif
 	return NULL;
 }
 
@@ -1472,8 +1478,8 @@ dump_unmanaged_coderefs (MonoProfiler *prof)
 	const char* last_symbol;
 	uintptr_t addr, page_end;
 
-	load_binaries (prof);
-	return;
+	if (load_binaries (prof))
+		return;
 	for (i = 0; i < size_code_pages; ++i) {
 		const char* sym;
 		if (!code_pages [i] || code_pages [i] & 1)
