@@ -5583,12 +5583,9 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 
 	if (count - pos > 0) {
 		mono_class_setup_vtable (klass->parent);
-		if (klass->parent->exception_type) {
-			printf ("\n--------------BROKEN TYPE %s parent %s-------------\n",
-				mono_type_get_full_name (klass),
-				mono_type_get_full_name (klass->parent));
+		if (klass->parent->exception_type)
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Failed to setup parent interfaces"));
-		} else
+		else
 			setup_interface_offsets (klass, klass->parent->vtable_size);
 	}
 
