@@ -10,7 +10,6 @@
 
 #include "config.h"
 #include "mono/metadata/profiler-private.h"
-#include "mono/metadata/profiler-default.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/debug-mono-symfile.h"
