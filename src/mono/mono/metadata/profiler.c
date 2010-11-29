@@ -1043,18 +1043,37 @@ typedef void (*ProfilerInitializer) (const char*);
 void 
 mono_profiler_load (const char *desc)
 {
+	char *cdesc = NULL;
 	mono_gc_base_init ();
 
-#ifndef DISABLE_PROFILER
-	if (!desc || (strcmp ("default", desc) == 0) || (strncmp (desc, "default:", 8) == 0)) {
-		mono_profiler_install_simple (desc);
-		return;
+	if (!desc || (strcmp ("default", desc) == 0)) {
+		desc = "log:report";
 	}
-#else
-	if (!desc) {
-		desc = "default";
+	/* we keep command-line compat with the old version here */
+	if (strncmp (desc, "default:", 8) == 0) {
+		gchar **args, **ptr;
+		GString *str = g_string_new ("log:report");
+		args = g_strsplit (desc + 8, ",", -1);
+		for (ptr = args; ptr && *ptr; ptr++) {
+			const char *arg = *ptr;
+
+			if (!strcmp (arg, "time"))
+				g_string_append (str, ",calls");
+			else if (!strcmp (arg, "alloc"))
+				g_string_append (str, ",alloc");
+			else if (!strcmp (arg, "stat"))
+				g_string_append (str, ",sample");
+			else if (!strcmp (arg, "jit"))
+				continue; /* accept and do nothing */
+			else if (strncmp (arg, "file=", 5) == 0) {
+				g_string_append_printf (str, ",output=%s", arg + 5);
+			} else {
+				fprintf (stderr, "profiler : Unknown argument '%s'.\n", arg);
+				return;
+			}
+		}
+		desc = cdesc = g_string_free (str, FALSE);
 	}
-#endif
 	{
 		MonoDl *pmodule = NULL;
 		const char* col = strchr (desc, ':');
@@ -1096,5 +1115,6 @@ mono_profiler_load (const char *desc)
 		g_free (mname);
 		g_free (path);
 	}
+	g_free (cdesc);
 }
 
