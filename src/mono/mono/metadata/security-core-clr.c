@@ -111,6 +111,9 @@ get_default_ctor (MonoClass *klass)
 		MonoMethodSignature *sig;
 		MonoMethod *method = klass->methods [i];
 
+		if (!method)
+			continue;
+
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) == 0)
 			continue;
 		if ((method->name[0] != '.') || strcmp (".ctor", method->name))
