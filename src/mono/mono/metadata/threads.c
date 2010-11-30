@@ -647,27 +647,15 @@ set_current_thread_for_domain (MonoDomain *domain, MonoInternalThread *thread, M
 static MonoInternalThread*
 create_internal_thread_object (void)
 {
-#ifdef HAVE_SGEN_GC
-	/*
-	 * These objects are long living, and they will become pinned by the thread startup code
-	 * anyway, so allocate them from oldspace.
-	 */
 	MonoVTable *vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.internal_thread_class);
-	return (MonoInternalThread*)mono_gc_alloc_pinned_obj (vt, vt->klass->instance_size);
-#else
-	return (MonoInternalThread*)mono_object_new (mono_get_root_domain (), mono_defaults.internal_thread_class);
-#endif
+	return (MonoInternalThread*)mono_gc_alloc_mature (vt);
 }
 
 static MonoThread*
 create_thread_object (MonoDomain *domain)
 {
-#ifdef HAVE_SGEN_GC
 	MonoVTable *vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.thread_class);
-	return (MonoThread*)mono_gc_alloc_pinned_obj (vt, vt->klass->instance_size);
-#else
-	return (MonoThread*)mono_object_new (domain, mono_defaults.thread_class);
-#endif
+	return (MonoThread*)mono_gc_alloc_mature (vt);
 }
 
 static MonoThread*

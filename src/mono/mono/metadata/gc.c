@@ -1278,3 +1278,11 @@ mono_gc_parse_environment_string_extract_number (const char *str, glong *out)
 	*out = val;
 	return TRUE;
 }
+
+#ifndef HAVE_SGEN_GC
+void*
+mono_gc_alloc_mature (MonoVTable *vtable)
+{
+	return mono_object_new_specific (vtable);
+}
+#endif

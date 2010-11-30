@@ -3872,6 +3872,18 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 	return p;
 }
 
+void*
+mono_gc_alloc_mature (MonoVTable *vtable)
+{
+	void **res;
+	size_t size = ALIGN_UP (vtable->klass->instance_size);
+	LOCK_GC;
+	res = alloc_degraded (vtable, size);
+	*res = vtable;
+	UNLOCK_GC;
+	return res;
+}
+
 /*
  * ######################################################################
  * ########  Finalization support
