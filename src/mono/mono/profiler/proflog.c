@@ -27,7 +27,9 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
 #ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
 #endif
@@ -1130,8 +1132,9 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	EXIT_LOG (logbuffer);
 }
 
+#ifndef HOST_WIN32
 #include "mono/io-layer/atomic.h"
-//#ifdef HOST_WIN32
+#endif
 #define cmp_exchange InterlockedCompareExchangePointer
 /*#else
 static void*
@@ -1285,6 +1288,18 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 }
 
 #ifdef ELFMAG0
+
+#if SIZEOF_VOID_P == 4
+#define ELF_WSIZE 32
+#else
+#define ELF_WSIZE 64
+#endif
+#ifndef ElfW
+#define ElfW(type)      _ElfW (Elf, ELF_WSIZE, type)
+#define _ElfW(e,w,t)    _ElfW_1 (e, w, _##t)
+#define _ElfW_1(e,w,t)  e##w##t
+#endif
+
 static void
 dump_elf_symbols (ElfW(Sym) *symbols, int num_symbols, const char *strtab, void *load_addr)
 {
