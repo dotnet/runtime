@@ -108,10 +108,10 @@ exit ($total_errors? 1: 0);
 sub append_path {
 	my $var = shift;
 	my $value = shift;
-	if (exists $ENV {$var}) {
-		$ENV {$var} = $value . ";" . $ENV {$var};
+	if (exists $ENV{$var}) {
+		$ENV{$var} = $value . ":" . $ENV{$var};
 	} else {
-		$ENV {$var} = $value;
+		$ENV{$var} = $value;
 	}
 }
 
