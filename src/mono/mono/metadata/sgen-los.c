@@ -461,6 +461,23 @@ los_sweep (void)
 	g_assert (los_num_sections == num_sections);
 }
 
+static gboolean
+mono_sgen_ptr_is_in_los (char *ptr, char **start)
+{
+	LOSObject *obj;
+
+	*start = NULL;
+	for (obj = los_object_list; obj; obj = obj->next) {
+		char *end = obj->data + obj->size;
+
+		if (ptr >= obj->data && ptr < end) {
+			*start = obj->data;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 #ifdef SGEN_HAVE_CARDTABLE
 
 static void

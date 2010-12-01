@@ -6208,11 +6208,18 @@ describe_ptr (char *ptr)
 	MonoVTable *vtable;
 	mword desc;
 	int type;
+	char *start;
 
 	if (ptr_in_nursery (ptr)) {
 		printf ("Pointer inside nursery.\n");
 	} else {
-		if (major_collector.ptr_is_in_non_pinned_space (ptr)) {
+		if (mono_sgen_ptr_is_in_los (ptr, &start)) {
+			if (ptr == start)
+				printf ("Pointer is the start of object %p in LOS space.\n", start);
+			else
+				printf ("Pointer is at offset 0x%x of object %p in LOS space.\n", (int)(ptr - start), start);
+			ptr = start;
+		} else if (major_collector.ptr_is_in_non_pinned_space (ptr)) {
 			printf ("Pointer inside oldspace.\n");
 		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
 			printf ("Pointer is inside a pinned chunk.\n");

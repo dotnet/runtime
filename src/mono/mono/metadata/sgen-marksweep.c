@@ -707,7 +707,13 @@ major_is_object_live (char *obj)
 static gboolean
 major_ptr_is_in_non_pinned_space (char *ptr)
 {
-	g_assert_not_reached ();
+	MSBlockInfo *block;
+
+	FOREACH_BLOCK (block) {
+		if (ptr >= (char*)block && ptr <= (char*)block + MS_BLOCK_SIZE)
+			return TRUE;
+	} END_FOREACH_BLOCK;
+	return FALSE;
 }
 
 static void
