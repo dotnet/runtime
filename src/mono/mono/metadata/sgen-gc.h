@@ -217,6 +217,13 @@ extern long long stat_objects_copied_major;
 #define HEAVY_STAT(x)
 #endif
 
+#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
+
+extern int gc_debug_level;
+extern FILE* gc_debug_file;
+
+extern int current_collection_generation;
+
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
 
@@ -738,6 +745,7 @@ mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 
 #define mono_sgen_safe_object_get_size(o)		mono_sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE ((o)), (o))
 
+const char* mono_sgen_safe_name (void* obj) MONO_INTERNAL;
 
 enum {
 	SPACE_MAJOR,

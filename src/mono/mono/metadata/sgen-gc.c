@@ -323,8 +323,8 @@ static long long time_major_fragment_creation = 0;
 
 #define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
-static int gc_debug_level = 0;
-static FILE* gc_debug_file;
+int gc_debug_level = 0;
+FILE* gc_debug_file;
 
 /*
 void
@@ -454,6 +454,12 @@ safe_name (void* obj)
 }
 
 #define safe_object_get_size	mono_sgen_safe_object_get_size
+
+const char*
+mono_sgen_safe_name (void* obj)
+{
+	return safe_name (obj);
+}
 
 /*
  * ######################################################################

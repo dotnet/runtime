@@ -39,8 +39,6 @@
 #include "metadata/sgen-cardtable.h"
 #include "metadata/gc-internal.h"
 
-#define DEBUG(l,x)
-
 #define MS_BLOCK_SIZE	(16*1024)
 #define MS_BLOCK_SIZE_SHIFT	14
 #define MAJOR_SECTION_SIZE	MS_BLOCK_SIZE
