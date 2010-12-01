@@ -226,7 +226,7 @@ sub check_call_traces
 	foreach my $method (keys %calls) {
 		my @desc = @{$calls{$method}};
 		my $num = shift @desc;
-		my $trace = get_delim_data ($section, "\\s+\\d+\\s+\\d+\\s+\\d+\\s+\Q$method\E", "^\\s*\\d+\\s+\\d");
+		my $trace = get_delim_data ($section, "\\s+\\d+\\s+\\d+\\s+\\d+\\s+\Q$method\E", "^(\\s*\\d+\\s+\\d)|(^Total calls)");
 		if ($trace =~ s/^\s+(\d+)\s+calls from:$//m) {
 			my $num_calls = $1;
 			push @errors, "Wrong calls to $method." unless $num_calls == $num;
@@ -250,7 +250,7 @@ sub check_alloc_traces
 	foreach my $type (keys %types) {
 		my @desc = @{$types{$type}};
 		my $num = shift @desc;
-		my $trace = get_delim_data ($section, "\\s+\\d+\\s+\\d+\\s+\\d+\\s+\Q$type\E", "^\\s*\\d+\\s+\\d");
+		my $trace = get_delim_data ($section, "\\s+\\d+\\s+\\d+\\s+\\d+\\s+\Q$type\E", "^(\\s*\\d+\\s+\\d)|(^Total)");
 		if ($trace =~ s/^\s+(\d+)\s+bytes from:$//m) {
 			#my $num_calls = $1;
 			#push @errors, "Wrong calls to $method." unless $num_calls == $num;
