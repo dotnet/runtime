@@ -654,7 +654,7 @@ create_internal_thread_object (void)
 static MonoThread*
 create_thread_object (MonoDomain *domain)
 {
-	MonoVTable *vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.thread_class);
+	MonoVTable *vt = mono_class_vtable (domain, mono_defaults.thread_class);
 	return (MonoThread*)mono_gc_alloc_mature (vt);
 }
 
