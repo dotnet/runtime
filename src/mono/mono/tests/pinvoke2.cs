@@ -1597,5 +1597,27 @@ public class Tests {
 		return 0;
 	}
 
+
+	/*char array marshaling */
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_ansi_char_array", CharSet=CharSet.Ansi)]
+	public static extern int mono_test_marshal_ansi_char_array (char[] a1);
+
+	public static int test_0_marshal_ansi_char_array () {
+		char[] buf = new char [32];
+		buf [0] = 'q';
+		buf [1] = 'w';
+		buf [2] = 'e';
+		buf [3] = 'r';
+
+		if (mono_test_marshal_ansi_char_array (buf) != 0)
+			return 1;
+
+		string s = new string (buf);
+		if (s.StartsWith ("qwer"))
+			return 0;
+		else
+			return 2;
+	}
+
 }
 
