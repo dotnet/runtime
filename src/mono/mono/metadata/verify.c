@@ -4141,13 +4141,21 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 	if (!virtual && !check_overflow (ctx))
 		return;
 
-	if (!IS_METHOD_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid token %x for ldftn  at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
-		return;
-	}
+	if (ctx->method->wrapper_type != MONO_WRAPPER_NONE) {
+		method = mono_method_get_wrapper_data (ctx->method, (guint32)token);
+		if (!method) {
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid token %x for ldftn  at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+			return;
+		}
+	} else {
+		if (!IS_METHOD_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid token %x for ldftn  at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+			return;
+		}
 
-	if (!(method = verifier_load_method (ctx, token, virtual ? "ldvirtfrn" : "ldftn")))
-		return;
+		if (!(method = verifier_load_method (ctx, token, virtual ? "ldvirtfrn" : "ldftn")))
+			return;
+	}
 
 	if (mono_method_is_constructor (method))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use ldftn with a constructor at 0x%04x", ctx->ip_offset));
@@ -4176,11 +4184,6 @@ static void
 do_sizeof (VerifyContext *ctx, int token)
 {
 	MonoType *type;
-
-	if (!IS_TYPE_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid type token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
-		return;
-	}
 	
 	if (!(type = verifier_load_type (ctx, token, "sizeof")))
 		return;
@@ -4226,16 +4229,18 @@ static void
 do_ldstr (VerifyContext *ctx, guint32 token)
 {
 	GSList *error = NULL;
-	if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
-		return;
-	}
+	if (ctx->method->wrapper_type == MONO_WRAPPER_NONE) {
+		if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+			return;
+		}
 
-	if (!ctx->image->dynamic && !mono_verifier_verify_string_signature (ctx->image, mono_metadata_token_index (token), &error)) {
-		if (error)
-			ctx->list = g_slist_concat (ctx->list, error);
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
-		return;
+		if (!mono_verifier_verify_string_signature (ctx->image, mono_metadata_token_index (token), &error)) {
+			if (error)
+				ctx->list = g_slist_concat (ctx->list, error);
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+			return;
+		}
 	}
 
 	if (check_overflow (ctx))
