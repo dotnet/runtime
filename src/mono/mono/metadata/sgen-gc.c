@@ -341,10 +341,10 @@ mono_gc_flush_info (void)
  */
 #define USER_CONFIG 1
 
-#define TV_DECLARE(name) gint64 name
-#define TV_GETTIME(tv) tv = mono_100ns_ticks ()
-#define TV_ELAPSED(start,end) (int)((end-start) / 10)
-#define TV_ELAPSED_MS(start,end) ((TV_ELAPSED((start),(end)) + 500) / 1000)
+#define TV_DECLARE SGEN_TV_DECLARE
+#define TV_GETTIME SGEN_TV_GETTIME
+#define TV_ELAPSED SGEN_TV_ELAPSED
+#define TV_ELAPSED_MS SGEN_TV_ELAPSED_MS
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -3067,9 +3067,6 @@ major_do_collection (const char *reason)
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
 
-	if (xdomain_checks)
-		check_for_xdomain_refs ();
-
 	nursery_section->next_data = nursery_real_end;
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
@@ -3077,6 +3074,9 @@ major_do_collection (const char *reason)
 
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
+
+	if (xdomain_checks)
+		check_for_xdomain_refs ();
 
 	/* The remsets are not useful for a major collection */
 	clear_remsets ();
