@@ -84,6 +84,7 @@ struct _MSBlockInfo {
 	unsigned int is_to_space : 1;
 #ifdef FIXED_HEAP
 	unsigned int used : 1;
+	unsigned int zeroed : 1;
 #else
 	MSBlockInfo *next;
 #endif
@@ -265,6 +266,7 @@ major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
 			block_infos [i].next_free = &block_infos [i + 1];
 		else
 			block_infos [i].next_free = NULL;
+		block_infos [i].zeroed = TRUE;
 	}
 
 	empty_blocks = &block_infos [0];
@@ -306,6 +308,9 @@ ms_get_empty_block (void)
 
 	block->used = TRUE;
 
+	if (!block->zeroed)
+		memset (block->block, 0, MS_BLOCK_SIZE);
+
 	return block;
 }
 
@@ -315,6 +320,7 @@ ms_free_block (MSBlockInfo *block)
 	block->next_free = empty_blocks;
 	empty_blocks = block;
 	block->used = FALSE;
+	block->zeroed = FALSE;
 	mono_sgen_release_space (MS_BLOCK_SIZE, SPACE_MAJOR);
 }
 #else
