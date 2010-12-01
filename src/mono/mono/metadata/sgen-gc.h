@@ -667,6 +667,8 @@ void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
 int mono_sgen_get_current_collection_generation (void) MONO_INTERNAL;
 
+typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
+
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
@@ -689,7 +691,7 @@ struct _SgenMajorCollector {
 	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*scan_card_table) (SgenGrayQueue *queue);
-	void (*iterate_live_block_ranges) (void *callback);
+	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
 	void (*check_scan_starts) (void);
@@ -755,5 +757,32 @@ enum {
 gboolean mono_sgen_try_alloc_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_release_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_pin_object (void *object, SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;;
+void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;
+gboolean mono_sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
+
+/* LOS */
+
+typedef struct _LOSObject LOSObject;
+struct _LOSObject {
+	LOSObject *next;
+	mword size; /* this is the object size */
+	guint16 huge_object;
+	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
+	char data [MONO_ZERO_LEN_ARRAY];
+};
+
+#define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
+
+extern LOSObject *los_object_list;
+extern mword los_memory_usage;
+extern mword last_los_memory_usage;
+
+void mono_sgen_los_free_object (LOSObject *obj) MONO_INTERNAL;
+void* mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size) MONO_INTERNAL;
+void mono_sgen_los_sweep (void) MONO_INTERNAL;
+gboolean mono_sgen_ptr_is_in_los (char *ptr, char **start) MONO_INTERNAL;
+void mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data) MONO_INTERNAL;
+void mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
+void mono_sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
+
 #endif /* __MONO_SGENGC_H__ */

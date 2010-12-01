@@ -864,7 +864,6 @@ SgenMajorCollector major_collector;
 #include "sgen-pinning-stats.c"
 #include "sgen-gray.c"
 #include "sgen-workers.c"
-#include "sgen-los.c"
 #include "sgen-cardtable.c"
 
 /* Root bitmap descriptors are simpler: the lower three bits describe the type
@@ -1297,7 +1296,6 @@ scan_roots_for_specific_ref (MonoObject *key, int root_type)
 void
 mono_gc_scan_for_specific_ref (MonoObject *key)
 {
-	LOSObject *bigobj;
 	RootRecord *root;
 	int i;
 
@@ -1306,8 +1304,7 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		scan_object_for_specific_ref (bigobj->data, key);
+	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
 	scan_roots_for_specific_ref (key, ROOT_TYPE_NORMAL);
 	scan_roots_for_specific_ref (key, ROOT_TYPE_WBARRIER);
@@ -1562,7 +1559,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 			bigobj = bigobj->next;
 			DEBUG (4, fprintf (gc_debug_file, "Freeing large object %p\n",
 					bigobj->data));
-			free_large_object (to_free);
+			mono_sgen_los_free_object (to_free);
 			continue;
 		}
 		prev = bigobj;
@@ -2826,6 +2823,12 @@ need_major_collection (mword space_needed)
 		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
 }
 
+gboolean
+mono_sgen_need_major_collection (mword space_needed)
+{
+	return need_major_collection (space_needed);
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -3193,7 +3196,7 @@ major_do_collection (const char *reason)
 				los_object_list = bigobj->next;
 			to_free = bigobj;
 			bigobj = bigobj->next;
-			free_large_object (to_free);
+			mono_sgen_los_free_object (to_free);
 			continue;
 		}
 		prevbo = bigobj;
@@ -3203,7 +3206,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (btv);
 	time_major_free_bigobjs += TV_ELAPSED_MS (atv, btv);
 
-	los_sweep ();
+	mono_sgen_los_sweep ();
 
 	TV_GETTIME (atv);
 	time_major_los_sweep += TV_ELAPSED_MS (btv, atv);
@@ -3559,7 +3562,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	 */
 
 	if (size > MAX_SMALL_OBJ_SIZE) {
-		p = alloc_large_inner (vtable, size);
+		p = mono_sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
 
@@ -3864,7 +3867,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 
 	if (size > MAX_SMALL_OBJ_SIZE) {
 		/* large objects are always pinned anyway */
-		p = alloc_large_inner (vtable, size);
+		p = mono_sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		DEBUG (9, g_assert (vtable->klass->inited));
 		p = major_collector.alloc_small_pinned_obj (size, vtable->klass->has_references);
@@ -5965,8 +5968,10 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 static char *found_obj;
 
 static void
-find_object_for_ptr_callback (char *obj, size_t size, char *ptr)
+find_object_for_ptr_callback (char *obj, size_t size, void *user_data)
 {
+	char *ptr = user_data;
+
 	if (ptr >= obj && ptr < obj + size) {
 		g_assert (!found_obj);
 		found_obj = obj;
@@ -5978,27 +5983,25 @@ char* find_object_for_ptr (char *ptr);
 char*
 find_object_for_ptr (char *ptr)
 {
-	LOSObject *bigobj;
-
 	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
 		found_obj = NULL;
 		mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-				(IterateObjectCallbackFunc)find_object_for_ptr_callback, ptr);
+										   find_object_for_ptr_callback, ptr);
 		if (found_obj)
 			return found_obj;
 	}
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
-		if (ptr >= bigobj->data && ptr < bigobj->data + bigobj->size)
-			return bigobj->data;
-	}
+	found_obj = NULL;
+	mono_sgen_los_iterate_objects (find_object_for_ptr_callback, ptr);
+	if (found_obj)
+		return found_obj;
 
 	/*
 	 * Very inefficient, but this is debugging code, supposed to
 	 * be called from gdb, so we don't care.
 	 */
 	found_obj = NULL;
-	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)find_object_for_ptr_callback, ptr);
+	major_collector.iterate_objects (TRUE, TRUE, find_object_for_ptr_callback, ptr);
 	return found_obj;
 }
 
@@ -6423,8 +6426,6 @@ check_consistency_callback (char *start, size_t size, void *dummy)
 static void
 check_consistency (void)
 {
-	LOSObject *bigobj;
-
 	// Need to add more checks
 
 	missing_remsets = FALSE;
@@ -6434,8 +6435,7 @@ check_consistency (void)
 	// Check that oldspace->newspace pointers are registered with the collector
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		check_consistency_callback (bigobj->data, bigobj->size, NULL);
+	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 
@@ -6462,12 +6462,8 @@ check_major_refs_callback (char *start, size_t size, void *dummy)
 static void
 check_major_refs (void)
 {
-	LOSObject *bigobj;
-
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
-
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		check_major_refs_callback (bigobj->data, bigobj->size, NULL);
+	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_major_refs_callback, NULL);
 }
 
 /* Check that the reference is valid */
@@ -6563,7 +6559,6 @@ int
 mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 {
 	HeapWalkInfo hwi;
-	LOSObject *bigobj;
 
 	hwi.flags = flags;
 	hwi.callback = callback;
@@ -6573,9 +6568,8 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi);
 
 	major_collector.iterate_objects (TRUE, TRUE, walk_references, &hwi);
+	mono_sgen_los_iterate_objects (walk_references, &hwi);
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		walk_references (bigobj->data, bigobj->size, &hwi);
 	return 0;
 }
 

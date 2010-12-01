@@ -45,6 +45,13 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef HAVE_SGEN_GC
+
+#include "metadata/sgen-gc.h"
+#include "metadata/sgen-protocol.h"
+#include "metadata/sgen-cardtable.h"
+#include "utils/mono-mmap.h"
+
 #define LOS_SECTION_SIZE	(1024 * 1024)
 
 /*
@@ -64,15 +71,6 @@
 
 #define LOS_NUM_FAST_SIZES		32
 
-typedef struct _LOSObject LOSObject;
-struct _LOSObject {
-	LOSObject *next;
-	mword size; /* this is the object size */
-	guint16 huge_object;
-	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
-	char data [MONO_ZERO_LEN_ARRAY];
-};
-
 typedef struct _LOSFreeChunks LOSFreeChunks;
 struct _LOSFreeChunks {
 	LOSFreeChunks *next_size;
@@ -86,11 +84,12 @@ struct _LOSSection {
 	unsigned char *free_chunk_map;
 };
 
+LOSObject *los_object_list = NULL;
+mword los_memory_usage = 0;
+mword last_los_memory_usage = 0;
+
 static LOSSection *los_sections = NULL;
-static LOSObject *los_object_list = NULL;
 static LOSFreeChunks *los_fast_free_lists [LOS_NUM_FAST_SIZES]; /* 0 is for larger sizes */
-static mword los_memory_usage = 0;
-static mword last_los_memory_usage = 0;
 static mword los_num_objects = 0;
 static int los_num_sections = 0;
 static mword next_los_collection = 2*1024*1024; /* 2 MB, need to tune */
@@ -298,8 +297,10 @@ free_los_section_memory (LOSObject *obj, size_t size)
 	add_free_chunk ((LOSFreeChunks*)obj, size);
 }
 
-static void
-free_large_object (LOSObject *obj)
+static int pagesize;
+
+void
+mono_sgen_los_free_object (LOSObject *obj)
 {
 #ifndef LOS_DUMMY
 	size_t size = obj->size;
@@ -313,6 +314,8 @@ free_large_object (LOSObject *obj)
 	free (obj);
 #else
 	if (size > LOS_SECTION_OBJECT_LIMIT) {
+		if (!pagesize)
+			pagesize = mono_pagesize ();
 		size += sizeof (LOSObject);
 		size += pagesize - 1;
 		size &= ~(pagesize - 1);
@@ -334,13 +337,13 @@ free_large_object (LOSObject *obj)
  * They don't move, so there is no need to pin them during collection
  * and we avoid the memcpy overhead.
  */
-static void* __attribute__((noinline))
-alloc_large_inner (MonoVTable *vtable, size_t size)
+void*
+mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 {
 	LOSObject *obj = NULL;
 	void **vtslot;
 
-	g_assert (size > MAX_SMALL_OBJ_SIZE);
+	g_assert (size > SGEN_MAX_SMALL_OBJ_SIZE);
 
 #ifdef LOS_DUMMY
 	if (!los_segment)
@@ -351,13 +354,9 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_segment_index += size + sizeof (LOSObject);
 	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
 #else
-	if (need_major_collection (size)) {
+	if (mono_sgen_need_major_collection (size)) {
 		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %lu, limit: %lu)\n", size, (unsigned long)los_memory_usage, (unsigned long)next_los_collection));
-		mono_profiler_gc_event (MONO_GC_EVENT_START, 1);
-		stop_world (1);
-		major_collection ("LOS overflow");
-		restart_world (1);
-		mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
+		sgen_collect_major_no_lock ("LOS overflow");
 	}
 
 #ifdef USE_MALLOC
@@ -366,6 +365,8 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 #else
 	if (size > LOS_SECTION_OBJECT_LIMIT) {
 		size_t alloc_size = size;
+		if (!pagesize)
+			pagesize = mono_pagesize ();
 		alloc_size += sizeof (LOSObject);
 		alloc_size += pagesize - 1;
 		alloc_size &= ~(pagesize - 1);
@@ -382,7 +383,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 #endif
 	if (!obj)
 		return NULL;
-	g_assert (!((mword)obj->data & (ALLOC_ALIGN - 1)));
+	g_assert (!((mword)obj->data & (SGEN_ALLOC_ALIGN - 1)));
 	obj->size = size;
 	vtslot = (void**)obj->data;
 	*vtslot = vtable;
@@ -401,8 +402,8 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	return obj->data;
 }
 
-static void
-los_sweep (void)
+void
+mono_sgen_los_sweep (void)
 {
 	LOSSection *section, *prev;
 	int i;
@@ -461,7 +462,7 @@ los_sweep (void)
 	g_assert (los_num_sections == num_sections);
 }
 
-static gboolean
+gboolean
 mono_sgen_ptr_is_in_los (char *ptr, char **start)
 {
 	LOSObject *obj;
@@ -478,23 +479,28 @@ mono_sgen_ptr_is_in_los (char *ptr, char **start)
 	return FALSE;
 }
 
-#ifdef SGEN_HAVE_CARDTABLE
+void
+mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data)
+{
+	LOSObject *obj;
 
-static void
-los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
+	for (obj = los_object_list; obj; obj = obj->next)
+		cb (obj->data, obj->size, user_data);
+}
+
+void
+mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	LOSObject *obj;
 	for (obj = los_object_list; obj; obj = obj->next) {
-		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj->data);
+		MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj->data);
 		if (vt->klass->has_references)
 			callback ((mword)obj->data, (mword)obj->size);
 	}
 }
 
-#define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
-
-static void __attribute__((noinline))
-los_scan_card_table (GrayQueue *queue)
+void
+mono_sgen_los_scan_card_table (SgenGrayQueue *queue)
 {
 	LOSObject *obj;
 
@@ -503,4 +509,4 @@ los_scan_card_table (GrayQueue *queue)
 	}
 }
 
-#endif
+#endif /* HAVE_SGEN_GC */
