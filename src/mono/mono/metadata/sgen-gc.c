@@ -1192,22 +1192,36 @@ scan_object_for_xdomain_refs (char *start, mword size, void *data)
 static void
 scan_object_for_specific_ref (char *start, MonoObject *key)
 {
+	char *forwarded;
+
+	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (start)))
+		start = forwarded;
+
 	#include "sgen-scan-object.h"
 }
 
 void
-mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data)
+mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags)
 {
 	while (start < end) {
 		size_t size;
+		char *obj;
+
 		if (!*(void**)start) {
 			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
 			continue;
 		}
 
-		size = ALIGN_UP (safe_object_get_size ((MonoObject*) start));
+		if (allow_flags) {
+			if (!(obj = SGEN_OBJECT_IS_FORWARDED (start)))
+				obj = start;
+		} else {
+			obj = start;
+		}
 
-		callback (start, size, data);
+		size = ALIGN_UP (safe_object_get_size (obj));
+
+		callback (obj, size, data);
 
 		start += size;
 	}
@@ -1300,7 +1314,7 @@ mono_gc_scan_for_specific_ref (MonoObject *key)
 	int i;
 
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
+			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE);
 
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
@@ -1450,7 +1464,7 @@ check_for_xdomain_refs (void)
 	LOSObject *bigobj;
 
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
+			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE);
 
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
@@ -1528,7 +1542,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	}
 
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain);
+			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE);
 
 	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
 	to memory returned to the OS.*/
@@ -5986,7 +6000,7 @@ find_object_for_ptr (char *ptr)
 	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
 		found_obj = NULL;
 		mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-										   find_object_for_ptr_callback, ptr);
+				find_object_for_ptr_callback, ptr, TRUE);
 		if (found_obj)
 			return found_obj;
 	}
@@ -6565,7 +6579,7 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 	hwi.data = data;
 
 	clear_nursery_fragments (nursery_next);
-	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi);
+	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi, FALSE);
 
 	major_collector.iterate_objects (TRUE, TRUE, walk_references, &hwi);
 	mono_sgen_los_iterate_objects (walk_references, &hwi);

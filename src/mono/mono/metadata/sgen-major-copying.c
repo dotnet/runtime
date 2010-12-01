@@ -445,7 +445,7 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 	if (non_pinned) {
 		GCMemSection *section;
 		for (section = section_list; section; section = section->block.next)
-			mono_sgen_scan_area_with_callback (section->data, section->end_data, callback, data);
+			mono_sgen_scan_area_with_callback (section->data, section->end_data, callback, data, FALSE);
 	}
 	if (pinned)
 		mono_sgen_internal_scan_objects (&pinned_allocator, callback, data);

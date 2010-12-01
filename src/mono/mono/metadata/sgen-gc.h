@@ -577,7 +577,7 @@ void mono_sgen_update_heap_boundaries (mword low, mword high) MONO_INTERNAL;
 void mono_sgen_register_major_sections_alloced (int num_sections) MONO_INTERNAL;
 mword mono_sgen_get_minor_collection_allowance (void) MONO_INTERNAL;
 
-void mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data) MONO_INTERNAL;
+void mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags) MONO_INTERNAL;
 void mono_sgen_check_section_scan_starts (GCMemSection *section) MONO_INTERNAL;
 
 /* Keep in sync with mono_sgen_dump_internal_mem_usage() in dump_heap()! */
