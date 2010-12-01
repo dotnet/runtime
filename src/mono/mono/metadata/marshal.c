@@ -6902,6 +6902,25 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
+static gboolean
+mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
+{
+	switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+	case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
+		return FALSE;
+	case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+		return TRUE;
+	case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
+#ifdef TARGET_WIN32
+		return TRUE;
+#else
+		return FALSE;
+#endif
+	default:
+		return FALSE;
+	}
+}
+
 static int
 emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					MonoMarshalSpec *spec, 
@@ -6972,6 +6991,8 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			if (is_string)
 				esize = sizeof (gpointer);
+			else if (eklass == mono_defaults.char_class) /*can't call mono_marshal_type_size since it causes all sorts of asserts*/
+				esize = mono_pinvoke_is_unicode (m->piinfo) ? 2 : 1;
 			else
 				esize = mono_class_native_size (eklass, NULL);
 
@@ -7061,6 +7082,8 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			eklass = klass->element_class;
 			if ((eklass == mono_defaults.stringbuilder_class) || (eklass == mono_defaults.string_class))
 				esize = sizeof (gpointer);
+			else if (eklass == mono_defaults.char_class)
+				esize = mono_pinvoke_is_unicode (m->piinfo) ? 2 : 1;
 			else
 				esize = mono_class_native_size (eklass, NULL);
 			src_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -7504,6 +7527,8 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (is_string)
 			esize = sizeof (gpointer);
+		else if (eklass == mono_defaults.char_class)
+			esize = mono_pinvoke_is_unicode (m->piinfo) ? 2 : 1;
 		else
 			esize = mono_class_native_size (eklass, NULL);
 
