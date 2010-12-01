@@ -646,7 +646,12 @@ mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, gboole
 void
 mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data)
 {
-	mono_jit_walk_stack_from_ctx (func, NULL, do_il_offset, user_data);
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+
+	if (jit_tls && jit_tls->orig_ex_ctx_set)
+		mono_jit_walk_stack_from_ctx (func, &jit_tls->orig_ex_ctx, do_il_offset, user_data);
+	else
+		mono_jit_walk_stack_from_ctx (func, NULL, do_il_offset, user_data);
 }
 
 /**
@@ -1207,6 +1212,12 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	g_assert (jit_tls->end_of_stack);
 	g_assert (jit_tls->abort_func);
 
+	/*
+	 * We set orig_ex_ctx_set to TRUE/FALSE around profiler calls to make sure it doesn't
+	 * end up being TRUE on any code path.
+	 */
+	memcpy (&jit_tls->orig_ex_ctx, ctx, sizeof (MonoContext));
+
 	if (!test_only && !resume) {
 		MonoContext ctx_cp = *ctx;
 		if (mono_trace_is_enabled ()) {
@@ -1233,7 +1244,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			if (mono_ex && mono_trace_eval_exception (mono_object_class (mono_ex)))
 				mono_print_thread_dump_from_ctx (ctx);
 		}
+		jit_tls->orig_ex_ctx_set = TRUE;
 		mono_profiler_exception_thrown (obj);
+		jit_tls->orig_ex_ctx_set = FALSE;
 		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, FALSE, &first_filter_idx, out_ji, non_exception)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
@@ -1444,7 +1457,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 					if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 						g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+					jit_tls->orig_ex_ctx_set = TRUE;
 					mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
+					jit_tls->orig_ex_ctx_set = FALSE;
 					mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
 					MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					*(mono_get_lmf_addr ()) = lmf;
@@ -1458,7 +1473,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					(ei->flags == MONO_EXCEPTION_CLAUSE_FAULT)) {
 					if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 						g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+					jit_tls->orig_ex_ctx_set = TRUE;
 					mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
+					jit_tls->orig_ex_ctx_set = FALSE;
 					mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
 					call_filter (ctx, ei->handler_start);
 				}
@@ -1466,7 +1483,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					(ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
 					if (mono_trace_is_enabled () && mono_trace_eval (ji->method))
 						g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+					jit_tls->orig_ex_ctx_set = TRUE;
 					mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
+					jit_tls->orig_ex_ctx_set = FALSE;
 					mono_debugger_call_exception_handler (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), ex_obj);
 					mono_perfcounters->exceptions_finallys++;
 					*(mono_get_lmf_addr ()) = lmf;
@@ -1495,8 +1514,11 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				}
 			}
 		}
-		if (!test_only)
+		if (!test_only) {
+			jit_tls->orig_ex_ctx_set = TRUE;
 			mono_profiler_exception_method_leave (ji->method);
+			jit_tls->orig_ex_ctx_set = FALSE;
+		}
 
 		*ctx = new_ctx;
 	}

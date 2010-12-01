@@ -880,6 +880,13 @@ typedef struct {
 	gpointer handler_block_return_address;
 	/* handler block been guarded */
 	MonoJitExceptionInfo *handler_block;
+
+	/* 
+	 * Stores the state at the exception throw site to be used by mono_stack_walk ()
+	 * when it is called from profiler functions during exception handling.
+	 */
+	MonoContext orig_ex_ctx;
+	gboolean orig_ex_ctx_set;
 } MonoJitTlsData;
 
 typedef enum {
