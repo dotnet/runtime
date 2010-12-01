@@ -1015,6 +1015,10 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		MS_SET_MARK_BIT (block, word, bit);
 	} else {
 		char *forwarded;
+#ifndef FIXED_HEAP
+		mword objsize;
+#endif
+
 		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
 			*ptr = forwarded;
 			return;
@@ -1023,8 +1027,6 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 #ifdef FIXED_HEAP
 		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
 #else
-		mword objsize;
-
 		objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
 
 		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)

@@ -631,7 +631,7 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
 		notify_gc_roots (report);
 	report->objects [report->count] = object;
 	report->root_types [report->count] = rtype;
-	report->extra_info [report->count++] = ((MonoVTable*)LOAD_VTABLE (object))->klass;
+	report->extra_info [report->count++] = (uintptr_t)((MonoVTable*)LOAD_VTABLE (object))->klass;
 }
 
 /* 
