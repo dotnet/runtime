@@ -6920,7 +6920,7 @@ debugger_thread (void *arg)
 void
 mono_debugger_agent_parse_options (char *options)
 {
-	g_error ("This runtime is configure with the debugger agent disabled.");
+	g_error ("This runtime is configured with the debugger agent disabled.");
 }
 
 void
