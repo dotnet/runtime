@@ -965,6 +965,11 @@ recv_length (int fd, void *buf, int len, int flags)
 	} while ((res > 0 && total < len) || (res == -1 && errno == EINTR));
 	return total;
 }
+
+#ifndef TARGET_PS3
+#define HAVE_GETADDRINFO 1
+#endif
+
 /*
  * transport_connect:
  *
@@ -973,8 +978,12 @@ recv_length (int fd, void *buf, int len, int flags)
 static void
 transport_connect (const char *host, int port)
 {
+#ifdef HAVE_GETADDRINFO
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
+#else
+	struct hostent *result;
+#endif
 	int sfd, s, res;
 	char port_string [128];
 	char handshake_msg [128];
@@ -988,7 +997,7 @@ transport_connect (const char *host, int port)
 		mono_network_init ();
 
 		/* Obtain address(es) matching host/port */
-
+#ifdef HAVE_GETADDRINFO
 		memset (&hints, 0, sizeof (struct addrinfo));
 		hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
 		hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
@@ -997,12 +1006,20 @@ transport_connect (const char *host, int port)
 
 		s = getaddrinfo (host, port_string, &hints, &result);
 		if (s != 0) {
-			fprintf (stderr, "debugger-agent: Unable to connect to %s:%d: %s\n", host, port, gai_strerror (s));
+			fprintf (stderr, "debugger-agent: Unable to resolve %s:%d: %s\n", host, port, gai_strerror (s));
 			exit (1);
 		}
+#else
+		/* The PS3 doesn't even have _r or hstrerror () */
+		result = gethostbyname (host);
+		if (!result) {
+			fprintf (stderr, "debugger-agent: Unable to resolve %s:%d: %d\n", host, port, h_errno);
+		}
+#endif
 	}
 
 	if (agent_config.server) {
+#ifdef HAVE_GETADDRINFO
 		/* Wait for a connection */
 		if (!host) {
 			struct sockaddr_in addr;
@@ -1055,7 +1072,9 @@ transport_connect (const char *host, int port)
 			 * http://msdn.microsoft.com/en-us/library/ms737931(VS.85).aspx
 			 * only works with MSVC.
 			 */
+#ifdef HAVE_GETADDRINFO
 			freeaddrinfo (result);
+#endif
 #endif
 		}
 
@@ -1083,8 +1102,12 @@ transport_connect (const char *host, int port)
 		}
 
 		DEBUG (1, fprintf (log_file, "Accepted connection from client, socket fd=%d.\n", conn_fd));
+#else
+		NOT_IMPLEMENTED;
+#endif /* HAVE_GETADDRINFO */
 	} else {
 		/* Connect to the specified address */
+#ifdef HAVE_GETADDRINFO
 		/* FIXME: Respect the timeout */
 		for (rp = result; rp != NULL; rp = rp->ai_next) {
 			sfd = socket (rp->ai_family, rp->ai_socktype,
@@ -1098,17 +1121,27 @@ transport_connect (const char *host, int port)
 			close (sfd);
 		}
 
-		conn_fd = sfd;
-
-#ifndef HOST_WIN32
-		/* See the comment above */
-		freeaddrinfo (result);
-#endif
-
 		if (rp == 0) {
 			fprintf (stderr, "debugger-agent: Unable to connect to %s:%d\n", host, port);
 			exit (1);
 		}
+#else
+			sfd = socket (result->h_addrtype, SOCK_STREAM, 0);
+			if (sfd == -1)
+				g_assert_not_reached ();
+			res = connect (sfd, (void*)result->h_addr_list [0], result->h_length);
+			if (res == -1)
+				g_assert_not_reached ();
+#endif
+
+		conn_fd = sfd;
+
+#ifndef HOST_WIN32
+		/* See the comment above */
+#ifdef HAVE_GETADDRINFO
+		freeaddrinfo (result);
+#endif
+#endif
 	}
 	
 	/* Write handshake message */
