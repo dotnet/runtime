@@ -1167,7 +1167,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	if (do_debug) {
 		int len;
 		char buf [256];
-		snprintf (buf, sizeof (buf), "hit at %p in thread %p at %llu\n", ip, (void*)thread_id (), now);
+		snprintf (buf, sizeof (buf), "hit at %p in thread %p at %llu\n", ip, (void*)thread_id (), (unsigned long long int)now);
 		len = strlen (buf);
 		write (2, buf, len);
 	}
@@ -1192,7 +1192,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	do {
 		old_data = sbuf->data;
 		new_data = old_data + 4;
-		data = cmp_exchange ((volatile void**)&sbuf->data, new_data, old_data);
+		data = cmp_exchange ((volatile gpointer*)&sbuf->data, new_data, old_data);
 	} while (data != old_data);
 	if (old_data >= sbuf->data_end)
 		return; /* lost event */
@@ -1977,7 +1977,7 @@ create_profiler (const char *filename)
 			filename = "|mprof-report -";
 		else
 			filename = "output.mlpd";
-		nf = filename;
+		nf = (char*)filename;
 	} else {
 		nf = new_filename (filename);
 		if (do_report) {
