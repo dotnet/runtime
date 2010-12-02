@@ -127,6 +127,8 @@ fi
 AC_SUBST(G_HAVE_ISO_VARARGS)
 
 AC_CHECK_HEADERS(getopt.h sys/time.h sys/wait.h pwd.h langinfo.h iconv.h localcharset.h)
+AC_CHECK_HEADER(alloca.h, [HAVE_ALLOCA_H=1], [HAVE_ALLOCA_H=0])
+AC_SUBST(HAVE_ALLOCA_H)
 
 if test $ac_cv_sizeof_void_p != $ac_cv_sizeof_int; then
    GPOINTER_TO_INT="((gint)(long) (ptr))"
