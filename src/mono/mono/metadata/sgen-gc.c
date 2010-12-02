@@ -2829,10 +2829,73 @@ init_stats (void)
 	inited = TRUE;
 }
 
+static gboolean need_calculate_minor_collection_allowance;
+
+static int last_collection_old_num_major_sections;
+static mword last_collection_los_memory_usage = 0;
+static mword last_collection_old_los_memory_usage;
+static mword last_collection_los_memory_alloced;
+
+static void
+reset_minor_collection_allowance (void)
+{
+	need_calculate_minor_collection_allowance = TRUE;
+}
+
+static void
+try_calculate_minor_collection_allowance (gboolean overwrite)
+{
+	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
+	mword los_memory_saved;
+
+	if (overwrite)
+		g_assert (need_calculate_minor_collection_allowance);
+
+	if (!need_calculate_minor_collection_allowance)
+		return;
+
+	if (!*major_collector.have_swept) {
+		if (overwrite)
+			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+		return;
+	}
+
+	num_major_sections = major_collector.get_num_major_sections ();
+
+	num_major_sections_saved = MAX (last_collection_old_num_major_sections - num_major_sections, 0);
+	los_memory_saved = MAX (last_collection_old_los_memory_usage - last_collection_los_memory_usage, 1);
+
+	save_target = ((num_major_sections * major_collector.section_size) + los_memory_saved) / 2;
+
+	/*
+	 * We aim to allow the allocation of as many sections as is
+	 * necessary to reclaim save_target sections in the next
+	 * collection.  We assume the collection pattern won't change.
+	 * In the last cycle, we had num_major_sections_saved for
+	 * minor_collection_sections_alloced.  Assuming things won't
+	 * change, this must be the same ratio as save_target for
+	 * allowance_target, i.e.
+	 *
+	 *    num_major_sections_saved            save_target
+	 * --------------------------------- == ----------------
+	 * minor_collection_sections_alloced    allowance_target
+	 *
+	 * hence:
+	 */
+	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + last_collection_los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
+
+	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
+
+	if (major_collector.have_computed_minor_collection_allowance)
+		major_collector.have_computed_minor_collection_allowance ();
+
+	need_calculate_minor_collection_allowance = FALSE;
+}
+
 static gboolean
 need_major_collection (mword space_needed)
 {
-	mword los_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
+	mword los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
 	return (space_needed > available_free_space ()) ||
 		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
 }
@@ -2892,6 +2955,8 @@ collect_nursery (size_t requested_size)
 	nursery_section->next_data = nursery_next;
 
 	major_collector.start_nursery_collection ();
+
+	try_calculate_minor_collection_allowance (FALSE);
 
 	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
 
@@ -3028,19 +3093,18 @@ major_do_collection (const char *reason)
 	 */
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
-	int old_num_major_sections = major_collector.get_num_major_sections ();
-	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
 	int old_next_pin_slot;
-	mword los_memory_saved, los_memory_alloced, old_los_memory_usage;
 
 	mono_perfcounters->gc_collections1++;
 
+	last_collection_old_num_major_sections = major_collector.get_num_major_sections ();
+
 	/*
 	 * A domain could have been freed, resulting in
-	 * los_memory_usage being less than last_los_memory_usage.
+	 * los_memory_usage being less than last_collection_los_memory_usage.
 	 */
-	los_memory_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
-	old_los_memory_usage = los_memory_usage;
+	last_collection_los_memory_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
+	last_collection_old_los_memory_usage = los_memory_usage;
 	objects_pinned = 0;
 
 	//count_ref_nonref_objs ();
@@ -3074,6 +3138,9 @@ major_do_collection (const char *reason)
 
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
+
+	*major_collector.have_swept = FALSE;
+	reset_minor_collection_allowance ();
 
 	if (xdomain_checks)
 		check_for_xdomain_refs ();
@@ -3255,33 +3322,10 @@ major_do_collection (const char *reason)
 
 	g_assert (gray_object_queue_is_empty (&gray_queue));
 
-	num_major_sections = major_collector.get_num_major_sections ();
-
-	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 0);
-	los_memory_saved = MAX (old_los_memory_usage - los_memory_usage, 1);
-
-	save_target = ((num_major_sections * major_collector.section_size) + los_memory_saved) / 2;
-	/*
-	 * We aim to allow the allocation of as many sections as is
-	 * necessary to reclaim save_target sections in the next
-	 * collection.  We assume the collection pattern won't change.
-	 * In the last cycle, we had num_major_sections_saved for
-	 * minor_collection_sections_alloced.  Assuming things won't
-	 * change, this must be the same ratio as save_target for
-	 * allowance_target, i.e.
-	 *
-	 *    num_major_sections_saved            save_target
-	 * --------------------------------- == ----------------
-	 * minor_collection_sections_alloced    allowance_target
-	 *
-	 * hence:
-	 */
-	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
-
-	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
+	try_calculate_minor_collection_allowance (TRUE);
 
 	minor_collection_sections_alloced = 0;
-	last_los_memory_usage = los_memory_usage;
+	last_collection_los_memory_usage = los_memory_usage;
 
 	major_collector.finish_major_collection ();
 

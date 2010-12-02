@@ -190,6 +190,8 @@ static char *nursery_end;
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666;
 
+static gboolean have_swept;
+
 #define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), nursery_bits, nursery_start, nursery_end))
 
 #ifdef FIXED_HEAP
@@ -1278,6 +1280,8 @@ ms_sweep (void)
 			evacuate_block_obj_sizes [i] = FALSE;
 		}
 	}
+
+	have_swept = TRUE;
 }
 
 static void
@@ -1421,8 +1425,17 @@ major_start_major_collection (void)
 static void
 major_finish_major_collection (void)
 {
+}
+
+static void
+major_have_computer_minor_collection_allowance (void)
+{
 #ifndef FIXED_HEAP
 	int section_reserve = mono_sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
+
+	g_assert (have_swept);
+	ms_wait_for_sweep_done ();
+	g_assert (!ms_sweep_in_progress);
 
 	/*
 	 * FIXME: We don't free blocks on 32 bit platforms because it
@@ -1759,6 +1772,8 @@ mono_sgen_marksweep_init
 #endif
 	collector->supports_cardtable = TRUE;
 
+	collector->have_swept = &have_swept;
+
 	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
@@ -1783,6 +1798,7 @@ mono_sgen_marksweep_init
 	collector->finish_nursery_collection = major_finish_nursery_collection;
 	collector->start_major_collection = major_start_major_collection;
 	collector->finish_major_collection = major_finish_major_collection;
+	collector->have_computed_minor_collection_allowance = major_have_computer_minor_collection_allowance;
 	collector->ptr_is_in_non_pinned_space = major_ptr_is_in_non_pinned_space;
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;

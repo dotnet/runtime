@@ -680,6 +680,12 @@ struct _SgenMajorCollector {
 	gboolean is_parallel;
 	gboolean supports_cardtable;
 
+	/*
+	 * This is set to TRUE if the sweep for the last major
+	 * collection has been completed.
+	 */
+	gboolean *have_swept;
+
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
 	void* (*alloc_small_pinned_obj) (size_t size, gboolean has_references);
@@ -706,6 +712,7 @@ struct _SgenMajorCollector {
 	void (*finish_nursery_collection) (void);
 	void (*start_major_collection) (void);
 	void (*finish_major_collection) (void);
+	void (*have_computed_minor_collection_allowance) (void);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr);
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);

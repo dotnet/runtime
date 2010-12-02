@@ -67,6 +67,8 @@ static GCMemSection *section_list = NULL;
 
 static SgenInternalAllocator pinned_allocator;
 
+static gboolean have_swept;
+
 /*
  * used when moving the objects
  */
@@ -540,6 +542,8 @@ major_sweep (void)
 	update:
 		mono_sgen_update_heap_boundaries ((mword)this_section->data, (mword)this_section->data + this_section->size);
 	}
+
+	have_swept = TRUE;
 }
 
 static void
@@ -648,6 +652,8 @@ mono_sgen_copying_init (SgenMajorCollector *collector)
 	collector->section_size = MAJOR_SECTION_SIZE;
 	collector->supports_cardtable = FALSE;
 	collector->is_parallel = FALSE;
+
+	collector->have_swept = &have_swept;
 
 	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;

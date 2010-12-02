@@ -86,7 +86,6 @@ struct _LOSSection {
 
 LOSObject *los_object_list = NULL;
 mword los_memory_usage = 0;
-mword last_los_memory_usage = 0;
 
 static LOSSection *los_sections = NULL;
 static LOSFreeChunks *los_fast_free_lists [LOS_NUM_FAST_SIZES]; /* 0 is for larger sizes */
