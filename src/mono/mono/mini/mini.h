@@ -889,6 +889,15 @@ typedef struct {
 	gboolean orig_ex_ctx_set;
 } MonoJitTlsData;
 
+/*
+ * This structure is an extension of MonoLMF and contains extra information.
+ */
+typedef struct {
+	struct MonoLMF lmf;
+	gboolean debugger_invoke;
+	MonoContext ctx; /* if debugger_invoke is TRUE */
+} MonoLMFExt;
+
 typedef enum {
 #define PATCH_INFO(a,b) MONO_PATCH_INFO_ ## a,
 #include "patch-info.h"
