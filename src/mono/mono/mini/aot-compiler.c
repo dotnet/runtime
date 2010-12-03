@@ -2258,6 +2258,8 @@ add_wrappers (MonoAotCompile *acfg)
 
 		/* Skip methods which can not be handled by get_runtime_invoke () */
 		sig = mono_method_signature (method);
+		if (!sig)
+			continue;
 		if ((sig->ret->type == MONO_TYPE_PTR) ||
 			(sig->ret->type == MONO_TYPE_TYPEDBYREF))
 			skip = TRUE;
