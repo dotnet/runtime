@@ -29,8 +29,11 @@
 #ifdef HAVE_SGEN_GC
 
 #include <math.h>
+#include <errno.h>
 
 #include "utils/mono-counters.h"
+#include "utils/mono-semaphore.h"
+#include "utils/mono-time.h"
 #include "metadata/object-internals.h"
 #include "metadata/profiler-private.h"
 
@@ -187,6 +190,9 @@ static char *nursery_end;
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666;
 
+static gboolean concurrent_sweep = FALSE;
+static gboolean have_swept;
+
 #define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), nursery_bits, nursery_start, nursery_end))
 
 #ifdef FIXED_HEAP
@@ -219,6 +225,57 @@ static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
 static long long stat_major_blocks_alloced = 0;
 static long long stat_major_blocks_freed = 0;
 static long long stat_major_objects_evacuated = 0;
+static long long stat_time_wait_for_sweep = 0;
+
+static gboolean ms_sweep_in_progress = FALSE;
+static pthread_t ms_sweep_thread;
+static MonoSemType ms_sweep_cmd_semaphore;
+static MonoSemType ms_sweep_done_semaphore;
+
+static void
+ms_signal_sweep_command (void)
+{
+	if (!concurrent_sweep)
+		return;
+
+	g_assert (!ms_sweep_in_progress);
+	ms_sweep_in_progress = TRUE;
+	MONO_SEM_POST (&ms_sweep_cmd_semaphore);
+}
+
+static void
+ms_signal_sweep_done (void)
+{
+	if (!concurrent_sweep)
+		return;
+
+	MONO_SEM_POST (&ms_sweep_done_semaphore);
+}
+
+static void
+ms_wait_for_sweep_done (void)
+{
+	SGEN_TV_DECLARE (atv);
+	SGEN_TV_DECLARE (btv);
+	int result;
+
+	if (!concurrent_sweep)
+		return;
+
+	if (!ms_sweep_in_progress)
+		return;
+
+	SGEN_TV_GETTIME (atv);
+	while ((result = MONO_SEM_WAIT (&ms_sweep_done_semaphore)) != 0) {
+		if (errno != EINTR)
+			g_error ("MONO_SEM_WAIT");
+	}
+	SGEN_TV_GETTIME (btv);
+	stat_time_wait_for_sweep += SGEN_TV_ELAPSED_MS (atv, btv);
+
+	g_assert (ms_sweep_in_progress);
+	ms_sweep_in_progress = FALSE;
+}
 
 static int
 ms_find_block_obj_size_index (int size)
@@ -560,6 +617,8 @@ alloc_obj (int size, gboolean pinned, gboolean has_references)
 
 	LOCK_MS_BLOCK_LIST;
 
+	g_assert (!ms_sweep_in_progress);
+
 	if (!free_blocks [size_index]) {
 		if (G_UNLIKELY (!ms_alloc_block (size_index, pinned, has_references))) {
 			UNLOCK_MS_BLOCK_LIST;
@@ -634,7 +693,11 @@ major_free_non_pinned_object (char *obj, size_t size)
 static void*
 major_alloc_small_pinned_obj (size_t size, gboolean has_references)
 {
-	 void *res = alloc_obj (size, TRUE, has_references);
+	void *res;
+
+	ms_wait_for_sweep_done ();
+
+	res = alloc_obj (size, TRUE, has_references);
 	 /*If we failed to alloc memory, we better try releasing memory
 	  *as pinned alloc is requested by the runtime.
 	  */
@@ -658,7 +721,12 @@ static void*
 major_alloc_degraded (MonoVTable *vtable, size_t size)
 {
 	void *obj;
-	int old_num_sections = num_major_sections;
+	int old_num_sections;
+
+	ms_wait_for_sweep_done ();
+
+	old_num_sections = num_major_sections;
+
 	obj = alloc_obj (size, FALSE, vtable->klass->has_references);
 	if (G_LIKELY (obj)) {
 		*(MonoVTable**)obj = vtable;
@@ -724,6 +792,8 @@ static void
 major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallbackFunc callback, void *data)
 {
 	MSBlockInfo *block;
+
+	ms_wait_for_sweep_done ();
 
 	FOREACH_BLOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
@@ -1085,7 +1155,7 @@ mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
 }
 
 static void
-major_sweep (void)
+ms_sweep (void)
 {
 	int i;
 #ifdef FIXED_HEAP
@@ -1220,6 +1290,42 @@ major_sweep (void)
 			evacuate_block_obj_sizes [i] = FALSE;
 		}
 	}
+
+	have_swept = TRUE;
+}
+
+static void*
+ms_sweep_thread_func (void *dummy)
+{
+	g_assert (concurrent_sweep);
+
+	for (;;) {
+		int result;
+
+		while ((result = MONO_SEM_WAIT (&ms_sweep_cmd_semaphore)) != 0) {
+			if (errno != EINTR)
+				g_error ("MONO_SEM_WAIT");
+		}
+
+		ms_sweep ();
+
+		ms_signal_sweep_done ();
+	}
+
+	return NULL;
+}
+
+static void
+major_sweep (void)
+{
+	if (concurrent_sweep) {
+		if (!ms_sweep_thread)
+			pthread_create (&ms_sweep_thread, NULL, ms_sweep_thread_func, NULL);
+
+		ms_signal_sweep_command ();
+	} else {
+		ms_sweep ();
+	}
 }
 
 static int count_pinned_ref;
@@ -1300,6 +1406,8 @@ static int old_num_major_sections;
 static void
 major_start_nursery_collection (void)
 {
+	ms_wait_for_sweep_done ();
+
 #ifdef MARKSWEEP_CONSISTENCY_CHECK
 	consistency_check ();
 #endif
@@ -1321,6 +1429,8 @@ major_start_major_collection (void)
 {
 	int i;
 
+	ms_wait_for_sweep_done ();
+
 	/* clear the free lists */
 	for (i = 0; i < num_block_obj_sizes; ++i) {
 		if (!evacuate_block_obj_sizes [i])
@@ -1334,8 +1444,17 @@ major_start_major_collection (void)
 static void
 major_finish_major_collection (void)
 {
+}
+
+static void
+major_have_computer_minor_collection_allowance (void)
+{
 #ifndef FIXED_HEAP
 	int section_reserve = mono_sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
+
+	g_assert (have_swept);
+	ms_wait_for_sweep_done ();
+	g_assert (!ms_sweep_in_progress);
 
 	/*
 	 * FIXME: We don't free blocks on 32 bit platforms because it
@@ -1438,6 +1557,12 @@ major_handle_gc_param (const char *opt)
 		}
 		evacuation_threshold = (float)percentage / 100.0;
 		return TRUE;
+	} else if (!strcmp (opt, "concurrent-sweep")) {
+		concurrent_sweep = TRUE;
+		return TRUE;
+	} else if (!strcmp (opt, "no-concurrent-sweep")) {
+		concurrent_sweep = FALSE;
+		return TRUE;
 	}
 
 	return FALSE;
@@ -1452,6 +1577,7 @@ major_print_gc_param_usage (void)
 			"  major-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n"
 #endif
 			"  evacuation-threshold=P (where P is a percentage, an integer in 0-100)\n"
+			"  (no-)concurrent-sweep\n"
 			);
 }
 
@@ -1598,6 +1724,17 @@ major_scan_card_table (SgenGrayQueue *queue)
 }
 #endif
 
+static gboolean
+major_is_worker_thread (pthread_t thread)
+{
+	if (concurrent_sweep)
+		return thread == ms_sweep_thread;
+	else
+		return FALSE;
+}
+
+#undef pthread_create
+
 void
 #ifdef SGEN_PARALLEL_MARK
 #ifdef FIXED_HEAP
@@ -1650,6 +1787,14 @@ mono_sgen_marksweep_init
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
+	mono_counters_register ("Wait for sweep time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_time_wait_for_sweep);
+
+	/*
+	 * FIXME: These are superfluous if concurrent sweep is
+	 * disabled.  We might want to create them lazily.
+	 */
+	MONO_SEM_INIT (&ms_sweep_cmd_semaphore, 0);
+	MONO_SEM_INIT (&ms_sweep_done_semaphore, 0);
 
 	collector->section_size = MAJOR_SECTION_SIZE;
 #ifdef SGEN_PARALLEL_MARK
@@ -1658,6 +1803,8 @@ mono_sgen_marksweep_init
 	collector->is_parallel = FALSE;
 #endif
 	collector->supports_cardtable = TRUE;
+
+	collector->have_swept = &have_swept;
 
 	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;
@@ -1683,12 +1830,14 @@ mono_sgen_marksweep_init
 	collector->finish_nursery_collection = major_finish_nursery_collection;
 	collector->start_major_collection = major_start_major_collection;
 	collector->finish_major_collection = major_finish_major_collection;
+	collector->have_computed_minor_collection_allowance = major_have_computer_minor_collection_allowance;
 	collector->ptr_is_in_non_pinned_space = major_ptr_is_in_non_pinned_space;
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
 	collector->handle_gc_param = major_handle_gc_param;
 	collector->print_gc_param_usage = major_print_gc_param_usage;
+	collector->is_worker_thread = major_is_worker_thread;
 
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);

@@ -65,6 +65,11 @@ typedef guint32 mword;
 typedef guint64 mword;
 #endif
 
+#define SGEN_TV_DECLARE(name) gint64 name
+#define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()
+#define SGEN_TV_ELAPSED(start,end) (int)((end-start) / 10)
+#define SGEN_TV_ELAPSED_MS(start,end) ((SGEN_TV_ELAPSED((start),(end)) + 500) / 1000)
+
 /* for use with write barriers */
 typedef struct _RememberedSet RememberedSet;
 struct _RememberedSet {
@@ -675,6 +680,12 @@ struct _SgenMajorCollector {
 	gboolean is_parallel;
 	gboolean supports_cardtable;
 
+	/*
+	 * This is set to TRUE if the sweep for the last major
+	 * collection has been completed.
+	 */
+	gboolean *have_swept;
+
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
 	void* (*alloc_small_pinned_obj) (size_t size, gboolean has_references);
@@ -701,12 +712,14 @@ struct _SgenMajorCollector {
 	void (*finish_nursery_collection) (void);
 	void (*start_major_collection) (void);
 	void (*finish_major_collection) (void);
+	void (*have_computed_minor_collection_allowance) (void);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr);
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);
 	int (*get_num_major_sections) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
+	gboolean (*is_worker_thread) (pthread_t thread);
 };
 
 void mono_sgen_marksweep_init (SgenMajorCollector *collector) MONO_INTERNAL;
