@@ -4229,7 +4229,7 @@ static void
 do_ldstr (VerifyContext *ctx, guint32 token)
 {
 	GSList *error = NULL;
-	if (ctx->method->wrapper_type == MONO_WRAPPER_NONE) {
+	if (ctx->method->wrapper_type == MONO_WRAPPER_NONE && !ctx->image->dynamic) {
 		if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 			return;
