@@ -190,6 +190,7 @@ static char *nursery_end;
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666;
 
+static gboolean concurrent_sweep = FALSE;
 static gboolean have_swept;
 
 #define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), nursery_bits, nursery_start, nursery_end))
@@ -234,6 +235,9 @@ static MonoSemType ms_sweep_done_semaphore;
 static void
 ms_signal_sweep_command (void)
 {
+	if (!concurrent_sweep)
+		return;
+
 	g_assert (!ms_sweep_in_progress);
 	ms_sweep_in_progress = TRUE;
 	MONO_SEM_POST (&ms_sweep_cmd_semaphore);
@@ -242,6 +246,9 @@ ms_signal_sweep_command (void)
 static void
 ms_signal_sweep_done (void)
 {
+	if (!concurrent_sweep)
+		return;
+
 	MONO_SEM_POST (&ms_sweep_done_semaphore);
 }
 
@@ -251,6 +258,9 @@ ms_wait_for_sweep_done (void)
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
 	int result;
+
+	if (!concurrent_sweep)
+		return;
 
 	if (!ms_sweep_in_progress)
 		return;
@@ -1284,15 +1294,11 @@ ms_sweep (void)
 	have_swept = TRUE;
 }
 
-static void
-major_sweep (void)
-{
-	ms_signal_sweep_command ();
-}
-
 static void*
 ms_sweep_thread_func (void *dummy)
 {
+	g_assert (concurrent_sweep);
+
 	for (;;) {
 		int result;
 
@@ -1307,6 +1313,19 @@ ms_sweep_thread_func (void *dummy)
 	}
 
 	return NULL;
+}
+
+static void
+major_sweep (void)
+{
+	if (concurrent_sweep) {
+		if (!ms_sweep_thread)
+			pthread_create (&ms_sweep_thread, NULL, ms_sweep_thread_func, NULL);
+
+		ms_signal_sweep_command ();
+	} else {
+		ms_sweep ();
+	}
 }
 
 static int count_pinned_ref;
@@ -1538,6 +1557,12 @@ major_handle_gc_param (const char *opt)
 		}
 		evacuation_threshold = (float)percentage / 100.0;
 		return TRUE;
+	} else if (!strcmp (opt, "concurrent-sweep")) {
+		concurrent_sweep = TRUE;
+		return TRUE;
+	} else if (!strcmp (opt, "no-concurrent-sweep")) {
+		concurrent_sweep = FALSE;
+		return TRUE;
 	}
 
 	return FALSE;
@@ -1552,6 +1577,7 @@ major_print_gc_param_usage (void)
 			"  major-heap-size=N (where N is an integer, possibly with a k, m or a g suffix)\n"
 #endif
 			"  evacuation-threshold=P (where P is a percentage, an integer in 0-100)\n"
+			"  (no-)concurrent-sweep\n"
 			);
 }
 
@@ -1701,7 +1727,10 @@ major_scan_card_table (SgenGrayQueue *queue)
 static gboolean
 major_is_worker_thread (pthread_t thread)
 {
-	return thread == ms_sweep_thread;
+	if (concurrent_sweep)
+		return thread == ms_sweep_thread;
+	else
+		return FALSE;
 }
 
 #undef pthread_create
@@ -1760,9 +1789,12 @@ mono_sgen_marksweep_init
 	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
 	mono_counters_register ("Wait for sweep time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_time_wait_for_sweep);
 
+	/*
+	 * FIXME: These are superfluous if concurrent sweep is
+	 * disabled.  We might want to create them lazily.
+	 */
 	MONO_SEM_INIT (&ms_sweep_cmd_semaphore, 0);
 	MONO_SEM_INIT (&ms_sweep_done_semaphore, 0);
-	pthread_create (&ms_sweep_thread, NULL, ms_sweep_thread_func, NULL);
 
 	collector->section_size = MAJOR_SECTION_SIZE;
 #ifdef SGEN_PARALLEL_MARK
