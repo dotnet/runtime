@@ -1192,7 +1192,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	do {
 		old_data = sbuf->data;
 		new_data = old_data + 4;
-		data = cmp_exchange ((volatile gpointer*)&sbuf->data, new_data, old_data);
+		data = cmp_exchange ((volatile void**)&sbuf->data, new_data, old_data);
 	} while (data != old_data);
 	if (old_data >= sbuf->data_end)
 		return; /* lost event */
