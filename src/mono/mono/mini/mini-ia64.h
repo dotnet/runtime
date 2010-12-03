@@ -46,7 +46,6 @@
 #define MONO_ARCH_SIGNAL_STACK_SIZE SIGSTKSZ
 
 struct MonoLMF {
-	guint64    ebp;
 };
 
 typedef struct MonoContext {
@@ -137,7 +136,6 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 }
 
 #define MONO_CONTEXT_SET_IP(ctx,eip) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_IP, (unw_word_t)(eip)); g_assert (err == 0); } while (0)
-#define MONO_CONTEXT_SET_BP(ctx,ebp) do { } while (0)
 #define MONO_CONTEXT_SET_SP(ctx,esp) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_SP, (unw_word_t)(esp)); g_assert (err == 0); } while (0)
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(mono_ia64_context_get_ip ((ctx))))
