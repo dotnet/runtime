@@ -2127,6 +2127,8 @@ is_valid_methodspec_blob (VerifyContext *ctx, guint32 offset)
 		FAIL (ctx, g_strdup ("MethodSpec: Zero generic argument count"));
 
 	for (i = 0; i < count; ++i) {
+		if (!parse_custom_mods (ctx, &ptr, end))
+			return FALSE;
 		if (!parse_type (ctx, &ptr, end))
 			FAIL (ctx, g_strdup_printf ("MethodSpec: Could not parse parameter %d", i + 1));
 	}
