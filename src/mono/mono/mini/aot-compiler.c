@@ -2768,6 +2768,9 @@ add_generic_instances (MonoAotCompile *acfg)
 		token = MONO_TOKEN_METHOD_SPEC | (i + 1);
 		method = mono_get_method (acfg->image, token, NULL);
 
+		if (!method)
+			continue;
+
 		if (method->klass->image != acfg->image)
 			continue;
 
