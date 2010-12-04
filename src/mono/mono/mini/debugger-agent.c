@@ -4062,7 +4062,6 @@ ss_stop (SingleStepReq *ss_req)
 static void
 ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch)
 {
-	gboolean use_bp = FALSE;
 	int i, frame_index;
 	SeqPoint *next_sp;
 	MonoBreakpoint *bp;
@@ -4096,7 +4095,6 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 		}
 
 		if (sp && sp->next_len > 0) {
-			use_bp = TRUE;
 			for (i = 0; i < sp->next_len; ++i) {
 				next_sp = &info->seq_points [sp->next [i]];
 
