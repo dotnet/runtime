@@ -1219,7 +1219,7 @@ mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallback
 			obj = start;
 		}
 
-		size = ALIGN_UP (safe_object_get_size (obj));
+		size = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
 
 		callback (obj, size, data);
 
