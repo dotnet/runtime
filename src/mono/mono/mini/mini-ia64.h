@@ -157,7 +157,7 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 /* This is ia64 only */
 #define MONO_CONTEXT_SET_FUNC(ctx, func) MONO_CONTEXT_SET_IP ((ctx), ((gpointer*)(func))[0])
 
-#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 #define MONO_ARCH_CONTEXT_DEF unw_context_t unw_ctx;
 
