@@ -3782,6 +3782,22 @@ mono_debugger_agent_breakpoint_hit (void *sigctx)
 	resume_from_signal_handler (sigctx, process_breakpoint);
 }
 
+static const char*
+ss_depth_to_string (StepDepth depth)
+{
+	switch (depth) {
+	case STEP_DEPTH_OVER:
+		return "over";
+	case STEP_DEPTH_OUT:
+		return "out";
+	case STEP_DEPTH_INTO:
+		return "into";
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
 static void
 process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 {
@@ -3812,25 +3828,9 @@ process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 		return;
 
 	if (log_level > 0) {
-		const char *depth = NULL;
-
 		ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
 
-		switch (ss_req->depth) {
-		case STEP_DEPTH_OVER:
-			depth = "over";
-			break;
-		case STEP_DEPTH_OUT:
-			depth = "out";
-			break;
-		case STEP_DEPTH_INTO:
-			depth = "into";
-			break;
-		default:
-			g_assert_not_reached ();
-		}
-			
-		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p), sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), depth, mono_method_full_name (ji->method, TRUE), MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
+		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p), sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), ss_depth_to_string (ss_req->depth), mono_method_full_name (ji->method, TRUE), MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
 	}
 
 	/*
@@ -4105,6 +4105,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 	}
 
 	if (!ss_req->bps) {
+		DEBUG (1, printf ("[dbg] Turning on global single stepping.\n"));
 		ss_req->global = TRUE;
 		start_single_stepping ();
 	} else {
@@ -4135,6 +4136,8 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		DEBUG (0, printf ("Received a single step request while the previous one was still active.\n"));
 		return ERR_NOT_IMPLEMENTED;
 	}
+
+	DEBUG (1, printf ("[dbg] Starting single step of thread %p (depth=%s).\n", thread, ss_depth_to_string (depth)));
 
 	ss_req = g_new0 (SingleStepReq, 1);
 	ss_req->req = req;
@@ -6817,6 +6820,41 @@ command_set_to_string (CommandSet command_set)
 	}
 }
 
+static const char*
+cmd_to_string (CommandSet set, int command)
+{
+	switch (set) {
+	case CMD_SET_VM: {
+		switch (command) {
+		case CMD_VM_VERSION:
+			return "VERSION";
+		case CMD_VM_ALL_THREADS:
+			return "ALL_THREADS";
+		case CMD_VM_SUSPEND:
+			return "SUSPEND";
+		case CMD_VM_RESUME:
+			return "RESUME";
+		case CMD_VM_EXIT:
+			return "EXIT";
+		case CMD_VM_DISPOSE:
+			return "DISPOSE";
+		case CMD_VM_INVOKE_METHOD:
+			return "INVOKE_METHOD";
+		case CMD_VM_SET_PROTOCOL_VERSION:
+			return "SET_PROTOCOL_VERSION";
+		case CMD_VM_ABORT_INVOKE:
+			return "ABORT_INVOKE";
+		default:
+			break;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	return NULL;
+}
+
 /*
  * debugger_thread:
  *
@@ -6861,7 +6899,18 @@ debugger_thread (void *arg)
 
 		g_assert (flags == 0);
 
-		DEBUG (1, fprintf (log_file, "[dbg] Received command %s(%d), id=%d.\n", command_set_to_string (command_set), command, id));
+		if (log_level) {
+			const char *cmd_str;
+			char cmd_num [256];
+
+			cmd_str = cmd_to_string (command_set, command);
+			if (!cmd_str) {
+				sprintf (cmd_num, "%d", command);
+				cmd_str = cmd_num;
+			}
+			
+			DEBUG (1, fprintf (log_file, "[dbg] Received command %s(%s), id=%d.\n", command_set_to_string (command_set), cmd_str, id));
+		}
 
 		data = g_malloc (len - HEADER_LENGTH);
 		if (len - HEADER_LENGTH > 0)
