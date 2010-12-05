@@ -200,6 +200,7 @@
 #include "metadata/threads.h"
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-protocol.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
@@ -859,7 +860,6 @@ static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenMajorCollector major_collector;
 
-#include "sgen-protocol.c"
 #include "sgen-pinning.c"
 #include "sgen-pinning-stats.c"
 #include "sgen-gray.c"

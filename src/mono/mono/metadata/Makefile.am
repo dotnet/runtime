@@ -81,7 +81,6 @@ sgen_sources = \
 	sgen-gray.c		\
 	sgen-pinning.c		\
 	sgen-pinning-stats.c	\
-	sgen-protocol.c		\
 	sgen-workers.c
 
 libmonoruntime_la_SOURCES = \
@@ -191,6 +190,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-marksweep-fixed-par.c	\
 	sgen-major-copying.c	\
 	sgen-los.c		\
+	sgen-protocol.c \
 	sgen-gc.h		\
 	sgen-archdep.h		\
 	sgen-cardtable.h	\
