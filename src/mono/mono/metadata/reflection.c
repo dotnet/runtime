@@ -43,20 +43,6 @@
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 
-
-#if HAVE_SGEN_GC
-static void* reflection_info_desc = NULL;
-#define MOVING_GC_REGISTER(addr) do {	\
-		if (!reflection_info_desc) {	\
-			gsize bmap = 1;		\
-			reflection_info_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);	\
-		}	\
-		mono_gc_register_root ((char*)(addr), sizeof (gpointer), reflection_info_desc); \
-	} while (0)
-#else
-#define MOVING_GC_REGISTER(addr)
-#endif
-
 static gboolean is_usertype (MonoReflectionType *ref);
 static MonoReflectionType *mono_reflection_type_resolve_user_types (MonoReflectionType *type);
 
@@ -2204,7 +2190,7 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	entry = g_new0 (GenericParamTableEntry, 1);
 	entry->owner = owner;
 	/* FIXME: track where gen_params should be freed and remove the GC root as well */
-	MOVING_GC_REGISTER (&entry->gparam);
+	MONO_GC_REGISTER_ROOT_IF_MOVING (entry->gparam);
 	entry->gparam = gparam;
 	
 	g_ptr_array_add (assembly->gen_params, entry);
@@ -6594,11 +6580,8 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 			return mono_class_get_ref_info (klass);
 		}
 	}
-#ifdef HAVE_SGEN_GC
-	res = (MonoReflectionType *)mono_gc_alloc_pinned_obj (mono_class_vtable (domain, mono_defaults.monotype_class), mono_class_instance_size (mono_defaults.monotype_class));
-#else
-	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
-#endif
+	/* This is stored in vtables/JITted code so it has to be pinned */
+	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.monotype_class);
 	res->type = type;
 	mono_g_hash_table_insert (domain->type_hash, type, res);
 
@@ -10760,7 +10743,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		dgclass->fields [i].type = mono_class_inflate_generic_type (
 			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass));
 		dgclass->field_generic_types [i] = field->type;
-		MOVING_GC_REGISTER (&dgclass->field_objects [i]);
+		MONO_GC_REGISTER_ROOT_IF_MOVING (dgclass->field_objects [i]);
 		dgclass->field_objects [i] = obj;
 
 		if (inflated_field) {
@@ -10786,9 +10769,7 @@ mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
 	for (i = 0; i < dgclass->count_fields; ++i) {
 		MonoClassField *field = dgclass->fields + i;
 		mono_metadata_free_type (field->type);
-#if HAVE_SGEN_GC
-		MONO_GC_UNREGISTER_ROOT (dgclass->field_objects [i]);
-#endif
+		MONO_GC_UNREGISTER_ROOT_IF_MOVING (dgclass->field_objects [i]);
 	}
 }
 

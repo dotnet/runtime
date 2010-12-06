@@ -1533,6 +1533,9 @@ mono_class_set_ref_info (MonoClass *klass, gpointer obj) MONO_INTERNAL;
 void
 mono_class_free_ref_info (MonoClass *klass) MONO_INTERNAL;
 
+MonoObject *
+mono_object_new_pinned (MonoDomain *domain, MonoClass *klass) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 

@@ -2173,7 +2173,6 @@ typedef struct unload_data {
 	char *failure_reason;
 } unload_data;
 
-#ifdef HAVE_SGEN_GC
 static void
 deregister_reflection_info_roots_nspace_table (gpointer key, gpointer value, gpointer image)
 {
@@ -2237,7 +2236,6 @@ deregister_reflection_info_roots (MonoDomain *domain)
 	mono_domain_assemblies_unlock (domain);
 	mono_loader_unlock ();
 }
-#endif
 
 static guint32 WINAPI
 unload_thread_main (void *arg)
@@ -2293,9 +2291,7 @@ unload_thread_main (void *arg)
 #endif
 	for (i = 0; i < domain->class_vtable_array->len; ++i)
 		clear_cached_vtable (g_ptr_array_index (domain->class_vtable_array, i));
-#ifdef HAVE_SGEN_GC
 	deregister_reflection_info_roots (domain);
-#endif
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 
@@ -2312,7 +2308,7 @@ unload_thread_main (void *arg)
 
 	mono_gc_collect (mono_gc_max_generation ());
 
-	mono_thread_detach  (thread);
+	mono_thread_detach (thread);
 
 	return 0;
 }

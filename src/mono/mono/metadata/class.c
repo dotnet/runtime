@@ -1545,13 +1545,6 @@ mono_class_has_references (MonoClass *klass)
 	}
 }
 
-/* useful until we keep track of gc-references in corlib etc. */
-#ifdef HAVE_SGEN_GC
-#define IS_GC_REFERENCE(t) FALSE
-#else
-#define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U && class->image == mono_defaults.corlib)
-#endif
-
 /*
  * mono_type_get_basic_type_from_generic:
  * @type: a type

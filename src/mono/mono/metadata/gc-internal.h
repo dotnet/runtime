@@ -51,6 +51,30 @@
 	mono_gc_register_root ((char*)&(x), sizeof(MonoObject*), mono_gc_make_root_descr_all_refs (1)); \
 	} while (0)
 
+/*
+ * This is used for fields which point to objects which are kept alive by other references
+ * when using Boehm.
+ */
+#ifdef HAVE_SGEN_GC
+#define MONO_GC_REGISTER_ROOT_IF_MOVING(x) do { \
+		MONO_GC_REGISTER_ROOT_SINGLE(x);		\
+} while (0)
+
+#define MONO_GC_UNREGISTER_ROOT_IF_MOVING(x) do { \
+	MONO_GC_UNREGISTER_ROOT (x); \
+} while (0)
+#else
+#define MONO_GC_REGISTER_ROOT_IF_MOVING(x)
+#define MONO_GC_UNREGISTER_ROOT_IF_MOVING(x)
+#endif
+
+/* useful until we keep track of gc-references in corlib etc. */
+#ifdef HAVE_SGEN_GC
+#define IS_GC_REFERENCE(t) FALSE
+#else
+#define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U && class->image == mono_defaults.corlib)
+#endif
+
 void   mono_object_register_finalizer               (MonoObject  *obj) MONO_INTERNAL;
 void   ves_icall_System_GC_InternalCollect          (int          generation) MONO_INTERNAL;
 gint64 ves_icall_System_GC_GetTotalMemory           (MonoBoolean  forceCollection) MONO_INTERNAL;

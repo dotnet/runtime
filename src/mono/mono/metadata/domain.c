@@ -1217,9 +1217,7 @@ mono_domain_create (void)
 	domain->jit_info_table = jit_info_table_new (domain);
 	domain->jit_info_free_queue = NULL;
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-#ifndef HAVE_SGEN_GC
 	domain->track_resurrection_handles_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-#endif
 
 	InitializeCriticalSection (&domain->lock);
 	InitializeCriticalSection (&domain->assemblies_lock);
@@ -1899,24 +1897,20 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 	return ass;
 }
 
-#ifndef HAVE_SGEN_GC
 static void
 free_slist (gpointer key, gpointer value, gpointer user_data)
 {
 	g_slist_free (value);
 }
-#endif
 
-#if HAVE_SGEN_GC
 static void
 unregister_vtable_reflection_type (MonoVTable *vtable)
 {
 	MonoObject *type = vtable->type;
 
 	if (type->vtable->klass != mono_defaults.monotype_class)
-		mono_gc_deregister_root ((char*)&vtable->type);
+		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
 }
-#endif
 
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
@@ -1970,13 +1964,11 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		domain->type_init_exception_hash = NULL;
 	}
 
-#if HAVE_SGEN_GC
 	if (domain->class_vtable_array) {
 		int i;
 		for (i = 0; i < domain->class_vtable_array->len; ++i)
 			unregister_vtable_reflection_type (g_ptr_array_index (domain->class_vtable_array, i));
 	}
-#endif
 
 	/* This needs to be done before closing assemblies */
 	mono_gc_clear_domain (domain);
@@ -2061,14 +2053,12 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	domain->finalizable_objects_hash = NULL;
-#ifndef HAVE_SGEN_GC
 	if (domain->track_resurrection_objects_hash) {
 		g_hash_table_foreach (domain->track_resurrection_objects_hash, free_slist, NULL);
 		g_hash_table_destroy (domain->track_resurrection_objects_hash);
 	}
 	if (domain->track_resurrection_handles_hash)
 		g_hash_table_destroy (domain->track_resurrection_handles_hash);
-#endif
 	if (domain->method_rgctx_hash) {
 		g_hash_table_destroy (domain->method_rgctx_hash);
 		domain->method_rgctx_hash = NULL;

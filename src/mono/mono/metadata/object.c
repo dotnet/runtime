@@ -2077,21 +2077,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 
 	/*FIXME check for OOM*/
 	vt->type = mono_type_get_object (domain, &class->byval_arg);
-#if HAVE_SGEN_GC
-	if (mono_object_get_class (vt->type) != mono_defaults.monotype_class) {
-		static void *type_desc = NULL;
-
-		if (!type_desc) {
-			gsize bmap = 1;
-			type_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);
-		}
-
+	if (mono_object_get_class (vt->type) != mono_defaults.monotype_class)
 		/* This is unregistered in
 		   unregister_vtable_reflection_type() in
 		   domain.c. */
-		mono_gc_register_root ((char*)&vt->type, sizeof (gpointer), type_desc);
-	}
-#endif
+		MONO_GC_REGISTER_ROOT_IF_MOVING(vt->type);
 	if (class->contextbound)
 		vt->remote = 1;
 	else
@@ -4197,6 +4187,29 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 	if (!vtable)
 		return NULL;
 	return mono_object_new_specific (vtable);
+}
+
+/**
+ * mono_object_new_pinned:
+ *
+ *   Same as mono_object_new, but the returned object will be pinned.
+ * FIXME: How are these freed under sgen ?
+ */
+MonoObject *
+mono_object_new_pinned (MonoDomain *domain, MonoClass *klass)
+{
+	MonoVTable *vtable;
+
+	MONO_ARCH_SAVE_REGS;
+	vtable = mono_class_vtable (domain, klass);
+	if (!vtable)
+		return NULL;
+
+#ifdef HAVE_SGEN_GC
+	return mono_gc_alloc_pinned_obj (vtable, mono_class_instance_size (klass));
+#else
+	return mono_object_new_specific (vtable);
+#endif
 }
 
 /**
