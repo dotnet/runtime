@@ -5177,11 +5177,6 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	if (di->gen_params) {
 		for (i = 0; i < di->gen_params->len; i++) {
 			GenericParamTableEntry *entry = g_ptr_array_index (di->gen_params, i);
-			if (entry->gparam->type.type) {
-				MonoGenericParam *param = entry->gparam->type.type->data.generic_param;
-				g_free ((char*)mono_generic_param_info (param)->name);
-				g_free (param);
-			}
 			mono_gc_deregister_root ((char*) &entry->gparam);
 			g_free (entry);
 		}
@@ -10430,10 +10425,12 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 {
 	MonoClassField *field;
 	MonoType *custom;
+	MonoError error;
 
 	field = g_new0 (MonoClassField, 1);
 
-	field->name = mono_string_to_utf8 (fb->name);
+	field->name = mono_string_to_utf8_image (klass->image, fb->name, &error);
+	g_assert (mono_error_ok (&error));
 	if (fb->attrs || fb->modreq || fb->modopt) {
 		field->type = mono_metadata_type_dup (NULL, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type));
 		field->type->attrs = fb->attrs;
@@ -10441,7 +10438,8 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 		g_assert (klass->image->dynamic);
 		custom = add_custom_modifiers ((MonoDynamicImage*)klass->image, field->type, fb->modreq, fb->modopt);
 		g_free (field->type);
-		field->type = custom;
+		field->type = mono_metadata_type_dup (klass->image, custom);
+		g_free (custom);
 	} else {
 		field->type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type);
 	}
@@ -11432,10 +11430,17 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	MonoGenericParamFull *param;
 	MonoImage *image;
 	MonoClass *pklass;
+	MonoError error;
 
 	MONO_ARCH_SAVE_REGS;
 
-	param = g_new0 (MonoGenericParamFull, 1);
+	image = &gparam->tbuilder->module->dynamic_image->image;
+
+	param = mono_image_new0 (image, MonoGenericParamFull, 1);
+
+	param->info.name = mono_string_to_utf8_image (image, gparam->name, &error);
+	g_assert (mono_error_ok (&error));
+	param->param.num = gparam->index;
 
 	if (gparam->mbuilder) {
 		if (!gparam->mbuilder->generic_container) {
@@ -11459,10 +11464,6 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 		param->param.owner = gparam->tbuilder->generic_container;
 	}
 
-	param->info.name = mono_string_to_utf8 (gparam->name);
-	param->param.num = gparam->index;
-
-	image = &gparam->tbuilder->module->dynamic_image->image;
 	pklass = mono_class_from_generic_parameter ((MonoGenericParam *) param, image, gparam->mbuilder != NULL);
 
 	gparam->type.type = &pklass->byval_arg;
