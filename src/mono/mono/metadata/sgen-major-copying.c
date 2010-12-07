@@ -53,8 +53,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
-
-#define DEBUG(l,x)
+#include "metadata/mono-gc.h"
 
 #define MAJOR_SECTION_SIZE		SGEN_PINNED_CHUNK_SIZE
 #define BLOCK_FOR_OBJECT(o)		SGEN_PINNED_CHUNK_FOR_PTR ((o))
@@ -67,6 +66,8 @@ static int num_major_sections = 0;
 static GCMemSection *section_list = NULL;
 
 static SgenInternalAllocator pinned_allocator;
+
+static gboolean have_swept;
 
 /*
  * used when moving the objects
@@ -130,7 +131,7 @@ alloc_major_section (void)
 	section->size = MAJOR_SECTION_SIZE - SGEN_SIZEOF_GC_MEM_SECTION;
 	section->end_data = section->data + section->size;
 	mono_sgen_update_heap_boundaries ((mword)section->data, (mword)section->end_data);
-	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %zd\n", section->data, section->end_data, total_alloc));
+	DEBUG (3, fprintf (gc_debug_file, "New major heap section: (%p-%p), total: %zd\n", section->data, section->end_data, mono_gc_get_heap_size ()));
 	scan_starts = (section->size + SGEN_SCAN_START_SIZE - 1) / SGEN_SCAN_START_SIZE;
 	section->scan_starts = mono_sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
@@ -353,7 +354,7 @@ major_copy_or_mark_object (void **obj_slot, SgenGrayQueue *queue)
 	if (G_UNLIKELY (objsize > SGEN_MAX_SMALL_OBJ_SIZE || obj_is_from_pinned_alloc (obj))) {
 		if (SGEN_OBJECT_IS_PINNED (obj))
 			return;
-		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, safe_name (obj), objsize));
+		DEBUG (9, fprintf (gc_debug_file, " (marked LOS/Pinned %p (%s), size: %zd)\n", obj, mono_sgen_safe_name (obj), objsize));
 		binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), mono_sgen_safe_object_get_size ((MonoObject*)obj));
 		SGEN_PIN_OBJECT (obj);
 		GRAY_OBJECT_ENQUEUE (queue, obj);
@@ -427,9 +428,9 @@ sweep_pinned_objects_callback (char *ptr, size_t size, void *data)
 {
 	if (SGEN_OBJECT_IS_PINNED (ptr)) {
 		SGEN_UNPIN_OBJECT (ptr);
-		DEBUG (6, fprintf (gc_debug_file, "Unmarked pinned object %p (%s)\n", ptr, safe_name (ptr)));
+		DEBUG (6, fprintf (gc_debug_file, "Unmarked pinned object %p (%s)\n", ptr, mono_sgen_safe_name (ptr)));
 	} else {
-		DEBUG (6, fprintf (gc_debug_file, "Freeing unmarked pinned object %p (%s)\n", ptr, safe_name (ptr)));
+		DEBUG (6, fprintf (gc_debug_file, "Freeing unmarked pinned object %p (%s)\n", ptr, mono_sgen_safe_name (ptr)));
 		free_pinned_object (ptr, size);
 	}
 }
@@ -446,7 +447,7 @@ major_iterate_objects (gboolean non_pinned, gboolean pinned, IterateObjectCallba
 	if (non_pinned) {
 		GCMemSection *section;
 		for (section = section_list; section; section = section->block.next)
-			mono_sgen_scan_area_with_callback (section->data, section->end_data, callback, data);
+			mono_sgen_scan_area_with_callback (section->data, section->end_data, callback, data, FALSE);
 	}
 	if (pinned)
 		mono_sgen_internal_scan_objects (&pinned_allocator, callback, data);
@@ -466,7 +467,7 @@ pin_pinned_object_callback (void *addr, size_t slot_size, SgenGrayQueue *queue)
 		mono_sgen_pin_stats_register_object ((char*) addr, mono_sgen_safe_object_get_size ((MonoObject*) addr));
 	SGEN_PIN_OBJECT (addr);
 	GRAY_OBJECT_ENQUEUE (queue, addr);
-	DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, safe_name (addr)));
+	DEBUG (6, fprintf (gc_debug_file, "Marked pinned object %p (%s) from roots\n", addr, mono_sgen_safe_name (addr)));
 }
 
 static void
@@ -541,6 +542,8 @@ major_sweep (void)
 	update:
 		mono_sgen_update_heap_boundaries ((mword)this_section->data, (mword)this_section->data + this_section->size);
 	}
+
+	have_swept = TRUE;
 }
 
 static void
@@ -649,6 +652,8 @@ mono_sgen_copying_init (SgenMajorCollector *collector)
 	collector->section_size = MAJOR_SECTION_SIZE;
 	collector->supports_cardtable = FALSE;
 	collector->is_parallel = FALSE;
+
+	collector->have_swept = &have_swept;
 
 	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;

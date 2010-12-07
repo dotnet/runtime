@@ -1303,6 +1303,9 @@ parse_generic_inst (VerifyContext *ctx, const char **_ptr, const char *end)
 		FAIL (ctx, g_strdup ("GenericInst: Zero arguments generic instance"));
 
 	for (i = 0; i < count; ++i) {
+		if (!parse_custom_mods (ctx, &ptr, end))
+			FAIL (ctx, g_strdup ("Type: Failed to parse pointer custom attr"));
+
 		if (!parse_type (ctx, &ptr, end))
 			FAIL (ctx, g_strdup_printf ("GenericInst: invalid generic argument %d", i + 1));
 	}
@@ -1436,8 +1439,11 @@ parse_param (VerifyContext *ctx, const char **_ptr, const char *end)
 	}
 
 	//it's a byref, update the cursor ptr
-	if (type == MONO_TYPE_BYREF)
+	if (type == MONO_TYPE_BYREF) {
 		*_ptr = ptr;
+		if (!parse_custom_mods (ctx, _ptr, end))
+			return FALSE;
+	}
 
 	return parse_type (ctx, _ptr, end);
 }
@@ -1526,6 +1532,8 @@ parse_property_signature (VerifyContext *ctx, const char **_ptr, const char *end
 		FAIL (ctx, g_strdup ("PropertySig: Could not parse property type"));
 
 	for (i = 0; i < param_count; ++i) {
+		if (!parse_custom_mods (ctx, &ptr, end))
+			FAIL (ctx, g_strdup ("Type: Failed to parse pointer custom attr"));
 		if (!parse_type (ctx, &ptr, end))
 			FAIL (ctx, g_strdup_printf ("PropertySig: Error parsing arg %d", i));
 	}
@@ -2119,6 +2127,8 @@ is_valid_methodspec_blob (VerifyContext *ctx, guint32 offset)
 		FAIL (ctx, g_strdup ("MethodSpec: Zero generic argument count"));
 
 	for (i = 0; i < count; ++i) {
+		if (!parse_custom_mods (ctx, &ptr, end))
+			return FALSE;
 		if (!parse_type (ctx, &ptr, end))
 			FAIL (ctx, g_strdup_printf ("MethodSpec: Could not parse parameter %d", i + 1));
 	}

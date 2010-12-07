@@ -34,7 +34,6 @@ void sgen_card_table_mark_address (mword address) MONO_INTERNAL;
 void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
 void sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQueue *queue) MONO_INTERNAL;
 gboolean sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards) MONO_INTERNAL;
-typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 
 /*How many bytes a single card covers*/
 #define CARD_BITS 9

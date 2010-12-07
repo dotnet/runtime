@@ -880,7 +880,23 @@ typedef struct {
 	gpointer handler_block_return_address;
 	/* handler block been guarded */
 	MonoJitExceptionInfo *handler_block;
+
+	/* 
+	 * Stores the state at the exception throw site to be used by mono_stack_walk ()
+	 * when it is called from profiler functions during exception handling.
+	 */
+	MonoContext orig_ex_ctx;
+	gboolean orig_ex_ctx_set;
 } MonoJitTlsData;
+
+/*
+ * This structure is an extension of MonoLMF and contains extra information.
+ */
+typedef struct {
+	struct MonoLMF lmf;
+	gboolean debugger_invoke;
+	MonoContext ctx; /* if debugger_invoke is TRUE */
+} MonoLMFExt;
 
 typedef enum {
 #define PATCH_INFO(a,b) MONO_PATCH_INFO_ ## a,
@@ -1670,7 +1686,7 @@ void     mono_xdebug_init                   (char *xdebug_opts) MONO_INTERNAL;
 void     mono_save_xdebug_info              (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_save_trampoline_xdebug_info   (MonoTrampInfo *info) MONO_INTERNAL;
 /* This is an exported function */
-void     mono_xdebug_flush                  (void) MONO_INTERNAL;
+void     mono_xdebug_flush                  (void);
 
 /* LLVM backend */
 void     mono_llvm_init                     (void) MONO_LLVM_INTERNAL;

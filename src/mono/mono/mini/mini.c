@@ -5926,6 +5926,9 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	mono_install_callbacks (&callbacks);
+
+	if (getenv ("MONO_DEBUG") != NULL)
+		mini_parse_debug_options ();
 	
 	mono_arch_cpu_init ();
 
@@ -5934,9 +5937,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_unwind_init ();
 
 	mini_gc_init ();
-
-	if (getenv ("MONO_DEBUG") != NULL)
-		mini_parse_debug_options ();
 
 	if (getenv ("MONO_XDEBUG")) {
 		char *xdebug_opts = getenv ("MONO_XDEBUG");

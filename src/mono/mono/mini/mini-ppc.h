@@ -55,15 +55,6 @@ typedef struct {
 	double fregs [MONO_SAVED_FREGS];
 } MonoContext;
 
-/*
- * This structure is an extension of MonoLMF and contains extra information.
- */
-typedef struct {
-	struct MonoLMF lmf;
-	gboolean debugger_invoke;
-	MonoContext ctx; /* if debugger_invoke is TRUE */
-} MonoLMFExt;
-
 typedef struct MonoCompileArch {
 	int fp_conv_var_offset;
 } MonoCompileArch;

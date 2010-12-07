@@ -1740,6 +1740,7 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
+	guint32 pid = -1;
 	
 	mono_once (&process_current_once, process_set_current);
 
@@ -1747,13 +1748,27 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 		return(FALSE);
 	}
 	
+	pid = GPOINTER_TO_UINT (process) - _WAPI_PROCESS_UNHANDLED;
 	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
 		/* This is a pseudo handle, so we don't know what the
-		 * exit code was
+		 * exit code was, but we can check whether it's alive or not
 		 */
-		return(FALSE);
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
+		if ((kill(pid, 0) == 0) || (errno == EPERM)) {
+#elif defined(__HAIKU__)
+		team_info teamInfo;
+		if (get_team_info ((team_id)pid, &teamInfo) == B_OK) {
+#else
+		gchar *dir = g_strdup_printf ("/proc/%d", pid);
+		if (!access (dir, F_OK)) {
+#endif
+			*code = STILL_ACTIVE;
+			return TRUE;
+		} else {
+			return FALSE;
+		}
 	}
-	
+
 	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 				(gpointer *)&process_handle);
 	if(ok==FALSE) {

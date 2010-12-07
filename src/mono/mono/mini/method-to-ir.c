@@ -6987,17 +6987,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *addr;
 
 				if (strcmp (cmethod->name, "Set") == 0) { /* array Set */ 
-					if (sp [fsig->param_count]->type == STACK_OBJ) {
+					MonoInst *val = sp [fsig->param_count];
+
+					if (val->type == STACK_OBJ) {
 						MonoInst *iargs [2];
 
 						iargs [0] = sp [0];
-						iargs [1] = sp [fsig->param_count];
+						iargs [1] = val;
 						
 						mono_emit_jit_icall (cfg, mono_helper_stelem_ref_check, iargs);
 					}
 					
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, TRUE);
-					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [fsig->param_count - 1], addr->dreg, 0, sp [fsig->param_count]->dreg);
+					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [fsig->param_count - 1], addr->dreg, 0, val->dreg);
+					if (cfg->gen_write_barriers && val->type == STACK_OBJ && !(val->opcode == OP_PCONST && val->inst_c0 == 0))
+						emit_write_barrier (cfg, addr, val, 0);
 				} else if (strcmp (cmethod->name, "Get") == 0) { /* array Get */
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, FALSE);
 

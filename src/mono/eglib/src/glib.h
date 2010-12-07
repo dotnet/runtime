@@ -24,6 +24,10 @@
 #include <eglib-remap.h>
 #endif
 
+#ifdef G_HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+
 #ifndef offsetof
 #   define offsetof(s_name,n_name) (size_t)(char *)&(((s_name*)0)->m_name)
 #endif

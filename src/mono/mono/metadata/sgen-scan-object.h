@@ -46,7 +46,6 @@
 
 {
 	GCVTable *vt;
-	size_t skip_size;
 	mword desc;
 
 	vt = (GCVTable*)SGEN_LOAD_VTABLE (start);
@@ -56,68 +55,55 @@
 	desc = vt->desc;
 	switch (desc & 0x7) {
 	case DESC_TYPE_RUN_LENGTH:
-		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
 #define SCAN OBJ_RUN_LEN_FOREACH_PTR (desc, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
 #undef SCAN
-		start += skip_size;
 		break;
 	case DESC_TYPE_ARRAY:
 	case DESC_TYPE_VECTOR:
-		skip_size = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)start));
 #define SCAN OBJ_VECTOR_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
 #undef SCAN
-		start += skip_size;
 		break;
 	case DESC_TYPE_SMALL_BITMAP:
-		OBJ_BITMAP_SIZE (skip_size, desc, start);
-		g_assert (skip_size);
 #define SCAN OBJ_BITMAP_FOREACH_PTR (desc, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
 #undef SCAN
-		start += skip_size;
 		break;
 	case DESC_TYPE_LARGE_BITMAP:
-		skip_size = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)start));
 #define SCAN OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
 #undef SCAN
-		start += skip_size;
 		break;
 	case DESC_TYPE_COMPLEX:
 		/* this is a complex object */
-		skip_size = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)start));
 #define SCAN OBJ_COMPLEX_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
 #undef SCAN
-		start += skip_size;
 		break;
 	case DESC_TYPE_COMPLEX_ARR:
 		/* this is an array of complex structs */
-		skip_size = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)start));
 #define SCAN OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start)
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
 		SCAN_OBJECT_ACTION;
 #undef SCAN
-		start += skip_size;
 		break;
 	default:
 		g_assert_not_reached ();

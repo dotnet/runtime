@@ -398,4 +398,14 @@ class Tests {
 
 		return 0;
 	}
+
+	public static int test_0_multi_dim_ref_array_wbarrier () {
+        string [,] arr = new string [256, 256];
+        for (int i = 0; i < 256; ++i) {
+            for (int j = 0; j < 100; ++j)
+                arr [i, j] = "" + i + " " + j;
+		}
+		GC.Collect ();
+		return 0;
+	}
 }

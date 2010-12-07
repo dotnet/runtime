@@ -200,6 +200,7 @@
 #include "metadata/threads.h"
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-protocol.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
@@ -323,8 +324,8 @@ static long long time_major_fragment_creation = 0;
 
 #define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
-static int gc_debug_level = 0;
-static FILE* gc_debug_file;
+int gc_debug_level = 0;
+FILE* gc_debug_file;
 
 /*
 void
@@ -341,10 +342,10 @@ mono_gc_flush_info (void)
  */
 #define USER_CONFIG 1
 
-#define TV_DECLARE(name) gint64 name
-#define TV_GETTIME(tv) tv = mono_100ns_ticks ()
-#define TV_ELAPSED(start,end) (int)((end-start) / 10)
-#define TV_ELAPSED_MS(start,end) ((TV_ELAPSED((start),(end)) + 500) / 1000)
+#define TV_DECLARE SGEN_TV_DECLARE
+#define TV_GETTIME SGEN_TV_GETTIME
+#define TV_ELAPSED SGEN_TV_ELAPSED
+#define TV_ELAPSED_MS SGEN_TV_ELAPSED_MS
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -454,6 +455,12 @@ safe_name (void* obj)
 }
 
 #define safe_object_get_size	mono_sgen_safe_object_get_size
+
+const char*
+mono_sgen_safe_name (void* obj)
+{
+	return safe_name (obj);
+}
 
 /*
  * ######################################################################
@@ -631,7 +638,7 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
 		notify_gc_roots (report);
 	report->objects [report->count] = object;
 	report->root_types [report->count] = rtype;
-	report->extra_info [report->count++] = ((MonoVTable*)LOAD_VTABLE (object))->klass;
+	report->extra_info [report->count++] = (uintptr_t)((MonoVTable*)LOAD_VTABLE (object))->klass;
 }
 
 /* 
@@ -853,12 +860,10 @@ static void null_ephemerons_for_domain (MonoDomain *domain);
 
 SgenMajorCollector major_collector;
 
-#include "sgen-protocol.c"
 #include "sgen-pinning.c"
 #include "sgen-pinning-stats.c"
 #include "sgen-gray.c"
 #include "sgen-workers.c"
-#include "sgen-los.c"
 #include "sgen-cardtable.c"
 
 /* Root bitmap descriptors are simpler: the lower three bits describe the type
@@ -1187,22 +1192,36 @@ scan_object_for_xdomain_refs (char *start, mword size, void *data)
 static void
 scan_object_for_specific_ref (char *start, MonoObject *key)
 {
+	char *forwarded;
+
+	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (start)))
+		start = forwarded;
+
 	#include "sgen-scan-object.h"
 }
 
 void
-mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data)
+mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags)
 {
 	while (start < end) {
 		size_t size;
+		char *obj;
+
 		if (!*(void**)start) {
 			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
 			continue;
 		}
 
-		size = ALIGN_UP (safe_object_get_size ((MonoObject*) start));
+		if (allow_flags) {
+			if (!(obj = SGEN_OBJECT_IS_FORWARDED (start)))
+				obj = start;
+		} else {
+			obj = start;
+		}
 
-		callback (start, size, data);
+		size = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
+
+		callback (obj, size, data);
 
 		start += size;
 	}
@@ -1291,17 +1310,15 @@ scan_roots_for_specific_ref (MonoObject *key, int root_type)
 void
 mono_gc_scan_for_specific_ref (MonoObject *key)
 {
-	LOSObject *bigobj;
 	RootRecord *root;
 	int i;
 
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
+			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE);
 
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		scan_object_for_specific_ref (bigobj->data, key);
+	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
 	scan_roots_for_specific_ref (key, ROOT_TYPE_NORMAL);
 	scan_roots_for_specific_ref (key, ROOT_TYPE_WBARRIER);
@@ -1447,7 +1464,7 @@ check_for_xdomain_refs (void)
 	LOSObject *bigobj;
 
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
+			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE);
 
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
@@ -1525,7 +1542,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	}
 
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain);
+			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE);
 
 	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
 	to memory returned to the OS.*/
@@ -1556,7 +1573,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 			bigobj = bigobj->next;
 			DEBUG (4, fprintf (gc_debug_file, "Freeing large object %p\n",
 					bigobj->data));
-			free_large_object (to_free);
+			mono_sgen_los_free_object (to_free);
 			continue;
 		}
 		prev = bigobj;
@@ -2812,12 +2829,81 @@ init_stats (void)
 	inited = TRUE;
 }
 
+static gboolean need_calculate_minor_collection_allowance;
+
+static int last_collection_old_num_major_sections;
+static mword last_collection_los_memory_usage = 0;
+static mword last_collection_old_los_memory_usage;
+static mword last_collection_los_memory_alloced;
+
+static void
+reset_minor_collection_allowance (void)
+{
+	need_calculate_minor_collection_allowance = TRUE;
+}
+
+static void
+try_calculate_minor_collection_allowance (gboolean overwrite)
+{
+	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
+	mword los_memory_saved;
+
+	if (overwrite)
+		g_assert (need_calculate_minor_collection_allowance);
+
+	if (!need_calculate_minor_collection_allowance)
+		return;
+
+	if (!*major_collector.have_swept) {
+		if (overwrite)
+			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
+		return;
+	}
+
+	num_major_sections = major_collector.get_num_major_sections ();
+
+	num_major_sections_saved = MAX (last_collection_old_num_major_sections - num_major_sections, 0);
+	los_memory_saved = MAX (last_collection_old_los_memory_usage - last_collection_los_memory_usage, 1);
+
+	save_target = ((num_major_sections * major_collector.section_size) + los_memory_saved) / 2;
+
+	/*
+	 * We aim to allow the allocation of as many sections as is
+	 * necessary to reclaim save_target sections in the next
+	 * collection.  We assume the collection pattern won't change.
+	 * In the last cycle, we had num_major_sections_saved for
+	 * minor_collection_sections_alloced.  Assuming things won't
+	 * change, this must be the same ratio as save_target for
+	 * allowance_target, i.e.
+	 *
+	 *    num_major_sections_saved            save_target
+	 * --------------------------------- == ----------------
+	 * minor_collection_sections_alloced    allowance_target
+	 *
+	 * hence:
+	 */
+	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + last_collection_los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
+
+	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
+
+	if (major_collector.have_computed_minor_collection_allowance)
+		major_collector.have_computed_minor_collection_allowance ();
+
+	need_calculate_minor_collection_allowance = FALSE;
+}
+
 static gboolean
 need_major_collection (mword space_needed)
 {
-	mword los_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
+	mword los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
 	return (space_needed > available_free_space ()) ||
 		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
+}
+
+gboolean
+mono_sgen_need_major_collection (mword space_needed)
+{
+	return need_major_collection (space_needed);
 }
 
 /*
@@ -2869,6 +2955,8 @@ collect_nursery (size_t requested_size)
 	nursery_section->next_data = nursery_next;
 
 	major_collector.start_nursery_collection ();
+
+	try_calculate_minor_collection_allowance (FALSE);
 
 	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
 
@@ -3005,19 +3093,18 @@ major_do_collection (const char *reason)
 	 */
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
-	int old_num_major_sections = major_collector.get_num_major_sections ();
-	int num_major_sections, num_major_sections_saved, save_target, allowance_target;
 	int old_next_pin_slot;
-	mword los_memory_saved, los_memory_alloced, old_los_memory_usage;
 
 	mono_perfcounters->gc_collections1++;
 
+	last_collection_old_num_major_sections = major_collector.get_num_major_sections ();
+
 	/*
 	 * A domain could have been freed, resulting in
-	 * los_memory_usage being less than last_los_memory_usage.
+	 * los_memory_usage being less than last_collection_los_memory_usage.
 	 */
-	los_memory_alloced = los_memory_usage - MIN (last_los_memory_usage, los_memory_usage);
-	old_los_memory_usage = los_memory_usage;
+	last_collection_los_memory_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
+	last_collection_old_los_memory_usage = los_memory_usage;
 	objects_pinned = 0;
 
 	//count_ref_nonref_objs ();
@@ -3044,9 +3131,6 @@ major_do_collection (const char *reason)
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
 
-	if (xdomain_checks)
-		check_for_xdomain_refs ();
-
 	nursery_section->next_data = nursery_real_end;
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
@@ -3054,6 +3138,12 @@ major_do_collection (const char *reason)
 
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
+
+	*major_collector.have_swept = FALSE;
+	reset_minor_collection_allowance ();
+
+	if (xdomain_checks)
+		check_for_xdomain_refs ();
 
 	/* The remsets are not useful for a major collection */
 	clear_remsets ();
@@ -3187,7 +3277,7 @@ major_do_collection (const char *reason)
 				los_object_list = bigobj->next;
 			to_free = bigobj;
 			bigobj = bigobj->next;
-			free_large_object (to_free);
+			mono_sgen_los_free_object (to_free);
 			continue;
 		}
 		prevbo = bigobj;
@@ -3197,7 +3287,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (btv);
 	time_major_free_bigobjs += TV_ELAPSED_MS (atv, btv);
 
-	los_sweep ();
+	mono_sgen_los_sweep ();
 
 	TV_GETTIME (atv);
 	time_major_los_sweep += TV_ELAPSED_MS (btv, atv);
@@ -3232,33 +3322,10 @@ major_do_collection (const char *reason)
 
 	g_assert (gray_object_queue_is_empty (&gray_queue));
 
-	num_major_sections = major_collector.get_num_major_sections ();
-
-	num_major_sections_saved = MAX (old_num_major_sections - num_major_sections, 0);
-	los_memory_saved = MAX (old_los_memory_usage - los_memory_usage, 1);
-
-	save_target = ((num_major_sections * major_collector.section_size) + los_memory_saved) / 2;
-	/*
-	 * We aim to allow the allocation of as many sections as is
-	 * necessary to reclaim save_target sections in the next
-	 * collection.  We assume the collection pattern won't change.
-	 * In the last cycle, we had num_major_sections_saved for
-	 * minor_collection_sections_alloced.  Assuming things won't
-	 * change, this must be the same ratio as save_target for
-	 * allowance_target, i.e.
-	 *
-	 *    num_major_sections_saved            save_target
-	 * --------------------------------- == ----------------
-	 * minor_collection_sections_alloced    allowance_target
-	 *
-	 * hence:
-	 */
-	allowance_target = (mword)((double)save_target * (double)(minor_collection_sections_alloced * major_collector.section_size + los_memory_alloced) / (double)(num_major_sections_saved * major_collector.section_size + los_memory_saved));
-
-	minor_collection_allowance = MAX (MIN (allowance_target, num_major_sections * major_collector.section_size + los_memory_usage), MIN_MINOR_COLLECTION_ALLOWANCE);
+	try_calculate_minor_collection_allowance (TRUE);
 
 	minor_collection_sections_alloced = 0;
-	last_los_memory_usage = los_memory_usage;
+	last_collection_los_memory_usage = los_memory_usage;
 
 	major_collector.finish_major_collection ();
 
@@ -3553,7 +3620,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	 */
 
 	if (size > MAX_SMALL_OBJ_SIZE) {
-		p = alloc_large_inner (vtable, size);
+		p = mono_sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
 
@@ -3858,7 +3925,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 
 	if (size > MAX_SMALL_OBJ_SIZE) {
 		/* large objects are always pinned anyway */
-		p = alloc_large_inner (vtable, size);
+		p = mono_sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		DEBUG (9, g_assert (vtable->klass->inited));
 		p = major_collector.alloc_small_pinned_obj (size, vtable->klass->has_references);
@@ -3870,6 +3937,18 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 	}
 	UNLOCK_GC;
 	return p;
+}
+
+void*
+mono_gc_alloc_mature (MonoVTable *vtable)
+{
+	void **res;
+	size_t size = ALIGN_UP (vtable->klass->instance_size);
+	LOCK_GC;
+	res = alloc_degraded (vtable, size);
+	*res = vtable;
+	UNLOCK_GC;
+	return res;
 }
 
 /*
@@ -5947,8 +6026,10 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 static char *found_obj;
 
 static void
-find_object_for_ptr_callback (char *obj, size_t size, char *ptr)
+find_object_for_ptr_callback (char *obj, size_t size, void *user_data)
 {
+	char *ptr = user_data;
+
 	if (ptr >= obj && ptr < obj + size) {
 		g_assert (!found_obj);
 		found_obj = obj;
@@ -5960,27 +6041,25 @@ char* find_object_for_ptr (char *ptr);
 char*
 find_object_for_ptr (char *ptr)
 {
-	LOSObject *bigobj;
-
 	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
 		found_obj = NULL;
 		mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-				(IterateObjectCallbackFunc)find_object_for_ptr_callback, ptr);
+				find_object_for_ptr_callback, ptr, TRUE);
 		if (found_obj)
 			return found_obj;
 	}
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
-		if (ptr >= bigobj->data && ptr < bigobj->data + bigobj->size)
-			return bigobj->data;
-	}
+	found_obj = NULL;
+	mono_sgen_los_iterate_objects (find_object_for_ptr_callback, ptr);
+	if (found_obj)
+		return found_obj;
 
 	/*
 	 * Very inefficient, but this is debugging code, supposed to
 	 * be called from gdb, so we don't care.
 	 */
 	found_obj = NULL;
-	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)find_object_for_ptr_callback, ptr);
+	major_collector.iterate_objects (TRUE, TRUE, find_object_for_ptr_callback, ptr);
 	return found_obj;
 }
 
@@ -6196,11 +6275,18 @@ describe_ptr (char *ptr)
 	MonoVTable *vtable;
 	mword desc;
 	int type;
+	char *start;
 
 	if (ptr_in_nursery (ptr)) {
 		printf ("Pointer inside nursery.\n");
 	} else {
-		if (major_collector.ptr_is_in_non_pinned_space (ptr)) {
+		if (mono_sgen_ptr_is_in_los (ptr, &start)) {
+			if (ptr == start)
+				printf ("Pointer is the start of object %p in LOS space.\n", start);
+			else
+				printf ("Pointer is at offset 0x%x of object %p in LOS space.\n", (int)(ptr - start), start);
+			ptr = start;
+		} else if (major_collector.ptr_is_in_non_pinned_space (ptr)) {
 			printf ("Pointer inside oldspace.\n");
 		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
 			printf ("Pointer is inside a pinned chunk.\n");
@@ -6398,8 +6484,6 @@ check_consistency_callback (char *start, size_t size, void *dummy)
 static void
 check_consistency (void)
 {
-	LOSObject *bigobj;
-
 	// Need to add more checks
 
 	missing_remsets = FALSE;
@@ -6409,8 +6493,7 @@ check_consistency (void)
 	// Check that oldspace->newspace pointers are registered with the collector
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		check_consistency_callback (bigobj->data, bigobj->size, NULL);
+	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 
@@ -6437,12 +6520,8 @@ check_major_refs_callback (char *start, size_t size, void *dummy)
 static void
 check_major_refs (void)
 {
-	LOSObject *bigobj;
-
 	major_collector.iterate_objects (TRUE, TRUE, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
-
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		check_major_refs_callback (bigobj->data, bigobj->size, NULL);
+	mono_sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_major_refs_callback, NULL);
 }
 
 /* Check that the reference is valid */
@@ -6538,19 +6617,17 @@ int
 mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 {
 	HeapWalkInfo hwi;
-	LOSObject *bigobj;
 
 	hwi.flags = flags;
 	hwi.callback = callback;
 	hwi.data = data;
 
 	clear_nursery_fragments (nursery_next);
-	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi);
+	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi, FALSE);
 
 	major_collector.iterate_objects (TRUE, TRUE, walk_references, &hwi);
+	mono_sgen_los_iterate_objects (walk_references, &hwi);
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		walk_references (bigobj->data, bigobj->size, &hwi);
 	return 0;
 }
 

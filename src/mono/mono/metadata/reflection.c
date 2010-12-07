@@ -43,20 +43,6 @@
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 
-
-#if HAVE_SGEN_GC
-static void* reflection_info_desc = NULL;
-#define MOVING_GC_REGISTER(addr) do {	\
-		if (!reflection_info_desc) {	\
-			gsize bmap = 1;		\
-			reflection_info_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);	\
-		}	\
-		mono_gc_register_root ((char*)(addr), sizeof (gpointer), reflection_info_desc); \
-	} while (0)
-#else
-#define MOVING_GC_REGISTER(addr)
-#endif
-
 static gboolean is_usertype (MonoReflectionType *ref);
 static MonoReflectionType *mono_reflection_type_resolve_user_types (MonoReflectionType *type);
 
@@ -2204,7 +2190,7 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	entry = g_new0 (GenericParamTableEntry, 1);
 	entry->owner = owner;
 	/* FIXME: track where gen_params should be freed and remove the GC root as well */
-	MOVING_GC_REGISTER (&entry->gparam);
+	MONO_GC_REGISTER_ROOT_IF_MOVING (entry->gparam);
 	entry->gparam = gparam;
 	
 	g_ptr_array_add (assembly->gen_params, entry);
@@ -5191,11 +5177,6 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	if (di->gen_params) {
 		for (i = 0; i < di->gen_params->len; i++) {
 			GenericParamTableEntry *entry = g_ptr_array_index (di->gen_params, i);
-			if (entry->gparam->type.type) {
-				MonoGenericParam *param = entry->gparam->type.type->data.generic_param;
-				g_free ((char*)mono_generic_param_info (param)->name);
-				g_free (param);
-			}
 			mono_gc_deregister_root ((char*) &entry->gparam);
 			g_free (entry);
 		}
@@ -6594,11 +6575,8 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 			return mono_class_get_ref_info (klass);
 		}
 	}
-#ifdef HAVE_SGEN_GC
-	res = (MonoReflectionType *)mono_gc_alloc_pinned_obj (mono_class_vtable (domain, mono_defaults.monotype_class), mono_class_instance_size (mono_defaults.monotype_class));
-#else
-	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
-#endif
+	/* This is stored in vtables/JITted code so it has to be pinned */
+	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.monotype_class);
 	res->type = type;
 	mono_g_hash_table_insert (domain->type_hash, type, res);
 
@@ -10447,10 +10425,12 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 {
 	MonoClassField *field;
 	MonoType *custom;
+	MonoError error;
 
 	field = g_new0 (MonoClassField, 1);
 
-	field->name = mono_string_to_utf8 (fb->name);
+	field->name = mono_string_to_utf8_image (klass->image, fb->name, &error);
+	g_assert (mono_error_ok (&error));
 	if (fb->attrs || fb->modreq || fb->modopt) {
 		field->type = mono_metadata_type_dup (NULL, mono_reflection_type_get_handle ((MonoReflectionType*)fb->type));
 		field->type->attrs = fb->attrs;
@@ -10458,7 +10438,8 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 		g_assert (klass->image->dynamic);
 		custom = add_custom_modifiers ((MonoDynamicImage*)klass->image, field->type, fb->modreq, fb->modopt);
 		g_free (field->type);
-		field->type = custom;
+		field->type = mono_metadata_type_dup (klass->image, custom);
+		g_free (custom);
 	} else {
 		field->type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type);
 	}
@@ -10760,7 +10741,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		dgclass->fields [i].type = mono_class_inflate_generic_type (
 			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass));
 		dgclass->field_generic_types [i] = field->type;
-		MOVING_GC_REGISTER (&dgclass->field_objects [i]);
+		MONO_GC_REGISTER_ROOT_IF_MOVING (dgclass->field_objects [i]);
 		dgclass->field_objects [i] = obj;
 
 		if (inflated_field) {
@@ -10786,9 +10767,7 @@ mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
 	for (i = 0; i < dgclass->count_fields; ++i) {
 		MonoClassField *field = dgclass->fields + i;
 		mono_metadata_free_type (field->type);
-#if HAVE_SGEN_GC
-		MONO_GC_UNREGISTER_ROOT (dgclass->field_objects [i]);
-#endif
+		MONO_GC_UNREGISTER_ROOT_IF_MOVING (dgclass->field_objects [i]);
 	}
 }
 
@@ -11451,10 +11430,17 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	MonoGenericParamFull *param;
 	MonoImage *image;
 	MonoClass *pklass;
+	MonoError error;
 
 	MONO_ARCH_SAVE_REGS;
 
-	param = g_new0 (MonoGenericParamFull, 1);
+	image = &gparam->tbuilder->module->dynamic_image->image;
+
+	param = mono_image_new0 (image, MonoGenericParamFull, 1);
+
+	param->info.name = mono_string_to_utf8_image (image, gparam->name, &error);
+	g_assert (mono_error_ok (&error));
+	param->param.num = gparam->index;
 
 	if (gparam->mbuilder) {
 		if (!gparam->mbuilder->generic_container) {
@@ -11478,10 +11464,6 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 		param->param.owner = gparam->tbuilder->generic_container;
 	}
 
-	param->info.name = mono_string_to_utf8 (gparam->name);
-	param->param.num = gparam->index;
-
-	image = &gparam->tbuilder->module->dynamic_image->image;
 	pklass = mono_class_from_generic_parameter ((MonoGenericParam *) param, image, gparam->mbuilder != NULL);
 
 	gparam->type.type = &pklass->byval_arg;

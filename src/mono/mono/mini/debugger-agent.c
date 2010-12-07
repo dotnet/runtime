@@ -965,6 +965,11 @@ recv_length (int fd, void *buf, int len, int flags)
 	} while ((res > 0 && total < len) || (res == -1 && errno == EINTR));
 	return total;
 }
+
+#ifndef TARGET_PS3
+#define HAVE_GETADDRINFO 1
+#endif
+
 /*
  * transport_connect:
  *
@@ -973,8 +978,12 @@ recv_length (int fd, void *buf, int len, int flags)
 static void
 transport_connect (const char *host, int port)
 {
+#ifdef HAVE_GETADDRINFO
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
+#else
+	struct hostent *result;
+#endif
 	int sfd, s, res;
 	char port_string [128];
 	char handshake_msg [128];
@@ -988,7 +997,7 @@ transport_connect (const char *host, int port)
 		mono_network_init ();
 
 		/* Obtain address(es) matching host/port */
-
+#ifdef HAVE_GETADDRINFO
 		memset (&hints, 0, sizeof (struct addrinfo));
 		hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
 		hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
@@ -997,12 +1006,20 @@ transport_connect (const char *host, int port)
 
 		s = getaddrinfo (host, port_string, &hints, &result);
 		if (s != 0) {
-			fprintf (stderr, "debugger-agent: Unable to connect to %s:%d: %s\n", host, port, gai_strerror (s));
+			fprintf (stderr, "debugger-agent: Unable to resolve %s:%d: %s\n", host, port, gai_strerror (s));
 			exit (1);
 		}
+#else
+		/* The PS3 doesn't even have _r or hstrerror () */
+		result = gethostbyname (host);
+		if (!result) {
+			fprintf (stderr, "debugger-agent: Unable to resolve %s:%d: %d\n", host, port, h_errno);
+		}
+#endif
 	}
 
 	if (agent_config.server) {
+#ifdef HAVE_GETADDRINFO
 		/* Wait for a connection */
 		if (!host) {
 			struct sockaddr_in addr;
@@ -1055,7 +1072,9 @@ transport_connect (const char *host, int port)
 			 * http://msdn.microsoft.com/en-us/library/ms737931(VS.85).aspx
 			 * only works with MSVC.
 			 */
+#ifdef HAVE_GETADDRINFO
 			freeaddrinfo (result);
+#endif
 #endif
 		}
 
@@ -1083,8 +1102,12 @@ transport_connect (const char *host, int port)
 		}
 
 		DEBUG (1, fprintf (log_file, "Accepted connection from client, socket fd=%d.\n", conn_fd));
+#else
+		NOT_IMPLEMENTED;
+#endif /* HAVE_GETADDRINFO */
 	} else {
 		/* Connect to the specified address */
+#ifdef HAVE_GETADDRINFO
 		/* FIXME: Respect the timeout */
 		for (rp = result; rp != NULL; rp = rp->ai_next) {
 			sfd = socket (rp->ai_family, rp->ai_socktype,
@@ -1098,17 +1121,27 @@ transport_connect (const char *host, int port)
 			close (sfd);
 		}
 
-		conn_fd = sfd;
-
-#ifndef HOST_WIN32
-		/* See the comment above */
-		freeaddrinfo (result);
-#endif
-
 		if (rp == 0) {
 			fprintf (stderr, "debugger-agent: Unable to connect to %s:%d\n", host, port);
 			exit (1);
 		}
+#else
+			sfd = socket (result->h_addrtype, SOCK_STREAM, 0);
+			if (sfd == -1)
+				g_assert_not_reached ();
+			res = connect (sfd, (void*)result->h_addr_list [0], result->h_length);
+			if (res == -1)
+				g_assert_not_reached ();
+#endif
+
+		conn_fd = sfd;
+
+#ifndef HOST_WIN32
+		/* See the comment above */
+#ifdef HAVE_GETADDRINFO
+		freeaddrinfo (result);
+#endif
+#endif
 	}
 	
 	/* Write handshake message */
@@ -3749,6 +3782,22 @@ mono_debugger_agent_breakpoint_hit (void *sigctx)
 	resume_from_signal_handler (sigctx, process_breakpoint);
 }
 
+static const char*
+ss_depth_to_string (StepDepth depth)
+{
+	switch (depth) {
+	case STEP_DEPTH_OVER:
+		return "over";
+	case STEP_DEPTH_OUT:
+		return "out";
+	case STEP_DEPTH_INTO:
+		return "into";
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
 static void
 process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 {
@@ -3779,25 +3828,9 @@ process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 		return;
 
 	if (log_level > 0) {
-		const char *depth = NULL;
-
 		ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
 
-		switch (ss_req->depth) {
-		case STEP_DEPTH_OVER:
-			depth = "over";
-			break;
-		case STEP_DEPTH_OUT:
-			depth = "out";
-			break;
-		case STEP_DEPTH_INTO:
-			depth = "into";
-			break;
-		default:
-			g_assert_not_reached ();
-		}
-			
-		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p), sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), ss_req->depth == STEP_DEPTH_OVER ? "over" : "out", mono_method_full_name (ji->method, TRUE), MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
+		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p), sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), ss_depth_to_string (ss_req->depth), mono_method_full_name (ji->method, TRUE), MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
 	}
 
 	/*
@@ -4029,7 +4062,6 @@ ss_stop (SingleStepReq *ss_req)
 static void
 ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch)
 {
-	gboolean use_bp = FALSE;
 	int i, frame_index;
 	SeqPoint *next_sp;
 	MonoBreakpoint *bp;
@@ -4063,7 +4095,6 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 		}
 
 		if (sp && sp->next_len > 0) {
-			use_bp = TRUE;
 			for (i = 0; i < sp->next_len; ++i) {
 				next_sp = &info->seq_points [sp->next [i]];
 
@@ -4074,6 +4105,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 	}
 
 	if (!ss_req->bps) {
+		DEBUG (1, printf ("[dbg] Turning on global single stepping.\n"));
 		ss_req->global = TRUE;
 		start_single_stepping ();
 	} else {
@@ -4104,6 +4136,8 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		DEBUG (0, printf ("Received a single step request while the previous one was still active.\n"));
 		return ERR_NOT_IMPLEMENTED;
 	}
+
+	DEBUG (1, printf ("[dbg] Starting single step of thread %p (depth=%s).\n", thread, ss_depth_to_string (depth)));
 
 	ss_req = g_new0 (SingleStepReq, 1);
 	ss_req->req = req;
@@ -6786,6 +6820,41 @@ command_set_to_string (CommandSet command_set)
 	}
 }
 
+static const char*
+cmd_to_string (CommandSet set, int command)
+{
+	switch (set) {
+	case CMD_SET_VM: {
+		switch (command) {
+		case CMD_VM_VERSION:
+			return "VERSION";
+		case CMD_VM_ALL_THREADS:
+			return "ALL_THREADS";
+		case CMD_VM_SUSPEND:
+			return "SUSPEND";
+		case CMD_VM_RESUME:
+			return "RESUME";
+		case CMD_VM_EXIT:
+			return "EXIT";
+		case CMD_VM_DISPOSE:
+			return "DISPOSE";
+		case CMD_VM_INVOKE_METHOD:
+			return "INVOKE_METHOD";
+		case CMD_VM_SET_PROTOCOL_VERSION:
+			return "SET_PROTOCOL_VERSION";
+		case CMD_VM_ABORT_INVOKE:
+			return "ABORT_INVOKE";
+		default:
+			break;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	return NULL;
+}
+
 /*
  * debugger_thread:
  *
@@ -6830,7 +6899,18 @@ debugger_thread (void *arg)
 
 		g_assert (flags == 0);
 
-		DEBUG (1, fprintf (log_file, "[dbg] Received command %s(%d), id=%d.\n", command_set_to_string (command_set), command, id));
+		if (log_level) {
+			const char *cmd_str;
+			char cmd_num [256];
+
+			cmd_str = cmd_to_string (command_set, command);
+			if (!cmd_str) {
+				sprintf (cmd_num, "%d", command);
+				cmd_str = cmd_num;
+			}
+			
+			DEBUG (1, fprintf (log_file, "[dbg] Received command %s(%s), id=%d.\n", command_set_to_string (command_set), cmd_str, id));
+		}
 
 		data = g_malloc (len - HEADER_LENGTH);
 		if (len - HEADER_LENGTH > 0)
@@ -6920,7 +7000,7 @@ debugger_thread (void *arg)
 void
 mono_debugger_agent_parse_options (char *options)
 {
-	g_error ("This runtime is configure with the debugger agent disabled.");
+	g_error ("This runtime is configured with the debugger agent disabled.");
 }
 
 void

@@ -250,15 +250,6 @@ typedef struct {
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)
 
-/*
- * This structure is an extension of MonoLMF and contains extra information.
- */
-typedef struct {
-	struct MonoLMF lmf;
-	gboolean debugger_invoke;
-	MonoContext ctx; /* if debugger_invoke is TRUE */
-} MonoLMFExt;
-
 /* Enables OP_LSHL, OP_LSHL_IMM, OP_LSHR, OP_LSHR_IMM, OP_LSHR_UN, OP_LSHR_UN_IMM */
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 

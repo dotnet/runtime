@@ -164,12 +164,6 @@ card_table_init (void)
 #endif
 }
 
-
-void los_scan_card_table (GrayQueue *queue);
-void los_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
-
-
-
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
 static void
@@ -224,7 +218,7 @@ card_table_clear (void)
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
 	if (use_cardtable) {
 		major_collector.iterate_live_block_ranges (clear_cards);
-		los_iterate_live_block_ranges (clear_cards);
+		mono_sgen_los_iterate_live_block_ranges (clear_cards);
 	}
 }
 static void
@@ -235,13 +229,13 @@ scan_from_card_tables (void *start_nursery, void *end_nursery, GrayQueue *queue)
 	/*FIXME we should have a bit on each block/los object telling if the object have marked cards.*/
 	/*First we copy*/
 	major_collector.iterate_live_block_ranges (move_cards_to_shadow_table);
-	los_iterate_live_block_ranges (move_cards_to_shadow_table);
+	mono_sgen_los_iterate_live_block_ranges (move_cards_to_shadow_table);
 
 	/*Then we clear*/
 	card_table_clear ();
 #endif
 		major_collector.scan_card_table (queue);
-		los_scan_card_table (queue);
+		mono_sgen_los_scan_card_table (queue);
 	}
 }
 

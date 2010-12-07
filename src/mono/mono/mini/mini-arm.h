@@ -197,15 +197,6 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
-/*
- * This structure is an extension of MonoLMF and contains extra information.
- */
-typedef struct {
-	struct MonoLMF lmf;
-	gboolean debugger_invoke;
-	MonoContext ctx; /* if debugger_invoke is TRUE */
-} MonoLMFExt;
-
 void
 mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
 

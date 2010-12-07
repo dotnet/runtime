@@ -2258,6 +2258,8 @@ add_wrappers (MonoAotCompile *acfg)
 
 		/* Skip methods which can not be handled by get_runtime_invoke () */
 		sig = mono_method_signature (method);
+		if (!sig)
+			continue;
 		if ((sig->ret->type == MONO_TYPE_PTR) ||
 			(sig->ret->type == MONO_TYPE_TYPEDBYREF))
 			skip = TRUE;
@@ -2767,6 +2769,9 @@ add_generic_instances (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
 		token = MONO_TOKEN_METHOD_SPEC | (i + 1);
 		method = mono_get_method (acfg->image, token, NULL);
+
+		if (!method)
+			continue;
 
 		if (method->klass->image != acfg->image)
 			continue;

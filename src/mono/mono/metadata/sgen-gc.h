@@ -65,6 +65,11 @@ typedef guint32 mword;
 typedef guint64 mword;
 #endif
 
+#define SGEN_TV_DECLARE(name) gint64 name
+#define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()
+#define SGEN_TV_ELAPSED(start,end) (int)((end-start) / 10)
+#define SGEN_TV_ELAPSED_MS(start,end) ((SGEN_TV_ELAPSED((start),(end)) + 500) / 1000)
+
 /* for use with write barriers */
 typedef struct _RememberedSet RememberedSet;
 struct _RememberedSet {
@@ -216,6 +221,13 @@ extern long long stat_objects_copied_major;
 #else
 #define HEAVY_STAT(x)
 #endif
+
+#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
+
+extern int gc_debug_level;
+extern FILE* gc_debug_file;
+
+extern int current_collection_generation;
 
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
@@ -570,7 +582,7 @@ void mono_sgen_update_heap_boundaries (mword low, mword high) MONO_INTERNAL;
 void mono_sgen_register_major_sections_alloced (int num_sections) MONO_INTERNAL;
 mword mono_sgen_get_minor_collection_allowance (void) MONO_INTERNAL;
 
-void mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data) MONO_INTERNAL;
+void mono_sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags) MONO_INTERNAL;
 void mono_sgen_check_section_scan_starts (GCMemSection *section) MONO_INTERNAL;
 
 /* Keep in sync with mono_sgen_dump_internal_mem_usage() in dump_heap()! */
@@ -660,11 +672,19 @@ void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
 
 int mono_sgen_get_current_collection_generation (void) MONO_INTERNAL;
 
+typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
+
 typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
 	gboolean is_parallel;
 	gboolean supports_cardtable;
+
+	/*
+	 * This is set to TRUE if the sweep for the last major
+	 * collection has been completed.
+	 */
+	gboolean *have_swept;
 
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
@@ -682,7 +702,7 @@ struct _SgenMajorCollector {
 	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*scan_card_table) (SgenGrayQueue *queue);
-	void (*iterate_live_block_ranges) (void *callback);
+	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
 	void (*check_scan_starts) (void);
@@ -692,12 +712,14 @@ struct _SgenMajorCollector {
 	void (*finish_nursery_collection) (void);
 	void (*start_major_collection) (void);
 	void (*finish_major_collection) (void);
+	void (*have_computed_minor_collection_allowance) (void);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr);
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);
 	int (*get_num_major_sections) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
+	gboolean (*is_worker_thread) (pthread_t thread);
 };
 
 void mono_sgen_marksweep_init (SgenMajorCollector *collector) MONO_INTERNAL;
@@ -738,6 +760,7 @@ mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 
 #define mono_sgen_safe_object_get_size(o)		mono_sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE ((o)), (o))
 
+const char* mono_sgen_safe_name (void* obj) MONO_INTERNAL;
 
 enum {
 	SPACE_MAJOR,
@@ -747,5 +770,32 @@ enum {
 gboolean mono_sgen_try_alloc_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_release_space (mword size, int space) MONO_INTERNAL;
 void mono_sgen_pin_object (void *object, SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;;
+void sgen_collect_major_no_lock (const char *reason) MONO_INTERNAL;
+gboolean mono_sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
+
+/* LOS */
+
+typedef struct _LOSObject LOSObject;
+struct _LOSObject {
+	LOSObject *next;
+	mword size; /* this is the object size */
+	guint16 huge_object;
+	int dummy; /* to have a sizeof (LOSObject) a multiple of ALLOC_ALIGN  and data starting at same alignment */
+	char data [MONO_ZERO_LEN_ARRAY];
+};
+
+#define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
+
+extern LOSObject *los_object_list;
+extern mword los_memory_usage;
+extern mword last_los_memory_usage;
+
+void mono_sgen_los_free_object (LOSObject *obj) MONO_INTERNAL;
+void* mono_sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size) MONO_INTERNAL;
+void mono_sgen_los_sweep (void) MONO_INTERNAL;
+gboolean mono_sgen_ptr_is_in_los (char *ptr, char **start) MONO_INTERNAL;
+void mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data) MONO_INTERNAL;
+void mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
+void mono_sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
+
 #endif /* __MONO_SGENGC_H__ */

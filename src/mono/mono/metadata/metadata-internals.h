@@ -504,6 +504,8 @@ mono_image_alloc  (MonoImage *image, guint size) MONO_INTERNAL;
 gpointer
 mono_image_alloc0 (MonoImage *image, guint size) MONO_INTERNAL;
 
+#define mono_image_new0(image,type,size) ((type *) mono_image_alloc0 (image, sizeof (type)* (size)))
+
 char*
 mono_image_strdup (MonoImage *image, const char *s) MONO_INTERNAL;
 

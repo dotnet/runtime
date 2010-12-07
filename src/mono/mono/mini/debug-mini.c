@@ -759,8 +759,7 @@ mono_debugger_method_has_breakpoint (MonoMethod *method)
 {
 	int i;
 
-	if (!breakpoints || ((method->wrapper_type != MONO_WRAPPER_NONE) &&
-						 (method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)))
+	if (!breakpoints)
 		return 0;
 
 	for (i = 0; i < breakpoints->len; i++) {

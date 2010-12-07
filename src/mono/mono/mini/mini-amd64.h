@@ -232,15 +232,6 @@ typedef struct {
 #endif
 
 /*
- * This structure is an extension of MonoLMF and contains extra information.
- */
-typedef struct {
-	struct MonoLMF lmf;
-	gboolean debugger_invoke;
-	MonoContext ctx; /* if debugger_invoke is TRUE */
-} MonoLMFExt;
-
-/*
  * some icalls like mono_array_new_va needs to be called using a different 
  * calling convention.
  */
