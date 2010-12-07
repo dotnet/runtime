@@ -196,7 +196,14 @@ mono_images_init (void)
 void
 mono_images_cleanup (void)
 {
+	GHashTableIter iter;
+	MonoImage *image;
+
 	DeleteCriticalSection (&images_mutex);
+
+	g_hash_table_iter_init (&iter, loaded_images_hash);
+	while (g_hash_table_iter_next (&iter, NULL, (void**)&image))
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly image '%s' still loaded at shutdown.", image->name);
 
 	g_hash_table_destroy (loaded_images_hash);
 	g_hash_table_destroy (loaded_images_refonly_hash);
