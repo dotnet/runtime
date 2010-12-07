@@ -1018,10 +1018,23 @@ mono_mb_emit_contextbound_check (MonoMethodBuilder *mb, int branch_code)
 	return mono_mb_emit_branch (mb, branch_code);
 }
 
+/*
+ * mono_mb_emit_exception_marshal_directive:
+ *
+ *   This function assumes ownership of MSG, which should be malloc-ed.
+ */
 static void
-mono_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, const char *msg)
+mono_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, char *msg)
 {
-	mono_mb_emit_exception_full (mb, "System.Runtime.InteropServices", "MarshalDirectiveException", msg);
+	char *s;
+
+	if (!mb->dynamic) {
+		s = mono_image_strdup (mb->method->klass->image, msg);
+		g_free (msg);
+	} else {
+		s = g_strdup (msg);
+	}
+	mono_mb_emit_exception_full (mb, "System.Runtime.InteropServices", "MarshalDirectiveException", s);
 }
 
 guint
@@ -1398,7 +1411,6 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		char *msg = g_strdup_printf ("marshaling conversion %d not implemented", conv);
 
 		mono_mb_emit_exception_marshal_directive (mb, msg);
-		g_free (msg);
 		break;
 	}
 	}
@@ -6203,7 +6215,7 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 		
 		if (t->data.klass->flags & TYPE_ATTRIBUTE_ABSTRACT){
 			mono_mb_emit_byte (mb, CEE_POP);
-			mono_mb_emit_exception_marshal_directive (mb, "Returned SafeHandles should not be abstract");
+			mono_mb_emit_exception_marshal_directive (mb, g_strdup ("Returned SafeHandles should not be abstract"));
 			break;
 		}
 
@@ -6263,8 +6275,8 @@ emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t,
 		*conv_arg_type = intptr_type;
 
 		if (t->byref){
-			mono_mb_emit_exception_marshal_directive (mb,
-				"HandleRefs can not be returned from unmanaged code (or passed by ref)");
+			char *msg = g_strdup ("HandleRefs can not be returned from unmanaged code (or passed by ref)");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
 			break;
 		} 
 		mono_mb_emit_ldarg_addr (mb, argnum);
@@ -6285,8 +6297,8 @@ emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 		
 	case MARSHAL_ACTION_CONV_RESULT: {
-		mono_mb_emit_exception_marshal_directive (mb,
-			"HandleRefs can not be returned from unmanaged code (or passed by ref)");
+		char *msg = g_strdup ("HandleRefs can not be returned from unmanaged code (or passed by ref)");
+		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
 	}
 		

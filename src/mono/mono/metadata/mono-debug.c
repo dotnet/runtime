@@ -162,9 +162,9 @@ free_header_data (gpointer key, gpointer value, gpointer user_data)
 
 	if (header->wrapper_data) {
 		g_free ((gpointer)header->wrapper_data->method_name);
-		g_slist_free (header->address_list);
 		g_free (header->wrapper_data);
 	}
+	g_slist_free (header->address_list);
 }
 
 static void

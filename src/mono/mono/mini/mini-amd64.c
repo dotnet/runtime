@@ -1767,7 +1767,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	 * passed on the stack after the signature. So compensate by 
 	 * passing a different signature.
 	 */
-	tmp_sig = mono_metadata_signature_dup (call->signature);
+	tmp_sig = mono_metadata_signature_dup_full (cfg->method->klass->image, call->signature);
 	tmp_sig->param_count -= call->signature->sentinelpos;
 	tmp_sig->sentinelpos = 0;
 	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));

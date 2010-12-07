@@ -2300,6 +2300,8 @@ mono_destroy_compile (MonoCompile *cfg)
 		g_hash_table_destroy (cfg->abs_patches);
 	mono_mempool_destroy (cfg->mempool);
 
+	mono_debug_free_method (cfg);
+
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
 	g_free (cfg->exception_message);

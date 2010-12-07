@@ -1977,6 +1977,7 @@ void      mono_debug_init_method                (MonoCompile *cfg, MonoBasicBloc
 						 guint32 breakpoint_id) MONO_INTERNAL;
 void      mono_debug_open_method                (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_debug_close_method               (MonoCompile *cfg) MONO_INTERNAL;
+void      mono_debug_free_method                (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_debug_open_block                 (MonoCompile *cfg, MonoBasicBlock *bb, guint32 address) MONO_INTERNAL;
 void      mono_debug_record_line_number         (MonoCompile *cfg, MonoInst *ins, guint32 address) MONO_INTERNAL;
 void      mono_debug_serialize_debug_info       (MonoCompile *cfg, guint8 **out_buf, guint32 *buf_len) MONO_INTERNAL;

@@ -320,8 +320,21 @@ mono_debug_close_method (MonoCompile *cfg)
 	mono_debugger_check_breakpoints (method, debug_info);
 
 	mono_debug_free_method_jit_info (jit);
-	g_array_free (info->line_numbers, TRUE);
-	g_free (info);
+	mono_debug_free_method (cfg);
+}
+
+void
+mono_debug_free_method (MonoCompile *cfg)
+{
+	MiniDebugMethodInfo *info;
+
+	info = (MiniDebugMethodInfo *) cfg->debug_info;
+	if (info) {
+		if (info->line_numbers)
+			g_array_free (info->line_numbers, TRUE);
+		g_free (info);
+		cfg->debug_info = NULL;	
+	}
 }
 
 void
