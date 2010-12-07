@@ -3601,7 +3601,7 @@ do_newobj (VerifyContext *ctx, int token)
 	if (method->klass->flags & (TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_INTERFACE))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Trying to instantiate an abstract or interface type at 0x%04x", ctx->ip_offset));
 
-	if (!mono_method_can_access_method_full (ctx->method, method, NULL)) {
+	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method_full (ctx->method, method, NULL)) {
 		char *from = mono_method_full_name (ctx->method, TRUE);
 		char *to = mono_method_full_name (method, TRUE);
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Constructor %s not visible from %s at 0x%04x", to, from, ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
@@ -4173,7 +4173,7 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unexpected object for ldvirtftn at 0x%04x", ctx->ip_offset));
 	}
 	
-	if (!mono_method_can_access_method_full (ctx->method, method, NULL))
+	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method_full (ctx->method, method, NULL))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Loaded method is not visible for ldftn/ldvirtftn at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
 	top = stack_push_val(ctx, TYPE_PTR, mono_type_create_fnptr_from_mono_method (ctx, method));
