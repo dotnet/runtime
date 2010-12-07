@@ -1230,7 +1230,7 @@ parse_custom_mods (VerifyContext *ctx, const char **_ptr, const char *end)
 		if (!safe_read_cint (token, ptr, end))
 			FAIL (ctx, g_strdup ("CustomMod: Not enough room for the token"));
 	
-		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
+		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token) || !get_coded_index_token (TYPEDEF_OR_REF_DESC, token))
 			FAIL (ctx, g_strdup_printf ("CustomMod: invalid TypeDefOrRef token %x", token));
 	}
 
@@ -1287,7 +1287,7 @@ parse_generic_inst (VerifyContext *ctx, const char **_ptr, const char *end)
 	if (!safe_read_cint (token, ptr, end))
 		FAIL (ctx, g_strdup ("GenericInst: Not enough room for type token"));
 
-	if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
+	if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token) || !get_coded_index_token (TYPEDEF_OR_REF_DESC, token))
 		FAIL (ctx, g_strdup_printf ("GenericInst: invalid TypeDefOrRef token %x", token));
 
 	if (ctx->token) {
@@ -1349,7 +1349,7 @@ parse_type (VerifyContext *ctx, const char **_ptr, const char *end)
 		if (!safe_read_cint (token, ptr, end))
 			FAIL (ctx, g_strdup ("Type: Not enough room for the type token"));
 	
-		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token))
+		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, token) || !get_coded_index_token (TYPEDEF_OR_REF_DESC, token))
 			FAIL (ctx, g_strdup_printf ("Type: invalid TypeDefOrRef token %x", token));
 
 		if (!get_coded_index_token (TYPEDEF_OR_REF_DESC, token))
@@ -4033,7 +4033,7 @@ mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, MonoErr
 }
 
 gboolean
-mono_verifier_verify_memberref_signature (MonoImage *image, guint32 offset, GSList **error_list)
+mono_verifier_verify_memberref_method_signature (MonoImage *image, guint32 offset, GSList **error_list)
 {
 	VerifyContext ctx;
 
@@ -4043,7 +4043,22 @@ mono_verifier_verify_memberref_signature (MonoImage *image, guint32 offset, GSLi
 	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
-	is_valid_method_or_field_signature (&ctx, offset);
+	is_valid_method_signature (&ctx, offset);
+	return cleanup_context (&ctx, error_list);
+}
+
+gboolean
+mono_verifier_verify_memberref_field_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list != NULL);
+	ctx.stage = STAGE_TABLES;
+
+	is_valid_field_signature (&ctx, offset);
 	return cleanup_context (&ctx, error_list);
 }
 
@@ -4333,12 +4348,6 @@ mono_verifier_verify_method_signature (MonoImage *image, guint32 offset, MonoErr
 }
 
 gboolean
-mono_verifier_verify_memberref_signature (MonoImage *image, guint32 offset, GSList **error_list)
-{
-	return TRUE;
-}
-
-gboolean
 mono_verifier_verify_standalone_signature (MonoImage *image, guint32 offset, GSList **error_list)
 {
 	return TRUE;
@@ -4392,6 +4401,18 @@ gboolean
 mono_verifier_verify_methodimpl_row (MonoImage *image, guint32 row, MonoError *error)
 {
 	mono_error_init (error);
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_memberref_method_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_memberref_field_signature (MonoImage *image, guint32 offset, GSList **error_list)
+{
 	return TRUE;
 }
 

@@ -442,7 +442,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 
 	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
-	if (!mono_verifier_verify_memberref_signature (image, cols [MONO_MEMBERREF_SIGNATURE], NULL)) {
+	if (!mono_verifier_verify_memberref_field_signature (image, cols [MONO_MEMBERREF_SIGNATURE], NULL)) {
 		mono_loader_set_error_bad_image (g_strdup_printf ("Bad field signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
 		return NULL;
 	}
@@ -842,7 +842,7 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 
 		sig = find_cached_memberref_sig (image, sig_idx);
 		if (!sig) {
-			if (!mono_verifier_verify_memberref_signature (image, sig_idx, NULL)) {
+			if (!mono_verifier_verify_memberref_method_signature (image, sig_idx, NULL)) {
 				guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 				const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
@@ -993,7 +993,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
 
-	if (!mono_verifier_verify_memberref_signature (image, sig_idx, NULL)) {
+	if (!mono_verifier_verify_memberref_method_signature (image, sig_idx, NULL)) {
 		mono_loader_set_error_method_load (klass->name, mname);
 		return NULL;
 	}
