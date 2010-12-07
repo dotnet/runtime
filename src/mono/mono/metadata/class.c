@@ -5350,6 +5350,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if (class->enumtype) {
 		MonoType *enum_basetype = mono_class_find_enum_basetype (class);
 		if (!enum_basetype) {
+			/*set it to a default value as the whole runtime can't handle this to be null*/
+			class->cast_class = class->element_class = mono_defaults.int32_class;
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
