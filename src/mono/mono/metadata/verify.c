@@ -2364,6 +2364,8 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 		return candidate->type == target->type;
 
 	case MONO_TYPE_PTR:
+		if (candidate->type != MONO_TYPE_PTR)
+			return FALSE;
 		return mono_delegate_type_equal (target->data.type, candidate->data.type);
 
 	case MONO_TYPE_FNPTR:
