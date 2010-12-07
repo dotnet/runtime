@@ -1653,6 +1653,20 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+is_valid_memberref_method_signature (VerifyContext *ctx, guint32 offset)
+{
+	guint32 size = 0;
+	const char *ptr = NULL, *end;
+
+	if (!decode_signature_header (ctx, offset, &size, &ptr))
+		FAIL (ctx, g_strdup ("MemberRefSig: Could not decode signature header"));
+	end = ptr + size;
+
+	return parse_method_signature (ctx, &ptr, end, TRUE, FALSE);
+}
+
+
+static gboolean
 is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 {
 	guint32 size = 0;
@@ -4043,7 +4057,7 @@ mono_verifier_verify_memberref_method_signature (MonoImage *image, guint32 offse
 	init_verify_context (&ctx, image, error_list != NULL);
 	ctx.stage = STAGE_TABLES;
 
-	is_valid_method_signature (&ctx, offset);
+	is_valid_memberref_method_signature (&ctx, offset);
 	return cleanup_context (&ctx, error_list);
 }
 
