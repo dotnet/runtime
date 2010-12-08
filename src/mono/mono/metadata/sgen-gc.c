@@ -3564,7 +3564,6 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 		mono_profiler_gc_event (MONO_GC_EVENT_END, 1);
 	}
 
-	degraded_mode += size;
 	return major_collector.alloc_degraded (vtable, size);
 }
 
