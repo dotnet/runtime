@@ -177,6 +177,8 @@ namespace RemotingTest
 			if (typeof (R1) != myobj.GetType ())
 				return 7;
 	
+			AppDomain.Unload (app2);
+
 			Console.WriteLine("test-ok");
 			return 0;
 		}
