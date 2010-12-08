@@ -366,12 +366,13 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
  * For x86 win32, see ???.
  */
 static CallInfo*
-get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoMethodSignature *sig)
 {
 	guint32 i, gr, fr, pstart;
 	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
+	gboolean is_pinvoke = sig->pinvoke;
 
 	gr = 0;
 	fr = 0;
@@ -572,7 +573,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 }
 
 static CallInfo*
-get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	int n = sig->hasthis + sig->param_count;
 	CallInfo *cinfo;
@@ -582,7 +583,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	else
 		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
-	return get_call_info_internal (gsctx, cinfo, sig, is_pinvoke);
+	return get_call_info_internal (gsctx, cinfo, sig);
 }
 
 /*
@@ -613,7 +614,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	cinfo = (CallInfo*)g_newa (guint8*, len);
 	memset (cinfo, 0, len);
 
-	cinfo = get_call_info_internal (NULL, cinfo, csig, FALSE);
+	cinfo = get_call_info_internal (NULL, cinfo, csig);
 
 	arg_info [0].offset = offset;
 
@@ -673,8 +674,8 @@ mono_x86_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignatu
 	CallInfo *c1, *c2;
 	gboolean res;
 
-	c1 = get_call_info (NULL, NULL, caller_sig, FALSE);
-	c2 = get_call_info (NULL, NULL, callee_sig, FALSE);
+	c1 = get_call_info (NULL, NULL, caller_sig);
+	c2 = get_call_info (NULL, NULL, callee_sig);
 	res = c1->stack_usage >= c2->stack_usage;
 	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret) && c2->ret.storage != ArgValuetypeInReg)
 		/* An address on the callee's stack is passed as the first argument */
@@ -1115,7 +1116,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	header = cfg->header;
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
 	cfg->frame_reg = X86_EBP;
 	offset = 0;
@@ -1247,7 +1248,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
@@ -1317,7 +1318,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, sig->pinvoke);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
 	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
 
@@ -1428,7 +1429,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		sentinelpos = sig->sentinelpos + (sig->hasthis ? 1 : 0);
@@ -2276,7 +2277,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	sig = mono_method_signature (method);
 
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 	
 	/* This is the opposite of the code in emit_prolog */
 
@@ -5209,7 +5210,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		for (quad = 0; quad < 2; quad ++) {
 			switch (cinfo->ret.pair_storage [quad]) {
