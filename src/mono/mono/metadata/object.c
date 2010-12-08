@@ -4193,7 +4193,7 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
  * mono_object_new_pinned:
  *
  *   Same as mono_object_new, but the returned object will be pinned.
- * FIXME: How are these freed under sgen ?
+ * For SGEN, these objects will only be freed at appdomain unload.
  */
 MonoObject *
 mono_object_new_pinned (MonoDomain *domain, MonoClass *klass)
