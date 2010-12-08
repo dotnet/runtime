@@ -480,7 +480,7 @@ mono_class_has_default_constructor (MonoClass *klass)
  * this function checks for VAR and MVAR types that are invalid under the current verifier,
  */
 static gboolean
-mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
+mono_type_is_valid_type_in_context_full (MonoType *type, MonoGenericContext *context, gboolean check_gtd)
 {
 	int i;
 	MonoGenericInst *inst;
@@ -495,17 +495,17 @@ mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
 			return FALSE;
 		break;
 	case MONO_TYPE_SZARRAY:
-		return mono_type_is_valid_type_in_context (&type->data.klass->byval_arg, context);
+		return mono_type_is_valid_type_in_context_full (&type->data.klass->byval_arg, context, TRUE);
 	case MONO_TYPE_ARRAY:
-		return mono_type_is_valid_type_in_context (&type->data.array->eklass->byval_arg, context);
+		return mono_type_is_valid_type_in_context_full (&type->data.array->eklass->byval_arg, context, TRUE);
 	case MONO_TYPE_PTR:
-		return mono_type_is_valid_type_in_context (type->data.type, context);
+		return mono_type_is_valid_type_in_context_full (type->data.type, context, TRUE);
 	case MONO_TYPE_GENERICINST:
 		inst = type->data.generic_class->context.class_inst;
 		if (!inst->is_open)
 			break;
 		for (i = 0; i < inst->type_argc; ++i)
-			if (!mono_type_is_valid_type_in_context (inst->type_argv [i], context))
+			if (!mono_type_is_valid_type_in_context_full (inst->type_argv [i], context, TRUE))
 				return FALSE;
 		break;
 	case MONO_TYPE_CLASS:
@@ -520,11 +520,20 @@ mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
 		 * reflection oddities which are harmless  - to security at least.
 		 */
 		if (klass->byval_arg.type != type->type)
-			return mono_type_is_valid_type_in_context (&klass->byval_arg, context);
+			return mono_type_is_valid_type_in_context_full (&klass->byval_arg, context, check_gtd);
+
+		if (check_gtd && klass->generic_container)
+			return FALSE;
 		break;
 	}
 	}
 	return TRUE;
+}
+
+static gboolean
+mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
+{
+	return mono_type_is_valid_type_in_context_full (type, context, FALSE);
 }
 
 /*This function returns NULL if the type is not instantiatable*/
