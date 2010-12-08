@@ -614,8 +614,6 @@ mono_set_rootdir (void)
  			fallback ();
  			return;
  		}
-
-		name = mono_path_resolve_symlinks (name);
  	}
 #endif
 
