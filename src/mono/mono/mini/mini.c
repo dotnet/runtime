@@ -2139,7 +2139,11 @@ print_dfn (MonoCompile *cfg) {
 	MonoBasicBlock *bb;
 	MonoInst *c;
 
-	g_print ("IR code for method %s\n", mono_method_full_name (cfg->method, TRUE));
+	{
+		char *method_name = mono_method_full_name (cfg->method, TRUE);
+		g_print ("IR code for method %s\n", method_name);
+		g_free (method_name);
+	}
 
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		bb = cfg->bblocks [i];
@@ -4084,12 +4088,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * header->max_stack);
 
 	if (cfg->verbose_level > 0) {
+		char *method_name;
 		if (COMPILE_LLVM (cfg))
-			g_print ("converting llvm method %s\n", mono_method_full_name (method, TRUE));
+			g_print ("converting llvm method %s\n", method_name = mono_method_full_name (method, TRUE));
 		else if (cfg->generic_sharing_context)
-			g_print ("converting shared method %s\n", mono_method_full_name (method_to_compile, TRUE));
+			g_print ("converting shared method %s\n", method_name = mono_method_full_name (method_to_compile, TRUE));
 		else
-			g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
+			g_print ("converting method %s\n", method_name = mono_method_full_name (method, TRUE));
+		g_free (method_name);
 	}
 
 	if (cfg->opt & (MONO_OPT_ABCREM | MONO_OPT_SSAPRE))
