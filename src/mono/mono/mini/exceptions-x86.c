@@ -310,6 +310,13 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
+	else {
+		GSList *l;
+
+		for (l = unwind_ops; l; l = l->next)
+			g_free (l->data);
+		g_slist_free (unwind_ops);
+	}
 
 	return start;
 }
@@ -382,6 +389,13 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
+	else {
+		GSList *l;
+
+		for (l = unwind_ops; l; l = l->next)
+			g_free (l->data);
+		g_slist_free (unwind_ops);
+	}
 
 	g_assert ((code - start) < kMaxCodeSize);
 	return start;
@@ -619,6 +633,13 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup (name), start, code - start, ji, unwind_ops);
+	else {
+		GSList *l;
+
+		for (l = unwind_ops; l; l = l->next)
+			g_free (l->data);
+		g_slist_free (unwind_ops);
+	}
 
 	return start;
 }
@@ -1038,6 +1059,13 @@ mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup ("x86_signal_exception_trampoline"), start, code - start, ji, unwind_ops);
+	else {
+		GSList *l;
+
+		for (l = unwind_ops; l; l = l->next)
+			g_free (l->data);
+		g_slist_free (unwind_ops);
+	}
 
 	return start;
 }
