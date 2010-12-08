@@ -1162,7 +1162,9 @@ lookup_custom_attr (MonoImage *image, gpointer member)
 	if (!res)
 		return NULL;
 
-	return g_memdup (res, MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * res->num_attrs);
+	res = g_memdup (res, MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * res->num_attrs);
+	res->cached = 0;
+	return res;
 }
 
 static gboolean
