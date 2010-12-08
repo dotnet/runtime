@@ -88,9 +88,8 @@ struct _MSBlockInfo {
 #ifdef FIXED_HEAP
 	unsigned int used : 1;
 	unsigned int zeroed : 1;
-#else
-	MSBlockInfo *next;
 #endif
+	MSBlockInfo *next;
 	char *block;
 	void **free_list;
 	MSBlockInfo *next_free;
@@ -195,28 +194,20 @@ static gboolean have_swept;
 
 #define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), nursery_bits, nursery_start, nursery_end))
 
+/* all allocated blocks in the system */
+static MSBlockInfo *all_blocks;
+
 #ifdef FIXED_HEAP
 /* non-allocated block free-list */
 static MSBlockInfo *empty_blocks = NULL;
 #else
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
-/* all allocated blocks in the system */
-static MSBlockInfo *all_blocks;
 static int num_empty_blocks = 0;
 #endif
 
-#ifdef FIXED_HEAP
-#define FOREACH_BLOCK(bl)	{					\
-		int __block_i;						\
-		for (__block_i = 0; __block_i < ms_heap_num_blocks; ++__block_i) { \
-			(bl) = &block_infos [__block_i];		\
-			if (!(bl)->used) continue;
-#define END_FOREACH_BLOCK	}}
-#else
 #define FOREACH_BLOCK(bl)	for ((bl) = all_blocks; (bl); (bl) = (bl)->next) {
 #define END_FOREACH_BLOCK	}
-#endif
 
 static int num_major_sections = 0;
 /* one free block list for each block object size */
@@ -465,14 +456,13 @@ check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 		/* the block must not be in the empty_blocks list */
 		for (b = empty_blocks; b; b = b->next_free)
 			g_assert (b != block);
-#else
+#endif
 		/* the block must be in the all_blocks list */
 		for (b = all_blocks; b; b = b->next) {
 			if (b == block)
 				break;
 		}
 		g_assert (b == block);
-#endif
 	}
 }
 
@@ -589,10 +579,8 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->next_free = free_blocks [size_index];
 	free_blocks [size_index] = info;
 
-#ifndef FIXED_HEAP
 	info->next = all_blocks;
 	all_blocks = info;
-#endif
 
 	++num_major_sections;
 	return TRUE;
@@ -1158,11 +1146,8 @@ static void
 ms_sweep (void)
 {
 	int i;
-#ifdef FIXED_HEAP
-	int j;
-#else
 	MSBlockInfo **iter;
-#endif
+
 	/* statistics for evacuation */
 	int *slots_available = alloca (sizeof (int) * num_block_obj_sizes);
 	int *slots_used = alloca (sizeof (int) * num_block_obj_sizes);
@@ -1180,24 +1165,14 @@ ms_sweep (void)
 	}
 
 	/* traverse all blocks, free and zero unmarked objects */
-#ifdef FIXED_HEAP
-	for (j = 0; j < ms_heap_num_blocks; ++j) {
-		MSBlockInfo *block = &block_infos [j];
-#else
 	iter = &all_blocks;
 	while (*iter) {
 		MSBlockInfo *block = *iter;
-#endif
 		int count;
 		gboolean have_live = FALSE;
 		gboolean has_pinned;
 		int obj_index;
 		int obj_size_index;
-
-#ifdef FIXED_HEAP
-		if (!block->used)
-			continue;
-#endif
 
 		obj_size_index = block->obj_size_index;
 
@@ -1244,9 +1219,7 @@ ms_sweep (void)
 				slots_available [obj_size_index] += count;
 			}
 
-#ifndef FIXED_HEAP
 			iter = &block->next;
-#endif
 
 			/*
 			 * If there are free slots in the block, add
@@ -1265,12 +1238,13 @@ ms_sweep (void)
 			 * Blocks without live objects are removed from the
 			 * block list and freed.
 			 */
+			*iter = block->next;
+
 #ifdef FIXED_HEAP
 			ms_free_block (block);
 #else
-			*iter = block->next;
-
 			ms_free_block (block->block);
+
 			mono_sgen_free_internal (block, INTERNAL_MEM_MS_BLOCK_INFO);
 #endif
 
