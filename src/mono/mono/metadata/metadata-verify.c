@@ -3369,7 +3369,7 @@ verify_fieldrva_table (VerifyContext *ctx)
 	}
 }
 
-#define INVALID_ASSEMBLY_FLAGS_BITS ~((1 << 0) | (1 << 4) | (1 << 8) | (1 << 14) | (1 << 15))
+#define INVALID_ASSEMBLY_FLAGS_BITS ~((1 << 0) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8) | (1 << 14) | (1 << 15))
 static void
 verify_assembly_table (VerifyContext *ctx)
 {
