@@ -2434,6 +2434,9 @@ verify_typedef_table (VerifyContext *ctx)
 		if (data [MONO_TYPEDEF_EXTENDS] && !is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
 
+		if (data [MONO_TYPEDEF_EXTENDS] && !get_coded_index_token (TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d zero coded extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
+
 		visibility = data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		if ((visibility >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visibility <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM) &&
 			search_sorted_table (ctx, MONO_TABLE_NESTEDCLASS, MONO_NESTED_CLASS_NESTED, i + 1) == -1)
