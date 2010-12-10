@@ -456,7 +456,7 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 		method_container_class = ji->method->klass;
 
 	/* class might refer to a subclass of ji->method's class */
-	while (class->generic_class && class->generic_class->container_class != method_container_class) {
+	while (!(class == ji->method->klass || (class->generic_class && class->generic_class->container_class == method_container_class))) {
 		class = class->parent;
 		g_assert (class);
 	}
