@@ -1756,7 +1756,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 }
 
 static void
-emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
+emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object, gboolean unicode)
 {
 	MonoMarshalType *info;
 	int i;
@@ -1859,8 +1859,18 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			case MONO_TYPE_R8:
 				mono_mb_emit_ldloc (mb, 1);
 				mono_mb_emit_ldloc (mb, 0);
-				mono_mb_emit_byte (mb, mono_type_to_ldind (ftype));
-				mono_mb_emit_byte (mb, mono_type_to_stind (ftype));
+				if (ftype->type == MONO_TYPE_CHAR && !unicode) {
+					if (to_object) {
+						mono_mb_emit_byte (mb, CEE_LDIND_U1);
+						mono_mb_emit_byte (mb, CEE_STIND_I2);
+					} else {
+						mono_mb_emit_byte (mb, CEE_LDIND_U2);
+						mono_mb_emit_byte (mb, CEE_STIND_I1);
+					}
+				} else {
+					mono_mb_emit_byte (mb, mono_type_to_ldind (ftype));
+					mono_mb_emit_byte (mb, mono_type_to_stind (ftype));
+				}
 				break;
 			case MONO_TYPE_VALUETYPE: {
 				int src_var, dst_var;
@@ -1963,6 +1973,12 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			mono_mb_emit_add_to_local (mb, 1, usize);
 		}				
 	}
+}
+
+static void
+emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
+{
+	emit_struct_conv_full (mb, klass, to_object, TRUE);
 }
 
 static void
@@ -7058,7 +7074,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_stloc (mb, 1);
 
 				/* emit valuetype conversion code */
-				emit_struct_conv (mb, eklass, FALSE);
+				emit_struct_conv_full (mb, eklass, FALSE, mono_pinvoke_is_unicode (m->piinfo));
 			}
 
 			mono_mb_emit_add_to_local (mb, index_var, 1);
@@ -7176,7 +7192,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					mono_mb_emit_stloc (mb, 1);
 
 					/* emit valuetype conversion code */
-					emit_struct_conv (mb, eklass, TRUE);
+					emit_struct_conv_full (mb, eklass, TRUE, mono_pinvoke_is_unicode (m->piinfo));
 				}
 
 				if (need_free) {
