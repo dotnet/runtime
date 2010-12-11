@@ -567,7 +567,7 @@ set_dirs (char *exe)
 
 	config = g_build_filename (base, "etc", NULL);
 	lib = g_build_filename (base, "lib", NULL);
-	mono = g_build_filename (lib, "mono/1.0", NULL);
+	mono = g_build_filename (lib, "mono/2.0", NULL);
 	if (stat (mono, &buf) == -1)
 		fallback ();
 	else {
