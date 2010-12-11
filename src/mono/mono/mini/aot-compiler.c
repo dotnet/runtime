@@ -113,6 +113,7 @@ typedef struct MonoAotOptions {
 	gboolean stats;
 	char *tool_prefix;
 	gboolean autoreg;
+	char *mtriple;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -181,6 +182,8 @@ typedef struct MonoAotCompile {
 	MonoAotFileFlags flags;
 	MonoDynamicStream blob;
 	MonoClass **typespec_classes;
+	GString *llc_args;
+	GString *as_args;
 } MonoAotCompile;
 
 typedef struct {
@@ -484,22 +487,33 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #define PPC_LDX_OP "lwzx"
 #endif
 
-//#define TARGET_ARM
+static void
+arch_process_target_triple (MonoAotCompile *acfg)
+{
+	char *mtriple = acfg->aot_opts.mtriple;
+
+	if (!mtriple)
+		return;
+
+	acfg->llc_args = g_string_new ("");
+	acfg->as_args = g_string_new ("");
 
 #ifdef TARGET_ARM
-#define LLVM_LABEL_PREFIX "_"
+	if (strstr (acfg->aot_opts.mtriple, "darwin")) {
+		g_string_append (acfg->llc_args, "-mattr=+v6");
+		acfg->llvm_label_prefix = "_";
+	} else {
+#ifdef ARM_FPU_VFP
+		g_string_append (acfg->llc_args, " -mattr=+vfp2,+d16");
+		g_string_append (acfg->as_args, " -mfpu=vfp3");
 #else
-#define LLVM_LABEL_PREFIX ""
+		g_string_append (acfg->llc_args, " -soft-float");
 #endif
+	}
 
-#ifdef TARGET_ARM
-/* iphone */
-#define LLC_TARGET_ARGS "-march=arm -mattr=+v6 -mtriple=arm-apple-darwin"
-/* ELF */
-//#define LLC_TARGET_ARGS "-march=arm -mtriple=arm-linux-gnueabi -soft-float"
-#else
-#define LLC_TARGET_ARGS ""
+	mono_arch_set_target (mtriple);
 #endif
+}
 
 /*
  * arch_emit_direct_call:
@@ -4233,6 +4247,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->print_skipped_methods = TRUE;
 		} else if (str_begins_with (arg, "stats")) {
 			opts->stats = TRUE;
+		} else if (str_begins_with (arg, "mtriple=")) {
+			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -4786,7 +4802,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	char *command, *opts;
 	int i;
 	MonoJumpInfo *patch_info;
-	const char *llc_extra_args;
+	const char *llc_args;
 
 	/*
 	 * When using LLVM, we let llvm emit the got since the LLVM IL needs to refer
@@ -4851,11 +4867,17 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 #if !LLVM_CHECK_VERSION(2, 8)
 	/* LLVM 2.8 removed the -f flag ??? */
-	llc_extra_args = "-f";
+	llc_args = "-f";
 #else
-	llc_extra_args = "";
+	llc_args = "";
 #endif
-	command = g_strdup_printf ("llc %s %s -relocation-model=pic -unwind-tables -o %s temp.opt.bc", LLC_TARGET_ARGS, llc_extra_args, acfg->tmpfname);
+
+	if (!acfg->aot_opts.mtriple) {
+		fprintf (stderr, "The mtriple= option is required when compiling using LLVM.\n");
+		exit (1);
+	}
+
+	command = g_strdup_printf ("llc -mtriple=%s %s %s -relocation-model=pic -unwind-tables -o %s temp.opt.bc", acfg->aot_opts.mtriple, llc_args, acfg->llc_args ? acfg->llc_args->str : "", acfg->tmpfname);
 
 	printf ("Executing llc: %s\n", command);
 
@@ -6119,7 +6141,7 @@ compile_asm (MonoAotCompile *acfg)
 	} else {
 		objfile = g_strdup_printf ("%s.o", acfg->tmpfname);
 	}
-	command = g_strdup_printf ("%s%s %s %s -o %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->tmpfname, objfile);
+	command = g_strdup_printf ("%s%s %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->as_args ? acfg->as_args->str : "", objfile, acfg->tmpfname);
 	printf ("Executing the native assembler: %s\n", command);
 	if (system (command) != 0) {
 		g_free (command);
@@ -6359,8 +6381,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	 * symbols.
 	 */
 	acfg->llvm_label_prefix = "";
-	if (acfg->llvm)
-		acfg->llvm_label_prefix = LLVM_LABEL_PREFIX;
+
+	arch_process_target_triple (acfg);
 
 	acfg->method_index = 1;
 
@@ -6477,7 +6499,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			MonoCompile *cfg = acfg->cfgs [i];
 			int method_index = get_method_index (acfg, cfg->orig_method);
 
-			cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, LLVM_LABEL_PREFIX, method_index);
+			cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, acfg->llvm_label_prefix, method_index);
 		}
 	}
 
