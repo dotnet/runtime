@@ -39,13 +39,17 @@ static CRITICAL_SECTION mini_arch_mutex;
 static int v5_supported = 0;
 static int v7_supported = 0;
 static int thumb_supported = 0;
-
+/*
+ * Whenever to use the ARM EABI
+ */
+static int eabi_supported = 0;
 /* 
  * Whenever to use the iphone ABI extensions:
  * http://developer.apple.com/library/ios/documentation/Xcode/Conceptual/iPhoneOSABIReference/index.html
  * Basically, r7 is used as a frame pointer and it should point to the saved r7 + lr.
  */
 static int iphone_abi = 0;
+static int i8_align;
 
 /*
  * The code generated for sequence points reads from this location, which is
@@ -450,6 +454,14 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 void
 mono_arch_cpu_init (void)
 {
+#if defined(__ARM_EABI__)
+	eabi_supported = TRUE;
+#endif
+#if defined(__APPLE__) && defined(MONO_CROSS_COMPILE)
+		i8_align = 4;
+#else
+		i8_align = __alignof__ (gint64);
+#endif
 }
 
 /*
@@ -728,17 +740,12 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->reg = *gr;
 		}
 	} else {
-#if defined(__APPLE__) && defined(MONO_CROSS_COMPILE)
-		int i8_align = 4;
-#else
-		int i8_align = __alignof__ (gint64);
-#endif
+		gboolean split;
 
-#if __ARM_EABI__
-		gboolean split = i8_align == 4;
-#else
-		gboolean split = TRUE;
-#endif
+		if (eabi_supported)
+			split = i8_align == 4;
+		else
+			split = TRUE;
 		
 		if (*gr == ARMREG_R3 && split) {
 			/* first word in r3 and the second on the stack */
@@ -747,22 +754,22 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->storage = RegTypeBaseGen;
 			*stack_size += 4;
 		} else if (*gr >= ARMREG_R3) {
-#ifdef __ARM_EABI__
-			/* darwin aligns longs to 4 byte only */
-			if (i8_align == 8) {
-				*stack_size += 7;
-				*stack_size &= ~7;
+			if (eabi_supported) {
+				/* darwin aligns longs to 4 byte only */
+				if (i8_align == 8) {
+					*stack_size += 7;
+					*stack_size &= ~7;
+				}
 			}
-#endif
 			ainfo->offset = *stack_size;
 			ainfo->reg = ARMREG_SP; /* in the caller */
 			ainfo->storage = RegTypeBase;
 			*stack_size += 8;
 		} else {
-#ifdef __ARM_EABI__
-			if (i8_align == 8 && ((*gr) & 1))
-				(*gr) ++;
-#endif
+			if (eabi_supported) {
+				if (i8_align == 8 && ((*gr) & 1))
+					(*gr) ++;
+			}
 			ainfo->storage = RegTypeIRegPair;
 			ainfo->reg = *gr;
 		}
@@ -916,10 +923,10 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
 			cinfo->args [n].storage = RegTypeStructByVal;
 			/* FIXME: align stack_size if needed */
-#ifdef __ARM_EABI__
-			if (align >= 8 && (gr & 1))
-				gr ++;
-#endif
+			if (eabi_supported) {
+				if (align >= 8 && (gr & 1))
+					gr ++;
+			}
 			if (gr > ARMREG_R3) {
 				cinfo->args [n].size = 0;
 				cinfo->args [n].vtsize = nwords;
@@ -5752,3 +5759,25 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 	return info;
 }
+
+/*
+ * mono_arch_set_target:
+ *
+ *   Set the target architecture the JIT backend should generate code for, in the form
+ * of a GNU target triplet. Only used in AOT mode.
+ */
+void
+mono_arch_set_target (char *mtriple)
+{
+	/* The GNU target triple format is not very well documented */
+	if (strstr (mtriple, "armv7"))
+		v7_supported = TRUE;
+	if (strstr (mtriple, "darwin")) {
+		v5_supported = TRUE;
+		thumb_supported = TRUE;
+		iphone_abi = TRUE;
+	}
+	if (strstr (mtriple, "gnueabi"))
+		eabi_supported = TRUE;
+}
+
