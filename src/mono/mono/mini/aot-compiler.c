@@ -488,18 +488,13 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #endif
 
 static void
-arch_process_target_triple (MonoAotCompile *acfg)
+arch_init (MonoAotCompile *acfg)
 {
-	char *mtriple = acfg->aot_opts.mtriple;
-
-	if (!mtriple)
-		return;
-
 	acfg->llc_args = g_string_new ("");
 	acfg->as_args = g_string_new ("");
 
 #ifdef TARGET_ARM
-	if (strstr (acfg->aot_opts.mtriple, "darwin")) {
+	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
 		acfg->llvm_label_prefix = "_";
 	} else {
@@ -511,7 +506,8 @@ arch_process_target_triple (MonoAotCompile *acfg)
 #endif
 	}
 
-	mono_arch_set_target (mtriple);
+	if (mtriple)
+		mono_arch_set_target (acfg->aot_opts.mtriple, mtriple);
 #endif
 }
 
@@ -4802,7 +4798,6 @@ emit_llvm_file (MonoAotCompile *acfg)
 	char *command, *opts;
 	int i;
 	MonoJumpInfo *patch_info;
-	const char *llc_args;
 
 	/*
 	 * When using LLVM, we let llvm emit the got since the LLVM IL needs to refer
@@ -4865,19 +4860,18 @@ emit_llvm_file (MonoAotCompile *acfg)
 #endif
 	g_free (opts);
 
+	if (!acfg->llc_args)
+		acfg->llc_args = g_string_new ("");
+
 #if !LLVM_CHECK_VERSION(2, 8)
 	/* LLVM 2.8 removed the -f flag ??? */
-	llc_args = "-f";
-#else
-	llc_args = "";
+	g_string_append (acfg->llc_args, " -f");
 #endif
 
-	if (!acfg->aot_opts.mtriple) {
-		fprintf (stderr, "The mtriple= option is required when compiling using LLVM.\n");
-		exit (1);
-	}
+	if (acfg->aot_opts.mtriple)
+		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
 
-	command = g_strdup_printf ("llc -mtriple=%s %s %s -relocation-model=pic -unwind-tables -o %s temp.opt.bc", acfg->aot_opts.mtriple, llc_args, acfg->llc_args ? acfg->llc_args->str : "", acfg->tmpfname);
+	command = g_strdup_printf ("llc %s -relocation-model=pic -unwind-tables -o %s temp.opt.bc", acfg->llc_args->str, acfg->tmpfname);
 
 	printf ("Executing llc: %s\n", command);
 
@@ -6382,7 +6376,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	 */
 	acfg->llvm_label_prefix = "";
 
-	arch_process_target_triple (acfg);
+	arch_init (acfg);
 
 	acfg->method_index = 1;
 
