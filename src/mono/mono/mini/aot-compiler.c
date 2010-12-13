@@ -506,8 +506,8 @@ arch_init (MonoAotCompile *acfg)
 #endif
 	}
 
-	if (mtriple)
-		mono_arch_set_target (acfg->aot_opts.mtriple, mtriple);
+	if (acfg->aot_opts.mtriple)
+		mono_arch_set_target (acfg->aot_opts.mtriple);
 #endif
 }
 
