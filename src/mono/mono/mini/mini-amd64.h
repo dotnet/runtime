@@ -422,6 +422,9 @@ mono_amd64_get_original_ip (void) MONO_INTERNAL;
 guint8*
 mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
 
+GSList*
+mono_amd64_get_exception_trampolines (gboolean aot) MONO_INTERNAL;
+
 typedef struct {
 	guint8 *address;
 	guint8 saved_byte;

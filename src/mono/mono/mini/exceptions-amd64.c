@@ -472,7 +472,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	}
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? (llvm_abs ? "mono_amd64_throw_corlib_exception_abs" : "mono_amd64_throw_corlib_exception") : "mono_amd64_throw_exception");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? "mono_amd64_throw_corlib_exception" : "mono_amd64_throw_exception");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, resume_unwind ? (mono_amd64_resume_unwind) : (corlib ? (gpointer)mono_amd64_throw_corlib_exception : (gpointer)mono_amd64_throw_exception));
@@ -1101,26 +1101,55 @@ mono_arch_notify_pending_exc (void)
 	*(gpointer*)(lmf->rsp - 8) = throw_pending_exception;
 }
 
+GSList*
+mono_amd64_get_exception_trampolines (gboolean aot)
+{
+	MonoTrampInfo *info;
+	GSList *tramps = NULL;
+
+	mono_arch_get_throw_pending_exception (&info, aot);
+	tramps = g_slist_prepend (tramps, info);
+
+	/* LLVM needs different throw trampolines */
+	get_throw_trampoline (&info, FALSE, TRUE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", aot);
+	tramps = g_slist_prepend (tramps, info);
+
+	get_throw_trampoline (&info, FALSE, TRUE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", aot);
+	tramps = g_slist_prepend (tramps, info);
+
+	get_throw_trampoline (&info, FALSE, TRUE, TRUE, TRUE, "llvm_resume_unwind_trampoline", FALSE);
+	tramps = g_slist_prepend (tramps, info);
+
+	return tramps;
+}
+
 void
 mono_arch_exceptions_init (void)
 {
-	guint8 *tramp;
+	GSList *tramps, *l;
+	gpointer tramp;
 
 	if (mono_aot_only) {
 		throw_pending_exception = mono_aot_get_trampoline ("throw_pending_exception");
+		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_trampoline");
+		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
+		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_abs_trampoline");
+		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE);
+		tramp = mono_aot_get_trampoline ("llvm_resume_unwind_trampoline");
+		mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
 	} else {
 		/* Call this to avoid initialization races */
 		throw_pending_exception = mono_arch_get_throw_pending_exception (NULL, FALSE);
 
-		/* LLVM needs different throw trampolines */
-		tramp = get_throw_trampoline (NULL, FALSE, TRUE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", FALSE);
-		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
+		tramps = mono_amd64_get_exception_trampolines (FALSE);
+		for (l = tramps; l; l = l->next) {
+			MonoTrampInfo *info = l->data;
 
-		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", FALSE);
-		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE);
-
-		tramp = get_throw_trampoline (NULL, FALSE, TRUE, TRUE, TRUE, "llvm_resume_unwind_trampoline", FALSE);
-		mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
+			mono_register_jit_icall (info->code, info->name, NULL, TRUE);
+			mono_save_trampoline_xdebug_info (info);
+			mono_tramp_info_free (info);
+		}
+		g_slist_free (tramps);
 	}
 }
 

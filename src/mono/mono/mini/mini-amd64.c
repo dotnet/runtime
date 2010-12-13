@@ -7594,14 +7594,7 @@ mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, in
 GSList *
 mono_arch_get_trampolines (gboolean aot)
 {
-	MonoTrampInfo *info;
-	GSList *tramps = NULL;
-
-	mono_arch_get_throw_pending_exception (&info, aot);
-
-	tramps = g_slist_append (tramps, info);
-
-	return tramps;
+	return mono_amd64_get_exception_trampolines (aot);
 }
 
 /* Soft Debug support */
