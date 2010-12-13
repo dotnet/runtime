@@ -617,11 +617,16 @@ checktests: $(regtests)
 rcheck: mono $(regtests)
 	$(RUNTIME) --regression $(regtests)
 
+LLVM_AOT_RUNTIME_OPTS=$(if ($LLVM),--llvm,)
+
 aotcheck: mono $(regtests)
 	rm -f *.exe.so
-	$(RUNTIME) --aot $(regtests) || exit 1
+	$(RUNTIME) $(LLVM_AOT_RUNTIME_OPTS) --aot $(regtests) || exit 1
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
 	rm -f *.exe.so
+
+llvmaotcheck:
+	$(MAKE) aotcheck LLVM=1
 
 # This currently only works on amd64/arm
 fullaotcheck: mono $(regtests)
