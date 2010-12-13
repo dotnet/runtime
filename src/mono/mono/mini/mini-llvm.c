@@ -1083,6 +1083,10 @@ get_plt_entry (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gc
 	if (!callee_name)
 		return NULL;
 
+	if (ctx->cfg->compile_aot)
+		/* Add a patch so referenced wrappers can be compiled in full aot mode */
+		mono_add_patch_info (ctx->cfg, 0, type, data);
+
 	// FIXME: Locking
 	callee = g_hash_table_lookup (ctx->lmodule->plt_entries, callee_name);
 	if (!callee) {
