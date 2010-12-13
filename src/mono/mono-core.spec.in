@@ -1000,11 +1000,7 @@ Mono development tools.
 %dir %_datadir/mono-2.0/mono
 %dir %_datadir/mono-2.0/mono/cil
 %_datadir/mono-2.0/mono/cil/cil-opcodes.xml
-%_libdir/libmono-profiler-aot.*
-%_libdir/libmono-profiler-cov.*
-%_libdir/libmono-profiler-iomap.*
-%_libdir/libmono-profiler-log.*
-%_libdir/libmono-profiler-logging.*
+%_libdir/libmono-profiler-*.*
 %_libdir/pkgconfig/cecil.pc
 %_libdir/pkgconfig/dotnet.pc
 %_libdir/pkgconfig/dotnet35.pc
