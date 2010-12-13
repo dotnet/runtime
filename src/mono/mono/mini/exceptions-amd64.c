@@ -1145,7 +1145,7 @@ mono_arch_exceptions_init (void)
 		for (l = tramps; l; l = l->next) {
 			MonoTrampInfo *info = l->data;
 
-			mono_register_jit_icall (info->code, info->name, NULL, TRUE);
+			mono_register_jit_icall (info->code, g_strdup (info->name), NULL, TRUE);
 			mono_save_trampoline_xdebug_info (info);
 			mono_tramp_info_free (info);
 		}
