@@ -478,6 +478,7 @@ mono_arch_init (void)
 
 	mono_aot_register_jit_icall ("mono_arm_throw_exception", mono_arm_throw_exception);
 	mono_aot_register_jit_icall ("mono_arm_throw_exception_by_token", mono_arm_throw_exception_by_token);
+	mono_aot_register_jit_icall ("mono_arm_resume_unwind", mono_arm_resume_unwind);
 }
 
 /*
@@ -5543,6 +5544,18 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 		return (gpointer)ctx->esp;
 	else
 		return (gpointer)ctx->regs [reg];
+}
+
+/*
+ * mono_arch_get_trampolines:
+ *
+ *   Return a list of MonoTrampInfo structures describing arch specific trampolines
+ * for AOT.
+ */
+GSList *
+mono_arch_get_trampolines (gboolean aot)
+{
+	return mono_arm_get_exception_trampolines (aot);
 }
 
 /*

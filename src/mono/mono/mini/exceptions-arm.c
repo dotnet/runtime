@@ -12,9 +12,13 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
+
+#ifndef MONO_CROSS_COMPILE
 #ifdef HAVE_ASM_SIGCONTEXT_H
 #include <asm/sigcontext.h>
 #endif  /* def HAVE_ASM_SIGCONTEXT_H */
+#endif
+
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
 #endif  /* def HAVE_UCONTEXT_H */
@@ -162,7 +166,7 @@ mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsign
 	mono_arm_throw_exception ((MonoObject*)mono_exception_from_token (mono_defaults.corlib, type_token), eip, esp, int_regs, fp_regs);
 }
 
-static void
+void
 mono_arm_resume_unwind (guint32 dummy1, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
 {
 	MonoContext ctx;
@@ -228,7 +232,16 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	ARM_ORR_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, rethrow);
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, corlib ? "mono_arm_throw_exception_by_token" : "mono_arm_throw_exception");
+		const char *icall_name;
+
+		if (resume_unwind)
+			icall_name = "mono_arm_resume_unwind";
+		else if (corlib)
+			icall_name = "mono_arm_throw_exception_by_token";
+		else
+			icall_name = "mono_arm_throw_exception";
+
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)(gpointer)code = NULL;
@@ -299,22 +312,48 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 	return get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot);
 }	
 
+GSList*
+mono_arm_get_exception_trampolines (gboolean aot)
+{
+	MonoTrampInfo *info;
+	GSList *tramps = NULL;
+
+	/* LLVM uses the normal trampolines, but with a different name */
+	get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", &info, aot);
+	tramps = g_slist_prepend (tramps, info);
+	
+	get_throw_trampoline (168, TRUE, FALSE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", &info, aot);
+	tramps = g_slist_prepend (tramps, info);
+
+	get_throw_trampoline (168, FALSE, FALSE, FALSE, TRUE, "llvm_resume_unwind_trampoline", &info, aot);
+	tramps = g_slist_prepend (tramps, info);
+
+	return tramps;
+}
+
 void
 mono_arch_exceptions_init (void)
 {
 	guint8 *tramp;
-
+	GSList *tramps, *l;
+	
 	if (mono_aot_only) {
-	} else {
-		/* LLVM uses the normal trampolines, but with a different name */
-		tramp = get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", NULL, FALSE);
+		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_trampoline");
 		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
-
-		tramp = get_throw_trampoline (168, TRUE, FALSE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", NULL, FALSE);
+		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_abs_trampoline");
 		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE);
-
-		tramp = get_throw_trampoline (168, FALSE, FALSE, FALSE, TRUE, "llvm_resume_unwind_trampoline", NULL, FALSE);
+		tramp = mono_aot_get_trampoline ("llvm_resume_unwind_trampoline");
 		mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
+	} else {
+		tramps = mono_arm_get_exception_trampolines (FALSE);
+		for (l = tramps; l; l = l->next) {
+			MonoTrampInfo *info = l->data;
+
+			mono_register_jit_icall (info->code, info->name, NULL, TRUE);
+			mono_save_trampoline_xdebug_info (info);
+			mono_tramp_info_free (info);
+		}
+		g_slist_free (tramps);
 	}
 }
 
@@ -432,7 +471,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-#if BROKEN_LINUX
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif BROKEN_LINUX
 	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = sigctx;
@@ -446,7 +487,9 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 {
-#if BROKEN_LINUX
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif BROKEN_LINUX
 	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = ctx;
@@ -534,7 +577,9 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-#if BROKEN_LINUX
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#elif BROKEN_LINUX
 	g_assert_not_reached ();
 #else
 	arm_ucontext *my_uc = sigctx;

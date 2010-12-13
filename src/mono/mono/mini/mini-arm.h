@@ -167,6 +167,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
+#define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 
 /* Matches the HAVE_AEABI_READ_TP define in mini-arm.c */
 #if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID)
@@ -203,8 +204,14 @@ mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 void
 mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
 
+void
+mono_arm_resume_unwind (guint32 dummy1, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
+
 gboolean
 mono_arm_thumb_supported (void);
+
+GSList*
+mono_arm_get_exception_trampolines (gboolean aot) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_ARM_H__ */
 
