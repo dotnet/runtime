@@ -5725,12 +5725,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY ||
 			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER ||
 			    clause->flags == MONO_EXCEPTION_CLAUSE_FAULT) {
+				MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
+				MONO_ADD_INS (tblock, ins);
+
 				if (seq_points) {
 					NEW_SEQ_POINT (cfg, ins, clause->handler_offset, TRUE);
 					MONO_ADD_INS (tblock, ins);
 				}
-				MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
-				MONO_ADD_INS (tblock, ins);
 
 				/* todo: is a fault block unsafe to optimize? */
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT)
