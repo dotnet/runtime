@@ -113,8 +113,8 @@ typedef struct MonoAotModule {
 	guint32 *extra_method_info_offsets;
 	guint8 *unwind_info;
 
-	/* Points to the GNU .eh_frame_hdr section, if it exists */
-	guint8 *eh_frame_hdr;
+	/* Points to the mono EH data created by LLVM */
+	guint8 *mono_eh_frame;
 
 	/* Points to the trampolines */
 	guint8 *trampolines [MONO_AOT_TRAMP_NUM];
@@ -927,25 +927,6 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 	}
 }
 
-#if defined(HAVE_DL_ITERATE_PHDR) && defined(PT_GNU_EH_FRAME)
-static int
-dl_callback (struct dl_phdr_info *info, size_t size, void *data)
-{
-	int j;
-	MonoAotModule *amodule = data;
-
-	if (!strcmp (amodule->aot_name, info->dlpi_name)) {
-		for (j = 0; j < info->dlpi_phnum; j++) {
-			if (info->dlpi_phdr [j].p_type == PT_GNU_EH_FRAME)
-				amodule->eh_frame_hdr = (guint8*)(info->dlpi_addr + info->dlpi_phdr [j].p_vaddr);
-		}
-		return 1;
-	} else {
-		return 0;
-	}
-}
-#endif
-
 static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
@@ -1169,6 +1150,13 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "plt", (gpointer*)&amodule->plt);
 	find_symbol (sofile, globals, "plt_end", (gpointer*)&amodule->plt_end);
 
+	if (file_info->flags & MONO_AOT_FILE_FLAG_WITH_LLVM) {
+		gpointer *p = NULL;
+		find_symbol (sofile, globals, "mono_eh_frame_addr", (gpointer*)&p);
+		g_assert (p);
+		amodule->mono_eh_frame = *p;
+	}
+
 	if (make_unreadable) {
 #ifndef TARGET_WIN32
 		guint8 *addr;
@@ -1199,11 +1187,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_jit_info_add_aot_module (assembly->image, amodule->code, amodule->code_end);
 
 	assembly->image->aot_module = amodule;
- 
-#if defined(HAVE_DL_ITERATE_PHDR) && defined(PT_GNU_EH_FRAME)
-	/* Lookup the address of the .eh_frame_hdr () section if available */
-	dl_iterate_phdr (dl_callback, amodule);
-#endif	
 
 	if (mono_aot_only) {
 		if (mono_defaults.corlib) {
@@ -1524,75 +1507,52 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	return TRUE;
 }
 
-#define DW_EH_PE_omit	0xff
-#define DW_EH_PE_uleb128 0x01
-#define DW_EH_PE_udata2	0x02
-#define DW_EH_PE_udata4	0x03
-#define DW_EH_PE_udata8	0x04
-#define DW_EH_PE_sleb128 0x09
-#define DW_EH_PE_sdata2	0x0A
-#define DW_EH_PE_sdata4	0x0B
-#define DW_EH_PE_sdata8	0x0C
-
-#define DW_EH_PE_absptr	0x00
-#define DW_EH_PE_pcrel	0x10
-#define DW_EH_PE_datarel 0x30
-#define DW_EH_PE_omit	0xff
-
-typedef struct
-{
-	guint8 version;
-	guint8 eh_frame_ptr_enc;
-	guint8 fde_count_enc;
-	guint8 table_enc;
-	guint8 rest;
-} eh_frame_hdr;
-
 /*
- * decode_eh_frame:
+ * decode_mono_eh_frame:
  *
- *   Decode the exception handling information in the .eh_frame section of the AOT
- * file belong to CODE, and construct a MonoJitInfo structure from it.
+ *   Decode the EH information emitted by our modified LLVM compiler and construct a
+ * MonoJitInfo structure from it.
  * LOCKING: Acquires the domain lock.
  */
-static G_GNUC_UNUSED MonoJitInfo*
-decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain, 
-				 MonoMethod *method, guint8 *code, 
-				 MonoJitExceptionInfo *clauses, int num_clauses,
-				 int extra_size, GSList **nesting,
-				 int *this_reg, int *this_offset)
+static MonoJitInfo*
+decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, 
+						   MonoMethod *method, guint8 *code, 
+						   MonoJitExceptionInfo *clauses, int num_clauses,
+						   int extra_size, GSList **nesting,
+						   int *this_reg, int *this_offset)
 {
-	eh_frame_hdr *hdr;
 	guint8 *p;
-	guint8 *eh_frame, *unwind_info;
-	guint32 eh_frame_ptr;
-	int fde_count;
+	guint8 *fde, *cie, *code_start, *code_end;
+	int version, fde_count;
 	gint32 *table;
-	int i, j, pos, left, right, offset, offset1, offset2;
-	guint32 unw_len, code_len;
+	int i, j, pos, left, right, offset, offset1, offset2, code_len;
 	MonoJitExceptionInfo *ei;
-	guint32 ei_len, nested_len, nindex;
+	guint32 fde_len, ei_len, nested_len, nindex;
 	gpointer *type_info;
 	MonoJitInfo *jinfo;
+	MonoLLVMFDEInfo info;
 
-	g_assert (amodule->eh_frame_hdr);
+	g_assert (amodule->mono_eh_frame);
 
-	// http://refspecs.freestandards.org/LSB_1.3.0/gLSB/gLSB/ehframehdr.html
-	hdr = (eh_frame_hdr*)amodule->eh_frame_hdr;
-	g_assert (hdr->version == 1);
-	g_assert (hdr->eh_frame_ptr_enc == (DW_EH_PE_pcrel | DW_EH_PE_sdata4));
-	g_assert (hdr->fde_count_enc == DW_EH_PE_udata4);
-	g_assert (hdr->table_enc == (DW_EH_PE_datarel | DW_EH_PE_sdata4));
+	p = amodule->mono_eh_frame;
 
-	p = &(hdr->rest);
-	eh_frame_ptr = *(guint32*)p;
-	p += 4;
+	/* p points to data emitted by LLVM in DwarfException::EmitMonoEHFrame () */
+
+	/* Header */
+	version = *p;
+	g_assert (version == 1);
+	p ++;
+	p = ALIGN_PTR_TO (p, 4);
+
 	fde_count = *(guint32*)p;
 	p += 4;
 	table = (gint32*)p;
 
+	/* There is +1 entry in the table */
+	cie = p + ((fde_count + 1) * 8);
+
 	/* Binary search in the table to find the entry for code */
-	offset = code - amodule->eh_frame_hdr;
+	offset = code - amodule->mono_eh_frame;
 
 	left = 0;
 	right = fde_count;
@@ -1614,13 +1574,23 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 			break;
 	}
 
-	g_assert (code >= amodule->eh_frame_hdr + table [(pos * 2)]);
-	if (pos + 1 < fde_count)
-		g_assert (code < amodule->eh_frame_hdr + table [(pos * 2) + 2]);
+	code_start = amodule->mono_eh_frame + table [(pos * 2)];
+	/* This won't overflow because there is +1 entry in the table */
+	code_end = amodule->mono_eh_frame + table [(pos * 2) + 2];
+	code_len = code_end - code_start;
 
-	eh_frame = amodule->eh_frame_hdr + table [(pos * 2) + 1];
+	g_assert (code >= code_start && code < code_end);
 
-	unwind_info = mono_unwind_decode_fde (eh_frame, &unw_len, &code_len, &ei, &ei_len, &type_info, this_reg, this_offset);
+	fde = amodule->mono_eh_frame + table [(pos * 2) + 1];	
+	/* This won't overflow because there is +1 entry in the table */
+	fde_len = table [(pos * 2) + 2 + 1] - table [(pos * 2) + 1];
+
+	mono_unwind_decode_llvm_mono_fde (fde, fde_len, cie, code_start, &info);
+	ei = info.ex_info;
+	ei_len = info.ex_info_len;
+	type_info = info.type_info;
+	*this_reg = info.this_reg;
+	*this_offset = info.this_offset;
 
 	/* Count number of nested clauses */
 	nested_len = 0;
@@ -1648,7 +1618,7 @@ decode_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO + (sizeof (MonoJitExceptionInfo) * (ei_len + nested_len)) + extra_size);
 
 	jinfo->code_size = code_len;
-	jinfo->used_regs = mono_cache_unwind_info (unwind_info, unw_len);
+	jinfo->used_regs = mono_cache_unwind_info (info.unw_info, info.unw_info_len);
 	jinfo->method = method;
 	jinfo->code_start = code;
 	jinfo->domain_neutral = 0;
@@ -1786,7 +1756,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			}
 		}
 
- 		jinfo = decode_eh_frame (amodule, domain, method, code, clauses, num_clauses, generic_info_size + try_holes_info_size, nesting, &this_reg, &this_offset);
+ 		jinfo = decode_llvm_mono_eh_frame (amodule, domain, method, code, clauses, num_clauses, generic_info_size + try_holes_info_size, nesting, &this_reg, &this_offset);
 		jinfo->from_llvm = 1;
 
 		g_free (clauses);

@@ -4871,7 +4871,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.mtriple)
 		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
 
-	command = g_strdup_printf ("llc %s -relocation-model=pic -unwind-tables -o %s temp.opt.bc", acfg->llc_args->str, acfg->tmpfname);
+	command = g_strdup_printf ("llc %s -relocation-model=pic -unwind-tables -disable-gnu-eh-frame -enable-mono-eh-frame -o %s temp.opt.bc", acfg->llc_args->str, acfg->tmpfname);
 
 	printf ("Executing llc: %s\n", command);
 
@@ -5468,6 +5468,18 @@ emit_unwind_info (MonoAotCompile *acfg)
 		emit_bytes (acfg, unwind_info, unwind_info_len);
 
 		acfg->stats.unwind_info_size += (p - buf) + unwind_info_len;
+	}
+
+	/*
+	 * Emit a reference to the mono_eh_frame table created by our modified LLVM compiler.
+	 */
+	if (acfg->llvm) {
+		sprintf (symbol, "mono_eh_frame_addr");
+		emit_section_change (acfg, ".data", 0);
+		emit_global (acfg, symbol, FALSE);
+		emit_alignment (acfg, 8);
+		emit_label (acfg, symbol);
+		emit_pointer (acfg, "mono_eh_frame");
 	}
 }
 
@@ -6114,11 +6126,7 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS ""
 #endif
 
-#ifdef ENABLE_LLVM
-#define EH_LD_OPTIONS "--eh-frame-hdr"
-#else
 #define EH_LD_OPTIONS ""
-#endif
 
 	if (acfg->aot_opts.asm_only) {
 		printf ("Output file: '%s'.\n", acfg->tmpfname);

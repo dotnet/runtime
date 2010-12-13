@@ -116,6 +116,21 @@ guint8* mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len) MO
 
 guint8* mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len, gpointer **type_info, int *this_reg, int *this_offset) MONO_LLVM_INTERNAL;
 
+/* Data retrieved from an LLVM Mono FDE entry */
+typedef struct {
+	/* Malloc'ed */
+	guint8 *unw_info;
+	guint32 unw_info_len;
+	MonoJitExceptionInfo *ex_info;
+	guint32 ex_info_len;
+	gpointer *type_info;
+	int this_reg;
+	int this_offset;
+} MonoLLVMFDEInfo;
+
+void
+mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 *code, MonoLLVMFDEInfo *res) MONO_INTERNAL;
+
 GSList* mono_unwind_get_cie_program (void) MONO_INTERNAL;
 
 #endif
