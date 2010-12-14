@@ -2005,7 +2005,7 @@ get_plt_symbol (MonoAotCompile *acfg, int plt_offset, MonoJumpInfo *patch_info)
 	 */
 	return g_strdup_printf ("%sp_%d", acfg->llvm_label_prefix, plt_offset);
 #else
-	return g_strdup_printf ("%s%sp_%d", acfg->llvm_label_prefix, acfg->temp_prefix, plt_offset);
+	return g_strdup_printf ("%sp_%d", acfg->temp_prefix, plt_offset);
 #endif
 }
 
