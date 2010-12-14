@@ -2292,6 +2292,9 @@ unload_thread_main (void *arg)
 	for (i = 0; i < domain->class_vtable_array->len; ++i)
 		clear_cached_vtable (g_ptr_array_index (domain->class_vtable_array, i));
 	deregister_reflection_info_roots (domain);
+
+	mono_assembly_cleanup_domain_bindings (domain->domain_id);
+
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 

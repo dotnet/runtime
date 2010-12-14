@@ -444,6 +444,7 @@ typedef struct _MonoAssemblyBindingInfo {
 	guint has_old_version_top : 1;
 	guint has_new_version : 1;
 	guint is_valid : 1;
+	gint32 domain_id; /*Needed to unload per-domain binding*/
 } MonoAssemblyBindingInfo;
 
 struct _MonoMethodHeader {

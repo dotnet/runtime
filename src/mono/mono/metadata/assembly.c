@@ -2445,7 +2445,15 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 
 		mono_loader_lock ();
 		mono_domain_lock (domain);
-		info = get_per_domain_assembly_binding_info (domain, aname);
+		info2 = get_per_domain_assembly_binding_info (domain, aname);
+
+		if (info2) {
+			info = g_memdup (info2, sizeof (MonoAssemblyBindingInfo));
+			info->name = g_strdup (info2->name);
+			info->culture = g_strdup (info2->culture);
+			info->domain_id = domain->domain_id;
+		}
+
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
 	}
@@ -2895,6 +2903,27 @@ mono_assemblies_cleanup (void)
 	free_assembly_load_hooks ();
 	free_assembly_search_hooks ();
 	free_assembly_preload_hooks ();
+}
+
+/*LOCKING assumes loader lock is held*/
+void
+mono_assembly_cleanup_domain_bindings (guint32 domain_id)
+{
+	GSList **iter = &loaded_assembly_bindings;
+
+	while (*iter) {
+		GSList *l = *iter;
+		MonoAssemblyBindingInfo *info = l->data;
+
+		if (info->domain_id == domain_id) {
+			*iter = l->next;
+			mono_assembly_binding_info_free (info);
+			g_free (info);
+			g_slist_free_1 (l);
+		} else {
+			iter = &l->next;
+		}
+	}
 }
 
 /*
