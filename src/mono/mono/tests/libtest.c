@@ -352,6 +352,27 @@ mono_test_marshal_ansi_char_array (char *s)
 	return 0;
 }
 
+LIBTEST_API int STDCALL
+mono_test_marshal_unicode_char_array (gunichar2 *s)
+{
+	const char m[] = "abcdef";
+	const char expected[] = "qwer";
+	gunichar2 *s1, *s2;
+	glong len1, len2;
+
+	s1 = g_utf8_to_utf16 (m, -1, NULL, &len1, NULL);
+	s2 = g_utf8_to_utf16 (expected, -1, NULL, &len2, NULL);
+	len1 = (len1 * 2);
+	len2 = (len2 * 2);
+
+	if (memcmp (s, s2, len2))
+		return 1;
+
+	memcpy (s, s1, len1);
+	return 0;
+}
+
+
 LIBTEST_API int STDCALL 
 mono_test_empty_pinvoke (int i)
 {
