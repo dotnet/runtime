@@ -1756,7 +1756,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 }
 
 static void
-emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object, gboolean unicode)
+emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 {
 	MonoMarshalType *info;
 	int i;
@@ -1859,7 +1859,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 			case MONO_TYPE_R8:
 				mono_mb_emit_ldloc (mb, 1);
 				mono_mb_emit_ldloc (mb, 0);
-				if (ftype->type == MONO_TYPE_CHAR && !unicode) {
+				if (ntype == MONO_NATIVE_U1) {
 					if (to_object) {
 						mono_mb_emit_byte (mb, CEE_LDIND_U1);
 						mono_mb_emit_byte (mb, CEE_STIND_I2);
@@ -1973,12 +1973,6 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 			mono_mb_emit_add_to_local (mb, 1, usize);
 		}				
 	}
-}
-
-static void
-emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
-{
-	emit_struct_conv_full (mb, klass, to_object, TRUE);
 }
 
 static void
@@ -6940,13 +6934,12 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
 	case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 		return TRUE;
 	case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
+	default:
 #ifdef TARGET_WIN32
 		return TRUE;
 #else
 		return FALSE;
 #endif
-	default:
-		return FALSE;
 	}
 }
 
@@ -7074,7 +7067,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_stloc (mb, 1);
 
 				/* emit valuetype conversion code */
-				emit_struct_conv_full (mb, eklass, FALSE, mono_pinvoke_is_unicode (m->piinfo));
+				emit_struct_conv (mb, eklass, FALSE);
 			}
 
 			mono_mb_emit_add_to_local (mb, index_var, 1);
@@ -7192,7 +7185,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					mono_mb_emit_stloc (mb, 1);
 
 					/* emit valuetype conversion code */
-					emit_struct_conv_full (mb, eklass, TRUE, mono_pinvoke_is_unicode (m->piinfo));
+					emit_struct_conv (mb, eklass, TRUE);
 				}
 
 				if (need_free) {

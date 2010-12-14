@@ -5413,7 +5413,17 @@ handle_enum:
 		}
 		*conv = MONO_MARSHAL_CONV_BOOL_I4;
 		return MONO_NATIVE_BOOLEAN;
-	case MONO_TYPE_CHAR: return unicode ? MONO_NATIVE_U2 : MONO_NATIVE_U1;
+	case MONO_TYPE_CHAR:
+		if (mspec) {
+			switch (mspec->native) {
+			case MONO_NATIVE_U2:
+			case MONO_NATIVE_U1:
+				return mspec->native;
+			default:
+				g_error ("cant marshal char to native type %02x", mspec->native);
+			}
+		}
+		return unicode ? MONO_NATIVE_U2 : MONO_NATIVE_U1;
 	case MONO_TYPE_I1: return MONO_NATIVE_I1;
 	case MONO_TYPE_U1: return MONO_NATIVE_U1;
 	case MONO_TYPE_I2: return MONO_NATIVE_I2;
