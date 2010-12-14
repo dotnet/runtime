@@ -770,6 +770,10 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 				gint32 offset = *(gint32*)ttype_entry;
 				guint8 *stub = ttype_entry + offset;
 				tinfo = *(gpointer*)stub;
+			} else if (ttype_encoding == (DW_EH_PE_pcrel | DW_EH_PE_sdata4)) {
+				guint8 *ttype_entry = (ttype - (type_offset * 4));
+				gint32 offset = *(gint32*)ttype_entry;
+				tinfo = ttype_entry + offset;
 			} else {
 				g_assert_not_reached ();
 			}
