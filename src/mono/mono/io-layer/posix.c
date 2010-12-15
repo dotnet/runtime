@@ -60,7 +60,8 @@ gpointer _wapi_stdhandle_create (int fd, const gchar *name)
 	g_message("%s: creating standard handle type %s, fd %d", __func__,
 		  name, fd);
 #endif
-	
+
+#if !defined(__native_client__)	
 	/* Check if fd is valid */
 	do {
 		flags=fcntl(fd, F_GETFL);
@@ -78,11 +79,18 @@ gpointer _wapi_stdhandle_create (int fd, const gchar *name)
 		SetLastError (_wapi_get_win32_file_error (errno));
 		return(INVALID_HANDLE_VALUE);
 	}
+	file_handle.fileaccess=convert_from_flags(flags);
+#else
+	/* 
+	 * fcntl will return -1 in nacl, as there is no real file system API. 
+	 * Yet, standard streams are available.
+	 */
+	file_handle.fileaccess = (fd == STDIN_FILENO) ? GENERIC_READ : GENERIC_WRITE;
+#endif
 
 	file_handle.filename = g_strdup(name);
 	/* some default security attributes might be needed */
 	file_handle.security_attributes=0;
-	file_handle.fileaccess=convert_from_flags(flags);
 
 	/* Apparently input handles can't be written to.  (I don't
 	 * know if output or error handles can't be read from.)

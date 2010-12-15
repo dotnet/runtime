@@ -1980,6 +1980,7 @@ dnl ***  NaCl  ***
 dnl **************
 
 AC_ARG_ENABLE(nacl_codegen, [  --enable-nacl-codegen      Enable Native Client code generation], enable_nacl_codegen=$enableval, enable_nacl_codegen=no)
+AC_ARG_ENABLE(nacl_gc, [  --enable-nacl-gc           Enable Native Client garbage collection], enable_nacl_gc=$enableval, enable_nacl_gc=no)
 
 AM_CONDITIONAL(NACL_CODEGEN, test x$enable_nacl_codegen != xno)
 if test "x$enable_nacl_codegen" = "xyes"; then
@@ -1988,6 +1989,10 @@ if test "x$enable_nacl_codegen" = "xyes"; then
    AC_DEFINE(TARGET_NACL, 1, [...])
 else
    MONO_NACL_ALIGN_MASK_OFF=0
+   CPPFLAGS="$CPPFLAGS -D__default_codegen__"
+fi
+if test "x$enable_nacl_gc" = "xyes"; then
+   CPPFLAGS="$CPPFLAGS -finstrument-for-thread-suspension -D__native_client_gc__"
 fi
 AC_SUBST(MONO_NACL_ALIGN_MASK_OFF)
 
@@ -2291,6 +2296,13 @@ if test "x$host" != "x$target"; then
 		sizeof_register=8
 		target_byte_order=G_BIG_ENDIAN
 		;;
+   x86_64-*-nacl)
+		TARGET=AMD64
+		arch_target=amd64
+		AC_DEFINE(TARGET_AMD64, 1, [...])
+		AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
+		sizeof_register=8
+		;;
 	*)
 		AC_MSG_WARN([Cross compiling is only supported for targets matching 'powerpc64-{ps3,xbox360}-linux-gnu'])
 	esac
@@ -2548,6 +2560,10 @@ case "x$gc" in
 		if test x$TARGET = xSPARC -o x$TARGET = xSPARC64; then
 			LIBGC_CPPFLAGS=`echo $LIBGC_CPPFLAGS | sed -e 's/-D_FILE_OFFSET_BITS=64//g'`
 		fi
+		# Don't pass -finstrument-for-thread-suspension in, 
+		# if these are instrumented it will be very bad news 
+		# (infinite recursion, undefined parking behavior, etc)
+		LIBGC_CPPFLAGS=`echo $LIBGC_CPPFLAGS | sed -e 's/-finstrument-for-thread-suspension//g'`
 		ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args \"CPPFLAGS_FOR_LIBGC=$LIBGC_CPPFLAGS\" \"CFLAGS_FOR_LIBGC=$CFLAGS_FOR_LIBGC\""
 		AC_CONFIG_SUBDIRS(libgc)
 		;;
