@@ -2604,6 +2604,14 @@ process_filter_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data
 {
 	ComputeFramesUserData *ud = user_data;
 
+	/*
+	 * 'tls->filter_ctx' is the location of the throw site.
+	 *
+	 * mono_walk_stack() will never actually hit the throw site, but unwind
+	 * directly from the filter to the call site; we abort stack unwinding here
+	 * once this happens and resume from the throw site.
+	 */
+
 	if (MONO_CONTEXT_GET_SP (ctx) >= MONO_CONTEXT_GET_SP (&ud->tls->filter_ctx))
 		return TRUE;
 
@@ -2634,8 +2642,16 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 		process_frame (&tls->async_last_frame, NULL, &user_data);
 		mono_walk_stack (process_frame, tls->domain, &tls->async_ctx, FALSE, thread, tls->async_lmf, &user_data);
 	} else if (tls->has_filter_ctx) {
+		/*
+		 * We are inside an exception filter.
+		 *
+		 * First we add all the frames from inside the filter; 'tls->ctx' has the current context.
+		 */
 		if (tls->has_context)
 			mono_walk_stack (process_filter_frame, tls->domain, &tls->ctx, FALSE, thread, tls->lmf, &user_data);
+		/*
+		 * After that, we resume unwinding from the location where the exception has been thrown.
+		 */
 		mono_walk_stack (process_frame, tls->domain, &tls->filter_ctx, FALSE, thread, tls->filter_lmf, &user_data);
 	} else if (tls->has_context) {
 		mono_walk_stack (process_frame, tls->domain, &tls->ctx, FALSE, thread, tls->lmf, &user_data);
@@ -4356,6 +4372,30 @@ mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx
 	tls = TlsGetValue (debugger_tls_id);
 	if (!tls)
 		return;
+
+	/*
+	 * We're about to invoke an exception filter during the first pass of exception handling.
+	 *
+	 * 'ctx' is the context that'll get passed to the filter ('call_filter (ctx, ei->data.filter)'),
+	 * 'orig_ctx' is the context where the exception has been thrown.
+	 *
+	 *
+	 * See mcs/class/Mono.Debugger.Soft/Tests/dtest-excfilter.il for an example.
+	 *
+	 * If we're stopped in Filter(), normal stack unwinding would first unwind to
+	 * the call site (line 37) and then continue to Main(), but it would never
+	 * include the throw site (line 32).
+	 *
+	 * Since exception filters are invoked during the first pass of exception handling,
+	 * the stack frames of the throw site are still intact, so we should include them
+	 * in a stack trace.
+	 *
+	 * We do this here by saving the context of the throw site in 'tls->filter_ctx'.
+	 *
+	 * Exception filters are used by MonoDroid, where we want to stop inside a call filter,
+	 * but report the location of the 'throw' to the user.
+	 *
+	 */
 
 	memcpy (&tls->filter_ctx, orig_ctx, sizeof (MonoContext));
 	tls->has_filter_ctx = TRUE;
