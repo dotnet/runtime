@@ -2065,12 +2065,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMSetLinkage (type_info, LLVMPrivateLinkage);
 			LLVMSetVisibility (type_info, LLVMHiddenVisibility);
 
-			/*
-			 * Put this into the .text section so it needs less relocations/stubs, if
-			 * the LSDA is in the .text section too.
-			 */
-			LLVMSetSection (type_info, "text");
-
 			/* 
 			 * Enabling this causes llc to crash:
 			 * http://llvm.org/bugs/show_bug.cgi?id=6102
