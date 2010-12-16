@@ -75,14 +75,18 @@ This is Mono.
 
 
 
-    c. Building the software from SVN
+    c. Building the software from GIT
     ---------------------------------
 
-	If you are building the software from SVN, make sure that you
+	If you are building the software from GIT, make sure that you
 	have up-to-date mcs and mono sources:
 
-		svn co svn+ssh://USER@mono-cvs.ximian.com/source/trunk/mono
-		svn co svn+ssh://USER@mono-cvs.ximian.com/source/trunk/mcs
+	   If you are an anonymous user:
+		git clone git://github.com/mono/mono.git
+
+           If you are a Mono contributors with read/write privileges:
+	        git clone git@github.com:mono/mono.git
+
 
 	Then, go into the mono directory, and configure:
 
