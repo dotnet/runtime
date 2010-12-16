@@ -774,6 +774,10 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo **ex_info, guint32
 				guint8 *ttype_entry = (ttype - (type_offset * 4));
 				gint32 offset = *(gint32*)ttype_entry;
 				tinfo = ttype_entry + offset;
+			} else if (ttype_encoding == DW_EH_PE_udata4) {
+				/* Embedded directly */
+				guint8 *ttype_entry = (ttype - (type_offset * 4));
+				tinfo = ttype_entry;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -976,7 +980,7 @@ void
 mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 *code, MonoLLVMFDEInfo *res)
 {
 	guint8 *p, *fde_aug, *cie_cfi, *fde_cfi, *buf;
-	int aug_len, cie_cfi_len, fde_cfi_len;
+	int has_aug, aug_len, cie_cfi_len, fde_cfi_len;
 	gint32 code_align, data_align, return_reg, pers_encoding;
 
 	memset (res, 0, sizeof (*res));
@@ -985,30 +989,25 @@ mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 
 
 	/* fde points to data emitted by LLVM in DwarfException::EmitMonoEHFrame () */
 	p = fde;
-	aug_len = *p;
+	has_aug = *p;
 	p ++;
+	if (has_aug) {
+		aug_len = read32 (p);
+		p += 4;
+	} else {
+		aug_len = 0;
+	}
 	fde_aug = p;
 	p += aug_len;
 	fde_cfi = p;
 
-	if (aug_len) {
-		gint32 lsda_offset;
+	if (has_aug) {
 		guint8 *lsda;
 
-		/* LSDA pointer */
+		/* The LSDA is embedded directly into the FDE */
+		lsda = fde_aug;
 
-		/* sdata|pcrel encoding */
-		if (aug_len == 4)
-			lsda_offset = read32 (fde_aug);
-		else if (aug_len == 8)
-			lsda_offset = *(gint64*)fde_aug;
-		else
-			g_assert_not_reached ();
-		if (lsda_offset != 0) {
-			lsda = fde_aug + lsda_offset;
-
-			decode_lsda (lsda, code, &res->ex_info, &res->ex_info_len, &res->type_info, &res->this_reg, &res->this_offset);
-		}
+		decode_lsda (lsda, code, &res->ex_info, &res->ex_info_len, &res->type_info, &res->this_reg, &res->this_offset);
 	}
 
 	/* Decode CIE */

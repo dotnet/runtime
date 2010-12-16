@@ -51,6 +51,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/mono-endian.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-mmap.h>
 #include "mono/utils/mono-compiler.h"
@@ -1595,14 +1596,15 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	/* Count number of nested clauses */
 	nested_len = 0;
 	for (i = 0; i < ei_len; ++i) {
-		gint32 cindex1 = *(gint32*)type_info [i];
+		/* This might be unaligned */
+		gint32 cindex1 = read32 (type_info [i]);
 		GSList *l;
 
 		for (l = nesting [cindex1]; l; l = l->next) {
 			gint32 nesting_cindex = GPOINTER_TO_INT (l->data);
 
 			for (j = 0; j < ei_len; ++j) {
-				gint32 cindex2 = *(gint32*)type_info [j];
+				gint32 cindex2 = read32 (type_info [j]);
 
 				if (cindex2 == nesting_cindex)
 					nested_len ++;
@@ -1632,7 +1634,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		 * compiler, we have to combine that with the information produced by LLVM
 		 */
 		/* The type_info entries contain IL clause indexes */
-		int clause_index = *(gint32*)type_info [i];
+		int clause_index = read32 (type_info [i]);
 		MonoJitExceptionInfo *jei = &jinfo->clauses [i];
 		MonoJitExceptionInfo *orig_jei = &clauses [clause_index];
 
@@ -1648,14 +1650,14 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	/* See exception_cb () in mini-llvm.c as to why this is needed */
 	nindex = ei_len;
 	for (i = 0; i < ei_len; ++i) {
-		gint32 cindex1 = *(gint32*)type_info [i];
+		gint32 cindex1 = read32 (type_info [i]);
 		GSList *l;
 
 		for (l = nesting [cindex1]; l; l = l->next) {
 			gint32 nesting_cindex = GPOINTER_TO_INT (l->data);
 
 			for (j = 0; j < ei_len; ++j) {
-				gint32 cindex2 = *(gint32*)type_info [j];
+				gint32 cindex2 = read32 (type_info [j]);
 
 				if (cindex2 == nesting_cindex) {
 					/* 
