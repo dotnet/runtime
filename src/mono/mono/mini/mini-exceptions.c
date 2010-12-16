@@ -1268,16 +1268,44 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gpoin
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					mono_perfcounters->exceptions_filters++;
 					mono_debugger_call_exception_handler (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), ex_obj);
+					if (mono_ex && !initial_trace_ips) {
+						trace_ips = g_list_reverse (trace_ips);
+						MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));
+
+						if (has_dynamic_methods)
+							/* These methods could go away anytime, so compute the stack trace now */
+							MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
+					}
+					g_list_free (trace_ips);
+
+					if (ji->from_llvm) {
+#ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
+						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+#else
+						g_assert_not_reached ();
+#endif
+					} else {
+						/* store the exception object in bp + ei->exvar_offset */
+						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
+					}
+
+					mono_debugger_agent_begin_exception_filter (mono_ex, ctx, &initial_ctx);
 					filtered = call_filter (ctx, ei->data.filter);
+					mono_debugger_agent_end_exception_filter (mono_ex, ctx, &initial_ctx);
 					if (filtered && out_filter_idx)
 						*out_filter_idx = filter_idx;
 					if (out_ji)
 						*out_ji = ji;
 					filter_idx ++;
+
+					if (filtered) {
+						/* mono_debugger_agent_handle_exception () needs this */
+						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
+						return TRUE;
+					}
 				}
 
-				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-					 mono_object_isinst (ex_obj, catch_class)) || filtered) {
+				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst (ex_obj, catch_class)) {
 					if (mono_ex && !initial_trace_ips) {
 						trace_ips = g_list_reverse (trace_ips);
 						MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));

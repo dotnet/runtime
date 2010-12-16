@@ -213,6 +213,10 @@ typedef struct {
 
 	gboolean has_async_ctx;
 
+	gboolean has_filter_ctx;
+	MonoContext filter_ctx;
+	MonoLMF *filter_lmf;
+
 	/*
 	 * The lmf where the stack walk can be started for running threads.
 	 */
@@ -2595,6 +2599,17 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	return FALSE;
 }
 
+static gboolean
+process_filter_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
+{
+	ComputeFramesUserData *ud = user_data;
+
+	if (MONO_CONTEXT_GET_SP (ctx) >= MONO_CONTEXT_GET_SP (&ud->tls->filter_ctx))
+		return TRUE;
+
+	return process_frame (info, ctx, user_data);
+}
+
 static void
 compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 {
@@ -2618,6 +2633,10 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 		/* Have to use the state saved by the signal handler */
 		process_frame (&tls->async_last_frame, NULL, &user_data);
 		mono_walk_stack (process_frame, tls->domain, &tls->async_ctx, FALSE, thread, tls->async_lmf, &user_data);
+	} else if (tls->has_filter_ctx) {
+		if (tls->has_context)
+			mono_walk_stack (process_filter_frame, tls->domain, &tls->ctx, FALSE, thread, tls->lmf, &user_data);
+		mono_walk_stack (process_frame, tls->domain, &tls->filter_ctx, FALSE, thread, tls->filter_lmf, &user_data);
 	} else if (tls->has_context) {
 		mono_walk_stack (process_frame, tls->domain, &tls->ctx, FALSE, thread, tls->lmf, &user_data);
 	} else {
@@ -4324,6 +4343,40 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 
 	if (tls)
 		tls->has_catch_ctx = FALSE;
+}
+
+void
+mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
+{
+	DebuggerTlsData *tls;
+
+	if (!inited)
+		return;
+
+	tls = TlsGetValue (debugger_tls_id);
+	if (!tls)
+		return;
+
+	memcpy (&tls->filter_ctx, orig_ctx, sizeof (MonoContext));
+	tls->has_filter_ctx = TRUE;
+
+	tls->filter_lmf = mono_get_lmf ();
+	tls->domain = mono_domain_get ();
+}
+
+void
+mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
+{
+	DebuggerTlsData *tls;
+
+	if (!inited)
+		return;
+
+	tls = TlsGetValue (debugger_tls_id);
+	if (!tls)
+		return;
+
+	tls->has_filter_ctx = FALSE;
 }
 
 /*
