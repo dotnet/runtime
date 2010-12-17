@@ -305,6 +305,21 @@ This is Mono.
 		System.dll, System.Code.dll and System.Xml.Core.dll) and turn
 	  	on the LINQ extensions for the compiler.
 
+	--with-moon-gc=boehm,sgen
+
+		Select the GC to use for Moonlight.
+
+		boehm:
+			Selects the Boehm Garbage Collector, with the same flags
+			as the regular Mono build. This is the default.
+
+		sgen:
+			Selects the new SGen Garbage Collector, which provides
+			Generational GC support, using the same flags as the
+			mono-sgen build.
+
+		This defaults to `boehm'.
+
 	--with-libgdiplus=installed,sibling,<path>
 
 		This is used to configure where should Mono look for
