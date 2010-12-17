@@ -2304,6 +2304,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				cmp = LLVMBuildFCmp (builder, fpcond_to_llvm_cond [rel], convert (ctx, lhs, LLVMDoubleType ()), convert (ctx, rhs, LLVMDoubleType ()), "");
 			else if (ins->opcode == OP_COMPARE_IMM)
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), "");
+			else if (ins->opcode == OP_LCOMPARE_IMM) {
+				if (SIZEOF_REGISTER == 4 && COMPILE_LLVM (cfg))  {
+					/* The immediate is encoded in two fields */
+					guint64 l = ((guint64)(guint32)ins->inst_offset << 32) | ((guint32)ins->inst_imm);
+					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, LLVMInt64Type ()), LLVMConstInt (LLVMInt64Type (), l, FALSE), "");
+				} else {
+					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, LLVMInt64Type ()), LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE), "");
+				}
+			}
 			else if (ins->opcode == OP_COMPARE)
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), convert (ctx, rhs, IntPtrType ()), "");
 			else

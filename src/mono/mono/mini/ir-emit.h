@@ -588,6 +588,21 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 	    MONO_ADD_INS ((cfg)->cbb, inst); \
 	} while (0)
 
+/* This is used on 32 bit machines too when running with LLVM */
+#define	MONO_EMIT_NEW_LCOMPARE_IMM(cfg,sr1,imm) do { \
+        MonoInst *inst; \
+        MONO_INST_NEW ((cfg), (inst), (OP_LCOMPARE_IMM)); \
+        inst->sreg1 = sr1;									\
+        if (SIZEOF_REGISTER == 4 && COMPILE_LLVM (cfg))  { 	\
+			guint64 _l = (imm);								\
+			inst->inst_imm = _l & 0xffffffff;				\
+			inst->inst_offset = _l >> 32;						\
+		} else { \
+			inst->inst_imm = (imm);		 \
+		}								 \
+	    MONO_ADD_INS ((cfg)->cbb, inst); \
+	} while (0)
+
 #define MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg,op,dr,base,offset) do { \
         MonoInst *inst; \
         MONO_INST_NEW ((cfg), (inst), (op)); \
