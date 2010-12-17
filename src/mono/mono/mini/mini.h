@@ -1350,7 +1350,7 @@ enum {
 #endif
 
 /* Opcodes to load/store regsize quantities */
-#ifdef __mono_ilp32__
+#if defined (__mono_ilp32__) || (defined(__native_client_codegen__) && defined(TARGET_AMD64))
 #define OP_LOADR_MEMBASE OP_LOADI8_MEMBASE
 #define OP_STORER_MEMBASE_REG OP_STOREI8_MEMBASE_REG
 #else
@@ -1630,6 +1630,7 @@ void      mono_linterval_split              (MonoCompile *cfg, MonoLiveInterval 
 void      mono_liveness_handle_exception_clauses (MonoCompile *cfg) MONO_INTERNAL;
 
 /* Native Client functions */
+gpointer mono_realloc_native_code(MonoCompile *cfg);
 #ifdef __native_client_codegen__
 void mono_nacl_align_inst(guint8 **pcode, int instlen);
 void mono_nacl_align_call(guint8 **start, guint8 **pcode);
@@ -1640,6 +1641,18 @@ void mono_nacl_fix_patches(const guint8 *code, MonoJumpInfo *ji);
 guint8 *mono_arch_nacl_pad(guint8 *code, int pad);
 guint8 *mono_arch_nacl_skip_nops(guint8 *code);
 
+extern const guint kNaClAlignment;
+extern const guint kNaClAlignmentMask;
+#endif
+
+#if defined(__native_client__) || defined(__native_client_codegen__)
+void mono_nacl_gc();
+#endif
+
+#if defined(__native_client_codegen__) || defined(__native_client__)
+#define NACL_SIZE(a, b) (b)
+#else
+#define NACL_SIZE(a, b) (a)
 #endif
 
 /* AOT */
@@ -1749,6 +1762,11 @@ char*             mono_get_rgctx_fetch_trampoline_name (int slot) MONO_INTERNAL;
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;
 void*             mono_global_codeman_reserve (int size) MONO_INTERNAL;
+#if defined(__native_client_codegen__) && defined(__native_client__)
+void*             nacl_global_codeman_get_dest(void *data) MONO_INTERNAL;
+void              mono_global_codeman_commit(void *data, int size, int newsize) MONO_INTERNAL;
+void              nacl_global_codeman_validate(guint8 **buf_base, int buf_size, guint8 **code_end) MONO_INTERNAL;
+#endif
 const char       *mono_regname_full (int reg, int bank) MONO_INTERNAL;
 gint32*           mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align) MONO_INTERNAL;
 gint32*           mono_allocate_stack_slots (MonoCompile *cfg, guint32 *stack_size, guint32 *stack_align) MONO_INTERNAL;

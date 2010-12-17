@@ -179,7 +179,9 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	amd64_mov_reg_membase (code, AMD64_R12, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r12), 8);
 	amd64_mov_reg_membase (code, AMD64_R13, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r13), 8);
 	amd64_mov_reg_membase (code, AMD64_R14, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r14), 8);
+#if !defined(__native_client_codegen__)
 	amd64_mov_reg_membase (code, AMD64_R15, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r15), 8);
+#endif
 
 	if (mono_running_on_valgrind ()) {
 		/* Prevent 'Address 0x... is just below the stack ptr.' errors */
@@ -194,6 +196,10 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	/* jump to the saved IP */
 	amd64_jump_reg (code, AMD64_R11);
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_global_codeman_validate(&start, 256, &code);
+#endif
 
 	mono_arch_flush_icache (start, code - start);
 
@@ -219,8 +225,9 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	guint32 pos;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
+	const guint kMaxCodeSize = NACL_SIZE (128, 256);
 
-	start = code = mono_global_codeman_reserve (128);
+	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	code = start;
@@ -252,7 +259,9 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	amd64_mov_reg_membase (code, AMD64_R12, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r12), 8);
 	amd64_mov_reg_membase (code, AMD64_R13, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r13), 8);
 	amd64_mov_reg_membase (code, AMD64_R14, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r14), 8);
+#if !defined(__native_client_codegen__)
 	amd64_mov_reg_membase (code, AMD64_R15, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r15), 8);
+#endif
 #ifdef TARGET_WIN32
 	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rdi), 8);
 	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rsi), 8);
@@ -275,7 +284,11 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	amd64_leave (code);
 	amd64_ret (code);
 
-	g_assert ((code - start) < 128);
+	g_assert ((code - start) < kMaxCodeSize);
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
+#endif
 
 	mono_arch_flush_icache (start, code - start);
 
@@ -405,10 +418,10 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	guint8 *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int i, buf_size, stack_size, arg_offsets [16], regs_offset;
+	int i, stack_size, arg_offsets [16], regs_offset;
+	const guint kMaxCodeSize = NACL_SIZE (256, 512);
 
-	buf_size = 256;
-	start = code = mono_global_codeman_reserve (buf_size);
+	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
 	/* The stack is unaligned on entry */
 	stack_size = 192 + 8;
@@ -482,7 +495,11 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 	mono_arch_flush_icache (start, code - start);
 
-	g_assert ((code - start) < buf_size);
+	g_assert ((code - start) < kMaxCodeSize);
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
+#endif
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup (tramp_name), start, code - start, ji, unwind_ops);
@@ -549,7 +566,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		gssize regs [MONO_MAX_IREGS + 1];
+		mgreg_t regs [MONO_MAX_IREGS + 1];
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
@@ -597,7 +614,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->r15 = regs [AMD64_R15];
  
 		/* The CFA becomes the new SP value */
-		new_ctx->rsp = (gssize)cfa;
+		new_ctx->rsp = (mgreg_t)cfa;
 
 		/* Adjust IP */
 		new_ctx->rip --;
@@ -650,7 +667,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			 * The rsp field is set just before the call which transitioned to native 
 			 * code. Obtain the rip from the stack.
 			 */
-			rip = *(guint64*)((*lmf)->rsp - sizeof (gpointer));
+			rip = *(guint64*)((*lmf)->rsp - SIZEOF_REGISTER);
 		}
 
 		ji = mini_jit_info_table_find (domain, (gpointer)rip, NULL);
@@ -771,6 +788,10 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
+#if defined(__native_client_codegen__) || defined(__native_client__)
+	printf("WARNING: mono_arch_sigctx_to_monoctx() called!\n");
+#endif
+
 #if defined(MONO_ARCH_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
@@ -809,6 +830,10 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
+#if defined(__native_client__) || defined(__native_client_codegen__)
+  printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
+#endif
+
 #if defined(MONO_ARCH_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
@@ -966,8 +991,9 @@ mono_arch_get_throw_pending_exception (MonoTrampInfo **info, gboolean aot)
 	gpointer throw_trampoline;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
+	const guint kMaxCodeSize = NACL_SIZE (128, 256);
 
-	start = code = mono_global_codeman_reserve (128);
+	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
 	/* We are in the frame of a managed method after a call */
 	/* 
@@ -1060,7 +1086,11 @@ mono_arch_get_throw_pending_exception (MonoTrampInfo **info, gboolean aot)
 	/* Return to original code */
 	amd64_jump_reg (code, AMD64_R11);
 
-	g_assert ((code - start) < 128);
+	g_assert ((code - start) < kMaxCodeSize);
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
+#endif
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("throw_pending_exception"), start, code - start, ji, unwind_ops);
@@ -1402,10 +1432,12 @@ mono_tasklets_arch_restore (void)
 	static guint8* saved = NULL;
 	guint8 *code, *start;
 	int cont_reg = AMD64_R9; /* register usable on both call conventions */
+	const guint kMaxCodeSize = NACL_SIZE (64, 128);
+	
 
 	if (saved)
 		return (MonoContinuationRestore)saved;
-	code = start = mono_global_codeman_reserve (64);
+	code = start = mono_global_codeman_reserve (kMaxCodeSize);
 	/* the signature is: restore (MonoContinuation *cont, int state, MonoLMF **lmf_addr) */
 	/* cont is in AMD64_ARG_REG1 ($rcx or $rdi)
 	 * state is in AMD64_ARG_REG2 ($rdx or $rsi)
@@ -1431,7 +1463,9 @@ mono_tasklets_arch_restore (void)
 	amd64_mov_reg_membase (code, AMD64_R12, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r12), 8);
 	amd64_mov_reg_membase (code, AMD64_R13, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r13), 8);
 	amd64_mov_reg_membase (code, AMD64_R14, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r14), 8);
+#if !defined(__native_client_codegen__)
 	amd64_mov_reg_membase (code, AMD64_R15, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r15), 8);
+#endif
 #ifdef TARGET_WIN32
 	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rdi), 8);
 	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rsi), 8);
@@ -1444,7 +1478,10 @@ mono_tasklets_arch_restore (void)
 
 	/* state is already in rax */
 	amd64_jump_membase (code, cont_reg, G_STRUCT_OFFSET (MonoContinuation, return_ip));
-	g_assert ((code - start) <= 64);
+	g_assert ((code - start) <= kMaxCodeSize);
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
+#endif
 	saved = start;
 	return (MonoContinuationRestore)saved;
 }

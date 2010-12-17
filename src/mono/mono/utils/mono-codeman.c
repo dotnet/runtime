@@ -19,7 +19,12 @@
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
- 
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+#include <malloc.h>
+#include <sys/nacl_syscalls.h>
+#endif
+
 /*
  * AMD64 processors maintain icache coherency only for pages which are 
  * marked executable. Also, windows DEP requires us to obtain executable memory from
@@ -82,9 +87,118 @@ struct _MonoCodeManager {
 	int read_only;
 	CodeChunk *current;
 	CodeChunk *full;
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	MonoGHashTable *hash;
+#endif
 };
 
 #define ALIGN_INT(val,alignment) (((val) + (alignment - 1)) & ~(alignment - 1))
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+/* End of text segment, set by linker. 
+ * Dynamic text starts on the next allocated page.
+ */
+extern char etext[];
+char *next_dynamic_code_addr = NULL;
+
+/*
+ * This routine gets the next available bundle aligned
+ * pointer in the dynamic code section.  It does not check
+ * for the section end, this error will be caught in the
+ * service runtime.
+ */
+void*
+allocate_code(intptr_t increment)
+{
+	char *addr;
+	if (increment < 0) return NULL;
+	increment = increment & kNaClBundleMask ? (increment & ~kNaClBundleMask) + kNaClBundleSize : increment;
+	addr = next_dynamic_code_addr;
+	next_dynamic_code_addr += increment;
+	return addr;
+}
+
+int
+nacl_is_code_address (void *target)
+{
+	return (char *)target < next_dynamic_code_addr;
+}
+
+const int kMaxPatchDepth = 32;
+__thread unsigned char **patch_source_base = NULL;
+__thread unsigned char **patch_dest_base = NULL;
+__thread int *patch_alloc_size = NULL;
+__thread int patch_current_depth = -1;
+__thread int allow_target_modification = 1;
+
+void
+nacl_allow_target_modification (int val)
+{
+	allow_target_modification = val;
+}
+
+static void
+nacl_jit_check_init ()
+{
+	if (patch_source_base == NULL) {
+		patch_source_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
+		patch_dest_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
+		patch_alloc_size = g_malloc (kMaxPatchDepth * sizeof(int));
+	}
+}
+
+
+/* Given a patch target, modify the target such that patching will work when
+ * the code is copied to the data section.
+ */
+void*
+nacl_modify_patch_target (unsigned char *target)
+{
+	/* This seems like a bit of an ugly way to do this but the advantage
+	 * is we don't have to worry about all the conditions in
+	 * mono_resolve_patch_target, and it can be used by all the bare uses
+	 * of <arch>_patch.
+	 */
+	unsigned char *sb;
+	unsigned char *db;
+
+	if (!allow_target_modification) return target;
+
+	nacl_jit_check_init ();
+	sb = patch_source_base[patch_current_depth];
+	db = patch_dest_base[patch_current_depth];
+
+	if (target >= sb && (target < sb + patch_alloc_size[patch_current_depth])) {
+		/* Do nothing.  target is in the section being generated.
+		 * no need to modify, the disp will be the same either way.
+		 */
+	} else {
+		int target_offset = target - db;
+		target = sb + target_offset;
+	}
+	return target;
+}
+
+void*
+nacl_inverse_modify_patch_target (unsigned char *target)
+{
+	unsigned char *sb;
+	unsigned char *db;
+	int target_offset;
+
+	if (!allow_target_modification) return target;
+
+	nacl_jit_check_init ();
+	sb = patch_source_base[patch_current_depth];
+	db = patch_dest_base[patch_current_depth];
+
+	target_offset = target - sb;
+	target = db + target_offset;
+	return target;
+}
+
+
+#endif /* __native_client_codegen && __native_client__ */
 
 /**
  * mono_code_manager_new:
@@ -107,6 +221,24 @@ mono_code_manager_new (void)
 	cman->full = NULL;
 	cman->dynamic = 0;
 	cman->read_only = 0;
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	if (next_dynamic_code_addr == NULL) {
+		const guint kPageMask = 0xFFFF; /* 64K pages */
+		next_dynamic_code_addr = (uintptr_t)(etext + kPageMask) & ~kPageMask;
+		/* Workaround bug in service runtime, unable to allocate */
+		/* from the first page in the dynamic code section.    */
+		/* TODO: remove */
+		next_dynamic_code_addr += (uintptr_t)0x10000;
+	}
+	cman->hash =  mono_g_hash_table_new (NULL, NULL);
+	/* Keep the hash table from being collected */
+	mono_gc_register_root (&cman->hash, sizeof (void*), NULL);
+	if (patch_source_base == NULL) {
+		patch_source_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
+		patch_dest_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
+		patch_alloc_size = g_malloc (kMaxPatchDepth * sizeof(int));
+	}
+#endif
 	return cman;
 }
 
@@ -288,7 +420,10 @@ new_codechunk (int dynamic, int size)
 		if (!ptr)
 			return NULL;
 	} else {
-		ptr = mono_valloc (NULL, chunk_size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+		/* Allocate MIN_ALIGN-1 more than we need so we can still */
+		/* guarantee MIN_ALIGN alignment for individual allocs    */
+		/* from mono_code_manager_reserve_align.                  */
+		ptr = mono_valloc (NULL, chunk_size + MIN_ALIGN - 1, MONO_PROT_RWX | ARCH_MAP_FLAGS);
 		if (!ptr)
 			return NULL;
 	}
@@ -333,8 +468,10 @@ new_codechunk (int dynamic, int size)
 void*
 mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 {
+#if !defined(__native_client__) || !defined(__native_client_codegen__)
 	CodeChunk *chunk, *prev;
 	void *ptr;
+	guint32 align_mask = alignment - 1;
 
 	g_assert (!cman->read_only);
 
@@ -357,8 +494,10 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	for (chunk = cman->current; chunk; chunk = chunk->next) {
 		if (ALIGN_INT (chunk->pos, alignment) + size <= chunk->size) {
 			chunk->pos = ALIGN_INT (chunk->pos, alignment);
-			ptr = chunk->data + chunk->pos;
-			chunk->pos += size;
+			/* Align the chunk->data we add to chunk->pos */
+			/* or we can't guarantee proper alignment     */
+			ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~align_mask) + chunk->pos);
+			chunk->pos = ((char*)ptr - chunk->data) + size;
 			return ptr;
 		}
 	}
@@ -385,9 +524,33 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	chunk->next = cman->current;
 	cman->current = chunk;
 	chunk->pos = ALIGN_INT (chunk->pos, alignment);
-	ptr = chunk->data + chunk->pos;
-	chunk->pos += size;
+	/* Align the chunk->data we add to chunk->pos */
+	/* or we can't guarantee proper alignment     */
+	ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~align_mask) + chunk->pos);
+	chunk->pos = ((char*)ptr - chunk->data) + size;
 	return ptr;
+#else
+	unsigned char *temp_ptr, *code_ptr;
+	/* Round up size to next bundle */
+	alignment = kNaClBundleSize;
+	size = (size + kNaClBundleSize) & (~kNaClBundleMask);
+	/* Allocate a temp buffer */
+	temp_ptr = memalign (alignment, size);
+	g_assert (((uintptr_t)temp_ptr & kNaClBundleMask) == 0);
+	/* Allocate code space from the service runtime */
+	code_ptr = allocate_code (size);
+	/* Insert pointer to code space in hash, keyed by buffer ptr */
+	mono_g_hash_table_insert (cman->hash, temp_ptr, code_ptr);
+
+	nacl_jit_check_init ();
+
+	patch_current_depth++;
+	patch_source_base[patch_current_depth] = temp_ptr;
+	patch_dest_base[patch_current_depth] = code_ptr;
+	patch_alloc_size[patch_current_depth] = size;
+	g_assert (patch_current_depth < kMaxPatchDepth);
+	return temp_ptr;
+#endif
 }
 
 /**
@@ -419,12 +582,44 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 void
 mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsize)
 {
+#if !defined(__native_client__) || !defined(__native_client_codegen__)
 	g_assert (newsize <= size);
 
 	if (cman->current && (size != newsize) && (data == cman->current->data + cman->current->pos - size)) {
 		cman->current->pos -= size - newsize;
 	}
+#else
+	unsigned char *code;
+	int status;
+	g_assert (newsize <= size);
+	code = mono_g_hash_table_lookup (cman->hash, data);
+	g_assert (code != NULL);
+	/* Pad space after code with HLTs */
+	/* TODO: this is x86/amd64 specific */
+	while (newsize & kNaClBundleMask) {
+		*((char *)data + newsize) = 0xf4;
+		newsize++;
+	}
+	status = nacl_dyncode_create (code, data, newsize);
+	if (status != 0) {
+		g_assert_not_reached ();
+	}
+	mono_g_hash_table_remove (cman->hash, data);
+	g_assert (data == patch_source_base[patch_current_depth]);
+	g_assert (code == patch_dest_base[patch_current_depth]);
+	patch_current_depth--;
+	g_assert (patch_current_depth >= -1);
+	free (data);
+#endif
 }
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+void *
+nacl_code_manager_get_code_dest (MonoCodeManager *cman, void *data)
+{
+	return mono_g_hash_table_lookup (cman->hash, data);
+}
+#endif
 
 /**
  * mono_code_manager_size:

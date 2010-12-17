@@ -115,7 +115,10 @@ opt_funcs [sizeof (int) * 8] = {
 };
 
 #ifdef __native_client_codegen__
-extern guint8 nacl_align_byte;
+extern gint8 nacl_align_byte;
+#endif
+#ifdef __native_client__
+extern char *nacl_mono_path;
 #endif
 
 #define DEFAULT_OPTIMIZATIONS (	\
@@ -1644,7 +1647,11 @@ mono_main (int argc, char* argv[])
 			mono_use_llvm = FALSE;
 #ifdef __native_client_codegen__
 		} else if (strcmp (argv [i], "--nacl-align-mask-off") == 0){
-			nacl_align_byte = 0xff;	
+			nacl_align_byte = -1; /* 0xff */
+#endif
+#ifdef __native_client__
+		} else if (strcmp (argv [i], "--nacl-mono-path") == 0){
+			nacl_mono_path = g_strdup(argv[++i]);
 #endif
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
@@ -1655,7 +1662,7 @@ mono_main (int argc, char* argv[])
 #ifdef __native_client_codegen__
 	if (getenv ("MONO_NACL_ALIGN_MASK_OFF"))
 	{
-		nacl_align_byte = 0xff;
+		nacl_align_byte = -1; /* 0xff */
 	}
 #endif
 

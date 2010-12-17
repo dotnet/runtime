@@ -871,6 +871,13 @@ MINI_OP(OP_LIVERANGE_START, "liverange_start", NONE, NONE, NONE)
 MINI_OP(OP_LIVERANGE_END, "liverange_end", NONE, NONE, NONE)
 
 /* Arch specific opcodes */
+/* #if defined(__native_client_codegen__) || defined(__native_client__) */
+/* We have to define these in terms of the TARGET defines, not NaCl defines */
+/* because genmdesc.pl doesn't have multiple defines per platform.          */
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+MINI_OP(OP_NACL_GC_SAFE_POINT,     "nacl_gc_safe_point", IREG, NONE, NONE)
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null", NONE, IREG, NONE)
 MINI_OP(OP_X86_COMPARE_MEMBASE_REG,"x86_compare_membase_reg", NONE, IREG, IREG)

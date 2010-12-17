@@ -79,7 +79,7 @@ sub load_opcodes
 	if ($arch =~ "__i386__") {
 		$arch_define = "TARGET_X86";
 	}
-	if ($arch =~ " __x86_64__") {
+	if ($arch =~ "__x86_64__") {
 		$arch_define = "TARGET_AMD64";
 	}
 	if ($arch =~ "__arm__") {

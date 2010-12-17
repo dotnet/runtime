@@ -308,6 +308,10 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* jump to the saved IP */
 	x86_ret (code);
 
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_global_codeman_validate(&start, 128, &code);
+#endif
+
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
 	else {
@@ -335,11 +339,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	guint8 *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-#ifdef __native_client_codegen__
-	guint kMaxCodeSize = 128;
-#else
-	guint kMaxCodeSize = 64;
-#endif  /* __native_client_codegen__ */
+	guint kMaxCodeSize = NACL_SIZE (64, 128);
 
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	start = code = mono_global_codeman_reserve (kMaxCodeSize);
@@ -386,6 +386,10 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	x86_pop_reg (code, X86_EBX);
 	x86_leave (code);
 	x86_ret (code);
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
+#endif
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
@@ -515,11 +519,8 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-#ifdef __native_client_codegen__
-	guint kMaxCodeSize = 256;
-#else
-	guint kMaxCodeSize = 128;
-#endif
+	guint kMaxCodeSize = NACL_SIZE (128, 256);
+
 	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
 	stack_size = 128;
@@ -628,6 +629,10 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 		x86_call_code (code, resume_unwind ? (mono_x86_resume_unwind) : (corlib ? (gpointer)mono_x86_throw_corlib_exception : (gpointer)mono_x86_throw_exception));
 	}
 	x86_breakpoint (code);
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
+#endif
 
 	g_assert ((code - start) < kMaxCodeSize);
 

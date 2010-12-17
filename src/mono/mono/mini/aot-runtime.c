@@ -944,6 +944,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	int i;
 	gpointer *got_addr;
 	guint8 *blob;
+	gboolean do_load_image = TRUE;
 
 	if (mono_compile_aot)
 		return;
@@ -1215,8 +1216,20 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	 * non-lazily, since we can't handle out-of-date errors later.
 	 * The cached class info also depends on the exact assemblies.
 	 */
-	for (i = 0; i < amodule->image_table_len; ++i)
-		load_image (amodule, i, FALSE);
+#if defined(__native_client__)
+	/* TODO: Don't 'load_image' on mscorlib due to a */
+	/* recursive loading problem.  This should be    */
+	/* removed if mscorlib is loaded from disk.      */
+	if (strncmp(assembly->aname.name, "mscorlib", 8)) {
+		do_load_image = TRUE;
+	} else {
+		do_load_image = FALSE;
+	}
+#endif
+	if (do_load_image) {
+		for (i = 0; i < amodule->image_table_len; ++i)
+			load_image (amodule, i, FALSE);
+	}
 
 	if (amodule->out_of_date) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s is unusable because a dependency is out-of-date.\n", assembly->image->name);

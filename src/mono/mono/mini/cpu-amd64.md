@@ -53,6 +53,13 @@
 #
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
+#
+# Native Client Note: NaCl call sequences do not really reach > 32 bytes but 
+# the maximum length can be high, so if we get unlucky and wind up trying to 
+# emit a call sequence such that we are one or two bytes too long, we need to
+# pad out almost an entire 32 bytes.
+#
+
 break: len:2
 jmp: len:120
 tailcall: len:120 clob:c
@@ -60,8 +67,8 @@ br: len:6
 label: len:0
 seq_point: len:25
 
-long_add: dest:i src1:i src2:i len:3 clob:1
-long_sub: dest:i src1:i src2:i len:3 clob:1
+long_add: dest:i src1:i src2:i len:3 clob:1 nacl:6
+long_sub: dest:i src1:i src2:i len:3 clob:1 nacl:6
 long_mul: dest:i src1:i src2:i len:4 clob:1
 long_div: dest:a src1:a src2:i len:16 clob:d
 long_div_un: dest:a src1:a src2:i len:16 clob:d
@@ -96,11 +103,11 @@ long_min_un: dest:i src1:i src2:i len:16 clob:1
 long_max: dest:i src1:i src2:i len:16 clob:1
 long_max_un: dest:i src1:i src2:i len:16 clob:1
 
-throw: src1:i len:18
-rethrow: src1:i len:18
+throw: src1:i len:18 nacl:50
+rethrow: src1:i len:18 nacl:50
 start_handler: len:16
-endfinally: len:9
-endfilter: src1:a len:9
+endfinally: len:9 nacl:22
+endfilter: src1:a len:9 nacl:19
 ckfinite: dest:f src1:f len:43
 ceq: dest:c len:8
 cgt: dest:c len:8
@@ -115,11 +122,11 @@ compare_imm: src1:i len:13
 icompare_imm: src1:i len:8
 fcompare: src1:f src2:f clob:a len:13
 oparglist: src1:b len:11
-checkthis: src1:b len:5
-call: dest:a clob:c len:32
-voidcall: clob:c len:32
-voidcall_reg: src1:i clob:c len:32
-voidcall_membase: src1:b clob:c len:32
+checkthis: src1:b len:5 nacl:8
+call: dest:a clob:c len:32 nacl:64
+voidcall: clob:c len:32 nacl:64
+voidcall_reg: src1:i clob:c len:32 nacl:64
+voidcall_membase: src1:b clob:c len:32 nacl:64
 fcall: dest:f len:64 clob:c
 fcall_reg: dest:f src1:i len:64 clob:c
 fcall_membase: dest:f src1:b len:64 clob:c
@@ -129,39 +136,39 @@ lcall_membase: dest:a src1:b len:64 clob:c
 vcall: len:64 clob:c
 vcall_reg: src1:i len:64 clob:c
 vcall_membase: src1:b len:64 clob:c
-call_reg: dest:a src1:i len:32 clob:c
-call_membase: dest:a src1:b len:32 clob:c
+call_reg: dest:a src1:i len:32 clob:c nacl:64
+call_membase: dest:a src1:b len:32 clob:c nacl:64
 iconst: dest:i len:10
 i8const: dest:i len:10
 r4const: dest:f len:14
 r8const: dest:f len:9
 store_membase_imm: dest:b len:15
-store_membase_reg: dest:b src1:i len:9
-storei8_membase_reg: dest:b src1:i len:9
-storei1_membase_imm: dest:b len:11
-storei1_membase_reg: dest:b src1:c len:9
-storei2_membase_imm: dest:b len:13
-storei2_membase_reg: dest:b src1:i len:9
-storei4_membase_imm: dest:b len:13
-storei4_membase_reg: dest:b src1:i len:9
+store_membase_reg: dest:b src1:i len:9 nacl:11
+storei8_membase_reg: dest:b src1:i len:9 nacl:11
+storei1_membase_imm: dest:b len:11 nacl:15
+storei1_membase_reg: dest:b src1:c len:9 nacl:11
+storei2_membase_imm: dest:b len:13 nacl:15
+storei2_membase_reg: dest:b src1:i len:9 nacl:11
+storei4_membase_imm: dest:b len:13 nacl:15
+storei4_membase_reg: dest:b src1:i len:9 nacl:11
 storei8_membase_imm: dest:b len:18
 storer4_membase_reg: dest:b src1:f len:15
 storer8_membase_reg: dest:b src1:f len:10
-load_membase: dest:i src1:b len:8
-loadi1_membase: dest:c src1:b len:9
-loadu1_membase: dest:c src1:b len:9
-loadi2_membase: dest:i src1:b len:9
-loadu2_membase: dest:i src1:b len:9
-loadi4_membase: dest:i src1:b len:9
-loadu4_membase: dest:i src1:b len:9
-loadi8_membase: dest:i src1:b len:18
+load_membase: dest:i src1:b len:8 nacl:12
+loadi1_membase: dest:c src1:b len:9 nacl:12
+loadu1_membase: dest:c src1:b len:9 nacl:12
+loadi2_membase: dest:i src1:b len:9 nacl:12
+loadu2_membase: dest:i src1:b len:9 nacl:12
+loadi4_membase: dest:i src1:b len:9 nacl:12
+loadu4_membase: dest:i src1:b len:9 nacl:12
+loadi8_membase: dest:i src1:b len:18 nacl:14
 loadr4_membase: dest:f src1:b len:16
 loadr8_membase: dest:f src1:b len:16
 loadu4_mem: dest:i len:10
 amd64_loadi8_memindex: dest:i src1:i src2:i len:10
 move: dest:i src1:i len:3
-add_imm: dest:i src1:i len:8 clob:1
-sub_imm: dest:i src1:i len:8 clob:1
+add_imm: dest:i src1:i len:8 clob:1 nacl:11
+sub_imm: dest:i src1:i len:8 clob:1 nacl:11
 mul_imm: dest:i src1:i len:11
 and_imm: dest:i src1:i len:8 clob:1
 or_imm: dest:i src1:i len:8 clob:1
@@ -246,8 +253,9 @@ float_clt_membase: dest:i src1:f src2:b len:35
 float_clt_un_membase: dest:i src1:f src2:b len:42
 float_conv_to_u: dest:i src1:f len:46
 fmove: dest:f src1:f len:8
-call_handler: len:14 clob:c
+call_handler: len:14 clob:c nacl:52
 aot_const: dest:i len:10
+nacl_gc_safe_point: clob:c
 x86_test_null: src1:i len:5
 x86_compare_membase_reg: src1:b src2:i len:9
 x86_compare_membase_imm: src1:b len:13
@@ -263,7 +271,7 @@ x86_push_imm: len:6
 x86_push_membase: src1:b len:8
 x86_push_obj: src1:b len:40
 x86_lea: dest:i src1:i src2:i len:8
-x86_lea_membase: dest:i src1:i len:11
+x86_lea_membase: dest:i src1:i len:11 nacl:14
 x86_xchg: src1:i src2:i clob:x len:2
 x86_fpop: src1:f len:3
 x86_seteq_membase: src1:b len:9
@@ -298,7 +306,7 @@ subcc: dest:i src1:i src2:i len:3 clob:1
 adc_imm: dest:i src1:i len:8 clob:1
 sbb: dest:i src1:i src2:i len:3 clob:1
 sbb_imm: dest:i src1:i len:8 clob:1
-br_reg: src1:i len:3
+br_reg: src1:i len:3 nacl:8
 sin: dest:f src1:f len:32
 cos: dest:f src1:f len:32
 abs: dest:f src1:f clob:1 len:32
@@ -310,8 +318,8 @@ sext_i2: dest:i src1:i len:4
 sext_i4: dest:i src1:i len:8
 
 # 32 bit opcodes
-int_add: dest:i src1:i src2:i clob:1 len:4
-int_sub: dest:i src1:i src2:i clob:1 len:4
+int_add: dest:i src1:i src2:i clob:1 len:4 nacl:7
+int_sub: dest:i src1:i src2:i clob:1 len:4 nacl:7
 int_mul: dest:i src1:i src2:i clob:1 len:4
 int_mul_ovf: dest:i src1:i src2:i clob:1 len:32
 int_mul_ovf_un: dest:i src1:i src2:i clob:1 len:32
@@ -331,8 +339,8 @@ int_sbb: dest:i src1:i src2:i clob:1 len:4
 int_sbb_imm: dest:i src1:i clob:1 len:8
 int_addcc: dest:i src1:i src2:i clob:1 len:16
 int_subcc: dest:i src1:i src2:i clob:1 len:16
-int_add_imm: dest:i src1:i clob:1 len:8
-int_sub_imm: dest:i src1:i clob:1 len:8
+int_add_imm: dest:i src1:i clob:1 len:8 nacl:10
+int_sub_imm: dest:i src1:i clob:1 len:8 nacl:10
 int_mul_imm: dest:i src1:i clob:1 len:32
 int_div_imm: dest:a src1:i clob:d len:32
 int_div_un_imm: dest:a src1:i clob:d len:32
@@ -438,8 +446,8 @@ cmov_lgt_un: dest:i src1:i src2:i len:16 clob:1
 cmov_lle_un: dest:i src1:i src2:i len:16 clob:1
 cmov_llt_un: dest:i src1:i src2:i len:16 clob:1
 
-long_add_imm: dest:i src1:i clob:1 len:12
-long_sub_imm: dest:i src1:i clob:1 len:12
+long_add_imm: dest:i src1:i clob:1 len:12 nacl:15
+long_sub_imm: dest:i src1:i clob:1 len:12 nacl:15
 long_and_imm: dest:i src1:i clob:1 len:12
 long_or_imm: dest:i src1:i clob:1 len:12
 long_xor_imm: dest:i src1:i clob:1 len:12
@@ -486,7 +494,7 @@ vcall2: len:64 clob:c
 vcall2_reg: src1:i len:64 clob:c
 vcall2_membase: src1:b len:64 clob:c
 
-dyn_call: src1:i src2:i len:64 clob:c
+dyn_call: src1:i src2:i len:64 clob:c nacl:128
 
 localloc_imm: dest:i len:84
 
