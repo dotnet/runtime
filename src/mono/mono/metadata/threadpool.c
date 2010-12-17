@@ -2018,6 +2018,8 @@ async_invoke_thread (gpointer data)
 							mono_unhandled_exception (exc);
 							exit (255);
 						}
+						if (klass == mono_defaults.threadabortexception_class)
+							mono_thread_internal_reset_abort (thread);
 					}
 					if (is_socket && tp->is_io) {
 						MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
