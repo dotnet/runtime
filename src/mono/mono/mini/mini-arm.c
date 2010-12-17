@@ -43,10 +43,17 @@ static int thumb_supported = 0;
  * Whenever to use the ARM EABI
  */
 static int eabi_supported = 0;
+
+/*
+ * Whenever we are on arm/darwin aka the iphone.
+ */
+static int darwin = 0;
 /* 
  * Whenever to use the iphone ABI extensions:
  * http://developer.apple.com/library/ios/documentation/Xcode/Conceptual/iPhoneOSABIReference/index.html
  * Basically, r7 is used as a frame pointer and it should point to the saved r7 + lr.
+ * This is required for debugging/profiling tools to work, but it has some overhead so it should
+ * only be turned on in debug builds.
  */
 static int iphone_abi = 0;
 static int i8_align;
@@ -507,6 +514,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 #if __APPLE__
 	thumb_supported = TRUE;
 	v5_supported = TRUE;
+	darwin = TRUE;
 	iphone_abi = TRUE;
 #else
 	char buf [512];
@@ -624,7 +632,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V1));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V2));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V3));
-	if (iphone_abi)
+	if (darwin)
 		/* V4=R7 is used as a frame pointer, but V7=R10 is preserved */
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V7));
 	else
@@ -4586,6 +4594,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			 * the frame, so we keep using our own frame pointer.
 			 * FIXME: Optimize this.
 			 */
+			g_assert (darwin);
 			ARM_PUSH (code, (1 << ARMREG_R7) | (1 << ARMREG_LR));
 			ARM_MOV_REG_REG (code, ARMREG_R7, ARMREG_SP);
 			prev_sp_offset += 8; /* r7 and lr */
@@ -5788,6 +5797,7 @@ mono_arch_set_target (char *mtriple)
 	if (strstr (mtriple, "darwin")) {
 		v5_supported = TRUE;
 		thumb_supported = TRUE;
+		darwin = TRUE;
 		iphone_abi = TRUE;
 	}
 	if (strstr (mtriple, "gnueabi"))
