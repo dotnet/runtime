@@ -72,6 +72,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/assembly.h>
 #include <mono/utils/mono-semaphore.h>
+#include <mono/utils/mono-error-internals.h>
 #include "debugger-agent.h"
 #include "mini.h"
 
@@ -301,7 +302,8 @@ typedef enum {
 	ERR_INVALID_ARGUMENT = 102,
 	ERR_UNLOADED = 103,
 	ERR_NO_INVOCATION = 104,
-	ERR_ABSENT_INFORMATION = 105
+	ERR_ABSENT_INFORMATION = 105,
+	ERR_NO_SEQ_POINT_AT_IL_OFFSET = 106
 } ErrorCode;
 
 typedef enum {
@@ -3290,11 +3292,14 @@ breakpoints_init (void)
  * JI.
  */
 static void
-insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo *ji, MonoBreakpoint *bp)
+insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo *ji, MonoBreakpoint *bp, MonoError *error)
 {
 	int i, count;
 	gint32 il_offset = -1, native_offset;
 	BreakpointInstance *inst;
+
+	if (error)
+		mono_error_init (error);
 
 	native_offset = 0;
 	for (i = 0; i < seq_points->len; ++i) {
@@ -3306,8 +3311,15 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	}
 
 	if (i == seq_points->len) {
-		/* Have to handle this somehow */
-		g_error ("Unable to insert breakpoint at %s:%d, seq_points=%d\n", mono_method_full_name (ji->method, TRUE), bp->il_offset, seq_points->len);
+		char *s = g_strdup_printf ("Unable to insert breakpoint at %s:%d, seq_points=%d\n", mono_method_full_name (ji->method, TRUE), bp->il_offset, seq_points->len);
+		if (error) {
+			mono_error_set_error (error, MONO_ERROR_GENERIC, "%s", s);
+			g_free (s);
+			return;
+		} else {
+			g_error ("%s", s);
+			g_free (s);
+		}
 	}
 
 	inst = g_new0 (BreakpointInstance, 1);
@@ -3406,7 +3418,7 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 				continue;
 			g_assert (seq_points);
 
-			insert_breakpoint (seq_points, domain, ji, bp);
+			insert_breakpoint (seq_points, domain, ji, bp, NULL);
 		}
 	}
 
@@ -3414,10 +3426,13 @@ add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 }
 
 static void
-set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_points, MonoBreakpoint *bp)
+set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_points, MonoBreakpoint *bp, MonoError *error)
 {
 	gpointer code;
 	MonoJitInfo *ji;
+
+	if (error)
+		mono_error_init (error);
 
 	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
 	if (!code) {
@@ -3429,42 +3444,11 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 	}
 	g_assert (code);
 
-	insert_breakpoint (seq_points, domain, ji, bp);
-}
-
-typedef struct
-{
-	MonoBreakpoint *bp;
-	MonoDomain *domain;
-} SetBpUserData;
-
-static void
-set_bp_in_method_cb (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoMethod *method = key;
-	MonoSeqPointInfo *seq_points = value;
-	SetBpUserData *ud = user_data;
-	MonoBreakpoint *bp = ud->bp;
-	MonoDomain *domain = ud->domain;
-
-	if (bp_matches_method (bp, method))
-		set_bp_in_method (domain, method, seq_points, bp);
+	insert_breakpoint (seq_points, domain, ji, bp, error);
 }
 
 static void
-set_bp_in_domain (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoDomain *domain = key;
-	MonoBreakpoint *bp = user_data;
-	SetBpUserData ud;
-
-	ud.bp = bp;
-	ud.domain = domain;
-
-	mono_domain_lock (domain);
-	g_hash_table_foreach (domain_jit_info (domain)->seq_points, set_bp_in_method_cb, &ud);
-	mono_domain_unlock (domain);
-}
+clear_breakpoint (MonoBreakpoint *bp);
 
 /*
  * set_breakpoint:
@@ -3473,11 +3457,20 @@ set_bp_in_domain (gpointer key, gpointer value, gpointer user_data)
  * METHOD can be NULL, in which case a breakpoint is placed in all methods.
  * METHOD can also be a generic method definition, in which case a breakpoint
  * is placed in all instances of the method.
+ * If ERROR is non-NULL, then it is set and NULL is returnd if some breakpoints couldn't be
+ * inserted.
  */
 static MonoBreakpoint*
-set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req)
+set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError *error)
 {
 	MonoBreakpoint *bp;
+	GHashTableIter iter, iter2;
+	MonoDomain *domain;
+	MonoMethod *m;
+	MonoSeqPointInfo *seq_points;
+
+	if (error)
+		mono_error_init (error);
 
 	// FIXME:
 	// - suspend/resume the vm to prevent code patching problems
@@ -3495,13 +3488,29 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req)
 
 	mono_loader_lock ();
 
-	g_hash_table_foreach (domains, set_bp_in_domain, bp);
+	g_hash_table_iter_init (&iter, domains);
+	while (g_hash_table_iter_next (&iter, (void**)&domain, NULL)) {
+		mono_domain_lock (domain);
+
+		g_hash_table_iter_init (&iter2, domain_jit_info (domain)->seq_points);
+		while (g_hash_table_iter_next (&iter2, (void**)&m, (void**)&seq_points)) {
+			if (bp_matches_method (bp, m))
+				set_bp_in_method (domain, m, seq_points, bp, error);
+		}
+
+		mono_domain_unlock (domain);
+	}
 
 	mono_loader_unlock ();
 
 	mono_loader_lock ();
 	g_ptr_array_add (breakpoints, bp);
 	mono_loader_unlock ();
+
+	if (error && !mono_error_ok (error)) {
+		clear_breakpoint (bp);
+		return NULL;
+	}
 
 	return bp;
 }
@@ -4108,7 +4117,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 	 * Implement single stepping using breakpoints if possible.
 	 */
 	if (step_to_catch) {
-		bp = set_breakpoint (method, sp->il_offset, ss_req->req);
+		bp = set_breakpoint (method, sp->il_offset, ss_req->req, NULL);
 		ss_req->bps = g_slist_append (ss_req->bps, bp);
 	} else if (ss_req->depth == STEP_DEPTH_OVER) {
 		frame_index = 1;
@@ -4133,7 +4142,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 			for (i = 0; i < sp->next_len; ++i) {
 				next_sp = &info->seq_points [sp->next [i]];
 
-				bp = set_breakpoint (method, next_sp->il_offset, ss_req->req);
+				bp = set_breakpoint (method, next_sp->il_offset, ss_req->req, NULL);
 				ss_req->bps = g_slist_append (ss_req->bps, bp);
 			}
 		}
@@ -5426,6 +5435,7 @@ static ErrorCode
 event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
 	int err;
+	MonoError error;
 
 	switch (command) {
 	case CMD_EVENT_REQUEST_SET: {
@@ -5508,7 +5518,13 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (req->event_kind == EVENT_KIND_BREAKPOINT) {
 			g_assert (method);
 
-			req->info = set_breakpoint (method, location, req);
+			req->info = set_breakpoint (method, location, req, &error);
+			if (!mono_error_ok (&error)) {
+				g_free (req);
+				DEBUG(1, fprintf (log_file, "[dbg] Failed to set breakpoint: %s\n", mono_error_get_message (&error)));
+				mono_error_cleanup (&error);
+				return ERR_NO_SEQ_POINT_AT_IL_OFFSET;
+			}
 		} else if (req->event_kind == EVENT_KIND_STEP) {
 			g_assert (step_thread_id);
 
@@ -5524,9 +5540,9 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return err;
 			}
 		} else if (req->event_kind == EVENT_KIND_METHOD_ENTRY) {
-			req->info = set_breakpoint (NULL, METHOD_ENTRY_IL_OFFSET, req);
+			req->info = set_breakpoint (NULL, METHOD_ENTRY_IL_OFFSET, req, NULL);
 		} else if (req->event_kind == EVENT_KIND_METHOD_EXIT) {
-			req->info = set_breakpoint (NULL, METHOD_EXIT_IL_OFFSET, req);
+			req->info = set_breakpoint (NULL, METHOD_EXIT_IL_OFFSET, req, NULL);
 		} else if (req->event_kind == EVENT_KIND_EXCEPTION) {
 		} else {
 			if (req->nmodifiers) {
