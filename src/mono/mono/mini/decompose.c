@@ -167,7 +167,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, ((int)-2147483648));
 #else
 		g_assert (COMPILE_LLVM (cfg));
-		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, -2147483648UL);
+		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, -2147483648LL);
 #endif
 		MONO_EMIT_NEW_COND_EXC (cfg, LT, "OverflowException");
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->sreg1);

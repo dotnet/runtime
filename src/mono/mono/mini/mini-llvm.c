@@ -1941,7 +1941,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 #endif
 	/* The two can't be used together, so use only one LLVM calling conv to pass them */
 	g_assert (!(call->rgctx_arg_reg && call->imt_arg_reg));
-	LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
+	if (!sig->pinvoke)
+		LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
 
 	if (call->rgctx_arg_reg)
 		LLVMAddInstrAttribute (lcall, 1 + sinfo.rgctx_arg_pindex, LLVMInRegAttribute);
