@@ -2413,6 +2413,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_MOVE:
 		case OP_LMOVE:
 		case OP_XMOVE:
+		case OP_SETFRET:
 			g_assert (lhs);
 			values [ins->dreg] = lhs;
 			break;
