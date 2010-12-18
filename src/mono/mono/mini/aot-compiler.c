@@ -493,6 +493,14 @@ arch_init (MonoAotCompile *acfg)
 	acfg->llc_args = g_string_new ("");
 	acfg->as_args = g_string_new ("");
 
+	/*
+	 * The prefix LLVM likes to put in front of symbol names on darwin.
+	 * The mach-os specs require this for globals, but LLVM puts them in front of all
+	 * symbols. We need to handle this, since we need to refer to LLVM generated
+	 * symbols.
+	 */
+	acfg->llvm_label_prefix = "";
+
 #ifdef TARGET_ARM
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
@@ -3149,7 +3157,7 @@ get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 {
 	char *name1, *name2, *cached;
 	int i, j, len, count;
-		
+
 	name1 = mono_method_full_name (method, TRUE);
 	len = strlen (name1);
 	name2 = malloc (strlen (prefix) + len + 16);
@@ -4743,14 +4751,6 @@ mono_aot_get_got_offset (MonoJumpInfo *ji)
 
 char*
 mono_aot_get_method_name (MonoCompile *cfg)
-{
-	guint32 method_index = get_method_index (llvm_acfg, cfg->orig_method);
-
-	return g_strdup_printf ("m_%x", method_index);
-}
-
-char*
-mono_aot_get_method_debug_name (MonoCompile *cfg)
 {
 	return get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
 }
@@ -6361,6 +6361,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #endif
 	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? acfg->aot_opts.nimt_trampolines : 0;
 
+	acfg->temp_prefix = img_writer_get_temp_label_prefix (NULL);
+
+	arch_init (acfg);
+
 	acfg->got_symbol_base = g_strdup_printf ("%smono_aot_%s_got", acfg->llvm_label_prefix, acfg->image->assembly->aname.name);
 	acfg->plt_symbol = g_strdup_printf ("%smono_aot_%s_plt", acfg->llvm_label_prefix, acfg->image->assembly->aname.name);
 
@@ -6373,18 +6377,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		if (!(isalnum (*p) || *p == '_'))
 			*p = '_';
 	}
-
-	acfg->temp_prefix = img_writer_get_temp_label_prefix (NULL);
-
-	/*
-	 * The prefix LLVM likes to put in front of symbol names on darwin.
-	 * The mach-os specs require this for globals, but LLVM puts them in front of all
-	 * symbols. We need to handle this, since we need to refer to LLVM generated
-	 * symbols.
-	 */
-	acfg->llvm_label_prefix = "";
-
-	arch_init (acfg);
 
 	acfg->method_index = 1;
 
@@ -6501,7 +6493,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			MonoCompile *cfg = acfg->cfgs [i];
 			int method_index = get_method_index (acfg, cfg->orig_method);
 
-			cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, acfg->llvm_label_prefix, method_index);
+			if (COMPILE_LLVM (cfg))
+				cfg->asm_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, cfg->llvm_method_name);
+			else
+				cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, acfg->llvm_label_prefix, method_index);
 		}
 	}
 

@@ -3738,8 +3738,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	MonoBasicBlock *bb;
 	LLVMTypeRef method_type;
-	LLVMValueRef method = NULL, debug_alias = NULL;
-	char *method_name, *debug_name = NULL;
+	LLVMValueRef method = NULL;
+	char *method_name;
 	LLVMValueRef *values;
 	int i, max_block_num, bb_index;
 	gboolean last = FALSE;
@@ -3792,12 +3792,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (cfg->compile_aot) {
 		ctx->lmodule = &aot_module;
 		method_name = mono_aot_get_method_name (cfg);
-		debug_name = mono_aot_get_method_debug_name (cfg);
+		cfg->llvm_method_name = g_strdup (method_name);
 	} else {
 		init_jit_module ();
 		ctx->lmodule = &jit_module;
 		method_name = mono_method_full_name (cfg->method, TRUE);
-		debug_name = NULL;
 	}
 	
 	module = ctx->module = ctx->lmodule->module;
@@ -3848,6 +3847,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
 #endif
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
+
+	if (cfg->compile_aot) {
+		LLVMSetLinkage (method, LLVMInternalLinkage);
+		LLVMSetVisibility (method, LLVMHiddenVisibility);
+	} else {
+		LLVMSetLinkage (method, LLVMPrivateLinkage);
+	}
 
 	if (cfg->method->save_lmf)
 		LLVM_FAILURE (ctx, "lmf");
@@ -4072,14 +4078,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	if (cfg->compile_aot) {
 		/* Don't generate native code, keep the LLVM IR */
-
-		/* Can't delete the method if it has an alias, so only add it if successful */
-		if (debug_name) {
-			debug_alias = LLVMAddAlias (module, LLVMTypeOf (method), method, debug_name);
-			LLVMSetLinkage (debug_alias, LLVMInternalLinkage);
-			LLVMSetVisibility (debug_alias, LLVMHiddenVisibility);
-		}
-
 		if (cfg->compile_aot && cfg->verbose_level)
 			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), method_name);
 
@@ -4127,7 +4125,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	g_free (ctx->pindexes);
 	g_free (ctx->is_dead);
 	g_free (ctx->unreachable);
-	g_free (debug_name);
 	g_ptr_array_free (phi_values, TRUE);
 	g_free (ctx->bblocks);
 	g_hash_table_destroy (ctx->region_to_handler);
