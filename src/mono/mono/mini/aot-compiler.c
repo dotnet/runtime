@@ -3026,7 +3026,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	MonoMethodHeader *header;
 	gboolean skip, direct_call;
 	guint32 got_slot;
-	char direct_call_target [128];
+	char direct_call_target [1024];
 
 	if (method) {
 		header = mono_method_get_header (method);
@@ -3078,6 +3078,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
 						//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
 						direct_call = TRUE;
+						g_assert (strlen (callee_cfg->asm_symbol) < 1000);
 						sprintf (direct_call_target, "%s", callee_cfg->asm_symbol);
 						patch_info->type = MONO_PATCH_INFO_NONE;
 						acfg->stats.direct_calls ++;
