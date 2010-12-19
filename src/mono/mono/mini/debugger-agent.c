@@ -426,6 +426,7 @@ typedef enum {
 	CMD_TYPE_GET_FIELD_CATTRS = 11,
 	CMD_TYPE_GET_PROPERTY_CATTRS = 12,
 	CMD_TYPE_GET_SOURCE_FILES_2 = 13,
+	CMD_TYPE_GET_VALUES_2 = 14
 } CmdType;
 
 typedef enum {
@@ -6042,13 +6043,28 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
 		break;
 	}
-	case CMD_TYPE_GET_VALUES: {
+	case CMD_TYPE_GET_VALUES:
+	case CMD_TYPE_GET_VALUES_2: {
 		guint8 *val;
 		MonoClassField *f;
 		MonoVTable *vtable;
 		MonoClass *k;
 		int len, i;
 		gboolean found;
+		MonoThread *thread_obj;
+		MonoInternalThread *thread = NULL;
+		guint32 special_static_type;
+
+		if (command == CMD_TYPE_GET_VALUES_2) {
+			int objid = decode_objid (p, &p, end);
+			int err;
+
+			err = get_object (objid, (MonoObject**)&thread_obj);
+			if (err)
+				return err;
+
+			thread = THREAD_TO_INTERNAL (thread_obj);
+		}
 
 		len = decode_int (p, &p, end);
 		for (i = 0; i < len; ++i) {
@@ -6058,8 +6074,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC))
 				return ERR_INVALID_FIELDID;
-			if (mono_class_field_is_special_static (f))
-				return ERR_INVALID_FIELDID;
+			special_static_type = mono_class_field_get_special_static_type (f);
+			if (special_static_type != SPECIAL_STATIC_NONE) {
+				if (!(thread && special_static_type == SPECIAL_STATIC_THREAD))
+					return ERR_INVALID_FIELDID;
+			}
 
 			/* Check that the field belongs to the object */
 			found = FALSE;
@@ -6074,7 +6093,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			vtable = mono_class_vtable (domain, f->parent);
 			val = g_malloc (mono_class_instance_size (mono_class_from_mono_type (f->type)));
-			mono_field_static_get_value (vtable, f, val);
+			mono_field_static_get_value_for_thread (thread ? thread : mono_thread_internal_current (), vtable, f, val);
 			buffer_add_value (buf, f->type, val, domain);
 			g_free (val);
 		}
