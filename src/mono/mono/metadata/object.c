@@ -2290,6 +2290,25 @@ mono_class_field_is_special_static (MonoClassField *field)
 }
 
 /**
+ * mono_class_field_get_special_static_type:
+ * @field: The MonoClassField describing the field.
+ *
+ * Returns: SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_CONTEXT if it is context static,
+ * SPECIAL_STATIC_NONE otherwise.
+ */
+guint32
+mono_class_field_get_special_static_type (MonoClassField *field)
+{
+	if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		return SPECIAL_STATIC_NONE;
+	if (mono_field_is_deleted (field))
+		return SPECIAL_STATIC_NONE;
+	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
+		return field_is_special_static (field->parent, field);
+	return SPECIAL_STATIC_NONE;
+}
+
+/**
  * mono_class_has_special_static_fields:
  * 
  *   Returns whenever @klass has any thread/context static fields.
@@ -2904,7 +2923,11 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 
 	if (field->offset == -1) {
 		/* Special static */
-		gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+		gpointer addr;
+
+		mono_domain_lock (vt->domain);
+		addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+		mono_domain_unlock (vt->domain);
 		dest = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
 		dest = (char*)vt->data + field->offset;
@@ -2927,7 +2950,11 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		if (field->offset == -1) {
 			/* Special static */
-			gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+			gpointer addr;
+
+			mono_domain_lock (vt->domain);
+			addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+			mono_domain_unlock (vt->domain);
 			src = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 		} else {
 			src = (guint8*)vt->data + field->offset;
@@ -3169,6 +3196,28 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 	mono_get_constant_value_from_blob (domain, def_type, data, value);
 }
 
+void
+mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value)
+{
+	void *src;
+
+	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+	
+	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
+		get_default_field_value (vt->domain, field, value);
+		return;
+	}
+
+	if (field->offset == -1) {
+		/* Special static */
+		gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+		src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
+	} else {
+		src = (char*)vt->data + field->offset;
+	}
+	set_value (field->type, value, src, TRUE);
+}
+
 /**
  * mono_field_static_get_value:
  * @vt: vtable to the object
@@ -3188,23 +3237,7 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
-	void *src;
-
-	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
-	
-	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
-		get_default_field_value (vt->domain, field, value);
-		return;
-	}
-
-	if (field->offset == -1) {
-		/* Special static */
-		gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
-		src = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-	} else {
-		src = (char*)vt->data + field->offset;
-	}
-	set_value (field->type, value, src, TRUE);
+	return mono_field_static_get_value_for_thread (mono_thread_internal_current (), vt, field, value);
 }
 
 /**

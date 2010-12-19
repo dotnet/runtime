@@ -3709,7 +3709,7 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 }
 
 gpointer
-mono_get_special_static_data (guint32 offset)
+mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset)
 {
 	/* The high bit means either thread (0) or static (1) data. */
 
@@ -3720,7 +3720,7 @@ mono_get_special_static_data (guint32 offset)
 	idx = (offset >> 24) - 1;
 
 	if (static_type == 0) {
-		return get_thread_static_data (mono_thread_internal_current (), offset);
+		return get_thread_static_data (thread, offset);
 	} else {
 		/* Allocate static data block under demand, since we don't have a list
 		// of contexts
@@ -3733,6 +3733,12 @@ mono_get_special_static_data (guint32 offset)
 		}
 		return ((char*) context->static_data [idx]) + (offset & 0xffffff);	
 	}
+}
+
+gpointer
+mono_get_special_static_data (guint32 offset)
+{
+	return mono_get_special_static_data_for_thread (mono_thread_internal_current (), offset);
 }
 
 typedef struct {
