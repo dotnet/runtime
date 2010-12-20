@@ -612,12 +612,17 @@ if test "x$enable_shared" = "xno"; then
    with_shared_mono=no
 fi
 
+case $host in
+*nacl* ) with_shared_mono=yes;;
+esac
+
 if test "x$host_win32" = "xyes"; then
    # Boehm GC requires the runtime to be in its own dll
    with_static_mono=no
 fi
 
 AM_CONDITIONAL(STATIC_MONO, test x$with_static_mono != xno)
+AM_CONDITIONAL(SHARED_MONO, test x$with_shared_mono != xno)
 AC_ARG_ENABLE(mcs-build, [  --disable-mcs-build disable the build of the mcs directory], try_mcs_build=$enableval, enable_mcs_build=yes)
 
 AC_ARG_WITH(xen_opt,   [  --with-xen_opt=yes,no          Enable Xen-specific behaviour (defaults to yes)],[],[with_xen_opt=yes])
