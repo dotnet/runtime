@@ -1816,10 +1816,10 @@ mono_sgen_marksweep_init
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);
 
-
+#ifdef SGEN_HAVE_CARDTABLE
 	/*cardtable requires major pages to be 8 cards aligned*/
 	g_assert ((MS_BLOCK_SIZE % (8 * CARD_SIZE_IN_BYTES)) == 0);
-
+#endif
 }
 
 #endif
