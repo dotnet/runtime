@@ -1,0 +1,92 @@
+Quick guide
+===========
+
+Prerequistites (see end of file for gclient & svn paths)
+--------------
+1. Naclports from SVN
+   - needed for nacl toolchain (nacl-gcc, etc.)
+   - needed for packages (zlib for nacl, etc.)
+2. Native Client repo from SVN
+   - currently needed for sel_ldr
+3. Mono with NaCl support (you have it if you're reading this file)
+
+4. Directory conventions used in this document
+(your directories may differ...)
+  ~/naclports  Naclports repo from SVN
+  ~/nacl       Native Client repo from SVN
+  ~/mono       Mono for NaCl
+
+5. Setting your environment:
+  export NACL_SDK_PATH=/home/username/naclports
+  export NACL_PATH=/home/username/nacl
+5a. Make sure you have a dbg sel_ldr available
+  /home/username/nacl/
+    native_client/scons-out/dbg-${OS_SUBDIR}-x86-${BITSIZE}/staging
+5b. If it is not available, scons build it (substitute
+   linux with mac or win as needed)
+      cd /home/username/nacl/native_client
+      ./scons MODE=dbg-linux,nacl [platform=x86-64]
+
+6. Build naclports libraries
+     cd /home/username/naclports/src/packages
+     ./nacl-install-all.sh
+
+7. Build NaCl Mono Runtime ('libmono.a' for NaCl, 5 minutes):
+  cd /home/username/mono/trunk/nacl
+  ./nacl-runtime-mono.sh [TARGET_BITSIZE=32/64 for cross-compiling runtime]
+
+8. (optional for AOT) Build NaCl Mono Compiler: ('nacl[64]-mono' AOT cross compiler for NaCl, 5 minutes):
+  cd /home/username/mono/trunk/nacl
+  ./nacl-mono.sh (32-bit cross-compiler)
+  ./nacl64-mono.sh (64-bit cross-compiler)
+
+Native Client Mono Install locations:
+  /home/username/mono/trunk/nacl/runtime
+  /home/username/mono/trunk/nacl/compiler
+
+Normal (not-Native-Client) Mono Install location:
+  /home/username/mono/trunk/nacl/normal-mono
+
+Simple Test (requires sel_ldr to run)
+  cd  /home/username/mono/trunk/nacl/test
+  ./nacl [normal,aot,regression] (defaults to nacl,jit,simple test)
+
+
+SVN Repos
+=========
+
+1. Getting Naclports repo
+  cd ~
+  mkdir naclports
+  cd naclports
+  gclient config https://naclports.googlecode.com/svn/trunk/src
+  gclient sync
+
+2. Getting Native Client repo
+
+  cd ~
+  mkdir nacl
+  cd nacl
+  vim .gclient
+--------add text below-------
+solutions = [
+  { "name"        : "native_client",
+    "url"         : "svn://svn.chromium.org/native_client/trunk/src/native_client",
+  },
+  { "name"        : "supplement.DEPS",
+    "url"         : "svn://svn.chromium.org/native_client/trunk/deps/supplement.DEPS",
+  },
+]
+---------end text------------
+  gclient sync
+  gclient runhooks --force
+
+
+3. Getting Mono repo
+
+  cd ~
+  mkdir mono
+  cd mono
+  // see http://mono-project.com/Compiling_Mono_From_Git
+
+
