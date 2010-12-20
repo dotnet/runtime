@@ -89,10 +89,6 @@
 
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
 
-#ifdef __native_client_codegen__
-/* Default alignment for Native Client is 32-byte. */
-guint8 nacl_align_byte = 0xe0;
-#endif
 
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;

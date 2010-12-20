@@ -449,7 +449,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	offset += SIZEOF_REGISTER;
 	rax_offset = - offset;
 
-	offset += sizeof(gpointer);
+	offset += SIZEOF_REGISTER;
 	tramp_offset = - offset;
 
 	offset += sizeof(gpointer);
@@ -480,9 +480,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		if (i == AMD64_RBP) {
 			/* RAX is already saved */
 			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, rbp_offset, SIZEOF_REGISTER);
-			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), AMD64_RAX, SIZEOF_REGISTER);
+			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * SIZEOF_REGISTER), AMD64_RAX, SIZEOF_REGISTER);
 		} else if (i != AMD64_R11) {
-			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), i, SIZEOF_REGISTER);
+			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * SIZEOF_REGISTER), i, SIZEOF_REGISTER);
 		} else {
 			/* We have to save R11 right at the start of
 			   the trampoline code because it's used as a

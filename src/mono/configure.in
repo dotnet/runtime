@@ -196,6 +196,7 @@ case "$host" in
 		use_sigposix=yes
 		ikvm_native=no
 		AC_DEFINE(DISABLE_SOCKETS,1,[Disable sockets support])
+		AC_DEFINE(DISABLE_ATTACH, 1, [Disable agent attach support])
 		;;
 	*-*-hpux*)
 	        host_win32=no
@@ -617,7 +618,6 @@ if test "x$host_win32" = "xyes"; then
 fi
 
 AM_CONDITIONAL(STATIC_MONO, test x$with_static_mono != xno)
-AM_CONDITIONAL(SHARED_MONO, test x$with_shared_mono != xno)
 AC_ARG_ENABLE(mcs-build, [  --disable-mcs-build disable the build of the mcs directory], try_mcs_build=$enableval, enable_mcs_build=yes)
 
 AC_ARG_WITH(xen_opt,   [  --with-xen_opt=yes,no          Enable Xen-specific behaviour (defaults to yes)],[],[with_xen_opt=yes])
@@ -2144,6 +2144,11 @@ case "$host" in
 		  darwin*|openbsd*|freebsd*)
 			sgen_supported=true
 			;;
+		esac
+		case "$host" in
+			x86_64-*-nacl*)
+				sizeof_register=8
+				;;
 		esac
 		;;
 	ia64-*-*)

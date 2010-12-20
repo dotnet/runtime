@@ -31,7 +31,7 @@ CustomConfigureStep() {
   make distclean
   cd ${MONO_TRUNK_NACL}
   set -e
-  cp config-nacl-runtime.cache config-nacl-runtime.cache.temp
+  cp config-nacl-runtime${TARGET_BIT_PREFIX}.cache config-nacl-runtime${TARGET_BIT_PREFIX}.cache.temp
   Remove ${PACKAGE_NAME}
   MakeDir ${PACKAGE_NAME}
   cd ${PACKAGE_NAME}
@@ -40,11 +40,11 @@ CustomConfigureStep() {
   PKG_CONFIG_LIBDIR=${NACL_SDK_USR_LIB} PATH=${NACL_BIN_PATH}:${PATH} LIBS="-lnosys -lg" \
   CFLAGS="-g -D_POSIX_PATH_MAX=256 -DPATH_MAX=256" ../../configure \
     --host=nacl${TARGET_BIT_PREFIX} \
-    --disable-shared \
     --exec-prefix=${INSTALL_PATH} \
     --libdir=${INSTALL_PATH}/lib \
     --prefix=${INSTALL_PATH} \
     --oldincludedir=${MONO_TRUNK_NACL}/runtime/include \
+    --disable-shared \
     --disable-mcs-build \
     --with-glib=embedded \
     --with-tls=pthread \
@@ -54,11 +54,10 @@ CustomConfigureStep() {
     --with-gc=included \
     --enable-nacl-gc \
     --enable-nacl-codegen \
-    --cache-file=../config-nacl-runtime.cache.temp
+    --cache-file=../config-nacl-runtime${TARGET_BIT_PREFIX}.cache.temp
   echo "// --- Native Client runtime below" >> config.h
   echo "#define pthread_cleanup_push(x, y)" >> config.h
   echo "#define pthread_cleanup_pop(x)" >> config.h
-  echo "#define DISABLE_SOCKETS 1" >> config.h
   echo "#undef HAVE_EPOLL" >> config.h
   echo "#undef HAVE_WORKING_SIGALTSTACK" >> config.h
   echo "extern long int timezone;" >> config.h
@@ -69,7 +68,7 @@ CustomConfigureStep() {
   echo "// --- Native Client runtime below" >> eglib/src/eglib-config.h
   echo "#undef G_BREAKPOINT" >> eglib/src/eglib-config.h
   echo "#define G_BREAKPOINT() G_STMT_START { __asm__ (\"hlt\"); } G_STMT_END" >> eglib/src/eglib-config.h
-  rm ../config-nacl-runtime.cache.temp
+  rm ../config-nacl-runtime${TARGET_BIT_PREFIX}.cache.temp
 }
 
 CustomInstallStep() {

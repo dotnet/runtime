@@ -13,4 +13,6 @@
 
 ac_cv_func_mmap=${ac_cv_func_mmap=no}
 ac_cv_var_timezone=${ac_cv_var_timezone=yes}
+ac_cv_host=${ac_cv_host=x86_64-pc-nacl}
+ac_cv_target=${ac_cv_target=x86_64-pc-nacl}
 

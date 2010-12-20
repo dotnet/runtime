@@ -442,37 +442,37 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	 */
 
 	arg_offsets [0] = 0;
-	arg_offsets [1] = sizeof (gpointer);
-	arg_offsets [2] = sizeof (gpointer) * 2;
-	arg_offsets [3] = sizeof (gpointer) * 3;
-	regs_offset = sizeof (gpointer) * 4;
+	arg_offsets [1] = SIZEOF_REGISTER;
+	arg_offsets [2] = SIZEOF_REGISTER * 2;
+	arg_offsets [3] = SIZEOF_REGISTER * 3;
+	regs_offset = SIZEOF_REGISTER * 4;
 
 	/* Save registers */
 	for (i = 0; i < AMD64_NREG; ++i)
 		if (i != AMD64_RSP)
-			amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (i * sizeof (gpointer)), i, 8);
+			amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (i * SIZEOF_REGISTER), i, SIZEOF_REGISTER);
 	/* Save RSP */
-	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, stack_size + sizeof (gpointer));
-	amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (AMD64_RSP * sizeof (gpointer)), X86_EAX, 8);
+	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, stack_size + SIZEOF_REGISTER);
+	amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (AMD64_RSP * SIZEOF_REGISTER), X86_EAX, SIZEOF_REGISTER);
 	/* Set arg1 == regs */
 	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, regs_offset);
-	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [0], AMD64_RAX, 8);
+	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [0], AMD64_RAX, SIZEOF_REGISTER);
 	/* Set arg2 == eip */
 	if (llvm_abs)
 		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
 	else
-		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, stack_size, 8);
-	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [1], AMD64_RAX, 8);
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, stack_size, SIZEOF_REGISTER);
+	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [1], AMD64_RAX, SIZEOF_REGISTER);
 	/* Set arg3 == exc/ex_token_index */
 	if (resume_unwind)
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [2], 0, 8);
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [2], 0, SIZEOF_REGISTER);
 	else
-		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [2], AMD64_ARG_REG1, 8);
+		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [2], AMD64_ARG_REG1, SIZEOF_REGISTER);
 	/* Set arg4 == rethrow/pc offset */
 	if (resume_unwind) {
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], 0, 8);
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], 0, SIZEOF_REGISTER);
 	} else if (corlib) {
-		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [3], AMD64_ARG_REG2, 8);
+		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [3], AMD64_ARG_REG2, SIZEOF_REGISTER);
 		if (llvm_abs)
 			/* 
 			 * The caller is LLVM code which passes the absolute address not a pc offset,
@@ -481,7 +481,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 			 */
 			amd64_neg_membase (code, AMD64_RSP, arg_offsets [3]);
 	} else {
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], rethrow, 8);
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], rethrow, SIZEOF_REGISTER);
 	}
 
 	if (aot) {

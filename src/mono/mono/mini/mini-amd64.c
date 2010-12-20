@@ -7580,6 +7580,46 @@ mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guin
 	return can_write;
 }
 
+#if defined(__native_client_codegen__)
+/* For membase calls, we want the base register. for Native Client,  */
+/* all indirect calls have the following sequence with the given sizes: */
+/* mov %eXX,%eXX				[2-3]	*/
+/* mov disp(%r15,%rXX,scale),%r11d		[4-8]	*/
+/* and $0xffffffffffffffe0,%r11d		[4]	*/
+/* add %r15,%r11				[3]	*/
+/* callq *%r11					[3]	*/
+
+
+/* Determine if code points to a NaCl call-through-register sequence, */
+/* (i.e., the last 3 instructions listed above) */
+int
+is_nacl_call_reg_sequence(guint8* code)
+{
+	const char *sequence = "\x41\x83\xe3\xe0" /* and */
+			       "\x4d\x03\xdf"     /* add */
+			       "\x41\xff\xd3";   /* call */
+	return memcmp(code, sequence, 10) == 0;
+}
+
+/* Determine if code points to the first opcode of the mov membase component */
+/* of an indirect call sequence (i.e. the first 2 instructions listed above) */
+/* (there could be a REX prefix before the opcode but it is ignored) */
+static int
+is_nacl_indirect_call_membase_sequence(guint8* code)
+{
+	       /* Check for mov opcode, reg-reg addressing mode (mod = 3), */
+	return code[0] == 0x8b && amd64_modrm_mod(code[1]) == 3 &&
+	       /* and that src reg = dest reg */
+	       amd64_modrm_reg(code[1]) == amd64_modrm_rm(code[1]) &&
+	       /* Check that next inst is mov, uses SIB byte (rm = 4), */
+	       IS_REX(code[2]) &&
+	       code[3] == 0x8b && amd64_modrm_rm(code[4]) == 4 &&
+	       /* and has dst of r11 and base of r15 */
+	       (amd64_modrm_reg(code[4]) + amd64_rex_r(code[2])) == AMD64_R11 &&
+	       (amd64_sib_base(code[5]) + amd64_rex_b(code[2])) == AMD64_R15;
+}
+#endif /* __native_client_codegen__ */
+
 int
 mono_arch_get_this_arg_reg (guint8 *code)
 {

@@ -6,7 +6,7 @@ set -o verbose
 
 source ../common.sh
 
-MONO_RUNTIME_BASE=../runtime
+MONO_RUNTIME_BASE=../runtime${TARGET_BIT_PREFIX}
 MONO_BASE=../compiler
 MONO="${MONO_BASE}/bin/nacl${TARGET_BIT_PREFIX}-mono"
 CC=$NACLCC
