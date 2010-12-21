@@ -693,7 +693,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		x86_jump_membase32 (pbytes, X86_EBX, offset);
 		emit_bytes (acfg, bytes, kSizeOfNaClJmp);
 		/* four bytes of data, used by mono_arch_patch_plt_entry              */
-		/* TODO(bradchen): make this work with data embedded in push.         */
+		/* For Native Client, make this work with data embedded in push.      */
 		emit_byte (acfg, 0x68);  /* hide data in a push */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
