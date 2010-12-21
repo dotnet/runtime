@@ -4864,13 +4864,13 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (!acfg->llc_args)
 		acfg->llc_args = g_string_new ("");
 
-#if !LLVM_CHECK_VERSION(2, 8)
-	/* LLVM 2.8 removed the -f flag ??? */
-	g_string_append (acfg->llc_args, " -f");
-#endif
+	/* Verbose asm slows down llc greatly */
+	g_string_append (acfg->llc_args, " -asm-verbose=false");
 
 	if (acfg->aot_opts.mtriple)
 		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
+
+	unlink (acfg->tmpfname);
 
 	command = g_strdup_printf ("llc %s -relocation-model=pic -unwind-tables -disable-gnu-eh-frame -enable-mono-eh-frame -o %s temp.opt.bc", acfg->llc_args->str, acfg->tmpfname);
 
