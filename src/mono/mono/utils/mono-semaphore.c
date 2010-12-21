@@ -99,7 +99,8 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 		}
 	}
 #endif
-	return (res != -1);
+	/* Don't do (res == -1) here since OSX might return > 0 for error */
+	return (res != 0);
 }
 
 int
