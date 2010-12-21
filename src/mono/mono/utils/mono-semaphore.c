@@ -99,8 +99,10 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 		}
 	}
 #endif
-	/* Don't do (res == -1) here since OSX might return > 0 for error */
-	return (res != 0);
+	/* OSX might return > 0 for error */
+	if (res != 0)
+		res = -1;
+	return res;
 }
 
 int
@@ -116,6 +118,9 @@ mono_sem_wait (MonoSemType *sem, gboolean alertable)
 		if (alertable)
 			return -1;
 	}
+	/* OSX might return > 0 for error */
+	if (res != 0)
+		res = -1;
 	return res;
 }
 
@@ -127,6 +132,9 @@ mono_sem_post (MonoSemType *sem)
 	while ((res = sem_post (sem) == -1) && errno == EINTR);
 #else
 	while ((res = semaphore_signal (*sem) == -1) && errno == EINTR);
+	/* OSX might return > 0 for error */
+	if (res != 0)
+		res = -1;
 #endif
 	return res;
 }
