@@ -30,9 +30,6 @@ moon_libs = \
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS)
-if MOONLIGHT_BOEHM
-	moon_libs += $(libgc_libs)
-endif
 endif
 
 static_libs=	\
@@ -510,11 +507,13 @@ libmonosgen_2_0_la_LIBADD = $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 
 if MOONLIGHT
 libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmono_moon_la_CFLAGS = $(AM_CFLAGS) $(MOONLIGHT_DEFINES)
 if MOONLIGHT_BOEHM
-libmono_moon_la_CFLAGS += $(LIBGC_CFLAGS)
-endif
+libmono_moon_la_CFLAGS = $(mono_CFLAGS) $(MOONLIGHT_DEFINES)
+libmono_moon_la_LIBADD = $(moon_libs) $(libgc_libs) $(LIBMONO_DTRACE_OBJECT)
+else
+libmono_moon_la_CFLAGS = $(mono_sgen_CFLAGS) $(MOONLIGHT_DEFINES)
 libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
+endif
 endif
 
 libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)

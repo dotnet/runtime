@@ -2597,25 +2597,13 @@ AC_ARG_WITH(moonlight, [  --with-moonlight=yes|no|only         If you want to bu
         MOONLIGHT_DEFINES="-DMOONLIGHT -DDISABLE_ASSEMBLY_REMAPPING "
 	fi
 ], [with_moonlight=no])
-
-MOONLIGHT_GC=boehm
-AC_ARG_WITH(moon_gc, [  --with-moon-gc=boehm,sgen		Select the gc to use with Moonlight (defaults to boehm)],[
-], [with_moon_gc=boehm])
-
-case "x$with_moon_gc" in
-	xboehm)
-		MOONLIGHT_GC=boehm
-		MOONLIGHT_DEFINES="$MOONLIGHT_DEFINES $BOEHM_DEFINES"
-	;;
-	xsgen)
-		MOONLIGHT_GC=sgen
-		MOONLIGHT_DEFINES="$MOONLIGHT_DEFINES $SGEN_DEFINES"
-	;;
-	*)
-		AC_MSG_ERROR([Invalid argument to --with-moon-gc.]) ;;
-esac
-
 AC_SUBST(MOONLIGHT_DEFINES)
+
+AC_ARG_WITH(moon_gc, [  --with-moon-gc=boehm,sgen		Select the gc to use with Moonlight (defaults to boehm)],[
+	if test "x$with_moon_gc" != "xsgen"; then
+		with_moon_gc=boehm
+	fi
+], [with_moon_gc=boehm])
 
 AC_CHECK_HEADER([malloc.h], 
 		[AC_DEFINE([HAVE_USR_INCLUDE_MALLOC_H], [1], 
