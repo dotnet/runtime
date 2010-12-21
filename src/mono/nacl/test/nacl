@@ -75,7 +75,7 @@ echo ${MONO_PATH}
 #-----
 # enable the appropriate set of AOT options below.
 
-readonly AOT_OPTIONS=full,static,nodebug
+readonly AOT_OPTIONS=full,static,nodebug,ntrampolines=4096
 #-----
 
 # make a temp copy of mscorlib.dll in this directory
@@ -129,25 +129,22 @@ if [ $MODE = "regression" ]; then
   $CC -o fsa-tmp/fsacheck.nexe -g -static ../../mono/mini/fsacheck.c ${CC_DEFINES} ${AOT_OBJS} -lmono-2.0 -lpthread -lm -lnosys -L${MONO_RUNTIME_BASE}/lib -I${MONO_RUNTIME_BASE}/include/mono-2.0  -I${MONO_RUNTIME_BASE}/include ${RELOCATE_RODATA}
 fi
 
-# only actually run the tests if we are on the target platform
-if [ $TARGET_BITSIZE = $HOST_BITSIZE ]; then
-  if [ $MODE = "regression" ]; then
-    cd fsa-tmp
-    ${NCVAL} -readwrite_sfi fsacheck.nexe 2> validator_out || echo "fsacheck.nexe invalid: continuing anyway"
-    nacl-objdump -d fsacheck.nexe > fsacheck.disasm
-    for t in $fsatests; do
-      sel_ldr -a -c fsacheck.nexe $t || true
-    done
+if [ $MODE = "regression" ]; then
+  cd fsa-tmp
+  ${NCVAL} -readwrite_sfi fsacheck.nexe 2> validator_out || echo "fsacheck.nexe invalid: continuing anyway"
+  nacl-objdump -d fsacheck.nexe > fsacheck.disasm
+  for t in $fsatests; do
+    sel_ldr -a -c fsacheck.nexe $t || true
+  done
+else
+  export MONO_PATH=$(pwd)
+  # run generated test(select one or more below)
+  if [ $MODE = "normal" ]; then
+    ./hw-test
   else
-    export MONO_PATH=$(pwd)
-    # run generated test(select one or more below)
-    if [ $MODE = "normal" ]; then
-      ./hw-test
-    else
-      ${NCVAL} -readwrite_sfi hw-test.nexe 2> validator_out || echo "hw-test.nexe invalid: continuing anyway"
-      nacl-objdump -d hw-test.nexe > hw-test.disasm
-      sel_ldr -a -c hw-test.nexe
-    fi
+    ${NCVAL} -readwrite_sfi hw-test.nexe 2> validator_out || echo "hw-test.nexe invalid: continuing anyway"
+    nacl-objdump -d hw-test.nexe > hw-test.disasm
+    sel_ldr -a -c hw-test.nexe
   fi
 fi
 
