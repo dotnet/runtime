@@ -11,16 +11,6 @@ This is Mono.
    a. Build Requirements
    ---------------------
 
-	To build Mono, you will need the following components:
-
-		* pkg-config
-
-		  Available from: http://www.freedesktop.org/Software/pkgconfig
-
-		* glib 2.4
-
-		  Available from: http://www.gtk.org/
-
 	On Itanium, you must obtain libunwind:
 
 		http://www.hpl.hp.com/research/linux/libunwind/download.php4
@@ -35,7 +25,15 @@ This is Mono.
 		* libgdiplus
 
 		  If you want to get support for System.Drawing, you will need to get
-		  Libgdiplus.
+		  Libgdiplus.    This library in turn requires glib and pkg-config:
+
+			* pkg-config
+
+		    	  Available from: http://www.freedesktop.org/Software/pkgconfig
+
+		  	* glib 2.4
+
+		    	  Available from: http://www.gtk.org/
 
 		* libzlib
 
@@ -72,7 +70,6 @@ This is Mono.
 	problems in your makefiles or your system) pass the V=1 flag to make, like this:
 
 		 make V=1
-
 
 
     c. Building the software from GIT
@@ -168,10 +165,13 @@ This is Mono.
 
 		make install
 
+	You can verify your installation by using the mono-test-install
+	script, it can diagnose some common problems with Mono's install.
+
 	Failure to follow these steps may result in a broken installation. 
 
-    d. Common Configuration Options
-    -------------------------------
+    d. Configuration Options
+    ------------------------
 
 	The following are the configuration options that someone
 	building Mono might want to use:
