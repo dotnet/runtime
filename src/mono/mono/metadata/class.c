@@ -1217,11 +1217,6 @@ static gpointer
 mono_class_alloc (MonoClass *class, int size)
 {
 	if (class->generic_class)
-		/*
-		 * This should be freed in free_generic_class () in metadata.c.
-		 * FIXME: It would be better to allocate this from the image set mempool, by
-		 * adding an image_set field to MonoGenericClass.
-		 */
 		return mono_image_set_alloc (class->generic_class->owner, size);
 	else
 		return mono_image_alloc (class->image, size);
