@@ -111,7 +111,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "70"
+#define MONO_AOT_FILE_VERSION "71"
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -2245,6 +2245,8 @@ enum {
 	MONO_AOT_WRAPPER_MONO_ENTER,
 	MONO_AOT_WRAPPER_MONO_EXIT,
 	MONO_AOT_WRAPPER_ELEMENT_ADDR,
+	MONO_AOT_WRAPPER_PTR_TO_STRUCTURE,
+	MONO_AOT_WRAPPER_STRUCTURE_TO_PTR,
 	MONO_AOT_WRAPPER_LAST
 };
 

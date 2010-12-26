@@ -1822,12 +1822,19 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_UNKNOWN:
-			if (strcmp (method->name, "FastMonitorEnter") == 0)
+			if (strcmp (method->name, "FastMonitorEnter") == 0) {
 				encode_value (MONO_AOT_WRAPPER_MONO_ENTER, p, &p);
-			else if (strcmp (method->name, "FastMonitorExit") == 0)
+			} else if (strcmp (method->name, "FastMonitorExit") == 0) {
 				encode_value (MONO_AOT_WRAPPER_MONO_EXIT, p, &p);
-			else
+			} else if (strcmp (method->name, "PtrToStructure") == 0) {
+				encode_value (MONO_AOT_WRAPPER_PTR_TO_STRUCTURE, p, &p);
+				encode_klass_ref (acfg, method->klass, p, &p);
+			} else if (strcmp (method->name, "StructureToPtr") == 0) {
+				encode_value (MONO_AOT_WRAPPER_STRUCTURE_TO_PTR, p, &p);
+				encode_klass_ref (acfg, method->klass, p, &p);
+			} else {
 				g_assert_not_reached ();
+			}
 			break;
 		case MONO_WRAPPER_SYNCHRONIZED:
 		case MONO_WRAPPER_MANAGED_TO_NATIVE:
@@ -5280,25 +5287,39 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 		name = NULL;
 		if (method->wrapper_type) {
+			gboolean encode_ref = FALSE;
+
 			/* 
 			 * We encode some wrappers using their name, since encoding them
-			 * directly would be difficult. This also avoids creating the wrapper
-			 * methods at runtime, since they are not needed anyway.
+			 * directly would be difficult. This works because at runtime, we only need to
+			 * check whenever a method ref matches an existing MonoMethod. The downside is
+			 * that the method names are large, so we use the binary encoding if possible.
 			 */
 			switch (method->wrapper_type) {
 			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
 			case MONO_WRAPPER_SYNCHRONIZED:
-				/* encode_method_ref () can handle these */
+				encode_ref = TRUE;
 				break;
+			case MONO_WRAPPER_MANAGED_TO_NATIVE:
+				/* Skip JIT icall wrappers */
+				if (!strstr (method->name, "__icall_wrapper"))
+					encode_ref = TRUE;
+				break;
+			case MONO_WRAPPER_UNKNOWN:
+				if (!strcmp (method->name, "PtrToStructure") || !strcmp (method->name, "StructureToPtr"))
+					encode_ref = TRUE;
+ 				break;
 			case MONO_WRAPPER_RUNTIME_INVOKE:
 				if (mono_marshal_method_from_wrapper (method) != method && !strstr (method->name, "virtual"))
 					/* Direct wrapper, encode normally */
-					break;
-				/* Fall through */
+					encode_ref = TRUE;
+				break;
 			default:
-				name = mono_aot_wrapper_name (method);
 				break;
 			}
+
+			if (!encode_ref)
+				name = mono_aot_wrapper_name (method);
 		}
 
 		if (name) {

@@ -584,16 +584,37 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			MonoMethod *orig_method;
 			int subtype = decode_value (p, &p);
 
-			if (subtype == MONO_AOT_WRAPPER_MONO_ENTER)
-				desc = mono_method_desc_new ("Monitor:Enter", FALSE);
-			else if (subtype == MONO_AOT_WRAPPER_MONO_EXIT)
-				desc = mono_method_desc_new ("Monitor:Exit", FALSE);
-			else
-				g_assert_not_reached ();
-			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-			g_assert (orig_method);
-			mono_method_desc_free (desc);
-			ref->method = mono_monitor_get_fast_path (orig_method);
+			if (subtype == MONO_AOT_WRAPPER_PTR_TO_STRUCTURE || subtype == MONO_AOT_WRAPPER_STRUCTURE_TO_PTR) {
+				MonoClass *klass = decode_klass_ref (module, p, &p);
+				
+				if (!klass)
+					return FALSE;
+
+				g_assert (target);
+				if (klass != target->klass)
+					return FALSE;
+
+				if (subtype == MONO_AOT_WRAPPER_PTR_TO_STRUCTURE) {
+					if (strcmp (target->name, "PtrToStructure"))
+						return FALSE;
+					ref->method = mono_marshal_get_ptr_to_struct (klass);
+				} else {
+					if (strcmp (target->name, "StructureToPtr"))
+						return FALSE;
+					ref->method = mono_marshal_get_struct_to_ptr (klass);
+				}
+			} else {
+				if (subtype == MONO_AOT_WRAPPER_MONO_ENTER)
+					desc = mono_method_desc_new ("Monitor:Enter", FALSE);
+				else if (subtype == MONO_AOT_WRAPPER_MONO_EXIT)
+					desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+				else
+					g_assert_not_reached ();
+				orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+				g_assert (orig_method);
+				mono_method_desc_free (desc);
+				ref->method = mono_monitor_get_fast_path (orig_method);
+			}
 			break;
 		}
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
@@ -616,6 +637,20 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			} else {
 				g_assert_not_reached ();
 			}
+			break;
+		}
+		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
+			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
+
+			if (!m)
+				return FALSE;
+
+			/* This should only happen when looking for an extra method */
+			g_assert (target);
+			if (mono_marshal_method_from_wrapper (target) == m)
+				ref->method = target;
+			else
+				return FALSE;
 			break;
 		}
 		default:
