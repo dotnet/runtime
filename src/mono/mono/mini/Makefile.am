@@ -619,7 +619,7 @@ checktests: $(regtests)
 rcheck: mono $(regtests)
 	$(RUNTIME) --regression $(regtests)
 
-LLVM_AOT_RUNTIME_OPTS=$(if ($LLVM),--llvm,)
+LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
 
 aotcheck: mono $(regtests)
 	rm -f *.exe.so
