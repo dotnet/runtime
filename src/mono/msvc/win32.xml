@@ -9,8 +9,8 @@
 	<Copy source="{monobuilddir}\MonoPosixHelper.dll" destination="{destdir}\bin\MonoPosixHelper.dll" />
 
 	<!-- Copy Consts.cs.in and insert this revision number -->
-	<Copy source="{sourcedir}\mcs\build\common\Consts.cs.in" destination="{sourcedir}\mcs\build\common\Consts.cs" />
-	<Regex source="{sourcedir}\mcs\build\common\Consts.cs" pattern="@MONO_VERSION@" replacement="2.5.0.0" />
+	<Copy source="{sourcedir}\mono\mcs\build\common\Consts.cs.in" destination="{sourcedir}\mono\mcs\build\common\Consts.cs" />
+	<Regex source="{sourcedir}\mono\mcs\build\common\Consts.cs" pattern="@MONO_VERSION@" replacement="2.5.0.0" />
 	
 	<!-- Make the \etc directory -->
 	<Copy source="{sourcedir}\mono\data\net_2_0\machine.config" destination="{destdir}\etc\mono\2.0\machine.config" />
@@ -30,8 +30,8 @@
 
 	<Copy source="{sourcedir}\mono\msvc\jaystuff.bat" destination="{sourcedir}\jaystuff.bat" />
 
-	<Copy source="{sourcedir}\mcs\class\System.XML\System.Xml.XPath\Parser.jay" destination="{sourcedir}\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" />
-	<Regex source="{sourcedir}\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" pattern="%start Expr" replacement="%start Pattern" />
+	<Copy source="{sourcedir}\mono\mcs\class\System.XML\System.Xml.XPath\Parser.jay" destination="{sourcedir}\mono\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" />
+	<Regex source="{sourcedir}\mono\mcs\class\System.XML\Mono.Xml.Xsl\PatternParser.jay" pattern="%start Expr" replacement="%start Pattern" />
 
 	<Run source="{sourcedir}\jaystuff.bat" />
 
@@ -39,7 +39,7 @@
 	<Assembly name="gmcs" destination="{destdir}\lib\mono\2.0\gmcs.exe" mono="install">
 		<OutputType>exe</OutputType>
 		<DefineConstants>GMCS_SOURCE,NET_1_1,NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\mcs</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\mcs</SourcePath>
 		<Debug>false</Debug>
 		<NoConfig>false</NoConfig>
 		<Sources>
@@ -50,7 +50,7 @@
 	<Assembly name="mscorlib" destination="{destdir}\lib\mono\2.0\mscorlib.dll" mono="install">
 		<OutputType>library</OutputType>
 		<DefineConstants>INSIDE_CORLIB,NET_1_1,NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\corlib</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\corlib</SourcePath>
 		<Debug>false</Debug>
 		<NoStandardLib>true</NoStandardLib>
 		<IgnoreWarnings>612,618</IgnoreWarnings>
@@ -78,7 +78,7 @@
 		<DefineConstants>NET_1_1;NET_2_0;CONFIGURATION_2_0;XML_DEP;SECURITY_DEP;CONFIGURATION_DEP</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<IgnoreWarnings>618</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System\</SourcePath>
 		<Sources>
 			<Source type="list">System.dll.sources</Source>
 			<Source>-resource:resources/Asterisk.wav</Source>
@@ -96,7 +96,7 @@
 		<OutputType>library</OutputType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Debug>false</Debug>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Security\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Security\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Security.dll.sources</Source>
 		</Sources>
@@ -109,7 +109,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<IgnoreWarnings>612,618,642</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.Xml</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Xml</SourcePath>
 		<Debug>false</Debug>
 		<Sources>
 			<Source type="list">System.Xml.dll.sources</Source>
@@ -130,7 +130,7 @@
 		<Debug>false</Debug>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<IgnoreWarnings>618,414</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.Security\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Security\</SourcePath>
 		<Sources>
 			<Source type="list">System.Security.dll.sources</Source>
 		</Sources>
@@ -147,14 +147,17 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Debug>false</Debug>
 		<IgnoreWarnings>618,414</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.Configuration\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Configuration\</SourcePath>
 		<Sources>
 			<Source type="list">System.Configuration.dll.sources</Source>
 		</Sources>
 	</Assembly>
 	<Assembly name="Mono.CompilerServices.SymbolWriter" destination="{destdir}\lib\mono\2.0\Mono.CompilerServices.SymbolWriter.dll" mono="install">
+		<References>
+			<Reference>System</Reference>
+		</References>
 		<OutputType>library</OutputType>
-		<SourcePath>{sourcedir}\mcs\class\Mono.CompilerServices.SymbolWriter</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.CompilerServices.SymbolWriter</SourcePath>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<Debug>false</Debug>
 		<Sources>
@@ -169,7 +172,7 @@
     </References>
     <OutputType>library</OutputType>
     <DefineConstants>NET_1_1;NET_2_0;NET_3_5;LIBC</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\System.Core\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\System.Core\</SourcePath>
     <IgnoreWarnings>1720</IgnoreWarnings>
     <Debug>false</Debug>
     <Sources>
@@ -181,7 +184,7 @@
 	<Assembly name="gmcs" destination="{destdir}\temp\gmcs.exe">
 		<OutputType>exe</OutputType>
 		<DefineConstants>GMCS_SOURCE,NET_1_1,NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\mcs</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\mcs</SourcePath>
 		<Debug>true</Debug>
 		<NoConfig>false</NoConfig>
 		<Sources>
@@ -192,7 +195,7 @@
 	<Assembly name="mscorlib" destination="{destdir}\temp\mscorlib.dll">
 		<OutputType>library</OutputType>
 		<DefineConstants>INSIDE_CORLIB,NET_1_1,NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\corlib</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\corlib</SourcePath>
 		<Debug>true</Debug>
 		<NoStandardLib>true</NoStandardLib>
 		<IgnoreWarnings>612,618</IgnoreWarnings>
@@ -220,7 +223,7 @@
 		<DefineConstants>NET_1_1;NET_2_0;CONFIGURATION_2_0;XML_DEP;SECURITY_DEP;CONFIGURATION_DEP</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<IgnoreWarnings>618</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System\</SourcePath>
 		<Sources>
 			<Source type="list">System.dll.sources</Source>
 			<Source>-resource:resources/Asterisk.wav</Source>
@@ -238,7 +241,7 @@
 		<OutputType>library</OutputType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Debug>true</Debug>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Security\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Security\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Security.dll.sources</Source>
 		</Sources>
@@ -251,7 +254,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<IgnoreWarnings>612,618,642</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.Xml</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Xml</SourcePath>
 		<Debug>true</Debug>
 		<Sources>
 			<Source type="list">System.Xml.dll.sources</Source>
@@ -272,7 +275,7 @@
 		<Debug>true</Debug>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<IgnoreWarnings>618,414</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.Security\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Security\</SourcePath>
 		<Sources>
 			<Source type="list">System.Security.dll.sources</Source>
 		</Sources>
@@ -289,7 +292,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Debug>true</Debug>
 		<IgnoreWarnings>618,414</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.Configuration\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Configuration\</SourcePath>
 		<Sources>
 			<Source type="list">System.Configuration.dll.sources</Source>
 		</Sources>
@@ -303,7 +306,7 @@
     <DefineConstants>NET_1_1;NET_2_0</DefineConstants>
     <IgnoreWarnings>618,612</IgnoreWarnings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SourcePath>{sourcedir}\mcs\class\Mono.Posix\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\Mono.Posix\</SourcePath>
     <Sources>
       <Source type="list">Mono.Posix.dll.sources</Source>
     </Sources>
@@ -316,7 +319,7 @@
     </References>
     <OutputType>library</OutputType>
     <DefineConstants>NET_1_1;NET_2_0;NET_3_5;LIBC</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\System.Core\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\System.Core\</SourcePath>
     <IgnoreWarnings>1720</IgnoreWarnings>
     <Sources>
       <Source type="list">System.Core.dll.sources</Source>
@@ -331,7 +334,7 @@
 		<OutputType>exe</OutputType>
 		<NoConfig>true</NoConfig>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\tools\security</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\tools\security</SourcePath>
 		<Debug>true</Debug>
 		<Sources>
 			<Source>sn.cs</Source>
@@ -342,13 +345,13 @@
 	</Assembly>
 
 	<!-- Sign what we've made so far -->
-	<Sign assembly="{destdir}\temp\System.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\temp\mscorlib.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\temp\Mono.Security.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\temp\System.Xml.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\temp\System.Security.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\temp\System.Configuration.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\temp\System.Core.dll" key="{sourcedir}\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\temp\System.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\temp\mscorlib.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\temp\Mono.Security.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\temp\System.Xml.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\temp\System.Security.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\temp\System.Configuration.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\temp\System.Core.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
 
   <!-- Copy our new assemblies to the bin/lib locations -->
 	<Copy source="{destdir}\temp\gmcs.exe" destination="{destdir}\lib\mono\2.0\gmcs.exe" />
@@ -379,7 +382,7 @@
 		<OutputType>exe</OutputType>
 		<NoConfig>false</NoConfig>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\tools\gacutil</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\tools\gacutil</SourcePath>
 		<Debug>true</Debug>
 		<Sources>
 			<Source type="list">gacutil.exe.sources</Source>
@@ -387,7 +390,7 @@
 	</Assembly>
 	<Assembly name="resgen" destination="{destdir}\lib\mono\2.0\resgen.exe">
 		<OutputType>exe</OutputType>
-		<SourcePath>{sourcedir}\mcs\tools\resgen</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\tools\resgen</SourcePath>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<NoConfig>false</NoConfig>
 		<Debug>true</Debug>
@@ -397,7 +400,7 @@
 	</Assembly>
 	<Assembly name="culevel" destination="{destdir}\lib\mono\2.0\culevel.exe">
 		<OutputType>exe</OutputType>
-		<SourcePath>{sourcedir}\mcs\tools\culevel</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\tools\culevel</SourcePath>
 		<NoConfig>false</NoConfig>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<Debug>true</Debug>
@@ -413,7 +416,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\I18N\Common\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\I18N\Common\</SourcePath>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<Sources>
 			<Source type="list">I18N.dll.sources</Source>
@@ -427,7 +430,7 @@
 		<OutputType>library</OutputType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\I18N\West\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\I18N\West\</SourcePath>
 		<Sources>
 			<Source type="list">I18N.West.dll.sources</Source>
 		</Sources>
@@ -440,7 +443,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\I18N\MidEast\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\I18N\MidEast\</SourcePath>
 		<Sources>
 			<Source type="list">I18N.MidEast.dll.sources</Source>
 		</Sources>
@@ -453,7 +456,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\I18N\Other\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\I18N\Other\</SourcePath>
 		<Sources>
 			<Source type="list">I18N.Other.dll.sources</Source>
 		</Sources>
@@ -466,7 +469,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\I18N\Rare\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\I18N\Rare\</SourcePath>
 		<Sources>
 			<Source type="list">I18N.Rare.dll.sources</Source>
 		</Sources>
@@ -479,7 +482,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\I18N\CJK\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\I18N\CJK\</SourcePath>
 		<Sources>
 			<Source type="list">I18N.CJK.dll.sources</Source>
 			<Source>/resource:jis.table</Source>
@@ -495,7 +498,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\System.Drawing\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Drawing\</SourcePath>
 		<Sources>
 			<Source type="list">System.Drawing.dll.sources</Source>
 			<Source>-resource:Assembly/Mono.ico,Mono.ico</Source>
@@ -513,7 +516,7 @@
 		<OutputType>library</OutputType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Transactions\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Transactions\</SourcePath>
 		<Sources>
 			<Source type="list">System.Transactions.dll.sources</Source>
 		</Sources>
@@ -528,7 +531,7 @@
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<IgnoreWarnings>168,162</IgnoreWarnings>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\System.EnterpriseServices\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.EnterpriseServices\</SourcePath>
 		<Sources>
 			<Source type="list">System.EnterpriseServices.dll.sources</Source>
 		</Sources>
@@ -542,7 +545,7 @@
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
 		<IgnoreWarnings>169</IgnoreWarnings>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\Mono.C5\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.C5\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.C5.dll.sources</Source>
 		</Sources>
@@ -557,7 +560,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Data.Tds\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Data.Tds\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Data.Tds.dll.sources</Source>
 		</Sources>
@@ -576,7 +579,7 @@
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<IgnoreWarnings>649</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.Data\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Data\</SourcePath>
 		<Sources>
 			<Source type="list">System.Data.dll.sources</Source>
 			<Source>Mono.Data.SqlExpressions/Parser.cs</Source>
@@ -588,7 +591,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Accessibility\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Accessibility\</SourcePath>
 		<Sources>
 			<Source type="list">Accessibility.dll.sources</Source>
 		</Sources>
@@ -600,13 +603,13 @@
 		<OutputType>library</OutputType>
 		<IgnoreWarnings>108</IgnoreWarnings>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.WebBrowser\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.WebBrowser\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.WebBrowser.dll.sources</Source>
 		</Sources>
 	</Assembly>
 
-	<Copy source="{sourcedir}\mcs\class\Managed.Windows.Forms\resources\keyboards.resources.prebuilt" destination="{sourcedir}\mcs\class\Managed.Windows.Forms\resources\keyboards.resources" />
+	<Copy source="{sourcedir}\mono\mcs\class\Managed.Windows.Forms\resources\keyboards.resources.prebuilt" destination="{sourcedir}\mono\mcs\class\Managed.Windows.Forms\resources\keyboards.resources" />
 
 	<Assembly name="System.Windows.Forms" destination="{destdir}\lib\mono\2.0\System.Windows.Forms.dll">
 		<References>
@@ -623,7 +626,7 @@
 		<OutputType>library</OutputType>
 		<IgnoreWarnings>618,612,809</IgnoreWarnings>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Managed.Windows.Forms\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Managed.Windows.Forms\</SourcePath>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Sources>
 			<Source type="list">System.Windows.Forms.dll.sources</Source>
@@ -631,7 +634,7 @@
 		</Sources>
 	</Assembly>
 
-	<Resgen workingdir="{sourcedir}\mcs\class\Mono.Data.Sqlite">{sourcedir}\mcs\class\Mono.Data.Sqlite\resources\SR.resx</Resgen>
+	<Resgen workingdir="{sourcedir}\mono\mcs\class\Mono.Data.Sqlite">{sourcedir}\mono\mcs\class\Mono.Data.Sqlite\resources\SR.resx</Resgen>
 
 	<Assembly name="Mono.Data.Sqlite" destination="{destdir}\lib\mono\2.0\Mono.Data.Sqlite.dll">
 		<References>
@@ -641,7 +644,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;MONO_BACKWARD_COMPAT</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Data.Sqlite\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Data.Sqlite\</SourcePath>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Sources>
 			<Source type="list">Mono.Data.Sqlite.dll.sources</Source>
@@ -649,8 +652,8 @@
 		</Sources>
 	</Assembly>
 
-	<Culevel source="{sourcedir}\mcs\class\System.Web\UplevelHelperDefinitions.xml" destination="{sourcedir}\mcs\class\System.Web\System.Web\UplevelHelper.cs" />
-	<Resgen workingdir="{sourcedir}\mcs\class\System.Web">{sourcedir}\mcs\class\System.Web\resources\TranslationResources.resx</Resgen>
+	<Culevel source="{sourcedir}\mono\mcs\class\System.Web\UplevelHelperDefinitions.xml" destination="{sourcedir}\mono\mcs\class\System.Web\System.Web\UplevelHelper.cs" />
+	<Resgen workingdir="{sourcedir}\mono\mcs\class\System.Web">{sourcedir}\mono\mcs\class\System.Web\resources\TranslationResources.resx</Resgen>
 
 	<Assembly name="System.Web" destination="{destdir}\lib\mono\2.0\System.Web.dll">
 		<References>
@@ -668,7 +671,7 @@
 		<DefineConstants>NET_1_1;NET_2_0;INSIDE_SYSTEM_WEB;SYSTEMCORE_DEP</DefineConstants>
 		<IgnoreWarnings>618,612</IgnoreWarnings>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\System.Web\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Web\</SourcePath>
 		<Sources>
 			<Source type="list">System.Web.dll.sources</Source>
 			<Source>System.Web.UI/KeyedList.cs</Source>
@@ -698,7 +701,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Web\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Web\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Web.dll.sources</Source>
 		</Sources>
@@ -715,7 +718,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
 		<IgnoreWarnings>649,169</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.Web.Services\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Web.Services\</SourcePath>
 		<Sources>
 			<Source type="list">System.Web.Services.dll.sources</Source>
 			<Source>-resource:System.Web.Services.Description/wsdl-1.1.xsd,wsdl-1.1.xsd</Source>
@@ -741,7 +744,7 @@
 		<DefineConstants>NET_1_1;NET_2_0;INSIDE_SYSTEM_WEB;WEBSERVICES_DEP;MONOWEB_DEP;SYSTEMCORE_DEP</DefineConstants>
 		<IgnoreWarnings>618,612</IgnoreWarnings>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\class\System.Web\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Web\</SourcePath>
 		<Sources>
 			<Source type="list">System.Web.dll.sources</Source>
 			<Source>System.Web.UI/KeyedList.cs</Source>
@@ -819,7 +822,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Runtime.Serialization.Formatters.Soap\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Runtime.Serialization.Formatters.Soap\</SourcePath>
 		<Sources>
 			<Source type="list">System.Runtime.Serialization.Formatters.Soap.dll.sources</Source>
 		</Sources>
@@ -834,7 +837,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Runtime.Remoting\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Runtime.Remoting\</SourcePath>
 		<Sources>
 			<Source type="list">System.Runtime.Remoting.dll.sources</Source>
 		</Sources>
@@ -847,7 +850,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Configuration.Install\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Configuration.Install\</SourcePath>
 		<Sources>
 			<Source type="list">System.Configuration.Install.dll.sources</Source>
 		</Sources>
@@ -860,7 +863,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Management\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Management\</SourcePath>
 		<Sources>
 			<Source type="list">System.Management.dll.sources</Source>
 		</Sources>
@@ -876,7 +879,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Data.OracleClient\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Data.OracleClient\</SourcePath>
 		<Sources>
 			<Source type="list">System.Data.OracleClient.dll.sources</Source>
 		</Sources>
@@ -888,7 +891,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Microsoft.VisualC\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Microsoft.VisualC\</SourcePath>
 		<Sources>
 			<Source type="list">Microsoft.VisualC.dll.sources</Source>
 		</Sources>
@@ -900,7 +903,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Cscompmgd\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Cscompmgd\</SourcePath>
 		<Sources>
 			<Source type="list">Cscompmgd.dll.sources</Source>
 		</Sources>
@@ -919,7 +922,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Design\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Design\</SourcePath>
 		<Sources>
 			<Source type="list">System.Design.dll.sources</Source>
 		</Sources>
@@ -931,7 +934,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\PEAPI\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\PEAPI\</SourcePath>
 		<Sources>
 			<Source type="list">PEAPI.dll.sources</Source>
 		</Sources>
@@ -946,7 +949,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Npgsql\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Npgsql\</SourcePath>
 		<Sources>
 			<Source type="list">Npgsql.dll.sources</Source>
 		</Sources>
@@ -960,7 +963,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
 		<KeyFile>SharpZipLib.key</KeyFile>
-		<SourcePath>{sourcedir}\mcs\class\ICSharpCode.SharpZipLib\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\ICSharpCode.SharpZipLib\</SourcePath>
 		<Sources>
 			<Source type="list">ICSharpCode.SharpZipLib.dll.sources</Source>
 		</Sources>
@@ -973,7 +976,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Commons.Xml.Relaxng\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Commons.Xml.Relaxng\</SourcePath>
 		<Sources>
 			<Source type="list">Commons.Xml.Relaxng.dll.sources</Source>
 			<Source>/resource:resources/relaxng.rng,relaxng.rng</Source>
@@ -981,7 +984,7 @@
 		</Sources>
 	</Assembly>
 
-	<Resgen workingdir="{sourcedir}\mcs\class\Novell.Directory.Ldap">{sourcedir}\mcs\class\Novell.Directory.Ldap\Novell.Directory.Ldap.Utilclass\ResultCodeMessages.resx</Resgen>
+	<Resgen workingdir="{sourcedir}\mono\mcs\class\Novell.Directory.Ldap">{sourcedir}\mono\mcs\class\Novell.Directory.Ldap\Novell.Directory.Ldap.Utilclass\ResultCodeMessages.resx</Resgen>
 
 	<Assembly name="Novell.Directory.Ldap" destination="{destdir}\lib\mono\2.0\Novell.Directory.Ldap.dll">
 		<References>
@@ -992,7 +995,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
 		<IgnoreWarnings>649,169,219,168</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\Novell.Directory.Ldap\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Novell.Directory.Ldap\</SourcePath>
 		<Sources>
 			<Source type="list">Novell.Directory.Ldap.dll.sources</Source>
 			<Source>/res:Novell.Directory.Ldap.Utilclass/ResultCodeMessages.resources</Source>
@@ -1004,7 +1007,7 @@
 		<OutputType>library</OutputType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Security.Win32\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Security.Win32\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Security.Win32.dll.sources</Source>
 		</Sources>
@@ -1017,7 +1020,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.DirectoryServices\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.DirectoryServices\</SourcePath>
 		<Sources>
 			<Source type="list">System.DirectoryServices.dll.sources</Source>
 		</Sources>
@@ -1029,7 +1032,7 @@
     </References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Messaging\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Messaging\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Messaging.dll.sources</Source>
 		</Sources>
@@ -1045,7 +1048,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Messaging\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Messaging\</SourcePath>
 		<Sources>
 			<Source type="list">System.Messaging.dll.sources</Source>
 			<Source>/resource:System.Messaging/MessageQueue.resx</Source>
@@ -1058,7 +1061,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\RabbitMQ.Client\src\client\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\RabbitMQ.Client\src\client\</SourcePath>
 		<Sources>
 			<Source type="list">RabbitMQ.Client.dll.sources</Source>
 		</Sources>
@@ -1072,7 +1075,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Messaging.RabbitMQ\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Messaging.RabbitMQ\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Messaging.RabbitMQ.dll.sources</Source>
 		</Sources>
@@ -1086,7 +1089,7 @@
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
 		<IgnoreWarnings>618</IgnoreWarnings>
-		<SourcePath>{sourcedir}\mcs\class\System.ServiceProcess\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.ServiceProcess\</SourcePath>
 		<Sources>
 			<Source type="list">System.ServiceProcess.dll.sources</Source>
 		</Sources>
@@ -1100,7 +1103,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Drawing.Design\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Drawing.Design\</SourcePath>
 		<Sources>
 			<Source type="list">System.Drawing.Design.dll.sources</Source>
 		</Sources>
@@ -1120,7 +1123,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>DRAWING_DESIGN_DEP;NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Design\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Design\</SourcePath>
 		<Sources>
 			<Source type="list">System.Design.dll.sources</Source>
 		</Sources>
@@ -1136,7 +1139,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Http\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Http\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Http.dll.sources</Source>
 		</Sources>
@@ -1146,7 +1149,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Cairo\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Cairo\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Cairo.dll.sources</Source>
 		</Sources>
@@ -1159,7 +1162,7 @@
 			<Reference>System.Data</Reference>
 		</References>
 		<OutputType>library</OutputType>
-		<SourcePath>{sourcedir}\mcs\class\IBM.Data.DB2\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\IBM.Data.DB2\</SourcePath>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Sources>
@@ -1173,7 +1176,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\CustomMarshalers\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\CustomMarshalers\</SourcePath>
 		<Sources>
 			<Source type="list">CustomMarshalers.dll.sources</Source>
 		</Sources>
@@ -1183,7 +1186,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\OpenSystem.C\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\OpenSystem.C\</SourcePath>
 		<Sources>
 			<Source type="list">OpenSystem.C.dll.sources</Source>
 		</Sources>
@@ -1195,7 +1198,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Microsoft.Build.Framework\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Microsoft.Build.Framework\</SourcePath>
 		<Sources>
 			<Source type="list">Microsoft.Build.Framework.dll.sources</Source>
 		</Sources>
@@ -1208,7 +1211,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Microsoft.Build.Utilities\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Microsoft.Build.Utilities\</SourcePath>
 		<Sources>
 			<Source type="list">Microsoft.Build.Utilities.dll.sources</Source>
 		</Sources>
@@ -1224,7 +1227,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Microsoft.Build.Engine\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Microsoft.Build.Engine\</SourcePath>
 		<Sources>
 			<Source type="list">Microsoft.Build.Engine.dll.sources</Source>
 		</Sources>
@@ -1242,7 +1245,7 @@
     </References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Microsoft.Build.Tasks\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Microsoft.Build.Tasks\</SourcePath>
 		<Sources>
 			<Source type="list">Microsoft.Build.Tasks.dll.sources</Source>
 		</Sources>
@@ -1255,7 +1258,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Xml.Linq\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Xml.Linq\</SourcePath>
 		<IgnoreWarnings>1720</IgnoreWarnings>
 		<Sources>
 			<Source type="list">System.Xml.Linq.dll.sources</Source>
@@ -1272,7 +1275,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Data.DataSetExtensions\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Data.DataSetExtensions\</SourcePath>
 		<IgnoreWarnings>1720</IgnoreWarnings>
 		<Sources>
 			<Source type="list">System.Data.DataSetExtensions.dll.sources</Source>
@@ -1288,7 +1291,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Runtime.Serialization\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Runtime.Serialization\</SourcePath>
 		<IgnoreWarnings>168,169,219,414</IgnoreWarnings>
 		<Sources>
 			<Source type="list">System.Runtime.Serialization.dll.sources</Source>
@@ -1305,7 +1308,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5;MONO_STRICT;MONO_DEPLOY</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Data.Linq\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Data.Linq\</SourcePath>
 		<IgnoreWarnings>1720</IgnoreWarnings>
 		<Sources>
 			<Source type="list">System.Data.Linq.dll.sources</Source>
@@ -1319,7 +1322,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Web.Abstractions\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Web.Abstractions\</SourcePath>
 		<Sources>
 			<Source type="list">System.Web.Abstractions.dll.sources</Source>
 		</Sources>
@@ -1333,7 +1336,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Web.Routing\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Web.Routing\</SourcePath>
 		<Sources>
 			<Source type="list">System.Web.Routing.dll.sources</Source>
 		</Sources>
@@ -1349,7 +1352,7 @@
     </References>
     <OutputType>library</OutputType>
     <DefineConstants>NET_1_1;NET_2_0;NET_3_0</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\System.IdentityModel\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\System.IdentityModel\</SourcePath>
     <Sources>
       <Source type="list">System.IdentityModel.dll.sources</Source>
     </Sources>
@@ -1364,7 +1367,7 @@
     </References>
     <OutputType>library</OutputType>
     <DefineConstants>NET_1_1;NET_2_0;NET_3_0</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\System.IdentityModel.Selectors\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\System.IdentityModel.Selectors\</SourcePath>
     <Sources>
       <Source type="list">System.IdentityModel.Selectors.dll.sources</Source>
     </Sources>
@@ -1390,7 +1393,7 @@
     <DefineConstants>NET_1_1;NET_2_0;NET_3_0</DefineConstants>
     <IgnoreWarnings>414,169,67,3005,436,219,618</IgnoreWarnings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SourcePath>{sourcedir}\mcs\class\System.ServiceModel\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\System.ServiceModel\</SourcePath>
     <Sources>
       <Source type="list">System.ServiceModel.dll.sources</Source>
       <Source>/resource:resources/WS-Addressing.schema</Source>
@@ -1414,7 +1417,7 @@
     </References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5;SYSTEM_WEB_EXTENSIONS</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Web.Extensions\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Web.Extensions\</SourcePath>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Sources>
 			<Source type="list">System.Web.Extensions.dll.sources</Source>
@@ -1427,7 +1430,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Web.Extensions.Design\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Web.Extensions.Design\</SourcePath>
 		<Sources>
 			<Source type="list">System.Web.Extensions.Design.dll.sources</Source>
 		</Sources>
@@ -1444,7 +1447,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.ServiceModel.Web\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.ServiceModel.Web\</SourcePath>
 		<Sources>
 			<Source type="list">System.ServiceModel.Web.dll.sources</Source>
 		</Sources>
@@ -1457,7 +1460,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Management\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Management\</SourcePath>
 		<Sources>
 			<Source type="list">Mono.Management.dll.sources</Source>
 		</Sources>
@@ -1469,7 +1472,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\Mono.Simd\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\Mono.Simd\</SourcePath>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Sources>
 			<Source type="list">Mono.Simd.dll.sources</Source>
@@ -1484,7 +1487,7 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.ComponentModel.DataAnnotations\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.ComponentModel.DataAnnotations\</SourcePath>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Sources>
 			<Source type="list">System.ComponentModel.DataAnnotations.dll.sources</Source>
@@ -1505,14 +1508,14 @@
 		</References>
 		<OutputType>library</OutputType>
 		<DefineConstants>NET_1_1;NET_2_0;NET_3_5</DefineConstants>
-		<SourcePath>{sourcedir}\mcs\class\System.Web.DynamicData\</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\class\System.Web.DynamicData\</SourcePath>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Sources>
 			<Source type="list">System.Web.DynamicData.dll.sources</Source>
 		</Sources>
 	</Assembly>
   
-  <Resgen workingdir="{sourcedir}\mcs\class\System.Web.Mvc">{sourcedir}\mcs\class\System.Web.Mvc\System.Web.Mvc\Resources\MvcResources.resx</Resgen>
+  <Resgen workingdir="{sourcedir}\mono\mcs\class\System.Web.Mvc">{sourcedir}\mono\mcs\class\System.Web.Mvc\System.Web.Mvc\Resources\MvcResources.resx</Resgen>
 
   <Assembly name="System.Web.Mvc" destination="{destdir}\lib\mono\2.0\System.Web.Mvc.dll">
     <References>
@@ -1528,7 +1531,7 @@
     </References>
     <OutputType>library</OutputType>
     <DefineConstants>NET_1_1;NET_2_0;NET_3_5;MONO</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\System.Web.Mvc\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\System.Web.Mvc\</SourcePath>
     <Sources>
       <Source type="list">System.Web.Mvc.dll.sources</Source>
       <Source>/resource:System.Web.Mvc\Resources\MvcResources.resx</Source>
@@ -1541,7 +1544,7 @@
     </References>
     <OutputType>library</OutputType>
     <DefineConstants>NET_1_1;NET_2_0;NET_3_0</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\WindowsBase\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\WindowsBase\</SourcePath>
     <Sources>
       <Source type="list">WindowsBase.dll.sources</Source>
     </Sources>
@@ -1551,7 +1554,7 @@
     <References>
     </References>
     <OutputType>library</OutputType>
-    <SourcePath>{sourcedir}\mcs\class\Mono.Tasklets\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\Mono.Tasklets\</SourcePath>
     <DefineConstants>NET_1_1;NET_2_0</DefineConstants>
     <Sources>
       <Source type="list">Mono.Tasklets.dll.sources</Source>
@@ -1559,7 +1562,7 @@
   </Assembly>
 
   <!-- Cecil looks for the signing key in the wrong place for our setup -->
-  <Copy source="{sourcedir}\mcs\class\mono.snk" destination="{sourcedir}\mcs\mono.snk" />
+  <Copy source="{sourcedir}\mono\mcs\class\mono.snk" destination="{sourcedir}\mono\mcs\mono.snk" />
 
   <Assembly name="Mono.Cecil" destination="{destdir}\lib\mono\2.0\Mono.Cecil.dll">
     <References>
@@ -1567,7 +1570,7 @@
     </References>
     <OutputType>library</OutputType>
     <DefineConstants>NET_1_1;NET_2_0;KEYFILE</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\Mono.Cecil\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\Mono.Cecil\</SourcePath>
     <Sources>
       <Source type="list">Mono.Cecil.dll.sources</Source>
     </Sources>
@@ -1579,7 +1582,7 @@
     </References>
     <OutputType>library</OutputType>
     <DefineConstants>NET_1_1;NET_2_0;CECIL</DefineConstants>
-    <SourcePath>{sourcedir}\mcs\class\Mono.Cecil.Mdb\</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\class\Mono.Cecil.Mdb\</SourcePath>
     <Sources>
       <Source type="list">Mono.Cecil.Mdb.dll.sources</Source>
     </Sources>
@@ -1593,89 +1596,89 @@
     </References>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>library</OutputType>
-    <KeyFile>{sourcedir}\mcs\class\mono.snk</KeyFile>
-    <SourcePath>{sourcedir}\mcs\class\Mono.Debugger.Soft\</SourcePath>
+    <KeyFile>{sourcedir}\mono\mcs\class\mono.snk</KeyFile>
+    <SourcePath>{sourcedir}\mono\mcs\class\Mono.Debugger.Soft\</SourcePath>
     <DefineConstants>NET_1_1;NET_2_0;MONO_DATACONVERTER_STATIC_METHODS</DefineConstants>
     <Sources>
       <Source type="list">Mono.Debugger.Soft.dll.sources</Source>
     </Sources>
   </Assembly>
 
-  <Sign assembly="{destdir}\lib\mono\2.0\I18N.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\I18N.West.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\I18N.MidEast.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\I18N.Other.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\I18N.Rare.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\I18N.CJK.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Drawing.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Transactions.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.EnterpriseServices.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.C5.dll" key="{sourcedir}\mcs\class\Mono.C5\c5.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.Tds.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Posix.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Accessibility.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.WebBrowser.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Windows.Forms.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.Sqlite.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Web.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Services.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Runtime.Serialization.Formatters.Soap.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Runtime.Remoting.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Configuration.Install.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Management.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.OracleClient.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.VisualC.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Cscompmgd.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Design.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\PEAPI.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Npgsql.dll" key="{sourcedir}\mcs\class\Npgsql\Npgsql\Npgsql.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\ICSharpCode.SharpZipLib.dll" key="{sourcedir}\mcs\class\ICSharpCode.SharpZipLib\SharpZipLib.key" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Commons.Xml.Relaxng.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Novell.Directory.Ldap.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Security.Win32.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.DirectoryServices.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Messaging.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.ServiceProcess.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Drawing.Design.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Design.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Http.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Cairo.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\IBM.Data.DB2.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\CustomMarshalers.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\OpenSystem.C.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Framework.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Utilities.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Engine.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Tasks.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Core.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Xml.Linq.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.DataSetExtensions.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.Linq.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Abstractions.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Routing.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Extensions.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Extensions.Design.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.Runtime.Serialization.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.IdentityModel.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.IdentityModel.Selectors.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.ServiceModel.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.ServiceModel.Web.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Management.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Simd.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Messaging.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign enabled="false" assembly="{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign enabled="false" assembly="{destdir}\lib\mono\2.0\RabbitMQ.Client.dll" key="{sourcedir}\mcs\class\mono.snk" />
-	<Sign assembly="{destdir}\lib\mono\2.0\System.ComponentModel.DataAnnotations.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\lib\mono\2.0\System.Web.DynamicData.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\lib\mono\2.0\System.Web.Mvc.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\lib\mono\2.0\WindowsBase.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Tasklets.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Cecil.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Cecil.Mdb.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\lib\mono\2.0\Mono.CompilerServices.SymbolWriter.dll" key="{sourcedir}\mcs\class\mono.snk" />
-  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Debugger.Soft.dll" key="{sourcedir}\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\I18N.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\I18N.West.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\I18N.MidEast.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\I18N.Other.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\I18N.Rare.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\I18N.CJK.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Drawing.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Transactions.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.EnterpriseServices.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.C5.dll" key="{sourcedir}\mono\mcs\class\Mono.C5\c5.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.Tds.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Posix.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Accessibility.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.WebBrowser.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Windows.Forms.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Data.Sqlite.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Web.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Services.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Runtime.Serialization.Formatters.Soap.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Runtime.Remoting.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Configuration.Install.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Management.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.OracleClient.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.VisualC.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Cscompmgd.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Design.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\PEAPI.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Npgsql.dll" key="{sourcedir}\mono\mcs\class\Npgsql\Npgsql\Npgsql.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\ICSharpCode.SharpZipLib.dll" key="{sourcedir}\mono\mcs\class\ICSharpCode.SharpZipLib\SharpZipLib.key" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Commons.Xml.Relaxng.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Novell.Directory.Ldap.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Security.Win32.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.DirectoryServices.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Messaging.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.ServiceProcess.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Drawing.Design.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Design.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Http.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Cairo.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\IBM.Data.DB2.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\CustomMarshalers.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\OpenSystem.C.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Framework.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Utilities.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Engine.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Microsoft.Build.Tasks.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Core.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Xml.Linq.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.DataSetExtensions.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Data.Linq.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Abstractions.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Routing.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Extensions.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Web.Extensions.Design.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.Runtime.Serialization.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.IdentityModel.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.IdentityModel.Selectors.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.ServiceModel.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.ServiceModel.Web.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Management.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Simd.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\Mono.Messaging.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign enabled="false" assembly="{destdir}\lib\mono\2.0\Mono.Messaging.RabbitMQ.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign enabled="false" assembly="{destdir}\lib\mono\2.0\RabbitMQ.Client.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+	<Sign assembly="{destdir}\lib\mono\2.0\System.ComponentModel.DataAnnotations.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\System.Web.DynamicData.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\System.Web.Mvc.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\WindowsBase.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Tasklets.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Cecil.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Cecil.Mdb.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\Mono.CompilerServices.SymbolWriter.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
+  <Sign assembly="{destdir}\lib\mono\2.0\Mono.Debugger.Soft.dll" key="{sourcedir}\mono\mcs\class\mono.snk" />
 
   <!-- GAC our assemblies -->
 	<Gac>{destdir}\lib\mono\2.0\System.dll</Gac>
@@ -1765,7 +1768,7 @@
 		<References>
 			<Reference>Mono.Security</Reference>
 		</References>
-		<SourcePath>{sourcedir}\mcs\tools\al</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\tools\al</SourcePath>
 		<NoConfig>false</NoConfig>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<Debug>true</Debug>
@@ -1781,7 +1784,7 @@
 		<Reference>Mono.Management</Reference>
 		</References>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<SourcePath>{sourcedir}\mcs\tools\csharp</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\tools\csharp</SourcePath>
 		<NoConfig>false</NoConfig>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<Debug>true</Debug>
@@ -1795,7 +1798,7 @@
 		<References>
 			<Reference>Mono.Security</Reference>
 		</References>
-		<SourcePath>{sourcedir}\mcs\tools\security</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\tools\security</SourcePath>
 		<NoConfig>false</NoConfig>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<Debug>true</Debug>
@@ -1812,7 +1815,7 @@
 		<Reference>Mono.CompilerServices.SymbolWriter</Reference>
 		<Reference>Mono.Security</Reference>
 		</References>
-		<SourcePath>{sourcedir}\mcs\ilasm</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\ilasm</SourcePath>
 		<NoConfig>false</NoConfig>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<Debug>true</Debug>
@@ -1825,7 +1828,7 @@
 		<OutputType>exe</OutputType>
 		<References>
 		<Reference>System.Configuration.Install</Reference></References>
-		<SourcePath>{sourcedir}\mcs\tools\installutil</SourcePath>
+		<SourcePath>{sourcedir}\mono\mcs\tools\installutil</SourcePath>
 		<NoConfig>false</NoConfig>
 		<DefineConstants>NET_1_1,NET_2_0</DefineConstants>
 		<Debug>true</Debug>
@@ -1839,7 +1842,7 @@
       <Reference>System.Xml</Reference>
       <Reference>System.Web.Services</Reference>
     </References>
-    <SourcePath>{sourcedir}\mcs\tools\wsdl</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\tools\wsdl</SourcePath>
     <NoConfig>false</NoConfig>
     <DefineConstants>NET_1_1,NET_2_0</DefineConstants>
     <Debug>true</Debug>
@@ -1854,7 +1857,7 @@
       <Reference>Microsoft.Build.Utilities</Reference>
       <Reference>Microsoft.Build.Engine</Reference>
     </References>
-    <SourcePath>{sourcedir}\mcs\tools\xbuild</SourcePath>
+    <SourcePath>{sourcedir}\mono\mcs\tools\xbuild</SourcePath>
     <NoConfig>false</NoConfig>
     <DefineConstants>NET_1_1,NET_2_0</DefineConstants>
     <Debug>true</Debug>
@@ -1881,7 +1884,7 @@
 	</Output>
 
   <!-- Copy some static things we want to ship -->
-  <Copy source="{sourcedir}\mcs\mcs\gmcs.exe.config" destination="{destdir}\lib\mono\2.0\gmcs.exe.config" />
+  <Copy source="{sourcedir}\mono\mcs\mcs\gmcs.exe.config" destination="{destdir}\lib\mono\2.0\gmcs.exe.config" />
 
   <!-- Delete things we don't want to end up in the installer -->
 	<Delete type="file">{destdir}\lib\mono\2.0\culevel.exe</Delete>
