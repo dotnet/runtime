@@ -185,7 +185,6 @@
     <ClCompile Include="..\support\crc32.c" />
     <ClCompile Include="..\support\deflate.c" />
     <ClCompile Include="..\support\errno.c" />
-    <ClCompile Include="..\support\gzio.c" />
     <ClCompile Include="..\support\infback.c" />
     <ClCompile Include="..\support\inffast.c" />
     <ClCompile Include="..\support\inflate.c" />
