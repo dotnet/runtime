@@ -5,7 +5,7 @@
 	<Delete type="directory">{destdir}\lib</Delete>
 
 	<Copy source="{monobuilddir}\mono.exe" destination="{destdir}\bin\mono.exe" />
-	<Copy source="{monobuilddir}\mono.dll" destination="{destdir}\bin\mono.dll" />
+	<Copy source="{monobuilddir}\mono-2.0.dll" destination="{destdir}\bin\mono-2.0.dll" />
 	<Copy source="{monobuilddir}\MonoPosixHelper.dll" destination="{destdir}\bin\MonoPosixHelper.dll" />
 
 	<!-- Copy Consts.cs.in and insert this revision number -->
