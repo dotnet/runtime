@@ -7361,6 +7361,9 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 			if (tb && tb->interfaces) {
 				for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
 					MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
+					/* we can't realize the type here since it can do pretty much anything. */
+					if (!iface->type)
+						continue;
 					MonoClass *iface_class = mono_class_from_mono_type (iface->type);
 					if (iface_class == target)
 						return TRUE;
