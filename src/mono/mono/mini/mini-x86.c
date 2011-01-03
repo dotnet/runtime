@@ -1164,6 +1164,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += (locals_stack_align - 1);
 		offset &= ~(locals_stack_align - 1);
 	}
+	cfg->locals_min_stack_offset = - (offset + locals_stack_size);
+	cfg->locals_max_stack_offset = - offset;
 	/*
 	 * EBP is at alignment 8 % MONO_ARCH_FRAME_ALIGNMENT, so if we
 	 * have locals larger than 8 bytes we need to make sure that
@@ -3095,6 +3097,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method);
 			else
 				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature)) {
 				/* a pop is one byte, while an add reg, imm is 3. So if there are 4 or 8
 				 * bytes to pop, we want to use pops. GCC does this (note it won't happen
@@ -3127,6 +3131,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_REG:
 			call = (MonoCallInst*)ins;
 			x86_call_reg (code, ins->sreg1);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature)) {
 				if (call->stack_usage == 4)
 					x86_pop_reg (code, X86_ECX);
@@ -3144,6 +3150,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 
 			x86_call_membase (code, ins->sreg1, ins->inst_offset);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature)) {
 				if (call->stack_usage == 4)
 					x86_pop_reg (code, X86_ECX);
@@ -3217,6 +3225,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_push_reg (code, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 							  (gpointer)"mono_arch_throw_exception");
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			break;
 		}
 		case OP_RETHROW: {
@@ -3224,6 +3234,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_push_reg (code, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 							  (gpointer)"mono_arch_rethrow_exception");
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			break;
 		}
 		case OP_CALL_HANDLER:
@@ -4682,6 +4694,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MONO_VARINFO (cfg, ins->inst_c0)->live_range_end = code - cfg->native_code;
 			break;
 		}
+		case OP_GC_LIVENESS_DEF:
+		case OP_GC_LIVENESS_USE:
+		case OP_GC_PARAM_SLOT_LIVENESS_DEF:
+			ins->backend.pc_offset = code - cfg->native_code;
+			break;
+		case OP_GC_SPILL_SLOT_LIVENESS_DEF:
+			ins->backend.pc_offset = code - cfg->native_code;
+			bb->spill_slot_defs = g_slist_prepend_mempool (cfg->mempool, bb->spill_slot_defs, ins);
+			break;
 		default:
 			g_warning ("unknown opcode %s\n", mono_inst_name (ins->opcode));
 			g_assert_not_reached ();
@@ -4819,6 +4840,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_offset (cfg, code, X86_EBP, - cfa_offset);
 		x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
 		mono_emit_unwind_op_def_cfa_reg (cfg, code, X86_EBP);
+	} else {
+		cfg->frame_reg = X86_ESP;
 	}
 
 	alloc_size = cfg->stack_offset;

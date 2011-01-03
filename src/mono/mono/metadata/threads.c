@@ -678,15 +678,19 @@ init_root_domain_thread (MonoInternalThread *thread, MonoThread *candidate)
 	MONO_OBJECT_SETREF (thread, root_domain_thread, candidate);
 }
 
-static guint32 WINAPI start_wrapper(void *data)
+static guint32 WINAPI start_wrapper_internal(void *data)
 {
 	struct StartInfo *start_info=(struct StartInfo *)data;
 	guint32 (*start_func)(void *);
 	void *start_arg;
 	gsize tid;
-	MonoThread *thread=start_info->obj;
-	MonoInternalThread *internal = thread->internal_thread;
+	/* 
+	 * We don't create a local to hold start_info->obj, so hopefully it won't get pinned during a
+	 * GC stack walk.
+	 */
+	MonoInternalThread *internal = start_info->obj->internal_thread;
 	MonoObject *start_delegate = start_info->delegate;
+	MonoDomain *domain = start_info->obj->obj.vtable->domain;
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper", __func__, GetCurrentThreadId ()));
 
@@ -703,9 +707,9 @@ static guint32 WINAPI start_wrapper(void *data)
 	mono_monitor_init_tls ();
 
 	/* Every thread references the appdomain which created it */
-	mono_thread_push_appdomain_ref (thread->obj.vtable->domain);
+	mono_thread_push_appdomain_ref (domain);
 	
-	if (!mono_domain_set (thread->obj.vtable->domain, FALSE)) {
+	if (!mono_domain_set (domain, FALSE)) {
 		/* No point in raising an appdomain_unloaded exception here */
 		/* FIXME: Cleanup here */
 		mono_thread_pop_appdomain_ref ();
@@ -718,7 +722,7 @@ static guint32 WINAPI start_wrapper(void *data)
 	/* We have to do this here because mono_thread_new_init()
 	   requires that root_domain_thread is set up. */
 	thread_adjust_static_data (internal);
-	init_root_domain_thread (internal, thread);
+	init_root_domain_thread (internal, start_info->obj);
 
 	/* This MUST be called before any managed code can be
 	 * executed, as it calls the callback function that (for the
@@ -746,17 +750,17 @@ static guint32 WINAPI start_wrapper(void *data)
 	}
 
 	mono_threads_lock ();
-	mono_g_hash_table_remove (thread_start_args, thread);
+	mono_g_hash_table_remove (thread_start_args, start_info->obj);
 	mono_threads_unlock ();
+
+	mono_thread_set_execution_context (start_info->obj->ec_to_set);
+	start_info->obj->ec_to_set = NULL;
 
 	g_free (start_info);
 #ifdef DEBUG
 	g_message ("%s: start_wrapper for %"G_GSIZE_FORMAT, __func__,
 		   thread->tid);
 #endif
-
-	mono_thread_set_execution_context (thread->ec_to_set);
-	thread->ec_to_set = NULL;
 
 	/* 
 	 * Call this after calling start_notify, since the profiler callback might want
@@ -804,6 +808,18 @@ static guint32 WINAPI start_wrapper(void *data)
 	mono_domain_unset ();
 
 	return(0);
+}
+
+static guint32 WINAPI start_wrapper(void *data)
+{
+#ifdef HAVE_SGEN_GC
+	volatile int dummy;
+
+	/* Avoid scanning the frames above this frame during a GC */
+	mono_gc_set_stack_end ((void*)&dummy);
+#endif
+
+	return start_wrapper_internal (data);
 }
 
 void mono_thread_new_init (intptr_t tid, gpointer stack_start, gpointer func)

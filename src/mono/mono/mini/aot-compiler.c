@@ -1503,6 +1503,24 @@ add_to_blob (MonoAotCompile *acfg, const guint8 *data, guint32 data_len)
 	return add_stream_data (&acfg->blob, (char*)data, data_len);
 }
 
+static guint32
+add_to_blob_aligned (MonoAotCompile *acfg, const guint8 *data, guint32 data_len, guint32 align)
+{
+	char buf [4] = {0};
+	guint32 count;
+
+	if (acfg->blob.alloc_size == 0)
+		stream_init (&acfg->blob);
+
+	count = acfg->blob.index % align;
+
+	/* we assume the stream data will be aligned */
+	if (count)
+		add_stream_data (&acfg->blob, buf, 4 - count);
+
+	return add_stream_data (&acfg->blob, (char*)data, data_len);
+}
+
 /*
  * emit_offset_table:
  *
@@ -3566,14 +3584,14 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	seq_points = cfg->seq_point_info;
 
-	buf_size = header->num_clauses * 256 + debug_info_size + 1024 + (seq_points ? (seq_points->len * 64) : 0);
+	buf_size = header->num_clauses * 256 + debug_info_size + 1024 + (seq_points ? (seq_points->len * 64) : 0) + cfg->gc_map_size;
 	p = buf = g_malloc (buf_size);
 
 #ifdef MONO_ARCH_HAVE_XP_UNWIND
 	use_unwind_ops = cfg->unwind_ops != NULL;
 #endif
 
-	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0);
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0) | (cfg->gc_map ? 64 : 0);
 
 	encode_value (flags, p, &p);
 
@@ -3707,7 +3725,6 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 	}
 		
-
 	g_assert (debug_info_size < buf_size);
 
 	encode_value (debug_info_size, p, &p);
@@ -3717,12 +3734,23 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		g_free (debug_info);
 	}
 
+	/* GC Map */
+	if (cfg->gc_map) {
+		encode_value (cfg->gc_map_size, p, &p);
+		/* The GC map requires 4 bytes of alignment */
+		while ((guint64)p % 4)
+			p ++;
+		memcpy (p, cfg->gc_map, cfg->gc_map_size);
+		p += cfg->gc_map_size;
+	}
+
 	acfg->stats.ex_info_size += p - buf;
 
 	g_assert (p - buf < buf_size);
 
 	/* Emit info */
-	cfg->ex_info_offset = add_to_blob (acfg, buf, p - buf);
+	/* The GC Map requires 4 byte alignment */
+	cfg->ex_info_offset = add_to_blob_aligned (acfg, buf, p - buf, cfg->gc_map ? 4 : 1);
 	g_free (buf);
 }
 

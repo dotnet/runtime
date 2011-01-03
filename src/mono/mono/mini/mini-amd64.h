@@ -165,6 +165,7 @@ typedef struct MonoCompileArch {
 	gint32 localloc_offset;
 	gint32 reg_save_area_offset;
 	gint32 stack_alloc_size;
+	gint32 sp_fp_offset;
 	gboolean omit_fp, omit_fp_computed, no_pushes;
 	gpointer cinfo;
 	gint32 async_point_count;
@@ -382,6 +383,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
 #define MONO_ARCH_HAVE_CARD_TABLE_WBARRIER 1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
+#define MONO_ARCH_GC_MAPS_SUPPORTED 1
 
 gboolean
 mono_amd64_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig) MONO_INTERNAL;

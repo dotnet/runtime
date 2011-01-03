@@ -212,7 +212,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	if (managed)
 		*managed = FALSE;
 
-	err = mono_arch_find_jit_info (domain, jit_tls, ji, ctx, new_ctx, lmf, &frame);
+	err = mono_arch_find_jit_info (domain, jit_tls, ji, ctx, new_ctx, lmf, NULL, &frame);
 	if (!err)
 		return (gpointer)-1;
 
@@ -324,11 +324,16 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
  * - These frames are used to mark managed-to-native transitions, so CTX will refer to native
  * code, and new_ctx will refer to the last managed frame. The caller should unwind once more
  * to obtain the last managed frame.
+ * If SAVE_LOCATIONS is not NULL, it should point to an array of size MONO_MAX_IREGS.
+ * On return, it will be filled with the locations where callee saved registers are saved
+ * by the current frame. This is returned outside of StackFrameInfo because it can be
+ * quite large on some platforms.
  */
 gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						MonoJitInfo *prev_ji, MonoContext *ctx,
 						MonoContext *new_ctx, char **trace, MonoLMF **lmf,
+						mgreg_t **save_locations,
 						StackFrameInfo *frame)
 {
 	gboolean err;
@@ -348,7 +353,10 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (!target_domain)
 		target_domain = domain;
 
-	err = mono_arch_find_jit_info (target_domain, jit_tls, ji, ctx, new_ctx, lmf, frame);
+	if (save_locations)
+		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (mgreg_t*));
+
+	err = mono_arch_find_jit_info (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
 	if (!err)
 		return FALSE;
 
@@ -710,7 +718,7 @@ mono_walk_stack (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_c
 
 	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		frame.lmf = lmf;
-		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
+		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (!res)
 			return;
 
@@ -767,7 +775,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	new_ctx = ctx;
 	do {
 		ctx = new_ctx;
-		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
+		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (!res)
 			return FALSE;
 
@@ -1185,7 +1193,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gpoin
 		
 		StackFrameInfo frame;
 
-		unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, &frame);
+		unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (unwind_res) {
 			if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE || frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
 				*ctx = new_ctx;
@@ -1491,7 +1499,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		} else {
 			StackFrameInfo frame;
 
-			unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, &frame);
+			unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 			if (unwind_res) {
 				if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE || frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
 					*ctx = new_ctx;

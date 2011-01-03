@@ -537,7 +537,8 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 gboolean
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 MonoContext *new_ctx, MonoLMF **lmf,
+							 mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -563,6 +564,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			unwind_info = mono_aot_get_unwind_info (ji, &unwind_info_len);
 		else
 			unwind_info = mono_get_cached_unwind_info (ji->used_regs, &unwind_info_len);
+
+		frame->unwind_info = unwind_info;
+		frame->unwind_info_len = unwind_info_len;
  
 		regs [AMD64_RAX] = new_ctx->rax;
 		regs [AMD64_RBX] = new_ctx->rbx;
@@ -580,7 +584,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
-						   ip, regs, MONO_MAX_IREGS + 1, &cfa);
+						   ip, regs, MONO_MAX_IREGS + 1, 
+						   save_locations, MONO_MAX_IREGS, &cfa);
 
 		new_ctx->rax = regs [AMD64_RAX];
 		new_ctx->rbx = regs [AMD64_RBX];

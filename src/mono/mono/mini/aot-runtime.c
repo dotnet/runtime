@@ -1724,9 +1724,9 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	MonoJitInfo *jinfo;
 	guint used_int_regs, flags;
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes;
-	gboolean from_llvm;
+	gboolean from_llvm, has_gc_map;
 	guint8 *p;
-	int generic_info_size, try_holes_info_size, num_holes, this_reg, this_offset;
+	int generic_info_size, try_holes_info_size, num_holes, this_reg = 0, this_offset = 0;
 
 	/* Load the method info from the AOT file */
 
@@ -1738,6 +1738,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	has_seq_points = (flags & 8) != 0;
 	from_llvm = (flags & 16) != 0;
 	has_try_block_holes = (flags & 32) != 0;
+	has_gc_map = (flags & 64) != 0;
 
 	if (has_dwarf_unwind_info) {
 		guint32 offset;
@@ -1907,6 +1908,16 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	/* Load debug info */
 	buf_len = decode_value (p, &p);
 	mono_debug_add_aot_method (domain, method, code, p, buf_len);
+	p += buf_len;
+
+	if (has_gc_map) {
+		int map_size = decode_value (p, &p);
+		/* The GC map requires 4 bytes of alignment */
+		while ((guint64)(gsize)p % 4)
+			p ++;		
+		jinfo->gc_info = p;
+		p += map_size;
+	}
 
 	if (amodule != jinfo->method->klass->image->aot_module) {
 		mono_aot_lock ();
@@ -1915,7 +1926,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		g_hash_table_insert (ji_to_amodule, jinfo, amodule);
 		mono_aot_unlock ();		
 	}
-	
+
 	return jinfo;
 }
 

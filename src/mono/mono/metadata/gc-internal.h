@@ -110,6 +110,8 @@ extern gboolean mono_gc_register_thread (void *baseptr) MONO_INTERNAL;
 
 extern gboolean mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread) MONO_INTERNAL;
 
+extern void mono_gc_set_stack_end (void *stack_end) MONO_INTERNAL;
+
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).
  */
@@ -250,7 +252,11 @@ typedef struct {
 	 * needed by the other functions.
 	 */
 	gpointer (*thread_attach_func) (void);
-	/* FIXME: Add a cleanup function too */
+	/* 
+	 * Function called during thread deatch to free the data allocated by
+	 * thread_attach_func.
+	 */
+	void (*thread_detach_func) (gpointer user_data);
 	/* 
 	 * Function called from every thread when suspending for GC. It can save
 	 * data needed for marking from thread stacks. user_data is the data returned 

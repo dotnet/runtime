@@ -54,14 +54,42 @@ alloc_freg (MonoCompile *cfg)
 }
 
 static inline guint32
+alloc_ireg_ref (MonoCompile *cfg)
+{
+	int vreg = alloc_ireg (cfg);
+
+#ifdef HAVE_SGEN_GC
+	if (cfg->compute_gc_maps)
+		mono_mark_vreg_as_ref (cfg, vreg);
+#endif
+
+	return vreg;
+}
+
+static inline guint32
+alloc_ireg_mp (MonoCompile *cfg)
+{
+	int vreg = alloc_ireg (cfg);
+
+#ifdef HAVE_SGEN_GC
+	if (cfg->compute_gc_maps)
+		mono_mark_vreg_as_mp (cfg, vreg);
+#endif
+
+	return vreg;
+}
+
+static inline guint32
 alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 {
 	switch (stack_type) {
 	case STACK_I4:
 	case STACK_PTR:
-	case STACK_MP:
-	case STACK_OBJ:
 		return alloc_ireg (cfg);
+	case STACK_MP:
+		return alloc_ireg_mp (cfg);
+	case STACK_OBJ:
+		return alloc_ireg_ref (cfg);
 	case STACK_R8:
 		return alloc_freg (cfg);
 	case STACK_I8:
@@ -365,6 +393,12 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 	(dest)->flags = ss_loc ? MONO_INST_SINGLE_STEP_LOC : 0; \
 	} while (0)
 
+#define NEW_GC_PARAM_SLOT_LIVENESS_DEF(cfg,dest,offset,type) do { \
+	MONO_INST_NEW ((cfg), (dest), OP_GC_PARAM_SLOT_LIVENESS_DEF); \
+	(dest)->inst_offset = (offset); \
+	(dest)->inst_vtype = (type); \
+	} while (0)
+
 /*
  * Variants which do an emit as well.
  */
@@ -487,6 +521,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define EMIT_NEW_STORE_MEMBASE_TYPE(cfg,dest,ltype,base,offset,sr) do { NEW_STORE_MEMBASE_TYPE ((cfg), (dest), (ltype), (base), (offset), (sr)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
+#define EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF(cfg,dest,offset,type) do { NEW_GC_PARAM_SLOT_LIVENESS_DEF ((cfg), (dest), (offset), (type)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 /*
  * Variants which do not take an dest argument, but take a dreg argument.
  */

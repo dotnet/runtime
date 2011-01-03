@@ -4209,7 +4209,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 		 */
 
 		/* Find the the jit info for the catch context */
-		res = mono_find_jit_info_ext (mono_domain_get (), thread->jit_data, NULL, &tls->catch_ctx, &new_ctx, NULL, &lmf, &frame);
+		res = mono_find_jit_info_ext (mono_domain_get (), thread->jit_data, NULL, &tls->catch_ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		g_assert (res);
 		g_assert (frame.type == FRAME_TYPE_MANAGED);
 

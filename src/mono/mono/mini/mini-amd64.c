@@ -32,6 +32,7 @@
 #include "mini-amd64.h"
 #include "cpu-amd64.h"
 #include "debugger-agent.h"
+#include "mini-gc.h"
 
 static gint lmf_tls_offset = -1;
 static gint lmf_addr_tls_offset = -1;
@@ -261,6 +262,7 @@ typedef struct {
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
 	gint8 pair_regs [2];
+	int nregs;
 } ArgInfo;
 
 typedef struct {
@@ -569,6 +571,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 
 		ainfo->storage = ArgValuetypeInReg;
 		ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
+		ainfo->nregs = nquads;
 		for (quad = 0; quad < nquads; ++quad) {
 			switch (args [quad]) {
 			case ARG_CLASS_INTEGER:
@@ -837,11 +840,13 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	stack_size += 0x20;
 #endif
 
+#ifndef MONO_AMD64_NO_PUSHES
 	if (stack_size & 0x8) {
 		/* The AMD64 ABI requires each stack frame to be 16 byte aligned */
 		cinfo->need_stack_align = TRUE;
 		stack_size += 8;
 	}
+#endif
 
 	cinfo->stack_usage = stack_size;
 	cinfo->reg_usage = gr;
@@ -1558,9 +1563,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					offset = ALIGN_TO (offset, sizeof (gpointer));
 					if (cfg->arch.omit_fp) {
 						ins->inst_offset = offset;
-						offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+						offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (gpointer) : sizeof (gpointer);
 					} else {
-						offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+						offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (gpointer) : sizeof (gpointer);
 						ins->inst_offset = - offset;
 					}
 					break;
@@ -1635,11 +1640,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				offset = ALIGN_TO (offset, sizeof (gpointer));
 				if (cfg->arch.omit_fp) {
 					ins->inst_offset = offset;
-					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+					offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (gpointer) : sizeof (gpointer);
 					// Arguments are yet supported by the stack map creation code
 					//cfg->locals_max_stack_offset = MAX (cfg->locals_max_stack_offset, offset);
 				} else {
-					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
+					offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (gpointer) : sizeof (gpointer);
 					ins->inst_offset = - offset;
 					//cfg->locals_min_stack_offset = MIN (cfg->locals_min_stack_offset, offset);
 				}
@@ -1703,7 +1708,7 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 	switch (storage) {
 	case ArgInIReg:
 		MONO_INST_NEW (cfg, ins, OP_MOVE);
-		ins->dreg = mono_alloc_ireg (cfg);
+		ins->dreg = mono_alloc_ireg_copy (cfg, tree->dreg);
 		ins->sreg1 = tree->dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
 		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, FALSE);
@@ -1948,6 +1953,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
 				} else {
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
+				}
+				if (cfg->compute_gc_maps) {
+					MonoInst *def;
+
+					EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, t);
 				}
 			}
 		}
@@ -2215,6 +2225,11 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 				arg->inst_imm = size;
 				MONO_ADD_INS (cfg->cbb, arg);
 			}
+		}
+
+		if (cfg->compute_gc_maps) {
+			MonoInst *def;
+			EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, &ins->klass->byval_arg);
 		}
 	}
 }
@@ -2862,7 +2877,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					if (((ins2->opcode == OP_STORE_MEMBASE_IMM) || (ins2->opcode == OP_STOREI4_MEMBASE_IMM) || (ins2->opcode == OP_STOREI8_MEMBASE_IMM) || (ins2->opcode == OP_STORE_MEMBASE_IMM)) && (ins2->inst_imm == 0)) {
 						ins2->opcode = store_membase_imm_to_store_membase_reg (ins2->opcode);
 						ins2->sreg1 = ins->dreg;
-					} else if ((ins2->opcode == OP_STOREI1_MEMBASE_IMM) || (ins2->opcode == OP_STOREI2_MEMBASE_IMM) || (ins2->opcode == OP_STOREI4_MEMBASE_REG) || (ins2->opcode == OP_STOREI8_MEMBASE_REG) || (ins2->opcode == OP_STORE_MEMBASE_REG) || (ins2->opcode == OP_LIVERANGE_START)) {
+					} else if ((ins2->opcode == OP_STOREI1_MEMBASE_IMM) || (ins2->opcode == OP_STOREI2_MEMBASE_IMM) || (ins2->opcode == OP_STOREI4_MEMBASE_REG) || (ins2->opcode == OP_STOREI8_MEMBASE_REG) || (ins2->opcode == OP_STORE_MEMBASE_REG) || (ins2->opcode == OP_LIVERANGE_START) || (ins2->opcode == OP_GC_LIVENESS_DEF) || (ins2->opcode == OP_GC_LIVENESS_USE)) {
 						/* Continue */
 					} else if (((ins2->opcode == OP_ICONST) || (ins2->opcode == OP_I8CONST)) && (ins2->dreg == ins->dreg) && (ins2->inst_c0 == 0)) {
 						NULLIFY_INS (ins2);
@@ -4130,6 +4145,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				amd64_set_reg_template (code, AMD64_R11);
 			amd64_jump_reg (code, AMD64_R11);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			break;
 		}
 		case OP_CHECK_THIS:
@@ -4174,6 +4191,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
 			else
 				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr, FALSE);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention) && !cfg->arch.no_pushes)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
@@ -4222,6 +4241,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			amd64_call_reg (code, ins->sreg1);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention) && !cfg->arch.no_pushes)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
@@ -4235,6 +4256,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 
 			amd64_call_membase (code, ins->sreg1, ins->inst_offset);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention) && !cfg->arch.no_pushes)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
@@ -4259,6 +4282,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			
 			/* Make the call */
 			amd64_call_reg (code, AMD64_R10);
+
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 
 			/* Save result */
 			amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
@@ -4355,12 +4381,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_reg (code, AMD64_ARG_REG1, ins->sreg1, 8);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception", FALSE);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			break;
 		}
 		case OP_RETHROW: {
 			amd64_mov_reg_reg (code, AMD64_ARG_REG1, ins->sreg1, 8);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_rethrow_exception", FALSE);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
 			break;
 		}
 		case OP_CALL_HANDLER: 
@@ -5647,6 +5677,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MONO_VARINFO (cfg, ins->inst_c0)->live_range_end = code - cfg->native_code;
 			break;
 		}
+		case OP_GC_LIVENESS_DEF:
+		case OP_GC_LIVENESS_USE:
+		case OP_GC_PARAM_SLOT_LIVENESS_DEF:
+			ins->backend.pc_offset = code - cfg->native_code;
+			break;
+		case OP_GC_SPILL_SLOT_LIVENESS_DEF:
+			ins->backend.pc_offset = code - cfg->native_code;
+			bb->spill_slot_defs = g_slist_prepend_mempool (cfg->mempool, bb->spill_slot_defs, ins);
+			break;
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
@@ -5820,6 +5859,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	// IP saved at CFA - 8
 	mono_emit_unwind_op_offset (cfg, code, AMD64_RIP, -cfa_offset);
 	async_exc_point (code);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 
 	if (!cfg->arch.omit_fp) {
 		amd64_push_reg (code, AMD64_RBP);
@@ -5830,6 +5870,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #ifdef HOST_WIN32
 		mono_arch_unwindinfo_add_push_nonvol (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
 #endif
+		/* These are handled automatically by the stack marking code */
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 		
 		amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
 		mono_emit_unwind_op_def_cfa_reg (cfg, code, AMD64_RBP);
@@ -5850,6 +5892,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				offset += 8;
 				mono_emit_unwind_op_offset (cfg, code, i, - offset);
 				async_exc_point (code);
+
+				/* These are handled automatically by the stack marking code */
+				mini_gc_set_slot_type_from_cfa (cfg, - offset, SLOT_NOREF);
 			}
 	}
 
@@ -5864,16 +5909,23 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (cfg->arch.omit_fp) {
 		/* 
-		 * On enter, the stack is misaligned by the the pushing of the return
+		 * On enter, the stack is misaligned by the pushing of the return
 		 * address. It is either made aligned by the pushing of %rbp, or by
 		 * this.
 		 */
 		alloc_size = ALIGN_TO (cfg->stack_offset, 8);
-		if ((alloc_size % 16) == 0)
+		if ((alloc_size % 16) == 0) {
 			alloc_size += 8;
+			/* Mark the padding slot as NOREF */
+			mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset - sizeof (mgreg_t), SLOT_NOREF);
+		}
 	} else {
 		alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
-
+		if (cfg->stack_offset != alloc_size) {
+			/* Mark the padding slot as NOREF */
+			mini_gc_set_slot_type_from_fp (cfg, -alloc_size + cfg->param_area, SLOT_NOREF);
+		}
+		cfg->arch.sp_fp_offset = alloc_size;
 		alloc_size -= pos;
 	}
 
@@ -6001,6 +6053,26 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - (lmf_offset + offset)));
 			}
 		}
+
+		/* These can't contain refs */
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
+
+		/* These are handled automatically by the stack marking code */
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), SLOT_NOREF);
+#ifdef HOST_WIN32
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), SLOT_NOREF);
+		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), SLOT_NOREF);
+#endif
+
 	}
 
 	/* Save callee saved registers */
@@ -6014,6 +6086,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				amd64_mov_membase_reg (code, AMD64_RSP, save_area_offset, i, 8);
 				mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - save_area_offset));
+
+				/* These are handled automatically by the stack marking code */
+				mini_gc_set_slot_type_from_cfa (cfg, - (cfa_offset - save_area_offset), SLOT_NOREF);
+
 				save_area_offset += 8;
 				async_exc_point (code);
 			}

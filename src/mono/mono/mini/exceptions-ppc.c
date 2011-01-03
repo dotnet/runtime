@@ -511,7 +511,8 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 gboolean
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 MonoContext *new_ctx, MonoLMF **lmf,
+							 mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -560,7 +561,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 			mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 							   (guint8*)ji->code_start + ji->code_size,
-							   ip, regs, ppc_lr + 1, &cfa);
+							   ip, regs, ppc_lr + 1,
+							   save_locations, MONO_MAX_IREGS, &cfa);
 
 			/* we substract 4, so that the IP points into the call instruction */
 			MONO_CONTEXT_SET_IP (new_ctx, regs [ppc_lr] - 4);

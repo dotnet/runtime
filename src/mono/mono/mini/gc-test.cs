@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Collections;
 
 /*
  * Regression tests for the GC support in the JIT
@@ -139,39 +140,6 @@ class Tests {
 			(int)b.o21 + (int)b.o22 + (int)b.o23 + (int)b.o24 + (int)b.o25 +
 			(int)b.o26 + (int)b.o27 + (int)b.o28 + (int)b.o29 + (int)b.o30 +
 			(int)b.o31 + (int)b.o32;
-	}
-
-	static void cond (bool b) {
-		if (b) {
-			/* Exhaust all registers so 'o' is stack allocated */
-			int sum = 0, i, j, k, l, m;
-			for (i = 0; i < 100; ++i)
-				sum ++;
-			for (j = 0; j < 100; ++j)
-				sum ++;
-			for (k = 0; k < 100; ++k)
-				sum ++;
-			for (l = 0; l < 100; ++l)
-				sum ++;
-			for (m = 0; m < 100; ++m)
-				sum ++;
-
-			object o = new object ();
-			sum += i + j + k;
-			if (b) {
-				throw new Exception (o.ToString ());
-			}
-		}
-		GC.Collect (1);
-	}
-
-	/* 
-	 * Tests liveness of object references which are initialized conditionally,
-	 * used in an out-of-line bblock, and the initlocals assignment is optimized away.
-	 */
-	public static int test_0_liveness_out_of_line_bblocks () {
-		cond (false);
-		return 0;
 	}
 
 	/*
@@ -358,8 +326,18 @@ class Tests {
 	 */
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	static object liveness_6_1 () {
+	static object alloc_obj () {
 		return new object ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static bool return_true () {
+		return true;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static bool return_false () {
+		return false;
 	}
 
 	public static int test_0_liveness_6 () {
@@ -387,7 +365,7 @@ class Tests {
 
 			GC.Collect (1);
 
-			object o = liveness_6_1 ();
+			object o = alloc_obj ();
 
 			o.ToString ();
 
@@ -406,6 +384,184 @@ class Tests {
                 arr [i, j] = "" + i + " " + j;
 		}
 		GC.Collect ();
+
+		return 0;
+	}
+
+	/*
+	 * Liveness + out of line bblocks
+	 */
+	public static int test_0_liveness_7 () {
+		/* Exhaust all registers so 'o' is stack allocated */
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+
+		// o is dead here
+		GC.Collect (1);
+
+		if (return_false ()) {
+			// This bblock is in-line
+			object o = alloc_obj ();
+			// o is live here
+			if (return_false ()) {
+				// This bblock is out-of-line, and o is live here
+				throw new Exception (o.ToString ());
+			}
+		}
+
+		// o is dead here too
+		GC.Collect (1);
+
+		return 0;
+	}
+
+	// Liveness + finally clauses
+	public static int test_0_liveness_8 () {
+		/* Exhaust all registers so 'o' is stack allocated */
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+
+		object o = null;
+		try {
+			o = alloc_obj ();
+		} finally {
+			GC.Collect (1);
+		}
+
+		o.GetHashCode ();
+		return 0;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static object alloc_string () {
+		return "A";
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static object alloc_obj_and_gc () {
+		GC.Collect (1);
+		return new object ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void clobber_regs_and_gc () {
+		int sum = 0, i, j, k, l, m, n, s;
+		for (i = 0; i < 100; ++i)
+			sum ++;
+		for (j = 0; j < 100; ++j)
+			sum ++;
+		for (k = 0; k < 100; ++k)
+			sum ++;
+		for (l = 0; l < 100; ++l)
+			sum ++;
+		for (m = 0; m < 100; ++m)
+			sum ++;
+		for (n = 0; n < 100; ++n)
+			sum ++;
+		for (s = 0; s < 100; ++s)
+			sum ++;
+		GC.Collect (1);
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void liveness_9_call1 (object o1, object o2, object o3) {
+		o1.GetHashCode ();
+		o2.GetHashCode ();
+		o3.GetHashCode ();
+	}
+
+	// Liveness + JIT temporaries
+	public static int test_0_liveness_9 () {
+		// the result of alloc_obj () goes into a vreg, which gets converted to a
+		// JIT temporary because of the branching introduced by the cast
+		// FIXME: This doesn't crash if MONO_TYPE_I is not treated as a GC ref
+		liveness_9_call1 (alloc_obj (), (string)alloc_string (), alloc_obj_and_gc ());
+		return 0;
+	}
+
+	// Liveness for registers
+	public static int test_0_liveness_10 () {
+		// Make sure this goes into a register
+		object o = alloc_obj ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		o.GetHashCode ();
+		// Break the bblock so o doesn't become a local vreg
+		if (return_true ())
+			// Clobber it with a call and run a GC
+			clobber_regs_and_gc ();
+		// Access it again
+		o.GetHashCode ();
+		return 0;
+	}
+
+	// Liveness for spill slots holding managed pointers
+	public static int test_0_liveness_11 () {
+		Tests[] arr = new Tests [10];
+		// This uses an ldelema internally
+		// FIXME: This doesn't crash if mp-s are not correctly tracked, just writes to
+		// an old object.
+		arr [0] >>= 1;
+
+		return 0;
+	}
+
+	public static Tests operator >> (Tests bi1, int shiftVal) {
+		clobber_regs_and_gc ();
+		return bi1;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void liveness_12_inner (int a, int b, int c, int d, int e, int f, object o) {
+		GC.Collect (1);
+		o.GetHashCode ();
+	}
+
+	// Liveness for param area
+	public static int test_0_liveness_12 () {
+		// The ref argument should be passed on the stack
+		liveness_12_inner (1, 2, 3, 4, 5, 6, new object ());
+		return 0;
+	}
+
+	public static void liveness_13_inner (ref ArrayList arr) {
+		// The value of arr will be stored in a spill slot
+		arr.Add (alloc_obj_and_gc ());
+	}
+
+	// Liveness for byref arguments in spill slots
+	public static int test_0_liveness_13 () {
+		var arr = new ArrayList ();
+		liveness_13_inner (ref arr);
 		return 0;
 	}
 }
