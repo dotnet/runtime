@@ -111,7 +111,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "71"
+#define MONO_AOT_FILE_VERSION 72
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -149,10 +149,44 @@ typedef enum {
 /* This structure is stored in the AOT file */
 typedef struct MonoAotFileInfo
 {
+	/* The version number of the AOT file format, should match MONO_AOT_FILE_VERSION */
+	guint32 version;
+	/* For alignment */
+	guint32 dummy;
+
 	/* All the pointers should be at the start to avoid alignment problems */
+
+	/* Mono's Global Offset Table */
 	gpointer got;
+	/* Compiled code for methods */
 	gpointer methods;
+	/* Mono EH Frame created by llc when using LLVM */
 	gpointer mono_eh_frame;
+	/* Data blob */
+	gpointer blob;
+	gpointer class_name_table;
+	gpointer class_info_offsets;
+	gpointer method_info_offsets;
+	gpointer ex_info_offsets;
+	gpointer code_offsets;
+	gpointer extra_method_info_offsets;
+	gpointer extra_method_table;
+	gpointer got_info_offsets;
+	gpointer methods_end;
+	gpointer unwind_info;
+	gpointer mem_end;
+	gpointer image_table;
+	/* Start of Mono's Program Linkage Table */
+	gpointer plt;
+	/* End of Mono's Program Linkage Table */
+	gpointer plt_end;
+	/* The GUID of the assembly which the AOT image was generated from */
+	gpointer assembly_guid;
+	gpointer runtime_version;
+	gpointer specific_trampolines;
+	gpointer static_rgctx_trampolines;
+	gpointer imt_thunks;
+	gpointer thumb_end;
 
 	guint32 plt_got_offset_base;
 	guint32 got_size;

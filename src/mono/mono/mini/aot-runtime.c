@@ -964,6 +964,65 @@ find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *valu
 	}
 }
 
+static gboolean
+check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
+{
+	char *build_info;
+	char *msg = NULL;
+	gboolean usable = TRUE;
+	gboolean full_aot;
+	guint8 *blob;
+
+	if (strcmp (assembly->image->guid, info->assembly_guid)) {
+		msg = g_strdup_printf ("doesn't match assembly");
+		usable = FALSE;
+	}
+
+	build_info = mono_get_runtime_build_info ();
+	if (strlen (info->runtime_version) > 0 && strcmp (info->runtime_version, build_info)) {
+		msg = g_strdup_printf ("compiled against runtime version '%s' while this runtime has version '%s'", info->runtime_version, build_info);
+		usable = FALSE;
+	}
+	g_free (build_info);
+
+	full_aot = info->flags & MONO_AOT_FILE_FLAG_FULL_AOT;
+
+	if (mono_aot_only && !full_aot) {
+		msg = g_strdup_printf ("not compiled with --aot=full");
+		usable = FALSE;
+	}
+	if (!mono_aot_only && full_aot) {
+		msg = g_strdup_printf ("compiled with --aot=full");
+		usable = FALSE;
+	}
+#ifdef TARGET_ARM
+	/* mono_arch_find_imt_method () requires this */
+	if ((info->flags & MONO_AOT_FILE_FLAG_WITH_LLVM) && !mono_use_llvm) {
+		msg = g_strdup_printf ("compiled against LLVM");
+		usable = FALSE;
+	}
+#endif
+	if (mini_get_debug_options ()->mdb_optimizations && !(info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot) {
+		msg = g_strdup_printf ("not compiled for debugging");
+		usable = FALSE;
+	}
+
+	blob = info->blob;
+
+	if (info->gc_name_index != -1) {
+		char *gc_name = (char*)&blob [info->gc_name_index];
+		const char *current_gc_name = mono_gc_get_gc_name ();
+
+		if (strcmp (current_gc_name, gc_name) != 0) {
+			msg = g_strdup_printf ("compiled against GC %s, while the current runtime uses GC %s.\n", gc_name, current_gc_name);
+			usable = FALSE;
+		}
+	}
+
+	*out_msg = msg;
+	return usable;
+}
+
 static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
@@ -971,15 +1030,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	MonoAotModule *amodule;
 	MonoDl *sofile;
 	gboolean usable = TRUE;
-	char *saved_guid = NULL;
-	char *aot_version = NULL;
-	char *runtime_version, *build_info;
-	char *opt_flags = NULL;
+	char *version_symbol = NULL;
 	char *msg = NULL;
 	gpointer *globals;
-	gboolean full_aot = FALSE;
-	MonoAotFileInfo *file_info = NULL;
-	int i;
+	MonoAotFileInfo *info = NULL;
+	int i, version;
 	guint8 *blob;
 
 	if (mono_compile_aot)
@@ -1035,66 +1090,22 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
-	find_symbol (sofile, globals, "mono_assembly_guid", (gpointer *) &saved_guid);
-	find_symbol (sofile, globals, "mono_aot_version", (gpointer *) &aot_version);
-	find_symbol (sofile, globals, "mono_aot_opt_flags", (gpointer *)&opt_flags);
-	find_symbol (sofile, globals, "mono_runtime_version", (gpointer *)&runtime_version);
+	find_symbol (sofile, globals, "mono_aot_version", (gpointer *) &version_symbol);
+	find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&info);
 
-	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
-		msg = g_strdup_printf ("wrong file format version (expected %s got %s)", MONO_AOT_FILE_VERSION, aot_version);
+	if (version_symbol) {
+		/* Old file format */
+		version = atoi (version_symbol);
+	} else {
+		g_assert (info);
+		version = info->version;
+	}
+
+	if (version != MONO_AOT_FILE_VERSION) {
+		msg = g_strdup_printf ("wrong file format version (expected %d got %d)", MONO_AOT_FILE_VERSION, version);
 		usable = FALSE;
-	}
-	else {
-		if (!saved_guid || strcmp (assembly->image->guid, saved_guid)) {
-			msg = g_strdup_printf ("doesn't match assembly");
-			usable = FALSE;
-		}
-	}
-
-	build_info = mono_get_runtime_build_info ();
-	if (!runtime_version || ((strlen (runtime_version) > 0 && strcmp (runtime_version, build_info)))) {
-		msg = g_strdup_printf ("compiled against runtime version '%s' while this runtime has version '%s'", runtime_version, build_info);
-		usable = FALSE;
-	}
-	g_free (build_info);
-
-	find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&file_info);
-	g_assert (file_info);
-
-	full_aot = ((MonoAotFileInfo*)file_info)->flags & MONO_AOT_FILE_FLAG_FULL_AOT;
-
-	if (mono_aot_only && !full_aot) {
-		fprintf (stderr, "Can't use AOT image '%s' in aot-only mode because it is not compiled with --aot=full.\n", aot_name);
-		exit (1);
-	}
-	if (!mono_aot_only && full_aot) {
-		msg = g_strdup_printf ("compiled with --aot=full");
-		usable = FALSE;
-	}
-
-#ifdef TARGET_ARM
-	/* mono_arch_find_imt_method () requires this */
-	if ((((MonoAotFileInfo*)file_info)->flags & MONO_AOT_FILE_FLAG_WITH_LLVM) && !mono_use_llvm) {
-		msg = g_strdup_printf ("compiled against LLVM");
-		usable = FALSE;
-	}
-#endif
-
-	if (mini_get_debug_options ()->mdb_optimizations && !(file_info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot) {
-		msg = g_strdup_printf ("not compiled for debugging");
-		usable = FALSE;
-	}
-
-	find_symbol (sofile, globals, "blob", (gpointer*)&blob);
-
-	if (usable && ((MonoAotFileInfo*)file_info)->gc_name_index != -1) {
-		char *gc_name = (char*)&blob [((MonoAotFileInfo*)file_info)->gc_name_index];
-		const char *current_gc_name = mono_gc_get_gc_name ();
-
-		if (strcmp (current_gc_name, gc_name) != 0) {
-			msg = g_strdup_printf ("compiled against GC %s, while the current runtime uses GC %s.\n", gc_name, current_gc_name);
-			usable = FALSE;
-		}
+	} else {
+		usable = check_usable (assembly, info, &msg);
 	}
 
 	if (!usable) {
@@ -1112,11 +1123,13 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
+	blob = info->blob;
+
 	amodule = g_new0 (MonoAotModule, 1);
 	amodule->aot_name = aot_name;
 	amodule->assembly = assembly;
 
-	memcpy (&amodule->info, file_info, sizeof (*file_info));
+	memcpy (&amodule->info, info, sizeof (*info));
 
 	amodule->got = amodule->info.got;
 	amodule->got [0] = assembly->image;
@@ -1130,7 +1143,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		guint32 table_len, i;
 		char *table = NULL;
 
-		find_symbol (sofile, globals, "mono_image_table", (gpointer *)&table);
+		table = info->image_table;
 		g_assert (table);
 
 		table_len = *(guint32*)table;
@@ -1166,34 +1179,30 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		}
 	}
 
-	/* Read method and method_info tables */
-	find_symbol (sofile, globals, "code_offsets", (gpointer*)&amodule->code_offsets);
-	amodule->code = amodule->info.methods;
+	amodule->code_offsets = info->code_offsets;
+	amodule->code = info->methods;
 #ifdef TARGET_ARM
 	/* Mask out thumb interop bit */
 	amodule->code = (void*)((mgreg_t)amodule->code & ~1);
 #endif
-	find_symbol (sofile, globals, "methods_end", (gpointer*)&amodule->code_end);
-	find_symbol (sofile, globals, "method_info_offsets", (gpointer*)&amodule->method_info_offsets);
-	find_symbol (sofile, globals, "ex_info_offsets", (gpointer*)&amodule->ex_info_offsets);
-	find_symbol (sofile, globals, "class_info_offsets", (gpointer*)&amodule->class_info_offsets);
-	find_symbol (sofile, globals, "class_name_table", (gpointer *)&amodule->class_name_table);
-	find_symbol (sofile, globals, "extra_method_table", (gpointer *)&amodule->extra_method_table);
-	find_symbol (sofile, globals, "extra_method_info_offsets", (gpointer *)&amodule->extra_method_info_offsets);
-	find_symbol (sofile, globals, "got_info_offsets", (gpointer*)&amodule->got_info_offsets);
-	find_symbol (sofile, globals, "specific_trampolines", (gpointer*)&(amodule->trampolines [MONO_AOT_TRAMP_SPECIFIC]));
-	find_symbol (sofile, globals, "static_rgctx_trampolines", (gpointer*)&(amodule->trampolines [MONO_AOT_TRAMP_STATIC_RGCTX]));
-	find_symbol (sofile, globals, "imt_thunks", (gpointer*)&(amodule->trampolines [MONO_AOT_TRAMP_IMT_THUNK]));
-	find_symbol (sofile, globals, "unwind_info", (gpointer)&amodule->unwind_info);
-	find_symbol (sofile, globals, "mem_end", (gpointer*)&amodule->mem_end);
-	find_symbol (sofile, globals, "thumb_end", (gpointer*)&amodule->thumb_end);
-
+	amodule->code_end = info->methods_end;
+	amodule->method_info_offsets = info->method_info_offsets;
+	amodule->ex_info_offsets = info->ex_info_offsets;
+	amodule->class_info_offsets = info->class_info_offsets;
+	amodule->class_name_table = info->class_name_table;
+	amodule->extra_method_table = info->extra_method_table;
+	amodule->extra_method_info_offsets = info->extra_method_info_offsets;
+	amodule->got_info_offsets = info->got_info_offsets;
+	amodule->unwind_info = info->unwind_info;
+	amodule->mem_end = info->mem_end;
 	amodule->mem_begin = amodule->code;
-
-	find_symbol (sofile, globals, "plt", (gpointer*)&amodule->plt);
-	find_symbol (sofile, globals, "plt_end", (gpointer*)&amodule->plt_end);
-
-	amodule->mono_eh_frame = amodule->info.mono_eh_frame;
+	amodule->plt = info->plt;
+	amodule->plt_end = info->plt_end;
+	amodule->mono_eh_frame = info->mono_eh_frame;
+	amodule->trampolines [MONO_AOT_TRAMP_SPECIFIC] = info->specific_trampolines;
+	amodule->trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = info->static_rgctx_trampolines;
+	amodule->trampolines [MONO_AOT_TRAMP_IMT_THUNK] = info->imt_thunks;
+	amodule->thumb_end = info->thumb_end;
 
 	if (make_unreadable) {
 #ifndef TARGET_WIN32
