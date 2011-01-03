@@ -782,6 +782,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
                          MonoJitInfo *res, MonoJitInfo *prev_ji,
 						 MonoContext *ctx,
                          MonoContext *new_ctx, MonoLMF **lmf,
+						 mgreg_t **save_locations,
                          gboolean *managed)
 {
   MonoJitInfo *ji;
