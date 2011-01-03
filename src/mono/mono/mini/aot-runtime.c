@@ -1726,7 +1726,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes;
 	gboolean from_llvm, has_gc_map;
 	guint8 *p;
-	int generic_info_size, try_holes_info_size, num_holes, this_reg, this_offset;
+	int generic_info_size, try_holes_info_size, num_holes, this_reg = 0, this_offset = 0;
 
 	/* Load the method info from the AOT file */
 
