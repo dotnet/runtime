@@ -8,6 +8,7 @@
 /*.lo
 /*.la
 /*.o
+/*.a
 /semantic.cache
 /.project
 /.cproject
