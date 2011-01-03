@@ -104,6 +104,9 @@ mono_string_utf8_to_builder2 (char *text);
 static MonoStringBuilder *
 mono_string_utf16_to_builder2 (gunichar2 *text);
 
+static MonoString*
+mono_string_new_len_wrapper (const char *text, guint length);
+
 static void
 mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype, guint32 elnum);
 
@@ -204,6 +207,7 @@ mono_marshal_init (void)
 		register_icall (mono_string_to_utf16, "mono_string_to_utf16", "ptr obj", FALSE);
 		register_icall (mono_string_from_utf16, "mono_string_from_utf16", "obj ptr", FALSE);
 		register_icall (mono_string_new_wrapper, "mono_string_new_wrapper", "obj ptr", FALSE);
+		register_icall (mono_string_new_len_wrapper, "mono_string_new_len_wrapper", "obj ptr int", FALSE);
 		register_icall (mono_string_to_utf8, "mono_string_to_utf8", "ptr obj", FALSE);
 		register_icall (mono_string_to_lpstr, "mono_string_to_lpstr", "ptr obj", FALSE);
 		register_icall (mono_string_to_ansibstr, "mono_string_to_ansibstr", "ptr object", FALSE);
@@ -966,6 +970,12 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
 	if (size <= mono_string_length (src))
 		len--;
 	*((gunichar2 *) dst + len) = 0;
+}
+
+static MonoString*
+mono_string_new_len_wrapper (const char *text, guint length)
+{
+	return mono_string_new_len (mono_domain_get (), text, length);
 }
 
 static int
@@ -2197,6 +2207,7 @@ mono_marshal_get_string_to_ptr_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 	case MONO_NATIVE_LPWSTR:
 		return MONO_MARSHAL_CONV_STR_LPWSTR;
 	case MONO_NATIVE_LPSTR:
+	case MONO_NATIVE_VBBYREFSTR:
 		return MONO_MARSHAL_CONV_STR_LPSTR;
 	case MONO_NATIVE_LPTSTR:
 		return MONO_MARSHAL_CONV_STR_LPTSTR;
@@ -2239,6 +2250,7 @@ mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		*need_free = FALSE;
 		return MONO_MARSHAL_CONV_LPWSTR_STR;
 	case MONO_NATIVE_LPSTR:
+	case MONO_NATIVE_VBBYREFSTR:
 		return MONO_MARSHAL_CONV_LPSTR_STR;
 	case MONO_NATIVE_LPTSTR:
 		return MONO_MARSHAL_CONV_LPTSTR_STR;
@@ -6020,7 +6032,27 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+		if (encoding == MONO_NATIVE_VBBYREFSTR) {
+			static MonoMethod *m;
+
+			if (!m) {
+				m = mono_class_get_method_from_name_flags (mono_defaults.string_class, "get_Length", -1, 0);
+				g_assert (m);
+			}
+
+			/* 
+			 * Have to allocate a new string with the same length as the original, and
+			 * copy the contents of the buffer pointed to by CONV_ARG into it.
+			 */
+			g_assert (t->byref);
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDIND_I);				
+			mono_mb_emit_managed_call (mb, m, NULL);
+			mono_mb_emit_icall (mb, mono_string_new_len_wrapper);
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
+		} else if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_icall (mb, conv_to_icall (conv));
@@ -6037,7 +6069,7 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (t->byref && encoding != MONO_NATIVE_VBBYREFSTR)
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
