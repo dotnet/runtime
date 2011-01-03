@@ -163,6 +163,9 @@ mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 void
 mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
 {
+	/* Clear thumb bit */
+	eip &= ~1;
+
 	mono_arm_throw_exception ((MonoObject*)mono_exception_from_token (mono_defaults.corlib, type_token), eip, esp, int_regs, fp_regs);
 }
 
@@ -413,6 +416,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
+		/* Clear thumb bit */
+		new_ctx->eip &= ~1;
+
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->eip--;
 
@@ -458,6 +464,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->regs [ARMREG_LR] = (*lmf)->iregs [ARMREG_LR - 1];
 		new_ctx->esp = (*lmf)->iregs [ARMREG_IP];
 		new_ctx->eip = new_ctx->regs [ARMREG_LR];
+
+		/* Clear thumb bit */
+		new_ctx->eip &= ~1;
 
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->eip--;
@@ -558,6 +567,9 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	if ((gsize)UCONTEXT_REG_PC (sigctx) & 1)
 		/* Transition to thumb */
 		UCONTEXT_REG_CPSR (sigctx) |= (1 << 5);
+	else
+		/* Transition to ARM */
+		UCONTEXT_REG_CPSR (sigctx) &= ~(1 << 5);
 #endif
 
 	return TRUE;
