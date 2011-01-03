@@ -975,6 +975,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *aot_version = NULL;
 	char *runtime_version, *build_info;
 	char *opt_flags = NULL;
+	char *msg = NULL;
 	gpointer *globals;
 	gboolean full_aot = FALSE;
 	MonoAotFileInfo *file_info = NULL;
@@ -1040,19 +1041,19 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "mono_runtime_version", (gpointer *)&runtime_version);
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
+		msg = g_strdup_printf ("wrong file format version (expected %s got %s)", MONO_AOT_FILE_VERSION, aot_version);
 		usable = FALSE;
 	}
 	else {
 		if (!saved_guid || strcmp (assembly->image->guid, saved_guid)) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is out of date.\n", aot_name);
+			msg = g_strdup_printf ("doesn't match assembly");
 			usable = FALSE;
 		}
 	}
 
 	build_info = mono_get_runtime_build_info ();
 	if (!runtime_version || ((strlen (runtime_version) > 0 && strcmp (runtime_version, build_info)))) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled against runtime version '%s' while this runtime has version '%s'.\n", aot_name, runtime_version, build_info);
+		msg = g_strdup_printf ("compiled against runtime version '%s' while this runtime has version '%s'", runtime_version, build_info);
 		usable = FALSE;
 	}
 	g_free (build_info);
@@ -1067,19 +1068,20 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		exit (1);
 	}
 	if (!mono_aot_only && full_aot) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled with --aot=full.\n", aot_name);
+		msg = g_strdup_printf ("compiled with --aot=full");
 		usable = FALSE;
 	}
 
-	/* This is no longer needed, LLVM and non-LLVM runtimes should be compatible.
+#ifdef TARGET_ARM
+	/* mono_arch_find_imt_method () requires this */
 	if ((((MonoAotFileInfo*)file_info)->flags & MONO_AOT_FILE_FLAG_WITH_LLVM) && !mono_use_llvm) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled with LLVM.\n", aot_name);
+		msg = g_strdup_printf ("compiled against LLVM");
 		usable = FALSE;
 	}
-	*/
+#endif
 
 	if (mini_get_debug_options ()->mdb_optimizations && !(file_info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is not compiled for debugging.\n", aot_name);
+		msg = g_strdup_printf ("not compiled for debugging");
 		usable = FALSE;
 	}
 
@@ -1090,18 +1092,19 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		const char *current_gc_name = mono_gc_get_gc_name ();
 
 		if (strcmp (current_gc_name, gc_name) != 0) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled against GC %s, while the current runtime uses GC %s.\n", aot_name, gc_name, current_gc_name);
+			msg = g_strdup_printf ("compiled against GC %s, while the current runtime uses GC %s.\n", gc_name, current_gc_name);
 			usable = FALSE;
 		}
 	}
 
 	if (!usable) {
 		if (mono_aot_only) {
-			fprintf (stderr, "Failed to load AOT module '%s' while running in aot-only mode.\n", aot_name);
+			fprintf (stderr, "Failed to load AOT module '%s' while running in aot-only mode: %s.\n", aot_name, msg);
 			exit (1);
 		} else {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable.\n", aot_name);
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable: %s.\n", aot_name, msg);
 		}
+		g_free (msg);
 		g_free (aot_name);
 		if (sofile)
 			mono_dl_close (sofile);
