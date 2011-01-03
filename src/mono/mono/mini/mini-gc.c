@@ -67,6 +67,8 @@ typedef struct {
 
 #define ALIGN_TO(val,align) ((((mgreg_t)val) + ((align) - 1)) & ~((align) - 1))
 
+#undef DEBUG
+
 #if 0
 /* We don't support debug levels, its all-or-nothing */
 #define DEBUG(s) do { s; fflush (logfile); } while (0)
