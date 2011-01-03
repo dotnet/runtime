@@ -6979,6 +6979,9 @@ mono_gc_base_init (void)
 	use_cardtable = FALSE;
 #endif
 
+	/* Keep this the default for now */
+	conservative_stack_mark = TRUE;
+
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
