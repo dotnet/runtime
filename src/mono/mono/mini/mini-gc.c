@@ -1117,6 +1117,9 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 	if (COMPILE_LLVM (cfg))
 		return;
 
+	if (!cfg->compile_aot && conservative_stack_mark)
+		return;
+
 #if 1
 	/* Debugging support */
 	{
