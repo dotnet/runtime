@@ -149,6 +149,11 @@ typedef enum {
 /* This structure is stored in the AOT file */
 typedef struct MonoAotFileInfo
 {
+	/* All the pointers should be at the start to avoid alignment problems */
+	gpointer got;
+	gpointer methods;
+	gpointer mono_eh_frame;
+
 	guint32 plt_got_offset_base;
 	guint32 got_size;
 	guint32 plt_size;

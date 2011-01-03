@@ -184,11 +184,12 @@ typedef struct MonoAotCompile {
 	MonoClass **typespec_classes;
 	GString *llc_args;
 	GString *as_args;
+	gboolean thumb_mixed;
 } MonoAotCompile;
 
 typedef struct {
 	int plt_offset;
-	char *symbol;
+	char *symbol, *llvm_symbol;
 	MonoJumpInfo *ji;
 } MonoPltEntry;
 
@@ -513,6 +514,8 @@ arch_init (MonoAotCompile *acfg)
 		g_string_append (acfg->llc_args, " -soft-float");
 #endif
 	}
+	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "thumb"))
+		acfg->thumb_mixed = TRUE;
 
 	if (acfg->aot_opts.mtriple)
 		mono_arch_set_target (acfg->aot_opts.mtriple);
@@ -723,35 +726,13 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		guint8 buf [256];
 		guint8 *code;
 
-		/* FIXME:
-		 * - optimize OP_AOTCONST implementation
-		 * - optimize the PLT entries
-		 * - optimize SWITCH AOT implementation
-		 */
 		code = buf;
-		if (acfg->use_bin_writer && FALSE) {
-			/* FIXME: mono_arch_patch_plt_entry () needs to decode this */
-			/* We only emit 1 relocation since we implement it ourselves anyway */
-			img_writer_emit_reloc (acfg->w, R_ARM_ALU_PC_G0_NC, acfg->got_symbol, ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 8);
-			/* FIXME: A 2 instruction encoding is sufficient in most cases */
-			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
-			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
-			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
-			emit_bytes (acfg, buf, code - buf);
-			/* Used by mono_aot_get_plt_info_offset */
-			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
-		} else {
-			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-			ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_IP);
-			emit_bytes (acfg, buf, code - buf);
-			emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 4);
-			/* Used by mono_aot_get_plt_info_offset */
-			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
-		}
-		/* 
-		 * The plt_got_info_offset is computed automatically by 
-		 * mono_aot_get_plt_info_offset (), so no need to save it here.
-		 */
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+		ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_IP);
+		emit_bytes (acfg, buf, code - buf);
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 4);
+		/* Used by mono_aot_get_plt_info_offset */
+		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 #elif defined(TARGET_POWERPC)
 		guint32 offset = (acfg->plt_got_offset_base + index) * sizeof (gpointer);
 
@@ -2078,6 +2059,7 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 		res->plt_offset = acfg->plt_offset;
 		res->ji = new_ji;
 		res->symbol = get_plt_symbol (acfg, res->plt_offset, patch_info);
+		res->llvm_symbol = g_strdup_printf ("%s_llvm", res->symbol);
 
 		g_hash_table_insert (acfg->patch_to_plt_entry, new_ji, res);
 
@@ -3895,9 +3877,32 @@ emit_plt (MonoAotCompile *acfg)
 			 */
 			if (ji && is_direct_callable (acfg, NULL, ji) && !acfg->use_bin_writer) {
 				MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, ji->data.method);
-				fprintf (acfg->fp, "\n.set %s, %s\n", label, callee_cfg->asm_symbol);
+
+				if (acfg->thumb_mixed) {
+					/* LLVM calls the PLT entries using bl, so emit a stub */
+					/* FIXME: Too much overhead on every call */
+					emit_label (acfg, plt_entry->llvm_symbol);
+					fprintf (acfg->fp, ".thumb_func\n");
+					fprintf (acfg->fp, "bx pc\n");
+					fprintf (acfg->fp, "nop\n");
+					fprintf (acfg->fp, ".arm\n");
+					fprintf (acfg->fp, "b %s\n", callee_cfg->asm_symbol);
+				} else {
+					fprintf (acfg->fp, "\n.set %s, %s\n", plt_entry->llvm_symbol, callee_cfg->asm_symbol);
+				}
 				continue;
 			}
+		}
+
+		emit_label (acfg, plt_entry->llvm_symbol);
+
+		if (acfg->thumb_mixed) {
+			/* LLVM calls the PLT entries using bl, so emit a stub */
+			/* FIXME: Too much overhead on every call */
+			fprintf (acfg->fp, ".thumb_func\n");
+			fprintf (acfg->fp, "bx pc\n");
+			fprintf (acfg->fp, "nop\n");
+			fprintf (acfg->fp, ".arm\n");
 		}
 
 		emit_label (acfg, label);
@@ -4805,7 +4810,7 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 
 	plt_entry = get_plt_entry (llvm_acfg, ji);
 
-	return g_strdup_printf (plt_entry->symbol);
+	return g_strdup_printf (plt_entry->llvm_symbol);
 }
 
 MonoJumpInfo*
@@ -4940,7 +4945,6 @@ emit_code (MonoAotCompile *acfg)
 	 */
 	sprintf (symbol, "methods");
 	emit_section_change (acfg, ".text", 0);
-	emit_global (acfg, symbol, TRUE);
 	emit_alignment (acfg, 8);
 	if (acfg->llvm) {
 		for (i = 0; i < acfg->nmethods; ++i) {
@@ -5519,18 +5523,6 @@ emit_unwind_info (MonoAotCompile *acfg)
 
 		acfg->stats.unwind_info_size += (p - buf) + unwind_info_len;
 	}
-
-	/*
-	 * Emit a reference to the mono_eh_frame table created by our modified LLVM compiler.
-	 */
-	if (acfg->llvm) {
-		sprintf (symbol, "mono_eh_frame_addr");
-		emit_section_change (acfg, ".data", 0);
-		emit_global (acfg, symbol, FALSE);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-		emit_pointer (acfg, "mono_eh_frame");
-	}
 }
 
 static void
@@ -5753,13 +5745,6 @@ emit_got (MonoAotCompile *acfg)
 		sprintf (symbol, "got_end");
 		emit_label (acfg, symbol);
 	}
-
-	sprintf (symbol, "mono_aot_got_addr");
-	emit_section_change (acfg, ".data", 0);
-	emit_global (acfg, symbol, FALSE);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-	emit_pointer (acfg, acfg->got_symbol);
 }
 
 typedef struct GlobalsTableEntry {
@@ -5975,6 +5960,22 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_global (acfg, symbol, FALSE);
 
 	/* The data emitted here must match MonoAotFileInfo. */
+
+	/* 
+	 * We emit these as data to avoid making these symbols global, which leads to
+	 * various problems
+	 */
+	emit_pointer (acfg, acfg->got_symbol);
+	emit_pointer (acfg, "methods");
+	if (acfg->llvm) {
+		/*
+		 * Emit a reference to the mono_eh_frame table created by our modified LLVM compiler.
+		 */
+		emit_pointer (acfg, "mono_eh_frame");
+	} else {
+		emit_pointer (acfg, NULL);
+	}
+
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
@@ -6557,6 +6558,21 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	if (acfg->dwarf)
 		mono_dwarf_writer_emit_base_info (acfg->dwarf, mono_unwind_get_cie_program ());
+
+	if (acfg->thumb_mixed) {
+		char symbol [256];
+		/*
+		 * This global symbol marks the end of THUMB code, and the beginning of ARM
+		 * code generated by our JIT.
+		 */
+		sprintf (symbol, "thumb_end");
+		emit_section_change (acfg, ".text", 0);
+		emit_global (acfg, symbol, FALSE);
+		emit_label (acfg, symbol);
+		fprintf (acfg->fp, ".skip 16\n");
+
+		fprintf (acfg->fp, ".arm\n");
+	}
 
 	emit_code (acfg);
 
