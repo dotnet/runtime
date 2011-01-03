@@ -1647,7 +1647,15 @@ parse_public_key (const gchar *key, gchar** pubkey)
 	keylen = strlen (key) >> 1;
 	if (keylen < 1)
 		return FALSE;
-	
+
+	/* allow the ECMA standard key */
+	if (strcmp (key, "00000000000000000400000000000000") == 0) {
+		if (pubkey) {
+			arr = g_strdup ("b77a5c561934e089");
+			*pubkey = arr;
+		}
+		return TRUE;
+	}
 	val = g_ascii_xdigit_value (key [0]) << 4;
 	val |= g_ascii_xdigit_value (key [1]);
 	switch (val) {
