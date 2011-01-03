@@ -2061,7 +2061,6 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	/* Compute a sorted table mapping code offsets to method indexes. */
 	if (!amodule->sorted_code_offsets) {
-
 		code_offsets = g_new0 (gint32, nmethods * 2);
 		offsets_len = 0;
 		for (i = 0; i < nmethods; ++i) {

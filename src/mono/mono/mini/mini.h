@@ -182,24 +182,40 @@ typedef struct MonoAotFileInfo
 	gpointer plt_end;
 	/* The GUID of the assembly which the AOT image was generated from */
 	gpointer assembly_guid;
+	/*
+	 * The runtime version string for AOT images generated using 'bind-to-runtime-version',
+	 * NULL otherwise.
+	 */
 	gpointer runtime_version;
+	/* Blocks of various kinds of trampolines */
 	gpointer specific_trampolines;
 	gpointer static_rgctx_trampolines;
 	gpointer imt_thunks;
+	/*
+	 * The end of LLVM generated thumb code, or NULL.
+	 */
 	gpointer thumb_end;
 
+	/* The index of the first GOT slot used by the PLT */
 	guint32 plt_got_offset_base;
+	/* Number of entries in the GOT */
 	guint32 got_size;
+	/* Number of entries in the PLT */
 	guint32 plt_size;
+	/* Number of methods */
 	guint32 nmethods;
+	/* A union of MonoAotFileFlags */
 	guint32 flags;
 	/* Optimization flags used to compile the module */
 	guint32 opts;
 	/* Index of the blob entry holding the GC used by this module */
 	gint32 gc_name_index;
 
+	/* Number of trampolines */
 	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
+	/* The indexes of the first GOT slots used by the trampolines */
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
+	/* The size of one trampoline */
 	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
 } MonoAotFileInfo;
 
