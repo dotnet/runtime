@@ -6592,7 +6592,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		 */
 		sprintf (symbol, "thumb_end");
 		emit_section_change (acfg, ".text", 0);
-		emit_global (acfg, symbol, FALSE);
 		emit_label (acfg, symbol);
 		fprintf (acfg->fp, ".skip 16\n");
 
