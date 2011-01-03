@@ -103,6 +103,10 @@ guint32 mono_jit_tls_id = -1;
 MINI_FAST_TLS_DECLARE(mono_jit_tls);
 #endif
 
+#ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
+#define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 1
+#endif
+
 MonoTraceSpec *mono_jit_trace_calls = NULL;
 gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
@@ -3759,9 +3763,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				/*
 				 * Extend the try block backwards to include parts of the previous call
 				 * instruction.
-				 * FIXME: This is arch specific.
 				 */
-				ei->try_start = (guint8*)ei->try_start - 1;
+				ei->try_start = (guint8*)ei->try_start - MONO_ARCH_MONITOR_ENTER_ADJUSTMENT;
 			}
 			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
 			g_assert (tblock);
