@@ -1554,7 +1554,8 @@ process_variables (MonoCompile *cfg)
 				mono_class_compute_gc_descriptor (ins->klass);
 
 				bitmap = mono_gc_get_bitmap_for_descr (ins->klass->gc_descr, &numbits);
-				g_assert (bitmap);
+				if (!bitmap)
+					pin = TRUE;
 
 				/*
 				 * Most vtypes are marked volatile because of the LDADDR instructions,
