@@ -85,6 +85,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #endif
 
 #ifndef DISABLE_DEBUGGER_AGENT
+
 #include <mono/io-layer/mono-mutex.h>
 
 /* Definitions to make backporting to 2.6 easier */
@@ -7162,5 +7163,16 @@ mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *throw_ctx
 									  MonoContext *catch_ctx)
 {
 }
+
+void
+mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
+{
+}
+
+void
+mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
+{
+}
+
 #endif
 
