@@ -10798,9 +10798,7 @@ op_to_op_src1_membase (int load_opcode, int opcode)
 
 	switch (opcode) {
 	case OP_X86_PUSH:
-#ifdef __native_client_codegen__
-		/* In AMD64 NaCl, pointers are 4 bytes, */
-		/*  so LOAD_* != LOADI8_* */
+#ifdef __mono_ilp32__
 		if (load_opcode == OP_LOADI8_MEMBASE)
 #else
 		if ((load_opcode == OP_LOAD_MEMBASE) || (load_opcode == OP_LOADI8_MEMBASE))
@@ -10819,7 +10817,7 @@ op_to_op_src1_membase (int load_opcode, int opcode)
 		break;
 	case OP_COMPARE:
 	case OP_LCOMPARE:
-#ifdef __native_client_codegen__
+#ifdef __mono_ilp32__
 		if (load_opcode == OP_LOAD_MEMBASE)
 			return OP_AMD64_ICOMPARE_MEMBASE_REG;
 		if (load_opcode == OP_LOADI8_MEMBASE)
@@ -10863,10 +10861,10 @@ op_to_op_src2_membase (int load_opcode, int opcode)
 #endif
 
 #ifdef TARGET_AMD64
-#if defined(__default_codegen__)
-	if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE)) {
-#elif defined(__native_client_codegen__)
+#ifdef __mono_ilp32__
 	if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE) ) {
+#else
+	if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE)) {
 #endif
 		switch (opcode) {
 		case OP_ICOMPARE:
@@ -10882,10 +10880,10 @@ op_to_op_src2_membase (int load_opcode, int opcode)
 		case OP_IXOR:
 			return OP_X86_XOR_REG_MEMBASE;
 		}
-#if defined(__default_codegen__)
-	} else if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE)) {
-#elif defined(__native_client_codegen__)
+#ifdef __mono_ilp32__
 	} else if (load_opcode == OP_LOADI8_MEMBASE) {
+#else
+	} else if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE)) {
 #endif
 		switch (opcode) {
 		case OP_COMPARE:

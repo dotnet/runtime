@@ -2087,10 +2087,10 @@ arg_storage_to_load_membase (ArgStorage storage)
 {
 	switch (storage) {
 	case ArgInIReg:
-#if defined(__default_codegen__)
-		return OP_LOAD_MEMBASE;
-#elif defined(__native_client_codegen__)
+#if defined(__mono_ilp32__)
 		return OP_LOADI8_MEMBASE;
+#else
+		return OP_LOAD_MEMBASE;
 #endif
 	case ArgInDoubleSSEReg:
 		return OP_LOADR8_MEMBASE;
@@ -2774,14 +2774,14 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
-#if !defined(__native_client__)
+#if !defined(__mono_ilp32__)
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 #endif
 			g_assert (dinfo->cinfo->args [i + sig->hasthis].reg == param_regs [greg]);
 			p->regs [greg ++] = PTR_TO_GREG(*(arg));
 			break;
-#if defined(__native_client__)
+#if defined(__mono_ilp32__)
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			g_assert (dinfo->cinfo->args [i + sig->hasthis].reg == param_regs [greg]);
@@ -3309,13 +3309,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg2 = temp->dreg;
 			}
 			break;
-#ifndef __native_client_codegen__
-		/* In AMD64 NaCl, pointers are 4 bytes, */
-		/*  so LOAD_* != LOADI8_* */
-		/* Also, don't generate memindex opcodes (to simplify */
-		/*  read sandboxing) */
+#ifndef __mono_ilp32__
 		case OP_LOAD_MEMBASE:
+#endif
 		case OP_LOADI8_MEMBASE:
+#ifndef __native_client_codegen__
+		/*  Don't generate memindex opcodes (to simplify */
+		/*  read sandboxing) */
 			if (!amd64_is_imm32 (ins->inst_offset)) {
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
@@ -3323,9 +3323,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = OP_AMD64_LOADI8_MEMINDEX;
 				ins->inst_indexreg = temp->dreg;
 			}
-			break;
 #endif
-#ifndef __native_client_codegen__
+			break;
+#ifndef __mono_ilp32__
 		case OP_STORE_MEMBASE_IMM:
 #endif
 		case OP_STOREI8_MEMBASE_IMM:
@@ -3771,8 +3771,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, ins->inst_imm, 8);
 			break;
 		case OP_LOAD_MEM:
-#ifdef __native_client_codegen__
-			/* For NaCl, pointers are 4 bytes, so separate these */
+#ifdef __mono_ilp32__
+			/* In ILP32, pointers are 4 bytes, so separate these */
 			/* cases, use literal 8 below where we really want 8 */
 			amd64_mov_reg_imm (code, ins->dreg, ins->inst_imm);
 			amd64_mov_reg_membase (code, ins->dreg, ins->dreg, 0, sizeof(gpointer));

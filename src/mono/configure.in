@@ -2152,6 +2152,7 @@ case "$host" in
 		esac
 		case "$host" in
 			x86_64-*-nacl*)
+				AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 				sizeof_register=8
 				;;
 		esac
@@ -2311,6 +2312,7 @@ if test "x$host" != "x$target"; then
 		arch_target=amd64
 		AC_DEFINE(TARGET_AMD64, 1, [...])
 		AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
+		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
 		;;
 	*)
