@@ -969,11 +969,17 @@ typedef struct {
 	/* Stores state needed by handler block with a guard */
 	MonoContext     ex_ctx;
 	ResumeState resume_state;
-	/* handle block return address */
+
+	/*Variabled use to implement handler blocks (finally/catch/etc) guards during interruption*/
+	/* handler block return address */
 	gpointer handler_block_return_address;
-	/* handler block been guarded */
+
+	/* handler block been guarded. It's safe to store this even for dynamic methods since there
+	is an activation on stack making sure it will remain alive.*/
 	MonoJitExceptionInfo *handler_block;
 
+	/* context to be used by the guard trampoline when resuming interruption.*/
+	MonoContext handler_block_context;
 	/* 
 	 * Stores the state at the exception throw site to be used by mono_stack_walk ()
 	 * when it is called from profiler functions during exception handling.

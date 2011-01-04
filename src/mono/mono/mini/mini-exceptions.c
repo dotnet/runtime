@@ -1584,7 +1584,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					 */
 					if (G_UNLIKELY (jit_tls->handler_block_return_address)) {
 						gboolean is_outside = FALSE;
-						gpointer prot_bp = MONO_CONTEXT_GET_BP (&jit_tls->ex_ctx);
+						gpointer prot_bp = MONO_CONTEXT_GET_BP (&jit_tls->handler_block_context);
 						gpointer catch_bp = MONO_CONTEXT_GET_BP (ctx);
 						//FIXME make this stack direction aware
 						if (catch_bp > prot_bp) {
@@ -1599,7 +1599,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							 *	There aren't any further finally/fault handler blocks down the stack over this exception.
 							 *   This must be ensured by the code that installs the guard trampoline.
 							 */
-							g_assert (ji == mini_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (&jit_tls->ex_ctx), NULL));
+							g_assert (ji == mini_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (&jit_tls->handler_block_context), NULL));
 
 							if (!is_address_protected (ji, jit_tls->handler_block, ei->handler_start)) {
 								is_outside = TRUE;
@@ -2337,7 +2337,7 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	if (!data.ji)
 		return FALSE;
 
-	memcpy (&jit_tls->ex_ctx, &data.ctx, sizeof (MonoContext));
+	memcpy (&jit_tls->handler_block_context, &data.ctx, sizeof (MonoContext));
 
 	resume_ip = install_handler_block_guard (data.ji, &data.ctx);
 	if (resume_ip == NULL)
