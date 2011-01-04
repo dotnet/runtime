@@ -189,8 +189,9 @@ typedef struct MonoAotCompile {
 
 typedef struct {
 	int plt_offset;
-	char *symbol, *llvm_symbol;
+	char *symbol, *llvm_symbol, *debug_sym;
 	MonoJumpInfo *ji;
+	gboolean jit_used, llvm_used;
 } MonoPltEntry;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -760,6 +761,33 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 #else
 		g_assert_not_reached ();
+#endif
+}
+
+static void
+arch_emit_llvm_plt_entry (MonoAotCompile *acfg, int index)
+{
+#if defined(TARGET_ARM)
+#if 0
+	/* LLVM calls the PLT entries using bl, so emit a stub */
+	/* FIXME: Too much overhead on every call */
+	fprintf (acfg->fp, ".thumb_func\n");
+	fprintf (acfg->fp, "bx pc\n");
+	fprintf (acfg->fp, "nop\n");
+	fprintf (acfg->fp, ".arm\n");
+#endif
+	/* LLVM calls the PLT entries using bl, so these have to be thumb2 */
+	fprintf (acfg->fp, ".thumb_func\n");
+	/* The code below should be 12 bytes long */
+	fprintf (acfg->fp, "ldr ip, [pc, #8]\n");
+	/* thumb can't encode ld pc, [pc, ip] */
+	fprintf (acfg->fp, "add ip, pc, ip\n");
+	fprintf (acfg->fp, "ldr ip, [ip, #0]\n");
+	fprintf (acfg->fp, "bx ip\n");
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) + 4);
+	emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+#else
+	g_assert_not_reached ();
 #endif
 }
 
@@ -3111,6 +3139,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 		
 						/* Nullify the patch */
 						patch_info->type = MONO_PATCH_INFO_NONE;
+						plt_entry->jit_used = TRUE;
 					}
 				}
 
@@ -3830,6 +3859,45 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	return res;
 }
 
+static char*
+get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cache)
+{
+	char *debug_sym;
+
+	switch (ji->type) {
+	case MONO_PATCH_INFO_METHOD:
+		debug_sym = get_debug_sym (ji->data.method, "plt_", cache);
+		break;
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+		debug_sym = g_strdup_printf ("plt__jit_icall_%s", ji->data.name);
+		break;
+	case MONO_PATCH_INFO_CLASS_INIT:
+		debug_sym = g_strdup_printf ("plt__class_init_%s", mono_type_get_name (&ji->data.klass->byval_arg));
+		sanitize_symbol (debug_sym);
+		break;
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+		debug_sym = g_strdup_printf ("plt__rgctx_fetch_%d", acfg->label_generator ++);
+		break;
+	case MONO_PATCH_INFO_ICALL_ADDR: {
+		char *s = get_debug_sym (ji->data.method, "", cache);
+		
+		debug_sym = g_strdup_printf ("plt__icall_native_%s", s);
+		g_free (s);
+		break;
+	}
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+		debug_sym = g_strdup_printf ("plt__jit_icall_native_%s", ji->data.name);
+		break;
+	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
+		debug_sym = g_strdup_printf ("plt__generic_class_init");
+		break;
+	default:
+		break;
+	}
+
+	return debug_sym;
+}
+
 /*
  * Calls made from AOTed code are routed through a table of jumps similar to the
  * ELF PLT (Program Linkage Table). The differences are the following:
@@ -3857,7 +3925,6 @@ emit_plt (MonoAotCompile *acfg)
 	emit_label (acfg, acfg->plt_symbol);
 
 	for (i = 0; i < acfg->plt_offset; ++i) {
-		char label [128];
 		char *debug_sym = NULL;
 		MonoPltEntry *plt_entry = NULL;
 		MonoJumpInfo *ji;
@@ -3872,7 +3939,6 @@ emit_plt (MonoAotCompile *acfg)
 
 		plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
 		ji = plt_entry->ji;
-		sprintf (label, "%s", plt_entry->symbol);
 
 		if (acfg->llvm) {
 			/*
@@ -3900,62 +3966,71 @@ emit_plt (MonoAotCompile *acfg)
 			}
 		}
 
-		emit_label (acfg, plt_entry->llvm_symbol);
+		if (acfg->aot_opts.write_symbols)
+			plt_entry->debug_sym = get_plt_entry_debug_sym (acfg, ji, cache);
+		debug_sym = plt_entry->debug_sym;
 
-		if (acfg->thumb_mixed) {
-			/* LLVM calls the PLT entries using bl, so emit a stub */
-			/* FIXME: Too much overhead on every call */
-			fprintf (acfg->fp, ".thumb_func\n");
-			fprintf (acfg->fp, "bx pc\n");
-			fprintf (acfg->fp, "nop\n");
-			fprintf (acfg->fp, ".arm\n");
+		if (acfg->thumb_mixed && !plt_entry->jit_used)
+			/* Emit only a thumb version */
+			continue;
+
+		if (!acfg->thumb_mixed)
+			emit_label (acfg, plt_entry->llvm_symbol);
+
+		if (debug_sym) {
+			emit_local_symbol (acfg, debug_sym, NULL, TRUE);
+			emit_label (acfg, debug_sym);
 		}
 
-		emit_label (acfg, label);
+		emit_label (acfg, plt_entry->symbol);
 
-		if (acfg->aot_opts.write_symbols) {
-			switch (ji->type) {
-			case MONO_PATCH_INFO_METHOD:
-				debug_sym = get_debug_sym (ji->data.method, "plt_", cache);
-				break;
-			case MONO_PATCH_INFO_INTERNAL_METHOD:
-				debug_sym = g_strdup_printf ("plt__jit_icall_%s", ji->data.name);
-				break;
-			case MONO_PATCH_INFO_CLASS_INIT:
-				debug_sym = g_strdup_printf ("plt__class_init_%s", mono_type_get_name (&ji->data.klass->byval_arg));
-				sanitize_symbol (debug_sym);
-				break;
-			case MONO_PATCH_INFO_RGCTX_FETCH:
-				debug_sym = g_strdup_printf ("plt__rgctx_fetch_%d", acfg->label_generator ++);
-				break;
-			case MONO_PATCH_INFO_ICALL_ADDR: {
-				char *s = get_debug_sym (ji->data.method, "", cache);
-					
-				debug_sym = g_strdup_printf ("plt__icall_native_%s", s);
-				g_free (s);
-				break;
-			}
-			case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-				debug_sym = g_strdup_printf ("plt__jit_icall_native_%s", ji->data.name);
-				break;
-			case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
-				debug_sym = g_strdup_printf ("plt__generic_class_init");
-				break;
-			default:
-				break;
+		arch_emit_plt_entry (acfg, i);
+
+		if (debug_sym)
+			emit_symbol_size (acfg, debug_sym, ".");
+	}
+
+	if (acfg->thumb_mixed) {
+		/* 
+		 * Emit a separate set of PLT entries using thumb2 which is called by LLVM generated
+		 * code.
+		 */
+		for (i = 0; i < acfg->plt_offset; ++i) {
+			char *debug_sym = NULL;
+			MonoPltEntry *plt_entry = NULL;
+			MonoJumpInfo *ji;
+
+			if (i == 0)
+				continue;
+
+			plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
+			ji = plt_entry->ji;
+
+			if (ji && is_direct_callable (acfg, NULL, ji) && !acfg->use_bin_writer)
+				continue;
+
+			/* Skip plt entries not actually called by LLVM code */
+			if (!plt_entry->llvm_used)
+				continue;
+
+			if (acfg->aot_opts.write_symbols) {
+				if (plt_entry->debug_sym)
+					debug_sym = g_strdup_printf ("%s_thumb", plt_entry->debug_sym);
 			}
 
 			if (debug_sym) {
 				emit_local_symbol (acfg, debug_sym, NULL, TRUE);
 				emit_label (acfg, debug_sym);
 			}
-		}
 
-		arch_emit_plt_entry (acfg, i);
+			emit_label (acfg, plt_entry->llvm_symbol);
 
-		if (debug_sym) {
-			emit_symbol_size (acfg, debug_sym, ".");
-			g_free (debug_sym);
+			arch_emit_llvm_plt_entry (acfg, i);
+
+			if (debug_sym) {
+				emit_symbol_size (acfg, debug_sym, ".");
+				g_free (debug_sym);
+			}
 		}
 	}
 
@@ -4813,6 +4888,7 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 		return NULL;
 
 	plt_entry = get_plt_entry (llvm_acfg, ji);
+	plt_entry->llvm_used = TRUE;
 
 	return g_strdup_printf (plt_entry->llvm_symbol);
 }
