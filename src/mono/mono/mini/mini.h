@@ -1350,7 +1350,7 @@ enum {
 #endif
 
 /* Opcodes to load/store regsize quantities */
-#if defined (__mono_ilp32__) || (defined(__native_client_codegen__) && defined(TARGET_AMD64))
+#if defined (__mono_ilp32__)
 #define OP_LOADR_MEMBASE OP_LOADI8_MEMBASE
 #define OP_STORER_MEMBASE_REG OP_STOREI8_MEMBASE_REG
 #else
