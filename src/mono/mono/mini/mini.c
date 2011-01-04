@@ -495,6 +495,24 @@ nacl_global_codeman_validate (guint8 **buf_base, int buf_size, guint8 **code_end
 	*code_end = tmp + (*code_end - *buf_base);
 	*buf_base = tmp;
 }
+#else
+/* no-op versions of Native Client functions */
+void*
+nacl_global_codeman_get_dest (void *data)
+{
+	return data;
+}
+
+void
+mono_global_codeman_commit (void *data, int size, int newsize)
+{
+}
+
+void
+nacl_global_codeman_validate (guint8 **buf_base, int buf_size, guint8 **code_end)
+{
+}
+
 #endif /* __native_client__ */
 
 /**

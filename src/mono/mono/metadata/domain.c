@@ -2230,6 +2230,22 @@ nacl_domain_code_validate (MonoDomain *domain, guint8 **buf_base, int buf_size, 
 	*code_end = tmp + (*code_end - *buf_base);
 	*buf_base = tmp;
 }
+
+#else
+
+/* no-op versions of Native Client functions */
+
+void *
+nacl_domain_get_code_dest (MonoDomain *domain, void *data)
+{
+	return data;
+}
+
+void
+nacl_domain_code_validate (MonoDomain *domain, guint8 **buf_base, int buf_size, guint8 **code_end)
+{
+}
+
 #endif
 
 /*

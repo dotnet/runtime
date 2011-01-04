@@ -308,9 +308,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* jump to the saved IP */
 	x86_ret (code);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, 128, &code);
-#endif
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("restore_context"), start, code - start, ji, unwind_ops);
@@ -387,9 +385,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	x86_leave (code);
 	x86_ret (code);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
-#endif
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("call_filter"), start, code - start, ji, unwind_ops);
@@ -630,9 +626,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	}
 	x86_breakpoint (code);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
-#endif
 
 	g_assert ((code - start) < kMaxCodeSize);
 

@@ -7673,9 +7673,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		g_assert ((code - start) < 64);
 	}
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, 64, &code);
-#endif
 
 	mono_debug_add_delegate_trampoline (start, code - start);
 
@@ -8013,9 +8011,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		mono_stats.imt_thunks_size += code - start;
 	g_assert (code - start <= size);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_domain_code_validate(domain, &start, size, &code);
-#endif
 
 	return start;
 }

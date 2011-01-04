@@ -351,15 +351,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES_2 1
 #define MONO_ARCH_HAVE_IMT 1
 #define MONO_ARCH_HAVE_TLS_GET 1
-#if defined(__default_codegen__)
-#define MONO_ARCH_IMT_REG AMD64_R11
-#define MONO_ARCH_IMT_SCRATCH_REG AMD64_R10
-#elif defined(__native_client_codegen__)
-/* Use r10 as the IMT_REG because R11 is clobbered in the call.    */
-/* Original mono code used R10 as scratch, we can use R11 instead. */
 #define MONO_ARCH_IMT_REG AMD64_R10
 #define MONO_ARCH_IMT_SCRATCH_REG AMD64_R11
-#endif
 #define MONO_ARCH_VTABLE_REG MONO_AMD64_ARG_REG1
 /*
  * We use r10 for the imt/rgctx register rather than r11 because r11 is

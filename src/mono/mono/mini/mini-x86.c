@@ -5612,9 +5612,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		g_free (buff);
 	}
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_domain_code_validate (domain, &start, size, &code);
-#endif
 
 	return start;
 }
@@ -5905,9 +5903,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		g_assert ((code - start) < code_reserve);
 	}
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, code_reserve, &code);
-#endif
 	mono_debug_add_delegate_trampoline (start, code - start);
 
 	if (code_len)

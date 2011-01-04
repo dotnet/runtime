@@ -61,9 +61,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	amd64_jump_reg (code, AMD64_RAX);
 	g_assert ((code - start) < 20);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_domain_code_validate (domain, &start, 20, &code);
-#endif
 
 	mono_arch_flush_icache (start, code - start);
 
@@ -99,9 +97,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 	amd64_jump_code (code, addr);
 	g_assert ((code - start) < buf_len);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_domain_code_validate (domain, &start, buf_len, &code);
-#endif
 	mono_arch_flush_icache (start, code - start);
 
 	return start;
@@ -129,9 +125,7 @@ mono_arch_get_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_off
 
 	g_assert ((code - start) < buf_len);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_domain_code_validate (domain, &start, buf_len, &code);
-#endif
 
 	mono_arch_flush_icache (start, code - start);
 
@@ -672,9 +666,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	g_assert ((code - buf) <= kMaxCodeSize);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate (&buf, kMaxCodeSize, &code);
-#endif
 
 	mono_arch_flush_icache (buf, code - buf);
 
@@ -697,9 +689,7 @@ mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 	code = buf = mono_global_codeman_reserve (16);
 	amd64_ret (code);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&buf, 16, &code);
-#endif
 
 	mono_arch_flush_icache (buf, code - buf);
 
@@ -760,9 +750,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	if (code_len)
 		*code_len = size;
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_domain_code_validate(domain, &buf, size, &code);
-#endif
 
 	mono_arch_flush_icache (buf, size);
 
@@ -856,9 +844,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		amd64_jump_code (code, tramp);
 	}
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
-#endif
 	mono_arch_flush_icache (buf, code - buf);
 
 	g_assert (code - buf <= tramp_size);
@@ -906,9 +892,7 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 		amd64_jump_code (code, tramp);
 	}
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
-#endif
 
 	mono_arch_flush_icache (buf, code - buf);
 
@@ -1033,9 +1017,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		amd64_jump_code (code, tramp);
 	}
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
-#endif
 
 	mono_arch_flush_icache (code, code - buf);
 	g_assert (code - buf <= tramp_size);
@@ -1153,9 +1135,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 		amd64_jump_code (code, tramp);
 	}
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
-#endif
 
 	mono_arch_flush_icache (code, code - buf);
 	g_assert (code - buf <= tramp_size);

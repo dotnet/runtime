@@ -197,9 +197,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* jump to the saved IP */
 	amd64_jump_reg (code, AMD64_R11);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, 256, &code);
-#endif
 
 	mono_arch_flush_icache (start, code - start);
 
@@ -286,9 +284,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	g_assert ((code - start) < kMaxCodeSize);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
-#endif
 
 	mono_arch_flush_icache (start, code - start);
 
@@ -497,9 +493,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 	g_assert ((code - start) < kMaxCodeSize);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
-#endif
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup (tramp_name), start, code - start, ji, unwind_ops);
@@ -1088,9 +1082,7 @@ mono_arch_get_throw_pending_exception (MonoTrampInfo **info, gboolean aot)
 
 	g_assert ((code - start) < kMaxCodeSize);
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
-#endif
 
 	if (info)
 		*info = mono_tramp_info_create (g_strdup_printf ("throw_pending_exception"), start, code - start, ji, unwind_ops);
@@ -1479,9 +1471,9 @@ mono_tasklets_arch_restore (void)
 	/* state is already in rax */
 	amd64_jump_membase (code, cont_reg, G_STRUCT_OFFSET (MonoContinuation, return_ip));
 	g_assert ((code - start) <= kMaxCodeSize);
-#if defined(__native_client_codegen__) && defined(__native_client__)
+
 	nacl_global_codeman_validate(&start, kMaxCodeSize, &code);
-#endif
+
 	saved = start;
 	return (MonoContinuationRestore)saved;
 }
