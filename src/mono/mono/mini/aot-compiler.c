@@ -3728,7 +3728,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	if (cfg->gc_map) {
 		encode_value (cfg->gc_map_size, p, &p);
 		/* The GC map requires 4 bytes of alignment */
-		while ((guint64)p % 4)
+		while ((gsize)p % 4)
 			p ++;
 		memcpy (p, cfg->gc_map, cfg->gc_map_size);
 		p += cfg->gc_map_size;
@@ -3885,9 +3885,8 @@ emit_plt (MonoAotCompile *acfg)
 			if (ji && is_direct_callable (acfg, NULL, ji) && !acfg->use_bin_writer) {
 				MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, ji->data.method);
 
-				if (acfg->thumb_mixed) {
+				if (acfg->thumb_mixed && !callee_cfg->compile_llvm) {
 					/* LLVM calls the PLT entries using bl, so emit a stub */
-					/* FIXME: Too much overhead on every call */
 					emit_label (acfg, plt_entry->llvm_symbol);
 					fprintf (acfg->fp, ".thumb_func\n");
 					fprintf (acfg->fp, "bx pc\n");
