@@ -1020,10 +1020,13 @@ mono_arch_create_handler_block_trampoline (void)
 		code = mono_x86_emit_tls_get (code, X86_EAX, mono_get_jit_tls_offset ());
 		x86_mov_reg_membase (code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 4);
 		/*simulate a call*/
+		/*Fix stack alignment*/
+		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x8);
 		x86_push_reg (code, X86_EAX);
 		x86_jump_code (code, tramp);
 	} else {
 		/*Slow path uses a c helper*/
+		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x8);
 		x86_push_reg (code, X86_ESP);
 		x86_push_imm (code, tramp);
 		x86_jump_code (code, handler_block_trampoline_helper);
