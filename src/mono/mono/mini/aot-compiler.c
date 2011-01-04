@@ -3900,12 +3900,8 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 
 /*
  * Calls made from AOTed code are routed through a table of jumps similar to the
- * ELF PLT (Program Linkage Table). The differences are the following:
- * - the ELF PLT entries make an indirect jump though the GOT so they expect the
- *   GOT pointer to be in EBX. We want to avoid this, so our table contains direct
- *   jumps. This means the jumps need to be patched when the address of the callee is
- *   known. Initially the PLT entries jump to code which transfers control to the
- *   AOT runtime through the first PLT entry.
+ * ELF PLT (Program Linkage Table). Initially the PLT entries jump to code which transfers
+ * control to the AOT runtime through a trampoline.
  */
 static void
 emit_plt (MonoAotCompile *acfg)
@@ -3929,13 +3925,11 @@ emit_plt (MonoAotCompile *acfg)
 		MonoPltEntry *plt_entry = NULL;
 		MonoJumpInfo *ji;
 
-		if (i == 0) {
+		if (i == 0)
 			/* 
-			 * The first plt entry is used to transfer code to the AOT loader. 
+			 * The first plt entry is unused.
 			 */
-			arch_emit_plt_entry (acfg, i);
 			continue;
-		}
 
 		plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
 		ji = plt_entry->ji;
