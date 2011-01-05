@@ -438,37 +438,37 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	 */
 
 	arg_offsets [0] = 0;
-	arg_offsets [1] = SIZEOF_REGISTER;
-	arg_offsets [2] = SIZEOF_REGISTER * 2;
-	arg_offsets [3] = SIZEOF_REGISTER * 3;
-	regs_offset = SIZEOF_REGISTER * 4;
+	arg_offsets [1] = sizeof(mgreg_t);
+	arg_offsets [2] = sizeof(mgreg_t) * 2;
+	arg_offsets [3] = sizeof(mgreg_t) * 3;
+	regs_offset = sizeof(mgreg_t) * 4;
 
 	/* Save registers */
 	for (i = 0; i < AMD64_NREG; ++i)
 		if (i != AMD64_RSP)
-			amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (i * SIZEOF_REGISTER), i, SIZEOF_REGISTER);
+			amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (i * sizeof(mgreg_t)), i, sizeof(mgreg_t));
 	/* Save RSP */
-	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, stack_size + SIZEOF_REGISTER);
-	amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (AMD64_RSP * SIZEOF_REGISTER), X86_EAX, SIZEOF_REGISTER);
+	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, stack_size + sizeof(mgreg_t));
+	amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (AMD64_RSP * sizeof(mgreg_t)), X86_EAX, sizeof(mgreg_t));
 	/* Set arg1 == regs */
 	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, regs_offset);
-	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [0], AMD64_RAX, SIZEOF_REGISTER);
+	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [0], AMD64_RAX, sizeof(mgreg_t));
 	/* Set arg2 == eip */
 	if (llvm_abs)
 		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
 	else
-		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, stack_size, SIZEOF_REGISTER);
-	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [1], AMD64_RAX, SIZEOF_REGISTER);
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, stack_size, sizeof(mgreg_t));
+	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [1], AMD64_RAX, sizeof(mgreg_t));
 	/* Set arg3 == exc/ex_token_index */
 	if (resume_unwind)
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [2], 0, SIZEOF_REGISTER);
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [2], 0, sizeof(mgreg_t));
 	else
-		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [2], AMD64_ARG_REG1, SIZEOF_REGISTER);
+		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [2], AMD64_ARG_REG1, sizeof(mgreg_t));
 	/* Set arg4 == rethrow/pc offset */
 	if (resume_unwind) {
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], 0, SIZEOF_REGISTER);
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], 0, sizeof(mgreg_t));
 	} else if (corlib) {
-		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [3], AMD64_ARG_REG2, SIZEOF_REGISTER);
+		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [3], AMD64_ARG_REG2, sizeof(mgreg_t));
 		if (llvm_abs)
 			/* 
 			 * The caller is LLVM code which passes the absolute address not a pc offset,
@@ -477,7 +477,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 			 */
 			amd64_neg_membase (code, AMD64_RSP, arg_offsets [3]);
 	} else {
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], rethrow, SIZEOF_REGISTER);
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], rethrow, sizeof(mgreg_t));
 	}
 
 	if (aot) {
@@ -661,7 +661,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			 * The rsp field is set just before the call which transitioned to native 
 			 * code. Obtain the rip from the stack.
 			 */
-			rip = *(guint64*)((*lmf)->rsp - SIZEOF_REGISTER);
+			rip = *(guint64*)((*lmf)->rsp - sizeof(mgreg_t));
 		}
 
 		ji = mini_jit_info_table_find (domain, (gpointer)rip, NULL);

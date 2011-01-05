@@ -1959,7 +1959,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 
 	vars = mono_varlist_sort (cfg, vars, 0);
 	offset = 0;
-	*stack_align = SIZEOF_REGISTER;
+	*stack_align = sizeof(mgreg_t);
 	for (l = vars; l; l = l->next) {
 		vmv = l->data;
 		inst = cfg->varinfo [vmv->idx];
