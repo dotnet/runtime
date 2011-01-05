@@ -3934,7 +3934,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		p = mono_sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		DEBUG (9, g_assert (vtable->klass->inited));
-		p = major_collector.alloc_small_pinned_obj (size, vtable->klass->has_references);
+		p = major_collector.alloc_small_pinned_obj (size, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	}
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
@@ -6227,7 +6227,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		sgen_card_table_mark_range ((mword)dest, size);
 	} else {
 		rs = REMEMBERED_SET;
-		if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !klass->has_references) {
+		if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !SGEN_CLASS_HAS_REFERENCES (klass)) {
 			UNLOCK_GC;
 			return;
 		}

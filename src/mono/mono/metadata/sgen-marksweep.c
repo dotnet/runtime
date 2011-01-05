@@ -715,7 +715,7 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 
 	old_num_sections = num_major_sections;
 
-	obj = alloc_obj (size, FALSE, vtable->klass->has_references);
+	obj = alloc_obj (size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	if (G_LIKELY (obj)) {
 		*(MonoVTable**)obj = vtable;
 		HEAVY_STAT (++stat_objects_alloced_degraded);

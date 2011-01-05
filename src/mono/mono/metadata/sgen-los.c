@@ -493,7 +493,7 @@ mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	LOSObject *obj;
 	for (obj = los_object_list; obj; obj = obj->next) {
 		MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj->data);
-		if (vt->klass->has_references)
+		if (SGEN_VTABLE_HAS_REFERENCES (vt))
 			callback ((mword)obj->data, (mword)obj->size);
 	}
 }
