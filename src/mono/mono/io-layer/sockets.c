@@ -716,15 +716,15 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 		g_message ("%s: send error: %s", __func__, strerror (errno));
 #endif
 
+#ifdef O_NONBLOCK
 		/* At least linux returns EAGAIN/EWOULDBLOCK when the timeout has been set on
 		 * a blocking socket. See bug #599488 */
 		if (errnum == EAGAIN) {
-			gboolean nonblock;
-
-			ret = ioctlsocket (fd, FIONBIO, (gulong *) &nonblock);
-			if (ret != SOCKET_ERROR && !nonblock)
+			ret = fcntl (fd, F_GETFL, 0);
+			if (ret != -1 && (ret & O_NONBLOCK) == 0)
 				errnum = ETIMEDOUT;
 		}
+#endif /* O_NONBLOCK */
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
 		
