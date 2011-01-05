@@ -2419,8 +2419,11 @@ mono_get_lmf (void)
 
 	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
 		return jit_tls->lmf;
-
-	g_assert_not_reached ();
+	/*
+	 * We do not assert here because this function can be called from
+	 * mini-gc.c on a thread that has not executed any managed code, yet
+	 * (the thread object allocation can trigger a collection).
+	 */
 	return NULL;
 #endif
 }
