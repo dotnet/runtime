@@ -282,6 +282,15 @@ typedef union {
 
 #define amd64_alu_reg_reg(inst,opc,dreg,reg) amd64_alu_reg_reg_size ((inst),(opc),(dreg),(reg),8)
 
+#define amd64_alu_reg_membase_size(inst,opc,reg,basereg,disp,size) \
+	do { \
+		amd64_codegen_pre(inst);						  \
+		amd64_emit_rex ((inst),(size),(reg),0,(basereg)); \
+		*(inst)++ = (((unsigned char)(opc)) << 3) + 3;	\
+		amd64_membase_emit (inst, reg, basereg, disp); \
+		amd64_codegen_post(inst);					   \
+} while (0)
+
 #define amd64_mov_regp_reg(inst,regp,reg,size)	\
 	do {	\
 		amd64_codegen_pre(inst); \
@@ -1406,7 +1415,7 @@ typedef union {
 //#define amd64_alu_reg_reg_size(inst,opc,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_alu_reg_reg((inst),(opc),((dreg)&0x7),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_reg8_reg8_size(inst,opc,dreg,reg,is_dreg_h,is_reg_h,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_alu_reg8_reg8((inst),(opc),((dreg)&0x7),((reg)&0x7),(is_dreg_h),(is_reg_h)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_reg_mem_size(inst,opc,reg,mem,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_alu_reg_mem((inst),(opc),((reg)&0x7),(mem)); amd64_codegen_post(inst); } while (0)
-#define amd64_alu_reg_membase_size(inst,opc,reg,basereg,disp,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_alu_reg_membase((inst),(opc),((reg)&0x7),((basereg)&0x7),(disp)); amd64_codegen_post(inst); } while (0)
+//#define amd64_alu_reg_membase_size(inst,opc,reg,basereg,disp,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_alu_reg_membase((inst),(opc),((reg)&0x7),((basereg)&0x7),(disp)); amd64_codegen_post(inst); } while (0)
 #define amd64_test_reg_imm_size(inst,reg,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_test_reg_imm((inst),((reg)&0x7),(imm)); amd64_codegen_post(inst); } while (0)
 #define amd64_test_mem_imm_size(inst,mem,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_test_mem_imm((inst),(mem),(imm)); amd64_codegen_post(inst); } while (0)
 #define amd64_test_membase_imm_size(inst,basereg,disp,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_test_membase_imm((inst),((basereg)&0x7),(disp),(imm)); amd64_codegen_post(inst); } while (0)
