@@ -602,4 +602,4 @@
 /* #undef USE_MONO_MUTEX */
 
 /* Version number of package */
-#define VERSION "2.7"
+#define VERSION "2.9"
