@@ -201,6 +201,7 @@ static const SimdIntrinsc vector2d_intrinsics[] = {
 	{ SN_PrefetchTemporal1stLevelCache, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_1 },
 	{ SN_PrefetchTemporal2ndLevelCache, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_2 },
 	{ SN_PrefetchNonTemporal, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_NTA },
+	{ SN_Shuffle, OP_SHUFPD, SIMD_VERSION_SSE1, SIMD_EMIT_SHUFFLE },
 	{ SN_Sqrt, OP_SQRTPD, SIMD_VERSION_SSE1, SIMD_EMIT_UNARY },
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_VERSION_SSE1, SIMD_EMIT_STORE },
 	{ SN_get_X, 0, SIMD_VERSION_SSE1, SIMD_EMIT_GETTER_QWORD },
@@ -225,6 +226,7 @@ static const SimdIntrinsc vector2ul_intrinsics[] = {
 	{ SN_PrefetchTemporal1stLevelCache, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_1 },
 	{ SN_PrefetchTemporal2ndLevelCache, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_2 },
 	{ SN_PrefetchNonTemporal, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_NTA },
+	{ SN_Shuffle, OP_SHUFPD, SIMD_VERSION_SSE1, SIMD_EMIT_SHUFFLE },
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_VERSION_SSE1, SIMD_EMIT_STORE },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHQ, SIMD_VERSION_SSE1, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWQ, SIMD_VERSION_SSE1, SIMD_EMIT_BINARY },
@@ -253,6 +255,7 @@ static const SimdIntrinsc vector2l_intrinsics[] = {
 	{ SN_PrefetchTemporal1stLevelCache, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_1 },
 	{ SN_PrefetchTemporal2ndLevelCache, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_2 },
 	{ SN_PrefetchNonTemporal, 0, SIMD_VERSION_SSE1, SIMD_EMIT_PREFETCH, SIMD_PREFETCH_MODE_NTA },
+	{ SN_Shuffle, OP_SHUFPD, SIMD_VERSION_SSE1, SIMD_EMIT_SHUFFLE },
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_VERSION_SSE1, SIMD_EMIT_STORE },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHQ, SIMD_VERSION_SSE1, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWQ, SIMD_VERSION_SSE1, SIMD_EMIT_BINARY },
@@ -1317,10 +1320,13 @@ simd_intrinsic_emit_shuffle (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mo
 	int vreg, vreg2 = -1;
 	int param_count = mono_method_signature (cmethod)->param_count;
 
+printf ("shuffle\n");
 	if (args [param_count - 1]->opcode != OP_ICONST) {
 		/*TODO Shuffle with non literals is not yet supported */
 		return NULL;
 	}
+
+printf ("shuffle again\n");
 	vreg = get_simd_vreg (cfg, cmethod, args [0]);
 	if (param_count == 3)
 		vreg2 = get_simd_vreg (cfg, cmethod, args [1]);
@@ -1337,10 +1343,8 @@ simd_intrinsic_emit_shuffle (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mo
 	ins->dreg = alloc_ireg (cfg);
 	MONO_ADD_INS (cfg->cbb, ins);
 
-	if (param_count == 3) {
-		g_assert (intrinsic->opcode == OP_PSHUFLED);
+	if (param_count == 3 && ins->opcode == OP_PSHUFLED)
 		ins->opcode = OP_SHUFPS;
-	}
 	return ins;
 }
 

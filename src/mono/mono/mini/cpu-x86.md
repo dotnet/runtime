@@ -456,6 +456,7 @@ pshufflew_high: dest:x src1:x len:5
 pshufflew_low: dest:x src1:x len:5
 pshuffled: dest:x src1:x len:5
 shufps: dest:x src1:x src2:x len:4 clob:1
+shufpd: dest:x src1:x src2:x len:5 clob:1
 
 extract_mask: dest:i src1:x len:4
 
