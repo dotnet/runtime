@@ -68,36 +68,13 @@ static CRITICAL_SECTION mini_arch_mutex;
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
-static gpointer
-mono_realloc_native_code (MonoCompile *cfg)
-{
-#ifdef __native_client_codegen__
-	guint old_padding;
-	gpointer native_code;
-	guint alignment_check;
-
-	/* Save the old alignment offset so we can re-align after the realloc. */
-	old_padding = (guint)(cfg->native_code - cfg->native_code_alloc);
-
-	cfg->native_code_alloc = g_realloc (cfg->native_code_alloc, 
-										cfg->code_size + kNaClAlignment);
-
-	/* Align native_code to next nearest kNaClAlignment byte. */
-	native_code = (guint)cfg->native_code_alloc + kNaClAlignment;
-	native_code = (guint)native_code & ~kNaClAlignmentMask;
-
-	/* Shift the data to be 32-byte aligned again. */
-	memmove (native_code, cfg->native_code_alloc + old_padding, cfg->code_size);
-
-	alignment_check = (guint)native_code & kNaClAlignmentMask;
-	g_assert (alignment_check == 0);
-	return native_code;
-#else
-	return g_realloc (cfg->native_code, cfg->code_size);
-#endif
-}
 
 #ifdef __native_client_codegen__
+const guint kNaClAlignment = kNaClAlignmentX86;
+const guint kNaClAlignmentMask = kNaClAlignmentMaskX86;
+
+/* Default alignment for Native Client is 32-byte. */
+gint8 nacl_align_byte = -32; /* signed version of 0xe0 */
 
 /* mono_arch_nacl_pad: Add pad bytes of alignment instructions at code,       */
 /* Check that alignment doesn't cross an alignment boundary.        */
@@ -2332,6 +2309,16 @@ x86_pop_reg (code, X86_EAX);
 #define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
 
 #ifndef DISABLE_JIT
+
+#if defined(__native_client__) || defined(__native_client_codegen__)
+void
+mono_nacl_gc()
+{
+#ifdef __native_client_gc__
+	__nacl_suspend_thread_if_needed();
+#endif
+}
+#endif
 
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -4694,6 +4681,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MONO_VARINFO (cfg, ins->inst_c0)->live_range_end = code - cfg->native_code;
 			break;
 		}
+		case OP_NACL_GC_SAFE_POINT: {
+#if defined(__native_client_codegen__)
+			code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)mono_nacl_gc);
+#endif
+			break;
+		}
 		case OP_GC_LIVENESS_DEF:
 		case OP_GC_LIVENESS_USE:
 		case OP_GC_PARAM_SLOT_LIVENESS_DEF:
@@ -4773,13 +4766,46 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 		case MONO_PATCH_INFO_MONITOR_ENTER:
 		case MONO_PATCH_INFO_MONITOR_EXIT:
+#if defined(__native_client_codegen__) && defined(__native_client__)
+			if (nacl_is_code_address (code)) {
+				/* For tail calls, code is patched after being installed */
+				/* but not through the normal "patch callsite" method.   */
+				unsigned char buf[kNaClAlignment];
+				unsigned char *aligned_code = (uintptr_t)code & ~kNaClAlignmentMask;
+				unsigned char *_target = target;
+				int ret;
+				/* All patch targets modified in x86_patch */
+				/* are IP relative.                        */
+				_target = _target + (uintptr_t)buf - (uintptr_t)aligned_code;
+				memcpy (buf, aligned_code, kNaClAlignment);
+				/* Patch a temp buffer of bundle size, */
+				/* then install to actual location.    */
+				x86_patch (buf + ((uintptr_t)code - (uintptr_t)aligned_code), _target);
+				ret = nacl_dyncode_modify (aligned_code, buf, kNaClAlignment);
+				g_assert (ret == 0);
+			}
+			else {
+				x86_patch (ip, target);
+			}
+#else
 			x86_patch (ip, target);
+#endif
 			break;
 		case MONO_PATCH_INFO_NONE:
 			break;
-		default: {
+		case MONO_PATCH_INFO_R4:
+		case MONO_PATCH_INFO_R8: {
 			guint32 offset = mono_arch_get_patch_offset (ip);
 			*((gconstpointer *)(ip + offset)) = target;
+			break;
+		}
+		default: {
+			guint32 offset = mono_arch_get_patch_offset (ip);
+#if !defined(__native_client__)
+			*((gconstpointer *)(ip + offset)) = target;
+#else
+			*((gconstpointer *)(ip + offset)) = nacl_modify_patch_target (target);
+#endif
 			break;
 		}
 		}
@@ -4805,7 +4831,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		cfg->code_size += 512;
 
-#ifdef __native_client_codegen__
+#if defined(__default_codegen__)
+	code = cfg->native_code = g_malloc (cfg->code_size);
+#elif defined(__native_client_codegen__)
 	/* native_code_alloc is not 32-byte aligned, native_code is. */
 	cfg->native_code_alloc = g_malloc (cfg->code_size + kNaClAlignment);
 
@@ -4817,8 +4845,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	alignment_check = (guint)cfg->native_code & kNaClAlignmentMask;
   	g_assert(alignment_check == 0);
-#else
-	code = cfg->native_code = g_malloc (cfg->code_size);
 #endif
 
 	/* Offset between RSP and the CFA */
@@ -5339,11 +5365,11 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				guint32 size;
 
 				/* Compute size of code following the push <OFFSET> */
-#ifdef __native_client_codegen__
+#if defined(__default_codegen__)
+				size = 5 + 5;
+#elif defined(__native_client_codegen__)
 				code = mono_nacl_align (code);
 				size = kNaClAlignment;
-#else
-				size = 5 + 5;
 #endif
 				/*This is aligned to 16 bytes by the callee. This way we save a few bytes here.*/
 
@@ -5459,16 +5485,15 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 //[1 + 5] x86_jump_mem(inst,mem)
 
 #define CMP_SIZE 6
-#ifdef __native_client_codegen__
-/* These constants should be coming from cpu-x86.md            */
-/* I suspect the size calculation below is actually incorrect. */
-/* TODO: fix the calculation that uses these sizes.            */
-#define BR_SMALL_SIZE 16
-#define BR_LARGE_SIZE 12
-#else
+#if defined(__default_codegen__)
 #define BR_SMALL_SIZE 2
 #define BR_LARGE_SIZE 5
-#endif  /* __native_client_codegen__ */
+#elif defined(__native_client_codegen__)
+/* I suspect the size calculation below is actually incorrect. */
+/* TODO: fix the calculation that uses these sizes.  */
+#define BR_SMALL_SIZE 16
+#define BR_LARGE_SIZE 12
+#endif  /*__native_client_codegen__*/
 #define JUMP_IMM_SIZE 6
 #define ENABLE_WRONG_METHOD_CHECK 0
 #define DEBUG_IMT 0
@@ -5493,9 +5518,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	int size = 0;
 	guint8 *code, *start;
 
-#ifdef __native_client_codegen__
-	/* g_print("mono_arch_build_imt_thunk needs to be aligned.\n"); */
-#endif
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
@@ -5519,10 +5541,16 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 		size += item->chunk_size;
 	}
+#if defined(__native_client__) && defined(__native_client_codegen__)
+	/* In Native Client, we don't re-use thunks, allocate from the */
+	/* normal code manager paths. */
+	code = mono_domain_code_reserve (domain, size);
+#else
 	if (fail_tramp)
 		code = mono_method_alloc_generic_virtual_thunk (domain, size);
 	else
 		code = mono_domain_code_reserve (domain, size);
+#endif
 	start = code;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -5606,6 +5634,8 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		mono_emit_jit_tramp (start, code - start, buff);
 		g_free (buff);
 	}
+
+	nacl_domain_code_validate (domain, &start, size, &code);
 
 	return start;
 }
@@ -5837,6 +5867,7 @@ static gpointer
 get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *code_len)
 {
 	guint8 *code, *start;
+	int code_reserve = 64;
 
 	/*
 	 * The stack contains:
@@ -5845,7 +5876,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 	 */
 
 	if (has_target) {
-		start = code = mono_global_codeman_reserve (64);
+		start = code = mono_global_codeman_reserve (code_reserve);
 
 		/* Replace the this argument with the target */
 		x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
@@ -5853,15 +5884,15 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		x86_mov_membase_reg (code, X86_ESP, 4, X86_ECX, 4);
 		x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
-		g_assert ((code - start) < 64);
+		g_assert ((code - start) < code_reserve);
 	} else {
 		int i = 0;
 		/* 8 for mov_reg and jump, plus 8 for each parameter */
 #ifdef __native_client_codegen__
 		/* TODO: calculate this size correctly */
-		int code_reserve = 13 + (param_count * 8) + 2 * kNaClAlignment;
+		code_reserve = 13 + (param_count * 8) + 2 * kNaClAlignment;
 #else
-		int code_reserve = 8 + (param_count * 8);
+		code_reserve = 8 + (param_count * 8);
 #endif  /* __native_client_codegen__ */
 		/*
 		 * The stack contains:
@@ -5895,6 +5926,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		g_assert ((code - start) < code_reserve);
 	}
 
+	nacl_global_codeman_validate(&start, code_reserve, &code);
 	mono_debug_add_delegate_trampoline (start, code - start);
 
 	if (code_len)

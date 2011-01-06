@@ -385,7 +385,6 @@ test_sources = 			\
 	basic-simd.cs
 
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
-fsatests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe devirtualization.exe basic-simd.exe
 
 if X86
 if MONO_DEBUGGER_SUPPORTED
@@ -538,6 +537,9 @@ libmonoinclude_HEADERS = jit.h
 basic-simd.exe: basic-simd.cs
 	$(MCS) -out:$@ $< -r:TestDriver.dll -r:Mono.Simd.dll
 
+nacl.exe: nacl.cs
+	$(MCS) -out:$@ $< -r:TestDriver.dll -r:Mono.Simd.dll
+
 generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
 	$(MCS) -out:$@ $< -r:TestDriver.dll -r:generics-variant-types.dll
 
@@ -641,20 +643,6 @@ fullaotcheck: mono $(regtests)
 
 llvmfullaotcheck:
 	$(MAKE) fullaotcheck LLVM=1
-
-fsacheck: mono $(fsatests) fsacheck.c generics.exe
-	rm -rf fsa-tmp
-	mkdir fsa-tmp
-	cp $(CLASS)/mscorlib.dll $(CLASS)/System.Core.dll $(CLASS)/System.dll $(CLASS)/Mono.Posix.dll $(CLASS)/System.Configuration.dll $(CLASS)/System.Security.dll $(CLASS)/System.Xml.dll $(CLASS)/Mono.Security.dll $(CLASS)/Mono.Simd.dll \
-	$(fsatests) generics-variant-types.dll TestDriver.dll fsa-tmp/
-	cp $(fsatests) fsa-tmp/
-	MONO_PATH=fsa-tmp $(top_builddir)/runtime/mono-wrapper --aot=full,static fsa-tmp/*.dll || exit 1
-	MONO_PATH=fsa-tmp $(top_builddir)/runtime/mono-wrapper --aot=full,static fsa-tmp/*.exe || exit 1
-	$(CC) -o $@.out -g -static $(VPATH)/fsacheck.c fsa-tmp/*.o \
-	-lmono-2.0 -lpthread -lm -ldl -lrt \
-	-DTARGET_X86 -L.libs -I${prefix}/include/mono-2.0 \
-	-I${prefix} -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
-	for i in $(fsatests); do echo $$i; MONO_PATH=fsa-tmp ./$@.out $$i || exit 1; done
 
 bench: mono test.exe
 	time env $(RUNTIME) --ncompile $(count) --compile Test:$(mtest) test.exe

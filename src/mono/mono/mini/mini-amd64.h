@@ -5,6 +5,18 @@
 #include <mono/utils/mono-sigcontext.h>
 #include <glib.h>
 
+#ifdef __native_client_codegen__
+#define kNaClAlignmentAMD64 32
+#define kNaClAlignmentMaskAMD64 (kNaClAlignmentAMD64 - 1)
+
+/* TODO: use kamd64NaClLengthOfCallImm    */
+/* temporarily using kNaClAlignmentAMD64 so padding in */
+/* image-writer.c doesn't happen                       */
+#define kNaClLengthOfCallImm kNaClAlignmentAMD64
+
+int is_nacl_call_reg_sequence(guint8* code);
+#endif
+
 #ifdef HOST_WIN32
 #include <windows.h>
 /* use SIG* defines if possible */
@@ -146,7 +158,13 @@ struct MonoLMF {
 	gpointer    lmf_addr;
 	/* This is only set in trampoline LMF frames */
 	MonoMethod *method;
+#if defined(__default_codegen__) || defined(HOST_WIN32)
 	guint64     rip;
+#elif defined(__native_client_codegen__)
+	/* On 64-bit compilers, default alignment is 8 for this field, */
+	/* this allows the structure to match for 32-bit compilers.    */
+	guint64     rip __attribute__ ((aligned(8)));
+#endif
 	guint64     rbx;
 	guint64     rbp;
 	guint64     rsp;
@@ -238,7 +256,7 @@ typedef struct {
  */
 #define MONO_ARCH_VARARG_ICALLS 1
 
-#ifndef HOST_WIN32
+#if !defined( HOST_WIN32 ) && !defined(__native_client__) && !defined(__native_client_codegen__)
 
 #define MONO_ARCH_USE_SIGACTION 1
 
@@ -248,7 +266,7 @@ typedef struct {
 
 #endif
 
-#endif /* HOST_WIN32 */
+#endif /* !HOST_WIN32 && !__native_client__ */
 
 #if defined (__APPLE__)
 
@@ -335,6 +353,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_IMT 1
 #define MONO_ARCH_HAVE_TLS_GET 1
 #define MONO_ARCH_IMT_REG AMD64_R10
+#define MONO_ARCH_IMT_SCRATCH_REG AMD64_R11
 #define MONO_ARCH_VTABLE_REG MONO_AMD64_ARG_REG1
 /*
  * We use r10 for the imt/rgctx register rather than r11 because r11 is
@@ -357,7 +376,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
-#ifndef HOST_WIN32
+#if !defined( HOST_WIN32 ) && !defined( __native_client__ )
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #else
 #define DISABLE_DEBUGGER_AGENT 1

@@ -3,6 +3,14 @@
 
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/utils/mono-sigcontext.h>
+
+#ifdef __native_client_codegen__
+#define kNaClAlignmentX86 32
+#define kNaClAlignmentMaskX86 (kNaClAlignmentX86 - 1)
+
+#define kNaClLengthOfCallImm kx86NaClLengthOfCallImm
+#endif
+
 #ifdef HOST_WIN32
 #include <windows.h>
 /* use SIG* defines if possible */
@@ -57,12 +65,6 @@ struct sigcontext {
 
 #if defined(__native_client__)
 #undef MONO_ARCH_USE_SIGACTION
-#endif
-
-#if defined(__native_client_codegen__) || defined(__native_client__)
-#define NACL_SIZE(a, b) (b)
-#else
-#define NACL_SIZE(a, b) (a)
 #endif
 
 #ifndef HOST_WIN32

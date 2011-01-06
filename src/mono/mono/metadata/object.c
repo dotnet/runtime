@@ -1709,8 +1709,12 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 			g_ptr_array_free (sorted, TRUE);
 		}
 
+#ifndef __native_client__
+		/* We don't re-use any thunks as there is a lot of overhead */
+		/* to deleting and re-using code in Native Client.          */
 		if (old_thunk != vtable_trampoline && old_thunk != imt_trampoline)
 			invalidate_generic_virtual_thunk (domain, old_thunk);
+#endif
 	}
 
 	mono_domain_unlock (domain);

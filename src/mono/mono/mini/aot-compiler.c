@@ -484,7 +484,7 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #else
 #define AOT_FUNC_ALIGNMENT 16
 #endif
-#if defined(TARGET_X86) && defined(__native_client_codegen__)
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(__native_client_codegen__)
 #undef AOT_FUNC_ALIGNMENT
 #define AOT_FUNC_ALIGNMENT 32
 #endif
@@ -698,8 +698,14 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 {
 #if defined(TARGET_X86)
 		guint32 offset = (acfg->plt_got_offset_base + index) * sizeof (gpointer);
-
-#ifdef __native_client_codegen__
+#if defined(__default_codegen__)
+		/* jmp *<offset>(%ebx) */
+		emit_byte (acfg, 0xff);
+		emit_byte (acfg, 0xa3);
+		emit_int32 (acfg, offset);
+		/* Used by mono_aot_get_plt_info_offset */
+		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+#elif defined(__native_client_codegen__)
 		const guint8 kSizeOfNaClJmp = 11;
 		guint8 bytes[kSizeOfNaClJmp];
 		guint8 *pbytes = &bytes[0];
@@ -711,15 +717,9 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		emit_byte (acfg, 0x68);  /* hide data in a push */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
-#else
-		/* jmp *<offset>(%ebx) */
-		emit_byte (acfg, 0xff);
-		emit_byte (acfg, 0xa3);
-		emit_int32 (acfg, offset);
-		/* Used by mono_aot_get_plt_info_offset */
-		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
-#endif  /* __native_client_codegen__ */
+#endif /*__native_client_codegen__*/
 #elif defined(TARGET_AMD64)
+#if defined(__default_codegen__)
 		/*
 		 * We can't emit jumps because they are 32 bits only so they can't be patched.
 		 * So we make indirect calls through GOT entries which are patched by the AOT 
@@ -731,6 +731,27 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+#elif defined(__native_client_codegen__)
+		guint8 buf [256];
+		guint8 *buf_aligned = ALIGN_TO(buf, kNaClAlignment);
+		guint8 *code = buf_aligned;
+
+		/* mov <OFFSET>(%rip), %r11d */
+		emit_byte (acfg, '\x45');
+		emit_byte (acfg, '\x8b');
+		emit_byte (acfg, '\x1d');
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
+
+		amd64_jump_reg (code, AMD64_R11);
+		/* This should be constant for the plt patch */
+		g_assert ((size_t)(code-buf_aligned) == 10);
+		emit_bytes (acfg, buf_aligned, code - buf_aligned);
+
+		/* Hide data in a push imm32 so it passes validation */
+		emit_byte (acfg, 0x68);  /* push */
+		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
+#endif /*__native_client_codegen__*/
 #elif defined(TARGET_ARM)
 		guint8 buf [256];
 		guint8 *code;
@@ -814,6 +835,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	 * - all the trampolines should be of the same length.
 	 */
 #if defined(TARGET_AMD64)
+#if defined(__default_codegen__)
 	/* This should be exactly 16 bytes long */
 	*tramp_size = 16;
 	/* call *<offset>(%rip) */
@@ -822,8 +844,61 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	emit_byte (acfg, '\x15');
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
 	/* This should be relative to the start of the trampoline */
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 19);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset+1) * sizeof (gpointer)) + 7);
 	emit_zero_bytes (acfg, 5);
+#elif defined(__native_client_codegen__)
+	guint8 buf [256];
+	guint8 *buf_aligned = ALIGN_TO(buf, kNaClAlignment);
+	guint8 *code = buf_aligned;
+	guint8 *call_start;
+	size_t call_len;
+	int got_offset;
+
+	/* Emit this call in 'code' so we can find out how long it is. */
+	amd64_call_reg (code, AMD64_R11);
+	call_start = mono_arch_nacl_skip_nops (buf_aligned);
+	call_len = code - call_start;
+
+	/* The tramp_size is twice the NaCl alignment because it starts with */ 
+	/* a call which needs to be aligned to the end of the boundary.      */
+	*tramp_size = kNaClAlignment*2;
+	{
+		/* Emit nops to align call site below which is 7 bytes plus */
+		/* the length of the call sequence emitted above.           */
+		/* Note: this requires the specific trampoline starts on a  */
+		/* kNaclAlignedment aligned address, which it does because  */
+		/* it's its own function that is aligned.                   */
+		guint8 nop_buf[256];
+		guint8 *nopbuf_aligned = ALIGN_TO (nop_buf, kNaClAlignment);
+		guint8 *nopbuf_end = mono_arch_nacl_pad (nopbuf_aligned, kNaClAlignment - 7 - (call_len));
+		emit_bytes (acfg, nopbuf_aligned, nopbuf_end - nopbuf_aligned);
+	}
+	/* The trampoline is stored at the offset'th pointer, the -4 is  */
+	/* present because RIP relative addressing starts at the end of  */
+	/* the current instruction, while the label "." is relative to   */
+	/* the beginning of the current asm location, which in this case */
+	/* is not the mov instruction, but the offset itself, due to the */
+	/* way the bytes and ints are emitted here.                      */
+	got_offset = (offset * sizeof(gpointer)) - 4;
+
+	/* mov <OFFSET>(%rip), %r11d */
+	emit_byte (acfg, '\x45');
+	emit_byte (acfg, '\x8b');
+	emit_byte (acfg, '\x1d');
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", got_offset);
+
+	/* naclcall %r11 */
+	emit_bytes (acfg, call_start, call_len);
+
+	/* The arg is stored at the offset+1 pointer, relative to beginning */
+	/* of trampoline: 7 for mov, plus the call length, and 1 for push.  */
+	got_offset = ((offset + 1) * sizeof(gpointer)) + 7 + call_len + 1;
+
+	/* We can't emit this data directly, hide in a "push imm32" */
+	emit_byte (acfg, '\x68'); /* push */
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", got_offset);
+	emit_alignment (acfg, kNaClAlignment);
+#endif /*__native_client_codegen__*/
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
@@ -1010,6 +1085,7 @@ static void
 arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 {
 #if defined(TARGET_AMD64)
+#if defined(__default_codegen__)
 	/* This should be exactly 13 bytes long */
 	*tramp_size = 13;
 
@@ -1023,6 +1099,31 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	emit_byte (acfg, '\xff');
 	emit_byte (acfg, '\x25');
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4);
+#elif defined(__native_client_codegen__)
+	guint8 buf [128];
+	guint8 *buf_aligned = ALIGN_TO(buf, kNaClAlignment);
+	guint8 *code = buf_aligned;
+
+	/* mov <OFFSET>(%rip), %r10d */
+	emit_byte (acfg, '\x45');
+	emit_byte (acfg, '\x8b');
+	emit_byte (acfg, '\x15');
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
+
+	/* mov <OFFSET>(%rip), %r11d */
+	emit_byte (acfg, '\x45');
+	emit_byte (acfg, '\x8b');
+	emit_byte (acfg, '\x1d');
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4);
+
+	/* nacljmp *%r11 */
+	amd64_jump_reg (code, AMD64_R11);
+	emit_bytes (acfg, buf_aligned, code - buf_aligned);
+
+	emit_alignment (acfg, kNaClAlignment);
+	*tramp_size = kNaClAlignment;
+#endif /*__native_client_codegen__*/
+
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
@@ -1132,50 +1233,74 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 {
 #if defined(TARGET_AMD64)
 	guint8 *buf, *code;
+#if defined(__native_client_codegen__)
+	guint8 *buf_alloc;
+#endif
 	guint8 *labels [3];
+	guint8 mov_buf[3];
+	guint8 *mov_buf_ptr = mov_buf;
 
+	const int kSizeOfMove = 7;
+#if defined(__default_codegen__)
 	code = buf = g_malloc (256);
+#elif defined(__native_client_codegen__)
+	buf_alloc = g_malloc (256 + kNaClAlignment + kSizeOfMove);
+	buf = ((guint)buf_alloc + kNaClAlignment) & ~kNaClAlignmentMask;
+	/* The RIP relative move below is emitted first */
+	buf += kSizeOfMove;
+	code = buf;
+#endif
 
 	/* FIXME: Optimize this, i.e. use binary search etc. */
 	/* Maybe move the body into a separate function (slower, but much smaller) */
 
-	/* R11 is a free register */
+	/* MONO_ARCH_IMT_SCRATCH_REG is a free register */
 
 	labels [0] = code;
-	amd64_alu_membase_imm (code, X86_CMP, AMD64_R11, 0, 0);
+	amd64_alu_membase_imm (code, X86_CMP, MONO_ARCH_IMT_SCRATCH_REG, 0, 0);
 	labels [1] = code;
-	amd64_branch8 (code, X86_CC_Z, FALSE, 0);
+	amd64_branch8 (code, X86_CC_Z, 0, FALSE);
 
 	/* Check key */
-	amd64_alu_membase_reg (code, X86_CMP, AMD64_R11, 0, MONO_ARCH_IMT_REG);
+	amd64_alu_membase_reg_size (code, X86_CMP, MONO_ARCH_IMT_SCRATCH_REG, 0, MONO_ARCH_IMT_REG, sizeof (gpointer));
 	labels [2] = code;
-	amd64_branch8 (code, X86_CC_Z, FALSE, 0);
+	amd64_branch8 (code, X86_CC_Z, 0, FALSE);
 
 	/* Loop footer */
-	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, 2 * sizeof (gpointer));
+	amd64_alu_reg_imm (code, X86_ADD, MONO_ARCH_IMT_SCRATCH_REG, 2 * sizeof (gpointer));
 	amd64_jump_code (code, labels [0]);
 
 	/* Match */
 	mono_amd64_patch (labels [2], code);
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, sizeof (gpointer), 8);
-	amd64_jump_membase (code, AMD64_R11, 0);
+	amd64_mov_reg_membase (code, MONO_ARCH_IMT_SCRATCH_REG, MONO_ARCH_IMT_SCRATCH_REG, sizeof (gpointer), sizeof (gpointer));
+	amd64_jump_membase (code, MONO_ARCH_IMT_SCRATCH_REG, 0);
 
 	/* No match */
 	/* FIXME: */
 	mono_amd64_patch (labels [1], code);
 	x86_breakpoint (code);
 
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 12345678, 8);
-
-	/* mov <OFFSET>(%rip), %r11 */
-	emit_byte (acfg, '\x4d');
-	emit_byte (acfg, '\x8b');
-	emit_byte (acfg, '\x1d');
+	/* mov <OFFSET>(%rip), MONO_ARCH_IMT_SCRATCH_REG */
+	amd64_emit_rex (mov_buf_ptr, sizeof(gpointer), MONO_ARCH_IMT_SCRATCH_REG, 0, AMD64_RIP);
+	*(mov_buf_ptr)++ = (unsigned char)0x8b; /* mov opcode */
+	x86_address_byte (mov_buf_ptr, 0, MONO_ARCH_IMT_SCRATCH_REG & 0x7, 5);
+	emit_bytes (acfg, mov_buf, mov_buf_ptr - mov_buf);
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
 
 	emit_bytes (acfg, buf, code - buf);
 	
-	*tramp_size = code - buf + 7;
+	*tramp_size = code - buf + kSizeOfMove;
+#if defined(__native_client_codegen__)
+	/* The tramp will be padded to the next kNaClAlignment bundle. */
+	*tramp_size = ALIGN_TO ((*tramp_size), kNaClAlignment);
+#endif
+
+#if defined(__default_codegen__)
+	g_free (buf);
+#elif defined(__native_client_codegen__)
+	g_free (buf_alloc); 
+#endif
+
 #elif defined(TARGET_X86)
 	guint8 *buf, *code;
 #ifdef __native_client_codegen__
@@ -1183,11 +1308,11 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 #endif
 	guint8 *labels [3];
 
-#ifdef __native_client_codegen__
+#if defined(__default_codegen__)
+	code = buf = g_malloc (256);
+#elif defined(__native_client_codegen__)
 	buf_alloc = g_malloc (256 + kNaClAlignment);
 	code = buf = ((guint)buf_alloc + kNaClAlignment) & ~kNaClAlignmentMask;
-#else
-	code = buf = g_malloc (256);
 #endif
 
 	/* Allocate a temporary stack slot */
@@ -1240,6 +1365,13 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	emit_bytes (acfg, buf, code - buf);
 	
 	*tramp_size = code - buf;
+
+#if defined(__default_codegen__)
+	g_free (buf);
+#elif defined(__native_client_codegen__)
+	g_free (buf_alloc); 
+#endif
+
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code, *code2, *labels [16];
@@ -3916,7 +4048,7 @@ emit_plt (MonoAotCompile *acfg)
 	sprintf (symbol, "plt");
 
 	emit_section_change (acfg, ".text", 0);
-	emit_alignment (acfg, 16);
+	emit_alignment (acfg, NACL_SIZE(16, kNaClAlignment));
 	emit_label (acfg, symbol);
 	emit_label (acfg, acfg->plt_symbol);
 
@@ -5038,7 +5170,17 @@ emit_code (MonoAotCompile *acfg)
 	 * Emit some padding so the local symbol for the first method doesn't have the
 	 * same address as 'methods'.
 	 */
+#if defined(__default_codegen__)
 	emit_zero_bytes (acfg, 16);
+#elif defined(__native_client_codegen__)
+	{
+		const int kPaddingSize = 16;
+		guint8 pad_buffer[kPaddingSize];
+		mono_arch_nacl_pad (pad_buffer, kPaddingSize);
+		emit_bytes (acfg, pad_buffer, kPaddingSize);
+	}
+#endif
+	
 
 	for (l = acfg->method_order; l != NULL; l = l->next) {
 		MonoCompile *cfg;
@@ -6262,7 +6404,11 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 
 #ifdef __native_client_codegen__
+#if defined(TARGET_AMD64)
+#define AS_NAME "nacl64-as"
+#else
 #define AS_NAME "nacl-as"
+#endif
 #else
 #define AS_NAME "as"
 #endif

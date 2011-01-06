@@ -197,13 +197,23 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
 	return memcmp (pubt1, pubt2, 16) == 0;
 }
 
+/* Native Client can't get this info from an environment variable so */
+/* it's passed in to the runtime, or set manually by embedding code. */
+#ifdef __native_client__
+char* nacl_mono_path = NULL;
+#endif
+
 static void
 check_path_env (void)
 {
 	const char *path;
 	char **splitted, **dest;
 	
+#ifdef __native_client__
+	path = nacl_mono_path;
+#else
 	path = g_getenv ("MONO_PATH");
+#endif
 	if (!path)
 		return;
 

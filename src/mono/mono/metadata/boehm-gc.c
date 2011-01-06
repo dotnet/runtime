@@ -105,6 +105,8 @@ mono_gc_base_init (void)
 
 		GC_stackbottom = (char*)ss.ss_sp;
 	}
+#elif defined(__native_client__)
+	/* Do nothing, GC_stackbottom is set correctly in libgc */
 #else
 	{
 		int dummy;

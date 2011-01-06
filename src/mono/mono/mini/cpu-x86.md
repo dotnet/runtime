@@ -247,6 +247,7 @@ call_handler: len:11 clob:c
 aot_const: dest:i len:5
 load_gotaddr: dest:i len:64
 got_entry: dest:i src1:b len:7
+nacl_gc_safe_point: clob:c
 x86_test_null: src1:i len:2
 x86_compare_membase_reg: src1:b src2:i len:7
 x86_compare_membase_imm: src1:b len:11

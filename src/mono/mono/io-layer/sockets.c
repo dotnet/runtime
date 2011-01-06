@@ -7,9 +7,10 @@
  * (C) 2002 Ximian, Inc.
  */
 
+#include <config.h>
+
 #ifndef DISABLE_SOCKETS
 
-#include <config.h>
 #include <glib.h>
 #include <pthread.h>
 #include <errno.h>

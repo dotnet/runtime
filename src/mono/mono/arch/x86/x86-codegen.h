@@ -17,9 +17,7 @@
 #include <assert.h>
 
 #ifdef __native_client_codegen__
-#define kNaClAlignment 32
-#define kNaClAlignmentMask (kNaClAlignment - 1)
-extern guint8 nacl_align_byte;
+extern gint8 nacl_align_byte;
 #endif /* __native_client_codegen__ */
 
 
@@ -28,15 +26,10 @@ extern guint8 nacl_align_byte;
 #define x86_call_sequence_pre(inst) guint8* _code_start = (inst);
 #define x86_call_sequence_post(inst) \
   (mono_nacl_align_call(&_code_start, &(inst)), _code_start);
-#define x86_call_sequence_pre_val(inst) guint8* _code_start = (inst);
-#define x86_call_sequence_post_val(inst) \
-  (mono_nacl_align_call(&_code_start, &(inst)), _code_start);
 #else
 #define x86_codegen_pre(inst_ptr_ptr, inst_len) do {} while (0)
-#define x86_call_sequence_pre(inst)
-#define x86_call_sequence_post(inst)
-#define x86_call_sequence_pre_val(inst) guint8* _code_start = (inst);
-#define x86_call_sequence_post_val(inst) _code_start
+#define x86_call_sequence_pre(inst) guint8* _code_start = (inst);
+#define x86_call_sequence_post(inst) _code_start
 #endif  /* __native_client_codegen__ */
 
 
@@ -305,7 +298,7 @@ typedef union {
 
 #define kMaxMembaseEmitPadding 6
 
-#define x86_membase_emit(inst,r,basereg,disp)	do {\
+#define x86_membase_emit_body(inst,r,basereg,disp)	do {\
 	if ((basereg) == X86_ESP) {	\
 		if ((disp) == 0) {	\
 			x86_address_byte ((inst), 0, (r), X86_ESP);	\
@@ -334,6 +327,18 @@ typedef union {
 	}	\
 	} while (0)
 
+#if defined(__native_client_codegen__) && defined(TARGET_AMD64)
+#define x86_membase_emit(inst,r,basereg,disp) \
+	do { \
+		amd64_nacl_membase_handler(&(inst), (basereg), (disp), (r)) ; \
+	} while (0)
+#else /* __default_codegen__ || 32-bit NaCl codegen */
+#define x86_membase_emit(inst,r,basereg,disp) \
+	do { \
+		x86_membase_emit_body((inst),(r),(basereg),(disp)); \
+	} while (0)
+#endif
+
 #define kMaxMemindexEmitPadding 6
 
 #define x86_memindex_emit(inst,r,basereg,disp,indexreg,shift)	\
@@ -351,7 +356,7 @@ typedef union {
 			x86_imm_emit8 ((inst), (disp));	\
 		} else {	\
 			x86_address_byte ((inst), 2, (r), 4);	\
-			x86_address_byte ((inst), (shift), (indexreg), 5);	\
+			x86_address_byte ((inst), (shift), (indexreg), (basereg));	\
 			x86_imm_emit32 ((inst), (disp));	\
 		}	\
 	} while (0)
@@ -438,12 +443,23 @@ typedef union {
     } while ( in_nop );  \
   } while (0)
 
+#if defined(__native_client__)
 #define x86_patch(ins,target) \
   do { \
     unsigned char* inst = (ins); \
+    guint8* new_target = nacl_modify_patch_target((target)); \
     x86_skip_nops((inst)); \
-    x86_do_patch((inst), (target)); \
+    x86_do_patch((inst), new_target); \
   } while (0)
+#else /* __native_client__ */
+#define x86_patch(ins,target) \
+  do { \
+    unsigned char* inst = (ins); \
+    guint8* new_target = (target); \
+    x86_skip_nops((inst)); \
+    x86_do_patch((inst), new_target); \
+  } while (0)
+#endif /* __native_client__ */
 
 #else
 #define x86_patch(ins,target) do { x86_do_patch((ins), (target)); } while (0)
@@ -472,6 +488,13 @@ typedef union {
 #define x86_movsl(inst) do { *(inst)++ =(unsigned char)0xa5; } while (0)
 #define x86_movsd(inst) x86_movsl((inst))
 
+#if defined(__default_codegen__)
+#define x86_prefix(inst,p) \
+	do { \
+		*(inst)++ =(unsigned char) (p); \
+	} while (0)
+#elif defined(__native_client_codegen__)
+#if defined(TARGET_X86)
 /* kNaClAlignment - 1 is the max value we can pass into x86_codegen_pre. */
 /* This keeps us from having to call x86_codegen_pre with specific       */
 /* knowledge of the size of the instruction that follows it, and         */
@@ -481,6 +504,18 @@ typedef union {
 		x86_codegen_pre(&(inst), kNaClAlignment - 1); \
 		*(inst)++ =(unsigned char) (p); \
 	} while (0)
+#elif defined(TARGET_AMD64)
+/* We need to tag any prefixes so we can perform proper membase sandboxing */
+/* See: mini-amd64.c:amd64_nacl_membase_handler for verbose details        */
+#define x86_prefix(inst,p) \
+	do { \
+		amd64_nacl_tag_legacy_prefix((inst)); \
+		*(inst)++ =(unsigned char) (p); \
+	} while (0)
+
+#endif /* TARGET_AMD64 */
+
+#endif /* __native_client_codegen__ */
 
 #define x86_rdtsc(inst) \
 	do {	\
@@ -1041,7 +1076,7 @@ typedef union {
 		x86_codegen_pre(&(inst), 7); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x88; break;	\
-		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
 		case 4: *(inst)++ = (unsigned char)0x89; break;	\
 		default: assert (0);	\
 		}	\
@@ -1053,7 +1088,7 @@ typedef union {
 		x86_codegen_pre(&(inst), 3); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x88; break;	\
-		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
 		case 4: *(inst)++ = (unsigned char)0x89; break;	\
 		default: assert (0);	\
 		}	\
@@ -1065,7 +1100,7 @@ typedef union {
 		x86_codegen_pre(&(inst), 2 + kMaxMembaseEmitPadding); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x88; break;	\
-		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
 		case 4: *(inst)++ = (unsigned char)0x89; break;	\
 		default: assert (0);	\
 		}	\
@@ -1077,7 +1112,7 @@ typedef union {
 		x86_codegen_pre(&(inst), 2 + kMaxMemindexEmitPadding); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x88; break;	\
-		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
 		case 4: *(inst)++ = (unsigned char)0x89; break;	\
 		default: assert (0);	\
 		}	\
@@ -1089,7 +1124,7 @@ typedef union {
 		x86_codegen_pre(&(inst), 3); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
-		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
 		case 4: *(inst)++ = (unsigned char)0x8b; break;	\
 		default: assert (0);	\
 		}	\
@@ -1101,7 +1136,7 @@ typedef union {
 		x86_codegen_pre(&(inst), 7); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
-		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
 		case 4: *(inst)++ = (unsigned char)0x8b; break;	\
 		default: assert (0);	\
 		}	\
@@ -1115,7 +1150,7 @@ typedef union {
 		x86_codegen_pre(&(inst), kMovRegMembasePadding); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
-		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
 		case 4: *(inst)++ = (unsigned char)0x8b; break;	\
 		default: assert (0);	\
 		}	\
@@ -1127,7 +1162,7 @@ typedef union {
 		x86_codegen_pre(&(inst), 2 + kMaxMemindexEmitPadding); \
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
-		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
 		case 4: *(inst)++ = (unsigned char)0x8b; break;	\
 		default: assert (0);	\
 		}	\
@@ -1155,7 +1190,7 @@ typedef union {
 			x86_imm_emit8 ((inst), (imm));	\
 		} else if ((size) == 2) {	\
 			x86_codegen_pre(&(inst), 9); \
-			*(inst)++ = (unsigned char)0x66;	\
+			x86_prefix((inst), X86_OPERAND_PREFIX);	\
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_mem_emit ((inst), 0, (mem));	\
 			x86_imm_emit16 ((inst), (imm));	\
@@ -1176,7 +1211,7 @@ typedef union {
 			x86_imm_emit8 ((inst), (imm));	\
 		} else if ((size) == 2) {	\
 			x86_codegen_pre(&(inst), 4 + kMaxMembaseEmitPadding); \
-			*(inst)++ = (unsigned char)0x66;	\
+			x86_prefix((inst), X86_OPERAND_PREFIX);	\
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_membase_emit ((inst), 0, (basereg), (disp));	\
 			x86_imm_emit16 ((inst), (imm));	\
@@ -1197,7 +1232,7 @@ typedef union {
 			x86_imm_emit8 ((inst), (imm));	\
 		} else if ((size) == 2) {	\
 			x86_codegen_pre(&(inst), 4 + kMaxMemindexEmitPadding); \
-			*(inst)++ = (unsigned char)0x66;	\
+			x86_prefix((inst), X86_OPERAND_PREFIX);	\
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));	\
 			x86_imm_emit16 ((inst), (imm));	\
@@ -1681,6 +1716,7 @@ typedef union {
 		x86_imm_emit8 ((inst), (imm));	\
 	} while (0)
 
+#if defined(TARGET_X86)
 #define x86_jump32(inst,imm)	\
 	do {	\
 		x86_codegen_pre(&(inst), 5); \
@@ -1694,9 +1730,27 @@ typedef union {
 		*(inst)++ = (unsigned char)0xeb;	\
 		x86_imm_emit8 ((inst), (imm));	\
 	} while (0)
+#elif defined(TARGET_AMD64)
+/* These macros are used directly from mini-amd64.c and other      */
+/* amd64 specific files, so they need to be instrumented directly. */
+#define x86_jump32(inst,imm)	\
+	do {	\
+		amd64_codegen_pre(inst); \
+		*(inst)++ = (unsigned char)0xe9;	\
+		x86_imm_emit32 ((inst), (imm));	\
+		amd64_codegen_post(inst); \
+	} while (0)
 
+#define x86_jump8(inst,imm)	\
+	do {	\
+		amd64_codegen_pre(inst); \
+		*(inst)++ = (unsigned char)0xeb;	\
+		x86_imm_emit8 ((inst), (imm));	\
+		amd64_codegen_post(inst); \
+	} while (0)
+#endif
 
-#ifdef __native_client_codegen__
+#if defined( __native_client_codegen__ ) && defined( TARGET_X86 )
 #define x86_jump_reg(inst,reg)	do {	\
     x86_codegen_pre(&(inst), 5);			\
     *(inst)++ = (unsigned char)0x83;  /* and */		\
@@ -1747,7 +1801,7 @@ typedef union {
 /*
  * target is a pointer in our buffer.
  */
-#define x86_jump_code(inst,target)	\
+#define x86_jump_code_body(inst,target)	\
 	do {	\
 		int t; \
 		x86_codegen_pre(&(inst), 2); \
@@ -1761,6 +1815,31 @@ typedef union {
 		}	\
 	} while (0)
 
+#if defined(__default_codegen__) 
+#define x86_jump_code(inst,target) \
+	do { \
+		x86_jump_code_body((inst),(target)); \
+	} while (0)
+#elif defined(__native_client_codegen__) && defined(TARGET_X86)
+#define x86_jump_code(inst,target) \
+	do { \
+    		guint8* jump_start = (inst); \
+		x86_jump_code_body((inst),(target)); \
+		x86_patch(jump_start, (target)); \
+	} while (0)
+#elif defined(__native_client_codegen__) && defined(TARGET_AMD64)
+#define x86_jump_code(inst,target) \
+	do { \
+		/* jump_code_body is used twice because there are offsets */ \
+		/* calculated based on the IP, which can change after the */ \
+		/* call to amd64_codegen_post                             */ \
+		amd64_codegen_pre(inst); \
+		x86_jump_code_body((inst),(target)); \
+		inst = amd64_codegen_post(inst); \
+		x86_jump_code_body((inst),(target)); \
+	} while (0)
+#endif /* __native_client_codegen__ */
+
 #define x86_jump_disp(inst,disp)	\
 	do {	\
 		int t = (disp) - 2;	\
@@ -1772,6 +1851,7 @@ typedef union {
 		}	\
 	} while (0)
 
+#if defined(TARGET_X86)
 #define x86_branch8(inst,cond,imm,is_signed)	\
 	do {	\
 		x86_codegen_pre(&(inst), 2); \
@@ -1792,12 +1872,40 @@ typedef union {
 			*(inst)++ = x86_cc_unsigned_map [(cond)] + 0x10;	\
 		x86_imm_emit32 ((inst), (imm));	\
 	} while (0)
+#elif defined(TARGET_AMD64)
+/* These macros are used directly from mini-amd64.c and other      */
+/* amd64 specific files, so they need to be instrumented directly. */
+#define x86_branch8(inst,cond,imm,is_signed)	\
+	do {	\
+		amd64_codegen_pre(inst); \
+		if ((is_signed))	\
+			*(inst)++ = x86_cc_signed_map [(cond)];	\
+		else	\
+			*(inst)++ = x86_cc_unsigned_map [(cond)];	\
+		x86_imm_emit8 ((inst), (imm));	\
+		amd64_codegen_post(inst); \
+	} while (0)
+#define x86_branch32(inst,cond,imm,is_signed)	\
+	do {	\
+		amd64_codegen_pre(inst); \
+		*(inst)++ = (unsigned char)0x0f;	\
+		if ((is_signed))	\
+			*(inst)++ = x86_cc_signed_map [(cond)] + 0x10;	\
+		else	\
+			*(inst)++ = x86_cc_unsigned_map [(cond)] + 0x10;	\
+		x86_imm_emit32 ((inst), (imm));	\
+		amd64_codegen_post(inst); \
+	} while (0)
+#endif
 
+#if defined(TARGET_X86)
 #define x86_branch(inst,cond,target,is_signed)	\
 	do {	\
 		int offset;					 \
+		guint8* branch_start; \
 		x86_codegen_pre(&(inst), 2); \
 		offset = (target) - (inst) - 2;	\
+		branch_start = (inst); \
 		if (x86_is_imm8 ((offset)))	\
 			x86_branch8 ((inst), (cond), offset, (is_signed));	\
 		else {	\
@@ -1805,7 +1913,42 @@ typedef union {
 			offset = (target) - (inst) - 6;	\
 			x86_branch32 ((inst), (cond), offset, (is_signed));	\
 		}	\
+		x86_patch(branch_start, (target)); \
 	} while (0)
+#elif defined(TARGET_AMD64)
+/* This macro is used directly from mini-amd64.c and other        */
+/* amd64 specific files, so it needs to be instrumented directly. */
+
+#define x86_branch_body(inst,cond,target,is_signed)	\
+	do {	\
+		int offset = (target) - (inst) - 2;	\
+		if (x86_is_imm8 ((offset)))	\
+			x86_branch8 ((inst), (cond), offset, (is_signed));	\
+		else {	\
+			offset = (target) - (inst) - 6;	\
+			x86_branch32 ((inst), (cond), offset, (is_signed));	\
+		}	\
+	} while (0)
+
+#if defined(__default_codegen__)
+#define x86_branch(inst,cond,target,is_signed)	\
+	do { \
+		x86_branch_body((inst),(cond),(target),(is_signed)); \
+	} while (0)
+#elif defined(__native_client_codegen__)
+#define x86_branch(inst,cond,target,is_signed)	\
+	do {	\
+		/* branch_body is used twice because there are offsets */ \
+		/* calculated based on the IP, which can change after  */ \
+ 		/* the call to amd64_codegen_post                      */ \
+		amd64_codegen_pre(inst); \
+		x86_branch_body((inst),(cond),(target),(is_signed)); \
+		inst = amd64_codegen_post(inst); \
+		x86_branch_body((inst),(cond),(target),(is_signed)); \
+	} while (0)
+#endif /* __native_client_codegen__ */
+
+#endif /* TARGET_AMD64 */
 
 #define x86_branch_disp(inst,cond,disp,is_signed)	\
 	do {	\
@@ -1865,10 +2008,10 @@ typedef union {
 		x86_call_sequence_post((inst)); \
 	} while (0)
 
-#ifdef __native_client_codegen__
+
+#if defined( __native_client_codegen__ ) && defined( TARGET_X86 )
 #define x86_call_reg_internal(inst,reg)	\
   do {							\
-    x86_codegen_pre(&(inst), 5);			\
     *(inst)++ = (unsigned char)0x83;  /* and */		\
     x86_reg_emit ((inst), 4, (reg));  /* reg */		\
     *(inst)++ = (unsigned char)nacl_align_byte;		\
@@ -1914,20 +2057,23 @@ typedef union {
 #endif  /* __native_client_codegen__ */
 
 
-#ifdef __native_client_codegen__
+#if defined( __native_client_codegen__ ) && defined( TARGET_X86 )
 
 #define x86_call_code(inst,target)	\
 	do {	\
 		int _x86_offset; \
+		guint8* call_start; \
 		guint8* _aligned_start; \
-		x86_call_sequence_pre_val ((inst)); \
+		x86_call_sequence_pre((inst)); \
 		_x86_offset = (unsigned char*)(target) - (inst);	\
 		_x86_offset -= 5;	\
 		x86_call_imm_body ((inst), _x86_offset);	\
-		_aligned_start = x86_call_sequence_post_val ((inst)); \
+		_aligned_start = x86_call_sequence_post((inst)); \
+		call_start = _aligned_start; \
 		_x86_offset = (unsigned char*)(target) - (_aligned_start);	\
 		_x86_offset -= 5;	\
 		x86_call_imm_body ((_aligned_start), _x86_offset);	\
+		x86_patch(call_start, (target)); \
 	} while (0)
 
 #define SIZE_OF_RET 6
@@ -2062,9 +2208,9 @@ typedef union {
 
 #ifdef __native_client_codegen__
 
-#define kNaClLengthOfCallReg 5
-#define kNaClLengthOfCallImm 5
-#define kNaClLengthOfCallMembase (kNaClLengthOfCallReg + 6)
+#define kx86NaClLengthOfCallReg 5
+#define kx86NaClLengthOfCallImm 5
+#define kx86NaClLengthOfCallMembase (kx86NaClLengthOfCallReg + 6)
 
 #endif  /* __native_client_codegen__ */
 

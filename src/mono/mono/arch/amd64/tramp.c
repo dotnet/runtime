@@ -543,7 +543,7 @@ enum_marshal2:
 	amd64_call_reg (p, AMD64_R11);
 
 	if (sig->ret->byref || string_ctor || !(retval_implicit || sig->ret->type == MONO_TYPE_VOID)) {
-		amd64_mov_reg_membase(p, AMD64_RSI, AMD64_RBP, -8, 8);
+		amd64_mov_reg_membase(p, AMD64_RSI, AMD64_RBP, -8, SIZEOF_VOID_P);
 	}
 	/*
 	 * Handle retval.
@@ -883,19 +883,19 @@ enum_calc_size:
 	 * Initialize MonoInvocation fields, first the ones known now.
 	 */
 	amd64_alu_reg_reg (p, X86_XOR, AMD64_RAX, AMD64_RAX);
-	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, ex)), AMD64_RAX, 8);
-	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, ex_handler)), AMD64_RAX, 8);
-	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, parent)), AMD64_RAX, 8);
+	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, ex)), AMD64_RAX, SIZEOF_VOID_P);
+	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, ex_handler)), AMD64_RAX, SIZEOF_VOID_P);
+	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, parent)), AMD64_RAX, SIZEOF_VOID_P);
 	/*
 	 * Set the method pointer.
 	 */
-	amd64_mov_membase_imm (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, method)), (long)method, 8);
+	amd64_mov_membase_imm (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, method)), (long)method, SIZEOF_VOID_P);
 
 	/*
 	 * Handle this.
 	 */
 	if (sig->hasthis)
-		amd64_mov_membase_reg(p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, obj)), this_reg, 8);
+		amd64_mov_membase_reg(p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, obj)), this_reg, SIZEOF_VOID_P);
 
 	/*
 	 * Handle the arguments. stackval_pos is the offset from RBP of the stackval in the MonoInvocation args array .
@@ -903,7 +903,7 @@ enum_calc_size:
 	 * We just call stackval_from_data to handle all the (nasty) issues....
 	 */
 	amd64_lea_membase (p, AMD64_RAX, AMD64_RBP, stackval_pos);
-	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, stack_args)), AMD64_RAX, 8);
+	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, stack_args)), AMD64_RAX, SIZEOF_VOID_P);
 	for (i = 0; i < sig->param_count; ++i) {
 /* Need to call stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke); */
 		amd64_mov_reg_imm (p, AMD64_R11, stackval_from_data);
@@ -926,12 +926,12 @@ enum_calc_size:
 	 * Handle the return value storage area.
 	 */
 	amd64_lea_membase (p, AMD64_RAX, AMD64_RBP, stackval_pos);
-	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, retval)), AMD64_RAX, 8);
+	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, retval)), AMD64_RAX, SIZEOF_VOID_P);
 	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->byref) {
 		MonoClass *klass  = sig->ret->data.klass;
 		if (!klass->enumtype) {
-			amd64_mov_reg_membase (p, AMD64_RCX, AMD64_RBP, retval_ptr_rbp_offset, 8);
-			amd64_mov_membase_reg (p, AMD64_RBP, stackval_pos, AMD64_RCX, 8);
+			amd64_mov_reg_membase (p, AMD64_RCX, AMD64_RBP, retval_ptr_rbp_offset, SIZEOF_VOID_P);
+			amd64_mov_membase_reg (p, AMD64_RBP, stackval_pos, AMD64_RCX, SIZEOF_VOID_P);
 		}
 	}
 
@@ -947,7 +947,7 @@ enum_calc_size:
 	 */
 	amd64_lea_membase (p, AMD64_RAX, AMD64_RBP, stackval_pos);
 	if (sig->ret->byref) {
-		amd64_mov_reg_membase (p, AMD64_RAX, AMD64_RAX, 0, 8);
+		amd64_mov_reg_membase (p, AMD64_RAX, AMD64_RAX, 0, SIZEOF_VOID_P);
 	} else {
 		int simpletype = sig->ret->type;	
 	enum_retvalue:

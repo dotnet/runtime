@@ -85,6 +85,10 @@ double mono_conv_to_r8_un (guint32 a) MONO_INTERNAL;
 
 double mono_lconv_to_r8_un (guint64 a) MONO_INTERNAL;
 
+#if defined(__native_client_codegen__) || defined(__native_client__)
+double mono_fmod(double a, double b) MONO_INTERNAL;
+#endif
+
 gpointer mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg) MONO_INTERNAL;
 
 MonoString *mono_helper_ldstr (MonoImage *image, guint32 idx) MONO_INTERNAL;

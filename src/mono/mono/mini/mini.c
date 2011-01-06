@@ -89,10 +89,6 @@
 
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
 
-#ifdef __native_client_codegen__
-/* Default alignment for Native Client is 32-byte. */
-guint8 nacl_align_byte = 0xe0;
-#endif
 
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
@@ -163,6 +159,38 @@ gboolean check_for_pending_exc = TRUE;
 gboolean disable_vtypes_in_regs = FALSE;
 
 gboolean mono_dont_free_global_codeman;
+
+gpointer
+mono_realloc_native_code (MonoCompile *cfg)
+{
+#if defined(__default_codegen__)
+	return g_realloc (cfg->native_code, cfg->code_size);
+#elif defined(__native_client_codegen__)
+	guint old_padding;
+	gpointer native_code;
+	guint alignment_check;
+
+	/* Save the old alignment offset so we can re-align after the realloc. */
+	old_padding = (guint)(cfg->native_code - cfg->native_code_alloc);
+
+	cfg->native_code_alloc = g_realloc ( cfg->native_code_alloc,
+										 cfg->code_size + kNaClAlignment );
+
+	/* Align native_code to next nearest kNaClAlignment byte. */
+	native_code = (guint)cfg->native_code_alloc + kNaClAlignment;
+	native_code = (guint)native_code & ~kNaClAlignmentMask;
+
+	/* Shift the data to be 32-byte aligned again. */
+	memmove (native_code, cfg->native_code_alloc + old_padding, cfg->code_size);
+
+	alignment_check = (guint)native_code & kNaClAlignmentMask;
+	g_assert (alignment_check == 0);
+	return native_code;
+#else
+	g_assert_not_reached ();
+	return cfg->native_code;
+#endif
+}
 
 #ifdef __native_client_codegen__
 
@@ -429,6 +457,67 @@ void *mono_global_codeman_reserve (int size)
 		return ptr;
 	}
 }
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+/* Given the temporary buffer (allocated by mono_global_codeman_reserve) into
+ * which we are generating code, return a pointer to the destination in the
+ * dynamic code segment into which the code will be copied when
+ * mono_global_codeman_commit is called.
+ * LOCKING: Acquires the jit lock.
+ */
+void*
+nacl_global_codeman_get_dest (void *data)
+{
+	void *dest;
+	mono_jit_lock ();
+	dest = nacl_code_manager_get_code_dest (global_codeman, data);
+	mono_jit_unlock ();
+	return dest;
+}
+
+void
+mono_global_codeman_commit (void *data, int size, int newsize)
+{
+	mono_jit_lock ();
+	mono_code_manager_commit (global_codeman, data, size, newsize);
+	mono_jit_unlock ();
+}
+
+/* 
+ * Convenience function which calls mono_global_codeman_commit to validate and
+ * copy the code. The caller sets *buf_base and *buf_size to the start and size
+ * of the buffer (allocated by mono_global_codeman_reserve), and *code_end to
+ * the byte after the last instruction byte. On return, *buf_base will point to
+ * the start of the copied in the code segment, and *code_end will point after
+ * the end of the copied code.
+ */
+void
+nacl_global_codeman_validate (guint8 **buf_base, int buf_size, guint8 **code_end)
+{
+	guint8 *tmp = nacl_global_codeman_get_dest (*buf_base);
+	mono_global_codeman_commit (*buf_base, buf_size, *code_end - *buf_base);
+	*code_end = tmp + (*code_end - *buf_base);
+	*buf_base = tmp;
+}
+#else
+/* no-op versions of Native Client functions */
+void*
+nacl_global_codeman_get_dest (void *data)
+{
+	return data;
+}
+
+void
+mono_global_codeman_commit (void *data, int size, int newsize)
+{
+}
+
+void
+nacl_global_codeman_validate (guint8 **buf_base, int buf_size, guint8 **code_end)
+{
+}
+
+#endif /* __native_client__ */
 
 /**
  * mono_create_unwind_op:
@@ -1684,7 +1773,7 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
-#if SIZEOF_REGISTER == 4
+#if SIZEOF_VOID_P == 4
 		case MONO_TYPE_I4:
 #else
 		case MONO_TYPE_I8:
@@ -1918,7 +2007,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 
 	vars = mono_varlist_sort (cfg, vars, 0);
 	offset = 0;
-	*stack_align = sizeof (gpointer);
+	*stack_align = sizeof(mgreg_t);
 	for (l = vars; l; l = l->next) {
 		vmv = l->data;
 		inst = cfg->varinfo [vmv->idx];
@@ -1973,7 +2062,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 			case MONO_TYPE_PTR:
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
-#if SIZEOF_REGISTER == 4
+#if SIZEOF_VOID_P == 4
 			case MONO_TYPE_I4:
 #else
 			case MONO_TYPE_I8:
@@ -2277,6 +2366,8 @@ mono_bblock_insert_before_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *ins_
 {
 	if (ins == NULL) {
 		ins = bb->code;
+		if (ins)
+			ins->prev = ins_to_insert;
 		bb->code = ins_to_insert;
 		ins_to_insert->next = ins;
 		if (bb->last_ins == NULL)
@@ -2859,7 +2950,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = patch_info->data.inst->inst_c0 + code;
 		break;
 	case MONO_PATCH_INFO_IP:
+#if defined(__native_client__) && defined(__native_client_codegen__)
+		/* Need to transform to the destination address, it's */
+		/* emitted as an immediate in the code. */
+		target = nacl_inverse_modify_patch_target(ip);
+#else
 		target = ip;
+#endif
 		break;
 	case MONO_PATCH_INFO_METHOD_REL:
 		target = code + patch_info->data.offset;
@@ -2875,6 +2972,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_METHOD_JUMP:
 		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE);
+#if defined(__native_client__) && defined(__native_client_codegen__)
+#if defined(TARGET_AMD64)
+		/* This target is an absolute address, not relative to the */
+		/* current code being emitted on AMD64. */
+		target = nacl_inverse_modify_patch_target(target);
+#endif
+#endif
 		break;
 	case MONO_PATCH_INFO_METHOD:
 		if (patch_info->data.method == method) {
@@ -2888,6 +2992,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		gpointer *jump_table;
 		int i;
 
+#if defined(__native_client__) && defined(__native_client_codegen__)
+		/* This memory will leak, but we don't care if we're */
+		/* not deleting JIT'd methods anyway                 */
+		jump_table = g_malloc0 (sizeof(gpointer) * patch_info->data.table->table_size);
+#else
 		if (method && method->dynamic) {
 			jump_table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
@@ -2897,10 +3006,27 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 				jump_table = mono_domain_code_reserve (domain, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
 		}
+#endif
 
-		for (i = 0; i < patch_info->data.table->table_size; i++)
+		for (i = 0; i < patch_info->data.table->table_size; i++) {
+#if defined(__native_client__) && defined(__native_client_codegen__)
+			/* 'code' is relative to the current code blob, we */
+			/* need to do this transform on it to make the     */
+			/* pointers in this table absolute                 */
+			jump_table [i] = nacl_inverse_modify_patch_target (code) + GPOINTER_TO_INT (patch_info->data.table->table [i]);
+#else
 			jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
+#endif
+		}
+
+#if defined(__native_client__) && defined(__native_client_codegen__)
+		/* jump_table is in the data section, we need to transform */
+		/* it here so when it gets modified in amd64_patch it will */
+		/* then point back to the absolute data address            */
+		target = nacl_inverse_modify_patch_target (jump_table);
+#else
 		target = jump_table;
+#endif
 		break;
 	}
 	case MONO_PATCH_INFO_METHODCONST:
@@ -3246,11 +3372,18 @@ mono_postprocess_patches (MonoCompile *cfg)
 		}
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table;
+#if defined(__native_client__) && defined(__native_client_codegen__)
+			/* This memory will leak.  */
+			/* TODO: can we free this when  */
+			/* making the final jump table? */
+			table = g_malloc0 (sizeof(gpointer) * patch_info->data.table->table_size);
+#else
 			if (cfg->method->dynamic) {
 				table = mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
 				table = mono_domain_code_reserve (cfg->domain, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
+#endif
 
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
 				/* Might be NULL if the switch is eliminated */
@@ -3268,6 +3401,12 @@ mono_postprocess_patches (MonoCompile *cfg)
 			GSList *list;
 			MonoDomain *domain = cfg->domain;
 			unsigned char *ip = cfg->native_code + patch_info->ip.i;
+#if defined(__native_client__) && defined(__native_client_codegen__)
+			/* When this jump target gets evaluated, the method */
+			/* will be installed in the dynamic code section,   */
+			/* not at the location of cfg->native_code.         */
+			ip = nacl_inverse_modify_patch_target (cfg->native_code) + patch_info->ip.i;
+#endif
 
 			mono_domain_lock (domain);
 			if (!domain_jit_info (domain)->jump_target_hash)
@@ -3407,6 +3546,15 @@ mono_codegen (MonoCompile *cfg)
 	int max_epilog_size;
 	guint8 *code;
 
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	void *code_dest;
+
+	/* This keeps patch targets from being transformed during
+	 * ordinary method compilation, for local branches and jumps.
+	 */
+	nacl_allow_target_modification (FALSE);
+#endif
+
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		cfg->spill_count = 0;
 		/* we reuse dfn here */
@@ -3459,6 +3607,9 @@ mono_codegen (MonoCompile *cfg)
 		}
 	}
 
+#ifdef __native_client_codegen__
+	mono_nacl_fix_patches (cfg->native_code, cfg->patch_info);
+#endif
 	mono_arch_emit_exceptions (cfg);
 
 	max_epilog_size = 0;
@@ -3489,9 +3640,14 @@ mono_codegen (MonoCompile *cfg)
 #endif
 		code = mono_domain_code_reserve (cfg->domain, cfg->code_size + unwindlen);
 	}
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	nacl_allow_target_modification (TRUE);
+#endif
 
 	memcpy (code, cfg->native_code, cfg->code_len);
-#ifdef __native_client_codegen__
+#if defined(__default_codegen__)
+	g_free (cfg->native_code);
+#elif defined(__native_client_codegen__)
 	if (cfg->native_code_alloc) {
 		g_free (cfg->native_code_alloc);
 		cfg->native_code_alloc = 0;
@@ -3499,9 +3655,7 @@ mono_codegen (MonoCompile *cfg)
 	else if (cfg->native_code) {
 		g_free (cfg->native_code);
 	}
-#else
-	g_free (cfg->native_code);
-#endif
+#endif /* __native_client_codegen__ */
 	cfg->native_code = code;
 	code = cfg->native_code + cfg->code_len;
   
@@ -3539,8 +3693,18 @@ if (valgrind_register){
 #ifdef MONO_ARCH_HAVE_SAVE_UNWIND_INFO
 	mono_arch_save_unwind_info (cfg);
 #endif
-	
-#ifdef __native_client_codegen__
+
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	if (!cfg->compile_aot) {
+		if (cfg->method->dynamic) {
+			code_dest = nacl_code_manager_get_code_dest(cfg->dynamic_info->code_mp, cfg->native_code);
+		} else {
+			code_dest = nacl_domain_get_code_dest(cfg->domain, cfg->native_code);
+		}
+	}
+#endif
+
+#if defined(__native_client_codegen__)
 	mono_nacl_fix_patches (cfg->native_code, cfg->patch_info);
 #endif
 
@@ -3551,6 +3715,9 @@ if (valgrind_register){
 	} else {
 		mono_domain_code_commit (cfg->domain, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
+#if defined(__native_client_codegen__) && defined(__native_client__)
+	cfg->native_code = code_dest;
+#endif
 	mono_profiler_code_buffer_new (cfg->native_code, cfg->code_len, MONO_PROFILER_CODE_BUFFER_METHOD, cfg->method);
 	
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
@@ -6149,6 +6316,9 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_load_remote_field_new, "mono_load_remote_field_new", "object object ptr ptr", FALSE);
 	register_icall (mono_store_remote_field_new, "mono_store_remote_field_new", "void object ptr ptr object", FALSE);
 
+#if defined(__native_client__) || defined(__native_client_codegen__)
+	register_icall (mono_nacl_gc, "mono_nacl_gc", "void", TRUE);
+#endif
 	/* 
 	 * NOTE, NOTE, NOTE, NOTE:
 	 * when adding emulation for some opcodes, remember to also add a dummy
@@ -6219,7 +6389,11 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_register_opcode_emulation (OP_LCONV_TO_R_UN, "__emul_lconv_to_r8_un", "double long", mono_lconv_to_r8_un, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_FREM
+#if defined(__default_codegen__)
 	mono_register_opcode_emulation (OP_FREM, "__emul_frem", "double double double", fmod, FALSE);
+#elif defined(__native_client_codegen__)
+	mono_register_opcode_emulation (OP_FREM, "__emul_frem", "double double double", mono_fmod, FALSE);
+#endif
 #endif
 
 #ifdef MONO_ARCH_SOFT_FLOAT
