@@ -4200,6 +4200,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
 			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
+		case OP_SHUFPS:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
+			x86_sse_alu_reg_reg_imm8 (code, X86_SSE_SHUFPS, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break; 
 
 		case OP_ADDPD:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_ADD, ins->sreg1, ins->sreg2);
