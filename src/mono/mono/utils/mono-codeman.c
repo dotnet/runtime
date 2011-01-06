@@ -494,17 +494,11 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	for (chunk = cman->current; chunk; chunk = chunk->next) {
 		if (ALIGN_INT (chunk->pos, alignment) + size <= chunk->size) {
 			chunk->pos = ALIGN_INT (chunk->pos, alignment);
-			ptr = chunk->data + chunk->pos;
-			chunk->pos += size;
-			return ptr;
-#if 0
-			chunk->pos = ALIGN_INT (chunk->pos, alignment);
 			/* Align the chunk->data we add to chunk->pos */
 			/* or we can't guarantee proper alignment     */
-			ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~align_mask) + chunk->pos);
+			ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
 			chunk->pos = ((char*)ptr - chunk->data) + size;
 			return ptr;
-#endif
 		}
 	}
 	/* 
@@ -532,7 +526,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	chunk->pos = ALIGN_INT (chunk->pos, alignment);
 	/* Align the chunk->data we add to chunk->pos */
 	/* or we can't guarantee proper alignment     */
-	ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~align_mask) + chunk->pos);
+	ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
 	chunk->pos = ((char*)ptr - chunk->data) + size;
 	return ptr;
 #else
