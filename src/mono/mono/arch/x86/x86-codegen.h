@@ -2380,6 +2380,9 @@ typedef enum {
 	X86_SSE_PEXTRB = 0x14,/*sse41*/
 	X86_SSE_PEXTRW = 0xC5,
 	X86_SSE_PEXTRD = 0x16,/*sse41*/
+
+	X86_SSE_SHUFPS = 0xC6,	
+	
 } X86_SSE_Opcode;
 
 
@@ -2426,6 +2429,14 @@ typedef enum {
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
+#define x86_sse_alu_reg_reg_imm8(inst,opc,dreg,reg, imm8)	\
+	do {	\
+		x86_codegen_pre(&(inst), 4); \
+		*(inst)++ = (unsigned char)0x0F;	\
+		*(inst)++ = (unsigned char)(opc);	\
+		x86_reg_emit ((inst), (dreg), (reg));	\
+		*(inst)++ = (unsigned char)(imm8);	\
+	} while (0)
 
 #define x86_sse_alu_pd_reg_reg(inst,opc,dreg,reg)       \
 	do {    \
