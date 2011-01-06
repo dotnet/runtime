@@ -3862,7 +3862,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 static char*
 get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cache)
 {
-	char *debug_sym;
+	char *debug_sym = NULL;
 
 	switch (ji->type) {
 	case MONO_PATCH_INFO_METHOD:
