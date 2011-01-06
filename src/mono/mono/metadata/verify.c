@@ -4610,6 +4610,12 @@ mono_method_verify (MonoMethod *method, int level)
 		finish_collect_stats ();
 		return ctx.list;
 	}
+	if (!method->is_generic && !method->klass->is_generic && ctx.signature->has_type_parameters) {
+		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Method and signature don't match in terms of genericity"));
+		finish_collect_stats ();
+		return ctx.list;
+	}
+
 	ctx.header = mono_method_get_header (method);
 	if (!ctx.header) {
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method header"));
