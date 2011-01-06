@@ -23,13 +23,18 @@ extern gint8 nacl_align_byte;
 
 #if defined( __native_client_codegen__ ) && defined( TARGET_X86 )
 #define x86_codegen_pre(inst_ptr_ptr, inst_len) do { mono_nacl_align_inst(inst_ptr_ptr, inst_len); } while (0)
-#define x86_call_sequence_pre(inst) guint8* _code_start = (inst);
-#define x86_call_sequence_post(inst) \
+#define x86_call_sequence_pre_val(inst) guint8* _code_start = (inst);
+#define x86_call_sequence_post_val(inst) \
   (mono_nacl_align_call(&_code_start, &(inst)), _code_start);
+#define x86_call_sequence_pre(inst) x86_call_sequence_pre_val((inst))
+#define x86_call_sequence_post(inst) x86_call_sequence_post_val((inst))
 #else
 #define x86_codegen_pre(inst_ptr_ptr, inst_len) do {} while (0)
-#define x86_call_sequence_pre(inst) guint8* _code_start = (inst);
-#define x86_call_sequence_post(inst) _code_start
+/* Two variants are needed to avoid warnings */
+#define x86_call_sequence_pre_val(inst) guint8* _code_start = (inst);
+#define x86_call_sequence_post_val(inst) _code_start
+#define x86_call_sequence_pre(inst)
+#define x86_call_sequence_post(inst)
 #endif  /* __native_client_codegen__ */
 
 
@@ -2064,11 +2069,11 @@ typedef union {
 		int _x86_offset; \
 		guint8* call_start; \
 		guint8* _aligned_start; \
-		x86_call_sequence_pre((inst)); \
+		x86_call_sequence_pre_val((inst)); \
 		_x86_offset = (unsigned char*)(target) - (inst);	\
 		_x86_offset -= 5;	\
 		x86_call_imm_body ((inst), _x86_offset);	\
-		_aligned_start = x86_call_sequence_post((inst)); \
+		_aligned_start = x86_call_sequence_post_val((inst)); \
 		call_start = _aligned_start; \
 		_x86_offset = (unsigned char*)(target) - (_aligned_start);	\
 		_x86_offset -= 5;	\

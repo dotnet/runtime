@@ -757,10 +757,11 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	/* If this struct can't be split up naturally into 8-byte */
 	/* chunks (registers), pass it on the stack.              */
 	if (sig->pinvoke && !pass_on_stack) {
-		info = mono_marshal_load_type_info (klass);
-		g_assert(info);
 		guint32 align;
 		guint32 field_size;
+
+		info = mono_marshal_load_type_info (klass);
+		g_assert(info);
 		for (i = 0; i < info->num_fields; ++i) {
 			field_size = mono_marshal_type_size (info->fields [i].field->type, 
 							   info->fields [i].mspec, 
@@ -7233,7 +7234,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_R8:
 		case MONO_PATCH_INFO_R4: {
-			guint8 *pos, *patch_pos, *target_pos;
+			guint8 *pos, *patch_pos;
+			guint32 target_pos;
 
 			/* The SSE opcodes require a 16 byte alignment */
 #if defined(__default_codegen__)

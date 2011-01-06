@@ -384,7 +384,9 @@ mono_compute_natural_loops (MonoCompile *cfg)
 			/* The loop body start is the first bblock in the order they will be emitted */
 			MonoBasicBlock *h = cfg->bblocks [i];
 			MonoBasicBlock *body_start = h;
+#if defined(__native_client_codegen__)
 			MonoInst *inst;
+#endif
 			GList *l;
 
 			for (l = h->loop_blocks; l; l = l->next) {
