@@ -1320,13 +1320,11 @@ simd_intrinsic_emit_shuffle (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mo
 	int vreg, vreg2 = -1;
 	int param_count = mono_method_signature (cmethod)->param_count;
 
-printf ("shuffle\n");
 	if (args [param_count - 1]->opcode != OP_ICONST) {
 		/*TODO Shuffle with non literals is not yet supported */
 		return NULL;
 	}
 
-printf ("shuffle again\n");
 	vreg = get_simd_vreg (cfg, cmethod, args [0]);
 	if (param_count == 3)
 		vreg2 = get_simd_vreg (cfg, cmethod, args [1]);
