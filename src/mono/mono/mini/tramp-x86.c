@@ -577,7 +577,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	x86_jump_code (buf, tramp);
 	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
 
-	nacl_domain_code_validate (domain, &code, kNaClAlignment, &buf);
+	nacl_domain_code_validate (domain, &code, NACL_SIZE (4, kNaClAlignment), &buf);
 
 	mono_arch_flush_icache (code, buf - code);
 
