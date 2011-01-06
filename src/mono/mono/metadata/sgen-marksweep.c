@@ -715,7 +715,7 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 
 	old_num_sections = num_major_sections;
 
-	obj = alloc_obj (size, FALSE, vtable->klass->has_references);
+	obj = alloc_obj (size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	if (G_LIKELY (obj)) {
 		*(MonoVTable**)obj = vtable;
 		HEAVY_STAT (++stat_objects_alloced_degraded);
@@ -1816,10 +1816,10 @@ mono_sgen_marksweep_init
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);
 
-
+#ifdef SGEN_HAVE_CARDTABLE
 	/*cardtable requires major pages to be 8 cards aligned*/
 	g_assert ((MS_BLOCK_SIZE % (8 * CARD_SIZE_IN_BYTES)) == 0);
-
+#endif
 }
 
 #endif

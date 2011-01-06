@@ -99,6 +99,10 @@ guint32 mono_jit_tls_id = -1;
 MINI_FAST_TLS_DECLARE(mono_jit_tls);
 #endif
 
+#ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
+#define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 1
+#endif
+
 MonoTraceSpec *mono_jit_trace_calls = NULL;
 gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
@@ -1128,6 +1132,18 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	inst->backend.is_pinvoke = 0;
 	inst->dreg = vreg;
 
+	if (cfg->compute_gc_maps) {
+		if (type->byref) {
+			mono_mark_vreg_as_mp (cfg, vreg);
+		} else {
+			MonoType *t = mini_type_get_underlying_type (NULL, type);
+			if ((MONO_TYPE_ISSTRUCT (t) && inst->klass->has_references) || MONO_TYPE_IS_REFERENCE (t)) {
+				inst->flags |= MONO_INST_GC_TRACK;
+				mono_mark_vreg_as_ref (cfg, vreg);
+			}
+		}
+	}
+	
 	cfg->varinfo [num] = inst;
 
 	MONO_INIT_VARINFO (&cfg->vars [num], num);
@@ -1217,6 +1233,38 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 
 	return mono_compile_create_var_for_vreg (cfg, type, opcode, dreg);
 }
+
+void
+mono_mark_vreg_as_ref (MonoCompile *cfg, int vreg)
+{
+	if (vreg >= cfg->vreg_is_ref_len) {
+		gboolean *tmp = cfg->vreg_is_ref;
+		int size = cfg->vreg_is_ref_len;
+
+		while (vreg >= cfg->vreg_is_ref_len)
+			cfg->vreg_is_ref_len = cfg->vreg_is_ref_len ? cfg->vreg_is_ref_len * 2 : 32;
+		cfg->vreg_is_ref = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * cfg->vreg_is_ref_len);
+		if (size)
+			memcpy (cfg->vreg_is_ref, tmp, size * sizeof (gboolean));
+	}
+	cfg->vreg_is_ref [vreg] = TRUE;
+}	
+
+void
+mono_mark_vreg_as_mp (MonoCompile *cfg, int vreg)
+{
+	if (vreg >= cfg->vreg_is_mp_len) {
+		gboolean *tmp = cfg->vreg_is_mp;
+		int size = cfg->vreg_is_mp_len;
+
+		while (vreg >= cfg->vreg_is_mp_len)
+			cfg->vreg_is_mp_len = cfg->vreg_is_mp_len ? cfg->vreg_is_mp_len * 2 : 32;
+		cfg->vreg_is_mp = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * cfg->vreg_is_mp_len);
+		if (size)
+			memcpy (cfg->vreg_is_mp, tmp, size * sizeof (gboolean));
+	}
+	cfg->vreg_is_mp [vreg] = TRUE;
+}	
 
 /*
  * Transform a MonoInst into a load from the variable of index var_index.
@@ -2462,8 +2510,11 @@ mono_get_lmf (void)
 
 	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
 		return jit_tls->lmf;
-
-	g_assert_not_reached ();
+	/*
+	 * We do not assert here because this function can be called from
+	 * mini-gc.c on a thread that has not executed any managed code, yet
+	 * (the thread object allocation can trigger a collection).
+	 */
 	return NULL;
 #endif
 }
@@ -3537,6 +3588,7 @@ mono_codegen (MonoCompile *cfg)
 	/* emit code all basic blocks */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		bb->native_offset = cfg->code_len;
+		bb->real_native_offset = cfg->code_len;
 		//if ((bb == cfg->bb_entry) || !(bb->region == -1 && !bb->dfn))
 			mono_arch_output_basic_block (cfg, bb);
 		bb->native_length = cfg->code_len - bb->native_offset;
@@ -3881,9 +3933,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				/*
 				 * Extend the try block backwards to include parts of the previous call
 				 * instruction.
-				 * FIXME: This is arch specific.
 				 */
-				ei->try_start = (guint8*)ei->try_start - 1;
+				ei->try_start = (guint8*)ei->try_start - MONO_ARCH_MONITOR_ENTER_ADJUSTMENT;
 			}
 			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
 			g_assert (tblock);
@@ -4781,12 +4832,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	else
 		InterlockedIncrement (&mono_jit_stats.methods_without_llvm);
 
-	if (cfg->verbose_level >= 2) {
-		char *id =  mono_method_full_name (cfg->method, FALSE);
-		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
-		g_free (id);
-	}
-
 	cfg->jit_info = create_jit_info (cfg, method_to_compile);
 
 #ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
@@ -4803,6 +4848,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mini_gc_create_gc_map (cfg);
  
 	mono_save_seq_point_info (cfg);
+
+	if (cfg->verbose_level >= 2) {
+		char *id =  mono_method_full_name (cfg->method, FALSE);
+		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
+		g_free (id);
+	}
 
 	if (!cfg->compile_aot) {
 		mono_domain_lock (cfg->domain);
@@ -6220,6 +6271,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_handler (mono_get_throw_exception ());
 
 	mono_icall_init ();
+
+	/* This should come after mono_init () too */
+	mini_gc_init ();
 
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 
 				ves_icall_get_frame_info);

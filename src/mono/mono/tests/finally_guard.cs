@@ -70,7 +70,7 @@ class Driver {
 		} catch (Exception e) {
 			if (!(e is ArgumentException))
 				result |= 0x4;
-			Console.WriteLine ("caught/1 a {0} while on {1}", e.GetType (), Thread.CurrentThread.ThreadState);
+			Console.WriteLine ("caught/1 a {0} while on {1} res {2}", e.GetType (), Thread.CurrentThread.ThreadState, result);
 		}
 	}
 
@@ -81,7 +81,7 @@ class Driver {
 		} catch (Exception e) {
 			if (!(e is ThreadAbortException))
 				result |= 0x8;
-			Console.WriteLine ("caught/2 a {0} while on {1}", e.GetType (), Thread.CurrentThread.ThreadState);
+			Console.WriteLine ("caught/2 a {0} while on {1} res {2}", e.GetType (), Thread.CurrentThread.ThreadState, result);
 		}
 	}
 
@@ -124,7 +124,7 @@ class Driver {
 		} catch (Exception e) {
 			if (!(e is ArgumentException))
 				result |= 0x4;
-			Console.WriteLine ("caught/1 a {0} while on {1}", e.GetType (), Thread.CurrentThread.ThreadState);
+			Console.WriteLine ("caught/3 a {0} while on {1} res {2}", e.GetType (), Thread.CurrentThread.ThreadState, result);
 		}
 	}
 
@@ -134,7 +134,7 @@ class Driver {
 			InnerFromEH1 ();
 		} catch (Exception e) {
 			result |= 0x8;
-			Console.WriteLine ("caught/2 a {0} while on {1}", e.GetType (), Thread.CurrentThread.ThreadState);
+			Console.WriteLine ("caught/4 a {0} while on {1}", e.GetType (), Thread.CurrentThread.ThreadState);
 		}
 	}
 
@@ -173,9 +173,9 @@ class Driver {
 			Console.WriteLine ("After finally");
 			result |= 0x10;
 		} catch (Exception e) {
-			Console.WriteLine ("caught/1 a {0} while on {1}", e.GetType (), Thread.CurrentThread.ThreadState);
 			if (!(e is ThreadAbortException))
 				result |= 0x4;
+			Console.WriteLine ("caught/5 a {0} while on {1} res {2}", e.GetType (), Thread.CurrentThread.ThreadState, result);
 		}
 	}
 
@@ -184,9 +184,9 @@ class Driver {
 		try {
 			InnerFromEH ();
 		} catch (Exception e) {
-			Console.WriteLine ("caught/2 a {0} while on {1}", e.GetType (), Thread.CurrentThread.ThreadState);
 			if (!(e is ThreadAbortException))
 				result |= 0x8;
+			Console.WriteLine ("caught/6 a {0} while on {1} res {2}", e.GetType (), Thread.CurrentThread.ThreadState, result);
 		}
 	}
 
@@ -196,6 +196,8 @@ class Driver {
 			Console.WriteLine ("Unhandled {0}",  sender.ExceptionObject);
 		};
 
+		finally_done = false;
+		result = 0;
 		Action ac = GuardFromEH;
 		handle = new ManualResetEvent (false);
 		var res = ac.BeginInvoke (null, null);

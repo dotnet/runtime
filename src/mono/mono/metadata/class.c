@@ -1217,11 +1217,6 @@ static gpointer
 mono_class_alloc (MonoClass *class, int size)
 {
 	if (class->generic_class)
-		/*
-		 * This should be freed in free_generic_class () in metadata.c.
-		 * FIXME: It would be better to allocate this from the image set mempool, by
-		 * adding an image_set field to MonoGenericClass.
-		 */
 		return mono_image_set_alloc (class->generic_class->owner, size);
 	else
 		return mono_image_alloc (class->image, size);
@@ -5466,7 +5461,14 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	 */
 
 	if (gklass->parent) {
-		klass->parent = mono_class_inflate_generic_class (gklass->parent, mono_generic_class_get_context (gclass));
+		MonoError error;
+		klass->parent = mono_class_inflate_generic_class_checked (gklass->parent, mono_generic_class_get_context (gclass), &error);
+		if (!mono_error_ok (&error)) {
+			/*Set parent to something safe as the runtime doesn't handle well this kind of failure.*/
+			klass->parent = mono_defaults.object_class;
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_error_cleanup (&error);
+		}
 	}
 
 	if (klass->parent)
@@ -7366,7 +7368,12 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 			if (tb && tb->interfaces) {
 				for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
 					MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
-					MonoClass *iface_class = mono_class_from_mono_type (iface->type);
+					MonoClass *iface_class;
+
+					/* we can't realize the type here since it can do pretty much anything. */
+					if (!iface->type)
+						continue;
+					iface_class = mono_class_from_mono_type (iface->type);
 					if (iface_class == target)
 						return TRUE;
 					if (is_variant && mono_class_is_variant_compatible_slow (target, iface_class))

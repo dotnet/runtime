@@ -48,7 +48,11 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 	if (timeout_ms == (guint32) 0xFFFFFFFF)
 		return mono_sem_wait (sem, alertable);
 
+#ifdef USE_MACH_SEMA
+	memset (&t, 0, sizeof (TIMESPEC));
+#else
 	gettimeofday (&t, NULL);
+#endif
 	ts.tv_sec = timeout_ms / 1000 + t.tv_sec;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000 + t.tv_usec * 1000;
 	while (ts.tv_nsec > NSEC_PER_SEC) {
@@ -73,7 +77,11 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 		struct timeval current;
 		if (alertable)
 			return -1;
+#ifdef USE_MACH_SEMA
+		memset (&current, 0, sizeof (TIMESPEC));
+#else
 		gettimeofday (&current, NULL);
+#endif
 		ts = copy;
 		ts.tv_sec -= (current.tv_sec - t.tv_sec);
 		ts.tv_nsec -= (current.tv_usec - t.tv_usec) * 1000;
@@ -91,7 +99,10 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 		}
 	}
 #endif
-	return (res != -1);
+	/* OSX might return > 0 for error */
+	if (res != 0)
+		res = -1;
+	return res;
 }
 
 int
@@ -107,6 +118,9 @@ mono_sem_wait (MonoSemType *sem, gboolean alertable)
 		if (alertable)
 			return -1;
 	}
+	/* OSX might return > 0 for error */
+	if (res != 0)
+		res = -1;
 	return res;
 }
 
@@ -118,6 +132,9 @@ mono_sem_post (MonoSemType *sem)
 	while ((res = sem_post (sem) == -1) && errno == EINTR);
 #else
 	while ((res = semaphore_signal (*sem) == -1) && errno == EINTR);
+	/* OSX might return > 0 for error */
+	if (res != 0)
+		res = -1;
 #endif
 	return res;
 }

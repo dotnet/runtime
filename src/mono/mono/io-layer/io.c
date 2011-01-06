@@ -28,6 +28,10 @@
 #include <fnmatch.h>
 #include <stdio.h>
 #include <utime.h>
+#ifdef __linux__
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+#endif
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -797,6 +801,34 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 		_wapi_set_last_error_from_errno ();
 		return(INVALID_FILE_SIZE);
 	}
+	
+	/* fstat indicates block devices as zero-length, so go a different path */
+#ifdef BLKGETSIZE64
+	if (S_ISBLK(statbuf.st_mode)) {
+		guint64 bigsize;
+		if (ioctl(fd, BLKGETSIZE64, &bigsize) < 0) {
+#ifdef DEBUG
+			g_message ("%s: handle %p ioctl BLKGETSIZE64 failed: %s",
+				   __func__, handle, strerror(errno));
+#endif
+
+			_wapi_set_last_error_from_errno ();
+			return(INVALID_FILE_SIZE);
+		}
+		
+		size = bigsize & 0xFFFFFFFF;
+		if (highsize != NULL) {
+			*highsize = bigsize>>32;
+		}
+
+#ifdef DEBUG
+		g_message ("%s: Returning block device size %d/%d",
+			   __func__, size, *highsize);
+#endif
+	
+		return(size);
+	}
+#endif
 	
 #ifdef HAVE_LARGE_FILE_SUPPORT
 	size = statbuf.st_size & 0xFFFFFFFF;

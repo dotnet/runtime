@@ -27,4 +27,10 @@ gboolean mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji) MO
 void
 mono_debugger_agent_handle_exception (MonoException *ext, MonoContext *throw_ctx, MonoContext *catch_ctx) MONO_INTERNAL;
 
+void
+mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx) MONO_INTERNAL;
+
+void
+mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx) MONO_INTERNAL;
+
 #endif

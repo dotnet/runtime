@@ -214,8 +214,14 @@ libmonoruntime_la_SOURCES = \
 
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
 
+if MOONLIGHT
 libmonoruntimemoon_la_SOURCES = $(libmonoruntime_la_SOURCES)
+if MOONLIGHT_BOEHM
 libmonoruntimemoon_la_CFLAGS = $(MOONLIGHT_DEFINES) $(BOEHM_DEFINES)
+else
+libmonoruntimemoon_la_CFLAGS = $(MOONLIGHT_DEFINES) $(SGEN_DEFINES)
+endif
+endif
 
 libmonoruntimesgen_la_SOURCES = $(libmonoruntime_la_SOURCES)
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES)

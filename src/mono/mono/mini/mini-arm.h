@@ -213,5 +213,8 @@ mono_arm_thumb_supported (void);
 GSList*
 mono_arm_get_exception_trampolines (gboolean aot) MONO_INTERNAL;
 
+guint8*
+mono_arm_get_thumb_plt_entry (guint8 *code) MONO_INTERNAL;
+
 #endif /* __MONO_MINI_ARM_H__ */
 

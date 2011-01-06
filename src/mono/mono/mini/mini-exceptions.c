@@ -212,7 +212,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	if (managed)
 		*managed = FALSE;
 
-	err = mono_arch_find_jit_info (domain, jit_tls, ji, ctx, new_ctx, lmf, &frame);
+	err = mono_arch_find_jit_info (domain, jit_tls, ji, ctx, new_ctx, lmf, NULL, &frame);
 	if (!err)
 		return (gpointer)-1;
 
@@ -324,11 +324,16 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
  * - These frames are used to mark managed-to-native transitions, so CTX will refer to native
  * code, and new_ctx will refer to the last managed frame. The caller should unwind once more
  * to obtain the last managed frame.
+ * If SAVE_LOCATIONS is not NULL, it should point to an array of size MONO_MAX_IREGS.
+ * On return, it will be filled with the locations where callee saved registers are saved
+ * by the current frame. This is returned outside of StackFrameInfo because it can be
+ * quite large on some platforms.
  */
 gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						MonoJitInfo *prev_ji, MonoContext *ctx,
 						MonoContext *new_ctx, char **trace, MonoLMF **lmf,
+						mgreg_t **save_locations,
 						StackFrameInfo *frame)
 {
 	gboolean err;
@@ -348,7 +353,10 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (!target_domain)
 		target_domain = domain;
 
-	err = mono_arch_find_jit_info (target_domain, jit_tls, ji, ctx, new_ctx, lmf, frame);
+	if (save_locations)
+		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (mgreg_t*));
+
+	err = mono_arch_find_jit_info (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
 	if (!err)
 		return FALSE;
 
@@ -710,7 +718,7 @@ mono_walk_stack (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_c
 
 	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		frame.lmf = lmf;
-		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
+		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (!res)
 			return;
 
@@ -767,7 +775,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	new_ctx = ctx;
 	do {
 		ctx = new_ctx;
-		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, &frame);
+		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (!res)
 			return FALSE;
 
@@ -1185,7 +1193,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gpoin
 		
 		StackFrameInfo frame;
 
-		unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, &frame);
+		unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (unwind_res) {
 			if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE || frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
 				*ctx = new_ctx;
@@ -1268,16 +1276,45 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gpoin
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					mono_perfcounters->exceptions_filters++;
 					mono_debugger_call_exception_handler (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), ex_obj);
+					if (mono_ex && !initial_trace_ips) {
+						trace_ips = g_list_reverse (trace_ips);
+						MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));
+
+						if (has_dynamic_methods)
+							/* These methods could go away anytime, so compute the stack trace now */
+							MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
+					}
+					g_list_free (trace_ips);
+					trace_ips = NULL;
+
+					if (ji->from_llvm) {
+#ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
+						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+#else
+						g_assert_not_reached ();
+#endif
+					} else {
+						/* store the exception object in bp + ei->exvar_offset */
+						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
+					}
+
+					mono_debugger_agent_begin_exception_filter (mono_ex, ctx, &initial_ctx);
 					filtered = call_filter (ctx, ei->data.filter);
+					mono_debugger_agent_end_exception_filter (mono_ex, ctx, &initial_ctx);
 					if (filtered && out_filter_idx)
 						*out_filter_idx = filter_idx;
 					if (out_ji)
 						*out_ji = ji;
 					filter_idx ++;
+
+					if (filtered) {
+						/* mono_debugger_agent_handle_exception () needs this */
+						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
+						return TRUE;
+					}
 				}
 
-				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-					 mono_object_isinst (ex_obj, catch_class)) || filtered) {
+				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst (ex_obj, catch_class)) {
 					if (mono_ex && !initial_trace_ips) {
 						trace_ips = g_list_reverse (trace_ips);
 						MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (trace_ips, mono_defaults.int_class));
@@ -1462,7 +1499,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		} else {
 			StackFrameInfo frame;
 
-			unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, &frame);
+			unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 			if (unwind_res) {
 				if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE || frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
 					*ctx = new_ctx;
@@ -1547,7 +1584,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					 */
 					if (G_UNLIKELY (jit_tls->handler_block_return_address)) {
 						gboolean is_outside = FALSE;
-						gpointer prot_bp = MONO_CONTEXT_GET_BP (&jit_tls->ex_ctx);
+						gpointer prot_bp = MONO_CONTEXT_GET_BP (&jit_tls->handler_block_context);
 						gpointer catch_bp = MONO_CONTEXT_GET_BP (ctx);
 						//FIXME make this stack direction aware
 						if (catch_bp > prot_bp) {
@@ -1562,7 +1599,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							 *	There aren't any further finally/fault handler blocks down the stack over this exception.
 							 *   This must be ensured by the code that installs the guard trampoline.
 							 */
-							g_assert (ji == mini_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (&jit_tls->ex_ctx), NULL));
+							g_assert (ji == mini_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (&jit_tls->handler_block_context), NULL));
 
 							if (!is_address_protected (ji, jit_tls->handler_block, ei->handler_start)) {
 								is_outside = TRUE;
@@ -2300,7 +2337,7 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	if (!data.ji)
 		return FALSE;
 
-	memcpy (&jit_tls->ex_ctx, &data.ctx, sizeof (MonoContext));
+	memcpy (&jit_tls->handler_block_context, &data.ctx, sizeof (MonoContext));
 
 	resume_ip = install_handler_block_guard (data.ji, &data.ctx);
 	if (resume_ip == NULL)

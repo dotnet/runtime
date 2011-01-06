@@ -59,6 +59,16 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 		guint32 offset = ((guint32*)code)[2];
 		
 		jump_entry = code + offset + 12;
+	} else if (*(guint16*)(code - 4) == 0xf8df) {
+		/* 
+		 * Thumb PLT entry, begins with ldr.w ip, [pc, #8], code points to entry + 4, see
+		 * mono_arm_get_thumb_plt_entry ().
+		 */
+		guint32 offset;
+
+		code -= 4;
+		offset = *(guint32*)(code + 12);
+		jump_entry = code + offset + 8;
 	} else {
 		g_assert_not_reached ();
 	}
@@ -730,4 +740,53 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
 {
 	/* The offset is stored as the 4th word of the plt entry */
 	return ((guint32*)plt_entry) [3];
+}
+
+/*
+ * Return the address of the PLT entry called by the thumb code CODE.
+ */
+guint8*
+mono_arm_get_thumb_plt_entry (guint8 *code)
+{
+	int s, j1, j2, imm10, imm11, i1, i2, imm32;
+	guint8 *bl, *base;
+	guint16 t1, t2;
+	guint8 *target;
+
+	/* code should be right after a BL */
+	code = (guint8*)((mgreg_t)code & ~1);
+	base = (guint8*)((mgreg_t)code & ~3);
+	bl = code - 4;
+	t1 = ((guint16*)bl) [0];
+	t2 = ((guint16*)bl) [1];
+
+	g_assert ((t1 >> 11) == 0b11110);
+
+	s = (t1 >> 10) & 0x1;
+	imm10 = (t1 >> 0) & 0x3ff;
+	j1 = (t2 >> 13) & 0x1;
+	j2 = (t2 >> 11) & 0x1;
+	imm11 = t2 & 0x7ff;
+
+	i1 = (s ^ j1) ? 0 : 1;
+	i2 = (s ^ j2) ? 0 : 1;
+
+	imm32 = (imm11 << 1) | (imm10 << 12) | (i2 << 22) | (i1 << 23);
+	// FIXME:
+	g_assert (s == 0);
+
+	target = code + imm32;
+
+	/* target now points to the thumb plt entry */
+	/* ldr.w r12, [pc, #8] */
+	g_assert (((guint16*)target) [0] == 0xf8df);
+	g_assert (((guint16*)target) [1] == 0xc008);
+
+	/* 
+	 * The PLT info offset is at offset 16, but mono_arch_get_plt_entry_offset () returns
+	 * the 3rd word, so compensate by returning a different value.
+	 */
+	target += 4;
+
+	return target;
 }

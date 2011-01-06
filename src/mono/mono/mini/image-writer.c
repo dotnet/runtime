@@ -381,9 +381,11 @@ bin_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
 	BinReloc *reloc;
 
-	if (!target)
-		// FIXME:
-		g_assert_not_reached ();
+	if (!target) {
+		acfg->cur_section->cur_offset += sizeof (gpointer);
+		return;
+	}
+
 	reloc = g_new0 (BinReloc, 1);
 	reloc->val1 = g_strdup (target);
 	reloc->section = acfg->cur_section;
@@ -1777,6 +1779,17 @@ asm_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char*
 #else
 	start = get_label (start);
 	end = get_label (end);
+
+	if (offset == 0 && strcmp (start, ".") != 0) {
+		char symbol [128];
+		sprintf (symbol, ".LDIFF_SYM%d", acfg->label_gen);
+		acfg->label_gen ++;
+		fprintf (acfg->fp, "\n%s=%s - %s", symbol, end, start);
+		fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
+		fprintf (acfg->fp, "%s", symbol);
+		return;
+	}
+
 	if ((acfg->col_count++ % 8) == 0)
 		fprintf (acfg->fp, "\n\t%s ", AS_INT32_DIRECTIVE);
 	else

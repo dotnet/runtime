@@ -1941,7 +1941,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 #endif
 	/* The two can't be used together, so use only one LLVM calling conv to pass them */
 	g_assert (!(call->rgctx_arg_reg && call->imt_arg_reg));
-	LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
+	if (!sig->pinvoke)
+		LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
 
 	if (call->rgctx_arg_reg)
 		LLVMAddInstrAttribute (lcall, 1 + sinfo.rgctx_arg_pindex, LLVMInRegAttribute);
@@ -2064,12 +2065,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			LLVMSetLinkage (type_info, LLVMPrivateLinkage);
 			LLVMSetVisibility (type_info, LLVMHiddenVisibility);
-
-			/*
-			 * Put this into the .text section so it needs less relocations/stubs, if
-			 * the LSDA is in the .text section too.
-			 */
-			LLVMSetSection (type_info, "text");
 
 			/* 
 			 * Enabling this causes llc to crash:
@@ -2310,6 +2305,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				cmp = LLVMBuildFCmp (builder, fpcond_to_llvm_cond [rel], convert (ctx, lhs, LLVMDoubleType ()), convert (ctx, rhs, LLVMDoubleType ()), "");
 			else if (ins->opcode == OP_COMPARE_IMM)
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), "");
+			else if (ins->opcode == OP_LCOMPARE_IMM) {
+				if (SIZEOF_REGISTER == 4 && COMPILE_LLVM (cfg))  {
+					/* The immediate is encoded in two fields */
+					guint64 l = ((guint64)(guint32)ins->inst_offset << 32) | ((guint32)ins->inst_imm);
+					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, LLVMInt64Type ()), LLVMConstInt (LLVMInt64Type (), l, FALSE), "");
+				} else {
+					cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, LLVMInt64Type ()), LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE), "");
+				}
+			}
 			else if (ins->opcode == OP_COMPARE)
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], convert (ctx, lhs, IntPtrType ()), convert (ctx, rhs, IntPtrType ()), "");
 			else
@@ -2409,6 +2413,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_MOVE:
 		case OP_LMOVE:
 		case OP_XMOVE:
+		case OP_SETFRET:
 			g_assert (lhs);
 			values [ins->dreg] = lhs;
 			break;
@@ -3733,8 +3738,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	MonoBasicBlock *bb;
 	LLVMTypeRef method_type;
-	LLVMValueRef method = NULL, debug_alias = NULL;
-	char *method_name, *debug_name = NULL;
+	LLVMValueRef method = NULL;
+	char *method_name;
 	LLVMValueRef *values;
 	int i, max_block_num, bb_index;
 	gboolean last = FALSE;
@@ -3787,12 +3792,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (cfg->compile_aot) {
 		ctx->lmodule = &aot_module;
 		method_name = mono_aot_get_method_name (cfg);
-		debug_name = mono_aot_get_method_debug_name (cfg);
+		cfg->llvm_method_name = g_strdup (method_name);
 	} else {
 		init_jit_module ();
 		ctx->lmodule = &jit_module;
 		method_name = mono_method_full_name (cfg->method, TRUE);
-		debug_name = NULL;
 	}
 	
 	module = ctx->module = ctx->lmodule->module;
@@ -3843,6 +3847,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
 #endif
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
+
+	if (cfg->compile_aot) {
+		LLVMSetLinkage (method, LLVMInternalLinkage);
+		LLVMSetVisibility (method, LLVMHiddenVisibility);
+	} else {
+		LLVMSetLinkage (method, LLVMPrivateLinkage);
+	}
 
 	if (cfg->method->save_lmf)
 		LLVM_FAILURE (ctx, "lmf");
@@ -4067,14 +4078,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	if (cfg->compile_aot) {
 		/* Don't generate native code, keep the LLVM IR */
-
-		/* Can't delete the method if it has an alias, so only add it if successful */
-		if (debug_name) {
-			debug_alias = LLVMAddAlias (module, LLVMTypeOf (method), method, debug_name);
-			LLVMSetLinkage (debug_alias, LLVMInternalLinkage);
-			LLVMSetVisibility (debug_alias, LLVMHiddenVisibility);
-		}
-
 		if (cfg->compile_aot && cfg->verbose_level)
 			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), method_name);
 
@@ -4122,7 +4125,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	g_free (ctx->pindexes);
 	g_free (ctx->is_dead);
 	g_free (ctx->unreachable);
-	g_free (debug_name);
 	g_ptr_array_free (phi_values, TRUE);
 	g_free (ctx->bblocks);
 	g_hash_table_destroy (ctx->region_to_handler);

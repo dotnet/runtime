@@ -163,6 +163,9 @@ mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 void
 mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
 {
+	/* Clear thumb bit */
+	eip &= ~1;
+
 	mono_arm_throw_exception ((MonoObject*)mono_exception_from_token (mono_defaults.corlib, type_token), eip, esp, int_regs, fp_regs);
 }
 
@@ -365,7 +368,8 @@ mono_arch_exceptions_init (void)
 gboolean
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 MonoContext *new_ctx, MonoLMF **lmf,
+							 mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -399,7 +403,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
-						   ip, regs, MONO_MAX_IREGS, &cfa);
+						   ip, regs, MONO_MAX_IREGS,
+						   save_locations, MONO_MAX_IREGS, &cfa);
 
 		for (i = 0; i < 16; ++i)
 			new_ctx->regs [i] = regs [i];
@@ -410,6 +415,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			/* remove any unused lmf */
 			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
+
+		/* Clear thumb bit */
+		new_ctx->eip &= ~1;
 
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->eip--;
@@ -456,6 +464,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->regs [ARMREG_LR] = (*lmf)->iregs [ARMREG_LR - 1];
 		new_ctx->esp = (*lmf)->iregs [ARMREG_IP];
 		new_ctx->eip = new_ctx->regs [ARMREG_LR];
+
+		/* Clear thumb bit */
+		new_ctx->eip &= ~1;
 
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->eip--;
@@ -556,6 +567,9 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	if ((gsize)UCONTEXT_REG_PC (sigctx) & 1)
 		/* Transition to thumb */
 		UCONTEXT_REG_CPSR (sigctx) |= (1 << 5);
+	else
+		/* Transition to ARM */
+		UCONTEXT_REG_CPSR (sigctx) &= ~(1 << 5);
 #endif
 
 	return TRUE;

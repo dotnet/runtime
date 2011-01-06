@@ -280,7 +280,7 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
 
-	if (!klass->has_references)
+	if (!SGEN_VTABLE_HAS_REFERENCES (vt))
 		return;
 
 	if (vt->rank) {

@@ -148,6 +148,11 @@ struct sigcontext {
 /*This is the max size of the locals area of a given frame. I think 1MB is a safe default for now*/
 #define MONO_ARCH_MAX_FRAME_SIZE 0x100000
 
+/*This is how much a try block must be extended when is is preceeded by a Monitor.Enter() call.
+It's 4 bytes as this is how many bytes + 1 that 'add 0x10, %esp' takes. It is used to pop the arguments from
+the monitor.enter call and must be already protected.*/
+#define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 4
+
 struct MonoLMF {
 	/* 
 	 * If the lowest bit is set to 1, then this is a trampoline LMF frame.
@@ -313,6 +318,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
 
 #define MONO_ARCH_HAVE_CARD_TABLE_WBARRIER 1
+#define MONO_ARCH_GC_MAPS_SUPPORTED 1
 
 gboolean
 mono_x86_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig) MONO_INTERNAL;

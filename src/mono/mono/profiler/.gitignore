@@ -6,4 +6,8 @@
 /*.o
 /*.lo
 /*.la
+/*.a
+/*.so
+/*.exe
+/*.mdb
 /TAGS

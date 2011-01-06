@@ -215,6 +215,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/2.0/csharp.exe*
 %_prefix/lib/mono/2.0/gacutil.exe*
 %_prefix/lib/mono/2.0/gmcs.exe*
+%_prefix/lib/mono/2.0/mcs.exe*
 %_prefix/lib/mono/2.0/mscorlib.dll*
 %_prefix/lib/mono/4.0/Commons.Xml.Relaxng.dll
 %_prefix/lib/mono/4.0/CustomMarshalers.dll

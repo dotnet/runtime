@@ -925,6 +925,9 @@ mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller) MONO_INTERNAL;
 gboolean
 mono_class_field_is_special_static (MonoClassField *field) MONO_INTERNAL;
 
+guint32
+mono_class_field_get_special_static_type (MonoClassField *field) MONO_INTERNAL;
+
 gboolean
 mono_class_has_special_static_fields (MonoClass *klass) MONO_INTERNAL;
 

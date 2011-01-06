@@ -6301,12 +6301,13 @@ ves_icall_System_Environment_get_Platform (void)
 #elif defined(__MACH__)
 	/* OSX */
 	//
-	// For compatibility with our client code, this will be 4 for a while.
-	// We will eventually move to 6 to match .NET, but it requires all client
-	// code to be updated and the documentation everywhere to be updated 
-	// first.
+	// Notice that the value is hidden from user code, and only exposed
+	// to mscorlib.   This is due to Mono's Unix/MacOS code predating the
+	// define and making assumptions based on Unix/128/4 values before there
+	// was a MacOS define.    Lots of code would assume that not-Unix meant
+	// Windows, but in this case, it would be OSX. 
 	//
-	return 4;
+	return 6;
 #else
 	/* Unix */
 	return 4;

@@ -870,6 +870,26 @@ MINI_OP(OP_LIVERANGE_START, "liverange_start", NONE, NONE, NONE)
  */
 MINI_OP(OP_LIVERANGE_END, "liverange_end", NONE, NONE, NONE)
 
+/* GC support */
+/*
+ * mono_arch_output_basic_block () will set the backend.pc_offset field to the current pc
+ * offset.
+ */
+MINI_OP(OP_GC_LIVENESS_DEF, "gc_liveness_def", NONE, NONE, NONE)
+MINI_OP(OP_GC_LIVENESS_USE, "gc_liveness_use", NONE, NONE, NONE)
+
+/*
+ * This marks the location inside a basic block where a GC tracked spill slot has been
+ * defined. The spill slot is assumed to be alive until the end of the bblock.
+ */
+MINI_OP(OP_GC_SPILL_SLOT_LIVENESS_DEF, "gc_spill_slot_liveness_def", NONE, NONE, NONE)
+
+/*
+ * This marks the location inside a basic block where a GC tracked param area slot has
+ * been defined. The slot is assumed to be alive until the next call.
+ */
+MINI_OP(OP_GC_PARAM_SLOT_LIVENESS_DEF, "gc_param_slot_liveness_def", NONE, NONE, NONE)
+
 /* Arch specific opcodes */
 /* #if defined(__native_client_codegen__) || defined(__native_client__) */
 /* We have to define these in terms of the TARGET defines, not NaCl defines */

@@ -24,12 +24,13 @@ sgen_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS)
 
+if MOONLIGHT
 moon_libs = \
 	$(monodir)/mono/metadata/libmonoruntimemoon.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) \
-	$(libgc_libs)
+	$(GLIB_LIBS)
+endif
 
 static_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
@@ -496,41 +497,42 @@ monobin_platform_ldflags=-framework CoreFoundation
 endif
 
 libmono_2_0_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
-libmono_2_0_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
+libmono_2_0_la_CFLAGS = $(mono_CFLAGS)
+libmono_2_0_la_LIBADD = $(libs) $(LIBMONO_DTRACE_OBJECT)
 
 libmonosgen_2_0_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmonosgen_2_0_la_CFLAGS = $(AM_CFLAGS) $(SGEN_DEFINES)
+libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
+libmonosgen_2_0_la_LIBADD = $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 
 if MOONLIGHT
 libmono_moon_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmono_moon_la_CFLAGS = $(AM_CFLAGS) $(MOONLIGHT_DEFINES)
+if MOONLIGHT_BOEHM
+libmono_moon_la_CFLAGS = $(mono_CFLAGS) $(MOONLIGHT_DEFINES)
+libmono_moon_la_LIBADD = $(moon_libs) $(libgc_libs) $(LIBMONO_DTRACE_OBJECT)
+else
+libmono_moon_la_CFLAGS = $(mono_sgen_CFLAGS) $(MOONLIGHT_DEFINES)
 libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
+endif
 endif
 
 libmono_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmono_static_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
+libmono_static_la_CFLAGS = $(mono_CFLAGS)
 libmono_static_la_LDFLAGS = -static
 libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
 
 libmonosgen_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmonosgen_static_la_CFLAGS = $(AM_CFLAGS) $(SGEN_DEFINES)
+libmonosgen_static_la_CFLAGS = $(mono_sgen_CFLAGS)
 libmonosgen_static_la_LDFLAGS = -static
 libmonosgen_static_la_LIBADD = $(sgenstatic_libs) $(MONO_DTRACE_OBJECT)
 
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
-nodist_libmono_static_la_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
+nodist_libmono_static_la_CFLAGS = $(mono_CFLAGS)
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
 libmonoinclude_HEADERS = jit.h
-
-libmono_2_0_la_LIBADD = \
-	$(libs) $(LIBMONO_DTRACE_OBJECT)
-
-libmonosgen_2_0_la_LIBADD = \
-	$(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 
 basic-simd.exe: basic-simd.cs
 	$(MCS) -out:$@ $< -r:TestDriver.dll -r:Mono.Simd.dll
@@ -619,7 +621,7 @@ checktests: $(regtests)
 rcheck: mono $(regtests)
 	$(RUNTIME) --regression $(regtests)
 
-LLVM_AOT_RUNTIME_OPTS=$(if ($LLVM),--llvm,)
+LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
 
 aotcheck: mono $(regtests)
 	rm -f *.exe.so

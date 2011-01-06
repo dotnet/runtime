@@ -242,8 +242,8 @@ enum {
  */
 
 static int gc_initialized = 0;
-/* If set, do a minor collection before every allocation */
-static gboolean collect_before_allocs = FALSE;
+/* If set, do a minor collection before every X allocation */
+static guint32 collect_before_allocs = 0;
 /* If set, do a heap consistency check before each minor collection */
 static gboolean consistency_check_at_minor_collection = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
@@ -251,7 +251,7 @@ static gboolean xdomain_checks = FALSE;
 /* If not null, dump the heap after each collection into this file */
 static FILE *heap_dump_file = NULL;
 /* If set, mark stacks conservatively, even if precise marking is possible */
-static gboolean conservative_stack_mark = TRUE;
+gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
@@ -297,6 +297,8 @@ static int stat_wbarrier_set_root = 0;
 static int stat_wbarrier_value_copy = 0;
 static int stat_wbarrier_object_copy = 0;
 #endif
+
+static long long stat_pinned_objects = 0;
 
 static long long time_minor_pre_collection_fragment_clear = 0;
 static long long time_minor_pinning = 0;
@@ -1844,6 +1846,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 			add_profile_gc_root (&report, definitely_pinned [idx], MONO_PROFILE_GC_ROOT_PINNING, 0);
 		notify_gc_roots (&report);
 	}
+	stat_pinned_objects += count;
 	return count;
 }
 
@@ -2004,7 +2007,7 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 				pin_stage_ptr ((void*)addr);
 			if (heap_dump_file)
 				pin_stats_register_address ((char*)addr, pin_type);
-			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p\n", (void*)addr));
+			DEBUG (6, if (count) fprintf (gc_debug_file, "Pinning address %p from %p\n", (void*)addr, start));
 			count++;
 		}
 		start++;
@@ -2783,6 +2786,7 @@ init_stats (void)
 	mono_counters_register ("Major sweep", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_sweep);
 	mono_counters_register ("Major fragment creation", MONO_COUNTER_GC | MONO_COUNTER_LONG, &time_major_fragment_creation);
 
+	mono_counters_register ("Number of pinned objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_pinned_objects);
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_field);
@@ -3594,13 +3598,16 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	g_assert (vtable->gc_descr);
 
 	if (G_UNLIKELY (collect_before_allocs)) {
-		if (nursery_section) {
+		static int alloc_count;
+
+		InterlockedIncrement (&alloc_count);
+		if (((alloc_count % collect_before_allocs) == 0) && nursery_section) {
 			mono_profiler_gc_event (MONO_GC_EVENT_START, 0);
 			stop_world (0);
 			collect_nursery (0);
 			restart_world (0);
 			mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
-			if (!degraded_mode && !search_fragment_for_size (size)) {
+			if (!degraded_mode && !search_fragment_for_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
 				// FIXME:
 				g_assert_not_reached ();
 			}
@@ -3927,7 +3934,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		p = mono_sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		DEBUG (9, g_assert (vtable->klass->inited));
-		p = major_collector.alloc_small_pinned_obj (size, vtable->klass->has_references);
+		p = major_collector.alloc_small_pinned_obj (size, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	}
 	if (G_LIKELY (p)) {
 		DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
@@ -5181,7 +5188,6 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 void*
 mono_gc_scan_object (void *obj)
 {
-	g_assert_not_reached ();
 	if (current_collection_generation == GENERATION_NURSERY)
 		major_collector.copy_object (&obj, &gray_queue);
 	else
@@ -5223,7 +5229,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 static void
 find_pinning_ref_from_thread (char *obj, size_t size)
 {
-	int i;
+	int i, j;
 	SgenThreadInfo *info;
 	char *endobj = obj + size;
 
@@ -5239,7 +5245,12 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 				start++;
 			}
 
-			/* FIXME: check info->stopped_regs */
+			for (j = 0; j < ARCH_NUM_REGS; ++j) {
+				mword w = (mword)info->stopped_regs [j];
+
+				if (w >= (mword)obj && w < (mword)obj + size)
+					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in saved reg %d of thread %p (id %p)\n", obj, j, info, (gpointer)info->id));
+			}
 		}
 	}
 }
@@ -5732,6 +5743,12 @@ unregister_current_thread (void)
 	} else {
 		prev->next = p->next;
 	}
+
+	if (gc_callbacks.thread_detach_func) {
+		gc_callbacks.thread_detach_func (p->runtime_data);
+		p->runtime_data = NULL;
+	}
+
 	if (p->remset) {
 		if (freed_thread_remsets) {
 			for (rset = p->remset; rset->next; rset = rset->next)
@@ -5765,8 +5782,13 @@ mono_gc_register_thread (void *baseptr)
 	LOCK_GC;
 	init_stats ();
 	info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
-	if (info == NULL)
+	if (info == NULL) {
 		info = gc_register_current_thread (baseptr);
+	} else {
+		/* The main thread might get registered before callbacks are set */
+		if (gc_callbacks.thread_attach_func && !info->runtime_data)
+			info->runtime_data = gc_callbacks.thread_attach_func ();
+	}
 	UNLOCK_GC;
 
 	/* Need a better place to initialize this */
@@ -5775,6 +5797,26 @@ mono_gc_register_thread (void *baseptr)
 	}
 
 	return info != NULL;
+}
+
+/*
+ * mono_gc_set_stack_end:
+ *
+ *   Set the end of the current threads stack to STACK_END. The stack space between 
+ * STACK_END and the real end of the threads stack will not be scanned during collections.
+ */
+void
+mono_gc_set_stack_end (void *stack_end)
+{
+	SgenThreadInfo *info;
+
+	LOCK_GC;
+	info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
+	if (info) {
+		g_assert (stack_end < info->stack_end);
+		info->stack_end = stack_end;
+	}
+	UNLOCK_GC;
 }
 
 #if USE_PTHREAD_INTERCEPT
@@ -6185,7 +6227,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		sgen_card_table_mark_range ((mword)dest, size);
 	} else {
 		rs = REMEMBERED_SET;
-		if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !klass->has_references) {
+		if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !SGEN_CLASS_HAS_REFERENCES (klass)) {
 			UNLOCK_GC;
 			return;
 		}
@@ -6882,7 +6924,7 @@ mono_gc_base_init (void)
 		return;
 	}
 	pagesize = mono_pagesize ();
-	gc_debug_file = stderr;
+	gc_debug_file = stdout;
 
 	LOCK_INIT (interruption_mutex);
 	LOCK_INIT (global_remset_mutex);
@@ -6937,6 +6979,9 @@ mono_gc_base_init (void)
 	use_cardtable = FALSE;
 #endif
 
+	/* Keep this the default for now */
+	conservative_stack_mark = TRUE;
+
 	if (opts) {
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
@@ -6970,6 +7015,18 @@ mono_gc_base_init (void)
 				}
 				continue;
 			}
+			if (g_str_has_prefix (opt, "stack-mark=")) {
+				opt = strchr (opt, '=') + 1;
+				if (!strcmp (opt, "precise")) {
+					conservative_stack_mark = FALSE;
+				} else if (!strcmp (opt, "conservative")) {
+					conservative_stack_mark = TRUE;
+				} else {
+					fprintf (stderr, "Invalid value '%s' for stack-mark= option, possible values are: 'precise', 'conservative'.\n", opt);
+					exit (1);
+				}
+				continue;
+			}
 #ifdef USER_CONFIG
 			if (g_str_has_prefix (opt, "nursery-size=")) {
 				long val;
@@ -6999,6 +7056,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  nursery-size=N (where N is an integer, possibly with a k, m or a g suffix)\n");
 				fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-par' or `copying')\n");
 				fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
+				fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
 				if (major_collector.print_gc_param_usage)
 					major_collector.print_gc_param_usage ();
 				exit (1);
@@ -7033,7 +7091,10 @@ mono_gc_base_init (void)
 					g_free (rf);
 				}
 			} else if (!strcmp (opt, "collect-before-allocs")) {
-				collect_before_allocs = TRUE;
+				collect_before_allocs = 1;
+			} else if (g_str_has_prefix (opt, "collect-before-allocs=")) {
+				char *arg = strchr (opt, '=') + 1;
+				collect_before_allocs = atoi (arg);
 			} else if (!strcmp (opt, "check-at-minor-collections")) {
 				consistency_check_at_minor_collection = TRUE;
 				nursery_clear_policy = CLEAR_AT_GC;
@@ -7041,8 +7102,8 @@ mono_gc_base_init (void)
 				xdomain_checks = TRUE;
 			} else if (!strcmp (opt, "clear-at-gc")) {
 				nursery_clear_policy = CLEAR_AT_GC;
-			} else if (!strcmp (opt, "conservative-stack-mark")) {
-				conservative_stack_mark = TRUE;
+			} else if (!strcmp (opt, "clear-nursery-at-gc")) {
+				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "check-scan-starts")) {
 				do_scan_starts_check = TRUE;
 			} else if (g_str_has_prefix (opt, "heap-dump=")) {
@@ -7059,7 +7120,7 @@ mono_gc_base_init (void)
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
-				fprintf (stderr, "Valid options are: collect-before-allocs, check-at-minor-collections, xdomain-checks, clear-at-gc.\n");
+				fprintf (stderr, "Valid options are: collect-before-allocs[=<n>], check-at-minor-collections, xdomain-checks, clear-at-gc.\n");
 				exit (1);
 			}
 		}
@@ -7736,6 +7797,12 @@ mono_sgen_debug_printf (int level, const char *format, ...)
 	va_start (ap, format);
 	vfprintf (gc_debug_file, format, ap);
 	va_end (ap);
+}
+
+FILE*
+mono_sgen_get_logfile (void)
+{
+	return gc_debug_file;
 }
 
 #endif /* HAVE_SGEN_GC */

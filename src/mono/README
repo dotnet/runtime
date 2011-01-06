@@ -11,16 +11,6 @@ This is Mono.
    a. Build Requirements
    ---------------------
 
-	To build Mono, you will need the following components:
-
-		* pkg-config
-
-		  Available from: http://www.freedesktop.org/Software/pkgconfig
-
-		* glib 2.4
-
-		  Available from: http://www.gtk.org/
-
 	On Itanium, you must obtain libunwind:
 
 		http://www.hpl.hp.com/research/linux/libunwind/download.php4
@@ -35,7 +25,15 @@ This is Mono.
 		* libgdiplus
 
 		  If you want to get support for System.Drawing, you will need to get
-		  Libgdiplus.
+		  Libgdiplus.    This library in turn requires glib and pkg-config:
+
+			* pkg-config
+
+		    	  Available from: http://www.freedesktop.org/Software/pkgconfig
+
+		  	* glib 2.4
+
+		    	  Available from: http://www.gtk.org/
 
 		* libzlib
 
@@ -74,15 +72,18 @@ This is Mono.
 		 make V=1
 
 
-
-    c. Building the software from SVN
+    c. Building the software from GIT
     ---------------------------------
 
-	If you are building the software from SVN, make sure that you
+	If you are building the software from GIT, make sure that you
 	have up-to-date mcs and mono sources:
 
-		svn co svn+ssh://USER@mono-cvs.ximian.com/source/trunk/mono
-		svn co svn+ssh://USER@mono-cvs.ximian.com/source/trunk/mcs
+	   If you are an anonymous user:
+		git clone git://github.com/mono/mono.git
+
+           If you are a Mono contributors with read/write privileges:
+	        git clone git@github.com:mono/mono.git
+
 
 	Then, go into the mono directory, and configure:
 
@@ -164,10 +165,13 @@ This is Mono.
 
 		make install
 
+	You can verify your installation by using the mono-test-install
+	script, it can diagnose some common problems with Mono's install.
+
 	Failure to follow these steps may result in a broken installation. 
 
-    d. Common Configuration Options
-    -------------------------------
+    d. Configuration Options
+    ------------------------
 
 	The following are the configuration options that someone
 	building Mono might want to use:
@@ -300,6 +304,21 @@ This is Mono.
 		the Silverlight modified assemblies (mscorlib.dll,
 		System.dll, System.Code.dll and System.Xml.Core.dll) and turn
 	  	on the LINQ extensions for the compiler.
+
+	--with-moon-gc=boehm,sgen
+
+		Select the GC to use for Moonlight.
+
+		boehm:
+			Selects the Boehm Garbage Collector, with the same flags
+			as the regular Mono build. This is the default.
+
+		sgen:
+			Selects the new SGen Garbage Collector, which provides
+			Generational GC support, using the same flags as the
+			mono-sgen build.
+
+		This defaults to `boehm'.
 
 	--with-libgdiplus=installed,sibling,<path>
 

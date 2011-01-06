@@ -142,7 +142,7 @@ win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, struct sigcontext *sctx)
 	do {
 		MonoContext new_ctx;
 
-		mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, &lmf, &frame);
+		mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, &lmf, NULL, &frame);
 		if (!frame.ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
@@ -741,7 +741,8 @@ mono_arch_exceptions_init (void)
 gboolean
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf, 
+							 MonoContext *new_ctx, MonoLMF **lmf,
+							 mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -780,7 +781,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
-						   ip, regs, MONO_MAX_IREGS + 1, &cfa);
+						   ip, regs, MONO_MAX_IREGS + 1,
+						   save_locations, MONO_MAX_IREGS, &cfa);
 
 		new_ctx->eax = regs [X86_EAX];
 		new_ctx->ebx = regs [X86_EBX];

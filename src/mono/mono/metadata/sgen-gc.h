@@ -229,6 +229,8 @@ extern FILE* gc_debug_file;
 
 extern int current_collection_generation;
 
+extern gboolean conservative_stack_mark;
+
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
 
@@ -347,6 +349,7 @@ enum {
 };
 
 #define SGEN_VTABLE_HAS_REFERENCES(vt)	(((MonoVTable*)(vt))->gc_descr != (void*)DESC_TYPE_RUN_LENGTH)
+#define SGEN_CLASS_HAS_REFERENCES(c)	((c)->gc_descr != (void*)DESC_TYPE_RUN_LENGTH)
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
 #define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \
@@ -797,5 +800,6 @@ gboolean mono_sgen_ptr_is_in_los (char *ptr, char **start) MONO_INTERNAL;
 void mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data) MONO_INTERNAL;
 void mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 void mono_sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
+FILE *mono_sgen_get_logfile (void) MONO_INTERNAL;
 
 #endif /* __MONO_SGENGC_H__ */

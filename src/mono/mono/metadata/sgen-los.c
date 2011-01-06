@@ -493,11 +493,12 @@ mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	LOSObject *obj;
 	for (obj = los_object_list; obj; obj = obj->next) {
 		MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj->data);
-		if (vt->klass->has_references)
+		if (SGEN_VTABLE_HAS_REFERENCES (vt))
 			callback ((mword)obj->data, (mword)obj->size);
 	}
 }
 
+#ifdef SGEN_HAVE_CARDTABLE
 void
 mono_sgen_los_scan_card_table (SgenGrayQueue *queue)
 {
@@ -507,5 +508,6 @@ mono_sgen_los_scan_card_table (SgenGrayQueue *queue)
 		sgen_cardtable_scan_object (obj->data, obj->size, NULL, queue);
 	}
 }
+#endif
 
 #endif /* HAVE_SGEN_GC */

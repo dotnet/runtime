@@ -1576,7 +1576,13 @@ perf_event_syscall (struct perf_event_attr *attr, pid_t pid, int cpu, int group_
 {
 	attr->size = PERF_ATTR_SIZE_VER0;
 	//printf ("perf attr size: %d\n", attr->size);
+#if defined(__x86_64__)
+	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
+#elif defined(__i386__)
 	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
+#else
+	return -1;
+#endif
 }
 
 static int
