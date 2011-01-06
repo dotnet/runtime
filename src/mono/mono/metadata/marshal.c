@@ -5376,7 +5376,10 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	if (!ICustomMarshaler) {
 		ICustomMarshaler = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "ICustomMarshaler");
-		g_assert (ICustomMarshaler);
+		if (!ICustomMarshaler) {
+			exception_msg = g_strdup ("Current profile doesn't support ICustomMarshaler");
+			goto handle_exception;
+		}
 
 		cleanup_native = mono_class_get_method_from_name (ICustomMarshaler, "CleanUpNativeData", 1);
 		g_assert (cleanup_native);
@@ -5408,6 +5411,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 	if (!get_instance)
 		exception_msg = g_strdup_printf ("Custom marshaler '%s' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.", mklass->name);
 
+handle_exception:
 	/* Throw exception and emit compensation code if neccesary */
 	if (exception_msg) {
 		switch (action) {
