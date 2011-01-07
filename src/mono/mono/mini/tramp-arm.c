@@ -157,13 +157,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * regs on the stack (all but PC and SP). The original LR value has been
 	 * saved as sp + LR_OFFSET by the push in the specific trampoline
 	 */
-#define LR_OFFSET (sizeof (gpointer) * 13)
+#define LR_OFFSET (sizeof (mgreg_t) * 13)
 
 	// FIXME: Finish the unwind info, the current info allows us to unwind
 	// when the trampoline is not in the epilog
 
 	// CFA = SP + (num registers pushed) * 4
-	cfa_offset = 14 * sizeof (gpointer);
+	cfa_offset = 14 * sizeof (mgreg_t);
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, cfa_offset);
 	// PC saved at sp+LR_OFFSET
 	mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_LR, -4);
@@ -208,8 +208,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * The pointer to the struct is put in r1.
 	 * the iregs array is already allocated on the stack by push.
 	 */
-	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (MonoLMF) - sizeof (guint) * 14);
-	cfa_offset += sizeof (MonoLMF) - sizeof (guint) * 14;
+	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (MonoLMF) - sizeof (mgreg_t) * 14);
+	cfa_offset += sizeof (MonoLMF) - sizeof (mgreg_t) * 14;
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	ARM_ADD_REG_IMM8 (code, ARMREG_R1, ARMREG_SP, STACK - sizeof (MonoLMF));
 	/* r0 is the result from mono_get_lmf_addr () */
@@ -228,7 +228,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 	/* Save sp into lmf->iregs, the eh code expects it to be at IP */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, cfa_offset);
-	ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, iregs) + (ARMREG_IP * 4));
+	ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, iregs) + (ARMREG_IP * sizeof (mgreg_t)));
 	ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, esp));
 	/* save the IP (caller ip) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -277,7 +277,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * clobbered). This way we can just restore all the regs in one inst
 	 * and branch to IP.
 	 */
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_V1, (ARMREG_R12 * 4));
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_V1, (ARMREG_R12 * sizeof (mgreg_t)));
 
 	/* Check for thread interruption */
 	/* This is not perf critical code so no need to check the interrupt flag */
@@ -320,12 +320,12 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Restore the registers and jump to the code:
 	 * Note that IP has been conveniently set to the method addr.
 	 */
-	ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (MonoLMF) - sizeof (guint) * 14);
+	ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (MonoLMF) - sizeof (mgreg_t) * 14);
 	ARM_POP_NWB (code, 0x5fff);
 	if (tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 		ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_IP);
 	/* do we need to set sp? */
-	ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (14 * 4));
+	ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (14 * sizeof (mgreg_t)));
 	if ((tramp_type == MONO_TRAMPOLINE_CLASS_INIT) || (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) || (tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH))
 		code = emit_bx (code, ARMREG_LR);
 	else

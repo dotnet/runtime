@@ -3815,7 +3815,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_STR_REG_REG (code, ARMREG_LR, ARMREG_SP, ins->dreg);
 				arm_patch (branch_to_cond, code);
 				/* decrement by 4 and set flags */
-				ARM_SUBS_REG_IMM8 (code, ins->dreg, ins->dreg, 4);
+				ARM_SUBS_REG_IMM8 (code, ins->dreg, ins->dreg, sizeof (mgreg_t));
 				ARM_B_COND (code, ARMCOND_GE, 0);
 				arm_patch (code - 4, start_loop);
 			}
@@ -3840,13 +3840,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Set stack slots using R0 as scratch reg */
 			/* MONO_ARCH_DYN_CALL_PARAM_AREA gives the size of stack space available */
 			for (i = 0; i < DYN_CALL_STACK_ARGS; ++i) {
-				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, (PARAM_REGS + i) * sizeof (gpointer));
-				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, i * sizeof (gpointer));
+				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, (PARAM_REGS + i) * sizeof (mgreg_t));
+				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, i * sizeof (mgreg_t));
 			}
 
 			/* Set argument registers */
 			for (i = 0; i < PARAM_REGS; ++i)
-				ARM_LDR_IMM (code, i, ARMREG_LR, i * sizeof (gpointer));
+				ARM_LDR_IMM (code, i, ARMREG_LR, i * sizeof (mgreg_t));
 
 			/* Make the call */
 			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
@@ -5044,7 +5044,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		int lmf_offset, reg, sp_adj, regmask;
 		/* all but r0-r3, sp and pc */
-		pos += sizeof (MonoLMF) - (4 * 10);
+		pos += sizeof (MonoLMF) - (MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
 		lmf_offset = pos;
 		/* r2 contains the pointer to the current LMF */
 		code = emit_big_add (code, ARMREG_R2, cfg->frame_reg, cfg->stack_usage - lmf_offset);
@@ -5055,7 +5055,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		/* *(lmf_addr) = previous_lmf */
 		ARM_STR_IMM (code, ARMREG_IP, ARMREG_LR, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* This points to r4 inside MonoLMF->iregs */
-		sp_adj = (sizeof (MonoLMF) - 10 * sizeof (gulong));
+		sp_adj = (sizeof (MonoLMF) - MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
 		reg = ARMREG_R4;
 		regmask = 0x9ff0; /* restore lr to pc */
 		/* Skip caller saved registers not used by the method */
