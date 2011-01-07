@@ -5619,6 +5619,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
 			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
+		case OP_SHUFPS:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
+			amd64_sse_shufps_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_SHUFPD:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0x3);
+			amd64_sse_shufpd_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
 
 		case OP_ADDPD:
 			amd64_sse_addpd_reg_reg (code, ins->sreg1, ins->sreg2);
