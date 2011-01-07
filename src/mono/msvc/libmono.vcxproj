@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -84,7 +84,7 @@
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src;..\..\mono\eglib\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>TARGET_X86;_DEBUG;__i386__;TARGET_X86;i386;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;HOST_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;GC_NOT_DLL;HAVE_CONFIG_H;WINVER=0x0500;_WIN32_WINNT=0x0500;_WIN32_IE=0x0501;WIN32_THREADS;FD_SETSIZE=1024;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TARGET_X86;_DEBUG;__i386__;TARGET_X86;i386;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;HOST_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;GC_NOT_DLL;HAVE_CONFIG_H;WINVER=0x0500;_WIN32_WINNT=0x0500;_WIN32_IE=0x0501;WIN32_THREADS;FD_SETSIZE=1024;__default_codegen__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
