@@ -114,6 +114,7 @@ typedef struct MonoAotOptions {
 	char *tool_prefix;
 	gboolean autoreg;
 	char *mtriple;
+	char *llvm_path;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -4490,6 +4491,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->stats = TRUE;
 		} else if (str_begins_with (arg, "mtriple=")) {
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
+		} else if (str_begins_with (arg, "llvm-path=")) {
+			opts->llvm_path = g_strdup (arg + strlen ("llvm-path="));
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -5090,7 +5093,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	opts = g_strdup ("-instcombine -simplifycfg");
 	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -prune-eh -inline -functionattrs -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify");
 #if 1
-	command = g_strdup_printf ("opt -f %s -o temp.opt.bc temp.bc", opts);
+	command = g_strdup_printf ("%sopt -f %s -o temp.opt.bc temp.bc", acfg->aot_opts.llvm_path, opts);
 	printf ("Executing opt: %s\n", command);
 	if (system (command) != 0) {
 		exit (1);
@@ -5109,7 +5112,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	unlink (acfg->tmpfname);
 
-	command = g_strdup_printf ("llc %s -relocation-model=pic -unwind-tables -disable-gnu-eh-frame -enable-mono-eh-frame -o %s temp.opt.bc", acfg->llc_args->str, acfg->tmpfname);
+	command = g_strdup_printf ("%sllc %s -relocation-model=pic -unwind-tables -disable-gnu-eh-frame -enable-mono-eh-frame -o %s temp.opt.bc", acfg->aot_opts.llvm_path, acfg->llc_args->str, acfg->tmpfname);
 
 	printf ("Executing llc: %s\n", command);
 
@@ -6600,6 +6603,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->aot_opts.ntrampolines = 1024;
 	acfg->aot_opts.nrgctx_trampolines = 1024;
 	acfg->aot_opts.nimt_trampolines = 128;
+	acfg->aot_opts.llvm_path = g_strdup ("");
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
