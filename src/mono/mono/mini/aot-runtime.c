@@ -1032,7 +1032,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	gboolean usable = TRUE;
 	char *version_symbol = NULL;
 	char *msg = NULL;
-	gpointer *globals;
+	gpointer *globals = NULL;
 	MonoAotFileInfo *info = NULL;
 	int i, version;
 	guint8 *blob;
@@ -1056,16 +1056,17 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	mono_aot_lock ();
 	if (static_aot_modules)
-		globals = g_hash_table_lookup (static_aot_modules, assembly->aname.name);
+		info = g_hash_table_lookup (static_aot_modules, assembly->aname.name);
 	else
-		globals = NULL;
+		info = NULL;
 	mono_aot_unlock ();
 
-	if (globals) {
+	if (info) {
 		/* Statically linked AOT module */
 		sofile = NULL;
 		aot_name = g_strdup_printf ("%s", assembly->aname.name);
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Found statically linked AOT module '%s'.\n", aot_name);
+		globals = info->globals;
 	} else {
 		if (use_aot_cache)
 			sofile = load_aot_module_from_cache (assembly, &aot_name);
@@ -1091,8 +1092,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
-	find_symbol (sofile, globals, "mono_aot_version", (gpointer *) &version_symbol);
-	find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&info);
+	if (!info) {
+		find_symbol (sofile, globals, "mono_aot_version", (gpointer *) &version_symbol);
+		find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&info);
+	}
 
 	if (version_symbol) {
 		/* Old file format */
@@ -1123,6 +1126,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		assembly->image->aot_module = NULL;
 		return;
 	}
+
+	/* Sanity check */
+	g_assert (info->double_align == __alignof__ (double));
+	g_assert (info->long_align == __alignof__ (gint64));
 
 	blob = info->blob;
 
@@ -1313,13 +1320,14 @@ mono_aot_register_module (gpointer *aot_info)
 {
 	gpointer *globals;
 	char *aname;
+	MonoAotFileInfo *info = (gpointer)aot_info;
 
-	globals = aot_info;
+	g_assert (info->version == MONO_AOT_FILE_VERSION);
+
+	globals = info->globals;
 	g_assert (globals);
 
-	/* Determine the assembly name */
-	find_symbol (NULL, globals, "mono_aot_assembly_name", (gpointer*)&aname);
-	g_assert (aname);
+	aname = info->assembly_name;
 
 	/* This could be called before startup */
 	if (aot_modules)
@@ -1328,7 +1336,7 @@ mono_aot_register_module (gpointer *aot_info)
 	if (!static_aot_modules)
 		static_aot_modules = g_hash_table_new (g_str_hash, g_str_equal);
 
-	g_hash_table_insert (static_aot_modules, aname, globals);
+	g_hash_table_insert (static_aot_modules, aname, info);
 
 	if (aot_modules)
 		mono_aot_unlock ();

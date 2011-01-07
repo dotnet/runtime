@@ -48,6 +48,11 @@ typedef gint64 mgreg_t;
 #define G_MININT32 (-G_MAXINT32 - 1)
 #endif
 
+#ifndef __GNUC__
+/*#define __alignof__(a) sizeof(a)*/
+#define __alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
+#endif
+
 #if DISABLE_LOGGING
 #define MINI_DEBUG(level,limit,code)
 #else
@@ -111,7 +116,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 72
+#define MONO_AOT_FILE_VERSION 75
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -195,6 +200,10 @@ typedef struct MonoAotFileInfo
 	 * The end of LLVM generated thumb code, or NULL.
 	 */
 	gpointer thumb_end;
+	/* In static mode, points to a table of global symbols for trampolines etc */
+	gpointer globals;
+	/* Points to a string containing the assembly name*/
+	gpointer assembly_name;
 
 	/* The index of the first GOT slot used by the PLT */
 	guint32 plt_got_offset_base;
@@ -217,6 +226,9 @@ typedef struct MonoAotFileInfo
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
 	/* The size of one trampoline */
 	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
+
+	/* These are used for sanity checking object layout problems when cross-compiling */
+	guint32 double_align, long_align;
 } MonoAotFileInfo;
 
 /* Per-domain information maintained by the JIT */

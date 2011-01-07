@@ -1122,6 +1122,10 @@ typedef union {
 
 #define amd64_sse_pshufd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0x70, (imm))
 
+#define amd64_sse_shufps_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_op2_imm((inst), (dreg), (reg), 0x0f, 0xC6, (imm))
+
+#define amd64_sse_shufpd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0xC6, (imm))
+
 
 #define amd64_sse_addpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x58)
 

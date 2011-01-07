@@ -3136,6 +3136,25 @@ public class SimdTests {
 		return 0;
 	}
 
+	static void CallMethodThatClobbersRegs () {
+		Vector4f a = new Vector4f (9,9,9,9);
+		Vector4f b = new Vector4f (9,9,9,9);
+		a = a + b;
+	}
+
+	public static int test_0_call_spills_regs_correctly () {
+		Vector4f a = new Vector4f (1,2,3,4);
+		Vector4f b = new Vector4f (5,6,7,8);
+
+		CallMethodThatClobbersRegs ();
+
+		bool b0 = a.X == 1f;
+		bool b1 = b.X == 5f;
+		if (!b0 || !b1)
+			return 1;
+		return 0;
+	}
+
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (SimdTests), args);
 	}

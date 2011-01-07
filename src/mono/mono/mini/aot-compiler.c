@@ -373,15 +373,6 @@ static void
 emit_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
 {
 	img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
-	emit_global (acfg, name, FALSE);
-	img_writer_emit_label (acfg->w, name);
-	img_writer_emit_string (acfg->w, value);
-}
-
-static void
-emit_local_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
-{
-	img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
 	img_writer_emit_label (acfg->w, name);
 	img_writer_emit_string (acfg->w, value);
 }
@@ -5958,13 +5949,20 @@ typedef struct GlobalsTableEntry {
 } GlobalsTableEntry;
 
 static void
-emit_globals_table (MonoAotCompile *acfg)
+emit_globals (MonoAotCompile *acfg)
 {
 	int i, table_size;
 	guint32 hash;
 	GPtrArray *table;
 	char symbol [256];
 	GlobalsTableEntry *entry, *new_entry;
+
+	if (!acfg->aot_opts.static_link)
+		return;
+
+	/* 
+	 * When static linking, we emit a table containing our globals.
+	 */
 
 	/*
 	 * Construct a chained hash table for mapping global names to their index in
@@ -6056,58 +6054,6 @@ emit_globals_table (MonoAotCompile *acfg)
 }
 
 static void
-emit_globals (MonoAotCompile *acfg)
-{
-	char *build_info;
-
-	emit_local_string_symbol (acfg, "assembly_guid" , acfg->image->guid);
-
-	if (acfg->aot_opts.bind_to_runtime_version) {
-		build_info = mono_get_runtime_build_info ();
-		emit_local_string_symbol (acfg, "runtime_version", build_info);
-		g_free (build_info);
-	} else {
-		emit_local_string_symbol (acfg, "runtime_version", "");
-	}
-
-	/* 
-	 * When static linking, we emit a global which will point to the symbol table.
-	 */
-	if (acfg->aot_opts.static_link) {
-		char symbol [256];
-		char *p;
-
-		/* Emit a string holding the assembly name */
-		emit_string_symbol (acfg, "mono_aot_assembly_name", acfg->image->assembly->aname.name);
-
-		emit_globals_table (acfg);
-
-		/* 
-		 * Emit a global symbol which can be passed by an embedding app to
-		 * mono_aot_register_module ().
-		 */
-#if defined(__MACH__) && !defined(__native_client_codegen__)
-		sprintf (symbol, "_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
-#else
-		sprintf (symbol, "mono_aot_module_%s_info", acfg->image->assembly->aname.name);
-#endif
-
-		/* Get rid of characters which cannot occur in symbols */
-		p = symbol;
-		for (p = symbol; *p; ++p) {
-			if (!(isalnum (*p) || *p == '_'))
-				*p = '_';
-		}
-		acfg->static_linking_symbol = g_strdup (symbol);
-		emit_global_inner (acfg, symbol, FALSE);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-		sprintf (symbol, "%sglobals", acfg->temp_prefix);
-		emit_pointer (acfg, symbol);
-	}
-}
-
-static void
 emit_autoreg (MonoAotCompile *acfg)
 {
 	char *symbol;
@@ -6143,10 +6089,24 @@ emit_mem_end (MonoAotCompile *acfg)
 static void
 emit_file_info (MonoAotCompile *acfg)
 {
-	char symbol [128];
+	char symbol [256];
 	int i;
 	int gc_name_offset;
 	const char *gc_name;
+	char *build_info;
+
+	emit_string_symbol (acfg, "assembly_guid" , acfg->image->guid);
+
+	if (acfg->aot_opts.bind_to_runtime_version) {
+		build_info = mono_get_runtime_build_info ();
+		emit_string_symbol (acfg, "runtime_version", build_info);
+		g_free (build_info);
+	} else {
+		emit_string_symbol (acfg, "runtime_version", "");
+	}
+
+	/* Emit a string holding the assembly name */
+	emit_string_symbol (acfg, "assembly_name", acfg->image->assembly->aname.name);
 
 	/*
 	 * The managed allocators are GC specific, so can't use an AOT image created by one GC
@@ -6159,7 +6119,8 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_section_change (acfg, ".data", 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
-	emit_global (acfg, symbol, FALSE);
+	if (!acfg->aot_opts.static_link)
+		emit_global (acfg, symbol, FALSE);
 
 	/* The data emitted here must match MonoAotFileInfo. */
 
@@ -6212,6 +6173,12 @@ emit_file_info (MonoAotCompile *acfg)
 	} else {
 		emit_pointer (acfg, NULL);
 	}
+	if (acfg->aot_opts.static_link) {
+		emit_pointer (acfg, ".Lglobals");
+	} else {
+		emit_pointer (acfg, NULL);
+	}
+	emit_pointer (acfg, "assembly_name");
 
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
@@ -6227,6 +6194,35 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_int32 (acfg, acfg->trampoline_got_offset_base [i]);
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->trampoline_size [i]);
+
+	emit_int32 (acfg, __alignof__ (double));
+	emit_int32 (acfg, __alignof__ (gint64));
+
+	if (acfg->aot_opts.static_link) {
+		char *p;
+
+		/* 
+		 * Emit a global symbol which can be passed by an embedding app to
+		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
+		 * structure.
+		 */
+#if defined(__MACH__) && !defined(__native_client_codegen__)
+		sprintf (symbol, "_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
+#else
+		sprintf (symbol, "mono_aot_module_%s_info", acfg->image->assembly->aname.name);
+#endif
+
+		/* Get rid of characters which cannot occur in symbols */
+		p = symbol;
+		for (p = symbol; *p; ++p) {
+			if (!(isalnum (*p) || *p == '_'))
+				*p = '_';
+		}
+		acfg->static_linking_symbol = g_strdup (symbol);
+		emit_global_inner (acfg, symbol, FALSE);
+		emit_label (acfg, symbol);
+		emit_pointer (acfg, "mono_aot_file_info");
+	}
 }
 
 static void
@@ -6639,6 +6635,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->llvm = TRUE;
 		acfg->aot_opts.asm_writer = TRUE;
 		acfg->flags |= MONO_AOT_FILE_FLAG_WITH_LLVM;
+
+		if (acfg->aot_opts.soft_debug) {
+			fprintf (stderr, "The 'soft-debug' option is not supported when compiling with LLVM.\n");
+			exit (1);
+		}
 	}
 
 	if (acfg->aot_opts.full_aot)
@@ -6808,7 +6809,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		sprintf (symbol, "thumb_end");
 		emit_section_change (acfg, ".text", 0);
 		emit_label (acfg, symbol);
-		fprintf (acfg->fp, ".skip 16\n");
+		emit_zero_bytes (acfg, 16);
 
 		fprintf (acfg->fp, ".arm\n");
 	}

@@ -1234,6 +1234,20 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 	return mono_compile_create_var_for_vreg (cfg, type, opcode, dreg);
 }
 
+/*
+ * Transform a MonoInst into a load from the variable of index var_index.
+ */
+void
+mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index) {
+	memset (dest, 0, sizeof (MonoInst));
+	dest->inst_i0 = cfg->varinfo [var_index];
+	dest->opcode = mini_type_to_ldind (cfg, dest->inst_i0->inst_vtype);
+	type_to_eval_stack_type (cfg, dest->inst_i0->inst_vtype, dest);
+	dest->klass = dest->inst_i0->klass;
+}
+
+#endif
+
 void
 mono_mark_vreg_as_ref (MonoCompile *cfg, int vreg)
 {
@@ -1265,20 +1279,6 @@ mono_mark_vreg_as_mp (MonoCompile *cfg, int vreg)
 	}
 	cfg->vreg_is_mp [vreg] = TRUE;
 }	
-
-/*
- * Transform a MonoInst into a load from the variable of index var_index.
- */
-void
-mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index) {
-	memset (dest, 0, sizeof (MonoInst));
-	dest->inst_i0 = cfg->varinfo [var_index];
-	dest->opcode = mini_type_to_ldind (cfg, dest->inst_i0->inst_vtype);
-	type_to_eval_stack_type (cfg, dest->inst_i0->inst_vtype, dest);
-	dest->klass = dest->inst_i0->klass;
-}
-
-#endif
 
 static MonoType*
 type_from_stack_type (MonoInst *ins) {

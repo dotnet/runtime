@@ -3156,10 +3156,8 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		 * See mcs/test/gtest-440. and #650936.
 		 * FIXME This better be moved to the metadata verifier as it can catch more cases.
 		 */
-		if (class->byval_arg.type && class->byval_arg.type != type->type) {
-			printf ("me [%x] it [%x] -- '%s'\n", type->type, type->data.klass->byval_arg.type, mono_type_full_name (type));
+		if (class->byval_arg.type && class->byval_arg.type != type->type)
 			return FALSE;
-		}
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {

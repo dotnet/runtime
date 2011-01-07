@@ -43,11 +43,13 @@
 #define MONO_MAX_IREGS 16
 #define MONO_MAX_FREGS 16
 
-#define MONO_SAVED_GREGS 10 /* r4-411, ip, lr */
+#define MONO_SAVED_GREGS 10 /* r4-r11, ip, lr */
 #define MONO_SAVED_FREGS 8
 
 /* r4-r11, ip, lr: registers saved in the LMF  */
 #define MONO_ARM_REGSAVE_MASK 0x5ff0
+#define MONO_ARM_FIRST_SAVED_REG ARMREG_R4
+#define MONO_ARM_NUM_SAVED_REGS 10
 
 /* Parameters used by the register allocator */
 
