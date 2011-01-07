@@ -760,7 +760,7 @@ mono_arm_get_thumb_plt_entry (guint8 *code)
 	t1 = ((guint16*)bl) [0];
 	t2 = ((guint16*)bl) [1];
 
-	g_assert ((t1 >> 11) == 0b11110);
+	g_assert ((t1 >> 11) == 0x1e);
 
 	s = (t1 >> 10) & 0x1;
 	imm10 = (t1 >> 0) & 0x3ff;
