@@ -6227,6 +6227,9 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_int32 (acfg, acfg->trampoline_got_offset_base [i]);
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->trampoline_size [i]);
+
+	emit_int32 (acfg, __alignof__ (double));
+	emit_int32 (acfg, __alignof__ (gint64));
 }
 
 static void

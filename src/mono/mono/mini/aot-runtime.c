@@ -1124,6 +1124,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
+	/* Sanity check */
+	g_assert (info->double_align == __alignof__ (double));
+	g_assert (info->long_align == __alignof__ (gint64));
+
 	blob = info->blob;
 
 	amodule = g_new0 (MonoAotModule, 1);
