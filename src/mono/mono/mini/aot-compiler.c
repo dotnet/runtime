@@ -6809,7 +6809,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		sprintf (symbol, "thumb_end");
 		emit_section_change (acfg, ".text", 0);
 		emit_label (acfg, symbol);
-		fprintf (acfg->fp, ".skip 16\n");
+		emit_zero_bytes (acfg, 16);
 
 		fprintf (acfg->fp, ".arm\n");
 	}
