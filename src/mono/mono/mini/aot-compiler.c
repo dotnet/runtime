@@ -4456,6 +4456,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->save_temps = TRUE;
 		} else if (str_begins_with (arg, "write-symbols")) {
 			opts->write_symbols = TRUE;
+		} else if (str_begins_with (arg, "no-write-symbols")) {
+			opts->write_symbols = FALSE;
 		} else if (str_begins_with (arg, "metadata-only")) {
 			opts->metadata_only = TRUE;
 		} else if (str_begins_with (arg, "bind-to-runtime-version")) {
