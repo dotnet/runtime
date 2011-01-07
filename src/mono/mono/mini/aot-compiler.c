@@ -6639,6 +6639,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->llvm = TRUE;
 		acfg->aot_opts.asm_writer = TRUE;
 		acfg->flags |= MONO_AOT_FILE_FLAG_WITH_LLVM;
+
+		if (acfg->aot_opts.soft_debug) {
+			fprintf (stderr, "The 'soft-debug' option is not supported when compiling with LLVM.\n");
+			exit (1);
+		}
 	}
 
 	if (acfg->aot_opts.full_aot)
