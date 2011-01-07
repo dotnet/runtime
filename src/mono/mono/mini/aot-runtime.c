@@ -1327,9 +1327,7 @@ mono_aot_register_module (gpointer *aot_info)
 	globals = info->globals;
 	g_assert (globals);
 
-	/* Determine the assembly name */
-	find_symbol (NULL, globals, "mono_aot_assembly_name", (gpointer*)&aname);
-	g_assert (aname);
+	aname = info->assembly_name;
 
 	/* This could be called before startup */
 	if (aot_modules)

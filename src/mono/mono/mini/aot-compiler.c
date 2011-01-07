@@ -373,15 +373,6 @@ static void
 emit_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
 {
 	img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
-	emit_global (acfg, name, FALSE);
-	img_writer_emit_label (acfg->w, name);
-	img_writer_emit_string (acfg->w, value);
-}
-
-static void
-emit_local_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
-{
-	img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
 	img_writer_emit_label (acfg->w, name);
 	img_writer_emit_string (acfg->w, value);
 }
@@ -6104,18 +6095,18 @@ emit_file_info (MonoAotCompile *acfg)
 	const char *gc_name;
 	char *build_info;
 
-	emit_local_string_symbol (acfg, "assembly_guid" , acfg->image->guid);
+	emit_string_symbol (acfg, "assembly_guid" , acfg->image->guid);
 
 	if (acfg->aot_opts.bind_to_runtime_version) {
 		build_info = mono_get_runtime_build_info ();
-		emit_local_string_symbol (acfg, "runtime_version", build_info);
+		emit_string_symbol (acfg, "runtime_version", build_info);
 		g_free (build_info);
 	} else {
-		emit_local_string_symbol (acfg, "runtime_version", "");
+		emit_string_symbol (acfg, "runtime_version", "");
 	}
 
 	/* Emit a string holding the assembly name */
-	emit_string_symbol (acfg, "mono_aot_assembly_name", acfg->image->assembly->aname.name);
+	emit_string_symbol (acfg, "assembly_name", acfg->image->assembly->aname.name);
 
 	/*
 	 * The managed allocators are GC specific, so can't use an AOT image created by one GC
@@ -6187,6 +6178,8 @@ emit_file_info (MonoAotCompile *acfg)
 	} else {
 		emit_pointer (acfg, NULL);
 	}
+	emit_pointer (acfg, "assembly_name");
+
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
