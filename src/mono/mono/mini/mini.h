@@ -116,7 +116,7 @@ typedef gint64 mgreg_t;
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 73
+#define MONO_AOT_FILE_VERSION 74
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -200,6 +200,8 @@ typedef struct MonoAotFileInfo
 	 * The end of LLVM generated thumb code, or NULL.
 	 */
 	gpointer thumb_end;
+	/* In static mode, points to a table of global symbols for trampolines etc */
+	gpointer globals;
 
 	/* The index of the first GOT slot used by the PLT */
 	guint32 plt_got_offset_base;
