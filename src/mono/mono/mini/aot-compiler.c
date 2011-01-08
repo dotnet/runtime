@@ -6035,7 +6035,7 @@ emit_globals (MonoAotCompile *acfg)
 	}
 
 	/* Emit the globals table */
-	sprintf (symbol, ".Lglobals");
+	sprintf (symbol, "globals");
 	emit_section_change (acfg, ".data", 0);
 	/* This is not a global, since it is accessed by the init function */
 	emit_alignment (acfg, 8);
@@ -6179,7 +6179,7 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_pointer (acfg, NULL);
 	}
 	if (acfg->aot_opts.static_link) {
-		emit_pointer (acfg, ".Lglobals");
+		emit_pointer (acfg, "globals");
 	} else {
 		emit_pointer (acfg, NULL);
 	}
