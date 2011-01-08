@@ -80,7 +80,7 @@
 
 #ifdef TARGET_WIN32
 #define SHARED_EXT ".dll"
-#elif defined(__ppc__) && defined(__MACH__)
+#elif defined(__ppc__) && defined(__APPLE__)
 #define SHARED_EXT ".dylib"
 #elif defined(__APPLE__) && defined(TARGET_X86) && !defined(__native_client_codegen__)
 #define SHARED_EXT ".dylib"
@@ -185,7 +185,7 @@ typedef struct MonoAotCompile {
 	MonoClass **typespec_classes;
 	GString *llc_args;
 	GString *as_args;
-	gboolean thumb_mixed;
+	gboolean thumb_mixed, need_no_dead_strip;
 } MonoAotCompile;
 
 typedef struct {
@@ -520,6 +520,10 @@ arch_init (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.mtriple)
 		mono_arch_set_target (acfg->aot_opts.mtriple);
+#endif
+
+#ifdef __APPLE__
+	acfg->need_no_dead_strip = TRUE;
 #endif
 }
 
@@ -2182,7 +2186,7 @@ is_plt_patch (MonoJumpInfo *patch_info)
 static char*
 get_plt_symbol (MonoAotCompile *acfg, int plt_offset, MonoJumpInfo *patch_info)
 {
-#ifdef __MACH__
+#ifdef __APPLE__
 	/* 
 	 * The Apple linker reorganizes object files, so it doesn't like branches to local
 	 * labels, since those have no relocations.
@@ -3422,6 +3426,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		debug_sym = get_debug_sym (method, "", acfg->method_label_hash);
 
 		sprintf (symbol, "%sme_%x", acfg->temp_prefix, method_index);
+		if (acfg->need_no_dead_strip)
+			fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
 		emit_local_symbol (acfg, debug_sym, symbol, TRUE);
 		emit_label (acfg, debug_sym);
 	}
@@ -4124,6 +4130,8 @@ emit_plt (MonoAotCompile *acfg)
 			emit_label (acfg, plt_entry->llvm_symbol);
 
 		if (debug_sym) {
+			if (acfg->need_no_dead_strip)
+				fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
 			emit_local_symbol (acfg, debug_sym, NULL, TRUE);
 			emit_label (acfg, debug_sym);
 		}
@@ -4170,10 +4178,10 @@ emit_plt (MonoAotCompile *acfg)
 			if (debug_sym) {
 #if defined(__APPLE__)
 				fprintf (acfg->fp, "	.thumb_func %s\n", debug_sym);
-#else
+				fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
+#endif
 				emit_local_symbol (acfg, debug_sym, NULL, TRUE);
 				emit_label (acfg, debug_sym);
-#endif
 			}
 			fprintf (acfg->fp, "\n.thumb_func\n");
 
@@ -5273,7 +5281,6 @@ emit_code (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-#ifdef __MACH__
 	/* 
 	 * Add .no_dead_strip directives for all LLVM methods to prevent the OSX linker
 	 * from optimizing them away, since it doesn't see that code_offsets references them.
@@ -5281,14 +5288,13 @@ emit_code (MonoAotCompile *acfg)
 	 * symbols.
 	 * FIXME: This is why write-symbols doesn't work on OSX ?
 	 */
-	if (acfg->llvm) {
+	if (acfg->llvm && acfg->need_no_dead_strip) {
 		fprintf (acfg->fp, "\n");
 		for (i = 0; i < acfg->nmethods; ++i) {
 			if (acfg->cfgs [i] && acfg->cfgs [i]->compile_llvm)
 				fprintf (acfg->fp, ".no_dead_strip %s\n", acfg->cfgs [i]->asm_symbol);
 		}
 	}
-#endif
 
 	sprintf (symbol, "code_offsets");
 	emit_section_change (acfg, RODATA_SECT, 1);
@@ -6293,7 +6299,7 @@ emit_file_info (MonoAotCompile *acfg)
 		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
 		 * structure.
 		 */
-#if defined(__MACH__) && !defined(__native_client_codegen__)
+#if defined(__APPLE__) && !defined(__native_client_codegen__)
 		sprintf (symbol, "_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
 #else
 		sprintf (symbol, "mono_aot_module_%s_info", acfg->image->assembly->aname.name);
@@ -6543,7 +6549,7 @@ compile_asm (MonoAotCompile *acfg)
 
 #if defined(sparc)
 	command = g_strdup_printf ("ld -shared -G -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-#elif defined(__ppc__) && defined(__MACH__)
+#elif defined(__ppc__) && defined(__APPLE__)
 	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(HOST_WIN32)
 	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
@@ -6568,7 +6574,7 @@ compile_asm (MonoAotCompile *acfg)
 	system (com);
 	g_free (com);*/
 
-#if defined(TARGET_ARM) && !defined(__MACH__)
+#if defined(TARGET_ARM) && !defined(__APPLE__)
 	/* 
 	 * gas generates 'mapping symbols' each time code and data is mixed, which 
 	 * happens a lot in emit_and_reloc_code (), so we need to get rid of them.
