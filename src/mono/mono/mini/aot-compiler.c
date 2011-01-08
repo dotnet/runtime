@@ -4081,7 +4081,7 @@ emit_plt (MonoAotCompile *acfg)
 
 				if (acfg->thumb_mixed && !callee_cfg->compile_llvm) {
 					/* LLVM calls the PLT entries using bl, so emit a stub */
-					fprintf (acfg->fp, ".thumb_func\n");
+					fprintf (acfg->fp, "\n.thumb_func\n");
 					emit_label (acfg, plt_entry->llvm_symbol);
 					fprintf (acfg->fp, "bx pc\n");
 					fprintf (acfg->fp, "nop\n");
@@ -4157,14 +4157,7 @@ emit_plt (MonoAotCompile *acfg)
 				emit_label (acfg, debug_sym);
 #endif
 			}
-#if defined(__APPLE__)
-			fprintf (acfg->fp, "\n");
-			fprintf (acfg->fp, "	.align 2\n");
-			fprintf (acfg->fp, "	.code 16\n");
-			fprintf (acfg->fp, "	.thumb_func %s\n", plt_entry->llvm_symbol);
-#else
-			fprintf (acfg->fp, ".thumb_func\n");
-#endif
+			fprintf (acfg->fp, "\n.thumb_func\n");
 
 			emit_label (acfg, plt_entry->llvm_symbol);
 
