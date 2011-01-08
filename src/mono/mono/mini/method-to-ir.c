@@ -5499,7 +5499,15 @@ is_jit_optimizer_disabled (MonoMethod *m)
 	if (ass->jit_optimizer_disabled_inited)
 		return ass->jit_optimizer_disabled;
 
-	klass = mono_class_from_name_cached (mono_defaults.corlib, "System.Diagnostics", "DebuggableAttribute");
+	if (!klass)
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggableAttribute");
+	if (!klass) {
+		/* Linked away */
+		ass->jit_optimizer_disabled = FALSE;
+		mono_memory_barrier ();
+		ass->jit_optimizer_disabled_inited = TRUE;
+		return FALSE;
+	}
 
 	attrs = mono_custom_attrs_from_assembly (ass);
 	if (attrs) {
