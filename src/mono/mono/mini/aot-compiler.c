@@ -5277,6 +5277,9 @@ emit_code (MonoAotCompile *acfg)
 	/* 
 	 * Add .no_dead_strip directives for all LLVM methods to prevent the OSX linker
 	 * from optimizing them away, since it doesn't see that code_offsets references them.
+	 * JITted methods don't need this since they are referenced using assembler local
+	 * symbols.
+	 * FIXME: This is why write-symbols doesn't work on OSX ?
 	 */
 	if (acfg->llvm) {
 		fprintf (acfg->fp, "\n");
