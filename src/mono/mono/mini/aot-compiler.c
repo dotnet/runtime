@@ -5273,6 +5273,20 @@ emit_code (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
+#ifdef __MACH__
+	/* 
+	 * Add .no_dead_strip directives for all LLVM methods to prevent the OSX linker
+	 * from optimizing them away, since it doesn't see that code_offsets references them.
+	 */
+	if (acfg->llvm) {
+		fprintf (acfg->fp, "\n");
+		for (i = 0; i < acfg->nmethods; ++i) {
+			if (acfg->cfgs [i] && acfg->cfgs [i]->compile_llvm)
+				fprintf (acfg->fp, ".no_dead_strip %s\n", acfg->cfgs [i]->asm_symbol);
+		}
+	}
+#endif
+
 	sprintf (symbol, "code_offsets");
 	emit_section_change (acfg, RODATA_SECT, 1);
 	emit_alignment (acfg, 8);
