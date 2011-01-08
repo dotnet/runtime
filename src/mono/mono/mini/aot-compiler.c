@@ -4158,6 +4158,7 @@ emit_plt (MonoAotCompile *acfg)
 #endif
 			}
 #if defined(__APPLE__)
+			fprintf (acfg->fp, "\n");
 			fprintf (acfg->fp, "	.align 2\n");
 			fprintf (acfg->fp, "	.code 16\n");
 			fprintf (acfg->fp, "	.thumb_func %s\n", plt_entry->llvm_symbol);
