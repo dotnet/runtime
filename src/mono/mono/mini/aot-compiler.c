@@ -6228,8 +6228,25 @@ emit_file_info (MonoAotCompile *acfg)
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, acfg->trampoline_size [i]);
 
+#if defined (TARGET_ARM) && defined (__APPLE__)
+       {
+               MonoType t;
+               int align = 0;
+
+               t.type = MONO_TYPE_R8;
+               mono_type_size (&t, &align);
+
+               emit_int32 (acfg, align);
+
+               t.type = MONO_TYPE_I8;
+               mono_type_size (&t, &align);
+
+               emit_int32 (acfg, align);
+       }
+#else
 	emit_int32 (acfg, __alignof__ (double));
 	emit_int32 (acfg, __alignof__ (gint64));
+#endif
 
 	if (acfg->aot_opts.static_link) {
 		char *p;
