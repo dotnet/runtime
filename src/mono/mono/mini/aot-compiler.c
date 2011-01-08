@@ -1000,7 +1000,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
  * CALL_TARGET is the symbol pointing to the native code of METHOD.
  */
 static void
-arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, const char *call_target)
+arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *method, const char *call_target)
 {
 #if defined(TARGET_AMD64)
 	guint8 buf [32];
@@ -1033,6 +1033,13 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, const char
 	guint8 buf [128];
 	guint8 *code;
 
+	if (acfg->thumb_mixed && cfg->compile_llvm) {
+		fprintf (acfg->fp, "add r0, r0, #%d\n", sizeof (MonoObject));
+		fprintf (acfg->fp, "b %s\n", call_target);
+		fprintf (acfg->fp, ".arm\n");
+		return;
+	}
+
 	code = buf;
 
 	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, sizeof (MonoObject));
@@ -1049,7 +1056,10 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, const char
 		img_writer_emit_reloc (acfg->w, R_ARM_JUMP24, call_target, -8);
 		emit_bytes (acfg, buf, 4);
 	} else {
-		fprintf (acfg->fp, "\n\tb %s\n", call_target);
+		if (acfg->thumb_mixed && cfg->compile_llvm)
+			fprintf (acfg->fp, "\n\tbx %s\n", call_target);
+		else
+			fprintf (acfg->fp, "\n\tb %s\n", call_target);
 	}
 #elif defined(TARGET_POWERPC)
 	int this_pos = 3;
@@ -5207,11 +5217,15 @@ emit_code (MonoAotCompile *acfg)
 			emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
 #endif
 			emit_global (acfg, symbol, TRUE);
+
+			if (acfg->thumb_mixed && cfg->compile_llvm)
+				fprintf (acfg->fp, "\n.thumb_func\n");
+
 			emit_label (acfg, symbol);
 
 			sprintf (call_target, "%s", cfg->asm_symbol);
 
-			arch_emit_unbox_trampoline (acfg, cfg->orig_method, call_target);
+			arch_emit_unbox_trampoline (acfg, cfg, cfg->orig_method, call_target);
 		}
 
 		if (cfg->compile_llvm)
