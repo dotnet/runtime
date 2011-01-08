@@ -214,6 +214,7 @@
 	#define UCONTEXT_REG_R10(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[10])
 	#define UCONTEXT_REG_R11(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[11])
 	#define UCONTEXT_REG_R12(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__r[12])
+	#define UCONTEXT_REG_CPSR(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__cpsr)
 #elif defined(__linux__)
 	typedef struct arm_ucontext {
 		unsigned long       uc_flags;
