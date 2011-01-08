@@ -5018,7 +5018,11 @@ mono_aot_get_got_offset (MonoJumpInfo *ji)
 char*
 mono_aot_get_method_name (MonoCompile *cfg)
 {
-	return get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
+	if (llvm_acfg->aot_opts.static_link)
+		/* Include the assembly name too to avoid duplicate symbol errors */
+		return g_strdup_printf ("%s_%s", llvm_acfg->image->assembly->aname.name, get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash));
+	else
+		return get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
 }
 
 char*
@@ -5036,7 +5040,11 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 	plt_entry = get_plt_entry (llvm_acfg, ji);
 	plt_entry->llvm_used = TRUE;
 
+#if defined(__APPLE__)
+	return g_strdup_printf (plt_entry->llvm_symbol + strlen (llvm_acfg->llvm_label_prefix));
+#else
 	return g_strdup_printf (plt_entry->llvm_symbol);
+#endif
 }
 
 MonoJumpInfo*
