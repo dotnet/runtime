@@ -790,7 +790,7 @@ arch_emit_llvm_plt_entry (MonoAotCompile *acfg, int index)
 	fprintf (acfg->fp, ".arm\n");
 #endif
 	/* LLVM calls the PLT entries using bl, so these have to be thumb2 */
-	fprintf (acfg->fp, ".thumb_func\n");
+	/* The caller already transitioned to thumb */
 	/* The code below should be 12 bytes long */
 	fprintf (acfg->fp, "ldr ip, [pc, #8]\n");
 	/* thumb can't encode ld pc, [pc, ip] */
@@ -4081,8 +4081,8 @@ emit_plt (MonoAotCompile *acfg)
 
 				if (acfg->thumb_mixed && !callee_cfg->compile_llvm) {
 					/* LLVM calls the PLT entries using bl, so emit a stub */
-					emit_label (acfg, plt_entry->llvm_symbol);
 					fprintf (acfg->fp, ".thumb_func\n");
+					emit_label (acfg, plt_entry->llvm_symbol);
 					fprintf (acfg->fp, "bx pc\n");
 					fprintf (acfg->fp, "nop\n");
 					fprintf (acfg->fp, ".arm\n");
@@ -4119,6 +4119,9 @@ emit_plt (MonoAotCompile *acfg)
 	}
 
 	if (acfg->thumb_mixed) {
+		/* Make sure the ARM symbols don't alias the thumb ones */
+		emit_zero_bytes (acfg, 16);
+
 		/* 
 		 * Emit a separate set of PLT entries using thumb2 which is called by LLVM generated
 		 * code.
@@ -4147,9 +4150,20 @@ emit_plt (MonoAotCompile *acfg)
 			}
 
 			if (debug_sym) {
+#if defined(__APPLE__)
+				fprintf (acfg->fp, "	.thumb_func %s\n", debug_sym);
+#else
 				emit_local_symbol (acfg, debug_sym, NULL, TRUE);
 				emit_label (acfg, debug_sym);
+#endif
 			}
+#if defined(__APPLE__)
+			fprintf (acfg->fp, "	.align 2\n");
+			fprintf (acfg->fp, "	.code 16\n");
+			fprintf (acfg->fp, "	.thumb_func %s\n", plt_entry->llvm_symbol);
+#else
+			fprintf (acfg->fp, ".thumb_func\n");
+#endif
 
 			emit_label (acfg, plt_entry->llvm_symbol);
 
