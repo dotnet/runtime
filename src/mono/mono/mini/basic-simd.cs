@@ -3155,6 +3155,34 @@ public class SimdTests {
 		return 0;
 	}
 
+	public static int test_0_shuffle_with_two_args_pd () {
+		Vector2d a = new Vector2d (1,2);
+		Vector2d b = new Vector2d (5,6);
+
+		Vector2d c = a.Shuffle (b, 0x2);
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 6)
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_shuffle_with_two_args_ps () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f b = new Vector4f (5, 6, 7, 8);
+
+		Vector4f c = a.Shuffle (b, ShuffleSel.ExpandY);
+		if (c.X != 2)
+			return 1;
+		if (c.Y != 2)
+			return 2;
+		if (c.Z != 6)
+			return 3;
+		if (c.W != 6)
+			return 4;
+		return 0;
+	}
+
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (SimdTests), args);
 	}
