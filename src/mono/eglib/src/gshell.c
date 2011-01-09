@@ -33,7 +33,7 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **error)
 {
 	gchar *ptr;
 	gchar c;
-	gboolean escaped = FALSE;
+	gboolean escaped = FALSE, fresh = TRUE;
 	gchar quote_char = '\0';
 	GString *str;
 
@@ -57,8 +57,10 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **error)
 		} else if (quote_char) {
 			if (c == quote_char) {
 				quote_char = '\0';
-				g_ptr_array_add (array, g_string_free (str, FALSE));
-				str = g_string_new ("");
+				if (fresh && g_ascii_isspace (*ptr)){
+					g_ptr_array_add (array, g_string_free (str, FALSE));
+					str = g_string_new ("");
+				}
 			} else if (c == '\\'){
 				escaped = TRUE;
 			} else 
@@ -71,6 +73,7 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **error)
 		} else if (c == '\\') {
 			escaped = TRUE;
 		} else if (c == '\'' || c == '"') {
+			fresh = str->len == 0;
 			quote_char = c;
 		} else {
 			g_string_append_c (str, c);
