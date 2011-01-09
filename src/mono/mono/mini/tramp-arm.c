@@ -389,7 +389,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	mono_domain_lock (domain);
 	code = buf = mono_domain_code_reserve_align (domain, size, 4);
-	if ((short_branch = branch_for_target_reachable (code + 8, tramp))) {
+	if ((short_branch = branch_for_target_reachable (code + 4, tramp))) {
 		size = 12;
 		mono_domain_code_commit (domain, code, SPEC_TRAMP_SIZE, size);
 	}
