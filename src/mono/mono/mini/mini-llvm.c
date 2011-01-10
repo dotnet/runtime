@@ -256,6 +256,29 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 	}
 }
 
+/* Return the 128 bit SIMD type corresponding to the mono type TYPE */
+static inline G_GNUC_UNUSED LLVMTypeRef
+type_to_simd_type (int type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+		return LLVMVectorType (LLVMInt8Type (), 16);
+	case MONO_TYPE_I2:
+		return LLVMVectorType (LLVMInt16Type (), 8);
+	case MONO_TYPE_I4:
+		return LLVMVectorType (LLVMInt32Type (), 4);
+	case MONO_TYPE_I8:
+		return LLVMVectorType (LLVMInt64Type (), 2);
+	case MONO_TYPE_R8:
+		return LLVMVectorType (LLVMDoubleType (), 2);
+	case MONO_TYPE_R4:
+		return LLVMVectorType (LLVMFloatType (), 4);
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
 /*
  * type_to_llvm_type:
  *
@@ -617,7 +640,7 @@ simd_op_to_intrins (int opcode)
 	case OP_MINPD:
 		return "llvm.x86.sse2.min.pd";
 	case OP_MINPS:
-		return "llvm.x86.sse2.min.ps";
+		return "llvm.x86.sse.min.ps";
 	case OP_PMIND_UN:
 		return "llvm.x86.sse41.pminud";
 	case OP_PMINW_UN:
@@ -629,13 +652,53 @@ simd_op_to_intrins (int opcode)
 	case OP_MAXPD:
 		return "llvm.x86.sse2.max.pd";
 	case OP_MAXPS:
-		return "llvm.x86.sse2.max.ps";
+		return "llvm.x86.sse.max.ps";
+	case OP_HADDPD:
+		return "llvm.x86.sse3.hadd.pd";
+	case OP_HADDPS:
+		return "llvm.x86.sse3.hadd.ps";
+	case OP_HSUBPD:
+		return "llvm.x86.sse3.hsub.pd";
+	case OP_HSUBPS:
+		return "llvm.x86.sse3.hsub.ps";
 	case OP_PMAXD_UN:
 		return "llvm.x86.sse41.pmaxud";
 	case OP_PMAXW_UN:
 		return "llvm.x86.sse41.pmaxuw";
 	case OP_PMAXB_UN:
 		return "llvm.x86.sse2.pmaxu.b";
+	case OP_ADDSUBPD:
+		return "llvm.x86.sse3.addsub.pd";
+	case OP_EXTRACT_MASK:
+		return "llvm.x86.sse2.pmovmskb.128";
+	case OP_PSHRW:
+		return "llvm.x86.sse2.psrli.w";
+	case OP_PSHRD:
+		return "llvm.x86.sse2.psrli.d";
+	case OP_PSHRQ:
+		return "llvm.x86.sse2.psrli.q";
+	case OP_PSHLW:
+		return "llvm.x86.sse2.pslli.w";
+	case OP_PSHLD:
+		return "llvm.x86.sse2.pslli.d";
+	case OP_PSHLQ:
+		return "llvm.x86.sse2.pslli.q";
+	case OP_PADDB_SAT:
+		return "llvm.x86.sse2.padds.b";
+	case OP_PADDW_SAT:
+		return "llvm.x86.sse2.padds.w";
+	case OP_PSUBB_SAT:
+		return "llvm.x86.sse2.psubs.b";
+	case OP_PSUBW_SAT:
+		return "llvm.x86.sse2.psubs.w";
+	case OP_PADDB_SAT_UN:
+		return "llvm.x86.sse2.paddus.b";
+	case OP_PADDW_SAT_UN:
+		return "llvm.x86.sse2.paddus.w";
+	case OP_PSUBB_SAT_UN:
+		return "llvm.x86.sse2.psubus.b";
+	case OP_PSUBW_SAT_UN:
+		return "llvm.x86.sse2.psubus.w";
 	case OP_PCMPEQB:
 		return "llvm.x86.sse2.pcmpeq.b";
 	case OP_PCMPEQW:
@@ -646,6 +709,26 @@ simd_op_to_intrins (int opcode)
 		return "llvm.x86.sse41.pcmpeqq";
 	case OP_PCMPGTB:
 		return "llvm.x86.sse2.pcmpgt.b";
+	case OP_CVTDQ2PD:
+		return "llvm.x86.sse2.cvtdq2pd";
+	case OP_CVTDQ2PS:
+		return "llvm.x86.sse2.cvtdq2ps";
+	case OP_CVTPD2DQ:
+		return "llvm.x86.sse2.cvtpd2dq";
+	case OP_CVTPS2DQ:
+		return "llvm.x86.sse2.cvtps2dq";
+	case OP_CVTPD2PS:
+		return "llvm.x86.sse2.cvtpd2ps";
+	case OP_CVTPS2PD:
+		return "llvm.x86.sse2.cvtps2pd";
+	case OP_CVTTPD2DQ:
+		return "llvm.x86.sse2.cvttpd2dq";
+	case OP_CVTTPS2DQ:
+		return "llvm.x86.sse2.cvttps2dq";
+	case OP_COMPPS:
+		return "llvm.x86.sse.cmp.ps";
+	case OP_COMPPD:
+		return "llvm.x86.sse2.cmp.pd";
 #endif
 	default:
 		g_assert_not_reached ();
@@ -660,23 +743,37 @@ simd_op_to_llvm_type (int opcode)
 	switch (opcode) {
 	case OP_EXTRACT_R8:
 	case OP_EXPAND_R8:
-		return LLVMVectorType (LLVMDoubleType (), 2);
+		return type_to_simd_type (MONO_TYPE_R8);
 	case OP_EXTRACT_I8:
 	case OP_EXPAND_I8:
-		return LLVMVectorType (LLVMInt64Type (), 2);
+		return type_to_simd_type (MONO_TYPE_I8);
 	case OP_EXTRACT_I4:
 	case OP_EXPAND_I4:
-		return LLVMVectorType (LLVMInt32Type (), 4);
+		return type_to_simd_type (MONO_TYPE_I4);
 	case OP_EXTRACT_I2:
 	case OP_EXTRACT_U2:
+	case OP_EXTRACTX_U2:
 	case OP_EXPAND_I2:
-		return LLVMVectorType (LLVMInt16Type (), 8);
+		return type_to_simd_type (MONO_TYPE_I2);
 	case OP_EXTRACT_I1:
 	case OP_EXTRACT_U1:
 	case OP_EXPAND_I1:
-		return LLVMVectorType (LLVMInt8Type (), 16);
+		return type_to_simd_type (MONO_TYPE_I1);
 	case OP_EXPAND_R4:
-		return LLVMVectorType (LLVMFloatType (), 4);
+		return type_to_simd_type (MONO_TYPE_R4);
+	case OP_CVTDQ2PD:
+	case OP_CVTDQ2PS:
+		return type_to_simd_type (MONO_TYPE_I4);
+	case OP_CVTPD2DQ:
+	case OP_CVTPD2PS:
+	case OP_CVTTPD2DQ:
+		return type_to_simd_type (MONO_TYPE_R8);
+	case OP_CVTPS2DQ:
+	case OP_CVTPS2PD:
+	case OP_CVTTPS2DQ:
+		return type_to_simd_type (MONO_TYPE_R4);
+	case OP_EXTRACT_MASK:
+		return type_to_simd_type (MONO_TYPE_I1);
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -796,6 +893,9 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 		if (stype == LLVMInt32Type () && dtype == LLVMDoubleType ())
 			return LLVMBuildBitCast (ctx->builder, LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), ""), dtype, "");
 #endif
+
+		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind)
+			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
 
 		LLVMDumpValue (v);
 		LLVMDumpValue (LLVMConstNull (dtype));
@@ -3332,6 +3432,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, src, "", FALSE, 1);
 			break;
 		}
+		case OP_STOREX_MEMBASE: {
+			LLVMTypeRef t = LLVMTypeOf (values [ins->sreg1]);
+			LLVMValueRef dest;
+
+			dest = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (t, 0));
+			mono_llvm_build_aligned_store (builder, values [ins->sreg1], dest, FALSE, 1);
+			break;
+		}
 		case OP_PADDB:
 		case OP_PADDW:
 		case OP_PADDD:
@@ -3428,6 +3536,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_MINPS:
 		case OP_MAXPD:
 		case OP_MAXPS:
+		case OP_ADDSUBPD:
 		case OP_PMIND_UN:
 		case OP_PMINW_UN:
 		case OP_PMINB_UN:
@@ -3435,6 +3544,18 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_PMAXD_UN:
 		case OP_PMAXW_UN:
 		case OP_PMAXB_UN:
+		case OP_HADDPD:
+		case OP_HADDPS:
+		case OP_HSUBPD:
+		case OP_HSUBPS:
+		case OP_PADDB_SAT:
+		case OP_PADDW_SAT:
+		case OP_PSUBB_SAT:
+		case OP_PSUBW_SAT:
+		case OP_PADDB_SAT_UN:
+		case OP_PADDW_SAT_UN:
+		case OP_PSUBB_SAT_UN:
+		case OP_PSUBW_SAT_UN:
 		case OP_PCMPEQB:
 		case OP_PCMPEQW:
 		case OP_PCMPEQD:
@@ -3453,6 +3574,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_EXTRACT_I4:
 		case OP_EXTRACT_I2:
 		case OP_EXTRACT_U2:
+		case OP_EXTRACTX_U2:
 		case OP_EXTRACT_I1:
 		case OP_EXTRACT_U1: {
 			LLVMTypeRef t;
@@ -3468,6 +3590,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_EXTRACT_I1:
 				break;
 			case OP_EXTRACT_U2:
+			case OP_EXTRACTX_U2:
 			case OP_EXTRACT_U1:
 				zext = TRUE;
 				break;
@@ -3501,7 +3624,57 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, values [ins->dreg], LLVMGetUndef (t), LLVMConstVector (mask, LLVMGetVectorSize (t)), "");
 			break;
 		}
-#endif
+
+		case OP_CVTDQ2PD:
+		case OP_CVTDQ2PS:
+		case OP_CVTPD2DQ:
+		case OP_CVTPS2DQ:
+		case OP_CVTPD2PS:
+		case OP_CVTPS2PD:
+		case OP_CVTTPD2DQ:
+		case OP_CVTTPS2DQ:
+		case OP_EXTRACT_MASK: {
+			LLVMValueRef v;
+
+			v = convert (ctx, values [ins->sreg1], simd_op_to_llvm_type (ins->opcode));
+
+			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, simd_op_to_intrins (ins->opcode)), &v, 1, dname);
+			break;
+		}
+
+		case OP_ICONV_TO_R8_RAW:
+			/* Same as OP_ICONV_TO_R8 */
+			values [ins->dreg] = convert (ctx, LLVMBuildBitCast (builder, lhs, LLVMFloatType (), ""), LLVMDoubleType ());
+			break;
+
+		case OP_COMPPS:
+		case OP_COMPPD: {
+			LLVMValueRef args [3];
+
+			args [0] = lhs;
+			args [1] = rhs;
+			args [2] = LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE);
+
+			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, simd_op_to_intrins (ins->opcode)), args, 3, dname);
+			break;
+		}
+
+		case OP_PSHRW:
+		case OP_PSHRD:
+		case OP_PSHRQ:
+		case OP_PSHLW:
+		case OP_PSHLD:
+		case OP_PSHLQ: {
+			LLVMValueRef args [3];
+
+			args [0] = lhs;
+			args [1] = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
+
+			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, simd_op_to_intrins (ins->opcode)), args, 2, dname);
+			break;
+		}
+
+#endif /* SIMD */
 
 		case OP_DUMMY_USE:
 			break;
@@ -4436,47 +4609,131 @@ add_intrinsics (LLVMModuleRef module)
 
 	/* SSE intrinsics */
 	{
-		LLVMTypeRef vector_type, arg_types [2];
+		LLVMTypeRef ret_type, arg_types [2];
 
-		vector_type = LLVMVectorType (LLVMInt32Type (), 4);
-		arg_types [0] = vector_type;
-		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse41.pminud", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse41.pmaxud", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.d", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		/* Binary ops */
+		ret_type = type_to_simd_type (MONO_TYPE_I4);
+		arg_types [0] = ret_type;
+		arg_types [1] = ret_type;
+		LLVMAddFunction (module, "llvm.x86.sse41.pminud", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse41.pmaxud", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.d", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
 
-		vector_type = LLVMVectorType (LLVMInt16Type (), 8);
-		arg_types [0] = vector_type;
-		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse41.pminuw", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse2.pmins.w", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse41.pmaxuw", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.w", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [0] = ret_type;
+		arg_types [1] = ret_type;
+		LLVMAddFunction (module, "llvm.x86.sse41.pminuw", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pmins.w", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse41.pmaxuw", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.w", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.padds.w", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.psubs.w", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.paddus.w", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.psubus.w", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
 
-		vector_type = LLVMVectorType (LLVMInt8Type (), 16);
-		arg_types [0] = vector_type;
-		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse2.pminu.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse2.pmaxu.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse2.pcmpgt.b", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [0] = ret_type;
+		arg_types [1] = ret_type;
+		LLVMAddFunction (module, "llvm.x86.sse2.pminu.b", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pmaxu.b", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pcmpeq.b", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.pcmpgt.b", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.padds.b", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.psubs.b", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.paddus.b", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.psubus.b", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
 
-		vector_type = LLVMVectorType (LLVMInt64Type (), 2);
-		arg_types [0] = vector_type;
-		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse41.pcmpeqq", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I8);
+		arg_types [0] = ret_type;
+		arg_types [1] = ret_type;
+		LLVMAddFunction (module, "llvm.x86.sse41.pcmpeqq", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
 
-		vector_type = LLVMVectorType (LLVMDoubleType (), 2);
-		arg_types [0] = vector_type;
-		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse2.min.pd", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse2.max.pd", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_R8);
+		arg_types [0] = ret_type;
+		arg_types [1] = ret_type;
+		LLVMAddFunction (module, "llvm.x86.sse2.min.pd", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse2.max.pd", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse3.hadd.pd", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse3.hsub.pd", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse3.addsub.pd", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
 
-		vector_type = LLVMVectorType (LLVMFloatType (), 4);
-		arg_types [0] = vector_type;
-		arg_types [1] = vector_type;
-		LLVMAddFunction (module, "llvm.x86.sse2.min.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
-		LLVMAddFunction (module, "llvm.x86.sse2.max.ps", LLVMFunctionType (vector_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_R4);
+		arg_types [0] = ret_type;
+		arg_types [1] = ret_type;
+		LLVMAddFunction (module, "llvm.x86.sse.min.ps", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse.max.ps", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse3.hadd.ps", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		LLVMAddFunction (module, "llvm.x86.sse3.hsub.ps", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+
+		/* cmp pd/ps */
+		ret_type = type_to_simd_type (MONO_TYPE_R8);
+		arg_types [0] = ret_type;
+		arg_types [1] = ret_type;
+		arg_types [2] = LLVMInt8Type ();
+		LLVMAddFunction (module, "llvm.x86.sse2.cmp.pd", LLVMFunctionType (ret_type, arg_types, 3, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_R4);
+		arg_types [0] = ret_type;
+		arg_types [1] = ret_type;
+		arg_types [2] = LLVMInt8Type ();
+		LLVMAddFunction (module, "llvm.x86.sse.cmp.ps", LLVMFunctionType (ret_type, arg_types, 3, FALSE));
+
+		/* Conversion ops */
+		ret_type = type_to_simd_type (MONO_TYPE_R8);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I4);
+		LLVMAddFunction (module, "llvm.x86.sse2.cvtdq2pd", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_R4);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I4);
+		LLVMAddFunction (module, "llvm.x86.sse2.cvtdq2ps", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I4);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_R8);
+		LLVMAddFunction (module, "llvm.x86.sse2.cvtpd2dq", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I4);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_R4);
+		LLVMAddFunction (module, "llvm.x86.sse2.cvtps2dq", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_R4);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_R8);
+		LLVMAddFunction (module, "llvm.x86.sse2.cvtpd2ps", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_R8);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_R4);
+		LLVMAddFunction (module, "llvm.x86.sse2.cvtps2pd", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
+
+		ret_type = type_to_simd_type (MONO_TYPE_I4);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_R8);
+		LLVMAddFunction (module, "llvm.x86.sse2.cvttpd2dq", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I4);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_R4);
+		LLVMAddFunction (module, "llvm.x86.sse2.cvttps2dq", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
+
+		/* psrl/psll */
+		ret_type = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [0] = ret_type;
+		arg_types [1] = LLVMInt32Type ();
+		LLVMAddFunction (module, "llvm.x86.sse2.psrli.w", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I4);
+		arg_types [0] = ret_type;
+		arg_types [1] = LLVMInt32Type ();
+		LLVMAddFunction (module, "llvm.x86.sse2.psrli.d", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I8);
+		arg_types [0] = ret_type;
+		arg_types [1] = LLVMInt32Type ();
+		LLVMAddFunction (module, "llvm.x86.sse2.psrli.q", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [0] = ret_type;
+		arg_types [1] = LLVMInt32Type ();
+		LLVMAddFunction (module, "llvm.x86.sse2.pslli.w", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I4);
+		arg_types [0] = ret_type;
+		arg_types [1] = LLVMInt32Type ();
+		LLVMAddFunction (module, "llvm.x86.sse2.pslli.d", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+		ret_type = type_to_simd_type (MONO_TYPE_I8);
+		arg_types [0] = ret_type;
+		arg_types [1] = LLVMInt32Type ();
+		LLVMAddFunction (module, "llvm.x86.sse2.pslli.q", LLVMFunctionType (ret_type, arg_types, 2, FALSE));
+
+		/* pmovmskb */
+		ret_type = LLVMInt32Type ();
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I1);
+		LLVMAddFunction (module, "llvm.x86.sse2.pmovmskb.128", LLVMFunctionType (ret_type, arg_types, 1, FALSE));
 	}
 
 	/* Load/Store intrinsics */

@@ -50,6 +50,10 @@ LLVMValueRef
 mono_llvm_build_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
 					   gboolean is_volatile);
 
+LLVMValueRef 
+mono_llvm_build_aligned_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
+							   gboolean is_volatile, int alignment);
+
 void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v);
 
