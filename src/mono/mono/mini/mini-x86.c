@@ -4676,6 +4676,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_movsd_reg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
 			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0x44);
 			break;
+
+		case OP_CVTDQ2PD:
+			x86_sse_alu_ss_reg_reg (code, X86_SSE_CVTDQ2PD, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTDQ2PS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_CVTDQ2PS, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTPD2DQ:
+			x86_sse_alu_sd_reg_reg (code, X86_SSE_CVTPD2DQ, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTPD2PS:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_CVTPD2PS, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTPS2DQ:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_CVTPS2DQ, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTPS2PD:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_CVTPS2PD, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTTPD2DQ:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_CVTTPD2DQ, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTTPS2DQ:
+			x86_sse_alu_ss_reg_reg (code, X86_SSE_CVTTPS2DQ, ins->dreg, ins->sreg1);
+			break;
+
 #endif
 		case OP_LIVERANGE_START: {
 			if (cfg->verbose_level > 1)

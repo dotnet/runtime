@@ -564,6 +564,15 @@ pshrq_reg: dest:x src1:x src2:x len:4 clob:1
 pshlq: dest:x src1:x len:5 clob:1
 pshlq_reg: dest:x src1:x src2:x len:4 clob:1
 
+cvtdq2pd: dest:x src1:x len:4 clob:1
+cvtdq2ps: dest:x src1:x len:3 clob:1
+cvtpd2dq: dest:x src1:x len:4 clob:1
+cvtpd2ps: dest:x src1:x len:4 clob:1
+cvtps2dq: dest:x src1:x len:4 clob:1
+cvtps2pd: dest:x src1:x len:3 clob:1
+cvttpd2dq: dest:x src1:x len:4 clob:1
+cvttps2dq: dest:x src1:x len:4 clob:1
+
 xmove: dest:x src1:x len:4
 xzero: dest:x len:4
 

@@ -3183,6 +3183,109 @@ public class SimdTests {
 		return 0;
 	}
 
+	public static int test_0_i_to_d () {
+		var a = new Vector4i (1, 2, 3, 4);
+		var b = a.ConvertToDouble ();
+		if (b.X != 1)
+			return 1;
+		if (b.Y != 2)
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_i_to_f () {
+		var a = new Vector4i (1, 2, 3, 4);
+		var b = a.ConvertToFloat ();
+		if (b.X != 1)
+			return 1;
+		if (b.Y != 2)
+			return 2;
+		if (b.Z != 3)
+			return 3;
+		if (b.W != 4)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_d_to_i () {
+		var a = new Vector2d (1.4, 2.6);
+		var b = a.ConvertToInt ();
+		if (b.X != 1)
+			return 1;
+		if (b.Y != 3)
+			return 2;
+		if (b.Z != 0)
+			return 3;
+		if (b.W != 0)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_d_to_f () {
+		var a = new Vector2d (1, 2);
+		var b = a.ConvertToFloat ();
+		if (b.X != 1)
+			return 1;
+		if (b.Y != 2)
+			return 2;
+		if (b.Z != 0)
+			return 3;
+		if (b.W != 0)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_f_to_i () {
+		var a = new Vector4f (1.1f, 2.2f, 3.5f, 4.6f);
+		var b = a.ConvertToInt ();
+		if (b.X != 1)
+			return 1;
+		if (b.Y != 2)
+			return 2;
+		if (b.Z != 4)
+			return 3;
+		if (b.W != 5)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_f_to_d () {
+		var a = new Vector4f (1,2,3,4);
+		var b = a.ConvertToDouble ();
+		if (b.X != 1)
+			return 1;
+		if (b.Y != 2)
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_d_to_i_trunc () {
+		var a = new Vector2d (1.4, 2.6);
+		var b = a.ConvertToIntTruncated ();
+		if (b.X != 1)
+			return 1;
+		if (b.Y != 2)
+			return 2;
+		if (b.Z != 0)
+			return 3;
+		if (b.W != 0)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_f_to_i_trunc () {
+		var a = new Vector4f (1.1f, 2.2f, 3.5f, 4.6f);
+		var b = a.ConvertToIntTruncated ();
+		if (b.X != 1)
+			return 1;
+		if (b.Y != 2)
+			return 2;
+		if (b.Z != 3)
+			return 3;
+		if (b.W != 4)
+			return 4;
+		return 0;
+	}
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (SimdTests), args);
 	}
