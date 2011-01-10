@@ -368,6 +368,10 @@ mono_pmip (void *ip)
  * output.  Unlike mono_pmip which returns a string, this routine
  * prints the value on the standard output. 
  */
+#ifdef __GNUC__
+/* Prevent the linker from optimizing this away in embedding setups to help debugging */
+ __attribute__((used))
+#endif
 void
 mono_print_method_from_ip (void *ip)
 {
