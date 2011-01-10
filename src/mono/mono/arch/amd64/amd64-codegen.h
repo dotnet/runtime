@@ -1353,6 +1353,23 @@ typedef union {
 #define amd64_sse_psllq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0xf3)
 
 
+#define amd64_sse_cvtdq2pd_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xF3, 0x0F, 0xE6)
+
+#define amd64_sse_cvtdq2ps_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0F, 0x5B)
+
+#define amd64_sse_cvtpd2dq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xF2, 0x0F, 0xE6)
+
+#define amd64_sse_cvtpd2ps_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0F, 0x5A)
+
+#define amd64_sse_cvtps2dq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0F, 0x5B)
+
+#define amd64_sse_cvtps2pd_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op2((inst), (dreg), (reg), 0x0F, 0x5A)
+
+#define amd64_sse_cvttpd2dq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0F, 0xE6)
+
+#define amd64_sse_cvttps2dq_reg_reg(inst, dreg, reg) emit_sse_reg_reg((inst), (dreg), (reg), 0xF3, 0x0F, 0x5B)
+
+
 #define amd64_movd_xreg_reg_size(inst,dreg,sreg,size) emit_sse_reg_reg_size((inst), (dreg), (sreg), 0x66, 0x0f, 0x6e, (size))
 
 #define amd64_movd_reg_xreg_size(inst,dreg,sreg,size) emit_sse_reg_reg_size((inst), (sreg), (dreg), 0x66, 0x0f, 0x7e, (size))

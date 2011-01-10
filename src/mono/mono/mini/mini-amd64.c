@@ -5952,6 +5952,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_PSHLQ_REG:
 			amd64_sse_psllq_reg_reg (code, ins->dreg, ins->sreg2);
 			break;	
+		case OP_CVTDQ2PD:
+			amd64_sse_cvtdq2pd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTDQ2PS:
+			amd64_sse_cvtdq2ps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTPD2DQ:
+			amd64_sse_cvtpd2dq_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTPD2PS:
+			amd64_sse_cvtpd2ps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTPS2DQ:
+			amd64_sse_cvtps2dq_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTPS2PD:
+			amd64_sse_cvtps2pd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTTPD2DQ:
+			amd64_sse_cvttpd2dq_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVTTPS2DQ:
+			amd64_sse_cvttps2dq_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
 
 		case OP_ICONV_TO_X:
 			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
