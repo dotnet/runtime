@@ -1007,6 +1007,30 @@ mono_type_elements_shift_bits (MonoType *type)
 	g_assert_not_reached ();
 }
 
+static G_GNUC_UNUSED int
+mono_type_to_insert_op (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_INSERT_I1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_INSERT_I2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_INSERT_I4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_INSERT_I8;
+	case MONO_TYPE_R4:
+		return OP_INSERT_R4;
+	case MONO_TYPE_R8:
+		return OP_INSERT_R8;
+	}
+	g_assert_not_reached ();
+}
+
 static int
 mono_type_to_slow_insert_op (MonoType *type)
 {
@@ -1042,7 +1066,14 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 
 	size = mono_type_size (sig->params [0], &align); 
 
-	if (size == 2 || size == 4 || size == 8) {
+	if (COMPILE_LLVM (cfg)) {
+		MONO_INST_NEW (cfg, ins, mono_type_to_insert_op (sig->params [0]));
+		ins->klass = cmethod->klass;
+		ins->dreg = ins->sreg1 = dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
+		ins->sreg2 = args [1]->dreg;
+		ins->inst_c0 = intrinsic->opcode;
+		MONO_ADD_INS (cfg->cbb, ins);
+	} else if (size == 2 || size == 4 || size == 8) {
 		MONO_INST_NEW (cfg, ins, mono_type_to_slow_insert_op (sig->params [0]));
 		ins->klass = cmethod->klass;
 		/*This is a partial load so we encode the dependency on the previous value by setting dreg and sreg1 to the same value.*/
