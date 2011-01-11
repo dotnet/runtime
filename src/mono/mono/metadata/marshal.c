@@ -1869,7 +1869,7 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			case MONO_TYPE_R8:
 				mono_mb_emit_ldloc (mb, 1);
 				mono_mb_emit_ldloc (mb, 0);
-				if (ntype == MONO_NATIVE_U1) {
+				if (t == MONO_TYPE_CHAR && ntype == MONO_NATIVE_U1) {
 					if (to_object) {
 						mono_mb_emit_byte (mb, CEE_LDIND_U1);
 						mono_mb_emit_byte (mb, CEE_STIND_I2);
