@@ -121,7 +121,12 @@ endif
 if LOADED_LLVM
 lib_LTLIBRARIES += libmono-llvm.la
 libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp
-libmono_llvm_la_LIBADD = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(LLVM_LIBS) $(LLVM_LDFLAGS) $(libs)
+libmono_llvm_la_LIBADD = $(LLVM_LIBS) $(LLVM_LDFLAGS)
+if PLATFORM_DARWIN
+libmono_llvm_la_LDFLAGS=-undefined suppress
+else
+libmono_llvm_la_LIBADD += $(top_builddir)/mono/mini/libmono-$(API_VER).la $(libs)
+endif
 endif
 
 endif
