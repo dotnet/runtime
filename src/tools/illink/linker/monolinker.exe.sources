@@ -8,7 +8,6 @@
 ./Mono.Linker/Driver.cs
 ./Mono.Linker/I18nAssemblies.cs
 ./Mono.Linker/MethodAction.cs
-./Mono.Linker/ResolutionException.cs
 ./Mono.Linker/XApiReader.cs
 ./Mono.Linker/IXApiVisitor.cs
 ./Mono.Linker.Steps/BaseStep.cs
