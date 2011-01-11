@@ -6066,8 +6066,11 @@ mono_verifier_verify_class (MonoClass *class)
 			return FALSE;
 		if (!class->generic_class && class->parent->generic_container)
 			return FALSE;
-		if (class->parent->generic_class) {
-			if (!mono_type_is_valid_type_in_context (&class->parent->byval_arg, mono_class_get_context (class)))
+		if (class->parent->generic_class && !class->generic_class) {
+			MonoGenericContext *context = mono_class_get_context (class);
+			if (class->generic_container)
+				context = &class->generic_container->context;
+			if (!mono_type_is_valid_type_in_context (&class->parent->byval_arg, context))
 				return FALSE;
 		}
 	}
