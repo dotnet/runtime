@@ -47,7 +47,6 @@
     <Compile Include="Mono.Linker.Steps\RegenerateGuidStep.cs" />
     <Compile Include="Mono.Linker.Steps\LoadI18nAssemblies.cs" />
     <Compile Include="Mono.Linker\IXApiVisitor.cs" />
-    <Compile Include="Mono.Linker\ResolutionException.cs" />
     <Compile Include="Mono.Linker\I18nAssemblies.cs" />
     <Compile Include="Mono.Linker.Steps\IStep.cs" />
     <Compile Include="Mono.Linker.Steps\LoadReferencesStep.cs" />
