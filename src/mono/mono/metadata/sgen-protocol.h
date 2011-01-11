@@ -22,6 +22,8 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "sgen-gc.h"
+
 #ifdef SGEN_BINARY_PROTOCOL
 
 enum {
@@ -126,6 +128,11 @@ typedef struct {
 
 /* missing: finalizers, dislinks, roots, non-store wbarriers */
 
+void binary_protocol_init (const char *filename) MONO_INTERNAL;
+gboolean binary_protocol_is_enabled (void) MONO_INTERNAL;
+
+void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
+
 void binary_protocol_collection (int generation) MONO_INTERNAL;
 void binary_protocol_alloc (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
 void binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
@@ -145,6 +152,8 @@ void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offs
 		gpointer value, gpointer value_vtable, int value_pinned) MONO_INTERNAL;
 
 #else
+
+#define binary_protocol_is_enabled()	FALSE
 
 #define binary_protocol_flush_buffers(force)
 #define binary_protocol_collection(generation)

@@ -6538,9 +6538,7 @@ check_consistency (void)
 
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 
-#ifdef SGEN_BINARY_PROTOCOL
-	if (!binary_protocol_file)
-#endif
+	if (!binary_protocol_is_enabled ())
 		g_assert (!missing_remsets);
 }
 
@@ -7115,7 +7113,7 @@ mono_gc_base_init (void)
 #ifdef SGEN_BINARY_PROTOCOL
 			} else if (g_str_has_prefix (opt, "binary-protocol=")) {
 				char *filename = strchr (opt, '=') + 1;
-				binary_protocol_file = fopen (filename, "w");
+				binary_protocol_init (filename);
 #endif
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
