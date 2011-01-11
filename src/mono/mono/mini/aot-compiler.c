@@ -506,7 +506,6 @@ arch_init (MonoAotCompile *acfg)
 #ifdef TARGET_ARM
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
-		acfg->llvm_label_prefix = "_";
 	} else {
 #ifdef ARM_FPU_VFP
 		g_string_append (acfg->llc_args, " -mattr=+vfp2,+d16");
@@ -523,6 +522,7 @@ arch_init (MonoAotCompile *acfg)
 #endif
 
 #ifdef __APPLE__
+	acfg->llvm_label_prefix = "_";
 	acfg->need_no_dead_strip = TRUE;
 #endif
 }
@@ -6755,7 +6755,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	arch_init (acfg);
 
-	acfg->got_symbol_base = g_strdup_printf ("%smono_aot_%s_got", acfg->llvm_label_prefix, acfg->image->assembly->aname.name);
+	acfg->got_symbol_base = g_strdup_printf ("mono_aot_%s_got", acfg->image->assembly->aname.name);
 	acfg->plt_symbol = g_strdup_printf ("%smono_aot_%s_plt", acfg->llvm_label_prefix, acfg->image->assembly->aname.name);
 
 	/* Get rid of characters which cannot occur in symbols */
