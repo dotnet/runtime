@@ -2963,6 +2963,11 @@ fi
 	   enable_system_aot=yes
 	fi
 
+	if test "x$enable_loadedllvm" = "xyes"; then
+	   # This seems to fail on the x86 buildbots
+	   enable_system_aot=no
+	fi
+
     if test x$host_win32 = xno -a x$platform_darwin != xyes -a x$enable_system_aot = xyes; then
       echo "ENABLE_AOT = 1" >> $mcs_topdir/build/config.make
     fi
