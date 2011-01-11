@@ -516,7 +516,7 @@ mono_type_is_valid_type_in_context_full (MonoType *type, MonoGenericContext *con
 		 * Fixing the type decoding is really tricky since under some cases this behavior is needed, for example, to
 		 * have a 'class' type pointing to a 'genericinst' class.
 		 *
-		 * For the runtime these non canonical (weird) encodings work fine, they worst they can cause is some
+		 * For the runtime these non canonical (weird) encodings work fine, the worst they can cause is some
 		 * reflection oddities which are harmless  - to security at least.
 		 */
 		if (klass->byval_arg.type != type->type)
@@ -6066,6 +6066,10 @@ mono_verifier_verify_class (MonoClass *class)
 			return FALSE;
 		if (!class->generic_class && class->parent->generic_container)
 			return FALSE;
+		if (class->parent->generic_class) {
+			if (!mono_type_is_valid_type_in_context (&class->parent->byval_arg, mono_class_get_context (class)))
+				return FALSE;
+		}
 	}
 	if (class->generic_container && (class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
 		return FALSE;
