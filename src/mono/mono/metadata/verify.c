@@ -234,6 +234,9 @@ mono_method_is_valid_generic_instantiation (VerifyContext *ctx, MonoMethod *meth
 
 static MonoGenericParam*
 verifier_get_generic_param_from_type (VerifyContext *ctx, MonoType *type);
+
+static gboolean
+verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate);
 //////////////////////////////////////////////////////////////////
 
 
@@ -624,6 +627,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 			ctr = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 
+			/*FIXME maybe we need the same this as verifier_class_is_assignable_from*/
 			if (!mono_class_is_assignable_from_slow (ctr, paramClass))
 				return FALSE;
 		}
@@ -675,7 +679,7 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 				cc = mono_class_from_mono_type (inflated);
 				mono_metadata_free_type (inflated);
 
-				if (mono_class_is_assignable_from (tc, cc))
+				if (verifier_class_is_assignable_from (tc, cc))
 					break;
 
 				/*
@@ -1847,7 +1851,7 @@ is_array_type_compatible (MonoType *target, MonoType *candidate)
 	if (left->rank != right->rank)
 		return FALSE;
 
-	return mono_class_is_assignable_from (left->eklass, right->eklass);
+	return verifier_class_is_assignable_from (left->eklass, right->eklass);
 }
 
 static int
@@ -2030,6 +2034,34 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 		code->stack->stype |= BOXED_MASK;
 }
 
+static gboolean
+verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
+{
+	static MonoClass* generic_icollection_class = NULL;
+	static MonoClass* generic_ienumerable_class = NULL;
+	MonoClass *iface_gtd;
+
+	if (mono_class_is_assignable_from (target, candidate))
+		return TRUE;
+
+	if (!MONO_CLASS_IS_INTERFACE (target) || !target->generic_class || candidate->rank != 1)
+		return FALSE;
+
+	if (generic_icollection_class == NULL) {
+		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "ICollection`1");
+		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
+			"System.Collections.Generic", "IEnumerable`1");
+	}
+	iface_gtd = target->generic_class->container_class;
+	if (iface_gtd != mono_defaults.generic_ilist_class && iface_gtd != generic_icollection_class && iface_gtd != generic_ienumerable_class)
+		return FALSE;
+
+	target = mono_class_from_mono_type (target->generic_class->context.class_inst->type_argv [0]);
+	candidate = candidate->element_class;
+	return mono_class_is_assignable_from (target, candidate);
+}
+
 /*Verify if type 'candidate' can be stored in type 'target'.
  * 
  * If strict, check for the underlying type and not the verification stack types
@@ -2137,8 +2169,7 @@ handle_enum:
 				return FALSE;
 			return target_klass == candidate_klass;
 		}
-		
-		return mono_class_is_assignable_from (target_klass, candidate_klass);
+		return verifier_class_is_assignable_from (target_klass, candidate_klass);
 	}
 
 	case MONO_TYPE_STRING:
@@ -2158,7 +2189,7 @@ handle_enum:
 		/* If candidate is an enum it should return true for System.Enum and supertypes.
 		 * That's why here we use the original type and not the underlying type.
 		 */ 
-		return mono_class_is_assignable_from (target->data.klass, mono_class_from_mono_type (original_candidate));
+		return verifier_class_is_assignable_from (target->data.klass, mono_class_from_mono_type (original_candidate));
 
 	case MONO_TYPE_OBJECT:
 		return MONO_TYPE_IS_REFERENCE (candidate);
@@ -2172,7 +2203,7 @@ handle_enum:
 		left = mono_class_from_mono_type (target);
 		right = mono_class_from_mono_type (candidate);
 
-		return mono_class_is_assignable_from (left, right);
+		return verifier_class_is_assignable_from (left, right);
 	}
 
 	case MONO_TYPE_ARRAY:
@@ -2315,7 +2346,7 @@ is_compatible_boxed_valuetype (VerifyContext *ctx, MonoType *type, MonoType *can
 	if (!strict)
 		return TRUE;
 
-	return MONO_TYPE_IS_REFERENCE (type) && mono_class_is_assignable_from (mono_class_from_mono_type (type), mono_class_from_mono_type (candidate));
+	return MONO_TYPE_IS_REFERENCE (type) && verifier_class_is_assignable_from (mono_class_from_mono_type (type), mono_class_from_mono_type (candidate));
 }
 
 static int
@@ -2388,18 +2419,18 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 		target_klass = mono_class_from_mono_type (target);
 		candidate_klass = mono_class_from_mono_type (candidate);
 		/*FIXME handle nullables and enum*/
-		return mono_class_is_assignable_from (target_klass, candidate_klass);
+		return verifier_class_is_assignable_from (target_klass, candidate_klass);
 	}
 	case MONO_TYPE_OBJECT:
 		return MONO_TYPE_IS_REFERENCE (candidate);
 
 	case MONO_TYPE_CLASS:
-		return mono_class_is_assignable_from(target->data.klass, mono_class_from_mono_type (candidate));
+		return verifier_class_is_assignable_from(target->data.klass, mono_class_from_mono_type (candidate));
 
 	case MONO_TYPE_SZARRAY:
 		if (candidate->type != MONO_TYPE_SZARRAY)
 			return FALSE;
-		return mono_class_is_assignable_from (mono_class_from_mono_type (target)->element_class, mono_class_from_mono_type (candidate)->element_class);
+		return verifier_class_is_assignable_from (mono_class_from_mono_type (target)->element_class, mono_class_from_mono_type (candidate)->element_class);
 
 	case MONO_TYPE_ARRAY:
 		if (candidate->type != MONO_TYPE_ARRAY)
