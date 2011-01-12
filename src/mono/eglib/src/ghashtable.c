@@ -579,13 +579,13 @@ g_direct_hash (gconstpointer v1)
 gboolean
 g_int_equal (gconstpointer v1, gconstpointer v2)
 {
-	return GPOINTER_TO_INT (v1) == GPOINTER_TO_INT (v2);
+	return *(gint *)v1 == *(gint *)v2;
 }
 
 guint
 g_int_hash (gconstpointer v1)
 {
-	return GPOINTER_TO_UINT(v1);
+	return *(guint *)v1;
 }
 
 gboolean
