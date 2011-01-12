@@ -26,6 +26,9 @@
 
 /* pthread impl */
 #include "config.h"
+
+#ifdef HAVE_SGEN_GC
+
 #include <glib.h>
 #include <pthread.h>
 #include <signal.h>
@@ -801,5 +804,7 @@ void mono_sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_dat
 void mono_sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback) MONO_INTERNAL;
 void mono_sgen_los_scan_card_table (SgenGrayQueue *queue) MONO_INTERNAL;
 FILE *mono_sgen_get_logfile (void) MONO_INTERNAL;
+
+#endif /* HAVE_SGEN_GC */
 
 #endif /* __MONO_SGENGC_H__ */
