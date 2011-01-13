@@ -434,6 +434,14 @@ class Tests {
 		if (sum != 1800)
 			return 12;
 
+		/* Null check */
+		object[,] a13 = null;
+		try {
+			a13 [0, 0] = new Object ();
+			return 13;
+		} catch (NullReferenceException) {
+		}
+
 		return 0;
 	}
 

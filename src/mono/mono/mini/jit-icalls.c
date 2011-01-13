@@ -74,6 +74,8 @@ mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	if (!array)
+		mono_raise_exception (mono_get_exception_null_reference ());
 	if (val && !mono_object_isinst (val, array->obj.vtable->klass->element_class))
 		mono_raise_exception (mono_get_exception_array_type_mismatch ());
 }
