@@ -929,8 +929,6 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 
 #endif
 
-#ifdef HAVE_SGEN_GC
-
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 static inline void
@@ -1093,4 +1091,3 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 	g_free (vreg_to_varinfo);
 }
 
-#endif
