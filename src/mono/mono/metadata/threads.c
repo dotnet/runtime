@@ -164,7 +164,7 @@ static __thread MonoInternalThread * tls_current_object MONO_TLS_FAST;
 #define GET_CURRENT_OBJECT() tls_current_object
 #else
 #define SET_CURRENT_OBJECT(x) TlsSetValue (current_object_key, x)
-#define GET_CURRENT_OBJECT() (MonoThread*) TlsGetValue (current_object_key)
+#define GET_CURRENT_OBJECT() (MonoInternalThread*) TlsGetValue (current_object_key)
 #endif
 
 /* function called at thread start */
