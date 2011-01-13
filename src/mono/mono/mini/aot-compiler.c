@@ -374,6 +374,10 @@ static void
 emit_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
 {
 	img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
+#ifdef __APPLE__
+	/* On apple, all symbols need to be aligned to avoid warnings from ld */
+	emit_alignment (acfg, 4);
+#endif
 	img_writer_emit_label (acfg->w, name);
 	img_writer_emit_string (acfg->w, value);
 }
@@ -6177,6 +6181,9 @@ emit_globals (MonoAotCompile *acfg)
 
 		sprintf (symbol, "name_%d", i);
 		emit_section_change (acfg, RODATA_SECT, 1);
+#ifdef __APPLE__
+		emit_alignment (acfg, 4);
+#endif
 		emit_label (acfg, symbol);
 		emit_string (acfg, name);
 	}
