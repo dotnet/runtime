@@ -645,11 +645,11 @@ namespace Mono.Linker.Steps {
 		{
 			var method = instance as GenericInstanceMethod;
 			if (method != null)
-				return method.ElementMethod;
+				return ResolveMethodDefinition (method.ElementMethod);
 
 			var type = instance as GenericInstanceType;
 			if (type != null)
-				return type.ElementType;
+				return ResolveTypeDefinition (type.ElementType);
 
 			return null;
 		}
