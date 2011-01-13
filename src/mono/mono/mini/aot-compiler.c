@@ -489,6 +489,50 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #define PPC_LDX_OP "lwzx"
 #endif
 
+#ifdef TARGET_AMD64
+#define AOT_TARGET_STR "AMD64"
+#endif
+
+#ifdef TARGET_ARM
+#ifdef __MACH__
+#define AOT_TARGET_STR "ARM (MACH)"
+#else
+#define AOT_TARGET_STR "ARM (!MACH)"
+#endif
+#endif
+
+#ifdef TARGET_POWERPC
+#ifdef __mono_ilp32__
+#define AOT_TARGET_STR "POWERPC (mono ilp32)"
+#else
+#define AOT_TARGET_STR "POWERPC (!mono ilp32)"
+#endif
+#endif
+
+#ifdef TARGET_POWERPC64
+#ifdef __mono_ilp32__
+#define AOT_TARGET_STR "POWERPC64 (mono ilp32)"
+#else
+#define AOT_TARGET_STR "POWERPC64 (!mono ilp32)"
+#endif
+#endif
+
+#ifdef TARGET_WIN32
+#define AOT_TARGET_STR "WIN32"
+#endif
+
+#ifdef TARGET_X86
+#ifdef __native_client_codegen__
+#define AOT_TARGET_STR "X86 (native client codegen)"
+#else
+#define AOT_TARGET_STR "X86 (!native client codegen)"
+#endif
+#endif
+
+#ifndef AOT_TARGET_STR
+#define AOT_TARGET_STR ""
+#endif
+
 static void
 arch_init (MonoAotCompile *acfg)
 {
@@ -4539,6 +4583,34 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else if (str_begins_with (arg, "llvm-path=")) {
 			opts->llvm_path = g_strdup (arg + strlen ("llvm-path="));
+		} else if (str_begins_with (arg, "info")) {
+			printf ("AOT target setup: %s.\n", AOT_TARGET_STR);
+			exit (0);
+		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
+			printf ("Supported options for --aot:\n");
+			printf ("    outfile=\n");
+			printf ("    save-temps\n");
+			printf ("    keep-temps\n");
+			printf ("    write-symbols\n");
+			printf ("    metadata-only\n");
+			printf ("    bind-to-runtime-version\n");
+			printf ("    full\n");
+			printf ("    threads=\n");
+			printf ("    static\n");
+			printf ("    asmonly\n");
+			printf ("    asmwriter\n");
+			printf ("    nodebug\n");
+			printf ("    ntrampolines=\n");
+			printf ("    nrgctx-trampolines=\n");
+			printf ("    nimt-trampolines=\n");
+			printf ("    autoreg\n");
+			printf ("    tool-prefix=\n");
+			printf ("    soft-debug\n");
+			printf ("    print-skipped\n");
+			printf ("    stats\n");
+			printf ("    info\n");
+			printf ("    help/?\n");
+			exit (0);
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
