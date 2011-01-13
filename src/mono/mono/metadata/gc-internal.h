@@ -331,5 +331,9 @@ pthread_t mono_gc_get_mach_exception_thread (void) MONO_INTERNAL;
 
 gboolean mono_gc_parse_environment_string_extract_number (const char *str, glong *out) MONO_INTERNAL;
 
+gboolean mono_gc_precise_stack_mark_enabled (void) MONO_INTERNAL;
+
+FILE *mono_gc_get_logfile (void) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

@@ -251,7 +251,7 @@ static gboolean xdomain_checks = FALSE;
 /* If not null, dump the heap after each collection into this file */
 static FILE *heap_dump_file = NULL;
 /* If set, mark stacks conservatively, even if precise marking is possible */
-gboolean conservative_stack_mark = FALSE;
+static gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
@@ -2266,6 +2266,18 @@ mono_gc_get_nursery (int *shift_bits, size_t *size)
 	*shift_bits = -1;
 #endif
 	return nursery_start;
+}
+
+gboolean
+mono_gc_precise_stack_mark_enabled (void)
+{
+	return !conservative_stack_mark;
+}
+
+FILE *
+mono_gc_get_logfile (void)
+{
+	return mono_sgen_get_logfile ();
 }
 
 static void

@@ -232,8 +232,6 @@ extern FILE* gc_debug_file;
 
 extern int current_collection_generation;
 
-extern gboolean conservative_stack_mark;
-
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
 

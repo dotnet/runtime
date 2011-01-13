@@ -58,10 +58,8 @@ alloc_ireg_ref (MonoCompile *cfg)
 {
 	int vreg = alloc_ireg (cfg);
 
-#ifdef HAVE_SGEN_GC
 	if (cfg->compute_gc_maps)
 		mono_mark_vreg_as_ref (cfg, vreg);
-#endif
 
 	return vreg;
 }
@@ -71,10 +69,8 @@ alloc_ireg_mp (MonoCompile *cfg)
 {
 	int vreg = alloc_ireg (cfg);
 
-#ifdef HAVE_SGEN_GC
 	if (cfg->compute_gc_maps)
 		mono_mark_vreg_as_mp (cfg, vreg);
-#endif
 
 	return vreg;
 }

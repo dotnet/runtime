@@ -1131,13 +1131,8 @@ enum {
 
 #define vreg_is_volatile(cfg, vreg) (G_UNLIKELY (get_vreg_to_inst ((cfg), (vreg)) && (get_vreg_to_inst ((cfg), (vreg))->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))))
 
-#ifdef HAVE_SGEN_GC
 #define vreg_is_ref(cfg, vreg) ((vreg) < (cfg)->vreg_is_ref_len ? (cfg)->vreg_is_ref [(vreg)] : 0)
 #define vreg_is_mp(cfg, vreg) ((vreg) < (cfg)->vreg_is_mp_len ? (cfg)->vreg_is_mp [(vreg)] : 0)
-#else
-#define vreg_is_ref(cfg, vreg) FALSE
-#define vreg_is_mp(cfg, vreg) FALSE
-#endif
 
 /*
  * Control Flow Graph and compilation unit information

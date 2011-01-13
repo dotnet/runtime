@@ -12,11 +12,18 @@
 #include <mono/metadata/gc-internal.h>
 
 //#if 0
-#if defined(HAVE_SGEN_GC) && defined(MONO_ARCH_GC_MAPS_SUPPORTED)
+#if defined(MONO_ARCH_GC_MAPS_SUPPORTED)
 
-#include <mono/metadata/sgen-gc.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-counters.h>
+
+#if SIZEOF_VOID_P == 4
+typedef guint32 mword;
+#else
+typedef guint64 mword;
+#endif
+
+#define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
 /* Contains state needed by the GC Map construction code */
 typedef struct {
@@ -1117,7 +1124,7 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 	if (COMPILE_LLVM (cfg))
 		return;
 
-	if (!cfg->compile_aot && conservative_stack_mark)
+	if (!cfg->compile_aot && !mono_gc_precise_stack_mark_enabled ())
 		return;
 
 #if 1
@@ -2310,7 +2317,7 @@ mini_gc_init (void)
 	cb.thread_mark_func = thread_mark_func;
 	mono_gc_set_gc_callbacks (&cb);
 
-	logfile = mono_sgen_get_logfile ();
+	logfile = mono_gc_get_logfile ();
 
 	parse_debug_options ();
 
