@@ -131,13 +131,11 @@ endif
 
 endif
 
-mono_SOURCES = \
-	main.c
-
-mono_CFLAGS = $(AM_CFLAGS) $(BOEHM_DEFINES) $(LIBGC_CFLAGS)
+mono_SOURCES = main.c
+mono_CFLAGS = $(AM_CFLAGS)
 
 mono_sgen_SOURCES = $(mono_SOURCES)
-mono_sgen_CFLAGS = $(SGEN_DEFINES) $(AM_CFLAGS)
+mono_sgen_CFLAGS = $(mono_CFLAGS)
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
@@ -506,7 +504,7 @@ libmono_2_0_la_CFLAGS = $(mono_CFLAGS)
 libmono_2_0_la_LIBADD = $(libs) $(LIBMONO_DTRACE_OBJECT)
 
 libmonosgen_2_0_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
+libmonosgen_2_0_la_CFLAGS = $(mono_CFLAGS)
 libmonosgen_2_0_la_LIBADD = $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 
 if MOONLIGHT
@@ -515,7 +513,7 @@ if MOONLIGHT_BOEHM
 libmono_moon_la_CFLAGS = $(mono_CFLAGS) $(MOONLIGHT_DEFINES)
 libmono_moon_la_LIBADD = $(moon_libs) $(libgc_libs) $(LIBMONO_DTRACE_OBJECT)
 else
-libmono_moon_la_CFLAGS = $(mono_sgen_CFLAGS) $(MOONLIGHT_DEFINES)
+libmono_moon_la_CFLAGS = $(mono_CFLAGS) $(MOONLIGHT_DEFINES)
 libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
 endif
 endif
@@ -526,7 +524,7 @@ libmono_static_la_LDFLAGS = -static
 libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
 
 libmonosgen_static_la_SOURCES = $(libmono_2_0_la_SOURCES)
-libmonosgen_static_la_CFLAGS = $(mono_sgen_CFLAGS)
+libmonosgen_static_la_CFLAGS = $(mono_CFLAGS)
 libmonosgen_static_la_LDFLAGS = -static
 libmonosgen_static_la_LIBADD = $(sgenstatic_libs) $(MONO_DTRACE_OBJECT)
 
