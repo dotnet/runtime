@@ -7192,6 +7192,12 @@ enum {
 	mono_mb_emit_i4 ((mb), (offset));		\
 	} while (0)
 #else
+
+/* 
+ * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
+ * where the two are the same.
+ */
+#ifdef __APPLE__
 #define EMIT_TLS_ACCESS(mb,member,dummy)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
@@ -7200,6 +7206,10 @@ enum {
 	mono_mb_emit_byte ((mb), CEE_ADD);		\
 	mono_mb_emit_byte ((mb), CEE_LDIND_I);		\
 	} while (0)
+#else
+#define EMIT_TLS_ACCESS(mb,member,dummy)	do { g_error ("sgen is not supported when using --with-tls=pthread.\n"); } while (0)
+#endif
+
 #endif
 
 #ifdef MANAGED_ALLOCATION
