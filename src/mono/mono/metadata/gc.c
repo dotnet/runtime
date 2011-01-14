@@ -298,8 +298,6 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
 #elif defined(HAVE_SGEN_GC)
-	MonoDomain *domain;
-
 	if (obj == NULL)
 		mono_raise_exception (mono_get_exception_argument_null ("obj"));
 
