@@ -18,10 +18,6 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-compiler.h>
 
-#ifdef HAVE_SGEN_GC
-#error "Please keep mini/ free of #HAVE_SGEN_GC by using suitable functions in gc-internal.h."
-#endif
-
 #define MONO_BREAKPOINT_ARRAY_SIZE 64
 
 /* C type matching the size of a machine register. Not always the same as 'int' */
