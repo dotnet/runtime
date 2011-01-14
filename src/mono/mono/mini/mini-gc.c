@@ -1124,6 +1124,9 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 	if (COMPILE_LLVM (cfg))
 		return;
 
+	if (!mono_gc_is_moving ())
+		return;
+
 	if (!cfg->compile_aot && !mono_gc_precise_stack_mark_enabled ())
 		return;
 
