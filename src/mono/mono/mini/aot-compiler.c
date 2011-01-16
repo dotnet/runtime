@@ -505,19 +505,19 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 #endif
 #endif
 
+#ifdef TARGET_POWERPC64
+#ifdef __mono_ilp32__
+#define AOT_TARGET_STR "POWERPC64 (mono ilp32)"
+#else
+#define AOT_TARGET_STR "POWERPC64 (!mono ilp32)"
+#endif
+#else
 #ifdef TARGET_POWERPC
 #ifdef __mono_ilp32__
 #define AOT_TARGET_STR "POWERPC (mono ilp32)"
 #else
 #define AOT_TARGET_STR "POWERPC (!mono ilp32)"
 #endif
-#endif
-
-#ifdef TARGET_POWERPC64
-#ifdef __mono_ilp32__
-#define AOT_TARGET_STR "POWERPC64 (mono ilp32)"
-#else
-#define AOT_TARGET_STR "POWERPC64 (!mono ilp32)"
 #endif
 #endif
 
