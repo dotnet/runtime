@@ -609,6 +609,7 @@ enum {
 	INTERNAL_MEM_MS_BLOCK_INFO,
 	INTERNAL_MEM_EPHEMERON_LINK,
 	INTERNAL_MEM_WORKER_DATA,
+	INTERNAL_MEM_BRIDGE_DATA,
 	INTERNAL_MEM_MAX
 };
 
@@ -764,6 +765,11 @@ mono_sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 #define mono_sgen_safe_object_get_size(o)		mono_sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE ((o)), (o))
 
 const char* mono_sgen_safe_name (void* obj) MONO_INTERNAL;
+
+gboolean mono_sgen_object_is_live (void *obj) MONO_INTERNAL;
+
+gboolean mono_sgen_need_bridge_processing (void) MONO_INTERNAL;
+void mono_sgen_bridge_processing (int num_objs, MonoObject **objs) MONO_INTERNAL;
 
 enum {
 	SPACE_MAJOR,
