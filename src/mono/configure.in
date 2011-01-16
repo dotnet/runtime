@@ -3008,7 +3008,6 @@ echo "
 
    Engine:
 	GC:	       $gc_msg 
-	GLIB:	       $with_glib
 	TLS:           $with_tls
 	SIGALTSTACK:   $with_sigaltstack
 	Engine:        $jit_status
