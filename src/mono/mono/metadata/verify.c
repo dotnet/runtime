@@ -554,7 +554,9 @@ verifier_inflate_type (VerifyContext *ctx, MonoType *type, MonoGenericContext *c
 	return result;
 }
 
-
+/*A side note here. We don't need to check if arguments are broken since this
+is only need to be done by the runtime before realizing the type.
+*/
 static gboolean
 is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
 {
@@ -576,8 +578,6 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 
 		paramClass = mono_class_from_mono_type (param_type);
 
-		if (paramClass->exception_type != MONO_EXCEPTION_NONE)
-			return FALSE;
 
 		/* A GTD can't be a generic argument.
 		 *
