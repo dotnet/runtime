@@ -1,14 +1,19 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_OP=$3
 TEST_CALL_OP=$4
 
-TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | sed -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
+TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | $SED -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
 echo $TEST_FILE
-TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
-sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/CALL_OP/${TEST_CALL_OP}/g" > $TEST_FILE <<//EOF
+TEST_TYPE1=`echo $TEST_TYPE1 | $SED -s 's/&/\\\&/'`
+$SED -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/CALL_OP/${TEST_CALL_OP}/g" > $TEST_FILE <<//EOF
 
 .assembly extern mscorlib
 {

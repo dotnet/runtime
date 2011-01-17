@@ -1,17 +1,22 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_OP=$3
 TEST_TYPE1=$4
 TEST_TYPE2=$5
 
-T1_VAL=`echo $TEST_TYPE1 | sed -s 's/\\\&//g'`
+T1_VAL=`echo $TEST_TYPE1 | $SED -s 's/\\\&//g'`
 
 TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME}_generated.il`
 echo $TEST_FILE
 
-sed -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/T1_VAL/${T1_VAL}/g" -e "s/TYPE2/${TEST_TYPE2}/g"  -e "s/OP/${TEST_OP}/g" > $TEST_FILE <<//EOF
+$SED -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/T1_VAL/${T1_VAL}/g" -e "s/TYPE2/${TEST_TYPE2}/g"  -e "s/OP/${TEST_OP}/g" > $TEST_FILE <<//EOF
 
 .assembly extern mscorlib
 {

@@ -1,11 +1,16 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_OP=$1
 
 TEST_OP_SHORT=`echo $TEST_OP | cut -d " " -f 1`
-TEST_FILE=`echo invalid_stack_0_${TEST_OP_SHORT} | sed -e "s/ /_/g" -e "s/\./_/g" -e "s/&/mp/g"`_generated.il
+TEST_FILE=`echo invalid_stack_0_${TEST_OP_SHORT} | $SED -e "s/ /_/g" -e "s/\./_/g" -e "s/&/mp/g"`_generated.il
 echo $TEST_FILE
-sed -e "s/OPCODE/${TEST_OP}/g" > $TEST_FILE <<//EOF
+$SED -e "s/OPCODE/${TEST_OP}/g" > $TEST_FILE <<//EOF
 // invalid CIL which breaks the ECMA-335 rules. 
 // This CIL should fail verification by a conforming CLI verifier.
 

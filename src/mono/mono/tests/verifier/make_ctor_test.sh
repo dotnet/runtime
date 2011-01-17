@@ -1,5 +1,10 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_CODE=$3
@@ -14,9 +19,9 @@ if [ "$TEST_TARGET_TYPE" == "other" ]; then
 	TEST_CODE=""
 fi
 
-TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | sed -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
+TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | $SED -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
 echo $TEST_FILE
-sed -e "s/CODE/${TEST_CODE}/g" -e "s/OTHER/${TEST_OTHER_CODE}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" > $TEST_FILE <<//EOF
+$SED -e "s/CODE/${TEST_CODE}/g" -e "s/OTHER/${TEST_OTHER_CODE}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" > $TEST_FILE <<//EOF
 
 .assembly extern mscorlib
 {

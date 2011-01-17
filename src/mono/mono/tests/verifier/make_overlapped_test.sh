@@ -1,5 +1,10 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_POS_0=$3
@@ -11,10 +16,10 @@ if [ "$TEST_TYPE_0" == "" ] ; then
 	TEST_TYPE_0="int32";
 fi
 
-TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | sed -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
+TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | $SED -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
 echo $TEST_FILE
-TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE_0/${TEST_TYPE_0}/g"> $TEST_FILE <<//EOF
+TEST_TYPE1=`echo $TEST_TYPE1 | $SED -s 's/&/\\\&/'`
+$SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE_0/${TEST_TYPE_0}/g"> $TEST_FILE <<//EOF
 
 // VALIDITY CIL which breaks the ECMA-335 rules. 
 // this CIL should fail verification by a conforming CLI verifier.

@@ -1,5 +1,10 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_OP=$3
@@ -14,8 +19,8 @@ fi
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
-TEST_TYPE=`echo $TEST_TYPE | sed -s 's/&/\\\&/'`
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/INIT/${TEST_INIT}/g" > $TEST_FILE <<//EOF
+TEST_TYPE=`echo $TEST_TYPE | $SED -s 's/&/\\\&/'`
+$SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/INIT/${TEST_INIT}/g" > $TEST_FILE <<//EOF
 
 // VALIDITY CIL which breaks the ECMA-335 rules. 
 // this CIL should fail verification by a conforming CLI verifier.

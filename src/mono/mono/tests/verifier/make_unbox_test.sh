@@ -1,5 +1,10 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_TYPE1=$3
@@ -11,9 +16,9 @@ if [ "${TEST_NO_BOX}" == "yes" ]; then
 	TEST_BOX="";
 fi
 
-TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | sed -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
+TEST_FILE=`echo ${TEST_VALIDITY}_${TEST_NAME} | $SED -e 's/ /_/g' -e 's/\./_/g' -e 's/&/mp/g' -e 's/\[/_/g' -e 's/\]/_/g'`_generated.il
 echo $TEST_FILE
-sed -e "s/BOX_OP/${TEST_BOX}/g"  -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE2/${TEST_TYPE2}/g"  -e "s/POST_OP/${TEST_POST_OP}/g"> $TEST_FILE <<//EOF
+$SED -e "s/BOX_OP/${TEST_BOX}/g"  -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE2/${TEST_TYPE2}/g"  -e "s/POST_OP/${TEST_POST_OP}/g"> $TEST_FILE <<//EOF
 
 .assembly extern mscorlib
 {

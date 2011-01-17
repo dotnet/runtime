@@ -1,5 +1,10 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_OP=$3
@@ -8,7 +13,7 @@ TEST_LOAD=$4
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/LOAD/${TEST_LOAD}/g"  -e "s/OPCODE/${TEST_OP}/g" > $TEST_FILE <<//EOF
+$SED -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/LOAD/${TEST_LOAD}/g"  -e "s/OPCODE/${TEST_OP}/g" > $TEST_FILE <<//EOF
 
 .assembly '${TEST_NAME}_generated'
 {

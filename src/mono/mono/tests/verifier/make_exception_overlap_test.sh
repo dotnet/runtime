@@ -1,5 +1,10 @@
 #! /bin/sh
 
+SED="sed"
+if [ `which gsed 2> /dev/null` ] ; then 
+	SED="gsed"
+fi
+
 TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_BLOCK_1=$3
@@ -57,7 +62,7 @@ fi
 TEST_FILE=${TEST_VALIDITY}_${TEST_NAME}_generated.il
 echo $TEST_FILE
 
-sed -e "s/EXCEPTION_BLOCK_1/${TEST_BLOCK_1}/g" -e "s/EXCEPTION_BLOCK_2/${TEST_BLOCK_2}/g" > $TEST_FILE <<//EOF
+$SED -e "s/EXCEPTION_BLOCK_1/${TEST_BLOCK_1}/g" -e "s/EXCEPTION_BLOCK_2/${TEST_BLOCK_2}/g" > $TEST_FILE <<//EOF
 // VALIDITY CIL
 
 .assembly '${TEST_VALIDITY}_${TEST_NAME}_generated'
