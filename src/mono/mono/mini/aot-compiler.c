@@ -2862,6 +2862,9 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 	MonoMethod *method;
 	gpointer iter;
 
+	if (depth > 8)
+		return;
+
 	mono_class_init (klass);
 
 	if (klass->generic_class && klass->generic_class->context.class_inst->is_open)
@@ -2887,7 +2890,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 		 * FIXME: Instances which are referenced by these methods are not added,
 		 * for example Array.Resize<int> for List<int>.Add ().
 		 */
-		add_extra_method_with_depth (acfg, method, depth);
+		add_extra_method_with_depth (acfg, method, depth + 1);
 	}
 
 	if (klass->delegate) {
@@ -3129,16 +3132,18 @@ add_generic_instances (MonoAotCompile *acfg)
 
 	/* Add types of args/locals */
 	for (i = 0; i < acfg->methods->len; ++i) {
-		int j;
+		int j, depth;
 
 		method = g_ptr_array_index (acfg->methods, i);
+
+		depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
 
 		sig = mono_method_signature (method);
 
 		if (sig) {
 			for (j = 0; j < sig->param_count; ++j)
 				if (sig->params [j]->type == MONO_TYPE_GENERICINST)
-					add_generic_class (acfg, mono_class_from_mono_type (sig->params [j]), FALSE);
+					add_generic_class_with_depth (acfg, mono_class_from_mono_type (sig->params [j]), depth + 1);
 		}
 
 		header = mono_method_get_header (method);
@@ -3146,7 +3151,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (header) {
 			for (j = 0; j < header->num_locals; ++j)
 				if (header->locals [j]->type == MONO_TYPE_GENERICINST)
-					add_generic_class (acfg, mono_class_from_mono_type (header->locals [j]), FALSE);
+					add_generic_class_with_depth (acfg, mono_class_from_mono_type (header->locals [j]), depth + 1);
 		}
 	}
 
