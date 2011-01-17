@@ -433,13 +433,13 @@ typedef struct {
 
 #define s390_emit16(c, x) do 			\
 {						\
-	*((guint16 *) c) = x; 			\
+	*((guint16 *) c) = (guint16) x;		\
 	c += sizeof(guint16);			\
 } while(0)
 
 #define s390_emit32(c, x) do 			\
 {						\
-	*((guint32 *) c) = x; 			\
+	*((guint32 *) c) = (guint32) x;		\
 	c += sizeof(guint32);			\
 } while(0)
 

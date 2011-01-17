@@ -1560,7 +1560,10 @@ enum_retvalue:
 	 * are sometimes made using calli without sig->hasthis set, like in the delegate
 	 * invoke wrappers.
 	 */
-	if (cinfo->struct_ret && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (gsctx, sig->params [0]))))) {
+	if (cinfo->struct_ret && !is_pinvoke && 
+	    (sig->hasthis || 
+             (sig->param_count > 0 && 
+	      MONO_TYPE_IS_REFERENCE (mini_type_get_underlying_type (gsctx, sig->params [0]))))) {
 		if (sig->hasthis) {
 			cinfo->args[nParm].size = sizeof (gpointer);
 			add_general (&gr, sz, cinfo->args + nParm);
@@ -1926,15 +1929,15 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 				size = sizeof (gpointer);
 
-				inst->opcode = OP_REGOFFSET;
+				inst->opcode       = OP_REGOFFSET;
 				inst->inst_basereg = frame_reg;
-				offset = S390_ALIGN (offset, sizeof (gpointer));
-				inst->inst_offset = offset;
+				offset             = S390_ALIGN (offset, sizeof (gpointer));
+				inst->inst_offset  = offset;
 
 				/* Add a level of indirection */
 				MONO_INST_NEW (cfg, indir, 0);
-				*indir = *inst;
-				inst->opcode = OP_VTARG_ADDR;
+				*indir          = *inst;
+				inst->opcode    = OP_VTARG_ADDR;
 				inst->inst_left = indir;
 			}
 				break;
@@ -1962,9 +1965,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			case RegTypeStructByVal :
 				size		   = cinfo->args[iParm].size;
 				offset		   = S390_ALIGN(offset, size);
-				inst->opcode = OP_REGOFFSET;
+				inst->opcode       = OP_REGOFFSET;
 				inst->inst_basereg = frame_reg;
-				inst->inst_offset = offset;
+				inst->inst_offset  = offset;
 				break;
 			default :
 				if (cinfo->args [iParm].reg == STK_BASE) {
@@ -1991,7 +1994,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 									  ? sizeof(int)  
 									  : sizeof(long));
 					offset		   = S390_ALIGN(offset, size);
-					inst->inst_offset  = offset;
+					if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) 
+						inst->inst_offset  = offset;
+					else
+						inst->inst_offset  = offset + (8 - size);
 				}
 				break;
 			}
@@ -2000,7 +2006,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			    (iParm < sig->sentinelpos)) 
 				cfg->sig_cookie += size;
 
-			offset += size;
+			offset += MAX(size, 8);
 		}
 		curinst++;
 	}
@@ -4882,6 +4888,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoInst *inst;
 	int alloc_size, pos, max_offset, i;
 	guint8 *code;
+	guint32 size;
 	CallInfo *cinfo;
 	int tracing = 0;
 	int lmfOffset;
@@ -4949,8 +4956,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
-		ArgInfo *ainfo = &cinfo->ret;
-		inst         = cfg->vret_addr;
+		ArgInfo *ainfo     = &cinfo->ret;
+		inst               = cfg->vret_addr;
 		inst->backend.size = ainfo->vtsize;
 		s390_stg (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 	}
@@ -5020,7 +5027,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					s390_lgr  (code, s390_r13, STK_BASE);
 					s390_aghi (code, s390_r13, alloc_size);
 				}
-				switch (ainfo->size) {
+
+				size = (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE  
+					? mono_class_native_size(mono_class_from_mono_type(inst->inst_vtype), NULL)
+					: ainfo->size);
+
+				switch (size) {
 					case 1:
 						if (ainfo->reg == STK_BASE)
 				                	s390_ic (code, reg, 0, s390_r13, ainfo->offset+7);
