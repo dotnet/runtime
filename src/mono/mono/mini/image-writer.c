@@ -1070,7 +1070,7 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 {
 	FILE *file;
 	ElfHeader header;
-	ElfProgHeader progh [3];
+	ElfProgHeader progh [4];
 	ElfSectHeader secth [SECT_NUM];
 #ifdef USE_ELF_RELA
 	ElfRelocA *relocs;
@@ -1336,7 +1336,7 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	header.e_phoff = sizeof (header);
 	header.e_ehsize = sizeof (header);
 	header.e_phentsize = sizeof (ElfProgHeader);
-	header.e_phnum = 3;
+	header.e_phnum = 4;
 	header.e_entry = secth [SECT_TEXT].sh_addr;
 	header.e_shstrndx = SECT_SHSTRTAB;
 	header.e_shentsize = sizeof (ElfSectHeader);
@@ -1406,6 +1406,13 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	progh [2].p_filesz = progh [2].p_memsz = secth [SECT_DYNAMIC].sh_size;
 	progh [2].p_align = SIZEOF_VOID_P;
 	progh [2].p_flags = 6;
+
+	progh [3].p_type = PT_GNU_STACK;
+	progh [3].p_offset = secth [SECT_DYNAMIC].sh_offset;
+	progh [3].p_vaddr = progh [3].p_paddr = secth [SECT_DYNAMIC].sh_addr;
+	progh [3].p_filesz = progh [3].p_memsz = secth [SECT_DYNAMIC].sh_size;
+	progh [3].p_align = SIZEOF_VOID_P;
+	progh [3].p_flags = 6;
 
 	/* Compute the addresses of the bin sections, so relocation can be done */
 	for (i = 0; i < SECT_NUM; ++i) {

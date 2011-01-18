@@ -185,7 +185,7 @@ typedef struct MonoAotCompile {
 	MonoClass **typespec_classes;
 	GString *llc_args;
 	GString *as_args;
-	gboolean thumb_mixed, need_no_dead_strip;
+	gboolean thumb_mixed, need_no_dead_strip, need_pt_gnu_stack;
 } MonoAotCompile;
 
 typedef struct {
@@ -572,6 +572,10 @@ arch_init (MonoAotCompile *acfg)
 #ifdef __APPLE__
 	acfg->llvm_label_prefix = "_";
 	acfg->need_no_dead_strip = TRUE;
+#endif
+
+#if defined(__linux__)
+	acfg->need_pt_gnu_stack = TRUE;
 #endif
 }
 
@@ -7034,6 +7038,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 
 	emit_mem_end (acfg);
+
+	if (acfg->need_pt_gnu_stack) {
+		/* This is required so the .so doesn't have an executable stack */
+		/* The bin writer already emits this */
+		if (!acfg->use_bin_writer)
+			fprintf (acfg->fp, "\n.section	.note.GNU-stack,\"\",@progbits\n");
+	}
 
 	TV_GETTIME (btv);
 
