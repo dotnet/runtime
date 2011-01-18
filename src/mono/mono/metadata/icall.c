@@ -687,7 +687,6 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 	void * source_addr;
 	MonoClass *src_class;
 	MonoClass *dest_class;
-	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -711,6 +710,10 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 
 	/* Case1: object[] -> valuetype[] (ArrayList::ToArray) */
 	if (src_class == mono_defaults.object_class && dest_class->valuetype) {
+		// FIXME: This is racy
+		return FALSE;
+		/*
+		  int i;
 		int has_refs = dest_class->has_references;
 		for (i = source_idx; i < source_idx + length; ++i) {
 			MonoObject *elem = mono_array_get (source, MonoObject*, i);
@@ -731,6 +734,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 				memcpy (addr, (char *)elem + sizeof (MonoObject), element_size);
 		}
 		return TRUE;
+		*/
 	}
 
 	/* Check if we're copying a char[] <==> (u)short[] */
@@ -741,13 +745,18 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 		if (mono_class_is_subclass_of (src_class, dest_class, FALSE))
 			;
 		/* Case2: object[] -> reftype[] (ArrayList::ToArray) */
-		else if (mono_class_is_subclass_of (dest_class, src_class, FALSE))
+		else if (mono_class_is_subclass_of (dest_class, src_class, FALSE)) {
+			// FIXME: This is racy
+			return FALSE;
+			/*
+			  int i;
 			for (i = source_idx; i < source_idx + length; ++i) {
 				MonoObject *elem = mono_array_get (source, MonoObject*, i);
 				if (elem && !mono_object_isinst (elem, dest_class))
 					return FALSE;
 			}
-		else
+			*/
+		} else
 			return FALSE;
 	}
 
