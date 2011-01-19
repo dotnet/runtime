@@ -464,16 +464,24 @@ dfs2 (HashEntry *entry)
 {
 	int i;
 
-	if (entry->scc_index >= 0) {
-		if (entry->scc_index != current_scc->index)
-			scc_add_xref (DYN_ARRAY_REF (&sccs, entry->scc_index), current_scc);
-		return;
-	}
+	g_assert (dfs_stack.size == 0);
 
-	scc_add_entry (current_scc, entry);
+	dyn_array_ptr_push (&dfs_stack, entry);
 
-	for (i = 0; i < entry->srcs.size; ++i)
-		dfs2 (DYN_ARRAY_PTR_REF (&entry->srcs, i));
+	do {
+		entry = dyn_array_ptr_pop (&dfs_stack);
+
+		if (entry->scc_index >= 0) {
+			if (entry->scc_index != current_scc->index)
+				scc_add_xref (DYN_ARRAY_REF (&sccs, entry->scc_index), current_scc);
+			continue;
+		}
+
+		scc_add_entry (current_scc, entry);
+
+		for (i = 0; i < entry->srcs.size; ++i)
+			dyn_array_ptr_push (&dfs_stack, DYN_ARRAY_PTR_REF (&entry->srcs, i));
+	} while (dfs_stack.size > 0);
 }
 
 static int
