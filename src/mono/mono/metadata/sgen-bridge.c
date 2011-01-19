@@ -123,6 +123,18 @@ dyn_array_ptr_add (DynArray *da, void *ptr)
 	*p = ptr;
 }
 
+#define dyn_array_ptr_push dyn_array_ptr_add
+
+static void*
+dyn_array_ptr_pop (DynArray *da)
+{
+	void *p;
+	g_assert (da->size > 0);
+	p = DYN_ARRAY_PTR_REF (da, da->size - 1);
+	--da->size;
+	return p;
+}
+
 static void
 dyn_array_int_add (DynArray *da, int x)
 {
@@ -360,34 +372,60 @@ object_is_live (MonoObject **objp)
 	return lookup_hash_entry (obj) == NULL;
 }
 
+static DynArray dfs_stack;
+
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 		MonoObject *dst = (MonoObject*)*(ptr);			\
-		if (dst && !object_is_live (&dst))			\
-			dfs1 (get_hash_entry (dst), obj_entry);		\
+		if (dst && !object_is_live (&dst)) {			\
+			dyn_array_ptr_push (&dfs_stack, obj_entry);	\
+			dyn_array_ptr_push (&dfs_stack, get_hash_entry (dst)); \
+		}							\
 	} while (0)
 
 static void
 dfs1 (HashEntry *obj_entry, HashEntry *src)
 {
-	MonoObject *obj = obj_entry->obj;
-	char *start = (char*)obj;
+	g_assert (dfs_stack.size == 0);
 
-	if (src) {
-		//g_print ("link %s -> %s\n", mono_sgen_safe_name (src->obj), mono_sgen_safe_name (obj));
-		add_source (obj_entry, src);
-	} else {
-		//g_print ("starting with %s\n", mono_sgen_safe_name (obj));
-	}
+	dyn_array_ptr_push (&dfs_stack, src);
+	dyn_array_ptr_push (&dfs_stack, obj_entry);
 
-	if (obj_entry->is_visited)
-		return;
+	do {
+		MonoObject *obj;
+		char *start;
 
-	obj_entry->is_visited = TRUE;
+		obj_entry = dyn_array_ptr_pop (&dfs_stack);
+		if (obj_entry) {
+			src = dyn_array_ptr_pop (&dfs_stack);
+
+			obj = obj_entry->obj;
+			start = (char*)obj;
+
+			if (src) {
+				//g_print ("link %s -> %s\n", mono_sgen_safe_name (src->obj), mono_sgen_safe_name (obj));
+				add_source (obj_entry, src);
+			} else {
+				//g_print ("starting with %s\n", mono_sgen_safe_name (obj));
+			}
+
+			if (obj_entry->is_visited)
+				continue;
+
+			obj_entry->is_visited = TRUE;
+
+			dyn_array_ptr_push (&dfs_stack, obj_entry);
+			/* NULL marks that the next entry is to be finished */
+			dyn_array_ptr_push (&dfs_stack, NULL);
 
 #include "sgen-scan-object.h"
+		} else {
+			obj_entry = dyn_array_ptr_pop (&dfs_stack);
 
-	register_finishing_time (obj_entry, current_time++);
+			//g_print ("finish %s\n", mono_sgen_safe_name (obj_entry->obj));
+			register_finishing_time (obj_entry, current_time++);
+		}
+	} while (dfs_stack.size > 0);
 }
 
 static void
@@ -477,6 +515,8 @@ mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 
 	/* first DFS pass */
 
+	dyn_array_ptr_init (&dfs_stack);
+
 	current_time = 0;
 	for (i = 0; i < num_objs; ++i)
 		dfs1 (get_hash_entry (objs [i]), NULL);
@@ -526,6 +566,8 @@ mono_sgen_bridge_processing (int num_objs, MonoObject **objs)
 	}
 
 	//g_print ("%d sccs\n", sccs.size);
+
+	dyn_array_uninit (&dfs_stack);
 
 	/* init data for callback */
 
