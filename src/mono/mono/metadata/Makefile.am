@@ -255,6 +255,7 @@ libmonoruntimeinclude_HEADERS = \
 	mono-config.h		\
 	mono-debug.h		\
 	mono-gc.h		\
+	sgen-bridge.h		\
 	object.h		\
 	opcodes.h		\
 	profiler.h		\
