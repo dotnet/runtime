@@ -2923,6 +2923,9 @@ mono_threads_set_shutting_down (void)
 			LeaveCriticalSection (current_thread->synch_cs);
 		}
 
+		/*since we're killing the thread, unset the current domain.*/
+		mono_domain_unset ();
+
 		/* Wake up other threads potentially waiting for us */
 		ExitThread (0);
 	} else {
