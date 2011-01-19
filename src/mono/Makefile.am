@@ -19,7 +19,16 @@ DIST_SUBDIRS = po libgc eglib mono ikvm-native support data runtime scripts man 
 endif
 endif
 
-EXTRA_DIST= nls.m4 po.m4 progtest.m4 mono-uninstalled.pc.in build-mingw32.sh LICENSE mkinstalldirs autogen.sh 
+EXTRA_DIST= \
+	    LICENSE \
+	    autogen.sh \
+	    build-mingw32.sh \
+	    mkinstalldirs \
+	    mono-uninstalled.pc.in \
+	    nls.m4 \
+	    po.m4 \
+	    progtest.m4 \
+	    winconfig.h
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
