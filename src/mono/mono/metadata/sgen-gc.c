@@ -825,7 +825,7 @@ static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
 static void add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, int generation);
-static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue);
+static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue);
 static void null_links_for_domain (MonoDomain *domain, int generation);
 static gboolean search_fragment_for_size (size_t size);
 static int search_fragment_for_size_range (size_t desired_size, size_t minimum_size);
@@ -2480,6 +2480,15 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	drain_gray_stack (queue);
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
+
+	/*
+	We must clear weak links that don't track resurrection before processing object ready for
+	finalization so they can be cleared before that.
+	*/
+	null_link_in_range (copy_func, start_addr, end_addr, generation, TRUE, queue);
+	if (generation == GENERATION_OLD)
+		null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, TRUE, queue);
+
 	/* walk the finalization queue and move also the objects that need to be
 	 * finalized: use the finalized objects as new roots so the objects they depend
 	 * on are also not reclaimed. As with the roots above, only objects in the nursery
@@ -2531,9 +2540,9 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 */
 	g_assert (gray_object_queue_is_empty (queue));
 	for (;;) {
-		null_link_in_range (copy_func, start_addr, end_addr, generation, queue);
+		null_link_in_range (copy_func, start_addr, end_addr, generation, FALSE, queue);
 		if (generation == GENERATION_OLD)
-			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, queue);
+			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, FALSE, queue);
 		if (gray_object_queue_is_empty (queue))
 			break;
 		drain_gray_stack (queue);
@@ -4288,7 +4297,7 @@ mark_ephemerons_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end
 
 /* LOCKING: requires that the GC lock is held */
 static void
-null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, GrayQueue *queue)
+null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue)
 {
 	DisappearingLinkHashTable *hash = get_dislink_hash_table (generation);
 	DisappearingLink **disappearing_link_hash = hash->table;
@@ -4300,9 +4309,17 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		prev = NULL;
 		for (entry = disappearing_link_hash [i]; entry;) {
-			char *object = DISLINK_OBJECT (entry);
+			char *object;
+			gboolean track = DISLINK_TRACK (entry);
+			if (track == before_finalization) {
+				prev = entry;
+				entry = entry->next;
+				continue;
+			}
+
+			object = DISLINK_OBJECT (entry);
+
 			if (object >= start && object < end && !major_collector.is_object_live (object)) {
-				gboolean track = DISLINK_TRACK (entry);
 				if (!track && object_is_fin_ready (object)) {
 					void **p = entry->link;
 					DisappearingLink *old;
