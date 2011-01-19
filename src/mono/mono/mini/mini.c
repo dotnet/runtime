@@ -6,7 +6,7 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *
  * Copyright 2002-2003 Ximian, Inc.
- * Coprygith 2003-2010 Novell, Inc.
+ * Copyright 2003-2010 Novell, Inc.
  */
 
 #define MONO_LLVM_IN_MINI 1
