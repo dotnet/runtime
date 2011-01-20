@@ -63,9 +63,21 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
+		static void SetAction (LinkContext context, AssemblyDefinition assembly, AssemblyAction action)
+		{
+			TryReadSymbols (context, assembly);
+
+			context.Annotations.SetAction (assembly, action);
+		}
+
+		static void TryReadSymbols (LinkContext context, AssemblyDefinition assembly)
+		{
+			context.SafeReadSymbols (assembly);
+		}
+
 		public static void ProcessLibrary (LinkContext context, AssemblyDefinition assembly)
 		{
-			context.Annotations.SetAction (assembly, AssemblyAction.Copy);
+			SetAction (context, assembly, AssemblyAction.Copy);
 
 			foreach (TypeDefinition type in assembly.MainModule.Types)
 				MarkType (context, type);
@@ -86,7 +98,7 @@ namespace Mono.Linker.Steps {
 
 		void ProcessExecutable (AssemblyDefinition assembly)
 		{
-			Annotations.SetAction (assembly, AssemblyAction.Link);
+			SetAction (Context, assembly, AssemblyAction.Link);
 
 			Annotations.Mark (assembly.EntryPoint.DeclaringType);
 			MarkMethod (Context, assembly.EntryPoint, MethodAction.Parse);
