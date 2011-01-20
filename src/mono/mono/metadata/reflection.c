@@ -6861,6 +6861,10 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	unsigned char format, flags;
 	int i;
 
+	/* for compatibility with .net */
+    if (method->dynamic)
+        mono_raise_exception (mono_get_exception_invalid_operation (NULL));
+
 	if (!System_Reflection_MethodBody)
 		System_Reflection_MethodBody = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MethodBody");
 	if (!System_Reflection_LocalVariableInfo)
