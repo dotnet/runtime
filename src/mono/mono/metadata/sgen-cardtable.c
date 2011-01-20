@@ -316,6 +316,58 @@ collect_faulted_cards (void)
 }
 #endif
 
+#define MWORD_MASK (sizeof (mword) - 1)
+
+static inline int
+find_card_offset (mword card)
+{
+/*XXX Use assembly as this generates some pretty bad code */
+#if defined(__i386__) && defined(__GNUC__)
+	return  (__builtin_ffs (card) - 1) / 8;
+#elif defined(__x86_64__) && defined(__GNUC__)
+	return (__builtin_ffsll (card) - 1) / 8;
+#else
+	int i;
+	guint8 *ptr = &card;
+	for (i = 0; i < sizeof (mword); ++i) {
+		if (card [i])
+			return i;
+	}
+	return 0;
+#endif
+}
+
+static guint8*
+find_next_card (guint8 *card_data, guint8 *end)
+{
+	mword *cards, *cards_end;
+	mword card;
+
+	while ((((mword)card_data) & MWORD_MASK) && card_data < end) {
+		if (*card_data)
+			return card_data;
+		++card_data;
+	}
+
+	cards = (mword*)card_data;
+	cards_end = (mword*)((mword)end & ~MWORD_MASK);
+	while (cards < cards_end) {
+		card = *cards;
+		if (card)
+			return (guint8*)cards + find_card_offset (card);
+		++cards;
+	}
+
+	card_data = (guint8*)cards_end;
+	while (card_data < end) {
+		if (*card_data)
+			return card_data;
+		++card_data;
+	}
+
+	return end;
+}
+
 void
 sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQueue *queue)
 {
@@ -362,18 +414,17 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 
 LOOP_HEAD:
 #endif
-		/*FIXME use card skipping code*/
-		for (; card_data < card_data_end; ++card_data) {
+
+		card_data = find_next_card (card_data, card_data_end);
+		for (; card_data < card_data_end; card_data = find_next_card (card_data + 1, card_data_end)) {
 			int index;
 			int idx = (card_data - card_base) + extra_idx;
 			char *start = (char*)(obj_start + idx * CARD_SIZE_IN_BYTES);
 			char *card_end = start + CARD_SIZE_IN_BYTES;
 			char *elem;
 
-			if (!*card_data)
-				continue;
-
 			HEAVY_STAT (++los_marked_cards);
+
 			if (!cards)
 				sgen_card_table_prepare_card_for_scanning (card_data);
 
@@ -392,8 +443,7 @@ LOOP_HEAD:
 				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
 					gpointer new, old = *(gpointer*)elem;
-					/*XXX it might be faster to do a nursery check here instead as it avoid a call*/
-					if (old) {
+					if (G_UNLIKELY (ptr_in_nursery (old))) {
 						HEAVY_STAT (++los_array_remsets);
 						major_collector.copy_object ((void**)elem, queue);
 						new = *(gpointer*)elem;
