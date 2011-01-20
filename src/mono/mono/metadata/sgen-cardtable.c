@@ -39,6 +39,24 @@
 
 guint8 *sgen_cardtable;
 
+
+#ifdef HEAVY_STATISTICS
+long long marked_cards;
+long long scanned_cards;
+long long scanned_objects;
+
+static long long los_marked_cards;
+static long long large_objects;
+static long long bloby_objects;
+static long long los_array_cards;
+static long long los_array_remsets;
+
+#endif
+static long long major_card_scan_time;
+static long long los_card_scan_time;
+
+static long long last_major_scan_time;
+static long long last_los_scan_time;
 /*WARNING: This function returns the number of cards regardless of overflow in case of overlapping cards.*/
 static mword
 cards_in_range (mword address, mword size)
@@ -162,6 +180,20 @@ card_table_init (void)
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	sgen_shadow_cardtable = mono_sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, TRUE);
 #endif
+
+#ifdef HEAVY_STATISTICS
+	mono_counters_register ("marked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &marked_cards);
+	mono_counters_register ("scanned cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &scanned_cards);
+	mono_counters_register ("los marked cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_marked_cards);
+	mono_counters_register ("los scanned cards", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_scanned_cards);
+	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_array_cards);
+	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_array_remsets);
+	mono_counters_register ("cardtable scanned objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &scanned_objects);
+	mono_counters_register ("cardtable large objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &large_objects);
+	mono_counters_register ("cardtable bloby objects", MONO_COUNTER_GC | MONO_COUNTER_LONG, &bloby_objects);
+#endif
+	mono_counters_register ("cardtable major scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &major_card_scan_time);
+	mono_counters_register ("cardtable los scan time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &los_card_scan_time);
 }
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
@@ -225,6 +257,9 @@ static void
 scan_from_card_tables (void *start_nursery, void *end_nursery, GrayQueue *queue)
 {
 	if (use_cardtable) {
+		TV_DECLARE (atv);
+		TV_DECLARE (btv);
+
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	/*FIXME we should have a bit on each block/los object telling if the object have marked cards.*/
 	/*First we copy*/
@@ -234,8 +269,15 @@ scan_from_card_tables (void *start_nursery, void *end_nursery, GrayQueue *queue)
 	/*Then we clear*/
 	card_table_clear ();
 #endif
+		TV_GETTIME (atv);
 		major_collector.scan_card_table (queue);
+		TV_GETTIME (btv);
+		last_major_scan_time = TV_ELAPSED_MS (atv, btv); 
+		major_card_scan_time += last_major_scan_time;
 		mono_sgen_los_scan_card_table (queue);
+		TV_GETTIME (atv);
+		last_los_scan_time = TV_ELAPSED_MS (btv, atv);
+		los_card_scan_time += last_los_scan_time;
 	}
 }
 
@@ -279,6 +321,8 @@ sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards, SgenGrayQu
 {
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
+
+	HEAVY_STAT (++large_objects);
 
 	if (!SGEN_VTABLE_HAS_REFERENCES (vt))
 		return;
@@ -329,6 +373,7 @@ LOOP_HEAD:
 			if (!*card_data)
 				continue;
 
+			HEAVY_STAT (++los_marked_cards);
 			if (!cards)
 				sgen_card_table_prepare_card_for_scanning (card_data);
 
@@ -344,10 +389,12 @@ LOOP_HEAD:
 				for (; elem < card_end; elem += elem_size)
 					major_collector.minor_scan_vtype (elem, desc, nursery_start, nursery_next, queue);
 			} else {
+				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
 					gpointer new, old = *(gpointer*)elem;
 					/*XXX it might be faster to do a nursery check here instead as it avoid a call*/
 					if (old) {
+						HEAVY_STAT (++los_array_remsets);
 						major_collector.copy_object ((void**)elem, queue);
 						new = *(gpointer*)elem;
 						if (G_UNLIKELY (ptr_in_nursery (new)))
@@ -368,6 +415,7 @@ LOOP_HEAD:
 #endif
 
 	} else {
+		HEAVY_STAT (++bloby_objects);
 		if (cards) {
 			if (sgen_card_table_is_range_marked (cards, (mword)obj, obj_size))
 				major_collector.minor_scan_object (obj, queue);
@@ -379,16 +427,21 @@ LOOP_HEAD:
 
 #ifdef CARDTABLE_STATS
 
-static int total_cards, marked_cards, remarked_cards;
+typedef struct {
+	int total, marked, remarked;	
+} card_stats;
+
+static card_stats major_stats, los_stats;
+static card_stats *cur_stats;
 
 static void
 count_marked_cards (mword start, mword size)
 {
 	mword end = start + size;
 	while (start <= end) {
-		++total_cards;
+		++cur_stats->total;
 		if (sgen_card_table_address_is_marked (start))
-			++marked_cards;
+			++cur_stats->marked;
 		start += CARD_SIZE_IN_BYTES;
 	}
 }
@@ -399,7 +452,7 @@ count_remarked_cards (mword start, mword size)
 	mword end = start + size;
 	while (start <= end) {
 		if (sgen_card_table_address_is_marked (start))
-			++remarked_cards;
+			++cur_stats->remarked;
 		start += CARD_SIZE_IN_BYTES;
 	}
 }
@@ -411,13 +464,21 @@ card_tables_collect_stats (gboolean begin)
 {
 #ifdef CARDTABLE_STATS
 	if (begin) {
-		total_cards = marked_cards = remarked_cards = 0;
+		memset (&major_stats, 0, sizeof (card_stats));
+		memset (&los_stats, 0, sizeof (card_stats));
+		cur_stats = &major_stats;
 		major_collector.iterate_live_block_ranges (count_marked_cards);
-		los_iterate_live_block_ranges (count_marked_cards);
+		cur_stats = &los_stats;
+		mono_sgen_los_iterate_live_block_ranges (count_marked_cards);
 	} else {
+		cur_stats = &major_stats;
 		major_collector.iterate_live_block_ranges (count_marked_cards);
-		los_iterate_live_block_ranges (count_remarked_cards);
-		printf ("cards total %d marked %d remarked %d\n", total_cards, marked_cards, remarked_cards);
+		cur_stats = &los_stats;
+		mono_sgen_los_iterate_live_block_ranges (count_remarked_cards);
+		printf ("cards major (t %d m %d r %d)  los (t %d m %d r %d) major_scan %lld los_scan %lld\n", 
+			major_stats.total, major_stats.marked, major_stats.remarked,
+			los_stats.total, los_stats.marked, los_stats.remarked,
+			last_major_scan_time, last_los_scan_time);
 	}
 #endif
 }

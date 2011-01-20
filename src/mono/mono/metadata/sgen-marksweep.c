@@ -1567,6 +1567,13 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	} END_FOREACH_BLOCK;
 }
 
+#ifdef HEAVY_STATISTICS
+extern long long marked_cards;
+extern long long scanned_cards;
+extern long long scanned_objects;
+
+#endif
+
 #define CARD_WORDS_PER_BLOCK (CARDS_PER_BLOCK / SIZEOF_VOID_P)
 /*
  * MS blocks are 16K aligned.
@@ -1677,8 +1684,13 @@ major_scan_card_table (SgenGrayQueue *queue)
 				char *end = start + CARD_SIZE_IN_BYTES;
 				char *obj;
 
+				HEAVY_STAT (++scanned_cards);
+
 				if (!*card_data)
 					continue;
+
+				HEAVY_STAT (++marked_cards);
+
 				sgen_card_table_prepare_card_for_scanning (card_data);
 
 				if (idx == 0)
@@ -1688,8 +1700,10 @@ major_scan_card_table (SgenGrayQueue *queue)
 
 				obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, index);
 				while (obj < end) {
-					if (MS_OBJ_ALLOCED_FAST (obj, block_start))
+					if (MS_OBJ_ALLOCED_FAST (obj, block_start)) {
+						HEAVY_STAT (++scanned_objects);
 						minor_scan_object (obj, queue);
+					}
 					obj += block_obj_size;
 				}
 			}
