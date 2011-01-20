@@ -4,7 +4,7 @@ RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug
 
 CAS_RUNTIME = $(RUNTIME) --security
 
-CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -debug
+CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/basic/mcs.exe -debug
 PERMVIEW = $(RUNTIME2) $(mcs_topdir)/tools/security/permview.exe
 PROFILE = net_2_0
 

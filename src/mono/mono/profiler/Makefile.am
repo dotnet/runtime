@@ -44,7 +44,7 @@ PLOG_TESTS=$(PLOG_TESTS_SRC:.cs=.exe)
 with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
-MCS = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug
+MCS = $(RUNTIME) $(mcs_topdir)/class/lib/basic/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug
 
 %.exe: %.cs
 	$(MCS) -out:$@ $<

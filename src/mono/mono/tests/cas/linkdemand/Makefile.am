@@ -8,7 +8,7 @@ PROFILE = net_2_0
 
 compiler_defines = -d:NET_2_0
 
-CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -debug
+CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/basic/mcs.exe -debug
 SN = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug $(mcs_topdir)/tools/security/sn.exe
 
 EXTRA_DIST = icall1.cs icall2.cs icall3.cs icall4.cs icall5.cs icall6.cs \
