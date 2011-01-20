@@ -48,6 +48,13 @@ security_safe_critical_attribute (void)
 	return class;
 }
 
+/* sometime we get a NULL (not found) caller (e.g. get_reflection_caller) */
+static char*
+get_method_full_name (MonoMethod * method)
+{
+	return method ? mono_method_full_name (method, TRUE) : g_strdup ("'no caller found'");
+}
+
 /*
  * set_type_load_exception_type
  *
@@ -82,8 +89,8 @@ set_type_load_exception_type (const char *format, MonoClass *class)
 static void
 set_type_load_exception_methods (const char *format, MonoMethod *override, MonoMethod *base)
 {
-	char *method_name = mono_method_full_name (override, TRUE);
-	char *base_name = mono_method_full_name (base, TRUE);
+	char *method_name = get_method_full_name (override);
+	char *base_name = get_method_full_name (base);
 	char *message = g_strdup_printf (format, method_name, base_name);
 
 	g_free (base_name);
@@ -451,8 +458,8 @@ static MonoException*
 get_argument_exception (const char *format, MonoMethod *caller, MonoMethod *callee)
 {
 	MonoException *ex;
-	char *caller_name = mono_method_full_name (caller, TRUE);
-	char *callee_name = mono_method_full_name (callee, TRUE);
+	char *caller_name = get_method_full_name (caller);
+	char *callee_name = get_method_full_name (callee);
 	char *message = g_strdup_printf (format, caller_name, callee_name);
 	g_free (callee_name);
 	g_free (caller_name);
@@ -476,7 +483,7 @@ static MonoException*
 get_field_access_exception (const char *format, MonoMethod *caller, MonoClassField *field)
 {
 	MonoException *ex;
-	char *caller_name = mono_method_full_name (caller, TRUE);
+	char *caller_name = get_method_full_name (caller);
 	char *field_name = mono_field_full_name (field);
 	char *message = g_strdup_printf (format, caller_name, field_name);
 	g_free (field_name);
@@ -501,8 +508,8 @@ static MonoException*
 get_method_access_exception (const char *format, MonoMethod *caller, MonoMethod *callee)
 {
 	MonoException *ex;
-	char *caller_name = caller ? mono_method_full_name (caller, TRUE) : g_strdup ("no caller found");
-	char *callee_name = mono_method_full_name (callee, TRUE);
+	char *caller_name = get_method_full_name (caller);
+	char *callee_name = get_method_full_name (callee);
 	char *message = g_strdup_printf (format, caller_name, callee_name);
 	g_free (callee_name);
 	g_free (caller_name);
