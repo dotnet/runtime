@@ -146,7 +146,7 @@ namespace Mono.Linker {
 			return !_annotations.HasAction (assembly);
 		}
 
-		void SafeReadSymbols (AssemblyDefinition assembly)
+		public void SafeReadSymbols (AssemblyDefinition assembly)
 		{
 			try {
 				assembly.MainModule.ReadSymbols ();
