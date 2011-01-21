@@ -610,6 +610,20 @@ class Tests {
 		return 0;
 	}
 
+
+	struct RecStruct<T> {
+		public void foo (RecStruct<RecStruct<T>> baz) {
+		}
+	}
+
+	public static int test_0_infinite_generic_recursion () {
+		// Check that the AOT compile can deal with infinite generic recursion through
+		// parameter types
+		RecStruct<int> bla;
+
+		return 0;
+	}
+
 	public static int test_0_partial_sharing () {
 		if (PartialShared1 (new List<string> (), 1) != typeof (string))
 			return 1;
