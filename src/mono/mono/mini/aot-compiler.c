@@ -574,7 +574,7 @@ arch_init (MonoAotCompile *acfg)
 	acfg->need_no_dead_strip = TRUE;
 #endif
 
-#if defined(__linux__)
+#if defined(__linux__) && !defined(TARGET_ARM)
 	acfg->need_pt_gnu_stack = TRUE;
 #endif
 }
