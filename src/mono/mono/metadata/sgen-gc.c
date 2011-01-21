@@ -7568,7 +7568,7 @@ mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
 		return NULL;
 	if (collect_before_allocs)
 		return NULL;
-	g_assert (!klass->has_finalize && !klass->marshalbyref);
+	g_assert (!mono_class_has_finalizer (klass) && !klass->marshalbyref);
 
 	return mono_gc_get_managed_allocator_by_type (ATYPE_VECTOR);
 #else
