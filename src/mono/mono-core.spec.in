@@ -228,6 +228,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.0/Mono.Cairo.dll
 %_prefix/lib/mono/4.0/Mono.CompilerServices.SymbolWriter.dll
 %_prefix/lib/mono/4.0/Mono.Management.dll
+%_prefix/lib/mono/4.0/Mono.Parallel.dll
 %_prefix/lib/mono/4.0/Mono.Posix.dll
 %_prefix/lib/mono/4.0/Mono.Security.dll
 %_prefix/lib/mono/4.0/Mono.Simd.dll
@@ -268,6 +269,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/gac/Mono.Cecil.Mdb
 %_prefix/lib/mono/gac/Mono.CompilerServices.SymbolWriter
 %_prefix/lib/mono/gac/Mono.Management
+%_prefix/lib/mono/gac/Mono.Parallel
 %_prefix/lib/mono/gac/Mono.Posix
 %_prefix/lib/mono/gac/Mono.Security
 %_prefix/lib/mono/gac/Mono.Simd
@@ -772,6 +774,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.0/System.Runtime.Serialization.Formatters.Soap.dll
 %_prefix/lib/mono/4.0/System.Web.Abstractions.dll
 %_prefix/lib/mono/4.0/System.Web.ApplicationServices.dll
+%_prefix/lib/mono/4.0/System.Web.Infrastructure.dll
 %_prefix/lib/mono/4.0/System.Web.Routing.dll
 %_prefix/lib/mono/4.0/System.Web.Services.dll
 %_prefix/lib/mono/4.0/System.Web.dll
@@ -789,6 +792,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/gac/System.Web
 %_prefix/lib/mono/gac/System.Web.Abstractions
 %_prefix/lib/mono/gac/System.Web.ApplicationServices
+%_prefix/lib/mono/gac/System.Web.Infrastructure
 %_prefix/lib/mono/gac/System.Web.Routing
 %_prefix/lib/mono/gac/System.Web.Services
 
