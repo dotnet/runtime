@@ -11238,6 +11238,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	klass->flags = tb->attrs;
 	klass->has_cctor = 1;
 	klass->has_finalize = 1;
+	klass->has_finalize_inited = 1;
 
 	/* fool mono_class_setup_parent */
 	klass->supertypes = NULL;

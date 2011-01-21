@@ -1851,6 +1851,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	if (class->generic_class && !class->vtable)
 		mono_class_check_vtable_constraints (class, NULL);
 
+	/* Initialize klass->has_finalize */
+	mono_class_has_finalizer (class);
+
 	if (class->exception_type) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();

@@ -350,6 +350,8 @@ struct _MonoClass {
 	guint simd_type : 1; /* class is a simd intrinsic type */
 	guint is_generic : 1; /* class is a generic type definition */
 	guint is_inflated : 1; /* class is a generic instance */
+	/* next byte */
+	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
 
@@ -1296,5 +1298,8 @@ mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter) MONO_INTERNAL;
 
 gboolean
 mono_class_check_vtable_constraints (MonoClass *class, GList *in_setup) MONO_INTERNAL;
+
+gboolean
+mono_class_has_finalizer (MonoClass *klass) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
