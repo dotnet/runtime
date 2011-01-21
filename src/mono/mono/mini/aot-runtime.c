@@ -3552,25 +3552,38 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	guint32 got_offset;
 	gpointer code;
 	gpointer *buf;
-	int i;
+	int i, index, real_count;
 	MonoAotModule *amodule;
 
 	code = get_numerous_trampoline (MONO_AOT_TRAMP_IMT_THUNK, 1, &amodule, &got_offset, NULL);
 
+	real_count = 0;
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+
+		if (item->is_equals)
+			real_count ++;
+	}
+
 	/* Save the entries into an array */
-	buf = mono_domain_alloc (domain, (count + 1) * 2 * sizeof (gpointer));
+	buf = mono_domain_alloc (domain, (real_count + 1) * 2 * sizeof (gpointer));
+	index = 0;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];		
+
+		if (!item->is_equals)
+			continue;
 
 		g_assert (item->key);
 		/* FIXME: */
 		g_assert (!item->has_target_code);
 
-		buf [(i * 2)] = item->key;
-		buf [(i * 2) + 1] = &(vtable->vtable [item->value.vtable_slot]);
+		buf [(index * 2)] = item->key;
+		buf [(index * 2) + 1] = &(vtable->vtable [item->value.vtable_slot]);
+		index ++;
 	}
-	buf [(count * 2)] = NULL;
-	buf [(count * 2) + 1] = fail_tramp;
+	buf [(index * 2)] = NULL;
+	buf [(index * 2) + 1] = fail_tramp;
 	
 	amodule->got [got_offset] = buf;
 
