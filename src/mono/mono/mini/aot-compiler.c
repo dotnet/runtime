@@ -2894,9 +2894,6 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth)
 	MonoMethod *method;
 	gpointer iter;
 
-	if (depth > 8)
-		return;
-
 	mono_class_init (klass);
 
 	if (klass->generic_class && klass->generic_class->context.class_inst->is_open)
