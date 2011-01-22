@@ -2327,9 +2327,6 @@ mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, Mo
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, rgctx_arg->dreg);
 	}
 
-	if (rgctx_arg)
-		printf ("MOO!\n");
-
 	call = mono_emit_call_args (cfg, sig, args, TRUE, FALSE, FALSE, rgctx_arg ? TRUE : FALSE);
 
 	call->inst.sreg1 = addr->dreg;
@@ -3157,7 +3154,7 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 		addr = emit_get_rgctx_method (cfg, context_used, method,
 									  MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 
-		rgctx = emit_get_rgctx (cfg, method, context_used);
+		rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
 
 		return mono_emit_calli (cfg, mono_method_signature (method), &val, addr, rgctx);
 	} else {
