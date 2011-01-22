@@ -343,7 +343,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	if (find_handle == INVALID_HANDLE_VALUE) {
 		gint32 find_error = GetLastError ();
 		
-		if (find_error == ERROR_FILE_NOT_FOUND) {
+		if (find_error == ERROR_FILE_NOT_FOUND || find_error == ERROR_NO_MORE_FILES) {
 			/* No files, so just return an empty array */
 			result = mono_array_new (domain,
 						 mono_defaults.string_class,
