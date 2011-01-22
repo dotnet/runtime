@@ -1293,9 +1293,7 @@ static void
 major_sweep (void)
 {
 	if (concurrent_sweep) {
-		if (!ms_sweep_thread)
-			pthread_create (&ms_sweep_thread, NULL, ms_sweep_thread_func, NULL);
-
+		g_assert (ms_sweep_thread);
 		ms_signal_sweep_command ();
 	} else {
 		ms_sweep ();
@@ -1723,6 +1721,17 @@ major_is_worker_thread (pthread_t thread)
 
 #undef pthread_create
 
+static void
+post_param_init (void)
+{
+	if (concurrent_sweep) {
+		if (pthread_create (&ms_sweep_thread, NULL, ms_sweep_thread_func, NULL)) {
+			fprintf (stderr, "Error: Could not create sweep thread.\n");
+			exit (1);
+		}
+	}
+}
+
 void
 #ifdef SGEN_PARALLEL_MARK
 #ifdef FIXED_HEAP
@@ -1826,6 +1835,7 @@ mono_sgen_marksweep_init
 	collector->handle_gc_param = major_handle_gc_param;
 	collector->print_gc_param_usage = major_print_gc_param_usage;
 	collector->is_worker_thread = major_is_worker_thread;
+	collector->post_param_init = post_param_init;
 
 	FILL_COLLECTOR_COPY_OBJECT (collector);
 	FILL_COLLECTOR_SCAN_OBJECT (collector);

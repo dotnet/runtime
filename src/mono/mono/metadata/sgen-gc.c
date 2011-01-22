@@ -7154,6 +7154,9 @@ mono_gc_base_init (void)
 		g_strfreev (opts);
 	}
 
+	if (major_collector.post_param_init)
+		major_collector.post_param_init ();
+
 	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
 	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
 

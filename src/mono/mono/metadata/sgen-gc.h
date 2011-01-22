@@ -724,6 +724,7 @@ struct _SgenMajorCollector {
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
 	gboolean (*is_worker_thread) (pthread_t thread);
+	void (*post_param_init) (void);
 };
 
 void mono_sgen_marksweep_init (SgenMajorCollector *collector) MONO_INTERNAL;
