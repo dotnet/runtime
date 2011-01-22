@@ -102,7 +102,7 @@
 	((a)[14] = (gpointer) (UCONTEXT_REG_R15 (ctx)));	\
 	} while (0)
 
-#elif defined(__ppc__)
+#elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
 
 #define REDZONE_SIZE	224
 

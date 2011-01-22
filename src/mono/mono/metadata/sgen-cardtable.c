@@ -327,12 +327,16 @@ find_card_offset (mword card)
 #elif defined(__x86_64__) && defined(__GNUC__)
 	return (__builtin_ffsll (card) - 1) / 8;
 #else
+	// FIXME:
+	g_assert_not_reached ();
+	/*
 	int i;
 	guint8 *ptr = &card;
 	for (i = 0; i < sizeof (mword); ++i) {
 		if (card [i])
 			return i;
 	}
+	*/
 	return 0;
 #endif
 }
