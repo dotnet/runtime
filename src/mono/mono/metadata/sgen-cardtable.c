@@ -353,6 +353,9 @@ find_next_card (guint8 *card_data, guint8 *end)
 		++card_data;
 	}
 
+	if (card_data == end)
+		return end;
+
 	cards = (mword*)card_data;
 	cards_end = (mword*)((mword)end & ~MWORD_MASK);
 	while (cards < cards_end) {
