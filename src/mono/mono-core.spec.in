@@ -484,6 +484,7 @@ Database connectivity for Mono.
 %_prefix/lib/mono/4.0/System.EnterpriseServices.dll
 %_prefix/lib/mono/4.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/4.0/System.Transactions.dll
+%_prefix/lib/mono/4.0/WebMatrix.Data.dll
 %_prefix/lib/mono/4.0/sqlmetal.exe*
 %_prefix/lib/mono/4.0/sqlsharp.exe*
 %_prefix/lib/mono/gac/Mono.Data.Tds
@@ -495,6 +496,7 @@ Database connectivity for Mono.
 %_prefix/lib/mono/gac/System.EnterpriseServices
 %_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.Transactions
+%_prefix/lib/mono/gac/WebMatrix.Data
 
 %package -n mono-winforms
 License:        LGPL v2.1 only
