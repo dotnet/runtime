@@ -118,6 +118,8 @@ mono_sgen_thread_handshake (int signum)
 			count ++;
 
 			mach_port_deallocate (task, t);
+		} else {
+			mach_port_deallocate (task, t);
 		}
 	}
 
