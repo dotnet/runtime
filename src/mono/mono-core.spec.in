@@ -350,6 +350,7 @@ A Library for embedding Mono in your Application (sgen version).
 %files -n libmonosgen-2_0-0
 %defattr(-, root, root)
 %_libdir/libmonosgen-2.0.so.0*
+%_libdir/pkgconfig/monosgen-2.pc
 
 %post -n libmonosgen-2_0-0 -p /sbin/ldconfig
 

@@ -191,6 +191,8 @@ libmonoruntime_la_SOURCES = \
 	sgen-major-copying.c	\
 	sgen-los.c		\
 	sgen-protocol.c \
+	sgen-bridge.c		\
+	sgen-bridge.h		\
 	sgen-gc.h		\
 	sgen-archdep.h		\
 	sgen-cardtable.h	\
@@ -253,6 +255,7 @@ libmonoruntimeinclude_HEADERS = \
 	mono-config.h		\
 	mono-debug.h		\
 	mono-gc.h		\
+	sgen-bridge.h		\
 	object.h		\
 	opcodes.h		\
 	profiler.h		\
