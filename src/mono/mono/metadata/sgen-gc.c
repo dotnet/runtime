@@ -6961,10 +6961,6 @@ mono_gc_base_init (void)
 	struct sigaction sinfo;
 	glong max_heap = 0;
 
-#ifdef PLATFORM_ANDROID
-	g_assert_not_reached ();
-#endif
-
 	/* the gc_initialized guard seems to imply this method is
 	   idempotent, but LOCK_INIT(gc_mutex) might not be.  It's
 	   defined in sgen-gc.h as nothing, so there's no danger at
