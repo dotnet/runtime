@@ -2699,7 +2699,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 			if (t->byref) {
 				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_byte (mb, CEE_LDIND_I);
+				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			} else
 				mono_mb_emit_ldarg (mb, argnum);
 
@@ -2714,7 +2714,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 			label2 = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 
-			index_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			index_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
 			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 			mono_mb_emit_stloc (mb, index_var);
 
@@ -2726,7 +2726,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 			if (t->byref) {
 				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_byte (mb, CEE_LDIND_I);
+				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			} else
 				mono_mb_emit_ldarg (mb, argnum);
 
