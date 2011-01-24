@@ -1437,12 +1437,14 @@ conv_to_icall (MonoMarshalConv conv)
 		return mono_marshal_string_to_utf16;		
 	case MONO_MARSHAL_CONV_LPWSTR_STR:
 		return mono_string_from_utf16;
-	case MONO_MARSHAL_CONV_LPSTR_STR:
+	case MONO_MARSHAL_CONV_LPTSTR_STR:
 #ifdef TARGET_WIN32
 		return mono_string_from_utf16;
 #else
 		return mono_string_new_wrapper;
 #endif
+	case MONO_MARSHAL_CONV_LPSTR_STR:
+		return mono_string_new_wrapper;
 	case MONO_MARSHAL_CONV_STR_LPTSTR:
 #ifdef TARGET_WIN32
 		return mono_marshal_string_to_utf16;
@@ -6615,7 +6617,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 				}
 
 				mono_mb_emit_ldloc (mb, conv_arg);
-				mono_mb_emit_icall (mb, g_free);
+				mono_mb_emit_icall (mb, mono_marshal_free);
 
 				mono_mb_patch_branch (mb, pos2);
 			}
@@ -6677,7 +6679,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	
 			/* Free the pointer allocated by unmanaged code */
 			mono_mb_emit_ldloc (mb, loc);
-			mono_mb_emit_icall (mb, g_free);
+			mono_mb_emit_icall (mb, mono_marshal_free);
 			mono_mb_patch_branch (mb, pos);
 		}
 		break;
