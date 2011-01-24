@@ -376,7 +376,8 @@ BASE_TEST_CS_SRC=		\
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
 	async-exc-compilation.cs \
-	filter-stack.cs
+	filter-stack.cs	\
+	finally_guard.cs
 
 TEST_CS_SRC_GEN = \
 	runtime-invoke.gen.cs \
