@@ -123,6 +123,8 @@ mono_sgen_thread_handshake (int signum)
 		}
 	}
 
+	mono_mach_free_threads (thread_list, num_threads);
+
 	mach_port_deallocate (task, cur_thread);
 
 	return count;

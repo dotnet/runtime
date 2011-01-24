@@ -35,4 +35,10 @@ mono_mach_get_threads (thread_act_array_t *threads, guint32 *count)
 
 	return ret;
 }
+
+kern_return_t
+mono_mach_free_threads (thread_act_array_t threads, guint32 count)
+{
+	return vm_deallocate(current_task (), (vm_address_t) threads, sizeof (thread_t) * count);
+}
 #endif
