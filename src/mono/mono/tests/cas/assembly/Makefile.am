@@ -5,7 +5,7 @@ RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug
 CAS_RUNTIME = $(RUNTIME) --security
 
 CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/basic/mcs.exe -debug
-PERMVIEW = $(RUNTIME2) $(mcs_topdir)/tools/security/permview.exe
+PERMVIEW = $(RUNTIME) $(mcs_topdir)/tools/security/permview.exe
 PROFILE = net_2_0
 
 tests: all.exe min.exe opt.exe ref.exe none.exe
