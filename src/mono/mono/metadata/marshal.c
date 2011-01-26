@@ -4025,6 +4025,8 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 			res = newm;
 			new_key = g_new0 (SignatureMethodPair, 1);
 			*new_key = key;
+			if (static_method_with_first_arg_bound)
+				new_key->sig = signature_dup (del->method->klass->image, key.sig);
 			g_hash_table_insert (cache, new_key, res);
 			mono_marshal_set_wrapper_info (res, new_key);
 			mono_marshal_unlock ();
