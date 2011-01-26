@@ -1469,6 +1469,13 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
 			mono_debugger_agent_handle_exception (obj, ctx, NULL);
+
+			if (mini_get_debug_options ()->suspend_on_unhandled) {
+				fprintf (stderr, "Unhandled exception, suspending...");
+				while (1)
+					;
+			}
+
 			// FIXME: This runs managed code so it might cause another stack overflow when
 			// we are handling a stack overflow
 			mono_unhandled_exception (obj);
