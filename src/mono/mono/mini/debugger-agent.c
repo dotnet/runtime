@@ -6423,7 +6423,10 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 
 			if (handle_class == mono_defaults.typehandle_class) {
 				buffer_add_byte (buf, TOKEN_TYPE_TYPE);
-				buffer_add_typeid (buf, domain, mono_class_from_mono_type ((MonoType*)val));
+				if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+					buffer_add_typeid (buf, domain, (MonoClass *) val);
+				else
+					buffer_add_typeid (buf, domain, mono_class_from_mono_type ((MonoType*)val));
 			} else if (handle_class == mono_defaults.fieldhandle_class) {
 				buffer_add_byte (buf, TOKEN_TYPE_FIELD);
 				buffer_add_fieldid (buf, domain, val);
