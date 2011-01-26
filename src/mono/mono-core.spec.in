@@ -705,7 +705,9 @@ Mono implementation of core WinFX APIs
 
 %files -n mono-winfxcore
 %defattr(-, root, root)
+%_prefix/lib/mono/2.0/System.Data.Services.Client.dll*
 %_prefix/lib/mono/2.0/WindowsBase.dll*
+%_prefix/lib/mono/4.0/System.Data.Services.Client.dll*
 %_prefix/lib/mono/4.0/WindowsBase.dll*
 %_prefix/lib/mono/gac/System.Data.Services.Client
 %_prefix/lib/mono/gac/WindowsBase
