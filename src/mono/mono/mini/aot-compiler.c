@@ -2084,6 +2084,13 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				g_assert_not_reached ();
 			}
 			break;
+		case MONO_WRAPPER_CASTCLASS:
+			if (!strcmp (method->name, "__castclass_with_cache")) {
+				encode_value (MONO_AOT_WRAPPER_CASTCLASS_WITH_CACHE, p, &p);
+			} else {
+				g_assert_not_reached ();
+			}
+			break;
 		default:
 			g_assert_not_reached ();
 		}
@@ -2658,6 +2665,9 @@ add_wrappers (MonoAotCompile *acfg)
 			if (klass)
 				add_method (acfg, mono_marshal_get_virtual_stelemref (mono_array_class_get (klass, 1)));
 		}
+
+		/* castclass_with_check wrapper */
+		add_method (acfg, mono_marshal_get_castclass_with_cache ());
 	}
 
 	/* 
@@ -3555,6 +3565,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		break;
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
+	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		break;
 	case MONO_PATCH_INFO_METHOD_REL:
 		encode_value ((gint)patch_info->data.offset, p, &p);
@@ -4717,6 +4728,11 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 					return TRUE;
 				else
 					return FALSE;
+			case MONO_WRAPPER_CASTCLASS:
+				if (!strcmp (method->name, "__castclass_with_cache"))
+					return TRUE;
+				else
+					return FALSE;
 			default:
 				//printf ("Skip (wrapper call): %d -> %s\n", patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
 				return FALSE;
@@ -5258,7 +5274,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * then removing tailcallelim + the global opts, and adding a second gvn.
 	 */
 	opts = g_strdup ("-instcombine -simplifycfg");
-	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -prune-eh -inline -functionattrs -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -gvn -simplifycfg -preverify -domtree -verify");
+	opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -basiccg -prune-eh -inline -functionattrs -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loopsimplify -domfrontier -loopsimplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loopsimplify -lcssa -iv-users -indvars -loop-deletion -loopsimplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -simplifycfg -preverify -domtree -verify");
 #if 1
 	command = g_strdup_printf ("%sopt -f %s -o temp.opt.bc temp.bc", acfg->aot_opts.llvm_path, opts);
 	printf ("Executing opt: %s\n", command);

@@ -3230,6 +3230,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
 		break;
 	}
+	case MONO_PATCH_INFO_CASTCLASS_CACHE: {
+		target = mono_domain_alloc0 (domain, sizeof (gpointer));
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}

@@ -654,6 +654,15 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				return FALSE;
 			break;
 		}
+		case MONO_WRAPPER_CASTCLASS: {
+			int subtype = decode_value (p, &p);
+
+			if (subtype == MONO_AOT_WRAPPER_CASTCLASS_WITH_CACHE)
+				ref->method = mono_marshal_get_castclass_with_cache ();
+			else
+				g_assert_not_reached ();
+			break;
+		}
 		default:
 			g_assert_not_reached ();
 		}
@@ -2348,6 +2357,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
+	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		gboolean res;
