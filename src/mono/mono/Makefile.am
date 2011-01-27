@@ -2,7 +2,7 @@ if CROSS_COMPILING
 SUBDIRS = utils io-layer cil metadata arch $(interpreter_dir) mini dis
 else
 if MOONLIGHT
-SUBDIRS = utils io-layer metadata arch mini profiler
+SUBDIRS = utils io-layer metadata arch mini
 
 moon-do-build:
 	@list='$(SUBDIRS)'; for subdir in $$list; do \
