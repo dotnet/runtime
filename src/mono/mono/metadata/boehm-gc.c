@@ -132,6 +132,10 @@ mono_gc_base_init (void)
 	GC_init_gcj_malloc (5, NULL);
 #endif
 
+#ifdef HAVE_GC_ALLOW_REGISTER_THREADS
+	GC_allow_register_threads();
+#endif
+
 	if ((env = getenv ("MONO_GC_PARAMS"))) {
 		char **ptr, **opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; *ptr; ++ptr) {

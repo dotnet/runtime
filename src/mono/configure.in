@@ -851,6 +851,14 @@ case "x$gc" in
 		if test "x$found_gc_enable" = "xyes"; then
 			BOEHM_DEFINES="-DHAVE_GC_ENABLE $BOEHM_DEFINES"
 		fi
+
+		# check whether we need to explicitly allow
+               	# thread registering
+               	AC_CHECK_LIB(gc, GC_allow_register_threads, found_allow_register_threads="yes",,$libdl)
+               	if test "x$found_allow_register_threads" = "xyes"; then
+                        AC_DEFINE(HAVE_GC_ALLOW_REGISTER_THREADS, 1, [GC requires thread registration])
+               	fi
+
 		;;
 
 	xincluded)
