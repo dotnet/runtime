@@ -25,7 +25,6 @@ mono_portability_helpers_init (void)
 gchar *
 mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 {
-	g_assert_not_reached();
 	return NULL;
 }
 
@@ -147,7 +146,11 @@ static inline void do_mono_profiler_iomap (GString **report, const char *pathnam
 gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 {
 	GString *report = NULL;
-	gchar *ret = mono_portability_find_file_internal (&report, pathname, last_exists);
+	gchar *ret;
+	
+	if (!pathname || !pathname [0])
+		return NULL;
+	ret = mono_portability_find_file_internal (&report, pathname, last_exists);
 
 	if (report)
 		g_string_free (report, TRUE);

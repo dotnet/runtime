@@ -32,6 +32,7 @@
 #include <mono/utils/mono-path.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
+#include <mono/utils/mono-io-portability.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -2457,11 +2458,17 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 	if (domain && domain->setup && domain->setup->configuration_file) {
 		mono_domain_lock (domain);
 		if (!domain->assembly_bindings_parsed) {
-			gchar *domain_config_file = mono_string_to_utf8 (domain->setup->configuration_file);
+			gchar *domain_config_file_name = mono_string_to_utf8 (domain->setup->configuration_file);
+			gchar *domain_config_file_path = mono_portability_find_file (domain_config_file_name, TRUE);
 
-			mono_config_parse_assembly_bindings (domain_config_file, aname->major, aname->minor, domain, assembly_binding_info_parsed);
+			if (!domain_config_file_path)
+				domain_config_file_path = domain_config_file_name;
+			
+			mono_config_parse_assembly_bindings (domain_config_file_path, aname->major, aname->minor, domain, assembly_binding_info_parsed);
 			domain->assembly_bindings_parsed = TRUE;
-			g_free (domain_config_file);
+			if (domain_config_file_name != domain_config_file_path)
+				g_free (domain_config_file_name);
+			g_free (domain_config_file_path);
 		}
 		mono_domain_unlock (domain);
 

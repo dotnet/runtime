@@ -816,7 +816,7 @@ void
 mono_set_private_bin_path_from_config (MonoDomain *domain)
 {
 	MonoError error;
-	gchar *config_file, *text;
+	gchar *config_file_name = NULL, *text = NULL, *config_file_path = NULL;
 	gsize len;
 	GMarkupParseContext *context;
 	RuntimeConfig runtime_config;
@@ -825,21 +825,23 @@ mono_set_private_bin_path_from_config (MonoDomain *domain)
 	if (!domain || !domain->setup || !domain->setup->configuration_file)
 		return;
 
-	config_file = mono_string_to_utf8_checked (domain->setup->configuration_file, &error); 
+	config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, &error);
 	if (!mono_error_ok (&error)) {
 		mono_error_cleanup (&error);
-		return;
+		goto free_and_out;
 	}
 
-	if (!g_file_get_contents (config_file, &text, &len, NULL)) {
-		g_free (config_file);
-		return;
-	}
+	config_file_path = mono_portability_find_file (config_file_name, TRUE);
+	if (!config_file_path)
+		config_file_path = config_file_name;
+
+	if (!g_file_get_contents (config_file_path, &text, &len, NULL))
+		goto free_and_out;
 
 	runtime_config.runtime_count = 0;
 	runtime_config.assemblybinding_count = 0;
 	runtime_config.domain = domain;
-	runtime_config.filename = config_file;
+	runtime_config.filename = config_file_path;
 	
 	offset = 0;
 	if (len > 3 && text [0] == '\xef' && text [1] == (gchar) '\xbb' && text [2] == '\xbf')
@@ -849,8 +851,12 @@ mono_set_private_bin_path_from_config (MonoDomain *domain)
 	if (g_markup_parse_context_parse (context, text + offset, len - offset, NULL))
 		g_markup_parse_context_end_parse (context, NULL);
 	g_markup_parse_context_free (context);
+
+  free_and_out:
 	g_free (text);
-	g_free (config_file);
+	if (config_file_name != config_file_path)
+		g_free (config_file_name);
+	g_free (config_file_path);
 }
 
 MonoAppDomain *
