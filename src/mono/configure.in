@@ -561,28 +561,15 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir      Chan
 	fi
 )
 
-AC_ARG_WITH([glib],
-	[  --with-glib=embedded|system    Choose glib API: system or embedded (default to embedded)],
-	[], [with_glib=embedded])
-
 ac_configure_args="$ac_configure_args \"CPPFLAGS_FOR_EGLIB=$EGLIB_CPPFLAGS\" \"CFLAGS_FOR_EGLIB=$CFLAGS_FOR_EGLIB\""
 AC_CONFIG_SUBDIRS(eglib)
 
-case $with_glib in
-embedded) 
-  GLIB_CFLAGS='-I$(top_srcdir)/eglib/src -I$(top_builddir)/eglib/src'
-  GLIB_LIBS='-L$(top_builddir)/eglib/src -leglib -lm'
-  BUILD_GLIB_CFLAGS="$GLIB_CFLAGS"
-  BUILD_GLIB_LIBS="$GLIB_LIBS"
-  GMODULE_CFLAGS="$GLIB_CFLAGS"
-  GMODULE_LIBS="$GLIB_LIBS"
-  ;;
-system)
-  AC_MSG_ERROR([--with-glib=system is no longer supported as of Mono 2.8])
-  ;;
-*)
-  AC_MSG_ERROR([Invalid argument to --with-glib.])
-esac
+GLIB_CFLAGS='-I$(top_srcdir)/eglib/src -I$(top_builddir)/eglib/src'
+GLIB_LIBS='-L$(top_builddir)/eglib/src -leglib -lm'
+BUILD_GLIB_CFLAGS="$GLIB_CFLAGS"
+BUILD_GLIB_LIBS="$GLIB_LIBS"
+GMODULE_CFLAGS="$GLIB_CFLAGS"
+GMODULE_LIBS="$GLIB_LIBS"
   
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
@@ -2074,7 +2061,7 @@ X11="libX11.so"
 
 sizeof_register="SIZEOF_VOID_P"
 
-jit_wanted=false
+jit_wanted=true
 interp_wanted=false
 sgen_supported=false
 case "$host" in
@@ -2087,7 +2074,6 @@ case "$host" in
 		arch_target=mips;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 
 		AC_MSG_CHECKING(for mips n32)
 		AC_TRY_COMPILE([], [
@@ -2107,7 +2093,6 @@ case "$host" in
 		TARGET=X86;
 		arch_target=x86;
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		case $host_os in
 		  solaris*)
 			LIBC="libc.so"
@@ -2148,7 +2133,6 @@ case "$host" in
 		TARGET=AMD64;
 		arch_target=amd64;
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		case $host_os in
 		  linux*)
 			sgen_supported=true
@@ -2170,7 +2154,6 @@ case "$host" in
 		arch_target=ia64
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		LIBC="libc.so.6.1"
 		INTL="libc.so.6.1"
 		AC_CHECK_LIB(unwind, _U_dyn_register, [], [AC_MSG_ERROR(library libunwind not found)])
@@ -2191,7 +2174,6 @@ case "$host" in
 			LIBC="libc.so"
 			INTL="libintl.so"
 		esac
-		jit_wanted=true
 		if test x"$GCC" = xyes; then
 			# We don't support v8 cpus
 			CFLAGS="$CFLAGS -Wno-cast-align -mcpu=v9"
@@ -2204,7 +2186,6 @@ case "$host" in
 		TARGET=ALPHA;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		arch_target=alpha;
 		CFLAGS="$CFLAGS -mieee -O0"
 		case $host_os in
@@ -2231,7 +2212,6 @@ case "$host" in
 		arch_target=hppa; 
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		;;
 	macppc-*-openbsd* | powerpc*-*-linux* | powerpc-*-openbsd* | \
         powerpc-*-sysv* | powerpc-*-darwin* | powerpc-*-netbsd* | powerpc-*-freebsd* )
@@ -2245,7 +2225,6 @@ case "$host" in
 		fi
 		arch_target=ppc;
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		case $host_os in
 		  linux*|darwin*)
 			sgen_supported=true
@@ -2258,7 +2237,6 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		CPPFLAGS="$CPPFLAGS -DARM_FPU_NONE=1"
-		jit_wanted=true
 		sgen_supported=true
 		;;
 	arm*-linux*)
@@ -2266,7 +2244,6 @@ case "$host" in
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		sgen_supported=true
 		;;
 	s390-*-linux*)
@@ -2274,7 +2251,6 @@ case "$host" in
 		arch_target=s390;
 		ACCESS_UNALIGNED="yes"
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		sgen_supported=true
 		# Required CFLAGS for s390[x].  USE_STRING_INLINES is automatic with gcc 4.1
 		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
@@ -2284,7 +2260,6 @@ case "$host" in
 		arch_target=s390x;
 		ACCESS_UNALIGNED="yes"
 		JIT_SUPPORTED=yes
-		jit_wanted=true
 		sgen_supported=true
 		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
 		;;
@@ -2393,22 +2368,6 @@ if test x$buildsgen = xyes; then
 fi
 AC_SUBST(SGEN_DEFINES)
 AM_CONDITIONAL(SUPPORT_SGEN, test x$buildsgen = xyes)
-
-AC_ARG_WITH(jit, [  --with-jit=yes,no              If you want to build scripts that default to the JIT (defaults to no)],[
-	if test x$withval = xyes; then
-	   jit_wanted=true
-	else
-	   jit_wanted=false
-	fi
-])
-
-AC_ARG_WITH(interp, [  --with-interp=yes,no           If you want to build scripts that default to the interpreter (defaults to no)],[
-	if test x$withval = xyes; then
-	   interp_wanted=true
-	else
-	   interp_wanted=false
-	fi
-])
 
 USEJIT=false
 if test x$JIT_SUPPORTED = xyes; then
