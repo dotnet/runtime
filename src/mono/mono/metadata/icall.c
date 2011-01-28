@@ -7096,6 +7096,8 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 	if (method->slot >= klass->vtable_size)
 		return m;
 
+	mono_class_setup_vtable (klass);
+
 	result = klass->vtable [method->slot];
 	if (result == NULL) {
 		/* It is an abstract method */
