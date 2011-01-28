@@ -2664,6 +2664,8 @@ add_wrappers (MonoAotCompile *acfg)
 			klass = mono_class_get (acfg->image, token);
 			if (klass)
 				add_method (acfg, mono_marshal_get_virtual_stelemref (mono_array_class_get (klass, 1)));
+			else
+				mono_loader_clear_error ();
 		}
 
 		/* castclass_with_check wrapper */
@@ -2699,6 +2701,11 @@ add_wrappers (MonoAotCompile *acfg)
 		
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
+
+		if (!klass) {
+			mono_loader_clear_error ();
+			continue;
+		}
 
 		if (klass->delegate && klass != mono_defaults.delegate_class && klass != mono_defaults.multicastdelegate_class && !klass->generic_container) {
 			method = mono_get_delegate_invoke (klass);
@@ -2806,6 +2813,11 @@ add_wrappers (MonoAotCompile *acfg)
 		
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
+
+		if (!klass) {
+			mono_loader_clear_error ();
+			continue;
+		}
 
 		if (klass->valuetype && !klass->generic_container && can_marshal_struct (klass)) {
 			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
@@ -3166,8 +3178,10 @@ add_generic_instances (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
 
 		klass = mono_class_get (acfg->image, token);
-		if (!klass || klass->rank)
+		if (!klass || klass->rank) {
+			mono_loader_clear_error ();
 			continue;
+		}
 
 		add_generic_class (acfg, klass, FALSE);
 	}
@@ -4037,6 +4051,8 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	gpointer iter = NULL;
 
 	if (!klass) {
+		mono_loader_clear_error ();
+
 		buf_size = 16;
 
 		p = buf = g_malloc (buf_size);
@@ -4836,6 +4852,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
+		//printf ("E: %s\n", mono_method_full_name (method, TRUE));
 		/* Let the exception happen at runtime */
 		return;
 	}
@@ -5980,8 +5997,10 @@ emit_class_name_table (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
-		if (!klass)
+		if (!klass) {
+			mono_loader_clear_error ();
 			continue;
+		}
 		full_name = mono_type_get_name_full (mono_class_get_type (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
 		hash = mono_metadata_str_hash (full_name) % table_size;
 		g_free (full_name);
