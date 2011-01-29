@@ -5855,7 +5855,7 @@ unregister_thread (void *k)
 	 * the thread
 	 */
 	if (mono_domain_get ())
-		mono_thread_detach ();
+		mono_thread_detach (mono_thread_current ());
 
 	LOCK_GC;
 	unregister_current_thread ();
