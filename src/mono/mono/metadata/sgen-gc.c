@@ -5848,7 +5848,15 @@ unregister_current_thread (void)
 static void
 unregister_thread (void *k)
 {
-	g_assert (!mono_domain_get ());
+	/* If a delegate is passed to native code and invoked on a thread we dont
+	 * know about, the jit will register it with mono_jit_thead_attach, but
+	 * we have no way of knowing when that thread goes away.  SGen has a TSD
+	 * so we assume that if the domain is still registered, we can detach
+	 * the thread
+	 */
+	if (mono_domain_get ())
+		mono_thread_detach ();
+
 	LOCK_GC;
 	unregister_current_thread ();
 	UNLOCK_GC;
