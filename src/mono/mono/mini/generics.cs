@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 class Tests {
 
@@ -823,5 +824,28 @@ class Tests {
 	
 	static T Unbox <T> (object o) {
 		return (T) o;
+	}
+
+	interface IDefaultRetriever
+	{
+		T GetDefault<T>();
+	}
+
+	class DefaultRetriever : IDefaultRetriever
+	{
+		[MethodImpl(MethodImplOptions.Synchronized)]
+		public T GetDefault<T>()
+		{
+			return default(T);
+		}
+	}
+
+	public static int test_0_regress_668095_synchronized_gshared () {
+		return DoSomething (new DefaultRetriever ());
+	}
+
+    static int DoSomething(IDefaultRetriever foo) {
+		int result = foo.GetDefault<int>();
+		return result;
 	}
 }
