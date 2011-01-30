@@ -144,7 +144,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *extra_methods;
 	GPtrArray *image_table;
 	GPtrArray *globals;
-	GList *method_order;
+	GPtrArray *method_order;
 	guint32 *plt_got_info_offsets;
 	guint32 got_offset, plt_offset, plt_got_offset_base;
 	guint32 final_got_size;
@@ -2372,8 +2372,7 @@ add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra, int d
 	index = acfg->method_index;
 	add_method_with_index (acfg, method, index, extra);
 
-	/* FIXME: Fix quadratic behavior */
-	acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (index));
+	g_ptr_array_add (acfg->method_order, GUINT_TO_POINTER (index));
 
 	g_hash_table_insert (acfg->method_depth, method, GUINT_TO_POINTER (depth));
 
@@ -5105,7 +5104,8 @@ load_profile_files (MonoAotCompile *acfg)
 	int file_index, res, method_index, i;
 	char ver [256];
 	guint32 token;
-	GList *unordered;
+	GList *unordered, *l;
+	gboolean found;
 
 	file_index = 0;
 	while (TRUE) {
@@ -5151,9 +5151,15 @@ load_profile_files (MonoAotCompile *acfg)
 				token = mono_method_get_token (method);
 				method_index = mono_metadata_token_index (token) - 1;
 
-				if (!g_list_find (acfg->method_order, GUINT_TO_POINTER (method_index))) {
-					acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (method_index));
+				found = FALSE;
+				for (i = 0; i < acfg->method_order->len; ++i) {
+					if (g_ptr_array_index (acfg->method_order, i) == GUINT_TO_POINTER (method_index)) {
+						found = TRUE;
+						break;
+					}
 				}
+				if (!found)
+					g_ptr_array_add (acfg->method_order, GUINT_TO_POINTER (method_index));
 			} else {
 				//printf ("No method found matching '%s'.\n", name);
 			}
@@ -5163,15 +5169,20 @@ load_profile_files (MonoAotCompile *acfg)
 
 	/* Add missing methods */
 	unordered = NULL;
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		if (!g_list_find (acfg->method_order, GUINT_TO_POINTER (i)))
-			unordered = g_list_prepend (unordered, GUINT_TO_POINTER (i));
+	for (method_index = 0; method_index < acfg->image->tables [MONO_TABLE_METHOD].rows; ++method_index) {
+		found = FALSE;
+		for (i = 0; i < acfg->method_order->len; ++i) {
+			if (g_ptr_array_index (acfg->method_order, i) == GUINT_TO_POINTER (method_index)) {
+				found = TRUE;
+				break;
+			}
+		}
+		if (!found)
+			unordered = g_list_prepend (unordered, GUINT_TO_POINTER (method_index));
 	}
 	unordered = g_list_reverse (unordered);
-	if (acfg->method_order)
-		g_list_last (acfg->method_order)->next = unordered;
-	else
-		acfg->method_order = unordered;
+	for (l = unordered; l; l = l->next)
+		g_ptr_array_add (acfg->method_order, l->data);
 }
  
 /* Used by the LLVM backend */
@@ -5329,10 +5340,9 @@ emit_llvm_file (MonoAotCompile *acfg)
 static void
 emit_code (MonoAotCompile *acfg)
 {
-	int i;
+	int oindex, i;
 	char symbol [256];
 	char end_symbol [256];
-	GList *l;
 
 #if defined(TARGET_POWERPC64)
 	sprintf (symbol, ".Lgot_addr");
@@ -5378,13 +5388,12 @@ emit_code (MonoAotCompile *acfg)
 		emit_bytes (acfg, pad_buffer, kPaddingSize);
 	}
 #endif
-	
 
-	for (l = acfg->method_order; l != NULL; l = l->next) {
+	for (oindex = 0; oindex < acfg->method_order->len; ++oindex) {
 		MonoCompile *cfg;
 		MonoMethod *method;
 
-		i = GPOINTER_TO_UINT (l->data);
+		i = GPOINTER_TO_UINT (g_ptr_array_index (acfg->method_order, oindex));
 
 		cfg = acfg->cfgs [i];
 
@@ -5467,15 +5476,14 @@ emit_code (MonoAotCompile *acfg)
 static void
 emit_info (MonoAotCompile *acfg)
 {
-	int i;
+	int oindex, i;
 	char symbol [256];
-	GList *l;
 	gint32 *offsets;
 
 	offsets = g_new0 (gint32, acfg->nmethods);
 
-	for (l = acfg->method_order; l != NULL; l = l->next) {
-		i = GPOINTER_TO_UINT (l->data);
+	for (oindex = 0; oindex < acfg->method_order->len; ++oindex) {
+		i = GPOINTER_TO_UINT (g_ptr_array_index (acfg->method_order, oindex));
 
 		if (acfg->cfgs [i]) {
 			emit_method_info (acfg, acfg->cfgs [i]);
@@ -6789,6 +6797,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->unwind_info_offsets = g_hash_table_new (NULL, NULL);
 	acfg->unwind_ops = g_ptr_array_new ();
 	acfg->method_label_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+	acfg->method_order = g_ptr_array_new ();
 	InitializeCriticalSection (&acfg->mutex);
 
 	return acfg;
