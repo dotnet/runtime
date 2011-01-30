@@ -107,12 +107,21 @@
 #define REDZONE_SIZE	224
 
 #define ARCH_NUM_REGS 32
+#ifdef __APPLE__
 #define ARCH_STORE_REGS(ptr)	\
 	__asm__ __volatile__(	\
 		"stmw r0, 0(%0)\n"	\
 		:			\
 		: "b" (ptr)		\
 	)
+#else
+#define ARCH_STORE_REGS(ptr)	\
+	__asm__ __volatile__(	\
+		"stmw 0, 0(%0)\n"	\
+		:			\
+		: "b" (ptr)		\
+	)
+#endif
 #define ARCH_SIGCTX_SP(ctx)	(UCONTEXT_REG_Rn((ctx), 1))
 #define ARCH_SIGCTX_IP(ctx)	(UCONTEXT_REG_NIP((ctx)))
 #define ARCH_COPY_SIGCTX_REGS(a,ctx) do {	\
