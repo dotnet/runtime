@@ -2860,10 +2860,11 @@ mono_patch_info_hash (gconstpointer data)
 	switch (ji->type) {
 	case MONO_PATCH_INFO_RVA:
 	case MONO_PATCH_INFO_LDSTR:
-	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_DECLSEC:
 		return (ji->type << 8) | ji->data.token->token;
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+		return (ji->type << 8) | ji->data.token->token | (ji->data.token->has_context ? (gsize)ji->data.token->context.class_inst : 0);
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 		return (ji->type << 8) | g_str_hash (ji->data.name);
 	case MONO_PATCH_INFO_VTABLE:
