@@ -16,6 +16,7 @@
 #include <mono/metadata/filewatcher.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-dl.h>
+#include <mono/utils/mono-io-portability.h>
 #ifdef HOST_WIN32
 
 /*
@@ -171,7 +172,7 @@ ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 int
 ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 mask)
 {
-	char *str;
+	char *str, *path;
 	int retval;
 
 	MONO_ARCH_SAVE_REGS;
@@ -180,7 +181,11 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 		return -1;
 
 	str = mono_string_to_utf8 (name);
-	retval = syscall (__NR_inotify_add_watch, fd, str, mask);
+	path = mono_portability_find_file (str, TRUE);
+	if (!path)
+		path = str;
+
+	retval = syscall (__NR_inotify_add_watch, fd, path, mask);
 	if (retval < 0) {
 		switch (errno) {
 		case EACCES:
@@ -207,6 +212,8 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 		}
 		mono_marshal_set_last_error ();
 	}
+	if (path != str)
+		g_free (path);
 	g_free (str);
 	return retval;
 }
