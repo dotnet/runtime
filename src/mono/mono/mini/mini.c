@@ -3554,6 +3554,17 @@ mono_codegen (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	int max_epilog_size;
 	guint8 *code;
+	MonoDomain *code_domain;
+
+	if (mono_using_xdebug)
+		/*
+		 * Recent gdb versions have trouble processing symbol files containing
+		 * overlapping address ranges, so allocate all code from the code manager
+		 * of the root domain. (#666152).
+		 */
+		code_domain = mono_get_root_domain ();
+	else
+		code_domain = cfg->domain;
 
 #if defined(__native_client_codegen__) && defined(__native_client__)
 	void *code_dest;
@@ -3641,13 +3652,17 @@ mono_codegen (MonoCompile *cfg)
 		mono_dynamic_code_hash_insert (cfg->domain, cfg->method, cfg->dynamic_info);
 		mono_domain_unlock (cfg->domain);
 
-		code = mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + unwindlen);
+		if (mono_using_xdebug)
+			/* See the comment for cfg->code_domain */
+			code = mono_domain_code_reserve (code_domain, cfg->code_size + unwindlen);
+		else
+			code = mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + unwindlen);
 	} else {
 		guint unwindlen = 0;
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
 		unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
 #endif
-		code = mono_domain_code_reserve (cfg->domain, cfg->code_size + unwindlen);
+		code = mono_domain_code_reserve (code_domain, cfg->code_size + unwindlen);
 	}
 #if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_allow_target_modification (TRUE);
@@ -3720,9 +3735,12 @@ if (valgrind_register){
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
 	if (cfg->method->dynamic) {
-		mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
+		if (mono_using_xdebug)
+			mono_domain_code_commit (code_domain, cfg->native_code, cfg->code_size, cfg->code_len);
+		else
+			mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
 	} else {
-		mono_domain_code_commit (cfg->domain, cfg->native_code, cfg->code_size, cfg->code_len);
+		mono_domain_code_commit (code_domain, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
 #if defined(__native_client_codegen__) && defined(__native_client__)
 	cfg->native_code = code_dest;
