@@ -360,6 +360,11 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (!err)
 		return FALSE;
 
+	if (frame->type == FRAME_TYPE_MANAGED) {
+		if (!ji->method->wrapper_type || ji->method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+			frame->managed = TRUE;
+	}
+
 	if (frame->type == FRAME_TYPE_MANAGED_TO_NATIVE) {
 		/*
 		 * This type of frame is just a marker, the caller should unwind once more to get the
