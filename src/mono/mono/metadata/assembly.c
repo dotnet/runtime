@@ -201,26 +201,14 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
 	return memcmp (pubt1, pubt2, 16) == 0;
 }
 
-/* Native Client can't get this info from an environment variable so */
-/* it's passed in to the runtime, or set manually by embedding code. */
-#ifdef __native_client__
-char* nacl_mono_path = NULL;
-#endif
-
-static void
-check_path_env (void)
+/**
+ *	Explicitly sets path to look for assemblies, useful for platforms that do not support environment variables.
+ */
+void
+mono_set_assemblies_path (const char* path)
 {
-	const char *path;
 	char **splitted, **dest;
 	
-#ifdef __native_client__
-	path = nacl_mono_path;
-#else
-	path = g_getenv ("MONO_PATH");
-#endif
-	if (!path)
-		return;
-
 	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (assemblies_path)
 		g_strfreev (assemblies_path);
@@ -242,6 +230,27 @@ check_path_env (void)
 
 		splitted++;
 	}
+}
+
+/* Native Client can't get this info from an environment variable so */
+/* it's passed in to the runtime, or set manually by embedding code. */
+#ifdef __native_client__
+char* nacl_mono_path = NULL;
+#endif
+
+static void
+check_path_env (void)
+{
+	const char* path;
+#ifdef __native_client__
+	path = nacl_mono_path;
+#else
+	path = g_getenv ("MONO_PATH");
+#endif
+	if (!path || assemblies_path != NULL)
+		return;
+
+	mono_set_assemblies_path(path);
 }
 
 static void
