@@ -11441,14 +11441,55 @@ mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 	return result;
 }
 
+typedef struct {
+	MonoMethod *handle;
+	MonoDomain *domain;
+} DynamicMethodReleaseData;
+	
+static MonoReferenceQueue *dynamic_method_queue;
+
+void
+mono_reflection_shutdown (void)
+{
+	MonoReferenceQueue *queue;
+	mono_loader_lock ();
+	queue = dynamic_method_queue;
+	dynamic_method_queue = NULL;
+	if (queue)
+		mono_gc_reference_queue_free (queue);
+	mono_loader_unlock ();
+}
+
+static void
+free_dynamic_method (void *dynamic_method)
+{
+	DynamicMethodReleaseData *data = dynamic_method;
+
+	mono_runtime_free_method (data->domain, data->handle);
+	g_free (data);
+}
+
 void 
 mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 {
+	MonoReferenceQueue *queue;
+	MonoMethod *handle;
+	DynamicMethodReleaseData *release_data;
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
 	MonoClass *klass;
 	GSList *l;
 	int i;
+
+	if (mono_runtime_is_shutting_down ())
+		mono_raise_exception (mono_get_exception_invalid_operation (""));
+
+	if (!(queue = dynamic_method_queue)) {
+		mono_loader_lock ();
+		if (!(queue = dynamic_method_queue))
+			queue = dynamic_method_queue = mono_gc_reference_queue_new (free_dynamic_method);
+		mono_loader_unlock ();
+	}
 
 	sig = dynamic_method_to_signature (mb);
 
@@ -11507,7 +11548,12 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 
 	klass = mb->owner ? mono_class_from_mono_type (mono_reflection_type_get_handle ((MonoReflectionType*)mb->owner)) : mono_defaults.object_class;
 
-	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
+	mb->mhandle = handle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
+	release_data = g_new (DynamicMethodReleaseData, 1);
+	release_data->handle = handle;
+	release_data->domain = mono_object_get_domain ((MonoObject*)mb);
+	if (!mono_gc_reference_queue_add (queue, (MonoObject*)mb, release_data))
+		g_free (release_data);
 
 	/* Fix up refs entries pointing at us */
 	for (l = mb->referenced_by; l; l = l->next) {
@@ -11532,16 +11578,6 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 }
 
 #endif /* DISABLE_REFLECTION_EMIT */
-
-void
-mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb)
-{
-	g_assert (mb);
-
-	if (mb->mhandle)
-		mono_runtime_free_method (
-			mono_object_get_domain ((MonoObject*)mb), mb->mhandle);
-}
 
 /**
  * 

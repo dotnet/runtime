@@ -524,7 +524,6 @@ ICALL(DERIVEDTYPE_1, "create_unmanaged_type", mono_reflection_create_unmanaged_t
 
 ICALL_TYPE(DYNM, "System.Reflection.Emit.DynamicMethod", DYNM_1)
 ICALL(DYNM_1, "create_dynamic_method", mono_reflection_create_dynamic_method)
-ICALL(DYNM_2, "destroy_dynamic_method", mono_reflection_destroy_dynamic_method)
 
 ICALL_TYPE(ENUMB, "System.Reflection.Emit.EnumBuilder", ENUMB_1)
 ICALL(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type)
