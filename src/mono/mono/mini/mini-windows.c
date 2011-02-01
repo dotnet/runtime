@@ -50,6 +50,10 @@
 
 #include "jit-icalls.h"
 
+extern LPTOP_LEVEL_EXCEPTION_FILTER mono_old_win_toplevel_exception_filter;
+extern guint64 mono_win_chained_exception_filter_result;
+extern gboolean mono_win_chained_exception_filter_didrun;
+
 void
 mono_runtime_install_handlers (void)
 {
@@ -71,9 +75,24 @@ mono_runtime_cleanup_handlers (void)
 #endif
 }
 
+
+/* mono_chain_signal:
+ *
+ *   Call the original signal handler for the signal given by the arguments, which
+ * should be the same as for a signal handler. Returns TRUE if the original handler
+ * was called, false otherwise.
+ */
 gboolean
 SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
+	int signal = _dummy;
+	GET_CONTEXT;
+
+	if (mono_old_win_toplevel_exception_filter) {
+		mono_win_chained_exception_filter_didrun = TRUE;
+		mono_win_chained_exception_filter_result = (*mono_old_win_toplevel_exception_filter)(info);
+		return TRUE;
+	}
 	return FALSE;
 }
 
