@@ -335,5 +335,28 @@ gboolean mono_gc_precise_stack_mark_enabled (void) MONO_INTERNAL;
 
 FILE *mono_gc_get_logfile (void) MONO_INTERNAL;
 
+typedef void (*mono_reference_queue_callback) (void *user_data);
+
+typedef struct _MonoReferenceQueue MonoReferenceQueue;
+typedef struct _RefQueueEntry RefQueueEntry;
+
+struct _RefQueueEntry {
+	void *dis_link;
+	void *user_data;
+	RefQueueEntry *next;
+};
+
+struct _MonoReferenceQueue {
+	RefQueueEntry *queue;
+	mono_reference_queue_callback callback;
+	MonoReferenceQueue *next;
+	gboolean should_be_deleted;
+};
+
+MonoReferenceQueue* mono_gc_reference_queue_new (mono_reference_queue_callback callback) MONO_INTERNAL;
+void mono_gc_reference_queue_free (MonoReferenceQueue *queue) MONO_INTERNAL;
+gboolean mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data) MONO_INTERNAL;
+
+
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 
