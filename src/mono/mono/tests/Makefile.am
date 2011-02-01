@@ -371,7 +371,8 @@ BASE_TEST_CS_SRC=		\
 	bug-575941.cs	\
 	bug-599469.cs	\
 	bug-389886-3.cs \
-	monitor.cs
+	monitor.cs	\
+	dynamic-method-resurrection.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
