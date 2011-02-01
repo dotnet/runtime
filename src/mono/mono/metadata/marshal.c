@@ -10136,10 +10136,18 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 	res = mono_mb_create_method (mb, signature, 4);
 	res->flags |= METHOD_ATTRIBUTE_VIRTUAL;
 	mono_marshal_set_wrapper_info (res, GUINT_TO_POINTER (kind + 1));
-	cached_methods [kind] = res;
+
+	mono_marshal_lock ();
+	if (!cached_methods [kind]) {
+		cached_methods [kind] = res;
+		mono_marshal_unlock ();
+	} else {
+		mono_marshal_unlock ();
+		mono_free_method (res);
+	}
 
 	mono_mb_free (mb);
-	return res;
+	return cached_methods [kind];
 }
 
 MonoMethod*
