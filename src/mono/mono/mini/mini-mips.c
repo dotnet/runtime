@@ -3422,18 +3422,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IDIV:
 		case OP_IREM: {
 			guint32 *divisor_is_m1;
+			guint32 *dividend_is_minvalue;
 			guint32 *divisor_is_zero;
 
-			/* */
-			mips_addiu (code, mips_at, mips_zero, 0xffff);
+			mips_load_const (code, mips_at, -1);
 			divisor_is_m1 = (guint32 *)(void *)code;
 			mips_bne (code, ins->sreg2, mips_at, 0);
+			mips_lui (code, mips_at, mips_zero, 0x8000);
+			dividend_is_minvalue = (guint32 *)(void *)code;
+			mips_bne (code, ins->sreg1, mips_at, 0);
 			mips_nop (code);
 
-			/* Divide by -1 -- throw exception */
-			EMIT_SYSTEM_EXCEPTION_NAME("ArithmeticException");
+			/* Divide Int32.MinValue by -1 -- throw exception */
+			EMIT_SYSTEM_EXCEPTION_NAME("OverflowException");
 
 			mips_patch (divisor_is_m1, (guint32)code);
+			mips_patch (dividend_is_minvalue, (guint32)code);
 
 			/* Put divide in branch delay slot (NOT YET) */
 			divisor_is_zero = (guint32 *)(void *)code;
