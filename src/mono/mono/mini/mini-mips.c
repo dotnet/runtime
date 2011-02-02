@@ -4007,9 +4007,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 
 			case OP_MIPS_COND_EXC_LE_UN:
-				mips_subu (code, mips_at, ins->sreg1, ins->sreg2);
+				mips_sltu (code, mips_at, ins->sreg2, ins->sreg1);
 				throw = (guint32 *)(void *)code;
-				mips_blez (code, mips_at, 0);
+				mips_beq (code, mips_at, mips_zero, 0);
 				mips_nop (code);
 				break;
 
