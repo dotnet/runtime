@@ -66,6 +66,7 @@ static void object_register_finalizer (MonoObject *obj, void (*callback)(void *,
 static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 
 static void reference_queue_proccess_all (void);
+static void mono_reference_queue_cleanup (void);
 #ifndef HAVE_NULL_GC
 static HANDLE pending_done_event;
 static HANDLE shutdown_event;
@@ -1177,6 +1178,8 @@ mono_gc_cleanup (void)
 #endif
 	}
 
+	mono_reference_queue_cleanup ();
+
 	DeleteCriticalSection (&handle_section);
 	DeleteCriticalSection (&allocator_section);
 	DeleteCriticalSection (&finalizer_mutex);
@@ -1365,6 +1368,15 @@ restart:
 		g_free (queue);
 	}
 	LeaveCriticalSection (&reference_queue_mutex);
+}
+
+static void
+mono_reference_queue_cleanup (void)
+{
+	MonoReferenceQueue *queue = ref_queues;
+	for (; queue; queue = queue->next)
+		queue->should_be_deleted = TRUE;
+	reference_queue_proccess_all ();
 }
 
 /**

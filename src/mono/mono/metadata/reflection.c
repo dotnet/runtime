@@ -11445,20 +11445,11 @@ typedef struct {
 	MonoMethod *handle;
 	MonoDomain *domain;
 } DynamicMethodReleaseData;
-	
-static MonoReferenceQueue *dynamic_method_queue;
 
-void
-mono_reflection_shutdown (void)
-{
-	MonoReferenceQueue *queue;
-	mono_loader_lock ();
-	queue = dynamic_method_queue;
-	dynamic_method_queue = NULL;
-	if (queue)
-		mono_gc_reference_queue_free (queue);
-	mono_loader_unlock ();
-}
+/*
+ * The runtime automatically clean up those after finalization.
+*/	
+static MonoReferenceQueue *dynamic_method_queue;
 
 static void
 free_dynamic_method (void *dynamic_method)
