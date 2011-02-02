@@ -1417,7 +1417,6 @@ mono_gc_reference_queue_new (mono_reference_queue_callback callback)
 gboolean
 mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data)
 {
-	RefQueueEntry *head;
 	RefQueueEntry *entry;
 	if (queue->should_be_deleted)
 		return FALSE;
