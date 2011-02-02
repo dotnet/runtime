@@ -568,6 +568,7 @@ typedef struct {
 	char*    (*get_runtime_build_info) (void);
 	gpointer (*get_vtable_trampoline) (int slot_index);
 	gpointer (*get_imt_trampoline) (int imt_slot_index);
+	void (*set_cast_details) (MonoClass *from, MonoClass *to);
 } MonoRuntimeCallbacks;
 
 /* used to free a dynamic method */

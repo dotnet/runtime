@@ -2379,3 +2379,15 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 
 #endif
 
+void
+mono_set_cast_details (MonoClass *from, MonoClass *to)
+{
+	MonoJitTlsData *jit_tls = NULL;
+
+	if (mini_get_debug_options ()->better_cast_details) {
+		jit_tls = TlsGetValue (mono_jit_tls_id);
+		jit_tls->class_cast_from = from;
+		jit_tls->class_cast_to = to;
+	}
+}
+

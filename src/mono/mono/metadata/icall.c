@@ -246,7 +246,8 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 			"value", "not a widening conversion")); \
 }G_STMT_END
 
-#define INVALID_CAST G_STMT_START{\
+#define INVALID_CAST G_STMT_START{ \
+		mono_get_runtime_callbacks ()->set_cast_details (vc, ec); \
 	mono_raise_exception (mono_get_exception_invalid_cast ()); \
 }G_STMT_END
 

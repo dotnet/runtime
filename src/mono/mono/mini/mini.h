@@ -2136,6 +2136,7 @@ MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_f
 						 gint32 *iloffset, gint32 *native_offset,
 						 MonoString **file, gint32 *line, gint32 *column) MONO_INTERNAL;
 MonoString *ves_icall_System_Exception_get_trace (MonoException *exc) MONO_INTERNAL;
+void mono_set_cast_details                      (MonoClass *from, MonoClass *to) MONO_INTERNAL;
 
 /* Dominator/SSA methods */
 void        mono_compile_dominator_info         (MonoCompile *cfg, int dom_flags) MONO_INTERNAL;
