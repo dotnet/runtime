@@ -5439,14 +5439,16 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 {
 	MonoClass *klass, *gklass;
 
+	if (gclass->cached_class)
+		return gclass->cached_class;
+
 	mono_loader_lock ();
 	if (gclass->cached_class) {
 		mono_loader_unlock ();
 		return gclass->cached_class;
 	}
 
-	gclass->cached_class = mono_image_set_alloc0 (gclass->owner, sizeof (MonoClass));
-	klass = gclass->cached_class;
+	klass = mono_image_set_alloc0 (gclass->owner, sizeof (MonoClass));
 
 	gklass = gclass->container_class;
 
@@ -5519,6 +5521,9 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 			klass->size_inited = 1;
 		}
 	}
+
+	mono_memory_barrier ();
+	gclass->cached_class = klass;
 
 	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
 
