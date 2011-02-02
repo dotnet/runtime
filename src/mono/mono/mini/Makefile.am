@@ -52,7 +52,7 @@ RUNTIME_EXECUTABLE = $(if $(SGEN),$(top_builddir)/mono/mini/mono-sgen,$(top_buil
 RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
 RUNTIME_AOTCHECK = MONO_PATH=$(CLASS):. $(RUNTIME_EXECUTABLE)
 
-MCS = $(RUNTIME) $(mcs_topdir)/class/lib/basic/mcs.exe -unsafe -nowarn:0162
+MCS = $(RUNTIME_EXECUTABLE) $(mcs_topdir)/class/lib/build/mcs.exe -sdk:2 -unsafe -nowarn:0162
 ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
 
 AM_CFLAGS = \
