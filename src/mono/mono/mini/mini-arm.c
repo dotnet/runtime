@@ -1607,6 +1607,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			ins->inst_p0 = call;
 			ins->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
 			memcpy (ins->inst_p1, ainfo, sizeof (ArgInfo));
+			mono_call_inst_add_outarg_vt (cfg, call, ins);
 			MONO_ADD_INS (cfg->cbb, ins);
 			break;
 		case RegTypeBase:

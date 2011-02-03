@@ -1527,6 +1527,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 						MonoCallInst *call2;
 						MonoInst *iargs [1];
 						MonoInst *conv;
+						GSList *l;
 
 						/* Convert the call into a call returning an int */
 						MONO_INST_NEW_CALL (cfg, call2, OP_CALL);
@@ -1546,6 +1547,10 @@ mono_decompose_soft_float (MonoCompile *cfg)
 						}
 						call2->inst.dreg = mono_alloc_ireg (cfg);
 						MONO_ADD_INS (cfg->cbb, (MonoInst*)call2);
+
+						/* Remap OUTARG_VT instructions referencing this call */
+						for (l = call->outarg_vts; l; l = l->next)
+							((MonoInst*)(l->data))->inst_p0 = call2;
 
 						/* FIXME: Optimize this */
 

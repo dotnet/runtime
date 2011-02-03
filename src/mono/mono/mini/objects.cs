@@ -1352,6 +1352,19 @@ ncells ) {
 			return 1;
 	}
 
+	struct AStruct2 {
+		public int i;
+		public int j;
+	}
+
+	static float pass_vtype_return_float (AStruct2 s) {
+		return s.i + s.j == 6 ? 1.0f : -1.0f;
+	}
+
+	public static int test_0_vtype_arg_soft_float () {
+		return pass_vtype_return_float (new AStruct2 () { i = 2, j = 4 }) > 0.0 ? 0 : 1;
+	}
+
 	static int range_check_strlen (int i, string s) {
 		if (i < 0 || i > s.Length)
 			return 1;

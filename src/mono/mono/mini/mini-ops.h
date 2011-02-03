@@ -17,6 +17,10 @@ MINI_OP(OP_ICOMPARE_IMM,	"icompare_imm", NONE, IREG, NONE)
 MINI_OP(OP_LCOMPARE_IMM,	"lcompare_imm", NONE, LREG, NONE)
 MINI_OP(OP_LOCAL,	"local", NONE, NONE, NONE)
 MINI_OP(OP_ARG,		"arg", NONE, NONE, NONE)
+/*
+ * Represents passing a valuetype argument which has not been decomposed yet.
+ * inst_p0 points to the call.
+ */
 MINI_OP(OP_OUTARG_VT,	"outarg_vt", NONE, VREG, NONE)
 MINI_OP(OP_OUTARG_VTRETADDR, "outarg_vtretaddr", IREG, NONE, NONE)
 MINI_OP(OP_SETRET,	"setret", NONE, IREG, NONE)

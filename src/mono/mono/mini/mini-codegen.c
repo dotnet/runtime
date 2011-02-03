@@ -271,6 +271,17 @@ mono_call_inst_add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, int vreg, i
 	}
 }
 
+/*
+ * mono_call_inst_add_outarg_vt:
+ *
+ *   Register OUTARG_VT as belonging to CALL.
+ */
+void
+mono_call_inst_add_outarg_vt (MonoCompile *cfg, MonoCallInst *call, MonoInst *outarg_vt)
+{
+	call->outarg_vts = g_slist_append_mempool (cfg->mempool, call->outarg_vts, outarg_vt);
+}
+
 static void
 resize_spill_info (MonoCompile *cfg, int bank)
 {
