@@ -2508,9 +2508,18 @@ if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_bui
 	dnl ******************************************
 	AC_MSG_CHECKING(which FPU to use)
 
-	AC_TRY_COMPILE([], [
-		__asm__ ("ldfd f0, [r0]");
-		], fpu=FPA, fpu=NONE)
+	ORIG_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -mfpu=vfp -mfloat-abi=softfp"
+	AC_TRY_RUN([
+		int main () { __asm__ ("faddd	d7, d6, d7"); return 0; }
+			], fpu=VFP, fpu=NONE)
+	CFLAGS=$ORIG_CFLAGS
+
+	if test x$fpu = xNONE; then
+		AC_TRY_COMPILE([], [
+			__asm__ ("ldfd f0, [r0]");
+			], fpu=FPA, fpu=NONE)
+	fi
 
 	AC_MSG_RESULT($fpu)
 	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu=1"
