@@ -2245,6 +2245,7 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		sgen_supported=true
+		AOT_SUPPORTED="yes"
 		;;
 	s390-*-linux*)
 		TARGET=S390;
