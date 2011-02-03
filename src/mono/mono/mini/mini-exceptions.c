@@ -2003,6 +2003,74 @@ mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 	return FALSE;
 }
 
+typedef struct {
+	FILE *stream;
+	MonoMethod *omethod;
+	int count;
+} PrintOverflowUserData;
+
+static gboolean
+print_overflow_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data)
+{
+	PrintOverflowUserData *user_data = data;
+	FILE *stream = user_data->stream;
+	gchar *location;
+
+	if (method) {
+		if (user_data->count == 0) {
+			/* The first frame is in its prolog, so a line number cannot be computed */
+			user_data->count ++;
+			return FALSE;
+		}
+
+		/* If this is a one method overflow, skip the other instances */
+		if (method == user_data->omethod)
+			return FALSE;
+
+		location = mono_debug_print_stack_frame (method, native_offset, mono_domain_get ());
+		fprintf (stream, "  %s\n", location);
+		g_free (location);
+
+		if (user_data->count == 1) {
+			fprintf (stream, "  <...>\n");
+			user_data->omethod = method;
+		} else {
+			user_data->omethod = NULL;
+		}
+
+		user_data->count ++;
+	} else
+		fprintf (stream, "  at <unknown> <0x%05x>\n", native_offset);
+
+	return FALSE;
+}
+
+void
+mono_handle_hard_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, guint8* fault_addr)
+{
+	const char *method;
+	/* we don't do much now, but we can warn the user with a useful message */
+	fprintf (stderr, "Stack overflow: IP: %p, fault addr: %p\n", mono_arch_ip_from_context (ctx), fault_addr);
+	if (ji && ji->method) {
+		PrintOverflowUserData ud;
+		MonoContext mctx;
+
+		mono_arch_sigctx_to_monoctx (ctx, &mctx);
+			
+		method = mono_method_full_name (ji->method, TRUE);
+		fprintf (stderr, "Stacktrace:\n");
+
+		memset (&ud, 0, sizeof (ud));
+		ud.stream = stderr;
+
+		mono_jit_walk_stack_from_ctx (print_overflow_stack_frame, &mctx, MONO_UNWIND_LOOKUP_ACTUAL_METHOD, &ud);
+	} else {
+		method = "Unmanaged";
+		fprintf (stderr, "  at %s\n", method);
+	}
+	_exit (1);
+}
+
 static gboolean
 print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data)
 {
