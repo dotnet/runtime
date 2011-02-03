@@ -539,7 +539,6 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 	gpointer handle = INVALID_HANDLE_VALUE;
 	int thr_ret, i, k;
 	struct _WapiHandleShared *shared;
-	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
 	
 	g_assert (_wapi_has_shut_down == FALSE);
 	
@@ -556,6 +555,7 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 
 	shared = &_wapi_shared_layout->handles[offset];
 	if (timestamp) {
+		guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
 		/* Bump up the timestamp for this offset */
 		InterlockedExchange ((gint32 *)&shared->timestamp, now);
 	}
@@ -1029,7 +1029,6 @@ done:
 void _wapi_handle_ref (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
-	guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
 	struct _WapiHandleUnshared *handle_data;
 
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
@@ -1053,7 +1052,7 @@ void _wapi_handle_ref (gpointer handle)
 	 */
 	if (_WAPI_SHARED_HANDLE(handle_data->type)) {
 		struct _WapiHandleShared *shared_data = &_wapi_shared_layout->handles[handle_data->u.shared.offset];
-		
+		guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
 		InterlockedExchange ((gint32 *)&shared_data->timestamp, now);
 	}
 	
