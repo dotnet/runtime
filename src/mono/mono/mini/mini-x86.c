@@ -1803,11 +1803,23 @@ if (ins->inst_true_bb->native_offset) { \
 static guint8*
 emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
 {
+	gboolean needs_paddings = TRUE;
+	if (cfg->abs_patches && g_hash_table_lookup (cfg->abs_patches, data)) {
+	} else {
+		MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
+		if (info) {
+			if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && strstr (cfg->method->name, info->name))
+				needs_paddings = FALSE; /* A call to the wrapped function */
+		}
+	}
+
+	if (cfg->compile_aot)
+		needs_paddings = FALSE;
 	/*The address must be 4 bytes aligned to avoid spanning multiple cache lines.
 	This is required for code patching to be safe on SMP machines.
 	*/
 	guint32 pad_size = (guint32)(code + 1 - cfg->native_code) & 0x3;
-	if (pad_size)
+	if (needs_paddings && pad_size)
 		x86_padding (code, pad_size);
 
 	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
