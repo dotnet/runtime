@@ -763,6 +763,8 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	int in_fd, out_fd, err_fd;
 	pid_t pid;
 	int thr_ret;
+	int startup_pipe [2] = {-1, -1};
+	int dummy;
 	
 	mono_once (&process_ops_once, process_ops_init);
 	
@@ -1185,6 +1187,17 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		env_strings[env_count] = g_strdup_printf ("_WAPI_PROCESS_HANDLE_OFFSET=%d", ref->offset);
 	}
 
+	/* Create a pipe to make sure the child doesn't exit before 
+	 * we can add the process to the linked list of mono_processes */
+	if (pipe (startup_pipe) == -1) {
+		/* Could not create the pipe to synchroniz process startup. We'll just not synchronize.
+		 * This is just for a very hard to hit race condition in the first place */
+		startup_pipe [0] = startup_pipe [1] = -1;
+#if DEBUG
+		g_warning ("%s: new process startup not synchronized. We may not notice if the newly created process exits immediately.", __func__);
+#endif
+	}
+
 	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
 	
@@ -1197,18 +1210,14 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	} else if (pid == 0) {
 		/* Child */
 		
-		if (_wapi_shm_disabled == FALSE) {
-			/* Wait for the parent to finish setting up
-			 * the handle.  The semaphore lock is safe
-			 * because the sem_undo structures of a
-			 * semaphore aren't inherited across a fork
-			 * (), but we can't do this if we're not using
-			 * the shared memory
-			 */
-			thr_ret = _wapi_handle_lock_shared_handles ();
-			g_assert (thr_ret == 0);
-	
-			_wapi_handle_unlock_shared_handles ();
+		if (startup_pipe [0] != -1) {
+			/* Wait until the parent has updated it's internal data */
+			read (startup_pipe [0], &dummy, 1);
+#if DEBUG
+			g_warning ("%s: child: parent has completed its setup", __func__);
+#endif
+			close (startup_pipe [0]);
+			close (startup_pipe [1]);
 		}
 		
 		/* should we detach from the process group? */
@@ -1277,6 +1286,13 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 
 cleanup:
 	_wapi_handle_unlock_shared_handles ();
+
+	if (startup_pipe [1] != -1) {
+		/* Write 1 byte, doesn't matter what */
+		write (startup_pipe [1], startup_pipe, 1);
+		close (startup_pipe [0]);
+		close (startup_pipe [1]);
+	}
 
 free_strings:
 	if (cmd != NULL) {
