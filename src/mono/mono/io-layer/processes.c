@@ -84,6 +84,7 @@ extern char **environ;
 #undef DEBUG
 
 static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable);
+static gboolean is_pid_valid (pid_t pid);
 
 #if !defined(__OpenBSD__)
 static FILE *
@@ -235,6 +236,28 @@ void _wapi_process_reap (void)
 			_wapi_handle_unref (proc);
 		}
 	} while (proc != NULL);
+}
+
+/* Check if a pid is valid - i.e. if a process exists with this pid. */
+static gboolean is_pid_valid (pid_t pid)
+{
+	gboolean result = FALSE;
+
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
+	if (((kill(pid, 0) == 0) || (errno == EPERM)) && pid != 0)
+		result = TRUE;
+#elif defined(__HAIKU__)
+	team_info teamInfo;
+	if (get_team_info ((team_id)pid, &teamInfo) == B_OK)
+		result = TRUE;
+#else
+	gchar *dir = g_strdup_printf ("/proc/%d", pid);
+	if (!access (dir, F_OK))
+		result = TRUE;
+	g_free (dir);
+#endif
+	
+	return result;
 }
 
 /* Limitations: This can only wait for processes that are our own
@@ -1708,15 +1731,7 @@ gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_
 				      process_open_compare,
 				      GUINT_TO_POINTER (pid), NULL, TRUE);
 	if (handle == 0) {
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
-		if (((kill(pid, 0) == 0) || (errno == EPERM)) && pid != 0) {
-#elif defined(__HAIKU__)
-		team_info teamInfo;
-		if (get_team_info ((team_id)pid, &teamInfo) == B_OK) {
-#else
-		gchar *dir = g_strdup_printf ("/proc/%d", pid);
-		if (!access (dir, F_OK)) {
-#endif
+		if (is_pid_valid (pid)) {
 			/* Return a pseudo handle for processes we
 			 * don't have handles for
 			 */
@@ -1754,15 +1769,7 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 		/* This is a pseudo handle, so we don't know what the
 		 * exit code was, but we can check whether it's alive or not
 		 */
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
-		if ((kill(pid, 0) == 0) || (errno == EPERM)) {
-#elif defined(__HAIKU__)
-		team_info teamInfo;
-		if (get_team_info ((team_id)pid, &teamInfo) == B_OK) {
-#else
-		gchar *dir = g_strdup_printf ("/proc/%d", pid);
-		if (!access (dir, F_OK)) {
-#endif
+		if (is_pid_valid (pid)) {
 			*code = STILL_ACTIVE;
 			return TRUE;
 		} else {
