@@ -2048,26 +2048,21 @@ print_overflow_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_
 void
 mono_handle_hard_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, guint8* fault_addr)
 {
-	const char *method;
+	PrintOverflowUserData ud;
+	MonoContext mctx;
+
 	/* we don't do much now, but we can warn the user with a useful message */
 	fprintf (stderr, "Stack overflow: IP: %p, fault addr: %p\n", mono_arch_ip_from_context (ctx), fault_addr);
-	if (ji && ji->method) {
-		PrintOverflowUserData ud;
-		MonoContext mctx;
 
-		mono_arch_sigctx_to_monoctx (ctx, &mctx);
+	mono_arch_sigctx_to_monoctx (ctx, &mctx);
 			
-		method = mono_method_full_name (ji->method, TRUE);
-		fprintf (stderr, "Stacktrace:\n");
+	fprintf (stderr, "Stacktrace:\n");
 
-		memset (&ud, 0, sizeof (ud));
-		ud.stream = stderr;
+	memset (&ud, 0, sizeof (ud));
+	ud.stream = stderr;
 
-		mono_jit_walk_stack_from_ctx (print_overflow_stack_frame, &mctx, MONO_UNWIND_LOOKUP_ACTUAL_METHOD, &ud);
-	} else {
-		method = "Unmanaged";
-		fprintf (stderr, "  at %s\n", method);
-	}
+	mono_jit_walk_stack_from_ctx (print_overflow_stack_frame, &mctx, MONO_UNWIND_LOOKUP_ACTUAL_METHOD, &ud);
+
 	_exit (1);
 }
 
