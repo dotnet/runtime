@@ -68,6 +68,8 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-path.h>
 #include <mono/io-layer/timefuncs-private.h>
+#include <mono/utils/mono-time.h>
+#include <mono/utils/mono-membar.h>
 
 /* The process' environment strings */
 #if defined(__APPLE__) && !defined (__arm__)
@@ -84,6 +86,7 @@ extern char **environ;
 #undef DEBUG
 
 static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable);
+static void process_close (gpointer handle, gpointer data);
 static gboolean is_pid_valid (pid_t pid);
 
 #if !defined(__OpenBSD__)
@@ -92,13 +95,38 @@ open_process_map (int pid, const char *mode);
 #endif
 
 struct _WapiHandleOps _wapi_process_ops = {
-	NULL,				/* close_shared */
+	process_close,		/* close_shared */
 	NULL,				/* signal */
 	NULL,				/* own */
 	NULL,				/* is_owned */
 	process_wait,			/* special_wait */
 	NULL				/* prewait */	
 };
+
+#if HAVE_SIGACTION
+static struct sigaction previous_chld_sa;
+#endif
+static mono_once_t process_sig_chld_once = MONO_ONCE_INIT;
+static void process_add_sigchld_handler (void);
+
+/* The signal-safe logic to use mono_processes goes like this:
+ * - The list must be safe to traverse for the signal handler at all times.
+ *   It's safe to: prepend an entry (which is a single store to 'mono_processes'),
+ *   unlink an entry (assuming the unlinked entry isn't freed and doesn't 
+ *   change its 'next' pointer so that it can still be traversed).
+ * When cleaning up we first unlink an entry, then we verify that
+ * the read lock isn't locked. Then we can free the entry, since
+ * we know that nobody is using the old version of the list (including
+ * the unlinked entry).
+ * We also need to lock when adding and cleaning up so that those two
+ * operations don't mess with eachother. (This lock is not used in the
+ * signal handler)
+ */
+static struct MonoProcess *mono_processes = NULL;
+static volatile gint32 mono_processes_read_lock = 0;
+static volatile gint32 mono_processes_cleaning_up = 0;
+static mono_mutex_t mono_processes_mutex;
+static void mono_processes_cleanup (void);
 
 static mono_once_t process_current_once=MONO_ONCE_INIT;
 static gpointer current_process=NULL;
@@ -112,131 +140,6 @@ static void process_ops_init (void)
 					    WAPI_HANDLE_CAP_SPECIAL_WAIT);
 }
 
-static gboolean process_set_termination_details (gpointer handle, int status)
-{
-	struct _WapiHandle_process *process_handle;
-	gboolean ok;
-	int thr_ret;
-	
-	g_assert ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
-				  (gpointer *)&process_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up process handle %p",
-			   __func__, handle);
-		return(FALSE);
-	}
-	
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-
-	if (WIFSIGNALED(status)) {
-		process_handle->exitstatus = 128 + WTERMSIG(status);
-	} else {
-		process_handle->exitstatus = WEXITSTATUS(status);
-	}
-	_wapi_time_t_to_filetime (time(NULL), &process_handle->exit_time);
-
-	/* Don't set process_handle->waited here, it needs to only
-	 * happen in the parent when wait() has been called.
-	 */
-	
-#ifdef DEBUG
-	g_message ("%s: Setting handle %p pid %d signalled, exit status %d",
-		   __func__, handle, process_handle->id,
-		   process_handle->exitstatus);
-#endif
-
-	_wapi_shared_handle_set_signal_state (handle, TRUE);
-
-	_wapi_handle_unlock_shared_handles ();
-
-	/* Drop the reference we hold so we have somewhere to store
-	 * the exit details, now the process has in fact exited
-	 */
-	_wapi_handle_unref (handle);
-	
-	return (ok);
-}
-
-/* See if any child processes have terminated and wait() for them,
- * updating process handle info.  This function is called from the
- * collection thread every few seconds.
- */
-static gboolean waitfor_pid (gpointer test, gpointer user_data)
-{
-	struct _WapiHandle_process *process;
-	gboolean ok;
-	int status;
-	pid_t ret;
-	
-	g_assert ((GPOINTER_TO_UINT (test) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
-	
-	ok = _wapi_lookup_handle (test, WAPI_HANDLE_PROCESS,
-				  (gpointer *)&process);
-	if (ok == FALSE) {
-		/* The handle must have been too old and was reaped */
-		return (FALSE);
-	}
-
-	if (process->waited) {
-		/* We've already done this one */
-		return(FALSE);
-	}
-	
-	do {
-		ret = waitpid (process->id, &status, WNOHANG);
-	} while (errno == EINTR);
-	
-	if (ret <= 0) {
-		/* Process not ready for wait */
-#ifdef DEBUG
-		g_message ("%s: Process %d not ready for waiting for: %s",
-			   __func__, process->id, g_strerror (errno));
-#endif
-
-		return (FALSE);
-	}
-	
-#ifdef DEBUG
-	g_message ("%s: Process %d finished", __func__, ret);
-#endif
-
-	process->waited = TRUE;
-	
-	*(int *)user_data = status;
-	
-	return (TRUE);
-}
-
-void _wapi_process_reap (void)
-{
-	gpointer proc;
-	int status;
-	
-#ifdef DEBUG
-	g_message ("%s: Reaping child processes", __func__);
-#endif
-
-	do {
-		proc = _wapi_search_handle (WAPI_HANDLE_PROCESS, waitfor_pid,
-					    &status, NULL, FALSE);
-		if (proc != NULL) {
-#ifdef DEBUG
-			g_message ("%s: process handle %p exit code %d",
-				   __func__, proc, status);
-#endif
-			
-			process_set_termination_details (proc, status);
-
-			/* _wapi_search_handle adds a reference, so
-			 * drop it here
-			 */
-			_wapi_handle_unref (proc);
-		}
-	} while (proc != NULL);
-}
 
 /* Check if a pid is valid - i.e. if a process exists with this pid. */
 static gboolean is_pid_valid (pid_t pid)
@@ -260,142 +163,11 @@ static gboolean is_pid_valid (pid_t pid)
 	return result;
 }
 
-/* Limitations: This can only wait for processes that are our own
- * children.  Fixing this means resurrecting a daemon helper to manage
- * processes.
- */
-static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable)
-{
-	struct _WapiHandle_process *process_handle;
-	gboolean ok;
-	pid_t pid, ret;
-	int status;
-	
-	g_assert ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
-	
-#ifdef DEBUG
-	g_message ("%s: Waiting for process %p", __func__, handle);
-#endif
-
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
-				  (gpointer *)&process_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up process handle %p", __func__,
-			   handle);
-		return(WAIT_FAILED);
-	}
-	
-	if (process_handle->waited) {
-		/* We've already done this one */
-#ifdef DEBUG
-		g_message ("%s: Process %p already signalled", __func__,
-			   handle);
-#endif
-
-		return (WAIT_OBJECT_0);
-	}
-	
-	pid = process_handle->id;
-	
-#ifdef DEBUG
-	g_message ("%s: PID is %d, timeout %d", __func__, pid, timeout);
-#endif
-
-	if (timeout == INFINITE) {
-		if (pid == _wapi_getpid ()) {
-			do {
-				Sleep (10000);
-			} while(1);
-		} else {
-			while ((ret = waitpid (pid, &status, 0)) != pid) {
-				if (ret == (pid_t)-1 && errno != EINTR) {
-					return(WAIT_FAILED);
-				}
-			}
-		}
-	} else if (timeout == 0) {
-		/* Just poll */
-		ret = waitpid (pid, &status, WNOHANG);
-		if (ret != pid) {
-			return (WAIT_TIMEOUT);
-		}
-	} else {
-		/* Poll in a loop */
-		if (pid == _wapi_getpid ()) {
-			Sleep (timeout);
-			return(WAIT_TIMEOUT);
-		} else {
-			do {
-				ret = waitpid (pid, &status, WNOHANG);
-#ifdef DEBUG
-				g_message ("%s: waitpid returns: %d, timeout is %d", __func__, ret, timeout);
-#endif
-				
-				if (ret == pid) {
-					break;
-				} else if (ret == (pid_t)-1 &&
-					   errno != EINTR) {
-#ifdef DEBUG
-					g_message ("%s: waitpid failure: %s",
-						   __func__,
-						   g_strerror (errno));
-#endif
-
-					if (errno == ECHILD &&
-					    process_handle->waited) {
-						/* The background
-						 * process reaper must
-						 * have got this one
-						 */
-#ifdef DEBUG
-						g_message ("%s: Process %p already reaped", __func__, handle);
-#endif
-
-						return(WAIT_OBJECT_0);
-					} else {
-						return(WAIT_FAILED);
-					}
-				}
-
-				_wapi_handle_spin (100);
-				timeout -= 100;
-			} while (timeout > 0);
-		}
-		
-		if (timeout <= 0) {
-			return(WAIT_TIMEOUT);
-		}
-	}
-
-	/* Process must have exited */
-#ifdef DEBUG
-	g_message ("%s: Wait done, status %d", __func__, status);
-#endif
-
-	ok = process_set_termination_details (handle, status);
-	if (ok == FALSE) {
-		SetLastError (ERROR_OUTOFMEMORY);
-		return (WAIT_FAILED);
-	}
-	process_handle->waited = TRUE;
-	
-	return(WAIT_OBJECT_0);
-}
-
-void _wapi_process_signal_self ()
-{
-	if (current_process != NULL) {
-		process_set_termination_details (current_process, 0);
-	}
-}
-	
 static void process_set_defaults (struct _WapiHandle_process *process_handle)
 {
 	/* These seem to be the defaults on w2k */
 	process_handle->min_working_set = 204800;
 	process_handle->max_working_set = 1413120;
-
-	process_handle->waited = FALSE;
 	
 	_wapi_time_t_to_filetime (time (NULL), &process_handle->create_time);
 }
@@ -765,8 +537,10 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	int thr_ret;
 	int startup_pipe [2] = {-1, -1};
 	int dummy;
+	struct MonoProcess *mono_process;
 	
 	mono_once (&process_ops_once, process_ops_init);
+	mono_once (&process_sig_chld_once, process_add_sigchld_handler);
 	
 	/* appname and cmdline specify the executable and its args:
 	 *
@@ -1111,11 +885,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		goto free_strings;
 	}
 
-	/* Hold another reference so the process has somewhere to
-	 * store its exit data even if we drop this handle
-	 */
-	_wapi_handle_ref (handle);
-	
 	/* new_environ is a block of NULL-terminated strings, which
 	 * is itself NULL-terminated. Of course, passing an array of
 	 * string pointers would have made things too easy :-(
@@ -1272,6 +1041,31 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	}
 	
 	process_handle_data->id = pid;
+
+	/* Add our mono_process into the linked list of mono_processes */
+	mono_process = (struct MonoProcess *) g_malloc0 (sizeof (struct MonoProcess));
+	mono_process->pid = pid;
+	mono_process->handle_count = 1;
+	if (sem_init (&mono_process->exit_sem, 0, 0) != 0) {
+		/* If we can't create the exit semaphore, we just don't add anything
+		 * to our list of mono processes. Waiting on the process will return 
+		 * immediately. */
+		g_warning ("%s: could not create exit semaphore for process.", strerror (errno));
+		g_free (mono_process);
+	} else {
+		/* Keep the process handle artificially alive until the process
+		 * exits so that the information in the handle isn't lost. */
+		_wapi_handle_ref (handle);
+		mono_process->handle = handle;
+
+		process_handle_data->self = _wapi_getpid ();
+		process_handle_data->mono_process = mono_process;
+
+		mono_mutex_lock (&mono_processes_mutex);
+		mono_process->next = mono_processes;
+		mono_processes = mono_process;
+		mono_mutex_unlock (&mono_processes_mutex);
+	}
 	
 	if (process_info != NULL) {
 		process_info->hProcess = handle;
@@ -1322,6 +1116,9 @@ free_strings:
 		   pid);
 #endif
 
+	/* Check if something needs to be cleaned up. */
+	mono_processes_cleanup ();
+	
 	return(ret);
 }
 		
@@ -2971,3 +2768,337 @@ SetPriorityClass (gpointer process, guint32  priority_class)
 	return FALSE;
 #endif
 }
+
+static void
+mono_processes_cleanup (void)
+{
+	struct MonoProcess *mp;
+	struct MonoProcess *prev = NULL;
+	struct MonoProcess *candidate = NULL;
+	gpointer unref_handle;
+	int spin;
+
+#if DEBUG
+	g_warning ("%s", __func__);
+#endif
+
+	/* Ensure we're not in here in multiple threads at once, nor recursive. */
+	if (InterlockedCompareExchange (&mono_processes_cleaning_up, 1, 0) != 0)
+		return;
+
+	mp = mono_processes;
+	while (mp != NULL) {
+		if (mp->pid == 0 && mp->handle != NULL) {
+			/* This process has exited and we need to remove the artifical ref
+			 * on the handle */
+			mono_mutex_lock (&mono_processes_mutex);
+			unref_handle = mp->handle;
+			mp->handle = NULL;
+			mono_mutex_unlock (&mono_processes_mutex);
+			if (unref_handle)
+				_wapi_handle_unref (unref_handle);
+			continue;
+		}
+		mp = mp->next;
+	}
+
+	mp = mono_processes;
+	spin = 0;
+	while (mp != NULL) {
+		if ((mp->handle_count == 0 && mp->pid == 0) || candidate != NULL) {
+			if (spin > 0) {
+				_wapi_handle_spin (spin);
+				spin <<= 1;
+			}
+
+			/* We've found a candidate */
+			mono_mutex_lock (&mono_processes_mutex);
+			if (candidate == NULL) {
+				/* unlink it */
+				if (mp == mono_processes) {
+					mono_processes = mp->next;
+				} else {
+					prev->next = mp->next;
+				}
+				candidate = mp;
+			}
+
+			/* It's still safe to traverse the structure.*/
+			mono_memory_barrier ();
+
+			if (mono_processes_read_lock != 0) {
+				/* The sigchld handler is watching us. Spin a bit and try again */
+				if (spin == 0) {
+					spin = 1;
+				} else if (spin >= 8) {
+					/* Just give up for now */
+					mono_mutex_unlock (&mono_processes_mutex);
+					break;
+				}
+			} else {
+				/* We've modified the list of processes, and we know the sigchld handler
+				 * isn't executing, so even if it executes at any moment, it'll see the
+				 * new version of the list. So now we can free the candidate. */
+#if DEBUG
+				g_warning ("%s: freeing candidate %p", __func__, candidate);
+#endif
+				mp = candidate->next;
+				sem_destroy (&candidate->exit_sem);
+				g_free (candidate);
+				candidate = NULL;
+			}
+
+			mono_mutex_unlock (&mono_processes_mutex);
+
+			continue;
+		}
+		spin = 0;
+		prev = mp;
+		mp = mp->next;
+	}
+
+#if DEBUG
+	g_warning ("%s done", __func__);
+#endif
+
+	InterlockedDecrement (&mono_processes_cleaning_up);
+}
+
+static void
+process_close (gpointer handle, gpointer data)
+{
+	struct _WapiHandle_process *process_handle;
+
+#if DEBUG
+	g_warning ("%s", __func__);
+#endif
+
+	process_handle = (struct _WapiHandle_process *) data;
+	if (process_handle->mono_process && process_handle->self == _wapi_getpid ())
+		InterlockedDecrement (&process_handle->mono_process->handle_count);
+	mono_processes_cleanup ();
+}
+
+#if HAVE_SIGACTION
+static void
+mono_sigchld_signal_handler (int _dummy, siginfo_t *info, void *context)
+{
+	int status;
+	int pid;
+	struct MonoProcess *p;
+
+#if DEBUG	
+	fprintf (stdout, "SIG CHILD handler for pid: %i counter: %i\n", info->si_pid, counter);
+#endif
+
+	InterlockedIncrement (&mono_processes_read_lock);
+
+	do {
+		do {
+			pid = waitpid (-1, &status, WNOHANG);
+		} while (pid == -1 && errno == EINTR);
+
+		if (pid <= 0)
+			break;
+
+#if DEBUG
+		fprintf (stdout, "child ended: %i", pid);
+#endif
+		p = mono_processes;
+		while (p != NULL) {
+			if (p->pid == pid) {
+				p->pid = 0; /* this pid doesn't exist anymore, clear it */
+				p->status = status;
+				sem_post (&p->exit_sem);
+				break;
+			}
+			p = p->next;
+		}
+	} while (1);
+
+	InterlockedDecrement (&mono_processes_read_lock);
+
+#if DEBUG
+	fprintf (stdout, "SIG CHILD handler: done looping.");
+#endif
+}
+#endif
+
+static void process_add_sigchld_handler (void)
+{
+#if HAVE_SIGACTION
+	struct sigaction sa;
+
+	sa.sa_sigaction = mono_sigchld_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = SA_NOCLDSTOP | SA_SIGINFO;
+	g_assert (sigaction (SIGCHLD, &sa, &previous_chld_sa) != -1);
+#if DEBUG
+	g_warning ("Added SIGCHLD handler");
+#endif
+#endif
+}
+
+static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable)
+{
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	pid_t pid, ret;
+	int status;
+	guint32 start;
+	guint32 now;
+	struct MonoProcess *mp;
+	struct timespec timeout_spec;
+	gboolean spin;
+	gpointer current_thread;
+
+	current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	if (current_thread == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return WAIT_FAILED;
+	}
+
+	/* FIXME: We can now easily wait on processes that aren't our own children,
+	 * but WaitFor*Object won't call us for pseudo handles. */
+	g_assert ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
+
+#if DEBUG
+	g_warning ("%s (%p, %u)", __func__, handle, timeout);
+#endif
+
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS, (gpointer *)&process_handle);
+	if (ok == FALSE) {
+		g_warning ("%s: error looking up process handle %p", __func__, handle);
+		return WAIT_FAILED;
+	}
+
+	if (process_handle->exited) {
+		/* We've already done this one */
+#if DEBUG
+		g_warning ("%s (%p, %u): Process already exited", __func__, handle, timeout);
+#endif
+		return WAIT_OBJECT_0;
+	}
+
+	pid = process_handle->id;
+
+#if DEBUG
+	g_warning ("%s (%p, %u): PID: %d", __func__, handle, timeout, pid);
+#endif
+
+	/* We don't need to lock mono_processes here, the entry
+	 * has a handle_count > 0 which means it will not be freed. */
+	mp = process_handle->mono_process;
+	if (mp && process_handle->self != _wapi_getpid ()) {
+		/* mono_process points to memory in another process' address space: we can't use it */
+		mp = NULL;
+	}
+
+	start = mono_msec_ticks ();
+	now = start;
+	spin = mp == NULL;
+
+	while (1) {
+		if (mp != NULL) {
+			/* We have a semaphore we can wait on */
+			if (timeout != INFINITE) {
+				timeout_spec.tv_sec = (timeout - (now - start)) / 1000;
+				timeout_spec.tv_nsec = ((timeout - (now - start)) % 1000) * 1000000;
+#if DEBUG
+				g_warning ("%s (%p, %u): waiting on semaphore for %li seconds and %li nanoseconds...", 
+					__func__, handle, timeout, timeout_spec.tv_sec, timeout_spec.tv_nsec);
+#endif
+
+				ret = sem_timedwait (&mp->exit_sem, &timeout_spec);
+			} else {
+#if DEBUG
+				g_warning ("%s (%p, %u): waiting on semaphore forever...", 
+					__func__, handle, timeout);
+#endif
+				ret = sem_wait (&mp->exit_sem);
+			}
+
+			if (ret == -1 && errno != EINTR && errno != ETIMEDOUT) {
+#if DEBUG
+				g_warning ("%s (%p, %u): sem_timedwait failure: %s", 
+					__func__, handle, timeout, g_strerror (errno));
+#endif
+				/* Should we return a failure here? */
+			}
+
+			if (ret == 0) {
+				/* Success, process has exited */
+				sem_post (&mp->exit_sem);
+				break;
+			}
+		} else {
+			/* We did not create this process, so we can't waidpid / sem_wait it.
+			 * We need to poll for the pid existence */
+#if DEBUG
+			g_warning ("%s (%p, %u): polling on pid...", __func__, handle, timeout);
+#endif
+			if (!is_pid_valid (pid)) {
+				/* Success, process has exited */
+				break;
+			}
+		}
+
+		if (timeout == 0) {
+#if DEBUG
+			g_warning ("%s (%p, %u): WAIT_TIMEOUT (timeout = 0)", __func__, handle, timeout);
+#endif
+			return WAIT_TIMEOUT;
+		}
+
+		now = mono_msec_ticks ();
+		if (now - start >= timeout) {
+#if DEBUG
+			g_warning ("%s (%p, %u): WAIT_TIMEOUT", __func__, handle, timeout);
+#endif
+			return WAIT_TIMEOUT;
+		}
+
+		if (spin) {
+			/* "timeout - (now - start)" will not underflow, since timeout is always >=0,
+			 * and we passed the check just above */
+			_wapi_handle_spin (MIN (100, timeout - (now - start)));
+		}
+		
+		if (alertable && _wapi_thread_apc_pending (current_thread)) {
+#if DEBUG
+			g_warning ("%s (%p, %u): WAIT_IO_COMPLETION", __func__, handle, timeout);
+#endif
+			return WAIT_IO_COMPLETION;
+		}
+	}
+
+	/* Process must have exited */
+#if DEBUG
+	g_warning ("%s (%p, %u): Waited successfully", __func__, handle, timeout);
+#endif
+
+	ret = _wapi_handle_lock_shared_handles ();
+	g_assert (ret == 0);
+
+	status = mp ? mp->status : 0;
+	if (WIFSIGNALED (status)) {
+		process_handle->exitstatus = 128 + WTERMSIG (status);
+	} else {
+		process_handle->exitstatus = WEXITSTATUS (status);
+	}
+	_wapi_time_t_to_filetime (time (NULL), &process_handle->exit_time);
+
+	process_handle->exited = TRUE;
+
+#if DEBUG
+	g_warning ("%s (%p, %u): Setting pid %d signalled, exit status %d",
+		   __func__, handle, timeout, process_handle->id, process_handle->exitstatus);
+#endif
+
+	_wapi_shared_handle_set_signal_state (handle, TRUE);
+
+	_wapi_handle_unlock_shared_handles ();
+
+	return WAIT_OBJECT_0;
+}
+
