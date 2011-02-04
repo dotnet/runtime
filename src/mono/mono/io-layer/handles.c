@@ -1287,7 +1287,7 @@ gboolean _wapi_handle_ops_isowned (gpointer handle)
 	}
 }
 
-guint32 _wapi_handle_ops_special_wait (gpointer handle, guint32 timeout)
+guint32 _wapi_handle_ops_special_wait (gpointer handle, guint32 timeout, gboolean alertable)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	WapiHandleType type;
@@ -1300,7 +1300,7 @@ guint32 _wapi_handle_ops_special_wait (gpointer handle, guint32 timeout)
 	
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->special_wait != NULL) {
-		return(handle_ops[type]->special_wait (handle, timeout));
+		return(handle_ops[type]->special_wait (handle, timeout, alertable));
 	} else {
 		return(WAIT_FAILED);
 	}

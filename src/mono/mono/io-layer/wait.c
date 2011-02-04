@@ -127,7 +127,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		g_message ("%s: handle %p has special wait", __func__, handle);
 #endif
 
-		ret = _wapi_handle_ops_special_wait (handle, timeout);
+		ret = _wapi_handle_ops_special_wait (handle, timeout, alertable);
 	
 		if (alertable && _wapi_thread_apc_pending (current_thread)) {
 			apc_pending = TRUE;
@@ -682,7 +682,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 			_wapi_handle_ops_prewait (handles[i]);
 		
 			if (_wapi_handle_test_capabilities (handles[i], WAPI_HANDLE_CAP_SPECIAL_WAIT) == TRUE && _wapi_handle_issignalled (handles[i]) == FALSE) {
-				_wapi_handle_ops_special_wait (handles[i], 0);
+				_wapi_handle_ops_special_wait (handles[i], 0, alertable);
 			}
 		}
 		

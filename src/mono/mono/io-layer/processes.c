@@ -83,7 +83,7 @@ extern char **environ;
 
 #undef DEBUG
 
-static guint32 process_wait (gpointer handle, guint32 timeout);
+static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable);
 
 #if !defined(__OpenBSD__)
 static FILE *
@@ -241,7 +241,7 @@ void _wapi_process_reap (void)
  * children.  Fixing this means resurrecting a daemon helper to manage
  * processes.
  */
-static guint32 process_wait (gpointer handle, guint32 timeout)
+static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
@@ -1786,7 +1786,7 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 	/* Make sure any process exit has been noticed, before
 	 * checking if the process is signalled.  Fixes bug 325463.
 	 */
-	process_wait (process, 0);
+	process_wait (process, 0, TRUE);
 	
 	if (_wapi_handle_issignalled (process) == TRUE) {
 		*code = process_handle->exitstatus;
