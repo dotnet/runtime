@@ -527,6 +527,7 @@ static AgentConfig agent_config;
 static gint32 inited;
 
 static int conn_fd;
+static int listen_fd;
 
 static int packet_id = 0;
 
@@ -658,6 +659,7 @@ static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth
 static void ss_destroy (SingleStepReq *req);
 
 static void start_debugger_thread (void);
+static void stop_debugger_thread (void);
 
 static void finish_agent_init (gboolean on_startup);
 
@@ -909,48 +911,11 @@ mono_debugger_agent_cleanup (void)
 	if (!inited)
 		return;
 
-	/* This will interrupt the agent thread */
-	/* Close the read part only so it can still send back replies */
-#ifdef HOST_WIN32
-	shutdown (conn_fd, SD_RECEIVE);
-#else
-	shutdown (conn_fd, SHUT_RD);
-#endif
-
-	/* 
-	 * Wait for the thread to exit.
-	 *
-	 * If we continue with the shutdown without waiting for it, then the client might
-	 * not receive an answer to its last command like a resume.
-	 * The WaitForSingleObject infrastructure doesn't seem to work during shutdown, so
-	 * use pthreads.
-	 */
-	//WaitForSingleObject (debugger_thread_handle, INFINITE);
-	if (GetCurrentThreadId () != debugger_thread_id) {
-		mono_mutex_lock (&debugger_thread_exited_mutex);
-		while (!debugger_thread_exited) {
-#ifdef HOST_WIN32
-			if (WAIT_TIMEOUT == WaitForSingleObject(debugger_thread_exited_cond, 0)) {
-				mono_mutex_unlock (&debugger_thread_exited_mutex);
-				Sleep(0);
-				mono_mutex_lock (&debugger_thread_exited_mutex);
-			}
-#else
-			mono_cond_wait (&debugger_thread_exited_cond, &debugger_thread_exited_mutex);
-#endif
-		}
-		mono_mutex_unlock (&debugger_thread_exited_mutex);
-	}
+	stop_debugger_thread ();
 
 	breakpoints_cleanup ();
 	objrefs_cleanup ();
 	ids_cleanup ();
-
-#ifdef HOST_WIN32
-	shutdown (conn_fd, SD_BOTH);
-#else
-	shutdown (conn_fd, SHUT_RDWR);
-#endif
 	
 	mono_mutex_destroy (&debugger_thread_exited_mutex);
 	mono_cond_destroy (&debugger_thread_exited_cond);
@@ -978,6 +943,65 @@ recv_length (int fd, void *buf, int len, int flags)
 #ifndef TARGET_PS3
 #define HAVE_GETADDRINFO 1
 #endif
+ 
+static gboolean
+transport_handshake (void)
+{
+	char handshake_msg [128];
+	guint8 buf [128];
+	int res;
+	
+	/* Write handshake message */
+	sprintf (handshake_msg, "DWP-Handshake");
+	do {
+		res = send (conn_fd, handshake_msg, strlen (handshake_msg), 0);
+	} while (res == -1 && errno == EINTR);
+	g_assert (res != -1);
+
+	/* Read answer */
+	res = recv_length (conn_fd, buf, strlen (handshake_msg), 0);
+	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg) != 0))) {
+		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
+		return FALSE;
+	}
+
+	/*
+	 * To support older clients, the client sends its protocol version after connecting
+	 * using a command. Until that is received, default to our protocol version.
+	 */
+	major_version = MAJOR_VERSION;
+	minor_version = MINOR_VERSION;
+	protocol_version_set = FALSE;
+
+	/* 
+	 * Set TCP_NODELAY on the socket so the client receives events/command
+	 * results immediately.
+	 */
+	{
+		int flag = 1;
+		int result = setsockopt (conn_fd,
+								 IPPROTO_TCP,
+								 TCP_NODELAY,
+								 (char *) &flag,
+								 sizeof(int));
+		g_assert (result >= 0);
+	}
+	
+	return TRUE;
+}
+
+static int
+transport_accept (int socket_fd)
+{
+	conn_fd = accept (socket_fd, NULL, NULL);
+	if (conn_fd == -1) {
+		fprintf (stderr, "debugger-agent: Unable to listen on %d\n", socket_fd);
+	} else {
+		DEBUG (1, fprintf (log_file, "Accepted connection from client, connection fd=%d.\n", conn_fd));
+	}
+	
+	return conn_fd;
+}
 
 /*
  * transport_connect:
@@ -995,10 +1019,9 @@ transport_connect (const char *host, int port)
 #endif
 	int sfd, s, res;
 	char port_string [128];
-	char handshake_msg [128];
-	guint8 buf [128];
 
 	conn_fd = -1;
+	listen_fd = -1;
 
 	if (host) {
 		sprintf (port_string, "%d", port);
@@ -1044,6 +1067,7 @@ transport_connect (const char *host, int port)
 				fprintf (stderr, "debugger-agent: Unable to setup listening socket: %s\n", strerror (errno));
 				exit (1);
 			}
+			listen_fd = sfd;
 
 			addrlen = sizeof (addr);
 			memset (&addr, 0, sizeof (addr));
@@ -1071,6 +1095,7 @@ transport_connect (const char *host, int port)
 				res = listen (sfd, 16);
 				if (res == -1)
 					continue;
+				listen_fd = sfd;
 				break;
 			}
 
@@ -1104,11 +1129,9 @@ transport_connect (const char *host, int port)
 			}
 		}
 
-		conn_fd = accept (sfd, NULL, NULL);
-		if (conn_fd == -1) {
-			fprintf (stderr, "debugger-agent: Unable to listen on %s:%d\n", host, port);
+		conn_fd = transport_accept (sfd);
+		if (conn_fd == -1)
 			exit (1);
-		}
 
 		DEBUG (1, fprintf (log_file, "Accepted connection from client, socket fd=%d.\n", conn_fd));
 #else
@@ -1152,42 +1175,9 @@ transport_connect (const char *host, int port)
 #endif
 #endif
 	}
-	
-	/* Write handshake message */
-	sprintf (handshake_msg, "DWP-Handshake");
-	do {
-		res = send (conn_fd, handshake_msg, strlen (handshake_msg), 0);
-	} while (res == -1 && errno == EINTR);
-	g_assert (res != -1);
 
-	/* Read answer */
-	res = recv_length (conn_fd, buf, strlen (handshake_msg), 0);
-	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg) != 0))) {
-		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
+	if (!transport_handshake ())
 		exit (1);
-	}
-
-	/*
-	 * To support older clients, the client sends its protocol version after connecting
-	 * using a command. Until that is received, default to our protocol version.
-	 */
-	major_version = MAJOR_VERSION;
-	minor_version = MINOR_VERSION;
-	protocol_version_set = FALSE;
-
-	/* 
-	 * Set TCP_NODELAY on the socket so the client receives events/command
-	 * results immediately.
-	 */
-	{
-		int flag = 1;
-		int result = setsockopt(conn_fd,
-                                 IPPROTO_TCP,
-                                 TCP_NODELAY,
-                                 (char *) &flag,
-                                 sizeof(int));
-		g_assert (result >= 0);
-	}
 }
 
 static gboolean
@@ -1202,6 +1192,58 @@ transport_send (guint8 *data, int len)
 		return FALSE;
 	else
 		return TRUE;
+}
+
+static void
+stop_debugger_thread (void)
+{
+	if (!inited)
+		return;
+
+	/* This will interrupt the agent thread */
+	/* Close the read part only so it can still send back replies */
+	/* Also shut down the connection listener so that we can exit normally */
+#ifdef HOST_WIN32
+	shutdown (conn_fd, SD_RECEIVE);
+	shutdown (listen_fd, SD_BOTH);
+	closesocket (listen_fd);
+#else
+	shutdown (conn_fd, SHUT_RD);
+	shutdown (listen_fd, SHUT_RDWR);
+	close (listen_fd);
+#endif
+
+	/* 
+	 * Wait for the thread to exit.
+	 *
+	 * If we continue with the shutdown without waiting for it, then the client might
+	 * not receive an answer to its last command like a resume.
+	 * The WaitForSingleObject infrastructure doesn't seem to work during shutdown, so
+	 * use pthreads.
+	 */
+	//WaitForSingleObject (debugger_thread_handle, INFINITE);
+	if (GetCurrentThreadId () != debugger_thread_id) {
+		mono_mutex_lock (&debugger_thread_exited_mutex);
+		if (!debugger_thread_exited)
+		{
+#ifdef HOST_WIN32
+			if (WAIT_TIMEOUT == WaitForSingleObject(debugger_thread_exited_cond, 0)) {
+				mono_mutex_unlock (&debugger_thread_exited_mutex);
+				Sleep(0);
+				mono_mutex_lock (&debugger_thread_exited_mutex);
+			}
+#else
+			mono_cond_wait (&debugger_thread_exited_cond, &debugger_thread_exited_mutex);
+#endif
+		}
+		mono_mutex_unlock (&debugger_thread_exited_mutex);
+	}
+
+#ifdef HOST_WIN32
+	shutdown (conn_fd, SD_BOTH);
+#else
+	shutdown (conn_fd, SHUT_RDWR);
+#endif
 }
 
 static void
@@ -2823,22 +2865,33 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	GSList *l;
 	MonoDomain *domain = mono_domain_get ();
 	MonoThread *thread;
+	gboolean send_success = FALSE;
 
-	if (!inited)
+	if (!inited) {
+		DEBUG (2, fprintf (log_file, "Debugger agent not initialized yet: dropping %s\n", event_to_string (event)));
 		return;
+	}
 
-	if (!vm_start_event_sent && event != EVENT_KIND_VM_START)
+	if (!vm_start_event_sent && event != EVENT_KIND_VM_START) {
 		// FIXME: We miss those events
+		DEBUG (2, fprintf (log_file, "VM start event not sent yet: dropping %s\n", event_to_string (event)));
 		return;
+	}
 
-	if (vm_death_event_sent)
+	if (vm_death_event_sent) {
+		DEBUG (2, fprintf (log_file, "VM death event has been sent: dropping %s\n", event_to_string (event)));
 		return;
+	}
 
-	if (mono_runtime_is_shutting_down () && event != EVENT_KIND_VM_DEATH)
+	if (mono_runtime_is_shutting_down () && event != EVENT_KIND_VM_DEATH) {
+		DEBUG (2, fprintf (log_file, "Mono runtime is shutting down: dropping %s\n", event_to_string (event)));
 		return;
+	}
 
-	if (disconnected)
+	if (disconnected) {
+		DEBUG (2, fprintf (log_file, "Debugger client is not connected: dropping %s\n", event_to_string (event)));
 		return;
+	}
 
 	if (events == NULL)
 		return;
@@ -2927,17 +2980,23 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		suspend_vm ();
 	}
 
-	send_packet (CMD_SET_EVENT, CMD_COMPOSITE, &buf);
+	send_success = send_packet (CMD_SET_EVENT, CMD_COMPOSITE, &buf);
+
+	buffer_free (&buf);
 
 	g_slist_free (events);
 	events = NULL;
+
+	if (!send_success) {
+		DEBUG (2, fprintf (log_file, "Sending command %s failed.\n", event_to_string (event)));
+		return;
+	}
 
 	if (event == EVENT_KIND_VM_START)
 		vm_start_event_sent = TRUE;
 
 	DEBUG (1, fprintf (log_file, "[%p] Sent event %s, suspend=%d.\n", (gpointer)GetCurrentThreadId (), event_to_string (event), suspend_policy));
 
-	buffer_free (&buf);
 
 	switch (suspend_policy) {
 	case SUSPEND_POLICY_NONE:
