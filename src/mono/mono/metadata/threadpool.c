@@ -12,12 +12,6 @@
 #include <config.h>
 #include <glib.h>
 
-#ifdef MONO_SMALL_CONFIG
-#define QUEUE_LENGTH 16 /* Must be 2^N */
-#else
-#define QUEUE_LENGTH 64 /* Must be 2^N */
-#endif
-
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/tabledefs.h>
@@ -31,6 +25,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/socket-io.h>
+#include <mono/metadata/mono-cq.h>
 #include <mono/metadata/mono-wsq.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/gc-internal.h>
@@ -131,11 +126,7 @@ typedef struct {
 
 typedef struct {
 	MonoSemType lock;
-	MonoMList *first; /* GC root */
-	MonoMList *last;
-	MonoMList *unused; /* Up to 20 chunks. GC root */
-	gint head;
-	gint tail;
+	MonoCQ *queue; /* GC root */
 	MonoSemType new_job;
 	volatile gint waiting; /* threads waiting for a work item */
 
@@ -1169,10 +1160,10 @@ static void
 threadpool_init (ThreadPool *tp, int min_threads, int max_threads, void (*async_invoke) (gpointer))
 {
 	memset (tp, 0, sizeof (ThreadPool));
-	MONO_SEM_INIT (&tp->lock, 1);
 	tp->min_threads = min_threads;
 	tp->max_threads = max_threads;
 	tp->async_invoke = async_invoke;
+	tp->queue = mono_cq_create ();
 	MONO_SEM_INIT (&tp->new_job, 0);
 }
 
@@ -1229,15 +1220,11 @@ signal_handler (int signo)
 	ThreadPool *tp;
 
 	tp = &async_tp;
-	MONO_SEM_WAIT (&tp->lock);
 	g_print ("\n-----Non-IO-----\n");
 	print_pool_info (tp);
-	MONO_SEM_POST (&tp->lock);
 	tp = &async_io_tp;
-	MONO_SEM_WAIT (&tp->lock);
 	g_print ("\n-----IO-----\n");
 	print_pool_info (tp);
-	MONO_SEM_POST (&tp->lock);
 	alarm (2);
 }
 #endif
@@ -1272,8 +1259,7 @@ monitor_thread (gpointer data)
 			break;
 		if (tp->waiting > 0)
 			continue;
-		MONO_SEM_WAIT (&tp->lock);
-		need_one = (tp->head != tp->tail);
+		need_one = (mono_cq_count (tp->queue) > 0);
 		if (!need_one) {
 			EnterCriticalSection (&wsqs_lock);
 			for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
@@ -1286,7 +1272,6 @@ monitor_thread (gpointer data)
 			}
 			LeaveCriticalSection (&wsqs_lock);
 		}
-		MONO_SEM_POST (&tp->lock);
 		if (need_one)
 			threadpool_start_thread (tp);
 	}
@@ -1311,13 +1296,6 @@ mono_thread_pool_init ()
 				return;
 		}
 	}
-
-	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.first);
-	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.last);
-	MONO_GC_REGISTER_ROOT_SINGLE (async_tp.unused);
-	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.first);
-	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.unused);
-	MONO_GC_REGISTER_ROOT_SINGLE (async_io_tp.last);
 
 	MONO_GC_REGISTER_ROOT_FIXED (socket_io_data.sock_to_state);
 	InitializeCriticalSection (&socket_io_data.io_lock);
@@ -1469,16 +1447,12 @@ mono_thread_pool_cleanup (void)
 	if (!(async_tp.pool_status == 0 || async_tp.pool_status == 2)) {
 		if (!(async_tp.pool_status == 1 && InterlockedCompareExchange (&async_tp.pool_status, 2, 1) == 2)) {
 			InterlockedExchange (&async_io_tp.pool_status, 2);
-			MONO_SEM_WAIT (&async_tp.lock);
 			threadpool_free_queue (&async_tp);
 			threadpool_kill_idle_threads (&async_tp);
-			MONO_SEM_POST (&async_tp.lock);
 
 			socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
-			MONO_SEM_WAIT (&async_io_tp.lock);
 			threadpool_free_queue (&async_io_tp);
 			threadpool_kill_idle_threads (&async_io_tp);
-			MONO_SEM_POST (&async_io_tp.lock);
 			MONO_SEM_DESTROY (&async_io_tp.new_job);
 		}
 	}
@@ -1490,42 +1464,6 @@ mono_thread_pool_cleanup (void)
 	wsqs = NULL;
 	LeaveCriticalSection (&wsqs_lock);
 	MONO_SEM_DESTROY (&async_tp.new_job);
-}
-
-/* Caller must enter &tp->lock */
-static MonoObject*
-dequeue_job_nolock (ThreadPool *tp)
-{
-	MonoObject *ar;
-	MonoArray *array;
-	MonoMList *list;
-
-	list = tp->first;
-	do {
-		if (mono_runtime_is_shutting_down ())
-			return NULL;
-		if (!list || tp->head == tp->tail)
-			return NULL;
-
-		array = (MonoArray *) mono_mlist_get_data (list);
-		ar = mono_array_get (array, MonoObject *, tp->head % QUEUE_LENGTH);
-		mono_array_set (array, MonoObject *, tp->head % QUEUE_LENGTH, NULL);
-		tp->head++;
-		if ((tp->head % QUEUE_LENGTH) == 0) {
-			list = tp->first;
-			tp->first = mono_mlist_next (list);
-			if (tp->first == NULL)
-				tp->last = NULL;
-			if (mono_mlist_length (tp->unused) < 20) {
-				/* reuse this chunk */
-				tp->unused = mono_mlist_set_next (list, tp->unused);
-			}
-			tp->head -= QUEUE_LENGTH;
-			tp->tail -= QUEUE_LENGTH;
-		}
-		list = tp->first;
-	} while (ar == NULL);
-	return ar;
 }
 
 static gboolean
@@ -1563,35 +1501,12 @@ threadpool_append_job (ThreadPool *tp, MonoObject *ar)
 	threadpool_append_jobs (tp, &ar, 1);
 }
 
-static MonoMList *
-create_or_reuse_list (ThreadPool *tp)
-{
-	MonoMList *list;
-	MonoArray *array;
-
-	list = NULL;
-	if (tp->unused) {
-		list = tp->unused;
-		tp->unused = mono_mlist_next (list);
-		mono_mlist_set_next (list, NULL);
-		//TP_DEBUG (tp->nodes_reused++);
-	} else {
-		array = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, QUEUE_LENGTH);
-		list = mono_mlist_alloc ((MonoObject *) array);
-		//TP_DEBUG (tp->nodes_created++);
-	}
-	return list;
-}
-
 static void
 threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 {
 	static int job_counter;
-	MonoArray *array;
-	MonoMList *list;
 	MonoObject *ar;
 	gint i;
-	gboolean lock_taken = FALSE; /* We won't take the lock when the local queue is used */
 
 	if (mono_runtime_is_shutting_down ())
 		return;
@@ -1612,25 +1527,8 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 		if (!tp->is_io && mono_wsq_local_push (ar))
 			continue;
 
-		if (!lock_taken) {
-			MONO_SEM_WAIT (&tp->lock);
-			lock_taken = TRUE;
-		}
-		if ((tp->tail % QUEUE_LENGTH) == 0) {
-			list = create_or_reuse_list (tp);
-			if (tp->last != NULL)
-				mono_mlist_set_next (tp->last, list);
-			tp->last = list;
-			if (tp->first == NULL)
-				tp->first = tp->last;
-		}
-
-		array = (MonoArray *) mono_mlist_get_data (tp->last);
-		mono_array_setref (array, tp->tail % QUEUE_LENGTH, ar);
-		tp->tail++;
+		mono_cq_enqueue (tp->queue, ar);
 	}
-	if (lock_taken)
-		MONO_SEM_POST (&tp->lock);
 
 	for (i = 0; i < MIN(njobs, tp->max_threads); i++)
 		pulse_on_new_job (tp);
@@ -1639,45 +1537,24 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 static void
 threadpool_clear_queue (ThreadPool *tp, MonoDomain *domain)
 {
-	MonoMList *current;
-	MonoArray *array;
 	MonoObject *obj;
+	MonoMList *other;
 	int domain_count;
-	int i;
 
+	other = NULL;
 	domain_count = 0;
-	MONO_SEM_WAIT (&tp->lock);
-	current = tp->first;
-	while (current) {
-		array = (MonoArray *) mono_mlist_get_data (current);
-		for (i = 0; i < QUEUE_LENGTH; i++) {
-			obj = mono_array_get (array, MonoObject*, i);
-			if (obj != NULL && obj->vtable->domain == domain) {
-				domain_count++;
-				mono_array_setref (array, i, NULL);
-				threadpool_jobs_dec (obj);
-			}
+	while (mono_cq_dequeue (tp->queue, &obj)) {
+		if (obj != NULL && obj->vtable->domain == domain) {
+			domain_count++;
+			threadpool_jobs_dec (obj);
+		} else if (obj != NULL) {
+			other = mono_mlist_prepend (other, obj);
 		}
-		current = mono_mlist_next (current);
 	}
 
-	if (!domain_count) {
-		MONO_SEM_POST (&tp->lock);
-		return;
-	}
-
-	current = tp->first;
-	tp->first = NULL;
-	tp->last = NULL;
-	tp->head = 0;
-	tp->tail = 0;
-	MONO_SEM_POST (&tp->lock);
-	/* Re-add everything but the nullified elements */
-	while (current) {
-		array = (MonoArray *) mono_mlist_get_data (current);
-		threadpool_append_jobs (tp, mono_array_addr (array, MonoObject *, 0), QUEUE_LENGTH);
-		memset (mono_array_addr (array, MonoObject *, 0), 0, sizeof (MonoObject *) * QUEUE_LENGTH);
-		current = mono_mlist_next (current);
+	while (other) {
+		threadpool_append_job (tp, (MonoObject *) mono_mlist_get_data (other));
+		other = mono_mlist_next (other);
 	}
 }
 
@@ -1730,19 +1607,17 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 static void
 threadpool_free_queue (ThreadPool *tp)
 {
-	tp->head = tp->tail = 0;
-	tp->first = NULL;
-	tp->unused = NULL;
+	mono_cq_destroy (tp->queue);
+	tp->queue = NULL;
 }
 
 gboolean
 mono_thread_pool_is_queue_array (MonoArray *o)
 {
-	gpointer obj = o;
+	// gpointer obj = o;
 
 	// FIXME: need some fix in sgen code.
-	// There are roots at: async*tp.unused (MonoMList) and wsqs [n]->queue (MonoArray)
-	return obj == async_tp.first || obj == async_io_tp.first;
+	return FALSE;
 }
 
 static MonoWSQ *
@@ -1830,9 +1705,7 @@ dequeue_or_steal (ThreadPool *tp, gpointer *data)
 	if (mono_runtime_is_shutting_down ())
 		return FALSE;
 	TP_DEBUG ("Dequeue");
-	MONO_SEM_WAIT (&tp->lock);
-	*data = dequeue_job_nolock (tp);
-	MONO_SEM_POST (&tp->lock);
+	mono_cq_dequeue (tp->queue, (MonoObject **) data);
 	if (!tp->is_io && !*data)
 		try_steal (data, FALSE);
 	return (*data != NULL);
