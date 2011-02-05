@@ -2054,6 +2054,7 @@ mono_handle_hard_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 	/* we don't do much now, but we can warn the user with a useful message */
 	fprintf (stderr, "Stack overflow: IP: %p, fault addr: %p\n", mono_arch_ip_from_context (ctx), fault_addr);
 
+#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 	mono_arch_sigctx_to_monoctx (ctx, &mctx);
 			
 	fprintf (stderr, "Stacktrace:\n");
@@ -2062,6 +2063,12 @@ mono_handle_hard_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 	ud.stream = stderr;
 
 	mono_jit_walk_stack_from_ctx (print_overflow_stack_frame, &mctx, MONO_UNWIND_LOOKUP_ACTUAL_METHOD, &ud);
+#else
+	if (ji && ji->method)
+		fprintf (stderr, "At %s\n", mono_method_full_name (ji->method, TRUE));
+	else
+		fprintf (stderr, "At <unmanaged>.\n");
+#endif
 
 	_exit (1);
 }
