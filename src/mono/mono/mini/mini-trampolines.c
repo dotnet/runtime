@@ -911,7 +911,10 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_data, gui
 			mono_error_raise_exception (&err);
 
 		callvirt = !delegate->target && sig->hasthis;
-		if (delegate->target && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) {
+		if (delegate->target && 
+			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
+			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
+			method->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) {
 			method = mono_object_get_virtual_method (delegate->target, method);
 			enable_caching = FALSE;
 		}
