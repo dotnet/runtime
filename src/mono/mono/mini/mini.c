@@ -6190,8 +6190,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_unwind_init ();
 
-	mini_gc_init ();
-
 	if (getenv ("MONO_XDEBUG")) {
 		char *xdebug_opts = getenv ("MONO_XDEBUG");
 		mono_xdebug_init (xdebug_opts);
