@@ -5386,7 +5386,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoClass *ICustomMarshaler = NULL;
 	static MonoMethod *cleanup_native, *cleanup_managed;
 	static MonoMethod *marshal_managed_to_native, *marshal_native_to_managed;
-	MonoMethod *get_instance;
+	MonoMethod *get_instance = NULL;
 	MonoMethodBuilder *mb = m->mb;
 	char *exception_msg = NULL;
 	guint32 loc1;
