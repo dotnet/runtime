@@ -5701,10 +5701,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			}
 		} else {
 			mips_load_const (code, mips_temp, (gulong)item->key);
-			mips_slt (code, mips_temp, mips_temp, MONO_ARCH_IMT_REG);
+			mips_slt (code, mips_temp, MONO_ARCH_IMT_REG, mips_temp);
 
 			item->jmp_code = code;
-			mips_bne (code, mips_temp, mips_zero, 0);
+			mips_beq (code, mips_temp, mips_zero, 0);
 			mips_nop (code);
 		}
 	}
