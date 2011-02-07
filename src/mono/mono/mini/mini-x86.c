@@ -1804,6 +1804,8 @@ static guint8*
 emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
 {
 	gboolean needs_paddings = TRUE;
+	guint32 pad_size;
+
 	if (cfg->abs_patches && g_hash_table_lookup (cfg->abs_patches, data)) {
 	} else {
 		MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
@@ -1818,7 +1820,7 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 	/*The address must be 4 bytes aligned to avoid spanning multiple cache lines.
 	This is required for code patching to be safe on SMP machines.
 	*/
-	guint32 pad_size = (guint32)(code + 1 - cfg->native_code) & 0x3;
+	pad_size = (guint32)(code + 1 - cfg->native_code) & 0x3;
 	if (needs_paddings && pad_size)
 		x86_padding (code, pad_size);
 
