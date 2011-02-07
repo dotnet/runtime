@@ -24,7 +24,6 @@ os_files = $(unix_files)
 endif
 
 libeglib_la_SOURCES = \
-	eglib-config.h	\
 	eglib-remap.h	\
 	sort.frag.h	\
 	glib.h	     	\
