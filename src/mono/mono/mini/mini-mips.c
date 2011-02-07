@@ -5643,9 +5643,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		MonoIMTCheckItem *item = imt_entries [i];
 
 		item->code_target = code;
-		mips_load_const (code, mips_temp, (gsize)item->key);
 		if (item->is_equals) {
 			if (item->check_target_idx) {
+				mips_load_const (code, mips_temp, (gsize)item->key);
 				item->jmp_code = code;
 				mips_bne (code, mips_temp, MONO_ARCH_IMT_REG, 0);
 				mips_nop (code);
@@ -5661,6 +5661,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				mips_nop (code);
 			} else {
 				if (fail_tramp) {
+					mips_load_const (code, mips_temp, (gsize)item->key);
 					patch = code;
 					mips_bne (code, mips_temp, MONO_ARCH_IMT_REG, 0);
 					mips_nop (code);
