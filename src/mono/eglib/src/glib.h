@@ -16,6 +16,10 @@
 /* For pid_t */
 #ifndef WIN32
 #include <unistd.h>
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #endif
 #endif
 
