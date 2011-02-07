@@ -555,9 +555,13 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 			{
 				MonoJitInfo *target_ji = 
 					mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (compiled_method));
+				if (!target_ji)
+					target_ji = mono_jit_info_table_find (mono_get_root_domain (), mono_get_addr_from_ftnptr (compiled_method));
 
 				if (!ji)
 					ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+				if (!ji)
+					ji = mono_jit_info_table_find (mono_get_root_domain (), (char*)code);
 
 				if (mono_method_same_domain (ji, target_ji))
 					mono_arch_patch_callsite (ji->code_start, code, addr);
