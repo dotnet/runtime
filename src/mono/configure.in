@@ -1741,6 +1741,11 @@ if test x$target_win32 = xno; then
 	dnl * on xp+
 	AC_DEFINE(HAVE_GETPROCESSID, 1, [Define if GetProcessId is available])
 else
+	dnl *********************************
+	dnl *** Checks for Windows compilation ***
+	dnl *********************************
+	AC_CHECK_HEADERS(winternl.h)
+
 	jdk_headers_found=no
 	AC_CHECK_LIB(ws2_32, main, LIBS="$LIBS -lws2_32", AC_ERROR(bad mingw install?))
 	AC_CHECK_LIB(psapi, main, LIBS="$LIBS -lpsapi", AC_ERROR(bad mingw install?))

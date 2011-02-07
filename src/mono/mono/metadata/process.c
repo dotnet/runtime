@@ -24,15 +24,15 @@
 #include <mono/utils/mono-proclib.h>
 #include <mono/io-layer/io-layer.h>
 #ifndef HAVE_GETPROCESSID
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(HAVE_WINTERNL_H)
 #include <winternl.h>
 #ifndef NT_SUCCESS
 #define NT_SUCCESS(status) ((NTSTATUS) (status) >= 0)
 #endif /* !NT_SUCCESS */
-#else /* !_MSC_VER */
+#else /* ! (defined(_MSC_VER) || defined(HAVE_WINTERNL_H)) */
 #include <ddk/ntddk.h>
 #include <ddk/ntapi.h>
-#endif /* _MSC_VER */
+#endif /* (defined(_MSC_VER) || defined(HAVE_WINTERNL_H)) */
 #endif /* !HAVE_GETPROCESSID */
 /* FIXME: fix this code to not depend so much on the inetrnals */
 #include <mono/metadata/class-internals.h>
