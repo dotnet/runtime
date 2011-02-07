@@ -7065,6 +7065,7 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 	MonoClass *klass, *parent;
 	MonoMethod *method = m->method;
 	MonoMethod *result = NULL;
+	int slot;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -7076,6 +7077,10 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 	    method->flags & METHOD_ATTRIBUTE_NEW_SLOT)
 		return m;
 
+	slot = mono_method_get_vtable_slot (method);
+	if (slot == -1)
+		return m;
+
 	klass = method->klass;
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
@@ -7084,7 +7089,7 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 		/* At the end of the loop, klass points to the eldest class that has this virtual function slot. */
 		for (parent = klass->parent; parent != NULL; parent = parent->parent) {
 			mono_class_setup_vtable (parent);
-			if (parent->vtable_size <= method->slot)
+			if (parent->vtable_size <= slot)
 				break;
 			klass = parent;
 		}
@@ -7100,17 +7105,17 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 	/*This is possible if definition == FALSE.
 	 * Do it here to be really sure we don't read invalid memory.
 	 */
-	if (method->slot >= klass->vtable_size)
+	if (slot >= klass->vtable_size)
 		return m;
 
 	mono_class_setup_vtable (klass);
 
-	result = klass->vtable [method->slot];
+	result = klass->vtable [slot];
 	if (result == NULL) {
 		/* It is an abstract method */
 		gpointer iter = NULL;
 		while ((result = mono_class_get_methods (klass, &iter)))
-			if (result->slot == method->slot)
+			if (result->slot == slot)
 				break;
 	}
 
