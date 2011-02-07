@@ -23,6 +23,17 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/io-layer/io-layer.h>
+#ifndef HAVE_GETPROCESSID
+#ifdef _MSC_VER
+#include <winternl.h>
+#ifndef NT_SUCCESS
+#define NT_SUCCESS(status) ((NTSTATUS) (status) >= 0)
+#endif /* !NT_SUCCESS */
+#else /* !_MSC_VER */
+#include <ddk/ntddk.h>
+#include <ddk/ntapi.h>
+#endif /* _MSC_VER */
+#endif /* !HAVE_GETPROCESSID */
 /* FIXME: fix this code to not depend so much on the inetrnals */
 #include <mono/metadata/class-internals.h>
 
