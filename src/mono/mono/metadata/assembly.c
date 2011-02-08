@@ -202,7 +202,17 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
 }
 
 /**
- *	Explicitly sets path to look for assemblies, useful for platforms that do not support environment variables.
+ * mono_set_assemblies_path:
+ * @path: list of paths that contain directories where Mono will look for assemblies
+ *
+ * Use this method to override the standard assembly lookup system and
+ * override any assemblies coming from the GAC.  This is the method
+ * that supports the MONO_PATH variable.
+ *
+ * Notice that MONO_PATH and this method are really a very bad idea as
+ * it prevents the GAC from working and it prevents the standard
+ * resolution mechanisms from working.  Nonetheless, for some debugging
+ * situations and bootstrapping setups, this is useful to have. 
  */
 void
 mono_set_assemblies_path (const char* path)
