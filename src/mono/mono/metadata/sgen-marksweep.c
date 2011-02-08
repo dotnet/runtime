@@ -590,10 +590,15 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 }
 
 static gboolean
-obj_is_from_pinned_alloc (char *obj)
+obj_is_from_pinned_alloc (char *ptr)
 {
-	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-	return block->pinned;
+	MSBlockInfo *block;
+
+	FOREACH_BLOCK (block) {
+		if (ptr >= block->block && ptr <= block->block + MS_BLOCK_SIZE)
+			return block->pinned;
+	} END_FOREACH_BLOCK;
+	return FALSE;
 }
 
 static void*
@@ -773,8 +778,8 @@ major_ptr_is_in_non_pinned_space (char *ptr)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		if (ptr >= (char*)block && ptr <= (char*)block + MS_BLOCK_SIZE)
-			return TRUE;
+		if (ptr >= block->block && ptr <= block->block + MS_BLOCK_SIZE)
+			return !block->pinned;
 	} END_FOREACH_BLOCK;
 	return FALSE;
 }
