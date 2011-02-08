@@ -217,6 +217,9 @@ static long long stat_major_blocks_alloced = 0;
 static long long stat_major_blocks_freed = 0;
 static long long stat_major_objects_evacuated = 0;
 static long long stat_time_wait_for_sweep = 0;
+#ifdef SGEN_PARALLEL_MARK
+static long long stat_slots_allocated_in_vain = 0;
+#endif
 
 static gboolean ms_sweep_in_progress = FALSE;
 static pthread_t ms_sweep_thread;
@@ -988,6 +991,8 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			obj = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
 
 			*ptr = obj;
+
+			++stat_slots_allocated_in_vain;
 		}
 	} else {
 #ifdef FIXED_HEAP
@@ -1785,6 +1790,9 @@ mono_sgen_marksweep_init
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
 	mono_counters_register ("Wait for sweep time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_time_wait_for_sweep);
+#ifdef SGEN_PARALLEL_MARK
+	mono_counters_register ("Slots allocated in vain", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_slots_allocated_in_vain);
+#endif
 
 	/*
 	 * FIXME: These are superfluous if concurrent sweep is
