@@ -1068,8 +1068,6 @@ finalizer_thread (gpointer unused)
 		mono_attach_maybe_start ();
 #endif
 
-		reference_queue_proccess_all ();
-
 		if (domains_to_finalize) {
 			mono_finalizer_lock ();
 			if (domains_to_finalize) {
@@ -1088,6 +1086,7 @@ finalizer_thread (gpointer unused)
 		 */
 		mono_gc_invoke_finalizers ();
 
+		reference_queue_proccess_all ();
 
 		SetEvent (pending_done_event);
 	}
@@ -1332,9 +1331,14 @@ reference_queue_proccess (MonoReferenceQueue *queue)
 	RefQueueEntry **iter = &queue->queue;
 	RefQueueEntry *entry;
 	while ((entry = *iter)) {
+#ifdef HAVE_SGEN_GC
 		if (queue->should_be_deleted || !mono_gc_weak_link_get (&entry->dis_link)) {
-			ref_list_remove_element (iter, entry);
 			mono_gc_weak_link_remove (&entry->dis_link);
+#else
+		if (queue->should_be_deleted || !mono_gchandle_get_target (entry->gchandle)) {
+			mono_gchandle_free ((guint32)entry->gchandle);
+#endif
+			ref_list_remove_element (iter, entry);
 			queue->callback (entry->user_data);
 			g_free (entry);
 		} else {
@@ -1423,7 +1427,14 @@ mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *u
 
 	entry = g_new0 (RefQueueEntry, 1);
 	entry->user_data = user_data;
+
+#ifdef HAVE_SGEN_GC
 	mono_gc_weak_link_add (&entry->dis_link, obj, TRUE);
+#else
+	entry->gchandle = mono_gchandle_new_weakref (obj, TRUE);
+	mono_object_register_finalizer (obj);
+#endif
+
 	ref_list_push (&queue->queue, entry);
 	return TRUE;
 }
