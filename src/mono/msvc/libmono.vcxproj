@@ -289,6 +289,7 @@
     <ClInclude Include="..\mono\metadata\method-builder.h" />
     <ClInclude Include="..\mono\metadata\monitor.h" />
     <ClInclude Include="..\mono\metadata\mono-basic-block.h" />
+    <ClInclude Include="..\mono\metadata\mono-cq.h" />
     <ClInclude Include="..\mono\metadata\mono-debug-debugger.h" />
     <ClInclude Include="..\mono\metadata\mono-debug.h" />
     <ClInclude Include="..\mono\metadata\mono-mlist.h" />
@@ -1036,6 +1037,7 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\mono-basic-block.c" />
+    <ClCompile Include="..\mono\metadata\mono-cq.c" />
     <ClCompile Include="..\mono\metadata\mono-config.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>

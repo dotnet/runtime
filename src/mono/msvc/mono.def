@@ -835,3 +835,8 @@ mono_win32_compat_CopyMemory
 mono_win32_compat_FillMemory
 mono_win32_compat_MoveMemory
 mono_win32_compat_ZeroMemory
+mono_cq_create
+mono_cq_destroy
+mono_cq_dequeue
+mono_cq_count
+mono_cq_enqueue
