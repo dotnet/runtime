@@ -23,6 +23,9 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/io-layer/io-layer.h>
+#if defined (MINGW_CROSS_COMPILE) && defined (HAVE_GETPROCESSID)
+#undef HAVE_GETPROCESSID
+#endif
 #ifndef HAVE_GETPROCESSID
 #if defined(_MSC_VER) || defined(HAVE_WINTERNL_H)
 #include <winternl.h>
@@ -524,10 +527,6 @@ complete_path (const gunichar2 *appname, gchar **completed)
 	g_free (utf8appmemory);
 	return TRUE;
 }
-
-#if defined (MINGW_CROSS_COMPILE) && defined (HAVE_GETPROCESSID)
-#undef HAVE_GETPROCESSID
-#endif
 
 #ifndef HAVE_GETPROCESSID
 /* Run-time GetProcessId detection for Windows */
