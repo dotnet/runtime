@@ -7201,10 +7201,11 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass)
 	int j;
 	MonoType **klass_argv, **oklass_argv;
 	MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
+	MonoClass *oklass_gtd = mono_class_get_generic_type_definition (oklass);
 	MonoGenericContainer *container = klass_gtd->generic_container;
 
 	/*Viable candidates are instances of the same generic interface*/
-	if (mono_class_get_generic_type_definition (oklass) != klass_gtd)
+	if (mono_class_get_generic_type_definition (oklass) != klass_gtd || oklass == klass_gtd)
 		return FALSE;
 
 	klass_argv = &klass->generic_class->context.class_inst->type_argv [0];
@@ -7344,7 +7345,7 @@ mono_class_is_variant_compatible_slow (MonoClass *klass, MonoClass *oklass)
 	MonoGenericContainer *container = klass_gtd->generic_container;
 
 	/*Viable candidates are instances of the same generic interface*/
-	if (mono_class_get_generic_type_definition (oklass) != klass_gtd)
+	if (mono_class_get_generic_type_definition (oklass) != klass_gtd || oklass == klass_gtd)
 		return FALSE;
 
 	klass_argv = &klass->generic_class->context.class_inst->type_argv [0];
