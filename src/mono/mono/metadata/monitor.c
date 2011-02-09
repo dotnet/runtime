@@ -26,6 +26,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-semaphore.h>
 
 /*
  * Pull the list of opcodes
@@ -80,7 +81,7 @@ struct _MonoThreadsSync
 	gint32 hash_code;
 #endif
 	volatile gint32 entry_count;
-	HANDLE entry_sem;
+	MonoSemType *entry_sem;
 	GSList *wait_list;
 	void *data;
 };
@@ -228,7 +229,8 @@ mon_finalize (MonoThreadsSync *mon)
 	LOCK_DEBUG (g_message ("%s: Finalizing sync %p", __func__, mon));
 
 	if (mon->entry_sem != NULL) {
-		CloseHandle (mon->entry_sem);
+		MONO_SEM_DESTROY (mon->entry_sem);
+		g_free (mon->entry_sem);
 		mon->entry_sem = NULL;
 	}
 	/* If this isn't empty then something is seriously broken - it
@@ -412,7 +414,7 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 {
 	MonoThreadsSync *mon;
 	gsize id = GetCurrentThreadId ();
-	HANDLE sem;
+	MonoSemType *sem;
 	guint32 then = 0, now, delta;
 	guint32 waitms;
 	guint32 ret;
@@ -581,11 +583,13 @@ retry_contended:
 	 */
 	if (mon->entry_sem == NULL) {
 		/* Create the semaphore */
-		sem = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+		sem = g_new0 (MonoSemType, 1);
+		MONO_SEM_INIT (sem, 0);
 		g_assert (sem != NULL);
 		if (InterlockedCompareExchangePointer ((gpointer*)&mon->entry_sem, sem, NULL) != NULL) {
 			/* Someone else just put a handle here */
-			CloseHandle (sem);
+			MONO_SEM_DESTROY (sem);
+			g_free (sem);
 		}
 	}
 	
@@ -622,7 +626,7 @@ retry_contended:
 	 * We pass TRUE instead of allow_interruption since we have to check for the
 	 * StopRequested case below.
 	 */
-	ret = WaitForSingleObjectEx (mon->entry_sem, waitms, TRUE);
+	ret = MONO_SEM_TIMEDWAIT_ALERTABLE(mon->entry_sem, waitms, TRUE);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -746,7 +750,7 @@ mono_monitor_exit (MonoObject *obj)
 		 * struct.
 		 */
 		if (mon->entry_count > 0) {
-			ReleaseSemaphore (mon->entry_sem, 1, NULL);
+			MONO_SEM_POST (mon->entry_sem);
 		}
 	} else {
 		LOCK_DEBUG (g_message ("%s: (%d) Object %p is now locked %d times", __func__, GetCurrentThreadId (), obj, nest));
