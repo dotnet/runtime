@@ -201,26 +201,24 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
 	return memcmp (pubt1, pubt2, 16) == 0;
 }
 
-/* Native Client can't get this info from an environment variable so */
-/* it's passed in to the runtime, or set manually by embedding code. */
-#ifdef __native_client__
-char* nacl_mono_path = NULL;
-#endif
-
-static void
-check_path_env (void)
+/**
+ * mono_set_assemblies_path:
+ * @path: list of paths that contain directories where Mono will look for assemblies
+ *
+ * Use this method to override the standard assembly lookup system and
+ * override any assemblies coming from the GAC.  This is the method
+ * that supports the MONO_PATH variable.
+ *
+ * Notice that MONO_PATH and this method are really a very bad idea as
+ * it prevents the GAC from working and it prevents the standard
+ * resolution mechanisms from working.  Nonetheless, for some debugging
+ * situations and bootstrapping setups, this is useful to have. 
+ */
+void
+mono_set_assemblies_path (const char* path)
 {
-	const char *path;
 	char **splitted, **dest;
 	
-#ifdef __native_client__
-	path = nacl_mono_path;
-#else
-	path = g_getenv ("MONO_PATH");
-#endif
-	if (!path)
-		return;
-
 	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (assemblies_path)
 		g_strfreev (assemblies_path);
@@ -242,6 +240,27 @@ check_path_env (void)
 
 		splitted++;
 	}
+}
+
+/* Native Client can't get this info from an environment variable so */
+/* it's passed in to the runtime, or set manually by embedding code. */
+#ifdef __native_client__
+char* nacl_mono_path = NULL;
+#endif
+
+static void
+check_path_env (void)
+{
+	const char* path;
+#ifdef __native_client__
+	path = nacl_mono_path;
+#else
+	path = g_getenv ("MONO_PATH");
+#endif
+	if (!path || assemblies_path != NULL)
+		return;
+
+	mono_set_assemblies_path(path);
 }
 
 static void

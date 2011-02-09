@@ -88,11 +88,18 @@ minor_scan_vtype (char *start, mword desc, char* from_start, char* from_end, Sge
 	return NULL;
 }
 
+#ifdef FIXED_HEAP
+#define PREFETCH_DYNAMIC_HEAP(addr)
+#else
+#define PREFETCH_DYNAMIC_HEAP(addr)	PREFETCH ((addr))
+#endif
+
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 		void *__old = *(ptr);					\
 		void *__copy;						\
 		if (__old) {						\
+			PREFETCH_DYNAMIC_HEAP (__old);			\
 			major_copy_or_mark_object ((ptr), queue);	\
 			__copy = *(ptr);				\
 			DEBUG (9, if (__old != __copy) mono_sgen_debug_printf (9, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old)); \

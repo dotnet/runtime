@@ -217,6 +217,9 @@ static long long stat_major_blocks_alloced = 0;
 static long long stat_major_blocks_freed = 0;
 static long long stat_major_objects_evacuated = 0;
 static long long stat_time_wait_for_sweep = 0;
+#ifdef SGEN_PARALLEL_MARK
+static long long stat_slots_allocated_in_vain = 0;
+#endif
 
 static gboolean ms_sweep_in_progress = FALSE;
 static pthread_t ms_sweep_thread;
@@ -587,10 +590,15 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 }
 
 static gboolean
-obj_is_from_pinned_alloc (char *obj)
+obj_is_from_pinned_alloc (char *ptr)
 {
-	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-	return block->pinned;
+	MSBlockInfo *block;
+
+	FOREACH_BLOCK (block) {
+		if (ptr >= block->block && ptr <= block->block + MS_BLOCK_SIZE)
+			return block->pinned;
+	} END_FOREACH_BLOCK;
+	return FALSE;
 }
 
 static void*
@@ -770,8 +778,8 @@ major_ptr_is_in_non_pinned_space (char *ptr)
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		if (ptr >= (char*)block && ptr <= (char*)block + MS_BLOCK_SIZE)
-			return TRUE;
+		if (ptr >= block->block && ptr <= block->block + MS_BLOCK_SIZE)
+			return !block->pinned;
 	} END_FOREACH_BLOCK;
 	return FALSE;
 }
@@ -900,25 +908,26 @@ static void
 major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 {
 	void *obj = *ptr;
-	mword vtable_word = *(mword*)obj;
-	MonoVTable *vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
 	mword objsize;
 	MSBlockInfo *block;
+	MonoVTable *vt;
 
 	HEAVY_STAT (++stat_copy_object_called_major);
 
 	DEBUG (9, g_assert (obj));
 	DEBUG (9, g_assert (current_collection_generation == GENERATION_OLD));
 
-	if (vtable_word & SGEN_FORWARDED_BIT) {
-		*ptr = (void*)vt;
-		return;
-	}
-
 	if (ptr_in_nursery (obj)) {
 		int word, bit;
 		gboolean has_references;
 		void *destination;
+		mword vtable_word = *(mword*)obj;
+		vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+
+		if (vtable_word & SGEN_FORWARDED_BIT) {
+			*ptr = (void*)vt;
+			return;
+		}
 
 		if (vtable_word & SGEN_PINNED_BIT)
 			return;
@@ -988,11 +997,21 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			obj = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
 
 			*ptr = obj;
+
+			++stat_slots_allocated_in_vain;
 		}
 	} else {
 #ifdef FIXED_HEAP
 		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
 #else
+		mword vtable_word = *(mword*)obj;
+		vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+
+		/* see comment in the non-parallel version below */
+		if (vtable_word & SGEN_FORWARDED_BIT) {
+			*ptr = (void*)vt;
+			return;
+		}
 		objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
 
 		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)
@@ -1006,12 +1025,30 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			if (!block->has_pinned && evacuate_block_obj_sizes [size_index]) {
 				if (block->is_to_space)
 					return;
+
+#ifdef FIXED_HEAP
+				{
+					mword vtable_word = *(mword*)obj;
+					vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+
+					if (vtable_word & SGEN_FORWARDED_BIT) {
+						*ptr = (void*)vt;
+						return;
+					}
+				}
+#endif
+
 				HEAVY_STAT (++stat_major_objects_evacuated);
 				goto do_copy_object;
-			} else {
-				MS_PAR_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 			}
+
+			MS_PAR_MARK_OBJECT_AND_ENQUEUE (obj, block, queue);
 		} else {
+#ifdef FIXED_HEAP
+			mword vtable_word = *(mword*)obj;
+			vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+#endif
+
 			if (vtable_word & SGEN_PINNED_BIT)
 				return;
 			binary_protocol_pin (obj, vt, mono_sgen_safe_object_get_size ((MonoObject*)obj));
@@ -1077,29 +1114,51 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 		MS_SET_MARK_BIT (block, word, bit);
 	} else {
 		char *forwarded;
-#ifndef FIXED_HEAP
+#ifdef FIXED_HEAP
+		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
+#else
 		mword objsize;
-#endif
 
+		/*
+		 * If we have don't have a fixed heap we cannot know
+		 * whether an object is in the LOS or in the small
+		 * object major heap without checking its size.  To do
+		 * that, however, we need to know that we actually
+		 * have a valid object, not a forwarding pointer, so
+		 * we have to do this check first.
+		 */
 		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
 			*ptr = forwarded;
 			return;
 		}
 
-#ifdef FIXED_HEAP
-		if (MS_PTR_IN_SMALL_MAJOR_HEAP (obj))
-#else
 		objsize = SGEN_ALIGN_UP (mono_sgen_safe_object_get_size ((MonoObject*)obj));
 
 		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE)
 #endif
 		{
 			int size_index;
+			gboolean evacuate;
 
 			block = MS_BLOCK_FOR_OBJ (obj);
 			size_index = block->obj_size_index;
+			evacuate = evacuate_block_obj_sizes [size_index];
 
-			if (!block->has_pinned && evacuate_block_obj_sizes [size_index]) {
+#ifdef FIXED_HEAP
+			/*
+			 * We could also check for !block->has_pinned
+			 * here, but it would only make an uncommon case
+			 * faster, namely objects that are in blocks
+			 * whose slot sizes are evacuated but which have
+			 * pinned objects.
+			 */
+			if (evacuate && (forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
+				*ptr = forwarded;
+				return;
+			}
+#endif
+
+			if (evacuate && !block->has_pinned) {
 				if (block->is_to_space)
 					return;
 				HEAVY_STAT (++stat_major_objects_evacuated);
@@ -1785,6 +1844,9 @@ mono_sgen_marksweep_init
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
 	mono_counters_register ("Wait for sweep time", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_time_wait_for_sweep);
+#ifdef SGEN_PARALLEL_MARK
+	mono_counters_register ("Slots allocated in vain", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_slots_allocated_in_vain);
+#endif
 
 	/*
 	 * FIXME: These are superfluous if concurrent sweep is
