@@ -32,6 +32,11 @@
 #include <alloca.h>
 #endif
 
+#ifdef WIN32
+/* For alloca */
+#include <malloc.h>
+#endif
+
 #ifndef offsetof
 #   define offsetof(s_name,n_name) (size_t)(char *)&(((s_name*)0)->m_name)
 #endif
