@@ -2669,11 +2669,13 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 	if (token)
 		return token;
 
-	g_assert (tb->generic_params);
-
 	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
 
-	parent = create_generic_typespec (assembly, tb);
+	if (tb->generic_params)
+		parent = create_generic_typespec (assembly, tb);
+	else
+		parent = mono_image_typedef_or_ref (assembly, mono_reflection_type_get_handle ((MonoReflectionType*)tb));
+	
 	name = mono_string_to_utf8 (rmb.name);
 	sig = method_builder_encode_signature (assembly, &rmb);
 
