@@ -3263,7 +3263,7 @@ major_do_collection (const char *reason)
 
 	major_collector.init_to_space ();
 
-	workers_start_all_workers (1);
+	workers_start_all_workers ();
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
@@ -3301,10 +3301,9 @@ major_do_collection (const char *reason)
 	if (major_collector.is_parallel) {
 		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			workers_distribute_gray_queue_sections ();
-			usleep (2000);
+			usleep (1000);
 		}
 	}
-	workers_change_num_working (-1);
 	workers_join ();
 
 	if (major_collector.is_parallel)
