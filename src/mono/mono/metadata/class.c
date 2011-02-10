@@ -7201,7 +7201,6 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass)
 	int j;
 	MonoType **klass_argv, **oklass_argv;
 	MonoClass *klass_gtd = mono_class_get_generic_type_definition (klass);
-	MonoClass *oklass_gtd = mono_class_get_generic_type_definition (oklass);
 	MonoGenericContainer *container = klass_gtd->generic_container;
 
 	/*Viable candidates are instances of the same generic interface*/
