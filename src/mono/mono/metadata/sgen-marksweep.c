@@ -534,6 +534,9 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	int size = block_obj_sizes [size_index];
 	int count = MS_BLOCK_FREE / size;
 	MSBlockInfo *info;
+#ifdef SGEN_PARALLEL_MARK
+	MSBlockInfo *next;
+#endif
 #ifndef FIXED_HEAP
 	MSBlockHeader *header;
 #endif
@@ -579,11 +582,21 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	/* the last one */
 	*(void**)obj_start = NULL;
 
+#ifdef SGEN_PARALLEL_MARK
+	do {
+		next = info->next_free = free_blocks [size_index];
+	} while (SGEN_CAS_PTR ((void**)&free_blocks [size_index], info, next) != next);
+
+	do {
+		next = info->next = all_blocks;
+	} while (SGEN_CAS_PTR ((void**)&all_blocks, info, next) != next);
+#else
 	info->next_free = free_blocks [size_index];
 	free_blocks [size_index] = info;
 
 	info->next = all_blocks;
 	all_blocks = info;
+#endif
 
 	++num_major_sections;
 	return TRUE;
@@ -601,40 +614,63 @@ obj_is_from_pinned_alloc (char *ptr)
 	return FALSE;
 }
 
+static void
+try_remove_block_from_free_list (MSBlockInfo *block, MSBlockInfo **free_blocks, int size_index)
+{
+	/*
+	 * No more free slots in the block, so try to free the block.
+	 * Don't try again if we don't succeed - another thread will
+	 * already have done it.
+	 */
+	MSBlockInfo *next_block = block->next_free;
+	if (SGEN_CAS_PTR ((void**)&free_blocks [size_index], next_block, block) == block)
+		block->next_free = NULL;
+}
+
 static void*
 alloc_obj (int size, gboolean pinned, gboolean has_references)
 {
 	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
 	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
 	MSBlockInfo *block;
-	void *obj;
-
-	/* FIXME: try to do this without locking */
-
-	LOCK_MS_BLOCK_LIST;
+	void *obj, *next_slot;
 
 	g_assert (!ms_sweep_in_progress);
 
 	if (!free_blocks [size_index]) {
-		if (G_UNLIKELY (!ms_alloc_block (size_index, pinned, has_references))) {
-			UNLOCK_MS_BLOCK_LIST;
+		gboolean success;
+
+	alloc:
+		LOCK_MS_BLOCK_LIST;
+		success = ms_alloc_block (size_index, pinned, has_references);
+		UNLOCK_MS_BLOCK_LIST;
+
+		if (G_UNLIKELY (!success))
 			return NULL;
-		}
 	}
 
+ get_block:
 	block = free_blocks [size_index];
-	DEBUG (9, g_assert (block));
+	if (!block)
+		goto alloc;
 
-	obj = block->free_list;
-	DEBUG (9, g_assert (obj));
+	do {
+		obj = block->free_list;
+		if (!obj) {
+			try_remove_block_from_free_list (block, free_blocks, size_index);
+			goto get_block;
+		}
 
-	block->free_list = *(void**)obj;
+		next_slot = *(void**)obj;
+	} while (SGEN_CAS_PTR ((void**)&block->free_list, next_slot, obj) != obj);
+
+	if (next_slot == NULL)
+		try_remove_block_from_free_list (block, free_blocks, size_index);
+
 	if (!block->free_list) {
 		free_blocks [size_index] = block->next_free;
 		block->next_free = NULL;
 	}
-
-	UNLOCK_MS_BLOCK_LIST;
 
 	/*
 	 * FIXME: This should not be necessary because it'll be
