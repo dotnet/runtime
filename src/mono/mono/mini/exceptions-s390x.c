@@ -83,23 +83,6 @@ typedef enum {
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_has_unwind_info                         */
-/*                                                                  */
-/* Function	- Tests if a function has a DWARF exception table   */
-/*		  that is able to restore all caller saved registers*/
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-gboolean
-mono_arch_has_unwind_info (gconstpointer addr)
-{
-	return FALSE;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- mono_arch_get_call_filter                         */
 /*                                                                  */
 /* Function	- Return a pointer to a method which calls an       */

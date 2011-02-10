@@ -596,10 +596,3 @@ mono_arch_ip_from_context (void *sigctx)
 	return (void*) UCONTEXT_REG_PC (my_uc);
 #endif
 }
-
-gboolean
-mono_arch_has_unwind_info (gconstpointer addr)
-{
-	return FALSE;
-}
-
