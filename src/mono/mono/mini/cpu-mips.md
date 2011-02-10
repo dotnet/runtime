@@ -177,10 +177,10 @@ not_null: src1:i len:0
 int_add: dest:i src1:i src2:i len:4
 int_sub: dest:i src1:i src2:i len:4
 int_mul: dest:i src1:i src2:i len:4
-int_div: dest:i src1:i src2:i len:76
+int_div: dest:i src1:i src2:i len:84
 int_div_un: dest:i src1:i src2:i len:40
-int_rem: dest:i src1:i src2:i len:76
-int_rem_un: dest:i src1:i src2:i len:76
+int_rem: dest:i src1:i src2:i len:84
+int_rem_un: dest:i src1:i src2:i len:40
 int_and: dest:i src1:i src2:i len:4
 int_or: dest:i src1:i src2:i len:4
 int_xor: dest:i src1:i src2:i len:4
