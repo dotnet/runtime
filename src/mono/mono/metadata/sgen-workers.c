@@ -51,7 +51,8 @@ static MonoSemType workers_waiting_sem;
 static MonoSemType workers_done_sem;
 static volatile int workers_done_posted = 0;
 
-static long long stat_workers_stolen_from_self;
+static long long stat_workers_stolen_from_self_lock;
+static long long stat_workers_stolen_from_self_no_lock;
 static long long stat_workers_stolen_from_others;
 static long long stat_workers_num_waited;
 
@@ -95,6 +96,82 @@ workers_wait (void)
 	MONO_SEM_WAIT (&workers_waiting_sem);
 }
 
+static gboolean
+workers_steal (WorkerData *data, WorkerData *victim_data, gboolean lock)
+{
+	GrayQueue *queue = &data->private_gray_queue;
+	int num, n;
+
+	g_assert (!queue->first);
+
+	if (!victim_data->stealable_stack_fill)
+		return FALSE;
+
+	if (lock && pthread_mutex_trylock (&victim_data->stealable_stack_mutex))
+		return FALSE;
+
+	n = num = (victim_data->stealable_stack_fill + 1) / 2;
+	/* We're stealing num entries. */
+
+	while (n > 0) {
+		int m = MIN (SGEN_GRAY_QUEUE_SECTION_SIZE, n);
+		n -= m;
+
+		gray_object_alloc_queue_section (queue);
+		memcpy (queue->first->objects,
+				victim_data->stealable_stack + victim_data->stealable_stack_fill - num + n,
+				sizeof (char*) * m);
+		queue->first->end = m;
+	}
+
+	victim_data->stealable_stack_fill -= num;
+
+	if (lock)
+		pthread_mutex_unlock (&victim_data->stealable_stack_mutex);
+
+	if (data == victim_data) {
+		if (lock)
+			stat_workers_stolen_from_self_lock += num;
+		else
+			stat_workers_stolen_from_self_no_lock += num;
+	} else {
+		stat_workers_stolen_from_others += num;
+	}
+
+	return num != 0;
+}
+
+static gboolean
+workers_get_work (WorkerData *data)
+{
+	g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
+
+	for (;;) {
+		int i;
+
+		/* Try to steal from our own stack. */
+		if (workers_steal (data, data, TRUE))
+			return TRUE;
+
+		/* Then from the GC thread's stack. */
+		if (workers_steal (data, &workers_gc_thread_data, TRUE))
+			return TRUE;
+
+		/* Finally, from another worker. */
+		for (i = 0; i < workers_num; ++i) {
+			WorkerData *victim_data = &workers_data [i];
+			if (data == victim_data)
+				continue;
+			if (workers_steal (data, victim_data, TRUE))
+				return TRUE;
+		}
+
+		/* Nobody to steal from, so wait. */
+		g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
+		workers_wait ();
+	}
+}
+
 static void
 workers_gray_queue_share_redirect (GrayQueue *queue)
 {
@@ -131,81 +208,13 @@ workers_gray_queue_share_redirect (GrayQueue *queue)
 			gray_object_free_queue_section (section, queue->allocator);
 	}
 
+	if (data != &workers_gc_thread_data && gray_object_queue_is_empty (queue))
+		workers_steal (data, data, FALSE);
+
 	pthread_mutex_unlock (&data->stealable_stack_mutex);
 
 	if (workers_gc_in_progress)
 		workers_wake_up_all ();
-}
-
-static gboolean
-workers_steal (WorkerData *data, WorkerData *victim_data)
-{
-	GrayQueue *queue = &data->private_gray_queue;
-	int num, n;
-
-	g_assert (!queue->first);
-
-	if (!victim_data->stealable_stack_fill)
-		return FALSE;
-
-	if (pthread_mutex_trylock (&victim_data->stealable_stack_mutex))
-		return FALSE;
-
-	n = num = (victim_data->stealable_stack_fill + 1) / 2;
-	/* We're stealing num entries. */
-
-	while (n > 0) {
-		int m = MIN (SGEN_GRAY_QUEUE_SECTION_SIZE, n);
-		n -= m;
-
-		gray_object_alloc_queue_section (queue);
-		memcpy (queue->first->objects,
-				victim_data->stealable_stack + victim_data->stealable_stack_fill - num + n,
-				sizeof (char*) * m);
-		queue->first->end = m;
-	}
-
-	victim_data->stealable_stack_fill -= num;
-
-	pthread_mutex_unlock (&victim_data->stealable_stack_mutex);
-
-	if (data == victim_data)
-		stat_workers_stolen_from_self += num;
-	else
-		stat_workers_stolen_from_others += num;
-
-	return num != 0;
-}
-
-static gboolean
-workers_get_work (WorkerData *data)
-{
-	g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
-
-	for (;;) {
-		int i;
-
-		/* Try to steal from our own stack. */
-		if (workers_steal (data, data))
-			return TRUE;
-
-		/* Then from the GC thread's stack. */
-		if (workers_steal (data, &workers_gc_thread_data))
-			return TRUE;
-
-		/* Finally, from another worker. */
-		for (i = 0; i < workers_num; ++i) {
-			WorkerData *victim_data = &workers_data [i];
-			if (data == victim_data)
-				continue;
-			if (workers_steal (data, victim_data))
-				return TRUE;
-		}
-
-		/* Nobody to steal from, so wait. */
-		g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
-		workers_wait ();
-	}
 }
 
 static void*
@@ -282,7 +291,8 @@ workers_init (int num_workers)
 			workers_data [i].major_collector_data = major_collector.alloc_worker_data ();
 	}
 
-	mono_counters_register ("Stolen from self", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_self);
+	mono_counters_register ("Stolen from self lock", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_self_lock);
+	mono_counters_register ("Stolen from self no lock", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_self_no_lock);
 	mono_counters_register ("Stolen from others", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_others);
 	mono_counters_register ("# workers waited", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_num_waited);
 }
