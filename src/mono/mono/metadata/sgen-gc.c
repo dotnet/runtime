@@ -7900,4 +7900,10 @@ mono_sgen_get_logfile (void)
 	return gc_debug_file;
 }
 
+#ifdef HOST_WIN32
+BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
+{
+}
+#endif
+
 #endif /* HAVE_SGEN_GC */

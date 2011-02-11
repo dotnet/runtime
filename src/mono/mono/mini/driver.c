@@ -1239,7 +1239,7 @@ static const char info[] =
 #ifdef HOST_WIN32
 BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
-	if (!GC_DllMain (module_handle, reason, reserved))
+	if (!mono_gc_dllmain (module_handle, reason, reserved))
 		return FALSE;
 
 	switch (reason)
