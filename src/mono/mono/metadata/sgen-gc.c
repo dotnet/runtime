@@ -3314,6 +3314,15 @@ major_do_collection (const char *reason)
 	TV_GETTIME (atv);
 	time_major_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
 
+	/*
+	 * The (single-threaded) finalization code might have done
+	 * some copying/marking so we can only reset the GC thread's
+	 * worker data here instead of earlier when we joined the
+	 * workers.
+	 */
+	if (major_collector.reset_worker_data)
+		major_collector.reset_worker_data (workers_gc_thread_data.major_collector_data);
+
 	if (objects_pinned) {
 		/*This is slow, but we just OOM'd*/
 		mono_sgen_pin_queue_clear_discarded_entries (nursery_section, old_next_pin_slot);
