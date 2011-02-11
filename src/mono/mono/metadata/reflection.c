@@ -4943,8 +4943,12 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 			type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 			token = mono_image_typedef_or_ref_full (assembly, type, TRUE);
 			token = mono_metadata_token_from_dor (token);
-		} else {
+		} else if (tb->module->dynamic_image == assembly) {
 			token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
+		} else {
+			MonoType *type;
+			type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
+			token = mono_metadata_token_from_dor (mono_image_typedef_or_ref (assembly, type));
 		}
 	} else if (strcmp (klass->name, "MonoType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
