@@ -227,7 +227,8 @@ workers_thread_func (void *data_untyped)
 		g_assert (got_work);
 		g_assert (!gray_object_queue_is_empty (&data->private_gray_queue));
 
-		drain_gray_stack (&data->private_gray_queue);
+		while (!drain_gray_stack (&data->private_gray_queue, 32))
+			workers_gray_queue_share_redirect (&data->private_gray_queue);
 		g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
 
 		gray_object_queue_init (&data->private_gray_queue, &allocator);
