@@ -1866,7 +1866,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	gboolean version_defined;
 	gboolean token_defined;
 	guint32 flags = 0;
-	guint32 arch = PROCESSOR_ARCHITECTURE_NONE;
+	guint32 arch = MONO_PROCESSOR_ARCHITECTURE_NONE;
 
 	if (!is_version_defined)
 		is_version_defined = &version_defined;
@@ -1942,15 +1942,15 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		if (!g_ascii_strncasecmp (value, "ProcessorArchitecture=", 22)) {
 			char *s = g_strstrip (value + 22);
 			if (!g_ascii_strcasecmp (s, "None"))
-				arch = PROCESSOR_ARCHITECTURE_NONE;
+				arch = MONO_PROCESSOR_ARCHITECTURE_NONE;
 			else if (!g_ascii_strcasecmp (s, "MSIL"))
-				arch = PROCESSOR_ARCHITECTURE_MSIL;
+				arch = MONO_PROCESSOR_ARCHITECTURE_MSIL;
 			else if (!g_ascii_strcasecmp (s, "X86"))
-				arch = PROCESSOR_ARCHITECTURE_X86;
+				arch = MONO_PROCESSOR_ARCHITECTURE_X86;
 			else if (!g_ascii_strcasecmp (s, "IA64"))
-				arch = PROCESSOR_ARCHITECTURE_IA64;
+				arch = MONO_PROCESSOR_ARCHITECTURE_IA64;
 			else if (!g_ascii_strcasecmp (s, "AMD64"))
-				arch = PROCESSOR_ARCHITECTURE_AMD64;
+				arch = MONO_PROCESSOR_ARCHITECTURE_AMD64;
 			else
 				goto cleanup_and_fail;
 			tmp++;
