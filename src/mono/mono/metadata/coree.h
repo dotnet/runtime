@@ -24,7 +24,11 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle);
 
 /* Defined by the linker. */
 #ifndef _MSC_VER
+#ifdef __MINGW64_VERSION_MAJOR
+#define __ImageBase __MINGW_LSYMBOL(_image_base__)
+#else
 #define __ImageBase _image_base__
+#endif
 #endif
 extern IMAGE_DOS_HEADER __ImageBase MONO_INTERNAL;
 
