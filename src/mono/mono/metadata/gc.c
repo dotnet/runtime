@@ -1059,11 +1059,11 @@ finalizer_thread (gpointer unused)
 
 		g_assert (mono_domain_get () == mono_get_root_domain ());
 
+		/* An alertable wait is required so this thread can be suspended on windows */
 #ifdef MONO_HAS_SEMAPHORES
-		MONO_SEM_WAIT (&finalizer_sem);
+		MONO_SEM_WAIT_ALERTABLE (&finalizer_sem, TRUE);
 #else
-		/* Use alertable=FALSE since we will be asked to exit using the event too */
-		WaitForSingleObjectEx (finalizer_event, INFINITE, FALSE);
+		WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
 #endif
 
 		mono_console_handle_async_ops ();
