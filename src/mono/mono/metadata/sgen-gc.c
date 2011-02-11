@@ -6993,6 +6993,7 @@ mono_gc_base_init (void)
 	char *major_collector_opt = NULL;
 	struct sigaction sinfo;
 	glong max_heap = 0;
+	int num_workers;
 
 	/* the gc_initialized guard seems to imply this method is
 	   idempotent, but LOCK_INIT(gc_mutex) might not be.  It's
@@ -7043,10 +7044,8 @@ mono_gc_base_init (void)
 		mono_sgen_marksweep_fixed_init (&major_collector);
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-par")) {
 		mono_sgen_marksweep_par_init (&major_collector);
-		workers_init (mono_cpu_count ());
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-fixed-par")) {
 		mono_sgen_marksweep_fixed_par_init (&major_collector);
-		workers_init (mono_cpu_count ());
 	} else if (!strcmp (major_collector_opt, "copying")) {
 		mono_sgen_copying_init (&major_collector);
 	} else {
@@ -7059,6 +7058,11 @@ mono_gc_base_init (void)
 #else
 	use_cardtable = FALSE;
 #endif
+
+	num_workers = mono_cpu_count ();
+	g_assert (num_workers > 0);
+	if (num_workers > 16)
+		num_workers = 16;
 
 	/* Keep this the default for now */
 	conservative_stack_mark = TRUE;
@@ -7094,6 +7098,26 @@ mono_gc_base_init (void)
 					fprintf (stderr, "max-heap-size must be an integer.\n");
 					exit (1);
 				}
+				continue;
+			}
+			if (g_str_has_prefix (opt, "workers=")) {
+				long val;
+				char *endptr;
+				if (!major_collector.is_parallel) {
+					fprintf (stderr, "The workers= option can only be used for parallel collectors.");
+					exit (1);
+				}
+				opt = strchr (opt, '=') + 1;
+				val = strtol (opt, &endptr, 10);
+				if (!*opt || *endptr) {
+					fprintf (stderr, "Cannot parse the workers= option value.");
+					exit (1);
+				}
+				if (val <= 0 || val > 16) {
+					fprintf (stderr, "The number of workers must be in the range 1 to 16.");
+					exit (1);
+				}
+				num_workers = (int)val;
 				continue;
 			}
 			if (g_str_has_prefix (opt, "stack-mark=")) {
@@ -7145,6 +7169,9 @@ mono_gc_base_init (void)
 		}
 		g_strfreev (opts);
 	}
+
+	if (major_collector.is_parallel)
+		workers_init (num_workers);
 
 	if (major_collector_opt)
 		g_free (major_collector_opt);
