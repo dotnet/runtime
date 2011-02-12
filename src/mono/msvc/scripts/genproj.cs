@@ -106,7 +106,7 @@ class MsbuildGenerator {
 		if (dir == "mcs"){
 			mcs_topdir = "..\\";
 			class_dir = "..\\class\\";
-			base_dir = "..\\..\\..\\mcs\\mcs";
+			base_dir = "..\\..\\mcs\\mcs";
 		} else {
 			mcs_topdir = "..\\";
 			
@@ -116,7 +116,7 @@ class MsbuildGenerator {
 			}
 			class_dir = mcs_topdir.Substring (3);
 			
-			base_dir = "..\\..\\..\\mcs\\" + dir;
+			base_dir = "..\\..\\mcs\\" + dir;
 		}
 	}
 	
@@ -138,6 +138,7 @@ class MsbuildGenerator {
 	bool WarningsAreErrors;
 	Dictionary<string,string> embedded_resources = new Dictionary<string,string> ();
 	List<string> references = new List<string> ();
+	List<string> libs = new List<string> ();
 	List<string> reference_aliases = new List<string> ();
 	List<string> warning_as_error = new List<string> ();
 	int WarningLevel = 4;
@@ -305,10 +306,14 @@ class MsbuildGenerator {
 		case "/addmodule": 
 		case "/win32res":
 		case "/doc": 
-		case "/lib": 
 		{
 			Console.WriteLine ("{0} = not supported", arg);
 			throw new Exception ();
+		}
+		case "/lib":
+		{
+			libs.Add (value);
+			return true;
 		}
 		case "/win32icon": {
 			win32IconFile = value;
@@ -359,6 +364,10 @@ class MsbuildGenerator {
 			}
 			return true;
 
+		case "/-runtime":
+			Console.WriteLine ("Warning ignoring /runtime:v4");
+			return true;
+			
 		case "/warnaserror-":
 			if (value.Length == 0) {
 				WarningsAreErrors = false;
@@ -461,6 +470,7 @@ class MsbuildGenerator {
 			return true;
 		}
 
+		Console.WriteLine ("Failing with : {0}", arg);
 		return false;
 	}
 
@@ -578,6 +588,7 @@ class MsbuildGenerator {
 		}
 		
 		string [] source_files;
+		Console.WriteLine ("Base: {0} res: {1}", base_dir, response);
 		using (var reader = new StreamReader (base_dir + "\\" + response)){
 			source_files  = reader.ReadToEnd ().Split ();
 		}
@@ -594,37 +605,6 @@ class MsbuildGenerator {
 			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", s.Replace ("/", "\\")));
 		}
 		
-		//
-		// Compute the csc command that we need to use
-		//
-		// The mcs string is formatted like this:
-		// MONO_PATH=./../../class/lib/basic: /cvs/mono/runtime/mono-wrapper ./../../class/lib/basic/mcs.exe
-		//
-		// The first block is a set of MONO_PATHs, the last part is the compiler
-		//
-		if (mcs.StartsWith ("MONO_PATH="))
-			mcs = mcs.Substring (10);
-		
-		var compiler = mcs.Substring (mcs.LastIndexOf (' ') + 1);
-		if (compiler.EndsWith ("class/lib/basic/gmcs.exe"))
-			compiler = "gmcs";
-		else if (compiler.EndsWith ("class/lib/net_2_0_bootstrap/gmcs.exe"))
-			compiler = "net_2_0_bootstrap";
-		else if (compiler.EndsWith ("mcs/gmcs.exe"))
-			compiler = "gmcs";
-		else if (compiler.EndsWith ("class/lib/moonlight_bootstrap/smcs.exe"))
-			compiler = "moonlight_bootstrap";
-		else if (compiler.EndsWith ("class/lib/moonlight_raw/smcs.exe"))
-			compiler = "moonlight_raw";
-		else if (compiler.EndsWith ("class/lib/net_4_0_bootstrap/dmcs.exe"))
-			compiler = "net_4_0_bootstrap";
-		else if (compiler.EndsWith ("class/lib/net_4_0/dmcs.exe"))
-			compiler = "dmcs";
-		else {
-			Console.WriteLine ("Can not determine compiler from {0}", compiler);
-			Environment.Exit (1);
-		}
-
 		var mono_paths = mcs.Substring (0, mcs.IndexOf (' ')).Split (new char [] {':'});
 		for (int i = 0; i < mono_paths.Length; i++){
 			int p = mono_paths [i].LastIndexOf ('/');
@@ -633,17 +613,6 @@ class MsbuildGenerator {
 		}
 		
 		var encoded_mono_paths = string.Join ("-", mono_paths).Replace ("--", "-");
-		var encoded_mp_compiler = (encoded_mono_paths + "-" + compiler).Replace ("--", "-");
-		
-		string csc_tool_path = mcs_topdir + "..\\mono\\msvc\\scripts\\" + encoded_mp_compiler;
-		if (!Directory.Exists (encoded_mp_compiler)){
-			Console.WriteLine ("Created {0}", encoded_mp_compiler);
-			Directory.CreateDirectory (encoded_mp_compiler);
-		}
-		if (!File.Exists (Path.Combine (encoded_mp_compiler, "csc.exe"))){
-			File.Copy ("monowrap.exe", Path.Combine (encoded_mp_compiler, "csc.exe"));
-			File.Copy ("monowrap.pdb", Path.Combine (encoded_mp_compiler, "csc.pdb"));
-		}
 		
 		var refs = new StringBuilder ();
 		//
@@ -698,7 +667,6 @@ class MsbuildGenerator {
 			Replace ("@ASSEMBLYNAME@", Path.GetFileNameWithoutExtension (output_name)).
 			Replace ("@OUTPUTDIR@", Path.GetDirectoryName (library_output)).
 			Replace ("@DEFINECONSTANTS@", defines.ToString ()).
-			Replace ("@CSCTOOLPATH@", csc_tool_path).
 			Replace ("@DEBUG@", want_debugging_support ? "true" : "false").
 			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
 			Replace ("@REFERENCES@", refs.ToString ()).
@@ -706,8 +674,8 @@ class MsbuildGenerator {
 			Replace ("@SOURCES@", sources.ToString ());
 
 
-		string ofile = "..\\..\\..\\mcs\\" + dir + "\\" + library + ".csproj";
-		ofile = ofile.Replace ('/', '\\');
+		string ofile = "..\\..\\mcs\\" + dir + "\\" + library + ".csproj";
+		ofile = ofile.Replace ('\\', '/');
 		//Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
 		using (var o = new StreamWriter (ofile)){
 			o.WriteLine (output);
@@ -722,7 +690,7 @@ public class Driver {
 	
 	static void Main (string [] args)
 	{
-		if (!File.Exists ("genproj.cs") || !File.Exists ("monowrap.cs")){
+		if (!File.Exists ("genproj.cs")){
 			Console.WriteLine ("This command should be ran from mono/msvc/scripts");
 			Environment.Exit (1);
 		}
@@ -743,12 +711,13 @@ public class Driver {
 			// Do not do 2.1, it is not working yet
 			// Do not do basic, as there is no point (requires a system mcs to be installed).
 			//
-			if (library.Contains ("moonlight") || library.Contains ("-basic"))
+			if (library.Contains ("moonlight") || library.Contains ("-basic") || library.EndsWith ("bootstrap"))
 				continue;
 			
 			var gen = new MsbuildGenerator (dir);
 			try {
-				sln_gen.Add (gen.Generate (project));
+				//sln_gen.Add (gen.Generate (project));
+				gen.Generate (project);
 			} catch (Exception e) {
 				Console.WriteLine ("Error in {0}\n{1}", dir, e);
 			}
