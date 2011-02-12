@@ -7,6 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{155AEF28-C81F-405D-9072-9D52780E3E70}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <OutputPath>@OUTPUTDIR@</OutputPath>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     @NOSTDLIB@
@@ -22,6 +23,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>@DEBUG@</DebugSymbols>
     <DebugType>@DEBUGTYPE@</DebugType>
+    <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <Optimize>false</Optimize>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -29,6 +31,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
+    <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <Optimize>true</Optimize>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Globalization;
 using System.Xml.Linq;
+using System.Linq;
 
 public enum Target {
 	Library, Exe, Module, WinExe
@@ -525,12 +526,22 @@ class MsbuildGenerator {
 
 	static string Load (string f)
 	{
-		if (File.Exists (f)){
-			using (var sr = new StreamReader (f)){
+		var native = NativeName (f);
+			
+		if (File.Exists (native)){
+			using (var sr = new StreamReader (native)){
 				return sr.ReadToEnd ();
 			}
 		} else
 			return "";
+	}
+
+	public static string NativeName (string path)
+	{
+		if (System.IO.Path.DirectorySeparatorChar == '/')
+			return path.Replace ("\\", "/");
+		else
+			return path.Replace ("/", "\\");
 	}
 	
 	public string Generate (XElement xproject)
@@ -589,7 +600,7 @@ class MsbuildGenerator {
 		
 		string [] source_files;
 		Console.WriteLine ("Base: {0} res: {1}", base_dir, response);
-		using (var reader = new StreamReader (base_dir + "\\" + response)){
+		using (var reader = new StreamReader (NativeName (base_dir + "\\" + response))){
 			source_files  = reader.ReadToEnd ().Split ();
 		}
 		StringBuilder sources = new StringBuilder ();
@@ -662,6 +673,7 @@ class MsbuildGenerator {
 		//
 		string output = template.
 			Replace ("@DEFINES@", defines.ToString ()).
+			Replace ("@DISABLEDWARNINGS@", string.Join (",", (from i in ignore_warning select i.ToString ()).ToArray ())).
 			Replace ("@NOSTDLIB@", StdLib ? "" : "<NoStdLib>true</NoStdLib>").
 			Replace ("@ALLOWUNSAFE@", Unsafe ? "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>" : "").
 			Replace ("@ASSEMBLYNAME@", Path.GetFileNameWithoutExtension (output_name)).
