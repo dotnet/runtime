@@ -7864,12 +7864,16 @@ handle_type:
 			int etype = *p;
 			p ++;
 
-			if (etype == 0x51)
-				/* See Partition II, Appendix B3 */
-				etype = MONO_TYPE_OBJECT;
 			type = MONO_TYPE_SZARRAY;
-			simple_type.type = etype;
-			tklass = mono_class_from_mono_type (&simple_type);
+			if (etype == 0x50) {
+				tklass = mono_defaults.systemtype_class;
+			} else {
+				if (etype == 0x51)
+					/* See Partition II, Appendix B3 */
+					etype = MONO_TYPE_OBJECT;
+				simple_type.type = etype;
+				tklass = mono_class_from_mono_type (&simple_type);
+			}
 			goto handle_enum;
 		} else if (subt == 0x55) {
 			char *n;
