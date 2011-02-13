@@ -1,12 +1,19 @@
+Visual Studio Build Setup for Mono's Managed Code
+=================================================
 
-The scripts in this directory are used to:
+The scripts in this directory are used to create the various .csproj
+for each one of the modules in Mono.  To avoid accidentally making
+changes on the Makefile system that is not reflected on the csproj
+system, the .csproj files are generated from the actual Makefile
+settings.
+
+This requires a couple of steps: 
 
 	* Extract the order, compiler and compilation flags for all
-	  managed code in Mono.
+	  managed code in Mono on Linux by using the existing Makefile
+	  system.
 
 	* Generate csproj files from the previous step
-
-	* Support the generated csproj file
 
 The idea is to ensure that we do not miss any compilation flag,
 define, resource, reference, icon or any other element that might be
@@ -35,8 +42,6 @@ necessary to build the Mono class libraries.
 
 * Generate csproj files
 
-	
+	Run the genproj.exe executable in this directory.
 
 
-To generate the "order" file, run the command: make csproj in the mcs directory on a fully
-configured Mono setup (Linux or Cygwin)

@@ -662,6 +662,17 @@ class MsbuildGenerator {
 			refs.Append ("  </ItemGroup>\n");
 		}
 
+		var resources = new StringBuilder ();
+		if (embedded_resources.Count > 0){
+			resources.AppendFormat ("  <ItemGroup>\n");
+			foreach (var dk in embedded_resources){
+				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">\n", dk.Key);
+				resources.AppendFormat ("       <LogicalName>{0}</LogicalName>\n", dk.Value);
+				resources.AppendFormat ("    </EmbeddedResource>\n");
+			}
+			resources.AppendFormat ("  </ItemGroup>\n");
+		}
+		
 		try {
 			Path.GetDirectoryName (library_output);
 		} catch {
@@ -683,6 +694,9 @@ class MsbuildGenerator {
 			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
 			Replace ("@REFERENCES@", refs.ToString ()).
 			Replace ("@PREBUILD@", prebuild).
+			Replace ("@ADDITIONALLIBPATHS@", String.Format ("<AdditionalLibPaths>{0}</AdditionalLibPaths>", string.Join (",", libs.ToArray ()))).
+			Replace ("@RESOURCES@", resources.ToString ()).
+			Replace ("@OPTIMIZE@", Optimize ? "true" : "false").
 			Replace ("@SOURCES@", sources.ToString ());
 
 

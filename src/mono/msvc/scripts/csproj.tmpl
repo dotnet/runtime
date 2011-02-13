@@ -24,18 +24,20 @@
     <DebugSymbols>@DEBUG@</DebugSymbols>
     <DebugType>@DEBUGTYPE@</DebugType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
-    <Optimize>false</Optimize>
+    <Optimize>@OPTIMIZE@</Optimize>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    @ADDITIONALLIBPATHS@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
-    <Optimize>true</Optimize>
+    <Optimize>@OPTIMIZE@</Optimize>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    @ADDITIONALLIBPATHS@
   </PropertyGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -55,4 +57,5 @@
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+  @RESOURCES@
 </Project>
