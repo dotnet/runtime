@@ -162,6 +162,13 @@ static MonoRuntimeCallbacks callbacks;
 void
 mono_thread_set_main (MonoThread *thread)
 {
+	static gboolean registered = FALSE;
+
+	if (!registered) {
+		MONO_GC_REGISTER_ROOT_SINGLE (main_thread);
+		registered = TRUE;
+	}
+
 	main_thread = thread;
 }
 
