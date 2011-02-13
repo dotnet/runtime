@@ -10069,8 +10069,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	m->slot = -1;
 	m->flags = rmb->attrs;
 	m->iflags = rmb->iattrs;
-	m->name = mono_string_to_utf8_image (image, rmb->name, &error);
-	g_assert (mono_error_ok (&error));
+	m->name = mono_string_to_utf8_image_ignore (image, rmb->name);
 	m->klass = klass;
 	m->signature = sig;
 	m->sre_method = TRUE;
