@@ -1057,19 +1057,21 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 		*error = WSAEAFNOSUPPORT;
 		return NULL;
 	}
-	sa = g_malloc0 (salen);
+	sa = (salen <= 128) ? alloca (salen) : g_malloc0 (salen);
 	ret = _wapi_getsockname (sock, (struct sockaddr *)sa, &salen);
 	
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
-		g_free (sa);
+		if (salen > 128)
+			g_free (sa);
 		return(NULL);
 	}
 	
 	LOGDEBUG (g_message("%s: bound to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port)));
 
 	result = create_object_from_sockaddr((struct sockaddr *)sa, salen, error);
-	g_free (sa);
+	if (salen > 128)
+		g_free (sa);
 	return result;
 }
 
@@ -1089,19 +1091,21 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(S
 		*error = WSAEAFNOSUPPORT;
 		return NULL;
 	}
-	sa = g_malloc0 (salen);
+	sa = (salen <= 128) ? alloca (salen) : g_malloc0 (salen);
 	/* Note: linux returns just 2 for AF_UNIX. Always. */
 	ret = _wapi_getpeername (sock, (struct sockaddr *)sa, &salen);
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
-		g_free (sa);
+		if (salen > 128)
+			g_free (sa);
 		return(NULL);
 	}
 	
 	LOGDEBUG (g_message("%s: connected to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port)));
 
 	result = create_object_from_sockaddr((struct sockaddr *)sa, salen, error);
-	g_free (sa);
+	if (salen > 128)
+		g_free (sa);
 	return result;
 }
 
