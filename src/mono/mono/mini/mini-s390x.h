@@ -117,6 +117,7 @@ typedef struct
 #define MONO_ARCH_HAVE_IMT 				1
 #define MONO_ARCH_IMT_REG				s390_r9
 #define MONO_ARCH_THIS_AS_FIRST_ARG     		1
+#define MONO_ARCH_HAVE_XP_UNWIND			1
 
 #define MONO_ARCH_USE_SIGACTION 	1
 
@@ -208,8 +209,7 @@ typedef struct
 		__asm__ volatile("lgr   %0,15" : "=r" (sframe));	\
 		MONO_CONTEXT_SET_BP ((ctx), sframe->prev);		\
 		MONO_CONTEXT_SET_SP ((ctx), sframe->prev);		\
-		sframe = (MonoS390StackFrame*)sframe->prev;		\
-		MONO_CONTEXT_SET_IP ((ctx), sframe->return_address);	\
+		MONO_CONTEXT_SET_IP ((ctx), func);			\
 	} while (0)
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf) do { (lmf)->ebp = -1; } while (0)

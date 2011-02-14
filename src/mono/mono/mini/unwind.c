@@ -66,6 +66,11 @@ static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8,
 #define NUM_REGS 110
 #define DWARF_DATA_ALIGN (-(gint32)sizeof (mgreg_t))
 #define DWARF_PC_REG 108
+#elif defined (TARGET_S390X)
+static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+#define NUM_REGS 16
+#define DWARF_DATA_ALIGN (-8)
+#define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (14))
 #else
 static int map_hw_reg_to_dwarf_reg [16];
 #define NUM_REGS 16

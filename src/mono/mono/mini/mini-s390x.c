@@ -357,6 +357,7 @@ static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gbool
 gpointer mono_arch_get_lmf_addr (void);
 static guint8 * emit_load_volatile_arguments (guint8 *, MonoCompile *);
 static void catch_SIGILL(int, siginfo_t *, void *);
+static __inline__ void emit_unwind_regs(MonoCompile *, guint8 *, int, int, long);
 
 /*========================= End of Prototypes ======================*/
 
@@ -510,6 +511,28 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- emit_unwind_regs.                                 */
+/*                                                                  */
+/* Function	- Determines if a value can be returned in one or   */
+/*                two registers.                                    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+static void __inline__
+emit_unwind_regs(MonoCompile *cfg, guint8 *code, int start, int end, long offset)
+{
+	int i;
+
+	for (i = start; i < end; i++) {
+		mono_emit_unwind_op_offset (cfg, code, i, offset);
+		offset += sizeof(gulong);
+	}
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- retFitsInReg.                                     */
 /*                                                                  */
 /* Function	- Determines if a value can be returned in one or   */
@@ -547,6 +570,9 @@ static inline guint8 *
 backUpStackPtr(MonoCompile *cfg, guint8 *code)
 {
 	int stackSize = cfg->stack_usage;
+
+	if (cfg->frame_reg != STK_BASE)
+		s390_lgr (code, STK_BASE, cfg->frame_reg);
 
 	if (s390_is_imm16 (stackSize)) {
 		s390_aghi  (code, STK_BASE, stackSize);
@@ -3935,7 +3961,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			code = backUpStackPtr(cfg, code);
-			s390_lg  (code, s390_r14, 0, STK_BASE, S390_RET_ADDR_OFFSET);
+			s390_lg  (code, s390_r14, 0, cfg->frame_reg, S390_RET_ADDR_OFFSET);
 			mono_add_patch_info (cfg, code - cfg->native_code,
 					     MONO_PATCH_INFO_METHOD_JUMP,
 					     ins->inst_p0);
@@ -4115,7 +4141,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_START_HANDLER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 
-			S390_LONG (code, stg, stg, s390_r14, 0, 
+			S390_LONG (code, stg, stg, s390_r14, 0,
 				   spvar->inst_basereg, 
 				   spvar->inst_offset);
 		}
@@ -4125,7 +4151,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (ins->sreg1 != s390_r2)
 				s390_lgr(code, s390_r2, ins->sreg1);
-			S390_LONG (code, lg, lg, s390_r14, 0, 
+			S390_LONG (code, lg, lg, s390_r14, 0,
 				   spvar->inst_basereg, 
 				   spvar->inst_offset);
 			s390_br  (code, s390_r14);
@@ -4134,7 +4160,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ENDFINALLY: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 
-			S390_LONG (code, lg, lg, s390_r14, 0, 
+			S390_LONG (code, lg, lg, s390_r14, 0,
 				   spvar->inst_basereg, 
 				   spvar->inst_offset);
 			s390_br  (code, s390_r14);
@@ -4886,7 +4912,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, max_offset, i;
+	long alloc_size, pos, max_offset, i, cfa_offset = 0;
 	guint8 *code;
 	guint32 size;
 	CallInfo *cinfo;
@@ -4905,7 +4931,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cfg->native_code = code = g_malloc (cfg->code_size);
 
+	mono_emit_unwind_op_def_cfa (cfg, code, STK_BASE, 0);
+	emit_unwind_regs(cfg, code, s390_r6, s390_r14, S390_REG_SAVE_OFFSET);
 	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+	mono_emit_unwind_op_offset (cfg, code, s390_r14, S390_RET_ADDR_OFFSET);
 
 	if (cfg->arch.bkchain_reg != -1)
 		s390_lgr (code, cfg->arch.bkchain_reg, STK_BASE);
@@ -4916,7 +4945,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	alloc_size = cfg->stack_offset;
 
-	cfg->stack_usage = alloc_size;
+	cfg->stack_usage = cfa_offset = alloc_size;
+	mono_emit_unwind_op_def_cfa_offset (cfg, code, alloc_size);
 	s390_lgr  (code, s390_r11, STK_BASE);
 	if (s390_is_imm16 (alloc_size)) {
 		s390_aghi (code, STK_BASE, -alloc_size);
@@ -4932,6 +4962,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (cfg->frame_reg != STK_BASE)
 		s390_lgr (code, s390_r11, STK_BASE);
+
+	mono_emit_unwind_op_def_cfa_reg (cfg, code, cfg->frame_reg);
 
         /* compute max_offset in order to use short forward jumps
 	 * we always do it on s390 because the immediate displacement
@@ -5198,9 +5230,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (method->save_lmf) 
 		restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA) 
+	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
+//		if (cfg->frame_reg != STK_BASE)
+//			s390_lgr (code, STK_BASE, cfg->frame_reg);
 		s390_lg  (code, STK_BASE, 0, STK_BASE, 0);
-	else
+	} else
 		code = backUpStackPtr(cfg, code);
 
 	s390_lmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);

@@ -9,7 +9,7 @@
 #include "mini-ppc.h"
 #elif defined(__sparc__) || defined(sparc)
 #include "mini-sparc.h"
-#elif defined(__s390__) || defined(s390)
+#elif defined(TARGET_S390X)
 # if defined(__s390x__)
 #  include "mini-s390x.h"
 # else

@@ -420,6 +420,11 @@ if ARM
 PLATFORM_DISABLED_TESTS=filter-stack.exe
 endif
 
+if S390x
+PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe
+#PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe exception17.exe
+endif
+
 # The two finalizer tests only work under sgen
 # gc-altstack.exe fails under boehm because it has no support for altstack
 # bug-459094.exe creates an extremely deep directory tree

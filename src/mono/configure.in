@@ -2322,6 +2322,9 @@ POWERPC64)
 	AC_DEFINE(TARGET_POWERPC, 1, [...])
 	AC_DEFINE(TARGET_POWERPC64, 1, [...])
 	;;
+S390x)
+	AC_DEFINE(TARGET_S390X, 1, [...])
+	;;
 esac
 
 if test "x$sizeof_register" = "x4"; then

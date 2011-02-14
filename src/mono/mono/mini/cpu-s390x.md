@@ -181,7 +181,7 @@ sext_i4: dest:i src1:i len:4
 zext_i4: dest:i src1:i len:4
 shl_imm: dest:i src1:i len:10
 shr_imm: dest:i src1:i len:10
-shr_un_imm: dest:i src1:i len:8
+shr_un_imm: dest:i src1:i len:10
 sqrt: dest:f src1:f len:4
 start_handler: len:26
 store_membase_imm: dest:b len:46
