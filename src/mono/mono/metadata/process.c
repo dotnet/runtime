@@ -23,6 +23,20 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/io-layer/io-layer.h>
+#if defined (MINGW_CROSS_COMPILE) && defined (HAVE_GETPROCESSID)
+#undef HAVE_GETPROCESSID
+#endif
+#ifndef HAVE_GETPROCESSID
+#if defined(_MSC_VER) || defined(HAVE_WINTERNL_H)
+#include <winternl.h>
+#ifndef NT_SUCCESS
+#define NT_SUCCESS(status) ((NTSTATUS) (status) >= 0)
+#endif /* !NT_SUCCESS */
+#else /* ! (defined(_MSC_VER) || defined(HAVE_WINTERNL_H)) */
+#include <ddk/ntddk.h>
+#include <ddk/ntapi.h>
+#endif /* (defined(_MSC_VER) || defined(HAVE_WINTERNL_H)) */
+#endif /* !HAVE_GETPROCESSID */
 /* FIXME: fix this code to not depend so much on the inetrnals */
 #include <mono/metadata/class-internals.h>
 
@@ -513,10 +527,6 @@ complete_path (const gunichar2 *appname, gchar **completed)
 	g_free (utf8appmemory);
 	return TRUE;
 }
-
-#if defined (MINGW_CROSS_COMPILE) && defined (HAVE_GETPROCESSID)
-#undef HAVE_GETPROCESSID
-#endif
 
 #ifndef HAVE_GETPROCESSID
 /* Run-time GetProcessId detection for Windows */

@@ -39,16 +39,13 @@ gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
-	int this_pos = mips_a0;
 	MonoDomain *domain = mono_domain_get ();
-
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
-		this_pos = mips_a1;
 	    
 	start = code = mono_domain_code_reserve (domain, 20);
 
 	mips_load (code, mips_t9, addr);
-	mips_addiu (code, this_pos, this_pos, sizeof (MonoObject));
+	/* The this pointer is kept in a0 */
+	mips_addiu (code, mips_a0, mips_a0, sizeof (MonoObject));
 	mips_jr (code, mips_t9);
 	mips_nop (code);
 

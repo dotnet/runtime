@@ -361,8 +361,11 @@ enum {
 		(size) = ((desc) & 0xfff8) >> 1;	\
     } while (0)
 
-//#define PREFETCH(addr) __asm__ __volatile__ ("     prefetchnta     %0": : "m"(*(char *)(addr)))
+#ifdef __GNUC__
+#define PREFETCH(addr)	__builtin_prefetch ((addr))
+#else
 #define PREFETCH(addr)
+#endif
 
 /* code using these macros must define a HANDLE_PTR(ptr) macro that does the work */
 #define OBJ_RUN_LEN_FOREACH_PTR(desc,obj)	do {	\
@@ -554,6 +557,7 @@ struct _SgenGrayQueue {
 			mono_sgen_gray_object_enqueue ((queue), (o));	\
 		else							\
 			(queue)->first->objects [(queue)->first->end++] = (o); \
+		PREFETCH ((o));						\
 	} while (0)
 #define GRAY_OBJECT_DEQUEUE(queue,o) do {				\
 		if (!(queue)->first)					\

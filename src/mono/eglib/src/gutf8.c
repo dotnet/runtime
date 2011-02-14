@@ -338,6 +338,7 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 			} else {
 				surrogate = 0;
 				/* invalid surrogate pair */
+				++in_pos;
 				continue;
 			}
 		} else {
@@ -354,6 +355,7 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 			else if (ch >= 0xD800 && ch <= 0xDBFF)
 				surrogate = ch;
 			else if (ch >= 0xDC00 && ch <= 0xDFFF) {
+				++in_pos;
 				/* invalid surrogate pair */
 				continue;
 			}

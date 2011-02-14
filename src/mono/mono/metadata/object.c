@@ -82,6 +82,10 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig);
 static void
 free_main_args (void);
 
+static char *
+mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error);
+
+
 #define ldstr_lock() EnterCriticalSection (&ldstr_section)
 #define ldstr_unlock() LeaveCriticalSection (&ldstr_section)
 static CRITICAL_SECTION ldstr_section;
@@ -162,6 +166,13 @@ static MonoRuntimeCallbacks callbacks;
 void
 mono_thread_set_main (MonoThread *thread)
 {
+	static gboolean registered = FALSE;
+
+	if (!registered) {
+		MONO_GC_REGISTER_ROOT_SINGLE (main_thread);
+		registered = TRUE;
+	}
+
 	main_thread = thread;
 }
 
@@ -5410,6 +5421,66 @@ mono_string_to_utf8_checked (MonoString *s, MonoError *error)
 }
 
 /**
+ * mono_string_to_utf8_ignore:
+ * @s: a MonoString
+ *
+ * Converts a MonoString to its UTF8 representation. Will ignore
+ * invalid surrogate pairs.
+ * The resulting buffer should be freed with mono_free().
+ * 
+ */
+char *
+mono_string_to_utf8_ignore (MonoString *s)
+{
+	long written = 0;
+	char *as;
+
+	if (s == NULL)
+		return NULL;
+
+	if (!s->length)
+		return g_strdup ("");
+
+	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, &written, NULL);
+
+	/* g_utf16_to_utf8  may not be able to complete the convertion (e.g. NULL values were found, #335488) */
+	if (s->length > written) {
+		/* allocate the total length and copy the part of the string that has been converted */
+		char *as2 = g_malloc0 (s->length);
+		memcpy (as2, as, written);
+		g_free (as);
+		as = as2;
+	}
+
+	return as;
+}
+
+/**
+ * mono_string_to_utf8_image_ignore:
+ * @s: a System.String
+ *
+ * Same as mono_string_to_utf8_ignore, but allocate the string from the image mempool.
+ */
+char *
+mono_string_to_utf8_image_ignore (MonoImage *image, MonoString *s)
+{
+	return mono_string_to_utf8_internal (NULL, image, s, TRUE, NULL);
+}
+
+/**
+ * mono_string_to_utf8_mp_ignore:
+ * @s: a System.String
+ *
+ * Same as mono_string_to_utf8_ignore, but allocate the string from a mempool.
+ */
+char *
+mono_string_to_utf8_mp_ignore (MonoMemPool *mp, MonoString *s)
+{
+	return mono_string_to_utf8_internal (mp, NULL, s, TRUE, NULL);
+}
+
+
+/**
  * mono_string_to_utf16:
  * @s: a MonoString
  *
@@ -5462,15 +5533,19 @@ mono_string_from_utf16 (gunichar2 *data)
 
 
 static char *
-mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, MonoError *error)
+mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error)
 {
 	char *r;
 	char *mp_s;
 	int len;
 
-	r = mono_string_to_utf8_checked (s, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	if (ignore_error) {
+		r = mono_string_to_utf8_ignore (s);
+	} else {
+		r = mono_string_to_utf8_checked (s, error);
+		if (!mono_error_ok (error))
+			return NULL;
+	}
 
 	if (!mp && !image)
 		return r;
@@ -5497,7 +5572,7 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 char *
 mono_string_to_utf8_image (MonoImage *image, MonoString *s, MonoError *error)
 {
-	return mono_string_to_utf8_internal (NULL, image, s, error);
+	return mono_string_to_utf8_internal (NULL, image, s, FALSE, error);
 }
 
 /**
@@ -5509,7 +5584,7 @@ mono_string_to_utf8_image (MonoImage *image, MonoString *s, MonoError *error)
 char *
 mono_string_to_utf8_mp (MonoMemPool *mp, MonoString *s, MonoError *error)
 {
-	return mono_string_to_utf8_internal (mp, NULL, s, error);
+	return mono_string_to_utf8_internal (mp, NULL, s, FALSE, error);
 }
 
 static void

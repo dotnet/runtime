@@ -1540,6 +1540,15 @@ mono_object_new_pinned (MonoDomain *domain, MonoClass *klass) MONO_INTERNAL;
 void
 mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value) MONO_INTERNAL;
 
+char *
+mono_string_to_utf8_ignore (MonoString *s) MONO_INTERNAL;
+
+char *
+mono_string_to_utf8_image_ignore (MonoImage *image, MonoString *s) MONO_INTERNAL;
+
+char *
+mono_string_to_utf8_mp_ignore (MonoMemPool *mp, MonoString *s) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 

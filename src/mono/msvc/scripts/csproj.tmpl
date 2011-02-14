@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -7,9 +7,9 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{155AEF28-C81F-405D-9072-9D52780E3E70}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <OutputPath>@OUTPUTDIR@</OutputPath>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
-    <CscToolPath>@CSCTOOLPATH@</CscToolPath>
     @NOSTDLIB@
     @ALLOWUNSAFE@
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -23,17 +23,21 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>@DEBUG@</DebugSymbols>
     <DebugType>@DEBUGTYPE@</DebugType>
-    <Optimize>false</Optimize>
+    <NoWarn>@DISABLEDWARNINGS@</NoWarn>
+    <Optimize>@OPTIMIZE@</Optimize>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    @ADDITIONALLIBPATHS@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
+    <NoWarn>@DISABLEDWARNINGS@</NoWarn>
+    <Optimize>@OPTIMIZE@</Optimize>
     <DefineConstants>@DEFINECONSTANTS@</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    @ADDITIONALLIBPATHS@
   </PropertyGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -53,4 +57,5 @@
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+  @RESOURCES@
 </Project>

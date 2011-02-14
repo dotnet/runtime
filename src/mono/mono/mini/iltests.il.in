@@ -967,7 +967,7 @@ COND:   ldloc.0
 		ret
 	}
 
-#if !defined(__ppc__) && !defined(__powerpc__) && !defined(__arm__) && !defined(__sparc__)
+#if !defined(__ppc__) && !defined(__powerpc__) && !defined(__arm__) && !defined(__sparc__) && !defined(__mips__)
     	// PPC handles overflow by clipping, but this test assumes
 	// no overflow handling.  According to ECMA the result of
 	// float->int conversion is undefined if overflow occurs, so
@@ -2605,6 +2605,21 @@ END:
 		ldtoken class Tests modopt (Tests)
 		pop
 		ldc.i4.0
+		ret
+	}
+
+	.method public hidebysig static int32 SizeOfT<T>() cil managed
+  	{
+		.maxstack  8
+    
+		sizeof !!0
+    	ret
+  	}
+
+	.method public static default int32 test_1_sizeof_gshared () cil managed {
+	    call   int32 Tests::SizeOfT<int8>()
+		ldc.i4.1
+		ceq
 		ret
 	}
 }

@@ -341,7 +341,11 @@ typedef struct _MonoReferenceQueue MonoReferenceQueue;
 typedef struct _RefQueueEntry RefQueueEntry;
 
 struct _RefQueueEntry {
+#ifdef HAVE_SGEN_GC
 	void *dis_link;
+#else
+	guint32 gchandle;
+#endif
 	void *user_data;
 	RefQueueEntry *next;
 };
@@ -357,6 +361,9 @@ MonoReferenceQueue* mono_gc_reference_queue_new (mono_reference_queue_callback c
 void mono_gc_reference_queue_free (MonoReferenceQueue *queue) MONO_INTERNAL;
 gboolean mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data) MONO_INTERNAL;
 
+#ifdef HOST_WIN32
+BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved) MONO_INTERNAL;
+#endif
 
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

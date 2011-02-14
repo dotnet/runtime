@@ -16,6 +16,10 @@
 /* For pid_t */
 #ifndef WIN32
 #include <unistd.h>
+#else
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #endif
 #endif
 
@@ -26,6 +30,11 @@
 
 #ifdef G_HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
+
+#ifdef WIN32
+/* For alloca */
+#include <malloc.h>
 #endif
 
 #ifndef offsetof

@@ -9,7 +9,7 @@ int vasprintf(char **ret, const char *fmt, va_list ap)
 	size_t buflen;
 	va_list ap2;
 	
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW64_VERSION_MAJOR)
 	ap2 = ap;
 	len = _vscprintf(fmt, ap2); // NOTE MS specific extension ( :-( )
 #else

@@ -387,4 +387,10 @@ mono_gc_pthread_detach (pthread_t thread)
 
 #endif
 
+#ifdef HOST_WIN32
+BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
+{
+}
+#endif
+
 #endif

@@ -1560,7 +1560,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 /* FIXME: exitContext isnt documented */
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
-	HANDLE *handles;
+	HANDLE handles [MAXIMUM_WAIT_OBJECTS];
 	guint32 numhandles;
 	guint32 ret;
 	guint32 i;
@@ -1572,7 +1572,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	mono_thread_current_check_pending_interrupt ();
 
 	numhandles = mono_array_length(mono_handles);
-	handles = g_new0(HANDLE, numhandles);
+	if (numhandles > MAXIMUM_WAIT_OBJECTS)
+		return WAIT_FAILED;
 
 	for(i = 0; i < numhandles; i++) {	
 		waitHandle = mono_array_get(mono_handles, MonoObject*, i);
@@ -1601,8 +1602,6 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	} while (ms == -1 || ms > 0);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
-	
-	g_free(handles);
 
 	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") returning %d", __func__, GetCurrentThreadId (), ret));
 

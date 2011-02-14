@@ -201,26 +201,24 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
 	return memcmp (pubt1, pubt2, 16) == 0;
 }
 
-/* Native Client can't get this info from an environment variable so */
-/* it's passed in to the runtime, or set manually by embedding code. */
-#ifdef __native_client__
-char* nacl_mono_path = NULL;
-#endif
-
-static void
-check_path_env (void)
+/**
+ * mono_set_assemblies_path:
+ * @path: list of paths that contain directories where Mono will look for assemblies
+ *
+ * Use this method to override the standard assembly lookup system and
+ * override any assemblies coming from the GAC.  This is the method
+ * that supports the MONO_PATH variable.
+ *
+ * Notice that MONO_PATH and this method are really a very bad idea as
+ * it prevents the GAC from working and it prevents the standard
+ * resolution mechanisms from working.  Nonetheless, for some debugging
+ * situations and bootstrapping setups, this is useful to have. 
+ */
+void
+mono_set_assemblies_path (const char* path)
 {
-	const char *path;
 	char **splitted, **dest;
 	
-#ifdef __native_client__
-	path = nacl_mono_path;
-#else
-	path = g_getenv ("MONO_PATH");
-#endif
-	if (!path)
-		return;
-
 	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (assemblies_path)
 		g_strfreev (assemblies_path);
@@ -242,6 +240,27 @@ check_path_env (void)
 
 		splitted++;
 	}
+}
+
+/* Native Client can't get this info from an environment variable so */
+/* it's passed in to the runtime, or set manually by embedding code. */
+#ifdef __native_client__
+char* nacl_mono_path = NULL;
+#endif
+
+static void
+check_path_env (void)
+{
+	const char* path;
+#ifdef __native_client__
+	path = nacl_mono_path;
+#else
+	path = g_getenv ("MONO_PATH");
+#endif
+	if (!path || assemblies_path != NULL)
+		return;
+
+	mono_set_assemblies_path(path);
 }
 
 static void
@@ -1847,7 +1866,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	gboolean version_defined;
 	gboolean token_defined;
 	guint32 flags = 0;
-	guint32 arch = PROCESSOR_ARCHITECTURE_NONE;
+	guint32 arch = MONO_PROCESSOR_ARCHITECTURE_NONE;
 
 	if (!is_version_defined)
 		is_version_defined = &version_defined;
@@ -1923,15 +1942,15 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		if (!g_ascii_strncasecmp (value, "ProcessorArchitecture=", 22)) {
 			char *s = g_strstrip (value + 22);
 			if (!g_ascii_strcasecmp (s, "None"))
-				arch = PROCESSOR_ARCHITECTURE_NONE;
+				arch = MONO_PROCESSOR_ARCHITECTURE_NONE;
 			else if (!g_ascii_strcasecmp (s, "MSIL"))
-				arch = PROCESSOR_ARCHITECTURE_MSIL;
+				arch = MONO_PROCESSOR_ARCHITECTURE_MSIL;
 			else if (!g_ascii_strcasecmp (s, "X86"))
-				arch = PROCESSOR_ARCHITECTURE_X86;
+				arch = MONO_PROCESSOR_ARCHITECTURE_X86;
 			else if (!g_ascii_strcasecmp (s, "IA64"))
-				arch = PROCESSOR_ARCHITECTURE_IA64;
+				arch = MONO_PROCESSOR_ARCHITECTURE_IA64;
 			else if (!g_ascii_strcasecmp (s, "AMD64"))
-				arch = PROCESSOR_ARCHITECTURE_AMD64;
+				arch = MONO_PROCESSOR_ARCHITECTURE_AMD64;
 			else
 				goto cleanup_and_fail;
 			tmp++;

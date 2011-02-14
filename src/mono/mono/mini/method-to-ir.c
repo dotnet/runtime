@@ -10308,7 +10308,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
-				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !method->klass->image->dynamic) {
+				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !method->klass->image->dynamic && !generic_context) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					token = mono_type_size (type, &ialign);
 				} else {

@@ -600,11 +600,3 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 
 	return result;
 }
-
-
-gboolean
-mono_arch_has_unwind_info (gconstpointer addr)
-{
-	return FALSE;
-}
-

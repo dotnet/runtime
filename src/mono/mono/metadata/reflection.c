@@ -2669,11 +2669,13 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 	if (token)
 		return token;
 
-	g_assert (tb->generic_params);
-
 	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
 
-	parent = create_generic_typespec (assembly, tb);
+	if (tb->generic_params)
+		parent = create_generic_typespec (assembly, tb);
+	else
+		parent = mono_image_typedef_or_ref (assembly, mono_reflection_type_get_handle ((MonoReflectionType*)tb));
+	
 	name = mono_string_to_utf8 (rmb.name);
 	sig = method_builder_encode_signature (assembly, &rmb);
 
@@ -4941,8 +4943,12 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 			type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 			token = mono_image_typedef_or_ref_full (assembly, type, TRUE);
 			token = mono_metadata_token_from_dor (token);
-		} else {
+		} else if (tb->module->dynamic_image == assembly) {
 			token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
+		} else {
+			MonoType *type;
+			type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
+			token = mono_metadata_token_from_dor (mono_image_typedef_or_ref (assembly, type));
 		}
 	} else if (strcmp (klass->name, "MonoType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
@@ -7858,12 +7864,16 @@ handle_type:
 			int etype = *p;
 			p ++;
 
-			if (etype == 0x51)
-				/* See Partition II, Appendix B3 */
-				etype = MONO_TYPE_OBJECT;
 			type = MONO_TYPE_SZARRAY;
-			simple_type.type = etype;
-			tklass = mono_class_from_mono_type (&simple_type);
+			if (etype == 0x50) {
+				tklass = mono_defaults.systemtype_class;
+			} else {
+				if (etype == 0x51)
+					/* See Partition II, Appendix B3 */
+					etype = MONO_TYPE_OBJECT;
+				simple_type.type = etype;
+				tklass = mono_class_from_mono_type (&simple_type);
+			}
 			goto handle_enum;
 		} else if (subt == 0x55) {
 			char *n;
@@ -10059,8 +10069,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	m->slot = -1;
 	m->flags = rmb->attrs;
 	m->iflags = rmb->iattrs;
-	m->name = mono_string_to_utf8_image (image, rmb->name, &error);
-	g_assert (mono_error_ok (&error));
+	m->name = mono_string_to_utf8_image_ignore (image, rmb->name);
 	m->klass = klass;
 	m->signature = sig;
 	m->sre_method = TRUE;

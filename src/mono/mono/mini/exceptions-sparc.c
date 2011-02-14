@@ -387,12 +387,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	}
 }
 
-gboolean
-mono_arch_has_unwind_info (gconstpointer addr)
-{
-	return FALSE;
-}
-
 #ifdef __linux__
 
 gboolean
