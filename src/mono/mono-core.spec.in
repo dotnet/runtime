@@ -1084,6 +1084,7 @@ Mono development tools.
 %_prefix/lib/mono/4.0/Microsoft.Common.targets
 %_prefix/lib/mono/4.0/Microsoft.Common.tasks
 %_prefix/lib/mono/4.0/Microsoft.VisualBasic.targets
+%_prefix/lib/mono/4.0/Mono.Debugger.Soft.dll
 %_prefix/lib/mono/4.0/Mono.CodeContracts.dll
 %_prefix/lib/mono/4.0/PEAPI.dll
 %_prefix/lib/mono/4.0/caspol.exe*
