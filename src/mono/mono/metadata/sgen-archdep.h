@@ -138,14 +138,11 @@
 #define ARCH_NUM_REGS 14
 #define ARCH_STORE_REGS(ptr)				\
 	__asm__ __volatile__(				\
-		"ldr r12, %0\n"				\
-		"push {r0}\n"				\
-		"push {r12}\n"				\
-		"stmia r12!, {r0-r11}\n"		\
-		"pop {r0}\n"				\
-		"stmia r12!, {r0, lr}\n"		\
+		"push {lr}\n"				\
+		"ldr lr, %0\n"				\
+		"stmia lr!, {r0-r12}\n"			\
 		"mov r12, r0\n"				\
-		"pop {r0}\n"				\
+		"pop {lr}\n"				\
 		: 					\
 		: "m" (ptr)				\
 	)
