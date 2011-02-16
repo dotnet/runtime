@@ -606,17 +606,8 @@ static gboolean
 generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
 						  gboolean allow_partial)
 {
-	gboolean has_refs;
 	int i;
 
-	has_refs = FALSE;
-	for (i = 0; i < inst->type_argc; ++i) {
-		MonoType *type = inst->type_argv [i];
-
-		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
-			has_refs = TRUE;
-	}
- 
 	for (i = 0; i < inst->type_argc; ++i) {
 		MonoType *type = inst->type_argv [i];
 
