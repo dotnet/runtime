@@ -290,5 +290,6 @@ pedump_LDFLAGS=-framework CoreFoundation
 endif
 endif
 
-EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) $(sgen_sources) runtime.h
+EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) $(sgen_sources) runtime.h \
+		tpool-poll.c tpool-epoll.c
 
