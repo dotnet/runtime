@@ -1182,6 +1182,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	header = cfg->header;
 
+	/* See mono_arch_get_global_int_regs () */
+	if (cfg->flags & MONO_CFG_HAS_CALLS)
+		cfg->uses_rgctx_reg = TRUE;
+
 	if (cfg->frame_reg != ARMREG_SP)
 		cfg->used_int_regs |= 1 << cfg->frame_reg;
 
