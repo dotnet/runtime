@@ -71,7 +71,7 @@ utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **erro
 	ret = 0;
 
 	/* Common case */
-	for (in_pos = 0; in_pos < len && str [in_pos] < 0x80; in_pos++)
+	for (in_pos = 0; in_pos < len && (guchar) str [in_pos] < 0x80; in_pos++)
 		ret ++;
 
 	if (in_pos == len) {
