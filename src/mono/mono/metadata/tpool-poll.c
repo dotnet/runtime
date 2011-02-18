@@ -1,3 +1,14 @@
+/*
+ * tpool-poll.c: poll related stuff
+ *
+ * Authors:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *   Gonzalo Paniagua Javier (gonzalo@ximian.com)
+ *
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2011 Novell, Inc (http://www.novell.com)
+ */
+
 #define INIT_POLLFD(a, b, c) {(a)->fd = b; (a)->events = c; (a)->revents = 0;}
 struct _tp_poll_data {
 	int pipe [2];
@@ -166,7 +177,6 @@ tp_poll_wait (gpointer p)
 	for (i = 1; i < allocated; i++)
 		INIT_POLLFD (&pfds [i], -1, 0);
 
-	printf ("poll_wait\n");
 	while (1) {
 		int nsock = 0;
 		mono_pollfd *pfd;

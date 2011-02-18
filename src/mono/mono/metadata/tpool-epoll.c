@@ -1,3 +1,14 @@
+/*
+ * tpool-epoll.c: epoll related stuff
+ *
+ * Authors:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *   Gonzalo Paniagua Javier (gonzalo@ximian.com)
+ *
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2011 Novell, Inc (http://www.novell.com)
+ */
+
 struct _tp_epoll_data {
 	int epollfd;
 };
@@ -82,7 +93,6 @@ tp_epoll_wait (gpointer p)
 	thread = mono_thread_internal_current ();
 	events = g_new0 (struct epoll_event, EPOLL_NEVENTS);
 
-	printf ("epoll_wait\n");
 	while (1) {
 		do {
 			if (ready == -1) {
