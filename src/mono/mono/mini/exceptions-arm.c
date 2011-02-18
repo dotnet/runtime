@@ -531,6 +531,19 @@ handle_signal_exception (gpointer obj, gboolean test_only)
 }
 
 /*
+ * This works around a gcc 4.5 bug:
+ * https://bugs.launchpad.net/ubuntu/+source/gcc-4.5/+bug/721531
+ */
+#if defined(__GNUC__)
+__attribute__((noinline))
+#endif
+static gpointer
+get_handle_signal_exception_addr (void)
+{
+	return handle_signal_exception;
+}
+
+/*
  * This is the function called from the signal handler
  */
 gboolean
@@ -558,7 +571,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	sp -= 16;
 	UCONTEXT_REG_SP (sigctx) = sp;
 
-	UCONTEXT_REG_PC (sigctx) = (gsize)handle_signal_exception;
+	UCONTEXT_REG_PC (sigctx) = (gsize)get_handle_signal_exception_addr ();
 #ifdef UCONTEXT_REG_CPSR
 	if ((gsize)UCONTEXT_REG_PC (sigctx) & 1)
 		/* Transition to thumb */
