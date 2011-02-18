@@ -16,9 +16,10 @@ static void
 connect_hack (gpointer x)
 {
 	struct sockaddr_in *addr = (struct sockaddr_in *) x;
+	tp_poll_data *data = socket_io_data.event_data;
 	int count = 0;
 
-	while (connect ((SOCKET) socket_io_data.pipe [1], (SOCKADDR *) addr, sizeof (struct sockaddr_in))) {
+	while (connect ((SOCKET) data->pipe [1], (SOCKADDR *) addr, sizeof (struct sockaddr_in))) {
 		Sleep (500);
 		if (++count > 3) {
 			g_warning ("Error initializing async. sockets %d.", WSAGetLastError ());
