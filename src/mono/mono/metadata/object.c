@@ -1967,7 +1967,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 					bitmap = default_bitmap;
 				}
 				size = mono_type_size (field->type, &align);
-				offset = mono_alloc_special_static_data (special_static, size, align, bitmap, max_set);
+				offset = mono_alloc_special_static_data (special_static, size, align, (uintptr_t*)bitmap, max_set);
 				if (!domain->special_static_fields)
 					domain->special_static_fields = g_hash_table_new (NULL, NULL);
 				g_hash_table_insert (domain->special_static_fields, field, GUINT_TO_POINTER (offset));
