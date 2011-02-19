@@ -390,15 +390,37 @@ get_process_stat_time (int pid, int pos, int sum, MonoProcessError *error)
 }
 
 static gint64
-get_pid_status_item (int pid, const char *item, MonoProcessError *error)
+get_pid_status_item (int pid, const char *item, MonoProcessError *error, int multiplier)
 {
+#if defined(__APPLE__)
+	// ignore the multiplier
+	
+	task_t task;
+	if (task_for_pid (mach_task_self (), pid, &task) != KERN_SUCCESS)
+		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
+
+	struct task_basic_info t_info;
+	mach_msg_type_number_t th_count = TASK_BASIC_INFO_COUNT;
+	
+	if (task_info (task, TASK_BASIC_INFO, (task_info_t)&t_info, &th_count) != KERN_SUCCESS)
+		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
+
+	if (strcmp (item, "VmRSS") == 0 || strcmp (item, "VmHWM") == 0)
+		return t_info.resident_size;
+	else if (strcmp (item, "VmSize") == 0 || strcmp (item, "VmPeak") == 0)
+		return t_info.virtual_size;
+	else if (strcmp (item, "Threads") == 0)
+		return th_count;
+	return 0;
+#else
 	char buf [64];
 	char *s;
 
 	s = get_pid_status_item_buf (pid, item, buf, sizeof (buf), error);
 	if (s)
-		return atoi (s);
+		return atoi (s) * multiplier;
 	return 0;
+#endif
 }
 
 /**
@@ -420,7 +442,7 @@ mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProces
 
 	switch (data) {
 	case MONO_PROCESS_NUM_THREADS:
-		return get_pid_status_item (rpid, "Threads", error);
+		return get_pid_status_item (rpid, "Threads", error, 1);
 	case MONO_PROCESS_USER_TIME:
 		return get_process_stat_time (rpid, 10, FALSE, error);
 	case MONO_PROCESS_SYSTEM_TIME:
@@ -428,20 +450,20 @@ mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProces
 	case MONO_PROCESS_TOTAL_TIME:
 		return get_process_stat_time (rpid, 10, TRUE, error);
 	case MONO_PROCESS_WORKING_SET:
-		return get_pid_status_item (rpid, "VmRSS", error) * 1024;
+		return get_pid_status_item (rpid, "VmRSS", error, 1024);
 	case MONO_PROCESS_WORKING_SET_PEAK:
-		val = get_pid_status_item (rpid, "VmHWM", error) * 1024;
+		val = get_pid_status_item (rpid, "VmHWM", error, 1024);
 		if (val == 0)
-			val = get_pid_status_item (rpid, "VmRSS", error) * 1024;
+			val = get_pid_status_item (rpid, "VmRSS", error, 1024);
 		return val;
 	case MONO_PROCESS_PRIVATE_BYTES:
-		return get_pid_status_item (rpid, "VmData", error) * 1024;
+		return get_pid_status_item (rpid, "VmData", error, 1024);
 	case MONO_PROCESS_VIRTUAL_BYTES:
-		return get_pid_status_item (rpid, "VmSize", error) * 1024;
+		return get_pid_status_item (rpid, "VmSize", error, 1024);
 	case MONO_PROCESS_VIRTUAL_BYTES_PEAK:
-		val = get_pid_status_item (rpid, "VmPeak", error) * 1024;
+		val = get_pid_status_item (rpid, "VmPeak", error, 1024);
 		if (val == 0)
-			val = get_pid_status_item (rpid, "VmSize", error) * 1024;
+			val = get_pid_status_item (rpid, "VmSize", error, 1024);
 		return val;
 	case MONO_PROCESS_FAULTS:
 		return get_process_stat_item (rpid, 6, TRUE, error);
