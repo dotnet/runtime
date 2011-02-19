@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/proc.h>
+#include <mach/mach.h>
 #ifdef HAVE_SYS_USER_H
 #include <sys/user.h>
 #endif
@@ -262,6 +263,58 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 static gint64
 get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 {
+#if defined(__APPLE__) 
+	double process_user_time = 0, process_system_time = 0;//, process_percent = 0;
+
+	task_t task;
+	if (task_for_pid(mach_task_self(), pid, &task) != KERN_SUCCESS)
+		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
+	
+	struct task_basic_info t_info;
+	mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT, th_count;
+	if (task_info(task,
+					TASK_BASIC_INFO,
+					(task_info_t)&t_info,
+					&t_info_count) != KERN_SUCCESS)
+		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
+	
+	thread_array_t th_array;
+	if (task_threads(task, &th_array, &th_count) != KERN_SUCCESS)
+		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
+		
+	size_t i;
+
+	for (i = 0; i < th_count; i++) {
+		double thread_user_time, thread_system_time;//, thread_percent;
+		
+		struct thread_basic_info th_info;
+		mach_msg_type_number_t th_info_count = THREAD_BASIC_INFO_COUNT;
+		if (thread_info(th_array[i], THREAD_BASIC_INFO, (thread_info_t)&th_info, &th_info_count) == KERN_SUCCESS) {
+			thread_user_time = th_info.user_time.seconds + th_info.user_time.microseconds / 1e6;
+			thread_system_time = th_info.system_time.seconds + th_info.system_time.microseconds / 1e6;
+			//thread_percent = (double)th_info.cpu_usage / TH_USAGE_SCALE;
+			
+			process_user_time += thread_user_time;
+			process_system_time += thread_system_time;
+			//process_percent += th_percent;
+		}
+	}
+	
+	for (i = 0; i < th_count; i++)
+		mach_port_deallocate(task, th_array[i]);
+
+	process_user_time += t_info.user_time.seconds + t_info.user_time.microseconds / 1e6;
+	process_system_time += t_info.system_time.seconds + t_info.system_time.microseconds / 1e6;
+    
+	if (pos == 10 && sum == TRUE)
+		return (gint64)((process_user_time + process_system_time) * 10000000);
+	else if (pos == 10)
+		return (gint64)(process_user_time * 10000000);
+	else if (pos == 11)
+		return (gint64)(process_system_time * 10000000);
+		
+	return 0;
+#else
 	char buf [512];
 	char *s, *end;
 	FILE *f;
@@ -307,6 +360,7 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	if (error)
 		*error = MONO_PROCESS_ERROR_NONE;
 	return value;
+#endif
 }
 
 static int
@@ -327,8 +381,12 @@ static gint64
 get_process_stat_time (int pid, int pos, int sum, MonoProcessError *error)
 {
 	gint64 val = get_process_stat_item (pid, pos, sum, error);
+#if defined(__APPLE__)
+	return val;
+#else
 	/* return 100ns ticks */
 	return (val * 10000000) / get_user_hz ();
+#endif
 }
 
 static gint64
