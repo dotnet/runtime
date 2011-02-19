@@ -267,22 +267,25 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 {
 #if defined(__APPLE__) 
 	double process_user_time = 0, process_system_time = 0;//, process_percent = 0;
-
 	task_t task;
+
 	if (task_for_pid(mach_task_self(), pid, &task) != KERN_SUCCESS)
 		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
 	
 	struct task_basic_info t_info;
 	mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT, th_count;
-	if (task_info(task,
-					TASK_BASIC_INFO,
-					(task_info_t)&t_info,
-					&t_info_count) != KERN_SUCCESS)
+
+	if (task_info(task, TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count) != KERN_SUCCESS) {
+		mach_port_deallocate (mach_task_self (), task);
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
+	}
 	
 	thread_array_t th_array;
-	if (task_threads(task, &th_array, &th_count) != KERN_SUCCESS)
+
+	if (task_threads(task, &th_array, &th_count) != KERN_SUCCESS) {
+		mach_port_deallocate (mach_task_self (), task);
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
+	}
 		
 	size_t i;
 
@@ -304,6 +307,8 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	
 	for (i = 0; i < th_count; i++)
 		mach_port_deallocate(task, th_array[i]);
+
+	mach_port_deallocate (mach_task_self (), task);
 
 	process_user_time += t_info.user_time.seconds + t_info.user_time.microseconds / 1e6;
 	process_system_time += t_info.system_time.seconds + t_info.system_time.microseconds / 1e6;
@@ -397,6 +402,7 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 #if defined(__APPLE__)
 	// ignore the multiplier
 	
+	gint64 ret;
 	task_t task;
 	if (task_for_pid (mach_task_self (), pid, &task) != KERN_SUCCESS)
 		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
@@ -404,16 +410,21 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 	struct task_basic_info t_info;
 	mach_msg_type_number_t th_count = TASK_BASIC_INFO_COUNT;
 	
-	if (task_info (task, TASK_BASIC_INFO, (task_info_t)&t_info, &th_count) != KERN_SUCCESS)
+	if (task_info (task, TASK_BASIC_INFO, (task_info_t)&t_info, &th_count) != KERN_SUCCESS) {
+		mach_port_deallocate (mach_task_self (), task);
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
+	}
 
 	if (strcmp (item, "VmRSS") == 0 || strcmp (item, "VmHWM") == 0)
-		return t_info.resident_size;
+		ret = t_info.resident_size;
 	else if (strcmp (item, "VmSize") == 0 || strcmp (item, "VmPeak") == 0)
-		return t_info.virtual_size;
+		ret = t_info.virtual_size;
 	else if (strcmp (item, "Threads") == 0)
-		return th_count;
-	return 0;
+		ret = th_count;
+
+	mach_port_deallocate (mach_task_self (), task);
+	
+	return ret;
 #else
 	char buf [64];
 	char *s;
