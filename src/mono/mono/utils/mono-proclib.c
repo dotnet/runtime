@@ -18,7 +18,9 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/proc.h>
+#if defined(__APPLE__)
 #include <mach/mach.h>
+#endif
 #ifdef HAVE_SYS_USER_H
 #include <sys/user.h>
 #endif
