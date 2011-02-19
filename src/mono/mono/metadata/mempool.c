@@ -316,9 +316,9 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			pool->pos += size;
 		}
 	}
+#endif
 
 	return rval;
-#endif
 }
 
 /**
