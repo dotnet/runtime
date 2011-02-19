@@ -43,6 +43,10 @@
 #ifdef HAVE_EPOLL
 #include <sys/epoll.h>
 #endif
+#ifdef HAVE_KQUEUE
+#include <sys/event.h>
+#endif
+
 
 #ifndef DISABLE_SOCKETS
 #include "mono/io-layer/socket-wrappers.h"
@@ -69,7 +73,8 @@ static volatile int tp_inited;
 
 enum {
 	POLL_BACKEND,
-	EPOLL_BACKEND
+	EPOLL_BACKEND,
+	KQUEUE_BACKEND
 };
 
 typedef struct {
@@ -180,6 +185,8 @@ enum {
 #include <mono/metadata/tpool-poll.c>
 #ifdef HAVE_EPOLL
 #include <mono/metadata/tpool-epoll.c>
+#elif defined(HAVE_KQUEUE)
+#include <mono/metadata/tpool-kqueue.c>
 #endif
 /*
  * Functions to check whenever a class is given system class. We need to cache things in MonoDomain since some of the
@@ -473,6 +480,9 @@ init_event_system (SocketIOData *data)
 #ifdef HAVE_EPOLL
 	if (data->event_system == EPOLL_BACKEND)
 		data->event_data = tp_epoll_init (data);
+#elif defined(HAVE_KQUEUE)
+	if (data->event_system == KQUEUE_BACKEND)
+		data->event_data = tp_kqueue_init (data);
 #endif
 	if (data->event_system == POLL_BACKEND)
 		data->event_data = tp_poll_init (data);
@@ -500,6 +510,8 @@ socket_io_init (SocketIOData *data)
 	data->sock_to_state = mono_g_hash_table_new_type (g_direct_hash, g_direct_equal, MONO_HASH_VALUE_GC);
 #ifdef HAVE_EPOLL
 	data->event_system = EPOLL_BACKEND;
+#elif defined(HAVE_KQUEUE)
+	data->event_system = KQUEUE_BACKEND;
 #else
 	data->event_system = POLL_BACKEND;
 #endif
