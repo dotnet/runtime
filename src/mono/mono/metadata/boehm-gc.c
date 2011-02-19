@@ -1189,7 +1189,11 @@ mono_gc_pthread_detach (pthread_t thread)
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
+#ifdef USE_INCLUDED_LIBGC
 	return GC_DllMain (module_handle, reason, reserved);
+#else
+	return TRUE;
+#endif
 }
 #endif
 
