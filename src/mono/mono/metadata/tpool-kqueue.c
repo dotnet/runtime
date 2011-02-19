@@ -36,7 +36,7 @@ static void
 kevent_change (int kfd, struct kevent *evt, const char *error_str)
 {
 	if (kevent (kfd, evt, 1, NULL, 0, NULL) == -1) {
-		int err = errno;	
+		int err = errno;
 		g_message ("kqueue(%s): %d %s", error_str, err, g_strerror (err));
 	}
 }
