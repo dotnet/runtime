@@ -267,6 +267,11 @@ typedef struct {
 
 #define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
 
+/* Contains a list of ips which needs to be patched when a method is compiled */
+typedef struct {
+	GSList *list;
+} MonoJumpList;
+
 /* Arch-specific */
 typedef struct {
 	int dummy;
