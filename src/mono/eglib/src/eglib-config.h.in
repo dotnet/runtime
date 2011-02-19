@@ -42,4 +42,6 @@ typedef signed   @GSIZE@ gssize;
 #define G_BREAKPOINT()
 #endif
 
+typedef @PIDTYPE@ GPid;
+
 #endif

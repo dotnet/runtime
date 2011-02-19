@@ -71,4 +71,6 @@ int vasprintf(char **ret, const char *fmt, va_list ap);
 #pragma warning(disable:4100 4127)
 #endif
 
+typedef void * GPid;
+
 #endif

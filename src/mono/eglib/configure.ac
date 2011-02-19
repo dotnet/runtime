@@ -46,17 +46,20 @@ case $host in
     PATHSEP='\\'
     SEARCHSEP=';'
     OS="WIN32"
+    PIDTYPE='void *'
     ;;
 *-*darwin*)
     platform_darwin=yes
     PATHSEP='/'
     SEARCHSEP=':'
     OS="UNIX"
+    PIDTYPE='int'
     ;;
 *)
     PATHSEP='/'
     SEARCHSEP=':'
     OS="UNIX"
+    PIDTYPE='int'
     ;;
 esac
 
@@ -84,6 +87,7 @@ AC_SUBST(CFLAGS)
 AC_SUBST(PATHSEP)
 AC_SUBST(SEARCHSEP)
 AC_SUBST(OS)
+AC_SUBST(PIDTYPE)
 AM_CONDITIONAL(HOST_WIN32, test x$OS = xWIN32)
 AM_CONDITIONAL(TARGET_WIN32, test x$OS = xWIN32)
 AM_CONDITIONAL(PLATFORM_DARWIN, test x$platform_darwin = xyes)
