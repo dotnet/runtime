@@ -10,9 +10,6 @@
  */
 
 #include <config.h>
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -2795,10 +2792,8 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 			break;
 	is_open = (i < type_argc);
 
-	ginst = alloca (size);
-#ifndef MONO_SMALL_CONFIG
-	ginst->id = 0;
-#endif
+	ginst = g_alloca (size);
+	memset (ginst, 0, sizeof (MonoGenericInst));
 	ginst->is_open = is_open;
 	ginst->type_argc = type_argc;
 	memcpy (ginst->type_argv, type_argv, type_argc * sizeof (MonoType *));

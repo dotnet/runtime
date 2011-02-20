@@ -314,6 +314,12 @@ struct _MonoImage {
 	/* List of image sets containing this image */
 	GSList *image_sets;
 
+	/* Caches for MonoClass-es representing anon generic params */
+	MonoClass **var_cache_fast;
+	MonoClass **mvar_cache_fast;
+	GHashTable *var_cache_slow;
+	GHashTable *mvar_cache_slow;
+
 	/*
 	 * No other runtime locks must be taken while holding this lock.
 	 * It's meant to be used only to mutate and query structures part of this image.
