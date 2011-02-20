@@ -7903,6 +7903,7 @@ mono_sgen_get_logfile (void)
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
+	return TRUE;
 }
 #endif
 
