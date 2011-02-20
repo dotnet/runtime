@@ -3261,6 +3261,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		switch (ins->opcode) {
 		case OP_MEMORY_BARRIER:
+			ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
+			ARM_MCR (code, 15, 0, ARMREG_R0, 7, 10, 5);
 			break;
 		case OP_TLS_GET:
 #ifdef HAVE_AEABI_READ_TP

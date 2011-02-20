@@ -1084,6 +1084,16 @@ typedef union {
 #define ARM_MOVT_REG_IMM_COND(p, rd, imm16, cond) ARM_EMIT(p, (((cond) << 28) | (3 << 24) | (4 << 20) | ((((guint32)(imm16)) >> 12) << 16) | ((rd) << 12) | (((guint32)(imm16)) & 0xfff)))
 #define ARM_MOVT_REG_IMM(p, rd, imm16) ARM_MOVT_REG_IMM_COND ((p), (rd), (imm16), ARMCOND_AL)
 
+/* MCR */
+#define ARM_DEF_MCR_COND(coproc, opc1, rt, crn, crm, opc2, cond)	\
+	ARM_DEF_COND ((cond)) | ((0xe << 24) | (((opc1) & 0x7) << 21) | (0 << 20) | (((crn) & 0xf) << 16) | (((rt) & 0xf) << 12) | (((coproc) & 0xf) << 8) | (((opc2) & 0x7) << 5) | (1 << 4) | (((crm) & 0xf) << 0))
+
+#define ARM_MCR_COND(p, coproc, opc1, rt, crn, crm, opc2, cond)	\
+	ARM_EMIT(p, ARM_DEF_MCR_COND ((coproc), (opc1), (rt), (crn), (crm), (opc2), (cond)))
+
+#define ARM_MCR(p, coproc, opc1, rt, crn, crm, opc2) \
+	ARM_MCR_COND ((p), (coproc), (opc1), (rt), (crn), (crm), (opc2), ARMCOND_AL)
+
 #ifdef __cplusplus
 }
 #endif
