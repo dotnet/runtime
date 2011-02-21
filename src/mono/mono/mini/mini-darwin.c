@@ -66,6 +66,7 @@
 #include <mach/task.h>
 #include <pthread.h>
 #include <dlfcn.h>
+#include <AvailabilityMacros.h>
 
 /*
  * This code disables the CrashReporter of MacOS X by installing
@@ -190,7 +191,9 @@ macosx_register_exception_handler ()
 void
 mono_runtime_install_handlers (void)
 {
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_5
 	macosx_register_exception_handler ();
+#endif
 	mono_runtime_posix_install_handlers ();
 
 	/* Snow Leopard has a horrible bug: http://openradar.appspot.com/7209349
