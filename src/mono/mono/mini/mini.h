@@ -2247,6 +2247,9 @@ mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgct
 MonoGenericContext
 mono_method_construct_object_context (MonoMethod *method) MONO_INTERNAL;
 
+MonoMethod*
+mono_method_get_declaring_generic_method (MonoMethod *method) MONO_INTERNAL;
+
 int
 mono_generic_context_check_used (MonoGenericContext *context) MONO_INTERNAL;
 
