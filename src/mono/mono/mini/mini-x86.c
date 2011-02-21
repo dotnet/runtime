@@ -2203,6 +2203,12 @@ gboolean
 mono_x86_have_tls_get (void)
 {
 #ifdef __APPLE__
+	static gboolean have_tls_get = FALSE;
+	static gboolean inited = FALSE;
+
+	if (inited)
+		return have_tls_get;
+
 	guint32 *ins = (guint32*)pthread_getspecific;
 	/*
 	 * We're looking for these two instructions:
@@ -2210,7 +2216,11 @@ mono_x86_have_tls_get (void)
 	 * mov    0x4(%esp),%eax
 	 * mov    %gs:0x48(,%eax,4),%eax
 	 */
-	return ins [0] == 0x0424448b && ins [1] == 0x85048b65 && ins [2] == 0x00000048;
+	have_tls_get = ins [0] == 0x0424448b && ins [1] == 0x85048b65 && ins [2] == 0x00000048;
+
+	inited = TRUE;
+
+	return have_tls_get;
 #else
 	return TRUE;
 #endif
