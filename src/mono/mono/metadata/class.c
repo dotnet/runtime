@@ -3790,6 +3790,14 @@ print_unimplemented_interface_method_info (MonoClass *class, MonoClass *ic, Mono
 	}
 }
 
+static MonoMethod*
+mono_method_get_method_definition (MonoMethod *method)
+{
+	while (method->is_inflated)
+		method = ((MonoMethodInflated*)method)->declaring;
+	return method;
+}
+
 static gboolean
 verify_class_overrides (MonoClass *class, MonoMethod **overrides, int onum)
 {
@@ -3822,6 +3830,18 @@ verify_class_overrides (MonoClass *class, MonoMethod **overrides, int onum)
 
 		if (!mono_class_is_assignable_from_slow (decl->klass, class)) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method overrides a class or interface that extended or implemented by this type"));
+			return FALSE;
+		}
+
+		body = mono_method_get_method_definition (body);
+		decl = mono_method_get_method_definition (decl);
+
+		if (!mono_method_can_access_method_full (body, decl, NULL)) {
+			char *body_name = mono_method_full_name (body, TRUE);
+			char *decl_name = mono_method_full_name (decl, TRUE);
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
+			g_free (body_name);
+			g_free (decl_name);
 			return FALSE;
 		}
 	}
@@ -4202,6 +4222,15 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						slot = mono_method_get_vtable_slot (m1);
 						if (slot == -1)
 							goto fail;
+
+						if (!mono_method_can_access_method_full (cm, m1, NULL)) {
+							char *body_name = mono_method_full_name (cm, TRUE);
+							char *decl_name = mono_method_full_name (m1, TRUE);
+							mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
+							g_free (body_name);
+							g_free (decl_name);
+							goto fail;
+						}
 
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
