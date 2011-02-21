@@ -837,7 +837,7 @@ static void optimize_pin_queue (int start_slot);
 static void clear_remsets (void);
 static void clear_tlabs (void);
 static void sort_addresses (void **array, int size);
-static void drain_gray_stack (GrayQueue *queue);
+static gboolean drain_gray_stack (GrayQueue *queue, int max_objs);
 static void finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *queue);
 static gboolean need_major_collection (mword space_needed);
 static void major_collection (const char *reason);
@@ -1698,8 +1698,8 @@ mono_sgen_add_to_global_remset (gpointer ptr)
  * frequently after each object is copied, to achieve better locality and cache
  * usage.
  */
-static void
-drain_gray_stack (GrayQueue *queue)
+static gboolean
+drain_gray_stack (GrayQueue *queue, int max_objs)
 {
 	char *obj;
 
@@ -1707,21 +1707,26 @@ drain_gray_stack (GrayQueue *queue)
 		for (;;) {
 			GRAY_OBJECT_DEQUEUE (queue, obj);
 			if (!obj)
-				break;
+				return TRUE;
 			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
 			major_collector.minor_scan_object (obj, queue);
 		}
 	} else {
-		if (major_collector.is_parallel && queue == &workers_distribute_gray_queue)
-			return;
+		int i;
 
-		for (;;) {
-			GRAY_OBJECT_DEQUEUE (queue, obj);
-			if (!obj)
-				break;
-			DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
-			major_collector.major_scan_object (obj, queue);
-		}
+		if (major_collector.is_parallel && queue == &workers_distribute_gray_queue)
+			return TRUE;
+
+		do {
+			for (i = 0; i != max_objs; ++i) {
+				GRAY_OBJECT_DEQUEUE (queue, obj);
+				if (!obj)
+					return TRUE;
+				DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", obj, safe_name (obj)));
+				major_collector.major_scan_object (obj, queue);
+			}
+		} while (max_objs < 0);
+		return FALSE;
 	}
 }
 
@@ -2099,7 +2104,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 			if ((desc & 1) && *start_root) {
 				copy_func (start_root, queue);
 				DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", start_root, *start_root));
-				drain_gray_stack (queue);
+				drain_gray_stack (queue, -1);
 			}
 			desc >>= 1;
 			start_root++;
@@ -2117,7 +2122,7 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 				if ((bmap & 1) && *objptr) {
 					copy_func (objptr, queue);
 					DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", objptr, *objptr));
-					drain_gray_stack (queue);
+					drain_gray_stack (queue, -1);
 				}
 				bmap >>= 1;
 				++objptr;
@@ -2501,7 +2506,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	drain_gray_stack (queue);
+	drain_gray_stack (queue, -1);
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
 
@@ -2538,7 +2543,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 		int done_with_ephemerons = 0;
 		do {
 			done_with_ephemerons = mark_ephemerons_in_range (copy_func, start_addr, end_addr, queue);
-			drain_gray_stack (queue);
+			drain_gray_stack (queue, -1);
 			++ephemeron_rounds;
 		} while (!done_with_ephemerons);
 
@@ -2555,7 +2560,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 
 		/* drain the new stack that might have been created */
 		DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area post fin\n"));
-		drain_gray_stack (queue);
+		drain_gray_stack (queue, -1);
 	} while (fin_ready != num_ready_finalizers);
 
 	if (mono_sgen_need_bridge_processing ())
@@ -2585,7 +2590,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 			null_link_in_range (copy_func, start_addr, end_addr, GENERATION_NURSERY, FALSE, queue);
 		if (gray_object_queue_is_empty (queue))
 			break;
-		drain_gray_stack (queue);
+		drain_gray_stack (queue, -1);
 	}
 
 	g_assert (gray_object_queue_is_empty (queue));
@@ -3066,7 +3071,7 @@ collect_nursery (size_t requested_size)
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
 	}
 
-	drain_gray_stack (&gray_queue);
+	drain_gray_stack (&gray_queue, -1);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
@@ -3263,7 +3268,7 @@ major_do_collection (const char *reason)
 
 	major_collector.init_to_space ();
 
-	workers_start_all_workers (1);
+	workers_start_all_workers ();
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
@@ -3301,10 +3306,9 @@ major_do_collection (const char *reason)
 	if (major_collector.is_parallel) {
 		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
 			workers_distribute_gray_queue_sections ();
-			usleep (2000);
+			usleep (1000);
 		}
 	}
-	workers_change_num_working (-1);
 	workers_join ();
 
 	if (major_collector.is_parallel)
@@ -3314,6 +3318,15 @@ major_do_collection (const char *reason)
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD, &gray_queue);
 	TV_GETTIME (atv);
 	time_major_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
+
+	/*
+	 * The (single-threaded) finalization code might have done
+	 * some copying/marking so we can only reset the GC thread's
+	 * worker data here instead of earlier when we joined the
+	 * workers.
+	 */
+	if (major_collector.reset_worker_data)
+		major_collector.reset_worker_data (workers_gc_thread_data.major_collector_data);
 
 	if (objects_pinned) {
 		/*This is slow, but we just OOM'd*/
@@ -6994,6 +7007,7 @@ mono_gc_base_init (void)
 	char *major_collector_opt = NULL;
 	struct sigaction sinfo;
 	glong max_heap = 0;
+	int num_workers;
 
 	/* the gc_initialized guard seems to imply this method is
 	   idempotent, but LOCK_INIT(gc_mutex) might not be.  It's
@@ -7044,10 +7058,8 @@ mono_gc_base_init (void)
 		mono_sgen_marksweep_fixed_init (&major_collector);
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-par")) {
 		mono_sgen_marksweep_par_init (&major_collector);
-		workers_init (mono_cpu_count ());
 	} else if (!major_collector_opt || !strcmp (major_collector_opt, "marksweep-fixed-par")) {
 		mono_sgen_marksweep_fixed_par_init (&major_collector);
-		workers_init (mono_cpu_count ());
 	} else if (!strcmp (major_collector_opt, "copying")) {
 		mono_sgen_copying_init (&major_collector);
 	} else {
@@ -7060,6 +7072,11 @@ mono_gc_base_init (void)
 #else
 	use_cardtable = FALSE;
 #endif
+
+	num_workers = mono_cpu_count ();
+	g_assert (num_workers > 0);
+	if (num_workers > 16)
+		num_workers = 16;
 
 	/* Keep this the default for now */
 	conservative_stack_mark = TRUE;
@@ -7095,6 +7112,26 @@ mono_gc_base_init (void)
 					fprintf (stderr, "max-heap-size must be an integer.\n");
 					exit (1);
 				}
+				continue;
+			}
+			if (g_str_has_prefix (opt, "workers=")) {
+				long val;
+				char *endptr;
+				if (!major_collector.is_parallel) {
+					fprintf (stderr, "The workers= option can only be used for parallel collectors.");
+					exit (1);
+				}
+				opt = strchr (opt, '=') + 1;
+				val = strtol (opt, &endptr, 10);
+				if (!*opt || *endptr) {
+					fprintf (stderr, "Cannot parse the workers= option value.");
+					exit (1);
+				}
+				if (val <= 0 || val > 16) {
+					fprintf (stderr, "The number of workers must be in the range 1 to 16.");
+					exit (1);
+				}
+				num_workers = (int)val;
 				continue;
 			}
 			if (g_str_has_prefix (opt, "stack-mark=")) {
@@ -7146,6 +7183,9 @@ mono_gc_base_init (void)
 		}
 		g_strfreev (opts);
 	}
+
+	if (major_collector.is_parallel)
+		workers_init (num_workers);
 
 	if (major_collector_opt)
 		g_free (major_collector_opt);

@@ -730,6 +730,9 @@ struct _SgenMajorCollector {
 	void (*print_gc_param_usage) (void);
 	gboolean (*is_worker_thread) (pthread_t thread);
 	void (*post_param_init) (void);
+	void* (*alloc_worker_data) (void);
+	void (*init_worker_thread) (void *data);
+	void (*reset_worker_data) (void *data);
 };
 
 void mono_sgen_marksweep_init (SgenMajorCollector *collector) MONO_INTERNAL;
