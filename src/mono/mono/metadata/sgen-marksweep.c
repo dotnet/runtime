@@ -211,7 +211,11 @@ static int num_major_sections = 0;
 static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
 
 #ifdef SGEN_PARALLEL_MARK
+#ifdef HAVE_KW_THREAD
+static __thread MSBlockInfo ***workers_free_block_lists;
+#else
 static pthread_key_t workers_free_block_lists_key;
+#endif
 #endif
 
 static long long stat_major_blocks_alloced = 0;
@@ -286,7 +290,11 @@ ms_find_block_obj_size_index (int size)
 #define FREE_BLOCKS_FROM(lists,p,r)	(lists [((p) ? MS_BLOCK_FLAG_PINNED : 0) | ((r) ? MS_BLOCK_FLAG_REFS : 0)])
 #define FREE_BLOCKS(p,r)		(FREE_BLOCKS_FROM (free_block_lists, (p), (r)))
 #ifdef SGEN_PARALLEL_MARK
+#ifdef HAVE_KW_THREAD
+#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (workers_free_block_lists, (p), (r)))
+#else
 #define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (((MSBlockInfo***)(pthread_getspecific (workers_free_block_lists_key))), (p), (r)))
+#endif
 #else
 //#define FREE_BLOCKS_LOCAL(p,r)		(FREE_BLOCKS_FROM (free_block_lists, (p), (r)))
 #endif
@@ -1909,7 +1917,11 @@ major_init_worker_thread (void *data)
 			g_assert (!lists [i][j]);
 	}
 
+#ifdef HAVE_KW_THREAD
+	workers_free_block_lists = data;
+#else
 	pthread_setspecific (workers_free_block_lists_key, data);
+#endif
 }
 
 static void
@@ -1993,7 +2005,9 @@ mono_sgen_marksweep_init
 #ifdef SGEN_PARALLEL_MARK
 	mono_counters_register ("Slots allocated in vain", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_slots_allocated_in_vain);
 
+#ifndef HAVE_KW_THREAD
 	pthread_key_create (&workers_free_block_lists_key, NULL);
+#endif
 #endif
 
 	/*
