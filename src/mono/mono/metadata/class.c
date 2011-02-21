@@ -9022,6 +9022,9 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 {
 	int access_level;
 
+	if (access_klass->image->assembly && access_klass->image->assembly->corlib_internal)
+		return TRUE;
+
 	if (access_klass->element_class && !access_klass->enumtype)
 		access_klass = access_klass->element_class;
 
@@ -9081,6 +9084,9 @@ static gboolean
 can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* context_klass, int access_level)
 {
 	MonoClass *member_generic_def;
+	if (access_klass->image->assembly && access_klass->image->assembly->corlib_internal)
+		return TRUE;
+
 	if (((access_klass->generic_class && access_klass->generic_class->container_class) ||
 					access_klass->generic_container) && 
 			(member_generic_def = get_generic_definition_class (member_klass))) {
