@@ -3588,6 +3588,43 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 
 #endif /* DISABLE_JIT */
 
+gboolean
+mono_amd64_have_tls_get (void)
+{
+#ifdef __APPLE__
+	static gboolean have_tls_get = FALSE;
+	static gboolean inited = FALSE;
+
+	if (inited)
+		return have_tls_get;
+
+	guint8 *ins = (guint8*)pthread_getspecific;
+
+	/*
+	 * We're looking for these two instructions:
+	 *
+	 * mov    %gs:0x60(,%rdi,8),%rax
+	 * retq
+	 */
+	have_tls_get = ins [0] == 0x65 &&
+		       ins [1] == 0x48 &&
+		       ins [2] == 0x8b &&
+		       ins [3] == 0x04 &&
+		       ins [4] == 0xfd &&
+		       ins [5] == 0x60 &&
+		       ins [6] == 0x00 &&
+		       ins [7] == 0x00 &&
+		       ins [8] == 0x00 &&
+		       ins [9] == 0xc3;
+
+	inited = TRUE;
+
+	return have_tls_get;
+#else
+	return TRUE;
+#endif
+}
+
 /*
  * mono_amd64_emit_tls_get:
  * @code: buffer to store code to
@@ -3607,6 +3644,9 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	g_assert (tls_offset < 64);
 	x86_prefix (code, X86_GS_PREFIX);
 	amd64_mov_reg_mem (code, dreg, (tls_offset * 8) + 0x1480, 8);
+#elif defined(__APPLE__)
+	x86_prefix (code, X86_GS_PREFIX);
+	amd64_mov_reg_mem (code, dreg, 0x60 + tls_offset * 8, 8);
 #else
 	if (optimize_for_xen) {
 		x86_prefix (code, X86_FS_PREFIX);
@@ -7033,7 +7073,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			amd64_mov_reg_membase (code, X86_ECX, X86_ECX, G_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 8);
 			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
 			patch = code;
-		        x86_branch8 (code, X86_CC_Z, 0, FALSE);
+			x86_branch8 (code, X86_CC_Z, 0, FALSE);
 			/* note that the call trampoline will preserve eax/edx */
 			x86_call_reg (code, X86_ECX);
 			x86_patch (patch, code);
