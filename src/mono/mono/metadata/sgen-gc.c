@@ -4375,6 +4375,16 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 		for (entry = disappearing_link_hash [i]; entry;) {
 			char *object;
 			gboolean track = DISLINK_TRACK (entry);
+
+			/*
+			 * Tracked references are processed after
+			 * finalization handling whereas standard weak
+			 * references are processed before.  If an
+			 * object is still not marked after finalization
+			 * handling it means that it either doesn't have
+			 * a finalizer or the finalizer has already run,
+			 * so we must null a tracking reference.
+			 */
 			if (track == before_finalization) {
 				prev = entry;
 				entry = entry->next;
@@ -4384,7 +4394,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 			object = DISLINK_OBJECT (entry);
 
 			if (object >= start && object < end && !major_collector.is_object_live (object)) {
-				if (!track && object_is_fin_ready (object)) {
+				if (object_is_fin_ready (object)) {
 					void **p = entry->link;
 					DisappearingLink *old;
 					*p = NULL;
@@ -4431,14 +4441,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 
 						continue;
 					} else {
-						/* We set the track resurrection bit to
-						 * FALSE if the object is to be finalized
-						 * so that the object can be collected in
-						 * the next cycle (i.e. after it was
-						 * finalized).
-						 */
-						*entry->link = HIDE_POINTER (copy,
-							object_is_fin_ready (object) ? FALSE : track);
+						*entry->link = HIDE_POINTER (copy, track);
 						DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->link, DISLINK_OBJECT (entry)));
 					}
 				}
