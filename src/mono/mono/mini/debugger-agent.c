@@ -742,8 +742,6 @@ mono_debugger_agent_parse_options (char *options)
 		if (strncmp (arg, "transport=", 10) == 0) {
 			agent_config.transport = g_strdup (arg + 10);
 		} else if (strncmp (arg, "address=", 8) == 0) {
-			if (agent_config.address)
-				g_free (agent_config.address);
 			agent_config.address = g_strdup (arg + 8);
 		} else if (strncmp (arg, "loglevel=", 9) == 0) {
 			agent_config.log_level = atoi (arg + 9);
@@ -965,52 +963,6 @@ recv_length (int fd, void *buf, int len, int flags)
 #define HAVE_GETADDRINFO 1
 #endif
  
-static gboolean
-transport_handshake (void)
-{
-	char handshake_msg [128];
-	guint8 buf [128];
-	int res;
-	
-	/* Write handshake message */
-	sprintf (handshake_msg, "DWP-Handshake");
-	do {
-		res = send (conn_fd, handshake_msg, strlen (handshake_msg), 0);
-	} while (res == -1 && errno == EINTR);
-	g_assert (res != -1);
-
-	/* Read answer */
-	res = recv_length (conn_fd, buf, strlen (handshake_msg), 0);
-	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg) != 0))) {
-		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
-		return FALSE;
-	}
-
-	/*
-	 * To support older clients, the client sends its protocol version after connecting
-	 * using a command. Until that is received, default to our protocol version.
-	 */
-	major_version = MAJOR_VERSION;
-	minor_version = MINOR_VERSION;
-	protocol_version_set = FALSE;
-
-	/* 
-	 * Set TCP_NODELAY on the socket so the client receives events/command
-	 * results immediately.
-	 */
-	{
-		int flag = 1;
-		int result = setsockopt (conn_fd,
-								 IPPROTO_TCP,
-								 TCP_NODELAY,
-								 (char *) &flag,
-								 sizeof(int));
-		g_assert (result >= 0);
-	}
-	
-	return TRUE;
-}
-
 static int
 transport_accept (int socket_fd)
 {
@@ -1068,19 +1020,6 @@ transport_handshake (void)
 	}
 	
 	return TRUE;
-}
-
-static int
-transport_accept (int socket_fd)
-{
-	conn_fd = accept (socket_fd, NULL, NULL);
-	if (conn_fd == -1) {
-		fprintf (stderr, "debugger-agent: Unable to listen on %d\n", socket_fd);
-	} else {
-		DEBUG (1, fprintf (log_file, "Accepted connection from client, connection fd=%d.\n", conn_fd));
-	}
-	
-	return conn_fd;
 }
 
 /*
@@ -1194,6 +1133,9 @@ transport_connect (const char *host, int port)
 
 		DEBUG (1, fprintf (log_file, "Listening on %s:%d (timeout=%d ms)...\n", host, port, agent_config.timeout));
 
+		if (agent_config.defer)
+			return;
+
 		if (agent_config.timeout) {
 			fd_set readfds;
 			struct timeval tv;
@@ -1210,11 +1152,9 @@ transport_connect (const char *host, int port)
 			}
 		}
 
-		if (!agent_config.defer) {
-			conn_fd = transport_accept (sfd);
-			if (conn_fd == -1)
-				exit (1);
-		}
+		conn_fd = transport_accept (sfd);
+		if (conn_fd == -1)
+			exit (1);
 
 		DEBUG (1, fprintf (log_file, "Accepted connection from client, socket fd=%d.\n", conn_fd));
 #else
@@ -1259,11 +1199,9 @@ transport_connect (const char *host, int port)
 #endif
 	}
 	
-	if (!agent_config.defer) {
-		disconnected = !transport_handshake ();
-		if (disconnected)
-			exit (1);
-	}
+	disconnected = !transport_handshake ();
+	if (disconnected)
+		exit (1);
 }
 
 static gboolean
@@ -3049,9 +2987,12 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	if (events == NULL)
 		return;
 	
-	if (debugger_thread_id == GetCurrentThreadId ())
-		thread = mono_thread_get_main ();
-	else thread = mono_thread_current ();
+	if (agent_config.defer) {
+		/* Make sure the thread id is always set when doing deferred debugging */
+		if (debugger_thread_id == GetCurrentThreadId ())
+			thread = mono_thread_get_main ();
+		else thread = mono_thread_current ();
+	}
 
 	buffer_init (&buf, 128);
 	buffer_add_byte (&buf, suspend_policy);
@@ -3106,13 +3047,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	}
 
 	if (event == EVENT_KIND_VM_START) {
- 		if (agent_config.defer) {
- 			/* Don't suspend when doing a deferred attach */
- 			suspend_policy = SUSPEND_POLICY_NONE;
- 		} else {
-			suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;
+		suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;
+		if (!agent_config.defer)
 			start_debugger_thread ();
-		}
 	}
    
 	if (event == EVENT_KIND_VM_DEATH) {
@@ -3147,7 +3084,8 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	
 	if (event == EVENT_KIND_VM_START) {
 		vm_start_event_sent = TRUE;
-		mono_debugger_agent_on_attach ();
+		if (agent_config.defer)
+			mono_debugger_agent_on_attach ();
 	}
 	
 	DEBUG (1, fprintf (log_file, "[%p] Sent event %s, suspend=%d.\n", (gpointer)GetCurrentThreadId (), event_to_string (event), suspend_policy));
@@ -3299,13 +3237,12 @@ appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result)
 static void
 appdomain_unload (MonoProfiler *prof, MonoDomain *domain)
 {
-	/* Invalidate each thread's frame stack */
-	mono_g_hash_table_foreach (thread_to_tls, invalidate_each_thread, NULL);
 	clear_breakpoints_for_domain (domain);
 	
 	mono_loader_lock ();
+	/* Invalidate each thread's frame stack */
+	mono_g_hash_table_foreach (thread_to_tls, invalidate_each_thread, NULL);
 	g_hash_table_remove_all (loaded_classes);
-	g_hash_table_remove (domains, domain);
 	mono_loader_unlock ();
 	
 	process_profiler_event (EVENT_KIND_APPDOMAIN_UNLOAD, domain);
@@ -7251,10 +7188,10 @@ debugger_thread (void *arg)
 		if (!wait_for_attach ()) {
 			DEBUG (1, fprintf (log_file, "[dbg] Can't attach, aborting debugger thread.\n"));
 			attach_failed = TRUE; // Don't abort process when we can't listen
+		} else {
+			/* Send start event to client */
+			process_profiler_event (EVENT_KIND_VM_START, mono_thread_get_main ());
 		}
-		
-		/* Send start event to client */
-		process_profiler_event (EVENT_KIND_VM_START, mono_thread_get_main ());
 	}
 	
 	while (!attach_failed) {
@@ -7372,7 +7309,7 @@ debugger_thread (void *arg)
 
 		DEBUG (1, printf ("[dbg] Debugger thread exited.\n"));
 		
-		if (command_set == CMD_SET_VM && command == CMD_VM_DISPOSE && !(vm_death_event_sent || mono_runtime_is_shutting_down () || attach_failed)) {
+		if (!attach_failed && command_set == CMD_SET_VM && command == CMD_VM_DISPOSE && !(vm_death_event_sent || mono_runtime_is_shutting_down ())) {
 			DEBUG (2, fprintf (log_file, "[dbg] Detached - restarting clean debugger thread.\n"));
 			start_debugger_thread ();
 		}
