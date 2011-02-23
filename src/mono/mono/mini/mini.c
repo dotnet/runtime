@@ -69,24 +69,6 @@
 #include "mini-gc.h"
 #include "debugger-agent.h"
 
-#if defined(HAVE_KW_THREAD)
-#define MINI_FAST_TLS_SET(x,y) x = y
-#define MINI_FAST_TLS_GET(x) x
-#define MINI_FAST_TLS_INIT(x)
-#define MINI_FAST_TLS_DECLARE(x) static __thread gpointer x MONO_TLS_FAST;
-#define MINI_HAVE_FAST_TLS
-#define MINI_THREAD_VAR_OFFSET(x,y) MONO_THREAD_VAR_OFFSET(x,y)
-#elif (defined(__APPLE__) && defined(__i386__))
-#define MINI_FAST_TLS_SET(x,y) pthread_setspecific(x, y)
-#define MINI_FAST_TLS_GET(x) pthread_getspecific(x)
-#define MINI_FAST_TLS_INIT(x) pthread_key_create(&x, NULL)
-#define MINI_FAST_TLS_DECLARE(x) static pthread_key_t x;
-#define MINI_HAVE_FAST_TLS
-#define MINI_THREAD_VAR_OFFSET(x,y) y = (gint32) x
-#else
-#define MINI_THREAD_VAR_OFFSET(x,y) MONO_THREAD_VAR_OFFSET(x,y)
-#endif
-
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
 
 
@@ -95,9 +77,7 @@ static gboolean default_opt_set = FALSE;
 
 guint32 mono_jit_tls_id = -1;
 
-#ifdef MINI_HAVE_FAST_TLS
-MINI_FAST_TLS_DECLARE(mono_jit_tls);
-#endif
+MONO_FAST_TLS_DECLARE(mono_jit_tls);
 
 #ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
 #define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 1
@@ -2455,14 +2435,14 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_free (cfg);
 }
 
-#ifdef MINI_HAVE_FAST_TLS
-MINI_FAST_TLS_DECLARE(mono_lmf_addr);
+#ifdef MONO_HAVE_FAST_TLS
+MONO_FAST_TLS_DECLARE(mono_lmf_addr);
 #ifdef MONO_ARCH_ENABLE_MONO_LMF_VAR
 /* 
  * When this is defined, the current lmf is stored in this tls variable instead of in 
  * jit_tls->lmf.
  */
-MINI_FAST_TLS_DECLARE(mono_lmf);
+MONO_FAST_TLS_DECLARE(mono_lmf);
 #endif
 #endif
 
@@ -2475,21 +2455,17 @@ mono_get_jit_tls_key (void)
 gint32
 mono_get_jit_tls_offset (void)
 {
-#ifdef MINI_HAVE_FAST_TLS
 	int offset;
-	MINI_THREAD_VAR_OFFSET (mono_jit_tls, offset);
+	MONO_THREAD_VAR_OFFSET (mono_jit_tls, offset);
 	return offset;
-#else
-	return -1;
-#endif
 }
 
 gint32
 mono_get_lmf_tls_offset (void)
 {
-#if defined(MINI_HAVE_FAST_TLS) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
 	int offset;
-	MINI_THREAD_VAR_OFFSET(mono_lmf,offset);
+	MONO_THREAD_VAR_OFFSET(mono_lmf,offset);
 	return offset;
 #else
 	return -1;
@@ -2500,15 +2476,15 @@ gint32
 mono_get_lmf_addr_tls_offset (void)
 {
 	int offset;
-	MINI_THREAD_VAR_OFFSET(mono_lmf_addr,offset);
+	MONO_THREAD_VAR_OFFSET(mono_lmf_addr,offset);
 	return offset;
 }
 
 MonoLMF *
 mono_get_lmf (void)
 {
-#if defined(MINI_HAVE_FAST_TLS) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
-	return MINI_FAST_TLS_GET (mono_lmf);
+#if defined(MONO_HAVE_FAST_TLS) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	return MONO_FAST_TLS_GET (mono_lmf);
 #else
 	MonoJitTlsData *jit_tls;
 
@@ -2526,8 +2502,8 @@ mono_get_lmf (void)
 MonoLMF **
 mono_get_lmf_addr (void)
 {
-#ifdef MINI_HAVE_FAST_TLS
-	return MINI_FAST_TLS_GET (mono_lmf_addr);
+#ifdef MONO_HAVE_FAST_TLS
+	return MONO_FAST_TLS_GET (mono_lmf_addr);
 #else
 	MonoJitTlsData *jit_tls;
 
@@ -2555,8 +2531,8 @@ mono_get_lmf_addr (void)
 void
 mono_set_lmf (MonoLMF *lmf)
 {
-#if defined(MINI_HAVE_FAST_TLS) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
-	MINI_FAST_TLS_SET (mono_lmf, lmf);
+#if defined(MONO_HAVE_FAST_TLS) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+	MONO_FAST_TLS_SET (mono_lmf, lmf);
 #endif
 
 	(*mono_get_lmf_addr ()) = lmf;
@@ -2567,16 +2543,16 @@ mono_set_jit_tls (MonoJitTlsData *jit_tls)
 {
 	TlsSetValue (mono_jit_tls_id, jit_tls);
 
-#ifdef MINI_HAVE_FAST_TLS
-	MINI_FAST_TLS_SET (mono_jit_tls, jit_tls);
+#ifdef MONO_HAVE_FAST_TLS
+	MONO_FAST_TLS_SET (mono_jit_tls, jit_tls);
 #endif
 }
 
 static void
 mono_set_lmf_addr (gpointer lmf_addr)
 {
-#ifdef MINI_HAVE_FAST_TLS
-	MINI_FAST_TLS_SET (mono_lmf_addr, lmf_addr);
+#ifdef MONO_HAVE_FAST_TLS
+	MONO_FAST_TLS_SET (mono_lmf_addr, lmf_addr);
 #endif
 }
 
@@ -2591,8 +2567,8 @@ mono_jit_thread_attach (MonoDomain *domain)
 		 */
 		domain = mono_get_root_domain ();
 
-#ifdef MINI_HAVE_FAST_TLS
-	if (!MINI_FAST_TLS_GET (mono_lmf_addr)) {
+#ifdef MONO_HAVE_FAST_TLS
+	if (!MONO_FAST_TLS_GET (mono_lmf_addr)) {
 		mono_thread_attach (domain);
 	}
 #else
@@ -2647,9 +2623,9 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	jit_tls->first_lmf = lmf;
 
-#if defined(MINI_HAVE_FAST_TLS) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
+#if defined(MONO_HAVE_FAST_TLS) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
 	/* jit_tls->lmf is unused */
-	MINI_FAST_TLS_SET (mono_lmf, lmf);
+	MONO_FAST_TLS_SET (mono_lmf, lmf);
 	mono_set_lmf_addr (&mono_lmf);
 #else
 	mono_set_lmf_addr (&jit_tls->lmf);
@@ -6172,11 +6148,11 @@ mini_init (const char *filename, const char *runtime_version)
 		mini_debugger_init ();
 #endif
 
-#ifdef MINI_HAVE_FAST_TLS
-	MINI_FAST_TLS_INIT (mono_jit_tls);
-	MINI_FAST_TLS_INIT (mono_lmf_addr);
+#ifdef MONO_HAVE_FAST_TLS
+	MONO_FAST_TLS_INIT (mono_jit_tls);
+	MONO_FAST_TLS_INIT (mono_lmf_addr);
 #ifdef MONO_ARCH_ENABLE_MONO_LMF_VAR
-	MINI_FAST_TLS_INIT (mono_lmf);
+	MONO_FAST_TLS_INIT (mono_lmf);
 #endif
 #endif
 
