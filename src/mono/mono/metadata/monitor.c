@@ -775,7 +775,7 @@ mono_monitor_get_object_monitor_weak_link (MonoObject *object)
 
 static void
 emit_obj_syncp_check (MonoMethodBuilder *mb, int syncp_loc, int *obj_null_branch, int *syncp_true_false_branch,
-	gboolean branch_on_true)
+	int *thin_hash_branch, gboolean branch_on_true)
 {
 	/*
 	  ldarg		0							obj
@@ -802,6 +802,26 @@ emit_obj_syncp_check (MonoMethodBuilder *mb, int syncp_loc, int *obj_null_branch
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, syncp_loc);
+
+	
+	if (mono_gc_is_moving ()) {
+		/*check for a thin hash*/
+		mono_mb_emit_ldloc (mb, syncp_loc);
+		mono_mb_emit_icon (mb, 0x01);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_byte (mb, CEE_AND);
+		*thin_hash_branch = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
+
+		/*clear gc bits*/
+		mono_mb_emit_ldloc (mb, syncp_loc);
+		mono_mb_emit_icon (mb, ~0x3);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_byte (mb, CEE_AND);
+		mono_mb_emit_stloc (mb, syncp_loc);
+	} else {
+		*thin_hash_branch = 0;
+	}
+
 	mono_mb_emit_ldloc (mb, syncp_loc);
 	*syncp_true_false_branch = mono_mb_emit_short_branch (mb, branch_on_true ? CEE_BRTRUE_S : CEE_BRFALSE_S);
 }
@@ -813,13 +833,9 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 	static MonoMethod *compare_exchange_method;
 
 	MonoMethodBuilder *mb;
-	int obj_null_branch, syncp_null_branch, has_owner_branch, other_owner_branch, tid_branch;
+	int obj_null_branch, syncp_null_branch, has_owner_branch, other_owner_branch, tid_branch, thin_hash_branch;
 	int tid_loc, syncp_loc, owner_loc;
 	int thread_tls_offset;
-
-#ifdef HAVE_MOVING_COLLECTOR
-	return NULL;
-#endif
 
 	thread_tls_offset = mono_thread_get_tls_offset ();
 	if (thread_tls_offset == -1)
@@ -851,7 +867,7 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 	syncp_loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	owner_loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
-	emit_obj_syncp_check (mb, syncp_loc, &obj_null_branch, &syncp_null_branch, FALSE);
+	emit_obj_syncp_check (mb, syncp_loc, &obj_null_branch, &syncp_null_branch, &thin_hash_branch, FALSE);
 
 	/*
 	  mono. tls	thread_tls_offset					threadp
@@ -940,6 +956,8 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 	  ret
 	*/
 
+	if (thin_hash_branch)
+		mono_mb_patch_short_branch (mb, thin_hash_branch);
 	mono_mb_patch_short_branch (mb, obj_null_branch);
 	mono_mb_patch_short_branch (mb, syncp_null_branch);
 	mono_mb_patch_short_branch (mb, has_owner_branch);
@@ -960,13 +978,9 @@ mono_monitor_get_fast_exit_method (MonoMethod *monitor_exit_method)
 	static MonoMethod *fast_monitor_exit;
 
 	MonoMethodBuilder *mb;
-	int obj_null_branch, has_waiting_branch, has_syncp_branch, owned_branch, nested_branch;
+	int obj_null_branch, has_waiting_branch, has_syncp_branch, owned_branch, nested_branch, thin_hash_branch;
 	int thread_tls_offset;
 	int syncp_loc;
-
-#ifdef HAVE_MOVING_COLLECTOR
-	return NULL;
-#endif
 
 	thread_tls_offset = mono_thread_get_tls_offset ();
 	if (thread_tls_offset == -1)
@@ -983,7 +997,7 @@ mono_monitor_get_fast_exit_method (MonoMethod *monitor_exit_method)
 
 	syncp_loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
-	emit_obj_syncp_check (mb, syncp_loc, &obj_null_branch, &has_syncp_branch, TRUE);
+	emit_obj_syncp_check (mb, syncp_loc, &obj_null_branch, &has_syncp_branch, &thin_hash_branch, TRUE);
 
 	/*
 	  ret
@@ -1100,6 +1114,8 @@ mono_monitor_get_fast_exit_method (MonoMethod *monitor_exit_method)
 	  ret
 	 */
 
+	if (thin_hash_branch)
+		mono_mb_patch_short_branch (mb, thin_hash_branch);
 	mono_mb_patch_short_branch (mb, obj_null_branch);
 	mono_mb_patch_short_branch (mb, has_waiting_branch);
 	mono_mb_emit_byte (mb, CEE_LDARG_0);
