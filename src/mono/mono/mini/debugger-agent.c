@@ -2383,7 +2383,6 @@ suspend_current (void)
 
 	while (suspend_count - tls->resume_count > 0) {
 #ifdef HOST_WIN32
-		/* FIXME: https://bugzilla.novell.com/show_bug.cgi?id=587470 */
 		if (WAIT_TIMEOUT == WaitForSingleObject(suspend_cond, 0))
 		{
 			mono_mutex_unlock (&suspend_mutex);
