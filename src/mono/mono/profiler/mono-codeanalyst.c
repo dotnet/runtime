@@ -34,52 +34,10 @@ struct _MonoProfiler {
 	GList *bb_coverage;
 };
 
-static void
-get_assembly (MonoAssembly* ass, MonoProfiler *prof)
-{
-	if (strcmp (prof->assembly_name, mono_image_get_name (mono_assembly_get_image (ass))) == 0)
-		prof->assembly = ass;
-}
-
-static void
-coverage_callback (MonoProfiler *prof, const MonoProfileCoverageEntry *entry)
-{
-	char* cmsg;
-
-	if (entry->counter)
-		return;
-
-	if (entry->filename) {
-		cmsg = g_strdup_printf ("offset 0x%04x (%s: line: %d, col: %d)", 
-			entry->iloffset, entry->filename, entry->line, entry->col);
-	} else {
-		cmsg = g_strdup_printf ("offset 0x%04x", entry->iloffset);
-	}
-	prof->bb_coverage = g_list_append (prof->bb_coverage, cmsg);
-}
-
-static void
-check_partial_coverage (MonoProfiler *prof, MonoMethod *method)
-{
-	GList *tmp;
-	
-	mono_profiler_coverage_get (prof, method, coverage_callback);
-	if (prof->bb_coverage) {
-		char *name = mono_method_full_name (method, TRUE);
-		g_print ("Partial coverage: %s\n", name);
-		g_free (name);
-		for (tmp = prof->bb_coverage; tmp; tmp = tmp->next) {
-			g_print ("\t%s\n", (char*)tmp->data);
-			g_free (tmp->data);
-		}
-		g_list_free (prof->bb_coverage);
-		prof->bb_coverage = NULL;
-	}
-}
 
 /* called at the end of the program */
 static void
-cov_shutdown (MonoProfiler *prof)
+codeanalyst_shutdown (MonoProfiler *prof)
 {
 	MonoImage *image;
 	MonoMethod *method;
@@ -87,46 +45,6 @@ cov_shutdown (MonoProfiler *prof)
 	char *name;
 
 	CAJIT_CompleteJITLog ();
-	return;
-
-	mono_assembly_foreach ((GFunc)get_assembly, prof);
-	if (!prof->assembly) {
-		g_print ("Assembly '%s' was not loaded\n", prof->assembly_name);
-		return;
-	}
-	image = mono_assembly_get_image (prof->assembly);
-	for (i = 1; i <= mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoClass *klass;
-		method = mono_get_method (image, i | MONO_TOKEN_METHOD_DEF, NULL);
-		if (!method)
-			continue;
-		if ((mono_method_get_flags (method, NULL) & METHOD_ATTRIBUTE_ABSTRACT))
-			continue;
-		/* FIXME: handle icalls, runtime calls and synchronized methods */
-		if (prof->class_name && *prof->class_name) {
-			klass = mono_method_get_class (method);
-			if (!strstr (mono_class_get_name (klass), prof->class_name) && !strstr (mono_class_get_namespace (klass), prof->class_name))
-				continue;
-		}
-		/*g_print ("check %s::%s, %p\n", method->klass->name, method->name, method);*/
-		if (g_hash_table_lookup (prof->hash, method)) {
-			/* the method was executed: check it was fully covered */
-			check_partial_coverage (prof, method);
-			continue;
-		}
-		name = mono_method_full_name (method, TRUE);
-		g_print ("Not covered: %s\n", name);
-		g_free (name);
-	}
-}
-static void
-method_start_jit (MonoProfiler *profiler, MonoMethod *method) {
-	int i = 0;
-}
-static void
-method_end_jit (MonoProfiler *profiler, MonoMethod *method, int result) {
-	int i = 0;
-
 }
 
 static void
@@ -135,7 +53,7 @@ method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, i
 		gunichar2* name_utf16;
 		MonoClass *klass = mono_method_get_class (method);
 		char *signature = mono_signature_get_desc (mono_method_signature (method), TRUE);
-		char *name = g_strdup_printf ("%s.%s::%s (%s)", mono_class_get_namespace (klass), mono_class_get_name (klass), mono_method_get_name (method), signature);
+		char *name = g_strdup_printf ("%s.%s.%s (%s)", mono_class_get_namespace (klass), mono_class_get_name (klass), mono_method_get_name (method), signature);
 		gpointer code_start = mono_jit_info_get_code_start (jinfo);
 		int code_size = mono_jit_info_get_code_size (jinfo);
 		
@@ -178,11 +96,7 @@ mono_profiler_startup (const char *desc)
 
 	CAJIT_Initialize ();
 
-	mono_profiler_install (prof, cov_shutdown);
-	
-	//mono_profiler_install_enter_leave (cov_method_enter, cov_method_leave);
-	
-	//mono_profiler_install_jit_compile (method_start_jit, method_end_jit);
+	mono_profiler_install (prof, codeanalyst_shutdown);
 	
 	mono_profiler_install_jit_end (method_jit_result);
 	mono_profiler_set_events (MONO_PROFILE_JIT_COMPILATION);
