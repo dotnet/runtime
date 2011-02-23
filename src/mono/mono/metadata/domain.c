@@ -52,25 +52,25 @@ static guint32 appdomain_thread_id = -1;
 #if (defined(__i386__) || defined(__x86_64__)) && !defined(HOST_WIN32)
 #define NO_TLS_SET_VALUE
 #endif
- 
-#ifdef HAVE_KW_THREAD
 
-static __thread MonoDomain * tls_appdomain MONO_TLS_FAST;
+#ifdef MONO_HAVE_FAST_TLS
 
-#define GET_APPDOMAIN() tls_appdomain
+MONO_FAST_TLS_DECLARE(tls_appdomain);
+
+#define GET_APPDOMAIN() ((MonoDomain*)MONO_FAST_TLS_GET(tls_appdomain))
 
 #ifdef NO_TLS_SET_VALUE
 #define SET_APPDOMAIN(x) do { \
-	tls_appdomain = x; \
+	MONO_FAST_TLS_SET (tls_appdomain,x); \
 } while (FALSE)
 #else
 #define SET_APPDOMAIN(x) do { \
-	tls_appdomain = x; \
+	MONO_FAST_TLS_SET (tls_appdomain,x); \
 	TlsSetValue (appdomain_thread_id, x); \
 } while (FALSE)
 #endif
 
-#else /* !HAVE_KW_THREAD */
+#else /* !MONO_HAVE_FAST_TLS */
 
 #define GET_APPDOMAIN() ((MonoDomain *)TlsGetValue (appdomain_thread_id))
 #define SET_APPDOMAIN(x) TlsSetValue (appdomain_thread_id, x);
@@ -1284,6 +1284,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	mono_gc_base_init ();
 
+	MONO_FAST_TLS_INIT (tls_appdomain);
 	appdomain_thread_id = TlsAlloc ();
 
 	InitializeCriticalSection (&appdomains_mutex);

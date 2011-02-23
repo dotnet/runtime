@@ -152,16 +152,16 @@ static MonoGHashTable *thread_start_args = NULL;
 /* The TLS key that holds the MonoObject assigned to each thread */
 static guint32 current_object_key = -1;
 
-#ifdef HAVE_KW_THREAD
+#ifdef MONO_HAVE_FAST_TLS
 /* we need to use both the Tls* functions and __thread because
  * the gc needs to see all the threads 
  */
-static __thread MonoInternalThread * tls_current_object MONO_TLS_FAST;
+MONO_FAST_TLS_DECLARE(tls_current_object);
 #define SET_CURRENT_OBJECT(x) do { \
-	tls_current_object = x; \
+	MONO_FAST_TLS_SET (tls_current_object, x); \
 	TlsSetValue (current_object_key, x); \
 } while (FALSE)
-#define GET_CURRENT_OBJECT() tls_current_object
+#define GET_CURRENT_OBJECT() ((MonoInternalThread*) MONO_FAST_TLS_GET (tls_current_object))
 #else
 #define SET_CURRENT_OBJECT(x) TlsSetValue (current_object_key, x)
 #define GET_CURRENT_OBJECT() (MonoInternalThread*) TlsGetValue (current_object_key)
@@ -2623,6 +2623,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
 
+	MONO_FAST_TLS_INIT (tls_current_object);
 	current_object_key=TlsAlloc();
 	THREAD_DEBUG (g_message ("%s: Allocated current_object_key %d", __func__, current_object_key));
 
