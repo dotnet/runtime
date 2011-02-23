@@ -281,7 +281,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_XP_UNWIND 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
-#if defined(__linux__)
+#if defined(__linux__) || defined (__APPLE__)
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
 #endif
 #define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
@@ -301,9 +301,7 @@ typedef struct {
 
 #define MONO_ARCH_AOT_SUPPORTED 1
 
-#if defined(__linux__) || defined(__sun)
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
-#endif
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE 1
