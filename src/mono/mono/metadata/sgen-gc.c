@@ -746,6 +746,10 @@ static int moved_objects_idx = 0;
 /* Vtable of the objects used to fill out nursery fragments before a collection */
 static MonoVTable *array_fill_vtable;
 
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+pthread_t main_gc_thread = NULL;
+#endif
+
 /*
  * ######################################################################
  * ########  Heap size accounting
@@ -3267,6 +3271,10 @@ major_do_collection (const char *reason)
 
 	major_collector.init_to_space ();
 
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	main_gc_thread = pthread_self ();
+#endif
+
 	workers_start_all_workers ();
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
@@ -3309,6 +3317,10 @@ major_do_collection (const char *reason)
 		}
 	}
 	workers_join ();
+
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	main_gc_thread = NULL;
+#endif
 
 	if (major_collector.is_parallel)
 		g_assert (gray_object_queue_is_empty (&gray_queue));

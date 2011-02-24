@@ -54,6 +54,8 @@
 
 #define SGEN_MAX_DEBUG_LEVEL 2
 
+//#define SGEN_DEBUG_INTERNAL_ALLOC
+
 #define THREAD_HASH_SIZE 11
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
@@ -631,6 +633,9 @@ enum {
 #define SGEN_INTERNAL_FREELIST_NUM_SLOTS	30
 
 struct _SgenInternalAllocator {
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	pthread_t thread;
+#endif
 	SgenPinnedChunk *chunk_list;
 	SgenPinnedChunk *free_lists [SGEN_INTERNAL_FREELIST_NUM_SLOTS];
 	void *delayed_free_lists [SGEN_INTERNAL_FREELIST_NUM_SLOTS];

@@ -228,6 +228,9 @@ workers_thread_func (void *data_untyped)
 		major_collector.init_worker_thread (data->major_collector_data);
 
 	memset (&allocator, 0, sizeof (allocator));
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	allocator.thread = pthread_self ();
+#endif
 
 	gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue, &allocator,
 			workers_gray_queue_share_redirect, data);
@@ -264,7 +267,9 @@ workers_init_distribute_gray_queue (void)
 		return;
 
 	gray_object_queue_init (&workers_distribute_gray_queue, &workers_distribute_gray_queue_allocator);
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
 	workers_distribute_gray_queue_allocator.thread = pthread_self ();
+#endif
 }
 
 static void
