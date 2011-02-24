@@ -37,6 +37,7 @@ static gint lmf_addr_tls_offset = -1;
 static CRITICAL_SECTION mini_arch_mutex;
 
 static int v5_supported = 0;
+static int v6_supported = 0;
 static int v7_supported = 0;
 static int thumb_supported = 0;
 /*
@@ -508,6 +509,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
 		if (strncmp (cpu_arch, "armv", 4) == 0) {
 			v5_supported = cpu_arch [4] >= '5';
+			v6_supported = cpu_arch [4] >= '6';
 			v7_supported = cpu_arch [4] >= '7';
 		}
 	} else {
@@ -526,6 +528,8 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 				char *ver = strstr (line, "(v");
 				if (ver && (ver [2] == '5' || ver [2] == '6' || ver [2] == '7'))
 					v5_supported = TRUE;
+				if (ver && (ver [2] == '6' || ver [2] == '7'))
+					v6_supported = TRUE;
 				if (ver && (ver [2] == '7'))
 					v7_supported = TRUE;
 				continue;
@@ -3291,8 +3295,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		switch (ins->opcode) {
 		case OP_MEMORY_BARRIER:
-			ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
-			ARM_MCR (code, 15, 0, ARMREG_R0, 7, 10, 5);
+			if (v6_supported) {
+				ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
+				ARM_MCR (code, 15, 0, ARMREG_R0, 7, 10, 5);
+			}
 			break;
 		case OP_TLS_GET:
 #ifdef HAVE_AEABI_READ_TP
@@ -5875,8 +5881,13 @@ void
 mono_arch_set_target (char *mtriple)
 {
 	/* The GNU target triple format is not very well documented */
-	if (strstr (mtriple, "armv7"))
+	if (strstr (mtriple, "armv7")) {
+		v6_supported = TRUE;
 		v7_supported = TRUE;
+	}
+	if (strstr (mtriple, "armv7")) {
+		v6_supported = TRUE;
+	}
 	if (strstr (mtriple, "darwin")) {
 		v5_supported = TRUE;
 		thumb_supported = TRUE;
