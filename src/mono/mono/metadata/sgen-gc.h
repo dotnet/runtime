@@ -73,6 +73,14 @@ typedef guint64 mword;
 #define SGEN_TV_ELAPSED(start,end) (int)((end-start) / 10)
 #define SGEN_TV_ELAPSED_MS(start,end) ((SGEN_TV_ELAPSED((start),(end)) + 500) / 1000)
 
+/* LOCKING: assumes the GC lock is held */
+#define FOREACH_THREAD(thread) { \
+	int __i;	\
+	for (__i = 0; __i < THREAD_HASH_SIZE; ++__i)	\
+		for ((thread) = thread_table [__i]; (thread); (thread) = (thread)->next) {
+
+#define END_FOREACH_THREAD }}
+
 /* for use with write barriers */
 typedef struct _RememberedSet RememberedSet;
 struct _RememberedSet {
@@ -115,6 +123,8 @@ struct _SgenThreadInfo {
 	long store_remset_buffer_index;
 #endif
 };
+
+extern SgenThreadInfo* thread_table [THREAD_HASH_SIZE] MONO_INTERNAL;
 
 enum {
 	MEMORY_ROLE_GEN0,
@@ -580,7 +590,7 @@ void mono_sgen_free_os_memory (void *addr, size_t size) MONO_INTERNAL;
 
 int mono_sgen_thread_handshake (int signum) MONO_INTERNAL;
 SgenThreadInfo* mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id) MONO_INTERNAL;
-SgenThreadInfo** mono_sgen_get_thread_table (void) MONO_INTERNAL;
+
 void mono_sgen_wait_for_suspend_ack (int count) MONO_INTERNAL;
 
 gboolean mono_sgen_is_worker_thread (pthread_t thread) MONO_INTERNAL;

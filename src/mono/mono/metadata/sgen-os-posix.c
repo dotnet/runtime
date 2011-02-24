@@ -41,27 +41,23 @@ int
 mono_sgen_thread_handshake (int signum)
 {
 	int count, i, result;
-	SgenThreadInfo **thread_table;
 	SgenThreadInfo *info;
 	pthread_t me = pthread_self ();
 
-	thread_table = mono_sgen_get_thread_table ();
 	count = 0;
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			if (ARCH_THREAD_EQUALS (info->id, me)) {
-				continue;
-			}
-			/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
-				continue;*/
-			result = pthread_kill (info->id, signum);
-			if (result == 0) {
-				count++;
-			} else {
-				info->skip = 1;
-			}
+	FOREACH_THREAD (info) {
+		if (ARCH_THREAD_EQUALS (info->id, me)) {
+			continue;
 		}
-	}
+		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
+			continue;*/
+		result = pthread_kill (info->id, signum);
+		if (result == 0) {
+			count++;
+		} else {
+			info->skip = 1;
+		}
+	} END_FOREACH_THREAD
 
 	mono_sgen_wait_for_suspend_ack (count);
 
