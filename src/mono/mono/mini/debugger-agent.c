@@ -3127,8 +3127,6 @@ process_profiler_event (EventKind event, gpointer arg)
 
 	mono_loader_lock ();
 	events = create_event_list (event, NULL, NULL, NULL, &suspend_policy);
-	if (!events)
-		events = g_slist_append (events, GINT_TO_POINTER (InterlockedIncrement (&event_request_id)));
 	mono_loader_unlock ();
 
 	process_event (event, arg, 0, NULL, events, suspend_policy);
