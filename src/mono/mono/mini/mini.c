@@ -376,6 +376,7 @@ mono_print_method_from_ip (void *ip)
 		}
 		else
 			g_print ("No method at %p\n", ip);
+		fflush (stdout);
 		return;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
@@ -385,6 +386,7 @@ mono_print_method_from_ip (void *ip)
 
 	if (source)
 		g_print ("%s:%d\n", source->source_file, source->row);
+	fflush (stdout);
 
 	mono_debug_free_source_location (source);
 	g_free (method);
