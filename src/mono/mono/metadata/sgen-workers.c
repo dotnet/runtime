@@ -46,6 +46,7 @@ static SgenInternalAllocator workers_distribute_gray_queue_allocator;
 #define WORKERS_DISTRIBUTE_GRAY_QUEUE (major_collector.is_parallel ? &workers_distribute_gray_queue : &gray_queue)
 
 static volatile gboolean workers_gc_in_progress = FALSE;
+static volatile gboolean workers_marking = FALSE;
 static gboolean workers_started = FALSE;
 static volatile int workers_num_waiting = 0;
 static MonoSemType workers_waiting_sem;
@@ -58,12 +59,10 @@ static long long stat_workers_stolen_from_others;
 static long long stat_workers_num_waited;
 
 static void
-workers_wake_up_all (void)
+workers_wake_up (int max)
 {
-	int max;
 	int i;
 
-	max = workers_num_waiting;
 	for (i = 0; i < max; ++i) {
 		int num;
 		do {
@@ -73,6 +72,12 @@ workers_wake_up_all (void)
 		} while (InterlockedCompareExchange (&workers_num_waiting, num - 1, num) != num);
 		MONO_SEM_POST (&workers_waiting_sem);
 	}
+}
+
+static void
+workers_wake_up_all (void)
+{
+	workers_wake_up (workers_num);
 }
 
 static void
@@ -236,15 +241,19 @@ workers_thread_func (void *data_untyped)
 			workers_gray_queue_share_redirect, data);
 
 	for (;;) {
-		gboolean got_work = workers_get_work (data);
-		g_assert (got_work);
-		g_assert (!gray_object_queue_is_empty (&data->private_gray_queue));
+		if (workers_marking) {
+			gboolean got_work = workers_get_work (data);
+			g_assert (got_work);
+			g_assert (!gray_object_queue_is_empty (&data->private_gray_queue));
 
-		while (!drain_gray_stack (&data->private_gray_queue, 32))
-			workers_gray_queue_share_redirect (&data->private_gray_queue);
-		g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
+			while (!drain_gray_stack (&data->private_gray_queue, 32))
+				workers_gray_queue_share_redirect (&data->private_gray_queue);
+			g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
 
-		gray_object_queue_init (&data->private_gray_queue, &allocator);
+			gray_object_queue_init (&data->private_gray_queue, &allocator);
+		} else {
+			workers_wait ();
+		}
 	}
 
 	/* dummy return to make compilers happy */
@@ -337,6 +346,7 @@ workers_start_all_workers (void)
 
 	g_assert (!workers_gc_in_progress);
 	workers_gc_in_progress = TRUE;
+	workers_marking = FALSE;
 	workers_done_posted = 0;
 
 	if (workers_started) {
@@ -349,6 +359,17 @@ workers_start_all_workers (void)
 		workers_start_worker (i);
 
 	workers_started = TRUE;
+}
+
+static void
+workers_start_marking (void)
+{
+	g_assert (workers_started && workers_gc_in_progress);
+	g_assert (!workers_marking);
+
+	workers_marking = TRUE;
+
+	workers_wake_up_all ();
 }
 
 static void
@@ -367,6 +388,7 @@ workers_join (void)
 	if (workers_num_waiting == workers_num)
 		workers_wake_up_all ();
 	MONO_SEM_WAIT (&workers_done_sem);
+	workers_marking = FALSE;
 
 	if (major_collector.reset_worker_data) {
 		for (i = 0; i < workers_num; ++i)

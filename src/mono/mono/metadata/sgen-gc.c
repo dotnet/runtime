@@ -3276,6 +3276,7 @@ major_do_collection (const char *reason)
 #endif
 
 	workers_start_all_workers ();
+	workers_start_marking ();
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
