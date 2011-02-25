@@ -5885,7 +5885,7 @@ mono_arch_set_target (char *mtriple)
 		v6_supported = TRUE;
 		v7_supported = TRUE;
 	}
-	if (strstr (mtriple, "armv7")) {
+	if (strstr (mtriple, "armv6")) {
 		v6_supported = TRUE;
 	}
 	if (strstr (mtriple, "darwin")) {
