@@ -2199,18 +2199,33 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	return code;
 }
 
+#ifdef __APPLE__
+static int tls_gs_offset;
+#endif
+
 gboolean
 mono_x86_have_tls_get (void)
 {
 #ifdef __APPLE__
+	static gboolean have_tls_get = FALSE;
+	static gboolean inited = FALSE;
+
+	if (inited)
+		return have_tls_get;
+
 	guint32 *ins = (guint32*)pthread_getspecific;
 	/*
 	 * We're looking for these two instructions:
 	 *
 	 * mov    0x4(%esp),%eax
-	 * mov    %gs:0x48(,%eax,4),%eax
+	 * mov    %gs:[offset](,%eax,4),%eax
 	 */
-	return ins [0] == 0x0424448b && ins [1] == 0x85048b65 && ins [2] == 0x00000048;
+	have_tls_get = ins [0] == 0x0424448b && ins [1] == 0x85048b65;
+	tls_gs_offset = ins [2];
+
+	inited = TRUE;
+
+	return have_tls_get;
 #else
 	return TRUE;
 #endif
@@ -2233,7 +2248,7 @@ mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
 #if defined(__APPLE__)
 	x86_prefix (code, X86_GS_PREFIX);
-	x86_mov_reg_mem (code, dreg, 0x48 + tls_offset * 4, 4);
+	x86_mov_reg_mem (code, dreg, tls_gs_offset + (tls_offset * 4), 4);
 #elif defined(TARGET_WIN32)
 	/* 
 	 * See the Under the Hood article in the May 1996 issue of Microsoft Systems 
