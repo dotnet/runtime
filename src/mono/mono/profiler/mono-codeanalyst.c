@@ -1,8 +1,29 @@
 /*
  * mono-codeanalyst.c: AMD CodeAnalyst profiler
  *
-
- * Copyright 2011 Jonathan Chambers (joncham@gmail.com)
+ * Author:
+ *   Jonathan Chambers (joncham@gmail.com)
+ *
+ * (C) 2011 Jonathan Chambers
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tokentype.h>
@@ -16,34 +37,10 @@
 
 #include "CAJITNTFLib.h"
 
-/*
- * Coverage profiler. Compile with:
- * gcc -Wall -shared -o mono-profiler-cov.so mono-cov.c `pkg-config --cflags --libs mono`
- * Install the binary where the dynamic loader can find it (/usr/local/lib, for example,
- * or set the env var LD_LIBRARY_PATH to the directory where the file is).
- * Then run mono with:
- * mono --profile=cov:yourassembly test_suite.exe
- * mono --profile=cov:yourassembly/namespace test_suite.exe
- */
-
-struct _MonoProfiler {
-	GHashTable *hash;
-	char* assembly_name;
-	char* class_name;
-	MonoAssembly *assembly;
-	GList *bb_coverage;
-};
-
-
 /* called at the end of the program */
 static void
 codeanalyst_shutdown (MonoProfiler *prof)
 {
-	MonoImage *image;
-	MonoMethod *method;
-	int i;
-	char *name;
-
 	CAJIT_CompleteJITLog ();
 }
 
@@ -56,10 +53,6 @@ method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, i
 		char *name = g_strdup_printf ("%s.%s.%s (%s)", mono_class_get_namespace (klass), mono_class_get_name (klass), mono_method_get_name (method), signature);
 		gpointer code_start = mono_jit_info_get_code_start (jinfo);
 		int code_size = mono_jit_info_get_code_size (jinfo);
-		
-		//if (op_write_native_code (name, code_start, code_size)) {
-		//	g_warning ("Problem calling op_write_native_code\n");
-		//}
 		
 		name_utf16 = g_utf8_to_utf16 (name, strlen (name), NULL, NULL, NULL);
 		
@@ -78,26 +71,9 @@ mono_profiler_startup (const char *desc);
 void
 mono_profiler_startup (const char *desc)
 {
-	MonoProfiler *prof;
-
-	prof = g_new0 (MonoProfiler, 1);
-	prof->hash = g_hash_table_new (NULL, NULL);
-	if (strncmp ("cov:", desc, 4) == 0 && desc [4]) {
-		char *cname;
-		prof->assembly_name = g_strdup (desc + 4);
-		cname = strchr (prof->assembly_name, '/');
-		if (cname) {
-			*cname = 0;
-			prof->class_name = cname + 1;
-		}
-	} else {
-		prof->assembly_name = g_strdup ("mscorlib");
-	}
-
 	CAJIT_Initialize ();
 
-	mono_profiler_install (prof, codeanalyst_shutdown);
-	
+	mono_profiler_install (NULL, codeanalyst_shutdown);
 	mono_profiler_install_jit_end (method_jit_result);
 	mono_profiler_set_events (MONO_PROFILE_JIT_COMPILATION);
 }
