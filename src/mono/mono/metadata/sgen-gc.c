@@ -3183,8 +3183,7 @@ major_do_collection (const char *reason)
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
 	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
-	if (major_collector.is_parallel)
-		gray_object_queue_init (&workers_distribute_gray_queue, mono_sgen_get_unmanaged_allocator ());
+	workers_init_distribute_gray_queue ();
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
