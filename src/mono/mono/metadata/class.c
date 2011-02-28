@@ -3526,6 +3526,18 @@ print_method_signatures (MonoMethod *im, MonoMethod *cm) {
 
 #endif
 static gboolean
+is_wcf_hack_disabled (void)
+{
+	static gboolean disabled;
+	static gboolean inited = FALSE;
+	if (!inited) {
+		disabled = g_getenv ("MONO_DISABLE_WCF_HACK") != NULL;
+		inited = TRUE;
+	}
+	return disabled;
+}
+
+static gboolean
 check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *cm, gboolean require_newslot, gboolean interface_is_explicitly_implemented_by_class, gboolean slot_is_empty, gboolean security_enabled) {
 	MonoMethodSignature *cmsig, *imsig;
 	if (strcmp (im->name, cm->name) == 0) {
@@ -3569,6 +3581,15 @@ check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *c
 		if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
 			mono_security_core_clr_check_override (class, cm, im);
 		TRACE_INTERFACE_VTABLE (printf ("[NAME CHECK OK]"));
+		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, im, NULL)) {
+			char *body_name = mono_method_full_name (cm, TRUE);
+			char *decl_name = mono_method_full_name (im, TRUE);
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
+			g_free (body_name);
+			g_free (decl_name);
+			return FALSE;
+		}
+
 		return TRUE;
 	} else {
 		MonoClass *ic = im->klass;
@@ -3646,6 +3667,15 @@ check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *c
 			mono_security_core_clr_check_override (class, cm, im);
 		
 		TRACE_INTERFACE_VTABLE (printf ("[INJECTED INTERFACE CHECK OK]"));
+		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, im, NULL)) {
+			char *body_name = mono_method_full_name (cm, TRUE);
+			char *decl_name = mono_method_full_name (im, TRUE);
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
+			g_free (body_name);
+			g_free (decl_name);
+			return FALSE;
+		}
+		
 		return TRUE;
 	}
 }
@@ -3796,18 +3826,6 @@ mono_method_get_method_definition (MonoMethod *method)
 	while (method->is_inflated)
 		method = ((MonoMethodInflated*)method)->declaring;
 	return method;
-}
-
-static gboolean
-is_wcf_hack_disabled (void)
-{
-	static gboolean disabled;
-	static gboolean inited = FALSE;
-	if (!inited) {
-		disabled = g_getenv ("MONO_DISABLE_WCF_HACK") != NULL;
-		inited = TRUE;
-	}
-	return disabled;
 }
 
 static gboolean
