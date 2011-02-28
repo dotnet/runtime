@@ -3006,6 +3006,10 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		if (debugger_thread_id == GetCurrentThreadId ())
 			thread = mono_thread_get_main ();
 		else thread = mono_thread_current ();
+	} else {
+		if (debugger_thread_id == GetCurrentThreadId () && event != EVENT_KIND_VM_DEATH)
+			// FIXME: Send these with a NULL thread, don't suspend the current thread
+			return;
 	}
 
 	buffer_init (&buf, 128);
@@ -3015,6 +3019,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	for (l = events; l; l = l->next) {
 		buffer_add_byte (&buf, event); // event kind
 		buffer_add_int (&buf, GPOINTER_TO_INT (l->data)); // request id
+
+		if (!thread)
+			thread = mono_thread_current ();
 
 		if (event == EVENT_KIND_VM_START && arg != NULL)
 			thread = arg;
