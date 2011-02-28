@@ -3799,6 +3799,18 @@ mono_method_get_method_definition (MonoMethod *method)
 }
 
 static gboolean
+is_wcf_hack_disabled (void)
+{
+	static gboolean disabled;
+	static gboolean inited = FALSE;
+	if (!inited) {
+		disabled = g_getenv ("MONO_DISABLE_WCF_HACK") != NULL;
+		inited = TRUE;
+	}
+	return disabled;
+}
+
+static gboolean
 verify_class_overrides (MonoClass *class, MonoMethod **overrides, int onum)
 {
 	int i;
@@ -3836,7 +3848,7 @@ verify_class_overrides (MonoClass *class, MonoMethod **overrides, int onum)
 		body = mono_method_get_method_definition (body);
 		decl = mono_method_get_method_definition (decl);
 
-		if (!mono_method_can_access_method_full (body, decl, NULL)) {
+		if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (body, decl, NULL)) {
 			char *body_name = mono_method_full_name (body, TRUE);
 			char *decl_name = mono_method_full_name (decl, TRUE);
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
@@ -4223,7 +4235,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						if (slot == -1)
 							goto fail;
 
-						if (!mono_method_can_access_method_full (cm, m1, NULL)) {
+						if (is_wcf_hack_disabled () && !mono_method_can_access_method_full (cm, m1, NULL)) {
 							char *body_name = mono_method_full_name (cm, TRUE);
 							char *decl_name = mono_method_full_name (m1, TRUE);
 							mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Method %s overrides method '%s' which is not accessible", body_name, decl_name));
