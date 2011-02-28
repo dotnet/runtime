@@ -2310,6 +2310,29 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
 		;;
+   armv7l-unknown-linux-gnueabi*)
+		# TEGRA
+		TARGET=ARM;
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__"
+		jit_wanted=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+		with_tls=pthread
+		;;
+   armv5tel-unknown-linux-gnueabi*)
+		TARGET=ARM;
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
+		jit_wanted=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+		with_tls=pthread
+		;;
 	*)
 		AC_MSG_WARN([Cross compiling is only supported for targets matching 'powerpc64-{ps3,xbox360}-linux-gnu'])
 	esac
