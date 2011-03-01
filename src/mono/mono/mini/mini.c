@@ -1489,12 +1489,13 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 	if (method->verification_success)
 		return FALSE;
 
-	is_fulltrust = mono_verifier_is_method_full_trust (method);
-
 	if (!mono_verifier_is_enabled_for_method (method))
 		return FALSE;
 
-	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility);
+	/*skip verification implies the assembly must be */
+	is_fulltrust = mono_verifier_is_method_full_trust (method) ||  mini_assembly_can_skip_verification (cfg->domain, method);
+
+	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility, is_fulltrust);
 
 	if ((error = mono_loader_get_last_error ())) {
 		if (fail_compile)
@@ -1541,8 +1542,7 @@ gboolean
 mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 {
 	MonoMethod *method_definition = method;
-	gboolean dont_verify = mini_assembly_can_skip_verification (cfg->domain, method);
-	dont_verify |= method->klass->image->assembly->corlib_internal;
+	gboolean dont_verify = method->klass->image->assembly->corlib_internal;
 
 	while (method_definition->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
