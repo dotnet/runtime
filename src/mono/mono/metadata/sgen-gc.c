@@ -746,6 +746,10 @@ static int moved_objects_idx = 0;
 /* Vtable of the objects used to fill out nursery fragments before a collection */
 static MonoVTable *array_fill_vtable;
 
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+pthread_t main_gc_thread = NULL;
+#endif
+
 /*
  * ######################################################################
  * ########  Heap size accounting
@@ -3183,8 +3187,7 @@ major_do_collection (const char *reason)
 	binary_protocol_collection (GENERATION_OLD);
 	check_scan_starts ();
 	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
-	if (major_collector.is_parallel)
-		gray_object_queue_init (&workers_distribute_gray_queue, mono_sgen_get_unmanaged_allocator ());
+	workers_init_distribute_gray_queue ();
 
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
@@ -3268,6 +3271,10 @@ major_do_collection (const char *reason)
 
 	major_collector.init_to_space ();
 
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	main_gc_thread = pthread_self ();
+#endif
+
 	workers_start_all_workers ();
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
@@ -3310,6 +3317,10 @@ major_do_collection (const char *reason)
 		}
 	}
 	workers_join ();
+
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	main_gc_thread = NULL;
+#endif
 
 	if (major_collector.is_parallel)
 		g_assert (gray_object_queue_is_empty (&gray_queue));
@@ -4375,6 +4386,16 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 		for (entry = disappearing_link_hash [i]; entry;) {
 			char *object;
 			gboolean track = DISLINK_TRACK (entry);
+
+			/*
+			 * Tracked references are processed after
+			 * finalization handling whereas standard weak
+			 * references are processed before.  If an
+			 * object is still not marked after finalization
+			 * handling it means that it either doesn't have
+			 * a finalizer or the finalizer has already run,
+			 * so we must null a tracking reference.
+			 */
 			if (track == before_finalization) {
 				prev = entry;
 				entry = entry->next;
@@ -4384,7 +4405,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 			object = DISLINK_OBJECT (entry);
 
 			if (object >= start && object < end && !major_collector.is_object_live (object)) {
-				if (!track && object_is_fin_ready (object)) {
+				if (object_is_fin_ready (object)) {
 					void **p = entry->link;
 					DisappearingLink *old;
 					*p = NULL;
@@ -4431,14 +4452,7 @@ null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int 
 
 						continue;
 					} else {
-						/* We set the track resurrection bit to
-						 * FALSE if the object is to be finalized
-						 * so that the object can be collected in
-						 * the next cycle (i.e. after it was
-						 * finalized).
-						 */
-						*entry->link = HIDE_POINTER (copy,
-							object_is_fin_ready (object) ? FALSE : track);
+						*entry->link = HIDE_POINTER (copy, track);
 						DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->link, DISLINK_OBJECT (entry)));
 					}
 				}
@@ -4939,7 +4953,7 @@ mono_gc_deregister_root (char* addr)
 /* FIXME: handle large/small config */
 #define HASH_PTHREAD_T(id) (((unsigned int)(id) >> 4) * 2654435761u)
 
-static SgenThreadInfo* thread_table [THREAD_HASH_SIZE];
+SgenThreadInfo* thread_table [THREAD_HASH_SIZE];
 
 #if USE_SIGNAL_BASED_START_STOP_WORLD
 
@@ -4950,12 +4964,7 @@ static unsigned int global_stop_count = 0;
 static sigset_t suspend_signal_mask;
 static mword cur_thread_regs [ARCH_NUM_REGS] = {0};
 
-/* LOCKING: assumes the GC lock is held */
-SgenThreadInfo**
-mono_sgen_get_thread_table (void)
-{
-	return thread_table;
-}
+
 
 SgenThreadInfo*
 mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id)
@@ -5020,41 +5029,39 @@ static int
 restart_threads_until_none_in_managed_allocator (void)
 {
 	SgenThreadInfo *info;
-	int i, result, num_threads_died = 0;
+	int result, num_threads_died = 0;
 	int sleep_duration = -1;
 
 	for (;;) {
 		int restart_count = 0, restarted_count = 0;
 		/* restart all threads that stopped in the
 		   allocator */
-		for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-			for (info = thread_table [i]; info; info = info->next) {
-				if (info->skip)
-					continue;
-				if (!info->stack_start || info->in_critical_region ||
-						is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
-					binary_protocol_thread_restart ((gpointer)info->id);
+		FOREACH_THREAD (info) {
+			if (info->skip)
+				continue;
+			if (!info->stack_start || info->in_critical_region ||
+					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
+				binary_protocol_thread_restart ((gpointer)info->id);
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
-					result = thread_resume (pthread_mach_thread_np (info->id));
+				result = thread_resume (pthread_mach_thread_np (info->id));
 #else
-					result = pthread_kill (info->id, restart_signal_num);
+				result = pthread_kill (info->id, restart_signal_num);
 #endif
-					if (result == 0) {
-						++restart_count;
-					} else {
-						info->skip = 1;
-					}
+				if (result == 0) {
+					++restart_count;
 				} else {
-					/* we set the stopped_ip to
-					   NULL for threads which
-					   we're not restarting so
-					   that we can easily identify
-					   the others */
-					info->stopped_ip = NULL;
-					info->stopped_domain = NULL;
+					info->skip = 1;
 				}
+			} else {
+				/* we set the stopped_ip to
+				   NULL for threads which
+				   we're not restarting so
+				   that we can easily identify
+				   the others */
+				info->stopped_ip = NULL;
+				info->stopped_domain = NULL;
 			}
-		}
+		} END_FOREACH_THREAD
 		/* if no threads were restarted, we're done */
 		if (restart_count == 0)
 			break;
@@ -5075,22 +5082,20 @@ restart_threads_until_none_in_managed_allocator (void)
 		}
 
 		/* stop them again */
-		for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-			for (info = thread_table [i]; info; info = info->next) {
-				if (info->skip || info->stopped_ip == NULL)
-					continue;
+		FOREACH_THREAD (info) {
+			if (info->skip || info->stopped_ip == NULL)
+				continue;
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
-				result = thread_suspend (pthread_mach_thread_np (info->id));
+			result = thread_suspend (pthread_mach_thread_np (info->id));
 #else
-				result = pthread_kill (info->id, suspend_signal_num);
+			result = pthread_kill (info->id, suspend_signal_num);
 #endif
-				if (result == 0) {
-					++restarted_count;
-				} else {
-					info->skip = 1;
-				}
+			if (result == 0) {
+				++restarted_count;
+			} else {
+				info->skip = 1;
 			}
-		}
+		} END_FOREACH_THREAD
 		/* some threads might have died */
 		num_threads_died += restart_count - restarted_count;
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
@@ -5218,7 +5223,7 @@ stop_world (int generation)
 static int
 restart_world (int generation)
 {
-	int count, i;
+	int count;
 	SgenThreadInfo *info;
 	TV_DECLARE (end_sw);
 	unsigned long usec;
@@ -5231,12 +5236,10 @@ restart_world (int generation)
 		}
 	}
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			info->stack_start = NULL;
-			info->stopped_regs = NULL;
-		}
-	}
+	FOREACH_THREAD (info) {
+		info->stack_start = NULL;
+		info->stopped_regs = NULL;
+	} END_FOREACH_THREAD
 
 	release_gc_locks ();
 
@@ -5294,57 +5297,52 @@ mono_gc_scan_object (void *obj)
 static void
 scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 {
-	int i;
 	SgenThreadInfo *info;
 
 	scan_area_arg_start = start_nursery;
 	scan_area_arg_end = end_nursery;
 
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			if (info->skip) {
-				DEBUG (3, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
-				continue;
-			}
-			DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
-			if (gc_callbacks.thread_mark_func && !conservative_stack_mark)
-				gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
-			else if (!precise)
-				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
-
-			if (!precise)
-				conservatively_pin_objects_from (info->stopped_regs, info->stopped_regs + ARCH_NUM_REGS,
-						start_nursery, end_nursery, PIN_TYPE_STACK);
+	FOREACH_THREAD (info) {
+		if (info->skip) {
+			DEBUG (3, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %td\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+			continue;
 		}
-	}
+		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
+		if (gc_callbacks.thread_mark_func && !conservative_stack_mark)
+			gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
+		else if (!precise)
+			conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
+
+		if (!precise)
+			conservatively_pin_objects_from (info->stopped_regs, info->stopped_regs + ARCH_NUM_REGS,
+					start_nursery, end_nursery, PIN_TYPE_STACK);
+	} END_FOREACH_THREAD
 }
 
 static void
 find_pinning_ref_from_thread (char *obj, size_t size)
 {
-	int i, j;
+	int j;
 	SgenThreadInfo *info;
 	char *endobj = obj + size;
 
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			char **start = (char**)info->stack_start;
-			if (info->skip)
-				continue;
-			while (start < (char**)info->stack_end) {
-				if (*start >= obj && *start < endobj) {
-					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p\n", obj, info, (gpointer)info->id, start, info->stack_start, info->stack_end));
-				}
-				start++;
+	FOREACH_THREAD (info) {
+		char **start = (char**)info->stack_start;
+		if (info->skip)
+			continue;
+		while (start < (char**)info->stack_end) {
+			if (*start >= obj && *start < endobj) {
+				DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p\n", obj, info, (gpointer)info->id, start, info->stack_start, info->stack_end));
 			}
-
-			for (j = 0; j < ARCH_NUM_REGS; ++j) {
-				mword w = (mword)info->stopped_regs [j];
-
-				if (w >= (mword)obj && w < (mword)obj + size)
-					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in saved reg %d of thread %p (id %p)\n", obj, j, info, (gpointer)info->id));
-			}
+			start++;
 		}
+
+		for (j = 0; j < ARCH_NUM_REGS; ++j) {
+			mword w = (mword)info->stopped_regs [j];
+
+			if (w >= (mword)obj && w < (mword)obj + size)
+				DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in saved reg %d of thread %p (id %p)\n", obj, j, info, (gpointer)info->id));
+		} END_FOREACH_THREAD
 	}
 }
 
@@ -5479,12 +5477,10 @@ remset_stats (void)
 	int i;
 	mword *addresses, *bumper, *p, *r;
 
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			for (remset = info->remset; remset; remset = remset->next)
-				size += remset->store_next - remset->data;
-		}
-	}
+	FOREACH_THREAD (info) {
+		for (remset = info->remset; remset; remset = remset->next)
+			size += remset->store_next - remset->data;
+	} END_FOREACH_THREAD
 	for (remset = freed_thread_remsets; remset; remset = remset->next)
 		size += remset->store_next - remset->data;
 	for (remset = global_remset; remset; remset = remset->next)
@@ -5492,12 +5488,10 @@ remset_stats (void)
 
 	bumper = addresses = mono_sgen_alloc_internal_dynamic (sizeof (mword) * size, INTERNAL_MEM_STATISTICS);
 
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			for (remset = info->remset; remset; remset = remset->next)
-				bumper = collect_store_remsets (remset, bumper);
-		}
-	}
+	FOREACH_THREAD (info) {
+		for (remset = info->remset; remset; remset = remset->next)
+			bumper = collect_store_remsets (remset, bumper);
+	} END_FOREACH_THREAD
 	for (remset = global_remset; remset; remset = remset->next)
 		bumper = collect_store_remsets (remset, bumper);
 	for (remset = freed_thread_remsets; remset; remset = remset->next)
@@ -5598,27 +5592,25 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 	generic_store_remsets = NULL;
 
 	/* the per-thread ones */
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			RememberedSet *next;
-			int j;
-			for (remset = info->remset; remset; remset = next) {
-				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
-				for (p = remset->data; p < remset->store_next;)
-					p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
-				remset->store_next = remset->data;
-				next = remset->next;
-				remset->next = NULL;
-				if (remset != info->remset) {
-					DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-					mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
-				}
+	FOREACH_THREAD (info) {
+		RememberedSet *next;
+		int j;
+		for (remset = info->remset; remset; remset = next) {
+			DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
+			for (p = remset->data; p < remset->store_next;)
+				p = handle_remset (p, start_nursery, end_nursery, FALSE, queue);
+			remset->store_next = remset->data;
+			next = remset->next;
+			remset->next = NULL;
+			if (remset != info->remset) {
+				DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
+				mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 			}
-			for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
-				handle_remset ((mword*)*info->store_remset_buffer_addr + j + 1, start_nursery, end_nursery, FALSE, queue);
-			clear_thread_store_remset_buffer (info);
 		}
-	}
+		for (j = 0; j < *info->store_remset_buffer_index_addr; ++j)
+			handle_remset ((mword*)*info->store_remset_buffer_addr + j + 1, start_nursery, end_nursery, FALSE, queue);
+		clear_thread_store_remset_buffer (info);
+	} END_FOREACH_THREAD
 
 	/* the freed thread ones */
 	while (freed_thread_remsets) {
@@ -5642,7 +5634,6 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 static void
 clear_remsets (void)
 {
-	int i;
 	SgenThreadInfo *info;
 	RememberedSet *remset, *next;
 
@@ -5663,20 +5654,18 @@ clear_remsets (void)
 		generic_store_remsets = gs_next;
 	}
 	/* the per-thread ones */
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			for (remset = info->remset; remset; remset = next) {
-				remset->store_next = remset->data;
-				next = remset->next;
-				remset->next = NULL;
-				if (remset != info->remset) {
-					DEBUG (3, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-					mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
-				}
+	FOREACH_THREAD (info) {
+		for (remset = info->remset; remset; remset = next) {
+			remset->store_next = remset->data;
+			next = remset->next;
+			remset->next = NULL;
+			if (remset != info->remset) {
+				DEBUG (3, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
+				mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
 			}
-			clear_thread_store_remset_buffer (info);
 		}
-	}
+		clear_thread_store_remset_buffer (info);
+	} END_FOREACH_THREAD
 
 	/* the freed thread ones */
 	while (freed_thread_remsets) {
@@ -5694,17 +5683,14 @@ static void
 clear_tlabs (void)
 {
 	SgenThreadInfo *info;
-	int i;
 
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			/* A new TLAB will be allocated when the thread does its first allocation */
-			*info->tlab_start_addr = NULL;
-			*info->tlab_next_addr = NULL;
-			*info->tlab_temp_end_addr = NULL;
-			*info->tlab_real_end_addr = NULL;
-		}
-	}
+	FOREACH_THREAD (info) {
+		/* A new TLAB will be allocated when the thread does its first allocation */
+		*info->tlab_start_addr = NULL;
+		*info->tlab_next_addr = NULL;
+		*info->tlab_temp_end_addr = NULL;
+		*info->tlab_real_end_addr = NULL;
+	} END_FOREACH_THREAD
 }
 
 /* LOCKING: assumes the GC lock is held */
@@ -6553,23 +6539,21 @@ find_in_remsets (char *addr)
 	}
 
 	/* the per-thread ones */
-	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
-		for (info = thread_table [i]; info; info = info->next) {
-			int j;
-			for (remset = info->remset; remset; remset = remset->next) {
-				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
-				for (p = remset->data; p < remset->store_next;) {
-					p = find_in_remset_loc (p, addr, &found);
-					if (found)
-						return TRUE;
-				}
-			}
-			for (j = 0; j < *info->store_remset_buffer_index_addr; ++j) {
-				if ((*info->store_remset_buffer_addr) [j + 1] == addr)
+	FOREACH_THREAD (info) {
+		int j;
+		for (remset = info->remset; remset; remset = remset->next) {
+			DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %td\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
+			for (p = remset->data; p < remset->store_next;) {
+				p = find_in_remset_loc (p, addr, &found);
+				if (found)
 					return TRUE;
 			}
 		}
-	}
+		for (j = 0; j < *info->store_remset_buffer_index_addr; ++j) {
+			if ((*info->store_remset_buffer_addr) [j + 1] == addr)
+				return TRUE;
+		}
+	} END_FOREACH_THREAD
 
 	/* the freed thread ones */
 	for (remset = freed_thread_remsets; remset; remset = remset->next) {

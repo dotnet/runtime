@@ -349,9 +349,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_ATOMIC_EXCHANGE 1
 #define MONO_ARCH_HAVE_ATOMIC_CAS 1
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
-#define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES_2 1
 #define MONO_ARCH_HAVE_IMT 1
-#define MONO_ARCH_HAVE_TLS_GET 1
+#define MONO_ARCH_HAVE_TLS_GET (mono_amd64_have_tls_get ())
 #define MONO_ARCH_IMT_REG AMD64_R10
 #define MONO_ARCH_IMT_SCRATCH_REG AMD64_R11
 #define MONO_ARCH_VTABLE_REG MONO_AMD64_ARG_REG1
@@ -442,6 +441,9 @@ mono_amd64_get_original_ip (void) MONO_INTERNAL;
 
 guint8*
 mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
+
+gboolean
+mono_amd64_have_tls_get (void) MONO_INTERNAL;
 
 GSList*
 mono_amd64_get_exception_trampolines (gboolean aot) MONO_INTERNAL;

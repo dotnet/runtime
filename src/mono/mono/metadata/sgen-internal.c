@@ -130,6 +130,10 @@ static long long large_internal_bytes_alloced = 0;
 static long long stat_internal_alloc = 0;
 #endif
 
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+extern pthread_t main_gc_thread;
+#endif
+
 /*
  * Debug reporting.
  */
@@ -299,6 +303,15 @@ alloc_from_slot (SgenInternalAllocator *alc, int slot, int type)
 	SgenPinnedChunk *pchunk;
 	size_t size = freelist_sizes [slot];
 
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	if (type == INTERNAL_MEM_MS_BLOCK_INFO) {
+		g_assert (alc == &unmanaged_allocator);
+	} else {
+		if (main_gc_thread)
+			g_assert (pthread_self () == alc->thread);
+	}
+#endif
+
 	alc->small_internal_mem_bytes [type] += size;
 
 	if (alc->delayed_free_lists [slot]) {
@@ -400,6 +413,13 @@ free_from_slot (SgenInternalAllocator *alc, void *addr, int slot, int type)
 	SgenPinnedChunk *pchunk = (SgenPinnedChunk*)SGEN_PINNED_CHUNK_FOR_PTR (addr);
 	void **p = addr;
 	void *next;
+
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	if (alc->thread)
+		g_assert (pthread_self () == alc->thread);
+	else if (main_gc_thread)
+		g_assert (pthread_self () == main_gc_thread);
+#endif
 
 	g_assert (addr >= (void*)pchunk && (char*)addr < (char*)pchunk + pchunk->num_pages * FREELIST_PAGESIZE);
 	if (type == INTERNAL_MEM_MANAGED)

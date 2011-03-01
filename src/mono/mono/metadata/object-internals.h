@@ -1516,6 +1516,9 @@ mono_method_clear_object (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 void
 mono_class_compute_gc_descriptor (MonoClass *class) MONO_INTERNAL;
 
+gsize*
+mono_class_compute_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields) MONO_INTERNAL;
+
 MonoObject*
 mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, MonoObject **exc) MONO_INTERNAL;
 

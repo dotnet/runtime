@@ -756,6 +756,17 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 	return bitmap;
 }
 
+/**
+ * mono_class_compute_bitmap:
+ *
+ * Mono internal function to compute a bitmap of reference fields in a class.
+ */
+gsize*
+mono_class_compute_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
+{
+	return compute_class_bitmap (class, bitmap, size, offset, max_set, static_fields);
+}
+
 #if 0
 /* 
  * similar to the above, but sets the bits in the bitmap for any non-ref field

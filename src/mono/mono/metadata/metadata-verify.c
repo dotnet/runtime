@@ -2685,8 +2685,8 @@ verify_method_table (VerifyContext *ctx)
 		//TODO check signature contents
 
 		if (rva) {
-			if (flags & METHOD_ATTRIBUTE_ABSTRACT)
-				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is Abstract", i));
+			if ((flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_PINVOKE_IMPL)) || (implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is either Abstract, InternalCall or PinvokeImpl", i));
 			if (code_type == METHOD_IMPL_ATTRIBUTE_OPTIL)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is CodeTypeMask is neither Native, CIL or Runtime", i));
 		} else {

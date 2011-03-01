@@ -3090,6 +3090,23 @@ mono_metadata_get_shared_type (MonoType *type)
 	return NULL;
 }
 
+static gboolean
+compare_type_literals (int class_type, int type_type)
+{
+	/* byval_arg.type can be zero if we're decoding a type that references a class been loading.
+	 * See mcs/test/gtest-440. and #650936.
+	 * FIXME This better be moved to the metadata verifier as it can catch more cases.
+	 */
+	if (!class_type)
+		return TRUE;
+	/* NET 1.1 assemblies might encode string and object in a denormalized way.
+	 * See #675464.
+	 */
+	if (type_type == MONO_TYPE_CLASS && (class_type == MONO_TYPE_STRING || class_type == MONO_TYPE_OBJECT))
+		return TRUE;
+	return class_type == type_type;
+}
+
 /* 
  * do_mono_metadata_parse_type:
  * @type: MonoType to be filled in with the return value
@@ -3147,11 +3164,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		type->data.klass = class;
 		if (!class)
 			return FALSE;
-		/* byval_arg.type can be zero if we're decoding a type that references a class been loading.
-		 * See mcs/test/gtest-440. and #650936.
-		 * FIXME This better be moved to the metadata verifier as it can catch more cases.
-		 */
-		if (class->byval_arg.type && class->byval_arg.type != type->type)
+		if (!compare_type_literals (class->byval_arg.type, type->type))
 			return FALSE;
 		break;
 	}

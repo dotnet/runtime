@@ -152,16 +152,16 @@ static MonoGHashTable *thread_start_args = NULL;
 /* The TLS key that holds the MonoObject assigned to each thread */
 static guint32 current_object_key = -1;
 
-#ifdef HAVE_KW_THREAD
+#ifdef MONO_HAVE_FAST_TLS
 /* we need to use both the Tls* functions and __thread because
  * the gc needs to see all the threads 
  */
-static __thread MonoInternalThread * tls_current_object MONO_TLS_FAST;
+MONO_FAST_TLS_DECLARE(tls_current_object);
 #define SET_CURRENT_OBJECT(x) do { \
-	tls_current_object = x; \
+	MONO_FAST_TLS_SET (tls_current_object, x); \
 	TlsSetValue (current_object_key, x); \
 } while (FALSE)
-#define GET_CURRENT_OBJECT() tls_current_object
+#define GET_CURRENT_OBJECT() ((MonoInternalThread*) MONO_FAST_TLS_GET (tls_current_object))
 #else
 #define SET_CURRENT_OBJECT(x) TlsSetValue (current_object_key, x)
 #define GET_CURRENT_OBJECT() (MonoInternalThread*) TlsGetValue (current_object_key)
@@ -2623,6 +2623,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
 
+	MONO_FAST_TLS_INIT (tls_current_object);
 	current_object_key=TlsAlloc();
 	THREAD_DEBUG (g_message ("%s: Allocated current_object_key %d", __func__, current_object_key));
 
@@ -3779,14 +3780,9 @@ free_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 }
 
 static void
-do_free_special (gpointer key, gpointer value, gpointer data)
+do_free_special_slot (guint32 offset, guint32 size)
 {
-	MonoClassField *field = key;
-	guint32 offset = GPOINTER_TO_UINT (value);
 	guint32 static_type = (offset & 0x80000000);
-	gint32 align;
-	guint32 size;
-	size = mono_type_size (field->type, &align);
 	/*g_print ("free %s , size: %d, offset: %x\n", field->name, size, offset);*/
 	if (static_type == 0) {
 		TlsOffsetSize data;
@@ -3811,12 +3807,102 @@ do_free_special (gpointer key, gpointer value, gpointer data)
 	}
 }
 
+static void
+do_free_special (gpointer key, gpointer value, gpointer data)
+{
+	MonoClassField *field = key;
+	guint32 offset = GPOINTER_TO_UINT (value);
+	gint32 align;
+	guint32 size;
+	size = mono_type_size (field->type, &align);
+	do_free_special_slot (offset, size);
+}
+
 void
 mono_alloc_special_static_data_free (GHashTable *special_static_fields)
 {
 	mono_threads_lock ();
 	g_hash_table_foreach (special_static_fields, do_free_special, NULL);
 	mono_threads_unlock ();
+}
+
+void
+mono_special_static_data_free_slot (guint32 offset, guint32 size)
+{
+	mono_threads_lock ();
+	do_free_special_slot (offset, size);
+	mono_threads_unlock ();
+}
+
+/*
+ * allocates room in the thread local area for storing an instance of the struct type
+ * the allocation is kept track of in domain->tlsrec_list.
+ */
+uint32_t
+mono_thread_alloc_tls (MonoReflectionType *type)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoClass *klass;
+	MonoTlsDataRecord *tlsrec;
+	int max_set = 0;
+	gsize *bitmap;
+	gsize default_bitmap [4] = {0};
+	uint32_t tls_offset;
+	guint32 size;
+	gint32 align;
+
+	klass = mono_class_from_mono_type (type->type);
+	/* TlsDatum is a struct, so we subtract the object header size offset */
+	bitmap = mono_class_compute_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
+	size = mono_type_size (type->type, &align);
+	tls_offset = mono_alloc_special_static_data (SPECIAL_STATIC_THREAD, size, align, bitmap, max_set);
+	if (bitmap != default_bitmap)
+		g_free (bitmap);
+	tlsrec = g_new0 (MonoTlsDataRecord, 1);
+	tlsrec->tls_offset = tls_offset;
+	tlsrec->size = size;
+	mono_domain_lock (domain);
+	tlsrec->next = domain->tlsrec_list;
+	domain->tlsrec_list = tlsrec;
+	mono_domain_unlock (domain);
+	return tls_offset;
+}
+
+void
+mono_thread_destroy_tls (uint32_t tls_offset)
+{
+	MonoTlsDataRecord *prev = NULL;
+	MonoTlsDataRecord *cur;
+	guint32 size = 0;
+	MonoDomain *domain = mono_domain_get ();
+	mono_domain_lock (domain);
+	cur = domain->tlsrec_list;
+	while (cur) {
+		if (cur->tls_offset == tls_offset) {
+			if (prev)
+				prev->next = cur->next;
+			else
+				domain->tlsrec_list = cur->next;
+			size = cur->size;
+			g_free (cur);
+			break;
+		}
+		prev = cur;
+		cur = cur->next;
+	}
+	mono_domain_unlock (domain);
+	if (size)
+		mono_special_static_data_free_slot (tls_offset, size);
+}
+
+/*
+ * This is just to ensure cleanup: the finalizers should have taken care, so this is not perf-critical.
+ */
+void
+mono_thread_destroy_domain_tls (MonoDomain *domain)
+{
+	while (domain->tlsrec_list)
+		mono_thread_destroy_tls (domain->tlsrec_list->tls_offset);
 }
 
 static MonoClassField *local_slots = NULL;

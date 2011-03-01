@@ -37,6 +37,7 @@ static gint lmf_addr_tls_offset = -1;
 static CRITICAL_SECTION mini_arch_mutex;
 
 static int v5_supported = 0;
+static int v6_supported = 0;
 static int v7_supported = 0;
 static int thumb_supported = 0;
 /*
@@ -508,6 +509,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
 		if (strncmp (cpu_arch, "armv", 4) == 0) {
 			v5_supported = cpu_arch [4] >= '5';
+			v6_supported = cpu_arch [4] >= '6';
 			v7_supported = cpu_arch [4] >= '7';
 		}
 	} else {
@@ -526,6 +528,8 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 				char *ver = strstr (line, "(v");
 				if (ver && (ver [2] == '5' || ver [2] == '6' || ver [2] == '7'))
 					v5_supported = TRUE;
+				if (ver && (ver [2] == '6' || ver [2] == '7'))
+					v6_supported = TRUE;
 				if (ver && (ver [2] == '7'))
 					v7_supported = TRUE;
 				continue;
@@ -2825,7 +2829,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 }
 
 static void
-handle_thunk (MonoDomain *domain, int absolute, guchar *code, const guchar *target)
+handle_thunk (MonoDomain *domain, int absolute, guchar *code, const guchar *target, MonoCodeManager *dyn_code_mp)
 {
 	PatchData pdata;
 
@@ -2837,23 +2841,53 @@ handle_thunk (MonoDomain *domain, int absolute, guchar *code, const guchar *targ
 	pdata.absolute = absolute;
 	pdata.found = 0;
 
-	mono_domain_lock (domain);
-	mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
-
-	if (!pdata.found) {
-		/* this uses the first available slot */
-		pdata.found = 2;
-		mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
+	if (dyn_code_mp) {
+		mono_code_manager_foreach (dyn_code_mp, search_thunk_slot, &pdata);
 	}
-	mono_domain_unlock (domain);
 
+	if (pdata.found != 1) {
+		mono_domain_lock (domain);
+		mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
+
+		if (!pdata.found) {
+			/* this uses the first available slot */
+			pdata.found = 2;
+			mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
+		}
+		mono_domain_unlock (domain);
+	}
+
+	if (pdata.found != 1) {
+		GHashTable *hash;
+		GHashTableIter iter;
+		MonoJitDynamicMethodInfo *ji;
+
+		/*
+		 * This might be a dynamic method, search its code manager. We can only
+		 * use the dynamic method containing CODE, since the others might be freed later.
+		 */
+		pdata.found = 0;
+
+		mono_domain_lock (domain);
+		hash = domain_jit_info (domain)->dynamic_code_hash;
+		if (hash) {
+			/* FIXME: Speed this up */
+			g_hash_table_iter_init (&iter, hash);
+			while (g_hash_table_iter_next (&iter, NULL, (gpointer*)&ji)) {
+				mono_code_manager_foreach (ji->code_mp, search_thunk_slot, &pdata);
+				if (pdata.found == 1)
+					break;
+			}
+		}
+		mono_domain_unlock (domain);
+	}
 	if (pdata.found != 1)
 		g_print ("thunk failed for %p from %p\n", target, code);
 	g_assert (pdata.found == 1);
 }
 
 static void
-arm_patch_general (MonoDomain *domain, guchar *code, const guchar *target)
+arm_patch_general (MonoDomain *domain, guchar *code, const guchar *target, MonoCodeManager *dyn_code_mp)
 {
 	guint32 *code32 = (void*)code;
 	guint32 ins = *code32;
@@ -2899,7 +2933,7 @@ arm_patch_general (MonoDomain *domain, guchar *code, const guchar *target)
 			}
 		}
 		
-		handle_thunk (domain, TRUE, code, target);
+		handle_thunk (domain, TRUE, code, target, dyn_code_mp);
 		return;
 	}
 
@@ -3002,7 +3036,7 @@ arm_patch_general (MonoDomain *domain, guchar *code, const guchar *target)
 void
 arm_patch (guchar *code, const guchar *target)
 {
-	arm_patch_general (NULL, code, target);
+	arm_patch_general (NULL, code, target, NULL);
 }
 
 /* 
@@ -3261,8 +3295,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		switch (ins->opcode) {
 		case OP_MEMORY_BARRIER:
-			ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
-			ARM_MCR (code, 15, 0, ARMREG_R0, 7, 10, 5);
+			if (v6_supported) {
+				ARM_MOV_REG_IMM8 (code, ARMREG_R0, 0);
+				ARM_MCR (code, 15, 0, ARMREG_R0, 7, 10, 5);
+			}
 			break;
 		case OP_TLS_GET:
 #ifdef HAVE_AEABI_READ_TP
@@ -4514,7 +4550,7 @@ mono_arch_register_lowlevel_calls (void)
 	} while (0)
 
 void
-mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
+mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, MonoCodeManager *dyn_code_mp, gboolean run_cctors)
 {
 	MonoJumpInfo *patch_info;
 	gboolean compile_aot = !run_cctors;
@@ -4587,7 +4623,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		default:
 			break;
 		}
-		arm_patch_general (domain, ip, target);
+		arm_patch_general (domain, ip, target, dyn_code_mp);
 	}
 }
 
@@ -5845,8 +5881,13 @@ void
 mono_arch_set_target (char *mtriple)
 {
 	/* The GNU target triple format is not very well documented */
-	if (strstr (mtriple, "armv7"))
+	if (strstr (mtriple, "armv7")) {
+		v6_supported = TRUE;
 		v7_supported = TRUE;
+	}
+	if (strstr (mtriple, "armv6")) {
+		v6_supported = TRUE;
+	}
 	if (strstr (mtriple, "darwin")) {
 		v5_supported = TRUE;
 		thumb_supported = TRUE;

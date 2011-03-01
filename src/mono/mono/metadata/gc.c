@@ -347,6 +347,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	DomainFinalizationReq *req;
 	guint32 res;
 	HANDLE done_event;
+	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	if (mono_thread_internal_current () == gc_thread)
 		/* We are called from inside a finalizer, not much we can do here */
@@ -387,12 +388,19 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	if (timeout == -1)
 		timeout = INFINITE;
 
-	res = WaitForSingleObjectEx (done_event, timeout, TRUE);
+	while (TRUE) {
+		res = WaitForSingleObjectEx (done_event, timeout, TRUE);
+		/* printf ("WAIT RES: %d.\n", res); */
 
-	/* printf ("WAIT RES: %d.\n", res); */
-	if (res == WAIT_TIMEOUT) {
-		/* We leak the handle here */
-		return FALSE;
+		if (res == WAIT_IO_COMPLETION) {
+			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
+				return FALSE;
+		} else if (res == WAIT_TIMEOUT) {
+			/* We leak the handle here */
+			return FALSE;
+		} else {
+			break;
+		}
 	}
 
 	CloseHandle (done_event);

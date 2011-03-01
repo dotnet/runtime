@@ -17,7 +17,7 @@ public class TestDriver {
 
 	static public int RunTests (Type type, string[] args) {
 		int failed = 0, ran = 0;
-		int result, expected, elen;
+		int result, expected;
 		int i, j, iterations;
 		string name;
 		MethodInfo[] methods;

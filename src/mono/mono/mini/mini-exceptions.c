@@ -1329,6 +1329,9 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gpoin
 					}
 					g_list_free (trace_ips);
 
+					if (out_ji)
+						*out_ji = ji;
+
 					/* mono_debugger_agent_handle_exception () needs this */
 					MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					return TRUE;
@@ -1468,7 +1471,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		mono_profiler_exception_thrown (obj);
 		jit_tls->orig_ex_ctx_set = FALSE;
 
-		res = mono_handle_exception_internal_first_pass (&ctx_cp, obj, original_ip, &first_filter_idx, out_ji, non_exception);
+		res = mono_handle_exception_internal_first_pass (&ctx_cp, obj, original_ip, &first_filter_idx, &ji, non_exception);
 
 		if (!res) {
 			if (mono_break_on_exc)
@@ -1485,7 +1488,14 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			// we are handling a stack overflow
 			mono_unhandled_exception (obj);
 		} else {
-			mono_debugger_agent_handle_exception (obj, ctx, &ctx_cp);
+			//
+			// Treat exceptions that are "handled" by mono_runtime_invoke() as unhandled.
+			// See bug #669836.
+			//
+			if (ji && ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)
+				mono_debugger_agent_handle_exception (obj, ctx, NULL);
+			else
+				mono_debugger_agent_handle_exception (obj, ctx, &ctx_cp);
 		}
 	}
 

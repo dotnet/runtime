@@ -248,12 +248,12 @@ case "$host" in
 		if test "x$cross_compiling" = "xyes"; then
 			has_broken_apple_cpp=yes
 		fi
-		dnl Snow Leopard is horribly broken -- it reports itself as i386-apple-darwin10.0.0, but
+		dnl Snow Leopard is horribly broken -- it reports itself as i386-apple-darwin*, but
 		dnl its gcc defaults to 64-bit mode.  They have also deprecated the usage of ucontext
 		dnl we need to set some flags to build our 32-bit binaries on 10.6 properly
 		case "$host" in
-			dnl Snow Leopard config.guess reports as this
-			i*86-*-darwin10*)
+			dnl Snow Leopard and newer config.guess reports as this
+			i*86-*-darwin*)
 				BROKEN_DARWIN_FLAGS="-arch i386 -D_XOPEN_SOURCE -mmacosx-version-min=10.5"
 				CPPFLAGS="$CPPFLAGS $BROKEN_DARWIN_FLAGS"
 				CFLAGS="$CFLAGS $BROKEN_DARWIN_FLAGS"
@@ -2247,7 +2247,7 @@ case "$host" in
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
-		CPPFLAGS="$CPPFLAGS -DARM_FPU_NONE=1"
+		CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__ -DHAVE_ARMV6=1"
 		sgen_supported=true
 		;;
 	arm*-linux*)
@@ -2309,6 +2309,29 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
 		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
+		;;
+   armv7l-unknown-linux-gnueabi*)
+		# TEGRA
+		TARGET=ARM;
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		CPPFLAGS="$CPPFLAGS -DARM_FPU_VFP=1 -D__ARM_EABI__"
+		jit_wanted=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+		with_tls=pthread
+		;;
+   armv5tel-unknown-linux-gnueabi*)
+		TARGET=ARM;
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
+		jit_wanted=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+		with_tls=pthread
 		;;
 	*)
 		AC_MSG_WARN([Cross compiling is only supported for targets matching 'powerpc64-{ps3,xbox360}-linux-gnu'])
@@ -2539,6 +2562,16 @@ if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_bui
 	AC_MSG_RESULT($fpu)
 	CPPFLAGS="$CPPFLAGS -DARM_FPU_$fpu=1"
 	unset fpu
+
+	AC_MSG_CHECKING(for ARMV6)
+	AC_TRY_RUN([
+		int main () { __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); return 0; }
+			], armv6=yes, armv6=no)
+
+	AC_MSG_RESULT($armv6)
+	if test ${armv6} = yes; then
+	   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
+	fi
 fi
 
 if test ${TARGET} = unknown; then

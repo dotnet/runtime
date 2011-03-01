@@ -41,6 +41,7 @@ static WorkerData *workers_data;
 static WorkerData workers_gc_thread_data;
 
 static GrayQueue workers_distribute_gray_queue;
+static SgenInternalAllocator workers_distribute_gray_queue_allocator;
 
 #define WORKERS_DISTRIBUTE_GRAY_QUEUE (major_collector.is_parallel ? &workers_distribute_gray_queue : &gray_queue)
 
@@ -227,6 +228,9 @@ workers_thread_func (void *data_untyped)
 		major_collector.init_worker_thread (data->major_collector_data);
 
 	memset (&allocator, 0, sizeof (allocator));
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	allocator.thread = pthread_self ();
+#endif
 
 	gray_object_queue_init_with_alloc_prepare (&data->private_gray_queue, &allocator,
 			workers_gray_queue_share_redirect, data);
@@ -257,6 +261,18 @@ workers_distribute_gray_queue_sections (void)
 }
 
 static void
+workers_init_distribute_gray_queue (void)
+{
+	if (!major_collector.is_parallel)
+		return;
+
+	gray_object_queue_init (&workers_distribute_gray_queue, &workers_distribute_gray_queue_allocator);
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+	workers_distribute_gray_queue_allocator.thread = pthread_self ();
+#endif
+}
+
+static void
 workers_init (int num_workers)
 {
 	int i;
@@ -274,7 +290,7 @@ workers_init (int num_workers)
 	MONO_SEM_INIT (&workers_waiting_sem, 0);
 	MONO_SEM_INIT (&workers_done_sem, 0);
 
-	gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue, mono_sgen_get_unmanaged_allocator (),
+	gray_object_queue_init_with_alloc_prepare (&workers_distribute_gray_queue, &workers_distribute_gray_queue_allocator,
 			workers_gray_queue_share_redirect, &workers_gc_thread_data);
 	pthread_mutex_init (&workers_gc_thread_data.stealable_stack_mutex, NULL);
 	workers_gc_thread_data.stealable_stack_fill = 0;
