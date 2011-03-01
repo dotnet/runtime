@@ -6935,6 +6935,8 @@ mono_gc_make_root_descr_all_refs (int numbits)
 
 	gc_bitmap = g_malloc0 (ALIGN_TO (numbits, 8) + 1);
 	memset (gc_bitmap, 0xff, numbits / 8);
+	if (numbits < ((sizeof (*gc_bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) 
+		gc_bitmap[0] = GUINT64_TO_LE(gc_bitmap[0]);
 	if (numbits % 8)
 		gc_bitmap [numbits / 8] = (1 << (numbits % 8)) - 1;
 	descr = mono_gc_make_descr_from_bitmap (gc_bitmap, numbits);

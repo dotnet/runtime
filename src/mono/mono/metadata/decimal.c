@@ -578,6 +578,15 @@ my_g_bit_nth_msf (gsize mask)
 	if (_BitScanReverse64 (&bIndex, mask))
 		return bIndex;
 	return -1;
+#elif defined(__s390x__) && defined(__NOT_YET)
+	guint64 r;
+
+	__asm__("\tlrvgr\t%1,%1\n"
+		"\tflogr\t%0,%1\n"
+		"\tjz\t0f\n"
+		"\tlghi\t%0,-1\n"
+		"0:\n"
+		: "=r" (r) : "r" (mask) : "cc");
 #else
 	int i;
 

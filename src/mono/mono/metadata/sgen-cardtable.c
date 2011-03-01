@@ -325,14 +325,16 @@ find_card_offset (mword card)
 	return  (__builtin_ffs (card) - 1) / 8;
 #elif defined(__x86_64__) && defined(__GNUC__)
 	return (__builtin_ffsll (card) - 1) / 8;
+#elif defined(__s390x__)
+	return (__builtin_ffsll (card) - 1) / 8;
 #else
 	// FIXME:
 	g_assert_not_reached ();
 	/*
 	int i;
-	guint8 *ptr = &card;
+	guint8 *ptr = (guint *) &card;
 	for (i = 0; i < sizeof (mword); ++i) {
-		if (card [i])
+		if (ptr[i])
 			return i;
 	}
 	*/
