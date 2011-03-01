@@ -1127,6 +1127,7 @@ Mono development tools.
 %_prefix/lib/mono/gac/Mono.Debugger.Soft
 %_prefix/lib/mono/gac/PEAPI
 %_prefix/lib/mono/xbuild
+%_prefix/lib/mono/xbuild-frameworks
 
 %package -n monodoc-core
 License:        LGPL v2.1 only
