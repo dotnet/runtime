@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 delegate int Getter ();
 
@@ -17,6 +18,7 @@ class Host {
 	}
 
 	~Host () {
+		Console.WriteLine ("got finalizated");
 		Program.resed = g;
 	}
 }
@@ -49,7 +51,9 @@ class Program {
 		public static int Main ()
         {
 			int cnt = 5;
-			DoStuff ();
+			var t = new Thread (DoStuff);
+			t.Start ();
+			t.Join ();
 			do {
 				if (CheckStuff ())
 					break;
@@ -58,6 +62,7 @@ class Program {
 			} while (cnt-- > 0);
 			GC.Collect ();
 			GC.WaitForPendingFinalizers ();
+			Console.WriteLine ("done with finalizers");
 			return result == 42 ? 0 : 1;
 		}
 }
