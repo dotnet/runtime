@@ -3,6 +3,7 @@
 
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/utils/mono-sigcontext.h>
+#include <mono/utils/mono-context.h>
 
 #ifdef __native_client_codegen__
 #define kNaClAlignmentX86 32
@@ -176,58 +177,6 @@ typedef struct {
 	gboolean need_stack_frame_inited;
 	gboolean need_stack_frame;
 } MonoCompileArch;
-
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
-# define SC_EAX sc_eax
-# define SC_EBX sc_ebx
-# define SC_ECX sc_ecx
-# define SC_EDX sc_edx
-# define SC_EBP sc_ebp
-# define SC_EIP sc_eip
-# define SC_ESP sc_esp
-# define SC_EDI sc_edi
-# define SC_ESI sc_esi
-#elif defined(__HAIKU__)
-# define SC_EAX regs.eax
-# define SC_EBX regs._reserved_2[2]
-# define SC_ECX regs.ecx
-# define SC_EDX regs.edx
-# define SC_EBP regs.ebp
-# define SC_EIP regs.eip
-# define SC_ESP regs.esp
-# define SC_EDI regs._reserved_2[0]
-# define SC_ESI regs._reserved_2[1]
-#else
-# define SC_EAX eax
-# define SC_EBX ebx
-# define SC_ECX ecx
-# define SC_EDX edx
-# define SC_EBP ebp
-# define SC_EIP eip
-# define SC_ESP esp
-# define SC_EDI edi
-# define SC_ESI esi
-#endif
-
-typedef struct {
-	guint32 eax;
-	guint32 ebx;
-	guint32 ecx;
-	guint32 edx;
-	guint32 ebp;
-	guint32 esp;
-    guint32 esi;
-	guint32 edi;
-	guint32 eip;
-} MonoContext;
-
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (long)(ip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->ebp = (long)(bp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->esp = (long)(sp); } while (0); 
-
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->eip))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->ebp))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->eax = (gsize)exc; } while (0)
 
