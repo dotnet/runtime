@@ -13,6 +13,11 @@
 #include "mono-sigcontext.h"
 #include "mono-machine.h"
 
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
+
 /*
  * General notes about mono-context.
  * Each arch defines a MonoContext struct with all GPR regs + IP/PC.
