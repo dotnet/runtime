@@ -820,7 +820,7 @@ typedef char* (*ScanObjectFunc) (char*, GrayQueue*);
 /* forward declarations */
 static int stop_world (int generation);
 static int restart_world (int generation);
-static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise);
+static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, GrayQueue *queue);
 static void scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, GrayQueue *queue);
@@ -835,7 +835,7 @@ static void null_links_for_domain (MonoDomain *domain, int generation);
 static gboolean search_fragment_for_size (size_t size);
 static int search_fragment_for_size_range (size_t desired_size, size_t minimum_size);
 static void clear_nursery_fragments (char *next);
-static void pin_from_roots (void *start_nursery, void *end_nursery);
+static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void optimize_pin_queue (int start_slot);
 static void clear_remsets (void);
@@ -2057,7 +2057,7 @@ find_pinning_reference (char *obj, size_t size)
  * conservatively scanned.
  */
 static void
-pin_from_roots (void *start_nursery, void *end_nursery)
+pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue)
 {
 	RootRecord *root;
 	int i;
@@ -2076,7 +2076,7 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 	 * *) the _last_ managed stack frame
 	 * *) pointers slots in managed frames
 	 */
-	scan_thread_data (start_nursery, end_nursery, FALSE);
+	scan_thread_data (start_nursery, end_nursery, FALSE, queue);
 
 	evacuate_pin_staging_area ();
 }
@@ -3062,7 +3062,7 @@ collect_nursery (size_t requested_size)
 	/* pin from pinned handles */
 	init_pinning ();
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
-	pin_from_roots (nursery_start, nursery_next);
+	pin_from_roots (nursery_start, nursery_next, &gray_queue);
 	/* identify pinned objects */
 	optimize_pin_queue (0);
 	next_pin_slot = pin_objects_from_addresses (nursery_section, pin_queue, pin_queue + next_pin_slot, nursery_start, nursery_next, &gray_queue);
@@ -3109,7 +3109,7 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 	/* thread data */
-	scan_thread_data (nursery_start, nursery_next, TRUE);
+	scan_thread_data (nursery_start, nursery_next, TRUE, &gray_queue);
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 	btv = atv;
@@ -3174,6 +3174,12 @@ collect_nursery (size_t requested_size)
 	return needs_major;
 }
 
+static GrayQueue*
+job_gray_queue (WorkerData *worker_data)
+{
+	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
+}
+
 typedef struct
 {
 	char *heap_start;
@@ -3189,7 +3195,22 @@ job_scan_from_registered_roots (WorkerData *worker_data, void *job_data_untyped)
 	scan_from_registered_roots (major_collector.copy_or_mark_object,
 			job_data->heap_start, job_data->heap_end,
 			job_data->root_type,
-			worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE);
+			job_gray_queue (worker_data));
+}
+
+typedef struct
+{
+	char *heap_start;
+	char *heap_end;
+} ScanThreadDataJobData;
+
+static void
+job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
+{
+	ScanThreadDataJobData *job_data = job_data_untyped;
+
+	scan_thread_data (job_data->heap_start, job_data->heap_end, TRUE,
+			job_gray_queue (worker_data));
 }
 
 static void
@@ -3207,6 +3228,7 @@ major_do_collection (const char *reason)
 	char *heap_end = (char*)-1;
 	int old_next_pin_slot;
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
+	ScanThreadDataJobData stdjd;
 
 	mono_perfcounters->gc_collections1++;
 
@@ -3266,7 +3288,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (atv);
 	init_pinning ();
 	DEBUG (6, fprintf (gc_debug_file, "Collecting pinned addresses\n"));
-	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address);
+	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	optimize_pin_queue (0);
 
 	/*
@@ -3337,7 +3359,10 @@ major_do_collection (const char *reason)
 	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 
 	/* Threads */
-	scan_thread_data (heap_start, heap_end, TRUE);
+	stdjd.heap_start = heap_start;
+	stdjd.heap_end = heap_end;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_thread_data, &stdjd);
+
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 
@@ -5357,10 +5382,12 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 void*
 mono_gc_scan_object (void *obj)
 {
+	UserCopyOrMarkData *data = pthread_getspecific (user_copy_or_mark_key);
+
 	if (current_collection_generation == GENERATION_NURSERY)
-		major_collector.copy_object (&obj, &gray_queue);
+		major_collector.copy_object (&obj, data->queue);
 	else
-		major_collector.copy_or_mark_object (&obj, &gray_queue);
+		major_collector.copy_or_mark_object (&obj, data->queue);
 	return obj;
 }
 
@@ -5368,7 +5395,7 @@ mono_gc_scan_object (void *obj)
  * Mark from thread stacks and registers.
  */
 static void
-scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
+scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, GrayQueue *queue)
 {
 	SgenThreadInfo *info;
 
@@ -5381,10 +5408,14 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 			continue;
 		}
 		DEBUG (3, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %td, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
-		if (gc_callbacks.thread_mark_func && !conservative_stack_mark)
+		if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
+			UserCopyOrMarkData data = { NULL, queue };
+			set_user_copy_or_mark_data (&data);
 			gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
-		else if (!precise)
+			set_user_copy_or_mark_data (NULL);
+		} else if (!precise) {
 			conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
+		}
 
 #ifdef USE_MONO_CTX
 		if (!precise)
