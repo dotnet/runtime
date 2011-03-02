@@ -1127,10 +1127,10 @@ transport_connect (const char *host, int port)
 #endif
 		}
 
-		DEBUG (1, fprintf (log_file, "Listening on %s:%d (timeout=%d ms)...\n", host, port, agent_config.timeout));
-
 		if (agent_config.defer)
 			return;
+
+		DEBUG (1, fprintf (log_file, "Listening on %s:%d (timeout=%d ms)...\n", host, port, agent_config.timeout));
 
 		if (agent_config.timeout) {
 			fd_set readfds;
@@ -1143,8 +1143,7 @@ transport_connect (const char *host, int port)
 			res = select (sfd + 1, &readfds, NULL, NULL, &tv);
 			if (res == 0) {
 				fprintf (stderr, "debugger-agent: Timed out waiting to connect.\n");
-				if (!agent_config.defer)
-					exit (1);
+				exit (1);
 			}
 		}
 
@@ -1757,7 +1756,8 @@ mono_debugger_agent_on_attach (void)
 	mono_loader_unlock ();
 }
 
-static AgentDomainInfo* get_agent_domain_info (MonoDomain *domain)
+static AgentDomainInfo*
+get_agent_domain_info (MonoDomain *domain)
 {
 	AgentDomainInfo *info = NULL;
 
@@ -1785,9 +1785,9 @@ get_id (MonoDomain *domain, IdType type, gpointer val)
 
 	mono_loader_lock ();
 
-	info = get_agent_domain_info (domain);
-
 	mono_domain_lock (domain);
+
+	info = get_agent_domain_info (domain);
 
 	if (info->val_to_id [type] == NULL)
 		info->val_to_id [type] = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -3358,8 +3358,9 @@ send_type_load (MonoClass *klass)
 	AgentDomainInfo *info = NULL;
 
 	mono_loader_lock ();
-	info = get_agent_domain_info (domain);
 	mono_domain_lock (domain);
+
+	info = get_agent_domain_info (domain);
 
 	if (!g_hash_table_lookup (info->loaded_classes, klass)) {
 		type_load = TRUE;
