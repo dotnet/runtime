@@ -5,10 +5,12 @@
  * Copyright (c) 2011 Novell, Inc (http://www.novell.com)
  */
 
+
+#if defined(__i386__)
+
 #include <mono/utils/mono-context.h>
 #include <mono/utils/mono-sigcontext.h>
 
-#if defined(__i386__)
 
 #ifdef __sun
 #define REG_EAX EAX
