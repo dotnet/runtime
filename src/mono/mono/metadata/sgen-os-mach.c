@@ -57,7 +57,11 @@ mono_sgen_thread_handshake (int signum)
 	pthread_t exception_thread = mono_gc_get_mach_exception_thread ();
 
 	SgenThreadInfo *info;
+#ifdef USE_MONO_CTX
+	MonoContext monoctx;
+#else
 	gpointer regs [ARCH_NUM_REGS];
+#endif
 	gpointer stack_start;
 
 	int count, i;
@@ -98,8 +102,13 @@ mono_sgen_thread_handshake (int signum)
 					if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
 						info->stack_start = stack_start;
 
+#ifdef USE_MONO_CTX
+						mono_sigctx_to_monoctx (&ctx, &monoctx);
+						info->monoctx = &monoctx;
+#else
 						ARCH_COPY_SIGCTX_REGS (regs, &ctx);
 						info->stopped_regs = regs;
+#endif
 					} else {
 						g_assert (!info->stack_start);
 					}

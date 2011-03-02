@@ -30,32 +30,16 @@
 
 #ifdef __i386__
 
+#include <mono/utils/mono-context.h>
+
 #define REDZONE_SIZE	0
 
 #define ARCH_NUM_REGS 7		/* we're never storing ESP */
-#define ARCH_STORE_REGS(ptr)	\
-	__asm__ __volatile__(	\
-		"mov %%ecx, 0x00(%0)\n"	\
-		"mov %%edx, 0x04(%0)\n"	\
-		"mov %%ebx, 0x08(%0)\n"	\
-		"mov %%edi, 0x0c(%0)\n"	\
-		"mov %%esi, 0x10(%0)\n"	\
-		"mov %%ebp, 0x14(%0)\n"	\
-		: "=&a" (ptr)	\
-		: "0" (cur_thread_regs)	\
-		: "memory"	\
-	)
-#define ARCH_SIGCTX_SP(ctx)	(UCONTEXT_REG_ESP ((ctx)))
-#define ARCH_SIGCTX_IP(ctx)	(UCONTEXT_REG_EIP ((ctx)))
-#define ARCH_COPY_SIGCTX_REGS(a,ctx) do {			\
-	(a)[0] = (gpointer) UCONTEXT_REG_EAX ((ctx));		\
-	(a)[1] = (gpointer) UCONTEXT_REG_EBX ((ctx));		\
-	(a)[2] = (gpointer) UCONTEXT_REG_ECX ((ctx));		\
-	(a)[3] = (gpointer) UCONTEXT_REG_EDX ((ctx));		\
-	(a)[4] = (gpointer) UCONTEXT_REG_ESI ((ctx));		\
-	(a)[5] = (gpointer) UCONTEXT_REG_EDI ((ctx));		\
-	(a)[6] = (gpointer) UCONTEXT_REG_EBP ((ctx));		\
-	} while (0)
+#define USE_MONO_CTX
+
+/*FIXME, move this to mono-sigcontext as this is generaly useful.*/
+#define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_ESP ((ctx)))
+#define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_EIP ((ctx)))
 
 #elif defined(__x86_64__)
 
