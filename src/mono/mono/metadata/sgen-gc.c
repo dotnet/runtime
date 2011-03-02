@@ -2081,13 +2081,34 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 	evacuate_pin_staging_area ();
 }
 
-static CopyOrMarkObjectFunc user_copy_or_mark_func;
-static GrayQueue *user_copy_or_mark_queue;
+typedef struct {
+	CopyOrMarkObjectFunc func;
+	GrayQueue *queue;
+} UserCopyOrMarkData;
+
+static pthread_key_t user_copy_or_mark_key;
+
+static void
+init_user_copy_or_mark_key (void)
+{
+	pthread_key_create (&user_copy_or_mark_key, NULL);
+}
+
+static void
+set_user_copy_or_mark_data (UserCopyOrMarkData *data)
+{
+	static pthread_once_t init_control = PTHREAD_ONCE_INIT;
+	pthread_once (&init_control, init_user_copy_or_mark_key);
+
+	pthread_setspecific (user_copy_or_mark_key, data);
+}
 
 static void
 single_arg_user_copy_or_mark (void **obj)
 {
-	user_copy_or_mark_func (obj, user_copy_or_mark_queue);
+	UserCopyOrMarkData *data = pthread_getspecific (user_copy_or_mark_key);
+
+	data->func (obj, data->queue);
 }
 
 /*
@@ -2136,12 +2157,11 @@ precisely_scan_objects_from (CopyOrMarkObjectFunc copy_func, void** start_root, 
 		break;
 	}
 	case ROOT_DESC_USER: {
+		UserCopyOrMarkData data = { copy_func, queue };
 		MonoGCRootMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
-		user_copy_or_mark_func = copy_func;
-		user_copy_or_mark_queue = queue;
+		set_user_copy_or_mark_data (&data);
 		marker (start_root, single_arg_user_copy_or_mark);
-		user_copy_or_mark_func = NULL;
-		user_copy_or_mark_queue = NULL;
+		set_user_copy_or_mark_data (NULL);
 		break;
 	}
 	case ROOT_DESC_RUN_LEN:
@@ -3154,6 +3174,24 @@ collect_nursery (size_t requested_size)
 	return needs_major;
 }
 
+typedef struct
+{
+	char *heap_start;
+	char *heap_end;
+	int root_type;
+} ScanFromRegisteredRootsJobData;
+
+static void
+job_scan_from_registered_roots (WorkerData *worker_data, void *job_data_untyped)
+{
+	ScanFromRegisteredRootsJobData *job_data = job_data_untyped;
+
+	scan_from_registered_roots (major_collector.copy_or_mark_object,
+			job_data->heap_start, job_data->heap_end,
+			job_data->root_type,
+			worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE);
+}
+
 static void
 major_do_collection (const char *reason)
 {
@@ -3168,6 +3206,7 @@ major_do_collection (const char *reason)
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
 	int old_next_pin_slot;
+	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 
 	mono_perfcounters->gc_collections1++;
 
@@ -3284,14 +3323,20 @@ major_do_collection (const char *reason)
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (major_collector.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_NORMAL, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	scan_from_registered_roots (major_collector.copy_or_mark_object, heap_start, heap_end, ROOT_TYPE_WBARRIER, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	scrrjd_normal.heap_start = heap_start;
+	scrrjd_normal.heap_end = heap_end;
+	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_normal);
+
+	scrrjd_wbarrier.heap_start = heap_start;
+	scrrjd_wbarrier.heap_end = heap_end;
+	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_wbarrier);
+
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 
 	/* Threads */
-	/* FIXME: This is the wrong place for this, because it does
-	   pinning */
 	scan_thread_data (heap_start, heap_end, TRUE);
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED_MS (btv, atv);

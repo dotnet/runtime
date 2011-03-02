@@ -117,10 +117,17 @@ workers_wait (void)
 }
 
 static void
-workers_enqueue_job (JobFunc func, void *data)
+workers_enqueue_job (SgenInternalAllocator *allocator, JobFunc func, void *data)
 {
 	int num_entries;
-	JobQueueEntry *entry = mono_sgen_alloc_internal (INTERNAL_MEM_JOB_QUEUE_ENTRY);
+	JobQueueEntry *entry;
+
+	if (!major_collector.is_parallel) {
+		func (NULL, data);
+		return;
+	}
+
+	entry = mono_sgen_alloc_internal_fixed (allocator, INTERNAL_MEM_JOB_QUEUE_ENTRY);
 	entry->func = func;
 	entry->data = data;
 
@@ -138,6 +145,8 @@ workers_dequeue_and_do_job (WorkerData *data)
 {
 	JobQueueEntry *entry;
 
+	g_assert (major_collector.is_parallel);
+
 	if (!workers_job_queue_num_entries)
 		return FALSE;
 
@@ -153,7 +162,7 @@ workers_dequeue_and_do_job (WorkerData *data)
 		return FALSE;
 
 	entry->func (data, entry->data);
-	mono_sgen_free_internal (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY);
+	mono_sgen_free_internal_delayed (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY, data->private_gray_queue.allocator);
 	return TRUE;
 }
 
@@ -296,10 +305,12 @@ workers_thread_func (void *data_untyped)
 	for (;;) {
 		gboolean did_work = FALSE;
 
-		while (workers_dequeue_and_do_job (data))
+		while (workers_dequeue_and_do_job (data)) {
 			did_work = TRUE;
+			/* FIXME: maybe distribute the gray queue here? */
+		}
 
-		if (workers_marking && workers_get_work (data)) {
+		if (workers_marking && (!gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data))) {
 			g_assert (!gray_object_queue_is_empty (&data->private_gray_queue));
 
 			while (!drain_gray_stack (&data->private_gray_queue, 32))
@@ -427,6 +438,9 @@ workers_start_all_workers (void)
 static void
 workers_start_marking (void)
 {
+	if (!major_collector.is_parallel)
+		return;
+
 	g_assert (workers_started && workers_gc_in_progress);
 	g_assert (!workers_marking);
 
