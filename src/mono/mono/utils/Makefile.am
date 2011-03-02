@@ -68,6 +68,7 @@ monoutils_sources = \
 	mono-counters.h	\
 	mono-digest.h	\
 	mono-error.h	\
+	mono-machine.h	\
 	mono-math.h	\
 	mono-membar.h	\
 	mono-path.h	\
