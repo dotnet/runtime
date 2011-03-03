@@ -2615,7 +2615,7 @@ get_memcpy_method (void)
 }
 
 static void
-create_write_barrier_bitmap (MonoClass *klass, unsigned *wb_bitmap, int offset)
+create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bitmap, int offset)
 {
 	MonoClassField *field;
 	gpointer iter = NULL;
@@ -2626,14 +2626,13 @@ create_write_barrier_bitmap (MonoClass *klass, unsigned *wb_bitmap, int offset)
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		foffset = klass->valuetype ? field->offset - sizeof (MonoObject): field->offset;
-		if (mono_type_is_reference (field->type)) {
+		if (mini_type_is_reference (cfg, mono_field_get_type (field))) {
 			g_assert ((foffset % SIZEOF_VOID_P) == 0);
 			*wb_bitmap |= 1 << ((offset + foffset) / SIZEOF_VOID_P);
 		} else {
-			/*FIXME support nested value types so this works for: struct X { Y y; int z;} struct Y { object a,b; }*/
 			MonoClass *field_class = mono_class_from_mono_type (field->type);
 			if (field_class->has_references)
-				create_write_barrier_bitmap (field_class, wb_bitmap, offset + foffset);
+				create_write_barrier_bitmap (cfg, field_class, wb_bitmap, offset + foffset);
 		}
 	}
 }
@@ -2724,7 +2723,7 @@ mono_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4
 	if (size > 32 * SIZEOF_VOID_P)
 		return FALSE;
 
-	create_write_barrier_bitmap (klass, &need_wb, 0);
+	create_write_barrier_bitmap (cfg, klass, &need_wb, 0);
 
 	/* We don't unroll more than 5 stores to avoid code bloat. */
 	if (size > 5 * SIZEOF_VOID_P) {
@@ -3338,7 +3337,7 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 
 
 static gboolean
-mini_class_has_reference_variant_generic_argument (MonoClass *klass, int context_used)
+mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *klass, int context_used)
 {
 	int i;
 	MonoGenericContainer *container;
@@ -3359,10 +3358,7 @@ mini_class_has_reference_variant_generic_argument (MonoClass *klass, int context
 		if (!(mono_generic_container_get_param_info (container, i)->flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT)))
 			continue;
 		type = ginst->type_argv [i];
-		if (MONO_TYPE_IS_REFERENCE (type))
-			return TRUE;
-
-		if (context_used && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))
+		if (mini_type_is_reference (cfg, type))
 			return TRUE;
 	}
 	return FALSE;
@@ -3385,7 +3381,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 	if (context_used) {
 		MonoInst *args [3];
 
-		if(mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+		if(mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 			MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
 			MonoInst *cache_ins;
 
@@ -3479,7 +3475,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 	if (context_used) {
 		MonoInst *args [3];
 
-		if(mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+		if(mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 			MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
 			MonoInst *cache_ins;
 
@@ -4631,7 +4627,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #ifdef MONO_ARCH_HAVE_ATOMIC_CAS
 		if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
 			int size = 0;
-			gboolean is_ref = MONO_TYPE_IS_REFERENCE (fsig->params [1]);
+			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [1]);
 			if (fsig->params [1]->type == MONO_TYPE_I4)
 				size = 4;
 			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I)
@@ -5407,13 +5403,7 @@ set_exception_object (MonoCompile *cfg, MonoException *exception)
 static gboolean
 generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
 {
-	MonoType *type;
-
-	if (cfg->generic_sharing_context)
-		type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, &klass->byval_arg);
-	else
-		type = &klass->byval_arg;
-	return MONO_TYPE_IS_REFERENCE (type);
+	return mini_type_is_reference (cfg, &klass->byval_arg);
 }
 
 static void
@@ -5459,9 +5449,7 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 		token = read32 (ip + 2);
 		klass = mini_get_class (cfg->current_method, token, cfg->generic_context);
 		CHECK_TYPELOAD (klass);
-		if (generic_class_is_reference_type (cfg, klass)) {
-			MONO_EMIT_NEW_PCONST (cfg, cfg->locals [local]->dreg, NULL);
-		} else if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+		if (mini_type_is_reference (cfg, &klass->byval_arg)) {
 			MONO_EMIT_NEW_PCONST (cfg, cfg->locals [local]->dreg, NULL);
 		} else if (MONO_TYPE_ISSTRUCT (&klass->byval_arg)) {
 			MONO_EMIT_NEW_VZERO (cfg, cfg->locals [local]->dreg, klass);
@@ -8214,7 +8202,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
-			if (!context_used && mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 				MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
 				MonoInst *args [3];
 
@@ -8277,7 +8265,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
-			if (!context_used && mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 				MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
 				MonoInst *args [3];
 
@@ -8339,7 +8327,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS FIXME kill this huge slice of duplicated code*/
-				if (!context_used && mini_class_has_reference_variant_generic_argument (klass, context_used)) {
+				if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 					MonoMethod *mono_castclass = mono_marshal_get_castclass_with_cache ();
 					MonoInst *args [3];
 

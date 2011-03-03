@@ -2296,6 +2296,8 @@ guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb) MONO_INTERNAL;
 
 void mono_cfg_set_exception (MonoCompile *cfg, int type) MONO_INTERNAL;
+gboolean mini_type_is_reference (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
+
 
 /* wapihandles.c */
 int mini_wapi_hps (int argc, char **argv) MONO_INTERNAL;

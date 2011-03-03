@@ -1123,7 +1123,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			mono_mark_vreg_as_mp (cfg, vreg);
 		} else {
 			MonoType *t = mini_type_get_underlying_type (NULL, type);
-			if ((MONO_TYPE_ISSTRUCT (t) && inst->klass->has_references) || MONO_TYPE_IS_REFERENCE (t)) {
+			if ((MONO_TYPE_ISSTRUCT (t) && inst->klass->has_references) || mini_type_is_reference (cfg, t)) {
 				inst->flags |= MONO_INST_GC_TRACK;
 				mono_mark_vreg_as_ref (cfg, vreg);
 			}

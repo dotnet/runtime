@@ -1878,3 +1878,14 @@ mono_generic_sharing_cleanup (void)
 	if (generic_subclass_hash)
 		g_hash_table_destroy (generic_subclass_hash);
 }
+
+gboolean
+mini_type_is_reference (MonoCompile *cfg, MonoType *type)
+{
+	if (mono_type_is_reference (type))
+		return TRUE;
+	if (!cfg->generic_sharing_context)
+		return FALSE;
+	/*FIXME the probably needs better handle under partial sharing*/
+	return type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR;
+}
