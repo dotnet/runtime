@@ -34,7 +34,7 @@
 
 #define REDZONE_SIZE	0
 
-#define ARCH_NUM_REGS 7		/* we're never storing ESP */
+#define ARCH_NUM_REGS 8
 #define USE_MONO_CTX
 
 /*FIXME, move this to mono-sigcontext as this is generaly useful.*/
