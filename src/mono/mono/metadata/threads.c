@@ -757,10 +757,8 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	start_info->obj->ec_to_set = NULL;
 
 	g_free (start_info);
-#ifdef DEBUG
-	g_message ("%s: start_wrapper for %"G_GSIZE_FORMAT, __func__,
-		   thread->tid);
-#endif
+	THREAD_DEBUG (g_message ("%s: start_wrapper for %"G_GSIZE_FORMAT, __func__,
+							 thread->tid));
 
 	/* 
 	 * Call this after calling start_notify, since the profiler callback might want
