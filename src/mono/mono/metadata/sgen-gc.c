@@ -3213,6 +3213,21 @@ job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
 			job_gray_queue (worker_data));
 }
 
+typedef struct
+{
+	FinalizeEntry *list;
+} ScanFinalizerEntriesJobData;
+
+static void
+job_scan_finalizer_entries (WorkerData *worker_data, void *job_data_untyped)
+{
+	ScanFinalizerEntriesJobData *job_data = job_data_untyped;
+
+	scan_finalizer_entries (major_collector.copy_or_mark_object,
+			job_data->list,
+			job_gray_queue (worker_data));
+}
+
 static void
 major_do_collection (const char *reason)
 {
@@ -3229,6 +3244,7 @@ major_do_collection (const char *reason)
 	int old_next_pin_slot;
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 	ScanThreadDataJobData stdjd;
+	ScanFinalizerEntriesJobData sfejd_fin_ready, sfejd_critical_fin;
 
 	mono_perfcounters->gc_collections1++;
 
@@ -3371,9 +3387,14 @@ major_do_collection (const char *reason)
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_finalizer_roots ();
+
 	/* scan the list of objects ready for finalization */
-	scan_finalizer_entries (major_collector.copy_or_mark_object, fin_ready_list, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	scan_finalizer_entries (major_collector.copy_or_mark_object, critical_fin_list, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	sfejd_fin_ready.list = fin_ready_list;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_finalizer_entries, &sfejd_fin_ready);
+
+	sfejd_critical_fin.list = critical_fin_list;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_finalizer_entries, &sfejd_critical_fin);
+
 	TV_GETTIME (atv);
 	time_major_scan_finalized += TV_ELAPSED_MS (btv, atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
