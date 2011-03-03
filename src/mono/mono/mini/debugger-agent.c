@@ -5456,15 +5456,14 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		wait_for_suspend ();
 
 		env_class = mono_class_from_name (mono_defaults.corlib, "System", "Environment");
-		g_assert (env_class);
-		exit_method = mono_class_get_method_from_name (env_class, "Exit", 1);
-		g_assert (exit_method);
+		if (env_class)
+			exit_method = mono_class_get_method_from_name (env_class, "Exit", 1);
 
 		mono_loader_lock ();
 		thread = mono_g_hash_table_find (tid_to_thread, is_really_suspended, NULL);
 		mono_loader_unlock ();
 
-		if (thread) {
+		if (thread && exit_method) {
 			mono_loader_lock ();
 			tls = mono_g_hash_table_lookup (thread_to_tls, thread);
 			mono_loader_unlock ();
