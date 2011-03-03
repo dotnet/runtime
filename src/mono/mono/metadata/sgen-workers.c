@@ -342,8 +342,12 @@ workers_distribute_gray_queue_sections (void)
 static void
 workers_init_distribute_gray_queue (void)
 {
-	if (!major_collector.is_parallel)
+	if (!major_collector.is_parallel) {
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+		mono_sgen_get_unmanaged_allocator ()->thread = pthread_self ();
+#endif
 		return;
+	}
 
 	gray_object_queue_init (&workers_distribute_gray_queue, &workers_distribute_gray_queue_allocator);
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
@@ -454,8 +458,12 @@ workers_join (void)
 {
 	int i;
 
-	if (!major_collector.is_parallel)
+	if (!major_collector.is_parallel) {
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+		mono_sgen_get_unmanaged_allocator ()->thread = NULL;
+#endif
 		return;
+	}
 
 	g_assert (gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));
 	g_assert (gray_object_queue_is_empty (&workers_distribute_gray_queue));

@@ -1009,6 +1009,32 @@ major_dump_heap (FILE *heap_dump_file)
 		}							\
 	} while (0)
 
+#ifdef SGEN_PARALLEL_MARK
+static void
+pin_or_update_par (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
+{
+	for (;;) {
+		mword vtable_word;
+
+		if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
+			mono_sgen_pin_object (obj, queue);
+			break;
+		}
+
+		vtable_word = *(mword*)obj;
+		/*someone else forwarded it, update the pointer and bail out*/
+		if (vtable_word & SGEN_FORWARDED_BIT) {
+			*ptr = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+			break;
+		}
+
+		/*someone pinned it, nothing to do.*/
+		if (vtable_word & SGEN_PINNED_BIT)
+			break;
+	}
+}
+#endif
+
 #include "sgen-major-copy-object.h"
 
 #ifdef SGEN_PARALLEL_MARK
@@ -1055,23 +1081,7 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 				evacuate_block_obj_sizes [size_index] = FALSE;
 			}
 
-			do {
-				if (SGEN_CAS_PTR (obj, (void*)((mword)vt | SGEN_PINNED_BIT), vt) == vt) {
-					mono_sgen_pin_object (obj, queue);
-					break;
-				}
-
-				vtable_word = *(mword*)obj;
-				/*someone else forwarded it, update the pointer and bail out*/
-				if (vtable_word & SGEN_FORWARDED_BIT) {
-					*ptr = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
-					break;
-				}
-
-				/*someone pinned it, nothing to do.*/
-				if (vtable_word & SGEN_PINNED_BIT)
-					break;
-			} while (TRUE);
+			pin_or_update_par (ptr, obj, vt, queue);
 			return;
 		}
 

@@ -440,6 +440,7 @@ static gpointer global_remset_cache [2];
  */
 #define DEFAULT_REMSET_SIZE 1024
 static RememberedSet* alloc_remset (int size, gpointer id);
+static RememberedSet* alloc_global_remset (SgenInternalAllocator *alc, int size, gpointer id);
 
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
@@ -821,6 +822,7 @@ typedef char* (*ScanObjectFunc) (char*, GrayQueue*);
 static int stop_world (int generation);
 static int restart_world (int generation);
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, GrayQueue *queue);
+static void scan_from_global_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static void scan_from_registered_roots (CopyOrMarkObjectFunc copy_func, char *addr_start, char *addr_end, int root_type, GrayQueue *queue);
 static void scan_finalizer_entries (CopyOrMarkObjectFunc copy_func, FinalizeEntry *list, GrayQueue *queue);
@@ -1644,10 +1646,10 @@ global_remset_location_was_not_added (gpointer ptr)
  * lock must be held.  For serial collectors that is not necessary.
  */
 void
-mono_sgen_add_to_global_remset (gpointer ptr)
+mono_sgen_add_to_global_remset (SgenInternalAllocator *alc, gpointer ptr)
 {
 	RememberedSet *rs;
-	gboolean lock;
+	gboolean lock = major_collector.is_parallel;
 
 	if (use_cardtable) {
 		sgen_card_table_mark_address ((mword)ptr);
@@ -1656,7 +1658,6 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 
 	g_assert (!ptr_in_nursery (ptr) && ptr_in_nursery (*(gpointer*)ptr));
 
-	lock = (current_collection_generation == GENERATION_OLD && major_collector.is_parallel);
 	if (lock)
 		LOCK_GLOBAL_REMSET;
 
@@ -1676,7 +1677,7 @@ mono_sgen_add_to_global_remset (gpointer ptr)
 		*(global_remset->store_next++) = (mword)ptr;
 		goto done;
 	}
-	rs = alloc_remset (global_remset->end_set - global_remset->data, NULL);
+	rs = alloc_global_remset (alc, global_remset->end_set - global_remset->data, NULL);
 	rs->next = global_remset;
 	global_remset = rs;
 	*(global_remset->store_next++) = (mword)ptr;
@@ -3053,6 +3054,7 @@ collect_nursery (size_t requested_size)
 	try_calculate_minor_collection_allowance (FALSE);
 
 	gray_object_queue_init (&gray_queue, mono_sgen_get_unmanaged_allocator ());
+	workers_init_distribute_gray_queue ();
 
 	num_minor_gcs++;
 	mono_stats.minor_gc_count ++;
@@ -3062,10 +3064,10 @@ collect_nursery (size_t requested_size)
 	/* pin from pinned handles */
 	init_pinning ();
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
-	pin_from_roots (nursery_start, nursery_next, &gray_queue);
+	pin_from_roots (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	/* identify pinned objects */
 	optimize_pin_queue (0);
-	next_pin_slot = pin_objects_from_addresses (nursery_section, pin_queue, pin_queue + next_pin_slot, nursery_start, nursery_next, &gray_queue);
+	next_pin_slot = pin_objects_from_addresses (nursery_section, pin_queue, pin_queue + next_pin_slot, nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	nursery_section->pin_queue_start = pin_queue;
 	nursery_section->pin_queue_num_entries = next_pin_slot;
 	TV_GETTIME (atv);
@@ -3076,12 +3078,20 @@ collect_nursery (size_t requested_size)
 	if (consistency_check_at_minor_collection)
 		check_consistency ();
 
-	/* 
-	 * walk all the roots and copy the young objects to the old generation,
-	 * starting from to_space
-	 */
+	workers_start_all_workers ();
 
-	scan_from_remsets (nursery_start, nursery_next, &gray_queue);
+	/*
+	 * Walk all the roots and copy the young objects to the old
+	 * generation, starting from to_space.
+	 *
+	 * The global remsets must be processed before the workers start
+	 * marking because they might add global remsets.
+	 */
+	scan_from_global_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+
+	workers_start_marking ();
+
+	scan_from_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
 	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
@@ -3090,12 +3100,13 @@ collect_nursery (size_t requested_size)
 	if (use_cardtable) {
 		atv = btv;
 		card_tables_collect_stats (TRUE);
-		scan_from_card_tables (nursery_start, nursery_next, &gray_queue);
+		scan_from_card_tables (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 		TV_GETTIME (btv);
 		time_minor_scan_card_table += TV_ELAPSED_MS (atv, btv);
 	}
 
-	drain_gray_stack (&gray_queue, -1);
+	if (!major_collector.is_parallel)
+		drain_gray_stack (&gray_queue, -1);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_registered_roots ();
@@ -3104,20 +3115,40 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (major_collector.copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL, &gray_queue);
-	scan_from_registered_roots (major_collector.copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER, &gray_queue);
+	scan_from_registered_roots (major_collector.copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	scan_from_registered_roots (major_collector.copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 	/* thread data */
-	scan_thread_data (nursery_start, nursery_next, TRUE, &gray_queue);
+	scan_thread_data (nursery_start, nursery_next, TRUE, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 	btv = atv;
+
+	if (major_collector.is_parallel) {
+		while (!gray_object_queue_is_empty (WORKERS_DISTRIBUTE_GRAY_QUEUE)) {
+			workers_distribute_gray_queue_sections ();
+			usleep (1000);
+		}
+	}
+	workers_join ();
+
+	if (major_collector.is_parallel)
+		g_assert (gray_object_queue_is_empty (&gray_queue));
 
 	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY, &gray_queue);
 	TV_GETTIME (atv);
 	time_minor_finish_gray_stack += TV_ELAPSED_MS (btv, atv);
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, 0);
+
+	/*
+	 * The (single-threaded) finalization code might have done
+	 * some copying/marking so we can only reset the GC thread's
+	 * worker data here instead of earlier when we joined the
+	 * workers.
+	 */
+	if (major_collector.reset_worker_data)
+		major_collector.reset_worker_data (workers_gc_thread_data.major_collector_data);
 
 	if (objects_pinned) {
 		evacuate_pin_staging_area ();
@@ -4391,11 +4422,11 @@ clear_unreachable_ephemerons (CopyOrMarkObjectFunc copy_func, char *start, char 
 			if (was_promoted) {
 				if (ptr_in_nursery (key)) {/*key was not promoted*/
 					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to key %p\n", key));
-					mono_sgen_add_to_global_remset (&cur->key);
+					mono_sgen_add_to_global_remset (queue->allocator, &cur->key);
 				}
 				if (ptr_in_nursery (cur->value)) {/*value was not promoted*/
 					DEBUG (5, fprintf (gc_debug_file, "\tAdded remset to value %p\n", cur->value));
-					mono_sgen_add_to_global_remset (&cur->value);
+					mono_sgen_add_to_global_remset (queue->allocator, &cur->value);
 				}
 			}
 		}
@@ -5521,7 +5552,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 				 * becomes part of the global remset, which can grow very large.
 				 */
 				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
-				mono_sgen_add_to_global_remset (ptr);
+				mono_sgen_add_to_global_remset (queue->allocator, ptr);
 			}
 		} else {
 			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
@@ -5536,7 +5567,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			major_collector.copy_object (ptr, queue);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
-				mono_sgen_add_to_global_remset (ptr);
+				mono_sgen_add_to_global_remset (queue->allocator, ptr);
 			++ptr;
 		}
 		return p + 2;
@@ -5665,17 +5696,10 @@ remset_byte_size (RememberedSet *remset)
 }
 
 static void
-scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
+scan_from_global_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 {
-	int i;
-	SgenThreadInfo *info;
 	RememberedSet *remset;
-	GenericStoreRememberedSet *store_remset;
 	mword *p, *next_p, *store_pos;
-
-#ifdef HEAVY_STATISTICS
-	remset_stats ();
-#endif
 
 	/* the global one */
 	for (remset = global_remset; remset; remset = remset->next) {
@@ -5708,6 +5732,20 @@ scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
 		/* Truncate the remset */
 		remset->store_next = store_pos;
 	}
+}
+
+static void
+scan_from_remsets (void *start_nursery, void *end_nursery, GrayQueue *queue)
+{
+	int i;
+	SgenThreadInfo *info;
+	RememberedSet *remset;
+	GenericStoreRememberedSet *store_remset;
+	mword *p;
+
+#ifdef HEAVY_STATISTICS
+	remset_stats ();
+#endif
 
 	/* the generic store ones */
 	store_remset = generic_store_remsets;
@@ -5779,7 +5817,8 @@ clear_remsets (void)
 		remset->next = NULL;
 		if (remset != global_remset) {
 			DEBUG (4, fprintf (gc_debug_file, "Freed remset at %p\n", remset->data));
-			mono_sgen_free_internal_dynamic (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET);
+			mono_sgen_free_internal_dynamic_delayed (remset, remset_byte_size (remset), INTERNAL_MEM_REMSET,
+					mono_sgen_get_unmanaged_allocator ());
 		}
 	}
 	/* the generic store ones */
@@ -6141,6 +6180,17 @@ alloc_remset (int size, gpointer id) {
 	res->end_set = res->data + size;
 	res->next = NULL;
 	DEBUG (4, fprintf (gc_debug_file, "Allocated remset size %d at %p for %p\n", size, res->data, id));
+	return res;
+}
+
+static RememberedSet*
+alloc_global_remset (SgenInternalAllocator *alc, int size, gpointer id)
+{
+	RememberedSet* res = mono_sgen_alloc_internal_full (alc, sizeof (RememberedSet) + (size * sizeof (gpointer)), INTERNAL_MEM_REMSET);
+	res->store_next = res->data;
+	res->end_set = res->data + size;
+	res->next = NULL;
+	DEBUG (4, fprintf (gc_debug_file, "Allocated global remset size %d at %p for %p\n", size, res->data, id));
 	return res;
 }
 
