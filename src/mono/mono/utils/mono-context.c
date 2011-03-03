@@ -5,12 +5,15 @@
  * Copyright (c) 2011 Novell, Inc (http://www.novell.com)
  */
 
+#include <mono/utils/mono-sigcontext.h>
+
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
 
 #if defined(__i386__)
 
 #include <mono/utils/mono-context.h>
-#include <mono/utils/mono-sigcontext.h>
-
 
 #ifdef __sun
 #define REG_EAX EAX
@@ -38,8 +41,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->esi = 0xDEADBEEF;
 	mctx->edi = 0xDEADBEEF;
 	mctx->eip = 0xDEADBEEF;
-#else
-#ifdef MONO_SIGNAL_USE_SIGACTION
+#elif defined(MONO_SIGNAL_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	
 	mctx->eax = UCONTEXT_REG_EAX (ctx);
@@ -63,7 +65,6 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->esi = ctx->SC_ESI;
 	mctx->edi = ctx->SC_EDI;
 	mctx->eip = ctx->SC_EIP;
-#endif
 #endif /* if defined(__native_client__) */
 }
 
@@ -72,8 +73,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
 #if defined(__native_client__)
 	printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
-#else
-#ifdef MONO_SIGNAL_USE_SIGACTION
+#elif defined(MONO_SIGNAL_USE_SIGACTION)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	UCONTEXT_REG_EAX (ctx) = mctx->eax;
@@ -97,7 +97,6 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	ctx->SC_ESI = mctx->esi;
 	ctx->SC_EDI = mctx->edi;
 	ctx->SC_EIP = mctx->eip;
-#endif
 #endif /* __native_client__ */
 }
 
