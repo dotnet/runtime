@@ -108,7 +108,68 @@ typedef struct {
 	: "memory")
 
 
-#else  /* defined(__i386__) */
+#elif defined(__x86_64__) /* defined(__i386__) */
+
+
+#if !defined( HOST_WIN32 ) && !defined(__native_client__) && !defined(__native_client_codegen__)
+
+#define MONO_SIGNAL_USE_SIGACTION 1
+
+#endif
+
+typedef struct {
+	mgreg_t rax;
+	mgreg_t rbx;
+	mgreg_t rcx;
+	mgreg_t rdx;
+	mgreg_t rbp;
+	mgreg_t rsp;
+    mgreg_t rsi;
+	mgreg_t rdi;
+	mgreg_t r8;
+	mgreg_t r9;
+	mgreg_t r10;
+	mgreg_t r11;
+	mgreg_t r12;
+	mgreg_t r13;
+	mgreg_t r14;
+	mgreg_t r15;
+	mgreg_t rip;
+} MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->rip = (mgreg_t)(ip); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->rbp = (mgreg_t)(bp); } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->rsp = (mgreg_t)(esp); } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->rip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->rbp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->rsp))
+
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"movq $0x0,  0x00(%0)\n"	\
+		"movq %%rbx, 0x08(%0)\n"	\
+		"movq %%rcx, 0x10(%0)\n"	\
+		"movq %%rdx, 0x18(%0)\n"	\
+		"movq %%rbp, 0x20(%0)\n"	\
+		"movq %%rsp, 0x28(%0)\n"	\
+		"movq %%rsi, 0x30(%0)\n"	\
+		"movq %%rdi, 0x38(%0)\n"	\
+		"movq %%r8,  0x40(%0)\n"	\
+		"movq %%r9,  0x48(%0)\n"	\
+		"movq %%r10, 0x50(%0)\n"	\
+		"movq %%r11, 0x58(%0)\n"	\
+		"movq %%r12, 0x60(%0)\n"	\
+		"movq %%r13, 0x68(%0)\n"	\
+		"movq %%r14, 0x70(%0)\n"	\
+		"movq %%r15, 0x78(%0)\n"	\
+		"leaq (%%rip), %%rdx\n"	\
+		"movq %%rdx, 0x80(%0)\n"	\
+		: 	\
+		: "a" (&(ctx))	\
+		: "rdx", "memory")
+
+#else  
 
 #error "Implement mono-context for the current arch"
 
