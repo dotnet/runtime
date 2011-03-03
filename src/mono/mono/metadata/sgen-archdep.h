@@ -43,48 +43,16 @@
 
 #elif defined(__x86_64__)
 
+#include <mono/utils/mono-context.h>
+
 #define REDZONE_SIZE	128
 
-#define ARCH_NUM_REGS 15	/* we're never storing RSP */
-#define ARCH_STORE_REGS(ptr)	\
-	__asm__ __volatile__(	\
-		"movq %%rcx, 0x00(%0)\n"	\
-		"movq %%rdx, 0x08(%0)\n"	\
-		"movq %%rbx, 0x10(%0)\n"	\
-		"movq %%rdi, 0x18(%0)\n"	\
-		"movq %%rsi, 0x20(%0)\n"	\
-		"movq %%rbp, 0x28(%0)\n"	\
-		"movq %%r8, 0x30(%0)\n"	\
-		"movq %%r9, 0x38(%0)\n"	\
-		"movq %%r10, 0x40(%0)\n"	\
-		"movq %%r11, 0x48(%0)\n"	\
-		"movq %%r12, 0x50(%0)\n"	\
-		"movq %%r13, 0x58(%0)\n"	\
-		"movq %%r14, 0x60(%0)\n"	\
-		"movq %%r15, 0x68(%0)\n"	\
-		: "=&a" (ptr)	\
-		: "0" (cur_thread_regs)	\
-		: "memory"	\
-	)
+#define ARCH_NUM_REGS 16
+#define USE_MONO_CTX
+
+/*FIXME, move this to mono-sigcontext as this is generaly useful.*/
 #define ARCH_SIGCTX_SP(ctx)    (UCONTEXT_REG_RSP (ctx))
 #define ARCH_SIGCTX_IP(ctx)    (UCONTEXT_REG_RIP (ctx))
-#define ARCH_COPY_SIGCTX_REGS(a,ctx) do {	\
-	((a)[0] = (gpointer) (UCONTEXT_REG_RAX (ctx)));	\
-	((a)[1] = (gpointer) (UCONTEXT_REG_RBX (ctx)));	\
-	((a)[2] = (gpointer) (UCONTEXT_REG_RCX (ctx)));	\
-	((a)[3] = (gpointer) (UCONTEXT_REG_RDX (ctx)));	\
-	((a)[4] = (gpointer) (UCONTEXT_REG_RSI (ctx)));	\
-	((a)[5] = (gpointer) (UCONTEXT_REG_RDI (ctx)));	\
-	((a)[6] = (gpointer) (UCONTEXT_REG_RBP (ctx)));	\
-	((a)[7] = (gpointer) (UCONTEXT_REG_R8 (ctx)));	\
-	((a)[8] = (gpointer) (UCONTEXT_REG_R9 (ctx)));	\
-	((a)[9] = (gpointer) (UCONTEXT_REG_R10 (ctx)));	\
-	((a)[10] = (gpointer) (UCONTEXT_REG_R11 (ctx)));	\
-	((a)[11] = (gpointer) (UCONTEXT_REG_R12 (ctx)));	\
-	((a)[12] = (gpointer) (UCONTEXT_REG_R13 (ctx)));	\
-	((a)[13] = (gpointer) (UCONTEXT_REG_R14 (ctx)));	\
-	((a)[14] = (gpointer) (UCONTEXT_REG_R15 (ctx)));	\
-	} while (0)
 
 #elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
 
