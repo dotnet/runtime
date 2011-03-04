@@ -2204,6 +2204,15 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
 	MonoJitInfo *ji;
 
+	if (mono_loader_lock_is_owned_by_self ()) {
+		/*
+		 * Shortcut for the check in suspend_current (). This speeds up processing
+		 * when executing long running code inside the loader lock, i.e. assembly load
+		 * hooks.
+		 */
+		return;
+	}
+
 	if (debugger_thread_id == GetCurrentThreadId ())
 		return;
 
