@@ -3001,6 +3001,26 @@ mono_sgen_need_major_collection (mword space_needed)
 	return need_major_collection (space_needed);
 }
 
+static GrayQueue*
+job_gray_queue (WorkerData *worker_data)
+{
+	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
+}
+
+typedef struct
+{
+	char *heap_start;
+	char *heap_end;
+} ScanFromRemsetsJobData;
+
+static void
+job_scan_from_remsets (WorkerData *worker_data, void *job_data_untyped)
+{
+	ScanFromRemsetsJobData *job_data = job_data_untyped;
+
+	scan_from_remsets (job_data->heap_start, job_data->heap_end, job_gray_queue (worker_data));
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -3011,6 +3031,7 @@ collect_nursery (size_t requested_size)
 	gboolean needs_major;
 	size_t max_garbage_amount;
 	char *orig_nursery_next;
+	ScanFromRemsetsJobData sfrjd;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
@@ -3091,7 +3112,10 @@ collect_nursery (size_t requested_size)
 
 	workers_start_marking ();
 
-	scan_from_remsets (nursery_start, nursery_next, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	sfrjd.heap_start = nursery_start;
+	sfrjd.heap_end = nursery_next;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_remsets, &sfrjd);
+
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
 	time_minor_scan_remsets += TV_ELAPSED_MS (atv, btv);
@@ -3203,12 +3227,6 @@ collect_nursery (size_t requested_size)
 	objects_pinned = 0;
 
 	return needs_major;
-}
-
-static GrayQueue*
-job_gray_queue (WorkerData *worker_data)
-{
-	return worker_data ? &worker_data->private_gray_queue : WORKERS_DISTRIBUTE_GRAY_QUEUE;
 }
 
 typedef struct
