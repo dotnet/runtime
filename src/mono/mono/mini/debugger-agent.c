@@ -2075,7 +2075,7 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 
 	if (ji) {
 		/* Running managed code, will be suspended by the single step code */
-		DEBUG (1, printf ("[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)GetCurrentThreadId (), ji->method->name, mono_arch_ip_from_context (sigctx)));
+		DEBUG (1, fprintf (log_file, "[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)GetCurrentThreadId (), ji->method->name, mono_arch_ip_from_context (sigctx)));
 		return TRUE;
 	} else {
 		/* 
@@ -2091,7 +2091,7 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			// FIXME: printf is not signal safe, but this is only used during
 			// debugger debugging
 			if (sigctx)
-				DEBUG (1, printf ("[%p] Received interrupt while at %p, treating as suspended.\n", (gpointer)GetCurrentThreadId (), mono_arch_ip_from_context (sigctx)));
+				DEBUG (1, fprintf (log_file, "[%p] Received interrupt while at %p, treating as suspended.\n", (gpointer)GetCurrentThreadId (), mono_arch_ip_from_context (sigctx)));
 			//save_thread_context (&ctx);
 
 			if (!tls->thread)
@@ -4317,7 +4317,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointI
 	}
 
 	if (!ss_req->bps) {
-		DEBUG (1, printf ("[dbg] Turning on global single stepping.\n"));
+		DEBUG (1, fprintf (log_file, "[dbg] Turning on global single stepping.\n"));
 		ss_req->global = TRUE;
 		start_single_stepping ();
 	} else {
@@ -4345,11 +4345,11 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 
 	// FIXME: Multiple requests
 	if (ss_req) {
-		DEBUG (0, printf ("Received a single step request while the previous one was still active.\n"));
+		DEBUG (0, fprintf (log_file, "Received a single step request while the previous one was still active.\n"));
 		return ERR_NOT_IMPLEMENTED;
 	}
 
-	DEBUG (1, printf ("[dbg] Starting single step of thread %p (depth=%s).\n", thread, ss_depth_to_string (depth)));
+	DEBUG (1, fprintf (log_file, "[dbg] Starting single step of thread %p (depth=%s).\n", thread, ss_depth_to_string (depth)));
 
 	ss_req = g_new0 (SingleStepReq, 1);
 	ss_req->req = req;
@@ -5098,7 +5098,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 		 * Invoke this method directly, currently only Environment.Exit () is supported.
 		 */
 		this = NULL;
-		DEBUG (1, printf ("[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (invoke->method, TRUE), this ? this->vtable->klass->name : "<null>"));
+		DEBUG (1, fprintf (log_file, "[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (invoke->method, TRUE), this ? this->vtable->klass->name : "<null>"));
 		mono_runtime_invoke (invoke->method, NULL, invoke->args, &exc);
 		g_assert_not_reached ();
 	}
@@ -5129,7 +5129,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 	else
 		this = NULL;
 
-	DEBUG (1, printf ("[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (m, TRUE), this ? this->vtable->klass->name : "<null>"));
+	DEBUG (1, fprintf (log_file, "[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (m, TRUE), this ? this->vtable->klass->name : "<null>"));
 
 	if (this && this->vtable->domain != domain)
 		NOT_IMPLEMENTED;
@@ -5323,7 +5323,7 @@ invoke_method (void)
 		tls->resume_count -= invoke->suspend_count;
 	}
 
-	DEBUG (1, printf ("[%p] Invoke finished, resume_count = %d.\n", (gpointer)GetCurrentThreadId (), tls->resume_count));
+	DEBUG (1, fprintf (log_file, "[%p] Invoke finished, resume_count = %d.\n", (gpointer)GetCurrentThreadId (), tls->resume_count));
 
 	/*
 	 * Take the loader lock to avoid race conditions with CMD_VM_ABORT_INVOKE:
@@ -7332,7 +7332,7 @@ debugger_thread (void *arg)
 	mono_cond_signal (&debugger_thread_exited_cond);
 	mono_mutex_unlock (&debugger_thread_exited_mutex);
 
-	DEBUG (1, printf ("[dbg] Debugger thread exited.\n"));
+	DEBUG (1, fprintf (log_file, "[dbg] Debugger thread exited.\n"));
 	
 	if (!attach_failed && command_set == CMD_SET_VM && command == CMD_VM_DISPOSE && !(vm_death_event_sent || mono_runtime_is_shutting_down ())) {
 		DEBUG (2, fprintf (log_file, "[dbg] Detached - restarting clean debugger thread.\n"));
