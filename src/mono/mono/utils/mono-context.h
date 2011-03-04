@@ -38,6 +38,21 @@
 #undef MONO_SIGNAL_USE_SIGACTION
 #endif
 
+#ifdef HOST_WIN32
+/* sigcontext surrogate */
+struct sigcontext {
+	unsigned int eax;
+	unsigned int ebx;
+	unsigned int ecx;
+	unsigned int edx;
+	unsigned int ebp;
+	unsigned int esp;
+	unsigned int esi;
+	unsigned int edi;
+	unsigned int eip;
+};
+#endif
+
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
 # define SC_EAX sc_eax
 # define SC_EBX sc_ebx

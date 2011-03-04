@@ -19,19 +19,6 @@
 #include <signal.h>
 #endif
 
-/* sigcontext surrogate */
-struct sigcontext {
-	unsigned int eax;
-	unsigned int ebx;
-	unsigned int ecx;
-	unsigned int edx;
-	unsigned int ebp;
-	unsigned int esp;
-	unsigned int esi;
-	unsigned int edi;
-	unsigned int eip;
-};
-
 typedef void (* MonoW32ExceptionHandler) (int _dummy, EXCEPTION_RECORD *info, void *context);
 void win32_seh_init(void);
 void win32_seh_cleanup(void);
