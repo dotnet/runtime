@@ -5593,30 +5593,34 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 
-		item->chunk_size += LOAD_CONST_SIZE;
 		if (item->is_equals) {
 			if (item->check_target_idx) {
-				item->chunk_size += BR_SIZE + LOAD_CONST_SIZE + JUMP_JR_SIZE;
+				item->chunk_size += LOAD_CONST_SIZE + BR_SIZE + JUMP_JR_SIZE;
+				if (item->has_target_code)
+					item->chunk_size += LOAD_CONST_SIZE;
+				else
+					item->chunk_size += LOADSTORE_SIZE;
 			} else {
 				if (fail_tramp) {
-					item->chunk_size += BR_SIZE + JUMP_IMM32_SIZE * 2;
+					item->chunk_size += LOAD_CONST_SIZE + BR_SIZE + JUMP_IMM32_SIZE +
+						LOADSTORE_SIZE + JUMP_IMM32_SIZE;
 					if (!item->has_target_code)
 						item->chunk_size += LOADSTORE_SIZE;
 				} else {
-					item->chunk_size += LOADSTORE_SIZE + JUMP_IMM_SIZE;
+					item->chunk_size += LOADSTORE_SIZE + JUMP_JR_SIZE;
 #if ENABLE_WRONG_METHOD_CHECK
 					item->chunk_size += CMP_SIZE + BR_SIZE + 4;
 #endif
 				}
 			}
 		} else {
-			item->chunk_size += BR_SIZE;
+			item->chunk_size += CMP_SIZE + BR_SIZE;
 			imt_entries [item->check_target_idx]->compare_done = TRUE;
 		}
 		size += item->chunk_size;
 	}
 	/* the initial load of the vtable address */
-	size += MIPS_LOAD_SEQUENCE_LENGTH + LOADSTORE_SIZE;
+	size += MIPS_LOAD_SEQUENCE_LENGTH;
 	if (fail_tramp) {
 		code = mono_method_alloc_generic_virtual_thunk (domain, size);
 	} else {
