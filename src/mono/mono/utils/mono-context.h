@@ -183,6 +183,24 @@ typedef struct {
 		: "a" (&(ctx))	\
 		: "rdx", "memory")
 
+#elif defined(__arm__) /* defined(__x86_64__) */
+
+typedef struct {
+	gulong eip;          // pc 
+	gulong esp;          // sp
+	gulong regs [16];
+	double fregs [8];
+} MonoContext;
+
+/* we have the stack pointer, not the base pointer in sigcontext */
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (int)ip; } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (int)bp; } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->esp = (int)bp; } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->eip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
+
 #else  
 
 #error "Implement mono-context for the current arch"

@@ -2,6 +2,7 @@
 #define __MONO_MINI_ARM_H__
 
 #include <mono/arch/arm/arm-codegen.h>
+#include <mono/utils/mono-context.h>
 #include <glib.h>
 
 #if defined(ARM_FPU_NONE) || (defined(__ARM_EABI__) && !defined(ARM_FPU_VFP))
@@ -112,19 +113,6 @@ struct MonoLMF {
 	gulong     iregs [14];
 };
 
-/* we define our own structure and we'll copy the data
- * from sigcontext/ucontext/mach when we need it.
- * This also makes us save stack space and time when copying
- * We might also want to add an additional field to propagate
- * the original context from the signal handler.
- */
-typedef struct {
-	gulong eip;          // pc 
-	gulong esp;          // sp
-	gulong regs [16];
-	double fregs [MONO_SAVED_FREGS];
-} MonoContext;
-
 typedef struct MonoCompileArch {
 	gpointer seq_point_info_var, ss_trigger_page_var;
 	gboolean omit_fp, omit_fp_computed;
@@ -180,15 +168,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_RGCTX_REG ARMREG_V5
 /* First argument reg */
 #define MONO_ARCH_VTABLE_REG ARMREG_R0
-
-/* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (int)ip; } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (int)bp; } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->esp = (int)bp; } while (0); 
-
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->eip))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->regs [0] = (gsize)exc; } while (0)
 
