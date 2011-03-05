@@ -1040,6 +1040,10 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 #if MIPS_PASS_STRUCTS_BY_VALUE
 			/* Need to do alignment if struct contains long or double */
 			if (alignment > 4) {
+				/* Drop onto stack *before* looking at
+				   stack_size, if required. */
+				if (!cinfo->on_stack && cinfo->gr > MIPS_LAST_ARG_REG)
+					args_onto_stack (cinfo);
 				if (cinfo->stack_size & (alignment - 1)) {
 					add_int32_arg (cinfo, &dummy_arg);
 				}
