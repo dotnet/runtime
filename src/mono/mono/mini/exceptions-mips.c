@@ -396,25 +396,6 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE, FALSE);
 	inited = 1;
 	return start;
-}	
-
-static MonoArray *
-glist_to_array (GList *list, MonoClass *eclass) 
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	int len, i;
-
-	if (!list)
-		return NULL;
-
-	len = g_list_length (list);
-	res = mono_array_new (domain, eclass, len);
-
-	for (i = 0; list; list = list->next, i++)
-		mono_array_set (res, gpointer, i, list->data);
-
-	return res;
 }
 
 /*
