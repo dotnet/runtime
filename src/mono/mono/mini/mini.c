@@ -1898,6 +1898,12 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 
 		LSCAN_DEBUG (printf ("R%d %s -> 0x%x\n", inst->dreg, mono_type_full_name (t), slot));
 
+		if (inst->flags & MONO_INST_LMF) {
+			size = sizeof (MonoLMF);
+			align = sizeof (mgreg_t);
+			reuse_slot = FALSE;
+		}
+
 		if (!reuse_slot)
 			slot = 0xffffff;
 
@@ -2124,6 +2130,16 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 				mono_print_ins (inst);
 				}
 			*/
+		}
+
+		if (inst->flags & MONO_INST_LMF) {
+			/*
+			 * This variable represents a MonoLMF structure, which has no corresponding
+			 * CLR type, so hard-code its size/alignment.
+			 */
+			size = sizeof (MonoLMF);
+			align = sizeof (mgreg_t);
+			reuse_slot = FALSE;
 		}
 
 		if (!reuse_slot)

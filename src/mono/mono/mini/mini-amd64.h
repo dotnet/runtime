@@ -180,7 +180,6 @@ struct MonoLMF {
 };
 
 typedef struct MonoCompileArch {
-	gint32 lmf_offset;
 	gint32 localloc_offset;
 	gint32 reg_save_area_offset;
 	gint32 stack_alloc_size;
@@ -193,6 +192,7 @@ typedef struct MonoCompileArch {
 	gpointer	unwindinfo;
 #endif
 	gpointer ss_trigger_page_var;
+	gpointer lmf_var;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->rax = (gsize)exc; } while (0)

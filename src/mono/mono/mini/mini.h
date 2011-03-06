@@ -834,6 +834,11 @@ enum {
 	MONO_INST_NORANGECHECK   = 16,
 	/* On loads, the source address can be null */
 	MONO_INST_FAULT = 32,
+	/* 
+	 * On variables, identifies LMF variables. These variables have a dummy type (int), but
+	 * require stack space for a MonoLMF struct.
+	 */
+	MONO_INST_LMF = 32,
 	/* On loads, the source address points to a constant value */
 	MONO_INST_CONSTANT_LOAD = 64,
 	/* On variables, the variable needs GC tracking */
