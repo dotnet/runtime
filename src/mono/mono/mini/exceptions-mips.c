@@ -484,7 +484,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		MONO_CONTEXT_SET_IP (new_ctx, new_ctx->sc_regs[mips_ra] - 8);
 
 		/* Sanity check -- we should have made progress here */
-		g_assert (new_ctx->sc_pc != ctx->sc_pc);
+		g_assert (MONO_CONTEXT_GET_BP (new_ctx) != MONO_CONTEXT_GET_BP (ctx));
 		return TRUE;
 	} else if (*lmf) {
 		if (!(*lmf)->method) {
