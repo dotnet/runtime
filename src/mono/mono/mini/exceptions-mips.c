@@ -413,33 +413,28 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 							 mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
-	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-	gpointer fp = MONO_CONTEXT_GET_BP (ctx);
-	guint32 sp;
-
 	memset (frame, 0, sizeof (StackFrameInfo));
 	frame->ji = ji;
 
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		int i;
 		gint32 address;
-		int offset = 0;
+		gpointer ip = MONO_CONTEXT_GET_IP (ctx);
+		gpointer fp = MONO_CONTEXT_GET_BP (ctx);
+		guint32 sp;
 
 		frame->type = FRAME_TYPE_MANAGED;
 
-		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
+		if (*lmf && (fp >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
 			*lmf = (*lmf)->previous_lmf;
 		}
 
 		address = (char *)ip - (char *)ji->code_start;
 
-		/* My stack frame */
-		fp = MONO_CONTEXT_GET_BP (ctx);
-
-		/* Compute the previous stack frame */
+		/* Compute the previous stack frame, assuming method
+		 * starts with addiu sp, sp, <offset>. */
 		sp = (guint32)(fp) - (short)(*(guint32 *)(ji->code_start));
 
 		/* Sanity check the frame */
