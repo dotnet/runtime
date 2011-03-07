@@ -1143,6 +1143,9 @@ mini_usage (void)
 		"                           Currently the only supported option is 'disable'.\n"
 		"    --llvm, --nollvm       Controls whenever the runtime uses LLVM to compile code.\n"
 	        "    --gc=[sgen,boehm]      Select SGen or Boehm GC (runs mono or mono-sgen)\n"
+#ifdef HOST_WIN32
+	        "    --mixed-mode           Enable mixed-mode image support.\n"
+#endif
 	  );
 }
 
@@ -1250,10 +1253,8 @@ BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 		mono_install_runtime_load (mini_init);
 		break;
 	case DLL_PROCESS_DETACH:
-#ifdef ENABLE_COREE
 		if (coree_module_handle)
 			FreeLibrary (coree_module_handle);
-#endif
 		break;
 	}
 	return TRUE;
@@ -1344,6 +1345,9 @@ mono_main (int argc, char* argv[])
 	char *attach_options = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
+#endif
+#ifdef HOST_WIN32
+	int mixed_mode = FALSE;
 #endif
 
 #ifdef MOONLIGHT
@@ -1473,6 +1477,10 @@ mono_main (int argc, char* argv[])
 				return 1;
 			}
 			config_file = argv [++i];
+#ifdef HOST_WIN32
+		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
+			mixed_mode = TRUE;
+#endif
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --ncompile requires an argument\n");
@@ -1735,6 +1743,11 @@ mono_main (int argc, char* argv[])
 		if ((opt & MONO_OPT_GSHARED) == 0)
 			mini_debugger_set_attach_ok ();
 	}
+#endif
+
+#ifdef HOST_WIN32
+	if (mixed_mode)
+		mono_load_coree (argv [i]);
 #endif
 
 	mono_set_defaults (mini_verbose, opt);
