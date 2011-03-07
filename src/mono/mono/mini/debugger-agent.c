@@ -5249,8 +5249,15 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke)
 		} else if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
 			buffer_add_value (buf, sig->ret, &res, domain);
 		} else if (mono_class_from_mono_type (sig->ret)->valuetype) {
-			g_assert (res);
-			buffer_add_value (buf, sig->ret, mono_object_unbox (res), domain);
+			if (mono_class_is_nullable (mono_class_from_mono_type (sig->ret))) {
+				if (!res)
+					buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &res, domain);
+				else
+					buffer_add_value (buf, sig->ret, mono_object_unbox (res), domain);
+			} else {
+				g_assert (res);
+				buffer_add_value (buf, sig->ret, mono_object_unbox (res), domain);
+			}
 		} else {
 			NOT_IMPLEMENTED;
 		}
