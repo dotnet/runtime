@@ -6,6 +6,14 @@
 #include <asm/sigcontext.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
 #if defined(__i386__)
 
 #if defined(__FreeBSD__) || defined(__APPLE__)

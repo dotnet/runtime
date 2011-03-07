@@ -26,7 +26,7 @@ gboolean mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method
 
 gboolean mono_verifier_verify_class (MonoClass *klass) MONO_INTERNAL;
 
-GSList* mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visibility) MONO_INTERNAL;
+GSList* mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visibility, gboolean is_fulltrust) MONO_INTERNAL;
 
 gboolean mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list) MONO_INTERNAL;
 gboolean mono_verifier_verify_cli_data (MonoImage *image, GSList **error_list) MONO_INTERNAL;

@@ -20,18 +20,9 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-machine.h>
 
 #define MONO_BREAKPOINT_ARRAY_SIZE 64
-
-/* C type matching the size of a machine register. Not always the same as 'int' */
-/* Note that member 'p' of MonoInst must be the same type, as OP_PCONST is defined
- * as one of the OP_ICONST types, so inst_c0 must be the same as inst_p0
- */
-#if SIZEOF_REGISTER == 4
-typedef gint32 mgreg_t;
-#elif SIZEOF_REGISTER == 8
-typedef gint64 mgreg_t;
-#endif
 
 #include "mini-arch.h"
 #include "regalloc.h"
@@ -843,6 +834,11 @@ enum {
 	MONO_INST_NORANGECHECK   = 16,
 	/* On loads, the source address can be null */
 	MONO_INST_FAULT = 32,
+	/* 
+	 * On variables, identifies LMF variables. These variables have a dummy type (int), but
+	 * require stack space for a MonoLMF struct.
+	 */
+	MONO_INST_LMF = 32,
 	/* On loads, the source address points to a constant value */
 	MONO_INST_CONSTANT_LOAD = 64,
 	/* On variables, the variable needs GC tracking */
@@ -2305,6 +2301,8 @@ guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb) MONO_INTERNAL;
 
 void mono_cfg_set_exception (MonoCompile *cfg, int type) MONO_INTERNAL;
+gboolean mini_type_is_reference (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
+
 
 /* wapihandles.c */
 int mini_wapi_hps (int argc, char **argv) MONO_INTERNAL;

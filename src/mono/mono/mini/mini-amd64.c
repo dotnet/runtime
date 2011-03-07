@@ -1769,15 +1769,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	if (cfg->method->save_lmf) {
-		/* Reserve stack space for saving LMF */
-		if (cfg->arch.omit_fp) {
-			cfg->arch.lmf_offset = offset;
-			offset += sizeof (MonoLMF);
-		}
-		else {
-			offset += sizeof (MonoLMF);
-			cfg->arch.lmf_offset = -offset;
-		}
+		/* The LMF var is allocated normally */
 	} else {
 		if (cfg->arch.omit_fp)
 			cfg->arch.reg_save_area_offset = offset;
@@ -2051,6 +2043,13 @@ mono_arch_create_vars (MonoCompile *cfg)
 	 */
 	cfg->arch.no_pushes = TRUE;
 #endif
+
+	if (cfg->method->save_lmf) {
+		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		lmf_var->flags |= MONO_INST_VOLATILE;
+		lmf_var->flags |= MONO_INST_LMF;
+		cfg->arch.lmf_var = lmf_var;
+	}
 }
 
 static void
@@ -3665,6 +3664,165 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	return code;
 }
 
+/*
+ * emit_setup_lmf:
+ *
+ *   Emit code to initialize an LMF structure at LMF_OFFSET.
+ */
+static guint8*
+emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offset)
+{
+	int i;
+
+	/* 
+	 * The ip field is not set, the exception handling code will obtain it from the stack location pointed to by the sp field.
+	 */
+	/* 
+	 * sp is saved right before calls but we need to save it here too so
+	 * async stack walks would work.
+	 */
+	amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
+	/* Skip method (only needed for trampoline LMF frames) */
+	/* Save callee saved regs */
+	for (i = 0; i < MONO_MAX_IREGS; ++i) {
+		int offset;
+
+		switch (i) {
+		case AMD64_RBX: offset = G_STRUCT_OFFSET (MonoLMF, rbx); break;
+		case AMD64_RBP: offset = G_STRUCT_OFFSET (MonoLMF, rbp); break;
+		case AMD64_R12: offset = G_STRUCT_OFFSET (MonoLMF, r12); break;
+		case AMD64_R13: offset = G_STRUCT_OFFSET (MonoLMF, r13); break;
+		case AMD64_R14: offset = G_STRUCT_OFFSET (MonoLMF, r14); break;
+#ifndef __native_client_codegen__
+		case AMD64_R15: offset = G_STRUCT_OFFSET (MonoLMF, r15); break;
+#endif
+#ifdef HOST_WIN32
+		case AMD64_RDI: offset = G_STRUCT_OFFSET (MonoLMF, rdi); break;
+		case AMD64_RSI: offset = G_STRUCT_OFFSET (MonoLMF, rsi); break;
+#endif
+		default:
+			offset = -1;
+			break;
+		}
+
+		if (offset != -1) {
+			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + offset, i, 8);
+			if ((cfg->arch.omit_fp || (i != AMD64_RBP)) && cfa_offset != -1)
+				mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - (lmf_offset + offset)));
+		}
+	}
+
+	/* These can't contain refs */
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
+
+	/* These are handled automatically by the stack marking code */
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), SLOT_NOREF);
+#ifdef HOST_WIN32
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), SLOT_NOREF);
+	mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), SLOT_NOREF);
+#endif
+
+	return code;
+}
+
+/*
+ * emit_save_lmf:
+ *
+ *   Emit code to push an LMF structure on the LMF stack.
+ */
+static guint8*
+emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, gboolean *args_clobbered)
+{
+	if ((lmf_tls_offset != -1) && !optimize_for_xen) {
+		/*
+		 * Optimized version which uses the mono_lmf TLS variable instead of 
+		 * indirection through the mono_lmf_addr TLS variable.
+		 */
+		/* %rax = previous_lmf */
+		x86_prefix (code, X86_FS_PREFIX);
+		amd64_mov_reg_mem (code, AMD64_RAX, lmf_tls_offset, 8);
+
+		/* Save previous_lmf */
+		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_RAX, 8);
+		/* Set new lmf */
+		if (lmf_offset == 0) {
+			x86_prefix (code, X86_FS_PREFIX);
+			amd64_mov_mem_reg (code, lmf_tls_offset, cfg->frame_reg, 8);
+		} else {
+			amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
+			x86_prefix (code, X86_FS_PREFIX);
+			amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
+		}
+	} else {
+		if (lmf_addr_tls_offset != -1) {
+			/* Load lmf quicky using the FS register */
+			code = mono_amd64_emit_tls_get (code, AMD64_RAX, lmf_addr_tls_offset);
+#ifdef HOST_WIN32
+			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
+			/* FIXME: Add a separate key for LMF to avoid this */
+			amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#endif
+		}
+		else {
+			/* 
+			 * The call might clobber argument registers, but they are already
+			 * saved to the stack/global regs.
+			 */
+			if (args_clobbered)
+				*args_clobbered = TRUE;
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+							  (gpointer)"mono_get_lmf_addr", TRUE);		
+		}
+
+		/* Save lmf_addr */
+		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, sizeof(gpointer));
+		/* Save previous_lmf */
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, sizeof(gpointer));
+		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, sizeof(gpointer));
+		/* Set new lmf */
+		amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
+		amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
+	}
+
+	return code;
+}
+
+/*
+ * emit_save_lmf:
+ *
+ *   Emit code to pop an LMF structure from the LMF stack.
+ */
+static guint8*
+emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
+{
+	if ((lmf_tls_offset != -1) && !optimize_for_xen) {
+		/*
+		 * Optimized version which uses the mono_lmf TLS variable instead of indirection
+		 * through the mono_lmf_addr TLS variable.
+		 */
+		/* reg = previous_lmf */
+		amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
+		x86_prefix (code, X86_FS_PREFIX);
+		amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
+	} else {
+		/* Restore previous lmf */
+		amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
+		amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
+		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
+	}
+
+	return code;
+}
+
 #define REAL_PRINT_REG(text,reg) \
 mono_assert (reg >= 0); \
 amd64_push_reg (code, AMD64_RAX); \
@@ -4787,9 +4945,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_membase_reg (code, AMD64_R11, G_STRUCT_OFFSET (DynCallArgs, res), AMD64_RAX, 8);
 			break;
 		}
-		case OP_AMD64_SAVE_SP_TO_LMF:
-			amd64_mov_membase_reg (code, cfg->frame_reg, cfg->arch.lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
+		case OP_AMD64_SAVE_SP_TO_LMF: {
+			MonoInst *lmf_var = cfg->arch.lmf_var;
+			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_var->inst_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 			break;
+		}
 		case OP_X86_PUSH:
 			g_assert (!cfg->arch.no_pushes);
 			amd64_push_reg (code, ins->sreg1);
@@ -6360,7 +6520,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, pos, i, cfa_offset, quad, max_epilog_size;
 	guint8 *code;
 	CallInfo *cinfo;
-	gint32 lmf_offset = cfg->arch.lmf_offset;
+	MonoInst *lmf_var = cfg->arch.lmf_var;
 	gboolean args_clobbered = FALSE;
 	gboolean trace = FALSE;
 #ifdef __native_client_codegen__
@@ -6586,63 +6746,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* Save LMF */
 	if (method->save_lmf) {
-		/* 
-		 * The ip field is not set, the exception handling code will obtain it from the stack location pointed to by the sp field.
-		 */
-		/* 
-		 * sp is saved right before calls but we need to save it here too so
-		 * async stack walks would work.
-		 */
-		amd64_mov_membase_reg (code, cfg->frame_reg, cfg->arch.lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
-		/* Skip method (only needed for trampoline LMF frames) */
-		/* Save callee saved regs */
-		for (i = 0; i < MONO_MAX_IREGS; ++i) {
-			int offset;
-
-			switch (i) {
-			case AMD64_RBX: offset = G_STRUCT_OFFSET (MonoLMF, rbx); break;
-			case AMD64_RBP: offset = G_STRUCT_OFFSET (MonoLMF, rbp); break;
-			case AMD64_R12: offset = G_STRUCT_OFFSET (MonoLMF, r12); break;
-			case AMD64_R13: offset = G_STRUCT_OFFSET (MonoLMF, r13); break;
-			case AMD64_R14: offset = G_STRUCT_OFFSET (MonoLMF, r14); break;
-#ifndef __native_client_codegen__
-			case AMD64_R15: offset = G_STRUCT_OFFSET (MonoLMF, r15); break;
-#endif
-#ifdef HOST_WIN32
-			case AMD64_RDI: offset = G_STRUCT_OFFSET (MonoLMF, rdi); break;
-			case AMD64_RSI: offset = G_STRUCT_OFFSET (MonoLMF, rsi); break;
-#endif
-			default:
-				offset = -1;
-				break;
-			}
-
-			if (offset != -1) {
-				amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + offset, i, 8);
-				if (cfg->arch.omit_fp || (i != AMD64_RBP))
-					mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - (lmf_offset + offset)));
-			}
-		}
-
-		/* These can't contain refs */
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), SLOT_NOREF);
-
-		/* These are handled automatically by the stack marking code */
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), SLOT_NOREF);
-#ifdef HOST_WIN32
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), SLOT_NOREF);
-		mini_gc_set_slot_type_from_fp (cfg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), SLOT_NOREF);
-#endif
-
+		code = emit_setup_lmf (cfg, code, lmf_var->inst_offset, cfa_offset);
 	}
 
 	/* Save callee saved registers */
@@ -6897,55 +7001,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (method->save_lmf) {
-		if ((lmf_tls_offset != -1) && !optimize_for_xen) {
-			/*
-			 * Optimized version which uses the mono_lmf TLS variable instead of 
-			 * indirection through the mono_lmf_addr TLS variable.
-			 */
-			/* %rax = previous_lmf */
-			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_reg_mem (code, AMD64_RAX, lmf_tls_offset, 8);
-
-			/* Save previous_lmf */
-			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_RAX, 8);
-			/* Set new lmf */
-			if (lmf_offset == 0) {
-				x86_prefix (code, X86_FS_PREFIX);
-				amd64_mov_mem_reg (code, lmf_tls_offset, cfg->frame_reg, 8);
-			} else {
-				amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
-				x86_prefix (code, X86_FS_PREFIX);
-				amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
-			}
-		} else {
-			if (lmf_addr_tls_offset != -1) {
-				/* Load lmf quicky using the FS register */
-				code = mono_amd64_emit_tls_get (code, AMD64_RAX, lmf_addr_tls_offset);
-#ifdef HOST_WIN32
-				/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
-				/* FIXME: Add a separate key for LMF to avoid this */
-				amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
-#endif
-			}
-			else {
-				/* 
-				 * The call might clobber argument registers, but they are already
-				 * saved to the stack/global regs.
-				 */
-				args_clobbered = TRUE;
-				code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-								  (gpointer)"mono_get_lmf_addr", TRUE);		
-			}
-
-			/* Save lmf_addr */
-			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, sizeof(gpointer));
-			/* Save previous_lmf */
-			amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, 0, sizeof(gpointer));
-			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_R11, sizeof(gpointer));
-			/* Set new lmf */
-			amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
-			amd64_mov_membase_reg (code, AMD64_RAX, 0, AMD64_R11, sizeof(gpointer));
-		}
+		code = emit_save_lmf (cfg, code, lmf_var->inst_offset, &args_clobbered);
 	}
 
 	if (trace) {
@@ -7049,7 +7105,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	guint8 *code;
 	int max_epilog_size;
 	CallInfo *cinfo;
-	gint32 lmf_offset = cfg->arch.lmf_offset;
+	gint32 lmf_offset = cfg->arch.lmf_var ? ((MonoInst*)cfg->arch.lmf_var)->inst_offset : -1;
 	
 	max_epilog_size = get_max_epilog_size (cfg);
 
@@ -7085,21 +7141,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		} else {
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
-		if ((lmf_tls_offset != -1) && !optimize_for_xen) {
-			/*
-			 * Optimized version which uses the mono_lmf TLS variable instead of indirection
-			 * through the mono_lmf_addr TLS variable.
-			 */
-			/* reg = previous_lmf */
-			amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
-			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
-		} else {
-			/* Restore previous lmf */
-			amd64_mov_reg_membase (code, AMD64_RCX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof(gpointer));
-			amd64_mov_reg_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof(gpointer));
-			amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof(gpointer));
-		}
+
+		code = emit_restore_lmf (cfg, code, lmf_offset);
 
 		/* Restore caller saved regs */
 		if (cfg->used_int_regs & (1 << AMD64_RBP)) {

@@ -35,6 +35,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/sgen-archdep.h>
 
 /*
  * Turning on heavy statistics will turn off the managed allocator and
@@ -115,7 +116,11 @@ struct _SgenThreadInfo {
 	gpointer runtime_data;
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
 	MonoDomain *stopped_domain; /* ditto */
+#ifdef USE_MONO_CTX
+	MonoContext *monoctx;	/* ditto */
+#else
 	gpointer *stopped_regs;	    /* ditto */
+#endif
 #ifndef HAVE_KW_THREAD
 	char *tlab_start;
 	char *tlab_next;

@@ -4962,8 +4962,12 @@ static MonoSemType *suspend_ack_semaphore_ptr;
 static unsigned int global_stop_count = 0;
 
 static sigset_t suspend_signal_mask;
-static mword cur_thread_regs [ARCH_NUM_REGS] = {0};
 
+#ifdef USE_MONO_CTX
+static MonoContext cur_thread_ctx = {0};
+#else
+static mword cur_thread_regs [ARCH_NUM_REGS] = {0};
+#endif
 
 
 SgenThreadInfo*
@@ -4982,13 +4986,23 @@ mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id)
 static void
 update_current_thread_stack (void *start)
 {
+	int stack_guard = 0;
+#ifdef USE_MONO_CTX
+	void *ptr = NULL;
+#else
 	void *ptr = cur_thread_regs;
+#endif
 	SgenThreadInfo *info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
 	
-	info->stack_start = align_pointer (&ptr);
+	info->stack_start = align_pointer (&stack_guard);
 	g_assert (info->stack_start >= info->stack_start_limit && info->stack_start < info->stack_end);
+#ifdef USE_MONO_CTX
+	MONO_CONTEXT_GET_CURRENT (cur_thread_ctx);
+	info->monoctx = &cur_thread_ctx;
+#else
 	ARCH_STORE_REGS (ptr);
 	info->stopped_regs = ptr;
+#endif
 	if (gc_callbacks.thread_suspend_func)
 		gc_callbacks.thread_suspend_func (info->runtime_data, NULL);
 }
@@ -5118,7 +5132,11 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	pthread_t id;
 	int stop_count;
 	int old_errno = errno;
+#ifdef USE_MONO_CTX
+	MonoContext monoctx;
+#else
 	gpointer regs [ARCH_NUM_REGS];
+#endif
 	gpointer stack_start;
 
 	id = pthread_self ();
@@ -5141,8 +5159,13 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
 		info->stack_start = stack_start;
 
+#ifdef USE_MONO_CTX
+		mono_sigctx_to_monoctx (context, &monoctx);
+		info->monoctx = &monoctx;
+#else
 		ARCH_COPY_SIGCTX_REGS (regs, context);
 		info->stopped_regs = regs;
+#endif
 	} else {
 		g_assert (!info->stack_start);
 	}
@@ -5238,7 +5261,11 @@ restart_world (int generation)
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
 	FOREACH_THREAD (info) {
 		info->stack_start = NULL;
+#ifdef USE_MONO_CTX
+		info->monoctx = NULL;
+#else
 		info->stopped_regs = NULL;
+#endif
 	} END_FOREACH_THREAD
 
 	release_gc_locks ();
@@ -5313,9 +5340,15 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 		else if (!precise)
 			conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
 
+#ifdef USE_MONO_CTX
+		if (!precise)
+			conservatively_pin_objects_from ((void**)info->monoctx, (void**)info->monoctx + ARCH_NUM_REGS,
+				start_nursery, end_nursery, PIN_TYPE_STACK);
+#else
 		if (!precise)
 			conservatively_pin_objects_from (info->stopped_regs, info->stopped_regs + ARCH_NUM_REGS,
 					start_nursery, end_nursery, PIN_TYPE_STACK);
+#endif
 	} END_FOREACH_THREAD
 }
 
@@ -5338,7 +5371,11 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 		}
 
 		for (j = 0; j < ARCH_NUM_REGS; ++j) {
+#ifdef USE_MONO_CTX
+			mword w = ((mword*)info->monoctx) [j];
+#else
 			mword w = (mword)info->stopped_regs [j];
+#endif
 
 			if (w >= (mword)obj && w < (mword)obj + size)
 				DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in saved reg %d of thread %p (id %p)\n", obj, j, info, (gpointer)info->id));
@@ -5729,7 +5766,11 @@ gc_register_current_thread (void *addr)
 	info->store_remset_buffer_index_addr = &STORE_REMSET_BUFFER_INDEX;
 	info->stopped_ip = NULL;
 	info->stopped_domain = NULL;
+#ifdef USE_MONO_CTX
+	info->monoctx = NULL;
+#else
 	info->stopped_regs = NULL;
+#endif
 
 	binary_protocol_thread_register ((gpointer)info->id);
 

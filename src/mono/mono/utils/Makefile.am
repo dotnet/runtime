@@ -68,6 +68,7 @@ monoutils_sources = \
 	mono-counters.h	\
 	mono-digest.h	\
 	mono-error.h	\
+	mono-machine.h	\
 	mono-math.h	\
 	mono-membar.h	\
 	mono-path.h	\
@@ -77,7 +78,9 @@ monoutils_sources = \
 	valgrind.h	\
 	mach-support.c	\
 	mach-support.h  \
-	memcheck.h
+	memcheck.h	\
+	mono-context.c	\
+	mono-context.h
 
 arch_sources = 
 

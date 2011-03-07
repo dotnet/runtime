@@ -3,6 +3,7 @@
 
 #include <mono/arch/amd64/amd64-codegen.h>
 #include <mono/utils/mono-sigcontext.h>
+#include <mono/utils/mono-context.h>
 #include <glib.h>
 
 #ifdef __native_client_codegen__
@@ -179,7 +180,6 @@ struct MonoLMF {
 };
 
 typedef struct MonoCompileArch {
-	gint32 lmf_offset;
 	gint32 localloc_offset;
 	gint32 reg_save_area_offset;
 	gint32 stack_alloc_size;
@@ -192,31 +192,8 @@ typedef struct MonoCompileArch {
 	gpointer	unwindinfo;
 #endif
 	gpointer ss_trigger_page_var;
+	gpointer lmf_var;
 } MonoCompileArch;
-
-typedef struct {
-	guint64 rax;
-	guint64 rbx;
-	guint64 rcx;
-	guint64 rdx;
-	guint64 rbp;
-	guint64 rsp;
-    guint64 rsi;
-	guint64 rdi;
-	guint64 rip;
-	guint64 r12;
-	guint64 r13;
-	guint64 r14;
-	guint64 r15;
-} MonoContext;
-
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->rip = (guint64)(ip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->rbp = (guint64)(bp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->rsp = (guint64)(esp); } while (0); 
-
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->rip))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->rbp))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->rsp))
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->rax = (gsize)exc; } while (0)
 
