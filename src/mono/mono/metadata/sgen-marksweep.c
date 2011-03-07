@@ -1085,6 +1085,14 @@ major_copy_or_mark_object (void **ptr, SgenGrayQueue *queue)
 			return;
 		}
 
+		/*
+		 * We do this before the CAS because we want to make
+		 * sure that if another thread sees the destination
+		 * pointer the VTable is already in place.  Not doing
+		 * this can crash binary protocols.
+		 */
+		*(MonoVTable**)destination = vt;
+
 		if (SGEN_CAS_PTR (obj, (void*)((mword)destination | SGEN_FORWARDED_BIT), vt) == vt) {
 			gboolean was_marked;
 

@@ -41,7 +41,6 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %lu)\n", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize));
 	binary_protocol_copy (obj, destination, vt, objsize);
 
-	*(MonoVTable**)destination = vt;
 	if (objsize <= sizeof (gpointer) * 8) {
 		mword *dest = (mword*)destination;
 		goto *copy_labels [objsize / sizeof (gpointer)];
@@ -132,6 +131,8 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 		return;
 	}
 
+	*(MonoVTable**)destination = vt;
+
 	if (SGEN_CAS_PTR ((void*)obj, (void*)((mword)destination | SGEN_FORWARDED_BIT), vt) == vt) {
 		par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
 		obj = destination;
@@ -166,6 +167,7 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 		return obj;
 	}
 
+	*(MonoVTable**)destination = vt;
 	par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
 
 	/* set the forwarding pointer */
