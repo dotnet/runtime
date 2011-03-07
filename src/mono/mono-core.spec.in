@@ -325,6 +325,7 @@ Development files for libmono.
 
 %files -n libmono-2_0-devel
 %defattr(-, root, root)
+%_bindir/mono-gdb.py
 %_includedir/mono-2.0
 %_libdir/libmono-2.0.a
 %_libdir/libmono-2.0.so
@@ -348,7 +349,6 @@ A Library for embedding Mono in your Application (sgen version).
 %files -n libmonosgen-2_0-0
 %defattr(-, root, root)
 %_libdir/libmonosgen-2.0.so.0*
-%_libdir/pkgconfig/monosgen-2.pc
 
 %post -n libmonosgen-2_0-0 -p /sbin/ldconfig
 
@@ -359,6 +359,7 @@ License:        LGPL v2.1 only
 Summary:	Development files for libmonosgen
 Group:          Development/Languages/Mono
 Requires:       mono-core == %version-%release
+Requires:       libmono-2_0-devel
 
 %description -n libmonosgen-2_0-devel
 The Mono Project is an open development initiative that is working to
@@ -371,8 +372,10 @@ Development files for libmonosgen.
 
 %files -n libmonosgen-2_0-devel
 %defattr(-, root, root)
+%_bindir/mono-sgen-gdb.py
 %_libdir/libmonosgen-2.0.a
 %_libdir/libmonosgen-2.0.so
+%_libdir/pkgconfig/monosgen-2.pc
 %endif
 
 %if %llvm == yes
@@ -982,7 +985,6 @@ Mono development tools.
 %_bindir/mono-cil-strip
 %_bindir/mono-find-provides
 %_bindir/mono-find-requires
-%_bindir/mono-gdb.py
 %_bindir/mono-heapviz
 %_bindir/mono-shlib-cop
 %_bindir/mono-xmltool
