@@ -448,8 +448,17 @@ workers_join (void)
 
 	g_assert (workers_gc_in_progress);
 	workers_gc_in_progress = FALSE;
-	if (workers_num_waiting == workers_num)
+	if (workers_num_waiting == workers_num) {
+		/*
+		 * All the workers might have shut down at this point
+		 * and posted the done semaphore but we don't know it
+		 * yet.  It's not a big deal to wake them up again -
+		 * they'll just do one iteration of their loop trying to
+		 * find something to do and then go back to waiting
+		 * again.
+		 */
 		workers_wake_up_all ();
+	}
 	MONO_SEM_WAIT (&workers_done_sem);
 	workers_marking = FALSE;
 
@@ -459,7 +468,6 @@ workers_join (void)
 	}
 
 	g_assert (workers_done_posted);
-	g_assert (workers_num_waiting == workers_num);
 
 	g_assert (!workers_gc_thread_data.stealable_stack_fill);
 	g_assert (gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));
