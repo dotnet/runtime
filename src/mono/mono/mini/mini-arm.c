@@ -305,22 +305,22 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	 * alloc_size is the total stack space allocated, so the offset
 	 * of MonoLMF from the current stack ptr is alloc_size - lmf_offset.
 	 * The pointer to the struct is put in r1 (new_lmf).
-	 * r2 is used as scratch
+	 * ip is used as scratch
 	 * The callee-saved registers are already in the MonoLMF structure
 	 */
 	code = emit_big_add (code, ARMREG_R1, ARMREG_SP, lmf_offset);
 	/* r0 is the result from mono_get_lmf_addr () */
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
 	/* new_lmf->previous_lmf = *lmf_addr */
-	ARM_LDR_IMM (code, ARMREG_R2, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-	ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* *(lmf_addr) = r1 */
 	ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* Skip method (only needed for trampoline LMF frames) */
 	ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, esp));
 	/* save the current IP */
-	ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_PC);
-	ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
+	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
 
 	return code;
 }
