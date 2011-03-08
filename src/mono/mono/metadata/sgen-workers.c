@@ -36,6 +36,16 @@ struct _WorkerData {
 	char *stealable_stack [STEALABLE_STACK_SIZE];
 };
 
+typedef void (*JobFunc) (WorkerData *worker_data, void *job_data);
+
+typedef struct _JobQueueEntry JobQueueEntry;
+struct _JobQueueEntry {
+	JobFunc func;
+	void *data;
+
+	volatile JobQueueEntry *next;
+};
+
 static int workers_num;
 static WorkerData *workers_data;
 static WorkerData workers_gc_thread_data;
@@ -46,11 +56,16 @@ static SgenInternalAllocator workers_distribute_gray_queue_allocator;
 #define WORKERS_DISTRIBUTE_GRAY_QUEUE (major_collector.is_parallel ? &workers_distribute_gray_queue : &gray_queue)
 
 static volatile gboolean workers_gc_in_progress = FALSE;
+static volatile gboolean workers_marking = FALSE;
 static gboolean workers_started = FALSE;
 static volatile int workers_num_waiting = 0;
 static MonoSemType workers_waiting_sem;
 static MonoSemType workers_done_sem;
 static volatile int workers_done_posted = 0;
+
+static volatile int workers_job_queue_num_entries = 0;
+static volatile JobQueueEntry *workers_job_queue = NULL;
+static LOCK_DECLARE (workers_job_queue_mutex);
 
 static long long stat_workers_stolen_from_self_lock;
 static long long stat_workers_stolen_from_self_no_lock;
@@ -58,12 +73,10 @@ static long long stat_workers_stolen_from_others;
 static long long stat_workers_num_waited;
 
 static void
-workers_wake_up_all (void)
+workers_wake_up (int max)
 {
-	int max;
 	int i;
 
-	max = workers_num_waiting;
 	for (i = 0; i < max; ++i) {
 		int num;
 		do {
@@ -73,6 +86,12 @@ workers_wake_up_all (void)
 		} while (InterlockedCompareExchange (&workers_num_waiting, num - 1, num) != num);
 		MONO_SEM_POST (&workers_waiting_sem);
 	}
+}
+
+static void
+workers_wake_up_all (void)
+{
+	workers_wake_up (workers_num);
 }
 
 static void
@@ -95,6 +114,56 @@ workers_wait (void)
 			MONO_SEM_POST (&workers_done_sem);
 	}
 	MONO_SEM_WAIT (&workers_waiting_sem);
+}
+
+static void
+workers_enqueue_job (SgenInternalAllocator *allocator, JobFunc func, void *data)
+{
+	int num_entries;
+	JobQueueEntry *entry;
+
+	if (!major_collector.is_parallel) {
+		func (NULL, data);
+		return;
+	}
+
+	entry = mono_sgen_alloc_internal_fixed (allocator, INTERNAL_MEM_JOB_QUEUE_ENTRY);
+	entry->func = func;
+	entry->data = data;
+
+	pthread_mutex_lock (&workers_job_queue_mutex);
+	entry->next = workers_job_queue;
+	workers_job_queue = entry;
+	num_entries = ++workers_job_queue_num_entries;
+	pthread_mutex_unlock (&workers_job_queue_mutex);
+
+	workers_wake_up (num_entries);
+}
+
+static gboolean
+workers_dequeue_and_do_job (WorkerData *data)
+{
+	JobQueueEntry *entry;
+
+	g_assert (major_collector.is_parallel);
+
+	if (!workers_job_queue_num_entries)
+		return FALSE;
+
+	pthread_mutex_lock (&workers_job_queue_mutex);
+	entry = (JobQueueEntry*)workers_job_queue;
+	if (entry) {
+		workers_job_queue = entry->next;
+		--workers_job_queue_num_entries;
+	}
+	pthread_mutex_unlock (&workers_job_queue_mutex);
+
+	if (!entry)
+		return FALSE;
+
+	entry->func (data, entry->data);
+	mono_sgen_free_internal_delayed (entry, INTERNAL_MEM_JOB_QUEUE_ENTRY, data->private_gray_queue.allocator);
+	return TRUE;
 }
 
 static gboolean
@@ -145,32 +214,30 @@ workers_steal (WorkerData *data, WorkerData *victim_data, gboolean lock)
 static gboolean
 workers_get_work (WorkerData *data)
 {
+	int i;
+
 	g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
 
-	for (;;) {
-		int i;
+	/* Try to steal from our own stack. */
+	if (workers_steal (data, data, TRUE))
+		return TRUE;
 
-		/* Try to steal from our own stack. */
-		if (workers_steal (data, data, TRUE))
+	/* Then from the GC thread's stack. */
+	if (workers_steal (data, &workers_gc_thread_data, TRUE))
+		return TRUE;
+
+	/* Finally, from another worker. */
+	for (i = 0; i < workers_num; ++i) {
+		WorkerData *victim_data = &workers_data [i];
+		if (data == victim_data)
+			continue;
+		if (workers_steal (data, victim_data, TRUE))
 			return TRUE;
-
-		/* Then from the GC thread's stack. */
-		if (workers_steal (data, &workers_gc_thread_data, TRUE))
-			return TRUE;
-
-		/* Finally, from another worker. */
-		for (i = 0; i < workers_num; ++i) {
-			WorkerData *victim_data = &workers_data [i];
-			if (data == victim_data)
-				continue;
-			if (workers_steal (data, victim_data, TRUE))
-				return TRUE;
-		}
-
-		/* Nobody to steal from, so wait. */
-		g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
-		workers_wait ();
 	}
+
+	/* Nobody to steal from */
+	g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
+	return FALSE;
 }
 
 static void
@@ -236,15 +303,27 @@ workers_thread_func (void *data_untyped)
 			workers_gray_queue_share_redirect, data);
 
 	for (;;) {
-		gboolean got_work = workers_get_work (data);
-		g_assert (got_work);
-		g_assert (!gray_object_queue_is_empty (&data->private_gray_queue));
+		gboolean did_work = FALSE;
 
-		while (!drain_gray_stack (&data->private_gray_queue, 32))
-			workers_gray_queue_share_redirect (&data->private_gray_queue);
-		g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
+		while (workers_dequeue_and_do_job (data)) {
+			did_work = TRUE;
+			/* FIXME: maybe distribute the gray queue here? */
+		}
 
-		gray_object_queue_init (&data->private_gray_queue, &allocator);
+		if (workers_marking && (!gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data))) {
+			g_assert (!gray_object_queue_is_empty (&data->private_gray_queue));
+
+			while (!drain_gray_stack (&data->private_gray_queue, 32))
+				workers_gray_queue_share_redirect (&data->private_gray_queue);
+			g_assert (gray_object_queue_is_empty (&data->private_gray_queue));
+
+			gray_object_queue_init (&data->private_gray_queue, &allocator);
+
+			did_work = TRUE;
+		}
+
+		if (!did_work)
+			workers_wait ();
 	}
 
 	/* dummy return to make compilers happy */
@@ -263,8 +342,12 @@ workers_distribute_gray_queue_sections (void)
 static void
 workers_init_distribute_gray_queue (void)
 {
-	if (!major_collector.is_parallel)
+	if (!major_collector.is_parallel) {
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+		mono_sgen_get_unmanaged_allocator ()->thread = pthread_self ();
+#endif
 		return;
+	}
 
 	gray_object_queue_init (&workers_distribute_gray_queue, &workers_distribute_gray_queue_allocator);
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
@@ -307,6 +390,10 @@ workers_init (int num_workers)
 			workers_data [i].major_collector_data = major_collector.alloc_worker_data ();
 	}
 
+	LOCK_INIT (workers_job_queue_mutex);
+
+	mono_sgen_register_fixed_internal_mem_type (INTERNAL_MEM_JOB_QUEUE_ENTRY, sizeof (JobQueueEntry));
+
 	mono_counters_register ("Stolen from self lock", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_self_lock);
 	mono_counters_register ("Stolen from self no lock", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_self_no_lock);
 	mono_counters_register ("Stolen from others", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_others);
@@ -337,6 +424,7 @@ workers_start_all_workers (void)
 
 	g_assert (!workers_gc_in_progress);
 	workers_gc_in_progress = TRUE;
+	workers_marking = FALSE;
 	workers_done_posted = 0;
 
 	if (workers_started) {
@@ -352,21 +440,49 @@ workers_start_all_workers (void)
 }
 
 static void
+workers_start_marking (void)
+{
+	if (!major_collector.is_parallel)
+		return;
+
+	g_assert (workers_started && workers_gc_in_progress);
+	g_assert (!workers_marking);
+
+	workers_marking = TRUE;
+
+	workers_wake_up_all ();
+}
+
+static void
 workers_join (void)
 {
 	int i;
 
-	if (!major_collector.is_parallel)
+	if (!major_collector.is_parallel) {
+#ifdef SGEN_DEBUG_INTERNAL_ALLOC
+		mono_sgen_get_unmanaged_allocator ()->thread = NULL;
+#endif
 		return;
+	}
 
 	g_assert (gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));
 	g_assert (gray_object_queue_is_empty (&workers_distribute_gray_queue));
 
 	g_assert (workers_gc_in_progress);
 	workers_gc_in_progress = FALSE;
-	if (workers_num_waiting == workers_num)
+	if (workers_num_waiting == workers_num) {
+		/*
+		 * All the workers might have shut down at this point
+		 * and posted the done semaphore but we don't know it
+		 * yet.  It's not a big deal to wake them up again -
+		 * they'll just do one iteration of their loop trying to
+		 * find something to do and then go back to waiting
+		 * again.
+		 */
 		workers_wake_up_all ();
+	}
 	MONO_SEM_WAIT (&workers_done_sem);
+	workers_marking = FALSE;
 
 	if (major_collector.reset_worker_data) {
 		for (i = 0; i < workers_num; ++i)
@@ -374,7 +490,6 @@ workers_join (void)
 	}
 
 	g_assert (workers_done_posted);
-	g_assert (workers_num_waiting == workers_num);
 
 	g_assert (!workers_gc_thread_data.stealable_stack_fill);
 	g_assert (gray_object_queue_is_empty (&workers_gc_thread_data.private_gray_queue));

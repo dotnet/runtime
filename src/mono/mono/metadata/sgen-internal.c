@@ -485,26 +485,42 @@ mono_sgen_free_internal_dynamic (void *addr, size_t size, int type)
 	mono_sgen_free_internal_full (&unmanaged_allocator, addr, size, type);
 }
 
-void
-mono_sgen_free_internal_delayed (void *addr, int type, SgenInternalAllocator *thread_allocator)
+static void
+free_from_slot_delayed (void *addr, size_t size, int slot, int type, SgenInternalAllocator *thread_allocator)
 {
 	SgenPinnedChunk *pchunk = (SgenPinnedChunk*)SGEN_PINNED_CHUNK_FOR_PTR (addr);
 	SgenInternalAllocator *alc = pchunk->allocator;
-	int slot;
 	void *next;
 
 	if (alc == thread_allocator) {
-		mono_sgen_free_internal_fixed (alc, addr, type);
+		if (size > 0)
+			mono_sgen_free_internal_full (alc, addr, size, type);
+		else
+			mono_sgen_free_internal_fixed (alc, addr, type);
 		return;
 	}
-
-	slot = fixed_type_freelist_slots [type];
-	g_assert (slot >= 0);
 
 	do {
 		next = alc->delayed_free_lists [slot];
 		*(void**)addr = next;
 	} while (SGEN_CAS_PTR (&alc->delayed_free_lists [slot], addr, next) != next);
+}
+
+void
+mono_sgen_free_internal_delayed (void *addr, int type, SgenInternalAllocator *thread_allocator)
+{
+	free_from_slot_delayed (addr, 0, fixed_type_freelist_slots [type], type, thread_allocator);
+}
+
+void
+mono_sgen_free_internal_dynamic_delayed (void *addr, size_t size, int type, SgenInternalAllocator *thread_allocator)
+{
+	if (size > freelist_sizes [SGEN_INTERNAL_FREELIST_NUM_SLOTS - 1]) {
+		mono_sgen_free_internal_full (NULL, addr, size, type);
+		return;
+	}
+
+	free_from_slot_delayed (addr, size, slot_for_size (size), type, thread_allocator);
 }
 
 void
@@ -515,7 +531,7 @@ mono_sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 						     "dislink", "roots-table", "root-record", "statistics",
 						     "remset", "gray-queue", "store-remset", "marksweep-tables",
 						     "marksweep-block-info", "ephemeron-link", "worker-data",
-						     "bridge-data" };
+						     "bridge-data", "job-queue-entry" };
 
 	int i;
 

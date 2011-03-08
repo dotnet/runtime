@@ -632,6 +632,7 @@ enum {
 	INTERNAL_MEM_EPHEMERON_LINK,
 	INTERNAL_MEM_WORKER_DATA,
 	INTERNAL_MEM_BRIDGE_DATA,
+	INTERNAL_MEM_JOB_QUEUE_ENTRY,
 	INTERNAL_MEM_MAX
 };
 
@@ -681,6 +682,8 @@ void* mono_sgen_alloc_internal_full (SgenInternalAllocator *allocator, size_t si
 void mono_sgen_free_internal_full (SgenInternalAllocator *allocator, void *addr, size_t size, int type) MONO_INTERNAL;
 
 void mono_sgen_free_internal_delayed (void *addr, int type, SgenInternalAllocator *thread_allocator) MONO_INTERNAL;
+void mono_sgen_free_internal_dynamic_delayed (void *addr, size_t size, int type, SgenInternalAllocator *thread_allocator) MONO_INTERNAL;
+
 
 void mono_sgen_debug_printf (int level, const char *format, ...) MONO_INTERNAL;
 
@@ -697,7 +700,7 @@ void mono_sgen_pin_objects_in_section (GCMemSection *section, SgenGrayQueue *que
 
 void mono_sgen_pin_stats_register_object (char *obj, size_t size);
 
-void mono_sgen_add_to_global_remset (gpointer ptr) MONO_INTERNAL;
+void mono_sgen_add_to_global_remset (SgenInternalAllocator *alc, gpointer ptr) MONO_INTERNAL;
 
 int mono_sgen_get_current_collection_generation (void) MONO_INTERNAL;
 

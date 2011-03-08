@@ -41,7 +41,6 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %lu)\n", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize));
 	binary_protocol_copy (obj, destination, vt, objsize);
 
-	*(MonoVTable**)destination = vt;
 	if (objsize <= sizeof (gpointer) * 8) {
 		mword *dest = (mword*)destination;
 		goto *copy_labels [objsize / sizeof (gpointer)];
@@ -82,6 +81,79 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 	}
 }
 
+#ifdef SGEN_PARALLEL_MARK
+static void
+copy_object (void **obj_slot, SgenGrayQueue *queue)
+{
+	char *obj = *obj_slot;
+	mword vtable_word, objsize;
+	MonoVTable *vt;
+	void *destination;
+	gboolean has_references;
+
+	DEBUG (9, g_assert (current_collection_generation == GENERATION_NURSERY));
+
+	HEAVY_STAT (++stat_copy_object_called_nursery);
+
+	if (!ptr_in_nursery (obj)) {
+		HEAVY_STAT (++stat_nursery_copy_object_failed_from_space);
+		return;
+	}
+
+	vtable_word = *(mword*)obj;
+	vt = (MonoVTable*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+
+	/*
+	 * Before we can copy the object we must make sure that we are
+	 * allowed to, i.e. that the object not pinned or not already
+	 * forwarded.
+	 */
+
+	if (vtable_word & SGEN_FORWARDED_BIT) {
+		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
+		*obj_slot = vt;
+		return;
+	}
+	if (vtable_word & SGEN_PINNED_BIT) {
+		HEAVY_STAT (++stat_nursery_copy_object_failed_pinned);
+		return;
+	}
+
+	HEAVY_STAT (++stat_objects_copied_nursery);
+
+	objsize = SGEN_ALIGN_UP (mono_sgen_par_object_get_size (vt, (MonoObject*)obj));
+	has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
+
+	destination = alloc_obj_par (objsize, FALSE, has_references);
+
+	if (G_UNLIKELY (!destination)) {
+		pin_or_update_par (obj_slot, obj, vt, queue);
+		return;
+	}
+
+	*(MonoVTable**)destination = vt;
+
+	if (SGEN_CAS_PTR ((void*)obj, (void*)((mword)destination | SGEN_FORWARDED_BIT), vt) == vt) {
+		par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
+		obj = destination;
+		*obj_slot = obj;
+	} else {
+		/* FIXME: unify with code in major_copy_or_mark_object() */
+
+		/* FIXME: Give destination back to the allocator. */
+		*(void**)destination = NULL;
+
+		vtable_word = *(mword*)obj;
+		g_assert (vtable_word & SGEN_FORWARDED_BIT);
+
+		obj = (void*)(vtable_word & ~SGEN_VTABLE_BITS_MASK);
+
+		*obj_slot = obj;
+
+		++stat_slots_allocated_in_vain;
+	}
+}
+#else
 static void*
 copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 {
@@ -95,6 +167,7 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 		return obj;
 	}
 
+	*(MonoVTable**)destination = vt;
 	par_copy_object_no_checks (destination, vt, obj, objsize, has_references ? queue : NULL);
 
 	/* set the forwarding pointer */
@@ -164,6 +237,7 @@ copy_object (void **obj_slot, SgenGrayQueue *queue)
 
 	*obj_slot = copy_object_no_checks (obj, queue);
 }
+#endif
 
 #define FILL_COLLECTOR_COPY_OBJECT(collector)	do {			\
 		(collector)->copy_object = copy_object;			\
