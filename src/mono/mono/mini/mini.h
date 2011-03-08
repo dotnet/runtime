@@ -21,6 +21,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-machine.h>
+#include <mono/utils/mono-stack-unwinding.h>
 
 #define MONO_BREAKPOINT_ARRAY_SIZE 64
 
@@ -269,44 +270,10 @@ typedef struct {
 } MonoDynCallInfo;
 
 /*
- * Possible frame types returned by the stack walker.
+ * Information about a stack frame.
+ * FIXME This typedef exists only to avoid tons of code rewriting
  */
-typedef enum {
-	/* Normal managed frames */
-	FRAME_TYPE_MANAGED = 0,
-	/* Pseudo frame marking the start of a method invocation done by the soft debugger */
-	FRAME_TYPE_DEBUGGER_INVOKE = 1,
-	/* Frame for transitioning to native code */
-	FRAME_TYPE_MANAGED_TO_NATIVE = 2,
-	FRAME_TYPE_SENTINEL = 3
-} StackFrameType;
-
-/*
- * Information about a stack frame
- */
-typedef struct {
-	StackFrameType type;
-	/* 
-	 * For FRAME_TYPE_MANAGED, otherwise NULL.
-	 */
-	MonoJitInfo *ji;
-	/*
-	 * Same as ji->method.
-	 */
-	MonoMethod *method;
-	/*
-	 * If ji->method is a gshared method, this is the actual method instance.
-	 */
-	MonoMethod *actual_method;
-	/* The domain containing the code executed by this frame */
-	MonoDomain *domain;
-	gboolean managed;
-	int native_offset;
-	int il_offset;
-	gpointer lmf;
-	guint32 unwind_info_len;
-	guint8 *unwind_info;
-} StackFrameInfo;
+typedef MonoStackFrameInfo StackFrameInfo;
 
 typedef struct {
 	int il_offset, native_offset;
@@ -2092,16 +2059,6 @@ gpointer mono_create_handler_block_trampoline (void) MONO_INTERNAL;
 gboolean mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx) MONO_INTERNAL;
 
 /* Exception handling */
-
-typedef enum {
-	MONO_UNWIND_NONE = 0x0,
-	MONO_UNWIND_LOOKUP_IL_OFFSET = 0x1,
-	MONO_UNWIND_LOOKUP_ACTUAL_METHOD = 0x2,
-	MONO_UNWIND_DEFAULT = MONO_UNWIND_LOOKUP_ACTUAL_METHOD,
-	MONO_UNWIND_SIGNAL_SAFE = MONO_UNWIND_NONE,
-	MONO_UNWIND_LOOKUP_ALL = MONO_UNWIND_LOOKUP_IL_OFFSET | MONO_UNWIND_LOOKUP_ACTUAL_METHOD,
-} MonoUnwindOptions;
-
 typedef gboolean (*MonoJitStackWalk)            (StackFrameInfo *frame, MonoContext *ctx, gpointer data);
 
 void     mono_exceptions_init                   (void) MONO_INTERNAL;
