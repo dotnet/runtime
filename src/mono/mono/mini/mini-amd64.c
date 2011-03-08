@@ -1832,7 +1832,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	/* Allocate locals */
 	if (!cfg->globalra) {
-		offsets = mono_allocate_stack_slots_full (cfg, cfg->arch.omit_fp ? FALSE: TRUE, &locals_stack_size, &locals_stack_align);
+		offsets = mono_allocate_stack_slots (cfg, cfg->arch.omit_fp ? FALSE: TRUE, &locals_stack_size, &locals_stack_align);
 		if (locals_stack_size > MONO_ARCH_MAX_FRAME_SIZE) {
 			char *mname = mono_method_full_name (cfg->method, TRUE);
 			cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;

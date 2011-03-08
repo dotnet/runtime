@@ -1416,7 +1416,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		offset += sizeof(gpointer);
 	}
 
-	offsets = mono_allocate_stack_slots_full (m, FALSE, &locals_stack_size, &locals_stack_align);
+	offsets = mono_allocate_stack_slots (m, FALSE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_align) {
 		offset += (locals_stack_align - 1);
 		offset &= ~(locals_stack_align - 1);
