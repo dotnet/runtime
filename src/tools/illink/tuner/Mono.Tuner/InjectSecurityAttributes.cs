@@ -100,33 +100,38 @@ namespace Mono.Tuner {
 		protected void RemoveSecurityAttributes ()
 		{
 			foreach (TypeDefinition type in _assembly.MainModule.Types) {
-				RemoveSecurityAttributes (type);
+				if (RemoveSecurityAttributes (type))
+					type.HasSecurity = false;
 
-				if (type.HasMethods)
-					foreach (MethodDefinition method in type.Methods)
-						RemoveSecurityAttributes (method);
+				if (type.HasMethods) {
+					foreach (MethodDefinition method in type.Methods) {
+						if (RemoveSecurityAttributes (method))
+							method.HasSecurity = false;
+					}
+				}
 			}
 		}
 
-		static void RemoveSecurityDeclarations (ISecurityDeclarationProvider provider)
+		static bool RemoveSecurityDeclarations (ISecurityDeclarationProvider provider)
 		{
 			// also remove already existing CAS security declarations
 
 			if (provider == null)
-				return;
+				return false;
 
 			if (!provider.HasSecurityDeclarations)
-				return;
+				return false;
 
 			provider.SecurityDeclarations.Clear ();
+			return true;
 		}
 
-		static void RemoveSecurityAttributes (ICustomAttributeProvider provider)
+		static bool RemoveSecurityAttributes (ICustomAttributeProvider provider)
 		{
-			RemoveSecurityDeclarations (provider as ISecurityDeclarationProvider);
+			bool result = RemoveSecurityDeclarations (provider as ISecurityDeclarationProvider);
 
 			if (!provider.HasCustomAttributes)
-				return;
+				return result;
 
 			var attributes = provider.CustomAttributes;
 			for (int i = 0; i < attributes.Count; i++) {
@@ -138,6 +143,7 @@ namespace Mono.Tuner {
 					break;
 				}
 			}
+			return result;
 		}
 
 		void ProcessSecurityAttributeFile (string file)
