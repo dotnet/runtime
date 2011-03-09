@@ -1332,6 +1332,7 @@ async_invoke_thread (gpointer data)
 	MonoWSQ *wsq;
 	ThreadPool *tp;
 	gboolean must_die;
+	const gchar *name;
   
 	tp = data;
 	wsq = NULL;
@@ -1341,7 +1342,8 @@ async_invoke_thread (gpointer data)
 	thread = mono_thread_internal_current ();
 
 	mono_profiler_thread_start (thread->tid);
-	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), "Threadpool worker"));
+	name = (tp->is_io) ? "IO Threadpool worker" : "Threadpool worker";
+	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), name));
 
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);

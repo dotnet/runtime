@@ -928,7 +928,6 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 		mono_threads_unlock ();
 		g_free (start_info);
 		mono_raise_exception (mono_get_exception_execution_engine ("Couldn't create thread"));
-		printf ("Shit\n");
 		return NULL;
 	}
 
