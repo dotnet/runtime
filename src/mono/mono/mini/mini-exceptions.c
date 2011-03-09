@@ -65,6 +65,7 @@ static gpointer restore_stack_protection_tramp = NULL;
 static void try_more_restore (void);
 static void restore_stack_protection (void);
 static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data);
+static void mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
 
 void
 mono_exceptions_init (void)
@@ -106,6 +107,8 @@ mono_exceptions_init (void)
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
 	mono_arch_exceptions_init ();
 #endif
+	mono_install_stack_walk (mono_jit_walk_stack);
+
 }
 
 gpointer
@@ -646,26 +649,20 @@ stack_walk_adapter (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	}
 }
 
-void
-mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, gpointer user_data)
+static void
+mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data)
 {
 	StackWalkUserData d;
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoUnwindOptions unwind_options = do_il_offset ? MONO_UNWIND_LOOKUP_ALL : MONO_UNWIND_DEFAULT;
 
 	d.func = func;
 	d.user_data = user_data;
 
-	mono_walk_stack_with_ctx (stack_walk_adapter, start_ctx, unwind_options, &d);
-}
-
-void
-mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data)
-{
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoUnwindOptions unwind_options = do_il_offset ? MONO_UNWIND_LOOKUP_ALL : MONO_UNWIND_DEFAULT;
 	if (jit_tls && jit_tls->orig_ex_ctx_set)
-		mono_jit_walk_stack_from_ctx (func, &jit_tls->orig_ex_ctx, unwind_options, user_data);
+		mono_walk_stack_with_ctx (stack_walk_adapter, &jit_tls->orig_ex_ctx, unwind_options, &d);
 	else
-		mono_jit_walk_stack_from_ctx (func, NULL, unwind_options, user_data);
+		mono_walk_stack_simple (stack_walk_adapter, unwind_options, &d);
 }
 
 /*unwind the current thread starting at @context*/
@@ -766,7 +763,8 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 	g_assert (start_ctx);
 	g_assert (domain);
 	g_assert (jit_tls);
-	g_assert (lmf);
+	/*The LMF will be null if the target have no managed frames.*/
+ 	/* g_assert (lmf); */
 
 	memcpy (&ctx, start_ctx, sizeof (MonoContext));
 
@@ -2069,8 +2067,12 @@ typedef struct {
 } PrintOverflowUserData;
 
 static gboolean
-print_overflow_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data)
+print_overflow_stack_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
+	MonoMethod *method = NULL;
+	if (frame->ji)
+		method = frame->ji->method;
+
 	PrintOverflowUserData *user_data = data;
 	FILE *stream = user_data->stream;
 	gchar *location;
@@ -2086,7 +2088,7 @@ print_overflow_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_
 		if (method == user_data->omethod)
 			return FALSE;
 
-		location = mono_debug_print_stack_frame (method, native_offset, mono_domain_get ());
+		location = mono_debug_print_stack_frame (method, frame->native_offset, mono_domain_get ());
 		fprintf (stream, "  %s\n", location);
 		g_free (location);
 
@@ -2099,7 +2101,7 @@ print_overflow_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_
 
 		user_data->count ++;
 	} else
-		fprintf (stream, "  at <unknown> <0x%05x>\n", native_offset);
+		fprintf (stream, "  at <unknown> <0x%05x>\n", frame->native_offset);
 
 	return FALSE;
 }
@@ -2121,7 +2123,7 @@ mono_handle_hard_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 	memset (&ud, 0, sizeof (ud));
 	ud.stream = stderr;
 
-	mono_jit_walk_stack_from_ctx (print_overflow_stack_frame, &mctx, MONO_UNWIND_LOOKUP_ACTUAL_METHOD, &ud);
+	mono_walk_stack_with_ctx (print_overflow_stack_frame, &mctx, MONO_UNWIND_LOOKUP_ACTUAL_METHOD, &ud);
 #else
 	if (ji && ji->method)
 		fprintf (stderr, "At %s\n", mono_method_full_name (ji->method, TRUE));
@@ -2133,32 +2135,37 @@ mono_handle_hard_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 }
 
 static gboolean
-print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data)
+print_stack_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
 	FILE *stream = (FILE*)data;
+	MonoMethod *method = NULL;
+	if (frame->ji)
+		method = frame->ji->method;
 
 	if (method) {
-		gchar *location = mono_debug_print_stack_frame (method, native_offset, mono_domain_get ());
+		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, mono_domain_get ());
 		fprintf (stream, "  %s\n", location);
 		g_free (location);
 	} else
-		fprintf (stream, "  at <unknown> <0x%05x>\n", native_offset);
+		fprintf (stream, "  at <unknown> <0x%05x>\n", frame->native_offset);
 
 	return FALSE;
 }
 
 static G_GNUC_UNUSED gboolean
-print_stack_frame_to_string (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed,
-			     gpointer data)
+print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
 	GString *p = (GString*)data;
+	MonoMethod *method = NULL;
+	if (frame->ji)
+		method = frame->ji->method;
 
 	if (method) {
-		gchar *location = mono_debug_print_stack_frame (method, native_offset, mono_domain_get ());
+		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, mono_domain_get ());
 		g_string_append_printf (p, "  %s\n", location);
 		g_free (location);
 	} else
-		g_string_append_printf (p, "  at <unknown> <0x%05x>\n", native_offset);
+		g_string_append_printf (p, "  at <unknown> <0x%05x>\n", frame->native_offset);
 
 	return FALSE;
 }
@@ -2195,7 +2202,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	if (jit_tls && mono_thread_internal_current ()) {
 		fprintf (stderr, "Stacktrace:\n\n");
 
-		mono_jit_walk_stack (print_stack_frame, TRUE, stderr);
+		mono_walk_stack_simple (print_stack_frame, TRUE, stderr);
 
 		fflush (stderr);
 	}
@@ -2334,7 +2341,7 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	else
 		mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 
-	mono_jit_walk_stack_from_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
+	mono_walk_stack_with_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
 #else
 	printf ("\t<Stack traces in thread dumps not supported on this platform>\n");
 #endif

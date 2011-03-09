@@ -2067,8 +2067,6 @@ gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
 void     mono_handle_native_sigsegv             (int signal, void *sigctx) MONO_INTERNAL;
 void     mono_print_thread_dump                 (void *sigctx);
 void     mono_print_thread_dump_from_ctx        (MonoContext *ctx);
-void     mono_jit_walk_stack                    (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) MONO_INTERNAL;
-void     mono_jit_walk_stack_from_ctx           (MonoStackWalk func, MonoContext *ctx, MonoUnwindOptions unwind_options, gpointer user_data) MONO_INTERNAL;
 void     mono_walk_stack                        (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, MonoUnwindOptions unwind_options, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data) MONO_INTERNAL;
 void     mono_walk_stack_with_ctx               (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data) MONO_INTERNAL;
 void     mono_walk_stack_with_state             (MonoJitStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions unwind_options, void *user_data) MONO_INTERNAL;

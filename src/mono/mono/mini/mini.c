@@ -6272,7 +6272,6 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef JIT_INVOKE_WORKS
 	mono_install_runtime_invoke (mono_jit_runtime_invoke);
 #endif
-	mono_install_stack_walk (mono_jit_walk_stack);
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
