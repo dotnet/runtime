@@ -2551,6 +2551,21 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 #endif
 }
 
+gboolean
+mono_thread_state_init_from_monoctx (MonoThreadUnwindState *ctx, MonoContext *mctx)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	if (!thread || !thread->jit_data) {
+		ctx->valid = FALSE;
+		return FALSE;
+	}
+
+	ctx->ctx = *mctx;
+	ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
+	ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
+	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;
+	ctx->valid = TRUE;
+}
 
 /*returns false if the thread is not attached*/
 gboolean
