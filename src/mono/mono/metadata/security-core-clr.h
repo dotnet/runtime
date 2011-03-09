@@ -21,9 +21,10 @@ typedef enum {
 } MonoSecurityCoreCLRLevel;
 
 typedef enum {
-	MONO_SECURITY_CORE_CLR_BEHAVIOUR_MOONLIGHT = 0,
-	MONO_SECURITY_CORE_CLR_BEHAVIOUR_RELAXED
-} MonoSecurityCoreCLRBehaviour;
+	MONO_SECURITY_CORE_CLR_OPTIONS_DEFAULT = 0,
+	MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_REFLECTION = 1,
+	MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_DELEGATE = 2,
+} MonoSecurityCoreCLROptions;
 
 extern gboolean mono_security_core_clr_test;
 
@@ -48,7 +49,7 @@ extern gboolean mono_security_core_clr_determine_platform_image (MonoImage *imag
 
 extern gboolean mono_security_core_clr_require_elevated_permissions (void);
 
-extern void mono_security_core_clr_set_behaviour (MonoSecurityCoreCLRBehaviour behaviour);
-extern MonoSecurityCoreCLRBehaviour mono_security_core_clr_get_behaviour (void);
+extern void mono_security_core_clr_set_options (MonoSecurityCoreCLROptions options);
+extern MonoSecurityCoreCLROptions mono_security_core_clr_get_options (void);
 
 #endif	/* _MONO_METADATA_SECURITY_CORE_CLR_H_ */

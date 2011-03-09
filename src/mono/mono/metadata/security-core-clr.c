@@ -409,25 +409,26 @@ mono_security_core_clr_require_elevated_permissions (void)
 }
 
 
-static MonoSecurityCoreCLRBehaviour security_core_clr_behaviour = MONO_SECURITY_CORE_CLR_BEHAVIOUR_MOONLIGHT;
+static MonoSecurityCoreCLROptions security_core_clr_options = MONO_SECURITY_CORE_CLR_OPTIONS_DEFAULT;
 
 /*
- * mono_security_core_clr_set_behaviour
+ * mono_security_core_clr_set_options
  *
- *      Moonlight's security model forbids execution trough reflection of methods not visible from the calling code.
+ *      By default, the CoreCLRs security model forbids execution trough reflection of methods not visible from the calling code.
  *      Even if the method being called is not in a platform assembly. For non moonlight CoreCLR users this restriction does not
- *      make a lot of sense, since the author could have just changed the non platform assembly to allow the method to be called. 
+ *      make a lot of sense, since the author could have just changed the non platform assembly to allow the method to be called.
+ *	this function allows specific relaxations from the default behaviour to be set. 
  */
 
 void 
-mono_security_core_clr_set_behaviour (MonoSecurityCoreCLRBehaviour behaviour) {
-	security_core_clr_behaviour = behaviour;
+mono_security_core_clr_set_options (MonoSecurityCoreCLROptions options) {
+	security_core_clr_options = options;
 }
 
-MonoSecurityCoreCLRBehaviour
-mono_security_core_clr_get_behaviour ()
+MonoSecurityCoreCLROptions
+mono_security_core_clr_get_options ()
 {
-	return security_core_clr_behaviour;
+	return security_core_clr_options;
 }
 
 
@@ -565,8 +566,7 @@ mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field)
 	if (mono_security_core_clr_method_level (caller, TRUE) != MONO_SECURITY_CORE_CLR_TRANSPARENT)
 		return;
 
-	if (mono_security_core_clr_get_behaviour() == MONO_SECURITY_CORE_CLR_BEHAVIOUR_RELAXED)
-	{
+	if (mono_security_core_clr_get_options () & MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_REFLECTION) {
 		if (!mono_security_core_clr_is_platform_image (mono_field_get_parent(field)->image))
 			return;
 	}
@@ -603,8 +603,7 @@ mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
 	if (mono_security_core_clr_method_level (caller, TRUE) != MONO_SECURITY_CORE_CLR_TRANSPARENT)
 		return;
 
-	if (mono_security_core_clr_get_behaviour() == MONO_SECURITY_CORE_CLR_BEHAVIOUR_RELAXED)
-	{
+	if (mono_security_core_clr_get_options () & MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_REFLECTION) {
 		if (!mono_security_core_clr_is_platform_image (method->klass->image))
 			return;
 	}
@@ -691,9 +690,8 @@ mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean th
 			"Transparent method %s cannot create a delegate on Critical method %s.", 
 			caller, method));
 	}
-	
-	if (mono_security_core_clr_get_behaviour() == MONO_SECURITY_CORE_CLR_BEHAVIOUR_RELAXED)
-	{
+
+	if (mono_security_core_clr_get_options() & MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_DELEGATE) {
 		if (!mono_security_core_clr_is_platform_image (method->klass->image))
 			return TRUE;
 	}
