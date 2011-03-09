@@ -3,6 +3,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/metadata.h>
+#include <mono/utils/mono-context.h>
 
 /*
  * Possible frame types returned by the stack walker.
@@ -58,6 +59,23 @@ typedef struct {
 	guint8 *unwind_info;
 
 } MonoStackFrameInfo;
+
+/*Index into MonoThreadState::unwind_data. */
+enum {
+	MONO_UNWIND_DATA_DOMAIN,
+	MONO_UNWIND_DATA_LMF,
+	MONO_UNWIND_DATA_JIT_TLS,	
+};
+
+/*
+ * This structs holds all information needed to unwind the stack
+ * of a thread.
+ */
+typedef struct {
+	MonoContext ctx;
+	gpointer unwind_data [3]; /*right now: domain, lmf and jit_tls*/
+	gboolean valid;
+} MonoThreadUnwindState;
 
 
 #endif

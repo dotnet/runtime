@@ -64,6 +64,7 @@ static gpointer restore_stack_protection_tramp = NULL;
 
 static void try_more_restore (void);
 static void restore_stack_protection (void);
+static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data);
 
 void
 mono_exceptions_init (void)
@@ -653,7 +654,7 @@ mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, MonoUn
 	d.func = func;
 	d.user_data = user_data;
 
-	mono_walk_stack (stack_walk_adapter, mono_domain_get (), start_ctx, unwind_options, mono_thread_internal_current (), mono_get_lmf (), &d);
+	mono_walk_stack_with_ctx (stack_walk_adapter, start_ctx, unwind_options, &d);
 }
 
 void
@@ -665,6 +666,42 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 		mono_jit_walk_stack_from_ctx (func, &jit_tls->orig_ex_ctx, unwind_options, user_data);
 	else
 		mono_jit_walk_stack_from_ctx (func, NULL, unwind_options, user_data);
+}
+
+/*unwind the current thread starting at @context*/
+void
+mono_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+
+	g_assert (start_ctx);
+
+	if (!thread || !thread->jit_data)
+		return;
+
+	mono_walk_stack_full (func, start_ctx, mono_domain_get (), thread->jit_data, mono_get_lmf (), unwind_options, user_data);
+}
+
+/*if @state is null, we capture the current context.*/
+void
+mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions unwind_options, void *user_data)
+{
+	mono_walk_stack_full (func,
+		&state->ctx, 
+		state->unwind_data [MONO_UNWIND_DATA_DOMAIN],
+		state->unwind_data [MONO_UNWIND_DATA_JIT_TLS],
+		state->unwind_data [MONO_UNWIND_DATA_LMF],
+		unwind_options, user_data);
+}
+
+/*TODO this will replace mono_walk_stack */
+void
+mono_walk_stack_simple (MonoJitStackWalk func, MonoUnwindOptions options, void *user_data)
+{
+	MonoThreadUnwindState state;
+	if (!mono_thread_state_init_from_current (&state))
+		return;
+	mono_walk_stack_with_state (func, &state, options, user_data);
 }
 
 /**
@@ -686,11 +723,7 @@ void
 mono_walk_stack (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, MonoUnwindOptions unwind_options, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data)
 {
 	MonoJitTlsData *jit_tls;
-	gint il_offset;
-	MonoContext ctx, new_ctx;
-	StackFrameInfo frame;
-	gboolean res;
-	
+	MonoContext ctx;
 	MONO_ARCH_CONTEXT_DEF
 
 	mono_arch_flush_register_windows ();
@@ -709,17 +742,33 @@ mono_walk_stack (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_c
 	if (!thread || !thread->jit_data)
 		return;
 	jit_tls = thread->jit_data;
-
-	if (start_ctx) {
-		memcpy (&ctx, start_ctx, sizeof (MonoContext));
-	} else {
+	if (!start_ctx) {
 #ifdef MONO_INIT_CONTEXT_FROM_CURRENT
 		MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
 #else
-		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, mono_jit_walk_stack_from_ctx);
+		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, mono_walk_stack);
 #endif
 		g_assert (thread == mono_thread_internal_current ());
+		start_ctx = &ctx;
 	}
+
+	mono_walk_stack_full (func, start_ctx, domain, jit_tls, lmf, unwind_options, user_data);
+}
+
+static void
+mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data)
+{
+	gint il_offset;
+	MonoContext ctx, new_ctx;
+	StackFrameInfo frame;
+	gboolean res;
+
+	g_assert (start_ctx);
+	g_assert (domain);
+	g_assert (jit_tls);
+	g_assert (lmf);
+
+	memcpy (&ctx, start_ctx, sizeof (MonoContext));
 
 	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		frame.lmf = lmf;
@@ -2471,3 +2520,53 @@ mono_set_cast_details (MonoClass *from, MonoClass *to)
 	}
 }
 
+
+/*returns false if the thread is not attached*/
+gboolean
+mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
+{
+#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	if (!thread || !thread->jit_data) {
+		ctx->valid = FALSE;
+		return FALSE;
+	}
+
+	mono_arch_sigctx_to_monoctx (sigctx, &ctx->ctx);
+	ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
+	ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
+	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;
+	ctx->valid = TRUE;
+	return TRUE;
+#else
+	g_error ("Implement mono_arch_sigctx_to_monoctx for the current target");
+	return FALSE;
+#endif
+}
+
+
+/*returns false if the thread is not attached*/
+gboolean
+mono_thread_state_init_from_current (MonoThreadUnwindState *ctx)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	MONO_ARCH_CONTEXT_DEF
+
+	mono_arch_flush_register_windows ();
+
+	if (!thread || !thread->jit_data) {
+		ctx->valid = FALSE;
+		return FALSE;
+	}
+#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
+	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx->ctx);
+#else
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx->ctx, mono_thread_state_init_from_current);
+#endif
+		
+	ctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
+	ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
+	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;
+	ctx->valid = TRUE;
+	return TRUE;
+}
