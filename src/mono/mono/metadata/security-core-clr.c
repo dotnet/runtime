@@ -408,6 +408,29 @@ mono_security_core_clr_require_elevated_permissions (void)
 	return (mono_security_core_clr_method_level (cookie.caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT);
 }
 
+
+static MonoSecurityCoreCLRBehaviour security_core_clr_behaviour = MONO_SECURITY_CORE_CLR_BEHAVIOUR_MOONLIGHT;
+
+/*
+ * mono_security_core_clr_set_behaviour
+ *
+ *      Moonlight's security model forbids execution trough reflection of methods not visible from the calling code.
+ *      Even if the method being called is not in a platform assembly. For non moonlight CoreCLR users this restriction does not
+ *      make a lot of sense, since the author could have just changed the non platform assembly to allow the method to be called. 
+ */
+
+void 
+mono_security_core_clr_set_behaviour (MonoSecurityCoreCLRBehaviour behaviour) {
+	security_core_clr_behaviour = behaviour;
+}
+
+MonoSecurityCoreCLRBehaviour
+mono_security_core_clr_get_behaviour ()
+{
+	return security_core_clr_behaviour;
+}
+
+
 /*
  * check_field_access:
  *
@@ -542,6 +565,12 @@ mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field)
 	if (mono_security_core_clr_method_level (caller, TRUE) != MONO_SECURITY_CORE_CLR_TRANSPARENT)
 		return;
 
+	if (mono_security_core_clr_get_behaviour() == MONO_SECURITY_CORE_CLR_BEHAVIOUR_RELAXED)
+	{
+		if (!mono_security_core_clr_is_platform_image (mono_field_get_parent(field)->image))
+			return;
+	}
+
 	/* Transparent code cannot [get|set]value on Critical fields */
 	if (mono_security_core_clr_class_level (mono_field_get_parent (field)) == MONO_SECURITY_CORE_CLR_CRITICAL) {
 		mono_raise_exception (get_field_access_exception (
@@ -573,6 +602,12 @@ mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
 	/* CoreCLR restrictions applies to Transparent code/caller */
 	if (mono_security_core_clr_method_level (caller, TRUE) != MONO_SECURITY_CORE_CLR_TRANSPARENT)
 		return;
+
+	if (mono_security_core_clr_get_behaviour() == MONO_SECURITY_CORE_CLR_BEHAVIOUR_RELAXED)
+	{
+		if (!mono_security_core_clr_is_platform_image (method->klass->image))
+			return;
+	}
 
 	/* Transparent code cannot invoke, even using reflection, Critical code */
 	if (mono_security_core_clr_method_level (method, TRUE) == MONO_SECURITY_CORE_CLR_CRITICAL) {
@@ -657,6 +692,12 @@ mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean th
 			caller, method));
 	}
 	
+	if (mono_security_core_clr_get_behaviour() == MONO_SECURITY_CORE_CLR_BEHAVIOUR_RELAXED)
+	{
+		if (!mono_security_core_clr_is_platform_image (method->klass->image))
+			return TRUE;
+	}
+
 	/* also it cannot create the delegate on a method that is not visible from it's (caller) point of view */
 	if (!check_method_access (caller, method)) {
 		mono_raise_exception (get_method_access_exception (
