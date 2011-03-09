@@ -11,6 +11,8 @@
 #ifdef WIN32
 #include <windows.h>
 #include "initguid.h"
+#else
+#include <pthread.h>
 #endif
 
 #ifdef WIN32
@@ -5031,4 +5033,29 @@ mono_test_marshal_safearray_mixed(
 
 #endif
 
+static int call_managed_res;
 
+static void
+call_managed (gpointer arg)
+{
+	SimpleDelegate del = arg;
+
+	call_managed_res = del (42);
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_thread_attach (SimpleDelegate del)
+{
+#ifdef WIN32
+	return 43;
+#else
+	int res;
+	pthread_t t;
+
+	res = pthread_create (&t, NULL, (gpointer)call_managed, del);
+	g_assert (res == 0);
+	pthread_join (t, NULL);
+
+	return call_managed_res;
+#endif
+}

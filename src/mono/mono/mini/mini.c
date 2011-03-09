@@ -2582,10 +2582,14 @@ mono_jit_thread_attach (MonoDomain *domain)
 #ifdef MONO_HAVE_FAST_TLS
 	if (!MONO_FAST_TLS_GET (mono_lmf_addr)) {
 		mono_thread_attach (domain);
+		// #678164
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 	}
 #else
-	if (!TlsGetValue (mono_jit_tls_id))
+	if (!TlsGetValue (mono_jit_tls_id)) {
 		mono_thread_attach (domain);
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+	}
 #endif
 	if (mono_domain_get () != domain)
 		mono_domain_set (domain, TRUE);
