@@ -691,7 +691,7 @@ mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean th
 			caller, method));
 	}
 
-	if (mono_security_core_clr_get_options() & MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_DELEGATE) {
+	if (mono_security_core_clr_get_options () & MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_DELEGATE) {
 		if (!mono_security_core_clr_is_platform_image (method->klass->image))
 			return TRUE;
 	}
