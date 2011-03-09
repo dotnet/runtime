@@ -3021,6 +3021,25 @@ job_scan_from_remsets (WorkerData *worker_data, void *job_data_untyped)
 	scan_from_remsets (job_data->heap_start, job_data->heap_end, job_gray_queue (worker_data));
 }
 
+typedef struct
+{
+	CopyOrMarkObjectFunc func;
+	char *heap_start;
+	char *heap_end;
+	int root_type;
+} ScanFromRegisteredRootsJobData;
+
+static void
+job_scan_from_registered_roots (WorkerData *worker_data, void *job_data_untyped)
+{
+	ScanFromRegisteredRootsJobData *job_data = job_data_untyped;
+
+	scan_from_registered_roots (job_data->func,
+			job_data->heap_start, job_data->heap_end,
+			job_data->root_type,
+			job_gray_queue (worker_data));
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -3032,6 +3051,7 @@ collect_nursery (size_t requested_size)
 	size_t max_garbage_amount;
 	char *orig_nursery_next;
 	ScanFromRemsetsJobData sfrjd;
+	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
@@ -3138,9 +3158,20 @@ collect_nursery (size_t requested_size)
 		report_finalizer_roots ();
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED_MS (btv, atv);
+
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (major_collector.copy_object, nursery_start, nursery_next, ROOT_TYPE_NORMAL, WORKERS_DISTRIBUTE_GRAY_QUEUE);
-	scan_from_registered_roots (major_collector.copy_object, nursery_start, nursery_next, ROOT_TYPE_WBARRIER, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	scrrjd_normal.func = major_collector.copy_object;
+	scrrjd_normal.heap_start = nursery_start;
+	scrrjd_normal.heap_end = nursery_next;
+	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_normal);
+
+	scrrjd_wbarrier.func = major_collector.copy_object;
+	scrrjd_wbarrier.heap_start = nursery_start;
+	scrrjd_wbarrier.heap_end = nursery_next;
+	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_wbarrier);
+
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
 	/* thread data */
@@ -3227,24 +3258,6 @@ collect_nursery (size_t requested_size)
 	objects_pinned = 0;
 
 	return needs_major;
-}
-
-typedef struct
-{
-	char *heap_start;
-	char *heap_end;
-	int root_type;
-} ScanFromRegisteredRootsJobData;
-
-static void
-job_scan_from_registered_roots (WorkerData *worker_data, void *job_data_untyped)
-{
-	ScanFromRegisteredRootsJobData *job_data = job_data_untyped;
-
-	scan_from_registered_roots (major_collector.copy_or_mark_object,
-			job_data->heap_start, job_data->heap_end,
-			job_data->root_type,
-			job_gray_queue (worker_data));
 }
 
 typedef struct
@@ -3410,11 +3423,13 @@ major_do_collection (const char *reason)
 	time_major_scan_pinned += TV_ELAPSED_MS (btv, atv);
 
 	/* registered roots, this includes static fields */
+	scrrjd_normal.func = major_collector.copy_or_mark_object;
 	scrrjd_normal.heap_start = heap_start;
 	scrrjd_normal.heap_end = heap_end;
 	scrrjd_normal.root_type = ROOT_TYPE_NORMAL;
 	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_from_registered_roots, &scrrjd_normal);
 
+	scrrjd_wbarrier.func = major_collector.copy_or_mark_object;
 	scrrjd_wbarrier.heap_start = heap_start;
 	scrrjd_wbarrier.heap_end = heap_end;
 	scrrjd_wbarrier.root_type = ROOT_TYPE_WBARRIER;
