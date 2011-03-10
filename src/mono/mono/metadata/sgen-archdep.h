@@ -88,15 +88,14 @@
 
 /* We dont store ip, sp */
 #define ARCH_NUM_REGS 14
-#define ARCH_STORE_REGS(ptr)				\
-	__asm__ __volatile__(				\
+#define ARCH_STORE_REGS(ptr)		\
+	__asm__ __volatile__(			\
 		"push {lr}\n"				\
-		"ldr lr, %0\n"				\
-		"stmia lr!, {r0-r12}\n"			\
-		"mov r12, r0\n"				\
+		"mov lr, %0\n"				\
+		"stmia lr!, {r0-r12}\n"		\
 		"pop {lr}\n"				\
-		: 					\
-		: "m" (ptr)				\
+		:							\
+		: "r" (ptr)					\
 	)
 
 #define ARCH_SIGCTX_SP(ctx)	(UCONTEXT_REG_SP((ctx)))
