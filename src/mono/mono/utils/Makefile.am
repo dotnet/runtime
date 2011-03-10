@@ -80,7 +80,8 @@ monoutils_sources = \
 	mach-support.h  \
 	memcheck.h	\
 	mono-context.c	\
-	mono-context.h
+	mono-context.h	\
+	mono-stack-unwinding.h
 
 arch_sources = 
 
