@@ -6305,7 +6305,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	/* This must come after mono_init () in the aot-only case */
 	mono_exceptions_init ();
-	mono_install_handler (mono_get_throw_exception ());
 
 	mono_icall_init ();
 

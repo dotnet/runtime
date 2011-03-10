@@ -108,6 +108,7 @@ mono_exceptions_init (void)
 	mono_arch_exceptions_init ();
 #endif
 	mono_install_stack_walk (mono_jit_walk_stack);
+	mono_install_handler (mono_get_throw_exception ());
 
 }
 
