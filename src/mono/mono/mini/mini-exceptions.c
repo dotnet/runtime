@@ -665,24 +665,59 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 		mono_walk_stack (stack_walk_adapter, unwind_options, &d);
 }
 
-/*unwind the current thread starting at @context*/
-void
+/**
+ * mono_walk_stack_with_ctx:
+ *
+ * Unwind the current thread starting at @start_ctx.
+ * 
+ * If @start_ctx is null, we capture the current context.
+ */void
 mono_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data)
 {
+	MonoContext extra_ctx;
 	MonoInternalThread *thread = mono_thread_internal_current ();
-
-	g_assert (start_ctx);
+	MONO_ARCH_CONTEXT_DEF
 
 	if (!thread || !thread->jit_data)
 		return;
 
+	if (!start_ctx) {
+		mono_arch_flush_register_windows ();
+
+#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
+		MONO_INIT_CONTEXT_FROM_CURRENT (&extra_ctx);
+#else
+		MONO_INIT_CONTEXT_FROM_FUNC (&extra_ctx, mono_walk_stack_with_ctx);
+#endif
+		start_ctx = &extra_ctx;
+	}
+
 	mono_walk_stack_full (func, start_ctx, mono_domain_get (), thread->jit_data, mono_get_lmf (), unwind_options, user_data);
 }
 
-/*if @state is null, we capture the current context.*/
+/**
+ * mono_walk_stack_with_state:
+ *
+ * Unwind a thread described by @state.
+ *
+ * State must be valid (state->valid == TRUE).
+ *
+ * If you are using this function to unwind another thread, make sure it is suspended.
+ * 
+ * If @state is null, we capture the current context.
+ */
 void
 mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions unwind_options, void *user_data)
 {
+	MonoThreadUnwindState extra_state;
+	if (!state) {
+		if (!mono_thread_state_init_from_current (&extra_state))
+			return;
+		state = &extra_state;
+	}
+
+	g_assert (state->valid);
+
 	mono_walk_stack_full (func,
 		&state->ctx, 
 		state->unwind_data [MONO_UNWIND_DATA_DOMAIN],
