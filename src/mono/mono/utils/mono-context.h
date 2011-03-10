@@ -226,6 +226,22 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
 
+#elif defined(__sparc__) || defined(sparc) /* defined(__mono_ppc__) */
+
+typedef struct MonoContext {
+	guint8 *ip;
+	gpointer *sp;
+	gpointer *fp;
+} MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (gpointer*)(ebp); } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->sp = (gpointer*)(esp); } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
+
 #else  
 
 #error "Implement mono-context for the current arch"
