@@ -4,6 +4,7 @@
 #include <glib.h>
 
 #include <mono/arch/ia64/ia64-codegen.h>
+#include <mono/utils/mono-context.h>
 
 #define MONO_ARCH_CPU_SPEC ia64_desc
 
@@ -47,13 +48,6 @@
 
 struct MonoLMF {
 };
-
-typedef struct MonoContext {
-	unw_cursor_t cursor;
-	/* Whenever the ip in 'cursor' points to the ip where the exception happened */
-	/* This is true for the initial context for exceptions thrown from signal handlers */
-	gboolean precise_ip;
-} MonoContext;
 
 typedef struct MonoCompileArch {
 	gint32 stack_alloc_size;
@@ -134,13 +128,6 @@ mono_ia64_context_get_fp (MonoContext *ctx)
 
 	return fp;
 }
-
-#define MONO_CONTEXT_SET_IP(ctx,eip) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_IP, (unw_word_t)(eip)); g_assert (err == 0); } while (0)
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_SP, (unw_word_t)(esp)); g_assert (err == 0); } while (0)
-
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(mono_ia64_context_get_ip ((ctx))))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(mono_ia64_context_get_fp ((ctx))))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(mono_ia64_context_get_sp ((ctx))))
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
     MONO_INIT_CONTEXT_FROM_CURRENT (ctx); \

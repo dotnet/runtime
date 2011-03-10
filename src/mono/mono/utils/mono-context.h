@@ -242,7 +242,24 @@ typedef struct MonoContext {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
 
-#else  
+#elif defined(__ia64__) /*defined(__sparc__) || defined(sparc) */
+
+typedef struct MonoContext {
+	unw_cursor_t cursor;
+	/* Whenever the ip in 'cursor' points to the ip where the exception happened */
+	/* This is true for the initial context for exceptions thrown from signal handlers */
+	gboolean precise_ip;
+} MonoContext;
+
+/*XXX SET_BP is missing*/
+#define MONO_CONTEXT_SET_IP(ctx,eip) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_IP, (unw_word_t)(eip)); g_assert (err == 0); } while (0)
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_SP, (unw_word_t)(esp)); g_assert (err == 0); } while (0)
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(mono_ia64_context_get_ip ((ctx))))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(mono_ia64_context_get_fp ((ctx))))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(mono_ia64_context_get_sp ((ctx))))
+
+#else
 
 #error "Implement mono-context for the current arch"
 
