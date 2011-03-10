@@ -2070,12 +2070,12 @@ static gboolean
 print_overflow_stack_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
 	MonoMethod *method = NULL;
-	if (frame->ji)
-		method = frame->ji->method;
-
 	PrintOverflowUserData *user_data = data;
 	FILE *stream = user_data->stream;
 	gchar *location;
+
+	if (frame->ji)
+		method = frame->ji->method;
 
 	if (method) {
 		if (user_data->count == 0) {
