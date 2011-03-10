@@ -244,6 +244,13 @@ typedef struct MonoContext {
 
 #elif defined(__ia64__) /*defined(__sparc__) || defined(sparc) */
 
+#ifndef UNW_LOCAL_ONLY
+
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+
+#endif
+
 typedef struct MonoContext {
 	unw_cursor_t cursor;
 	/* Whenever the ip in 'cursor' points to the ip where the exception happened */
