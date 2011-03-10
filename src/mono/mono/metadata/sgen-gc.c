@@ -3040,6 +3040,21 @@ job_scan_from_registered_roots (WorkerData *worker_data, void *job_data_untyped)
 			job_gray_queue (worker_data));
 }
 
+typedef struct
+{
+	char *heap_start;
+	char *heap_end;
+} ScanThreadDataJobData;
+
+static void
+job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
+{
+	ScanThreadDataJobData *job_data = job_data_untyped;
+
+	scan_thread_data (job_data->heap_start, job_data->heap_end, TRUE,
+			job_gray_queue (worker_data));
+}
+
 /*
  * Collect objects in the nursery.  Returns whether to trigger a major
  * collection.
@@ -3052,6 +3067,7 @@ collect_nursery (size_t requested_size)
 	char *orig_nursery_next;
 	ScanFromRemsetsJobData sfrjd;
 	ScanFromRegisteredRootsJobData scrrjd_normal, scrrjd_wbarrier;
+	ScanThreadDataJobData stdjd;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
@@ -3174,8 +3190,12 @@ collect_nursery (size_t requested_size)
 
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED_MS (atv, btv);
+
 	/* thread data */
-	scan_thread_data (nursery_start, nursery_next, TRUE, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	stdjd.heap_start = nursery_start;
+	stdjd.heap_end = nursery_next;
+	workers_enqueue_job (workers_distribute_gray_queue.allocator, job_scan_thread_data, &stdjd);
+
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED_MS (btv, atv);
 	btv = atv;
@@ -3258,21 +3278,6 @@ collect_nursery (size_t requested_size)
 	objects_pinned = 0;
 
 	return needs_major;
-}
-
-typedef struct
-{
-	char *heap_start;
-	char *heap_end;
-} ScanThreadDataJobData;
-
-static void
-job_scan_thread_data (WorkerData *worker_data, void *job_data_untyped)
-{
-	ScanThreadDataJobData *job_data = job_data_untyped;
-
-	scan_thread_data (job_data->heap_start, job_data->heap_end, TRUE,
-			job_gray_queue (worker_data));
 }
 
 typedef struct
