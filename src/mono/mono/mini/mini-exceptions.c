@@ -662,7 +662,7 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 	if (jit_tls && jit_tls->orig_ex_ctx_set)
 		mono_walk_stack_with_ctx (stack_walk_adapter, &jit_tls->orig_ex_ctx, unwind_options, &d);
 	else
-		mono_walk_stack_simple (stack_walk_adapter, unwind_options, &d);
+		mono_walk_stack (stack_walk_adapter, unwind_options, &d);
 }
 
 /*unwind the current thread starting at @context*/
@@ -691,9 +691,8 @@ mono_walk_stack_with_state (MonoJitStackWalk func, MonoThreadUnwindState *state,
 		unwind_options, user_data);
 }
 
-/*TODO this will replace mono_walk_stack */
 void
-mono_walk_stack_simple (MonoJitStackWalk func, MonoUnwindOptions options, void *user_data)
+mono_walk_stack (MonoJitStackWalk func, MonoUnwindOptions options, void *user_data)
 {
 	MonoThreadUnwindState state;
 	if (!mono_thread_state_init_from_current (&state))
@@ -702,7 +701,7 @@ mono_walk_stack_simple (MonoJitStackWalk func, MonoUnwindOptions options, void *
 }
 
 /**
- * mono_walk_stack:
+ * mono_walk_stack_full:
  * @func: callback to call for each stack frame
  * @domain: starting appdomain, can be NULL to use the current domain
  * @unwind_options: what extra information the unwinder should gather
@@ -716,42 +715,6 @@ mono_walk_stack_simple (MonoJitStackWalk func, MonoUnwindOptions options, void *
  * function is called with the relevant info. The walk ends when no more
  * managed stack frames are found or when the callback returns a TRUE value.
  */
-void
-mono_walk_stack (MonoJitStackWalk func, MonoDomain *domain, MonoContext *start_ctx, MonoUnwindOptions unwind_options, MonoInternalThread *thread, MonoLMF *lmf, gpointer user_data)
-{
-	MonoJitTlsData *jit_tls;
-	MonoContext ctx;
-	MONO_ARCH_CONTEXT_DEF
-
-	mono_arch_flush_register_windows ();
-
-	if (!thread) {
-		thread = mono_thread_internal_current ();
-		lmf = mono_get_lmf ();
-	}
-
-	/* A NULL thread->jit_data can happen in a small window during thread startup: the thread
-	 * allocation happens, we do a stack walk (for example with
-	 * --profile=log:nocalls and xsp) but the jit is not fully setup for the thread
-	 *  yet. Of course there are no stack frames, so just returning is ok.
-	 *  A NULL thread can happen during domain unload with the same test.
-	 */
-	if (!thread || !thread->jit_data)
-		return;
-	jit_tls = thread->jit_data;
-	if (!start_ctx) {
-#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-		MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
-#else
-		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, mono_walk_stack);
-#endif
-		g_assert (thread == mono_thread_internal_current ());
-		start_ctx = &ctx;
-	}
-
-	mono_walk_stack_full (func, start_ctx, domain, jit_tls, lmf, unwind_options, user_data);
-}
-
 static void
 mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data)
 {
@@ -921,13 +884,12 @@ callback_get_first_frame_security_info (StackFrameInfo *frame, MonoContext *ctx,
 MonoSecurityFrame*
 ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 {
-	MonoDomain *domain = mono_domain_get ();
 	MonoFrameSecurityInfo si;
 
 	si.skips = skip;
 	si.frame = NULL;
 
-	mono_walk_stack (callback_get_first_frame_security_info, domain, NULL, MONO_UNWIND_DEFAULT, NULL, NULL, &si);
+	mono_walk_stack (callback_get_first_frame_security_info, MONO_UNWIND_DEFAULT, &si);
 
 	return (si.skips == 0) ? si.frame : NULL;
 }
@@ -1018,7 +980,6 @@ glist_to_array (GList *list, MonoClass *eclass)
 MonoArray*
 ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 {
-	MonoDomain *domain = mono_domain_get ();
 	MonoSecurityStack ss;
 
 #if	defined(__ia64__) || defined(__s390__) || defined(__s390x__)
@@ -1028,8 +989,8 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 	ss.skips = skip;
 	ss.count = 0;
 	ss.maximum = MONO_CAS_INITIAL_STACK_SIZE;
-	ss.stack = mono_array_new (domain, mono_defaults.runtimesecurityframe_class, ss.maximum);
-	mono_walk_stack (callback_get_stack_frames_security_info, domain, NULL, MONO_UNWIND_DEFAULT, NULL, NULL, &ss);
+	ss.stack = mono_array_new (mono_domain_get (), mono_defaults.runtimesecurityframe_class, ss.maximum);
+	mono_walk_stack (callback_get_stack_frames_security_info, MONO_UNWIND_DEFAULT, &ss);
 	/* g_warning ("STACK RESULT: %d out of %d", ss.count, ss.maximum); */
 	return ss.stack;
 }
@@ -2202,7 +2163,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	if (jit_tls && mono_thread_internal_current ()) {
 		fprintf (stderr, "Stacktrace:\n\n");
 
-		mono_walk_stack_simple (print_stack_frame, TRUE, stderr);
+		mono_walk_stack (print_stack_frame, TRUE, stderr);
 
 		fflush (stderr);
 	}
@@ -2475,7 +2436,6 @@ gboolean
 mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 {
 	FindHandlerBlockData data = { 0 };
-	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	gpointer resume_ip;
 
@@ -2485,7 +2445,7 @@ mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx)
 	if (!jit_tls || jit_tls->handler_block_return_address)
 		return FALSE;
 
-	mono_walk_stack (find_last_handler_block, domain, ctx, MONO_UNWIND_SIGNAL_SAFE, NULL, NULL, &data);
+	mono_walk_stack_with_ctx (find_last_handler_block, ctx, MONO_UNWIND_SIGNAL_SAFE, &data);
 
 	if (!data.ji)
 		return FALSE;
@@ -2565,6 +2525,7 @@ mono_thread_state_init_from_monoctx (MonoThreadUnwindState *ctx, MonoContext *mc
 	ctx->unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
 	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;
 	ctx->valid = TRUE;
+	return TRUE;
 }
 
 /*returns false if the thread is not attached*/
