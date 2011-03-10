@@ -571,6 +571,12 @@ typedef struct {
 	void (*set_cast_details) (MonoClass *from, MonoClass *to);
 } MonoRuntimeCallbacks;
 
+typedef struct {
+	void (*mono_walk_stack) (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
+	void (*mono_raise_exception) (MonoException *ex);
+} MonoRuntimeExceptionHandlingCallbacks;
+
+
 /* used to free a dynamic method */
 typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *method);
 
@@ -622,12 +628,6 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 void
 mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 
-/* runtime initialization functions */
-typedef void (*MonoExceptionFunc) (MonoException *ex);
-
-void
-mono_install_handler	    (MonoExceptionFunc func) MONO_INTERNAL;
-
 void	    
 mono_install_runtime_invoke (MonoInvokeFunc func) MONO_INTERNAL;
 
@@ -642,6 +642,12 @@ mono_install_callbacks      (MonoRuntimeCallbacks *cbs) MONO_INTERNAL;
 
 MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void) MONO_INTERNAL;
+
+void
+mono_install_eh_callbacks (MonoRuntimeExceptionHandlingCallbacks *cbs) MONO_INTERNAL;
+
+MonoRuntimeExceptionHandlingCallbacks *
+mono_get_eh_callbacks (void) MONO_INTERNAL;
 
 void
 mono_type_initialization_init (void) MONO_INTERNAL;

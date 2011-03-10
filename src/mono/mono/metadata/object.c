@@ -5598,27 +5598,19 @@ mono_string_to_utf8_mp (MonoMemPool *mp, MonoString *s, MonoError *error)
 	return mono_string_to_utf8_internal (mp, NULL, s, FALSE, error);
 }
 
-static void
-default_ex_handler (MonoException *ex)
+
+static MonoRuntimeExceptionHandlingCallbacks eh_callbacks;
+
+void
+mono_install_eh_callbacks (MonoRuntimeExceptionHandlingCallbacks *cbs)
 {
-	MonoObject *o = (MonoObject*)ex;
-	g_error ("Exception %s.%s raised in C code", o->vtable->klass->name_space, o->vtable->klass->name);
-	exit (1);
+	eh_callbacks = *cbs;
 }
 
-static MonoExceptionFunc ex_handler = default_ex_handler;
-
-/**
- * mono_install_handler:
- * @func: exception handler
- *
- * This is an internal JIT routine used to install the handler for exceptions
- * being throwh.
- */
-void
-mono_install_handler (MonoExceptionFunc func)
+MonoRuntimeExceptionHandlingCallbacks *
+mono_get_eh_callbacks (void)
 {
-	ex_handler = func? func: default_ex_handler;
+	return &eh_callbacks;
 }
 
 /**
@@ -5643,7 +5635,7 @@ mono_raise_exception (MonoException *ex)
 		MONO_OBJECT_SETREF (thread, abort_exc, ex);
 	}
 	
-	ex_handler (ex);
+	eh_callbacks.mono_raise_exception (ex);
 }
 
 /**

@@ -70,6 +70,7 @@ static void mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpoi
 void
 mono_exceptions_init (void)
 {
+	MonoRuntimeExceptionHandlingCallbacks cbs;
 	if (mono_aot_only) {
 		restore_context_func = mono_aot_get_trampoline ("restore_context");
 		call_filter_func = mono_aot_get_trampoline ("call_filter");
@@ -107,9 +108,9 @@ mono_exceptions_init (void)
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
 	mono_arch_exceptions_init ();
 #endif
-	mono_install_stack_walk (mono_jit_walk_stack);
-	mono_install_handler (mono_get_throw_exception ());
-
+	cbs.mono_walk_stack = mono_jit_walk_stack;
+	cbs.mono_raise_exception = mono_get_throw_exception ();
+	mono_install_eh_callbacks (&cbs);
 }
 
 gpointer

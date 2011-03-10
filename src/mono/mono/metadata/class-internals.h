@@ -17,8 +17,6 @@
 
 extern gboolean mono_print_vtable;
 
-typedef void     (*MonoStackWalkImpl) (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
-
 typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;
 typedef struct _MonoMethodPInvoke MonoMethodPInvoke;
@@ -1151,9 +1149,6 @@ mono_icall_cleanup         (void) MONO_INTERNAL;
 
 gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id) MONO_INTERNAL;
-
-void
-mono_install_stack_walk (MonoStackWalkImpl func) MONO_INTERNAL;
 
 gboolean
 mono_metadata_has_generic_params (MonoImage *image, guint32 token) MONO_INTERNAL;
