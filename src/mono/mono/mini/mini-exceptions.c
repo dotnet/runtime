@@ -65,7 +65,6 @@ static gpointer restore_stack_protection_tramp = NULL;
 static void try_more_restore (void);
 static void restore_stack_protection (void);
 static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data);
-static void mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
 
 void
 mono_exceptions_init (void)
@@ -108,7 +107,6 @@ mono_exceptions_init (void)
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
 	mono_arch_exceptions_init ();
 #endif
-	cbs.mono_walk_stack = mono_jit_walk_stack;
 	cbs.mono_walk_stack_with_ctx = mono_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 	cbs.mono_raise_exception = mono_get_throw_exception ();
@@ -627,46 +625,6 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	}
 
 	return res;
-}
-
-typedef struct {
-	MonoStackWalk func;
-	gpointer user_data;
-} StackWalkUserData;
-
-static gboolean
-stack_walk_adapter (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
-{
-	StackWalkUserData *d = data;
-
-	switch (frame->type) {
-	case FRAME_TYPE_DEBUGGER_INVOKE:
-	case FRAME_TYPE_MANAGED_TO_NATIVE:
-		return FALSE;
-	case FRAME_TYPE_MANAGED:
-		g_assert (frame->ji);
-		return d->func (frame->ji->method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
-		break;
-	default:
-		g_assert_not_reached ();
-		return FALSE;
-	}
-}
-
-static void
-mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data)
-{
-	StackWalkUserData d;
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoUnwindOptions unwind_options = do_il_offset ? MONO_UNWIND_LOOKUP_ALL : MONO_UNWIND_DEFAULT;
-
-	d.func = func;
-	d.user_data = user_data;
-
-	if (jit_tls && jit_tls->orig_ex_ctx_set)
-		mono_walk_stack_with_ctx (stack_walk_adapter, &jit_tls->orig_ex_ctx, unwind_options, &d);
-	else
-		mono_walk_stack (stack_walk_adapter, unwind_options, &d);
 }
 
 /**

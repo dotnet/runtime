@@ -2068,16 +2068,42 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
 	return data [id];
 }
 
+typedef struct {
+	MonoStackWalk func;
+	gpointer user_data;
+} StackWalkUserData;
+
+static gboolean
+stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	StackWalkUserData *d = data;
+
+	switch (frame->type) {
+	case FRAME_TYPE_DEBUGGER_INVOKE:
+	case FRAME_TYPE_MANAGED_TO_NATIVE:
+		return FALSE;
+	case FRAME_TYPE_MANAGED:
+		g_assert (frame->ji);
+		return d->func (frame->ji->method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
+		break;
+	default:
+		g_assert_not_reached ();
+		return FALSE;
+	}
+}
+
 void
 mono_stack_walk (MonoStackWalk func, gpointer user_data)
 {
-	mono_get_eh_callbacks ()->mono_walk_stack (func, TRUE, user_data);
+	StackWalkUserData ud = { func, user_data };
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_LOOKUP_ALL, &ud);
 }
 
 void
 mono_stack_walk_no_il (MonoStackWalk func, gpointer user_data)
 {
-	mono_get_eh_callbacks ()->mono_walk_stack (func, FALSE, user_data);
+	StackWalkUserData ud = { func, user_data };
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_DEFAULT, &ud);
 }
 
 static gboolean
@@ -2094,7 +2120,7 @@ MonoMethod*
 mono_method_get_last_managed (void)
 {
 	MonoMethod *m = NULL;
-	mono_get_eh_callbacks ()->mono_walk_stack (last_managed, FALSE, &m);
+	mono_stack_walk_no_il (last_managed, &m);
 	return m;
 }
 

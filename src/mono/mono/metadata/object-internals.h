@@ -575,7 +575,6 @@ typedef struct {
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
 
 typedef struct {
-	void (*mono_walk_stack) (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
 	void (*mono_walk_stack_with_ctx) (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
 	void (*mono_walk_stack_with_state) (MonoInternalStackWalk func, MonoThreadState *state, MonoUnwindOptions options, void *user_data);
 	void (*mono_raise_exception) (MonoException *ex);
