@@ -65,6 +65,7 @@ static gpointer restore_stack_protection_tramp = NULL;
 static void try_more_restore (void);
 static void restore_stack_protection (void);
 static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data);
+static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx);
 
 void
 mono_exceptions_init (void)
@@ -110,6 +111,7 @@ mono_exceptions_init (void)
 	cbs.mono_walk_stack_with_ctx = mono_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 	cbs.mono_raise_exception = mono_get_throw_exception ();
+	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
 	mono_install_eh_callbacks (&cbs);
 }
 
@@ -2549,4 +2551,14 @@ mono_thread_state_init_from_current (MonoThreadUnwindState *ctx)
 	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread->jit_data;
 	ctx->valid = TRUE;
 	return TRUE;
+}
+
+static void
+mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx)
+{
+	void (*restore_context) (MonoContext *);
+	restore_context = mono_get_restore_context ();
+
+	mono_handle_exception (ctx, exc, NULL, FALSE);
+	restore_context (ctx);
 }

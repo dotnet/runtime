@@ -578,6 +578,7 @@ typedef struct {
 	void (*mono_walk_stack_with_ctx) (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
 	void (*mono_walk_stack_with_state) (MonoInternalStackWalk func, MonoThreadState *state, MonoUnwindOptions options, void *user_data);
 	void (*mono_raise_exception) (MonoException *ex);
+	void (*mono_raise_exception_with_ctx) (MonoException *ex, MonoContext *ctx);
 } MonoRuntimeExceptionHandlingCallbacks;
 
 
