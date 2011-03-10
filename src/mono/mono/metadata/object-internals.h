@@ -10,6 +10,7 @@
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
+#include "mono/utils/mono-stack-unwinding.h"
 
 /* 
  * We should find a better place for this stuff. We can't put it in mono-compiler.h,
@@ -571,8 +572,12 @@ typedef struct {
 	void (*set_cast_details) (MonoClass *from, MonoClass *to);
 } MonoRuntimeCallbacks;
 
+typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
+
 typedef struct {
 	void (*mono_walk_stack) (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
+	void (*mono_walk_stack_with_ctx) (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
+	void (*mono_walk_stack_with_state) (MonoInternalStackWalk func, MonoThreadState *state, MonoUnwindOptions options, void *user_data);
 	void (*mono_raise_exception) (MonoException *ex);
 } MonoRuntimeExceptionHandlingCallbacks;
 
