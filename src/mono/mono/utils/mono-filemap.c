@@ -25,7 +25,18 @@
 MonoFileMap *
 mono_file_map_open (const char* name)
 {
+#ifdef WIN32
+	gunichar2 *wname = g_utf8_to_utf16 (name, -1, 0, 0, 0);
+	MonoFileMap *result;
+
+	if (wname == NULL)
+		return NULL;
+	result = (MonoFileMap *) _wfopen ((wchar_t *) wname, L"rb");
+	g_free (wname);
+	return result;
+#else
 	return (MonoFileMap *)fopen (name, "rb");
+#endif
 }
 
 guint64 
