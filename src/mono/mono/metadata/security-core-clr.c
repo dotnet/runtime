@@ -411,19 +411,35 @@ mono_security_core_clr_require_elevated_permissions (void)
 
 static MonoSecurityCoreCLROptions security_core_clr_options = MONO_SECURITY_CORE_CLR_OPTIONS_DEFAULT;
 
-/*
- * mono_security_core_clr_set_options
+/**
+ * mono_security_core_clr_set_options:
+ * @options: the new options for the coreclr system to use
  *
- *      By default, the CoreCLRs security model forbids execution trough reflection of methods not visible from the calling code.
- *      Even if the method being called is not in a platform assembly. For non moonlight CoreCLR users this restriction does not
- *      make a lot of sense, since the author could have just changed the non platform assembly to allow the method to be called.
- *	this function allows specific relaxations from the default behaviour to be set. 
+ * By default, the CoreCLRs security model forbids execution trough reflection of methods not visible from the calling code.
+ * Even if the method being called is not in a platform assembly. For non moonlight CoreCLR users this restriction does not
+ * make a lot of sense, since the author could have just changed the non platform assembly to allow the method to be called.
+ * This function allows specific relaxations from the default behaviour to be set.
+ *
+ * Use MONO_SECURITY_CORE_CLR_OPTIONS_DEFAULT for the default coreclr coreclr behaviour as used in Moonlight.
+ *
+ * Use MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_REFLECTION to allow transparent code to execute methods and access 
+ * fields that are not in platformcode, even if those methods and fields are private or otherwise not visible to the calling code.
+ *
+ * Use MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_DELEGATE to allow delegates to be created that point at methods that are not in
+ * platformcode even if those methods and fields are private or otherwise not visible to the calling code.
+ *
  */
 
 void 
 mono_security_core_clr_set_options (MonoSecurityCoreCLROptions options) {
 	security_core_clr_options = options;
 }
+
+/**
+ * mono_security_core_clr_get_options:
+ *
+ * Retrieves the current options used by the coreclr system.
+ */
 
 MonoSecurityCoreCLROptions
 mono_security_core_clr_get_options ()

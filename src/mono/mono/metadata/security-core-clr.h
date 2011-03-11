@@ -21,9 +21,18 @@ typedef enum {
 } MonoSecurityCoreCLRLevel;
 
 typedef enum {
+	//The following flags can be used in combination, and control specific behaviour of the CoreCLR securit system.
+
+	//Default coreclr behaviour, as used in moonlight.
 	MONO_SECURITY_CORE_CLR_OPTIONS_DEFAULT = 0,
+
+	//Allow transparent code to execute methods and access fields that are not in platformcode,
+	//even if those methods and fields are private or otherwise not visible to the calling code.
 	MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_REFLECTION = 1,
-	MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_DELEGATE = 2,
+
+	//Allow delegates to be created that point at methods that are not in platformcode,
+	//even if those methods and fields are private or otherwise not visible to the calling code.
+	MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_DELEGATE = 2
 } MonoSecurityCoreCLROptions;
 
 extern gboolean mono_security_core_clr_test;
