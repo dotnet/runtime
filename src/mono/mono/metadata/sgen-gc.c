@@ -5132,9 +5132,7 @@ static void
 update_current_thread_stack (void *start)
 {
 	int stack_guard = 0;
-#ifdef USE_MONO_CTX
-	void *ptr = NULL;
-#else
+#ifndef USE_MONO_CTX
 	void *ptr = cur_thread_regs;
 #endif
 	SgenThreadInfo *info = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
