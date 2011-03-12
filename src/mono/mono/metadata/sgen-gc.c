@@ -447,7 +447,7 @@ static RememberedSet* alloc_global_remset (SgenInternalAllocator *alc, int size,
 #define pin_object		SGEN_PIN_OBJECT
 #define unpin_object		SGEN_UNPIN_OBJECT
 
-#define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, nursery_start, nursery_real_end))
+#define ptr_in_nursery(p)	(SGEN_PTR_IN_NURSERY ((p), DEFAULT_NURSERY_BITS, nursery_start, nursery_end))
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
@@ -648,7 +648,7 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
 /* 
  * The current allocation cursors
  * We allocate objects in the nursery.
- * The nursery is the area between nursery_start and nursery_real_end.
+ * The nursery is the area between nursery_start and nursery_end.
  * Allocation is done from a Thread Local Allocation Buffer (TLAB). TLABs are allocated
  * from nursery fragments.
  * tlab_next is the pointer to the space inside the TLAB where the next object will 
@@ -664,6 +664,10 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
  * MAX(nursery_last_pinned_end, nursery_frag_real_end)
  */
 static char *nursery_start = NULL;
+static char *nursery_next = NULL;
+static char *nursery_frag_real_end = NULL;
+static char *nursery_end = NULL;
+static char *nursery_last_pinned_end = NULL;
 
 #ifdef HAVE_KW_THREAD
 #define TLAB_ACCESS_INIT
@@ -709,10 +713,6 @@ static __thread char **tlab_next_addr;
 static __thread char *stack_end;
 static __thread long *store_remset_buffer_index_addr;
 #endif
-static char *nursery_next = NULL;
-static char *nursery_frag_real_end = NULL;
-static char *nursery_real_end = NULL;
-static char *nursery_last_pinned_end = NULL;
 
 /* The size of a TLAB */
 /* The bigger the value, the less often we have to go to the slow path to allocate a new 
@@ -834,8 +834,8 @@ static void finalize_in_range (CopyOrMarkObjectFunc copy_func, char *start, char
 static void add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, int generation);
 static void null_link_in_range (CopyOrMarkObjectFunc copy_func, char *start, char *end, int generation, gboolean before_finalization, GrayQueue *queue);
 static void null_links_for_domain (MonoDomain *domain, int generation);
-static gboolean search_fragment_for_size (size_t size);
-static int search_fragment_for_size_range (size_t desired_size, size_t minimum_size);
+static gboolean alloc_fragment_for_size (size_t size);
+static int alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size);
 static void clear_nursery_fragments (char *next);
 static void pin_from_roots (void *start_nursery, void *end_nursery, GrayQueue *queue);
 static int pin_objects_from_addresses (GCMemSection *section, void **start, void **end, void *start_nursery, void *end_nursery, GrayQueue *queue);
@@ -2263,13 +2263,13 @@ alloc_nursery (void)
 	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
 #endif
 	nursery_start = data;
-	nursery_real_end = nursery_start + nursery_size;
-	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_real_end);
+	nursery_end = nursery_start + nursery_size;
+	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_end);
 	nursery_next = nursery_start;
 	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)nursery_size, (unsigned long)total_alloc));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
-	section->end_data = nursery_real_end;
+	section->end_data = nursery_end;
 	scan_starts = (alloc_size + SCAN_START_SIZE - 1) / SCAN_START_SIZE;
 	section->scan_starts = mono_sgen_alloc_internal_dynamic (sizeof (char*) * scan_starts, INTERNAL_MEM_SCAN_STARTS);
 	section->num_scan_start = scan_starts;
@@ -2282,8 +2282,8 @@ alloc_nursery (void)
 	frag = alloc_fragment ();
 	frag->fragment_start = nursery_start;
 	frag->fragment_limit = nursery_start;
-	frag->fragment_end = nursery_real_end;
-	nursery_frag_real_end = nursery_real_end;
+	frag->fragment_end = nursery_end;
+	nursery_frag_real_end = nursery_end;
 	/* FIXME: frag here is lost */
 }
 
@@ -2575,7 +2575,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation, GrayQueue *
 		fin_ready = num_ready_finalizers;
 		finalize_in_range (copy_func, start_addr, end_addr, generation, queue);
 		if (generation == GENERATION_OLD)
-			finalize_in_range (copy_func, nursery_start, nursery_real_end, GENERATION_NURSERY, queue);
+			finalize_in_range (copy_func, nursery_start, nursery_end, GENERATION_NURSERY, queue);
 
 		if (fin_ready != num_ready_finalizers) {
 			++num_loops;
@@ -2673,7 +2673,7 @@ build_nursery_fragments (void **start, int num_entries)
 		frag_start = (char*)start [i] + frag_size;
 	}
 	nursery_last_pinned_end = frag_start;
-	frag_end = nursery_real_end;
+	frag_end = nursery_end;
 	frag_size = frag_end - frag_start;
 	if (frag_size)
 		add_nursery_frag (frag_size, frag_start, frag_end);
@@ -3049,7 +3049,7 @@ collect_nursery (size_t requested_size)
 	orig_nursery_next = nursery_next;
 	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
 	/* FIXME: optimize later to use the higher address where an object can be present */
-	nursery_next = MAX (nursery_next, nursery_real_end);
+	nursery_next = MAX (nursery_next, nursery_end);
 
 	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", num_minor_gcs, nursery_start, nursery_next, (int)(nursery_next - nursery_start)));
 	max_garbage_amount = nursery_next - nursery_start;
@@ -3330,7 +3330,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED_MS (atv, btv);
 
-	nursery_section->next_data = nursery_real_end;
+	nursery_section->next_data = nursery_end;
 	/* we should also coalesce scanning from sections close to each other
 	 * and deal with pointers outside of the sections later.
 	 */
@@ -3490,7 +3490,7 @@ major_do_collection (const char *reason)
 	}
 
 	reset_heap_boundaries ();
-	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_real_end);
+	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_end);
 
 	/* sweep the big objects list */
 	prevbo = NULL;
@@ -3613,7 +3613,7 @@ minor_collect_or_expand_inner (size_t size)
 		DEBUG (2, fprintf (gc_debug_file, "Heap size: %lu, LOS size: %lu\n", (unsigned long)total_alloc, (unsigned long)los_memory_usage));
 		restart_world (0);
 		/* this also sets the proper pointers for the next allocation */
-		if (!search_fragment_for_size (size)) {
+		if (!alloc_fragment_for_size (size)) {
 			int i;
 			/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
 			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", size, last_num_pinned));
@@ -3709,12 +3709,13 @@ setup_fragment (Fragment *frag, Fragment *prev, size_t size)
 	fragment_freelist = frag;
 }
 
-/* check if we have a suitable fragment in nursery_fragments to be able to allocate
- * an object of size @size
- * Return FALSE if not found (which means we need a collection)
+/*
+ * Allocate a new nursery fragment able to hold an object of size @size.
+ * nursery_next and nursery_frag_real_end are set to the boundaries of the fragment.
+ * Return TRUE if found, FALSE otherwise.
  */
 static gboolean
-search_fragment_for_size (size_t size)
+alloc_fragment_for_size (size_t size)
 {
 	Fragment *frag, *prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, size: %zd\n", nursery_frag_real_end, size));
@@ -3736,11 +3737,11 @@ search_fragment_for_size (size_t size)
 }
 
 /*
- * Same as search_fragment_for_size but if search for @desired_size fails, try to satisfy @minimum_size.
+ * Same as alloc_fragment_for_size but if search for @desired_size fails, try to satisfy @minimum_size.
  * This improves nursery usage.
  */
 static int
-search_fragment_for_size_range (size_t desired_size, size_t minimum_size)
+alloc_fragment_for_size_range (size_t desired_size, size_t minimum_size)
 {
 	Fragment *frag, *prev, *min_prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, desired size: %zd minimum size %zd\n", nursery_frag_real_end, desired_size, minimum_size));
@@ -3833,7 +3834,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			collect_nursery (0);
 			restart_world (0);
 			mono_profiler_gc_event (MONO_GC_EVENT_END, 0);
-			if (!degraded_mode && !search_fragment_for_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
+			if (!degraded_mode && !alloc_fragment_for_size (size) && size <= MAX_SMALL_OBJ_SIZE) {
 				// FIXME:
 				g_assert_not_reached ();
 			}
@@ -3913,7 +3914,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 			if (size > tlab_size) {
 				/* Allocate directly from the nursery */
 				if (nursery_next + size >= nursery_frag_real_end) {
-					if (!search_fragment_for_size (size)) {
+					if (!alloc_fragment_for_size (size)) {
 						minor_collect_or_expand_inner (size);
 						if (degraded_mode) {
 							p = alloc_degraded (vtable, size);
@@ -3943,7 +3944,7 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 					if (available_in_nursery > MAX_NURSERY_TLAB_WASTE && available_in_nursery > size) {
 						alloc_size = available_in_nursery;
 					} else {
-						alloc_size = search_fragment_for_size_range (tlab_size, size);
+						alloc_size = alloc_fragment_for_size_range (tlab_size, size);
 						if (!alloc_size) {
 							alloc_size = tlab_size;
 							minor_collect_or_expand_inner (tlab_size);
@@ -7966,9 +7967,9 @@ mono_gc_get_write_barrier (void)
 		mono_mb_emit_ptr (mb, (gpointer) nursery_start);
 		label_continue_1 = mono_mb_emit_branch (mb, CEE_BLT);
 
-		// if (ptr >= nursery_real_end)) goto continue;
+		// if (ptr >= nursery_end)) goto continue;
 		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ptr (mb, (gpointer) nursery_real_end);
+		mono_mb_emit_ptr (mb, (gpointer) nursery_end);
 		label_continue_2 = mono_mb_emit_branch (mb, CEE_BGE);
 
 		// Otherwise return
@@ -7991,7 +7992,7 @@ mono_gc_get_write_barrier (void)
 
 		// if (*ptr >= nursery_end) return;
 		mono_mb_emit_ldloc (mb, dereferenced_var);
-		mono_mb_emit_ptr (mb, (gpointer) nursery_real_end);
+		mono_mb_emit_ptr (mb, (gpointer) nursery_end);
 		label_no_wb_5 = mono_mb_emit_branch (mb, CEE_BGE);
 
 #endif 
