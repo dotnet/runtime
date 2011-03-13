@@ -2210,6 +2210,19 @@ alloc_fragment (void)
 	frag->next = NULL;
 	return frag;
 }
+ 
+static void
+add_fragment (char *start, char *end)
+{
+	Fragment *fragment;
+
+	fragment = alloc_fragment ();
+	fragment->fragment_start = start;
+	fragment->fragment_limit = start;
+	fragment->fragment_end = end;
+	fragment->next = nursery_fragments;
+	nursery_fragments = fragment;
+}
 
 /* size must be a power of 2 */
 void*
@@ -2242,7 +2255,6 @@ alloc_nursery (void)
 	GCMemSection *section;
 	char *data;
 	int scan_starts;
-	Fragment *frag;
 	int alloc_size;
 
 	if (nursery_section)
@@ -2265,7 +2277,6 @@ alloc_nursery (void)
 	nursery_start = data;
 	nursery_end = nursery_start + nursery_size;
 	mono_sgen_update_heap_boundaries ((mword)nursery_start, (mword)nursery_end);
-	nursery_next = nursery_start;
 	DEBUG (4, fprintf (gc_debug_file, "Expanding nursery size (%p-%p): %lu, total: %lu\n", data, data + alloc_size, (unsigned long)nursery_size, (unsigned long)total_alloc));
 	section->data = section->next_data = data;
 	section->size = alloc_size;
@@ -2279,12 +2290,7 @@ alloc_nursery (void)
 	nursery_section = section;
 
 	/* Setup the single first large fragment */
-	frag = alloc_fragment ();
-	frag->fragment_start = nursery_start;
-	frag->fragment_limit = nursery_start;
-	frag->fragment_end = nursery_end;
-	nursery_frag_real_end = nursery_end;
-	/* FIXME: frag here is lost */
+	add_fragment (nursery_start, nursery_end);
 }
 
 void*
@@ -2433,7 +2439,6 @@ static mword fragment_total = 0;
 static void
 add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 {
-	Fragment *fragment;
 	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
 	binary_protocol_empty (frag_start, frag_size);
 	/* Not worth dealing with smaller fragments: need to tune */
@@ -2442,12 +2447,7 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 		if (nursery_clear_policy == CLEAR_AT_GC)
 			memset (frag_start, 0, frag_size);
 
-		fragment = alloc_fragment ();
-		fragment->fragment_start = frag_start;
-		fragment->fragment_limit = frag_start;
-		fragment->fragment_end = frag_end;
-		fragment->next = nursery_fragments;
-		nursery_fragments = fragment;
+		add_fragment (frag_start, frag_end);
 		fragment_total += frag_size;
 	} else {
 		/* Clear unused fragments, pinning depends on this */
