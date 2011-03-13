@@ -377,6 +377,7 @@ mips_patch (guint32 *code, guint32 target)
 		mono_arch_flush_icache ((guint8 *)code, 4);
 		break;
 	case 0x0f: /* LUI / ADDIU pair */
+		g_assert ((code[1] >> 26) == 0x9);
 		patch_lui_addiu (code, target);
 		mono_arch_flush_icache ((guint8 *)code, 8);
 		break;
@@ -3748,12 +3749,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_CALL:
 				if (ins->flags & MONO_INST_HAS_METHOD) {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
-					mips_call (code, mips_t9, call->method);
+					mips_load (code, mips_t9, call->method);
 				}
 				else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-					mips_call (code, mips_t9, call->fptr);
+					mips_load (code, mips_t9, call->fptr);
 				}
+				mips_jalr (code, mips_t9, mips_ra);
+				mips_nop (code);
 				break;
 			case OP_FCALL_REG:
 			case OP_LCALL_REG:
