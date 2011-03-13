@@ -4582,15 +4582,31 @@ mips_adjust_stackframe(MonoCompile *cfg)
 			if (cfg->verbose_level > 2) {
 				mono_print_ins_index (ins_cnt, ins);
 			}
-			if (MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_fp))
-				adj_c0 = 1;
-			if (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_fp))
-				adj_c0 = 1;
-			/* The following two catch FP spills */
-			if (MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_sp))
-				adj_c0 = 1;
-			if (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_sp))
-				adj_c0 = 1;
+			/* The == mips_sp tests catch FP spills */
+			if (MONO_IS_LOAD_MEMBASE(ins) && ((ins->inst_basereg == mips_fp) ||
+							  (ins->inst_basereg == mips_sp))) {
+				switch (ins->opcode) {
+				case OP_LOADI8_MEMBASE:
+				case OP_LOADR8_MEMBASE:
+					adj_c0 = 8;
+					break;
+				default:
+					adj_c0 = 4;
+					break;
+				}
+			} else if (MONO_IS_STORE_MEMBASE(ins) && ((ins->dreg == mips_fp) ||
+								  (ins->dreg == mips_sp))) {
+				switch (ins->opcode) {
+				case OP_STOREI8_MEMBASE_REG:
+				case OP_STORER8_MEMBASE_REG:
+				case OP_STOREI8_MEMBASE_IMM:
+					adj_c0 = 8;
+					break;
+				default:
+					adj_c0 = 4;
+					break;
+				}
+			}
 			if (((ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_IADD_IMM)) && (ins->sreg1 == mips_fp))
 				adj_imm = 1;
 			if (adj_c0) {
@@ -4602,7 +4618,8 @@ mips_adjust_stackframe(MonoCompile *cfg)
 					}
 				}
 				else if (ins->inst_c0 < 0) {
-					ins->inst_c0 = - ins->inst_c0 - 4;
+                                        /* Adj_c0 holds the size of the datatype. */
+					ins->inst_c0 = - ins->inst_c0 - adj_c0;
 					if (cfg->verbose_level > 2) {
 						g_print ("spill");
 						mono_print_ins_index (ins_cnt, ins);
