@@ -1013,7 +1013,7 @@ pulse_on_new_job (ThreadPool *tp)
 void
 icall_append_job (MonoObject *ar)
 {
-	threadpool_append_job (&async_tp, ar);
+	threadpool_append_jobs (&async_tp, &ar, 1);
 }
 
 static void
@@ -1057,7 +1057,7 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 		mono_cq_enqueue (tp->queue, ar);
 	}
 
-	for (i = 0; i < MIN(njobs, tp->max_threads); i++)
+	for (i = 0; tp->waiting > 0 && i < MIN(njobs, tp->max_threads); i++)
 		pulse_on_new_job (tp);
 }
 
