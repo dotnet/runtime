@@ -1500,5 +1500,29 @@ ncells ) {
 		return 0;
 	}
 
+	public static bool flag;
+
+	class B {
+
+		internal static B[] d;
+
+		static B () {
+			flag = true;
+		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static int regress_679467_inner () {
+		if (flag == true)
+			return 1;
+		var o = B.d;
+		var o2 = B.d;
+		return 0;
+	}
+
+	static int test_0_multiple_cctor_calls_regress_679467 () {
+		flag = false;
+		return regress_679467_inner ();
+	}
 }
 
