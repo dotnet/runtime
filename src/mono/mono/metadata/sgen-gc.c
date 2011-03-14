@@ -256,6 +256,8 @@ gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
+static gboolean disable_minor_collections = FALSE;
+static gboolean disable_major_collections = FALSE;
 
 #ifdef HEAVY_STATISTICS
 static long long stat_objects_alloced = 0;
@@ -2966,6 +2968,9 @@ collect_nursery (size_t requested_size)
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
+	if (disable_minor_collections)
+		return TRUE;
+
 	mono_perfcounters->gc_collections0++;
 
 	current_collection_generation = GENERATION_NURSERY;
@@ -3384,7 +3389,7 @@ major_do_collection (const char *reason)
 static void
 major_collection (const char *reason)
 {
-	if (g_getenv ("MONO_GC_NO_MAJOR")) {
+	if (disable_major_collections) {
 		collect_nursery (0);
 		return;
 	}
@@ -7154,6 +7159,10 @@ mono_gc_base_init (void)
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "check-scan-starts")) {
 				do_scan_starts_check = TRUE;
+			} else if (!strcmp (opt, "disable-minor")) {
+				disable_minor_collections = TRUE;
+			} else if (!strcmp (opt, "disable-major")) {
+				disable_major_collections = TRUE;
 			} else if (g_str_has_prefix (opt, "heap-dump=")) {
 				char *filename = strchr (opt, '=') + 1;
 				nursery_clear_policy = CLEAR_AT_GC;
@@ -7168,7 +7177,13 @@ mono_gc_base_init (void)
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
-				fprintf (stderr, "Valid options are: collect-before-allocs[=<n>], check-at-minor-collections, xdomain-checks, clear-at-gc.\n");
+				fprintf (stderr, "Valid options are:\n");
+				fprintf (stderr, "  collect-before-allocs[=<n>]\n");
+				fprintf (stderr, "  check-at-minor-collections\n");
+				fprintf (stderr, "  disable-minor\n");
+				fprintf (stderr, "  disable-major\n");
+				fprintf (stderr, "  xdomain-checks\n");
+				fprintf (stderr, "  clear-at-gc\n");
 				exit (1);
 			}
 		}
