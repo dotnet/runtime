@@ -53,14 +53,12 @@ mono_sgen_thread_handshake (int signum)
 	mcontext_t mctx;
 
 	SgenThreadInfo *info;
-#ifdef USE_MONO_CTX
-	MonoContext monoctx;
-#else
-	gpointer regs [ARCH_NUM_REGS];
-#endif
 	gpointer stack_start;
 
 	int count;
+
+	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
+	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
 	FOREACH_THREAD (info) {
 		if (info == cur_thread || mono_sgen_is_worker_thread (info->id))
@@ -71,12 +69,10 @@ mono_sgen_thread_handshake (int signum)
 			if (ret != KERN_SUCCESS)
 				continue;
 
-			state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 			ret = mono_mach_arch_get_thread_state (info->mach_port, state, &num_state);
 			if (ret != KERN_SUCCESS)
 				continue;
 
-			mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 			mono_mach_arch_thread_state_to_mcontext (state, mctx);
 			ctx.uc_mcontext = mctx;
 
@@ -88,11 +84,11 @@ mono_sgen_thread_handshake (int signum)
 				info->stack_start = stack_start;
 
 #ifdef USE_MONO_CTX
-				mono_sigctx_to_monoctx (&ctx, &monoctx);
-				info->monoctx = &monoctx;
+				mono_sigctx_to_monoctx (&ctx, &info->ctx);
+				info->monoctx = &info->ctx;
 #else
-				ARCH_COPY_SIGCTX_REGS (regs, &ctx);
-				info->stopped_regs = regs;
+				ARCH_COPY_SIGCTX_REGS (&info->regs, &ctx);
+				info->stopped_regs = &info->regs;
 #endif
 			} else {
 				g_assert (!info->stack_start);

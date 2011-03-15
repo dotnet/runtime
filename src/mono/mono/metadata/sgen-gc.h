@@ -123,6 +123,15 @@ struct _SgenThreadInfo {
 	gpointer runtime_data;
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
 	MonoDomain *stopped_domain; /* ditto */
+
+#if defined(__MACH__)
+#ifdef USE_MONO_CTX
+	MonoContext ctx;		/* ditto */
+#else
+	gpointer regs[ARCH_NUM_REGS];	    /* ditto */
+#endif
+#endif
+
 #ifdef USE_MONO_CTX
 	MonoContext *monoctx;	/* ditto */
 #else
