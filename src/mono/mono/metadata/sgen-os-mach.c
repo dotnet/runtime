@@ -45,7 +45,7 @@
 int
 mono_sgen_thread_handshake (int signum)
 {
-	SgenThreadInfo *cur_thread = mono_sgen_thread_info_lookup (ARCH_GET_THREAD ());
+	SgenThreadInfo *cur_thread = mono_sgen_thread_info_current ();
 	mach_msg_type_number_t num_state;
 	thread_state_t state;
 	kern_return_t ret;

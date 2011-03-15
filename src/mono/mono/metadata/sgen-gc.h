@@ -613,6 +613,7 @@ void mono_sgen_free_os_memory (void *addr, size_t size) MONO_INTERNAL;
 
 int mono_sgen_thread_handshake (int signum) MONO_INTERNAL;
 SgenThreadInfo* mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id) MONO_INTERNAL;
+SgenThreadInfo* mono_sgen_thread_info_current (void) MONO_INTERNAL;
 
 void mono_sgen_wait_for_suspend_ack (int count) MONO_INTERNAL;
 
