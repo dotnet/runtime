@@ -66,6 +66,7 @@ static void try_more_restore (void);
 static void restore_stack_protection (void);
 static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data);
 static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx);
+static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
 
 void
 mono_exceptions_init (void)
@@ -108,7 +109,7 @@ mono_exceptions_init (void)
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
 	mono_arch_exceptions_init ();
 #endif
-	cbs.mono_walk_stack_with_ctx = mono_walk_stack_with_ctx;
+	cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 	cbs.mono_raise_exception = mono_get_throw_exception ();
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
@@ -629,13 +630,24 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	return res;
 }
 
+static void
+mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data)
+{
+	if (!start_ctx) {
+		MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+		if (jit_tls && jit_tls->orig_ex_ctx_set)
+			start_ctx = &jit_tls->orig_ex_ctx;
+	}
+	mono_walk_stack_with_ctx (func, start_ctx, unwind_options, user_data);
+}
 /**
  * mono_walk_stack_with_ctx:
  *
  * Unwind the current thread starting at @start_ctx.
  * 
  * If @start_ctx is null, we capture the current context.
- */void
+ */
+void
 mono_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data)
 {
 	MonoContext extra_ctx;
