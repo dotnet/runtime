@@ -3334,9 +3334,7 @@ ref_stack_push (RefStack *rs, gpointer ptr)
 static void
 ref_stack_pop (RefStack *rs)
 {
-	g_assert (rs != NULL);
-
-	if (rs->bottom == 0)
+	if (rs == NULL || rs->bottom == 0)
 		return;
 
 	rs->bottom--;
