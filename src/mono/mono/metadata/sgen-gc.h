@@ -36,6 +36,9 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/sgen-archdep.h>
+#if defined(__MACH__)
+	#include <mach/mach_port.h>
+#endif
 
 /*
  * Turning on heavy statistics will turn off the managed allocator and
@@ -99,6 +102,10 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 struct _SgenThreadInfo {
 	SgenThreadInfo *next;
 	ARCH_THREAD_TYPE id;
+#if defined(__MACH__)
+	thread_port_t mach_port;
+#endif
+	
 	unsigned int stop_count; /* to catch duplicate signals */
 	int signal;
 	int skip;
