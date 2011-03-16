@@ -365,7 +365,40 @@ void _wapi_process_signal_self ()
 		process_set_termination_details (current_process, 0);
 	}
 }
+
+#ifndef HAVE_SIGACTION
+void
+_wapi_process_noshm_wait_setup (void)
+{
+}
+#else
+static void
+sigchld_signal (int dummy, siginfo_t *info, void *context)
+{
+	struct _WapiHandle_process *process_handle;
+	gpointer p;
+	int status;
+
+	p = (gpointer) info->si_pid;
+	/* If the handle exists, wait for it using process_wait, which will fill in the data.
+	 * If the handle does not exist, call waitpid() to avoid leaving a zombie */
+	if (_wapi_lookup_handle (p, WAPI_HANDLE_PROCESS, (gpointer *)&process_handle) != FALSE)
+		process_wait (p, 0);
+	else
+		waitpid (info->si_pid, &status, WNOHANG);
+}
+
+void
+_wapi_process_noshm_wait_setup (void)
+{
+	struct sigaction sa;
 	
+	sa.sa_sigaction = sigchld_signal;
+	sa.sa_flags = SA_NOCLDSTOP | SA_SIGINFO;
+	sigaction (SIGCHLD, &sa, NULL);
+}
+#endif /* HAVE_SIGACTION */
+
 static void process_set_defaults (struct _WapiHandle_process *process_handle)
 {
 	/* These seem to be the defaults on w2k */

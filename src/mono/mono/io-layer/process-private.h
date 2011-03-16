@@ -42,5 +42,6 @@ struct _WapiHandle_process
 
 extern void _wapi_process_reap (void);
 extern void _wapi_process_signal_self (void);
+extern void _wapi_process_noshm_wait_setup (void);
 
 #endif /* _WAPI_PROCESS_PRIVATE_H_ */

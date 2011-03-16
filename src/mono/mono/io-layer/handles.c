@@ -276,6 +276,8 @@ static void shared_init (void)
 		/* This allocates a 4mb array, so do it only if SHM is enabled */
 		_wapi_fileshare_layout = _wapi_shm_attach (WAPI_SHM_FILESHARE);
 		g_assert (_wapi_fileshare_layout != NULL);
+	} else {
+		_wapi_process_noshm_wait_setup ();
 	}
 	
 #if !defined (DISABLE_SHARED_HANDLES)
