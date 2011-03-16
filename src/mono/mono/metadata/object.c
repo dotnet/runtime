@@ -1552,6 +1552,12 @@ mono_method_alloc_generic_virtual_thunk (MonoDomain *domain, int size)
 	p = mono_domain_code_reserve (domain, size);
 	*p = size;
 
+	mono_domain_lock (domain);
+	if (!domain->generic_virtual_thunks)
+		domain->generic_virtual_thunks = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (domain->generic_virtual_thunks, p, p);
+	mono_domain_unlock (domain);
+
 	return p + 1;
 }
 
@@ -1563,7 +1569,18 @@ invalidate_generic_virtual_thunk (MonoDomain *domain, gpointer code)
 {
 	guint32 *p = code;
 	MonoThunkFreeList *l = (MonoThunkFreeList*)(p - 1);
+	gboolean found = FALSE;
 
+	mono_domain_lock (domain);
+	if (!domain->generic_virtual_thunks)
+		domain->generic_virtual_thunks = g_hash_table_new (NULL, NULL);
+	if (g_hash_table_lookup (domain->generic_virtual_thunks, l))
+		found = TRUE;
+	mono_domain_unlock (domain);
+
+	if (!found)
+		/* Not allocated by mono_method_alloc_generic_virtual_thunk (), i.e. AOT */
+		return;
 	init_thunk_free_lists (domain);
 
 	while (domain->thunk_free_lists [0] && domain->thunk_free_lists [0]->length >= MAX_WAIT_LENGTH) {
