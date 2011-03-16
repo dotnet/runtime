@@ -734,6 +734,17 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	return(GUINT_TO_POINTER(fd));
 }
 
+gboolean
+_wapi_private_handle_is_allocated (gpointer handle)
+{
+	guint32 handle_idx = GPOINTER_TO_UINT (handle);
+
+	if (!_WAPI_PRIVATE_VALID_SLOT (handle_idx))
+		return FALSE;
+
+	return (_wapi_private_handles [SLOT_INDEX (handle_idx)] != NULL);
+}
+
 gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 			      gpointer *handle_specific)
 {
