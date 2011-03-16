@@ -97,7 +97,6 @@ extern void _wapi_handle_foreach (WapiHandleType type,
 					gboolean (*on_each)(gpointer test, gpointer user),
 					gpointer user_data);
 void _wapi_free_share_info (_WapiFileShare *share_info);
-extern gboolean _wapi_private_handle_is_allocated (gpointer handle);
 
 /* This is OK to use for atomic writes of individual struct members, as they
  * are independent

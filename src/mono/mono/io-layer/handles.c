@@ -276,8 +276,6 @@ static void shared_init (void)
 		/* This allocates a 4mb array, so do it only if SHM is enabled */
 		_wapi_fileshare_layout = _wapi_shm_attach (WAPI_SHM_FILESHARE);
 		g_assert (_wapi_fileshare_layout != NULL);
-	} else {
-		_wapi_process_noshm_wait_setup ();
 	}
 	
 #if !defined (DISABLE_SHARED_HANDLES)
@@ -732,17 +730,6 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
 
 	return(GUINT_TO_POINTER(fd));
-}
-
-gboolean
-_wapi_private_handle_is_allocated (gpointer handle)
-{
-	guint32 handle_idx = GPOINTER_TO_UINT (handle);
-
-	if (!_WAPI_PRIVATE_VALID_SLOT (handle_idx))
-		return FALSE;
-
-	return (_wapi_private_handles [SLOT_INDEX (handle_idx)] != NULL);
 }
 
 gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
