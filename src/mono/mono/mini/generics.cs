@@ -446,6 +446,29 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_generic_virtual_on_interfaces_ref () {
+		Foo<string>.count1 = 0;
+		Foo<string>.count2 = 0;
+		Foo<string>.count3 = 0;
+		Foo<string>.count4 = 0;
+
+		IFoo f = new Foo<string> ("");
+		for (int i = 0; i < 1000; ++i) {
+			f.Bar <string> ();
+			f.Bar <object> ();
+			f.NonGeneric ();
+		}
+
+		if (Foo<string>.count2 != 1000)
+			return 2;
+		if (Foo<string>.count3 != 1000)
+			return 3;
+		if (Foo<string>.count4 != 1000)
+			return 4;
+
+		return 0;
+	}
+
 	//repro for #505375
 	[Category ("!FULLAOT")]
 	public static int test_2_cprop_bug () {
@@ -773,7 +796,7 @@ class Tests {
 			GenericEvent (this);
 		}
 
-		public static int count1, count2, count3;
+		public static int count1, count2, count3, count4;
 
 		public void NonGeneric () {
 			count3 ++;
@@ -784,6 +807,8 @@ class Tests {
 				count1 ++;
 			else if (typeof (T) == typeof (string))
 				count2 ++;
+			else if (typeof (T) == typeof (object))
+				count4 ++;
 			return null;
 		}
 	}
