@@ -895,7 +895,7 @@ test-process-exit:
 	@$(MCS) $(srcdir)/bug-438454.cs -out:bug-438454.exe
 	@echo "Testing bug-438454.exe..."
 	@$(RUNTIME) bug-438454.exe > bug-438454.exe.stdout
-	@diff bug-438454.exe.stdout $(srcdir)/bug-438454.exe.stdout.expected
+	@diff -w bug-438454.exe.stdout $(srcdir)/bug-438454.exe.stdout.expected
 
 OOM_TESTS =	\
 	gc-oom-handling.exe	\

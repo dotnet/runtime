@@ -3,6 +3,7 @@
 
 #include <mono/arch/ppc/ppc-codegen.h>
 #include <mono/utils/mono-sigcontext.h>
+#include <mono/utils/mono-context.h>
 #include <glib.h>
 
 #ifdef __mono_ppc64__
@@ -42,18 +43,6 @@ struct MonoLMF {
 	gdouble    fregs [MONO_SAVED_FREGS]; /* 14..31 */
 };
 
-/* we define our own structure and we'll copy the data
- * from sigcontext/ucontext/mach when we need it.
- * This also makes us save stack space and time when copying
- * We might also want to add an additional field to propagate
- * the original context from the signal handler.
- */
-typedef struct {
-	gulong sc_ir;          // pc 
-	gulong sc_sp;          // r1
-	mgreg_t regs [MONO_SAVED_GREGS];
-	double fregs [MONO_SAVED_FREGS];
-} MonoContext;
 
 typedef struct MonoCompileArch {
 	int fp_conv_var_offset;
@@ -210,16 +199,6 @@ typedef struct MonoCompileArch {
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
 #define PPC_NUM_REG_FPARGS (PPC_LAST_FPARG_REG-PPC_FIRST_FPARG_REG+1)
-
-/* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (gulong)ip; } while (0);
-/* FIXME: should be called SET_SP */
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)bp; } while (0);
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (gulong)sp; } while (0);
-
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
 
 #ifdef MONO_CROSS_COMPILE
 

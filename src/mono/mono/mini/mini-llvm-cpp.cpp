@@ -109,7 +109,7 @@ public:
 						   unsigned char *TableEnd, 
 						   unsigned char* FrameRegister);
 
-#if LLVM_MAJOR_VERSION == 2 && LLVM_MINOR_VERSION >= 7
+#if LLVM_CHECK_VERSION(2, 7)
 	virtual void deallocateFunctionBody(void*) {
 	}
 

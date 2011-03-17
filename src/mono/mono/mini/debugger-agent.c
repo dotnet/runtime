@@ -73,6 +73,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/metadata/assembly.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-stack-unwinding.h>
 #include "debugger-agent.h"
 #include "mini.h"
 
@@ -152,10 +153,8 @@ struct _InvokeData
 };
 
 typedef struct {
-	MonoContext ctx;
-	MonoLMF *lmf;
-	MonoDomain *domain;
-	gboolean has_context;
+	MonoThreadUnwindState context;
+
 	gpointer resume_event;
 	/* This is computed on demand when it is requested using the wire protocol */
 	/* It is freed up when the thread is resumed */
@@ -212,18 +211,12 @@ typedef struct {
 	/*
 	 * The context where the stack walk can be started for running threads.
 	 */
-	MonoContext async_ctx;
-
-	gboolean has_async_ctx;
-
-	gboolean has_filter_ctx;
-	MonoContext filter_ctx;
-	MonoLMF *filter_lmf;
+	MonoThreadUnwindState async_state;
 
 	/*
-	 * The lmf where the stack walk can be started for running threads.
-	 */
-	gpointer async_lmf;
+     * The context used for filter clauses
+     */
+	MonoThreadUnwindState filter_state;
 
 	/*
  	 * The callee address of the last mono_runtime_invoke call
@@ -1958,19 +1951,10 @@ save_thread_context (MonoContext *ctx)
 	tls = TlsGetValue (debugger_tls_id);
 	g_assert (tls);
 
-	if (ctx) {
-		memcpy (&tls->ctx, ctx, sizeof (MonoContext));
-	} else {
-#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
-		MONO_INIT_CONTEXT_FROM_CURRENT (&tls->ctx);
-#else
-		MONO_INIT_CONTEXT_FROM_FUNC (&tls->ctx, save_thread_context);
-#endif
-	}
-
-	tls->lmf = mono_get_lmf ();
-	tls->domain = mono_domain_get ();
-	tls->has_context = TRUE;
+	if (ctx)
+		mono_thread_state_init_from_monoctx (&tls->context, ctx);
+	else
+		mono_thread_state_init_from_current (&tls->context);
 }
 
 /* The number of times the runtime is suspended */
@@ -2111,17 +2095,14 @@ mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
 			data.last_frame_set = FALSE;
 			if (sigctx) {
 				mono_arch_sigctx_to_monoctx (sigctx, &ctx);
-				mono_walk_stack (get_last_frame, mono_domain_get (), &ctx, MONO_UNWIND_DEFAULT, tls->thread, mono_get_lmf (), &data);
+				mono_walk_stack_with_ctx (get_last_frame, &ctx, MONO_UNWIND_DEFAULT, &data);
 			}
 			if (data.last_frame_set) {
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
-				memcpy (&tls->async_ctx, &data.ctx, sizeof (MonoContext));
-				tls->async_lmf = data.lmf;
-				tls->has_async_ctx = TRUE;
-				tls->domain = mono_domain_get ();
-				memcpy (&tls->ctx, &ctx, sizeof (MonoContext));
+				g_assert (mono_thread_state_init_from_monoctx (&tls->async_state, sigctx));
+				g_assert (mono_thread_state_init_from_monoctx (&tls->context, sigctx));
 			} else {
-				tls->has_async_ctx = FALSE;
+				tls->async_state.valid = FALSE;
 			}
 
 			mono_memory_barrier ();
@@ -2433,14 +2414,14 @@ suspend_current (void)
 	if (tls->pending_invoke) {
 		/* Save the original context */
 		tls->pending_invoke->has_ctx = TRUE;
-		memcpy (&tls->pending_invoke->ctx, &tls->ctx, sizeof (MonoContext));
+		tls->pending_invoke->ctx = tls->context.ctx;
 
 		invoke_method ();
 	}
 
 	/* The frame info becomes invalid after a resume */
-	tls->has_context = FALSE;
-	tls->has_async_ctx = FALSE;
+	tls->context.valid = FALSE;
+	tls->async_state.valid = FALSE;
 	invalidate_frames (NULL);
 }
 
@@ -2724,7 +2705,7 @@ process_filter_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data
 	 * once this happens and resume from the throw site.
 	 */
 
-	if (MONO_CONTEXT_GET_SP (ctx) >= MONO_CONTEXT_GET_SP (&ud->tls->filter_ctx))
+	if (MONO_CONTEXT_GET_SP (ctx) >= MONO_CONTEXT_GET_SP (&ud->tls->filter_state.ctx))
 		return TRUE;
 
 	return process_frame (info, ctx, user_data);
@@ -2749,24 +2730,24 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 	if (tls->terminated) {
 		tls->frame_count = 0;
 		return;
-	} if (!tls->really_suspended && tls->has_async_ctx) {
+	} if (!tls->really_suspended && tls->async_state.valid) {
 		/* Have to use the state saved by the signal handler */
 		process_frame (&tls->async_last_frame, NULL, &user_data);
-		mono_walk_stack (process_frame, tls->domain, &tls->async_ctx, MONO_UNWIND_DEFAULT, thread, tls->async_lmf, &user_data);
-	} else if (tls->has_filter_ctx) {
+		mono_walk_stack_with_state (process_frame, &tls->async_state, MONO_UNWIND_DEFAULT, &user_data);
+	} else if (tls->filter_state.valid) {
 		/*
 		 * We are inside an exception filter.
 		 *
 		 * First we add all the frames from inside the filter; 'tls->ctx' has the current context.
 		 */
-		if (tls->has_context)
-			mono_walk_stack (process_filter_frame, tls->domain, &tls->ctx, MONO_UNWIND_DEFAULT, thread, tls->lmf, &user_data);
+		if (tls->context.valid)
+			mono_walk_stack_with_state (process_filter_frame, &tls->context, MONO_UNWIND_DEFAULT, &user_data);
 		/*
 		 * After that, we resume unwinding from the location where the exception has been thrown.
 		 */
-		mono_walk_stack (process_frame, tls->domain, &tls->filter_ctx, MONO_UNWIND_DEFAULT, thread, tls->filter_lmf, &user_data);
-	} else if (tls->has_context) {
-		mono_walk_stack (process_frame, tls->domain, &tls->ctx, MONO_UNWIND_DEFAULT, thread, tls->lmf, &user_data);
+		mono_walk_stack_with_state (process_frame, &tls->filter_state, MONO_UNWIND_DEFAULT, &user_data);
+	} else if (tls->context.valid) {
+		mono_walk_stack_with_state (process_frame, &tls->context, MONO_UNWIND_DEFAULT, &user_data);
 	} else {
 		// FIXME:
 		tls->frame_count = 0;
@@ -4371,8 +4352,8 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 	tls = mono_g_hash_table_lookup (thread_to_tls, thread);
 	mono_loader_unlock ();
 	g_assert (tls);
-	g_assert (tls->has_context);
-	ss_req->start_sp = ss_req->last_sp = MONO_CONTEXT_GET_SP (&tls->ctx);
+	g_assert (tls->context.valid);
+	ss_req->start_sp = ss_req->last_sp = MONO_CONTEXT_GET_SP (&tls->context.ctx);
 
 	if (tls->has_catch_ctx) {
 		gboolean res;
@@ -4576,18 +4557,14 @@ mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx
 	 * the stack frames of the throw site are still intact, so we should include them
 	 * in a stack trace.
 	 *
-	 * We do this here by saving the context of the throw site in 'tls->filter_ctx'.
+	 * We do this here by saving the context of the throw site in 'tls->filter_state'.
 	 *
 	 * Exception filters are used by MonoDroid, where we want to stop inside a call filter,
 	 * but report the location of the 'throw' to the user.
 	 *
 	 */
 
-	memcpy (&tls->filter_ctx, orig_ctx, sizeof (MonoContext));
-	tls->has_filter_ctx = TRUE;
-
-	tls->filter_lmf = mono_get_lmf ();
-	tls->domain = mono_domain_get ();
+	g_assert (mono_thread_state_init_from_monoctx (&tls->filter_state, orig_ctx));
 }
 
 void
@@ -4602,7 +4579,7 @@ mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, 
 	if (!tls)
 		return;
 
-	tls->has_filter_ctx = FALSE;
+	tls->filter_state.valid = FALSE;
 }
 
 /*
@@ -5441,7 +5418,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		MonoInternalThread *thread;
 		DebuggerTlsData *tls;
 		MonoClass *env_class;
-		MonoMethod *exit_method;
+		MonoMethod *exit_method = NULL;
 		gpointer *args;
 		int exit_code;
 
@@ -7211,7 +7188,7 @@ wait_for_attach (void)
 static guint32 WINAPI
 debugger_thread (void *arg)
 {
-	int res, len, id, flags, command_set, command;
+	int res, len, id, flags, command_set = 0, command = 0;
 	guint8 header [HEADER_LENGTH];
 	guint8 *data, *p, *end;
 	Buffer buf;

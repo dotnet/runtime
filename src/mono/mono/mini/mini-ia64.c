@@ -875,7 +875,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* Allocate locals */
-	offsets = mono_allocate_stack_slots_full (cfg, cfg->arch.omit_fp ? FALSE : TRUE, &locals_stack_size, &locals_stack_align);
+	offsets = mono_allocate_stack_slots (cfg, cfg->arch.omit_fp ? FALSE : TRUE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_align) {
 		offset = ALIGN_TO (offset, locals_stack_align);
 	}

@@ -201,7 +201,72 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
 
-#else  
+#elif defined(__mono_ppc__) /* defined(__arm__) */
+
+/* we define our own structure and we'll copy the data
+ * from sigcontext/ucontext/mach when we need it.
+ * This also makes us save stack space and time when copying
+ * We might also want to add an additional field to propagate
+ * the original context from the signal handler.
+ */
+typedef struct {
+	gulong sc_ir;          // pc 
+	gulong sc_sp;          // r1
+	mgreg_t regs [19]; /*FIXME, this must be changed to 32 for sgen*/
+	double fregs [18];
+} MonoContext;
+
+/* we have the stack pointer, not the base pointer in sigcontext */
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (gulong)ip; } while (0);
+/* FIXME: should be called SET_SP */
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (gulong)sp; } while (0);
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
+
+#elif defined(__sparc__) || defined(sparc) /* defined(__mono_ppc__) */
+
+typedef struct MonoContext {
+	guint8 *ip;
+	gpointer *sp;
+	gpointer *fp;
+} MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (gpointer)(eip); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (gpointer*)(ebp); } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->sp = (gpointer*)(esp); } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
+
+#elif defined(__ia64__) /*defined(__sparc__) || defined(sparc) */
+
+#ifndef UNW_LOCAL_ONLY
+
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+
+#endif
+
+typedef struct MonoContext {
+	unw_cursor_t cursor;
+	/* Whenever the ip in 'cursor' points to the ip where the exception happened */
+	/* This is true for the initial context for exceptions thrown from signal handlers */
+	gboolean precise_ip;
+} MonoContext;
+
+/*XXX SET_BP is missing*/
+#define MONO_CONTEXT_SET_IP(ctx,eip) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_IP, (unw_word_t)(eip)); g_assert (err == 0); } while (0)
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { int err = unw_set_reg (&(ctx)->cursor, UNW_IA64_SP, (unw_word_t)(esp)); g_assert (err == 0); } while (0)
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(mono_ia64_context_get_ip ((ctx))))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(mono_ia64_context_get_fp ((ctx))))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(mono_ia64_context_get_sp ((ctx))))
+
+#else
 
 #error "Implement mono-context for the current arch"
 

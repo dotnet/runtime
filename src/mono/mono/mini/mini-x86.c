@@ -1129,7 +1129,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* Allocate locals */
-	offsets = mono_allocate_stack_slots (cfg, &locals_stack_size, &locals_stack_align);
+	offsets = mono_allocate_stack_slots (cfg, TRUE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_size > MONO_ARCH_MAX_FRAME_SIZE) {
 		char *mname = mono_method_full_name (cfg->method, TRUE);
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
@@ -6458,7 +6458,8 @@ gboolean
 mono_arch_is_single_step_event (void *info, void *sigctx)
 {
 #ifdef TARGET_WIN32
-	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;	/* Sometimes the address is off by 4 */
+	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;	/* Sometimes the address is off by 4 */
+
 	if ((einfo->ExceptionInformation[1] >= ss_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)ss_trigger_page + 128))
 		return TRUE;
 	else
@@ -6477,7 +6478,7 @@ gboolean
 mono_arch_is_breakpoint_event (void *info, void *sigctx)
 {
 #ifdef TARGET_WIN32
-	EXCEPTION_RECORD* einfo = (EXCEPTION_RECORD*)info;	/* Sometimes the address is off by 4 */
+	EXCEPTION_RECORD* einfo = ((EXCEPTION_POINTERS*)info)->ExceptionRecord;	/* Sometimes the address is off by 4 */
 	if ((einfo->ExceptionInformation[1] >= bp_trigger_page && (guint8*)einfo->ExceptionInformation[1] <= (guint8*)bp_trigger_page + 128))
 		return TRUE;
 	else

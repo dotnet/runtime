@@ -3585,11 +3585,15 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 			continue;
 
 		g_assert (item->key);
-		/* FIXME: */
-		g_assert (!item->has_target_code);
 
 		buf [(index * 2)] = item->key;
-		buf [(index * 2) + 1] = &(vtable->vtable [item->value.vtable_slot]);
+		if (item->has_target_code) {
+			gpointer *p = mono_domain_alloc (domain, sizeof (gpointer));
+			*p = item->value.target_code;
+			buf [(index * 2) + 1] = p;
+		} else {
+			buf [(index * 2) + 1] = &(vtable->vtable [item->value.vtable_slot]);
+		}
 		index ++;
 	}
 	buf [(index * 2)] = NULL;

@@ -270,6 +270,90 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	return code;
 }
 
+/*
+ * emit_save_lmf:
+ *
+ *   Emit code to push an LMF structure on the LMF stack.
+ * On arm, this is intermixed with the initialization of other fields of the structure.
+ */
+static guint8*
+emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
+{
+	gboolean get_lmf_fast = FALSE;
+
+#ifdef HAVE_AEABI_READ_TP
+	gint32 lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
+
+	if (lmf_addr_tls_offset != -1) {
+		get_lmf_fast = TRUE;
+
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+							 (gpointer)"__aeabi_read_tp");
+		code = emit_call_seq (cfg, code);
+
+		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, lmf_addr_tls_offset);
+		get_lmf_fast = TRUE;
+	}
+#endif
+	if (!get_lmf_fast) {
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+								 (gpointer)"mono_get_lmf_addr");
+		code = emit_call_seq (cfg, code);
+	}
+	/* we build the MonoLMF structure on the stack - see mini-arm.h */
+	/* lmf_offset is the offset from the previous stack pointer,
+	 * alloc_size is the total stack space allocated, so the offset
+	 * of MonoLMF from the current stack ptr is alloc_size - lmf_offset.
+	 * The pointer to the struct is put in r1 (new_lmf).
+	 * ip is used as scratch
+	 * The callee-saved registers are already in the MonoLMF structure
+	 */
+	code = emit_big_add (code, ARMREG_R1, ARMREG_SP, lmf_offset);
+	/* r0 is the result from mono_get_lmf_addr () */
+	ARM_STR_IMM (code, ARMREG_R0, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
+	/* new_lmf->previous_lmf = *lmf_addr */
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	/* *(lmf_addr) = r1 */
+	ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	/* Skip method (only needed for trampoline LMF frames) */
+	ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, esp));
+	/* save the current IP */
+	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_PC);
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
+
+	return code;
+}
+
+/*
+ * emit_save_lmf:
+ *
+ *   Emit code to pop an LMF structure from the LMF stack.
+ */
+static guint8*
+emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
+{
+	int basereg, offset;
+
+	if (lmf_offset < 32) {
+		basereg = cfg->frame_reg;
+		offset = lmf_offset;
+	} else {
+		basereg = ARMREG_R2;
+		offset = 0;
+		code = emit_big_add (code, ARMREG_R2, cfg->frame_reg, lmf_offset);
+	}
+
+	/* ip = previous_lmf */
+	ARM_LDR_IMM (code, ARMREG_IP, basereg, offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	/* lr = lmf_addr */
+	ARM_LDR_IMM (code, ARMREG_LR, basereg, offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr));
+	/* *(lmf_addr) = previous_lmf */
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_LR, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+
+	return code;
+}
+
 #endif /* #ifndef DISABLE_JIT */
 
 /*
@@ -4972,50 +5056,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = emit_call_seq (cfg, code);
 	}
 
-	if (method->save_lmf) {
-		gboolean get_lmf_fast = FALSE;
-
-#ifdef HAVE_AEABI_READ_TP
-		gint32 lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
-
-		if (lmf_addr_tls_offset != -1) {
-			get_lmf_fast = TRUE;
-
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-								 (gpointer)"__aeabi_read_tp");
-			code = emit_call_seq (cfg, code);
-
-			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, lmf_addr_tls_offset);
-			get_lmf_fast = TRUE;
-		}
-#endif
-		if (!get_lmf_fast) {
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-								 (gpointer)"mono_get_lmf_addr");
-			code = emit_call_seq (cfg, code);
-		}
-		/* we build the MonoLMF structure on the stack - see mini-arm.h */
-		/* lmf_offset is the offset from the previous stack pointer,
-		 * alloc_size is the total stack space allocated, so the offset
-		 * of MonoLMF from the current stack ptr is alloc_size - lmf_offset.
-		 * The pointer to the struct is put in r1 (new_lmf).
-		 * r2 is used as scratch
-		 * The callee-saved registers are already in the MonoLMF structure
-		 */
-		code = emit_big_add (code, ARMREG_R1, ARMREG_SP, alloc_size - lmf_offset);
-		/* r0 is the result from mono_get_lmf_addr () */
-		ARM_STR_IMM (code, ARMREG_R0, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
-		/* new_lmf->previous_lmf = *lmf_addr */
-		ARM_LDR_IMM (code, ARMREG_R2, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		/* *(lmf_addr) = r1 */
-		ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		/* Skip method (only needed for trampoline LMF frames) */
-		ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, esp));
-		/* save the current IP */
-		ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_PC);
-		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, eip));
-	}
+	if (method->save_lmf)
+		code = emit_save_lmf (cfg, code, alloc_size - lmf_offset);
 
 	if (tracing)
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
@@ -5117,14 +5159,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		/* all but r0-r3, sp and pc */
 		pos += sizeof (MonoLMF) - (MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
 		lmf_offset = pos;
-		/* r2 contains the pointer to the current LMF */
-		code = emit_big_add (code, ARMREG_R2, cfg->frame_reg, cfg->stack_usage - lmf_offset);
-		/* ip = previous_lmf */
-		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		/* lr = lmf_addr */
-		ARM_LDR_IMM (code, ARMREG_LR, ARMREG_R2, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
-		/* *(lmf_addr) = previous_lmf */
-		ARM_STR_IMM (code, ARMREG_IP, ARMREG_LR, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+
+		code = emit_restore_lmf (cfg, code, cfg->stack_usage - lmf_offset);
+
 		/* This points to r4 inside MonoLMF->iregs */
 		sp_adj = (sizeof (MonoLMF) - MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t));
 		reg = ARMREG_R4;
@@ -5136,7 +5173,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			reg ++;
 		}
 		/* point sp at the registers to restore: 10 is 14 -4, because we skip r0-r3 */
-		ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_R2, sp_adj);
+		code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage - lmf_offset + sp_adj);
 		/* restore iregs */
 		ARM_POP (code, regmask); 
 	} else {

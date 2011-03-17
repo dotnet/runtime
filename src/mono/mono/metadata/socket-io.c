@@ -2842,12 +2842,16 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	MONO_ARCH_SAVE_REGS;
 	
 	hostname=mono_string_to_utf8 (host);
-	if (*hostname == '\0')
+	if (*hostname == '\0') {
 		add_local_ips = TRUE;
+		*h_name = host;
+	}
 #ifdef HAVE_SIOCGIFCONF
 	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
-		if (!strcmp (hostname, this_hostname))
+		if (!strcmp (hostname, this_hostname)) {
 			add_local_ips = TRUE;
+			*h_name = host;
+		}
 	}
 #endif
 

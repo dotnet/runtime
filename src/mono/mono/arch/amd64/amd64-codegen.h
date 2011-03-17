@@ -214,7 +214,7 @@ typedef union {
 			*(inst)++ = (unsigned char)0x83;	\
 			x86_reg_emit ((inst), (opc), (reg));	\
 			x86_imm_emit8 ((inst), (imm));	\
-		} else if ((reg) == X86_EAX) {	\
+		} else if ((reg) == AMD64_RAX) {	\
 			amd64_emit_rex(inst, size, 0, 0, 0); \
 			*(inst)++ = (((unsigned char)(opc)) << 3) + 5;	\
 			x86_imm_emit32 ((inst), (imm));	\

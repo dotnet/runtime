@@ -64,6 +64,7 @@
 			} while (1)
 
 #define SPIN_UNLOCK(i) i = 0
+#define SMALL_STACK (128 * (sizeof (gpointer) / 4) * 1024)
 
 /* DEBUG: prints tp data every 2s */
 #undef DEBUG 
@@ -492,7 +493,6 @@ static void
 socket_io_init (SocketIOData *data)
 {
 	int inited;
-	guint32 stack_size;
 
 	if (data->inited >= 2) // 2 -> initialized, 3-> cleaned up
 		return;
@@ -519,12 +519,10 @@ socket_io_init (SocketIOData *data)
 		data->event_system = POLL_BACKEND;
 
 	init_event_system (data);
-	stack_size = mono_threads_get_default_stacksize ();
-	mono_threads_set_default_stacksize (128 * (sizeof (gpointer) / 4) * 1024);
-	mono_thread_create_internal (mono_get_root_domain (), data->wait, data, TRUE);
-	mono_threads_set_default_stacksize (stack_size);
+	mono_thread_create_internal (mono_get_root_domain (), data->wait, data, TRUE, SMALL_STACK);
 	LeaveCriticalSection (&data->io_lock);
 	data->inited = 2;
+	mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_io_tp, TRUE, SMALL_STACK);
 }
 
 static void
@@ -660,9 +658,9 @@ static void
 threadpool_start_idle_threads (ThreadPool *tp)
 {
 	int n;
+	guint32 stack_size;
 
-	if (tp->pool_status == 1 && !tp->is_io)
-		mono_thread_create_internal (mono_get_root_domain (), monitor_thread, tp, TRUE);
+	stack_size = (!tp->is_io) ? 0 : SMALL_STACK;
 	do {
 		while (1) {
 			n = tp->nthreads;
@@ -672,7 +670,7 @@ threadpool_start_idle_threads (ThreadPool *tp)
 				break;
 		}
 		mono_perfcounter_update_value (tp->pc_nthreads, TRUE, 1);
-		mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE);
+		mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
 		SleepEx (100, TRUE);
 	} while (1);
 }
@@ -965,37 +963,44 @@ threadpool_kill_idle_threads (ThreadPool *tp)
 void
 mono_thread_pool_cleanup (void)
 {
-	if (!(async_tp.pool_status == 0 || async_tp.pool_status == 2)) {
-		if (!(async_tp.pool_status == 1 && InterlockedCompareExchange (&async_tp.pool_status, 2, 1) == 2)) {
-			InterlockedExchange (&async_io_tp.pool_status, 2);
-			threadpool_free_queue (&async_tp);
-			threadpool_kill_idle_threads (&async_tp);
-
-			socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
-			threadpool_free_queue (&async_io_tp);
-			threadpool_kill_idle_threads (&async_io_tp);
-			MONO_SEM_DESTROY (&async_io_tp.new_job);
-		}
+	if (InterlockedExchange (&async_io_tp.pool_status, 2) == 1) {
+		socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
+		threadpool_kill_idle_threads (&async_io_tp);
 	}
 
-	EnterCriticalSection (&wsqs_lock);
-	mono_wsq_cleanup ();
-	if (wsqs)
-		g_ptr_array_free (wsqs, TRUE);
-	wsqs = NULL;
-	LeaveCriticalSection (&wsqs_lock);
-	MONO_SEM_DESTROY (&async_tp.new_job);
+	if (async_io_tp.queue != NULL) {
+		MONO_SEM_DESTROY (&async_io_tp.new_job);
+		threadpool_free_queue (&async_io_tp);
+	}
+
+
+	if (InterlockedExchange (&async_tp.pool_status, 2) == 1) {
+		threadpool_kill_idle_threads (&async_tp);
+		threadpool_free_queue (&async_tp);
+	}
+
+	if (wsqs) {
+		EnterCriticalSection (&wsqs_lock);
+		mono_wsq_cleanup ();
+		if (wsqs)
+			g_ptr_array_free (wsqs, TRUE);
+		wsqs = NULL;
+		LeaveCriticalSection (&wsqs_lock);
+		MONO_SEM_DESTROY (&async_tp.new_job);
+	}
 }
 
 static gboolean
 threadpool_start_thread (ThreadPool *tp)
 {
 	gint n;
+	guint32 stack_size;
 
+	stack_size = (!tp->is_io) ? 0 : SMALL_STACK;
 	while (!mono_runtime_is_shutting_down () && (n = tp->nthreads) < tp->max_threads) {
 		if (InterlockedCompareExchange (&tp->nthreads, n + 1, n) == n) {
 			mono_perfcounter_update_value (tp->pc_nthreads, TRUE, 1);
-			mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE);
+			mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
 			return TRUE;
 		}
 	}
@@ -1013,7 +1018,7 @@ pulse_on_new_job (ThreadPool *tp)
 void
 icall_append_job (MonoObject *ar)
 {
-	threadpool_append_job (&async_tp, ar);
+	threadpool_append_jobs (&async_tp, &ar, 1);
 }
 
 static void
@@ -1032,8 +1037,14 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 	if (mono_runtime_is_shutting_down ())
 		return;
 
-	if (tp->pool_status == 0 && InterlockedCompareExchange (&tp->pool_status, 1, 0) == 0)
-		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, tp, TRUE);
+	if (tp->pool_status == 0 && InterlockedCompareExchange (&tp->pool_status, 1, 0) == 0) {
+		if (!tp->is_io)
+			mono_thread_create_internal (mono_get_root_domain (), monitor_thread, tp, TRUE, SMALL_STACK);
+		/* Create on demand up to min_threads to avoid startup penalty for apps that don't use
+		 * the threadpool that much
+		* mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, tp, TRUE, SMALL_STACK);
+		*/
+	}
 
 	for (i = 0; i < njobs; i++) {
 		ar = jobs [i];
@@ -1051,7 +1062,7 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 		mono_cq_enqueue (tp->queue, ar);
 	}
 
-	for (i = 0; i < MIN(njobs, tp->max_threads); i++)
+	for (i = 0; tp->waiting > 0 && i < MIN(njobs, tp->max_threads); i++)
 		pulse_on_new_job (tp);
 }
 
@@ -1326,6 +1337,7 @@ async_invoke_thread (gpointer data)
 	MonoWSQ *wsq;
 	ThreadPool *tp;
 	gboolean must_die;
+	const gchar *name;
   
 	tp = data;
 	wsq = NULL;
@@ -1335,7 +1347,8 @@ async_invoke_thread (gpointer data)
 	thread = mono_thread_internal_current ();
 
 	mono_profiler_thread_start (thread->tid);
-	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), "Threadpool worker"));
+	name = (tp->is_io) ? "IO Threadpool worker" : "Threadpool worker";
+	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), name));
 
 	if (tp_start_func)
 		tp_start_func (tp_hooks_user_data);
@@ -1537,9 +1550,9 @@ ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, gint co
 	InterlockedExchange (&async_tp.min_threads, workerThreads);
 	InterlockedExchange (&async_io_tp.min_threads, completionPortThreads);
 	if (workerThreads > async_tp.nthreads)
-		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_tp, TRUE);
+		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_tp, TRUE, SMALL_STACK);
 	if (completionPortThreads > async_io_tp.nthreads)
-		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_io_tp, TRUE);
+		mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_io_tp, TRUE, SMALL_STACK);
 	return TRUE;
 }
 

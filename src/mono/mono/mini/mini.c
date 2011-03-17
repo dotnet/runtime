@@ -1655,7 +1655,7 @@ compare_by_interval_start_pos_func (gconstpointer a, gconstpointer b)
 #endif
 
 static gint32*
-mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
+mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
 {
 	int i, slot, offset, size;
 	guint32 align;
@@ -1954,7 +1954,7 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 }
 
 /*
- *  mono_allocate_stack_slots_full:
+ *  mono_allocate_stack_slots:
  *
  *  Allocate stack slots for all non register allocated variables using a
  * linear scan algorithm.
@@ -1963,7 +1963,7 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
  * STACK_ALIGN is set to the alignment needed by the locals area.
  */
 gint32*
-mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
+mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
 {
 	int i, slot, offset, size;
 	guint32 align;
@@ -1977,7 +1977,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 	gboolean reuse_slot;
 
 	if ((cfg->num_varinfo > 0) && MONO_VARINFO (cfg, 0)->interval)
-		return mono_allocate_stack_slots_full2 (cfg, backward, stack_size, stack_align);
+		return mono_allocate_stack_slots2 (cfg, backward, stack_size, stack_align);
 
 	scalar_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * MONO_TYPE_PINNED);
 	vtype_stack_slots = NULL;
@@ -2198,19 +2198,13 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 #else
 
 gint32*
-mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
+mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
 
 #endif /* DISABLE_JIT */
-
-gint32*
-mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_align)
-{
-	return mono_allocate_stack_slots_full (m, TRUE, stack_size, stack_align);
-}
 
 #define EMUL_HIT_SHIFT 3
 #define EMUL_HIT_MASK ((1 << EMUL_HIT_SHIFT) - 1)
@@ -2588,10 +2582,14 @@ mono_jit_thread_attach (MonoDomain *domain)
 #ifdef MONO_HAVE_FAST_TLS
 	if (!MONO_FAST_TLS_GET (mono_lmf_addr)) {
 		mono_thread_attach (domain);
+		// #678164
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 	}
 #else
-	if (!TlsGetValue (mono_jit_tls_id))
+	if (!TlsGetValue (mono_jit_tls_id)) {
 		mono_thread_attach (domain);
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+	}
 #endif
 	if (mono_domain_get () != domain)
 		mono_domain_set (domain, TRUE);
@@ -6278,7 +6276,6 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef JIT_INVOKE_WORKS
 	mono_install_runtime_invoke (mono_jit_runtime_invoke);
 #endif
-	mono_install_stack_walk (mono_jit_walk_stack);
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
@@ -6308,7 +6305,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	/* This must come after mono_init () in the aot-only case */
 	mono_exceptions_init ();
-	mono_install_handler (mono_get_throw_exception ());
 
 	mono_icall_init ();
 

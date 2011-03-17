@@ -373,11 +373,13 @@ static gint64 gc_start_time;
 static void
 on_gc_notification (GCEventType event)
 {
-	if (event == MONO_GC_EVENT_START) {
+	MonoGCEvent e = (MonoGCEvent)event;
+
+	if (e == MONO_GC_EVENT_START) {
 		mono_perfcounters->gc_collections0++;
 		mono_stats.major_gc_count ++;
 		gc_start_time = mono_100ns_ticks ();
-	} else if (event == MONO_GC_EVENT_END) {
+	} else if (e == MONO_GC_EVENT_END) {
 		guint64 heap_size = GC_get_heap_size ();
 		guint64 used_size = heap_size - GC_get_free_bytes ();
 		mono_perfcounters->gc_total_bytes = used_size;
@@ -387,7 +389,7 @@ on_gc_notification (GCEventType event)
 		mono_stats.major_gc_time_usecs += (mono_100ns_ticks () - gc_start_time) / 10;
 		mono_trace_message (MONO_TRACE_GC, "gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 	}
-	mono_profiler_gc_event ((MonoGCEvent) event, 0);
+	mono_profiler_gc_event (e, 0);
 }
  
 static void

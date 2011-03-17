@@ -1136,7 +1136,7 @@ mono_gc_init (void)
 	MONO_SEM_INIT (&finalizer_sem, 0);
 #endif
 
-	gc_thread = mono_thread_create_internal (mono_domain_get (), finalizer_thread, NULL, FALSE);
+	gc_thread = mono_thread_create_internal (mono_domain_get (), finalizer_thread, NULL, FALSE, 0);
 	ves_icall_System_Threading_Thread_SetName_internal (gc_thread, mono_string_new (mono_domain_get (), "Finalizer"));
 }
 

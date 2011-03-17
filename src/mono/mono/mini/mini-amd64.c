@@ -1832,7 +1832,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	/* Allocate locals */
 	if (!cfg->globalra) {
-		offsets = mono_allocate_stack_slots_full (cfg, cfg->arch.omit_fp ? FALSE: TRUE, &locals_stack_size, &locals_stack_align);
+		offsets = mono_allocate_stack_slots (cfg, cfg->arch.omit_fp ? FALSE: TRUE, &locals_stack_size, &locals_stack_align);
 		if (locals_stack_size > MONO_ARCH_MAX_FRAME_SIZE) {
 			char *mname = mono_method_full_name (cfg->method, TRUE);
 			cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
@@ -7127,11 +7127,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		/* check if we need to restore protection of the stack after a stack overflow */
 		if (mono_get_jit_tls_offset () != -1) {
 			guint8 *patch;
-			code = mono_amd64_emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
+			code = mono_amd64_emit_tls_get (code, AMD64_RCX, mono_get_jit_tls_offset ());
 			/* we load the value in a separate instruction: this mechanism may be
 			 * used later as a safer way to do thread interruption
 			 */
-			amd64_mov_reg_membase (code, X86_ECX, X86_ECX, G_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 8);
+			amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RCX, G_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 8);
 			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
 			patch = code;
 			x86_branch8 (code, X86_CC_Z, 0, FALSE);

@@ -7,6 +7,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 public class Tests {
 
@@ -1030,4 +1031,23 @@ public class Tests {
 	public static int test_0_marshal_byref_string_delegate () {	
 		return mono_test_marshal_byref_string_delegate (new ByrefStringDelegate (byref_string_delegate));
 	}
+
+	/*
+	 * Thread attach
+	 */
+
+	public delegate int SimpleDelegate (int i);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_thread_attach")]
+	public static extern int mono_test_marshal_thread_attach (SimpleDelegate d);
+
+	public static int test_43_thread_attach () {
+		int res = mono_test_marshal_thread_attach (delegate (int i) {
+				if (!Thread.CurrentThread.IsBackground)
+					return 0;
+				return i + 1;
+			});
+		return res;
+	}
+
 }

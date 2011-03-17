@@ -192,6 +192,7 @@ static void mono_thread_start (MonoThread *thread);
 static void signal_thread_state_change (MonoInternalThread *thread);
 
 static MonoException* mono_thread_execute_interruption (MonoInternalThread *thread);
+static void ref_stack_destroy (gpointer rs);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
 #define mono_interlocked_lock() EnterCriticalSection (&interlocked_mutex)
@@ -593,13 +594,14 @@ static void thread_cleanup (MonoInternalThread *thread)
 
 	mono_free_static_data (thread->static_data, TRUE);
 	thread->static_data = NULL;
+	ref_stack_destroy (thread->appdomain_refs);
+	thread->appdomain_refs = NULL;
 
 	if (mono_thread_cleanup_fn)
 		mono_thread_cleanup_fn (thread);
 
 	small_id_free (thread->small_id);
 	thread->small_id = -2;
-
 }
 
 static gpointer
@@ -880,7 +882,7 @@ register_thread_start_argument (MonoThread *thread, struct StartInfo *start_info
 	mono_g_hash_table_insert (thread_start_args, thread, start_info->start_arg);
 }
 
-MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread)
+MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size)
 {
 	MonoThread *thread;
 	MonoInternalThread *internal;
@@ -912,10 +914,13 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
  	mono_g_hash_table_insert (threads_starting_up, thread, thread);
 	mono_threads_unlock ();	
 
+	if (stack_size == 0)
+		stack_size = default_stacksize_for_thread (internal);
+
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
-	thread_handle = mono_create_thread (NULL, default_stacksize_for_thread (internal), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
+	thread_handle = mono_create_thread (NULL, stack_size, (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
 	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 	if (thread_handle == NULL) {
@@ -949,7 +954,7 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 void
 mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
-	mono_thread_create_internal (domain, func, arg, FALSE);
+	mono_thread_create_internal (domain, func, arg, FALSE, 0);
 }
 
 /*
@@ -3282,6 +3287,75 @@ mono_threads_request_thread_dump (void)
 	}
 }
 
+struct ref_stack {
+	gpointer *refs;
+	gint allocated; /* +1 so that refs [allocated] == NULL */
+	gint bottom;
+};
+
+typedef struct ref_stack RefStack;
+
+static RefStack *
+ref_stack_new (gint initial_size)
+{
+	RefStack *rs;
+
+	initial_size = MAX (initial_size, 16) + 1;
+	rs = g_new0 (RefStack, 1);
+	rs->refs = g_new0 (gpointer, initial_size);
+	rs->allocated = initial_size;
+	return rs;
+}
+
+static void
+ref_stack_destroy (gpointer ptr)
+{
+	RefStack *rs = ptr;
+
+	if (rs != NULL) {
+		g_free (rs->refs);
+		g_free (rs);
+	}
+}
+
+static void
+ref_stack_push (RefStack *rs, gpointer ptr)
+{
+	g_assert (rs != NULL);
+
+	if (rs->bottom >= rs->allocated) {
+		rs->refs = g_realloc (rs->refs, rs->allocated * 2 * sizeof (gpointer) + 1);
+		rs->allocated <<= 1;
+		rs->refs [rs->allocated] = NULL;
+	}
+	rs->refs [rs->bottom++] = ptr;
+}
+
+static void
+ref_stack_pop (RefStack *rs)
+{
+	if (rs == NULL || rs->bottom == 0)
+		return;
+
+	rs->bottom--;
+	rs->refs [rs->bottom] = NULL;
+}
+
+static gboolean
+ref_stack_find (RefStack *rs, gpointer ptr)
+{
+	gpointer *refs;
+
+	if (rs == NULL)
+		return FALSE;
+
+	for (refs = rs->refs; refs && *refs; refs++) {
+		if (*refs == ptr)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * mono_thread_push_appdomain_ref:
  *
@@ -3297,7 +3371,9 @@ mono_thread_push_appdomain_ref (MonoDomain *domain)
 	if (thread) {
 		/* printf ("PUSH REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, domain->friendly_name); */
 		SPIN_LOCK (thread->lock_thread_id);
-		thread->appdomain_refs = g_slist_prepend (thread->appdomain_refs, domain);
+		if (thread->appdomain_refs == NULL)
+			thread->appdomain_refs = ref_stack_new (16);
+		ref_stack_push (thread->appdomain_refs, domain);
 		SPIN_UNLOCK (thread->lock_thread_id);
 	}
 }
@@ -3309,10 +3385,8 @@ mono_thread_pop_appdomain_ref (void)
 
 	if (thread) {
 		/* printf ("POP REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
-		/* FIXME: How can the list be empty ? */
 		SPIN_LOCK (thread->lock_thread_id);
-		if (thread->appdomain_refs)
-			thread->appdomain_refs = g_slist_remove (thread->appdomain_refs, thread->appdomain_refs->data);
+		ref_stack_pop (thread->appdomain_refs);
 		SPIN_UNLOCK (thread->lock_thread_id);
 	}
 }
@@ -3322,7 +3396,7 @@ mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, MonoDomain *
 {
 	gboolean res;
 	SPIN_LOCK (thread->lock_thread_id);
-	res = g_slist_find (thread->appdomain_refs, domain) != NULL;
+	res = ref_stack_find (thread->appdomain_refs, domain);
 	SPIN_UNLOCK (thread->lock_thread_id);
 	return res;
 }

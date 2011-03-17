@@ -4402,6 +4402,7 @@ static void
 emit_trampolines (MonoAotCompile *acfg)
 {
 	char symbol [256];
+	char end_symbol [256];
 	int i, tramp_got_offset;
 	MonoAotTrampoline ntype;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
@@ -4544,6 +4545,11 @@ emit_trampolines (MonoAotCompile *acfg)
 				g_assert_not_reached ();
 			}
 
+			sprintf (end_symbol, "%s_e", symbol);
+
+			if (acfg->aot_opts.write_symbols)
+				emit_local_symbol (acfg, symbol, end_symbol, TRUE);
+
 			emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
 			emit_label (acfg, symbol);
 
@@ -4578,6 +4584,8 @@ emit_trampolines (MonoAotCompile *acfg)
 					acfg->trampoline_size [ntype] = tramp_size;
 				}
 			}
+
+			emit_label (acfg, end_symbol);
 		}
 
 		/* Reserve some entries at the end of the GOT for our use */

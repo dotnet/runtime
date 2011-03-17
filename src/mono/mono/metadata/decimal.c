@@ -945,7 +945,11 @@ gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits)
     PRECONDITION(digits <= 15);
 
     sign = ((*p & LIT_GUINT64_HIGHBIT) != 0) ? 1 : 0;
+
+    // Exponent
     k = ((guint16)((*p) >> 52)) & 0x7FF;
+
+    // 1-bit followed by the fraction component from the float
     alo = (*p & LIT_GUINT64(0xFFFFFFFFFFFFF)) | LIT_GUINT64(0x10000000000000);
     ahi = 0;
 
@@ -964,7 +968,7 @@ gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits)
     }
 
     scale = 0;
-    rc = rescale128(&alo, &ahi, &scale, -texp, 0, DECIMAL_MAX_SCALE, 0);
+    rc = rescale128(&alo, &ahi, &scale, -texp, 0, DECIMAL_MAX_SCALE, 1);
     if (rc != DECIMAL_SUCCESS) return rc;
 
     sigDigits = calcDigits(alo, ahi);

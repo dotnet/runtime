@@ -45,6 +45,10 @@ g_build_path (const gchar *separator, const gchar *first_element, ...)
 	const char *s, *p, *next;
 	size_t slen;
 	va_list args;
+	gboolean found;
+#ifdef G_OS_WIN32
+	const gchar alt_separator = '/';
+#endif
 	
 	g_return_val_if_fail (separator != NULL, NULL);
 
@@ -57,24 +61,41 @@ g_build_path (const gchar *separator, const gchar *first_element, ...)
 	
 	va_start (args, first_element);
 	for (s = first_element; s != NULL; s = next){
+		found = FALSE;
 		next = va_arg (args, char *);
 		p = (s + strlen (s));
 
-		if (next && p - slen > s){
-			for (; strncmp (p-slen, separator, slen) == 0; ){
+		/* Strip all but one trailing separator */
+		if (next && p - slen >= s){
+			for (; strncmp (p-slen, separator, slen) == 0
+#ifdef G_OS_WIN32
+			     || alt_separator == *(p-slen)
+#endif
+			;){
+				found = TRUE;
 				p -= slen;
 			}
 		}
+		if (found) p += slen;
+
+		/* Append path token */
 		g_string_append_len (result, s, p - s);
 
 		if (next && *next){
-			if (strncmp (separator, result->str + strlen (result->str) - slen, slen))
+			/* Append separator if needed */
+			if (!found)
 				g_string_append (result, separator);
 
-			for (; strncmp (next, separator, slen) == 0; )
+			/* Strip multiple contiguous separators */
+			for (; strncmp (next, separator, slen) == 0 
+#ifdef G_OS_WIN32
+			|| alt_separator == *next
+#endif
+			; )
 				next += slen;
 		}
 	}
+	/* Nul-terminate */
 	g_string_append_c (result, 0);
 	va_end (args);
 

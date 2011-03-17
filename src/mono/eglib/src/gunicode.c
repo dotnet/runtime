@@ -300,13 +300,13 @@ g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gs
 gboolean
 g_get_charset (G_CONST_RETURN char **charset)
 {
+	if (my_charset == NULL) {
 #ifdef G_OS_WIN32
-	static char buf[14];
-	sprintf (buf, "CP%u", GetACP ());
-	*charset = buf;
-	is_utf8 = FALSE;
+		static char buf [14];
+		sprintf (buf, "CP%u", GetACP ());
+		my_charset = buf;
+		is_utf8 = FALSE;
 #else
-	if (my_charset == NULL){
 		/* These shouldn't be heap allocated */
 #if HAVE_LOCALCHARSET_H
 		my_charset = locale_charset ();
@@ -316,12 +316,12 @@ g_get_charset (G_CONST_RETURN char **charset)
 		my_charset = "UTF-8";
 #endif
 		is_utf8 = strcmp (my_charset, "UTF-8") == 0;
+#endif
 	}
 	
 	if (charset != NULL)
 		*charset = my_charset;
 
-#endif
 	return is_utf8;
 }
 

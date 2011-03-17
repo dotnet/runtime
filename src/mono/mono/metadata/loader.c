@@ -2068,29 +2068,42 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
 	return data [id];
 }
 
-static void
-default_stack_walk (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) {
-	g_error ("stack walk not installed");
-}
+typedef struct {
+	MonoStackWalk func;
+	gpointer user_data;
+} StackWalkUserData;
 
-static MonoStackWalkImpl stack_walk = default_stack_walk;
+static gboolean
+stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	StackWalkUserData *d = data;
+
+	switch (frame->type) {
+	case FRAME_TYPE_DEBUGGER_INVOKE:
+	case FRAME_TYPE_MANAGED_TO_NATIVE:
+		return FALSE;
+	case FRAME_TYPE_MANAGED:
+		g_assert (frame->ji);
+		return d->func (frame->ji->method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
+		break;
+	default:
+		g_assert_not_reached ();
+		return FALSE;
+	}
+}
 
 void
 mono_stack_walk (MonoStackWalk func, gpointer user_data)
 {
-	stack_walk (func, TRUE, user_data);
+	StackWalkUserData ud = { func, user_data };
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_LOOKUP_ALL, &ud);
 }
 
 void
 mono_stack_walk_no_il (MonoStackWalk func, gpointer user_data)
 {
-	stack_walk (func, FALSE, user_data);
-}
-
-void
-mono_install_stack_walk (MonoStackWalkImpl func)
-{
-	stack_walk = func;
+	StackWalkUserData ud = { func, user_data };
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_DEFAULT, &ud);
 }
 
 static gboolean
@@ -2107,7 +2120,7 @@ MonoMethod*
 mono_method_get_last_managed (void)
 {
 	MonoMethod *m = NULL;
-	stack_walk (last_managed, FALSE, &m);
+	mono_stack_walk_no_il (last_managed, &m);
 	return m;
 }
 

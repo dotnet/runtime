@@ -10,6 +10,7 @@
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
+#include "mono/utils/mono-stack-unwinding.h"
 
 /* 
  * We should find a better place for this stuff. We can't put it in mono-compiler.h,
@@ -385,7 +386,7 @@ struct _MonoInternalThread {
 	gpointer lock_data;
 	MonoAppContext *current_appcontext;
 	int stack_size;
-	GSList *appdomain_refs;
+	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
 	gint32 interruption_requested;
 	gpointer suspend_event;
@@ -571,6 +572,16 @@ typedef struct {
 	void (*set_cast_details) (MonoClass *from, MonoClass *to);
 } MonoRuntimeCallbacks;
 
+typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
+
+typedef struct {
+	void (*mono_walk_stack_with_ctx) (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
+	void (*mono_walk_stack_with_state) (MonoInternalStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions options, void *user_data);
+	void (*mono_raise_exception) (MonoException *ex);
+	void (*mono_raise_exception_with_ctx) (MonoException *ex, MonoContext *ctx);
+} MonoRuntimeExceptionHandlingCallbacks;
+
+
 /* used to free a dynamic method */
 typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *method);
 
@@ -622,12 +633,6 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 void
 mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 
-/* runtime initialization functions */
-typedef void (*MonoExceptionFunc) (MonoException *ex);
-
-void
-mono_install_handler	    (MonoExceptionFunc func) MONO_INTERNAL;
-
 void	    
 mono_install_runtime_invoke (MonoInvokeFunc func) MONO_INTERNAL;
 
@@ -642,6 +647,12 @@ mono_install_callbacks      (MonoRuntimeCallbacks *cbs) MONO_INTERNAL;
 
 MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void) MONO_INTERNAL;
+
+void
+mono_install_eh_callbacks (MonoRuntimeExceptionHandlingCallbacks *cbs) MONO_INTERNAL;
+
+MonoRuntimeExceptionHandlingCallbacks *
+mono_get_eh_callbacks (void) MONO_INTERNAL;
 
 void
 mono_type_initialization_init (void) MONO_INTERNAL;

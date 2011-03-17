@@ -2745,7 +2745,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoObject *f, MonoCl
 		if (is_field_on_inst (field))
 			type = get_field_on_inst_generic_type (field);
 		else
-			type = field->type;
+			type = mono_field_get_type (field);
 	}
 	token = mono_image_get_memberref_token (assembly, &field->parent->byval_arg,
 											mono_field_get_name (field),
