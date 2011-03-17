@@ -5906,7 +5906,12 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		gboolean ignorecase = decode_byte (p, &p, end);
 		MonoTypeNameParse info;
 		MonoType *t;
-		gboolean type_resolve;
+		gboolean type_resolve, res;
+		MonoDomain *d = mono_domain_get ();
+
+		/* This is needed to be able to find referenced assemblies */
+		res = mono_domain_set (domain, FALSE);
+		g_assert (res);
 
 		if (!mono_reflection_parse_type (s, &info)) {
 			t = NULL;
@@ -5918,6 +5923,8 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_typeid (buf, domain, t ? mono_class_from_mono_type (t) : NULL);
 		mono_reflection_free_type_info (&info);
 		g_free (s);
+
+		mono_domain_set (d, TRUE);
 
 		break;
 	}
