@@ -266,6 +266,29 @@ typedef struct MonoContext {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(mono_ia64_context_get_fp ((ctx))))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(mono_ia64_context_get_sp ((ctx))))
 
+#elif defined(__mips__) && SIZEOF_REGISTER == 4 /* defined(__ia64__) */
+
+/* we define our own structure and we'll copy the data
+ * from sigcontext/ucontext/mach when we need it.
+ * This also makes us save stack space and time when copying
+ * We might also want to add an additional field to propagate
+ * the original context from the signal handler.
+ */
+typedef struct {
+	gpointer	sc_pc;
+	guint32		sc_regs [32];
+	gfloat		sc_fpregs [32];
+} MonoContext;
+
+/* we have the stack pointer, not the base pointer in sigcontext */
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_pc = (int)(ip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_regs[mips_fp] = (int)(bp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_regs[mips_sp] = (int)(sp); } while (0);
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_pc))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_regs[mips_fp]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_regs[mips_sp]))
+
 #else
 
 #error "Implement mono-context for the current arch"
