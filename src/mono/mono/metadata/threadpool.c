@@ -963,26 +963,31 @@ threadpool_kill_idle_threads (ThreadPool *tp)
 void
 mono_thread_pool_cleanup (void)
 {
-	if (!(async_tp.pool_status == 0 || async_tp.pool_status == 2)) {
-		if (!(async_tp.pool_status == 1 && InterlockedCompareExchange (&async_tp.pool_status, 2, 1) == 2)) {
-			InterlockedExchange (&async_io_tp.pool_status, 2);
-			threadpool_free_queue (&async_tp);
-			threadpool_kill_idle_threads (&async_tp);
-
-			socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
-			threadpool_free_queue (&async_io_tp);
-			threadpool_kill_idle_threads (&async_io_tp);
-			MONO_SEM_DESTROY (&async_io_tp.new_job);
-		}
+	if (InterlockedExchange (&async_io_tp.pool_status, 2) == 1) {
+		socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
+		threadpool_kill_idle_threads (&async_io_tp);
 	}
 
-	EnterCriticalSection (&wsqs_lock);
-	mono_wsq_cleanup ();
-	if (wsqs)
-		g_ptr_array_free (wsqs, TRUE);
-	wsqs = NULL;
-	LeaveCriticalSection (&wsqs_lock);
-	MONO_SEM_DESTROY (&async_tp.new_job);
+	if (async_io_tp.queue != NULL) {
+		MONO_SEM_DESTROY (&async_io_tp.new_job);
+		threadpool_free_queue (&async_io_tp);
+	}
+
+
+	if (InterlockedExchange (&async_tp.pool_status, 2) == 1) {
+		threadpool_kill_idle_threads (&async_tp);
+		threadpool_free_queue (&async_tp);
+	}
+
+	if (wsqs) {
+		EnterCriticalSection (&wsqs_lock);
+		mono_wsq_cleanup ();
+		if (wsqs)
+			g_ptr_array_free (wsqs, TRUE);
+		wsqs = NULL;
+		LeaveCriticalSection (&wsqs_lock);
+		MONO_SEM_DESTROY (&async_tp.new_job);
+	}
 }
 
 static gboolean
