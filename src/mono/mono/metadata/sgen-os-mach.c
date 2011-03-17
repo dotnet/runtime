@@ -55,7 +55,7 @@ mono_sgen_thread_handshake (int signum)
 	SgenThreadInfo *info;
 	gpointer stack_start;
 
-	int count;
+	int count = 0;
 
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
