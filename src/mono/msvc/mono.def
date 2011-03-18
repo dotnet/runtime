@@ -403,7 +403,6 @@ mono_get_uint64_class
 mono_get_uintptr_class
 mono_get_void_class
 mono_guid_to_string
-mono_hazard_pointer_get
 mono_image_add_to_name_cache
 mono_image_addref
 mono_image_close
@@ -779,8 +778,6 @@ mono_thread_detach
 mono_thread_exit
 mono_thread_get_main
 mono_thread_get_undeniable_exception
-mono_thread_hazardous_free_or_queue
-mono_thread_hazardous_try_free_all
 mono_thread_init
 mono_thread_manage
 mono_thread_new_init
