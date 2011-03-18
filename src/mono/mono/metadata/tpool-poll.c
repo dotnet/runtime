@@ -23,6 +23,24 @@ static void tp_poll_modify (gpointer event_data, int fd, int operation, int even
 static void tp_poll_wait (gpointer p);
 
 #ifdef HOST_WIN32
+static void
+connect_hack (gpointer x)
+{
+	struct sockaddr_in *addr = (struct sockaddr_in *) x;
+	tp_poll_data *data = socket_io_data.event_data;
+	int count = 0;
+
+	while (connect ((SOCKET) data->pipe [1], (SOCKADDR *) addr, sizeof (struct sockaddr_in))) {
+		Sleep (500);
+		if (++count > 3) {
+			g_warning ("Error initializing async. sockets %d.", WSAGetLastError ());
+			g_assert (WSAGetLastError ());
+		}
+	}
+}
+#endif
+
+#ifdef HOST_WIN32
 #define PIPE(a) _pipe ((a), 256, O_BINARY)
 #else
 #define PIPE(a) pipe (a)
@@ -44,7 +62,6 @@ tp_poll_init (SocketIOData *data)
 	data->wait = tp_poll_wait;
 	return result;
 }
-#undef PIPE
 
 static void
 tp_poll_modify (gpointer event_data, int fd, int operation, int events, gboolean is_new)
@@ -63,27 +80,24 @@ tp_poll_modify (gpointer event_data, int fd, int operation, int events, gboolean
 #endif
 }
 
-#ifdef HOST_WIN32
-#define CLOSE(a) _close (a)
-#else
-#define CLOSE(a) close (a)
-#endif
 static void
 tp_poll_shutdown (gpointer event_data)
 {
 	tp_poll_data *data = event_data;
 
-	if ((gpointer) data->pipe [0] != INVALID_HANDLE_VALUE) {
-		CLOSE (data->pipe [0]);
-		data->pipe [0] = (int) INVALID_HANDLE_VALUE;
-	}
-	if ((gpointer) data->pipe [1] != INVALID_HANDLE_VALUE) {
-		CLOSE (data->pipe [1]);
-		data->pipe [1] = (int) INVALID_HANDLE_VALUE;
-	}
+#ifdef HOST_WIN32
+	closesocket (data->pipe [0]);
+	closesocket (data->pipe [1]);
+#else
+	if (data->pipe [0] > -1)
+		close (data->pipe [0]);
+	if (data->pipe [1] > -1)
+		close (data->pipe [1]);
+#endif
+	data->pipe [0] = -1;
+	data->pipe [1] = -1;
 	MONO_SEM_DESTROY (&data->new_sem);
 }
-#undef CLOSE
 
 static int
 mark_bad_fds (mono_pollfd *pfds, int nfds)
