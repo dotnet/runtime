@@ -11,6 +11,10 @@
 
 #ifdef _MSC_VER
 #pragma include_alias(<eglib-config.h>, <eglib-config.hw>)
+#endif
+
+/* VS 2010 and later have stdint.h */
+#if defined(_MSC_VER) && _MSC_VER < 1600
 #else
 #include <stdint.h>
 #endif
@@ -60,7 +64,8 @@ typedef char           gchar;
 typedef unsigned char  guchar;
 
 #if !G_TYPES_DEFINED
-#ifdef _MSC_VER
+/* VS 2010 and later have stdint.h */
+#if defined(_MSC_VER) && _MSC_VER < 1600
 typedef __int8				gint8;
 typedef unsigned __int8		guint8;
 typedef __int16				gint16;
