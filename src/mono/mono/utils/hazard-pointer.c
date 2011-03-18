@@ -174,6 +174,36 @@ mono_hazard_pointer_get (void)
 	return &hazard_table [current_thread->small_id];
 }
 
+/* Can be called with hp==NULL, in which case it acts as an ordinary
+   pointer fetch.  It's used that way indirectly from
+   mono_jit_info_table_add(), which doesn't have to care about hazards
+   because it holds the respective domain lock. */
+gpointer
+get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
+{
+	gpointer p;
+
+	for (;;) {
+		/* Get the pointer */
+		p = *pp;
+		/* If we don't have hazard pointers just return the
+		   pointer. */
+		if (!hp)
+			return p;
+		/* Make it hazardous */
+		mono_hazard_pointer_set (hp, hazard_index, p);
+		/* Check that it's still the same.  If not, try
+		   again. */
+		if (*pp != p) {
+			mono_hazard_pointer_clear (hp, hazard_index);
+			continue;
+		}
+		break;
+	}
+
+	return p;
+}
+
 static void
 try_free_delayed_free_item (int index)
 {

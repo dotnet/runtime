@@ -275,36 +275,6 @@ jit_info_table_free (MonoJitInfoTable *table)
 	g_free (table);
 }
 
-/* Can be called with hp==NULL, in which case it acts as an ordinary
-   pointer fetch.  It's used that way indirectly from
-   mono_jit_info_table_add(), which doesn't have to care about hazards
-   because it holds the respective domain lock. */
-static gpointer
-get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
-{
-	gpointer p;
-
-	for (;;) {
-		/* Get the pointer */
-		p = *pp;
-		/* If we don't have hazard pointers just return the
-		   pointer. */
-		if (!hp)
-			return p;
-		/* Make it hazardous */
-		mono_hazard_pointer_set (hp, hazard_index, p);
-		/* Check that it's still the same.  If not, try
-		   again. */
-		if (*pp != p) {
-			mono_hazard_pointer_clear (hp, hazard_index);
-			continue;
-		}
-		break;
-	}
-
-	return p;
-}
-
 /* The jit_info_table is sorted in ascending order by the end
  * addresses of the compiled methods.  The reason why we have to do
  * this is that once we introduce tombstones, it becomes possible for
