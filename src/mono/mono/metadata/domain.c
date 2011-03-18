@@ -20,6 +20,7 @@
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/hazard-pointer.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/domain-internals.h>

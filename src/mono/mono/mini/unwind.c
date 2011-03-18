@@ -12,6 +12,7 @@
 
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/freebsd-dwarf.h>
+#include <mono/utils/hazard-pointer.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/mono-endian.h>
 
