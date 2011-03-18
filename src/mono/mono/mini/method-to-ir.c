@@ -1614,7 +1614,7 @@ mini_emit_class_check_inst (MonoCompile *cfg, int klass_reg, MonoClass *klass, M
 static inline void
 mini_emit_class_check (MonoCompile *cfg, int klass_reg, MonoClass *klass)
 {
-	return mini_emit_class_check_inst (cfg, klass_reg, klass, NULL);
+	mini_emit_class_check_inst (cfg, klass_reg, klass, NULL);
 }
 
 static inline void
@@ -1689,7 +1689,7 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 static void
 mini_emit_castclass (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClass *klass, MonoBasicBlock *object_is_null)
 {
-	return mini_emit_castclass_inst (cfg, obj_reg, klass_reg, klass, NULL, object_is_null);
+	mini_emit_castclass_inst (cfg, obj_reg, klass_reg, klass, NULL, object_is_null);
 }
 
 static void 
