@@ -40,22 +40,47 @@ connect_hack (gpointer x)
 }
 #endif
 
-#ifdef HOST_WIN32
-#define PIPE(a) _pipe ((a), 256, O_BINARY)
-#else
-#define PIPE(a) pipe (a)
-#endif
 static gpointer
 tp_poll_init (SocketIOData *data)
 {
 	tp_poll_data *result;
+#ifdef HOST_WIN32
+	struct sockaddr_in server;
+	struct sockaddr_in client;
+	SOCKET srv;
+	int len;
+#endif
 
 	result = g_new0 (tp_poll_data, 1);
-	if (PIPE (result->pipe) != 0) {
+#ifndef HOST_WIN32
+	if (pipe (result->pipe) != 0) {
 		int err = errno;
 		perror ("mono");
 		g_assert (err);
 	}
+#else
+	srv = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	g_assert (srv != INVALID_SOCKET);
+	result->pipe [1] = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	g_assert (result->pipe [1] != INVALID_SOCKET);
+
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = inet_addr ("127.0.0.1");
+	server.sin_port = 0;
+	if (bind (srv, (SOCKADDR *) &server, sizeof (server))) {
+		g_print ("%d\n", WSAGetLastError ());
+		g_assert (1 != 0);
+	}
+
+	len = sizeof (server);
+	getsockname (srv, (SOCKADDR *) &server, &len);
+	listen (srv, 1);
+	mono_thread_create (mono_get_root_domain (), connect_hack, &server);
+	len = sizeof (server);
+	result->pipe [0] = accept (srv, (SOCKADDR *) &client, &len);
+	g_assert (result->pipe [0] != INVALID_SOCKET);
+	closesocket (srv);
+#endif
 	MONO_SEM_INIT (&result->new_sem, 1);
 	data->shutdown = tp_poll_shutdown;
 	data->modify = tp_poll_modify;
