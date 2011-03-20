@@ -4760,7 +4760,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* save used registers in own stack frame (at pos) */
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			if (iregs_to_save & (1 << i)) {
-				g_assert (pos < cfg->stack_usage - sizeof(gpointer));
+				g_assert (pos < (int)(cfg->stack_usage - sizeof(gpointer)));
 				g_assert (mips_is_imm16(pos));
 				MIPS_SW (code, i, mips_sp, pos);
 				pos += SIZEOF_REGISTER;
@@ -4865,28 +4865,32 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		} else {
 			/* Argument ends up on the stack */
 			if (ainfo->regtype == RegTypeGeneral) {
+				int basereg_offset;
 				/* Incoming parameters should be above this frame */
 				if (cfg->verbose_level > 2)
-					g_print ("stack slot at %d of %d\n", inst->inst_offset, alloc_size);
+					g_print ("stack slot at %d of %d+%d\n",
+						 inst->inst_offset, alloc_size, alloc2_size);
 				/* g_assert (inst->inst_offset >= alloc_size); */
-				g_assert (mips_is_imm16 (inst->inst_offset));
+				g_assert (inst->inst_basereg == mips_fp);
+				basereg_offset = inst->inst_offset - alloc2_size;
+				g_assert (mips_is_imm16 (basereg_offset));
 				switch (ainfo->size) {
 				case 1:
-					mips_sb (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					mips_sb (code, ainfo->reg, inst->inst_basereg, basereg_offset);
 					break;
 				case 2:
-					mips_sh (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					mips_sh (code, ainfo->reg, inst->inst_basereg, basereg_offset);
 					break;
 				case 0: /* XXX */
 				case 4:
-					mips_sw (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					mips_sw (code, ainfo->reg, inst->inst_basereg, basereg_offset);
 					break;
 				case 8:
 #if (SIZEOF_REGISTER == 4)
-					mips_sw (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
-					mips_sw (code, ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);
+					mips_sw (code, ainfo->reg, inst->inst_basereg, basereg_offset);
+					mips_sw (code, ainfo->reg + 1, inst->inst_basereg, basereg_offset + 4);
 #elif (SIZEOF_REGISTER == 8)
-					mips_sd (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					mips_sd (code, ainfo->reg, inst->inst_basereg, basereg_offset);
 #endif
 					break;
 				default:
