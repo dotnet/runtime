@@ -84,6 +84,7 @@
 		<type fullname="System.MonoAsyncCall" preserve="fields" />
 		<type fullname="System.MonoCustomAttrs" preserve="fields" />
 		<type fullname="System.MonoCustomAttrs/AttributeInfo" preserve="fields" />
+		<type fullname="System.MonoCQItem" preserve="fields" />
 		<type fullname="System.MonoEnumInfo" preserve="fields" />
 		<type fullname="System.MonoListItem" preserve="fields" />
 		<type fullname="System.MonoType" preserve="fields" />
