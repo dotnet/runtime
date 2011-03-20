@@ -2625,21 +2625,8 @@ loop_start:
 			ins->opcode = OP_LOCALLOC;
 			break;
 
-		case OP_LOAD_MEMBASE:
-		case OP_LOADI4_MEMBASE:
-		case OP_LOADU4_MEMBASE:
-		case OP_LOADI2_MEMBASE:
-		case OP_LOADU2_MEMBASE:
-		case OP_LOADI1_MEMBASE:
-		case OP_LOADU1_MEMBASE:
 		case OP_LOADR4_MEMBASE:
-		case OP_LOADR8_MEMBASE:
-		case OP_STORE_MEMBASE_REG:
-		case OP_STOREI4_MEMBASE_REG:
-		case OP_STOREI2_MEMBASE_REG:
-		case OP_STOREI1_MEMBASE_REG:
 		case OP_STORER4_MEMBASE_REG:
-		case OP_STORER8_MEMBASE_REG:
 			/* we can do two things: load the immed in a register
 			 * and use an indexed load, or see if the immed can be
 			 * represented as an ad_imm + a load with a smaller offset
