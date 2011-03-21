@@ -564,7 +564,7 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 void
 mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
 {
-	memcpy (mctx, ctx, sizeof(MonoContext));
+	mono_sigctx_to_monoctx(ctx, mctx);
 }
 
 /*========================= End of Function ========================*/
@@ -580,7 +580,7 @@ mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 {
-	memcpy (ctx, mctx, sizeof(MonoContext));
+	mono_monoctx_to_sigctx(mctx, ctx);
 }
 
 /*========================= End of Function ========================*/

@@ -2,6 +2,7 @@
 #define __MONO_MINI_S390X_H__
 
 #include <mono/arch/s390x/s390x-codegen.h>
+#include <mono/utils/mono-context.h>
 #include <signal.h>
 
 #define MONO_ARCH_CPU_SPEC s390x_cpu_desc
@@ -46,8 +47,6 @@ struct MonoLMF {
 	gulong	    gregs[16];
 	gdouble     fregs[16];
 };
-
-typedef struct ucontext MonoContext;
 
 typedef struct MonoCompileArch {
 	gpointer    litpool;
@@ -118,6 +117,7 @@ typedef struct
 #define MONO_ARCH_IMT_REG				s390_r9
 #define MONO_ARCH_THIS_AS_FIRST_ARG     		1
 #define MONO_ARCH_HAVE_XP_UNWIND			1
+#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX		1
 
 #define MONO_ARCH_USE_SIGACTION 	1
 
@@ -186,23 +186,6 @@ typedef struct
 
 #define S390_CC_EQ			8
 #define S390_ALIGN(v, a)	(((a) > 0 ? (((v) + ((a) - 1)) & ~((a) - 1)) : (v)))
-
-#define MONO_CONTEXT_SET_IP(ctx,ip) 					\
-	do {								\
-		(ctx)->uc_mcontext.gregs[14] = (unsigned long)ip;	\
-		(ctx)->uc_mcontext.psw.addr = (unsigned long)ip;	\
-	} while (0); 
-
-#define MONO_CONTEXT_SET_SP(ctx,bp) MONO_CONTEXT_SET_BP((ctx),(bp))
-#define MONO_CONTEXT_SET_BP(ctx,bp) 					\
-	do {		 						\
-		(ctx)->uc_mcontext.gregs[15] = (unsigned long)bp;	\
-		(ctx)->uc_stack.ss_sp	     = (void*)bp;		\
-	} while (0) 
-
-#define MONO_CONTEXT_GET_IP(ctx) (gpointer) (ctx)->uc_mcontext.psw.addr
-#define MONO_CONTEXT_GET_BP(ctx) MONO_CONTEXT_GET_SP((ctx))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->uc_mcontext.gregs[15]))
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {			\
 		MonoS390StackFrame *sframe;				\

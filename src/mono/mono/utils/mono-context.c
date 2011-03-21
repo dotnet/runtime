@@ -204,4 +204,41 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #endif
 }
 
+#elif defined(__s390x__)
+
+#include <mono/utils/mono-context.h>
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_sigctx_to_monoctx.                      */
+/*                                                                  */
+/* Function	- Called from the signal handler to convert signal  */
+/*                context to MonoContext.                           */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+void
+mono_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
+{
+	memcpy (mctx, ctx, sizeof(MonoContext));
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_monoctx_to_sigctx.                      */
+/*                                                                  */
+/* Function	- Convert MonoContext structure to signal context.  */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+void
+mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
+{
+	memcpy (ctx, mctx, sizeof(MonoContext));
+}
+
+/*========================= End of Function ========================*/
+
 #endif /* #if defined(__i386__) */

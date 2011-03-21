@@ -861,7 +861,7 @@ static void check_scan_starts (void);
 static void check_for_xdomain_refs (void);
 static void dump_heap (const char *type, int num, const char *reason);
 
-void mono_gc_scan_for_specific_ref (MonoObject *key);
+void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
 static void init_stats (void);
 
@@ -1176,7 +1176,7 @@ check_reference_for_xdomain (gpointer *ptr, char *obj, MonoDomain *domain)
 			o, o->vtable->klass->name_space, o->vtable->klass->name,
 			offset, field ? field->name : "",
 			ref, ref->vtable->klass->name_space, ref->vtable->klass->name, str ? str : "");
-	mono_gc_scan_for_specific_ref (o);
+	mono_gc_scan_for_specific_ref (o, TRUE);
 	if (str)
 		g_free (str);
 }
@@ -1191,6 +1191,8 @@ scan_object_for_xdomain_refs (char *start, mword size, void *data)
 
 	#include "sgen-scan-object.h"
 }
+
+static gboolean scan_object_for_specific_ref_precise = TRUE;
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj) do {		\
@@ -1208,7 +1210,19 @@ scan_object_for_specific_ref (char *start, MonoObject *key)
 	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (start)))
 		start = forwarded;
 
-	#include "sgen-scan-object.h"
+	if (scan_object_for_specific_ref_precise) {
+		#include "sgen-scan-object.h"
+	} else {
+		mword *words = (mword*)start;
+		size_t size = safe_object_get_size ((MonoObject*)start);
+		int i;
+		for (i = 0; i < size / sizeof (mword); ++i) {
+			if (words [i] == (mword)key) {
+				g_print ("found possible ref to %p in object %p (%s) at offset %td\n",
+						key, start, safe_name (start), i * sizeof (mword));
+			}
+		}
+	}
 }
 
 void
@@ -1319,10 +1333,12 @@ scan_roots_for_specific_ref (MonoObject *key, int root_type)
 }
 
 void
-mono_gc_scan_for_specific_ref (MonoObject *key)
+mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise)
 {
 	RootRecord *root;
 	int i;
+
+	scan_object_for_specific_ref_precise = precise;
 
 	mono_sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
 			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE);
@@ -7162,14 +7178,17 @@ mono_gc_make_root_descr_all_refs (int numbits)
 {
 	gsize *gc_bitmap;
 	void *descr;
+	int num_bytes = numbits / 8;
 
 	if (numbits < 32 && all_ref_root_descrs [numbits])
 		return all_ref_root_descrs [numbits];
 
 	gc_bitmap = g_malloc0 (ALIGN_TO (numbits, 8) + 1);
-	memset (gc_bitmap, 0xff, numbits / 8);
+	memset (gc_bitmap, 0xff, num_bytes);
 	if (numbits < ((sizeof (*gc_bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) 
 		gc_bitmap[0] = GUINT64_TO_LE(gc_bitmap[0]);
+	else if (numbits && num_bytes % (sizeof (*gc_bitmap)))
+		gc_bitmap[num_bytes / 8] = GUINT64_TO_LE(gc_bitmap [num_bytes / 8]);
 	if (numbits % 8)
 		gc_bitmap [numbits / 8] = (1 << (numbits % 8)) - 1;
 	descr = mono_gc_make_descr_from_bitmap (gc_bitmap, numbits);

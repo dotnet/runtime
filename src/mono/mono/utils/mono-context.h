@@ -289,6 +289,50 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_regs[mips_fp]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_regs[mips_sp]))
 
+#elif defined(__s390x__)
+
+typedef struct ucontext MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,ip) 					\
+	do {								\
+		(ctx)->uc_mcontext.gregs[14] = (unsigned long)ip;	\
+		(ctx)->uc_mcontext.psw.addr = (unsigned long)ip;	\
+	} while (0); 
+
+#define MONO_CONTEXT_SET_SP(ctx,bp) MONO_CONTEXT_SET_BP((ctx),(bp))
+#define MONO_CONTEXT_SET_BP(ctx,bp) 					\
+	do {		 						\
+		(ctx)->uc_mcontext.gregs[15] = (unsigned long)bp;	\
+		(ctx)->uc_stack.ss_sp	     = (void*)bp;		\
+	} while (0) 
+
+#define MONO_CONTEXT_GET_IP(ctx) (gpointer) (ctx)->uc_mcontext.psw.addr
+#define MONO_CONTEXT_GET_BP(ctx) MONO_CONTEXT_GET_SP((ctx))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->uc_mcontext.gregs[15]))
+
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"stg	%%r0,0x00(%0)\n\t"	\
+		"stg	%%r1,0x08(%0)\n\t"	\
+		"stg	%%r2,0x10(%0)\n\t"	\
+		"stg	%%r3,0x18(%0)\n\t"	\
+		"stg	%%r4,0x20(%0)\n\t"	\
+		"stg	%%r5,0x28(%0)\n\t"	\
+		"stg	%%r6,0x30(%0)\n\t"	\
+		"stg	%%r7,0x38(%0)\n\t"	\
+		"stg	%%r8,0x40(%0)\n\t"	\
+		"stg	%%r9,0x48(%0)\n\t"	\
+		"stg	%%r10,0x50(%0)\n\t"	\
+		"stg	%%r11,0x58(%0)\n\t"	\
+		"stg	%%r12,0x60(%0)\n\t"	\
+		"stg	%%r13,0x68(%0)\n\t"	\
+		"stg	%%r14,0x70(%0)\n\t"	\
+		"stg	%%r15,0x78(%0)\n"	\
+		: "=&a" (ptr)			\
+		: "0" (cur_thread_regs)		\
+		: "memory"			\
+	)
+
 #else
 
 #error "Implement mono-context for the current arch"
