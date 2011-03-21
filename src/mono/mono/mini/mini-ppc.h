@@ -302,6 +302,11 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 #include "mini-ppc-os.h"
 #endif
 
+gboolean
+mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig) MONO_INTERNAL;
+
+#define MONO_ARCH_USE_OP_TAIL_CALL(caller_sig, callee_sig) mono_ppc_tail_call_supported (caller_sig, callee_sig)
+
 void
 mono_ppc_patch (guchar *code, const guchar *target) MONO_INTERNAL;
 
