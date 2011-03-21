@@ -14,6 +14,9 @@ struct _tp_poll_data {
 	int pipe [2];
 	MonoSemType new_sem;
 	mono_pollfd newpfd;
+#ifdef HOST_WIN32
+	struct sockaddr_in server;
+#endif
 };
 
 typedef struct _tp_poll_data tp_poll_data;
@@ -26,11 +29,10 @@ static void tp_poll_wait (gpointer p);
 static void
 connect_hack (gpointer x)
 {
-	struct sockaddr_in *addr = (struct sockaddr_in *) x;
-	tp_poll_data *data = socket_io_data.event_data;
+	tp_poll_data *data = (tp_poll_data *) x;
 	int count = 0;
 
-	while (connect ((SOCKET) data->pipe [1], (SOCKADDR *) addr, sizeof (struct sockaddr_in))) {
+	while (connect ((SOCKET) data->pipe [1], (SOCKADDR *) &data->server, sizeof (struct sockaddr_in))) {
 		Sleep (500);
 		if (++count > 3) {
 			g_warning ("Error initializing async. sockets %d.", WSAGetLastError ());
@@ -45,7 +47,6 @@ tp_poll_init (SocketIOData *data)
 {
 	tp_poll_data *result;
 #ifdef HOST_WIN32
-	struct sockaddr_in server;
 	struct sockaddr_in client;
 	SOCKET srv;
 	int len;
@@ -64,19 +65,19 @@ tp_poll_init (SocketIOData *data)
 	result->pipe [1] = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	g_assert (result->pipe [1] != INVALID_SOCKET);
 
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = inet_addr ("127.0.0.1");
-	server.sin_port = 0;
-	if (bind (srv, (SOCKADDR *) &server, sizeof (server))) {
+	result->server.sin_family = AF_INET;
+	result->server.sin_addr.s_addr = inet_addr ("127.0.0.1");
+	result->server.sin_port = 0;
+	if (bind (srv, (SOCKADDR *) &result->server, sizeof (struct sockaddr_in))) {
 		g_print ("%d\n", WSAGetLastError ());
 		g_assert (1 != 0);
 	}
 
-	len = sizeof (server);
-	getsockname (srv, (SOCKADDR *) &server, &len);
+	len = sizeof (result->server);
+	getsockname (srv, (SOCKADDR *) &result->server, &len);
 	listen (srv, 1);
-	mono_thread_create (mono_get_root_domain (), connect_hack, &server);
-	len = sizeof (server);
+	mono_thread_create (mono_get_root_domain (), connect_hack, result);
+	len = sizeof (client);
 	result->pipe [0] = accept (srv, (SOCKADDR *) &client, &len);
 	g_assert (result->pipe [0] != INVALID_SOCKET);
 	closesocket (srv);
@@ -93,13 +94,12 @@ tp_poll_modify (gpointer event_data, int fd, int operation, int events, gboolean
 {
 	tp_poll_data *data = event_data;
 	char msg [1];
-	int w;
 
 	MONO_SEM_WAIT (&data->new_sem);
 	INIT_POLLFD (&data->newpfd, GPOINTER_TO_INT (fd), events);
 	*msg = (char) operation;
 #ifndef HOST_WIN32
-	w = write (data->pipe [1], msg, 1);
+	if (write (data->pipe [1], msg, 1));
 #else
 	send ((SOCKET) data->pipe [1], msg, 1, 0);
 #endif

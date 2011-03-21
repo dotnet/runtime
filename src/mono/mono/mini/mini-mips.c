@@ -377,6 +377,7 @@ mips_patch (guint32 *code, guint32 target)
 		mono_arch_flush_icache ((guint8 *)code, 4);
 		break;
 	case 0x0f: /* LUI / ADDIU pair */
+		g_assert ((code[1] >> 26) == 0x9);
 		patch_lui_addiu (code, target);
 		mono_arch_flush_icache ((guint8 *)code, 8);
 		break;
@@ -1040,6 +1041,10 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 #if MIPS_PASS_STRUCTS_BY_VALUE
 			/* Need to do alignment if struct contains long or double */
 			if (alignment > 4) {
+				/* Drop onto stack *before* looking at
+				   stack_size, if required. */
+				if (!cinfo->on_stack && cinfo->gr > MIPS_LAST_ARG_REG)
+					args_onto_stack (cinfo);
 				if (cinfo->stack_size & (alignment - 1)) {
 					add_int32_arg (cinfo, &dummy_arg);
 				}
@@ -3744,12 +3749,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_CALL:
 				if (ins->flags & MONO_INST_HAS_METHOD) {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
-					mips_call (code, mips_t9, call->method);
+					mips_load (code, mips_t9, call->method);
 				}
 				else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-					mips_call (code, mips_t9, call->fptr);
+					mips_load (code, mips_t9, call->fptr);
 				}
+				mips_jalr (code, mips_t9, mips_ra);
+				mips_nop (code);
 				break;
 			case OP_FCALL_REG:
 			case OP_LCALL_REG:
@@ -4578,15 +4585,31 @@ mips_adjust_stackframe(MonoCompile *cfg)
 			if (cfg->verbose_level > 2) {
 				mono_print_ins_index (ins_cnt, ins);
 			}
-			if (MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_fp))
-				adj_c0 = 1;
-			if (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_fp))
-				adj_c0 = 1;
-			/* The following two catch FP spills */
-			if (MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_sp))
-				adj_c0 = 1;
-			if (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_sp))
-				adj_c0 = 1;
+			/* The == mips_sp tests catch FP spills */
+			if (MONO_IS_LOAD_MEMBASE(ins) && ((ins->inst_basereg == mips_fp) ||
+							  (ins->inst_basereg == mips_sp))) {
+				switch (ins->opcode) {
+				case OP_LOADI8_MEMBASE:
+				case OP_LOADR8_MEMBASE:
+					adj_c0 = 8;
+					break;
+				default:
+					adj_c0 = 4;
+					break;
+				}
+			} else if (MONO_IS_STORE_MEMBASE(ins) && ((ins->dreg == mips_fp) ||
+								  (ins->dreg == mips_sp))) {
+				switch (ins->opcode) {
+				case OP_STOREI8_MEMBASE_REG:
+				case OP_STORER8_MEMBASE_REG:
+				case OP_STOREI8_MEMBASE_IMM:
+					adj_c0 = 8;
+					break;
+				default:
+					adj_c0 = 4;
+					break;
+				}
+			}
 			if (((ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_IADD_IMM)) && (ins->sreg1 == mips_fp))
 				adj_imm = 1;
 			if (adj_c0) {
@@ -4598,7 +4621,8 @@ mips_adjust_stackframe(MonoCompile *cfg)
 					}
 				}
 				else if (ins->inst_c0 < 0) {
-					ins->inst_c0 = - ins->inst_c0 - 4;
+                                        /* Adj_c0 holds the size of the datatype. */
+					ins->inst_c0 = - ins->inst_c0 - adj_c0;
 					if (cfg->verbose_level > 2) {
 						g_print ("spill");
 						mono_print_ins_index (ins_cnt, ins);
@@ -5593,30 +5617,34 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 
-		item->chunk_size += LOAD_CONST_SIZE;
 		if (item->is_equals) {
 			if (item->check_target_idx) {
-				item->chunk_size += BR_SIZE + LOAD_CONST_SIZE + JUMP_JR_SIZE;
+				item->chunk_size += LOAD_CONST_SIZE + BR_SIZE + JUMP_JR_SIZE;
+				if (item->has_target_code)
+					item->chunk_size += LOAD_CONST_SIZE;
+				else
+					item->chunk_size += LOADSTORE_SIZE;
 			} else {
 				if (fail_tramp) {
-					item->chunk_size += BR_SIZE + JUMP_IMM32_SIZE * 2;
+					item->chunk_size += LOAD_CONST_SIZE + BR_SIZE + JUMP_IMM32_SIZE +
+						LOADSTORE_SIZE + JUMP_IMM32_SIZE;
 					if (!item->has_target_code)
 						item->chunk_size += LOADSTORE_SIZE;
 				} else {
-					item->chunk_size += LOADSTORE_SIZE + JUMP_IMM_SIZE;
+					item->chunk_size += LOADSTORE_SIZE + JUMP_JR_SIZE;
 #if ENABLE_WRONG_METHOD_CHECK
 					item->chunk_size += CMP_SIZE + BR_SIZE + 4;
 #endif
 				}
 			}
 		} else {
-			item->chunk_size += BR_SIZE;
+			item->chunk_size += CMP_SIZE + BR_SIZE;
 			imt_entries [item->check_target_idx]->compare_done = TRUE;
 		}
 		size += item->chunk_size;
 	}
 	/* the initial load of the vtable address */
-	size += MIPS_LOAD_SEQUENCE_LENGTH + LOADSTORE_SIZE;
+	size += MIPS_LOAD_SEQUENCE_LENGTH;
 	if (fail_tramp) {
 		code = mono_method_alloc_generic_virtual_thunk (domain, size);
 	} else {

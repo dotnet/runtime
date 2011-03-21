@@ -190,7 +190,7 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 
 		ppc_load (code, ppc_r0, shifted);
 		ppc_mtctr (code, ppc_r0);
-		g_assert (sreg == ppc_r11);
+		//g_assert (sreg == ppc_r11);
 		ppc_addi (code, ppc_r12, dreg, (doffset - sizeof (gpointer)));
 		ppc_addi (code, ppc_r11, sreg, (soffset - sizeof (gpointer)));
 		copy_loop_start = code;
@@ -961,13 +961,14 @@ has_only_a_r48_field (MonoClass *klass)
 #endif
 
 static CallInfo*
-calculate_sizes (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig)
 {
 	guint i, fr, gr, pstart;
 	int n = sig->hasthis + sig->param_count;
 	MonoType *simpletype;
 	guint32 stack_size = 0;
 	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * n);
+	gboolean is_pinvoke = sig->pinvoke;
 
 	fr = PPC_FIRST_FPARG_REG;
 	gr = PPC_FIRST_ARG_REG;
@@ -1198,6 +1199,7 @@ calculate_sizes (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gbo
 			g_error ("Can't trampoline 0x%x", sig->params [i]->type);
 		}
 	}
+	cinfo->nargs = n;
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 		/* Prevent implicit arguments and sig_cookie from
@@ -1262,33 +1264,59 @@ calculate_sizes (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gbo
 	return cinfo;
 }
 
-static void
-allocate_tailcall_valuetype_addrs (MonoCompile *cfg)
+G_GNUC_UNUSED static void
+break_count (void)
 {
-#if !PPC_PASS_STRUCTS_BY_VALUE
-	MonoMethodSignature *sig = mono_method_signature (cfg->method);
-	int num_structs = 0;
+}
+
+G_GNUC_UNUSED static gboolean
+debug_count (void)
+{
+	static int count = 0;
+	count ++;
+
+	if (!getenv ("COUNT"))
+		return TRUE;
+
+	if (count == atoi (getenv ("COUNT"))) {
+		break_count ();
+	}
+
+	if (count > atoi (getenv ("COUNT"))) {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+gboolean
+mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+{
+	CallInfo *c1, *c2;
+	gboolean res;
 	int i;
 
-	if (!(cfg->flags & MONO_CFG_HAS_TAIL))
-		return;
-
-	for (i = 0; i < sig->param_count; ++i) {
-		MonoType *type = mono_type_get_underlying_type (sig->params [i]);
-		if (type->type == MONO_TYPE_VALUETYPE)
-			num_structs++;
+	c1 = get_call_info (NULL, caller_sig);
+	c2 = get_call_info (NULL, callee_sig);
+	res = c1->stack_usage >= c2->stack_usage;
+	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret))
+		/* An address on the callee's stack is passed as the first argument */
+		res = FALSE;
+	for (i = 0; i < c2->nargs; ++i) {
+		if (c2->args [i].regtype == RegTypeStructByAddr)
+			/* An address on the callee's stack is passed as the argument */
+			res = FALSE;
 	}
 
-	if (num_structs) {
-		cfg->tailcall_valuetype_addrs =
-			mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * num_structs);
-		for (i = 0; i < num_structs; ++i) {
-			cfg->tailcall_valuetype_addrs [i] =
-				mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-			cfg->tailcall_valuetype_addrs [i]->flags |= MONO_INST_INDIRECT;
-		}
-	}
-#endif
+	/*
+	if (!debug_count ())
+		res = FALSE;
+	*/
+
+	g_free (c1);
+	g_free (c2);
+
+	return res;
 }
 
 /*
@@ -1305,8 +1333,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int frame_reg = ppc_sp;
 	gint32 *offsets;
 	guint32 locals_stack_size, locals_stack_align;
-
-	allocate_tailcall_valuetype_addrs (m);
 
 	m->flags |= MONO_CFG_HAS_SPILLUP;
 
@@ -1489,7 +1515,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	m->stack_offset = offset;
 
 	if (sig->call_convention == MONO_CALL_VARARG) {
-		CallInfo *cinfo = calculate_sizes (m->generic_sharing_context, m->method->signature, m->method->signature->pinvoke);
+		CallInfo *cinfo = get_call_info (m->generic_sharing_context, m->method->signature);
 
 		m->sig_cookie = cinfo->sig_cookie.offset;
 
@@ -1535,7 +1561,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	
-	cinfo = calculate_sizes (cfg->generic_sharing_context, sig, sig->pinvoke);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig);
 
 	for (i = 0; i < n; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
@@ -2988,201 +3014,10 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	return code;
 }
 
-/*
- * emit_load_volatile_arguments:
- *
- *  Load volatile arguments from the stack to the original input registers.
- * Required before a tail call.
- */
-static guint8*
-emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
-{
-	MonoMethod *method = cfg->method;
-	MonoMethodSignature *sig;
-	MonoInst *inst;
-	CallInfo *cinfo;
-	guint32 i, pos;
-	int struct_index = 0;
-
-	sig = mono_method_signature (method);
-
-	/* This is the opposite of the code in emit_prolog */
-
-	pos = 0;
-
-	cinfo = calculate_sizes (cfg->generic_sharing_context, sig, sig->pinvoke);
-
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		ArgInfo *ainfo = &cinfo->ret;
-		inst = cfg->vret_addr;
-		g_assert (ppc_is_imm16 (inst->inst_offset));
-		ppc_ldptr (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-	}
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		ArgInfo *ainfo = cinfo->args + i;
-		inst = cfg->args [pos];
-
-		g_assert (inst->opcode != OP_REGVAR);
-		g_assert (ppc_is_imm16 (inst->inst_offset));
-
-		switch (ainfo->regtype) {
-		case RegTypeGeneral:
-			switch (ainfo->size) {
-				case 1:
-					ppc_lbz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					break;
-				case 2:
-					ppc_lhz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					break;
-#ifdef __mono_ppc64__
-				case 4:
-					ppc_lwz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					break;
-#endif
-				default:
-					ppc_ldptr (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					break;
-			}
-			break;
-
-		case RegTypeFP:
-			switch (ainfo->size) {
-				case 4:
-					ppc_lfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					break;
-				case 8:
-					ppc_lfd (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-					break;
-				default:
-					g_assert_not_reached ();
-			}
-			break;
-
-		case RegTypeBase: {
-			MonoType *type = mini_type_get_underlying_type (cfg->generic_sharing_context,
-				&inst->klass->byval_arg);
-
-#ifndef __mono_ppc64__
-			if (type->type == MONO_TYPE_I8)
-				NOT_IMPLEMENTED;
-#endif
-
-			if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_I8) {
-				ppc_ldptr (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
-				ppc_stptr (code, ppc_r0, ainfo->offset, ainfo->reg);
-			} else if (type->type == MONO_TYPE_I4) {
-				ppc_lwz (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
-				ppc_stw (code, ppc_r0, ainfo->offset, ainfo->reg);
-			} else {
-				NOT_IMPLEMENTED;
-			}
-
-			break;
-		}
-
-		case RegTypeStructByVal: {
-#ifdef __APPLE__
-			guint32 size = 0;
-#endif
-			int j;
-
-			/* FIXME: */
-			if (ainfo->vtsize)
-				NOT_IMPLEMENTED;
-#ifdef __APPLE__
-			/*
-			 * Darwin pinvokes needs some special handling
-			 * for 1 and 2 byte arguments
-			 */
-			if (method->signature->pinvoke)
-				size = mono_class_native_size (inst->klass, NULL);
-			if (size == 1 || size == 2) {
-				/* FIXME: */
-				NOT_IMPLEMENTED;
-			} else
-#endif
-				for (j = 0; j < ainfo->vtregs; ++j) {
-					ppc_ldptr (code, ainfo->reg + j,
-							inst->inst_offset + j * sizeof (gpointer),
-							inst->inst_basereg);
-					/* FIXME: shift to the right */
-					if (ainfo->bytes)
-						NOT_IMPLEMENTED;
-				}
-			break;
-		}
-
-		case RegTypeStructByAddr: {
-			MonoInst *addr = cfg->tailcall_valuetype_addrs [struct_index];
-
-			g_assert (ppc_is_imm16 (addr->inst_offset));
-			g_assert (!ainfo->offset);
-			ppc_ldptr (code, ainfo->reg, addr->inst_offset, addr->inst_basereg);
-
-			struct_index++;
-			break;
-		}
-
-		default:
-			g_assert_not_reached ();
-		}
-
-		pos ++;
-	}
-
-	g_free (cinfo);
-
-	return code;
-}
-
-/* This must be kept in sync with emit_load_volatile_arguments(). */
 static int
 ins_native_length (MonoCompile *cfg, MonoInst *ins)
 {
-	int len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
-	MonoMethodSignature *sig;
-	MonoCallInst *call;
-	CallInfo *cinfo;
-	int i;
-
-	if (ins->opcode != OP_JMP)
-		return len;
-
-	call = (MonoCallInst*)ins;
-	sig = mono_method_signature (cfg->method);
-	cinfo = calculate_sizes (cfg->generic_sharing_context, sig, sig->pinvoke);
-
-	if (MONO_TYPE_ISSTRUCT (sig->ret))
-		len += 4;
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		ArgInfo *ainfo = cinfo->args + i;
-
-		switch (ainfo->regtype) {
-		case RegTypeGeneral:
-		case RegTypeFP:
-			len += 4;
-			break;
-
-		case RegTypeBase:
-			len += 8;
-			break;
-
-		case RegTypeStructByVal:
-			len += 4 * ainfo->size;
-			break;
-
-		case RegTypeStructByAddr:
-			len += 4;
-			break;
-
-		default:
-			g_assert_not_reached ();
-		}
-	}
-
-	g_free (cinfo);
-
-	return len;
+	return ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 }
 
 static guint8*
@@ -3906,9 +3741,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_R4:
 			ppc_frsp (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_JMP: {
+		case OP_TAILCALL: {
 			int i, pos;
-			
+			MonoCallInst *call = (MonoCallInst*)ins;
+
 			/*
 			 * Keep in sync with mono_arch_emit_epilog
 			 */
@@ -3928,8 +3764,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_mtlr (code, ppc_r0);
 			}
 
-			code = emit_load_volatile_arguments (cfg, code);
-
 			if (ppc_is_imm16 (cfg->stack_usage)) {
 				ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->stack_usage);
 			} else {
@@ -3939,12 +3773,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_addi (code, ppc_r11, ppc_r11, cfg->stack_usage);
 			}
 			if (!cfg->method->save_lmf) {
-				/*for (i = 31; i >= 14; --i) {
-					if (cfg->used_float_regs & (1 << i)) {
-						pos += sizeof (double);
-						ppc_lfd (code, i, -pos, cfg->frame_reg);
-					}
-				}*/
 				pos = 0;
 				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
@@ -3955,6 +3783,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				/* FIXME restore from MonoLMF: though this can't happen yet */
 			}
+
+			/* Copy arguments on the stack to our argument area */
+			if (call->stack_usage) {
+				code = emit_memcpy (code, call->stack_usage, ppc_r11, PPC_STACK_PARAM_OFFSET, ppc_sp, PPC_STACK_PARAM_OFFSET);
+				/* r11 was clobbered */
+				g_assert (cfg->frame_reg == ppc_sp);
+				if (ppc_is_imm16 (cfg->stack_usage)) {
+					ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->stack_usage);
+				} else {
+					/* cfg->stack_usage is an int, so we can use
+					 * an addis/addi sequence here even in 64-bit.  */
+					ppc_addis (code, ppc_r11, cfg->frame_reg, ppc_ha(cfg->stack_usage));
+					ppc_addi (code, ppc_r11, ppc_r11, cfg->stack_usage);
+				}
+			}
+
 			ppc_mr (code, ppc_sp, ppc_r11);
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			if (cfg->compile_aot) {
@@ -4931,7 +4775,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* load arguments allocated to register from the stack */
 	pos = 0;
 
-	cinfo = calculate_sizes (cfg->generic_sharing_context, sig, sig->pinvoke);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;

@@ -12,6 +12,7 @@
 
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/freebsd-dwarf.h>
+#include <mono/utils/hazard-pointer.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/mono-endian.h>
 
@@ -507,32 +508,6 @@ mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)
 
 	unwind_unlock ();
 	return i;
-}
-
-static gpointer
-get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
-{
-	gpointer p;
-
-	for (;;) {
-		/* Get the pointer */
-		p = *pp;
-		/* If we don't have hazard pointers just return the
-		   pointer. */
-		if (!hp)
-			return p;
-		/* Make it hazardous */
-		mono_hazard_pointer_set (hp, hazard_index, p);
-		/* Check that it's still the same.  If not, try
-		   again. */
-		if (*pp != p) {
-			mono_hazard_pointer_clear (hp, hazard_index);
-			continue;
-		}
-		break;
-	}
-
-	return p;
 }
 
 /*

@@ -40,7 +40,7 @@
 int
 mono_sgen_thread_handshake (int signum)
 {
-	int count, i, result;
+	int count, result;
 	SgenThreadInfo *info;
 	pthread_t me = pthread_self ();
 

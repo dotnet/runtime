@@ -81,7 +81,9 @@ monoutils_sources = \
 	memcheck.h	\
 	mono-context.c	\
 	mono-context.h	\
-	mono-stack-unwinding.h
+	mono-stack-unwinding.h	\
+	hazard-pointer.c	\
+	hazard-pointer.h
 
 arch_sources = 
 

@@ -3,6 +3,7 @@
 
 #include <glib.h>
 #include <mono/arch/mips/mips-codegen.h>
+#include <mono/utils/mono-context.h>
 
 #if _MIPS_SIM == _ABIO32
 /* o32 fully supported */
@@ -219,18 +220,6 @@ struct MonoLMF {
 	gulong		magic;
 };
 
-/* we define our own structure and we'll copy the data
- * from sigcontext/ucontext/mach when we need it.
- * This also makes us save stack space and time when copying
- * We might also want to add an additional field to propagate
- * the original context from the signal handler.
- */
-typedef struct {
-	gpointer	sc_pc;
-	mips_ireg	sc_regs [MONO_SAVED_GREGS];
-	mips_freg	sc_fpregs [MONO_SAVED_FREGS];
-} MonoContext;
-
 typedef struct MonoCompileArch {
 	guint		iregs_offset;
 	guint		lmf_offset;
@@ -300,15 +289,6 @@ typedef struct MonoCompileArch {
 
 #define MIPS_NUM_REG_ARGS (MIPS_LAST_ARG_REG-MIPS_FIRST_ARG_REG+1)
 #define MIPS_NUM_REG_FPARGS (MIPS_LAST_FPARG_REG-MIPS_FIRST_FPARG_REG+1)
-
-/* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_pc = (int)(ip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_regs[mips_fp] = (int)(bp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_regs[mips_sp] = (int)(sp); } while (0); 
-
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_pc))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_regs[mips_fp]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_regs[mips_sp]))
 
 typedef struct {
 	unsigned long zero;
