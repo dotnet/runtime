@@ -14,9 +14,6 @@ struct _tp_poll_data {
 	int pipe [2];
 	MonoSemType new_sem;
 	mono_pollfd newpfd;
-#ifdef HOST_WIN32
-	struct sockaddr_in server;
-#endif
 };
 
 typedef struct _tp_poll_data tp_poll_data;
@@ -25,29 +22,13 @@ static void tp_poll_shutdown (gpointer event_data);
 static void tp_poll_modify (gpointer event_data, int fd, int operation, int events, gboolean is_new);
 static void tp_poll_wait (gpointer p);
 
-#ifdef HOST_WIN32
-static void
-connect_hack (gpointer x)
-{
-	tp_poll_data *data = (tp_poll_data *) x;
-	int count = 0;
-
-	while (connect ((SOCKET) data->pipe [1], (SOCKADDR *) &data->server, sizeof (struct sockaddr_in))) {
-		Sleep (500);
-		if (++count > 3) {
-			g_warning ("Error initializing async. sockets %d.", WSAGetLastError ());
-			g_assert (WSAGetLastError ());
-		}
-	}
-}
-#endif
-
 static gpointer
 tp_poll_init (SocketIOData *data)
 {
 	tp_poll_data *result;
 #ifdef HOST_WIN32
 	struct sockaddr_in client;
+	struct sockaddr_in server;
 	SOCKET srv;
 	int len;
 #endif
@@ -65,18 +46,21 @@ tp_poll_init (SocketIOData *data)
 	result->pipe [1] = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	g_assert (result->pipe [1] != INVALID_SOCKET);
 
-	result->server.sin_family = AF_INET;
-	result->server.sin_addr.s_addr = inet_addr ("127.0.0.1");
-	result->server.sin_port = 0;
-	if (bind (srv, (SOCKADDR *) &result->server, sizeof (struct sockaddr_in))) {
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = inet_addr ("127.0.0.1");
+	server.sin_port = 0;
+	if (bind (srv, (SOCKADDR *) &server, sizeof (struct sockaddr_in))) {
 		g_print ("%d\n", WSAGetLastError ());
 		g_assert (1 != 0);
 	}
 
-	len = sizeof (result->server);
-	getsockname (srv, (SOCKADDR *) &result->server, &len);
+	len = sizeof (server);
+	getsockname (srv, (SOCKADDR *) &server, &len);
 	listen (srv, 1);
-	mono_thread_create (mono_get_root_domain (), connect_hack, result);
+	if (connect ((SOCKET) result->pipe [1], (SOCKADDR *) &server, sizeof (server)) == SOCKET_ERROR) {
+		g_print ("%d\n", WSAGetLastError ());
+		g_assert (1 != 0);
+	}
 	len = sizeof (client);
 	result->pipe [0] = accept (srv, (SOCKADDR *) &client, &len);
 	g_assert (result->pipe [0] != INVALID_SOCKET);
