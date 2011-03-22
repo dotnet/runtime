@@ -1091,9 +1091,14 @@ transport_connect (const char *host, int port)
 		} else {
 			/* Listen on the provided address */
 			for (rp = result; rp != NULL; rp = rp->ai_next) {
+				int n = 1;
+
 				sfd = socket (rp->ai_family, rp->ai_socktype,
 							  rp->ai_protocol);
 				if (sfd == -1)
+					continue;
+
+				if (setsockopt (sfd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof(n)) == -1)
 					continue;
 
 				res = bind (sfd, rp->ai_addr, rp->ai_addrlen);
