@@ -1218,15 +1218,20 @@ try_steal (gpointer *data, gboolean retry)
 	do {
 		if (mono_runtime_is_shutting_down ())
 			return;
+
+		EnterCriticalSection (&wsqs_lock);
 		for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
 			if (mono_runtime_is_shutting_down ()) {
+				LeaveCriticalSection (&wsqs_lock);
 				return;
 			}
 			mono_wsq_try_steal (wsqs->pdata [i], data, ms);
 			if (*data != NULL) {
+				LeaveCriticalSection (&wsqs_lock);
 				return;
 			}
 		}
+		LeaveCriticalSection (&wsqs_lock);
 		ms += 10;
 	} while (retry && ms < 11);
 }
