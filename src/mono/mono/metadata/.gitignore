@@ -1,6 +1,7 @@
 /Makefile
 /Makefile.in
 /pedump
+/pedump.exe
 /monosn
 /monodiet
 /.libs

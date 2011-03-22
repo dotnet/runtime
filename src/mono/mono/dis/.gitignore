@@ -3,6 +3,7 @@
 /.libs
 /.deps
 /monodis
+/monodis.exe
 /*.a
 /*.o
 /*.lo
