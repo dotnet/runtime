@@ -41,19 +41,20 @@ MonoString*
 ves_icall_System_Environment_GetOSVersionString (void)
 {
 #ifdef HOST_WIN32
-	OSVERSIONINFO verinfo;
+	OSVERSIONINFOEX verinfo;
 
 	MONO_ARCH_SAVE_REGS;
 
-	verinfo.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
-	if (GetVersionEx (&verinfo)) {
-		char version [64];
-		/* maximum string length is 35 bytes 
-		   3 x 10 bytes per number, 1 byte for 0, 3 x 1 byte for dots, 1 for NULL */
-		sprintf (version, "%ld.%ld.%ld.0", 
-			verinfo.dwMajorVersion,
-			verinfo.dwMinorVersion,
-			verinfo.dwBuildNumber);
+	verinfo.dwOSVersionInfoSize = sizeof (OSVERSIONINFOEX);
+	if (GetVersionEx ((OSVERSIONINFO*)&verinfo)) {
+		char version [128];
+		/* maximum string length is 45 bytes
+		   4 x 10 bytes per number, 1 byte for 0, 3 x 1 byte for dots, 1 for NULL */
+		sprintf (version, "%ld.%ld.%ld.%d",
+				 verinfo.dwMajorVersion,
+				 verinfo.dwMinorVersion,
+				 verinfo.dwBuildNumber,
+				 verinfo.wServicePackMajor << 16);
 		return mono_string_new (mono_domain_get (), version);
 	}
 #elif defined(HAVE_SYS_UTSNAME_H)
