@@ -39,8 +39,12 @@
 #ifdef G_OS_WIN32
 #include <io.h>
 #define open _open
+#ifndef S_ISREG
 #define S_ISREG(x) ((x &  _S_IFMT) == _S_IFREG)
+#endif
+#ifndef S_ISDIR
 #define S_ISDIR(x) ((x &  _S_IFMT) == _S_IFDIR)
+#endif
 #endif
 
 int mkstemp (char *tmp_template)

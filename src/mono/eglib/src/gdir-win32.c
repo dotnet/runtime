@@ -47,14 +47,14 @@ g_dir_open (const gchar *path, guint flags, GError **error)
 	GDir *dir;
 	gunichar2* path_utf16;
 	gunichar2* path_utf16_search;
-	WIN32_FIND_DATA find_data;
+	WIN32_FIND_DATAW find_data;
 
 	g_return_val_if_fail (path != NULL, NULL);
 	g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
 	dir = g_new0 (GDir, 1);
 	path_utf16 = u8to16 (path);
-	path_utf16_search = g_malloc ((wcslen(path_utf16) + 3)*sizeof(gunichar2));
+	path_utf16_search = g_malloc ((wcslen((wchar_t *) path_utf16) + 3)*sizeof(gunichar2));
 	wcscpy (path_utf16_search, path_utf16);
 	wcscat (path_utf16_search, L"\\*");
 
@@ -72,7 +72,7 @@ g_dir_open (const gchar *path, guint flags, GError **error)
 	g_free (path_utf16_search);
 	g_free (path_utf16);
 
-	while ((wcscmp (find_data.cFileName, L".") == 0) || (wcscmp (find_data.cFileName, L"..") == 0)) {
+	while ((wcscmp ((wchar_t *) find_data.cFileName, L".") == 0) || (wcscmp ((wchar_t *) find_data.cFileName, L"..") == 0)) {
 		if (!FindNextFileW (dir->handle, &find_data)) {
 			if (error) {
 				gint err = errno;
@@ -91,7 +91,7 @@ g_dir_open (const gchar *path, guint flags, GError **error)
 const gchar *
 g_dir_read_name (GDir *dir)
 {
-	WIN32_FIND_DATA find_data;
+	WIN32_FIND_DATAW find_data;
 
 	g_return_val_if_fail (dir != NULL && dir->handle != 0, NULL);
 
@@ -111,7 +111,7 @@ g_dir_read_name (GDir *dir)
 			dir->next = NULL;
 			return dir->current;
 		}
-	} while ((wcscmp (find_data.cFileName, L".") == 0) || (wcscmp (find_data.cFileName, L"..") == 0));
+	} while ((wcscmp ((wchar_t *) find_data.cFileName, L".") == 0) || (wcscmp ((wchar_t *) find_data.cFileName, L"..") == 0));
 
 	dir->next = u16to8 (find_data.cFileName);
 	return dir->current;

@@ -79,6 +79,7 @@ gchar ***_NSGetEnviron();
 extern char **environ;
 #endif
 
+#ifndef G_OS_WIN32
 static int
 safe_read (int fd, gchar *buffer, gint count, GError **error)
 {
@@ -185,7 +186,7 @@ create_pipe (int *fds, GError **error)
 	}
 	return TRUE;
 }
-
+#endif /* G_OS_WIN32 */
 gboolean
 g_spawn_command_line_sync (const gchar *command_line,
 				gchar **standard_output,

@@ -80,7 +80,7 @@ g_unsetenv(const gchar *variable)
 {
 	gunichar2 *var;
 	var = u8to16(variable); 
-	SetEnvironmentVariableW(var, TEXT(""));
+	SetEnvironmentVariableW(var, L"");
 	g_free(var);
 }
 
@@ -98,14 +98,15 @@ g_path_is_absolute (const char *filename)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
 
-	if (filename[0] != '\0' && filename[1] != '\0')
-		if (filename[1] == ':' && filename[2] != '\0' && 
+	if (filename[0] != '\0' && filename[1] != '\0') {
+		if (filename[1] == ':' && filename[2] != '\0' &&
 			(filename[2] == '\\' || filename[2] == '/'))
 			return TRUE;
 		/* UNC paths */
 		else if (filename[0] == '\\' && filename[1] == '\\' && 
 			filename[2] != '\0')
 			return TRUE;
+	}
 
 	return FALSE;
 }
