@@ -53,7 +53,7 @@ g_module_open (const gchar *file, GModuleFlags flags)
 		gunichar2 *file16;
 		file16 = u8to16(file); 
 		module->main_module = FALSE;
-		module->handle = LoadLibrary (file16);
+		module->handle = LoadLibraryW (file16);
 		g_free(file16);
 		if (!module->handle) {
 			g_free (module);
