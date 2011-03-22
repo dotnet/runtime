@@ -729,6 +729,10 @@
 			Name="utils"
 			>
 			<File
+				RelativePath="..\mono\utils\hazard-pointer.c"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\dlmalloc.c"
 				>
 			</File>
