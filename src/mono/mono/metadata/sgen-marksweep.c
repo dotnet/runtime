@@ -1783,7 +1783,7 @@ initial_skip_card (guint8 *card_data)
 #elif defined(__x86_64__) && defined(__GNUC__)
 	return card_data + i * 8 +  (__builtin_ffsll (card) - 1) / 8;
 #elif defined(__s390x__) && defined(__GNUC__)
-	return card_data + i * 8 +  (__builtin_ffsll (card) - 1) / 8;
+	return card_data + i * 8 +  (__builtin_ffsll (GUINT64_TO_LE(card)) - 1) / 8;
 #else
 	for (i = i * SIZEOF_VOID_P; i < CARDS_PER_BLOCK; ++i) {
 		if (card_data [i])
