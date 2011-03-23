@@ -19,7 +19,8 @@
 #include <sys/statvfs.h>
 #elif defined(HAVE_SYS_STATFS_H)
 #include <sys/statfs.h>
-#elif defined(HAVE_SYS_PARAM_H) && defined(HAVE_SYS_MOUNT_H)
+#endif
+#if defined(HAVE_SYS_PARAM_H) && defined(HAVE_SYS_MOUNT_H)
 #include <sys/param.h>
 #include <sys/mount.h>
 #endif
@@ -3587,6 +3588,42 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 	return(ret);
 }
 
+#ifdef HAVE_GETFSSTAT
+/* Darwin has getfsstat */
+gint32 GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
+{
+	struct statfs *stats;
+	int size, n, i;
+	gunichar2 *dir;
+	glong length, total = 0;
+	
+	n = getfsstat (NULL, 0, MNT_NOWAIT);
+	if (n == -1)
+		return 0;
+	size = n * sizeof (struct statfs);
+	stats = (struct statfs *) g_malloc (size);
+	if (stats == NULL)
+		return 0;
+	if (getfsstat (stats, size, MNT_NOWAIT) == -1){
+		g_free (stats);
+		return 0;
+	}
+	for (i = 0; i < n; i++){
+		printf ("Processing %d -> %s of type %s\n", i, stats [i].f_mntonname, stats [i].f_fstypename);
+		dir = g_utf8_to_utf16 (stats [i].f_mntonname, -1, NULL, &length, NULL);
+		if (total + length < len){
+			memcpy (buf + total, dir, sizeof (gunichar2) * length);
+			buf [total+length] = 0;
+		} else {
+			printf ("Baitling out, we do not fit anymore: total=%d length=%d len=%d\n", total, length, len);
+		}
+		g_free (dir);
+		total += length + 1;
+	}
+	g_free (stats);
+	return total;
+}
+#else
 /* In-place octal sequence replacement */
 static void
 unescape_octal (gchar *str)
@@ -3700,6 +3737,7 @@ GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 }
 #endif
 }
+#endif
 
 #if (defined(HAVE_STATVFS) || defined(HAVE_STATFS)) && !defined(PLATFORM_ANDROID)
 gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_bytes_avail,
@@ -3805,12 +3843,31 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 }
 #endif
 
+/*
+ * General Unix support
+ */
 typedef struct {
 	guint32 drive_type;
 	const gchar* fstype;
 } _wapi_drive_type;
 
 static _wapi_drive_type _wapi_drive_types[] = {
+#if PLATFORM_MACOSX
+	{ DRIVE_REMOTE, "afp" },
+	{ DRIVE_CDROM, "cddafs" },
+	{ DRIVE_CDROM, "cd9660" },
+	{ DRIVE_RAMDISK, "devfs" },
+	{ DRIVE_FIXED, "exfat" },
+	{ DRIVE_RAMDISK, "fdesc" },
+	{ DRIVE_REMOTE, "ftp" },
+	{ DRIVE_FIXED, "hfs" },
+	{ DRIVE_FIXED, "msdos" },
+	{ DRIVE_REMOTE, "nfs" },
+	{ DRIVE_FIXED, "ntfs" },
+	{ DRIVE_REMOTE, "smbfs" },
+	{ DRIVE_FIXED, "udf" },
+	{ DRIVE_REMOTE, "webdav" },
+#else
 	{ DRIVE_RAMDISK, "ramfs"      },
 	{ DRIVE_RAMDISK, "tmpfs"      },
 	{ DRIVE_RAMDISK, "proc"       },
@@ -3841,6 +3898,7 @@ static _wapi_drive_type _wapi_drive_types[] = {
 	{ DRIVE_REMOTE,  "ncpfs"      },
 	{ DRIVE_REMOTE,  "coda"       },
 	{ DRIVE_REMOTE,  "afs"        },
+#endif
 	{ DRIVE_UNKNOWN, NULL         }
 };
 
@@ -3859,34 +3917,24 @@ static guint32 _wapi_get_drive_type(const gchar* fstype)
 	return current->drive_type;
 }
 
-guint32 GetDriveType(const gunichar2 *root_path_name)
+#if HAVE_SYS_MOUNT_H
+static guint32
+GetDriveTypeFromPath (const char *path)
 {
+	struct statfs buf;
+	
+	if (statfs (path, &buf) == -1)
+		return DRIVE_UNKNOWN;
+	return _wapi_get_drive_type (buf.f_fstypename);
+}
+#else
+guint32
+GetDriveTypeFromPath (const gchar *path)
+{
+	guint32 drive_type;
 	FILE *fp;
 	gchar buffer [512];
 	gchar **splitted;
-	gchar *utf8_root_path_name;
-	guint32 drive_type;
-
-	if (root_path_name == NULL) {
-		utf8_root_path_name = g_strdup (g_get_current_dir());
-		if (utf8_root_path_name == NULL) {
-			return(DRIVE_NO_ROOT_DIR);
-		}
-	}
-	else {
-		utf8_root_path_name = mono_unicode_to_external (root_path_name);
-		if (utf8_root_path_name == NULL) {
-#ifdef DEBUG
-			g_message("%s: unicode conversion returned NULL", __func__);
-#endif
-			return(DRIVE_NO_ROOT_DIR);
-		}
-		
-		/* strip trailing slash for compare below */
-		if (g_str_has_suffix(utf8_root_path_name, "/")) {
-			utf8_root_path_name[strlen(utf8_root_path_name) - 1] = 0;
-		}
-	}
 
 	fp = fopen ("/etc/mtab", "rt");
 	if (fp == NULL) {
@@ -3918,6 +3966,35 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 	}
 
 	fclose (fp);
+}
+#endif
+
+guint32 GetDriveType(const gunichar2 *root_path_name)
+{
+	gchar *utf8_root_path_name;
+	guint32 drive_type;
+
+	if (root_path_name == NULL) {
+		utf8_root_path_name = g_strdup (g_get_current_dir());
+		if (utf8_root_path_name == NULL) {
+			return(DRIVE_NO_ROOT_DIR);
+		}
+	}
+	else {
+		utf8_root_path_name = mono_unicode_to_external (root_path_name);
+		if (utf8_root_path_name == NULL) {
+#ifdef DEBUG
+			g_message("%s: unicode conversion returned NULL", __func__);
+#endif
+			return(DRIVE_NO_ROOT_DIR);
+		}
+		
+		/* strip trailing slash for compare below */
+		if (g_str_has_suffix(utf8_root_path_name, "/")) {
+			utf8_root_path_name[strlen(utf8_root_path_name) - 1] = 0;
+		}
+	}
+	drive_type = GetDriveTypeFromPath (utf8_root_path_name);
 	g_free (utf8_root_path_name);
 
 	return (drive_type);
