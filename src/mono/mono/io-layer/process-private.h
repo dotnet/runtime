@@ -36,7 +36,7 @@ extern struct _WapiHandleOps _wapi_process_ops;
  */
 struct MonoProcess {
 	pid_t pid; /* the pid of the process. This value is only valid until the process has exited. */
-	sem_t exit_sem; /* this semaphore will be released when the process exits */
+	MonoSemType exit_sem; /* this semaphore will be released when the process exits */
 	int status; /* the exit status */
 	gint32 handle_count; /* the number of handles to this mono_process instance */
 	/* we keep a ref to the creating _WapiHandle_process handle until

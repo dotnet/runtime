@@ -1046,7 +1046,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	mono_process = (struct MonoProcess *) g_malloc0 (sizeof (struct MonoProcess));
 	mono_process->pid = pid;
 	mono_process->handle_count = 1;
-	if (sem_init (&mono_process->exit_sem, 0, 0) != 0) {
+	if (MONO_SEM_INIT (&mono_process->exit_sem, 0) != 0) {
 		/* If we can't create the exit semaphore, we just don't add anything
 		 * to our list of mono processes. Waiting on the process will return 
 		 * immediately. */
@@ -2843,7 +2843,7 @@ mono_processes_cleanup (void)
 				g_warning ("%s: freeing candidate %p", __func__, candidate);
 #endif
 				mp = candidate->next;
-				sem_destroy (&candidate->exit_sem);
+				MONO_SEM_DESTROY (&candidate->exit_sem);
 				g_free (candidate);
 				candidate = NULL;
 			}
@@ -2909,7 +2909,7 @@ mono_sigchld_signal_handler (int _dummy, siginfo_t *info, void *context)
 			if (p->pid == pid) {
 				p->pid = 0; /* this pid doesn't exist anymore, clear it */
 				p->status = status;
-				sem_post (&p->exit_sem);
+				MONO_SEM_POST (&p->exit_sem);
 				break;
 			}
 			p = p->next;
@@ -2948,7 +2948,6 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 	guint32 start;
 	guint32 now;
 	struct MonoProcess *mp;
-	struct timespec timeout_spec;
 	gboolean spin;
 	gpointer current_thread;
 
@@ -3002,20 +3001,18 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 		if (mp != NULL) {
 			/* We have a semaphore we can wait on */
 			if (timeout != INFINITE) {
-				timeout_spec.tv_sec = (timeout - (now - start)) / 1000;
-				timeout_spec.tv_nsec = ((timeout - (now - start)) % 1000) * 1000000;
 #if DEBUG
-				g_warning ("%s (%p, %u): waiting on semaphore for %li seconds and %li nanoseconds...", 
-					__func__, handle, timeout, timeout_spec.tv_sec, timeout_spec.tv_nsec);
+				g_warning ("%s (%p, %u): waiting on semaphore for %li ms...", 
+					__func__, handle, timeout, (timeout - (now - start)));
 #endif
 
-				ret = sem_timedwait (&mp->exit_sem, &timeout_spec);
+				ret = MONO_SEM_TIMEDWAIT_ALERTABLE (&mp->exit_sem, (timeout - (now - start)), alertable);
 			} else {
 #if DEBUG
 				g_warning ("%s (%p, %u): waiting on semaphore forever...", 
 					__func__, handle, timeout);
 #endif
-				ret = sem_wait (&mp->exit_sem);
+				ret = MONO_SEM_WAIT_ALERTABLE (&mp->exit_sem, alertable);
 			}
 
 			if (ret == -1 && errno != EINTR && errno != ETIMEDOUT) {
@@ -3028,7 +3025,7 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 
 			if (ret == 0) {
 				/* Success, process has exited */
-				sem_post (&mp->exit_sem);
+				MONO_SEM_POST (&mp->exit_sem);
 				break;
 			}
 		} else {
