@@ -3919,7 +3919,7 @@ static guint32 _wapi_get_drive_type(const gchar* fstype)
 	return current->drive_type;
 }
 
-#if HAVE_SYS_MOUNT_H && !__linux__
+#if PLATFORM_MACOSX
 static guint32
 GetDriveTypeFromPath (const char *utf8_root_path_name)
 {
@@ -4002,7 +4002,7 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 }
 
 /* Linux has struct statfs which has a different layout */
-#if defined(HAVE_SYS_PARAM_H) && defined(HAVE_SYS_MOUNT_H) && !__linux__
+#if PLATFORM_MACOSX
 gboolean
 GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize)
 {
