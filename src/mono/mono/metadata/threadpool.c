@@ -522,7 +522,7 @@ socket_io_init (SocketIOData *data)
 	mono_thread_create_internal (mono_get_root_domain (), data->wait, data, TRUE, SMALL_STACK);
 	LeaveCriticalSection (&data->io_lock);
 	data->inited = 2;
-	mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, &async_io_tp, TRUE, SMALL_STACK);
+	threadpool_start_thread (&async_io_tp);
 }
 
 static void
@@ -749,15 +749,16 @@ signal_handler (int signo)
 #endif
 
 static void
-monitor_thread (gpointer data)
+monitor_thread (gpointer unused)
 {
-	ThreadPool *tp;
+	ThreadPool *pools [2];
 	MonoInternalThread *thread;
 	guint32 ms;
 	gboolean need_one;
 	int i;
 
-	tp = data;
+	pools [0] = &async_tp;
+	pools [1] = &async_io_tp;
 	thread = mono_thread_internal_current ();
 	ves_icall_System_Threading_Thread_SetName_internal (thread, mono_string_new (mono_domain_get (), "Threadpool monitor"));
 	while (1) {
@@ -776,23 +777,28 @@ monitor_thread (gpointer data)
 
 		if (mono_runtime_is_shutting_down ())
 			break;
-		if (tp->waiting > 0)
-			continue;
-		need_one = (mono_cq_count (tp->queue) > 0);
-		if (!need_one) {
-			EnterCriticalSection (&wsqs_lock);
-			for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
-				MonoWSQ *wsq;
-				wsq = g_ptr_array_index (wsqs, i);
-				if (mono_wsq_count (wsq) > 0) {
-					need_one = TRUE;
-					break;
+
+		for (i = 0; i < 2; i++) {
+			ThreadPool *tp;
+			tp = pools [i];
+			if (tp->waiting > 0)
+				continue;
+			need_one = (mono_cq_count (tp->queue) > 0);
+			if (!need_one && !tp->is_io) {
+				EnterCriticalSection (&wsqs_lock);
+				for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
+					MonoWSQ *wsq;
+					wsq = g_ptr_array_index (wsqs, i);
+					if (mono_wsq_count (wsq) != 0) {
+						need_one = TRUE;
+						break;
+					}
 				}
+				LeaveCriticalSection (&wsqs_lock);
 			}
-			LeaveCriticalSection (&wsqs_lock);
+			if (need_one)
+				threadpool_start_thread (tp);
 		}
-		if (need_one)
-			threadpool_start_thread (tp);
 	}
 }
 
@@ -1039,7 +1045,7 @@ threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 
 	if (tp->pool_status == 0 && InterlockedCompareExchange (&tp->pool_status, 1, 0) == 0) {
 		if (!tp->is_io)
-			mono_thread_create_internal (mono_get_root_domain (), monitor_thread, tp, TRUE, SMALL_STACK);
+			mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, SMALL_STACK);
 		/* Create on demand up to min_threads to avoid startup penalty for apps that don't use
 		 * the threadpool that much
 		* mono_thread_create_internal (mono_get_root_domain (), threadpool_start_idle_threads, tp, TRUE, SMALL_STACK);
@@ -1206,7 +1212,7 @@ remove_wsq (MonoWSQ *wsq)
 }
 
 static void
-try_steal (gpointer *data, gboolean retry)
+try_steal (MonoWSQ *local_wsq, gpointer *data, gboolean retry)
 {
 	int i;
 	int ms;
@@ -1221,10 +1227,11 @@ try_steal (gpointer *data, gboolean retry)
 
 		EnterCriticalSection (&wsqs_lock);
 		for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
-			if (mono_runtime_is_shutting_down ()) {
-				LeaveCriticalSection (&wsqs_lock);
-				return;
-			}
+			MonoWSQ *wsq;
+
+			wsq = wsqs->pdata [i];
+			if (wsq == local_wsq || mono_wsq_count (wsq) == 0)
+				continue;
 			mono_wsq_try_steal (wsqs->pdata [i], data, ms);
 			if (*data != NULL) {
 				LeaveCriticalSection (&wsqs_lock);
@@ -1237,13 +1244,13 @@ try_steal (gpointer *data, gboolean retry)
 }
 
 static gboolean
-dequeue_or_steal (ThreadPool *tp, gpointer *data)
+dequeue_or_steal (ThreadPool *tp, gpointer *data, MonoWSQ *local_wsq)
 {
 	if (mono_runtime_is_shutting_down ())
 		return FALSE;
 	mono_cq_dequeue (tp->queue, (MonoObject **) data);
 	if (!tp->is_io && !*data)
-		try_steal (data, FALSE);
+		try_steal (local_wsq, data, FALSE);
 	return (*data != NULL);
 }
 
@@ -1457,7 +1464,7 @@ async_invoke_thread (gpointer data)
 		data = NULL;
 		must_die = should_i_die (tp);
 		if (!must_die && (tp->is_io || !mono_wsq_local_pop (&data)))
-			dequeue_or_steal (tp, &data);
+			dequeue_or_steal (tp, &data, wsq);
 
 		n_naps = 0;
 		while (!must_die && !data && n_naps < 4) {
@@ -1478,7 +1485,7 @@ async_invoke_thread (gpointer data)
 			if (mono_runtime_is_shutting_down ())
 				break;
 			must_die = should_i_die (tp);
-			dequeue_or_steal (tp, &data);
+			dequeue_or_steal (tp, &data, wsq);
 			n_naps++;
 		}
 
