@@ -1202,6 +1202,8 @@ static const char info[] =
 #endif
 #ifdef HAVE_EPOLL
     "\tNotifications: epoll\n"
+#elif defined(HAVE_KQUEUE)
+    "\tNotification:  kqueue\n"
 #else
     "\tNotification:  Thread + polling\n"
 #endif
