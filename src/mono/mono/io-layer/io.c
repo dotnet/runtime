@@ -65,6 +65,7 @@ static gboolean file_setfiletime(gpointer handle,
 				 const WapiFileTime *create_time,
 				 const WapiFileTime *last_access,
 				 const WapiFileTime *last_write);
+static guint32 GetDriveTypeFromPath (const gchar *utf8_root_path_name);
 
 /* File handle is only signalled for overlapped IO */
 struct _WapiHandleOps _wapi_file_ops = {
@@ -3918,19 +3919,19 @@ static guint32 _wapi_get_drive_type(const gchar* fstype)
 	return current->drive_type;
 }
 
-#if HAVE_SYS_MOUNT_H
+#if HAVE_SYS_MOUNT_H && !__linux__
 static guint32
-GetDriveTypeFromPath (const char *path)
+GetDriveTypeFromPath (const char *utf8_root_path_name)
 {
 	struct statfs buf;
 	
-	if (statfs (path, &buf) == -1)
+	if (statfs (utf8_root_path_name, &buf) == -1)
 		return DRIVE_UNKNOWN;
 	return _wapi_get_drive_type (buf.f_fstypename);
 }
 #else
-guint32
-GetDriveTypeFromPath (const gchar *path)
+static guint32
+GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 {
 	guint32 drive_type;
 	FILE *fp;
@@ -3940,10 +3941,8 @@ GetDriveTypeFromPath (const gchar *path)
 	fp = fopen ("/etc/mtab", "rt");
 	if (fp == NULL) {
 		fp = fopen ("/etc/mnttab", "rt");
-		if (fp == NULL) {
-			g_free (utf8_root_path_name);
+		if (fp == NULL) 
 			return(DRIVE_UNKNOWN);
-		}
 	}
 
 	drive_type = DRIVE_NO_ROOT_DIR;
@@ -3967,6 +3966,7 @@ GetDriveTypeFromPath (const gchar *path)
 	}
 
 	fclose (fp);
+	return drive_type;
 }
 #endif
 
@@ -4001,13 +4001,14 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 	return (drive_type);
 }
 
-#if defined(HAVE_SYS_PARAM_H) && defined(HAVE_SYS_MOUNT_H)
+/* Linux has struct statfs which has a different layout */
+#if defined(HAVE_SYS_PARAM_H) && defined(HAVE_SYS_MOUNT_H) && !__linux__
 gboolean
 GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize)
 {
 	gchar *utfpath;
 	struct statfs stat;
-	gboolean status = 0;
+	gboolean status = FALSE;
 	glong len;
 	
 	// We only support getting the file system type
@@ -4020,7 +4021,7 @@ GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesi
 		if (ret != NULL && len < fsbuffersize){
 			memcpy (fsbuffer, ret, len * sizeof (gunichar2));
 			fsbuffer [len] = 0;
-			status = 1;
+			status = TRUE;
 		}
 		if (ret != NULL)
 			g_free (ret);
@@ -4028,13 +4029,14 @@ GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesi
 	g_free (utfpath);
 	return status;
 }
-#else
+/* Windows has its own GetVolumeInformation */
+#elif !HOST_WIN32 
 /*
  * Linux does not this case, as the processing is done in managed code, by parsing /etc/mtab
  */
 gboolean
 GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize)
 {
-	return NULL;
+	return FALSE;
 }
 #endif

@@ -27,6 +27,9 @@
 #if defined (HOST_WIN32)
 #include <stdlib.h>
 #endif
+#if defined (HAVE_WCHAR_H)
+#include <wchar.h>
+#endif
 
 #include "mono/utils/mono-membar.h"
 #include <mono/metadata/object.h>
@@ -6623,8 +6626,9 @@ ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString *path)
 {
 	gunichar2 volume_name [MAX_PATH];
 	
-	if (GetVolumeInformation (mono_string_chars (path), NULL, 0, NULL, NULL, NULL, &volume_name, MAX_PATH) == 0)
+	if (GetVolumeInformation (mono_string_chars (path), NULL, 0, NULL, NULL, NULL, volume_name, MAX_PATH) == FALSE)
 		return NULL;
+	/* Not sure using wcslen here is safe */
 	return mono_string_new_utf16 (mono_domain_get (), volume_name, wcslen (volume_name));
 }
 
