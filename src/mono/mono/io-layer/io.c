@@ -3609,17 +3609,17 @@ gint32 GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 		return 0;
 	}
 	for (i = 0; i < n; i++){
-		printf ("Processing %d -> %s of type %s\n", i, stats [i].f_mntonname, stats [i].f_fstypename);
 		dir = g_utf8_to_utf16 (stats [i].f_mntonname, -1, NULL, &length, NULL);
 		if (total + length < len){
 			memcpy (buf + total, dir, sizeof (gunichar2) * length);
 			buf [total+length] = 0;
-		} else {
-			printf ("Baitling out, we do not fit anymore: total=%d length=%d len=%d\n", total, length, len);
-		}
+		} 
 		g_free (dir);
 		total += length + 1;
 	}
+	if (total < len)
+		buf [total] = 0;
+	total++;
 	g_free (stats);
 	return total;
 }
@@ -3854,6 +3854,7 @@ typedef struct {
 static _wapi_drive_type _wapi_drive_types[] = {
 #if PLATFORM_MACOSX
 	{ DRIVE_REMOTE, "afp" },
+	{ DRIVE_REMOTE, "autofs" },
 	{ DRIVE_CDROM, "cddafs" },
 	{ DRIVE_CDROM, "cd9660" },
 	{ DRIVE_RAMDISK, "devfs" },
@@ -3990,7 +3991,7 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 		}
 		
 		/* strip trailing slash for compare below */
-		if (g_str_has_suffix(utf8_root_path_name, "/")) {
+		if (g_str_has_suffix(utf8_root_path_name, "/") && utf8_root_path_name [1] != 0) {
 			utf8_root_path_name[strlen(utf8_root_path_name) - 1] = 0;
 		}
 	}
@@ -4000,3 +4001,40 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 	return (drive_type);
 }
 
+#if defined(HAVE_SYS_PARAM_H) && defined(HAVE_SYS_MOUNT_H)
+gboolean
+GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize)
+{
+	gchar *utfpath;
+	struct statfs stat;
+	gboolean status = 0;
+	glong len;
+	
+	// We only support getting the file system type
+	if (fsbuffer == NULL)
+		return 0;
+	
+	utfpath = mono_unicode_to_external (path);
+	if (statfs (utfpath, &stat) != -1){
+		gunichar2 *ret = g_utf8_to_utf16 (stat.f_fstypename, -1, NULL, &len, NULL);
+		if (ret != NULL && len < fsbuffersize){
+			memcpy (fsbuffer, ret, len * sizeof (gunichar2));
+			fsbuffer [len] = 0;
+			status = 1;
+		}
+		if (ret != NULL)
+			g_free (ret);
+	}
+	g_free (utfpath);
+	return status;
+}
+#else
+/*
+ * Linux does not this case, as the processing is done in managed code, by parsing /etc/mtab
+ */
+gboolean
+GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize)
+{
+	return NULL;
+}
+#endif

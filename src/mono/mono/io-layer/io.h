@@ -222,6 +222,7 @@ extern gboolean LockFile (gpointer handle, guint32 offset_low,
 extern gboolean UnlockFile (gpointer handle, guint32 offset_low,
 			    guint32 offset_high, guint32 length_low,
 			    guint32 length_high);
+extern gboolean GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize);
 
 G_END_DECLS
 
