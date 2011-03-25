@@ -148,10 +148,11 @@ get_default_ctor (MonoClass *klass)
  *	Reference: http://msdn.microsoft.com/en-us/magazine/cc765416.aspx#id0190030
  *
  *	Furthermore a class MUST have a default constructor if its base 
- *	class has a non-transparent default constructor. The same 
- *	inheritance rule applies to both default constructors.
+ *	class has a non-transparent, public or protected, default constructor. 
+ *	The same inheritance rule applies to both default constructors.
  *
  *	Reference: message from a SecurityException in SL4RC
+ *	Reference: fxcop CA2132 rule
  */
 void
 mono_security_core_clr_check_inheritance (MonoClass *class)
@@ -170,12 +171,15 @@ mono_security_core_clr_check_inheritance (MonoClass *class)
 			"Inheritance failure for type %s. Parent class %s is more restricted.",
 			class);
 	} else {
-		class_level = mono_security_core_clr_method_level (get_default_ctor (class), FALSE);
-		parent_level = mono_security_core_clr_method_level (get_default_ctor (parent), FALSE);
-		if (class_level < parent_level) {
-			set_type_load_exception_type (
-				"Inheritance failure for type %s. Default constructor security mismatch with %s.",
-				class);
+		MonoMethod *parent_ctor = get_default_ctor (parent);
+		if (parent_ctor && ((parent_ctor->flags & METHOD_ATTRIBUTE_PUBLIC) != 0)) {
+			class_level = mono_security_core_clr_method_level (get_default_ctor (class), FALSE);
+			parent_level = mono_security_core_clr_method_level (parent_ctor, FALSE);
+			if (class_level < parent_level) {
+				set_type_load_exception_type (
+					"Inheritance failure for type %s. Default constructor security mismatch with %s.",
+					class);
+			}
 		}
 	}
 }
