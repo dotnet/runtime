@@ -61,6 +61,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "profiler-codeanalyst", "pro
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Profilers", "Profilers", "{4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "profiler-vtune", "profiler-vtune.vcxproj", "{F51017F9-B7FB-4F87-B7B5-12799D965783}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -195,6 +197,14 @@ Global
 		{8FEF7F9E-F5F3-470E-91F4-404B7D6BC1BB}.Debug|x64.ActiveCfg = Debug|x64
 		{8FEF7F9E-F5F3-470E-91F4-404B7D6BC1BB}.Release|Win32.ActiveCfg = Release|Win32
 		{8FEF7F9E-F5F3-470E-91F4-404B7D6BC1BB}.Release|x64.ActiveCfg = Release|x64
+		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Debug|Win32.Build.0 = Debug|Win32
+		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Debug|x64.ActiveCfg = Debug|x64
+		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Debug|x64.Build.0 = Debug|x64
+		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Release|Win32.ActiveCfg = Release|Win32
+		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Release|Win32.Build.0 = Release|Win32
+		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Release|x64.ActiveCfg = Release|x64
+		{F51017F9-B7FB-4F87-B7B5-12799D965783}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -217,11 +227,12 @@ Global
 		{83D4D926-2983-4770-BA92-EB9CB8828C95} = {4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}
 		{8FEF7F9E-F5F3-470E-91F4-404B7D6BC1BB} = {4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}
 		{86663B87-4CD2-42B6-8D8E-C79DA1CCDEE6} = {4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}
+		{F51017F9-B7FB-4F87-B7B5-12799D965783} = {4CFD7702-60B2-4E82-BFAD-FCBB53EB4DA2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
-		AMDCaPersistentStartup = mono
 		AMDCaPersistentConfig = Debug|Win32
+		AMDCaPersistentStartup = mono
+		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}
