@@ -124,6 +124,7 @@ typedef struct
 	MonoContext ctx;
 	MonoDebugMethodJitInfo *jit;
 	int flags;
+	mgreg_t *reg_locations [MONO_MAX_IREGS];
 	/*
 	 * Whenever ctx is set. This is FALSE for the last frame of running threads, since
 	 * the frame can become invalid.
@@ -237,6 +238,13 @@ typedef struct {
 	MonoContext catch_ctx;
 
 	gboolean has_catch_ctx;
+
+	/*
+	 * The context which needs to be restored after handling a single step/breakpoint
+	 * event. This is the same as the ctx at step/breakpoint site, but includes changes
+	 * to caller saved registers done by set_var ().
+	 */
+	MonoContext restore_ctx;
 } DebuggerTlsData;
 
 /* 
@@ -854,8 +862,10 @@ mono_debugger_agent_init (void)
 	 */
 	mini_get_debug_options ()->mdb_optimizations = TRUE;
 
+#ifndef MONO_ARCH_HAVE_CONTEXT_SET_INT_REG
 	/* This is needed because we can't set local variables in registers yet */
 	mono_disable_optimizations (MONO_OPT_LINEARS);
+#endif
 
 	if (!agent_config.onuncaught && !agent_config.onthrow)
 		finish_agent_init (TRUE);
@@ -2686,6 +2696,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	frame->actual_method = actual_method;
 	frame->il_offset = info->il_offset;
 	frame->native_offset = info->native_offset;
+	memcpy (frame->reg_locations, info->reg_locations, MONO_MAX_IREGS * sizeof (mgreg_t*));
 	if (ctx) {
 		frame->ctx = *ctx;
 		frame->has_ctx = TRUE;
@@ -2723,6 +2734,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 	GSList *tmp;
 	int i, findex, new_frame_count;
 	StackFrame **new_frames, *f;
+	MonoUnwindOptions opts = MONO_UNWIND_DEFAULT|MONO_UNWIND_REG_LOCATIONS;
 
 	// FIXME: Locking on tls
 	if (tls->frames && tls->frames_up_to_date)
@@ -2738,7 +2750,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 	} if (!tls->really_suspended && tls->async_state.valid) {
 		/* Have to use the state saved by the signal handler */
 		process_frame (&tls->async_last_frame, NULL, &user_data);
-		mono_walk_stack_with_state (process_frame, &tls->async_state, MONO_UNWIND_DEFAULT, &user_data);
+		mono_walk_stack_with_state (process_frame, &tls->async_state, opts, &user_data);
 	} else if (tls->filter_state.valid) {
 		/*
 		 * We are inside an exception filter.
@@ -2746,13 +2758,13 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 		 * First we add all the frames from inside the filter; 'tls->ctx' has the current context.
 		 */
 		if (tls->context.valid)
-			mono_walk_stack_with_state (process_filter_frame, &tls->context, MONO_UNWIND_DEFAULT, &user_data);
+			mono_walk_stack_with_state (process_filter_frame, &tls->context, opts, &user_data);
 		/*
 		 * After that, we resume unwinding from the location where the exception has been thrown.
 		 */
-		mono_walk_stack_with_state (process_frame, &tls->filter_state, MONO_UNWIND_DEFAULT, &user_data);
+		mono_walk_stack_with_state (process_frame, &tls->filter_state, opts, &user_data);
 	} else if (tls->context.valid) {
-		mono_walk_stack_with_state (process_frame, &tls->context, MONO_UNWIND_DEFAULT, &user_data);
+		mono_walk_stack_with_state (process_frame, &tls->context, opts, &user_data);
 	} else {
 		// FIXME:
 		tls->frame_count = 0;
@@ -3774,7 +3786,7 @@ breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 }
 
 static void
-process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
+process_breakpoint_inner (DebuggerTlsData *tls)
 {
 	MonoJitInfo *ji;
 	guint8 *orig_ip, *ip;
@@ -3785,6 +3797,7 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	GPtrArray *bp_reqs, *ss_reqs_orig, *ss_reqs;
 	GSList *bp_events = NULL, *ss_events = NULL, *enter_leave_events = NULL;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
+	MonoContext *ctx = &tls->restore_ctx;
 
 	// FIXME: Speed this up
 
@@ -3928,24 +3941,35 @@ process_breakpoint_inner (DebuggerTlsData *tls, MonoContext *ctx)
 		process_event (kind, ji->method, 0, ctx, enter_leave_events, suspend_policy);
 }
 
+/* Process a breakpoint/single step event after resuming from a signal handler */
 static void
-process_breakpoint (void)
+process_signal_event (void (*func) (DebuggerTlsData*))
 {
 	DebuggerTlsData *tls;
-	MonoContext ctx;
+	MonoContext orig_restore_ctx, ctx;
 	static void (*restore_context) (void *);
 
 	if (!restore_context)
 		restore_context = mono_get_restore_context ();
 
 	tls = TlsGetValue (debugger_tls_id);
-	memcpy (&ctx, &tls->handler_ctx, sizeof (MonoContext));
+	/* Have to save/restore the restore_ctx as we can be called recursively during invokes etc. */
+	memcpy (&orig_restore_ctx, &tls->restore_ctx, sizeof (MonoContext));
+	memcpy (&tls->restore_ctx, &tls->handler_ctx, sizeof (MonoContext));
 
-	process_breakpoint_inner (tls, &ctx);
+	func (tls);
 
 	/* This is called when resuming from a signal handler, so it shouldn't return */
+	memcpy (&ctx, &tls->restore_ctx, sizeof (MonoContext));
+	memcpy (&tls->restore_ctx, &orig_restore_ctx, sizeof (MonoContext));
 	restore_context (&ctx);
 	g_assert_not_reached ();
+}
+
+static void
+process_breakpoint (void)
+{
+	process_signal_event (process_breakpoint_inner);
 }
 
 static void
@@ -4006,7 +4030,7 @@ ss_depth_to_string (StepDepth depth)
 }
 
 static void
-process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
+process_single_step_inner (DebuggerTlsData *tls)
 {
 	MonoJitInfo *ji;
 	guint8 *ip;
@@ -4014,6 +4038,7 @@ process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 	int il_offset, suspend_policy;
 	MonoDomain *domain;
 	GSList *events;
+	MonoContext *ctx = &tls->restore_ctx;
 
 	// FIXME: Speed this up
 
@@ -4142,21 +4167,7 @@ process_single_step_inner (DebuggerTlsData *tls, MonoContext *ctx)
 static void
 process_single_step (void)
 {
-	DebuggerTlsData *tls;
-	MonoContext ctx;
-	static void (*restore_context) (void *);
-
-	if (!restore_context)
-		restore_context = mono_get_restore_context ();
-
-	tls = TlsGetValue (debugger_tls_id);
-	memcpy (&ctx, &tls->handler_ctx, sizeof (MonoContext));
-
-	process_single_step_inner (tls, &ctx);
-
-	/* This is called when resuming from a signal handler, so it shouldn't return */
-	restore_context (&ctx);
-	g_assert_not_reached ();
+	process_signal_event (process_single_step_inner);
 }
 
 /*
@@ -4916,7 +4927,7 @@ add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, Mono
 }
 
 static void
-set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domain, guint8 *val)
+set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domain, guint8 *val, mgreg_t **reg_locations, MonoContext *restore_ctx)
 {
 	guint32 flags;
 	int reg, size;
@@ -4931,10 +4942,50 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 		size = mono_class_value_size (mono_class_from_mono_type (t), NULL);
 
 	switch (flags) {
-	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER: {
+#ifdef MONO_ARCH_HAVE_CONTEXT_SET_INT_REG
+		mgreg_t v;
+		gboolean is_signed = FALSE;
+
+		if (!t->byref && (t->type == MONO_TYPE_I1 || t->type == MONO_TYPE_I2 || t->type == MONO_TYPE_I4 || t->type == MONO_TYPE_I8))
+			is_signed = TRUE;
+
+		switch (size) {
+		case 1:
+			v = is_signed ? *(gint8*)val : *(guint8*)val;
+			break;
+		case 2:
+			v = is_signed ? *(gint16*)val : *(guint16*)val;
+			break;
+		case 4:
+			v = is_signed ? *(gint32*)val : *(guint32*)val;
+			break;
+		case 8:
+			v = is_signed ? *(gint64*)val : *(guint64*)val;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		/* Set value on the stack or in the return ctx */
+		if (reg_locations [reg]) {
+			/* Saved on the stack */
+			DEBUG (1, fprintf (log_file, "[dbg] Setting stack location %p for reg %x to %p.\n", reg_locations [reg], reg, (gpointer)v));
+			*(reg_locations [reg]) = v;
+		} else {
+			/* Not saved yet */
+			DEBUG (1, fprintf (log_file, "[dbg] Setting context location for reg %x to %p.\n", reg, (gpointer)v));
+			mono_arch_context_set_int_reg (restore_ctx, reg, v);
+		}			
+
+		// FIXME: Move these to mono-context.h/c.
+		mono_arch_context_set_int_reg (ctx, reg, v);
+#else
 		// FIXME: Can't set registers, so we disable linears
 		NOT_IMPLEMENTED;
+#endif
 		break;
+	}
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 		addr = mono_arch_context_get_int_reg (ctx, reg);
 		addr += (gint32)var->offset;
@@ -6750,7 +6801,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	int err;
 	MonoThread *thread_obj;
 	MonoInternalThread *thread;
-	int pos, i, len;
+	int pos, i, len, frame_idx;
 	DebuggerTlsData *tls;
 	StackFrame *frame;
 	MonoDebugMethodJitInfo *jit;
@@ -6780,7 +6831,8 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (i == tls->frame_count)
 		return ERR_INVALID_FRAMEID;
 
-	frame = tls->frames [i];
+	frame_idx = i;
+	frame = tls->frames [frame_idx];
 
 	if (!frame->has_ctx)
 		// FIXME:
@@ -6874,7 +6926,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (err)
 				return err;
 
-			set_var (t, var, &frame->ctx, frame->domain, val_buf);
+			set_var (t, var, &frame->ctx, frame->domain, val_buf, frame->reg_locations, &tls->restore_ctx);
 		}
 		mono_metadata_free_mh (header);
 		break;
