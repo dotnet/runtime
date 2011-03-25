@@ -729,10 +729,13 @@ mono_walk_stack (MonoJitStackWalk func, MonoUnwindOptions options, void *user_da
 static void
 mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain *domain, MonoJitTlsData *jit_tls, MonoLMF *lmf, MonoUnwindOptions unwind_options, gpointer user_data)
 {
-	gint il_offset;
+	gint il_offset, i;
 	MonoContext ctx, new_ctx;
 	StackFrameInfo frame;
 	gboolean res;
+	mgreg_t *reg_locations [MONO_MAX_IREGS];
+	mgreg_t *new_reg_locations [MONO_MAX_IREGS];
+	gboolean get_reg_locations = unwind_options & MONO_UNWIND_REG_LOCATIONS;
 
 	g_assert (start_ctx);
 	g_assert (domain);
@@ -741,10 +744,11 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
  	/* g_assert (lmf); */
 
 	memcpy (&ctx, start_ctx, sizeof (MonoContext));
+	memset (reg_locations, 0, sizeof (reg_locations));
 
 	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		frame.lmf = lmf;
-		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, NULL, &frame);
+		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, get_reg_locations ? new_reg_locations : NULL, &frame);
 		if (!res)
 			return;
 
@@ -765,8 +769,17 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 			frame.actual_method = frame.method;
 		}
 
+		if (get_reg_locations)
+			frame.reg_locations = reg_locations;
+
 		if (func (&frame, &ctx, user_data))
 			return;
+
+		if (get_reg_locations) {
+			for (i = 0; i < MONO_MAX_IREGS; ++i)
+				if (new_reg_locations [i])
+					reg_locations [i] = new_reg_locations [i];
+		}
 		
 		ctx = new_ctx;
 	}
