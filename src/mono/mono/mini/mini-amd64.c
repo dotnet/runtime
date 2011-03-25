@@ -8331,7 +8331,7 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	return ins;
 }
 
-#define _CTX_REG(ctx,fld,i) ((gpointer)((&ctx->fld)[i]))
+#define _CTX_REG(ctx,fld,i) ((&ctx->fld)[i])
 
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
@@ -8344,9 +8344,38 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	case AMD64_RSP: return (gpointer)ctx->rsp;
 	default:
 		if (reg < 8)
-			return _CTX_REG (ctx, rax, reg);
+			return (gpointer)_CTX_REG (ctx, rax, reg);
 		else if (reg >= 12)
-			return _CTX_REG (ctx, r12, reg - 12);
+			return (gpointer)_CTX_REG (ctx, r12, reg - 12);
+		else
+			g_assert_not_reached ();
+	}
+}
+
+void
+mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
+{
+	switch (reg) {
+	case AMD64_RCX:
+		ctx->rcx = val;
+		break;
+	case AMD64_RDX: 
+		ctx->rdx = val;
+		break;
+	case AMD64_RBX:
+		ctx->rbx = val;
+		break;
+	case AMD64_RBP:
+		ctx->rbp = val;
+		break;
+	case AMD64_RSP:
+		ctx->rsp = val;
+		break;
+	default:
+		if (reg < 8)
+			_CTX_REG (ctx, rax, reg) = val;
+		else if (reg >= 12)
+			_CTX_REG (ctx, r12, reg - 12) = val;
 		else
 			g_assert_not_reached ();
 	}
