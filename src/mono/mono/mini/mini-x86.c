@@ -6110,6 +6110,39 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	}
 }
 
+void
+mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
+{
+	switch (reg) {
+	case X86_EAX:
+		ctx->eax = val;
+		break;
+	case X86_EBX:
+		ctx->ebx = val;
+		break;
+	case X86_ECX:
+		ctx->ecx = val;
+		break;
+	case X86_EDX:
+		ctx->edx = val;
+		break;
+	case X86_ESP:
+		ctx->esp = val;
+		break;
+	case X86_EBP:
+		ctx->ebp = val;
+		break;
+	case X86_ESI:
+		ctx->esi = val;
+		break;
+	case X86_EDI:
+		ctx->edi = val;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 
 static MonoInst*
