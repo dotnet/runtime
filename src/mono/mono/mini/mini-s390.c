@@ -5277,7 +5277,7 @@ mono_arch_get_patch_offset (guint8 *code)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-gpointer
+mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	/* FIXME: implement */

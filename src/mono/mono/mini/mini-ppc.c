@@ -5803,15 +5803,15 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	return ins;
 }
 
-gpointer
+mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	if (reg == ppc_r1)
-		return MONO_CONTEXT_GET_SP (ctx);
+		return (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 
 	g_assert (reg >= ppc_r13);
 
-	return (gpointer)(gsize)ctx->regs [reg - ppc_r13];
+	return ctx->regs [reg - ppc_r13];
 }
 
 guint32

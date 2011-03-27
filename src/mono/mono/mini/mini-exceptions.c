@@ -432,7 +432,7 @@ get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 		return NULL;
 
 	if (gi->this_in_reg)
-		info = mono_arch_context_get_int_reg (ctx, gi->this_reg);
+		info = (gpointer)mono_arch_context_get_int_reg (ctx, gi->this_reg);
 	else
 		info = *(gpointer*)(gpointer)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
 									  gi->this_offset);

@@ -4432,7 +4432,7 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	return NULL;
 }
 
-gpointer
+mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	/* FIXME: implement */

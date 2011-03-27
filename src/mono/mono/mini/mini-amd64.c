@@ -8333,20 +8333,20 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 
 #define _CTX_REG(ctx,fld,i) ((&ctx->fld)[i])
 
-gpointer
+mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	switch (reg) {
-	case AMD64_RCX: return (gpointer)ctx->rcx;
-	case AMD64_RDX: return (gpointer)ctx->rdx;
-	case AMD64_RBX: return (gpointer)ctx->rbx;
-	case AMD64_RBP: return (gpointer)ctx->rbp;
-	case AMD64_RSP: return (gpointer)ctx->rsp;
+	case AMD64_RCX: return ctx->rcx;
+	case AMD64_RDX: return ctx->rdx;
+	case AMD64_RBX: return ctx->rbx;
+	case AMD64_RBP: return ctx->rbp;
+	case AMD64_RSP: return ctx->rsp;
 	default:
 		if (reg < 8)
-			return (gpointer)_CTX_REG (ctx, rax, reg);
+			return _CTX_REG (ctx, rax, reg);
 		else if (reg >= 12)
-			return (gpointer)_CTX_REG (ctx, r12, reg - 12);
+			return _CTX_REG (ctx, r12, reg - 12);
 		else
 			g_assert_not_reached ();
 	}

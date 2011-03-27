@@ -5672,13 +5672,13 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 
 #endif
 
-gpointer
+mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	if (reg == ARMREG_SP)
-		return (gpointer)ctx->esp;
+		return ctx->esp;
 	else
-		return (gpointer)ctx->regs [reg];
+		return ctx->regs [reg];
 }
 
 void

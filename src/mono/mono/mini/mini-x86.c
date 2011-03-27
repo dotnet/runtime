@@ -6094,18 +6094,18 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	return start;
 }
 
-gpointer
+mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	switch (reg) {
-	case X86_EAX: return (gpointer)ctx->eax;
-	case X86_EBX: return (gpointer)ctx->ebx;
-	case X86_ECX: return (gpointer)ctx->ecx;
-	case X86_EDX: return (gpointer)ctx->edx;
-	case X86_ESP: return (gpointer)ctx->esp;
-	case X86_EBP: return (gpointer)ctx->ebp;
-	case X86_ESI: return (gpointer)ctx->esi;
-	case X86_EDI: return (gpointer)ctx->edi;
+	case X86_EAX: return ctx->eax;
+	case X86_EBX: return ctx->ebx;
+	case X86_ECX: return ctx->ecx;
+	case X86_EDX: return ctx->edx;
+	case X86_ESP: return ctx->esp;
+	case X86_EBP: return ctx->ebp;
+	case X86_ESI: return ctx->esi;
+	case X86_EDI: return ctx->edi;
 	default: g_assert_not_reached ();
 	}
 }

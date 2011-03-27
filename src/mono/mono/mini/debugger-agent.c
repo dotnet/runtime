@@ -4899,7 +4899,7 @@ add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, Mono
 	guint32 flags;
 	int reg;
 	guint8 *addr;
-	gpointer reg_val;
+	mgreg_t reg_val;
 
 	flags = var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 	reg = var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
@@ -4911,7 +4911,7 @@ add_var (Buffer *buf, MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, Mono
 		buffer_add_value_full (buf, t, &reg_val, domain, as_vtype);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
-		addr = mono_arch_context_get_int_reg (ctx, reg);
+		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
 		addr += (gint32)var->offset;
 
 		//printf ("[R%d+%d] = %p\n", reg, var->offset, addr);
@@ -4987,7 +4987,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 		break;
 	}
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
-		addr = mono_arch_context_get_int_reg (ctx, reg);
+		addr = (gpointer)mono_arch_context_get_int_reg (ctx, reg);
 		addr += (gint32)var->offset;
 
 		//printf ("[R%d+%d] = %p\n", reg, var->offset, addr);
