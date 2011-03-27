@@ -5681,6 +5681,15 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 		return (gpointer)ctx->regs [reg];
 }
 
+void
+mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
+{
+	if (reg == ARMREG_SP)
+		ctx->esp = val;
+	else
+		ctx->regs [reg] = val;
+}
+
 /*
  * mono_arch_get_trampolines:
  *
