@@ -547,10 +547,6 @@ struct _MonoGenericClass {
  */
 struct _MonoDynamicGenericClass {
 	MonoGenericClass generic_class;
-	int count_methods;
-	MonoMethod **methods;
-	int count_ctors;
-	MonoMethod **ctors;
 	int count_fields;
 	MonoClassField *fields;
 	guint initialized;

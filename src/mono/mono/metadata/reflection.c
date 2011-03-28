@@ -10618,27 +10618,11 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	gklass = gclass->container_class;
 	mono_class_init (gklass);
 
-	dgclass->count_methods = methods ? mono_array_length (methods) : 0;
-	dgclass->count_ctors = ctors ? mono_array_length (ctors) : 0;
 	dgclass->count_fields = fields ? mono_array_length (fields) : 0;
 
-	dgclass->methods = mono_image_set_new0 (gclass->owner, MonoMethod *, dgclass->count_methods);
-	dgclass->ctors = mono_image_set_new0 (gclass->owner, MonoMethod *, dgclass->count_ctors);
 	dgclass->fields = mono_image_set_new0 (gclass->owner, MonoClassField, dgclass->count_fields);
 	dgclass->field_objects = mono_image_set_new0 (gclass->owner, MonoObject*, dgclass->count_fields);
 	dgclass->field_generic_types = mono_image_set_new0 (gclass->owner, MonoType*, dgclass->count_fields);
-
-	for (i = 0; i < dgclass->count_methods; i++) {
-		MonoObject *obj = mono_array_get (methods, gpointer, i);
-
-		dgclass->methods [i] = inflate_method ((MonoReflectionType*)type, obj);
-	}
-
-	for (i = 0; i < dgclass->count_ctors; i++) {
-		MonoObject *obj = mono_array_get (ctors, gpointer, i);
-
-		dgclass->ctors [i] = inflate_method ((MonoReflectionType*)type, obj);
-	}
 
 	for (i = 0; i < dgclass->count_fields; i++) {
 		MonoObject *obj = mono_array_get (fields, gpointer, i);
