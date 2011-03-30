@@ -5689,16 +5689,14 @@ mono_arch_get_patch_offset (guint8 *code)
 /*                                                                  */
 /* Function	- 						    */
 /*		                               			    */
-/* Returns	- Offset for patch.				    */
+/* Returns	- Return a register from the context.		    */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
 mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	/* FIXME: implement */
-	g_assert_not_reached ();
-	return NULL;
+	return ((mgreg_t) ctx->uc_mcontext.gregs[reg]);
 }
 
 /*========================= End of Function ========================*/
