@@ -6840,6 +6840,9 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 	klass = mono_class_from_mono_type (type->type);
 	mono_class_init_or_throw (klass);
 
+	if (MONO_CLASS_IS_INTERFACE (klass) || (klass->flags & TYPE_ATTRIBUTE_ABSTRACT))
+		mono_raise_exception (mono_get_exception_argument ("type", "Type cannot be instantiated"));
+
 	if (klass->rank >= 1) {
 		g_assert (klass->rank == 1);
 		return (MonoObject *) mono_array_new (domain, klass->element_class, 0);
