@@ -76,7 +76,7 @@ mono_sgen_thread_handshake (int signum)
 			mono_mach_arch_thread_state_to_mcontext (state, mctx);
 			ctx.uc_mcontext = mctx;
 
-			info->stopped_domain = mono_mach_arch_get_tls_value_from_thread ((pthread_t)info->id, mono_pthread_key_for_tls (mono_domain_get_tls_key ()));
+			info->stopped_domain = mono_mach_arch_get_tls_value_from_thread ((pthread_t)info->id, mono_domain_get_tls_offset ());
 			info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
 			stack_start = (char*) mono_mach_arch_get_sp (state) - REDZONE_SIZE;
 			/* If stack_start is not within the limits, then don't set it in info and we will be restarted. */
