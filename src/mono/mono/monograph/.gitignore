@@ -5,4 +5,5 @@
 /monograph
 /*.o
 /*.lo
+/*.exe
 /TAGS
