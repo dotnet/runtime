@@ -2888,7 +2888,7 @@ mono_sigchld_signal_handler (int _dummy, siginfo_t *info, void *context)
 	struct MonoProcess *p;
 
 #if DEBUG	
-	fprintf (stdout, "SIG CHILD handler for pid: %i counter: %i\n", info->si_pid, counter);
+	fprintf (stdout, "SIG CHILD handler for pid: %i\n", info->si_pid);
 #endif
 
 	InterlockedIncrement (&mono_processes_read_lock);
