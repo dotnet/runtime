@@ -1099,7 +1099,7 @@ set_domain_search_path (MonoDomain *domain)
 	if (setup->private_bin_path) {
 		search_path = mono_string_to_utf8_checked (setup->private_bin_path, &error);
 		if (!mono_error_ok (&error)) { /*FIXME maybe we should bubble up the error.*/
-			g_warning ("Could not decode AppDomain search path since it contains invalid caracters");
+			g_warning ("Could not decode AppDomain search path since it contains invalid characters");
 			mono_error_cleanup (&error);
 			mono_domain_assemblies_unlock (domain);
 			return;
