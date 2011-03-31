@@ -81,8 +81,11 @@ mono_path_canonicalize (const char *path)
 		pos = strchr (lastpos, G_DIR_SEPARATOR);
 	}
 
-#ifdef HOST_WIN32 /* For UNC paths the first '\' is removed. */
-	if (*(lastpos-1) == G_DIR_SEPARATOR && *(lastpos-2) == G_DIR_SEPARATOR)
+#ifdef HOST_WIN32
+	/* Avoid removing the first '\' for UNC paths. We must make sure that it's indeed an UNC path
+	by checking if the \\ pair happens exactly at the end of the string.
+	*/
+	if (*(lastpos-1) == G_DIR_SEPARATOR && *(lastpos-2) == G_DIR_SEPARATOR && *lastpos == 0)
 		lastpos = lastpos-1;
 #endif
 	
