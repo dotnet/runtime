@@ -243,13 +243,50 @@ RESULT ptrarray_sort()
 
 	for(i = 0; i < array->len; i++) {
 		if(array->pdata[i] != letters[i]) {
-			return FAILED("Array out of order, expected %s got %s", 
-				(gchar *)array->pdata[i], letters[i]);
+			return FAILED("Array out of order, expected %s got %s at position %d",
+				letters [i], (gchar *) array->pdata [i], i);
 		}
 	}
 
 	g_ptr_array_free(array, TRUE);
 	
+	return OK;
+}
+
+static gint ptrarray_sort_compare_with_data (gconstpointer a, gconstpointer b, gpointer user_data)
+{
+	gchar *stra = *(gchar **) a;
+	gchar *strb = *(gchar **) b;
+
+	if (strcmp (user_data, "this is the data for qsort") != 0)
+		fprintf (stderr, "oops at compare with_data\n");
+
+	return strcmp(stra, strb);
+}
+
+RESULT ptrarray_sort_with_data ()
+{
+	GPtrArray *array = g_ptr_array_new();
+	guint i;
+	gchar *letters [] = { "A", "B", "C", "D", "E" };
+
+	g_ptr_array_add(array, letters[4]);
+	g_ptr_array_add(array, letters[1]);
+	g_ptr_array_add(array, letters[2]);
+	g_ptr_array_add(array, letters[0]);
+	g_ptr_array_add(array, letters[3]);
+
+	g_ptr_array_sort_with_data(array, ptrarray_sort_compare_with_data, "this is the data for qsort");
+
+	for(i = 0; i < array->len; i++) {
+		if(array->pdata[i] != letters[i]) {
+			return FAILED("Array out of order, expected %s got %s at position %d",
+				letters [i], (gchar *) array->pdata [i], i);
+		}
+	}
+
+	g_ptr_array_free(array, TRUE);
+
 	return OK;
 }
 
@@ -303,6 +340,7 @@ static Test ptrarray_tests [] = {
 	{"remove", ptrarray_remove},
 	{"sort", ptrarray_sort},
 	{"remove_fast", ptrarray_remove_fast},
+	{"sort_with_data", ptrarray_sort_with_data},
 	{NULL, NULL}
 };
 

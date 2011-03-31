@@ -3,8 +3,9 @@
  *
  * Author:
  *   Aaron Bockover (abockover@novell.com)
+ *   Gonzalo Paniagua Javier (gonzalo@novell.com)
  *
- * (C) 2006 Novell, Inc.
+ * (C) 2006,2011 Novell, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -215,11 +216,45 @@ g_ptr_array_sort(GPtrArray *array, GCompareFunc compare_func)
 	qsort(array->pdata, array->len, sizeof(gpointer), compare_func);
 }
 
-void
-g_ptr_array_sort_with_data(GPtrArray *array, GCompareDataFunc compare_func, 
-	gpointer user_data)
+#define PTR_ADDR(n) (&g_ptr_array_index (array, n))
+#define SWAP_PTR(l,r) do { \
+		gpointer ptr; \
+		if (l != r) { \
+			ptr = array->pdata [l]; \
+			array->pdata [l] = array->pdata [r]; \
+			array->pdata [r] = ptr; \
+		} \
+	} while (0)
+
+static void
+qsort_with_data (GPtrArray *array, gint left, gint right, GCompareDataFunc compare_func, gpointer user_data)
 {
+	gint l = left + 1;
+	gint r = right;
+	if (right <= left + 1)
+		return;
+
+	while (l < r) {
+		if (compare_func (PTR_ADDR (l), PTR_ADDR (left), user_data) <= 0) {
+			l++;
+		} else {
+			r--;
+			SWAP_PTR (l, r);
+		}
+	}
+	l--;
+	SWAP_PTR (l, left);
+	qsort_with_data (array, left, l, compare_func, user_data);
+	qsort_with_data (array, r, right, compare_func, user_data);
 }
+#undef PTR_ADDR
+#undef SWAP_PTR
 
-
+void
+g_ptr_array_sort_with_data(GPtrArray *array, GCompareDataFunc compare_func, gpointer user_data)
+{
+	g_return_if_fail (array != NULL);
+	g_return_if_fail (compare_func != NULL);
+	qsort_with_data (array, 0, array->len, compare_func, user_data);
+}
 
