@@ -1287,6 +1287,7 @@ static int gc_resizes;
 typedef struct {
 	uint64_t created;
 	uint64_t destroyed;
+	uint64_t live;
 	uint64_t max_live;
 	TraceDesc traces;
 } HandleInfo;
@@ -1582,10 +1583,11 @@ decode_buffer (ProfContext *ctx)
 				if (htype > 3)
 					return 0;
 				handle_info [htype].created++;
+				handle_info [htype].live++;
 				add_trace_thread (thread, &handle_info [htype].traces, 1);
 				/* FIXME: we don't take into account timing here */
-				if (handle_info [htype].created > handle_info [htype].max_live)
-					handle_info [htype].max_live = handle_info [htype].created;
+				if (handle_info [htype].live > handle_info [htype].max_live)
+					handle_info [htype].max_live = handle_info [htype].live;
 				if (num_tracked_objects)
 					track_handle (OBJ_ADDR (objdiff), htype, handle);
 				if (debug)
@@ -1595,7 +1597,8 @@ decode_buffer (ProfContext *ctx)
 				uint32_t handle = decode_uleb128 (p, &p);
 				if (htype > 3)
 					return 0;
-				handle_info [htype].created--;
+				handle_info [htype].destroyed ++;
+				handle_info [htype].live--;
 				if (debug)
 					fprintf (outfile, "handle (%s) %u destroyed\n", get_handle_name (htype), handle);
 			}
