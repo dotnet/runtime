@@ -4,6 +4,7 @@
  * Author:
  *   Aaron Bockover (abockover@novell.com)
  *   Gonzalo Paniagua Javier (gonzalo@novell.com)
+ *   Jeffrey Stedfast (fejj@novell.com)
  *
  * (C) 2006,2011 Novell, Inc.
  *
@@ -58,7 +59,7 @@ g_ptr_array_grow(GPtrArrayPriv *array, guint length)
 }
 
 GPtrArray *
-g_ptr_array_new()
+g_ptr_array_new(void)
 {
 	return g_ptr_array_sized_new(0);
 }
@@ -210,51 +211,103 @@ g_ptr_array_foreach(GPtrArray *array, GFunc func, gpointer user_data)
 }
 
 void
-g_ptr_array_sort(GPtrArray *array, GCompareFunc compare_func)
+g_ptr_array_sort(GPtrArray *array, GCompareFunc compare)
 {
 	g_return_if_fail(array != NULL);
-	qsort(array->pdata, array->len, sizeof(gpointer), compare_func);
+	qsort(array->pdata, array->len, sizeof(gpointer), compare);
 }
-
-#define PTR_ADDR(n) (&g_ptr_array_index (array, n))
-#define SWAP_PTR(l,r) do { \
-		gpointer ptr; \
-		if (l != r) { \
-			ptr = array->pdata [l]; \
-			array->pdata [l] = array->pdata [r]; \
-			array->pdata [r] = ptr; \
-		} \
-	} while (0)
 
 static void
-qsort_with_data (GPtrArray *array, gint left, gint right, GCompareDataFunc compare_func, gpointer user_data)
+g_qsort_swap (char *a, char *b, size_t n)
 {
-	gint l = left + 1;
-	gint r = right;
-	if (right <= left + 1)
-		return;
-
-	while (l < r) {
-		if (compare_func (PTR_ADDR (l), PTR_ADDR (left), user_data) <= 0) {
-			l++;
-		} else {
-			r--;
-			SWAP_PTR (l, r);
-		}
-	}
-	l--;
-	SWAP_PTR (l, left);
-	qsort_with_data (array, left, l, compare_func, user_data);
-	qsort_with_data (array, r, right, compare_func, user_data);
+	char *an = a + n;
+	char tmp;
+	
+	do {
+		tmp = *a;
+		*a++ = *b;
+		*b++ = tmp;
+	} while (a < an);
 }
-#undef PTR_ADDR
-#undef SWAP_PTR
+
+static char *
+g_qsort_median (char *a, char *b, char *c, GCompareDataFunc compare, gpointer user_data)
+{
+	if (compare (a, b, user_data) < 0) {
+		/* a < b < c */
+		if (compare (b, c, user_data) < 0)
+			return b;
+		
+		/* a < c < b */
+		if (compare (a, c, user_data) < 0)
+			return c;
+		
+		/* c < a < b */
+		return a;
+	} else {
+		/* b < a < c */
+		if (compare (a, c, user_data) < 0)
+			return a;
+		
+		/* b < c < a */
+		if (compare (b, c, user_data) < 0)
+			return c;
+		
+		/* c < b < a */
+		return b;
+	}
+}
 
 void
-g_ptr_array_sort_with_data(GPtrArray *array, GCompareDataFunc compare_func, gpointer user_data)
+g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc compare, gpointer user_data)
+{
+	char *middle = ((char *) base) + (nmemb / 2) * size;
+	char *last = ((char *) base) + (nmemb - 1) * size;
+	char *first = (char *) base;
+	register char *i = first + size;
+	register char *k = last;
+	register char *pivot;
+	
+	if (nmemb <= 1)
+		return;
+	
+	/* determine which element contains the median value */
+	pivot = g_qsort_median (first, middle, last, compare, user_data);
+	
+	/* swap pivot value into first element (so the location stays constant) */
+	g_qsort_swap (first, pivot, size);
+	pivot = first;
+	
+	do {
+		/* find the first element with a value > pivot value */
+		while (compare (i, pivot, user_data) <= 0 && i < last && i < k)
+			i += size;
+		
+		/* find the last element with a value <= pivot value */
+		while (compare (k, pivot, user_data) > 0 && k > first && k >= i)
+			k -= size;
+		
+		if (k <= i)
+			break;
+		
+		g_qsort_swap (i, k, size);
+	} while (1);
+	
+	/* swap the pivot with the last element in the first partition */
+	g_qsort_swap (pivot, k, size);
+	
+	/* sort the first partition */
+	g_qsort_with_data (first, (k - first) / size, size, compare, user_data);
+	
+	/* sort the second partition */
+	g_qsort_with_data (k + size, (last - k) / size, size, compare, user_data);
+}
+
+void
+g_ptr_array_sort_with_data (GPtrArray *array, GCompareDataFunc compare, gpointer user_data)
 {
 	g_return_if_fail (array != NULL);
-	g_return_if_fail (compare_func != NULL);
-	qsort_with_data (array, 0, array->len, compare_func, user_data);
+	
+	g_qsort_with_data (array->pdata, array->len, sizeof (gpointer), compare, user_data);
 }
 
