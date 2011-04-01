@@ -494,6 +494,12 @@ GArray* g_array_remove_index_fast (GArray *array, guint index_);
 #define g_array_index(a,t,i)      *(t*)(((a)->data) + sizeof(t) * (i))
 
 /*
+ * QSort
+*/
+
+void g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc compare, gpointer user_data);
+
+/*
  * Pointer Array
  */
 
