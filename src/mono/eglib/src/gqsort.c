@@ -92,6 +92,9 @@ g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc co
 	char *mid, *lo, *hi;
 	size_t n, n1, n2;
 	
+	if (nmemb <= 1)
+		return;
+	
 	/* initialize our stack */
 	sp = stack;
 	QSORT_PUSH (sp, base, nmemb);
@@ -149,7 +152,7 @@ g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc co
 		n2 = (hi - k) / size;
 		n1 = (k - lo) / size;
 		
-		if (n1 == 1 || n2 == 1) {
+		if (n1 <= 1 || n2 <= 1) {
 			/* pathological case detected, switch to insertion sort */
 			for (i = lo + size; i <= hi; i += size)
 				for (k = i; k > lo && compare (k - size, k, user_data) > 0; k -= size)
