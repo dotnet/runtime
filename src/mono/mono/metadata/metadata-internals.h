@@ -278,6 +278,7 @@ struct _MonoImage {
 	GHashTable *cominterop_invoke_cache;
 	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
 	GHashTable *thunk_invoke_cache;
+	GHashTable *wrapper_param_names;
 
 	/*
 	 * indexed by MonoClass pointers

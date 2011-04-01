@@ -4496,6 +4496,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 	static MonoMethodSignature *cctor_signature = NULL;
 	static MonoMethodSignature *finalize_signature = NULL;
 	char *name;
+	const char *param_names [16];
 	gboolean need_direct_wrapper = FALSE;
 
 	g_assert (method);
@@ -4616,6 +4617,12 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 	name = mono_signature_to_name (callsig, virtual ? "runtime_invoke_virtual" : "runtime_invoke");
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
 	g_free (name);
+
+	param_names [0] = "this";
+	param_names [1] = "params";
+	param_names [2] = "exc";
+	param_names [3] = "method";
+	mono_mb_set_param_names (mb, param_names);
 
 	emit_runtime_invoke_body (mb, target_klass, method, sig, callsig, virtual, need_direct_wrapper);
 
@@ -9784,7 +9791,7 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 	MonoMethod *res;
 	int kind;
 	char *name;
-
+	const char *param_names [16];
 	guint32 b1, b2, b3;
 	int aklass, vklass, vtable, uiid;
 	int array_slot_addr;
@@ -9798,6 +9805,10 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 	name = g_strdup_printf ("virt_stelemref_%s", strelemref_wrapper_name [kind]);
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STELEMREF);
 	g_free (name);
+
+	param_names [0] = "index";
+	param_names [1] = "value";
+	mono_mb_set_param_names (mb, param_names);
 
 	if (!signature) {
 		MonoMethodSignature *sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);

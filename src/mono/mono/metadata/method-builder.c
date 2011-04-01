@@ -226,6 +226,18 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	printf ("%s\n", mono_disasm_code (&marshal_dh, method, mb->code, mb->code + mb->pos));
 #endif
 
+	if (mb->param_names) {
+		char **param_names = mono_image_alloc0 (image, signature->param_count * sizeof (gpointer));
+		for (i = 0; i < signature->param_count; ++i)
+			param_names [i] = mono_image_strdup (image, mb->param_names [i]);
+
+		mono_image_lock (image);
+		if (!image->wrapper_param_names)
+			image->wrapper_param_names = g_hash_table_new (NULL, NULL);
+		g_hash_table_insert (image->wrapper_param_names, method, param_names);
+		mono_image_unlock (image);
+	}
+
 	mono_loader_unlock ();
 	return method;
 }
@@ -530,4 +542,16 @@ mono_mb_set_clauses (MonoMethodBuilder *mb, int num_clauses, MonoExceptionClause
 {
 	mb->num_clauses = num_clauses;
 	mb->clauses = clauses;
+}
+
+/*
+ * mono_mb_set_param_names:
+ *
+ *   PARAM_NAMES should have length equal to the sig->param_count, the caller retains
+ * ownership of the array, and its entries.
+ */
+void
+mono_mb_set_param_names (MonoMethodBuilder *mb, const char **param_names)
+{
+	mb->param_names = param_names;
 }

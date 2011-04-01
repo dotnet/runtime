@@ -31,6 +31,7 @@ typedef struct _MonoMethodBuilder {
 	unsigned char *code;
 	int num_clauses;
 	MonoExceptionClause *clauses;
+	const char **param_names;
 } MonoMethodBuilder;
 
 MonoMethodBuilder *
@@ -140,6 +141,9 @@ mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str) MONO_INTERNAL;
 
 void
 mono_mb_set_clauses (MonoMethodBuilder *mb, int num_clauses, MonoExceptionClause *clauses) MONO_INTERNAL;
+
+void
+mono_mb_set_param_names (MonoMethodBuilder *mb, const char **param_names) MONO_INTERNAL;
 
 G_END_DECLS
 

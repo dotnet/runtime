@@ -1895,6 +1895,21 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		return;
 	}
 
+	if (method->wrapper_type) {
+		char **pnames = NULL;
+
+		mono_image_lock (klass->image);
+		if (klass->image->wrapper_param_names)
+			pnames = g_hash_table_lookup (klass->image->wrapper_param_names, method);
+		mono_image_unlock (klass->image);
+
+		if (pnames) {
+			for (i = 0; i < signature->param_count; ++i)
+				names [i] = pnames [i];
+		}
+		return;
+	}
+
 	methodt = &klass->image->tables [MONO_TABLE_METHOD];
 	paramt = &klass->image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
