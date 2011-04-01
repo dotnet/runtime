@@ -37,6 +37,12 @@
 #include "metadata/object-internals.h"
 
 #if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED
+gboolean
+mono_sgen_suspend_thread (SgenThreadInfo *info)
+{
+	return pthread_kill (info->id, suspend_signal_num) == 0;
+}
+
 int
 mono_sgen_thread_handshake (int signum)
 {

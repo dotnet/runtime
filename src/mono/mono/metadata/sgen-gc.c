@@ -5295,11 +5295,8 @@ restart_threads_until_none_in_managed_allocator (void)
 			gboolean result;
 			if (info->skip || info->stopped_ip == NULL)
 				continue;
-#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
 			result = mono_sgen_suspend_thread (info);
-#else
-			result = pthread_kill (info->id, suspend_signal_num) == 0;
-#endif
+
 			if (result) {
 				++restarted_count;
 			} else {
