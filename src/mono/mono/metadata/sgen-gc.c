@@ -5236,7 +5236,7 @@ static int
 restart_threads_until_none_in_managed_allocator (void)
 {
 	SgenThreadInfo *info;
-	int result, num_threads_died = 0;
+	int num_threads_died = 0;
 	int sleep_duration = -1;
 
 	for (;;) {
@@ -5244,17 +5244,19 @@ restart_threads_until_none_in_managed_allocator (void)
 		/* restart all threads that stopped in the
 		   allocator */
 		FOREACH_THREAD (info) {
+			gboolean result;
+
 			if (info->skip)
 				continue;
 			if (!info->stack_start || info->in_critical_region ||
 					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
 				binary_protocol_thread_restart ((gpointer)info->id);
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
-				result = thread_resume (pthread_mach_thread_np (info->id));
+				result = thread_resume (info->mach_port) == KERN_SUCCESS;
 #else
-				result = pthread_kill (info->id, restart_signal_num);
+				result = pthread_kill (info->id, restart_signal_num) == 0;
 #endif
-				if (result == 0) {
+				if (result) {
 					++restart_count;
 				} else {
 					info->skip = 1;
@@ -5290,14 +5292,15 @@ restart_threads_until_none_in_managed_allocator (void)
 
 		/* stop them again */
 		FOREACH_THREAD (info) {
+			gboolean result;
 			if (info->skip || info->stopped_ip == NULL)
 				continue;
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
-			result = thread_suspend (pthread_mach_thread_np (info->id));
+			result = mono_sgen_suspend_thread (info);
 #else
-			result = pthread_kill (info->id, suspend_signal_num);
+			result = pthread_kill (info->id, suspend_signal_num) == 0;
 #endif
-			if (result == 0) {
+			if (result) {
 				++restarted_count;
 			} else {
 				info->skip = 1;
