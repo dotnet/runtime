@@ -274,17 +274,19 @@ g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc co
 	/* determine which element contains the median value */
 	pivot = g_qsort_median (first, middle, last, compare, user_data);
 	
-	/* swap pivot value into first element (so the location stays constant) */
-	g_qsort_swap (first, pivot, size);
-	pivot = first;
+	if (pivot != first) {
+		/* swap pivot value into first element (so the location stays constant) */
+		g_qsort_swap (first, pivot, size);
+		pivot = first;
+	}
 	
 	do {
 		/* find the first element with a value > pivot value */
-		while (compare (i, pivot, user_data) <= 0 && i < last && i < k)
+		while (i < k && compare (i, pivot, user_data) <= 0)
 			i += size;
 		
 		/* find the last element with a value <= pivot value */
-		while (compare (k, pivot, user_data) > 0 && k > first && k >= i)
+		while (k>= i && compare (k, pivot, user_data) > 0)
 			k -= size;
 		
 		if (k <= i)
@@ -293,8 +295,10 @@ g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc co
 		g_qsort_swap (i, k, size);
 	} while (1);
 	
-	/* swap the pivot with the last element in the first partition */
-	g_qsort_swap (pivot, k, size);
+	if (k != pivot) {
+		/* swap the pivot with the last element in the first partition */
+		g_qsort_swap (pivot, k, size);
+	}
 	
 	/* sort the first partition */
 	g_qsort_with_data (first, (k - first) / size, size, compare, user_data);
