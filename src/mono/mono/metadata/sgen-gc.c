@@ -5221,6 +5221,9 @@ is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip);
 void
 mono_sgen_wait_for_suspend_ack (int count)
 {
+#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
+		/* mach thread_resume is synchronous so we dont need to wait for them */
+#else
 	int i, result;
 
 	for (i = 0; i < count; ++i) {
@@ -5230,6 +5233,7 @@ mono_sgen_wait_for_suspend_ack (int count)
 			}
 		}
 	}
+#endif
 }
 
 static int
@@ -5251,11 +5255,7 @@ restart_threads_until_none_in_managed_allocator (void)
 			if (!info->stack_start || info->in_critical_region ||
 					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip)) {
 				binary_protocol_thread_restart ((gpointer)info->id);
-#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
-				result = thread_resume (info->mach_port) == KERN_SUCCESS;
-#else
-				result = pthread_kill (info->id, restart_signal_num) == 0;
-#endif
+				result = mono_sgen_resume_thread (info);
 				if (result) {
 					++restart_count;
 				} else {
@@ -5275,12 +5275,8 @@ restart_threads_until_none_in_managed_allocator (void)
 		if (restart_count == 0)
 			break;
 
-#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
-		/* mach thread_resume is synchronous so we dont need to wait for them */
-#else
 		/* wait for the threads to signal their restart */
 		mono_sgen_wait_for_suspend_ack (restart_count);
-#endif
 
 		if (sleep_duration < 0) {
 			sched_yield ();
@@ -5305,13 +5301,9 @@ restart_threads_until_none_in_managed_allocator (void)
 		} END_FOREACH_THREAD
 		/* some threads might have died */
 		num_threads_died += restart_count - restarted_count;
-#if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
-		/* mach thread_resume is synchronous so we dont need to wait for them */
-#else
 		/* wait for the threads to signal their suspension
 		   again */
 		mono_sgen_wait_for_suspend_ack (restart_count);
-#endif
 	}
 
 	return num_threads_died;

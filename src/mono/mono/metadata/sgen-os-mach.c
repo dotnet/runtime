@@ -42,6 +42,12 @@
 
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
 gboolean
+mono_sgen_resume_thread (SgenThreadInfo *info)
+{
+	return thread_resume (info->mach_port) == KERN_SUCCESS;
+}
+
+gboolean
 mono_sgen_suspend_thread (SgenThreadInfo *info)
 {
 	mach_msg_type_number_t num_state;

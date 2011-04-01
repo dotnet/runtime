@@ -38,6 +38,12 @@
 
 #if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED
 gboolean
+mono_sgen_resume_thread (SgenThreadInfo *info)
+{
+	return pthread_kill (info->id, restart_signal_num) == 0;
+}
+
+gboolean
 mono_sgen_suspend_thread (SgenThreadInfo *info)
 {
 	return pthread_kill (info->id, suspend_signal_num) == 0;
