@@ -33,6 +33,8 @@
  * now... */
 #define MAX_THRESHOLD 7
 
+#define STACK_SIZE (8 * sizeof (size_t))
+
 typedef struct _QSortStack {
 	char *array;
 	size_t count;
@@ -85,8 +87,8 @@ g_qsort_median (char *a, char *b, char *c, GCompareDataFunc compare, gpointer us
 void
 g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc compare, gpointer user_data)
 {
+	QSortStack stack[STACK_SIZE], *sp;
 	register char *i, *k, *pivot;
-	QSortStack stack[32], *sp;
 	char *mid, *lo, *hi;
 	size_t n, n1, n2;
 	
