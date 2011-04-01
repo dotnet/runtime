@@ -34,6 +34,7 @@ libeglib_la_SOURCES = \
 	gmem.c       	\
 	gmodule.h	\
 	goutput.c    	\
+	gqsort.c	\
 	gstr.c       	\
 	gslist.c     	\
 	gstring.c    	\
