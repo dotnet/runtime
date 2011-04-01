@@ -40,63 +40,74 @@
 #include "utils/mach-support.h"
 #endif
 
-/* LOCKING: assumes the GC lock is held */
 #if defined(__MACH__) && MONO_MACH_ARCH_SUPPORTED
-int
-mono_sgen_thread_handshake (int signum)
+gboolean
+mono_sgen_suspend_thread (SgenThreadInfo *info)
 {
-	SgenThreadInfo *cur_thread = mono_sgen_thread_info_current ();
 	mach_msg_type_number_t num_state;
 	thread_state_t state;
 	kern_return_t ret;
 	ucontext_t ctx;
 	mcontext_t mctx;
 
-	SgenThreadInfo *info;
 	gpointer stack_start;
-
-	int count = 0;
 
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
+
+	ret = thread_suspend (info->mach_port);
+	if (ret != KERN_SUCCESS)
+		return FALSE;
+
+	ret = mono_mach_arch_get_thread_state (info->mach_port, state, &num_state);
+	if (ret != KERN_SUCCESS)
+		return FALSE;
+
+	mono_mach_arch_thread_state_to_mcontext (state, mctx);
+	ctx.uc_mcontext = mctx;
+
+	info->stopped_domain = mono_mach_arch_get_tls_value_from_thread ((pthread_t)info->id, mono_domain_get_tls_offset ());
+	info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
+	stack_start = (char*) mono_mach_arch_get_sp (state) - REDZONE_SIZE;
+	/* If stack_start is not within the limits, then don't set it in info and we will be restarted. */
+	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
+		info->stack_start = stack_start;
+
+#ifdef USE_MONO_CTX
+		mono_sigctx_to_monoctx (&ctx, &info->ctx);
+		info->monoctx = &info->ctx;
+#else
+		ARCH_COPY_SIGCTX_REGS (&info->regs, &ctx);
+		info->stopped_regs = &info->regs;
+#endif
+	} else {
+		g_assert (!info->stack_start);
+	}
+
+	/* Notify the JIT */
+	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
+		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx);
+	return TRUE;
+}
+
+/* LOCKING: assumes the GC lock is held */
+int
+mono_sgen_thread_handshake (int signum)
+{
+	SgenThreadInfo *cur_thread = mono_sgen_thread_info_current ();
+	kern_return_t ret;
+
+	SgenThreadInfo *info;
+
+	int count = 0;
 
 	FOREACH_THREAD (info) {
 		if (info == cur_thread || mono_sgen_is_worker_thread (info->id))
 			continue;
 
 		if (signum == suspend_signal_num) {
-			ret = thread_suspend (info->mach_port);
-			if (ret != KERN_SUCCESS)
+			if (!mono_sgen_suspend_thread (info))
 				continue;
-
-			ret = mono_mach_arch_get_thread_state (info->mach_port, state, &num_state);
-			if (ret != KERN_SUCCESS)
-				continue;
-
-			mono_mach_arch_thread_state_to_mcontext (state, mctx);
-			ctx.uc_mcontext = mctx;
-
-			info->stopped_domain = mono_mach_arch_get_tls_value_from_thread ((pthread_t)info->id, mono_domain_get_tls_offset ());
-			info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
-			stack_start = (char*) mono_mach_arch_get_sp (state) - REDZONE_SIZE;
-			/* If stack_start is not within the limits, then don't set it in info and we will be restarted. */
-			if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
-				info->stack_start = stack_start;
-
-#ifdef USE_MONO_CTX
-				mono_sigctx_to_monoctx (&ctx, &info->ctx);
-				info->monoctx = &info->ctx;
-#else
-				ARCH_COPY_SIGCTX_REGS (&info->regs, &ctx);
-				info->stopped_regs = &info->regs;
-#endif
-			} else {
-				g_assert (!info->stack_start);
-			}
-
-			/* Notify the JIT */
-			if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
-				mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx);
 		} else {
 			ret = thread_resume (info->mach_port);
 			if (ret != KERN_SUCCESS)
