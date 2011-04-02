@@ -7175,7 +7175,7 @@ mono_gc_make_root_descr_all_refs (int numbits)
 	if (numbits < 32 && all_ref_root_descrs [numbits])
 		return all_ref_root_descrs [numbits];
 
-	gc_bitmap = g_malloc0 (ALIGN_TO (numbits, 8) + 1);
+	gc_bitmap = g_malloc0 (ALIGN_TO (ALIGN_TO (numbits, 8) + 1, sizeof (gsize)));
 	memset (gc_bitmap, 0xff, num_bytes);
 	if (numbits < ((sizeof (*gc_bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) 
 		gc_bitmap[0] = GUINT64_TO_LE(gc_bitmap[0]);
