@@ -897,8 +897,9 @@ mono_type_to_expand_op (MonoType *type)
 		return OP_EXPAND_R4;
 	case MONO_TYPE_R8:
 		return OP_EXPAND_R8;
+	default:
+		g_assert_not_reached ();
 	}
-	g_assert_not_reached ();
 }
 
 static int
@@ -984,8 +985,9 @@ mono_type_to_extract_op (MonoType *type)
 	case MONO_TYPE_U4:
 	case MONO_TYPE_R4:
 		return OP_EXTRACT_I4;
+	default:
+		g_assert_not_reached ();
 	}
-	g_assert_not_reached ();
 }
 
 /*Returns the amount to shift the element index to get the dword it belongs to*/
@@ -1003,8 +1005,9 @@ mono_type_elements_shift_bits (MonoType *type)
 	case MONO_TYPE_U4:
 	case MONO_TYPE_R4:
 		return 0;
+	default:
+		g_assert_not_reached ();
 	}
-	g_assert_not_reached ();
 }
 
 static G_GNUC_UNUSED int
@@ -1027,8 +1030,9 @@ mono_type_to_insert_op (MonoType *type)
 		return OP_INSERT_R4;
 	case MONO_TYPE_R8:
 		return OP_INSERT_R8;
+	default:
+		g_assert_not_reached ();
 	}
-	g_assert_not_reached ();
 }
 
 static int
@@ -1051,8 +1055,9 @@ mono_type_to_slow_insert_op (MonoType *type)
 		return OP_INSERTX_R4_SLOW;
 	case MONO_TYPE_R8:
 		return OP_INSERTX_R8_SLOW;
+	default:
+		g_assert_not_reached ();
 	}
-	g_assert_not_reached ();
 }
 
 static MonoInst*

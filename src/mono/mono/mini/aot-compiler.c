@@ -5550,8 +5550,9 @@ mono_aot_type_hash (MonoType *t1)
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (&t1->data.array->eklass->byval_arg);
 	case MONO_TYPE_GENERICINST:
 		return ((hash << 5) - hash) ^ 0;
+	default:
+		return hash;
 	}
-	return hash;
 }
 
 /*

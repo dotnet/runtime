@@ -2488,8 +2488,9 @@ mono_is_regsize_var (MonoType *t)
 		return FALSE;
 	case MONO_TYPE_VALUETYPE:
 		return FALSE;
+	default:
+		return FALSE;
 	}
-	return FALSE;
 }
 
 #ifndef DISABLE_JIT
