@@ -6628,7 +6628,6 @@ ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString *path)
 	
 	if (GetVolumeInformation (mono_string_chars (path), NULL, 0, NULL, NULL, NULL, volume_name, MAX_PATH + 1) == FALSE)
 		return NULL;
-	/* Not sure using wcslen here is safe */
 	return mono_string_from_utf16 (volume_name);
 }
 
