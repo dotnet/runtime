@@ -141,6 +141,8 @@ g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc co
 				break;
 			
 			g_qsort_swap (i, k, size);
+			i += size;
+			k -= size;
 		} while (1);
 		
 		if (k != pivot) {
