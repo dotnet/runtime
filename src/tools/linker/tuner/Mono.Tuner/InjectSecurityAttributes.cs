@@ -160,7 +160,7 @@ namespace Mono.Tuner {
 
 		void ProcessLine (string line)
 		{
-			if (line == null || line.Length < 6)
+			if (line == null || line.Length < 6 || line [0] == '#')
 				return;
 
 			int sep = line.IndexOf (": ");
