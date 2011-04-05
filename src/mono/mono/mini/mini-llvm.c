@@ -2180,7 +2180,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 * LLVM asserts if llvm.eh.selector is called from a bblock which
 			 * doesn't have an invoke pointing at it.
 			 */
-			LLVM_FAILURE (ctx, "handler without invokes");
+			//LLVM_FAILURE (ctx, "handler without invokes");
 		}
 
 		eh_selector = LLVMGetNamedFunction (module, eh_selector_name);
@@ -3171,12 +3171,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SQRT: {
 			LLVMValueRef args [1];
 
+#if 0
+			/* This no longer seems to happen */
 			/*
 			 * LLVM optimizes sqrt(nan) into undefined in
 			 * lib/Analysis/ConstantFolding.cpp
 			 * Also, sqrt(NegativeInfinity) is optimized into 0.
 			 */
 			LLVM_FAILURE (ctx, "sqrt");
+#endif
 			args [0] = lhs;
 			values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.sqrt.f64"), args, 1, dname);
 			break;
