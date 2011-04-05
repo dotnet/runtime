@@ -3304,8 +3304,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_RELAXED_NOP: {
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-			/* No way to get LLVM to emit this */
-			LLVM_FAILURE (ctx, "relaxed_nop");
+			if (IS_LLVM_MONO_BRANCH)
+				emit_call (ctx, bb, &builder, LLVMGetNamedFunction (ctx->module, "llvm.x86.sse2.pause"), NULL, 0);
+			else
+				/* No way to get LLVM to emit this */
+				LLVM_FAILURE (ctx, "relaxed_nop");
+			break;
 #else
 			break;
 #endif
@@ -5067,6 +5071,10 @@ add_intrinsics (LLVMModuleRef module)
 		ret_type = LLVMInt32Type ();
 		arg_types [0] = type_to_simd_type (MONO_TYPE_I1);
 		AddFunc (module, "llvm.x86.sse2.pmovmskb.128", ret_type, arg_types, 1);
+	}
+
+	if (IS_LLVM_MONO_BRANCH) {
+		AddFunc (module, "llvm.x86.sse2.pause", LLVMVoidType (), NULL, 0);
 	}
 
 	/* Load/Store intrinsics */
