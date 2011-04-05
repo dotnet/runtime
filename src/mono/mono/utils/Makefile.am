@@ -83,7 +83,11 @@ monoutils_sources = \
 	mono-context.h	\
 	mono-stack-unwinding.h	\
 	hazard-pointer.c	\
-	hazard-pointer.h
+	hazard-pointer.h	\
+	mono-linked-list-set.c	\
+	mono-linked-list-set.h
+
+>>>>>>> 0805fe2... Add implementation of a lock free linked list set.
 
 arch_sources = 
 
