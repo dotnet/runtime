@@ -272,8 +272,6 @@ static void *thread_start_routine (gpointer args)
 		pthread_exit (NULL);
 	}
 
-	thread->id = pthread_self();
-
 #ifdef DEBUG
 	g_message ("%s: started thread id %ld", __func__, thread->id);
 #endif
