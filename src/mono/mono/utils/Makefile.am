@@ -87,8 +87,6 @@ monoutils_sources = \
 	mono-linked-list-set.c	\
 	mono-linked-list-set.h
 
->>>>>>> 0805fe2... Add implementation of a lock free linked list set.
-
 arch_sources = 
 
 if X86
