@@ -2179,8 +2179,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/*
 			 * LLVM asserts if llvm.eh.selector is called from a bblock which
 			 * doesn't have an invoke pointing at it.
+			 * Update: LLVM no longer asserts, but some tests in exceptions.exe now fail.
 			 */
-			//LLVM_FAILURE (ctx, "handler without invokes");
+			LLVM_FAILURE (ctx, "handler without invokes");
 		}
 
 		eh_selector = LLVMGetNamedFunction (module, eh_selector_name);
