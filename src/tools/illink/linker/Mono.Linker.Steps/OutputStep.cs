@@ -30,6 +30,7 @@ using System;
 using System.IO;
 
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Steps {
 
@@ -83,7 +84,10 @@ namespace Mono.Linker.Steps {
 			if (!assembly.MainModule.HasSymbols)
 				return parameters;
 
-			parameters.WriteSymbols = true;
+			if (Context.SymbolWriterProvider != null)
+				parameters.SymbolWriterProvider = Context.SymbolWriterProvider;
+			else
+				parameters.WriteSymbols = true;
 			return parameters;
 		}
 
