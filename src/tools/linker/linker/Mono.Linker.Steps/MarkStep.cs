@@ -289,6 +289,9 @@ namespace Mono.Linker.Steps {
 //			if (IgnoreScope (reference.DeclaringType.Scope))
 //				return;
 
+			if (reference.DeclaringType is GenericInstanceType)
+				MarkType (reference.DeclaringType);
+
 			FieldDefinition field = ResolveFieldDefinition (reference);
 
 			if (field == null)
@@ -712,6 +715,9 @@ namespace Mono.Linker.Steps {
 
 			if (reference.DeclaringType is ArrayType)
 				return;
+
+			if (reference.DeclaringType is GenericInstanceType)
+				MarkType (reference.DeclaringType);
 
 //			if (IgnoreScope (reference.DeclaringType.Scope))
 //				return;
