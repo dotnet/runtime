@@ -9,8 +9,10 @@
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
 
+#define HAZARD_POINTER_COUNT 3
+
 typedef struct {
-	gpointer hazard_pointers [2];
+	gpointer hazard_pointers [HAZARD_POINTER_COUNT];
 } MonoThreadHazardPointers;
 
 typedef void (*MonoHazardousFreeFunc) (gpointer p);
@@ -21,7 +23,7 @@ MonoThreadHazardPointers* mono_hazard_pointer_get (void) MONO_INTERNAL;
 gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index) MONO_INTERNAL;
 
 #define mono_hazard_pointer_set(hp,i,v)	\
-	do { g_assert ((i) == 0 || (i) == 1); \
+	do { g_assert ((i) >= 0 && (i) < HAZARD_POINTER_COUNT); \
 		(hp)->hazard_pointers [(i)] = (v); \
 		mono_memory_write_barrier (); \
 	} while (0)
@@ -30,7 +32,7 @@ gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers 
 	((hp)->hazard_pointers [(i)])
 
 #define mono_hazard_pointer_clear(hp,i)	\
-	do { g_assert ((i) == 0 || (i) == 1); \
+	do { g_assert ((i) >= 0 && (i) < HAZARD_POINTER_COUNT); \
 		(hp)->hazard_pointers [(i)] = NULL; \
 	} while (0)
 

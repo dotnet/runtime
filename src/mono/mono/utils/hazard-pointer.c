@@ -47,7 +47,7 @@ static MonoBitSet *small_id_table;
 int
 mono_thread_small_id_alloc (void)
 {
-	int id = -1;
+	int i, id = -1;
 
 	EnterCriticalSection (&small_id_mutex);
 
@@ -105,8 +105,8 @@ mono_thread_small_id_alloc (void)
 
 #endif
 		g_assert (id < hazard_table_size);
-		hazard_table [id].hazard_pointers [0] = NULL;
-		hazard_table [id].hazard_pointers [1] = NULL;
+		for (i = 0; i < HAZARD_POINTER_COUNT; ++i)
+			hazard_table [id].hazard_pointers [i] = NULL;
 	}
 
 	if (id > highest_small_id) {
