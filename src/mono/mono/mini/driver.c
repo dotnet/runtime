@@ -1363,6 +1363,11 @@ mono_main (int argc, char* argv[])
 
 	if (getenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
+
+#ifdef TARGET_ARM
+	// #683409
+	mono_set_use_smp (FALSE);
+#endif
 	
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
