@@ -1022,6 +1022,7 @@ guint32 SleepEx(guint32 ms, gboolean alertable)
 	req.tv_nsec=ms_rem*1000000;
 	
 again:
+	memset (&rem, 0, sizeof (rem));
 	ret=nanosleep(&req, &rem);
 
 	if (alertable && _wapi_thread_apc_pending (current_thread)) {
