@@ -31,6 +31,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 
 namespace Mono.Linker {
 
@@ -45,6 +46,7 @@ namespace Mono.Linker {
 		readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider> ();
 		readonly Dictionary<MethodDefinition, List<MethodDefinition>> override_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
+		readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
 
 		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 
@@ -208,6 +210,21 @@ namespace Mono.Linker {
 			}
 
 			methods.Add (method);
+		}
+
+		public void AddSymbolReader (AssemblyDefinition assembly, ISymbolReader symbolReader)
+		{
+			symbol_readers [assembly] = symbolReader;
+		}
+
+		public void CloseSymbolReader (AssemblyDefinition assembly)
+		{
+			ISymbolReader symbolReader;
+			if (!symbol_readers.TryGetValue (assembly, out symbolReader))
+				return;
+
+			symbol_readers.Remove (assembly);
+			symbolReader.Dispose ();
 		}
 
 		public Dictionary<IMetadataTokenProvider, object> GetCustomAnnotations (object key)

@@ -65,14 +65,24 @@ namespace Mono.Linker.Steps {
 				assembly.Write (GetAssemblyFileName (assembly, directory), SaveSymbols (assembly));
 				break;
 			case AssemblyAction.Copy:
+				CloseSymbols (assembly);
 				CopyAssembly (GetOriginalAssemblyFileInfo (assembly), directory);
 				break;
 			case AssemblyAction.Delete:
+				CloseSymbols (assembly);
 				var target = GetAssemblyFileName (assembly, directory);
 				if (File.Exists (target))
 					File.Delete (target);
 				break;
+			default:
+				CloseSymbols (assembly);
+				break;
 			}
+		}
+
+		void CloseSymbols (AssemblyDefinition assembly)
+		{
+			Annotations.CloseSymbolReader (assembly);
 		}
 
 		WriterParameters SaveSymbols (AssemblyDefinition assembly)

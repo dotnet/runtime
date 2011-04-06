@@ -171,6 +171,7 @@ namespace Mono.Linker {
 						assembly.MainModule,
 						assembly.MainModule.FullyQualifiedName);
 
+					_annotations.AddSymbolReader (assembly, symbolReader);
 					assembly.MainModule.ReadSymbols (symbolReader);
 				} else
 					assembly.MainModule.ReadSymbols ();
