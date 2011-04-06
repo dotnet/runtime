@@ -42,6 +42,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-threads.h>
 #include <mono/utils/hazard-pointer.h>
 
 #include <mono/metadata/gc-internal.h>
@@ -375,9 +376,7 @@ static void thread_cleanup (MonoInternalThread *thread)
 	if (mono_thread_cleanup_fn)
 		mono_thread_cleanup_fn (thread);
 
-	mono_thread_small_id_free (thread->small_id);
 	MONO_GC_UNREGISTER_ROOT (thread->thread_pinning_ref);
-	thread->small_id = -2;
 }
 
 static gpointer
@@ -458,6 +457,7 @@ init_root_domain_thread (MonoInternalThread *thread, MonoThread *candidate)
 
 static guint32 WINAPI start_wrapper_internal(void *data)
 {
+	MonoThreadInfo *info;
 	struct StartInfo *start_info=(struct StartInfo *)data;
 	guint32 (*start_func)(void *);
 	void *start_arg;
@@ -477,6 +477,11 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	 * was created suspended, and these values were set before the
 	 * thread resumed
 	 */
+
+	info = mono_thread_info_current ();
+	g_assert (info);
+	internal->thread_info = info;
+
 
 	tid=internal->tid;
 
@@ -712,7 +717,6 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 	internal->handle=thread_handle;
 	internal->tid=tid;
 	internal->apartment_state=ThreadApartmentState_Unknown;
-	internal->small_id = mono_thread_small_id_alloc ();
 	internal->thread_pinning_ref = internal;
 	MONO_GC_REGISTER_ROOT (internal->thread_pinning_ref);
 
@@ -836,7 +840,6 @@ mono_thread_attach (MonoDomain *domain)
 	thread->android_tid = (gpointer) gettid ();
 #endif
 	thread->apartment_state=ThreadApartmentState_Unknown;
-	thread->small_id = mono_thread_small_id_alloc ();
 	thread->thread_pinning_ref = thread;
 	MONO_GC_REGISTER_ROOT (thread->thread_pinning_ref);
 
@@ -958,8 +961,6 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		return NULL;
 	}
 
-	internal->small_id = -1;
-
 	if ((internal->state & ThreadState_Aborted) != 0) {
 		LeaveCriticalSection (internal->synch_cs);
 		return this;
@@ -1004,7 +1005,6 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		
 		internal->handle=thread;
 		internal->tid=tid;
-		internal->small_id = mono_thread_small_id_alloc ();
 		internal->thread_pinning_ref = internal;
 		MONO_GC_REGISTER_ROOT (internal->thread_pinning_ref);
 		

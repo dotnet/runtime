@@ -31,8 +31,8 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 #include <glib.h>
-#include "metadata/gc-internal.h"
 #include "metadata/sgen-gc.h"
+#include "metadata/gc-internal.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/object-internals.h"
 
@@ -40,13 +40,13 @@
 gboolean
 mono_sgen_resume_thread (SgenThreadInfo *info)
 {
-	return pthread_kill (info->id, restart_signal_num) == 0;
+	return pthread_kill (mono_thread_info_get_tid (info), restart_signal_num) == 0;
 }
 
 gboolean
 mono_sgen_suspend_thread (SgenThreadInfo *info)
 {
-	return pthread_kill (info->id, suspend_signal_num) == 0;
+	return pthread_kill (mono_thread_info_get_tid (info), suspend_signal_num) == 0;
 }
 
 int
@@ -54,22 +54,23 @@ mono_sgen_thread_handshake (int signum)
 {
 	int count, result;
 	SgenThreadInfo *info;
-	pthread_t me = pthread_self ();
+
+	MonoNativeThreadId me = mono_native_thread_id_get ();
 
 	count = 0;
-	FOREACH_THREAD (info) {
-		if (ARCH_THREAD_EQUALS (info->id, me)) {
+	FOREACH_THREAD_SAFE (info) {
+		if (mono_native_thread_id_equals (mono_thread_info_get_tid (info), me)) {
 			continue;
 		}
 		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
 			continue;*/
-		result = pthread_kill (info->id, signum);
+		result = pthread_kill (mono_thread_info_get_tid (info), signum);
 		if (result == 0) {
 			count++;
 		} else {
 			info->skip = 1;
 		}
-	} END_FOREACH_THREAD
+	} END_FOREACH_THREAD_SAFE
 
 	mono_sgen_wait_for_suspend_ack (count);
 

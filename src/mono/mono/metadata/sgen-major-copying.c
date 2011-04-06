@@ -48,12 +48,12 @@
 #ifdef HAVE_SGEN_GC
 
 #include "utils/mono-counters.h"
-#include "metadata/object-internals.h"
-#include "metadata/profiler-private.h"
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/mono-gc.h"
+#include "metadata/object-internals.h"
+#include "metadata/profiler-private.h"
 
 #define MAJOR_SECTION_SIZE		SGEN_PINNED_CHUNK_SIZE
 #define BLOCK_FOR_OBJECT(o)		SGEN_PINNED_CHUNK_FOR_PTR ((o))
