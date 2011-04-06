@@ -54,9 +54,6 @@ mono_thread_small_id_alloc (void)
 	if (!small_id_table)
 		small_id_table = mono_bitset_new (1, 0);
 
-//	if (small_id_next >= small_id_table->size)
-//		small_id_next = 0;
-
 	id = mono_bitset_find_first_unset (small_id_table, small_id_next);
 	if (id == -1)
 		id = mono_bitset_find_first_unset (small_id_table, -1);
