@@ -29,7 +29,9 @@
 using System;
 using System.Collections;
 using System.IO;
+
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 
 namespace Mono.Linker {
 
@@ -45,6 +47,8 @@ namespace Mono.Linker {
 		AssemblyResolver _resolver;
 
 		ReaderParameters _readerParameters;
+		ISymbolReaderProvider _symbolReaderProvider;
+		ISymbolWriterProvider _symbolWriterProvider;
 
 		AnnotationStore _annotations;
 
@@ -77,6 +81,19 @@ namespace Mono.Linker {
 
 		public AssemblyResolver Resolver {
 			get { return _resolver; }
+		}
+
+		public ISymbolReaderProvider SymbolReaderProvider {
+			get { return _symbolReaderProvider; }
+			set {
+				_symbolReaderProvider = value;
+				_readerParameters.SymbolReaderProvider = value;
+			}
+		}
+
+		public ISymbolWriterProvider SymbolWriterProvider {
+			get { return _symbolWriterProvider; }
+			set { _symbolWriterProvider = value; }
 		}
 
 		public LinkContext (Pipeline pipeline)
@@ -149,7 +166,14 @@ namespace Mono.Linker {
 		public void SafeReadSymbols (AssemblyDefinition assembly)
 		{
 			try {
-				assembly.MainModule.ReadSymbols ();
+				if (_symbolReaderProvider != null) {
+					var symbolReader = _symbolReaderProvider.GetSymbolReader (
+						assembly.MainModule,
+						assembly.MainModule.FullyQualifiedName);
+
+					assembly.MainModule.ReadSymbols (symbolReader);
+				} else
+					assembly.MainModule.ReadSymbols ();
 			} catch {}
 		}
 
