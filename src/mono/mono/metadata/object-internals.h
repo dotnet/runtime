@@ -405,11 +405,11 @@ struct _MonoInternalThread {
 	gpointer interrupt_on_stop;
 	gsize    flags;
 	gpointer android_tid;
+	gpointer thread_pinning_ref;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to the unmanaged MonoThread structure.
 	 */
-	gpointer unused5;
 	gpointer unused6;
 };
 

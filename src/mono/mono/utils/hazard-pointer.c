@@ -6,9 +6,10 @@
 
 #include <config.h>
 
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/monobitset.h>
 #include <mono/io-layer/io-layer.h>
 
 typedef struct {
@@ -33,10 +34,9 @@ static GArray *delayed_free_table = NULL;
 
 /* The table for small ID assignment */
 static CRITICAL_SECTION small_id_mutex;
-static int small_id_table_size = 0;
-static int small_id_next = 0;
+static int small_id_next;
 static int highest_small_id = -1;
-static MonoInternalThread **small_id_table = NULL;
+static MonoBitSet *small_id_table;
 
 /*
  * Allocate a small thread id.
@@ -45,53 +45,38 @@ static MonoInternalThread **small_id_table = NULL;
  * domain_id_alloc() in domain.c and should be merged.
  */
 int
-mono_thread_small_id_alloc (MonoInternalThread *thread)
+mono_thread_small_id_alloc (void)
 {
-	int id = -1, i;
+	int id = -1;
 
 	EnterCriticalSection (&small_id_mutex);
 
-	if (!small_id_table) {
-		small_id_table_size = 2;
-		/* 
-		 * Enabling this causes problems, because SGEN doesn't track/update the TLS slot holding
-		 * the current thread.
-		 */
-		//small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (small_id_table_size));
-		small_id_table = mono_gc_alloc_fixed (small_id_table_size * sizeof (MonoInternalThread*), NULL);
-	}
-	for (i = small_id_next; i < small_id_table_size; ++i) {
-		if (!small_id_table [i]) {
-			id = i;
-			break;
-		}
-	}
+	if (!small_id_table)
+		small_id_table = mono_bitset_new (1, 0);
+
+//	if (small_id_next >= small_id_table->size)
+//		small_id_next = 0;
+
+	id = mono_bitset_find_first_unset (small_id_table, small_id_next);
+	if (id == -1)
+		id = mono_bitset_find_first_unset (small_id_table, -1);
+
 	if (id == -1) {
-		for (i = 0; i < small_id_next; ++i) {
-			if (!small_id_table [i]) {
-				id = i;
-				break;
-			}
-		}
-	}
-	if (id == -1) {
-		MonoInternalThread **new_table;
-		int new_size = small_id_table_size * 2;
-		if (new_size >= (1 << 16))
+		MonoBitSet *new_table;
+		if (small_id_table->size * 2 >= (1 << 16))
 			g_assert_not_reached ();
-		id = small_id_table_size;
-		//new_table = mono_gc_alloc_fixed (new_size * sizeof (MonoInternalThread*), mono_gc_make_root_descr_all_refs (new_size));
-		new_table = mono_gc_alloc_fixed (new_size * sizeof (MonoInternalThread*), NULL);
-		memcpy (new_table, small_id_table, small_id_table_size * sizeof (void*));
-		mono_gc_free_fixed (small_id_table);
+		new_table = mono_bitset_clone (small_id_table, small_id_table->size * 2);
+		id = mono_bitset_find_first_unset (new_table, small_id_table->size - 1);
+
+		mono_bitset_free (small_id_table);
 		small_id_table = new_table;
-		small_id_table_size = new_size;
 	}
-	thread->small_id = id;
-	g_assert (small_id_table [id] == NULL);
-	small_id_table [id] = thread;
+
+	g_assert (!mono_bitset_test_fast (small_id_table, id));
+	mono_bitset_set_fast (small_id_table, id);
+
 	small_id_next++;
-	if (small_id_next > small_id_table_size)
+	if (small_id_next >= small_id_table->size)
 		small_id_next = 0;
 
 	g_assert (id < HAZARD_TABLE_MAX_SIZE);
@@ -137,10 +122,14 @@ mono_thread_small_id_alloc (MonoInternalThread *thread)
 void
 mono_thread_small_id_free (int id)
 {
-	g_assert (id >= 0 && id < small_id_table_size);
-	g_assert (small_id_table [id] != NULL);
+	/* MonoBitSet operations are not atomic. */
+	EnterCriticalSection (&small_id_mutex);
 
-	small_id_table [id] = NULL;
+	g_assert (id >= 0 && id < small_id_table->size);
+	g_assert (mono_bitset_test_fast (small_id_table, id));
+	mono_bitset_clear_fast (small_id_table, id);
+
+	LeaveCriticalSection (&small_id_mutex);
 }
 
 static gboolean
@@ -271,8 +260,6 @@ mono_thread_hazardous_try_free_all (void)
 void
 mono_thread_smr_init (void)
 {
-	MONO_GC_REGISTER_ROOT_FIXED (small_id_table);
-
 	InitializeCriticalSection(&delayed_free_table_mutex);
 	InitializeCriticalSection(&small_id_mutex);	
 
@@ -286,5 +273,5 @@ mono_thread_smr_cleanup (void)
 
 	g_array_free (delayed_free_table, TRUE);
 	delayed_free_table = NULL;
-	
+	/*FIXME, can't we release the small id table here?*/
 }

@@ -7,7 +7,6 @@
 #define __MONO_HAZARD_POINTER_H__
 
 #include <glib.h>
-#include <mono/metadata/object-internals.h>
 #include <mono/utils/mono-compiler.h>
 
 typedef struct {
@@ -37,7 +36,7 @@ gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers 
 
 
 void mono_thread_small_id_free (int id) MONO_INTERNAL;
-int mono_thread_small_id_alloc (MonoInternalThread *thread) MONO_INTERNAL;
+int mono_thread_small_id_alloc (void) MONO_INTERNAL;
 
 void mono_thread_smr_init (void) MONO_INTERNAL;
 void mono_thread_smr_cleanup (void) MONO_INTERNAL;

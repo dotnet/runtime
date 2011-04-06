@@ -376,6 +376,7 @@ static void thread_cleanup (MonoInternalThread *thread)
 		mono_thread_cleanup_fn (thread);
 
 	mono_thread_small_id_free (thread->small_id);
+	MONO_GC_UNREGISTER_ROOT (thread->thread_pinning_ref);
 	thread->small_id = -2;
 }
 
@@ -711,7 +712,9 @@ MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer fu
 	internal->handle=thread_handle;
 	internal->tid=tid;
 	internal->apartment_state=ThreadApartmentState_Unknown;
-	mono_thread_small_id_alloc (internal);
+	internal->small_id = mono_thread_small_id_alloc ();
+	internal->thread_pinning_ref = internal;
+	MONO_GC_REGISTER_ROOT (internal->thread_pinning_ref);
 
 	internal->synch_cs = g_new0 (CRITICAL_SECTION, 1);
 	InitializeCriticalSection (internal->synch_cs);
@@ -833,7 +836,10 @@ mono_thread_attach (MonoDomain *domain)
 	thread->android_tid = (gpointer) gettid ();
 #endif
 	thread->apartment_state=ThreadApartmentState_Unknown;
-	mono_thread_small_id_alloc (thread);
+	thread->small_id = mono_thread_small_id_alloc ();
+	thread->thread_pinning_ref = thread;
+	MONO_GC_REGISTER_ROOT (thread->thread_pinning_ref);
+
 	thread->stack_ptr = &tid;
 
 	thread->synch_cs = g_new0 (CRITICAL_SECTION, 1);
@@ -998,7 +1004,10 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		
 		internal->handle=thread;
 		internal->tid=tid;
-		mono_thread_small_id_alloc (internal);
+		internal->small_id = mono_thread_small_id_alloc ();
+		internal->thread_pinning_ref = internal;
+		MONO_GC_REGISTER_ROOT (internal->thread_pinning_ref);
+		
 
 		/* Don't call handle_store() here, delay it to Start.
 		 * We can't join a thread (trying to will just block
