@@ -1036,12 +1036,17 @@ void ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInterna
 		CloseHandle (thread);
 
 	if (this->synch_cs) {
-		DeleteCriticalSection (this->synch_cs);
-		g_free (this->synch_cs);
+		CRITICAL_SECTION *synch_cs = this->synch_cs;
 		this->synch_cs = NULL;
+		DeleteCriticalSection (synch_cs);
+		g_free (synch_cs);
 	}
 
-	g_free (this->name);
+	if (this->name) {
+		void *name = this->name;
+		this->name = NULL;
+		g_free (name);
+	}
 }
 
 static void mono_thread_start (MonoThread *thread)
