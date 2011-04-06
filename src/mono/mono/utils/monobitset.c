@@ -8,7 +8,7 @@
 
 /*
  * mono_bitset_alloc_size:
- * @max_size: The numer of bits you want to hold
+ * @max_size: The number of bits you want to hold
  * @flags: unused
  *
  * Return the number of bytes required to hold the bitset.
