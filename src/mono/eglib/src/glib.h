@@ -809,6 +809,11 @@ GFileError g_file_error_from_errno (gint err_no);
 gint       g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error);
 gboolean   g_file_test (const gchar *filename, GFileTest test);
 
+#define g_open open
+#define g_rename rename
+#define g_stat stat
+#define g_unlink unlink
+
 /*
  * Pattern matching
  */
