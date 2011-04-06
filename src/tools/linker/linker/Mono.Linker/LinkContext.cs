@@ -165,6 +165,9 @@ namespace Mono.Linker {
 
 		public void SafeReadSymbols (AssemblyDefinition assembly)
 		{
+			if (!_linkSymbols)
+				return;
+
 			try {
 				if (_symbolReaderProvider != null) {
 					var symbolReader = _symbolReaderProvider.GetSymbolReader (
