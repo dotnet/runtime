@@ -6609,9 +6609,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoMethod *cil_method;
 				
 				if (method->wrapper_type != MONO_WRAPPER_NONE) {
-					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
+					if (cfg->verbose_level > 2)
+						printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_call));
+					cmethod = (MonoMethod *)mono_method_get_wrapper_data (method, token);
 					cil_method = cmethod;
+					if (constrained_call && !((constrained_call->byval_arg.type == MONO_TYPE_VAR ||
+							constrained_call->byval_arg.type == MONO_TYPE_MVAR) &&
+							cfg->generic_sharing_context)) {
+						cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_call, generic_context);
+					}
 				} else if (constrained_call) {
+					if (cfg->verbose_level > 2)
+						printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_call));
+
 					if ((constrained_call->byval_arg.type == MONO_TYPE_VAR || constrained_call->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
 						/* 
 						 * This is needed since get_method_constrained can't find 

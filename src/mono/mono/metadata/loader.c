@@ -1730,37 +1730,17 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 	return result;
 }
 
-/**
- * mono_get_method_constrained:
- *
- * This is used when JITing the `constrained.' opcode.
- *
- * This returns two values: the contrained method, which has been inflated
- * as the function return value;   And the original CIL-stream method as
- * declared in cil_method.  The later is used for verification.
- */
-MonoMethod *
-mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class,
-			     MonoGenericContext *context, MonoMethod **cil_method)
+static MonoMethod *
+get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context)
 {
-	MonoMethod *method, *result;
+	MonoMethod *result;
 	MonoClass *ic = NULL;
 	MonoGenericContext *method_context = NULL;
 	MonoMethodSignature *sig, *original_sig;
 
-	mono_loader_lock ();
-
-	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL);
-	if (!*cil_method) {
-		mono_loader_unlock ();
-		return NULL;
-	}
-
 	mono_class_init (constrained_class);
-	method = *cil_method;
 	original_sig = sig = mono_method_signature (method);
 	if (sig == NULL) {
-		mono_loader_unlock ();
 		return NULL;
 	}
 
@@ -1783,7 +1763,6 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 			/*Fixme, property propagate this error*/
 			sig = inflate_generic_signature_checked (method->klass->image, sig, &ctx, &error);
 			if (!mono_error_ok (&error)) {
-				mono_loader_unlock ();
 				mono_error_cleanup (&error);
 				return NULL;
 			}
@@ -1798,14 +1777,58 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 		mono_metadata_free_inflated_signature (sig);
 
 	if (!result) {
-		g_warning ("Missing method %s.%s.%s in assembly %s token %x", method->klass->name_space,
-			   method->klass->name, method->name, image->name, token);
-		mono_loader_unlock ();
+		char *m = mono_method_full_name (method, 1);
+		g_warning ("Missing method %s.%s.%s in assembly %s method %s", method->klass->name_space,
+			   method->klass->name, method->name, image->name, m);
+		g_free (m);
 		return NULL;
 	}
 
 	if (method_context)
 		result = mono_class_inflate_generic_method (result, method_context);
+
+	return result;
+}
+
+MonoMethod *
+mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class,
+			     MonoGenericContext *context)
+{
+	MonoMethod *result;
+
+	g_assert (method);
+
+	mono_loader_lock ();
+
+	result = get_method_constrained (image, method, constrained_class, context);
+
+	mono_loader_unlock ();
+	return result;	
+}
+/**
+ * mono_get_method_constrained:
+ *
+ * This is used when JITing the `constrained.' opcode.
+ *
+ * This returns two values: the contrained method, which has been inflated
+ * as the function return value;   And the original CIL-stream method as
+ * declared in cil_method.  The later is used for verification.
+ */
+MonoMethod *
+mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class,
+			     MonoGenericContext *context, MonoMethod **cil_method)
+{
+	MonoMethod *result;
+
+	mono_loader_lock ();
+
+	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL);
+	if (!*cil_method) {
+		mono_loader_unlock ();
+		return NULL;
+	}
+
+	result = get_method_constrained (image, *cil_method, constrained_class, context);
 
 	mono_loader_unlock ();
 	return result;
