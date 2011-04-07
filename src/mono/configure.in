@@ -2577,6 +2577,8 @@ if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_bui
 	AC_MSG_RESULT($armv6)
 	if test ${armv6} = yes; then
 	   AC_DEFINE(HAVE_ARMV6, 1, "Host supports ARMV6 instructions")
+	   # libgc's gc_locks.h depends on this
+	   NESTED_LIBGC_FLAGS="$NESTED_LIBGC_FLAGS -DHAVE_ARMV6"
 	fi
 fi
 
