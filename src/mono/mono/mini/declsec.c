@@ -17,7 +17,7 @@
 MonoBoolean
 mono_method_has_declsec (MonoMethod *method)
 {
-	mono_jit_stats.cas_declsec_check++;
+	InterlockedIncrement (&mono_jit_stats.cas_declsec_check);
 
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE || method->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
 		method = mono_marshal_method_from_wrapper (method);
@@ -116,7 +116,7 @@ mono_declsec_linkdemand_standard (MonoDomain *domain, MonoMethod *caller, MonoMe
 {
 	MonoDeclSecurityActions linkclass, linkmethod;
 
-	mono_jit_stats.cas_linkdemand++;
+	InterlockedIncrement (&mono_jit_stats.cas_linkdemand);
 
 	if (mono_declsec_get_linkdemands (callee, &linkclass, &linkmethod)) {
 		MonoAssembly *assembly = mono_image_get_assembly (caller->klass->image);
@@ -190,7 +190,7 @@ mono_declsec_linkdemand_aptc (MonoDomain *domain, MonoMethod *caller, MonoMethod
 	MonoAssembly *assembly;
 	guint32 size = 0;
 
-	mono_jit_stats.cas_linkdemand_aptc++;
+	InterlockedIncrement (&mono_jit_stats.cas_linkdemand_aptc);
 
 	/* A - Applicable only if we're calling into *another* assembly */
 	if (caller->klass->image == callee->klass->image)
@@ -262,7 +262,7 @@ mono_declsec_linkdemand_pinvoke (MonoDomain *domain, MonoMethod *caller, MonoMet
 {
 	MonoAssembly *assembly = mono_image_get_assembly (caller->klass->image);
 
-	mono_jit_stats.cas_linkdemand_pinvoke++;
+	InterlockedIncrement (&mono_jit_stats.cas_linkdemand_pinvoke);
 
 	/* Check for P/Invoke flag for the assembly */
 	if (!MONO_SECMAN_FLAG_INIT (assembly->unmanaged)) {
@@ -321,7 +321,7 @@ mono_declsec_linkdemand_icall (MonoDomain *domain, MonoMethod *caller, MonoMetho
 {
 	MonoAssembly *assembly;
 
-	mono_jit_stats.cas_linkdemand_icall++;
+	InterlockedIncrement (&mono_jit_stats.cas_linkdemand_icall);
 
 	/* check if the _icall_ is defined inside an ECMA signed assembly */
 	assembly = mono_image_get_assembly (icall->klass->image);

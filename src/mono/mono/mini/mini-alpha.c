@@ -1745,7 +1745,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
     {
       cfg->code_size *= 2;
       cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
-      mono_jit_stats.code_reallocs++;
+      cfg->stat_code_reallocs++;
     }
   
   code = (unsigned int *)(cfg->native_code + cfg->code_len);
@@ -1845,7 +1845,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
     {
       cfg->code_size *= 2;
       cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
-      mono_jit_stats.code_reallocs++;
+      cfg->stat_code_reallocs++;
     }
   
   code = (unsigned int *)((char *)cfg->native_code + cfg->code_len);
@@ -2189,7 +2189,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   cfg->code_size *= 2;
 	   cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 	   code = (unsigned int *)(cfg->native_code + offset);
-	   mono_jit_stats.code_reallocs++;
+	   cfg->stat_code_reallocs++;
 	 }
 	  
        mono_debug_record_line_number (cfg, ins, offset);

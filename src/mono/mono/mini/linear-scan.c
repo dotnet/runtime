@@ -222,7 +222,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 		}
 	}
 
-	mono_jit_stats.regvars += n_regvars;
+	cfg->stat_n_regvars = n_regvars;
 
 	/* Compute used regs */
 	used_regs = 0;
@@ -493,7 +493,7 @@ mono_linear_scan2 (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_m
 		}
 	}
 
-	mono_jit_stats.regvars += n_regvars;
+	cfg->stat_n_regvars = n_regvars;
 
 	/* Compute used regs */
 	used_regs = 0;
