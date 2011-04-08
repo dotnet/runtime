@@ -7720,12 +7720,25 @@ mono_gc_get_gc_name (void)
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
 static MonoMethod *write_barrier_method;
 
+gboolean
+mono_gc_is_critical_method (MonoMethod *method)
+{
+	int i;
+	if (method == write_barrier_method)
+		return TRUE;
+
+	for (i = 0; i < ATYPE_NUM; ++i)
+		if (method == alloc_method_cache [i])
+			return TRUE;
+
+	return FALSE;
+}
+
 static gboolean
 is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 {
 	MonoJitInfo *ji;
 	MonoMethod *method;
-	int i;
 
 	if (!mono_thread_internal_current ())
 		/* Happens during thread attach */
@@ -7736,14 +7749,8 @@ is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 	ji = mono_jit_info_table_find (domain, ip);
 	if (!ji)
 		return FALSE;
-	method = ji->method;
 
-	if (method == write_barrier_method)
-		return TRUE;
-	for (i = 0; i < ATYPE_NUM; ++i)
-		if (method == alloc_method_cache [i])
-			return TRUE;
-	return FALSE;
+	return mono_gc_is_critical_method (ji->method);
 }
 
 /*

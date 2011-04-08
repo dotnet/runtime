@@ -211,6 +211,12 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 			mono_object_class (obj)->instance_size - sizeof (MonoObject));
 }
 
+gboolean
+mono_gc_is_critical_method (MonoMethod *method)
+{
+	return FALSE;
+}
+
 MonoMethod*
 mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 {
