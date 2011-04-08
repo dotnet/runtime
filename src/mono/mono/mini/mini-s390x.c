@@ -1500,6 +1500,8 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 	sz->code_size     = 0;
 	sz->parm_size     = 0;
 	sz->local_size    = 0;
+	align		  = 0;
+	size		  = 0;
 
 	/*----------------------------------------------------------*/
 	/* We determine the size of the return code/stack in case we*/
@@ -1618,6 +1620,7 @@ enum_retvalue:
 
 	if ((sig->call_convention == MONO_CALL_VARARG) && (sig->param_count == 0)) {
 		gr = S390_LAST_ARG_REG + 1;
+		fr = S390_LAST_FPARG_REG + 1;
 
 		/* Emit the signature cookie just before the implicit arguments */
 		add_general (&gr, sz, &cinfo->sigCookie);
@@ -1639,6 +1642,7 @@ enum_retvalue:
 		if ((sig->call_convention == MONO_CALL_VARARG) &&
 		    (i == sig->sentinelpos)) {
 			gr = S390_LAST_ARG_REG + 1;
+			fr = S390_LAST_FPARG_REG + 1;
 			add_general (&gr, sz, &cinfo->sigCookie);
 		}
 
@@ -1807,6 +1811,7 @@ enum_retvalue:
 	    (!sig->pinvoke) &&
 	    (sig->param_count == sig->sentinelpos)) {
 		gr = S390_LAST_ARG_REG + 1;
+		fr = S390_LAST_FPARG_REG + 1;
 		add_general (&gr, sz, &cinfo->sigCookie);
 	}
 
@@ -2027,10 +2032,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				}
 				break;
 			}
+#if 0
 			if ((sig->call_convention == MONO_CALL_VARARG) && 
 			    (cinfo->args[iParm].regtype != RegTypeGeneral) &&
 			    (iParm < sig->sentinelpos)) 
 				cfg->sig_cookie += size;
+printf("%s %4d cookine %x\n",__FUNCTION__,__LINE__,cfg->sig_cookie);
+#endif
 
 			offset += MAX(size, 8);
 		}
