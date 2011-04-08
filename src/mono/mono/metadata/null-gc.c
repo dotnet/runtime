@@ -376,7 +376,7 @@ mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
 int
 mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
 {
-	return pthread_create (new_thread, attr, start_routine, arg);
+	return mono_threads_pthread_create (new_thread, attr, start_routine, arg);
 }
 
 int
