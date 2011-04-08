@@ -2291,15 +2291,24 @@ ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
 }
 
 static gboolean
+mono_threads_is_critical_method (MonoMethod *method)
+{
+	switch (method->wrapper_type) {
+	case MONO_WRAPPER_RUNTIME_INVOKE:
+	case MONO_WRAPPER_XDOMAIN_INVOKE:
+	case MONO_WRAPPER_XDOMAIN_DISPATCH:	
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
 find_wrapper (MonoMethod *m, gint no, gint ilo, gboolean managed, gpointer data)
 {
 	if (managed)
 		return TRUE;
 
-	if (m->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
-		m->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
-		m->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH) 
-	{
+	if (mono_threads_is_critical_method (m)) {
 		*((gboolean*)data) = TRUE;
 		return TRUE;
 	}
