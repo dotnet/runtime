@@ -2,7 +2,9 @@
 #define __LINUX_MAGIC_H
 
 #if __linux__
+#if HAVE_LINUX_MAGIC_H
 #include <linux/magic.h>
+#endif
 
 #ifndef ADFS_SUPER_MAGIC
 #define ADFS_SUPER_MAGIC        0xadf5
