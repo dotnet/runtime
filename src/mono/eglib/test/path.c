@@ -111,7 +111,6 @@ test_buildpath ()
 	if (s [0] != '/')
 		return FAILED ("Must have a '/' at the start");
 
-	printf ("Got: %s\n", s);
 	g_free (s);
 	return OK;
 }
