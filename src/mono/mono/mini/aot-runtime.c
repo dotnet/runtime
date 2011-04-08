@@ -2621,7 +2621,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	mono_aot_lock ();
 
-	mono_jit_stats.methods_aot++;
+	InterlockedIncrement (&mono_jit_stats.methods_aot);
 
 	amodule->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
 

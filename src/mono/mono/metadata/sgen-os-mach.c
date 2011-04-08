@@ -30,11 +30,13 @@
 
 #include "config.h"
 #ifdef HAVE_SGEN_GC
+
+
 #include <glib.h>
-#include "metadata/gc-internal.h"
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/object-internals.h"
+#include "metadata/gc-internal.h"
 
 #if defined(__MACH__)
 #include "utils/mach-support.h"
@@ -72,7 +74,8 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 	mono_mach_arch_thread_state_to_mcontext (state, mctx);
 	ctx.uc_mcontext = mctx;
 
-	info->stopped_domain = mono_mach_arch_get_tls_value_from_thread ((pthread_t)info->id, mono_domain_get_tls_offset ());
+	info->stopped_domain = mono_mach_arch_get_tls_value_from_thread (
+		mono_thread_info_get_tid (info), mono_domain_get_tls_offset ());
 	info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
 	stack_start = (char*) mono_mach_arch_get_sp (state) - REDZONE_SIZE;
 	/* If stack_start is not within the limits, then don't set it in info and we will be restarted. */
@@ -93,6 +96,7 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 	/* Notify the JIT */
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx);
+
 	return TRUE;
 }
 
@@ -100,15 +104,14 @@ mono_sgen_suspend_thread (SgenThreadInfo *info)
 int
 mono_sgen_thread_handshake (int signum)
 {
-	SgenThreadInfo *cur_thread = mono_sgen_thread_info_current ();
+	SgenThreadInfo *cur_thread = mono_thread_info_current ();
 	kern_return_t ret;
-
 	SgenThreadInfo *info;
 
 	int count = 0;
 
-	FOREACH_THREAD (info) {
-		if (info == cur_thread || mono_sgen_is_worker_thread (info->id))
+	FOREACH_THREAD_SAFE (info) {
+		if (info == cur_thread || mono_sgen_is_worker_thread (mono_thread_info_get_tid (info)))
 			continue;
 
 		if (signum == suspend_signal_num) {
@@ -120,7 +123,7 @@ mono_sgen_thread_handshake (int signum)
 				continue;
 		}
 		count ++;
-	} END_FOREACH_THREAD
+	} END_FOREACH_THREAD_SAFE
 	return count;
 }
 #endif

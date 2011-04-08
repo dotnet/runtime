@@ -29,10 +29,14 @@
 
 #ifdef HAVE_SGEN_GC
 
+typedef struct _SgenThreadInfo SgenThreadInfo;
+#define THREAD_INFO_TYPE SgenThreadInfo
+
 #include <glib.h>
 #include <pthread.h>
 #include <signal.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-threads.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/sgen-archdep.h>
@@ -60,13 +64,8 @@
 
 //#define SGEN_DEBUG_INTERNAL_ALLOC
 
-#define THREAD_HASH_SIZE 11
-
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
 
-#define ARCH_THREAD_TYPE pthread_t
-#define ARCH_GET_THREAD pthread_self
-#define ARCH_THREAD_EQUALS(a,b) pthread_equal (a, b)
 
 #if SIZEOF_VOID_P == 4
 typedef guint32 mword;
@@ -79,14 +78,6 @@ typedef guint64 mword;
 #define SGEN_TV_ELAPSED(start,end) (int)((end-start) / 10)
 #define SGEN_TV_ELAPSED_MS(start,end) ((SGEN_TV_ELAPSED((start),(end)) + 500) / 1000)
 
-/* LOCKING: assumes the GC lock is held */
-#define FOREACH_THREAD(thread) { \
-	int __i;	\
-	for (__i = 0; __i < THREAD_HASH_SIZE; ++__i)	\
-		for ((thread) = thread_table [__i]; (thread); (thread) = (thread)->next) {
-
-#define END_FOREACH_THREAD }}
-
 /* for use with write barriers */
 typedef struct _RememberedSet RememberedSet;
 struct _RememberedSet {
@@ -97,11 +88,8 @@ struct _RememberedSet {
 };
 
 /* eventually share with MonoThread? */
-typedef struct _SgenThreadInfo SgenThreadInfo;
-
 struct _SgenThreadInfo {
-	SgenThreadInfo *next;
-	ARCH_THREAD_TYPE id;
+	MonoThreadInfo info;
 #if defined(__MACH__)
 	thread_port_t mach_port;
 #endif
@@ -146,8 +134,6 @@ struct _SgenThreadInfo {
 	long store_remset_buffer_index;
 #endif
 };
-
-extern SgenThreadInfo* thread_table [THREAD_HASH_SIZE] MONO_INTERNAL;
 
 enum {
 	MEMORY_ROLE_GEN0,
@@ -612,8 +598,6 @@ void* mono_sgen_alloc_os_memory_aligned (mword size, mword alignment, gboolean a
 void mono_sgen_free_os_memory (void *addr, size_t size) MONO_INTERNAL;
 
 int mono_sgen_thread_handshake (int signum) MONO_INTERNAL;
-SgenThreadInfo* mono_sgen_thread_info_lookup (ARCH_THREAD_TYPE id) MONO_INTERNAL;
-SgenThreadInfo* mono_sgen_thread_info_current (void) MONO_INTERNAL;
 gboolean mono_sgen_suspend_thread (SgenThreadInfo *info) MONO_INTERNAL;
 gboolean mono_sgen_resume_thread (SgenThreadInfo *info) MONO_INTERNAL;
 

@@ -22,6 +22,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
 #include <mono/utils/gc_wrapper.h>
 
@@ -41,6 +42,9 @@
 
 static gboolean gc_initialized = FALSE;
 
+static void*
+boehm_thread_register (MonoThreadInfo* info, void *baseptr);
+
 static void
 mono_gc_warning (char *msg, GC_word arg)
 {
@@ -50,6 +54,7 @@ mono_gc_warning (char *msg, GC_word arg)
 void
 mono_gc_base_init (void)
 {
+	MonoThreadInfoCallbacks cb;
 	char *env;
 
 	if (gc_initialized)
@@ -163,6 +168,10 @@ mono_gc_base_init (void)
 		}
 		g_strfreev (opts);
 	}
+
+	memset (&cb, 0, sizeof (cb));
+	cb.thread_register = boehm_thread_register;
+	mono_threads_init (&cb, sizeof (MonoThreadInfo));
 
 	mono_gc_enable_events ();
 	gc_initialized = TRUE;
@@ -321,6 +330,12 @@ extern int GC_thread_register_foreign (void *base_addr);
 gboolean
 mono_gc_register_thread (void *baseptr)
 {
+	return mono_thread_info_attach (baseptr) != NULL;
+}
+
+static void*
+boehm_thread_register (MonoThreadInfo* info, void *baseptr)
+{
 #if GC_VERSION_MAJOR >= 7
 	struct GC_stack_base sb;
 	int res;
@@ -336,16 +351,16 @@ mono_gc_register_thread (void *baseptr)
 	res = GC_register_my_thread (&sb);
 	if ((res != GC_SUCCESS) && (res != GC_DUPLICATE)) {
 		g_warning ("GC_register_my_thread () failed.\n");
-		return FALSE;
+		return NULL;
 	}
-	return TRUE;
+	return info;
 #else
 	if (mono_gc_is_gc_thread())
-		return TRUE;
+		return info;
 #if defined(USE_INCLUDED_LIBGC) && !defined(HOST_WIN32)
-	return GC_thread_register_foreign (baseptr);
+	return GC_thread_register_foreign (baseptr) ? info : NULL;
 #else
-	return FALSE;
+	return NULL;
 #endif
 #endif
 }
@@ -1171,7 +1186,7 @@ mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
 int
 mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
 {
-	return pthread_create (new_thread, attr, start_routine, arg);
+	return mono_threads_pthread_create (new_thread, attr, start_routine, arg);
 }
 
 int

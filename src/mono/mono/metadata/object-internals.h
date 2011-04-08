@@ -383,7 +383,7 @@ struct _MonoInternalThread {
 	gpointer stack_ptr;
 	gpointer *static_data;
 	gpointer jit_data;
-	gpointer lock_data;
+	void *thread_info; /*This is MonoThreadInfo*, but to simplify dependencies, let's make it a void* here. */
 	MonoAppContext *current_appcontext;
 	int stack_size;
 	gpointer appdomain_refs;
@@ -398,7 +398,7 @@ struct _MonoInternalThread {
 	MonoBoolean thread_interrupt_requested;
 	guint8	apartment_state;
 	gint32 critical_region_level;
-	guint32 small_id; /* A small, unique id, used for the hazard pointer table. */
+	guint32 unused0;	
 	MonoThreadManageCallback manage_callback;
 	MonoException *pending_exception;
 	MonoThread *root_domain_thread;

@@ -349,8 +349,6 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	/* Sanity check */
 	g_assert ((buf - code) <= METHOD_TRAMPOLINE_SIZE);
 
-	mono_jit_stats.method_trampolines++;
-
 	return code;
 }
 
@@ -377,8 +375,6 @@ create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain)
 	ji->method = method;
 	ji->code_start = code;
 	ji->code_size = buf - code;
-
-	mono_jit_stats.method_trampolines++;
 
 	return ji;
 }

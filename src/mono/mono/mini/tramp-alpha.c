@@ -485,8 +485,6 @@ mono_arch_create_specific_trampoline (gpointer arg1,
   	g_debug("mono_arch_create_specific_trampoline: Target: %p, Arg1: %p",
 	 real_code, arg1);
   
-  mono_jit_stats.method_trampolines++;
-  
   if (code_len)
     *code_len = size;
   

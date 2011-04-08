@@ -416,6 +416,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			g_hash_table_remove (type_initialization_hash, vtable);
 			g_free (lock);
 		}
+		mono_memory_barrier ();
 		if (!vtable->init_failed)
 			vtable->initialized = 1;
 		mono_type_initialization_unlock ();

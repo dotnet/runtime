@@ -1107,7 +1107,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		memset (&cfg->vars [orig_count], 0, (cfg->varinfo_count - orig_count) * sizeof (MonoMethodVar));
 	}
 
-	mono_jit_stats.allocate_var++;
+	cfg->stat_allocate_var++;
 
 	MONO_INST_NEW (cfg, inst, opcode);
 	inst->inst_c0 = num;
@@ -1947,7 +1947,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			g_list_free (vtype_stack_slots [i].active);
 	}
 
-	mono_jit_stats.locals_stack_size += offset;
+	cfg->stat_locals_stack_size += offset;
 
 	*stack_size = offset;
 	return offsets;
@@ -2189,7 +2189,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			g_list_free (vtype_stack_slots [i].active);
 	}
 
-	mono_jit_stats.locals_stack_size += offset;
+	cfg->stat_locals_stack_size += offset;
 
 	*stack_size = offset;
 	return offsets;
@@ -4130,7 +4130,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 
-	mono_jit_stats.methods_compiled++;
+	InterlockedIncrement (&mono_jit_stats.methods_compiled);
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
 		mono_profiler_method_jit (method);
 	if (MONO_PROBE_METHOD_COMPILE_BEGIN_ENABLED ())
@@ -4441,8 +4441,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	mono_jit_stats.basic_blocks += cfg->num_bblocks;
-	mono_jit_stats.max_basic_blocks = MAX (cfg->num_bblocks, mono_jit_stats.max_basic_blocks);
+	cfg->stat_basic_blocks += cfg->num_bblocks;
 
 	if (COMPILE_LLVM (cfg)) {
 		MonoInst *ins;
@@ -5246,6 +5245,21 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	jinfo = cfg->jit_info;
 
 	prof_options = cfg->prof_options;
+
+	/*
+	 * Update global stats while holding a lock, instead of doing many
+	 * InterlockedIncrement operations during JITting.
+	 */
+	mono_jit_stats.allocate_var += cfg->stat_allocate_var;
+	mono_jit_stats.locals_stack_size += cfg->stat_locals_stack_size;
+	mono_jit_stats.basic_blocks += cfg->stat_basic_blocks;
+	mono_jit_stats.max_basic_blocks = MAX (cfg->stat_basic_blocks, mono_jit_stats.max_basic_blocks);
+	mono_jit_stats.cil_code_size += cfg->stat_cil_code_size;
+	mono_jit_stats.regvars += cfg->stat_n_regvars;
+	mono_jit_stats.inlineable_methods += cfg->stat_inlineable_methods;
+	mono_jit_stats.inlined_methods += cfg->stat_inlined_methods;
+	mono_jit_stats.cas_demand_generation += cfg->stat_cas_demand_generation;
+	mono_jit_stats.code_reallocs += cfg->stat_code_reallocs;
 
 	mono_destroy_compile (cfg);
 
@@ -6051,9 +6065,21 @@ register_jit_stats (void)
 {
 	mono_counters_register ("Compiled methods", MONO_COUNTER_JIT | MONO_COUNTER_WORD, &mono_jit_stats.methods_compiled);
 	mono_counters_register ("Methods from AOT", MONO_COUNTER_JIT | MONO_COUNTER_WORD, &mono_jit_stats.methods_aot);
-	mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_llvm);	
 	mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_without_llvm);
+	mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_llvm);	
 	mono_counters_register ("Total time spent JITting (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_time);
+	mono_counters_register ("Basic blocks", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.basic_blocks);
+	mono_counters_register ("Max basic blocks", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.max_basic_blocks);
+	mono_counters_register ("Allocated vars", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.allocate_var);
+	mono_counters_register ("Code reallocs", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.code_reallocs);
+	mono_counters_register ("Allocated code size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.allocated_code_size);
+	mono_counters_register ("Inlineable methods", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.inlineable_methods);
+	mono_counters_register ("Inlined methods", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.inlined_methods);
+	mono_counters_register ("Regvars", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.regvars);
+	mono_counters_register ("Locals stack size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.locals_stack_size);
+	mono_counters_register ("Method cache lookups", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_lookups);
+	mono_counters_register ("Compiled CIL code size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.cil_code_size);
+	mono_counters_register ("Native code size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.native_code_size);
 }
 
 static void runtime_invoke_info_free (gpointer value);
@@ -6551,22 +6577,10 @@ print_jit_stats (void)
 {
 	if (mono_jit_stats.enabled) {
 		g_print ("Mono Jit statistics\n");
-		g_print ("Methods cache lookup:   %ld\n", mono_jit_stats.methods_lookups);
-		g_print ("Basic blocks:           %ld\n", mono_jit_stats.basic_blocks);
-		g_print ("Max basic blocks:       %ld\n", mono_jit_stats.max_basic_blocks);
-		g_print ("Allocated vars:         %ld\n", mono_jit_stats.allocate_var);
-		g_print ("Compiled CIL code size: %ld\n", mono_jit_stats.cil_code_size);
-		g_print ("Native code size:       %ld\n", mono_jit_stats.native_code_size);
 		g_print ("Max code size ratio:    %.2f (%s)\n", mono_jit_stats.max_code_size_ratio/100.0,
 				 mono_jit_stats.max_ratio_method);
 		g_print ("Biggest method:         %ld (%s)\n", mono_jit_stats.biggest_method_size,
 				 mono_jit_stats.biggest_method);
-		g_print ("Code reallocs:          %ld\n", mono_jit_stats.code_reallocs);
-		g_print ("Allocated code size:    %ld\n", mono_jit_stats.allocated_code_size);
-		g_print ("Inlineable methods:     %ld\n", mono_jit_stats.inlineable_methods);
-		g_print ("Inlined methods:        %ld\n", mono_jit_stats.inlined_methods);
-		g_print ("Regvars:                %ld\n", mono_jit_stats.regvars);
-		g_print ("Locals stack size:      %ld\n", mono_jit_stats.locals_stack_size);
 
 		g_print ("\nCreated object count:   %ld\n", mono_stats.new_object_count);
 		g_print ("Delegates created:      %ld\n", mono_stats.delegate_creations);

@@ -272,11 +272,13 @@ static void *thread_start_routine (gpointer args)
 		pthread_exit (NULL);
 	}
 
-	thread->id = pthread_self();
-
 #ifdef DEBUG
 	g_message ("%s: started thread id %ld", __func__, thread->id);
 #endif
+
+	/* We set it again here since passing &thread->id to pthread_create is racy
+	   as the thread can start running before the value is set.*/
+	thread->id = pthread_self ();
 
 	if (thread->create_flags & CREATE_SUSPENDED) {
 		_wapi_thread_suspend (thread);

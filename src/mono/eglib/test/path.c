@@ -20,6 +20,8 @@ RESULT
 test_buildpath ()
 {
 	char *s;
+	char *buffer = "var/private";
+	char *dir = "/";
 	
 	s = g_build_path ("/", "hola///", "//mundo", NULL);
 	if (strcmp (s, "hola/mundo") != 0)
@@ -99,6 +101,16 @@ test_buildpath ()
 		return FAILED ("must get a non-NULL return");
 	if (s [0] != 0)
 		return FAILED ("must get an empty string");
+
+	// This is to test the regression introduced by Levi for the Windows support
+	// that code errouneously read below the allowed area (in this case dir [-1]).
+	// and caused all kinds of random errors.
+	dir = "//";
+	dir++;
+	s = g_build_filename (dir, buffer, NULL);
+	if (s [0] != '/')
+		return FAILED ("Must have a '/' at the start");
+
 	g_free (s);
 	return OK;
 }

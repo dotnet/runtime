@@ -1355,6 +1355,17 @@ typedef struct {
 	 */
 	guint8 *gc_map;
 	guint32 gc_map_size;
+
+	/* Stats */
+	int stat_allocate_var;
+	int stat_locals_stack_size;
+	int stat_basic_blocks;
+	int stat_cil_code_size;
+	int stat_n_regvars;
+	int stat_inlineable_methods;
+	int stat_inlined_methods;
+	int stat_cas_demand_generation;
+	int stat_code_reallocs;
 } MonoCompile;
 
 typedef enum {
@@ -1370,30 +1381,30 @@ typedef enum {
 } MonoCompileFlags;
 
 typedef struct {
-	gulong methods_compiled;
-	gulong methods_aot;
-	gulong methods_lookups;
-	gulong allocate_var;
-	gulong cil_code_size;
-	gulong native_code_size;
-	gulong code_reallocs;
-	gulong max_code_size_ratio;
-	gulong biggest_method_size;
-	gulong allocated_code_size;
-	gulong inlineable_methods;
-	gulong inlined_methods;
-	gulong basic_blocks;
-	gulong max_basic_blocks;
-	gulong locals_stack_size;
-	gulong regvars;
-	gulong cas_declsec_check;
-	gulong cas_linkdemand_icall;
-	gulong cas_linkdemand_pinvoke;
-	gulong cas_linkdemand_aptc;
-	gulong cas_linkdemand;
-	gulong cas_demand_generation;
-	gulong generic_virtual_invocations;
-    int methods_with_llvm;
+	gint32 methods_compiled;
+	gint32 methods_aot;
+	gint32 methods_lookups;
+	gint32 allocate_var;
+	gint32 cil_code_size;
+	gint32 native_code_size;
+	gint32 code_reallocs;
+	gint32 max_code_size_ratio;
+	gint32 biggest_method_size;
+	gint32 allocated_code_size;
+	gint32 inlineable_methods;
+	gint32 inlined_methods;
+	gint32 basic_blocks;
+	gint32 max_basic_blocks;
+	gint32 locals_stack_size;
+	gint32 regvars;
+	gint32 cas_declsec_check;
+	gint32 cas_linkdemand_icall;
+	gint32 cas_linkdemand_pinvoke;
+	gint32 cas_linkdemand_aptc;
+	gint32 cas_linkdemand;
+	gint32 cas_demand_generation;
+	gint32 generic_virtual_invocations;
+	int methods_with_llvm;
 	int methods_without_llvm;
 	char *max_ratio_method;
 	char *biggest_method;

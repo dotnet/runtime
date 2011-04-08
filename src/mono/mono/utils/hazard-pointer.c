@@ -6,10 +6,12 @@
 
 #include <config.h>
 
-#include <mono/metadata/object-internals.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/monobitset.h>
+#include <mono/utils/mono-threads.h>
 #include <mono/io-layer/io-layer.h>
 
 typedef struct {
@@ -149,7 +151,7 @@ is_pointer_hazardous (gpointer p)
 MonoThreadHazardPointers*
 mono_hazard_pointer_get (void)
 {
-	MonoInternalThread *current_thread = mono_thread_internal_current ();
+	MonoThreadInfo *current_thread = mono_thread_info_current ();
 
 	if (!(current_thread && current_thread->small_id >= 0)) {
 		static MonoThreadHazardPointers emerg_hazard_table;
@@ -158,6 +160,13 @@ mono_hazard_pointer_get (void)
 	}
 
 	return &hazard_table [current_thread->small_id];
+}
+
+MonoThreadHazardPointers*
+mono_hazard_pointer_get_by_id (int small_id)
+{
+	g_assert (small_id >= 0 && small_id <= highest_small_id);
+	return &hazard_table [small_id];
 }
 
 /* Can be called with hp==NULL, in which case it acts as an ordinary
