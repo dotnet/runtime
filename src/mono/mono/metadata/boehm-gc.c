@@ -963,8 +963,6 @@ gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
 	int i;
-	if (method == write_barrier_method)
-		return TRUE;
 
 	for (i = 0; i < ATYPE_NUM; ++i)
 		if (method == alloc_method_cache [i])
