@@ -14,8 +14,20 @@
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-linked-list-set.h>
 
-#include <pthread.h>
 #include <glib.h>
+
+#ifdef HOST_WIN32
+
+#include <windows.h>
+
+typedef DWORD MonoNativeThreadId;
+
+#define mono_native_thread_id_get GetCurrentThreadId
+#define mono_native_thread_id_equals(a,b) ((a) == ((b))
+
+#else
+
+#include <pthread.h>
 
 #if defined(__MACH__)
 #include <mono/utils/mach-support.h>
@@ -24,7 +36,9 @@
 typedef pthread_t MonoNativeThreadId;
 
 #define mono_native_thread_id_get pthread_self
-#define mono_native_thread_id_equals pthread_equal
+#define mono_native_thread_id_equals(a,b) pthread_equal((a),(b))
+
+#endif /* #ifdef HOST_WIN32 */
 
 #ifndef THREAD_INFO_TYPE
 #define THREAD_INFO_TYPE MonoThreadInfo
@@ -62,9 +76,7 @@ Snapshot iteration.
  */
 void
 mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t thread_info_size) MONO_INTERNAL;
-	
-int
-mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) MONO_INTERNAL;
+
 
 THREAD_INFO_TYPE *
 mono_thread_info_attach (void *baseptr) MONO_INTERNAL;
@@ -78,4 +90,10 @@ mono_thread_info_list_head (void) MONO_INTERNAL;
 MonoThreadInfo*
 mono_thread_info_lookup (MonoNativeThreadId id) MONO_INTERNAL;
 
+#if !defined(HOST_WIN32)
+
+int
+mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) MONO_INTERNAL;
+
+#endif
 #endif /* __MONO_THREADS_H__ */

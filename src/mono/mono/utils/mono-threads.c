@@ -14,7 +14,6 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/appdomain.h>
 
-#include <pthread.h>
 #include <errno.h>
 
 
