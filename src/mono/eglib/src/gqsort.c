@@ -43,57 +43,41 @@ typedef struct _QSortStack {
 #define QSORT_PUSH(sp, a, c) (sp->array = a, sp->count = c, sp++)
 #define QSORT_POP(sp, a, c) (sp--, a = sp->array, c = sp->count)
 
-static inline void
-g_qsort_swap (char *a, char *b, size_t n)
-{
-	register char *an = a + n;
-	register char tmp;
-	
-	do {
-		tmp = *a;
-		*a++ = *b;
-		*b++ = tmp;
-	} while (a < an);
+#define SWAPTYPE(TYPE, a, b) {              \
+	long __n = size / sizeof (TYPE);    \
+	register TYPE *__a = (TYPE *) (a);  \
+	register TYPE *__b = (TYPE *) (b);  \
+	register TYPE t;                    \
+	                                    \
+	do {                                \
+		t = *__a;                   \
+		*__a++ = *__b;              \
+		*__b++ = t;                 \
+	} while (--__n > 0);                \
 }
 
-static inline char *
-g_qsort_median (char *a, char *b, char *c, GCompareDataFunc compare, gpointer user_data)
-{
-	if (compare (a, b, user_data) < 0) {
-		/* a < b < c */
-		if (compare (b, c, user_data) < 0)
-			return b;
-		
-		/* a < c < b */
-		if (compare (a, c, user_data) < 0)
-			return c;
-		
-		/* c < a < b */
-		return a;
-	} else {
-		/* b < a < c */
-		if (compare (a, c, user_data) < 0)
-			return a;
-		
-		/* b < c < a */
-		if (compare (b, c, user_data) < 0)
-			return c;
-		
-		/* c < b < a */
-		return b;
-	}
-}
+#define SWAPBYTE(a, b) SWAPTYPE(char, (a), (b))
+#define SWAPLONG(a, b) SWAPTYPE(long, (a), (b))
+#define SWAP(a, b) if (swaplong) SWAPLONG((a), (b)) else SWAPBYTE((a), (b))
+
+/* check if we can swap by longs rather than bytes by making sure that
+ * memory is properly aligned and that the element size is a multiple
+ * of sizeof (long) */
+#define SWAP_INIT() swaplong = (((char *) base) - ((char *) 0)) % sizeof (long) == 0 && (size % sizeof (long)) == 0
 
 void
 g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc compare, gpointer user_data)
 {
 	QSortStack stack[STACK_SIZE], *sp;
-	register char *i, *k, *pivot;
-	char *mid, *lo, *hi;
+	register char *i, *k, *mid;
 	size_t n, n1, n2;
+	char *lo, *hi;
+	int swaplong;
 	
 	if (nmemb <= 1)
 		return;
+	
+	SWAP_INIT ();
 	
 	/* initialize our stack */
 	sp = stack;
@@ -108,7 +92,7 @@ g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc co
 			/* switch to insertion sort */
 			for (i = lo + size; i <= hi; i += size)
 				for (k = i; k > lo && compare (k - size, k, user_data) > 0; k -= size)
-					g_qsort_swap (k - size, k, size);
+					SWAP (k - size, k);
 			
 			continue;
 		}
@@ -116,53 +100,66 @@ g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc co
 		/* calculate the middle element */
 		mid = lo + (n / 2) * size;
 		
-		/* determine which element contains the median value */
-		pivot = g_qsort_median (lo, mid, hi, compare, user_data);
-		
-		if (pivot != lo) {
-			/* swap pivot value into first element (so the location stays constant) */
-			g_qsort_swap (lo, pivot, size);
-			pivot = lo;
+		/* once we re-order the lo, mid, and hi elements to be in
+		 * ascending order, we'll use mid as our pivot. */
+		if (compare (mid, lo, user_data) < 0) {
+			SWAP (mid, lo);
 		}
 		
+		if (compare (hi, mid, user_data) < 0) {
+			SWAP (mid, hi);
+			if (compare (mid, lo, user_data) < 0) {
+				SWAP (mid, lo);
+			}
+		}
+		
+		/* since we've already guaranteed that lo <= mid and mid <= hi,
+		 * we can skip comparing them again */
 		i = lo + size;
-		k = hi;
+		k = hi - size;
 		
 		do {
 			/* find the first element with a value > pivot value */
-			while (i < k && compare (i, pivot, user_data) <= 0)
+			while (i < k && compare (i, mid, user_data) <= 0)
 				i += size;
 			
 			/* find the last element with a value <= pivot value */
-			while (k >= i && compare (k, pivot, user_data) > 0)
+			while (k >= i && compare (mid, k, user_data) < 0)
 				k -= size;
 			
 			if (k <= i)
 				break;
 			
-			g_qsort_swap (i, k, size);
+			SWAP (i, k);
+			
+			/* make sure we keep track of our pivot element */
+			if (mid == i) {
+				mid = k;
+			} else if (mid == k) {
+				mid = i;
+			}
+			
 			i += size;
 			k -= size;
 		} while (1);
 		
-		if (k != pivot) {
+		if (k != mid) {
 			/* swap the pivot with the last element in the first partition */
-			g_qsort_swap (pivot, k, size);
+			SWAP (mid, k);
 		}
 		
 		/* calculate segment sizes */
 		n2 = (hi - k) / size;
 		n1 = (k - lo) / size;
 		
-		if (n1 <= 1 || n2 <= 1) {
-			/* pathological case detected, switch to insertion sort */
-			for (i = lo + size; i <= hi; i += size)
-				for (k = i; k > lo && compare (k - size, k, user_data) > 0; k -= size)
-					g_qsort_swap (k - size, k, size);
+		/* push our partitions onto the stack, largest first
+		 * (to make sure we don't run out of stack space) */
+		if (n2 > n1) {
+			if (n2 > 1) QSORT_PUSH (sp, k + size, n2);
+			if (n1 > 1) QSORT_PUSH (sp, lo, n1);
 		} else {
-			/* push each segment onto the stack */
-			QSORT_PUSH (sp, k + size, n2);
-			QSORT_PUSH (sp, lo, n1);
+			if (n1 > 1) QSORT_PUSH (sp, lo, n1);
+			if (n2 > 1) QSORT_PUSH (sp, k + size, n2);
 		}
 	} while (sp > stack);
 }
