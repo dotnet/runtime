@@ -7738,7 +7738,6 @@ static gboolean
 is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 {
 	MonoJitInfo *ji;
-	MonoMethod *method;
 
 	if (!mono_thread_internal_current ())
 		/* Happens during thread attach */
