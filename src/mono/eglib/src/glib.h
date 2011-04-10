@@ -221,6 +221,7 @@ gboolean        g_hash_table_lookup_extended (GHashTable *hash, gconstpointer ke
 void            g_hash_table_foreach         (GHashTable *hash, GHFunc func, gpointer user_data);
 gpointer        g_hash_table_find            (GHashTable *hash, GHRFunc predicate, gpointer user_data);
 gboolean        g_hash_table_remove          (GHashTable *hash, gconstpointer key);
+gboolean        g_hash_table_steal           (GHashTable *hash, gconstpointer key);
 void            g_hash_table_remove_all      (GHashTable *hash);
 guint           g_hash_table_foreach_remove  (GHashTable *hash, GHRFunc func, gpointer user_data);
 guint           g_hash_table_foreach_steal   (GHashTable *hash, GHRFunc func, gpointer user_data);
