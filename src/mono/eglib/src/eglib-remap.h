@@ -51,6 +51,7 @@
 #define g_hash_table_new monoeg_g_hash_table_new
 #define g_hash_table_new_full monoeg_g_hash_table_new_full
 #define g_hash_table_remove monoeg_g_hash_table_remove
+#define g_hash_table_steal monoeg_g_hash_table_steal
 #define g_hash_table_size monoeg_g_hash_table_size
 #define g_hash_table_print_stats monoeg_g_hash_table_print_stats
 #define g_hash_table_remove_all monoeg_g_hash_table_remove_all

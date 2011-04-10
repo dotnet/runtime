@@ -436,6 +436,37 @@ g_hash_table_foreach_remove (GHashTable *hash, GHRFunc func, gpointer user_data)
 	return count;
 }
 
+gboolean
+g_hash_table_steal (GHashTable *hash, gconstpointer key)
+{
+	GEqualFunc equal;
+	Slot *s, *last;
+	guint hashcode;
+	
+	g_return_val_if_fail (hash != NULL, FALSE);
+	sanity_check (hash);
+	equal = hash->key_equal_func;
+	
+	hashcode = ((*hash->hash_func)(key)) % hash->table_size;
+	last = NULL;
+	for (s = hash->table [hashcode]; s != NULL; s = s->next){
+		if ((*equal)(s->key, key)) {
+			if (last == NULL)
+				hash->table [hashcode] = s->next;
+			else
+				last->next = s->next;
+			g_free (s);
+			hash->in_use--;
+			sanity_check (hash);
+			return TRUE;
+		}
+		last = s;
+	}
+	sanity_check (hash);
+	return FALSE;
+	
+}
+
 guint
 g_hash_table_foreach_steal (GHashTable *hash, GHRFunc func, gpointer user_data)
 {
