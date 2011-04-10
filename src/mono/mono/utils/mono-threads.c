@@ -10,6 +10,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-tls.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/appdomain.h>
@@ -29,7 +30,7 @@ typedef struct {
 
 static int thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
-static pthread_key_t thread_info_key;
+static MonoNativeTlsKey thread_info_key;
 static MonoLinkedListSet thread_list;
 
 static inline void
@@ -93,7 +94,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 		}
 	}
 
-	pthread_setspecific (thread_info_key, info);
+	mono_native_tls_set_value (thread_info_key, info);
 
 	/*If this fail it means a given thread has been registered twice, which doesn't make sense. */
 	result = mono_thread_info_insert (info);
@@ -146,7 +147,7 @@ inner_start_thread (void *arg)
 MonoThreadInfo*
 mono_thread_info_current (void)
 {
-	return pthread_getspecific (thread_info_key);
+	return mono_native_tls_get_value (thread_info_key);
 }
 
 MonoLinkedListSet*
@@ -158,7 +159,7 @@ mono_thread_info_list_head (void)
 MonoThreadInfo*
 mono_thread_info_attach (void *baseptr)
 {
-	MonoThreadInfo *info = pthread_getspecific (thread_info_key);
+	MonoThreadInfo *info = mono_native_tls_get_value (thread_info_key);
 	if (!info) {
 		info = g_malloc0 (thread_info_size);
 		if (!register_thread (info, baseptr))
@@ -172,11 +173,14 @@ mono_thread_info_attach (void *baseptr)
 void
 mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 {
+	gboolean res;
 	threads_callbacks = *callbacks;
 	thread_info_size = info_size;
-	pthread_key_create (&thread_info_key, unregister_thread);
+	res = mono_native_tls_alloc (&thread_info_key, unregister_thread);
 	mono_lls_init (&thread_list, free_thread_info);
 	mono_thread_smr_init ();
+
+	g_assert (res);
 	g_assert (sizeof (MonoNativeThreadId) == sizeof (uintptr_t));
 }
 
