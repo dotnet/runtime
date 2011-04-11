@@ -165,6 +165,7 @@
     <ClCompile Include="..\eglib\src\gpath.c" />
     <ClCompile Include="..\eglib\src\gpattern.c" />
     <ClCompile Include="..\eglib\src\gptrarray.c" />
+    <ClCompile Include="..\eglib\src\gqsort.c" />
     <ClCompile Include="..\eglib\src\gqueue.c" />
     <ClCompile Include="..\eglib\src\gshell.c" />
     <ClCompile Include="..\eglib\src\gslist.c" />

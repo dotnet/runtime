@@ -440,6 +440,7 @@
     </ClCompile>
     <ClCompile Include="..\mono\utils\mono-internal-hash.c" />
     <ClCompile Include="..\mono\utils\mono-io-portability.c" />
+    <ClCompile Include="..\mono\utils\mono-linked-list-set.c" />
     <ClCompile Include="..\mono\utils\mono-logger.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -567,6 +568,7 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\mono\utils\mono-stdlib.c" />
+    <ClCompile Include="..\mono\utils\mono-threads.c" />
     <ClCompile Include="..\mono\utils\mono-time.c" />
     <ClCompile Include="..\mono\utils\mono-uri.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
