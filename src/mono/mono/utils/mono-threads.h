@@ -90,8 +90,12 @@ mono_thread_info_list_head (void) MONO_INTERNAL;
 MonoThreadInfo*
 mono_thread_info_lookup (MonoNativeThreadId id) MONO_INTERNAL;
 
-#if !defined(HOST_WIN32)
+#if defined(HOST_WIN32)
 
+gpointer
+mono_threads_wthread_create (LPSECURITY_ATTRIBUTES security, guint32 stacksize, LPTHREAD_START_ROUTINE start, gpointer param, guint32 create, LPDWORD tid) MONO_INTERNAL;
+
+#else
 int
 mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) MONO_INTERNAL;
 

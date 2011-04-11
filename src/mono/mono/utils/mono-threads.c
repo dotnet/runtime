@@ -17,12 +17,22 @@
 
 #include <errno.h>
 
+#ifdef HOST_WIN32
+#define mono_native_thread_start LPTHREAD_START_ROUTINE
+#define native_thread_ret_type guint32
+
+#else
+
+typedef void *(*mono_native_thread_start)(void*);
+#define native_thread_ret_type void*
+
+#endif
 
 #define THREADS_DEBUG(...)
 //#define THREADS_DEBUG(...) g_message(__VA_ARGS__)
 
 typedef struct {
-	void *(*start_routine) (void *);
+	mono_native_thread_start start_routine;
 	void *arg;
 	int flags;
 	MonoSemType registered;
@@ -123,25 +133,34 @@ unregister_thread (void *arg)
 	mono_thread_small_id_free (small_id);
 }
 
-static void*
+static native_thread_ret_type WINAPI
 inner_start_thread (void *arg)
 {
 	ThreadStartInfo *start_info = arg;
 	MonoThreadInfo* info;
 	void *t_arg = start_info->arg;
-	void *(*start_func) (void*) = start_info->start_routine;
-	void *result;
 	int post_result;
+	mono_native_thread_start start_func = start_info->start_routine;
+	native_thread_ret_type result;
 
 	info = g_malloc0 (thread_info_size);
+	THREADS_DEBUG ("inner start %p\n", info);
 
 	register_thread (info, &post_result);
 
+#ifdef HOST_WIN32
+	g_free (start_info);
+#else
 	post_result = MONO_SEM_POST (&(start_info->registered));
 	g_assert (!post_result);
+#endif
 
 	result = start_func (t_arg);
 	g_assert (!mono_domain_get ());
+
+#ifdef HOST_WIN32
+	unregister_thread (info);
+#endif
 
 	return result;
 }
@@ -190,6 +209,30 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	g_assert (sizeof (MonoNativeThreadId) == sizeof (uintptr_t));
 }
 
+#ifdef HOST_WIN32
+
+gpointer
+mono_threads_wthread_create (LPSECURITY_ATTRIBUTES security, guint32 stacksize, LPTHREAD_START_ROUTINE start, gpointer param, guint32 create, LPDWORD tid)
+{
+	ThreadStartInfo *start_info;
+	gpointer result;
+
+	start_info = g_malloc0 (sizeof (ThreadStartInfo));
+	if (!start_info)
+		return NULL;
+
+	start_info->arg = param;
+	start_info->start_routine = start;
+
+	/*
+	On win32 we can't use a semaphore to wait for registration as it leads to deadlocks when the thread is created suspended
+	*/
+	result = CreateThread (security, stacksize, inner_start_thread, start_info, create, tid);
+	return result;	
+}
+
+#else
+
 int
 mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
 {
@@ -213,3 +256,5 @@ mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, 
 	g_free (start_info);
 	return result;
 }
+
+#endif
