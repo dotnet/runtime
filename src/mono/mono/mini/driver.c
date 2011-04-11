@@ -1244,6 +1244,7 @@ static const char info[] =
 #ifdef HOST_WIN32
 BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
+	int dummy;
 	if (!mono_gc_dllmain (module_handle, reason, reserved))
 		return FALSE;
 
@@ -1256,6 +1257,13 @@ BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 		if (coree_module_handle)
 			FreeLibrary (coree_module_handle);
 		break;
+	case DLL_THREAD_ATTACH:
+		mono_thread_info_attach (&dummy);
+		break;
+	case DLL_THREAD_DETACH:
+		mono_thread_info_dettach ();
+		break;
+	
 	}
 	return TRUE;
 }

@@ -148,19 +148,12 @@ inner_start_thread (void *arg)
 
 	register_thread (info, &post_result);
 
-#ifdef HOST_WIN32
-	g_free (start_info);
-#else
 	post_result = MONO_SEM_POST (&(start_info->registered));
 	g_assert (!post_result);
-#endif
 
 	result = start_func (t_arg);
 	g_assert (!mono_domain_get ());
 
-#ifdef HOST_WIN32
-	unregister_thread (info);
-#endif
 
 	return result;
 }
@@ -183,12 +176,23 @@ mono_thread_info_attach (void *baseptr)
 	MonoThreadInfo *info = mono_native_tls_get_value (thread_info_key);
 	if (!info) {
 		info = g_malloc0 (thread_info_size);
+		THREADS_DEBUG ("attaching %p\n", info);
 		if (!register_thread (info, baseptr))
 			return NULL;
 	} else if (threads_callbacks.thread_attach) {
 		threads_callbacks.thread_attach (info);
 	}
 	return info;
+}
+
+void
+mono_thread_info_dettach (void)
+{
+	MonoThreadInfo *info = mono_native_tls_get_value (thread_info_key);
+	if (info) {
+		THREADS_DEBUG ("detaching %p\n", info);
+		unregister_thread (info);
+	}
 }
 
 void
@@ -209,29 +213,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	g_assert (sizeof (MonoNativeThreadId) == sizeof (uintptr_t));
 }
 
-#ifdef HOST_WIN32
-
-gpointer
-mono_threads_wthread_create (LPSECURITY_ATTRIBUTES security, guint32 stacksize, LPTHREAD_START_ROUTINE start, gpointer param, guint32 create, LPDWORD tid)
-{
-	ThreadStartInfo *start_info;
-	gpointer result;
-
-	start_info = g_malloc0 (sizeof (ThreadStartInfo));
-	if (!start_info)
-		return NULL;
-
-	start_info->arg = param;
-	start_info->start_routine = start;
-
-	/*
-	On win32 we can't use a semaphore to wait for registration as it leads to deadlocks when the thread is created suspended
-	*/
-	result = CreateThread (security, stacksize, inner_start_thread, start_info, create, tid);
-	return result;	
-}
-
-#else
+#if !defined(HOST_WIN32)
 
 int
 mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
@@ -257,4 +239,4 @@ mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, 
 	return result;
 }
 
-#endif
+#endif /* !defined(HOST_WIN32) */

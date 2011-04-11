@@ -635,7 +635,7 @@ gpointer mono_create_thread (WapiSecurityAttributes *security,
 #ifdef HOST_WIN32
 	DWORD real_tid;
 
-	res = mono_threads_wthread_create (security, stacksize, start, param, create, &real_tid);
+	res = CreateThread (security, stacksize, start, param, create, &real_tid);
 	if (tid)
 		*tid = real_tid;
 #else
