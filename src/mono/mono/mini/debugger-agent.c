@@ -4208,8 +4208,9 @@ debugger_agent_single_step_from_context (MonoContext *ctx)
 
 	tls = TlsGetValue (debugger_tls_id);
 	g_assert (tls);
+	memcpy (&tls->restore_ctx, ctx, sizeof (MonoContext));
 
-	process_single_step_inner (tls, ctx);
+	process_single_step_inner (tls);
 }
 
 void
@@ -4219,8 +4220,9 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 
 	tls = TlsGetValue (debugger_tls_id);
 	g_assert (tls);
+	memcpy (&tls->restore_ctx, ctx, sizeof (MonoContext));
 
-	process_breakpoint_inner (tls, ctx);
+	process_breakpoint_inner (tls);
 }
 
 /*
