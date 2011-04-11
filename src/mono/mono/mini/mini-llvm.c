@@ -356,6 +356,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 			for (i = 0; i < size; ++i)
 				eltypes [i] = LLVMInt8Type ();
 
+			/* We couldn't name these types since LLVM uses structural type equality */
 			ltype = LLVMStructType (eltypes, size, FALSE);
 			g_hash_table_insert (ctx->lmodule->llvm_types, klass, ltype);
 			g_free (eltypes);
@@ -4812,6 +4813,10 @@ static void
 add_intrinsics (LLVMModuleRef module)
 {
 	/* Emit declarations of instrinsics */
+	/*
+	 * It would be nicer to emit only the intrinsics actually used, but LLVM's Module
+	 * type doesn't seem to do any locking.
+	 */
 	{
 		LLVMTypeRef memset_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
