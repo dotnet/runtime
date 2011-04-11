@@ -20,6 +20,12 @@ void
 mono_debugger_agent_single_step_event (void *sigctx) MONO_INTERNAL;
 
 void
+debugger_agent_single_step_from_context (MonoContext *ctx) MONO_INTERNAL;
+
+void
+debugger_agent_breakpoint_from_context (MonoContext *ctx) MONO_INTERNAL;
+
+void
 mono_debugger_agent_free_domain_info (MonoDomain *domain) MONO_INTERNAL;
 
 gboolean mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji) MONO_INTERNAL;

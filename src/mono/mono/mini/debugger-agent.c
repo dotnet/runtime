@@ -4201,6 +4201,28 @@ mono_debugger_agent_single_step_event (void *sigctx)
 	resume_from_signal_handler (sigctx, process_single_step);
 }
 
+void
+debugger_agent_single_step_from_context (MonoContext *ctx)
+{
+	DebuggerTlsData *tls;
+
+	tls = TlsGetValue (debugger_tls_id);
+	g_assert (tls);
+
+	process_single_step_inner (tls, ctx);
+}
+
+void
+debugger_agent_breakpoint_from_context (MonoContext *ctx)
+{
+	DebuggerTlsData *tls;
+
+	tls = TlsGetValue (debugger_tls_id);
+	g_assert (tls);
+
+	process_breakpoint_inner (tls, ctx);
+}
+
 /*
  * start_single_stepping:
  *
