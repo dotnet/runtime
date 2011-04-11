@@ -63,8 +63,10 @@ mono_thread_info_remove (MonoThreadInfo *info)
 {
 	/*TLS is gone by now, so we can't rely on it to retrieve hp*/
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get_by_id (info->small_id);
+	gboolean res;
+
 	THREADS_DEBUG ("removing info %p\n", info);
-	gboolean res = mono_lls_remove (&thread_list, hp, (MonoLinkedListSetNode*)info);
+	res = mono_lls_remove (&thread_list, hp, (MonoLinkedListSetNode*)info);
 	mono_hazard_pointer_clear_all (hp, -1);
 	return res;
 }
