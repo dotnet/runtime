@@ -1298,7 +1298,10 @@ mono_jit_parse_options (int argc, char * argv[])
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--soft-breakpoints")) {
-			mini_get_debug_options ()->soft_breakpoints = TRUE;
+			MonoDebugOptions *opt = mini_get_debug_options ();
+
+			opt->soft_breakpoints = TRUE;
+			opt->explicit_null_checks = TRUE;
 		} else {
 			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
 			exit (1);
