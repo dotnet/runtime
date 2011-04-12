@@ -29,12 +29,10 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -80,5 +78,3 @@ g_file_test (const gchar *filename, GFileTest test)
 	}
 	return FALSE;
 }
-
-

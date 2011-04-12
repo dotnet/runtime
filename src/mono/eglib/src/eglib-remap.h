@@ -17,6 +17,7 @@
 #define g_dir_open monoeg_g_dir_open
 #define g_dir_read_name monoeg_g_dir_read_name
 #define g_dir_rewind monoeg_g_dir_rewind
+#define g_mkdir_with_parents monoeg_g_mkdir_with_parents
 #define g_direct_equal monoeg_g_direct_equal
 #define g_direct_hash monoeg_g_direct_hash
 #define g_error_free monoeg_g_error_free
