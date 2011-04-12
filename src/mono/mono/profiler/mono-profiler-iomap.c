@@ -208,7 +208,7 @@ static inline void print_report (const gchar *format, ...)
 
 static inline void append_report (GString **report, const gchar *format, ...)
 {
-#if GLIB_CHECK_VERSION(2,14,0)
+#if defined (_EGLIB_MAJOR) || GLIB_CHECK_VERSION(2,14,0)
 	va_list ap;
 	if (!*report)
 		*report = g_string_new ("");
