@@ -87,6 +87,7 @@ monoutils_sources = \
 	mono-linked-list-set.c	\
 	mono-linked-list-set.h	\
 	mono-threads.c	\
+	mono-threads-posix.c	\
 	mono-threads.h
 
 arch_sources = 
