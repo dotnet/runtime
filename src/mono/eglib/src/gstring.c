@@ -167,6 +167,19 @@ g_string_append_printf (GString *string, const gchar *format, ...)
 }
 
 void
+g_string_append_vprintf (GString *string, const gchar *format, va_list args)
+{
+	char *ret;
+
+	g_return_if_fail (string != NULL);
+	g_return_if_fail (format != NULL);
+
+	ret = g_strdup_vprintf (format, args);
+	g_string_append (string, ret);
+	g_free (ret);
+}
+
+void
 g_string_printf (GString *string, const gchar *format, ...)
 {
 	va_list args;

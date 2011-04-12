@@ -342,6 +342,7 @@ gchar       *g_string_free          (GString *string, gboolean free_segment);
 GString     *g_string_append        (GString *string, const gchar *val);
 void         g_string_printf        (GString *string, const gchar *format, ...);
 void         g_string_append_printf (GString *string, const gchar *format, ...);
+void         g_string_append_vprintf (GString *string, const gchar *format, va_list args);
 GString     *g_string_append_c      (GString *string, gchar c);
 GString     *g_string_append        (GString *string, const gchar *val);
 GString     *g_string_append_len    (GString *string, const gchar *val, gssize len);
