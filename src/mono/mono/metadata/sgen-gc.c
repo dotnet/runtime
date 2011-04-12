@@ -6474,8 +6474,9 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		rs = alloc_remset (rs->end_set - rs->data, (void*)1);
 		rs->next = REMEMBERED_SET;
 		REMEMBERED_SET = rs;
-
+#ifdef HAVE_KW_THREAD
 		mono_thread_info_current ()->remset = rs;
+#endif
 		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		*(rs->store_next++) = (mword)count;
@@ -6516,8 +6517,9 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	rs->next = REMEMBERED_SET;
 	REMEMBERED_SET = rs;
 
+#ifdef HAVE_KW_THREAD
 	mono_thread_info_current ()->remset = rs;
-
+#endif
 	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
 	UNLOCK_GC;
 }
