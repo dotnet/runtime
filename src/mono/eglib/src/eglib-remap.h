@@ -180,6 +180,7 @@
 #define g_string_append monoeg_g_string_append
 #define g_string_append_c monoeg_g_string_append_c
 #define g_string_append_len monoeg_g_string_append_len
+#define g_string_append_unichar monoeg_g_string_append_unichar
 #define g_string_append_printf monoeg_g_string_append_printf
 #define g_string_free monoeg_g_string_free
 #define g_string_new monoeg_g_string_new
@@ -203,6 +204,7 @@
 #define g_timer_start monoeg_g_timer_start
 #define g_timer_stop monoeg_g_timer_stop
 #define g_trailingBytesForUTF8 monoeg_g_trailingBytesForUTF8
+#define g_ucs4_to_utf8 monoeg_g_ucs4_to_utf8
 #define g_ucs4_to_utf16 monoeg_g_ucs4_to_utf16
 #define g_unichar_case monoeg_g_unichar_case
 #define g_unichar_isxdigit monoeg_g_unichar_isxdigit
@@ -221,6 +223,7 @@
 #define g_utf8_strup monoeg_g_utf8_strup
 #define g_utf8_to_utf16 monoeg_g_utf8_to_utf16
 #define g_utf8_validate monoeg_g_utf8_validate
+#define g_unichar_to_utf8 monoeg_g_unichar_to_utf8
 #define g_win32_getlocale monoeg_g_win32_getlocale
 #define g_assertion_message monoeg_assertion_message
 #define g_malloc monoeg_malloc

@@ -72,18 +72,17 @@ typedef unsigned char  guchar;
 #if !G_TYPES_DEFINED
 /* VS 2010 and later have stdint.h */
 #if defined(_MSC_VER) && _MSC_VER < 1600
-typedef __int8				gint8;
+typedef __int8			gint8;
 typedef unsigned __int8		guint8;
-typedef __int16				gint16;
+typedef __int16			gint16;
 typedef unsigned __int16	guint16;
-typedef __int32				gint32;
+typedef __int32			gint32;
 typedef unsigned __int32	guint32;
-typedef __int64				gint64;
+typedef __int64			gint64;
 typedef unsigned __int64	guint64;
-typedef float				gfloat;
-typedef double				gdouble;
-typedef unsigned __int16	gunichar2;
-typedef int                 gboolean;
+typedef float			gfloat;
+typedef double			gdouble;
+typedef int			gboolean;
 #else
 /* Types defined in terms of the stdint.h */
 typedef int8_t         gint8;
@@ -96,10 +95,12 @@ typedef int64_t        gint64;
 typedef uint64_t       guint64;
 typedef float          gfloat;
 typedef double         gdouble;
-typedef uint16_t       gunichar2;
 typedef int32_t        gboolean;
 #endif
 #endif
+
+typedef guint16 gunichar2;
+typedef guint32 gunichar;
 
 /*
  * Macros
@@ -343,6 +344,7 @@ GString     *g_string_append        (GString *string, const gchar *val);
 void         g_string_printf        (GString *string, const gchar *format, ...);
 void         g_string_append_printf (GString *string, const gchar *format, ...);
 void         g_string_append_vprintf (GString *string, const gchar *format, va_list args);
+GString     *g_string_append_unichar (GString *string, gunichar c);
 GString     *g_string_append_c      (GString *string, gchar c);
 GString     *g_string_append        (GString *string, const gchar *val);
 GString     *g_string_append_len    (GString *string, const gchar *val, gssize len);
@@ -603,7 +605,6 @@ gpointer g_convert_error_quark(void);
  * only used if the old collation code is activated, so this is only the
  * bare minimum to build.
  */
-typedef guint32 gunichar;
 
 typedef enum {
 	G_UNICODE_CONTROL,
@@ -683,12 +684,14 @@ typedef enum {
 	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH
 } GConvertError;
 
-gchar* g_utf8_strup (const gchar *str, gssize len);
-gchar* g_utf8_strdown (const gchar *str, gssize len);
+gchar     *g_utf8_strup (const gchar *str, gssize len);
+gchar     *g_utf8_strdown (const gchar *str, gssize len);
+gint       g_unichar_to_utf8 (gunichar c, gchar *outbuf);
 gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **error);
 gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error);
-gunichar2 *g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error);
 gunichar  *g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error);
+gchar     *g_ucs4_to_utf8  (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error);
+gunichar2 *g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error);
 
 #define u8to16(str) g_utf8_to_utf16(str, (glong)strlen(str), NULL, NULL, NULL)
 

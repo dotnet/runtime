@@ -450,6 +450,63 @@ utf16_to_utf8_len (const gunichar2 *str, glong len, glong *items_read, GError **
 	return ret;
 }
 
+gchar *
+g_ucs4_to_utf8 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error)
+{
+	gchar *outbuf, *outptr;
+	glong nwritten = 0;
+	glong i;
+	gint n;
+	
+	if (len == -1) {
+		for (i = 0; str[i] != 0; i++) {
+			if ((n = g_unichar_to_utf8 (str[i], NULL)) < 0) {
+				g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
+					     "Invalid sequence in conversion input");
+				
+				if (items_read)
+					*items_read = i;
+				
+				return NULL;
+			}
+			
+			nwritten += n;
+		}
+	} else {
+		for (i = 0; i < len; i++) {
+			if ((n = g_unichar_to_utf8 (str[i], NULL)) < 0) {
+				g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
+					     "Invalid sequence in conversion input");
+				
+				if (items_read)
+					*items_read = i;
+				
+				return NULL;
+			}
+			
+			nwritten += n;
+		}
+	}
+	
+	outptr = outbuf = g_malloc (nwritten + 1);
+	if (len == -1) {
+		for (i = 0; str[i] != 0; i++)
+			outptr += g_unichar_to_utf8 (str[i], outptr);
+	} else {
+		for (i = 0; i < len; i++)
+			outptr += g_unichar_to_utf8 (str[i], outptr);
+	}
+	*outptr = '\0';
+	
+	if (items_written)
+		*items_written = nwritten;
+	
+	if (items_read != 0)
+		*items_read = i;
+	
+	return outbuf;
+}
+
 static glong
 g_ucs4_to_utf16_len (const gunichar *str, glong len, glong *items_read, GError **error)
 {
@@ -616,4 +673,83 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 		*error = lerror;
 
 	return retstr;
+}
+
+/**
+ * from http://home.tiscali.nl/t876506/utf8tbl.html
+ *
+ * From Unicode UCS-4 to UTF-8:
+ * Start with the Unicode number expressed as a decimal number and call this ud.
+ *
+ * If ud <128 (7F hex) then UTF-8 is 1 byte long, the value of ud.
+ *
+ * If ud >=128 and <=2047 (7FF hex) then UTF-8 is 2 bytes long.
+ *    byte 1 = 192 + (ud div 64)
+ *    byte 2 = 128 + (ud mod 64)
+ *
+ * If ud >=2048 and <=65535 (FFFF hex) then UTF-8 is 3 bytes long.
+ *    byte 1 = 224 + (ud div 4096)
+ *    byte 2 = 128 + ((ud div 64) mod 64)
+ *    byte 3 = 128 + (ud mod 64)
+ *
+ * If ud >=65536 and <=2097151 (1FFFFF hex) then UTF-8 is 4 bytes long.
+ *    byte 1 = 240 + (ud div 262144)
+ *    byte 2 = 128 + ((ud div 4096) mod 64)
+ *    byte 3 = 128 + ((ud div 64) mod 64)
+ *    byte 4 = 128 + (ud mod 64)
+ *
+ * If ud >=2097152 and <=67108863 (3FFFFFF hex) then UTF-8 is 5 bytes long.
+ *    byte 1 = 248 + (ud div 16777216)
+ *    byte 2 = 128 + ((ud div 262144) mod 64)
+ *    byte 3 = 128 + ((ud div 4096) mod 64)
+ *    byte 4 = 128 + ((ud div 64) mod 64)
+ *    byte 5 = 128 + (ud mod 64)
+ *
+ * If ud >=67108864 and <=2147483647 (7FFFFFFF hex) then UTF-8 is 6 bytes long.
+ *    byte 1 = 252 + (ud div 1073741824)
+ *    byte 2 = 128 + ((ud div 16777216) mod 64)
+ *    byte 3 = 128 + ((ud div 262144) mod 64)
+ *    byte 4 = 128 + ((ud div 4096) mod 64)
+ *    byte 5 = 128 + ((ud div 64) mod 64)
+ *    byte 6 = 128 + (ud mod 64)
+ **/
+gint
+g_unichar_to_utf8 (gunichar c, gchar *outbuf)
+{
+	gint len, i;
+	char base;
+	
+	if (c < 128UL) {
+		base = 0;
+		len = 1;
+	} else if (c < 2048UL) {
+		base = 192;
+		len = 2;
+	} else if (c < 65536UL) {
+		base = 224;
+		len = 3;
+	} else if (c < 2097152UL) {
+		base = 240;
+		len = 4;
+	} else if (c < 67108864UL) {
+		base = 248;	
+		len = 5;
+	} else if (c < 2147483648UL) {
+		base = 252;
+		len = 6;
+	} else
+		return -1;
+	
+	if (outbuf != NULL) {
+		for (i = len - 1; i > 0; i--) {
+			/* mask off 6 bits worth and add 128 */
+			outbuf[i] = 128 + (c & 0x3f);
+			c >>= 6;
+		}
+		
+		/* first character has a different base */
+		outbuf[0] = base + (c & 0x3f);
+	}
+	
+	return len;
 }
