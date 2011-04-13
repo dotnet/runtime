@@ -2981,7 +2981,11 @@ do_ret (VerifyContext *ctx)
 		top = stack_pop(ctx);
 
 		if (!verify_stack_type_compatibility (ctx, ctx->signature->ret, top)) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible return value on stack with method signature ret at 0x%04x", ctx->ip_offset));
+			char *ret_type = mono_type_full_name (ctx->signature->ret);
+			char *stack_type = stack_slot_full_name (top);
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible return value on stack with method signature, expected '%s' but got '%s' at 0x%04x", ret_type, stack_type, ctx->ip_offset));
+			g_free (stack_type);
+			g_free (ret_type);
 			return;
 		}
 
