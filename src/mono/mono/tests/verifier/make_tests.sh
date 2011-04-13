@@ -3163,10 +3163,17 @@ done
 #token
 
 I=1
-for TOKEN in int32 int64 float32 float64 "valuetype MyStruct" "int32*" "typedref" "int32[]" "string" "method int32 *(int32)"
+for TOKEN in int32 int64 float32 float64 "valuetype MyStruct" "int32[]" "string"
 do
 	./make_cast_test.sh cast_token_${I} valid "object" "ldloc.0" "castclass $TOKEN"
 	./make_cast_test.sh isinst_token_${I} valid "object" "ldloc.0" "isinst $TOKEN"
+	I=`expr $I + 1`
+done
+
+for TOKEN in "int32*" "method int32 *(int32)" "typedref"
+do
+	./make_cast_test.sh cast_token_${I} unverifiable "object" "ldloc.0" "castclass $TOKEN"
+	./make_cast_test.sh isinst_token_${I} unverifiable "object" "ldloc.0" "isinst $TOKEN"
 	I=`expr $I + 1`
 done
 

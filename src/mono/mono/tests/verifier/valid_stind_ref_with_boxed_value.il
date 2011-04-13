@@ -11,7 +11,7 @@
 .class private sequential ansi sealed beforefieldinit MyVT
         extends [mscorlib]System.Object
 {
-	.field public [mscorlib]System.Decimal Value
+	.field public valuetype [mscorlib]System.Decimal Value
 }
 
 
