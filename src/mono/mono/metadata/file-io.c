@@ -330,6 +330,7 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	HANDLE find_handle;
 	GPtrArray *names;
 	gchar *utf8_path, *utf8_result, *full_name;
+	gint32 attributes;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -337,9 +338,18 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 
 	domain = mono_domain_get ();
 	mask = convert_attrs (mask);
+	attributes = get_file_attributes (mono_string_chars (path));
+	if (attributes != -1) {
+		if ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+			*error = ERROR_INVALID_NAME;
+			return (NULL);
+		}
+	} else {
+		*error = GetLastError ();
+		return (NULL);
+	}
 	
-	find_handle = FindFirstFile (mono_string_chars (path_with_pattern),
-				     &data);
+	find_handle = FindFirstFile (mono_string_chars (path_with_pattern), &data);
 	if (find_handle == INVALID_HANDLE_VALUE) {
 		gint32 find_error = GetLastError ();
 		
