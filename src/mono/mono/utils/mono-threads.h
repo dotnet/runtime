@@ -21,6 +21,7 @@
 #include <windows.h>
 
 typedef DWORD MonoNativeThreadId;
+typedef HANDLE MonoNativeThreadHandle;
 
 #define mono_native_thread_id_get GetCurrentThreadId
 #define mono_native_thread_id_equals(a,b) ((a) == ((b))
@@ -31,7 +32,14 @@ typedef DWORD MonoNativeThreadId;
 
 #if defined(__MACH__)
 #include <mono/utils/mach-support.h>
-#endif
+
+typedef thread_port_t MonoNativeThreadHandle;
+
+#else
+
+typedef pthread_t MonoNativeThreadHandle;
+
+#endif /* defined(__MACH__) */
 
 typedef pthread_t MonoNativeThreadId;
 
@@ -55,6 +63,12 @@ typedef struct {
 	void (*thread_attach)(THREAD_INFO_TYPE *info);
 } MonoThreadInfoCallbacks;
 
+typedef struct {
+	void (*setup_async_callback) (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data);
+	gboolean (*thread_state_init_from_sigctx) (MonoThreadUnwindState *state, void *sigctx);
+	gboolean (*thread_state_init_from_handle) (MonoThreadUnwindState *tctx, MonoNativeThreadId thread_id, MonoNativeThreadHandle thread_handle);
+} MonoThreadInfoRuntimeCallbacks;
+
 /*
 Requires the world to be stoped
 */
@@ -77,6 +91,11 @@ Snapshot iteration.
 void
 mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t thread_info_size) MONO_INTERNAL;
 
+void
+mono_threads_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks) MONO_INTERNAL;
+
+MonoThreadInfoRuntimeCallbacks *
+mono_threads_get_runtime_callbacks (void) MONO_INTERNAL;
 
 THREAD_INFO_TYPE *
 mono_thread_info_attach (void *baseptr) MONO_INTERNAL;

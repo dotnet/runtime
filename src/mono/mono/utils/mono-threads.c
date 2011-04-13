@@ -22,6 +22,7 @@
 
 static int thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
+static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
 static MonoNativeTlsKey thread_info_key;
 static MonoLinkedListSet thread_list;
 
@@ -168,4 +169,16 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 
 	g_assert (res);
 	g_assert (sizeof (MonoNativeThreadId) == sizeof (uintptr_t));
+}
+
+void
+mono_threads_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks)
+{
+	runtime_callbacks = *callbacks;
+}
+
+MonoThreadInfoRuntimeCallbacks *
+mono_threads_get_runtime_callbacks (void)
+{
+	return &runtime_callbacks;
 }
