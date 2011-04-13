@@ -22,6 +22,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-machine.h>
 #include <mono/utils/mono-stack-unwinding.h>
+#include <mono/utils/mono-threads.h>
 
 #define MONO_BREAKPOINT_ARRAY_SIZE 64
 
@@ -2078,6 +2079,17 @@ gpointer mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptio
 gpointer mono_arch_create_handler_block_trampoline (void) MONO_INTERNAL;
 gpointer mono_create_handler_block_trampoline (void) MONO_INTERNAL;
 gboolean mono_install_handler_block_guard (MonoInternalThread *thread, MonoContext *ctx) MONO_INTERNAL;
+
+/*New interruption machinery */
+void
+mono_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data) MONO_INTERNAL;
+
+void
+mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data) MONO_INTERNAL;
+
+gboolean
+mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThreadId thread_id, MonoNativeThreadHandle thread_handle) MONO_INTERNAL;
+
 
 /* Exception handling */
 typedef gboolean (*MonoJitStackWalk)            (StackFrameInfo *frame, MonoContext *ctx, gpointer data);

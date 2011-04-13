@@ -251,3 +251,42 @@ mono_gdb_render_native_backtraces ()
 
 	return TRUE;
 }
+
+gboolean
+mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThreadId thread_id, MonoNativeThreadHandle thread_handle)
+{
+	kern_return_t ret;
+	mach_msg_type_number_t num_state;
+	thread_state_t state;
+	ucontext_t ctx;
+	mcontext_t mctx;
+	guint32 domain_key, jit_key;
+	MonoJitTlsData *jit_tls;
+	void *domain;
+
+	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
+	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
+
+	ret = mono_mach_arch_get_thread_state (thread_handle, state, &num_state);
+	if (ret != KERN_SUCCESS)
+		return FALSE;
+
+	mono_mach_arch_thread_state_to_mcontext (state, mctx);
+	ctx.uc_mcontext = mctx;
+
+	mono_sigctx_to_monoctx (&ctx, &tctx->ctx);
+
+	domain_key = mono_domain_get_tls_offset ();
+	jit_key = mono_pthread_key_for_tls (mono_get_jit_tls_key ());
+	jit_tls = mono_mach_arch_get_tls_value_from_thread (thread_id, jit_key);
+	domain = mono_mach_arch_get_tls_value_from_thread (thread_id, domain_key);
+	g_assert (jit_tls);
+	g_assert (domain);
+
+	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
+	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = jit_tls ? jit_tls->lmf : NULL;
+	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = jit_tls;
+	tctx->valid = TRUE;
+
+	return TRUE;
+}

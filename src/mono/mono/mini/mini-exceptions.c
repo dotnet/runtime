@@ -2588,3 +2588,17 @@ mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx)
 	mono_handle_exception (ctx, exc, NULL, FALSE);
 	restore_context (ctx);
 }
+
+/*FIXME Move all monoctx -> sigctx conversion to signal handlers once all archs support utils/mono-context */
+void
+mono_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
+{
+#ifdef MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	jit_tls->ex_ctx = *ctx;
+
+	mono_arch_setup_async_callback (ctx, async_cb, user_data);
+#else
+	g_error ("This target doesn't support mono_arch_setup_async_callback");
+#endif
+}

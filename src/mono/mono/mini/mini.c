@@ -6172,6 +6172,7 @@ mini_init (const char *filename, const char *runtime_version)
 {
 	MonoDomain *domain;
 	MonoRuntimeCallbacks callbacks;
+	MonoThreadInfoRuntimeCallbacks ticallbacks;
 
 	MONO_PROBE_VES_INIT_BEGIN ();
 
@@ -6225,6 +6226,14 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	mono_install_callbacks (&callbacks);
+
+	memset (&ticallbacks, 0, sizeof (ticallbacks));
+	ticallbacks.setup_async_callback = mono_setup_async_callback;
+	ticallbacks.thread_state_init_from_sigctx = mono_thread_state_init_from_sigctx;
+	ticallbacks.thread_state_init_from_handle = mono_thread_state_init_from_handle;
+
+	mono_threads_runtime_init (&ticallbacks);
+
 
 	if (getenv ("MONO_DEBUG") != NULL)
 		mini_parse_debug_options ();

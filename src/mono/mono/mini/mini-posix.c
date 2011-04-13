@@ -662,3 +662,13 @@ mono_gdb_render_native_backtraces ()
 #endif
 #endif /* __native_client__ */
 
+#if !defined (__MACH__)
+
+gboolean
+mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoNativeThreadId thread_id, MonoNativeThreadHandle thread_handle)
+{
+	g_error ("Posix systems don't support mono_thread_state_init_from_handle");
+	return FALSE;
+}
+
+#endif
