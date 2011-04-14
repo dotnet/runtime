@@ -168,7 +168,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_thread_smr_init ();
 
 	g_assert (res);
-	g_assert (sizeof (MonoNativeThreadId) == sizeof (uintptr_t));
+	g_assert (sizeof (MonoNativeThreadId) <= sizeof (uintptr_t));
 }
 
 void
