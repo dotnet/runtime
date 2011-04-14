@@ -14,6 +14,9 @@
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-linked-list-set.h>
 
+/* FIXME used for CRITICAL_SECTION replace with mono-mutex  */
+#include <mono/io-layer/io-layer.h>
+
 #include <glib.h>
 
 #ifdef HOST_WIN32
@@ -36,7 +39,7 @@ typedef HANDLE MonoNativeThreadHandle;
 typedef thread_port_t MonoNativeThreadHandle;
 
 #else
-
+/*FIXME this should be pid_t on posix - to handle android borken signaling */
 typedef pthread_t MonoNativeThreadHandle;
 
 #endif /* defined(__MACH__) */
@@ -52,9 +55,33 @@ typedef pthread_t MonoNativeThreadId;
 #define THREAD_INFO_TYPE MonoThreadInfo
 #endif
 
+enum {
+	STATE_STARTING,
+	STATE_RUNNING,
+	STATE_SHUTTING_DOWN,
+	STATE_DEAD
+};
+
 typedef struct {
 	MonoLinkedListSetNode node;
 	guint32 small_id; /*Used by hazard pointers */
+	MonoNativeThreadHandle native_handle;
+	int thread_state;
+
+	/* suspend machinery, fields protected by the suspend_lock */
+	CRITICAL_SECTION suspend_lock;
+	int suspend_count;
+
+	/* only needed by the posix backend */ 
+#if defined(_POSIX_VERSION) && !defined (__MACH__)
+	MonoSemType suspend_semaphore;
+	MonoSemType resume_semaphore; 
+	MonoSemType finish_resume_semaphore;
+	gboolean self_suspend;
+#endif
+
+	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
+	MonoThreadUnwindState suspend_state;
 } MonoThreadInfo;
 
 typedef struct {
@@ -112,11 +139,38 @@ mono_thread_info_list_head (void) MONO_INTERNAL;
 MonoThreadInfo*
 mono_thread_info_lookup (MonoNativeThreadId id) MONO_INTERNAL;
 
+MonoThreadInfo*
+mono_thread_info_safe_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel) MONO_INTERNAL;
+
+gboolean
+mono_thread_info_resume (MonoNativeThreadId tid) MONO_INTERNAL;
+
+void
+mono_thread_info_self_suspend (void) MONO_INTERNAL;
+
+gboolean
+mono_thread_info_new_interrupt_enabled (void) MONO_INTERNAL;
+
+void
+mono_thread_info_suspend_lock (void) MONO_INTERNAL;
+
+void
+mono_thread_info_suspend_unlock (void) MONO_INTERNAL;
+
 #if !defined(HOST_WIN32)
 
 int
 mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) MONO_INTERNAL;
 
 #endif /* !defined(HOST_WIN32) */
+
+/* Plartform specific functions DON'T use them */
+void mono_threads_init_platform (void) MONO_INTERNAL; //ok
+gboolean mono_threads_core_suspend (MonoThreadInfo *info) MONO_INTERNAL;
+gboolean mono_threads_core_resume (MonoThreadInfo *info) MONO_INTERNAL;
+void mono_threads_platform_register (MonoThreadInfo *info) MONO_INTERNAL; //ok
+void mono_threads_platform_free (MonoThreadInfo *info) MONO_INTERNAL;
+void mono_threads_core_self_suspend (MonoThreadInfo *info) MONO_INTERNAL;
+void mono_threads_core_interrupt (MonoThreadInfo *info) MONO_INTERNAL;
 
 #endif /* __MONO_THREADS_H__ */

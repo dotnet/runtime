@@ -484,7 +484,8 @@ mono_runtime_posix_install_handlers (void)
 	if (mono_jit_trace_calls != NULL)
 		add_signal_handler (SIGUSR2, sigusr2_signal_handler);
 
-	add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
+	if (!mono_thread_info_new_interrupt_enabled ())
+		add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
 	/* it seems to have become a common bug for some programs that run as parents
 	 * of many processes to block signal delivery for real time signals.
 	 * We try to detect and work around their breakage here.

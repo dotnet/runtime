@@ -13,6 +13,7 @@
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/metadata/threads-types.h>
 
 #include <errno.h>
 
@@ -71,5 +72,112 @@ mono_threads_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, 
 	return result;
 }
 
+#if !defined (__MACH__)
+
+static void
+suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
+{
+	MonoThreadInfo *current = mono_thread_info_current ();
+	gboolean ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&current->suspend_state, context);
+
+	g_assert (ret);
+
+	if (current->self_suspend)
+		LeaveCriticalSection (&current->suspend_lock);
+	else
+		MONO_SEM_POST (&current->suspend_semaphore);
+		
+	while (MONO_SEM_WAIT (&current->resume_semaphore) != 0) {
+		/*if (EINTR != errno) ABORT("sem_wait failed"); */
+	}
+
+	MONO_SEM_POST (&current->finish_resume_semaphore);
+}
+
+static void
+mono_posix_add_signal_handler (int signo, gpointer handler)
+{
+	/*FIXME, move the code from mini to utils and do the right thing!*/
+	struct sigaction sa;
+	struct sigaction previous_sa;
+	int ret;
+
+	sa.sa_sigaction = handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = SA_SIGINFO;
+	ret = sigaction (signo, &sa, &previous_sa);
+
+	g_assert (ret != -1);
+}
+
+void
+mono_threads_init_platform (void)
+{
+	/*
+	FIXME we should use all macros from mini to make this more portable
+	FIXME it would be very sweet if sgen could end up using this too.
+	*/
+	if (mono_thread_info_new_interrupt_enabled ())
+		mono_posix_add_signal_handler (mono_thread_get_abort_signal (), suspend_signal_handler);
+}
+
+/*nothing to be done here since suspend always abort syscalls due using signals*/
+void
+mono_threads_core_interrupt (MonoThreadInfo *info)
+{
+}
+
+/*
+We self suspend using signals since thread_state_init_from_sigctx only supports
+a null context on a few targets.
+*/
+void
+mono_threads_core_self_suspend (MonoThreadInfo *info)
+{
+	/*FIXME, check return value*/
+	info->self_suspend = TRUE;
+	pthread_kill (mono_thread_info_get_tid (info), mono_thread_get_abort_signal ());
+}
+
+gboolean
+mono_threads_core_suspend (MonoThreadInfo *info)
+{
+	/*FIXME, check return value*/
+	info->self_suspend = FALSE;
+	pthread_kill (mono_thread_info_get_tid (info), mono_thread_get_abort_signal ());
+	while (MONO_SEM_WAIT (&info->suspend_semaphore) != 0) {
+		/* g_assert (errno == EINTR); */
+	}
+	return TRUE;
+}
+
+gboolean
+mono_threads_core_resume (MonoThreadInfo *info)
+{
+	MONO_SEM_POST (&info->resume_semaphore);
+	while (MONO_SEM_WAIT (&info->finish_resume_semaphore) != 0) {
+		/* g_assert (errno == EINTR); */
+	}
+
+	return TRUE;
+}
+
+void
+mono_threads_platform_register (MonoThreadInfo *info)
+{
+	MONO_SEM_INIT (&info->suspend_semaphore, 0);
+	MONO_SEM_INIT (&info->resume_semaphore, 0);
+	MONO_SEM_INIT (&info->finish_resume_semaphore, 0);
+}
+
+void
+mono_threads_platform_free (MonoThreadInfo *info)
+{
+	MONO_SEM_DESTROY (&info->suspend_semaphore);
+	MONO_SEM_DESTROY (&info->resume_semaphore);
+	MONO_SEM_DESTROY (&info->finish_resume_semaphore);
+}
+
+#endif /*!defined (__MACH__)*/
 
 #endif
