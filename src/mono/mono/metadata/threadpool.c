@@ -1077,17 +1077,14 @@ threadpool_clear_queue (ThreadPool *tp, MonoDomain *domain)
 {
 	MonoObject *obj;
 	MonoMList *other;
-	int domain_count;
 
 	other = NULL;
-	domain_count = 0;
 	while (mono_cq_dequeue (tp->queue, &obj)) {
-		if (obj != NULL && obj->vtable->domain == domain) {
-			domain_count++;
-			threadpool_jobs_dec (obj);
-		} else if (obj != NULL) {
+		if (obj == NULL)
+			continue;
+		if (obj->vtable->domain != domain)
 			other = mono_mlist_prepend (other, obj);
-		}
+		threadpool_jobs_dec (obj);
 	}
 
 	while (other) {
