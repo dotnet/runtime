@@ -7337,6 +7337,112 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass)
 	return TRUE;
 }
 
+static gboolean
+mono_type_is_generic_argument (MonoType *type)
+{
+	return type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR;
+}
+
+static gboolean
+mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
+{
+	MonoGenericParam *gparam, *ogparam;
+	MonoGenericParamInfo *tinfo, *cinfo;
+	MonoClass **candidate_class;
+	gboolean class_constraint_satisfied, valuetype_constraint_satisfied;
+	int tmask, cmask;
+
+	if (target == candidate)
+		return TRUE;
+	if (target->byval_arg.type != candidate->byval_arg.type)
+		return FALSE;
+
+	gparam = target->byval_arg.data.generic_param;
+	ogparam = candidate->byval_arg.data.generic_param;
+	tinfo = mono_generic_param_info (gparam);
+	cinfo = mono_generic_param_info (ogparam);
+
+	class_constraint_satisfied = FALSE;
+	valuetype_constraint_satisfied = FALSE;
+
+	/*candidate must have a super set of target's special constraints*/
+	tmask = tinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
+	cmask = cinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
+
+	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !(cmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT))
+		return FALSE;
+
+	if (cinfo->constraints) {
+		for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
+			MonoClass *cc = *candidate_class;
+
+			if (mono_type_is_reference (&cc->byval_arg) && !MONO_CLASS_IS_INTERFACE (cc))
+				class_constraint_satisfied = TRUE;
+			else if (!mono_type_is_reference (&cc->byval_arg) && !MONO_CLASS_IS_INTERFACE (cc))
+				valuetype_constraint_satisfied = TRUE;
+		}
+	}
+	class_constraint_satisfied |= (cmask & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) != 0;
+	valuetype_constraint_satisfied |= (cmask & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) != 0;
+
+	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && !class_constraint_satisfied)
+		return FALSE;
+	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && !valuetype_constraint_satisfied)
+		return FALSE;
+
+
+	/*candidate type constraints must be a superset of target's*/
+	if (tinfo->constraints) {
+		MonoClass **target_class;
+		for (target_class = tinfo->constraints; *target_class; ++target_class) {
+			MonoClass *tc = *target_class;
+
+			/*
+			 * A constraint from @target might inflate into @candidate itself and in that case we don't need
+			 * check it's constraints since it satisfy the constraint by itself.
+			 */
+			if (mono_metadata_type_equal (&tc->byval_arg, &candidate->byval_arg))
+				continue;
+
+			if (!cinfo->constraints)
+				return FALSE;
+
+			for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
+				MonoClass *cc = *candidate_class;
+
+				if (mono_class_is_assignable_from (tc, cc))
+					break;
+
+				/*
+				 * This happens when we have the following:
+				 *
+				 * Bar<K> where K : IFace
+				 * Foo<T, U> where T : U where U : IFace
+				 * 	...
+				 * 	Bar<T> <- T here satisfy K constraint transitively through to U's constraint
+				 *
+				 */
+				if (mono_type_is_generic_argument (&cc->byval_arg)) {
+					if (mono_gparam_is_assignable_from (target, cc))
+						break;
+				}
+			}
+			if (!*candidate_class)
+				return FALSE;
+		}
+	}
+
+	/*candidate itself must have a constraint that satisfy target*/
+	if (cinfo->constraints) {
+		for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
+			MonoClass *cc = *candidate_class;
+			if (mono_class_is_assignable_from (target, cc))
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /**
  * mono_class_is_assignable_from:
  * @klass: the class to be assigned to
@@ -7358,8 +7464,11 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	if (klass->exception_type || oklass->exception_type)
 		return FALSE;
 
-	if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
-		return klass == oklass;
+	if (mono_type_is_generic_argument (&klass->byval_arg)) {
+		if (!mono_type_is_generic_argument (&oklass->byval_arg))
+			return FALSE;
+		return mono_gparam_is_assignable_from (klass, oklass);
+	}
 
 	if (MONO_CLASS_IS_INTERFACE (klass)) {
 		if ((oklass->byval_arg.type == MONO_TYPE_VAR) || (oklass->byval_arg.type == MONO_TYPE_MVAR))
@@ -7566,7 +7675,7 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 		return mono_class_is_variant_compatible (target, candidate);
 
 	/*FIXME properly handle nullables and arrays */
-
+	/*FIXME properly handle (M)VAR */
 	return FALSE;
 }
 
