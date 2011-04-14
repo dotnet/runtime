@@ -1328,6 +1328,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	 * args or return vals.  Extra stack space avoids this in a lot of cases.
 	 */
 	offset += EXTRA_STACK_SPACE;
+	offset += SIZEOF_REGISTER - 1;
+	offset &= ~(SIZEOF_REGISTER - 1);
 
 	/* Space for saved registers */
 	cfg->arch.iregs_offset = offset;
