@@ -586,6 +586,10 @@ decode_cie_op (guint8 *p, guint8 **endp)
 		case DW_CFA_advance_loc4:
 			p += 4;
 			break;
+		case DW_CFA_offset_extended_sf:
+			decode_uleb128 (p, &p);
+			decode_uleb128 (p, &p);
+			break;
 		default:
 			g_assert_not_reached ();
 		}
