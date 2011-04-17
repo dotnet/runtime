@@ -4473,6 +4473,9 @@ mono_object_clone (MonoObject *obj)
 	MonoObject *o;
 	int size = obj->vtable->klass->instance_size;
 
+	if (obj->vtable->klass->rank)
+		return (MonoObject*)mono_array_clone ((MonoArray*)obj);
+
 	o = mono_object_allocate (size, obj->vtable);
 
 	if (obj->vtable->klass->has_references) {
