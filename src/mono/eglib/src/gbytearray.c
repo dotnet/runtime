@@ -29,67 +29,23 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#define INITIAL_CAPACITY 16
-
-static void
-ensure_capacity (GByteArray *array,
-		 int capacity)
-{
-	int new_capacity = MAX (array->len, INITIAL_CAPACITY);
-
-	if (capacity < array->len)
-		return;
-
-	while (new_capacity < capacity) {
-		new_capacity <<= 1;
-	}
-	capacity = new_capacity;
-	array->data = (guint8*) g_realloc (array->data, capacity);
-
-	memset (array->data + array->len, 0, capacity - array->len);
-	array->len = capacity;
-}
-
 GByteArray *
 g_byte_array_new ()
 {
-	GByteArray *rv = g_new0 (GByteArray, 1);
-
-	ensure_capacity (rv, INITIAL_CAPACITY);
-
-	return rv;
+	return (GByteArray *) g_array_new (FALSE, TRUE, 1);
 }
 
 guint8*
 g_byte_array_free (GByteArray *array,
 	      gboolean free_segment)
 {
-	guint8* rv = NULL;
-
-	g_return_val_if_fail (array != NULL, NULL);
-
-	if (free_segment)
-		g_free (array->data);
-	else
-		rv = array->data;
-
-	g_free (array);
-
-	return rv;
+	return (guint8*) g_array_free ((GArray *)array, free_segment);
 }
 
 GByteArray *
-g_array_append (GByteArray *array,
-		     guint8 *data,
+g_byte_array_append (GByteArray *array,
+		     const guint8 *data,
 		     guint len)
 {
-	g_return_val_if_fail (array != NULL, NULL);
-
-	ensure_capacity (array, array->len + len);
-  
-	memmove (array->data + array->len, data, len);
-
-	array->len += len;
-
-	return array;
+	return (GByteArray *)g_array_append_vals ((GArray *)array, data, len);
 }
