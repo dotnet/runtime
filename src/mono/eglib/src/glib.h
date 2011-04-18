@@ -952,14 +952,11 @@ gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
 /*
  * Character set conversion
  */
-/*
-* Index into the table below with the first byte of a UTF-8 sequence to
-* get the number of trailing bytes that are supposed to follow it.
-* Note that *legal* UTF-8 values can't have 4 or 5-bytes. The table is
-* left as-is for anyone who may want to do such conversion, which was
-* allowed in earlier algorithms.
-*/
-extern const gchar g_trailingBytesForUTF8[256];
+typedef struct _GIConv *GIConv;
+
+gsize g_iconv (GIConv converter, gchar **inbuf, gsize *inleft, gchar **outbuf, gsize *outleft);
+GIConv g_iconv_open (const gchar *to, const gchar *from);
+int g_iconv_close (GIConv converter);
 
 gboolean  g_get_charset        (G_CONST_RETURN char **charset);
 gchar    *g_locale_to_utf8     (const gchar *opsysstring, gssize len,
@@ -972,6 +969,19 @@ gchar    *g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *byte
 gchar    *g_convert            (const gchar *str, gssize len,
 				const gchar *to_codeset, const gchar *from_codeset,
 				gsize *bytes_read, gsize *bytes_written, GError **error);
+
+/*
+ * Unicode manipulation
+ */
+/*
+* Index into the table below with the first byte of a UTF-8 sequence to
+* get the number of trailing bytes that are supposed to follow it.
+* Note that *legal* UTF-8 values can't have 4 or 5-bytes. The table is
+* left as-is for anyone who may want to do such conversion, which was
+* allowed in earlier algorithms.
+*/
+extern const gchar g_trailingBytesForUTF8[256];
+
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
 gunichar  g_utf8_get_char      (const gchar *src);
 glong     g_utf8_strlen        (const gchar *str, gssize max);

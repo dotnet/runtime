@@ -31,6 +31,7 @@ libeglib_la_SOURCES = \
 	gbytearray.c	\
 	gerror.c	\
 	ghashtable.c 	\
+	giconv.c	\
 	gmem.c       	\
 	gmodule.h	\
 	goutput.c    	\

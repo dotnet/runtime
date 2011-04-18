@@ -581,6 +581,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\eglib\src\giconv.c"
+				>
+			</File>
+			<File
 				RelativePath="..\eglib\src\glist.c"
 				>
 			</File>
