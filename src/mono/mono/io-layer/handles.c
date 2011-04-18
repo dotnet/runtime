@@ -153,6 +153,7 @@ static pid_t _wapi_pid;
 static mono_once_t pid_init_once = MONO_ONCE_INIT;
 
 static gpointer _wapi_handle_real_new (WapiHandleType type, gpointer handle_specific);
+static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles);
 
 static void pid_init (void)
 {
@@ -201,6 +202,7 @@ static void handle_cleanup (void)
 					 * away, so this sets those
 					 * anyway.
 					 */
+					g_assert (0); /*This condition is freaking impossible*/
 					_wapi_thread_set_termination_details (handle, 0);
 				}
 			}
@@ -210,7 +212,7 @@ static void handle_cleanup (void)
 				g_message ("%s: unreffing %s handle %p", __func__, _wapi_handle_typename[type], handle);
 #endif
 					
-				_wapi_handle_unref (handle);
+				_wapi_handle_unref_full (handle, TRUE);
 			}
 		}
 	}
@@ -1062,10 +1064,10 @@ void _wapi_handle_ref (gpointer handle)
 }
 
 /* The handle must not be locked on entry to this function */
-void _wapi_handle_unref (gpointer handle)
+static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
-	gboolean destroy = FALSE;
+	gboolean destroy = FALSE, early_exit = FALSE;
 	int thr_ret;
 
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
@@ -1136,10 +1138,17 @@ void _wapi_handle_unref (gpointer handle)
 			 * "unlock_and_destroy" atomic function.
 			 */
 			thr_ret = mono_mutex_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
-			g_assert (thr_ret == 0);
-				
-			thr_ret = pthread_cond_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_cond);
-			g_assert (thr_ret == 0);
+			/*WARNING gross hack to make cleanup not crash when exiting without the whole runtime teardown.*/
+			if (thr_ret == EBUSY && ignore_private_busy_handles) {
+				early_exit = TRUE;
+			} else {
+				if (thr_ret != 0)
+					g_error ("Error destroying handle %p mutex due to %d\n", handle, thr_ret);
+
+				thr_ret = pthread_cond_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_cond);
+				if (thr_ret != 0)
+					g_error ("Error destroying handle %p cond var due to %d\n", handle, thr_ret);
+			}
 		} else {
 			struct _WapiHandleShared *shared = &_wapi_shared_layout->handles[handle_data.u.shared.offset];
 
@@ -1165,6 +1174,8 @@ void _wapi_handle_unref (gpointer handle)
 		g_assert (thr_ret == 0);
 		pthread_cleanup_pop (0);
 
+		if (early_exit)
+			return;
 		if (is_shared) {
 			_wapi_handle_unlock_shared_handles ();
 		}
@@ -1177,6 +1188,11 @@ void _wapi_handle_unref (gpointer handle)
 			}
 		}
 	}
+}
+
+void _wapi_handle_unref (gpointer handle)
+{
+	_wapi_handle_unref_full (handle, FALSE);
 }
 
 void _wapi_handle_register_capabilities (WapiHandleType type,
