@@ -5296,6 +5296,10 @@ suspend_handler (int sig, siginfo_t *siginfo, void *context)
 	gpointer stack_start;
 
 	info = mono_thread_info_current ();
+	if (!info)
+		/* This can happen while a thread is dying */
+		return;
+
 	info->stopped_domain = mono_domain_get ();
 	info->stopped_ip = (gpointer) ARCH_SIGCTX_IP (context);
 	stop_count = global_stop_count;
