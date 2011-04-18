@@ -172,6 +172,7 @@
 #define g_spawn_async_with_pipes monoeg_g_spawn_async_with_pipes
 #define g_spawn_command_line_sync monoeg_g_spawn_command_line_sync
 #define g_sprintf monoeg_g_sprintf
+#define g_stpcpy monoeg_g_stpcpy
 #define g_str_equal monoeg_g_str_equal
 #define g_str_has_prefix monoeg_g_str_has_prefix
 #define g_str_has_suffix monoeg_g_str_has_suffix

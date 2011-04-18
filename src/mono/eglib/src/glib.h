@@ -301,7 +301,9 @@ gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ..
 #define g_vsnprintf vsnprintf
 #define g_vasprintf vasprintf
 
-gsize       g_strlcpy          (gchar *dest, const gchar *src, gsize dest_size);
+gsize   g_strlcpy            (gchar *dest, const gchar *src, gsize dest_size);
+gchar  *g_stpcpy             (gchar *dest, const char *src);
+
 
 gchar   g_ascii_tolower      (gchar c);
 gchar  *g_ascii_strdown      (const gchar *str, gssize len);

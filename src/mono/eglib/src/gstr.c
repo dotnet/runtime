@@ -778,6 +778,20 @@ g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 #endif
 }
 
+gchar *
+g_stpcpy (gchar *dest, const char *src)
+{
+	g_return_val_if_fail (dest != NULL, dest);
+	g_return_val_if_fail (src != NULL, dest);
+
+#if HAVE_STPCPY
+	return stpcpy (dest, src);
+#else
+	strcpy (dest, src);
+	return dest + strlen (src);
+#endif
+}
+
 static const gchar escaped_dflt [256] = {
 	1, 1, 1, 1, 1, 1, 1, 1, 'b', 't', 'n', 1, 'f', 'r', 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
