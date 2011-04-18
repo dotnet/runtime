@@ -80,6 +80,22 @@ g_array_new (gboolean zero_terminated,
 	return (GArray*)rv;
 }
 
+GArray *
+g_array_sized_new (gboolean zero_terminated,
+	     gboolean clear_,
+	     guint element_size,
+		 guint reserved_size)
+{
+	GArrayPriv *rv = g_new0 (GArrayPriv, 1);
+	rv->zero_terminated = zero_terminated;
+	rv->clear_ = clear_;
+	rv->element_size = element_size;
+
+	ensure_capacity (rv, reserved_size);
+
+	return (GArray*)rv;
+}
+
 gchar*
 g_array_free (GArray *array,
 	      gboolean free_segment)
@@ -204,3 +220,21 @@ g_array_remove_index_fast (GArray *array,
 	return array;
 }
 
+void
+g_array_set_size (GArray *array, gint length)
+{
+	g_return_if_fail (array != NULL);
+	g_return_if_fail (length >= 0);
+
+	GArrayPriv *priv = (GArrayPriv*)array;
+
+	if (length == priv->capacity)
+		return; // nothing to be done
+
+	if (length > priv->capacity) {
+		// grow the array
+		ensure_capacity (priv, length);
+	}
+
+	array->len = length;
+}

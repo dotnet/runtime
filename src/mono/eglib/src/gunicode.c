@@ -130,6 +130,13 @@ int i;
 	return 0;
 }
 
+GUnicodeBreakType
+g_unichar_break_type (gunichar c)
+{
+	// MOONLIGHT_FIXME
+	return G_UNICODE_BREAK_UNKNOWN;
+}
+
 gunichar
 g_unichar_case (gunichar c, gboolean upper)
 {
@@ -201,6 +208,18 @@ g_unichar_xdigit_value (gunichar c)
 	if (c >= 0x61 && c <= 0x66) /*a-f*/
 		return (c - 0x57);
 	return -1;
+}
+
+gboolean
+g_unichar_isspace (gunichar c)
+{
+	GUnicodeType type = g_unichar_type (c);
+	if (type == G_UNICODE_LINE_SEPARATOR ||
+	    type == G_UNICODE_PARAGRAPH_SEPARATOR ||
+	    type == G_UNICODE_SPACE_SEPARATOR)
+		return TRUE;
+
+	return FALSE;
 }
 
 gchar *

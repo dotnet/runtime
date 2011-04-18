@@ -675,6 +675,124 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	return retstr;
 }
 
+gchar *
+g_utf8_offset_to_pointer (const gchar *str, glong offset)
+{
+	if (offset == 0)
+		return str;
+
+	if (offset > 0) {
+		gchar *p = (gchar*)str;
+		do {
+			p = g_utf8_next_char (p);
+			offset --;
+		} while (offset > 0);
+
+		return p;
+	}
+	else {
+		// MOONLIGHT_FIXME
+		g_assert_not_reached();
+	}
+}
+
+glong
+g_utf8_pointer_to_offset (const gchar *str, const gchar *pos)
+{
+	const gchar *inptr, *inend;
+	glong offset = 0;
+	glong sign = 1;
+	
+	if (pos == str)
+		return 0;
+	
+	if (str < pos) {
+		inptr = str;
+		inend = pos;
+	} else {
+		inptr = pos;
+		inend = str;
+		sign = -1;
+	}
+	
+	do {
+		inptr = g_utf8_next_char (inptr);
+		offset++;
+	} while (inptr < inend);
+	
+	return offset * sign;
+}
+
+gunichar*
+g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
+{
+	gunichar* ucs4;
+	int ucs4_index;
+	const char *p;
+	int mb_size;
+	gunichar codepoint;
+
+	g_return_val_if_fail (str != NULL, NULL);
+	
+	if (len < 0) {
+		/* we need to find the length of str, as len < 0 means it must be 0 terminated */
+
+		len = 0;
+		p = str;
+		while (*p) {
+			len ++;
+			p = g_utf8_next_char(p);
+		}
+	}
+
+	ucs4 = g_malloc (sizeof(gunichar)*len);
+	if (items_written)
+		*items_written = len;
+
+	p = str;
+	ucs4_index = 0;
+	while (len) {
+		guint8 c = *p++;
+
+
+		if (c < 0x80) {
+			mb_size = 1;
+		}
+		else if ((c & 0xE0) == 0xC0) {
+			c &= 0x1f;
+
+			mb_size = 2;
+		}
+		else if ((c & 0xF0) == 0xE0) {
+			c &= 0x0f;
+			mb_size = 3;
+		}
+		else if ((c & 0xF8) == 0xF0) {
+			c &= 0x07;
+			mb_size = 4;
+		}
+		else if ((c & 0xFC) == 0xF8) {
+			c &= 0x03;
+			mb_size = 5;
+		}
+		else if ((c & 0xFE) == 0xFC) {
+			c &= 0x01;
+			mb_size = 6;
+		}
+
+		codepoint = c;
+		while (--mb_size) {
+			codepoint <<= 6 | ((*p)&0x3f);
+			p++;
+		}
+
+		ucs4[ucs4_index++] = codepoint;
+		len --;
+	}
+
+	return ucs4;
+}
+
 /**
  * from http://home.tiscali.nl/t876506/utf8tbl.html
  *

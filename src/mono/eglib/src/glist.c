@@ -126,6 +126,25 @@ g_list_remove (GList *list, gconstpointer data)
 }
 
 GList*
+g_list_remove_all (GList *list, gconstpointer data)
+{
+	GList *current = g_list_find (list, data);
+
+	if (!current)
+		return list;
+
+	while (current) {
+		if (current == list)
+			list = list->next;
+		g_list_free_1 (disconnect_node (current));
+
+		current = g_list_find (list, data);
+	}
+
+	return list;
+}
+
+GList*
 g_list_remove_link (GList *list, GList *link)
 {
 	if (list == link)

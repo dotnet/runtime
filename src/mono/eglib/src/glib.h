@@ -113,6 +113,7 @@ typedef guint32 gunichar;
 #define G_MAXINT             INT_MAX
 #define G_MININT             INT_MIN
 #define G_MAXINT32           INT32_MAX
+#define G_MAXUINT32          UINT32_MAX
 #define G_MININT32           INT32_MIN
 #define G_MININT64           INT64_MIN
 #define G_MAXINT64	     INT64_MAX
@@ -187,6 +188,7 @@ gchar*           g_win32_getlocale(void);
 /*
  * Precondition macros
  */
+#define g_warn_if_fail(x)  G_STMT_START { if (!(x)) { g_warning ("%s:%d: assertion '%s' failed", __FILE__, __LINE__, #x); } } G_STMT_END
 #define g_return_if_fail(x)  G_STMT_START { if (!(x)) { g_critical ("%s:%d: assertion '%s' failed", __FILE__, __LINE__, #x); return; } } G_STMT_END
 #define g_return_val_if_fail(x,e)  G_STMT_START { if (!(x)) { g_critical ("%s:%d: assertion '%s' failed", __FILE__, __LINE__, #x); return (e); } } G_STMT_END
 
@@ -323,6 +325,7 @@ gint    g_ascii_xdigit_value (gchar c);
 #define g_strncasecmp strncasecmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))
 #endif
+#define g_ascii_strdup strdup
 
 
 #define	G_STR_DELIMITERS "_-|> <."
@@ -350,6 +353,9 @@ GString     *g_string_append        (GString *string, const gchar *val);
 GString     *g_string_append_len    (GString *string, const gchar *val, gssize len);
 GString     *g_string_truncate      (GString *string, gsize len);
 GString     *g_string_prepend       (GString *string, const gchar *val);
+GString     *g_string_insert        (GString *string, gssize pos, const gchar *val);
+GString     *g_string_set_size      (GString *string, gsize len);
+GString     *g_string_erase         (GString *string, gssize pos, gssize len);
 
 #define g_string_sprintfa g_string_append_printf
 
@@ -448,6 +454,8 @@ GList *g_list_find_custom   (GList	   *list,
 			     GCompareFunc   func);
 GList *g_list_remove        (GList         *list,
 			     gconstpointer  data);
+GList *g_list_remove_all    (GList         *list,
+			     gconstpointer  data);
 GList *g_list_reverse       (GList         *list);
 GList *g_list_remove_link   (GList         *list,
 			     GList         *link);
@@ -487,11 +495,13 @@ struct _GArray {
 };
 
 GArray *g_array_new               (gboolean zero_terminated, gboolean clear_, guint element_size);
+GArray *g_array_sized_new         (gboolean zero_terminated, gboolean clear_, guint element_size, guint reserved_size);
 gchar*  g_array_free              (GArray *array, gboolean free_segment);
 GArray *g_array_append_vals       (GArray *array, gconstpointer data, guint len);
 GArray* g_array_insert_vals       (GArray *array, guint index_, gconstpointer data, guint len);
 GArray* g_array_remove_index      (GArray *array, guint index_);
 GArray* g_array_remove_index_fast (GArray *array, guint index_);
+void    g_array_set_size          (GArray *array, gint length);
 
 #define g_array_append_val(a,v)   (g_array_append_vals((a),&(v),1))
 #define g_array_insert_val(a,i,v) (g_array_insert_vals((a),(i),&(v),1))
@@ -639,12 +649,53 @@ typedef enum {
 	G_UNICODE_SPACE_SEPARATOR
 } GUnicodeType;
 
+typedef enum {
+	G_UNICODE_BREAK_MANDATORY,
+	G_UNICODE_BREAK_CARRIAGE_RETURN,
+	G_UNICODE_BREAK_LINE_FEED,
+	G_UNICODE_BREAK_COMBINING_MARK,
+	G_UNICODE_BREAK_SURROGATE,
+	G_UNICODE_BREAK_ZERO_WIDTH_SPACE,
+	G_UNICODE_BREAK_INSEPARABLE,
+	G_UNICODE_BREAK_NON_BREAKING_GLUE,
+	G_UNICODE_BREAK_CONTINGENT,
+	G_UNICODE_BREAK_SPACE,
+	G_UNICODE_BREAK_AFTER,
+	G_UNICODE_BREAK_BEFORE,
+	G_UNICODE_BREAK_BEFORE_AND_AFTER,
+	G_UNICODE_BREAK_HYPHEN,
+	G_UNICODE_BREAK_NON_STARTER,
+	G_UNICODE_BREAK_OPEN_PUNCTUATION,
+	G_UNICODE_BREAK_CLOSE_PUNCTUATION,
+	G_UNICODE_BREAK_QUOTATION,
+	G_UNICODE_BREAK_EXCLAMATION,
+	G_UNICODE_BREAK_IDEOGRAPHIC,
+	G_UNICODE_BREAK_NUMERIC,
+	G_UNICODE_BREAK_INFIX_SEPARATOR,
+	G_UNICODE_BREAK_SYMBOL,
+	G_UNICODE_BREAK_ALPHABETIC,
+	G_UNICODE_BREAK_PREFIX,
+	G_UNICODE_BREAK_POSTFIX,
+	G_UNICODE_BREAK_COMPLEX_CONTEXT,
+	G_UNICODE_BREAK_AMBIGUOUS,
+	G_UNICODE_BREAK_UNKNOWN,
+	G_UNICODE_BREAK_NEXT_LINE,
+	G_UNICODE_BREAK_WORD_JOINER,
+	G_UNICODE_BREAK_HANGUL_L_JAMO,
+	G_UNICODE_BREAK_HANGUL_V_JAMO,
+	G_UNICODE_BREAK_HANGUL_T_JAMO,
+	G_UNICODE_BREAK_HANGUL_LV_SYLLABLE,
+	G_UNICODE_BREAK_HANGUL_LVT_SYLLABLE
+} GUnicodeBreakType;
+
 gunichar       g_unichar_toupper (gunichar c);
 gunichar       g_unichar_tolower (gunichar c);
 gunichar       g_unichar_totitle (gunichar c);
 GUnicodeType   g_unichar_type    (gunichar c);
+gboolean       g_unichar_isspace (gunichar c);
 gboolean       g_unichar_isxdigit (gunichar c);
 gint           g_unichar_xdigit_value (gunichar c);
+GUnicodeBreakType   g_unichar_break_type (gunichar c);
 
 #ifndef MAX
 #define MAX(a,b) (((a)>(b)) ? (a) : (b))
@@ -687,6 +738,7 @@ typedef enum {
 gchar     *g_utf8_strup (const gchar *str, gssize len);
 gchar     *g_utf8_strdown (const gchar *str, gssize len);
 gint       g_unichar_to_utf8 (gunichar c, gchar *outbuf);
+gunichar*  g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written);
 gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **error);
 gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error);
 gunichar  *g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error);
@@ -818,6 +870,13 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #define g_rename rename
 #define g_stat stat
 #define g_unlink unlink
+#define g_fopen fopen
+#define g_lstat lstat
+#define g_rmdir rmdir
+#define g_mkstemp mkstemp
+#define g_ascii_isdigit isdigit
+#define g_ascii_strtod strtod
+#define g_ascii_isalnum isalnum
 
 /*
  * Pattern matching
@@ -917,6 +976,14 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 gunichar  g_utf8_get_char      (const gchar *src);
 glong     g_utf8_strlen        (const gchar *str, gssize max);
 #define   g_utf8_next_char(p) p + (g_trailingBytesForUTF8[(guchar)(*p)] + 1)
+gchar *   g_utf8_offset_to_pointer (const gchar *str, glong offset);
+glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
+
+/*
+ * priorities
+ */
+#define G_PRIORITY_DEFAULT 0
+#define G_PRIORITY_DEFAULT_IDLE 200
 
 /*
  * Empty thread functions, not used by eglib
