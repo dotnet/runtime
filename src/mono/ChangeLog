@@ -1,3 +1,16 @@
+2011-04-19  gettextize  <bug-gnu-gettext@gnu.org>
+
+	* m4/gettext.m4: New file, from gettext-0.18.1.
+	* m4/iconv.m4: New file, from gettext-0.18.1.
+	* m4/lib-ld.m4: New file, from gettext-0.18.1.
+	* m4/lib-link.m4: New file, from gettext-0.18.1.
+	* m4/lib-prefix.m4: New file, from gettext-0.18.1.
+	* m4/nls.m4: Upgrade to gettext-0.18.1.
+	* m4/po.m4: Upgrade to gettext-0.18.1.
+	* m4/progtest.m4: Upgrade to gettext-0.18.1.
+	* m4/Makefile.am (EXTRA_DIST): Add the new files.
+	* configure.in (AC_CONFIG_FILES): Add po/Makefile.in.
+
 2010-08-05  Andrés G. Aragoneses  <andres@lindenlab.com>
 
 	* scripts/.gitignore: added mono-abi-info.

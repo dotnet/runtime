@@ -1,8 +1,13 @@
-AC_INIT(README)
-AC_CANONICAL_SYSTEM
+AC_INIT(eglib, [0.3],
+        [http://bugzilla.novell.com/enter_bug.cgi?product=mono])
 
-AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(eglib,0.3)
+AC_CONFIG_SRCDIR([README])
+#AC_CONFIG_MACRO_DIR([m4])
+AC_CANONICAL_SYSTEM
+AC_CANONICAL_HOST
+
+AM_INIT_AUTOMAKE([1.9 dist-bzip2 tar-ustar no-dist-gzip foreign])
+AM_CONFIG_HEADER([config.h])
 AM_MAINTAINER_MODE
 
 AC_PROG_CC
