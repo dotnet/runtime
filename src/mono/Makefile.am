@@ -24,9 +24,6 @@ EXTRA_DIST= \
 	    build-mingw32.sh \
 	    mkinstalldirs \
 	    mono-uninstalled.pc.in \
-	    nls.m4 \
-	    po.m4 \
-	    progtest.m4 \
 	    winconfig.h
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
