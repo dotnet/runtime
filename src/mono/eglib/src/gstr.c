@@ -351,21 +351,18 @@ g_strsplit_set (const gchar *string, const gchar *delimiter, gint max_tokens)
 gchar *
 g_strreverse (gchar *str)
 {
-	size_t len, half;
-	size_t i;
+	size_t i, j;
 	gchar c;
 
 	if (str == NULL)
 		return NULL;
 
-	len = strlen (str);
-	half = len / 2;
-	len--;
-	for (i = 0; i < half; i++, len--) {
+	for (i = 0, j = strlen (str) - 1; i < j; i++, j--) {
 		c = str [i];
-		str [i] = str [len];
-		str [len] = c;
+		str [i] = str [j];
+		str [j] = c;
 	}
+
 	return str;
 }
 
@@ -373,13 +370,14 @@ gchar *
 g_strjoin (const gchar *separator, ...)
 {
 	va_list args;
-	char *res, *s;
+	char *res, *s, *r;
 	size_t len, slen;
 
 	if (separator != NULL)
 		slen = strlen (separator);
 	else
 		slen = 0;
+	
 	len = 0;
 	va_start (args, separator);
 	for (s = va_arg (args, char *); s != NULL; s = va_arg (args, char *)){
@@ -387,21 +385,20 @@ g_strjoin (const gchar *separator, ...)
 		len += slen;
 	}
 	va_end (args);
+
 	if (len == 0)
 		return g_strdup ("");
 	
 	/* Remove the last separator */
 	if (slen > 0 && len > 0)
 		len -= slen;
-	len++;
-	res = g_malloc (len);
+
+	r = res = g_malloc (len + 1);
 	va_start (args, separator);
-	s = va_arg (args, char *);
-	strcpy (res, s);
 	for (s = va_arg (args, char *); s != NULL; s = va_arg (args, char *)){
 		if (separator != NULL)
-			strcat (res, separator);
-		strcat (res, s);
+			r = g_stpcpy (r, separator);
+		r = g_stpcpy (r, s);
 	}
 	va_end (args);
 
@@ -411,7 +408,7 @@ g_strjoin (const gchar *separator, ...)
 gchar *
 g_strjoinv (const gchar *separator, gchar **str_array)
 {
-	char *res;
+	char *res, *r;
 	size_t slen, len, i;
 	
 	if (separator != NULL)
@@ -424,18 +421,20 @@ g_strjoinv (const gchar *separator, gchar **str_array)
 		len += strlen (str_array [i]);
 		len += slen;
 	}
+
 	if (len == 0)
 		return g_strdup ("");
+
 	if (slen > 0 && len > 0)
 		len -= slen;
-	len++;
-	res = g_malloc (len);
-	strcpy (res, str_array [0]);
-	for (i = 1; str_array [i] != NULL; i++){
+
+	r = res = g_malloc (len + 1);
+	for (i = 0; str_array [i] != NULL; i++){
 		if (separator != NULL)
-			strcat (res, separator);
-		strcat (res, str_array [i]);
+			r = g_stpcpy (r, separator);
+		r = g_stpcpy (r, str_array [i]);
 	}
+
 	return res;
 }
 
