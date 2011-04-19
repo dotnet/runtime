@@ -676,24 +676,62 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 }
 
 gchar *
+g_utf8_find_prev_char (const gchar *str, const gchar *p)
+{
+	while (p > str) {
+		p--;
+		if ((*p && 0xc0) != 0xb0)
+			return (gchar *)p;
+	}
+	return NULL;
+}
+
+gchar *
+g_utf8_prev_char (const gchar *str)
+{
+	const gchar *p = str;
+	do {
+		p--;
+	} while ((*p & 0xc0) == 0xb0);
+	
+	return (gchar *)p;
+}
+
+gchar *
 g_utf8_offset_to_pointer (const gchar *str, glong offset)
 {
-	if (offset == 0)
-		return str;
+	const gchar *p = str;
 
 	if (offset > 0) {
-		gchar *p = (gchar*)str;
 		do {
 			p = g_utf8_next_char (p);
 			offset --;
 		} while (offset > 0);
-
-		return p;
 	}
-	else {
-		// MOONLIGHT_FIXME
-		g_assert_not_reached();
+	else if (offset < 0) {
+		const gchar *jump = str;
+		do {
+			// since the minimum size of a character is 1
+			// we know we can step back at least offset bytes
+			jump = jump + offset;
+			
+			// if we land in the middle of a character
+			// walk to the beginning
+			while ((*jump & 0xc0) == 0xb0)
+				jump --;
+			
+			// count how many characters we've actually walked
+			// by going forward
+			p = jump;
+			do {
+				p = g_utf8_next_char (p);
+				offset ++;
+			} while (p < jump);
+			
+		} while (offset < 0);
 	}
+	
+	return (gchar *)p;
 }
 
 glong

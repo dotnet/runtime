@@ -990,6 +990,8 @@ glong     g_utf8_strlen        (const gchar *str, gssize max);
 #define   g_utf8_next_char(p) p + (g_trailingBytesForUTF8[(guchar)(*p)] + 1)
 gchar *   g_utf8_offset_to_pointer (const gchar *str, glong offset);
 glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
+gchar *   g_utf8_prev_char (const char *str);
+gchar *   g_utf8_find_prev_char (const char *str, const char *p);
 
 /*
  * priorities
