@@ -104,8 +104,6 @@ AC_CHECK_SIZEOF(long long)
 AC_CHECK_FUNCS(strndup strlcpy stpcpy getpwuid_r strtok_r rewinddir vasprintf)
 AM_CONDITIONAL(NEED_VASPRINTF, test x$have_vasprintf = x )
 AM_ICONV()
-AC_SUBST(LIBICONV)
-LIBS="$LIBS $LIBICONV"
 AC_SEARCH_LIBS(sqrtf, m)
 
 # nanosleep may not be part of libc, also search it in other libraries

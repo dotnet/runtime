@@ -65,7 +65,7 @@ if HOST_WIN32
 libeglib_la_LIBADD = -lm $(LIBICONV) -lpsapi
 endif
 
-libeglib_static_la_LIBADD = $(libeglib_la_LIBADD)
+libeglib_static_la_LIBADD = $(libeglib_la_LIBADD) $(LIBICONV)
 libeglib_static_la_LDFLAGS = -static
 
 MAINTAINERCLEANFILES = Makefile.in
