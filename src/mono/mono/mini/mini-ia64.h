@@ -71,64 +71,6 @@ typedef struct MonoCompileArch {
 	GHashTable *branch_targets;
 } MonoCompileArch;
 
-static inline unw_word_t
-mono_ia64_context_get_ip (MonoContext *ctx)
-{
-	unw_word_t ip;
-	int err;
-
-	err = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
-	g_assert (err == 0);
-
-	if (ctx->precise_ip) {
-		return ip;
-	} else {
-		/* Subtrack 1 so ip points into the actual instruction */
-		return ip - 1;
-	}
-}
-
-static inline unw_word_t
-mono_ia64_context_get_sp (MonoContext *ctx)
-{
-	unw_word_t sp;
-	int err;
-
-	err = unw_get_reg (&ctx->cursor, UNW_IA64_SP, &sp);
-	g_assert (err == 0);
-
-	return sp;
-}
-
-static inline unw_word_t
-mono_ia64_context_get_fp (MonoContext *ctx)
-{
-	unw_cursor_t new_cursor;
-	unw_word_t fp;
-	int err;
-
-	{
-		unw_word_t ip, sp;
-
-		err = unw_get_reg (&ctx->cursor, UNW_IA64_SP, &sp);
-		g_assert (err == 0);
-
-		err = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
-		g_assert (err == 0);
-	}
-
-	/* fp is the SP of the parent frame */
-	new_cursor = ctx->cursor;
-
-	err = unw_step (&new_cursor);
-	g_assert (err >= 0);
-
-	err = unw_get_reg (&new_cursor, UNW_IA64_SP, &fp);
-	g_assert (err == 0);
-
-	return fp;
-}
-
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
     MONO_INIT_CONTEXT_FROM_CURRENT (ctx); \
 } while (0)
