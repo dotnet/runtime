@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 if HOST_WIN32
 SUBDIRS = src
 else

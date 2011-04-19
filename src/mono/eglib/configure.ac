@@ -2,7 +2,7 @@ AC_INIT(eglib, [0.3],
         [http://bugzilla.novell.com/enter_bug.cgi?product=mono])
 
 AC_CONFIG_SRCDIR([README])
-#AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_SYSTEM
 AC_CANONICAL_HOST
 
