@@ -156,6 +156,7 @@ rm -rf %buildroot
 %_bindir/al2
 %_bindir/certmgr
 %_bindir/chktrust
+%_bindir/crlupdate
 %_bindir/csharp
 %_bindir/dmcs
 %_bindir/gacutil
@@ -176,6 +177,7 @@ rm -rf %buildroot
 %_libdir/libikvm-native.so
 %_mandir/man1/certmgr.1%ext_man
 %_mandir/man1/chktrust.1%ext_man
+%_mandir/man1/crlupdate.1%ext_man
 %_mandir/man1/csharp.1%ext_man
 %_mandir/man1/gacutil.1%ext_man
 %_mandir/man1/mcs.1%ext_man
@@ -244,10 +246,11 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.0/al.exe*
 %_prefix/lib/mono/4.0/certmgr.exe*
 %_prefix/lib/mono/4.0/chktrust.exe*
+%_prefix/lib/mono/4.0/crlupdate.exe*
 %_prefix/lib/mono/4.0/cscompmgd.dll
 %_prefix/lib/mono/4.0/csharp.exe*
-%_prefix/lib/mono/4.0/mcs.exe*
 %_prefix/lib/mono/4.0/gacutil.exe*
+%_prefix/lib/mono/4.0/mcs.exe*
 %_prefix/lib/mono/4.0/mozroots.exe*
 %_prefix/lib/mono/4.0/mscorlib.dll*
 %_prefix/lib/mono/4.0/setreg.exe*
