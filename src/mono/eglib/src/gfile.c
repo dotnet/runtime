@@ -144,7 +144,7 @@ g_file_set_contents (const gchar *filename, const gchar *contents, gssize length
 	
 	fclose (fp);
 	
-	if (rename (path, filename) != 0) {
+	if (g_rename (path, filename) != 0) {
 		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
 		g_unlink (path);
 		g_free (path);
