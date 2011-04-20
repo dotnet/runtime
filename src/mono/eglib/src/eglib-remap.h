@@ -28,8 +28,10 @@
 #define g_error_free monoeg_g_error_free
 #define g_error_new monoeg_g_error_new
 #define g_error_vnew monoeg_g_error_vnew
+#define g_file_error_quark monoeg_g_file_error_quark
 #define g_file_error_from_errno monoeg_g_file_error_from_errno
 #define g_file_get_contents monoeg_g_file_get_contents
+#define g_file_set_contents monoeg_g_file_set_contents
 #define g_file_open_tmp monoeg_g_file_open_tmp
 #define g_file_test monoeg_g_file_test
 #define g_filename_from_uri monoeg_g_filename_from_uri

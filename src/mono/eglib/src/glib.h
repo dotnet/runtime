@@ -829,6 +829,10 @@ void g_usleep (gulong microseconds);
  * File
  */
 
+gpointer g_file_error_quark (void);
+
+#define G_FILE_ERROR g_file_error_quark ()
+
 typedef enum {
 	G_FILE_ERROR_EXIST,
 	G_FILE_ERROR_ISDIR,

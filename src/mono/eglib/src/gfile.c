@@ -25,10 +25,24 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #include <config.h>
+
 #include <glib.h>
 #include <stdio.h>
+#include <string.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include <errno.h>
+
+static gpointer error_quark = "FileError";
+
+gpointer
+g_file_error_quark (void)
+{
+	return error_quark;
+}
 
 GFileError
 g_file_error_from_errno (gint err_no)
@@ -91,4 +105,53 @@ g_file_error_from_errno (gint err_no)
 	}
 }
 
+#ifdef G_OS_WIN32
+#define TMP_FILE_FORMAT "%.*s%s.tmp"
+#else
+#define TMP_FILE_FORMAT "%.*s.%s~"
+#endif
 
+gboolean
+g_file_set_contents (const gchar *filename, const gchar *contents, gssize length, GError **err)
+{
+	const char *name;
+	char *path;
+	FILE *fp;
+	
+	if (!(name = strrchr (filename, G_DIR_SEPARATOR)))
+		name = filename;
+	else
+		name++;
+	
+	path = g_strdup_printf (TMP_FILE_FORMAT, name - filename, filename, name);
+	if (!(fp = fopen (path, "wb"))) {
+		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
+		g_free (path);
+		return FALSE;
+	}
+	
+	if (length < 0)
+		length = strlen (contents);
+	
+	if (fwrite (contents, 1, length, fp) < length) {
+		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (ferror (fp)), "%s", g_strerror (ferror (fp)));
+		g_unlink (path);
+		g_free (path);
+		fclose (fp);
+		
+		return FALSE;
+	}
+	
+	fclose (fp);
+	
+	if (g_rename (path, filename) != 0) {
+		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
+		g_unlink (path);
+		g_free (path);
+		return FALSE;
+	}
+	
+	g_free (path);
+	
+	return TRUE;
+}
