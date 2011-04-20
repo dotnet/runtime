@@ -872,8 +872,8 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 gint
 g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 {
-	gint len, i;
-	char base;
+	size_t len, i;
+	int base;
 	
 	if (c < 128UL) {
 		base = 0;
@@ -893,8 +893,9 @@ g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 	} else if (c < 2147483648UL) {
 		base = 252;
 		len = 6;
-	} else
+	} else {
 		return -1;
+	}
 	
 	if (outbuf != NULL) {
 		for (i = len - 1; i > 0; i--) {
@@ -904,7 +905,7 @@ g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 		}
 		
 		/* first character has a different base */
-		outbuf[0] = base + (c & 0x3f);
+		outbuf[0] = base + c;
 	}
 	
 	return len;
