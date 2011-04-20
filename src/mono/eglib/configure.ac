@@ -212,6 +212,7 @@ fi
 
 AC_OUTPUT([
 Makefile
+m4/Makefile
 src/Makefile
 src/eglib-config.h
 test/Makefile
