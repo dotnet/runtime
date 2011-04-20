@@ -29,13 +29,13 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <fcntl.h>
+#include <errno.h>
 
 #ifdef _MSC_VER
 #include <direct.h>
@@ -173,4 +173,3 @@ g_get_current_dir (void)
 	 */
 	return buffer;
 }
-

@@ -10,13 +10,13 @@
 #include <stdio.h>
 #include <glib.h>
 
-gpointer error_quark = "ERROR";
+static gpointer error_quark = "ConvertError";
 
 static glong utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **error);
 static glong utf16_to_utf8_len (const gunichar2 *str, glong len, glong *items_read, GError **error);
 
 gpointer
-g_convert_error_quark ()
+g_convert_error_quark (void)
 {
 	return error_quark;
 }
