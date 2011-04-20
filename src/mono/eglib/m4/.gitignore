@@ -1,3 +1,5 @@
+Makefile
+Makefile.in
 libtool.m4
 ltoptions.m4
 ltsugar.m4
