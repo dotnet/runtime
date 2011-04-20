@@ -179,6 +179,7 @@ mono_LDADD = \
 	$(MONO_LIB)		\
 	$(GLIB_LIBS)		\
 	$(LLVMMONOF)		\
+	$(LIBICONV)		\
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
 
@@ -189,6 +190,7 @@ mono_sgen_LDADD = \
 	$(MONO_SGEN_LIB)	\
 	$(GLIB_LIBS)		\
 	$(LLVMMONOF)		\
+	$(LIBICONV)		\
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
 
@@ -222,7 +224,8 @@ genmdesc_SOURCES = \
 # Don't link this against libmonoruntime to speed up rebuilds
 genmdesc_LDADD = \
 	$(monodir)/mono/utils/libmonoutils.la -lm	\
-	$(GLIB_LIBS)
+	$(GLIB_LIBS)					\
+	$(LIBICONV)
 
 x86_sources = \
 	mini-x86.c		\

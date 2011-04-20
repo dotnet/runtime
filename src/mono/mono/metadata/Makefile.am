@@ -283,7 +283,7 @@ pedump_SOURCES =		\
 	pedump.c
 
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
-	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(PEDUMP_DTRACE_OBJECT)
+	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV) $(PEDUMP_DTRACE_OBJECT)
 
 if PLATFORM_DARWIN
 pedump_LDFLAGS=-framework CoreFoundation
