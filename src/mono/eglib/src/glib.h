@@ -308,6 +308,7 @@ gchar  *g_stpcpy             (gchar *dest, const char *src);
 gchar   g_ascii_tolower      (gchar c);
 gchar  *g_ascii_strdown      (const gchar *str, gssize len);
 gint    g_ascii_strncasecmp  (const gchar *s1, const gchar *s2, gsize n);
+gint    g_ascii_strcasecmp   (const gchar *s1, const gchar *s2);
 gint    g_ascii_xdigit_value (gchar c);
 #define g_ascii_isspace(c)   (isspace (c) != 0)
 #define g_ascii_isalpha(c)   (isalpha (c) != 0)
@@ -956,9 +957,9 @@ gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
  */
 typedef struct _GIConv *GIConv;
 
-gsize g_iconv (GIConv converter, gchar **inbuf, gsize *inleft, gchar **outbuf, gsize *outleft);
-GIConv g_iconv_open (const gchar *to, const gchar *from);
-int g_iconv_close (GIConv converter);
+gsize g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft, gchar **outbytes, gsize *outbytesleft);
+GIConv g_iconv_open (const gchar *to_charset, const gchar *from_charset);
+int g_iconv_close (GIConv cd);
 
 gboolean  g_get_charset        (G_CONST_RETURN char **charset);
 gchar    *g_locale_to_utf8     (const gchar *opsysstring, gssize len,
@@ -1027,39 +1028,47 @@ gchar *   g_utf8_find_prev_char (const char *str, const char *p);
 				  
  
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#   define GUINT32_TO_LE(x) (x)
-#   define GUINT64_TO_LE(x) (x)
-#   define GUINT16_TO_LE(x) (x)
-#   define GUINT_TO_LE(x)   (x)
-#   define GUINT32_TO_BE(x) GUINT32_SWAP_LE_BE(x)
-#   define GUINT16_FROM_BE(x) GUINT16_SWAP_LE_BE(x)
-#   define GUINT32_FROM_BE(x) GUINT32_SWAP_LE_BE(x)
 #   define GUINT64_FROM_BE(x) GUINT64_SWAP_LE_BE(x)
-#   define GINT16_FROM_BE(x) GUINT16_SWAP_LE_BE(x)
-#   define GINT32_FROM_BE(x) GUINT32_SWAP_LE_BE(x)
-#   define GINT64_FROM_BE(x) GUINT64_SWAP_LE_BE(x)
+#   define GUINT32_FROM_BE(x) GUINT32_SWAP_LE_BE(x)
+#   define GUINT16_FROM_BE(x) GUINT16_SWAP_LE_BE(x)
+#   define GUINT_FROM_BE(x)   GUINT32_SWAP_LE_BE(x)
+#   define GUINT64_FROM_LE(x) (x)
+#   define GUINT32_FROM_LE(x) (x)
+#   define GUINT16_FROM_LE(x) (x)
+#   define GUINT_FROM_LE(x)   (x)
+#   define GUINT64_TO_BE(x)   GUINT64_SWAP_LE_BE(x)
+#   define GUINT32_TO_BE(x)   GUINT32_SWAP_LE_BE(x)
+#   define GUINT16_TO_BE(x)   GUINT16_SWAP_LE_BE(x)
+#   define GUINT_TO_BE(x)     GUINT32_SWAP_LE_BE(x)
+#   define GUINT64_TO_LE(x)   (x)
+#   define GUINT32_TO_LE(x)   (x)
+#   define GUINT16_TO_LE(x)   (x)
+#   define GUINT_TO_LE(x)     (x)
 #else
-#   define GUINT32_TO_LE(x) GUINT32_SWAP_LE_BE(x)
-#   define GUINT64_TO_LE(x) GUINT64_SWAP_LE_BE(x)
-#   define GUINT16_TO_LE(x) GUINT16_SWAP_LE_BE(x)
-#   define GUINT_TO_LE(x)   GUINT32_SWAP_LE_BE(x)
-#   define GUINT32_TO_BE(x) (x)
-#   define GUINT16_FROM_BE(x) (x)
-#   define GUINT32_FROM_BE(x) (x)
 #   define GUINT64_FROM_BE(x) (x)
-#   define GINT16_FROM_BE(x) (x)
-#   define GINT32_FROM_BE(x) (x)
-#   define GINT64_FROM_BE(x) (x)
+#   define GUINT32_FROM_BE(x) (x)
+#   define GUINT16_FROM_BE(x) (x)
+#   define GUINT_FROM_BE(x)   (x)
+#   define GUINT64_FROM_LE(x) GUINT64_SWAP_LE_BE(x)
+#   define GUINT32_FROM_LE(x) GUINT32_SWAP_LE_BE(x)
+#   define GUINT16_FROM_LE(x) GUINT16_SWAP_LE_BE(x)
+#   define GUINT_FROM_LE(x)   GUINT32_SWAP_LE_BE(x)
+#   define GUINT64_TO_BE(x)   (x)
+#   define GUINT32_TO_BE(x)   (x)
+#   define GUINT16_TO_BE(x)   (x)
+#   define GUINT_TO_BE(x)     (x)
+#   define GUINT64_TO_LE(x)   GUINT64_SWAP_LE_BE(x)
+#   define GUINT32_TO_LE(x)   GUINT32_SWAP_LE_BE(x)
+#   define GUINT16_TO_LE(x)   GUINT16_SWAP_LE_BE(x)
+#   define GUINT_TO_LE(x)     GUINT32_SWAP_LE_BE(x)
 #endif
 
+#define GINT64_FROM_BE(x)   (GUINT64_TO_BE (x))
+#define GINT32_FROM_BE(x)   (GUINT32_TO_BE (x))
+#define GINT16_FROM_BE(x)   (GUINT16_TO_BE (x))
 #define GINT64_FROM_LE(x)   (GUINT64_TO_LE (x))
 #define GINT32_FROM_LE(x)   (GUINT32_TO_LE (x))
 #define GINT16_FROM_LE(x)   (GUINT16_TO_LE (x))
-
-#define GUINT32_FROM_LE(x)  (GUINT32_TO_LE (x))
-#define GUINT64_FROM_LE(x)  (GUINT64_TO_LE (x))
-#define GUINT16_FROM_LE(x)  (GUINT16_TO_LE (x))
-#define GUINT_FROM_LE(x)    (GUINT_TO_LE (x))
 
 #define _EGLIB_MAJOR  2
 #define _EGLIB_MIDDLE 4

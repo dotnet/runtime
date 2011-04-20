@@ -43,15 +43,9 @@
 /* FIXME */
 #  define CODESET 1
 #  include <windows.h>
-#  ifdef _MSC_VER
-       typedef int iconv_t;
-#  endif
 #else
 #    ifdef HAVE_LANGINFO_H
 #       include <langinfo.h>
-#    endif
-#    ifdef HAVE_ICONV_H
-#       include <iconv.h>
 #    endif
 #    ifdef HAVE_LOCALCHARSET_H
 #       include <localcharset.h>
@@ -93,7 +87,7 @@ static const gulong offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E208
 GUnicodeType 
 g_unichar_type (gunichar c)
 {
-int i;
+	int i;
 
 	guint16 cp = (guint16) c;
 	for (i = 0; i < unicode_category_ranges_count; i++) {
@@ -227,32 +221,29 @@ g_convert (const gchar *str, gssize len,
 	   const gchar *to_codeset, const gchar *from_codeset,
 	   gsize *bytes_read, gsize *bytes_written, GError **error)
 {
-	char *result = NULL;
-#ifdef G_OS_WIN32
-#elif HAVE_ICONV_H
-	iconv_t convertor;
-	char *buffer, *output;
-	const char *strptr = (const char *) str;
 	size_t str_len = len == -1 ? strlen (str) : len;
-	size_t buffer_size;
-	size_t left, out_left;
+	const char *strptr = (const char *) str;
+	size_t left, out_left, buffer_size;
+	char *buffer, *output;
+	char *result = NULL;
+	GIConv cd;
 	
-	convertor = iconv_open (to_codeset, from_codeset);
-	if (convertor == (iconv_t) -1){
+	if ((cd = g_iconv_open (to_codeset, from_codeset)) == (GIConv) -1) {
 		if (bytes_written)
 			*bytes_written = 0;
 		if (bytes_read)
 			*bytes_read = 0;
 		return NULL;
 	}
-
+	
 	buffer_size = str_len + 1 + 8;
 	buffer = g_malloc (buffer_size);
 	out_left = str_len;
 	output = buffer;
 	left = str_len;
+	
 	while (left > 0){
-		int res = iconv (convertor, (char **) &strptr, &left, &output, &out_left);
+		int res = g_iconv (cd, (char **) &strptr, &left, &output, &out_left);
 		if (res == (size_t) -1){
 			if (errno == E2BIG){
 				char *n;
@@ -295,8 +286,8 @@ g_convert (const gchar *str, gssize len,
 	*output = 0;
 	result = buffer;
  leave:
-	iconv_close (convertor);
-#endif
+	g_iconv_close (cd);
+	
 	return result;
 }
 

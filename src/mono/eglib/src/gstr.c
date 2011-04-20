@@ -708,20 +708,35 @@ g_ascii_strncasecmp (const gchar *s1, const gchar *s2, gsize n)
 	g_return_val_if_fail (s1 != NULL, 0);
 	g_return_val_if_fail (s2 != NULL, 0);
 
-	for (i = 0; i < n; i++){
+	for (i = 0; i < n; i++) {
 		gchar c1 = g_ascii_tolower (*s1++);
 		gchar c2 = g_ascii_tolower (*s2++);
 		
-		if (c1 == c2)
-			continue;
-		
-		if (c1 == 0)
-			return -1;
-		if (c2 == 0)
-			return 1;
-		return c1-c2;
+		if (c1 != c2)
+			return c1 - c2;
 	}
+	
 	return 0;
+}
+
+gint
+g_ascii_strcasecmp (const gchar *s1, const gchar *s2)
+{
+	const char *sp1 = s1;
+	const char *sp2 = s2;
+	
+	g_return_val_if_fail (s1 != NULL, 0);
+	g_return_val_if_fail (s2 != NULL, 0);
+	
+	while (*sp1 != '\0') {
+		char c1 = g_ascii_tolower (*sp1++);
+		char c2 = g_ascii_tolower (*sp2++);
+		
+		if (c1 != c2)
+			return c1 - c2;
+	}
+	
+	return (*sp1) - (*sp2);
 }
 
 gchar *
