@@ -264,6 +264,37 @@ g_hash_table_insert_replace (GHashTable *hash, gpointer key, gpointer value, gbo
 	sanity_check (hash);
 }
 
+GList*
+g_hash_table_get_keys (GHashTable *hash)
+{
+	GHashTableIter iter;
+	GList *rv = NULL;
+	gpointer key;
+
+	g_hash_table_iter_init (&iter, hash);
+
+	while (g_hash_table_iter_next (&iter, &key, NULL))
+		rv = g_list_prepend (rv, key);
+
+	return g_list_reverse (rv);
+}
+
+GList*
+g_hash_table_get_values (GHashTable *hash)
+{
+	GHashTableIter iter;
+	GList *rv = NULL;
+	gpointer value;
+
+	g_hash_table_iter_init (&iter, hash);
+
+	while (g_hash_table_iter_next (&iter, NULL, &value))
+		rv = g_list_prepend (rv, value);
+
+	return g_list_reverse (rv);
+}
+
+
 guint
 g_hash_table_size (GHashTable *hash)
 {

@@ -193,60 +193,6 @@ gchar*           g_win32_getlocale(void);
 #define g_return_val_if_fail(x,e)  G_STMT_START { if (!(x)) { g_critical ("%s:%d: assertion '%s' failed", __FILE__, __LINE__, #x); return (e); } } G_STMT_END
 
 /*
- * Hashtables
- */
-typedef struct _GHashTable GHashTable;
-typedef struct _GHashTableIter GHashTableIter;
-
-/* Private, but needed for stack allocation */
-struct _GHashTableIter
-{
-	gpointer dummy [8];
-};
-
-typedef void     (*GFunc)          (gpointer data, gpointer user_data);
-typedef gint     (*GCompareFunc)   (gconstpointer a, gconstpointer b);
-typedef gint     (*GCompareDataFunc) (gconstpointer a, gconstpointer b, gpointer user_data);
-typedef void     (*GHFunc)         (gpointer key, gpointer value, gpointer user_data);
-typedef gboolean (*GHRFunc)        (gpointer key, gpointer value, gpointer user_data);
-typedef void     (*GDestroyNotify) (gpointer data);
-typedef guint    (*GHashFunc)      (gconstpointer key);
-typedef gboolean (*GEqualFunc)     (gconstpointer a, gconstpointer b);
-typedef void     (*GFreeFunc)      (gpointer       data);
-
-GHashTable     *g_hash_table_new             (GHashFunc hash_func, GEqualFunc key_equal_func);
-GHashTable     *g_hash_table_new_full        (GHashFunc hash_func, GEqualFunc key_equal_func,
-					      GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func);
-void            g_hash_table_insert_replace  (GHashTable *hash, gpointer key, gpointer value, gboolean replace);
-guint           g_hash_table_size            (GHashTable *hash);
-gpointer        g_hash_table_lookup          (GHashTable *hash, gconstpointer key);
-gboolean        g_hash_table_lookup_extended (GHashTable *hash, gconstpointer key, gpointer *orig_key, gpointer *value);
-void            g_hash_table_foreach         (GHashTable *hash, GHFunc func, gpointer user_data);
-gpointer        g_hash_table_find            (GHashTable *hash, GHRFunc predicate, gpointer user_data);
-gboolean        g_hash_table_remove          (GHashTable *hash, gconstpointer key);
-gboolean        g_hash_table_steal           (GHashTable *hash, gconstpointer key);
-void            g_hash_table_remove_all      (GHashTable *hash);
-guint           g_hash_table_foreach_remove  (GHashTable *hash, GHRFunc func, gpointer user_data);
-guint           g_hash_table_foreach_steal   (GHashTable *hash, GHRFunc func, gpointer user_data);
-void            g_hash_table_destroy         (GHashTable *hash);
-void            g_hash_table_print_stats     (GHashTable *table);
-
-void            g_hash_table_iter_init       (GHashTableIter *iter, GHashTable *hash_table);
-gboolean        g_hash_table_iter_next       (GHashTableIter *iter, gpointer *key, gpointer *value);
-
-guint           g_spaced_primes_closest      (guint x);
-
-#define g_hash_table_insert(h,k,v)    g_hash_table_insert_replace ((h),(k),(v),FALSE)
-#define g_hash_table_replace(h,k,v)   g_hash_table_insert_replace ((h),(k),(v),TRUE)
-
-gboolean g_direct_equal (gconstpointer v1, gconstpointer v2);
-guint    g_direct_hash  (gconstpointer v1);
-gboolean g_int_equal    (gconstpointer v1, gconstpointer v2);
-guint    g_int_hash     (gconstpointer v1);
-gboolean g_str_equal    (gconstpointer v1, gconstpointer v2);
-guint    g_str_hash     (gconstpointer v1);
-
-/*
  * Errors
  */
 typedef struct {
@@ -362,6 +308,16 @@ GString     *g_string_erase         (GString *string, gssize pos, gssize len);
 
 #define g_string_sprintfa g_string_append_printf
 
+typedef void     (*GFunc)          (gpointer data, gpointer user_data);
+typedef gint     (*GCompareFunc)   (gconstpointer a, gconstpointer b);
+typedef gint     (*GCompareDataFunc) (gconstpointer a, gconstpointer b, gpointer user_data);
+typedef void     (*GHFunc)         (gpointer key, gpointer value, gpointer user_data);
+typedef gboolean (*GHRFunc)        (gpointer key, gpointer value, gpointer user_data);
+typedef void     (*GDestroyNotify) (gpointer data);
+typedef guint    (*GHashFunc)      (gconstpointer key);
+typedef gboolean (*GEqualFunc)     (gconstpointer a, gconstpointer b);
+typedef void     (*GFreeFunc)      (gpointer       data);
+
 /*
  * Lists
  */
@@ -472,6 +428,52 @@ GList *g_list_insert_before (GList         *list,
 			     gpointer       data);
 GList *g_list_sort          (GList         *sort,
 			     GCompareFunc   func);
+
+/*
+ * Hashtables
+ */
+typedef struct _GHashTable GHashTable;
+typedef struct _GHashTableIter GHashTableIter;
+
+/* Private, but needed for stack allocation */
+struct _GHashTableIter
+{
+	gpointer dummy [8];
+};
+
+GHashTable     *g_hash_table_new             (GHashFunc hash_func, GEqualFunc key_equal_func);
+GHashTable     *g_hash_table_new_full        (GHashFunc hash_func, GEqualFunc key_equal_func,
+					      GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func);
+void            g_hash_table_insert_replace  (GHashTable *hash, gpointer key, gpointer value, gboolean replace);
+guint           g_hash_table_size            (GHashTable *hash);
+GList          *g_hash_table_get_keys        (GHashTable *hash);
+GList          *g_hash_table_get_values      (GHashTable *hash);
+gpointer        g_hash_table_lookup          (GHashTable *hash, gconstpointer key);
+gboolean        g_hash_table_lookup_extended (GHashTable *hash, gconstpointer key, gpointer *orig_key, gpointer *value);
+void            g_hash_table_foreach         (GHashTable *hash, GHFunc func, gpointer user_data);
+gpointer        g_hash_table_find            (GHashTable *hash, GHRFunc predicate, gpointer user_data);
+gboolean        g_hash_table_remove          (GHashTable *hash, gconstpointer key);
+gboolean        g_hash_table_steal           (GHashTable *hash, gconstpointer key);
+void            g_hash_table_remove_all      (GHashTable *hash);
+guint           g_hash_table_foreach_remove  (GHashTable *hash, GHRFunc func, gpointer user_data);
+guint           g_hash_table_foreach_steal   (GHashTable *hash, GHRFunc func, gpointer user_data);
+void            g_hash_table_destroy         (GHashTable *hash);
+void            g_hash_table_print_stats     (GHashTable *table);
+
+void            g_hash_table_iter_init       (GHashTableIter *iter, GHashTable *hash_table);
+gboolean        g_hash_table_iter_next       (GHashTableIter *iter, gpointer *key, gpointer *value);
+
+guint           g_spaced_primes_closest      (guint x);
+
+#define g_hash_table_insert(h,k,v)    g_hash_table_insert_replace ((h),(k),(v),FALSE)
+#define g_hash_table_replace(h,k,v)   g_hash_table_insert_replace ((h),(k),(v),TRUE)
+
+gboolean g_direct_equal (gconstpointer v1, gconstpointer v2);
+guint    g_direct_hash  (gconstpointer v1);
+gboolean g_int_equal    (gconstpointer v1, gconstpointer v2);
+guint    g_int_hash     (gconstpointer v1);
+gboolean g_str_equal    (gconstpointer v1, gconstpointer v2);
+guint    g_str_hash     (gconstpointer v1);
 
 /*
  * ByteArray
