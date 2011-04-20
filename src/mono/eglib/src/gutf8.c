@@ -792,35 +792,34 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 	while (len) {
 		guint8 c = *p++;
 
-
 		if (c < 0x80) {
 			mb_size = 1;
 		}
-		else if ((c & 0xE0) == 0xC0) {
+		else if (c < 0xe0) {
 			c &= 0x1f;
 
 			mb_size = 2;
 		}
-		else if ((c & 0xF0) == 0xE0) {
+		else if (c < 0xf0) {
 			c &= 0x0f;
 			mb_size = 3;
 		}
-		else if ((c & 0xF8) == 0xF0) {
+		else if (c < 0xf8) {
 			c &= 0x07;
 			mb_size = 4;
 		}
-		else if ((c & 0xFC) == 0xF8) {
+		else if (c < 0xfc) {
 			c &= 0x03;
 			mb_size = 5;
 		}
-		else if ((c & 0xFE) == 0xFC) {
+		else if (c < 0xfe) {
 			c &= 0x01;
 			mb_size = 6;
 		}
 
 		codepoint = c;
 		while (--mb_size) {
-			codepoint <<= 6 | ((*p)&0x3f);
+			codepoint = (codepoint << 6) | ((*p) & 0x3f);
 			p++;
 		}
 
