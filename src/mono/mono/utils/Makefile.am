@@ -89,7 +89,9 @@ monoutils_sources = \
 	mono-threads.c	\
 	mono-threads-posix.c	\
 	mono-threads-mach.c	\
-	mono-threads.h
+	mono-threads.h	\
+	mono-tls.h	\
+	linux_magic.h
 
 arch_sources = 
 

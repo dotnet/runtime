@@ -2909,6 +2909,7 @@ mono/monograph/Makefile
 mono/io-layer/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
+m4/Makefile
 ikvm-native/Makefile
 scripts/Makefile
 man/Makefile
