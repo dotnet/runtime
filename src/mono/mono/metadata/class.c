@@ -7369,9 +7369,6 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 	tmask = tinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 	cmask = cinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 
-	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !(cmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT))
-		return FALSE;
-
 	if (cinfo->constraints) {
 		for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
 			MonoClass *cc = *candidate_class;
@@ -7389,6 +7386,10 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 		return FALSE;
 	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && !valuetype_constraint_satisfied)
 		return FALSE;
+	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !((cmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) ||
+		valuetype_constraint_satisfied)) {
+		return FALSE;
+	}
 
 
 	/*candidate type constraints must be a superset of target's*/

@@ -652,8 +652,6 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 	int tmask = tinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 	int cmask = cinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 
-	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !(cmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT))
-		return FALSE;
 	if (cinfo->constraints) {
 		for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
 			MonoClass *cc;
@@ -676,6 +674,11 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 		return FALSE;
 	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && !valuetype_constraint_satisfied)
 		return FALSE;
+	if ((tmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !((cmask & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) ||
+		valuetype_constraint_satisfied)) {
+		return FALSE;
+	}
+
 
 	if (tinfo->constraints) {
 		MonoClass **target_class;
