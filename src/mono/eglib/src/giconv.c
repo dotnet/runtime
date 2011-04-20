@@ -72,21 +72,29 @@ static int encode_utf16 (gunichar c, char **outbytes, size_t *outbytesleft);
 static int decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar);
 static int encode_utf8 (gunichar c, char **outbytes, size_t *outbytesleft);
 
+static int decode_latin1 (char **inbytes, size_t *inbytesleft, gunichar *outchar);
+static int encode_latin1 (gunichar c, char **outbytes, size_t *outbytesleft);
+
 static struct {
 	const char *name;
 	Decoder decoder;
 	Encoder encoder;
 } charsets[] = {
-	{ "UTF-32BE", decode_utf32be, encode_utf32be },
-	{ "UTF-32LE", decode_utf32le, encode_utf32le },
-	{ "UTF-16BE", decode_utf16be, encode_utf16be },
-	{ "UTF-16LE", decode_utf16le, encode_utf16le },
-	{ "UTF-32",   decode_utf32,   encode_utf32   },
-	{ "UTF-16",   decode_utf16,   encode_utf16   },
-	{ "UTF-8",    decode_utf8,    encode_utf8    },
-	{ "UTF32",    decode_utf32,   encode_utf32   },
-	{ "UTF16",    decode_utf16,   encode_utf16   },
-	{ "UTF8",     decode_utf8,    encode_utf8    },
+	{ "ISO-8859-1", decode_latin1,  encode_latin1  },
+	{ "ISO8859-1",  decode_latin1,  encode_latin1  },
+	{ "UTF-32BE",   decode_utf32be, encode_utf32be },
+	{ "UTF-32LE",   decode_utf32le, encode_utf32le },
+	{ "UTF-16BE",   decode_utf16be, encode_utf16be },
+	{ "UTF-16LE",   decode_utf16le, encode_utf16le },
+	{ "UTF-32",     decode_utf32,   encode_utf32   },
+	{ "UTF-16",     decode_utf16,   encode_utf16   },
+	{ "UTF-8",      decode_utf8,    encode_utf8    },
+	{ "US-ASCII",   decode_latin1,  encode_latin1  },
+	{ "Latin1",     decode_latin1,  encode_latin1  },
+	{ "ASCII",      decode_latin1,  encode_latin1  },
+	{ "UTF32",      decode_utf32,   encode_utf32   },
+	{ "UTF16",      decode_utf16,   encode_utf16   },
+	{ "UTF8",       decode_utf8,    encode_utf8    },
 };
 
 
@@ -455,6 +463,9 @@ decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 	unsigned char c;
 	gunichar u;
 	
+	if (inleft < 1)
+		return 0;
+	
 	c = *inptr++;
 	
 	if (c < 0x80) {
@@ -545,6 +556,48 @@ encode_utf8 (gunichar c, char **outbytes, size_t *outbytesleft)
 	
 	*outbytesleft = outleft - len;
 	*outbytes = outptr + len;
+	
+	return 0;
+}
+
+static int
+decode_latin1 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
+{
+	size_t inleft = *inbytesleft;
+	char *inptr = *inbytes;
+	gunichar u = *inptr;
+	
+	if (inleft < 1)
+		return 0;
+	
+	*inbytesleft = inleft - 1;
+	*inbytes = inptr + 1;
+	*outchar = u;
+	
+	return 0;
+}
+
+static int
+encode_latin1 (gunichar c, char **outbytes, size_t *outbytesleft)
+{
+	size_t outleft = *outbytesleft;
+	char *outptr = *outbytes;
+	
+	if (outleft < 1) {
+		errno = E2BIG;
+		return -1;
+	}
+	
+	if (c > 0xff) {
+		errno = EILSEQ;
+		return -1;
+	}
+	
+	*outptr++ = (char) c;
+	outleft--;
+	
+	*outbytesleft = outleft;
+	*outbytes = outptr;
 	
 	return 0;
 }
