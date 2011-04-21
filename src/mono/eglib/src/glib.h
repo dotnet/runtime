@@ -870,7 +870,7 @@ typedef enum {
 } GFileTest;
 
 
-gboolean   g_file_set_contents (const gchar *filename, const gchar *contents, gsize length, GError **error);
+gboolean   g_file_set_contents (const gchar *filename, const gchar *contents, gssize length, GError **error);
 gboolean   g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **error);
 GFileError g_file_error_from_errno (gint err_no);
 gint       g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error);
