@@ -1273,7 +1273,6 @@ get_handler_clause (MonoCompile *cfg, MonoBasicBlock *bb)
 static void
 set_metadata_flag (LLVMValueRef v, const char *flag_name)
 {
-#if LLVM_CHECK_VERSION (2, 8)
 	LLVMValueRef md_arg;
 	int md_kind;
 	
@@ -1283,7 +1282,6 @@ set_metadata_flag (LLVMValueRef v, const char *flag_name)
 	md_kind = LLVMGetMDKindID (flag_name, strlen (flag_name));
 	md_arg = LLVMMDString ("mono", 4);
 	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
-#endif
 }
 
 /*
@@ -4170,15 +4168,6 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 		cfg->disable_llvm = TRUE;
 	}
 
-	if (!LLVM_CHECK_VERSION (2, 8)) {
-		/*
-		 * FIXME: LLLVM 2.6 no longer seems to generate correct exception info
-		 * for JITted code.
-		 */
-		cfg->exception_message = g_strdup ("clauses");
-		cfg->disable_llvm = TRUE;
-	}
-
 #if 0
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
@@ -4820,26 +4809,17 @@ add_intrinsics (LLVMModuleRef module)
 	{
 		LLVMTypeRef memset_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
-		if (LLVM_CHECK_VERSION(2, 8)) {
-			memset_param_count = 5;
-			memset_func_name = "llvm.memset.p0i8.i32";
-		} else {
-			memset_param_count = 4;
-			memset_func_name = "llvm.memset.i32";
-		}
+		memset_param_count = 5;
+		memset_func_name = "llvm.memset.p0i8.i32";
+
 		LLVMAddFunction (module, memset_func_name, LLVMFunctionType (LLVMVoidType (), memset_params, memset_param_count, FALSE));
 	}
 
 	{
 		LLVMTypeRef memcpy_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
-		if (LLVM_CHECK_VERSION(2, 8)) {
-			memcpy_param_count = 5;
-			memcpy_func_name = "llvm.memcpy.p0i8.p0i8.i32";
-		} else {
-			memcpy_param_count = 4;
-			memcpy_func_name = "llvm.memcpy.i32";
-		}
+		memcpy_param_count = 5;
+		memcpy_func_name = "llvm.memcpy.p0i8.p0i8.i32";
 
 		LLVMAddFunction (module, memcpy_func_name, LLVMFunctionType (LLVMVoidType (), memcpy_params, memcpy_param_count, FALSE));
 	}
@@ -4908,18 +4888,9 @@ add_intrinsics (LLVMModuleRef module)
 
 		arg_types [0] = LLVMPointerType (LLVMInt8Type (), 0);
 		arg_types [1] = LLVMPointerType (LLVMInt8Type (), 0);
-		if (LLVM_CHECK_VERSION(2, 8)) {
-			eh_selector_name = "llvm.eh.selector";
-			ret_type = LLVMInt32Type ();
-		} else {
-			if (SIZEOF_VOID_P == 8) {
-				eh_selector_name = "llvm.eh.selector.i64";
-				ret_type = LLVMInt64Type ();
-			} else {
-				eh_selector_name = "llvm.eh.selector.i32";
-				ret_type = LLVMInt32Type ();
-			}
-		}
+		eh_selector_name = "llvm.eh.selector";
+		ret_type = LLVMInt32Type ();
+
 		LLVMAddFunction (module, eh_selector_name, LLVMFunctionType (ret_type, arg_types, 2, TRUE));
 
 		LLVMAddFunction (module, "llvm.eh.exception", LLVMFunctionType (LLVMPointerType (LLVMInt8Type (), 0), NULL, 0, FALSE));
