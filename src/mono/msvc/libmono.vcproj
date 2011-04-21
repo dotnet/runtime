@@ -733,6 +733,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\utils\mono-threads-windows.c"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\hazard-pointer.c"
 				>
 			</File>
