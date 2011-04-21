@@ -252,7 +252,9 @@ gchar  *g_stpcpy             (gchar *dest, const char *src);
 
 
 gchar   g_ascii_tolower      (gchar c);
+gchar   g_ascii_toupper      (gchar c);
 gchar  *g_ascii_strdown      (const gchar *str, gssize len);
+gchar  *g_ascii_strup        (const gchar *str, gssize len);
 gint    g_ascii_strncasecmp  (const gchar *s1, const gchar *s2, gsize n);
 gint    g_ascii_strcasecmp   (const gchar *s1, const gchar *s2);
 gint    g_ascii_xdigit_value (gchar c);

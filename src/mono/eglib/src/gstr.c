@@ -703,6 +703,31 @@ g_ascii_strdown (const gchar *str, gssize len)
 	return ret;
 }
 
+gchar
+g_ascii_toupper (gchar c)
+{
+	return c >= 'a' && c <= 'z' ? c + ('A' - 'a') : c;
+}
+
+gchar *
+g_ascii_strup (const gchar *str, gssize len)
+{
+	char *ret;
+	int i;
+	
+	g_return_val_if_fail  (str != NULL, NULL);
+
+	if (len == -1)
+		len = strlen (str);
+	
+	ret = g_malloc (len + 1);
+	for (i = 0; i < len; i++)
+		ret [i] = (guchar) g_ascii_toupper (str [i]);
+	ret [i] = 0;
+	
+	return ret;
+}
+
 gint
 g_ascii_strncasecmp (const gchar *s1, const gchar *s2, gsize n)
 {
