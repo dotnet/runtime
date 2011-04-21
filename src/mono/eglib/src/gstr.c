@@ -393,8 +393,10 @@ g_strjoin (const gchar *separator, ...)
 	if (slen > 0 && len > 0)
 		len -= slen;
 
-	r = res = g_malloc (len + 1);
+	res = g_malloc (len + 1);
 	va_start (args, separator);
+	s = va_arg (args, char *);
+	r = g_stpcpy (res, s);
 	for (s = va_arg (args, char *); s != NULL; s = va_arg (args, char *)){
 		if (separator != NULL)
 			r = g_stpcpy (r, separator);
@@ -428,8 +430,9 @@ g_strjoinv (const gchar *separator, gchar **str_array)
 	if (slen > 0 && len > 0)
 		len -= slen;
 
-	r = res = g_malloc (len + 1);
-	for (i = 0; str_array [i] != NULL; i++){
+	res = g_malloc (len + 1);
+	r = g_stpcpy (res, str_array [0]);
+	for (i = 1; str_array [i] != NULL; i++){
 		if (separator != NULL)
 			r = g_stpcpy (r, separator);
 		r = g_stpcpy (r, str_array [i]);
@@ -801,8 +804,12 @@ g_stpcpy (gchar *dest, const char *src)
 #if HAVE_STPCPY
 	return stpcpy (dest, src);
 #else
-	strcpy (dest, src);
-	return dest + strlen (src);
+	while (*src)
+		*dest++ = *src++;
+	
+	*dest = '\0';
+	
+	return dest;
 #endif
 }
 
