@@ -994,6 +994,7 @@ extern const gchar g_trailingBytesForUTF8[256];
 
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
 gunichar  g_utf8_get_char      (const gchar *src);
+gunichar  g_utf8_get_char_validated (const gchar *str, gssize max_len);
 glong     g_utf8_strlen        (const gchar *str, gssize max);
 #define   g_utf8_next_char(p) p + (g_trailingBytesForUTF8[(guchar)(*p)] + 1)
 gchar *   g_utf8_offset_to_pointer (const gchar *str, glong offset);
