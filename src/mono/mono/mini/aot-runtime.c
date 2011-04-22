@@ -659,6 +659,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 
 			if (subtype == MONO_AOT_WRAPPER_CASTCLASS_WITH_CACHE)
 				ref->method = mono_marshal_get_castclass_with_cache ();
+			else if (subtype == MONO_AOT_WRAPPER_ISINST_WITH_CACHE)
+				ref->method = mono_marshal_get_isinst_with_cache ();
 			else
 				g_assert_not_reached ();
 			break;
