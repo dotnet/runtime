@@ -565,11 +565,12 @@ decode_latin1 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 {
 	size_t inleft = *inbytesleft;
 	char *inptr = *inbytes;
-	gunichar u = *inptr;
+	gunichar u;
 	
 	if (inleft < 1)
 		return 0;
 	
+	u = (unsigned char) *inptr;
 	*inbytesleft = inleft - 1;
 	*inbytes = inptr + 1;
 	*outchar = u;
