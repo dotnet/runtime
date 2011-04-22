@@ -84,6 +84,10 @@ monoutils_sources = \
 	mono-stack-unwinding.h	\
 	hazard-pointer.c	\
 	hazard-pointer.h	\
+	lock-free-queue.c	\
+	lock-free-queue.h	\
+	lock-free-alloc.c	\
+	lock-free-alloc.h	\
 	mono-linked-list-set.c	\
 	mono-linked-list-set.h	\
 	mono-threads.c	\
