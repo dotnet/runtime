@@ -223,10 +223,10 @@ g_array_remove_index_fast (GArray *array,
 void
 g_array_set_size (GArray *array, gint length)
 {
+	GArrayPriv *priv = (GArrayPriv*)array;
+
 	g_return_if_fail (array != NULL);
 	g_return_if_fail (length >= 0);
-
-	GArrayPriv *priv = (GArrayPriv*)array;
 
 	if (length == priv->capacity)
 		return; // nothing to be done
