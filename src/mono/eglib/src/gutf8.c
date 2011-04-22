@@ -55,6 +55,25 @@ g_utf8_strdown (const gchar *str, gssize len)
 	return (gchar*)utf8_case_conv (str, len, FALSE);
 }
 
+gunichar
+g_utf8_get_char_validated (const gchar *str, gssize max_len)
+{
+	gunichar ch = 0;
+	gushort extra_bytes = 0;
+
+	if (max_len == 0)
+		return -2;
+	
+	extra_bytes = g_trailingBytesForUTF8 [*str];
+
+	if (max_len <= extra_bytes)
+		return -2;
+
+	if (g_utf8_validate (str, max_len, NULL))
+		return g_utf8_get_char (str);
+	return -1;
+}
+
 static glong
 utf8_to_utf16_len (const gchar *str, glong len, glong *items_read, GError **error)
 {
