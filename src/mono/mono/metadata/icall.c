@@ -7186,8 +7186,9 @@ mono_ArgIterator_IntGetNextArg (MonoArgIterator *iter)
 
 	res.type = iter->sig->params [i];
 	res.klass = mono_class_from_mono_type (res.type);
-	res.value = iter->args;
 	arg_size = mono_type_stack_size (res.type, &align);
+	iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
+	res.value = iter->args;
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	if (arg_size <= sizeof (gpointer)) {
 		int dummy;
@@ -7221,8 +7222,9 @@ mono_ArgIterator_IntGetNextArgT (MonoArgIterator *iter, MonoType *type)
 		res.type = iter->sig->params [i];
 		res.klass = mono_class_from_mono_type (res.type);
 		/* FIXME: endianess issue... */
-		res.value = iter->args;
 		arg_size = mono_type_stack_size (res.type, &align);
+		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
+		res.value = iter->args;
 		iter->args = (char*)iter->args + arg_size;
 		iter->next_arg++;
 		/* g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res.type->type, arg_size, res.value); */
