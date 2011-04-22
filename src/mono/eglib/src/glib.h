@@ -266,12 +266,10 @@ gint    g_ascii_xdigit_value (gchar c);
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #ifdef _MSC_VER
 #define g_strcasecmp stricmp
-#define g_ascii_strcasecmp stricmp
 #define g_strncasecmp strnicmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))
 #else
 #define g_strcasecmp strcasecmp
-#define g_ascii_strcasecmp strcasecmp
 #define g_ascii_strtoull strtoull
 #define g_strncasecmp strncasecmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))

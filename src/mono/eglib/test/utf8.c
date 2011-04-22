@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "test.h"
 
 /*
@@ -241,22 +243,71 @@ test_utf8_to_utf16 ()
 RESULT
 test_convert ()
 {
-	gsize n;
-	char *s = g_convert ("\242\241\243\242\241\243\242\241\243\242\241\243", -1, "UTF-8", "ISO-8859-1", NULL, &n, NULL);
-	guchar *u = (guchar *) s;
+	static const char *charsets[] = { "UTF-8", "UTF-16LE", "UTF-16BE", "UTF-32LE", "UTF-32BE" };
+	gsize content_length, converted_length, expected_length, k;
+	char *content, *converted, *expected, *path;
+	GError *err = NULL;
+	const char *srcdir;
+	gboolean loaded;
+	guint i, j;
 	
-	if (!s)
-		return FAILED ("Expected 24 bytes, got: NULL");
-
-	if (strlen (s) != 24)
-		return FAILED ("Expected 24 bytes, got: %d", strlen (s));
-
-	if (u [1] != 162 || u [2] != 194 ||
-	    u [3] != 161 || u [4] != 194 ||
-	    u [5] != 163 || u [6] != 194)
-		return FAILED ("Incorrect conversion");
+	if (!(srcdir = getenv ("srcdir")))
+		return FAILED ("srcdir not defined!");
 	
-	g_free (s);
+	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
+		path = g_strdup_printf ("%s%c%s.txt", srcdir, G_DIR_SEPARATOR, charsets[i]);
+		loaded = g_file_get_contents (path, &content, &content_length, &err);
+		g_free (path);
+		
+		if (!loaded) {
+			fprintf (stderr, "test_convert(): error loading test file for %s: %s\n", charsets[i], err->message);
+			g_error_free (err);
+			err = NULL;
+			continue;
+		}
+		
+		for (j = 0; j < G_N_ELEMENTS (charsets); j++) {
+			path = g_strdup_printf ("%s%c%s.txt", srcdir, G_DIR_SEPARATOR, charsets[j]);
+			loaded = g_file_get_contents (path, &expected, &expected_length, NULL);
+			g_free (path);
+			
+			if (!loaded) {
+				fprintf (stderr, "test_convert(): error loading test file for %s\n", charsets[i]);
+				continue;
+			}
+			
+			converted = g_convert (content, content_length, charsets[j], charsets[i], NULL, &converted_length, NULL);
+			
+			if (converted == NULL) {
+				g_free (expected);
+				g_free (content);
+				return FAILED ("Failed to convert from %s to %s: NULL", charsets[i], charsets[j]);
+			}
+			
+			if (converted_length != expected_length) {
+				g_free (converted);
+				g_free (expected);
+				g_free (content);
+				return FAILED ("Failed to convert from %s to %s: expected %u bytes, got %u",
+					       charsets[i], charsets[j], expected_length, converted_length);
+			}
+			
+			for (k = 0; k < converted_length; k++) {
+				if (converted[k] != expected[k]) {
+					g_free (converted);
+					g_free (expected);
+					g_free (content);
+					return FAILED ("Failed to convert from %s to %s: expected 0x%x at offset %u, got 0x%x",
+						       charsets[i], charsets[j], expected[k], k, converted[k]);
+				}
+			}
+			
+			g_free (converted);
+			g_free (expected);
+		}
+		
+		g_free (content);
+	}
 	
 	return OK;
 }

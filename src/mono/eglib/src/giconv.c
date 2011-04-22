@@ -109,8 +109,11 @@ g_iconv_open (const char *to_charset, const char *from_charset)
 	GIConv cd;
 	guint i;
 	
-	if (!to_charset || !from_charset || !to_charset[0] || !from_charset[0])
+	if (!to_charset || !from_charset || !to_charset[0] || !from_charset[0]) {
+		errno = EINVAL;
+		
 		return (GIConv) -1;
+	}
 	
 	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
 		if (!g_ascii_strcasecmp (charsets[i].name, from_charset))
@@ -125,6 +128,8 @@ g_iconv_open (const char *to_charset, const char *from_charset)
 		if ((icd = iconv_open (to_charset, from_charset)) == (iconv_t) -1)
 			return (GIConv) -1;
 #else
+		errno = EINVAL;
+		
 		return (GIConv) -1;
 #endif
 	}
@@ -178,21 +183,24 @@ g_iconv (GIConv cd, char **inbytes, size_t *inbytesleft,
 	inptr = inbytes ? *inbytes : NULL;
 	outleft = *outbytesleft;
 	outptr = *outbytes;
-	c = cd->c;
 	
-	do {
-		if (c == (gunichar) -1 && cd->decode (&inptr, &inleft, &c) == -1) {
+	if ((c = cd->c) != (gunichar) -1)
+		goto encode;
+	
+	while (inleft > 0) {
+		if (cd->decode (&inptr, &inleft, &c) == -1) {
 			rc = -1;
 			break;
 		}
 		
+	encode:
 		if (cd->encode (c, &outptr, &outleft) == -1) {
 			rc = -1;
 			break;
 		}
 		
-		c = -1;
-	} while (inleft > 0 && outleft > 0);
+		c = (gunichar) -1;
+	}
 	
 	if (inbytesleft)
 		*inbytesleft = inleft;
