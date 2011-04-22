@@ -6614,7 +6614,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoMethod *cil_method;
 				
 				if (method->wrapper_type != MONO_WRAPPER_NONE) {
-					if (cfg->verbose_level > 2)
+					if (constrained_call && cfg->verbose_level > 2)
 						printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_call));
 					cmethod = (MonoMethod *)mono_method_get_wrapper_data (method, token);
 					cil_method = cmethod;
