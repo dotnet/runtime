@@ -220,7 +220,7 @@ gchar *
 g_convert (const gchar *str, gssize len, const gchar *to_charset, const gchar *from_charset,
 	   gsize *bytes_read, gsize *bytes_written, GError **err)
 {
-	size_t outsize, outused, outleft, inleft, rc;
+	size_t outsize, outused, outleft, inleft, grow, rc;
 	char *result, *outbuf, *inbuf;
 	gboolean flush = FALSE;
 	gboolean done = FALSE;
@@ -258,9 +258,10 @@ g_convert (const gchar *str, gssize len, const gchar *to_charset, const gchar *f
 			switch (errno) {
 			case E2BIG:
 				/* grow our result buffer */
+				grow = MAX (inleft, 8) << 1;
 				outused = outbuf - result;
-				outsize += MAX (inleft, 8);
-				outleft += MAX (inleft, 8);
+				outsize += grow;
+				outleft += grow;
 				result = g_realloc (result, outsize + 4);
 				outbuf = result + outused;
 				break;
