@@ -559,49 +559,50 @@ static int
 encode_utf8 (gunichar c, char **outbytes, size_t *outbytesleft)
 {
 	size_t outleft = *outbytesleft;
-	char *outptr = *outbytes;
-	size_t len, i;
-	int base;
+	unsigned char *outptr;
+	int base, n;
 	
 	if (c < 128UL) {
 		base = 0;
-		len = 1;
+		n = 1;
 	} else if (c < 2048UL) {
 		base = 192;
-		len = 2;
+		n = 2;
 	} else if (c < 65536UL) {
 		base = 224;
-		len = 3;
+		n = 3;
 	} else if (c < 2097152UL) {
 		base = 240;
-		len = 4;
+		n = 4;
 	} else if (c < 67108864UL) {
-		base = 248;	
-		len = 5;
+		base = 248;
+		n = 5;
 	} else if (c < 2147483648UL) {
 		base = 252;
-		len = 6;
+		n = 6;
 	} else {
 		errno = EINVAL;
 		return -1;
 	}
 	
-	if (outleft < len) {
+	if (outleft < n) {
 		errno = E2BIG;
 		return -1;
 	}
 	
-	for (i = len - 1; i > 0; i--) {
-		/* mask off 6 bits worth and add 128 */
-		outptr[i] = 128 + (c & 0x3f);
-		c >>= 6;
+	outptr = (unsigned char *) *outbytes;
+	
+	switch (n) {
+	case 6: outptr[5] = (c & 0x3f) | 0x80; c >>= 6;
+	case 5: outptr[4] = (c & 0x3f) | 0x80; c >>= 6;
+	case 4: outptr[3] = (c & 0x3f) | 0x80; c >>= 6;
+	case 3: outptr[2] = (c & 0x3f) | 0x80; c >>= 6;
+	case 2: outptr[1] = (c & 0x3f) | 0x80; c >>= 6;
+	case 1: outptr[0] = c | base;
 	}
 	
-	/* first character has a different base */
-	outptr[0] = base + c;
-	
-	*outbytesleft = outleft - len;
-	*outbytes = outptr + len;
+	*outbytes = (char *) outptr + n;
+	*outbytesleft = outleft - n;
 	
 	return 0;
 }
