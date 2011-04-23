@@ -501,47 +501,54 @@ decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 {
 	unsigned char *inptr = (unsigned char *) *inbytes;
 	size_t inleft = *inbytesleft;
-	size_t i, len = 0;
-	unsigned char c;
 	gunichar u;
+	size_t n;
 	
-	c = *inptr++;
+	u = *inptr++;
 	
-	if (c < 0x80) {
+	if (u < 0x80) {
 		/* simple ascii case */
-		len = 1;
-	} else if (c < 0xe0) {
-		c &= 0x1f;
-		len = 2;
-	} else if (c < 0xf0) {
-		c &= 0x0f;
-		len = 3;
-	} else if (c < 0xf8) {
-		c &= 0x07;
-		len = 4;
-	} else if (c < 0xfc) {
-		c &= 0x03;
-		len = 5;
-	} else if (c < 0xfe) {
-		c &= 0x01;
-		len = 6;
+		*inbytesleft = inleft - 1;
+		*inbytes = (char *) inptr;
+		*outchar = u;
+		return 0;
+	} else if (u < 0xc2) {
+		errno = EILSEQ;
+		return -1;
+	} else if (u < 0xe0) {
+		u &= 0x1f;
+		n = 2;
+	} else if (u < 0xf0) {
+		u &= 0x0f;
+		n = 3;
+	} else if (u < 0xf8) {
+		u &= 0x07;
+		n = 4;
+	} else if (u < 0xfc) {
+		u &= 0x03;
+		n = 5;
+	} else if (u < 0xfe) {
+		u &= 0x01;
+		n = 6;
 	} else {
 		errno = EILSEQ;
 		return -1;
 	}
 	
-	if (len > inleft) {
+	if (n > inleft) {
 		errno = EINVAL;
 		return -1;
 	}
 	
-	u = c;
-	for (i = 1; i < len; i++) {
-		u = (u << 6) | ((*inptr) & 0x3f);
-		inptr++;
+	switch (n) {
+	case 6: u = (u << 6) | (*inptr++ ^ 0x80);
+	case 5: u = (u << 6) | (*inptr++ ^ 0x80);
+	case 4: u = (u << 6) | (*inptr++ ^ 0x80);
+	case 3: u = (u << 6) | (*inptr++ ^ 0x80);
+	case 2: u = (u << 6) | (*inptr++ ^ 0x80);
 	}
 	
-	*inbytesleft = inleft - len;
+	*inbytesleft = inleft - n;
 	*inbytes = (char *) inptr;
 	*outchar = u;
 	
