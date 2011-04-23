@@ -251,7 +251,7 @@ test_convert ()
 	gboolean loaded;
 	guint i, j;
 	
-	if (!(srcdir = getenv ("srcdir")))
+	if (!(srcdir = getenv ("srcdir")) && !(srcdir = getenv ("PWD")))
 		return FAILED ("srcdir not defined!");
 	
 	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
