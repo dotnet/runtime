@@ -5722,7 +5722,9 @@ static void
 clear_thread_store_remset_buffer (SgenThreadInfo *info)
 {
 	*info->store_remset_buffer_index_addr = 0;
-	memset (*info->store_remset_buffer_addr, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
+	/* See the comment at the end of sgen_thread_unregister() */
+	if (*info->store_remset_buffer_addr)
+		memset (*info->store_remset_buffer_addr, 0, sizeof (gpointer) * STORE_REMSET_BUFFER_SIZE);
 }
 
 static size_t
@@ -6045,6 +6047,16 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	if (*p->store_remset_buffer_index_addr)
 		add_generic_store_remset_from_buffer (*p->store_remset_buffer_addr);
 	mono_sgen_free_internal (*p->store_remset_buffer_addr, INTERNAL_MEM_STORE_REMSET);
+	/*
+	 * This is currently not strictly required, but we do it
+	 * anyway in case we change thread unregistering:
+
+	 * If the thread is removed from the thread list after
+	 * unregistering (this is currently not the case), and a
+	 * collection occurs, clear_remsets() would want to memset
+	 * this buffer, which would either clobber memory or crash.
+	 */
+	*p->store_remset_buffer_addr = NULL;
 	UNLOCK_GC;
 }
 
