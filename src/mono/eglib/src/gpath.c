@@ -68,7 +68,9 @@ g_build_path (const gchar *separator, const gchar *first_element, ...)
 		g_string_append_len (result, s, p - s);
 
 		if (next && *next){
-			if (strncmp (separator, result->str + strlen (result->str) - slen, slen))
+			int reslen = strlen (result->str);
+			
+			if (reslen >= slen && strncmp (separator, result->str + reslen - slen, slen))
 				g_string_append (result, separator);
 
 			for (; strncmp (next, separator, slen) == 0; )
