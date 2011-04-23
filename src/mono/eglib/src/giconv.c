@@ -465,14 +465,11 @@ encode_utf16 (gunichar c, char **outbytes, size_t *outbytesleft)
 static int
 decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 {
+	unsigned char *inptr = (unsigned char *) *inbytes;
 	size_t inleft = *inbytesleft;
-	char *inptr = *inbytes;
 	size_t i, len = 0;
 	unsigned char c;
 	gunichar u;
-	
-	if (inleft < 1)
-		return 0;
 	
 	c = *inptr++;
 	
@@ -511,7 +508,7 @@ decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 	}
 	
 	*inbytesleft = inleft - len;
-	*inbytes = inptr;
+	*inbytes = (char *) inptr;
 	*outchar = u;
 	
 	return 0;
@@ -574,9 +571,6 @@ decode_latin1 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 	size_t inleft = *inbytesleft;
 	char *inptr = *inbytes;
 	gunichar u;
-	
-	if (inleft < 1)
-		return 0;
 	
 	u = (unsigned char) *inptr;
 	*inbytesleft = inleft - 1;
