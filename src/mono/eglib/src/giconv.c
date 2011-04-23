@@ -34,8 +34,8 @@
 #endif
 #include <errno.h>
 
-typedef int (* Decoder) (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-typedef int (* Encoder) (gunichar c, char **outbytes, size_t *outbytesleft);
+typedef int (* Decoder) (char *inbuf, size_t inleft, gunichar *outchar);
+typedef int (* Encoder) (gunichar c, char *outbuf, size_t outleft);
 
 struct _GIConv {
 	Decoder decode;
@@ -46,23 +46,23 @@ struct _GIConv {
 #endif
 };
 
-static int decode_utf32be (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-static int encode_utf32be (gunichar c, char **outbytes, size_t *outbytesleft);
+static int decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar);
+static int encode_utf32be (gunichar c, char *outbuf, size_t outleft);
 
-static int decode_utf32le (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-static int encode_utf32le (gunichar c, char **outbytes, size_t *outbytesleft);
+static int decode_utf32le (char *inbuf, size_t inleft, gunichar *outchar);
+static int encode_utf32le (gunichar c, char *outbuf, size_t outleft);
 
-static int decode_utf16be (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-static int encode_utf16be (gunichar c, char **outbytes, size_t *outbytesleft);
+static int decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar);
+static int encode_utf16be (gunichar c, char *outbuf, size_t outleft);
 
-static int decode_utf16le (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-static int encode_utf16le (gunichar c, char **outbytes, size_t *outbytesleft);
+static int decode_utf16le (char *inbuf, size_t inleft, gunichar *outchar);
+static int encode_utf16le (gunichar c, char *outbuf, size_t outleft);
 
-static int decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-static int encode_utf8 (gunichar c, char **outbytes, size_t *outbytesleft);
+static int decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar);
+static int encode_utf8 (gunichar c, char *outbuf, size_t outleft);
 
-static int decode_latin1 (char **inbytes, size_t *inbytesleft, gunichar *outchar);
-static int encode_latin1 (gunichar c, char **outbytes, size_t *outbytesleft);
+static int decode_latin1 (char *inbuf, size_t inleft, gunichar *outchar);
+static int encode_latin1 (gunichar c, char *outbuf, size_t outleft);
 
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define decode_utf32 decode_utf32le
@@ -189,18 +189,19 @@ g_iconv (GIConv cd, char **inbytes, size_t *inbytesleft,
 		goto encode;
 	
 	while (inleft > 0) {
-		if (cd->decode (&inptr, &inleft, &c) == -1) {
-			rc = -1;
+		if ((rc = cd->decode (inptr, inleft, &c)) == -1)
 			break;
-		}
+		
+		inleft -= rc;
+		inptr += rc;
 		
 	encode:
-		if (cd->encode (c, &outptr, &outleft) == -1) {
-			rc = -1;
+		if ((rc = cd->encode (c, outptr, outleft)) == -1)
 			break;
-		}
 		
 		c = (gunichar) -1;
+		outleft -= rc;
+		outptr += rc;
 	}
 	
 	if (inbytesleft)
@@ -221,10 +222,9 @@ g_iconv (GIConv cd, char **inbytes, size_t *inbytesleft,
  */
 
 static int
-decode_utf32be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
+decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar)
 {
-	gunichar *inptr = (gunichar *) *inbytes;
-	size_t inleft = *inbytesleft;
+	gunichar *inptr = (gunichar *) inbuf;
 	gunichar c;
 	
 	if (inleft < 4) {
@@ -233,26 +233,21 @@ decode_utf32be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 	}
 	
 	c = GUINT32_FROM_BE (*inptr);
-	inleft -= 4;
-	inptr++;
 	
 	if (c >= 2147483648UL) {
 		errno = EILSEQ;
 		return -1;
 	}
 	
-	*inbytes = (char *) inptr;
-	*inbytesleft = inleft;
 	*outchar = c;
 	
-	return 0;
+	return 4;
 }
 
 static int
-decode_utf32le (char **inbytes, size_t *inbytesleft, gunichar *outchar)
+decode_utf32le (char *inbuf, size_t inleft, gunichar *outchar)
 {
-	gunichar *inptr = (gunichar *) *inbytes;
-	size_t inleft = *inbytesleft;
+	gunichar *inptr = (gunichar *) inbuf;
 	gunichar c;
 	
 	if (inleft < 4) {
@@ -261,66 +256,51 @@ decode_utf32le (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 	}
 	
 	c = GUINT32_FROM_LE (*inptr);
-	inleft -= 4;
-	inptr++;
 	
 	if (c >= 2147483648UL) {
 		errno = EILSEQ;
 		return -1;
 	}
 	
-	*inbytes = (char *) inptr;
-	*inbytesleft = inleft;
 	*outchar = c;
 	
-	return 0;
+	return 4;
 }
 
 static int
-encode_utf32be (gunichar c, char **outbytes, size_t *outbytesleft)
+encode_utf32be (gunichar c, char *outbuf, size_t outleft)
 {
-	gunichar *outptr = (gunichar *) *outbytes;
-	size_t outleft = *outbytesleft;
+	gunichar *outptr = (gunichar *) outbuf;
 	
 	if (outleft < 4) {
 		errno = E2BIG;
 		return -1;
 	}
 	
-	*outptr++ = GUINT32_TO_BE (c);
-	outleft -= 4;
+	*outptr = GUINT32_TO_BE (c);
 	
-	*outbytes = (char *) outptr;
-	*outbytesleft = outleft;
-	
-	return 0;
+	return 4;
 }
 
 static int
-encode_utf32le (gunichar c, char **outbytes, size_t *outbytesleft)
+encode_utf32le (gunichar c, char *outbuf, size_t outleft)
 {
-	gunichar *outptr = (gunichar *) *outbytes;
-	size_t outleft = *outbytesleft;
+	gunichar *outptr = (gunichar *) outbuf;
 	
 	if (outleft < 4) {
 		errno = E2BIG;
 		return -1;
 	}
 	
-	*outptr++ = GUINT32_TO_LE (c);
-	outleft -= 4;
+	*outptr = GUINT32_TO_LE (c);
 	
-	*outbytes = (char *) outptr;
-	*outbytesleft = outleft;
-	
-	return 0;
+	return 4;
 }
 
 static int
-decode_utf16be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
+decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar)
 {
-	gunichar2 *inptr = (gunichar2 *) *inbytes;
-	size_t inleft = *inbytesleft;
+	gunichar2 *inptr = (gunichar2 *) inbuf;
 	gunichar2 c;
 	gunichar u;
 	
@@ -330,21 +310,19 @@ decode_utf16be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 	}
 	
 	u = GUINT16_FROM_BE (*inptr);
-	inleft -= 2;
-	inptr++;
 	
 	if (u < 0xd800) {
 		/* 0x0000 -> 0xd7ff */
+		*outchar = u;
+		return 2;
 	} else if (u < 0xdc00) {
 		/* 0xd800 -> 0xdbff */
-		if (inleft < 2) {
+		if (inleft < 4) {
 			errno = EINVAL;
 			return -1;
 		}
 		
-		c = GUINT16_FROM_BE (*inptr);
-		inleft -= 2;
-		inptr++;
+		c = GUINT16_FROM_BE (inptr[1]);
 		
 		if (c < 0xdc00 || c > 0xdfff) {
 			errno = EILSEQ;
@@ -352,26 +330,24 @@ decode_utf16be (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 		}
 		
 		u = ((u - 0xd800) << 10) + (c - 0xdc00) + 0x0010000UL;
+		*outchar = u;
+		
+		return 4;
 	} else if (u < 0xe000) {
 		/* 0xdc00 -> 0xdfff */
 		errno = EILSEQ;
 		return -1;
 	} else {
 		/* 0xe000 -> 0xffff */
+		*outchar = u;
+		return 2;
 	}
-	
-	*inbytes = (char *) inptr;
-	*inbytesleft = inleft;
-	*outchar = u;
-	
-	return 0;
 }
 
 static int
-decode_utf16le (char **inbytes, size_t *inbytesleft, gunichar *outchar)
+decode_utf16le (char *inbuf, size_t inleft, gunichar *outchar)
 {
-	gunichar2 *inptr = (gunichar2 *) *inbytes;
-	size_t inleft = *inbytesleft;
+	gunichar2 *inptr = (gunichar2 *) inbuf;
 	gunichar2 c;
 	gunichar u;
 	
@@ -381,21 +357,19 @@ decode_utf16le (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 	}
 	
 	u = GUINT16_FROM_LE (*inptr);
-	inleft -= 2;
-	inptr++;
 	
 	if (u < 0xd800) {
 		/* 0x0000 -> 0xd7ff */
+		*outchar = u;
+		return 2;
 	} else if (u < 0xdc00) {
 		/* 0xd800 -> 0xdbff */
-		if (inleft < 2) {
+		if (inleft < 4) {
 			errno = EINVAL;
 			return -1;
 		}
 		
-		c = GUINT16_FROM_LE (*inptr);
-		inleft -= 2;
-		inptr++;
+		c = GUINT16_FROM_LE (inptr[1]);
 		
 		if (c < 0xdc00 || c > 0xdfff) {
 			errno = EILSEQ;
@@ -403,26 +377,24 @@ decode_utf16le (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 		}
 		
 		u = ((u - 0xd800) << 10) + (c - 0xdc00) + 0x0010000UL;
+		*outchar = u;
+		
+		return 4;
 	} else if (u < 0xe000) {
 		/* 0xdc00 -> 0xdfff */
 		errno = EILSEQ;
 		return -1;
 	} else {
 		/* 0xe000 -> 0xffff */
+		*outchar = u;
+		return 2;
 	}
-	
-	*inbytes = (char *) inptr;
-	*inbytesleft = inleft;
-	*outchar = u;
-	
-	return 0;
 }
 
 static int
-encode_utf16be (gunichar c, char **outbytes, size_t *outbytesleft)
+encode_utf16be (gunichar c, char *outbuf, size_t outleft)
 {
-	gunichar2 *outptr = (gunichar2 *) *outbytes;
-	size_t outleft = *outbytesleft;
+	gunichar2 *outptr = (gunichar2 *) outbuf;
 	gunichar2 ch;
 	gunichar c2;
 	
@@ -434,8 +406,9 @@ encode_utf16be (gunichar c, char **outbytes, size_t *outbytesleft)
 	if (c <= 0xffff && (c < 0xd800 || c > 0xdfff)) {
 		ch = (gunichar2) c;
 		
-		*outptr++ = GUINT16_TO_BE (ch);
-		outleft -= 2;
+		*outptr = GUINT16_TO_BE (ch);
+		
+		return 2;
 	} else if (outleft < 4) {
 		errno = E2BIG;
 		return -1;
@@ -443,25 +416,19 @@ encode_utf16be (gunichar c, char **outbytes, size_t *outbytesleft)
 		c2 = c - 0x10000;
 		
 		ch = (gunichar2) ((c2 >> 10) + 0xd800);
-		*outptr++ = GUINT16_TO_BE (ch);
+		outptr[0] = GUINT16_TO_BE (ch);
 		
 		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
-		*outptr++ = GUINT16_TO_BE (ch);
+		outptr[1] = GUINT16_TO_BE (ch);
 		
-		outleft -= 4;
+		return 4;
 	}
-	
-	*outbytes = (char *) outptr;
-	*outbytesleft = outleft;
-	
-	return 0;
 }
 
 static int
-encode_utf16le (gunichar c, char **outbytes, size_t *outbytesleft)
+encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 {
-	gunichar2 *outptr = (gunichar2 *) *outbytes;
-	size_t outleft = *outbytesleft;
+	gunichar2 *outptr = (gunichar2 *) outbuf;
 	gunichar2 ch;
 	gunichar c2;
 	
@@ -474,7 +441,8 @@ encode_utf16le (gunichar c, char **outbytes, size_t *outbytesleft)
 		ch = (gunichar2) c;
 		
 		*outptr++ = GUINT16_TO_LE (ch);
-		outleft -= 2;
+		
+		return 2;
 	} else if (outleft < 4) {
 		errno = E2BIG;
 		return -1;
@@ -482,36 +450,28 @@ encode_utf16le (gunichar c, char **outbytes, size_t *outbytesleft)
 		c2 = c - 0x10000;
 		
 		ch = (gunichar2) ((c2 >> 10) + 0xd800);
-		*outptr++ = GUINT16_TO_LE (ch);
+		outptr[0] = GUINT16_TO_LE (ch);
 		
 		ch = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
-		*outptr++ = GUINT16_TO_LE (ch);
+		outptr[1] = GUINT16_TO_LE (ch);
 		
-		outleft -= 4;
+		return 4;
 	}
-	
-	*outbytes = (char *) outptr;
-	*outbytesleft = outleft;
-	
-	return 0;
 }
 
 static int
-decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
+decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 {
-	unsigned char *inptr = (unsigned char *) *inbytes;
-	size_t inleft = *inbytesleft;
+	unsigned char *inptr = (unsigned char *) inbuf;
 	gunichar u;
-	size_t n;
+	int n;
 	
 	u = *inptr++;
 	
 	if (u < 0x80) {
 		/* simple ascii case */
-		*inbytesleft = inleft - 1;
-		*inbytes = (char *) inptr;
 		*outchar = u;
-		return 0;
+		return 1;
 	} else if (u < 0xc2) {
 		errno = EILSEQ;
 		return -1;
@@ -548,18 +508,15 @@ decode_utf8 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
 	case 2: u = (u << 6) | (*inptr++ ^ 0x80);
 	}
 	
-	*inbytesleft = inleft - n;
-	*inbytes = (char *) inptr;
 	*outchar = u;
 	
-	return 0;
+	return n;
 }
 
 static int
-encode_utf8 (gunichar c, char **outbytes, size_t *outbytesleft)
+encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 {
-	size_t outleft = *outbytesleft;
-	unsigned char *outptr;
+	unsigned char *outptr = (unsigned char *) outbuf;
 	int base, n;
 	
 	if (c < 128UL) {
@@ -590,8 +547,6 @@ encode_utf8 (gunichar c, char **outbytes, size_t *outbytesleft)
 		return -1;
 	}
 	
-	outptr = (unsigned char *) *outbytes;
-	
 	switch (n) {
 	case 6: outptr[5] = (c & 0x3f) | 0x80; c >>= 6;
 	case 5: outptr[4] = (c & 0x3f) | 0x80; c >>= 6;
@@ -601,33 +556,19 @@ encode_utf8 (gunichar c, char **outbytes, size_t *outbytesleft)
 	case 1: outptr[0] = c | base;
 	}
 	
-	*outbytes = (char *) outptr + n;
-	*outbytesleft = outleft - n;
-	
-	return 0;
+	return n;
 }
 
 static int
-decode_latin1 (char **inbytes, size_t *inbytesleft, gunichar *outchar)
+decode_latin1 (char *inbuf, size_t inleft, gunichar *outchar)
 {
-	size_t inleft = *inbytesleft;
-	char *inptr = *inbytes;
-	gunichar u;
-	
-	u = (unsigned char) *inptr;
-	*inbytesleft = inleft - 1;
-	*inbytes = inptr + 1;
-	*outchar = u;
-	
-	return 0;
+	*outchar = (unsigned char) *inbuf;
+	return 1;
 }
 
 static int
-encode_latin1 (gunichar c, char **outbytes, size_t *outbytesleft)
+encode_latin1 (gunichar c, char *outbuf, size_t outleft)
 {
-	size_t outleft = *outbytesleft;
-	char *outptr = *outbytes;
-	
 	if (outleft < 1) {
 		errno = E2BIG;
 		return -1;
@@ -638,11 +579,7 @@ encode_latin1 (gunichar c, char **outbytes, size_t *outbytesleft)
 		return -1;
 	}
 	
-	*outptr++ = (char) c;
-	outleft--;
+	*outbuf = (char) c;
 	
-	*outbytesleft = outleft;
-	*outbytes = outptr;
-	
-	return 0;
+	return 1;
 }
