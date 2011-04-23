@@ -39,30 +39,28 @@ typedef struct {
 	gboolean clear_;
 	guint element_size;
 	gboolean zero_terminated;
-	gint capacity;
+	guint capacity;
 } GArrayPriv;
 
 static void
-ensure_capacity (GArrayPriv *priv,
-		 int capacity)
+ensure_capacity (GArrayPriv *priv, guint capacity)
 {
-	int new_capacity = MAX (priv->capacity, INITIAL_CAPACITY);
-
-	if (capacity < priv->capacity)
+	guint new_capacity;
+	
+	if (capacity <= priv->capacity)
 		return;
-
-	while (new_capacity < capacity) {
-		new_capacity <<= 1;
-	}
-	capacity = new_capacity;
-	priv->array.data = (gchar*)g_realloc (priv->array.data, element_length (priv, capacity));
-
+	
+	new_capacity = (capacity + 63) & ~63;
+	
+	priv->array.data = g_realloc (priv->array.data, element_length (priv, new_capacity));
+	
 	if (priv->clear_) {
 		memset (element_offset (priv, priv->capacity),
 			0,
-			element_length (priv, capacity - priv->capacity));
+			element_length (priv, new_capacity - priv->capacity));
 	}
-	priv->capacity = capacity;
+	
+	priv->capacity = new_capacity;
 }
 
 GArray *
